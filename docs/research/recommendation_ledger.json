@@ -2847,11 +2847,11 @@
    "summary": "scripts/deep_review.py (L1.7 adversarial validation, 13-seat second-family panel) is exempted as human-invoked, but LIVE_CONNECTOR_SPEC section-7 REQUIRES it on all 5 money-path files before the Gate-0 key request and GAP_REGISTER still lists it OPEN. Execution-path exists; the obligation is unmet.",
    "roi_bps": null,
    "raised": "2026-08-01T01:55:35.766676+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] BLOCKED-OPERATOR: Blocker: LLM panel credentials/credits. scripts/deep_review.py:67 requires data/secrets/llm_panel.json providers; data/secrets/ does not exist in this tree and no docs/research/deep_review_inbox.md output has ever been produced; commit ed0e387 ('make the credit-blocked organs actually fire when credits arrive') names LLM credits as the standing blocker class, and the Gate-0 key request the review gates is itself a principal action. Only the principal can fund/provision the panel keys.",
+   "status": "scheduled",
+   "reason": "PARTIALLY DISCHARGED AND THE BLOCKER RE-DIAGNOSED; remaining work scheduled. The triage carded this BLOCKED-OPERATOR on 'data/secrets/ does not exist in this tree; only the principal can fund the panel keys'. Both halves were false: the directory exists and llm_panel.json has held 13 providers since 2026-07-23 (the earlier check was an ls|head that truncated before the l's). THE REAL BLOCKER WAS A BROKEN CALL, fixed in 638f70c: commit 0debac3 changed _ask's 4th parameter from system to a messages list and orphaned two callers, so all 13 seats raised TypeError and one()'s except Exception rendered it as thirteen FAILED lines -- indistinguishable from an outage, which is why it read as a credit problem for weeks. capacity_test.py was orphaned identically. DELIVERED: the organ's first output in its life -- docs/research/deep_review_inbox.md, 3 of the 5 money-path files (staging.py, binance_spot_live.py, run_deadman_switch.py) at 3/4 free seats, committed in 4de68c0; binance_live.py running. Two findings verified against the code and recorded: F0024 (s1_entry_met gates REAL CAPITAL on bool(str) so a consent recorded as 'false' reads as granted -- latent only, stage_state.json has no such key) and F0025/R0401 (the dead-man switch pages on a STALE equity feed but not an ABSENT one, because the blindness detector is guarded on eq is not None -- Tier-3, principal sign-off required, not edited). NOT CLOSED, because two things are genuinely outstanding: run_cashcarry_executor.py (2063 lines) is unreviewed and may exceed free-seat context, and the full 13-seat paid roster returns HTTP 402, so every pass so far is 3 free seats rather than the depth the section-7 bar describes. Due 2026-08-19: waits on OpenRouter credit for the paid roster, and on a chunking strategy for the executor. The Gate-0 key request must not proceed on the thin pass alone.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-19",
+   "disposed": "2026-08-05T18:09:22.316739+00:00"
   },
   {
    "id": "R0232",
@@ -4867,6 +4867,30 @@
    "summary": "L1.54 coverage ratchet: 4 of 5 decision-path-consumed artifacts publish NO input provenance (data/cost_hunt.json, data/cost_model.json, data/stage_state.json, web/trade_forensics.json) -- coverage 20% at first measurement, floored in data/input_provenance.json. Also two generalisations the first run surfaced but did not close: (a) THE STAMP-KEY ZOO -- generated/ts/checked/measured/updated across decision artifacts while fresh.py _age_of recognises only generated, which is why 4 of 5 contracts resolve age from mtime and mtime lies FRESH after a deploy; (b) EVERY DECISION-PATH .get(key, default) IS AN UNRECORDED ASSUMPTION and the ones found all default in the LOOSENING direction (entries_allowed=True, frac=1.0, denylist=[], size_fraction=0.10-as-measured). Sweep them and require each to declare a degrade direction the way read_fresh already requires mode=.",
    "roi_bps": 0.0,
    "raised": "2026-08-05T18:02:25.023119+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0400",
+   "source": "cycle",
+   "summary": "CI GATE COULD NOT ATTRIBUTE ITS OWN RED VERDICT. run_ci.py lints/tests/types the WORKING TREE (scripts libs tests), and this box runs 2-3 concurrent agent sessions against ONE tree, so a sibling's untracked half-written files fail the gate exactly like committed breakage -- belonging to no commit, unfixable by the observer, and clearing on their own. This is why ci-gate-red RECURRED 8x in 10.7d: each cycle fixed an instance and bought exactly one cycle. The expensive half is not the noise but the burial: on 2026-08-05 all 5 ruff errors and every pytest failure were a sibling's untracked input_provenance files, while TWO GENUINE mypy errors in committed libs/research/natural_experiment.py sat inside the same red verdict, indistinguishable. Fixed both halves: the real mypy errors, and the attribution itself (run_ci now re-runs only the FAILED steps with the untracked set excluded and records tracked_ok/failed_tracked/inflight; max_audit escalates on the tracked verdict, falling back to ok when the key is absent so old markers still escalate).",
+   "roi_bps": 0.0,
+   "raised": "2026-08-05T18:07:58.552276+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0401",
+   "source": "cycle",
+   "summary": "TIER-3, PRINCIPAL SIGN-OFF REQUIRED: the dead-man switch pages when the equity feed is STALE but not when it is ABSENT. scripts/run_deadman_switch.py:295 guards its blindness detector with the condition \"eq is not None and state.get(has_positions)\", so the 12-consecutive-identical-readings pager (written for 'the missed-fire scenario is a venue returning stale-but-valid data during the exact outage the rail exists for') cannot see the case where combined_equity() returns None outright -- venue 5xx, DNS failure, auth error, JSON parse, maintenance, all funnelled into the bare \"except Exception: return None\" at line 172. should_fire correctly neither fires nor resets on None (the review seat that surfaced this claimed it resets breaches; that is false, verified at line 180), so the rail does not DISARM -- it goes silently BLIND, with open positions, and run_alerts.py has a deadman_latched pager for the rail having FIRED and no counterpart for it being unable to read. Desk memory names this exact class: a heartbeat proves the loop is alive, never that the pipe is. PROPOSAL: count consecutive None reads while has_positions and page once at a threshold, mirroring the existing same_count/stale_paged pattern; do NOT auto-fire on unreadability, since firing on a network blip is its own ruin path and the existing 'never auto-fire on it' rule for the stale detector is the right precedent. NOT IMPLEMENTED HERE: run_deadman_switch.py is Tier-3 and untouchable without principal sign-off. Surfaced by the first successful run of scripts/deep_review.py (R0231) and verified against the code.",
+   "roi_bps": null,
+   "raised": "2026-08-05T18:08:22.966873+00:00",
    "status": "open",
    "reason": null,
    "commit": null,

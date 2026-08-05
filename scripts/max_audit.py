@@ -867,10 +867,21 @@ def check_self_application(defects) -> None:
     if ci_marker.exists():
         with contextlib.suppress(OSError, json.JSONDecodeError):
             ci = json.loads(ci_marker.read_text("utf-8"))
-            if ci.get("ok") is False:
+            # READ THE TRACKED VERDICT (2026-08-05). This box runs several agent sessions against
+            # ONE working tree, so the whole-tree `ok` also goes False when a concurrent session
+            # has a half-written untracked file -- breakage that belongs to no commit and that
+            # the observer cannot fix. Escalating that made ci-gate-red recur 8x in 10.7d and,
+            # worse, BURIED a real one: on 2026-08-05 all 5 lint errors were scratch files while
+            # two genuine mypy errors sat in committed code inside the same red verdict.
+            # `tracked_ok` is absent on markers written before that fix -- fall back to `ok`, so
+            # an old marker still escalates rather than silently reading as green.
+            tracked_ok = ci.get("tracked_ok", ci.get("ok"))
+            if tracked_ok is False:
+                failed = ci.get("failed_tracked") or ci.get("failed")
                 defects.append(("ci-gate-red",
-                                f"last CI run ({ci.get('ts')}) was RED -> {ci.get('failed')}; "
-                                "the desk-wide safety gate is down. Run scripts/run_ci.py + fix"))
+                                f"last CI run ({ci.get('ts')}) was RED on COMMITTED code -> "
+                                f"{failed}; the desk-wide safety gate is down. "
+                                "Run scripts/run_ci.py + fix"))
 
 
 def check_dig_depth(defects) -> None:

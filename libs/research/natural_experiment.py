@@ -186,7 +186,7 @@ def _cross_sectional_t(x: np.ndarray) -> float:
     sd = float(np.std(x, ddof=1))
     if sd <= 1e-12 or not np.isfinite(sd):
         return 0.0
-    return float(np.mean(x)) / (sd / np.sqrt(n))
+    return float(np.mean(x) / (sd / np.sqrt(n)))
 
 
 def difference_in_differences(
@@ -262,7 +262,14 @@ def difference_in_differences(
             "placebo_ok": False, "identified": False, "inference": None, "passed": False,
             "verdict": why, "exogeneity_note": exogeneity_note, "direction": direction}
         base.update(kw)
-        return DiDResult(**base)  # type: ignore[arg-type]
+        # NOT `DiDResult(**base)  # type: ignore[arg-type]`: that ignore is REQUIRED on some
+        # in-pin mypy versions and reads as UNUSED on others, so the pinned box and the deploy
+        # box disagree about whether this file is clean -- the pyarrow straddle one module over
+        # (libs/data/lake.py), which pyproject had to paper over with a scoped override.
+        # `model_validate` is typed to accept `Any` on every version, so no version can disagree
+        # and no override is needed. Identical at runtime: pydantic routes both `__init__` and
+        # `model_validate` to `__pydantic_validator__.validate_python(<the same dict>)`.
+        return DiDResult.model_validate(base)
 
     if n == 0:
         return _refuse("No treated units supplied -- nothing to identify.")

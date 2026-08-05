@@ -9,6 +9,7 @@ neither caller's contract can silently regress.
 from __future__ import annotations
 
 import fcntl
+import json
 
 import scripts.run_ci as run_ci
 
@@ -37,6 +38,67 @@ def test_lock_contention_stays_rc0_for_organs(tmp_path, monkeypatch):
         assert run_ci.main([]) == 0
     finally:
         fh.close()
+
+
+def _isolate(tmp_path, monkeypatch):
+    """Point run_ci at a scratch root so a test can never clobber the real CI marker."""
+    monkeypatch.setattr(run_ci, "_ROOT", tmp_path)
+    monkeypatch.setattr(run_ci, "_LOCK", tmp_path / "ci.lock")
+    (tmp_path / "data").mkdir(parents=True, exist_ok=True)
+
+
+def _marker(tmp_path):
+    return json.loads((tmp_path / "data/.ci_last_run.json").read_text("utf-8"))
+
+
+def test_scratch_file_failure_does_not_claim_the_desk_gate_is_down(tmp_path, monkeypatch):
+    # Several agent sessions share ONE working tree on this box, so the gate also judges whatever
+    # a sibling has half-written. That breakage belongs to no commit and the observer cannot fix
+    # it -- it must not raise the desk-wide alarm, but the author's exit code must still be red.
+    _isolate(tmp_path, monkeypatch)
+    monkeypatch.setattr(run_ci, "_STEPS", [("lint (ruff)", ["sh", "-c", "exit 1"])])
+    monkeypatch.setattr(run_ci, "_inflight_py", lambda: ["libs/ops/scratch.py"])
+    monkeypatch.setattr(run_ci, "_scoped_to_tracked", lambda *_: ["sh", "-c", "exit 0"])
+    rc = run_ci.main([])
+    m = _marker(tmp_path)
+    assert rc == 1, "the author running the gate must still see their own breakage"
+    assert m["ok"] is False, "whole-tree meaning is preserved for pre-existing readers"
+    assert m["tracked_ok"] is True, "committed code is clean -- do not cry wolf"
+    assert m["failed_tracked"] == []
+    assert m["inflight"] == ["libs/ops/scratch.py"], "recorded, never swallowed"
+
+
+def test_committed_failure_still_escalates_even_amid_scratch_files(tmp_path, monkeypatch):
+    # The expensive half: on 2026-08-05 two REAL mypy errors sat in committed code while five
+    # lint errors from a sibling's scratch files filled the same red verdict. A scratch file
+    # present must never mask a genuine failure.
+    _isolate(tmp_path, monkeypatch)
+    monkeypatch.setattr(run_ci, "_STEPS", [("types (mypy)", ["sh", "-c", "exit 1"])])
+    monkeypatch.setattr(run_ci, "_inflight_py", lambda: ["libs/ops/scratch.py"])
+    monkeypatch.setattr(run_ci, "_scoped_to_tracked", lambda *_: ["sh", "-c", "exit 1"])
+    assert run_ci.main([]) == 1
+    m = _marker(tmp_path)
+    assert m["tracked_ok"] is False
+    assert m["failed_tracked"] == ["types (mypy)"]
+
+
+def test_unscopable_step_is_attributed_to_committed_code():
+    # Fail-safe direction: attribution may only ever retract an alarm it has PROVEN belongs to
+    # scratch files. A step it cannot scope (the stress harness takes no file arguments) stays
+    # blamed on committed code.
+    assert run_ci._scoped_to_tracked("stress harness", ["x"], ["a.py"]) is None
+    assert run_ci._scoped_to_tracked("lint (ruff)", ["x"], []) is None
+    assert run_ci._scoped_to_tracked("lint (ruff)", ["x"], ["a.py"])[-2:] == ["--extend-exclude",
+                                                                             "a.py"]
+    assert "--ignore=a.py" in run_ci._scoped_to_tracked("tests (pytest)", ["x"], ["a.py"])
+    assert run_ci._scoped_to_tracked("types (mypy)", ["x"], ["a.py"])[-1] == r"(a\.py)"
+
+
+def test_old_marker_without_attribution_still_escalates():
+    # max_audit falls back to `ok` when `tracked_ok` is absent, so a marker written before this
+    # fix keeps escalating rather than silently reading as green.
+    src = (run_ci._ROOT / "scripts/max_audit.py").read_text("utf-8")
+    assert 'ci.get("tracked_ok", ci.get("ok"))' in src
 
 
 def test_puller_invokes_strict_and_guards_the_revert():
