@@ -140,18 +140,24 @@ def main() -> int:
     sh = np.array([sharpe_ratio(m[:, i]) for i in range(m.shape[1])])
     ppy = 365.0 * 24.0 * 3600_000.0 / args.bar_ms      # bars per year at this cadence
 
-    # RESOLVING POWER, PRICED BEFORE THE VERDICTS ARE READ (L1.25 branch 1: "is the INSTRUMENT
-    # broken?"). N here is m.shape[1] -- an accident of how many candidates generation happened to
-    # emit, never a design decision -- and nothing used to compute what that N did to the
-    # campaign's ability to see anything. The desk's 420-tested/0-survivors record was read for
-    # weeks as a fact about the market when it was substantially a fact about this: at T=310,
-    # N=420 the DSR hurdle is an annualised Sharpe of 5.04 and power against a TRUE Sharpe of 3 is
-    # 2.98%. LABEL ONLY, NEVER A GATE -- an UNDERPOWERED campaign still runs and still reports, in
-    # full (L1.25a: null streaks throttle nothing; L1.28b(f): acquisition is never cut). What
-    # changes is that a zero-survivor result now arrives with the reader's first question already
-    # answered: could this campaign have SEEN a survivor at all?
-    design = preflight(m.shape[1], m.shape[0], ppy=ppy)
-    print(f"design: {design.verdict} -- {design.note}", flush=True)
+    # CAN THIS CAMPAIGN SEE AN EDGE AT ALL -- asked BEFORE the compute is spent, not after.
+    # `n_trials` here is `m.shape[1]`, an ACCIDENT OF GENERATION VOLUME rather than a design
+    # decision, and until now nothing computed what that N did to the campaign's resolving power.
+    # The measured consequence is on the record: at T=310 / N=420 the DSR hurdle is an annualised
+    # Sharpe of 5.04 and the power against a TRUE annual Sharpe of 3 is 2.98%. The desk's
+    # 420-tested / 0-survivors history has been read repeatedly as a fact about the market; it is
+    # substantially a fact about the INSTRUMENT (L1.25 branch 1: "is the instrument broken?").
+    # `informative_null()` is what makes that difference readable in the artifact instead of
+    # arguable after the fact.
+    #
+    # IT NEVER BLOCKS. An UNDERPOWERED verdict LABELS the result; it does not veto the run,
+    # shrink the candidate set, or move a gate -- the campaign still runs and still reports in
+    # full (L1.25a: null streaks throttle nothing; L1.28b(f): acquisition is never cut).
+    design = preflight(int(m.shape[1]), int(m.shape[0]), ppy=ppy)
+    print(f"design: {design.verdict} -- hurdle annSR {design.hurdle_annual_sharpe:.2f}, "
+          f"power at target {design.power_at_target:.1%}, "
+          f"a zero-survivor result {'IS' if design.informative_null() else 'is NOT'} "
+          "evidence about the market", flush=True)
 
     rows: list[dict[str, Any]] = []
     for i, nm in enumerate(names):
@@ -177,6 +183,11 @@ def main() -> int:
                        "column that decides whether this was worth doing is oos_sharpe: the "
                        "2026-08-01 daily-bar campaign topped out at 0.100 across 129 textbook "
                        "mechanisms."),
+           # THE DESIGN, ON THE ARTIFACT. Without it a zero-survivor campaign reads as a
+           # verdict on the market when it may only be a verdict on the sample. as_dict() rather
+           # than a hand-spelled subset: it is the dataclass's own contract, so se_annual_sharpe,
+           # periods_per_year and the power_curve travel too, and a field added to the design
+           # later cannot go missing here by omission.
            "design": design.as_dict(),
            "rows": rows}
     _OUT.write_text(json.dumps(report, indent=2), "utf-8")

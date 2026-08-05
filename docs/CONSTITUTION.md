@@ -1733,3 +1733,68 @@ missing file. An unexamined clamp is the more expensive error (L1.27).
 
 **Binding on future work.** Any new decision-path producer declares its inputs in the same commit
 that creates it. Fenced by `scripts/check_input_provenance.py` over `libs/ops/input_provenance.py`.
+
+## L1.56 A SCREEN CANNOT GATE ITS OWN PROMOTION -- ADMISSION IS BY COST, NOT BY SIGNIFICANCE
+
+Found 2026-08-05 while hunting the desk's first survivor. Confirmed by direct measurement of the
+live artifacts, not by argument.
+
+**The state that prompted it.** 120 scored screen cells on disk. Twelve Stage-B forward slots.
+ZERO forward clocks ever started, in the desk's entire life. Every organ in the chain reported
+success, and the principal was told repeatedly that the desk had found no survivors. It had not
+found no survivors; it had never run the test.
+
+**Four independent breaks, each failing CLOSED and each silent.**
+
+1. **No converter.** `finalize_axis_screens` speaks one schema -- a `trials` list. Every newer
+   screen writes its own. 114 of 120 cells were UNREADABLE, which is not the same fact as refuted,
+   and the artifact said neither.
+2. **Admission gated on a Stage-A verdict.** `verdict_adjusted.startswith("SCREEN-INTERESTING")`.
+   NONE of the 120 carried it, so none was ever admitted.
+3. **Absent read as unknown.** Eight state files that had NEVER BEEN WRITTEN marked the slot
+   cohort `complete=False`, and free slots collapse to zero on an incomplete cohort -- permanently.
+4. **Evidence map hardcoded.** Eight names, eight artifacts. A sleeve spawned afterwards could
+   never publish a day count, so it could never accrue and never resolve.
+
+**The law that break 2 violated, in the desk's own words.** TWO_STAGE_DISCOVERY_LAW: *"The
+backtest gauntlet is a RANKING DEVICE only... nothing screened here is ever validated"* and
+*"Slots are filled by EV-rank (economics, orthogonality, capacity, measured cost)."* Gating
+admission on a Stage-A significance verdict hands the ranking device exactly the promotion
+authority the law withholds from it. The arithmetic shows why it is fatal rather than merely
+wrong: at ~1,096 Stage-A trials the data-snooping critical value is sqrt(2*ln(1096)) = 3.74 sigma,
+demanding an in-sample Sharpe near 2.2 on three years of daily bars. Requiring that BEFORE granting
+a COSTLESS forward clock means the desk only ever forward-tests hypotheses so strong they needed no
+confirmation. Every real, weak, exploitable edge is filtered out before it can be tested.
+
+**THE RULE.** A forward slot's scarce resource is CALENDAR TIME, not significance. Admission ranks
+by TIME-TO-RESOLUTION:
+
+    n_needed = (z_holm / |ic|)^2        resolve_days = n_needed * bar_length_days
+
+Measured on the desk's own store the same day: the 5-minute liquidation-reversion cell at
+|ic| 0.0172 settles in **45 days**; thirteen cells settle inside ninety. Those were the cells being
+reported as "no survivors". A weak IC on a fast bar is worth far more slot-time than a strong IC on
+a slow one, and significance-ranking inverts that exactly.
+
+**What is still refused, and it is not a strength bar.** Controls and diagnostics (a look-ahead
+control exists to MEASURE a leak; promoting one is the rule-8 artifact-as-edge failure) and BROKEN
+MEASUREMENTS -- TIMING-ARTIFACT, SUSPECT-LOOKAHEAD -- where the alignment gate fired and the number
+does not mean what it says. SCREEN-WEAK and SCREEN-UNDERPOWERED stay admissible: "underpowered"
+means the screen could not SEE, not that it looked and found nothing (L1.49). Of 228 recorded
+negatives only 50 were POWERED.
+
+**NO BAR MOVED, AND THE DIRECTION IS THE CONSERVATIVE ONE.** Stage B's Holm threshold, alpha=0.05
+and MAX_FORWARD_SLOTS=12 are untouched; the admission ranker READS the Holm bar to price the wait
+and never sets it. Admitting clocks RAISES m, which TIGHTENS every standing candidate's bar. What
+changed is only WHICH candidates get to attempt Stage B -- the one place the law says selection
+pressure is harmless.
+
+**The general class, beyond slots.** A pipeline can fail closed at every link and report nothing at
+every link, and the accumulated silence then reads as a finding about the world. *Zero results is a
+claim about the instrument until the instrument has been shown to work.* Before any zero is read as
+evidence, the chain that produces non-zeros must be demonstrated end to end.
+
+**Binding on future work.** No stage may gate admission to the next on a statistic the governing
+law denies it authority over. Every spawned clock declares the artifact it re-reads and a baseline
+captured at spawn, or it is not a clock. Fenced by `check_survivor_pipeline` in
+`scripts/max_audit.py` and `tests/research/test_survivor_pipeline.py`.

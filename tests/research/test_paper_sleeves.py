@@ -72,7 +72,21 @@ def test_spawn_from_fake_verdict_creates_state_file_and_roster_row(tmp_path: Pat
     assert ledger["spawned"][0]["ts"] and ledger["spawned"][0]["reason"]
 
 
-def test_weak_and_noncandidate_verdicts_never_qualify(tmp_path: Path) -> None:
+def test_a_weak_verdict_qualifies_but_a_diagnostic_never_does(tmp_path: Path) -> None:
+    """THE LAW CHANGED HERE ON 2026-08-05, and the old assertion was the defect.
+
+    This test used to demand that SCREEN-WEAK never qualify. That is a SIGNIFICANCE GATE at Stage
+    A, and the two-stage law is explicit that Stage A is a ranking device with ZERO promotion
+    authority -- so gating admission on its verdict hands the ranking device exactly the authority
+    the law withholds. The cost was total and measured: of 120 scored cells on disk NONE carried
+    SCREEN-INTERESTING, so zero were ever admitted, ten of twelve forward slots sat idle, and not
+    one forward clock had ever started in the desk's life. Nothing could survive because nothing
+    was ever tested.
+
+    What must STILL never qualify is a CONTROL or a broken measurement -- a different thing from a
+    weak one. A future-peeking shift diagnostic exists to measure a leak; promoting one is the
+    rule-8 artifact-as-edge failure, and it stays impossible.
+    """
     _store(tmp_path, "fx", [
         _trial("em_basket->btc_5d", "SCREEN-WEAK (Sharpe fails the 0.5 floor once corrected)"),
         _trial("SHIFT_em_basket_plus1d->btc_1d",
@@ -80,9 +94,11 @@ def test_weak_and_noncandidate_verdicts_never_qualify(tmp_path: Path) -> None:
     ])
     out, rc = run(tmp_path, cohort=_cohort(0), book_usd=50_000.0)
     assert rc == 0
-    assert out["status"] == "NO-CANDIDATES"
-    assert not out["queued"] and not out["spawned"]
-    assert not list(tmp_path.glob("data/*_shadow_state.json"))
+    assert out["status"].startswith("SPAWNED 1"), "a weak edge must still get a costless clock"
+    spawned = [r["name"] for r in out["spawned"]]
+    assert spawned == ["fx_em_basket_btc_5d"]
+    assert not any("shift" in n.lower() for n in spawned), (
+        "a future-peeking diagnostic can never become a forward clock, however it scored")
 
 
 # ------------------------------------------------------------- over-cap queues, never spawns

@@ -104,12 +104,76 @@ def _spawn_one(root: Path, c: Candidate, reason: str) -> dict[str, Any]:
                       "never touches capital (L1.6)",
             "axis": c.axis, "trial": c.trial, "screen_report": f"{_REPORTS}/{c.source}",
             "screen_verdict": c.verdict,
+            # THE BASELINE THE FORWARD CLOCK IS MEASURED AGAINST. Without it there is no way to
+            # tell which rows arrived after birth, so "forward evidence" would silently mean
+            # "in-sample evidence re-read" -- the exact confusion Stage B exists to prevent.
+            "baseline": {"n_eff": c.n_eff, "ic": c.ic, "horizon_days": c.horizon_days,
+                         "captured_at_spawn": True},
+            "origin_artifact": c.origin_artifact, "origin_key": c.origin_key,
+            "mechanism": c.mechanism,
         }, indent=1) + "\n", "utf-8")
     roster = sorted({*(str(x) for x in roster_raw if str(x).strip()), c.name})
     roster_path.write_text(json.dumps(roster, indent=1) + "\n", "utf-8")
     return {"name": c.name, "ts": _now(), "state": "SPAWNED", "reason": reason,
             "axis": c.axis, "trial": c.trial,
+            # The verdict this clock was admitted under, ON THE LEDGER ROW. It was written into
+            # the state file only, so the permanent spawn ledger recorded `verdict: None` for
+            # every sleeve -- and the ledger is what survives a data reset, so the one durable
+            # record of WHY a clock exists carried nothing.
+            "verdict": c.verdict, "ic": c.ic, "horizon_days": c.horizon_days,
+            "mechanism": c.mechanism,
             "state_file": f"data/{c.name}_shadow_state.json"}
+
+
+def _repair_provenance(root: Path, candidates: list[Candidate]) -> list[dict[str, Any]]:
+    """Top up a standing sleeve's state file with the provenance a forward runner needs.
+
+    WHY A REPAIR PASS AND NOT A MIGRATION SCRIPT. `_spawn_one` never rewrites an existing state
+    file -- rewriting one would reset `shadow_start` and erase a clock's forward evidence, which is
+    the one thing that must never happen here. So a sleeve spawned before the state file carried
+    `origin_artifact`/`origin_key`/`baseline` can never acquire them at spawn time, and the forward
+    runner reports it UNRUNNABLE forever: standing, charging the cohort its multiplicity, and
+    unable to accrue a single row. This pass adds ONLY the missing keys, on the sleeves whose
+    hypothesis is still in the verdict store, and it is the reason the fix self-heals instead of
+    needing a one-off script every time the shape grows.
+
+    SHADOW_START IS NEVER TOUCHED, and neither is any key already present. The baseline is stamped
+    `backfilled` rather than `captured_at_spawn`, because it was read after the clock started and
+    claiming otherwise would overstate how much of the sample is genuinely out-of-sample.
+    """
+    repaired: list[dict[str, Any]] = []
+    by_name = {c.name: c for c in candidates}
+    data_dir = root / "data"
+    if not data_dir.is_dir():
+        return repaired
+    for path in sorted(data_dir.glob("*_shadow_state.json")):
+        name = path.name[: -len("_shadow_state.json")]
+        c = by_name.get(name)
+        if c is None:
+            continue                            # not one of ours, or its hypothesis is gone
+        doc = _load_json(path)
+        if not isinstance(doc, dict) or not doc.get("shadow_start"):
+            continue
+        missing = [k for k in ("origin_artifact", "origin_key", "baseline") if not doc.get(k)]
+        if not missing:
+            continue
+        if "origin_artifact" in missing:
+            doc["origin_artifact"] = c.origin_artifact
+        if "origin_key" in missing:
+            doc["origin_key"] = c.origin_key
+        if "baseline" in missing:
+            doc["baseline"] = {
+                "n_eff": c.n_eff, "ic": c.ic, "horizon_days": c.horizon_days,
+                "captured_at_spawn": False,
+                "backfilled_utc": _now(),
+                "why": ("read AFTER the clock started, because this sleeve was spawned before "
+                        "the state file carried a baseline. Rows already in the source at this "
+                        "moment are therefore NOT proven out-of-sample; forward accrual is "
+                        "measured from here, which understates nothing and overstates nothing."),
+            }
+        path.write_text(json.dumps(doc, indent=1) + "\n", "utf-8")
+        repaired.append({"name": name, "added": missing})
+    return repaired
 
 
 def run(root: Path, cohort: dict[str, Any] | None = None,
@@ -145,6 +209,8 @@ def run(root: Path, cohort: dict[str, Any] | None = None,
         out["queued"] = prior["queued"]
         _write(queue_path, out)
         return out, 2
+
+    out["provenance_repaired"] = _repair_provenance(root, parsed["candidates"])
 
     standing = standing_names(cohort, root / "data", prior)
     decision = decide(parsed["candidates"], standing, cohort, book_usd)

@@ -2682,6 +2682,14 @@ _FINDING_DOCS_EXCLUDED = {
         "L1.22 self-improvement. States how the desk researches its own research; enforced by the cycle's meta duty, not by an artifact-freshness clock.",
     "docs/research/UNREACHABLE_LAYER_TRIAGE.md":
         "§36 orphan-code triage. The standing record of which modules are unreachable and why, with each carrying an explicit wire/defer/retire verdict -- self-disposing, like the other triage registers.",
+    "docs/research/deep_review_inbox.md":
+        "CADENCED PRODUCER (§36) -- scripts/deep_review.py appends one panel pass per risk-path\n"
+        "module (LIVE_CONNECTOR_SPEC section 7 bar). It is an INBOX, so its own conversion rule\n"
+        "is the one its header states: every accepted finding is rowed via\n"
+        "scripts/track_findings.py in the same run, and the file is the transcript, not the\n"
+        "backlog. Unclaimed it read as an orphan, which is exactly the inventory-accumulates\n"
+        "failure §36 exists to catch -- the claim names the conversion path rather than\n"
+        "exempting the file from having one.",
     "docs/research/capability_hunt/":
         "daily L1.31 hunt records -- dated per-slot snapshots whose findings are ROWED IN THE\n"
         "SAME RUN by the hunt's own duty (L1.31/L1.39; 2026-07-31 proof: s5 -> R0153-R0173,\n"
@@ -6782,3 +6790,116 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+#: A paper sleeve's accrual artifact older than this is a FOSSIL, not evidence. Sources regenerate
+#: daily, so two missed runs is already a runner that stopped.
+_FORWARD_STALE_H = 60.0
+
+
+def check_survivor_pipeline(defects) -> None:
+    """THE CHAIN BETWEEN MINING AND A SURVIVOR, checked link by link.
+
+    WHY THIS EXISTS. On 2026-08-05 the desk had 120 scored screen cells on disk, twelve forward
+    slots, and ZERO forward clocks ever started -- and every organ in the chain reported success.
+    The break was structural and completely silent: a converter did not exist, so 114 of 120 cells
+    were unreadable by the correction layer; admission gated on a Stage-A significance verdict the
+    two-stage law says Stage A cannot issue; the slot registry read ABSENT state files as UNKNOWN,
+    which forced free slots to zero forever; and the evidence map was eight hardcoded names, so a
+    spawned sleeve could never publish a day count. Each link failed CLOSED and reported nothing,
+    and the desk read the resulting silence as "no edges exist". It was reading its own closed door.
+
+    Every check here is about PLUMBING, never about strength. Nothing in this function reads an
+    effect size, and a desk with zero real edges must be able to pass it completely -- the failure
+    it detects is a pipeline that cannot deliver a survivor even if one is standing in it.
+    """
+    import json as _json
+
+    conv = ROOT / "reports/axis_screens"
+    corrected = 0
+    if conv.is_dir():
+        for p in conv.glob("*.json"):
+            try:
+                doc = _json.loads(p.read_text("utf-8"))
+            except (OSError, ValueError):
+                continue
+            trials = doc.get("trials")
+            if isinstance(trials, list):
+                corrected += sum(1 for t in trials
+                                 if isinstance(t, dict) and t.get("verdict_adjusted"))
+
+    # LINK 1 -- conversion. Scored cells exist on disk that the correction layer cannot read.
+    try:
+        sys.path.insert(0, str(ROOT))
+        from libs.research.screen_conversion import convert_all
+        result = convert_all(ROOT)
+        on_disk = int(result["n_cells"])
+    except Exception as exc:
+        defects.append(("survivor-conversion-broken",
+                        f"screen_conversion could not run ({type(exc).__name__}: {exc}). Every "
+                        "screen that writes its own schema is then invisible to the correction "
+                        "layer, and its cells can never reach a forward slot."))
+        on_disk = 0
+    if on_disk and corrected < on_disk:
+        defects.append(("survivor-cells-unconverted",
+                        f"{on_disk} scored cell(s) convertible but only {corrected} carry "
+                        "verdict_adjusted -- run scripts/finalize_axis_screens.py. Cells nobody "
+                        "can read are not refuted, they are UNREAD, and reporting the silence as "
+                        "'no survivors' is the conversion defect (L1.50/L1.53)."))
+
+    # LINK 2 -- slots. Idle capacity while candidates are queued is unspent forward time, and
+    # forward time is the only thing that ever produces a survivor.
+    try:
+        from libs.research.slot_registry import derive_slots
+        cohort = derive_slots()
+    except Exception as exc:
+        defects.append(("survivor-registry-broken",
+                        f"slot_registry.derive_slots failed ({type(exc).__name__}: {exc}) -- the "
+                        "cohort size m is then unknown, and every Holm bar downstream is computed "
+                        "from a number nobody could derive."))
+        cohort = {}
+    queue = _j(ROOT / "data/paper_sleeve_queue.json", {}) or {}
+    n_queued = len(queue.get("queued") or [])
+    idle = int(cohort.get("idle_slots") or 0)
+    if idle > 0 and n_queued > 0:
+        defects.append(("survivor-slots-idle-with-queue",
+                        f"{idle} forward slot(s) idle while {n_queued} candidate(s) wait in the "
+                        "queue. A slot costs nothing to fill and every idle day is forward "
+                        "evidence not accruing -- the two-stage law's own clock-saturation "
+                        "failure, and it is what ten idle slots looked like for the desk's "
+                        "entire life."))
+
+    # LINK 3 -- accrual. A clock that is standing but not running is worse than no clock: it pays
+    # the cohort's multiplicity (tightening every other candidate's bar) and returns nothing.
+    fwd = _j(ROOT / "web/paper_sleeve_forward.json", None)
+    live = [n for n in (_j(ROOT / "data/shadow_sleeves.json", []) or [])
+            if (ROOT / "data" / f"{n}_shadow_state.json").exists()]
+    if live and not isinstance(fwd, dict):
+        defects.append(("survivor-clocks-unrun",
+                        f"{len(live)} paper sleeve(s) standing and web/paper_sleeve_forward.json "
+                        "is absent -- nothing has ever run them. A spawned clock nobody runs can "
+                        "never accrue and never resolve, while still charging the cohort its "
+                        "multiplicity: born, registered, and structurally unable to finish."))
+    elif isinstance(fwd, dict):
+        # _parse_iso returns EPOCH SECONDS, and NOW is time.time(). Both are floats; treating
+        # either as a datetime raises inside the check and the whole audit dies silently on it.
+        ts = _parse_iso(fwd.get("updated"))
+        if ts is not None and (NOW - ts) / 3600.0 > _FORWARD_STALE_H:
+            age = round((NOW - ts) / 3600.0, 1)
+            defects.append(("survivor-accrual-stale",
+                            f"web/paper_sleeve_forward.json is {age}h old (> {_FORWARD_STALE_H}h). "
+                            "The forward runner has stopped; every standing clock is a fossil "
+                            "reporting its last reading, and a fossil that still says ACCRUING is "
+                            "how a dead pipeline reads as a healthy one."))
+        unrunnable = [n for n, s in (fwd.get("sleeves") or {}).items()
+                      if isinstance(s, dict) and s.get("evidence") in ("UNRUNNABLE", "SOURCE-GONE")]
+        if unrunnable:
+            defects.append(("survivor-clocks-unrunnable",
+                            f"{len(unrunnable)} standing clock(s) cannot be run at all "
+                            f"({', '.join(sorted(unrunnable)[:3])}...): their state file names no "
+                            "origin artifact, or the source no longer carries their cell. Each is "
+                            "charging the cohort multiplicity while unable to produce evidence -- "
+                            "retire by a ledgered decision or re-spawn, never leave standing."))
+
+
+CHECKS += [("survivor-pipeline", check_survivor_pipeline)]
