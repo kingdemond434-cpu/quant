@@ -241,6 +241,23 @@ filterwarnings = ["error"]
 # without saying where -- which is most of the diagnostic value.
 timeout = 300
 timeout_method = "signal"
+# THE SUITE'S OWN SCRATCH WAS STARVING THE SUITE. /tmp here is a tmpfs, so every byte under
+# /tmp/pytest-of-quant is RESIDENT RAM on a 3.8GB box with NO SWAP that also carries the live
+# executor, three recorders and several agent sessions. Measured 2026-08-05: 35 orphaned run
+# directories holding 1021MB -- 26% of the machine -- against 189MB available.
+#
+# It is a closed loop, which is why it never self-corrected: a run killed by the OOM killer never
+# reaches its own cleanup, so its directory is orphaned; pytest's start-of-run garbage collection
+# keeps only the newest few but will not touch a directory whose lock looks live; the orphans
+# accumulate; RAM falls; the next run is likelier to be killed. That is precisely how the desk
+# arrived at a `tests (pytest)` red it could not reproduce -- the suite collects clean in 19s at
+# 326MB peak, flat in directory count, so there was never anything wrong with the tests.
+#
+# `failed` deletes the tmp_path of every PASSING test at teardown and keeps it only where someone
+# might actually need to read it. Retention is not a debugging loss: the scratch that survives is
+# exactly the scratch belonging to a failure. Reclaiming the orphans took available memory from
+# 189MB to 1555MB in one pass.
+tmp_path_retention_policy = "failed"
 
 [tool.coverage.run]
 source = ["libs"]
