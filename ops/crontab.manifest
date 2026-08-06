@@ -83,6 +83,22 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 5 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_campaign_retention.py >> data/cro_ai_logs/campaign_retention.log 2>&1
 
+# EVENT CALENDAR REBUILD (R0276): regenerates data/event_calendar.json, which libs/execution/
+# event_guard.py reads to defer conviction entries across FOMC windows. IDEMPOTENT -- the dates
+# are held in the generator with their source, so a run either reproduces the committed file
+# byte-for-byte or shows a diff worth reading. It is scheduled for one reason: the guard BLOCKS
+# when the calendar is absent, so a wiped or un-synced data/ would silently stop the sleeve, and
+# a monthly self-heal makes that unrecoverable state recoverable without a human noticing first.
+# CADENCE CEILING: DATA-ARRIVAL (L1.28c) -- the Fed publishes the schedule annually and dates are
+# tentative until the preceding meeting, so the INFORMATION changes at most yearly; monthly is
+# the self-heal rate, not the information rate, and re-pulling the source is a manual act
+# (refresh_by in the artifact). Nothing here fetches: bls.gov 403s this host, recorded in
+# pending_sources so CPI/NFP read as UNPOPULATED rather than as a clear calendar.
+# EVIDENCE: scripts/build_event_calendar.py -> data/event_calendar.json (16 FOMC windows,
+# 2026-2027, UTC computed from IANA not typed); tests/execution/test_conviction_trader.py.
+# CONFIDENCE: committed-script (new this cycle)
+19 4 1 * * cd "$QUANT_ROOT" && .venv/bin/python scripts/build_event_calendar.py >> data/cro_ai_logs/event_calendar.log 2>&1
+
 # KIMI HUNTER (Deep Forest Protocol, waves 1->2->3 enforced in code). BUILT and automated on the
 # box per commit a9a4dcd ("cron at 06:00 UTC + full-chain mock proves funding is the only
 # remaining variable") but ABSENT FROM THIS MANIFEST until 2026-07-30 -- i.e. live-only

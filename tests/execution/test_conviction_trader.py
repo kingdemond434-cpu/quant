@@ -773,3 +773,114 @@ def test_floor_above_full_kelly_is_reported_never_silently_clamped(monkeypatch):
     assert out["cap"] == RISK_CAP_FLOOR                # never zero -- the kill must stay reachable
     assert out["floor_above_full_kelly"] is True       # and never silent
     assert "promotion gate" in out["why"]
+
+
+# --------------------------------------------------------------- R0276 scheduled-event deferral
+
+
+class _Verdict:
+    """Stands in for EventVerdict -- validate() only ever reads .allowed/.state/.why."""
+
+    def __init__(self, allowed, state, why="because"):
+        self.allowed, self.state, self.why = allowed, state, why
+
+
+def test_an_entry_inside_a_scheduled_event_window_is_deferred():
+    """A stop is a promise the book cannot keep across a repricing it can see coming."""
+    ok, why = validate(_t(), event=_Verdict(False, "BLACKOUT", "FOMC decision at 18:00Z"))
+    assert ok is False
+    assert why.startswith("DEFERRED (BLACKOUT)")
+    assert "available again once the window closes" in why
+
+
+def test_the_deferral_never_reads_as_a_refusal_of_the_thesis():
+    """DEFERRED and REFUSED are different verdicts about different things (L1.16a).
+
+    A refusal says the call was bad; a deferral says the clock was wrong. Collapsing them would
+    teach the sleeve's own scoring that a good call was a bad one, once per FOMC.
+    """
+    _, why = validate(_t(), event=_Verdict(False, "BLACKOUT"))
+    assert "REFUSED" not in why
+
+
+def test_an_empty_or_stale_calendar_blocks_rather_than_waves_through():
+    """The ambiguous branch is never the permissive one -- both absences still defer."""
+    for state in ("EMPTY", "STALE"):
+        ok, why = validate(_t(), event=_Verdict(False, state))
+        assert ok is False and state in why
+
+
+def test_a_clear_window_changes_nothing():
+    ok, why = validate(_t(), event=_Verdict(True, "CLEAR"))
+    assert ok is True and why == "accepted"
+
+
+def test_absent_guard_does_not_block(monkeypatch):
+    """event=None is the import-failed path and must fail OPEN -- see event_window()."""
+    ok, why = validate(_t(), event=None)
+    assert ok is True and why == "accepted"
+
+
+def test_a_malformed_call_still_gets_its_real_refusal_inside_a_blackout():
+    """ORDERING IS THE POINT. The event check is LAST so a bad call is named as a bad call.
+
+    If the blackout were tested first, every malformed call during a 45-minute window would come
+    back as DEFERRED and the desk would lose the feedback it scores the sleeve on.
+    """
+    ok, why = validate(_t(driver="too thin"), event=_Verdict(False, "BLACKOUT"))
+    assert ok is False
+    assert "REFUSED" in why and "DEFERRED" not in why
+
+
+def test_a_pass_is_never_deferred():
+    """A PASS reprices nothing, so an event window has no opinion on it."""
+    ok, why = validate({"action": "PASS", "pass_reason": "no setup worth the risk today"},
+                       event=_Verdict(False, "BLACKOUT"))
+    assert ok is True and why.startswith("PASS:")
+
+
+def test_the_shipped_calendar_actually_blocks_a_real_fomc_window():
+    """END TO END against the COMMITTED calendar, not a fixture (verify the artifact, not the code).
+
+    Pins that the generator's UTC conversion is right where it matters: a hand-typed daylight
+    offset would put this window an hour off and the guard would clear the repricing.
+    """
+    from libs.execution.event_guard import check
+    sep = datetime(2026, 9, 16, 18, 0, tzinfo=UTC)          # 14:00 America/New_York, EDT
+    assert check(sep - timedelta(minutes=10)).state == "BLACKOUT"
+    assert check(sep + timedelta(minutes=5)).state == "BLACKOUT"
+    assert check(sep + timedelta(hours=3)).state == "CLEAR"
+    jan = datetime(2026, 1, 28, 19, 0, tzinfo=UTC)          # 14:00 America/New_York, EST
+    assert check(jan - timedelta(minutes=10)).state == "BLACKOUT"
+
+
+def test_build_event_calendar_refuses_to_ship_a_broken_calendar():
+    """A malformed calendar is WORSE than none: it clears a window that is a real repricing.
+
+    The refusal path is exercised, not just present -- an organ whose refusal branch has never
+    been run has not been shown to have one.
+    """
+    from scripts.build_event_calendar import build, refusal
+
+    good = build()
+    assert refusal(good) is None
+    assert len(good["events"]) == 16                      # 8 FOMC decision days x 2026, 2027
+    assert good["pending_sources"], "CPI/NFP must stay declared-absent, never silently dropped"
+
+    assert "REFUSED" in (refusal({**good, "events": []}) or "")
+    scrambled = {**good, "events": list(reversed(good["events"]))}
+    assert "REFUSED" in (refusal(scrambled) or "")
+    dup = {**good, "events": [good["events"][0], good["events"][0]]}
+    assert "DUPLICATE" in (refusal(dup) or "")
+
+
+def test_every_shipped_stamp_is_1400_eastern():
+    """The one fact a hand-typed UTC offset gets wrong, asserted against the IANA database."""
+    from zoneinfo import ZoneInfo
+
+    from scripts.build_event_calendar import build
+
+    for e in build()["events"]:
+        local = datetime.fromisoformat(e["utc"].replace("Z", "+00:00")).astimezone(
+            ZoneInfo("America/New_York"))
+        assert (local.hour, local.minute) == (14, 0), e

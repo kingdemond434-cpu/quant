@@ -423,6 +423,38 @@ STOP_MISMATCH_TOL = 0.25               # relative
 COST_REFUSE_R = 0.5
 
 
+def event_window() -> Any:
+    """The scheduled-event verdict for RIGHT NOW, or None if the guard itself is unavailable.
+
+    R0276. THE TWO ABSENCES ARE NOT THE SAME and this is the one place they get separated. A
+    missing or expired CALENDAR is the guard working: it returns EMPTY/STALE and blocks, because
+    an unknown event window must never read as a clear one. A missing GUARD MODULE is this
+    script's dependency being broken, and blocking every entry on an ImportError would let a
+    packaging mistake silently halt the sleeve -- a much larger loss than the one the guard
+    prevents. So the calendar fails CLOSED and the import fails OPEN, deliberately, and the open
+    branch is published in the state file rather than swallowed (L2.4).
+    """
+    try:
+        from libs.execution.event_guard import check
+    except ImportError:
+        return None
+    try:
+        return check()
+    except OSError:
+        return None
+
+
+def _event_state() -> dict[str, Any]:
+    """The event verdict rendered for the published state file -- always present, never silent."""
+    v = event_window()
+    if v is None:
+        return {"state": "GUARD-UNAVAILABLE", "allowed": True,
+                "why": "libs.execution.event_guard could not be loaded -- entries are NOT being "
+                       "screened against the scheduled-event calendar. This is a dependency "
+                       "defect, not a quiet market"}
+    return {"state": v.state, "allowed": bool(v.allowed), "why": v.why}
+
+
 def trade_cost_view(root: Path, symbol: str, direction: str, stop_pct: float,
                     horizon_hours: float) -> dict[str, Any]:
     """Expected all-in cost of THIS call, in R, priced BEFORE sizing -- possible because cost in
@@ -1228,7 +1260,8 @@ def build_brief(root: Path) -> dict[str, Any]:
 
 def validate(call: dict[str, Any], *, noise: dict[str, Any] | None = None,
              heat: dict[str, Any] | None = None,
-             costs: dict[str, Any] | None = None) -> tuple[bool, str]:
+             costs: dict[str, Any] | None = None,
+             event: Any | None = None) -> tuple[bool, str]:
     if call.get("action") == "PASS":
         if not call.get("pass_reason"):
             return False, "REFUSED: a PASS must state why -- an unjustified pass is not a decision"
@@ -1314,6 +1347,21 @@ def validate(call: dict[str, Any], *, noise: dict[str, Any] | None = None,
             return False, (f"REFUSED: already live in {call['symbol']} -- doubling the same "
                            "instrument is concentration wearing a second name, which is exactly "
                            "what the spread-the-heat design exists to avoid")
+    # SCHEDULED-EVENT DEFERRAL (R0276), and it is LAST on purpose. A stop is a promise the book
+    # cannot keep across a scheduled repricing: FOMC gaps straight through the level, so the
+    # invalidation this desk derives its size from stops being the loss it is sized against.
+    #
+    # Placed after every quality check so a malformed call still gets its REAL refusal. Ordering
+    # it first would mask the model's actual mistake behind a timing verdict for 45 minutes at a
+    # time, and the desk would lose the feedback it uses to score the sleeve.
+    #
+    # DEFERRED IS NOT REFUSED, and the vocabulary carries that: the thesis is intact and the same
+    # entry is available on the other side of the window. This costs ZERO statistical power --
+    # nothing here judges whether an edge is real -- so it is not a bar and cannot be one.
+    if event is not None and not getattr(event, "allowed", True):
+        return False, (f"DEFERRED ({getattr(event, 'state', '?')}): {getattr(event, 'why', '')} "
+                       "-- the thesis is untouched and this entry is available again once the "
+                       "window closes")
     return True, "accepted"
 
 
@@ -1557,7 +1605,14 @@ def main() -> int:
                                             float(call["horizon_hours"]))
             except (KeyError, TypeError, ValueError):
                 costs = None                   # malformed call -- validate names the real refusal
-        ok, why = validate(call, noise=noise, heat=heat, costs=costs)
+        # SCHEDULED-EVENT WINDOW (R0276). Computed here and INJECTED, like noise/heat/costs, so
+        # validate() stays a pure function of its arguments and the tests can put the clock
+        # wherever they need it. Only for real entries: a PASS reprices nothing, and this guard
+        # has no opinion on closes.
+        event = None
+        if call.get("action") != "PASS":
+            event = event_window()
+        ok, why = validate(call, noise=noise, heat=heat, costs=costs, event=event)
         if not ok:
             state = {"status": "REFUSED", "why": why, "call": call, "noise": noise}
         elif call.get("action") == "PASS":
@@ -1570,6 +1625,12 @@ def main() -> int:
     state["drawdown_rail"] = dd
     state["heat"] = heat
     state["ensemble"] = consensus
+    # PUBLISHED WHETHER OR NOT IT BOUND (R0276). The guard blocks on EMPTY and STALE as well as on
+    # a real blackout, which is the right direction -- but an unpopulated or expired calendar would
+    # then stop every entry, and a sleeve that has quietly stopped trading looks exactly like a
+    # sleeve finding no setups. Putting the state on every run makes those two distinguishable
+    # without reading the refusal text. The calendar's own refresh_by is the repair.
+    state["event_window"] = _event_state()
     state.setdefault("at", datetime.now(tz=UTC).isoformat())
     (_ROOT / _STATE).write_text(json.dumps(state, indent=2), "utf-8")
     print(json.dumps(state, indent=2) if args.json else

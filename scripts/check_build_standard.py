@@ -94,6 +94,7 @@ _GOVERNED: tuple[str, ...] = (
     "run_organ_er.py",
     "check_enforcement_execution.py",       # L1.43 execution-vs-existence (capability hunt s3)
     "check_campaign_retention.py",          # R0270 L1.0 campaign observation-retention ratchet
+    "build_event_calendar.py",              # R0276 scheduled-event calendar the guard reads
     "check_doctrine_diff.py",               # R0093: doctrine order -> blind-spot row (L2.5)
     "run_paper_sleeve_spawner.py",          # R0102 paper-sleeve auto-spawn (2026-08-05)
     "collect_dexscreener.py",               # R0100 axis 3 (2026-08-05)

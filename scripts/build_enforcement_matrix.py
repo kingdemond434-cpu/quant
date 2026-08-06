@@ -50,7 +50,13 @@ _MAP: dict[str, list[str]] = {
     "L1.2": ["check_directives"],
     "L1.3": ["check_data_utilization", "check_generation"],
     "L1.4": ["run_reality_gap.py", "check_forensics_fresh", "check_carry_funding_measured"],
-    "L1.5": ["run_cost_model.py", "check_carry_funding_measured", "run_execution_intel.py"],
+    # R0276 adds the scheduled-event deferral. L1.5 is EXECUTION PHYSICS: a stop is priced as the
+    # loss it caps, and across a scheduled repricing it is not -- the gap jumps straight through
+    # the level the whole size was derived from. build_event_calendar.py supplies the windows the
+    # conviction sleeve defers entries across. It DEFERS, never kills, so it costs no statistical
+    # power and is not a bar.
+    "L1.5": ["run_cost_model.py", "check_carry_funding_measured", "run_execution_intel.py",
+             "build_event_calendar.py"],
     "L1.6": ["libs/autodiscovery/validation.py", "check_welded_gates", "check_gate_optimality",
              "run_mutation.py"],
     "L1.7": ["check_rubberstamp_detector", "check_rubberstamp_enforcement", "deep_review.py"],

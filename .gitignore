@@ -33,6 +33,12 @@ data/*
 # probe window and the falsifier for every symbol on the execution denylist. Untracked, a symbol
 # could be quietly re-admitted with no record of what change justified it.
 !data/execution_reentry.json
+# THE GUARD BLOCKS WHEN THIS FILE IS ABSENT, which is the correct direction and exactly why it
+# cannot be untracked: data/* is ignored wholesale, so on a fresh clone or a wiped data/ the
+# conviction sleeve would refuse EVERY entry and read as a quiet market. Committed so its absence
+# is impossible rather than merely unlikely, and so a revised FOMC date is a reviewable diff
+# (the Fed's dates are tentative until the preceding meeting confirms them). R0276.
+!data/event_calendar.json
 # A HIGH-WATER MARK STORED WHERE `rm` RESETS IT IS NOT A FLOOR. data/* is ignored wholesale, so
 # the capability ratchet -- which exists precisely so no aspect can silently fall -- would have
 # had its own history live only on whichever box last ran it. That is the failure mode the
