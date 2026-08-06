@@ -1,0 +1,59 @@
+{
+ "axis": "openmarket_polymarket_binance_ms",
+ "row": "R0268",
+ "registered": "2026-08-06",
+ "status": "CATALOGUED-SAMPLED -- sample split ingested and measured; full split NOT ingested",
+ "why_not_ingested": "The obvious construction is graveyarded by the authors' own out-of-sample null (see docs/graveyard.md lit_prediction_market_microstructure_vs_book). A 727M-row ingest is not justified by a mechanism that is already dead; it waits on a NAMED orthogonal use, not on disk or effort.",
+
+ "source": {
+  "paper": "arXiv:2607.26245 -- OpenMarket: A Synchronized Polymarket-Binance Dataset for High-Frequency Prediction-Market Research (Gregory Young, 2026)",
+  "data": "https://huggingface.co/datasets/gregyoung14/openmarket-btc-polymarket",
+  "code": "https://github.com/gregyoung14/openmarket",
+  "verified_first_hand": "2026-08-06 from this box: arXiv abs HTTP 200; HF API gated=false private=false disabled=false, 4253 files, 1411 downloads, lastModified 2026-07-31T02:05:24Z; two sample parquet downloaded and parsed."
+ },
+
+ "legitimacy_s13": {
+  "verdict": "CLEAN FOR THE DATA, UNRESOLVED FOR THE CODE -- and the two must not be collapsed",
+  "data_licence": "apache-2.0, declared in the HF dataset cardData AND in the README front-matter. Permits research use.",
+  "code_licence": "NOASSERTION (GitHub API license.spdx_id) -- the Rust collection/pairing pipeline carries no recognised licence. DO NOT VENDOR THE CODE. Reading the paper's method and re-implementing is unaffected; copying the repo is not authorised by anything read.",
+  "note": "Recorded separately because a permissive DATA licence on a repo whose CODE is unlicensed is the exact collapse the bitFlyer ruling warned about in the other direction (availability is not permission)."
+ },
+
+ "corpus": {
+  "span_event_data": "2026-02-12 .. 2026-05-15 (54 Polymarket days, 57 Binance days, per paper abstract)",
+  "span_snapshots": "2026-03-14T19:32:15Z .. 2026-07-01T02:56:54Z (202 archival snapshots)",
+  "rows_unified": 727098247,
+  "lead_lag_pairs": 2936031,
+  "splits": {
+   "unified/": "v0.4.3-unified -- RECOMMENDED, ~727M rows, 504 parquet",
+   "full/": "v0.2-full -- 202-snapshot per-export archive, 3312 parquet",
+   "(root)": "v0.1-sample -- 12 flat parquet, 9352 rows (what was ingested here)",
+   "features/": "v0.4-features -- step2/step3 demo, reproducible from unified/"
+  },
+  "layout": "Hive-style <table>/date=YYYY-MM-DD/*.parquet; a `date` column is also carried in-file",
+  "state": "ARCHIVAL SHUTDOWN -- frozen at source tag v0.5.2, no new snapshots. A fixed historical record, so it can never become a live axis; it is a one-time reference corpus."
+ },
+
+ "sample_measured_here": {
+  "files": ["lag_pairs_ms.parquet (25171 B)", "market_meta.parquet (17721 B)"],
+  "lag_pairs_rows": 1769,
+  "lag_pairs_columns": ["id", "paired_at_ms", "market_slug", "side_label", "binance_tick_id", "polymarket_tick_id", "binance_source_ts_ms", "polymarket_source_ts_ms", "lead_lag_ms", "binance_price", "polymarket_bid", "price_delta_bps", "quality_flag", "date"],
+  "markets": 4,
+  "dates": ["2026-05-14"],
+  "lead_lag_ms": {"min": -613, "p25": -38, "median": 14, "p75": 92, "max": 508},
+  "quality_flag": {"tight": 1078, "medium": 571, "wide": 120},
+  "collector_minus_venue_ms": {"p05": 1171, "median": 6213, "p95": 18698},
+  "data_caveat_found_here": "price_delta_bps is DEGENERATE in this split: every value lies in [-10000.0, -9999.9]. It differences a Polymarket probability (0..1) against a Binance USD price (~80949), so the field is a unit-mismatch sentinel, not a spread. Do not consume this column."
+ },
+
+ "why_this_matters_to_the_desk": {
+  "headline": "The corpus's realised value here is METHODOLOGICAL, not directional, and it was banked without ingesting the full split.",
+  "l1_46_corroboration": "Every lag_pairs row declares THREE clocks -- binance_source_ts_ms, polymarket_source_ts_ms (venue stamps) and paired_at_ms (collector stamp) -- which is exactly the discipline L1.46 installed here after 82% of desk data was found carrying an undeclared clock. An outside team, independently, treats t_venue and t_recv as separate first-class columns.",
+  "the_measured_warning": "The paper reports a 16ms median lag on venue source clocks, relative clock drift bounded to <=6ms, and a RESIDUAL SINGLE-VANTAGE CONSTANT-OFFSET AMBIGUITY OF ~+/-99ms. Measured here on the sample: median lead_lag +14ms with IQR [-38, +92]ms. THE DECLARED AMBIGUITY IS THE SIZE OF THE ENTIRE INTERQUARTILE RANGE. A single-vantage collector cannot resolve a sub-100ms cross-venue lead-lag, however carefully it stamps -- not a data-quality failing, a structural limit of observing two venues from one point.",
+  "their_response_to_it": "They fall back to a SYNCHRONIZATION-FREE event study measured only on the collector clock, which independently shows Polymarket quotes responding to large Binance moves after a median 347ms. That is the robust estimand: an interval on ONE clock, never a difference between two.",
+  "measured_here_supporting_that": "paired_at_ms - binance_source_ts_ms has median 6213ms (p95 18698ms) in the sample -- the collector clock is seconds away from the venue stamp, so the two bases are not interchangeable even approximately.",
+  "bears_on": "R0117 (cross-venue quote lead-lag at own synchronized L2 timestamps), already flagged in L1.46 as resting on a false premise via sampling-phase aliasing. This is a SECOND, independent reason the same row cannot work as specified: even with perfect sampling phase, a single-vantage constant-offset ambiguity remains. Rowed separately."
+ },
+
+ "reopen_condition_l1_16a": "A named orthogonal use that does NOT re-run the graveyarded construction -- e.g. using the corpus as a labelled ground-truth fixture to validate the desk's own cross-venue timing methodology against a corpus whose clock provenance is fully declared. Absent that, the full 727M-row split stays un-ingested."
+}

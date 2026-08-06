@@ -105,6 +105,7 @@ _GOVERNED: tuple[str, ...] = (
     "resolve_llm_trader_book.py",           # R0123 decline grader (2026-08-05)
     "run_natural_experiment.py",            # R0207 first causal study, DiD (2026-08-05)
     "probe_bybit_archive.py",               # R0243 T7 retention alarm (2026-08-05)
+    "fit_passive_impact.py",                # R0267 passive-fill impact model (2026-08-06)
 )
 
 #: Organs that legitimately owe no cron line, with the reason. "No schedule" must be a DECISION.

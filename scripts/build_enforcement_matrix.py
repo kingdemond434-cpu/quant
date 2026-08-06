@@ -200,8 +200,12 @@ _MAP: dict[str, list[str]] = {
     # L1.45: execution excitation. Every other fence walks NODES and EDGES; this one looks for a
     # CYCLE (traded -> recorded -> measured -> cheap -> traded) and for exclusions with no path
     # back. It also owns the producer for the three ramp_gate step-up conditions that had none.
+    # R0267 joins L1.45 rather than getting its own key: it is the FUNCTIONAL FORM the excitation
+    # design has no vocabulary for, and its own-fill half refuses for exactly the reason L1.45
+    # names -- an operating point the desk never visits, so go buy the observation.
     "L1.45": ["scripts/check_excitation.py", "scripts/run_cost_identification.py",
-              "libs/execution/excitation.py"],
+              "libs/execution/excitation.py", "scripts/fit_passive_impact.py",
+              "libs/execution/passive_impact.py"],
     # L1.46: clock provenance. Every other data fence asks whether the COLLECTOR RAN -- gapless
     # collection was verified GOOD on the same corpus that is not monotonic in its own `t` field.
     # This one asks whether the TIMESTAMPS MEAN WHAT THE SCHEMA IMPLIES, which is the defect class
@@ -511,6 +515,9 @@ _FENCE_OWNERS: dict[str, str] = {
     # --- discovery duties (L1.8 / L1.9 / L1.11a / L1.24).
     "check_clock_saturation": "L1.8",    # objective-#2 duty: the clock is the scarce resource
     "check_mine_scope": "L1.8",          # a find written somewhere unscanned is outside the law
+    "check_mine_scope_vacuous": "L1.57",  # the INWARD leak: a doc IN scope the parser cannot see,
+                                          # so §33 reads a clean backlog off an empty set
+    "check_feed_inbox_backlog": "L1.8",  # a queue nobody counts becomes an archive (R0269)
     "check_source_backlog": "L1.9",      # a catalogue that grows faster than it is verified
     "check_dig_uncommitted": "L1.9",     # VPS disk is not institutional memory
     "check_paid_target_registry": "L1.11a",
