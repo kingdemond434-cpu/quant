@@ -64,6 +64,10 @@ _NOT_ORGANS = {
     "model_upgrade":         "capability BENCHMARK -- its prompts test the model, and seeding "
                              "them with the desk's objective would contaminate the measurement",
     "max_audit":             "the auditor itself; it reads organs, it is not one",
+    "check_credentials":     "credential INVENTORY -- it opens llm_panel.json to report whether "
+                             "each key is present and well-shaped, and deliberately never reads a "
+                             "value or calls a model. An objective preamble would be text nothing "
+                             "sends anywhere",
 }
 
 

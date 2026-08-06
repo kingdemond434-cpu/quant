@@ -212,6 +212,16 @@ def _income_rows(since_ms: int, income_type: str = "",
 
 def income_summary(since_ms: int = 0, fetch: Any = None) -> dict[str, float]:
     """Realized PnL, funding earned/paid, and commission since ``since_ms`` (default: recent)."""
+    # gross_profit/gross_loss = EVERY income event split by sign (winning closes + funding earned vs
+    # losing closes + funding paid + fees) -> the true trading-report gross split, not a sign-split
+    # of the NETTED realized_pnl (which hides winning trades inside a net-negative total). So these
+    # two are NOT a trade-level profit factor: commission rows are always negative and land in
+    # gross_loss, so gross_profit/|gross_loss| is a NET-OF-COSTS ratio. That is the intended
+    # meaning, and it is written here rather than only in binance_testnet.py because the two
+    # modules are drop-in replacements -- a reader who checks only the live one must not have to
+    # infer it, and someone "fixing" the apparent asymmetry would silently redefine the number.
+    # n_wins/n_losses = count of winning vs losing CLOSED trades (REALIZED_PNL events) -> trade
+    # win rate = n_wins / (n_wins + n_losses).
     out = {"realized_pnl": 0.0, "funding": 0.0, "commission": 0.0,
            "gross_profit": 0.0, "gross_loss": 0.0, "n_wins": 0.0, "n_losses": 0.0}
     for r in _income_rows(since_ms, fetch=fetch):
@@ -378,9 +388,44 @@ def cancel_all(symbol: str) -> dict[str, Any]:
 
 
 def flatten_all() -> list[dict[str, Any]]:
-    """Emergency: market-close every open position."""
-    out = []
+    """Emergency: market-close every open position. Reduce-only, and isolated per symbol.
+
+    TWO DEFECTS FIXED 2026-08-06, BOTH ON THE PATH THAT RUNS BECAUSE SOMETHING ALREADY WENT WRONG.
+
+    `reduce_only` WAS MISSING. `place_market`'s own docstring three functions up calls it
+    "mandatory on any cover/close leg", and this IS the close leg -- the last one, the one the
+    guard fires at a flatten rung. The size comes from a `positions()` read, and between that read
+    and the fill the position can shrink: a resting maker quote fills, a venue-side STOP_MARKET
+    triggers, an earlier chunk of this same flatten lands. Then SELL(100) against a position that
+    is now +40 does not close it, it SELLS THROUGH ZERO INTO A 60-LOT SHORT. That is incident #6's
+    exact mechanism (+916,772 long), reproduced on the emergency path, at the one moment the book
+    is most likely to be moving underneath the read. `reduceOnly` makes it arithmetically
+    impossible: the venue clamps the fill at flat.
+
+    It also fixes the client order ID, which is not a separate bug so much as the same one seen
+    from the idempotency side. `place_market` derives `intent = "close" if reduce_only else
+    "open"`, so every emergency close was being tagged an OPEN -- and libs/execution/idempotency.py
+    exists precisely so "a cover and an entry on the same symbol/side never share an ID inside one
+    bucket". A genuine entry on the same symbol and side inside the same 90s bucket would collide
+    with the flatten leg, and the venue would reject THE FLATTEN as a duplicate. Fail-safe is a
+    missed entry; this was the collision resolving the other way.
+
+    ONE RAISING LEG ABANDONED EVERY REMAINING POSITION. The loop had no isolation and the only
+    caller (scripts/run_live_guard.py) wraps the whole call in one try/except, so a single symbol
+    erroring left the rest of the book open while the report read "flatten FAILED". Emergency
+    semantics are per-symbol: try everything, close what closes, report what did not. This matters
+    MORE now, not less -- reduce-only orders are rejected (-2022) when the position is already
+    flat, which is a routine race here rather than an error, and without isolation that benign
+    rejection would strand every position after it.
+
+    Failures are returned as rows carrying ``error`` so the count of genuinely-closed positions
+    stays honest; nothing is swallowed.
+    """
+    out: list[dict[str, Any]] = []
     for sym, amt in positions().items():
         side = "SELL" if amt > 0 else "BUY"
-        out.append(place_market(sym, side, abs(amt)))
+        try:
+            out.append(place_market(sym, side, abs(amt), reduce_only=True))
+        except Exception as exc:
+            out.append({"symbol": sym, "side": side, "qty": abs(amt), "error": repr(exc)})
     return out

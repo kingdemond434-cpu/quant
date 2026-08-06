@@ -18,6 +18,8 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+from libs.execution.idempotency import client_order_id
+
 _BASE = "https://testnet.binance.vision"        # PINNED spot testnet -- never live
 _KEY_ENV = "BINANCE_SPOT_TESTNET_KEY"
 _SECRET_ENV = "BINANCE_SPOT_TESTNET_SECRET"
@@ -179,29 +181,46 @@ def account_value_usdt() -> float:
     return round(total, 2)
 
 
-def place_market(symbol: str, side: str, qty: float) -> dict[str, Any]:
-    """Spot MARKET order. side in {BUY, SELL}; qty in base asset units (e.g. BTC)."""
+def place_market(symbol: str, side: str, qty: float,
+                 cycle: str | None = None) -> dict[str, Any]:
+    """Spot MARKET order. side in {BUY, SELL}; qty in base asset units (e.g. BTC).
+
+    GAP #49 EXTENDED TO SPOT, 2026-08-06. See binance_spot_live.place_market for the full
+    reasoning. Short version: every futures order has carried a deterministic client order ID
+    since GAP #49 and no spot order carried one, so on the cash-carry pair an ambiguous timeout
+    left the retry deduped on the futures leg and PLACED AGAIN on the spot leg -- two spot longs
+    against one perp short, which is a naked long, not an oversized carry.
+
+    Kept in step with the live module because they are drop-in replacements and this is where the
+    behaviour is rehearsed before it is trusted with money -- including the new failure mode, a
+    duplicate REJECTION, which is the one an operator needs to have seen on testnet first.
+    """
     res = _signed("/api/v3/order", {
         "symbol": symbol, "side": side, "type": "MARKET", "quantity": qty,
+        "newClientOrderId": client_order_id(symbol, side, "spot", cycle=cycle),
     }, method="POST")
     return dict(res) if isinstance(res, dict) else {"raw": res}
 
 
-def place_market_quote(symbol: str, side: str, quote_usdt: float) -> dict[str, Any]:
+def place_market_quote(symbol: str, side: str, quote_usdt: float,
+                       cycle: str | None = None) -> dict[str, Any]:
     """Spot MARKET order sized in QUOTE (USDT) -- convenient for buying $X of an asset."""
     res = _signed("/api/v3/order", {
         "symbol": symbol, "side": side, "type": "MARKET", "quoteOrderQty": quote_usdt,
+        "newClientOrderId": client_order_id(symbol, side, "spotquote", cycle=cycle),
     }, method="POST")
     return dict(res) if isinstance(res, dict) else {"raw": res}
 
 
-def place_post_only(symbol: str, side: str, qty: float, price: float) -> dict[str, Any]:
+def place_post_only(symbol: str, side: str, qty: float, price: float,
+                    cycle: str | None = None) -> dict[str, Any]:
     """Post-only spot LIMIT order (type=LIMIT_MAKER) -- guaranteed MAKER (rejected if it crosses).
 
     Mirrors the futures GTX behaviour so the carry can be executed maker-first on both legs.
     """
     res = _signed("/api/v3/order", {
         "symbol": symbol, "side": side, "type": "LIMIT_MAKER", "quantity": qty, "price": price,
+        "newClientOrderId": client_order_id(symbol, side, "spotmaker", cycle=cycle),
     }, method="POST")
     return dict(res) if isinstance(res, dict) else {"raw": res}
 

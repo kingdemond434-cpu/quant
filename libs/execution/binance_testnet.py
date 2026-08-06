@@ -379,9 +379,26 @@ def cancel_all(symbol: str) -> dict[str, Any]:
 
 
 def flatten_all() -> list[dict[str, Any]]:
-    """Emergency: market-close every open position."""
-    out = []
+    """Emergency: market-close every open position. Reduce-only, and isolated per symbol.
+
+    Kept byte-for-byte in step with binance_live.flatten_all -- see that docstring for the full
+    reasoning. Short version: the size comes from a `positions()` read, the position can shrink
+    between that read and the fill, and a non-reduce-only close then SELLS THROUGH ZERO into the
+    opposite position. `reduce_only=True` also corrects the client order ID, which was tagging
+    every emergency close as an `open` and could collide with a genuine entry inside the same 90s
+    idempotency bucket. Per-symbol isolation stops one rejected leg (routinely -2022, reduce-only
+    against an already-flat position) from abandoning the rest of the book.
+
+    THE TESTNET COPY MATTERS AS MUCH AS THE LIVE ONE, for the reason the drop-in interface exists:
+    this is where the flatten path is actually exercised before it is trusted with money. A
+    testnet that closes positions by a mechanism the live module no longer uses is a rehearsal of
+    the wrong thing, and `tests/execution/test_binance_live.py` pins the two signatures together.
+    """
+    out: list[dict[str, Any]] = []
     for sym, amt in positions().items():
         side = "SELL" if amt > 0 else "BUY"
-        out.append(place_market(sym, side, abs(amt)))
+        try:
+            out.append(place_market(sym, side, abs(amt), reduce_only=True))
+        except Exception as exc:
+            out.append({"symbol": sym, "side": side, "qty": abs(amt), "error": repr(exc)})
     return out

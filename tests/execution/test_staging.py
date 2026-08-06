@@ -162,3 +162,71 @@ def test_stage_always_in_valid_range_under_any_sequence(  # type: ignore[no-unty
         assert idx in (0, 1, 2)
         assert abs(idx - prev_idx) <= 1                     # never a 2-stage jump
         prev_idx = idx
+
+
+# ------------------------------------------------ what the machine believes when the record is bad
+
+def test_A_CORRUPT_STATE_FILE_FALLS_BACK_TO_S0_NOT_TO_THE_LAST_STAGE(  # type: ignore[no-untyped-def]
+    tmp_path, monkeypatch
+) -> None:
+    """THE DIRECTION OF THE FALLBACK IS THE WHOLE SAFETY PROPERTY, and it is one `return` away
+    from being inverted.
+
+    A half-written stage_state.json is not exotic -- `_save` is a plain write with no temp-and-
+    rename, so any kill between truncate and flush leaves exactly this. Falling back to S0 means a
+    damaged record demotes the desk to paper until a human looks. Any other choice -- raising,
+    or preserving a remembered stage -- means an unreadable file leaves live automation running on
+    a record nothing can verify. Pinned because "don't lose the operator's progress on a parse
+    error" is a natural-sounding change that silently converts a fail-safe into a fail-open.
+    """
+    _isolate(tmp_path, monkeypatch)
+    staging._STATE.write_text('{"stage": "S2", "history": [] ', "utf-8")   # truncated mid-write
+    assert staging.current_stage() == "S0"
+
+
+def test_AN_UNRECOGNISED_STAGE_IS_NOT_TRUSTED(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """Valid JSON carrying a stage this module has never heard of -- a hand-edit, a rolled-back
+    deploy that knew about an "S3". `_STAGES.index()` in `demote` would raise ValueError on it,
+    so an unrecognised stage does not merely mis-report: it makes the DEMOTION PATH throw, and
+    demotion is the one operation the spec says is unlimited and never gated."""
+    _isolate(tmp_path, monkeypatch)
+    staging._STATE.write_text('{"stage": "S3", "history": []}', "utf-8")
+    assert staging.current_stage() == "S0"
+    ok, _why = staging.demote("tripwire")
+    assert ok is False, "demote must not raise on a stage it does not recognise"
+
+
+def test_A_JSON_LIST_WHERE_THE_STATE_SHOULD_BE(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """Parses fine, has no `.get`. Without the isinstance check this is an AttributeError inside
+    every caller of current_stage(), including the live guard's reporting pass."""
+    _isolate(tmp_path, monkeypatch)
+    staging._STATE.write_text('[{"stage": "S2"}]', "utf-8")
+    assert staging.current_stage() == "S0"
+
+
+def test_A_MISSING_FILE_IS_S0_AND_DEMOTE_SAYS_SO(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """The floor is a floor: demoting from S0 reports failure rather than walking off the list."""
+    _isolate(tmp_path, monkeypatch)
+    ok, why = staging.demote("tripwire")
+    assert ok is False and "S0" in why
+
+
+def test_PROMOTION_STOPS_AT_S2(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """S2 is terminal. A fourth stage reached by index arithmetic would be a stage with no gate
+    defined for it at all."""
+    _isolate(tmp_path, monkeypatch)
+    staging._STATE.write_text('{"stage": "S2", "history": []}', "utf-8")
+    ok, why = staging.promote({})
+    assert ok is False and "terminal" in why
+
+
+def test_A_STATE_FILE_WITH_NO_HISTORY_KEY_STILL_LOGS(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """Every transition is logged "for auditability" -- but the log lives in the same dict the
+    file supplies, so a record written by an older version without the key would KeyError on the
+    append. The transition that fails is the DEMOTION, i.e. the one that runs when a tripwire has
+    already fired."""
+    _isolate(tmp_path, monkeypatch)
+    staging._STATE.write_text('{"stage": "S1"}', "utf-8")
+    ok, _target = staging.demote("tripwire")
+    assert ok is True
+    assert staging.current_stage() == "S0"

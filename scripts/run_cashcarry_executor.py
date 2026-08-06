@@ -916,13 +916,23 @@ def _passive_price(bk: dict[str, Any], fl: dict[str, Any], sym: str, side: str) 
 
 
 def _maker_pair(sym: str, qty: float, spot_side: str, fut_side: str,
-                *, wait: float) -> dict[str, Any]:
+                *, wait: float, cycle: str | None = None) -> dict[str, Any]:
     """Quote BOTH legs post-only (maker), wait, then taker-fill whatever didn't rest+fill.
 
     Same qty on both legs -> the pair ends delta-neutral; the wait bounds any transient exposure.
     Returns modes plus spot_ok/fut_ok -- a leg only counts as filled once EITHER it rested and
     left the open-orders book (maker fill) OR its taker fallback returns a confirmed FILLED
-    order; a leg that never confirms either way is reported unfilled, never assumed."""
+    order; a leg that never confirms either way is reported unfilled, never assumed.
+
+    `cycle` IS SHARED WITH THE CALLER'S MARKET FALLBACK, and that sharing is the point (2026-08-06).
+    This function has its own taker fallback, and the caller wraps the whole call in `except ->
+    market pair`. So a maker path that placed the spot taker fallback and THEN raised -- a
+    cancel_all timing out, an open_orders read failing, anything after line one of the fallback
+    loop -- dropped into the caller's market pair, which placed the spot leg A SECOND TIME. Under
+    separate cycle tokens those are two different orders to the venue and both fill: double spot
+    against a single perp short. Threading one token through both attempts makes the venue reject
+    the second, which is the whole reason the token exists.
+    """
     sbk, fbk = spot.book_ticker(), fut.book_ticker()
     sfl = spot.exchange_filters().get(sym, {})
     ffl = fut.exchange_filters().get(sym, {})
@@ -932,7 +942,7 @@ def _maker_pair(sym: str, qty: float, spot_side: str, fut_side: str,
     for name, mod, side, bk, fl in legs:
         px = _passive_price(bk, fl, sym, side)
         with _safe():
-            o = mod.place_post_only(sym, side, qty, px) if px else {}
+            o = mod.place_post_only(sym, side, qty, px, cycle=cycle) if px else {}
             modes[name] = "maker_pending" if o.get("orderId") else "taker"
     end = time.time() + wait
     while time.time() < end:                               # wait for the resting quotes to fill
@@ -943,7 +953,7 @@ def _maker_pair(sym: str, qty: float, spot_side: str, fut_side: str,
         with _safe():
             if mod.open_orders(sym):
                 mod.cancel_all(sym)
-                res = mod.place_market(sym, side, qty)
+                res = mod.place_market(sym, side, qty, cycle=cycle)
                 modes[name] = "taker_fallback"
                 ok[name] = _filled(res)
             elif modes.get(name) == "maker_pending":
@@ -1048,12 +1058,19 @@ def _execute_pair_impl(sym: str, qty: float, spot_side: str, fut_side: str) -> d
     # A close is a CERTAINTY problem, not a fee problem; the desk's own note already says
     # "patient on OPENS, fast on CLOSES". Opens keep the maker rebate, which is where it pays.
     _CLOSE_IS_MARKET_ONLY = spot_side == "SELL"
+    # ONE TOKEN FOR THE WHOLE PAIR EXECUTION, computed BEFORE the maker branch (2026-08-06).
+    # It used to be computed after it, so the maker path and the market fallback that catches the
+    # maker path's exceptions used DIFFERENT identities -- and a leg placed by the first was
+    # placed again by the second. Hoisting it also matters because _pair_cycle carries a coarse
+    # time term and the maker path deliberately waits: recomputing after that wait can land in the
+    # next window, which silently un-does the dedupe at the one moment two attempts exist.
+    _cycle = _pair_cycle(sym, spot_side, qty)
     if _MAKER and not _CLOSE_IS_MARKET_ONLY:
         try:
             # patient on OPENS (spot BUY = entering a carry), fast on CLOSES (spot SELL =
             # unwinding, where the rails need speed). See the fee audit note above.
             _w = _MAKER_WAIT_OPEN if spot_side == "BUY" else _MAKER_WAIT
-            return _maker_pair(sym, qty, spot_side, fut_side, wait=_w)
+            return _maker_pair(sym, qty, spot_side, fut_side, wait=_w, cycle=_cycle)
         except Exception as e:  # maker machinery failed -> safe market fallback
             with contextlib.suppress(Exception):
                 _ERR.write_text(f"{datetime.now(tz=UTC).isoformat()} maker fail {sym}: {e!r}\n")
@@ -1068,10 +1085,17 @@ def _execute_pair_impl(sym: str, qty: float, spot_side: str, fut_side: str) -> d
     # same client order IDs regardless of how long the retry took, so the venue dedupes them.
     # A wall-clock bucket alone would not: an order placed just before a bucket rolls has a
     # sub-second retry window, after which the duplicate is placed -- and a duplicated leg on a
-    # delta-neutral book is an unhedged directional position.
-    _cycle = _pair_cycle(sym, spot_side, qty)
+    # delta-neutral book is an unhedged directional position. `_cycle` is computed once at the top
+    # of this function so the maker attempt above and this fallback share ONE identity.
     with _safe():
-        spot_res = spot.place_market(sym, spot_side, qty)
+        # THE CYCLE MUST REACH BOTH LEGS (fixed 2026-08-06). It was computed here, the comment
+        # above explained why a duplicated leg on a delta-neutral book is an unhedged directional
+        # position, and then it was passed to the futures leg ONLY -- the spot connector did not
+        # even accept it, and set no client order ID at all. So the retry of an ambiguous pair was
+        # deduped by the venue on one side and placed again on the other: two spot longs against
+        # one perp short. Half an idempotency guarantee on a two-legged trade is not half the
+        # protection, it is a mechanism for CREATING the imbalance it was meant to prevent.
+        spot_res = spot.place_market(sym, spot_side, qty, cycle=_cycle)
     with _safe():
         fut_res = fut.place_market(sym, fut_side, qty, reduce_only=_reduce_only_leg,
                                    cycle=_cycle)

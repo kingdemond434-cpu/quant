@@ -252,7 +252,19 @@ def main() -> int:
         if venue is not None and allow_flatten:
             try:
                 res = venue.flatten_all()
-                flatten_note = f"FLATTENED {len(res)} position(s) at rung {rung.name}"
+                # flatten_all is now isolated PER SYMBOL (it must be: reduce-only legs are
+                # rejected -2022 against an already-flat position, and one raising leg used to
+                # abandon every position after it). So it returns rows for failures too, and
+                # `len(res)` is the number ATTEMPTED, not the number closed. Reporting attempts as
+                # closures is the failure mode this whole script exists to catch in other people's
+                # code: an artifact that claims flat while the book is not.
+                bad = [r for r in res if isinstance(r, dict) and r.get("error")]
+                flatten_note = (f"FLATTENED {len(res) - len(bad)}/{len(res)} position(s) at rung "
+                                f"{rung.name}")
+                if bad:
+                    flatten_note += (" -- STILL OPEN: "
+                                     + "; ".join(f"{r.get('symbol')}: {r.get('error')}"
+                                                 for r in bad[:5]))
             except Exception as e:
                 flatten_note = f"flatten FAILED at rung {rung.name}: {e!r}"
         else:

@@ -20,6 +20,8 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+from libs.execution.idempotency import client_order_id
+
 _BASE = "https://api.binance.com"                # PINNED live spot -- verified against docs
 _KEYFILE = Path("data/secrets/binance_live_spot.json")
 _ENABLE_FLAG = Path("data/LIVE_ENABLE")
@@ -163,26 +165,66 @@ def account_value_usdt() -> float:
     return round(total, 2)
 
 
-def place_market(symbol: str, side: str, qty: float) -> dict[str, Any]:
-    """Spot MARKET order. side in {BUY, SELL}; qty in base asset units (e.g. BTC)."""
+def place_market(symbol: str, side: str, qty: float,
+                 cycle: str | None = None) -> dict[str, Any]:
+    """Spot MARKET order. side in {BUY, SELL}; qty in base asset units (e.g. BTC).
+
+    GAP #49 EXTENDED TO SPOT, 2026-08-06 -- IT WAS ONLY EVER APPLIED TO HALF THE TRADE. Every
+    futures order has carried a deterministic `newClientOrderId` since GAP #49; no spot order
+    carried one at all. The desk's primary live strategy is a cash-and-carry pair, and
+    scripts/run_cashcarry_executor.py placed it like this:
+
+        _cycle = _pair_cycle(sym, spot_side, qty)
+        spot_res = spot.place_market(sym, spot_side, qty)                  # no ID
+        fut_res  = fut.place_market(sym, fut_side, qty, ..., cycle=_cycle) # ID
+
+    -- with a comment above it stating that "a duplicated leg on a delta-neutral book is an
+    unhedged directional position". On an ambiguous timeout the retry is then deduped by the venue
+    on the futures leg and PLACED AGAIN on the spot leg: two spot longs against one perp short.
+    Not a slightly-oversized carry -- a naked long, arrived at by the exact mechanism the
+    protection was written to prevent, on the leg it was never wired into.
+
+    THE TRADEOFF IS THE SAME ONE FUTURES ALREADY TOOK, and is worth restating because it is a real
+    cost. Two genuinely distinct spot orders sharing symbol+side+intent inside one 90s bucket now
+    collide, and the venue rejects the second: a missed order, visible and retryable. The
+    alternative is a silent duplicated leg. libs/execution/idempotency.py argues that asymmetry at
+    length; the answer does not change because the venue is spot.
+
+    Pass `cycle` on any paired execution -- the wall-clock bucket is a fallback with an
+    unobservable boundary, and a retry that lands the wrong side of it is placed as a new order.
+    """
     res = _signed("/api/v3/order", {
         "symbol": symbol, "side": side, "type": "MARKET", "quantity": qty,
+        "newClientOrderId": client_order_id(symbol, side, "spot", cycle=cycle),
     }, method="POST")
     return dict(res) if isinstance(res, dict) else {"raw": res}
 
 
-def place_market_quote(symbol: str, side: str, quote_usdt: float) -> dict[str, Any]:
-    """Spot MARKET order sized in QUOTE (USDT) -- convenient for buying $X of an asset."""
+def place_market_quote(symbol: str, side: str, quote_usdt: float,
+                       cycle: str | None = None) -> dict[str, Any]:
+    """Spot MARKET order sized in QUOTE (USDT) -- convenient for buying $X of an asset.
+
+    Distinct intent from `place_market` so a base-sized and a quote-sized order for the same
+    symbol and side inside one cycle are different logical orders, not a collision.
+    """
     res = _signed("/api/v3/order", {
         "symbol": symbol, "side": side, "type": "MARKET", "quoteOrderQty": quote_usdt,
+        "newClientOrderId": client_order_id(symbol, side, "spotquote", cycle=cycle),
     }, method="POST")
     return dict(res) if isinstance(res, dict) else {"raw": res}
 
 
-def place_post_only(symbol: str, side: str, qty: float, price: float) -> dict[str, Any]:
-    """Post-only spot LIMIT order (type=LIMIT_MAKER) -- guaranteed MAKER."""
+def place_post_only(symbol: str, side: str, qty: float, price: float,
+                    cycle: str | None = None) -> dict[str, Any]:
+    """Post-only spot LIMIT order (type=LIMIT_MAKER) -- guaranteed MAKER.
+
+    A RESTING order is more dangerous to duplicate than a market order, not less: incident #6 was
+    accumulated resting fills. Separate intent again -- a maker quote and a taker sweep on the same
+    symbol inside one cycle are deliberately different orders.
+    """
     res = _signed("/api/v3/order", {
         "symbol": symbol, "side": side, "type": "LIMIT_MAKER", "quantity": qty, "price": price,
+        "newClientOrderId": client_order_id(symbol, side, "spotmaker", cycle=cycle),
     }, method="POST")
     return dict(res) if isinstance(res, dict) else {"raw": res}
 
