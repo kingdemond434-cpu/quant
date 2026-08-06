@@ -4306,15 +4306,38 @@ _ORPHAN_MODULE_BUDGET = 45
 #:   negative_knowledge.md     -- own terminal schema (``[priority: ...] review-due: <date>``)
 #:   search_operator_library.md-- own terminal schema (``[status: active|watch|archived]``)
 #:   prospector_watchlist.md   -- prose STEP headers, not carded finds
+#: RE-DERIVED 2026-08-06 (R0269) BY MEASUREMENT, not by intent. Three of the four paths that used
+#: to sit here parsed to ZERO items -- `_ITEM_RE` wants `### N. <name>` and none of them writes
+#: that shape -- so §33 was measuring ONE doc and reporting it as the desk's whole mining surface.
+#: Listing a path is not counting it. They are moved to _DIG_DOCS_EXCLUDED with their real
+#: lifecycles below, and `check_mine_scope_vacuous` now fails if this list ever again contains a
+#: path whose content the parser cannot see.
 _DIG_DOCS = (
     "docs/research/data_axis_watchlist.md",
-    "docs/research/feed_inbox.md",
-    "docs/research/discovery_hypotheses.md",
-    "docs/research/literature_coverage.md",
 )
 #: Card-bearing docs deliberately OUT of §33 scope, each with its reason. Kept explicit so the
 #: scope check below can tell "consciously excluded" from "quietly unmonitored".
 _DIG_DOCS_EXCLUDED = {
+    "docs/research/feed_inbox.md":
+        "A QUEUE with a process-then-DELETE protocol stated in its own header, not a card-bearing "
+        "find doc. The collector appends '## <title>' entries; the CRO triages them, routes what "
+        "survives to a watchlist card / graveyard row / ledger row, and DELETES the entry. So an "
+        "entry's disposition is its ABSENCE, and a §33 tag on it would be a second bookkeeping "
+        "system over the same item -- the improvement_inbox precedent. It sat in _DIG_DOCS from "
+        "2026-07 to 2026-08-06 and contributed exactly ZERO items the whole time (27 entries, 0 "
+        "parsed), so the 'now a measured, fenced number' claim in R0269 was true in scope and "
+        "false in effect. The count is now genuinely measured by check_feed_inbox_backlog below",
+    "docs/research/discovery_hypotheses.md":
+        "Charter §22 hypothesis register with its OWN lifecycle and its own disposition field: "
+        "'### DH-<nnn> <hypothesis> [status: open|validated|falsified]'. A DH entry is a "
+        "hypothesis about WHERE information lives, resolved by evidence rather than by a dig "
+        "disposition, and it is permanent once falsified. Demanding a §33 tag as well would "
+        "double-charge one backlog to two laws",
+    "docs/research/literature_coverage.md":
+        "A COVERAGE MAP -- a rotation table of literature families with last-visited dates and "
+        "yield, plus dated session notes. Its headings are sessions, not finds; the finds those "
+        "sessions produced were carded to the watchlist or graveyarded at the time. Nothing here "
+        "owes a disposition because nothing here IS a find",
     "docs/research/THREE_MECHANISM_PREREGISTRATION.md":
         "PRE-REGISTRATION document (2026-08-04), not mined finds: its three cards are study "
         "designs named IN ADVANCE precisely so the trial count is honest, and each lives the "
@@ -4705,6 +4728,122 @@ def check_mine_scope(defects) -> None:
             "_DIG_DOCS_EXCLUDED with a stated reason -- never leave it decided by omission."))
 
 
+def check_mine_scope_vacuous(defects) -> None:
+    """L1.57 applied to §33's own scope: a doc IN the law that the parser cannot see.
+
+    `check_mine_scope` above hunts the outward leak -- a card-bearing doc outside `_DIG_DOCS`. The
+    INWARD one had no detector at all, and it is the quieter of the two: a path listed in scope
+    that contributes ZERO items reads exactly like a path that was checked and found clean. The
+    backlog count comes back low, the ratchet looks healthy, and `data/mining_suspended` never
+    fires -- all honestly computed, all over an empty set.
+
+    MEASURED 2026-08-06, and this is why the check exists rather than the docstring: THREE of the
+    four `_DIG_DOCS` parsed zero cards. `feed_inbox.md` (27 `##` entries), `discovery_hypotheses.md`
+    (4) and `literature_coverage.md` (10) all contribute nothing, because `_ITEM_RE` requires
+    `### N. <name>` and none of them writes that shape. §33 was measuring one doc and reporting it
+    as the desk's whole mining surface. A ledger row had already recorded feed_inbox as "now a
+    measured, fenced number" -- true in SCOPE, false in EFFECT, which is precisely the gap between
+    listing a denominator and counting one.
+
+    THE DISTINCTION THAT KEEPS THIS FROM FALSE-FIRING, and it is the whole design: an EMPTY doc is
+    healthy. A queue drained to zero should read clean, and a fence that punished that would push
+    the desk to keep entries around. So vacuity is content-the-parser-cannot-see -- headings
+    present, cards parsed zero -- never merely "no cards".
+    """
+    from libs.research.mine_conversion import parse_dispositions
+
+    head = re.compile(r"^#{2,3} ", re.MULTILINE)
+    absent, vacuous = [], []
+    for rel in _DIG_DOCS:
+        p = ROOT / rel
+        if not p.exists():
+            absent.append(rel)
+            continue
+        try:
+            text = p.read_text("utf-8", errors="ignore")
+        except OSError:
+            absent.append(f"{rel}(unreadable)")
+            continue
+        n_head = len(head.findall(text))
+        try:
+            n_card = len(parse_dispositions(text, source=rel))
+        except Exception:
+            # A parser that raises yields zero items, which is the very thing this check exists
+            # to refuse to read as "clean". Caught broadly on purpose: the failure mode matters,
+            # the exception type does not.
+            vacuous.append(f"{Path(rel).name}(parser raised)")
+            continue
+        if n_card == 0 and n_head > 0:
+            vacuous.append(f"{Path(rel).name}({n_head} headings -> 0 cards)")
+    if absent:
+        defects.append((
+            "mine-scope-phantom",
+            f"§33 scope: {len(absent)} path(s) in _DIG_DOCS do not exist -- {', '.join(absent)}. "
+            "They are skipped silently, so the law reads as covering more ground than it does. "
+            "Create the doc, or remove the path and record why the surface went away."))
+    if vacuous:
+        defects.append((
+            "mine-scope-vacuous",
+            f"§33 scope: {len(vacuous)} doc(s) IN the law parse to ZERO items while carrying "
+            f"content -- {', '.join(vacuous[:8])}. A listed path that yields nothing reads exactly "
+            "like a path checked and found clean (L1.57: a passing verdict over an empty set is "
+            "vacuous, not OK). Either card the findings as '### N. <name>' so they owe a "
+            "disposition, or move the doc to _DIG_DOCS_EXCLUDED with a stated reason and its own "
+            "fence. An empty doc is fine -- this fires only on content the parser cannot see."))
+
+
+#: A feed entry may sit one cycle. Past this it is not a queue, it is an archive nobody reads.
+_FEED_INBOX_STALE_DAYS = 3.0
+#: Depth beyond which the queue is not being drained at the rate it fills, whatever its age.
+_FEED_INBOX_MAX_OPEN = 20
+
+
+def check_feed_inbox_backlog(defects) -> None:
+    """R0269: the research feed inbox is a QUEUE, so its depth and age are measured numbers.
+
+    THE DUTY THAT WAS SILENTLY NOT RUNNING. `docs/research/feed_inbox.md` is specified as a queue
+    processed and CLEARED every cycle. On 2026-08-01 it held 27 entries all predating 07-28, and
+    nothing anywhere reported that -- the per-cycle duty had not run for days while emitting no
+    signal at all. It was nominally inside §33's scope, which is what made the silence convincing;
+    in fact it parsed to zero items, so §33 was reporting a clean backlog off an empty set.
+
+    A QUEUE NOBODY COUNTS BECOMES AN ARCHIVE. This counts it: entries live (the collector writes
+    '## <title>' and triage DELETES), and the age of the oldest, read from the '- <YYYY-MM-DD> ...'
+    line each entry carries. Zero entries is the HEALTHY state and reads clean -- draining is what
+    this fence exists to reward.
+    """
+    p = ROOT / "docs/research/feed_inbox.md"
+    if not p.exists():
+        return
+    try:
+        text = p.read_text("utf-8", errors="ignore")
+    except OSError:
+        return
+    # Entries only: the file also carries HTML-comment triage blocks, which are the RECORD of
+    # draining and must never be counted as backlog.
+    entries = re.findall(r"^## (?!Record schema)(.+)$", text, re.MULTILINE)
+    if not entries:
+        return
+    dates = sorted(re.findall(r"^- (\d{4}-\d{2}-\d{2}) ", text, re.MULTILINE))
+    oldest_days = None
+    if dates:
+        with contextlib.suppress(ValueError):
+            oldest = datetime.strptime(dates[0], "%Y-%m-%d").replace(tzinfo=UTC)
+            oldest_days = (datetime.now(tz=UTC) - oldest).total_seconds() / 86400.0
+    n = len(entries)
+    stale = oldest_days is not None and oldest_days > _FEED_INBOX_STALE_DAYS
+    if stale or n > _FEED_INBOX_MAX_OPEN:
+        age = f"{oldest_days:.1f}d" if oldest_days is not None else "unknown age"
+        defects.append((
+            "feed-inbox-backlog",
+            f"§33/R0269: research feed inbox holds {n} live entr(ies), oldest {age} "
+            f"(bars: {_FEED_INBOX_MAX_OPEN} open / {_FEED_INBOX_STALE_DAYS:.0f}d). The inbox is "
+            "specified as a queue processed and CLEARED every cycle, so a standing backlog means "
+            "the per-cycle triage duty is not running -- and it reports nothing on its own, which "
+            "is how it went unnoticed for days. Triage each entry to a watchlist card, a graveyard "
+            "row with its mechanism, or a ledger row, then DELETE it and record the batch."))
+
+
 def check_mine_gate(defects) -> None:
     """The gate must be DERIVED, not a deletable flag -- and it must actually run.
 
@@ -5068,6 +5207,8 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("mine-flow", check_mine_flow),
                       ("mine-gate", check_mine_gate),
                       ("mine-scope", check_mine_scope),
+                      ("mine-scope-vacuous", check_mine_scope_vacuous),
+                      ("feed-inbox-backlog", check_feed_inbox_backlog),
                       ("dig-uncommitted", check_dig_uncommitted),
                       ("depth-parity", check_depth_parity),
                       ("source-backlog", check_source_backlog),

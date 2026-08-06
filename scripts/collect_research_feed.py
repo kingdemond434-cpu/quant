@@ -13,7 +13,9 @@ signal-per-maintenance-hour) -- those remain the CRO's WebSearch job.
 
 from __future__ import annotations
 
+import contextlib
 import json
+import re
 import ssl
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -24,11 +26,51 @@ import certifi
 
 _ARCHIVE = Path("data/research_feed.json")
 _INBOX = Path("docs/research/feed_inbox.md")
+_AGENDA = Path("research_agenda.json")
+_GRAVEYARD = Path("docs/graveyard.md")
 _API = ("http://export.arxiv.org/api/query?search_query="
         "cat:q-fin.TR+OR+cat:q-fin.PM+OR+cat:q-fin.ST"
         "&sortBy=submittedDate&sortOrder=descending&max_results=25")
 _NS = {"a": "http://www.w3.org/2005/Atom"}
 _KEEP = 500
+
+#: arXiv ids carry a version suffix. Keying the seen-archive on the FULL versioned URL made a v2
+#: of an already-delivered paper a brand-new item -- measured 2026-08-06: two exact duplicate
+#: pairs sitting in the inbox (2607.19005 and 2607.17428, each delivered as v1 then v2). The
+#: paper is the thing that was already triaged, not the revision.
+_VERSION = re.compile(r"v\d+$")
+
+
+def canonical_id(raw: str) -> str:
+    """Strip the version suffix so a revised paper is the SAME item, not a new one."""
+    return _VERSION.sub("", (raw or "").strip().rstrip("/"))
+
+
+def _arxiv_ids(text: str) -> set[str]:
+    """Every arXiv id mentioned anywhere in a text blob, version-stripped."""
+    return {canonical_id(m) for m in re.findall(r"\b\d{4}\.\d{4,5}(?:v\d+)?\b", text or "")}
+
+
+def killed_ids() -> set[str]:
+    """arXiv ids the desk has ALREADY judged -- from do_not_repeat and the graveyard.
+
+    THE RE-DELIVERY THIS CLOSES. The collector deduped only against its own seen-archive, so a
+    paper EV-rejected months ago and recorded in do_not_repeat came back as a fresh inbox entry
+    the moment arXiv bumped its version. Measured instance: 'The Quarter-Hour Effect'
+    (2607.09426), rejected 2026-07-17 at ev 0.0006 and re-delivered as v2.
+
+    Unreadable or absent sources return what was found so far rather than raising -- degrading
+    toward MORE inbox entries, never fewer. A dedupe that silently swallowed a read error would
+    drop real papers, which is the expensive direction.
+    """
+    ids: set[str] = set()
+    with contextlib.suppress(OSError, json.JSONDecodeError):
+        agenda = json.loads(_AGENDA.read_text("utf-8"))
+        for entry in agenda.get("do_not_repeat") or []:
+            ids |= _arxiv_ids(str(entry))
+    with contextlib.suppress(OSError):
+        ids |= _arxiv_ids(_GRAVEYARD.read_text("utf-8"))
+    return ids
 
 
 def _text(e: ET.Element, tag: str) -> str:
@@ -55,10 +97,26 @@ def main() -> None:
     except (OSError, json.JSONDecodeError):
         arch = {"seen": {}}
     seen = arch.get("seen", {})
-    new = [it for it in _fetch() if it["id"] and it["id"] not in seen]
+    # Migrate legacy versioned keys so an already-delivered paper is not re-delivered once on the
+    # changeover. Without this the fix would itself cause one duplicate wave.
+    seen = {canonical_id(k): v for k, v in seen.items()}
+    killed = killed_ids()
+    fetched = [it for it in _fetch() if it["id"]]
+    new, blocked = [], []
+    for it in fetched:
+        cid = canonical_id(it["id"])
+        if cid in seen:
+            continue
+        if _arxiv_ids(cid) & killed:
+            blocked.append(cid)          # judged already: record it as seen, do NOT re-inbox it
+            continue
+        it["cid"] = cid
+        new.append(it)
     today = datetime.now(tz=UTC).date().isoformat()
     for it in new:
-        seen[it["id"]] = today
+        seen[it["cid"]] = today
+    for cid in blocked:
+        seen[cid] = today
     arch["seen"] = dict(list(seen.items())[-_KEEP:])
     _ARCHIVE.parent.mkdir(parents=True, exist_ok=True)
     _ARCHIVE.write_text(json.dumps(arch), "utf-8")
@@ -76,7 +134,8 @@ def main() -> None:
             body += (f"\n## {it['title']}\n- {it['published']} · {it['id']}\n"
                      f"- {it['abstract']}\n")
         _INBOX.write_text(body, "utf-8")
-    print(f"research feed: {len(new)} new paper(s) -> inbox (archive {len(arch['seen'])})")
+    print(f"research feed: {len(new)} new paper(s) -> inbox, {len(blocked)} already-judged "
+          f"suppressed (archive {len(arch['seen'])})")
 
 
 if __name__ == "__main__":
