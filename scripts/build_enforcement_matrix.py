@@ -54,7 +54,13 @@ _MAP: dict[str, list[str]] = {
     "L1.6": ["libs/autodiscovery/validation.py", "check_welded_gates", "check_gate_optimality",
              "run_mutation.py"],
     "L1.7": ["check_rubberstamp_detector", "check_rubberstamp_enforcement", "deep_review.py"],
-    "L1.8": ["check_no_mining_throttle", "check_mining_nonregression", "check_mine_flow"],
+    # R0270 adds the EXTRACTION-side non-regression fence beside the acquisition-side ones. L1.8
+    # ends "idle ingested data is a defect", and a campaign that truncates its history to the
+    # shortest candidate leaves observations already on disk untested -- idle data manufactured by
+    # the validator rather than by a lazy collector. check_campaign_retention.py floors the share
+    # a campaign actually tests on, so the 82.9% min-length discard cannot come back in silence.
+    "L1.8": ["check_no_mining_throttle", "check_mining_nonregression", "check_mine_flow",
+             "check_campaign_retention.py"],
     "L1.9": ["check_blind_trigger", "check_interrogation", "check_dig_depth"],
     "L1.10": ["check_mine_conversion", "check_mine_gate"],
     "L1.11": ["moat_audit.py", "check_vendor_replacement", "run_recorder.py"],

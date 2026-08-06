@@ -69,6 +69,20 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 7 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_ratchets.py --ratchet --json >> data/cro_ai_logs/ratchets.log 2>&1
 
+# CAMPAIGN RETENTION FENCE (R0270; L1.0 ratchet, L2.0 fence): the share of available observations
+# each campaign actually tested on. The orchestrator has written a `campaign_strata` audit row
+# every campaign for weeks and NOTHING READ IT, so a return to min-length truncation would have
+# restored an 82.9% discard of the data on disk in silence -- and history length is the binding
+# constraint on this desk's discovery power. Also names plan_strata's min-length FALLBACK, which
+# degrades quietly by design and drives n_untested DOWN to zero, so it reads as inclusiveness.
+# CADENCE CEILING: DATA-ARRIVAL (L1.28c). The input changes once per campaign and the crypto
+# factory is daily at 01:30, so firing more often re-reads an unchanged row. Placed at 07:05 so
+# the artifact is two minutes fresh when check_ratchets reads it at 07:07 (48h max_age).
+# EVIDENCE: scripts/check_campaign_retention.py -> data/campaign_retention.json; floor
+# campaign_obs_retained=0.8581 recorded in data/ratchet_floors.json from the 2026-08-05 campaign.
+# CONFIDENCE: committed-script (new this cycle)
+5 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_campaign_retention.py >> data/cro_ai_logs/campaign_retention.log 2>&1
+
 # KIMI HUNTER (Deep Forest Protocol, waves 1->2->3 enforced in code). BUILT and automated on the
 # box per commit a9a4dcd ("cron at 06:00 UTC + full-chain mock proves funding is the only
 # remaining variable") but ABSENT FROM THIS MANIFEST until 2026-07-30 -- i.e. live-only

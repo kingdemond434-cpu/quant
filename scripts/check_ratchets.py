@@ -93,6 +93,19 @@ def _mutation_at_bar(d: Any) -> float | None:
     return sum(1 for v in rates.values() if v >= 0.90) / len(rates)
 
 
+def _campaign_retained(d: Any) -> float | None:
+    """Observation-retention of the newest campaign (R0270).
+
+    Returns None -- UNMEASURED, never a pass -- whenever the producing fence could not read a
+    campaign. A retention number is only meaningful beside the plan it came from, and "no campaign
+    on record" must not enter the ratchet board as a value.
+    """
+    if not isinstance(d, dict):
+        return None
+    v = d.get("retained_fraction")
+    return float(v) if isinstance(v, (int, float)) else None
+
+
 def _findings_coverage(d: Any) -> float | None:
     if not isinstance(d, dict):
         return None
@@ -194,6 +207,12 @@ _METRICS: dict[str, tuple[str, Callable[[Any], float | None], float | None, str]
     "capability_wired": (
         "data/utilisation.json", _capability_wired, 12.0,
         "python scripts/check_utilisation.py"),
+    # R0270: the share of available observations a campaign actually tested on. History length is
+    # the binding constraint on this desk's discovery power, so this is the ratchet that says the
+    # 82.9% min-length discard never comes back. 48h = two runs of the daily crypto factory.
+    "campaign_obs_retained": (
+        "data/campaign_retention.json", _campaign_retained, 48.0,
+        "python scripts/check_campaign_retention.py"),
 }
 # Artifacts read as raw files rather than parsed JSON documents.
 _FILE_METRICS: dict[str, tuple[str, Callable[[Path], float | None], float | None, str]] = {
