@@ -58,7 +58,14 @@ def _klines(
         "open": [float(r[1]) for r in rows], "high": [float(r[2]) for r in rows],
         "low": [float(r[3]) for r in rows], "close": [float(r[4]) for r in rows],
         "volume": [float(r[5]) for r in rows],
-        "taker_buy_frac": np.where(qv > 0, tbq / qv, 0.5),   # >0.5 = net taker buying (flow)
+        # >0.5 = net taker buying (flow). `np.where(qv > 0, tbq / qv, 0.5)` was WRONG in a way that
+        # only shows on a zero-volume bar: np.where selects AFTER both branches are evaluated, so
+        # `tbq / qv` still divides by zero for every such bar and emits
+        # "invalid value encountered in divide". This repo runs `filterwarnings = error`, so the
+        # whole fetch RAISED on any symbol with one untraded interval -- and untraded intervals are
+        # the normal state of an illiquid perp, which is exactly the breadth this source exists to
+        # provide. `np.divide(..., where=)` never evaluates the excluded lanes.
+        "taker_buy_frac": np.divide(tbq, qv, out=np.full(qv.shape, 0.5), where=qv > 0),
     })
 
 

@@ -36,6 +36,15 @@ from libs.self_improvement import dormancy as D
 
 # ------------------------------------------------------------------ the scan, on the live tree
 
+#: ONE live scan for the whole module, and the scoping is not tidiness -- it is the difference
+#: between a suite that finishes and one that does not. `scan()` SHELLS OUT to grep once per
+#: module and twice per script: 267 modules + 364 scripts is ~630 subprocesses and ~10.4s
+#: uncovered. Under `--cov` tracing that becomes minutes, and my first draft called it THREE
+#: times, which hung the full suite at 85% until py-spy named this frame.
+#:
+#: A slow test is a test somebody eventually deselects, so the cost is a correctness issue rather
+#: than a comfort one. Everything that needs the LIVE tree shares this one scan; anything testing
+#: the flags or the report shape uses a scoped or synthetic one below.
 @pytest.fixture(scope="module")
 def report() -> D.DormancyReport:
     return D.scan()
@@ -171,9 +180,15 @@ def test_the_scanned_packages_all_exist() -> None:
 
 # ------------------------------------------------------------------ the report
 
-def test_the_two_halves_can_be_scanned_independently() -> None:
-    """The module half is fast; the script half shells out per file. A caller that only wants one
-    should not pay for both -- and if the flags were ignored the cost would be invisible."""
+def test_the_two_halves_can_be_scanned_independently(monkeypatch) -> None:
+    """A caller that only wants one half should not pay for both -- and if the flags were ignored
+    the cost would be INVISIBLE, which is exactly how this file hung the suite.
+
+    `_LIB_SCOPE` is narrowed to a single small package so the flags are proved without re-walking
+    267 modules of subprocess greps. The flags are what is under test; the breadth is not.
+    """
+    monkeypatch.setattr(D, "_LIB_SCOPE", ("libs/self_improvement",))
+
     mods = D.scan(include_scripts=False)
     assert mods.n_scripts_scanned == 0 and mods.n_modules_scanned > 0
     assert all(d.kind == "module" for d in mods.dormant)
@@ -239,11 +254,15 @@ def test_the_module_CANNOT_delete_retire_or_edit_anything() -> None:
         assert banned not in src, f"the dormancy hunter can {banned} -- it must only report"
 
 
-def test_the_scan_leaves_the_tree_untouched() -> None:
+def test_the_scan_leaves_the_tree_untouched(monkeypatch) -> None:
     """The behavioural half of the same guarantee: a reporter that mutated what it measured would
-    make every subsequent run a report about its own side effects."""
-    watched = [D._ROOT / "libs/self_improvement/dormancy.py",
-               D._ROOT / "libs/research/capacity_policy.py"]
+    make every subsequent run a report about its own side effects.
+
+    Scoped for the same reason as the flags test -- mutation is a property of the scan's code path,
+    not of how many packages it walks, so paying 8s of subprocess greps to observe it buys nothing.
+    """
+    monkeypatch.setattr(D, "_LIB_SCOPE", ("libs/self_improvement",))
+    watched = [D._ROOT / "libs/self_improvement/dormancy.py"]
     before = {p: p.stat().st_mtime_ns for p in watched if p.exists()}
     D.scan(include_scripts=False)
     after = {p: p.stat().st_mtime_ns for p in watched if p.exists()}
