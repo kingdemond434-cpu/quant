@@ -63,3 +63,60 @@ def test_stripping_is_lossless_on_ordinary_text() -> None:
     for plain in ("量化交易 策略回测", "walk forward analysis",
                   "年化 24%！最大回撤仅 5.5%"):  # noqa: RUF001
         assert _strip(plain) == plain
+
+
+# --------------------------------------------------------------- the silent-zero refusal
+# THE DEFECT THIS PINS, measured on the 2026-08-06 06:33 sweep. 17 of 34 Bilibili queries -- the
+# LAST 17, contiguous, after ~68 signed requests -- returned ([], None): no rows and no error. The
+# miner recorded them as healthy zeros, so half the desk's highest-yielding source produced
+# nothing while appearing in no blocked list, opening no route hunt, and reaching the source-health
+# ledger as HEALTHY. Re-run standalone minutes later the same queries returned 19 rows each.
+#
+# The measurement that makes this unambiguous: Bilibili answers a keyword that cannot match
+# anything (`zzqqxxjjvv不存在的关键词9182`) with numResults=1000 and 20 generic fallback rows. The
+# API has NO empty state for a text query, so `code=0` with an empty result set is always a
+# refusal and never an empty corpus.
+#
+# Same class as the two Chinese-lane bugs already fixed (the CJK word-boundary bug, the Sogou
+# attribute-order bug): the FETCH was healthy and the desk was told there was nothing there.
+
+def _fake_body(rows: object, *, code: int = 0, num_results: object = 1000) -> dict:
+    return {"code": code, "data": {"result": rows, "numResults": num_results}}
+
+
+def test_empty_result_set_is_reported_as_a_refusal_not_an_empty_corpus(monkeypatch) -> None:
+    import libs.data.bilibili as bl
+    monkeypatch.setattr(bl, "signed_get", lambda *a, **k: _fake_body([]))
+    vids, err = bl.search("量化 过拟合")
+    assert vids == []
+    assert err, "code=0 with no rows returned as a clean empty -- this is the silent-zero defect"
+    assert "SOFT REFUSAL" in err
+
+
+def test_a_missing_result_key_is_also_a_refusal(monkeypatch) -> None:
+    """`data` present but carrying no `result` at all -- the other shape a throttle takes."""
+    import libs.data.bilibili as bl
+    monkeypatch.setattr(bl, "signed_get", lambda *a, **k: {"code": 0, "data": {}})
+    vids, err = bl.search("量化 回测")
+    assert vids == [] and err and "SOFT REFUSAL" in err
+
+
+def test_a_real_result_set_still_parses_clean(monkeypatch) -> None:
+    """The refusal check must not swallow healthy responses."""
+    import libs.data.bilibili as bl
+    monkeypatch.setattr(bl, "signed_get", lambda *a, **k: _fake_body([
+        {"bvid": "BV1xx", "title": "量化<em>回测</em>", "author": "a", "description": "d",
+         "tag": "量化,回测", "duration": "12:30", "play": 100, "pubdate": 1},
+    ]))
+    vids, err = bl.search("量化 回测")
+    assert err is None
+    assert len(vids) == 1 and vids[0].bvid == "BV1xx" and vids[0].title == "量化回测"
+
+
+def test_rows_without_a_bvid_do_not_masquerade_as_a_refusal(monkeypatch) -> None:
+    """A page of unusable rows is a PARSE outcome, not a refusal -- the two must stay distinct or
+    the backoff would fire on a healthy source and cost the rest of the run's queries."""
+    import libs.data.bilibili as bl
+    monkeypatch.setattr(bl, "signed_get", lambda *a, **k: _fake_body([{"title": "no bvid"}]))
+    vids, err = bl.search("量化 回测")
+    assert vids == [] and err is None

@@ -228,9 +228,31 @@ def probe_all() -> list[dict[str, Any]]:
     ):
         try:
             body = _get(url, referer=url, timeout=15.0)
+            # THE DECLARED REASON IS THE PRIOR AND MUST NOT BE WRITTEN INTO THE EVIDENCE FIELD.
+            # This branch is the SUCCESS branch -- the fetch returned -- and it was reporting the
+            # hardcoded note as `error` regardless. Measured 2026-08-06: csdn had been failing with
+            # an SSL handshake timeout, then answered with 2,141 bytes, and the probe row said
+            # `reachable: true, error: "read timeout from this box"`. Those two fields contradict
+            # each other, and the false one is the one a reader believes, because it is the one
+            # that names a cause. This file's own docstring states the rule it was breaking: "a
+            # declared status is a prior; this is the evidence."
+            #
+            # WHAT IS STILL NOT ok. A response is not content: 2KB from a search endpoint is an
+            # anti-bot shell or a redirect stub. So `ok` stays False and the row now says WHICH of
+            # the two it is, because "unreachable" and "reachable but serving a shell" lead to
+            # different work -- one is a network route to hunt, the other is a parser or a render
+            # path. The threshold matches probe_cn's own `looks_like_content` cut.
+            shell = len(body) <= 20_000
             rows.append({"source": name, "ok": False, "reachable": True, "bytes": len(body),
-                         "error": note})
+                         "looks_like_content": not shell,
+                         "declared": note,
+                         "error": (f"responded with {len(body)}B -- "
+                                   + ("an anti-bot shell or stub, not content" if shell
+                                      else "a full-size body; the declared blocker may be STALE, "
+                                           "re-check whether this source is parseable now")
+                                   + f" (declared prior: {note})")})
         except Exception as exc:
             rows.append({"source": name, "ok": False, "reachable": False,
+                         "declared": note,
                          "error": f"{type(exc).__name__}: {str(exc)[:90]} :: {note}"})
     return rows

@@ -603,6 +603,38 @@ _REGISTRY: Final[tuple[Replacements, ...]] = (
         ),
     ),
     Replacements(
+        source="hatena",
+        information_class=JA_PRACTITIONER_FORUM,
+        recorded_reason=("HTTP 429 Too Many Requests on the FIRST query of the 2026-08-06 06:33 "
+                         "sweep, after which the foreign lane backed off for the rest of the run "
+                         "and all 18 Japanese queries were lost. A 429 is a PACING verdict, not a "
+                         "block: Hatena is serving, it is refusing this desk's request RATE. That "
+                         "makes it the one entry here whose first substitute is the same host on "
+                         "a slower, keyed route rather than a different site"),
+        candidates=(
+            _c("hatena_bookmark_rss", JA_PRACTITIONER_FORUM,
+               "https://b.hatena.ne.jp/search/text?q=&mode=rss",
+               "switch the Hatena lane from the HTML search route to the per-query RSS feed, "
+               "which is a lighter response and a documented feed route rather than a scrape -- "
+               "then re-pace to one query per several seconds and verify the 429 clears",
+               note="SAME SOURCE, cheaper route. A 429 says slow down; hunting a different "
+                    "website first would abandon a healthy corpus over the desk's own pacing"),
+            _c("qiita_api_tag", JA_PRACTITIONER_FORUM,
+               "https://qiita.com/api/v2/items?query=",
+               "Qiita's v2 API is keyless for read and returns JSON, so it needs no parser "
+               "guesswork; query the same Japanese quant vocabulary the hatena lane uses",
+               note="already a mined source, listed here because it is the in-class fallback "
+                    "when Hatena is pacing-blocked -- narrower register, no post-mortems"),
+            _c("hatena_blog_archive", JA_PRACTITIONER_FORUM,
+               "https://hatenablog.com/",
+               "for the specific botter blogs Hatena search surfaces, read each blog's own "
+               "/archive listing directly -- one request per author per run instead of one per "
+               "query, which is a far lower rate against the same content",
+               note="loses discovery of NEW authors; keeps the known ones readable while the "
+                    "search route is rate-limited"),
+        ),
+    ),
+    Replacements(
         source="coinpan",
         information_class=KO_PRACTITIONER_FORUM,
         recorded_reason=("HTTP 403 Forbidden to urllib with a browser UA -- an edge WAF. "

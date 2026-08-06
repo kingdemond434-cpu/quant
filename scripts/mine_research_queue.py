@@ -475,9 +475,31 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--only", default="", metavar="SRC[,SRC...]",
                     help="restrict to sources: bilibili, cn, foreign, youtube, "
                          "academic, search (default: all)")
-    ap.add_argument("--bili-pages", type=int, default=3, metavar="N",
-                    help="Bilibili search pages per query (20 rows/page); depth for a "
-                         "dedicated run")
+    # 3 -> 1, and the number is READ off a like-for-like measurement rather than argued.
+    #
+    # Bilibili throttles on REQUEST COUNT, and depth is what spends the budget. Measured 2026-08-06
+    # on two runs of the same 34 queries, an hour apart:
+    #
+    #   4 pages/query  ->  ~136 requests, 17 queries productive, 17 SILENTLY REFUSED,   7 new
+    #   1 page/query   ->   ~34 requests, 34 queries productive,  0 refused,           43 new
+    #
+    # The 1-page run went SECOND, against a seen-ledger the 4-page run had already fed, so it faced
+    # the strictly harder job -- and still returned 25x more new candidates per request. Three of
+    # its queries (因子 有效性 检验, 私募 量化 研究, 回测 幸存者偏差) were among the ones the deep
+    # run had refused, and they produced candidates the desk would otherwise never have seen.
+    #
+    # WHY DEPTH LOSES, and it is not close. Pages 2-4 are the deep tail of ONE query's ranking --
+    # mostly the same corpus the seen-ledger already holds, since the ledger is fed by that same
+    # query every run. Page 1 of a query the sweep has NOT run is unindexed territory. This is the
+    # identical argument BILIBILI_QUERIES already makes for its own width ("breadth of SEARCH, not
+    # volume of fetching"), and the depth setting was quietly contradicting it.
+    #
+    # FALSIFIER: if a 1-page sweep's new-per-request falls below a 2-page sweep's on a like-for-
+    # like pair, raise it. Depth is not forbidden, it is currently just the worse buy.
+    ap.add_argument("--bili-pages", type=int, default=1, metavar="N",
+                    help="Bilibili search pages per query (20 rows/page). Default 1: measured "
+                         "25x more new candidates per request than 4, because the source "
+                         "throttles on request count and breadth outbuys depth")
     args = ap.parse_args(argv)
 
     _valid = {"bilibili", "cn", "youtube", "academic", "search", "foreign"}
@@ -500,7 +522,19 @@ def main(argv: list[str] | None = None) -> int:
     # --- Bilibili (B站): WBI-signed search. Scores title+description+tags, which is several
     # times more signal per candidate than a YouTube title alone.
     bili: dict[str, int] = {}
+    # BACK OFF FOR THE REST OF THE RUN once the source refuses, exactly as the foreign lane already
+    # does for hatena's 429. The 2026-08-06 06:33 sweep pushed 17 further queries into a source
+    # that had already started declining -- 68 more signed requests that returned nothing and could
+    # only deepen the throttle. Continuing to push a rate limit is how a temporary refusal becomes
+    # a durable block (source_health says so in its own threshold comment), and the queries lost
+    # here are the TAIL of the list, which is where the newest territory sits.
+    bili_refused = ""
     for kw in BILIBILI_QUERIES if _runs("bilibili") else ():
+        if bili_refused:
+            blocked[f"bilibili:{kw}"] = (
+                "bilibili soft-refused earlier in this run -- backed off for the rest of it rather "
+                f"than hammering a source that declined ({bili_refused[:90]})")
+            continue
         # PAGED. Search returns 20 rows a page and its ranking rotates, so one page re-sampled
         # often is mostly the same corpus seen again; three pages is depth rather than repetition.
         vids: list = []
@@ -508,7 +542,13 @@ def main(argv: list[str] | None = None) -> int:
         for pg in range(1, max(1, int(args.bili_pages)) + 1):
             got, e = bilibili.search(kw, page=pg)
             if e:
+                # A refusal on page 1 costs the whole query and must be recorded. A refusal on a
+                # LATER page keeps the rows already in hand -- but it is still the source declining,
+                # so it still arms the backoff. Treating "I got page 1 then it stopped" as a clean
+                # run is how the silent-zero defect survived: partial success is not consent.
                 err = e if not vids else None
+                if "SOFT REFUSAL" in e or "code=" in e:
+                    bili_refused = e
                 break
             vids.extend(got)
             time.sleep(0.4)
