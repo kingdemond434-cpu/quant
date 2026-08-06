@@ -475,9 +475,31 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--only", default="", metavar="SRC[,SRC...]",
                     help="restrict to sources: bilibili, cn, foreign, youtube, "
                          "academic, search (default: all)")
-    ap.add_argument("--bili-pages", type=int, default=3, metavar="N",
-                    help="Bilibili search pages per query (20 rows/page); depth for a "
-                         "dedicated run")
+    # 3 -> 1, and the number is READ off a like-for-like measurement rather than argued.
+    #
+    # Bilibili throttles on REQUEST COUNT, and depth is what spends the budget. Measured 2026-08-06
+    # on two runs of the same 34 queries, an hour apart:
+    #
+    #   4 pages/query  ->  ~136 requests, 17 queries productive, 17 SILENTLY REFUSED,   7 new
+    #   1 page/query   ->   ~34 requests, 34 queries productive,  0 refused,           43 new
+    #
+    # The 1-page run went SECOND, against a seen-ledger the 4-page run had already fed, so it faced
+    # the strictly harder job -- and still returned 25x more new candidates per request. Three of
+    # its queries (因子 有效性 检验, 私募 量化 研究, 回测 幸存者偏差) were among the ones the deep
+    # run had refused, and they produced candidates the desk would otherwise never have seen.
+    #
+    # WHY DEPTH LOSES, and it is not close. Pages 2-4 are the deep tail of ONE query's ranking --
+    # mostly the same corpus the seen-ledger already holds, since the ledger is fed by that same
+    # query every run. Page 1 of a query the sweep has NOT run is unindexed territory. This is the
+    # identical argument BILIBILI_QUERIES already makes for its own width ("breadth of SEARCH, not
+    # volume of fetching"), and the depth setting was quietly contradicting it.
+    #
+    # FALSIFIER: if a 1-page sweep's new-per-request falls below a 2-page sweep's on a like-for-
+    # like pair, raise it. Depth is not forbidden, it is currently just the worse buy.
+    ap.add_argument("--bili-pages", type=int, default=1, metavar="N",
+                    help="Bilibili search pages per query (20 rows/page). Default 1: measured "
+                         "25x more new candidates per request than 4, because the source "
+                         "throttles on request count and breadth outbuys depth")
     args = ap.parse_args(argv)
 
     _valid = {"bilibili", "cn", "youtube", "academic", "search", "foreign"}
