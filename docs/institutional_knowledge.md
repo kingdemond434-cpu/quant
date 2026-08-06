@@ -778,3 +778,40 @@ hypotheses and EV-score them; only the top few enter research.
   hypothesised and **refuted**: only 0.8% of fees sit on symbols the book never traded. Reconcile
   the venue income ledger against the trade log before trusting any per-trade verdict — and note the
   trade log is capped at `log[-500:]`, so "all-time" forensics silently truncates once it fills.
+
+## 2026-08-05 -- the rail's inception became reported profit ($4,807.75 on the only deployed sleeve)
+
+`web/cashcarry_live.json` published `net_pnl +2938.01` while the venue's own income ledger said the
+futures leg was **-4791.09** since inception (realized -3153.27 + funding 113.06 - commission
+1750.88). True net **-1869.74**. The book whose note reads *"builds the forward track record the
+gate sizes on"* reported a profit while it had lost $1,870, and `hurdle_rate.py:97` was reading the
+inflated field to decide whether the carry beats T-bills.
+
+**Cause, and it is a shared-source bug rather than a broken hedge.** `fut_pnl = fut_eq - start_eq`
+where `start_eq` is `capital_events.effective_start_equity` -- the RUIN RAIL's inception. On
+2026-08-01 a principal-signed `RESTART` moved it 10,547.78 -> 5,757.08 so the rail would measure the
+post-fix book instead of latching on an already-fixed churn-loop bug. Correct for the rail. Not
+correct for P&L reporting, which must measure from the first inception forever. One number served
+both questions, so $4,790.70 of re-base became $4,790.70 of reported profit. R0322 had earlier
+*pinned* the executor and molded books to this one inception so a deposit could not split the desk
+into two published truths -- which made them agree without making them right, and propagated the
+same leak into `portfolio.json`.
+
+**Why it survived four days.** The desk had already computed the exact error and named it
+`leak_attribution.residual = 4807.75`, and the bleed alarm was firing. But the alarm's verdict
+asserted *"a NAKED/UNTRACKED leg -- reconcile spot vs perp qty"* against a book holding **zero open
+positions**. The ordered remedy was not merely wrong, it was impossible to perform; anyone who
+looked found no legs and moved on. A confident wrong diagnosis closes the search.
+
+**Fixed** (`libs/execution/carry_accounting.reconcile_futures_leg`): the futures leg now carries two
+independent measurements -- the equity delta (one re-baseable input) and the venue income ledger
+(none) -- published side by side with their gap. A gap matching a ledgered re-base reads
+`REBASE-LEAK`; a gap matching nothing reads `PHANTOM` and keeps the page. `net_pnl` now carries the
+income-ledger number so the gates reading it get the truth; the equity-delta reading keeps its own
+key so the two can never silently re-converge. The bleed alarm no longer asserts a naked leg on a
+flat book.
+
+**The generalisable rules** (L0073, L0074): a rail's reference point and a performance number may
+never share a source -- same family as L1.51's `_capital()`, where a ceiling and its own numerator
+shared one. And an alarm must name the cause its data supports, not the one its shape suggests:
+check the diagnosis is *possible* in the current state before asserting it.

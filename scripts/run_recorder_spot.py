@@ -31,6 +31,7 @@ import contextlib
 import gzip
 import json
 import shutil
+import signal
 import time
 import urllib.request
 from datetime import UTC, datetime
@@ -133,6 +134,35 @@ def _disk_ok(path: Path = _ROOT) -> bool:
     return (u.used / u.total) < _DISK_MAX_FRAC
 
 
+# --- GRACEFUL DRAIN ON SIGNAL (L1.28a: a buffered row is as unbuyable as an unrecorded one) ---
+# Twin of run_recorder.py. Rows sit in memory until _FLUSH_ROWS accumulate -- at depth@5s that is
+# ~16 MINUTES per symbol -- so every respawn (the */5 supervisor, the */10 pgrep guard, a deploy,
+# a crash-restart) silently dropped up to that much tape. The universe-refresh path already
+# flushes DEPARTING SYMBOLS "so no buffered rows are lost"; the departing PROCESS never got the
+# same care. A flag rather than a flush inside the handler on purpose: signals land between
+# bytecodes, so flushing there can interrupt a gzip member mid-write and corrupt the file the
+# drain exists to protect.
+_STOP = False
+
+
+def _request_stop(_signum: int, _frame: object) -> None:
+    global _STOP
+    _STOP = True
+
+
+def _install_drain() -> None:
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        with contextlib.suppress(OSError, ValueError):
+            signal.signal(sig, _request_stop)
+
+
+def _drain(buf: dict[str, list[dict]]) -> None:
+    """Flush every buffered row before exit; one bad path must not strand other symbols' rows."""
+    for sym in list(buf):
+        with contextlib.suppress(OSError):
+            _flush(sym, buf[sym])
+
+
 def _flush(sym: str, rows: list[dict]) -> None:
     if not rows:
         return
@@ -204,6 +234,7 @@ def _weight_capped(symbols: tuple[str, ...]) -> tuple[str, ...]:
 def main() -> None:
     symbols = _weight_capped(_valid_spot_symbols(_SYMBOLS))
     _assert_weight_budget(symbols)
+    _install_drain()
     print(f"spot recorder v1 | {len(symbols)} symbols | depth@{_DEPTH_EVERY_S}s "
           f"trades@{_TRADES_EVERY_S}s -> {_ROOT}/")
     buf: dict[str, list[dict]] = {s: [] for s in symbols}
@@ -213,6 +244,10 @@ def main() -> None:
     disk_warned = False
     while True:
         t0 = time.time()
+        if _STOP:
+            _drain(buf)
+            print("spot recorder: drained buffers on signal -- exiting")
+            return
         # UNIVERSE REFRESH (gap #39 residual, 2026-07-29): twin of run_recorder.py. New spot legs
         # start recording within the hour; departing symbols flush first; the weight budget is
         # re-checked against the ACTUAL count, and new names are re-validated as spot pairs.

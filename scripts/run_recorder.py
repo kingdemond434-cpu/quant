@@ -23,6 +23,7 @@ import contextlib
 import gzip
 import json
 import shutil
+import signal
 import time
 import urllib.request
 from datetime import UTC, datetime
@@ -134,6 +135,40 @@ def _disk_ok(path: Path = _ROOT) -> bool:
     return (u.used / u.total) < _DISK_MAX_FRAC
 
 
+# --- GRACEFUL DRAIN ON SIGNAL (L1.28a: a buffered row is as unbuyable as an unrecorded one) ---
+# Rows sit in memory until _FLUSH_ROWS of them accumulate, which at depth@5s is ~16 MINUTES per
+# symbol. Every respawn therefore dropped up to that much tape on the floor, silently and
+# routinely: the */5 supervisor, the */10 pgrep guard, a deploy, a crash-restart. The
+# universe-refresh path above already flushes DEPARTING SYMBOLS "so no buffered rows are lost" --
+# the same care simply was never extended to the departing PROCESS.
+#
+# WHY A FLAG AND NOT A FLUSH INSIDE THE HANDLER. Signals land between bytecodes, so flushing from
+# the handler can interrupt a gzip member mid-write and corrupt the very file the drain exists to
+# protect. Draining at the top of the loop cannot race the writer and costs at most one iteration
+# of latency (PEP 475 resumes the sleep, so <= _DEPTH_EVERY_S plus any in-flight request).
+_STOP = False
+
+
+def _request_stop(_signum: int, _frame: object) -> None:
+    global _STOP
+    _STOP = True
+
+
+def _install_drain() -> None:
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        # A handler is unsettable off the main thread; that is not a reason to refuse to record.
+        with contextlib.suppress(OSError, ValueError):
+            signal.signal(sig, _request_stop)
+
+
+def _drain(buf: dict[str, list[dict]]) -> None:
+    """Flush every buffered row before exit. Best-effort per symbol: one bad path must not
+    strand the other twenty-nine symbols' rows."""
+    for sym in list(buf):
+        with contextlib.suppress(OSError):
+            _flush(sym, buf[sym])
+
+
 def _flush(sym: str, rows: list[dict]) -> None:
     if not rows:
         return
@@ -188,6 +223,7 @@ def _assert_weight_budget() -> None:
 
 def main() -> None:
     _assert_weight_budget()
+    _install_drain()
     print(f"recorder v1 | {len(_SYMBOLS)} symbols | depth@{_DEPTH_EVERY_S}s "
           f"trades@{_TRADES_EVERY_S}s -> {_ROOT}/")
     symbols = _weight_capped(_SYMBOLS)
@@ -198,6 +234,10 @@ def main() -> None:
     disk_warned = False
     while True:
         t0 = time.time()
+        if _STOP:
+            _drain(buf)
+            print("recorder: drained buffers on signal -- exiting")
+            return
         # UNIVERSE REFRESH (gap #39, 2026-07-29): a name the executor opens starts being recorded
         # within the hour rather than at the next restart. Departing symbols flush first so no
         # buffered rows are lost; the weight budget is re-checked against the ACTUAL new count.

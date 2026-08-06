@@ -1,23 +1,21 @@
 # Desk digest (auto-generated daily -- do not hand-edit)
-_updated 2026-08-02T08:20Z · companion to [[institutional_knowledge]]_
+_updated 2026-08-06T02:31Z · companion to [[institutional_knowledge]]_
 
 ## Book
-- Molded net: **$-1709.88** | funding **$113.06** | run-rate APR 0.0% | day 31.12
-- Root cause: **unknown_novel** (pause_and_page) | tracking error $-1978.94
+- Molded net: **$-1886.24** | funding **$113.06** | run-rate APR 0.0% | day 34.88
+- Root cause: **unknown_novel** (pause_and_page) | tracking error $2821.81
 
 ## Validation clocks
-- **carry (DEPLOYED)**: 37/90d | bt 3.28 fwd 15.44
-- **perp L/S**: 30/90d | bt 0.58 fwd 3.87
-- **trend**: 30/90d | bt 1.27 fwd -4.25
-- **trend regime-gated**: 25/90d | bt 1.27 fwd 0.0
-- **OI/LS data**: 35/40d
-- **stablecoin data**: 31/40d
+- **carry (DEPLOYED)**: 41/90d | bt 4.29 fwd 17.52
+- **perp L/S**: 34/90d | bt 0.44 fwd -0.44
+- **trend**: 34/90d | bt 1.3 fwd -6.23
+- **trend regime-gated**: 29/90d | bt 1.25 fwd 0.0
+- **OI/LS data**: 39/40d
+- **stablecoin data**: 35/40d
 
 ## Open decisions (ledger)
-- `2026-07-04-cashcarry-top10-4500` -- review 2026-08-04: funding/day rises ~50% without new drift losses by 2026-08-04
 - `2026-07-04-levered-lab-3x` -- review 2026-10-02: by day 90: sim vs real comparison decisively answers the leverage question
 - `2026-07-04-trend-promotion` -- review 2026-10-02: forward Sharpe >= 0.7 (>=0.5x backtest) at day 90
-- `2026-07-04-reconcile-limit-fallback` -- review 2026-08-04: zero stranded orphans > 24h by 2026-08-04
 - `2026-07-09-trend-unblend-and-regime-challenger` -- review 2026-10-07: challenger fwd Sharpe > incumbent fwd Sharpe AND >=0.5 at day 90
 - `2026-07-09-carry-accounting-symmetric-realized` -- review 2026-08-08: net_pnl ~= funding - fees +- basis drift as closes accumulate
 - `2026-07-09-income-pagination` -- review 2026-08-08: income totals stable vs manual venue export
@@ -40,10 +38,8 @@ _updated 2026-08-02T08:20Z · companion to [[institutional_knowledge]]_
 - `2026-07-16-level5-factory-prompt-triage` -- review 2026-08-15: by pilot day-30 (~2026-08-15): scale-or-not decided from survivors-per-1000 evidence; zero
 - `2026-07-16-audit-max-roi-upgrade` -- review 2026-08-15: 30d: >=1 micro-audit finding leads to a verified fix or a logged ruling; brain_down pager 
 - `2026-07-16-pager-silent-death-backoff-fix` -- review 2026-08-15: test page received by principal; alert state shows successful pushes resuming
-- `2026-07-16-gap-elimination-override-adoption` -- review 2026-07-30: 14d: >=1 benchmark-mission plan or micro-audit missing-action survives code verification a
 - `2026-07-16-fred-macro-collector-wired` -- review 2026-08-15: first pre-registered macro-crypto hypothesis clears or fails the gauntlet honestly within 
 - `2026-07-16-leverage-optimizer-runaway` -- review 2026-08-15: brain root-causes the confidence jump within 3 cycles; no position ever exceeds cap_frac x
-- `2026-07-16-v8-master-blueprint-triage` -- review 2026-07-23: external heartbeat pings green within 48h of operator signup; live-connector spec review i
 - `2026-07-17-tier1-scorecard-rider` -- review 2026-08-16: first two tier1 runs produce >=7 validly-cited dimension scores per model; scores correlat
 - `2026-07-17-data-triggered-generation` -- review 2026-08-16: first matured family (OI/LS ~07-29) gets its scoped generate run within 2 cycles
 - `2026-07-17-cadence-engine` -- review 2026-08-14: 4 weeks: panels fired 7.0+-0.5d apart with zero brain involvement; no double-fires
@@ -57,7 +53,6 @@ _updated 2026-08-02T08:20Z · companion to [[institutional_knowledge]]_
 - `2026-07-17-hwm-contamination-false-fire` -- review 2026-08-16: post-reset baseline forms on clean wallet; no fourth false fire from stale references
 - `2026-07-17-spec-prebuild-standing-rule` -- review 2026-08-16: next 3 implemented register items each had a complete spec before their build began
 - `2026-07-17-research-pack-triage` -- review 2026-08-16: decay-lab spec complete before monthly window; clustering live before next factory expansi
-- `2026-07-17-master-expansion-package-triage` -- review 2026-07-31: 5 specs complete within 5 cycles; liquidation-cascade hypothesis pre-registered within 2 w
 - `2026-07-17-deadman-reset-2-principal-approved` -- review 2026-08-16: 48h: no deadman breach counts; positions ~$300-450/name; measured eq stable vs new HW
 - `2026-07-18-prospector-seat-adopted` -- review 2026-08-17: >=1 provenance-SEMI-or-better card reaching pre-registration within 2 runs; watchlist aliv
 - `2026-07-18-execution-lockdown-and-recorder-live` -- review 2026-08-17: 7 consecutive days of gap-free hourly partitions for 5 symbols; recorder survives a cycle 
@@ -118,15 +113,10 @@ _updated 2026-08-02T08:20Z · companion to [[institutional_knowledge]]_
 - `2026-07-19-founders-directives-adopted` -- review 2026-08-18: next auth failure produces a page within one cycle-start; zero doctrine additions until Ga
 - `2026-07-20-implementation-caps-removed` -- review 2026-09-14: 8 weeks: implemented-change yield stays healthy and zero change-induced incidents; churn t
 - `2026-07-20-hypothesis-generation-maximized` -- review 2026-08-19: hypotheses/week up >=3x with FDR detector flat; compute per gauntlet survivor down; pager:
-- `2026-07-20-collapse-detector-and-exhaustion-audit` -- review 2026-07-27: diversity KPIs visible in scorecard within 2 cycles; zero silent-collapse windows >1 week 
-- `2026-07-20-max-cadence-everything` -- review 2026-07-27: 7 days: cycles-completed/day >= 3, zero silent no-ops, dig logs full-size, panel cadence 3
-- `2026-07-20-addenda-bcd-integrated` -- review 2026-08-03: within 2 weeks: >=5 addenda sources verified + Bronze-archived + feeding features; dev-act
 - `2026-07-20-miners-activated-carveout-deadline` -- review 2026-08-19: 7 miner logs with real session notes within 48h of quota headroom; coverage map gains 7 re
 - `2026-07-20-panel-tier-policy` -- review 2026-08-19: Gate-0 pre-mortem runs on premium tier; wizardlm seat replaced within a week; scorecard dr
 - `2026-07-20-kimi-k3-seat-upgrade` -- review 2026-08-19: k3 responses present in next panel run; scorecard hit-rate tracked from version boundary
-- `2026-07-20-deadman-reset-reconciled` -- review 2026-07-27: book redeploys and runs 7 days without a false fire; if one occurs, GAP #34 fix becomes to
 - `2026-07-20-flagship-roster-max` -- review 2026-08-19: next panel: 13/13 respond, no blanks; accepted-finding rate >= prior roster within 4 runs
-- `2026-07-20-full-audit-coverage` -- review 2026-08-03: coverage % rises every run; zero never-audited risk-path files within 14 days; >=1 finding
 - `2026-07-20-openrouter-exhausted-purchase-page` -- review 2026-08-19: next panel run either executes fully or pages BEFORE spending; zero mid-run 402s
 - `2026-07-20-no-cost-degradation` -- review 2026-08-19: zero cost-motivated config reductions in the ledger; full roster restored automatically po
 - `2026-07-20-full-capacity-roster` -- review 2026-08-19: capacity test Friday: 13/13 ingest the full payload and correctly answer the probe
@@ -137,8 +127,6 @@ _updated 2026-08-02T08:20Z · companion to [[institutional_knowledge]]_
 - `2026-07-21-maximization-checker` -- review 2026-08-20: next 30d: >=1 real below-max state caught by the checker BEFORE the principal notices it; 
 - `2026-07-21-ceiling-self-audit` -- review 2026-08-20: by 07-25: all 3 directives closed on time; realized cycles/day >= 3; connector sections 3-
 - `2026-07-21-addall-axes-recorder` -- review 2026-08-20: within 48h: lake shows 20-symbol depth files growing; bronze has wikipedia/crossasset/mini
-- `2026-07-21-recorder-spot-leg-gap35` -- review 2026-07-28: data/moat/spot/ accumulates continuous hourly partitions for >=1 week with <5% gap; spot-l
-- `2026-07-21-redteam-protocol` -- review 2026-08-04: next funded deep audit: all responding models deliver 3 parts; >=1 part-2/part-3 item impl
 - `2026-07-21-no-compromise-principle` -- review 2026-08-20: capability defects and rail-loosening proposals both flagged; neither recurs
 - `2026-07-21-principal-doctrine-injected` -- review 2026-08-20: cycles consistently close a gap or prove a ceiling each run; zero rail-loosening; no rise 
 - `2026-07-21-self-interrogation-protocol` -- review 2026-08-20: cycles consistently report verified probes + occasionally a new angle added to the battery
@@ -160,7 +148,6 @@ _updated 2026-08-02T08:20Z · companion to [[institutional_knowledge]]_
 - `2026-07-22-anytime-valid-measured-refutes-speedup` -- review 2026-08-21: used as a secondary gate on high-stakes promotions; never cited as a speedup
 - `2026-07-22-8h-block-challenger-shadow` -- review 2026-08-21: challenger tracks incumbent direction over the comparison window; on adoption, promotion d
 - `2026-07-22-cost-truth-and-peek` -- review 2026-08-21: measured-cost coverage grows with the recorder; peek e-values track the day-40 verdicts
-- `2026-07-22-recursion-angles-12-18` -- review 2026-08-05: blind-spot ledger origin=principal rate falls toward zero over the next 2 weeks of cycles
 - `2026-07-22-dual-objective-growth-ladder` -- review 2026-08-21: each ladder step fires within 24h of its evidence; cycle reports score both objectives; cl
 - `2026-07-22-small-capital-stack` -- review 2026-08-21: blended seed-window return lands 100%+ in yr-1 with the desk's own risk rails intact and z
 - `2026-07-23-frame-lock-autopsy` -- review 2026-08-22: zero further origin=principal rows in the objective-frame class
@@ -206,7 +193,6 @@ _updated 2026-08-02T08:20Z · companion to [[institutional_knowledge]]_
 - `2026-07-27-longterm-trader-skill-zero-predictive-power` -- review 2026-08-26: n/a -- rejected; zero predictive power on the primary criterion
 - `2026-07-27-highpower-skill-drawdown-persists-returns-do-not` -- review 2026-08-26: n/a -- returns/Sharpe persistence REJECTED with power; drawdown persistence CONFIRMED but 
 - `2026-07-27-elite-risk-filter-replicates-oos-plus-feature-factory` -- review 2026-08-26: elite risk filter holds on a THIRD independent cohort or a forward clock; behavioural feat
-- `2026-07-28-carry-churn-loop-root-cause-and-fix` -- review 2026-08-04: 7d commission/funding ratio falls from 63.42x toward the 6.84x best-ever ratchet; CLOSE-FA
 - `2026-07-28-fee-blind-pnl-and-page-destruction` -- review 2026-08-27: hold_buckets_net_of_fees present in web/trade_forensics.json each run; FEE INTENSITY fires
 - `2026-07-29-pbo-rc-are-campaign-constants-not-candidate-gates` -- review 2026-08-28: PRE-REGISTERED, both directions required: (a) a 100%-null synthetic campaign must admit <=
 - `2026-07-29-carry-book-absorbing-state-and-rail-undercount` -- review 2026-08-28: check_book_absorbing_state fires on the live state today (VERIFIED) and goes silent within
@@ -222,11 +208,13 @@ _updated 2026-08-02T08:20Z · companion to [[institutional_knowledge]]_
 - `2026-07-31-freeze-response-commit-scheduler-unification-reject-loop-l116a-reopens` -- review 2026-08-12: REARM reply observed lifting freeze + book resumes within one tick; zero duplicate-organ f
 - `2026-07-31-ci-red-deploy-pipeline-repair` -- review 2026-08-30: within 1h of push: puller tick reports up-to-date (or deployed) with CI marker green, cron
 - `2026-07-31-cycle4-recovery-merge-walcl` -- review 2026-08-07: next puller ticks stay green+up-to-date; walcl clock accrues daily rows; no new id collisi
-- `2026-07-31-cycle5-repairmode-conversion-batch` -- review 2026-08-02: max_audit stays 0 live defects through 08-01 noon except acks expiring on their stated fal
 - `2026-07-31-cycle6-r0206-carry-attribution-and-inert-moneypath-fix` -- review 2026-08-31: R0206: the ~66 bps gap decomposes with execution as the DOMINANT term when measured agains
 - `2026-08-01-cycle-calibration-sign-inversion-and-asserted-forward-clocks` -- review 2026-09-01: (a) calibration bias stays positive over pre-registered-only forecasts at the 2026-09-01 g
 - `2026-08-01-cycle-stratified-campaign-window-ends-min-len-truncation` -- review 2026-09-01: (a) HONESTY, checkable now: the next campaign's audit-log campaign_strata row shows strata
 - `2026-08-01-cycle-carryover-ack-blindness-and-generation-third-store` -- review 2026-08-08: The §37 brief's top-12 contains ZERO currently-acked items on the next 5 cycles (was 12/12
+- `2026-08-05-carry-denylist-forgot-itself-while-paused` -- review 2026-08-12T03:09:51.014009+00:00: On the next re-arm, zero opens in COOKIEUSDT/1000CATUSDT before 2026-08-15, and after that
+- `2026-08-05-stablecoin-supply-momentum-shift-keep-accruing` -- review 2026-09-04: The clock reaches its 40-observation wall and returns a verdict on post-break data. Either
+- `2026-08-05-ci-gate-attribution-tracked-vs-inflight` -- review 2026-08-19: ci-gate-red does not fire on a cycle whose only failures are another session's untracked f
 
 ## Executive KPI snapshot
 - CRO: {"hypotheses_tested_lifetime": 20, "validated_survivors": 1, "survivor_note": "cash-carry (fwd 8/90); trend candidate gauntlet-passed (fwd 1/90); all else graveyarded", "survival_r
