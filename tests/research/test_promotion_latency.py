@@ -115,7 +115,8 @@ def test_the_lag_is_MEASURED_from_the_ledger_once_it_has_three_closed_rows(
     _ledger(tmp_path, rows, monkeypatch)
     c = PL.decision_lag_days()
     assert c.provenance == "MEASURED"
-    assert c.days == pytest.approx(4.0), "the MEDIAN, not the mean -- one stalled row is not the norm"
+    # The MEDIAN, not the mean -- one stalled row is not the norm and must not become it.
+    assert c.days == pytest.approx(4.0)
 
 
 def test_fewer_than_three_rows_is_ESTIMATED_and_floored_at_the_daily_cycle(

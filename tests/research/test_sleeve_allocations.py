@@ -22,6 +22,7 @@ import json
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from libs.research import sleeve_allocations as SA
 from libs.research.capacity_policy import max_allocation
@@ -65,7 +66,7 @@ def test_the_declaration_is_FROZEN_once_made() -> None:
     what was declared when the gate was passed, so a caller that could edit it in place could pass
     the gate and then move the goalposts."""
     a = _alloc()
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         a.declared_usd = 999_999.0            # type: ignore[misc]
 
 
