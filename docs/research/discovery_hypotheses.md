@@ -120,3 +120,49 @@ confidence: 0.25 — the mechanism is real and well documented in equities; that
   the ceiling.
 outcome: —
 
+
+### DH-007 The put-call parity residual is computed every collection and thrown away [status: open]
+rationale: surfaced by the dedicated Bilibili sweep 2026-08-06, three MECHANISM-naming rows at the
+  3.0 threshold — `11.2 期权平价公式套利策略` (put-call parity arbitrage), `量化实战策略：BTC期权统计套利｜
+  同一个BTC，为什么有两套概率？` (BTC options statistical arbitrage: "the same BTC, why two sets of
+  probabilities?"), and `盘点中国市场所有套利交易策略`. Converted rather than queued because chasing
+  the prompt into the desk's own code found something the video did not say and could not have.
+mechanism-prior: `relative_value_convergence` (census), with a second leg in
+  `liquidity_provision_immediacy`. WHO PAYS: a participant who must transact one leg — an option
+  buyer with a view, or a market maker forced to warehouse inventory — when the synthetic built
+  from the other legs is cheaper. Parity is an arbitrage IDENTITY, so a persistent residual is not
+  a forecast, it is a rent someone is paying to trade in the wrong instrument.
+THE FINDING, which is a DATA-PATH defect rather than an untested idea:
+  `scripts/collect_deribit_vol_markets.py:261` — "the forward comes from put-call parity at" the
+  ladder — recovers the forward from the call/put legs and then writes ONLY the aggregate
+  (`atm_iv`, `forward`, `n_strikes`, `dte_days`). Verified against the artifact: 400 sampled rows
+  of data/deribit_vol_markets.jsonl carry NO per-strike quotes. So the desk computes the parity
+  relationship on every collection, uses it to derive one number, and DISCARDS the residual — and
+  the residual is exactly the signal. The mechanism is untestable today not because the data is
+  unavailable but because the collector consumes it.
+expected-info-value: high, and cheap. The fix is a COLLECTOR change (retain the per-strike legs, or
+  at minimum the parity residual per strike and expiry), not a new data source, no vendor and no
+  paywall. Deribit's chain is already fetched on the existing cadence; the desk is paying the
+  fetch cost and throwing away the byproduct (L1.50: an unexploited asset is a defect — here the
+  asset is generated in-house and deleted).
+supporting-evidence: the VIDEO IS THE PROMPT, NOT THE EVIDENCE, and unlike DH-006 that distinction
+  matters here. The desk cannot read Bilibili video content, so the titles above are worth exactly
+  the mechanism NAME they carry. The evidential basis is the desk's OWN collector source line and
+  its OWN artifact schema, both quoted above, plus a textbook identity that needs no source at all.
+  No number from any video is used, and none should be.
+search-plan: (1) amend the collector to persist the parity residual per (underlying, expiry,
+  strike) with the same one-clock stamping the VRP screen already documents — this is the only
+  build step and it is small; (2) accrue forward: the residual is point-in-time and cannot be
+  backfilled from the aggregate now on disk, so the series starts the day the collector changes;
+  (3) pre-register the test BEFORE any data exists — deviation must be net of the fee/spread it
+  would take to close, or the whole residual is a measurement of the bid-ask; (4) charge it as one
+  cell in the existing multiplicity family, never as a fresh campaign.
+BLOCKER, stated plainly: nothing can be screened today. The historical residual is unrecoverable —
+  it was never written — so this hypothesis owes forward accrual before it owes a screen, exactly
+  like the circulating-supply denominator. That is a fact about the collector's history, not a
+  verdict about the mechanism.
+confidence: 0.35 — parity residuals on a liquid venue are usually small and usually eaten by
+  costs, which is why the fee-net construction is step (3) and not an afterthought. What raises it
+  above DH-006 is that the economics are an identity rather than a premium story, and the desk
+  already pays for the data.
+outcome: —
