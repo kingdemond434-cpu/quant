@@ -167,7 +167,18 @@ def liquidation_burst(liq_notional: pd.Series, idx: np.ndarray, *,
             continue
         med = float(np.median(hist))
         if med > 0:
-            out[k] = float(cur.sum()) / (med * max(window, 1))
+            # THE DENOMINATOR MUST COUNT THE BARS ACTUALLY SUMMED. `cur` spans i .. i+window
+            # INCLUSIVE -- window+1 bars, because the event bar itself belongs in the burst -- and
+            # the first version divided by `med * window`. So a perfectly quiet window scored
+            # 1.333 instead of 1.0 at window=3, and EVERY burst multiple was inflated by
+            # (window+1)/window. That is a 33% overstatement in the flattering direction, applied
+            # uniformly, which is exactly the kind of bias no downstream check can see: the
+            # ordering of events is untouched, so only the absolute multiple is wrong and it is
+            # wrong everywhere at once.
+            #
+            # `cur.size` rather than `window + 1`, because the slice is truncated at the end of
+            # the series -- dividing a 2-bar sum by 4 would understate a burst on the last bars.
+            out[k] = float(cur.sum()) / (med * max(cur.size, 1))
     return out
 
 
@@ -181,6 +192,18 @@ def mechanism_evidence(swept: np.ndarray, control: np.ndarray, *,
     "before vs after a sweep" -- OI drifts, funding trends, and a before/after split would confirm
     the hypothesis on any series with a trend in it. It is SWEPT LEVELS vs LEVELS THAT WERE NOT
     SWEPT, which holds the "there was a level here" condition fixed and varies only the sweep.
+
+    THE CALLER OWES ONE THING THIS FUNCTION CANNOT ENFORCE: the two arms must be INTERLEAVED IN
+    TIME, not drawn from different stretches of the series. `oi_collapse` reports a FRACTIONAL
+    change, so on a trending series the same absolute move is a larger fraction wherever the level
+    is lower -- and if every swept event sits early and every control late, a pure monotone trend
+    with no sweeps at all produces |d| = 0.28 and a CONTRADICTED verdict. Measured, not feared:
+    swept=bars 50-150 and control=bars 200-300 on a straight line from 1000 to 500 gives arm means
+    of -0.0114 and -0.0145.
+    That is the before/after failure returning through the sampling rather than through the
+    windows, and it is invisible here because both arms are validly "levels". `run_failed_breakout
+    _study` draws its control from the whole index for exactly this reason; any other caller must
+    do the same or the verdict is a fact about the trend.
 
     A channel with no data is reported UNMEASURABLE, never as an effect of zero. Those are
     different findings: one says the mechanism is absent, the other says nobody looked, and the
