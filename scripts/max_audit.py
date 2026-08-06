@@ -3802,6 +3802,16 @@ _ONESHOT_SCRIPTS = frozenset({
     # decisive experiment is by definition not a cadence: re-running it on unchanged history
     # would re-test dead ground and burn multiplicity budget for nothing.
     "screen_kr_perasset_depth.py",
+    # classified 2026-08-06: R0266's named STUDY, whose whole purpose was to answer one sizing
+    # question before any wiring -- and it answered DO NOT WIRE (boundary shrink <=10% at the
+    # desk's real barrier, an order of magnitude under the estimation shrink already applied).
+    # Verdict banked in docs/research/absorbing_kelly_study.json (committed 92cb529); no sizer,
+    # rail or bar changed, which is exactly why nothing imports it. It is a SIMULATION over a
+    # parameter grid, not a reader of desk state, so a cadence would re-derive a settled number
+    # from unchanged inputs. NOT a hidden orphan: R0431 rows the one follow-up that would re-run
+    # it (multi-year horizons, to confirm the 1y framing is what inverted the sign), and that is
+    # a re-run of the same decisive experiment rather than a schedule.
+    "study_absorbing_kelly.py",
 })
 
 
