@@ -1549,3 +1549,50 @@ files are published under Brazil's open-data policy (LAI 12.527/2011). **CLEAN �
 78 monthly rows satisfy PF+PJ=Subtotal and Subtotal₁+Subtotal₂+Domestic=TotalGeral with worst
 residual **exactly 0.00**) · licence clean ✓ · **ingest NOT started** · **screen deliberately withheld
 as underpowered, with the enabling change named above.**
+
+### 30. OpenMarket — synchronized millisecond Polymarket↔Binance BTC corpus (arXiv:2607.26245, HuggingFace, Apache-2.0) — grade: **verified-live, licence CLEAN for the data, sample ingested and measured; DEAD AS AN ALPHA AXIS by the authors' own out-of-sample null, KEPT as a clock-provenance reference** [§33: killed -> docs/graveyard.md lit_prediction_market_microstructure_vs_book]
+- **Provides:** the first public millisecond-level paired Polymarket-BTC / Binance-BTCUSDT corpus
+  with explicit pairing metadata. 727,098,247 deduplicated rows across 202 archival snapshots;
+  2,936,031 explicit lead-lag pairs; event data on 54 Polymarket / 57 Binance days between
+  2026-02-12 and 2026-05-15. Hive-partitioned parquet (`<table>/date=YYYY-MM-DD/`), four splits
+  (`unified/` 504 files recommended, `full/` 3,312, a 9,352-row root sample, `features/`).
+- **Verified first-hand 2026-08-06 from this box** (not from the paper's claims): arXiv abs HTTP 200;
+  HF API `gated=false private=false disabled=false`, 4,253 files, 1,411 downloads, lastModified
+  2026-07-31; **two sample parquet downloaded and parsed**. Registration artifact with the full
+  measured schema: `docs/research/openmarket_corpus.json`.
+- **Legitimacy (§13): CLEAN FOR THE DATA, UNRESOLVED FOR THE CODE — and the two are recorded
+  separately on purpose.** The HF dataset declares `apache-2.0` in both `cardData` and the README
+  front-matter. The GitHub pipeline repo returns `NOASSERTION` — **no recognised licence on the
+  code**, so the Rust collector must not be vendored. Re-implementing from the paper's description
+  is unaffected. (The mirror image of the bitFlyer ruling: there, availability was mistaken for
+  permission; here, a permissive data licence must not be read across to unlicensed code.)
+- **WHY IT IS KILLED AS AN ALPHA AXIS, not deferred:** the paper's central result is its own
+  out-of-sample null — 43 microstructure features in a walk-forward logistic do not beat the
+  probability already implied by Polymarket's own book, netting −0.116 normalized payoff units per
+  trade after stated fees. The mechanism is general and is what makes it permanent: **the book you
+  are trying to beat already aggregates the flow your features are derived from.** Graveyarded with
+  that mechanism. The corpus is additionally in **archival shutdown** (frozen at tag v0.5.2, no new
+  snapshots), so it can never become a live axis — it is a one-time historical reference.
+- **WHAT SURVIVES THE KILL, and it is the reason this card exists at all — an L1.46 corroboration
+  from outside this desk.** Every `lag_pairs_ms` row declares **three** clocks:
+  `binance_source_ts_ms` and `polymarket_source_ts_ms` (venue stamps) plus `paired_at_ms`
+  (collector stamp). An independent team treats `t_venue` and `t_recv` as separate first-class
+  columns — exactly the discipline L1.46 installed here after 82% of desk data was found carrying
+  an undeclared clock.
+- **THE MEASURED WARNING, and it bears directly on R0117.** The authors report a 16 ms median
+  venue-clock lag, drift bounded to ≤6 ms, and a residual **single-vantage constant-offset
+  ambiguity of ≈ ±99 ms**. Measured here on the sample: median lead-lag **+14 ms, IQR [−38, +92] ms**
+  — **the declared ambiguity is the size of the entire interquartile range.** A single-vantage
+  collector cannot resolve a sub-100 ms cross-venue lead-lag however carefully it stamps; that is a
+  structural limit of observing two venues from one point, not a data-quality failing. Their
+  response is the transferable method: a **synchronization-free event study on the collector clock
+  alone** (Polymarket quotes respond to large Binance moves after a median 347 ms) — an interval on
+  ONE clock, never a difference between two. Corroborated here: `paired_at_ms − binance_source_ts_ms`
+  has median **6,213 ms** (p95 18,698 ms), so the two bases are not interchangeable even roughly.
+- **DATA CAVEAT FOUND HERE, not stated in the abstract:** `price_delta_bps` is degenerate in this
+  split — every value lies in [−10000.0, −9999.9], because it differences a Polymarket probability
+  (0..1) against a Binance USD price (~80,949). It is a unit-mismatch sentinel, not a spread. Do
+  not consume that column.
+- **L1.16a re-entry:** a named orthogonal use that does NOT re-run the graveyarded construction —
+  e.g. using the corpus as declared-provenance ground truth to validate the desk's own cross-venue
+  timing methodology. Absent that, the 727M-row split stays un-ingested.
