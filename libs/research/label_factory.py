@@ -240,10 +240,26 @@ def regime_transition(bars: pd.DataFrame, *, win: int = 20, ratio: float = 1.8,
     rv = ret.rolling(win, min_periods=max(5, win // 4)).std()
     prior = rv.shift(win)
     stepped = _mask(rv > ratio * prior)
-    # held: the step is still in force through the confirmation window
-    held = stepped.copy()
-    for k in range(1, max(1, confirm) + 1):
-        held &= _mask(rv.shift(-k) > ratio * prior)
+
+    # THE CONFIRMATION WINDOW MUST NOT CONTAIN THE BAR IT IS CONFIRMING, and the first version of
+    # this did. It tested `rv.shift(-k) > ratio * prior` for k in 1..confirm -- but `rv` is a
+    # `win`-bar rolling std, so with confirm=5 and win=20 every one of those five windows STILL
+    # CONTAINS the initiating bar. A single enormous return keeps `rv` elevated for a full `win`
+    # bars on its own, so the persistence test passed on exactly the input it existed to reject:
+    # one loud bar, measured five times.
+    #
+    # That made the family a volatility-outlier detector wearing a regime label's name -- and the
+    # damage is downstream, because an event label is a research ASSET here: studies keyed on
+    # "regime transition" would have been keyed on spikes, and the lag this family pays for
+    # (`known_at_lag=5`, the only non-zero one on the desk) bought nothing.
+    #
+    # The fix is to estimate the post-step volatility on the confirmation window ALONE -- bars
+    # t+1..t+confirm, excluding t. Noisier than a 20-bar estimate, and that is the correct trade:
+    # a short honest window beats a long one contaminated by the event it is judging. The declared
+    # knowability lag is unchanged at `confirm`, because that is still exactly how far ahead this
+    # reads.
+    post = ret.rolling(max(1, confirm), min_periods=max(1, confirm)).std().shift(-confirm)
+    held = stepped & _mask(post > ratio * prior)
     fresh = held & ~_mask(held.shift(1))          # mark the ONSET, not every held bar
     return np.asarray(fresh.to_numpy(), dtype=np.int8)
 
