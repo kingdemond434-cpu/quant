@@ -185,6 +185,21 @@ def import_closure(entry: str, root: Path | None = None) -> set[str]:
     return {p.relative_to(root).as_posix() for p in seen if p != start}
 
 
+def tier_for_unit(unit: str) -> int | None:
+    """The supervision tier of a systemd unit, or None if this repo does not own it.
+
+    Exists so an ACTUATOR (``scripts/ship_restart.py``) can ask "may a script restart this?"
+    against the SAME map the planner uses. A second copy of the tier map is precisely the drift
+    this module's own ``_OWNED`` docstring warns about, and here it would drift in the one
+    direction that matters: a stale copy that forgot ``quant-deadman`` is TIER_RUIN would let a
+    script restart the ruin rail.
+    """
+    for _entry, (u, tier) in _OWNED.items():
+        if u == unit:
+            return tier
+    return None
+
+
 def plan(changed: Iterable[str], root: Path | None = None) -> DeployPlan:
     """Classify changed repo-relative paths into restart / escalate / stale-scheduler / no-op."""
     root = root or _ROOT

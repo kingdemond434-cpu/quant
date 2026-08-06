@@ -1406,7 +1406,8 @@
    "reason": "[wave2 2026-08-04] second-family consultation extracted to libs/llm/second_opinion.consult_second_family and wired into blindspot_prober + run_deep_sweep (was blindspot_max-only). Bonus production find: the inline import was silently SKIPPING under cron (missing sys.path root) -- committed blindspot_max.json carried no second_family key; guard added, dark-mode SOLO verified live. Governance fence strengthened to cover all three organs. 12 tests pass.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:42:23Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in e6a00daa7)"
   },
   {
    "id": "R0115",
@@ -1548,7 +1549,8 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] VERIFIED against the tree. Sleeve + all buildable owed stages exist: scripts/run_conviction_trader.py on hourly cron (ops/crontab.manifest:250), sizing fractional-Kelly on calibrated probability (calibrated_p :1234-1259 feeding kelly_leverage :1269-1272), heat-capped, PAPER-only; owed stage 1 (paper P&L with leverage + stop logic) = scripts/resolve_paper_book.py walking the stop/trail/pyramid ladder bar-by-bar adverse-first with leverage-scaled fees/slippage/funding (:249-317), on its own hourly cron (manifest:266-280); owed drawdown sub-rail = sleeve_drawdown (:950-972) halting the trader in main() (:1388-1397); every call scored via log_forecast (:1316, raw claim scored, adjusted sized -- pinned by test_conviction_trader.py:599-611). The 30-trade calibration+EV review has its machinery standing (pre-registered kill_check at 50 closed trades resolve_paper_book.py:101-105,526-549; run_tr",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:04:47Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5f1452988)"
   },
   {
    "id": "R0126",
@@ -1651,7 +1653,9 @@
    "reason": "built, scheduled hourly, 12 tests, verified live against OKX; renumbered from R0126 after the VPS session allocated that id concurrently",
    "commit": "d3d4c27",
    "due": null,
-   "note": "owed next: 30-call calibration+EV review that graveyards the sleeve if uncalibrated"
+   "note": "owed next: 30-call calibration+EV review that graveyards the sleeve if uncalibrated",
+   "disposed": "2026-07-31T14:06:12Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in a9666b54e)"
   },
   {
    "id": "R0134",
@@ -1663,7 +1667,9 @@
    "reason": "built, scheduled, 52 tests across the two organs, 18/18 instruments charted live",
    "commit": null,
    "due": null,
-   "note": "the gap-stress leverage cap is now INERT at a 6pct budget and is labelled as such in code rather than counted as protection; owed next: wire measured calibration into the probability before Kelly so size scales UP as evidence arrives, not only down"
+   "note": "the gap-stress leverage cap is now INERT at a 6pct budget and is labelled as such in code rather than counted as protection; owed next: wire measured calibration into the probability before Kelly so size scales UP as evidence arrives, not only down",
+   "disposed": "2026-07-31T14:23:06Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in e8fe1212f)"
   },
   {
    "id": "R0135",
@@ -1675,7 +1681,9 @@
    "reason": "built, in the law gate, 9 tests; money path 23/23 constants derived",
    "commit": null,
    "due": null,
-   "note": "the fence cannot check that a cited derivation is CORRECT, only that one exists and is specific -- stated in its docstring rather than implied"
+   "note": "the fence cannot check that a cited derivation is CORRECT, only that one exists and is specific -- stated in its docstring rather than implied",
+   "disposed": "2026-07-31T14:53:01Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in fbeedad04)"
   },
   {
    "id": "R0136",
@@ -1687,7 +1695,9 @@
    "reason": "built, tested, in the law gate",
    "commit": null,
    "due": null,
-   "note": "both changes raise net return without adding risk; neither is fitted to an outcome"
+   "note": "both changes raise net return without adding risk; neither is fitted to an outcome",
+   "disposed": "2026-07-31T15:21:24Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in f5812b544)"
   },
   {
    "id": "R0137",
@@ -1699,7 +1709,9 @@
    "reason": "built, tested, in the law gate",
    "commit": null,
    "due": null,
-   "note": "an unattributed WIN is as disqualifying as a loss -- the exposure that made it is still on, still unhedged, and will reverse"
+   "note": "an unattributed WIN is as disqualifying as a loss -- the exposure that made it is still on, still unhedged, and will reverse",
+   "disposed": "2026-07-31T15:21:24Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in f5812b544)"
   },
   {
    "id": "R0138",
@@ -1711,7 +1723,9 @@
    "reason": "built, 55 conviction tests + 17 resolver tests, law gate PASS",
    "commit": null,
    "due": null,
-   "note": "sizing fence flagged MIN_TRADE_RISK on first run; vocabulary widened rather than the organ reworded, per its own stated rule"
+   "note": "sizing fence flagged MIN_TRADE_RISK on first run; vocabulary widened rather than the organ reworded, per its own stated rule",
+   "disposed": "2026-07-31T15:30:25Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 9fa18af15)"
   },
   {
    "id": "R0139",
@@ -1723,7 +1737,9 @@
    "reason": "built, 10 review tests, 21/21 build standard, registered as a \u00a736 producer",
    "commit": null,
    "due": null,
-   "note": "weights are fixed and nothing here fine-tunes -- what improves is evidence-weighted knowledge of which setups pay, the way a journal improves a human trader"
+   "note": "weights are fixed and nothing here fine-tunes -- what improves is evidence-weighted knowledge of which setups pay, the way a journal improves a human trader",
+   "disposed": "2026-07-31T15:43:38Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 574a823f3)"
   },
   {
    "id": "R0140",
@@ -1735,7 +1751,9 @@
    "reason": "Stage A run live; H1 abandoned on measurement, H2 on a forward clock",
    "commit": null,
    "due": null,
-   "note": "two bugs found by checking my own numbers: the crowding gauge reported an outlier-dominated -0.97 as its centre when the median was -0.078, and posSide 'net' (46pct of margin) was being silently dropped from the long/short skew"
+   "note": "two bugs found by checking my own numbers: the crowding gauge reported an outlier-dominated -0.97 as its centre when the median was -0.078, and posSide 'net' (46pct of margin) was being silently dropped from the long/short skew",
+   "disposed": "2026-07-31T15:55:59Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in ef9d512cd)"
   },
   {
    "id": "R0141",
@@ -1747,7 +1765,9 @@
    "reason": "built, 8 tests, in the manifest; 23/23 build standard",
    "commit": null,
    "due": null,
-   "note": "first version normalised shares to 1, so two perfect duplicates received the same total heat as two independent sleeves -- the exact failure the organ exists to prevent, committed inside the organ itself and caught by its own demonstration"
+   "note": "first version normalised shares to 1, so two perfect duplicates received the same total heat as two independent sleeves -- the exact failure the organ exists to prevent, committed inside the organ itself and caught by its own demonstration",
+   "disposed": "2026-07-31T16:10:04Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 3843eb898)"
   },
   {
    "id": "R0142",
@@ -1759,7 +1779,9 @@
    "reason": "built, 8 tests, every 6h; feeds L1.29 which the conviction sizer already reads",
    "commit": null,
    "due": null,
-   "note": "the ordering was wrong and this makes it explicit: the sizer that consumes p was built before anything checked p was meaningful"
+   "note": "the ordering was wrong and this makes it explicit: the sizer that consumes p was built before anything checked p was meaningful",
+   "disposed": "2026-07-31T16:25:43Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in c0d06bcef)"
   },
   {
    "id": "R0143",
@@ -1771,7 +1793,9 @@
    "reason": "built, 8 tests, in the law gate's portable battery; 25/25 build standard",
    "commit": null,
    "due": null,
-   "note": "principal's own framing: the existing mandates (L1.28/L1.28a/L1.28b/L1.28c/L1.25a) already enforce maximum growth, so a stated number is redundant AND distorting -- removing it removes the one instruction pointing away from those laws"
+   "note": "principal's own framing: the existing mandates (L1.28/L1.28a/L1.28b/L1.28c/L1.25a) already enforce maximum growth, so a stated number is redundant AND distorting -- removing it removes the one instruction pointing away from those laws",
+   "disposed": "2026-07-31T16:36:49Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 21ea19e0f)"
   },
   {
    "id": "R0144",
@@ -1783,7 +1807,9 @@
    "reason": "built, 6 tests, in the law gate's state battery; 26/26 build standard",
    "commit": null,
    "due": null,
-   "note": "three self-inflicted defects caught before it shipped: a ';' separator that made most organs read NEVER-PRODUCED (false red -> fence gets disabled), docs/*.md counting as an artifact so any organ citing a law read FRESH forever (false GREEN -- worse), and its own except-pass plus missing lawful entry, both caught by the build standard"
+   "note": "three self-inflicted defects caught before it shipped: a ';' separator that made most organs read NEVER-PRODUCED (false red -> fence gets disabled), docs/*.md counting as an artifact so any organ citing a law read FRESH forever (false GREEN -- worse), and its own except-pass plus missing lawful entry, both caught by the build standard",
+   "disposed": "2026-07-31T16:42:58Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 90d618b1b)"
   },
   {
    "id": "R0145",
@@ -1819,7 +1845,8 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] VERIFIED. scripts/max_audit.py:4409-4425 -- comment reads 'RATCHET GRACE (R0147)' verbatim: check_dig_uncommitted grants tracked files whose last COMMIT is <6h old a grace window ('by end of cycle' = snapshotted this cycle, not a perpetually clean tree), untracked (??) files excluded from grace (:4416), grace-unreadable counted fail-firm (:4425). The row's named artifacts are covered: conversion_record.json and holdings_record.json live in docs/research/, inside _DIG_TRACKED (:3944), so the grace applies to exactly the files whose ~15min cron re-ticks caused the perpetual re-fire. This is the row's first proposed fix implemented (grace window variant: last-commit-age rather than mtime, which is the correct form since mtime is dirty within seconds of any commit).",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:04:47Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5f1452988)"
   },
   {
    "id": "R0148",
@@ -2097,7 +2124,9 @@
    "due": null,
    "note": "reviewable once the hit rate is measured -- far above breakeven the trade-off reverses and frequency wins again, so this is not permanent",
    "renumbered_from": "R0149",
-   "notes": " [renumbered from R0149 on merge 2026-07-31: concurrent allocation collision, second round -- local lineage had already taken the id]"
+   "notes": " [renumbered from R0149 on merge 2026-07-31: concurrent allocation collision, second round -- local lineage had already taken the id]",
+   "disposed": "2026-07-31T17:59:06Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 9b198c624)"
   },
   {
    "id": "R0171",
@@ -2111,7 +2140,9 @@
    "due": null,
    "note": "a blazing week grants rung 1 at most, and rung 1 is still paper -- which is the whole point of writing it down before the week happens",
    "renumbered_from": "R0150",
-   "notes": " [renumbered from R0150 on merge 2026-07-31: concurrent allocation collision, second round -- local lineage had already taken the id]"
+   "notes": " [renumbered from R0150 on merge 2026-07-31: concurrent allocation collision, second round -- local lineage had already taken the id]",
+   "disposed": "2026-07-31T17:59:06Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 9b198c624)"
   },
   {
    "id": "R0172",
@@ -2137,7 +2168,9 @@
    "due": null,
    "note": "first run correctly names EVIDENCE as binding: the sleeve is not producing yet, which check_organ_liveness independently confirms",
    "renumbered_from": "R0151",
-   "notes": " [renumbered from R0151 on merge 2026-07-31: concurrent allocation collision; local lineage had already taken the id]"
+   "notes": " [renumbered from R0151 on merge 2026-07-31: concurrent allocation collision; local lineage had already taken the id]",
+   "disposed": "2026-07-31T18:01:50Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 3ac76b3f7)"
   },
   {
    "id": "R0174",
@@ -2318,8 +2351,9 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] De-welding delivered by direct Monte Carlo instead of a 2PL fit, same deliverable: scripts/audit_gate_power.py (2026-08-01) measures per-gate Type I/II, leave-one-out, ROC and calibration on the REAL validate(); reports/gate_power_audit.json carries per_gate passes_null/blocks_true (= measured discrimination; e.g. economic_mechanism passes 100% of null = zero discrimination); reports/gate_subset_audit.json (787620a) scores gate SUBSETS; certify_gauntlet.py --targets 2,3,5,7,10,15 is the synthetic true-SR ladder; the welded->per-candidate seam landed (libs/validation/per_candidate.py + validation.py pc_pbo/pc_p in merge 9d456b7); REALITY_CHECK_POWER.md's pooled redesign moved power at true SR 1.0 from 5% to 70% with alpha untouched -- the max-information ask, delivered without loosening anything. ADVERSARIALLY VERIFIED 2026-08-04: every citation checked in-tree and holds -- per_gate passe",
    "commit": null,
    "due": null,
-   "disposed": null,
-   "note": "renumbered from R0177 after sibling-session ID race, merge 2026-07-31"
+   "disposed": "2026-08-04T22:04:47Z",
+   "note": "renumbered from R0177 after sibling-session ID race, merge 2026-07-31",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5f1452988)"
   },
   {
    "id": "R0189",
@@ -2497,7 +2531,8 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] The resolution diagnostic was run and MEASURED after this row was raised: docs/research/REALITY_CHECK_POWER.md measures the screen's power at its own resolution and proves bar count is not evidence (t = SR_ann*sqrt(YEARS)), then fixes the design via pooling (power at true SR 1.0: 5% -> 70%, alpha untouched); the pooled campaign shipped and ran (commits 27162b9/7cc800d, then ae8be98: 0/20 then 0/44 mechanisms -- the zero is now informative); and sub-daily resolution was tested DIRECTLY: 5m measured NO-GO (INTRADAY_ROTATION_RESULT.md, bc28e2a 08-04) and the pre-registered 15m/1h re-test completed same day -- NEW_FAMILY_GENERATORS_PREREGISTRATION.md 'Intraday timeframe ladder, completed... NO-GO at all three intervals' (cost-in-R -0.44 -> -0.25 -> -0.09, gross ~0 at every interval). The daily-resolution zero is now scoped by measurement, not by the angle-20 filter alone. ADVERSARIALLY VERIF",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T20:30:55Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 10619ddc0)"
   },
   {
    "id": "R0203",
@@ -2755,7 +2790,8 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] VERIFIED ADVERSARIALLY: the shape fix landed with every gate unchanged: scripts/run_real_campaign.py:223-310 pools each mechanism's returns equal-weight across symbols and validates ONE hypothesis per mechanism with n_trials=len(pooled) (:281) ('Alpha untouched, gates untouched... power at SR 1.0 goes 5%->70%', :225-236), emitted as pooled_by_mechanism (:344); reports/real_campaign.json (generated 2026-08-04T21:01:01Z) carries the pooled doc (n_mechanisms=44, 0 clearing); commits 27162b9/7cc800d/ae8be98 all exist and measured 0/20 then 0/44 pooled at 70% power. Screen stays unwired exactly as the row concluded it should.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:04:47Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5f1452988)"
   },
   {
    "id": "R0224",
@@ -2791,7 +2827,8 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] VERIFIED ADVERSARIALLY: module-granular reachability exists and is wired: scripts/max_audit.py:3774 _module_reachability() (transitive module-level BFS over ALL libs modules from scripts/, app/, api/; tests explicitly not entry points per docstring), :3886 check_orphan_modules (census of every individually-unreachable libs module against _ORPHAN_MODULE_BUDGET=45, :3910, with a ratchet-down-only comment), :3861 check_money_path_wired (blocking, law-independent), registered in the sweep at :4637-4639. Covers orphaned modules no law cites, which was the residual gap named by the row.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:04:47Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5f1452988)"
   },
   {
    "id": "R0227",
@@ -2803,7 +2840,8 @@
    "reason": "[wave1 2026-08-04] disagreement dampening shipped: conf *= GMM posterior mass on the HMM's label -- strictly conservative, agreement path unchanged, unfitted-GMM excluded. The live pathology (confidence 1.0 with hmm_gmm_agree false) now expresses as ~0. 53 regime tests pass.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:25:42Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in b7657c3f7)"
   },
   {
    "id": "R0228",
@@ -2983,7 +3021,8 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] VERIFIED ADVERSARIALLY (one count corrected: 21 tables, not 22): fixed by commit a845970 ('the backup drill compared the copy to itself'): run_moat_backup.py:114-149 snapshot now integrity-checks AND compares replica to SOURCE table-by-table row counts, raising on mismatch; :152-173 file digests taken from the SOURCE ('SOURCE, never `out`'); :244-256+:282-286 ABSENT -> DEGRADED joins the exit-2 failing set and the phantom research_memory.db was removed from _STORES (:59). backups/moat/manifest.json (2026-08-02, status OK) shows sor_research REPLICATED at 1,929,216 bytes with 21 table_rows; the replica sqlite verifies 21 tables. tests/ops/test_moat_backup.py pins both the DEGRADED status and the drill failing on a half-written copy.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:04:47Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5f1452988)"
   },
   {
    "id": "R0243",
@@ -3115,7 +3154,8 @@
    "reason": "[wave1 2026-08-04] engineering forecasts are now genuine pre-registrations: logged once with a pinned resolve_by=+30d, graded both directions (overdue-open -> False; post-deadline completion -> False), state assertions never logged, legacy rows inert. Calibration record receives zero degenerate rows; 105 calibration/forecast tests pass. (Diff rode in with the R0297 commit -- flagged and verified.)",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:26:21Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 4b4209d4a)"
   },
   {
    "id": "R0254",
@@ -3123,11 +3163,11 @@
    "summary": "CALIBRATION PROBE re-logs ONE identical claim: 'Will S2USDT trade ABOVE 102.0 in 24 hours' time?' appeared 17x in 14h (6x in the 06:01-06:14 window) at a FROZEN 102.0 threshold and constant p=0.61. Two defects: (a) the probe fires far more often than its 6-hourly cron line implies -- find the extra caller; (b) S2USDT's reference price looks stuck, which is the silent-stale-instrument class. Dedup now neutralises the calibration damage (17 copies score as 1) but the loop still burns quota and the stale price is unexplained.",
    "roi_bps": 2500.0,
    "raised": "2026-08-01T07:50:32.408193+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Both named asks are VPS-runtime forensics: run_calibration_probe.py is untouched since the row (git log empty since 08-01) and contains no open-question dedup, and the only scheduled caller in the tree is ops/crontab.manifest:1053 (6-hourly) -- the extra caller can only be found in the VPS crontab/journal, and the stuck S2USDT reference price needs the live price source. Calibration damage is already neutralised by estimator dedup per the row itself, so this is contained investigation work, not urgent.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Both halves answered by one root cause and fixed in ce5d37a. (a) The extra caller is the TEST SUITE, not a rogue cron line: pose() honoured its root for data/calibration_probe.jsonl but logged the forecast through forecast_calibration's module-level path, so tests/execution/test_calibration_probe.py's parsing case (which passes no monkeypatch) injected one fabricated row into the live L1.29 store on every run. (b) REFUTED -- S2USDT is not a stale instrument: _charts() names symbols S{i}USDT at price 100.0+i and 0.61 is the literal in that test's ask lambda, so the frozen 102.0/p=0.61 is a test constant, not a stuck price feed. Cost: 69 fabricated rows, and ALL 44 forecasts holding check_calibration OVERDUE were this fixture, zero were real -- the fence that detects the desk being confidently wrong was pinned red by its own tests. log_forecast/resolve now take an optional store and pose/resolve_due pass the root they already had (no-op in production). Purge changed no scored number (Brier 0.241 / bias +0.0886 / n=42 bit-identical); n_overdue 44 -> 0. New test verified failing without the fix.",
+   "commit": "ce5d37a",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T21:29:15.940413+00:00"
   },
   {
    "id": "R0255",
@@ -3139,7 +3179,8 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] VERIFIED ADVERSARIALLY: the demanded WIRE-or-RETIRE decision was taken and shipped: ops/crontab.manifest:1399-1418 (stamped 2026-08-01) schedules run_crossasset_shadow daily at 06:40Z ('40 6 * * *') with the full ledgered rationale -- names the 977h stall since 2026-06-21, the MAX_FORWARD_SLOTS=12 Holm cohort slot cost, chooses 'SCHEDULE RATHER THAN RETIRE' because the axis is orthogonal, and pre-commits retirement 'in a fortnight' if the clock still shows nothing. Exactly the explicit decision the row required.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:04:47Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5f1452988)"
   },
   {
    "id": "R0256",
@@ -3159,11 +3200,11 @@
    "summary": "DEGENERATE-OBSERVATION clocks that a staleness check CANNOT catch: walcl_reserve_impulse re-stamps one 2026-07-29 observation under a new date key daily (byte-identical payload, asof frozen), and defi_utilisation's z20 series is [0,0,0,0,1.80] where position=sign(z) makes all 4 realized returns exactly 0.0 (std=0, t-stat uncomputable). Both look ACCRUING to the new evidence probe because their artifacts ARE fresh and days>0. Extend the probe to read the RETURN SERIES, not just the day count.",
    "roi_bps": 2000.0,
    "raised": "2026-08-01T07:50:32.740678+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=8 effort_h=3: Still open. scripts/run_axis_shadows.py:122-160 _evaluate reads the return series but counts any date-keyed row as a forward day: a zero-variance series just yields sharpe=0.0 (line 147) with no DEGENERATE verdict, and nothing detects byte-identical re-stamps (repo grep for degenerate/byte-identical/payload-hash probes: none). scripts/derive_walcl_clock.py still stamps a fresh date key daily with frozen asof (line 91; untouched since commit 1428442). Extend the probe to flag std==0 realized-return series and asof-frozen re-stamped observations.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Implemented in 3ea1fca, and the probe found the problem is wider and worse than the row stated. forward_days counted any date-keyed pair (its own comment falsely claimed it excluded degenerate rows). THREE of four live clocks were faulty, not two: walcl_reserve_impulse 3 rows/1 distinct payload (daily cron vs weekly FRED release) read 2/20; defi_utilisation took no position on 4 of 5 days (sign(0)==0) read 5/20 -- and its payloads are all DISTINCT so de-dup alone would miss it; cny_premium had 14 dated rows with a null signal field in every one and read 0/20 forever. WORSE THAN 'looks ACCRUING': an all-zero series is ACCRUING only below MIN_OBS and turns FAILING at n>=20 via the t<=0 branch, so a clock that never measured anything would have retired its own research ground as a REFUTED hypothesis -- a false null, the direction nothing here alarms on. Fix: a dated row counts only if it is not a verbatim re-stamp and it took a position; both filters SUBTRACT only, so an axis can move further from ELIGIBLE and never closer. New DEGENERATE verdict is neither ACCRUING nor FAILING; consumers special-case only ELIGIBLE so it maps to PENDING/OK safely. 7 tests incl. the pre-fix FAILING masquerade and a can-only-subtract property.",
+   "commit": "3ea1fca",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T21:35:22.838592+00:00"
   },
   {
    "id": "R0258",
@@ -3175,7 +3216,8 @@
    "reason": "[wave2 2026-08-04] research-chain failures now leave evidence and page: both runners write data/research_chain_status.json atomically every run (empty failed list on clean -> RESOLVED flow works), run_daily_research exits 1 on step failure with names in the tail, run_alerts pages via the existing dedupe/backoff machinery with 24h override. Stubbed incident reproduced end-to-end. No gate weakened; exit-code change strengthens.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:40:09Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in c7cdc433c)"
   },
   {
    "id": "R0259",
@@ -3183,11 +3225,11 @@
    "summary": "recommendations.py:223 restricts --status to implemented|rejected|scheduled, so the 15 rows written as done/screened came from organs bypassing the CLI, carry disposed=None, and are terminal-without-a-timestamp. check_conversion now counts them terminal and reports terminal_unstamped=15, but the vocabulary drift remains: either teach the CLI these statuses or migrate the rows to implemented.",
    "roi_bps": 1500.0,
    "raised": "2026-08-01T07:50:32.971850+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=3 effort_h=1: Still open. scripts/recommendations.py:223 still restricts --status to implemented|rejected|scheduled, and the ledger currently holds 14 'done' + 1 'screened' rows with disposed=None (measured now: R0133-R0144, R0170, R0171, R0173 = the same 15 terminal-unstamped rows). Teach the CLI the statuses or migrate the rows.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Implemented in 20f82d9. Measuring first changed the diagnosis: 35 terminal rows carried disposed=None, not 15. The extra 20 had CLI-LEGAL statuses and still arrived unstamped, from bulk triage workflows writing the JSON directly -- so teaching the CLI new words fixes 15 of 35 and prevents zero recurrences; the hole is the WRITE PATH. Took the migrate option but not as written: collapsing screened into implemented destroys information (a screened axis is not an implemented recommendation and the conversion record would then lie about which work was done), so every row keeps its status and gains the timestamp it lacked, recovered from the ledger's own git history -- the commit that first recorded it terminal, 35/35 recovered, none invented, each marked disposed_source so a reconstructed stamp is never mistaken for a live one. terminal_unstamped 35 -> 0; the 7d window went from 173 dispositions to 209, correcting an understatement check_conversion documents. Invariant now enforced in tests/governance/test_tracked_json_integrity.py, verified failing against HEAD's ledger with all 35 ids. CLI-vocabulary half deliberately not duplicated: a concurrent session has scripts/recommendations.py open with done/screened already added. Write-path bypass rowed as R0416.",
+   "commit": "20f82d9",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T21:38:28.551126+00:00"
   },
   {
    "id": "R0260",
@@ -3195,11 +3237,11 @@
    "summary": "ORPHANED FORECAST NAMESPACE pins the desk's #1 max_push item permanently. 4 rows keyed calib-quiz-20260731-q1/q2/q4/q5 are past their resolve_by, and grep finds NO writer and NO resolver for 'calib-quiz' anywhere in scripts/ or libs/ -- run_calibration_probe.py --resolve owns only the 'probe:' namespace (it graded 2 this cycle, n 5->7, bias +0.176 -> +0.121). So calibration::forecast_reliability stays UNMEASURED at rank 1 forever regardless of how well the probe organ performs. Either give calib-quiz a resolver (they are ordinary market-direction claims with explicit thresholds and passed deadlines: BTCUSDT>63216.2 +4h, ETHUSDT>1874.22 +12h, PAXGUSDT>4051.35 +4h, BNBUSDT>589.28 +12h) or migrate the namespace into run_calibration_probe. NOT hand-graded this cycle on purpose -- rushing judgement work fabricates calibration data, which is the exact failure the L1.29 fix addressed.",
    "roi_bps": 2500.0,
    "raised": "2026-08-01T08:05:56.329253+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: KILL REFUTED. The calib-quiz namespace is indeed gone (repo grep matches only the ledger row; data/forecast_log.json holds 42 exclusively 'probe:'-keyed forecasts), but the kill leans on the successor organ 'already running' -- and it is not. Measured 2026-08-04: 0 of 42 forecasts carry resolved/outcome/resolved_at (libs/self_improvement/forecast_calibration.py:97-106 writes resolution in place, so nothing has ever been resolved); 39 of 42 sit past resolve_by (heaviest cohort due 2026-08-01); calibration_status.json's n_overdue=0 is a stale 2026-08-01T13:53 snapshot. The resolve path is inert on this box: no crontab is installed (ops/crontab.manifest:1053 is manifest-only), data/calibration_probe.json -- written unconditionally by every run_calibration_probe main() -- does not exist, and data/calibration_probe.jsonl, the open-questions file resolve_due() iterates (scripts/run_calibration",
-   "commit": null,
+   "status": "implemented",
+   "reason": "IMPLEMENTED 233596c. The row's literal ask is closed and its thesis is confirmed by a DIFFERENT mechanism than diagnosed. (1) calib-quiz: all 6 rows were graded 2026-08-01 by score_forecasts.py's price parser (scheduled hourly, crontab.manifest:1620) -- the namespace has a resolver and is dead. (2) The fence WAS pinned, by a denominator category error: n_resolved (42) is drawn from the scoreable population while check_calibration divided by the raw store (172), of which 43 rows can never enter the numerator; 42 < 172//4 = 43 fired BLIND and exited 2, while 42 < 129//4 = 32 on the matched population does not. Every exclusion hit the ratio twice, so the retrospective-row hygiene that fixed the calibration sign inversion pushed this fence toward BLIND. eligible() now shares _claim_signature with _scoreable so numerator-inside-denominator is structural; n_eligible and n_resolved_raw published; an empty population reads UNSCOREABLE not OK. (3) The class defect is live and now instrumented: 13 hand-logged judgement forecasts have a deadline and no grader, earliest due 2026-08-14; unowned() names them before the deadline, log_forecast(resolver=) is the escape. 16 tests green, ruff and mypy clean.",
+   "commit": "233596c",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T22:17:09.883441+00:00"
   },
   {
    "id": "R0261",
@@ -3207,11 +3249,11 @@
    "summary": "The discovery objective is ORPHANED, found by actually following up a principal-supplied video transcript instead of just reading it. libs/discovery/objective.py::discovery_score composes log growth, survival probability, diversification_contribution, average_correlation, failure_dependency_score, half_life_days, capacity, fragility, tail risk and parameter_plateau_score into 'a composite rank score that maximizes sustainable geometric growth under robustness' -- and it has ZERO production callers. Only tests and the libs/discovery/__init__ re-export touch it. scripts/run_discovery.py ranks with _rank = (promoted, sharpe) -- raw Sharpe descending. So every portfolio-aware term the desk deliberately built (diversification, correlation, failure dependency) is inert, and the desk ranks candidates by exactly the single-strategy statistic those terms exist to correct. parameter_plateau_score compounds it: the argument is REQUIRED by discovery_score and nothing in the repo computes it, so the objective could not be wired even if a caller wanted to. This matters against the measured portfolio arithmetic: 5 uncorrelated legs at true Sharpe 1.0 each combine to 2.24, but P(one leg clears the gate) is 0.01% at the campaign shape so P(all five clear) is ~9e-21 -- the desk gates each leg alone against a bar only the assembled book could clear, then ranks the survivors by the metric that ignores combination. Filed DH-003/004/005 in discovery_hypotheses.md. NOT FIXED: wiring discovery_score changes what the desk PROMOTES and must be measured before it lands, exactly as the DSR change was; it changes ORDERING, never admission, so no gate is relaxed by it.",
    "roi_bps": null,
    "raised": "2026-08-01T09:00:32.255495+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Partially engaged, core ask undone. discovery_score gained a report-only caller: scripts/run_geometric_review.py:160-164 calls it with hardcoded neutral placeholders (fragility_score=50.0, tail_risk_score=50.0, parameter_plateau_score=50.0) and declares ZERO PROMOTION AUTHORITY. scripts/run_discovery.py:181-183 still ranks with _rank=(promoted, raw sharpe); parameter_plateau_score is still produced nowhere. The row's own condition -- wire into promotion ordering only behind a measurement -- remains the open work.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "IMPLEMENTED d971a08 for the half that is real; the row's core premise is REFUTED by measurement. (1) PREMISE REFUTED: run_discovery.py's _rank (now :193-196) has ZERO promotion authority -- 'shadow' is a FILTER on status computed BEFORE the sort and is order-independent; nothing in the repo reads results[0] or any rank position (web/index.html renders file order; daily_research_cycle and research_cycle read only disc['pending']; run_reality_gap reads a top-level key the payload never writes). So wiring discovery_score into _rank would change the display order of web/discovery.json and nothing else -- the row's own condition, 'it changes what the desk PROMOTES and must be measured before it lands', is unmet because there is no promotion to change. (2) BLOCKED, not deferred: 3 of discovery_score's 10 REQUIRED inputs have no producer anywhere in the repo -- failure_dependency_score, parameter_plateau_score, and a per-sleeve diversification_contribution -- and libs/discovery/failure_dependency.py and parameter_stability.py were retired to the graveyard. Wiring it with placeholders is not a partial fix, it is the defect. (3) THE REAL LIVE DEFECT, FIXED: the one production call site (run_geometric_review.py:160) passes NINE of ten inputs as neutral literals, so the score is exactly log_growth*K -- measured 0.1253 to 0.00696 and 0.4068 to 0.02258, K identical to four figures -- and it was published as a bare float, claiming portfolio-aware content it does not contain (L1.55 FABRICATED). It now publishes value/measured:false/inputs_measured/inputs_defaulted/why, pinned by two tests. Residual rowed separately.",
+   "commit": "d971a08",
    "due": null,
-   "disposed": null,
+   "disposed": "2026-08-05T22:22:02.578279+00:00",
    "renumbered_from": "R0226",
    "renumber_note": "allocator race with the VPS lineage; origin keeps its ids by convention. Origin's R0226 is an unrelated check_orphan_code finding. No code references this row."
   },
@@ -3225,7 +3267,8 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] libs/validation/screen_admission.py implements exactly the ranked screen: rank_score() (lines 236-260, OOS Sharpe + DSR + cleared statistical gates) and admit() (lines 271-367) fill idle forward slots top-K by rank with structural gates as hard blocks. Wired: scripts/run_real_campaign.py:34 imports admit and :216 calls admit(..., idle_slots=12); power measured by scripts/measure_admission_power.py. The absolute campaign verdict was also replaced per-candidate (libs/validation/per_candidate.py; libs/autodiscovery/validation.py:526-564 dsr_trials=1 on the per-candidate path). [Adversarial verification 2026-08-04: CONFIRMED -- rank_score at :236-259 and admit at :270-369 as cited; admit called at run_real_campaign.py:220 with idle_slots=12, cost_basis='net'; reports/admission_power.json exists; the 08-04 MEASURED run admitted 12 of 82 structurally-sound candidates, so the forward stage is n",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:04:47Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5f1452988)"
   },
   {
    "id": "R0263",
@@ -3233,11 +3276,11 @@
    "summary": "STRATIFIED CAMPAIGN RUNTIME: Romano-Wolf's bootstrap is linear in retained observations, so the stratified campaign does ~5x the work of the truncated one (measured 96.9s for a 60-candidate 2-stratum fixture; the real 420-candidate campaign retains 698,655 obs across 24 strata). Not a reason to keep a broken instrument (NO-COST-DRIVEN-DEGRADATION), but the wall-clock is now unmeasured on the real campaign -- measure it and, if it binds the cycle, parallelise per-stratum rather than cutting n_boot.",
    "roi_bps": 5.0,
    "raised": "2026-08-01T09:01:49.331906+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Runtime still unmeasured: no timing or per-stratum parallelisation anywhere (grep ProcessPool/concurrent.futures/perf_counter over libs/autodiscovery + campaign scripts: none); stratified path still live at libs/autodiscovery/orchestrator.py:187. Mitigating: the full-history campaign that actually runs completed same-day (reports/real_campaign.json status MEASURED, generated 2026-08-04T21:01Z), so wall-clock is demonstrably not binding today. Low-priority measurement still owed.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "MEASURED, and the answer is that it does not bind. stratified_campaign_gates now times each stratum with perf_counter and fills StrataPlan.seconds/.stratum_seconds; plan_strata (which costs a campaign without running one) reports None rather than 0.0, because zero reads as instant -- the flattering direction. Measured at full campaign shape (420 candidates, 28 strata, 679,490 of 753,811 obs retained, 345 tested): total 198.6s, slowest stratum 10.8s. Against a 180.8x gain in expected discoveries, 3.3 minutes once per campaign is not a constraint. The row's proposed remedy is now quantified rather than assumed: parallel_speedup 18.3x, because the strata are independent bootstraps, so a per-stratum pool would land at ~11s giving up no statistical resolution -- and cutting n_boot stays off the table since it is the resolution of the multiplicity correction. The frozen prose figure it replaces (~97s for a 60-candidate two-stratum fixture) was the only cost number in the repo and nothing could read it. Also flows into the campaign_strata audit event. 3 tests added.",
+   "commit": "9a21455",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T23:23:07.281042+00:00"
   },
   {
    "id": "R0264",
@@ -3257,11 +3300,11 @@
    "summary": "FORWARD-SLOT DISPLACEMENT POLICY IS MISSING (feed_inbox 2607.28577 'Shadow Before Swap', Binance perps, 48 UTC weeks/8 underlyings). The desk has slot ADMISSION (EV-rank from screen survivors) but NO DISPLACEMENT rule: MAX_FORWARD_SLOTS=12 currently reads 12/12 occupied, so a new survivor -- exactly what this cycle's 180.8x power fix is built to produce -- has nowhere to go and silently waits. SBS is the incumbent-relative form: warm-refit the challenger OFF the serving path, score challenger vs maintained incumbent on the SAME next window of delayed labels, promote only on a fixed PAIRED advantage. Paired-on-identical-labels is the key property -- it removes the period effect that makes an absolute-threshold comparison between differently-aged clocks meaningless. Connects L1.30 (replacement rate: births must keep pace with deaths) and R0262 (top-K). CAUTION: displacement must never become a way to reset a losing clock -- the incumbent's kill must be on its own pre-registered terms, not on a challenger's arrival.",
    "roi_bps": 15.0,
    "raised": "2026-08-01T09:08:34.074218+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Displacement policy still missing. screen_admission.admit() fills IDLE slots only and explicitly treats a saturated forward stage as 'the intended steady state and the correct reason to admit nothing' (libs/validation/screen_admission.py:365-367). grep displace/incumbent/challenger: the only mechanism is libs/signal_engine/champion_challenger.py, recommend-only and orphaned (sole reference libs/signal_engine/__init__.py). The paired-on-identical-labels Shadow-Before-Swap rule is unbuilt.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "BUILT libs/research/slot_displacement.py and wired it into run_promotion_queue (cron every 6h), which is exactly where survivors were being told to WAIT. The row's premise verified live: derive_slots reads 12/12 with idle_slots 0, but three occupants -- defi_utilisation, cny_premium, walcl_reserve_impulse -- carry the DEGENERATE verdict, which run_axis_shadows issues for an INSTRUMENT FAULT and labels 'NOT evidence about the hypothesis'. A quarter of the multiplicity budget was held by clocks that cannot resolve. Two of the three publish evidence=ACCRUING because their artifacts are rewritten on schedule, so a rule keyed on liveness would have protected precisely the slots worth reclaiming: this keys on the VERDICT. The row's CAUTION is the design constraint, honoured in code and pinned by tests: an accruing clock is PROTECTED and can never be displaced however good the challenger, so an incumbent still dies only on its own pre-registered terms; plans are COUNT-NEUTRAL (one out, one in, m unchanged, no Holm bar moves in either direction); UNMEASURED slots are BLOCKED rather than reclaimed because wrongly evicting destroys forward evidence nothing can re-earn. Queue ordered by expiry, shortest runway first (L1.18a), with undeclared runway sorting LAST so declaring nothing is not a shortcut. Reclaimed hypotheses requeue as UNTESTED, never REFUTED (L1.17). Live run: 3 reclaimable, 9 protected, count-neutral. PARTIAL, and named as such: the Shadow-Before-Swap paired test against a HEALTHY incumbent is NOT built -- it needs the incumbent's pre-registered decision point as a readable field, and champion_challenger.py is not that mechanism since it differences two absolute Sharpes over each variant's own window, the exact period-effect confound. Follow-up rowed separately. 12 tests added.",
+   "commit": "52b24e0",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T23:23:25.780543+00:00"
   },
   {
    "id": "R0266",
@@ -3269,11 +3312,11 @@
    "summary": "KELLY NEAR AN ABSORBING BOUNDARY (feed_inbox 2607.28230, nonergodic multiplicative growth). libs/risk/kelly_shrink.py shrinks for ESTIMATION error -- S^2/(S^2+SE^2), Lo-2002 SE on the NW-adjusted N. This paper is a DIFFERENT and additive shrink: with a lower continuation threshold (costly absorption), optimal exposure falls BELOW the no-boundary Kelly fraction as a function of log-distance to the boundary, horizon and residual ratio. This desk is the exact case -- capital deploys from ~$1k and may start ~$100, venue minimums make small equity genuinely absorbing (an account that cannot meet a minimum cannot trade its way back), and the ruin<=2% cap is a boundary constraint the SIZER does not currently see. Worth testing whether the two shrinks compose or double-count before wiring anything: two independent haircuts on the same estimate is the duplicated-multiplicity error in sizing form, which is precisely what the gate audit found this week in validation.",
    "roi_bps": 10.0,
    "raised": "2026-08-01T09:08:34.178879+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Not built. libs/risk/kelly_shrink.py still carries only the estimation-error shrink (sharpe_se/shrink_fraction/shrunk_kelly/first_inversion_cap, lines 28-65); repo-wide grep finds no absorbing-boundary term in any sizer (libs/risk/sizing.py 'absorbs' hits are the unrelated capacity governor). The compose-vs-double-count study the row demands before wiring has not been run. Real research work, not yet top priority.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "STUDIED, which is exactly what the row asked for before any wiring, and the answer is DO NOT WIRE. scripts/study_absorbing_kelly.py + docs/research/absorbing_kelly_study.json; no sizer, rail or bar changed. (1) The boundary effect is REAL but small at the barrier this desk actually has: the $200 execution-viability floor on a $1k book is barrier 0.20, where gamma_boundary measures 1.00/0.95/0.90 for S=0.75/1.5/2.3; on a $100 book (barrier 0.50) it steepens to 0.90/0.75/0.70. At the size the desk trades that is at most a 10% haircut, against an estimation shrink already applying 0.058-0.721 in the same cells -- an order of magnitude smaller -- and _ruin_cap already binds the same barrier from the constraint side. A third haircut for a tenth-order effect IS the duplicated-multiplicity error the row warned about, so the row's own caution answers it. (2) The more valuable result is CONTROL A: with an unbiased mu, estimation noise ALONE leaves the optimum at exactly full Kelly in 12/12 cells, because E[logW] is linear in mu. The rationale carried in kelly_shrink.py -- Kelly's penalty is asymmetric so noise means bet less -- does not survive that. The shrink is still CORRECT: S^2/(S^2+SE^2) is the James-Stein/posterior-mean shrink toward a zero-edge prior, which is the right correction for a winner's curse on a SELECTED estimate. Only the story attached to it is wrong, and the two calibrate differently. Rowed R0432. (3) The joint absorption+noise cell came out ABOVE full Kelly and is published as an ARTIFACT: freezing at the barrier floors log-wealth at log(barrier) while upside stays unbounded, so mu-dispersion pays like a call option -- a property of the 1y horizon, not the objective. Rowed R0431. TWO WRONG ANSWERS WERE CAUGHT BY CONTROLS BEFORE SHIPPING: a first version made f a raw leverage not a Kelly multiple, putting the true optima (3.93x, 6.02x) outside a grid capped at 3.0 so two cells would have reported the argmax AT THE GRID EDGE; a second passed its positive control 12/12 and still concluded the shrinks DOUBLE-COUNT in 12/12 cells. Desk lesson L0082.",
+   "commit": "92cb529",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T23:40:40.959335+00:00"
   },
   {
    "id": "R0267",
@@ -3329,11 +3372,11 @@
    "summary": "MIN-LEN TRUNCATION, SIBLING SCRIPTS: 8 more campaign builders still align with r[-min_len:] (run_campaign.py:95, certify_gauntlet.py:100, run_carry_harvest.py:89, run_xsec_funding.py:90, run_xsec_funding_max.py:68, run_funding_8h.py:63, run_mt5_crossasset.py:87, run_mt5_funding_bridge.py:109, run_prediction_markets.py:100). orchestrator.py is now stratified via stratified_campaign_gates; these are not. certify_gauntlet is the sharpest: the desk CERTIFIES its own gate on a 82.9%-truncated matrix, so the certification measures the truncated instrument, not the one now in production.",
    "roi_bps": 40.0,
    "raised": "2026-08-01T09:01:49.122364+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=6 effort_h=6: All nine sites still truncate with r[-min_len:]: run_campaign.py:95-96, certify_gauntlet.py:100-101 (the certifier still certifies the gate on the min-len matrix), run_carry_harvest.py:89-90, run_xsec_funding.py:90-91, run_xsec_funding_max.py:68-69, run_funding_8h.py:63-64, run_mt5_crossasset.py:87-88, run_mt5_funding_bridge.py:109-110, run_prediction_markets.py:114-115. orchestrator is stratified; these are not. Note the two run_mt5_* scripts are candidates for retirement instead (MT5 abandoned per run_daily_research.py:23).",
-   "commit": null,
+   "status": "implemented",
+   "reason": "IMPLEMENTED 6fb3ee8 for the one site where the truncation was real and live; the other eight are dispositioned by measurement. SURVEYED all nine: only THREE stack series of DIFFERING length (run_campaign, certify_gauntlet, run_carry_harvest). The other six build every variant from a single shared panel, so min_len is a STRUCTURAL NO-OP costing zero observations today (run_xsec_funding, run_xsec_funding_max, run_funding_8h, run_prediction_markets, both MT5). MIGRATED run_carry_harvest (scheduled daily, CARRY is the desk's only repeat survivor): 30 candidates over 10 symbols at 6291-7432 bars, min-length retained 188730/206679 obs (91.3%), stratified retains 201456/206679 (97.5%) in 2 strata with 30/30 tested -- +12726 observations recovered, reality_check rejections 28 to 25, survivors still 0. NOT migrated, with reasons: certify_gauntlet's truncating branch is UNREACHABLE (_audit_prepared.pkl absent -- 3 readers, 0 writers, per its own docstring), so it always runs the SYNTHETIC path at equal lengths where stratification is a no-op; the row's 'certifies on a 82.9%-truncated matrix' claim is refuted on this box. run_campaign, run_xsec_funding_max, run_funding_8h and both MT5 scripts are ORPHANS (no cron line, no importer, REPO_MAP-deprecated). Two residuals rowed separately.",
+   "commit": "6fb3ee8",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T22:21:49.894186+00:00"
   },
   {
    "id": "R0272",
@@ -3357,7 +3400,8 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] The capability landed by another route and RAN: scripts/run_real_campaign.py:29-34 feeds the full generator set (libs.autodiscovery.generators.GENERATORS) through the real validate() and screen_admission.admit() over OKX full history, building MarketSeries at :129 -- and reports/real_campaign.json is status MEASURED, generated 2026-08-04T21:01:01Z, 10 symbols at 2,021-2,442 daily bars, with per-gate death attribution. The Lab also has a crypto entry point (libs/autodiscovery/crypto_adapter.py build_lab/load_universe + scripts/run_crypto_research.py). run_autodiscovery.py remains MT5-bound but is no longer the only path; the 'generation cannot start on this box' premise is refuted by the 08-04 measured artifacts (commits b96bb10, ae8be98). [Adversarial verification 2026-08-04: CONFIRMED -- crypto_adapter.py defines DataProvider = Callable[[str], MarketSeries|None], builds MarketSeries at ",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:04:47Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5f1452988)"
   },
   {
    "id": "R0274",
@@ -3365,11 +3409,11 @@
    "summary": "GROWTH AUDIT CANNOT TELL TIMIDITY FROM A LATCHED KILL SWITCH. web/growth_audit.json (regenerated 09:00 today) reports carry_capital_utilization as a CONSERVATISM DEFECT -- '$0 deployed / $200 authorized', justified_by NONE -- while data/CASHCARRY_KILL has been latched since 07-31 08:35Z and data/live_guard.json reads ladder.rung=full_flatten_disarmed, requires_manual_rearm=true. REARM is principal-only, so $0 is a survival rail doing its job, not under-deployment, and no cycle can close it. The audit does not read the kill file or the guard's ladder rung. This fires EVERY DAY until REARM and its own rule says 'every NONE-gap is a DEFECT: close it same-cycle' -- so the daily check trains its reader to ignore its only defect line, which is how a gate dies (L1.43: a gate that cries wolf gets acknowledged into silence). FIX: read the kill file + ladder rung and emit RAIL-LATCHED (with the latch timestamp and that REARM is a human step) as a distinct verdict from GAP. The distinction is the point -- L1.28a's own carve-out is that headroom held by a survival rail is legitimate idle, and the audit currently cannot express it.",
    "roi_bps": 3.0,
    "raised": "2026-08-01T09:23:05.835057+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=5 effort_h=1.5: Unchanged. scripts/run_growth_audit.py:56-79 still computes carry_capital_utilization purely from deployed/authorized and emits GAP with justified_by NONE -- zero reads of the kill file or ladder rung (grep kill/latch/rung/rearm in the file: only an unrelated 'ladder' string at :99); no RAIL-LATCHED verdict exists. The latch machinery to read is libs/ops/derisk_ladder.py (requires_manual_rearm at :13,:45,:62). Small, stops a daily false alarm from training its reader to ignore the only defect line.",
-   "commit": null,
+   "status": "implemented",
+   "reason": null,
+   "commit": "8026283",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T22:57:18.101345+00:00"
   },
   {
    "id": "R0275",
@@ -3381,9 +3425,10 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] All adopted items are in the tree: libs/validation/robustness_filters.py:37 REAL_EDGE_OOS_SHARPE_BAND=(0.5,1.5), :57 sample_adequacy (the min-trades gate), :77 studentised not_too_lucky (z against sqrt(PPY/n_is+PPY/n_oos), replacing the fixed 30% ratio). Wired: libs/validation/screen_admission.py:167,179 (structural/statistical gate lists), libs/validation/revalidation.py:68-69,147; libs/validation/brain_calibration.py:69,190 consumes the band. Tests: tests/validation/test_robustness_filters.py. Row should be disposed implemented. [Adversarial verification 2026-08-04: CONFIRMED -- additionally the filters are computed live in the production gauntlet, not just listed: libs/autodiscovery/validation.py:41 imports both, :631 computes not_too_lucky, :643 computes sample_adequacy, and the 08-04 MEASURED campaign's deaths_by_gate shows sample_adequacy killing 20 candidates.]",
    "commit": null,
    "due": null,
-   "disposed": null,
+   "disposed": "2026-08-04T22:04:47Z",
    "renumbered_from": "R0262",
-   "renumber_note": "allocator race with the VPS lineage; origin keeps its ids by convention. No code references this row."
+   "renumber_note": "allocator race with the VPS lineage; origin keeps its ids by convention. No code references this row.",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5f1452988)"
   },
   {
    "id": "R0276",
@@ -3599,7 +3644,8 @@
    "reason": "[wave2 2026-08-04] funding-clamp censoring shipped: per-symbol caps via live fundingInfo -> cached -> documented static tiers (each source labelled), prints >=99% of clamp marked censored=true -- labelled never dropped, ranked below measured extremes, excluded from the opportunity showcase. Bybit caps from instruments-info. Live fetch 451/403-blocked from this box (verified per-mirror); VPS daily run refreshes the cache. 119 funding tests green.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:43:52Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5116d566d)"
   },
   {
    "id": "R0294",
@@ -3647,7 +3693,8 @@
    "reason": "[wave1 2026-08-04] refusal path shipped (L1.41): every venue-fetch failure recorded+printed as blocked, <2-venue panel exits UNMEASURED, artifact carries measured venues + panel_accounting (attempted/resolved/blocked). Width gate kept at 6, not weakened. 4-scenario stubbed smoke passed.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:24:28Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 9b136febf)"
   },
   {
    "id": "R0298",
@@ -4127,7 +4174,8 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] All four named failures are green (pytest 2026-08-04): the jsonl fence was taught the ledger's own '#' header convention (tests/governance/test_tracked_json_integrity.py:42-44, merge 9d456b7 'jsonl integrity fence taught the lessons ledger's own # header convention'); test_every_docs_artifact_is_claimed passes \u2014 ops/run_commit_audit.sh landed in 5920b60 with docs/research/recent_changes.md deliberately GITIGNORED (425KB regenerable payload; \u00a736 governance applies to what is committed, per that commit's message); and both test_desk_memory invariants pass after the merge's graduations/retirement (L0024 retired, L0038/L0051 graduated \u2014 see R0327/R0348).",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:04:47Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5f1452988)"
   },
   {
    "id": "R0338",
@@ -4247,7 +4295,8 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] Fixed mapping and test together, exactly as asked (merge 9d456b7, 'L0061 graduated by BUILDING its fix... 260/653 -> full resolution, SHIB/PEPE/FLOKI/BONK/SATS recovered'): libs/data/multiexchange.py:43 okx_inst strips ('1000000','10000','1000','1M') prefixes because the multiplier lives in Binance's ticker vs OKX's ctVal (:28-40, incl. the no-rate-rescaling note); tests/data/test_multiexchange.py:14 now asserts okx_inst('1000PEPEUSDT')=='PEPE-USDT-SWAP' ('CORRECTED 2026-08-04 (R0294/L0061)'), with SHIB/SATS/MOG/BABYDOGE cases at :26-30.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:04:47Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5f1452988)"
   },
   {
    "id": "R0348",
@@ -4259,7 +4308,8 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] Both tests pass on this tree (pytest 2026-08-04). The close came by the research decision the row demanded, not a false enforcement claim: docs/desk_lessons.jsonl records L0024 retired='2026-08-04: ABSORBED into L0038' (falsifier-style retirement, absorbed duplicate), L0038 enforced_by=tests/research/test_mined_evidence_priority.py::test_every_miner_prompt_carries_the_mined_evidence_priority_block, and L0051 enforced_by=tests/stage14/test_survival_calibration.py::test_the_default_drawdown_limit_rejects_the_entire_real_edge_band \u2014 a genuine behavioural test of the inert-gate property, NOT the okx test R0347 flagged as pinning the bug.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:04:47Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5f1452988)"
   },
   {
    "id": "R0349",
@@ -5016,6 +5066,258 @@
    "commit": null,
    "due": "2026-08-19",
    "disposed": "2026-08-05T20:56:27.685569+00:00"
+  },
+  {
+   "id": "R0412",
+   "source": "cycle",
+   "summary": "run_ci's IN-FLIGHT ATTRIBUTION SEES UNTRACKED FILES ONLY, SO A SIBLING EDITING AN EXISTING FILE STILL TURNS THE DESK-WIDE GATE RED. _inflight_py() runs git ls-files --others --exclude-standard: that is UNTRACKED files. A concurrent session MODIFYING A TRACKED FILE produces an empty in-flight list, _attribute returns every failure as committed-code, tracked_ok goes False and ci-gate-red fires naming a commit that is innocent. MEASURED 2026-08-05 20:5x: ruff reported 2 errors (E501 in libs/execution/carry_accounting.py:161 and tests/execution/test_carry_accounting.py:222, F841 in scripts/run_live_combined.py:135). All three files were ' M' -- a sibling's uncommitted money-path work. Committed HEAD linted CLEAN in a detached worktree. So the gate was red, the desk-wide alarm was firing, and there was NOTHING WRONG WITH ANY COMMIT. THIS IS THE EXACT FAILURE _attribute WAS BUILT FOR, LEFT HALF-DONE: its own docstring says those failures 'belong to NO COMMIT, the session that observes them cannot fix them, and they clear on their own', and that is equally true of a modified tracked file -- the implementation just never covered the case, and modified-tracked is the COMMON case for agents working an existing codebase. WHY IT MATTERS BEYOND THE NOISE: run_ci.py:138 records that ci-gate-red recurred 8x in 10.7d and that fixing the instance bought exactly one cycle; a red everyone has learned to dismiss is how the genuine committed failure eb74f48 sat buried. THE FIX IS NOT TO WIDEN THE EXCLUSION LIST. Adding modified-tracked paths to the --ignore/--extend-exclude set would stop checking those files ENTIRELY, hiding a real committed error inside a file someone happens to be editing -- strictly worse. The right answer is the one R0246 just proved in deploy/pull_deploy.sh: GATE A DETACHED WORKTREE AT HEAD instead of judging the shared dirty tree, so the verdict is about a COMMIT by construction and needs no attribution heuristic at all. Note the worktree must have live data/ linked in per-entry or live-state tests pass for the wrong reason (desk lesson L0068), and it must share the CI lock -- both already solved in pull_deploy.sh and directly reusable.",
+   "roi_bps": 40.0,
+   "raised": "2026-08-05T20:59:52.470059+00:00",
+   "status": "scheduled",
+   "reason": "SCHEDULED 2026-08-08 rather than shipped tonight, and the reason is scope not appetite: the correct fix rewrites how the desk-wide safety gate decides WHAT IT IS JUDGING, and I am ending a session with an unfinished whole-suite run still in flight. Shipping a rewrite of run_ci while I cannot observe a full green suite would mean changing the gate and the evidence for the gate in the same breath. The design is settled and de-risked, which is why the date is three days out and not vague: gate a detached worktree at HEAD (the pattern 8c851e0 just proved end-to-end in deploy/pull_deploy.sh), link live data/ in PER ENTRY so live-state tests cannot pass for the wrong reason (L0068), and share the CI lock so two pytest runs never contend on a 3.8GB swapless box. Both of those are already written and tested in pull_deploy.sh and are directly reusable. EXPLICITLY REJECTED ALTERNATIVE, recorded so nobody re-derives it: do NOT add modified-tracked paths to the ruff --extend-exclude / pytest --ignore set. That stops checking those files entirely, so a genuine committed error inside a file a session happens to be editing would be hidden -- it converts a false alarm into a silent miss, which on a safety gate is strictly the worse direction.",
+   "commit": null,
+   "due": "2026-08-08",
+   "disposed": "2026-08-05T21:00:13.193890+00:00"
+  },
+  {
+   "id": "R0413",
+   "source": "cycle",
+   "summary": "CARRY BOOK REPORTED A PROFIT WHILE IT HAD LOST 1869.74 -- the ruin rail's re-based inception leaked into P&L reporting. web/cashcarry_live.json published net_pnl +2938.01; the venue income ledger (realized -3153.27 + funding +113.06 - commission 1750.88) says the futures leg is -4791.09. Gap +4807.75 = the 2026-08-01 principal-signed RESTART re-base 10547.78->5757.08 (+4790.70) plus 17.05 honest slack. Cause: fut_pnl = fut_eq - capital_events.effective_start_equity(), which is the RUIN RAIL inception -- correct for the rail, wrong for reporting, and one number served both. R0322 had pinned the executor and molded books to that same inception, so portfolio.json inherited it: pinning two books to one number made them agree without making them right. Consumers were reading the inflated field: hurdle_rate.py:97 feeds cc.net_pnl into the beats-T-bills gate (L1.5) on the desk's ONLY deployed sleeve, whose own note says it builds the forward track record the gate sizes on. It survived four days because the desk HAD already computed the exact error and filed it as leak_attribution.residual=4807.75 while the bleed alarm asserted a NAKED/UNTRACKED leg and ordered reconcile spot vs perp qty against a book holding ZERO open positions -- a remedy impossible to perform, so the search closed. FIXED: libs/execution/carry_accounting.reconcile_futures_leg publishes both measurements of the futures leg (equity delta = one re-baseable input; venue income ledger = none) plus their gap, verdicts AGREE / REBASE-LEAK / PHANTOM / UNMEASURED; net_pnl now carries the income-ledger number and the equity-delta reading keeps its own key so the two cannot silently re-converge; the bleed alarm can no longer assert a naked leg on a flat book. 8 new tests pin the live numbers.",
+   "roi_bps": 4000.0,
+   "raised": "2026-08-05T21:04:56.386595+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0414",
+   "source": "cycle",
+   "summary": "THE SECTION-42 FENCE WAS WELDED SHUT AND THAT IS WHY rec-ledger-backlog RECURRED 3x IN 5.1 DAYS. Measured over the ledger's entire life: the fence ('any row open past GRACE_H=24h is a DEFECT') read RED for 226 of its 226 informative hours -- the only 24 GREEN hours were before any row could age past grace. Median disposition latency is 37.8h against that 24h bar and only 41.8% of rows ever cleared it, so the bar sits below the desk's own demonstrated service time: unclearable in practice, exactly what GATE-OPTIMALITY DUTY says to investigate. It is MIS-APPLIED, not mis-calibrated: it puts a per-row deadline on a QUEUE, so a backlog being drained (2026-08-05: 61 in, 116 out) and one running away (2026-08-01: 131 in, 48 out) produce the identical verdict, and 3 quota-dead days age every row without showing it to anybody. The desk ALREADY had the discriminating measurement and this fence never read it: data/carryover_sweeps.jsonl carries an alive:true/false flag per sweep and the section-37 brief uses it to say 'survived N sweeps, N with the brain awake' -- two organs measuring ONE backlog, only one with the discipline. FIXED, and it is a net TIGHTENING: sweeps_shown() denominates the SKIP test in live sweeps per L1.48 (report shortfalls in observations, never days), and drain() adds a detector the desk did not have at all -- arrivals vs dispositions over a trailing window, the property a level cannot express. Every row still owes a disposition and every owed row is still printed; GRACE_H is untouched and now carries its L1.48 exemption as the DUTY horizon rather than the skip test. Report goes from an undifferentiated 70 DEFECTs to '70 owe a disposition; 10 of them are SKIPS', which agrees with the section-37 brief's independent count of 13. 8 tests including an explicit anti-loosening test.",
+   "roi_bps": 800.0,
+   "raised": "2026-08-05T21:09:21.537901+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0415",
+   "source": "cycle",
+   "summary": "THE GROWTH AUDIT'S ONLY CONSERVATISM DEFECT IS EXPLAINED, AND THE EXPLANATION WAS BURIED BY 476 FALSE ALARMS. web/growth_audit.json 2026-08-05T21:00Z reports carry_capital_utilization GAP, 0 deployed of 200 authorized, justified_by NONE -- the one item the cycle contract requires be closed or justified same-cycle. The answer is in web/cashcarry_live.json last_actions and it is the LAST of 477 entries: 'live_guard: sizing scaled to 0%'. The other 476 are ALL SPOT-EXCESS lines -- one per symbol, spanning the whole alphabet from 0GUSDT to ZRXUSDT plus the joke ticker \u5e01\u5b89\u4eba\u751fUSDT -- each declaring an untracked naked spot long and each ordering 'verify/flatten by hand'. They total 363,127 dollars of claimed naked exposure against 200 dollars of authorized capital, which is arithmetically impossible. VERIFIED CAUSE: libs/execution/binance_spot_testnet.py:21 pins _BASE to testnet.binance.vision, so the wallet the detector is reading is the TESTNET FAUCET's pre-seeded balances, which cluster at ~500 dollars per symbol across every listed pair. The detector's false-positive rate on this account is ~100 percent, so per L1.43 it carries zero information, and per the 2026-07-31 CI lesson a gate that cries wolf gets ignored -- this one does worse than get ignored, it CONSUMES the action feed and pushes the single true line to the end. TWO SEPARATE FIXES OWED: (1) SPOT-EXCESS must exclude wallet balances the desk never bought -- reconcile against our own fill history rather than against tracked carries alone, or the testnet faucet is permanently indistinguishable from a stranded leg, which also means a REAL stranded leg would be invisible in the noise on day one of live trading; (2) run_growth_audit must read the live_guard clamp so a deployment gap that IS explained stops being reported as justified_by NONE -- an unexplained-looking defect that has a known cause trains the reader to discount the whole report. Also note data/cashcarry_error.log 21:07:41Z shows the genuine asymmetry live: 'unfilled leg MOVEUSDT spot_ok=True fut_ok=False' -- spot filled, futures did not, the gap-41 class that CREATES real stranded legs, which is exactly what fix (1) must stay able to see.",
+   "roi_bps": 300.0,
+   "raised": "2026-08-05T21:12:00.269114+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0416",
+   "source": "cycle",
+   "summary": "LEDGER WRITE-PATH BYPASS: dispose() is the only writer that stamps a time, and it is not the only writer. Found while measuring R0259: 35 terminal rows carried disposed=None, and only 15 were the done/screened vocabulary drift that row was raised about. The other 20 had CLI-LEGAL statuses (implemented/rejected) and still arrived unstamped -- from bulk triage workflows ([triage 2026-08-04 wf_8e81833d-78a], [wave1/wave2 2026-08-04]) opening docs/research/recommendation_ledger.json and setting status directly. Several ids are recent (R0337/R0347/R0348), so the bypass is ONGOING, not historical. Cost is measurable: check_conversion differences arrivals against dispositions over a trailing window, so an unstamped terminal row is completed work no rate can see -- the 7d window read 173 dispositions where 209 had happened, biasing the queue verdict toward RUNNING AWAY and manufacturing repair-mode pressure out of work already done. R0259 backfilled the 35 from git history and tests/governance/test_tracked_json_integrity.py now fails loudly if any reappear, but that is a DETECTOR: nothing stops the next direct write. Nine modules import the ledger path (run_capability_hunt, run_strategy_coverage, max_audit, research_cycle, strategic_director, capability_ratchet, conversion_max, cro_role, funding_caps). FIX: give the ledger ONE write path -- a libs-level module owning load/mutate/save that stamps disposed on any terminal transition -- and make the direct writers call it, so the stamp is structural rather than a convention every future organ must remember. Same shape as R0254's half-parameterised store: isolation (or here, invariants) that depend on every caller remembering are not invariants.",
+   "roi_bps": 900.0,
+   "raised": "2026-08-05T21:38:16.175188+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0417",
+   "source": "deep_sweep",
+   "summary": "L1.57 coverage ratchet: wire scanned= into the remaining 38 fences, highest blast radius first -- check_utilisation.py:548 (every ceiling UNMEASURED leaves idle_unexplained empty, so a fully dark board exits 0) and check_mypy_ratchet.py:89 (uncheckable files are popped from the denominator, so mypy uninstalled yields total_errors 0 / n_files_checked 0 / exit 0, and a file that becomes uncheckable can never regress again). Coverage is at 4/42; data/denominators.json next_action names the queue.",
+   "roi_bps": null,
+   "raised": "2026-08-05T22:02:07.285052+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0418",
+   "source": "deep_sweep",
+   "summary": "Liveness layer per-row fix (capability hunt s2 Proposal A headline, NOT built): check_organ_liveness.py:168-173 takes age = min(fresh) over SURVIVING artifacts, so one live file hides every absent sibling in the same block and the row reads FRESH; max_audit.check_organs:388 continues past 8 organs sharing 1 artifact whose mtime is written by git. Refused a fourth central instrument -- these need the per-row fix, not a rewrite. Feeds capability_ratchet ops_autonomy.",
+   "roi_bps": null,
+   "raised": "2026-08-05T22:02:19.266866+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0419",
+   "source": "deep_sweep",
+   "summary": "Validation-layer welded-gate audit (capability hunt s2, NOT built -- separable work): screen_admission.py:296 uses g in gates, so an ABSENT structural gate cannot appear in blocked_list and cannot block; break_even_win_rate is declared structural at :70 and is written by NOTHING in the repo -- a structural gate that has never once evaluated; and measure_admission_power.py:143 uses all(gates.get(g, True)), so the harness that produced the \"structural gates pass 73-100pct of true alphas\" evidence reproduces the bug it would have caught. Until re-measured, every claim that the screen is calibrated is unsupported. Needs the per-gate accept/reject histogram the gate-optimality duty demands and admit() does not have.",
+   "roi_bps": null,
+   "raised": "2026-08-05T22:02:21.877204+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0420",
+   "source": "deep_sweep",
+   "summary": "Money-path defect cluster from capability hunt s2, STAGED not applied -- check_change_window reports STERILE (4.4d into the 7d launch window, a rail live, book unwinding) and L1.38 freezes money-path IMPROVEMENTS inside the window. Each verified by hand: run_cashcarry_executor.py:1077 wraps the risk-rail block in _safe() whose __exit__ returns True, so one signed-endpoint raise deletes ruin switch + DD breaker + exposure + concentration + fee-burn for the tick with risk=None and cands uncleared -- new carries open, and web/index.html:338 renders it as green OK; _reconcile returns [] on venue read failure (:693), byte-identical to \"already hedged\"; binance_live.py:293 force_orders returns {} on error so the ADL check re-shorts into the squeeze; the dead-man combined_equity None-on-missing-keys makes should_fire False forever AND gates its own stale-feed pager on eq is not None; protective stops are written to state OUTSIDE the _safe() that swallows place_stop_market. Highest-dollar item is a _safe(critical=True) variant that re-raises, ~10 lines.",
+   "roi_bps": null,
+   "raised": "2026-08-05T22:02:33.437815+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0421",
+   "source": "cycle",
+   "summary": "RETIRE THE MT5 PAIR, or say why not. scripts/run_mt5_crossasset.py and scripts/run_mt5_funding_bridge.py are dead by three independent measures: run_daily_research.py:48 ends its step-list comment with the literal sentence 'MT5 abandoned.' and _STEPS is crypto-only; ops/crontab.manifest has ZERO entries for either; no Python importer at any depth. REPO_MAP.md:99-104 already lists both under 'DEPRECATED scripts (MT5/old stack)'. They still carry live imports of validate/campaign_gate_stats, so every future validation-API change pays maintenance on two scripts nothing can run. Found while surveying R0271's nine truncation sites -- both were cited as work, and the correct disposition is deletion, not migration. NOTE the same survey found run_daily_research.py's module docstring at :5 still advertises '(4) the MT5 alpha-portfolio campaign', contradicting its own step list -- a stale docstring is how a dead path keeps looking alive.",
+   "roi_bps": 15.0,
+   "raised": "2026-08-05T22:22:12.518753+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0422",
+   "source": "cycle",
+   "summary": "THIRTEEN FORECASTS HAVE A DEADLINE AND NO GRADER -- earliest due 2026-08-14. Surfaced by unowned() built for R0260 (233596c) and now published in data/calibration_status.json as n_unowned/unowned_next_due. They are hand-logged judgement claims (kinds fence-yield, risk, diagnosis, engineering, research, capability) whose keys sit in no organ namespace and whose text score_forecasts.auto_resolvable cannot parse, so on 2026-08-14 check_calibration goes OVERDUE and NO organ on this desk can clear it -- a permanently-red fence, which is how a fence gets switched off (L1.43). MOST ARE CHEAPLY GRADEABLE FROM ARTIFACTS THE DESK ALREADY WRITES: 20260801-conversion-repair-mode-still-correct reads the backlog count in data/conversion_status.json; 20260731-filter-parity-holds reads whether tests/execution/test_filter_parity.py passes; 20260801-L1.45-cost-ratio-exceeds-1.25 reads the cost_ratio artifact. THE FIX IS PER-ROW, NOT A NEW ORGAN: set forecast_calibration.log_forecast(resolver=...) naming the artifact each answer is read off, then grade them on the date. Two (the 2026-09-30 blind-rediscovery originality check and the 2027-07-31 literature check-back) are genuinely judgement calls and need a declared human grader, not a script.",
+   "roi_bps": 30.0,
+   "raised": "2026-08-05T22:22:28.221603+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0423",
+   "source": "cycle",
+   "summary": "SHARED-TREE COMMIT SWEEP: a sibling session ran a broad commit between my 'git add' and my 'git commit', sweeping 4 staged money-path files (libs/execution/carry_accounting.py, run_cashcarry_executor.py, run_live_combined.py, tests/execution/test_carry_accounting.py) into its own commit d971a08, whose message is about R0261 discovery-rank and says NOTHING about the $4,807 futures-leg reporting repair those files contain. The CODE survived; the RATIONALE was destroyed -- and per L1.16 an edge/repair is only durable if its mechanism is understood, which is what a commit message is for. git blame on that repair now points a future reader at an unrelated subject line. This is the third recorded instance of the shared-checkout class (memory: 'sibling commit -a swept my staged ledger', 'a sibling git checkout'd the tree off my branch MID-TASK'). Per-instance fix each time = re-commit; the GENERALISATION is that concurrent sessions must not share a worktree: each takes 'git worktree add -b <branch>' at session start and merges back. Proposed: make that the documented default in ops/ and have a cheap check fire when two live claude processes resolve the same git common-dir.",
+   "roi_bps": 3.0,
+   "raised": "2026-08-05T22:49:43.088832+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0424",
+   "source": "cycle",
+   "summary": "L1.28b(d) ACTUATOR BUILT AND WIRED (commit 483b374): the conversion queue's drain mechanism was legislated, fenced and had NO consumer that changed any behaviour -- repair_mode was published every run and read only by run_max_push.py:249 to pick an advice string. That is why rec-ledger-backlog recurred 3x/5.2d: servicing the rows a queue names cannot drain a queue with arrivals 54.4/day against dispositions 30.0/day. libs/ops/repair_mode.py now emits the duty and ops/brain_env.sh injects it into _DOCTRINE at every organ spawn (VERIFIED live: the block with named rows is inside the 82,225-char doctrine string). Also fixed a live INVERSION: repair_mode was 'status != OK' so it was TRUE for ARRIVALS-COLLAPSED -- redirecting the brain AWAY from finding exactly when the fence says finding has collapsed. Duplicate-inflation hypothesis tested and REFUTED first (0 near-dup pairs at Jaccard>=0.5 over 203 rows), which is what makes 'raise capacity' honest rather than convenient.",
+   "roi_bps": 8.0,
+   "raised": "2026-08-05T22:49:54.197478+00:00",
+   "status": "implemented",
+   "reason": null,
+   "commit": "483b374",
+   "due": null,
+   "disposed": "2026-08-05T22:50:04.048533+00:00"
+  },
+  {
+   "id": "R0425",
+   "source": "cycle",
+   "summary": "run_cadence.py HAS NO ARGPARSE AND SILENTLY IGNORES EVERY FLAG. '.venv/bin/python scripts/run_cadence.py --help' does not print help -- it executes a full cadence run (measured 2026-08-05: still running at 3m13s, having checked panel funding and found balance -0.59). Any operator or organ reaching for --help, --dry-run, --report-only or --json on this script gets a REAL RUN of the engine that fires the weekly panel and monthly tier1. The desk has a documented instinct to probe a script with --help before invoking it (that is how several organs were verified this week), so the one habit meant to make invocation SAFE is, on this script, the thing that invokes it. This is the same class as the Windows-only generation entry point found by EXECUTING it: the signature is not what the caller assumes. FIX: add an argparse with --report-only/--json, or at minimum reject unknown argv with a non-zero exit and a usage line. Neighbour: ops/ callers and cron entries pass no flags today, so adding argparse is additive and cannot change scheduled behaviour.",
+   "roi_bps": 2.0,
+   "raised": "2026-08-05T22:54:46.276639+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0426",
+   "source": "cycle",
+   "summary": "STERILE COCKPIT HAS NO PER-COMMIT GRANULARITY, so a REPAIR cannot be deployed without also deploying every withheld IMPROVEMENT. L1.38 freezes money-path improvements inside the launch window and always allows repairs -- but the unit of deployment is a PROCESS RESTART, not a commit. Live instance today: commit 483b374 (a repair -- the futures leg published $4,807 of a signed re-base as profit, and scripts/hurdle_rate.py:97 reads that exact net_pnl to judge whether the carry beats T-bills) sits behind f7becef, an improvement a prior session deliberately withheld under L1.38 with a reasoned, unexpired ack. Restarting the executor to land the repair also lands the withheld improvement; not restarting leaves the repair INERT (verified: web/cashcarry_live.json still publishes net_pnl 2935.65 with no net_pnl_basis key, i.e. the running pid predates the fix -- desk lesson L0004). NOT restarted this cycle, and that is a decision not an oversight: the book is FLAT and killed (CASHCARRY_KILL present since 08-01T21:55), so nothing is being sized on the corrupt number right now, and the re-arm -- a principal decision -- will restart the process anyway. THE GAP TO CLOSE: check_change_window.py judges a WINDOW, never a DIFF, so it cannot tell an operator which pending commits are repairs and which are frozen improvements. It should classify the commits between the running process's start and HEAD, so 'can I restart?' becomes answerable instead of argued.",
+   "roi_bps": 4.0,
+   "raised": "2026-08-05T22:54:59.704915+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0427",
+   "source": "cycle",
+   "summary": "MAX_AUDIT FENCE WIRING IS A TRAP THAT HAS NOW REFUSED PUSHES TWICE IN FOUR COMMITS. A max_audit fence is a FUNCTION inside scripts/max_audit.py, so it is wired by adding the function NAME to _FENCE_OWNERS in build_enforcement_matrix.py. Adding the SCRIPT PATH to _MAP looks equivalent and reads equivalent in review, but does nothing -- there is no script path for a function. Miss it and build_enforcement_matrix exits 1 with 'fences with no governing principle', which is one of the 10 law fences in the L1.37 pre-push hook, so EVERY push on the branch is refused for everyone sharing it. Instances: c8983b1 (check_paywalls_registered) and cc28734 (check_blocked_routes_hunted + check_verified_alternatives_promoted), three commits apart, different authors. The per-instance fix is to map the fence; the GENERALISATION is that the author should not have to remember which registry: make build_enforcement_matrix's failure message NAME the registry and the exact line to add (it currently prints only the unmapped fence names), and/or have check_build_standard require a law mapping in the same commit that adds a max_audit check_* function -- L1.41 already requires LAW-MAPPED as a build condition, it just cannot see max_audit's internal functions.",
+   "roi_bps": 3.0,
+   "raised": "2026-08-05T23:00:03.754345+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0428",
+   "source": "cycle",
+   "summary": "CADENCE ENGINE HAD A SINGLE POINT OF FAILURE IN AN UNFUNDED EXTERNAL API -- FIXED (dfdffcd). run_cadence.py fires run_external_panel.py with timeout=720; OpenRouter balance -0.59 so the panel hung the full 720s, TimeoutExpired escaped main() uncaught, and since cadence state is written ONCE at the end of main() the artifact was never rewritten (mtime stayed 07:13 while the run ended 23:03). Every duty completed that cycle was forgotten and every timestamp stayed stale -- indistinguishable from 'the cadence engine is not running'. Fixed both halves: _run_panel catches TimeoutExpired and returns False (duty stays OWED, strictly stricter, no floor touched), and main() persists state in a finally so a later failure cannot erase earlier work. _assert_floors still raises through the finally -- pinned by a test. STILL OPEN AND NOT FIXED BY THIS: the panel is fired even though the funding pre-check has ALREADY recorded funded=false in data/panel_funding_state.json seconds earlier (checked 2026-08-05T22:51:20, balance -0.59). A measured 'unfunded' is written down and then ignored, costing 720s per cadence run. That is a separate defect -- an artifact produced and not consumed, one hop from the L1.28b(d) actuator defect fixed earlier this cycle -- and the fix is to gate the panel branch on the funding state the engine already computed.",
+   "roi_bps": 6.0,
+   "raised": "2026-08-05T23:06:00.030577+00:00",
+   "status": "implemented",
+   "reason": null,
+   "commit": "dfdffcd",
+   "due": null,
+   "disposed": "2026-08-05T23:06:11.574781+00:00"
+  },
+  {
+   "id": "R0429",
+   "source": "cycle",
+   "summary": "RUIN THRESHOLD IS PASSED AS A LEVEL BUT NAMED AND DOCUMENTED AS A DROP, and the mismatch runs in the LOOSENING direction. libs/risk/dynamic_leverage.py:91 declares 'drawdown_ruin: float = 0.35,  # equity drop treated as ruin' and passes it at :54 as risk_of_ruin(..., threshold=drawdown_ruin). But risk_of_ruin's own docstring (libs/risk/growth_leverage.py:49-53) is explicit that threshold is an equity LEVEL: 'threshold=0.2 means an 80% drawdown is treated as ruin', and the body computes mean(eq.min(axis=1) < threshold) on eq starting at 1.0. So the sizer believes it caps P(35% drawdown) <= 2% and actually caps P(65% drawdown) <= 2%. A 65% drawdown is far rarer, so _ruin_cap binds much less and PERMITS HIGHER LEVERAGE THAN INTENDED. docs/research/GROWTH_UNLOCK_LADDER.md states the desk's intent as a '35%-drawdown ruin definition', which points at the VALUE being wrong (0.35 should be 0.65) rather than the comment -- but the two readings change a survival rail's strictness in opposite directions, so this needs a decision, not a drive-by edit. NOT CURRENTLY SIZING LIVE MONEY: run_cashcarry_executor._dynamic_capital is quarantined (:140-155) and ignores data/leverage_target.json in both directions, so today the defect reaches the dashboard and run_capital_plan only -- it becomes live the moment that quarantine is lifted, which is exactly when nobody will re-read this constant. FIX: pick the branch (almost certainly threshold=1.0-drawdown_ruin at the call site, preserving the documented 35%-drawdown intent), add a test pinning the equity-level-vs-drop semantics, and confirm the tightening is intended before the quarantine lifts. Found while measuring R0266.",
+   "roi_bps": 12.0,
+   "raised": "2026-08-05T23:18:33.120286+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0430",
+   "source": "cycle",
+   "summary": "SHADOW-BEFORE-SWAP: the PAIRED half of R0265 is still unbuilt, and it is blocked on a missing field rather than on design. R0265 delivered dead-slot reclamation (libs/research/slot_displacement.py: a clock that cannot resolve is reclaimable, an accruing one is PROTECTED). The other half -- displacing a HEALTHY incumbent on a paired comparison scored on the SAME next window of delayed labels -- is deliberately not built, because it needs something that does not exist: the incumbent's PRE-REGISTERED DECISION POINT as a readable field. Without it a challenger would be scored against a horizon nobody wrote down, which is optional stopping with extra steps. THE PREREQUISITE IS THE WORK: forward clocks currently publish forward_days/verdict but no pre-registered end date or decision rule per slot, so nothing can say whether an incumbent has reached a legitimate decision point. Add that field to the slot registry first (the standing states already carry shadow_start, so the end date is the natural sibling), THEN the paired test becomes safe to build: warm-refit the challenger off the serving path, score challenger vs maintained incumbent on identical labels, swap only on a fixed paired advantage AND only once the incumbent's own terms allow a decision. DO NOT WIRE libs/signal_engine/champion_challenger.py for this -- it differences two absolute Sharpes each measured over its own window, which is precisely the period-effect confound the paired construction exists to remove; it is also orphaned (sole reference libs/signal_engine/__init__.py) and about signal-engine variants, not forward slots.",
+   "roi_bps": 10.0,
+   "raised": "2026-08-05T23:23:41.203798+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0431",
+   "source": "cycle",
+   "summary": "ABSORPTION COST IS HORIZON-DEPENDENT AND THE 1-YEAR FRAMING INVERTS ITS SIGN. Found by R0266's study (scripts/study_absorbing_kelly.py, docs/research/absorbing_kelly_study.json). Modelling absorption as the account FREEZING at the barrier -- correct for a venue minimum, since the money is still there -- floors terminal log-wealth at log(barrier) while the upside stays unbounded. Over a ONE-YEAR horizon that bounded downside makes E[logW] CONVEX in leverage once mu is uncertain: mu-dispersion pays like a call option, more spread puts more mass in the unbounded good tail while the bad tail is capped, and the measured optimum came out ABOVE full Kelly (f* 1.05 to 3.00). The first version of the study read that as 'the two shrinks double-count in 12/12 cells' and would have shipped a confident wrong number; it was caught only because a positive control and a no-barrier control were added. THE FIX IS THE HORIZON, NOT THE MODEL: this desk's objective is LIFETIME E[log W_T], and over a lifetime absorption forfeits ALL future compounding rather than settling at 0.2x book -- the very floor that creates the convexity is what a long horizon removes. WORK: re-run the study with multi-year horizons (or an explicit continuation value for the non-absorbed state) and confirm f*_joint falls below f*_absorbing as the horizon grows, which is the direction theory predicts. LOW PRIORITY and say so: the boundary shrink at the desk's real barrier measured <=10% (gamma_boundary 0.90-1.00 at the 00-on-k viability floor), an order of magnitude below the estimation shrink already applied, so nothing about deployed sizing turns on it. This row exists so the artifact's own caveat is tracked rather than living only in a docstring.",
+   "roi_bps": 8.0,
+   "raised": "2026-08-05T23:28:25.564804+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0432",
+   "source": "cycle",
+   "summary": "THE KELLY SHRINK IS THE RIGHT FORMULA WITH THE WRONG RATIONALE ATTACHED, AND THE TWO CALIBRATE DIFFERENTLY. Measured by R0266's study (CONTROL A, 12/12 cells): with an UNBIASED mu, estimation noise ALONE leaves the growth optimum at exactly full Kelly, f* = 1.00. That is not a simulation artifact -- E[log W_T] = T(L*mu - L^2 sigma^2/2) is LINEAR in mu, so averaging over symmetric unbiased parameter noise cannot move the argmax. The rationale carried in libs/risk/kelly_shrink.py and echoed in the constitution -- 'Kelly's penalty is asymmetric, so shrinkage RAISES expected log growth on an estimated edge' -- does not survive that test: the asymmetry is already inside the quadratic term, and symmetric noise about a correct mean does not shift the optimum. THE SHRINK IS STILL CORRECT, and this row must not be read as an argument to bet more. What justifies it is that mu-hat is NOT unbiased for the quantity the desk bets on: candidates are selected BECAUSE they measured well, so mu-hat carries a winner's curse, and the correct input is the POSTERIOR MEAN under a prior that most candidates have no edge. S^2/(S^2+SE^2) is exactly the James-Stein / normal-posterior shrinkage factor toward a zero-edge prior, so the FORM is right. WHY IT MATTERS PRACTICALLY: the two stories calibrate differently. A posterior-mean shrink should be tuned to (a) how strong the zero-edge prior is -- this desk has 420 tested / 0 survivors of evidence for a very strong one -- and (b) how SELECTED the particular candidate was, i.e. how many trials it won against. Neither is an input today; the shrink sees only S and N, so it applies the same haircut to an edge picked from 1 trial and one picked from 420, when the winner's curse differs enormously between them. WORK: restate the docstring rationale, then decide whether to feed the trial count (already tracked for DSR multiplicity) into the shrink. Direction of any change is TIGHTER for heavily-selected candidates, never looser.",
+   "roi_bps": 12.0,
+   "raised": "2026-08-05T23:28:45.668521+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

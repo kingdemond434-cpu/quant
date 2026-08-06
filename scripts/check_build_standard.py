@@ -60,7 +60,9 @@ _GOVERNED: tuple[str, ...] = (
     "screen_funding_spread.py", "screen_collateral_allocation.py",
     "check_build_standard.py",                              # this fence holds itself to it
     "check_input_provenance.py",                            # L1.55 transitive freshness
+    "check_denominators.py",                                # L1.57 the denominator of a verdict
     "check_fence_yield.py",
+    "ship_restart.py",                                      # the actuator for stale-code daemons
     "derive_walcl_clock.py",                                # R0031 forward clock (2026-07-31)
     "run_llm_trader.py",
     "collect_announcements.py",
@@ -121,6 +123,12 @@ _SCHEDULE_EXEMPT: dict[str, str] = {
                              "chain, immediately after collect_fred_macro refreshes its input "
                              "(phase-correct by construction); a separate cron line would race "
                              "the archive it reads",
+    "ship_restart.py": "an ACTUATOR, not a detector: it is invoked by deploy/pull_deploy.sh at "
+                       "the moment a pull invalidates a supervised process, and by an operator "
+                       "closing a daemon-stale-code defect. Putting it on a clock would restart "
+                       "daemons on a TIMER -- the opposite of event-driven, and a standing "
+                       "outage risk for the money path. Its detector (max_audit "
+                       "check_stale_daemons) is the scheduled half of the pair",
     "check_doctrine_diff.py": "runs as the doctrine_diff step of daily_research_cycle's _STEPS "
                               "chain, beside doctrine_guard; doctrine edits arrive at most a "
                               "few per week, so the daily chain IS the information-arrival "

@@ -61,8 +61,26 @@ the count is written to the audit log every campaign. Under min-length they were
 at ~0.25% power, so nothing that had a real chance of discovery lost one.
 
 COST: Romano-Wolf's bootstrap is linear in retained observations, so a stratified campaign does
-roughly 5x the work of a truncated one (measured ~97s for a 60-candidate two-stratum fixture).
-That is the price of using the data, and it is paid once per campaign.
+roughly 5x the work of a truncated one. That is the price of using the data, and it is paid once
+per campaign.
+
+That multiple used to be stated here as "~97s for a 60-candidate two-stratum fixture" and nowhere
+else, which made the real campaign's cost a number every reader had to guess (R0263). It is now
+MEASURED on every run: `StrataPlan.seconds` and `.stratum_seconds` are filled in by
+`stratified_campaign_gates` and written to the `campaign_strata` audit event. A plan that has only
+been costed -- `plan_strata` on its own -- reports None, which is not zero.
+
+MEASURED 2026-08-05 at full campaign shape (420 candidates on the repo's own realistic length
+distribution, 28 strata, 679,490 of 753,811 observations retained, 345 tested):
+
+    total 198.6s      slowest stratum 10.8s      parallel_speedup 18.3x
+
+So it does NOT bind: 3.3 minutes, once per campaign, against the 180.8x gain in expected
+discoveries that stratifying buys. And if it ever does bind, the remedy is already quantified --
+the strata are INDEPENDENT bootstraps, so a per-stratum pool takes the whole campaign down to its
+slowest stratum, ~11s. Cutting n_boot is not on the table: it is the resolution of the
+multiplicity correction, so buying seconds with it loosens the bar
+(NO-COST-DRIVEN-DEGRADATION).
 """
 from __future__ import annotations
 
@@ -106,10 +124,36 @@ class StrataPlan(NamedTuple):
     expected_discoveries: float
     """Sum over strata of cohort x per-candidate power -- the objective actually maximised."""
     why: str
+    seconds: float | None = None
+    """Wall-clock of the campaign that EXECUTED this plan, or None when nobody ran one.
+
+    None is not zero and the two must never be conflated: `plan_strata` returns a plan that has
+    only been COSTED, so its runtime is genuinely unknown, while 0.0 would read as "instant" --
+    the flattering direction, and the one a reader acts on (L1.28a: unmeasured counts as zero
+    only where zero is the CONSERVATIVE reading; for a cost it is the opposite).
+    """
+    stratum_seconds: tuple[float, ...] = ()
+    """Per-stratum wall-clock, positionally aligned with `strata`. Empty when unmeasured.
+
+    The whole point of splitting this out rather than reporting one total: the strata are
+    INDEPENDENT bootstraps, so `max(stratum_seconds)` is the wall-clock a perfectly parallel
+    campaign would pay and `sum` is what the serial one pays. Their ratio is the speedup
+    per-stratum parallelisation can buy, measured rather than assumed -- which is the question
+    R0263 asks and the reason to prefer it over cutting n_boot (NO-COST-DRIVEN-DEGRADATION:
+    n_boot is the resolution of the multiplicity correction, and shrinking it loosens the bar).
+    """
 
     @property
     def retained_fraction(self) -> float:
         return self.obs_retained / self.obs_available if self.obs_available else 0.0
+
+    @property
+    def parallel_speedup(self) -> float | None:
+        """Serial cost / best achievable parallel cost. None when unmeasured, never a guess."""
+        if not self.stratum_seconds:
+            return None
+        slowest = max(self.stratum_seconds)
+        return round(sum(self.stratum_seconds) / slowest, 2) if slowest > 0 else None
 
 
 #: Total family-wise error the WHOLE campaign is allowed, however many strata it is cut into.

@@ -19,6 +19,7 @@ from libs.execution.carry_accounting import (
     carry_bleed_report,
     derive_spot_realized,
     read_income,
+    reconcile_futures_leg,
 )
 from libs.portfolio.live_book import LivePortfolio
 from libs.risk import capital_events
@@ -124,6 +125,7 @@ def main() -> None:
     realized = 0.0
     funding = None
     venue_realized = None
+    fut_commission = None
     fut_winrate = None
     if fut.has_keys() and st.get("start"):
         sms = int(datetime.fromisoformat(str(st["start"])).timestamp() * 1000)
@@ -131,6 +133,7 @@ def main() -> None:
         if inc is not None:
             funding = round(_num(inc.get("funding")), 2)            # carry income (the edge)
             venue_realized = _num(inc.get("realized_pnl"))          # exact futures realized
+            fut_commission = abs(_num(inc.get("commission")))       # the fee bill, for the recon
             realized = round(_num(inc.get("funding")) + venue_realized
                              + _num(inc.get("commission")), 2)
             _nw, _nl = _num(inc.get("n_wins")), _num(inc.get("n_losses"))
@@ -178,8 +181,21 @@ def main() -> None:
     m_start = round(n_books * _BASE, 2)
     m_eq = round(fut_book + spot_book + (perp_book if perp_active else 0.0), 2)
     net = round(fut_pnl + spot_pnl + perp_net, 2)     # carry (real) + perp (paper); NO trend
+    # SAME NEIGHBOUR, SAME LEAK (2026-08-05). This book inherits the executor's inception by
+    # design (R0322 pinned them together so one deposit could not split the desk into two published
+    # truths) -- and therefore it inherited the R0322 defect too: `effective_start_equity` is the
+    # RUIN RAIL's inception, which a signed re-base moves, so `fut_pnl` above carries every dollar
+    # of that re-base as fabricated profit. Pinning two books to one number made them agree; it did
+    # not make them right. The cross-check below is what makes the shared number auditable.
+    recon = reconcile_futures_leg(
+        equity_delta=fut_pnl, venue_realized=venue_realized, funding=funding,
+        commission=fut_commission, unrealized=fut_unrl,
+        rebase_usd=round(_num(st.get("start_futures_equity"), fut_eq) - fut_start_real, 2))
     # standing carry-leak alarm: is the funding harvest surviving, or is the hedge bleeding it?
-    bleed = carry_bleed_report(funding=funding, spot_pnl=spot_pnl, fut_pnl=fut_pnl)
+    bleed = carry_bleed_report(funding=funding, spot_pnl=spot_pnl, fut_pnl=fut_pnl,
+                               open_legs=len(carries), recon=recon)
+    net_reported = (net if recon.reporting_pnl is None
+                    else round(recon.reporting_pnl + spot_pnl + perp_net, 2))
 
     # gross P&L for the COMBINED book: split each book's net P&L by sign -> total gains vs total
     # losses. They sum EXACTLY to the molded net.
@@ -265,8 +281,11 @@ def main() -> None:
     out = {
         "updated": now,
         "molded": {
-            "start": m_start, "equity": m_eq, "net_pnl": net,
-            "return_pct": round(net / m_start * 100, 3) if m_start else 0.0,
+            # Honest net (venue income ledger) under the headline name; see the executor's note --
+            # the equity-delta reading keeps its own key so the disagreement stays auditable.
+            "start": m_start, "equity": m_eq, "net_pnl": net_reported,
+            "net_pnl_equity_delta": net,
+            "return_pct": round(net_reported / m_start * 100, 3) if m_start else 0.0,
             "daily_pct": _pct_ago(mcurve, m_eq, 24), "monthly_pct": _pct_ago(mcurve, m_eq, 720),
             "unrealized": round(fut_unrl + _num(cc.get("spot_leg_pnl")), 2), "realized": realized,
             "gross_profit": gross_profit, "gross_loss": gross_loss,
@@ -274,6 +293,8 @@ def main() -> None:
             "non_funding_pnl": bleed.non_funding_pnl,
             "harvest_eaten_frac": bleed.harvest_eaten_frac,
             "bleed_alert": bleed.alert, "bleed_verdict": bleed.verdict,
+            # Both readings of the futures leg, and the honest net beside the published one.
+            "fut_leg_reconciliation": recon.model_dump(),
             "run_rate_apr_pct": round(avg_f * 3 * 365 * 100, 1),
             "days_live": port.days_live, "winrate_pct": port.winrate,
             "n_closed_trades": port.n_closed, "deployed_sharpe": port.deployed_sharpe,

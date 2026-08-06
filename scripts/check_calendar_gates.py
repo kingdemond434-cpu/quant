@@ -35,6 +35,12 @@ import sys
 from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+from libs.ops.denominator import record  # noqa: E402
+from libs.ops.fence_exit import fence_exit  # noqa: E402
+
+_PASSING = frozenset({"CLEAN"})
 
 #: Constant assignments whose NAME implies a calendar gate.
 _CONST = re.compile(
@@ -61,8 +67,17 @@ def _tagged(lines: list[str], i: int) -> str | None:
     return None
 
 
+#: How many files the last scan() actually read. THE DENOMINATOR OF THE "CLEAN" VERDICT (L1.57):
+#: this fence walks `_ROOT.rglob("*.py")` and prints CLEAN when it finds no untagged gate --
+#: which is exactly what it prints when the walk matched nothing at all. A moved root, a
+#: mis-parsed skip pattern or an unreadable tree all render as a clean codebase.
+N_SCANNED = 0
+
+
 def scan() -> tuple[list[tuple[str, int, str, str]], list[tuple[str, int, str, str]]]:
+    global N_SCANNED
     violations, exempt = [], []
+    n = 0
     for p in sorted(_ROOT.rglob("*.py")):
         rel = p.relative_to(_ROOT).as_posix()
         if any(part in _SKIP_DIRS for part in p.relative_to(_ROOT).parts[:-1]):
@@ -73,6 +88,7 @@ def scan() -> tuple[list[tuple[str, int, str, str]], list[tuple[str, int, str, s
             lines = p.read_text("utf-8").splitlines()
         except (OSError, UnicodeDecodeError):
             continue
+        n += 1
         for i, ln in enumerate(lines):
             if ln.lstrip().startswith("#"):
                 continue
@@ -89,6 +105,7 @@ def scan() -> tuple[list[tuple[str, int, str, str]], list[tuple[str, int, str, s
                 continue
             tag = _tagged(lines, i)
             (exempt if tag else violations).append((rel, i + 1, hit, tag or ""))
+    N_SCANNED = n
     return violations, exempt
 
 
@@ -112,9 +129,19 @@ def main() -> int:
         for rel, ln, hit, _ in violations:
             print(f"    {rel}:{ln}  {hit}")
         print(f"\n  MIGRATION CHECKLIST: {len(violations)} item(s) outstanding.")
+        # Declare on the FAILING path too (L1.57). This fence early-returns here without touching
+        # fence_exit, so while the 69-item migration backlog stands it would never reach its
+        # declaration site -- and a permanently-failing fence would be indistinguishable from an
+        # unwired one in the coverage ratchet. The exit code is deliberately left at 1: this path
+        # is not a vacuity refusal and consumers of it predate L1.57.
+        record("check_calendar_gates.py", "repo *.py files", N_SCANNED, passed=False)
         return 1
-    print(f"  CLEAN: no untagged calendar gate remains ({len(exempt)} exempt, all declared).")
-    return 0
+    print(f"  CLEAN: no untagged calendar gate remains in {N_SCANNED} file(s) scanned "
+          f"({len(exempt)} exempt, all declared).")
+    # A clean verdict now carries its denominator (L1.57). Zero files read is not a clean tree,
+    # and until this line the two printed the same sentence and returned the same code.
+    return fence_exit("CLEAN", _PASSING, scanned=N_SCANNED, of="repo *.py files",
+                      fence="check_calendar_gates.py")
 
 
 if __name__ == "__main__":

@@ -43,6 +43,34 @@ def test_an_unparseable_or_out_of_range_answer_is_discarded(tmp_path):
     assert r["status"] == "POSED" and r["n"] == 1
 
 
+def test_a_test_root_never_reaches_the_live_calibration_store(tmp_path, monkeypatch):
+    """R0254. THE TEST SUITE WAS THE EXTRA CALLER, and this is the test that catches it.
+
+    `pose()` honoured its `root` for the questions file and logged the forecast through the
+    calibration module's global path, so the case above -- which passes no monkeypatch, because
+    it is asserting parsing, not storage -- wrote one fabricated row into the desk's live L1.29
+    store on every single run. Measured on 2026-08-05 before the fix: 68 such rows, and ALL 44
+    forecasts holding the calibration fence OVERDUE were this exact fixture (S2USDT @ 102.0,
+    p=0.61 -- `_charts` names symbols `S{i}USDT` at price `100.0 + i`, and 0.61 is the literal
+    two lines up). They can never be graded: no venue lists S2USDT, so `resolve_due` correctly
+    refuses to guess and they sit past-due forever, pinning red the one fence that exists to
+    detect the desk being confidently wrong.
+
+    The assertion is deliberately about the DEFAULT store rather than about this one test: what
+    failed was not a missing monkeypatch, it was isolation that depended on every future caller
+    remembering one.
+    """
+    import libs.self_improvement.forecast_calibration as fc
+    live = tmp_path / "live_store.json"
+    monkeypatch.setattr(fc, "_LOG", live)
+    _charts(tmp_path)
+    r = pose(tmp_path, ask=lambda _p: '{"q1": 0.61, "q2": 0.44, "q3": 0.55}')
+    assert r["n"] == 3 and not r.get("calibration_log_error")
+    assert not live.exists(), f"pose() wrote to the module-global store: {live.read_text()}"
+    logged = json.loads((tmp_path / "data/forecast_log.json").read_text())["forecasts"]
+    assert len([k for k in logged if k.startswith("probe:")]) == 3
+
+
 def test_a_posed_question_is_logged_for_scoring(tmp_path, monkeypatch):
     _charts(tmp_path)
     import libs.self_improvement.forecast_calibration as fc

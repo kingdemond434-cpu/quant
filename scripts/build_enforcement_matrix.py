@@ -122,7 +122,17 @@ _MAP: dict[str, list[str]] = {
     "L1.28a": ["scripts/check_utilisation.py", "check_idle_capability", "check_clock_saturation",
                "check_capacity_runway"],
     # L1.28b: conversion hunts 100% daily -- FLATLINE (7d of silence on a non-empty queue) fails.
-    "L1.28b": ["scripts/check_conversion.py"],
+    # The fence DETECTS the debt; the actuator is what makes the law's own remedy -- (d) "flips
+    # the next audit/brain window from finding to fixing" -- actually reach an organ (L1.36).
+    # Both are listed because a law enforced only by a detector is half-enforced: the flag was
+    # published for weeks with no consumer that changed any behaviour.
+    # ship_restart is the REPAIR half of the desk's most expensive detection. max_audit's
+    # check_stale_daemons has fired correctly on all three stale-code instances (2026-07-10,
+    # 07-26, 08-05) and every one shipped only when a human happened to look, because the
+    # restart needs a systemctl this box denies. Detection without an actuator IS the L1.28b
+    # defect; this is the actuator.
+    "L1.28b": ["scripts/check_conversion.py", "libs/ops/repair_mode.py", "ops/brain_env.sh",
+               "scripts/ship_restart.py"],
     # L1.28c: every cadence hunts its own ceiling. The manifest fence requires a decided cadence
     # with evidence per line; brain_seat_throughput measures the resource they all compete for,
     # so "raise the cron" vs "buy a second seat" is settled by measurement.
@@ -276,6 +286,13 @@ _MAP: dict[str, list[str]] = {
     # below; the law arrived mapped in neither and the matrix correctly called it UNENFORCED.
     "L1.56": ["check_survivor_pipeline", "tests/research/test_survivor_pipeline.py",
               "scripts/finalize_axis_screens.py", "scripts/run_paper_sleeve_spawner.py"],
+    # L1.57: fence_exit fixed the map from status to exit code; it cannot see a status that is
+    # honestly OK because the fence examined NOTHING. 18 of 40 fences passed vacuously and 10
+    # more published len(<hardcoded literal>) as a denominator. The refusal lives in fence_exit
+    # (scanned=), the registry self-builds, and the meta-fence is subject to its own law.
+    "L1.57": ["scripts/check_denominators.py", "libs/ops/denominator.py",
+              "libs/ops/fence_exit.py", "tests/governance/test_denominators.py",
+              "scripts/check_exploration.py", "scripts/check_calendar_gates.py"],
     # R0123 decline grading: L1.29 says an ungraded prediction is a BELIEF that inflates the
     # apparent hit-rate by never counting its misses -- and a sleeve scored only on the trades it
     # CHOOSES to be graded on is that defect with a dominant strategy attached. Nine consecutive
@@ -429,6 +446,15 @@ _FENCE_OWNERS: dict[str, str] = {
     # calibration_mae_falling_months as ramp step-up conditions with no producer while the ramp sat
     # pinned at its floor), which is exactly the hand-is-not-a-mechanism gap L1.41 exists to close.
     "check_phantom_paths": "L1.40",
+    # --- L1.54 (a shut door is a routing problem, not a verdict). Both fences landed unmapped and
+    # therefore REFUSED EVERY PUSH on this branch -- the same failure my own check_paywalls_
+    # registered hit at c8983b1, which makes it a class rather than an accident: a max_audit fence
+    # is wired by adding the FUNCTION here, and adding the script to `_MAP` does not do it.
+    # Mapped from each fence's own docstring, which names L1.54 explicitly, not from a guess:
+    # "A blocked route the desk stopped chasing is an accepted loss. L1.54 forbids accepting it."
+    # and "the enumerated exhaustion L1.54 demands rather than silence."
+    "check_blocked_routes_hunted": "L1.54",
+    "check_verified_alternatives_promoted": "L1.54",
     # --- SAME LENS, ONE TURN LATER (L1.40): check_phantom_paths catches a reader whose source was
     # NEVER written; check_dormancy_disarm catches a reader whose source WENT EMPTY. Both take the
     # empty branch and return a plausible healthy answer, but the second is harder to see because
@@ -488,6 +514,9 @@ _FENCE_OWNERS: dict[str, str] = {
     "check_source_backlog": "L1.9",      # a catalogue that grows faster than it is verified
     "check_dig_uncommitted": "L1.9",     # VPS disk is not institutional memory
     "check_paid_target_registry": "L1.11a",
+    # Same duty from the other end: the registry fence above asks whether a KNOWN paid target is
+    # tracked, this one whether a paywall the desk actually WALKED INTO ever reached the registry.
+    "check_paywalls_registered": "L1.11a",
     "check_holdings_never_shrink": "L1.24",  # information advantage measured as a holding, not act
     # --- remaining singletons.
     "check_panel": "L1.7",               # adversarial review capability being DOWN is a defect

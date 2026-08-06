@@ -122,6 +122,107 @@ def test_zero_forecasts_is_unforecasting_not_ok(store):
     assert rep["status"] == "UNFORECASTING"           # never "OK" -- unmeasured counts as zero
 
 
+# --------------------------------------------------------------------------------------------
+# R0260 -- the BLIND denominator, and forecasts nobody can grade.
+# --------------------------------------------------------------------------------------------
+
+def test_numerator_is_a_subset_of_its_own_denominator(store):
+    """n_resolved is drawn from `eligible`; dividing it by len(store) is a category error.
+
+    The live shape on 2026-08-05: 42 scoreable resolved against a raw store of 172, of which 43
+    rows -- retrospective, non-sizing, deduped -- can never enter the numerator. `42 < 172//4=43`
+    fired BLIND; on the matched population `42 < 129//4=32` does not."""
+    for i in range(30):                                   # retrospective: no resolve_by
+        fc.log_forecast(f"eng:{i}", 0.9, "engineering")
+        fc.resolve(f"eng:{i}", outcome=True)
+    for i in range(9):                                    # non-sizing kind, excluded from report()
+        fc.log_forecast(f"pass:{i}", 0.5, "discretionary_pass_backfill", resolve_by=_SOON,
+                        claim=f"pass claim {i}")
+        fc.resolve(f"pass:{i}", outcome=True)
+    for i in range(40):                                   # genuine pre-registered, graded
+        fc.log_forecast(f"real:{i}", 0.6, "market_direction", resolve_by=_SOON,
+                        claim=f"real claim {i}")
+        fc.resolve(f"real:{i}", outcome=i % 2 == 0)
+    for i in range(90):                                   # genuine, not yet due
+        fc.log_forecast(f"open:{i}", 0.6, "market_direction", resolve_by=_SOON,
+                        claim=f"open claim {i}")
+    rep = fc.report()
+    store_rows = fc._load()["forecasts"]
+    assert rep["n_resolved"] == 40
+    assert rep["n_eligible"] == 130                       # 40 graded + 90 open; eng/pass excluded
+    assert rep["n_eligible"] <= len(store_rows) == 169
+    assert rep["n_resolved"] <= rep["n_eligible"]         # holds by construction, asserted anyway
+    # The regression itself: the raw denominator fires BLIND, the matched one does not.
+    assert rep["n_resolved"] < max(1, len(store_rows) // 4)      # 40 < 169//4 = 42 -> the bug
+    assert rep["n_resolved"] >= max(1, rep["n_eligible"] // 4)   # 40 >= 32 -> healthy
+
+
+def test_blind_reads_the_matched_population(store):
+    """The fence must not fire BLIND on a desk that graded a third of everything it can grade."""
+    import importlib
+    for i in range(30):
+        fc.log_forecast(f"eng:{i}", 0.9, "engineering")   # unscoreable ballast
+        fc.resolve(f"eng:{i}", outcome=True)
+    for i in range(12):
+        fc.log_forecast(f"real:{i}", 0.6, "market_direction", resolve_by=_SOON,
+                        claim=f"real claim {i}")
+        fc.resolve(f"real:{i}", outcome=i % 2 == 0)
+    for i in range(20):
+        fc.log_forecast(f"open:{i}", 0.6, "market_direction", resolve_by=_SOON,
+                        claim=f"open claim {i}")
+    cc = importlib.import_module("scripts.check_calibration")
+    rep = cc.build_report()
+    assert rep["n_eligible"] == 32 and rep["n_resolved"] == 12
+    assert rep["status"] != "BLIND"                       # 12/32 clears the quarter bar
+    assert rep["n_resolved_raw"] == 42                    # and the raw count is published too
+
+
+def test_store_with_nothing_scoreable_is_not_ok(store):
+    """`n_resolved < n_eligible//4` is `0 < 0` on an empty population -- False, i.e. a PASS.
+
+    A verdict over an empty denominator is vacuous and must never read as health (L1.57)."""
+    import importlib
+    for i in range(9):
+        fc.log_forecast(f"eng:{i}", 0.9, "engineering")   # no resolve_by -> never scoreable
+        fc.resolve(f"eng:{i}", outcome=True)
+    cc = importlib.import_module("scripts.check_calibration")
+    rep = cc.build_report()
+    assert rep["n_eligible"] == 0
+    assert rep["status"] == "UNSCOREABLE"
+    assert rep["status"] not in cc._PASSING
+
+
+def test_unowned_names_forecasts_no_organ_can_grade(store):
+    """R0260's class defect: a deadline with no grader pins the fence the day it comes due."""
+    fc.log_forecast("20260801-some-judgement-call", 0.7, "diagnosis", resolve_by=_SOON,
+                    claim="repair-mode was the correct read")            # hand-logged, no owner
+    fc.log_forecast("probe:x", 0.5, "calibration_probe", resolve_by=_SOON,
+                    claim="Will BTCUSDT trade ABOVE 60000 in 4 hours' time?")   # organ-owned
+    fc.log_forecast("20260801-declared", 0.7, "diagnosis", resolve_by=_SOON,
+                    claim="unparseable but owned", resolver="scripts/run_thing.py --grade")
+    fc.log_forecast("20260801-price-shaped", 0.7, "market_direction", resolve_by=_SOON,
+                    claim="BTCUSDT trades above 63216.2 at +4h")         # the scorer can parse it
+    from scripts.score_forecasts import auto_resolvable
+    keys = [u["key"] for u in fc.unowned(auto_resolvable, root=Path("."))]
+    assert keys == ["20260801-some-judgement-call"]
+
+
+def test_unowned_flags_a_namespace_whose_resolver_was_deleted(store, tmp_path):
+    """Reachability, not declaration: the map names a script, and the script must still exist."""
+    fc.log_forecast("probe:x", 0.5, "calibration_probe", resolve_by=_SOON, claim="judgement call")
+    assert fc.unowned(root=Path(".")) == []               # scripts/run_calibration_probe.py exists
+    orphans = fc.unowned(root=tmp_path)                   # same store, resolver not on disk
+    assert [o["key"] for o in orphans] == ["probe:x"]
+    assert "MISSING" in orphans[0]["why"]
+
+
+def test_resolved_rows_are_never_unowned(store):
+    fc.log_forecast("20260801-graded", 0.7, "diagnosis", resolve_by=_SOON, claim="a judgement")
+    assert len(fc.unowned(root=Path("."))) == 1
+    fc.resolve("20260801-graded", outcome=True)
+    assert fc.unowned(root=Path(".")) == []
+
+
 def test_law_and_wiring_present():
     const = " ".join(Path("docs/CONSTITUTION.md").read_text("utf-8").replace("**", "").split())
     assert "L1.29 THE DESK SCORES ITS OWN CONFIDENCE" in const

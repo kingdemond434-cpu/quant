@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from tests.discovery.conftest import make_returns
 
 from libs.discovery.capacity import capacity_estimate
@@ -76,3 +78,31 @@ def test_objective_log_growth_and_score() -> None:
         capacity_usd=1e6, fragility_score=10, tail_risk_score=10, parameter_plateau_score=80,
     )
     assert high > low
+
+
+def test_composite_on_neutral_defaults_is_log_growth_rescaled() -> None:
+    """R0261. Nine of ten inputs held constant leaves `growth` as the only free term, so the
+    'composite discovery rank' is EXACTLY log_growth times a constant -- it carries no ordering
+    information the plain log_growth ranking does not already have. Measured on the committed
+    artifact: 0.1253 -> 0.00696 and 0.4068 -> 0.02258, the same K to four figures."""
+    const = {
+        "survival_probability": 0.95, "diversification_contribution": 0.0,
+        "average_correlation": 0.0, "failure_dependency_score": 50.0, "half_life_days": 90.0,
+        "capacity_usd": 250_000.0, "fragility_score": 50.0, "tail_risk_score": 50.0,
+        "parameter_plateau_score": 50.0,
+    }
+    ks = [discovery_score(log_growth=g, **const) / g for g in (0.1253, 0.4068, 1.7)]
+    assert max(ks) - min(ks) < 1e-12                  # one constant, not a composite
+
+
+def test_geometric_review_publishes_the_composite_as_UNMEASURED() -> None:
+    """A score built from nine literals must not be published as a bare float: read that way it
+    claims the diversification / correlation / failure-dependency / plateau content its name
+    implies and does not contain (L1.55 -- a defaulted input rendered as a measurement)."""
+    src = Path("scripts/run_geometric_review.py").read_text("utf-8")
+    assert '"measured": False' in src
+    assert '"inputs_defaulted"' in src and '"inputs_measured"' in src
+    # the three that have NO producer anywhere in the repo must be named as defaulted
+    for missing in ("failure_dependency_score", "parameter_plateau_score",
+                    "diversification_contribution"):
+        assert missing in src

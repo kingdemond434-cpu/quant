@@ -18,7 +18,7 @@ from pathlib import Path
 import numpy as np
 
 from libs.autodiscovery.models import Family, Hypothesis
-from libs.autodiscovery.validation import campaign_gate_stats, validate
+from libs.autodiscovery.validation import stratified_campaign_gates, validate
 from libs.data.crypto_source import fetch_spot_klines
 from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
 from libs.data.lake import Layer, ParquetLake
@@ -90,24 +90,46 @@ def main() -> None:
     if not prepared:
         raise SystemExit("no aligned perp/spot series")
 
+    # STRATIFIED, NOT MIN-LENGTH (R0271). This built its campaign matrix with `r[-min_len:]`, so
+    # the SHORTEST perp/spot inner-join truncated every other symbol -- and the lengths here
+    # genuinely differ, because each symbol's join spans a different listing history. The gate
+    # audit measured history length as THE binding constraint on the whole funnel (T=310->2500
+    # takes power at true Sharpe 2.0 from 0.00% to 19.58%) while cohort size buys nothing.
+    # Truncation spent observations to keep candidates aligned, which is exactly the wrong trade.
+    # This RAISES POWER and lowers no bar: each stratum is its own family at CAMPAIGN_ALPHA/k, a
+    # STRICTER per-family level than the 5% the single campaign used, and plan_strata partitions
+    # on LENGTHS ALONE -- it never sees a return, a Sharpe or a p-value.
+    gates_by_candidate, strata_plan = stratified_campaign_gates([r for _, _, r in prepared])
     min_len = min(len(r) for _, _, r in prepared)
-    matrix = np.column_stack([r[-min_len:] for _, _, r in prepared])
+    matrix = np.column_stack([r[-min_len:] for _, _, r in prepared])  # legacy diagnostics only
     sharpes = np.array([sharpe_ratio(r) for _, _, r in prepared], dtype="float64")
     n_trials = len(prepared)
-    # per-candidate gates (gap #87 flip, principal-ruled 2026-07-29); thresholds unchanged
-    campaign = campaign_gate_stats(matrix)
 
     survivors = 0
+    untested = 0
     gate_fail: dict[str, int] = {}
     rows = []
-    # enumerate order == column_stack order over `prepared`, so `col` is the matrix column.
+    # enumerate order == column_stack order over `prepared`, so `col` indexes the candidate.
     for col, ((sym, sub, rets), spr) in enumerate(zip(prepared, sharpes, strict=True)):
+        # UNTESTED IS NOT REJECTED. A candidate no stratum supports has no campaign statistics.
+        # Falling through to the legacy campaign-constant path would be fail-CLOSED but would
+        # file a DATA-AVAILABILITY exclusion under a statistical mechanism of death, corrupting
+        # the family survival statistics that steer future search (L1.17) -- and this is the
+        # CARRY family, the desk's only repeat survivor. Say what actually happened instead.
+        stratum = gates_by_candidate[col]
+        if stratum is None:
+            untested += 1
+            rows.append({"symbol": sym, "variant": sub, "sharpe_per_bar": round(float(spr), 4),
+                         "ann_sharpe": None, "survived": False,
+                         "reason": f"not tested: no stratum supports {len(rets)} obs"})
+            continue
+        gates, gcol = stratum
         hyp = Hypothesis(family=Family.CARRY, subtype=f"funding_carry_{sub}", symbol=sym,
                          params={}, mechanism=MechanismType.RISK_PREMIUM,
                          edge_source="perp funding carry delta-neutral", failure_modes=_FAIL_MODES)
         v = validate(rets, hypothesis=hyp, periods_per_year=_PPY,
                      n_trials=n_trials, sharpe_estimates=sharpes,
-                     returns_matrix=matrix, campaign=campaign, column=col)
+                     returns_matrix=matrix, campaign=gates, column=gcol)
         survivors += int(v.survived)
         for g, ok in v.gates.items():
             if not ok:
@@ -119,6 +141,16 @@ def main() -> None:
     _OUT.mkdir(parents=True, exist_ok=True)
     (_OUT / "carry_report.json").write_text(
         json.dumps({"n_trials": n_trials, "survivors": survivors,
+                    # NO SILENT CAPS: an unreported exclusion reads downstream as "the campaign
+                    # covered everything". obs_retained vs obs_available is the truncation this
+                    # migration recovered, in the artifact rather than in a log nobody opens.
+                    "n_untested": untested,
+                    "strata": {"k": len(strata_plan.strata),
+                               "n_tested": strata_plan.n_tested,
+                               "obs_retained": strata_plan.obs_retained,
+                               "obs_available": strata_plan.obs_available,
+                               "retained_fraction": round(strata_plan.retained_fraction, 4),
+                               "why": strata_plan.why},
                     "rejection_by_gate": gate_fail, "candidates": rows}, indent=2), "utf-8")
     print(f"\n[carry] tested={n_trials} survivors={survivors}")
     print(f"rejection_by_gate={gate_fail}")

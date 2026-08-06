@@ -292,7 +292,15 @@ class AutoDiscoveryLab:
                     "obs_retained": strata_plan.obs_retained,
                     "obs_available": strata_plan.obs_available,
                     "strata_alpha": CAMPAIGN_ALPHA / max(1, len(strata_plan.strata)),
-                    "expected_discoveries": strata_plan.expected_discoveries},
+                    "expected_discoveries": strata_plan.expected_discoveries,
+                    # R0263: the campaign's own wall-clock, so "does stratification bind the
+                    # cycle?" is answered from the record instead of re-argued from a fixture
+                    # measured once in a docstring. parallel_speedup is the ceiling a per-stratum
+                    # pool could reach -- the remedy the row names, and the one that costs no
+                    # statistical resolution, unlike cutting n_boot.
+                    "seconds": strata_plan.seconds,
+                    "stratum_seconds": list(strata_plan.stratum_seconds),
+                    "parallel_speedup": strata_plan.parallel_speedup},
             outcome=strata_plan.why,
         )
         min_len = min(len(r) for _, r, _ in prepared)

@@ -287,3 +287,38 @@ _MEMORY="$(cd /home/quant/quant-platform 2>/dev/null && \
     .venv/bin/python scripts/learn.py render 2>/dev/null || true)"
 _DOCTRINE="${_DOCTRINE}
 ${_MEMORY}"
+
+# --- L1.28b(d) CONVERSION ACTUATOR --------------------------------------------------------------
+#
+# THE SAME DEFECT AS THE §33 BLOCK ABOVE, ONE LAW OVER. L1.28b(d) says the backlog "FLIPS the next
+# audit/brain window from finding to fixing -- when data/conversion_status.json says repair_mode".
+# check_conversion.py computed that flag on every run and published it; a grep for its consumers
+# on 2026-08-05 found exactly one, run_max_push.py:249, where it selects a different ADVICE
+# STRING. Nothing flipped. The remedy was legislated, fenced, and had no actuator -- which is why
+# `rec-ledger-backlog` recurred 3x in 5.2d over 13 sightings while each cycle dutifully disposed
+# the specific rows it named. Servicing the items a queue names does not drain a queue whose
+# arrival rate exceeds its service rate (measured that day: 54.4/day in, 30.0/day out).
+#
+# INJECTED HERE, INTO `_DOCTRINE`, FOR THE REASON L1.36 GIVES: a law that never reaches an organ
+# cannot change behaviour however well it is fenced. Every organ sources this file, so present and
+# future organs inherit the duty and the next one cannot be written without it.
+#
+# IT ADDS WORK AND REMOVES NONE. libs/ops/repair_mode.py has no vocabulary for stopping -- the
+# excitation.py precedent (L1.45) -- and its emitted text is asserted against a banned-verb list
+# by tests/governance/test_repair_actuator.py. L1.28b(f) is untouched and carried verbatim INTO
+# the block: collectors, recorders, miners, diggers, screens, forward clocks and fences run at
+# FULL CADENCE regardless. When the artifact says ARRIVALS-COLLAPSED the block says FIND HARDER,
+# never drain -- the opposite defect deserves the opposite duty.
+#
+# `|| true` matches _MEMORY and is load-bearing for the same reason: L1.37's spawn gate PAGES, it
+# does not KILL. A governance fault must never silently stop the desk (L1.2). Unlike _MEMORY,
+# though, an unreadable artifact is not silence here -- repair_mode.duty() returns UNMEASURED,
+# which emits a duty of its own, so a broken conversion fence reads as OWING WORK rather than as
+# nothing owing (L1.28a). Only a dead interpreter yields an empty string.
+_REPAIR_DUTY="$(cd "$_BRAIN_ROOT" 2>/dev/null && \
+    .venv/bin/python -m libs.ops.repair_mode 2>/dev/null || true)"
+if [ -n "$_REPAIR_DUTY" ]; then
+    _DOCTRINE="${_DOCTRINE}
+
+${_REPAIR_DUTY}"
+fi

@@ -52,6 +52,24 @@ _FENCES: dict[str, tuple[tuple[str, ...], str, str]] = {
     "check_change_window": (("ALLOW",), "data/change_window.json", "verdict"),
 }
 
+#: fence -> boolean artifact fields that force FAIL **independently of the status**.
+#:
+#: WHY THIS EXISTS, AND WHY IT IS NOT A WEAKENING. A status map cannot see a boolean carried
+#: BESIDE the status, and at least one fence deliberately keeps one: check_conversion returns FAIL
+#: on `debt_growing` even while publishing REPAIR-MODE, which is inside its pass set. That is
+#: correct and documented at the return site -- conversion losing ground is that fence's own
+#: subject matter, so exiting 0 there would report the failure it exists to catch in the same
+#: breath as success. Without this table the meta-test demanded exit 0 from a fence that was
+#: right, i.e. it was pushing a real fence toward being wrong.
+#:
+#: The teeth are unchanged in BOTH directions: a fence that exits 0 while one of these flags is
+#: true still fails here, and a fence that exits FAIL with a passing status and no flag set still
+#: fails here. Adding an entry is an edit in the diff with a reason, never a default -- the same
+#: rule libs/ops/fence_exit.py states for widening a pass set.
+_INDEPENDENT_FAIL_FLAGS: dict[str, tuple[str, ...]] = {
+    "check_conversion": ("debt_growing",),
+}
+
 #: The idiom R0237 exists to kill: exactly one failing status named, everything else exits 0.
 _SINGLE_STATUS_EXIT = re.compile(
     r"""return\s+\d+\s+if\s+\w+\[["'](?:status|verdict)["']\]\s*==\s*["'][A-Z-]+["']\s+else\s+0""")
@@ -102,11 +120,13 @@ def test_fence_exit_code_matches_its_own_verdict(fence: str) -> None:
         f"{proc.stderr[-2000:]}")
     rep = json.loads((_ROOT / artifact).read_text("utf-8"))
     verdict = rep.get(field)
-    expected = 0 if verdict in passing else FAIL
+    tripped = [f for f in _INDEPENDENT_FAIL_FLAGS.get(fence, ()) if rep.get(f)]
+    expected = 0 if (verdict in passing and not tripped) else FAIL
+    why = (f"{field}={verdict!r} against pass set {sorted(passing)}"
+           + (f", and independent fail flag(s) {tripped} are set" if tripped else ""))
     assert proc.returncode == expected, (
-        f"{fence} published {field}={verdict!r} against pass set {sorted(passing)}, so it should "
-        f"have exited {expected} -- it exited {proc.returncode}. A fence that disagrees with its "
-        f"own artifact is the R0237 defect.")
+        f"{fence} published {why}, so it should have exited {expected} -- it exited "
+        f"{proc.returncode}. A fence that disagrees with its own artifact is the R0237 defect.")
 
 
 def test_no_fence_enumerates_failures() -> None:

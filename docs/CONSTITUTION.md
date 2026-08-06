@@ -1798,3 +1798,68 @@ evidence, the chain that produces non-zeros must be demonstrated end to end.
 law denies it authority over. Every spawned clock declares the artifact it re-reads and a baseline
 captured at spawn, or it is not a clock. Fenced by `check_survivor_pipeline` in
 `scripts/max_audit.py` and `tests/research/test_survivor_pipeline.py`.
+
+## L1.57 A VERDICT WITHOUT A DENOMINATOR IS AN OPINION
+
+**The law was already written, for one ratio, and never carried to the place it does the most
+damage.** L1.53(4), 2026-08-05: *"whenever a gauge can be improved by doing less of the thing it
+exists to encourage, its denominator is a first-class measurement and is fenced separately."* It
+was written about the conversion ratio, fenced for the conversion ratio, and generalised in its
+own text to "every ratio the desk reports". Nobody carried it to a FENCE'S OWN VERDICT -- where
+the identical arithmetic decides whether the governance layer is believed. A duty with no
+instrument is a wish (L1.46).
+
+**What the existing instruments cannot see.** `libs/ops/fence_exit.py` (R0237, L1.28a) fixed the
+map from status to exit code: name the passing statuses, fail the rest. `check_fence_yield`
+(L1.43) asks whether a fence has ever FIRED. Neither can see the case where a fence runs, scans
+an EMPTY set, and honestly computes `OK` because zero violations were found in zero files:
+
+    files = list(root.rglob("*.py"))            # [] -- wrong root, moved dir, bad glob
+    violations = [f for f in files if bad(f)]   # [] , necessarily
+    return fence_exit("OK" if not violations else "DIRTY", {"OK"})   # 0
+
+Nothing there is a bug in the exit map. The status genuinely is OK. The DENOMINATOR is the lie,
+and no instrument read it. `all([])` is True, `0 < 0/2` is False, `min(survivors)` hides every
+absent sibling, and each renders as health.
+
+**Measured, 2026-08-05, 40 fences read by hand across two sweeps: 18 of 40 pass vacuously.** A
+further **10 publish an `n_*` key that reads as a denominator and is `len()` of a hardcoded
+module-level literal** -- a count of what the author wrote down, never of what the run found.
+Three published a measured count of what they actually examined.
+
+**The constant-denominator half is the nastier one.** `n_organs`, `n_fences`, `n_governed`,
+`n_criteria` all render as measurements in an artifact and in a report line, and they cannot fall
+when the thing they count disappears -- because they never counted it. The one event they exist to
+reveal is the one event they structurally cannot show. The proving instance was live when this was
+written: `check_exploration` computes `n = len(_FAMILY)` over a dict MUTATED AT IMPORT by
+`_FAMILY.pop()`, from a module loaded under `except: _secondary = {}`. Empty that dict and
+`len(fresh) < n / 2` is `0 < 0.0` -- False -- so the L1.32 exploration-family fence reported
+`status: OK` with `n_organs: 0` and exited 0. The desk would have read *"the unknown-unknown
+organs are healthy"* from a fence that had just been told there are none.
+
+**Operative.**
+1. Every fence declares, at its exit site, HOW MANY THINGS IT EXAMINED to earn its verdict:
+   `fence_exit(status, PASSING, scanned=n, of="...")`. A passing status over a count of zero --
+   or over a non-integer, which is what a failed scope discovery returns -- is **VACUOUS** and is
+   refused. The exit site is the only place that holds both halves.
+2. **A count of a hardcoded literal is not a denominator.** It must count what the RUN found.
+3. The registry is **self-building** (`data/denominator_contracts.jsonl`), on the L1.44 substrate
+   argument: the desk's hand-maintained lists rot, and a meta-fence about hardcoded denominators
+   that carried a hardcoded list of its own scope would be the defect it exists to detect.
+4. `check_denominators` is **subject to its own law**: it declares `scanned=n_fences`, so a scope
+   discovery returning nothing refuses its own pass. Zero declarations reads UNMEASURED, never OK
+   (L1.28a).
+5. Coverage below 100% is **PARTIAL and exits 0**. Coverage is a RATCHET (L1.0) whose gap is the
+   work queue; a fence that goes red on its first day gets switched off (L1.43), which is how the
+   fix becomes the next outage.
+
+**Anti-timidity reading (L1.28, required of every restraint clause).** This is a MEASUREMENT duty
+and a SCOPE EXPANSION. It lifts nothing, sizes nothing, promotes nothing, and loosens no
+statistical bar; it has no vocabulary for turning a failure into a pass, and `scanned` is consulted
+ONLY when the status was already going to pass. Its entire effect is to make *"I checked 900 files
+and found nothing"* distinguishable from *"I checked nothing"* -- two claims that were
+byte-identical on this desk, and only one of which is evidence. The error it catches always points
+the same way: toward false comfort.
+
+**Fenced by** `scripts/check_denominators.py` over `libs/ops/denominator.py`, with the refusal in
+`libs/ops/fence_exit.py` and `tests/governance/test_denominators.py`.

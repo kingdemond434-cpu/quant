@@ -34,6 +34,17 @@ to the caller, in the diff, with a reason -- never a default.
     _PASSING = frozenset({"OK"})
     ...
     return fence_exit(rep["status"], _PASSING)
+
+THE SECOND HALF, ADDED 2026-08-05 (L1.57). Naming the passing statuses fixed the map from status
+to exit code. It cannot fix a status that is honestly ``OK`` because the fence examined NOTHING:
+an empty ``rglob``, a mutated-at-import registry, ``all([])``. Pass ``scanned=`` and a passing
+status over a zero denominator is refused::
+
+    return fence_exit(rep["status"], _PASSING, scanned=len(found), of="scripts/check_*.py")
+
+Consulted ONLY when the status was already going to pass, so this direction is one-way too --
+it turns passes into failures and has no vocabulary for the reverse. Omitting ``scanned`` leaves
+behaviour byte-identical and is counted against a coverage ratchet instead (L1.0/L1.43).
 """
 from __future__ import annotations
 
@@ -44,7 +55,8 @@ from collections.abc import Iterable
 FAIL = 2
 
 
-def fence_exit(status: object, passing: Iterable[str], *, fail: int = FAIL) -> int:
+def fence_exit(status: object, passing: Iterable[str], *, fail: int = FAIL,
+               scanned: object = None, of: str = "", fence: str = "") -> int:
     """Return 0 only for an explicitly declared passing status; ``fail`` for everything else.
 
     ``status`` is deliberately typed ``object``: a fence whose report was built from a missing
@@ -52,7 +64,27 @@ def fence_exit(status: object, passing: Iterable[str], *, fail: int = FAIL) -> i
     Every one of those is a fence that did not measure, so every one of them fails. Coercing to
     ``str`` and comparing is the point -- there is no input this function turns into a pass by
     accident.
+
+    ``scanned`` is the DENOMINATOR of the verdict (L1.57): how many things this run actually
+    examined to earn it. When declared, a passing status over a count of zero -- or over a
+    non-integer, which is what a failed scope discovery hands back -- is refused. When omitted
+    the exit code is unchanged and the fence is counted as UNDECLARED against the L1.57 coverage
+    ratchet, so wiring is a ratchet rather than a cliff. ``of`` names what was counted, for the
+    registry and the report; it is required whenever ``scanned`` is passed.
     """
     if status is None:
         return fail
-    return 0 if str(status) in frozenset(passing) else fail
+    code = 0 if str(status) in frozenset(passing) else fail
+    if scanned is None:
+        return code
+    # The verdict is computed HERE, from the arguments in hand, and never depends on the
+    # registry import succeeding. Telemetry is best-effort; the refusal is not. Deciding
+    # vacuity inside the try block would make an unwritable data/ silently restore the pass.
+    vacuous = code == 0 and (isinstance(scanned, bool) or not isinstance(scanned, int)
+                             or scanned < 1)
+    try:                                   # best-effort: feeds the L1.57 coverage ratchet
+        from libs.ops.denominator import caller_name, record
+        record(fence or caller_name(), of or "<undeclared>", scanned, code == 0)
+    except Exception:
+        pass
+    return fail if vacuous else code

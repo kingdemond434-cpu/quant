@@ -156,12 +156,39 @@ def main() -> None:
     # ---- 4. composite discovery rank. Unknown robustness inputs are declared NEUTRAL, never
     # guessed favourably -- an optimistic default here would silently inflate the rank of a
     # sleeve nobody has stress-tested.
+    #
+    # AND THE COMPOSITE DECLARES WHAT IT WAS BUILT FROM (R0261, L1.55). Nine of the ten inputs
+    # below are literals, so every term except `growth` is a constant and the score is EXACTLY
+    # `log_growth * K`. Measured on the committed artifact: basis_slow 0.1253 -> 0.00696 and
+    # carry_smooth 0.4068 -> 0.02258, ratios 0.055547 and 0.055506 -- the same K to four figures.
+    # It therefore carries ZERO ordering information beyond rank_by_log_growth, which sits three
+    # keys away in the same file and is identical. Published as a bare float it read as a
+    # portfolio-aware composite -- diversification, correlation, failure-dependency, plateau --
+    # while being a single-strategy statistic wearing their names, which is the exact substitution
+    # R0261 was raised about. Three of the ten have NO producer anywhere in the repo
+    # (failure_dependency_score, parameter_plateau_score, and a per-sleeve
+    # diversification_contribution); two of those modules were retired to the graveyard. So the
+    # honest move is not to invent them here but to stop the number claiming to contain them.
+    _MEASURED = ("log_growth",)
+    _DEFAULTED = ("survival_probability", "diversification_contribution", "average_correlation",
+                  "failure_dependency_score", "half_life_days", "capacity_usd",
+                  "fragility_score", "tail_risk_score", "parameter_plateau_score")
     for x in rows:
-        x["discovery_score"] = round(discovery_score(
-            log_growth=x["log_growth"], survival_probability=0.95,
-            diversification_contribution=0.0, average_correlation=0.0,
-            failure_dependency_score=50.0, half_life_days=90.0, capacity_usd=250_000.0,
-            fragility_score=50.0, tail_risk_score=50.0, parameter_plateau_score=50.0), 5)
+        x["discovery_score"] = {
+            "value": round(discovery_score(
+                log_growth=x["log_growth"], survival_probability=0.95,
+                diversification_contribution=0.0, average_correlation=0.0,
+                failure_dependency_score=50.0, half_life_days=90.0, capacity_usd=250_000.0,
+                fragility_score=50.0, tail_risk_score=50.0, parameter_plateau_score=50.0), 5),
+            "measured": False,
+            "inputs_measured": list(_MEASURED),
+            "inputs_defaulted": list(_DEFAULTED),
+            "why": ("9 of 10 inputs are neutral literals, so this is log_growth rescaled by a "
+                    "constant and adds NO ordering information over rank_by_log_growth. "
+                    "failure_dependency_score, parameter_plateau_score and a per-sleeve "
+                    "diversification_contribution have no producer in the repo, so the "
+                    "portfolio-aware terms this composite is named for are inert."),
+        }
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(

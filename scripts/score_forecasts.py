@@ -57,6 +57,15 @@ _CONVICTION = re.compile(
     r"LONG\s+([A-Z0-9]{2,12}USD[TC]?)\b.*?stop\s+([0-9.]+)%.*?shelf\s+at\s+([0-9]+\.?[0-9]*)", re.I)
 
 
+def auto_resolvable(claim: str) -> bool:
+    """Can this scorer grade that claim WITHOUT judgement? The three patterns above, and nothing
+    else. Exported so `check_calibration` can name -- before the deadline rather than after -- the
+    forecasts no organ and no parser can ever score. Those rows fire OVERDUE the day they come due
+    and can never be cleared, which pins the L1.29 fence and is how a fence gets switched off
+    (L1.43). Reads the same compiled patterns `main()` dispatches on, so the two cannot drift."""
+    return any(p.search(claim or "") for p in (_CONVICTION_SHORT, _CONVICTION, _ABOVE))
+
+
 def _price_at(symbol: str, when: datetime) -> float | None:
     """Close of the 1m candle containing `when` -- one defined instant, not 'now'."""
     ms = int(when.timestamp() * 1000)

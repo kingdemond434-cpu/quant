@@ -316,8 +316,24 @@ def main() -> int:
             print("  NOT-INJECTED L1.28 is absent from ops/principal_doctrine.txt -- the law is "
                   "not reaching any organ (L2.1)")
         print(f"-> {_OUT.relative_to(_ROOT)}")
+    # THE TWO DENOMINATORS THIS VERDICT RESTS ON, NEITHER OF WHICH WAS CONSULTED (L1.57).
+    # `prompt_surfaces_scanned` was computed, published into the artifact, and then left out of
+    # the failure expression entirely: an empty glob yields zero hits, and zero hits read as full
+    # compliance. That matters here more than almost anywhere, because L1.36's aggression-family
+    # hardening rests on this sweep reaching ALL 18 prompt surfaces -- organ behaviour is set by
+    # prompts, so a silent zero-surface sweep certifies the one layer that decides how hard every
+    # organ pushes. `counts` is the same story for the constitution's own clauses.
+    n_surfaces = rep["prompt_surfaces_scanned"]
+    n_clauses = sum(rep["counts"].values()) if isinstance(rep["counts"], dict) else 0
+    blind = []
+    if not n_surfaces:
+        blind.append("ZERO prompt surfaces matched -- the L1.36 prompt sweep scanned nothing")
+    if not n_clauses:
+        blind.append("ZERO constitution clauses classified -- the L1.28 sweep scanned nothing")
+    for b in blind:
+        print(f"  UNMEASURED  {b}")
     failed = (rep["unclassified"] or rep["doctrine_timid_instructions"]
-              or rep["prompt_timid_hits"] or not rep["doctrine_injected"])
+              or rep["prompt_timid_hits"] or not rep["doctrine_injected"] or blind)
     return 0 if (args.report_only or not failed) else 1
 
 

@@ -116,3 +116,45 @@ def test_the_stratum_cap_sits_above_the_measured_optimum():
     plan = plan_strata(lens)
     assert len(plan.strata) < MAX_STRATA, (
         f"k={len(plan.strata)} is at the cap {MAX_STRATA} -- re-measure and raise it")
+
+
+# --- R0263: the campaign's wall-clock is a measured field, not a docstring anecdote -----------
+
+def test_a_costed_plan_reports_unmeasured_runtime_not_zero():
+    """`plan_strata` COSTS a campaign; it never runs one, so its runtime is unknown.
+
+    None and 0.0 must never be conflated here. Zero reads as "instant", which is the flattering
+    direction and the one a reader acts on -- it is how a cost nobody has paid yet becomes a cost
+    nobody believes is real.
+    """
+    plan = plan_strata(_realistic())
+    assert plan.seconds is None
+    assert plan.stratum_seconds == ()
+    assert plan.parallel_speedup is None
+
+
+def test_executing_a_campaign_fills_in_its_own_runtime():
+    from libs.autodiscovery.validation import stratified_campaign_gates
+
+    rng = np.random.default_rng(7)
+    series = [rng.normal(0.0005, 0.01, n) for n in (900, 900, 900, 400, 400, 400)]
+    _, plan = stratified_campaign_gates(series)
+
+    assert plan.seconds is not None and plan.seconds > 0.0
+    assert len(plan.stratum_seconds) == len(plan.strata)
+    # The total is timed independently of the parts, so it can only ever be >= their sum.
+    assert plan.seconds >= sum(plan.stratum_seconds) - 1e-6
+
+
+def test_parallel_speedup_is_the_ceiling_a_per_stratum_pool_could_reach():
+    """The remedy R0263 names. Strata are independent bootstraps, so a pool pays the SLOWEST
+    stratum while the serial campaign pays their sum -- that ratio is the whole argument for
+    parallelising instead of cutting n_boot, and it has to be measured to be made."""
+    from libs.validation.campaign_window import StrataPlan
+
+    plan = plan_strata([900] * 20)._replace(seconds=10.0, stratum_seconds=(6.0, 3.0, 1.0))
+    assert plan.parallel_speedup == round(10.0 / 6.0, 2)
+    # A degenerate single-stratum campaign has nothing to parallelise, and says 1.0 rather than
+    # dividing by zero or claiming a speedup it cannot deliver.
+    assert plan_strata([900] * 20)._replace(stratum_seconds=(4.0,)).parallel_speedup == 1.0
+    assert isinstance(plan, StrataPlan)

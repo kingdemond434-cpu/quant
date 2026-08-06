@@ -472,6 +472,21 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 57 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_input_provenance.py >> data/cro_ai_logs/input_provenance.log 2>&1
 
+# DENOMINATOR FENCE (L1.57). fence_exit fixed the map from STATUS to exit code; it cannot see a
+# status that is honestly OK because the fence examined NOTHING -- an empty rglob yields zero
+# violations NECESSARILY, and "I checked 900 files and found nothing" and "I checked nothing"
+# printed the same line and returned the same code. Measured at build time: 18 of 40 fences pass
+# vacuously, 10 more publish len(<hardcoded literal>) as a denominator. The proving instance was
+# live: check_exploration reported OK with n_organs 0 because `len(fresh) < n / 2` is `0 < 0.0`.
+# Verdicts: DECLARED / VACUOUS (a pass over an empty scan set -- the failing state) / UNDECLARED
+# (counted against a coverage ratchet, not a failure). Zero declarations reads UNMEASURED, never
+# OK; the fence is subject to its own law via scanned=n_fences. CADENCE: hourly, phased off
+# check_input_provenance -- it reads a registry that only changes when another fence exits, so it
+# is data-arrival bound on those runs (L1.28c) and is pure-CPU over one small JSONL.
+# EVIDENCE: scripts/check_denominators.py -> data/denominators.json; CONSTITUTION L1.57
+# CONFIDENCE: committed-script (new this cycle)
+2 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_denominators.py >> data/cro_ai_logs/denominators.log 2>&1
+
 # CAPABILITY HUNT (L1.31, principal order 2026-07-31): "chatgpt and claude both hunt for what to
 # add, what's missing, and IMPLEMENT it" -- what this session did by hand, every day, unprompted.
 # TWO INDEPENDENT FAMILIES on purpose: a Claude seat and the GPT-9 seat propose the missing
@@ -1482,6 +1497,28 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/run_weekly_desk_grade.py -> reports/weekly_desk_grade.json +
 # data/weekly_desk_grade.jsonl. CONFIDENCE: measured (counts above read from the first live run).
 10 7 * * 0 cd "$QUANT_ROOT" && flock -n data/.cron_deskgrade.lock .venv/bin/python scripts/run_weekly_desk_grade.py >> data/cro_ai_logs/weekly_desk_grade.log 2>&1
+
+# MECHANISM SUPPLY WORKLIST -- the desk's single binding constraint, converted into owed work.
+# Cross-mechanism N_eff is 4.08 against the ~100 a weak-edge portfolio needs, and the 44-candidate
+# maximum-power campaign covered 2.787 effective mechanism classes of 20 with ZERO carry tests. New
+# rules on the same OHLCV tape cannot move those numbers; only new mechanisms and new data axes can.
+# `mechanism_census` already ranks every untested class and lists the exact datasets each needs --
+# and NOTHING converted that into work, so the top-ranked gap on the binding constraint sat as a
+# paragraph in a report (L1.53, landing on the axis where it costs most).
+# FOUR STATES, and NEEDS-A-LOOK is the point: no paywall anywhere, the only thing missing is that
+# nobody has CHECKED whether a dataset is obtainable. The first version lumped that together with
+# "behind a paid vendor" -- a two-minute check reported as a wall, which is how the cheapest
+# available progress on the binding constraint stays invisible.
+# CEILING TYPE (L1.28c) is INFORMATION-ARRIVAL: the worklist only moves when the census moves, and
+# the census moves when the taxonomy or the tested corpus does -- weekly at most. Sunday 07:25,
+# after the desk grade at 07:10, so one Sunday pass produces the whole week's plan.
+# AUTHORITY: reads the census and what is on disk, writes a worklist. Runs no screen, admits
+# nothing to a forward slot, moves no threshold -- a new mechanism owes the identical Stage-A /
+# Stage-B path as everything else.
+# EVIDENCE: scripts/report_mechanism_supply.py -> reports/mechanism_supply.json. First live run
+# 2026-08-05: 21 ranked gaps over a 26-class taxonomy, top five ALL NEEDS-A-LOOK.
+# CONFIDENCE: measured (counts read from the artifact).
+25 7 * * 0 cd "$QUANT_ROOT" && flock -n data/.cron_mechsupply.lock .venv/bin/python scripts/report_mechanism_supply.py >> data/cro_ai_logs/mechanism_supply.log 2>&1
 # RESEARCH MINER (principal 2026-08-01, "max frequency everyday"). Discovers and RANKS quant
 # research across YouTube, Bilibili, Juejin, WeChat/Sogou, arXiv, SSRN, OpenReview, HN and GitHub.
 # Captions are blocked on both video platforms, so the video half is a QUEUE for a human and the

@@ -111,8 +111,27 @@ def _run_panel(mission: str | None) -> bool:
         _before = _verdicts.stat().st_size
     except OSError:
         _before = -1
-    r2 = subprocess.run([sys.executable, "scripts/run_external_panel.py"],
-                        capture_output=True, text=True, timeout=720, check=False, env=env)
+    # A TIMED-OUT PANEL IS A FAILED PANEL, NOT A FAILED CADENCE RUN (2026-08-05). `timeout=720`
+    # raises subprocess.TimeoutExpired, which escaped `main()` uncaught -- and because cadence
+    # state is written ONCE at the end of main(), every duty that had already run this cycle had
+    # its timestamp DISCARDED with it. Measured today: OpenRouter balance -$0.59, the panel hung
+    # the full 720s on an unfunded API, TimeoutExpired propagated, and data/cadence_state.json
+    # was never rewritten (mtime stayed 07:13 while the run ended at 23:03).
+    #
+    # The whole cadence engine therefore had a single point of failure in an EXTERNAL PAID API:
+    # while credits are out, the panel cannot produce, so nothing downstream of it in main() can
+    # ever record that it ran. Returning False is the correct semantics and needs no other change
+    # -- the caller only stamps `last_panel` when this returns True, so a timed-out panel leaves
+    # the duty OWED exactly as an unproductive one does. This makes cadence stricter, never
+    # looser, and touches no floor.
+    try:
+        r2 = subprocess.run([sys.executable, "scripts/run_external_panel.py"],
+                            capture_output=True, text=True, timeout=720, check=False, env=env)
+    except subprocess.TimeoutExpired:
+        print("cadence: panel TIMED OUT after 720s -- duty stays OWED. This is the unfunded-API "
+              "signature (a live roster answers or 402s in seconds; a dead one hangs). The "
+              "cadence run CONTINUES: one external dependency may not discard the other duties.")
+        return False
     tail = (r2.stdout or r2.stderr or "").strip().splitlines()[-1:] or [""]
     try:
         _after = _verdicts.stat().st_size
@@ -307,10 +326,36 @@ def _freeze_exit_met() -> tuple[bool, str]:
 
 
 def main() -> None:
+    """Run every due cadence duty, and BANK WHAT COMPLETED even if a later one raises.
+
+    STATE-WRITTEN-LAST IS THE DEFECT, and the panel timeout above is only the instance that
+    exposed it. `state` is mutated in memory by every duty and persisted ONCE at the end, so ANY
+    exception anywhere in this function -- a network hang, a malformed artifact, an OOM kill, an
+    operator Ctrl-C -- discards the record of every duty that had already run. The duties then
+    re-fire next cycle and their timestamps stay stale forever, which is indistinguishable from
+    "the cadence engine is not running" and is exactly how cadence starvation has presented here
+    before (2026-08-04).
+
+    The `finally` makes progress durable without making failure quiet: `_assert_floors` still
+    raises through it, so a breached floor still fails the run loudly -- it just no longer takes
+    the completed duties down with it. No floor is loosened, added to, or removed; this only
+    changes whether work that ALREADY happened is remembered.
+    """
     now = datetime.now(tz=UTC)
     state = _load(_STATE, {})
     stage = str(_load(_STAGE, {"stage": "S0"}).get("stage", "S0"))
     fired: list[str] = []
+    try:
+        _main_body(now, state, stage, fired)
+    finally:
+        _STATE.write_text(json.dumps(state, indent=2), "utf-8")
+    print(f"cadence[{stage}]: fired={fired or 'nothing due'} | "
+          f"panel due in {max(0.0, _PANEL_EVERY_D - _days_since(state, 'last_panel')):.1f}d | "
+          f"tier1 due in {max(0.0, _TIER1_EVERY_D - _days_since(state, 'last_tier1')):.1f}d")
+
+
+def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str]) -> None:
+    """The duty sequence itself. Mutates `state` in place; `main` owns persisting it."""
 
     if _days_since(state, "last_tier1") >= _TIER1_EVERY_D:
         if _run_panel("tier1"):
@@ -845,11 +890,10 @@ def main() -> None:
             due.append("FREEZE-EXIT CRITERIA MET -- activate docs/POST_GATE0_MANIFEST.md "
                        "top to bottom; flip stage_state to S1; set post_gate0_activated. "
                        "Nothing deferred may be skipped.")
+    # Floors stay EXACTLY here and stay raising: main()'s `finally` banks state around this call,
+    # so a breached floor still fails the run loudly while the duties that already completed are
+    # no longer forgotten. Tier-3-class -- never loosened, never deleted.
     _assert_floors(state, stage)
-    _STATE.write_text(json.dumps(state, indent=2), "utf-8")
-    print(f"cadence[{stage}]: fired={fired or 'nothing due'} | "
-          f"panel due in {max(0.0, _PANEL_EVERY_D - _days_since(state, 'last_panel')):.1f}d | "
-          f"tier1 due in {max(0.0, _TIER1_EVERY_D - _days_since(state, 'last_tier1')):.1f}d")
 
 
 if __name__ == "__main__":

@@ -12,6 +12,14 @@ So a paywall encounter is now a RECORDED EVENT, appended the moment a fetch is r
 and a separate fence checks that every vendor in the encounter ledger appears in the registry. The
 desk cannot silently accumulate paywalls it forgot to hunt replacements for.
 
+A MAYBE-PAYWALL IS NEVER PARKED. The 402/403 split keeps a WAF out of the PAID-VENDOR registry --
+that distinction is right and it stays -- but the first version then let those rows SIT, which is
+the same acceptance in a quieter form. A bare 403 is a BLOCKED ROUTE: a source the desk wanted,
+could not reach, and has no verdict on. Under L1.54 that is a routing problem to be hunted
+immediately and continuously, never a state to rest in. So the two verdicts go to DIFFERENT
+registries with the SAME urgency: a paywall owes a free-replacement hunt, a block owes a route
+hunt, and `unresolved_blocks()` + the `blocked-routes-unhunted` fence make sure neither can idle.
+
 WHAT COUNTS AS A PAYWALL, and why the list is narrow. HTTP 402 is unambiguous. 403 is not -- it is
 also a WAF, a bad UA, or a geo block, and recording all of those as paid datasets would fill the
 registry with things nobody sells and bury the ones somebody does. So 403 is recorded ONLY with a
@@ -33,7 +41,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-__all__ = ["LEDGER", "PAYWALL_MARKERS", "classify", "record", "vendors_encountered"]
+__all__ = ["BLOCK_STALE_H", "LEDGER", "PAYWALL_MARKERS", "classify", "record",
+           "resolve_block", "unresolved_blocks", "vendors_encountered"]
 
 _ROOT = Path(__file__).resolve().parents[2]
 
@@ -77,6 +86,12 @@ def classify(status: int | None, body: str = "", *, declared: bool = False) -> t
     return "NOT-A-PAYWALL", f"status {status} carries no payment signal"
 
 
+#: A blocked route with no recorded hunt after this long is IDLE, and idle is the failure. Six
+#: hours, so a block found in one sweep is chased by the next one rather than surviving a day --
+#: the miners run several times daily and a block that outlives a full cycle has been accepted.
+BLOCK_STALE_H = 6.0
+
+
 def _vendor(url: str) -> str:
     host = re.sub(r"^https?://", "", str(url or "")).split("/")[0].lower()
     host = re.sub(r"^(www|api|pro)\.", "", host)
@@ -116,6 +131,89 @@ def record(url: str, *, status: int | None, unlocks: str, body: str = "",
     return row
 
 
+def _rows(root: Path) -> list[dict[str, Any]]:
+    try:
+        text = (root / LEDGER).read_text("utf-8", errors="ignore")
+    except OSError:
+        return []
+    out: list[dict[str, Any]] = []
+    for line in text.splitlines():
+        if not line.strip():
+            continue
+        try:
+            out.append(json.loads(line))
+        except ValueError:
+            continue
+    return out
+
+
+def unresolved_blocks(root: Path | None = None, *,
+                      now: datetime | None = None) -> list[dict[str, Any]]:
+    """MAYBE-PAYWALL rows with no recorded route hunt -- the work the desk owes RIGHT NOW.
+
+    These are the ambiguous refusals: a 403 with no payment marker, a 401, a challenge. Keeping
+    them out of the paid-vendor registry is correct -- a registry full of WAFs buries the vendors
+    somebody actually sells -- but they are NOT resolved, and letting them rest in a ledger is the
+    same acceptance the split was meant to avoid. Each is a source the desk wanted and cannot
+    reach, which is a routing problem with named routes available (render path, mirrors, regional
+    hosts, primary-source reconstruction) and no excuse to idle.
+
+    Latest row per vendor wins, so a block that was later resolved stops being owed.
+    """
+    base = root or _ROOT
+    ts = now or datetime.now(tz=UTC)
+    latest: dict[str, dict[str, Any]] = {}
+    for row in _rows(base):
+        if row.get("verdict") == "MAYBE-PAYWALL" or row.get("verdict") == "BLOCKED-ROUTE":
+            latest[str(row.get("vendor", ""))] = row
+        elif row.get("verdict") == "ROUTE-RESOLVED":
+            latest.pop(str(row.get("vendor", "")), None)
+    latest.pop("", None)
+
+    owed: list[dict[str, Any]] = []
+    for vendor, row in sorted(latest.items()):
+        if str(row.get("route_hunt_status", "")).upper() in ("HUNTED", "RESOLVED", "UNREACHABLE"):
+            continue
+        age_h = None
+        try:
+            seen = datetime.fromisoformat(str(row.get("observed_utc", "")))
+            age_h = round((ts - (seen if seen.tzinfo else seen.replace(tzinfo=UTC)))
+                          .total_seconds() / 3600.0, 1)
+        except ValueError:
+            pass
+        owed.append({**row, "vendor": vendor, "age_h": age_h,
+                     "idle": age_h is not None and age_h > BLOCK_STALE_H,
+                     "owed": ("a ROUTE hunt -- render path, mirror, regional host, archive, or "
+                              "primary-source reconstruction. A block is not a verdict about the "
+                              "source, it is a verdict about the route the desk tried.")})
+    return owed
+
+
+def resolve_block(vendor: str, *, status: str, detail: str,
+                  root: Path | None = None) -> dict[str, Any]:
+    """Record that a blocked route was hunted. `status` is HUNTED / RESOLVED / UNREACHABLE.
+
+    UNREACHABLE is allowed and is NOT giving up -- it is the enumerated exhaustion L1.54 requires,
+    and it must name what was tried. It stops the fence because the work happened, not because the
+    row got old.
+    """
+    base = root or _ROOT
+    row = {
+        "observed_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+        "vendor": str(vendor), "verdict": "ROUTE-RESOLVED",
+        "route_hunt_status": str(status).upper(),
+        "detail": str(detail)[:500],
+    }
+    try:
+        path = base / LEDGER
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, ensure_ascii=False) + "\n")
+    except OSError:
+        pass
+    return row
+
+
 def vendors_encountered(root: Path | None = None, *,
                         only_paywalls: bool = True) -> dict[str, dict[str, Any]]:
     """Vendor -> the most recent encounter. Used by the fence that checks the registry lists them.
@@ -126,17 +224,7 @@ def vendors_encountered(root: Path | None = None, *,
     """
     base = root or _ROOT
     out: dict[str, dict[str, Any]] = {}
-    try:
-        text = (base / LEDGER).read_text("utf-8", errors="ignore")
-    except OSError:
-        return out
-    for line in text.splitlines():
-        if not line.strip():
-            continue
-        try:
-            row = json.loads(line)
-        except ValueError:
-            continue
+    for row in _rows(base):
         if only_paywalls and row.get("verdict") != "PAYWALL":
             continue
         out[str(row.get("vendor", ""))] = row
