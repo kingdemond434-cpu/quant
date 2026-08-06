@@ -51,7 +51,18 @@ def e_value(returns: np.ndarray | list[float]) -> float:
     if r.size < _MIN_OBS:
         return 0.0
     s = float(r.std(ddof=1))
-    if s <= 0.0:
+    # `s <= 0.0` DOES NOT CATCH A CONSTANT SERIES, which is the failure that matters here.
+    # `np.full(200, 0.01).std(ddof=1)` is 1.74e-18 rather than 0.0 -- the variance is computed as a
+    # difference of squares and does not cancel exactly. So the guard passed, z reached 5.75e15,
+    # and the e-value came back INFINITE: a series that never moved, certified as overwhelming
+    # evidence of an edge. That is precisely the shape of a stuck recorder echoing its last value,
+    # which is a live failure mode on this desk (`data_registry` scores `stale_frac` for it), so
+    # the gate was offering a promotion path to a dead feed.
+    #
+    # The guard is therefore RELATIVE to the data's own magnitude: a standard deviation eighteen
+    # orders below the mean is not a small edge, it is no variation at all.
+    scale = max(1.0, abs(float(np.mean(r))))
+    if not np.isfinite(s) or s <= 1e-12 * scale:
         return 0.0
     z = r / s
     # keep every component strictly positive: 1 + lam*z > 0  <=>  lam < 1/max(-z)
@@ -64,7 +75,12 @@ def e_value(returns: np.ndarray | list[float]) -> float:
     log_caps = np.array([np.sum(np.log1p(lam * z)) for lam in lams])
     m = float(np.max(log_caps))
     mix = m + np.log(np.mean(np.exp(log_caps - m)))
-    return float(np.exp(mix))
+    # CLAMPED BEFORE exp, because a genuinely strong edge overflows it. At 600 observations of a
+    # real edge `mix` exceeds 709 and `np.exp` returns inf with a RuntimeWarning -- and this repo
+    # runs `filterwarnings = error`, so the gate RAISED on exactly the candidates it should have
+    # passed most confidently. exp(700) is ~1.01e304: finite, and above any threshold a caller
+    # could state, so ordering is preserved everywhere it can matter.
+    return float(np.exp(min(float(mix), 700.0)))
 
 
 def graduates(returns: np.ndarray | list[float], *, alpha: float = 0.01) -> dict[str, float | bool]:
