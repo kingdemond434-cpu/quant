@@ -261,9 +261,28 @@ def _budget_ok() -> tuple[bool, str]:
         return (True, "budget state unreadable -- proceeding, guard is advisory")
 
 
+def _objective() -> str:
+    """The desk's objective, prepended ahead of the doctrine.
+
+    `_doctrine()` carries ANTI-TIMIDITY and the role, and it does NOT carry the objective -- the
+    two are separate injections and this organ shipped with only the first. Anti-timidity without
+    an objective is an instruction to be forceful about an unstated goal, which for the one seat
+    on this desk from an independent model family is the worst combination available: it will
+    fill the gap from its own priors and be confident about it. Failure here is never fatal to
+    the call, for the same reason `_doctrine` swallows: a missing preamble must not silence an
+    organ, it must be visible to the reach fence -- which is what caught this.
+    """
+    try:
+        from libs.doctrine.constitution import OBJECTIVE_PREAMBLE
+        return OBJECTIVE_PREAMBLE + "\n\n"
+    except Exception:  # blind-except intentional (BLE001)
+        return ""
+
+
 def _ask(base, key, system, user, timeout=240.0) -> str:
     body = json.dumps({"model": MODEL, "max_tokens": 16000, "temperature": 1.0,
-                       "messages": [{"role": "system", "content": _doctrine("kimi_hunter") + system},
+                       "messages": [{"role": "system",
+                                     "content": _objective() + _doctrine("kimi_hunter") + system},
                                     {"role": "user", "content": user}]}).encode()
     req = urllib.request.Request(base.rstrip("/") + "/chat/completions", data=body, method="POST",
                                  headers={"Authorization": f"Bearer {key}",

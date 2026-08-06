@@ -48,13 +48,18 @@ PREREG = ROOT / "docs/research/FAILED_BREAKOUT_PREREGISTRATION.md"
 
 #: The pre-declared grid. Every axis here was written into the pre-registration BEFORE this file
 #: existed; adding one without amending that document voids the deflation.
+#: AMENDMENT 1 (2026-08-06) added `structural`/`breakeven` to `hold` and 1h/4h to `timeframe`,
+#: to test the claim that the edge is the EXIT rather than the entry. The budget moved 4,860 ->
+#: 16,200 in the document before it moved here, and the deflation was paid up front: the
+#: expected-max-of-N hurdle goes 4.138 -> 4.408. Adding an axis without amending the document
+#: voids the study, which is why `test_grid_matches_the_preregistration` reads both.
 GRID = {
     "k": (20, 50, 100),
     "n_touch": (1, 2, 3),
     "theta_atr": (0.1, 0.25, 0.5),
     "n_fail": (1, 3, 5),
-    "timeframe": ("1m", "5m"),
-    "hold": ("fixed", "atr_stop", "retest"),
+    "timeframe": ("1m", "5m", "1h", "4h"),
+    "hold": ("fixed", "atr_stop", "retest", "structural", "breakeven"),
 }
 N_SYMBOLS_PLANNED = 10
 

@@ -29,6 +29,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from libs.llm.effort import reasoning_payload  # noqa: E402
 from libs.research.strategic_director import (  # noqa: E402
     assemble_dossier,
     build_prompt,
@@ -62,7 +63,7 @@ def _ask(prompt: str, model: str, timeout: float = 360.0) -> tuple[str, str]:
             continue
         body = json.dumps({
             "model": model, "max_tokens": 8000, "temperature": 0.4,
-            "reasoning": {"effort": "high"},
+            "reasoning": reasoning_payload(model),
             "messages": [{"role": "user", "content": prompt}],
         }).encode()
         req = urllib.request.Request(

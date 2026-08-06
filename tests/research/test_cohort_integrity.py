@@ -115,9 +115,20 @@ def test_axis_runner_imports_the_registry():
     assert "cohort_m_for_bar" in imported
 
 
+#: Artifacts written by the running desk and excluded from git (`web/*`, `data/*`). Tests that
+#: assert on them are asserting about ONE HOST'S DISK, and they were green on the VPS and red in
+#: CI on every push from 2026-08-05. The substance is worth keeping, so the precondition is made
+#: explicit instead of the assertion being deleted: present -> assert, absent -> skip and NAME the
+#: artifact. A silent pass would be the worse of the two failures.
+_RUNTIME_ONLY = "written by the running desk; gitignored, so absent from every fresh clone"
+
+
 def test_axis_artifact_records_the_m_it_used_and_it_is_not_the_axis_count():
     """A bar is only auditable if its artifact says which cohort it was computed against."""
-    doc = json.loads((_ROOT / "web/axis_shadows.json").read_text("utf-8"))
+    art = _ROOT / "web/axis_shadows.json"
+    if not art.exists():
+        pytest.skip(f"web/axis_shadows.json -- {_RUNTIME_ONLY}")
+    doc = json.loads(art.read_text("utf-8"))
     assert isinstance(doc.get("m_concurrent"), int)
     assert doc.get("m_provenance") in {"MEASURED", "INCOMPLETE-FLOORED", "REFUSED-FLOORED"}
     assert doc["m_concurrent"] >= cohort_m_for_bar().m
@@ -137,6 +148,11 @@ def test_fence_is_green_on_the_live_tree():
     from scripts.check_cohort_integrity import build_report
 
     rep = build_report()
+    shadow = _ROOT / "data/axis_shadow_state.json"
+    if rep["status"] == "COHORT-INCOMPLETE" and not shadow.exists():
+        pytest.skip(f"cohort sources -- {_RUNTIME_ONLY}. The fence reads shadow state written by "
+                    f"the live slots; on a clone it correctly reports a FLOOR rather than a "
+                    f"measurement, which is a fact about the clone: {rep['detail']}")
     assert rep["status"] == "OK", f"{rep['status']}: {rep['detail']}"
     assert rep["shipped_bar_crosscheck"] == "agrees", "local bar diverges from the shipped one"
 

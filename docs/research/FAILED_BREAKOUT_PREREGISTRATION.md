@@ -160,3 +160,102 @@ that is either arbitraged away post-2021 or was never measurable from the entry 
 
 If it dies, this document is the record of what it was tested against, and the graveyard entry
 carries the failing number. No variants in the same report.
+
+---
+
+# AMENDMENT 1 — the management arm (written 2026-08-06, before anything below it was run)
+
+Amended, not rewritten. The document above stands unchanged; this section adds axes and a fifth
+ablation arm, and **pays the deflation for them up front**, per the standing rule that any axis
+added later is added to the budget table or the study is void.
+
+## The claim this amendment tests, stated as its author put it
+
+> "Your edge today wasn't the 4265 level. Your edge was the 4263 structural stop loss, the
+> wait-for-the-close rule, and the breakeven management."
+
+That is a **specific, falsifiable, and currently untested** claim, and it identifies a real gap in
+the four-arm ablation above: **every one of those four arms uses the same fixed exit.** The
+decomposition can separate entry from mechanism from regime, and it cannot separate any of them
+from *management*, because management is held constant across all four. If the claim is right, the
+existing ablation is structurally incapable of noticing.
+
+## The arithmetic that bounds the claim — and makes it falsifiable
+
+An exit rule **cannot manufacture expectancy from a zero-expectancy entry.** Under a driftless
+price process, every stop/target policy is a stopping time on a martingale, and optional stopping
+gives every one of them the same expected value: zero. Wider stops raise win rate and enlarge the
+loss when it comes; breakeven ratchets raise win rate and truncate the right tail. They **reshape
+the payoff distribution; they do not move its mean.**
+
+So the claim can only be true through one specific channel, and naming it is what makes it
+testable rather than folklore: the conditional path distribution after a sweep must be
+**asymmetric in a way the stop distance interacts with** — e.g. penetration beyond the level
+mean-reverts within a bounded excursion, so a stop *outside* that excursion converts a loser into
+a winner while a stop inside it does not. That is a measurable property of the tape (the
+distribution of maximum adverse excursion conditional on a sweep), and it is measured directly
+rather than inferred from a P&L difference.
+
+**Corollary, pre-registered so it cannot be re-litigated later:** if the MAE distribution
+conditional on a sweep is not distinguishable from the unconditional one, the management arm is
+dead regardless of what its backtest says, and a positive backtest is then evidence of fitting.
+
+## New axes, and the exact price paid
+
+| axis | was | becomes | count |
+|---|---|---|---|
+| holding rule | fixed-N, ATR-stop, level-retest | + **structural stop** (beyond the sweep wick + buffer), + **breakeven ratchet** at 1R | 3 → **5** |
+| timeframe | 1m, 5m | + **1h, 4h** (the "institutions don't fake out on H1" crowding claim) | 2 → **4** |
+
+**Nominal trials: 3 × 3 × 3 × 3 × 4 × 10 × 5 = 16,200** (was 4,860).
+**Effective trials: 4,860** (symbol axis at ~3 effective, as before; was 1,458).
+**Three-study shared budget: 5,220 → 16,560.**
+
+The deflation cost is small and is stated rather than hidden: the expected maximum of `N` null
+trials scales as `√(2 ln N)`, so the hurdle moves **4.138 → 4.408, about +6.5%**. That is what
+makes this amendment worth making — it buys the single most informative arm available for a
+7% harder bar. It is not free, and the number is here so it is not treated as free.
+
+## Arm 5 — management alone, on RANDOM entries
+
+The decisive test, and it is nearly free to run:
+
+5. **management alone** — random entry times matched to the sweep-time distribution, identical
+   wait-for-close, structural stop, and breakeven ratchet.
+
+Read exactly as the existing arms are read:
+
+- **If (5) ≈ (2), the entry was never the alpha and neither was the mechanism** — the result is a
+  payoff-shape transform, and it will not survive costs, because a wider stop pays more slippage
+  on the trades that do hit it.
+- If (5) ≈ 0 and (2) > 0, management is a **modifier** of a real entry edge, which is the only
+  version of the claim worth sizing.
+- If (5) > 0 **net of costs**, the harness is broken. Random entries do not have edge. That
+  inference is pre-registered here, identically to the crowded-control rule in
+  `THREE_MECHANISM_PREREGISTRATION.md`, so it cannot be reinterpreted as a discovery.
+
+Entry times are matched to the sweep-time **distribution**, not drawn uniformly: sweeps cluster in
+high-volatility hours, and a uniform random control would compare a quiet-hour baseline against a
+volatile-hour strategy and call the difference edge.
+
+## K9 — the new kill criterion
+
+**K9.** If arm 5 reaches ≥ 70% of arm 2's net Sharpe, the entry rule is retired and the study is
+reported as a **management/payoff-shape finding**, never as a failed-breakout edge. 70% rather
+than 100%: a management rule capturing most of the claimed edge already falsifies the mechanism
+story, and demanding exact equality would let a 30% shortfall preserve a hypothesis it does not
+support.
+
+## Priors, recorded before the run so a confirmation cannot be retrofitted
+
+- **Breakeven ratchet: I expect it to LOWER net Sharpe.** It raises win rate — which is why it
+  feels good and is near-universal in retail systems — by truncating precisely the right tail that
+  pays for the losers.
+- **Structural stop: I expect it to raise gross return and lower net**, because its edge case is
+  the fast, thin sweep bar, which is the worst possible moment to be taking a market exit. This is
+  the arm most likely to look good until `walk_book` slippage at p10 depth is charged.
+- **Higher timeframes: I expect no crowding-decay improvement, and worse power.** The "H1 is less
+  saturated" claim confuses *fewer participants* with *more edge*, and 4h bars over the available
+  history give a sample too small for the DSR to clear at any effect size this hypothesis could
+  plausibly have. That is a **power** objection, and it is the reason to be sceptical of the arm
+  before any of it is run — not a reason to skip it, since it is now declared and paid for.

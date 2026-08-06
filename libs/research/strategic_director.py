@@ -43,6 +43,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from libs.doctrine.constitution import OBJECTIVE_PREAMBLE
+
 _ROOT = Path(__file__).resolve().parents[2]
 
 #: The dossier. Artifacts that ALREADY EXIST -- the queue's constraint, and why this needs no new
@@ -188,7 +190,13 @@ def assemble_dossier(root: Path | None = None) -> Dossier:
 def build_prompt(dossier: Dossier) -> str:
     """The director's instruction. States the contract AND the priority rule the code enforces."""
     dormant = dossier.dormant_count
-    return f"""You are the desk's STRATEGIC DIRECTOR. Produce ranked recommendations, as JSON only.
+    # THE CONSTITUTION LEADS, here as in every other reasoning organ. This seat is the INDEPENDENT
+    # model family, which is precisely why it needs the objective stated rather than inferred: it
+    # does not share the desk's priors, so anything left implicit is a thing it will fill in from
+    # its own training instead. It shipped without the preamble and the reach fence caught it.
+    return f"""{OBJECTIVE_PREAMBLE}
+
+You are the desk's STRATEGIC DIRECTOR. Produce ranked recommendations, as JSON only.
 
 YOUR CHARTER, and why your seat exists at all: you are the INDEPENDENT MODEL FAMILY. Every other
 reasoning organ on this desk is Claude, so the desk's self-review shares one set of priors and one

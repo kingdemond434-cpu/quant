@@ -104,10 +104,19 @@ re-litigated later when the number is in front of me and looks exciting.
 
 | study | nominal | notes |
 |---|---|---|
-| liquidation cascade (already registered) | 4,860 | grid in its own document |
+| liquidation cascade (already registered) | ~~4,860~~ **16,200** | grid in its own document; raised by AMENDMENT 1 |
 | funding carry | 2 venues × 3 holding rules × 3 funding thresholds × 10 symbols = **180** | |
 | OI divergence | 3 OI windows × 3 price windows × 2 timeframes × 10 symbols = **180** | |
-| **total** | **5,220** | deflation uses this, not the per-study count |
+| **total** | ~~5,220~~ **16,560** | deflation uses this, not the per-study count |
+
+**Revised 2026-08-06 by AMENDMENT 1** to `FAILED_BREAKOUT_PREREGISTRATION.md`, which added a
+management-ablation arm (structural stop, breakeven ratchet) and two higher timeframes. The shared
+hurdle moves **4.138 → 4.408 (+6.5%)** on `√(2 ln N)`. Recorded here rather than only in the other
+document because these three share one deflation: an axis added to any of them makes the bar
+harder for all three, and a budget that is only updated where the axis was added is not shared.
+
+**Still three studies.** The amendment widened one, it did not add a fourth — the arithmetic above
+is the whole reason that distinction is enforced rather than trusted.
 
 **The three studies share a deflation.** Running them in one campaign and deflating each against
 its own grid would be the same manufacturing this document exists to prevent, one level up.

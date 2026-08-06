@@ -67,7 +67,7 @@ def test_the_symbol_deflation_takes_the_STRICTER_of_two_disagreeing_numbers() ->
     The rule applied generalises: when an estimate and a formula disagree about how much credit a
     result gets, take the one that gives it less.
     """
-    assert S.effective_trials() == 1458
+    assert S.effective_trials() == 4860          # 1,458 before AMENDMENT 1 widened the grid
     assert S.effective_trials() < S.nominal_trials(), "deflation must reduce the count"
     formula = 10 / (1 + 9 * 0.8)
     assert formula < S.N_EFF_SYMBOLS, (
@@ -89,8 +89,13 @@ def test_with_no_data_the_study_reports_BLOCKED_and_synthesises_nothing(tmp_path
     # people to loosen it, which is how this suite lost a real assertion earlier today.
     assert "SYNTHESISED" in rep["note"].upper()
     assert "generator" in rep["note"]
-    # the budget is declared even when nothing ran -- that is the point of pre-registering it
-    assert rep["nominal_trials"] == 4860 and rep["effective_trials"] == 1458
+    # The budget is declared even when nothing ran -- that is the point of pre-registering it.
+    # 16,200/4,860 since AMENDMENT 1 (was 4,860/1,458): `hold` gained structural + breakeven and
+    # `timeframe` gained 1h + 4h, to test the claim that the exit is the alpha. Hard-coded rather
+    # than recomputed from GRID on purpose -- a test that derives the number from the code it is
+    # checking would follow any future axis silently, which is precisely the drift the
+    # pre-registration exists to prevent.
+    assert rep["nominal_trials"] == 16200 and rep["effective_trials"] == 4860
 
 
 def test_the_runner_cannot_reach_a_venue_or_place_an_order() -> None:

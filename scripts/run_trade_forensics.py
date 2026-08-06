@@ -182,11 +182,11 @@ def main() -> None:
         all_sym[s][0] += 1
         all_sym[s][1] += float(x.get("net") or 0)
         all_sym[s][2] += float(x.get("notional") or 0)
-    bleeding = sorted(({"symbol": s, "n": int(n), "net": round(net, 2),
-                        "bps": round(1e4 * net / nt, 1)}
-                       for s, (n, net, nt) in all_sym.items()
-                       if n >= _DENY_MIN_N and nt and 1e4 * net / nt <= _DENY_BPS),
-                      key=lambda r: r["bps"])
+    _bleeding: list[dict[str, Any]] = [
+        {"symbol": s, "n": int(n), "net": round(net, 2), "bps": round(1e4 * net / nt, 1)}
+        for s, (n, net, nt) in all_sym.items()
+        if n >= _DENY_MIN_N and nt and 1e4 * net / nt <= _DENY_BPS]
+    bleeding = sorted(_bleeding, key=lambda r: float(r["bps"]))
 
     # MAKER FILL-RATE ON THE PRIMARY BOOK (2026-07-26). The patient-maker opens shipped 07-24 to
     # cut a fee bill running ~2.5x the funding harvest, and the desk carried a standing duty to

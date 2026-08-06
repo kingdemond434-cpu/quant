@@ -482,11 +482,20 @@ def _boot_ts() -> float:
 
 _BOOT_TS = _boot_ts()
 _ORGAN_MIN_UP_H = 1.0                         # below this it is a one-shot CLI run, not an organ
-# /proc starttime is quantised to clock ticks (10ms) and rounds DOWN, and writing a file
-# immediately before exec'ing its interpreter is ordinary deploy ordering. Without a little slop
-# a perfectly fresh start races into a false "stale" verdict. 0.5s sits far below any real
-# deploy-then-restart gap, so nothing genuinely stale hides under it.
-_START_SLOP_S = 0.5
+# THE SLOP WAS SIZED AGAINST THE SMALLER OF TWO QUANTISATIONS. `_proc_start` is
+# `btime + starttime/HZ`, and the note here accounted only for the second term -- clock ticks,
+# 10ms, rounding down. But `btime` in /proc/stat is printed in WHOLE SECONDS, so `_BOOT_TS` is
+# truncated by up to 1s and every derived start time inherits that error in the direction that
+# makes a process look OLDER than it is. Measured on this box: a probe written and immediately
+# exec'd reported its own source as 0.72s NEWER than its start -- physically impossible, and it
+# fired `daemon-stale-code` on a process 1.2 seconds old.
+#
+# Which direction that matters in: the error only ever manufactures FALSE staleness, never hides
+# real staleness, so nothing was missed -- but a fence that cries wolf is one nobody reads, and
+# this desk has already retired two for exactly that. 2.0s covers btime truncation (<=1s), tick
+# rounding (10ms) and the write-then-exec ordering of an ordinary deploy, and still sits orders of
+# magnitude below any genuine deploy-then-restart gap, which is minutes at its very shortest.
+_START_SLOP_S = 2.0
 
 
 def _proc_start(pid: int) -> float | None:
@@ -4019,7 +4028,36 @@ CHECKS += [("fee-carry-ratio", check_fee_carry_ratio),
 #: something -- it just is not the desk's objective, and nothing in its output will say so.
 _CONSTITUTION_ORGANS = ("run_external_panel", "hypothesis_generator", "breadth_expander",
                         "llm_code_auditor", "meta_architect", "llm_blind_researcher",
-                        "collector_author", "deep_review", "run_micro_audit")
+                        "collector_author", "deep_review", "run_micro_audit",
+                        # Both shipped outside this list and outside the objective. kimi_hunter
+                        # carried `_doctrine()` -- ANTI-TIMIDITY and a role, and NOT the objective,
+                        # which is the worst pairing available: forceful about an unstated goal.
+                        "kimi_hunter", "run_strategic_director")
+
+
+def _carries_objective(script: Path) -> bool:
+    """Does this organ's prompt carry the objective -- in the script, or one hop into `libs/`?
+
+    A FLAT GREP ON scripts/ WAS WRONG IN BOTH DIRECTIONS, and the second direction is the one that
+    matters. `run_strategic_director` builds its prompt in `libs.research.strategic_director.
+    build_prompt`, so the preamble is correctly injected and the grep would have called it NAKED
+    forever. A fence that reports a defect which cannot be cleared is a fence that gets ignored --
+    this desk has already retired two for exactly that ("Two fences that cried wolf").
+
+    ONE HOP, NOT A FULL IMPORT GRAPH. The prompt of an organ lives either where the organ is or in
+    the module it delegates prompt-building to; chasing transitively would start finding the string
+    in unrelated dependencies and turn a specific check into one that can never go red.
+    """
+    src = script.read_text("utf-8", errors="ignore")
+    if "OBJECTIVE_PREAMBLE" in src:
+        return True
+    for mod in re.findall(r"^from (libs[.\w]+) import", src, re.M):
+        p = ROOT / (mod.replace(".", "/") + ".py")
+        if p.exists():
+            with contextlib.suppress(OSError):
+                if "OBJECTIVE_PREAMBLE" in p.read_text("utf-8", errors="ignore"):
+                    return True
+    return False
 
 
 def check_constitution(defects) -> None:
@@ -4058,7 +4096,7 @@ def check_constitution(defects) -> None:
         if not p.exists():
             continue
         with contextlib.suppress(OSError):
-            if "OBJECTIVE_PREAMBLE" not in p.read_text("utf-8", errors="ignore"):
+            if not _carries_objective(p):
                 naked.append(name)
     if naked:
         defects.append((

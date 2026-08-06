@@ -94,7 +94,17 @@ def test_stale_code_actually_raises_a_defect(monkeypatch) -> None:
     proc = subprocess.Popen([sys.executable, str(probe)])
     try:
         time.sleep(1.2)
-        probe.touch()                          # the fix lands AFTER the process loaded the module
+        # THE FIX LANDS AFTER THE PROCESS LOADED THE MODULE -- stated by construction rather than
+        # raced for. `probe.touch()` set mtime to "now", which is ~1.2s after start and therefore
+        # INSIDE `_START_SLOP_S`; the test only passed while that constant was 0.5, and it went red
+        # the moment the slop was widened to cover /proc/stat's whole-second `btime` truncation.
+        # Racing a wall-clock sleep against a tolerance constant tests the sleep. Setting the mtime
+        # relative to the measured start time and the slop tests the DETECTOR, and keeps testing it
+        # whatever the constant becomes.
+        started = _M._proc_start(proc.pid)
+        assert started, "cannot read the probe's start time -- the clock this check depends on"
+        stamp = started + _M._START_SLOP_S + 5.0
+        os.utime(probe, (stamp, stamp))
         monkeypatch.setattr(_M, "_ORGAN_MIN_UP_H", 0.0)   # no waiting an hour for the verdict
         defects: list[tuple] = []
         _M.check_stale_daemons(defects)

@@ -33,11 +33,12 @@ import json
 import smtplib
 import urllib.error
 import urllib.request
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from email.message import EmailMessage
 from hashlib import sha256
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 _CONFIG = Path("data/secrets/alert_channels.json")
 _LEDGER = Path("data/alert_delivery.jsonl")
@@ -150,9 +151,24 @@ def _send_hc(cfg: dict[str, Any], title: str, body: str, *, canary: bool = False
         return f"http {r.status} {'log' if canary else 'fail'}"
 
 
-_SENDERS = {"ntfy": _send_ntfy, "telegram": _send_telegram,
-            "webhook": _send_webhook, "email": _send_email, "hc": _send_hc}
-_CANARY_AWARE = frozenset({"hc"})     # kinds with a non-notifying probe endpoint
+#: TWO MAPS, NOT ONE MAP AND A SET OF NAMES. Every sender answers the plain three-argument call;
+#: only some also accept `canary=`. Keeping both in one dict makes the type the LOOSEST signature
+#: in it, so a sender that silently stopped accepting `canary` would type-check fine and fail at
+#: send time -- on the pager, which is the one path with no second chance to notice. Membership in
+#: `_CANARY_SENDERS` is now a typed fact rather than a name in a frozenset that nothing checks.
+_SENDERS: dict[str, Callable[[dict[str, Any], str, str], str]] = {
+    "ntfy": _send_ntfy, "telegram": _send_telegram,
+    "webhook": _send_webhook, "email": _send_email, "hc": _send_hc}
+
+
+class _CanarySender(Protocol):
+    def __call__(self, cfg: dict[str, Any], title: str, body: str, *,
+                 canary: bool = False) -> str: ...
+
+
+#: kinds with a non-notifying probe endpoint
+_CANARY_SENDERS: dict[str, _CanarySender] = {"hc": _send_hc}
+_CANARY_AWARE = frozenset(_CANARY_SENDERS)
 
 
 def send_all(title: str, body: str, *, config: Path = _CONFIG,
@@ -177,9 +193,8 @@ def send_all(title: str, body: str, *, config: Path = _CONFIG,
     for cfg in channels:
         kind = str(cfg.get("kind"))
         try:
-            sender = _SENDERS[kind]
-            detail = (sender(cfg, title, body, canary=canary) if kind in _CANARY_AWARE
-                      else sender(cfg, title, body))
+            detail = (_CANARY_SENDERS[kind](cfg, title, body, canary=canary)
+                      if kind in _CANARY_SENDERS else _SENDERS[kind](cfg, title, body))
             ok = True
         except (urllib.error.URLError, urllib.error.HTTPError, OSError, KeyError,
                 json.JSONDecodeError, smtplib.SMTPException, ValueError) as e:

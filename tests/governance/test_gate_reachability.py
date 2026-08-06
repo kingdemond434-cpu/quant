@@ -25,8 +25,8 @@ import json
 from pathlib import Path
 
 import pytest
-
 from scripts.check_gate_reachability import (
+    _LEDGER,
     build_report,
     declared_gates,
     governance_fields,
@@ -159,9 +159,26 @@ def test_unmeasured_says_it_cleared_nothing(tmp_path):
 # --- the live tree ------------------------------------------------------------------------
 
 def test_live_repo_currently_reports_the_defect():
-    """The first run found real defects; this fails if they are silently 'fixed' by unwiring."""
+    """The first run found real defects; this fails if they are silently 'fixed' by unwiring.
+
+    THE LEDGER IS UNTRACKED AND THAT CHANGES WHAT THIS TEST MAY ASSERT. `observed()` reads
+    ``data/sor_autodiscovery.sqlite``, which `.gitignore` excludes on purpose -- the journal is
+    data/, not git. So the candidate history exists on the BOX and on no other machine, and the
+    original form of this test ("the live ledger should be measurable") asserted a property of
+    one host's disk. It passed on the VPS and failed in CI on every push from 2026-08-05 onward,
+    which is how a green-on-the-box suite ships a red trunk.
+
+    The substance is kept and only its precondition is made explicit: where the ledger is
+    readable, the two dead branches must still be reported, so unwiring them on the box is caught
+    exactly as intended. Where it is absent the test SKIPS LOUDLY and names the artifact -- it
+    never passes quietly, which is the failure mode this file's own `_unmeasured` tests exist to
+    forbid one level down.
+    """
     rep = build_report(_ROOT)
-    assert rep["status"] != "UNMEASURED", "the live ledger should be measurable"
+    if rep["status"] == "UNMEASURED":
+        pytest.skip(f"no candidate ledger on this host ({_LEDGER}) -- gitignored, VPS-only. "
+                    f"Reachability is UNMEASURED here, which is a fact about the CLONE, not "
+                    f"about the gates: {rep['detail']}")
     assert set(rep["dead_branches"]) >= {"execution_gap", "regime_robustness"}
 
 

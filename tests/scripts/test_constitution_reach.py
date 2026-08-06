@@ -44,7 +44,13 @@ def test_every_reasoning_organ_injects_the_objective(organ: str) -> None:
     p = Path("scripts") / f"{organ}.py"
     if not p.exists():
         pytest.skip(f"{organ} not present")
-    assert "OBJECTIVE_PREAMBLE" in p.read_text("utf-8")
+    # THE SAME RESOLUTION THE FENCE USES, called rather than restated. A second flat grep here
+    # would be a second definition of "carries the objective", and the two would disagree the
+    # first time an organ builds its prompt in libs/ -- which `run_strategic_director` does. Then
+    # the test is red while max_audit is green, or the reverse, and neither is trustworthy.
+    assert M._carries_objective(p), (
+        f"{organ} sends a reasoning prompt with no objective in it, and none in the libs module "
+        f"it builds the prompt from")
 
 
 #: Scripts that hold the panel keys but send no reasoning prompt. Argued in writing rather than

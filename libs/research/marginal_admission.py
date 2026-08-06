@@ -120,7 +120,7 @@ def _portfolio_series(incumbents: np.ndarray) -> np.ndarray:
         incumbents = incumbents.reshape(-1, 1)
     sd = incumbents.std(axis=0, ddof=1)
     sd = np.where(sd > 0, sd, np.nan)
-    return np.nansum(incumbents / sd, axis=1)
+    return np.asarray(np.nansum(incumbents / sd, axis=1), dtype=float)
 
 
 def _sharpe(x: np.ndarray, periods_per_year: float) -> float:
@@ -176,10 +176,15 @@ def evaluate(
     if inc.size and inc.ndim == 1:
         inc = inc.reshape(-1, 1)
 
-    blank = {"candidate_sharpe": 0.0, "portfolio_sharpe": 0.0, "rho_hat": float("nan"),
-             "rho_used": 1.0, "hurdle": float("nan"), "orthogonal_ir": 0.0,
-             "portfolio_sharpe_after": 0.0, "gain": 0.0, "n_overlap": int(cand.size),
-             "n_eff_before": 0.0, "n_eff_after": 0.0}
+    # Annotated `Any` rather than inferred: the dict is genuinely heterogeneous (`n_overlap` is an
+    # int among floats) and inference narrows it to dict[str, float], which then fails to splat
+    # into Admission. Widening the VALUE type is the honest fix; retyping n_overlap as a float
+    # would change the dataclass to suit the inference.
+    blank: dict[str, Any] = {
+        "candidate_sharpe": 0.0, "portfolio_sharpe": 0.0, "rho_hat": float("nan"),
+        "rho_used": 1.0, "hurdle": float("nan"), "orthogonal_ir": 0.0,
+        "portfolio_sharpe_after": 0.0, "gain": 0.0, "n_overlap": int(cand.size),
+        "n_eff_before": 0.0, "n_eff_after": 0.0}
 
     if not np.all(np.isfinite(cand)) or cand.size == 0:
         return Admission(False, "candidate series is empty or non-finite", **blank)

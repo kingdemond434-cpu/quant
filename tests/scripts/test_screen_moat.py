@@ -40,12 +40,28 @@ import scripts.screen_moat as S  # noqa: E402
 
 def _tape(root: Path, *, predictive: bool, n: int = 4000, seed: int = 11,
           strength: float = 0.0010, noise: float = 0.0004, funding: bool = False,
-          day: str = "20260101_00") -> None:
+          lead: float = 0.4, day: str = "20260101_00") -> None:
     """Book imbalance drives the NEXT period (predictive) or the CURRENT one (contemporaneous).
 
     `funding` adds k="meta" rows so the FUSE-class mechanism has both legs. Without them it
     correctly returns nothing -- which is right, and also means a test written against this tape
     silently skips it. That is how a full-sample normalisation leak lived in it.
+
+    `lead` IS WHAT MAKES THE PREDICTIVE TAPE A SIGNAL RATHER THAN A LEAK, and getting it wrong
+    invalidated the positive control. The original put 100% of imbalance's price move AFTER the
+    snapshot, so the feature at `t` explained all of the return `t -> t+1` and NONE of `t-1 -> t`:
+    forward IC ~0.49 against a contemporaneous correlation of ~0. No real microstructure signal
+    looks like that -- imbalance that predicts the next minute is also moving price right now --
+    and it is precisely the shape `axis_screen`'s `ic_exceeds_contemporaneous` rail exists to
+    catch. So the harness was right and the control was wrong: it planted a leak and demanded the
+    leak detector stay quiet. It only ever "passed" because a separate defect inflated `n_eff` at
+    sub-daily horizons (fixed 2026-08-05), which pushed `ic_min` to ~0.0005 and left the rail's
+    threshold hostage to a near-zero contemporaneous term.
+
+    With `lead=0.4`, 60% of the move lands before the snapshot and 40% after -- a genuine lead,
+    where the forward IC is real and WEAKER than the contemporaneous relationship, which is the
+    pattern the rail's own docstring names as honest. The planted edge remains detectable; it
+    simply stops impersonating a bug.
     """
     d = root / "binance" / "BTCUSDT"
     d.mkdir(parents=True, exist_ok=True)
@@ -56,6 +72,8 @@ def _tape(root: Path, *, predictive: bool, n: int = 4000, seed: int = 11,
     for i in range(n):
         if not predictive:
             mid *= np.exp(strength * imb[i] + rng.normal(0, noise))   # move happens FIRST
+        else:
+            mid *= np.exp((1.0 - lead) * strength * imb[i])           # the contemporaneous part
         ts = t0 + i * 15000
         b = [max(0.01, 1.0 + 0.5 * imb[i] + rng.normal(0, 0.15)) for _ in range(20)]
         a = [max(0.01, 1.0 - 0.5 * imb[i] + rng.normal(0, 0.15)) for _ in range(20)]
@@ -67,7 +85,7 @@ def _tape(root: Path, *, predictive: bool, n: int = 4000, seed: int = 11,
             rows.append({"t": ts + 500, "k": "meta",
                          "fr": float(0.0001 + 0.00005 * np.sin(i / 37.0))})
         if predictive:
-            mid *= np.exp(strength * imb[i] + rng.normal(0, noise))   # move happens AFTER
+            mid *= np.exp(lead * strength * imb[i] + rng.normal(0, noise))   # the FORWARD part
     with gzip.open(d / f"{day}.jsonl.gz", "wt") as f:
         for r in rows:
             f.write(json.dumps(r) + "\n")
@@ -144,17 +162,56 @@ def test_a_contemporaneous_only_edge_yields_no_survivors(tmp_path) -> None:
     assert rep["survivors"] == [], f"survivors on a non-predictive tape: {rep['survivors']}"
 
 
+#: The positive control's tape parameters, named because THREE separate rails constrain them and
+#: changing one in isolation silently converts this test into a different question:
+#:
+#:   n=20_000    POWER. `powered = min_detectable_ic <= ic_min` and min_detectable_ic = 1.96/sqrt
+#:               (n_eff). At 60s periods a 4,000-snapshot tape gives n_eff=978 -> 0.0627 against
+#:               an ic_min of 0.03, so `powered` is FALSE and no strength whatever can produce a
+#:               survivor. This control passed for weeks only because a defect inflated n_eff at
+#:               sub-daily horizons (14.4M from 10k rows); when that was fixed on 2026-08-05 the
+#:               control went red and revealed it had never demonstrated detection under correct
+#:               power accounting. 20,000 snapshots -> n_eff=4,978 -> 0.0278, powered.
+#:               THE OPERATIONAL FACT THIS ENCODES: at a 60s horizon the moat screen cannot
+#:               certify anything until roughly 4,300 non-overlapping periods -- about three days
+#:               of continuous tape per cell. Shorter is not a weak result, it is no result.
+#:   lead=0.5    THE LEAKAGE RAIL. Forward IC must not exceed 1.5x the contemporaneous
+#:               correlation, or `ic_exceeds_contemporaneous` fires and the planted edge is
+#:               correctly called a leak.
+#:   noise       THE DE-CONTAMINATION RAIL, from the other side. |same-period corr| must stay
+#:               under contam_max=0.20 or the verdict is TIMING-ARTIFACT. Measured here: 0.178.
+#:
+#: The window between those last two is genuinely narrow, and that is the harness working: a
+#: forward relationship that is real, weaker than the same-period one, and not merely the
+#: same-period one bleeding through.
+_CONTROL = {"n": 20_000, "lead": 0.5, "strength": 0.0012, "noise": 0.0012}
+
+
 def test_a_genuinely_predictive_edge_IS_found(tmp_path) -> None:
     """THE POSITIVE CONTROL, AND THE MORE IMPORTANT ONE. A harness that never finds anything is
     indistinguishable from a broken harness, and 'no survivors' from it means nothing."""
     root = tmp_path / "moat_p"
-    # STRONG enough to be detectable across a family of 19 after Romano-Wolf. A weak planted edge
-    # (t ~ 1.4) correctly fails the stepdown, so testing detection with one proves nothing about
-    # the harness -- only that the edge was small.
-    _tape(root, predictive=True, strength=0.0035, noise=0.0004)
+    _tape(root, predictive=True, **_CONTROL)
     rep = _run(tmp_path, root)
     assert rep["survivors"], "a planted forward edge must be found"
     assert all(s["rw_p_adjusted"] <= 0.05 for s in rep["survivors"])
+
+
+def test_the_same_edge_on_a_short_tape_is_UNDERPOWERED_not_a_survivor(tmp_path) -> None:
+    """THE OTHER HALF OF THE POSITIVE CONTROL, and the half whose absence hid the n_eff defect.
+
+    Identical planted edge, one fifth of the tape. The screen must report that it could not have
+    seen it -- never a survivor, and never a refutation either. Without this, shortening the tape
+    (or re-inflating n_eff) turns the test above green again by making everything "powered", which
+    is exactly how the defect survived: the control only ever asserted that SOMETHING was found.
+    """
+    root = tmp_path / "moat_short"
+    _tape(root, predictive=True, **{**_CONTROL, "n": 4_000})
+    rep = _run(tmp_path, root)
+    assert rep["survivors"] == [], "a tape too short to be powered must yield no survivor"
+    rows = [r for r in rep["results"] if r.get("mechanism") == "imbalance"
+            and r.get("horizon_s") == 60]
+    assert rows and not rows[0]["powered"], "n_eff must not certify a 978-period cell as powered"
 
 
 def test_romano_wolf_runs_per_horizon_not_across_all_of_them() -> None:
@@ -317,7 +374,7 @@ def test_survivors_persist_with_their_misses(tmp_path) -> None:
     controls family-wise error ACROSS runs, so screening the archive repeatedly returns false
     survivors at the nominal rate by construction."""
     root = tmp_path / "moat_reg"
-    _tape(root, predictive=True, strength=0.0035, noise=0.0004)
+    _tape(root, predictive=True, **_CONTROL)
     rep = _run(tmp_path, root)
     assert rep["survivors"]
     reg = json.loads((tmp_path / "reg.json").read_text("utf-8"))
