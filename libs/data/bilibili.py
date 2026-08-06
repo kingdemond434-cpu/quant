@@ -152,7 +152,26 @@ def search(keyword: str, *, page: int = 1, order: str = "") -> tuple[list[Video]
         return [], f"{type(exc).__name__}: {str(exc)[:140]}"
     if body.get("code") != 0:
         return [], f"bilibili code={body.get('code')} msg={body.get('message')}"
-    rows = (body.get("data") or {}).get("result") or []
+    # AN EMPTY RESULT SET IS A REFUSAL, NEVER "NO MATCHES", and that is measured rather than
+    # assumed. Bilibili's search answers a keyword that cannot possibly match anything
+    # (`zzqqxxjjvv不存在的关键词9182`) with numResults=1000 and 20 generic fallback rows -- it does
+    # not have an empty state for a text query. So `code=0` with nothing in `result` means the API
+    # declined to serve THIS request, and returning ([], None) for it tells the caller the query
+    # was healthy and the corpus was empty. Both halves of that are false.
+    #
+    # THE COST, measured on the 2026-08-06 06:33 sweep: 17 of 34 queries -- the LAST 17, contiguous,
+    # after ~68 signed requests -- came back ([], None). The miner recorded them as healthy zeros,
+    # so half the desk's highest-yielding source silently produced nothing, appeared in no blocked
+    # list, opened no route hunt and reached the source-health ledger as HEALTHY. The same queries
+    # returned 19 rows each when re-run standalone minutes later. Third instance of one class on
+    # the Chinese lane (after the CJK word-boundary bug and the Sogou attribute-order bug): the
+    # FETCH was fine and the desk was told there was nothing there.
+    data = body.get("data") or {}
+    rows = data.get("result") or []
+    if not rows:
+        return [], ("bilibili returned code=0 with an empty result set -- a SOFT REFUSAL, not an "
+                    f"empty corpus (numResults={data.get('numResults')!r}); this API serves "
+                    "fallback rows even for a nonsense keyword, so it has no genuine empty state")
     out: list[Video] = []
     for r in rows:
         bvid = str(r.get("bvid") or "")

@@ -500,7 +500,19 @@ def main(argv: list[str] | None = None) -> int:
     # --- Bilibili (B站): WBI-signed search. Scores title+description+tags, which is several
     # times more signal per candidate than a YouTube title alone.
     bili: dict[str, int] = {}
+    # BACK OFF FOR THE REST OF THE RUN once the source refuses, exactly as the foreign lane already
+    # does for hatena's 429. The 2026-08-06 06:33 sweep pushed 17 further queries into a source
+    # that had already started declining -- 68 more signed requests that returned nothing and could
+    # only deepen the throttle. Continuing to push a rate limit is how a temporary refusal becomes
+    # a durable block (source_health says so in its own threshold comment), and the queries lost
+    # here are the TAIL of the list, which is where the newest territory sits.
+    bili_refused = ""
     for kw in BILIBILI_QUERIES if _runs("bilibili") else ():
+        if bili_refused:
+            blocked[f"bilibili:{kw}"] = (
+                "bilibili soft-refused earlier in this run -- backed off for the rest of it rather "
+                f"than hammering a source that declined ({bili_refused[:90]})")
+            continue
         # PAGED. Search returns 20 rows a page and its ranking rotates, so one page re-sampled
         # often is mostly the same corpus seen again; three pages is depth rather than repetition.
         vids: list = []
@@ -508,7 +520,13 @@ def main(argv: list[str] | None = None) -> int:
         for pg in range(1, max(1, int(args.bili_pages)) + 1):
             got, e = bilibili.search(kw, page=pg)
             if e:
+                # A refusal on page 1 costs the whole query and must be recorded. A refusal on a
+                # LATER page keeps the rows already in hand -- but it is still the source declining,
+                # so it still arms the backoff. Treating "I got page 1 then it stopped" as a clean
+                # run is how the silent-zero defect survived: partial success is not consent.
                 err = e if not vids else None
+                if "SOFT REFUSAL" in e or "code=" in e:
+                    bili_refused = e
                 break
             vids.extend(got)
             time.sleep(0.4)
