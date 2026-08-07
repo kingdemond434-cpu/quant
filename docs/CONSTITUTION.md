@@ -1522,3 +1522,53 @@ ideas queued and none tested, the next engineering priority is EXPERIMENT THROUG
 millionth idea. A desk that answers every research question by adding a module has stopped
 researching — it has merely relocated the activity somewhere that cannot fail. **Where generation
 and execution compete for the same hands, execution wins until the queue is draining.**
+
+**L1.52(a) THE SELECTION PATH IS PART OF THE EVIDENCE, AND THIS IS ITS RECORD** *(2026-08-07)*.
+L1.52 requires deflation over the selection path rather than the executed count. That duty is
+unenforceable without a schema, so here it is. Every adaptive research round records:
+
+```
+generation_id · candidate_id · mechanism_cluster
+candidates_available · candidates_selected · candidates_skipped
+information_available_at_decision · allocation_decision
+reason_for_selection · reason_for_rejection
+results_observed · subsequent_selection
+```
+
+`candidates_skipped` and `information_available_at_decision` are the load-bearing fields and the
+two most likely to be dropped as bookkeeping. Without them a round cannot be distinguished from an
+independent draw, which is exactly the distinction that decides whether the deflation is honest.
+A round that records only what it RAN has erased the evidence that it chose.
+
+**THE FOUR COUNTS, which are not interchangeable and are routinely reported as if they were:**
+
+| count | what it measures | how it inflates |
+|---|---|---|
+| FORMULA | expressions emitted | trivially — a threshold change makes another |
+| FAMILY | distinct parameterisations of one idea | slowly |
+| **INDEPENDENT MECHANISM** | `independence.cluster()` on realised returns | hard to inflate: requires genuinely uncorrelated behaviour |
+| **PORTFOLIO-CONTRIBUTING SURVIVOR** | mechanisms that improve geometric growth after correlation, cost and capacity | hardest, and the only one that pays |
+
+Only the last two may be described as DISCOVERIES. The first two are inventory. A desk reporting
+formula count as research output is reporting how fast it can type.
+
+**AND THE ASYMMETRY, stated as a rule rather than a preference:**
+
+```
+queue healthy      → generate, explore, mine data
+queue backlogged   → EXECUTE
+execution binds    → improve throughput
+data binds         → acquire data
+research saturates → expand the information frontier
+```
+
+Never `queue = 0 → build another module → queue = 0`. **The research mission is continuous; the
+research architecture is not sacred.** Execution outranks construction whenever the existing system
+holds untested research capacity.
+
+**TWO ZEROS ARE ROUTINELY CONFLATED ON THIS DESK AND THEY MEAN DIFFERENT THINGS.** Gate-0 at 0/17
+is UNSTARTED ADMIN — keys, 2FA, sub-accounts, cold wallet — and says nothing whatever about alpha.
+434 candidates at 0 survivors is a RESEARCH result, and it is also not evidence that no alpha
+exists: those 434 came from one screen, and the 20,052 pre-registered trials that would actually
+test the question have never run. Neither zero licenses a conclusion. Both license an action, and
+the actions are different.
