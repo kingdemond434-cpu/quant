@@ -1473,3 +1473,52 @@ by default, which is how a desk loses a region it merely got tired of.
 **Binding on future work.** Any organ, panel seat or report asserting that a line of research is
 finished must produce the per-axis coverage behind it. Absent that, the correct verdict is
 UNMEASURED (L1.28a) — and UNMEASURED means the work is owed, not that it is done.
+
+**L1.52 THE RESEARCH MISSION NEVER STOPS; ITS INTENSITY AND ALLOCATION ADAPT** *(principal law,
+2026-08-07)*. Research operates continuously and may never declare itself complete. Maintain
+permanently active: global information mining, new-data discovery, hypothesis generation, novelty
+search, exploration, exploitation, recombination, falsification, survivor mutation, near-survivor
+investigation, validation, portfolio research, research-ROI attribution, frontier expansion.
+
+**Never stop because:** the dataset is exhausted; the hypothesis library is exhausted; there are
+currently zero survivors; a research family failed; the search space has been enumerated. **Never**
+reduce exploration to zero, **never** let exploitation permanently consume the whole budget,
+**never** optimise for backtest return or formula count.
+
+**When a region saturates** → name the missing information, hunt new data, open a new region.
+**When a region produces survivors** → investigate the mechanism, generate descendants, test
+independent variants, evaluate PORTFOLIO contribution. **When it produces failures** → extract the
+failure mechanism, update the graph, modify future search. **When capacity is idle** → experiment
+more. **When throughput saturates** → improve prioritisation rather than generate blindly. **When
+data binds** → activate collection.
+
+Maximise **expected incremental portfolio value ÷ (compute + data + time + operational
+complexity)** — not raw return, which rewards overfitting, and not hypothesis count.
+
+**GENERATION IS NOT A TRIAL, AND THAT IS WHAT MAKES CONTINUOUS GENERATION LEGITIMATE.** A
+hypothesis written to the library costs nothing and deflates nothing. Only `hypothesis → backtest →
+statistical result` enters the evidence record. A desk may hold a million candidates and owe the
+multiple-testing hurdle for none of them.
+
+**BUT THAT EXEMPTION HAS A HARD EDGE, AND IT IS THE ONE MOST EASILY LOST.** Generation is free only
+while the CHOICE OF WHAT TO TEST is independent of results. The moment testing is adaptive — run a
+batch, read it, pick the next batch in light of it — the selection has used information, and the
+effective trial count includes **everything the desk steered past, not merely what it ran**.
+Adaptive allocation is exactly what this law mandates, so the desk is permanently in that regime.
+Therefore: **each adaptive round must record what it saw and what it skipped**, and the deflation
+must be computed over the selection path, never over the executed count alone. A research loop that
+steers on results and then deflates only on the trials it happened to run is manufacturing
+significance by the most respectable-looking route available.
+
+**SEMANTIC NOVELTY, NOT FORMULA NOVELTY.** `funding > x`, `funding > y`, `zscore(funding) > x` and
+`delta(funding) > x` are four formulas and roughly one research family. Counting them as four is how
+a generator reports enormous productivity while re-searching one neighbourhood. The count that
+matters is INDEPENDENT MECHANISMS (`libs/alpha_factory/independence.cluster`), and it is also the
+right basis for the effective trial count above.
+
+**THIS LAW DOES NOT LICENSE BUILDING OVER EXECUTING, and the distinction is the whole point.**
+"Research never stops" is not "construction never stops". The mandate's own text is explicit: with
+ideas queued and none tested, the next engineering priority is EXPERIMENT THROUGHPUT, not the
+millionth idea. A desk that answers every research question by adding a module has stopped
+researching — it has merely relocated the activity somewhere that cannot fail. **Where generation
+and execution compete for the same hands, execution wins until the queue is draining.**
