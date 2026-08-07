@@ -31,6 +31,7 @@ MANDATES: dict[str, str] = {
     "BACKTEST MINER": "backtest discovery is its own extraction category, costs included",
     "CLAIMED IS NOT VERIFIED": "a mined number is ore; only a run on the desk's data is evidence",
     "TRANSLATE, DO NOT COPY": "a foreign result is untestable here; its mechanism has an analogue",
+    "WORLDQUANT / PLATFORM-CORPUS MANDATE": "the largest public description of a working process",
 }
 
 
@@ -123,3 +124,38 @@ def test_COST_ABSENCE_IS_ITSELF_RECORDED_AS_A_FINDING() -> None:
     for p in PROMPTS:
         src = p.read_text("utf-8", errors="ignore")
         assert "Absence of cost accounting is itself the finding" in src
+
+
+def test_THE_PLATFORM_CORPUS_MANDATE_REFUSES_TO_IMPORT_THE_SUBMISSION_BAR() -> None:
+    """The one hard refusal on that ground. WorldQuant's "in-sample Sharpe >= 1.25" is a submission
+    filter for an operator that runs its own out-of-sample validation and pays per accepted alpha --
+    they can afford false positives because THEY bear the expensive stage. This desk bears it with
+    its own capital against a deflated t of 5.236. Importing 1.25 would be an order-of-magnitude bar
+    reduction wearing a respected institution's name, and it would arrive looking like rigour."""
+    for p in PROMPTS:
+        src = p.read_text("utf-8", errors="ignore")
+        assert "DO NOT IMPORT THE SUBMISSION BAR" in src, f"{p.name} may adopt a foreign bar"
+        assert "never as gates for ours" in src
+        # the phrase wraps across a line break in the prompt, so match on the law id
+        assert "L1.6" in src
+
+
+def test_THE_MANDATE_PRIORITISES_OPERATORS_AND_CITES_WHY() -> None:
+    """The operator taxonomy is the highest-yield artifact on the platform, and the desk has been
+    caught short by it twice -- once with no unary transforms at all, once with three missing group
+    operators found in a single forwarded screenshot."""
+    for p in PROMPTS:
+        src = p.read_text("utf-8", errors="ignore")
+        assert "group_rank" in src and "trade_when" in src
+        assert "search_operator_library.md" in src
+
+
+def test_VIDEO_IS_A_GROUND_AND_THE_EMPTY_LOG_IS_NAMED_AS_A_DEFECT() -> None:
+    """The log is the only evidence gate for a paid transcript unlock (GAP #26) and it has ZERO
+    rows after weeks of daily digs. An empty log reads to a future session as 'video was never a
+    blocker', which is the absence-reads-as-clean defect the desk keeps finding in itself."""
+    for p in PROMPTS:
+        src = p.read_text("utf-8", errors="ignore")
+        assert "VIDEO IS A GROUND, NOT AN EXCUSE" in src
+        assert "video_locked_log.md" in src
+        assert "A silent skip is the defect" in src

@@ -374,3 +374,51 @@ the idea arrives in another market's vocabulary and the translation is the desk'
 
 CLASSIFY EVERY DISCOVERY as: mechanism -> hypothesis -> evidence -> failure/success -> data source
 -> reproducibility. Collecting "profitable bot" claims without that structure is not mining.
+
+=== WORLDQUANT / PLATFORM-CORPUS MANDATE (principal 2026-08-07 -- mine it daily, exhaustively) ===
+WorldQuant BRAIN's public corpus -- tutorials, course material, documentation, forum threads,
+published guides and the community's own writeups -- is a standing DAILY ground, not an occasional
+one. It is the largest public description of a working alpha-research PROCESS, and process is the
+half that transfers (see the PROCESS MANDATE above). Mine every aspect, to depth and breadth, and
+never mark it exhausted while the platform keeps publishing.
+
+WHAT TO EXTRACT, IN PRIORITY ORDER:
+  1. OPERATORS. The operator taxonomy is the single highest-yield artifact on the platform, and
+     the desk has already been caught short by it twice. 2026-08-06: the generator combined RAW
+     features and had no unary transforms at all. 2026-08-07: one forwarded screenshot yielded
+     THREE more the desk lacked -- group_rank, group_zscore, ts_backfill -- plus trade_when, which
+     is NOT the desk's `condition` operator (condition goes FLAT on a failed gate; trade_when HOLDS
+     the previous position, which is a turnover difference, and turnover is what killed WS-006).
+     Every new operator goes to docs/research/search_operator_library.md with its crypto analogue.
+  2. GROUPINGS. `group_rank(..., subindustry)` is the canonical construct and the desk has NO
+     equity-style sector map. What is the crypto analogue -- L1/L2/DeFi/meme/RWA category, exchange
+     liquidity tier, listing cohort, correlation cluster? A grouping the desk can actually build is
+     worth more than an operator it cannot apply.
+  3. PROCESS. How contributors search, what they try first, what they discard, how they control
+     turnover, how they decide an alpha is finished.
+  4. FAILURES. What contributors report NOT working, and why they think so.
+
+**DO NOT IMPORT THE SUBMISSION BAR. THIS IS THE ONE HARD REFUSAL ON THIS GROUND.** The platform's
+public bar ("in-sample Sharpe >= 1.25, turnover in a band, a fitness score") is an IN-SAMPLE
+SUBMISSION FILTER for an operator that runs its own out-of-sample validation afterwards and pays
+per accepted alpha -- they can afford false positives because THEY bear the expensive stage. This
+desk bears it with its own capital, and its declared bar is a DEFLATED t of 5.236 plus
+out-of-sample, walk-forward, leakage and independence. Adopting 1.25 in-sample would be a bar
+reduction of roughly an order of magnitude wearing a respected institution's name (L1.6: never
+lower a bar). Record their thresholds as FACTS ABOUT THEIR PROCESS; never as gates for ours.
+The fitness formula's SHAPE is worth keeping -- it penalises churn, which is WS-006's lesson --
+and libs/alpha_factory/wq_operators.fitness() carries it as a diagnostic with no pass/fail path.
+
+ALSO NOTE WHAT THE PLATFORM IS NOT: it is primarily an EQUITIES venue. Its universe, groupings and
+fundamentals do not exist on a perp book, so every operator arrives needing the TRANSLATE-DO-NOT-COPY
+step above. An operator with no crypto analogue is still worth logging -- it names data the desk
+does not have, which is the information-frontier axis.
+
+VIDEO IS A GROUND, NOT AN EXCUSE. Much of the corpus is lecture video. If a mechanism or operator
+is readable ONLY inside video/audio you cannot fetch, you must append a row to
+docs/research/video_locked_log.md -- that log is the ONLY evidence gate for a paid transcript or
+proxy unlock (GAP #26), and it decides WHICH platform the desk buys for. **MEASURED 2026-08-07: the
+log has ZERO rows after weeks of daily digs across seven regions.** Either no digger has ever hit a
+video-locked mechanism -- implausible on this corpus -- or the mandate is being skipped, and an
+empty log reads to a future session as "video was never a blocker". A silent skip is the defect;
+the row costs one line.
