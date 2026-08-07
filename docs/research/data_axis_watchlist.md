@@ -1136,3 +1136,32 @@ undocumented. The desk's own recorder must stay primary; btc126 is backfill, not
   A wider generator increases the number of untested hypotheses; it does not test one of them.
   Ranking a DSL above the transport would be optimising the part that is already ahead — the exact
   substitution WS-004 names, and the reason this card is graded UNVERIFIED rather than actioned.
+
+### 25. EODHD.com (paid EOD/intraday vendor, $100/mo) — grade: UNVERIFIED
+
+- **WHERE IT CAME FROM:** a Reddit post claiming four backtested strategies built on 10 years of
+  EODHD data. The strategies themselves were REJECTED by the claim screen
+  (`libs/research/claim_screen.py`) — one reported out-of-sample BEATING in-sample by 47%, which
+  means the held-out window was easier rather than the strategy better, and none carried a
+  buy-and-hold benchmark. **Cataloguing the SOURCE is independent of rejecting the CLAIMS**, and
+  keeping those two apart is the point of this card.
+- **WHAT IT IS:** end-of-day and intraday history for equities, ETFs, forex and crypto, plus
+  fundamentals, splits and dividends.
+- **FOR CRYPTO IT ADDS NOTHING.** Every series this desk uses — klines, funding, OI, long/short,
+  taker flow, basis — is already free and keyless from Binance. Its value would be the EQUITY /
+  ETF / cross-asset axis, which is a different desk from the one that exists.
+- **IT FAILS THE STANDING TEST AS THINGS STAND (DIGGING_CHARTER, FREE-FRONTIER AXIOM):** paid is a
+  last resort permitted only by the evidence-gated exception AFTER a documented free hunt has
+  failed. No free hunt has been run on the equity axis, so the exception cannot be claimed —
+  not because the vendor is bad, but because the prerequisite is missing.
+- **THE POSTER'S OWN SENTENCE IS THE ARGUMENT AGAINST RENTING:** *"I purchased the data for $100
+  monthly and it just expired."* He can no longer re-run his own backtests. A rented dataset is a
+  result that stops being reproducible the moment you stop paying, which is precisely why this
+  desk records its own tape and treats the order-book archive as the moat.
+- **THE FREE MOVE THAT IS AVAILABLE NOW**, and it is already in the Search Operator Library as a
+  validated technique: *read a paid vendor's coverage documentation as a free INDEX of what data
+  exists*, then hunt each axis free. EODHD's coverage docs are worth reading. Its subscription is
+  not, yet.
+- **STATUS:** catalogued, NOT verified — no licence read, no ToS read, no endpoint test, no free-
+  alternative hunt. Enters the ordinary catalogue → verify → resolve queue. Cataloguing is not
+  adoption.
