@@ -897,6 +897,30 @@
    "commit": "",
    "due": "",
    "disposed": ""
+  },
+  {
+   "id": "R0075",
+   "source": "chatgpt_advisor",
+   "summary": "CORRECTION to 'massive search is cheap': the 20% hurdle rise does not make 884k extra trials cheap -- correlated candidates are not independent evidence and shared data creates enormous effective dependence",
+   "roi_bps": 0.0,
+   "raised": "2026-08-07T13:56:58.379080+00:00",
+   "status": "open",
+   "reason": "ACCEPTED AND SHARPENED. sqrt(2 ln N) is derived for N INDEPENDENT trials. 898,560 candidates built from 13 features on ONE dataset are massively dependent -- rank(funding)/delta(oi) and zscore(funding)/delta(oi) are nearly the same test. So N in the hurdle should be the EFFECTIVE independent count, not the raw count. That cuts BOTH ways: the raw-N hurdle is too HARSH for dependent trials, while the EVIDENCE from 898,560 dependent trials is far weaker than from 898,560 independent ones. libs/alpha_factory/independence.cluster() is the tool that would estimate effective N -- and it CANNOT be run without the candidates' actual return series, so this is blocked on execution exactly like everything else. Deliberately NOT built now: calibrating an effective-N estimator against no data would be fitting the estimator to an assumption.",
+   "commit": "",
+   "due": "",
+   "disposed": ""
+  },
+  {
+   "id": "R0076",
+   "source": "chatgpt_advisor",
+   "summary": "the liquidity finding implies signal and monetization are separate layers; future combinations should include signal x market-state transformations rather than assuming the signal carries the whole edge",
+   "roi_bps": 0.0,
+   "raised": "2026-08-07T13:56:58.379080+00:00",
+   "status": "open",
+   "reason": "ACCEPTED as the next generator change, and it is the RIGHT kind: informed by a measurement rather than guessed. WS-006 showed net-positive cells concentrate 48x tighter in spread while the signal itself is broad -- so spread/depth is a CONDITIONING axis, not a cost adjustment. Not built now, deliberately: the current regime axis (vol/trend) was chosen a priori, and the liquidity axis should be specified from the observed distribution of the first executed batch rather than from one screen. Building it now would bake WS-006's 45-symbol, 2-week tape into the generator as if it were general.",
+   "commit": "",
+   "due": "",
+   "disposed": ""
   }
  ]
 }

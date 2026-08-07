@@ -343,3 +343,23 @@ def iter_batches(space: CombinationSpace, size: int) -> Iterable[tuple[Combinati
     items = space.combinations
     for i in range(0, len(items), size):
         yield items[i:i + size]
+
+
+#: OPEN METHODOLOGICAL DEFECT, recorded 2026-08-07 rather than left in a chat log.
+#:
+#: `n_trials` is a RAW COUNT, and the sqrt(2 ln N) hurdle every consumer computes from it is
+#: derived for N INDEPENDENT trials. The candidates this module emits are anything but: built from
+#: one feature set on one dataset, `rank(funding)/delta(oi)` and `zscore(funding)/delta(oi)` are
+#: very nearly the same test. So the raw count is the wrong N, and it is wrong in BOTH directions
+#: at once -- the hurdle is too HARSH for dependent trials, while the EVIDENCE carried by 898,560
+#: dependent trials is far weaker than 898,560 independent ones would carry.
+#:
+#: The fix is an EFFECTIVE trial count, and `libs.alpha_factory.independence.cluster()` is already
+#: the right instrument for it: cluster candidate return series and count mechanisms rather than
+#: formulas. It is deliberately NOT wired here yet, because it CANNOT be calibrated without the
+#: candidates' actual returns -- and fitting an effective-N estimator against no data would be
+#: fitting the estimator to an assumption, which is the precise error this module exists to avoid.
+#:
+#: Until then `n_trials` is CONSERVATIVE (too harsh), which is the safe direction to be wrong in,
+#: and callers should read it as an upper bound on the correction rather than a measurement.
+_EFFECTIVE_N_IS_UNRESOLVED = True
