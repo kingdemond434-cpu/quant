@@ -29,6 +29,30 @@ ONLY="${1:-}"
 LOG="${STUDY_LOG:-data/study_runs.log}"
 mkdir -p "$(dirname "$LOG")"
 
+# THE INTERPRETER IS .venv/bin/python, NOT python3 -- and this script had it wrong until 2026-08-06.
+# Every other entry point on this box already knew: the systemd units all ExecStart
+# `.venv/bin/python`, ops/deploy_vps.sh hard-FAILS if that binary is absent, and brain_env.sh walks
+# the same fallback chain. The deps are installed by `pip install -e '.[dev]'` INTO THE VENV, so a
+# bare `python3` is the system interpreter with no pandas and no numpy.
+#
+# The cost of getting this wrong is not a wrong answer, it is a WASTED SESSION: the operator opens
+# an SSH session to run the studies, the first one dies on `ModuleNotFoundError: pandas` before
+# reading a single bar, and the traceback names the study rather than the interpreter. Failing here
+# instead, with the reason, costs one line.
+PY=""
+for _c in "$PWD/.venv/bin/python" .venv/bin/python python3; do
+    if [ -x "$_c" ] || command -v "$_c" >/dev/null 2>&1; then PY="$_c"; break; fi
+done
+[ -n "$PY" ] || { echo "FATAL: no python interpreter found (looked for .venv/bin/python, python3)"; exit 1; }
+if ! "$PY" -c "import pandas, numpy" >/dev/null 2>&1; then
+    echo "FATAL: $PY cannot import pandas/numpy -- the studies would die on the first import."
+    echo "       The venv is what carries the dependencies:"
+    echo "         python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'"
+    echo "       Checked BEFORE any study starts so this costs a second rather than a session."
+    exit 1
+fi
+echo "INTERPRETER $PY"
+
 # THE STUDIES, and each names the pre-registration that binds it. A study with no pre-registration
 # in this table cannot be run from here -- that is the point of the table, not an oversight. The
 # kill criteria have to exist before the run, or the run is a search.
@@ -53,7 +77,7 @@ run_one() {
   # niced and single-threaded: the recorders are the irreplaceable process on this box, and a
   # study that starves them costs tape that cannot be re-acquired at any price.
   OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
-    nice -n 15 python3 $cmd 2>&1 | tee -a "$LOG"
+    nice -n 15 "$PY" $cmd 2>&1 | tee -a "$LOG"
   echo "FINISHED $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }
 
