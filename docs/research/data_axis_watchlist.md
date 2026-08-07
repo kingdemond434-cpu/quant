@@ -1088,3 +1088,51 @@ undocumented. The desk's own recorder must stay primary; btc126 is backfill, not
   UNRULED question on exactly whether defeating an anti-bot gate is inside §13. Until the principal
   rules, these are read by hand or not at all — the ruling is not pre-empted by pointing a crawler
   at them first.
+
+### 24. Foreign AI-quant RESEARCH SYSTEMS (VeighNa/vnpy.alpha, Qlib, JP/KR equivalents) — grade: UNVERIFIED
+
+- **BRIEF (principal, 2026-08-06):** hunt the best Chinese/Japanese/etc AI-quant systems and *"copy
+  their best research processes"* — explicitly the research operating system, not their signals.
+  Named: **VeighNa (vn.py) 4.0 + `vnpy.alpha`** (feature-expression DSL, batch factor generation,
+  ML templates, research lab, Alpha158-style factor sets) and **Microsoft Qlib** (dataset
+  architecture, factor pipelines, experiment tracking, rolling validation, alpha-mining workflow).
+- **A NEW SOURCE CLASS FOR THIS PAGE, worth saying out loud.** Every other card here catalogues a
+  DATA source. This one catalogues a METHOD source: the artifact to extract is an architecture, and
+  the "endpoint test" is a code read, not a pull. It is entered here anyway because the
+  catalogue → verify → resolve discipline is what stops a named idea sitting unexamined, and that
+  applies to a design as much as to a feed.
+- **VERIFICATION IS A LICENCE READ FIRST, and the desk has been bitten here.** Qlib is MIT; vn.py
+  is understood to be MIT/Apache-family. NEITHER HAS BEEN READ THIS SESSION, so both are UNVERIFIED
+  on exactly the axis that killed the Coin Metrics adoption (row #79: a favourable read of a
+  licence the desk had recorded wrong in its own favour). Copying an ARCHITECTURE is not copying
+  code and carries no licence duty; lifting an implementation does. That distinction must be made
+  before anything is ported, not after.
+- **WHAT THE DESK ALREADY HAS, so the port is a DIFF and not a rebuild.** Checked against the tree
+  rather than assumed: `hypothesis_engine` + `hypothesis_novelty` (generation, Jaccard
+  de-duplication), `idea_ranking_engine` / `research_allocator` / `research_roi_engine`
+  (prioritisation by information return), `research_memory` + `research_graph` (knowledge base),
+  `alpha_family_tree` / `alpha_dna` / `strategy_similarity_engine` (lineage, redundancy),
+  `concept_evolution_engine` (cross-pollination), `crowding_intelligence` / `capacity_intelligence`,
+  `feature_drift_engine` / `half_life` / `lifecycle` (retirement), `libs/discovery/`
+  (monte-carlo survival, parameter stability, fragility, regime diversification), the validation
+  layer (DSR, PBO, CPCV, White's Reality Check, Romano-Wolf), plus the graveyard, mechanism board
+  and pre-registration discipline. **The meta-research layer is not missing.** A port that
+  re-implemented it would be duplication wearing the costume of progress.
+- **THE ONE COMPONENT THAT WAS GENUINELY MISSING, now measured and closed.** `HypothesisEngine`
+  walks a fixed template dict and can emit **7 hypotheses total from 13 features**, ever, without a
+  human writing another template — while everything downstream is built for a large stream. The
+  funnel was wide everywhere except at its mouth. `libs/alpha_factory/combination_engine.py`
+  (2026-08-06) enumerates (feature × feature × operator × horizon × regime): the same 13 features
+  now yield **14,040** distinct candidates. That is the "thousands of unique combinations" the
+  brief asks for, and it is the piece a Qlib/vnpy.alpha read would have pointed at.
+- **REMAINING DIFF, honest and ranked** — the two things those systems have that this desk does not:
+  1. a **feature-expression DSL** (`rank(volume_change / ATR)` as a first-class parseable object,
+     so the operator set is open rather than the fixed five enumerated today);
+  2. a **rolling walk-forward harness wired to the enumerator**, so a space is swept across folds
+     automatically rather than a study at a time.
+  Both are real gaps. Neither is the binding constraint.
+- **THE BINDING CONSTRAINT IS UNCHANGED AND MUST NOT BE OBSCURED BY THIS CARD.** 16,560
+  pre-registered trials, ZERO run, blocked on research data that does not reach an analysis clone.
+  A wider generator increases the number of untested hypotheses; it does not test one of them.
+  Ranking a DSL above the transport would be optimising the part that is already ahead — the exact
+  substitution WS-004 names, and the reason this card is graded UNVERIFIED rather than actioned.
