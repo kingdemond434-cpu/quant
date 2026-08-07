@@ -1,13 +1,13 @@
 {
  "_": "HIGH-WATER MARKS for test coverage. Raised by --update, NEVER lowered by code. The money path is tracked separately because a repo-wide average lets order-path coverage fall while research tests keep the aggregate up -- the average hides exactly the number worth watching.",
- "updated": "2026-08-07T01:14:39.974100+00:00",
- "last_raised": "2026-08-07T01:14:16.957443+00:00",
+ "updated": "2026-08-07T18:05:15.247868+00:00",
+ "last_raised": "2026-08-07T18:05:15.247693+00:00",
  "high_water": {
-  "repo_pct": 92.46,
+  "repo_pct": 92.6,
   "money_path_pct": 70.45
  },
  "measured": {
-  "repo_pct": 92.46,
+  "repo_pct": 92.6,
   "money_path_pct": 70.45,
   "money_path_statements": 748
  },

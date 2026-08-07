@@ -128,3 +128,60 @@ def test_THE_KEY_TRAVELS_WITH_THE_RESULT() -> None:
     c = _c("ratio", "delta", "sign")
     assert evaluate(c, feats, fwd).key == c.key
     assert MIN_OBS > 0
+
+
+def test_A_LENGTH_MISMATCH_RAISES_RATHER_THAN_INTERSECTS() -> None:
+    """The friendlier behaviour is the dangerous one. Index alignment would hand a caller whose
+    target sits on a different grid a silently-truncated intersection and a correlation computed
+    about the misalignment -- a wrong verdict rather than a stack trace."""
+    feats, _ = _feats(1000)
+    try:
+        evaluate(_c(), feats, pd.Series(_RNG.normal(size=900)))
+    except ValueError as exc:
+        assert "positionally" in str(exc)
+    else:  # pragma: no cover - the assertion below carries the failure message
+        raise AssertionError("a 1000-vs-900 mismatch was silently intersected")
+
+
+def test_A_FLAT_TARGET_IS_UNMEASURED_NOT_ZERO_EDGE() -> None:
+    """The case a regime-conditioned slice actually hits. Without the guard `corrcoef` divides by
+    zero and returns nan, which every downstream reader treats as 'no edge' -- absence resolving to
+    a clean verdict, which is WS-005."""
+    feats, _ = _feats(1000)
+    r = evaluate(_c(), feats, pd.Series(np.zeros(1000)))
+    assert not r.ok and "flat" in r.reason
+
+
+def test_INFINITIES_ARE_EXCLUDED_FROM_BOTH_SIDES() -> None:
+    """`ratio` divides, so infinities are produced by the operator set itself. One inf reaching
+    corrcoef does not raise -- it returns a number."""
+    n = 1000
+    a = pd.Series(_RNG.normal(size=n), name="a")
+    b = pd.Series(_RNG.normal(size=n), name="b")
+    b.iloc[::7] = 0.0                                     # forces inf through the ratio operator
+    fwd = pd.Series(_RNG.normal(scale=0.01, size=n), name="f")
+    r = evaluate(_c("ratio"), {"a": a, "b": b}, fwd)
+    assert r.ok and np.isfinite(r.ic) and np.isfinite(r.net_bps)
+
+
+def test_KEPT_PNL_IS_INDEX_ALIGNED_SO_CLUSTERING_COMPARES_LIKE_WITH_LIKE() -> None:
+    """`independence.cluster()` compares series POSITIONALLY. Two survivors that dropped different
+    bars, each compacted to its own length, would be correlated against the misalignment -- which
+    can both hide a duplicate and manufacture a diversifier."""
+    n = 1200
+    a = pd.Series(_RNG.normal(size=n), name="a")
+    b = pd.Series(np.ones(n), name="b")
+    fwd = pd.Series(_RNG.normal(scale=0.01, size=n), name="f")
+    fwd.iloc[:100] = np.nan                               # a ragged start, as a regime mask makes
+    r = evaluate(_c(), {"a": a, "b": b}, fwd, keep_pnl=True)
+    assert r.ok and r.pnl is not None
+    assert len(r.pnl) == n, "pnl was compacted; clustering would compare misaligned series"
+    assert int(r.pnl.notna().sum()) == r.n
+    assert bool(r.pnl.iloc[:100].isna().all()), "masked bars must stay masked in the pnl"
+
+
+def test_KEEPING_PNL_DOES_NOT_CHANGE_THE_NUMBERS() -> None:
+    """A diagnostic that perturbs the measurement is worse than no diagnostic."""
+    feats, fwd = _feats(2000)
+    plain, kept = evaluate(_c(), feats, fwd), evaluate(_c(), feats, fwd, keep_pnl=True)
+    assert (plain.ic, plain.net_bps, plain.n) == (kept.ic, kept.net_bps, kept.n)

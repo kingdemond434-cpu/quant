@@ -60,7 +60,19 @@ declare -A STUDIES=(
   ["failed_breakout"]="scripts/run_failed_breakout_study.py|docs/research/FAILED_BREAKOUT_PREREGISTRATION.md"
   ["moat_screen"]="scripts/screen_moat.py --files 200|docs/research/MAX_SURVIVORS_PROGRAM.md"
   ["ethbtc_rotation"]="scripts/run_ethbtc_rotation_study.py|docs/research/ETHBTC_ROTATION_PREREGISTRATION.md"
+  # THE WHOLE DECLARED SPACE AT ONCE -- 898,560 candidates, one pass, no sampling decision to
+  # justify. It PROJECTS ITS OWN RUNTIME on a calibration batch and refuses past --max-minutes
+  # rather than starving the recorders, so running it here is safe by construction.
+  ["full_sweep"]="scripts/run_full_sweep.py --max-minutes 180|docs/research/FULL_SWEEP_PREREGISTRATION.md"
 )
+
+# EXECUTION ORDER, EXPLICIT. This script's own header promised "every registered study, in order"
+# and could not deliver it: bash iterates an associative array in HASH order, so the sequence was
+# whatever the hash produced and would change silently when a study was added. That matters here
+# because the studies are niced and single-threaded by design -- the order IS the priority. The
+# blind sweep runs LAST: it is the widest and the least argued-for, and the mechanism studies must
+# not queue behind it.
+ORDER=(failed_breakout ethbtc_rotation moat_screen full_sweep)
 
 run_one() {
   local name="$1" spec="${STUDIES[$1]}"
@@ -92,12 +104,21 @@ for d in data/moat data/bars data/lake; do
   fi
 done | tee -a "$LOG"
 
+# A study registered but absent from ORDER would never run, and the log would look complete.
+for name in "${!STUDIES[@]}"; do
+  case " ${ORDER[*]} " in
+    *" $name "*) ;;
+    *) echo "FATAL: study '$name' is registered but missing from ORDER -- it would silently never"
+       echo "       run, and the run log would look complete. Add it to ORDER."; exit 1;;
+  esac
+done
+
 if [ -n "$ONLY" ]; then
   [ -n "${STUDIES[$ONLY]:-}" ] || {
-    echo "unknown study '$ONLY'. Registered: ${!STUDIES[*]}"; exit 1; }
+    echo "unknown study '$ONLY'. Registered: ${ORDER[*]}"; exit 1; }
   run_one "$ONLY"
 else
-  for name in "${!STUDIES[@]}"; do run_one "$name" || true; done
+  for name in "${ORDER[@]}"; do run_one "$name" || true; done
 fi
 
 echo

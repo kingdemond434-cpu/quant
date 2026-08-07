@@ -159,3 +159,9 @@ recorded in `max_audit.py` because they need code to be real. Zero remain ungove
 | Artifact | Class | Rationale | Staleness floor |
 |---|---|---|---|
 | `docs/research/MANAGEMENT_SWEEP_PREREGISTRATION.md` | **TERMINAL** | Same class and reasoning as the three pre-registrations above: terminal by definition, because criteria chosen after seeing a result are not criteria. Superseded by its own RESULT, never edited; amendments are appended and dated and move the shared deflation budget for all four. | n/a |
+
+### Added 2026-08-07 (fifth pre-registration)
+
+| Artifact | Class | Rationale | Staleness floor |
+|---|---|---|---|
+| `docs/research/FULL_SWEEP_PREREGISTRATION.md` | **TERMINAL** | Same class as the four pre-registrations above, and the declaration ordering is load-bearing here in a way it is not elsewhere: the universe size and the bar are fixed BEFORE any cell is evaluated, which is the entire statistical basis for a blind 898,560-cell sweep. Editing it after a result would not merely weaken the document, it would void the study. Superseded by its own result. | n/a |
