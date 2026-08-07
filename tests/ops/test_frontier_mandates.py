@@ -159,3 +159,47 @@ def test_VIDEO_IS_A_GROUND_AND_THE_EMPTY_LOG_IS_NAMED_AS_A_DEFECT() -> None:
         assert "VIDEO IS A GROUND, NOT AN EXCUSE" in src
         assert "video_locked_log.md" in src
         assert "A silent skip is the defect" in src
+
+
+def test_NO_PROMPT_STILL_CARRIES_THE_REFUTED_IP_BLOCKED_CLAIM() -> None:
+    """THE DEFECT THIS CATCHES ACTUALLY HAPPENED AND SURVIVED TWELVE DAYS.
+
+    `scripts/fetch_video_transcript.py` refuted "transcript fetch is IP-blocked from this VPS" on
+    2026-07-26 -- only the direct youtube timedtext route is blocked; Piped instances serve the
+    same caption tracks. Every frontier prompt nonetheless carried the refuted claim at LINE 11 and
+    its correction at line 77: sixty-six lines apart, in that order. A digger reading top-to-bottom
+    acts on the stale instruction first, so video grounds were treated as a known dead end and
+    neither fetched NOR logged -- which is precisely why the video-locked log reached 2026-08-07
+    with zero rows.
+
+    A negative result about ONE ROUTE is not a finding about the capability, and a stale premise
+    left at the top of a document outranks its own correction.
+    """
+    stale = []
+    for p in sorted(Path("ops").glob("*.txt")):
+        src = p.read_text("utf-8", errors="ignore")
+        if "IP-blocked from this VPS" in src or "IP-BLOCKED from this VPS" in src:
+            stale.append(p.name)
+    assert stale == [], (
+        f"prompt(s) still instruct diggers that transcript fetch is impossible: {stale}. It was "
+        "refuted 2026-07-26 by scripts/fetch_video_transcript.py. A digger told a ground is "
+        "unreachable does not dig it, and records nothing about not digging it.")
+
+
+def test_EVERY_MINER_IS_POINTED_AT_THE_WORKING_TRANSCRIPT_TOOL() -> None:
+    """Refuting a blocker is worth nothing if the prompt does not then name the route that works."""
+    for p in PROMPTS:
+        src = p.read_text("utf-8", errors="ignore")
+        assert "fetch_video_transcript.py" in src, f"{p.name} does not name the working tool"
+        assert "FIRST-CLASS" in src, f"{p.name} still frames video as a blocker rather than ground"
+
+
+def test_THE_MINERS_MUST_RECORD_THE_ZERO_NOT_JUST_THE_BLOCKERS() -> None:
+    """An empty log is ambiguous between 'never hit a video-locked mechanism' and 'never tried'.
+    Only an explicit zero distinguishes them, and without it the desk's purchase-evidence gate
+    silently argues against a purchase it never actually tested the need for."""
+    for p in PROMPTS:
+        src = p.read_text("utf-8", errors="ignore")
+        assert "RECORD THE ZERO" in src, (
+            f"{p.name} cannot distinguish an untried log from a clean one")
+        assert "NEVER THE WHOLE CAPABILITY" in src

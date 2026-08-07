@@ -24,12 +24,16 @@ covered. Actual state on 2026-07-20:
   00:15Z 07-21). Non-English coverage to date = ONE session touching surface-layer CN
   (CSDN/VeighNa/BigQuant/Zhihu/FMZ) + one JP note.com blog. The richmanbtc/note.com botter
   lineage (addendum C62, the named gem) is NOT yet dug.
-* VIDEO: direct transcript fetch is IP-BLOCKED from this VPS (RequestBlocked, tested
-  07-18). Video-origin material is currently reached ONLY via text mirrors (show notes,
-  transcript blogs, Substack writeups, community summaries). GAP #26 is the unlock and is
-  principal-spend-gated; it pages ONLY once the coverage log proves video-locked mechanisms
-  are a recurring binding blocker -- not yet demonstrated, because YouTube/talks has never
-  been worked at all.
+* VIDEO: **~~direct transcript fetch is IP-BLOCKED from this VPS~~ SUPERSEDED 2026-07-26,
+  MARKED HERE 2026-08-07.** The 07-18 finding was about ONE ROUTE (youtube.com/api/timedtext),
+  never about the capability, and `scripts/fetch_video_transcript.py` has fetched real
+  transcripts via public Piped instances since 07-26. Video is FIRST-CLASS dig material.
+  The original text is struck rather than deleted because this file records what the desk
+  BELIEVED and when -- but the strike is the point: this bullet sat 91 lines above its own
+  refutation for twelve days, and every digger prompt inherited the stale half. A reader
+  going top-to-bottom acted on the wrong line, which is exactly how the video-locked log
+  reached 2026-08-07 with zero rows. GAP #26 (paid unlock) remains principal-spend-gated and
+  is now LESS likely to be needed, not more.
 * "DARK FOREST": the genuinely closed layer (private WeChat/QQ groups, paid Knowledge-Planet
   circles, invite-only Discords/Telegrams) is PERMANENTLY OUT OF SCOPE under charter s13 --
   closed-group and paid-content material is never scraped or adopted. What is in scope is the
