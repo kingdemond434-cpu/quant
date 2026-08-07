@@ -43,14 +43,57 @@ def _row(name: str, ready: bool | None, detail: str, owner: str, artifact: str,
             "artifact": artifact, "action": action}
 
 
+#: The two files the live cash-and-carry cannot place without, and the fields each must carry.
+#: BOTH legs, because the futures leg alone is not the strategy -- it is an unhedged directional
+#: position, which is the exact failure #90 was opened for.
+_LIVE_KEYS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("binance_live.json", ("api_key", "api_secret")),
+    ("binance_live_spot.json", ("api_key", "api_secret")),
+)
+
+
 def _keys_present() -> dict[str, Any]:
+    """Are the live credentials USABLE -- not merely present as filenames?
+
+    MEASURED 2026-08-07 AND THIS GATE WAS GREEN ON EMPTY FILES. It globbed `data/secrets/*`,
+    filtered names containing "binance" or "api", and reported "4 live-venue credential file(s)"
+    as READY. On the same box and the same minute, `check_credentials.py` -- which OPENS them --
+    reported `binance_live.json` INCOMPLETE (missing api_key, api_secret), both testnets the same,
+    and `binance_live_spot.json` ABSENT entirely. So Gate-0, the last check before live trading,
+    would have signed off on a key set that cannot place an order.
+
+    That is the desk's own most-repeated defect (WS-005: absence resolving to the clean verdict)
+    sitting on the single most consequential gate it has, and it is the same shape as a file
+    existing being mistaken for a file working. A credential is a CAPABILITY, and the only
+    evidence of a capability is its contents.
+
+    UNREADABLE JSON IS NOT READY EITHER. A truncated paste leaves a file that exists, parses as
+    nothing, and is treated as absent by every reader while LOOKING configured.
+    """
     d = _ROOT / "data/secrets"
-    have = sorted(p.name for p in d.glob("*")) if d.exists() else []
-    live = [k for k in have if "binance" in k.lower() or "api" in k.lower()]
-    return _row("keys_present", bool(live),
-                f"{len(live)} live-venue credential file(s) in data/secrets" if live
-                else "no live-venue credential file in data/secrets",
-                PRINCIPAL, "data/secrets/", "supply the Binance spot+perp API keys")
+    ok: list[str] = []
+    bad: list[str] = []
+    for name, fields in _LIVE_KEYS:
+        p = d / name
+        if not p.exists():
+            bad.append(f"{name}: absent")
+            continue
+        try:
+            doc = json.loads(p.read_text("utf-8"))
+        except (OSError, ValueError):
+            bad.append(f"{name}: present but not valid JSON")
+            continue
+        missing = [k for k in fields if not (isinstance(doc, dict) and doc.get(k))]
+        if missing:
+            bad.append(f"{name}: missing or empty {', '.join(missing)}")
+        else:
+            ok.append(name)
+    return _row("keys_present", not bad,
+                (f"both live legs carry usable credentials ({len(ok)}/2)" if not bad
+                 else f"{len(ok)}/2 usable -- " + "; ".join(bad)),
+                PRINCIPAL, "data/secrets/",
+                "supply BOTH Binance keys with real api_key/api_secret -- a file that exists and "
+                "is empty reads as configured and cannot place an order")
 
 
 def _connector_verified() -> dict[str, Any]:
