@@ -259,3 +259,59 @@ support.
   history give a sample too small for the DSR to clear at any effect size this hypothesis could
   plausibly have. That is a **power** objection, and it is the reason to be sceptical of the arm
   before any of it is run — not a reason to skip it, since it is now declared and paid for.
+
+## AMENDMENT 2 (2026-08-07) — a competing prediction, recorded BEFORE the run
+
+An external source (a discretionary trading write-up forwarded by the principal) independently
+arrived at arm 5's design and stated it as a recommendation:
+
+> *"Do not code the entries yet. Let the algo prove that the risk management alone is profitable
+> first."*
+
+Same experiment, **opposite predicted outcome**. That source predicts arm 5 is PROFITABLE — that
+management (wide structural stop, breakeven ratchet, partial at 1R) carries the edge on its own.
+This desk's pre-registered reading is that arm 5 ≈ 0 net of costs, and that arm 5 > 0 means the
+HARNESS IS BROKEN.
+
+**Recorded here because a pre-registered disagreement is worth more than either prediction alone.**
+Both readings are now fixed in writing before the data exists, so neither can be retrofitted:
+whichever way arm 5 lands, one of the two positions is falsified and the desk learns something it
+could not learn from a result it predicted alone. No threshold in K9 moves.
+
+**THE ARGUMENT AGAINST THE EXTERNAL PREDICTION, stated so it can be judged rather than assumed.**
+Stops and targets are STOPPING TIMES. Optional stopping gives, on a driftless process, an expected
+value at any stopping time equal to the starting value — so no stop/target geometry creates
+expectancy; it reshapes variance, skew and hit rate and leaves the mean where it was, minus costs.
+The specific claim "1:4 R:R with a 40% win rate" asserts two quantities that are NOT independent:
+widening the target and tightening the stop lowers the win rate roughly proportionally, and at 1:4
+the hit rate converges toward ~20%. Asserting 40% at 1:4 is asserting directional edge and calling
+it risk management. The breakeven ratchet is the subtlest case: it converts some WINNERS into
+scratches — trades that retrace to entry and then continue — in exchange for removing some losers.
+It feels free because the loss it prevents is visible and the winner it kills is not.
+
+**ONE COMPONENT OF THE EXTERNAL WRITE-UP IS NOT PAYOFF RESHAPING, AND IT IS ADDED AS ARM 6:
+VOLATILITY-TARGETED SIZING.** Scaling position size inversely to realised volatility genuinely
+raises geometric growth, and it does so for a reason the source does not give. It is not "bigger
+size to profit from bigger moves" — that is the opposite of what it does. It equalises RISK per
+trade, which reduces the variance of the return stream, and geometric growth is reduced by
+variance (E[log wealth] ≈ μ − σ²/2). So vol-targeting can raise compounding **with zero directional
+edge**, which makes it the only item in that write-up with a mechanism that survives the optional-
+stopping argument. It is therefore tested as its own arm rather than folded into management.
+
+**ARM 6 (vol-targeted sizing on random entries):** size ∝ 1/ATR, capped, against a fixed-size
+control on identical entries and identical exits. **K10:** if arm 6 does not improve the GEOMETRIC
+mean (not the arithmetic mean) net of costs, vol-targeting is retired for this desk — the effect is
+well-supported in the literature and a null here would indict the harness or the cost model, not
+the mechanism.
+
+**A NOTE ON THE LOSS-STREAK CIRCUIT BREAKER**, which the same write-up recommends ("three losses,
+stop for an hour"): in its stated form it is superstition, because losses are not autocorrelated on
+a driftless process. But it has a REAL version, and the distinction is the finding: losses cluster
+because VOLATILITY clusters, which is a genuine and well-documented property. So the defensible
+rule conditions on realised volatility directly, not on the loss count — the loss streak is a noisy
+proxy for the thing that actually matters. Not added as an arm; recorded so the noisy version is
+never adopted in place of the clean one.
+
+**Trial budget: arm 6 adds 2 (targeted / fixed) × the existing symbol and timeframe axes = 540
+nominal.** Shared budget 16,632 → 17,172; hurdle √(2 ln N) 4.409 → 4.416. Same shared-deflation
+rule as every other amendment: an axis added anywhere makes the bar harder everywhere.
