@@ -121,6 +121,37 @@ def test_no_organ_still_hardcodes_the_effort_literal() -> None:
         "libs.llm.effort.reasoning_payload(model) so depth follows the roster.")
 
 
+def test_EVERY_CHAT_COMPLETION_ASKS_FOR_DEPTH_AT_ALL() -> None:
+    """THE OMISSION THE LITERAL-CHECK ABOVE COULD NOT SEE, and it had a live instance.
+
+    The test above catches an organ that asks for the WRONG depth. It cannot catch an organ that
+    asks for NO depth, because a payload with no `reasoning` key contains no literal to match --
+    so `kimi_hunter` sent chat completions with no reasoning block for its entire life and read as
+    compliant. That is the desk's most-repeated defect class (WS-005) inside the fence built to
+    prevent it: absence resolving to the clean verdict.
+
+    It mattered more there than anywhere else. Kimi is the desk's ONLY seat from an independent
+    model family -- the one whose job is to not share Claude's priors -- so the single organ
+    running at the provider's default depth was the single organ whose disagreement is worth most.
+
+    Scoped to files that POST a chat completion, so it grows with the roster of organs by itself
+    rather than needing a list somebody remembers to update.
+    """
+    offenders = []
+    for p in sorted(Path("scripts").glob("*.py")):
+        src = p.read_text("utf-8", errors="ignore")
+        if "/chat/completions" not in src or '"max_tokens"' not in src:
+            continue
+        if "reasoning" not in src:
+            offenders.append(p.stem)
+    assert offenders == [], (
+        f"organ(s) POST a chat completion with NO reasoning block: {offenders}. They run at the "
+        "provider's default depth while every other seat runs at the deepest rung it advertises, "
+        "and the call succeeds either way so the gap never surfaces on its own. Add "
+        "libs.llm.effort.reasoning_payload(model) -- and check max_tokens has room, since "
+        "reasoning tokens count against it and a tight cap returns an EMPTY completion.")
+
+
 def test_the_roster_refresh_records_capability_so_it_can_be_measured() -> None:
     """It is the only place with a live catalog, so it is the only place that can turn seat
     capability from a guess into data."""

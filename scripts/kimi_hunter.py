@@ -40,6 +40,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from libs.llm.effort import reasoning_payload  # noqa: E402
 from libs.research.untrusted import wrap  # noqa: E402
 
 KEYS = ROOT / "data/secrets/llm_panel.json"
@@ -285,7 +286,18 @@ def _objective() -> str:
 
 
 def _ask(base, key, system, user, timeout=240.0) -> str:
+    # DEPTH, WHICH THIS ORGAN ALONE WAS NOT ASKING FOR. Nine reasoning organs send a `reasoning`
+    # block; this one sent none, so the desk's only seat from an independent model family -- the
+    # one whose whole purpose is to disagree with Claude's priors -- was thinking at the
+    # provider's DEFAULT while every Claude-family seat thought at depth. The structural fence
+    # that was supposed to catch this only looked for the hardcoded literal, so an organ that
+    # omitted the block entirely read as compliant: absence resolving to the clean verdict.
+    #
+    # The 16k budget is what makes this safe here. Reasoning tokens count against `max_tokens`,
+    # and a 3k cap plus deep reasoning returns an EMPTY completion (measured 2026-07-12 on
+    # deepseek/glm). This organ already had the headroom; it was only missing the request.
     body = json.dumps({"model": MODEL, "max_tokens": 16000, "temperature": 1.0,
+                       "reasoning": reasoning_payload(MODEL),
                        "messages": [{"role": "system",
                                      "content": _objective() + _doctrine("kimi_hunter") + system},
                                     {"role": "user", "content": user}]}).encode()

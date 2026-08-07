@@ -269,3 +269,108 @@ skips, so they are the least picked over:
     the phrasing; it improves every query you run afterwards.
 The one thing that still fails is a claim that CANNOT BE TESTED -- and that is a property of the
 claim, never of its source, its tone, or its author.
+
+=== PROCESS MANDATE (principal 2026-08-07 -- mine the RESEARCH PROCESS, not only its results) ===
+Copying a public alpha buys you a formula that is already crowded and already decayed. Copying
+HOW A RESEARCHER WORKS is durable, transfers across regions and markets, and cannot decay because
+it is not a position. For every substantial writeup you mine, extract the PROCESS ALONGSIDE the
+claim -- and record it even when the claim itself is worthless, because a false conclusion reached
+by an interesting method is still an interesting method:
+  * DISCOVERY PATH: how did they come across this? What were they looking at when they noticed it?
+  * THE NOTICING: what anomaly or data artefact triggered the work? The trigger is often reusable
+    when the conclusion is not.
+  * DATA: which feed, which fields, what frequency, what history, what did it cost, how did they
+    get it? Route every named feed to the data axis watchlist regardless of the claim's quality.
+  * TRANSFORMATIONS: what did they do to the raw series -- normalisation, conditioning, ranking,
+    lagging, regime splits? Route to docs/research/search_operator_library.md.
+  * HYPOTHESES TESTED, including the ones that went nowhere.
+  * WHAT FAILED AND WHY THEY THINK IT FAILED. This is the single highest-value field on the page
+    and the one the crowd skips: a documented failure with a stated cause is free graveyard
+    material, and it is EVIDENCE rather than an opinion.
+  * WHAT NEARLY WORKED. A near-miss with a named obstacle is a better lead than a clean success,
+    because the obstacle is usually the actual research question.
+  * WHAT THEY SAID THEY COULD NOT TEST -- missing data, no venue access, no capital, no tooling.
+    Their blocker is a shopping list, and where the desk already HAS that data it is a free lead
+    nobody else could follow.
+  * UNUSUAL MARKET BEHAVIOUR OBSERVED but not explained. Unexplained observations are the rawest
+    material on the page; log them to docs/research/weak_signal_registry.md.
+  * TOOLS AND DATASETS they discovered or built.
+Route process findings to docs/research/improvement_inbox.md and the operator library. A session
+that returns only strategy claims and no process has mined the shallow half of every page it read.
+
+=== PROVENANCE IS MANDATORY (principal 2026-08-07 -- it is what makes cross-region convergence mean anything) ===
+The desk elevates a mechanism when researchers in UNRELATED ecosystems arrive at it independently:
+different data, different venues, different regimes, same conclusion. That is a genuinely strong
+prior -- and it is the easiest false signal this desk could build, because ecosystems are NOT
+independent. Three regions describing one effect are, more often than not, THREE READINGS OF ONE
+ENGLISH PAPER, and ideas propagate outward from the arXiv / SSRN / WorldQuant layer. Counting
+echoes as confirmations is GAP #85 (n counting readings of the world, not events in it) aimed
+squarely at the number used to promote a mechanism above its evidence.
+libs/research/convergence.py can only tell the two apart if YOU record where a finding came from.
+So on EVERY mechanism card, record two fields:
+  * SOURCE: the citable locator of this specific writeup.
+  * DERIVES-FROM: every paper, post, repo or thread it cites, translates, summarises or visibly
+    reacts to. If you checked and it cites nothing, write DERIVES-FROM: NONE (checked) --
+    explicitly, because an empty field and a checked-empty field are opposite facts and the module
+    treats a blank as UNVERIFIABLE rather than as original.
+An unverified match elevates NOTHING. It stays a lead, exactly like a singleton.
+And when convergence IS genuine it buys a QUEUE PLACE, never a lower bar: ten ecosystems can be
+wrong about the same thing, and folk finance is precisely where they are -- a belief is widely held
+because it is intuitive, not because it is true. A converged mechanism owes the same
+pre-registration, deflation and out-of-sample evidence as one nobody else mentioned.
+
+=== BINANCE/CRYPTO PRIORITY + BACKTEST MINER (principal 2026-08-07) ===
+This desk trades Binance crypto. Prioritise accordingly -- crypto-native sources first, general
+traditional finance last -- but NEVER hardcode that as a boundary: unexplored and undug ground is
+mandatory exploration, and the seed map is a starting point, not a ceiling.
+  crypto-native > exchange/microstructure research > GitHub/bots > crypto forums
+    > WorldQuant/other quant ecosystems > general traditional finance
+Seed grounds: docs/research/crypto_source_seeds.md (a READING MAP, deliberately not the catalogue
+-- do NOT bulk-add it to data_axis_watchlist.md; the desk's measured bottleneck is verification,
+and a source earns a graded card only by producing something).
+
+EXTRACT AGAINST THE CRYPTO MECHANISM VOCABULARY (libs/research/evidence_tier.CRYPTO_MECHANISMS):
+funding, open interest, liquidation, basis, order flow, book imbalance, trade intensity,
+volatility, market regime, cross-exchange spread, stablecoin flows, on-chain flows, whale activity,
+CEX/DEX flows, MEV, arbitrage, liquidation cascades, sentiment, derivatives positioning, options
+skew, term structure, funding dispersion, volume/price relationships, latency/microstructure.
+A finding that maps to NONE of these is the INTERESTING case, not the discardable one: the desk's
+entire feature set is that list, so a mechanism outside it is the only kind that widens the search
+space rather than re-searching it. Flag those explicitly in your session note.
+
+BACKTEST MINER -- a dedicated extraction category. Hunt: backtest, back-tested, backtesting,
+Sharpe, Sortino, Calmar, CAGR, drawdown, profit factor, win rate, PnL, equity curve, out-of-sample,
+walk-forward, Monte Carlo, paper trading, live results, track record. Then separately search CODE
+repositories for actual implementations of the same idea.
+RECORD WHETHER COSTS WERE ACCOUNTED FOR -- fees, funding, slippage, spread, impact, latency. A
+backtest that never mentions them is not a weaker result, it is a DIFFERENT QUANTITY from the one
+this desk computes: on a perp book funding alone routinely exceeds the edge (WS-006 -- a
+Holm-cleared signal that netted -0.656 bp/bar). Absence of cost accounting is itself the finding.
+
+TIER EVERY DISCOVERY BY HOW CHEAPLY IT CAN BE KILLED (libs/research/evidence_tier.classify):
+  EXECUTABLE         code + data + params -> refutable in an afternoon    <- HUNT THESE HARDEST
+  REPRODUCIBLE_SPEC  enough detail to rebuild without guessing            <- one cycle to settle
+  MECHANISM_ONLY     an economic story, no numbers                        <- the form that TRANSFERS
+  BARE_CLAIM         a headline return                                    <- ore, still worth mining
+EXECUTABLE RANKS FIRST BECAUSE IT IS CHEAPEST TO REFUTE, NOT BECAUSE CODE IS MORE HONEST. Published
+bot code is if anything MORE overfit than an anecdote -- it was tuned until the curve looked good.
+The reason to hunt it first is that the desk can SETTLE it instead of arguing about it.
+
+CLAIMED IS NOT VERIFIED. A post saying "my BTC bot made 40% last month" is RESEARCH ORE, never
+evidence, however precisely it is stated -- precision is the property fabrications have most. Record
+the claim in the claimed column and leave verified EMPTY; only a run on this desk's own data fills
+it. If code and data exist, say so loudly: that is a reproduction the desk can actually attempt. If
+they do not, extract the MECHANISM and hand it up as a hypothesis instead -- an unreproducible claim
+still carries a testable idea.
+
+TRANSLATE, DO NOT COPY (libs/research/evidence_tier.translate_to_crypto). A foreign or traditional
+result copied verbatim is untestable here; its MECHANISM usually has an exact crypto analogue this
+desk records. futures basis -> perp funding + spot-perp basis. roll yield -> funding carry.
+commitment of traders -> OI by venue + long/short account ratio. short interest -> aggregate perp
+short OI + funding sign. earnings drift -> post-listing / post-unlock drift. dividend capture ->
+funding-payment capture around settlement. order imbalance -> book imbalance + aggressor-side trade
+intensity. THIS is what makes the international miners worth more than scraping crypto strategies:
+the idea arrives in another market's vocabulary and the translation is the desk's edge.
+
+CLASSIFY EVERY DISCOVERY as: mechanism -> hypothesis -> evidence -> failure/success -> data source
+-> reproducibility. Collecting "profitable bot" claims without that structure is not mining.

@@ -68,6 +68,26 @@ else:
 st = j("data/failed_breakout_study.json")
 if st: print(f"  study        failed_breakout: {str(st.get('verdict','?'))[:60]}")
 else:  print("  study        failed_breakout: NO ARTIFACT -- 0 of 16,200 trials executed")
+
+# REASONING DEPTH. `libs.llm.effort.coverage()` existed with ZERO non-test callers, so the one
+# number it computes -- how many seats run on the 'high' FALLBACK instead of the deepest rung they
+# advertise -- was never read by anyone. Every such seat is a flagship being asked a shallower
+# question than it can answer, and the call succeeds either way, so the cost surfaces nowhere on
+# its own. It is on the odometer now for the same reason coverage is.
+caps = j("data/roster_capabilities.json")
+if caps:
+    models = sorted((caps.get("models") or caps).keys())
+    try:
+        from libs.llm.effort import coverage as _cov
+        c = _cov(models)
+        print(f"  llm depth    {c['measured']}/{c['models']} seats at their advertised max, "
+              f"{c['fallback']} on the 'high' fallback"
+              + ("  <-- under-driven; refresh_panel_roster" if c["fallback"] else ""))
+    except Exception:
+        print("  llm depth    roster present but unreadable -- depth UNKNOWN, not fine")
+else:
+    print("  llm depth    roster capabilities ABSENT -> EVERY seat runs on the 'high' fallback, "
+          "not its advertised max. Run scripts/refresh_panel_roster.py on the box.")
 PYEOF
 else
     echo "  desk-state: no python found -- state UNKNOWN, not fine"
