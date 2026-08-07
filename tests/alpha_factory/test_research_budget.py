@@ -24,11 +24,14 @@ import pytest
 
 from libs.alpha_factory.research_budget import (
     DEFAULT_QUOTAS,
+    EXHAUSTION_AXES,
+    EXHAUSTION_BAR,
     FLOORS,
     MODES,
     allocate,
     apply_floors,
     coverage_report,
+    exhaustion_claim,
     gap_lines,
 )
 
@@ -218,3 +221,68 @@ def test_gap_lines_NAMES_THE_UNDERPOWERED_COUNT_OUT_LOUD() -> None:
     lines = "\n".join(gap_lines(coverage_report(_SPACE, tested, min_n=30)))
     assert "underpowered" in lines and "EXCLUDED" in lines
     assert "WEAKEST DIMENSION" in lines
+
+
+# ------------------------------------------------------- exhaustion is a claim, not a default
+
+def test_A_BARE_EXHAUSTION_CLAIM_IS_REJECTED() -> None:
+    """THE INVALID INFERENCE THIS EXISTS TO BLOCK: "we tested every combination expressible from
+    our current feature set" -> "there are no worthwhile hypotheses left". A feature set is not a
+    hypothesis space; it is the alphabet. Four series support levels, changes, ratios, ranks,
+    z-scores, acceleration, persistence, interactions, conditional and nonlinear and
+    regime-dependent and lead/lag relationships, and combinations of all of them."""
+    v = exhaustion_claim("funding family", {})
+    assert v.accepted is False
+    assert len(v.missing_axes) == len(EXHAUSTION_AXES)
+    assert any("UNEXAMINED" in r for r in v.reasons)
+
+
+def test_AN_AXIS_ABSENT_FROM_THE_EVIDENCE_IS_NOT_AN_AXIS_AT_100() -> None:
+    """SILENCE IS HOW THIS CHECK GETS DEFEATED. A caller submits the three axes it happens to
+    measure, all clear the bar, and the claim passes while interaction depth, cross-domain
+    transfer and model class were never considered at all."""
+    v = exhaustion_claim("momentum", {"feature": 1.0, "operator": 1.0, "horizon": 1.0})
+    assert v.accepted is False
+    assert "interaction_depth" in v.missing_axes
+    assert "cross_domain" in v.missing_axes
+    assert v.unsupported == (), "a missing axis must not be reported as a failing one"
+
+
+def test_MISSING_AND_WEAK_ARE_REPORTED_SEPARATELY() -> None:
+    """They mean different things: unfinished work versus unexamined work, and the response to
+    each is different."""
+    cov = dict.fromkeys(EXHAUSTION_AXES, 1.0)
+    cov["regime"] = 0.30
+    del cov["model"]
+    v = exhaustion_claim("carry", cov)
+    assert v.unsupported == ("regime",)
+    assert v.missing_axes == ("model",)
+    assert not v.accepted
+
+
+def test_A_GENUINELY_SATURATED_REGION_CAN_BE_RETIRED() -> None:
+    """The claim is not always wrong, and a rule of "never stop generating" would burn the budget
+    on a dead seam forever -- ten thousand variants of RSI-plus-momentum genuinely add nothing.
+    The standard is DEMONSTRATED, per axis, at a named scope."""
+    v = exhaustion_claim("rsi x momentum", dict.fromkeys(EXHAUSTION_AXES, 0.99))
+    assert v.accepted is True
+    assert any("THIS REGION only" in r for r in v.reasons)
+    assert any("reopens it" in r for r in v.reasons), (
+        "an accepted claim must state its own expiry -- a new feature, venue, regime or "
+        "transformation reopens the region, and an acceptance with no expiry becomes permanent")
+
+
+def test_THE_BAR_IS_SHORT_OF_TOTALITY_ON_PURPOSE() -> None:
+    """Demanding literal 100% would make exhaustion unfalsifiable in the other direction, and a
+    region genuinely worked to 95% should be abandonable."""
+    assert 0.9 <= EXHAUSTION_BAR < 1.0
+    assert exhaustion_claim("x", dict.fromkeys(EXHAUSTION_AXES, 0.96)).accepted is True
+    assert exhaustion_claim("x", dict.fromkeys(EXHAUSTION_AXES, 0.94)).accepted is False
+
+
+def test_THE_SCOPE_TRAVELS_WITH_THE_VERDICT() -> None:
+    """"Exhausted" with no named scope is the unfalsifiable version of the claim. The scope is what
+    makes it checkable later."""
+    v = exhaustion_claim("funding x OI at 1h", dict.fromkeys(EXHAUSTION_AXES, 1.0))
+    assert v.scope == "funding x OI at 1h"
+    assert "funding x OI at 1h" in " ".join(v.reasons)

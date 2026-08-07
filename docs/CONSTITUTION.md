@@ -1432,3 +1432,44 @@ this law.
 **Binding on future work.** Any new ratcheted record — coverage, suite size, breadth, conversion —
 ships with `last_raised` on the day it is written. A high-water mark with no timestamp cannot
 distinguish a desk that is winning from a desk that has stopped, and those must never look alike.
+
+**L1.51 "EXHAUSTED" IS A CLAIM REQUIRING EVIDENCE — AND THE CHARTER ALREADY KNEW, FOR THE OTHER
+HALF** *(2026-08-06)*. `DIGGING_CHARTER.md`'s FREE-FRONTIER AXIOM has held since 2026-07-24 that
+*"'we already looked' is never a reason to stop"* and that *"no free source exists"* is a claim
+requiring evidence, never a default. Then its own precision note scopes it out: *"this axiom governs
+the SOURCE hunt, not the graveyard."*
+
+So the desk demands evidence for **"there is no more data to find"** and has nothing whatever for
+**"there is nothing more to ask of the data we have."** Both are exhaustion claims. Only one was
+governed.
+
+**The invalid inference.** *"We tested every combination expressible from our current feature set"*
+→ *"there are no worthwhile hypotheses left."* Those are not equivalent and the gap between them is
+enormous. **A feature set is not a hypothesis space; it is the alphabet.** Four series — price,
+volume, funding, open interest — support levels, changes, ratios, ranks, z-scores, rolling
+distributions, acceleration, persistence, interactions, conditional, nonlinear, regime-dependent,
+cross-sectional, lead/lag and multi-horizon relationships, and combinations of all of those. And
+then the *mechanism* can change without the formula changing at all.
+
+**But the claim is not always false, which is why this is a verdict and not a prohibition.** Ten
+thousand variants of RSI-plus-momentum genuinely add nothing, and a desk forbidden from ever
+declaring a region finished burns its budget on a dead seam forever — the mirror error, and just as
+expensive. The rule is therefore not *"exhaustion is impossible"* but **"exhaustion must be
+DEMONSTRATED, PER AXIS, AT A NAMED SCOPE"**: feature, operator, interaction depth, horizon, regime,
+asset, transformation, model, cross-domain. `libs.alpha_factory.research_budget.exhaustion_claim`
+is the producer.
+
+**AN AXIS ABSENT FROM THE EVIDENCE IS NOT AN AXIS AT 100%,** and this is the way the check gets
+defeated in practice: a caller submits the three axes it happens to measure, every one clears the
+bar, and the claim passes while interaction depth, cross-domain transfer and model class were never
+considered. Missing axes are reported separately from failing ones because they are different
+states — unexamined work versus unfinished work — and they call for different responses.
+
+**AN ACCEPTED CLAIM CARRIES ITS OWN EXPIRY.** Retiring a region is a statement about that region,
+never about the hypothesis space, and it does not survive the arrival of a new feature, venue,
+regime or transformation — any of which reopens it. An acceptance with no expiry becomes permanent
+by default, which is how a desk loses a region it merely got tired of.
+
+**Binding on future work.** Any organ, panel seat or report asserting that a line of research is
+finished must produce the per-axis coverage behind it. Absent that, the correct verdict is
+UNMEASURED (L1.28a) — and UNMEASURED means the work is owed, not that it is done.

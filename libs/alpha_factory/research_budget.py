@@ -226,3 +226,88 @@ def gap_lines(report: CoverageReport) -> list[str]:
     if report.weakest:
         out.append(f"WEAKEST DIMENSION: {report.weakest} -- point the next batch here")
     return out
+
+
+#: Dimensions an exhaustion claim must account for. NOT a preference list -- it is the set of axes
+#: along which "we tested everything" can be true of one and false of the rest, which is exactly how
+#: the invalid inference is made. A desk that has swept every FEATURE PAIR at one horizon, in one
+#: regime, with one operator family has exhausted a slice and nothing more.
+EXHAUSTION_AXES: tuple[str, ...] = (
+    "feature", "operator", "interaction_depth", "horizon", "regime",
+    "asset", "transformation", "model", "cross_domain",
+)
+
+#: Coverage below which an axis cannot support an exhaustion claim. Deliberately short of 1.0:
+#: demanding literal totality would make the claim unfalsifiable in the other direction, and a
+#: region genuinely worked to 95% should be abandonable. Above this, saturation is arguable.
+EXHAUSTION_BAR: float = 0.95
+
+
+@dataclass(frozen=True)
+class ExhaustionVerdict:
+    """Whether 'there is nothing left to test here' survives contact with the coverage record."""
+
+    accepted: bool
+    scope: str
+    unsupported: tuple[str, ...]
+    missing_axes: tuple[str, ...]
+    reasons: tuple[str, ...]
+
+
+def exhaustion_claim(
+    scope: str,
+    coverage_by_axis: Mapping[str, float],
+    *,
+    bar: float = EXHAUSTION_BAR,
+    axes: Sequence[str] = EXHAUSTION_AXES,
+) -> ExhaustionVerdict:
+    """EXHAUSTION IS A CLAIM REQUIRING EVIDENCE, NEVER A DEFAULT.
+
+    `DIGGING_CHARTER` already holds this rule for the SOURCE hunt -- "treat 'no free source exists'
+    as a claim requiring EVIDENCE... never a default" -- and scopes itself out of the hypothesis
+    space by its own precision note. This is the same rule for HYPOTHESES, where the invalid
+    inference is:
+
+        "we tested every combination expressible from our current feature set"
+        -> "there are no worthwhile hypotheses left"
+
+    Those are not equivalent, and the gap between them is enormous. Four series -- price, volume,
+    funding, open interest -- support levels, changes, ratios, ranks, z-scores, rolling
+    distributions, acceleration, persistence, interactions, conditional and nonlinear and
+    regime-dependent and cross-sectional and lead/lag and multi-horizon relationships, and
+    combinations of all of those. A feature set is not a hypothesis space; it is the alphabet.
+
+    THE CLAIM IS NOT ALWAYS WRONG, WHICH IS WHY THIS RETURNS A VERDICT RATHER THAN A REFUSAL. Ten
+    thousand variants of RSI-plus-momentum genuinely add nothing, and a rule of "never stop
+    generating" would burn the budget on a saturated seam forever. So the standard is not
+    "exhaustion is impossible" but "exhaustion must be DEMONSTRATED, PER AXIS, AT A NAMED SCOPE".
+
+    AN AXIS ABSENT FROM THE EVIDENCE IS NOT AN AXIS AT 100%. Silence is the most likely way this
+    check gets defeated -- a caller submits the three axes it happens to measure, every one clears
+    the bar, and the claim passes while interaction depth, cross-domain transfer and model class
+    were never considered at all. Missing axes are reported separately from failing ones because
+    they mean different things: one is unfinished work, the other is unexamined work.
+    """
+    reasons: list[str] = []
+    have = {a: float(coverage_by_axis.get(a, 0.0)) for a in axes}
+    missing = tuple(a for a in axes if a not in coverage_by_axis)
+    weak = tuple(a for a in axes if a in coverage_by_axis and have[a] < bar)
+    if missing:
+        reasons.append(
+            f"NOT EVIDENCED on {len(missing)} axis/axes: {', '.join(missing)}. An axis absent from "
+            "the record is UNEXAMINED, not complete -- and submitting only the axes one happens to "
+            "measure is the easiest way to pass this check without having done the work.")
+    if weak:
+        reasons.append(
+            "BELOW THE BAR: " + ", ".join(f"{a}={have[a]:.0%}" for a in weak)
+            + f" (bar {bar:.0%}). Coverage of a slice is not exhaustion of the space.")
+    if not reasons:
+        reasons.append(
+            f"ACCEPTED for scope '{scope}': every axis evidenced at or above {bar:.0%}. This "
+            "retires THIS REGION only -- it is not a statement about the hypothesis space, and it "
+            "does not survive the arrival of a new feature, venue, regime or transformation, any "
+            "of which reopens it.")
+    return ExhaustionVerdict(
+        accepted=not (missing or weak), scope=scope,
+        unsupported=weak, missing_axes=missing, reasons=tuple(reasons),
+    )
