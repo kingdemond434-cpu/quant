@@ -59,6 +59,7 @@ echo "INTERPRETER $PY"
 declare -A STUDIES=(
   ["failed_breakout"]="scripts/run_failed_breakout_study.py|docs/research/FAILED_BREAKOUT_PREREGISTRATION.md"
   ["moat_screen"]="scripts/screen_moat.py --files 200|docs/research/MAX_SURVIVORS_PROGRAM.md"
+  ["ethbtc_rotation"]="scripts/run_ethbtc_rotation_study.py|docs/research/ETHBTC_ROTATION_PREREGISTRATION.md"
 )
 
 run_one() {

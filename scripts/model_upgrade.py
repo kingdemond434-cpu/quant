@@ -58,6 +58,28 @@ from libs.llm.effort import reasoning_payload  # noqa: E402
 KEYS = ROOT / "data/secrets/llm_panel.json"
 STATE = ROOT / "data/model_upgrade.json"
 LOG = ROOT / "data/model_upgrade_log.jsonl"
+BUDGET = ROOT / "data/panel_budget.json"
+
+#: THE UPGRADE GAUNTLET GETS ITS OWN ENVELOPE, SEPARATE FROM RESEARCH -- and this is a decision,
+#: not an oversight, which is the reason it is written down rather than left to be rediscovered.
+#:
+#: Every other OpenRouter spender on this desk (run_external_panel, kimi_hunter, run_wiring_agent,
+#: breadth_expander, run_allocator, estimate_contributions) draws on one shared
+#: `monthly_envelope_usd`. This script did not, and the gap was invisible because the governance
+#: check covering it (test_constitution_reach) asks whether a script carries the desk's OBJECTIVE,
+#: not whether it respects a CAP. It was reviewed, it passed, and the spend axis was never examined.
+#:
+#: WHY IT IS NOT SIMPLY FOLDED INTO THE SHARED POT. If the panel burns the month's research budget,
+#: the desk must still be able to ask "is there a better model than the one we are running?" --
+#: L1.48's own reasoning, one level up: a capability check gated on unrelated spend means the desk
+#: silently freezes on stale models exactly when it is working hardest. That is a real cost and it
+#: is invisible, because nothing reports the upgrade that did not happen.
+#:
+#: WHY IT IS CAPPED AT ALL. `_balance_ok` already refuses to start a gauntlet it cannot pay for --
+#: the 402-mid-run lesson -- but raw balance is not a budget: it authorises spending the RESEARCH
+#: envelope's money on upgrades, without either side reporting it. A separate small cap bounds the
+#: blast radius while keeping the upgrade path alive, which is the whole point.
+UPGRADE_ENVELOPE_DEFAULT_USD = 10.0
 COVERAGE = ROOT / "data/audit_coverage.json"
 CATALOG = "https://openrouter.ai/api/v1/models"
 CTX = ssl.create_default_context(cafile=certifi.where())
@@ -303,6 +325,22 @@ def _log(rec: dict[str, Any]) -> None:
         f.write(json.dumps(rec) + "\n")
 
 
+def _upgrade_envelope() -> float:
+    """This script's OWN monthly cap. Falls back to the default when unset or unreadable.
+
+    Deliberately reads `upgrade_envelope_usd`, NOT `monthly_envelope_usd`: sharing the key would
+    re-merge the two pots the moment someone edited one. And a missing key falls back to a real
+    number rather than to "uncapped" -- the desk has already shipped a budget guard that read a
+    key that did not exist and printed "no cap configured" while a real envelope sat in the file
+    (llm_code_auditor's own defect list). Absence must not resolve to permission.
+    """
+    try:
+        cfg = json.loads(BUDGET.read_text("utf-8"))
+        return float(cfg.get("upgrade_envelope_usd") or UPGRADE_ENVELOPE_DEFAULT_USD)
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        return UPGRADE_ENVELOPE_DEFAULT_USD
+
+
 def _balance_ok(key: str, need: float) -> tuple[bool, str]:
     """Never start a gauntlet we cannot pay for (the 402-mid-run lesson from the panel runner)."""
     try:
@@ -385,7 +423,16 @@ def main() -> None:
         print("  every seat is already its lab's newest qualifying flagship -- nothing to do")
         return
 
-    ok, why = _balance_ok(key, 1.0 + 0.40 * sum(len(v) for v in shortlist.values()))
+    need = 1.0 + 0.40 * sum(len(v) for v in shortlist.values())
+    cap = _upgrade_envelope()
+    if need > cap:
+        print(f"    upgrade gauntlet REFUSED: needs ~${need:.2f}, own envelope is ${cap:.2f} "
+              f"(data/panel_budget.json:upgrade_envelope_usd). Raise the cap deliberately or "
+              f"shortlist fewer candidates -- this envelope is SEPARATE from the research pot so "
+              f"an upgrade cannot quietly spend the panel's money.")
+        return
+    print(f"    upgrade envelope ${cap:.2f}, this run needs ~${need:.2f}")
+    ok, why = _balance_ok(key, need)
     print(f"  {why}")
     if not ok:
         print("  INSUFFICIENT BALANCE -- gauntlet not started (a half-run proves nothing)")
