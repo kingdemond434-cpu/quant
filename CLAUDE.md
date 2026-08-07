@@ -42,11 +42,13 @@ python scripts/check_coverage_floors.py --report coverage.json
 
 Use `python -m mypy`, not `mypy` — the PATH binary is a uv tool install that cannot see project deps.
 
-## Current state (update when it changes)
+## Current state
 
-- Coverage: repo **92.46%**, money path **70.45%** over 748 stmts. Both floors at those values.
-- Research: **16,560 pre-registered trials, 0 executed.** 16,200 of them run today via
-  `bash ops/run_study_on_vps.sh failed_breakout` — on the VPS, where the data and the venue are
-  reachable. This analysis clone is network-policy-denied for venue hosts (GAP row 91).
-- **434 candidates, 0 survivors.** Attribution and the maturity ladder correctly return NOT MEASURED
-  until experiments execute. Do not read that as "nothing works" — read it as "nothing has run".
+**Not written here on purpose.** `.claude/desk-state.sh` runs at session start and prints coverage
+vs floors, the OI/LS 40-day clock, study execution state and the top open gap rows -- READ LIVE from
+the artifacts. A number typed into this file is correct the day it is typed and quietly wrong
+afterwards, and a stale number in an always-loaded file is worse than none: it is confidently
+misleading in every future session. This file holds the map; the hook holds the odometer.
+
+If you did not see a `=== DESK STATE ===` block at session start, the hook did not run -- treat
+every number you think you know as UNKNOWN and read the artifacts directly.
