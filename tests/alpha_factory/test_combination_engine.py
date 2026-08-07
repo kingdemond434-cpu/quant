@@ -238,3 +238,63 @@ def test_A_NONPOSITIVE_BATCH_SIZE_RAISES(bad: int) -> None:
     error, no output, and a process that never finishes."""
     with pytest.raises(ValueError, match="positive"):
         list(iter_batches(enumerate_space(("a", "b")), bad))
+
+
+# ------------------------------------------------ the transform axis (the DSL's missing half)
+
+def test_TRANSFORMS_ARE_THE_AXIS_THE_GENERATOR_DID_NOT_HAVE() -> None:
+    """The concrete answer to "what does the public operator taxonomy expose that we never tried":
+    we combined RAW features and never transformed them. Raw funding, its cross-sectional rank and
+    its change are three different hypotheses -- and that taxonomy is dominated by exactly these."""
+    from libs.alpha_factory.combination_engine import TRANSFORMS
+    assert "identity" in TRANSFORMS and TRANSFORMS[0] == "identity", (
+        "identity must be present and first -- a space where every feature is transformed has no "
+        "control, and 'the rank works' is uninterpretable without 'the level does not'")
+    assert len(TRANSFORMS) >= 6
+
+
+def test_A_TRANSFORMED_FEATURE_IS_A_DIFFERENT_HYPOTHESIS() -> None:
+    """If rank(x) and x collapsed to one key, the whole axis would add nothing while appearing to
+    multiply the space -- the worst possible outcome, since the trial count would still rise."""
+    plain = enumerate_space(("a", "b"), transforms=("identity",))
+    with_tf = enumerate_space(("a", "b"), transforms=("identity", "rank"))
+    assert len(with_tf) == len(plain) * 4, "T^2 growth: each side transforms independently"
+    keys = {c.key for c in with_tf.combinations}
+    assert len(keys) == len(with_tf), "transformed variants collided on one key"
+
+
+def test_THE_TRANSFORM_REACHES_THE_STATEMENT() -> None:
+    """A statement that renders the raw feature name while testing a transformed one is a lie in
+    the artifact a human reads."""
+    from libs.alpha_factory.combination_engine import Combination
+    c = Combination("x", "funding", "oi", "ratio", "4h", "high_vol", "rank", "delta")
+    assert "rank(funding)" in c.statement and "delta(oi)" in c.statement
+    assert c.features == ["rank(funding)", "delta(oi)"]
+
+
+def test_CROSS_SECTIONAL_TRANSFORMS_ARE_FLAGGED() -> None:
+    """A DATA REQUIREMENT, not a preference: a cross-sectional transform computed on a single
+    symbol degenerates to a constant, which turns a whole arm into a no-op that still consumes
+    trials and still raises the hurdle for everything else."""
+    from libs.alpha_factory.combination_engine import Combination
+    assert Combination("x", "a", "b", "ratio", "1d", "all", "rank", "identity").needs_panel
+    assert not Combination("x", "a", "b", "ratio", "1d", "all", "delta", "sign").needs_panel
+
+
+def test_space_size_STILL_PREDICTS_THE_ENUMERATION_WITH_TRANSFORMS() -> None:
+    """The predictor must stay honest, because its whole purpose is letting a caller see the trial
+    count BEFORE paying for it."""
+    from libs.alpha_factory.combination_engine import TRANSFORMS
+    for n_tf in (1, 2, 4):
+        feats = ("a", "b", "c")
+        got = len(enumerate_space(feats, transforms=TRANSFORMS[:n_tf]))
+        assert got == space_size(3, n_transforms=n_tf), f"mismatch at {n_tf} transforms"
+
+
+def test_THE_TRIAL_COUNT_RISES_WITH_THE_SPACE() -> None:
+    """The cost of the new axis must land in n_trials, or the hurdle would be computed from a
+    search smaller than the one performed -- manufacturing significance."""
+    from libs.alpha_factory.combination_engine import TRANSFORMS
+    small = enumerate_space(("a", "b"), transforms=("identity",))
+    big = enumerate_space(("a", "b"), transforms=TRANSFORMS[:4])
+    assert big.n_trials == len(big) > small.n_trials == len(small)

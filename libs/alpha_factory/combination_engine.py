@@ -57,6 +57,34 @@ OPERATORS: tuple[str, ...] = ("interaction", "condition", "divergence", "ratio",
 #: worst possible trade, because the duplicate still costs deflation.
 _DIRECTIONAL: frozenset[str] = frozenset({"condition", "divergence", "ratio", "lead"})
 
+#: UNARY TRANSFORMS, applied to each feature BEFORE the relation. THE DIMENSION THIS GENERATOR
+#: DID NOT HAVE, and the concrete answer to "what does the public operator taxonomy expose that we
+#: have never attempted": we combined RAW features and never transformed them. Raw funding, its
+#: cross-sectional rank, and its change are three different hypotheses, not one -- and the standard
+#: taxonomy is dominated by exactly these.
+#:
+#: `identity` MUST be present and is listed first: a space in which every feature is transformed
+#: has no control, and "the rank works" is uninterpretable without "the level does not".
+#:
+#: CS = cross-sectional (needs a panel of symbols at each timestamp). TS = time-series (needs only
+#: one symbol's history). The distinction is a DATA REQUIREMENT, not a preference -- a CS transform
+#: silently computed on a single symbol degenerates to a constant, which is how a whole arm becomes
+#: a no-op that still consumes trials.
+TRANSFORMS: tuple[str, ...] = (
+    "identity",     # --  the control
+    "rank",         # CS  percentile across the universe at each bar; kills scale and outliers
+    "zscore",       # CS  standardise across the universe; keeps magnitude, kills units
+    "delta",        # TS  first difference -- level vs CHANGE is the most common missed distinction
+    "ts_rank",      # TS  percentile within the feature's own trailing window
+    "decay",        # TS  exponentially-weighted mean; trades responsiveness for stability
+    "sign",         # --  direction only; discards magnitude deliberately
+    "abs",          # --  magnitude only; discards direction deliberately
+)
+
+#: Transforms requiring a cross-sectional panel. Recorded so a caller with one symbol can exclude
+#: them rather than run arms that silently degenerate.
+CROSS_SECTIONAL: frozenset[str] = frozenset({"rank", "zscore"})
+
 #: Bar horizons. Kept short and economically distinct rather than a dense grid: a grid over
 #: horizons is the classic way to turn one hypothesis into fifty correlated ones, pay the deflation
 #: for fifty, and learn what the one would have told you.
@@ -84,22 +112,35 @@ class Combination:
     operator: str
     horizon: str
     regime: str
+    left_tf: str = "identity"
+    right_tf: str = "identity"
+
+    @staticmethod
+    def _name(feat: str, tf: str) -> str:
+        return feat if tf == "identity" else f"{tf}({feat})"
 
     @property
     def features(self) -> list[str]:
-        return [self.left, self.right]
+        """Transformed names, so a downstream novelty check sees rank(x) and x as DIFFERENT --
+        which they are, and treating them as the same would collapse the axis this adds."""
+        return [self._name(self.left, self.left_tf), self._name(self.right, self.right_tf)]
+
+    @property
+    def needs_panel(self) -> bool:
+        return bool({self.left_tf, self.right_tf} & CROSS_SECTIONAL)
 
     @property
     def statement(self) -> str:
         """A falsifiable sentence. Phrased as a CLAIM ABOUT PREDICTION, never as a description --
         'X is high when Y is high' is a correlation nobody can trade or refute cleanly."""
         where = "" if self.regime == "all" else f" in {self.regime.replace('_', '-')} regimes"
+        left, right = self.features
         verb = {
-            "interaction": f"{self.left} and {self.right} jointly predict",
-            "condition": f"{self.left} predicts, conditioned on {self.right},",
-            "divergence": f"divergence between {self.left} and {self.right} predicts",
-            "ratio": f"the ratio of {self.left} to {self.right} predicts",
-            "lead": f"{self.left} leads {self.right} and predicts",
+            "interaction": f"{left} and {right} jointly predict",
+            "condition": f"{left} predicts, conditioned on {right},",
+            "divergence": f"divergence between {left} and {right} predicts",
+            "ratio": f"the ratio of {left} to {right} predicts",
+            "lead": f"{left} leads {right} and predicts",
         }[self.operator]
         return f"{verb} forward returns over {self.horizon}{where}"
 
@@ -108,7 +149,7 @@ class Combination:
         """Identity for de-duplication. For SYMMETRIC operators the pair is sorted, so (a,b) and
         (b,a) collapse to one key -- without this the same claim is enumerated twice and paid for
         twice in the multiple-testing hurdle."""
-        pair = (self.left, self.right)
+        pair = (self._name(self.left, self.left_tf), self._name(self.right, self.right_tf))
         if self.operator not in _DIRECTIONAL:
             pair = tuple(sorted(pair))  # type: ignore[assignment]
         return (self.category, self.operator, self.horizon, self.regime, *pair)
@@ -143,6 +184,7 @@ def enumerate_space(
     operators: Sequence[str] = OPERATORS,
     horizons: Sequence[str] = HORIZONS,
     regimes: Sequence[str] = REGIMES,
+    transforms: Sequence[str] = ("identity",),
     limit: int = 0,
 ) -> CombinationSpace:
     """Enumerate every distinct (pair x operator x horizon x regime) candidate.
@@ -162,14 +204,20 @@ def enumerate_space(
         for horizon in horizons:
             for regime in regimes:
                 for left, right in _pairs(uniq, operator):
-                    c = Combination(cat, left, right, operator, horizon, regime)
-                    if c.key in seen:
-                        continue
-                    seen.add(c.key)
-                    if limit and len(out) >= limit:
-                        truncated = True
+                    for ltf in transforms:
+                        for rtf in transforms:
+                            c = Combination(cat, left, right, operator, horizon, regime, ltf, rtf)
+                            if c.key in seen:
+                                continue
+                            seen.add(c.key)
+                            if limit and len(out) >= limit:
+                                truncated = True
+                                break
+                            out.append(c)
+                        if truncated:
+                            break
+                    if truncated:
                         break
-                    out.append(c)
                 if truncated:
                     break
             if truncated:
@@ -195,6 +243,7 @@ def space_size(
     n_operators: int = len(OPERATORS),
     n_horizons: int = len(HORIZONS),
     n_regimes: int = len(REGIMES),
+    n_transforms: int = 1,
 ) -> int:
     """Size of the space WITHOUT enumerating it -- so a caller can see the trial count it is about
     to incur before paying for it.
@@ -208,7 +257,13 @@ def space_size(
     ordered = n_features * (n_features - 1)
     n_dir = sum(1 for o in OPERATORS[:n_operators] if o in _DIRECTIONAL)
     n_sym = n_operators - n_dir
-    return (n_dir * ordered + n_sym * ordered // 2) * n_horizons * n_regimes
+    # Transforms apply INDEPENDENTLY to each side: rank(a)/delta(b) is a different claim from
+    # delta(a)/rank(b), so the factor is T^2 rather than T. That is where the growth comes from --
+    # and the honest note is that it costs remarkably little: the hurdle grows as sqrt(ln N), so
+    # 64x the search space raises the bar by roughly 20%. Massive search is cheap in SIGNIFICANCE
+    # terms; it is expensive in COMPUTE. The binding constraint is the machine, not the statistics.
+    tf2 = max(1, n_transforms) ** 2
+    return (n_dir * ordered + n_sym * ordered // 2) * n_horizons * n_regimes * tf2
 
 
 def as_hypotheses(
