@@ -280,3 +280,52 @@ ATR-limit/reversion claim must name bar size + post-2024-03 evidence; (b) if a f
 finds an hours-band reversion cell alive, check whether it is this band relocated before
 calling it new. Converges with the desk's low-pass lesson (daily price alpha dead ≠ all price
 alpha dead) from the opposite side: the fast pocket existed, and it CLOSES too.
+
+## WS-006 — THE MICROSTRUCTURE EDGE IS REAL AND SMALLER THAN THE SPREAD (2026-08-07, mined from committed data)
+
+**Mined from `docs/research/moat_microstructure_screen.json` — an existing, committed, previously
+unmined 450-cell measurement.** No new data was collected. This is what the desk already had and
+had not read.
+
+**THE SIGNAL IS REAL.** `flow_momentum @ 60s` clears Holm across 45 symbols: mean IC **+0.0069**,
+cross-symbol **t = +3.95** against a Holm bar of 2.81. That is a genuine, multiple-testing-corrected
+positive result on order-flow momentum, and it is the only one of ten arms that clears.
+
+**IT DOES NOT PAY.** That same arm nets **−0.656 bp per bar**, with **1 of 45 symbols net-positive**.
+Every one of the ten arms has a negative mean net. The effect is smaller than the cost of
+expressing it.
+
+**NINE CELLS PASS A FULL NET/POWER/DECONTAMINATION FILTER, AND THEIR COMMON PROPERTY IS NOT THE
+SIGNAL.** Filtering all 450 for `net_positive AND powered_honest AND decontam_passed` leaves 9.
+They span four different constructions and both bar sizes — no construction dominates. What they
+share is the book:
+
+    median spread, the 9 survivors      0.053 bp
+    median spread, the other 441        2.520 bp      (48x wider)
+    BTCUSDT + ETHUSDT                   6 of 9
+
+**So the finding is about LIQUIDITY, not about order-flow imbalance.** The edge exists everywhere
+and clears costs only where the spread is effectively zero. Reported as a signal discovery it would
+be false; reported as a liquidity boundary it is true and useful.
+
+**AND THE NINE HAVE NOT FACED THE BAR THEY WOULD HAVE TO CLEAR.** They were selected on net P&L out
+of 450 cells with no deflation applied — √(2 ln 450) = **3.50**. The panel test IS the correctly
+corrected statistic, and it clears exactly one arm, which loses money. Every one of the nine is
+additionally labelled **SCREEN-WEAK by the harness's own verdict**: they are net-positive and
+statistically weak, which are different populations, and taking their intersection as a survivor
+set would be selection on the axis that was not tested.
+
+**THE LEAK SIGNATURE IS SUBSTANTIAL AND SEPARATE.** 105 of 360 leak probes (**29%**) collapse under
+a one-bar lag — the apparent edge disappears when entry moves one bar later. That is a harness-wide
+property worth its own investigation, and it bounds how much of the +0.0069 should be believed.
+
+**WHAT THIS IS WORTH, stated without inflation.** It is not a survivor. It is a **measured boundary
+condition**: the microstructure family pays only at the very top of the liquidity distribution, and
+that is precisely where the desk's carry book already trades — so the marginal opportunity is
+narrower than the raw 36 SCREEN-INTERESTING count suggested. It also gives the first real
+independent-mechanism count on this desk: **one mechanism (order-flow momentum), not thirty-six
+candidates.**
+
+**NEXT TEST, if the family is pursued:** restrict to the top decile by book depth, re-run with the
+trial budget declared for THAT universe only, and require the net-positive arms to clear the
+deflated bar rather than be selected by it. Any other continuation is fitting the 450.
