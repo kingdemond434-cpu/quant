@@ -17,6 +17,23 @@ Keep this file SHORT. It sits in every context window, so it is an INDEX, never 
 | adding a doc under `docs/` | `docs/research/ARTIFACT_GOVERNANCE.md` — every artifact must be claimed by a law, on arrival |
 | data sources | `docs/research/data_axis_watchlist.md`, `scripts/source_backlog_next.py` |
 
+## Search the vault before deciding — 208k lines, one hop
+
+Do not grep blind, and do not decide something the desk already decided.
+
+```
+python scripts/vault_search.py "reduce_only close leg"          # humans + sessions
+python scripts/vault_search.py --json --limit 20 "liquidation"  # cycles / audits / sweeps
+```
+
+Claude also has it as the `vault_search` MCP tool (`.mcp.json` -> `scripts/vault_mcp_server.py`).
+Same index (`libs/research/vault_index.py`), so an organ and a session can never disagree about
+what the vault says.
+
+**LEXICAL (BM25), not semantic** — no embedding model is reachable from a network-denied clone. An
+empty result means THESE TOKENS are absent, **not** that the question was never settled. Re-query
+with the vocabulary the document itself would use.
+
 ## Laws most often violated by a fresh session
 
 - **Coverage floors ratchet UP only** (`docs/research/COVERAGE_RATCHET.json`, L1.50). A floor edited
