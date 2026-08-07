@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-06T03:20:20.360178+00:00",
+ "updated": "2026-08-07T03:16:10.741003+00:00",
  "n_closes": 27,
  "hold_buckets": {
   "<2h": {
@@ -52,18 +52,18 @@
   ">24h": {
    "n": 23,
    "notional": 19361.96,
-   "fee": 1562.51,
-   "net": -1635.2,
-   "bps": -844.54
+   "fee": 1549.41,
+   "net": -1622.1,
+   "bps": -837.78
   }
  },
  "fee_attribution": {
-  "venue_commission": 1570.71,
-  "attributed": 1562.66,
+  "venue_commission": 1557.61,
+  "attributed": 1549.56,
   "unattributed": 8.05,
   "unattributed_share": 0.005,
-  "n_events": 8740,
-  "fee_bps_of_logged_notional": 803.2,
+  "n_events": 8487,
+  "fee_bps_of_logged_notional": 796.5,
   "scope": "futures commission only (/fapi income); spot-leg fees not visible -> LOWER BOUND"
  },
  "baseline_funding_class": {
@@ -91,9 +91,9 @@
  "worst_symbols": [],
  "flags": [
   "hold-class >24h bleeding: -37.54 bps over 23 trades (net $-72.69)",
-  "FEE INTENSITY hold-class >24h: $1562.51 on $19362 = 807 bps, 81x the ~10 bps a futures round-trip should bill -- the venue is charging for fills this book did not intend (churn-loop fingerprint; see max_audit check_close_retry_loop)",
+  "FEE INTENSITY hold-class >24h: $1549.41 on $19362 = 800 bps, 80x the ~10 bps a futures round-trip should bill -- the venue is charging for fills this book did not intend (churn-loop fingerprint; see max_audit check_close_retry_loop)",
   "ENTRY-GATE REGRESSION: 2 open(s) at baseline funding 0.0001 AFTER the gate shipped -- gate is not filtering"
  ],
  "origin": "recursion rule 2026-07-22: mechanization of the principal-supplied probes that found gaps #42/#43/#34",
- "written": "2026-08-06T03:20:20.370989+00:00"
+ "written": "2026-08-07T03:16:10.746865+00:00"
 }

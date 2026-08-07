@@ -2,8 +2,8 @@
   "campaign_obs_retained": {
     "artifact": "data/campaign_retention.json",
     "proving_command": "python scripts/check_campaign_retention.py",
-    "recorded": "2026-08-06T03:25:22Z",
-    "value": 0.858082
+    "recorded": "2026-08-06T07:07:01Z",
+    "value": 1.0
   },
   "capability_wired": {
     "artifact": "data/utilisation.json",
@@ -32,7 +32,7 @@
   "scripts_mypy_clean": {
     "artifact": "data/mypy_ratchet.json",
     "proving_command": "python scripts/check_mypy_ratchet.py",
-    "recorded": "2026-08-06T03:25:22Z",
+    "recorded": "2026-08-07T03:06:26Z",
     "value": 0.406844
   },
   "test_strength::libs/autodiscovery/validation.py": {
