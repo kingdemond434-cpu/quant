@@ -153,3 +153,9 @@ recorded in `max_audit.py` because they need code to be real. Zero remain ungove
 | Artifact | Class | Rationale | Staleness floor |
 |---|---|---|---|
 | `docs/research/ETHBTC_ROTATION_PREREGISTRATION.md` | **TERMINAL** | Same class and the same reasoning as the two pre-registrations above: a pre-registration is terminal **by definition, and that is the point of one**. It fixes kill criteria and a trial budget BEFORE the run, so refreshing it in place would destroy the only property that makes it evidence — criteria chosen after seeing a result are not criteria. It is superseded by its own RESULT, never edited: the run either fires a kill criterion or it does not, and the document stands as the record of what was promised beforehand either way. An amendment (as `FAILED_BREAKOUT_PREREGISTRATION.md` took) is appended and dated, never a rewrite, and it moves the shared deflation budget for all three. | n/a |
+
+### Added 2026-08-07 (fourth pre-registration)
+
+| Artifact | Class | Rationale | Staleness floor |
+|---|---|---|---|
+| `docs/research/MANAGEMENT_SWEEP_PREREGISTRATION.md` | **TERMINAL** | Same class and reasoning as the three pre-registrations above: terminal by definition, because criteria chosen after seeing a result are not criteria. Superseded by its own RESULT, never edited; amendments are appended and dated and move the shared deflation budget for all four. | n/a |
