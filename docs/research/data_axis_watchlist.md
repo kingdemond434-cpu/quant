@@ -1165,3 +1165,39 @@ undocumented. The desk's own recorder must stay primary; btc126 is backfill, not
 - **STATUS:** catalogued, NOT verified — no licence read, no ToS read, no endpoint test, no free-
   alternative hunt. Enters the ordinary catalogue → verify → resolve queue. Cataloguing is not
   adoption.
+
+### 26. Kraken downloadable historical OHLCVT archive (2015→, all timeframes, free) — grade: UNVERIFIED
+
+- **THE GAP THIS EXPOSES, and it is a real one.** `FREE_DATA_ALTERNATIVES_SPEC` names
+  "exchange-native dumps & archives ... from every major AND regional venue" as source category
+  **#1**, dug to exhaustion EVERY run. The desk has cards for Upbit, bitFlyer, Bithumb, Coincheck,
+  OKX and the Binance archive. **It has no card for Kraken** — a top-tier venue with continuous
+  history to 2015 — and the miss went unnoticed because Kraken is already *present* in the
+  codebase, so a name-level check finds it and stops. That is the shape worth recording: **a
+  source can be simultaneously USED and UNMINED, and the name being familiar is exactly what
+  prevents the question being asked.**
+- **HOW KRAKEN IS USED TODAY (shallow):** `scripts/reconstruct_kaiko_reference_rate.py:109` pulls
+  the LIVE `api.kraken.com/0/public/Trades` endpoint with a `since` cursor, `max_calls=120` —
+  recent trades only, rate-limited, 13,595 trades in the 4-venue joint tape. That is a live feed
+  used as a live feed. The ARCHIVE is a different artifact entirely and has never been touched.
+- **CLAIMED (unverified):** `support.kraken.com/.../downloadable-historical-ohlcvt-open-high-low-
+  close-volume-trades-data` — OHLCV **and trades**, all timeframes, since 2015, free.
+- **WHY IT IS WORTH REAL EFFORT, three specific uses rather than "more data":**
+  1. **DEPTH PARITY (§32) on an axis the desk already owns shallow.** The reference-rate
+     reconstruction is currently 120 API calls deep. An archive to 2015 takes the same axis to its
+     archive floor — the charter's own rule that "depth always levels UP to whatever breadth
+     reaches", applied to a source already in use.
+  2. **A SECOND VENUE for the ETH/BTC rotation study** (card 24 / `ETHBTC_ROTATION_PREREGISTRATION`).
+     That study currently loads Binance bars only. A rotation edge that exists on Binance and not
+     on Kraken is a venue artifact, and cross-venue disagreement is the cheapest falsifier
+     available — it needs no new hypothesis, only a second tape.
+  3. **IT PREDATES BINANCE FUTURES.** Kraken from 2015 covers 2015-2017, which USD-M perp history
+     cannot. Every study whose out-of-sample window is bounded by Binance's start date is bounded
+     by a VENUE, not by the market.
+- **STATUS: UNVERIFIED, and the unverified parts are named.** No licence or ToS read, no endpoint
+  or download tested (this clone is network-policy-denied, GAP row 91), format unknown, and the
+  2015 start is the poster's claim rather than a checked fact. **The licence read comes FIRST** —
+  row #79 is the standing reminder that this desk once recorded a licence wrong in its own favour.
+- **PROVENANCE:** a Reddit commenter answering "where do you get long crypto history". Worth
+  stating that the desk's own weekly free-data mission should have found this before a forum
+  comment did — the failure was not effort, it was that a familiar name reads as a covered one.
