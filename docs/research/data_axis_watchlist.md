@@ -1030,3 +1030,61 @@ undocumented. The desk's own recorder must stay primary; btc126 is backfill, not
   note (next-run first items: 2023 s2d21 domestic-vs-overseas short-horizon dynamics;
   2025 s2d19 GMO-Bybit pair study — touches our LICENSED GMO tick source; 2022 s1d3+s1d21
   regression-bias pair; 2023 s1d24 limit-optimization under jumps).
+
+### 22. aigu + ProBitForge (principal-named CN sources) — grade: UNVERIFIED
+
+- **BRIEF:** principal named two sources to mine constantly *"if beneficial"* — **aigu** (described as
+  a Chinese AI crypto quant research lab doing transparent paper trading, strategy evaluation and
+  multi-agent experiments) and **ProBitForge** (described as publishing engineering posts on
+  AI-driven crypto research systems, memory architectures and automated strategy development).
+- **RESULT: NEITHER RESOLVES.** Four independent searches — English descriptive, English
+  exact-handle, Chinese descriptive (`爱谷 AI 量化 加密货币 实验室 多智能体`), and Chinese
+  practitioner-corpus — returned no entity of either name. "ProBitForge" collides with **ProBit
+  Global**, an exchange whose own help centre states it has PERMANENTLY TERMINATED service and that
+  any account claiming to represent it on social media is a scam. That collision is a reason for
+  more care, not less: a miner pointed at a plausible-but-unverified handle in that name-space is
+  pointed at an active impersonation surface.
+- **GRADED: UNRESOLVED — do not adopt, do not crawl, do not seed the hunter.** Recorded rather than
+  quietly dropped, per this file's own standard ("logged honestly as gaps, not painted over"), and
+  per WS-005: absence must resolve to *not measured*, never to a clean verdict. **This is NOT a
+  claim the sources do not exist** — a private account, a WeChat 公众号 (structurally unindexed), a
+  Telegram channel or a very new handle would all produce exactly this result. It is a claim that
+  the desk cannot presently point an automated miner at them, which is a different and weaker
+  statement. **UNBLOCKED BY ONE LINE FROM THE PRINCIPAL:** a URL or exact platform handle converts
+  this card to `pending-verification` immediately; nothing else is needed.
+- **WHY THE HUNTER WAS NOT SEEDED ANYWAY.** `kimi_hunter` mechanically debits its source on a
+  finding that maps to a family kill. Seeding it with an unresolvable name means either it invents
+  a source (the worst outcome — an unsourced claim wearing a citation) or it silently mines nothing
+  while the coverage file records the vector as EXPLORED, which retires the vector for
+  `_VECTOR_COOLDOWN_D` days. A fabricated exploration is worse than no exploration, because it
+  ALSO blocks the real one.
+
+### 23. 中文 practitioner corpus (thuquant index / 数量技术宅 / 土法炼钢) — grade: UNVERIFIED
+
+- **THE SUBSTITUTES, which do resolve, and why this is the same asset class.** The brief's intent —
+  a constantly-mined Chinese practitioner corpus — is directly served by sources that verifiably
+  exist. The precedent is this desk's own `jp_botter_advent_calendar` card: 187 JP entries mined as
+  a POST-MORTEM archive yielded three graveyard entries, because practitioners publish edges they
+  have already exhausted. Chinese-language 量化 writing has the identical shape and is currently
+  UNMINED by this desk.
+  1. **`thuquant/awesome-quant`** — 中国的Quant相关资源索引. An INDEX, so it is a breadth multiplier
+     rather than a finding source: mine it for the source list, not for claims.
+  2. **`cnblogs.com/sljsz` (数量技术宅)** — carries `再谈量化策略失效的问题` ("strategy decay,
+     revisited"). **Highest priority of the three, and the reason is the desk's doctrine rather
+     than the author's reputation:** writing explicitly about WHY A STRATEGY DIED is graveyard ore,
+     and the graveyard is the one corpus this desk mines for transferable kill-conditions rather
+     than for candidates.
+  3. **`quant67.com` (土法炼钢兴趣小组)** — crypto strategy notes incl. funding-rate arbitrage,
+     cross-exchange and DeFi yield. **CAUTION, and it is a real one:** funding-rate arb is the
+     desk's OWN live strategy and `{"binance","funding"}` is a FORBIDDEN_SET in `kimi_hunter` —
+     crowded beyond usefulness. Mine this for MECHANICS and failure modes (the fence checklist
+     shape that R0021 took from the JP corpus), never for the signal itself.
+- **STATUS:** all three catalogued, NONE verified — no robots.txt check, no licence read, no
+  endpoint test has been run this session. They enter the ordinary
+  catalogue → verify → resolve pipeline (`scripts/source_backlog_next.py`), which is the same bar
+  every other source on this page had to clear. Cataloguing is not adoption.
+- **§13 NOTE, stated before anyone hits it:** WeChat 公众号 content is structurally hostile to
+  automated access and Zhihu serves an anti-bot gate. Row #80 of the GAP register is an OPEN,
+  UNRULED question on exactly whether defeating an anti-bot gate is inside §13. Until the principal
+  rules, these are read by hand or not at all — the ruling is not pre-empted by pointing a crawler
+  at them first.

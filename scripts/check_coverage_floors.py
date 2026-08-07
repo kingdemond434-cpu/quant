@@ -64,6 +64,61 @@ MONEY_PATH = (
 #: which is worse than a floor set one point low.
 SLACK = 1.0
 
+#: L1.50. Past this many days with no floor RAISED, the ratchet is reported as STALLED.
+#:
+#: Not an evidence gate, so L1.48 does not apply: this measures ELAPSED NEGLECT, not accumulated
+#: proof, and there is no observation whose arrival would make a stalled ratchet acceptable. 14 days
+#: is two full weekly cycles -- long enough that one busy week reads as normal, short enough that a
+#: quarter cannot pass unremarked.
+STALL_DAYS = 14.0
+
+
+def days_since(iso: str | None) -> float | None:
+    """Days since an ISO timestamp, or None if absent/unparseable.
+
+    None means NOT MEASURED and must never be rendered as 0.0 (L1.28a). A record written before
+    L1.50 has no `last_raised`, and a missing timestamp that read as "raised today" would give the
+    oldest, most-stalled records the healthiest possible reading -- the exact inversion GAP #83
+    found in `register_health`, where a register never driven once scored perfect.
+    """
+    if not iso:
+        return None
+    try:
+        then = datetime.fromisoformat(str(iso))
+    except (TypeError, ValueError):
+        return None
+    if then.tzinfo is None:                      # naive compares wrong against every aware stamp
+        return None
+    return max(0.0, (datetime.now(tz=UTC) - then).total_seconds() / 86400.0)
+
+
+def stall_report(rec: dict) -> str:
+    """L1.50: a floor that has not risen is a ratchet that has stopped.
+
+    REPORTS, NEVER FAILS. A check that exits non-zero on a quiet day gets deleted, and a deleted
+    check enforces nothing -- the same reasoning behind SLACK. Regression is CI's business;
+    stagnation is the auditor's. A desk that cannot tell "you regressed" from "you stopped
+    improving" ends up told neither.
+    """
+    age = days_since(rec.get("last_raised"))
+    if age is None:
+        return ("  L1.50 STALL: this record has never recorded a raise. That is not a clean "
+                "reading -- it is an absent one, and the two must not look alike.")
+    if age >= STALL_DAYS:
+        return (f"  L1.50 STALL: no floor has RISEN in {age:.0f} days. The floors are holding, "
+                "which is the minimum, not the target. 100% is the target; the gap below is the "
+                "distance to it.")
+    return f"  L1.50: last raise {age:.1f}d ago -- ratchet moving."
+
+
+def gap_to_target(now: dict[str, float]) -> str:
+    """Distance to 100%, printed every run. A floor is a MINIMUM; the target is the ceiling, and
+    reporting only the floor lets a permanently-green desk read as a finished one."""
+    return (f"  to 100%: repo needs +{100.0 - now['repo_pct']:.2f}pp, "
+            f"money path +{100.0 - now['money_path_pct']:.2f}pp "
+            f"(~{round((100.0 - now['money_path_pct']) / 100.0 * now['money_path_statements'])} "
+            "uncovered statements on the code that can move funds)")
+
 
 def measure(report: dict) -> dict[str, float]:
     """(repo %, money-path %) from a coverage.py JSON report."""
@@ -115,6 +170,8 @@ def main() -> int:
     print(f"coverage-floors: repo {now['repo_pct']}% (floor {repo_floor}%) | "
           f"money path {now['money_path_pct']}% over {now['money_path_statements']} stmts "
           f"(floor {money_floor}%)")
+    print(gap_to_target(now))
+    print(stall_report(rec))
 
     breaches = []
     if now["repo_pct"] < repo_floor - SLACK:
@@ -128,25 +185,39 @@ def main() -> int:
     if a.update:
         floors["repo_pct"] = max(repo_floor, now["repo_pct"])
         floors["money_path_pct"] = max(money_floor, now["money_path_pct"])
+        # L1.50: `last_raised` moves ONLY when a floor actually rose. Stamping it on every
+        # --update would make running the updater look identical to improving coverage, which is
+        # GAP #85's error exactly -- an `n` that counts READINGS OF THE WORLD rather than events
+        # in it, so diligence in running the audit becomes the mechanism by which it goes wrong.
+        rose = (floors["repo_pct"] > repo_floor) or (floors["money_path_pct"] > money_floor)
+        last_raised = (datetime.now(tz=UTC).isoformat() if rose
+                       else rec.get("last_raised"))
         RECORD.write_text(json.dumps({
             "_": ("HIGH-WATER MARKS for test coverage. Raised by --update, NEVER lowered by code. "
                   "The money path is tracked separately because a repo-wide average lets order-"
                   "path coverage fall while research tests keep the aggregate up -- the average "
                   "hides exactly the number worth watching."),
             "updated": datetime.now(tz=UTC).isoformat(),
+            "last_raised": last_raised,
             "high_water": floors,
             "measured": now,
             "money_path_files": list(MONEY_PATH),
             "slack_pp": SLACK,
             "next_ceiling": (
-                "money-path coverage at parity with the repo. It sits at 41.6% against 88.1% "
-                "everywhere else, which is backwards: a bug in a research script costs a cycle, "
-                "a bug on the order path walks a short through zero. Parity is not the end "
-                "either -- the ceiling after it is coverage of the FAILURE branches specifically, "
-                "since every incident this desk has had came from an error path, not a happy one."),
+                "STILL money-path parity, and the gap is still the point. 41.6% -> 70.45% "
+                "(2026-08-06) against 92.46% repo-wide: the direction is right and the inversion "
+                "is not fixed. ~221 uncovered statements remain on the code that can place orders "
+                "and move funds, and the three defects found writing those tests -- a flatten leg "
+                "that could sell through zero, and GAP #49 wired into only one leg of a two-leg "
+                "trade -- were all in the untested part, which is the whole argument. Parity is "
+                "not the end either: the ceiling after it is the FAILURE branches specifically, "
+                "since every incident this desk has had came from an error path, not a happy one. "
+                "Per L1.50 the floor is the minimum and 100% is the target; the residue above is "
+                "named so it cannot be mistaken for work already done."),
         }, indent=1), "utf-8")
         print(f"  floors updated -> repo {floors['repo_pct']}% | "
-              f"money path {floors['money_path_pct']}%")
+              f"money path {floors['money_path_pct']}%"
+              + ("  (RAISED)" if rose else "  (no raise -- last_raised unchanged)"))
         return 0
 
     if breaches:

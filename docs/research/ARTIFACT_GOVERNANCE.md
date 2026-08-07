@@ -130,3 +130,20 @@ than edited.
 21d floor is tighter than the others because staleness there does not merely misinform a reader —
 it silently degrades every hypothesis the desk generates, and that degradation is invisible in
 the output. If any of these eight warrants a producer being built, it is this one.
+
+### Added 2026-08-06 (this session's own artifact, classified on arrival — the rule this register keeps having to re-apply to its author)
+
+`artifact-ungoverned` fired on **1** artifact, `docs/RESEARCH_DATA_TRANSPORT.md`, written earlier
+in this same session. Worth naming plainly rather than fixing quietly: the register's own standard
+is "classified on arrival, not later", and it was not — the check caught it, on a branch whose
+author had already read this file. That is the register working, and it is also the third time an
+artifact created by the session doing the governing arrived ungoverned. **The default is
+ungoverned, and no amount of knowing that changes the default** — which is precisely the argument
+for the check existing rather than for asking authors to remember.
+
+| Artifact | Class | Rationale | Staleness floor |
+|---|---|---|---|
+| `docs/RESEARCH_DATA_TRANSPORT.md` | **TERMINAL** | Same class and the same reasoning as `docs/VPS_BRINGUP.md` and `docs/RECORDER_DEPLOY.md` directly above: it records one deployment decision under one constraint. The constraint is that the research data lives in `data/` on the VPS, `.gitignore` excludes `data/*`, and every analysis container is a fresh clone — so a study cannot reach its own inputs. The document names the two lawful routes (run the study on the VPS via `ops/run_study_on_vps.sh`, or ship a periodic snapshot via `ops/snapshot_research_data.sh` → `ops/restore_research_data.sh`) and the one hard exclusion, `data/secrets/**`, which must never enter a snapshot. It has no producer and no cadence; a clock cannot make a runbook true, so a staleness floor would be theatre. **Its superseding condition, named rather than dated:** the day the research data reaches analysis clones by any other route — a mounted volume, an object store the clone can read directly, a data service — this document describes a transport that no longer exists, and a new runbook must supersede it by name. That condition, not an age, retires it. | n/a |
+
+**Running net: 3 cadenced, 8 doctrine, 8 terminal in this register, plus the three decisions
+recorded in `max_audit.py` because they need code to be real. Zero remain ungoverned.**

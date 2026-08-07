@@ -1,14 +1,15 @@
 {
  "_": "HIGH-WATER MARKS for test coverage. Raised by --update, NEVER lowered by code. The money path is tracked separately because a repo-wide average lets order-path coverage fall while research tests keep the aggregate up -- the average hides exactly the number worth watching.",
- "updated": "2026-08-04T02:24:31.497442+00:00",
+ "updated": "2026-08-07T01:14:39.974100+00:00",
+ "last_raised": "2026-08-07T01:14:16.957443+00:00",
  "high_water": {
-  "repo_pct": 89.06,
-  "money_path_pct": 59.59
+  "repo_pct": 92.46,
+  "money_path_pct": 70.45
  },
  "measured": {
-  "repo_pct": 89.06,
-  "money_path_pct": 59.59,
-  "money_path_statements": 740
+  "repo_pct": 92.46,
+  "money_path_pct": 70.45,
+  "money_path_statements": 748
  },
  "money_path_files": [
   "libs/execution/binance_live.py",
@@ -18,5 +19,5 @@
   "libs/execution/staging.py"
  ],
  "slack_pp": 1.0,
- "next_ceiling": "money-path coverage at parity with the repo. It sits at 41.6% against 88.1% everywhere else, which is backwards: a bug in a research script costs a cycle, a bug on the order path walks a short through zero. Parity is not the end either -- the ceiling after it is coverage of the FAILURE branches specifically, since every incident this desk has had came from an error path, not a happy one."
+ "next_ceiling": "STILL money-path parity, and the gap is still the point. 41.6% -> 70.45% (2026-08-06) against 92.46% repo-wide: the direction is right and the inversion is not fixed. ~221 uncovered statements remain on the code that can place orders and move funds, and the three defects found writing those tests -- a flatten leg that could sell through zero, and GAP #49 wired into only one leg of a two-leg trade -- were all in the untested part, which is the whole argument. Parity is not the end either: the ceiling after it is the FAILURE branches specifically, since every incident this desk has had came from an error path, not a happy one. Per L1.50 the floor is the minimum and 100% is the target; the residue above is named so it cannot be mistaken for work already done."
 }

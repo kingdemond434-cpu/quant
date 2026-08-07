@@ -1390,3 +1390,45 @@ ran" from "small sample" and must refuse to grade rather than manufacture a verd
 
 **Binding on future work.** Any new gate, verdict field or acceptance boolean must appear in the
 reachability roster on the day it is written. A gate nobody can fail is not a standard.
+
+**L1.50 A FLOOR THAT HAS NOT RISEN IS A RATCHET THAT HAS STOPPED** *(principal law, 2026-08-06)*.
+Principal: *"coverage should never be breached or regressed and all coverage should always aim to be
+100% maximised everyday ... always uses 100% of its ability to exploit survivors."* This law
+converts that from an intention into something that can fail.
+
+**The defect it closes is in the desk's own instrument.** `check_coverage_floors.py` fails on
+REGRESSION and is silent on STAGNATION. A desk that measures 89.06% every day for a year is
+permanently green and permanently unimproved, and the ratchet — an instrument built to force
+improvement — reports success throughout. That is L1.49's shape one level up: not a gate that never
+ran, but a gate that runs, passes, and asks nothing. **A floor is a MINIMUM, never a TARGET**; the
+target is 100% and the only honest reading of distance-to-target is the gap that remains.
+
+**The rule.** Every ratcheted instrument on this desk must record WHEN ITS FLOOR LAST ROSE, and
+report the interval since. `days_since_raise` is a first-class field of the record, printed on every
+run beside the floor itself. A stall is a reportable state, not an absence of news.
+
+**Stalling REPORTS; only regression FAILS, and the asymmetry is deliberate rather than timid.** A
+check that exits non-zero on a quiet day gets deleted, and a deleted check enforces nothing — the
+same reasoning that put `SLACK = 1.0` in the floor comparison. So stagnation is loud and
+non-blocking: it belongs to the auditor, which exists to emit defects nobody asked for, not to CI,
+which exists to block merges. A desk that cannot tell the difference between "you regressed" and
+"you stopped improving" will eventually be told neither.
+
+**100% IS THE TARGET AND IT IS NOT RHETORICAL.** Coverage, conversion and utilisation each carry the
+same target and the same reporting duty. Where 100% is genuinely unreachable, the residue must be
+NAMED — this module, these branches, this reason — because an unnamed residue is indistinguishable
+from work not done, and the two get the same silence.
+
+**THE SURVIVOR CLAUSE, and it is the half most easily misread.** "Use 100% of its ability to exploit
+survivors" is an obligation whose current value is ZERO, because the desk has 434 candidates and 0
+survivors. Full exploitation of an empty set is an empty act, and reporting it as compliance would
+be the purest available form of the substitution this desk keeps catching in itself. **While the
+survivor set is empty, this clause binds on the FUNNEL, not on the exploitation.** The binding
+constraint is named and unambiguous: 16,560 pre-registered trials, zero run, blocked on research
+data that lives on the VPS and reaches no analysis clone. Any report claiming full survivor
+exploitation while that number is zero is in breach of L1.28a (UNMEASURED is a real answer) and of
+this law.
+
+**Binding on future work.** Any new ratcheted record — coverage, suite size, breadth, conversion —
+ships with `last_raised` on the day it is written. A high-water mark with no timestamp cannot
+distinguish a desk that is winning from a desk that has stopped, and those must never look alike.
