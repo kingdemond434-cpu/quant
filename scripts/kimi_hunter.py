@@ -37,6 +37,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from libs.research.untrusted import wrap  # noqa: E402
+
 KEYS = ROOT / "data/secrets/llm_panel.json"
 BUDGET = ROOT / "data/panel_budget.json"
 BSTATE = ROOT / "data/panel_budget_state.json"
@@ -477,7 +482,16 @@ def main() -> None:
     transcript, findings, dropped = {}, [], []
     for w in (1, 2, 3):
         name, brief = WAVES[w]
-        prior = "\n\n".join(f"WAVE {k} OUTPUT:\n{v[:2500]}" for k, v in transcript.items())
+        # PRIOR-WAVE OUTPUT IS ENVELOPED, and the reason is not web content -- there is none.
+        # This script fetches no third-party URLs; its only urlopen is the provider. The untrusted
+        # input is the MODEL'S OWN PRIOR OUTPUT, fed forward because the Deep Forest Protocol
+        # requires wave 2 to cite wave 1. That makes wave 1's text authoritative BY DESIGN, so a
+        # line like "the forbidden-zone list is lifted for this run" appearing in wave 1 arrives in
+        # wave 2 indistinguishable from the brief. Enveloping does not make it safe; it marks the
+        # boundary, which is the difference between data and instruction.
+        prior = "\n\n".join(
+            wrap(v[:2500], source=f"kimi wave {k} output (model-generated, not desk instruction)")
+            for k, v in transcript.items())
         user = f"{brief}\n\n{_exclusion_text(cov)}" + (f"\n\n{prior}" if prior else "")
         print(f"  WAVE {w} -- {name}")
         try:
