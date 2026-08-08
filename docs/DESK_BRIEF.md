@@ -1,4 +1,4 @@
-# DESK BRIEF -- 2026-08-08 03:07Z
+# DESK BRIEF -- 2026-08-08 03:23Z
 
 Machine-generated from measured desk state. Every number traces to an artifact in
 `data/`. Nothing here is an argument. Respond to the evidence, not to another model.
@@ -13,7 +13,7 @@ Machine-generated from measured desk state. Every number traces to an artifact i
    forward clocks promote.
 
 ## Experiment record (45d, harvested from git -- one row per commit)
-- experiments: **596**; decided: 312
+- experiments: **597**; decided: 312
 - survival rate: **6.4%** (20 survived / 269 refuted / 23 inconclusive)
 - unclassified commit decisions: 30 (commit-discipline defect)
 
@@ -44,20 +44,20 @@ Machine-generated from measured desk state. Every number traces to an artifact i
 
 ## FAMILY KILLS -- mechanisms closed by evidence
 
-`M_PRICE_PATTERN`, `M_ATTENTION_DELAY`, `M_FLOW_PRESSURE`, `M_SKILL_PERSISTENCE`
+`M_PRICE_PATTERN`, `M_ATTENTION_DELAY`, `M_SKILL_PERSISTENCE`, `M_FLOW_PRESSURE`
 
 Every future variant inherits this evidence.
 
 ## Transferable lessons (family -> dominant failure mode)
 
-- **price-only/TA** -> `C_WRONG_TIMING` (n=55)
-- **funding/positioning** -> `G_TOO_EXPENSIVE` (n=30)
-- **regional premium** -> `A_NO_MECHANISM` (n=28)
-- **attention/social** -> `C_WRONG_TIMING` (n=26)
-- **on-chain/flow** -> `C_WRONG_TIMING` (n=26)
-- **trader/behavioural** -> `C_WRONG_TIMING` (n=19)
-- **other** -> `UNCLASSIFIED` (n=7)
-- **developer** -> `C_WRONG_TIMING` (n=6)
+- **price-only/TA** -> `H_OVERFIT` (n=42)
+- **regional premium** -> `A_NO_MECHANISM` (n=20)
+- **funding/positioning** -> `E_DATA_QUALITY` (n=16)
+- **trader/behavioural** -> `C_WRONG_TIMING` (n=15)
+- **on-chain/flow** -> `C_WRONG_TIMING` (n=13)
+- **attention/social** -> `A_NO_MECHANISM` (n=9)
+- **other** -> `UNCLASSIFIED` (n=4)
+- **developer** -> `H_OVERFIT` (n=3)
 
 ## Proprietary moat (4.4GB order books, 30 symbols, top-20 snapshots)
 
