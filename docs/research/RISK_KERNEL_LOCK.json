@@ -1,0 +1,27 @@
+{
+ "_": "SHA-256 lock on the survival path. Verified by scripts/check_risk_kernel.py on every cycle. The rails MAY change -- they may not change SILENTLY.",
+ "updated": "2026-08-08T15:34:51.443513+00:00",
+ "reason": "baseline lock, 2026-08-08: the desk hash-locked its constitution and left the survival path on an honour system enforced only by prose comments",
+ "files": {
+  "scripts/run_deadman_switch.py": "TIER-3 RUIN RAIL. Polls combined book equity and flattens on breach. The one control that ends a losing session rather than reducing it; log(0) = -inf, so ruin terminates the objective rather than lowering it",
+  "libs/risk/config.py": "the numeric limits every sizing decision reads. A silent widening here is invisible at every call site and shows up only as a larger loss",
+  "libs/risk/gate.py": "the pre-trade risk gate -- the last check between an intent and an order",
+  "libs/risk/kelly.py": "sizing arithmetic. Over-betting an estimated edge loses more growth than under-betting gains it, so an error here is asymmetric and compounds",
+  "libs/risk/drawdown.py": "the drawdown rail that de-risks before the ruin rail has to fire",
+  "libs/execution/staging.py": "order staging -- the path an intent takes to become an order"
+ },
+ "hashes": {
+  "scripts/run_deadman_switch.py": "ffe514989a9df3bf4798eab7d514001e59e8340e367724407cba5af75cd59c2c",
+  "libs/risk/config.py": "fe13f8a6cff8130ec96e2e744f894febe11cb396f8a329d8c1d597ac3620bf99",
+  "libs/risk/gate.py": "aea6bf46c8bac9ac930a08feb1e1db44cd051cfcf1ae2cf23d2e23b2f9f50db0",
+  "libs/risk/kelly.py": "fe5eba3223194ae6449f2e828a6bc917e7b44b818c6c5d5ee21f3ece0c7d7ab5",
+  "libs/risk/drawdown.py": "0fa242ad2b2faf73b5b5ac37cc82c6eaae888406529146fa929026adadbb3824",
+  "libs/execution/staging.py": "1a4e250887342c4aaed5d155b8cc7c3157550a7a7f860d76f80db87327745e69"
+ },
+ "history": [
+  {
+   "at": "2026-08-08T15:34:51.443825+00:00",
+   "reason": "baseline lock, 2026-08-08: the desk hash-locked its constitution and left the survival path on an honour system enforced only by prose comments"
+  }
+ ]
+}

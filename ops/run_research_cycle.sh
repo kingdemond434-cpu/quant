@@ -33,6 +33,12 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
 {
   echo "=== research cycle start $(date -u) | BARS_FILE_BUDGET=$BARS_FILE_BUDGET ==="
   # niced throughout: the recorders are the irreplaceable process on this box.
+  # SURVIVAL PATH FIRST, BEFORE ANY RESEARCH RUNS. The desk hash-locks its constitution and left
+  # the kill switch protected by prose comments; this verifies the rails are byte-identical to
+  # what the principal last approved. It runs FIRST because a cycle that researched all day and
+  # then discovered the dead-man switch had changed would have spent the day on a book with no
+  # floor under it.
+  "$PY" scripts/check_risk_kernel.py || echo "RISK-KERNEL DRIFT -- review before trusting this cycle"
   OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 nice -n 15 "$PY" scripts/build_bars.py
   bash ops/run_study_on_vps.sh
   # The ladder runs even when the sweep found nothing: it also reports what is ALREADY live, and a
