@@ -231,7 +231,7 @@ def test_A_FEATURE_THAT_CANNOT_BE_BUILT_IS_ABSENT_WITH_A_REASON(tmp_path: Path) 
     """A zero-filled feature is not a missing feature, it is a constant one -- and a constant
     consumes 69,120 trials while testing nothing (L1.28a)."""
     frames = FS.discover(None, _bars(tmp_path, volume=False))
-    _idx, aligned = FS.align(frames, 0)
+    _idx, aligned, _dropped = FS.align(frames, 0)
     panels, absent = FS.feature_panels(aligned)
     assert "liquidity" in absent and "volume" in absent["liquidity"]
     assert "carry" in absent and "funding" in absent["carry"]
@@ -243,7 +243,9 @@ def test_CROSS_SECTIONAL_FEATURES_ARE_REFUSED_ON_ONE_SYMBOL(tmp_path: Path) -> N
     """rel_strength against a one-symbol cross-section is identically zero. Computed rather than
     refused, it would be a flat line consuming a fifth of the universe."""
     frames = FS.discover(None, _bars(tmp_path, symbols=("BTCUSDT",)))
-    _idx, aligned = FS.align(frames, 0)
+    # min_symbols=1: a single-symbol panel is exactly the case under test, and the grid rule
+    # would otherwise (correctly) refuse to build one at all.
+    _idx, aligned, _dropped = FS.align(frames, 0, min_symbols=1)
     panels, absent = FS.feature_panels(aligned)
     for name in ("rel_strength", "dispersion", "lead_lag"):
         assert name in absent and name not in panels
@@ -253,7 +255,7 @@ def test_THE_LIQUIDITY_DISCLOSURE_IS_UNMEASURED_WITHOUT_A_SPREAD_COLUMN(tmp_path
     """F8. Reporting 'no concentration detected' from an absent column is WS-005 exactly, and it
     is the reading that flatters every survivor."""
     frames = FS.discover(None, _bars(tmp_path, spread=False))
-    _idx, aligned = FS.align(frames, 0)
+    _idx, aligned, _dropped = FS.align(frames, 0)
     import argparse
 
     args = argparse.Namespace(max_detail=10, cost_bp=10.0, min_obs=200)
@@ -407,3 +409,70 @@ def test_AN_EMPTY_SURVIVOR_LIST_DOES_NOT_BECOME_A_CLAIM_ABOUT_THE_SPACE() -> Non
     assert "not a statement about alpha" in never
     assert FS.verdict(3, 9, 1000, 1000).startswith("3 STAGE-A SURVIVOR(S)")
     assert "bounds the expression language" not in FS.verdict(3, 9, 1000, 1000)
+
+
+def test_RAGGED_SPANS_NO_LONGER_EMPTY_THE_WHOLE_PANEL() -> None:
+    """THE LIVE FAILURE, 2026-08-08: `common grid is 0 bars across 45 symbols`.
+
+    `align` required every symbol at every timestamp. On real tape the recorders cover names
+    raggedly -- BTCUSDT began 08-04 while 1000CATUSDT ended 08-04 -- so intersecting forty-five
+    ragged spans gave the empty set, and the entire panel was discarded because one name was
+    absent. The pathology is that the study got WORSE the more symbols it was given, which is
+    exactly backwards for a cross-sectional design.
+    """
+    a = pd.date_range("2026-08-01", periods=100, freq="15min", tz="UTC")
+    b = pd.date_range("2026-08-01 12:00", periods=100, freq="15min", tz="UTC")   # overlaps a
+    c = pd.date_range("2026-09-01", periods=100, freq="15min", tz="UTC")         # disjoint
+    frames = {s: pd.DataFrame({"timestamp": ts, "close": np.arange(len(ts), dtype=float)})
+              for s, ts in (("AAA", a), ("BBB", b), ("CCC", c))}
+
+    idx, aligned, dropped = FS.align(frames, 0)
+    assert len(idx) > 0, "ragged spans still empty the panel"
+    assert set(aligned) == {"AAA", "BBB"}, aligned
+    assert dropped == ["CCC"], "the disjoint symbol was not dropped, or was dropped silently"
+
+
+def test_A_BAR_IS_KEPT_ONLY_WHERE_ENOUGH_SYMBOLS_TRADED() -> None:
+    """A bar with one symbol in it cannot be ranked cross-sectionally -- `rank` and `zscore`
+    degenerate and correctly refuse -- so keeping it buys nothing and dilutes every count."""
+    a = pd.date_range("2026-08-01", periods=60, freq="15min", tz="UTC")
+    b = a[:30]                                   # BBB stops halfway
+    frames = {s: pd.DataFrame({"timestamp": ts, "close": np.ones(len(ts))})
+              for s, ts in (("AAA", a), ("BBB", b))}
+    idx, aligned, _ = FS.align(frames, 0, min_coverage=0.0)
+    assert len(idx) == 30, "bars with only one symbol survived the grid"
+    assert set(aligned) == {"AAA", "BBB"}
+
+
+def test_ABSENT_BARS_STAY_NaN_AND_ARE_NEVER_FORWARD_FILLED() -> None:
+    """A carried close is a price nothing traded at; screens read the flat stretch as genuine low
+    volatility and every vol-scaled feature downstream is wrong in the same direction."""
+    a = pd.date_range("2026-08-01", periods=40, freq="15min", tz="UTC")
+    frames = {
+        "AAA": pd.DataFrame({"timestamp": a, "close": np.arange(40, dtype=float)}),
+        "BBB": pd.DataFrame({"timestamp": a[::2], "close": np.arange(20, dtype=float)}),
+    }
+    _idx, aligned, _ = FS.align(frames, 0, min_symbols=1, min_coverage=0.0)
+    assert bool(aligned["BBB"]["close"].isna().any()), "a missing bar was filled rather than left"
+
+
+def test_TOO_FEW_OVERLAPPING_SYMBOLS_BLOCKS_RATHER_THAN_PRETENDING() -> None:
+    """Two symbols that never coexist is not a thin cross-section, it is none."""
+    a = pd.date_range("2026-08-01", periods=20, freq="15min", tz="UTC")
+    c = pd.date_range("2026-09-01", periods=20, freq="15min", tz="UTC")
+    frames = {s: pd.DataFrame({"timestamp": ts, "close": np.ones(len(ts))})
+              for s, ts in (("AAA", a), ("CCC", c))}
+    idx, aligned, dropped = FS.align(frames, 0)
+    assert len(idx) == 0 and aligned == {} and dropped == ["AAA", "CCC"]
+
+
+def test_THE_SYMBOL_NAME_DROPS_THE_BAR_FREQUENCY_SUFFIX(tmp_path: Path) -> None:
+    """build_bars writes `<SYMBOL>_15min.parquet`. The frequency is a property of the file, not
+    part of the instrument's name, and carrying it into the symbol breaks any lookup on the
+    ticker -- the live run reported 'BTCUSDT_15MIN' as the symbol."""
+    d = tmp_path / "bars"
+    d.mkdir()
+    ts = pd.date_range("2026-08-01", periods=5, freq="15min", tz="UTC")
+    pd.DataFrame({"timestamp": ts, "close": np.ones(5)}).to_csv(d / "BTCUSDT_15min.csv",
+                                                                index=False)
+    assert list(FS.discover(None, d)) == ["BTCUSDT"]
