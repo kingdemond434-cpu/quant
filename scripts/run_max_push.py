@@ -57,6 +57,8 @@ if str(_ROOT) not in sys.path:
 
 _OUT = _ROOT / "data/max_push_queue.json"
 
+from libs.research.gap_contract import load_published, to_queue_rows  # noqa: E402
+
 # Leverage per source class: how much does closing one unit of this gap move the two supreme
 # objectives? Declared with reasons rather than computed, because the desk has no EV model for
 # heterogeneous engineering work and a fabricated one would rank worse while looking rigorous.
@@ -385,7 +387,14 @@ def build(*, refresh: bool = True) -> dict[str, Any]:
     items = (_from_ratchets() + _from_utilisation() + _from_matrix()
              + _from_wiring() + _from_register() + _from_conversion()
              + _from_tier_benchmark() + _from_calibration() + _from_freshness()
-             + _from_stranding())
+             + _from_stranding()
+             # THE GENERIC CHANNEL. Every `_from_*` above is a bespoke reader that knows the shape
+             # of one artifact, and adding the tenth made the cost visible: a detector written
+             # today cannot influence tomorrow's priorities until somebody edits THIS file, which
+             # makes the ranker a gatekeeper on discovery. Detectors now publish `Gap` rows to
+             # data/published_gaps/ and are ranked with no edit here. The readers above stay --
+             # rewriting working producers to prove a point is the bloat this contract avoids.
+             + to_queue_rows(load_published(), _item))
     items.sort(key=lambda r: -float(r["score"]))
     at_ceiling = [i for i in items if i["measured"] and i["gap_fraction"] <= 0.0]
     unmeasured = [i for i in items if not i["measured"]]

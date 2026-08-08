@@ -579,9 +579,13 @@ def main() -> int:
         a.out.write_text(json.dumps(rep, indent=1), "utf-8")
         return 0
 
+    # FLUSHED, because this line is the only proof the run got past loading bars. The per-cell
+    # prints below already flush; this one did not, so a detached run wrote a log containing
+    # nothing but "STARTED" for the whole first cell -- read, correctly on the evidence available,
+    # as a hang. A progress line that arrives after the work is not progress reporting.
     print(f"full-sweep: {PREREGISTERED_UNIVERSE} candidates, hurdle {hurdle():.3f}, "
           f"{len(symbols)} symbol(s), {len(idx)} common bars, {pooled_len} pooled rows, "
-          f"~{projected_min:.0f} min projected")
+          f"~{projected_min:.0f} min projected", flush=True)
 
     bar = hurdle()
     evaluated = measurable = net_positive = 0

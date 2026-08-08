@@ -125,7 +125,13 @@ run_one() {
   echo "STARTED $(date -u +%Y-%m-%dT%H:%M:%SZ)"
   # niced and single-threaded: the recorders are the irreplaceable process on this box, and a
   # study that starves them costs tape that cannot be re-acquired at any price.
-  OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+  # PYTHONUNBUFFERED IS NOT COSMETIC ONCE THE RUN IS DETACHED, and it cost a diagnosis the same
+  # hour the detach guard landed. Python block-buffers stdout when it is a pipe or a file, so a
+  # detached study writes NOTHING to its log until 4-8KB accumulates. `run_full_sweep` flushes its
+  # per-cell lines explicitly but not its header, so the first ~8 minutes of a real run produced a
+  # log containing only "STARTED" -- indistinguishable from a hang, which is exactly what it was
+  # read as. The detach fix made the process survivable and simultaneously made it look dead.
+  OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONUNBUFFERED=1 \
     nice -n 15 "$PY" $cmd 2>&1 | tee -a "$LOG"
   echo "FINISHED $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }

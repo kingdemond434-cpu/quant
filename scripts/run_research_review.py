@@ -41,7 +41,12 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from libs.research.convergence import Observation, elevate  # noqa: E402
+from libs.research.difference_engine import Claim  # noqa: E402
+from libs.research.difference_engine import diff as corpus_diff  # noqa: E402
+from libs.research.difference_engine import summarise as diff_summary  # noqa: E402
 from libs.research.evidence_tier import Finding, classify  # noqa: E402
+from libs.research.failure_bands import FailureRecord  # noqa: E402
+from libs.research.failure_bands import summarise as band_summary  # noqa: E402
 from libs.research.funnel import Funnel, diagnose, render  # noqa: E402
 from libs.research.near_survivor import NearSurvivor, hurdle, next_experiments  # noqa: E402
 
@@ -51,6 +56,10 @@ OUT = ROOT / "data" / "research_review.json"
 #: origins_recorded}`. The frontier miners write PROSE to `docs/research/*`, so this file is
 #: normally absent -- and that absence is the measurement, not a missing feature.
 FINDINGS = ROOT / "data" / "frontier_findings.jsonl"
+#: Two research corpora to difference. Absent -> the comparison is UNMEASURED, which is honest:
+#: the desk cannot compute a residual rate against a corpus nobody wrote down.
+CORPUS_A = ROOT / "data" / "claims_desk.jsonl"
+CORPUS_B = ROOT / "data" / "claims_external.jsonl"
 
 #: Sweep kill criteria -> the near-survivor playbook's failure vocabulary. A cell killed by cost
 #: licenses different next experiments from one killed by a thin sample, and collapsing them would
@@ -241,10 +250,86 @@ def convergence_report(path: Path) -> dict[str, object]:
     }
 
 
+
+def load_claims(path: Path, corpus: str) -> list[Claim]:
+    """Mechanism claims from a JSONL corpus. `direction` absent -> None, never a default sign.
+
+    A default direction would let an uncommitted mention be scored as agreement with whatever the
+    other corpus said, which manufactures convergence out of a shrug.
+    """
+    if not path.exists():
+        return []
+    out: list[Claim] = []
+    for line in path.read_text("utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(row, dict) or not row.get("mechanism"):
+            continue
+        d = row.get("direction")
+        out.append(Claim(
+            mechanism=str(row["mechanism"]), corpus=corpus,
+            direction=None if d in (None, "") else str(d),
+            effect=str(row.get("effect", "")), detail=str(row.get("detail", "")),
+            source=str(row.get("source", "")),
+            provenance_recorded=bool(row.get("provenance_recorded", False))))
+    return out
+
+
+def failures_from(doc: dict[str, object]) -> list[FailureRecord]:
+    """Killed cells as banded failure records, from whatever the sweep chose to keep.
+
+    THE SWEEP REPORTS KILL COUNTS, NOT KILLED CELLS, so on most runs this returns one synthetic
+    record per criterion rather than per cell. That is a real limitation and it is named here
+    instead of being smoothed over: banding needs t and net per cell, and a criterion tally has
+    neither. The bands come back UNMEASURED, which is the correct answer and is also the argument
+    for the sweep retaining per-cell diagnostics.
+    """
+    out: list[FailureRecord] = []
+    cells = doc.get("killed_cells")
+    if isinstance(cells, list):
+        for c in cells:
+            if not isinstance(c, dict):
+                continue
+            out.append(FailureRecord(
+                key="|".join(str(x) for x in c.get("key", [])) or str(c.get("key", "?")),
+                t_stat=_f(c.get("t")), net_bps=_f(c.get("net_bps")),
+                hurdle=_f(c.get("hurdle")) or _f(doc.get("hurdle")),
+                n_observations=_i(c.get("n")), kill_criterion=str(c.get("kill", "")),
+                regime=str(c.get("regime", "")), horizon=str(c.get("horizon", "")),
+                cost_bps=_f(c.get("cost_bps"))))
+        return out
+    killed = doc.get("kill_criteria_fired")
+    if isinstance(killed, dict):
+        for crit, n in killed.items():
+            out.append(FailureRecord(key=f"{crit} ({n} cell(s))", kill_criterion=str(crit)))
+    return out
+
+
+def _f(v: object) -> float | None:
+    try:
+        return float(v)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
+
+
+def _i(v: object) -> int | None:
+    try:
+        return int(v)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--sweep", type=Path, default=SWEEP)
     ap.add_argument("--findings", type=Path, default=FINDINGS)
+    ap.add_argument("--claims-desk", type=Path, default=CORPUS_A)
+    ap.add_argument("--claims-external", type=Path, default=CORPUS_B)
     ap.add_argument("--out", type=Path, default=OUT)
     a = ap.parse_args()
 
@@ -262,6 +347,22 @@ def main() -> int:
     dominant, caveat = kill_caveat(doc, d.blocked_at)
     conv = convergence_report(a.findings)
 
+    # THE DIFFERENCE IS THE ONLY PART OF A SECOND SEARCH WORTH PAYING FOR. Computed from the two
+    # corpora rather than trusted from either side's labels: a seat cannot judge what the desk
+    # already knew, because it was never shown all of it.
+    ca = load_claims(a.claims_desk, "desk")
+    cb = load_claims(a.claims_external, "external")
+    diffs = corpus_diff(ca, cb, a_name="desk", b_name="external")
+    difference = (diff_summary(diffs, a_name="desk", b_name="external") if diffs else
+                  {"mechanisms": 0, "headline": (
+                      "UNMEASURED -- no structured claim corpora. The desk cannot compute a "
+                      "residual rate against a corpus nobody wrote down, and an empty diff is not "
+                      "agreement"), "tally": {}, "residual_rate": None})
+
+    # BANDS: the two diagnostic ones are the whole reason this runs. Span-blocked and cost-blocked
+    # cells both read as "did not survive" and are spent in different budgets.
+    bands = band_summary(failures_from(doc))
+
     rep = {
         "ts": datetime.now(tz=UTC).isoformat(),
         "source": str(a.sweep),
@@ -274,6 +375,8 @@ def main() -> int:
         "near_survivor_bank": bank,
         "survivor_tiers": tiers,
         "convergence": conv,
+        "difference_engine": difference,
+        "failure_bands": bands,
         "authority": "NONE. Reads artifacts, promotes nothing, sizes nothing, trades nothing.",
     }
     a.out.parent.mkdir(parents=True, exist_ok=True)
@@ -288,6 +391,8 @@ def main() -> int:
             print(f"    {b['killed_by']} ({b['cells']} cells) -> hurdle "
                   f"{b['descendant_hurdle']} for any descendant")
     print(f"  convergence: {conv['verdict']} over {conv['observations']} sighting(s) {conv['tally']}")
+    print(f"  difference: {difference['headline']}")
+    print(f"  failure bands: {bands['headline']}")
     print(f"  survivors tiered: {len(tiers)} | artifact: {a.out}")
     return 0
 

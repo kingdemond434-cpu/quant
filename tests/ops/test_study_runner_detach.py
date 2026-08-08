@@ -75,3 +75,23 @@ def test_THE_SCRIPT_STILL_PARSES() -> None:
     import subprocess
     r = subprocess.run(["bash", "-n", str(_SCRIPT)], capture_output=True, text=True, check=False)
     assert r.returncode == 0, r.stderr
+
+
+def test_A_DETACHED_RUN_MUST_NOT_BUFFER_ITS_OWN_PROGRESS(src: str) -> None:
+    """THE DETACH FIX MADE THE PROCESS SURVIVABLE AND SIMULTANEOUSLY MADE IT LOOK DEAD.
+
+    Python block-buffers stdout when it is a pipe or a file, so the detached run wrote nothing to
+    its log until 4-8KB accumulated. `run_full_sweep` flushed its per-cell lines but not its
+    header, so the first cell produced a log containing only "STARTED" -- indistinguishable from a
+    hang, and read as one. Two fixes were needed and both belong under test: the environment, and
+    the header line itself.
+    """
+    assert "PYTHONUNBUFFERED=1" in src
+
+
+def test_THE_SWEEPS_FIRST_PROGRESS_LINE_IS_FLUSHED() -> None:
+    """It is the only proof the run got past loading bars. A progress line that arrives after the
+    work is not progress reporting."""
+    sweep = Path("scripts/run_full_sweep.py").read_text("utf-8")
+    header = sweep.split("full-sweep: {PREREGISTERED_UNIVERSE} candidates")[1][:400]
+    assert "flush=True" in header, "the header print lost its flush -- a detached run goes silent"

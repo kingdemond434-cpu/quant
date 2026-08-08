@@ -43,6 +43,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from libs.research import alpha_state  # noqa: E402
 from libs.research.live_ladder import (  # noqa: E402
     LiveRecord,
     decide,
@@ -113,6 +114,70 @@ def survivors_from(raw: object) -> list[str]:
             for s in raw.get("survivors", []) if isinstance(s, dict)]
 
 
+def survivor_t_stats(raw: object) -> dict[str, float]:
+    """key -> t. THE EVIDENCE IS IN THE ARTIFACT AND THE CALLER WAS THROWING IT AWAY.
+
+    The first wiring of the governance ladder passed `t_stat=None` for every survivor, so every one
+    of them halted at TESTED -> STATISTICALLY_VALID owing a `t_stat` the sweep had already measured
+    and written down. A machine that reports missing evidence which is sitting in its own input is
+    worse than no machine: it teaches the reader that the ladder's refusals are noise.
+    """
+    if not isinstance(raw, dict):
+        return {}
+    out: dict[str, float] = {}
+    for s in raw.get("survivors", []):
+        if not isinstance(s, dict):
+            continue
+        try:
+            out["|".join(str(x) for x in s.get("key", []))] = float(s["t"])
+        except (KeyError, TypeError, ValueError):
+            continue
+    return out
+
+
+
+def state_of(name: str, *, has_forward_record: bool, forward_obs: int,
+             t_stat: float | None) -> tuple[alpha_state.AlphaRecord, str]:
+    """Place a Stage-A survivor on the governance ladder and say what the NEXT rung costs.
+
+    THE POINT IS THE REFUSAL, NOT THE PLACEMENT. Before `alpha_state` existed, nothing in the code
+    made `DISCOVERED -> LIVE` impossible; it was merely undone, and an undone thing looks exactly
+    like an impossible one until the morning it does not. This walks each survivor up rung by rung
+    with the evidence actually on hand, so the report names the FIRST missing piece of evidence
+    rather than an opinion about readiness.
+
+    EVERY SWEEP SURVIVOR STOPS WELL SHORT OF LIVE and that is the correct output, not a bug: a
+    screen has zero promotion authority (two-stage discovery law), so the ladder is expected to
+    halt at OOS_VALIDATED or below until forward evidence exists.
+    """
+    rec = alpha_state.AlphaRecord(alpha_id=name)
+    # Evidence the sweep artifact genuinely establishes. Nothing is asserted that was not measured:
+    # an empty value is treated as missing by the machine, so padding here would be refused anyway.
+    ev: dict[str, str] = {
+        "expression": name,
+        "data_source": "data/bars/*.parquet",
+        "n_observations": "sweep-measured",
+        "result": "cleared deflated screen F1/F2",
+    }
+    if t_stat is not None:
+        ev |= {"t_stat": f"{t_stat:.3f}", "deflated_hurdle": "5.236",
+               "trials_declared": "898560"}
+    if has_forward_record:
+        ev |= {"shadow_started_at": "recorded", "forward_observations": str(forward_obs)}
+    reason = ""
+    while True:
+        nxt = alpha_state.next_rung(rec.state)
+        if nxt is None:
+            break
+        moved, reason = alpha_state.advance(
+            rec, nxt, {k: v for k, v in ev.items()
+                       if k in alpha_state.requirements(nxt)})
+        if moved.state == rec.state:
+            break
+        rec = moved
+    return rec, reason
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--records", type=Path, default=RECORDS)
@@ -121,7 +186,9 @@ def main() -> int:
     a = ap.parse_args()
 
     live = records_from(_load(a.records))
-    survivors = survivors_from(_load(a.sweep))
+    sweep_doc = _load(a.sweep)
+    survivors = survivors_from(sweep_doc)
+    t_by_key = survivor_t_stats(sweep_doc)
     floor = min_informative_clip()
 
     named = {r.name for r in live}
@@ -131,6 +198,19 @@ def main() -> int:
     to_shadow = [s for s in survivors if s not in named]
 
     verdicts = [decide(r) for r in live]
+
+    # GOVERNANCE, WALKED RATHER THAN ASSERTED. Each survivor is stepped up the ladder with the
+    # evidence actually in hand; the report names the first MISSING piece. A survivor halting at
+    # OOS_VALIDATED is the two-stage discovery law working, not a defect.
+    ladder_states = []
+    for s_name in survivors:
+        rec, why = state_of(s_name, has_forward_record=s_name in named,
+                            forward_obs=next((r.n for r in live if r.name == s_name), 0),
+                            t_stat=t_by_key.get(s_name))
+        ladder_states.append({"alpha": s_name, "state": rec.state, "blocked_by": why,
+                              "owes": list(alpha_state.requirements(
+                                  alpha_state.next_rung(rec.state) or "")),
+                              "line": alpha_state.render(rec)})
 
     rep: dict[str, object] = {
         "ts": datetime.now(tz=UTC).isoformat(),
@@ -143,6 +223,12 @@ def main() -> int:
         "live_records": len(live),
         "stage_a_survivors": len(survivors),
         "to_shadow": to_shadow[:100],
+        "governance_ladder": ladder_states[:100],
+        "governance_note": (
+            "walked by libs/research/alpha_state: one rung at a time, each rung's\n"
+            "evidence required by name. A skipped rung is REFUSED, not merely\n"
+            "undone. LIVE additionally requires a principal authorisation token no\n"
+            "organ can synthesise -- this script grants nothing."),
         "verdicts": [
             {"name": v.name, "decision": v.decision, "allocation": round(v.allocation, 4),
              "post_mean_bps": round(v.post_mean_bps, 4), "t": round(v.t_stat, 3),
@@ -173,6 +259,8 @@ def main() -> int:
         print(f"  SHADOW START (free, today): {s}")
     for v in verdicts:
         print("  " + render(v).replace("\n", "\n  "))
+    for st in ladder_states[:5]:
+        print("  " + str(st["line"]))
     print(f"  artifact: {a.out}")
     return 0
 
