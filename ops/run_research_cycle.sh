@@ -44,7 +44,18 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # EXECUTION HEALTH runs every cycle, including days the research half found nothing. The money
   # path is where the desk is currently LOSING (27 closes, all three hold buckets negative net of
   # fees), so a cycle that reported only research would go quiet on the one number costing money.
+  # A COMPLETED SWEEP IS A TRIGGER, NOT AN ENDPOINT. Before this line the factory produced
+  # "INDEPENDENT MECHANISM 2 | PORTFOLIO-CONTRIBUTING unmeasured" and stopped -- a discovery
+  # stranded one stage short of the only count that pays, waiting for a human to notice. Survivor
+  # forwarding now runs in the same cycle that produced the survivors.
+  nice -n 15 "$PY" scripts/run_portfolio_admission.py || true
   nice -n 15 "$PY" scripts/run_trade_forensics.py || true
   nice -n 15 "$PY" scripts/run_exec_monitor.py || true
+  # THE LOOP CLOSES HERE. The intelligence cycle re-reads everything this run produced -- kills,
+  # survivors, admission, conversion joins, source and cadence yield -- and republishes the ranked
+  # gap set, so tomorrow's highest-value work is chosen from today's evidence rather than from
+  # whatever was true when the schedule was written.
+  nice -n 15 "$PY" scripts/run_intelligence_cycle.py || true
+  nice -n 15 "$PY" scripts/run_max_push.py || true
   echo "=== research cycle exit $? at $(date -u) ==="
 } 2>&1 | tee -a "$LOG"

@@ -48,6 +48,8 @@ from libs.research.evidence_tier import Finding, classify  # noqa: E402
 from libs.research.failure_bands import FailureRecord  # noqa: E402
 from libs.research.failure_bands import summarise as band_summary  # noqa: E402
 from libs.research.funnel import Funnel, diagnose, render  # noqa: E402
+from libs.research.kill_audit import KillRecord  # noqa: E402
+from libs.research.kill_audit import summarise as kill_summary  # noqa: E402
 from libs.research.near_survivor import NearSurvivor, hurdle, next_experiments  # noqa: E402
 
 SWEEP = ROOT / "data" / "full_sweep.json"
@@ -324,6 +326,34 @@ def _i(v: object) -> int | None:
         return None
 
 
+
+def kills_from(doc: dict[str, object]) -> list[KillRecord]:
+    """Killed cells WITH their statistics -- the sweep now retains them (`killed_cells`).
+
+    BEFORE THAT FIELD EXISTED THIS WAS IMPOSSIBLE. The sweep incremented a counter and dropped
+    every number that produced it, so "F3 WALK-FORWARD SIGN: 750" left no t, no net, no arm split
+    and no sample size to examine. A validator whose rejections cannot be inspected is
+    unfalsifiable -- and an unfalsifiable validator is the one component that could be destroying
+    real alpha at scale while every gate reports healthy.
+    """
+    cells = doc.get("killed_cells")
+    if not isinstance(cells, list):
+        return []
+    out: list[KillRecord] = []
+    for c in cells:
+        if not isinstance(c, dict):
+            continue
+        out.append(KillRecord(
+            key="|".join(str(x) for x in c.get("key", [])) or str(c.get("key", "?")),
+            kill=str(c.get("kill", "")), t=_f(c.get("t")), hurdle=_f(c.get("hurdle")),
+            n=_i(c.get("n")), net_bps=_f(c.get("net_bps")), gross_bps=_f(c.get("gross_bps")),
+            cost_bps=_f(c.get("cost_bps")), is_net_bps=_f(c.get("is_net_bps")),
+            oos_net_bps=_f(c.get("oos_net_bps")), is_n=_i(c.get("is_n")),
+            oos_n=_i(c.get("oos_n")), leak_net_bps=_f(c.get("leak_net_bps")),
+            regime=str(c.get("regime", "")), horizon=str(c.get("horizon", ""))))
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--sweep", type=Path, default=SWEEP)
@@ -363,6 +393,11 @@ def main() -> int:
     # cells both read as "did not survive" and are spent in different budgets.
     bands = band_summary(failures_from(doc))
 
+    # THE VALIDATOR IS AUDITED EVERY RUN. 750 cells dying at one gate is a measurement that points
+    # at the gate as readily as at the cells, and a counter cannot tell them apart. This classifies
+    # each rejection and NEVER promotes one -- a SOFT_KILL is still a kill.
+    kills = kill_summary(kills_from(doc))
+
     rep = {
         "ts": datetime.now(tz=UTC).isoformat(),
         "source": str(a.sweep),
@@ -377,6 +412,7 @@ def main() -> int:
         "convergence": conv,
         "difference_engine": difference,
         "failure_bands": bands,
+        "kill_audit": kills,
         "authority": "NONE. Reads artifacts, promotes nothing, sizes nothing, trades nothing.",
     }
     a.out.parent.mkdir(parents=True, exist_ok=True)
@@ -393,6 +429,7 @@ def main() -> int:
     print(f"  convergence: {conv['verdict']} over {conv['observations']} sighting(s) {conv['tally']}")
     print(f"  difference: {difference['headline']}")
     print(f"  failure bands: {bands['headline']}")
+    print(f"  kill audit: {kills['headline']}")
     print(f"  survivors tiered: {len(tiers)} | artifact: {a.out}")
     return 0
 

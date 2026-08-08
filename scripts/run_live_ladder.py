@@ -205,7 +205,7 @@ def main() -> int:
     ladder_states = []
     for s_name in survivors:
         rec, why = state_of(s_name, has_forward_record=s_name in named,
-                            forward_obs=next((r.n for r in live if r.name == s_name), 0),
+                            forward_obs=next((r.n_trades for r in live if r.name == s_name), 0),
                             t_stat=t_by_key.get(s_name))
         ladder_states.append({"alpha": s_name, "state": rec.state, "blocked_by": why,
                               "owes": list(alpha_state.requirements(
