@@ -28,6 +28,7 @@ Pure stdlib. import from libs.self_improvement.dormancy.
 """
 from __future__ import annotations
 
+import ast
 import re
 import subprocess
 from dataclasses import dataclass, field
@@ -172,3 +173,159 @@ def summarise(rep: DormancyReport) -> dict[str, object]:
                      "proving_command": d.proving_command} for d in ranked[:40]],
         "total_dormant_lines": sum(d.lines for d in rep.dormant),
     }
+
+
+# --------------------------------------------------------------------------------------------
+# THREE STRANDING STATES (L1.54(a)) -- because "does anything import it" answers ONE of them.
+#
+# MEASURED 2026-08-08, on this module's own author. A consumer was written for four orphan
+# modules; three were genuinely wired and the fourth, `convergence`, stayed orphaned because the
+# new consumer DESCRIBED its verdict in a hand-typed string instead of calling it. The importer
+# count would eventually have read 1 and the scan would have gone quiet -- a capability reported
+# as reachable while nothing on the desk had ever run it.
+#
+# So the states are separated, and the fix differs for each:
+#
+#     ORPHAN              nothing imports it            -> build a consumer
+#     INERT               a consumer exists, never ran  -> schedule it (L1.49)
+#     CONVERSION_FAILURE  it runs, output changes nothing -> wire the output to a decision
+#
+# The third is the one that hides: it passes every test an importer count can run.
+
+STRANDING_STATES: tuple[str, ...] = ("ORPHAN", "INERT", "CONVERSION_FAILURE", "WIRED", "UNMEASURED")
+
+
+def stranding(*, importers: int, callers: int, executions: int | None,
+              output_consumers: int | None) -> tuple[str, str]:
+    """(state, why) for one capability. PURE -- takes counts, returns a verdict.
+
+    `executions` and `output_consumers` are `int | None` on purpose and the None case is the
+    whole point of L1.28a: a capability nobody has instrumented is UNMEASURED, never WIRED.
+    Defaulting an unknown execution count to "probably ran" is how a dormant subsystem reports
+    itself healthy, and it is the exact failure this module was built to end.
+
+    ORDER OF CHECKS IS LOAD-BEARING. Callers are tested before executions, because a module that
+    is imported for its NAME but never called is an ORPHAN wearing an importer -- and that is the
+    case measured on 2026-08-08, not a hypothetical.
+    """
+    if importers <= 0:
+        return "ORPHAN", "nothing imports it -- the fix is a consumer, not a schedule"
+    if callers <= 0:
+        return "ORPHAN", (f"{importers} importer(s) but ZERO call sites: imported for its name and "
+                          "never invoked. An importer count would read this as reachable")
+    if executions is None:
+        return "UNMEASURED", (f"{callers} call site(s), but no execution record exists. That is an "
+                              "ABSENCE OF EVIDENCE (L1.28a), never a clean bill -- instrument the "
+                              "consumer before believing this runs")
+    if executions <= 0:
+        return "INERT", (f"{callers} call site(s) that have NEVER executed -- a gate that never "
+                         "ran is a claim the desk cannot cash (L1.49). The fix is a schedule")
+    if output_consumers is None:
+        return "UNMEASURED", (f"executed {executions}x, but nothing measures whether its output is "
+                              "read. The expensive stranding state is invisible from here")
+    if output_consumers <= 0:
+        return "CONVERSION_FAILURE", (
+            f"executed {executions}x and its output changes NOTHING downstream. This passes every "
+            "test an importer count can run, which is why it is the state that hides -- the fix "
+            "is to wire the output to a decision, not to run it more often")
+    return "WIRED", (f"{callers} call site(s), {executions} execution(s), {output_consumers} "
+                     "downstream consumer(s) of its output")
+
+
+def call_sites(rel: str) -> list[str]:
+    """Files that IMPORT this module and actually INVOKE one of the names they imported.
+
+    PARSED WITH `ast`, NOT MATCHED WITH A REGEX, and that is a correction rather than a
+    preference. The regex version shipped two false-positive bugs in one hour, both silent and
+    both in the flattering direction -- it read ZERO imported names and therefore reported the
+    module never-called:
+
+        `from x import (\n  render,\n  update,\n)`      the `(` ended the capture
+        `from x import name  # noqa: E402`             the comment rode into the name
+
+    Each made a WIRED module look stranded. A heuristic whose failure mode is "sees nothing,
+    concludes nothing is used" manufactures findings, and a findings list that is mostly wrong is
+    how a fence gets ignored -- which costs more than never having built it.
+
+    The `ast` walk asks the question exactly: which names did this file import from the module,
+    and does a Call node anywhere name one of them (directly, or as an attribute of the module).
+    A file that fails to parse is skipped rather than guessed at.
+    """
+    stem = Path(rel).stem
+    out: list[str] = []
+    for f in _external_importers(rel):
+        try:
+            tree = ast.parse((_ROOT / f).read_text("utf-8", errors="ignore"))
+        except (OSError, SyntaxError, ValueError):
+            continue
+        names: set[str] = set()
+        aliases: set[str] = {stem}
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and stem in (node.module or "").split("."):
+                names |= {a.asname or a.name for a in node.names}
+            elif isinstance(node, ast.ImportFrom):
+                # THE MODULE-AS-ALIAS FORM, which is how the desk imports half of `libs/research`:
+                # `from libs.research import marginal_admission as ma` binds the MODULE, not a
+                # name inside it, so every later use is `ma.evaluate(...)`. Missing this branch
+                # flagged two genuinely wired modules -- the third false positive from the same
+                # heuristic, and the reason it is now an exhaustive walk over import FORMS rather
+                # than the one form that happened to be in front of me.
+                aliases |= {a.asname or a.name for a in node.names if a.name == stem}
+            elif isinstance(node, ast.Import):
+                for a in node.names:
+                    if stem in a.name.split("."):
+                        aliases.add(a.asname or a.name.split(".")[-1])
+        called = False
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            fn = node.func
+            # WALK THE WHOLE ATTRIBUTE CHAIN TO ITS ROOT NAME. `canary_mod.CanaryState.load(...)`
+            # is Attribute(Attribute(Name)), so stopping at the first `.value` missed it and
+            # reported a live money-path guard as stranded -- the fourth shape this check got
+            # wrong. Root-walking makes the depth irrelevant instead of adding a case per depth.
+            root = fn
+            while isinstance(root, ast.Attribute):
+                root = root.value
+            if isinstance(root, ast.Name) and (root.id in names or root.id in aliases):
+                called = True
+        # A name used as a TYPE or a base class is a real use even with no Call node -- counting
+        # it as stranded would flag every dataclass and protocol the desk imports.
+        if not called and names:
+            called = any(
+                isinstance(n, ast.Name) and n.id in names and not isinstance(n.ctx, ast.Store)
+                for n in ast.walk(tree)) and any(
+                isinstance(n, ast.AnnAssign | ast.ClassDef | ast.arg) for n in ast.walk(tree))
+        if called:
+            out.append(f)
+    return out
+
+
+def imported_but_never_called(*, scope: tuple[str, ...] = _LIB_SCOPE) -> list[Dormant]:
+    """Modules the plain scan calls REACHABLE that nothing actually invokes.
+
+    This is the blind spot in `scan()`, and it is a measured one rather than a suspected one: the
+    plain scan asks "does anything import it", so a consumer that imports a module and then only
+    mentions it in prose flips it from dormant to reachable while the desk has still never run it.
+    A module in this list is an ORPHAN with an importer, and the fix is the orphan fix -- call it.
+    """
+    out: list[Dormant] = []
+    for pkg in scope:
+        d = _ROOT / pkg
+        if not d.is_dir():
+            continue
+        for f in sorted(d.glob("*.py")):
+            if f.name.startswith("_"):
+                continue
+            rel = f"{pkg}/{f.name}"
+            importers = _external_importers(rel)
+            if not importers or call_sites(rel):
+                continue
+            state, why = stranding(importers=len(importers), callers=0,
+                                   executions=None, output_consumers=None)
+            out.append(Dormant(
+                path=rel, kind=f"module:{state}", reason=why,
+                proving_command=f"grep -rn '{f.stem}' {' '.join(importers[:3])}",
+                lines=len(f.read_text("utf-8", errors="ignore").splitlines()),
+                suggested_exit="call it from the consumer that already imports it"))
+    return out

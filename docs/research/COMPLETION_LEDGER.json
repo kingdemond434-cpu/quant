@@ -1,0 +1,925 @@
+{
+ "_": "Every capability requested across today's specifications. Status is COMPUTED by libs/research/completion_ledger.py against the working tree, never asserted. A ledger listing only what exists would report 100% and measure nothing, so the unbuilt items are rows here from the moment they are requested.",
+ "capabilities": [
+  {
+   "capability_id": "KILL_AUDIT",
+   "title": "Kill audit / nine rejection states",
+   "economic_reason": "750 of 762 cells died at one gate; a counter cannot distinguish a correct gate from one destroying real alpha silently",
+   "source_spec": "validator spec \u00a72-\u00a73",
+   "module": "libs.research.kill_audit",
+   "tests": [
+    "tests/research/test_kill_audit.py"
+   ],
+   "callers": [
+    "scripts/run_research_review.py"
+   ],
+   "artifacts": [
+    "data/research_review.json"
+   ],
+   "consumers": [
+    "scripts/run_max_push.py"
+   ],
+   "external_blocker": "",
+   "next_action": ""
+  },
+  {
+   "capability_id": "PORTFOLIO_ADMISSION",
+   "title": "Survivor -> portfolio contribution",
+   "economic_reason": "PORTFOLIO_CONTRIBUTING was unmeasurable, not merely unmeasured: survivor pnl never left the sweep",
+   "source_spec": "validator spec \u00a712",
+   "module": "scripts.run_portfolio_admission",
+   "tests": [
+    "tests/scripts/test_portfolio_admission.py"
+   ],
+   "callers": [
+    "ops/run_research_cycle.sh"
+   ],
+   "artifacts": [
+    "data/portfolio_admission.json"
+   ],
+   "consumers": [
+    "scripts/run_live_ladder.py"
+   ],
+   "external_blocker": "",
+   "next_action": ""
+  },
+  {
+   "capability_id": "EVIDENCE_CLOCK",
+   "title": "Effective independent observations replace calendar gates",
+   "economic_reason": "An edge real for 20 days that spends 15 in a calendar gate has lost most of its economic life to its own validator",
+   "source_spec": "accelerator spec \u00a7D/\u00a710",
+   "module": "libs.research.evidence_clock",
+   "tests": [
+    "tests/research/test_evidence_clock.py"
+   ],
+   "callers": [
+    "scripts/run_live_ladder.py"
+   ],
+   "artifacts": [
+    "data/live_ladder.json"
+   ],
+   "consumers": [
+    "scripts/run_research_review.py"
+   ],
+   "external_blocker": "",
+   "next_action": ""
+  },
+  {
+   "capability_id": "ALPHA_STATE",
+   "title": "Alpha state machine incl. LIVE_CANARY",
+   "economic_reason": "Nothing made DISCOVERED->LIVE impossible; it was merely undone",
+   "source_spec": "spec \u00a79/\u00a7C",
+   "module": "libs.research.alpha_state",
+   "tests": [
+    "tests/research/test_alpha_state.py"
+   ],
+   "callers": [
+    "scripts/run_live_ladder.py"
+   ],
+   "artifacts": [
+    "data/live_ladder.json"
+   ],
+   "consumers": [
+    "scripts/run_research_review.py"
+   ],
+   "external_blocker": "",
+   "next_action": ""
+  },
+  {
+   "capability_id": "CAPITAL_COMPETITION",
+   "title": "Continuous capital competition, age confers no privilege",
+   "economic_reason": "Capital in a strategy whose forward expectation collapsed is the best remaining opportunity being declined, silently, every day",
+   "source_spec": "spec \u00a712/\u00a7E",
+   "module": "libs.portfolio.capital_competition",
+   "tests": [
+    "tests/portfolio/test_capital_competition.py"
+   ],
+   "callers": [
+    "scripts/run_live_ladder.py"
+   ],
+   "artifacts": [
+    "data/live_ladder.json"
+   ],
+   "consumers": [
+    "scripts/run_research_review.py"
+   ],
+   "external_blocker": "",
+   "next_action": ""
+  },
+  {
+   "capability_id": "GATE_POWER",
+   "title": "Gate power / F3 false-negative calibration",
+   "economic_reason": "F3 keeps 100% of stable and ~50% of conditional edges at every effect size; the plateau is arithmetic, not power",
+   "source_spec": "validator spec \u00a75",
+   "module": "libs.validation.gate_power",
+   "tests": [
+    "tests/validation/test_gate_power.py"
+   ],
+   "callers": [
+    "scripts/run_research_review.py"
+   ],
+   "artifacts": [
+    "data/research_review.json"
+   ],
+   "consumers": [
+    "scripts/run_max_push.py"
+   ],
+   "external_blocker": "",
+   "next_action": ""
+  },
+  {
+   "capability_id": "RISK_KERNEL_LOCK",
+   "title": "Hash-lock the survival path",
+   "economic_reason": "The desk hash-locked its constitution and left the kill switch protected by prose comments",
+   "source_spec": "fusion spec \u00a730",
+   "module": "scripts.check_risk_kernel",
+   "tests": [
+    "tests/scripts/test_risk_kernel_lock.py"
+   ],
+   "callers": [
+    "ops/run_research_cycle.sh"
+   ],
+   "artifacts": [
+    "docs/research/RISK_KERNEL_LOCK.json"
+   ],
+   "consumers": [
+    "ops/run_research_cycle.sh"
+   ],
+   "external_blocker": "",
+   "next_action": ""
+  },
+  {
+   "capability_id": "GAP_CONTRACT",
+   "title": "Generic published-gap contract",
+   "economic_reason": "A detector written today could not influence tomorrow's priorities until somebody edited the ranker",
+   "source_spec": "batch-2 spec",
+   "module": "libs.research.gap_contract",
+   "tests": [
+    "tests/research/test_gap_contract.py"
+   ],
+   "callers": [
+    "scripts/run_max_push.py"
+   ],
+   "artifacts": [
+    "data/published_gaps"
+   ],
+   "consumers": [
+    "scripts/run_max_push.py"
+   ],
+   "external_blocker": "",
+   "next_action": ""
+  },
+  {
+   "capability_id": "ORPHAN_SCAN",
+   "title": "Conversion-chain orphan scan",
+   "economic_reason": "The expensive orphans are research objects, not modules: a hypothesis never tested, a survivor never portfolio-tested",
+   "source_spec": "batch-2 \u00a733",
+   "module": "libs.research.orphan_scan",
+   "tests": [
+    "tests/research/test_orphan_scan.py"
+   ],
+   "callers": [
+    "scripts/run_intelligence_cycle.py"
+   ],
+   "artifacts": [
+    "data/published_gaps"
+   ],
+   "consumers": [
+    "scripts/run_max_push.py"
+   ],
+   "external_blocker": "",
+   "next_action": ""
+  },
+  {
+   "capability_id": "DIFFERENCE_ENGINE",
+   "title": "Claude<->GPT difference engine",
+   "economic_reason": "The valuable output of a second intelligence is the difference, not the overlap",
+   "source_spec": "residual spec",
+   "module": "libs.research.difference_engine",
+   "tests": [
+    "tests/research/test_difference_engine.py"
+   ],
+   "callers": [
+    "scripts/run_research_review.py"
+   ],
+   "artifacts": [
+    "data/research_review.json"
+   ],
+   "consumers": [
+    "scripts/run_max_push.py"
+   ],
+   "external_blocker": "",
+   "next_action": ""
+  },
+  {
+   "capability_id": "UNKNOWNS",
+   "title": "Assumption / contradiction / unknowns ledger",
+   "economic_reason": "A belief with no falsifier is a habit: it survives its own obsolescence",
+   "source_spec": "batch-2 \u00a78/\u00a722",
+   "module": "libs.research.unknowns",
+   "tests": [
+    "tests/research/test_unknowns.py"
+   ],
+   "callers": [
+    "scripts/run_intelligence_cycle.py"
+   ],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": ""
+  },
+  {
+   "capability_id": "FAILURE_BANDS",
+   "title": "Failure bands and near-survivor classes",
+   "economic_reason": "Span-blocked and cost-blocked cells both read as 'did not survive' and are spent in different budgets",
+   "source_spec": "validator spec \u00a711/\u00a715",
+   "module": "libs.research.failure_bands",
+   "tests": [
+    "tests/research/test_failure_bands.py"
+   ],
+   "callers": [
+    "scripts/run_research_review.py"
+   ],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": ""
+  },
+  {
+   "capability_id": "SOURCE_ROI",
+   "title": "Miner / model / prompt economic ROI",
+   "economic_reason": "Volume is a cost, never an output: 100k pages and no survivors is worse than 100 and two",
+   "source_spec": "batch-2 \u00a72/\u00a750",
+   "module": "libs.research.source_roi",
+   "tests": [
+    "tests/research/test_source_roi.py"
+   ],
+   "callers": [
+    "scripts/run_intelligence_cycle.py"
+   ],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": ""
+  },
+  {
+   "capability_id": "CADENCE_ROI",
+   "title": "Cadence vs measured yield",
+   "economic_reason": "Every cadence was chosen rather than measured; an under-run job finds less than it could forever and nothing records it",
+   "source_spec": "batch-2 \u00a717",
+   "module": "libs.research.cadence_roi",
+   "tests": [
+    "tests/research/test_cadence_roi.py"
+   ],
+   "callers": [
+    "scripts/run_intelligence_cycle.py"
+   ],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": ""
+  },
+  {
+   "capability_id": "STUDY_STATUS",
+   "title": "Deterministic study process status",
+   "economic_reason": "Process status was a shell expression, so every invocation could get it wrong",
+   "source_spec": "batch-2 \u00a716",
+   "module": "scripts.study_status",
+   "tests": [
+    "tests/scripts/test_study_status.py"
+   ],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": ""
+  },
+  {
+   "capability_id": "COMPLETION_LEDGER",
+   "title": "This ledger: capability status computed, not asserted",
+   "economic_reason": "Prose status drifts, cannot be re-checked, and lets 'built' mean whichever stage the writer had in mind",
+   "source_spec": "completion mandate \u00a71-\u00a72",
+   "module": "libs.research.completion_ledger",
+   "tests": [
+    "tests/research/test_completion_ledger.py"
+   ],
+   "callers": [
+    "scripts/run_completion_ledger.py"
+   ],
+   "artifacts": [
+    "data/completion_ledger_status.json"
+   ],
+   "consumers": [
+    "scripts/run_max_push.py"
+   ],
+   "external_blocker": "",
+   "next_action": ""
+  },
+  {
+   "capability_id": "F3_THRESHOLD_SENSITIVITY",
+   "title": "F3 threshold sensitivity surface",
+   "economic_reason": "A gate sitting on a knife edge changes hundreds of verdicts on a 5% perturbation",
+   "source_spec": "validator spec \u00a78",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "sweep justified perturbations, report the stability surface; never pick a threshold because it yields more survivors"
+  },
+  {
+   "capability_id": "GATE_ABLATION",
+   "title": "Per-gate ablation and unique-kill attribution",
+   "economic_reason": "A gate whose kills are entirely covered by another is compute and false-negative exposure for no protection",
+   "source_spec": "validator spec \u00a79",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "measure unique kills, overlap, planted-edge destruction per gate"
+  },
+  {
+   "capability_id": "FAILURE_CLUSTERING",
+   "title": "Cluster the 750 F3 kills into archetypes",
+   "economic_reason": "750 nominal formulas are not 750 independent failure events",
+   "source_spec": "validator spec \u00a710",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "cluster retained killed_cells by arm structure, magnitude, sample, regime, family"
+  },
+  {
+   "capability_id": "CONDITIONAL_BRANCH",
+   "title": "Regime-conditioned validation branch",
+   "economic_reason": "F3 makes conditional alpha mathematically impossible to pass ~half the time",
+   "source_spec": "completion mandate \u00a75",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "require an EX-ANTE observable state before any conditional rescue; every rescue is a new preregistered hypothesis on untouched evidence"
+  },
+  {
+   "capability_id": "REGIME_BETA_BOOK",
+   "title": "Regime / beta opportunity book",
+   "economic_reason": "Refusing positive beta in a risk-on regime because it is not market-neutral alpha has a real opportunity cost",
+   "source_spec": "fusion spec \u00a72/\u00a78",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "reuse existing regime modules; estimate posterior state and evaluate alternative beta exposures against cash"
+  },
+  {
+   "capability_id": "DRAWDOWN_ENGINE",
+   "title": "Path-aware drawdown / rebound engine",
+   "economic_reason": "Reaching -8% slowly is not reaching -8% through a liquidation cascade",
+   "source_spec": "fusion spec \u00a73/\u00a79",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "conditional forward distributions on path shape; kill honestly if the thesis fails"
+  },
+  {
+   "capability_id": "CAPITAL_INVENTORY",
+   "title": "Capital-inventory-aware deployment policy",
+   "economic_reason": "Deploying now versus retaining optionality for a better future state is a decision problem, not a fixed tranche count",
+   "source_spec": "fusion spec \u00a75/\u00a710",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "make remaining dry powder a state variable; derive tranche count endogenously"
+  },
+  {
+   "capability_id": "TRIGGER_COLLISION",
+   "title": "Trigger dependency / collision control",
+   "economic_reason": "Four triggers firing on one liquidation cascade is one event, not four signals",
+   "source_spec": "fusion spec \u00a76/\u00a711",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "effective independent trigger count before any sizing"
+  },
+  {
+   "capability_id": "XSEC_MOMENTUM",
+   "title": "Cross-sectional momentum / relative-strength book",
+   "economic_reason": "If we want exposure, WHERE it lives is often easier than forecasting direction",
+   "source_spec": "fusion spec \u00a77/\u00a712",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "build as a competing sleeve; test continuation AND crowded-winner reversal"
+  },
+  {
+   "capability_id": "MOMENTUM_REBOUND",
+   "title": "Momentum x rebound interaction",
+   "economic_reason": "Strong assets in systemic liquidation may dominate indiscriminate dip buying",
+   "source_spec": "fusion spec \u00a78/\u00a713",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "conditional surface, treated as a new family not assumed alpha"
+  },
+  {
+   "capability_id": "EXIT_ENGINE",
+   "title": "Take-profit / exit state engine",
+   "economic_reason": "Accumulation without a modelled exit is half a strategy",
+   "source_spec": "fusion spec \u00a743/\u00a714",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "E[log W | hold] vs E[log W | reallocate], competing with alternative uses of capital"
+  },
+  {
+   "capability_id": "EXECUTION_SURFACE",
+   "title": "Execution opportunity surface",
+   "economic_reason": "A 4bp gross signal may be +2.1bp net only when maker probability is high and adverse selection low",
+   "source_spec": "fusion spec \u00a715",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "integrate existing queue_fill/maker/TCA/book_walk rather than duplicating"
+  },
+  {
+   "capability_id": "ALPHA_RETENTION",
+   "title": "Operational alpha retention ratio",
+   "economic_reason": "Finding alpha is not enough; measure how much becomes realised money and attribute the leak",
+   "source_spec": "fusion spec \u00a716/\u00a732",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "realised vs counterfactual-under-intended-behaviour, attributed by defect class"
+  },
+  {
+   "capability_id": "RETURN_ATTRIBUTION",
+   "title": "Alpha / beta / selection / execution P&L attribution",
+   "economic_reason": "Never label bull-market beta as proprietary alpha",
+   "source_spec": "fusion spec \u00a737/\u00a738",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "decompose every realised P&L; the allocator cannot learn without it"
+  },
+  {
+   "capability_id": "MONETIZATION_LATENCY",
+   "title": "Monetisation latency regret accounting",
+   "economic_reason": "Unnecessary waiting is an economic defect and nothing charges it",
+   "source_spec": "fusion spec \u00a716",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "timestamp every stage; estimate decay and missed opportunity per stage"
+  },
+  {
+   "capability_id": "PRIVILEGE_SEPARATION",
+   "title": "Real privilege separation for the risk kernel",
+   "economic_reason": "Hash locking is tamper-evident only; an agent with write access can still change the rails",
+   "source_spec": "fusion spec \u00a717/\u00a730/\u00a731",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "OS-level credential and service separation lives on the VPS: a separate risk-service account the research process cannot write to or redeploy. The repo can generate the unit files and permission matrix; applying them is a host action requiring root on the box",
+   "next_action": "generate deployment config + permission matrix here; principal applies on the box"
+  },
+  {
+   "capability_id": "DISCLOSURE_INTEL",
+   "title": "Lawful public-disclosure intelligence",
+   "economic_reason": "Mandatory disclosures are information the actor was compelled to reveal",
+   "source_spec": "batch-2 \u00a721/\u00a722",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "ingest with published_at/first_seen/parsed_at; measure the latency curve before assuming any edge survives the delay"
+  },
+  {
+   "capability_id": "ACTOR_GRAPH",
+   "title": "Cross-domain actor / entity action graph",
+   "economic_reason": "Behavioural fingerprints and capital rotation, not identity",
+   "source_spec": "batch-2 \u00a723",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "explicit identity confidence; unknown stays unknown"
+  },
+  {
+   "capability_id": "EVIDENCE_FUSION",
+   "title": "Dependency-aware evidence fusion",
+   "economic_reason": "Five nominal scouts may equal 1.7 independent observations",
+   "source_spec": "batch-2 \u00a724/\u00a736",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "effective independent evidence count replaces vote counting"
+  },
+  {
+   "capability_id": "CREATOR_INTEL",
+   "title": "Public strategist change intelligence",
+   "economic_reason": "The CHANGE in a view carries more information than the view",
+   "source_spec": "batch-2 \u00a721/\u00a73",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "time-versioned claims + source calibration scorecard"
+  },
+  {
+   "capability_id": "SEMANTIC_COMPILER",
+   "title": "Public strategy semantic compiler",
+   "economic_reason": "One arbitrary encoding of a discretionary rule can falsely kill a real mechanism",
+   "source_spec": "transcript spec \u00a71/\u00a719",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "interpretation lattice; test the FAMILY not one encoding"
+  },
+  {
+   "capability_id": "RESEARCH_DAG",
+   "title": "Research DAG / task compiler",
+   "economic_reason": "Results should spawn their own next steps without a human naming the obvious one",
+   "source_spec": "batch-2 \u00a726",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "dependency-aware nodes with expected value and artifact contracts"
+  },
+  {
+   "capability_id": "CONCURRENCY_ECONOMICS",
+   "title": "Concurrency economics controller",
+   "economic_reason": "Maximum valuable throughput, not maximum process count",
+   "source_spec": "batch-2 \u00a729",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "scale while marginal useful throughput rises; idle capacity with work waiting is a defect"
+  },
+  {
+   "capability_id": "MODEL_ROUTER",
+   "title": "Learned multi-model router",
+   "economic_reason": "Route by measured downstream value, never reputation",
+   "source_spec": "batch-2 \u00a725/\u00a752",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "track cost/quality/defect-detection/survivor descendants per model x task class"
+  },
+  {
+   "capability_id": "EPHEMERAL_SPECIALISTS",
+   "title": "Ephemeral specialist workers",
+   "economic_reason": "Permanent seats for occasional work is bloat",
+   "source_spec": "batch-2 \u00a726/\u00a753",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "instantiate, execute, record value, terminate"
+  },
+  {
+   "capability_id": "WORKFLOW_DISTILL",
+   "title": "Workflow -> capability distillation",
+   "economic_reason": "An LLM doing repetitive deterministic work is cost with no edge",
+   "source_spec": "batch-2 \u00a75/\u00a727",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "detect repeated traces, compile, benchmark tokens and latency saved"
+  },
+  {
+   "capability_id": "DOCTRINE_DISTILL",
+   "title": "Experience -> doctrine distillation",
+   "economic_reason": "A lesson that stays in memory recurs",
+   "source_spec": "batch-2 \u00a76/\u00a728",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "convert recurring lessons into the strongest justified form; measure whether recurrence falls"
+  },
+  {
+   "capability_id": "MISSED_OPPORTUNITY",
+   "title": "Missed-opportunity intelligence",
+   "economic_reason": "Learning only from trades taken hides validator false negatives and allocator timidity",
+   "source_spec": "fusion spec \u00a746/\u00a729",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "counterfactuals that generate preregistered tests, never retroactive promotion"
+  },
+  {
+   "capability_id": "PREQUENTIAL",
+   "title": "Live prequential evaluation",
+   "economic_reason": "Forecast before outcome, scored without rewriting history",
+   "source_spec": "fusion spec \u00a757",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "store every forecast pre-outcome; maintain calibration curves"
+  },
+  {
+   "capability_id": "OPERATOR_UX",
+   "title": "Operator control surface",
+   "economic_reason": "A more sophisticated backend that is harder to observe is not obviously better",
+   "source_spec": "fusion spec \u00a733/\u00a734/\u00a735",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "one status surface answering what is live/making money/blocked/next"
+  },
+  {
+   "capability_id": "AUTONOMOUS_RECOVERY",
+   "title": "Autonomous recovery for non-capital-critical failures",
+   "economic_reason": "A stalled collector is silent alpha loss",
+   "source_spec": "fusion spec \u00a736/\u00a733",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "detect, diagnose, legal fallback, verify, record -- never by weakening validation"
+  },
+  {
+   "capability_id": "COMPLETION_SUPERVISOR",
+   "title": "Completion supervisor",
+   "economic_reason": "No completed batch may terminate the programme while solvable items remain",
+   "source_spec": "completion mandate \u00a734",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "read ledger, pick highest-value unfinished, launch, update, repeat"
+  },
+  {
+   "capability_id": "REGIME_TRANSITION_POSTERIOR",
+   "title": "Transition posterior + duration-aware hazard",
+   "economic_reason": "A state model that cannot say how likely it is to LEAVE the state cannot size the exposure it justifies",
+   "source_spec": "regime extension \u00a71-\u00a72",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "extend existing HMM/GMM modules; test whether duration-aware beats plain Markov OOS"
+  },
+  {
+   "capability_id": "TRANSITION_SURPRISE",
+   "title": "Transition surprise score",
+   "economic_reason": "An unexpected state change may precede volatility, liquidation or momentum failure -- a hypothesis, not assumed alpha",
+   "source_spec": "regime extension \u00a73",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "-log P(observed transition | prior info), as-of; route to the hypothesis factory"
+  },
+  {
+   "capability_id": "STATE_CONDITIONAL_MECHANISM",
+   "title": "Preregistered conditional-alpha validation branch",
+   "economic_reason": "F3's measured plateau makes conditional alpha impossible to pass ~half the time; the fix is a branch, never a lower global bar",
+   "source_spec": "regime extension \u00a74 / completion mandate \u00a75",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "state defined EX ANTE and causally observable; no post-hoc state mining on a failed candidate; untouched OOS; transition periods tested separately"
+  },
+  {
+   "capability_id": "REGIME_CONDITIONAL_ALLOCATION",
+   "title": "Regime-conditional capital allocation",
+   "economic_reason": "Sizing from P(bull)-P(bear) discards the variance and tail terms that decide log-growth",
+   "source_spec": "regime extension \u00a75-\u00a76",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "feed the full posterior into capital_competition: state-conditional return, variance, tail, entropy"
+  },
+  {
+   "capability_id": "REGIME_MODEL_SELECTION",
+   "title": "Regime representation selection by validated economics",
+   "economic_reason": "Choosing the most sophisticated model automatically is complexity nobody priced",
+   "source_spec": "regime extension \u00a78",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "compare 3-state / Markov / HMM / GMM / HSMM on untouched OOS E[log W] per unit complexity"
+  },
+  {
+   "capability_id": "CADENCE_ALIGNMENT",
+   "title": "Signal-cadence / alpha-half-life alignment",
+   "economic_reason": "A scheduler slower than the opportunity half-life loses the edge before the decision is made, and nothing anywhere records the loss",
+   "source_spec": "production spec \u00a71",
+   "module": "libs.research.cadence_alignment",
+   "tests": [
+    "tests/research/test_cadence_alignment.py"
+   ],
+   "callers": [
+    "scripts/run_intelligence_cycle.py"
+   ],
+   "artifacts": [
+    "data/intelligence_cycle.json"
+   ],
+   "consumers": [
+    "scripts/run_max_push.py"
+   ],
+   "external_blocker": "",
+   "next_action": "derive cadence from the strategy's information horizon; refuse configs where interval materially exceeds half-life; emit CADENCE_REGRET into alpha retention"
+  },
+  {
+   "capability_id": "DECISION_LEDGER",
+   "title": "Complete decision / non-trade ledger",
+   "economic_reason": "Learning only from trades taken hides validator false negatives, execution loss and allocator timidity",
+   "source_spec": "production spec \u00a72",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "record EXECUTED / SIGNAL_REJECTED / RISK_REJECTED / COST_REJECTED / CAPACITY_REJECTED / EXECUTION_REJECTED / VENUE_UNAVAILABLE / MISSED_LATENCY with the state snapshot"
+  },
+  {
+   "capability_id": "STRATEGY_MANIFEST",
+   "title": "Canonical immutable versioned strategy manifest",
+   "economic_reason": "No LLM may silently reinterpret a live strategy; production must reference a content hash",
+   "source_spec": "production spec \u00a73",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "audit existing trade-intent schema first; any modification creates a CHILD version"
+  },
+  {
+   "capability_id": "REALITY_GAP",
+   "title": "Paper / canary / live parity measurement",
+   "economic_reason": "A candidate cannot scale while unexplained execution divergence is material",
+   "source_spec": "production spec \u00a74",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "same decision engine across paper/canary/live; compare signal, decision, desired order, fill and cost parity"
+  },
+  {
+   "capability_id": "PREFLIGHT_CONTRACT",
+   "title": "Production pre-flight health contract",
+   "economic_reason": "Fail closed for execution, continue research -- and RECORD the opportunity the outage cost",
+   "source_spec": "production spec \u00a75",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "data freshness, clock, manifest hash, venue, auth, reconciliation, risk kernel, journal"
+  },
+  {
+   "capability_id": "VENUE_CAPABILITY",
+   "title": "Venue capability contract",
+   "economic_reason": "A strategy needing post-only on a venue without it is an untested failure waiting for live capital",
+   "source_spec": "production spec \u00a76",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "machine-readable adapter capabilities vs declared strategy requirements -> ELIGIBLE / DEGRADED / INELIGIBLE before promotion"
+  },
+  {
+   "capability_id": "EXECUTION_TAPE_ACCOUNTING",
+   "title": "Accounting derived from the authoritative execution tape",
+   "economic_reason": "A separate ledger as source of truth is a second truth, and the desk has already paid for phantom reconciliation once",
+   "source_spec": "production spec \u00a77",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "derive exports from immutable execution records; accounting is convenience, never evidence"
+  },
+  {
+   "capability_id": "DETERMINISTIC_HOT_PATH",
+   "title": "Deterministic production order path",
+   "economic_reason": "LLMs research and propose; they may not freestyle production order interpretation",
+   "source_spec": "production spec \u00a78",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "frozen manifest -> deterministic signal engine -> allocator -> immutable risk kernel -> deterministic adapter"
+  },
+  {
+   "capability_id": "LATENCY_METRICS",
+   "title": "End-to-end latency and regret metrics",
+   "economic_reason": "Unnecessary delay is an economic defect and nothing charges it",
+   "source_spec": "production spec \u00a710",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "signal_to_observation, observation_to_decision, decision_to_order, order_to_fill, cadence_regret, reality_gap, venue_availability_loss"
+  }
+ ]
+}

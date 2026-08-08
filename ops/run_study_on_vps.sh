@@ -29,6 +29,42 @@ ONLY="${1:-}"
 LOG="${STUDY_LOG:-data/study_runs.log}"
 mkdir -p "$(dirname "$LOG")"
 
+# ---------------------------------------------------------------------------------------------
+# SURVIVE A DROPPED SSH SESSION. Added 2026-08-08 after it cost a real run.
+#
+# WHAT HAPPENED. The operator started the full sweep over SSH at 09:56Z. At ~40% -- 359,424 of
+# 898,560 candidates evaluated across 8 of 20 cells -- the connection dropped:
+#
+#     client_loop: send disconnect: Connection reset
+#
+# The studies run in the FOREGROUND of the invoking shell, so SIGHUP killed the sweep. Afterwards
+# there was no process, no OOM line in dmesg, no traceback, and no data/full_sweep.json, because
+# the report is only written at the end. The eight cells of results existed solely in terminal
+# scrollback. THE FAILURE MODE IS SILENT AND TOTAL: an hour of niced compute produced nothing,
+# and every diagnostic the operator could run afterwards showed a clean box.
+#
+# This is a property of the runner, not operator error. A study that projects 56 minutes and is
+# allowed up to 180 CANNOT be tied to the lifetime of a terminal.
+#
+# THE GUARD: when started from a TTY, re-exec detached and hand back the follow command. cron and
+# systemd have no controlling terminal, so they take the normal path and nothing about the
+# scheduled runs changes. STUDY_FOREGROUND=1 opts out for debugging.
+# THE TEST IS "DO I HAVE A CONTROLLING TERMINAL", NOT "IS STDOUT A TTY", and the difference is
+# the whole point: SIGHUP is delivered to the foreground process group of the controlling
+# terminal REGARDLESS of where stdout was redirected. `[ -t 1 ]` would take the inline path for
+# `bash ops/run_study_on_vps.sh | tee run.log` -- the most natural way an operator would run this
+# -- and that invocation is exactly as exposed to a dropped connection as the bare one.
+if ( : > /dev/tty ) 2>/dev/null && [ -z "${STUDY_DETACHED:-}" ] && [ -z "${STUDY_FOREGROUND:-}" ]
+then
+    _runlog="data/study_runs_$(date -u +%Y%m%dT%H%M%SZ).log"
+    STUDY_DETACHED=1 setsid nohup bash "$0" "$@" > "$_runlog" 2>&1 < /dev/null &
+    echo "detached as pid $! -- this run now survives a dropped SSH session."
+    echo "  follow:  tail -f $_runlog"
+    echo "  stop:    kill $!"
+    echo "  (STUDY_FOREGROUND=1 runs inline instead; cron and systemd already do, having no TTY)"
+    exit 0
+fi
+
 # THE INTERPRETER IS .venv/bin/python, NOT python3 -- and this script had it wrong until 2026-08-06.
 # Every other entry point on this box already knew: the systemd units all ExecStart
 # `.venv/bin/python`, ops/deploy_vps.sh hard-FAILS if that binary is absent, and brain_env.sh walks
@@ -89,7 +125,13 @@ run_one() {
   echo "STARTED $(date -u +%Y-%m-%dT%H:%M:%SZ)"
   # niced and single-threaded: the recorders are the irreplaceable process on this box, and a
   # study that starves them costs tape that cannot be re-acquired at any price.
-  OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+  # PYTHONUNBUFFERED IS NOT COSMETIC ONCE THE RUN IS DETACHED, and it cost a diagnosis the same
+  # hour the detach guard landed. Python block-buffers stdout when it is a pipe or a file, so a
+  # detached study writes NOTHING to its log until 4-8KB accumulates. `run_full_sweep` flushes its
+  # per-cell lines explicitly but not its header, so the first ~8 minutes of a real run produced a
+  # log containing only "STARTED" -- indistinguishable from a hang, which is exactly what it was
+  # read as. The detach fix made the process survivable and simultaneously made it look dead.
+  OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONUNBUFFERED=1 \
     nice -n 15 "$PY" $cmd 2>&1 | tee -a "$LOG"
   echo "FINISHED $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }

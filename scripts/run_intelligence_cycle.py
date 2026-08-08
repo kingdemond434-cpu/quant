@@ -215,20 +215,207 @@ def _dormancy() -> dict[str, Any]:
     question mechanical: what does nothing import, and what does nothing schedule?
     Priority encoded (principal): find unused capability BEFORE inventing new capability."""
     try:
-        from libs.self_improvement.dormancy import scan, summarise
+        from libs.self_improvement.dormancy import (
+            imported_but_never_called,
+            scan,
+            summarise,
+        )
     except ImportError as e:
         return _cap("dormancy_hunter", "ERROR", f"import failed: {e}")
     rep = summarise(scan())
+    # THE SCAN'S OWN BLIND SPOT, measured 2026-08-08: it asks "does anything IMPORT it", so a
+    # consumer that imports a module and then only mentions it in prose flips it from dormant to
+    # reachable while the desk has still never run it. Reported alongside rather than merged --
+    # these are orphans WITH an importer, and the fix is to call it, not to write a consumer.
+    silent = imported_but_never_called()
+    rep["imported_but_never_called"] = [
+        {"path": d.path, "lines": d.lines, "reason": d.reason, "exit": d.suggested_exit}
+        for d in sorted(silent, key=lambda x: -x.lines)[:20]]
     n = sum(rep["counts"].values()) if isinstance(rep.get("counts"), dict) else 0
     return _cap("dormancy_hunter", "ACTIVE",
                 f"{n} dormant capabilities ({rep['total_dormant_lines']} paid-for unused lines) "
-                f"across {rep['scanned']['modules']} modules + {rep['scanned']['scripts']} scripts",
+                f"across {rep['scanned']['modules']} modules + {rep['scanned']['scripts']} "
+                f"scripts; {len(silent)} imported-but-never-called",
                 report=rep)
+
+
+def _orphan_chain() -> dict[str, Any]:
+    """ORPHANS BEYOND MODULES -- every producer whose output nothing consumes.
+
+    `dormancy` covers CODE. The expensive orphans are further down the chain, where the desk has
+    already paid for the discovery: a dataset turned into no feature, a hypothesis never tested, a
+    survivor never portfolio-tested. None of those is visible to an importer count -- the code all
+    works and the artifacts all exist, and the chain is broken at a join nobody watches.
+
+    PUBLISHES rather than prints, so the max-push queue ranks the finding beside every other gap
+    without anyone editing the ranker. Detection that cannot reach a priority is half a control.
+    """
+    try:
+        from libs.research.gap_contract import publish
+        from libs.research.orphan_scan import scan, summarise, to_gaps
+    except ImportError as e:
+        return _cap("orphan_chain", "ERROR", f"import failed: {e}")
+    counts = scan()
+    rep = summarise(counts)
+    publish("orphan_chain", to_gaps(counts))
+    n_un = len(rep["unwatched"]) if isinstance(rep.get("unwatched"), list) else 0
+    return _cap("orphan_chain", "ACTIVE",
+                f"{rep['measured']}/{rep['joins']} conversion joins measured, {n_un} unwatched; "
+                f"bottleneck: {rep['bottleneck'] or 'UNMEASURED'}",
+                report=rep)
+
+
+def _unknowns() -> dict[str, Any]:
+    """THE LEDGER OF WHAT THE DESK BELIEVES WITHOUT EVIDENCE, and what evidence has contradicted.
+
+    Assumptions, contradictions and unknowns are one object at three confidence levels, and the
+    valuable events are the MOVES between them -- a KNOWN that live evidence disputes is the most
+    expensive transition on the desk, because everything downstream was sized as though it held.
+
+    AN EMPTY LEDGER IS NOT A CLEAN BILL. A desk with no recorded assumptions has unrecorded ones,
+    so the report says that in those words rather than reporting zero.
+    """
+    try:
+        from libs.research.unknowns import Item, summarise
+    except ImportError as e:
+        return _cap("unknowns_ledger", "ERROR", f"import failed: {e}")
+    raw = _read("data/unknowns.json") or {}
+    rows = raw.get("items") if isinstance(raw, dict) else None
+    items = []
+    for r in rows or []:
+        if not isinstance(r, dict):
+            continue
+        try:
+            items.append(Item(
+                key=str(r["key"]), state=str(r["state"]), statement=str(r.get("statement", "")),
+                falsifier=str(r.get("falsifier", "")),
+                depends_on_it=tuple(str(x) for x in (r.get("depends_on_it") or [])),
+                needs_data=tuple(str(x) for x in (r.get("needs_data") or [])),
+                evidence=str(r.get("evidence", "")), trigger=str(r.get("trigger", ""))))
+        except (KeyError, ValueError):
+            # A row the ledger's own constructor refuses is a DEFECT IN THE ROW, not a reason to
+            # drop the whole ledger -- most often a belief written with no falsifier.
+            continue
+    rep = summarise(items)
+    return _cap("unknowns_ledger", "ACTIVE" if items else "NO-INPUT", str(rep["headline"]),
+                report=rep)
+
+
+def _source_roi() -> dict[str, Any]:
+    """WHICH MINER, MODEL OR PROMPT ACTUALLY PRODUCES VALIDATED ALPHA.
+
+    The desk knows how many documents each miner found. It has never measured whether any of them
+    became a survivor. Volume is a COST here, never an output: a source returning 100,000 pages and
+    zero independent survivors is worse than one returning 100 and two, because it also spends
+    triage -- the scarcest input in the chain.
+    """
+    try:
+        from libs.research.source_roi import SourceRecord, summarise
+    except ImportError as e:
+        return _cap("source_roi", "ERROR", f"import failed: {e}")
+    raw = _read("data/source_production.json") or {}
+    rows = raw.get("sources") if isinstance(raw, dict) else None
+    recs = []
+    for r in rows or []:
+        if not isinstance(r, dict) or not r.get("name"):
+            continue
+        recs.append(SourceRecord(
+            name=str(r["name"]), kind=str(r.get("kind", "miner")),
+            found=int(r.get("found", 0) or 0), novel=int(r.get("novel", 0) or 0),
+            hypotheses=int(r.get("hypotheses", 0) or 0), tested=int(r.get("tested", 0) or 0),
+            survivors=int(r.get("survivors", 0) or 0),
+            independent=int(r.get("independent", 0) or 0),
+            portfolio_positive=int(r.get("portfolio_positive", 0) or 0),
+            cost_units=float(r.get("cost_units", 0.0) or 0.0),
+            window_days=int(r.get("window_days", 0) or 0)))
+    if not recs:
+        return _cap("source_roi", "NO-INPUT",
+                    "no data/source_production.json -- the miners do not yet emit their own funnel "
+                    "counts, so no source can be shown to be earning OR failing. That is a "
+                    "MEASUREMENT gap in the desk, not a verdict on any source")
+    rep = summarise(recs)
+    return _cap("source_roi", "ACTIVE", str(rep["headline"]), report=rep)
+
+
+def _cadence_roi() -> dict[str, Any]:
+    """IS EACH SCHEDULE RUNNING AT THE FREQUENCY ITS YIELD JUSTIFIES?
+
+    Every cadence on this desk was CHOSEN rather than measured. The manifest records what somebody
+    picked without recording why, and L1.28c says every schedule hunts its own ceiling -- nothing
+    has ever checked whether one is at it.
+
+    UNDER-RUN IS THE INVISIBLE FAILURE and the reason this leads with it: an over-run job at least
+    shows up in a cost report, while an under-run one simply finds less than it could have, forever,
+    and nothing records the difference.
+    """
+    try:
+        from libs.research.cadence_roi import CadenceRecord, summarise
+    except ImportError as e:
+        return _cap("cadence_roi", "ERROR", f"import failed: {e}")
+    raw = _read("data/cadence_production.json") or {}
+    rows = raw.get("jobs") if isinstance(raw, dict) else None
+    recs = []
+    for r in rows or []:
+        if not isinstance(r, dict) or not r.get("job"):
+            continue
+        recs.append(CadenceRecord(
+            job=str(r["job"]), interval_minutes=float(r.get("interval_minutes", 0) or 0),
+            fires=int(r.get("fires", 0) or 0),
+            productive_fires=int(r.get("productive_fires", 0) or 0),
+            findings=int(r.get("findings", 0) or 0),
+            cost_per_fire=float(r.get("cost_per_fire", 0.0) or 0.0),
+            hard_floor_reason=str(r.get("hard_floor_reason", ""))))
+    if not recs:
+        return _cap("cadence_roi", "NO-INPUT",
+                    "no data/cadence_production.json -- every schedule on this desk was chosen "
+                    "rather than measured, and THAT is the finding. No cadence may be slowed on an "
+                    "unmeasured yield; tightening also needs the number")
+    rep = summarise(recs)
+    return _cap("cadence_roi", "ACTIVE", str(rep["headline"]), report=rep)
+
+
+def _cadence_alignment() -> dict[str, Any]:
+    """IS EACH SCHEDULER FAST ENOUGH FOR THE EDGE IT WATCHES?
+
+    A DIFFERENT QUESTION FROM `_cadence_roi`, which asks whether a job produces anything per fire.
+    This asks whether it can still be in TIME. A job can be productive on every fire and lose most
+    of the edge, because it only ever sees what survived until it looked -- and that loss appears
+    in no metric the desk keeps, since every metric is computed over what WAS observed.
+    """
+    try:
+        from libs.research.cadence_alignment import StrategyCadence, summarise
+    except ImportError as e:
+        return _cap("cadence_alignment", "ERROR", f"import failed: {e}")
+    raw = _read("data/strategy_horizons.json") or {}
+    rows = raw.get("strategies") if isinstance(raw, dict) else None
+    recs = []
+    for r in rows or []:
+        if not isinstance(r, dict) or not r.get("strategy"):
+            continue
+        recs.append(StrategyCadence(
+            strategy=str(r["strategy"]),
+            half_life_minutes=float(r.get("half_life_minutes", 0) or 0),
+            interval_minutes=float(r.get("interval_minutes", 0) or 0),
+            edge_bps=float(r.get("edge_bps", 0.0) or 0.0),
+            opportunities_per_day=float(r.get("opportunities_per_day", 0.0) or 0.0),
+            hard_floor_reason=str(r.get("hard_floor_reason", ""))))
+    if not recs:
+        return _cap("cadence_alignment", "NO-INPUT",
+                    "no data/strategy_horizons.json -- no strategy declares its alpha half-life, "
+                    "so no schedule on this desk can be justified OR refused. Every interval is a "
+                    "number somebody picked once")
+    rep = summarise(recs)
+    return _cap("cadence_alignment", "ACTIVE", str(rep["headline"]), report=rep)
 
 
 def main() -> int:
     caps = [
         _dormancy(),
+        _orphan_chain(),
+        _unknowns(),
+        _source_roi(),
+        _cadence_roi(),
+        _cadence_alignment(),
         # BEFORE the organs that navigate by it -- research_priority ranks what to test, and row
         # #77 is what happens when that ranking is made off a stale map.
         _data_registry(),

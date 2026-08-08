@@ -29,3 +29,11 @@ _audit_prepared.pkl
 coverage.json
 .coverage
 htmlcov/
+
+# Test-planted probes. `test_the_dead_caller_check_can_still_SEE_a_dead_caller` writes these into
+# the tree and removes them in a `finally`, but a `git add -A` landing inside that window commits
+# them -- which happened on 2026-08-08 and shipped two junk files to the branch. The test itself
+# ASSERTS they are absent when it starts, so a leaked pair turns the suite red on the next run.
+# Ignoring them makes the race harmless without weakening the test.
+libs/_deadlink_probe.py
+scripts/_deadlink_probe_caller.py

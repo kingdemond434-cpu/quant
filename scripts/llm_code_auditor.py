@@ -36,7 +36,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-from libs.doctrine.constitution import OBJECTIVE_PREAMBLE  # noqa: E402
+from libs.doctrine.constitution import (  # noqa: E402
+    OBJECTIVE_PREAMBLE,
+    RESIDUAL_MANDATE,
+    RESIDUAL_PROTOCOL,
+)
 from libs.llm.effort import reasoning_payload  # noqa: E402
 from libs.llm.push import PUSH_LADDER, push_rounds  # noqa: E402
 from scripts import seats  # noqa: E402 -- after the sys.path bootstrap above
@@ -54,7 +58,7 @@ SYSTEM = (
     # what its output LOOKS like rather than for expected shift in E[log W] -- and, worse,
     # quietly recommends the timid option because nothing told it that timidity is a
     # scored defect rather than a neutral default.
-    OBJECTIVE_PREAMBLE + "\n"
+    OBJECTIVE_PREAMBLE + RESIDUAL_MANDATE + RESIDUAL_PROTOCOL + "\n"
     "You are a hostile code reviewer for a quantitative trading desk. Your job is to find bugs "
     "that would cause SILENT WRONG BEHAVIOUR -- not style, not typing, not performance. A crash "
     "is safe because someone notices. A confident wrong number is not.\n\n"

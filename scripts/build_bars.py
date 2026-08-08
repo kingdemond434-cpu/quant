@@ -146,49 +146,93 @@ def group_by_symbol(files: list[Path]) -> dict[str, list[Path]]:
     return {k: sorted(v) for k, v in out.items()}
 
 
+#: Bar width in milliseconds, for the streaming bucket key. Derived from `freq` so the two can
+#: never drift apart -- a hardcoded 900_000 beside a configurable `freq` is a bug waiting for the
+#: first person who changes one of them.
+def _bucket_ms(freq: str) -> int:
+    return int(pd.Timedelta(freq).total_seconds() * 1000)
+
+
 def build(files: list[Path], freq: str = DEFAULT_FREQ) -> tuple[pd.DataFrame, dict]:
-    """OHLCV(+OI) bars from tape. Returns (bars, per-venue diagnostics)."""
-    px: list[tuple[int, float, float]] = []
-    oi: list[tuple[int, float]] = []
+    """OHLCV(+OI) bars from tape, STREAMED one file at a time.
+
+    THE EARLIER VERSION ACCUMULATED EVERY TRADE IN A PYTHON LIST AND WAS OOM-KILLED ON THE LIVE
+    BOX. It built `px` across all a symbol's files -- millions of 3-tuples for a busy name, each
+    carrying per-object overhead many times the 24 bytes of actual numbers -- and only then handed
+    the whole thing to pandas, which copies it again. On a 4GB machine that also runs the
+    recorders, `BARS_FILE_BUDGET=8000` died. The budget then looks like a tuning knob for how far
+    back the desk can see, when it was really a memory ceiling nobody had named.
+
+    Streaming makes memory O(BUCKETS) instead of O(TRADES): a day of 15-minute bars is 96 rows
+    whatever the trade count, so the archive size stops mattering and the budget becomes a time
+    budget again.
+
+    ORDER IS NOT ASSUMED. Each bucket tracks the timestamp of its own first and last trade, so
+    `open` and `close` are correct even if files arrive out of order or overlap -- which the
+    previous `.first()`/`.last()` got right only because a global sort had already happened. An
+    aggregation that silently depends on file naming is the kind of thing that stays correct until
+    a recorder changes its filename format.
+    """
+    step = _bucket_ms(freq)
+    # bucket_ms -> [open_ts, open_px, high, low, close_ts, close_px, volume, n_trades]
+    parts: dict[int, list[float]] = {}
+    oi_last: dict[int, tuple[int, float]] = {}
     seen: dict[str, int] = defaultdict(int)
+    n_trades = n_oi = 0
+
     for f in files:
         venue = f.parent.parent.name
         for row in _iter_rows(f):
-            t = trades_from(row)
-            if t:
-                px.extend(t)
-                seen[venue] += len(t)
-            elif row.get("k") == META_KIND and row.get("oi") is not None:
+            for ms, price, qty in trades_from(row):
+                b = (ms // step) * step
+                cur = parts.get(b)
+                if cur is None:
+                    parts[b] = [ms, price, price, price, ms, price, qty, 1.0]
+                else:
+                    if ms < cur[0]:
+                        cur[0], cur[1] = ms, price          # earlier trade -> this is the open
+                    if ms >= cur[4]:
+                        cur[4], cur[5] = ms, price          # later trade   -> this is the close
+                    if price > cur[2]:
+                        cur[2] = price
+                    if price < cur[3]:
+                        cur[3] = price
+                    cur[6] += qty
+                    cur[7] += 1.0
+                seen[venue] += 1
+                n_trades += 1
+            if row.get("k") == META_KIND and row.get("oi") is not None:
                 try:
-                    oi.append((int(row["t"]), float(row["oi"])))
+                    ms, val = int(row["t"]), float(row["oi"])
                 except (TypeError, ValueError):
                     continue
-    if not px:
+                b = (ms // step) * step
+                # LAST value in the bucket: open interest is a LEVEL, not a flow, so summing or
+                # averaging it would invent a quantity the venue never reported.
+                if b not in oi_last or ms >= oi_last[b][0]:
+                    oi_last[b] = (ms, val)
+                n_oi += 1
+
+    if not parts:
         return pd.DataFrame(), {"venues": dict(seen), "trades": 0}
 
-    tdf = pd.DataFrame(px, columns=["ms", "price", "qty"])
-    tdf["timestamp"] = pd.to_datetime(tdf["ms"], unit="ms", utc=True)
-    tdf = tdf.sort_values("timestamp").set_index("timestamp")
-    g = tdf["price"].resample(freq)
+    rows = sorted(parts.items())
     bars = pd.DataFrame({
-        "open": g.first(), "high": g.max(), "low": g.min(), "close": g.last(),
-        "volume": tdf["qty"].resample(freq).sum(),
-        "trades": tdf["price"].resample(freq).count(),
+        "timestamp": pd.to_datetime([b for b, _ in rows], unit="ms", utc=True),
+        "open": [v[1] for _, v in rows],
+        "high": [v[2] for _, v in rows],
+        "low": [v[3] for _, v in rows],
+        "close": [v[5] for _, v in rows],
+        "volume": [v[6] for _, v in rows],
+        "trades": [v[7] for _, v in rows],
     })
-    # EMPTY BUCKETS ARE DROPPED, NOT FORWARD-FILLED. A bar carried from the previous close is a
-    # price nothing traded at; screens would read the flat stretch as genuine low volatility and
-    # every vol-scaled feature downstream would be wrong in the same direction.
-    bars = bars[bars["trades"] > 0]
-    if oi:
-        odf = pd.DataFrame(oi, columns=["ms", "open_interest"])
-        odf["timestamp"] = pd.to_datetime(odf["ms"], unit="ms", utc=True)
-        # LAST value in the bucket: open interest is a level, not a flow, so summing or averaging
-        # it would invent a quantity the venue never reported.
-        oser = odf.sort_values("timestamp").set_index("timestamp")["open_interest"]
-        o = oser.resample(freq).last()
-        bars = bars.join(o)
-    bars = bars.reset_index()
-    return bars, {"venues": dict(seen), "trades": len(px), "oi_points": len(oi)}
+    # EMPTY BUCKETS NEVER EXIST HERE RATHER THAN BEING DROPPED AFTERWARDS -- a bucket with no trade
+    # is simply absent from `parts`. Same outcome as the old filter, and the reason is unchanged: a
+    # bar carried from the previous close is a price nothing traded at, and screens would read the
+    # flat stretch as genuine low volatility.
+    if oi_last:
+        bars["open_interest"] = [oi_last.get(b, (0, float("nan")))[1] for b, _ in rows]
+    return bars, {"venues": dict(seen), "trades": n_trades, "oi_points": n_oi}
 
 
 def main() -> int:

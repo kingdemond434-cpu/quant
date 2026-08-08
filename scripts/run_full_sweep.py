@@ -491,6 +491,10 @@ def main() -> int:
     ap.add_argument("--max-minutes", type=float, default=240.0,
                     help="refuse to start if the projected sweep exceeds this")
     ap.add_argument("--max-detail", type=int, default=200, help="survivor rows written in full")
+    ap.add_argument("--max-killed-cells", type=int, default=5000,
+                    help="retain at most N killed cells WITH their statistics. The counts stay "
+                         "exact regardless; this bounds the artifact, not the measurement. A "
+                         "validator whose rejections cannot be examined is unfalsifiable.")
     ap.add_argument("--max-cluster", type=int, default=500,
                     help="cluster at most this many survivors (top by |t|); the mechanism count is "
                          "a LOWER bound when the cap binds")
@@ -579,9 +583,13 @@ def main() -> int:
         a.out.write_text(json.dumps(rep, indent=1), "utf-8")
         return 0
 
+    # FLUSHED, because this line is the only proof the run got past loading bars. The per-cell
+    # prints below already flush; this one did not, so a detached run wrote a log containing
+    # nothing but "STARTED" for the whole first cell -- read, correctly on the evidence available,
+    # as a hang. A progress line that arrives after the work is not progress reporting.
     print(f"full-sweep: {PREREGISTERED_UNIVERSE} candidates, hurdle {hurdle():.3f}, "
           f"{len(symbols)} symbol(s), {len(idx)} common bars, {pooled_len} pooled rows, "
-          f"~{projected_min:.0f} min projected")
+          f"~{projected_min:.0f} min projected", flush=True)
 
     bar = hurdle()
     evaluated = measurable = net_positive = 0
@@ -614,6 +622,7 @@ def main() -> int:
     survivors: list[dict[str, object]] = []
     kept: list[tuple[Combination, int]] = []
     killed: Counter[str] = Counter()
+    killed_cells: list[dict[str, object]] = []
     # Cached by horizon rather than recomputed per survivor: `forward()` is a full-panel op, and
     # `setdefault` would evaluate it on every hit -- a per-survivor cost that is invisible at three
     # survivors and dominant at three thousand.
@@ -657,6 +666,29 @@ def main() -> int:
         for f in fired:
             killed[f.split(":")[0]] += 1
         if fired:
+            # RETAIN THE CELL, NOT ONLY THE COUNT. Until this line the sweep incremented a
+            # counter and dropped every number that produced it, so a run reporting
+            # "F3 WALK-FORWARD SIGN: 750" left NOTHING to audit: no t, no net, no arm split, no
+            # sample size. A validator whose rejections cannot be examined is unfalsifiable, and
+            # an unfalsifiable validator is the one component on this desk that could be silently
+            # destroying real alpha at scale while every gate reports healthy.
+            #
+            # BOUNDED, because 898,560 cells could all fail here. The cap keeps the report a
+            # report; the counts above stay exact and the artifact says which it is.
+            if len(killed_cells) < a.max_killed_cells:
+                killed_cells.append({
+                    "key": list(c.key), "kill": fired[0], "all_kills": fired,
+                    "horizon": h, "regime": c.regime, "n": r.n,
+                    "t": round(t_stat(r.ic, r.n, h), 4), "hurdle": round(hurdle(), 4),
+                    "net_bps": round(r.net_bps, 5), "gross_bps": round(r.gross_bps, 5),
+                    "cost_bps": round(r.gross_bps - r.net_bps, 5),
+                    "turnover": round(r.turnover, 6),
+                    "is_net_bps": None if not r_is.ok else round(r_is.net_bps, 5),
+                    "oos_net_bps": None if not r_oos.ok else round(r_oos.net_bps, 5),
+                    "is_n": r_is.n if r_is.ok else None,
+                    "oos_n": r_oos.n if r_oos.ok else None,
+                    "leak_net_bps": None if not r_leak.ok else round(r_leak.net_bps, 5),
+                })
             continue
 
         kept.append((c, h))
@@ -691,6 +723,15 @@ def main() -> int:
         full = evaluate(c, feats, base, cost_bp=a.cost_bp, min_obs=a.min_obs, keep_pnl=True)
         if full.pnl is not None:
             pnl["|".join(c.key)] = full.pnl.to_numpy(dtype=float)
+
+    # SURVIVOR RETURN SERIES LEAVE THE SWEEP. Until this, `pnl` was computed for clustering and
+    # discarded, so a survivor could NEVER be portfolio-tested without re-running the whole sweep
+    # -- which is exactly why the report has always said `PORTFOLIO_CONTRIBUTING: null`. That
+    # field was not an oversight in the counts; it was an artifact of the data never being
+    # emitted. Written as a sidecar because a return series per survivor does not belong inside a
+    # verdict document, and a verdict is not a lake.
+    if pnl:
+        np.savez_compressed(a.out.parent / "full_sweep_survivor_pnl.npz", **pnl)
 
     div = cluster(pnl) if pnl else None
     families = {family_of([str(x) for x in row["key"]]) for row in survivors}  # type: ignore[arg-type]
@@ -732,6 +773,9 @@ def main() -> int:
             "FORMULA": len(survivors),
             "FAMILY": len(families),
             "INDEPENDENT_MECHANISM": (div.n_independent if div else 0),
+            # STILL null HERE, and now for a different and much smaller reason: this harness
+            # builds no portfolio, but it no longer WITHHOLDS the data needed to build one.
+            # `scripts/run_portfolio_admission.py` consumes the sidecar and fills this in.
             "PORTFOLIO_CONTRIBUTING": None,
         },
         "counts_note": (
@@ -740,6 +784,16 @@ def main() -> int:
             "because this harness builds no portfolio -- that is UNMEASURED, not zero."),
         "unmeasurable_reasons": dict(reasons.most_common()),
         "kill_criteria_fired": dict(killed.most_common()),
+        # THE AUDIT SURFACE. Counts say a gate fired; only these say WHY, and whether the desk
+        # should believe it. Truncation is stated rather than silent -- a truncated audit that
+        # looked complete would be worse than none.
+        "killed_cells": killed_cells,
+        "killed_cells_truncated": sum(killed.values()) > len(killed_cells),
+        "survivor_pnl_artifact": (
+            str(a.out.parent / "full_sweep_survivor_pnl.npz") if pnl else None),
+        "killed_cells_note": (
+            f"{len(killed_cells)} of {sum(killed.values())} killed cells retained with full "
+            "statistics for kill audit; counts above are exact and unaffected by the cap"),
         "independence": ({"headline": div.headline, "clusters": [list(c) for c in div.clusters],
                           "unmeasured_pairs": div.unmeasured_pairs, "notes": list(div.notes),
                           "clustered": len(pnl), "capped_at": a.max_cluster if capped else None,

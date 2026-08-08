@@ -57,6 +57,8 @@ if str(_ROOT) not in sys.path:
 
 _OUT = _ROOT / "data/max_push_queue.json"
 
+from libs.research.gap_contract import load_published, to_queue_rows  # noqa: E402
+
 # Leverage per source class: how much does closing one unit of this gap move the two supreme
 # objectives? Declared with reasons rather than computed, because the desk has no EV model for
 # heterogeneous engineering work and a fabricated one would rank worse while looking rigorous.
@@ -324,6 +326,59 @@ def _from_freshness() -> list[dict[str, Any]]:
                   "data/freshness_status.json")]
 
 
+def _from_stranding() -> list[dict[str, Any]]:
+    """CONVERSION FAILURES the wiring source structurally cannot see, and that is the whole point.
+
+    `_from_wiring` reads `wiring_agent.json`, which counts scripts nothing SCHEDULES. That misses
+    the two states an importer count cannot reach (L1.54(a)): a module IMPORTED and never called,
+    and a module that runs while nothing reads its output. Both look reachable from every angle
+    the older sources have.
+
+    MEASURED 2026-08-08 and the reason this function exists rather than a note in the register:
+    `run_intelligence_cycle` imports `capital_reallocator` and `health_monitor` purely to prove
+    they import, then reads the artifacts itself and reports both ACTIVE. The detector found them
+    the same morning it was built -- and the queue could not see the finding, so the desk could
+    discover a real gap and never prioritise it. Detection without ranking is half a control.
+
+    Scored as `dormant_capability` rather than as a new class: it IS paid-for engineering
+    returning zero, and inventing a weight would rank worse while looking more precise.
+    """
+    d = _json("data/intelligence_cycle.json") or {}
+    caps = d.get("capabilities") if isinstance(d, dict) else None
+    rows: list[dict[str, Any]] = []
+    if isinstance(caps, list):
+        for c in caps:
+            if isinstance(c, dict) and c.get("name") == "dormancy_hunter":
+                rows = c.get("report", {}).get("imported_but_never_called", []) or []
+                break
+    if not isinstance(rows, list):
+        return []
+    scanned = 0
+    if isinstance(caps, list):
+        for c in caps:
+            if isinstance(c, dict) and c.get("name") == "dormancy_hunter":
+                scanned = int((c.get("report", {}).get("scanned", {}) or {}).get("modules", 0))
+                break
+    if not scanned:
+        # UNMEASURED, NOT ZERO. An absent cycle artifact means nobody looked, and letting that
+        # read as "no conversion failures" is WS-005 aimed at the queue's own inputs.
+        return [_item("capability::conversion_failures", "dormant_capability", None, 1.0,
+                      "no intelligence-cycle artifact -- the stranding scan has not run here",
+                      "run scripts/run_intelligence_cycle.py; UNMEASURED outranks a partial "
+                      "number because an unknown quantity is being ignored, not worked",
+                      "data/intelligence_cycle.json")]
+    n = len(rows)
+    worst = ", ".join(str(r.get("path", "?")) for r in rows[:3]) or "none"
+    return [_item("capability::conversion_failures", "dormant_capability",
+                  (scanned - n) / scanned, 1.0,
+                  f"{n} module(s) imported by a live consumer that NEVER call them, of {scanned} "
+                  f"scanned; worst by size: {worst}",
+                  "call it from the consumer that already imports it, or delete the import -- an "
+                  "import kept to prove a module loads reports ACTIVE while the capability has "
+                  "never run once (L1.54(a))",
+                  "data/intelligence_cycle.json")]
+
+
 def build(*, refresh: bool = True) -> dict[str, Any]:
     if refresh:
         for s in ("check_ratchets.py", "check_utilisation.py", "build_enforcement_matrix.py",
@@ -331,7 +386,15 @@ def build(*, refresh: bool = True) -> dict[str, Any]:
             _refresh(s)
     items = (_from_ratchets() + _from_utilisation() + _from_matrix()
              + _from_wiring() + _from_register() + _from_conversion()
-             + _from_tier_benchmark() + _from_calibration() + _from_freshness())
+             + _from_tier_benchmark() + _from_calibration() + _from_freshness()
+             + _from_stranding()
+             # THE GENERIC CHANNEL. Every `_from_*` above is a bespoke reader that knows the shape
+             # of one artifact, and adding the tenth made the cost visible: a detector written
+             # today cannot influence tomorrow's priorities until somebody edits THIS file, which
+             # makes the ranker a gatekeeper on discovery. Detectors now publish `Gap` rows to
+             # data/published_gaps/ and are ranked with no edit here. The readers above stay --
+             # rewriting working producers to prove a point is the bloat this contract avoids.
+             + to_queue_rows(load_published(), _item))
     items.sort(key=lambda r: -float(r["score"]))
     at_ceiling = [i for i in items if i["measured"] and i["gap_fraction"] <= 0.0]
     unmeasured = [i for i in items if not i["measured"]]

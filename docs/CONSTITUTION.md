@@ -1516,6 +1516,14 @@ a generator reports enormous productivity while re-searching one neighbourhood. 
 matters is INDEPENDENT MECHANISMS (`libs/alpha_factory/independence.cluster`), and it is also the
 right basis for the effective trial count above.
 
+**ANTI-TIMIDITY (L1.28): the restraint words in this law bind the EVIDENCE RECORD, not the search.**
+"Reject" here means a hypothesis that was MEASURED AND KILLED — never one declined on sight, and
+the pedigree rejections are forbidden outright by L1.53(a). "Slow" appears only as the thing this
+law refuses: a saturated queue is an argument for more throughput, never for a slower generator.
+Nothing in L1.52 is **not a licence** — it is the opposite: the one clause that could read as a
+brake ("improve prioritisation rather than generate blindly") orders BETTER ordering of the same
+uncapped stream, and exploration may never be reduced to zero under any of it.
+
 **THIS LAW DOES NOT LICENSE BUILDING OVER EXECUTING, and the distinction is the whole point.**
 "Research never stops" is not "construction never stops". The mandate's own text is explicit: with
 ideas queued and none tested, the next engineering priority is EXPERIMENT THROUGHPUT, not the
@@ -1572,3 +1580,253 @@ is UNSTARTED ADMIN — keys, 2FA, sub-accounts, cold wallet — and says nothing
 exists: those 434 came from one screen, and the 20,052 pre-registered trials that would actually
 test the question have never run. Neither zero licenses a conclusion. Both license an action, and
 the actions are different.
+
+**L1.53 MAXIMUM IMMEDIATE UTILISATION — A QUEUE IS A CAPACITY FACT, NEVER A MISSING EXECUTOR**
+*(principal law, 2026-08-08)*. Every accessible research asset is converted into actionable
+research output continuously: `data → features → hypotheses → experiments → evidence → survivors →
+portfolio candidates → capital decisions`, with recommendations, external research, code, failed
+experiments, near-survivors, datasets, models and prompts mined for further opportunity in
+parallel. No available resource may sit unused because a more elaborate module, pipeline,
+abstraction or prerequisite has not been built. **Prefer the simplest executable path that
+produces evidence today, and improve the infrastructure alongside it rather than ahead of it.**
+
+**THE BLOCKER ESCALATION RULE**, which replaces the backlog as the default response to a
+discovery:
+
+```
+DISCOVERY / RECOMMENDATION
+  ↓  testable with what the desk already holds?      YES → TEST NOW
+  ↓  NO: name the SMALLEST missing dependency
+  ↓  obtainable or buildable immediately?            YES → DO IT NOW, then test
+  ↓  NO: record blocker + reason + the nearest alternative test
+  → MOVE TO THE NEXT HIGHEST-VALUE EXPERIMENT
+```
+
+A blocker is recorded ONCE, with a re-test condition. "We need A → B → C → D before we can test Y"
+is not a plan; it is architecture theatre, and the correct reading of it is *run Y the simplest
+valid way now, build A/B/C in parallel*.
+
+**QUEUES ARE PROHIBITED UNLESS THEY REPRESENT A REAL CONSTRAINT.** Legitimate: saturated
+compute, API or rate limits, a genuinely unavailable data dependency, experiments that require a
+prior result, a statistical control that needs a defined selection boundary (L1.52(a)), live
+capital awaiting risk approval, exchange constraints. Never legitimate: hypothesis generation,
+source discovery, GPT/Kimi recommendations, cheap screens while compute is idle, near-survivor
+mutation, recombination, falsification, prompt or model experiments. **A queue must never be a
+synonym for "the executor was never built" — that is GAP #86 wearing a scheduler's clothes.**
+
+**CONVERSION IS MEASURED PER STAGE, NOT ADMIRED IN AGGREGATE** (this is L1.28b's parity rule
+generalised to the whole pipeline, and `libs/research/funnel.py` is its instrument). No stage may
+accumulate a permanent backlog while an upstream stage keeps producing. 10,000 mined items → 500
+hypotheses → 100 tests → 5 survivors is a report about the CONVERSION BOTTLENECK, not about the
+10,000. The bottleneck stage is the work.
+
+**"100%" MEANS OPPORTUNITY, NOT LITERAL SATURATION.** Use every available resource wherever its
+expected marginal research value exceeds its opportunity cost — which is a stricter and more
+aggressive rule than "keep everything busy", because it forbids spending a day of compute on a
+low-value search merely because the compute was there. The desk never says *we are at the
+ceiling*; it says *this is the highest-value gap remaining and here is the measurement*.
+
+**THE ONE THING NEVER MAXIMISED IS CAPITAL DEPLOYMENT.** Research utilisation is uncapped;
+capital remains constrained by evidence, liquidity, drawdown, capacity and execution risk (L1.23,
+L1.45, the Tier-3 rail). "Maximum utilisation" applied to capital is maximum ruin risk, and this
+law explicitly does not reach it.
+
+**AND SURVIVOR COUNT IS AN ASPIRATION, NEVER A QUOTA.** A forced monthly survivor number is met
+the same way every forced number is met: by relaxing independence or validation standards. The
+throughput target is EXPERIMENTS EXECUTED; the survivor count is an outcome that is reported,
+never demanded.
+
+**L1.53(a) COLD ON CLAIMS, OPEN ON HYPOTHESES — THE TWO ARE NOT THE SAME SKEPTICISM**
+*(2026-08-08)*. The desk verifies claims brutally and judges hypotheses lightly, and collapsing
+these into one posture breaks the research loop in one of two ways.
+
+**A claim is never evidence because an LLM stated it.** A proposed mechanism, a cited paper, a
+named dataset, a described repository, a reported result: each enters as
+`CLAIM → SOURCE → EXTRACTION → VERIFICATION → EXPERIMENT`, and every external output carries one
+of `VERIFIED | INFERRED | HYPOTHESIS | UNVERIFIED | CONTRADICTED`. Instructing a model not to
+hallucinate is not a control; making hallucination cheap and detectable is. Plausible reasoning is
+not demonstrated predictive edge, and a trading claim is the most expensive place on this desk to
+forget that.
+
+**AND A HYPOTHESIS IS NEVER REJECTED FOR ITS PEDIGREE.** No candidate may be dismissed because an
+LLM generated it, because it sounds unconventional, because it lacks prior evidence, because it
+contradicts the desk's current beliefs, because it is absent from the knowledge graph, because no
+paper covers it, or because its source is obscure or foreign-language. The only admissible
+rejections are: *cannot be executed*, *already in the graveyard with the same mechanism*, or
+*measured and killed*. Everything else is priced, queued by expected value, and tested — a
+hypothesis that contradicts a current belief is a FALSIFICATION OPPORTUNITY and ranks above a
+confirmatory one, not below it.
+
+    generate broadly · judge lightly before testing · test aggressively · validate brutally after
+
+**THE TWO GPT POSTURES ARE SEPARATED ON PURPOSE**, because a model that reads its own prior output
+elaborates it rather than challenges it. COLD DISCOVERY runs with the desk's conclusions withheld
+(`scripts/llm_blind_researcher.py`, `ops/run_blindrediscovery_dig.sh`) and periodically
+re-derives the space from scratch, so its rediscovery can be diffed against what the desk believes.
+EVIDENCE ANALYSIS reads actual experiment results and proposes follow-ups. Validation belongs to
+neither: it is the desk's own statistical machinery, and no LLM seat may adjudicate its own
+proposal.
+
+**L1.54 COMPUTE MAXIMISATION — THROUGHPUT IS THE TARGET, UTILISATION IS ONLY THE INSTRUMENT**
+*(principal law, 2026-08-08)*. Available compute is never intentionally left idle while valid
+research work exists. The scheduler pushes cores, GPU where applicable, RAM caching, parallel NVMe
+I/O, permitted network throughput and worker concurrency upward, and reclaims idle capacity
+automatically. Compute conservatism is not prudence; it is the queue excuse of L1.53 wearing a
+resource-management costume, and it is refused on the same grounds.
+
+**BUT THE OBJECTIVE IS `validated experiments per unit time`, NOT PERCENT UTILISATION, AND THE
+DIFFERENCE IS NOT COSMETIC:**
+
+```
+ 80 workers → 50k experiments/hour
+100 workers → 65k experiments/hour       ← optimum
+140 workers → 66k/hour + mass failures   ← higher CPU%, worse desk
+```
+
+A hardcoded "100% CPU forever" is worse engineering than a measured ceiling, because contention,
+swap, timeout and corruption all buy utilisation with throughput. **The scheduler therefore
+benchmarks its own concurrency continuously and scales until marginal throughput gain goes
+negligible OR reliability degrades — whichever binds first — rather than to any fixed target.**
+Concurrency, batching, caching, vectorisation, multiprocessing and I/O are all in scope, and each
+is a measurement, never a setting somebody chose once.
+
+**WHEN THE MACHINE SATURATES, THE NEXT TARGET IS THROUGHPUT — NEVER FEWER HYPOTHESES.** If
+100,000 valid experiments are waiting and the box can safely run 500 concurrently, it runs 500
+concurrently. Generation capacity and experiment capacity are separate quantities and are managed
+separately: saturated experiment capacity is an engineering target, and it is never a reason to
+tell a generator to slow down (L1.52).
+
+**THE STATISTICAL GATES ARE UNTOUCHED BY THIS LAW.** Compute aggression buys more experiments at
+the same bar. It never buys a lower one, and any change that raises throughput by weakening
+deflation, out-of-sample discipline or independence is a throughput loss measured in the only
+currency that counts.
+
+**ANTI-TIMIDITY (L1.28): every restraint word above points at the MACHINE, never at the desk.**
+"Conservatism", "slow", "wait" and "fewer" appear here only as the failure being named — this law
+is **not a licence** to defer a run, to size a batch down for comfort, or to hold hypotheses back
+because the box looks busy. The single legitimate reason to reduce concurrency is a MEASURED loss
+of throughput or reliability at the higher setting, and it is recorded with the measurement that
+produced it.
+
+**L1.54(a) NOTHING VALUABLE MAY REMAIN STRANDED — THE CONVERSION CHAIN IS THE ORGANISM**
+*(principal law, 2026-08-08)*. A discovery must become data; data must become features; features
+must become hypotheses; hypotheses must become experiments; experiments must become evidence;
+evidence must become survivors; survivors must be tested for INCREMENTAL portfolio value; live
+results must become new research information. Every object in that chain carries lineage, and
+every stage reports `input count · output count · conversion rate · latency · failure reasons ·
+compute consumed · downstream value` — so the desk can name **the largest economically important
+leak** rather than admire the widest stage.
+
+**THREE STRANDING STATES, WHICH ARE DIFFERENT DEFECTS WITH DIFFERENT FIXES** and were conflated
+until 2026-08-08, when a consumer was written for four orphan modules and one of them
+(`convergence`) stayed orphaned because the new consumer *described* its verdict in a hand-typed
+string instead of calling it:
+
+| state | test | fix |
+|---|---|---|
+| **ORPHAN** | zero importers, zero schedulers | build a consumer |
+| **INERT** | a consumer exists but has never executed | schedule it (L1.49) |
+| **CONVERSION FAILURE** | it executes and its output changes nothing | wire the output to a decision |
+
+The third is the one that hides, because it passes every test an importer count can run.
+
+**AND THE STANDING PRIORITY THAT FOLLOWS**: *find unused capability before inventing new
+capability*. A desk answering a research question by adding a module has relocated the activity
+somewhere it cannot fail. Complexity is added only when it raises expected validated research
+value — coverage of a diagram is not a reason, and a large collection of unused modules is the
+precise opposite of the ceiling this desk is aiming at.
+
+**L1.55 THE QUESTION SET IS PROVISIONAL — HARDCODE THE META-RULE, NEVER THE QUESTIONS**
+*(principal law, 2026-08-08)*. The desk continuously expands its capacity to ask valuable
+questions. **No question taxonomy, checklist, ontology, feature vocabulary, mechanism library,
+research domain or discovery procedure is ever treated as complete**, including this law's own
+examples. Expansion is driven by information gain, unexplained observations, novel mechanisms,
+contradictions, failures, external discovery and identified blind spots — never by accumulation.
+The objective is exploration of the research frontier; a longer checklist is not that.
+
+**WHY THE META-RULE AND NOT THE LIST.** A fixed set of eighteen good questions is a ceiling
+wearing the costume of thoroughness: it is answered, marked complete, and thereafter the desk sees
+exactly as far as whoever wrote it. Worse, it fails silently — every question gets a tick and the
+territory the list never described stays invisible. So what is constitutional is the ENGINE, and
+the current question set is an artifact it produces.
+
+```
+DATA → OBSERVATION → QUESTION → HYPOTHESIS → EXPERIMENT → RESULT
+                        ↑                                    │
+                        └────────── UNEXPLAINED RESIDUAL ─────┘
+```
+
+**THE INFORMATION-TO-ALPHA LOOP IS THE CURRENT SET, AND IT IS AN EXAMPLE, NOT THE LAW.** What
+information could exist · do we have it · if not why not · can it be acquired legally and
+technically · at what cost · can it be represented computationally · what features and mechanisms
+does it imply · what hypotheses follow · has it actually been TESTED · is the selection path
+accounted for (L1.52(a)) · does it carry INDEPENDENT information · did it convert to an executable
+alpha · does it survive cost, out-of-sample, regime and execution · does it improve the EXISTING
+portfolio · does live evidence confirm or contradict it · what did the result reveal · what remains
+unknown · what next. **Every object carries a machine-readable state through it, and UNKNOWN or
+NOT-MEASURED is a state, never an implicit no (L1.28a):**
+
+```
+DISCOVERED → ACQUIRED → REPRESENTABLE → FEATURED → HYPOTHESISED → TESTED
+   → VALIDATED → INDEPENDENCE_CHECKED → PORTFOLIO_TESTED → SHADOW → LIVE
+   → MONITORED → LEARNED → NEXT_RESEARCH_ACTION
+```
+
+**THE LOOP BINDS EVERY OBJECT CLASS, not datasets alone**: sources, miners, papers, forums,
+recommendations, GPT and Claude outputs, hypotheses, failures, near-survivors, features, models,
+prompts, execution observations, portfolio observations, regimes, infrastructure capabilities,
+research gaps and standing assumptions. A law written for one organ is a blind spot on the others.
+
+**EXPLORATION IS NOT BLOAT, AND THE DIFFERENCE IS TRACEABLE.** Every new question records what
+TRIGGERED it — new data, an unexplained result, a failed hypothesis, a near-survivor, a
+contradiction, model disagreement, an execution anomaly, a regime change, an external discovery, a
+named blind spot, a missing capability — and is scored `expected information gain + expected alpha
+value + novelty + feasibility − redundancy − cost`. A question that repeatedly yields nothing is
+DEPRIORITISED, never deleted (its null is evidence). A question that opens new territory spawns
+more. **A question with no trigger is accumulation and is refused on that ground alone.**
+
+**AND THE SAME INSTRUCTION GOES TO THE MODELS, WHICH IS WHERE A CHECKLIST DOES ITS WORST DAMAGE.**
+No seat is told "always ask these N questions" — it is told to identify what should be asked next,
+to treat the current set as provisional, and to challenge it. Claude's question space, each
+external seat's question space and the desk's standing set are then COMPARED, because where they
+diverge is itself a discovery source and is the cheapest one the desk owns.
+
+**THE TWO HALVES, and neither survives without the other:** maximum openness to information —
+nothing potentially valuable disappears merely because it does not fit the current structure — and
+maximum rigour in evidence — nothing becomes evidence because a model, a miner or a researcher
+found it compelling. Openness without rigour is a phantom-edge factory; rigour without openness is
+a desk that never finds anything to be rigorous about.
+
+**L1.56 BUILD-DEFERRAL IS A DEFECT — "IT WOULD BECOME INVENTORY" IS NOT A REASON TO SKIP A BUILD**
+*(principal law, 2026-08-08, written the day the desk did exactly this)*. A genuinely net-positive
+build is executed NOW and given its consumer in the same change. It is never postponed to a later
+cycle, never traded for a paragraph explaining the postponement, and never declined on the ground
+that it might become unwired capability.
+
+**THE TWO RULES BEING CONFUSED ARE OPPOSITES.** L2.9 and L1.54(a) say WIRE IT ON ARRIVAL. Neither
+has ever said DO NOT BUILD IT. Collapsing them turns a correct law against unwired capability into
+an excuse for no capability, and the second failure is strictly worse: an unwired module is value
+sitting one line from being collected, while an unbuilt one is value that does not exist.
+**BLOAT IS UNWIRED CAPABILITY, NOT CAPABILITY.** If a consumer cannot be written today, THAT is the
+problem to name and solve — never a reason to leave the build undone.
+
+**HOW THIS DEFECT PRESENTS, so it is recognisable from the inside**: the desk produces an accurate,
+well-evidenced account of why the highest-value item is not being done. Every clause is true. It
+cites real laws. It is still a failure, because the output of a cycle is capability, and a rationale
+is not capability. An honest inventory of unbuilt work is a good ARTIFACT and a bad DELIVERABLE, and
+the register row exists precisely so the inventory does not substitute for the build.
+
+**A REPEATED REQUEST IS A REQUEST ALREADY PAID FOR.** The principal restating a requirement means
+the first statement was not acted on; answering the restatement with reasoning spends his time a
+second time on work he had already commissioned. Treat a repeat as evidence of a defect in the
+desk, never as an invitation to re-argue the merits.
+
+**THE COST IS THE SAME CLASS AS AN IDLE DOLLAR** (L1.28a): a deferred beneficial build appears in no
+P&L, raises no error, and silently forgoes its entire forward output stream. **When the choice is
+between building and explaining why not: BUILD, and wire it.**
+
+**WHAT THIS DOES NOT LICENSE**, because the exception is the whole safety of the rule: it never
+overrides the survival rails, the Tier-3 deadman, the two-stage discovery law, or any evidence bar.
+Building faster is aggression on ENGINEERING; sizing beyond demonstrated edge is not aggression but
+ruin (L1.23). And it is not a mandate to build the unbeneficial — the test is expected validated
+value, and "it was on a list" was never the test.

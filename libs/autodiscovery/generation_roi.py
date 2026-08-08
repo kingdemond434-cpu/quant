@@ -6,11 +6,33 @@ gate (skip the graveyard) then the DSR gauntlet with cumulative-trial deflation 
 survivor rate and the cost per survivor.
 
 The economics it exposes: the DSR bar (``sr0_threshold``) RISES with the number of trials, so
-throwing more candidates at the SAME data lowers the survivor rate — mass generation is self-
-defeating under honest multiple-testing correction. The novelty gate helps only by NOT paying to
-backtest redundant candidates. This answers the ROI question with numbers, not argument, and is
-cheap to run: point it at real (hypothesis, returns) pairs, or drive it with a Monte-Carlo null via
-``scripts/run_generation_roi_test.py``.
+throwing more candidates at the SAME data lowers the survivor rate. The novelty gate helps only by
+NOT paying to backtest redundant candidates. This answers the ROI question with numbers, not
+argument, and is cheap to run: point it at real (hypothesis, returns) pairs, or drive it with a
+Monte-Carlo null via ``scripts/run_generation_roi_test.py``.
+
+**THE CLAIM ABOVE IS ABOUT A FIXED INFORMATION SET, AND SAYING IT ANY WIDER IS WRONG.** An earlier
+version of this docstring concluded "mass generation is self-defeating under honest
+multiple-testing correction", full stop. That is too broad, and dangerously so: read literally it
+argues for throttling generation, which L1.52 forbids outright ("never reduce exploration to
+zero"). The correct distinction is:
+
+    more formulas over the SAME information   -> diminishing returns plus a rising hurdle,
+                                                 which is what this harness measures
+    more genuinely INDEPENDENT information    -> a wider space at the same hurdle, which is
+    (features, venues, mechanisms, data)         the only thing that reliably buys discoveries
+
+MEASURED ON THIS DESK, 2026-08-08, and the two runs differ in exactly one input. The candidate
+count was IDENTICAL at 898,560 both times; the data was not::
+
+    1 symbol,  918 bars  -> 14% measurable, 0 cells cleared the deflated screen
+    45 symbols, 1045 bars -> 83% measurable, 150 cleared in the first group alone
+
+Going from 420 candidates to 898,560 did not escape "data exhaustion" -- it raised the hurdle from
+sqrt(2 ln 420) = 3.48 to sqrt(2 ln 898560) = 5.24 while the information stayed fixed. What changed
+the answer was reaching data the desk already had. So the standing instruction is NOT "stop
+generating": it is generate permanently, expand the information space at the same time, and never
+confuse formula count with research breadth.
 """
 
 from __future__ import annotations
