@@ -88,9 +88,21 @@ RUNGS: tuple[Rung, ...] = (
     Rung("SHADOW", ("shadow_started_at",),
          "a forward clock is running at zero capital. The slow part of discovery was never "
          "paperwork -- it is elapsed forward time, and that is the one input nobody can buy later"),
-    Rung("CAPITAL_ELIGIBLE", ("forward_observations", "forward_result", "risk_review"),
-         "the EVIDENCE for capital is complete. This is a statement about evidence and never a "
-         "grant: arming live trading is the principal's act"),
+    Rung("LIVE_CANARY", ("canary_size_quote_units", "principal_canary_authorisation"),
+         "REAL FILLS AT LEARNING SIZE, and the rung that exists because simulation cannot answer "
+         "the question it is asked. A canary is not there to make money -- it is there to test "
+         "whether the market behaves like the simulator: fills, slippage, queue position, adverse "
+         "selection, venue quirks, operational reliability. Months of shadow cannot produce that "
+         "information at any price, so an alpha kept out of the market is not being validated, it "
+         "is being starved of the one evidence class it most needs. It still requires the "
+         "principal's authorisation -- at canary size, which is a smaller decision than capital, "
+         "never no decision"),
+    Rung("CAPITAL_ELIGIBLE", ("forward_observations", "forward_result", "risk_review",
+                              "canary_execution_evidence"),
+         "the EVIDENCE for capital is complete, INCLUDING evidence from real fills -- a strategy "
+         "that has never traded has no execution evidence, and its forward record is a simulation "
+         "of a simulation. This is a statement about evidence and never a grant: arming live "
+         "trading is the principal's act"),
     Rung("LIVE", ("principal_authorisation", "size_quote_units"),
          "capital is deployed. Requires an explicit principal authorisation token that no organ "
          "can synthesise -- the one rung the machine refuses to reason its way onto"),

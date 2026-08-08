@@ -27,6 +27,10 @@ _FULL = {
     "mechanism_cluster": "c3", "correlation_to_book": "0.11",
     "marginal_contribution": "+0.4", "capacity": "9000",
     "shadow_started_at": "2026-08-08", "forward_observations": "60",
+    # The canary rung, added 2026-08-08: real fills at learning size are evidence a simulation
+    # cannot produce at any price, so CAPITAL_ELIGIBLE now owes execution evidence too.
+    "canary_size_quote_units": "150", "principal_canary_authorisation": "CANARY-TOKEN",
+    "canary_execution_evidence": "37 fills, slippage 0.4bp vs 0.3bp modelled",
     "forward_result": "+1.1bp", "risk_review": "done",
     "principal_authorisation": "TOKEN", "size_quote_units": "200",
     "monitor_since": "2026-09-01",
@@ -193,3 +197,38 @@ def test_TRIALS_DECLARED_IS_REQUIRED_BY_NAME() -> None:
     """Deflating on the executed count rather than the declared one is the most respectable route
     to a manufactured survivor, so the count is evidence rather than an assumption."""
     assert "trials_declared" in requirements("STATISTICALLY_VALID")
+
+
+def test_THE_CANARY_RUNG_SITS_BETWEEN_SHADOW_AND_CAPITAL() -> None:
+    """REAL FILLS AT LEARNING SIZE, and the rung exists because simulation cannot answer the
+    question it is asked. An alpha kept out of the market is not being validated -- it is being
+    starved of the one evidence class it most needs, and months of shadow cannot produce it at
+    any price.
+    """
+    assert ORDER.index("SHADOW") < ORDER.index("LIVE_CANARY") < ORDER.index("CAPITAL_ELIGIBLE")
+
+
+def test_THE_CANARY_STILL_NEEDS_THE_PRINCIPALS_AUTHORISATION() -> None:
+    """A smaller decision than capital, never NO decision."""
+    assert "principal_canary_authorisation" in requirements("LIVE_CANARY")
+    assert "canary_size_quote_units" in requirements("LIVE_CANARY")
+
+
+def test_CAPITAL_ELIGIBILITY_NOW_OWES_EXECUTION_EVIDENCE() -> None:
+    """A strategy that has never traded has no execution evidence, and its forward record is a
+    simulation of a simulation."""
+    assert "canary_execution_evidence" in requirements("CAPITAL_ELIGIBLE")
+    rec = _climb(stop_before="CAPITAL_ELIGIBLE")
+    assert rec.state == "LIVE_CANARY"
+    ev = {k: v for k, v in _FULL.items() if k != "canary_execution_evidence"}
+    out, why = advance(rec, "CAPITAL_ELIGIBLE", ev)
+    assert out.state == "LIVE_CANARY"
+    assert "canary_execution_evidence" in why
+
+
+def test_A_CANARY_CAN_BE_RETREATED_WITHOUT_RETIRING_THE_ALPHA() -> None:
+    """The middle case is the common one: execution disappointed, go back to zero capital and
+    keep the research alive."""
+    rec = AlphaRecord(alpha_id="a1", state="LIVE_CANARY")
+    out, _ = retreat(rec, "SHADOW", reason="fills 3x worse than modelled")
+    assert out.state == "SHADOW"
