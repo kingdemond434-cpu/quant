@@ -38,5 +38,10 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # The ladder runs even when the sweep found nothing: it also reports what is ALREADY live, and a
   # cycle that skipped it on a null day would go silent exactly when a live record needs reading.
   nice -n 15 "$PY" scripts/run_live_ladder.py
+  # EXECUTION HEALTH runs every cycle, including days the research half found nothing. The money
+  # path is where the desk is currently LOSING (27 closes, all three hold buckets negative net of
+  # fees), so a cycle that reported only research would go quiet on the one number costing money.
+  nice -n 15 "$PY" scripts/run_trade_forensics.py || true
+  nice -n 15 "$PY" scripts/run_exec_monitor.py || true
   echo "=== research cycle exit $? at $(date -u) ==="
 } 2>&1 | tee -a "$LOG"
