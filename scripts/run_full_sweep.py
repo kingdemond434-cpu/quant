@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import time
 from collections import Counter
@@ -142,7 +143,10 @@ def discover(symbols: list[str] | None, bars: Path = BARS) -> dict[str, pd.DataF
         sym = next((s for s in (symbols or []) if s.upper() in f.stem.upper()), None)
         if symbols and sym is None:
             continue
-        sym = sym or f.stem.upper()
+        # `<SYMBOL>_15min.parquet` -> BTCUSDT. The frequency is a property of the
+        # file, not part of the instrument's name, and carrying it into the symbol
+        # breaks every lookup that matches on the ticker.
+        sym = sym or re.sub(r'_(\d+[A-Z]+)$', '', f.stem.upper())
         if sym not in out or len(df) > len(out[sym]):
             out[sym] = df
     return out
@@ -157,23 +161,65 @@ def bar_seconds(index: pd.DatetimeIndex) -> float:
     return med if med > 0 else 0.0
 
 
-def align(frames: dict[str, pd.DataFrame], tail: int) -> tuple[pd.DatetimeIndex, dict[str, pd.DataFrame]]:
-    """Intersect the symbols onto one timestamp grid -- a cross-sectional study needs one clock.
+#: A timestamp is kept when at least this many symbols traded in it. TWO, because that is the
+#: minimum a cross-sectional operator can rank against -- below it `rank`/`zscore` degenerate and
+#: correctly refuse, so keeping such bars buys nothing.
+MIN_SYMBOLS_PER_BAR: int = 2
 
-    The intersection is a REAL COST (a symbol listed late truncates every other symbol's history),
-    so both spans are reported: per-symbol and common. A study that printed only the common span
-    would hide how much tape the cross-section threw away.
+#: A symbol is kept when it covers at least this share of the retained grid. A name present for 3%
+#: of the window contributes almost nothing to the cross-section while dragging the whole grid
+#: toward its own short span.
+MIN_SYMBOL_COVERAGE: float = 0.25
+
+
+def align(frames: dict[str, pd.DataFrame], tail: int, *,
+          min_symbols: int = MIN_SYMBOLS_PER_BAR,
+          min_coverage: float = MIN_SYMBOL_COVERAGE,
+          ) -> tuple[pd.DatetimeIndex, dict[str, pd.DataFrame], list[str]]:
+    """One clock for the cross-section, built by COVERAGE rather than by strict intersection.
+
+    THE STRICT INTERSECTION WAS WRONG AND THE LIVE RUN PROVED IT. Requiring every symbol to be
+    present at every timestamp gave `common grid is 0 bars across 45 symbols` on real tape: the
+    recorders cover names raggedly -- BTCUSDT started 08-04 while 1000CATUSDT ended 08-04 -- so the
+    intersection of forty-five ragged spans is empty, and the whole panel was discarded because one
+    name was absent. With more symbols the intersection can only shrink, so the study got WORSE the
+    more data it was given, which is exactly backwards.
+
+    WHAT REPLACES IT. Keep a timestamp when `min_symbols` traded in it, keep a symbol when it
+    covers `min_coverage` of that grid, and leave NaN where a symbol is genuinely absent. Nothing
+    is forward-filled: a carried close is a price nothing traded at, and the cross-sectional
+    operators skip NaN by construction, so a bar simply ranks across the names that were there.
+
+    THE DROPPED NAMES ARE RETURNED, NOT SWALLOWED. A panel that quietly shed thirty symbols would
+    report a cross-section far narrower than the one the reader believes was searched.
     """
-    idx: pd.DatetimeIndex | None = None
-    for df in frames.values():
-        ts = pd.DatetimeIndex(df["timestamp"])
-        idx = ts if idx is None else idx.intersection(ts)
-    if idx is None or len(idx) == 0:
-        return pd.DatetimeIndex([], tz=UTC), {}
-    idx = idx.sort_values()
+    if not frames:
+        return pd.DatetimeIndex([], tz=UTC), {}, []
+    per_symbol = {s: pd.DatetimeIndex(df["timestamp"]) for s, df in frames.items()}
+    union = per_symbol[next(iter(per_symbol))]
+    for ts in per_symbol.values():
+        union = union.union(ts)
+    union = union.sort_values()
+
+    present = pd.DataFrame({s: union.isin(ts) for s, ts in per_symbol.items()}, index=union)
+    idx = pd.DatetimeIndex(present.index[present.sum(axis=1) >= min_symbols])
+    if len(idx) == 0:
+        return pd.DatetimeIndex([], tz=UTC), {}, sorted(frames)
+
+    keep, dropped = [], []
+    for s in sorted(frames):
+        cover = float(present.loc[idx, s].mean())
+        (keep if cover >= min_coverage else dropped).append(s)
+    if len(keep) < min_symbols:
+        return pd.DatetimeIndex([], tz=UTC), {}, sorted(frames)
+
+    # Re-tighten the grid to the kept names only, so a bar retained on the strength of a symbol
+    # that was then dropped does not survive as an empty row.
+    idx = pd.DatetimeIndex(present.loc[idx, keep].index[present.loc[idx, keep].sum(axis=1)
+                                                        >= min_symbols])
     if tail > 0:
         idx = idx[-tail:]
-    return idx, {s: df.set_index("timestamp").reindex(idx) for s, df in frames.items()}
+    return idx, {s: frames[s].set_index("timestamp").reindex(idx) for s in keep}, dropped
 
 
 # ----------------------------------------------------------------- feature construction
@@ -473,11 +519,15 @@ def main() -> int:
         return 0
 
     symbols = sorted(frames)
-    idx, aligned = align(frames, a.tail_bars)
+    idx, aligned, dropped = align(frames, a.tail_bars)
     secs = bar_seconds(idx)
     if len(idx) < a.min_obs * 2 or secs <= 0:
         rep = blocked(
-            f"the common timestamp grid across {symbols} has {len(idx)} bars",
+            (f"the retained grid across {len(symbols)} symbol(s) has {len(idx)} bars -- fewer "
+             f"than {MIN_SYMBOLS_PER_BAR} symbol(s) overlap anywhere, or none covers "
+             f"{MIN_SYMBOL_COVERAGE:.0%} of the grid. The recorders cover names raggedly, so this "
+             "usually means the per-symbol bar windows do not intersect: widen BARS_FILE_BUDGET so "
+             "each symbol reaches further back, or rebuild bars over a common window."),
             {"symbols": symbols, "common_bars": len(idx),
              "per_symbol_bars": {s: len(d) for s, d in frames.items()},
              "bar_seconds": secs})
@@ -654,6 +704,13 @@ def main() -> int:
         "hurdle": round(bar, 3),
         "sample": {
             "symbols": symbols, "common_bars": len(idx), "pooled_rows": pooled_len,
+            "symbols_dropped_for_coverage": dropped,
+            "coverage_note": (
+                f"{len(dropped)} symbol(s) covered under {MIN_SYMBOL_COVERAGE:.0%} of the retained "
+                "grid and were dropped; bars are kept where at least "
+                f"{MIN_SYMBOLS_PER_BAR} symbol(s) traded. NOTHING IS FORWARD-FILLED -- a carried "
+                "close is a price nothing traded at, and the cross-sectional operators skip NaN, "
+                "so a bar ranks across the names that were actually there."),
             "bar_seconds": secs, "tail_bars": a.tail_bars,
             "window": [str(idx[0]), str(idx[-1])],
             "per_symbol_bars": {s: len(d) for s, d in frames.items()},

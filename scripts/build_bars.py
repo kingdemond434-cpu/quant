@@ -126,6 +126,26 @@ def trades_from(row: dict) -> list[tuple[int, float, float]]:
     return []
 
 
+def group_by_symbol(files: list[Path]) -> dict[str, list[Path]]:
+    """Tape files bucketed by SYMBOL, which the recorders encode in the path.
+
+    The layout is `data/moat/<venue>/<symbol>/<file>` -- `record_desk_metrics` already counts the
+    desk's breadth from exactly that nesting. So the symbol was always available and this builder
+    threw it away, pooling every instrument into one series.
+
+    VENUE IS DELIBERATELY NOT PART OF THE KEY. The same symbol on spot and on perp is the same
+    instrument for a bar series and merging their trades deepens it; what must never merge is two
+    different SYMBOLS. A file shallower than the expected nesting is skipped rather than guessed
+    at -- an unknown symbol pooled under a made-up name is the defect this function exists to end.
+    """
+    out: dict[str, list[Path]] = defaultdict(list)
+    for f in files:
+        symbol = f.parent.name.upper()
+        if symbol and symbol != MOAT.name.upper():
+            out[symbol].append(f)
+    return {k: sorted(v) for k, v in out.items()}
+
+
 def build(files: list[Path], freq: str = DEFAULT_FREQ) -> tuple[pd.DataFrame, dict]:
     """OHLCV(+OI) bars from tape. Returns (bars, per-venue diagnostics)."""
     px: list[tuple[int, float, float]] = []
@@ -186,46 +206,78 @@ def main() -> int:
         print(f"build-bars: NO TAPE under {_rel(MOAT)} -- recorders are the blocker, not this")
         return 0
 
-    budgeted = files[-FILE_BUDGET:]        # newest first: the recent window is what screens need
-    bars, diag = build(budgeted)
-    if bars.empty:
+    per_symbol = group_by_symbol(files)
+    # PER-SYMBOL BUDGET, NOT A GLOBAL ONE. A global `files[-N:]` takes the newest N across the
+    # whole tape, so the busiest stream eats the entire budget and every other symbol reports
+    # zero -- measured 2026-08-07 on the live box: 400/32,440 files yielded ONE venue and ONE
+    # blended series. Dividing the budget guarantees breadth, and breadth is the whole point:
+    # every cross-sectional operator the desk owns needs at least two symbols to rank against.
+    each = max(1, FILE_BUDGET // max(1, len(per_symbol)))
+    written: list[dict[str, object]] = []
+    empty: list[str] = []
+    venues: dict[str, int] = {}
+    n_read = 0
+
+    for symbol in sorted(per_symbol):
+        budgeted = per_symbol[symbol][-each:]      # newest: the recent window is what screens need
+        n_read += len(budgeted)
+        bars, diag = build(budgeted)
+        for v, c in diag.get("venues", {}).items():
+            venues[v] = venues.get(v, 0) + c
+        if bars.empty:
+            empty.append(symbol)
+            continue
+        path = OUT / f"{symbol}_{DEFAULT_FREQ}.parquet"
+        try:
+            bars.to_parquet(path, index=False)
+        except (ImportError, ValueError):
+            path = OUT / f"{symbol}_{DEFAULT_FREQ}.csv"
+            bars.to_csv(path, index=False)
+        written.append({
+            "symbol": symbol, "bars": len(bars), "artifact": _rel(path),
+            "span": [str(bars["timestamp"].iloc[0]), str(bars["timestamp"].iloc[-1])],
+            "has_open_interest": "open_interest" in bars.columns,
+            "files_read": len(budgeted), "files_on_disk": len(per_symbol[symbol]),
+        })
+
+    if not written:
         out = {"ts": datetime.now(tz=UTC).isoformat(), "state": "NO TRADES",
-               "files_read": len(budgeted), "diagnostics": diag,
+               "files_read": n_read, "symbols_seen": sorted(per_symbol), "venues": venues,
                "reason": ("tape present but no TRADE rows parsed. Bars are built from trades, "
                           "never from book mid -- a mid-price series looks like a price and is "
                           "not one, because nothing traded there."),
                "next": "check the recorders are capturing aggTrades/recent-trade, not only depth",
                "bars": 0}
         REPORT.write_text(json.dumps(out, indent=1), "utf-8")
-        print(f"build-bars: NO TRADES in {len(budgeted)} files | venues seen: {diag['venues']}")
+        print(f"build-bars: NO TRADES in {n_read} files | venues seen: {venues}")
         return 0
-
-    path = OUT / f"bars_{DEFAULT_FREQ}.parquet"
-    try:
-        bars.to_parquet(path, index=False)
-    except (ImportError, ValueError):
-        path = OUT / f"bars_{DEFAULT_FREQ}.csv"
-        bars.to_csv(path, index=False)
 
     out = {
         "ts": datetime.now(tz=UTC).isoformat(),
         "seconds": round(time.time() - t0, 1),
-        "files_read": len(budgeted), "files_on_disk": len(files),
-        "bars": len(bars), "freq": DEFAULT_FREQ, "artifact": _rel(path),
-        "span": [str(bars["timestamp"].iloc[0]), str(bars["timestamp"].iloc[-1])],
-        "has_open_interest": "open_interest" in bars.columns,
-        "diagnostics": diag,
-        "note": ("Bars are built from TRADES, never from book mid: nothing trades at the mid, and "
-                 "a synthetic OHLC under every screen would yield ICs about the book rather than "
-                 "about executable prices. Empty buckets are DROPPED, not forward-filled -- a "
-                 "carried close is a price nothing traded at, and screens would read the flat "
-                 "stretch as genuine low volatility."),
+        "files_read": n_read, "files_on_disk": len(files),
+        "per_symbol_budget": each,
+        "symbols_written": len(written), "symbols_empty": empty,
+        "bars": sum(w["bars"] for w in written), "freq": DEFAULT_FREQ,
+        "venues": venues, "symbols": written,
+        "note": ("ONE FILE PER SYMBOL. Until 2026-08-07 every trade from every symbol was pooled "
+                 "into a single OHLCV series, so an open from one instrument and a close from "
+                 "another shared a bar -- a price series of nothing. It also pinned every "
+                 "consumer to '1 symbol', which made the whole cross-sectional half of the "
+                 "expression language (rank, zscore, group_rank) permanently unmeasurable: they "
+                 "need peers to rank against and correctly refuse without them. "
+                 "Bars are built from TRADES, never from book mid, and empty buckets are DROPPED "
+                 "rather than forward-filled -- a carried close is a price nothing traded at."),
     }
     REPORT.write_text(json.dumps(out, indent=1, default=str), "utf-8")
-    print(f"build-bars: {len(bars)} bars @{DEFAULT_FREQ} from {len(budgeted)}/{len(files)} files "
-          f"-> {_rel(path)} | {out['seconds']}s")
-    print(f"  venues: {diag['venues']} | OI: {out['has_open_interest']} | "
-          f"{out['span'][0][:16]} -> {out['span'][1][:16]}")
+    print(f"build-bars: {out['bars']} bars @{DEFAULT_FREQ} across {len(written)} symbol(s) "
+          f"from {n_read}/{len(files)} files | {out['seconds']}s")
+    for w in written:
+        print(f"  {w['symbol']:<14} {w['bars']:>6} bars  OI:{w['has_open_interest']!s:<5} "
+              f"{w['span'][0][:16]} -> {w['span'][1][:16]}")
+    if empty:
+        print(f"  no trades parsed for: {empty} -- depth-only streams, not a builder failure")
+    print(f"  venues: {venues} | per-symbol file budget {each} (BARS_FILE_BUDGET={FILE_BUDGET})")
     return 0
 
 

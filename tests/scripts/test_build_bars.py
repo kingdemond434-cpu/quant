@@ -161,3 +161,56 @@ def test_bars_feed_the_ICT_screen_end_to_end(tape, monkeypatch, tmp_path) -> Non
     assert rep["screened"] >= 14, "the family may grow, but it must never silently shrink"
     assert rep["bars"] > 100
     assert rep["interesting"] == [], "a random walk must yield no interesting signal"
+
+
+def test_TWO_SYMBOLS_NEVER_SHARE_A_BAR_SERIES(tape) -> None:
+    """THE DEFECT THIS ENDS, MEASURED ON THE LIVE BOX 2026-08-07.
+
+    `build()` pooled every trade from every file into one list and resampled it into a SINGLE
+    OHLCV series. An open from one instrument and a close from another shared a bar -- a price
+    series of nothing. It also pinned every consumer to "1 symbol", which made the entire
+    cross-sectional half of the expression language permanently unmeasurable: `rank`, `zscore` and
+    `group_rank` need peers to rank against and correctly refuse without them. The live sweep read
+    898,560 candidates and reported 85.7% UNMEASURED for exactly this reason.
+
+    The symbol was never missing -- the recorders encode it in the path and the builder discarded
+    it.
+    """
+    btc = tape / "spot" / "BTCUSDT" / "a.jsonl.gz"
+    eth = tape / "spot" / "ETHUSDT" / "a.jsonl.gz"
+    _write(btc, [{"t": T0 + i * 1000, "k": "t", "p": "60000", "q": "1"} for i in range(5)])
+    _write(eth, [{"t": T0 + i * 1000, "k": "t", "p": "3000", "q": "1"} for i in range(5)])
+
+    grouped = B.group_by_symbol([btc, eth])
+    assert sorted(grouped) == ["BTCUSDT", "ETHUSDT"]
+
+    btc_bars, _ = B.build(grouped["BTCUSDT"])
+    eth_bars, _ = B.build(grouped["ETHUSDT"])
+    assert float(btc_bars["close"].iloc[0]) == 60000.0
+    assert float(eth_bars["close"].iloc[0]) == 3000.0
+
+    # and the pooled version is the bug: one series whose high/low span two instruments
+    pooled, _ = B.build([btc, eth])
+    assert float(pooled["high"].iloc[0]) == 60000.0 and float(pooled["low"].iloc[0]) == 3000.0, (
+        "pooling no longer mixes instruments -- if this changed, update the test; if build() was "
+        "made symbol-aware internally, this assertion should be inverted rather than deleted")
+
+
+def test_THE_FILE_BUDGET_IS_PER_SYMBOL_SO_ONE_STREAM_CANNOT_STARVE_THE_REST(tape) -> None:
+    """A global `files[-N:]` gives the whole budget to the busiest stream. Measured on the box:
+    400 of 32,440 files yielded ONE venue and ONE symbol, which is not a sampling choice anyone
+    made -- it is whichever recorder wrote most recently."""
+    import inspect
+
+    src = inspect.getsource(B.main)
+    assert "group_by_symbol(files)" in src, "main() no longer groups the tape by symbol"
+    assert "FILE_BUDGET // max(1, len(per_symbol))" in src, "the budget is global again"
+
+
+def test_ONE_ARTIFACT_PER_SYMBOL_SO_CONSUMERS_SEE_A_PANEL(tape) -> None:
+    """Every consumer globs data/bars/*.parquet and derives the symbol from the filename, so
+    per-symbol files are what turns a single series into a cross-section."""
+    import inspect
+
+    src = inspect.getsource(B.main)
+    assert 'f"{symbol}_{DEFAULT_FREQ}' in src, "the artifact name no longer carries the symbol"
