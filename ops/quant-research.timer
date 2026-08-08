@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily research cycle (bars -> studies -> ladder)
+
+[Timer]
+# 04:00 UTC: after the miners' overnight window and well clear of the 15:00 frontier rotation, so
+# the sweep is not competing with seven digs for the same 4GB.
+OnCalendar=*-*-* 04:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

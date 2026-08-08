@@ -1,0 +1,9 @@
+[Unit]
+Description=Research cycle -- build bars, run every registered study, ladder the survivors
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=quant
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/bin/bash /home/quant/quant-platform/ops/run_research_cycle.sh
