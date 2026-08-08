@@ -214,3 +214,47 @@ def test_ONE_ARTIFACT_PER_SYMBOL_SO_CONSUMERS_SEE_A_PANEL(tape) -> None:
 
     src = inspect.getsource(B.main)
     assert 'f"{symbol}_{DEFAULT_FREQ}' in src, "the artifact name no longer carries the symbol"
+
+
+def test_MEMORY_IS_BOUNDED_BY_BUCKETS_NOT_BY_TRADE_COUNT(tape) -> None:
+    """OOM-KILLED ON THE LIVE BOX, 2026-08-08. The previous build accumulated every trade for a
+    symbol in a Python list of 3-tuples and only then handed it to pandas, which copies it again.
+    On a 4GB machine also running the recorders, BARS_FILE_BUDGET=8000 died -- so the budget looked
+    like a knob for how far back the desk could see when it was really an unnamed memory ceiling.
+
+    Streaming makes the footprint a function of BUCKETS, not TRADES: a day of 15-minute bars is 96
+    rows whatever the trade count. This plants many trades inside very few buckets and asserts the
+    output stays tiny, which is the observable consequence of not holding them all.
+    """
+    p = tape / "spot" / "BUSYUSDT" / "a.jsonl.gz"
+    # 20,000 trades landing in a handful of 15-minute buckets
+    rows = [{"t": T0 + (i % 3) * 60_000, "k": "t", "p": str(100 + i % 7), "q": "1"}
+            for i in range(20_000)]
+    _write(p, rows)
+    bars, diag = B.build([p])
+    assert diag["trades"] == 20_000
+    assert len(bars) <= 2, f"20,000 trades produced {len(bars)} bars -- bucketing is wrong"
+    assert float(bars["volume"].iloc[0]) > 0
+
+
+def test_OPEN_AND_CLOSE_DO_NOT_DEPEND_ON_FILE_ORDER(tape) -> None:
+    """Each bucket tracks the timestamp of its own first and last trade, so open/close are correct
+    even if files arrive out of order or overlap. The previous `.first()`/`.last()` was right only
+    because a global sort had already happened -- an aggregation that silently depends on filename
+    ordering stays correct until a recorder changes its filename format."""
+    early = tape / "spot" / "ORDUSDT" / "b_early.jsonl.gz"
+    late = tape / "spot" / "ORDUSDT" / "a_late.jsonl.gz"      # sorts FIRST, contains LATER trades
+    _write(early, [{"t": T0, "k": "t", "p": "10", "q": "1"}])
+    _write(late, [{"t": T0 + 60_000, "k": "t", "p": "99", "q": "1"}])
+
+    forward, _ = B.build([early, late])
+    reverse, _ = B.build([late, early])
+    assert float(forward["open"].iloc[0]) == 10.0 and float(forward["close"].iloc[0]) == 99.0
+    assert float(reverse["open"].iloc[0]) == 10.0, "open followed file order, not trade time"
+    assert float(reverse["close"].iloc[0]) == 99.0, "close followed file order, not trade time"
+
+
+def test_THE_BUCKET_WIDTH_IS_DERIVED_FROM_THE_FREQUENCY() -> None:
+    """A hardcoded 900_000 beside a configurable `freq` is a bug waiting for whoever changes one."""
+    assert B._bucket_ms("15min") == 900_000
+    assert B._bucket_ms("1h") == 3_600_000
