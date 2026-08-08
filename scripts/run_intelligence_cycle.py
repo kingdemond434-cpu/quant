@@ -215,14 +215,27 @@ def _dormancy() -> dict[str, Any]:
     question mechanical: what does nothing import, and what does nothing schedule?
     Priority encoded (principal): find unused capability BEFORE inventing new capability."""
     try:
-        from libs.self_improvement.dormancy import scan, summarise
+        from libs.self_improvement.dormancy import (
+            imported_but_never_called,
+            scan,
+            summarise,
+        )
     except ImportError as e:
         return _cap("dormancy_hunter", "ERROR", f"import failed: {e}")
     rep = summarise(scan())
+    # THE SCAN'S OWN BLIND SPOT, measured 2026-08-08: it asks "does anything IMPORT it", so a
+    # consumer that imports a module and then only mentions it in prose flips it from dormant to
+    # reachable while the desk has still never run it. Reported alongside rather than merged --
+    # these are orphans WITH an importer, and the fix is to call it, not to write a consumer.
+    silent = imported_but_never_called()
+    rep["imported_but_never_called"] = [
+        {"path": d.path, "lines": d.lines, "reason": d.reason, "exit": d.suggested_exit}
+        for d in sorted(silent, key=lambda x: -x.lines)[:20]]
     n = sum(rep["counts"].values()) if isinstance(rep.get("counts"), dict) else 0
     return _cap("dormancy_hunter", "ACTIVE",
                 f"{n} dormant capabilities ({rep['total_dormant_lines']} paid-for unused lines) "
-                f"across {rep['scanned']['modules']} modules + {rep['scanned']['scripts']} scripts",
+                f"across {rep['scanned']['modules']} modules + {rep['scanned']['scripts']} "
+                f"scripts; {len(silent)} imported-but-never-called",
                 report=rep)
 
 

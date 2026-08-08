@@ -267,3 +267,112 @@ def test_the_scan_leaves_the_tree_untouched(monkeypatch) -> None:
     D.scan(include_scripts=False)
     after = {p: p.stat().st_mtime_ns for p in watched if p.exists()}
     assert before == after
+
+
+# --- THREE STRANDING STATES (L1.54(a)) -------------------------------------------------------
+
+def test_ZERO_IMPORTERS_IS_ORPHAN() -> None:
+    state, why = D.stranding(importers=0, callers=0, executions=None, output_consumers=None)
+    assert state == "ORPHAN" and "consumer, not a schedule" in why
+
+
+def test_IMPORTED_BUT_NEVER_CALLED_IS_STILL_AN_ORPHAN() -> None:
+    """MEASURED 2026-08-08 on this module's own author.
+
+    A consumer was written for four orphan modules; `convergence` stayed orphaned because the new
+    consumer DESCRIBED its verdict in a hand-typed string instead of calling it. The importer
+    count would have read 1 and the scan would have gone quiet.
+    """
+    state, why = D.stranding(importers=1, callers=0, executions=None, output_consumers=None)
+    assert state == "ORPHAN"
+    assert "imported for its name and never invoked" in why
+
+
+def test_A_CONSUMER_THAT_NEVER_RAN_IS_INERT_NOT_WIRED() -> None:
+    state, why = D.stranding(importers=1, callers=2, executions=0, output_consumers=0)
+    assert state == "INERT" and "L1.49" in why
+
+
+def test_OUTPUT_NOBODY_READS_IS_THE_STATE_THAT_HIDES() -> None:
+    """It passes every test an importer count can run -- which is why it needs its own name."""
+    state, why = D.stranding(importers=1, callers=2, executions=9, output_consumers=0)
+    assert state == "CONVERSION_FAILURE"
+    assert "wire the output to a decision" in why
+
+
+def test_AN_UNINSTRUMENTED_CAPABILITY_IS_UNMEASURED_NEVER_WIRED() -> None:
+    """L1.28a at the reachability layer: defaulting an unknown execution count to 'probably ran'
+    is how a dormant subsystem reports itself healthy."""
+    assert D.stranding(importers=1, callers=1, executions=None,
+                       output_consumers=None)[0] == "UNMEASURED"
+    assert D.stranding(importers=1, callers=1, executions=3,
+                       output_consumers=None)[0] == "UNMEASURED"
+
+
+def test_FULLY_WIRED_IS_THE_ONLY_CLEAN_VERDICT() -> None:
+    state, _ = D.stranding(importers=2, callers=2, executions=14, output_consumers=1)
+    assert state == "WIRED"
+
+
+def test_EVERY_VERDICT_IS_A_DECLARED_STATE() -> None:
+    for args in ((0, 0, None, None), (1, 0, None, None), (1, 1, 0, 0), (1, 1, 5, 0),
+                 (1, 1, None, None), (1, 1, 5, 2)):
+        assert D.stranding(importers=args[0], callers=args[1], executions=args[2],
+                           output_consumers=args[3])[0] in D.STRANDING_STATES
+
+
+def test_CALL_SITES_SEES_THE_CONSUMER_THAT_ACTUALLY_CALLS_CONVERGENCE() -> None:
+    """The fix landed the same day the defect was found, so this is a regression fence: the review
+    must CALL `elevate()`, not merely name the module."""
+    sites = D.call_sites("libs/research/convergence.py")
+    assert any("run_research_review" in s for s in sites), sites
+
+
+# --- call_sites: the four import shapes that each shipped a silent false positive -------------
+
+def _probe(tmp_path, consumer_src: str) -> list[str]:
+    """Run call_sites against a synthetic consumer by monkeypatching the importer lookup."""
+    import libs.self_improvement.dormancy as mod
+    f = tmp_path / "consumer.py"
+    f.write_text(consumer_src, "utf-8")
+    orig_root, orig_imp = mod._ROOT, mod._external_importers
+    mod._ROOT = tmp_path
+    mod._external_importers = lambda rel: ["consumer.py"]  # type: ignore[assignment]
+    try:
+        return mod.call_sites("libs/research/widget.py")
+    finally:
+        mod._ROOT, mod._external_importers = orig_root, orig_imp
+
+
+def test_PARENTHESISED_MULTILINE_IMPORT_IS_SEEN(tmp_path) -> None:
+    """`[^\\n(]+` stopped dead at the `(` and read ZERO names -- exec_monitor, which is called on
+    line 90 of its consumer, was reported stranded."""
+    assert _probe(tmp_path, "from libs.research.widget import (\n    render,\n    update,\n)\n"
+                            "update({})\n") == ["consumer.py"]
+
+
+def test_A_TRAILING_NOQA_COMMENT_DOES_NOT_HIDE_THE_CALL(tmp_path) -> None:
+    """The comment rode into the captured name and failed `isidentifier()`."""
+    assert _probe(tmp_path, "from libs.research.widget import lag  # noqa: E402\n"
+                            "x = lag('binance')\n") == ["consumer.py"]
+
+
+def test_MODULE_IMPORTED_UNDER_AN_ALIAS_IS_SEEN(tmp_path) -> None:
+    """`from libs.research import widget as w` binds the MODULE, so every use is `w.evaluate(...)`
+    -- the form half of libs/research is imported with."""
+    assert _probe(tmp_path, "from libs.research import widget as w\n"
+                            "v = w.evaluate(1)\n") == ["consumer.py"]
+
+
+def test_A_NESTED_ATTRIBUTE_CHAIN_IS_SEEN(tmp_path) -> None:
+    """`canary_mod.CanaryState.load(...)` is Attribute(Attribute(Name)); stopping at the first
+    `.value` reported a live money-path guard as stranded."""
+    assert _probe(tmp_path, "from libs.research import widget as m\n"
+                            "st = m.State.load('p')\n") == ["consumer.py"]
+
+
+def test_AN_IMPORT_WITH_NO_CALL_IS_STILL_CAUGHT(tmp_path) -> None:
+    """The check must keep catching what it was built for: the intelligence cycle imports
+    capital_reallocator purely to prove it is importable, then never invokes it."""
+    assert _probe(tmp_path, "import libs.research.widget  # noqa: F401\n"
+                            "print('activated')\n") == []

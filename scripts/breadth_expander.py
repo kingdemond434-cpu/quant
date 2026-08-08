@@ -39,7 +39,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-from libs.doctrine.constitution import OBJECTIVE_PREAMBLE  # noqa: E402
+from libs.doctrine.constitution import (  # noqa: E402
+    OBJECTIVE_PREAMBLE,
+    RESIDUAL_MANDATE,
+)
 from libs.llm.effort import reasoning_payload  # noqa: E402
 from libs.llm.push import PUSH_LADDER, push_rounds  # noqa: E402
 from scripts import seats  # noqa: E402 -- after the sys.path bootstrap above
@@ -79,7 +82,7 @@ SYSTEM = (
     # what its output LOOKS like rather than for expected shift in E[log W] -- and, worse,
     # quietly recommends the timid option because nothing told it that timidity is a
     # scored defect rather than a neutral default.
-    OBJECTIVE_PREAMBLE + "\n"
+    OBJECTIVE_PREAMBLE + RESIDUAL_MANDATE + "\n"
     "You are a research scout for a systematic crypto trading desk. You are a COLLEAGUE helping "
     "the desk's own miners see further -- not an auditor. Your job is BREADTH: name information "
     "sources, classes and modalities the desk has probably NOT considered.\n"

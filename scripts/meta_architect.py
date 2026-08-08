@@ -34,7 +34,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-from libs.doctrine.constitution import OBJECTIVE_PREAMBLE  # noqa: E402
+from libs.doctrine.constitution import (  # noqa: E402
+    OBJECTIVE_PREAMBLE,
+    RESIDUAL_MANDATE,
+)
 from libs.llm.effort import reasoning_payload  # noqa: E402
 from libs.llm.push import PUSH_LADDER, push_rounds  # noqa: E402
 from scripts import seats  # noqa: E402 -- after the sys.path bootstrap above
@@ -50,7 +53,7 @@ CHARTER = (
     # The board redesigns the desk itself, so it is the one seat where a missing objective
     # compounds: an architecture chosen against no objective becomes the frame every future
     # decision is made inside.
-    OBJECTIVE_PREAMBLE + "\n"
+    OBJECTIVE_PREAMBLE + RESIDUAL_MANDATE + "\n"
     "You are an ARCHITECTURE REVIEW BOARD for a quantitative research desk. You do NOT propose "
     "trading ideas. You propose improvements to the RESEARCH SYSTEM ITSELF.\n\n"
     "THE BINDING RULE: every proposal must EITHER replace an existing component OR improve a "

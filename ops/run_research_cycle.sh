@@ -37,6 +37,9 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   bash ops/run_study_on_vps.sh
   # The ladder runs even when the sweep found nothing: it also reports what is ALREADY live, and a
   # cycle that skipped it on a null day would go silent exactly when a live record needs reading.
+  # THE REVIEW CONSUMES THE SWEEP: funnel, near-survivor bank, evidence tiers, convergence. Four
+  # modules that had zero importers until this line existed -- inventory until something reads them.
+  nice -n 15 "$PY" scripts/run_research_review.py || true
   nice -n 15 "$PY" scripts/run_live_ladder.py
   # EXECUTION HEALTH runs every cycle, including days the research half found nothing. The money
   # path is where the desk is currently LOSING (27 closes, all three hold buckets negative net of
