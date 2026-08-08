@@ -39,11 +39,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 __all__ = [
+    "CAPITAL_REQUIREMENTS",
+    "SERVICE_REQUIREMENTS",
     "STAGES",
     "STATUS",
     "Capability",
     "Verification",
     "load",
+    "required_guarantees",
     "summarise",
     "verify",
 ]
@@ -57,6 +60,31 @@ STAGES: tuple[str, ...] = (
 
 STATUS: tuple[str, ...] = (
     "MISSING", "PARTIAL", "VERIFIED_COMPLETE", "EXTERNALLY_BLOCKED",
+)
+
+#: EXTRA GUARANTEES FOR CAPABILITIES THAT CAN MOVE MONEY. The eight stages above prove a
+#: capability RUNS and is READ. They say nothing about what happens when it runs twice, when it
+#: fails halfway, or when someone bypasses it -- and for a capability with capital behind it those
+#: are the only questions that matter. A capital-sensitive capability that passes all eight stages
+#: and cannot answer these is reported PARTIAL, not complete, because "it works" is not the claim
+#: being made about it.
+CAPITAL_REQUIREMENTS: tuple[str, ...] = (
+    "PERMISSION_BOUNDARY",   # the caller cannot widen its own authority
+    "FAIL_CLOSED",           # an error stops the money path rather than passing it through
+    "AUDIT_LINEAGE",         # every action traceable to the evidence that authorised it
+    "IDEMPOTENCY",           # running it twice is not two positions
+    "ROLLBACK",              # a wrong action can be undone, and the undo is tested
+    "BYPASS_TESTED",         # an attempt to route around it FAILS, and a test proves it
+)
+
+#: EXTRA GUARANTEES FOR THINGS THAT ARE SUPPOSED TO KEEP RUNNING. A daily job that silently
+#: stopped three weeks ago passes every stage above forever: the file exists, the tests pass, the
+#: scheduler names it. Only these four distinguish "running" from "was once wired".
+SERVICE_REQUIREMENTS: tuple[str, ...] = (
+    "TRIGGERED",             # a timer/cron/hook actually fires it
+    "RESTART_SAFE",          # it resumes correctly after the box reboots
+    "STALL_DETECTED",        # a run that stops happening raises something
+    "FAILURE_SURFACED",      # a run that fails is visible without reading a log
 )
 
 #: Files a scheduler reads. A caller none of these reach is code somebody must remember to run,
@@ -90,6 +118,36 @@ class Capability:
     expected_delta_elogw: str = ""
     next_action: str = ""
 
+    # ---- §0 ECONOMIC FIELDS. Carried so a capability can be RANKED rather than merely listed.
+    # A ledger that records only status answers "what is unfinished" and cannot answer "what
+    # should be finished next", which is the question that decides where the day goes.
+    #: What has to be true about markets for this to pay. Prose, but prose that can be argued with.
+    economic_mechanism: str = ""
+    #: What the desk learns by building it, separate from what it earns. A capability can be worth
+    #: building purely because it turns an UNMEASURED into a number.
+    information_value: str = ""
+    implementation_cost: str = ""
+    runtime_cost: str = ""
+    #: Capability ids that must land first. An unbuilt dependency is why a high-value row is not
+    #: simply the next task.
+    dependencies: tuple[str, ...] = field(default_factory=tuple)
+    #: What already does part of this. THE ANTI-DUPLICATION FIELD -- §1 forbids specification
+    #: growth from becoming an escape from implementation, and the commonest form that takes is a
+    #: new module that re-implements two thirds of an existing one.
+    existing_equivalent: str = ""
+    #: Timers, cron entries or hooks that fire it. Distinct from `callers`: a caller is code, a
+    #: trigger is the thing that makes the code run without a human.
+    triggers: tuple[str, ...] = field(default_factory=tuple)
+    #: What has actually been measured about its value so far. Empty = nothing, which is the
+    #: honest state for almost everything and must not read as zero value.
+    measured_value: str = ""
+    #: Declares the extra requirement sets above. Never inferred -- a capability nobody marked
+    #: capital-sensitive is not thereby safe, it is unclassified, and the report says so.
+    capital_sensitive: bool = False
+    continuous_service: bool = False
+    #: Which of CAPITAL_REQUIREMENTS / SERVICE_REQUIREMENTS have evidence, by name.
+    guarantees_met: tuple[str, ...] = field(default_factory=tuple)
+
 
 @dataclass(frozen=True)
 class Verification:
@@ -100,6 +158,9 @@ class Verification:
     stages: dict[str, bool]
     failed_stage: str
     detail: str
+    #: Declared extra guarantees with no recorded evidence. Non-empty forces PARTIAL even when all
+    #: eight stages pass -- for a capability with capital behind it, "it runs" is not the claim.
+    missing_guarantees: tuple[str, ...] = ()
 
     @property
     def complete(self) -> bool:
@@ -198,13 +259,38 @@ def verify(cap: Capability, *, root: Path | None = None,
     stages["CONSUMED"] = bool(consumed) or not cap.consumers
     stages["MEASURED"] = bool(cap.artifacts) and bool(consumed or produces)
 
+    missing_guarantees = required_guarantees(cap)
     failed = next((s for s in STAGES if not stages.get(s, False)), "")
-    if not failed:
+    if not failed and not missing_guarantees:
         return Verification(cap.capability_id, "VERIFIED_COMPLETE", stages, "",
-                            f"all {len(STAGES)} stages verified")
+                            f"all {len(STAGES)} stages verified", ())
+    if not failed:
+        return Verification(
+            cap.capability_id, "PARTIAL", stages, "GUARANTEES",
+            (f"all {len(STAGES)} stages verified, but {len(missing_guarantees)} declared "
+             f"guarantee(s) have no evidence: {list(missing_guarantees)}. For a capability that "
+             "can move money or is expected to keep running, 'it runs' is not the claim being "
+             "made about it"), missing_guarantees)
     status = "MISSING" if failed in {"EXISTS", "IMPORTS"} else "PARTIAL"
     return Verification(cap.capability_id, status, stages, failed,
-                        detail or f"first failing stage: {failed}")
+                        detail or f"first failing stage: {failed}", missing_guarantees)
+
+
+def required_guarantees(cap: Capability) -> tuple[str, ...]:
+    """Declared extra guarantees with no recorded evidence, in specification order.
+
+    DECLARED, NEVER INFERRED. A capability nobody marked capital-sensitive is not thereby safe --
+    it is unclassified, and the classification is a judgement this module cannot make from a
+    module path. What it CAN do is refuse to call a declared money-path capability complete on
+    the strength of the eight generic stages alone.
+    """
+    need: list[str] = []
+    if cap.capital_sensitive:
+        need.extend(CAPITAL_REQUIREMENTS)
+    if cap.continuous_service:
+        need.extend(SERVICE_REQUIREMENTS)
+    met = set(cap.guarantees_met)
+    return tuple(g for g in need if g not in met)
 
 
 def load(path: Path) -> list[Capability]:
@@ -226,7 +312,18 @@ def load(path: Path) -> list[Capability]:
             consumers=tuple(row.get("consumers") or ()),
             external_blocker=str(row.get("external_blocker", "")),
             expected_delta_elogw=str(row.get("expected_delta_elogw", "")),
-            next_action=str(row.get("next_action", ""))))
+            next_action=str(row.get("next_action", "")),
+            economic_mechanism=str(row.get("economic_mechanism", "")),
+            information_value=str(row.get("information_value", "")),
+            implementation_cost=str(row.get("implementation_cost", "")),
+            runtime_cost=str(row.get("runtime_cost", "")),
+            dependencies=tuple(row.get("dependencies") or ()),
+            existing_equivalent=str(row.get("existing_equivalent", "")),
+            triggers=tuple(row.get("triggers") or ()),
+            measured_value=str(row.get("measured_value", "")),
+            capital_sensitive=bool(row.get("capital_sensitive", False)),
+            continuous_service=bool(row.get("continuous_service", False)),
+            guarantees_met=tuple(row.get("guarantees_met") or ())))
     return out
 
 
@@ -265,7 +362,11 @@ def summarise(caps: list[Capability], *, root: Path | None = None) -> dict[str, 
             "that lists only what exists reports 100% and measures nothing"),
         "by_status": by_status,
         "rows": [{"id": r.capability_id, "status": r.status, "failed_stage": r.failed_stage,
-                  "detail": r.detail, "stages": r.stages} for r in results],
+                  "detail": r.detail, "stages": r.stages,
+                  "missing_guarantees": list(r.missing_guarantees)} for r in results],
+        "unclassified_for_extra_guarantees": [
+            c.capability_id for c in caps
+            if not c.capital_sensitive and not c.continuous_service and not c.external_blocker],
         "note": ("Status is the FIRST FAILING stage, never the strongest passing one. 'Large', "
                  "'later' and 'queued' are scheduling information and map to MISSING -- only a "
                  "named dependency this repository cannot satisfy is EXTERNALLY_BLOCKED."),

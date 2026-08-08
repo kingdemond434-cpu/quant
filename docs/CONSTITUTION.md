@@ -1830,3 +1830,83 @@ overrides the survival rails, the Tier-3 deadman, the two-stage discovery law, o
 Building faster is aggression on ENGINEERING; sizing beyond demonstrated edge is not aggression but
 ruin (L1.23). And it is not a mandate to build the unbeneficial — the test is expected validated
 value, and "it was on a list" was never the test.
+
+**L1.57 THE OBJECTIVE IS RETAINED NET LOG WEALTH — NOT RETURN, AND NOT ARCHITECTURE**
+*(principal law, 2026-08-08, LEWIS FUSION v3 §68)*. The desk exists to maximise long-run realised
+net expected log wealth. Every other number this desk keeps — Sharpe, hit rate, survivor count,
+alpha count, module count, coverage percentage, CPU utilisation — is an instrument, and an
+instrument that has come apart from the objective is to be corrected or discarded, never optimised.
+
+**SEARCH WITHOUT A FIXED CONCEPTUAL CEILING.** Independent alpha, regime beta, cross-sectional
+selection, drawdown/rebound, participant behaviour, public information, protocol-native carry,
+prediction markets and execution alpha all compete for the same capital on the same terms. Return
+classification exists for attribution and scientific honesty, NOT to forbid a profitable
+opportunity. A desk that produces 15% of alpha while the market it lives in produces 150% has not
+been prudent; it has declined to participate, and declining is a decision with a price.
+
+**BETA IS ALLOWED. BETA CALLED ALPHA IS NOT.** Intentional directional exposure is a legitimate
+return engine and may win the allocator outright. What is forbidden is attributing it to skill,
+because a beta return sized as if it were alpha is sized against the wrong covariance, and the
+error is invisible until the beta turns. `libs/portfolio/return_engines.py` is the fence: the
+attribution basis is closed, business revenue and self-issued token marks cannot enter it, and a
+supposedly independent engine whose variance is majority-explained by the market is NAMED.
+
+**NO INCUMBENT HAS PRIVILEGE.** No strategy, asset, model, data source or engine holds capital
+because it once worked, was expensive to build, or is conceptually impressive. Capital has no
+loyalty and the allocator re-asks every cycle whether an additional unit here beats an additional
+unit anywhere else, cash included.
+
+**ARCHITECTURE IS VALUABLE ONLY THROUGH FUTURE REALISED NET E[log W].** A larger system, more
+agents, more modules and more discovered alphas are costs until they show up in that number. The
+economic scoreboard therefore ranks ABOVE every architecture count, and
+`scripts/run_wealth_report.py` prints it that way.
+
+**L1.58 NO HISTORICAL GAIN JUSTIFIES NEGATIVE FORWARD MARGINAL E[log W]** *(principal law,
+2026-08-08, LEWIS FUSION v3 §69)*. Large gains are not success if the process carries a material
+probability of returning accumulated wealth to its starting point or to ruin. A path that goes 1x
+to 30x to 1x has a magnificent maximum, an impressive arithmetic mean, a publishable win rate, and
+a realised log growth of exactly zero — and every metric this desk keeps except the last one calls
+it a triumph.
+
+**THE ASYMMETRY IS ARITHMETIC, NOT PSYCHOLOGY.** A 50% loss needs a 100% gain to undo; an 80% loss
+needs 400%. Recovery cost is convex in drawdown while the gain that produced the drawdown was
+linear, so the same edge does not buy back what it lost. This is why MAXIMUM_GIVEBACK and
+ROUND_TRIP_RATIO are first-class numbers on the scoreboard and peak NAV is not reported at all.
+
+**NO ARBITRARY PROFIT-LOCKING RULE IS REQUIRED AND NONE IS PERMITTED TO MASQUERADE AS THIS LAW.**
+"After +100%, halve the risk" is a number somebody picked: it fires on a path that is still
+compounding and stays silent on one that is not. What is required instead is that every portfolio
+state make EXPLICIT how much accumulated wealth is currently exposed to loss, and whether that
+exposure is still justified by current evidence. The allocator continuously compares the marginal
+expected geometric value of additional risky exposure against the option value and survival value
+of retained capital. Cash is not idle capital earning zero — it is a call on every dislocation
+that has not happened yet, and pricing it at zero is what forces full investment and guarantees
+there is nothing left to deploy on the day the opportunity set is best.
+
+**PAST PERFORMANCE IS NOT AN INPUT TO A FORWARD MARGINAL DECISION.** Prior gains grant no risk
+privilege and impose no risk penalty. A module that quietly de-risked after a win would be the
+arbitrary rule this law forbids; one that levered up after a win would be the round trip itself.
+`libs/portfolio/wealth_retention.py` holds the arithmetic and a test pins the invariance.
+
+**L1.59 AGGRESSION IS SEARCH, SPEED AND CONVERSION — NEVER A RELAXED BAR**
+*(principal law, 2026-08-08, LEWIS FUSION v3 §67 / BEAT-LEWIS)*. The desk's measured deficit is not
+its science; it is the clock between holding evidence and holding a position. That latency is now
+measured (`libs/research/conversion_velocity.py`) and it is charged.
+
+**WHAT AGGRESSION MEANS**: search more broadly, test faster, parallelise independent work, exploit
+the capacity advantages available only to small capital, replace dead strategies quickly, and
+monetise genuine edge at the earliest evidence-supported moment. EVIDENCE DETERMINES SIZE; TIME
+DOES NOT. There is no requirement to wait 20 days, 30 days or three months when sufficient
+independent information already exists, and a calendar gate applied to an edge with a twenty-day
+life throws away most of its economic life.
+
+**WHAT AGGRESSION IS NOT**: relaxing an evidence bar because returns are desired, adding leverage
+to reach a target, ignoring covariance, treating a tiny sample as proof, bypassing risk, or
+back-solving exposure from a desired return. Desired return is a competitive benchmark and it does
+not alter statistical truth.
+
+**THE ONE DISTINCTION THAT KEEPS THIS LAW HONEST.** Latency that BUYS evidence is correct and is
+not a target for reduction; latency that buys nothing is waste. Conflating them would turn a
+throughput metric into an argument for lowering a bar, which is the single use it must never have.
+Every conversion record is therefore classified EVIDENCE_BOUND or PROCESS_BOUND before its delay is
+costed, and only the second is a defect.

@@ -56,7 +56,10 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 _OUT = _ROOT / "data/max_push_queue.json"
+_FRONTIER_OUT = _ROOT / "data/economic_frontier.json"
 
+from libs.research.frontier import Action, ResourcePrices  # noqa: E402
+from libs.research.frontier import summarise as frontier_summary  # noqa: E402
 from libs.research.gap_contract import load_published, to_queue_rows  # noqa: E402
 
 # Leverage per source class: how much does closing one unit of this gap move the two supreme
@@ -379,6 +382,126 @@ def _from_stranding() -> list[dict[str, Any]]:
                   "data/intelligence_cycle.json")]
 
 
+def _from_wealth() -> list[dict[str, Any]]:
+    """THE ECONOMIC ROWS -- and they belong at the top of the queue, not appended to it.
+
+    Every other `_from_*` reader above measures the desk's PROCESS: floors, fences, wiring,
+    conversion, calibration. All of them are proxies for the only thing that decides whether this
+    enterprise was worth running, and none of them can fall while real wealth is being lost. A
+    queue built purely from process metrics can be entirely green on the day the book round-trips.
+
+    So `data/wealth_report.json` enters the same ranking as everything else, and its DAILY BOARD
+    QUESTION becomes a queue row rather than a line in a log. The specification's instruction is
+    literal: the highest-value answer becomes the next task.
+
+    Two shapes come through. An UNMEASURED section is scored as unmeasured, which the ranker
+    already puts above partially-complete work -- correct here, because "we do not know whether we
+    are keeping what we make" outranks any known-and-being-worked number. A MEASURED section with
+    a finding (a round trip, hidden beta, process-bound survivors) comes through as a money-path
+    row, the heaviest weight the ranker carries.
+    """
+    d = _json("data/wealth_report.json")
+    if not isinstance(d, dict):
+        # UNMEASURED, NOT ABSENT-THEREFORE-FINE. No wealth report means nobody asked the board
+        # question today, and letting that read as a clean board is WS-005 pointed at the one
+        # artifact that outranks the rest of this file.
+        return [_item("wealth::board_question", "money_path_correctness", None, 1.0,
+                      "no wealth report -- the desk has not asked what is preventing it from "
+                      "generating and retaining more real net wealth",
+                      "run scripts/run_wealth_report.py; it is wired into the research cycle and "
+                      "its absence means the cycle did not complete",
+                      "data/wealth_report.json")]
+    out: list[dict[str, Any]] = []
+    answer = str(d.get("ANSWER", "?"))
+    out.append(_item(
+        "wealth::board_question", "money_path_correctness", None, 1.0,
+        f"BOARD QUESTION answer: {answer}", str(d.get("why", ""))[:400],
+        "data/wealth_report.json"))
+    for name in d.get("unmeasured_sections") or []:
+        sec = (d.get("sections") or {}).get(name) or {}
+        out.append(_item(
+            f"wealth::{name}", "capital_utilisation", None, 1.0,
+            str(sec.get("headline", ""))[:200],
+            f"produce {sec.get('missing_artifact', 'the input artifact')} -- until it exists this "
+            "section is UNMEASURED, which is a fact about the inputs and not a clean result",
+            "data/wealth_report.json"))
+    sections = d.get("sections") or {}
+    conv = sections.get("conversion") or {}
+    process_bound = int(conv.get("process_bound") or 0)
+    if process_bound:
+        out.append(_item(
+            "wealth::process_bound_survivors", "conversion_debt", 0.0, 1.0,
+            f"{process_bound} candidate(s) hold sufficient evidence and are not moving, costing "
+            f"at least {conv.get('total_process_waiting_cost_bps', 0)}bp",
+            "advance each PROCESS_BOUND candidate to its next stage; this latency buys nothing "
+            "and is not an evidence question", "data/wealth_report.json"))
+    hidden = (sections.get("return_engines") or {}).get("hidden_beta") or []
+    if hidden:
+        out.append(_item(
+            "wealth::hidden_beta", "money_path_correctness", 0.0, 1.0,
+            f"{len(hidden)} engine(s) declared independent behave as market exposure",
+            "reclassify or re-measure: capital sized against the wrong covariance is the "
+            "mechanism behind a round trip", "data/wealth_report.json"))
+    return out
+
+
+#: Shadow prices, declared. THE HONEST STATE IS THAT MOST ARE UNMEASURED, and the frontier report
+#: names every unpriced resource rather than letting a total read as a full accounting. Capital
+#: carries the only non-zero price today because it is the one resource this desk demonstrably
+#: cannot replace: compute and engineering time regenerate daily, a lost stack does not.
+_SHADOW_PRICES: dict[str, float] = {"capital": 0.01}
+
+#: How a queue row's declared leverage weight becomes an expected log-wealth contribution. This is
+#: a UNIT CONVERSION, not a claim: the weights were never in log-wealth units, and pretending they
+#: were would put a fabricated number at the top of the desk's ranking. The frontier report carries
+#: the caveat, and the conversion is one constant so it can be argued with in one place.
+_LEVERAGE_TO_ELOGW: float = 0.01
+
+
+def _frontier(items: list[dict[str, Any]]) -> dict[str, Any]:
+    """Re-rank the queue by ECONOMIC SURPLUS rather than by distance-from-ceiling.
+
+    THE TWO ORDERINGS DISAGREE IN A WAY THAT DECIDES DAYS. This file ranks by how far a metric sits
+    from 100%, which is correct for a ratchet and wrong for an allocator: a research module at 0%
+    outranks deploying a validated survivor at "done", even when the survivor's marginal
+    contribution is larger and its opportunity cost is a euro of compute rather than a euro of
+    capital. The frontier answers the allocator's question instead.
+
+    Both are published. The queue is the RATCHET -- it never reports done and escalates when
+    everything is green. The frontier is the ALLOCATOR. Replacing one with the other would lose a
+    control the desk relies on, so neither is deleted.
+
+    The surplus numbers here are DERIVED FROM DECLARED WEIGHTS, not measured, and the report says
+    so. Their ordering is informative; their magnitudes are not yet.
+    """
+    actions: list[Action] = []
+    for i in items[:40]:
+        gap = float(i.get("gap_fraction") or 0.0)
+        lev = float(i.get("leverage") or 0.0)
+        if gap <= 0:
+            continue
+        mean = gap * lev * _LEVERAGE_TO_ELOGW
+        # UNMEASURED aspects carry a WIDER posterior, not a larger mean. An unknown quantity is
+        # ranked above a known one by the queue's own rule; it must not also be treated as
+        # confidently valuable by the allocator.
+        sigma = mean * (0.8 if not i.get("measured") else 0.3)
+        actions.append(Action(
+            action_id=str(i.get("aspect", "?"))[:80],
+            category=str(i.get("source", "unknown")),
+            elogw_mean=mean, elogw_sigma=max(sigma, 1e-9),
+            resources={"research_attention": 1.0},
+            proposer=str(i.get("source", "")),
+        ))
+    rep = frontier_summary(actions, ResourcePrices(dict(_SHADOW_PRICES)))
+    rep["derivation_caveat"] = (
+        "Surpluses are DERIVED from run_max_push's declared leverage weights via a single "
+        f"conversion constant ({_LEVERAGE_TO_ELOGW}), because those weights were never in "
+        "log-wealth units. The ORDERING is informative; the MAGNITUDES are not yet, and no sizing "
+        "decision may cite them. They become real when actions carry measured posterior "
+        "distributions from the wealth report and the live ladder.")
+    return rep
+
+
 def build(*, refresh: bool = True) -> dict[str, Any]:
     if refresh:
         for s in ("check_ratchets.py", "check_utilisation.py", "build_enforcement_matrix.py",
@@ -387,7 +510,7 @@ def build(*, refresh: bool = True) -> dict[str, Any]:
     items = (_from_ratchets() + _from_utilisation() + _from_matrix()
              + _from_wiring() + _from_register() + _from_conversion()
              + _from_tier_benchmark() + _from_calibration() + _from_freshness()
-             + _from_stranding()
+             + _from_stranding() + _from_wealth()
              # THE GENERIC CHANNEL. Every `_from_*` above is a bespoke reader that knows the shape
              # of one artifact, and adding the tenth made the cost visible: a detector written
              # today cannot influence tomorrow's priorities until somebody edits THIS file, which
@@ -433,6 +556,9 @@ def main() -> int:
     rep = build(refresh=not args.no_refresh)
     _OUT.parent.mkdir(parents=True, exist_ok=True)
     _OUT.write_text(json.dumps(rep, indent=2), "utf-8")
+    # THE ALLOCATOR'S VIEW, published alongside the ratchet's. Neither replaces the other.
+    front = _frontier(rep["queue"])
+    _FRONTIER_OUT.write_text(json.dumps(front, indent=2), "utf-8")
     if args.json:
         print(json.dumps(rep, indent=2))
     else:
@@ -442,7 +568,8 @@ def main() -> int:
         for i, r in enumerate(rep["queue"][:args.top], 1):
             cur = "UNMEASURED" if not r["measured"] else f"{float(r['current']):.1%}"
             print(f"{i:3}. [{r['score']:.3f}] {r['aspect']:44} {cur:>11}  {r['detail'][:60]}")
-        print(f"-> {_OUT.relative_to(_ROOT)}")
+        print(f"FRONTIER: {front['headline']}")
+        print(f"-> {_OUT.relative_to(_ROOT)}, {_FRONTIER_OUT.relative_to(_ROOT)}")
     # Never fails the build: this is the WORK QUEUE, not a gate. A queue that fails CI would be
     # muted within a week, and the whole point is that it is read every morning.
     return 0

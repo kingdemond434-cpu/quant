@@ -62,6 +62,18 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # gap set, so tomorrow's highest-value work is chosen from today's evidence rather than from
   # whatever was true when the schedule was written.
   nice -n 15 "$PY" scripts/run_intelligence_cycle.py || true
+  # THE ECONOMIC SCOREBOARD, ABOVE THE ARCHITECTURE COUNTS. Everything before this line measures
+  # the RESEARCH: kills, survivors, admission, gaps. None of it answers the only question that
+  # decides whether this desk is worth running -- is it generating and RETAINING real net wealth.
+  # Runs every cycle including the days it can only answer UNMEASURED, because the day it stops
+  # being able to say that is the day a live fill happened and nobody wired the report.
+  nice -n 15 "$PY" scripts/run_wealth_report.py || true
+  # THE BLIND SPOT LEDGER. The Claude-side miners cannot retrieve YouTube transcripts and this
+  # clone has no network at all, so a large body of practitioner knowledge -- much of it with no
+  # paper, no repo and no article behind it -- is invisible to every collector the desk runs. The
+  # GPT seat fetches; this records what was fetched, at what completeness, and what remains, so
+  # "we mined that channel" stops being a claim nobody can check.
+  nice -n 15 "$PY" scripts/run_external_intel.py || true
   nice -n 15 "$PY" scripts/run_max_push.py || true
   # THE PROGRAMME CANNOT QUIETLY STALL. The ledger verifies every declared capability against the
   # working tree and publishes the unfinished ones as ranked gaps, so an item that stops being

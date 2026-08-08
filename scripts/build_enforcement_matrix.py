@@ -361,6 +361,16 @@ _FENCE_OWNERS: dict[str, str] = {
     "check_panel": "L1.7",               # adversarial review capability being DOWN is a defect
     "check_memory_hygiene": "L1.17",     # research debt is only debt if it is written and findable
     "check_mine_evidence_base": "L1.6",  # a ratchet calibrated on n=2 is superstition with a JSON
+    # --- THE ECONOMIC OBJECTIVE (L1.57-L1.59, 2026-08-08). These three laws are about WEALTH
+    # rather than about process, so their fences are behavioural tests and one report rather than
+    # a `check_*` script: there is no pass/fail condition on "the objective is retained log
+    # wealth", only a scoreboard that must exist, must refuse to invent numbers, and must rank
+    # above the architecture counts.
+    "tests/portfolio/test_return_engines.py": "L1.57",
+    "tests/scripts/test_wealth_report.py": "L1.57",
+    "tests/portfolio/test_wealth_retention.py": "L1.58",
+    "tests/research/test_conversion_velocity.py": "L1.59",
+    "tests/validation/test_state_conditional.py": "L1.59",
 }
 for _fence, _pid in _FENCE_OWNERS.items():
     _MAP.setdefault(_pid, []).append(_fence)
