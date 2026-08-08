@@ -63,5 +63,10 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # whatever was true when the schedule was written.
   nice -n 15 "$PY" scripts/run_intelligence_cycle.py || true
   nice -n 15 "$PY" scripts/run_max_push.py || true
+  # THE PROGRAMME CANNOT QUIETLY STALL. The ledger verifies every declared capability against the
+  # working tree and publishes the unfinished ones as ranked gaps, so an item that stops being
+  # worked reappears in tomorrow's priorities by itself. Runs LAST: it measures the cycle that
+  # just happened, including whatever this cycle wired.
+  nice -n 15 "$PY" scripts/run_completion_ledger.py || true
   echo "=== research cycle exit $? at $(date -u) ==="
 } 2>&1 | tee -a "$LOG"

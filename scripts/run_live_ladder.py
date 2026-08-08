@@ -43,8 +43,10 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from libs.research import alpha_state  # noqa: E402
+from libs.portfolio import capital_competition  # noqa: E402
+from libs.research import alpha_state, evidence_clock  # noqa: E402
 from libs.research.live_ladder import (  # noqa: E402
+    MIN_OBS_FOR_A_VERDICT,
     LiveRecord,
     decide,
     render,
@@ -178,6 +180,52 @@ def state_of(name: str, *, has_forward_record: bool, forward_obs: int,
     return rec, reason
 
 
+
+def evidence_of(rec: LiveRecord) -> tuple[float, str]:
+    """(effective observations, verdict) for a forward record. THE CLOCK, NOT THE CALENDAR.
+
+    A record's `n_trades` is the RAW count and it is the number that flatters: fills clustered in
+    one impulse are one observation of one event. The deflated count is what the ladder should
+    reason about, and reporting both makes the deflation visible rather than a silent haircut.
+
+    Autocorrelation and event structure are NOT recorded on a LiveRecord today, so they come
+    through as unmeasured -- which the clock treats as concentrated rather than independent. That
+    is the conservative direction and it is stated in the output rather than hidden.
+    """
+    st = evidence_clock.EvidenceState(
+        raw_observations=rec.n_trades,
+        distinct_regimes=0,   # unmeasured -> penalised as single-regime, deliberately
+        distinct_symbols=1,
+        measured=rec.n_trades > 0)
+    eff = evidence_clock.effective_n(st)
+    _v, why = evidence_clock.sufficiency(st, required=float(MIN_OBS_FOR_A_VERDICT))
+    return eff, why
+
+
+def competing_allocation(live: list[LiveRecord], verdicts: list) -> dict[str, object]:
+    """What every live record would receive if capital were re-competed RIGHT NOW.
+
+    Age is not an input. A record funded because it has been running for months and a record with
+    two days of stronger evidence are scored by the same function, so the report shows what the
+    allocator would do rather than what precedent did.
+
+    ADVISORY ONLY -- this script places nothing and sizes nothing. It surfaces the comparison so a
+    stale allocation cannot hide behind never being questioned.
+    """
+    cands = []
+    for r in live:
+        eff, _why = evidence_of(r)
+        cands.append(capital_competition.AlphaCandidate(
+            name=r.name, edge_bps=r.mean_bps, vol_bps=max(r.sd_bps, 1e-9),
+            effective_n=eff, state="LIVE"))
+    if not cands:
+        return {"headline": "no live records -- nothing to compete", "weights": {}}
+    rep = capital_competition.summarise(cands)
+    return {"headline": rep["headline"], "weights": capital_competition.allocate(cands),
+            "rows": rep["rows"],
+            "authority": "ADVISORY. This script places nothing and sizes nothing."}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--records", type=Path, default=RECORDS)
@@ -198,6 +246,7 @@ def main() -> int:
     to_shadow = [s for s in survivors if s not in named]
 
     verdicts = [decide(r) for r in live]
+    competition = competing_allocation(live, verdicts)
 
     # GOVERNANCE, WALKED RATHER THAN ASSERTED. Each survivor is stepped up the ladder with the
     # evidence actually in hand; the report names the first MISSING piece. A survivor halting at
@@ -224,6 +273,11 @@ def main() -> int:
         "stage_a_survivors": len(survivors),
         "to_shadow": to_shadow[:100],
         "governance_ladder": ladder_states[:100],
+        "capital_competition": competition,
+        "evidence_clock": [
+            {"name": r.name, "raw_trades": r.n_trades,
+             "effective_observations": round(evidence_of(r)[0], 2),
+             "verdict": evidence_of(r)[1]} for r in live[:50]],
         "governance_note": (
             "walked by libs/research/alpha_state: one rung at a time, each rung's\n"
             "evidence required by name. A skipped rung is REFUSED, not merely\n"
@@ -261,6 +315,7 @@ def main() -> int:
         print("  " + render(v).replace("\n", "\n  "))
     for st in ladder_states[:5]:
         print("  " + str(st["line"]))
+    print(f"  capital competition: {competition['headline']}")
     print(f"  artifact: {a.out}")
     return 0
 

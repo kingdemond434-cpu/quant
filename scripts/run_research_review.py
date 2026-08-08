@@ -51,6 +51,8 @@ from libs.research.funnel import Funnel, diagnose, render  # noqa: E402
 from libs.research.kill_audit import KillRecord  # noqa: E402
 from libs.research.kill_audit import summarise as kill_summary  # noqa: E402
 from libs.research.near_survivor import NearSurvivor, hurdle, next_experiments  # noqa: E402
+from libs.validation.gate_power import run_controls  # noqa: E402
+from libs.validation.gate_power import summarise as gate_power_summary  # noqa: E402
 
 SWEEP = ROOT / "data" / "full_sweep.json"
 OUT = ROOT / "data" / "research_review.json"
@@ -398,6 +400,11 @@ def main() -> int:
     # each rejection and NEVER promotes one -- a SOFT_KILL is still a kill.
     kills = kill_summary(kills_from(doc))
 
+    # THE GATE IS CALIBRATED BESIDE ITS KILLS, so a kill count is never read without the gate's
+    # measured false-negative exposure next to it. Cheap synthetic controls (~seconds), because a
+    # calibration nobody runs is the same defect as a kill nobody audits.
+    power = gate_power_summary(run_controls(n_obs=800, n_trials=150, seed=0))
+
     rep = {
         "ts": datetime.now(tz=UTC).isoformat(),
         "source": str(a.sweep),
@@ -413,6 +420,7 @@ def main() -> int:
         "difference_engine": difference,
         "failure_bands": bands,
         "kill_audit": kills,
+        "gate_power": power,
         "authority": "NONE. Reads artifacts, promotes nothing, sizes nothing, trades nothing.",
     }
     a.out.parent.mkdir(parents=True, exist_ok=True)
@@ -430,6 +438,7 @@ def main() -> int:
     print(f"  difference: {difference['headline']}")
     print(f"  failure bands: {bands['headline']}")
     print(f"  kill audit: {kills['headline']}")
+    print(f"  gate power: {power['headline']}")
     print(f"  survivors tiered: {len(tiers)} | artifact: {a.out}")
     return 0
 
