@@ -43,7 +43,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from libs.doctrine.constitution import OBJECTIVE_PREAMBLE
+from libs.doctrine.constitution import (
+    OBJECTIVE_PREAMBLE,
+    RESIDUAL_MANDATE,
+    RESIDUAL_PROTOCOL,
+)
 
 _ROOT = Path(__file__).resolve().parents[2]
 
@@ -194,7 +198,7 @@ def build_prompt(dossier: Dossier) -> str:
     # model family, which is precisely why it needs the objective stated rather than inferred: it
     # does not share the desk's priors, so anything left implicit is a thing it will fill in from
     # its own training instead. It shipped without the preamble and the reach fence caught it.
-    return f"""{OBJECTIVE_PREAMBLE}
+    return f"""{OBJECTIVE_PREAMBLE}{RESIDUAL_MANDATE}{RESIDUAL_PROTOCOL}
 
 You are the desk's STRATEGIC DIRECTOR. Produce ranked recommendations, as JSON only.
 

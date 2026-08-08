@@ -37,6 +37,7 @@ sys.path.insert(0, str(ROOT))
 from libs.doctrine.constitution import (  # noqa: E402
     OBJECTIVE_PREAMBLE,
     RESIDUAL_MANDATE,
+    RESIDUAL_PROTOCOL,
 )
 from libs.llm.effort import reasoning_payload  # noqa: E402
 from libs.llm.push import PUSH_LADDER, push_rounds  # noqa: E402
@@ -53,7 +54,7 @@ CHARTER = (
     # The board redesigns the desk itself, so it is the one seat where a missing objective
     # compounds: an architecture chosen against no objective becomes the frame every future
     # decision is made inside.
-    OBJECTIVE_PREAMBLE + RESIDUAL_MANDATE + "\n"
+    OBJECTIVE_PREAMBLE + RESIDUAL_MANDATE + RESIDUAL_PROTOCOL + "\n"
     "You are an ARCHITECTURE REVIEW BOARD for a quantitative research desk. You do NOT propose "
     "trading ideas. You propose improvements to the RESEARCH SYSTEM ITSELF.\n\n"
     "THE BINDING RULE: every proposal must EITHER replace an existing component OR improve a "

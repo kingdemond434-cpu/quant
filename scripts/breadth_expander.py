@@ -42,6 +42,7 @@ sys.path.insert(0, str(ROOT))
 from libs.doctrine.constitution import (  # noqa: E402
     OBJECTIVE_PREAMBLE,
     RESIDUAL_MANDATE,
+    RESIDUAL_PROTOCOL,
 )
 from libs.llm.effort import reasoning_payload  # noqa: E402
 from libs.llm.push import PUSH_LADDER, push_rounds  # noqa: E402
@@ -82,7 +83,7 @@ SYSTEM = (
     # what its output LOOKS like rather than for expected shift in E[log W] -- and, worse,
     # quietly recommends the timid option because nothing told it that timidity is a
     # scored defect rather than a neutral default.
-    OBJECTIVE_PREAMBLE + RESIDUAL_MANDATE + "\n"
+    OBJECTIVE_PREAMBLE + RESIDUAL_MANDATE + RESIDUAL_PROTOCOL + "\n"
     "You are a research scout for a systematic crypto trading desk. You are a COLLEAGUE helping "
     "the desk's own miners see further -- not an auditor. Your job is BREADTH: name information "
     "sources, classes and modalities the desk has probably NOT considered.\n"

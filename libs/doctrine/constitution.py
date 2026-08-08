@@ -82,6 +82,7 @@ __all__ = [
     "OBJECTIVE_PREAMBLE",
     "PRINCIPLES",
     "RESIDUAL_MANDATE",
+    "RESIDUAL_PROTOCOL",
     "SUBSYSTEM_DERIVATIVES",
     "WEAKENING_LEXICON",
     "WEALTH_ARGUMENTS",
@@ -1036,4 +1037,57 @@ RESIDUAL_MANDATE = (
     "-> the experiment that would settle it. An item with no path to an experiment is an opinion, "
     "and this desk already has enough of those.\n"
     "=== END RESIDUAL MANDATE ===\n"
+)
+
+
+#: RECURSIVE RESIDUAL-GAP PROTOCOL -- how a seat searches, as opposed to what it searches for.
+#:
+#: SEPARATE FROM `RESIDUAL_MANDATE` BECAUSE THE TWO ANSWER DIFFERENT QUESTIONS and are wanted in
+#: different combinations. The mandate says "hunt what the desk missed" and is withheld from the
+#: blind researcher. This says "do not stop at your first answer" and is safe for EVERY seat
+#: including the blind one, whose independence is about CONTEXT, never about effort.
+#:
+#: THE COUNT IS NOT THE CONTROL, and that correction is the whole design. A fixed "ask ten times"
+#: is too few for a rich problem and too many for a thin one, and its real damage is on the thin
+#: one: a model told to produce ten rounds produces ten rounds, inventing progressively more
+#: marginal items to satisfy the instruction. The stop condition is MARGINAL INFORMATION, and the
+#: model is explicitly permitted to stop early and say so -- "I found no further material
+#: improvement" is a stronger signal than a tenth manufactured suggestion, and a seat that cannot
+#: say it will never say anything else.
+#:
+#: PASSES SEARCH DIFFERENT DIMENSIONS RATHER THAN REPEATING ONE. Asking "what else?" ten times
+#: samples one direction ten times; the frontier list makes each pass enter territory the last one
+#: structurally could not reach, which is where the marginal item actually comes from.
+RESIDUAL_PROTOCOL = (
+    "=== RECURSIVE RESIDUAL-GAP PROTOCOL (your first answer is a draft) ===\n"
+    "DO NOT STOP AT YOUR FIRST ANSWER. Attack it, find what it omitted, and search again. "
+    "Reconsider earlier conclusions in light of anything new -- a later discovery can invalidate "
+    "an earlier dismissal, and a protocol that never revisits is a single pass wearing a loop.\n"
+    "PASS STRUCTURE. Each pass enters territory the previous one could not reach; asking 'what "
+    "else' repeatedly samples ONE direction repeatedly. Work these frontiers:\n"
+    "  DATA        datasets, sources, measurements, observables that are absent\n"
+    "  MECHANISM   causal or market mechanisms not represented\n"
+    "  FEATURE     transformations, interactions, conditionals, representations unexplored\n"
+    "  HYPOTHESIS  materially different explanations of the same returns\n"
+    "  CROSS-DOMAIN  ideas from other markets, disciplines, languages that transfer\n"
+    "  EXECUTION   alpha destroyed between signal and fill\n"
+    "  PORTFOLIO   survivors adding no incremental value; combinations that would\n"
+    "  REGIME      effects that exist only under particular market states\n"
+    "  ADVERSARIAL assumptions, biases, leakage, false discovery that could fool the desk\n"
+    "  UNKNOWN     whole CATEGORIES of question not currently being asked\n"
+    "THEN RECONSIDER, WHICH IS NOT A REPEAT. Take everything above as input and hunt what IT "
+    "missed or wrongly dismissed. Do not restate a point unless you materially improve it. Output "
+    "the new residual frontier, not a tidier version of the old one.\n"
+    "STOP CONDITION -- MARGINAL INFORMATION, NEVER A ROUND COUNT. Continue while a pass yields "
+    "materially new, actionable, non-redundant findings. STOP when it does not, or when another "
+    "pass would cost more than it is worth. A fixed number of rounds is too few for a rich "
+    "problem and too many for a thin one, and on the thin one it is actively harmful: it makes "
+    "invention the cheapest way to comply.\n"
+    "YOU ARE PERMITTED TO STOP EARLY AND SAY SO. 'I found no further material improvement' is a "
+    "RESULT and a strong one. Never manufacture an item to continue a pass, and never treat the "
+    "number of passes as evidence that the space is covered -- thirty passes can still miss "
+    "something and one can find the thing that matters.\n"
+    "MORE TOKENS ARE NOT MORE ALPHA. 'Give everything' means every insight you can substantiate "
+    "or propose as a labelled hypothesis, not every sentence you can produce.\n"
+    "=== END PROTOCOL ===\n"
 )

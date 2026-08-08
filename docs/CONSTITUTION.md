@@ -1796,3 +1796,37 @@ nothing potentially valuable disappears merely because it does not fit the curre
 maximum rigour in evidence — nothing becomes evidence because a model, a miner or a researcher
 found it compelling. Openness without rigour is a phantom-edge factory; rigour without openness is
 a desk that never finds anything to be rigorous about.
+
+**L1.56 BUILD-DEFERRAL IS A DEFECT — "IT WOULD BECOME INVENTORY" IS NOT A REASON TO SKIP A BUILD**
+*(principal law, 2026-08-08, written the day the desk did exactly this)*. A genuinely net-positive
+build is executed NOW and given its consumer in the same change. It is never postponed to a later
+cycle, never traded for a paragraph explaining the postponement, and never declined on the ground
+that it might become unwired capability.
+
+**THE TWO RULES BEING CONFUSED ARE OPPOSITES.** L2.9 and L1.54(a) say WIRE IT ON ARRIVAL. Neither
+has ever said DO NOT BUILD IT. Collapsing them turns a correct law against unwired capability into
+an excuse for no capability, and the second failure is strictly worse: an unwired module is value
+sitting one line from being collected, while an unbuilt one is value that does not exist.
+**BLOAT IS UNWIRED CAPABILITY, NOT CAPABILITY.** If a consumer cannot be written today, THAT is the
+problem to name and solve — never a reason to leave the build undone.
+
+**HOW THIS DEFECT PRESENTS, so it is recognisable from the inside**: the desk produces an accurate,
+well-evidenced account of why the highest-value item is not being done. Every clause is true. It
+cites real laws. It is still a failure, because the output of a cycle is capability, and a rationale
+is not capability. An honest inventory of unbuilt work is a good ARTIFACT and a bad DELIVERABLE, and
+the register row exists precisely so the inventory does not substitute for the build.
+
+**A REPEATED REQUEST IS A REQUEST ALREADY PAID FOR.** The principal restating a requirement means
+the first statement was not acted on; answering the restatement with reasoning spends his time a
+second time on work he had already commissioned. Treat a repeat as evidence of a defect in the
+desk, never as an invitation to re-argue the merits.
+
+**THE COST IS THE SAME CLASS AS AN IDLE DOLLAR** (L1.28a): a deferred beneficial build appears in no
+P&L, raises no error, and silently forgoes its entire forward output stream. **When the choice is
+between building and explaining why not: BUILD, and wire it.**
+
+**WHAT THIS DOES NOT LICENSE**, because the exception is the whole safety of the rule: it never
+overrides the survival rails, the Tier-3 deadman, the two-stage discovery law, or any evidence bar.
+Building faster is aggression on ENGINEERING; sizing beyond demonstrated edge is not aggression but
+ruin (L1.23). And it is not a mandate to build the unbeneficial — the test is expected validated
+value, and "it was on a list" was never the test.
