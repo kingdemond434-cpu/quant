@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-04T08:44:25.165617+00:00",
+  "generated": "2026-08-08T03:06:15.643137+00:00",
   "master_objective": "maximize expected lifetime geometric growth (log wealth), survival-c",
   "deployed": {
     "sleeves": [
@@ -7,16 +7,16 @@
       "perp_ls (paper)"
     ],
     "start_capital": 15000.0,
-    "equity": 13136.26,
-    "net_pnl": -1863.74,
-    "return_pct": -12.425,
-    "days_live": 33.14,
+    "equity": 13012.39,
+    "net_pnl": -1987.61,
+    "return_pct": -13.251,
+    "days_live": 36.91,
     "winrate_pct": 43.1,
     "n_closed_trades": 253,
-    "deployed_sharpe": -9.9,
+    "deployed_sharpe": 1.73,
     "funding": 113.06,
     "n_carries": 0,
-    "perp_paper_net": 1.5
+    "perp_paper_net": -135.0
   },
   "binding_constraint": "calendar-time data accumulation (not engineering throughput)",
   "bottleneck_rankings": [
@@ -26,17 +26,17 @@
       "evidence": [
         {
           "edge": "oi_divergence",
-          "have_days": 37,
+          "have_days": 41,
           "needs_days": 40
         },
         {
           "edge": "ls_contrarian",
-          "have_days": 37,
+          "have_days": 41,
           "needs_days": 40
         },
         {
           "edge": "liquidation_reversal",
-          "have_days": 37,
+          "have_days": 41,
           "needs_days": 40
         }
       ],
@@ -58,12 +58,20 @@
   "retirement_candidates": [
     {
       "sleeve": "basis_carry",
-      "marginal_sharpe": -0.09
+      "marginal_sharpe": -0.11
+    },
+    {
+      "sleeve": "funding_momentum",
+      "marginal_sharpe": -0.08
+    },
+    {
+      "sleeve": "taker_flow",
+      "marginal_sharpe": -0.04
     }
   ],
   "retirement_note": "SIGNAL ONLY \u2014 marginal-Sharpe swings ~\u00b10.15 between runs, so a single negative sign is within noise. Retire only on PERSISTENT negative contribution across runs, with promotion-grade rigor. No whipsaw.",
   "architecture_review_due": false,
-  "cycles_logged": 64,
+  "cycles_logged": 71,
   "completed_this_cycle": [
     "archive_integrity_ok",
     "watchdog_run_logged_off",
@@ -114,17 +122,17 @@
   "research_backlog": [
     {
       "edge": "oi_divergence",
-      "status": "data-blocked 37/40d",
+      "status": "data-blocked 41/40d",
       "info_value": "positive but not yet actionable"
     },
     {
       "edge": "ls_contrarian",
-      "status": "data-blocked 37/40d",
+      "status": "data-blocked 41/40d",
       "info_value": "positive but not yet actionable"
     },
     {
       "edge": "liquidation_reversal",
-      "status": "data-blocked 37/40d",
+      "status": "data-blocked 41/40d",
       "info_value": "positive but not yet actionable"
     }
   ],
@@ -135,13 +143,13 @@
     "DEFER heavy external paper search: info value < top backlog item this cycle."
   ],
   "forecast_calibration": {
-    "n_resolved": 65,
+    "n_resolved": 102,
     "status": "calibrated",
-    "brier": 0.1618,
-    "reliability": 0.8382,
-    "bias": -0.0271,
+    "brier": 0.1952,
+    "reliability": 0.8048,
+    "bias": 0.0357,
     "bias_label": "well-calibrated",
-    "hit_rate_posterior": 0.776,
+    "hit_rate_posterior": 0.615,
     "note": "Brier lower=better; reliability=1-Brier; bias>0 means forecasts were too high. Applied as a shrinkage on future p_success when |bias| is material."
   }
 }
