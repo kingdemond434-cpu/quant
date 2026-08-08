@@ -730,6 +730,196 @@
    "consumers": [],
    "external_blocker": "",
    "next_action": "read ledger, pick highest-value unfinished, launch, update, repeat"
+  },
+  {
+   "capability_id": "REGIME_TRANSITION_POSTERIOR",
+   "title": "Transition posterior + duration-aware hazard",
+   "economic_reason": "A state model that cannot say how likely it is to LEAVE the state cannot size the exposure it justifies",
+   "source_spec": "regime extension \u00a71-\u00a72",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "extend existing HMM/GMM modules; test whether duration-aware beats plain Markov OOS"
+  },
+  {
+   "capability_id": "TRANSITION_SURPRISE",
+   "title": "Transition surprise score",
+   "economic_reason": "An unexpected state change may precede volatility, liquidation or momentum failure -- a hypothesis, not assumed alpha",
+   "source_spec": "regime extension \u00a73",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "-log P(observed transition | prior info), as-of; route to the hypothesis factory"
+  },
+  {
+   "capability_id": "STATE_CONDITIONAL_MECHANISM",
+   "title": "Preregistered conditional-alpha validation branch",
+   "economic_reason": "F3's measured plateau makes conditional alpha impossible to pass ~half the time; the fix is a branch, never a lower global bar",
+   "source_spec": "regime extension \u00a74 / completion mandate \u00a75",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "state defined EX ANTE and causally observable; no post-hoc state mining on a failed candidate; untouched OOS; transition periods tested separately"
+  },
+  {
+   "capability_id": "REGIME_CONDITIONAL_ALLOCATION",
+   "title": "Regime-conditional capital allocation",
+   "economic_reason": "Sizing from P(bull)-P(bear) discards the variance and tail terms that decide log-growth",
+   "source_spec": "regime extension \u00a75-\u00a76",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "feed the full posterior into capital_competition: state-conditional return, variance, tail, entropy"
+  },
+  {
+   "capability_id": "REGIME_MODEL_SELECTION",
+   "title": "Regime representation selection by validated economics",
+   "economic_reason": "Choosing the most sophisticated model automatically is complexity nobody priced",
+   "source_spec": "regime extension \u00a78",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "compare 3-state / Markov / HMM / GMM / HSMM on untouched OOS E[log W] per unit complexity"
+  },
+  {
+   "capability_id": "CADENCE_ALIGNMENT",
+   "title": "Signal-cadence / alpha-half-life alignment",
+   "economic_reason": "A scheduler slower than the opportunity half-life loses the edge before the decision is made, and nothing anywhere records the loss",
+   "source_spec": "production spec \u00a71",
+   "module": "libs.research.cadence_alignment",
+   "tests": [
+    "tests/research/test_cadence_alignment.py"
+   ],
+   "callers": [
+    "scripts/run_intelligence_cycle.py"
+   ],
+   "artifacts": [
+    "data/intelligence_cycle.json"
+   ],
+   "consumers": [
+    "scripts/run_max_push.py"
+   ],
+   "external_blocker": "",
+   "next_action": "derive cadence from the strategy's information horizon; refuse configs where interval materially exceeds half-life; emit CADENCE_REGRET into alpha retention"
+  },
+  {
+   "capability_id": "DECISION_LEDGER",
+   "title": "Complete decision / non-trade ledger",
+   "economic_reason": "Learning only from trades taken hides validator false negatives, execution loss and allocator timidity",
+   "source_spec": "production spec \u00a72",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "record EXECUTED / SIGNAL_REJECTED / RISK_REJECTED / COST_REJECTED / CAPACITY_REJECTED / EXECUTION_REJECTED / VENUE_UNAVAILABLE / MISSED_LATENCY with the state snapshot"
+  },
+  {
+   "capability_id": "STRATEGY_MANIFEST",
+   "title": "Canonical immutable versioned strategy manifest",
+   "economic_reason": "No LLM may silently reinterpret a live strategy; production must reference a content hash",
+   "source_spec": "production spec \u00a73",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "audit existing trade-intent schema first; any modification creates a CHILD version"
+  },
+  {
+   "capability_id": "REALITY_GAP",
+   "title": "Paper / canary / live parity measurement",
+   "economic_reason": "A candidate cannot scale while unexplained execution divergence is material",
+   "source_spec": "production spec \u00a74",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "same decision engine across paper/canary/live; compare signal, decision, desired order, fill and cost parity"
+  },
+  {
+   "capability_id": "PREFLIGHT_CONTRACT",
+   "title": "Production pre-flight health contract",
+   "economic_reason": "Fail closed for execution, continue research -- and RECORD the opportunity the outage cost",
+   "source_spec": "production spec \u00a75",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "data freshness, clock, manifest hash, venue, auth, reconciliation, risk kernel, journal"
+  },
+  {
+   "capability_id": "VENUE_CAPABILITY",
+   "title": "Venue capability contract",
+   "economic_reason": "A strategy needing post-only on a venue without it is an untested failure waiting for live capital",
+   "source_spec": "production spec \u00a76",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "machine-readable adapter capabilities vs declared strategy requirements -> ELIGIBLE / DEGRADED / INELIGIBLE before promotion"
+  },
+  {
+   "capability_id": "EXECUTION_TAPE_ACCOUNTING",
+   "title": "Accounting derived from the authoritative execution tape",
+   "economic_reason": "A separate ledger as source of truth is a second truth, and the desk has already paid for phantom reconciliation once",
+   "source_spec": "production spec \u00a77",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "derive exports from immutable execution records; accounting is convenience, never evidence"
+  },
+  {
+   "capability_id": "DETERMINISTIC_HOT_PATH",
+   "title": "Deterministic production order path",
+   "economic_reason": "LLMs research and propose; they may not freestyle production order interpretation",
+   "source_spec": "production spec \u00a78",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "frozen manifest -> deterministic signal engine -> allocator -> immutable risk kernel -> deterministic adapter"
+  },
+  {
+   "capability_id": "LATENCY_METRICS",
+   "title": "End-to-end latency and regret metrics",
+   "economic_reason": "Unnecessary delay is an economic defect and nothing charges it",
+   "source_spec": "production spec \u00a710",
+   "module": "",
+   "tests": [],
+   "callers": [],
+   "artifacts": [],
+   "consumers": [],
+   "external_blocker": "",
+   "next_action": "signal_to_observation, observation_to_decision, decision_to_order, order_to_fill, cadence_regret, reality_gap, venue_availability_loss"
   }
  ]
 }

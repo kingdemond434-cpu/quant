@@ -374,6 +374,40 @@ def _cadence_roi() -> dict[str, Any]:
     return _cap("cadence_roi", "ACTIVE", str(rep["headline"]), report=rep)
 
 
+def _cadence_alignment() -> dict[str, Any]:
+    """IS EACH SCHEDULER FAST ENOUGH FOR THE EDGE IT WATCHES?
+
+    A DIFFERENT QUESTION FROM `_cadence_roi`, which asks whether a job produces anything per fire.
+    This asks whether it can still be in TIME. A job can be productive on every fire and lose most
+    of the edge, because it only ever sees what survived until it looked -- and that loss appears
+    in no metric the desk keeps, since every metric is computed over what WAS observed.
+    """
+    try:
+        from libs.research.cadence_alignment import StrategyCadence, summarise
+    except ImportError as e:
+        return _cap("cadence_alignment", "ERROR", f"import failed: {e}")
+    raw = _read("data/strategy_horizons.json") or {}
+    rows = raw.get("strategies") if isinstance(raw, dict) else None
+    recs = []
+    for r in rows or []:
+        if not isinstance(r, dict) or not r.get("strategy"):
+            continue
+        recs.append(StrategyCadence(
+            strategy=str(r["strategy"]),
+            half_life_minutes=float(r.get("half_life_minutes", 0) or 0),
+            interval_minutes=float(r.get("interval_minutes", 0) or 0),
+            edge_bps=float(r.get("edge_bps", 0.0) or 0.0),
+            opportunities_per_day=float(r.get("opportunities_per_day", 0.0) or 0.0),
+            hard_floor_reason=str(r.get("hard_floor_reason", ""))))
+    if not recs:
+        return _cap("cadence_alignment", "NO-INPUT",
+                    "no data/strategy_horizons.json -- no strategy declares its alpha half-life, "
+                    "so no schedule on this desk can be justified OR refused. Every interval is a "
+                    "number somebody picked once")
+    rep = summarise(recs)
+    return _cap("cadence_alignment", "ACTIVE", str(rep["headline"]), report=rep)
+
+
 def main() -> int:
     caps = [
         _dormancy(),
@@ -381,6 +415,7 @@ def main() -> int:
         _unknowns(),
         _source_roi(),
         _cadence_roi(),
+        _cadence_alignment(),
         # BEFORE the organs that navigate by it -- research_priority ranks what to test, and row
         # #77 is what happens when that ranking is made off a stale map.
         _data_registry(),
