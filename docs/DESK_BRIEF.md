@@ -1,4 +1,4 @@
-# DESK BRIEF -- 2026-08-08 03:23Z
+# DESK BRIEF -- 2026-08-09 03:07Z
 
 Machine-generated from measured desk state. Every number traces to an artifact in
 `data/`. Nothing here is an argument. Respond to the evidence, not to another model.
@@ -13,13 +13,13 @@ Machine-generated from measured desk state. Every number traces to an artifact i
    forward clocks promote.
 
 ## Experiment record (45d, harvested from git -- one row per commit)
-- experiments: **597**; decided: 312
-- survival rate: **6.4%** (20 survived / 269 refuted / 23 inconclusive)
-- unclassified commit decisions: 30 (commit-discipline defect)
+- experiments: **619**; decided: 327
+- survival rate: **6.4%** (21 survived / 282 refuted / 24 inconclusive)
+- unclassified commit decisions: 32 (commit-discipline defect)
 
 | mechanism | tested | survived | rate |
 |---|---:|---:|---:|
-| M_UNMAPPED | 229 | 14 | 6% |
+| M_UNMAPPED | 244 | 15 | 6% |
 | M_ATTENTION_DELAY | 32 | 2 | 6% |
 | M_LIQUIDITY_WITHDRAWAL | 23 | 1 | 4% |
 | M_FORCED_DELEVERAGE | 14 | 2 | 14% |
@@ -31,16 +31,16 @@ Machine-generated from measured desk state. Every number traces to an artifact i
 
 ### Why experiments died (45d)
 
-- `E_DATA_QUALITY` 129 (30%)
-- `B_WRONG_MEASUREMENT` 91 (21%)
-- `G_TOO_EXPENSIVE` 66 (15%)
-- `H_OVERFIT` 63 (15%)
-- `C_WRONG_TIMING` 44 (10%)
-- `F_REGIME_DEPENDENT` 28 (7%)
+- `E_DATA_QUALITY` 135 (30%)
+- `B_WRONG_MEASUREMENT` 93 (21%)
+- `G_TOO_EXPENSIVE` 68 (15%)
+- `H_OVERFIT` 68 (15%)
+- `C_WRONG_TIMING` 46 (10%)
+- `F_REGIME_DEPENDENT` 32 (7%)
 - `D_ALREADY_ARBITRAGED` 5 (1%)
 - `A_NO_MECHANISM` 3 (1%)
 
-**220/429 = 51% of refutations are MEASUREMENT failures (data quality + wrong construction), not absent alpha.**
+**228/450 = 51% of refutations are MEASUREMENT failures (data quality + wrong construction), not absent alpha.**
 
 ## FAMILY KILLS -- mechanisms closed by evidence
 
@@ -62,7 +62,7 @@ Every future variant inherits this evidence.
 ## Proprietary moat (4.4GB order books, 30 symbols, top-20 snapshots)
 
 M_LIQUIDITY_WITHDRAWAL, construction = negative z of near-touch depth vs 24h roll:
-- raw lead rho pooled: +0.1005
+- raw lead rho pooled: +0.0963
 - **after orthogonalising forward RV against current RV: residual rho +0.0154 (t +0.28), sign 1/5 -> the lead was vol clustering.**
 - ONE construction tested only. The mechanism is NOT refuted. Untested: replenishment rate, one-sided withdrawal, book shape, migration, recovery half-life, d(book)/dt.
 

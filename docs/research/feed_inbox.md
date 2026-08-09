@@ -173,3 +173,47 @@ reference for when that item is built (liquidity STATE, not just level, predicts
 ## Boundary-Induced Apparent Risk Aversion in Nonergodic Multiplicative Growth
 - 2026-07-30 · http://arxiv.org/abs/2607.28230v2
 - Observed risk-taking behavior is often rationalized through expected-utility curvature, yet the curvature required to fit choices in one context can differ sharply from the curvature required in another, a tension highlighted by calibration critiques of expected-utility theory. Finite multiplicative systems often cease to evolve when a lower continuation threshold is reached, whereas standard growth-optimal benchmarks assume uninterrupted continuation. We study a finite-horizon binary multiplicative process in which a fixed exposure is chosen ex ante and paths crossing an absorbing boundary ar
+
+## Thermodynamic statistics of given names in USA and France
+- 2026-08-06 · http://arxiv.org/abs/2608.06048v1
+- Using official government data sets of USA and France we analyze the occurrence/frequency/popularity distributions of given names on a time scale of more than 100 years. These distributions are characterized through the Lorenz and Pareto curves broadly used in the analysis of wealth inequality in the world. These curves remain stable during the considered time period with the Gini coefficient remaining in the narrow range 0.85-0.95. As for the case of wealth inequality, we show that the distributions of names are well described by the Rayleigh-Jeans (RJ) thermalization and condensation phenome
+
+## Knowledge-Optimising Investment Decisions with Informative Datasets
+- 2026-08-06 · http://arxiv.org/abs/2608.05991v1
+- The enormous growth in datasets, both in number and size, has prompted investors to adapt to new ways for assimilating information. Normatively, the approach has been to integrate such datasets into pricing formulations and assess the performance of portfolios created thereafter. However, such approaches underestimate their influence in portfolio investments by limiting their impact to pricing only. While being theoretically valid, this results in a potential sub-optimal performance in the presence of real-life decision constraints, and a blind spot for performance attribution. We start by ana
+
+## Cross-Sectional Heterogeneity in LSTM Networks for Financial Time Series
+- 2026-08-06 · http://arxiv.org/abs/2608.05755v1
+- Predicting financial asset returns remains one of the most difficult challenges in empirical finance, driven by the low signal-to-noise ratio and the semi-strong form of market efficiency. While deep learning models, especially LSTM networks, have shown promise in capturing temporal dependencies, standard architectures often struggle to account for the cross-sectional heterogeneity of asset returns. This paper proposes a novel architectural extension to the basic LSTM model designed to improve both predictive accuracy and model interpretability. The framework integrates macro-financial covaria
+
+## Velocity- and Regime-Aware Detection of Intraday Options Market Manipulation, with Explainable Attribution
+- 2026-08-05 · http://arxiv.org/abs/2608.05373v1
+- Intraday market manipulation is hard to detect because its footprint is brief, buried in millions of quotes, and statistically similar to ordinary volatility. Detectors reach high recall only by flagging so many other days that measured precision collapses, producing alerts no regulator can act on. We show that this manipulation leaves a distinctive dynamic signature: a pump-and-crash pattern visible in the velocity of market state, rather than its level. We build a minute-level detection pipeline, strictly partitioned in time, based on smoothed state velocity: option-Delta velocity for index 
+
+## Portfolio Allocation under Heterogeneous Scales and Multifractality
+- 2026-08-05 · http://arxiv.org/abs/2608.04987v1
+- Cross-correlations between financial signals are neither scale-free nor amplitude-independent: they vary with the time scale over which they are measured and with the magnitude of the fluctuations that dominate the average. We exploit this structure to construct a portfolio allocation model in which the risk functional is the signed fluctuation function of multifractal cross-correlation analysis (MFCCA), indexed by a scale $s$ and a fluctuation order $q$. Unlike MFDCCA-type criteria, which rectify local detrended covariances before aggregation, MFCCA retains their sign, so that co-moving and c
+
+## Optimal Life Insurance Decision in Mean-Variance DC Management with Mortality Improvements
+- 2026-08-05 · http://arxiv.org/abs/2608.04532v1
+- This paper studies the investment and insurance strategies of defined-contribution (DC) pension plans under the mean-variance framework. We consider a stochastic environment with time-varying interest rates, contributions, and mortality risk. The DC plan members are allowed to decide their bond and stock allocations, as well as their life insurance coverage. Adopting the martingale approach, we derive the closed-form optimal strategies and the mean-variance efficient frontier. Further numerical analysis investigates how mortality improvements affect investment and insurance decisions, as well 
+
+## Public Trader Identity: Adverse Selection and Return Predictability
+- 2026-08-05 · http://arxiv.org/abs/2608.04373v2
+- Informed traders are supposed to need anonymity: they profit by hiding among the uninformed. A decentralized exchange now publishes the counterparty. Every committed order, cancellation, rejection, and fill carries a persistent pseudonymous wallet address. We reconstruct the full-depth limit order book from a record of 17.1 billion messages and 14.3 million aggressive orders by 147,113 wallets, covering $84.3 billion in taker notional. We report three findings. First, informativeness is a persistent wallet attribute. Wallets ranked by the price movement following their aggressive orders retain
+
+## Measuring the engine of a liquidation cascade: subcritical branching inside a first-order transition
+- 2026-08-04 · http://arxiv.org/abs/2608.03616v1
+- We study seven major crypto-perpetual liquidation cascades (2022-2025), and in the largest of them we can watch the mechanism directly. From the on-chain fill log of a fully transparent venue we measure the branching ratio of that event -- the October 2025 crash, the largest on record -- in flight, with both of its factors observed and no free constants. It ran deeply subcritical: the structural ratio and the amplification bookkeeping both place it at $\hatλ\approx 0.1-0.2$ throughout, while a third, flow-based estimator falls through the climax rather than rising. All three agree on subcritic
+
+## A New Approach to Goodness of Fit for Ergodic Markov Processes
+- 2026-08-04 · http://arxiv.org/abs/2608.03088v1
+- We introduce a new density-based goodness of fit test for ergodic Markov processes. Our test compares the data against the class of models specified in the null hypothesis, and rejects if no model in the class yields a stationary density that matches with the data. No alternative needs to be specified in order to implement the test. Although our test compares densities, estimation of smoothing parameters is not required, and the test has nontrivial power against $1/\sqrt{n}$ local alternatives. The test provides new perspectives on some existing problems in econometric and financial modeling.
+
+## Mandate without Managers: Automated Market Makers as Verifiable Portfolio Products
+- 2026-08-03 · http://arxiv.org/abs/2608.02917v1
+- Automated market makers (AMMs) are typically interpreted and evaluated as decentralized exchanges. Herein, we take the perspective envisioned by Balancer that an AMM can also be viewed as a portfolio technology that programmatically enforces an economic mandate. In particular, we follow the geometric mean market maker (G3M) invariant employed by that protocol in order to enforce a target-weighted portfolio. We introduce a multi-asset fee structure to the G3M under which competitive arbitrage implements a band-rebalancing strategy with mis-weighting bounded ex ante, allowing compliance with the
+
+## Proper-score observation-driven filters: local geometry, estimation, and continuous-time limits
+- 2026-08-03 · http://arxiv.org/abs/2608.02828v1
+- Observation-driven filters update a time-varying parameter with the likelihood score, linking the recursion to the logarithmic scoring rule. We replace this update with the negative parameter derivative of a differentiable proper scoring rule, within a declared working family and predictable scaling. For a general rule, the conditional mean update is a pre-conditioned stochastic-gradient of conditional scoring risk; when an autoregressive pull is included, the centre is the zero of a composite mean field. We derive local realised-loss descent and conditional-mean contraction results, and decom
