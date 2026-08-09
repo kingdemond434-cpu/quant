@@ -39,6 +39,7 @@ __all__ = [
     "TRANSFERABLE_SOURCES",
     "ReturnClaim",
     "decompose",
+    "evidence_prior",
     "evidence_weight",
     "priority",
     "summarise",
@@ -72,6 +73,19 @@ _EVIDENCE_PRIOR: dict[str, float] = {
     "VERIFIED": 0.90,
     "AUDITED": 0.97,
 }
+
+def evidence_prior(evidence_class: str) -> float:
+    """P(approximately real) for an evidence class. THE ONE PLACE THIS LADDER LIVES.
+
+    Exported so that other modules ranking external claims -- practitioner corpora, benchmark
+    records -- read the same numbers. Two ladders would drift, and the day they disagreed the
+    desk would have two answers to "how much is this claim worth" and no way to choose.
+    """
+    if evidence_class not in _EVIDENCE_PRIOR:
+        raise ValueError(f"unknown evidence class {evidence_class!r}; "
+                         f"the ladder is {EVIDENCE_CLASSES}")
+    return _EVIDENCE_PRIOR[evidence_class]
+
 
 #: Every way an extraordinary return can arise. Closed on purpose.
 RETURN_SOURCES: tuple[str, ...] = (

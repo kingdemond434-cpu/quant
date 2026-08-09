@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """THE OPPORTUNITY BOOKS — the return engines the desk had specified and never built.
 
-SIX BOOKS, EACH ANSWERING A QUESTION THAT HAD NO ANSWER BEFORE TODAY::
+ELEVEN BOOKS, EACH ANSWERING A QUESTION THAT HAD NO ANSWER BEFORE TODAY::
 
     drawdown_rebound        is this 15% fall a forced-deleveraging flush or a repricing?
     capital_recycling       should this winner be kept, trimmed, harvested or rotated?
@@ -10,6 +10,10 @@ SIX BOOKS, EACH ANSWERING A QUESTION THAT HAD NO ANSWER BEFORE TODAY::
     crowding_hazard         is this edge being competed away, before the P&L says so?
     participant_phenotype   which cohort leads price, in which state?
     mechanism_ontology      which candidates are real questions rather than formulas?
+    alpha_reserve_bank      if half the live book died today, how much could be replaced?
+    portfolio_mc            what happens on the day every strategy loses at once?
+    market_breadth          where else can this mechanism meet the state it needs?
+    agent_authority         which component may reach which surface, and what does it break?
 
 **EVERY BOOK REPORTS UNMEASURED WHEN ITS INPUT IS ABSENT, AND MOST OF THEM ARE TODAY.** That is
 the honest state: this desk has no live positions, no cohort data and no crowding history. The
@@ -20,6 +24,10 @@ The mechanism ontology is the exception and it produces real output immediately,
 is economic reasoning rather than market data. It is the one book that can work on a
 network-denied clone, and its first run says something concrete: 83% of the naive combinatorial
 space is refused before it costs anything.
+
+The last section is not a return engine and is here because it must RUN somewhere: agent authority
+describes which component may reach which surface. A permission policy that nothing executes is
+prose, and prose does not fail a build the morning a grant has drifted.
 
 Reads artifacts, writes one. Trades nothing, sizes nothing, promotes nothing.
 """
@@ -37,14 +45,22 @@ if str(ROOT) not in sys.path:
 
 from libs.execution.opportunity_surface import BookState, SignalState  # noqa: E402
 from libs.execution.opportunity_surface import summarise as execution_summary  # noqa: E402
+from libs.ops.agent_authority import AgentGrant, BlastRadius  # noqa: E402
+from libs.ops.agent_authority import summarise as authority_summary  # noqa: E402
+from libs.portfolio.alpha_reserve_bank import ReserveCandidate  # noqa: E402
+from libs.portfolio.alpha_reserve_bank import summarise as reserve_summary  # noqa: E402
 from libs.portfolio.capital_recycling import PositionState  # noqa: E402
 from libs.portfolio.capital_recycling import summarise as recycling_summary  # noqa: E402
+from libs.portfolio.portfolio_monte_carlo import StrategyPath  # noqa: E402
+from libs.portfolio.portfolio_monte_carlo import summarise as portfolio_mc_summary  # noqa: E402
 from libs.portfolio.strategy_pool import PoolMember  # noqa: E402
 from libs.portfolio.strategy_pool import summarise as pool_summary  # noqa: E402
 from libs.research.crowding_hazard import CrowdingState  # noqa: E402
 from libs.research.crowding_hazard import summarise as crowding_summary  # noqa: E402
 from libs.research.drawdown_rebound import DeclineEvent  # noqa: E402
 from libs.research.drawdown_rebound import summarise as rebound_summary  # noqa: E402
+from libs.research.market_breadth import Expression  # noqa: E402
+from libs.research.market_breadth import summarise as breadth_summary  # noqa: E402
 from libs.research.mechanism_ontology import summarise as ontology_summary  # noqa: E402
 from libs.research.participant_phenotype import CohortObservation  # noqa: E402
 from libs.research.participant_phenotype import summarise as phenotype_summary  # noqa: E402
@@ -58,6 +74,10 @@ POOL = DATA / "strategy_pool.json"
 SIGNALS = DATA / "signal_book_states.json"
 CROWDING = DATA / "crowding_states.json"
 COHORTS = DATA / "participant_cohorts.json"
+RESERVE = DATA / "alpha_reserve_bank.json"
+PATHS = DATA / "strategy_paths.json"
+BREADTH = DATA / "market_breadth.json"
+AUTHORITY = DATA / "agent_authority.json"
 
 
 def _load(p: Path) -> object | None:
@@ -161,6 +181,59 @@ def phenotype_section() -> dict[str, object]:
     return phenotype_summary(obs)
 
 
+def reserve_section() -> dict[str, object]:
+    rows = _rows(RESERVE, "candidates")
+    if not rows:
+        return _absent(RESERVE, "REPLACEMENT LATENCY is unmeasured -- if half the live book died "
+                                "this morning nobody could say how much of it is replaceable, and "
+                                "discovery throughput is worth nothing without that number")
+    cands = [ReserveCandidate(**{k: v for k, v in r.items()
+                                 if k in ReserveCandidate.__dataclass_fields__}) for r in rows]
+    return reserve_summary(cands)
+
+
+def portfolio_mc_section() -> dict[str, object]:
+    rows = _rows(PATHS, "paths")
+    if not rows:
+        return _absent(PATHS, "the joint drawdown is unmeasured. Per-strategy Monte Carlo already "
+                              "runs and cannot answer it: independently shuffling each strategy is "
+                              "precisely what destroys the co-movement that kills a book")
+    paths = [StrategyPath(**{k: (tuple(v) if isinstance(v, list) else v)
+                             for k, v in r.items()
+                             if k in StrategyPath.__dataclass_fields__}) for r in rows]
+    return portfolio_mc_summary(paths)
+
+
+def breadth_section() -> dict[str, object]:
+    rows = _rows(BREADTH, "expressions")
+    if not rows:
+        return _absent(BREADTH, "whether a validated mechanism could act anywhere it currently "
+                                "does not is UNMEASURED, so the desk defaults to another parameter "
+                                "on the same five coins -- which adds no independent evidence")
+    exprs = [Expression(**{k: v for k, v in r.items()
+                           if k in Expression.__dataclass_fields__}) for r in rows]
+    raw = _load(BREADTH) or {}
+    depth = int(raw.get("depth_hypotheses", 0))                   # type: ignore[union-attr]
+    return breadth_summary(exprs, depth_hypotheses=depth)
+
+
+def authority_section() -> dict[str, object]:
+    rows = _rows(AUTHORITY, "agents")
+    if not rows:
+        return _absent(AUTHORITY, "which component may reach which surface is UNDECLARED. That is "
+                                  "an unknown state rather than a safe one, and it is the state in "
+                                  "which a model upgrade quietly widens what something may touch")
+    grants = []
+    for r in rows:
+        blast = BlastRadius(**{k: v for k, v in (r.get("blast") or {}).items()
+                               if k in BlastRadius.__dataclass_fields__})
+        grants.append(AgentGrant(blast=blast, **{k: (tuple(v) if isinstance(v, list) else v)
+                                                 for k, v in r.items()
+                                                 if k in AgentGrant.__dataclass_fields__
+                                                 and k != "blast"}))
+    return authority_summary(grants)
+
+
 def _safe(name: str, fn, artifact: Path) -> dict[str, object]:
     """A malformed input degrades ONE book to UNMEASURED rather than removing the whole report."""
     try:
@@ -180,6 +253,10 @@ def build() -> dict[str, object]:
         "execution_surface": _safe("execution_surface", execution_section, SIGNALS),
         "crowding_hazard": _safe("crowding_hazard", crowding_section, CROWDING),
         "participant_phenotype": _safe("participant_phenotype", phenotype_section, COHORTS),
+        "alpha_reserve_bank": _safe("alpha_reserve_bank", reserve_section, RESERVE),
+        "portfolio_monte_carlo": _safe("portfolio_monte_carlo", portfolio_mc_section, PATHS),
+        "market_breadth": _safe("market_breadth", breadth_section, BREADTH),
+        "agent_authority": _safe("agent_authority", authority_section, AUTHORITY),
         # No input file: its input is economic reasoning, so it works on a network-denied clone.
         "mechanism_ontology": ontology_summary(),
     }
@@ -190,8 +267,9 @@ def build() -> dict[str, object]:
         "unmeasured_books": unmeasured,
         "next_action": (
             f"{len(unmeasured)} of {len(books)} books have no input: {unmeasured}. Each names the "
-            "artifact it needs; none of them can be filled from this clone, because they all "
-            "describe a desk with live positions and this one has none"
+            "artifact it needs. Most describe a desk with live positions and cannot be filled from "
+            "this clone -- but agent_authority is a POLICY declaration rather than market data, so "
+            "if it appears above it is unfilled by omission and not by circumstance"
             if unmeasured else "every book has input"),
         "note": ("These are RETURN ENGINES, not research reports: each answers a question that "
                  "decides where capital goes. Most report UNMEASURED today and that is the honest "

@@ -100,7 +100,7 @@ class TestDependenceBlindness:
             f"drawdown badly; got {blind}")
 
     def test_INDEPENDENT_BOOK_VINDICATES_THE_CHEAP_METHOD(self) -> None:
-        """The other direction, and equally necessary: a metric that always fires measures nothing."""
+        """The other direction, equally necessary: a metric that always fires measures nothing."""
         blind = dependence_blindness(_independent_book(), draws=DRAWS)
         assert blind is not None
         assert blind < 1.3, f"an independent book must not be flagged as dependence-blind; {blind}"
@@ -137,7 +137,7 @@ class TestPortfolioMonteCarlo:
         assert res.strategies == 5 and res.marks == N and res.draws == DRAWS
 
     def test_TAIL_ELOG_IS_BELOW_THE_MEDIAN(self) -> None:
-        """The worst 5% of paths must not read better than the middle, or the tail is mislabelled."""
+        """The worst 5% of paths must not read better than the middle, or the tail is a lie."""
         res = portfolio_monte_carlo(_independent_book(), draws=DRAWS)
         assert res is not None
         assert res.tail_portfolio_elog <= res.median_portfolio_elog
@@ -215,7 +215,7 @@ class TestSummarise:
         r = summarise(_clone_book(), draws=DRAWS)
         assert r["measured"] is True
         assert r["DEPENDENCE_BLINDNESS"] is not None
-        assert "understates" in str(r["dependence_blindness_note"])
+        assert "SMALLER than the synchronized truth" in str(r["dependence_blindness_note"])
         assert "understates the p95" in str(r["headline"])
         assert set(r["PORTFOLIO_MC_DRAWDOWN"]) == {"p50", "p95", "p99"}   # type: ignore[arg-type]
 

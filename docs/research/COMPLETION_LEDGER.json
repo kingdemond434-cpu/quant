@@ -5,7 +5,7 @@
    "capability_id": "KILL_AUDIT",
    "title": "Kill audit / nine rejection states",
    "economic_reason": "750 of 762 cells died at one gate; a counter cannot distinguish a correct gate from one destroying real alpha silently",
-   "source_spec": "validator spec §2-§3",
+   "source_spec": "validator spec \u00a72-\u00a73",
    "module": "libs.research.kill_audit",
    "tests": [
     "tests/research/test_kill_audit.py"
@@ -26,7 +26,7 @@
    "capability_id": "PORTFOLIO_ADMISSION",
    "title": "Survivor -> portfolio contribution",
    "economic_reason": "PORTFOLIO_CONTRIBUTING was unmeasurable, not merely unmeasured: survivor pnl never left the sweep",
-   "source_spec": "validator spec §12",
+   "source_spec": "validator spec \u00a712",
    "module": "scripts.run_portfolio_admission",
    "tests": [
     "tests/scripts/test_portfolio_admission.py"
@@ -47,7 +47,7 @@
    "capability_id": "EVIDENCE_CLOCK",
    "title": "Effective independent observations replace calendar gates",
    "economic_reason": "An edge real for 20 days that spends 15 in a calendar gate has lost most of its economic life to its own validator",
-   "source_spec": "accelerator spec §D/§10",
+   "source_spec": "accelerator spec \u00a7D/\u00a710",
    "module": "libs.research.evidence_clock",
    "tests": [
     "tests/research/test_evidence_clock.py"
@@ -68,7 +68,7 @@
    "capability_id": "ALPHA_STATE",
    "title": "Alpha state machine incl. LIVE_CANARY",
    "economic_reason": "Nothing made DISCOVERED->LIVE impossible; it was merely undone",
-   "source_spec": "spec §9/§C",
+   "source_spec": "spec \u00a79/\u00a7C",
    "module": "libs.research.alpha_state",
    "tests": [
     "tests/research/test_alpha_state.py"
@@ -89,7 +89,7 @@
    "capability_id": "CAPITAL_COMPETITION",
    "title": "Continuous capital competition, age confers no privilege",
    "economic_reason": "Capital in a strategy whose forward expectation collapsed is the best remaining opportunity being declined, silently, every day",
-   "source_spec": "spec §12/§E",
+   "source_spec": "spec \u00a712/\u00a7E",
    "module": "libs.portfolio.capital_competition",
    "tests": [
     "tests/portfolio/test_capital_competition.py"
@@ -110,7 +110,7 @@
    "capability_id": "GATE_POWER",
    "title": "Gate power / F3 false-negative calibration",
    "economic_reason": "F3 keeps 100% of stable and ~50% of conditional edges at every effect size; the plateau is arithmetic, not power",
-   "source_spec": "validator spec §5",
+   "source_spec": "validator spec \u00a75",
    "module": "libs.validation.gate_power",
    "tests": [
     "tests/validation/test_gate_power.py"
@@ -131,7 +131,7 @@
    "capability_id": "RISK_KERNEL_LOCK",
    "title": "Hash-lock the survival path",
    "economic_reason": "The desk hash-locked its constitution and left the kill switch protected by prose comments",
-   "source_spec": "fusion spec §30",
+   "source_spec": "fusion spec \u00a730",
    "module": "scripts.check_risk_kernel",
    "tests": [
     "tests/scripts/test_risk_kernel_lock.py"
@@ -173,7 +173,7 @@
    "capability_id": "ORPHAN_SCAN",
    "title": "Conversion-chain orphan scan",
    "economic_reason": "The expensive orphans are research objects, not modules: a hypothesis never tested, a survivor never portfolio-tested",
-   "source_spec": "batch-2 §33",
+   "source_spec": "batch-2 \u00a733",
    "module": "libs.research.orphan_scan",
    "tests": [
     "tests/research/test_orphan_scan.py"
@@ -215,7 +215,7 @@
    "capability_id": "UNKNOWNS",
    "title": "Assumption / contradiction / unknowns ledger",
    "economic_reason": "A belief with no falsifier is a habit: it survives its own obsolescence",
-   "source_spec": "batch-2 §8/§22",
+   "source_spec": "batch-2 \u00a78/\u00a722",
    "module": "libs.research.unknowns",
    "tests": [
     "tests/research/test_unknowns.py"
@@ -232,7 +232,7 @@
    "capability_id": "FAILURE_BANDS",
    "title": "Failure bands and near-survivor classes",
    "economic_reason": "Span-blocked and cost-blocked cells both read as 'did not survive' and are spent in different budgets",
-   "source_spec": "validator spec §11/§15",
+   "source_spec": "validator spec \u00a711/\u00a715",
    "module": "libs.research.failure_bands",
    "tests": [
     "tests/research/test_failure_bands.py"
@@ -249,7 +249,7 @@
    "capability_id": "SOURCE_ROI",
    "title": "Miner / model / prompt economic ROI",
    "economic_reason": "Volume is a cost, never an output: 100k pages and no survivors is worse than 100 and two",
-   "source_spec": "batch-2 §2/§50",
+   "source_spec": "batch-2 \u00a72/\u00a750",
    "module": "libs.research.source_roi",
    "tests": [
     "tests/research/test_source_roi.py"
@@ -266,7 +266,7 @@
    "capability_id": "CADENCE_ROI",
    "title": "Cadence vs measured yield",
    "economic_reason": "Every cadence was chosen rather than measured; an under-run job finds less than it could forever and nothing records it",
-   "source_spec": "batch-2 §17",
+   "source_spec": "batch-2 \u00a717",
    "module": "libs.research.cadence_roi",
    "tests": [
     "tests/research/test_cadence_roi.py"
@@ -283,7 +283,7 @@
    "capability_id": "STUDY_STATUS",
    "title": "Deterministic study process status",
    "economic_reason": "Process status was a shell expression, so every invocation could get it wrong",
-   "source_spec": "batch-2 §16",
+   "source_spec": "batch-2 \u00a716",
    "module": "scripts.study_status",
    "tests": [
     "tests/scripts/test_study_status.py"
@@ -298,7 +298,7 @@
    "capability_id": "COMPLETION_LEDGER",
    "title": "This ledger: capability status computed, not asserted",
    "economic_reason": "Prose status drifts, cannot be re-checked, and lets 'built' mean whichever stage the writer had in mind",
-   "source_spec": "completion mandate §1-§2",
+   "source_spec": "completion mandate \u00a71-\u00a72",
    "module": "libs.research.completion_ledger",
    "tests": [
     "tests/research/test_completion_ledger.py"
@@ -319,7 +319,7 @@
    "capability_id": "F3_THRESHOLD_SENSITIVITY",
    "title": "F3 threshold sensitivity surface",
    "economic_reason": "A gate sitting on a knife edge changes hundreds of verdicts on a 5% perturbation",
-   "source_spec": "validator spec §8",
+   "source_spec": "validator spec \u00a78",
    "module": "",
    "tests": [],
    "callers": [],
@@ -332,7 +332,7 @@
    "capability_id": "GATE_ABLATION",
    "title": "Per-gate ablation and unique-kill attribution",
    "economic_reason": "A gate whose kills are entirely covered by another is compute and false-negative exposure for no protection",
-   "source_spec": "validator spec §9",
+   "source_spec": "validator spec \u00a79",
    "module": "",
    "tests": [],
    "callers": [],
@@ -345,7 +345,7 @@
    "capability_id": "FAILURE_CLUSTERING",
    "title": "Cluster the 750 F3 kills into archetypes",
    "economic_reason": "750 nominal formulas are not 750 independent failure events",
-   "source_spec": "validator spec §10",
+   "source_spec": "validator spec \u00a710",
    "module": "",
    "tests": [],
    "callers": [],
@@ -358,7 +358,7 @@
    "capability_id": "REGIME_BETA_BOOK",
    "title": "Regime / beta opportunity book",
    "economic_reason": "Refusing positive beta in a risk-on regime because it is not market-neutral alpha has a real opportunity cost",
-   "source_spec": "fusion spec §2/§8",
+   "source_spec": "fusion spec \u00a72/\u00a78",
    "module": "",
    "tests": [],
    "callers": [],
@@ -371,7 +371,7 @@
    "capability_id": "DRAWDOWN_ENGINE",
    "title": "Drawdown/rebound book with liquidation-mechanism classifier",
    "economic_reason": "Two 15% declines of identical depth have opposite forward distributions; a rule that cannot separate them is right often enough to keep running and wrong when the losses are large",
-   "source_spec": "LEWIS FUSION v3 §19; v4 §14/§15 (P1)",
+   "source_spec": "LEWIS FUSION v3 \u00a719; v4 \u00a714/\u00a715 (P1)",
    "module": "libs.research.drawdown_rebound",
    "tests": [
     "tests/research/test_opportunity_books.py"
@@ -402,7 +402,7 @@
    "capability_id": "CAPITAL_INVENTORY",
    "title": "Capital-inventory-aware deployment policy",
    "economic_reason": "Deploying now versus retaining optionality for a better future state is a decision problem, not a fixed tranche count",
-   "source_spec": "fusion spec §5/§10",
+   "source_spec": "fusion spec \u00a75/\u00a710",
    "module": "",
    "tests": [],
    "callers": [],
@@ -415,7 +415,7 @@
    "capability_id": "TRIGGER_COLLISION",
    "title": "Trigger dependency / collision control",
    "economic_reason": "Four triggers firing on one liquidation cascade is one event, not four signals",
-   "source_spec": "fusion spec §6/§11",
+   "source_spec": "fusion spec \u00a76/\u00a711",
    "module": "",
    "tests": [],
    "callers": [],
@@ -428,7 +428,7 @@
    "capability_id": "XSEC_MOMENTUM",
    "title": "Cross-sectional momentum / relative-strength book",
    "economic_reason": "If we want exposure, WHERE it lives is often easier than forecasting direction",
-   "source_spec": "fusion spec §7/§12",
+   "source_spec": "fusion spec \u00a77/\u00a712",
    "module": "",
    "tests": [],
    "callers": [],
@@ -441,7 +441,7 @@
    "capability_id": "MOMENTUM_REBOUND",
    "title": "Momentum x rebound interaction",
    "economic_reason": "Strong assets in systemic liquidation may dominate indiscriminate dip buying",
-   "source_spec": "fusion spec §8/§13",
+   "source_spec": "fusion spec \u00a78/\u00a713",
    "module": "",
    "tests": [],
    "callers": [],
@@ -454,7 +454,7 @@
    "capability_id": "EXIT_ENGINE",
    "title": "Take-profit / exit state engine",
    "economic_reason": "Accumulation without a modelled exit is half a strategy",
-   "source_spec": "fusion spec §43/§14",
+   "source_spec": "fusion spec \u00a743/\u00a714",
    "module": "",
    "tests": [],
    "callers": [],
@@ -467,7 +467,7 @@
    "capability_id": "EXECUTION_SURFACE",
    "title": "Execution opportunity surface: EV(maker) vs EV(taker) vs EV(wait) vs EV(no trade)",
    "economic_reason": "A validated signal that cannot survive the spread, the queue and adverse selection contributes exactly nothing, and nothing on this desk measured that",
-   "source_spec": "LEWIS FUSION v3 §39; v4 §16/§9 (P1)",
+   "source_spec": "LEWIS FUSION v3 \u00a739; v4 \u00a716/\u00a79 (P1)",
    "module": "libs.execution.opportunity_surface",
    "tests": [
     "tests/research/test_opportunity_books.py"
@@ -498,7 +498,7 @@
    "capability_id": "ALPHA_RETENTION",
    "title": "Operational alpha retention ratio",
    "economic_reason": "Finding alpha is not enough; measure how much becomes realised money and attribute the leak",
-   "source_spec": "fusion spec §16/§32",
+   "source_spec": "fusion spec \u00a716/\u00a732",
    "module": "",
    "tests": [],
    "callers": [],
@@ -511,7 +511,7 @@
    "capability_id": "RETURN_ATTRIBUTION",
    "title": "Strict P&L attribution across fourteen return engines, and effective engine count",
    "economic_reason": "Never label bull-market beta as proprietary alpha",
-   "source_spec": "fusion spec §37/§38; LEWIS FUSION v3 §53/§58",
+   "source_spec": "fusion spec \u00a737/\u00a738; LEWIS FUSION v3 \u00a753/\u00a758",
    "module": "libs.portfolio.return_engines",
    "tests": [
     "tests/portfolio/test_return_engines.py"
@@ -541,7 +541,7 @@
    "capability_id": "PRIVILEGE_SEPARATION",
    "title": "Real privilege separation for the risk kernel",
    "economic_reason": "Hash locking is tamper-evident only; an agent with write access can still change the rails",
-   "source_spec": "fusion spec §17/§30/§31",
+   "source_spec": "fusion spec \u00a717/\u00a730/\u00a731",
    "module": "",
    "tests": [],
    "callers": [],
@@ -554,7 +554,7 @@
    "capability_id": "DISCLOSURE_INTEL",
    "title": "Lawful public-disclosure intelligence",
    "economic_reason": "Mandatory disclosures are information the actor was compelled to reveal",
-   "source_spec": "batch-2 §21/§22",
+   "source_spec": "batch-2 \u00a721/\u00a722",
    "module": "",
    "tests": [],
    "callers": [],
@@ -567,7 +567,7 @@
    "capability_id": "ACTOR_GRAPH",
    "title": "Cross-domain actor / entity action graph",
    "economic_reason": "Behavioural fingerprints and capital rotation, not identity",
-   "source_spec": "batch-2 §23",
+   "source_spec": "batch-2 \u00a723",
    "module": "",
    "tests": [],
    "callers": [],
@@ -580,7 +580,7 @@
    "capability_id": "EVIDENCE_FUSION",
    "title": "Dependency-aware evidence fusion",
    "economic_reason": "Five nominal scouts may equal 1.7 independent observations",
-   "source_spec": "batch-2 §24/§36",
+   "source_spec": "batch-2 \u00a724/\u00a736",
    "module": "",
    "tests": [],
    "callers": [],
@@ -593,7 +593,7 @@
    "capability_id": "CREATOR_INTEL",
    "title": "Public strategist change intelligence",
    "economic_reason": "The CHANGE in a view carries more information than the view",
-   "source_spec": "batch-2 §21/§3",
+   "source_spec": "batch-2 \u00a721/\u00a73",
    "module": "",
    "tests": [],
    "callers": [],
@@ -606,7 +606,7 @@
    "capability_id": "SEMANTIC_COMPILER",
    "title": "Public strategy semantic compiler",
    "economic_reason": "One arbitrary encoding of a discretionary rule can falsely kill a real mechanism",
-   "source_spec": "transcript spec §1/§19",
+   "source_spec": "transcript spec \u00a71/\u00a719",
    "module": "",
    "tests": [],
    "callers": [],
@@ -619,7 +619,7 @@
    "capability_id": "RESEARCH_DAG",
    "title": "Research DAG / task compiler",
    "economic_reason": "Results should spawn their own next steps without a human naming the obvious one",
-   "source_spec": "batch-2 §26",
+   "source_spec": "batch-2 \u00a726",
    "module": "",
    "tests": [],
    "callers": [],
@@ -632,7 +632,7 @@
    "capability_id": "CONCURRENCY_ECONOMICS",
    "title": "Concurrency economics controller",
    "economic_reason": "Maximum valuable throughput, not maximum process count",
-   "source_spec": "batch-2 §29",
+   "source_spec": "batch-2 \u00a729",
    "module": "",
    "tests": [],
    "callers": [],
@@ -645,7 +645,7 @@
    "capability_id": "MODEL_ROUTER",
    "title": "Learned multi-model router",
    "economic_reason": "Route by measured downstream value, never reputation",
-   "source_spec": "batch-2 §25/§52",
+   "source_spec": "batch-2 \u00a725/\u00a752",
    "module": "",
    "tests": [],
    "callers": [],
@@ -658,7 +658,7 @@
    "capability_id": "EPHEMERAL_SPECIALISTS",
    "title": "Ephemeral specialist workers",
    "economic_reason": "Permanent seats for occasional work is bloat",
-   "source_spec": "batch-2 §26/§53",
+   "source_spec": "batch-2 \u00a726/\u00a753",
    "module": "",
    "tests": [],
    "callers": [],
@@ -671,7 +671,7 @@
    "capability_id": "WORKFLOW_DISTILL",
    "title": "Workflow -> capability distillation",
    "economic_reason": "An LLM doing repetitive deterministic work is cost with no edge",
-   "source_spec": "batch-2 §5/§27",
+   "source_spec": "batch-2 \u00a75/\u00a727",
    "module": "",
    "tests": [],
    "callers": [],
@@ -684,7 +684,7 @@
    "capability_id": "DOCTRINE_DISTILL",
    "title": "Experience -> doctrine distillation",
    "economic_reason": "A lesson that stays in memory recurs",
-   "source_spec": "batch-2 §6/§28",
+   "source_spec": "batch-2 \u00a76/\u00a728",
    "module": "",
    "tests": [],
    "callers": [],
@@ -697,7 +697,7 @@
    "capability_id": "MISSED_OPPORTUNITY",
    "title": "Missed-opportunity intelligence",
    "economic_reason": "Learning only from trades taken hides validator false negatives and allocator timidity",
-   "source_spec": "fusion spec §46/§29",
+   "source_spec": "fusion spec \u00a746/\u00a729",
    "module": "",
    "tests": [],
    "callers": [],
@@ -710,7 +710,7 @@
    "capability_id": "PREQUENTIAL",
    "title": "Live prequential evaluation",
    "economic_reason": "Forecast before outcome, scored without rewriting history",
-   "source_spec": "fusion spec §57",
+   "source_spec": "fusion spec \u00a757",
    "module": "",
    "tests": [],
    "callers": [],
@@ -723,7 +723,7 @@
    "capability_id": "OPERATOR_UX",
    "title": "Operator control surface",
    "economic_reason": "A more sophisticated backend that is harder to observe is not obviously better",
-   "source_spec": "fusion spec §33/§34/§35",
+   "source_spec": "fusion spec \u00a733/\u00a734/\u00a735",
    "module": "",
    "tests": [],
    "callers": [],
@@ -731,13 +731,13 @@
    "consumers": [],
    "external_blocker": "",
    "next_action": "one status surface answering what is live/making money/blocked/next",
-   "existing_equivalent": "scripts/run_wealth_report.py answers most of §60's operator questions from artifacts today (what is making money, why, what is closest to canary, what is the highest-value blocker, what is next). What remains is the SURFACE -- a single place to read them without a shell."
+   "existing_equivalent": "scripts/run_wealth_report.py answers most of \u00a760's operator questions from artifacts today (what is making money, why, what is closest to canary, what is the highest-value blocker, what is next). What remains is the SURFACE -- a single place to read them without a shell."
   },
   {
    "capability_id": "AUTONOMOUS_RECOVERY",
    "title": "Autonomous recovery for non-capital-critical failures",
    "economic_reason": "A stalled collector is silent alpha loss",
-   "source_spec": "fusion spec §36/§33",
+   "source_spec": "fusion spec \u00a736/\u00a733",
    "module": "",
    "tests": [],
    "callers": [],
@@ -750,7 +750,7 @@
    "capability_id": "COMPLETION_SUPERVISOR",
    "title": "Completion supervisor",
    "economic_reason": "No completed batch may terminate the programme while solvable items remain",
-   "source_spec": "completion mandate §34",
+   "source_spec": "completion mandate \u00a734",
    "module": "",
    "tests": [],
    "callers": [],
@@ -763,7 +763,7 @@
    "capability_id": "REGIME_TRANSITION_POSTERIOR",
    "title": "Transition posterior + duration-aware hazard",
    "economic_reason": "A state model that cannot say how likely it is to LEAVE the state cannot size the exposure it justifies",
-   "source_spec": "regime extension §1-§2",
+   "source_spec": "regime extension \u00a71-\u00a72",
    "module": "",
    "tests": [],
    "callers": [],
@@ -776,7 +776,7 @@
    "capability_id": "TRANSITION_SURPRISE",
    "title": "Transition surprise score",
    "economic_reason": "An unexpected state change may precede volatility, liquidation or momentum failure -- a hypothesis, not assumed alpha",
-   "source_spec": "regime extension §3",
+   "source_spec": "regime extension \u00a73",
    "module": "",
    "tests": [],
    "callers": [],
@@ -789,7 +789,7 @@
    "capability_id": "REGIME_CONDITIONAL_ALLOCATION",
    "title": "Regime-conditional capital allocation",
    "economic_reason": "Sizing from P(bull)-P(bear) discards the variance and tail terms that decide log-growth",
-   "source_spec": "regime extension §5-§6",
+   "source_spec": "regime extension \u00a75-\u00a76",
    "module": "",
    "tests": [],
    "callers": [],
@@ -802,7 +802,7 @@
    "capability_id": "REGIME_MODEL_SELECTION",
    "title": "Regime representation selection by validated economics",
    "economic_reason": "Choosing the most sophisticated model automatically is complexity nobody priced",
-   "source_spec": "regime extension §8",
+   "source_spec": "regime extension \u00a78",
    "module": "",
    "tests": [],
    "callers": [],
@@ -815,7 +815,7 @@
    "capability_id": "CADENCE_ALIGNMENT",
    "title": "Signal-cadence / alpha-half-life alignment",
    "economic_reason": "A scheduler slower than the opportunity half-life loses the edge before the decision is made, and nothing anywhere records the loss",
-   "source_spec": "production spec §1",
+   "source_spec": "production spec \u00a71",
    "module": "libs.research.cadence_alignment",
    "tests": [
     "tests/research/test_cadence_alignment.py"
@@ -836,7 +836,7 @@
    "capability_id": "DECISION_LEDGER",
    "title": "Complete decision / non-trade ledger",
    "economic_reason": "Learning only from trades taken hides validator false negatives, execution loss and allocator timidity",
-   "source_spec": "production spec §2; LEWIS FUSION v3 §40",
+   "source_spec": "production spec \u00a72; LEWIS FUSION v3 \u00a740",
    "module": "libs.research.decision_ledger",
    "tests": [
     "tests/research/test_decision_ledger.py"
@@ -866,7 +866,7 @@
    "capability_id": "STRATEGY_MANIFEST",
    "title": "Canonical immutable versioned strategy manifest",
    "economic_reason": "No LLM may silently reinterpret a live strategy; production must reference a content hash",
-   "source_spec": "production spec §3",
+   "source_spec": "production spec \u00a73",
    "module": "",
    "tests": [],
    "callers": [],
@@ -879,7 +879,7 @@
    "capability_id": "REALITY_GAP",
    "title": "Paper / canary / live parity measurement",
    "economic_reason": "A candidate cannot scale while unexplained execution divergence is material",
-   "source_spec": "production spec §4",
+   "source_spec": "production spec \u00a74",
    "module": "",
    "tests": [],
    "callers": [],
@@ -892,7 +892,7 @@
    "capability_id": "PREFLIGHT_CONTRACT",
    "title": "Production pre-flight health contract",
    "economic_reason": "Fail closed for execution, continue research -- and RECORD the opportunity the outage cost",
-   "source_spec": "production spec §5",
+   "source_spec": "production spec \u00a75",
    "module": "",
    "tests": [],
    "callers": [],
@@ -905,7 +905,7 @@
    "capability_id": "VENUE_CAPABILITY",
    "title": "Venue capability contract",
    "economic_reason": "A strategy needing post-only on a venue without it is an untested failure waiting for live capital",
-   "source_spec": "production spec §6",
+   "source_spec": "production spec \u00a76",
    "module": "",
    "tests": [],
    "callers": [],
@@ -918,7 +918,7 @@
    "capability_id": "EXECUTION_TAPE_ACCOUNTING",
    "title": "Accounting derived from the authoritative execution tape",
    "economic_reason": "A separate ledger as source of truth is a second truth, and the desk has already paid for phantom reconciliation once",
-   "source_spec": "production spec §7",
+   "source_spec": "production spec \u00a77",
    "module": "",
    "tests": [],
    "callers": [],
@@ -931,7 +931,7 @@
    "capability_id": "DETERMINISTIC_HOT_PATH",
    "title": "Deterministic production order path",
    "economic_reason": "LLMs research and propose; they may not freestyle production order interpretation",
-   "source_spec": "production spec §8",
+   "source_spec": "production spec \u00a78",
    "module": "",
    "tests": [],
    "callers": [],
@@ -944,7 +944,7 @@
    "capability_id": "LATENCY_METRICS",
    "title": "End-to-end latency and regret metrics",
    "economic_reason": "Unnecessary delay is an economic defect and nothing charges it",
-   "source_spec": "production spec §10",
+   "source_spec": "production spec \u00a710",
    "module": "",
    "tests": [],
    "callers": [],
@@ -957,7 +957,7 @@
    "capability_id": "WEALTH_RETENTION",
    "title": "Anti-round-trip / wealth-retention engine",
    "economic_reason": "Return generation is not wealth compounding: a 1x->30x->1x path has a realised log growth of zero and every other metric this desk keeps calls it a success",
-   "source_spec": "LEWIS FUSION v3 §4/§5/§69; BEAT-LEWIS 'compounding not gambling'",
+   "source_spec": "LEWIS FUSION v3 \u00a74/\u00a75/\u00a769; BEAT-LEWIS 'compounding not gambling'",
    "module": "libs.portfolio.wealth_retention",
    "tests": [
     "tests/portfolio/test_wealth_retention.py"
@@ -991,7 +991,7 @@
    "capability_id": "STATE_CONDITIONAL_BRANCH",
    "title": "F3 STATE_CONDITIONAL_MECHANISM validation branch",
    "economic_reason": "gate_power measured F3 keeping only ~50% of planted CONDITIONAL edges at EVERY effect size -- a structural coin flip, not an underpowered test",
-   "source_spec": "LEWIS FUSION v3 §16 (P0); supersedes CONDITIONAL_BRANCH (completion mandate §5) and STATE_CONDITIONAL_MECHANISM (regime extension §4) -- three ledger rows for one capability, merged rather than left to look like three pieces of unfinished work",
+   "source_spec": "LEWIS FUSION v3 \u00a716 (P0); supersedes CONDITIONAL_BRANCH (completion mandate \u00a75) and STATE_CONDITIONAL_MECHANISM (regime extension \u00a74) -- three ledger rows for one capability, merged rather than left to look like three pieces of unfinished work",
    "module": "libs.validation.state_conditional",
    "tests": [
     "tests/validation/test_state_conditional.py"
@@ -1024,7 +1024,7 @@
    "capability_id": "PAYOFF_MODEL_SELECTION",
    "title": "Payoff-aware model selection (E[log W], never accuracy)",
    "economic_reason": "An 89%-accurate model that wins 1bp and loses 12bp is the best model on any accuracy leaderboard and loses 5.4bp per trade",
-   "source_spec": "LEWIS FUSION v3 §6",
+   "source_spec": "LEWIS FUSION v3 \u00a76",
    "module": "libs.research.payoff_selection",
    "tests": [
     "tests/research/test_payoff_selection.py"
@@ -1088,7 +1088,7 @@
    "capability_id": "CONVERSION_VELOCITY",
    "title": "ECONOMIC_CONVERSION_VELOCITY and economic waiting cost",
    "economic_reason": "The benchmarked operator's actual advantage is not science, it is that he acts; the gap between evidence and exposure has never been measured on this desk",
-   "source_spec": "BEAT-LEWIS 'RETURN VELOCITY'; LEWIS FUSION v3 §36/§57; supersedes MONETIZATION_LATENCY (fusion spec §16), which asked for the same measurement under another name",
+   "source_spec": "BEAT-LEWIS 'RETURN VELOCITY'; LEWIS FUSION v3 \u00a736/\u00a757; supersedes MONETIZATION_LATENCY (fusion spec \u00a716), which asked for the same measurement under another name",
    "module": "libs.research.conversion_velocity",
    "tests": [
     "tests/research/test_conversion_velocity.py"
@@ -1121,7 +1121,7 @@
    "capability_id": "WEALTH_REPORT",
    "title": "Economic scoreboard and the daily board question",
    "economic_reason": "Architecture counts sit above economic outcomes on every surface this desk has; the specification puts them below",
-   "source_spec": "LEWIS FUSION v3 §59/§60; BEAT-LEWIS 'DAILY BOARD QUESTION'",
+   "source_spec": "LEWIS FUSION v3 \u00a759/\u00a760; BEAT-LEWIS 'DAILY BOARD QUESTION'",
    "module": "scripts.run_wealth_report",
    "tests": [
     "tests/scripts/test_wealth_report.py"
@@ -1166,7 +1166,7 @@
    "capability_id": "EFFECTIVE_SAMPLE",
    "title": "Effective sample size / window-overlap correction",
    "economic_reason": "t scales as sqrt(n); a tenfold inflated row count is a threefold inflated t-statistic applied silently to every candidate the sweep has ever produced",
-   "source_spec": "LEWIS FUSION v3 §15 (P0); v4 P0 'effective sample/overlap correction'",
+   "source_spec": "LEWIS FUSION v3 \u00a715 (P0); v4 P0 'effective sample/overlap correction'",
    "module": "libs.validation.effective_sample",
    "tests": [
     "tests/validation/test_effective_sample.py"
@@ -1259,7 +1259,7 @@
    "capability_id": "COMPETITOR_COVERAGE",
    "title": "External return-engine coverage matrix and adoption score",
    "economic_reason": "Being outperformed by a mechanism the desk never considered, and never noticing, because 'have we covered everything' was answered from memory",
-   "source_spec": "LEWIS FUSION v4 §1/§42; POST-BASELINE DELTA Part XVII",
+   "source_spec": "LEWIS FUSION v4 \u00a71/\u00a742; POST-BASELINE DELTA Part XVII",
    "module": "libs.research.competitor_coverage",
    "tests": [
     "tests/research/test_external_intelligence.py"
@@ -1412,7 +1412,7 @@
    "capability_id": "CAPITAL_RECYCLING",
    "title": "Capital recycling: keep / reduce / harvest / rotate / redeploy",
    "economic_reason": "The difference between a large gain and a kept one is what happened next; done by fixed rule it is a coin flip with extra steps",
-   "source_spec": "LEWIS FUSION v4 §2/§26 (P1)",
+   "source_spec": "LEWIS FUSION v4 \u00a72/\u00a726 (P1)",
    "module": "libs.portfolio.capital_recycling",
    "economic_mechanism": "Every action is an E[log W] comparison and ties resolve to KEEP because each alternative pays a round trip. No entry price or unrealised gain is a field on the dataclass, so a large winner cannot acquire ownership privilege even by accident.",
    "information_value": "CAPITAL_RECYCLING_ALPHA -- realised log growth minus holding the same exposure throughout. It can be NEGATIVE, and no other metric on the recycling path would ever say so.",
@@ -1472,7 +1472,7 @@
    "capability_id": "CROWDING_HAZARD",
    "title": "Crowding decay hazard from book evidence",
    "economic_reason": "By the time returns confirm an edge is crowded the money is gone; decay is indistinguishable from bad luck until the sample is large enough to be sure",
-   "source_spec": "LEWIS FUSION v4 §57; POST-BASELINE DELTA Part VI.15",
+   "source_spec": "LEWIS FUSION v4 \u00a757; POST-BASELINE DELTA Part VI.15",
    "module": "libs.research.crowding_hazard",
    "economic_mechanism": "Crowding leaves fingerprints on the book before it reaches the P&L: spread, basis and funding compress; queues lengthen; fills deteriorate; impact rises. All six are measured against the strategy's OWN baseline, because an absolute spread means nothing across instruments.",
    "information_value": "The realised edge ratio is a CHECK on the hazard and never an input -- a hazard that reads the P&L is a lagging indicator wearing a leading indicator's name. Public diffusion is computed, reported and EXCLUDED, because 'publication destroys edge' is widely believed and unmeasured here.",
@@ -1502,7 +1502,7 @@
    "capability_id": "PARTICIPANT_PHENOTYPE",
    "title": "Participant phenotype engine and crowd directionality",
    "economic_reason": "'Retail' is a sum over populations that behave oppositely; aggregating them cancels the informative components and produces the noise most flow studies report",
-   "source_spec": "LEWIS FUSION v3 §9/§10/§16/§17; v4 §20 (P1)",
+   "source_spec": "LEWIS FUSION v3 \u00a79/\u00a710/\u00a716/\u00a717; v4 \u00a720 (P1)",
    "module": "libs.research.participant_phenotype",
    "economic_mechanism": "Eight behavioural cohorts defined by conduct, never by identity. The relation to price is estimated per phenotype PER STATE, so follow-retail and fade-retail are both refused as fixed signs and NEUTRAL is a common honest answer.",
    "information_value": "Composition shift is measured FIRST: an aggregate can move because the same people changed behaviour or because different people arrived, and those carry opposite implications. directionality() refuses a verdict when composition moved materially.",
@@ -1532,7 +1532,7 @@
    "capability_id": "MECHANISM_ONTOLOGY",
    "title": "Mechanism ontology and constrained alpha grammar",
    "economic_reason": "A million random formulas and a million real questions are the same size and only one survives multiplicity correction",
-   "source_spec": "LEWIS FUSION v4 §3/§4/§5/§110",
+   "source_spec": "LEWIS FUSION v4 \u00a73/\u00a74/\u00a75/\u00a7110",
    "module": "libs.research.mechanism_ontology",
    "economic_mechanism": "Every mechanism carries a contract -- which observables MEASURE it, which transforms mean anything, which horizons its economics could survive, what would falsify it. A 90-day order-flow candidate is refused before it costs anything, because OFI measures who is pressing the book now.",
    "information_value": "MEASURED: 5 mechanisms generate 1,549 coherent candidates from 9,282 combinations -- 83% pruned before any compute. The pruned part is not a random sample: it is the part with no economic story, which is where false positives come from fastest. Every candidate carries its sibling count, so no winner can be detached from its selection path.",
@@ -1562,7 +1562,7 @@
    "capability_id": "OPPORTUNITY_BOOKS",
    "title": "Opportunity-books consumer",
    "economic_reason": "Seven books nothing reads are seven files",
-   "source_spec": "LEWIS FUSION v4 §88/§105",
+   "source_spec": "LEWIS FUSION v4 \u00a788/\u00a7105",
    "module": "scripts.run_opportunity_books",
    "economic_mechanism": "None of its own. It makes seven return engines reachable and reports UNMEASURED per book, naming the artifact each needs.",
    "information_value": "Six of seven correctly report UNMEASURED on a clone with no positions, which is the honest state and the reason the books exist BEFORE their inputs do.",
@@ -1576,6 +1576,142 @@
    ],
    "expected_delta_elogw": "Indirect: it makes the six books capability rather than inventory.",
    "next_action": "STALL_DETECTED unmet -- nothing notices if this stops regenerating."
+  },
+  {
+   "implementation_cost": "built",
+   "runtime_cost": "negligible",
+   "source_spec": "SURVIVOR-YIELD + ELOG EXPANSION DELTA (2026-08-09)",
+   "callers": [
+    "scripts/run_opportunity_books.py"
+   ],
+   "triggers": [
+    "ops/run_research_cycle.sh"
+   ],
+   "artifacts": [
+    "data/opportunity_books.json"
+   ],
+   "consumers": [
+    "scripts/run_max_push.py"
+   ],
+   "capability_id": "ALPHA_RESERVE_BANK",
+   "title": "Alpha reserve bank / replacement latency",
+   "module": "libs.portfolio.alpha_reserve_bank",
+   "tests": [
+    "tests/portfolio/test_alpha_reserve_bank.py"
+   ],
+   "economic_reason": "Discovery throughput is worth nothing if a dead edge's replacement is months behind; idle capital does not compound",
+   "economic_mechanism": "Prices the bench in forward E[log W], deflated by effective independence, and reports what share of a 25/50/75% shock is replaceable WITHOUT lowering the evidence bar",
+   "information_value": "UNMEASURED on this clone: no live book means no denominator, and the module refuses to report zero. First real number arrives with a live book or a populated SHADOW_CHALLENGER layer"
+  },
+  {
+   "implementation_cost": "built",
+   "runtime_cost": "negligible",
+   "source_spec": "SURVIVOR-YIELD + ELOG EXPANSION DELTA (2026-08-09)",
+   "callers": [
+    "scripts/run_opportunity_books.py"
+   ],
+   "triggers": [
+    "ops/run_research_cycle.sh"
+   ],
+   "artifacts": [
+    "data/opportunity_books.json"
+   ],
+   "consumers": [
+    "scripts/run_max_push.py"
+   ],
+   "capability_id": "PORTFOLIO_MONTE_CARLO",
+   "title": "Dependence-preserving portfolio Monte Carlo",
+   "module": "libs.portfolio.portfolio_monte_carlo",
+   "tests": [
+    "tests/portfolio/test_portfolio_monte_carlo.py"
+   ],
+   "economic_reason": "Per-strategy reshuffling manufactures diversification that does not exist; the event that kills a book is the joint one",
+   "economic_mechanism": "One block of TIME per draw applied to EVERY strategy, so co-activation, common regime, tail dependence and margin concurrency survive the resampling intact",
+   "information_value": "dependence_blindness reads 2.93x on a constructed clone book and ~1.0 on an independent one -- the discriminator works both ways. Its value on the REAL book is UNMEASURED until data/strategy_paths.json exists"
+  },
+  {
+   "implementation_cost": "built",
+   "runtime_cost": "negligible",
+   "source_spec": "SURVIVOR-YIELD + ELOG EXPANSION DELTA (2026-08-09)",
+   "callers": [
+    "scripts/run_opportunity_books.py"
+   ],
+   "triggers": [
+    "ops/run_research_cycle.sh"
+   ],
+   "artifacts": [
+    "data/opportunity_books.json"
+   ],
+   "consumers": [
+    "scripts/run_max_push.py"
+   ],
+   "capability_id": "MARKET_BREADTH",
+   "title": "Marginal market breadth",
+   "module": "libs.research.market_breadth",
+   "tests": [
+    "tests/research/test_market_breadth.py"
+   ],
+   "economic_reason": "A parameter search adds zero independent observations and pays full multiplicity; a new market adds new draws of the state the mechanism needs",
+   "economic_mechanism": "Prices marginal E[log W] per candidate expression, deflates occurrence counts by cross-expression state correlation, filters feasibility before ranking",
+   "information_value": "UNMEASURED: no candidate expressions recorded, so the desk still defaults to DEPTH -- which is exactly when depth is least likely right"
+  },
+  {
+   "implementation_cost": "built",
+   "runtime_cost": "negligible",
+   "source_spec": "SURVIVOR-YIELD + ELOG EXPANSION DELTA (2026-08-09)",
+   "callers": [
+    "scripts/run_external_intel.py"
+   ],
+   "triggers": [
+    "ops/run_research_cycle.sh"
+   ],
+   "artifacts": [
+    "data/intelligence/external_intel.json"
+   ],
+   "consumers": [
+    "scripts/run_max_push.py"
+   ],
+   "capability_id": "PRACTITIONER_CORPUS",
+   "title": "Practitioner corpus ledger (GPT Hunter role C)",
+   "module": "libs.research.practitioner_corpus",
+   "tests": [
+    "tests/research/test_practitioner_corpus.py"
+   ],
+   "economic_reason": "A channel can be exhausted while the person behind it has an untouched decade; the process knowledge is the half nobody transcribes",
+   "economic_mechanism": "Ranks READING ORDER only -- P(systematic) x evidence x magnitude x unread x novelty / cost. There is deliberately no credibility score",
+   "information_value": "2 practitioners seeded (alex_carter IN_EXHAUSTION, naoufel_chart_fanatics); both at 1 of 4 process axes, neither exhausted. 3 disagreements filed, 2 untested",
+   "inputs": [
+    "data/intelligence/practitioner_corpus.json"
+   ]
+  },
+  {
+   "implementation_cost": "built",
+   "runtime_cost": "negligible",
+   "source_spec": "ALEX CARTER PUBLIC-CORPUS RESIDUAL DELTA (2026-08-09)",
+   "callers": [
+    "scripts/run_opportunity_books.py"
+   ],
+   "triggers": [
+    "ops/run_research_cycle.sh"
+   ],
+   "artifacts": [
+    "data/opportunity_books.json"
+   ],
+   "consumers": [
+    "scripts/run_max_push.py"
+   ],
+   "capability_id": "AGENT_AUTHORITY",
+   "title": "Agent capability ladder + blast-radius budget",
+   "module": "libs.ops.agent_authority",
+   "tests": [
+    "tests/ops/test_agent_authority.py"
+   ],
+   "economic_reason": "Model intelligence is not model authority: a seat upgraded for good reasons must not silently widen what it may touch",
+   "economic_mechanism": "L0-L6 ladder, one-rung promotion on evidence about the rung, and no amount of evidence reaches a capital-sensitive rung without the principal. Grants nothing and cannot arm trading",
+   "information_value": "MEASURED: 6 components declared, 0 over-privileged, 0 unassessed blast radii. execution_engine deliberately holds L4 while its work needs L5",
+   "inputs": [
+    "data/agent_authority.json"
+   ]
   }
  ]
 }

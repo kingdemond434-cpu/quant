@@ -2082,6 +2082,10 @@ _FINDING_DOCS = (
 #: Finding-bearing docs deliberately out of scope, with the reason -- so the scope check can tell
 #: "consciously excluded" from "quietly unmonitored".
 _FINDING_DOCS_EXCLUDED = {
+    "docs/research/SURVIVOR_YIELD_AUDIT.md": (
+        "terminal repo audit -- its numbered rows classify EXISTING modules against a mandate, "
+        "so they are evidence for work NOT done rather than defects owing a register row. The "
+        "residuals it does name (right-tail auditor, capital-occupancy) are carried as GAP rows"),
     "docs/research/panel_inbox.md": "raw panel transcript -- rulings are the distilled output",
     "docs/research/feed_inbox.md": "literature feed, not desk findings",
     "docs/research/data_axis_watchlist.md": "source cards -- governed by §33 dispositions",

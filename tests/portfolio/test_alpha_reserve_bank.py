@@ -47,7 +47,7 @@ class TestLayers:
             assert ReserveCandidate(strategy_id="x", layer=ly).layer == ly
 
     def test_dormant_is_bench_and_retired_is_not(self) -> None:
-        """Retirement is a capital decision; deletion is an information one. Only RETIRED deletes."""
+        """Retirement is a capital decision, deletion an information one. Only RETIRED deletes."""
         assert ReserveCandidate(strategy_id="d", layer="DORMANT_MONITORED").is_bench
         assert not ReserveCandidate(strategy_id="r", layer="RETIRED").is_bench
 

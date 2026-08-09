@@ -35,6 +35,8 @@ if str(ROOT) not in sys.path:
 
 from libs.research.competitor_coverage import EngineCoverage  # noqa: E402
 from libs.research.competitor_coverage import summarise as coverage_summary  # noqa: E402
+from libs.research.practitioner_corpus import Disagreement, PractitionerRecord  # noqa: E402
+from libs.research.practitioner_corpus import summarise as practitioner_summary  # noqa: E402
 from libs.research.return_claims import ReturnClaim  # noqa: E402
 from libs.research.return_claims import summarise as claims_summary  # noqa: E402
 from libs.research.video_intelligence import ChannelCoverage, VideoRecord  # noqa: E402
@@ -45,6 +47,7 @@ OUT = DATA / "external_intel.json"
 VIDEO_LEDGER = DATA / "video_channel_coverage.json"
 CLAIMS_LEDGER = DATA / "extreme_return_claims.json"
 COVERAGE_LEDGER = ROOT / "docs" / "research" / "COMPETITOR_COVERAGE.json"
+PRACTITIONER_LEDGER = DATA / "practitioner_corpus.json"
 
 
 def _load(p: Path) -> object | None:
@@ -142,16 +145,48 @@ def coverage_section() -> dict[str, object]:
     return coverage_summary(engines)
 
 
+def practitioner_section() -> dict[str, object]:
+    """GPT Hunter's THIRD mission: people, not channels.
+
+    A practitioner's corpus spans a dozen channels and none of them is it. This section stays
+    UNMEASURED until the GPT seat has enumerated at least one person, and an empty ledger here
+    means the seat has not run -- not that there is nobody worth reading.
+    """
+    raw = _load(PRACTITIONER_LEDGER)
+    rows = raw.get("practitioners") if isinstance(raw, dict) else None
+    records = []
+    for r in (rows if isinstance(rows, list) else []):
+        if not isinstance(r, dict):
+            continue
+        records.append(PractitionerRecord(**{
+            k: (tuple(v) if isinstance(v, list) else v) for k, v in r.items()
+            if k in PractitionerRecord.__dataclass_fields__}))
+    disagreements = []
+    draw = raw.get("disagreements") if isinstance(raw, dict) else None
+    for d in (draw if isinstance(draw, list) else []):
+        if isinstance(d, dict):
+            disagreements.append(Disagreement(**{
+                k: v for k, v in d.items() if k in Disagreement.__dataclass_fields__}))
+    return practitioner_summary(records, disagreements=disagreements)
+
+
 def build() -> dict[str, object]:
     video = video_section()
     claims = claims_section()
     coverage = coverage_section()
+    try:
+        practitioners = practitioner_section()
+    except (TypeError, ValueError, KeyError) as e:
+        practitioners = {"measured": False, "headline": (
+            f"practitioner ledger present but MALFORMED ({type(e).__name__}: {e}) -- UNMEASURED. "
+            "A ledger that cannot be parsed knows exactly as much as one that is empty")}
     blocked = video.get("unresolved_high_value") or []
     return {
         "generated_at": datetime.now(UTC).isoformat(),
         "video_intelligence": video,
         "extreme_return_claims": claims,
         "competitor_coverage": coverage,
+        "practitioner_corpus": practitioners,
         "externally_blocked_sources": len(blocked) if isinstance(blocked, list) else 0,
         "next_action": _next_action(video, claims, coverage),
         "note": ("Transcript retrieval belongs to the GPT seat: the Claude-side miners cannot "

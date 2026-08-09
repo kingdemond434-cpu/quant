@@ -12,6 +12,18 @@ data/*
 !data/nav_attestation.jsonl
 !data/decision_ledger.json
 !data/cashcarry_config.json
+# The authority declaration is POLICY, not generated state: it says which component
+# may reach which surface. It must be reviewable in a diff, because a grant that
+# widens silently is the failure libs/ops/agent_authority.py exists to prevent.
+!data/agent_authority.json
+# The GPT-seat intelligence LEDGERS are institutional memory, not generated state: they record
+# what was fetched, at what completeness, and what remains unread. Ungitted they die with the
+# container, and the next session re-reads a corpus it has already paid for.
+# Only the INPUT ledgers: external_intel.json is the generated report and stays out.
+!data/intelligence/
+!data/intelligence/video_channel_coverage.json
+!data/intelligence/extreme_return_claims.json
+!data/intelligence/practitioner_corpus.json
 web/*
 !web/index.html
 reports/

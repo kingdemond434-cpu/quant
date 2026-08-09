@@ -29,8 +29,8 @@ plausible mechanism with no capital at risk, because the state that killed it ma
 and re-deriving a retired edge from scratch costs far more than watching it. Retirement is a
 capital decision; deletion is an information decision, and the desk has been conflating them.
 
-Reports. Allocates nothing, promotes nothing, retires nothing -- `libs/portfolio/capital_competition.py`
-owns allocation and `libs/research/alpha_state.py` owns the evidence ladder this module reads.
+Reports. Allocates nothing, promotes nothing, retires nothing: `capital_competition.py` owns
+allocation and `libs/research/alpha_state.py` owns the evidence ladder this module reads.
 """
 
 from __future__ import annotations
@@ -176,7 +176,7 @@ def alpha_reserve_ratio(book: list[ReserveCandidate]) -> tuple[float | None, str
 
 def replacement_coverage(book: list[ReserveCandidate], *, fraction: float,
                          dead_mechanisms: tuple[str, ...] = ()) -> tuple[float | None, str]:
-    """If `fraction` of live alpha died today, what share could be replaced WITHOUT lowering the bar.
+    """If `fraction` of live alpha died today, what share is replaceable WITHOUT lowering the bar.
 
     WORST CASE BY CONSTRUCTION: the dead are taken from the LARGEST live contributors first, not a
     random draw. A desk that models its own failures as average has modelled the wrong failure --

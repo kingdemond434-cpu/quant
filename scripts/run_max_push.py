@@ -458,6 +458,103 @@ _SHADOW_PRICES: dict[str, float] = {"capital": 0.01}
 _LEVERAGE_TO_ELOGW: float = 0.01
 
 
+def _from_books() -> list[dict[str, Any]]:
+    """THE RETURN ENGINES -- an UNMEASURED book is a ranked gap, not a quiet line in a report.
+
+    `scripts/run_opportunity_books.py` runs eleven books every cycle and most of them correctly
+    report UNMEASURED, each naming the exact artifact it needs. Left in the report, that reads as
+    housekeeping. Ranked here, each missing artifact becomes a queue row competing with everything
+    else on the same scale -- which is right, because a return engine with no input is a decision
+    the desk is currently making by default rather than by evidence.
+
+    THE DISTINCTION THAT MATTERS AND IS EASY TO LOSE: a book UNMEASURED because this clone has no
+    live positions is a fact about the clone. A book UNMEASURED because nobody wrote its
+    declaration is a fact about the desk, and only the second is actionable today. The row detail
+    carries the book's own headline so the reader can tell which they are looking at.
+    """
+    d = _json("data/opportunity_books.json")
+    if not isinstance(d, dict):
+        return [_item("books::opportunity_books", "unenforced_law", None, 1.0,
+                      "no opportunity-books report -- eleven return engines exist and none of "
+                      "them ran, so where capital would go is unranked",
+                      "run scripts/run_opportunity_books.py; it is wired into the research cycle "
+                      "and its absence means the cycle did not complete",
+                      "data/opportunity_books.json")]
+    books = d.get("books")
+    if not isinstance(books, dict):
+        return []
+    out: list[dict[str, Any]] = []
+    for name, body in books.items():
+        if not isinstance(body, dict):
+            continue
+        if body.get("measured") is False:
+            missing = str(body.get("missing_artifact", "?"))
+            out.append(_item(
+                f"books::{name}", "money_path_correctness", None, 1.0,
+                f"return engine {name} is UNMEASURED -- {missing} is absent",
+                str(body.get("headline", ""))[:400],
+                "data/opportunity_books.json"))
+            continue
+        # A MEASURED BOOK IS NOT AUTOMATICALLY A CLEAN ONE, and ranking only the unmeasured ones
+        # would have made a book that FOUND something the only book that never reaches the queue.
+        # That is the inverse of what this file is for.
+        for key, source, label in (
+                ("over_privileged", "unenforced_law",
+                 "component(s) hold authority above what their work needs"),
+                ("capital_sensitive_without_principal", "money_path_correctness",
+                 "component(s) sit on a CAPITAL-SENSITIVE rung with no principal authorisation"),
+                ("unbounded_blast_radius", "money_path_correctness",
+                 "component(s) can propagate failure or destroy irrecoverable data"),
+                ("unmeasured_blast_radius", "measurement_quality",
+                 "component(s) have never had their blast radius assessed"),
+                ("not_sandboxed", "money_path_correctness",
+                 "component(s) are not confined to an isolated sub-account or scoped key")):
+            found = body.get(key)
+            if isinstance(found, list) and found:
+                out.append(_item(
+                    f"books::{name}::{key}", source, None, 1.0,
+                    f"{name}: {len(found)} {label} -- {found}",
+                    str(body.get("headline", ""))[:400],
+                    "data/opportunity_books.json"))
+    return out
+
+
+def _from_practitioners() -> list[dict[str, Any]]:
+    """CORPORA READ WITHOUT EXTRACTING ANY PROCESS AXIS -- the expensive half left behind.
+
+    Reading a practitioner's signal rules and stopping is the cheapest possible extraction and the
+    one that feels complete. It is ranked here because it is silently recoverable value: the
+    corpus has already been paid for, and the part that compounds is still sitting in it.
+    """
+    d = _json("data/intelligence/external_intel.json")
+    if not isinstance(d, dict):
+        return []
+    pc = d.get("practitioner_corpus")
+    if not isinstance(pc, dict) or pc.get("measured") is not True:
+        return []
+    out: list[dict[str, Any]] = []
+    shallow = pc.get("read_but_no_process_extracted") or []
+    if isinstance(shallow, list) and shallow:
+        out.append(_item(
+            "intel::practitioner_process_axes", "conversion_debt", None, 1.0,
+            f"{len(shallow)} practitioner corpus/corpora read with NO process axis extracted: "
+            f"{shallow}",
+            "The signal rules were taken and the research, validation, retirement and replacement "
+            "processes were not. That corpus is already paid for and the part that compounds is "
+            "still in it -- re-extract along the process axes before enumerating anything new.",
+            "data/intelligence/practitioner_corpus.json"))
+    untested = pc.get("untested_disagreements")
+    if isinstance(untested, int) and untested > 0:
+        out.append(_item(
+            "intel::practitioner_disagreements", "conversion_debt", None, 1.0,
+            f"{untested} untested disagreement(s) between credible practitioners",
+            "Where two people who both made money contradict each other, the answer is "
+            "CONDITIONAL and the condition is the thing worth finding. Each is a ready-made "
+            "hypothesis with an external prior already attached.",
+            "data/intelligence/practitioner_corpus.json"))
+    return out
+
+
 def _frontier(items: list[dict[str, Any]]) -> dict[str, Any]:
     """Re-rank the queue by ECONOMIC SURPLUS rather than by distance-from-ceiling.
 
@@ -511,6 +608,7 @@ def build(*, refresh: bool = True) -> dict[str, Any]:
              + _from_wiring() + _from_register() + _from_conversion()
              + _from_tier_benchmark() + _from_calibration() + _from_freshness()
              + _from_stranding() + _from_wealth()
+             + _from_books() + _from_practitioners()
              # THE GENERIC CHANNEL. Every `_from_*` above is a bespoke reader that knows the shape
              # of one artifact, and adding the tenth made the cost visible: a detector written
              # today cannot influence tomorrow's priorities until somebody edits THIS file, which

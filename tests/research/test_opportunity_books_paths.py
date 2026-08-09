@@ -19,9 +19,9 @@ from libs.execution.opportunity_surface import (
     best_policy,
     maker_ev,
     taker_ev,
+    wait_ev,
 )
 from libs.execution.opportunity_surface import summarise as execution_summary
-from libs.execution.opportunity_surface import wait_ev
 from libs.portfolio.capital_recycling import PositionState, stage_of
 from libs.portfolio.capital_recycling import summarise as recycling_summary
 from libs.portfolio.strategy_pool import (
@@ -161,7 +161,7 @@ class TestCapitalRecycling:
         assert len(r["rows"]) == 1                               # type: ignore[arg-type]
 
     def test_RECYCLING_ALPHA_CAN_BE_NEGATIVE(self) -> None:
-        """Busy harvesting that underperforms a static hold is an expensive hobby, and must say so."""
+        """Harvesting that underperforms a static hold is an expensive hobby, and must say so."""
         p = PositionState(name="p", weight=0.5, forward_edge=0.01, edge_sigma=0.002,
                           variance=0.02, round_trip_cost=0.001)
         losing = tuple(1.0 - i * 0.001 for i in range(40))
@@ -202,7 +202,7 @@ class TestStrategyPool:
         assert rarely > always
 
     def test_a_bigger_return_still_wins_at_equal_exposure(self) -> None:
-        """It is NOT a preference for trading less: at the same exposure, more return ranks higher."""
+        """NOT a preference for trading less: at the same exposure, more return ranks higher."""
         big, _ = exposure_efficiency(PoolMember(strategy_id="big", annual_log_return=2.0,
                                                 market_exposure_fraction=1.0))
         small, _ = exposure_efficiency(PoolMember(strategy_id="sm", annual_log_return=0.2,
@@ -221,7 +221,7 @@ class TestStrategyPool:
         assert "no reference point" in why
 
     def test_TOO_EARLY_IS_ITS_OWN_ANSWER(self) -> None:
-        """A correct strategy gets switched off during exactly the losing run its reshuffles predict."""
+        """A correct strategy gets switched off during the losing run its reshuffles predict."""
         v, why = degradation_verdict(PoolMember(strategy_id="x", live_drawdown=0.4,
                                                 live_observations=3, mc_drawdown_p95=0.2,
                                                 mc_max_consecutive_losses=9))
@@ -451,7 +451,7 @@ class TestParticipantPhenotype:
         assert "cancel" in str(r["headline"])
 
     def test_A_COMPOSITION_SHIFT_INVALIDATES_THE_READ(self) -> None:
-        """If WHO is in the sample changed, a change in aggregate flow says nothing about behaviour."""
+        """If WHO is in the sample changed, a change in flow says nothing about behaviour."""
         obs = [
             CohortObservation(phenotype="MOMENTUM_CHASER", observations=500,
                               flow_leads_price=0.4, population_share=0.9,
