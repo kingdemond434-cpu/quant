@@ -330,6 +330,20 @@ def run(root: Path, cohort: dict[str, Any] | None = None,
                 else virtual.get("m_concurrent") or 0))
 
     decision = decide(parsed["candidates"], standing, virtual, book_usd)
+    # A virtual displacement may only fund ITS OWN challenger. Otherwise a higher-ranked,
+    # unrelated candidate can consume the virtual seat while the outgoing clock remains live.
+    actual = decide(parsed["candidates"], standing, cohort, book_usd)
+    real_free = int(actual["free_slots"])
+    lawful_spawn = []
+    for candidate in decision["spawn"]:
+        if real_free > 0:
+            lawful_spawn.append(candidate)
+            real_free -= 1
+        elif candidate.name in by_candidate:
+            lawful_spawn.append(candidate)
+        else:
+            decision["queue"].append(candidate)
+    decision["spawn"] = lawful_spawn
     out["free_slots"], out["why_free"] = decision["free_slots"], decision["why_free"]
     out["duplicates"] = decision["duplicates"]
     out["order_law"] = decision["order_law"]
