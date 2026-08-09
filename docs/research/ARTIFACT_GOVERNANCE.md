@@ -166,3 +166,9 @@ recorded in `max_audit.py` because they need code to be real. Zero remain ungove
 |---|---|---|---|
 | `docs/research/FULL_SWEEP_PREREGISTRATION.md` | **TERMINAL** | Same class as the four pre-registrations above, and the declaration ordering is load-bearing here in a way it is not elsewhere: the universe size and the bar are fixed BEFORE any cell is evaluated, which is the entire statistical basis for a blind 898,560-cell sweep. Editing it after a result would not merely weaken the document, it would void the study. Superseded by its own result. | n/a |
 | `docs/research/crypto_source_seeds.md` | **LIVING** | Claimed by L1.52 (information mining is permanently active) and by the miners' own anti-breadth-theater rule. It is deliberately NOT the catalogue: the catalogue (`data_axis_watchlist.md`) carries graded cards that owe verification decisions, and at 8 pending of 18 the desk's measured bottleneck is verification, not cataloguing. A seed map carries no verification debt, so it can hold 450 grounds without making that bottleneck worse — and a source only becomes a card by producing something. Grows as `kimi_hunter` discovers grounds absent from it; the list is seeds, never a ceiling. | n/a |
+
+### Added 2026-08-09 (controller convergence mandate, classified on arrival)
+
+| Artifact | Class | Rationale | Staleness floor |
+|---|---|---|---|
+| `docs/research/TIER1_CONTROLLER_MANDATE.md` | **DOCTRINE** | Principal-supplied standing controller law shared by Claude and Codex. It governs continuation, survivor conversion, open-world coverage, risk/statistical invariants, and atomic handoff of one persistent operation. It changes only by a later principal mandate; a cadence must execute it through the controller cycle, never rewrite it to look current. | never |

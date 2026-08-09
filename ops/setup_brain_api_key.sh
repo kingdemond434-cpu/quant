@@ -2,7 +2,7 @@
 # ONE-TIME principal step (Option A, 2026-07-19): put the AI brain on metered API billing.
 #
 # Before running: create the key in the Anthropic Console (console.anthropic.com >
-# API keys), and set a monthly SPEND CAP on the workspace first (start at $50).
+# API keys), and set a monthly SPEND CAP on the workspace first (start at \$50).
 #
 # Run as quant on the VPS:
 #     bash ops/setup_brain_api_key.sh

@@ -49,3 +49,31 @@ def test_extreme_funding_skew_holds_the_cap() -> None:
     out = _alloc(cands, 4500.0)
     assert out["HOTUSDT"] <= 0.35 * 4500.0 + 1e-6
     assert abs(sum(out.values()) - 4500.0) < 1e-6
+
+def test_production_preflight_fails_closed_for_new_risk_only(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(_MOD, "_PREFLIGHT", tmp_path / "preflight.json")
+    monkeypatch.setattr(_MOD, "_TRADES", tmp_path / "trades.json")
+    bad = _MOD._execution_preflight(
+        ranked=[], spot_prices={}, fut_prices={}, spot_filters={}, fut_filters={},
+        reconciled=False, risk_measured=False, authenticated=False, dry=False)
+    assert bad["status"] == "INELIGIBLE"
+    assert bad["scope"].startswith("NEW_OPENS_AND_TOPUPS")
+    good = _MOD._execution_preflight(
+        ranked=[("BTCUSDT", 0.001)], spot_prices={"BTCUSDT": 1},
+        fut_prices={"BTCUSDT": 1}, spot_filters={"BTCUSDT": {}},
+        fut_filters={"BTCUSDT": {}}, reconciled=True, risk_measured=True,
+        authenticated=True, dry=False)
+    assert good["status"] == "ELIGIBLE"
+
+
+def test_pair_intent_runs_frozen_deterministic_path(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(_MOD, "_HOT_REPLAY", tmp_path / "replay.json")
+    order = _MOD._deterministic_pair_intent(
+        symbol="BTCUSDT", qty=2.0, spot_side="BUY", fut_side="SELL",
+        observation={"funding": 0.001}, rationale="test")
+    assert order == {"symbol": "BTCUSDT", "qty": 2.0,
+                     "spot_side": "BUY", "fut_side": "SELL"}
+    import json
+    saved = json.loads((tmp_path / "replay.json").read_text("utf-8"))
+    assert saved["manifest"]["immutable"] is True
+    assert len(saved["path_hash"]) == 64

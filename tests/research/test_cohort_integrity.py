@@ -149,7 +149,7 @@ def test_fence_is_green_on_the_live_tree():
 
     rep = build_report()
     shadow = _ROOT / "data/axis_shadow_state.json"
-    if rep["status"] == "COHORT-INCOMPLETE" and not shadow.exists():
+    if rep["status"] in {"COHORT-INCOMPLETE", "UNMEASURED"} and not shadow.exists():
         pytest.skip(f"cohort sources -- {_RUNTIME_ONLY}. The fence reads shadow state written by "
                     f"the live slots; on a clone it correctly reports a FLOOR rather than a "
                     f"measurement, which is a fact about the clone: {rep['detail']}")

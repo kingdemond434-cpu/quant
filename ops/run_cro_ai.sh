@@ -6,7 +6,7 @@ cd /home/quant/quant-platform
 source ops/brain_env.sh
 # BRAIN_DRY_RUN=1 (CI shell-hygiene gate, 2026-07-20): exercise every expansion in this
 # script under `set -u` WITHOUT auth, network, tokens, or log writes -- the 2026-07-19
-# unescaped-$300 crash class is caught statically by exactly this path.
+# unescaped-\$300 crash class is caught statically by exactly this path.
 if [ "${BRAIN_DRY_RUN:-0}" != "1" ]; then
     brain_auth_check || exit 1
 fi

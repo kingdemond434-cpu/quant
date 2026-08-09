@@ -29,6 +29,7 @@ freely, and a log can be silent for a whole cell.
 from __future__ import annotations
 
 import argparse
+import json
 import shutil
 import subprocess
 import time
@@ -140,6 +141,8 @@ def main() -> int:
                     help="log silence beyond which an idle process is called STALLED. Default 30 "
                          "minutes: a sweep cell has taken ~8 minutes on the live box, so a "
                          "shorter window would call ordinary progress a stall")
+    ap.add_argument("--out", type=Path, default=Path("data/study_status.json"),
+                    help="machine-readable status artifact consumed by the research cycle")
     a = ap.parse_args()
 
     procs = describe(find(a.pattern))
@@ -148,6 +151,17 @@ def main() -> int:
     print(f"study-status [{state}] {why}")
     for p in procs[1:]:
         print(f"  also: pid {p.pid} up {p.etime} cpu {p.cpu_pct:.0f}% -- {p.cmd[:90]}")
+    artifact = {
+        "state": state,
+        "reason": why,
+        "pattern": a.pattern,
+        "log": str(a.log),
+        "log_age_seconds": age,
+        "processes": [p.__dict__ for p in procs],
+        "measured_at_unix": time.time(),
+    }
+    a.out.parent.mkdir(parents=True, exist_ok=True)
+    a.out.write_text(json.dumps(artifact, indent=1), encoding="utf-8")
     return 0
 
 

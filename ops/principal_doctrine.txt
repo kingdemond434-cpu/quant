@@ -26,6 +26,16 @@ Everything else is subordinate and instrumental: validated information gain, val
   THROUGHPUT COMES FROM SCREENING MORE, NEVER FROM PASSING MORE:  a survivor waved through at a lowered bar is NEGATIVE discovery -- it consumes capital and corrupts the prior. Empty funnel means GENERATE, never loosen. The bar is a constant for life.
   UNDER-EXPLORATION IS A BREACH:  any owned dataset below 100% explored is a breach, and the breach is the gap NOT CLOSING rather than the gap itself. Unmined proprietary data is edge already paid for and declined. Never propose exploring LESS; propose mining faster.
   IMMUTABLE CORE:  none of the above overrides the survival rails, the dead-man/kill-switch, the two-stage discovery law or any existing law. Where a computed floor conflicts with a survival rail, the rail wins unconditionally.
+FAMILY REACHABILITY INDEX (machine-checked; the prose above supplies the operative meaning):
+  AGGRESSION: L1.21a L1.28 L1.28a L1.28b L1.28c L1.25a L1.35 L1.41
+  EXPLORATION: L1.9 L1.11a L1.31 L1.32 L1.33 L1.34 L1.35 L1.40
+  CONVERSION: L1.10 L1.28b L2.3 L2.7 L1.39
+  SURVIVAL: L1.23 L1.20 L2.8a L1.38 L1.42
+  VALIDATION-HONESTY: L1.6 L1.25 L1.29 L1.30 L1.43 L1.44
+  MOAT: L1.11 L1.17 L2.9
+This index is an injection contract, never a substitute for docs/CONSTITUTION.md. Every present and
+future controller/organ receives all six families; no family may disappear merely because the
+implementation, model, schedule, data universe or discovery taxonomy changes.
 === END CONSTITUTION ===
 
 THE TWO MAXIMA, RESTATED IN THEIR PLACE (2026-08-01). This desk previously ran TWO CO-EQUAL SUPREME OBJECTIVES -- maximum safe-aggressive compounding and maximum alpha-discovery rate. They are NOT demoted; they are DERIVED, which is stronger. (1) MAXIMUM SAFE-AGGRESSIVE COMPOUNDING is max_pi E[log W_T] read at the deployment end: drive long-run E[log(wealth)] to the ABSOLUTE MAXIMUM the evidence permits -- not adequate, not reasonable, MAXIMUM. (2) MAXIMUM ALPHA-DISCOVERY RATE is the same objective read at the research end: DELTA_I_validated -> alpha_validated -> E[log W] -> G, so the rate of FINDING, TESTING and BANKING validated edge is the desk's principal lever on the objective and is driven to its physical maximum. Discovery is the primary DRIVER of growth, growth is the SCOREBOARD of discovery; every cycle report scores BOTH, and neither may be sacrificed to the other. What the hierarchy settles is the case they used to leave open: when two proposals conflict, the winner is whichever moves E[log W_T] more -- an arithmetic question, not a matter of taste. And it closes the gap they both left: W = W(alpha, R, X, C, L, S), so EXECUTION QUALITY, COSTS, RISK ALLOCATION and CAPACITY are first-class objectives in their own right, not support functions. A 20% cost reduction is worth exactly what a 20% better alpha is worth, and is cheaper and far more certain to obtain.

@@ -52,18 +52,35 @@ _ROOT = Path(__file__).resolve().parents[2]
 
 #: Ordered. Status is the FIRST failing stage -- the weakest link, never the strongest.
 STAGES: tuple[str, ...] = (
-    "EXISTS", "IMPORTS", "TESTS", "CALLED", "WIRED", "PRODUCES", "CONSUMED", "MEASURED",
+    "EXISTS",
+    "IMPORTS",
+    "TESTS",
+    "CALLED",
+    "WIRED",
+    "PRODUCES",
+    "CONSUMED",
+    "MEASURED",
 )
 
 STATUS: tuple[str, ...] = (
-    "MISSING", "PARTIAL", "VERIFIED_COMPLETE", "EXTERNALLY_BLOCKED",
+    "MISSING",
+    "PARTIAL",
+    "VERIFIED_COMPLETE",
+    "EXTERNALLY_BLOCKED",
 )
 
 #: Files a scheduler reads. A caller none of these reach is code somebody must remember to run,
 #: which is the definition of a capability that will eventually stop running.
 _SCHEDULERS: tuple[str, ...] = (
-    "ops/crontab.manifest", "ops/run_research_cycle.sh", "ops/run_frontier_rotation.sh",
-    "scripts/run_cadence.py", "scripts/run_intelligence_cycle.py", "ops/commit_daily_max.sh",
+    "ops/crontab.manifest",
+    "ops/run_research_cycle.sh",
+    "ops/run_sweep_then_cycle.sh",
+    "ops/run_midnight_frontier.sh",
+    "ops/run_midnight_codex_controller.sh",
+    "ops/run_frontier_rotation.sh",
+    "scripts/run_cadence.py",
+    "scripts/run_intelligence_cycle.py",
+    "ops/commit_daily_max.sh",
 )
 
 
@@ -141,6 +158,11 @@ def _scheduled(callers: list[str], root: Path) -> list[str]:
     """Callers a scheduler actually reaches. A caller nothing schedules is not wired."""
     hit = []
     for caller in callers:
+        # A scheduler can itself be the declared caller. Requiring another scheduler to mention
+        # it creates an impossible regress for top-level cycle scripts and cron manifests.
+        if caller in _SCHEDULERS and (root / caller).exists():
+            hit.append(f"{caller} (scheduler entrypoint)")
+            continue
         name = Path(caller).name
         for sched in _SCHEDULERS:
             p = root / sched
@@ -153,8 +175,12 @@ def _scheduled(callers: list[str], root: Path) -> list[str]:
     return hit
 
 
-def verify(cap: Capability, *, root: Path | None = None,
-           importer: Callable[[str], tuple[bool, str]] | None = None) -> Verification:
+def verify(
+    cap: Capability,
+    *,
+    root: Path | None = None,
+    importer: Callable[[str], tuple[bool, str]] | None = None,
+) -> Verification:
     """Check every stage against the working tree. PURE over `root` and `importer` for testing."""
     r = root or _ROOT
     imp = importer or _imports
@@ -162,8 +188,9 @@ def verify(cap: Capability, *, root: Path | None = None,
     detail = ""
 
     if cap.external_blocker:
-        return Verification(cap.capability_id, "EXTERNALLY_BLOCKED", {}, "",
-                            f"blocked by: {cap.external_blocker}")
+        return Verification(
+            cap.capability_id, "EXTERNALLY_BLOCKED", {}, "", f"blocked by: {cap.external_blocker}"
+        )
 
     mod_rel = cap.module.replace(".", "/") + ".py" if cap.module else ""
     stages["EXISTS"] = bool(mod_rel) and _exists(mod_rel, r)
@@ -192,7 +219,8 @@ def verify(cap: Capability, *, root: Path | None = None,
     # The check was wrong, not the code -- and a verifier that reports false gaps trains its reader
     # to ignore it, which is worse than no verifier.
     art = Path(cap.artifacts[0]).name if cap.artifacts else ""
-    produces = _mentions((cap.callers or (mod_rel,)), art, r) if cap.artifacts else []
+    producer_files = tuple(dict.fromkeys((*cap.callers, mod_rel))) if mod_rel else cap.callers
+    produces = _mentions(producer_files, art, r) if cap.artifacts else []
     stages["PRODUCES"] = bool(produces) or not cap.artifacts
     consumed = _mentions(cap.consumers, art, r) if cap.artifacts else []
     stages["CONSUMED"] = bool(consumed) or not cap.consumers
@@ -200,11 +228,13 @@ def verify(cap: Capability, *, root: Path | None = None,
 
     failed = next((s for s in STAGES if not stages.get(s, False)), "")
     if not failed:
-        return Verification(cap.capability_id, "VERIFIED_COMPLETE", stages, "",
-                            f"all {len(STAGES)} stages verified")
+        return Verification(
+            cap.capability_id, "VERIFIED_COMPLETE", stages, "", f"all {len(STAGES)} stages verified"
+        )
     status = "MISSING" if failed in {"EXISTS", "IMPORTS"} else "PARTIAL"
-    return Verification(cap.capability_id, status, stages, failed,
-                        detail or f"first failing stage: {failed}")
+    return Verification(
+        cap.capability_id, status, stages, failed, detail or f"first failing stage: {failed}"
+    )
 
 
 def load(path: Path) -> list[Capability]:
@@ -217,16 +247,22 @@ def load(path: Path) -> list[Capability]:
     for row in doc.get("capabilities", []) if isinstance(doc, dict) else []:
         if not isinstance(row, dict) or not row.get("capability_id"):
             continue
-        out.append(Capability(
-            capability_id=str(row["capability_id"]), title=str(row.get("title", "")),
-            economic_reason=str(row.get("economic_reason", "")),
-            source_spec=str(row.get("source_spec", "")), module=str(row.get("module", "")),
-            tests=tuple(row.get("tests") or ()), callers=tuple(row.get("callers") or ()),
-            artifacts=tuple(row.get("artifacts") or ()),
-            consumers=tuple(row.get("consumers") or ()),
-            external_blocker=str(row.get("external_blocker", "")),
-            expected_delta_elogw=str(row.get("expected_delta_elogw", "")),
-            next_action=str(row.get("next_action", ""))))
+        out.append(
+            Capability(
+                capability_id=str(row["capability_id"]),
+                title=str(row.get("title", "")),
+                economic_reason=str(row.get("economic_reason", "")),
+                source_spec=str(row.get("source_spec", "")),
+                module=str(row.get("module", "")),
+                tests=tuple(row.get("tests") or ()),
+                callers=tuple(row.get("callers") or ()),
+                artifacts=tuple(row.get("artifacts") or ()),
+                consumers=tuple(row.get("consumers") or ()),
+                external_blocker=str(row.get("external_blocker", "")),
+                expected_delta_elogw=str(row.get("expected_delta_elogw", "")),
+                next_action=str(row.get("next_action", "")),
+            )
+        )
     return out
 
 
@@ -244,8 +280,10 @@ def summarise(caps: list[Capability], *, root: Path | None = None) -> dict[str, 
     solvable = [r for r in results if r.status != "EXTERNALLY_BLOCKED"]
     complete = [r for r in solvable if r.complete]
     pct = (len(complete) / len(solvable) * 100.0) if solvable else 0.0
-    partial = sorted((r for r in results if r.status == "PARTIAL"),
-                     key=lambda r: STAGES.index(r.failed_stage) if r.failed_stage in STAGES else 99)
+    partial = sorted(
+        (r for r in results if r.status == "PARTIAL"),
+        key=lambda r: STAGES.index(r.failed_stage) if r.failed_stage in STAGES else 99,
+    )
     return {
         "capabilities": len(caps),
         "verified_complete": len(complete),
@@ -256,17 +294,30 @@ def summarise(caps: list[Capability], *, root: Path | None = None) -> dict[str, 
         "headline": (
             f"{len(complete)}/{len(solvable)} solvable capabilities VERIFIED_COMPLETE "
             f"({pct:.0f}%); {len(by_status['PARTIAL'])} partial, {len(by_status['MISSING'])} "
-            f"missing, {len(by_status['EXTERNALLY_BLOCKED'])} externally blocked"),
+            f"missing, {len(by_status['EXTERNALLY_BLOCKED'])} externally blocked"
+        ),
         "next_action": (
             f"{partial[0].capability_id}: closest to done, failing at {partial[0].failed_stage}"
-            if partial else
-            f"{by_status['MISSING'][0]}: not started" if by_status["MISSING"] else
-            "every solvable capability is verified complete -- ADD CAPABILITIES, because a ledger "
-            "that lists only what exists reports 100% and measures nothing"),
+            if partial
+            else f"{by_status['MISSING'][0]}: not started"
+            if by_status["MISSING"]
+            else "every solvable capability is verified complete -- ADD CAPABILITIES, "
+            "because a ledger that lists only what exists reports 100% and measures nothing"
+        ),
         "by_status": by_status,
-        "rows": [{"id": r.capability_id, "status": r.status, "failed_stage": r.failed_stage,
-                  "detail": r.detail, "stages": r.stages} for r in results],
-        "note": ("Status is the FIRST FAILING stage, never the strongest passing one. 'Large', "
-                 "'later' and 'queued' are scheduling information and map to MISSING -- only a "
-                 "named dependency this repository cannot satisfy is EXTERNALLY_BLOCKED."),
+        "rows": [
+            {
+                "id": r.capability_id,
+                "status": r.status,
+                "failed_stage": r.failed_stage,
+                "detail": r.detail,
+                "stages": r.stages,
+            }
+            for r in results
+        ],
+        "note": (
+            "Status is the FIRST FAILING stage, never the strongest passing one. 'Large', "
+            "'later' and 'queued' are scheduling information and map to MISSING -- only a "
+            "named dependency this repository cannot satisfy is EXTERNALLY_BLOCKED."
+        ),
     }

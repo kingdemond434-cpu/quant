@@ -50,6 +50,7 @@ if str(_ROOT) not in sys.path:
 #: and every push: a breach here is a breach anywhere.
 _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_constitution_core.py", ()),        # L2.8a -- the sealed core is intact
+    ("check_risk_kernel.py", ()),             # L1.23 -- survival code matches its seal
     # PRODUCER BEFORE CONSUMER. build_enforcement_matrix WRITES data/enforcement_matrix.json and
     # check_law_families READS it; the matrix is gitignored (data/*), so on a VIRGIN tree the
     # consumer ran first against a file that did not exist yet. That is why this gate was green

@@ -1,10 +1,10 @@
 [Unit]
-Description=Daily research cycle (bars -> studies -> ladder)
+Description=Midnight renewable research frontier (sweep -> cycle -> handoff)
 
 [Timer]
-# 04:00 UTC: after the miners' overnight window and well clear of the 15:00 frontier rotation, so
-# the sweep is not competing with seven digs for the same 4GB.
-OnCalendar=*-*-* 04:00:00
+# Start at local midnight so the full dependency-ordered cycle works through the overnight window.
+# The service uses one lock, nice/BLAS limits and recorder-first ordering; duplicate launchers exit.
+OnCalendar=*-*-* 00:00:00 Europe/London
 Persistent=true
 
 [Install]

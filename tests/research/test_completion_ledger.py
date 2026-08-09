@@ -111,11 +111,14 @@ def test_THE_REAL_LEDGER_PARSES_AND_IS_NOT_TRIVIAL() -> None:
     assert all(c.source_spec for c in caps), "every row cites the spec that asked for it"
 
 
-def test_UNBUILT_CAPABILITIES_ARE_ROWS_NOT_OMISSIONS() -> None:
-    """A ledger listing only what exists reports 100% and measures nothing. The denominator has to
-    include what is missing."""
-    rep = summarise(load(_LEDGER))
-    assert int(rep["missing"]) > 0, "no MISSING rows means the ledger is flattering itself"
+def test_REQUESTED_CAPABILITIES_STAY_IN_THE_DENOMINATOR_AFTER_BUILDING() -> None:
+    """Completion may reach 100%; it must do so by verifying every declared row, never omission."""
+    caps = load(_LEDGER)
+    rep = summarise(caps)
+    assert len(caps) >= 61
+    counted = (int(rep["verified_complete"]) + int(rep["partial"]) + int(rep["missing"])
+               + int(rep["externally_blocked"]))
+    assert counted == len(caps)
     assert 0.0 <= float(rep["completion_pct"]) <= 100.0
 
 
@@ -146,3 +149,10 @@ def test_A_MALFORMED_ROW_IS_SKIPPED_NOT_GUESSED(tmp_path) -> None:
 def test_STAGES_ARE_ORDERED_WEAKEST_FIRST() -> None:
     assert STAGES[0] == "EXISTS" and STAGES[-1] == "MEASURED"
     assert STAGES.index("CALLED") < STAGES.index("WIRED")
+
+def test_A_SCHEDULER_ENTRYPOINT_IS_WIRED_BY_DEFINITION() -> None:
+    v = verify(_cap(module="libs.research.completion_ledger",
+                    tests=("tests/research/test_completion_ledger.py",),
+                    callers=("ops/run_research_cycle.sh",)), importer=_ok)
+    assert v.stages["CALLED"] is True
+    assert v.stages["WIRED"] is True

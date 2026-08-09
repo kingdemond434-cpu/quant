@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# L1.37: portable law gate at the boundary where a commit can leave a controller's clone.
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+if [ -x "$ROOT/.venv/bin/python" ]; then
+    PY="$ROOT/.venv/bin/python"
+elif command -v python3 >/dev/null 2>&1; then
+    PY="$(command -v python3)"
+else
+    PY="$(command -v python)"
+fi
+
+exec "$PY" scripts/run_law_gate.py --laws-only

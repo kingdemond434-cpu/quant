@@ -41,6 +41,7 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   "$PY" scripts/check_risk_kernel.py || echo "RISK-KERNEL DRIFT -- review before trusting this cycle"
   OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 nice -n 15 "$PY" scripts/build_bars.py
   bash ops/run_study_on_vps.sh
+  nice -n 15 "$PY" scripts/study_status.py || true
   # The ladder runs even when the sweep found nothing: it also reports what is ALREADY live, and a
   # cycle that skipped it on a null day would go silent exactly when a live record needs reading.
   # THE REVIEW CONSUMES THE SWEEP: funnel, near-survivor bank, evidence tiers, convergence. Four
@@ -62,11 +63,22 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # gap set, so tomorrow's highest-value work is chosen from today's evidence rather than from
   # whatever was true when the schedule was written.
   nice -n 15 "$PY" scripts/run_intelligence_cycle.py || true
-  nice -n 15 "$PY" scripts/run_max_push.py || true
-  # THE PROGRAMME CANNOT QUIETLY STALL. The ledger verifies every declared capability against the
-  # working tree and publishes the unfinished ones as ranked gaps, so an item that stops being
-  # worked reappears in tomorrow's priorities by itself. Runs LAST: it measures the cycle that
-  # just happened, including whatever this cycle wired.
+  # Integrated residuals consume this cycle's real evidence; missing inputs remain UNMEASURED and
+  # therefore enter max-push above partially measured work rather than disappearing as clean zeros.
+  # Evolve the METHOD frontier before the completion report reads it: missing search methods,
+  # stagnation, fractional discovery credit and the bounded serendipity mission must affect the
+  # same night's priorities rather than appearing one cycle late.
+  nice -n 15 "$PY" scripts/research_alpha_optimizer.py || true
+  nice -n 15 "$PY" scripts/gpt_hunter.py || true
+  # Elite external work converts through the EXISTING hypothesis queue: public claims stay priors,
+  # while capability gaps, papers, failures, participant sensors, MEV and white-space coverage
+  # become measured frontier work rather than another document archive.
+  nice -n 15 "$PY" scripts/run_external_intelligence.py || true
+  nice -n 15 "$PY" scripts/run_alpha_frontier.py || true
+  # Verify the ledger BEFORE the integrated report and ranker consume it. Publishing gaps after
+  # max-push would strand every newly found incomplete capability for an extra day.
   nice -n 15 "$PY" scripts/run_completion_ledger.py || true
+  nice -n 15 "$PY" scripts/run_completion_program.py || true
+  nice -n 15 "$PY" scripts/run_max_push.py || true
   echo "=== research cycle exit $? at $(date -u) ==="
 } 2>&1 | tee -a "$LOG"

@@ -50,6 +50,14 @@ def test_AN_ABSENT_FILE_HASHES_TO_NONE_NOT_A_SENTINEL(tmp_path) -> None:
     assert RK.digest(tmp_path / "nope.py") is None
 
 
+def test_LINE_ENDING_CHECKOUT_CONVERSION_IS_NOT_FALSE_TAMPERING(tmp_path) -> None:
+    rail = tmp_path / "rail.py"
+    rail.write_bytes(b"first\nsecond\n")
+    canonical = RK.digest(rail)
+    rail.write_bytes(b"first\r\nsecond\r\n")
+    assert RK.digest(rail) == canonical
+
+
 def test_A_MODIFIED_RAIL_IS_DETECTED(tmp_path, monkeypatch) -> None:
     """The property the whole check exists for."""
     f = tmp_path / "rail.py"

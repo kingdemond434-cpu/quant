@@ -1,0 +1,14 @@
+{
+  "research_account": "quant",
+  "risk_account": "quant-risk",
+  "risk_runtime": "/opt/quant-risk-kernel",
+  "rules": [
+    {"principal": "root", "path": "/opt/quant-risk-kernel", "access": "owner-write"},
+    {"principal": "quant-risk", "path": "/opt/quant-risk-kernel", "access": "read-execute"},
+    {"principal": "quant-risk", "path": "/var/lib/quant-risk-kernel", "access": "read-write"},
+    {"principal": "quant", "path": "/opt/quant-risk-kernel", "access": "read-only"},
+    {"principal": "quant", "path": "/etc/systemd/system/quant-risk-kernel.service", "access": "none"}
+  ],
+  "invariant": "the research account cannot modify, redeploy, stop, or replace the survival path",
+  "application": "host root action; repository agents may generate and test but never apply"
+}

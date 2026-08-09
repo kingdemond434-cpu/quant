@@ -57,6 +57,9 @@ if str(_ROOT) not in sys.path:
 
 _OUT = _ROOT / "data/max_push_queue.json"
 
+from libs.research.alpha_frontier_gaps import queue_rows as alpha_frontier_queue_rows  # noqa: E402
+from libs.research.completion_program_gaps import load as load_completion_program  # noqa: E402
+from libs.research.completion_program_gaps import queue_rows as completion_queue_rows  # noqa: E402
 from libs.research.gap_contract import load_published, to_queue_rows  # noqa: E402
 
 # Leverage per source class: how much does closing one unit of this gap move the two supreme
@@ -64,39 +67,56 @@ from libs.research.gap_contract import load_published, to_queue_rows  # noqa: E4
 # heterogeneous engineering work and a fabricated one would rank worse while looking rigorous.
 _LEVERAGE: dict[str, tuple[float, str]] = {
     "money_path_correctness": (
-        1.00, "an undetected fault on the money path can end compounding outright (L1.23); every "
-              "other guarantee sits on top of it"),
+        1.00,
+        "an undetected fault on the money path can end compounding outright (L1.23); every "
+        "other guarantee sits on top of it",
+    ),
     "capital_utilisation": (
-        0.90, "an idle dollar is compounding that never starts, and the loss is unbooked -- it "
-              "appears in no P&L and raises no error (L1.28a)"),
+        0.90,
+        "an idle dollar is compounding that never starts, and the loss is unbooked -- it "
+        "appears in no P&L and raises no error (L1.28a)",
+    ),
     "evidence_throughput": (
-        0.85, "forward slots and discovery rate set how fast validated edges can EXIST at all; an "
-              "empty slot is evidence that will never be accrued"),
+        0.85,
+        "forward slots and discovery rate set how fast validated edges can EXIST at all; an "
+        "empty slot is evidence that will never be accrued",
+    ),
     "unenforced_law": (
-        0.70, "a principle with no fence is prose -- it cannot fire and degrades silently into "
-              "decoration (L2.0). Every defect found 2026-07-30 was of this shape"),
+        0.70,
+        "a principle with no fence is prose -- it cannot fire and degrades silently into "
+        "decoration (L2.0). Every defect found 2026-07-30 was of this shape",
+    ),
     "dormant_capability": (
-        0.55, "engineering already paid for, returning zero forever, and rotting into a liability "
-              "because nobody maintains what nobody runs (L2.9)"),
+        0.55,
+        "engineering already paid for, returning zero forever, and rotting into a liability "
+        "because nobody maintains what nobody runs (L2.9)",
+    ),
     "measurement_quality": (
-        0.65, "test strength and type coverage bound how much of the above the desk can TRUST"),
-    "open_defect": (
-        0.50, "a known defect nobody closed; its cost is already being paid"),
+        0.65,
+        "test strength and type coverage bound how much of the above the desk can TRUST",
+    ),
+    "open_defect": (0.50, "a known defect nobody closed; its cost is already being paid"),
     "conversion_debt": (
-        0.95, "a finding aging in the queue is alpha already paid for and never collected; the "
-              "measured spread between build-rate (~14 findings/day) and convert-rate "
-              "(~0.6/day, deep sweep 2026-07-31) is the desk's largest single loss, and it "
-              "multiplies every other row -- every queue item IS conversion (L1.28b)"),
+        0.95,
+        "a finding aging in the queue is alpha already paid for and never collected; the "
+        "measured spread between build-rate (~14 findings/day) and convert-rate "
+        "(~0.6/day, deep sweep 2026-07-31) is the desk's largest single loss, and it "
+        "multiplies every other row -- every queue item IS conversion (L1.28b)",
+    ),
     "calibration_debt": (
-        0.80, "every Kelly bet and every promotion rests on a probability the desk assigned; if "
-              "those are systematically over-confident the desk over-bets EVERY position and "
-              "the error is invisible per-decision (L1.29). Unscored forecasts inflate the "
-              "apparent hit rate by never counting the misses"),
+        0.80,
+        "every Kelly bet and every promotion rests on a probability the desk assigned; if "
+        "those are systematically over-confident the desk over-bets EVERY position and "
+        "the error is invisible per-decision (L1.29). Unscored forecasts inflate the "
+        "apparent hit rate by never counting the misses",
+    ),
     "tier1_process_gap": (
-        0.75, "the principal's standing order (2026-07-31): every gap to tier-1 PROCESS closes "
-              "autonomously, without being told -- only calendar-time walls are exempt. A layer "
-              "below T1 is a known distance to the best practice that exists, with its closer "
-              "named in the benchmark register"),
+        0.75,
+        "the principal's standing order (2026-07-31): every gap to tier-1 PROCESS closes "
+        "autonomously, without being told -- only calendar-time walls are exempt. A layer "
+        "below T1 is a known distance to the best practice that exists, with its closer "
+        "named in the benchmark register",
+    ),
 }
 
 # Aspects with no number at all rank above partially-complete ones -- see module docstring.
@@ -113,24 +133,45 @@ def _json(rel: str) -> Any:
 def _refresh(script: str) -> None:
     """Re-run a producer so the queue is built on today's numbers, not last week's."""
     try:
-        subprocess.run([sys.executable, str(_ROOT / "scripts" / script), "--report-only"],
-                       check=False, capture_output=True, timeout=300, cwd=_ROOT,
-                       env={**dict(__import__("os").environ), "PYTHONPATH": str(_ROOT)})
+        subprocess.run(
+            [sys.executable, str(_ROOT / "scripts" / script), "--report-only"],
+            check=False,
+            capture_output=True,
+            timeout=300,
+            cwd=_ROOT,
+            env={**dict(__import__("os").environ), "PYTHONPATH": str(_ROOT)},
+        )
     except (OSError, subprocess.TimeoutExpired):
         return
 
 
-def _item(aspect: str, source: str, current: float | None, ceiling: float, detail: str,
-          action: str, artifact: str) -> dict[str, Any]:
+def _item(
+    aspect: str,
+    source: str,
+    current: float | None,
+    ceiling: float,
+    detail: str,
+    action: str,
+    artifact: str,
+) -> dict[str, Any]:
     measured = current is not None
     gap = 1.0 if not measured else max(0.0, (ceiling - current) / ceiling if ceiling else 0.0)
     weight, why = _LEVERAGE[source]
     score = gap * weight * (_UNMEASURED_PRIORITY if not measured else 1.0)
-    return {"aspect": aspect, "source": source, "measured": measured,
-            "current": None if not measured else round(float(current), 4),
-            "ceiling": ceiling, "gap_fraction": round(gap, 4), "leverage": weight,
-            "score": round(score, 4), "why_it_matters": why, "detail": detail,
-            "next_action": action, "artifact": artifact}
+    return {
+        "aspect": aspect,
+        "source": source,
+        "measured": measured,
+        "current": None if not measured else round(float(current), 4),
+        "ceiling": ceiling,
+        "gap_fraction": round(gap, 4),
+        "leverage": weight,
+        "score": round(score, 4),
+        "why_it_matters": why,
+        "detail": detail,
+        "next_action": action,
+        "artifact": artifact,
+    }
 
 
 def _from_ratchets() -> list[dict[str, Any]]:
@@ -139,13 +180,20 @@ def _from_ratchets() -> list[dict[str, Any]]:
     for r in d.get("rows", d.get("metrics", [])) or []:
         name = str(r.get("metric", r.get("name", "?")))
         val = r.get("value", r.get("current"))
-        source = ("measurement_quality" if "strength" in name or "mypy" in name
-                  else "evidence_throughput")
-        out.append(_item(
-            f"ratchet::{name}", source, None if val is None else float(val), 1.0,
-            f"floor {r.get('floor')} status {r.get('status')}",
-            "close the gap to 100%; the survivor/failure list IS the work queue (L1.0c)",
-            "data/ratchet_report.json"))
+        source = (
+            "measurement_quality" if "strength" in name or "mypy" in name else "evidence_throughput"
+        )
+        out.append(
+            _item(
+                f"ratchet::{name}",
+                source,
+                None if val is None else float(val),
+                1.0,
+                f"floor {r.get('floor')} status {r.get('status')}",
+                "close the gap to 100%; the survivor/failure list IS the work queue (L1.0c)",
+                "data/ratchet_report.json",
+            )
+        )
     return out
 
 
@@ -154,16 +202,28 @@ def _from_utilisation() -> list[dict[str, Any]]:
     out = []
     for c in d.get("ceilings", []) or []:
         name = str(c.get("name"))
-        source = ("capital_utilisation" if "capital" in name else
-                  "evidence_throughput" if "slot" in name else
-                  "dormant_capability" if "capability" in name else
-                  "measurement_quality" if "kill_rate" in name else "capital_utilisation")
-        out.append(_item(
-            f"ceiling::{name}", source,
-            None if not c.get("measured") else float(c.get("utilisation", 0.0)), 1.0,
-            f"{c.get('used')}/{c.get('limit')} {c.get('unit')} -- {c.get('status')}",
-            c.get("binding_constraint") or "no binding constraint named -- L1.28a defect",
-            "data/utilisation.json"))
+        source = (
+            "capital_utilisation"
+            if "capital" in name
+            else "evidence_throughput"
+            if "slot" in name
+            else "dormant_capability"
+            if "capability" in name
+            else "measurement_quality"
+            if "kill_rate" in name
+            else "capital_utilisation"
+        )
+        out.append(
+            _item(
+                f"ceiling::{name}",
+                source,
+                None if not c.get("measured") else float(c.get("utilisation", 0.0)),
+                1.0,
+                f"{c.get('used')}/{c.get('limit')} {c.get('unit')} -- {c.get('status')}",
+                c.get("binding_constraint") or "no binding constraint named -- L1.28a defect",
+                "data/utilisation.json",
+            )
+        )
     return out
 
 
@@ -174,15 +234,24 @@ def _from_matrix() -> list[dict[str, Any]]:
     n_prin = max(int(d.get("n_principles", 1)), 1)
     n_fence = max(int(d.get("n_fences", 1)), 1)
     return [
-        _item("law::principles_enforced", "unenforced_law",
-              (n_prin - len(unenforced)) / n_prin, 1.0,
-              f"{len(unenforced)} unenforced: {unenforced[:5]}",
-              "map each to a fence, or record it HUMAN-ONLY with the reason",
-              "data/enforcement_matrix.json"),
-        _item("law::fences_claimed", "unenforced_law", (n_fence - len(orphans)) / n_fence, 1.0,
-              f"{len(orphans)} fences claimed by no law",
-              "name the governing law in _FENCE_OWNERS, or retire the fence",
-              "data/enforcement_matrix.json"),
+        _item(
+            "law::principles_enforced",
+            "unenforced_law",
+            (n_prin - len(unenforced)) / n_prin,
+            1.0,
+            f"{len(unenforced)} unenforced: {unenforced[:5]}",
+            "map each to a fence, or record it HUMAN-ONLY with the reason",
+            "data/enforcement_matrix.json",
+        ),
+        _item(
+            "law::fences_claimed",
+            "unenforced_law",
+            (n_fence - len(orphans)) / n_fence,
+            1.0,
+            f"{len(orphans)} fences claimed by no law",
+            "name the governing law in _FENCE_OWNERS, or retire the fence",
+            "data/enforcement_matrix.json",
+        ),
     ]
 
 
@@ -206,13 +275,19 @@ def _from_wiring() -> list[dict[str, Any]]:
     proposed = int(counts.get("PROPOSE", 0))
     if not scanned:
         return []
-    return [_item("capability::wiring_decisions_pending", "dormant_capability",
-                  (scanned - proposed) / scanned, 1.0,
-                  f"{proposed} scripts awaiting a cadence decision, of {scanned} scanned "
-                  f"({counts}); AUTO-WIRE=0 means the agent is caught up, not stalled",
-                  "each PROPOSE row names why it was withheld (money-path / spend / writes "
-                  "outside data+web) -- decide a cadence or record why it stays unscheduled",
-                  "data/wiring_agent.json")]
+    return [
+        _item(
+            "capability::wiring_decisions_pending",
+            "dormant_capability",
+            (scanned - proposed) / scanned,
+            1.0,
+            f"{proposed} scripts awaiting a cadence decision, of {scanned} scanned "
+            f"({counts}); AUTO-WIRE=0 means the agent is caught up, not stalled",
+            "each PROPOSE row names why it was withheld (money-path / spend / writes "
+            "outside data+web) -- decide a cadence or record why it stays unscheduled",
+            "data/wiring_agent.json",
+        )
+    ]
 
 
 def _from_register() -> list[dict[str, Any]]:
@@ -223,11 +298,17 @@ def _from_register() -> list[dict[str, Any]]:
     rows = re.findall(r"^\|\s*#?(\d+)\s*\|", text, re.MULTILINE)
     open_rows = len(re.findall(r"\bOPEN\b", text))
     total = max(len(rows), 1)
-    return [_item("register::rows_closed", "open_defect",
-                  max(0.0, (total - open_rows) / total), 1.0,
-                  f"{open_rows} OPEN of {total} rows",
-                  "close highest-EV rows first; a row nobody closes is a cost already being paid",
-                  "docs/GAP_REGISTER.md")]
+    return [
+        _item(
+            "register::rows_closed",
+            "open_defect",
+            max(0.0, (total - open_rows) / total),
+            1.0,
+            f"{open_rows} OPEN of {total} rows",
+            "close highest-EV rows first; a row nobody closes is a cost already being paid",
+            "docs/GAP_REGISTER.md",
+        )
+    ]
 
 
 def _from_conversion() -> list[dict[str, Any]]:
@@ -243,16 +324,31 @@ def _from_conversion() -> list[dict[str, Any]]:
     arr, disp = d.get("arrivals_7d"), d.get("dispositions_7d")
     flow = None if arr is None or disp is None else min(1.0, disp / arr) if arr else 1.0
     detail = d.get("detail") or "data/conversion_status.json missing -- run check_conversion.py"
-    action = ("repair-mode: flip the next audit/brain window from finding to fixing; drain "
-              "past-due rows first (each names its own fix)" if d.get("repair_mode")
-              else "keep dispositions >= arrivals; a row nobody closes is a cost already paid")
+    action = (
+        "repair-mode: flip the next audit/brain window from finding to fixing; drain "
+        "past-due rows first (each names its own fix)"
+        if d.get("repair_mode")
+        else "keep dispositions >= arrivals; a row nobody closes is a cost already paid"
+    )
     return [
-        _item("conversion::queue_dispositioned", "conversion_debt",
-              None if ratio is None else float(ratio), 1.0, detail, action,
-              "data/conversion_status.json"),
-        _item("conversion::flow_keeps_pace_7d", "conversion_debt", flow, 1.0,
-              f"7d: {arr} raised vs {disp} dispositioned; status {d.get('status')}",
-              action, "data/conversion_status.json"),
+        _item(
+            "conversion::queue_dispositioned",
+            "conversion_debt",
+            None if ratio is None else float(ratio),
+            1.0,
+            detail,
+            action,
+            "data/conversion_status.json",
+        ),
+        _item(
+            "conversion::flow_keeps_pace_7d",
+            "conversion_debt",
+            flow,
+            1.0,
+            f"7d: {arr} raised vs {disp} dispositioned; status {d.get('status')}",
+            action,
+            "data/conversion_status.json",
+        ),
     ]
 
 
@@ -268,22 +364,40 @@ def _from_tier_benchmark() -> list[dict[str, Any]]:
     """
     p = _ROOT / "docs/research/TIER1_BENCHMARK.md"
     if not p.exists():
-        return [_item("tier1::benchmark_register", "tier1_process_gap", None, 1.0,
-                      "docs/research/TIER1_BENCHMARK.md missing -- the standing gap register "
-                      "was deleted or never synced", "restore the register; the deep sweep "
-                      "re-grades it weekly", "docs/research/TIER1_BENCHMARK.md")]
+        return [
+            _item(
+                "tier1::benchmark_register",
+                "tier1_process_gap",
+                None,
+                1.0,
+                "docs/research/TIER1_BENCHMARK.md missing -- the standing gap register "
+                "was deleted or never synced",
+                "restore the register; the deep sweep re-grades it weekly",
+                "docs/research/TIER1_BENCHMARK.md",
+            )
+        ]
     out = []
     for m in re.finditer(
-            r"^\|\s*(\w+)\s*\|\s*(T[1-4]|—)\s*\|\s*(.+?)\s*\|\s*\**(yes|no)\**\s*\|\s*$",
-            p.read_text("utf-8"), re.MULTILINE):
+        r"^\|\s*(\w+)\s*\|\s*(T[1-4]|—)\s*\|\s*(.+?)\s*\|\s*\**(yes|no)\**\s*\|\s*$",
+        p.read_text("utf-8"),
+        re.MULTILINE,
+    ):
         layer, tier, closer, time_bound = m.groups()
         if time_bound == "yes" or tier == "—":
             continue
         score = _TIER_SCORE.get(tier)
         if score is not None and score < 1.0:
-            out.append(_item(f"tier1::{layer}", "tier1_process_gap", score, 1.0,
-                             f"graded {tier} -- distance to tier-1 process is named work",
-                             closer, "docs/research/TIER1_BENCHMARK.md"))
+            out.append(
+                _item(
+                    f"tier1::{layer}",
+                    "tier1_process_gap",
+                    score,
+                    1.0,
+                    f"graded {tier} -- distance to tier-1 process is named work",
+                    closer,
+                    "docs/research/TIER1_BENCHMARK.md",
+                )
+            )
     return out
 
 
@@ -297,13 +411,19 @@ def _from_calibration() -> list[dict[str, Any]]:
     st = str(d.get("status", "UNFORECASTING"))
     rel = d.get("reliability")
     measured = st not in ("UNFORECASTING", "OVERDUE") and rel is not None
-    return [_item("calibration::forecast_reliability", "calibration_debt",
-                  float(rel) if measured else None, 1.0,
-                  str(d.get("detail", "no calibration artifact")),
-                  "log a probability at every real decision point and RESOLVE it by its "
-                  "deadline; the measured bias then shrinks future confidence automatically "
-                  "(forecast_calibration.calibrated_confidence)",
-                  "data/calibration_status.json")]
+    return [
+        _item(
+            "calibration::forecast_reliability",
+            "calibration_debt",
+            float(rel) if measured else None,
+            1.0,
+            str(d.get("detail", "no calibration artifact")),
+            "log a probability at every real decision point and RESOLVE it by its "
+            "deadline; the measured bias then shrinks future confidence automatically "
+            "(forecast_calibration.calibrated_confidence)",
+            "data/calibration_status.json",
+        )
+    ]
 
 
 def _from_freshness() -> list[dict[str, Any]]:
@@ -317,13 +437,19 @@ def _from_freshness() -> list[dict[str, Any]]:
     st = str(d.get("status", "UNMEASURED"))
     frac = d.get("fresh_fraction")
     measured = st != "UNMEASURED" and frac is not None
-    return [_item("freshness::contracts_fresh", "money_path_correctness",
-                  float(frac) if measured else None, 1.0,
-                  str(d.get("detail", "no freshness artifact")),
-                  "revive the dead producer or re-wire the caller through "
-                  "libs.ops.fresh.read_fresh -- check_freshness.py names both ends of every "
-                  "stale edge",
-                  "data/freshness_status.json")]
+    return [
+        _item(
+            "freshness::contracts_fresh",
+            "money_path_correctness",
+            float(frac) if measured else None,
+            1.0,
+            str(d.get("detail", "no freshness artifact")),
+            "revive the dead producer or re-wire the caller through "
+            "libs.ops.fresh.read_fresh -- check_freshness.py names both ends of every "
+            "stale edge",
+            "data/freshness_status.json",
+        )
+    ]
 
 
 def _from_stranding() -> list[dict[str, Any]]:
@@ -362,39 +488,70 @@ def _from_stranding() -> list[dict[str, Any]]:
     if not scanned:
         # UNMEASURED, NOT ZERO. An absent cycle artifact means nobody looked, and letting that
         # read as "no conversion failures" is WS-005 aimed at the queue's own inputs.
-        return [_item("capability::conversion_failures", "dormant_capability", None, 1.0,
-                      "no intelligence-cycle artifact -- the stranding scan has not run here",
-                      "run scripts/run_intelligence_cycle.py; UNMEASURED outranks a partial "
-                      "number because an unknown quantity is being ignored, not worked",
-                      "data/intelligence_cycle.json")]
+        return [
+            _item(
+                "capability::conversion_failures",
+                "dormant_capability",
+                None,
+                1.0,
+                "no intelligence-cycle artifact -- the stranding scan has not run here",
+                "run scripts/run_intelligence_cycle.py; UNMEASURED outranks a partial "
+                "number because an unknown quantity is being ignored, not worked",
+                "data/intelligence_cycle.json",
+            )
+        ]
     n = len(rows)
     worst = ", ".join(str(r.get("path", "?")) for r in rows[:3]) or "none"
-    return [_item("capability::conversion_failures", "dormant_capability",
-                  (scanned - n) / scanned, 1.0,
-                  f"{n} module(s) imported by a live consumer that NEVER call them, of {scanned} "
-                  f"scanned; worst by size: {worst}",
-                  "call it from the consumer that already imports it, or delete the import -- an "
-                  "import kept to prove a module loads reports ACTIVE while the capability has "
-                  "never run once (L1.54(a))",
-                  "data/intelligence_cycle.json")]
+    return [
+        _item(
+            "capability::conversion_failures",
+            "dormant_capability",
+            (scanned - n) / scanned,
+            1.0,
+            f"{n} module(s) imported by a live consumer that NEVER call them, of {scanned} "
+            f"scanned; worst by size: {worst}",
+            "call it from the consumer that already imports it, or delete the import -- an "
+            "import kept to prove a module loads reports ACTIVE while the capability has "
+            "never run once (L1.54(a))",
+            "data/intelligence_cycle.json",
+        )
+    ]
 
 
 def build(*, refresh: bool = True) -> dict[str, Any]:
     if refresh:
-        for s in ("check_ratchets.py", "check_utilisation.py", "build_enforcement_matrix.py",
-                  "check_conversion.py", "check_calibration.py", "check_freshness.py"):
+        for s in (
+            "check_ratchets.py",
+            "check_utilisation.py",
+            "build_enforcement_matrix.py",
+            "check_conversion.py",
+            "check_calibration.py",
+            "check_freshness.py",
+        ):
             _refresh(s)
-    items = (_from_ratchets() + _from_utilisation() + _from_matrix()
-             + _from_wiring() + _from_register() + _from_conversion()
-             + _from_tier_benchmark() + _from_calibration() + _from_freshness()
-             + _from_stranding()
-             # THE GENERIC CHANNEL. Every `_from_*` above is a bespoke reader that knows the shape
-             # of one artifact, and adding the tenth made the cost visible: a detector written
-             # today cannot influence tomorrow's priorities until somebody edits THIS file, which
-             # makes the ranker a gatekeeper on discovery. Detectors now publish `Gap` rows to
-             # data/published_gaps/ and are ranked with no edit here. The readers above stay --
-             # rewriting working producers to prove a point is the bloat this contract avoids.
-             + to_queue_rows(load_published(), _item))
+    items = (
+        _from_ratchets()
+        + _from_utilisation()
+        + _from_matrix()
+        + _from_wiring()
+        + _from_register()
+        + _from_conversion()
+        + _from_tier_benchmark()
+        + _from_calibration()
+        + _from_freshness()
+        + _from_stranding()
+        + completion_queue_rows(
+            load_completion_program(_ROOT / "data/completion_program.json"), _item
+        )
+        + alpha_frontier_queue_rows(_ROOT / "data/intelligence/daily_alpha_frontier.json", _item)
+        # THE GENERIC CHANNEL. Every `_from_*` above is a bespoke reader that knows the shape
+        # of one artifact, and adding the tenth made the cost visible: a detector written
+        # today cannot influence tomorrow's priorities until somebody edits THIS file, which
+        # makes the ranker a gatekeeper on discovery. Detectors now publish `Gap` rows to
+        # data/published_gaps/ and are ranked with no edit here. The readers above stay --
+        # rewriting working producers to prove a point is the bloat this contract avoids.
+        + to_queue_rows(load_published(), _item)
+    )
     items.sort(key=lambda r: -float(r["score"]))
     at_ceiling = [i for i in items if i["measured"] and i["gap_fraction"] <= 0.0]
     unmeasured = [i for i in items if not i["measured"]]
@@ -404,22 +561,32 @@ def build(*, refresh: bool = True) -> dict[str, Any]:
     verdict = "PUSH"
     if items and len(at_ceiling) == len(items):
         verdict = "MEASUREMENT-SET-TOO-SMALL"
-        items.insert(0, _item(
-            "meta::measurement_coverage", "unenforced_law", None, 1.0,
-            f"all {len(items)} measured aspects are at their ceiling",
-            "A system that reaches 100% on everything it measures is measuring too little. "
-            "The correct next action is to ADD ceilings -- name an aspect of this desk that "
-            "currently carries no number and give it one (L1.0a: a capability with no number "
-            "is a defect).", "data/max_push_queue.json"))
+        items.insert(
+            0,
+            _item(
+                "meta::measurement_coverage",
+                "unenforced_law",
+                None,
+                1.0,
+                f"all {len(items)} measured aspects are at their ceiling",
+                "A system that reaches 100% on everything it measures is measuring too little. "
+                "The correct next action is to ADD ceilings -- name an aspect of this desk that "
+                "currently carries no number and give it one (L1.0a: a capability with no number "
+                "is a defect).",
+                "data/max_push_queue.json",
+            ),
+        )
     return {
         "generated": datetime.now(tz=UTC).isoformat(),
         "law": "L1.0 -- the gap between today's value and 100% IS the work queue. This organ "
-               "never reports done: all-green escalates to MEASUREMENT-SET-TOO-SMALL.",
+        "never reports done: all-green escalates to MEASUREMENT-SET-TOO-SMALL.",
         "verdict": verdict,
-        "n_aspects": len(items), "n_unmeasured": len(unmeasured),
+        "n_aspects": len(items),
+        "n_unmeasured": len(unmeasured),
         "n_at_ceiling": len(at_ceiling),
         "mean_completion": round(
-            sum(1.0 - float(i["gap_fraction"]) for i in items) / max(len(items), 1), 4),
+            sum(1.0 - float(i["gap_fraction"]) for i in items) / max(len(items), 1), 4
+        ),
         "queue": items,
     }
 
@@ -436,10 +603,12 @@ def main() -> int:
     if args.json:
         print(json.dumps(rep, indent=2))
     else:
-        print(f"MAX PUSH [{rep['verdict']}] {rep['n_aspects']} aspects | "
-              f"mean completion {rep['mean_completion']:.1%} | "
-              f"{rep['n_unmeasured']} UNMEASURED | {rep['n_at_ceiling']} at ceiling")
-        for i, r in enumerate(rep["queue"][:args.top], 1):
+        print(
+            f"MAX PUSH [{rep['verdict']}] {rep['n_aspects']} aspects | "
+            f"mean completion {rep['mean_completion']:.1%} | "
+            f"{rep['n_unmeasured']} UNMEASURED | {rep['n_at_ceiling']} at ceiling"
+        )
+        for i, r in enumerate(rep["queue"][: args.top], 1):
             cur = "UNMEASURED" if not r["measured"] else f"{float(r['current']):.1%}"
             print(f"{i:3}. [{r['score']:.3f}] {r['aspect']:44} {cur:>11}  {r['detail'][:60]}")
         print(f"-> {_OUT.relative_to(_ROOT)}")

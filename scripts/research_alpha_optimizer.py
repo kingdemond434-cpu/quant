@@ -29,6 +29,8 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
+from libs.research.search_strategy import evolve_search_strategies
+
 LEDGER = Path("data/decision_ledger.json")
 OUT = Path("data/research_alpha_optimizer.json")
 HIST = Path("data/method_outcomes.jsonl")
@@ -155,6 +157,15 @@ def main() -> None:
     total_surv = confirmed
     mode = "ACTIVE" if confirmed >= MIN_SURVIVORS else "INSTRUMENTING"
 
+    history = []
+    try:
+        history = [
+            json.loads(line) for line in HIST.read_text("utf-8").splitlines() if line.strip()
+        ]
+    except (OSError, json.JSONDecodeError):
+        history = []
+    today = datetime.now(tz=UTC).date().isoformat()
+    evolution = evolve_search_strategies(led, history, as_of=today)
     rows = []
     for m, s in stats.items():
         n = max(1, s["n"])
@@ -179,11 +190,12 @@ def main() -> None:
     print(
         "=== RESEARCH ALPHA OPTIMIZER -- which RESEARCH METHODS convert effort into knowledge ==="
     )
-    print(
-        f"    MODE: {mode}"
-        ("  (records only, drives NOTHING)" if mode == "INSTRUMENTING"
-         else "  (may inform allocation)")
+    mode_note = (
+        "  (records only, drives NOTHING)"
+        if mode == "INSTRUMENTING"
+        else "  (may inform allocation)"
     )
+    print(f"    MODE: {mode}{mode_note}")
     print(f"    activation needs >={MIN_SURVIVORS} confirmed edges; currently {total_surv}\n")
     print(
         f"  {'method':<20}{'att':>5}{'surv':>6}{'refut':>7}{'upg':>5}{'incon':>7}"
@@ -214,10 +226,12 @@ def main() -> None:
         fh.write(
             json.dumps(
                 {
-                    "date": datetime.now(tz=UTC).date().isoformat(),
+                    "date": today,
                     "mode": mode,
                     "total_survivors": total_surv,
                     "methods": {r["method"]: r["value_per_attempt"] for r in rows},
+                    "total_value": sum(float(s["value"]) for s in stats.values()),
+                    "serendipity_domain": evolution["serendipity_channel"]["domain"],
                 }
             )
             + "\n"
@@ -232,6 +246,7 @@ def main() -> None:
                 "keyword_hits": keyword_surv,
                 "value_function": VALUE,
                 "methods": rows,
+                "search_strategy_evolution": evolution,
             },
             indent=1,
         ),

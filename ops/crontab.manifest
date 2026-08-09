@@ -85,6 +85,11 @@ QUANT_ROOT=/home/quant/quant-platform
 # wave 1->2->3 protocol; duplicate finds are suppressed by the graveyard + novelty gate, so extra
 # frequency cannot manufacture duplicate work.
 5 */3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/kimi_hunter.py >> data/cro_ai_logs/kimi_hunter.log 2>&1
+# GPT HUNTER: one shared corpus/state for video transcripts, extreme-return claims and public
+# systematic strategies. Changed-item hashes make frequent checks cheap; failures remain retryable.
+# Kimi is independent and unchanged. The daily floor is exceeded so time-sensitive uploads move
+# into the same Alpha Factory within hours, subject to the ordinary validation/risk boundary.
+25 */3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/gpt_hunter.py >> data/cro_ai_logs/gpt_hunter.log 2>&1
 # WEEKLY DEEP: longer budget, targets previously unexplored languages/regions/eras per L1.11a.
 35 5 * * 0,3 cd "$QUANT_ROOT" && .venv/bin/python scripts/kimi_hunter.py --deep >> data/cro_ai_logs/kimi_hunter_deep.log 2>&1
 
@@ -744,6 +749,17 @@ SYSTEMD unit="quant-cro.timer" on="*-*-* 08:01:00" exec="scripts/daily_research_
 #   ops/memory/crypto-desk-state.md:21
 # CONFIDENCE: documented-cadence
 SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
+
+# PAGER, CADENCE, DAILY MAX AND MIDNIGHT FRONTIER. These committed timers are part of the
+# reconstitutable control plane, not an implicit VPS property. Keeping them in the manifest makes
+# timer/unit drift fail scripts/check_scheduler_manifest.py before deployment.
+# EVIDENCE: ops/quant-alerts.timer, ops/quant-cadence.timer, ops/quant-daily-max.timer,
+#   ops/quant-research.timer and their companion services.
+# CONFIDENCE: committed-unit
+SYSTEMD unit="quant-alerts.timer" on="*:0/15" exec="scripts/run_alerts.py"
+SYSTEMD unit="quant-cadence.timer" on="hourly" exec="scripts/run_cadence.py"
+SYSTEMD unit="quant-daily-max.timer" on="*-*-* 05:30:00" exec="scripts/daily_max.py"
+SYSTEMD unit="quant-research.timer" on="*-*-* 00:00:00 Europe/London" exec="ops/run_midnight_frontier.sh"
 
 # >>> WIRING AGENT (auto-wired, idempotent) >>>
 # Written by scripts/run_wiring_agent.py -- DO NOT hand-edit inside the fence; edits
