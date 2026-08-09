@@ -74,6 +74,11 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # GPT seat fetches; this records what was fetched, at what completeness, and what remains, so
   # "we mined that channel" stops being a claim nobody can check.
   nice -n 15 "$PY" scripts/run_external_intel.py || true
+  # THE RETURN ENGINES. Everything above measures whether the RESEARCH is healthy; these decide
+  # where capital would go if there were any. Six of seven correctly report UNMEASURED on a clone
+  # with no positions -- they exist now so that nothing has to be remembered and wired the day a
+  # live book appears, which is the failure mode L1.56 names.
+  nice -n 15 "$PY" scripts/run_opportunity_books.py || true
   nice -n 15 "$PY" scripts/run_max_push.py || true
   # THE PROGRAMME CANNOT QUIETLY STALL. The ledger verifies every declared capability against the
   # working tree and publishes the unfinished ones as ranked gaps, so an item that stops being

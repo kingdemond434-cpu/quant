@@ -369,16 +369,34 @@
   },
   {
    "capability_id": "DRAWDOWN_ENGINE",
-   "title": "Path-aware drawdown / rebound engine",
-   "economic_reason": "Reaching -8% slowly is not reaching -8% through a liquidation cascade",
-   "source_spec": "fusion spec §3/§9",
-   "module": "",
-   "tests": [],
-   "callers": [],
-   "artifacts": [],
-   "consumers": [],
+   "title": "Drawdown/rebound book with liquidation-mechanism classifier",
+   "economic_reason": "Two 15% declines of identical depth have opposite forward distributions; a rule that cannot separate them is right often enough to keep running and wrong when the losses are large",
+   "source_spec": "LEWIS FUSION v3 §19; v4 §14/§15 (P1)",
+   "module": "libs.research.drawdown_rebound",
+   "tests": [
+    "tests/research/test_opportunity_books.py"
+   ],
+   "callers": [
+    "scripts/run_opportunity_books.py"
+   ],
+   "artifacts": [
+    "data/opportunity_books.json"
+   ],
+   "consumers": [
+    "scripts/run_max_push.py"
+   ],
    "external_blocker": "",
-   "next_action": "conditional forward distributions on path shape; kill honestly if the thesis fails"
+   "next_action": "Emit data/decline_events.json from the moat tape: OI cleared, liquidation velocity, breadth and volume multiples are all derivable from data already on the box.",
+   "triggers": [
+    "ops/run_research_cycle.sh"
+   ],
+   "implementation_cost": "built",
+   "runtime_cost": "negligible",
+   "economic_mechanism": "Forced deleveraging is MECHANICAL selling that exhausts when the positions are gone and overshoots what an informed seller would accept. A news shock is INFORMED selling with no reason to exhaust at any price. Seven classes, and MIXED_UNKNOWN earns no rebound estimate at all.",
+   "information_value": "Separates the PRICE opportunity from the EXECUTION opportunity: after a cascade the directional expectancy can be positive while the book is still wrecked, and crossing into that pays the rebound away in slippage.",
+   "existing_equivalent": "libs/research/liquidation_mechanism.py answers one binary question (forced flow or supply) and is consumed here as the strongest single input. It does not separate the six ways a decline happens or estimate what comes next.",
+   "measured_value": "UNMEASURED -- data/decline_events.json absent; every drawdown on this desk is unclassified",
+   "expected_delta_elogw": "High: the largest single opportunity class the desk had specified and never built."
   },
   {
    "capability_id": "CAPITAL_INVENTORY",
@@ -447,16 +465,34 @@
   },
   {
    "capability_id": "EXECUTION_SURFACE",
-   "title": "Execution opportunity surface",
-   "economic_reason": "A 4bp gross signal may be +2.1bp net only when maker probability is high and adverse selection low",
-   "source_spec": "fusion spec §15",
-   "module": "",
-   "tests": [],
-   "callers": [],
-   "artifacts": [],
-   "consumers": [],
+   "title": "Execution opportunity surface: EV(maker) vs EV(taker) vs EV(wait) vs EV(no trade)",
+   "economic_reason": "A validated signal that cannot survive the spread, the queue and adverse selection contributes exactly nothing, and nothing on this desk measured that",
+   "source_spec": "LEWIS FUSION v3 §39; v4 §16/§9 (P1)",
+   "module": "libs.execution.opportunity_surface",
+   "tests": [
+    "tests/research/test_opportunity_books.py"
+   ],
+   "callers": [
+    "scripts/run_opportunity_books.py"
+   ],
+   "artifacts": [
+    "data/opportunity_books.json"
+   ],
+   "consumers": [
+    "scripts/run_max_push.py"
+   ],
    "external_blocker": "",
-   "next_action": "integrate existing queue_fill/maker/TCA/book_walk rather than duplicating"
+   "next_action": "Join validated signal edges to live book state; the execution tape already carries spread, depth and fill outcomes.",
+   "triggers": [
+    "ops/run_research_cycle.sh"
+   ],
+   "implementation_cost": "built",
+   "runtime_cost": "negligible",
+   "economic_mechanism": "A resting order is filled by whoever wanted to trade against it, which near-term is disproportionately someone better informed. Adverse selection is charged against the FILLED fraction only -- the good fills are the trades that did not happen.",
+   "information_value": "NOT ECONOMICALLY TRADEABLE becomes a reportable verdict about EXECUTION rather than a silent failure blamed on the research. Optimises expected bps, never maker share.",
+   "existing_equivalent": "libs/execution/maker.py executes maker-first and owns the order path; libs/execution/tca.py measures cost after the fact. Neither prices the choice beforehand.",
+   "measured_value": "UNMEASURED -- data/signal_book_states.json absent",
+   "expected_delta_elogw": "Direct: prevents capital being committed to signals the book cannot support."
   },
   {
    "capability_id": "ALPHA_RETENTION",
@@ -1354,6 +1390,192 @@
    "measured_value": "NO-INPUT: data/capability_snapshots.json absent, so every change on this desk is currently an unverified upgrade claim",
    "expected_delta_elogw": "Defensive: it protects the accumulated research breadth that every other capability sits on.",
    "next_action": "Emit data/capability_snapshots.json before/after each material subsystem change. Until then the organ correctly reports NO-INPUT rather than a clean board."
+  },
+  {
+   "tests": [
+    "tests/research/test_opportunity_books.py"
+   ],
+   "callers": [
+    "scripts/run_opportunity_books.py"
+   ],
+   "artifacts": [
+    "data/opportunity_books.json"
+   ],
+   "consumers": [
+    "scripts/run_max_push.py"
+   ],
+   "triggers": [
+    "ops/run_research_cycle.sh"
+   ],
+   "implementation_cost": "built",
+   "runtime_cost": "negligible",
+   "capability_id": "CAPITAL_RECYCLING",
+   "title": "Capital recycling: keep / reduce / harvest / rotate / redeploy",
+   "economic_reason": "The difference between a large gain and a kept one is what happened next; done by fixed rule it is a coin flip with extra steps",
+   "source_spec": "LEWIS FUSION v4 §2/§26 (P1)",
+   "module": "libs.portfolio.capital_recycling",
+   "economic_mechanism": "Every action is an E[log W] comparison and ties resolve to KEEP because each alternative pays a round trip. No entry price or unrealised gain is a field on the dataclass, so a large winner cannot acquire ownership privilege even by accident.",
+   "information_value": "CAPITAL_RECYCLING_ALPHA -- realised log growth minus holding the same exposure throughout. It can be NEGATIVE, and no other metric on the recycling path would ever say so.",
+   "existing_equivalent": "libs/portfolio/capital_competition.py allocates across candidates. This decides what to do with a position already held, which that module does not ask.",
+   "measured_value": "UNMEASURED -- data/positions.json absent; the desk holds nothing",
+   "expected_delta_elogw": "High and defensive: the mechanism that turns a large gain into a kept one.",
+   "next_action": "Emit data/positions.json with forward edge, posterior width and regime hazard per position once a live book exists."
+  },
+  {
+   "tests": [
+    "tests/research/test_opportunity_books.py"
+   ],
+   "callers": [
+    "scripts/run_opportunity_books.py"
+   ],
+   "artifacts": [
+    "data/opportunity_books.json"
+   ],
+   "consumers": [
+    "scripts/run_max_push.py"
+   ],
+   "triggers": [
+    "ops/run_research_cycle.sh"
+   ],
+   "implementation_cost": "built",
+   "runtime_cost": "negligible",
+   "capability_id": "STRATEGY_POOL",
+   "title": "Strategy pool: exposure efficiency, reshuffled sizing, bench swaps",
+   "economic_reason": "Two strategies at +20%/yr are not the same strategy if one is flat 90% of the year, and sizing off a backtest drawdown is sizing off the luckiest trade ordering",
+   "source_spec": "POST-BASELINE DELTA Part IV.3/IV.6; extracted from the Chart Fanatics/Naoufel corpus 2026-08-08",
+   "module": "libs.portfolio.strategy_pool",
+   "economic_mechanism": "Return per unit of TIME IN MARKET: uncommitted capital funds other strategies and is absent from the windows in which a gap or cascade can reach it. Sizing and retirement both key off the reshuffled drawdown distribution, never the observed ordering or a fixed multiple of it.",
+   "information_value": "Turns the retirement trigger from an invented constant (the source's '1.5x backtest DD') into the strategy's own reshuffled tail -- a multiplier fires early on a fat tail and late on a tight one because it knows nothing about the shape.",
+   "existing_equivalent": "libs/discovery/monte_carlo_survival.py computes the reshuffled distribution and was ALREADY BUILT; nothing used it as a sizing or retirement input. libs/research/alpha_state.py has lifecycle rungs but no standing bench.",
+   "measured_value": "UNMEASURED -- data/strategy_pool.json absent; there is no bench, so a degrading strategy can only be switched off",
+   "expected_delta_elogw": "Direct: the difference between replacing a decayed strategy and losing its capital.",
+   "next_action": "Populate data/strategy_pool.json from the shadow slots; every field except market_exposure_fraction is already computed somewhere on the box."
+  },
+  {
+   "tests": [
+    "tests/research/test_opportunity_books.py"
+   ],
+   "callers": [
+    "scripts/run_opportunity_books.py"
+   ],
+   "artifacts": [
+    "data/opportunity_books.json"
+   ],
+   "consumers": [
+    "scripts/run_max_push.py"
+   ],
+   "triggers": [
+    "ops/run_research_cycle.sh"
+   ],
+   "implementation_cost": "built",
+   "runtime_cost": "negligible",
+   "capability_id": "CROWDING_HAZARD",
+   "title": "Crowding decay hazard from book evidence",
+   "economic_reason": "By the time returns confirm an edge is crowded the money is gone; decay is indistinguishable from bad luck until the sample is large enough to be sure",
+   "source_spec": "LEWIS FUSION v4 §57; POST-BASELINE DELTA Part VI.15",
+   "module": "libs.research.crowding_hazard",
+   "economic_mechanism": "Crowding leaves fingerprints on the book before it reaches the P&L: spread, basis and funding compress; queues lengthen; fills deteriorate; impact rises. All six are measured against the strategy's OWN baseline, because an absolute spread means nothing across instruments.",
+   "information_value": "The realised edge ratio is a CHECK on the hazard and never an input -- a hazard that reads the P&L is a lagging indicator wearing a leading indicator's name. Public diffusion is computed, reported and EXCLUDED, because 'publication destroys edge' is widely believed and unmeasured here.",
+   "existing_equivalent": "libs/alpha_factory/crowding_intelligence.py steers RESEARCH away from crowded concepts -- a question about where to look. This asks whether a strategy already running is being competed away.",
+   "measured_value": "UNMEASURED -- data/crowding_states.json absent",
+   "expected_delta_elogw": "Direct: predicting decay before P&L confirms it is alpha retention.",
+   "next_action": "Emit data/crowding_states.json from the execution tape and the funding/basis recorders, all of which already run."
+  },
+  {
+   "tests": [
+    "tests/research/test_opportunity_books.py"
+   ],
+   "callers": [
+    "scripts/run_opportunity_books.py"
+   ],
+   "artifacts": [
+    "data/opportunity_books.json"
+   ],
+   "consumers": [
+    "scripts/run_max_push.py"
+   ],
+   "triggers": [
+    "ops/run_research_cycle.sh"
+   ],
+   "implementation_cost": "built",
+   "runtime_cost": "negligible",
+   "capability_id": "PARTICIPANT_PHENOTYPE",
+   "title": "Participant phenotype engine and crowd directionality",
+   "economic_reason": "'Retail' is a sum over populations that behave oppositely; aggregating them cancels the informative components and produces the noise most flow studies report",
+   "source_spec": "LEWIS FUSION v3 §9/§10/§16/§17; v4 §20 (P1)",
+   "module": "libs.research.participant_phenotype",
+   "economic_mechanism": "Eight behavioural cohorts defined by conduct, never by identity. The relation to price is estimated per phenotype PER STATE, so follow-retail and fade-retail are both refused as fixed signs and NEUTRAL is a common honest answer.",
+   "information_value": "Composition shift is measured FIRST: an aggregate can move because the same people changed behaviour or because different people arrived, and those carry opposite implications. directionality() refuses a verdict when composition moved materially.",
+   "existing_equivalent": "libs/data/wallet_graph.py and onchain_flows.py supply flow primitives. Neither models cohorts or separates behaviour change from population change.",
+   "measured_value": "UNMEASURED -- data/participant_cohorts.json absent",
+   "expected_delta_elogw": "Moderate and gated on data the desk does not yet have.",
+   "next_action": "Requires a cohort-resolved flow source. Wallet-level on-chain data can support several phenotypes; broker-cohort data cannot be obtained lawfully here."
+  },
+  {
+   "tests": [
+    "tests/research/test_opportunity_books.py"
+   ],
+   "callers": [
+    "scripts/run_opportunity_books.py"
+   ],
+   "artifacts": [
+    "data/opportunity_books.json"
+   ],
+   "consumers": [
+    "scripts/run_max_push.py"
+   ],
+   "triggers": [
+    "ops/run_research_cycle.sh"
+   ],
+   "implementation_cost": "built",
+   "runtime_cost": "negligible",
+   "capability_id": "MECHANISM_ONTOLOGY",
+   "title": "Mechanism ontology and constrained alpha grammar",
+   "economic_reason": "A million random formulas and a million real questions are the same size and only one survives multiplicity correction",
+   "source_spec": "LEWIS FUSION v4 §3/§4/§5/§110",
+   "module": "libs.research.mechanism_ontology",
+   "economic_mechanism": "Every mechanism carries a contract -- which observables MEASURE it, which transforms mean anything, which horizons its economics could survive, what would falsify it. A 90-day order-flow candidate is refused before it costs anything, because OFI measures who is pressing the book now.",
+   "information_value": "MEASURED: 5 mechanisms generate 1,549 coherent candidates from 9,282 combinations -- 83% pruned before any compute. The pruned part is not a random sample: it is the part with no economic story, which is where false positives come from fastest. Every candidate carries its sibling count, so no winner can be detached from its selection path.",
+   "existing_equivalent": "libs/research/mechanism_fingerprint.py answers whether two ideas are the SAME idea for dedupe. This decides which ideas may be CONSTRUCTED at all.",
+   "measured_value": "83% prune rate over the shipped 5-mechanism ontology; 1,549 coherent candidates enumerated",
+   "expected_delta_elogw": "High: the difference between a hypothesis factory and a formula generator.",
+   "next_action": "Register mechanisms from the external-intelligence seats. The ontology is deliberately small -- it holds only mechanisms this desk can already measure from data it already has."
+  },
+  {
+   "tests": [
+    "tests/research/test_opportunity_books.py"
+   ],
+   "callers": [
+    "ops/run_research_cycle.sh"
+   ],
+   "artifacts": [
+    "data/opportunity_books.json"
+   ],
+   "consumers": [
+    "scripts/run_max_push.py"
+   ],
+   "triggers": [
+    "ops/run_research_cycle.sh"
+   ],
+   "implementation_cost": "built",
+   "runtime_cost": "negligible",
+   "capability_id": "OPPORTUNITY_BOOKS",
+   "title": "Opportunity-books consumer",
+   "economic_reason": "Seven books nothing reads are seven files",
+   "source_spec": "LEWIS FUSION v4 §88/§105",
+   "module": "scripts.run_opportunity_books",
+   "economic_mechanism": "None of its own. It makes seven return engines reachable and reports UNMEASURED per book, naming the artifact each needs.",
+   "information_value": "Six of seven correctly report UNMEASURED on a clone with no positions, which is the honest state and the reason the books exist BEFORE their inputs do.",
+   "existing_equivalent": "scripts/run_wealth_report.py measures RETAINED wealth; this measures where capital would GO. No shared inputs.",
+   "measured_value": "6 of 7 books UNMEASURED; mechanism_ontology produces real output with no market data",
+   "continuous_service": true,
+   "guarantees_met": [
+    "TRIGGERED",
+    "RESTART_SAFE",
+    "FAILURE_SURFACED"
+   ],
+   "expected_delta_elogw": "Indirect: it makes the six books capability rather than inventory.",
+   "next_action": "STALL_DETECTED unmet -- nothing notices if this stops regenerating."
   }
  ]
 }
