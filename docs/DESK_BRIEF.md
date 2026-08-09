@@ -1,4 +1,4 @@
-# DESK BRIEF -- 2026-08-09 03:19Z
+# DESK BRIEF -- 2026-08-09 08:43Z
 
 Machine-generated from measured desk state. Every number traces to an artifact in
 `data/`. Nothing here is an argument. Respond to the evidence, not to another model.
@@ -13,7 +13,7 @@ Machine-generated from measured desk state. Every number traces to an artifact i
    forward clocks promote.
 
 ## Experiment record (45d, harvested from git -- one row per commit)
-- experiments: **620**; decided: 327
+- experiments: **621**; decided: 327
 - survival rate: **6.4%** (21 survived / 282 refuted / 24 inconclusive)
 - unclassified commit decisions: 32 (commit-discipline defect)
 
@@ -62,7 +62,7 @@ Every future variant inherits this evidence.
 ## Proprietary moat (4.4GB order books, 30 symbols, top-20 snapshots)
 
 M_LIQUIDITY_WITHDRAWAL, construction = negative z of near-touch depth vs 24h roll:
-- raw lead rho pooled: +0.0963
+- raw lead rho pooled: +0.0988
 - **after orthogonalising forward RV against current RV: residual rho +0.0154 (t +0.28), sign 1/5 -> the lead was vol clustering.**
 - ONE construction tested only. The mechanism is NOT refuted. Untested: replenishment rate, one-sided withdrawal, book shape, migration, recovery half-life, d(book)/dt.
 

@@ -20,7 +20,7 @@
   "scripts_mypy_clean": {
     "artifact": "data/mypy_ratchet.json",
     "proving_command": "python scripts/check_mypy_ratchet.py",
-    "recorded": "2026-08-02T07:07:01Z",
+    "recorded": "2026-08-09T07:07:01Z",
     "value": 0.406844
   },
   "test_strength::libs/execution/staging.py": {
