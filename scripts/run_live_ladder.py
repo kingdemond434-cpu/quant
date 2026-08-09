@@ -45,6 +45,8 @@ if str(ROOT) not in sys.path:
 
 from libs.portfolio import capital_competition  # noqa: E402
 from libs.research import alpha_state, evidence_clock  # noqa: E402
+from libs.research.clock_registry import REGISTRY as CLOCK_REGISTRY  # noqa: E402
+from libs.research.clock_registry import register_owed  # noqa: E402
 from libs.research.live_ladder import (  # noqa: E402
     MIN_OBS_FOR_A_VERDICT,
     LiveRecord,
@@ -230,6 +232,9 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--records", type=Path, default=RECORDS)
     ap.add_argument("--sweep", type=Path, default=SWEEP)
+    ap.add_argument("--registry", type=Path, default=CLOCK_REGISTRY,
+                    help="where owed forward clocks are recorded so Stage-B and the dashboard "
+                         "can see them; overridable so tests never write the real one")
     ap.add_argument("--out", type=Path, default=OUT)
     a = ap.parse_args()
 
@@ -244,6 +249,24 @@ def main() -> int:
     # evidence today at zero capital, not waiting for a queue -- shadow is free and the clock is
     # the only thing that cannot be bought later.
     to_shadow = [s for s in survivors if s not in named]
+
+    # THE WIRE THAT WAS MISSING, and its absence was silent. This script computes `to_shadow` and
+    # then declares `authority: NONE -- recommendations only`, which is correct: it must not start
+    # clocks. But run_axis_shadows.py -- the organ that DOES start them -- read a hardcoded _AXES
+    # dict and could not see this list. So a Stage-A survivor sat between an organ that noticed it
+    # and could not act, and an organ that could act and could not see it. Measured 2026-08-09:
+    # "9 survivor(s) owed a shadow start; 0 record(s) laddered", every cycle, for as long as the
+    # sweep has been producing survivors.
+    #
+    # Registering is NOT starting a clock and NOT a promotion. It makes the debt VISIBLE to
+    # Stage-B and to the dashboard, which is the whole difference between an owed clock and a
+    # forgotten one. Forward time is the single input this desk cannot buy later.
+    # REGISTRY PATH IS AN ARGUMENT, NOT A CONSTANT. The tests drive main() with tmp sweep/records/
+    # out paths; a hardcoded default here would write their fixture survivors into the REAL
+    # data/axis_clock_registry.json on every test run. That is not hypothetical -- the same shape
+    # polluted web/axis_shadows.json earlier today and turned a cohort fence red.
+    owed_registered, owed_why = register_owed(to_shadow, source="run_live_ladder",
+                                              registry=a.registry)
 
     verdicts = [decide(r) for r in live]
     competition = competing_allocation(live, verdicts)
@@ -272,6 +295,8 @@ def main() -> int:
         "live_records": len(live),
         "stage_a_survivors": len(survivors),
         "to_shadow": to_shadow[:100],
+        "owed_registered": owed_registered,
+        "owed_registration_note": owed_why,
         "governance_ladder": ladder_states[:100],
         "capital_competition": competition,
         "evidence_clock": [
@@ -301,7 +326,8 @@ def main() -> int:
             "Both are gitignored and live on the collecting box; the sweep has not run (GAP #91) "
             "and nothing has traded (Gate-0 0/17). This is UNMEASURED, not an empty ladder.")
     else:
-        rep["verdict"] = (f"{len(to_shadow)} survivor(s) owed a shadow start; "
+        rep["verdict"] = (f"{len(to_shadow)} survivor(s) owed a shadow start "
+                          f"({owed_registered} newly registered for Stage-B); "
                           f"{len(live)} record(s) laddered")
 
     a.out.parent.mkdir(parents=True, exist_ok=True)
