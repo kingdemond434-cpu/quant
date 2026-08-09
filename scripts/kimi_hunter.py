@@ -41,6 +41,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from libs.llm.effort import reasoning_payload  # noqa: E402
+from libs.research import hunt_frontier as hf  # noqa: E402
 from libs.research.untrusted import wrap  # noqa: E402
 
 KEYS = ROOT / "data/secrets/llm_panel.json"
@@ -216,45 +217,15 @@ WAVES = {
 }
 
 
+def _re_vectors(text: str) -> set[str]:
+    """Territory names the model declared this wave. EXTRACTION ONLY -- it records no outcome.
 
-def _load_coverage() -> dict:
-    try:
-        return json.loads(_COVERAGE.read_text("utf-8"))
-    except Exception:  # blind-except intentional (BLE001)
-        return {"vectors": {}}
-
-
-def _exclusion_text(cov: dict) -> str:
-    """What the hunter has ALREADY covered -- fed as exclusions, never as instructions."""
-    now = datetime.now(tz=UTC)
-    live = []
-    for v, meta in cov.get("vectors", {}).items():
-        try:
-            age = (now - datetime.fromisoformat(meta["first_seen"])).days
-        except Exception:  # blind-except intentional (BLE001)
-            age = 0
-        if age < _VECTOR_COOLDOWN_D:
-            live.append(f"{v} (hunted {age}d ago)")
-    if not live:
-        return ("You have no hunt history. Generate your own vectors -- name the territories "
-                "yourself. Do not ask what to search; decide.")
-    return ("ALREADY HUNTED -- do NOT return to these, they are picked over:\n  "
-            + "\n  ".join(sorted(live))
-            + "\n\nGenerate NEW vectors. Name each territory you choose and why the herd "
-              "cannot see it. A vector you have used before is a wasted run.")
-
-
-def _record_vectors(cov: dict, text: str) -> int:
-    """Harvest whatever territories the hunter named this run into permanent coverage memory."""
-    now = datetime.now(tz=UTC).isoformat()
-    found = set(re.findall(r"VECTOR:\s*([A-Za-z0-9_\- ]{4,50})", text))
-    n = 0
-    for v in found:
-        k = v.strip().lower()
-        if k and k not in cov.setdefault("vectors", {}):
-            cov["vectors"][k] = {"first_seen": now}
-            n += 1
-    return n
+    Splitting extraction from recording is the fix: the old version stamped every named territory
+    as covered the instant it was uttered, which buried wave-1 mapping output for the full
+    cooldown before anything hunted it.
+    """
+    return {v.strip().lower()
+            for v in re.findall(r"VECTOR:\s*([A-Za-z0-9_\- ]{4,50})", text) if v.strip()}
 
 
 def _budget_ok() -> tuple[bool, str]:
@@ -490,7 +461,20 @@ def main() -> None:
         if MECHB.exists() else set()
     print(f"  enforcing {len(FORBIDDEN_SETS)} forbidden zones + {len(kills)} family kills\n")
 
-    cov = _load_coverage()
+    state = hf.load(_COVERAGE)
+    go, gate_why = hf.should_hunt(state, cooldown_d=_VECTOR_COOLDOWN_D)
+    print(f"  frontier: {gate_why}")
+    if not go:
+        # THE FREE GATE. No model call was made to reach this decision -- it is read off local
+        # state. A hunter that fires on a clock pays a full reasoning pass to discover the world
+        # has not changed; the coverage file already knew.
+        print("  SKIPPING the reasoning pass -- no frontier open. This is not a failure and not "
+              "an outage: it is the organ declining to re-mine picked-over ground.")
+        _COVERAGE.parent.mkdir(parents=True, exist_ok=True)
+        hf.save(state, _COVERAGE)
+        return
+    _seen_before: set[str] = set(state.vectors)
+    _wave_vectors: dict[int, set[str]] = {}
     transcript, findings, dropped = {}, [], []
     for w in (1, 2, 3):
         name, brief = WAVES[w]
@@ -504,7 +488,9 @@ def main() -> None:
         prior = "\n\n".join(
             wrap(v[:2500], source=f"kimi wave {k} output (model-generated, not desk instruction)")
             for k, v in transcript.items())
-        user = f"{brief}\n\n{_exclusion_text(cov)}" + (f"\n\n{prior}" if prior else "")
+        _sec = hf.prompt_sections(state, cooldown_d=_VECTOR_COOLDOWN_D)
+        _cover = _sec["priority"] + (f"\n\n{_sec['exclude']}" if _sec["exclude"] else "")
+        user = f"{brief}\n\n{_cover}" + (f"\n\n{prior}" if prior else "")
         print(f"  WAVE {w} -- {name}")
         try:
             txt = _ask(prov["base_url"], prov["key"], CHARTER, user)
@@ -516,8 +502,17 @@ def main() -> None:
                 print("    the harness is intact and fires on the next funded run.")
             raise SystemExit(3) from e
         transcript[w] = txt
-        _new_v = _record_vectors(cov, txt)
-        print(f"    {len(txt)} chars returned, {_new_v} new vector(s) recorded")
+        # NAMING IS NOT HUNTING. Wave 1 is mapping only (`continue` below forbids findings), so
+        # its territories are recorded NAMED_ONLY -- frontier to chase next run, never coverage.
+        # Recording them as hunted is what locked this organ out of its own best ground for 45d.
+        _named = set(_re_vectors(txt))
+        for _v in _named:
+            if _v not in state.vectors:
+                hf.record(state, _v, outcome="NAMED_ONLY")
+        _new_v = len(_named - _seen_before)
+        _seen_before |= _named
+        _wave_vectors[w] = _named
+        print(f"    {len(txt)} chars returned, {_new_v} new vector(s) named")
 
         if w == 1:
             continue                       # Wave 1 is mapping only; findings are not permitted
@@ -546,8 +541,18 @@ def main() -> None:
         print(f"  -> {LEDGER}  (enters the SAME gate as every other contributor)")
     print("\n  ZERO PROMOTION AUTHORITY. These are raw ore. Next stops: mechanism board "
           "(family-kill rejection), measurement gate, Stage-A screening, forward clock.")
-    _COVERAGE.write_text(json.dumps(cov, indent=1), "utf-8")
-    print(f"  coverage memory: {len(cov.get(chr(34)+chr(118)+chr(101)+chr(99)+chr(116)+chr(111)+chr(114)+chr(115)+chr(34), {}))} territories hunted to date")
+    # OUTCOME ATTRIBUTION. A territory hunted in wave 2/3 is YIELDED if this run produced any
+    # finding, EMPTY otherwise -- and EMPTY is real negative knowledge, not a failure. Wave-1
+    # territories stay NAMED_ONLY so the next run chases them first.
+    _hunted = _wave_vectors.get(2, set()) | _wave_vectors.get(3, set())
+    _per = max(1, len(_hunted))
+    for _v in _hunted:
+        hf.record(state, _v, outcome=("YIELDED" if findings else "EMPTY"),
+                  findings=(len(findings) // _per if findings else 0))
+    hf.save(state, _COVERAGE)
+    _fr = hf.frontier(state, cooldown_d=_VECTOR_COOLDOWN_D)
+    print(f"  frontier: {len(_fr['unhunted'])} named-but-unhunted, {len(_fr['blocked'])} blocked, "
+          f"{len(_fr['picked_over'])} picked over ({len(state.vectors)} territories known)")
     OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(), "model": MODEL,
                                "waves": {str(k): v[:4000] for k, v in transcript.items()},
                                "findings": findings, "dropped": dropped}, indent=1), "utf-8")
