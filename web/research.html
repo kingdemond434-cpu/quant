@@ -57,6 +57,16 @@ svg text{fill:var(--dim);font-size:9px}
     <table id="xaweights"><thead><tr><th>Instrument</th><th>Target weight</th></tr></thead><tbody></tbody></table>
     <div class="note" id="xaverdict"></div></div>
 
+  <div class="card"><div class="ph">Promotion funnel · discovery -> shadow -> live (and where the DEAD time is)</div>
+    <div class="k" id="pqk"></div>
+    <div style="padding:10px 14px">
+      <table id="pqtab" style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="text-align:left;opacity:.7"><th>candidate</th><th>admission</th>
+          <th>slot action</th><th>runway</th></tr></thead><tbody></tbody></table>
+      <div id="pqlat" style="margin-top:10px;font-size:13px"></div>
+      <div id="pqnote" style="opacity:.65;margin-top:8px;font-size:12px"></div></div>
+  </div>
+
   <div class="card"><div class="ph">Loss forensics · WHERE the money went and WHY (daily)</div>
     <div class="k" id="fxk"></div>
     <div style="padding:10px 14px">
@@ -148,6 +158,39 @@ async function load(){
     }).join("");
     document.getElementById("levnote").textContent=L.note||"";
   }catch(e){document.getElementById("levnote").textContent="leverage.json not found — run run_mt5_portfolio.py";}
+  try{
+    const Q=await (await fetch("promotion_queue.json",{cache:"no-store"})).json();
+    const sl=Q.slots||{};
+    document.getElementById("pqk").innerHTML=
+      [["Candidates",Q.n_candidates],["Forward slots",`${sl.occupied||0}/${sl.cap||0} used, ${sl.free||0} free`],
+       ["Queued to admit",(Q.queue||[]).length],["Excluded",(Q.excluded||[]).length]]
+      .map(([l,v])=>`<div><span style="opacity:.6">${l}</span><br><b>${v===null||v===undefined?"—":v}</b></div>`).join("");
+    const qb=document.querySelector("#pqtab tbody"); qb.innerHTML="";
+    (Q.queue||[]).slice(0,15).forEach(r=>{
+      const now=String(r.slot_action||"").startsWith("ADMIT");
+      qb.innerHTML+=`<tr><td>${r.name||r.candidate||r.key||"—"}</td>`+
+        `<td>${r.admission||"—"}</td>`+
+        `<td style="color:${now?"#7ee787":"#e3b341"}">${r.slot_action||"—"}</td>`+
+        `<td>${r.runway_days===undefined?"—":fmt(r.runway_days)+"d"}</td></tr>`;
+    });
+    if(!(Q.queue||[]).length){
+      qb.innerHTML=`<tr><td colspan="4" style="color:#e3b341">no candidate is queued for admission — UNMEASURED if the sweep has not run, which is a fact about the box and not a clean queue</td></tr>`;
+    }
+    // EVIDENCE-BOUND vs PROCESS-BOUND is the whole point of this card. A forward clock is
+    // evidence accruing and cannot be compressed without destroying what it measures. Queue wait
+    // and decision lag are DEAD TIME -- latency nobody chose, and the only kind worth attacking.
+    const L=Q.latency||{};
+    const rows=Object.entries(L).filter(([,v])=>v&&typeof v==="object"&&("days" in v));
+    document.getElementById("pqlat").innerHTML = Q.latency_is_measured===false
+      ? `<span style="color:#e3b341">latency UNMEASURED — components missing, so total time-to-live is unknown rather than short</span>`
+      : (rows.length
+          ? `<b>Time to live:</b> `+rows.map(([k,v])=>{
+              const dead=/queue|decision|lag|wait/i.test(k);
+              return `<span style="color:${dead?"#ff7b72":"#7ee787"}" title="${dead?"DEAD TIME — nobody chose this":"evidence accruing — cannot be compressed"}">${k} ${fmt(v.days)}d</span>`;
+            }).join(" · ")+`<br><span style="opacity:.6">red = dead time (queue/decision lag) · green = evidence accruing (the forward clock, which must not be shortened)</span>`
+          : "");
+    document.getElementById("pqnote").textContent=`generated ${(Q.generated||"").slice(0,16)} · ${Q.law||""}`;
+  }catch(e){document.getElementById("pqnote").textContent="promotion_queue.json not found — run scripts/run_promotion_queue.py";}
   try{
     const F=await (await fetch("trade_forensics.json",{cache:"no-store"})).json();
     const mk=(F.maker_fill||{}), tp=(F.execution_tape||{});
