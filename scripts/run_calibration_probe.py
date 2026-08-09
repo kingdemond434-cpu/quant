@@ -50,6 +50,24 @@ from libs.ops.lawful import guard as _law_guard  # noqa: E402
 
 _OPEN = "data/calibration_probe.jsonl"
 _STATE = "data/calibration_probe.json"
+#: The calibration store, resolved against the SAME root as the questions file above.
+#:
+#: R0254. `pose()` took a `root`, honoured it for `_OPEN`, and logged the matching forecast through
+#: `forecast_calibration`'s module-level path -- so a caller handing it a tmp_path redirected half
+#: the organ and silently wrote the other half into the live L1.29 store. Measured 2026-08-05: 68
+#: fabricated `probe:*:q3` rows (S2USDT @ 102.0, p=0.61 -- the literal fixture in
+#: tests/execution/test_calibration_probe.py), unresolvable by construction because that symbol
+#: exists on no venue, and ALL 44 forecasts holding the calibration fence OVERDUE were these. The
+#: fence L1.29 calls "the ONLY mechanism that detects the desk being CONFIDENTLY WRONG" was pinned
+#: red by its own test suite, which is how a real ungraded forecast would have hidden.
+_CAL_STORE = "data/forecast_log.json"
+
+
+def _calibration_store(root: Path) -> Path:
+    """Where this root's forecasts are graded. In production `root` IS the repo, so this is the
+    live store and nothing changes; under a test root it is the test's own file, by construction
+    rather than by the test remembering to monkeypatch a global."""
+    return root / _CAL_STORE
 
 #: Horizons chosen so a question resolves fast enough to accumulate a sample in days, and long
 #: enough that the answer is not a coin flip on microstructure. 4h is the shortest horizon the
@@ -160,7 +178,8 @@ def pose(root: Path, *, n: int = 6, ask=_ask) -> dict[str, Any]:
         from libs.self_improvement import forecast_calibration as fc
         for row in posed:
             fc.log_forecast(row["key"], row["p"], "calibration_probe",
-                            resolve_by=row["resolve_at"], claim=row["text"])
+                            resolve_by=row["resolve_at"], claim=row["text"],
+                            store=_calibration_store(root))
     except Exception as exc:                              # broad by design -- never lose the probe
         return {"status": "POSED", "n": len(posed), "calibration_log_error": str(exc)}
     return {"status": "POSED", "n": len(posed),
@@ -203,7 +222,7 @@ def resolve_due(root: Path, *, now: datetime | None = None, fetch=None) -> dict[
             continue
         outcome = bars[-1][4] > float(r["ref_price"])
         try:
-            fc.resolve(r["key"], bool(outcome))
+            fc.resolve(r["key"], bool(outcome), store=_calibration_store(root))
             resolved += 1
         except (KeyError, ValueError, OSError):
             keep.append(r)

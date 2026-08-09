@@ -33,7 +33,6 @@ does not block), and never treats a constant flag/boolean field as a degenerate 
 
 Read-only. No keys, no LLM, no network. Run from repo root.
 """
-
 from __future__ import annotations
 
 import itertools
@@ -58,27 +57,9 @@ _COLLECTION = ("OUR_CAPTURE", "VENDOR_API", "PUBLIC_API", "SCRAPED", "DERIVED", 
 
 _TIME_KEYS = ("ts", "date", "timestamp", "time", "datetime", "hour", "day", "updated")
 # fields that are legitimately constant -- flags, config, identity. Never "degenerate features".
-_FLAGLIKE = (
-    "stale",
-    "ok",
-    "enabled",
-    "active",
-    "flag",
-    "is_",
-    "has_",
-    "source",
-    "venue",
-    "symbol",
-    "sym",
-    "name",
-    "id",
-    "kind",
-    "type",
-    "status",
-    "window",
-    "version",
-)
-MAX_ROWS = 4000  # bounded read; these checks are distributional, not exhaustive
+_FLAGLIKE = ("stale", "ok", "enabled", "active", "flag", "is_", "has_", "source", "venue",
+             "symbol", "sym", "name", "id", "kind", "type", "status", "window", "version")
+MAX_ROWS = 4000          # bounded read; these checks are distributional, not exhaustive
 
 
 class MeasurementError(RuntimeError):
@@ -88,9 +69,9 @@ class MeasurementError(RuntimeError):
 def _parse_ts(v):
     if isinstance(v, (int, float)):
         x = float(v)
-        if x > 1e11:  # milliseconds
+        if x > 1e11:            # milliseconds
             x /= 1000.0
-        if 9.4e8 < x < 4.1e9:  # 2000..2100
+        if 9.4e8 < x < 4.1e9:   # 2000..2100
             return datetime.fromtimestamp(x, tz=UTC)
         return None
     if not isinstance(v, str):
@@ -98,7 +79,7 @@ def _parse_ts(v):
     s = v.strip().replace("Z", "+00:00")
     for fmt in (None, "%Y-%m-%d", "%Y%m%d_%H", "%Y%m%d"):
         try:
-            d = datetime.fromisoformat(s) if fmt is None else datetime.strptime(s, fmt)  # noqa: DTZ007 -- normalised to UTC on the next line
+            d = datetime.fromisoformat(s) if fmt is None else datetime.strptime(s, fmt).replace(tzinfo=UTC)
             return d if d.tzinfo else d.replace(tzinfo=UTC)
         except (ValueError, TypeError):
             continue
@@ -155,10 +136,8 @@ def classify_kind(rows: list[dict], key: str | None, name: str = "") -> str:
     # to carry unique timestamps is structurally IDENTICAL to an irregular time series. Nothing in
     # the data can separate them. The filename is used ONLY here, as a tiebreaker after the
     # structural test, never as the primary signal.
-    loglike = any(
-        w in name.lower()
-        for w in ("_log", "log.", "ledger", "verdict", "registry", "audit", "queue", "events")
-    )
+    loglike = any(w in name.lower() for w in ("_log", "log.", "ledger", "verdict", "registry",
+                                              "audit", "queue", "events"))
     return "EVENT_LOG" if loglike else "TIME_SERIES"
 
 
@@ -172,8 +151,7 @@ def check_timestamps(rows: list[dict], kind: str) -> tuple[list[str], list[str],
     good = [t for t in ts if t is not None]
     if bad:
         (fails if bad > len(ts) * 0.02 else warns).append(
-            f"{bad}/{len(ts)} unparseable '{key}' values ({bad / len(ts) * 100:.1f}%)"
-        )
+            f"{bad}/{len(ts)} unparseable '{key}' values ({bad/len(ts)*100:.1f}%)")
     if len(good) < 8:
         return [*fails, "fewer than 8 parseable timestamps"], warns, {"field": key}
 
@@ -187,21 +165,15 @@ def check_timestamps(rows: list[dict], kind: str) -> tuple[list[str], list[str],
     ooo = sum(1 for a, b in itertools.pairwise(good) if b < a)
     if ooo and series:
         (fails if ooo > len(good) * 0.01 else warns).append(
-            f"{ooo} out-of-order timestamps ({ooo / len(good) * 100:.1f}%)"
-        )
+            f"{ooo} out-of-order timestamps ({ooo/len(good)*100:.1f}%)")
     dup = len(good) - len({t.isoformat() for t in good})
     if dup and series:
         (fails if dup > len(good) * 0.05 else warns).append(
-            f"{dup} duplicate timestamps ({dup / len(good) * 100:.1f}%)"
-        )
+            f"{dup} duplicate timestamps ({dup/len(good)*100:.1f}%)")
 
     gaps = sorted((b - a).total_seconds() for a, b in itertools.pairwise(good) if b >= a)
-    meta = {
-        "field": key,
-        "kind": kind,
-        "n": len(good),
-        "span_days": round((good[-1] - good[0]).days, 1),
-    }
+    meta = {"field": key, "kind": kind, "n": len(good),
+            "span_days": round((good[-1] - good[0]).days, 1)}
     if gaps and series:
         med = gaps[len(gaps) // 2]
         meta["median_gap_s"] = round(med, 1)
@@ -211,21 +183,16 @@ def check_timestamps(rows: list[dict], kind: str) -> tuple[list[str], list[str],
             meta["irregular_pct"] = round(irregular / len(gaps) * 100, 1)
             if irregular > len(gaps) * 0.20:
                 fails.append(
-                    f"IRREGULAR SPACING: {irregular / len(gaps) * 100:.0f}% of gaps deviate >75% "
-                    f"from "
-                    f"the median {med / 3600:.2f}h -- any fixed-horizon test on this series is "
-                    f"measuring a different horizon per observation"
-                )
+                    f"IRREGULAR SPACING: {irregular/len(gaps)*100:.0f}% of gaps deviate >75% from "
+                    f"the median {med/3600:.2f}h -- any fixed-horizon test on this series is "
+                    f"measuring a different horizon per observation")
             elif irregular > len(gaps) * 0.05:
-                warns.append(
-                    f"{irregular / len(gaps) * 100:.0f}% irregular gaps (median {med / 3600:.2f}h)"
-                )
+                warns.append(f"{irregular/len(gaps)*100:.0f}% irregular gaps "
+                             f"(median {med/3600:.2f}h)")
             biggest = gaps[-1]
             if biggest > med * 20:
-                warns.append(
-                    f"largest gap {biggest / 3600:.1f}h = {biggest / med:.0f}x median "
-                    f"-- collector outage"
-                )
+                warns.append(f"largest gap {biggest/3600:.1f}h = {biggest/med:.0f}x median "
+                             f"-- collector outage")
     return fails, warns, meta
 
 
@@ -237,15 +204,12 @@ def check_correctness(rows: list[dict], kind: str) -> tuple[list[str], list[str]
     # Heterogeneous keys are a defect in a series (a column vanished) but NORMAL in an event log,
     # where distinct event types carry distinct payloads. Same v1 false-positive class.
     if conform < 0.90 and kind == "TIME_SERIES":
-        fails.append(
-            f"SCHEMA UNSTABLE: only {conform * 100:.0f}% of records share the modal key set "
-            f"-- fields appear/disappear mid-series"
-        )
+        fails.append(f"SCHEMA UNSTABLE: only {conform*100:.0f}% of records share the modal key set "
+                     f"-- fields appear/disappear mid-series")
     elif conform < 0.995:
-        warns.append(
-            f"schema conformance {conform * 100:.1f}%"
-            + (" (event log -- heterogeneous payloads expected)" if kind == "EVENT_LOG" else "")
-        )
+        warns.append(f"schema conformance {conform*100:.1f}%"
+                     + (" (event log -- heterogeneous payloads expected)"
+                        if kind == "EVENT_LOG" else ""))
 
     nulls = {}
     for k in modal:
@@ -271,19 +235,10 @@ def check_correctness(rows: list[dict], kind: str) -> tuple[list[str], list[str]
         if best >= max(12, len(vals) * 0.15):
             frozen.append((k, best, len(vals)))
     for k, run, n in frozen[:4]:
-        fails.append(
-            f"field '{k}' FROZEN for {run} consecutive records of {n} "
-            f"-- collector likely dead while still writing"
-        )
-    return (
-        fails,
-        warns,
-        {
-            "schema_conformance": round(conform, 4),
-            "null_fields": len(nulls),
-            "frozen_fields": len(frozen),
-        },
-    )
+        fails.append(f"field '{k}' FROZEN for {run} consecutive records of {n} "
+                     f"-- collector likely dead while still writing")
+    return fails, warns, {"schema_conformance": round(conform, 4), "null_fields": len(nulls),
+                          "frozen_fields": len(frozen)}
 
 
 def check_features(rows: list[dict]) -> tuple[list[str], list[str], dict]:
@@ -292,11 +247,8 @@ def check_features(rows: list[dict]) -> tuple[list[str], list[str], dict]:
     for k in modal:
         if any(f in k.lower() for f in _FLAGLIKE) or any(t == k for t in _TIME_KEYS):
             continue
-        vals = [
-            r.get(k)
-            for r in rows
-            if isinstance(r.get(k), (int, float)) and not isinstance(r.get(k), bool)
-        ]
+        vals = [r.get(k) for r in rows if isinstance(r.get(k), (int, float))
+                and not isinstance(r.get(k), bool)]
         if len(vals) < 30:
             continue
         uniq = len(set(vals))
@@ -315,20 +267,14 @@ def check_cost_realism() -> tuple[list[str], list[str], dict]:
     if not COST.exists():
         cands = sorted(ROOT.glob("data/*cost*.json"))
         if not cands:
-            return (
-                [
-                    "no cost model artifact found -- every net-of-cost claim on this desk is "
-                    "resting on a default constant"
-                ],
-                [],
-                {},
-            )
+            return (["no cost model artifact found -- every net-of-cost claim on this desk is "
+                     "resting on a default constant"], [], {})
         c = cands[0]
     else:
         c = COST
     try:
         d = json.loads(c.read_text("utf-8"))
-    except Exception:
+    except Exception:  # blind-except intentional (BLE001)
         return [f"cost model {c.name} unparseable"], [], {}
     age_d = (datetime.now(tz=UTC).timestamp() - c.stat().st_mtime) / 86400
     meta = {"artifact": c.name, "age_days": round(age_d, 1)}
@@ -337,10 +283,8 @@ def check_cost_realism() -> tuple[list[str], list[str], dict]:
     n = len(d.get("pairs", d.get("symbols", d))) if isinstance(d, dict) else 0
     meta["entries"] = n
     if n and n < 10:
-        warns.append(
-            f"cost model covers only {n} symbols -- unmeasured symbols fall back to a "
-            f"default, and unmeasured means ILLIQUID, i.e. the expensive tail"
-        )
+        warns.append(f"cost model covers only {n} symbols -- unmeasured symbols fall back to a "
+                     f"default, and unmeasured means ILLIQUID, i.e. the expensive tail")
     return fails, warns, meta
 
 
@@ -354,9 +298,7 @@ def load_provenance() -> dict:
     return d.get("datasets", {}) if isinstance(d, dict) else {}
 
 
-def check_provenance(
-    p: Path, rows: list[dict], register: dict
-) -> tuple[list[str], list[str], dict]:
+def check_provenance(p: Path, rows: list[dict], register: dict) -> tuple[list[str], list[str], dict]:
     """FAMILY 6 -- WHERE THE NUMBERS CAME FROM (triage item #82).
 
     The other five families interrogate the data. None of them can see the one thing that
@@ -382,69 +324,49 @@ def check_provenance(
     warns: list[str] = []
     rec = register.get(p.name)
     if not isinstance(rec, dict):
-        return (
-            fails,
-            [
-                f"UNDECLARED PROVENANCE: {p.name} has no entry in "
-                f"{PROVENANCE.relative_to(ROOT)} -- origin, collection method, "
-                f"manipulation risk and survivorship are all unknown"
-            ],
-            {"declared": False},
-        )
+        return fails, [f"UNDECLARED PROVENANCE: {p.name} has no entry in "
+                       f"{PROVENANCE.relative_to(ROOT)} -- origin, collection method, "
+                       f"manipulation risk and survivorship are all unknown"], {"declared": False}
 
-    meta = {
-        "declared": True,
-        "source": str(rec.get("source", "") or ""),
-        "collection_method": str(rec.get("collection_method", "") or "").upper(),
-        "manipulation_risk": str(rec.get("manipulation_risk", "") or "").upper(),
-        "survivorship": str(rec.get("survivorship", "") or "").upper(),
-    }
+    meta = {"declared": True,
+            "source": str(rec.get("source", "") or ""),
+            "collection_method": str(rec.get("collection_method", "") or "").upper(),
+            "manipulation_risk": str(rec.get("manipulation_risk", "") or "").upper(),
+            "survivorship": str(rec.get("survivorship", "") or "").upper()}
 
     if meta["manipulation_risk"] == "HIGH":
         fails.append(
             "MANIPULATION RISK HIGH: the venue reporting this number can choose it (self-reported "
             "volume is the canonical case). An edge measured on a number its counterparty "
-            "controls is not an edge"
-        )
+            "controls is not an edge")
     elif meta["manipulation_risk"] not in _RISK_LEVELS:
-        warns.append(
-            f"manipulation_risk {meta['manipulation_risk'] or 'unset'!r} is not one of "
-            f"{'/'.join(_RISK_LEVELS)} -- ungraded risk is not low risk"
-        )
+        warns.append(f"manipulation_risk {meta['manipulation_risk'] or 'unset'!r} is not one of "
+                     f"{'/'.join(_RISK_LEVELS)} -- ungraded risk is not low risk")
 
     if meta["survivorship"] == "CONTAMINATED":
         fails.append(
             "SURVIVORSHIP CONTAMINATED: the universe is defined by present-day membership and "
             "applied to history. Every delisted, halted or dead symbol is silently absent, so the "
-            "backtest is run on the survivors of the very selection it claims to test"
-        )
+            "backtest is run on the survivors of the very selection it claims to test")
     elif meta["survivorship"] not in _SURVIVORSHIP:
-        warns.append(
-            f"survivorship {meta['survivorship'] or 'unset'!r} is not one of "
-            f"{'/'.join(_SURVIVORSHIP)}"
-        )
+        warns.append(f"survivorship {meta['survivorship'] or 'unset'!r} is not one of "
+                     f"{'/'.join(_SURVIVORSHIP)}")
 
     if meta["collection_method"] not in _COLLECTION:
-        warns.append(
-            f"collection_method {meta['collection_method'] or 'unset'!r} is not one of "
-            f"{'/'.join(_COLLECTION)} -- a rerun cannot be known to reproduce it"
-        )
+        warns.append(f"collection_method {meta['collection_method'] or 'unset'!r} is not one of "
+                     f"{'/'.join(_COLLECTION)} -- a rerun cannot be known to reproduce it")
 
     # CORROBORATION. Rows that name their own origin get to overrule the register.
-    observed = {
-        str(r[k]).strip().lower()
-        for r in rows[:MAX_ROWS]
-        for k in ("source", "venue", "exchange")
-        if isinstance(r.get(k), str) and r[k].strip()
-    }
+    observed = {str(r[k]).strip().lower()
+                for r in rows[:MAX_ROWS] for k in ("source", "venue", "exchange")
+                if isinstance(r.get(k), str) and r[k].strip()}
     if observed and meta["source"]:
         declared = meta["source"].lower()
         if not any(o in declared or declared in o for o in observed):
             fails.append(
                 f"PROVENANCE CONTRADICTED: rows report source/venue {sorted(observed)[:4]} but the "
                 f"register declares {meta['source']!r}. A wrong provenance claim is worse than an "
-                f"absent one -- absent invites a check, wrong is believed"
-            )
+                f"absent one -- absent invites a check, wrong is believed")
         meta["observed_sources"] = sorted(observed)[:6]
     return fails, warns, meta
 
@@ -455,22 +377,14 @@ def check_reproducibility(p: Path) -> tuple[list[str], list[str], dict]:
     # NO PRODUCER when libs/research/information_value.py writes it -- a false accusation of
     # irreproducibility against a healthy artifact. Third self-caught FP in this file.
     try:
-        hits = subprocess.run(
-            ["grep", "-rl", p.name, "scripts/", "libs/"],
-            cwd=str(ROOT),
-            capture_output=True,
-            text=True,
-            timeout=30,
-            check=False,
-        ).stdout
-    except Exception:
+        hits = subprocess.run(["grep", "-rl", p.name, "scripts/", "libs/"], cwd=str(ROOT),
+                              capture_output=True, text=True, timeout=30, check=False).stdout
+    except Exception:  # blind-except intentional (BLE001)
         hits = ""
     producers = [h.strip() for h in hits.splitlines() if h.strip()]
     if not producers:
-        fails.append(
-            "NO PRODUCER: no script in scripts/ references this artifact -- it cannot "
-            "be regenerated, so no result derived from it is reproducible"
-        )
+        fails.append("NO PRODUCER: no script in scripts/ references this artifact -- it cannot "
+                     "be regenerated, so no result derived from it is reproducible")
     age_d = (datetime.now(tz=UTC).timestamp() - p.stat().st_mtime) / 86400
     if age_d > 3:
         warns.append(f"artifact {age_d:.1f} days stale")
@@ -484,6 +398,15 @@ def verify_all() -> dict:
     for p in sorted((ROOT / "data").glob("*.jsonl")):
         rows = _load(p)
         if len(rows) < 25:
+            # Reported, never omitted -- same reason as data_vitals. An absent row cannot be
+            # distinguished from a passing row.
+            results[p.name] = {"rows_sampled": len(rows), "kind": "UNKNOWN",
+                               "verdict": "TOO_SMALL", "fails": [], "warns":
+                               [f"only {len(rows)} rows -- below the 25-row scoring floor"],
+                               "timestamps": {}, "correctness": {}, "features": {}, "repro": {},
+                               # empty on purpose: unchecked provenance reads as undeclared
+                               # (fail-closed), and its absence would KeyError verify_all below.
+                               "provenance": {}}
             continue
         tkey = next((k for k in _TIME_KEYS if k in rows[0]), None)
         kind = classify_kind(rows, tkey, p.name)
@@ -495,26 +418,18 @@ def verify_all() -> dict:
         fails = f1 + f2 + f3 + f4 + f5 + cost_f
         warns = w1 + w2 + w3 + w4 + w5
         results[p.name] = {
-            "rows_sampled": len(rows),
-            "kind": kind,
+            "rows_sampled": len(rows), "kind": kind,
             "verdict": "FAILED" if fails else "VERIFIED",
-            "fails": fails,
-            "warns": warns,
-            "timestamps": m1,
-            "correctness": m2,
-            "features": m3,
-            "repro": m4,
-            "provenance": m5,
-        }
+            "fails": fails, "warns": warns,
+            "timestamps": m1, "correctness": m2, "features": m3, "repro": m4,
+            "provenance": m5}
     undeclared = [n for n, v in results.items() if not v["provenance"].get("declared")]
-    return {
-        "updated": datetime.now(tz=UTC).isoformat(),
-        "cost_realism": {"fails": cost_f, "warns": cost_w, **cost_m},
-        # Reported as a COUNT so it can be ratcheted down. A list of undeclared datasets that
-        # nobody sums is a list that never shrinks.
-        "provenance_undeclared": {"n": len(undeclared), "datasets": undeclared},
-        "datasets": results,
-    }
+    return {"updated": datetime.now(tz=UTC).isoformat(),
+            "cost_realism": {"fails": cost_f, "warns": cost_w, **cost_m},
+            # Reported as a COUNT so it can be ratcheted down. A list of undeclared datasets that
+            # nobody sums is a list that never shrinks.
+            "provenance_undeclared": {"n": len(undeclared), "datasets": undeclared},
+            "datasets": results}
 
 
 def require_verified(dataset: str) -> dict:
@@ -526,8 +441,7 @@ def require_verified(dataset: str) -> dict:
     if not OUT.exists():
         raise MeasurementError(
             f"{dataset}: measurement gate has never run. Run scripts/measurement_gate.py. "
-            f"An unrun gate is not a pass."
-        )
+            f"An unrun gate is not a pass.")
     rep = json.loads(OUT.read_text("utf-8"))
     d = rep.get("datasets", {}).get(dataset)
     if d is None:
@@ -549,18 +463,18 @@ def main() -> None:
         raise SystemExit("no datasets with >=25 rows found")
 
     cm = rep["cost_realism"]
-    print(
-        f"  COST REALISM: {cm.get('artifact', 'NONE')} "
-        f"age {cm.get('age_days', '?')}d, {cm.get('entries', '?')} entries"
-    )
+    print(f"  COST REALISM: {cm.get('artifact','NONE')} "
+          f"age {cm.get('age_days','?')}d, {cm.get('entries','?')} entries")
     for w in cm.get("warns", []):
         print(f"    WARN {w}")
     for f in cm.get("fails", []):
         print(f"    FAIL {f}")
 
     ok = [k for k, v in ds.items() if v["verdict"] == "VERIFIED"]
+    small = [k for k, v in ds.items() if v["verdict"] == "TOO_SMALL"]
     bad = [k for k, v in ds.items() if v["verdict"] == "FAILED"]
-    print(f"\n  {len(ds)} datasets gated: {len(ok)} VERIFIED, {len(bad)} FAILED\n")
+    print(f"\n  {len(ds)} datasets gated: {len(ok)} VERIFIED, {len(bad)} FAILED, "
+          f"{len(small)} TOO_SMALL (reported, not scored -- still NOT a pass)\n")
     for name in sorted(bad, key=lambda k: -len(ds[k]["fails"])):
         v = ds[name]
         print(f"  FAILED  {name}  [{v['kind']}]  ({v['rows_sampled']} rows sampled)")
@@ -571,10 +485,8 @@ def main() -> None:
         for name in sorted(ok):
             print(f"      {name}  [{ds[name]['kind']}]")
     und = rep["provenance_undeclared"]
-    print(
-        f"\n  PROVENANCE (family 6): {len(ds) - und['n']}/{len(ds)} datasets declared in "
-        f"{PROVENANCE.relative_to(ROOT)}"
-    )
+    print(f"\n  PROVENANCE (family 6): {len(ds) - und['n']}/{len(ds)} datasets declared in "
+          f"{PROVENANCE.relative_to(ROOT)}")
     if und["n"]:
         print(f"    {und['n']} UNDECLARED: {', '.join(und['datasets'][:6])}")
         print("    Origin is the one property that invalidates a dataset without leaving a trace")

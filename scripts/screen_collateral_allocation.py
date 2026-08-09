@@ -80,7 +80,11 @@ def best_lending_apy(root: Path, *, stable_only: bool = True) -> tuple[float | N
         return None, "data/defi_lending.jsonl absent or empty on this host"
     best, where = None, ""
     for r in rows:
-        pools = r.get("data") if isinstance(r.get("data"), list) else [r]
+        # Bound ONCE and then narrowed. Calling r.get("data") twice -- once in the isinstance
+        # test, once for the value -- gives mypy nothing to narrow, and is genuinely two reads of
+        # a mutable mapping besides.
+        data = r.get("data")
+        pools = data if isinstance(data, list) else [r]
         for p in pools:
             if not isinstance(p, dict):
                 continue
@@ -138,6 +142,12 @@ def build_report(root: Path | None = None, *, haircut_bps: float = DEFAULT_HAIRC
         detail = (f"cannot compare: missing {', '.join(missing)}. UNMEASURED is NOT 'carry wins' "
                   "-- the assumption stays untested until both sides are readable")
     else:
+        # `apy is None` was handled above, so lending_net is real here -- but it was computed
+        # through a separate name and mypy cannot carry the narrowing across it. Re-derived from
+        # the narrowed `apy` rather than asserted or ignored: an assert would be a runtime cost
+        # for a fact the branch already guarantees, and a type-ignore would hide the next genuine
+        # None that arrives here.
+        lending_net_f = float(apy) - haircut_bps / 10_000.0
         cost = carry_cost_bps_annual / 10_000.0
         for name, key in (("high_funding", "high_regime_apy"), ("flat_funding", "flat_regime_apy")):
             gross = reg.get(key)
@@ -146,9 +156,9 @@ def build_report(root: Path | None = None, *, haircut_bps: float = DEFAULT_HAIRC
             carry_net = float(gross) - cost
             regime_map[name] = {
                 "carry_net_apy": round(carry_net, 4),
-                "lending_net_apy": round(lending_net, 4),
-                "winner": "carry" if carry_net > lending_net else "lending",
-                "edge_apy": round(abs(carry_net - lending_net), 4),
+                "lending_net_apy": round(lending_net_f, 4),
+                "winner": "carry" if carry_net > lending_net_f else "lending",
+                "edge_apy": round(abs(carry_net - lending_net_f), 4),
             }
         winners = {v["winner"] for v in regime_map.values()}
         if winners == {"carry"}:

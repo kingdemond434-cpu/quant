@@ -103,11 +103,22 @@ appear thorough -- a padded list costs the desk triage time it currently owes to
 engineering deadline, and inflated recommendations are the single most common way an advisory
 panel destroys value. Fewer, sharper, evidence-backed items beat a long list every time.
 
-BINDING CONTEXT you must respect when ranking: the live connector is the desk's #1 engineering
-priority with a 2026-07-31 deadline, and structural changes are frozen until Gate 0 clears.
-A recommendation that cannot beat ship the connector should say so and be labelled
-POST-GATE-0. Recommendations that ignore this constraint get rejected in triage regardless of
-quality -- state it and stay useful.
+BINDING CONTEXT you must respect when ranking (state of 2026-08-05 -- read the live board at
+data/gate0_readiness.json rather than trusting this paragraph if the two disagree). The live
+connector is DONE: 531 recorded fills, connector_verified READY, and the principal owes nothing.
+Gate 0 is blocked on FOUR desk-owned rows, and the first of them is the one that matters:
+
+  * net_of_fees_positive -- NOT-READY. All 4 hold buckets are NEGATIVE net of fees across 41
+    closes. The only deployed sleeve LOSES MONEY ON ITS OWN FILLS. Execution cost, not edge
+    discovery, is the binding constraint on this desk reaching live capital at all.
+  * soak_clean_7d -- NOT-READY, kill-file freeze currently latched.
+  * ruin_rail_clear -- BLOCKED-UNKNOWN off-box.
+  * premortem_completed -- this mission.
+
+Rank against THAT. A recommendation that cannot beat "make the sleeve profitable net of fees"
+should say so and be labelled POST-GATE-0. Recommendations that ignore this constraint get
+rejected in triage regardless of quality -- state it and stay useful. Do NOT recommend shipping
+the connector; it shipped.
 
 
 === MANDATORY RED-TEAM BLOCK (principal standing protocol 2026-07-21) ===
@@ -135,3 +146,18 @@ The CRO implements every part-2/part-3 item that survives triage and raises ROI,
 through track_findings.py so none is silently dropped. Re-raising a finding already in the
 settled-rulings feed (with its stated reason unchallenged) wastes triage budget -- bring new
 evidence or move on.
+
+TIER-1-SPECIFIC: This is the deepest review this desk runs, and it costs ~2x an ordinary panel.
+Spend it. Do not produce a survey. Produce the three things that would actually change a decision,
+AND everything else you found — both, not a choice between them.
+Assume every number in the dossier is self-reported and could be wrong. Check the ones that matter
+against the code you were given.
+
+
+=== EXHAUSTION MANDATE (principal 2026-07-28) — NO QUOTA, NO CEILING ===
+Report EVERY finding you can substantiate. Do not rank-and-truncate to a tidy number.
+A defect omitted for brevity is a defect shipped.
+If a seam is genuinely empty, SAY SO and name what you checked — a documented empty seam stops
+this desk re-digging it and is worth as much as a find.
+Go one layer past where you would normally stop. That layer is what every other reviewer skips.
+Silence is indistinguishable from not having looked.

@@ -1,147 +1,208 @@
 {
-  "generated": "2026-08-04T08:44:25.165617+00:00",
-  "master_objective": "maximize expected lifetime geometric growth (log wealth), survival-c",
-  "deployed": {
-    "sleeves": [
-      "cash_and_carry (real)",
-      "perp_ls (paper)"
-    ],
-    "start_capital": 15000.0,
-    "equity": 13136.26,
-    "net_pnl": -1863.74,
-    "return_pct": -12.425,
-    "days_live": 33.14,
-    "winrate_pct": 43.1,
-    "n_closed_trades": 253,
-    "deployed_sharpe": -9.9,
-    "funding": 113.06,
-    "n_carries": 0,
-    "perp_paper_net": 1.5
-  },
-  "binding_constraint": "calendar-time data accumulation (not engineering throughput)",
-  "bottleneck_rankings": [
-    {
-      "rank": 1,
-      "bottleneck": "calendar-time data accumulation",
-      "evidence": [
-        {
-          "edge": "oi_divergence",
-          "have_days": 37,
-          "needs_days": 40
-        },
-        {
-          "edge": "ls_contrarian",
-          "have_days": 37,
-          "needs_days": 40
-        },
-        {
-          "edge": "liquidation_reversal",
-          "have_days": 37,
-          "needs_days": 40
-        }
-      ],
-      "lever": "keep the flywheel alive + verify archives append; cannot be engineered away"
-    },
-    {
-      "rank": 2,
-      "bottleneck": "single deployed edge (concentration)",
-      "evidence": "2 deployed sleeve(s)",
-      "lever": "decorrelated survivors -- blocked on #1 (need forward data to validate)"
-    },
-    {
-      "rank": 3,
-      "bottleneck": "flywheel reliability (PC sleep / reboot)",
-      "evidence": "watchdog enabled; run-logged-off pending",
-      "lever": "execution_tca_fill_log"
-    }
-  ],
-  "retirement_candidates": [
-    {
-      "sleeve": "basis_carry",
-      "marginal_sharpe": -0.09
-    }
-  ],
-  "retirement_note": "SIGNAL ONLY \u2014 marginal-Sharpe swings ~\u00b10.15 between runs, so a single negative sign is within noise. Retire only on PERSISTENT negative contribution across runs, with promotion-grade rigor. No whipsaw.",
-  "architecture_review_due": false,
-  "cycles_logged": 64,
-  "completed_this_cycle": [
-    "archive_integrity_ok",
-    "watchdog_run_logged_off",
-    "honest_deployed_sharpe",
-    "single_portfolio_object",
-    "trade_logging",
-    "state_files_infra",
-    "cashcarry_capacity_sizing",
-    "bayesian_roi_calibration",
-    "dynamic_leverage",
-    "combined_perp_carry",
-    "execution_maker_carry",
-    "hedge_reconcile",
-    "growth_positive_risk_controls",
-    "test_suite_ci",
-    "stress_harness",
-    "stablecoin_flows_archiver",
-    "alpha_economics_gate",
-    "institutional_knowledge_base",
-    "reconcile_limit_fallback",
-    "root_cause_engine",
-    "decision_ledger",
-    "data_registry",
-    "executive_kpis",
-    "black_swan_library",
-    "growth_audit_engine",
-    "carry_crowding_monitor",
-    "live_connector_prebuild",
-    "autodiscovery_crypto_throughput"
-  ],
-  "engineering_backlog_top": [
-    {
-      "id": "execution_tca_fill_log",
-      "roi": 0.128,
-      "effort_h": 3.0
-    },
-    {
-      "id": "cross_venue_funding_study",
-      "roi": 0.064,
-      "effort_h": 3.0
-    },
-    {
-      "id": "funding_decay_predictor",
-      "roi": 0.037,
-      "effort_h": 4.0
-    }
-  ],
-  "research_backlog": [
-    {
-      "edge": "oi_divergence",
-      "status": "data-blocked 37/40d",
-      "info_value": "positive but not yet actionable"
-    },
-    {
-      "edge": "ls_contrarian",
-      "status": "data-blocked 37/40d",
-      "info_value": "positive but not yet actionable"
-    },
-    {
-      "edge": "liquidation_reversal",
-      "status": "data-blocked 37/40d",
-      "info_value": "positive but not yet actionable"
-    }
-  ],
-  "decisions_log": [
-    "REJECT ls_contrarian for deployment: Sharpe 10+ artifact, fails DSR (correct).",
-    "PIVOT executed book to delta-neutral cash-and-carry; perp L/S -> shadow.",
-    "DEFER new-hypothesis generation: lower marginal ROI than protecting the data clock.",
-    "DEFER heavy external paper search: info value < top backlog item this cycle."
-  ],
-  "forecast_calibration": {
-    "n_resolved": 65,
-    "status": "calibrated",
-    "brier": 0.1618,
-    "reliability": 0.8382,
-    "bias": -0.0271,
-    "bias_label": "well-calibrated",
-    "hit_rate_posterior": 0.776,
-    "note": "Brier lower=better; reliability=1-Brier; bias>0 means forecasts were too high. Applied as a shrinkage on future p_success when |bias| is material."
-  }
+    "generated":  "2026-08-07T03:16:04.762392+00:00",
+    "master_objective":  "maximize expected lifetime geometric growth (log wealth), survival-c",
+    "deployed":  {
+                     "sleeves":  [
+                                     "cash_and_carry (real)",
+                                     "perp_ls (paper)"
+                                 ],
+                     "start_capital":  15000,
+                     "equity":  17930.79,
+                     "net_pnl":  2930.79,
+                     "return_pct":  19.539,
+                     "days_live":  38.14,
+                     "winrate_pct":  43.1,
+                     "n_closed_trades":  253,
+                     "deployed_sharpe":  9.03,
+                     "funding":  113.06,
+                     "n_carries":  0,
+                     "perp_paper_net":  -1.5,
+                     "funding_measured":  true
+                 },
+    "binding_constraint":  "calendar-time data accumulation (not engineering throughput)",
+    "bottleneck_rankings":  [
+                                {
+                                    "rank":  1,
+                                    "bottleneck":  "calendar-time data accumulation",
+                                    "evidence":  [
+                                                     {
+                                                         "edge":  "oi_divergence",
+                                                         "have_days":  42,
+                                                         "needs_days":  40
+                                                     },
+                                                     {
+                                                         "edge":  "ls_contrarian",
+                                                         "have_days":  42,
+                                                         "needs_days":  40
+                                                     },
+                                                     {
+                                                         "edge":  "liquidation_reversal",
+                                                         "have_days":  42,
+                                                         "needs_days":  40
+                                                     }
+                                                 ],
+                                    "lever":  "keep the flywheel alive + verify archives append; cannot be engineered away"
+                                },
+                                {
+                                    "rank":  2,
+                                    "bottleneck":  "single deployed edge (concentration)",
+                                    "evidence":  "2 deployed sleeve(s)",
+                                    "lever":  "decorrelated survivors -- blocked on #1 (need forward data to validate)"
+                                },
+                                {
+                                    "rank":  3,
+                                    "bottleneck":  "flywheel reliability (PC sleep / reboot)",
+                                    "evidence":  "watchdog enabled; run-logged-off pending",
+                                    "lever":  "execution_tca_fill_log"
+                                },
+                                {
+                                    "rank":  1,
+                                    "bottleneck":  "calendar-time data accumulation",
+                                    "evidence":  [
+                                                     {
+                                                         "edge":  "oi_divergence",
+                                                         "have_days":  40,
+                                                         "needs_days":  40
+                                                     },
+                                                     {
+                                                         "edge":  "ls_contrarian",
+                                                         "have_days":  40,
+                                                         "needs_days":  40
+                                                     },
+                                                     {
+                                                         "edge":  "liquidation_reversal",
+                                                         "have_days":  40,
+                                                         "needs_days":  40
+                                                     }
+                                                 ],
+                                    "lever":  "keep the flywheel alive + verify archives append; cannot be engineered away"
+                                }
+                            ],
+    "retirement_candidates":  [
+                                  {
+                                      "sleeve":  "funding_momentum",
+                                      "marginal_sharpe":  -0.19
+                                  },
+                                  {
+                                      "sleeve":  "basis_carry",
+                                      "marginal_sharpe":  -0.05
+                                  },
+                                  {
+                                      "sleeve":  "funding_momentum",
+                                      "marginal_sharpe":  -0.11
+                                  },
+                                  {
+                                      "sleeve":  "basis_carry",
+                                      "marginal_sharpe":  -0.09
+                                  }
+                              ],
+    "retirement_note":  "SIGNAL ONLY — marginal-Sharpe swings ~±0.15 between runs, so a single negative sign is within noise. Retire only on PERSISTENT negative contribution across runs, with promotion-grade rigor. No whipsaw.",
+    "architecture_review_due":  false,
+    "cycles_logged":  75,
+    "completed_this_cycle":  [
+                                 "archive_integrity_ok",
+                                 "watchdog_run_logged_off",
+                                 "honest_deployed_sharpe",
+                                 "single_portfolio_object",
+                                 "trade_logging",
+                                 "state_files_infra",
+                                 "cashcarry_capacity_sizing",
+                                 "bayesian_roi_calibration",
+                                 "dynamic_leverage",
+                                 "combined_perp_carry",
+                                 "execution_maker_carry",
+                                 "hedge_reconcile",
+                                 "growth_positive_risk_controls",
+                                 "test_suite_ci",
+                                 "stress_harness",
+                                 "stablecoin_flows_archiver",
+                                 "alpha_economics_gate",
+                                 "institutional_knowledge_base",
+                                 "reconcile_limit_fallback",
+                                 "root_cause_engine",
+                                 "decision_ledger",
+                                 "data_registry",
+                                 "executive_kpis",
+                                 "black_swan_library",
+                                 "growth_audit_engine",
+                                 "carry_crowding_monitor",
+                                 "live_connector_prebuild",
+                                 "autodiscovery_crypto_throughput"
+                             ],
+    "engineering_backlog_top":  [
+                                    {
+                                        "id":  "execution_tca_fill_log",
+                                        "roi":  0.128,
+                                        "effort_h":  3
+                                    },
+                                    {
+                                        "id":  "cross_venue_funding_study",
+                                        "roi":  0.064,
+                                        "effort_h":  3
+                                    },
+                                    {
+                                        "id":  "funding_decay_predictor",
+                                        "roi":  0.037,
+                                        "effort_h":  4
+                                    },
+                                    {
+                                        "id":  "live_connector_prebuild",
+                                        "roi":  0.09,
+                                        "effort_h":  4.0
+                                    }
+                                ],
+    "research_backlog":  [
+                             {
+                                 "edge":  "oi_divergence",
+                                 "status":  "data-blocked 42/40d",
+                                 "info_value":  "positive but not yet actionable"
+                             },
+                             {
+                                 "edge":  "ls_contrarian",
+                                 "status":  "data-blocked 42/40d",
+                                 "info_value":  "positive but not yet actionable"
+                             },
+                             {
+                                 "edge":  "liquidation_reversal",
+                                 "status":  "data-blocked 42/40d",
+                                 "info_value":  "positive but not yet actionable"
+                             },
+                             {
+                                 "edge":  "oi_divergence",
+                                 "status":  "data-blocked 40/40d",
+                                 "info_value":  "positive but not yet actionable"
+                             },
+                             {
+                                 "edge":  "ls_contrarian",
+                                 "status":  "data-blocked 40/40d",
+                                 "info_value":  "positive but not yet actionable"
+                             },
+                             {
+                                 "edge":  "liquidation_reversal",
+                                 "status":  "data-blocked 40/40d",
+                                 "info_value":  "positive but not yet actionable"
+                             }
+                         ],
+    "decisions_log":  [
+                          "REJECT ls_contrarian for deployment: Sharpe 10+ artifact, fails DSR (correct).",
+                          "PIVOT executed book to delta-neutral cash-and-carry; perp L/S -\u003e shadow.",
+                          "DEFER new-hypothesis generation: lower marginal ROI than protecting the data clock.",
+                          "DEFER heavy external paper search: info value \u003c top backlog item this cycle."
+                      ],
+    "forecast_calibration":  {
+                                 "n_resolved":  103,
+                                 "status":  "calibrated",
+                                 "brier":  0.2412,
+                                 "reliability":  0.8051,
+                                 "bias":  0.1437,
+                                 "bias_label":  "over-confident",
+                                 "hit_rate_posterior":  0.619,
+                                 "note":  "Brier lower=better; reliability=1-Brier; bias\u003e0 means forecasts were too high. Applied as a shrinkage on future p_success when |bias| is material.",
+                                 "n_eligible":  151,
+                                 "n_excluded":  {
+                                                    "retrospective":  30,
+                                                    "duplicate_claim":  1,
+                                                    "non_sizing_kind":  9
+                                                }
+                             }
 }

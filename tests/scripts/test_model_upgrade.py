@@ -306,3 +306,22 @@ def test_inline_shell_default_chain_is_upgraded_too():
     out, changes = rewrite_text(body, {"claude-opus-5": "claude-opus-6"})
     assert "${_BRAIN_MODEL_CHAIN:-claude-fable-5 claude-opus-6 claude-opus-5}" in out
     assert changes and "inline chain default" in changes[0]
+
+
+def test_seat_frontmatter_model_pin_is_seen_and_rewritten():
+    """A seat definition's `model:` frontmatter is a pin, not prose.
+
+    ops/CRO_CONSTITUTION.md pinned claude-opus-4-8 in markdown frontmatter for its whole
+    life; chain_files scanned only .sh/.py, so the 2026-08-04 verified opus-4-8 -> opus-5
+    promotion had no surface to land on and sat unadopted -- the exact class the
+    model-upgrade-unadopted fence fires for.
+    """
+    body = ("---\n"
+            "name: cro-daily-research-cycle\n"
+            "model: claude-opus-4-8\n"
+            "---\n\n"
+            "prose that mentions claude-opus-4-8 stays untouched\n")
+    out, changes = rewrite_text(body, {"claude-opus-4-8": "claude-opus-5"})
+    assert "model: claude-opus-5\n" in out
+    assert "prose that mentions claude-opus-4-8 stays untouched" in out
+    assert changes == ["seat frontmatter model: claude-opus-4-8 -> claude-opus-5"]

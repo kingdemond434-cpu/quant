@@ -115,8 +115,23 @@ def simplifier() -> dict:
             "touched_30d": len({ln.strip() for ln in recent.splitlines() if ln.strip()})}
 
 
+def _doctrine(role: str = "") -> str:
+    """Runtime doctrine preamble. One source (scripts/doctrine.py); never a pasted copy."""
+    try:
+        from scripts.doctrine import preamble
+        return preamble(role)
+    except Exception:  # blind-except intentional (BLE001)
+        try:
+            import sys as _s
+            _s.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent))
+            from doctrine import preamble  # type: ignore
+            return preamble(role)
+        except Exception:  # blind-except intentional (BLE001)
+            return ""          # never break a caller over a preamble
+
+
 def _ask(base, key, model, messages, timeout=240.0):
-    body = json.dumps({"model": model, "max_tokens": 3000, "temperature": 0.6,
+    body = json.dumps({"model": model, "max_tokens": 12000, "temperature": 0.9,
                        # DEPTH IS MEASURED, NOT ASSUMED. "high" is the middle rung of a ladder
                        # whose top differs per model and per month -- a literal here is
                        # capability left unused on a flagship the desk pays for.
@@ -138,7 +153,8 @@ def _ask_pushed(base, key, model, system, user):
     ladder reuses it and keeps asking until novelty dies, the model surrenders, or the round cap
     binds. Returns (joined_text, stop_reason).
     """
-    r = push_rounds(lambda msgs: _ask(base, key, model, msgs), system, user, ladder=PUSH_LADDER)
+    r = push_rounds(lambda msgs: _ask(base, key, model, msgs),
+                    _doctrine("meta_architect") + system, user, ladder=PUSH_LADDER)
     return r.text, f"{r.rounds} push round(s); {r.stop_reason}"
 
 

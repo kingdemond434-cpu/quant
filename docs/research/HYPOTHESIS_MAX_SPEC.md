@@ -78,6 +78,59 @@ factor families first, per the 2026-07-19 standing targeting order).
 compute per survivor, pre-filter false-reject audit rate. Success = gauntlet throughput up
 with FDR detector flat.
 
+## COMPONENT STATUS — recorded 2026-07-29 (so the unbuilt half is a DECISION, not silence)
+Per §36, an unbuilt component with no recorded reason is the parked state. Status, with the
+evidence for each:
+- **#1 tiered pre-filter: PARTIAL, split across two live gates rather than one wired stage.**
+  The graveyard/do_not_repeat novelty match runs at generation time and blocked a dead-class
+  screen before compute on 2026-07-28 (commit 3db47ef: coinmetrics netflow blocked, "a blocked
+  hypothesis is a deliverable"); the cheap-economics screen runs pre-research as the EV gate
+  (`alpha_economics`, threshold 0.05 — with the self-contradiction found 2026-07-28 STILL OPEN:
+  conservative honest priors are structurally auto-rejected). The spec'd in-sample t-stat/IC
+  stage and the pass/fail + spot-audit reject trail are NOT built. Residual, not blocked.
+- **#2 telemetry feedback / #3 variation blocker: BUILT 2026-07-30.** Both were recorded
+  "residual, not blocked", so they were built rather than re-deferred.
+  `libs/research/mechanism_fingerprint.py` is the shared fingerprint the spec assumes (feature
+  family + signal transform + horizon bucket), bucketed COARSELY on purpose: a 20-day and a
+  21-day lookback are the same hypothesis, and treating them as two is the forking-paths failure
+  this exists to collapse. `libs/research/variation_blocker.py` blocks an exact fingerprint match
+  or a >=0.90 Jaccard near-duplicate BEFORE compute — the saving is statistical before it is
+  computational, since every look charges multiplicity against DSR and the stepdown. Every block
+  records what it duplicated, so the ledger stays a map of the searched space (the input #4 needs
+  when it unblocks). Telemetry emits `novel_rate` — the share of generated ideas that were
+  genuinely new questions — which is the number that distinguishes "420 tests" from "one question
+  asked 420 ways". 11 tests.
+  BUG FOUND BY ITS OWN TEST, recorded because it is the exact failure the module warns about:
+  the semantic proxy initially omitted the horizon, so a 7-day and a 90-day carry signal scored
+  Jaccard 1.00 and the 90-day version was BLOCKED despite a different fingerprint. The proxy was
+  overriding the structured dimension it is meant to complement, silently deleting a genuinely
+  different question. `describe()` now includes the horizon bucket.
+- **#4 breeder: NOT BUILT — BLOCKED ON EVIDENCE THAT DOES NOT EXIST YET, and building it now
+  would be ceremony.** The breeder crosses SURVIVING mechanics with NEWLY VALIDATED axes. The
+  desk's measured state 2026-07-29: confirmed alphas to date = 0 (DESK_BRIEF), 420 tested /
+  0 gauntlet survivors (an instrument artifact per register #87, but survivors are still 0
+  until the ruling + rerun), kimchi retracted as artifact (commit 02f2917), first forward-clock
+  verdict not due before 2026-09-01. The cross product is 0-or-1 survivors × 0 newly validated
+  axes = an empty loop. UNBLOCK TRIGGER (either): first Stage-B forward-clock validation
+  (~2026-09-01, OI/LS) OR first gauntlet survivor after the #87 per-candidate-gate ruling +
+  campaign rerun. When either fires, build #4 in the same cycle — the spec above stands.
+- **#5 orthogonality seeker: NOT BUILT — same blocker class.** It scores candidates against
+  "the existing book and the current candidate set"; the existing book is ONE sleeve (carry)
+  and the validated candidate set is empty, so today it reduces to the single-axis
+  `orthogonality` field the EV gate already charges (`run_axis_generate.py` Idea fields).
+  UNBLOCK TRIGGER: >1 independent validated/deployed return stream. Recording NOT BUILT with
+  this trigger beats building a scorer with nothing to score against.
+- **#6 collapse detector: BUILT 2026-07-30 — its trigger fired.** The deferral named an
+  explicit unblock condition ("build it when generation cadence upgrades to weekly at S1/Gate-0
+  entry"), and Gate 0 entry is today, so the deferral expired on its own terms rather than being
+  re-argued. `libs/research/collapse_detector.py`: mechanism entropy (normalised by ITEM count,
+  not category count — the latter reports 2 fingerprints across 50 ideas as PERFECTLY diverse),
+  feature breadth, market breadth counting cross-sectional universes properly, semantic Jaccard,
+  cross-generator overlap. Trailing-8-batch median comparison at the spec'd 40% drop / 25%
+  cross-duplicate triggers. NEVER blocks generation — instrumentation that books a DIVERSITY
+  AUDIT for the weekly panel, per spec. Wired by `scripts/run_generation_diversity.py` into
+  `panel_scorecard.gen_diversity`. 26 tests.
+
 ## 6. Generator collapse detector (principal micro-addition 2026-07-20 -- Lane-A instrumentation)
 Uncapped generation has a known failure mode: mode collapse -- multiple generators/seats
 converging on near-identical hypotheses, so measured throughput rises while INFORMATION

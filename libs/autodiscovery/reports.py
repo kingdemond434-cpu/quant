@@ -13,7 +13,10 @@ from libs.autodiscovery.memory import CandidateStore
 
 def _rejection_histogram(store: CandidateStore) -> dict[str, int]:
     hist: dict[str, int] = {}
-    for rec in store.all():
+    # Full history on purpose: this tallies WHICH GATES KILL, a historical fact that a later
+    # capacity retirement (status -> archived) must not shrink. Retired rows keep their original
+    # rejection_reason untouched, so their gate history still counts here.
+    for rec in store.all(include_retired=True):
         if rec.survived or not rec.rejection_reason:
             continue
         body = rec.rejection_reason.removeprefix("failed: ")
@@ -28,6 +31,7 @@ def research_report(store: CandidateStore) -> dict[str, Any]:
         "by_family": store.family_counts(),
         "by_status": store.status_counts(),
         "survivors": len(store.survivors()),
+        "screen_survivors": len(store.screen_survivors()),
     }
 
 

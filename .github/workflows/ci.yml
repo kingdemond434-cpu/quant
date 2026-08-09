@@ -32,11 +32,23 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
 
+      - name: LAW GATE (constitutional -- portable fences)
+        # L1.37: laws were enforced on cron ticks and nowhere else, so a breach could enter the
+        # tree between ticks with nothing watching. This runs the portable law fences (sealed
+        # core, law families, timidity incl. all prompt surfaces, enforcement matrix, scheduler
+        # manifest) on EVERY push and PR. State fences are box-only by design and run there.
+        run: python scripts/run_law_gate.py --laws-only
+
       - name: Lint (ruff)
         run: ruff check .
 
       - name: Types (mypy --strict)
         run: mypy
+
+      # L1.37: enforce the portable constitution/family/wiring fences before a commit can enter.
+      # Live-state checks remain on the VPS; a clean CI worker must not manufacture desk state.
+      - name: Laws (portable)
+        run: python scripts/run_law_gate.py --laws-only
 
       # COVERAGE IS MEASURED HERE OR IT IS NOT MEASURED AT ALL. pytest-cov has been a declared
       # dev dependency and [tool.coverage.run] has carried branch=true for as long as either has

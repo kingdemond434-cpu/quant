@@ -89,8 +89,8 @@ def build_panel() -> tuple[list[str], list[str], np.ndarray, dict[str, int]]:
 
     dates = sorted({d for d, _ in agg_net})
     active = defaultdict(int)
-    for _d, s in agg_net:
-        active[s] += 1
+    for _, sym in agg_net:
+        active[sym] += 1
     symbols = sorted(s for s, n in active.items() if n >= MIN_ACTIVE_DAYS)
 
     di = {d: i for i, d in enumerate(dates)}

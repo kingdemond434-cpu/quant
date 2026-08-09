@@ -45,7 +45,7 @@ FUNDING_PERIOD_H = 8
 def _load(p, d=None):
     try:
         return json.loads(p.read_text("utf-8"))
-    except Exception:
+    except Exception:  # blind-except intentional (BLE001)
         return d
 
 

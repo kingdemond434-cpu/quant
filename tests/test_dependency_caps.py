@@ -119,6 +119,11 @@ _OPTIONAL_BY_DESIGN = {
     "backtrader",       # cross-engine extra
     "vectorbt",         # cross-engine extra
     "streamlit",        # dashboard, not importable from any library path
+    # plotting only. scripts/run_intraday_rotation.py:276-281 imports it INSIDE _plots(), behind
+    # try/except ImportError, and on absence writes doc["plots"] = "matplotlib absent -- data
+    # tables in JSON only" and returns. The JSON tables -- the actual research output -- are
+    # unaffected, so this is a cosmetic degradation, never a silent one.
+    "matplotlib",
     "hypothesis", "pytest", "_pytest",   # test-only, declared in the dev extra
 }
 

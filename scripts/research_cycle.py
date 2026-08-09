@@ -16,7 +16,7 @@ deterministic and honest -- it reports what the files on disk actually say.
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -31,6 +31,52 @@ def _load(p: Path, d: Any = None) -> Any:
         return json.loads(p.read_text("utf-8"))
     except (OSError, json.JSONDecodeError):
         return d if d is not None else {}
+
+
+def _register_row_closed(row_id: int) -> bool:
+    """Has GAP_REGISTER row ``row_id`` reached a terminal status?
+
+    A backlog item that mirrors a register row must never claim done while the row is still
+    open. Those two systems disagreed for 8 days on the live connector -- the register said
+    in-progress with six named blockers and a 07-31 deadline, while the backlog said completed,
+    and the backlog is the one that produces `next_action` every morning. Unknown or unparseable
+    reads as NOT closed: the failure that cost the time was a detector defaulting to done.
+    """
+    try:
+        from libs.research.finding_registry import parse_register
+        rows = parse_register((_ROOT / "docs/GAP_REGISTER.md").read_text("utf-8"))
+    except (OSError, ImportError, ValueError):
+        return False
+    for r in rows:
+        if r.row_id == row_id:
+            return not r.is_open
+    return False
+
+
+def _live_path_wired() -> bool:
+    """Is the live path RUNNING, and is the register row it mirrors actually closed?
+
+    The wiring half checks the three things that were all false while the old
+    `binance_live.py.exists()` detector said done: the guard exists, the daily cycle calls it,
+    and the guard drives the stage machine + connector + reconcile.
+
+    The register half is what stops this detector re-arming the same trap. Wiring is necessary,
+    not sufficient -- row 2 still carries the panel fuzz/breaker report, the §7b pre-mortem and
+    the host-death and ladder drills, none of which a source-text check can see. With wiring
+    alone this would have flipped to done the moment the guard shipped and dropped the connector
+    out of the backlog's open list again, exactly as it did on 07-18.
+    """
+    guard = _ROOT / "scripts/run_live_guard.py"
+    cycle = _ROOT / "scripts/daily_research_cycle.py"
+    try:
+        g, c = guard.read_text("utf-8"), cycle.read_text("utf-8")
+    except OSError:
+        return False
+    wired = ("run_live_guard.py" in c
+             and "binance_live" in g
+             and "staging" in g
+             and "protective_stops" in g)
+    return wired and _register_row_closed(2)
 
 
 def _detectors() -> dict[str, bool]:
@@ -78,7 +124,12 @@ def _detectors() -> dict[str, bool]:
         "growth_audit_engine": (_ROOT / "scripts/run_growth_audit.py").exists(),
         "execution_tca_fill_log": (_ROOT / "web/tca.json").exists(),
         "funding_decay_predictor": (_ROOT / "web/funding_decay_backtest.json").exists(),
-        "live_connector_prebuild": (_ROOT / "libs/execution/binance_live.py").exists(),
+        # A FILE-EXISTENCE detector marked this done on 2026-07-18 and kept marking it done for
+        # 8 days while the connector and the stage machine had no production caller at all --
+        # measuring the proxy (a file on disk) instead of the thing the row names (a wired live
+        # path). Now it asks whether the rails actually RUN: the guard must exist, be on the
+        # daily cycle, and drive the stage machine.
+        "live_connector_prebuild": _live_path_wired(),
         "carry_crowding_monitor": (_ROOT / "web/crowding.json").exists(),
         "cross_venue_funding_study": (_ROOT / "web/cross_venue_funding.json").exists(),
         # the #1 tier-convergence build: autodiscovery factory generating/gauntleting CRYPTO
@@ -197,7 +248,10 @@ _ENG: list[dict[str, Any]] = [
             "data/LIVE_ENABLE flag file present AND VPS precondition marker set), plus a go-live "
             "runbook in docs/playbooks/. Unit-test the guard interlocks. Rushing real-money code "
             "on connection day is how phase changes go wrong; this makes go-live a config flip. "
-            "Detector: libs/execution/binance_live.py exists."},
+            "Detector: the live path is WIRED -- scripts/run_live_guard.py exists, the daily "
+            "cycle calls it, and it drives the connector + stage machine + naked-position "
+            "reconcile. (Was 'binance_live.py exists', which read done for 8 days while nothing "
+            "called either module.)"},
     {"id": "funding_decay_predictor",
      "title": "Funding-decay predictor: rank/exit carry on PREDICTED next-window funding",
      "impact": 0.50, "p": 0.30, "effort_h": 4.0,
@@ -336,12 +390,61 @@ def _research_state(eng: dict[str, Any], done: dict[str, bool]) -> dict[str, Any
     }
 
 
+# Horizon for an engineering forecast: "this task's done_if detector fires within N days of the
+# forecast being pre-registered". 30d spans several ROI-ranked cycles yet keeps the
+# check_calibration OVERDUE fence meaningful inside a quarter.
+_FORECAST_HORIZON_DAYS = 30
+
+
 def _calibrate(done: dict[str, bool]) -> dict[str, Any]:
-    """Log each engineering forecast + resolve the ones that completed, then report calibration."""
+    """Pre-register engineering forecasts, grade them only when the outcome is KNOWN, report.
+
+    CONTRACT (forecast_calibration._scoreable #1 / L1.29a): a probability is a forecast only if
+    it is logged with a resolve_by BEFORE the outcome is known. The old loop here logged eng:*
+    rows with no resolve_by and resolved them TRUE in the same pass -- 30 degenerate all-TRUE
+    rows, graded a median 18ms after being logged, which inverted the measured bias (+0.176
+    over-confident read as -0.146 under-confident) and fed kelly_leverage an inflated p
+    (recommendation_ledger rec 3101). The estimator now excludes such rows; this writer must
+    stop producing them. Therefore:
+
+      * a task already done at first sight is NEVER logged -- observing state is an assertion,
+        not a prediction;
+      * an open task is pre-registered ONCE, with a resolve_by fixed at first assertion and
+        never rolled forward (a rolling deadline can never go overdue, which would blind the
+        check_calibration fence);
+      * grading writes BOTH sides, so misses are counted: detector fires while the deadline is
+        still ahead -> True; deadline passes with the task still open -> False. A completion
+        first OBSERVED after the deadline also grades False -- we cannot verify it beat the
+        clock, and defaulting to credit is the exact self-flattering failure this replaces;
+      * one forecast per task, never re-registered after resolution: _scoreable dedups
+        identical claims, so a re-ask would add rows without adding information.
+
+    Legacy rows lacking a parseable resolve_by are left untouched (resolving one would mint
+    another retrospective row); the estimator already excludes them.
+    """
+    now = datetime.now(tz=UTC)
     for it in _ENG:
-        fc.log_forecast(f"eng:{it['id']}", it["p"], "engineering")
-        if done.get(it["id"]):
-            fc.resolve(f"eng:{it['id']}", outcome=True)     # a completed task = forecast realised
+        key = f"eng:{it['id']}"
+        row = fc.get_forecast(key)
+        if row is None:
+            if not done.get(it["id"]):              # first sight while still OPEN: pre-register
+                fc.log_forecast(
+                    key, it["p"], "engineering",
+                    resolve_by=(now + timedelta(days=_FORECAST_HORIZON_DAYS)).isoformat(),
+                    claim=(f"eng task '{it['id']}' done_if detector fires within "
+                           f"{_FORECAST_HORIZON_DAYS}d of {now.date().isoformat()}"))
+            continue                                # already done + never forecast: assert only
+        if row.get("resolved"):
+            continue                                # scored history is immutable
+        try:
+            due = datetime.fromisoformat(str(row.get("resolve_by")))
+            due = due if due.tzinfo else due.replace(tzinfo=UTC)
+        except (TypeError, ValueError):
+            continue                                # legacy no-deadline row: inert, never graded
+        if due < now:
+            fc.resolve(key, outcome=False)          # horizon passed unverified -> forecast missed
+        elif done.get(it["id"]):
+            fc.resolve(key, outcome=True)           # detector fired inside the horizon
     rep = fc.report()
     (_WEB / "calibration.json").write_text(json.dumps(rep, indent=2), "utf-8")
     return rep

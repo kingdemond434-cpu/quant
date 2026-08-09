@@ -24,6 +24,11 @@ cd "$(dirname "$0")/.."
 
 LOG="data/pipeline_$(date -u +%Y%m%dT%H%M%SZ).log"
 mkdir -p data
+exec 9>data/.overnight_frontier.lock
+if ! flock -n 9; then
+    echo "overnight frontier already running; refusing a duplicate cycle"
+    exit 0
+fi
 SWEEP_REPORT="data/full_sweep.json"
 CYCLE_ONLY="${1:-}"
 
@@ -33,8 +38,13 @@ for _c in "$PWD/.venv/bin/python" .venv/bin/python python3; do
 done
 [ -n "$PY" ] || { echo "FATAL: no interpreter"; exit 1; }
 
+SWEEP_RC=0
+CYCLE_RC=0
+PIPELINE_RC=0
+
 {
 echo "=== pipeline start $(date -u) ==="
+"$PY" scripts/overnight_frontier_handoff.py snapshot || echo "overnight-frontier: baseline failed; finalizer will report it"
 
 if [ "$CYCLE_ONLY" != "--cycle-only" ]; then
     # THE PRE-RUN MTIME IS THE COMPLETION TEST. "Does full_sweep.json exist" is not a test -- it
@@ -46,7 +56,8 @@ if [ "$CYCLE_ONLY" != "--cycle-only" ]; then
     echo "pre-run report mtime: $BEFORE"
 
     STUDY_FOREGROUND=1 bash ops/run_study_on_vps.sh full_sweep
-    echo "=== sweep exited $? at $(date -u) ==="
+    SWEEP_RC=$?
+    echo "=== sweep exited $SWEEP_RC at $(date -u) ==="
 
     AFTER=0
     [ -f "$SWEEP_REPORT" ] && AFTER=$(stat -c %Y "$SWEEP_REPORT" 2>/dev/null || echo 0)
@@ -55,6 +66,7 @@ if [ "$CYCLE_ONLY" != "--cycle-only" ]; then
         echo "  finish. Running the cycle now would audit the PREVIOUS run's kills and admit the"
         echo "  PREVIOUS run's survivors, and every number would look valid. Read the log above,"
         echo "  fix the cause, then re-run. --cycle-only skips this guard deliberately."
+        "$PY" scripts/overnight_frontier_handoff.py finalize --pipeline-rc 2 --sweep-rc "$SWEEP_RC" --cycle-rc "$CYCLE_RC" || true
         exit 2
     fi
     echo "sweep report rewritten ($BEFORE -> $AFTER); artifacts are from THIS run"
@@ -62,6 +74,8 @@ fi
 
 echo "=== research cycle $(date -u) ==="
 bash ops/run_research_cycle.sh
+CYCLE_RC=$?
+if [ "$SWEEP_RC" -ne 0 ]; then PIPELINE_RC="$SWEEP_RC"; else PIPELINE_RC="$CYCLE_RC"; fi
 
 echo
 echo "=== WHAT THE RUN PRODUCED ==="
@@ -113,7 +127,14 @@ show("data/live_ladder.json", ladder)
 show("data/completion_ledger_status.json", ledger)
 PYEOF
 
-echo "=== pipeline exit $? at $(date -u) ==="
+"$PY" scripts/overnight_frontier_handoff.py finalize --pipeline-rc "$PIPELINE_RC" --sweep-rc "$SWEEP_RC" --cycle-rc "$CYCLE_RC" || true
+# Finalization publishes maturity gaps through the generic contract; rebuild the morning queue so
+# those gaps are ranked immediately rather than waiting one more day.
+"$PY" scripts/run_max_push.py --no-refresh || true
+echo "=== pipeline exit $PIPELINE_RC at $(date -u) ==="
+exit "$PIPELINE_RC"
 } 2>&1 | tee -a "$LOG"
+PIPE_STATUS=${PIPESTATUS[0]}
 
 echo "full log: $LOG"
+exit "$PIPE_STATUS"

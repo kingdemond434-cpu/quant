@@ -6,142 +6,125 @@ Closes the gate-leak recovery loop (MAX_SURVIVORS Part 1.2). Plans which rejects
 that arrived AFTER its rejection, and writes data/reject_forward_scores.json -- exactly the file
 run_rejection_shadow.py reads. Incremental: already-scored rejects are kept, new scores merged.
 
-THE RE-EVAL: rebuilding a stored candidate's signal and running it on post-rejection market data
-needs the lake + the generator registry. Both are wired below. When the lake cannot produce an
-honest forward series (symbol absent, or fewer than ``--min-forward-bars`` bars after the
-rejection date) the candidate scores None and the shadow audit reports it unscored -- never a
-fabricated number.
+THE RE-EVAL (runtime-heavy, honest boundary): rebuilding a stored candidate's signal and running it
+on post-rejection market data needs the lake + the generator. That is wired here via the crypto
+adapter; if the lake/provider is unavailable (fresh clone, no data) the runner scores nothing and
+exits cleanly, leaving the shadow audit to report "unscored" -- never a fabricated score.
 
-WHICH STORE. Default is the crypto store, because it is the only one whose rejects are scorable
-here: the June FX-era store (sor_autodiscovery) holds 57 rejects on EURUSD/XAUUSD/US500 whose lake
-D1 bars stop 2026-06-19 -- the day before they were rejected -- and whose native H1 series was
-never persisted. Those can never be scored on this host, so pointing the loop at them guaranteed a
-permanently unscored audit that looked like a wiring bug.
-
-Usage: run_rejection_rescore.py [--db data/sor_crypto.sqlite] [--limit 50] [--min-age-days 30]
+Usage: run_rejection_rescore.py [--db data/sor_crypto.sqlite] [--limit 50] [--min-age 30]
 """
 from __future__ import annotations
 
 import argparse
 import json
 from pathlib import Path
-from typing import Any
 
-import numpy as np
-
-from libs.autodiscovery.generators import GENERATORS, net_returns
 from libs.autodiscovery.memory import CandidateStore
-from libs.autodiscovery.models import MarketSeries
-from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
-from libs.data.lake import Layer, ParquetLake
-from libs.data.timeframe import Timeframe
+from libs.core.time import from_iso8601, utcnow
 from libs.store.connection import Database
-from libs.validation.dsr import sharpe_ratio
 from libs.validation.reject_rescore import plan_rescore
 
 _ROOT = Path(__file__).resolve().parent.parent
 _SCORES = _ROOT / "data/reject_forward_scores.json"
-_LAKE = _ROOT / "data/lake"
-#: ~4bps taker + slippage per side. The forward score must be net of cost for the same reason the
-#: original backtest was: a gross-positive reject is not a gate leak, it is a cost failure.
-_COST_PER_SIDE = 5e-4
+
+# Lazy per-run caches: lake frames are read once per symbol, the BTC reference once.
+_FRAMES: dict[str, object] = {}
+
+#: FORWARD OBSERVATIONS a reject needs before ``_forward_score`` will return a number rather than
+#: None. This is the REAL requirement -- everything below is derived from it.
+_MIN_FWD_BARS = 30
+
+#: L1.48 EXEMPTION: DATA-WINDOW DEFINITION, not a probation, cooldown or grace period. The
+#: planner sees only ``(id, rejected_at, nearness)``; it cannot count bars, so it converts the
+#: observation requirement into the only unit a timestamp affords. The number is DERIVED from
+#: _MIN_FWD_BARS x the bar's calendar length, so the two can never drift: the old bare
+#: ``default=30.0`` looked like a chosen waiting period and would have been silently wrong on any
+#: other bar (30 H8 bars arrive in 10 days, not 30). Evidence is still the clock -- what is
+#: demanded is OBSERVATIONS, and days are the unit they are counted in on D1.
+_D1_BAR_DAYS = 1.0
+_MIN_AGE_DAYS = _MIN_FWD_BARS * _D1_BAR_DAYS
 
 
-def _spec_for(family: str, subtype: str) -> Any | None:
-    """The generator that produced this candidate, by its STORED (family, subtype) strings."""
-    for g in GENERATORS:
-        if g.family.value == family and g.subtype == subtype:
-            return g
-    return None
-
-
-def _lake_frames(lake_root: Path = _LAKE, *, verbose: bool = False) -> dict[str, Any]:
-    """Every symbol with D1 bars, keyed by symbol, indexed by timestamp. Read once per run.
-
-    REGISTERING THE INSTRUMENT IS NOT OPTIONAL. ``ParquetLake.read_bars`` resolves a symbol
-    through the instrument registry, so an unregistered symbol raises -- and with a bare
-    ``except: continue`` that read as "this symbol has no data". It silently dropped all 285
-    crypto perps (leaving only the seven fx/metal/index names registered elsewhere at import) and
-    the runner reported a clean zero. Unreadable partitions are COUNTED and surfaced rather than
-    swallowed, because "no scorable rejects" and "the reader is broken" must never look alike.
-    """
-    base = lake_root / "bronze"
-    if not base.exists():
-        return {}
-    lake = ParquetLake(str(lake_root))
-    out: dict[str, Any] = {}
-    failed = 0
-    for ac_dir in sorted(base.iterdir()):
-        if not ac_dir.is_dir():
-            continue
+def _frame(symbol: str):
+    if symbol not in _FRAMES:
         try:
-            asset_class = AssetClass(ac_dir.name)
-        except ValueError:
-            continue                     # not an asset-class dir (binance_metrics, fed, ...)
-        for sym_dir in sorted(ac_dir.iterdir()):
-            if not (sym_dir / Timeframe.D1.value).exists():
-                continue
-            register_instrument(InstrumentSpec(symbol=sym_dir.name, asset_class=asset_class,
-                                               description=sym_dir.name))
-            try:
-                out[sym_dir.name] = lake.read_bars(
-                    Layer.BRONZE, sym_dir.name, Timeframe.D1).set_index("timestamp")
-            except Exception:            # a corrupt partition must not kill the whole sweep
-                failed += 1
-    if failed and verbose:
-        print(f"  WARNING: {failed} symbol(s) had D1 partitions that would not read")
-    return out
+            from libs.autodiscovery.crypto_adapter import _read_frames
+            from libs.data.timeframe import Timeframe
+            _FRAMES.update(_read_frames([symbol], Timeframe.D1, "data/lake"))
+        except Exception:
+            _FRAMES[symbol] = None
+    return _FRAMES.get(symbol)
 
 
-def _forward_score(rec: object, frames: dict[str, Any], *, min_forward_bars: int = 30
-                   ) -> float | None:
+def _forward_score(rec: object) -> float | None:
     """Re-evaluate one rejected candidate on its post-rejection forward window.
 
-    NO LOOK-AHEAD, AND NO WARM-UP CHEAT. Positions are built over the FULL history -- a 200-bar
-    moving average genuinely needs its 200 prior bars, and computing them from the forward slice
-    alone would score a different (shorter-memory) strategy than the one that was rejected. Only
-    the RETURNS are then sliced to bars strictly after the rejection date. The signal primitives
-    are causal and ``net_returns`` applies lag-1, so a position at t uses only data up to t.
+    Rebuilds the stored (family, subtype, symbol, params) signal via the SAME generator registry
+    the campaign used, on the full lake series (causal rolling windows need their warmup), then
+    scores ONLY the bars strictly after ``rec.created_at`` -- genuinely out-of-sample relative to
+    the rejection. Same cost model as the campaign default (net_returns, 3bps/turnover). Returns
+    None when the lake cannot produce an honest forward series (missing frame, <30 forward bars,
+    unknown generator) -- never a guess. Annualized daily Sharpe (sqrt(365), crypto clock).
     """
-    spec = _spec_for(getattr(rec, "family", ""), getattr(rec, "subtype", ""))
-    df = frames.get(getattr(rec, "symbol", ""))
-    if spec is None or df is None or len(df) < 2:
+    if rec is None:
         return None
     try:
-        series = MarketSeries(
-            close=df["close"].to_numpy("float64"), high=df["high"].to_numpy("float64"),
-            low=df["low"].to_numpy("float64"), volume=df["volume"].to_numpy("float64"),
-            hour=np.array([t.hour for t in df.index], dtype="float64"),
-            funding=df["funding"].to_numpy("float64") if "funding" in df.columns else None,
-        )
-        positions = spec.fn(series, dict(getattr(rec, "params", {}) or {}))
-        rets = net_returns(series, positions, cost=_COST_PER_SIDE)
+        import numpy as np
+        import pandas as pd
+
+        from libs.autodiscovery.crypto_adapter import _provider_from_frames
+        from libs.autodiscovery.generators import GENERATORS, net_returns
+        spec = next((g for g in GENERATORS
+                     if g.family.value == rec.family and g.subtype == rec.subtype), None)
+        df = _frame(rec.symbol)
+        if spec is None or df is None:
+            return None
+        _frame("BTCUSDT")  # cross-asset generators need the reference leg in the frame cache
+        provider = _provider_from_frames({k: v for k, v in _FRAMES.items() if v is not None},
+                                         min_bars=_MIN_FWD_BARS)
+        series = provider(rec.symbol)
+        if series is None:
+            return None
+        positions = spec.fn(series, dict(rec.params))
+        rets = net_returns(series, positions)
+        cutoff = pd.Timestamp(rec.created_at)
+        idx = df.index
+        if getattr(idx, "tz", None) is not None and cutoff.tz is None:
+            cutoff = cutoff.tz_localize(idx.tz)
+        elif getattr(idx, "tz", None) is None and cutoff.tz is not None:
+            cutoff = cutoff.tz_localize(None)
+        rets = np.asarray(rets)
+        # net_returns yields the return REALIZED at each bar after the first (len N-1 vs N bars):
+        # align the cutoff mask to the TRAILING len(rets) bars so rets[j] pairs with its own bar.
+        mask = np.asarray(idx > cutoff)[-len(rets):]
+        fwd = rets[mask]
+        if len(fwd) < _MIN_FWD_BARS or float(np.std(fwd)) == 0.0:
+            return None
+        return float(np.mean(fwd) / np.std(fwd) * np.sqrt(365.0))
     except Exception:
-        return None
-    # strategy_returns drops the first bar, so returns align to the index from position 1 on.
-    stamps = df.index[1:]
-    if len(stamps) != len(rets):
-        return None
-    cutoff = np.datetime64(str(getattr(rec, "created_at", "")).replace("Z", "").split("+")[0])
-    forward = rets[stamps.to_numpy("datetime64[ns]") > cutoff]
-    if len(forward) < min_forward_bars:
-        return None
-    if float(np.std(forward)) == 0.0:
-        # The rule never took a position in the forward window. `sharpe_ratio` reports 0.0 for a
-        # zero-variance series, but "we measured it and it was flat" is a DIFFERENT claim from
-        # "it was never in the market" -- and feeding the second in as a real 0.0 would bias the
-        # gate-leak audit toward "no leak" with scores that measured nothing.
-        return None
-    return round(float(sharpe_ratio(forward)) * float(np.sqrt(252.0)), 6)
+        return None  # unreadable inputs surface as unscored, never as a fabricated number
+
+
+def _ages(rejects: list[tuple[str, str, float]]) -> list[tuple[str, float]]:
+    """(id, age_days) for every reject whose stamp parses. Unparseable stamps are DROPPED rather
+    than defaulted to 0.0: a reject the planner could not date must not be reported as the one
+    closest to eligibility."""
+    now = utcnow()
+    out: list[tuple[str, float]] = []
+    for cid, at, _ in rejects:
+        try:
+            out.append((cid, (now - from_iso8601(at)).total_seconds() / 86400.0))
+        except (TypeError, ValueError):
+            continue
+    return out
 
 
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--db", default="data/sor_crypto.sqlite")
     p.add_argument("--limit", type=int, default=50)
-    p.add_argument("--min-age-days", type=float, default=30.0)
-    p.add_argument("--min-forward-bars", type=int, default=30,
-                   help="a Sharpe on fewer bars than this is noise, so score None instead")
+    p.add_argument("--min-age-days", type=float, default=_MIN_AGE_DAYS,
+                   help=f"derived: {_MIN_FWD_BARS} forward D1 bars (see _MIN_AGE_DAYS)")
     a = p.parse_args()
 
     db_path = _ROOT / a.db if not Path(a.db).is_absolute() else Path(a.db)
@@ -149,42 +132,61 @@ def main() -> None:
         print(f"no candidate ledger at {db_path} -- nothing to re-score")
         return
     store = CandidateStore(Database(db_path, read_only=True))
-    all_rejects = store.rejects()
-    plan = plan_rescore(
-        [(r.id, r.created_at, max(r.metrics.oos_sharpe, r.metrics.annual_sharpe))
-         for r in all_rejects],
-        min_age_days=a.min_age_days, limit=a.limit,
-    )
+    # NEARNESS MIXES TWO POPULATIONS OF `annual_sharpe` UNTIL THE STORE TURNS OVER (R0086).
+    # Rows written before 2026-08-05 were annualised with the validator's deleted hourly constant
+    # (24*260) whatever bars they ran on, so a D1 lab row carries sqrt(6240/365) = 4.135x its
+    # honest value; rows written since carry the clock their caller declared. Nothing rewrites
+    # history -- see libs/autodiscovery/validation.py -- so ranking them together puts inflated
+    # rows ahead of identical honest ones (measured on a 50-slot batch: ~47 slots to pre-fix
+    # rows, ~24/50 overlap with the queue an all-honest store would produce).
+    # Within ONE population the order is unaffected: the deflation is a single positive constant
+    # and `annual_sharpe` dominates the per-bar `oos_sharpe` on both sides of it.
+    # A pre-fix row is recognisable by its stored series carrying a NULL `timeframe`
+    # (candidate_returns.timeframe), which the lab has populated since the fix.
+    rejects = [
+        (r.id, r.created_at, max(r.metrics.oos_sharpe, r.metrics.annual_sharpe))
+        for r in store.rejects()
+    ]
+    plan = plan_rescore(rejects, min_age_days=a.min_age_days, limit=a.limit)
     print(f"rescore plan: {plan.verdict}")
 
-    by_id = {r.id: r for r in all_rejects}
+    by_id = {r.id: r for r in store.rejects()}
     scores: dict[str, float] = {}
     if _SCORES.exists():
         try:
             scores = {str(k): float(v) for k, v in json.loads(_SCORES.read_text("utf-8")).items()}
         except Exception:
             scores = {}
-    frames = _lake_frames(verbose=True) if plan.selected else {}
     n_new = 0
-    unscorable = 0
     for cid in plan.selected:
         if cid in scores:
             continue  # already scored -- incremental
-        val = _forward_score(by_id.get(cid), frames, min_forward_bars=a.min_forward_bars)
-        if val is None:
-            unscorable += 1
-            continue
-        scores[cid] = val
-        n_new += 1
+        val = _forward_score(by_id.get(cid))
+        if val is not None:
+            scores[cid] = val
+            n_new += 1
 
     if n_new:
         _SCORES.parent.mkdir(parents=True, exist_ok=True)
         _SCORES.write_text(json.dumps(scores, indent=1), "utf-8")
         print(f"wrote {n_new} new forward score(s) -> {_SCORES}")
+    elif not plan.selected:
+        # THE MESSAGE MUST NAME THE ORGAN THAT ACTUALLY STOPPED (R0241c). With nothing selected,
+        # the re-eval loop never ran, so BOTH causes the old line offered were false -- and the
+        # one it named first sends a reader to debug the lake and the crypto adapter, which are
+        # fine. This is the L1.55 shape one layer up: a downstream message reporting a
+        # downstream cause for an upstream refusal. Shortfall is stated in OBSERVATIONS (L1.48).
+        newest = max((age for _, age in _ages(rejects)), default=None)
+        short = "" if newest is None else (
+            f" The nearest reject has ~{newest / _D1_BAR_DAYS:.0f} of the {_MIN_FWD_BARS} forward "
+            f"D1 bars a score needs.")
+        print(f"nothing was SELECTED, so no re-eval was attempted -- {plan.verdict}.{short} "
+              "This is an input shortfall, NOT a re-eval failure: the lake and the adapter were "
+              "never asked.")
     else:
-        print(f"no new forward scores produced ({unscorable} unscorable: no lake symbol, or "
-              f"fewer than {a.min_forward_bars} bars after the rejection date) -- the shadow "
-              "audit will report unscored, honestly")
+        print(f"{len(plan.selected)} reject(s) selected but no new forward score produced "
+              "(re-eval hook not wired on this host, or all selected already scored) -- "
+              "the shadow audit will report unscored, honestly")
 
 
 if __name__ == "__main__":

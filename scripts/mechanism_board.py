@@ -30,6 +30,7 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 GRAVE = ROOT / "docs/graveyard.md"
@@ -278,7 +279,8 @@ def main() -> None:
     if not ranked:
         print("  no ERV output -- run scripts/research_erv.py first")
     else:
-        used_mech, out = {}, []
+        used_mech: dict[str, int] = {}
+        out: list[dict[str, Any]] = []
         for h in ranked:
             ms = mech_of(h.get("name", "") + " " + " ".join(h.get("concepts", []))) or [
                 "M_UNMAPPED"

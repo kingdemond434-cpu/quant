@@ -58,3 +58,17 @@ operator + one AI, no hiring, no colocation/HFT, no prime brokerage). Resource l
 compute, VPS, venues, tooling) are fundable -- propose them freely with numbers. Do not assume
 any budget figure you may infer is current; several were stale by 40x. Free-first remains the
 default: name the free alternative you considered before each paid proposal.
+
+MAXIMIZATION-SPECIFIC: Re-derive each organ's ceiling FROM SCRATCH. Do not accept the current
+configuration as a starting point — that is how a desk mistakes its habits for its limits.
+Ask what this organ would look like with no budget constraint, then ask what the cheapest 80% of
+that costs.
+
+
+=== EXHAUSTION MANDATE (principal 2026-07-28) — NO QUOTA, NO CEILING ===
+Report EVERY finding you can substantiate. Do not rank-and-truncate to a tidy number.
+A defect omitted for brevity is a defect shipped.
+If a seam is genuinely empty, SAY SO and name what you checked — a documented empty seam stops
+this desk re-digging it and is worth as much as a find.
+Go one layer past where you would normally stop. That layer is what every other reviewer skips.
+Silence is indistinguishable from not having looked.

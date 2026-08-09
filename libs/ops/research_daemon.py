@@ -19,8 +19,8 @@ from typing import Any
 import numpy as np
 
 from libs.autodiscovery.models import Family, MarketSeries
-from libs.autodiscovery.novelty import NoveltyGate
 from libs.autodiscovery.orchestrator import AutoDiscoveryLab
+from libs.autodiscovery.validation import SESSION_DAYS_PER_YEAR
 from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
 from libs.data.lake import Layer, ParquetLake
 from libs.data.timeframe import Timeframe
@@ -163,8 +163,14 @@ def make_lake_executor(lake_dir: str = "data/lake") -> CampaignExecutor:
         def cost_provider(symbol: str) -> float:
             return _COST_PER_SIDE.get(available.get(symbol, AssetClass.FX), 1e-4)
 
-        lab = AutoDiscoveryLab(db, provider, cost_provider=cost_provider, families=families,
-                               novelty=NoveltyGate.from_corpus())
+        # D1 bars (read above), on the SESSION calendar. This executor serves whatever asset
+        # classes the lake holds -- FX by cost default, crypto when present -- and one lab runs one
+        # clock, so it takes the smaller of the two candidate calendars (252 vs 365). That is the
+        # conservative direction: it can only under-state an annualised Sharpe, never inflate one,
+        # which is the failure R0086 records (libs/autodiscovery/validation.py).
+        lab = AutoDiscoveryLab(db, provider, bar=Timeframe.D1,
+                               days_per_year=SESSION_DAYS_PER_YEAR,
+                               cost_provider=cost_provider, families=families)
         res = lab.cycle(symbols)
         return {"campaign_id": res.campaign_id, "tested": res.tested,
                 "survivors": res.survivors, "rejected": res.rejected}

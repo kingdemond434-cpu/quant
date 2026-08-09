@@ -14,6 +14,21 @@ from libs.store.connection import Database
 from libs.store.migrations import run_migrations
 
 
+@pytest.fixture(autouse=True)
+def _hermetic_fee_burn(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Point the gap-#98 cost-rate brake at empty per-test paths.
+
+    `risk_controls.evaluate` defaults to reading the executor's live income artifact (that is what
+    lets the brake reach the executor's call site without an executor edit). On a production box
+    that artifact EXISTS, so without this redirect the suite's verdicts would depend on the box's
+    live burn state -- a green suite must be evidence about the code, not about last night's fees.
+    Tests that want the brake exercised pass `fee_burn=`/paths explicitly.
+    """
+    from libs.risk import risk_controls
+    monkeypatch.setattr(risk_controls, "INCOME_ARTIFACT", tmp_path / "cashcarry_live.json")
+    monkeypatch.setattr(risk_controls, "BURN_WINDOW_FILE", tmp_path / "fee_burn_window.json")
+
+
 def make_account(**overrides: object) -> AccountState:
     defaults: dict[str, object] = {
         "equity": 100_000.0,

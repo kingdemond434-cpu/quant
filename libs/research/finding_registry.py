@@ -285,6 +285,28 @@ class RegisterRow(BaseModel):
     def is_open(self) -> bool:
         return self.status.strip().lower().startswith(_OPEN_STATUS)
 
+    def age_days(self, today: date) -> float:
+        """Days since this row was ADDED. -1 when the date is missing or unparseable.
+
+        The register writes `MM-DD` with no year. A date that would land in the future is read as
+        last year's -- the only reading that does not turn a December row into a -300-day-old one
+        every January, which would silently exempt the oldest rows exactly when they matter most.
+        """
+        raw = self.added.strip()
+        if not raw:
+            return -1.0
+        try:
+            month, day = (int(x) for x in raw.split("-")[:2])
+            when = date(today.year, month, day)
+        except (ValueError, TypeError):
+            return -1.0
+        if when > today:
+            try:
+                when = date(today.year - 1, month, day)
+            except ValueError:      # pragma: no cover - 29 Feb on a non-leap year
+                return -1.0
+        return float((today - when).days)
+
 
 class RegisterHealth(BaseModel):
     """Is the desk's only work-driving organ actually being driven?"""
@@ -298,6 +320,11 @@ class RegisterHealth(BaseModel):
     rerank_breach: bool         # past the register's own 7-day escalation bar
     undated_open: tuple[str, ...]
     ownerless: tuple[str, ...]
+    #: Open rows older than the register's OWN escalation bar. THE rule the register actually
+    #: states is about ITEMS ("items stale >7 days MUST be escalated"), not about the re-rank
+    #: stamp -- and measuring the stamp instead let a daily re-rank make every row immortal.
+    stale_rows: tuple[str, ...]
+    oldest_open_days: float
     verdict: str
 
 
@@ -343,6 +370,17 @@ def register_health(
     # exists to forbid.
     undated = tuple(f"#{r.row_id} {r.title[:48]}" for r in open_rows if not r.plan_has_date)
     ownerless = tuple(f"#{r.row_id} {r.title[:48]}" for r in open_rows if not r.owner)
+
+    # ROW-LEVEL STALENESS -- the rule the register actually writes down. It says "items stale >7
+    # days MUST be escalated"; the first version of this function measured the RE-RANK STAMP
+    # instead, so re-stamping the header each morning made every row immortal: 15 rows sat 9-10
+    # days untouched while the check reported clean. Measuring the artifact the rule names, rather
+    # than a proxy that correlates with tidiness, is the whole point of §36(3).
+    aged = sorted(((r.age_days(today), r) for r in open_rows), key=lambda x: -x[0])
+    stale_rows = tuple(f"#{r.row_id} ({a:.0f}d) {r.title[:44]}" for a, r in aged
+                       if a > escalate_days)
+    oldest = aged[0][0] if aged else -1.0
+
     # NEVER STAMPED IS THE WORST CASE, NOT THE BEST. `age` is -1.0 when no `Re-ranked` stamp has
     # ever been written, and -1.0 fails every `age > bar` comparison -- so a register that had
     # never been re-ranked once reported "re-rank current (-1d)" and passed clean. The absence of
@@ -362,6 +400,11 @@ def register_health(
                    "row(s). The register's own rule is 're-ranked at the START of every daily "
                    "cycle'; an unstamped register has not been driven once, and reporting that as "
                    "current would make never-having-run the healthiest possible state.")
+    elif stale_rows:
+        verdict = (f"{len(stale_rows)} open row(s) past the register's OWN {escalate_days:.0f}-day "
+                   f"escalation bar (oldest {oldest:.0f}d), while the re-rank stamp reads "
+                   f"{age:.0f}d old. Re-ranking the header is not escalating the rows: each one "
+                   "owes implement / defer-with-a-deadline / retire-with-reason.")
     elif breach:
         verdict = (f"re-rank {age:.0f}d old, past the register's OWN {escalate_days:.0f}-day "
                    f"escalation bar, with {len(open_rows)} open row(s). The rule is written in the "
@@ -372,6 +415,7 @@ def register_health(
     else:
         verdict = f"re-rank current ({age:.0f}d), {len(open_rows)} open row(s) under active rank"
     return RegisterHealth(
+        stale_rows=stale_rows, oldest_open_days=round(oldest, 1),
         n_rows=len(rows), n_open=len(open_rows), rerank_age_days=age,
         rerank_stale=stale, rerank_breach=breach,
         undated_open=undated[:8], ownerless=ownerless[:8], verdict=verdict,

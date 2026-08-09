@@ -90,3 +90,15 @@ def test_THE_STALL_WINDOW_IS_JUSTIFIED_BY_MEASURED_CELL_TIME() -> None:
 
 def test_FIND_RETURNS_A_LIST_AND_NEVER_RAISES() -> None:
     assert isinstance(SS.find("a-pattern-that-matches-nothing-xyz"), list)
+
+def test_MAIN_WRITES_MACHINE_READABLE_STATUS(tmp_path, monkeypatch) -> None:
+    out = tmp_path / "study_status.json"
+    monkeypatch.setattr(SS, "find", lambda _pattern: [])
+    monkeypatch.setattr(SS, "log_age_seconds", lambda _path: None)
+    monkeypatch.setattr("sys.argv", ["study_status.py", "--out", str(out)])
+    assert SS.main() == 0
+    import json
+    saved = json.loads(out.read_text("utf-8"))
+    assert saved["state"] == "ABSENT"
+    assert saved["processes"] == []
+    assert saved["pattern"] == "run_full_sweep"

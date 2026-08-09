@@ -28,6 +28,7 @@ from libs.autodiscovery.memory import content_hash
 from libs.autodiscovery.models import Family, Hypothesis
 from libs.autodiscovery.novelty import NoveltyGate, render
 from libs.autodiscovery.orchestrator import AutoDiscoveryLab
+from libs.data.timeframe import Timeframe
 from libs.store.audit import AuditLog
 from libs.store.connection import Database
 from libs.validation.economic_prior import MechanismType
@@ -136,19 +137,20 @@ def test_cycle_skips_redundant_hypotheses_before_spending_compute(db: Database) 
 
     # A prior covering every trend/ma_cross construction the planner will propose.
     gate = NoveltyGate([_prior_from(_hyp(), symbols=["EURUSD", "XAUUSD"])])
-    lab = AutoDiscoveryLab(db, counting_provider, families=[Family.TREND], novelty=gate)
+    lab = AutoDiscoveryLab(db, counting_provider, families=[Family.TREND],
+                           novelty=gate, bar=Timeframe.D1)
     result = lab.cycle(["EURUSD", "XAUUSD"])
 
     assert result.skipped_redundant > 0
     assert result.skipped_duplicate == 0          # nothing recorded yet -- these are NOT dupes
     # The saving is the point: a suppressed hypothesis must not even reach the data provider.
-    ungated = AutoDiscoveryLab(db, noise_provider(), families=[Family.TREND])
+    ungated = AutoDiscoveryLab(db, noise_provider(), families=[Family.TREND], bar=Timeframe.D1)
     assert result.tested < ungated.cycle(["EURUSD", "XAUUSD"]).tested
 
 
 def test_cycle_without_a_gate_is_unchanged(db: Database) -> None:
     """Default is off, so any caller that never opts in behaves exactly as it did before."""
-    lab = AutoDiscoveryLab(db, noise_provider(), families=[Family.TREND])
+    lab = AutoDiscoveryLab(db, noise_provider(), families=[Family.TREND], bar=Timeframe.D1)
     result = lab.cycle(["EURUSD"])
     assert result.skipped_redundant == 0
     assert result.tested > 0
@@ -157,7 +159,8 @@ def test_cycle_without_a_gate_is_unchanged(db: Database) -> None:
 def test_every_suppression_is_named_in_the_audit_log(db: Database) -> None:
     """A gate that drops candidates without a record cannot be audited for over-tightness."""
     gate = NoveltyGate([_prior_from(_hyp(), symbols=["EURUSD"])])
-    lab = AutoDiscoveryLab(db, noise_provider(), families=[Family.TREND], novelty=gate)
+    lab = AutoDiscoveryLab(db, noise_provider(), families=[Family.TREND],
+                           novelty=gate, bar=Timeframe.D1)
     lab.cycle(["EURUSD"])
     rows = [e for e in AuditLog(db).all() if e.decision_type == "novelty_gate_suppressed"]
     assert rows, "suppressions must be recorded"

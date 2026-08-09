@@ -1,0 +1,30 @@
+# The desk's OWN running costs -- what it burns to exist, not what a trade costs.
+#
+# config/costs.yaml is about execution (spread, commission, slippage). This file is the other
+# side: infrastructure, models, data. Nothing else in the repo tracked it, so the desk could not
+# answer "what return do I need just to stand still?" -- a hurdle every real fund knows and this
+# one had never computed.
+#
+# DECLARE ONLY WHAT YOU ACTUALLY PAY. Leave a line as `null` when you do not know it: the
+# break-even calculation reports "cannot compute" on unknowns rather than treating them as zero.
+# A burn rate that silently omits your largest cost is worse than no burn rate, because it
+# produces a hurdle you would actually plan against.
+#
+# Amounts are USD per month. Set `null` -> unknown; set `0` -> genuinely free.
+
+monthly_usd:
+  vps: null              # the box the executor, recorder and rails run on
+  llm_subscription: null # Claude/other model access for the brain + digger organs
+  llm_api: null          # metered API spend on top of any subscription
+  market_data: 0         # currently all free/licence-clean sources (charter §13)
+  proxies: 0             # not purchased; gated on docs/research/video_locked_log.md evidence
+  domains_misc: null
+
+# One-off costs already sunk, for the record. Not part of the monthly burn.
+one_off_usd: {}
+
+# What the desk considers an acceptable hurdle. If break-even required return exceeds this, the
+# cost base is too heavy for the capital deployed and the honest options are: add capital, cut
+# costs, or accept that the desk is a research project rather than a business.
+policy:
+  max_acceptable_annual_hurdle_pct: 10.0

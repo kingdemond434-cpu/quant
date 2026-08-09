@@ -41,6 +41,7 @@ import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from libs.ops.platform_paths import venv_python
 
@@ -70,8 +71,8 @@ def _metrics() -> dict[str, object]:
     """Cheap, no-network health snapshot (baseline for deterioration detection)."""
     err = _ROOT / "data" / "cashcarry_error.log"
     hb = _ROOT / "data" / "cashcarry_exec_heartbeat"
-    port: dict = {}
-    cc: dict = {}
+    port: dict[str, Any] = {}
+    cc: dict[str, Any] = {}
     with contextlib.suppress(OSError, json.JSONDecodeError):
         port = json.loads((_ROOT / "web" / "portfolio.json").read_text("utf-8")).get("deployed", {})
     with contextlib.suppress(OSError, json.JSONDecodeError):
@@ -88,7 +89,10 @@ def _metrics() -> dict[str, object]:
 
 
 def _ci_green() -> bool:
-    r = subprocess.run([_PY, "scripts/run_ci.py"], cwd=str(_ROOT),
+    # --fail-on-lock: without it, "another gate is mid-run" exits 0 and a guard deciding whether
+    # a revert restored health would count an UNVERIFIED tree as green (R0146, the skip-reads-
+    # green family). rc 3 -> False: a guard that could not verify must not claim health (L1.28a).
+    r = subprocess.run([_PY, "scripts/run_ci.py", "--fail-on-lock"], cwd=str(_ROOT),
                        capture_output=True, text=True, check=False)
     return r.returncode == 0
 

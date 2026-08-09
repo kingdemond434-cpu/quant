@@ -39,8 +39,19 @@ def calculate_position_size(
     max_position_amount: float | None = None,
     factor_headroom: float | None = None,
     heat_headroom: float | None = None,
+    edge_capacity_usd: float | None = None,
 ) -> PositionSizeResult:
-    """Synthesize a position size and clamp it by the binding risk constraint."""
+    """Synthesize a position size and clamp it by the binding risk constraint.
+
+    ``edge_capacity_usd`` is the §42 governor: the dollars the EDGE ITSELF absorbs before its own
+    impact eats it. Every other clamp here asks "how much risk may the book take?"; this one asks
+    "how much can this edge hold?", and the two are independent -- a book with plenty of risk
+    budget can still be far too large for a thin dislocation. Sizing past it does not lose money
+    slowly, it DESTROYS THE EDGE, because at that point the desk's own flow is the counterparty it
+    came to trade against. It joins the same tightest-constraint-binds set as every other cap, so
+    an over-capacity sleeve is clamped rather than rejected: a $5k edge on a big book is still a
+    good $1,250 trade, and refusing it outright would cost exactly the alphas §42 exists to keep.
+    """
     if equity <= 0:
         raise RiskError("equity must be positive")
     if risk_per_unit <= 0:
@@ -64,6 +75,9 @@ def calculate_position_size(
         candidates["factor_cap"] = max(0.0, factor_headroom)
     if heat_headroom is not None:
         candidates["heat_cap"] = max(0.0, heat_headroom)
+    if edge_capacity_usd is not None:
+        from libs.research.capacity_policy import max_allocation
+        candidates["edge_capacity"] = max_allocation(edge_capacity_usd)
 
     binding = min(candidates, key=lambda k: candidates[k])
     risk_amount = candidates[binding]

@@ -57,7 +57,14 @@ def main() -> None:
     rec = {
         "date": today,
         "ts": datetime.now(tz=UTC).isoformat(),
+        # NAMED FOR WHAT IT IS. This is the last point of the MOLDED CURVE, not an account
+        # balance and not a track record: `start_futures_equity` 5,000 sitting beside a ~14,600
+        # figure reads as 2.9x when realised P&L is ~500. Both keys are written -- the old one
+        # for chain continuity, the honest one for anything that reads this going forward.
+        "molded_curve_usd": _equity(),
         "equity_marked": _equity(),
+        "_note": ("molded_curve_usd is a MOLDED/SIMULATED curve, not venue truth and not a "
+                  "track record; venue truth is the dead-man's combined_equity"),
         "deployed_notional": dep,
         "n_carries": n,
         "realized_spot_pnl": rsp,

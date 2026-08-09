@@ -22,7 +22,7 @@ from libs.execution.idempotency import client_order_id
 
 _BASE = "https://testnet.binance.vision"        # PINNED spot testnet -- never live
 _KEY_ENV = "BINANCE_SPOT_TESTNET_KEY"
-_SECRET_ENV = "BINANCE_SPOT_TESTNET_SECRET"
+_SECRET_ENV: str = "BINANCE_SPOT_TESTNET_SECRET"  # noqa: S105 - env var NAME, not a secret
 _KEYFILE = Path("data/secrets/binance_spot_testnet.json")
 
 

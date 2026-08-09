@@ -3,6 +3,7 @@ set -uo pipefail
 cd /home/quant/quant-platform
 source ops/brain_env.sh
 dig_dry_run prospector ops/prospector_dig_prompt.txt && exit 0
+brain_mutex prospector   # ONE brain desk-wide; defers (exit 0) if another organ holds it
 brain_auth_check || exit 1
 # §33 CONVERSION PRIORITY. `dig_prompt` (ops/brain_env.sh) prepends the conversion duty
 # to this organ's brief so the run spends its FIRST effort disposing of the backlog, then

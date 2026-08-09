@@ -22,6 +22,7 @@ import subprocess
 import sys
 import time
 import urllib.request
+from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -38,7 +39,9 @@ _DEDUPE_S = 6 * 3600
 # stays at 6h deliberately -- a latched ruin rail SHOULD nag until the operator acts.
 _DEDUPE_OVERRIDES_S = {"growth_defect": 24 * 3600, "data_health": 24 * 3600,
                        "brain_noop": 24 * 3600, "principal_action_needed": 24 * 3600,
-                       "trade_class_bleeding": 24 * 3600, "auth_broken": 12 * 3600}
+                       "trade_class_bleeding": 24 * 3600, "auth_broken": 12 * 3600,
+                       # the chain runs once a day; its failures can only change once a day
+                       "research_chain_failed": 24 * 3600}
 _HB = Path("data/cashcarry_exec_heartbeat")
 _PAGER_BACKOFF = Path("data/.pager_backoff")
 _KILL = Path("data/CASHCARRY_KILL")
@@ -77,6 +80,13 @@ def _push(topic: str, title: str, body: str) -> None:
     # second-channel mirror (gap #38): fire the independent path FIRST so a failure in
     # the ntfy path (encoding, 429, outage) can never suppress the alert entirely.
     _second_channel(f"{safe_title}: {body}")
+    # ...and every configured channel in the registry (telegram/webhook/email), each independently
+    # wrapped so none can raise into this path. 2026-07-29: this is the half gap #38 was still
+    # missing -- not another channel, but a DELIVERY LEDGER, so "nothing arrived anywhere" becomes
+    # observable instead of being the thing nobody notices for five days.
+    with contextlib.suppress(Exception):
+        from libs.ops.alert_channels import send_all
+        send_all(safe_title, body)
     req = urllib.request.Request(f"https://ntfy.sh/{topic}", data=body.encode(),
                                  headers={"Title": safe_title, "Priority": "high",
                                           "Tags": "rotating_light"})
@@ -95,37 +105,22 @@ def _push(topic: str, title: str, body: str) -> None:
 
 def _ledger_ok(channel: str, detail: str, title: str, *, ok: bool = True) -> None:
     """Record the PRIMARY path's outcome in the same ledger as the registry channels, so the
-    silence check sees one unified view. Never raises -- a logging failure must not kill a page.
-
-    RESTORED 2026-08-05. This branch forked from master before these two call sites existed, so
-    data/alert_delivery.jsonl recorded nothing after 2026-08-02T06:42:13Z while ntfy accepted 199
-    messages in the last 24h alone. The only instrument that answers "is the pager alive" was
-    therefore stuck reporting silence -- data/ALERT_CHANNELS_SILENT claims "no alert delivery on
-    ANY channel in 24h" against a topic that is busy. That is the 2026-07-19 blind-pager class
-    running inverted: an alarm that is always on cannot distinguish a real outage from today.
-    """
+    silence check sees one unified view. Never raises -- a logging failure must not kill a page."""
     with contextlib.suppress(Exception):
         from libs.ops.alert_channels import _log
         _log(channel, ok, detail, title)
 
 
-# --- PRINCIPAL REPLY CHANNEL (2026-07-31; RESTORED 2026-08-05) -----------------------------
+# --- PRINCIPAL REPLY CHANNEL (2026-07-31) --------------------------------------------------
 # Pages have asked for replies ("reply YES/NO", "reply KILL-DIGEST") since 07-18, but nothing
 # ever READ the topic, and data/PAGE_ACK -- the derisk ladder's ack input -- had never been
-# created by anything: the ladder could latch (it froze the book) while the principal had no
-# phone-usable way to ack or re-arm. The ntfy app can PUBLISH to the topic it subscribes to, so
-# replies arrive as TITLELESS messages on the same channel; desk pushes always carry a Title
-# (_push sets one), which is the discriminator. REARM here is transport for the human's own act,
-# not an automated re-arm: it only ever runs off an explicit principal message. Trust boundary =
-# knowledge of the secret topic, identical to the pager itself (ledgered limitation; falsifier:
-# any suspected abuse moves this to authed ntfy).
-#
-# WHY IT IS BACK. This branch forked from master before the channel landed and deleted it, so on
-# this box the pager has been ONE-WAY since 2026-08-02T08:42:16Z (the last poll recorded in
-# data/.reply_poll_state.json). The 2026-08-04 22:03 page asking four YES/NO questions -- two of
-# which gate the entire book and the entire promotion funnel -- was delivered and could not be
-# answered by any means. A desk that pages for a decision it is incapable of receiving has not
-# escalated; it has only logged.
+# created by anything: the ladder could latch (it froze the book today) while the principal
+# had no phone-usable way to ack or re-arm. The ntfy app can PUBLISH to the topic it
+# subscribes to, so replies arrive as TITLELESS messages on the same channel; desk pushes
+# always carry a Title (_push sets one), which is the discriminator. REARM here is transport
+# for the human's own act, not an automated re-arm: it only ever runs off an explicit
+# principal message. Trust boundary = knowledge of the secret topic, identical to the pager
+# itself (ledgered limitation; falsifier: any suspected abuse moves this to authed ntfy).
 _PAGE_ACK = Path("data/PAGE_ACK")
 _REPLIES = Path("data/principal_replies.jsonl")
 _REPLY_STATE = Path("data/.reply_poll_state.json")
@@ -198,9 +193,22 @@ _CRED = Path("/home/quant/.claude/.credentials.json")
 
 
 def _auth_broken() -> bool:
-    """Every claude organ (brain + all diggers) runs as `quant` and reads ~/.claude. No active
-    credentials => nothing can reason. Free, definitive, no quota burned."""
-    return not _CRED.exists()
+    """Every claude organ (brain + all diggers) runs as `quant`. The legacy credentials file
+    was RETIRED 2026-07-19 (auth moved to setup-token/session storage), so the old existence
+    check paged false-positives for 12 days and fed the derisk ladder that froze the book on
+    2026-07-31. Truthful free check: session storage mtime moves on every authenticated
+    request, so 'broken' = no legacy file AND no session activity for >36h (organs run daily,
+    so a 36h-quiet desk is genuinely dead-on-arrival, whether auth or otherwise)."""
+    if _CRED.exists():
+        return False
+    for probe in (Path("/home/quant/.claude/history.jsonl"),
+                  Path("/home/quant/.claude/projects")):
+        try:
+            if time.time() - probe.stat().st_mtime < 36 * 3600:
+                return False
+        except OSError:
+            continue
+    return True
 
 
 def _digger_health() -> list[tuple[str, str]]:
@@ -270,17 +278,7 @@ def _checks() -> list[tuple[str, str]]:
     try:
         pa = Path("data/PRINCIPAL_ACTION.md").read_text("utf-8").strip().splitlines()
         if pa:
-            # CARRY THE REPLY INSTRUCTIONS (2026-08-05). Only `pa[0][:160]` was ever sent, so the
-            # 08-04 page -- four YES/NO decisions, two of them gating the whole book -- reached the
-            # phone with every "REPLY: ..." line cut off. The reply channel is a titleless message
-            # on this same topic, which nobody can guess from a truncated headline. ntfy accepts a
-            # ~4KB body, so the ask travels WITH the alert and the page is actionable where it is
-            # read. Bounded to keep the notification glanceable on a lock screen.
-            asks = [ln.strip() for ln in pa if ln.strip().upper().startswith(("REPLY:", "OPTIONAL:"))]
-            body = "the desk needs YOU: " + pa[0][:160]
-            if asks:
-                body += "\n\n" + "\n".join(asks[:6])[:600]
-            out.append(("principal_action_needed", body))
+            out.append(("principal_action_needed", "the desk needs YOU: " + pa[0][:160]))
     except OSError:
         pass
     rec_hb = Path("data/recorder_heartbeat")
@@ -288,6 +286,26 @@ def _checks() -> list[tuple[str, str]]:
         out.append(("recorder_stale", "data-moat recorder heartbeat stale >10min -- "
                     "unrecoverable microstructure data is being LOST; respawner runs next "
                     "cycle, or: .venv/bin/python scripts/ensure_recorder.py"))
+    # LIVE-GUARD DEATH (L1.44, capability hunt 2026-07-31). run_live_guard is simultaneously the
+    # size-fraction governor and the stage-demotion tripwire evaluator, and the executor's
+    # documented stale-guard behavior is fail-OPEN (full size, takers allowed). Its freeze path
+    # cannot save it: the KILL file is written BY the guard, so a dead guard can never write its
+    # own freeze -- both degradations point toward MORE aggressive execution, and until this
+    # check nothing paged on the file's age. Content `generated` over mtime (deploys lie fresh).
+    try:
+        lg = json.loads(Path("data/live_guard.json").read_text("utf-8"))
+        lg_at = datetime.fromisoformat(str(lg.get("generated", "1970-01-01T00:00:00+00:00")))
+        lg_age = (datetime.now(tz=UTC) - lg_at).total_seconds()
+    except (OSError, ValueError, TypeError):
+        lg_age = None
+        out.append(("live_guard_missing", "data/live_guard.json missing/unreadable -- size "
+                    "governor and stage tripwires UNEVALUATED; executor fail-opens to full "
+                    "size; start: .venv/bin/python scripts/run_live_guard.py"))
+    if lg_age is not None and lg_age > 900:
+        out.append(("live_guard_dead", f"live guard stale {lg_age/60:.0f}min (cadence 5min) -- "
+                    "executor fail-opens to FULL SIZE + takers and stage demotion is "
+                    "unevaluated; a dead guard cannot write its own KILL file; restart: "
+                    ".venv/bin/python scripts/run_live_guard.py"))
     try:
         v = json.loads(Path("data/cadence_violation.json").read_text("utf-8"))
         out.append(("cadence_floor_violation", "review/safety cadence FLOOR breached: "
@@ -330,6 +348,26 @@ def _checks() -> list[tuple[str, str]]:
                         + "; ".join(str(a)[:60] for a in alerts[:3])))
     except (OSError, json.JSONDecodeError):
         pass
+    # RESEARCH-CHAIN STEP FAILURES (R0258). The daily research runners are best-effort BY DESIGN
+    # (one step must never abort the chain) -- which made a dead step silent by design too:
+    # run_cashcarry_shadow's SystemExit killed the flagship forward clock for a full day with
+    # zero alarm. Both runners now drop data/research_chain_status.json (atomic write); a latest
+    # status carrying failed steps pages here, naming them. ABSENT artifact = no page: it is a
+    # new artifact, and the brain-down / cycle-age checks above already own "chain never ran".
+    try:
+        rcs = json.loads(Path("data/research_chain_status.json").read_text("utf-8"))
+        failed = [f for f in (rcs.get("failed") or []) if isinstance(f, dict)]
+        if failed:
+            names = "; ".join(
+                f"{str(f.get('step'))[:44]}(rc={f.get('rc')}) {str(f.get('tail', ''))[:60]}"
+                for f in failed[:3])
+            more = f" +{len(failed) - 3} more" if len(failed) > 3 else ""
+            out.append(("research_chain_failed",
+                        f"{len(failed)}/{rcs.get('steps_total', '?')} research step(s) FAILED "
+                        f"({rcs.get('runner', '?')} @ {str(rcs.get('generated', '?'))[:16]}Z): "
+                        f"{names}{more}"))
+    except (OSError, json.JSONDecodeError, AttributeError, TypeError):
+        pass
     # silent-failure sweep (2026-07-22): systemd-success != work-done. A timer that fired
     # into a quota/auth wall reports success while producing zero research.
     try:
@@ -341,25 +379,38 @@ def _checks() -> list[tuple[str, str]]:
     try:
         # TWO-STAGE LAW: confirmation slots are the ONLY multiplicity that matters; the
         # bar stays fixed for life only while the concurrent count stays <= 12.
-        #
-        # This counted `len(data/shadow_sleeves.json) + a hardcoded 6`. That file is `[]` and the
-        # six were named in a COMMENT (carry, perp_ls, oi_div, ls_contrarian, liq_reversal,
-        # stables) that had drifted from the registry's actual six, so the test was `6 > 12` --
-        # structurally unreachable, a guard on the desk's fixed-for-life bar that could never fire.
+        # The cohort is DERIVED from the clock artifacts (libs.research.slot_registry), never
+        # counted here. This block used to sum an empty registry + a hardcoded `_standing = 6`
+        # + the axis count -- three files each holding a different m, none of them the truth.
+        # Imported locally on purpose: this daemon is what pages the principal, so a bad import
+        # must degrade one alert, never silence the pager.
         from libs.research.slot_registry import MAX_FORWARD_SLOTS, derive_slots
+
         _snap = derive_slots()
-        _m = int(_snap["m_concurrent"])
-        if _m > MAX_FORWARD_SLOTS:
-            out.append(("slot_budget_exceeded",
-                        f"{_m} concurrent confirmation slots > {MAX_FORWARD_SLOTS} -- "
-                        "the fixed forward bar is only fixed while the cohort is capped; "
-                        "recycle or EV-evict before enrolling more"))
+        _total = int(_snap["m_concurrent"])
+        _by_kind = Counter(str(s["kind"]) for s in _snap["slots"])
+        _mix = " + ".join(f"{n} {k}" for k, n in sorted(_by_kind.items()))
         if not _snap["complete"]:
-            out.append(("slot_cohort_incomplete",
-                        f"{len(_snap['unknown_sources'])} cohort source(s) unreadable "
-                        f"({', '.join(_snap['unknown_sources'][:3])}) -- m is a LOWER bound and "
-                        "every Stage-B bar is floored at the cap until they are readable"))
-    except (OSError, json.JSONDecodeError, ImportError, KeyError):
+            # Unreadable is reported, never read as 0: a missing clock shrinks m and LOOSENS
+            # every bar, so silence here would be the phantom-edge direction.
+            out.append(("slot_budget_unreadable",
+                        f"forward-slot sources unreadable ({', '.join(_snap['unknown_sources'])})"
+                        f" -- the concurrent count is a LOWER BOUND ({_total}), not the truth; "
+                        "every clock's Holm bar may be too loose this run"))
+        elif _total > MAX_FORWARD_SLOTS:
+            out.append(("slot_budget_exceeded",
+                        f"{_total} concurrent confirmation slots > {MAX_FORWARD_SLOTS} "
+                        f"({_mix}) -- the fixed forward bar is only fixed while the cohort is "
+                        "capped; recycle or EV-evict before enrolling more"))
+        elif _total < MAX_FORWARD_SLOTS:
+            # CLOCK-SATURATION DUTY: an idle slot is idle capital's research twin. The law
+            # pins the cohort always-full-never-over, so under is a defect exactly like over.
+            out.append(("clock_slots_idle",
+                        f"only {_total}/{MAX_FORWARD_SLOTS} confirmation slots accruing "
+                        f"({_mix}) -- {MAX_FORWARD_SLOTS - _total} idle. Every verified axis owes "
+                        "a pre-registered hypothesis within 7 days; an empty clock discovers "
+                        "nothing"))
+    except (OSError, json.JSONDecodeError, ImportError, KeyError, TypeError):
         pass
     if _auth_broken():
         out.append(("auth_broken",
@@ -426,20 +477,35 @@ def _brain_watchdog(state: dict, active: set) -> str | None:
 
 def main() -> None:
     topic = _topic()
+    if "--status" in sys.argv:
+        # gap #38: which channels are ARMED, when each last DELIVERED, and whether everything has
+        # been silent -- the three facts nobody could read before 2026-07-29.
+        from libs.ops.alert_channels import status as _chan_status
+        st = _chan_status()
+        print(f"pager topic: https://ntfy.sh/{topic}")
+        print(f"registry channels armed: {st['armed']} {st['armed_kinds']}")
+        if st["arming_owed"]:
+            print("  NOT-ARMED (human step): data/secrets/alert_channels.json -- ntfy alone is "
+                  "the single point of failure gap #38 exists to remove")
+        print(f"last success per channel: {st['last_success_per_channel'] or 'NONE RECORDED'}")
+        print(f"all channels silent 24h: {st['all_silent_24h']}  "
+              f"SILENT flag: {st['silent_flag_present']}")
+        for row in st["ledger_tail"]:
+            print(f"  {row.get('ts', '?')} {row.get('channel', '?'):9} "
+                  f"ok={row.get('ok')} {row.get('detail', '')}")
+        return
     if "--test" in sys.argv:
         _push(topic, "Quant desk pager: TEST", "pager wired -- you will only hear from me "
               "when something is genuinely wrong")
         print(f"test page sent -> https://ntfy.sh/{topic}")
         return
-    try:
+    _poll_replies(topic)          # read principal replies BEFORE computing pages: a fresh
+    try:                          # ACK/REARM must suppress this very tick's escalation
         state = json.loads(_STATE.read_text("utf-8"))
     except (OSError, json.JSONDecodeError):
         state = {}
     now = time.time()
     sent = 0
-    # Read the topic BEFORE pushing: a reply that acks or re-arms should take effect on the tick
-    # it arrives, not one tick later behind a fresh page for the very thing it just answered.
-    _poll_replies(topic)
     checks = _checks()
     active = {k for k, _ in checks}
     paged = set(state.get("_paged", []))

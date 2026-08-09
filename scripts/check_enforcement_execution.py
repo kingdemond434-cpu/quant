@@ -53,6 +53,7 @@ it can PROVE is unexecuted, and says so.
 
     python scripts/check_enforcement_execution.py [--report-only] [--json]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -84,9 +85,9 @@ _AUDIT = _ROOT / "scripts/max_audit.py"
 #: owns (Gate-0 readiness), not this one. This fence asks only: can it execute at all?
 _MANUAL: dict[str, str] = {
     "scripts/deep_review.py": "13-seat second-model-family panel, ONE file per pass, invoked with "
-                              "explicit file arguments (LIVE_CONNECTOR_SPEC section-7). Cold "
-                              "independence is the point -- it is deliberately not self-served by "
-                              "the desk on a timer. Its Gate-0 obligation is tracked separately.",
+    "explicit file arguments (LIVE_CONNECTOR_SPEC section-7). Cold "
+    "independence is the point -- it is deliberately not self-served by "
+    "the desk on a timer. Its Gate-0 obligation is tracked separately.",
 }
 
 #: Non-executable artifact roots: these enforce by CONTENT (a sealed lock, the doctrine text, the
@@ -98,7 +99,7 @@ _STANDING_SUFFIXES = (".md", ".txt", ".lock", ".json", ".jsonl", ".yaml", ".yml"
 def _strip_citation(raw: str) -> str:
     """A citation carries prose: 'run_deadman_switch.py (Tier-3)', 'libs/x.py:capacity_status'."""
     s = re.sub(r"\s*\(.*?\)\s*$", "", raw.strip())
-    if ".py:" in s:                      # 'libs/autodiscovery/validation.py:capacity_status'
+    if ".py:" in s:  # 'libs/autodiscovery/validation.py:capacity_status'
         s = s.split(".py:")[0] + ".py"
     return s.strip()
 
@@ -116,12 +117,12 @@ def _resolve(cite: str) -> tuple[str, Path | None]:
         p = _ROOT / s
         if p.exists():
             return ("module" if s.startswith("libs/") else "script"), p
-        alt = _ROOT / "scripts" / s     # bare 'revalidate_clocks.py'
+        alt = _ROOT / "scripts" / s  # bare 'revalidate_clocks.py'
         if alt.exists():
             return "script", alt
         return ("module" if s.startswith("libs/") else "script"), p
     if "/" not in s and "." not in s:
-        return "fence", _AUDIT          # a max_audit fence function name
+        return "fence", _AUDIT  # a max_audit fence function name
     return "unknown", _ROOT / s
 
 
@@ -172,7 +173,9 @@ class _Corpus:
                 continue
         self.manifest = _MANIFEST.read_text("utf-8", errors="ignore") if _MANIFEST.exists() else ""
 
-    def references(self, symbols: set[str], *, exclude: Path, package_init: Path | None) -> str | None:
+    def references(
+        self, symbols: set[str], *, exclude: Path, package_init: Path | None
+    ) -> str | None:
         """Is any symbol used from real code? Returns the referencing file, or None.
 
         `package_init` is excluded: a re-export in `__init__.py` proves the module is IMPORTABLE,
@@ -183,7 +186,7 @@ class _Corpus:
                 continue
             for sym in symbols:
                 if re.search(rf"\b{re.escape(sym)}\b", text):
-                    return str(path.relative_to(_ROOT))
+                    return path.relative_to(_ROOT).as_posix()
         return None
 
     def invoked(self, script: Path) -> str | None:
@@ -197,7 +200,7 @@ class _Corpus:
             if path == script:
                 continue
             if rel in text or re.search(rf"\bscripts\.{re.escape(stem)}\b", text):
-                return str(path.relative_to(_ROOT))
+                return path.relative_to(_ROOT).as_posix()
         return None
 
 
@@ -214,13 +217,20 @@ def evaluate() -> dict[str, Any]:
     try:
         from scripts.build_enforcement_matrix import _MAP
     except Exception as exc:
-        return {"status": "UNMEASURED",
-                "reason": f"citation map unreadable ({type(exc).__name__}: {exc}); "
-                          "cannot prove any law is enforced, so nothing is claimed",
-                "citations": [], "counts": {}}
+        return {
+            "status": "UNMEASURED",
+            "reason": f"citation map unreadable ({type(exc).__name__}: {exc}); "
+            "cannot prove any law is enforced, so nothing is claimed",
+            "citations": [],
+            "counts": {},
+        }
     if not _MAP:
-        return {"status": "UNMEASURED", "reason": "citation map is empty",
-                "citations": [], "counts": {}}
+        return {
+            "status": "UNMEASURED",
+            "reason": "citation map is empty",
+            "citations": [],
+            "counts": {},
+        }
 
     corpus = _Corpus()
     audit_text = _AUDIT.read_text("utf-8", errors="ignore") if _AUDIT.exists() else ""
@@ -231,49 +241,69 @@ def evaluate() -> dict[str, Any]:
         for cite in cites:
             kind, path = _resolve(cite)
             key = f"{kind}:{path}"
-            if key in seen:                        # same artifact cited by several laws
+            if key in seen:  # same artifact cited by several laws
                 seen[key]["laws"].append(law)
                 continue
-            row: dict[str, Any] = {"laws": [law], "citation": cite, "kind": kind,
-                                   "path": str(path.relative_to(_ROOT)) if path else None}
+            row: dict[str, Any] = {
+                "laws": [law],
+                "citation": cite,
+                "kind": kind,
+                "path": path.relative_to(_ROOT).as_posix() if path else None,
+            }
             if path is None or (kind != "fence" and not path.exists()):
                 row |= {"verdict": "MISSING", "evidence": "path does not exist"}
             elif kind in ("standing", "test"):
-                row |= {"verdict": "STANDING" if kind == "standing" else "TEST",
-                        "evidence": "non-executable artifact (content is the enforcement)"
-                                    if kind == "standing" else "executed by pytest"}
+                row |= {
+                    "verdict": "STANDING" if kind == "standing" else "TEST",
+                    "evidence": "non-executable artifact (content is the enforcement)"
+                    if kind == "standing"
+                    else "executed by pytest",
+                }
             elif kind == "fence":
                 name = _strip_citation(cite)
                 ok = _fence_registered(name, audit_text)
-                row |= {"verdict": "EXECUTED" if ok else "DECORATIVE",
-                        "evidence": "registered in max_audit.py" if ok
-                                    else "no `def` in max_audit.py, or defined and never referenced"}
+                row |= {
+                    "verdict": "EXECUTED" if ok else "DECORATIVE",
+                    "evidence": "registered in max_audit.py"
+                    if ok
+                    else "no `def` in max_audit.py, or defined and never referenced",
+                }
             elif kind == "script":
-                rel = str(path.relative_to(_ROOT)) if path.exists() else ""
+                rel = path.relative_to(_ROOT).as_posix() if path.exists() else ""
                 where = corpus.invoked(path)
                 if where:
                     row |= {"verdict": "EXECUTED", "evidence": f"invoked by {where}"}
                 elif rel in _MANUAL:
                     row |= {"verdict": "MANUAL", "evidence": _MANUAL[rel]}
                 else:
-                    row |= {"verdict": "DECORATIVE",
-                            "evidence": "no cron line, no subprocess call, no importer"}
+                    row |= {
+                        "verdict": "DECORATIVE",
+                        "evidence": "no cron line, no subprocess call, no importer",
+                    }
             elif kind == "module":
                 syms = _public_symbols(path)
                 init = path.parent / "__init__.py"
-                where = corpus.references(syms, exclude=path,
-                                          package_init=init if init.exists() else None)
+                where = corpus.references(
+                    syms, exclude=path, package_init=init if init.exists() else None
+                )
                 if not syms:
-                    row |= {"verdict": "EXECUTED",
-                            "evidence": "no public symbols to trace (conservative pass)"}
+                    row |= {
+                        "verdict": "EXECUTED",
+                        "evidence": "no public symbols to trace (conservative pass)",
+                    }
                 else:
-                    row |= {"verdict": "EXECUTED" if where else "DECORATIVE",
-                            "evidence": f"symbol used by {where}" if where
-                                        else f"none of {sorted(syms)[:4]} referenced outside "
-                                             "its own module, its package __init__, or tests"}
+                    row |= {
+                        "verdict": "EXECUTED" if where else "DECORATIVE",
+                        "evidence": f"symbol used by {where}"
+                        if where
+                        else f"none of {sorted(syms)[:4]} referenced outside "
+                        "its own module, its package __init__, or tests",
+                    }
             else:
-                row |= {"verdict": "EXECUTED", "evidence": "unrecognised citation form "
-                                                           "(conservative pass)"}
+                row |= {
+                    "verdict": "EXECUTED",
+                    "evidence": "unrecognised citation form (conservative pass)",
+                }
             seen[key] = row
             rows.append(row)
 
@@ -290,11 +320,14 @@ def evaluate() -> dict[str, Any]:
     for r in rows:
         for law in r["laws"]:
             per_law.setdefault(law, []).append(r["verdict"])
-    unenforced = sorted(law for law, vs in per_law.items()
-                        if vs and all(v in ("DECORATIVE", "MISSING") for v in vs))
-    weakened = sorted(law for law, vs in per_law.items()
-                      if law not in unenforced
-                      and any(v in ("DECORATIVE", "MISSING") for v in vs))
+    unenforced = sorted(
+        law for law, vs in per_law.items() if vs and all(v in ("DECORATIVE", "MISSING") for v in vs)
+    )
+    weakened = sorted(
+        law
+        for law, vs in per_law.items()
+        if law not in unenforced and any(v in ("DECORATIVE", "MISSING") for v in vs)
+    )
 
     if not rows:
         status = "UNMEASURED"
@@ -304,18 +337,34 @@ def evaluate() -> dict[str, Any]:
         status = "DECORATIVE"
     else:
         status = "OK"
-    return {"status": status, "citations": rows, "counts": counts,
-            "broken": [{"laws": r["laws"], "path": r["path"], "verdict": r["verdict"],
-                        "evidence": r["evidence"]} for r in broken],
-            "laws_unenforced": unenforced, "laws_weakened": weakened,
-            "manual": [{"path": r["path"], "laws": r["laws"], "reason": r["evidence"]}
-                       for r in rows if r["verdict"] == "MANUAL"]}
+    return {
+        "status": status,
+        "citations": rows,
+        "counts": counts,
+        "broken": [
+            {
+                "laws": r["laws"],
+                "path": r["path"],
+                "verdict": r["verdict"],
+                "evidence": r["evidence"],
+            }
+            for r in broken
+        ],
+        "laws_unenforced": unenforced,
+        "laws_weakened": weakened,
+        "manual": [
+            {"path": r["path"], "laws": r["laws"], "reason": r["evidence"]}
+            for r in rows
+            if r["verdict"] == "MANUAL"
+        ],
+    }
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--report-only", action="store_true",
-                    help="print and always exit 0 (for dashboards)")
+    ap.add_argument(
+        "--report-only", action="store_true", help="print and always exit 0 (for dashboards)"
+    )
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
 
@@ -329,8 +378,11 @@ def main() -> int:
         print(json.dumps(res, indent=1))
     else:
         c = res.get("counts", {})
-        print(f"enforcement execution (L1.43): {res['status']} -- " +
-              ", ".join(f"{k}={v}" for k, v in sorted(c.items())) or "no citations")
+        print(
+            f"enforcement execution (L1.43): {res['status']} -- "
+            + ", ".join(f"{k}={v}" for k, v in sorted(c.items()))
+            or "no citations"
+        )
         if res.get("reason"):
             print(f"  {res['reason']}")
         for r in res.get("broken", []):
@@ -341,8 +393,10 @@ def main() -> int:
         if res.get("laws_unenforced"):
             print(f"  LAWS ENFORCED BY NOTHING: {', '.join(res['laws_unenforced'])}")
         if res.get("laws_weakened"):
-            print(f"  laws with a broken citation (others still execute): "
-                  f"{', '.join(res['laws_weakened'])}")
+            print(
+                f"  laws with a broken citation (others still execute): "
+                f"{', '.join(res['laws_weakened'])}"
+            )
         print(f"-> {_OUT.relative_to(_ROOT)}")
 
     if args.report_only:

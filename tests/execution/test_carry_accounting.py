@@ -7,7 +7,20 @@ from libs.execution.carry_accounting import (
     dedup_basis,
     derive_spot_realized,
     read_income,
+    reconcile_futures_leg,
 )
+
+# The live book as published 2026-08-05T20:50Z, from web/cashcarry_live.json and
+# data/cashcarry_positions.json. Kept as one named fixture because the defect was an INTERACTION
+# between these numbers, and a test built from rounder ones could not have expressed it.
+_LIVE = {
+    "equity_delta": 16.66,        # fut_eq - effective_start_equity(5757.08)
+    "venue_realized": -3153.27,   # income_summary realized_pnl, exact
+    "funding": 113.06,
+    "commission": 1750.88,
+    "rebase_usd": 4790.70,        # state 10547.78 -> ledgered RESTART inception 5757.08
+    "spot_realized": 2921.35,
+}
 
 
 def _closes() -> list[dict]:
@@ -150,3 +163,86 @@ def test_read_income_retries_then_succeeds() -> None:
 def test_read_income_rejects_non_dict_payload() -> None:
     """A venue error page parsed as a list is not a measurement."""
     assert read_income(lambda: ["unexpected"], attempts=1, sleeper=lambda _: None) is None
+
+
+# =================================================================================================
+# FUTURES-LEG RECONCILIATION (2026-08-05). The primary carry book published net_pnl +2938.01 while
+# the venue income ledger said the futures leg was -4791.09 -- a $4,807.75 overstatement on the
+# desk's ONLY deployed sleeve, whose own note says it "builds the forward track record the gate
+# sizes on". Cause: `fut_pnl = fut_eq - start_eq` where start_eq is the RUIN RAIL's inception,
+# which a principal-signed re-base legitimately moved 10,547.78 -> 5,757.08 on 2026-08-01.
+# =================================================================================================
+
+
+def test_reconcile_reproduces_the_live_overstatement_exactly() -> None:
+    """The regression that motivates the whole feature, in the numbers it actually happened in."""
+    r = reconcile_futures_leg(**{k: v for k, v in _LIVE.items() if k != "spot_realized"})
+    assert r.measured
+    assert r.income_ledger == -4791.09          # realized + funding - commission, venue-native
+    assert r.gap == 4807.75                     # exactly the residual the old code called unknown
+    assert r.explained                          # and the ledgered re-base accounts for it
+    assert "REBASE-LEAK" in r.verdict
+    # The published headline was +2938.01; the honest one is -1869.74. A $4.8k sign flip.
+    published = round(_LIVE["spot_realized"] + _LIVE["equity_delta"], 2)
+    reported = round(_LIVE["spot_realized"] + (r.reporting_pnl or 0.0), 2)
+    assert published == 2938.01
+    assert reported == -1869.74
+
+
+def test_reporting_pnl_is_immune_to_the_rebase_that_broke_it() -> None:
+    """The point of the fix: moving the rail's inception may not move the performance number."""
+    base = {k: v for k, v in _LIVE.items() if k != "spot_realized"}
+    before = reconcile_futures_leg(**{**base, "equity_delta": -4791.09, "rebase_usd": 0.0})
+    after = reconcile_futures_leg(**base)       # same book, inception re-based by +4790.70
+    assert before.reporting_pnl == after.reporting_pnl == -4791.09
+    assert before.gap == 0.0 and before.verdict.startswith("AGREE")
+
+
+def test_a_gap_the_rebase_does_not_explain_is_a_phantom_not_a_rebase_leak() -> None:
+    """EXPLAINED and FINE are different claims -- the distinction the old `residual` field lost."""
+    base = {k: v for k, v in _LIVE.items() if k != "spot_realized"}
+    r = reconcile_futures_leg(**{**base, "rebase_usd": 0.0})
+    assert r.measured and not r.explained
+    assert "PHANTOM" in r.verdict
+    assert r.gap == 4807.75                     # same gap, different and louder verdict
+
+
+def test_unmeasured_income_is_never_reported_as_agreement() -> None:
+    """A venue read that failed is not two measurements agreeing (the 2026-07-26 inf% class)."""
+    base = {k: v for k, v in _LIVE.items() if k != "spot_realized"}
+    for missing in ("venue_realized", "funding", "commission"):
+        r = reconcile_futures_leg(**{**base, missing: None})
+        assert not r.measured and not r.explained
+        assert r.gap is None and r.reporting_pnl is None   # no fabricated substitute
+        assert missing in r.verdict and "UNDECIDABLE" in r.verdict
+
+
+def test_tolerance_does_not_scale_with_the_gap_it_must_catch() -> None:
+    base = {k: v for k, v in _LIVE.items() if k != "spot_realized"}
+    near = reconcile_futures_leg(**{**base, "equity_delta": -4780.0, "rebase_usd": 0.0})
+    assert near.gap == 11.09 and near.verdict.startswith("AGREE")
+
+
+def test_bleed_alarm_cannot_order_a_hedge_reconcile_on_a_book_with_no_legs() -> None:
+    """The alarm fired for four days demanding an action that was impossible to perform."""
+    flat = carry_bleed_report(funding=113.06, spot_pnl=2921.35, fut_pnl=16.66, open_legs=0)
+    assert flat.alert                                        # still alarms -- this is not a mute
+    assert "NAKED" not in flat.verdict
+    assert "ZERO open carries" in flat.verdict
+    # It narrows to two candidates rather than clearing the hedge: `open_legs` counts TRACKED
+    # carries, and untracked exposure is exactly what the naked-leg hypothesis is about.
+    assert "ACCOUNTING artifact" in flat.verdict and "UNTRACKED exposure" in flat.verdict
+
+
+def test_bleed_alarm_still_names_a_naked_leg_when_legs_actually_exist() -> None:
+    """The old verdict is correct when the book HAS legs; the fix narrows it, never deletes it."""
+    held = carry_bleed_report(funding=113.06, spot_pnl=2921.35, fut_pnl=16.66, open_legs=4)
+    assert held.alert and "NAKED/UNTRACKED leg" in held.verdict and "4 open leg(s)" in held.verdict
+
+
+def test_bleed_alarm_prefers_the_measured_cause_over_the_guessed_one() -> None:
+    base = {k: v for k, v in _LIVE.items() if k != "spot_realized"}
+    recon = reconcile_futures_leg(**base)
+    b = carry_bleed_report(funding=113.06, spot_pnl=2921.35, fut_pnl=16.66,
+                           open_legs=0, recon=recon)
+    assert b.alert and "ACCOUNTING, NOT EDGE" in b.verdict and "REBASE-LEAK" in b.verdict

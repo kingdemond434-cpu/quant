@@ -24,11 +24,19 @@ marker -- so the registry of who-consumes-what BUILDS ITSELF from actual reads. 
 list to rot, and the registry is simultaneously the producer->consumer edge list that L1.28c's
 event-driven end state requires.
 
-THE THREE DESIGN RULES, each closing a way this class hid:
+THE FOUR DESIGN RULES, each closing a way this class hid:
   * CONTENT `generated` OUTRANKS MTIME. The 10-minute auto-deploy and the puller's revert path
     rewrite files, so mtime lies FRESH after a deploy -- the dangerous direction. All five
     existing registries are mtime-based and share that hole; this helper reads the artifact's
     own stamp first and falls back to mtime only when no stamp exists.
+  * FRESH-BUT-EMPTY IS NOT FRESH (R0159). A truncated write or zero-row payload passes every
+    age check with a young mtime -- the silent-empty failure this module exists to prevent,
+    wearing the age gate as camouflage. A caller may declare content floors at the read site:
+    min_rows= (len() of a list/dict payload) and min_bytes= (raw file size). A floor violation
+    takes the SAME refusal path as stale -- fresh=False, stale_read recorded, StaleRead under
+    mode='strict' -- with the failed floor and the observed value named in `why`. Default None
+    = no floor, so no read site changes behaviour until it opts in; and a floor can only
+    REMOVE freshness, never grant it to a read the age gate already refused.
   * kind='state' MEANS GUARDIAN-LIVENESS, NEVER OWN-AGE. A valid-until-changed file
     (stage_state.json) is legitimately old; its read is fresh iff the named GUARDIAN organ's
     artifact is alive within the contract. This distinction is what keeps the fence from crying
@@ -131,7 +139,8 @@ def _rel(root: Path, p: Path) -> str:
 
 
 def _record(root: Path, event: str, path: str, caller: str, kind: str,
-            max_age_h: float, age_h: float | None, guardian: str | None) -> None:
+            max_age_h: float, age_h: float | None, guardian: str | None,
+            min_rows: int | None = None, min_bytes: int | None = None) -> None:
     """Append to the self-building registry, marker-throttled. Best-effort by design (see module
     docstring): failure here must never break the read; the fence reports the silent registry."""
     key = hashlib.sha1(f"{caller}|{path}|{event}".encode()).hexdigest()[:16]
@@ -144,26 +153,66 @@ def _record(root: Path, event: str, path: str, caller: str, kind: str,
         marker.parent.mkdir(parents=True, exist_ok=True)
         reg = root / REGISTRY_REL
         reg.parent.mkdir(parents=True, exist_ok=True)
+        rec: dict[str, Any] = {
+            "ts": datetime.now(tz=UTC).isoformat(), "event": event, "path": path,
+            "caller": caller, "kind": kind, "max_age_h": max_age_h,
+            "age_h": None if age_h is None else round(age_h, 3),
+            "guardian": guardian,
+        }
+        # Declared content floors join the contract line only when a caller opts in, so the
+        # registry line stays byte-identical for every existing (floorless) read site.
+        if min_rows is not None:
+            rec["min_rows"] = min_rows
+        if min_bytes is not None:
+            rec["min_bytes"] = min_bytes
         with reg.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps({
-                "ts": datetime.now(tz=UTC).isoformat(), "event": event, "path": path,
-                "caller": caller, "kind": kind, "max_age_h": max_age_h,
-                "age_h": None if age_h is None else round(age_h, 3),
-                "guardian": guardian,
-            }) + "\n")
+            fh.write(json.dumps(rec) + "\n")
         marker.write_text(datetime.now(tz=UTC).isoformat(), "utf-8")
     except OSError:
         return
 
 
+def _floor_violation(p: Path, data: Any, min_rows: int | None,
+                     min_bytes: int | None) -> str | None:
+    """None, or a message naming each content floor that failed and the OBSERVED value.
+
+    The floors close the hole the age check cannot see: a fresh-but-EMPTY artifact (zero rows,
+    truncated write) steers a decision with nothing in it while every timestamp reads young.
+    min_rows is len() of the parsed payload (list or dict); min_bytes is the raw file size.
+    Unverifiable counts as FAILED -- a payload whose rows cannot be counted, or a file whose
+    size cannot be stat'd, has not met its declared floor (the same never-weaken direction as
+    the rest of this module)."""
+    fails: list[str] = []
+    if min_rows is not None:
+        rows = len(data) if isinstance(data, (list, dict)) else None
+        if rows is None or rows < min_rows:
+            observed = (f"{rows} row(s)" if rows is not None else
+                        f"uncountable {type(data).__name__} payload")
+            fails.append(f"min_rows={min_rows} floor failed: observed {observed}")
+    if min_bytes is not None:
+        try:
+            size: int | None = p.stat().st_size
+        except OSError:
+            size = None
+        observed = f"{size}B" if size is not None else "unmeasurable size"
+        if size is None or size < min_bytes:
+            fails.append(f"min_bytes={min_bytes} floor failed: observed {observed}")
+    return "; ".join(fails) if fails else None
+
+
 def read_fresh(path: Path | str, max_age_h: float, *, caller: str,
                kind: str = "measurement", guardian: Path | str | None = None,
-               mode: str = "fallback", root: Path | None = None) -> FreshRead:
+               mode: str = "fallback", min_rows: int | None = None,
+               min_bytes: int | None = None, root: Path | None = None) -> FreshRead:
     """Read a produced artifact under a declared freshness contract. See module docstring.
 
     kind='measurement' -- age is the artifact's own (generated stamp, else mtime).
     kind='state'       -- age is the GUARDIAN artifact's; requires guardian=. The state file's
                           own age is irrelevant by construction (valid-until-changed).
+    min_rows= / min_bytes= -- optional CONTENT floors on the read artifact itself (R0159): a
+                          fresh-but-empty payload (zero rows, truncated write) fails exactly
+                          like stale, with the violated floor and observed value in `why`.
+                          None (default) = no floor.
     """
     root = root or _root()
     p = Path(path)
@@ -183,14 +232,26 @@ def read_fresh(path: Path | str, max_age_h: float, *, caller: str,
     else:
         age, source, data = _age_of(p)
         fresh = age is not None and age <= max_age_h
+    # CONTENT FLOORS (R0159). Checked only on a read the age gate would pass: the floor may
+    # only take freshness away (fresh-but-empty -> refused), never hand it back to a read
+    # already refused as stale/missing -- so no gate below ever weakens.
+    empty_why: str | None = None
+    if fresh and (min_rows is not None or min_bytes is not None):
+        empty_why = _floor_violation(p, data, min_rows, min_bytes)
+        fresh = empty_why is None
     rel = _rel(root, p)
-    why = (f"fresh ({age:.2f}h <= {max_age_h}h via {source})" if fresh else
+    why = (f"EMPTY: {empty_why} (age {age:.2f}h <= {max_age_h}h via {source})" if empty_why else
+           f"fresh ({age:.2f}h <= {max_age_h}h via {source})" if fresh else
            f"STALE {age:.2f}h > {max_age_h}h ({source})" if age is not None else
            f"{source}: no age measurable")
-    _record(root, "contract", rel, caller, kind, max_age_h, age, guardian_rel)
+    _record(root, "contract", rel, caller, kind, max_age_h, age, guardian_rel,
+            min_rows, min_bytes)
     if not fresh:
+        # A floor violation lands here with age still measurable, so it records as the SAME
+        # stale_read event a frozen artifact would -- one refusal path, not a softer second one.
         event = "stale_read" if age is not None else "unreadable_read"
-        _record(root, event, rel, caller, kind, max_age_h, age, guardian_rel)
+        _record(root, event, rel, caller, kind, max_age_h, age, guardian_rel,
+                min_rows, min_bytes)
         if mode == "strict":
             raise StaleRead(f"{caller}: {rel} -- {why} (L1.44 strict: frozen input declared "
                             "worse than no input at this read site)")

@@ -79,7 +79,7 @@ COVERAGE_FALLBACK = {
 def _load(p: Path, d=None):
     try:
         return json.loads(p.read_text("utf-8"))
-    except Exception:
+    except Exception:  # blind-except intentional (BLE001)
         return d
 
 

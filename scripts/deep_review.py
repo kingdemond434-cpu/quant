@@ -56,15 +56,44 @@ minimal fix. Rank by expected loss. If the file is genuinely sound, say so plain
 single riskiest remaining assumption -- do not manufacture findings."""
 
 
+#: Seat roster. The paid panel is the default; `--panel free` selects the :free tier.
+#: THE FALLBACK IS NOT A NICETY -- IT IS THE DIFFERENCE BETWEEN A REVIEW AND NO REVIEW. The paid
+#: roster returns HTTP 402 (account out of credit) while three free seats answer normally, so a
+#: hardcoded paid path meant this bar could not be met at all during exactly the period when
+#: nobody was going to top the account up. Fewer and weaker seats are a WEAKER review, never a
+#: lower bar: the section-7 obligation is a second-model-family adversarial pass, and the
+#: inbox records which roster produced it so a thin pass is never mistaken for a full one.
+_PANELS = {"paid": "data/secrets/llm_panel.json", "free": "data/secrets/llm_panel_free.json"}
+
+
 def main() -> None:
-    files = sys.argv[1:]
+    argv = sys.argv[1:]
+    panel = "paid"
+    if "--panel" in argv:
+        i = argv.index("--panel")
+        panel = argv[i + 1] if i + 1 < len(argv) else "paid"
+        if panel not in _PANELS:
+            raise SystemExit(f"--panel must be one of {sorted(_PANELS)}, got {panel!r}")
+        del argv[i:i + 2]
+    files = argv
     if not files:
         raise SystemExit(__doc__)
+    # THIS ORGAN HAS NEVER PRODUCED A SINGLE REVIEW, and not for want of credentials.
+    # Commit 0debac3 changed `_ask(base_url, key, model, system, user, timeout)` to
+    # `_ask(base_url, key, model, messages, timeout)` and updated every caller except this one and
+    # capacity_test.py. The old call therefore passed SYSTEM as `messages` and the prompt as
+    # `timeout`, so all 13 seats raised `TypeError: 'str' object cannot be interpreted as an
+    # integer` -- and `one()` catches Exception, so the failure rendered as thirteen tidy "FAILED"
+    # lines and an inbox reading "0/13 seats responded" rather than as a broken call. R0231 was
+    # triaged BLOCKED-OPERATOR on missing panel credentials; data/secrets/llm_panel.json has held
+    # 13 funded providers since 2026-07-23. The blocker was this.
     from scripts.run_external_panel import _ask
+
+    from libs.llm.push import build_turns
     # risk-path depth passes run at MAX effort: this is the review standing between
     # the desk and real money, the one place where correctness outranks token cost
     # (elsewhere xhigh wins -- max is documented as prone to overthinking).
-    providers = json.loads((ROOT / "data/secrets/llm_panel.json").read_text())["providers"]
+    providers = json.loads((ROOT / _PANELS[panel]).read_text())["providers"]
     ts = datetime.now(tz=UTC).isoformat()
     OUT.parent.mkdir(parents=True, exist_ok=True)
 
@@ -80,9 +109,9 @@ def main() -> None:
 
         def one(pv, prompt=prompt):  # bind loop var per-iteration (ruff B023)
             try:
-                r = _ask(pv["base_url"], pv["key"], pv["model"], SYSTEM, prompt)
+                r = _ask(pv["base_url"], pv["key"], pv["model"], build_turns(SYSTEM, prompt))
                 if len(r.strip()) < 200:
-                    r = _ask(pv["base_url"], pv["key"], pv["model"], SYSTEM, prompt)
+                    r = _ask(pv["base_url"], pv["key"], pv["model"], build_turns(SYSTEM, prompt))
                 print(f"  {pv['model']}: {len(r)} chars")
                 return {"model": pv["model"], "response": r}
             except Exception as e:
@@ -95,7 +124,8 @@ def main() -> None:
 
         with OUT.open("a", encoding="utf-8") as f:
             f.write(f"\n\n# DEEP REVIEW -- {rel} -- {ts}\n"
-                    f"{len(ok)}/{len(res)} seats responded. RISK-PATH depth pass "
+                    f"{len(ok)}/{len(res)} seats responded on the {panel.upper()} roster. "
+                    "RISK-PATH depth pass "
                     "(LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every "
                     "claim against the code; consensus = high prior; record each accepted finding "
                     "via scripts/track_findings.py so it cannot be silently dropped.\n")

@@ -47,6 +47,7 @@ _REASON = "topping the book up after the July drawdown, per the 08-06 review"
 
 # ------------------------------------------------------------------ the module cannot loosen
 
+
 def test_with_NO_LEDGER_the_rail_sees_exactly_what_it_was_handed() -> None:
     """This module must be incapable of loosening anything by merely existing. On any box that has
     never had a capital event, the ruin rail's behaviour must be bit-identical to before."""
@@ -59,29 +60,45 @@ def test_first_inception_falls_back_to_the_current_start_with_no_history() -> No
 
 
 def test_a_corrupt_ledger_line_is_skipped_rather_than_taking_the_rail_down(
-        _isolated_ledger: Path) -> None:
+    _isolated_ledger: Path,
+) -> None:
     _isolated_ledger.write_text(
         json.dumps({"start_equity_after": 3_000.0, "start_equity_before": 5_000.0}) + "\n"
-        "{not json\n", "utf-8")
+        "{not json\n",
+        "utf-8",
+    )
     assert len(CE.history()) == 1
     assert CE.effective_start_equity(9_999.0) == 3_000.0
 
 
 # ------------------------------------------------------------------ the refusals
 
+
 def test_a_REBASE_WITH_NO_NEW_CAPITAL_during_a_live_breach_is_REFUSED() -> None:
     """THE EAT-THE-SAFETY-MARGIN MOVE, refused by name. Re-basing to today's equity clears the
     breach instantly while nothing about the book improved."""
     with pytest.raises(CE.CapitalEventRefused, match="ruin stop is LIVE"):
-        CE.rebase(equity_now=3_100.0, start_equity=5_000.0, deposit_usd=0.0,
-                  authorised_by="the executor", reason=_REASON, kind="RESTART")
+        CE.rebase(
+            equity_now=3_100.0,
+            start_equity=5_000.0,
+            deposit_usd=0.0,
+            authorised_by="the executor",
+            reason=_REASON,
+            kind="RESTART",
+        )
 
 
 def test_the_principal_override_is_the_ONLY_way_through_and_it_is_recorded() -> None:
     """Not a loophole -- a signature. The act becomes attributable in an append-only ledger, which
     is the difference between a decision and a drift."""
-    ev = CE.rebase(equity_now=3_100.0, start_equity=5_000.0, deposit_usd=0.0,
-                   authorised_by="PRINCIPAL-OVERRIDE alice", reason=_REASON, kind="RESTART")
+    ev = CE.rebase(
+        equity_now=3_100.0,
+        start_equity=5_000.0,
+        deposit_usd=0.0,
+        authorised_by="PRINCIPAL-OVERRIDE alice",
+        reason=_REASON,
+        kind="RESTART",
+    )
     assert ev.kind == "RESTART" and ev.deposit_usd == 0.0
     assert ev.authorised_by == "PRINCIPAL-OVERRIDE alice"
     assert CE.history()[-1]["authorised_by"] == "PRINCIPAL-OVERRIDE alice"
@@ -89,8 +106,14 @@ def test_the_principal_override_is_the_ONLY_way_through_and_it_is_recorded() -> 
 
 def test_the_override_check_is_case_insensitive_and_tolerates_surrounding_space() -> None:
     """A rail that could be defeated by capitalisation would be defeated by capitalisation."""
-    ev = CE.rebase(equity_now=3_100.0, start_equity=5_000.0, deposit_usd=0.0,
-                   authorised_by="  principal-override bob  ", reason=_REASON, kind="RESTART")
+    ev = CE.rebase(
+        equity_now=3_100.0,
+        start_equity=5_000.0,
+        deposit_usd=0.0,
+        authorised_by="  principal-override bob  ",
+        reason=_REASON,
+        kind="RESTART",
+    )
     assert ev.authorised_by.startswith("principal-override")
 
 
@@ -99,30 +122,46 @@ def test_a_ZERO_DEPOSIT_recorded_as_a_DEPOSIT_is_REFUSED_even_with_no_breach() -
     success. A ledger of meaningless rows is worse than no ledger -- it makes the real events
     harder to find. Clearing a stop without new money is a RESTART and must say so."""
     with pytest.raises(CE.CapitalEventRefused, match="records nothing"):
-        CE.rebase(equity_now=10_000.0, start_equity=5_000.0, deposit_usd=0.0,
-                  authorised_by="PRINCIPAL-OVERRIDE alice", reason=_REASON)
+        CE.rebase(
+            equity_now=10_000.0,
+            start_equity=5_000.0,
+            deposit_usd=0.0,
+            authorised_by="PRINCIPAL-OVERRIDE alice",
+            reason=_REASON,
+        )
 
 
 def test_an_UNSIGNED_event_is_REFUSED() -> None:
     """A rail cleared by nobody in particular is a rail nobody owns."""
     with pytest.raises(CE.CapitalEventRefused, match="unsigned"):
-        CE.rebase(equity_now=10_000.0, start_equity=5_000.0, deposit_usd=1_000.0,
-                  authorised_by="   ", reason=_REASON)
+        CE.rebase(
+            equity_now=10_000.0,
+            start_equity=5_000.0,
+            deposit_usd=1_000.0,
+            authorised_by="   ",
+            reason=_REASON,
+        )
 
 
 def test_a_STUB_REASON_is_REFUSED() -> None:
     """'fix' is not a record. The bar is a sentence a reader in six months can act on."""
     with pytest.raises(CE.CapitalEventRefused, match="not a record"):
-        CE.rebase(equity_now=10_000.0, start_equity=5_000.0, deposit_usd=1_000.0,
-                  authorised_by="alice", reason="fix")
+        CE.rebase(
+            equity_now=10_000.0,
+            start_equity=5_000.0,
+            deposit_usd=1_000.0,
+            authorised_by="alice",
+            reason="fix",
+        )
 
 
 def test_the_refusals_are_evaluated_in_an_order_that_names_the_REAL_problem() -> None:
     """A $0 deposit with a stub reason and no signature has three faults. Reporting the least
     important one first sends the operator to fix the wrong thing and try again."""
     with pytest.raises(CE.CapitalEventRefused, match="records nothing"):
-        CE.rebase(equity_now=10_000.0, start_equity=5_000.0, deposit_usd=0.0,
-                  authorised_by="", reason="x")
+        CE.rebase(
+            equity_now=10_000.0, start_equity=5_000.0, deposit_usd=0.0, authorised_by="", reason="x"
+        )
 
 
 def test_a_REFUSED_event_writes_NOTHING_to_the_ledger(_isolated_ledger: Path) -> None:
@@ -140,12 +179,18 @@ def test_a_REFUSED_event_writes_NOTHING_to_the_ledger(_isolated_ledger: Path) ->
 
 # ------------------------------------------------------------------ a real deposit
 
+
 def test_a_REAL_DEPOSIT_moves_the_inception_to_the_capital_the_book_now_has() -> None:
     """`equity_now` is BEFORE the deposit lands, so the new inception is equity + deposit -- the
     capital the book is actually being asked to work with from this moment. That is the only
     reading under which 'drawdown from start' means anything after money moves."""
-    ev = CE.rebase(equity_now=3_100.0, start_equity=5_000.0, deposit_usd=2_000.0,
-                   authorised_by="alice", reason=_REASON)
+    ev = CE.rebase(
+        equity_now=3_100.0,
+        start_equity=5_000.0,
+        deposit_usd=2_000.0,
+        authorised_by="alice",
+        reason=_REASON,
+    )
     assert ev.start_equity_after == pytest.approx(5_100.0)
     assert ev.equity_after == pytest.approx(5_100.0)
     assert ev.start_equity_before == 5_000.0
@@ -155,8 +200,13 @@ def test_a_deposit_CLEARS_the_breach_because_real_capital_arrived() -> None:
     """The distinction the whole module rests on: the stop lifts when the book genuinely has more
     money, and only then."""
     assert 3_100.0 / 5_000.0 - 1.0 <= -0.35, "precondition: the stop is live"
-    ev = CE.rebase(equity_now=3_100.0, start_equity=5_000.0, deposit_usd=2_000.0,
-                   authorised_by="alice", reason=_REASON)
+    ev = CE.rebase(
+        equity_now=3_100.0,
+        start_equity=5_000.0,
+        deposit_usd=2_000.0,
+        authorised_by="alice",
+        reason=_REASON,
+    )
     # AFTER the deposit the book holds equity_after, and the inception is that same figure -- so
     # drawdown is zero by construction. Comparing the PRE-deposit equity against the new inception
     # (my first draft) measures a book that no longer exists against capital it now has, and would
@@ -166,33 +216,60 @@ def test_a_deposit_CLEARS_the_breach_because_real_capital_arrived() -> None:
 
 
 def test_the_rail_then_measures_against_the_recorded_inception() -> None:
-    CE.rebase(equity_now=3_100.0, start_equity=5_000.0, deposit_usd=2_000.0,
-              authorised_by="alice", reason=_REASON)
+    CE.rebase(
+        equity_now=3_100.0,
+        start_equity=5_000.0,
+        deposit_usd=2_000.0,
+        authorised_by="alice",
+        reason=_REASON,
+    )
     assert CE.effective_start_equity(5_000.0) == pytest.approx(5_100.0)
 
 
 # ------------------------------------------------------------------ memory of loss
 
+
 def test_a_REBASE_MOVES_THE_RAIL_AND_NEVER_THE_DESKS_MEMORY_OF_WHAT_WAS_LOST() -> None:
     """Cumulative loss is measured from the FIRST inception, not the last re-base. Otherwise each
     top-up erases the history that justified caution, and after three deposits a book down 60%
     reports as flat."""
-    CE.rebase(equity_now=3_100.0, start_equity=5_000.0, deposit_usd=2_000.0,
-              authorised_by="alice", reason=_REASON)
-    second = CE.rebase(equity_now=4_000.0, start_equity=5_100.0, deposit_usd=1_000.0,
-                       authorised_by="alice", reason=_REASON)
+    CE.rebase(
+        equity_now=3_100.0,
+        start_equity=5_000.0,
+        deposit_usd=2_000.0,
+        authorised_by="alice",
+        reason=_REASON,
+    )
+    second = CE.rebase(
+        equity_now=4_000.0,
+        start_equity=5_100.0,
+        deposit_usd=1_000.0,
+        authorised_by="alice",
+        reason=_REASON,
+    )
     assert second.cumulative_loss_since_first_inception_usd == pytest.approx(4_000.0 - 5_000.0)
     assert CE.first_inception_equity(5_100.0) == 5_000.0
 
 
 def test_the_ledger_is_APPEND_ONLY_and_every_row_links_the_previous_inception(
-        _isolated_ledger: Path) -> None:
+    _isolated_ledger: Path,
+) -> None:
     """Every event records the inception it replaced, so the full drawdown history is always
     reconstructible however many restarts have happened."""
-    CE.rebase(equity_now=3_100.0, start_equity=5_000.0, deposit_usd=2_000.0,
-              authorised_by="alice", reason=_REASON)
-    CE.rebase(equity_now=4_000.0, start_equity=5_100.0, deposit_usd=1_000.0,
-              authorised_by="alice", reason=_REASON)
+    CE.rebase(
+        equity_now=3_100.0,
+        start_equity=5_000.0,
+        deposit_usd=2_000.0,
+        authorised_by="alice",
+        reason=_REASON,
+    )
+    CE.rebase(
+        equity_now=4_000.0,
+        start_equity=5_100.0,
+        deposit_usd=1_000.0,
+        authorised_by="alice",
+        reason=_REASON,
+    )
     rows = CE.history()
     assert len(rows) == 2
     assert rows[0]["start_equity_before"] == 5_000.0
@@ -203,42 +280,74 @@ def test_the_ledger_is_APPEND_ONLY_and_every_row_links_the_previous_inception(
 def test_the_latest_event_wins_for_the_rail_but_the_first_wins_for_the_memory() -> None:
     """Two different questions with two different answers, and swapping them is the failure this
     file is guarding: 'what am I judged against now' vs 'how much have I lost in total'."""
-    CE.rebase(equity_now=3_100.0, start_equity=5_000.0, deposit_usd=2_000.0,
-              authorised_by="alice", reason=_REASON)
-    CE.rebase(equity_now=4_000.0, start_equity=5_100.0, deposit_usd=1_000.0,
-              authorised_by="alice", reason=_REASON)
+    CE.rebase(
+        equity_now=3_100.0,
+        start_equity=5_000.0,
+        deposit_usd=2_000.0,
+        authorised_by="alice",
+        reason=_REASON,
+    )
+    CE.rebase(
+        equity_now=4_000.0,
+        start_equity=5_100.0,
+        deposit_usd=1_000.0,
+        authorised_by="alice",
+        reason=_REASON,
+    )
     assert CE.effective_start_equity(0.0) == pytest.approx(5_000.0)
     assert CE.first_inception_equity(0.0) == 5_000.0
 
 
 # ------------------------------------------------------------------ arithmetic edges
 
+
 def test_a_zero_start_equity_does_not_divide_by_zero() -> None:
     """A corrupt or absent state file must not crash the one path out of a ruin stop."""
-    ev = CE.rebase(equity_now=1_000.0, start_equity=0.0, deposit_usd=500.0,
-                   authorised_by="alice", reason=_REASON)
+    ev = CE.rebase(
+        equity_now=1_000.0,
+        start_equity=0.0,
+        deposit_usd=500.0,
+        authorised_by="alice",
+        reason=_REASON,
+    )
     assert ev.start_equity_after == pytest.approx(1_500.0)
 
 
 def test_a_negative_deposit_does_not_REDUCE_the_new_inception_below_equity() -> None:
     """A withdrawal is a different event with a different sign convention. Letting a negative
     deposit shrink the inception would LOOSEN the rail -- less capital to be judged against."""
-    ev = CE.rebase(equity_now=5_000.0, start_equity=5_000.0, deposit_usd=-1_000.0,
-                   authorised_by="alice", reason=_REASON, kind="WITHDRAWAL")
+    ev = CE.rebase(
+        equity_now=5_000.0,
+        start_equity=5_000.0,
+        deposit_usd=-1_000.0,
+        authorised_by="alice",
+        reason=_REASON,
+        kind="WITHDRAWAL",
+    )
     assert ev.start_equity_after == pytest.approx(5_000.0)
 
 
 def test_the_event_is_frozen_and_serialisable() -> None:
-    ev = CE.rebase(equity_now=3_100.0, start_equity=5_000.0, deposit_usd=2_000.0,
-                   authorised_by="alice", reason=_REASON)
+    ev = CE.rebase(
+        equity_now=3_100.0,
+        start_equity=5_000.0,
+        deposit_usd=2_000.0,
+        authorised_by="alice",
+        reason=_REASON,
+    )
     json.dumps(ev.as_dict())
     with pytest.raises(AttributeError):
-        ev.deposit_usd = 1.0            # type: ignore[misc]
+        ev.deposit_usd = 1.0  # type: ignore[misc]
 
 
 def test_the_event_carries_a_timestamp_so_the_ledger_is_orderable() -> None:
-    ev = CE.rebase(equity_now=3_100.0, start_equity=5_000.0, deposit_usd=2_000.0,
-                   authorised_by="alice", reason=_REASON)
+    ev = CE.rebase(
+        equity_now=3_100.0,
+        start_equity=5_000.0,
+        deposit_usd=2_000.0,
+        authorised_by="alice",
+        reason=_REASON,
+    )
     assert ev.at and "T" in ev.at
 
 
@@ -246,11 +355,17 @@ def test_this_module_is_NEVER_called_automatically() -> None:
     """A capital event is an act a human performs. If the desk could import and invoke this on its
     own schedule, the ruin rail would have an automated exit -- which is the whole thing L1.23 and
     the L2.8a immutable core forbid."""
-    import subprocess
-    hits = subprocess.run(
-        ["grep", "-rln", "capital_events", "scripts", "libs"],
-        capture_output=True, text=True, check=False).stdout.split()
-    callers = [h for h in hits if "capital_events.py" not in h and "test" not in h]
+    source_paths = [
+        path
+        for root in (Path("scripts"), Path("libs"))
+        for path in root.rglob("*.py")
+        if "capital_events.py" not in path.name and "test" not in path.parts
+    ]
+    callers = [
+        path
+        for path in source_paths
+        if "capital_events" in path.read_text("utf-8", errors="ignore")
+    ]
     for path in callers:
         src = Path(path).read_text("utf-8", errors="ignore")
         if "rebase(" not in src:
@@ -262,4 +377,5 @@ def test_this_module_is_NEVER_called_automatically() -> None:
         # danger, reaching the principal's append-only record unattended is.
         assert "LEDGER =" in src, (
             f"{path} calls rebase() against the REAL ledger -- the ruin rail must have no "
-            "automated exit")
+            "automated exit"
+        )

@@ -21,7 +21,9 @@ TIMER = Path("ops/quant-research.timer")
 def test_THE_EXECUTION_STAGE_IS_SCHEDULED_AT_ALL() -> None:
     """The finding this closes: mining was automated, testing was not."""
     assert CYCLE.exists() and SERVICE.exists() and TIMER.exists()
-    assert "run_research_cycle.sh" in SERVICE.read_text("utf-8")
+    assert "run_midnight_frontier.sh" in SERVICE.read_text("utf-8")
+    assert "run_sweep_then_cycle.sh" in Path("ops/run_midnight_frontier.sh").read_text("utf-8")
+    assert "run_research_cycle.sh" in Path("ops/run_sweep_then_cycle.sh").read_text("utf-8")
     assert "OnCalendar" in TIMER.read_text("utf-8")
 
 
@@ -50,16 +52,21 @@ def test_IT_IS_NICED_BECAUSE_THE_RECORDERS_ARE_IRREPLACEABLE() -> None:
     assert "OMP_NUM_THREADS=1" in src
 
 
-def test_THE_TIMER_AVOIDS_THE_MINER_WINDOW() -> None:
-    """Seven regional digs and a sweep contending for the same 4GB is how a box that OOM-killed
-    moat_screen loses both."""
-    assert "04:00" in TIMER.read_text("utf-8")
+def test_THE_TIMER_STARTS_THE_OVERNIGHT_FRONTIER_AT_LOCAL_MIDNIGHT() -> None:
+    """One existing timer starts the renewable cycle; the wrapper lock rejects duplicates."""
+    timer = TIMER.read_text("utf-8")
+    assert "00:00:00 Europe/London" in timer
+    assert ".overnight_frontier.lock" in Path("ops/run_sweep_then_cycle.sh").read_text("utf-8")
+    assert ".midnight_controller_cycle.lock" in Path("ops/run_midnight_frontier.sh").read_text(
+        "utf-8"
+    )
     assert "Persistent=true" in TIMER.read_text("utf-8"), (
-        "a missed cycle should run on the next boot rather than being skipped silently")
+        "a missed cycle should run on the next boot rather than being skipped silently"
+    )
 
 
 def test_THE_BAR_BUDGET_IS_OVERRIDABLE_BUT_HAS_A_SANE_DEFAULT() -> None:
     """build_bars streams now, so memory is O(buckets) -- but the budget still costs wall time and
     competes with the recorders, so it is a declared default rather than an unbounded job."""
     src = CYCLE.read_text("utf-8")
-    assert 'BARS_FILE_BUDGET:-' in src
+    assert "BARS_FILE_BUDGET:-" in src

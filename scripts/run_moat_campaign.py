@@ -46,6 +46,10 @@ from libs.research.moat_microstructure import (  # noqa: E402
     read_partition,
     resample,
 )
+from libs.validation.campaign_design import (  # noqa: E402
+    DEFAULT_TARGET_SHARPE,
+    preflight,
+)
 from libs.validation.dsr import sharpe_ratio  # noqa: E402
 from libs.validation.economic_prior import MechanismType  # noqa: E402
 
@@ -128,22 +132,112 @@ def main() -> int:
               f"bars/symbol: {per_symbol}")
         return 1
 
+    ppy = 365.0 * 24.0 * 3600_000.0 / args.bar_ms      # bars per year at this cadence
+    _TARGET_SR = DEFAULT_TARGET_SHARPE
+
+    # THE PANEL IS CHOSEN FOR POWER, not by whichever series is shortest.
+    #
+    # `T = min(len(r) for r in series)` truncated EVERY candidate to the worst one. Measured
+    # 2026-08-05: the moat campaign ran at T=1,065 one-minute bars -- under eighteen hours --
+    # against a tape the desk holds gigabytes of, because one late-added symbol capped the panel
+    # and every other column was cropped to match it. Sample LENGTH is the single lever the desk's
+    # own Type-II report names ("Sample LENGTH and pooling are the levers; alpha is not"), and this
+    # line was throwing away almost all of it to keep a column that could not carry a test anyway.
+    #
+    # Dropping a column costs one hypothesis. Keeping it cost every other hypothesis its history,
+    # AND raised N for all of them -- both of the two things that destroy power, to save one
+    # candidate. So the panel is now selected by maximising the campaign's OWN measured power:
+    # sort by length, and for each prefix price preflight(k columns, T_k observations). This is a
+    # DESIGN choice made before the compute is spent, not a filter on results -- no candidate is
+    # dropped for what it scored, only for how little history it brings.
+    # THE OBJECTIVE IS EXPECTED DISCOVERIES, k * power(k) -- NOT power alone.
+    #
+    # Maximising power by itself drives k to its minimum, because every added hypothesis tightens
+    # the multiplicity bar for all of them. On the real shape that picks k=2 at 41.5% power and
+    # throws away ten live hypotheses to do it -- which is the opposite of this desk's stated
+    # philosophy: many weak uncorrelated edges, never a narrow search. k * power(k) prices what is
+    # actually wanted, the expected NUMBER of true edges the campaign will surface:
+    #
+    #     k=2  0.83     k=6  0.96     k=10  1.02
+    #     k=11 1.03  <- chosen: every column that brings history is kept
+    #     k=12 0.007 <- the one short column collapses the panel by a factor of 150
+    #
+    # So the rule keeps almost everything and drops only the columns that destroy the panel, which
+    # is the honest reading of the trade-off rather than a preference for a narrow search.
+    order = sorted(range(len(series)), key=lambda i: -len(series[i]))
+    best_k, best_yield, best_power, ladder = len(order), -1.0, 0.0, []
+    for k in range(2, len(order) + 1):
+        keep = order[:k]
+        t_k = min(len(series[i]) for i in keep)
+        design = preflight(k, t_k, ppy=ppy)
+        expected = k * float(design.power_at_target)
+        ladder.append({"k": k, "T": int(t_k),
+                       "power_at_target": round(float(design.power_at_target), 4),
+                       "expected_discoveries": round(expected, 4),
+                       "hurdle_annual_sharpe": round(float(design.hurdle_annual_sharpe), 3)})
+        if expected > best_yield:
+            best_k, best_yield, best_power = k, expected, float(design.power_at_target)
+    keep_idx = sorted(order[:best_k])
+    dropped = [names[i] for i in range(len(names)) if i not in set(keep_idx)]
+    names = [names[i] for i in keep_idx]
+    series = [series[i] for i in keep_idx]
+
     T = min(len(r) for r in series)
     m = np.column_stack([r[-T:] for r in series])
-    print(f"campaign {m.shape[1]} candidates x {m.shape[0]} bars", flush=True)
+    print(f"campaign {m.shape[1]} candidates x {m.shape[0]} bars "
+          f"(panel chosen to maximise expected discoveries {best_yield:.2f} = "
+          f"{m.shape[1]} x {best_power:.1%} at true SR{_TARGET_SR:g}; "
+          f"{len(dropped)} short column(s) dropped)", flush=True)
+    if dropped:
+        print(f"  dropped for insufficient history: {', '.join(dropped[:6])}"
+              f"{'...' if len(dropped) > 6 else ''}", flush=True)
 
     gates = campaign_gate_stats(m)
     if gates is None:
         print("campaign_gate_stats returned None")
         return 1
     sh = np.array([sharpe_ratio(m[:, i]) for i in range(m.shape[1])])
-    ppy = 365.0 * 24.0 * 3600_000.0 / args.bar_ms      # bars per year at this cadence
+    # CAN THIS CAMPAIGN SEE AN EDGE AT ALL -- asked BEFORE the compute is spent, not after.
+    # `n_trials` here is `m.shape[1]`, an ACCIDENT OF GENERATION VOLUME rather than a design
+    # decision, and until now nothing computed what that N did to the campaign's resolving power.
+    # The measured consequence is on the record: at T=310 / N=420 the DSR hurdle is an annualised
+    # Sharpe of 5.04 and the power against a TRUE annual Sharpe of 3 is 2.98%. The desk's
+    # 420-tested / 0-survivors history has been read repeatedly as a fact about the market; it is
+    # substantially a fact about the INSTRUMENT (L1.25 branch 1: "is the instrument broken?").
+    # `informative_null()` is what makes that difference readable in the artifact instead of
+    # arguable after the fact.
+    #
+    # IT NEVER BLOCKS. An UNDERPOWERED verdict LABELS the result; it does not veto the run,
+    # shrink the candidate set, or move a gate -- the campaign still runs and still reports in
+    # full (L1.25a: null streaks throttle nothing; L1.28b(f): acquisition is never cut).
+    design = preflight(int(m.shape[1]), int(m.shape[0]), ppy=ppy)
+    print(f"design: {design.verdict} -- hurdle annSR {design.hurdle_annual_sharpe:.2f}, "
+          f"power at target {design.power_at_target:.1%}, "
+          f"a zero-survivor result {'IS' if design.informative_null() else 'is NOT'} "
+          "evidence about the market", flush=True)
 
     rows: list[dict[str, Any]] = []
     for i, nm in enumerate(names):
-        v = validate(m[:, i], hypothesis=_HYP, n_trials=m.shape[1], sharpe_estimates=sh,
+        # `ppy` is derived from the recorded bar width above -- the same number the row's own
+        # ann_sharpe uses, so the artifact and the verdict can no longer disagree (R0086).
+        v = validate(m[:, i], hypothesis=_HYP, periods_per_year=ppy,
+                     n_trials=m.shape[1], sharpe_estimates=sh,
                      returns_matrix=m, campaign=gates, column=i)
+        # THE FIELDS THAT MAKE A ROW READABLE BY THE SURVIVOR PIPELINE, and their absence made
+        # this campaign's output unreachable. `screen_conversion.is_scored_row` requires an effect
+        # estimate AND a sample size; these rows carried neither in a recognised spelling, so the
+        # ONE dataset the desk owns that the crowd does not produced candidates that could never
+        # be admitted to a forward slot. `sharpe_per_period` is the effect in the same currency
+        # the resolution formula uses -- over n periods a strategy's t-stat is SR_period*sqrt(n),
+        # exactly as an IC's is IC*sqrt(n) -- so the two are interchangeable there and neither is
+        # rescaled to flatter the other.
         rows.append({"name": nm, "survived": bool(v.survived),
+                     "n": int(m.shape[0]), "n_eff": float(m.shape[0]),
+                     "sharpe_per_period": float(sharpe_ratio(m[:, i])),
+                     "ic": float(sharpe_ratio(m[:, i])),
+                     "ic_is_sharpe_per_period": True,
+                     "horizon_ms": int(args.bar_ms),
+                     "periods_per_year": float(ppy),
                      "ann_sharpe": float(sharpe_ratio(m[:, i]) * np.sqrt(ppy)),
                      "failed": [g for g, ok in v.gates.items() if not ok],
                      "dsr": float(v.metrics.dsr), "pbo": float(v.metrics.pbo),
@@ -160,6 +254,12 @@ def main() -> int:
                        "column that decides whether this was worth doing is oos_sharpe: the "
                        "2026-08-01 daily-bar campaign topped out at 0.100 across 129 textbook "
                        "mechanisms."),
+           # THE DESIGN, ON THE ARTIFACT. Without it a zero-survivor campaign reads as a
+           # verdict on the market when it may only be a verdict on the sample. as_dict() rather
+           # than a hand-spelled subset: it is the dataclass's own contract, so se_annual_sharpe,
+           # periods_per_year and the power_curve travel too, and a field added to the design
+           # later cannot go missing here by omission.
+           "design": design.as_dict(),
            "rows": rows}
     _OUT.write_text(json.dumps(report, indent=2), "utf-8")
 

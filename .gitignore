@@ -24,16 +24,59 @@ data/*
 !data/intelligence/video_channel_coverage.json
 !data/intelligence/extreme_return_claims.json
 !data/intelligence/practitioner_corpus.json
+# Stage-A screen results are EVIDENCE named in ledger rows (R0288 cites this path), not generated
+# state: a gitignored evidence path is a dangling citation on every machine but the one that ran it,
+# and §33 requires a named artifact to exist and be non-empty. 12K.
+!data/unlock_event_screen.json
+# The immutable-core seal is EVIDENCE, not state: it must travel with the code it protects, or a
+# fresh clone has nothing to compare the constitution against and the fence degrades to a no-op.
+# Its diff is also the audit trail -- a changed hash in a commit names exactly which law moved.
+!data/constitution_core.lock
+# The Gate 0 sign-off is EVIDENCE of a principal decision, not state: the live
+# guard on the VPS reads it, so it must travel with the repo or the gate never
+# sees it. Revocation = delete the file and commit that too.
+!data/gate0_signoff.json
+# The L1.45 excitation design is the PRE-REGISTERED HYPOTHESIS, not state. An uncommitted
+# pre-registration is not a pre-registration: arms/epsilon/cap could be edited after seeing the
+# fills with no trace, which is the exact confounding the design exists to remove. Its diff IS
+# the audit trail -- a changed arm in a commit says a NEW experiment started, on that date.
+!data/excitation_design.json
+# The execution re-entry conditions are L1.16a EVIDENCE: the named enabling change, the dated
+# probe window and the falsifier for every symbol on the execution denylist. Untracked, a symbol
+# could be quietly re-admitted with no record of what change justified it.
+!data/execution_reentry.json
+# THE GUARD BLOCKS WHEN THIS FILE IS ABSENT, which is the correct direction and exactly why it
+# cannot be untracked: data/* is ignored wholesale, so on a fresh clone or a wiped data/ the
+# conviction sleeve would refuse EVERY entry and read as a quiet market. Committed so its absence
+# is impossible rather than merely unlikely, and so a revised FOMC date is a reviewable diff
+# (the Fed's dates are tentative until the preceding meeting confirms them). R0276.
+!data/event_calendar.json
+# A HIGH-WATER MARK STORED WHERE `rm` RESETS IT IS NOT A FLOOR. data/* is ignored wholesale, so
+# the capability ratchet -- which exists precisely so no aspect can silently fall -- would have
+# had its own history live only on whichever box last ran it. That is the failure mode the
+# coverage ratchet already avoids by living in docs/ (see the note further down), and the
+# reason the constitution ratchet requires a hand-edited dated file to weaken. Committed so a
+# regression has to survive review rather than a lost file.
+!data/CAPABILITY_RATCHET.json
+# THE BASELINE IS THE MEASUREMENT. probe_bybit_archive answers "is the free 345-day Bybit L2
+# archive expiring?" by comparing today's earliest-available date to the one it recorded LAST
+# time. Untracked, a fresh clone or a wiped data/ has no prior, every run reports BASELINE, and
+# the rolling-retention alarm the file exists to raise can never fire -- a detector that cannot
+# fire is the class L0070 is named for. The seeded BTCUSDT prior carries its own provenance.
+!data/bybit_archive_retention.json
 web/*
 !web/index.html
 reports/
 lake/
 docs/EXTERNAL_PANEL_DOSSIER.md
+# commit-audit payload: 425KB of `git log --since=24h` patches, REGENERATED on every run by
+# ops/run_commit_audit.sh. Same class as EXTERNAL_PANEL_DOSSIER.md above -- a derived panel
+# payload, not an artifact. Committing it would add a ~425KB blob per run for zero information
+# (every byte is reconstructable from git itself), and §36 governance rightly applies to what is
+# COMMITTED, so the PRODUCER carries the cadence claim instead (ops/crontab.manifest).
+docs/research/recent_changes.md
 *.exe
 tools/*.exe
-
-# one-shot gate-optimality diagnostic scratch (6MB pickle + root-level probes)
-_audit_prepared.pkl
 
 # Coverage reports are MEASUREMENTS, not records. The ratcheted high-water marks live in
 # docs/research/COVERAGE_RATCHET.json and are committed; the raw report is regenerated on every
@@ -55,3 +98,31 @@ scripts/_deadlink_probe_caller.py
 # FAILS that test on every fresh clone (it asserts the probe is absent before planting one). The
 # ignore makes that race unrepeatable.
 libs/_orphan_probe_do_not_import.py
+# one-shot gate-optimality diagnostic scratch (6MB pickle + root-level probes)
+_audit_prepared.pkl
+docs/audit_shards/
+
+# per-box role (primary|research) -- R0107: never committed, each box declares its own
+ops/role
+
+# STRAY-CWD ARTIFACTS. libs/ops/fresh.py and every organ write cwd-RELATIVE paths BY DESIGN --
+# see the _root() docstring: guessing an install root was itself a bug of this module's class,
+# and all 151 cron lines pin `cd "$QUANT_ROOT"`. So a data/ tree under scripts/ can only be
+# litter from something invoked with the wrong cwd (observed 2026-08-05 from a test run:
+# scripts/data/freshness_contracts.jsonl + .fresh_markers/). It is ignored rather than
+# committed because committing one would make a phantom SECOND freshness ledger permanent --
+# exactly the two-sources-of-truth failure fresh.py exists to close.
+# NARROW ON PURPOSE: libs/data/ is real source (28 tracked files) and tests/data/ holds
+# fixtures, so a `**/data/` rule would hide both.
+/scripts/data/
+
+# PRINCIPAL DROP -- NEVER COMMIT. data/inbox holds material the principal supplies by hand from
+# CLOSED sources: private WeChat groups, Telegram channels, paid substacks, login-walled pages.
+# `data/*` above already covers it; this entry is explicit and separate because the failure here
+# is IRREVERSIBLE -- publishing a private group's contents to a git remote cannot be undone by a
+# later commit, and a future `!data/<something>` exception added in good faith for an artifact
+# could otherwise widen the hole silently. The scored OUTPUT (reports/principal_drop.json) is
+# ignored too: it quotes up to 600 characters of the source material verbatim.
+data/inbox/
+data/inbox/**
+reports/principal_drop.json

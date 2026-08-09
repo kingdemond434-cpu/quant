@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 
 from libs.autodiscovery.models import Family, Hypothesis
-from libs.autodiscovery.validation import campaign_pbo_rc, validate
+from libs.autodiscovery.validation import campaign_gate_stats, validate
 from libs.data.cleaning import DEFAULT_CAPS, guard_close
 from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
 from libs.data.lake import Layer, ParquetLake
@@ -35,6 +35,7 @@ from libs.research.crossasset import (
     xsec_momentum_returns,
     xsec_momentum_weights,
 )
+from libs.research.event_density import forward_verdict
 from libs.validation.dsr import sharpe_ratio
 from libs.validation.economic_prior import MechanismType
 
@@ -78,13 +79,8 @@ def _ann(r: np.ndarray) -> float:
 
 
 def _verdict(fwd_days: int, fwd: float, bt: float) -> str:
-    if fwd_days < 90:
-        return f"ACCUMULATING ({fwd_days}/90+ days of forward evidence)"
-    if fwd < 0:
-        return "FAILING FORWARD -> kill candidate"
-    if fwd >= 0.5 and fwd >= 0.5 * bt:
-        return "ON TRACK -> eligible for TINY live on human approval (governance gate)"
-    return "WEAK forward -> continue shadow, do not deploy"
+    """EVIDENCE, NOT CALENDAR (L1.48) -- shared gate, so five runners cannot drift apart."""
+    return forward_verdict(fwd_days, fwd, bt, periods_per_year=_PPY)
 
 
 def main() -> None:
@@ -97,26 +93,36 @@ def main() -> None:
     r_mom = xsec_momentum_returns(close, cost, lookback=mlb, q=q, band=band)
     r_combo = 0.5 * r_trend + 0.5 * r_mom
 
-    # Gauntlet on the combo (peers = the two sub-books for PBO/RC)
+    # Gauntlet on the combo (peers = the two sub-books for the multiplicity stats)
     matrix = np.column_stack([r_trend, r_mom, r_combo])
     sharpes = np.array([sharpe_ratio(x[x != 0.0]) for x in (r_trend, r_mom, r_combo)])
-    pbo, rc = campaign_pbo_rc(matrix)
+    # per-candidate gates (gap #87 flip, principal-ruled 2026-07-29); thresholds unchanged
+    campaign = campaign_gate_stats(matrix)
     active = r_combo[r_combo != 0.0]
     verdict_gauntlet = validate(
         active, hypothesis=Hypothesis(
             family=Family.CROSS_ASSET, subtype="trend+momentum combo", symbol="MT5_XASSET",
             params={}, mechanism=MechanismType.RISK_PREMIUM,
             edge_source="cross-asset trend + x-sec momentum (equal risk, costed)",
-            failure_modes=_FAIL), n_trials=3, sharpe_estimates=sharpes,
-        returns_matrix=matrix, pbo=pbo, rc=rc)
+            failure_modes=_FAIL), periods_per_year=_PPY,   # D1 MT5 session bars, 252/yr (R0086)
+        n_trials=3, sharpe_estimates=sharpes,
+        returns_matrix=matrix, campaign=campaign, column=2)  # r_combo = matrix column 2
 
     # Forward shadow split
     dates = close.index
     state = json.loads(_STATE.read_text("utf-8")) if _STATE.exists() else {}
     if "shadow_start" not in state:
         state["shadow_start"] = dates[-1].isoformat()
-        _STATE.parent.mkdir(parents=True, exist_ok=True)
-        _STATE.write_text(json.dumps(state), "utf-8")
+    # RECORD THE RUN, every pass. The file used to be written only on the first run, so a clock
+    # scheduled daily left no trace of having run and check_organ_liveness -- which reads this
+    # artifact's mtime against the declared cadence -- reported STALE even immediately after a
+    # successful pass. That is how this clock sat dead for 42 days while still consuming one of
+    # the 12 capped Holm slots. shadow_start is NOT touched: it anchors the forward/backtest
+    # split, so rewriting it would silently move the in-sample boundary.
+    state["last_run"] = datetime.now(tz=UTC).isoformat()
+    state["last_run_rows"] = len(dates)
+    _STATE.parent.mkdir(parents=True, exist_ok=True)
+    _STATE.write_text(json.dumps(state, indent=1), "utf-8")
     shadow_start = pd.Timestamp(state["shadow_start"])
     is_fwd = dates >= shadow_start
     bt_sharpe, fwd_sharpe = _ann(r_combo[~is_fwd]), _ann(r_combo[is_fwd])

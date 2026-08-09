@@ -190,3 +190,100 @@ post-mortems with mechanism detail the English crowd never read).
    only an edge where a discontinuity turns timing into money. The probe must name the
    discontinuity before the recording, or it is cadence trivia.
 [§33: wired -> docs/graveyard.md]
+---
+
+## SESSION SUMMARY — 2026-07-30 (standing daily run, uncapped budget)
+
+- **STEP 0 watchlist review:** prior watchlist held ZERO entries (07-19 session) — nothing to
+  promote/hold/drop.
+- **Primary work (resume-first):** finished the 07-28 dying run's screen-on-discovery obligation
+  end-to-end. On the way through, PROVED the Upbit daily-candle boundary is UTC-midnight
+  (invalidating the 07-29 canonical keying + the kimchi retraction's stated mechanism — F0015,
+  R0067/R0068), verified the orphan per-asset KR premium series by exact reproduction (corr
+  1.0000), and ran the FULL pre-registered screen program: 5 cells on 8.2y 3-asset constructs +
+  L1.16a kimchi realignment re-test + 175-asset × 400d panel family (pre-declared).
+- **Cards kept (tradeable, survived graveyard + EV):** 0 — the panel family verdict is an honest
+  null at recent-era width; nothing cleared the bar. Kimchi's kill STANDS on corrected grounds
+  (full-depth same-instant IC +0.0012; original +0.148 was a thin-window read).
+- **Era archaeology (8btc tranche):** 4 threads mined to capture depth — OKCoin's 2014-06 retail
+  iceberg/TWAP launch (CZ-era), 2015 stop-cluster leakage suspicion, zero-fee era end + rail
+  sequencing. Era knowledge routed; no cards (all map to adjudicated mechanism families).
+- **Expansion:** KR per-coin premium tracker ecosystem (6 dashboards) catalogued + KR lexicon
+  (6 terms) seeded into the operator library. §39 advance: dawsbot/eth-labels VERIFIED (MIT,
+  169k labels, free API) — enabling ingredient for the netflow graveyard re-entry condition.
+
+## WATCHLIST (max 5 — seat memory)
+
+1. **kr_perasset_premium (dispersion / relative-tilt constructs)** — SINGLE TRIGGER: R0069
+   adjudication. If the brain ranks the full-depth panel backfill (Upbit to 2017-09, n_eff ~50k)
+   worth the fetch, that screen decides the axis permanently; family-positive → pre-register
+   forward clock per §26.5. Do NOT re-screen partial windows or new constructions meanwhile
+   (forking-paths guard). Mechanism: per-asset rail equilibrium (8btc tid 63748, 2017) + KR
+   retail per-coin premium attention (6 live dashboards). Current state: recent-era family null;
+   8.2y 3-asset cells could-not-tell with clean decontamination.
+
+---
+
+## RU FRONTIER MINER — session 1 (2026-08-01) — cards + the family this seat opened
+
+**CARDS KEPT (tradeable, survived graveyard + EV): 0.** Honest null on tradeable mechanisms, and
+the null is not for want of material — it is because the RU corpus's two dominant families are
+both already adjudicated here (`retail_crossvenue_scan_arb` → graveyarded this session;
+`statarb_kalman_hedge_ratio_refinement` → graveyarded this session). What the session actually
+produced is a **family prior** for the desk's only never-tested family, and a demonstrated defect.
+
+### FAMILY PRIOR — STATISTICAL-ARBITRAGE (`data/strategy_coverage.json` state:
+### MENTIONED-NEVER-TESTED, n_tested=0). First real evidence base, from RU practitioners.
+This family has **1 ledger mention and nothing ever in the graveyard** — the desk has never tested
+it. RU retail algo culture is the most statarb-saturated community in any region the desk covers
+(MOEX calendar spreads, SBRF/SBPR pairs, cointegration scanners), so it is the natural place to
+source a prior cheaply before spending a forward slot. **Not a card — a prior. Nothing here is
+promotable and no clock is requested.**
+
+| datum | value | source |
+|---|---|---|
+| gross return, 80 cointegrated pairs | **4.78%/yr per contract** | smart-lab (cointegration basics tranche) |
+| practitioner capacity ceiling per pair | **0.3–1.0M RUB ≈ $3–11k** before market makers take it | smart-lab 707565 comment (SaOLin) |
+| named binding constraint | **slippage + colocation**, not signal quality | smart-lab 707565 (author's own conclusion) |
+| bull-case claim (contested, unverified) | 50–100%/yr on SBRF-SBPR | smart-lab 707565 comment (Robinzon4) |
+| estimator sophistication premium | **≈ zero** — Kalman ≈ polynomial ≈ OLS+σ | smart-lab 936066 reply chain |
+
+**THE READ, and it cuts both ways — this is the honest part.**
+- **AGAINST:** a 4.78%/yr gross per contract against a family whose practitioners unanimously name
+  slippage as the killer is a thin starting point, and MOEX equity-pair statarb does not transfer
+  to crypto instruments the desk can trade.
+- **FOR, and it is a genuine §42 signal:** the practitioner capacity ceiling of **$3–11k per pair**
+  is not a reason to decline — under L1.18a it is *exactly* the band this desk exists to occupy,
+  and it is the reason funds cannot be here. "Market makers eat it above 1M RUB" is a statement
+  that the edge survives *below* 1M RUB. A fund reads that as uninvestable; a $4.5k book reads it
+  as a quota.
+- **THE DECIDING GAP:** every RU number above is **gross, MOEX-instrument, and equity-pair**. The
+  desk has no measurement of crypto-instrument statarb costs, and the desk's own record says
+  costs are where families die (`illiquidity_premium`, 96.2% frictions-family replication failure).
+- **THEREFORE:** the prior does NOT justify a forward slot and I am not requesting one. It justifies
+  exactly one cheap thing — that when the desk next tests STATISTICAL-ARBITRAGE, it spends the
+  budget on **cost/capacity measurement, not on the estimator**, because the RU corpus has already
+  spent a decade proving the estimator is not the binding constraint. Ledgered as **R0296**.
+
+### RU PREMIUM AXIS — CLOSED, do not re-open without a named enabling change (L1.16a)
+Item 3 of this session tested the desk's own **barrier-height law** at its most extreme
+out-of-sample point. Result: **the law survives, and the axis is closed on two independent
+grounds.**
+- **Measured:** RU P2P USDT/RUB bid-ask spread runs **~1.5–2.5%** (2025) — the widest of any region
+  in the desk's dataset (KR premium std 1.42% / JP 0.37% / TR 0.23% / Coinbase 0.06%). Barrier
+  height predicted the ordering correctly, out of sample. **But note the units differ** — 1.5–2.5%
+  is a *bid-ask spread*, i.e. a **transaction cost paid to the merchant who holds the rail**, not a
+  premium std the desk could harvest. That distinction is the whole finding: at the extreme of the
+  barrier-height law, the rent is so large it is charged *as spread*, and the desk would be the
+  payer, not the collector.
+- **§13 HARD STOP, and it is dispositive on its own:** the principal RU venue in this axis
+  (Garantex) is **OFAC-sanctioned**. Under §13 legitimacy this is a hard stop, never a hurdle — no
+  data collection, no execution, no exception, in any language. The axis is unhuntable regardless
+  of its economics.
+- **RE-ENTRY CONDITION:** none that this desk can satisfy. Recorded so no future seat re-spends on
+  "the Russia premium is huge, why aren't we there" — it is huge *because* it is unreachable, which
+  is the barrier-height law restating itself.
+- **DIASPORA (standing question, answered for this region):** post-2022 RU flow moved to **P2P/USDT
+  rails and sanctioned/offshore venues** — i.e. into exactly the leg the §13 gate forbids. There is
+  no followable diaspora here for this desk. This is a genuine dead end, and naming it as one is
+  the deliverable.

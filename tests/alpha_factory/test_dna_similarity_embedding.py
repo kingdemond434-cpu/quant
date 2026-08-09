@@ -7,8 +7,8 @@ from tests.alpha_factory.conftest import make_dna
 
 from libs.alpha_factory.alpha_dna import build_alpha_dna, dna_distance
 from libs.alpha_factory.alpha_embedding_engine import AlphaEmbeddingEngine
-from libs.alpha_factory.feature_drift_engine import FeatureDriftEngine
 from libs.alpha_factory.strategy_similarity_engine import StrategySimilarityEngine
+from libs.self_improvement.drift_detector import AlphaDriftDetector
 
 
 def test_build_dna_and_distance() -> None:
@@ -83,10 +83,13 @@ def test_embedding_zero_vectors_have_zero_similarity() -> None:
 
 
 def test_feature_drift_detection() -> None:
-    eng = FeatureDriftEngine(psi_threshold=0.2)
+    eng = AlphaDriftDetector(psi_threshold=0.2)
     rng = np.random.default_rng(1)
     stable = eng.detect(rng.normal(0, 1, 2000), rng.normal(0, 1, 2000))
     assert not stable.drifted
     shifted = eng.detect(rng.normal(0, 1, 2000), rng.normal(4, 1, 2000))
     assert shifted.drifted
-    assert "revalidate" in shifted.recommendation
+    # AlphaDriftDetector says "trigger revalidation" where the retired FeatureDriftEngine
+    # duplicate said "revalidate" -- same behaviour, one wording. Matching the stem keeps the
+    # assertion about the RECOMMENDATION rather than about a phrase.
+    assert "revalidat" in shifted.recommendation

@@ -172,3 +172,8 @@ recorded in `max_audit.py` because they need code to be real. Zero remain ungove
 | Artifact | Class | Rationale | Staleness floor |
 |---|---|---|---|
 | `docs/research/SURVIVOR_YIELD_AUDIT.md` | **TERMINAL** | The repo audit that a forty-section mandate required BEFORE building, and the evidence for the thirty-five sections deliberately not built. It is terminal because it is a record of one decision at one moment: the classification was true against 502 source files on 2026-08-09 and re-running the audit later produces a NEW record, never an edit to this one. Refreshing it in place would destroy the only thing it is for — showing what was already there when the decision was taken. The live successor state is `docs/research/COMPLETION_LEDGER.json`, which is cadenced and does move. | never |
+### Added 2026-08-09 (controller convergence mandate, classified on arrival)
+
+| Artifact | Class | Rationale | Staleness floor |
+|---|---|---|---|
+| `docs/research/TIER1_CONTROLLER_MANDATE.md` | **DOCTRINE** | Principal-supplied standing controller law shared by Claude and Codex. It governs continuation, survivor conversion, open-world coverage, risk/statistical invariants, and atomic handoff of one persistent operation. It changes only by a later principal mandate; a cadence must execute it through the controller cycle, never rewrite it to look current. | never |

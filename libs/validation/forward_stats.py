@@ -66,13 +66,31 @@ def nw_tstat(returns: np.ndarray, *, ppy: float = _PPY) -> float:
     return round(sharpe_ann * math.sqrt(n_eff / ppy), 2)
 
 
+def holm_alpha(m: int, rank: int = 1, *, alpha: float = 0.05) -> float:
+    """The per-candidate significance level Holm allots to the rank-th best of m.
+
+    Split out of `holm_bar` so the family-wise alpha has exactly ONE definition on the desk.
+    `holm_bar` converts this level into a FIXED-SAMPLE t threshold; the anytime-valid e-process
+    converts the same level into a wealth threshold 1/alpha (Ville). Two gates, one alpha -- and
+    because they now read it from the same function they cannot drift apart, which is the failure
+    that let `run_axis_shadows` count m four different ways before slot_registry existed.
+    """
+    m, rank = max(1, int(m)), max(1, int(rank))
+    return alpha / max(1, m - min(rank, m) + 1)
+
+
 def holm_bar(m: int, rank: int = 1, *, alpha: float = 0.05) -> float:
     """Holm step-down one-sided t threshold for the rank-th best of m cohort candidates.
 
     rank 1 = strongest candidate (bar alpha/m), rank m = weakest (bar alpha). The
     pre-registered PRIMARY hypothesis is exempt (use the plain 1.65 bar); this applies
     to the concurrently-monitored candidate cohort only.
+
+    VALID FOR ONE LOOK. This threshold is calibrated for a single fixed-sample test, so a caller
+    that re-evaluates it every day and stops at the first crossing is NOT running at `alpha` --
+    measured on the desk's own cohort (m=12, 180-day horizon, 1200 null paths): a single look
+    lands at 0.0042 against a nominal 0.00417, and daily peeking at 0.0367, i.e. 8.8x nominal.
+    Peek-safe callers must pair this with the e-process in libs.research.anytime_valid at the
+    matching `holm_alpha`; see scripts/run_axis_shadows.py for the wiring.
     """
-    m, rank = max(1, int(m)), max(1, int(rank))
-    adj = alpha / max(1, m - min(rank, m) + 1)
-    return round(NormalDist().inv_cdf(1.0 - adj), 2)
+    return round(NormalDist().inv_cdf(1.0 - holm_alpha(m, rank, alpha=alpha)), 2)

@@ -1,0 +1,250 @@
+{
+    "_":  "Seed sources for the unified GPT Hunter missions: transcript, extreme-return, public-strategy and elite external-intelligence. Seeds are not a ceiling; discovered related sources persist in shared state. Kimi and Claude miners are independent and unchanged.",
+    "sources":  [
+                    {
+                        "name":  "Lewis Jackson",
+                        "url":  "https://www.youtube.com/@LewisWJackson",
+                        "kind":  "youtube",
+                        "language":  "en",
+                        "surface":  "youtube"
+                    },
+                    {
+                        "name":  "Chart Fanatics",
+                        "url":  "https://www.youtube.com/@ChartFanatics",
+                        "kind":  "youtube",
+                        "language":  "en",
+                        "surface":  "youtube"
+                    },
+                    {
+                        "name":  "Quantified Strategies",
+                        "url":  "https://www.youtube.com/@QuantifiedStrategies",
+                        "kind":  "youtube",
+                        "language":  "en",
+                        "surface":  "youtube"
+                    },
+                    {
+                        "name":  "Better System Trader",
+                        "url":  "https://www.youtube.com/@BetterSystemTrader",
+                        "kind":  "youtube",
+                        "language":  "en",
+                        "surface":  "youtube"
+                    },
+                    {
+                        "name":  "Top Traders Unplugged",
+                        "url":  "https://www.youtube.com/@TopTradersUnplugged",
+                        "kind":  "youtube",
+                        "language":  "en",
+                        "surface":  "youtube"
+                    },
+                    {
+                        "name":  "Desire To Trade",
+                        "url":  "https://www.youtube.com/@DesireToTrade",
+                        "kind":  "youtube",
+                        "language":  "en",
+                        "surface":  "youtube"
+                    },
+                    {
+                        "name":  "StrategyQuant",
+                        "url":  "https://www.youtube.com/@StrategyQuant",
+                        "kind":  "youtube",
+                        "language":  "en",
+                        "surface":  "youtube"
+                    },
+                    {
+                        "name":  "Andrea Unger",
+                        "url":  "https://www.youtube.com/@AndreaUnger",
+                        "kind":  "youtube",
+                        "language":  "en",
+                        "surface":  "youtube"
+                    },
+                    {
+                        "name":  "Kevin Davey",
+                        "url":  "https://www.youtube.com/@KevinDavey",
+                        "kind":  "youtube",
+                        "language":  "en",
+                        "surface":  "youtube"
+                    },
+                    {
+                        "name":  "Saleh",
+                        "url":  "https://www.youtube.com/@saleh.m",
+                        "kind":  "youtube",
+                        "language":  "en",
+                        "surface":  "youtube"
+                    },
+                    {
+                        "name":  "Unbiased Trading Goshawk",
+                        "url":  "https://www.youtube.com/@UnbiasedTradingGoshawk",
+                        "kind":  "youtube",
+                        "language":  "en",
+                        "surface":  "youtube"
+                    },
+                    {
+                        "name":  "AI Pathways",
+                        "url":  "https://www.youtube.com/@AIPathwaysChannel",
+                        "kind":  "youtube",
+                        "language":  "en",
+                        "surface":  "youtube"
+                    },
+                    {
+                        "name":  "IQ Capital",
+                        "url":  "https://www.youtube.com/@IQCapital_io",
+                        "kind":  "youtube",
+                        "language":  "en",
+                        "surface":  "youtube"
+                    },
+                    {
+                        "name":  "Great Goat",
+                        "url":  "https://www.youtube.com/@Great_goat-b4y4y",
+                        "kind":  "youtube",
+                        "language":  "en",
+                        "surface":  "youtube"
+                    },
+                    {
+                        "name":  "DaviddTech",
+                        "url":  "https://www.youtube.com/@DaviddTech",
+                        "kind":  "youtube",
+                        "language":  "en",
+                        "surface":  "youtube"
+                    },
+                    {
+                        "name":  "Man Institute",
+                        "url":  "https://www.man.com/maninstitute",
+                        "kind":  "site",
+                        "language":  "en",
+                        "surface":  "site"
+                    },
+                    {
+                        "name":  "AQR Research",
+                        "url":  "https://www.aqr.com/Insights/Research",
+                        "kind":  "site",
+                        "language":  "en",
+                        "surface":  "site"
+                    },
+                    {
+                        "name":  "arXiv q-fin Trading",
+                        "url":  "https://export.arxiv.org/api/query?search_query=cat:q-fin.TR\u0026sortBy=submittedDate\u0026sortOrder=descending\u0026max_results=50",
+                        "kind":  "atom",
+                        "language":  "en",
+                        "surface":  "atom"
+                    },
+                    {
+                        "name":  "arXiv Market Microstructure",
+                        "url":  "https://export.arxiv.org/api/query?search_query=cat:q-fin.MF\u0026sortBy=submittedDate\u0026sortOrder=descending\u0026max_results=50",
+                        "kind":  "atom",
+                        "language":  "en",
+                        "surface":  "atom"
+                    },
+                    {
+                        "name":  "arXiv Portfolio Management",
+                        "url":  "https://export.arxiv.org/api/query?search_query=cat:q-fin.PM\u0026sortBy=submittedDate\u0026sortOrder=descending\u0026max_results=50",
+                        "kind":  "atom",
+                        "language":  "en",
+                        "surface":  "atom"
+                    },
+                    {
+                        "name":  "Flashbots Writings",
+                        "url":  "https://writings.flashbots.net/",
+                        "kind":  "site",
+                        "language":  "en",
+                        "surface":  "site"
+                    },
+                    {
+                        "name":  "Flashbots Research Collective",
+                        "url":  "https://collective.flashbots.net/",
+                        "kind":  "site",
+                        "language":  "en",
+                        "surface":  "site"
+                    },
+                    {
+                        "name":  "Ethereum Research Latest",
+                        "url":  "https://ethresear.ch/latest.json",
+                        "kind":  "site",
+                        "language":  "en",
+                        "surface":  "site"
+                    },
+                    {
+                        "name":  "Paradigm Research",
+                        "url":  "https://www.paradigm.xyz/writing",
+                        "kind":  "site",
+                        "language":  "en",
+                        "surface":  "site"
+                    },
+                    {
+                        "name":  "Jump Crypto Research",
+                        "url":  "https://jumpcrypto.com/writing/",
+                        "kind":  "site",
+                        "language":  "en",
+                        "surface":  "site"
+                    },
+                    {
+                        "name":  "Wintermute Research",
+                        "url":  "https://www.wintermute.com/research",
+                        "kind":  "site",
+                        "language":  "en",
+                        "surface":  "site"
+                    },
+                    {
+                        "surface":  "bilibili",
+                        "url":  "https://search.bilibili.com/all?keyword=%E9%87%8F%E5%8C%96%E4%BA%A4%E6%98%93",
+                        "name":  "Bilibili Quant Search",
+                        "language":  "zh",
+                        "kind":  "site"
+                    },
+                    {
+                        "surface":  "gitee",
+                        "url":  "https://gitee.com/explore/quant",
+                        "name":  "Gitee Quant Projects",
+                        "language":  "zh",
+                        "kind":  "site"
+                    },
+                    {
+                        "surface":  "zhihu",
+                        "url":  "https://www.zhihu.com/topic/19559052/hot",
+                        "name":  "Zhihu Quant Topic",
+                        "language":  "zh",
+                        "kind":  "site"
+                    },
+                    {
+                        "surface":  "github",
+                        "url":  "https://github.com/topics/algorithmic-trading",
+                        "name":  "GitHub Algorithmic Trading",
+                        "language":  "multilingual",
+                        "kind":  "site"
+                    },
+                    {
+                        "surface":  "huggingface",
+                        "url":  "https://huggingface.co/datasets?search=market+microstructure",
+                        "name":  "Hugging Face Finance Datasets",
+                        "language":  "multilingual",
+                        "kind":  "site"
+                    },
+                    {
+                        "surface":  "kaggle",
+                        "url":  "https://www.kaggle.com/datasets?search=algorithmic+trading",
+                        "name":  "Kaggle Trading Datasets",
+                        "language":  "multilingual",
+                        "kind":  "site"
+                    },
+                    {
+                        "surface":  "forum",
+                        "url":  "https://www.quantconnect.com/forum/discussions/1/research/",
+                        "name":  "QuantConnect Community Research",
+                        "language":  "en",
+                        "kind":  "site"
+                    },
+                    {
+                        "surface":  "forum",
+                        "url":  "https://habr.com/ru/search/?q=%D0%B0%D0%BB%D0%B3%D0%BE%D1%82%D1%80%D0%B5%D0%B9%D0%B4%D0%B8%D0%BD%D0%B3",
+                        "name":  "Habr Algorithmic Trading",
+                        "language":  "ru",
+                        "kind":  "site"
+                    },
+                    {
+                        "surface":  "developer-community",
+                        "url":  "https://qiita.com/tags/%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0%E5%8F%96%E5%BC%95",
+                        "name":  "Qiita Algorithmic Trading",
+                        "language":  "ja",
+                        "kind":  "site"
+                    }
+                ]
+}

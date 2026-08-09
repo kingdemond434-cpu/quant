@@ -90,6 +90,21 @@ SYSTEM = (
 )
 
 
+def _doctrine(role: str = "") -> str:
+    """Runtime doctrine preamble. One source (scripts/doctrine.py); never a pasted copy."""
+    try:
+        from scripts.doctrine import preamble
+        return preamble(role)
+    except Exception:  # blind-except intentional (BLE001)
+        try:
+            import sys as _s
+            _s.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent))
+            from doctrine import preamble  # type: ignore
+            return preamble(role)
+        except Exception:  # blind-except intentional (BLE001)
+            return ""          # never break a caller over a preamble
+
+
 def _ask(base, key, model, messages, timeout=150.0):
     body = json.dumps({"model": model, "max_tokens": 3000, "temperature": 0.3,
                        # DEPTH IS MEASURED, NOT ASSUMED. "high" is the middle rung of a ladder
@@ -222,7 +237,7 @@ def main() -> None:
             # instrument: it asks for rankings and removals, and extract_code() on a
             # ten-round concatenation would pick a block from the wrong round.
             # Breadth here comes from more TARGETS, not more rounds per target.
-            msgs = [{"role": "system", "content": SYSTEM},
+            msgs = [{"role": "system", "content": _doctrine("collector_author") + SYSTEM},
                     {"role": "user", "content": user}]
             return t, seat, extract_code(_ask(provs[seat]["base_url"],
                                               provs[seat]["key"], seat, msgs)), None

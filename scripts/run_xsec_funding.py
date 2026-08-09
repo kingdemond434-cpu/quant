@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 
 from libs.autodiscovery.models import Family, Hypothesis
-from libs.autodiscovery.validation import campaign_pbo_rc, validate
+from libs.autodiscovery.validation import campaign_gate_stats, validate
 from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
 from libs.data.lake import Layer, ParquetLake
 from libs.data.timeframe import Timeframe
@@ -29,6 +29,9 @@ _CRYPTO = Path("data/lake/bronze/crypto")
 _OUT = Path("reports/xsec_funding")
 _COST = 5e-4               # per-side perp taker + slippage
 _MIN_NAMES = 12            # need a real cross-section each day
+# D1 crypto bars, and perps trade 24/7 -- so 365 bars a year, not the 6240 hourly constant this
+# script's verdicts were annualised with until R0086 (a 4.135x inflation of ann_sharpe_metric).
+_PPY = 365.0
 _FAIL = ["funding dispersion compresses", "alt de-listings / illiquidity",
          "short borrow constraints", "correlated crypto crash overwhelms neutrality"]
 
@@ -90,19 +93,22 @@ def main() -> None:
     min_len = min(len(r) for _, r in series)
     matrix = np.column_stack([r[-min_len:] for _, r in series])
     sharpes = np.array([sharpe_ratio(r[r != 0.0]) for _, r in series], dtype="float64")
-    pbo, rc = campaign_pbo_rc(matrix)
+    # per-candidate gates (gap #87 flip, principal-ruled 2026-07-29); thresholds unchanged
+    campaign = campaign_gate_stats(matrix)
 
     survivors = 0
     results = []
-    for (name, rets), spr in zip(series, sharpes, strict=True):
+    # enumerate order == column_stack order over `series`, so `col` is the variant's matrix column
+    for col, ((name, rets), spr) in enumerate(zip(series, sharpes, strict=True)):
         active = rets[rets != 0.0]
         if len(active) >= 250:
             v = validate(active, hypothesis=Hypothesis(
                 family=Family.CARRY, subtype=f"xsec_funding_{name}", symbol="CRYPTO_XSEC",
                 params={}, mechanism=MechanismType.RISK_PREMIUM,
                 edge_source="cross-sectional funding dispersion", failure_modes=_FAIL),
+                periods_per_year=_PPY,
                 n_trials=len(series), sharpe_estimates=sharpes,
-                returns_matrix=matrix, pbo=pbo, rc=rc)
+                returns_matrix=matrix, campaign=campaign, column=col)
             survived, reason, metrics = v.survived, v.rejection_reason, v.metrics
         else:
             survived, reason, metrics = False, f"n={len(active)}<250", None

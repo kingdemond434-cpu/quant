@@ -69,15 +69,30 @@ def _bleeding_symbols(root: Path) -> list[dict[str, Any]]:
         return []
     rows = data.get("worst_symbols")
     if not isinstance(rows, list):
-        return []
+        rows = []
     out = []
+    seen: set[str] = set()
     for r in rows:
         try:
             if int(r.get("n", 0)) >= 5 and float(r.get("bps", 0.0)) <= -20.0:
                 out.append({"symbol": str(r.get("symbol")), "n": int(r.get("n", 0)),
                             "bps": float(r.get("bps", 0.0))})
+                seen.add(str(r.get("symbol")))
         except (TypeError, ValueError):
             continue
+    # PERSISTENT HALF OF THE SAME DENYLIST (2026-08-05). `worst_symbols` is a 14-day ROLLING
+    # window, so it empties while the book is paused and this fence would report ZERO exclusions
+    # while the executor was still denying -- the exact "fence and gate disagree about who is
+    # blocked" failure this function's docstring promises cannot happen. It could, because the
+    # executor now also denies on a recorded re-entry row (see `_structurally_bleeding`), which
+    # outlives the window. Read both, so the fence keeps measuring the desk it audits.
+    for symbol, row in _reentry_state(root).items():
+        if symbol.startswith("_") or not isinstance(row, dict) or symbol in seen:
+            continue
+        verdict = row.get("original_verdict")
+        verdict = verdict if isinstance(verdict, dict) else {}
+        out.append({"symbol": symbol, "n": int(verdict.get("n", 0) or 0),
+                    "bps": float(verdict.get("bps", 0.0) or 0.0)})
     return out
 
 

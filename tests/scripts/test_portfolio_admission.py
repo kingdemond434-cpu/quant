@@ -109,3 +109,27 @@ def test_THE_CYCLE_RUNS_IT() -> None:
     cyc = Path("ops/run_research_cycle.sh").read_text("utf-8")
     assert "run_portfolio_admission.py" in cyc
     assert "run_intelligence_cycle.py" in cyc and "run_max_push.py" in cyc
+
+
+def test_NAN_ROWS_ARE_MISSING_EVIDENCE_NOT_A_ZERO_SHARPE(
+        tmp_path, monkeypatch) -> None:
+    """The live sidecar is sparse by construction. np.mean over it is NaN, and the old code
+    converted that to a false rejection with printed Sharpe +0.000 for every real candidate."""
+    pnl = _pnl(
+        tmp_path,
+        edge=np.array([np.nan, 0.01, np.nan, 0.02, -0.001, np.nan]),
+        __timestamp_ns=np.arange(6),
+        __symbol=np.array(["", "BTC", "", "ETH", "BTC", ""]),
+    )
+    out = tmp_path / "o.json"
+    monkeypatch.setattr(sys, "argv", [
+        "run_portfolio_admission.py", "--pnl", str(pnl),
+        "--incumbents", str(tmp_path / "none.npz"), "--out", str(out),
+    ])
+    PA.main()
+    rep = json.loads(out.read_text())
+    assert rep["survivors_tested"] == 1, "provenance arrays are not candidate streams"
+    assert rep["PORTFOLIO_CONTRIBUTING"] == 1
+    assert rep["rows"][0]["finite_observations"] == 3
+    assert rep["rows"][0]["missing_fraction"] == 0.5
+    assert "+0.000" not in rep["rows"][0]["why"]

@@ -50,6 +50,9 @@ class LivePortfolio:
     spot_realized: float = 0.0     # banked PnL of CLOSED spot legs (lives in the spot wallet)
     spot_usdt: float = 0.0
     funding: float = 0.0
+    #: False when the executor could not MEASURE funding (venue outage) -- the 0.0 in `funding`
+    #: is then an absence, not a harvest of zero, and every surface must say so (R0013).
+    funding_measured: bool = True
     carries: list[dict[str, Any]] = field(default_factory=list)
     mcurve: list[list[Any]] = field(default_factory=list)
     trades: list[dict[str, Any]] = field(default_factory=list)
@@ -157,6 +160,7 @@ class LivePortfolio:
             spot_realized=round(_num(state.get("realized_spot_pnl")), 2),
             spot_usdt=round(spot.usdt_balance(), 2) if (spot and spot.has_keys()) else 0.0,
             funding=round(_num(cc.get("funding_harvested")), 2),
+            funding_measured=bool(cc.get("funding_measured", True)),
             carries=cc.get("carries", []) if isinstance(cc.get("carries"), list) else [],
             mcurve=curve.get("mcurve", []) if isinstance(curve.get("mcurve"), list) else [],
             trades=trades if isinstance(trades, list) else [],
@@ -178,6 +182,7 @@ class LivePortfolio:
                 "n_closed_trades": self.n_closed,
                 "deployed_sharpe": self.deployed_sharpe,
                 "funding": self.funding,
+                "funding_measured": self.funding_measured,
                 "n_carries": len(self.carries),
             },
             "note": ("Single source of truth for DEPLOYED capital. Sharpe here is from the live "

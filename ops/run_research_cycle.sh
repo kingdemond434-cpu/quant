@@ -41,6 +41,7 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   "$PY" scripts/check_risk_kernel.py || echo "RISK-KERNEL DRIFT -- review before trusting this cycle"
   OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 nice -n 15 "$PY" scripts/build_bars.py
   bash ops/run_study_on_vps.sh
+  nice -n 15 "$PY" scripts/study_status.py || true
   # The ladder runs even when the sweep found nothing: it also reports what is ALREADY live, and a
   # cycle that skipped it on a null day would go silent exactly when a live record needs reading.
   # THE REVIEW CONSUMES THE SWEEP: funnel, near-survivor bank, evidence tiers, convergence. Four
@@ -55,6 +56,13 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # stranded one stage short of the only count that pays, waiting for a human to notice. Survivor
   # forwarding now runs in the same cycle that produced the survivors.
   nice -n 15 "$PY" scripts/run_portfolio_admission.py || true
+  # ZERO-CAPITAL FORWARD CONVERSION, SAME CYCLE. The spawner now consumes both corrected axis
+  # screens and the full sweep's measured independent clusters. Waiting for tomorrow's cron
+  # throws away the one input that cannot be backfilled: forward time. The runner publishes a
+  # day-zero NO-EVIDENCE row immediately, proving every new clock is runnable and cohort-counted.
+  nice -n 15 "$PY" scripts/run_paper_sleeve_spawner.py || true
+  nice -n 15 "$PY" scripts/run_paper_sleeve_forward.py || true
+  nice -n 15 "$PY" scripts/run_promotion_queue.py || true
   nice -n 15 "$PY" scripts/run_trade_forensics.py || true
   nice -n 15 "$PY" scripts/run_exec_monitor.py || true
   # THE LOOP CLOSES HERE. The intelligence cycle re-reads everything this run produced -- kills,
@@ -86,6 +94,22 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # working tree and publishes the unfinished ones as ranked gaps, so an item that stops being
   # worked reappears in tomorrow's priorities by itself. Runs LAST: it measures the cycle that
   # just happened, including whatever this cycle wired.
+  # Integrated residuals consume this cycle's real evidence; missing inputs remain UNMEASURED and
+  # therefore enter max-push above partially measured work rather than disappearing as clean zeros.
+  # Evolve the METHOD frontier before the completion report reads it: missing search methods,
+  # stagnation, fractional discovery credit and the bounded serendipity mission must affect the
+  # same night's priorities rather than appearing one cycle late.
+  nice -n 15 "$PY" scripts/research_alpha_optimizer.py || true
+  nice -n 15 "$PY" scripts/gpt_hunter.py || true
+  # Elite external work converts through the EXISTING hypothesis queue: public claims stay priors,
+  # while capability gaps, papers, failures, participant sensors, MEV and white-space coverage
+  # become measured frontier work rather than another document archive.
+  nice -n 15 "$PY" scripts/run_external_intelligence.py || true
+  nice -n 15 "$PY" scripts/run_alpha_frontier.py || true
+  # Verify the ledger BEFORE the integrated report and ranker consume it. Publishing gaps after
+  # max-push would strand every newly found incomplete capability for an extra day.
   nice -n 15 "$PY" scripts/run_completion_ledger.py || true
+  nice -n 15 "$PY" scripts/run_completion_program.py || true
+  nice -n 15 "$PY" scripts/run_max_push.py || true
   echo "=== research cycle exit $? at $(date -u) ==="
 } 2>&1 | tee -a "$LOG"

@@ -100,7 +100,7 @@ ALPHAS = [
 def _closes():
     try:
         t = json.loads(TRADES.read_text("utf-8"))
-    except Exception:
+    except Exception:  # blind-except intentional (BLE001)
         return []
     rows = t if isinstance(t, list) else t.get("trades", [])
     out = []
@@ -140,7 +140,7 @@ def failure_patterns():
     rows = _closes()
     try:
         cm = json.loads(COST.read_text("utf-8"))
-    except Exception:
+    except Exception:  # blind-except intentional (BLE001)
         cm = {}
     if len(rows) < 40:
         print("  too few closes to mine")
@@ -279,7 +279,7 @@ def novelty(candidate: str) -> dict:
     try:
         for f in json.loads(FEAT.read_text("utf-8")).get("features", []):
             known.append((f"{f['name']} {f.get('rationale', '')}", f.get("mechanism")))
-    except Exception:
+    except Exception:  # blind-except intentional (BLE001)
         pass
     if GRAVE.exists():
         for ln in GRAVE.read_text("utf-8").splitlines():

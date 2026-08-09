@@ -101,9 +101,28 @@ NORTH STAR
 
 
 def preamble(role: str = "") -> str:
-    """The doctrine every LLM call must carry. Prepend to the system prompt."""
+    """The doctrine every LLM call must carry. Prepend to the system prompt.
+
+    THE REVIEW RUBRIC RIDES ALONG (2026-08-01). docs/research/ADVERSARIAL_REVIEW_RUBRIC.md holds
+    ten defect classes, each with the real shipped instance from this repo that produced it. It
+    was referenced in exactly one place -- a max_audit exclusion list -- and injected nowhere, so
+    it worked only when an agent happened to remember it. On the day it was wired, remembering it
+    had already caught three real defects in code written that same morning (a `> 0` guard that
+    floating-point dust walked through, a docstring whose algebra was backwards, and an estimator
+    read past its own domain). A checklist that fires on recall is not a control.
+
+    It is read from the markdown at call time rather than copied here, so editing the doc changes
+    every organ on the next call; and it degrades to "" if the file is missing, because a broken
+    enrichment must never take down a working organ. libs/research/review_rubric.audit() is what
+    makes that absence loud instead of silent.
+    """
     head = f"\n[ROLE: {role}]\n" if role else "\n"
-    return _ANTI_TIMIDITY + head
+    try:
+        from libs.research.review_rubric import preamble as _rubric
+        rubric = _rubric()
+    except Exception:
+        rubric = ""
+    return _ANTI_TIMIDITY + rubric + head
 
 
 
@@ -114,7 +133,8 @@ def audit_prompt_files() -> dict[str, Any]:
     """Every prompt FILE must also carry the mandate. Runtime injection covers code paths; a
     human pasting a prompt into a chat UI bypasses code entirely, and that is how rounds 1-2 of
     the panel actually ran. Files and callers are two separate enforcement surfaces."""
-    ok, missing = [], []
+    ok: list[str] = []
+    missing: list[str] = []
     for d in ("prompts", "prompts/panel_missions"):
         base = ROOT / d
         if not base.exists():
@@ -131,7 +151,8 @@ def audit_brain_instructions() -> dict[str, Any]:
     loads, the brain operates without it -- a whole intelligence running unconstrained."""
     targets = ["CLAUDE.md", "ops/memory/institutional-constitution.md",
                "docs/research/OPERATING_DOCTRINE.md", "docs/research/RESEARCH_EXCELLENCE.md"]
-    ok, missing = [], []
+    ok: list[str] = []
+    missing: list[str] = []
     for t in targets:
         f = ROOT / t
         if not f.exists():
@@ -143,7 +164,8 @@ def audit_brain_instructions() -> dict[str, Any]:
 
 def audit_callers() -> dict[str, Any]:
     """Which LLM callers inject doctrine, and which silently do not."""
-    injected, missing = [], []
+    injected: list[str] = []
+    missing: list[str] = []
     for p in sorted((ROOT / "scripts").glob("*.py")):
         s = p.read_text("utf-8", errors="ignore")
         # A file that merely CONTAINS the endpoint string is not a caller. prove_future.py holds

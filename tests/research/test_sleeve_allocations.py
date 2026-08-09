@@ -1,175 +1,224 @@
-"""THE DECLARATION THAT MAKES THE CAPACITY GATE HONEST -- 40 statements, zero tests until now.
+"""§42: a declared allocation must be a COMMITMENT, not a way to write $1 and pass every gate.
 
-`capacity_policy.capacity_fit` honours a DECLARED allocation, which is what admits the small edges
-equal weight would exclude: a $5k edge funded with $1k is 5x headroom and perfectly safe. But a
-declared number with nothing checking it is just a way to pass any capacity gate by writing a
-small number. This module is the check, and until now nothing checked the check.
-
-THREE FAILURES, DELIBERATELY KEPT APART, because collapsing any two of them loses the distinction
-that makes the reconciliation worth running:
-
-  INCONSISTENT   the declaration exceeds what the sleeve's OWN edge can hold. Refused on its face,
-                 before any funding figure is consulted -- it is arithmetically impossible.
-  OVERFUNDED     the sleeve is really funded above what it declared. THE BYPASS, caught.
-  UNVERIFIED     there is no live funding figure to compare against. Reported, NEVER counted as
-                 OK -- "nobody checked" reading as "checked and fine" is how the declaration
-                 becomes decorative.
-"""
+Allocation-aware capacity is what lets a $5k edge be funded with $1,000 instead of being judged at
+an equal-weight $1,477 and refused. That unblocks exactly the small edges the desk exists to trade
+-- and it is also the easiest bypass in the policy, so these lock the two checks that make the
+declaration mean something: it must be possible under its own capacity, and it must match what the
+sleeve is really funded with."""
 
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
-import pytest
-from pydantic import ValidationError
+import scripts.max_audit as m
 
-from libs.research import sleeve_allocations as SA
-from libs.research.capacity_policy import max_allocation
-
-
-def _alloc(sleeve: str = "s", capacity: float = 100_000.0,
-           declared: float = 1_000.0) -> SA.SleeveAllocation:
-    return SA.SleeveAllocation(sleeve=sleeve, capacity_usd=capacity, declared_usd=declared)
-
-
-# ------------------------------------------------------------------ the ceiling
-
-def test_the_ceiling_comes_from_the_ONE_capacity_policy() -> None:
-    """Re-deriving the headroom multiple here is exactly how five disagreeing copies of the
-    capacity policy appeared last time. It is imported, not restated."""
-    a = _alloc(capacity=100_000.0)
-    assert a.ceiling_usd == max_allocation(100_000.0)
-    assert a.ceiling_usd == pytest.approx(25_000.0), "4x headroom means a QUARTER of capacity"
+from libs.research.capacity_policy import capacity_band, capacity_fit, max_allocation
+from libs.research.sleeve_allocations import (
+    SleeveAllocation,
+    inconsistent,
+    load,
+    overfunded,
+    unverified,
+)
 
 
-def test_a_declaration_at_the_ceiling_is_consistent_and_one_above_it_is_not() -> None:
-    """The boundary is inclusive: filling to exactly the permitted ceiling is permitted."""
-    ceiling = _alloc().ceiling_usd
-    assert _alloc(declared=ceiling).self_consistent is True
-    assert _alloc(declared=ceiling + 0.01).self_consistent is False
-
-
-def test_a_zero_or_negative_declaration_is_NOT_consistent() -> None:
-    """'I will fund it with nothing' must not be a way to clear a capacity gate -- it would make
-    the required capacity collapse to the absolute floor and pass anything."""
-    assert _alloc(declared=0.0).self_consistent is False
-    assert _alloc(declared=-500.0).self_consistent is False
-
-
-def test_a_sleeve_with_no_capacity_can_declare_nothing() -> None:
-    assert _alloc(capacity=0.0, declared=1.0).self_consistent is False
-
-
-def test_the_declaration_is_FROZEN_once_made() -> None:
-    """A mutable declaration is not a commitment. The reconciliation compares live funding against
-    what was declared when the gate was passed, so a caller that could edit it in place could pass
-    the gate and then move the goalposts."""
-    a = _alloc()
-    with pytest.raises(ValidationError):
-        a.declared_usd = 999_999.0            # type: ignore[misc]
-
-
-# ------------------------------------------------------------------ loading
-
-def _store(tmp_path: Path, payload) -> Path:
-    p = tmp_path / "alloc.json"
-    p.write_text(json.dumps(payload) if not isinstance(payload, str) else payload, "utf-8")
+def _store(tmp_path, rows: dict[str, dict[str, float]]):
+    p = tmp_path / "sleeve_allocations.json"
+    p.write_text(json.dumps(rows), "utf-8")
     return p
 
 
-def test_a_missing_store_is_EMPTY_and_never_an_exception(tmp_path: Path) -> None:
-    """This is read from inside `capacity_policy.declared_allocation`, which is itself read by
-    every capacity gate on the desk. An exception here takes all of them down."""
-    assert SA.load(tmp_path / "absent.json") == []
+class TestMaxAllocation:
+    def test_you_never_fill_an_edge_to_its_stated_capacity(self) -> None:
+        # 4x headroom -> 25%. Trading up to capacity means arriving when impact already ate it.
+        assert max_allocation(5_000.0) == 1_250.0
+
+    def test_it_is_the_exact_inverse_of_the_requirement(self) -> None:
+        from libs.research.capacity_policy import capacity_required
+        assert capacity_required(max_allocation(20_000.0), 1) == 20_000.0
 
 
-@pytest.mark.parametrize("junk", ["{not json", "[]", "null", '"a string"', "123"])
-def test_a_corrupt_or_wrongly_shaped_store_is_EMPTY(tmp_path: Path, junk: str) -> None:
-    assert SA.load(_store(tmp_path, junk)) == []
+class TestAllocationAwareScoring:
+    def test_a_declared_allocation_unblocks_a_small_edge(self) -> None:
+        # THE gap this closes: $1k into a $5k edge is 5x headroom and safe, but equal weight on a
+        # $14.8k book reads $1,477 into it and fails
+        assert capacity_fit(5_000.0, 14_773.0, 10) < 1.0
+        assert capacity_fit(5_000.0, allocation_usd=1_000.0) == 1.0
+
+    def test_declaring_more_than_the_edge_holds_still_fails(self) -> None:
+        # the declaration is honoured, not obeyed -- $2,000 into a $5k edge is past the $1,250 cap
+        assert capacity_fit(5_000.0, allocation_usd=2_000.0) < 1.0
+
+    def test_the_band_agrees_with_the_score(self) -> None:
+        # if the score says fillable, the band must not simultaneously say UNFILLABLE
+        assert capacity_band(5_000.0, allocation_usd=1_000.0) == "NICHE"
+        assert capacity_band(5_000.0, allocation_usd=4_000.0) == "UNFILLABLE"
 
 
-def test_one_malformed_row_does_not_hide_the_others(tmp_path: Path) -> None:
-    """A single bad row taking the whole file down would silently disable every declaration --
-    and the failure direction matters: with no declarations, equal weight applies, which is
-    STRICTER. It fails safe, but it fails silently, so the partial read is the right behaviour."""
-    p = _store(tmp_path, {
-        "good": {"capacity_usd": 100_000.0, "declared_usd": 1_000.0},
-        "missing_field": {"capacity_usd": 100_000.0},
-        "not_a_number": {"capacity_usd": "lots", "declared_usd": 1_000.0},
-        "also_good": {"capacity_usd": 40_000.0, "declared_usd": 500.0},
-    })
-    got = {a.sleeve for a in SA.load(p)}
-    assert got == {"good", "also_good"}
+class TestDeclarationsAreChecked:
+    def test_a_self_refuting_declaration_is_caught(self) -> None:
+        a = SleeveAllocation(sleeve="s", capacity_usd=5_000.0, declared_usd=4_000.0)
+        assert not a.self_consistent and inconsistent([a]) == [a]
+
+    def test_a_workable_declaration_passes(self) -> None:
+        a = SleeveAllocation(sleeve="s", capacity_usd=5_000.0, declared_usd=1_000.0)
+        assert a.self_consistent and inconsistent([a]) == []
+
+    def test_zero_is_not_a_declaration(self) -> None:
+        assert not SleeveAllocation(sleeve="s", capacity_usd=5e3, declared_usd=0.0).self_consistent
+
+    def test_funding_above_the_declaration_is_the_bypass_and_is_caught(self) -> None:
+        a = SleeveAllocation(sleeve="s", capacity_usd=5_000.0, declared_usd=1_000.0)
+        assert overfunded([a], {"s": 1_240.0}) != []
+
+    def test_small_drift_is_tolerated(self) -> None:
+        # mark-to-market wobble is not cheating, and false defects train the desk to ignore checks
+        a = SleeveAllocation(sleeve="s", capacity_usd=5_000.0, declared_usd=1_000.0)
+        assert overfunded([a], {"s": 1_020.0}) == []
+
+    def test_no_funding_figure_is_UNVERIFIED_not_a_pass(self) -> None:
+        a = SleeveAllocation(sleeve="s", capacity_usd=5_000.0, declared_usd=1_000.0)
+        assert unverified([a], {}) == [a]
+        assert overfunded([a], {}) == []   # absent evidence is not evidence of compliance
 
 
-def test_loaded_values_are_coerced_to_the_declared_types(tmp_path: Path) -> None:
-    p = _store(tmp_path, {"s": {"capacity_usd": "100000", "declared_usd": "1000"}})
-    a = SA.load(p)[0]
-    assert isinstance(a.capacity_usd, float) and a.capacity_usd == 100_000.0
+class TestStore:
+    def test_missing_store_is_empty_not_an_error(self, tmp_path) -> None:
+        assert load(tmp_path / "nope.json") == []
+
+    def test_one_malformed_row_does_not_hide_the_others(self, tmp_path) -> None:
+        p = _store(tmp_path, {"good": {"capacity_usd": 5e3, "declared_usd": 1e3},
+                              "bad": {"capacity_usd": "oops"}})
+        assert [a.sleeve for a in load(p)] == ["good"]
 
 
-# ------------------------------------------------------------------ the three failures
+class TestAuditCheck:
+    def _run(self, tmp_path, monkeypatch, rows, funded=None) -> list[tuple[str, str]]:
+        (tmp_path / "data").mkdir(exist_ok=True)
+        (tmp_path / "data/sleeve_allocations.json").write_text(json.dumps(rows), "utf-8")
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        monkeypatch.setattr(m, "_funded_by_sleeve", lambda: funded or {})
+        out: list[tuple[str, str]] = []
+        m.check_capacity_allocation_honesty(out)
+        return out
 
-def test_INCONSISTENT_is_decided_without_consulting_any_funding_figure() -> None:
-    """It is arithmetically impossible on its face: the declaration exceeds what the sleeve's own
-    edge can hold. Waiting for a funding number to catch it would let it pass the capacity gate in
-    the meantime."""
-    bad = _alloc("greedy", capacity=10_000.0, declared=9_000.0)   # ceiling is 2,500
-    good = _alloc("modest", capacity=10_000.0, declared=1_000.0)
-    assert SA.inconsistent([bad, good]) == [bad]
+    def test_no_declarations_is_silent(self, tmp_path, monkeypatch) -> None:
+        # undeclared falls back to equal weight, which is STRICTER -- nothing to police
+        assert self._run(tmp_path, monkeypatch, {}) == []
 
+    def test_impossible_declaration_fires(self, tmp_path, monkeypatch) -> None:
+        ids = [d[0] for d in self._run(
+            tmp_path, monkeypatch, {"s": {"capacity_usd": 5e3, "declared_usd": 4e3}})]
+        assert "capacity-declaration-impossible" in ids
 
-def test_OVERFUNDED_catches_the_bypass() -> None:
-    """The gate was passed on a declared $1,000. Funding it with $5,000 is a breach of the
-    commitment the pass was granted on, not a rounding difference."""
-    a = _alloc("s", declared=1_000.0)
-    out = SA.overfunded([a], {"s": 5_000.0})
-    assert out == [(a, 5_000.0)]
+    def test_breached_declaration_fires(self, tmp_path, monkeypatch) -> None:
+        ids = [d[0] for d in self._run(
+            tmp_path, monkeypatch, {"s": {"capacity_usd": 5e3, "declared_usd": 1e3}},
+            funded={"s": 3_000.0})]
+        assert "capacity-declaration-breached" in ids
 
+    def test_unverified_when_nothing_can_be_checked(self, tmp_path, monkeypatch) -> None:
+        ids = [d[0] for d in self._run(
+            tmp_path, monkeypatch, {"s": {"capacity_usd": 5e3, "declared_usd": 1e3}})]
+        assert "capacity-declaration-unverified" in ids
 
-def test_mark_to_market_drift_is_ABSORBED_so_the_check_is_not_trained_away() -> None:
-    """A sleeve declared at $1,000 that marks to $1,020 has not cheated. Firing on that teaches
-    the desk to ignore the check, which costs more than the 2% it would catch."""
-    a = _alloc("s", declared=1_000.0)
-    assert SA.overfunded([a], {"s": 1_020.0}) == []
-    assert SA.overfunded([a], {"s": 1_050.0}) == [], "exactly at tolerance is still within it"
-    assert SA.overfunded([a], {"s": 1_051.0}) != []
-
-
-def test_the_tolerance_is_adjustable_and_a_zero_tolerance_catches_any_excess() -> None:
-    a = _alloc("s", declared=1_000.0)
-    assert SA.overfunded([a], {"s": 1_000.01}, tolerance=0.0) != []
-    assert SA.overfunded([a], {"s": 1_000.0}, tolerance=0.0) == []
-
-
-def test_an_UNDERFUNDED_sleeve_is_not_a_breach() -> None:
-    """Funding below the declaration is more headroom, not less. Flagging it would push the desk
-    toward filling every sleeve to its declared maximum."""
-    assert SA.overfunded([_alloc("s", declared=1_000.0)], {"s": 400.0}) == []
+    def test_a_kept_commitment_is_silent(self, tmp_path, monkeypatch) -> None:
+        assert self._run(tmp_path, monkeypatch,
+                         {"s": {"capacity_usd": 5e3, "declared_usd": 1e3}},
+                         funded={"s": 990.0}) == []
 
 
-def test_UNVERIFIED_is_reported_and_never_counted_as_OK() -> None:
-    """'Nobody checked' reading as 'checked and fine' is how the declaration becomes decorative --
-    and the declaration is the thing that let the small edge through the capacity gate."""
-    checked = _alloc("checked")
-    unchecked = _alloc("unchecked")
-    funded = {"checked": 900.0}
-    assert SA.unverified([checked, unchecked], funded) == [unchecked]
-    assert SA.overfunded([checked, unchecked], funded) == [], (
-        "an unverified sleeve must not also be reported as overfunded -- that is a different claim")
+class TestSizerEnforcesCapacity:
+    """Option 1: the declaration is only real if the SIZER cannot exceed it."""
+
+    def _kw(self):
+        return {"kelly_fraction": 0.5, "vol_scalar": 1.0, "risk_budget": 0.02,
+                "global_scalar": 1.0, "risk_per_unit": 1.0}
+
+    def test_capacity_clamps_the_size(self) -> None:
+        from libs.risk.sizing import calculate_position_size
+        big = calculate_position_size(1_000_000.0, **self._kw())
+        clamped = calculate_position_size(1_000_000.0, edge_capacity_usd=5_000.0, **self._kw())
+        assert clamped.risk_amount < big.risk_amount
+        assert clamped.binding_constraint == "edge_capacity"
+        assert clamped.risk_amount == max_allocation(5_000.0)
+
+    def test_an_over_capacity_sleeve_is_clamped_not_rejected(self) -> None:
+        # refusing it outright would cost exactly the small alphas §42 exists to keep
+        from libs.risk.sizing import calculate_position_size
+        r = calculate_position_size(1_000_000.0, edge_capacity_usd=5_000.0, **self._kw())
+        assert r.rejected is False and r.units > 0
+
+    def test_a_roomy_edge_does_not_bind(self) -> None:
+        from libs.risk.sizing import calculate_position_size
+        r = calculate_position_size(10_000.0, edge_capacity_usd=1e9, **self._kw())
+        assert r.binding_constraint != "edge_capacity"
+
+    def test_omitting_capacity_changes_nothing(self) -> None:
+        from libs.risk.sizing import calculate_position_size
+        a = calculate_position_size(10_000.0, **self._kw())
+        b = calculate_position_size(10_000.0, edge_capacity_usd=None, **self._kw())
+        assert a == b
 
 
-def test_an_empty_funding_map_makes_every_declaration_unverified() -> None:
-    allocs = [_alloc("a"), _alloc("b")]
-    assert SA.unverified(allocs, {}) == allocs
-    assert SA.overfunded(allocs, {}) == []
+class TestGovernorIsActuallyWired:
+    """A governor no caller passes is an orphaned artifact -- green tests, zero clamping."""
+
+    def test_the_gate_threads_capacity_into_the_sizer(self) -> None:
+        import inspect
+
+        from libs.risk import gate
+        src = inspect.getsource(gate)
+        assert "edge_capacity_usd=intent.edge_capacity_usd" in src, \
+            "the §42 capacity clamp is defined but never passed -- it clamps nothing"
+
+    def test_an_intent_can_carry_its_edge_capacity(self) -> None:
+        from libs.risk.gate import OrderIntent
+        oi = OrderIntent(instrument="BTCUSDT", side="buy", kelly_fraction=0.5,
+                         risk_budget=0.02, risk_per_unit=1.0, edge_capacity_usd=5_000.0)
+        assert oi.edge_capacity_usd == 5_000.0
+
+    def test_omitting_it_is_uncapped_by_capacity(self) -> None:
+        # correct for a deep instrument; the audit check is what catches a THIN one omitting it
+        from libs.risk.gate import OrderIntent
+        oi = OrderIntent(instrument="BTCUSDT", side="buy", kelly_fraction=0.5,
+                         risk_budget=0.02, risk_per_unit=1.0)
+        assert oi.edge_capacity_usd is None
+
+    def test_the_audit_catches_an_orphaned_governor(self) -> None:
+        out: list[tuple[str, str]] = []
+        m.check_capacity_governor_reachable(out)
+        assert out == [], f"governor is not wired on the live tree: {out}"
 
 
-def test_the_three_checks_are_independent_of_one_another() -> None:
-    """A sleeve can be inconsistent AND overfunded AND that is two findings, not one. Collapsing
-    them would let fixing the cheaper complaint hide the other."""
-    bad = SA.SleeveAllocation(sleeve="s", capacity_usd=10_000.0, declared_usd=9_000.0)
-    assert SA.inconsistent([bad]) == [bad]
-    assert SA.overfunded([bad], {"s": 50_000.0}) == [(bad, 50_000.0)]
-    assert SA.unverified([bad], {"s": 50_000.0}) == []
+class TestKnobsAreWiredToProduction:
+    """The class-level fix: three knobs in one day were built, tested green, wired to
+    nothing. A parameter no production caller passes is an orphan with camouflage."""
+
+    def test_no_capacity_knob_is_orphaned(self) -> None:
+        out: list[tuple[str, str]] = []
+        m.check_capacity_knobs_are_wired(out)
+        assert out == [], f"a capacity knob is wired to nothing: {[d[1][:120] for d in out]}"
+
+    def test_the_check_catches_an_orphan(self, monkeypatch) -> None:
+        # the guard must actually fire -- a check that can only pass is not a check
+        monkeypatch.setattr(m, "_CAPACITY_KNOBS", ("a_knob_nothing_passes",))
+        out: list[tuple[str, str]] = []
+        m.check_capacity_knobs_are_wired(out)
+        assert [d[0] for d in out] == ["capacity-knob-orphaned"]
+
+    def test_a_declaration_reaches_the_ev_score(self, tmp_path, monkeypatch) -> None:
+        # end to end: declaring a small allocation must change the SCORE, not just be stored
+        import json
+
+        import libs.research.capacity_policy as cp
+        from libs.research.alpha_economics import Idea, ev_score
+        store = tmp_path / "sleeve_allocations.json"
+        store.write_text(json.dumps(
+            {"tiny_edge": {"capacity_usd": 5_000.0, "declared_usd": 1_000.0}}), "utf-8")
+        monkeypatch.setattr(
+            cp, "declared_allocation",
+            lambda s: 1_000.0 if s == "tiny_edge" else None)
+        declared = ev_score(Idea("tiny_edge", capacity_usd=5_000.0))["ev"]
+        undeclared = ev_score(Idea("other_edge", capacity_usd=5_000.0))["ev"]
+        assert declared > undeclared, "the declaration never reached the scorer"

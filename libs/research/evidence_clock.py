@@ -29,16 +29,22 @@ measured the evidence and decided what it earned would be marking its own homewo
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 __all__ = [
     "MIN_EFFECTIVE",
+    "MIN_OBS",
+    "MIN_T",
     "EvidenceState",
+    "Sufficiency",
     "annualised_information_rate",
     "effective_n",
     "regime_penalty",
     "render",
     "sufficiency",
+    "sufficient",
+    "t_stat",
     "waiting_cost",
 ]
 
@@ -190,3 +196,78 @@ def render(state: EvidenceState, *, required: float) -> str:
     ratio = f"{eff / state.raw_observations:.1%}" if state.raw_observations else "n/a"
     return (f"[{verdict}] {eff:.1f} effective / {state.raw_observations} raw ({ratio} survive "
             f"deflation)\n    {why}")
+
+
+# ----------------------------------------------------------------------------------------------
+# THE t-TEST CLOCK (f4066f8). RESTORED VERBATIM 2026-08-09, and the restoration is deliberate.
+#
+# `sufficiency()` above replaced this API, and the replacement is better: it deflates the raw
+# count for autocorrelation, so correlated fills stop reading as independent evidence. But the
+# rewrite removed MIN_OBS / MIN_T / Sufficiency / sufficient() while THREE modules still imported
+# them -- libs/research/event_density.py, libs/research/crowding.py, libs/risk/vol_headroom.py --
+# and those three have been raising ImportError at import time ever since. Verified by import,
+# not inferred: all three fail on the unified frontier branch today.
+#
+# WHY RESTORED RATHER THAN MIGRATED. The two are not the same statistic. This one takes
+# (mean, sd, n) and tests a t against min_t; the new one takes an EvidenceState and tests an
+# EFFECTIVE n against a caller-supplied requirement. Rewriting three callers onto the new clock
+# during a merge would silently change what they compute, and a wrong answer that runs is worse
+# than an ImportError that does not. So the old function comes back UNCHANGED, and migrating the
+# three callers onto the effective-n clock is owed work with its own review, not merge cleanup.
+#
+# NEW CALLERS SHOULD USE `sufficiency()`. This exists to keep three existing modules honest, not
+# to offer a choice.
+# ----------------------------------------------------------------------------------------------
+
+#: Minimum observations before a t-statistic is trustworthy at all. Below this the estimate's own
+#: standard error is too wide for the t to mean much, whatever it reads.
+MIN_OBS = 20
+
+#: Default confidence bar. 2.0 is roughly p<0.05 two-sided and is the bar for ADMITTING an effect,
+#: not for betting the book on it -- callers sizing capital should ask for more (the sleeve ladder
+#: asks 2.5 at STRONG and 3.5 at DURABLE).
+MIN_T = 2.0
+
+@dataclass(frozen=True)
+class Sufficiency:
+    sufficient: bool
+    t_stat: float
+    n_obs: int
+    reason: str
+    #: Observations still needed at the CURRENT effect size. This is the number that replaces "come
+    #: back in N days": it tells a caller how much more evidence to GENERATE, which it can often
+    #: accelerate, rather than how long to wait, which it cannot.
+    obs_short: int
+
+
+def t_stat(mean: float, stdev: float, n_obs: int) -> float:
+    """t = sqrt(n) * mean/stdev. Zero when undefined -- never a confident default."""
+    if n_obs < 2 or not (stdev > 0) or not math.isfinite(mean) or not math.isfinite(stdev):
+        return 0.0
+    return math.sqrt(n_obs) * mean / stdev
+
+
+def sufficient(mean: float, stdev: float, n_obs: int, *,
+               min_obs: int = MIN_OBS, min_t: float = MIN_T) -> Sufficiency:
+    """Is there enough evidence YET -- regardless of how long it took to gather?
+
+    Returns the shortfall in OBSERVATIONS rather than days. A caller told "you need 40 more closes"
+    can open more slots, shorten holds, or widen the universe to get them today; a caller told
+    "wait 60 days" can only wait. That difference is the whole point.
+    """
+    t = t_stat(mean, stdev, n_obs)
+    if n_obs < min_obs:
+        return Sufficiency(False, t, n_obs,
+                           f"{n_obs}/{min_obs} observations -- too few for the t to be trusted",
+                           min_obs - n_obs)
+    if t < min_t:
+        # n needed scales with the SQUARE of the t shortfall, because t grows as sqrt(n).
+        need = math.ceil(n_obs * (min_t / t) ** 2) if t > 0 else 0
+        short = max(0, need - n_obs) if need else -1
+        return Sufficiency(False, t, n_obs,
+                           f"t={t:.2f} < {min_t} at n={n_obs}" +
+                           (f" -- needs ~{short} more observations at this effect size"
+                            if short >= 0
+                            else " -- effect is non-positive, more data will not fix it"),
+                           short if short >= 0 else 0)
+    return Sufficiency(True, t, n_obs, f"t={t:.2f} >= {min_t} on {n_obs} observations", 0)

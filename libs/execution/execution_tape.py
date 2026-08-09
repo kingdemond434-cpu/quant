@@ -38,13 +38,17 @@ def _disk_ok(path: Path = _TAPE) -> bool:
     """Is there room on the filesystem that actually HOLDS THE TAPE?
 
     It used to measure `/` unconditionally, which is the wrong device whenever data/ is a separate
-    mount -- the arrangement the VPS deploy notes assume. That gets it wrong in both directions: a
-    full root refuses writes to a data volume with terabytes free, and a full data volume passes
-    because root is empty. The guard exists to stop the tape filling a disk, so it has to look at
-    the disk the tape is on.
+    mount -- the arrangement the VPS deploy notes assume. That gets it wrong in both directions,
+    and silent in both: a full root refuses writes to a data volume with terabytes free, and a
+    full data volume passes because root is empty. The refusing direction is the dangerous one
+    here, because append() is an observer whose return value the executor ignores by design, so a
+    mis-measured guard destroys fills exactly the way the rolling buffer did -- the failure this
+    module exists to prevent. It also made the tape's tests inherit the ambient disk state of
+    whatever machine ran them: green on a clean disk, red on a full one (7 failures on a GitHub
+    runner whose / is over 80% full, for a test writing to tmp_path).
 
     Falls back to the nearest existing ancestor, because the tape's own directory may not exist
-    yet on the first write.
+    yet on the first write -- that is the filesystem the file will land on.
     """
     p = path if path.exists() else next(
         (a for a in path.parents if a.exists()), Path(path.anchor or "."))

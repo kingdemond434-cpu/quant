@@ -39,13 +39,20 @@ def _report(repo: float = 90.0, money: float = 60.0) -> dict[str, Any]:
     """A coverage.py JSON report shaped like the real one, with one money-path file."""
     return {
         "totals": {"percent_covered": repo},
-        "files": {C.MONEY_PATH[0]: {"summary": {"num_statements": 1000,
-                                                "covered_lines": int(money * 10)}}},
+        "files": {
+            C.MONEY_PATH[0]: {"summary": {"num_statements": 1000, "covered_lines": int(money * 10)}}
+        },
     }
 
 
-def _run(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, rec: dict[str, Any],
-         report: dict[str, Any], *, update: bool = False) -> tuple[int, str, dict[str, Any]]:
+def _run(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    rec: dict[str, Any],
+    report: dict[str, Any],
+    *,
+    update: bool = False,
+) -> tuple[int, str, dict[str, Any]]:
     """Drive main() against an isolated record; return (exit code, stdout, record after)."""
     rpath = tmp_path / "coverage.json"
     rpath.write_text(json.dumps(report), "utf-8")
@@ -62,11 +69,26 @@ def _run(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, rec: dict[str, Any],
 
 
 def _rec(repo: float, money: float, raised: str | None) -> dict[str, Any]:
-    return {"high_water": {"repo_pct": repo, "money_path_pct": money},
-            **({"last_raised": raised} if raised is not None else {})}
+    return {
+        "high_water": {"repo_pct": repo, "money_path_pct": money},
+        **({"last_raised": raised} if raised is not None else {}),
+    }
+
+
+def test_measure_normalizes_windows_coverage_paths() -> None:
+    report = _report(repo=93.0, money=75.0)
+    details = report["files"].pop(C.MONEY_PATH[0])
+    report["files"][C.MONEY_PATH[0].replace("/", "\\")] = details
+
+    measured = C.measure(report)
+
+    assert measured["repo_pct"] == 93.0
+    assert measured["money_path_pct"] == 75.0
+    assert measured["money_path_statements"] == 1000
 
 
 # ------------------------------------------------------------------ the stall itself
+
 
 def test_A_LONG_QUIET_RATCHET_IS_REPORTED_AS_STALLED(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
     """The whole point. Floors holding is the MINIMUM; it is not the target, and an instrument
@@ -107,6 +129,7 @@ def test_AN_UNPARSEABLE_OR_NAIVE_STAMP_IS_ALSO_NOT_CLEAN(monkeypatch, tmp_path, 
 
 # ------------------------------------------------- the stamp must track the world, not the auditor
 
+
 def test_UPDATE_WITHOUT_A_RAISE_DOES_NOT_TOUCH_THE_STAMP(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
     """GAP #85's shape, and the single most important test here. If `--update` stamped
     `last_raised` unconditionally, then RUNNING THE UPDATER would be indistinguishable from
@@ -114,16 +137,18 @@ def test_UPDATE_WITHOUT_A_RAISE_DOES_NOT_TOUCH_THE_STAMP(monkeypatch, tmp_path) 
     a desk could clear this law forever by scheduling a cron job."""
     old = (datetime.now(tz=UTC) - timedelta(days=40)).isoformat()
     # measured EQUALS the floors: nothing rose.
-    _code, out, after = _run(monkeypatch, tmp_path, _rec(90.0, 60.0, old), _report(90.0, 60.0),
-                             update=True)
+    _code, out, after = _run(
+        monkeypatch, tmp_path, _rec(90.0, 60.0, old), _report(90.0, 60.0), update=True
+    )
     assert after["last_raised"] == old, "the updater stamped a raise that did not happen"
     assert "no raise" in out
 
 
 def test_A_REAL_RAISE_MOVES_THE_STAMP_AND_THE_FLOOR(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
     old = (datetime.now(tz=UTC) - timedelta(days=40)).isoformat()
-    _code, out, after = _run(monkeypatch, tmp_path, _rec(89.06, 59.59, old), _report(91.0, 62.0),
-                             update=True)
+    _code, out, after = _run(
+        monkeypatch, tmp_path, _rec(89.06, 59.59, old), _report(91.0, 62.0), update=True
+    )
     assert after["last_raised"] != old
     assert after["high_water"]["repo_pct"] == 91.0
     assert after["high_water"]["money_path_pct"] == 62.0
@@ -135,8 +160,9 @@ def test_A_RAISE_ON_EITHER_FLOOR_ALONE_COUNTS(monkeypatch, tmp_path) -> None:  #
     it while the aggregate sits still is real progress -- arguably the most valuable kind here --
     and must not be recorded as a stall."""
     old = (datetime.now(tz=UTC) - timedelta(days=40)).isoformat()
-    _code, _out, after = _run(monkeypatch, tmp_path, _rec(90.0, 59.59, old), _report(90.0, 62.0),
-                              update=True)
+    _code, _out, after = _run(
+        monkeypatch, tmp_path, _rec(90.0, 59.59, old), _report(90.0, 62.0), update=True
+    )
     assert after["last_raised"] != old
     assert after["high_water"]["repo_pct"] == 90.0, "the untouched floor must not move"
 
@@ -145,13 +171,15 @@ def test_FLOORS_STILL_NEVER_FALL(monkeypatch, tmp_path) -> None:  # type: ignore
     """The original guarantee, re-asserted because this change edited the --update branch: a
     measurement BELOW the mark must not lower it. A floor edited to fit the measurement is not a
     floor."""
-    _code, _out, after = _run(monkeypatch, tmp_path, _rec(89.06, 59.59, None), _report(70.0, 30.0),
-                              update=True)
+    _code, _out, after = _run(
+        monkeypatch, tmp_path, _rec(89.06, 59.59, None), _report(70.0, 30.0), update=True
+    )
     assert after["high_water"]["repo_pct"] == 89.06
     assert after["high_water"]["money_path_pct"] == 59.59
 
 
 # ------------------------------------------------------------ regression still fails, stall never
+
 
 def test_REGRESSION_STILL_EXITS_NONZERO(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
     """The bar for this whole change: adding a soft signal must not have softened the hard one."""
@@ -163,12 +191,12 @@ def test_REGRESSION_STILL_EXITS_NONZERO(monkeypatch, tmp_path) -> None:  # type:
 def test_THE_SLACK_BAND_IS_NOT_A_BREACH(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
     """Coverage moves with test ordering and optional-dependency skips. A floor that fires on noise
     gets deleted, which is worse than a floor set one point low."""
-    code, _out, _ = _run(monkeypatch, tmp_path, _rec(89.06, 59.59, None),
-                         _report(88.5, 59.0))
+    code, _out, _ = _run(monkeypatch, tmp_path, _rec(89.06, 59.59, None), _report(88.5, 59.0))
     assert code == 0
 
 
 # --------------------------------------------------------------- the target is printed every run
+
 
 def test_THE_DISTANCE_TO_100_IS_ALWAYS_REPORTED(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
     """A floor is a MINIMUM and the target is 100%. Printing only the floor is how "both floors

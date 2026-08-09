@@ -11,12 +11,18 @@ gauntlet like anything else. Pure stdlib + numpy. Run from repo root.
 """
 from __future__ import annotations
 
+import datetime as _dt
 import json
+import sys as _sys
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
+from pathlib import Path as _P
 
 import numpy as np
+
+_sys.path.insert(0, str(_P(__file__).resolve().parent.parent))
+from libs.research.upbit_data import upbit_daily_utc_keyed
 
 _UPBIT = "https://api.upbit.com/v1/candles/days"
 _BINANCE = "https://api.binance.com/api/v3/klines"
@@ -30,11 +36,9 @@ def _get(url: str) -> object:
         return json.loads(r.read().decode())
 
 
-def _upbit_daily(market: str, n: int = 200) -> dict[str, float]:
-    rows = _get(f"{_UPBIT}?market={market}&count={n}")
-    if not isinstance(rows, list):
-        return {}
-    return {str(r["candle_date_time_utc"])[:10]: float(r["trade_price"]) for r in rows}
+def _upbit_daily(market: str) -> dict[str, float]:
+    # single source of the Upbit keying -- see libs/research/upbit_data.py for the boundary proof
+    return upbit_daily_utc_keyed(market, 200)
 
 
 def _binance_daily(sym: str, n: int = 200) -> dict[str, float]:
@@ -49,7 +53,6 @@ def _binance_daily(sym: str, n: int = 200) -> dict[str, float]:
 
 
 def _yahoo_usdkrw() -> dict[str, float]:
-    import datetime as _dt
     r = _get(_YF)
     res = r["chart"]["result"][0]
     ts, cl = res["timestamp"], res["indicators"]["quote"][0]["close"]
@@ -94,12 +97,17 @@ def main() -> None:
         return round(float(r.mean() / r.std() * np.sqrt(365)), 2) if r.std() else 0.0
     sh_mom, sh_rev = _sh(zv), _sh(-zv)
 
-    # current premium level + persist for the forward clock
-    today = datetime.now(tz=UTC).date().isoformat()
-    rec = {"date": today, "premium": round(float(prem[-1]), 5),
+    # current premium level + persist for the forward clock.
+    # The row is stamped with the OBSERVATION's date (dates[-1]), never wall-clock now(): prem[-1]
+    # is the premium at dates[-1], and the two diverge by 1-2 days whenever the FX leg has no print
+    # for today (weekends, KR/US holidays, or simply running before the Yahoo fix posts). Stamping
+    # now() silently relabels a Friday observation as Saturday's -- a look-ahead in the clock's own
+    # index, and the same defect class as the keying it sits next to (R0067).
+    obs_date = dates[-1]
+    rec = {"date": obs_date, "premium": round(float(prem[-1]), 5),
            "z20": round(float(z[-1]), 3), "n_hist": len(dates)}
     prev = _SERIES.read_text("utf-8").strip().splitlines() if _SERIES.exists() else []
-    if not prev or json.loads(prev[-1]).get("date") != today:
+    if not prev or json.loads(prev[-1]).get("date") != obs_date:
         with _SERIES.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(rec) + "\n")
 

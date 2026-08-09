@@ -34,6 +34,7 @@ docs/research/LAW_COVERAGE.json applies to constitutional enforcement.
 
 Reads a coverage JSON report. Writes the ratchet record. Exits 1 if a floor is breached.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -87,7 +88,7 @@ def days_since(iso: str | None) -> float | None:
         then = datetime.fromisoformat(str(iso))
     except (TypeError, ValueError):
         return None
-    if then.tzinfo is None:                      # naive compares wrong against every aware stamp
+    if then.tzinfo is None:  # naive compares wrong against every aware stamp
         return None
     return max(0.0, (datetime.now(tz=UTC) - then).total_seconds() / 86400.0)
 
@@ -102,27 +103,38 @@ def stall_report(rec: dict) -> str:
     """
     age = days_since(rec.get("last_raised"))
     if age is None:
-        return ("  L1.50 STALL: this record has never recorded a raise. That is not a clean "
-                "reading -- it is an absent one, and the two must not look alike.")
+        return (
+            "  L1.50 STALL: this record has never recorded a raise. That is not a clean "
+            "reading -- it is an absent one, and the two must not look alike."
+        )
     if age >= STALL_DAYS:
-        return (f"  L1.50 STALL: no floor has RISEN in {age:.0f} days. The floors are holding, "
-                "which is the minimum, not the target. 100% is the target; the gap below is the "
-                "distance to it.")
+        return (
+            f"  L1.50 STALL: no floor has RISEN in {age:.0f} days. The floors are holding, "
+            "which is the minimum, not the target. 100% is the target; the gap below is the "
+            "distance to it."
+        )
     return f"  L1.50: last raise {age:.1f}d ago -- ratchet moving."
 
 
 def gap_to_target(now: dict[str, float]) -> str:
     """Distance to 100%, printed every run. A floor is a MINIMUM; the target is the ceiling, and
     reporting only the floor lets a permanently-green desk read as a finished one."""
-    return (f"  to 100%: repo needs +{100.0 - now['repo_pct']:.2f}pp, "
-            f"money path +{100.0 - now['money_path_pct']:.2f}pp "
-            f"(~{round((100.0 - now['money_path_pct']) / 100.0 * now['money_path_statements'])} "
-            "uncovered statements on the code that can move funds)")
+    return (
+        f"  to 100%: repo needs +{100.0 - now['repo_pct']:.2f}pp, "
+        f"money path +{100.0 - now['money_path_pct']:.2f}pp "
+        f"(~{round((100.0 - now['money_path_pct']) / 100.0 * now['money_path_statements'])} "
+        "uncovered statements on the code that can move funds)"
+    )
 
 
 def measure(report: dict) -> dict[str, float]:
     """(repo %, money-path %) from a coverage.py JSON report."""
-    files = report.get("files", {})
+    raw_files = report.get("files", {})
+    files = (
+        {str(path).replace("\\", "/"): details for path, details in raw_files.items()}
+        if isinstance(raw_files, dict)
+        else {}
+    )
     stmts = covered = 0
     for rel in MONEY_PATH:
         s = files.get(rel, {}).get("summary")
@@ -147,8 +159,11 @@ def load_record() -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--report", default="coverage.json", help="coverage.py JSON report")
-    ap.add_argument("--update", action="store_true",
-                    help="RAISE the floors to what was just measured (never lowers)")
+    ap.add_argument(
+        "--update",
+        action="store_true",
+        help="RAISE the floors to what was just measured (never lowers)",
+    )
     a = ap.parse_args()
 
     p = Path(a.report)
@@ -157,8 +172,10 @@ def main() -> int:
     try:
         report = json.loads(p.read_text("utf-8"))
     except (OSError, json.JSONDecodeError) as e:
-        print(f"coverage-floors: cannot read {a.report} ({type(e).__name__}). Run pytest with "
-              "--cov=libs --cov-branch --cov-report=json:coverage.json first.")
+        print(
+            f"coverage-floors: cannot read {a.report} ({type(e).__name__}). Run pytest with "
+            "--cov=libs --cov-branch --cov-report=json:coverage.json first."
+        )
         return 1
 
     now = measure(report)
@@ -167,9 +184,11 @@ def main() -> int:
     repo_floor = float(floors.get("repo_pct", 0.0))
     money_floor = float(floors.get("money_path_pct", 0.0))
 
-    print(f"coverage-floors: repo {now['repo_pct']}% (floor {repo_floor}%) | "
-          f"money path {now['money_path_pct']}% over {now['money_path_statements']} stmts "
-          f"(floor {money_floor}%)")
+    print(
+        f"coverage-floors: repo {now['repo_pct']}% (floor {repo_floor}%) | "
+        f"money path {now['money_path_pct']}% over {now['money_path_statements']} stmts "
+        f"(floor {money_floor}%)"
+    )
     print(gap_to_target(now))
     print(stall_report(rec))
 
@@ -180,7 +199,8 @@ def main() -> int:
         breaches.append(
             f"MONEY PATH coverage {now['money_path_pct']}% fell below its {money_floor}% mark -- "
             "this is the code that places orders, and it is the one number a repo-wide average "
-            "would have hidden")
+            "would have hidden"
+        )
 
     if a.update:
         floors["repo_pct"] = max(repo_floor, now["repo_pct"])
@@ -190,34 +210,44 @@ def main() -> int:
         # GAP #85's error exactly -- an `n` that counts READINGS OF THE WORLD rather than events
         # in it, so diligence in running the audit becomes the mechanism by which it goes wrong.
         rose = (floors["repo_pct"] > repo_floor) or (floors["money_path_pct"] > money_floor)
-        last_raised = (datetime.now(tz=UTC).isoformat() if rose
-                       else rec.get("last_raised"))
-        RECORD.write_text(json.dumps({
-            "_": ("HIGH-WATER MARKS for test coverage. Raised by --update, NEVER lowered by code. "
-                  "The money path is tracked separately because a repo-wide average lets order-"
-                  "path coverage fall while research tests keep the aggregate up -- the average "
-                  "hides exactly the number worth watching."),
-            "updated": datetime.now(tz=UTC).isoformat(),
-            "last_raised": last_raised,
-            "high_water": floors,
-            "measured": now,
-            "money_path_files": list(MONEY_PATH),
-            "slack_pp": SLACK,
-            "next_ceiling": (
-                "STILL money-path parity, and the gap is still the point. 41.6% -> 70.45% "
-                "(2026-08-06) against 92.46% repo-wide: the direction is right and the inversion "
-                "is not fixed. ~221 uncovered statements remain on the code that can place orders "
-                "and move funds, and the three defects found writing those tests -- a flatten leg "
-                "that could sell through zero, and GAP #49 wired into only one leg of a two-leg "
-                "trade -- were all in the untested part, which is the whole argument. Parity is "
-                "not the end either: the ceiling after it is the FAILURE branches specifically, "
-                "since every incident this desk has had came from an error path, not a happy one. "
-                "Per L1.50 the floor is the minimum and 100% is the target; the residue above is "
-                "named so it cannot be mistaken for work already done."),
-        }, indent=1), "utf-8")
-        print(f"  floors updated -> repo {floors['repo_pct']}% | "
-              f"money path {floors['money_path_pct']}%"
-              + ("  (RAISED)" if rose else "  (no raise -- last_raised unchanged)"))
+        last_raised = datetime.now(tz=UTC).isoformat() if rose else rec.get("last_raised")
+        RECORD.write_text(
+            json.dumps(
+                {
+                    "_": (
+                        "HIGH-WATER MARKS for test coverage. Raised by --update, NEVER lowered by code. "
+                        "The money path is tracked separately because a repo-wide average lets order-"
+                        "path coverage fall while research tests keep the aggregate up -- the average "
+                        "hides exactly the number worth watching."
+                    ),
+                    "updated": datetime.now(tz=UTC).isoformat(),
+                    "last_raised": last_raised,
+                    "high_water": floors,
+                    "measured": now,
+                    "money_path_files": list(MONEY_PATH),
+                    "slack_pp": SLACK,
+                    "next_ceiling": (
+                        "STILL money-path parity, and the gap is still the point. 41.6% -> 70.45% "
+                        "(2026-08-06) against 92.46% repo-wide: the direction is right and the inversion "
+                        "is not fixed. ~221 uncovered statements remain on the code that can place orders "
+                        "and move funds, and the three defects found writing those tests -- a flatten leg "
+                        "that could sell through zero, and GAP #49 wired into only one leg of a two-leg "
+                        "trade -- were all in the untested part, which is the whole argument. Parity is "
+                        "not the end either: the ceiling after it is the FAILURE branches specifically, "
+                        "since every incident this desk has had came from an error path, not a happy one. "
+                        "Per L1.50 the floor is the minimum and 100% is the target; the residue above is "
+                        "named so it cannot be mistaken for work already done."
+                    ),
+                },
+                indent=1,
+            ),
+            "utf-8",
+        )
+        print(
+            f"  floors updated -> repo {floors['repo_pct']}% | "
+            f"money path {floors['money_path_pct']}%"
+            + ("  (RAISED)" if rose else "  (no raise -- last_raised unchanged)")
+        )
         return 0
 
     if breaches:

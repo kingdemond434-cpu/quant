@@ -96,6 +96,102 @@ def derive_spot_realized(venue_realized_pnl: float, trades: list[dict[str, Any]]
     return round(dedup_basis(trades) - vr, 2)
 
 
+class FuturesLegReconciliation(BaseModel):
+    """Two independent measurements of the SAME futures leg, and their disagreement.
+
+    Measured 2026-08-05: the primary carry book published ``net_pnl +2938.01`` while the venue's
+    own income ledger said the futures leg was ``-4791.09`` since inception. The gap was
+    ``+4807.75``, the book's ONLY deployed sleeve read as profitable while it had lost $1,869.74,
+    and the note on the artifact says it "builds the forward track record the gate sizes on".
+
+    THE CAUSE IS A SHARED SOURCE, NOT A BROKEN HEDGE. ``fut_pnl = fut_eq - start_eq`` and
+    ``start_eq`` is ``capital_events.effective_start_equity`` -- the RUIN RAIL's inception, which a
+    principal-signed re-base legitimately moves. On 2026-08-01 a ``RESTART`` moved it 10,547.78 ->
+    5,757.08 so the rail would measure the post-fix book instead of latching on an already-fixed
+    churn-loop bug. That is correct FOR THE RAIL. It is not correct for P&L REPORTING, which must
+    measure from the first inception forever -- and both read one number, so the re-base silently
+    became $4,790.70 of reported profit. Same family as L1.51's ``_capital()``: a rail's reference
+    point and a performance number may not share a source when a re-base can move one of them.
+
+    THE INCOME LEDGER WINS, and the reason is structural rather than a preference: ``realized +
+    funding - commission`` is venue-native and has no re-baseable input, so no desk-side accounting
+    act can move it. The equity delta has exactly one, and that one moved.
+
+    EXPLAINED IS NOT THE SAME AS FINE, and keeping them apart is the whole point (L1.55's
+    ABSENT-vs-UNREADABLE discipline): a gap matching a ledgered re-base is a REPORTING defect with
+    a known cause, while a gap that matches nothing is the phantom class that earns a page. The
+    previous code collapsed both into one field named ``residual`` that no verdict ever cited.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    equity_delta: float | None       # fut_eq - start_eq (start_eq is RE-BASEABLE)
+    income_ledger: float | None      # realized + funding - commission + unrealized (venue-native)
+    gap: float | None                # equity_delta - income_ledger; 0 on an honest flat book
+    rebase_usd: float                # ledgered re-base that would explain a gap of this size
+    explained: bool                  # gap is attributable to the known re-base, within tolerance
+    measured: bool                   # False = an income term was unreadable; NOT a zero gap
+    reporting_pnl: float | None      # the number P&L reporting should publish
+    verdict: str
+
+
+def reconcile_futures_leg(
+    *,
+    equity_delta: float | None,
+    venue_realized: float | None,
+    funding: float | None,
+    commission: float | None,
+    unrealized: float = 0.0,
+    rebase_usd: float = 0.0,
+    tol: float = 25.0,
+) -> FuturesLegReconciliation:
+    """Cross-check the equity-delta futures PnL against the venue income ledger.
+
+    ``tol`` absorbs the honest slack between the two paths -- open-position marks move between the
+    equity read and the income read, and both are rounded. It is deliberately NOT scaled to the
+    gap: a tolerance that grows with the discrepancy it is meant to catch explains everything.
+
+    UNMEASURED IS NOT AGREEMENT. Any missing income term returns ``measured=False`` with no gap and
+    no reporting number, because "the venue read failed" and "the two agree" are different claims
+    and only one of them is evidence (the 2026-07-26 ``inf%`` verdict came from judging one as the
+    other). ``reporting_pnl`` then stays ``None`` so a caller cannot quietly substitute a fabricated
+    zero for a measurement that did not happen.
+    """
+    if equity_delta is None or venue_realized is None or funding is None or commission is None:
+        missing = [n for n, v in (("equity_delta", equity_delta),
+                                  ("venue_realized", venue_realized),
+                                  ("funding", funding), ("commission", commission)) if v is None]
+        return FuturesLegReconciliation(
+            equity_delta=equity_delta, income_ledger=None, gap=None, rebase_usd=rebase_usd,
+            explained=False, measured=False, reporting_pnl=None,
+            verdict=(f"UNMEASURED: {', '.join(missing)} unreadable -- the futures leg has one "
+                     f"measurement, not two, so the cross-check is UNDECIDABLE. A missing term is "
+                     f"not an agreeing term."))
+    income = round(float(venue_realized) + float(funding) - abs(float(commission))
+                   + float(unrealized), 2)
+    gap = round(float(equity_delta) - income, 2)
+    explained = abs(gap - float(rebase_usd)) <= tol
+    if abs(gap) <= tol:
+        verdict = (f"AGREE: equity delta {equity_delta:+.2f} and income ledger {income:+.2f} match "
+                   f"within {tol:.2f} -- the futures leg is measured twice and both agree.")
+    elif explained:
+        verdict = (
+            f"REBASE-LEAK: equity delta {equity_delta:+.2f} exceeds the venue income ledger "
+            f"{income:+.2f} by {gap:+.2f}, which matches the ledgered inception re-base of "
+            f"{rebase_usd:+.2f}. The rail's re-based inception has leaked into P&L REPORTING; the "
+            f"book has NOT earned this. Publishing {income:+.2f}.")
+    else:
+        verdict = (
+            f"PHANTOM: equity delta {equity_delta:+.2f} vs income ledger {income:+.2f} differ by "
+            f"{gap:+.2f}, and the ledgered re-base of {rebase_usd:+.2f} does NOT account for it. "
+            f"Two measurements of one leg disagree for an unknown reason -- treat as unexplained "
+            f"until a venue read proves otherwise (2026-07-10 phantom class).")
+    return FuturesLegReconciliation(
+        equity_delta=round(float(equity_delta), 2), income_ledger=income, gap=gap,
+        rebase_usd=round(float(rebase_usd), 2), explained=explained, measured=True,
+        reporting_pnl=income, verdict=verdict)
+
+
 class CarryBleedReport(BaseModel):
     """The standing carry-leak alarm: how much of the funding harvest survives to the net."""
 
@@ -142,7 +238,8 @@ def attribute_non_funding(
 
 
 def carry_bleed_report(
-    *, funding: float | None, spot_pnl: float, fut_pnl: float, alert_frac: float = 0.5
+    *, funding: float | None, spot_pnl: float, fut_pnl: float, alert_frac: float = 0.5,
+    open_legs: int | None = None, recon: FuturesLegReconciliation | None = None,
 ) -> CarryBleedReport:
     """Attribute the delta-neutral book's non-funding PnL and raise an alarm if the leak is eating
     the funding harvest.
@@ -184,12 +281,39 @@ def carry_bleed_report(
         eaten = float("inf") if non_funding < 0 else 0.0
     alert = (abs(non_funding) >= alert_frac * funding) if funding > 0.0 else (non_funding < 0.0)
     if alert and non_funding > 0.0:
-        verdict = (
-            f"BLEED(inverted): non-funding PnL {non_funding:+.2f} is "
-            f"{non_funding / funding:.0%} of {funding:+.2f} funding harvest -- delta-neutral price "
-            "legs cancel, so a gain this size means a NAKED/UNTRACKED leg, not edge; reconcile "
-            "spot vs perp qty before trusting the number"
-        )
+        # NAME THE CAUSE THE DATA SUPPORTS, NEVER THE ONE THE SHAPE SUGGESTS. This branch used to
+        # assert "a NAKED/UNTRACKED leg -- reconcile spot vs perp qty" unconditionally. On
+        # 2026-08-05 it fired for four days against a book holding ZERO positions, so the remedy it
+        # ordered was not merely wrong, it was IMPOSSIBLE TO PERFORM: there were no legs to
+        # reconcile, and an operator who checked found nothing and moved on. The real cause was an
+        # inception re-base leaking into P&L reporting, which `reconcile_futures_leg` identifies
+        # exactly. A confident wrong diagnosis is worse than an honest open question, because it
+        # closes the search (2026-07-10 phantom lesson, applied to the alarm rather than the book).
+        head = (f"BLEED(inverted): non-funding PnL {non_funding:+.2f} is "
+                f"{non_funding / funding:.0%} of {funding:+.2f} funding harvest")
+        if recon is not None and recon.measured and not recon.explained and recon.gap is not None \
+                and abs(recon.gap) > 0.0:
+            verdict = f"{head} -- {recon.verdict}"
+        elif recon is not None and recon.explained and recon.gap is not None and recon.gap != 0.0:
+            verdict = f"{head} -- ACCOUNTING, NOT EDGE. {recon.verdict}"
+        elif open_legs == 0:
+            # `open_legs` counts TRACKED carries, and untracked exposure is precisely what the
+            # naked-leg hypothesis is about -- so zero tracked legs narrows the field to two
+            # candidates rather than clearing the hedge. Saying "this cannot be a naked leg" here
+            # would repeat, inverted, the very error this branch exists to fix: on 2026-08-05 the
+            # same executor was logging 476 SPOT-EXCESS lines about wallet balances it did not
+            # track. State both, and name which one to check first.
+            verdict = (
+                f"{head} -- and the book tracks ZERO open carries, so the gain is realized and "
+                "cannot come from a tracked hedge. Two candidates remain, in this order: an "
+                "ACCOUNTING artifact (check the inception the futures leg is differenced against "
+                "against the venue income ledger), or UNTRACKED exposure the position map does "
+                "not know about (check wallet balances against tracked carries).")
+        else:
+            verdict = (
+                f"{head} -- delta-neutral price legs cancel, so a gain this size means a "
+                f"NAKED/UNTRACKED leg, not edge; reconcile spot vs perp qty across the "
+                f"{open_legs if open_legs is not None else 'open'} open leg(s) before trusting it")
     elif non_funding >= 0.0:
         verdict = f"clean: non-funding PnL {non_funding:+.2f} not a drain; harvest survives"
     elif not alert:

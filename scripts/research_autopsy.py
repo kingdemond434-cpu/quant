@@ -29,6 +29,7 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 GRAVE = ROOT / "docs/graveyard.md"
@@ -65,7 +66,7 @@ FAMILY = {
 }
 
 
-def classify(text: str, table: dict) -> list[str]:
+def classify(text: str, table: dict[str, Any]) -> list[str]:
     t = text.lower()
     return [k for k, kws in table.items() if any(w in t for w in kws)]
 

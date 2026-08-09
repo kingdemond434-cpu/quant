@@ -36,6 +36,7 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -103,8 +104,38 @@ SYSTEM = (
 )
 
 
+def _taxonomy_block(limit: int = 14_000) -> str:
+    """The standing hunting map (principal 2026-08-04), injected whole so every seat diffs its
+    suggestions against the desk's declared 30-domain universe instead of rediscovering it.
+    Bounded so a growing taxonomy cannot crowd out the mission; the head carries the domains and
+    coverage table, which is the half a scout needs."""
+    try:
+        p = ROOT / "docs/research/DATA_UNIVERSE_TAXONOMY.md"
+        text = p.read_text("utf-8")
+        return ("\n\n=== THE DESK'S STANDING DATA-UNIVERSE TAXONOMY (diff against this; "
+                "propose what it LACKS, per domain, and bulk one-word candidates by the "
+                "hundred) ===\n" + text[:limit])
+    except OSError:
+        return ""
+
+
+def _doctrine(role: str = "") -> str:
+    """Runtime doctrine preamble. One source (scripts/doctrine.py); never a pasted copy."""
+    try:
+        from scripts.doctrine import preamble
+        return preamble(role)
+    except Exception:  # blind-except intentional (BLE001)
+        try:
+            import sys as _s
+            _s.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent))
+            from doctrine import preamble  # type: ignore
+            return preamble(role)
+        except Exception:  # blind-except intentional (BLE001)
+            return ""          # never break a caller over a preamble
+
+
 def _ask(base_url: str, key: str, model: str, messages, timeout: float = 110.0) -> str:
-    body = json.dumps({"model": model, "max_tokens": 4000, "temperature": 0.9,
+    body = json.dumps({"model": model, "max_tokens": 16000, "temperature": 1.0,
                        # DEPTH IS MEASURED, NOT ASSUMED. "high" is the middle rung of a ladder
                        # whose top differs per model and per month -- a literal here is
                        # capability left unused on a flagship the desk pays for.
@@ -127,7 +158,9 @@ def _ask_pushed(base, key, model, system, user):
     ladder reuses it and keeps asking until novelty dies, the model surrenders, or the round cap
     binds. Returns (joined_text, stop_reason).
     """
-    r = push_rounds(lambda msgs: _ask(base, key, model, msgs), system, user, ladder=PUSH_LADDER)
+    r = push_rounds(lambda msgs: _ask(base, key, model, msgs),
+                    _doctrine("breadth_expander") + system + _taxonomy_block(),
+                    user, ladder=PUSH_LADDER)
     return r.text, f"{r.rounds} push round(s); {r.stop_reason}"
 
 
@@ -259,7 +292,7 @@ def main() -> None:
     with ThreadPoolExecutor(max_workers=9) as ex:
         answers = list(ex.map(_run, jobs))
 
-    rows: list[dict] = []
+    rows: list[dict[str, Any]] = []
     for lens_name, seat, txt, err in answers:
         if err:
             print(f"    {seat.split('/')[-1]:<24} {lens_name[:18]:<18} FAILED ({err})")

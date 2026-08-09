@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
@@ -73,16 +74,24 @@ def main() -> None:
     if not topic:
         print("no ntfy topic configured -- digest not paged")
         return
-    req = urllib.request.Request(f"https://ntfy.sh/{topic}", data=body.encode("utf-8"),
-                                 method="POST")
-    req.add_header("Title", "Quant desk: daily digest")
-    req.add_header("Priority", "low")               # informational -- never buzzes like an alarm
-    try:
-        urllib.request.urlopen(req, timeout=20)
-        STAMP.write_text(today, "utf-8")
-        print(f"digest paged ({len(parts)} lines)")
-    except Exception as exc:                        # a failed digest must never break a cycle
-        print(f"digest page failed: {exc!r}")
+    # ntfy.sh free tier rate-limits per source; the 08:30 slot can collide with the max_audit
+    # escalation page, and 2 of the first 4 digest fires died on HTTP 429 (delivery is the whole
+    # point -- a digest that half-fails is register-#3 all over again). One patient retry clears
+    # a burst limit; anything still failing after that is reported, never raised.
+    for attempt in (0, 1):
+        if attempt:
+            time.sleep(90)
+        req = urllib.request.Request(f"https://ntfy.sh/{topic}", data=body.encode("utf-8"),
+                                     method="POST")
+        req.add_header("Title", "Quant desk: daily digest")
+        req.add_header("Priority", "low")           # informational -- never buzzes like an alarm
+        try:
+            urllib.request.urlopen(req, timeout=20)
+            STAMP.write_text(today, "utf-8")
+            print(f"digest paged ({len(parts)} lines)")
+            return
+        except Exception as exc:                    # a failed digest must never break a cycle
+            print(f"digest page failed{' (after retry)' if attempt else ''}: {exc!r}")
 
 
 if __name__ == "__main__":

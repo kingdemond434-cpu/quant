@@ -4,6 +4,7 @@ down the live executor that feeds it."""
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -20,8 +21,9 @@ def _disk_guard_is_not_the_hosts_disk(monkeypatch):
     because the tape was broken but because the host was full. That is the same class the
     dependency-pin work chased: a suite green only because of the environment it ran in.
 
-    The guard itself is real and load-bearing, so it is not removed -- it is pinned here and
-    tested directly in `test_the_disk_guard_refuses_when_the_disk_is_actually_full`.
+    The guard itself is real and load-bearing, so it is not removed -- the THRESHOLD is pinned
+    here (keeping the real `_disk_ok` code path under test), and the guard's own behaviour is
+    tested directly in the disk-guard section below.
     """
     monkeypatch.setattr(execution_tape, "_DISK_MAX_FRAC", 1.01)
 
@@ -121,6 +123,8 @@ def test_tape_outlives_the_rolling_cap(tmp_path):
     assert json.loads(p.read_text("utf-8").splitlines()[0])["symbol"] == "S0USDT"
 
 
+# --- the disk guard itself: measured on the TAPE's filesystem, never on "/" ---------------------
+
 def test_the_disk_guard_refuses_when_the_disk_is_actually_full(tmp_path, monkeypatch):
     """The property the autouse fixture pins away, tested on purpose rather than by accident.
 
@@ -136,6 +140,16 @@ def test_the_disk_guard_refuses_when_the_disk_is_actually_full(tmp_path, monkeyp
     assert execution_tape.read(path=p) == []
 
 
+def test_full_disk_refuses_the_append_and_writes_nothing(tmp_path, monkeypatch):
+    """The same refusal, isolated from HOW the verdict was computed: whatever `_disk_ok` says,
+    `append` must honour a False and leave no trace behind."""
+    monkeypatch.setattr(execution_tape, "_disk_ok", lambda path=None: False)
+    p = tmp_path / "tape.jsonl"
+    assert execution_tape.append(_rec(), path=p) is False
+    assert not p.exists()                       # refused, not half-written
+    assert execution_tape.read(path=p) == []
+
+
 def test_the_guard_measures_the_filesystem_holding_the_tape(tmp_path):
     """It used to measure `/` unconditionally. Whenever data/ is a separate mount -- which is what
     the VPS deploy notes assume -- that is the wrong device in both directions: a full root blocks
@@ -147,3 +161,26 @@ def test_the_guard_measures_the_filesystem_holding_the_tape(tmp_path):
     deep = tmp_path / "does" / "not" / "exist" / "tape.jsonl"
     assert execution_tape._disk_ok(deep) in (True, False)     # resolves an ancestor, never raises
     assert execution_tape.append(_rec(), path=deep) is True
+
+
+def test_disk_guard_measures_the_tapes_own_filesystem_not_root(tmp_path, monkeypatch):
+    """It used to call shutil.disk_usage("/") whatever path the tape was on.
+
+    data/moat sits on its own volume whenever the box has a data disk, so "/" is then simply a
+    different disk -- and the guard would pause the tape on a full root while the moat volume sat
+    empty, or let writes fill the moat volume unchecked. append() is an observer whose return
+    value the executor ignores by design, so the refusing direction destroys fills silently: the
+    exact failure this module was built to stop.
+    """
+    seen: list[str] = []
+    real = execution_tape.shutil.disk_usage
+
+    def spy(p):
+        seen.append(str(p))
+        return real("/")
+
+    monkeypatch.setattr(execution_tape.shutil, "disk_usage", spy)
+    execution_tape._disk_ok(tmp_path / "moat" / "deep" / "tape.jsonl")
+    assert seen and seen[0] != "/"
+    # the tape's tree may not exist yet -- the nearest EXISTING ancestor is the right probe
+    assert Path(seen[0]) == tmp_path

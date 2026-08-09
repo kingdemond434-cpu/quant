@@ -4,7 +4,8 @@ the live regime with confidence and the risk / leverage multipliers every downst
 A latent state is just an index; this maps it onto an economically meaningful label (bull/bear x
 vol tier) from the real per-state mean return and volatility, then derives a LEVERAGE MULTIPLIER
 that only de-risks (<=1.0): smaller in high-vol / bear regimes, full in calm bull regimes. The HMM
-(temporal) and GMM (clustering) are cross-checked -- agreement => high confidence.
+(temporal) and GMM (clustering) are cross-checked -- agreement => high confidence, disagreement
+dampens confidence (it can only fall on disagreement, never rise).
 """
 
 from __future__ import annotations
@@ -16,7 +17,7 @@ import pandas as pd
 
 from libs.regime.bayesian import BayesianRegimeFilter
 from libs.regime.features import regime_features
-from libs.regime.gmm import fit_gmm
+from libs.regime.gmm import fit_gmm, gmm_posteriors
 from libs.regime.hmm import GaussianHMM
 
 _VOL_FACTOR = {"high_vol": 0.5, "mid_vol": 0.8, "low_vol": 1.0}
@@ -76,7 +77,10 @@ class RegimeEngine:
                                     self.hmm.startprob)
 
     def current(self) -> dict[str, object]:
-        """Live regime: HMM state label, confidence, GMM agreement, leverage multiplier."""
+        """Live regime: HMM state label, confidence, GMM agreement, leverage multiplier.
+
+        On HMM/GMM disagreement the confidence is dampened; the regime label is untouched.
+        """
         if self.hmm_states.size == 0:
             return {"regime": "unknown", "confidence": 0.0, "leverage_multiplier": 1.0}
         j = int(self.hmm_states[-1])
@@ -87,6 +91,16 @@ class RegimeEngine:
             gj = int(self.gmm.predict(self.x[-1:])[0])
             gmm_label = str(self.gmm_char[gj]["label"])
         agree = gmm_label == ch["label"]
+        if self.gmm is not None and not agree:
+            # Cross-model disagreement MUST dampen confidence (strictly conservative: this
+            # branch can only LOWER conf, never raise it, and only fires on a genuine
+            # disagreement -- an unfitted GMM is "no second opinion", not a contradiction).
+            # Scale the HMM posterior by the GMM's own posterior mass on the HMM's label; on
+            # disagreement the winning GMM component carries a different label, so this factor
+            # is strictly < 1 and a confident contradiction drives conf towards 0.
+            gp = gmm_posteriors(self.gmm, self.x[-1:])[0]
+            same = [m for m in range(self.k) if str(self.gmm_char[m]["label"]) == ch["label"]]
+            conf *= float(gp[same].sum())
         return {
             "regime": ch["label"], "trend": ch["trend"], "vol_tier": ch["vol_tier"],
             "confidence": round(conf, 3),

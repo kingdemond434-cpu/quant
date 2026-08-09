@@ -105,7 +105,13 @@ def test_an_UNREADABLE_marker_RE_VERIFIES_rather_than_passing(tmp_path: Path,
     back through the checks, not through the cache."""
     root = _tree(tmp_path)
     _all_pass(monkeypatch)
-    monkeypatch.setattr(Path, "stat", lambda self: (_ for _ in ()).throw(OSError("gone")))
+    marker = root / L._MARKER.name
+    original_stat = Path.stat
+    def selective_stat(self, *args, **kwargs):  # type: ignore[no-untyped-def]
+        if self == marker:
+            raise OSError("gone")
+        return original_stat(self, *args, **kwargs)
+    monkeypatch.setattr(Path, "stat", selective_stat)
     assert L.guard(root=root).cached is False
 
 

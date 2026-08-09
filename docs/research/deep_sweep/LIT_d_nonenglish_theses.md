@@ -687,3 +687,26 @@ Honest defects, declared rather than buried:
    more to a desk with a running kimchi signal than a fifth speculative card.
 3. **One dependency on a non-primary source:** the 2028 Japanese tax effective date comes from a tax
    practitioner's writeup, not from 国税庁/金融庁. Flagged in D-3 and in the universe-map entry.
+
+---
+
+## RUN-4 ADDENDUM 2026-07-31 — divergent-query probes (STEP −1 duty), measured results
+
+Three queries a different searcher would run (litminer would not have chosen them), run per the
+spec's divergent-search-planning duty:
+
+1. **J-STAGE `ファンディングレート` → EXACTLY 0 results** ("検索条件に該当する記事が見つかりません").
+   The Japanese ACADEMIC corpus has never used the funding-rate loanword at all — sharper than the
+   earlier nulls (仮想通貨 流動性 → 62 hits but all law/tax; 暗号資産 裁定取引 → 0). JP-language
+   funding-rate knowledge lives ENTIRELY in the practitioner web (Money Partners / Monex CryptoBank
+   glossaries, onchain-guide.com). CONSEQUENCE for the corpus map: the JP perp-mechanism layer is a
+   PRACTITIONER-WEB ground (blogs/note.com/Bilibili-equivalents), not an academic one — allocate JP
+   budget accordingly; J-STAGE crypto-derivatives sub-corpus graded EXHAUSTED-BY-ABSENCE 2026-07-31.
+2. **Patents (liquidation engine / ADL):** no crypto-mechanism patents surfaced in a targeted
+   search — the mechanism knowledge is in practitioner explainers, not patent filings. Weak pointer
+   logged: Cryptonomist 2026-07-29 BitMEX retrospective (venue-mechanism HISTORY — insurance-fund /
+   ADL rule changes are regime-boundary metadata for the desk's BitMEX funding decade). Not opened
+   this run (bounded); named for the data-axis miner.
+3. **Retraction DB systematic crypto sweep:** retractiondatabase.org redirect-loops from this box
+   (routing, not a wall); site-search found NO crypto retractions beyond the already-mined Lucey
+   cluster. Honest null: the Lucey cluster IS the crypto retraction story to date.

@@ -26,8 +26,24 @@ def _get(url: str) -> dict[str, object]:
 
 
 def okx_inst(symbol: str) -> str:
-    """BTCUSDT -> BTC-USDT-SWAP."""
+    """BTCUSDT -> BTC-USDT-SWAP -- including the re-denominated micro-cap tickers.
+
+    THE COVERAGE GAP THIS CLOSES (R0294 / L0061, RU frontier miner 2026-08-01). Binance names a
+    re-denominated contract in the TICKER (1000SHIBUSDT = 1000 SHIB per contract unit) while OKX
+    carries the SAME asset under its bare name and puts the multiplier in the contract size
+    (SHIB-USDT-SWAP, ctVal=1e6). A literal string join therefore MISSES the asset entirely rather
+    than mismatching it: the old mapping resolved 260 of 653 Binance perps and silently dropped
+    SHIB, PEPE, FLOKI, BONK, SATS -- the whole micro-cap corner where funding dispersion is
+    largest. Stripping the numeric prefix is CORRECT here because funding is a dimensionless
+    RATE: the 1000x lives in contract size, not in the rate, so no value rescaling is needed --
+    and grading this as a "1000x scaling bug" would have been wrong for exactly that reason.
+    Prefixes seen on Binance: 1000, 10000, 1000000 (and 1MBABYDOGE-style "1M").
+    """
     base = symbol[:-4] if symbol.endswith("USDT") else symbol
+    for pre in ("1000000", "10000", "1000", "1M"):
+        if base.startswith(pre) and len(base) > len(pre) and not base[len(pre)].isdigit():
+            base = base[len(pre):]
+            break
     return f"{base}-USDT-SWAP"
 
 

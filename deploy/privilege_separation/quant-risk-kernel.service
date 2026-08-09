@@ -1,0 +1,29 @@
+[Unit]
+Description=Quant survival path under an isolated non-login account
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=quant-risk
+Group=quant-risk
+WorkingDirectory=/opt/quant-risk-kernel
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=-/etc/quant-risk-kernel/environment
+ExecStart=/opt/quant-risk-kernel/venv/bin/python /opt/quant-risk-kernel/scripts/run_deadman_switch.py
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ReadWritePaths=/var/lib/quant-risk-kernel /var/log/quant-risk-kernel
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+
+[Install]
+WantedBy=multi-user.target

@@ -11,6 +11,8 @@ cached data regardless.
 
 from __future__ import annotations
 
+import json
+import os
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -18,6 +20,29 @@ from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parent.parent
 _PY = sys.executable
+# R0258: best-effort is right for the CHAIN, but a swallowed step failure killed the flagship
+# cash-carry forward clock for a full day with zero alarm. Every run now leaves a machine-readable
+# status artifact that run_alerts.py reads on its watchdog tick and PAGES on failed steps.
+_STATUS = _ROOT / "data" / "research_chain_status.json"
+
+
+def _write_status(failed: list[dict[str, object]], total: int) -> None:
+    """Atomic status drop for the pager (same-dir tmp + os.replace, the run_deadman_switch.py
+    idiom): the alerts reader must see either the whole old file or the whole new one, never a
+    torn write. Best-effort -- a status-write failure must never abort the research chain."""
+    payload = {
+        "generated": datetime.now(tz=UTC).isoformat(),
+        "runner": "run_daily_research",
+        "steps_total": total,
+        "failed": failed,
+    }
+    try:
+        _STATUS.parent.mkdir(parents=True, exist_ok=True)
+        tmp = _STATUS.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(payload, indent=2), "utf-8")
+        os.replace(tmp, _STATUS)
+    except OSError as e:
+        print(f"[status-write-failed] {e!r}"[:160])
 # Crypto-ONLY research chain. Data collection (OI/LS/taker/breadth/regime) is now owned by the
 # always-on executor's flywheel, so this is PURE RESEARCH -- spawned daily by the executor (it no
 # longer depends on the fragile QuantDaily scheduled task). MT5 abandoned.
@@ -62,6 +87,7 @@ _STEPS = [
 def main() -> None:
     print(f"=== QuantDaily {datetime.now(tz=UTC).isoformat()} ===")
     results: list[tuple[str, str]] = []
+    failed: list[dict[str, object]] = []
     for label, args in _STEPS:
         print(f"\n--- {label} ---", flush=True)
         try:
@@ -71,13 +97,23 @@ def main() -> None:
             print(tail)
             if proc.returncode != 0:
                 print(f"[stderr] {proc.stderr.strip()[-400:]}")
+                failed.append({"step": label, "rc": proc.returncode,
+                               "tail": (proc.stderr.strip() or proc.stdout.strip())[-400:]})
             results.append((label, "ok" if proc.returncode == 0 else f"exit {proc.returncode}"))
         except Exception as e:  # best-effort daily batch, never abort the chain
             results.append((label, f"error: {e!r}"[:80]))
+            failed.append({"step": label, "rc": "error", "tail": repr(e)[:400]})
             print(f"[error] {e!r}")
+    _write_status(failed, len(_STEPS))
     print("\n=== summary ===")
     for label, status in results:
         print(f"  {label:34} {status}")
+    if failed:
+        # last stdout line ON PURPOSE: daily_research_cycle._run keeps exactly this line as the
+        # step tail, so the outer cycle's own status artifact names the inner failures too.
+        print(f"FAILED steps ({len(failed)}/{len(_STEPS)}): "
+              + "; ".join(str(f["step"]) for f in failed))
+        raise SystemExit(1)  # R0258: nonzero exit so callers that DO look see the truth
 
 
 if __name__ == "__main__":

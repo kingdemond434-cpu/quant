@@ -4,7 +4,7 @@ size/stage guards must never violate their invariants under any input."""
 
 from __future__ import annotations
 
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis import strategies as st
 
 import libs.execution.staging as staging
@@ -24,29 +24,44 @@ def test_starts_at_s0_by_default(tmp_path, monkeypatch) -> None:  # type: ignore
 def test_promotion_never_skips_a_stage(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
     _isolate(tmp_path, monkeypatch)
     full_evidence = {
-        "principal_signoff": True, "capital_fraction": 0.05, "symbol_count": 5,
-        "keys_present": True, "connector_verified": True,
-        "live_weeks": 10.0, "calibration_rows": 12, "critical_drill_failures": 0,
+        "principal_signoff": True,
+        "capital_fraction": 0.05,
+        "symbol_count": 5,
+        "keys_present": True,
+        "connector_verified": True,
+        "live_weeks": 10.0,
+        "calibration_rows": 12,
+        "critical_drill_failures": 0,
         "cost_ratio": 1.1,
     }
     assert staging.current_stage() == "S0"
     ok, _why = staging.promote(full_evidence)
     assert ok is True
-    assert staging.current_stage() == "S1"                 # S0 -> S1 only, never straight to S2
+    assert staging.current_stage() == "S1"  # S0 -> S1 only, never straight to S2
     ok2, _why2 = staging.promote(full_evidence)
     assert ok2 is True
     assert staging.current_stage() == "S2"
     ok3, _why3 = staging.promote(full_evidence)
-    assert ok3 is False                                    # S2 is terminal
+    assert ok3 is False  # S2 is terminal
     assert staging.current_stage() == "S2"
 
 
 def test_s1_gate_blocks_on_any_missing_precondition(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
     _isolate(tmp_path, monkeypatch)
-    base = {"principal_signoff": True, "capital_fraction": 0.05, "symbol_count": 5,
-            "keys_present": True, "connector_verified": True}
-    bad_values = {"principal_signoff": False, "capital_fraction": 1.0, "symbol_count": 0,
-                  "keys_present": False, "connector_verified": False}
+    base = {
+        "principal_signoff": True,
+        "capital_fraction": 0.05,
+        "symbol_count": 5,
+        "keys_present": True,
+        "connector_verified": True,
+    }
+    bad_values = {
+        "principal_signoff": False,
+        "capital_fraction": 1.0,
+        "symbol_count": 0,
+        "keys_present": False,
+        "connector_verified": False,
+    }
     for key, bad_val in bad_values.items():
         bad = dict(base)
         bad[key] = bad_val
@@ -56,8 +71,12 @@ def test_s1_gate_blocks_on_any_missing_precondition(tmp_path, monkeypatch) -> No
 
 def test_s1_gate_rejects_symbol_count_outside_4_to_5(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
     _isolate(tmp_path, monkeypatch)
-    base = {"principal_signoff": True, "capital_fraction": 0.05, "keys_present": True,
-            "connector_verified": True}
+    base = {
+        "principal_signoff": True,
+        "capital_fraction": 0.05,
+        "keys_present": True,
+        "connector_verified": True,
+    }
     for n in (0, 1, 2, 3, 6, 10):
         assert staging.s1_entry_met({**base, "symbol_count": n})[0] is False
     for n in (4, 5):
@@ -66,8 +85,12 @@ def test_s1_gate_rejects_symbol_count_outside_4_to_5(tmp_path, monkeypatch) -> N
 
 def test_s2_gate_blocks_on_any_missing_precondition(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
     _isolate(tmp_path, monkeypatch)
-    base = {"live_weeks": 10.0, "calibration_rows": 12, "critical_drill_failures": 0,
-            "cost_ratio": 1.1}
+    base = {
+        "live_weeks": 10.0,
+        "calibration_rows": 12,
+        "critical_drill_failures": 0,
+        "cost_ratio": 1.1,
+    }
     assert staging.s2_entry_met(base)[0] is True
     assert staging.s2_entry_met({**base, "live_weeks": 7.9})[0] is False
     assert staging.s2_entry_met({**base, "calibration_rows": 9})[0] is False
@@ -78,9 +101,14 @@ def test_s2_gate_blocks_on_any_missing_precondition(tmp_path, monkeypatch) -> No
 def test_demotion_is_unlimited_and_instant(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
     _isolate(tmp_path, monkeypatch)
     full_evidence = {
-        "principal_signoff": True, "capital_fraction": 0.05, "symbol_count": 5,
-        "keys_present": True, "connector_verified": True,
-        "live_weeks": 10.0, "calibration_rows": 12, "critical_drill_failures": 0,
+        "principal_signoff": True,
+        "capital_fraction": 0.05,
+        "symbol_count": 5,
+        "keys_present": True,
+        "connector_verified": True,
+        "live_weeks": 10.0,
+        "calibration_rows": 12,
+        "critical_drill_failures": 0,
         "cost_ratio": 1.1,
     }
     staging.promote(full_evidence)
@@ -91,14 +119,17 @@ def test_demotion_is_unlimited_and_instant(tmp_path, monkeypatch) -> None:  # ty
     ok2, target2 = staging.demote("second tripwire same day -- unlimited")
     assert ok2 is True and target2 == "S0"
     ok3, _target3 = staging.demote("already at floor")
-    assert ok3 is False                                    # S0 is the floor, demotion is a no-op
+    assert ok3 is False  # S0 is the floor, demotion is a no-op
 
 
 def test_every_transition_is_logged(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
     _isolate(tmp_path, monkeypatch)
     full_evidence = {
-        "principal_signoff": True, "capital_fraction": 0.05, "symbol_count": 5,
-        "keys_present": True, "connector_verified": True,
+        "principal_signoff": True,
+        "capital_fraction": 0.05,
+        "symbol_count": 5,
+        "keys_present": True,
+        "connector_verified": True,
     }
     staging.promote(full_evidence)
     staging.demote("test")
@@ -109,35 +140,58 @@ def test_every_transition_is_logged(tmp_path, monkeypatch) -> None:  # type: ign
 
 
 @given(
-    signoff=st.booleans(), cap_frac=st.floats(0.0, 1.0), n_sym=st.integers(0, 10),
-    keys=st.booleans(), verified=st.booleans(),
+    signoff=st.booleans(),
+    cap_frac=st.floats(0.0, 1.0),
+    n_sym=st.integers(0, 10),
+    keys=st.booleans(),
+    verified=st.booleans(),
 )
 def test_s1_gate_property_matches_conjunction(  # type: ignore[no-untyped-def]
-    signoff: bool, cap_frac: float, n_sym: int, keys: bool, verified: bool,
+    signoff: bool,
+    cap_frac: float,
+    n_sym: int,
+    keys: bool,
+    verified: bool,
 ) -> None:
     """The gate is exactly the AND of its five named checks -- no hidden leniency."""
-    evidence = {"principal_signoff": signoff, "capital_fraction": cap_frac,
-                "symbol_count": n_sym, "keys_present": keys, "connector_verified": verified}
+    evidence = {
+        "principal_signoff": signoff,
+        "capital_fraction": cap_frac,
+        "symbol_count": n_sym,
+        "keys_present": keys,
+        "connector_verified": verified,
+    }
     expected = signoff and cap_frac <= 0.10 and 4 <= n_sym <= 5 and keys and verified
     assert staging.s1_entry_met(evidence)[0] == expected
 
 
 @given(
-    weeks=st.floats(0.0, 20.0), rows=st.integers(0, 30), fails=st.integers(0, 5),
+    weeks=st.floats(0.0, 20.0),
+    rows=st.integers(0, 30),
+    fails=st.integers(0, 5),
     cost=st.floats(0.5, 3.0),
 )
 def test_s2_gate_property_matches_conjunction(  # type: ignore[no-untyped-def]
-    weeks: float, rows: int, fails: int, cost: float,
+    weeks: float,
+    rows: int,
+    fails: int,
+    cost: float,
 ) -> None:
-    evidence = {"live_weeks": weeks, "calibration_rows": rows,
-                "critical_drill_failures": fails, "cost_ratio": cost}
+    evidence = {
+        "live_weeks": weeks,
+        "calibration_rows": rows,
+        "critical_drill_failures": fails,
+        "cost_ratio": cost,
+    }
     expected = weeks >= 8.0 and rows >= 10 and fails == 0 and cost <= 1.25
     assert staging.s2_entry_met(evidence)[0] == expected
 
 
+@settings(deadline=None)
 @given(actions=st.lists(st.booleans(), min_size=1, max_size=12))
 def test_stage_always_in_valid_range_under_any_sequence(  # type: ignore[no-untyped-def]
-    tmp_path_factory, actions: list[bool],
+    tmp_path_factory,
+    actions: list[bool],
 ) -> None:
     """No sequence of promote/demote calls can ever push the stage outside {S0,S1,S2} or skip
     a stage in one hop -- the core safety property of the whole machine."""
@@ -147,9 +201,14 @@ def test_stage_always_in_valid_range_under_any_sequence(  # type: ignore[no-unty
     importlib.reload(staging)
     staging._STATE = tmp / "stage_state.json"
     full_evidence = {
-        "principal_signoff": True, "capital_fraction": 0.05, "symbol_count": 5,
-        "keys_present": True, "connector_verified": True,
-        "live_weeks": 10.0, "calibration_rows": 12, "critical_drill_failures": 0,
+        "principal_signoff": True,
+        "capital_fraction": 0.05,
+        "symbol_count": 5,
+        "keys_present": True,
+        "connector_verified": True,
+        "live_weeks": 10.0,
+        "calibration_rows": 12,
+        "critical_drill_failures": 0,
         "cost_ratio": 1.1,
     }
     prev_idx = _STAGES.index(staging.current_stage())
@@ -160,11 +219,12 @@ def test_stage_always_in_valid_range_under_any_sequence(  # type: ignore[no-unty
             staging.demote("fuzz")
         idx = _STAGES.index(staging.current_stage())
         assert idx in (0, 1, 2)
-        assert abs(idx - prev_idx) <= 1                     # never a 2-stage jump
+        assert abs(idx - prev_idx) <= 1  # never a 2-stage jump
         prev_idx = idx
 
 
 # ------------------------------------------------ what the machine believes when the record is bad
+
 
 def test_A_CORRUPT_STATE_FILE_FALLS_BACK_TO_S0_NOT_TO_THE_LAST_STAGE(  # type: ignore[no-untyped-def]
     tmp_path, monkeypatch
@@ -180,7 +240,7 @@ def test_A_CORRUPT_STATE_FILE_FALLS_BACK_TO_S0_NOT_TO_THE_LAST_STAGE(  # type: i
     error" is a natural-sounding change that silently converts a fail-safe into a fail-open.
     """
     _isolate(tmp_path, monkeypatch)
-    staging._STATE.write_text('{"stage": "S2", "history": [] ', "utf-8")   # truncated mid-write
+    staging._STATE.write_text('{"stage": "S2", "history": [] ', "utf-8")  # truncated mid-write
     assert staging.current_stage() == "S0"
 
 

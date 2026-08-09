@@ -35,15 +35,35 @@ sys.path.insert(0, str(ROOT))
 from libs.self_improvement import forecast_calibration as fc  # noqa: E402
 
 _UA = {"User-Agent": "Mozilla/5.0 (quant-desk forecast-scorer)"}
+# THE SYMBOL ALPHABET INCLUDES DIGITS, and leaving them out failed in BOTH directions (R0367).
+# These patterns were `[A-Z]{2,12}USD[TC]?`, so `S2USDT` matched nothing at all -- 46 forecasts
+# aged past their deadline ungraded and check_calibration sat OVERDUE, which is not merely a red
+# fence: an ungraded forecast never counts its miss, so the measured hit-rate can only rise, and
+# `report()`'s bias term feeds calibrated_confidence and from there Kelly leverage. A calibration
+# input that cannot fall is exactly the over-confidence L1.29 exists to catch.
+# The quieter half is worse. On a multiplier ticker the old pattern still matched -- but it
+# matched the WRONG INSTRUMENT: `1000PEPEUSDT` yielded `PEPEUSDT`, a different contract priced
+# 1000x apart, so the forecast would have been resolved against the wrong series and scored as a
+# confident hit or miss on a number that was never the claim. Silently returning a plausible
+# wrong answer beats loudly returning none, in the only direction that matters here.
 # "trades above 63216.2", "trade ABOVE 63007.5", "above the 4h shelf at 62441.9"
-_ABOVE = re.compile(r"\b([A-Z]{2,12}USD[TC]?)\b.*?\b(?:trades?|trade)\s+ABOVE\s+([0-9]+\.?[0-9]*)",
+_ABOVE = re.compile(r"\b([A-Z0-9]{2,12}USD[TC]?)\b.*?\b(?:trades?|trade)\s+ABOVE\s+([0-9]+\.?[0-9]*)",
                     re.I)
 # "LONG BTCUSDT @13.97x stop 0.86% (below the 4h shelf at 62441.9 ...)"
 # "SHORT SOLUSDT @7.34x stop 1.63% (... 73.47 cap ...)" -- mirror of the LONG pattern.
 _CONVICTION_SHORT = re.compile(
-    r"SHORT\s+([A-Z]{2,12}USD[TC]?)\b.*?stop\s+([0-9.]+)%.*?([0-9]+\.[0-9]+)", re.I)
+    r"SHORT\s+([A-Z0-9]{2,12}USD[TC]?)\b.*?stop\s+([0-9.]+)%.*?([0-9]+\.[0-9]+)", re.I)
 _CONVICTION = re.compile(
-    r"LONG\s+([A-Z]{2,12}USD[TC]?)\b.*?stop\s+([0-9.]+)%.*?shelf\s+at\s+([0-9]+\.?[0-9]*)", re.I)
+    r"LONG\s+([A-Z0-9]{2,12}USD[TC]?)\b.*?stop\s+([0-9.]+)%.*?shelf\s+at\s+([0-9]+\.?[0-9]*)", re.I)
+
+
+def auto_resolvable(claim: str) -> bool:
+    """Can this scorer grade that claim WITHOUT judgement? The three patterns above, and nothing
+    else. Exported so `check_calibration` can name -- before the deadline rather than after -- the
+    forecasts no organ and no parser can ever score. Those rows fire OVERDUE the day they come due
+    and can never be cleared, which pins the L1.29 fence and is how a fence gets switched off
+    (L1.43). Reads the same compiled patterns `main()` dispatches on, so the two cannot drift."""
+    return any(p.search(claim or "") for p in (_CONVICTION_SHORT, _CONVICTION, _ABOVE))
 
 
 def _price_at(symbol: str, when: datetime) -> float | None:

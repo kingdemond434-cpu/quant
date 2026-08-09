@@ -158,7 +158,11 @@ def _from_utilisation() -> list[dict[str, Any]]:
     for c in d.get("ceilings", []) or []:
         name = str(c.get("name"))
         source = ("capital_utilisation" if "capital" in name else
-                  "evidence_throughput" if "slot" in name else
+                  # "queue" as well as "slot": forward_queue_depth (R0205) measures what is
+                  # STAGED BEHIND the cohort, which is evidence throughput and not capital. The
+                  # default branch below is capital_utilisation, so an unmatched research ceiling
+                  # is silently filed against the wrong bottleneck rather than left unrouted.
+                  "evidence_throughput" if ("slot" in name or "queue" in name) else
                   "dormant_capability" if "capability" in name else
                   "measurement_quality" if "kill_rate" in name else "capital_utilisation")
         out.append(_item(
@@ -246,9 +250,22 @@ def _from_conversion() -> list[dict[str, Any]]:
     arr, disp = d.get("arrivals_7d"), d.get("dispositions_7d")
     flow = None if arr is None or disp is None else min(1.0, disp / arr) if arr else 1.0
     detail = d.get("detail") or "data/conversion_status.json missing -- run check_conversion.py"
-    action = ("repair-mode: flip the next audit/brain window from finding to fixing; drain "
-              "past-due rows first (each names its own fix)" if d.get("repair_mode")
-              else "keep dispositions >= arrivals; a row nobody closes is a cost already paid")
+    # THREE STATES, NOT TWO. This read `if d.get("repair_mode")`, which was `status != "OK"` at
+    # the source and therefore TRUE for ARRIVALS-COLLAPSED -- so the desk's top-ranked queue told
+    # a window that had found almost nothing to go and convert instead of hunting. The direction
+    # field (L1.28b(d)) separates "the queue is deep" from "the hunt has gone quiet"; they demand
+    # opposite work and only one of them is a conversion problem.
+    _ACTION = {
+        "DRAIN": ("repair-mode: flip the next audit/brain window from finding to fixing; drain "
+                  "past-due rows first (each names its own fix)"),
+        "FIND-HARDER": ("arrivals collapsed: HUNT HARDER this window -- do NOT redirect it to "
+                        "the backlog; raising the ratio by finding less is the denominator "
+                        "trick L1.28b(f) forbids"),
+        "STEADY": "keep dispositions >= arrivals; a row nobody closes is a cost already paid",
+    }
+    action = _ACTION.get(str(d.get("direction") or ""),
+                         "conversion state UNREADABLE -- treat as owing work, not as nothing "
+                         "owing (L1.28a); run scripts/check_conversion.py")
     return [
         _item("conversion::queue_dispositioned", "conversion_debt",
               None if ratio is None else float(ratio), 1.0, detail, action,

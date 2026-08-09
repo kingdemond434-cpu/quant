@@ -37,7 +37,7 @@ def _market_max_qty(sym: str) -> float:
                 for f in s["filters"]:
                     if f["filterType"] == "MARKET_LOT_SIZE":
                         return float(f["maxQty"])
-    except Exception:
+    except Exception:  # blind-except intentional (BLE001)
         pass
     return 100_000.0
 
@@ -97,7 +97,7 @@ def main() -> None:
                 },
                 method="POST",
             )
-        except Exception as e:
+        except Exception as e:  # blind-except intentional (BLE001)
             print(f"      CHUNK FAILED: {e!r} -- stopping. Position left at {pos_amt(creds):+,.1f}")
             print("      Not retrying blindly; blind retries created this incident.")
             break

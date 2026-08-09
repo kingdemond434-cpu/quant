@@ -118,6 +118,7 @@ if str(_ROOT) not in sys.path:
 from scripts.run_trade_review import N_SUPPORT  # noqa: E402
 
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
+from libs.research import liquidation_brief  # noqa: E402
 
 _BOOK = "data/conviction_book.jsonl"
 _STATE = "data/conviction_trader.json"
@@ -420,6 +421,38 @@ STOP_MISMATCH_TOL = 0.25               # relative
 #: ~0.015R); it exists for the extreme-funding regime -- 0.3%/8h has been observed on meme perps,
 #: which over a 20h hold at a 0.9% stop is ~0.8R of pure bleed. The refusal is those trades.
 COST_REFUSE_R = 0.5
+
+
+def event_window() -> Any:
+    """The scheduled-event verdict for RIGHT NOW, or None if the guard itself is unavailable.
+
+    R0276. THE TWO ABSENCES ARE NOT THE SAME and this is the one place they get separated. A
+    missing or expired CALENDAR is the guard working: it returns EMPTY/STALE and blocks, because
+    an unknown event window must never read as a clear one. A missing GUARD MODULE is this
+    script's dependency being broken, and blocking every entry on an ImportError would let a
+    packaging mistake silently halt the sleeve -- a much larger loss than the one the guard
+    prevents. So the calendar fails CLOSED and the import fails OPEN, deliberately, and the open
+    branch is published in the state file rather than swallowed (L2.4).
+    """
+    try:
+        from libs.execution.event_guard import check
+    except ImportError:
+        return None
+    try:
+        return check()
+    except OSError:
+        return None
+
+
+def _event_state() -> dict[str, Any]:
+    """The event verdict rendered for the published state file -- always present, never silent."""
+    v = event_window()
+    if v is None:
+        return {"state": "GUARD-UNAVAILABLE", "allowed": True,
+                "why": "libs.execution.event_guard could not be loaded -- entries are NOT being "
+                       "screened against the scheduled-event calendar. This is a dependency "
+                       "defect, not a quiet market"}
+    return {"state": v.state, "allowed": bool(v.allowed), "why": v.why}
 
 
 def trade_cost_view(root: Path, symbol: str, direction: str, stop_pct: float,
@@ -1021,19 +1054,43 @@ def setup_features(call: dict[str, Any], charts: dict[str, Any] | None) -> dict[
     return f
 
 
-def _chart_brief(root: Path, heat: dict[str, Any] | None = None, *, max_chars: int = 9000) -> str:
-    """The charts, trimmed to what fits and honest about what did not.
+#: Bound on the spawn-time inline chart rebuild (R0148). The chart organ normally runs from box
+#: cron every 20 minutes (ops/crontab.manifest); this ceiling exists only so a wedged venue call
+#: cannot stall the trader indefinitely when it has to build its own chart. Generous, because the
+#: alternative to waiting is reasoning blind on structure.
+CHART_BUILD_TIMEOUT_S: float = 240.0
+#: Age beyond which chart structure is treated as stale. The builder's cron cadence is 20
+#: minutes, so 2h means at least five consecutive missed builds -- the organ has STOPPED, not
+#: hiccuped. Same threshold the stale warning always used, now named so the rebuild trigger and
+#: the warning cannot drift apart.
+CHART_STALE_H: float = 2.0
 
-    Instruments already live are dropped: heat is capped and the same-symbol trade is refused
-    anyway, so spending brief on them buys nothing. STALE and MISSING are stated -- a trader
-    reasoning over yesterday's structure while believing it is today's is worse than one who
-    knows it is blind."""
+
+def _build_charts_inline(root: Path, *, timeout: float = CHART_BUILD_TIMEOUT_S) -> str | None:
+    """R0148 spawn-time fallback: run build_chart_context.py HERE, bounded, when the cron organ
+    has not. Returns None on success, else a short reason string for the caller to degrade with.
+
+    The live incident behind the row: box cron was not running the chart builder, the context
+    file was absent, and every spawn degraded straight to "CHARTS UNAVAILABLE ... trading BLIND"
+    -- a leveraged directional sleeve reasoning with no price structure at all. The manifest-side
+    fix reschedules the organ (ops/crontab.manifest, */20); THIS is the in-repo closure: the
+    trader builds the chart it is about to reason over, so no box-cron state can make it open a
+    position blind. Failure here is REPORTED, never swallowed -- the degraded path must say why
+    it is degraded."""
     try:
-        raw = json.loads((root / "data/chart_context.json").read_text("utf-8"))
-    except (OSError, ValueError) as exc:
-        return (f"CHARTS UNAVAILABLE ({type(exc).__name__}) -- build_chart_context.py has not run "
-                "on this host. You are trading BLIND on structure: do not name a swing level you "
-                "cannot see, and PASS unless the non-chart evidence alone is compelling.")
+        r = subprocess.run(
+            [sys.executable, str(root / "scripts/build_chart_context.py"), "--json"],
+            cwd=root, capture_output=True, text=True, timeout=timeout)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return f"{type(exc).__name__}: {exc}"[:300]
+    if r.returncode != 0:
+        tail = " ".join((r.stderr or r.stdout or "no output").split())[-240:]
+        return f"builder exit {r.returncode}: {tail}"
+    return None
+
+
+def _chart_age(raw: dict[str, Any]) -> tuple[float | None, str]:
+    """Age of the chart snapshot in hours, and the note the brief carries about it."""
     try:
         age_h: float | None = (datetime.now(tz=UTC)
                                - datetime.fromisoformat(raw["generated"])).total_seconds() / 3600.0
@@ -1042,13 +1099,71 @@ def _chart_brief(root: Path, heat: dict[str, Any] | None = None, *, max_chars: i
         # NOT swallowed: an unreadable timestamp means the trader cannot tell fresh structure from
         # a stale snapshot, and that must reach the trader rather than vanish into a default.
         age_h, age_note = None, f"age UNMEASURED ({type(exc).__name__}) -- treat as possibly STALE"
+    return age_h, age_note
+
+
+def _chart_brief(root: Path, heat: dict[str, Any] | None = None, *, max_chars: int = 9000) -> str:
+    """The charts, trimmed to what fits and honest about what did not.
+
+    Instruments already live are dropped: heat is capped and the same-symbol trade is refused
+    anyway, so spending brief on them buys nothing. STALE and MISSING are stated -- a trader
+    reasoning over yesterday's structure while believing it is today's is worse than one who
+    knows it is blind.
+
+    R0148: MISSING or STALE context now triggers ONE bounded inline build and a re-read before
+    any degradation. The blind path below still exists -- it is the honest state when even the
+    inline build fails -- but it is reachable only THROUGH a failed build, and the failure is
+    named in the same brief the model reads rather than implied by silence."""
+    rebuilt: str | None = None
+    try:
+        raw = json.loads((root / "data/chart_context.json").read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        build_err = _build_charts_inline(root)
+        if build_err is None:
+            try:
+                raw = json.loads((root / "data/chart_context.json").read_text("utf-8"))
+                rebuilt = "chart context was MISSING at spawn; rebuilt inline"
+            except (OSError, ValueError) as reread:
+                build_err = f"build reported success but re-read failed ({type(reread).__name__})"
+        if build_err is not None:
+            # The pre-R0148 degraded path, kept verbatim in its instruction -- but now reachable
+            # only through a FAILED inline build, and that failure is recorded loudly here.
+            return (f"CHARTS UNAVAILABLE ({type(exc).__name__}) -- build_chart_context.py has not "
+                    f"run on this host AND the spawn-time inline rebuild failed ({build_err}). "
+                    "You are trading BLIND on structure: do not name a swing level you "
+                    "cannot see, and PASS unless the non-chart evidence alone is compelling.")
+    age_h, age_note = _chart_age(raw)
+    # STALE is MISSING arriving slowly -- the same stopped-cron defect -- so it gets the same
+    # cure: one bounded rebuild (short-circuit: the build only runs when actually stale). On
+    # failure the stale copy stays in hand and the stale warning below still fires, so this can
+    # only tighten, never hide.
+    if (rebuilt is None and (age_h is None or age_h > CHART_STALE_H)
+            and _build_charts_inline(root) is None):
+        try:
+            raw = json.loads((root / "data/chart_context.json").read_text("utf-8"))
+            rebuilt = f"chart context was STALE at spawn ({age_note}); rebuilt inline"
+            age_h, age_note = _chart_age(raw)
+        except (OSError, ValueError) as reread:
+            # NOT SWALLOWED (L2.4). The MISSING branch twenty lines up treats this exact failure
+            # loudly -- "build reported success but re-read failed" -- and leaving its STALE twin
+            # on `pass` made a builder that claims success and then writes an unreadable file
+            # indistinguishable from a builder that simply has not run. Only the first is a defect
+            # the desk can act on, and it was the one being erased. The stale copy stays in hand
+            # and the stale WARNING below still fires on the unchanged age, so this can only add
+            # information, never hide any.
+            rebuilt = (f"chart context was STALE at spawn ({age_note}); the inline rebuild "
+                       f"reported SUCCESS but its output could not be re-read "
+                       f"({type(reread).__name__}) -- the levels below are the STALE copy")
     held = set((heat or {}).get("symbols") or [])
     charts = {k: v for k, v in (raw.get("charts") or {}).items() if k not in held}
     head = f"(chart context {age_note}, {raw.get('status')}: {raw.get('detail')})\n"
-    if age_h is None or age_h > 2:
+    if age_h is None or age_h > CHART_STALE_H:
         head = ("WARNING -- CHART STRUCTURE MAY BE STALE"
                 + (f" ({age_h:.1f}h old)" if age_h is not None else "")
                 + ", treat levels as approximate.\n") + head
+    if rebuilt is not None:
+        head = (f"NOTE -- {rebuilt}. The scheduled chart organ (ops/crontab.manifest) had not "
+                "run; the desk should check the box cron.\n") + head
     body = json.dumps(charts, separators=(",", ":"))
     if len(body) > max_chars:
         body = body[:max_chars] + f'... [TRUNCATED at {max_chars} chars of {len(body)}]'
@@ -1065,8 +1180,7 @@ def ensemble_consensus(reads: list[dict[str, Any] | None]) -> tuple[dict[str, An
     Imposing a filter without keeping what it rejected makes that unanswerable."""
     got = [r for r in reads if r]
     if not got:
-        return None, {"state": "NO-READS", "n": 0,
-                      "why": "no parseable read (auth/quota/refusal)"}
+        return None, {"state": "NO-READS", "n": 0, "why": _no_read_why()}
     votes: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for r in got:
         if r.get("action") == "PASS":
@@ -1098,8 +1212,12 @@ def ensemble_consensus(reads: list[dict[str, Any] | None]) -> tuple[dict[str, An
 
 def build_brief(root: Path) -> dict[str, Any]:
     brief: dict[str, Any] = {"generated": datetime.now(tz=UTC).isoformat(), "context": {}}
+    # See run_llm_trader.build_brief -- same defect, same cure (R0245). The old entry read
+    # data/liquidations.jsonl, which has never existed, inside the except OSError below, so this
+    # sleeve has built every conviction brief of its life with no liquidation context and said so
+    # in a string that reads identically to a dead collector.
+    brief["context"]["liquidations"] = liquidation_brief.for_brief(root, window_min=60)
     for label, rel, n in (("funding", "data/bitmex_funding.jsonl", 4),
-                          ("liquidations", "data/liquidations.jsonl", 6),
                           ("tradeable_events", "data/exchange_announcements.jsonl", 6)):
         try:
             lines = (root / rel).read_text("utf-8", errors="ignore").splitlines()
@@ -1142,7 +1260,8 @@ def build_brief(root: Path) -> dict[str, Any]:
 
 def validate(call: dict[str, Any], *, noise: dict[str, Any] | None = None,
              heat: dict[str, Any] | None = None,
-             costs: dict[str, Any] | None = None) -> tuple[bool, str]:
+             costs: dict[str, Any] | None = None,
+             event: Any | None = None) -> tuple[bool, str]:
     if call.get("action") == "PASS":
         if not call.get("pass_reason"):
             return False, "REFUSED: a PASS must state why -- an unjustified pass is not a decision"
@@ -1228,6 +1347,21 @@ def validate(call: dict[str, Any], *, noise: dict[str, Any] | None = None,
             return False, (f"REFUSED: already live in {call['symbol']} -- doubling the same "
                            "instrument is concentration wearing a second name, which is exactly "
                            "what the spread-the-heat design exists to avoid")
+    # SCHEDULED-EVENT DEFERRAL (R0276), and it is LAST on purpose. A stop is a promise the book
+    # cannot keep across a scheduled repricing: FOMC gaps straight through the level, so the
+    # invalidation this desk derives its size from stops being the loss it is sized against.
+    #
+    # Placed after every quality check so a malformed call still gets its REAL refusal. Ordering
+    # it first would mask the model's actual mistake behind a timing verdict for 45 minutes at a
+    # time, and the desk would lose the feedback it uses to score the sleeve.
+    #
+    # DEFERRED IS NOT REFUSED, and the vocabulary carries that: the thesis is intact and the same
+    # entry is available on the other side of the window. This costs ZERO statistical power --
+    # nothing here judges whether an edge is real -- so it is not a bar and cannot be one.
+    if event is not None and not getattr(event, "allowed", True):
+        return False, (f"DEFERRED ({getattr(event, 'state', '?')}): {getattr(event, 'why', '')} "
+                       "-- the thesis is untouched and this entry is available again once the "
+                       "window closes")
     return True, "accepted"
 
 
@@ -1354,14 +1488,42 @@ _LENSES: tuple[str, ...] = (
 )
 
 
+#: Whatever the shell last actually reported, for the NO-CALL path to cite. Same fix as
+#: run_llm_trader._LAST_CALL_FAILURE -- both organs guessed at their own failure identically.
+_LAST_CALL_FAILURE = ""
+
+
 def _ask(prompt: str, timeout: int = 600) -> str:
+    """Ask the brain, and KEEP the evidence when it refuses.
+
+    This dropped stderr and the return code and returned `r.stdout or ""`, so both NO-CALL sites
+    below reported the hardcoded guess "(auth/quota/refusal)" -- three causes named, none checked.
+    Worse, it put the literal word "auth" into the log of an organ whose real problem was an empty
+    CREDIT BALANCE, which is what made the stub-death fence report a quota outage as an auth
+    failure and would have sent anyone debugging it at the credentials instead of the billing.
+    With ENSEMBLE_N lens calls per run this also silently converted N transport failures into
+    "the models disagreed", which is a completely different and much more interesting claim.
+    """
+    global _LAST_CALL_FAILURE
     r = subprocess.run(
         ["bash", "-c",
          'source ops/brain_env.sh && brain_auth_check || exit 90 && '
          'claude --effort xhigh --append-system-prompt "$_DOCTRINE" -p "$0" '
          '--dangerously-skip-permissions', prompt],
         cwd=_ROOT, capture_output=True, text=True, timeout=timeout)
+    if r.returncode != 0:
+        err = (r.stderr or r.stdout or "").strip().replace("\n", " ")[:300]
+        # 90 is brain_auth_check's own exit code -- the ONE case where auth is established.
+        _LAST_CALL_FAILURE = (
+            f"brain_auth_check refused before the model was reached (exit 90): {err}"
+            if r.returncode == 90 else f"claude exited {r.returncode}: {err}")
     return r.stdout or ""
+
+
+def _no_read_why() -> str:
+    """Why there was no usable read -- the measured cause where we have one, never a guess."""
+    return (f"call FAILED -- {_LAST_CALL_FAILURE}" if _LAST_CALL_FAILURE else
+            "models ran but returned no parseable JSON (a refusal or malformed answers)")
 
 
 def parse(raw: str) -> dict[str, Any] | None:
@@ -1418,7 +1580,7 @@ def main() -> int:
     reads = [parse(_ask(base + _LENSES[i % len(_LENSES)])) for i in range(ENSEMBLE_N)]
     call, consensus = ensemble_consensus(reads)
     if call is None:
-        state = {"status": "NO-CALL", "why": "no parseable JSON (auth/quota/refusal)",
+        state = {"status": "NO-CALL", "why": _no_read_why(),
                  "at": datetime.now(tz=UTC).isoformat()}
     else:
         noise = None
@@ -1443,7 +1605,14 @@ def main() -> int:
                                             float(call["horizon_hours"]))
             except (KeyError, TypeError, ValueError):
                 costs = None                   # malformed call -- validate names the real refusal
-        ok, why = validate(call, noise=noise, heat=heat, costs=costs)
+        # SCHEDULED-EVENT WINDOW (R0276). Computed here and INJECTED, like noise/heat/costs, so
+        # validate() stays a pure function of its arguments and the tests can put the clock
+        # wherever they need it. Only for real entries: a PASS reprices nothing, and this guard
+        # has no opinion on closes.
+        event = None
+        if call.get("action") != "PASS":
+            event = event_window()
+        ok, why = validate(call, noise=noise, heat=heat, costs=costs, event=event)
         if not ok:
             state = {"status": "REFUSED", "why": why, "call": call, "noise": noise}
         elif call.get("action") == "PASS":
@@ -1456,6 +1625,12 @@ def main() -> int:
     state["drawdown_rail"] = dd
     state["heat"] = heat
     state["ensemble"] = consensus
+    # PUBLISHED WHETHER OR NOT IT BOUND (R0276). The guard blocks on EMPTY and STALE as well as on
+    # a real blackout, which is the right direction -- but an unpopulated or expired calendar would
+    # then stop every entry, and a sleeve that has quietly stopped trading looks exactly like a
+    # sleeve finding no setups. Putting the state on every run makes those two distinguishable
+    # without reading the refusal text. The calendar's own refresh_by is the repair.
+    state["event_window"] = _event_state()
     state.setdefault("at", datetime.now(tz=UTC).isoformat())
     (_ROOT / _STATE).write_text(json.dumps(state, indent=2), "utf-8")
     print(json.dumps(state, indent=2) if args.json else

@@ -76,3 +76,49 @@ Authored per-axis hypotheses, EV-gated honestly (no tuning-to-pass), routed per 
 - **Mechanism:** Cross-asset trend/carry agreement (FX carry, commodity trend, equity trend all risk-on) as a breadth-100 conditioning state for crypto sleeve sizing -- the diversified-macro regime read, distinct from any single index.
 - **Construction/falsify:** Construction: 3-asset-class trend agreement score -> sleeve sizing multiplier within existing rails. Falsify: regime-split difference insignificant at 40 fwd days. Overlay penalty applies.
 - **EV:** 0.0023 (p_survive 0.0525, tags ['crowded_known']) -> REJECT (EV below thresh)
+
+---
+
+## COT POSITIONING PANEL -- pre-registered 2026-07-29 BEFORE any computation (register #77)
+
+Not a crypto axis: this is a MEASUREMENT on 26 years of free CFTC Commitments-of-Traders data that
+the desk has owned and never read. Two questions, both pre-committed here with their kill criteria
+so the result cannot be spun after the fact. Screen only -- ZERO promotion authority (L1.6).
+
+### A. post_publication_decay (measurement, not a signal)
+- **Question:** the desk adopted a BORROWED -58% McLean-Pontiff post-publication haircut as a
+  standing prior (register #71). Does the desk's own panel reproduce it?
+- **Mechanism under test:** hedging-pressure / speculator-positioning effects were published
+  ~1992-2000 (Bessembinder 1992; De Roon-Nijman-Veld 2000) and became widely tradeable after.
+  If publication crowds an effect, its Sharpe should fall AFTER the publication boundary.
+- **Construction (fixed now):** commercial net position / open interest, 52-week z-score, weekly
+  observations; sign-based time-series positioning on the next week's return. Split at 2000-01-01
+  (the later of the two canonical publication dates). Sharpe before vs after; decay reported as
+  1 - (Sharpe_after / Sharpe_before).
+- **Kill/report criteria:** the number is the deliverable either way. Measured decay materially
+  below the borrowed 58% means the imported prior is too harsh for this data and must be
+  re-derived, not re-used; materially above means the prior is optimistic. Both outcomes are
+  reported; neither promotes anything.
+- **Trials charged:** 2 (commercial and non-commercial constructions), logged per asset.
+
+### B. ghr_lagged_positioning (a gating test with direct budget value)
+- **Question:** Gorton-Hayashi-Rouwenhorst REJECT hedging pressure -- positions significant
+  CONTEMPORANEOUSLY, zero LAGGED. Only the lagged form is tradeable. Does the desk's panel agree?
+- **Construction (fixed now):** regress next-week return on LAGGED positioning z (the only
+  tradeable form), per asset and pooled, Newey-West t-stats.
+- **PRE-COMMITTED CONSEQUENCE:** if pooled lagged predictability is indistinguishable from zero,
+  that is a REJECT for the positioning-axis CLASS, and it CANCELS any multi-week crypto
+  positioning-data acquisition on the queue -- a negative result with immediate budget value.
+  If it is significant, the crypto positioning acquisition is JUSTIFIED and gets a clock.
+- **Trials charged:** 1 pooled + one per asset, all logged.
+
+### Honest scope, fixed before running
+- Price legs come from FRED (public domain, keyless): WTI crude, EUR/USD, USD/JPY, GBP/USD,
+  S&P 500, 10Y Treasury yield -> mapped to their COT contracts. Metals, grains and softs are
+  DROPPED, not silently omitted: Stooq sits behind a JS proof-of-work bot gate and register #80
+  is an OPEN principal ruling on whether defeating an anti-bot gate is inside §13 -- so the gate
+  was not defeated, and Yahoo's chart endpoint returned HTTP 429. The panel is therefore 6 assets
+  wide, and that limit is part of the result, not a footnote.
+- Weekly alignment: COT is as-of Tuesday, published Friday. Returns are taken from the FOLLOWING
+  week to avoid using data before it was public -- the publication lag is a lookahead trap and is
+  handled explicitly, not assumed away.

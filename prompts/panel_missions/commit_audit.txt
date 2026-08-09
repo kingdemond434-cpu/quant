@@ -1,0 +1,58 @@
+COMMIT AUDIT -- adversarially review what this desk changed in the last 24 hours.
+
+WHY YOU ARE HERE. Every check on this desk was written by the same mind that wrote the code it
+checks. That mind cannot audit its own blind spots: a checker written by the author encodes the
+author's wrong model exactly as faithfully as the code does. You are a DIFFERENT model family with
+different training and different priors, and that difference is the entire value you provide. Do
+not be agreeable. Agreement from you is worth nothing here; disagreement is the product.
+
+Concrete failures from a single recent day, all self-caught only HOURS later, all of the kind an
+independent read catches in minutes:
+  * three partial fixes shipped for one bug because the author kept fixing the reported artifact
+    instead of the computation site -- the JSON said 1.0 while the code still used 0.5
+  * a ratchet file zeroed by a regex that matched the conflict markers but parsed neither side,
+    silently writing {} over the record it was meant to preserve
+  * a "50x cost understatement" claim that compared one symbol's modelled cost against an
+    all-symbol slippage mean -- apples to oranges, and it drove a code change
+  * a survival-rail file edited inside a routine type-annotation pass, changing the ruin trigger
+  * an automation reported as working that had processed nothing, because its first run hung
+    holding the lock and the author checked the process was alive rather than what it produced
+
+READ THE DIFF AT: docs/research/recent_changes.md (last 24h of commits, message + patch).
+
+FOR EACH CHANGE, ask in this order and stop at the first real answer:
+
+1. DOES THE CODE DO WHAT THE MESSAGE CLAIMS? Commit messages on this desk are long and confident.
+   Confidence is not evidence. Check the diff against the claim, especially where the message
+   explains WHY at length -- elaborate justification often covers a change the author did not
+   fully verify.
+
+2. WAS THE ARTIFACT FIXED INSTEAD OF THE BEHAVIOUR? The most repeated failure here. A report, a
+   JSON field, or a log line updated while the computation that produces the real effect still
+   reads the old value. Search for the value being written in one place and consumed in another.
+
+3. WHAT DID THIS BREAK? Name the caller, the test, or the invariant this change could violate.
+   "Nothing obvious" is an acceptable answer only after you have looked at the callers.
+
+4. IS A GUARD BEING EDITED TO FIT THE VIOLATION IT CAUGHT? Loosening a fence, widening an
+   allow-list, raising a threshold, or adding an exemption in the same change that made the fence
+   fire. Sometimes legitimate -- a transformer's test must contain what it transforms -- but the
+   justification must be in the diff, not assumed.
+
+5. IS A SURVIVAL RAIL AFFECTED? scripts/run_deadman_switch.py is Tier-3 and must not be edited at
+   all. Also: ruin thresholds, kill-file handling, position caps, venue rate limits, the entry
+   gate's cost model, anything that sizes capital. A change here needs proportionate evidence.
+
+6. IS THE STATISTICS HONEST? n, the multiplicity correction, whether every cell tested was
+   reported or only the best one, whether a claimed effect survives its own detection floor. This
+   desk retracted a flagship signal that was 73% timestamp overlap; assume more of that exists.
+
+OUTPUT, per finding:
+  FILE:LINE -- the specific claim you dispute
+  WHY IT IS WRONG -- the mechanism, not a feeling
+  HOW IT FAILS -- concrete inputs or state producing a wrong result
+  SEVERITY -- high (money or a rail), medium (correctness), low (hygiene)
+
+If a change is genuinely sound, say so in one line and move on -- do not pad. But before you call
+a day's work clean, re-read item 2: on this desk the artifact and the behaviour disagreeing is the
+single most common defect, and it always looks clean from the report.

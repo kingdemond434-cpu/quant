@@ -35,6 +35,7 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 GRAVE = ROOT / "docs/graveyard.md"
@@ -197,7 +198,7 @@ def concepts_of(text: str) -> set[str]:
     return {c for c, kws in CONCEPTS.items() if any(k in t for k in kws)}
 
 
-def score(h: dict) -> dict:
+def score(h: dict[str, Any]) -> dict[str, Any]:
     blob = " ".join(str(h.get(k, "")) for k in ("name", "mechanism", "data", "test"))
     t = blob.lower()
     cs = concepts_of(blob)

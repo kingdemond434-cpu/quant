@@ -1,6 +1,6 @@
 {
- "best_finds": 18,
- "updated": "2026-08-07T11:18:40.080501+00:00",
- "metric": "carded",
- "note": "desk's best-ever TOTAL carded-find count in one snapshot (mining VOLUME, not the un-dispositioned backlog); ratchets UP only -- mining volume may never regress (principal 2026-07-25)"
+    "best_finds":  18,
+    "updated":  "2026-08-06T07:00:29.649286+00:00",
+    "metric":  "carded",
+    "note":  "desk\u0027s best-ever carded-find count in one snapshot; ratchets UP only -- mining volume may never regress (principal 2026-07-25)"
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""RECOMMENDATION LEDGER (§41, principal 2026-07-26) -- nothing recommended is ever forgotten.
+"""RECOMMENDATION LEDGER (§42, principal 2026-07-26) -- nothing recommended is ever forgotten.
 
 THE HOLE. track_findings.py governs PANEL findings only (model / summary / accepted-or-rejected).
 Everything else this desk produces a recommendation from -- max_audit defects, the weekly deep cold
@@ -25,16 +25,33 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
+# `python3 scripts/recommendations.py` puts scripts/ on sys.path[0], NOT the repo root, so `libs`
+# is unimportable however sound the code is. The L1.29 hook's refusal path caught this on its first
+# live call and printed rather than swallowed -- which is the only reason it was a one-line fix and
+# not a permanently silent no-op wearing a green tick.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 LEDGER = ROOT / "docs/research/recommendation_ledger.json"
 
 # A recommendation may sit undisposed for one cycle -- long enough to be triaged in the next
 # organ run, short enough that it cannot quietly become permanent.
+#
+# L1.48 EXEMPTION CLAIMED, AND IT IS THE NARROW ONE. `GRACE_H` is not an evidence clock and never
+# was: it is the DUTY horizon -- how long a row may rest before someone owes it a decision -- and
+# duty is denominated in wall-clock because the principal reads a dashboard in wall-clock. It is
+# deliberately NOT the SKIP test. Elapsed hours cannot distinguish a row nobody would look at from
+# a row nobody DID look at, and conflating them is what welded this fence shut (see `owed`).
 GRACE_H = 24.0
+SWEEPS = ROOT / "data/carryover_sweeps.jsonl"
+# The §37 bar, borrowed verbatim rather than re-invented: shown to a LIVE cycle at least twice in a
+# row and still open. Two organs measure this one backlog and only one of them had this discipline.
+SKIP_SWEEPS = 2
 _TERMINAL = ("implemented", "rejected")
 _MIN_REASON = 25          # a bare "no" / "wontfix" is not a disposition
 
@@ -42,9 +59,17 @@ _MIN_REASON = 25          # a bare "no" / "wontfix" is not a disposition
 def _load() -> dict[str, Any]:
     if LEDGER.exists():
         try:
-            return json.loads(LEDGER.read_text("utf-8"))
-        except Exception:
-            pass
+            loaded: dict[str, Any] = json.loads(LEDGER.read_text("utf-8"))
+            return loaded
+        except Exception as e:
+            # A corrupt ledger must NEVER read as empty-healthy: `report` would print
+            # "0 total, nothing overdue" and the next _save would atomically replace
+            # every row with the empty dict -- the mass-deletion the ledger law forbids.
+            # Observed live 2026-07-31: merge-conflict markers committed to origin read
+            # here as a clean empty ledger. Refuse loudly; git history repairs it.
+            raise SystemExit(
+                f"REFUSING: {LEDGER} exists but cannot be parsed ({e}); repair it from "
+                "git history -- an unreadable ledger must never become an empty one") from e
     return {"recommendations": []}
 
 
@@ -62,6 +87,69 @@ def _age_h(iso: str) -> float:
         return 0.0
 
 
+def _next_id(d: dict) -> str:
+    """Allocate past BOTH the local ledger and the last-fetched origin/master copy (R0152).
+
+    Count-based allocation minted the same id on two boxes three times on 2026-07-31
+    (R0135-37, R0143, R0144): each box counts its own rows, so concurrent sessions collide
+    and every merge renumbers rows and repoints code comments. Max-known-id with origin
+    consulted (git show reads the fetched ref -- no network) shrinks the race window from
+    all-day to since-last-fetch; an unreadable origin falls back to the local max, which
+    still never re-mints an id a renumber has already retired.
+    """
+    import re
+    import subprocess
+    nums = [int(m.group(1)) for r in d["recommendations"]
+            if (m := re.match(r"R(\d+)$", str(r.get("id", ""))))]
+    try:
+        remote = subprocess.run(
+            ["git", "show", "origin/master:docs/research/recommendation_ledger.json"],
+            capture_output=True, text=True, timeout=10,
+            cwd=Path(__file__).resolve().parent.parent)
+        if remote.returncode == 0:
+            nums += [int(x) for x in re.findall(r'"id":\s*"R(\d+)"', remote.stdout)]
+    except (OSError, subprocess.SubprocessError):
+        pass                                   # offline clone: local max still monotonic
+    return f"R{(max(nums) if nums else 0) + 1:04d}"
+
+
+def _forecast_add(rid: str, rows: list) -> dict | None:
+    """Pre-register the L1.29 forecast for a new row. NEVER fatal to the ledger write.
+
+    The ledger is the organ; the calibration hook is instrumentation ON it. If the forecast log is
+    unwritable, the recommendation must still be ledgered -- losing a row to a broken side-effect
+    would trade the thing §42 exists to guarantee for the thing measuring it. The failure is
+    printed, not swallowed (L2.4): a silent except here would make an unwritable forecast log look
+    exactly like a healthy one.
+    """
+    try:
+        from libs.research.recommendation_forecast import on_add
+        return on_add(rid, rows)
+    except (ImportError, OSError, ValueError, KeyError, TypeError) as e:
+        print(f"  WARNING: L1.29 forecast not logged for {rid}: {type(e).__name__}: {e}")
+        return None
+
+
+def _settle_forecasts(rows: list) -> None:
+    """Grade every past-due `rec:*` forecast. Runs on EVERY invocation of this CLI.
+
+    Cheap (one small JSON read) and unconditional, because the alternative is a cron line that can
+    silently stop -- and an ungraded forecast inflates the desk's apparent hit-rate by never
+    counting its misses. This CLI is invoked constantly, so hanging the resolver off it makes the
+    forecasts self-closing by construction rather than by schedule.
+    """
+    try:
+        from libs.research.recommendation_forecast import settle
+        done = settle(rows)
+    except (ImportError, OSError, ValueError, KeyError, TypeError) as e:
+        print(f"  WARNING: L1.29 forecasts not settled: {type(e).__name__}: {e}")
+        return
+    if done:
+        hit = sum(1 for x in done if x["outcome"])
+        print(f"  L1.29: graded {len(done)} past-due forecast(s) -- {hit} implemented, "
+              f"{len(done) - hit} not")
+
+
 def add(a: argparse.Namespace) -> None:
     d = _load()
     # DEDUPE on (source, summary): organs re-read the same audit report every cycle, and a ledger
@@ -71,13 +159,17 @@ def add(a: argparse.Namespace) -> None:
         if r["source"] == a.source and r["summary"].strip() == a.summary.strip():
             print(f"{r['id']} already ledgered ({r['status']})")
             return
-    rid = f"R{len(d['recommendations']) + 1:04d}"
+    rid = _next_id(d)
     d["recommendations"].append({
         "id": rid, "source": a.source, "summary": a.summary,
         "roi_bps": a.roi_bps, "raised": datetime.now(tz=UTC).isoformat(),
         "status": "open", "reason": None, "commit": None, "due": None, "disposed": None})
     _save(d)
     print(f"{rid} ledgered from {a.source} -- OPEN, disposition owed within {GRACE_H:.0f}h")
+    fx = _forecast_add(rid, d["recommendations"])
+    if fx:
+        print(f"  L1.29 forecast {fx['key']} p={fx['p']} [{fx['provenance']}] "
+              f"resolve_by {fx['resolve_by'][:10]}")
 
 
 def dispose(a: argparse.Namespace) -> None:
@@ -141,6 +233,67 @@ def correct(a: argparse.Namespace) -> None:
           "a fresh disposition is now owed")
 
 
+def sweeps_shown() -> dict[str, int]:
+    """Row id -> how many sweeps the brain was AWAKE for have carried it.
+
+    THE MEASUREMENT THIS FENCE WAS MISSING. `data/carryover_sweeps.jsonl` records every §37 sweep
+    with an `alive` flag and the ids it carried, and the §37 brief already uses it to say "survived
+    N sweeps, N with the brain awake". This fence -- looking at the SAME backlog -- had no notion of
+    it and judged purely on elapsed hours.
+
+    An unreadable or absent record returns ``{}``, which degrades toward MORE alarm, not less:
+    every owed row then reports zero sweeps shown and none can claim the queued exemption.
+    """
+    counts: dict[str, int] = {}
+    if not SWEEPS.exists():
+        return counts
+    try:
+        lines = SWEEPS.read_text("utf-8").splitlines()
+    except OSError:
+        return counts
+    for line in lines:
+        if not line.strip():
+            continue
+        try:
+            sweep = json.loads(line)
+        except ValueError:
+            continue
+        if not sweep.get("alive"):          # a sweep the brain slept through shows nobody anything
+            continue
+        for rid in sweep.get("ids") or []:
+            if isinstance(rid, str) and rid.startswith("rec-owed-"):
+                counts[rid[len("rec-owed-"):]] = counts.get(rid[len("rec-owed-"):], 0) + 1
+    return counts
+
+
+def drain(d: dict[str, Any], window_h: float = 72.0) -> dict[str, float]:
+    """Arrivals vs dispositions over a trailing window -- the property a LEVEL cannot express.
+
+    THE DETECTOR THE DESK DID NOT HAVE. The old fence counted how many rows were open past grace,
+    which on 2026-08-01 (131 raised, 48 disposed) said exactly what it had said the day before and
+    what it said on a day the queue drained: RED. A backlog that is being worked down and one that
+    is running away look identical to a level. Measured 2026-08-05 over the ledger's whole life,
+    the level fence read RED for 226 of its 226 informative hours -- a gate that is always on
+    carries no information (L1.43), and one that cries wolf gets switched off (L1.37).
+    """
+    arrived = disposed = unstamped = 0
+    for r in d["recommendations"]:
+        if _age_h(r.get("raised")) <= window_h:
+            arrived += 1
+        dd = r.get("disposed")
+        if dd and _age_h(dd) <= window_h:
+            disposed += 1
+        # R0259: rows that reached a terminal state through an organ writing the JSON directly
+        # carry no `disposed` stamp, so they are real dispositions this window CANNOT see. Counted
+        # and published rather than silently dropped -- an undercounted numerator biases the drain
+        # verdict toward RUNNING AWAY, which is the direction that manufactures a false alarm.
+        elif not dd and r.get("status") not in ("open", "scheduled"):
+            unstamped += 1
+    return {"window_h": window_h, "arrived": arrived, "disposed": disposed,
+            "net": disposed - arrived, "terminal_unstamped": unstamped,
+            "ratio": (disposed / arrived) if arrived else float("inf")}
+
+
 def owed(d: dict[str, Any]) -> tuple[list[Any], list[Any]]:
     """(undisposed past grace, scheduled past due) -- the two ways a row goes stale."""
     now = datetime.now(tz=UTC)
@@ -167,12 +320,33 @@ def report(_a: argparse.Namespace) -> None:
           f"{sum(1 for r in rows if r['status'] == 'rejected')} rejected | "
           f"{sum(1 for r in rows if r['status'] == 'scheduled')} scheduled | "
           f"{sum(1 for r in rows if r['status'] == 'open')} open")
+    # THE QUEUE, NOT JUST ITS LEVEL. Printed first because it is the line that changes day to day.
+    fl = drain(d)
+    verdict = ("DRAINING" if fl["net"] > 0 else "FLAT" if fl["net"] == 0 else "RUNNING AWAY")
+    print(f"  queue/{fl['window_h']:.0f}h: {fl['arrived']} in, {fl['disposed']} out, "
+          f"net {fl['net']:+d} -- {verdict}"
+          + (f" (+{fl['terminal_unstamped']} terminal but unstamped, invisible to this window)"
+             if fl["terminal_unstamped"] else ""))
+    shown = sweeps_shown()
+    # SEPARATE "NOBODY LOOKED" FROM "NOBODY WOULD HAVE LOOKED YET". Both still owe a disposition and
+    # both are still printed; only one of them is evidence that work is being walked past. Calling a
+    # row raised into a quota-dead window "skipped" is a false positive, and a fence whose alarms
+    # are mostly false is a fence that gets ignored -- which is how the real skips hid among them.
     for label, group in (("UNDISPOSED past grace", orphans), ("SCHEDULED past due", overdue)):
         for r in group:
-            print(f"  DEFECT [{label}] {r['id']} ({r['source']}, {_age_h(r['raised']) / 24:.1f}d): "
-                  f"{r['summary'][:110]}")
+            n = shown.get(r["id"], 0)
+            tag = ("DEFECT" if n >= SKIP_SWEEPS else "OWED")
+            note = (f"skipped, shown to {n} live sweep(s)" if n >= SKIP_SWEEPS
+                    else f"queued, shown to {n} live sweep(s)")
+            print(f"  {tag} [{label}] {r['id']} ({r['source']}, "
+                  f"{_age_h(r['raised']) / 24:.1f}d, {note}): {r['summary'][:100]}")
+    n_skip = sum(1 for r in orphans + overdue if shown.get(r["id"], 0) >= SKIP_SWEEPS)
+    n_owed = len(orphans) + len(overdue)
     if not orphans and not overdue:
         print("  no orphans, nothing overdue -- every recommendation has a decision")
+    else:
+        print(f"  {n_owed} row(s) owe a disposition; {n_skip} of them are SKIPS "
+              f"(shown to >={SKIP_SWEEPS} live sweeps and still open)")
 
 
 def main() -> None:
@@ -186,7 +360,14 @@ def main() -> None:
     p.set_defaults(func=add)
     p = sub.add_parser("dispose", help="record the decision -- the only way a row leaves open")
     p.add_argument("--id", required=True)
-    p.add_argument("--status", required=True, choices=["implemented", "rejected", "scheduled"])
+    # R0259: the CLI accepted three statuses while organs were writing `done` and `screened`
+    # directly into the JSON, so 15 rows reached a terminal state through a path with no timestamp
+    # and no reason check. Migrating them to `implemented` was the other option offered and it
+    # DESTROYS information -- a SCREENED axis (the section-33 screen-on-discovery duty) is not an
+    # implemented recommendation, and collapsing the two would make the conversion record lie about
+    # which kind of work was done. Teach the CLI the vocabulary the desk actually uses instead.
+    p.add_argument("--status", required=True,
+                   choices=["implemented", "rejected", "scheduled", "done", "screened"])
     p.add_argument("--reason")
     p.add_argument("--commit")
     p.add_argument("--due", help="YYYY-MM-DD, required for scheduled")
@@ -201,6 +382,7 @@ def main() -> None:
     p = sub.add_parser("report", help="orphans and overdue -- both are defects, not backlog")
     p.set_defaults(func=report)
     a = ap.parse_args()
+    _settle_forecasts(_load()["recommendations"])
     a.func(a)
 
 

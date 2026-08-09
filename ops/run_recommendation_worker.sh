@@ -25,7 +25,14 @@ cd /home/quant/quant-platform
 source ops/brain_env.sh
 
 mkdir -p data/cro_ai_logs
-LOG="data/cro_ai_logs/recommendation_worker_$(date -u +%Y%m%dT%H%M).log"
+# PER-DAY, NOT PER-RUN (2026-08-05, stub-deaths defect). This was %Y%m%dT%H%M, so a worker firing
+# every 20 minutes minted up to 72 log files a day. Every fence that counts LOG FILES then read one
+# persistently-sick organ as dozens of dead ones: the stub-deaths defect reported "12 organ runs
+# died at birth" naming six files, of which seven were this single organ failing the same way on
+# the same cause. A naming convention was inflating a defect count by ~7x and burying the four
+# genuinely distinct failures underneath it. Appending per-day keeps every run's start/exit markers
+# while making one sick organ count once.
+LOG="data/cro_ai_logs/recommendation_worker_$(date -u +%Y%m%d).log"
 TUNE="data/owed_worker_tuning.json"
 
 AVAIL="$(free -m | awk 'NR==2{print $7}')"

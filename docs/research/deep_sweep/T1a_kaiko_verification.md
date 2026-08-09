@@ -586,7 +586,7 @@ day; you can never buy back yesterday for free.
 | Index selection/weighting/capping/buffering maths | **YES** | 75/25 rank, 50/50 weight, 30% cap, 80/120 buffer, 2/3 & 3/2 segment buffers, Laspeyres + divisor — all published with exact numbers |
 | **Circulating supply per asset** | **NO — THIS IS THE REAL BLOCKER** | Kaiko Indices Research proprietary model; 9 published *exclusion categories* but per-asset determinations are research judgements |
 | Kaiko Asset Taxonomy / Theme classification | **NO** | proprietary classification (3 classes / 9 categories / 19 subcategories) |
-| Published rate + index VALUES | **NO** | 403, API-key gated, no free tier |
+| Published rate + index VALUES | **NO → PARTIAL-daily (2026-07-28)** | direct feed stays 403/key-gated. BUT: CFE **PBT** (Continuous Bitcoin futures, settles vs the Cboe Kaiko Bitcoin Index) daily settlement is free per-date CSV (`cboe.com/us/futures/market_statistics/settlement/csv/?dt=`) — Cboe's OWN futures statistic, no Kaiko value redisseminated (s13-clean). This is a daily 16:00-ET index *PROXY*, not the print: proxy error bounded by the PBT-to-spot premium, measured mean −0.05% / std 0.09% over 153 sessions (session D screen, `data/cfe_regulated_basis_daily.jsonl`). Good enough to sanity-check a desk VWM reconstruction daily; NOT a substitute for the intraday fixing series. |
 
 ### THE VERDICT, STATED PLAINLY
 

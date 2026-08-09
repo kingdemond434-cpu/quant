@@ -320,7 +320,15 @@ daily, commit-velocity dev momentum.
   directly**). The Elsevier retraction notice for the Bitcoin/Ethereum bubbles paper,
   https://www.sciencedirect.com/science/article/pii/S1544612326000140, returned **HTTP 403 — verbatim
   notice text NOT read**; its existence and bibliographic details come from the search index plus the
-  Retraction Watch article. PubPeer thread on the citation stacking **not yet opened — carry-over.**
+  Retraction Watch article. ~~PubPeer thread on the citation stacking not yet opened — carry-over.~~
+  **CARRY-OVER CLOSED 2026-07-31 (run 4):** PubPeer DIRECT is 403-blocked from this box (bot-gate,
+  NOT circumvented — #80 ruling pending; logged). The layer was mined via
+  `chrisbrunet.com/p/elsevier-shuts-down-its-finance-journal` (read in full): a **peer-reviewed 2025
+  econometric study quantifies the stacking at +103% citations-per-article** (2021-2025 vs
+  2016-2020); Elsevier dismantled the ecosystem; 12 retractions = 5,104 combined citations;
+  author-level nodes named (Lucey 55 PubPeer flags, Vigne 21, Goodell 68-in-FRL); documented
+  co-authorship trading (SSRN draft scrubbed, fourth author added, same text). Full sharpened
+  operational rule routed to **NK-004 (upgraded to HIGH confidence)**. [§33: wired -> docs/research/negative_knowledge.md NK-004]
 
 ### F9. ★★ THE RECONCILIATION — Chen & Zimmermann vs Hou–Xue–Zhang: "reproduction" ≠ "replication", and the desk has been conflating them
 
@@ -425,12 +433,17 @@ daily, commit-velocity dev momentum.
   routes.* The DS3 survivors (2-week momentum, residual momentum) are `confirms-existing-kill` for
   this desk — short-horizon price-only momentum is inside the 420/0 kill and the desk additionally
   found short-term reversal at Sharpe −1.41.
-- **Provenance.** **SUMMARY-ONLY — this item's numbers come from the search index, NOT from a page I
-  opened.** https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4437594 returned **HTTP 403** and
-  https://www.sciencedirect.com/science/article/abs/pii/S0275531926000255 was not retrievable on this
-  box. Per the provenance rule, the verdict above is held at **no stronger than
-  provisional** and must be re-verified from primary before it is pasted into `docs/graveyard.md`.
-  **Carry-over: verify F11 from primary text.**
+- **Provenance.** ~~SUMMARY-ONLY~~ → **UPGRADED 2026-07-31 to ABSTRACT-PRIMARY (published version,
+  verbatim).** The OP-026 ladder resolved it: IDEAS/RePEc carries the RIBF 83 (2026) published
+  abstract verbatim (`ideas.repec.org/a/eee/riibaf/v83y2026ics0275531926000255.html`, DOI
+  10.1016/j.ribaf.2026.103298). Confirmed word-for-word: 49 anomalies; *"the disappearance of size
+  effect and the appearance of left-tail risk effect"* out-of-sample; DS3 = MKT + MOM2 + RMOM (no
+  size). **Routed:** corroboration appended to graveyard row `lit_crypto_xsec_size_and_volume`
+  (same family — no new row; a fifth row would double-count the kill). **STILL PROVISIONAL, interior
+  never read:** the "13 of 49 significant" figure and exact IS/OOS split dates. Routes exhausted
+  2026-07-31: SSRN `Delivery.cfm` direct-PDF 403s (NK-005 scope extended), ScienceDirect 403s.
+  Interior remains a legitimate-route residual, not a carry-over obligation — the actionable claim
+  (size-death) is closed. [§33: wired -> docs/graveyard.md row lit_crypto_xsec_size_and_volume]
 
 ---
 

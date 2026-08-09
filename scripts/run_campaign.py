@@ -20,6 +20,7 @@ from pathlib import Path
 import numpy as np
 
 from app.signal_builder import STRATEGIES, Bars, strategy_returns
+from libs.validation.campaign_design import Design, preflight
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
 from libs.validation.pbo import probability_backtest_overfitting
 from libs.validation.reality_check import whites_reality_check
@@ -96,6 +97,13 @@ def main() -> None:
     matrix = np.column_stack([r[-min_len:] for r in return_series])  # T x N, aligned
     per_trial_sharpes = np.array([sharpe_ratio(r) for r in return_series], dtype="float64")
 
+    # PRICE THE DESIGN BEFORE SPENDING THE COMPUTE. N here is an accident of generation volume
+    # (len(candidates)) and T is whatever min_len survived alignment -- neither was ever chosen,
+    # and together they set the hurdle every gate below then applies. This does not gate anything:
+    # the campaign runs at full breadth regardless. It decides only what a null may be READ as.
+    design = preflight(n_trials, int(matrix.shape[0]))
+    print(design.summary())
+
     # --- program-level guards (selection-aware) ---
     pbo = probability_backtest_overfitting(matrix) if n_trials >= 2 else None
     reality = whites_reality_check(matrix) if n_trials >= 2 else None
@@ -130,10 +138,21 @@ def main() -> None:
         }
         (survivors if record["survived"] else rejected).append(record)
 
-    _write_reports(candidates, survivors, rejected, pbo, reality, n_trials)
+    _write_reports(candidates, survivors, rejected, pbo, reality, n_trials, design)
     print(f"\nCAMPAIGN 1 COMPLETE: {len(survivors)} survivors / {n_trials} candidates")
     if not survivors:
-        print("ZERO SURVIVORS — no pre-registered hypothesis cleared institutional validation.")
+        # WHICH SENTENCE THIS PRINTS IS THE WHOLE POINT OF THE PREFLIGHT. The old text was
+        # unconditional, so a campaign with 0.3% power against a world-class edge announced its
+        # null in the language of a finding -- and that is how "420 tested / 0 survivors" became
+        # a belief about the market rather than a fact about the experiment (L1.25).
+        if design.informative_null():
+            print("ZERO SURVIVORS — no pre-registered hypothesis cleared institutional "
+                  "validation, on a design powered to have seen one.")
+        else:
+            print(f"ZERO SURVIVORS — but this campaign is {design.verdict} "
+                  f"(power {design.power_at_target:.1%} at true annual Sharpe "
+                  f"{design.target_true_sharpe:g}). THIS NULL IS UNINFORMATIVE about the market "
+                  "and must not be filed as evidence of absence.")
     for s in survivors:
         print(f"  SURVIVOR: {s['id']} annual_sharpe={s['annual_sharpe']} dsr={s['dsr']}")
 
@@ -141,6 +160,7 @@ def main() -> None:
 def _write_reports(
     candidates: list[dict[str, object]], survivors: list[dict[str, object]],
     rejected: list[dict[str, object]], pbo: object, reality: object, n_trials: int,
+    design: Design,
 ) -> None:
     _OUT.mkdir(parents=True, exist_ok=True)
     ts = datetime.now(UTC).isoformat()
@@ -153,6 +173,9 @@ def _write_reports(
     summary = {
         "generated_at": ts, "n_candidates": n_trials, "n_survivors": len(survivors),
         "n_rejected": len(rejected),
+        # Travels WITH the result, permanently: any later reader of this report can tell a null
+        # that means "no edge here" from a null that means "this design could not have seen one".
+        "campaign_design": design.as_dict(),
         "pbo": round(pbo.pbo, 3) if pbo is not None else None,
         "pbo_overfit": (pbo.overfit if pbo is not None else None),
         "reality_check_p_value": reality_p,

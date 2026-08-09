@@ -22,7 +22,6 @@ from libs.alpha_factory.capacity_intelligence import CapacityIntelligence
 from libs.alpha_factory.concept_evolution_engine import ConceptEvolutionEngine
 from libs.alpha_factory.crowding_intelligence import CrowdingIntelligence
 from libs.alpha_factory.errors import AlphaFactoryError, AlphaFactoryGovernanceError
-from libs.alpha_factory.feature_drift_engine import FeatureDriftEngine
 from libs.alpha_factory.hypothesis_engine import HypothesisEngine
 from libs.alpha_factory.idea_ranking_engine import IdeaRankingEngine
 from libs.alpha_factory.models import (
@@ -78,7 +77,6 @@ __all__ = [  # noqa: RUF022  # grouped by concern
     "CapacityIntelligence",
     "ConceptEvolutionEngine",
     "CrowdingIntelligence",
-    "FeatureDriftEngine",
     "HypothesisEngine",
     "IdeaRankingEngine",
     "ResearchAllocator",

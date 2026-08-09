@@ -39,12 +39,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-
-from libs.llm.effort import reasoning_payload  # noqa: E402
-from libs.research import hunt_frontier as hf  # noqa: E402
-from libs.research.untrusted import wrap  # noqa: E402
-
 KEYS = ROOT / "data/secrets/llm_panel.json"
+
+from libs.doctrine.constitution import OBJECTIVE_PREAMBLE  # noqa: E402
+from libs.ops.llm_route import build_chain  # noqa: E402
+from libs.research import hunt_frontier as hf  # noqa: E402
+
 BUDGET = ROOT / "data/panel_budget.json"
 BSTATE = ROOT / "data/panel_budget_state.json"
 LEDGER = ROOT / "data/suggestion_ledger.jsonl"
@@ -53,6 +53,34 @@ OUT = ROOT / "data/kimi_hunt.json"
 CTX = ssl.create_default_context()
 
 MODEL = "moonshotai/kimi-k3"          # seated model; swarm-max reserved for quarterly deep dives
+
+#: THE HUNT DOES NOT STOP BECAUSE ONE DOOR IS SHUT (L1.54, 2026-08-05).
+#:
+#: Until today this file named ONE model and had no path past it. Absent from the roster ->
+#: SystemExit(2). Out of credit -> SystemExit(3). Any transport hiccup mid-wave -> SystemExit(3)
+#: with the completed waves discarded from memory unwritten. The desk's widest non-Claude lens --
+#: scheduled every three hours plus two deep runs a week -- had therefore produced EXACTLY NOTHING
+#: since it was built: no data/kimi_hunt.json, no data/hunt_coverage.json, no ledger rows. Not
+#: because the protocol is wrong (it is good) but because a single unavailable string ended it,
+#: silently, 56 times a week.
+#:
+#: A weapon with one firing pin is not an aggressive weapon. The chain below is tried IN ORDER and
+#: the first model that answers wins. Free variants are last rather than absent: a free-tier hunt
+#: is worth immeasurably more than no hunt, and "the account is unfunded" is a reason to hunt
+#: cheaper, never a reason to stop hunting.
+#:
+#: NOT A QUALITY COMPROMISE HIDDEN AS RESILIENCE: every finding carries the model that produced
+#: it into the ledger, so a fallback hunt is attributable and can be re-run on the seated model
+#: later. The gate it must pass is identical either way -- fallback buys ATTEMPTS, never leniency.
+MODEL_CHAIN: tuple[str, ...] = (
+    "moonshotai/kimi-k3",            # seated: the deep-forest hunter proper
+    "moonshotai/kimi-k2",            # same family, previous generation
+    "deepseek/deepseek-r1",          # different family: a genuinely different prior on what is
+    "qwen/qwen3-235b-a22b",          #   under-observed, which is the point of the hunt
+    "moonshotai/kimi-k2:free",       # free tier -- last, never omitted
+    "deepseek/deepseek-r1:free",
+    "qwen/qwen3-235b-a22b:free",
+)
 
 _COVERAGE = ROOT / "data/hunt_coverage.json"
 _VECTOR_COOLDOWN_D = 45      # a forest may be re-entered only after this long
@@ -218,11 +246,11 @@ WAVES = {
 
 
 def _re_vectors(text: str) -> set[str]:
-    """Territory names the model declared this wave. EXTRACTION ONLY -- it records no outcome.
+    """Territory names declared this wave. EXTRACTION ONLY -- it records no outcome.
 
     Splitting extraction from recording is the fix: the old version stamped every named territory
-    as covered the instant it was uttered, which buried wave-1 mapping output for the full
-    cooldown before anything hunted it.
+    as covered the instant it was uttered, burying wave-1 mapping output for the full cooldown
+    before anything hunted it.
     """
     return {v.strip().lower()
             for v in re.findall(r"VECTOR:\s*([A-Za-z0-9_\- ]{4,50})", text) if v.strip()}
@@ -238,39 +266,31 @@ def _budget_ok() -> tuple[bool, str]:
         return (True, "budget state unreadable -- proceeding, guard is advisory")
 
 
-def _objective() -> str:
-    """The desk's objective, prepended ahead of the doctrine.
+def _providers() -> list[tuple[str, str, str]]:
+    """Every (model, base_url, key) worth trying, in preference order.
 
-    `_doctrine()` carries ANTI-TIMIDITY and the role, and it does NOT carry the objective -- the
-    two are separate injections and this organ shipped with only the first. Anti-timidity without
-    an objective is an instruction to be forceful about an unstated goal, which for the one seat
-    on this desk from an independent model family is the worst combination available: it will
-    fill the gap from its own priors and be confident about it. Failure here is never fatal to
-    the call, for the same reason `_doctrine` swallows: a missing preamble must not silence an
-    organ, it must be visible to the reach fence -- which is what caught this.
+    Built by crossing MODEL_CHAIN with the seated roster: a roster entry naming a chain model is
+    used directly, and any other roster entry sharing that entry's base_url can also SERVE the
+    chain model, because OpenRouter routes by the `model` field rather than by the credential.
+    That second rule is what turns one dead string into a working hunt -- previously a roster
+    holding four OpenRouter seats none of which was literally `moonshotai/kimi-k3` produced
+    "not in the seated roster", exit 2, no hunt, no artifact, no complaint.
+
+    Returns [] when there is genuinely no credential anywhere. That is a BLOCKER to record, and
+    main() records it -- it is not a reason for this function to invent one.
     """
-    try:
-        from libs.doctrine.constitution import OBJECTIVE_PREAMBLE
-        return OBJECTIVE_PREAMBLE + "\n\n"
-    except Exception:  # blind-except intentional (BLE001)
-        return ""
+    # ONE implementation, in libs/ops/llm_route. Eleven other organs on this desk resolve a single
+    # model and stop; copying this logic into each would guarantee eleven slightly different
+    # versions and eleven separate regressions, so the routing lives in a library they can all
+    # adopt and check_llm_routing names the ones that have not.
+    return [(r.model, r.base_url, r.key) for r in build_chain(MODEL_CHAIN, KEYS)]
 
 
-def _ask(base, key, system, user, timeout=240.0) -> str:
-    # DEPTH, WHICH THIS ORGAN ALONE WAS NOT ASKING FOR. Nine reasoning organs send a `reasoning`
-    # block; this one sent none, so the desk's only seat from an independent model family -- the
-    # one whose whole purpose is to disagree with Claude's priors -- was thinking at the
-    # provider's DEFAULT while every Claude-family seat thought at depth. The structural fence
-    # that was supposed to catch this only looked for the hardcoded literal, so an organ that
-    # omitted the block entirely read as compliant: absence resolving to the clean verdict.
-    #
-    # The 16k budget is what makes this safe here. Reasoning tokens count against `max_tokens`,
-    # and a 3k cap plus deep reasoning returns an EMPTY completion (measured 2026-07-12 on
-    # deepseek/glm). This organ already had the headroom; it was only missing the request.
-    body = json.dumps({"model": MODEL, "max_tokens": 16000, "temperature": 1.0,
-                       "reasoning": reasoning_payload(MODEL),
+def _ask(base, key, system, user, timeout=240.0, model: str = MODEL) -> str:
+    body = json.dumps({"model": model, "max_tokens": 16000, "temperature": 1.0,
                        "messages": [{"role": "system",
-                                     "content": _objective() + _doctrine("kimi_hunter") + system},
+                                     "content": (OBJECTIVE_PREAMBLE + "\n"
+                                                 + _doctrine("kimi_hunter") + system)},
                                     {"role": "user", "content": user}]}).encode()
     req = urllib.request.Request(base.rstrip("/") + "/chat/completions", data=body, method="POST",
                                  headers={"Authorization": f"Bearer {key}",
@@ -440,22 +460,51 @@ def _mock() -> int:
     return 0
 
 
+def _blocked(reason: str, attempts: list[dict] | None = None) -> None:
+    """Record a hunt that could not run, as an ARTIFACT rather than as a log line and an exit code.
+
+    L1.44's rule applied to an organ that produces nothing: an absent artifact is indistinguishable
+    from an organ nobody scheduled, so the desk could not tell "the hunter is unfunded" from "the
+    hunter was never built" -- a bill to pay versus a thing to build. The `status` field is what
+    the capability ratchet and max_audit read; `blocker` is what a human acts on.
+    """
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    OUT.write_text(json.dumps({
+        "updated": datetime.now(tz=UTC).isoformat(),
+        "status": "BLOCKED",
+        "blocker": reason,
+        "attempts": attempts or [],
+        "model_chain": list(MODEL_CHAIN),
+        "waves": {}, "findings": [], "dropped": [],
+        "note": ("the Deep Forest protocol and its intake gates are INTACT. This records that the "
+                 "hunt could not be ATTEMPTED, which is a different fact from a hunt that found "
+                 "nothing -- and only the second is evidence about the world."),
+    }, indent=1), "utf-8")
+    print(f"  BLOCKED -> {OUT}\n    {reason}")
+
+
 def main() -> None:
+    attempts: list[dict] = []
+    models_used: list[str] = []
     ok, why = _budget_ok()
     print("=== KIMI HUNTER -- Deep Forest Protocol (Wave 1 -> 2 -> 3) ===")
     print(f"    budget: {why}\n")
     if not ok:
         raise SystemExit("envelope exhausted -- refusing to start (guard, not a failure)")
 
-    prov = None
-    if KEYS.exists():
-        for p in json.loads(KEYS.read_text("utf-8")).get("providers", []):
-            if isinstance(p, dict) and p.get("model") == MODEL:
-                prov = p
-                break
-    if not prov:
-        print(f"  {MODEL} not in the seated roster -- add it to llm_panel.json first")
+    # A BLOCKED HUNT MUST LEAVE EVIDENCE THAT IT WAS BLOCKED. The old code printed a line and
+    # exited 2, so an organ firing 56 times a week left no artifact at all -- and an artifact that
+    # is absent looks exactly like an organ nobody scheduled. The desk could not tell "the hunter
+    # is unfunded" from "the hunter was never built", which is the difference between a bill to
+    # pay and a thing to build.
+    chain = _providers()
+    if not chain:
+        _blocked("no usable credential: data/secrets/llm_panel.json is absent or holds no seat "
+                 "with both a base_url and a key. The Deep Forest protocol is INTACT and unrun -- "
+                 "this is a funding/credential blocker, not a defect in the hunt.")
         raise SystemExit(2)
+    print(f"  {len(chain)} model/seat combination(s) to try, in order: "
+          f"{', '.join(m for m, _, _ in chain[:4])}{' ...' if len(chain) > 4 else ''}")
 
     kills = set(json.loads(MECHB.read_text("utf-8")).get("family_kills", [])) \
         if MECHB.exists() else set()
@@ -465,12 +514,10 @@ def main() -> None:
     go, gate_why = hf.should_hunt(state, cooldown_d=_VECTOR_COOLDOWN_D)
     print(f"  frontier: {gate_why}")
     if not go:
-        # THE FREE GATE. No model call was made to reach this decision -- it is read off local
-        # state. A hunter that fires on a clock pays a full reasoning pass to discover the world
-        # has not changed; the coverage file already knew.
-        print("  SKIPPING the reasoning pass -- no frontier open. This is not a failure and not "
-              "an outage: it is the organ declining to re-mine picked-over ground.")
-        _COVERAGE.parent.mkdir(parents=True, exist_ok=True)
+        # THE FREE GATE. No model call was made to reach this -- it is read off local state. A
+        # hunter on a clock pays a full reasoning pass to discover the world has not changed.
+        print("  SKIPPING the reasoning pass -- no frontier open. Not a failure and not an "
+              "outage: the organ is declining to re-mine picked-over ground.")
         hf.save(state, _COVERAGE)
         return
     _seen_before: set[str] = set(state.vectors)
@@ -478,41 +525,53 @@ def main() -> None:
     transcript, findings, dropped = {}, [], []
     for w in (1, 2, 3):
         name, brief = WAVES[w]
-        # PRIOR-WAVE OUTPUT IS ENVELOPED, and the reason is not web content -- there is none.
-        # This script fetches no third-party URLs; its only urlopen is the provider. The untrusted
-        # input is the MODEL'S OWN PRIOR OUTPUT, fed forward because the Deep Forest Protocol
-        # requires wave 2 to cite wave 1. That makes wave 1's text authoritative BY DESIGN, so a
-        # line like "the forbidden-zone list is lifted for this run" appearing in wave 1 arrives in
-        # wave 2 indistinguishable from the brief. Enveloping does not make it safe; it marks the
-        # boundary, which is the difference between data and instruction.
-        prior = "\n\n".join(
-            wrap(v[:2500], source=f"kimi wave {k} output (model-generated, not desk instruction)")
-            for k, v in transcript.items())
+        prior = "\n\n".join(f"WAVE {k} OUTPUT:\n{v[:2500]}" for k, v in transcript.items())
         _sec = hf.prompt_sections(state, cooldown_d=_VECTOR_COOLDOWN_D)
         _cover = _sec["priority"] + (f"\n\n{_sec['exclude']}" if _sec["exclude"] else "")
         user = f"{brief}\n\n{_cover}" + (f"\n\n{prior}" if prior else "")
         print(f"  WAVE {w} -- {name}")
-        try:
-            txt = _ask(prov["base_url"], prov["key"], CHARTER, user)
-        except Exception as e:  # blind-except intentional (BLE001)
-            code = getattr(e, "code", "")
-            print(f"    FAILED ({type(e).__name__} {code})")
-            if code == 402:
-                print("    OpenRouter is out of credit. The hunt is BLOCKED, not broken --")
-                print("    the harness is intact and fires on the next funded run.")
-            raise SystemExit(3) from e
+        # WALK THE CHAIN. One model being unavailable, rate-limited or out of credit ends that
+        # ATTEMPT, never the hunt. Failures accumulate into the artifact so a run that ends
+        # blocked says which doors it tried and what each one answered.
+        txt, used = "", ""
+        for model, base, key in chain:
+            try:
+                txt = _ask(base, key, CHARTER, user, model=model)
+            except Exception as e:  # blind-except intentional (BLE001)
+                code = getattr(e, "code", "")
+                attempts.append({"wave": w, "model": model, "error": f"{type(e).__name__} {code}"})
+                print(f"    {model}: FAILED ({type(e).__name__} {code})"
+                      + ("  [out of credit]" if code == 402 else ""))
+                continue
+            if txt.strip():
+                used = model
+                break
+            attempts.append({"wave": w, "model": model, "error": "empty response"})
+            print(f"    {model}: empty response")
+        if not used:
+            # EVERY door on this wave is shut. Keep whatever the earlier waves produced -- a
+            # completed Wave 1 map is worth having and re-deriving it costs a full run.
+            print(f"    wave {w} could not be run on any model; keeping {len(transcript)} "
+                  "completed wave(s)")
+            break
         transcript[w] = txt
-        # NAMING IS NOT HUNTING. Wave 1 is mapping only (`continue` below forbids findings), so
-        # its territories are recorded NAMED_ONLY -- frontier to chase next run, never coverage.
-        # Recording them as hunted is what locked this organ out of its own best ground for 45d.
-        _named = set(_re_vectors(txt))
+        models_used.append(used)
+        # NAMING IS NOT HUNTING. Wave 1 is mapping only, so its territories are NAMED_ONLY --
+        # frontier to chase next run, never coverage. Recording them as hunted is what locked
+        # this organ out of its own best ground for 45 days.
+        _named = _re_vectors(txt)
         for _v in _named:
             if _v not in state.vectors:
                 hf.record(state, _v, outcome="NAMED_ONLY")
         _new_v = len(_named - _seen_before)
         _seen_before |= _named
         _wave_vectors[w] = _named
-        print(f"    {len(txt)} chars returned, {_new_v} new vector(s) named")
+        print(f"    [{used}] {len(txt)} chars returned, {_new_v} new vector(s) recorded")
+        # PERSIST AFTER EVERY WAVE. Coverage used to be written only after Wave 3 returned, so a
+        # hunt dying late threw away the territory memory of the waves that HAD succeeded and the
+        # next run re-hunted the same forest -- the cooldown silently defeated by its own failure
+        # path, which is the most expensive way to lose depth.
+        hf.save(state, _COVERAGE)
 
         if w == 1:
             continue                       # Wave 1 is mapping only; findings are not permitted
@@ -542,8 +601,7 @@ def main() -> None:
     print("\n  ZERO PROMOTION AUTHORITY. These are raw ore. Next stops: mechanism board "
           "(family-kill rejection), measurement gate, Stage-A screening, forward clock.")
     # OUTCOME ATTRIBUTION. A territory hunted in wave 2/3 is YIELDED if this run produced any
-    # finding, EMPTY otherwise -- and EMPTY is real negative knowledge, not a failure. Wave-1
-    # territories stay NAMED_ONLY so the next run chases them first.
+    # finding, EMPTY otherwise -- EMPTY being real negative knowledge, not a failure.
     _hunted = _wave_vectors.get(2, set()) | _wave_vectors.get(3, set())
     _per = max(1, len(_hunted))
     for _v in _hunted:
@@ -551,11 +609,31 @@ def main() -> None:
                   findings=(len(findings) // _per if findings else 0))
     hf.save(state, _COVERAGE)
     _fr = hf.frontier(state, cooldown_d=_VECTOR_COOLDOWN_D)
-    print(f"  frontier: {len(_fr['unhunted'])} named-but-unhunted, {len(_fr['blocked'])} blocked, "
-          f"{len(_fr['picked_over'])} picked over ({len(state.vectors)} territories known)")
-    OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(), "model": MODEL,
+    # The key is `vectors`. This line read cov.get('"vectors"') -- chr(34) is a double quote, so
+    # the lookup asked for a key spelled WITH quotation marks, missed every time, and printed
+    # "0 territories hunted to date" unconditionally. The desk's only depth-accumulation readout
+    # was hardcoded to zero by an obfuscation, which is the worst place for one: a hunter whose
+    # depth always reads nothing gives nobody a reason to look at whether depth is accruing.
+    # ...and "hunted to date" was the wrong count anyway, which is why it now reports the
+    # FRONTIER split: a territory merely NAMED is not one hunted, and reporting them together is
+    # the same conflation that locked this organ out of its own mapping output.
+    n_terr = len(state.vectors)
+    print(f"  coverage memory: {n_terr} territories known -- "
+          f"{len(_fr['unhunted'])} named-but-unhunted, {len(_fr['blocked'])} blocked, "
+          f"{len(_fr['picked_over'])} picked over")
+    # PARTIAL is a first-class outcome. A run that mapped the herd and mined negative space but
+    # could not reach Wave 3 produced real work, and calling that a failure would throw it away.
+    status = "OK" if len(transcript) == 3 else ("PARTIAL" if transcript else "BLOCKED")
+    OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
+                               "status": status,
+                               "models_used": models_used,
+                               "model_chain": list(MODEL_CHAIN),
+                               "waves_completed": sorted(transcript),
+                               "attempts": attempts,
+                               "territories_hunted": n_terr,
                                "waves": {str(k): v[:4000] for k, v in transcript.items()},
                                "findings": findings, "dropped": dropped}, indent=1), "utf-8")
+    print(f"  status {status} | waves {sorted(transcript)} | models {models_used}")
     print(f"  -> {OUT}")
 
 

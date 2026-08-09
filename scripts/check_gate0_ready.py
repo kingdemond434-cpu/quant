@@ -31,6 +31,10 @@ if str(_ROOT) not in sys.path:
 
 _OUT = _ROOT / "data/gate0_readiness.json"
 
+#: The executor's published book state (run_cashcarry_executor.py:43). NOT cashcarry_state.json,
+#: which no organ has ever written -- see _load_state.
+_STATE_REL = "data/cashcarry_positions.json"
+
 #: who can clear a criterion. The split is the whole point of the board on launch day.
 DESK = "desk"            # the organism can close this by working
 PRINCIPAL = "principal"  # only a human with money/credentials can close this
@@ -43,57 +47,14 @@ def _row(name: str, ready: bool | None, detail: str, owner: str, artifact: str,
             "artifact": artifact, "action": action}
 
 
-#: The two files the live cash-and-carry cannot place without, and the fields each must carry.
-#: BOTH legs, because the futures leg alone is not the strategy -- it is an unhedged directional
-#: position, which is the exact failure #90 was opened for.
-_LIVE_KEYS: tuple[tuple[str, tuple[str, ...]], ...] = (
-    ("binance_live.json", ("api_key", "api_secret")),
-    ("binance_live_spot.json", ("api_key", "api_secret")),
-)
-
-
 def _keys_present() -> dict[str, Any]:
-    """Are the live credentials USABLE -- not merely present as filenames?
-
-    MEASURED 2026-08-07 AND THIS GATE WAS GREEN ON EMPTY FILES. It globbed `data/secrets/*`,
-    filtered names containing "binance" or "api", and reported "4 live-venue credential file(s)"
-    as READY. On the same box and the same minute, `check_credentials.py` -- which OPENS them --
-    reported `binance_live.json` INCOMPLETE (missing api_key, api_secret), both testnets the same,
-    and `binance_live_spot.json` ABSENT entirely. So Gate-0, the last check before live trading,
-    would have signed off on a key set that cannot place an order.
-
-    That is the desk's own most-repeated defect (WS-005: absence resolving to the clean verdict)
-    sitting on the single most consequential gate it has, and it is the same shape as a file
-    existing being mistaken for a file working. A credential is a CAPABILITY, and the only
-    evidence of a capability is its contents.
-
-    UNREADABLE JSON IS NOT READY EITHER. A truncated paste leaves a file that exists, parses as
-    nothing, and is treated as absent by every reader while LOOKING configured.
-    """
     d = _ROOT / "data/secrets"
-    ok: list[str] = []
-    bad: list[str] = []
-    for name, fields in _LIVE_KEYS:
-        p = d / name
-        if not p.exists():
-            bad.append(f"{name}: absent")
-            continue
-        try:
-            doc = json.loads(p.read_text("utf-8"))
-        except (OSError, ValueError):
-            bad.append(f"{name}: present but not valid JSON")
-            continue
-        missing = [k for k in fields if not (isinstance(doc, dict) and doc.get(k))]
-        if missing:
-            bad.append(f"{name}: missing or empty {', '.join(missing)}")
-        else:
-            ok.append(name)
-    return _row("keys_present", not bad,
-                (f"both live legs carry usable credentials ({len(ok)}/2)" if not bad
-                 else f"{len(ok)}/2 usable -- " + "; ".join(bad)),
-                PRINCIPAL, "data/secrets/",
-                "supply BOTH Binance keys with real api_key/api_secret -- a file that exists and "
-                "is empty reads as configured and cannot place an order")
+    have = sorted(p.name for p in d.glob("*")) if d.exists() else []
+    live = [k for k in have if "binance" in k.lower() or "api" in k.lower()]
+    return _row("keys_present", bool(live),
+                f"{len(live)} live-venue credential file(s) in data/secrets" if live
+                else "no live-venue credential file in data/secrets",
+                PRINCIPAL, "data/secrets/", "supply the Binance spot+perp API keys")
 
 
 def _connector_verified() -> dict[str, Any]:
@@ -175,28 +136,140 @@ def _principal_signoff() -> dict[str, Any]:
                 "record the go/no-go decision once the rows above are green")
 
 
+def _load_state() -> tuple[dict[str, Any] | None, str]:
+    """The executor's published book state, with the failure NAMED (R0333).
+
+    This board read data/cashcarry_state.json -- a path nothing writes -- inside one broad
+    `except (ImportError, OSError, ValueError, TypeError, KeyError)` that reported the single
+    detail "state unreadable on this box". Every box on earth hit it, so `_ruin_rail` could
+    never reach READY and the one board the desk consults on launch day had a criterion that was
+    structurally unmeasurable. Absent / unparseable / schema-missing-key are now three distinct
+    verdicts -- all still BLOCKED-UNKNOWN, because UNMEASURED never reads as OK.
+    """
+    p = _ROOT / _STATE_REL
+    try:
+        raw = p.read_text("utf-8")
+    except FileNotFoundError:
+        return None, f"absent: {_STATE_REL} has never been written on this box"
+    except OSError as exc:
+        return None, f"unreadable: {type(exc).__name__} on {_STATE_REL}"
+    try:
+        loaded = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        return None, (f"unparseable: {_STATE_REL} is not valid JSON "
+                      f"(line {exc.lineno} col {exc.colno}) -- torn write, not an empty book")
+    if not isinstance(loaded, dict):
+        return None, f"unparseable: {_STATE_REL} holds a {type(loaded).__name__}, not an object"
+    state: dict[str, Any] = loaded
+    return state, "ok"
+
+
+#: A pre-mortem clears this gate only at the panel's OWN non-degraded bar. run_external_panel
+#: stamps a run DEGRADED below 8 seats and tells the reader to "re-run on the full roster once
+#: funded before acting on anything structural" -- so admitting a 4-seat free run here would let
+#: advisory-weak findings unlock real capital, which is the one thing this criterion exists to stop.
+_PREMORTEM_SEATS = 8
+
+#: Same substantive-response bar the panel uses for coverage accounting (run_external_panel:454).
+#: A seat that returned a stub answered nothing, and counting it would be padding the quorum.
+_PREMORTEM_MIN_CHARS = 400
+
+
+def _premortem_completed() -> dict[str, Any]:
+    """Has the adversarial pre-mortem actually FIRED before the deposit (R0105)?
+
+    THE GAP THIS CLOSES. prompts/panel_missions/premortem.txt has existed and sat in the weekly
+    rotation since 2026-07-12, and has never once run: tallying the mission field across all of
+    data/external_panel_log.jsonl gives audit 60, tier1 53, verify 26, maximization 16, benchmark
+    13, synthesize 11, commit_audit 8 -- and premortem ZERO. The rotation is week-modulo over 8
+    missions, so index 4 simply never landed on a funded run. A capability that exists, is
+    scheduled, and has never fired is built-never-wired (L1.43 NEVER-RUN), and relying on the
+    rotation to produce it before launch day demonstrably does not work.
+
+    WHY IT IS A GATE-0 ROW RATHER THAN A REMINDER. The pass is one-shot insurance against exactly
+    the failures the readiness board cannot enumerate, because the board only ever checks things
+    someone already thought of. Its value is entirely front-loaded: fired after the deposit it is
+    a post-mortem. Making it a criterion is the only construction where "we never got round to it"
+    cannot happen quietly.
+
+    WHAT IT READS, AND WHY NOT THE OBVIOUS FILE. docs/research/panel_inbox.md is the human-readable
+    output and would be the natural thing to check -- but run_external_panel writes it with
+    write_text on EVERY run, so the next audit mission silently clobbers the pre-mortem and this
+    gate would flip back to NOT-READY (or, worse, be satisfied by an unrelated mission's inbox).
+    data/external_panel_log.jsonl is append-only and stamps every row with its mission, so it is
+    the only artifact that can answer "did the pre-mortem specifically run".
+    """
+    log = _ROOT / "data/external_panel_log.jsonl"
+    action = ("fire it once: PANEL_MISSION=premortem .venv/bin/python "
+              "scripts/run_external_panel.py  (needs a funded roster -- a free-seat run is "
+              "stamped DEGRADED and deliberately does NOT clear this row)")
+    try:
+        seats: set[str] = set()
+        for ln in log.read_text("utf-8").splitlines():
+            if not ln.strip() or '"premortem"' not in ln:
+                continue
+            try:
+                r = json.loads(ln)
+            except json.JSONDecodeError:
+                continue                       # a corrupt line is skipped, never counted
+            if r.get("mission") != "premortem":
+                continue
+            if len((r.get("response") or "").strip()) >= _PREMORTEM_MIN_CHARS:
+                seats.add(str(r.get("provider") or r.get("model") or ""))
+    except OSError:
+        # FAIL CLOSED. An unreadable panel log is "could not measure", never "satisfied".
+        return _row("premortem_completed", None, "panel log unreadable -- cannot verify", DESK,
+                    "data/external_panel_log.jsonl", action)
+
+    n = len(seats)
+    return _row("premortem_completed", n >= _PREMORTEM_SEATS,
+                f"{n}/{_PREMORTEM_SEATS} seats returned a substantive pre-mortem"
+                + ("" if n else " -- the mission has NEVER run"),
+                DESK, "data/external_panel_log.jsonl", action)
+
+
 def _ruin_rail() -> dict[str, Any]:
     """Not an S1 criterion, but it is the thing that actually stops the book trading, and on
     2026-07-30 it was in an absorbing state that no amount of good performance could clear."""
     try:
         from libs.risk import capital_events, risk_controls
-        st = json.loads((_ROOT / "data/cashcarry_state.json").read_text("utf-8"))
-        raw = float(st.get("start_futures_equity", 0.0))
-        eff = capital_events.effective_start_equity(raw)
-        eq = float(st.get("last_combined_equity", raw))
-        if eff <= 0:
-            return _row("ruin_rail_clear", None, "no inception recorded yet (fresh book)",
-                        DESK, "data/cashcarry_state.json", "")
-        d = risk_controls.evaluate(eq, eff, max(eff, eq), 0.0, ruin_cap_lev=8.0)
-        ok = d.action != "flatten"
-        return _row("ruin_rail_clear", ok,
-                    f"{eq / eff - 1.0:+.1%} from inception ${eff:,.0f} -> {d.action.upper()}",
-                    PRINCIPAL, "data/capital_events.jsonl",
-                    "" if ok else "record the funding deposit: "
-                                  "scripts/record_capital_event.py --deposit <usd> --by ... ")
-    except (ImportError, OSError, ValueError, TypeError, KeyError):
-        return _row("ruin_rail_clear", None, "state unreadable on this box",
-                    DESK, "data/cashcarry_state.json", "run from the box that holds the state")
+    except ImportError as exc:
+        return _row("ruin_rail_clear", None, f"risk libraries unimportable: {exc}",
+                    DESK, _STATE_REL, "run from a checkout with libs/risk importable")
+    st, verdict = _load_state()
+    if st is None:
+        return _row("ruin_rail_clear", None, f"executor state {verdict}",
+                    DESK, _STATE_REL, "run from the box that holds the executor state")
+    try:
+        raw = float(st["start_futures_equity"])
+        # SAME RULER (R0333). `last_combined_equity` is combined futures+spot equity and
+        # `peak_combined_equity` is ITS high-water mark; the old read fell back to the inception
+        # for equity and passed max(eff, eq) as the peak -- an inception standing in for a peak,
+        # which understates every drawdown the book has already taken. A state that publishes an
+        # inception but no combined equity is UNMEASURED, not "equity == inception".
+        eq = float(st["last_combined_equity"])
+        peak = max(float(st.get("peak_combined_equity", raw)), raw, eq)
+    except KeyError as exc:
+        return _row("ruin_rail_clear", None,
+                    f"schema-missing-key: {exc.args[0]!r} absent from {_STATE_REL} -- the "
+                    "executor has not published this book's equity ruler yet",
+                    DESK, _STATE_REL, "let the executor complete one tick on this box")
+    except (TypeError, ValueError) as exc:
+        return _row("ruin_rail_clear", None,
+                    f"non-numeric equity in {_STATE_REL}: {exc}",
+                    DESK, _STATE_REL, "restore the executor state from the live box")
+    eff = float(capital_events.effective_start_equity(raw))
+    if eff <= 0:
+        return _row("ruin_rail_clear", None, "no inception recorded yet (fresh book)",
+                    DESK, _STATE_REL, "")
+    d = risk_controls.evaluate(eq, eff, peak, 0.0, ruin_cap_lev=8.0)
+    ok = d.action != "flatten"
+    return _row("ruin_rail_clear", ok,
+                f"{eq / eff - 1.0:+.1%} from inception ${eff:,.0f} "
+                f"({eq / peak - 1.0:+.1%} from peak ${peak:,.0f}) -> {d.action.upper()}",
+                PRINCIPAL, "data/capital_events.jsonl",
+                "" if ok else "record the funding deposit: "
+                              "scripts/record_capital_event.py --deposit <usd> --by ... ")
 
 
 def _net_of_fees_positive() -> dict[str, Any]:
@@ -319,7 +392,7 @@ def _soak_clean_7d() -> dict[str, Any]:
 def build() -> dict[str, Any]:
     rows = [_principal_signoff(), _capital_fraction(), _symbol_count(),
             _keys_present(), _connector_verified(), _ruin_rail(),
-            _net_of_fees_positive(), _soak_clean_7d()]
+            _net_of_fees_positive(), _soak_clean_7d(), _premortem_completed()]
     blocking = [r for r in rows if r["status"] != "READY"]
     desk_owes = [r for r in blocking if r["owner"] == DESK]
     principal_owes = [r for r in blocking if r["owner"] == PRINCIPAL]

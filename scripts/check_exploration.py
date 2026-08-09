@@ -54,7 +54,14 @@ _ROOT = Path(__file__).resolve().parent.parent
 # window) and pages-but-does-not-block, so a governance fault never silences an organ.
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from libs.ops.fence_exit import fence_exit  # noqa: E402
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
+
+#: L1.32 names all four verdicts -- DARK / STALE / THIN / OK -- as this fence's output, but only
+#: DARK failed, so the family could decay to STALE or THIN (organs running but producing almost
+#: nothing) and still report green. That is the exact one-at-a-time decay L1.32 was written to
+#: catch, surviving inside its own fence.
+_PASSING = frozenset({"OK"})
 
 #: organ -> (artifact, max_age_hours implied by its own cadence, what it hunts)
 _FAMILY: dict[str, tuple[str, float, str]] = {
@@ -122,7 +129,16 @@ def build_report(root: Path | None = None, now: datetime | None = None) -> dict[
                         "max_age_hours": max_h}
 
     n = len(_FAMILY)
-    if dark:
+    if n == 0:
+        # THE DENOMINATOR IS ZERO, SO THERE IS NO VERDICT TO GIVE (L1.57). _FAMILY is MUTATED AT
+        # IMPORT by `_FAMILY.pop(_k, None)` over a map read from a dynamically exec'd module
+        # under `except: _secondary = {}`. Reclassify every organ as secondary -- or land one
+        # name collision -- and `dark`, `stale` and `fresh` are all empty, `len(fresh) < n / 2`
+        # is `0 < 0.0` (False), and this fence reported `status: OK` with `n_organs: 0`: "the
+        # unknown-unknown organs are healthy", from a fence that had just been told there are
+        # none. An empty family is the loudest possible L1.32 failure, not the quietest.
+        status = "UNMEASURED"
+    elif dark:
         status = "DARK"
     elif stale:
         status = "STALE"
@@ -162,7 +178,8 @@ def main() -> int:
           f"exploration family (L1.32): {rep['status']} -- {rep['detail']}\n-> {out}")
     if args.report_only:
         return 0
-    return 2 if rep["status"] == "DARK" else 0
+    return fence_exit(rep["status"], _PASSING, scanned=rep["n_organs"],
+                      of="L1.32 exploration organs", fence="check_exploration.py")
 
 
 if __name__ == "__main__":
