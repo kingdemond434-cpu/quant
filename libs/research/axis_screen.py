@@ -27,7 +27,9 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
                    zwin: int = 20, contam_max: float = 0.20, ic_min: float = 0.03,
                    sharpe_min: float = 0.5, ic_ceiling: float = 0.35,
                    sharpe_ceiling: float = 6.0, clock: str | None = None,
-                   horizon_days: float = 1.0, panel_width: int = 1) -> dict[str, Any]:
+                   horizon_days: float = 1.0, panel_width: int = 1,
+                   target_symbol: str = "",
+                   registry: str = "data/axis_clock_registry.json") -> dict[str, Any]:
     """Screen a signal against NEXT-period target returns with the mandatory angle-20 gate.
 
     signal[t], target_ret[t] must be aligned same-period arrays (target_ret[t] = return realised
@@ -43,6 +45,12 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
                                 leaking future info. Caught the bithumb_KR IC-0.72/Sharpe-10 fake.
                                 Treated as an artifact -- NEVER earns a clock. Re-run a +/-1 day
                                 shift-sensitivity check before trusting anything that trips this.
+      SUSPECT-STALE-LEG      -- |prior-period corr|>contam_max AND it exceeds the same-period corr.
+                                The spread knows the PREVIOUS bar better than the current one, which
+                                is the signature of one feed being stale by a bar. Caught the class
+                                that produced a published 4,709x "kimchi arbitrage" whose Upbit leg
+                                lagged Binance ~1 day. Same-day contamination reads near zero there,
+                                so the lag-0 gate passed it -- GAP #79, closed 2026-08-09.
       TIMING-ARTIFACT        -- fails de-contam: |same-period corr|>contam_max OR residual IC
                                 collapses below half the raw IC (the coinbase/turkey failure mode)
       SCREEN-INTERESTING     -- |IC|>=ic_min, best timing Sharpe>=sharpe_min, passes de-contam,
@@ -76,9 +84,30 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
 
     ic = float(np.corrcoef(zv, fv)[0, 1]) if fv.std() else 0.0
     same = float(np.corrcoef(zv, tv)[0, 1]) if tv.std() else 0.0
-    b = np.polyfit(tv, zv, 1)
-    zr = zv - (b[0] * tv + b[1])                       # signal orthogonalised to same-period return
+
+    # THE STALE-LEG HOLE (GAP #79, closed 2026-08-09). The same-period check above catches a leg
+    # that is aligned-but-coincident. It provably does NOT catch a foreign leg that is stale by one
+    # bar, and that is not a hypothetical: a peer-reviewed Korean paper's 4,709x "kimchi arbitrage"
+    # decomposed to exactly this -- its Upbit column lagged Binance ~1 day, so its "premium" was
+    # approximately MINUS the prior global return and its entry rule was "buy right after BTC
+    # rallied". Same-day contamination reads near zero there, so the gate passed it.
+    #
+    # A cross-source spread is built from two feeds with two clocks. When one is stale the spread
+    # mechanically encodes the OTHER leg's realised move, and the contamination lands at lag 1
+    # instead of lag 0 -- invisible to a lag-0 test by construction. So the prior-period return is
+    # now tested too, and the residual is orthogonalised against BOTH.
+    #
+    # This generalises past kimchi to every axis built by differencing two sources, which is most
+    # of them: any premium, any basis, any cross-venue spread. It can only ever tighten the screen.
+    lag = np.roll(r, 1)[zwin:-1]
+    lag1 = float(np.corrcoef(zv, lag)[0, 1]) if lag.std() else 0.0
+    design = np.column_stack([tv, lag, np.ones(len(zv))])
+    coef, *_ = np.linalg.lstsq(design, zv, rcond=None)
+    zr = zv - design @ coef            # orthogonalised to same-period AND prior-period return
     ic_res = float(np.corrcoef(zr, fv)[0, 1]) if zr.std() and fv.std() else 0.0
+    # STALE-LEG signature: the spread knows the PREVIOUS bar better than the current one. An
+    # honest same-clock spread has no reason to; a mis-clocked one has every reason to.
+    stale_leg = abs(lag1) > contam_max and abs(lag1) > abs(same)
 
     # Annualisation MUST match the target's period. target_ret are horizon_days-day returns, so a
     # year holds 365/horizon_days of them, not 365. The old hardcoded sqrt(365) overstated Sharpe by
@@ -134,10 +163,15 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
     # a diagnostic; ic_ceiling stays caller-tunable per axis rather than one global guess.
     ic_exceeds_contemporaneous = abs(ic) > max(abs(same), ic_min) * 1.5 and abs(ic) >= 0.15
 
-    decontam_fail = abs(same) > contam_max or abs(ic_res) < 0.5 * abs(ic)
+    decontam_fail = abs(same) > contam_max or abs(ic_res) < 0.5 * abs(ic) or stale_leg
     implausible = abs(ic) > ic_ceiling or best > sharpe_ceiling    # alignment/lookahead rail
     if implausible or ic_exceeds_contemporaneous:
         verdict = "SUSPECT-LOOKAHEAD"                  # bithumb-class: too strong to be real
+    elif stale_leg:
+        # Ranked ABOVE the weak/underpowered branches on purpose. A stale-leg axis can post a
+        # perfectly respectable IC, so letting a strength test run first would report the number
+        # rather than the defect that produced it.
+        verdict = "SUSPECT-STALE-LEG"
     elif best < sharpe_min or abs(ic) < ic_min:
         # Distinguish 'tested and refuted' from 'could not have detected it'. Only the former is
         # graveyard-grade negative knowledge.
@@ -166,7 +200,8 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
 
     out = {"name": name, "n": len(zv), "ic": round(ic, 4),
            "sharpe_momentum": sh_mom, "sharpe_reversal": sh_rev,
-           "same_period_corr": round(same, 3), "residual_ic": round(ic_res, 4),
+           "same_period_corr": round(same, 3), "prior_period_corr": round(lag1, 3),
+           "stale_leg": bool(stale_leg), "residual_ic": round(ic_res, 4),
            "decontam_passed": not decontam_fail, "implausible_leak": implausible,
            "horizon_days": float(horizon_days), "panel_width": int(panel_width),
            "n_eff": round(n_eff, 1),
@@ -183,7 +218,59 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
             with p.open("a", encoding="utf-8") as fh:
                 fh.write(json.dumps({"date": today, "z20": out["current_z"],
                                      "screen": out}) + "\n")
+        _register_clock(out, clock=clock, target_symbol=target_symbol, registry=registry)
     return out
+
+
+def _register_clock(out: dict[str, Any], *, clock: str, target_symbol: str,
+                    registry: str) -> None:
+    """Announce a newly-started clock so the Stage-B tracker and the dashboard SEE it.
+
+    THE BREAK THIS CLOSES. Starting a clock wrote a JSONL and told nobody. `run_axis_shadows.py`
+    read a HARDCODED `_AXES` dict, so a candidate that earned a clock did not reach Stage-B -- or
+    the dashboard -- until a human noticed and edited the script. A discovery whose visibility
+    depends on somebody remembering is a discovery the desk will eventually lose, and it fails
+    silently in the direction that looks like "no new candidates" rather than like an error.
+
+    DIRECTION IS DERIVED, NOT ASSUMED: whichever of momentum/reversal actually carried the Sharpe.
+    Guessing +1 would silently invert a reversal axis and turn a real edge into a real loss.
+
+    Registration is NOT promotion. It buys a forward clock and a row on the dashboard, nothing
+    else -- and every clock registered here raises the Holm bar for every other clock racing
+    beside it, which is the honest cost of being counted.
+    """
+    reg = Path(registry)
+    try:
+        blob = json.loads(reg.read_text("utf-8")) if reg.exists() else {}
+    except (OSError, ValueError):
+        blob = {}
+    raw = blob.get("axes")
+    axes: dict[str, Any] = dict(raw) if isinstance(raw, dict) else {}
+    name = str(out["name"])
+    if name in axes:                       # first registration wins; re-screens must not restamp
+        return
+    sign = 1 if abs(out["sharpe_momentum"]) >= abs(out["sharpe_reversal"]) else -1
+    axes[name] = {
+        "clock": clock,
+        "target_symbol": target_symbol,
+        "method": "z20",
+        "sign": sign,
+        "direction": "momentum" if sign > 0 else "reversal",
+        "registered_at": datetime.now(tz=UTC).isoformat(),
+        "screen_ic": out.get("ic"),
+        "screen_verdict": out.get("verdict"),
+        "tracked": bool(target_symbol),
+        "note": ("" if target_symbol else
+                 "NO TARGET SYMBOL SUPPLIED -- Stage-B cannot score this clock and will list it as "
+                 "UNTRACKED rather than guess one. Pass target_symbol= to stage_a_screen."),
+    }
+    reg.parent.mkdir(parents=True, exist_ok=True)
+    reg.write_text(json.dumps(
+        {"updated": datetime.now(tz=UTC).isoformat(), "axes": axes,
+         "note": ("Clocks started by stage_a_screen, registered so Stage-B and the dashboard pick "
+                  "them up WITHOUT a code edit. Registration is not promotion: it earns a forward "
+                  "clock and a dashboard row, and it raises the Holm bar for every concurrent "
+                  "clock.")}, indent=1), "utf-8")
 
 
 # --------------------------------------------------------------- target/horizon sweep ----------

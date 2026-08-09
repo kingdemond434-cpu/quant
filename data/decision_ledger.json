@@ -2879,6 +2879,17 @@
     "owned_and_fixed_first": "check_constitution_core (f35df7e)",
     "verified_on_remote": true
    }
+  },
+  {
+   "id": "2026-08-09-panel-cost-recorded-100x-low",
+   "decision": "CORRECTION, appended rather than edited -- the ledger is memory and history is not rewritten. Entry 2026-07-12-multi-model-advisory-panel records the external panel's cost as '~$5 credit = whole panel, ~$0.10-0.60/run'. The principal reports the actual spend as ~$200/MONTH, roughly 100x the recorded figure. That original number is what every downstream ROI comparison has been priced against, including this session's first answer to 'is the panel worth it', which said the dollar cost was negligible. It was not.",
+   "why": "A wrong cost in the ledger is worse than a missing one: research_roi, the frontier surplus calculation and every build/buy comparison read recorded costs and cannot tell an estimate from a measurement. An action priced at 1% of its true cost wins every comparison it enters.",
+   "measured": "Panel authorised 2026-07-12; ~1 month elapsed. Output: 67 distinct recommendations in docs/research/panel_inbox.md, 23 reaching improvement_inbox, ~3 reaching QUEUE-or-better (grep-level count, not an audit). VALIDATED SURVIVORS: 0. ECONOMIC DESCENDANTS: 0 -- the desk has zero confirmed edges, so nothing the panel suggested has produced money. ~$67 per queued finding; cost per dollar earned is undefined because the denominator is zero.",
+   "unmeasured": "The split of the ~$200 across panel / brain / miners is NOT established -- the principal was asked and has not yet answered, so this entry must not be read as '$200 for the panel alone'. Provider hit-rate has NEVER been computed: data/panel_verdicts.jsonl and data/panel_*.json do not exist, so the entry's own success metric ('provider hit-rate measurable by month 2') is unmet and its reversal condition cannot fire.",
+   "expected_cost": "~$200/month reported; split across seats UNMEASURED",
+   "success_metric": "the ORIGINAL entry's metric stands and is half-met: '>=1 QUEUE-or-better finding' PASSED (~3); 'provider hit-rate measurable by month 2' FAILED (never computed)",
+   "reversal_condition": "unchanged from the original entry: two consecutive panels with zero surviving findings -> drop to biweekly. On the evidence above it has arguably already fired and could not be observed",
+   "ts": "2026-08-09T10:54:30.050491+00:00"
   }
  ]
 }

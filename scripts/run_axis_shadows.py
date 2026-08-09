@@ -136,14 +136,63 @@ def _evaluate(name: str, clock: str, symbol: str, field: str, direction: int,
             "stage": "B (forward-only; eligibility != deployment)"}
 
 
+_REGISTRY = Path("data/axis_clock_registry.json")
+
+
+def _all_axes() -> tuple[dict[str, tuple[str, str, str, int]], list[dict[str, object]]]:
+    """Hand-curated axes UNION the ones stage_a_screen registered when it started a clock.
+
+    WHY THE UNION EXISTS. `_AXES` above is hand-maintained, so until 2026-08-09 a candidate that
+    EARNED a forward clock did not appear in Stage-B -- or on the dashboard -- until a human
+    noticed and edited this file. That failure is silent and it looks exactly like "no new
+    candidates", which is the one shape nobody investigates.
+
+    The curated entries WIN on a name collision: a considered decision here outranks whatever a
+    screen auto-registered, and a re-screen must never quietly redirect a live clock's target.
+
+    An axis registered WITHOUT a target symbol cannot be scored, so it is returned as an UNTRACKED
+    row rather than dropped or guessed at. Dropping it would recreate the invisibility this
+    function exists to remove; guessing a target would silently score it against the wrong asset.
+    """
+    merged = dict(_AXES)
+    untracked: list[dict[str, object]] = []
+    try:
+        blob = json.loads(_REGISTRY.read_text("utf-8"))
+    except (OSError, ValueError):
+        return merged, untracked
+    for name, rec in (blob.get("axes") or {}).items():
+        if name in merged or not isinstance(rec, dict):
+            continue
+        target = str(rec.get("target_symbol") or "")
+        clock = str(rec.get("clock") or "")
+        if not target or not clock:
+            untracked.append({
+                "axis": name, "verdict": "UNTRACKED", "forward_days": 0, "need": _MIN_DAYS,
+                "auto_registered": True,
+                "note": ("clock registered without a target symbol, so forward P&L cannot be "
+                         "scored. Listed rather than dropped -- an invisible candidate is the "
+                         "defect this union exists to prevent -- and NOT guessed at, because "
+                         "scoring it against the wrong asset would be worse than not scoring it"),
+                "stage": "B (registered, unscoreable)"})
+            continue
+        sign = int(rec.get("sign") or 1)
+        merged[name] = (clock, target, str(rec.get("method") or "z20"), sign)
+    return merged, untracked
+
+
 def main() -> None:
     # Derived ONCE, and BEFORE _STATE is rewritten below -- derive_slots() reads that same file to
     # count the axis clocks, so deriving per-axis would both re-read it 3x and let this run's own
     # write feed back into its own bar.
     cohort = cohort_m_for_bar()
-    results = [_evaluate(k, *v, cohort=cohort) for k, v in _AXES.items()]
+    tracked, untracked = _all_axes()
+    results = [_evaluate(k, *v, cohort=cohort) for k, v in tracked.items()]
+    results.extend(untracked)
+    for r in results:
+        r.setdefault("auto_registered", r.get("axis") not in _AXES)
     payload = {"updated": datetime.now(tz=UTC).isoformat(), "min_forward_days": _MIN_DAYS,
                "axes": results,
+               "curated_axes": len(_AXES), "auto_registered_axes": len(results) - len(_AXES),
                "m_concurrent": cohort.m, "m_provenance": cohort.provenance,
                "m_detail": cohort.detail,
                "note": ("Forward-only Stage-B tracking. P&L starts at the clock's first row, never "
