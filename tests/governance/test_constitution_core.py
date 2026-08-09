@@ -31,6 +31,14 @@ def sealed(tmp_path, monkeypatch):
     monkeypatch.setattr(core, "_CONST", const)
     monkeypatch.setattr(core, "_LOCK", lock)
     monkeypatch.setattr(core, "_ROOT", tmp_path)
+    master = tmp_path / core._MASTER_REL
+    master.parent.mkdir(parents=True, exist_ok=True)
+    master.write_text(
+        "SINGLE AUTHORITATIVE TOP-LEVEL OPERATING CONSTITUTION\n"
+        "24 HOURS PER DAY.\nCONSTITUTION FREEZE DEFAULT\nFREEZE PROSE.\n"
+        + "\n".join(f"# {i}. SECTION" for i in range(218)),
+        "utf-8",
+    )
     monkeypatch.setattr("sys.argv", ["check_constitution_core.py", "--reseal"])
     assert core.main() == 0
     return const, lock
@@ -115,3 +123,73 @@ def test_real_constitution_is_sealed_and_intact():
     now = core.current()
     assert all(v is not None for v in now.values()), f"clause not found: {now}"
     assert now == sealed_digests, "immutable constitutional core has drifted"
+
+
+def test_authoritative_master_is_complete_and_principal_sealed():
+    """The 24/7 top-level authority must be complete, present and part of the immutable seal."""
+    master, errors = core.master_current()
+    assert errors == []
+    assert master is not None and master["sections"] == 218
+    lock = json.loads(core._LOCK.read_text("utf-8"))
+    assert lock.get("master") == master
+
+
+def test_master_word_change_fails_the_same_entry_gate(sealed, monkeypatch, capsys):
+    """A controller cannot silently replace the master while leaving the compact L1 core intact."""
+    root = core._ROOT
+    (root / "AGENTS.md").write_text("read master", "utf-8")
+    master = root / core._MASTER_REL
+    phrases = (
+        "SINGLE AUTHORITATIVE TOP-LEVEL OPERATING CONSTITUTION\n"
+        "24 HOURS PER DAY.\nCONSTITUTION FREEZE DEFAULT\nFREEZE PROSE.\n"
+    )
+    master.parent.mkdir(parents=True, exist_ok=True)
+    master.write_text(phrases + "\n".join(f"# {i}. SECTION" for i in range(218)), "utf-8")
+    monkeypatch.setattr("sys.argv", ["check_constitution_core.py", "--reseal"])
+    assert core.main() == 0
+    master.write_text(master.read_text("utf-8").replace("24 HOURS", "23 HOURS"), "utf-8")
+    assert _verify(monkeypatch) == 1
+    assert "MASTER VIOLATION" in capsys.readouterr().out
+
+
+def test_master_seal_is_stable_across_lf_and_crlf(sealed, monkeypatch):
+    """Git newline conversion cannot manufacture a breach on a different controller host."""
+    root = core._ROOT
+    master = root / core._MASTER_REL
+    text = master.read_text("utf-8")
+    before, errors = core.master_current()
+    assert errors == []
+    master.write_bytes(text.replace("\n", "\r\n").encode("utf-8"))
+    after, errors = core.master_current()
+    assert errors == [] and after == before
+    assert _verify(monkeypatch) == 0
+
+
+def test_missing_master_always_fails_even_without_agents_file(sealed, monkeypatch, capsys):
+    """Authority cannot disappear by deleting both the master and its read-first pointer."""
+    root = core._ROOT
+    (root / core._MASTER_REL).unlink()
+    agents = root / "AGENTS.md"
+    if agents.exists():
+        agents.unlink()
+    assert _verify(monkeypatch) == 1
+    assert "MASTER VIOLATION" in capsys.readouterr().out
+
+
+def test_truncated_master_fails(sealed, monkeypatch, capsys):
+    """A partial restore cannot pass merely because the title and load-bearing phrases survived."""
+    master = core._ROOT / core._MASTER_REL
+    lines = master.read_text("utf-8").splitlines()
+    master.write_text("\n".join(lines[:120]) + "\n", "utf-8")
+    assert _verify(monkeypatch) == 1
+    assert "section sequence" in capsys.readouterr().out
+
+
+def test_master_without_seal_fails(sealed, monkeypatch, capsys):
+    """A present authority is not trusted unless the committed principal seal names it."""
+    _, lock = sealed
+    payload = json.loads(lock.read_text("utf-8"))
+    payload.pop("master")
+    lock.write_text(json.dumps(payload), "utf-8")
+    assert _verify(monkeypatch) == 1
+    assert "no principal seal" in capsys.readouterr().out

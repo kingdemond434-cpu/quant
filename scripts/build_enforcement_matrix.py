@@ -30,6 +30,7 @@ Pure stdlib. Run from repo root.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 from datetime import UTC, datetime
@@ -38,6 +39,7 @@ from typing import Any
 
 _ROOT = Path(__file__).resolve().parent.parent
 _CONST = _ROOT / "docs/CONSTITUTION.md"
+_MASTER = _ROOT / "docs/MASTER_QUANT_CONSTITUTION.md"
 _AUDIT = _ROOT / "scripts/max_audit.py"
 _MANIFEST = _ROOT / "ops/crontab.manifest"
 _OUT = _ROOT / "data/enforcement_matrix.json"
@@ -648,6 +650,28 @@ def _scheduled(refs: list[str]) -> list[str]:
     return [r for r in refs if Path(r.split(":")[0].split(" ")[0]).name in man]
 
 
+def _master_authority() -> dict[str, Any]:
+    """Expose the limit of this matrix instead of Goodharting its clean companion score."""
+    text = _MASTER.read_text("utf-8")
+    canonical = text.replace("\r\n", "\n").replace("\r", "\n").encode("utf-8")
+    sections = len(re.findall(r"^# \d+\.", text, re.MULTILINE))
+    return {
+        "master_path": _MASTER.relative_to(_ROOT).as_posix(),
+        "master_sha256": hashlib.sha256(canonical).hexdigest(),
+        "master_sections": sections,
+        "master_to_code_crosswalk": {
+            "status": "UNMEASURED",
+            "covered_sections": None,
+            "total_sections": sections,
+            "owed": True,
+            "scope_note": (
+                "The executable matrix below covers docs/CONSTITUTION.md companion laws; it is "
+                "not yet a section-by-section enforcement crosswalk for the sealed master."
+            ),
+        },
+    }
+
+
 def build() -> dict[str, Any]:
     principles, fences = _principles(), _fence_names()
     rows: list[dict[str, Any]] = []
@@ -677,6 +701,7 @@ def build() -> dict[str, Any]:
         "generated": datetime.now(tz=UTC).isoformat(),
         "law": "L2.0/L2.2 -- a principle with no enforcement is prose; a fence with no principle "
                "is unvoted complexity. Both directions are engineering gaps.",
+        "authority": _master_authority(),
         "counts": counts, "n_principles": len(principles), "n_fences": len(fences),
         "unenforced": [r["principle"] for r in rows if r["status"] == "UNENFORCED"],
         "broken_references": {r["principle"]: r["broken_references"] for r in rows
@@ -699,6 +724,9 @@ def main() -> int:
     else:
         print(f"enforcement matrix: {m['counts']} over {m['n_principles']} principles / "
               f"{m['n_fences']} fences")
+        crosswalk = m["authority"]["master_to_code_crosswalk"]
+        print(f"  sealed master: {m['authority']['master_sections']} sections; "
+              f"master-to-code crosswalk={crosswalk['status']} (owed={crosswalk['owed']})")
         for pid in m["unenforced"]:
             print(f"  UNENFORCED {pid}")
         for pid, refs in m["broken_references"].items():

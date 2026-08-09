@@ -2637,6 +2637,7 @@ _FINDING_DOCS_EXCLUDED = {
                             "the L1.x hash seal is not engaged",
     "docs/research/feed_inbox.md": "literature feed, not desk findings",
     "docs/research/data_axis_watchlist.md": "source cards -- governed by §33 dispositions",
+    "docs/research/crypto_source_seeds.md": "living source-seed map -- governed by L1.52 miners",
     "docs/research/discovery_hypotheses.md": "hypotheses -- governed by §33 / the trial ledger",
     "docs/research/literature_coverage.md": "coverage log -- governed by §33",
     "docs/research/prospector_coverage.md": "coverage log -- governed by §33, same as its "
@@ -2947,6 +2948,23 @@ _TERMINAL_ARTIFACTS = {
     # conversion, and "convert the doctrine" is not a coherent action. Terminal is the DECISION
     # the law demands, not a default -- each governs behaviour and is superseded by amendment,
     # never worked off a queue.
+    "docs/MASTER_QUANT_CONSTITUTION.md":
+        "principal-supplied sealed top-level doctrine -- injected at controller "
+        "entry, never an inventory",
+    "docs/audit_shards/":
+        "generated audit-shard class -- disposable working views, never a findings backlog",
+    "docs/research/ETHBTC_ROTATION_PREREGISTRATION.md":
+        "immutable preregistration -- superseded by its result, never refreshed in place",
+    "docs/research/FULL_SWEEP_PREREGISTRATION.md":
+        "immutable preregistration -- superseded by its result, never refreshed in place",
+    "docs/research/MANAGEMENT_SWEEP_PREREGISTRATION.md":
+        "immutable preregistration -- superseded by its result, never refreshed in place",
+    "docs/research/recent_changes.md":
+        "append-only change record -- each row is terminal evidence, not inventory",
+    "docs/research/TIER1_CONTROLLER_MANDATE.md":
+        "standing subordinate implementation doctrine under the sealed master",
+    "docs/RESEARCH_DATA_TRANSPORT.md":
+        "deployment runbook -- superseded by a new transport design, never cadence-refreshed",
     "docs/research/EXPLORATION_DOCTRINE.md": "standing doctrine -- binds organs, not an inventory",
     "docs/research/MEASUREMENT_DOCTRINE.md": "standing doctrine -- binds organs, not an inventory",
     "docs/research/OPERATING_DOCTRINE.md": "standing doctrine -- governs what to build",

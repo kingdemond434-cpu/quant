@@ -1,4 +1,6 @@
-I’d make this the **final top-level controller prompt** sitting above the full constitution. Its job is not to add another hundred research doctrines; it forces the quant to **close the actual gap toward tier-1 capability every day**, while relentlessly producing survivors.  FINAL TIER-1 QUANT CONVERGENCE, SURVIVOR MAXIMIZATION & PERMANENT FRONTIER DIRECTIVE
+> Authority: `docs/MASTER_QUANT_CONSTITUTION.md`. This mandate is an implementation contract under the sealed master.
+
+This is the **subordinate Tier-1 implementation contract** beneath the sealed master constitution. Its job is not to add another hundred research doctrines; it forces the quant to **close the actual gap toward tier-1 capability every day**, while relentlessly producing survivors.  FINAL TIER-1 QUANT CONVERGENCE, SURVIVOR MAXIMIZATION & PERMANENT FRONTIER DIRECTIVE
 
 ## SUPREME OBJECTIVE
 

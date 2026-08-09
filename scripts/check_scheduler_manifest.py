@@ -7,7 +7,8 @@ ops/crontab.manifest is the reconstructed DR floor; this checker keeps it honest
   (a) every script the manifest references must exist in the repo -- a deleted-but-still-
       scheduled script is a silent nightly failure (the DEAD CRON class, scripts/wiring_audit.py:8);
   (b) every committed ops/*.timer's service ExecStart script must exist AND appear in the
-      manifest -- the committed units are the one part the manifest CAN be sure of, so a unit
+      manifest, and every OnCalendar value must exactly match the manifest schedule -- the
+      committed units are the one part the manifest CAN be sure of, so a unit or schedule
       missing from it means the manifest has rotted, not the box;
   (c) where `crontab -l` succeeds (the live VPS), live-vs-manifest drift is reported in BOTH
       directions: an extra live line is tomorrow's un-reconstitutable job, a missing one is a
@@ -188,9 +189,22 @@ def _to_repo_rel(root: Path, path_str: str) -> str:
     return path_str
 
 
+def _on_calendar_values(timer_text: str) -> list[str]:
+    """Return active OnCalendar expressions exactly as systemd will parse them."""
+    values: list[str] = []
+    for line in timer_text.splitlines():
+        stripped = line.strip()
+        if stripped and not stripped.startswith("#") and stripped.startswith("OnCalendar="):
+            values.append(stripped.removeprefix("OnCalendar=").strip())
+    return values
+
+
 def check_committed_timers(root: Path, man: Manifest) -> list[str]:
-    """(b) every committed ops/*.timer must resolve to an existing ExecStart script that the
-    manifest names. The committed units are ground truth; the manifest must never lag them."""
+    """Fence committed timer wiring and exact calendar agreement with the manifest.
+
+    The unit files are executable ground truth. A manifest that names the right script but a
+    different time is not reconstitutable: it certifies one cadence and deploys another.
+    """
     problems: list[str] = []
     for timer in sorted((root / "ops").glob("*.timer")):
         service = timer.with_suffix(".service")
@@ -206,8 +220,32 @@ def check_committed_timers(root: Path, man: Manifest) -> list[str]:
         if not (root / rel).is_file():
             problems.append(f"{rel_timer}: ExecStart script {rel} does not exist in repo")
         if rel not in man.raw:
-            problems.append(f"{rel_timer}: ExecStart script {rel} is absent from the manifest"
-                            f" -- the manifest has rotted behind the committed units")
+            problems.append(
+                f"{rel_timer}: ExecStart script {rel} is absent from the manifest"
+                " -- the manifest has rotted behind the committed units"
+            )
+
+        calendars = _on_calendar_values(timer.read_text("utf-8"))
+        if not calendars:
+            continue
+        entries = [entry for entry in man.systemd if entry.unit == timer.name]
+        if len(entries) != 1:
+            problems.append(
+                f"{rel_timer}: expected exactly one matching SYSTEMD entry, found {len(entries)}"
+            )
+            continue
+        if len(calendars) != 1:
+            problems.append(
+                f"{rel_timer}: expected exactly one OnCalendar value, found {len(calendars)}"
+            )
+            continue
+        actual = calendars[0]
+        declared = entries[0].on
+        if actual != declared:
+            problems.append(
+                f"{rel_timer}: OnCalendar={actual!r} does not exactly match manifest "
+                f"on={declared!r}"
+            )
     return problems
 
 
