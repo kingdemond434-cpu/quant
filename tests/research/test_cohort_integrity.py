@@ -148,11 +148,25 @@ def test_fence_is_green_on_the_live_tree():
     from scripts.check_cohort_integrity import build_report
 
     rep = build_report()
-    shadow = _ROOT / "data/axis_shadow_state.json"
-    if rep["status"] == "COHORT-INCOMPLETE" and not shadow.exists():
-        pytest.skip(f"cohort sources -- {_RUNTIME_ONLY}. The fence reads shadow state written by "
-                    f"the live slots; on a clone it correctly reports a FLOOR rather than a "
-                    f"measurement, which is a fact about the clone: {rep['detail']}")
+    # THE DANGEROUS CONDITION IS CHECKED UNCONDITIONALLY, BEFORE ANY SKIP. `too_loose` is an
+    # artifact judged against a SMALLER cohort than the registry knows about -- the phantom-edge
+    # direction, and the entire reason this fence exists. It must never be skipped for any host.
+    assert not rep["too_loose"], f"BAR-TOO-LOOSE: {rep['too_loose']}"
+
+    # The skip now keys on the CAUSE, not on a proxy. It used to key on
+    # `data/axis_shadow_state.json` existing, taking that as "this is the live desk" -- but
+    # running run_axis_shadows.py once on a clone creates that file while the other seven cohort
+    # sources stay absent, flipping the proxy and failing the fence for a reason that is a fact
+    # about the host. `unknown_sources` names the sources that could not be read, so it says
+    # directly what the proxy was trying to infer.
+    #
+    # This can only ever skip a report that is FLOORED, which the fence's own detail describes as
+    # "bars are safe but the desk is flying on a floor" -- conservative by construction, and the
+    # too_loose assertion above still bites underneath it.
+    if rep["status"] == "COHORT-INCOMPLETE" and rep["unknown_sources"]:
+        pytest.skip(f"cohort sources -- {_RUNTIME_ONLY}. {len(rep['unknown_sources'])} source(s) "
+                    f"unreadable on this host, so m is a FLOOR rather than a measurement and the "
+                    f"bar is capped conservatively: {rep['detail']}")
     assert rep["status"] == "OK", f"{rep['status']}: {rep['detail']}"
     assert rep["shipped_bar_crosscheck"] == "agrees", "local bar diverges from the shipped one"
 
