@@ -29,7 +29,7 @@ def test_explicit_method_provenance_and_fractional_credit() -> None:
         as_of="2026-08-09",
     )
     by_method = {row["method"]: row for row in report["methods"]}
-    assert by_method["causal"]["attempts"] == 0.5
+    assert by_method["causal"]["explicit_attempts"] == 0.5
     assert by_method["participant_first"]["independent_survivors"] == 0.5
     assert report["coverage"]["explicit_provenance_ratio"] == 1.0
     credit = {row["contributor"]: row for row in report["discovery_credit"]}
@@ -65,5 +65,12 @@ def test_keyword_inference_is_labelled_not_treated_as_explicit() -> None:
     report = evolve_search_strategies(
         [{"hypothesis": "reverse engineer a public strategy"}], as_of="2026-08-09"
     )
-    assert report["coverage"]["represented"] == 1
+    assert report["status"] == "INSTRUMENTING"
+    assert report["coverage"]["represented"] == 0
+    assert report["coverage"]["ratio"] == 0
+    assert report["coverage"]["inferred_represented"] == 1
     assert report["coverage"]["explicit_provenance_ratio"] == 0.0
+    by_method = {row["method"]: row for row in report["methods"]}
+    inferred = by_method["reverse_engineering"]
+    assert inferred["inferred_mentions"] == 1.0
+    assert inferred["useful_yield_posterior"] is None

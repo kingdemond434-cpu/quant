@@ -176,7 +176,14 @@ def evolve_search_strategies(
     """Measure, mutate, combine and conservatively nominate retirement of search methods."""
     day = as_of or datetime.now(tz=UTC).date().isoformat()
     stats: dict[str, dict[str, float]] = {
-        method: defaultdict(float, attempts=0.0, explicit_attempts=0.0) for method in SEARCH_METHODS
+        method: defaultdict(
+            float,
+            classified_records=0.0,
+            explicit_attempts=0.0,
+            inferred_mentions=0.0,
+            useful_attempts=0.0,
+        )
+        for method in SEARCH_METHODS
     }
     unattributed = 0
     credit: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
@@ -189,13 +196,21 @@ def evolve_search_strategies(
         outcomes = _outcomes(row)
         method_weight = 1.0 / len(methods)
         for method in methods:
-            stats[method]["attempts"] += method_weight
+            stats[method]["classified_records"] += method_weight
             if classified["provenance"] == "EXPLICIT":
                 stats[method]["explicit_attempts"] += method_weight
-            for key, value in outcomes.items():
-                stats[method][key] += value * method_weight
+                stats[method]["useful_attempts"] += method_weight * min(
+                    1.0,
+                    max(outcomes["useful_information"], outcomes["independent_survivors"]),
+                )
+                for key, value in outcomes.items():
+                    stats[method][key] += value * method_weight
+            else:
+                # Keyword classification maps old prose into the taxonomy, but it is not an
+                # experiment record. Inferred mentions have zero outcome authority.
+                stats[method]["inferred_mentions"] += method_weight
         contributors = row.get("contributors", {})
-        if isinstance(contributors, Mapping):
+        if classified["provenance"] == "EXPLICIT" and isinstance(contributors, Mapping):
             for kind, raw_values in contributors.items():
                 values = (
                     [raw_values]
@@ -213,26 +228,42 @@ def evolve_search_strategies(
     rows: list[dict[str, object]] = []
     for method in SEARCH_METHODS:
         method_stats = dict(stats[method])
-        attempts = method_stats.get("attempts", 0.0)
-        useful = method_stats.get("useful_information", 0.0) + method_stats.get(
-            "independent_survivors", 0.0
-        )
-        alpha = 1.0 + useful
-        beta = 1.0 + max(0.0, attempts - useful)
-        mean = alpha / (alpha + beta)
-        sd = math.sqrt(alpha * beta / ((alpha + beta) ** 2 * (alpha + beta + 1)))
+        attempts = method_stats.get("explicit_attempts", 0.0)
+        useful = min(attempts, method_stats.get("useful_attempts", 0.0))
+        if attempts > 0:
+            alpha = 1.0 + useful
+            beta = 1.0 + max(0.0, attempts - useful)
+            mean: float | None = alpha / (alpha + beta)
+            sd: float | None = math.sqrt(
+                alpha * beta / ((alpha + beta) ** 2 * (alpha + beta + 1))
+            )
+        else:
+            mean = None
+            sd = None
         rows.append(
             {
                 "method": method,
                 **{key: round(value, 6) for key, value in method_stats.items()},
-                "useful_yield_posterior": round(mean, 6),
-                "useful_yield_upper_approx_95": round(min(1.0, mean + 2 * sd), 6),
+                "useful_yield_posterior": round(mean, 6) if mean is not None else None,
+                "useful_yield_upper_approx_95": (
+                    round(min(1.0, mean + 2 * sd), 6)
+                    if mean is not None and sd is not None
+                    else None
+                ),
             }
         )
-    covered = [row for row in rows if finite_float(row.get("attempts")) > 0]
-    missing = [str(row["method"]) for row in rows if finite_float(row.get("attempts")) == 0]
-    total = sum(finite_float(row.get("attempts")) for row in rows)
-    hhi = sum((finite_float(row.get("attempts")) / total) ** 2 for row in rows) if total else None
+    covered = [row for row in rows if finite_float(row.get("explicit_attempts")) > 0]
+    inferred = [row for row in rows if finite_float(row.get("inferred_mentions")) > 0]
+    missing = [
+        str(row["method"]) for row in rows if finite_float(row.get("explicit_attempts")) == 0
+    ]
+    total = sum(finite_float(row.get("explicit_attempts")) for row in rows)
+    classified_total = sum(finite_float(row.get("classified_records")) for row in rows)
+    hhi = (
+        sum((finite_float(row.get("explicit_attempts")) / total) ** 2 for row in rows)
+        if total
+        else None
+    )
     effective = (1.0 / hhi) if hhi else None
     starvation = bool(
         total and effective is not None and effective < max(2.0, math.sqrt(len(SEARCH_METHODS)))
@@ -273,17 +304,17 @@ def evolve_search_strategies(
             "method": row["method"],
             "status": "REVIEW_FOR_RETIREMENT",
             "reason": (
-                ">=10 fractionally credited attempts, no independent survivor, "
+                ">=10 explicitly attributed attempts, no independent survivor, "
                 "low posterior ceiling"
             ),
         }
         for row in rows
-        if finite_float(row.get("attempts")) >= 10
+        if finite_float(row.get("explicit_attempts")) >= 10
         and finite_float(row.get("independent_survivors")) == 0
         and finite_float(row.get("useful_yield_upper_approx_95")) < 0.2
     ]
     return {
-        "status": "MEASURED" if total else "UNMEASURED",
+        "status": "MEASURED" if total else "INSTRUMENTING" if classified_total else "UNMEASURED",
         "method_taxonomy": list(SEARCH_METHODS),
         "methods": rows,
         "coverage": {
@@ -292,9 +323,16 @@ def evolve_search_strategies(
             "ratio": len(covered) / len(SEARCH_METHODS),
             "missing": missing,
             "unattributed_events": unattributed,
+            "inferred_represented": len(inferred),
+            "inferred_ratio": len(inferred) / len(SEARCH_METHODS),
+            "inferred_only": [
+                str(row["method"])
+                for row in inferred
+                if finite_float(row.get("explicit_attempts")) == 0
+            ],
             "explicit_provenance_ratio": (
-                sum(finite_float(row.get("explicit_attempts")) for row in rows) / total
-                if total
+                total / classified_total
+                if classified_total
                 else None
             ),
         },
@@ -312,7 +350,11 @@ def evolve_search_strategies(
         ],
         "serendipity_channel": _serendipity(day, history),
         "recursive_question": "What method could discover a new method of discovering alpha?",
-        "authority": "RESEARCH ALLOCATION PRIOR ONLY; no survivor promotion or capital authority",
+        "authority": (
+            "RESEARCH ALLOCATION PRIOR ONLY; posterior and retirement outputs use EXPLICIT method "
+            "provenance only. Keyword-inferred mentions have zero outcome, survivor-promotion or "
+            "capital authority."
+        ),
     }
 
 
