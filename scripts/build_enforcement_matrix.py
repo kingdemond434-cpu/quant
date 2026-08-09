@@ -546,6 +546,16 @@ _FENCE_OWNERS: dict[str, str] = {
     "check_panel": "L1.7",               # adversarial review capability being DOWN is a defect
     "check_memory_hygiene": "L1.17",     # research debt is only debt if it is written and findable
     "check_mine_evidence_base": "L1.6",  # a ratchet calibrated on n=2 is superstition with a JSON
+    # --- THE ECONOMIC OBJECTIVE (L1.57-L1.59, 2026-08-08). These three laws are about WEALTH
+    # rather than about process, so their fences are behavioural tests and one report rather than
+    # a `check_*` script: there is no pass/fail condition on "the objective is retained log
+    # wealth", only a scoreboard that must exist, must refuse to invent numbers, and must rank
+    # above the architecture counts.
+    "tests/portfolio/test_return_engines.py": "L1.57",
+    "tests/scripts/test_wealth_report.py": "L1.57",
+    "tests/portfolio/test_wealth_retention.py": "L1.58",
+    "tests/research/test_conversion_velocity.py": "L1.59",
+    "tests/validation/test_state_conditional.py": "L1.59",
     # --- claimed at the 2026-08-04 merge: both branches' new fences, each under the law it serves.
     "check_asymmetry_ratchet": "L1.24",       # owned-data advantage is a holding that must not shrink
     "check_coexistence": "L1.23",             # sleeves sharing a book must not defeat its rails

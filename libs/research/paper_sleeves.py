@@ -318,8 +318,8 @@ def parse_full_sweep_candidates(report_path: Path) -> dict[str, Any]:
     window_end = str(window[-1]) if window else ""
     out: list[Candidate] = []
     for cluster_i, raw_cluster in enumerate(clusters, 1):
-        members = [by_key.get(str(k)) for k in raw_cluster] if isinstance(raw_cluster, list) else []
-        members = [r for r in members if isinstance(r, dict)]
+        found = [by_key.get(str(k)) for k in raw_cluster] if isinstance(raw_cluster, list) else []
+        members: list[dict[str, Any]] = [r for r in found if isinstance(r, dict)]
         if not members:
             continue
         # One measured cluster gets one clock. Highest |t| is a deterministic representative;

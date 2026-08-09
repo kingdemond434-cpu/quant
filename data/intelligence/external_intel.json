@@ -1,0 +1,927 @@
+{
+ "generated_at": "2026-08-09T04:33:08.820592+00:00",
+ "video_intelligence": {
+  "channels": 1,
+  "rows": [
+   {
+    "channel": "Chart Fanatics",
+    "creator": "Chart Fanatics (guest: Naoufel / Ultra Instinct)",
+    "category": "algorithmic_trading_practitioner",
+    "videos_enumerated": 1,
+    "economically_relevant": 1,
+    "enumeration_complete": false,
+    "by_transcript_status": {
+     "FULL": 1
+    },
+    "extractable": 1,
+    "processed": 1,
+    "residuals_new": 2,
+    "currently_exhausted": false,
+    "why": "Chart Fanatics: enumeration incomplete, so the denominator is unknown. 1 relevant video(s) found is a LOWER bound and calling the corpus covered would be a statement about what was looked at, not about what exists",
+    "source_roi": 2.0,
+    "roi_note": "Chart Fanatics: 2 residual mechanism(s) survived dedupe per 1 cost unit(s) = 2.00. Still producing genuinely new material",
+    "last_swept": "2026-08-08"
+   }
+  ],
+  "open_channels": 1,
+  "unresolved_high_value": [],
+  "extractions_from_incomplete_transcripts": [],
+  "headline": "1 of 1 channel(s) still open; 0 video(s) externally blocked and queued for retry",
+  "note": "PARTIAL is never FULL and DESCRIPTION_ONLY yields the titles of ideas rather than the ideas. A channel is only ever CURRENTLY exhausted: exhaustion is computed against the videos enumerated, so a new upload reopens it by construction. Falling source ROI lowers the sweep cadence and never deletes the source."
+ },
+ "extreme_return_claims": {
+  "claims": 5,
+  "rows": [
+   {
+    "subject": "Naoufel -- ES mean reversion (RSI2<20 above SMA200, exit RSI2>70)",
+    "source": "Chart Fanatics interview 2026-02-08",
+    "observed_at": "2026-02-08",
+    "evidence_class": "BACKTEST",
+    "P_real": 0.015,
+    "reported_return": 0.34,
+    "horizon_days": 365.0,
+    "annualised_log": 0.2927,
+    "attribution": {
+     "BETA": 0.4,
+     "ALPHA": 0.3,
+     "UNVERIFIABLE": 0.3
+    },
+    "transferable_share": 0.3,
+    "transferable_note": "Naoufel -- ES mean reversion (RSI2<20 above SMA200, exit RSI2>70): 30% of the reported return is attributed to transferable mechanisms (['ALPHA', 'CARRY', 'CONVEXITY']); 30% is UNVERIFIABLE",
+    "priority": 0.00028,
+    "priority_note": "Naoufel -- ES mean reversion (RSI2<20 above SMA200, exit RSI2>70): P(real) 0.01 x transferable 0.30 x log-magnitude 0.26 x novelty 0.50 x capacity 0.50 x horizon credibility 1.00 = 0.0003. Magnitude enters through a log so a claimed 1000% cannot outrank a verified 50% by twenty times",
+    "strategy_family": "index_mean_reversion",
+    "mechanism_recorded": true
+   },
+   {
+    "subject": "Naoufel (Ultra Instinct) -- Kinfo-verified portion",
+    "source": "Chart Fanatics interview 2026-02-08 + Kinfo",
+    "observed_at": "2026-02-08",
+    "evidence_class": "PARTIALLY_VERIFIABLE",
+    "P_real": 0.088,
+    "reported_return": 0.0,
+    "horizon_days": 0.0,
+    "annualised_log": null,
+    "attribution": {
+     "UNVERIFIABLE": 1.0
+    },
+    "transferable_share": 0,
+    "transferable_note": "Naoufel (Ultra Instinct) -- Kinfo-verified portion: 0% of the reported return is attributed to transferable mechanisms (['ALPHA', 'CARRY', 'CONVEXITY']); 100% is UNVERIFIABLE. The majority of this result has no attribution at all, which is the finding -- the desk does not know what produced it",
+    "priority": 0.0,
+    "priority_note": "Naoufel (Ultra Instinct) -- Kinfo-verified portion: no positive annualised growth computable (0d horizon) -- nothing to prioritise",
+    "strategy_family": "systematic breakout + mean reversion, futures/equities",
+    "mechanism_recorded": true
+   },
+   {
+    "subject": "Naoufel -- Gold Rush (buy Thursday, RSI<40, ATR stop, exit 3 bars)",
+    "source": "Chart Fanatics interview 2026-02-08",
+    "observed_at": "2026-02-08",
+    "evidence_class": "BACKTEST",
+    "P_real": 0.015,
+    "reported_return": 0.2262,
+    "horizon_days": 365.0,
+    "annualised_log": 0.2039,
+    "attribution": {
+     "UNVERIFIABLE": 1.0
+    },
+    "transferable_share": 0.0,
+    "transferable_note": "Naoufel -- Gold Rush (buy Thursday, RSI<40, ATR stop, exit 3 bars): no mechanism described, so NOTHING is transferable regardless of the attribution (0% nominally). A return that cannot be explained cannot be reproduced even if it was entirely real",
+    "priority": 0.0,
+    "priority_note": "Naoufel -- Gold Rush (buy Thursday, RSI<40, ATR stop, exit 3 bars): P(real) 0.01 x transferable 0.00 x log-magnitude 0.19 x novelty 0.50 x capacity 0.50 x horizon credibility 1.00 = 0.0000. Magnitude enters through a log so a claimed 1000% cannot outrank a verified 50% by twenty times",
+    "strategy_family": "calendar_anomaly",
+    "mechanism_recorded": false
+   },
+   {
+    "subject": "Naoufel -- workflow survival rate",
+    "source": "Chart Fanatics interview 2026-02-08",
+    "observed_at": "2026-02-08",
+    "evidence_class": "SELF_REPORTED",
+    "P_real": 0.044,
+    "reported_return": 0.0,
+    "horizon_days": 0.0,
+    "annualised_log": null,
+    "attribution": {
+     "UNVERIFIABLE": 1.0
+    },
+    "transferable_share": 0,
+    "transferable_note": "Naoufel -- workflow survival rate: 0% of the reported return is attributed to transferable mechanisms (['ALPHA', 'CARRY', 'CONVEXITY']); 100% is UNVERIFIABLE. The majority of this result has no attribution at all, which is the finding -- the desk does not know what produced it",
+    "priority": 0.0,
+    "priority_note": "Naoufel -- workflow survival rate: no positive annualised growth computable (0d horizon) -- nothing to prioritise",
+    "strategy_family": "process_claim",
+    "mechanism_recorded": true
+   },
+   {
+    "subject": "Larry Williams -- 10,000% championship year (cited in the same interview)",
+    "source": "Chart Fanatics interview 2026-02-08, secondhand",
+    "observed_at": "2026-02-08",
+    "evidence_class": "COMPETITION_RECORD",
+    "P_real": 0.103,
+    "reported_return": 100.0,
+    "horizon_days": 365.0,
+    "annualised_log": 4.6151,
+    "attribution": {
+     "LEVERAGE": 0.5,
+     "UNVERIFIABLE": 0.3,
+     "CONCENTRATION": 0.2
+    },
+    "transferable_share": 0.0,
+    "transferable_note": "Larry Williams -- 10,000% championship year (cited in the same interview): no mechanism described, so NOTHING is transferable regardless of the attribution (0% nominally). A return that cannot be explained cannot be reproduced even if it was entirely real",
+    "priority": 0.0,
+    "priority_note": "Larry Williams -- 10,000% championship year (cited in the same interview): P(real) 0.10 x transferable 0.00 x log-magnitude 1.73 x novelty 0.50 x capacity 0.50 x horizon credibility 1.00 = 0.0000. Magnitude enters through a log so a claimed 1000% cannot outrank a verified 50% by twenty times",
+    "strategy_family": "futures_directional",
+    "mechanism_recorded": false
+   }
+  ],
+  "top_priority": "Naoufel -- ES mean reversion (RSI2<20 above SMA200, exit RSI2>70)",
+  "no_mechanism_recorded": 2,
+  "majority_unverifiable": 3,
+  "headline": "top investigation target is Naoufel -- ES mean reversion (RSI2<20 above SMA200, exit RSI2>70) at priority 0.00028 (BACKTEST, 30% transferable); 2 claim(s) describe no mechanism and are therefore worth nothing to copy however large, 3 are majority UNVERIFIABLE",
+  "note": "A large return raises investigation URGENCY and never the evidence bar, never a validator threshold, and never a leverage allowance. Only the transferable share -- alpha, carry, convexity -- reaches the hypothesis factory; beta and leverage are available to anyone with an account and are not achievements to copy. A claim with no described mechanism has a transferable share of zero by construction."
+ },
+ "competitor_coverage": {
+  "coverage_score": {
+   "engines": 28,
+   "by_dimension": {
+    "IDENTIFIED": 28,
+    "SPECIFIED": 28,
+    "IMPLEMENTED": 20,
+    "VERIFIED": 12,
+    "LIVE": 0,
+    "ECONOMICALLY_VALIDATED": 0
+   },
+   "adopted": 0,
+   "externally_confirmed": 28,
+   "external_unknown": 0,
+   "note": "Reported per dimension rather than as one percentage: averaging a live capability with a paragraph produces a number that reads like progress. UNKNOWN external usage is permanent and legitimate -- private logic is not observable and must never be reconstructed by guess."
+  },
+  "residual_frontier": [
+   {
+    "engine": "live_learning",
+    "first_missing": "LIVE",
+    "external_uses": "YES",
+    "our_equivalent": "libs.research.evidence_clock + live_ladder",
+    "residual_gap": "the clock exists; zero live observations have ever been recorded",
+    "expected_close_value": 1.0,
+    "value_per_cost": 0.5,
+    "why": "live_learning: reached ['IDENTIFIED', 'SPECIFIED', 'IMPLEMENTED', 'VERIFIED'], first missing dimension is LIVE. Verified and not live is edge sitting still while it decays"
+   },
+   {
+    "engine": "public_expert_intelligence",
+    "first_missing": "LIVE",
+    "external_uses": "YES",
+    "our_equivalent": "libs.research.video_intelligence",
+    "residual_gap": "ledger built and tested; the GPT seat must populate it -- zero channels enumerated today",
+    "expected_close_value": 0.8,
+    "value_per_cost": 0.4,
+    "why": "public_expert_intelligence: reached ['IDENTIFIED', 'SPECIFIED', 'IMPLEMENTED', 'VERIFIED'], first missing dimension is LIVE. Verified and not live is edge sitting still while it decays"
+   },
+   {
+    "engine": "crypto_beta",
+    "first_missing": "LIVE",
+    "external_uses": "YES",
+    "our_equivalent": "libs.portfolio.return_engines BETA_REGIME",
+    "residual_gap": "attribution basis exists and is tested; no engine has produced a euro, so nothing is LIVE",
+    "expected_close_value": 0.9,
+    "value_per_cost": 0.3,
+    "why": "crypto_beta: reached ['IDENTIFIED', 'SPECIFIED', 'IMPLEMENTED', 'VERIFIED'], first missing dimension is LIVE. Verified and not live is edge sitting still while it decays"
+   },
+   {
+    "engine": "opportunity_diversification",
+    "first_missing": "LIVE",
+    "external_uses": "YES",
+    "our_equivalent": "libs.portfolio.return_engines effective_engine_count",
+    "residual_gap": "effective independent engine count is computable; no engine has returns to measure",
+    "expected_close_value": 0.6,
+    "value_per_cost": 0.3,
+    "why": "opportunity_diversification: reached ['IDENTIFIED', 'SPECIFIED', 'IMPLEMENTED', 'VERIFIED'], first missing dimension is LIVE. Verified and not live is edge sitting still while it decays"
+   },
+   {
+    "engine": "creator_strategy_extraction",
+    "first_missing": "LIVE",
+    "external_uses": "YES",
+    "our_equivalent": "libs.research.video_intelligence + difference_engine",
+    "residual_gap": "extraction discipline exists (PARTIAL never FULL); no corpus consumed yet",
+    "expected_close_value": 0.8,
+    "value_per_cost": 0.2667,
+    "why": "creator_strategy_extraction: reached ['IDENTIFIED', 'SPECIFIED', 'IMPLEMENTED', 'VERIFIED'], first missing dimension is LIVE. Verified and not live is edge sitting still while it decays"
+   },
+   {
+    "engine": "reserve_dry_powder",
+    "first_missing": "LIVE",
+    "external_uses": "YES",
+    "our_equivalent": "libs.portfolio.wealth_retention.reserve_option_value",
+    "residual_gap": "option value is priced crudely; needs a measured dislocation arrival rate from the rebound book",
+    "expected_close_value": 0.5,
+    "value_per_cost": 0.25,
+    "why": "reserve_dry_powder: reached ['IDENTIFIED', 'SPECIFIED', 'IMPLEMENTED', 'VERIFIED'], first missing dimension is LIVE. Verified and not live is edge sitting still while it decays"
+   },
+   {
+    "engine": "concentrated_beta",
+    "first_missing": "LIVE",
+    "external_uses": "YES",
+    "our_equivalent": "libs.portfolio.wealth_retention (marginal sizing) + return_engines",
+    "residual_gap": "concentration emerges from the optimiser rather than a rule; untested against a live book",
+    "expected_close_value": 0.7,
+    "value_per_cost": 0.2333,
+    "why": "concentrated_beta: reached ['IDENTIFIED', 'SPECIFIED', 'IMPLEMENTED', 'VERIFIED'], first missing dimension is LIVE. Verified and not live is edge sitting still while it decays"
+   },
+   {
+    "engine": "reentry_after_declines",
+    "first_missing": "IMPLEMENTED",
+    "external_uses": "YES",
+    "our_equivalent": null,
+    "residual_gap": "part of the capital recycling engine; not built",
+    "expected_close_value": 0.8,
+    "value_per_cost": 0.2,
+    "why": "reentry_after_declines: reached ['IDENTIFIED', 'SPECIFIED'], first missing dimension is IMPLEMENTED. A capability that is only IDENTIFIED and SPECIFIED contributes nothing -- there is a document and no economics"
+   },
+   {
+    "engine": "execution_discipline",
+    "first_missing": "LIVE",
+    "external_uses": "YES",
+    "our_equivalent": "libs.execution.tca + exec_monitor",
+    "residual_gap": "EXECUTION OPPORTUNITY SURFACE (spread x depth x fill hazard x adverse selection) not assembled",
+    "expected_close_value": 0.9,
+    "value_per_cost": 0.18,
+    "why": "execution_discipline: reached ['IDENTIFIED', 'SPECIFIED', 'IMPLEMENTED', 'VERIFIED'], first missing dimension is LIVE. Verified and not live is edge sitting still while it decays"
+   },
+   {
+    "engine": "quantitative_regime_models",
+    "first_missing": "LIVE",
+    "external_uses": "YES",
+    "our_equivalent": "libs.regime.hmm/gmm/bayesian",
+    "residual_gap": "our infrastructure is stronger; transition POSTERIOR, hazard and surprise are not derived",
+    "expected_close_value": 0.7,
+    "value_per_cost": 0.175,
+    "why": "quantitative_regime_models: reached ['IDENTIFIED', 'SPECIFIED', 'IMPLEMENTED', 'VERIFIED'], first missing dimension is LIVE. Verified and not live is edge sitting still while it decays"
+   },
+   {
+    "engine": "profit_harvesting",
+    "first_missing": "IMPLEMENTED",
+    "external_uses": "YES",
+    "our_equivalent": null,
+    "residual_gap": "CAPITAL RECYCLING ENGINE not built. wealth_retention prices the marginal unit but nothing computes harvest_Elog vs continuation_Elog vs rotate_Elog",
+    "expected_close_value": 1.0,
+    "value_per_cost": 0.1667,
+    "why": "profit_harvesting: reached ['IDENTIFIED', 'SPECIFIED'], first missing dimension is IMPLEMENTED. A capability that is only IDENTIFIED and SPECIFIED contributes nothing -- there is a document and no economics"
+   },
+   {
+    "engine": "cross_sectional_momentum",
+    "first_missing": "VERIFIED",
+    "external_uses": "YES",
+    "our_equivalent": "libs.research.crypto_xsec",
+    "residual_gap": "module exists; dispersion-conditioned sizing and momentum-crash state NOT researched",
+    "expected_close_value": 0.8,
+    "value_per_cost": 0.16,
+    "why": "cross_sectional_momentum: reached ['IDENTIFIED', 'SPECIFIED', 'IMPLEMENTED'], first missing dimension is VERIFIED. Code without evidence is a claim the desk cannot cash"
+   },
+   {
+    "engine": "relative_strength",
+    "first_missing": "VERIFIED",
+    "external_uses": "YES",
+    "our_equivalent": "libs.research.crypto_xsec",
+    "residual_gap": "same module; no untouched-OOS evidence",
+    "expected_close_value": 0.6,
+    "value_per_cost": 0.15,
+    "why": "relative_strength: reached ['IDENTIFIED', 'SPECIFIED', 'IMPLEMENTED'], first missing dimension is VERIFIED. Code without evidence is a claim the desk cannot cash"
+   },
+   {
+    "engine": "low_cap_asymmetry",
+    "first_missing": "VERIFIED",
+    "external_uses": "YES",
+    "our_equivalent": "libs.discovery.capacity",
+    "residual_gap": "capacity machinery exists; the low-cap OPPORTUNITY ENGINE (float, unlocks, emissions, holder concentration) is not built",
+    "expected_close_value": 0.9,
+    "value_per_cost": 0.15,
+    "why": "low_cap_asymmetry: reached ['IDENTIFIED', 'SPECIFIED', 'IMPLEMENTED'], first missing dimension is VERIFIED. Code without evidence is a claim the desk cannot cash"
+   },
+   {
+    "engine": "prediction_market_information",
+    "first_missing": "VERIFIED",
+    "external_uses": "YES",
+    "our_equivalent": "libs.data.prediction_markets",
+    "residual_gap": "data source exists; CALIBRATION engine (reliability curve, Brier, bias) not built",
+    "expected_close_value": 0.7,
+    "value_per_cost": 0.14,
+    "why": "prediction_market_information: reached ['IDENTIFIED', 'SPECIFIED', 'IMPLEMENTED'], first missing dimension is VERIFIED. Code without evidence is a claim the desk cannot cash"
+   },
+   {
+    "engine": "cross_model_review",
+    "first_missing": "LIVE",
+    "external_uses": "YES",
+    "our_equivalent": "libs.llm panel",
+    "residual_gap": "panel exists; USEFUL DISAGREEMENT economics not measured",
+    "expected_close_value": 0.4,
+    "value_per_cost": 0.1333,
+    "why": "cross_model_review: reached ['IDENTIFIED', 'SPECIFIED', 'IMPLEMENTED', 'VERIFIED'], first missing dimension is LIVE. Verified and not live is edge sitting still while it decays"
+   },
+   {
+    "engine": "unconventional_feature_mining",
+    "first_missing": "VERIFIED",
+    "external_uses": "YES",
+    "our_equivalent": "libs.alpha_factory.hypothesis_engine",
+    "residual_gap": "WILD FEATURE LAB not built as a governed surface: complete candidate universe and selection-path accounting are the whole point and are missing",
+    "expected_close_value": 0.9,
+    "value_per_cost": 0.1286,
+    "why": "unconventional_feature_mining: reached ['IDENTIFIED', 'SPECIFIED', 'IMPLEMENTED'], first missing dimension is VERIFIED. Code without evidence is a claim the desk cannot cash"
+   },
+   {
+    "engine": "dip_rebound_timing",
+    "first_missing": "IMPLEMENTED",
+    "external_uses": "YES",
+    "our_equivalent": null,
+    "residual_gap": "DRAWDOWN/REBOUND BOOK NOT BUILT. Needs liquidation-mechanism classifier (endogenous vs exogenous) before any rebound distribution is estimable",
+    "expected_close_value": 1.0,
+    "value_per_cost": 0.125,
+    "why": "dip_rebound_timing: reached ['IDENTIFIED', 'SPECIFIED'], first missing dimension is IMPLEMENTED. A capability that is only IDENTIFIED and SPECIFIED contributes nothing -- there is a document and no economics"
+   },
+   {
+    "engine": "staged_capital_deployment",
+    "first_missing": "IMPLEMENTED",
+    "external_uses": "YES",
+    "our_equivalent": null,
+    "residual_gap": "CAPITAL_INVENTORY policy not built: tranche count and size must be endogenous",
+    "expected_close_value": 0.6,
+    "value_per_cost": 0.12,
+    "why": "staged_capital_deployment: reached ['IDENTIFIED', 'SPECIFIED'], first missing dimension is IMPLEMENTED. A capability that is only IDENTIFIED and SPECIFIED contributes nothing -- there is a document and no economics"
+   },
+   {
+    "engine": "catalyst_trading",
+    "first_missing": "VERIFIED",
+    "external_uses": "YES",
+    "our_equivalent": "libs.research.event_calendar",
+    "residual_gap": "calendar exists; catalyst-conditioned EXIT surfaces are not learned",
+    "expected_close_value": 0.6,
+    "value_per_cost": 0.12,
+    "why": "catalyst_trading: reached ['IDENTIFIED', 'SPECIFIED', 'IMPLEMENTED'], first missing dimension is VERIFIED. Code without evidence is a claim the desk cannot cash"
+   },
+   {
+    "engine": "participant_broker_behaviour",
+    "first_missing": "IMPLEMENTED",
+    "external_uses": "YES",
+    "our_equivalent": null,
+    "residual_gap": "PARTICIPANT PHENOTYPE ENGINE not built; cohort bias fields specified only",
+    "expected_close_value": 0.9,
+    "value_per_cost": 0.1,
+    "why": "participant_broker_behaviour: reached ['IDENTIFIED', 'SPECIFIED'], first missing dimension is IMPLEMENTED. A capability that is only IDENTIFIED and SPECIFIED contributes nothing -- there is a document and no economics"
+   },
+   {
+    "engine": "public_disclosure_intelligence",
+    "first_missing": "VERIFIED",
+    "external_uses": "YES",
+    "our_equivalent": "libs.research.claim_screen",
+    "residual_gap": "screen exists; no disclosure feed wired",
+    "expected_close_value": 0.4,
+    "value_per_cost": 0.1,
+    "why": "public_disclosure_intelligence: reached ['IDENTIFIED', 'SPECIFIED', 'IMPLEMENTED'], first missing dimension is VERIFIED. Code without evidence is a claim the desk cannot cash"
+   },
+   {
+    "engine": "protocol_carry_staking",
+    "first_missing": "VERIFIED",
+    "external_uses": "YES",
+    "our_equivalent": "libs.execution.carry_accounting",
+    "residual_gap": "carry accounting exists; the PROTOCOL-NATIVE CARRY BOOK and AMM microstructure engine are not built",
+    "expected_close_value": 0.7,
+    "value_per_cost": 0.0875,
+    "why": "protocol_carry_staking: reached ['IDENTIFIED', 'SPECIFIED', 'IMPLEMENTED'], first missing dimension is VERIFIED. Code without evidence is a claim the desk cannot cash"
+   },
+   {
+    "engine": "prediction_market_trading",
+    "first_missing": "IMPLEMENTED",
+    "external_uses": "YES",
+    "our_equivalent": null,
+    "residual_gap": "forecast-to-profit separation not built; accuracy is not alpha without price disagreement",
+    "expected_close_value": 0.5,
+    "value_per_cost": 0.0833,
+    "why": "prediction_market_trading: reached ['IDENTIFIED', 'SPECIFIED'], first missing dimension is IMPLEMENTED. A capability that is only IDENTIFIED and SPECIFIED contributes nothing -- there is a document and no economics"
+   },
+   {
+    "engine": "protocol_native_beta",
+    "first_missing": "LIVE",
+    "external_uses": "YES",
+    "our_equivalent": "libs.portfolio.return_engines PROTOCOL_TOKEN_BETA",
+    "residual_gap": "attributable if it ever runs; no protocol adapter exists",
+    "expected_close_value": 0.5,
+    "value_per_cost": 0.0714,
+    "why": "protocol_native_beta: reached ['IDENTIFIED', 'SPECIFIED', 'IMPLEMENTED', 'VERIFIED'], first missing dimension is LIVE. Verified and not live is edge sitting still while it decays"
+   },
+   {
+    "engine": "asset_fundamental_selection",
+    "first_missing": "IMPLEMENTED",
+    "external_uses": "YES",
+    "our_equivalent": null,
+    "residual_gap": "no fundamental selection engine; 'solves a huge problem' is hypothesis ore",
+    "expected_close_value": 0.4,
+    "value_per_cost": 0.0667,
+    "why": "asset_fundamental_selection: reached ['IDENTIFIED', 'SPECIFIED'], first missing dimension is IMPLEMENTED. A capability that is only IDENTIFIED and SPECIFIED contributes nothing -- there is a document and no economics"
+   },
+   {
+    "engine": "subnet_token_selection",
+    "first_missing": "IMPLEMENTED",
+    "external_uses": "YES",
+    "our_equivalent": null,
+    "residual_gap": "needs the Dynamic-TAO AMM state model (reserves, implied price, swap impact)",
+    "expected_close_value": 0.5,
+    "value_per_cost": 0.0556,
+    "why": "subnet_token_selection: reached ['IDENTIFIED', 'SPECIFIED'], first missing dimension is IMPLEMENTED. A capability that is only IDENTIFIED and SPECIFIED contributes nothing -- there is a document and no economics"
+   },
+   {
+    "engine": "automated_execution",
+    "first_missing": "LIVE",
+    "external_uses": "YES",
+    "our_equivalent": "libs.execution.*",
+    "residual_gap": "engine exists and is hash-locked; nothing is armed. LIVE is a principal act, not an autonomous one",
+    "expected_close_value": 1.0,
+    "value_per_cost": null,
+    "why": "automated_execution: reached ['IDENTIFIED', 'SPECIFIED', 'IMPLEMENTED', 'VERIFIED'], first missing dimension is LIVE. Verified and not live is edge sitting still while it decays"
+   }
+  ],
+  "rows": [
+   {
+    "engine": "crypto_beta",
+    "external_uses": "YES",
+    "external_evidence": "public directional crypto positions discussed on record",
+    "our_equivalent": "libs.portfolio.return_engines BETA_REGIME",
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED",
+     "IMPLEMENTED",
+     "VERIFIED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "attribution basis exists and is tested; no engine has produced a euro, so nothing is LIVE"
+   },
+   {
+    "engine": "concentrated_beta",
+    "external_uses": "YES",
+    "external_evidence": "publicly described large single-asset weights",
+    "our_equivalent": "libs.portfolio.wealth_retention (marginal sizing) + return_engines",
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED",
+     "IMPLEMENTED",
+     "VERIFIED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "concentration emerges from the optimiser rather than a rule; untested against a live book"
+   },
+   {
+    "engine": "dip_rebound_timing",
+    "external_uses": "YES",
+    "external_evidence": "publicly described red-day accumulation",
+    "our_equivalent": null,
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "DRAWDOWN/REBOUND BOOK NOT BUILT. Needs liquidation-mechanism classifier (endogenous vs exogenous) before any rebound distribution is estimable"
+   },
+   {
+    "engine": "staged_capital_deployment",
+    "external_uses": "YES",
+    "external_evidence": "publicly described multi-entry deployment",
+    "our_equivalent": null,
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "CAPITAL_INVENTORY policy not built: tranche count and size must be endogenous"
+   },
+   {
+    "engine": "profit_harvesting",
+    "external_uses": "YES",
+    "external_evidence": "publicly described profit taking into stables",
+    "our_equivalent": null,
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "CAPITAL RECYCLING ENGINE not built. wealth_retention prices the marginal unit but nothing computes harvest_Elog vs continuation_Elog vs rotate_Elog"
+   },
+   {
+    "engine": "reserve_dry_powder",
+    "external_uses": "YES",
+    "external_evidence": "publicly described holding purchasing power",
+    "our_equivalent": "libs.portfolio.wealth_retention.reserve_option_value",
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED",
+     "IMPLEMENTED",
+     "VERIFIED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "option value is priced crudely; needs a measured dislocation arrival rate from the rebound book"
+   },
+   {
+    "engine": "reentry_after_declines",
+    "external_uses": "YES",
+    "external_evidence": "publicly described redeployment during weakness",
+    "our_equivalent": null,
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "part of the capital recycling engine; not built"
+   },
+   {
+    "engine": "cross_sectional_momentum",
+    "external_uses": "YES",
+    "external_evidence": "publicly described relative-strength selection",
+    "our_equivalent": "libs.research.crypto_xsec",
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED",
+     "IMPLEMENTED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "module exists; dispersion-conditioned sizing and momentum-crash state NOT researched"
+   },
+   {
+    "engine": "relative_strength",
+    "external_uses": "YES",
+    "external_evidence": "publicly described leadership rotation",
+    "our_equivalent": "libs.research.crypto_xsec",
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED",
+     "IMPLEMENTED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "same module; no untouched-OOS evidence"
+   },
+   {
+    "engine": "low_cap_asymmetry",
+    "external_uses": "YES",
+    "external_evidence": "publicly described small-cap searching",
+    "our_equivalent": "libs.discovery.capacity",
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED",
+     "IMPLEMENTED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "capacity machinery exists; the low-cap OPPORTUNITY ENGINE (float, unlocks, emissions, holder concentration) is not built"
+   },
+   {
+    "engine": "asset_fundamental_selection",
+    "external_uses": "YES",
+    "external_evidence": "publicly described project selection",
+    "our_equivalent": null,
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "no fundamental selection engine; 'solves a huge problem' is hypothesis ore"
+   },
+   {
+    "engine": "protocol_native_beta",
+    "external_uses": "YES",
+    "external_evidence": "publicly described Bittensor ecosystem exposure",
+    "our_equivalent": "libs.portfolio.return_engines PROTOCOL_TOKEN_BETA",
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED",
+     "IMPLEMENTED",
+     "VERIFIED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "attributable if it ever runs; no protocol adapter exists"
+   },
+   {
+    "engine": "protocol_carry_staking",
+    "external_uses": "YES",
+    "external_evidence": "publicly described staking",
+    "our_equivalent": "libs.execution.carry_accounting",
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED",
+     "IMPLEMENTED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "carry accounting exists; the PROTOCOL-NATIVE CARRY BOOK and AMM microstructure engine are not built"
+   },
+   {
+    "engine": "subnet_token_selection",
+    "external_uses": "YES",
+    "external_evidence": "publicly described subnet picks",
+    "our_equivalent": null,
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "needs the Dynamic-TAO AMM state model (reserves, implied price, swap impact)"
+   },
+   {
+    "engine": "catalyst_trading",
+    "external_uses": "YES",
+    "external_evidence": "publicly described listing/integration catalysts",
+    "our_equivalent": "libs.research.event_calendar",
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED",
+     "IMPLEMENTED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "calendar exists; catalyst-conditioned EXIT surfaces are not learned"
+   },
+   {
+    "engine": "public_expert_intelligence",
+    "external_uses": "YES",
+    "external_evidence": "publicly described transcript mining of a strategist",
+    "our_equivalent": "libs.research.video_intelligence",
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED",
+     "IMPLEMENTED",
+     "VERIFIED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "ledger built and tested; the GPT seat must populate it -- zero channels enumerated today"
+   },
+   {
+    "engine": "creator_strategy_extraction",
+    "external_uses": "YES",
+    "external_evidence": "publicly described strategy reconstruction",
+    "our_equivalent": "libs.research.video_intelligence + difference_engine",
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED",
+     "IMPLEMENTED",
+     "VERIFIED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "extraction discipline exists (PARTIAL never FULL); no corpus consumed yet"
+   },
+   {
+    "engine": "participant_broker_behaviour",
+    "external_uses": "YES",
+    "external_evidence": "publicly described 40k-account broker dataset",
+    "our_equivalent": null,
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "PARTICIPANT PHENOTYPE ENGINE not built; cohort bias fields specified only"
+   },
+   {
+    "engine": "public_disclosure_intelligence",
+    "external_uses": "YES",
+    "external_evidence": "publicly described disclosure reading",
+    "our_equivalent": "libs.research.claim_screen",
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED",
+     "IMPLEMENTED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "screen exists; no disclosure feed wired"
+   },
+   {
+    "engine": "prediction_market_information",
+    "external_uses": "YES",
+    "external_evidence": "publicly described prediction-market use",
+    "our_equivalent": "libs.data.prediction_markets",
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED",
+     "IMPLEMENTED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "data source exists; CALIBRATION engine (reliability curve, Brier, bias) not built"
+   },
+   {
+    "engine": "prediction_market_trading",
+    "external_uses": "YES",
+    "external_evidence": "publicly described contract trading",
+    "our_equivalent": null,
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "forecast-to-profit separation not built; accuracy is not alpha without price disagreement"
+   },
+   {
+    "engine": "unconventional_feature_mining",
+    "external_uses": "YES",
+    "external_evidence": "publicly described ~92-variable search incl. lunar state",
+    "our_equivalent": "libs.alpha_factory.hypothesis_engine",
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED",
+     "IMPLEMENTED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "WILD FEATURE LAB not built as a governed surface: complete candidate universe and selection-path accounting are the whole point and are missing"
+   },
+   {
+    "engine": "quantitative_regime_models",
+    "external_uses": "YES",
+    "external_evidence": "publicly described 3-state regime system",
+    "our_equivalent": "libs.regime.hmm/gmm/bayesian",
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED",
+     "IMPLEMENTED",
+     "VERIFIED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "our infrastructure is stronger; transition POSTERIOR, hazard and surprise are not derived"
+   },
+   {
+    "engine": "automated_execution",
+    "external_uses": "YES",
+    "external_evidence": "publicly described trading bots",
+    "our_equivalent": "libs.execution.*",
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED",
+     "IMPLEMENTED",
+     "VERIFIED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "engine exists and is hash-locked; nothing is armed. LIVE is a principal act, not an autonomous one"
+   },
+   {
+    "engine": "live_learning",
+    "external_uses": "YES",
+    "external_evidence": "publicly described learning from live results",
+    "our_equivalent": "libs.research.evidence_clock + live_ladder",
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED",
+     "IMPLEMENTED",
+     "VERIFIED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "the clock exists; zero live observations have ever been recorded"
+   },
+   {
+    "engine": "cross_model_review",
+    "external_uses": "YES",
+    "external_evidence": "publicly described multi-model checking",
+    "our_equivalent": "libs.llm panel",
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED",
+     "IMPLEMENTED",
+     "VERIFIED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "panel exists; USEFUL DISAGREEMENT economics not measured"
+   },
+   {
+    "engine": "opportunity_diversification",
+    "external_uses": "YES",
+    "external_evidence": "publicly described multiple return sources",
+    "our_equivalent": "libs.portfolio.return_engines effective_engine_count",
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED",
+     "IMPLEMENTED",
+     "VERIFIED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "effective independent engine count is computable; no engine has returns to measure"
+   },
+   {
+    "engine": "execution_discipline",
+    "external_uses": "YES",
+    "external_evidence": "publicly described entry/exit rules",
+    "our_equivalent": "libs.execution.tca + exec_monitor",
+    "dimensions_met": [
+     "IDENTIFIED",
+     "SPECIFIED",
+     "IMPLEMENTED",
+     "VERIFIED"
+    ],
+    "adoption": "NOT_ADOPTED",
+    "measured_value": null,
+    "residual_gap": "EXECUTION OPPORTUNITY SURFACE (spread x depth x fill hazard x adverse selection) not assembled"
+   }
+  ],
+  "headline": "0 of 28 external return engine(s) ADOPTED (all six dimensions incl. measured economics); 8 are stalled at SPECIFIED or IMPLEMENTED, which is the state that feels handled and pays nothing",
+  "note": "Adoption is the FIRST missing dimension, never the count achieved. 'Ours is better' splits into DESIGN / IMPLEMENTATION / LIVE_ECONOMIC superiority and only the last is settled by money -- which this desk does not yet have on either side of the comparison."
+ },
+ "practitioner_corpus": {
+  "measured": true,
+  "practitioners": 2,
+  "rows": [
+   {
+    "practitioner_id": "naoufel_chart_fanatics",
+    "name": "Naoufel (Chart Fanatics guest)",
+    "systematic_status": "PROBABLE_SYSTEMATIC",
+    "evidence_class": "BACKTEST",
+    "items": {
+     "discovered": 1,
+     "processed": 1,
+     "unavailable": 0
+    },
+    "axes_extracted": 3,
+    "axes_total": 12,
+    "process_axes_covered": 1,
+    "currently_exhausted": false,
+    "exhaustion_why": "naoufel_chart_fanatics: every available item is read, but 9 extraction axis/axes were never covered: ['mechanism', 'universe', 'state', 'portfolio', 'execution', 'research_process', 'retirement_process', 'replacement_process', 'failure_modes']. That is the usual shape of a false exhaustion claim -- the signal rules were taken and the research process was not",
+    "investigation_priority": 0.14,
+    "priority_why": "naoufel_chart_fanatics: P(systematic) 0.70 x evidence 0.10 x magnitude 1.00 x 0 unread x novelty 2.00 / cost 1.00 => priority 0.140. This ranks READING ORDER. It does not rank belief, and no number here may be cited in support of a hypothesis",
+    "source_roi": null,
+    "roi_why": "naoufel_chart_fanatics: 1 item(s) read with no recorded acquisition cost -- ROI is unpriceable. Reading is not free, and a source whose cost nobody recorded cannot be ranked against one that did",
+    "live_descendants": 0,
+    "realized": 0.0
+   },
+   {
+    "practitioner_id": "alex_carter",
+    "name": "AlexCarterTrading",
+    "systematic_status": "MIXED",
+    "evidence_class": "SELF_REPORTED",
+    "items": {
+     "discovered": 2,
+     "processed": 2,
+     "unavailable": 0
+    },
+    "axes_extracted": 2,
+    "axes_total": 12,
+    "process_axes_covered": 1,
+    "currently_exhausted": false,
+    "exhaustion_why": "alex_carter: every available item is read, but 10 extraction axis/axes were never covered: ['mechanism', 'universe', 'signal', 'state', 'sizing', 'portfolio', 'validation_process', 'retirement_process', 'replacement_process', 'failure_modes']. That is the usual shape of a false exhaustion claim -- the signal rules were taken and the research process was not",
+    "investigation_priority": 0.06,
+    "priority_why": "alex_carter: P(systematic) 0.40 x evidence 0.15 x magnitude 1.00 x 0 unread x novelty 1.00 / cost 1.00 => priority 0.060. This ranks READING ORDER. It does not rank belief, and no number here may be cited in support of a hypothesis",
+    "source_roi": null,
+    "roi_why": "alex_carter: 2 item(s) read with no recorded acquisition cost -- ROI is unpriceable. Reading is not free, and a source whose cost nobody recorded cannot be ranked against one that did",
+    "live_descendants": 0,
+    "realized": 0.0
+   }
+  ],
+  "never_enumerated": [],
+  "read_but_no_process_extracted": [],
+  "live_descendants": 0,
+  "realized_economic_descendants": 0.0,
+  "disagreements": [
+   {
+    "topic": "volatility targeting on a convex strategy",
+    "a": "AQR / Man AHL systematic tradition: scale position size to a volatility target",
+    "b": "trend-following CTA tradition (Parker, Chesapeake): do not scale; vol suppression truncates the right tail that IS the expectancy",
+    "tested_here": false,
+    "resolution": "",
+    "why": "AQR / Man AHL systematic tradition and trend-following CTA tradition (Parker, Chesapeake) both made money and disagree on volatility targeting on a convex strategy. Neither position is evidence. The useful hypothesis is that both are right in different regimes, and the research question is WHICH -- under this desk's capital, costs and objective"
+   },
+   {
+    "topic": "breadth versus depth of search",
+    "a": "Parker / Winton / Crabel: hundreds of markets, one simple robust rule",
+    "b": "Unger / Davey / Naoufel: a large population of distinct strategies on fewer markets",
+    "tested_here": false,
+    "resolution": "",
+    "why": "Parker / Winton / Crabel and Unger / Davey / Naoufel both made money and disagree on breadth versus depth of search. Neither position is evidence. The useful hypothesis is that both are right in different regimes, and the research question is WHICH -- under this desk's capital, costs and objective"
+   },
+   {
+    "topic": "how to select among generated strategy variants",
+    "a": "AlexCarterTrading: run them live small, keep whichever is profitable after one or two weeks",
+    "b": "this desk (L1.52 adaptive-selection law): preregistered mutation, full selection-path accounting, OOS and incubation",
+    "tested_here": true,
+    "resolution": "Not a real disagreement once stated plainly: a two-week realised-P&L filter over ten agents selects noise with near-certainty. The automation pattern is worth taking and the evidence standard is not.",
+    "why": "how to select among generated strategy variants: tested here. Not a real disagreement once stated plainly: a two-week realised-P&L filter over ten agents selects noise with near-certainty. The automation pattern is worth taking and the evidence standard is not."
+   }
+  ],
+  "untested_disagreements": 2,
+  "next_read": "naoufel_chart_fanatics",
+  "headline": "2 practitioner(s) tracked; 0 never enumerated; 0 live descendant(s) and +0.0000 realised. Next read: naoufel_chart_fanatics",
+  "note": "Ranks READING ORDER only. External success is a prior and never production evidence: nothing here may be cited in support of a hypothesis, and no practitioner's claim substitutes for this desk's own validation. Corpora are CURRENTLY_EXHAUSTED_AS_OF a timestamp and reopen on any new upload. Convergence between practitioners who could have read each other is one discovery, not several."
+ },
+ "externally_blocked_sources": 0,
+ "next_action": "close the residual on live_learning (first missing: LIVE) -- the clock exists; zero live observations have ever been recorded",
+ "note": "Transcript retrieval belongs to the GPT seat: the Claude-side miners cannot reliably obtain YouTube captions and a network-denied clone cannot obtain them at all. This script owns the LEDGER, not the fetch -- it makes the work auditable, resumable and honest about what remains unread."
+}

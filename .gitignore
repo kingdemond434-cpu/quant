@@ -12,6 +12,18 @@ data/*
 !data/nav_attestation.jsonl
 !data/decision_ledger.json
 !data/cashcarry_config.json
+# The authority declaration is POLICY, not generated state: it says which component
+# may reach which surface. It must be reviewable in a diff, because a grant that
+# widens silently is the failure libs/ops/agent_authority.py exists to prevent.
+!data/agent_authority.json
+# The GPT-seat intelligence LEDGERS are institutional memory, not generated state: they record
+# what was fetched, at what completeness, and what remains unread. Ungitted they die with the
+# container, and the next session re-reads a corpus it has already paid for.
+# Only the INPUT ledgers: external_intel.json is the generated report and stays out.
+!data/intelligence/
+!data/intelligence/video_channel_coverage.json
+!data/intelligence/extreme_return_claims.json
+!data/intelligence/practitioner_corpus.json
 # Stage-A screen results are EVIDENCE named in ledger rows (R0288 cites this path), not generated
 # state: a gitignored evidence path is a dangling citation on every machine but the one that ran it,
 # and §33 requires a named artifact to exist and be non-empty. 12K.
@@ -73,6 +85,19 @@ coverage.json
 .coverage
 htmlcov/
 
+# Test-planted probes. `test_the_dead_caller_check_can_still_SEE_a_dead_caller` writes these into
+# the tree and removes them in a `finally`, but a `git add -A` landing inside that window commits
+# them -- which happened on 2026-08-08 and shipped two junk files to the branch. The test itself
+# ASSERTS they are absent when it starts, so a leaked pair turns the suite red on the next run.
+# Ignoring them makes the race harmless without weakening the test.
+libs/_deadlink_probe.py
+scripts/_deadlink_probe_caller.py
+
+# Positive-control probe planted and removed by tests/scripts/test_wiring_and_ratchets.py. It was
+# committed once by a `git add -A` that ran while the test held it on disk, and a committed probe
+# FAILS that test on every fresh clone (it asserts the probe is absent before planting one). The
+# ignore makes that race unrepeatable.
+libs/_orphan_probe_do_not_import.py
 # one-shot gate-optimality diagnostic scratch (6MB pickle + root-level probes)
 _audit_prepared.pkl
 docs/audit_shards/

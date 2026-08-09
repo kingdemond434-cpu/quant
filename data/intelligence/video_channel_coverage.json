@@ -1,0 +1,31 @@
+{
+ "_": "Consumed 2026-08-08. The transcript was supplied in full by the principal, so this is a FULL transcript with both ends verified -- the one case where the network-denied clone can legitimately claim it. Every other row must come from the GPT seat per ops/gpt_video_hunter_prompt.txt.",
+ "channels": [
+  {
+   "channel": "Chart Fanatics",
+   "creator": "Chart Fanatics (guest: Naoufel / Ultra Instinct)",
+   "category": "algorithmic_trading_practitioner",
+   "enumeration_complete": false,
+   "last_swept": "2026-08-08",
+   "processing_cost_units": 1.0,
+   "videos": [
+    {
+     "video_id": "chartfanatics_naoufel_algo_2026-02-08",
+     "title": "Master ALGO Trading In Less Than 90 Minutes (NO Coding) | $1M+ Profits",
+     "published_at": "2026-02-08",
+     "url": "https://www.youtube.com/@ChartFanatics",
+     "economically_relevant": true,
+     "transcript_status": "FULL",
+     "transcript_source": "supplied verbatim by the principal",
+     "start_verified": true,
+     "end_verified": true,
+     "mechanisms_extracted": 4,
+     "failures_extracted": 1,
+     "claims_extracted": 5,
+     "residuals_new": 2,
+     "estimated_value": 3.0
+    }
+   ]
+  }
+ ]
+}

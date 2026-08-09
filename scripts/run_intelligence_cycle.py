@@ -408,6 +408,47 @@ def _cadence_alignment() -> dict[str, Any]:
     return _cap("cadence_alignment", "ACTIVE", str(rep["headline"]), report=rep)
 
 
+def _capability_regression() -> dict[str, Any]:
+    """§XXX. Did any change this cycle quietly cost a capability?
+
+    THE SNAPSHOT IS THE WHOLE MECHANISM and on this clone it is absent, which is itself the
+    finding: a regression you did not measure before is one you cannot detect after, because the
+    only evidence of what was lost left with the code. Reporting NO-INPUT here is honest;
+    reporting a clean board would be the exact substitution the module exists to prevent.
+    """
+    try:
+        from libs.self_improvement.capability_regression import CapabilitySnapshot, summarise
+    except ImportError as e:
+        return _cap("capability_regression", "ERROR", f"import failed: {e}")
+    raw = _read("data/capability_snapshots.json")
+    pairs = []
+    if isinstance(raw, dict):
+        for row in raw.get("comparisons", []):
+            try:
+                b, a = row["before"], row["after"]
+                pairs.append((
+                    CapabilitySnapshot(subsystem=str(b.get("subsystem", "?")),
+                                       at=str(b.get("at", "")),
+                                       metrics={str(k): float(v)
+                                                for k, v in (b.get("metrics") or {}).items()},
+                                       tests_passing=tuple(b.get("tests_passing") or ())),
+                    CapabilitySnapshot(subsystem=str(a.get("subsystem", "?")),
+                                       at=str(a.get("at", "")),
+                                       metrics={str(k): float(v)
+                                                for k, v in (a.get("metrics") or {}).items()},
+                                       tests_passing=tuple(a.get("tests_passing") or ()))))
+            except (KeyError, ValueError, TypeError):
+                continue
+    if not pairs:
+        return _cap("capability_regression", "NO-INPUT",
+                    "data/capability_snapshots.json absent -- every change on this desk is "
+                    "currently an unverified upgrade claim, and a regression would be invisible")
+    rep = summarise(pairs)
+    return _cap("capability_regression",
+                "ACTIVE" if not rep["regressions"] else "NO-INPUT",
+                str(rep["headline"]), report=rep)
+
+
 def main() -> int:
     caps = [
         _dormancy(),
@@ -416,6 +457,7 @@ def main() -> int:
         _source_roi(),
         _cadence_roi(),
         _cadence_alignment(),
+        _capability_regression(),
         # BEFORE the organs that navigate by it -- research_priority ranks what to test, and row
         # #77 is what happens when that ranking is made off a stale map.
         _data_registry(),

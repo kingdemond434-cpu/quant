@@ -173,10 +173,8 @@ def _observe_full_sweep(
 
     baseline = state.get("baseline") if isinstance(state.get("baseline"), dict) else {}
     horizon_days = float(baseline.get("horizon_days") or 0.0)
-    if len(unique_t) > 1:
-        step_s = float(np.median(np.diff(unique_t))) / 1_000_000_000.0
-    else:
-        step_s = 0.0
+    step_s = (float(np.median(np.diff(unique_t))) / 1_000_000_000.0
+              if len(unique_t) > 1 else 0.0)
     overlap = max(1.0, horizon_days * 86400.0 / step_s) if step_s > 0 else 1.0
     from libs.validation.forward_stats import autocorr_factor, holm_bar, nw_tstat
     dependence = max(overlap, autocorr_factor(portfolio_returns))
@@ -189,11 +187,11 @@ def _observe_full_sweep(
     row.update({
         "evidence": "ACCRUING",
         "raw_rows_added": int(mask.sum()),
-        "distinct_symbols": int(len(np.unique(symbols[mask]))),
-        "distinct_timestamps": int(len(unique_t)),
+        "distinct_symbols": len(np.unique(symbols[mask])),
+        "distinct_timestamps": len(unique_t),
         "overlap_factor": round(overlap, 3),
         "dependence_factor": round(dependence, 3),
-        "rows_added": int(len(unique_t)),
+        "rows_added": len(unique_t),
         "effective_observations": round(n_eff, 3),
         "forward_mean_bps": round(float(np.mean(portfolio_returns)) * 1e4, 6),
         "forward_nw_t": nw_tstat(portfolio_returns),

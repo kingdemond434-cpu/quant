@@ -4,7 +4,7 @@ WHY THESE EXIST. Four readers -- `run_promotion_queue`, `run_generation_diversit
 capacity audits in `max_audit` -- pointed at `data/research_memory.db`, a path NOTHING in this
 repo has ever written. That is the READ-WITHOUT-WRITER class (L1.40) and its signature is that it
 never crashes: each reader took its empty branch and published a plausible zero. The promotion
-queue reported 
+queue reported
 _candidates: 0` every six hours, the collapse detector reported PERFECT diversity
 (entropy 1.0) over an empty batch, and the two capacity audits reported OK for their entire
 existence without having read a single candidate.

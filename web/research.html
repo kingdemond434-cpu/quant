@@ -57,10 +57,31 @@ svg text{fill:var(--dim);font-size:9px}
     <table id="xaweights"><thead><tr><th>Instrument</th><th>Target weight</th></tr></thead><tbody></tbody></table>
     <div class="note" id="xaverdict"></div></div>
 
+  <div class="card"><div class="ph">Promotion funnel · discovery -> shadow -> live (and where the DEAD time is)</div>
+    <div class="k" id="pqk"></div>
+    <div style="padding:10px 14px">
+      <table id="pqtab" style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="text-align:left;opacity:.7"><th>candidate</th><th>admission</th>
+          <th>slot action</th><th>runway</th></tr></thead><tbody></tbody></table>
+      <div id="pqlat" style="margin-top:10px;font-size:13px"></div>
+      <div id="pqnote" style="opacity:.65;margin-top:8px;font-size:12px"></div></div>
+  </div>
+
+  <div class="card"><div class="ph">Loss forensics · WHERE the money went and WHY (daily)</div>
+    <div class="k" id="fxk"></div>
+    <div style="padding:10px 14px">
+      <table id="fxhold" style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="text-align:left;opacity:.7"><th>hold bucket</th><th>closes</th>
+          <th>net</th><th>bps</th></tr></thead><tbody></tbody></table>
+      <div id="fxbleed" style="margin-top:10px;font-size:13px"></div>
+      <div id="fxflags" style="margin-top:10px;font-size:13px"></div>
+      <div id="fxnote" style="opacity:.65;margin-top:8px;font-size:12px"></div></div>
+  </div>
+
   <div class="card"><div class="ph">Stage-B forward clocks · orthogonal data axes (zero capital, Holm-gated)</div>
     <div style="padding:10px 14px"><table id="axtab" style="width:100%;border-collapse:collapse;font-size:13px">
       <thead><tr style="text-align:left;opacity:.7">
-        <th>axis</th><th>verdict</th><th>fwd days</th><th>cum ret</th><th>ann Sharpe</th><th>NW-t</th><th>Holm bar</th>
+        <th>axis</th><th>src</th><th>verdict</th><th>fwd days</th><th>cum ret</th><th>ann Sharpe</th><th>NW-t</th><th>Holm bar</th>
       </tr></thead><tbody></tbody></table>
       <div id="axnote" style="opacity:.65;margin-top:8px;font-size:12px"></div></div>
   </div>
@@ -138,18 +159,87 @@ async function load(){
     document.getElementById("levnote").textContent=L.note||"";
   }catch(e){document.getElementById("levnote").textContent="leverage.json not found — run run_mt5_portfolio.py";}
   try{
+    const Q=await (await fetch("promotion_queue.json",{cache:"no-store"})).json();
+    const sl=Q.slots||{};
+    document.getElementById("pqk").innerHTML=
+      [["Candidates",Q.n_candidates],["Forward slots",`${sl.occupied||0}/${sl.cap||0} used, ${sl.free||0} free`],
+       ["Queued to admit",(Q.queue||[]).length],["Excluded",(Q.excluded||[]).length]]
+      .map(([l,v])=>`<div><span style="opacity:.6">${l}</span><br><b>${v===null||v===undefined?"—":v}</b></div>`).join("");
+    const qb=document.querySelector("#pqtab tbody"); qb.innerHTML="";
+    (Q.queue||[]).slice(0,15).forEach(r=>{
+      const now=String(r.slot_action||"").startsWith("ADMIT");
+      qb.innerHTML+=`<tr><td>${r.name||r.candidate||r.key||"—"}</td>`+
+        `<td>${r.admission||"—"}</td>`+
+        `<td style="color:${now?"#7ee787":"#e3b341"}">${r.slot_action||"—"}</td>`+
+        `<td>${r.runway_days===undefined?"—":fmt(r.runway_days)+"d"}</td></tr>`;
+    });
+    if(!(Q.queue||[]).length){
+      qb.innerHTML=`<tr><td colspan="4" style="color:#e3b341">no candidate is queued for admission — UNMEASURED if the sweep has not run, which is a fact about the box and not a clean queue</td></tr>`;
+    }
+    // EVIDENCE-BOUND vs PROCESS-BOUND is the whole point of this card. A forward clock is
+    // evidence accruing and cannot be compressed without destroying what it measures. Queue wait
+    // and decision lag are DEAD TIME -- latency nobody chose, and the only kind worth attacking.
+    const L=Q.latency||{};
+    const rows=Object.entries(L).filter(([,v])=>v&&typeof v==="object"&&("days" in v));
+    document.getElementById("pqlat").innerHTML = Q.latency_is_measured===false
+      ? `<span style="color:#e3b341">latency UNMEASURED — components missing, so total time-to-live is unknown rather than short</span>`
+      : (rows.length
+          ? `<b>Time to live:</b> `+rows.map(([k,v])=>{
+              const dead=/queue|decision|lag|wait/i.test(k);
+              return `<span style="color:${dead?"#ff7b72":"#7ee787"}" title="${dead?"DEAD TIME — nobody chose this":"evidence accruing — cannot be compressed"}">${k} ${fmt(v.days)}d</span>`;
+            }).join(" · ")+`<br><span style="opacity:.6">red = dead time (queue/decision lag) · green = evidence accruing (the forward clock, which must not be shortened)</span>`
+          : "");
+    document.getElementById("pqnote").textContent=`generated ${(Q.generated||"").slice(0,16)} · ${Q.law||""}`;
+  }catch(e){document.getElementById("pqnote").textContent="promotion_queue.json not found — run scripts/run_promotion_queue.py";}
+  try{
+    const F=await (await fetch("trade_forensics.json",{cache:"no-store"})).json();
+    const mk=(F.maker_fill||{}), tp=(F.execution_tape||{});
+    // AN ERROR STRING IS NOT A MEASUREMENT. A section that failed must read as failed, never as
+    // a number -- run_trade_forensics wraps its tape in a broad except and used to ship
+    // {"error":"ModuleNotFoundError"} straight into this slot.
+    const tapeTxt = tp.error ? `<span style="color:#ff7b72">FAILED: ${tp.error}</span>`
+                             : `${tp.taped===undefined?"—":tp.taped} events / ${fmt(tp.tape_days)}d`;
+    document.getElementById("fxk").innerHTML=
+      [["Closes analysed",F.n_closes],["Maker share",mk.maker_share===null||mk.maker_share===undefined?"UNMEASURED":(mk.maker_share*100).toFixed(0)+"%"],
+       ["Maker target",((mk.target||0)*100).toFixed(0)+"%"],["Execution tape",tapeTxt]]
+      .map(([l,v])=>`<div><span style="opacity:.6">${l}</span><br><b>${v===null||v===undefined?"—":v}</b></div>`).join("");
+    const hb=document.querySelector("#fxhold tbody"); hb.innerHTML="";
+    Object.entries(F.hold_buckets||{}).forEach(([k,v])=>{
+      const bad=(v.bps||0)<0;
+      hb.innerHTML+=`<tr><td>${k}</td><td>${v.n}</td>`+
+        `<td style="color:${bad?"#ff7b72":"#7ee787"}">${fmt(v.net)}</td>`+
+        `<td style="color:${bad?"#ff7b72":"#7ee787"}">${fmt(v.bps)}</td></tr>`;
+    });
+    const bleed=(F.bleeding_symbols||[]), worst=(F.worst_symbols||[]);
+    document.getElementById("fxbleed").innerHTML =
+      (bleed.length||worst.length)
+        ? `<b style="color:#ff7b72">Bleeding:</b> ${bleed.map(x=>typeof x==="string"?x:(x.symbol||JSON.stringify(x))).join(", ")||"—"}`
+          + `<br><b>Worst:</b> ${worst.map(x=>typeof x==="string"?x:(x.symbol||JSON.stringify(x))).join(", ")||"—"}`
+        : (F.n_closes ? "no symbol is bleeding over the window"
+                      : `<span style="color:#e3b341">UNMEASURED — 0 closes in the window. No losses to explain yet; this is a fact about the book, not a clean bill of health.</span>`);
+    const fl=(F.flags||[]);
+    document.getElementById("fxflags").innerHTML = fl.length
+      ? `<b style="color:#e3b341">Flags:</b> `+fl.map(f=>typeof f==="string"?f:JSON.stringify(f)).join(" · ") : "";
+    document.getElementById("fxnote").textContent=`updated ${(F.updated||"").slice(0,16)} · run_trade_forensics.py (daily, in the research cycle)`;
+  }catch(e){document.getElementById("fxnote").textContent="trade_forensics.json not found — run scripts/run_trade_forensics.py";}
+  try{
     const A=await (await fetch("axis_shadows.json",{cache:"no-store"})).json();
     const tb=document.querySelector("#axtab tbody"); tb.innerHTML="";
     (A.axes||[]).forEach(a=>{
       const tr=document.createElement("tr");
-      const col=a.verdict==="ELIGIBLE"?"#7ee787":(a.verdict==="FAILING"?"#ff7b72":"#d8dee9");
-      tr.innerHTML=`<td>${a.axis}</td><td style="color:${col}">${a.verdict}</td>`+
+      const col=a.verdict==="ELIGIBLE"?"#7ee787":(a.verdict==="FAILING"?"#ff7b72":
+        (a.verdict==="UNTRACKED"?"#e3b341":"#d8dee9"));
+      const src=a.auto_registered?`<span title="auto-registered by stage_a_screen when it started a clock -- no code edit needed" style="color:#79c0ff">auto</span>`:`<span style="opacity:.5">curated</span>`;
+      tr.innerHTML=`<td>${a.axis}</td><td>${src}</td><td style="color:${col}" title="${(a.note||"").replace(/"/g,"&quot;")}">${a.verdict}</td>`+
         `<td>${a.forward_days}/${a.need||A.min_forward_days}</td><td>${a.cum_return===undefined?"—":(a.cum_return*100).toFixed(2)+"%"}</td>`+
         `<td>${fmt(a.ann_sharpe)}</td><td>${fmt(a.nw_t)}</td><td>${fmt(a.holm_bar)}</td>`;
       tb.appendChild(tr);
     });
-    document.getElementById("axnote").textContent =
-      `updated ${(A.updated||"").slice(0,16)} · ${A.note||""}`;
+    const nUn=(A.axes||[]).filter(a=>a.verdict==="UNTRACKED").length;
+    document.getElementById("axnote").innerHTML =
+      `updated ${(A.updated||"").slice(0,16)} · ${A.curated_axes||0} curated + ${A.auto_registered_axes||0} auto-registered`
+      + (nUn?` · <span style="color:#e3b341">${nUn} UNTRACKED (clock registered with no target symbol — listed, never guessed)</span>`:"")
+      + `<br>${A.note||""}`;
   }catch(e){document.getElementById("axnote").textContent="axis_shadows.json not found — run run_axis_shadows.py";}
 }
 function curve(eq){

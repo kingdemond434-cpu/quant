@@ -44,6 +44,7 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 _OUT = _ROOT / "data/promotion_queue.json"
+_WEB = _ROOT / "web/promotion_queue.json"
 #: The lab candidate store. Was `data/research_memory.db` until 2026-08-01 (R0079) -- a path
 #: NOTHING in this repo has ever written. `_DB.exists()` was therefore always False, this returned
 #: [], and the queue reported a structural `n_candidates: 0` on every 6-hourly run while looking
@@ -231,6 +232,12 @@ def main() -> int:
     rep = build(equity_usd=args.equity, growth=args.growth)
     _OUT.parent.mkdir(parents=True, exist_ok=True)
     _OUT.write_text(json.dumps(rep, indent=2), "utf-8")
+    # MIRRORED TO web/ BECAUSE THE DASHBOARD FETCHES RELATIVE URLS. data/ stays authoritative --
+    # scripts/check_replacement_rate.py reads it -- so this is a copy, not a move. Without it the
+    # funnel card renders "not found" forever, which is the decorative-capability failure this
+    # desk keeps finding: a panel wired to an artifact that is never where it looks.
+    _WEB.parent.mkdir(parents=True, exist_ok=True)
+    _WEB.write_text(json.dumps(rep, indent=2), "utf-8")
     if args.json:
         print(json.dumps(rep, indent=2))
         return 0

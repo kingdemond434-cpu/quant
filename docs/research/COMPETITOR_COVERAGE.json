@@ -1,0 +1,429 @@
+{
+ "_": "Every publicly observable external return engine, entered at its TRUE adoption level. ADOPTED requires all six dimensions INCLUDING measured economic contribution -- most rows here stop at SPECIFIED or VERIFIED, and that uncomfortable headline is the deliverable. external_uses=UNKNOWN is permanent and legitimate for private logic: reconstructing it by guess would put fiction into the one artifact whose job is to say what is genuinely missing. Consumed by scripts/run_external_intel.py.",
+ "engines": [
+  {
+   "engine": "crypto_beta",
+   "external_uses": "YES",
+   "external_evidence": "public directional crypto positions discussed on record",
+   "our_equivalent": "libs.portfolio.return_engines BETA_REGIME",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED",
+    "IMPLEMENTED",
+    "VERIFIED"
+   ],
+   "residual_gap": "attribution basis exists and is tested; no engine has produced a euro, so nothing is LIVE",
+   "expected_close_value": 0.9,
+   "estimated_cost_units": 3,
+   "measured_value": ""
+  },
+  {
+   "engine": "concentrated_beta",
+   "external_uses": "YES",
+   "external_evidence": "publicly described large single-asset weights",
+   "our_equivalent": "libs.portfolio.wealth_retention (marginal sizing) + return_engines",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED",
+    "IMPLEMENTED",
+    "VERIFIED"
+   ],
+   "residual_gap": "concentration emerges from the optimiser rather than a rule; untested against a live book",
+   "expected_close_value": 0.7,
+   "estimated_cost_units": 3,
+   "measured_value": ""
+  },
+  {
+   "engine": "dip_rebound_timing",
+   "external_uses": "YES",
+   "external_evidence": "publicly described red-day accumulation",
+   "our_equivalent": "",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED"
+   ],
+   "residual_gap": "DRAWDOWN/REBOUND BOOK NOT BUILT. Needs liquidation-mechanism classifier (endogenous vs exogenous) before any rebound distribution is estimable",
+   "expected_close_value": 1.0,
+   "estimated_cost_units": 8,
+   "measured_value": ""
+  },
+  {
+   "engine": "staged_capital_deployment",
+   "external_uses": "YES",
+   "external_evidence": "publicly described multi-entry deployment",
+   "our_equivalent": "",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED"
+   ],
+   "residual_gap": "CAPITAL_INVENTORY policy not built: tranche count and size must be endogenous",
+   "expected_close_value": 0.6,
+   "estimated_cost_units": 5,
+   "measured_value": ""
+  },
+  {
+   "engine": "profit_harvesting",
+   "external_uses": "YES",
+   "external_evidence": "publicly described profit taking into stables",
+   "our_equivalent": "",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED"
+   ],
+   "residual_gap": "CAPITAL RECYCLING ENGINE not built. wealth_retention prices the marginal unit but nothing computes harvest_Elog vs continuation_Elog vs rotate_Elog",
+   "expected_close_value": 1.0,
+   "estimated_cost_units": 6,
+   "measured_value": ""
+  },
+  {
+   "engine": "reserve_dry_powder",
+   "external_uses": "YES",
+   "external_evidence": "publicly described holding purchasing power",
+   "our_equivalent": "libs.portfolio.wealth_retention.reserve_option_value",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED",
+    "IMPLEMENTED",
+    "VERIFIED"
+   ],
+   "residual_gap": "option value is priced crudely; needs a measured dislocation arrival rate from the rebound book",
+   "expected_close_value": 0.5,
+   "estimated_cost_units": 2,
+   "measured_value": ""
+  },
+  {
+   "engine": "reentry_after_declines",
+   "external_uses": "YES",
+   "external_evidence": "publicly described redeployment during weakness",
+   "our_equivalent": "",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED"
+   ],
+   "residual_gap": "part of the capital recycling engine; not built",
+   "expected_close_value": 0.8,
+   "estimated_cost_units": 4,
+   "measured_value": ""
+  },
+  {
+   "engine": "cross_sectional_momentum",
+   "external_uses": "YES",
+   "external_evidence": "publicly described relative-strength selection",
+   "our_equivalent": "libs.research.crypto_xsec",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED",
+    "IMPLEMENTED"
+   ],
+   "residual_gap": "module exists; dispersion-conditioned sizing and momentum-crash state NOT researched",
+   "expected_close_value": 0.8,
+   "estimated_cost_units": 5,
+   "measured_value": ""
+  },
+  {
+   "engine": "relative_strength",
+   "external_uses": "YES",
+   "external_evidence": "publicly described leadership rotation",
+   "our_equivalent": "libs.research.crypto_xsec",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED",
+    "IMPLEMENTED"
+   ],
+   "residual_gap": "same module; no untouched-OOS evidence",
+   "expected_close_value": 0.6,
+   "estimated_cost_units": 4,
+   "measured_value": ""
+  },
+  {
+   "engine": "low_cap_asymmetry",
+   "external_uses": "YES",
+   "external_evidence": "publicly described small-cap searching",
+   "our_equivalent": "libs.discovery.capacity",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED",
+    "IMPLEMENTED"
+   ],
+   "residual_gap": "capacity machinery exists; the low-cap OPPORTUNITY ENGINE (float, unlocks, emissions, holder concentration) is not built",
+   "expected_close_value": 0.9,
+   "estimated_cost_units": 6,
+   "measured_value": ""
+  },
+  {
+   "engine": "asset_fundamental_selection",
+   "external_uses": "YES",
+   "external_evidence": "publicly described project selection",
+   "our_equivalent": "",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED"
+   ],
+   "residual_gap": "no fundamental selection engine; 'solves a huge problem' is hypothesis ore",
+   "expected_close_value": 0.4,
+   "estimated_cost_units": 6,
+   "measured_value": ""
+  },
+  {
+   "engine": "protocol_native_beta",
+   "external_uses": "YES",
+   "external_evidence": "publicly described Bittensor ecosystem exposure",
+   "our_equivalent": "libs.portfolio.return_engines PROTOCOL_TOKEN_BETA",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED",
+    "IMPLEMENTED",
+    "VERIFIED"
+   ],
+   "residual_gap": "attributable if it ever runs; no protocol adapter exists",
+   "expected_close_value": 0.5,
+   "estimated_cost_units": 7,
+   "measured_value": ""
+  },
+  {
+   "engine": "protocol_carry_staking",
+   "external_uses": "YES",
+   "external_evidence": "publicly described staking",
+   "our_equivalent": "libs.execution.carry_accounting",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED",
+    "IMPLEMENTED"
+   ],
+   "residual_gap": "carry accounting exists; the PROTOCOL-NATIVE CARRY BOOK and AMM microstructure engine are not built",
+   "expected_close_value": 0.7,
+   "estimated_cost_units": 8,
+   "measured_value": ""
+  },
+  {
+   "engine": "subnet_token_selection",
+   "external_uses": "YES",
+   "external_evidence": "publicly described subnet picks",
+   "our_equivalent": "",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED"
+   ],
+   "residual_gap": "needs the Dynamic-TAO AMM state model (reserves, implied price, swap impact)",
+   "expected_close_value": 0.5,
+   "estimated_cost_units": 9,
+   "measured_value": ""
+  },
+  {
+   "engine": "catalyst_trading",
+   "external_uses": "YES",
+   "external_evidence": "publicly described listing/integration catalysts",
+   "our_equivalent": "libs.research.event_calendar",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED",
+    "IMPLEMENTED"
+   ],
+   "residual_gap": "calendar exists; catalyst-conditioned EXIT surfaces are not learned",
+   "expected_close_value": 0.6,
+   "estimated_cost_units": 5,
+   "measured_value": ""
+  },
+  {
+   "engine": "public_expert_intelligence",
+   "external_uses": "YES",
+   "external_evidence": "publicly described transcript mining of a strategist",
+   "our_equivalent": "libs.research.video_intelligence",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED",
+    "IMPLEMENTED",
+    "VERIFIED"
+   ],
+   "residual_gap": "ledger built and tested; the GPT seat must populate it -- zero channels enumerated today",
+   "expected_close_value": 0.8,
+   "estimated_cost_units": 2,
+   "measured_value": ""
+  },
+  {
+   "engine": "creator_strategy_extraction",
+   "external_uses": "YES",
+   "external_evidence": "publicly described strategy reconstruction",
+   "our_equivalent": "libs.research.video_intelligence + difference_engine",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED",
+    "IMPLEMENTED",
+    "VERIFIED"
+   ],
+   "residual_gap": "extraction discipline exists (PARTIAL never FULL); no corpus consumed yet",
+   "expected_close_value": 0.8,
+   "estimated_cost_units": 3,
+   "measured_value": ""
+  },
+  {
+   "engine": "participant_broker_behaviour",
+   "external_uses": "YES",
+   "external_evidence": "publicly described 40k-account broker dataset",
+   "our_equivalent": "",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED"
+   ],
+   "residual_gap": "PARTICIPANT PHENOTYPE ENGINE not built; cohort bias fields specified only",
+   "expected_close_value": 0.9,
+   "estimated_cost_units": 9,
+   "measured_value": ""
+  },
+  {
+   "engine": "public_disclosure_intelligence",
+   "external_uses": "YES",
+   "external_evidence": "publicly described disclosure reading",
+   "our_equivalent": "libs.research.claim_screen",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED",
+    "IMPLEMENTED"
+   ],
+   "residual_gap": "screen exists; no disclosure feed wired",
+   "expected_close_value": 0.4,
+   "estimated_cost_units": 4,
+   "measured_value": ""
+  },
+  {
+   "engine": "prediction_market_information",
+   "external_uses": "YES",
+   "external_evidence": "publicly described prediction-market use",
+   "our_equivalent": "libs.data.prediction_markets",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED",
+    "IMPLEMENTED"
+   ],
+   "residual_gap": "data source exists; CALIBRATION engine (reliability curve, Brier, bias) not built",
+   "expected_close_value": 0.7,
+   "estimated_cost_units": 5,
+   "measured_value": ""
+  },
+  {
+   "engine": "prediction_market_trading",
+   "external_uses": "YES",
+   "external_evidence": "publicly described contract trading",
+   "our_equivalent": "",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED"
+   ],
+   "residual_gap": "forecast-to-profit separation not built; accuracy is not alpha without price disagreement",
+   "expected_close_value": 0.5,
+   "estimated_cost_units": 6,
+   "measured_value": ""
+  },
+  {
+   "engine": "unconventional_feature_mining",
+   "external_uses": "YES",
+   "external_evidence": "publicly described ~92-variable search incl. lunar state",
+   "our_equivalent": "libs.alpha_factory.hypothesis_engine",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED",
+    "IMPLEMENTED"
+   ],
+   "residual_gap": "WILD FEATURE LAB not built as a governed surface: complete candidate universe and selection-path accounting are the whole point and are missing",
+   "expected_close_value": 0.9,
+   "estimated_cost_units": 7,
+   "measured_value": ""
+  },
+  {
+   "engine": "quantitative_regime_models",
+   "external_uses": "YES",
+   "external_evidence": "publicly described 3-state regime system",
+   "our_equivalent": "libs.regime.hmm/gmm/bayesian",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED",
+    "IMPLEMENTED",
+    "VERIFIED"
+   ],
+   "residual_gap": "our infrastructure is stronger; transition POSTERIOR, hazard and surprise are not derived",
+   "expected_close_value": 0.7,
+   "estimated_cost_units": 4,
+   "measured_value": ""
+  },
+  {
+   "engine": "automated_execution",
+   "external_uses": "YES",
+   "external_evidence": "publicly described trading bots",
+   "our_equivalent": "libs.execution.*",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED",
+    "IMPLEMENTED",
+    "VERIFIED"
+   ],
+   "residual_gap": "engine exists and is hash-locked; nothing is armed. LIVE is a principal act, not an autonomous one",
+   "expected_close_value": 1.0,
+   "estimated_cost_units": 0,
+   "measured_value": ""
+  },
+  {
+   "engine": "live_learning",
+   "external_uses": "YES",
+   "external_evidence": "publicly described learning from live results",
+   "our_equivalent": "libs.research.evidence_clock + live_ladder",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED",
+    "IMPLEMENTED",
+    "VERIFIED"
+   ],
+   "residual_gap": "the clock exists; zero live observations have ever been recorded",
+   "expected_close_value": 1.0,
+   "estimated_cost_units": 2,
+   "measured_value": ""
+  },
+  {
+   "engine": "cross_model_review",
+   "external_uses": "YES",
+   "external_evidence": "publicly described multi-model checking",
+   "our_equivalent": "libs.llm panel",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED",
+    "IMPLEMENTED",
+    "VERIFIED"
+   ],
+   "residual_gap": "panel exists; USEFUL DISAGREEMENT economics not measured",
+   "expected_close_value": 0.4,
+   "estimated_cost_units": 3,
+   "measured_value": ""
+  },
+  {
+   "engine": "opportunity_diversification",
+   "external_uses": "YES",
+   "external_evidence": "publicly described multiple return sources",
+   "our_equivalent": "libs.portfolio.return_engines effective_engine_count",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED",
+    "IMPLEMENTED",
+    "VERIFIED"
+   ],
+   "residual_gap": "effective independent engine count is computable; no engine has returns to measure",
+   "expected_close_value": 0.6,
+   "estimated_cost_units": 2,
+   "measured_value": ""
+  },
+  {
+   "engine": "execution_discipline",
+   "external_uses": "YES",
+   "external_evidence": "publicly described entry/exit rules",
+   "our_equivalent": "libs.execution.tca + exec_monitor",
+   "dimensions_met": [
+    "IDENTIFIED",
+    "SPECIFIED",
+    "IMPLEMENTED",
+    "VERIFIED"
+   ],
+   "residual_gap": "EXECUTION OPPORTUNITY SURFACE (spread x depth x fill hazard x adverse selection) not assembled",
+   "expected_close_value": 0.9,
+   "estimated_cost_units": 5,
+   "measured_value": ""
+  }
+ ]
+}

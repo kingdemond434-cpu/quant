@@ -70,6 +70,30 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # gap set, so tomorrow's highest-value work is chosen from today's evidence rather than from
   # whatever was true when the schedule was written.
   nice -n 15 "$PY" scripts/run_intelligence_cycle.py || true
+  # THE ECONOMIC SCOREBOARD, ABOVE THE ARCHITECTURE COUNTS. Everything before this line measures
+  # the RESEARCH: kills, survivors, admission, gaps. None of it answers the only question that
+  # decides whether this desk is worth running -- is it generating and RETAINING real net wealth.
+  # Runs every cycle including the days it can only answer UNMEASURED, because the day it stops
+  # being able to say that is the day a live fill happened and nobody wired the report.
+  nice -n 15 "$PY" scripts/run_wealth_report.py || true
+  # THE BLIND SPOT LEDGER. The Claude-side miners cannot retrieve YouTube transcripts and this
+  # clone has no network at all, so a large body of practitioner knowledge -- much of it with no
+  # paper, no repo and no article behind it -- is invisible to every collector the desk runs. The
+  # GPT seat fetches; this records what was fetched, at what completeness, and what remains, so
+  # "we mined that channel" stops being a claim nobody can check.
+  nice -n 15 "$PY" scripts/run_external_intel.py || true
+  # THE RETURN ENGINES. Everything above measures whether the RESEARCH is healthy; these decide
+  # where capital would go if there were any. ELEVEN books; nine correctly report UNMEASURED on a
+  # clone with no positions and each names the artifact it needs -- they exist now so that nothing
+  # has to be remembered and wired the day a live book appears, which is the failure mode L1.56
+  # names. Two produce real output on a network-denied clone: the mechanism ontology (its input is
+  # economic reasoning) and agent authority (its input is a policy declaration in git).
+  nice -n 15 "$PY" scripts/run_opportunity_books.py || true
+  nice -n 15 "$PY" scripts/run_max_push.py || true
+  # THE PROGRAMME CANNOT QUIETLY STALL. The ledger verifies every declared capability against the
+  # working tree and publishes the unfinished ones as ranked gaps, so an item that stops being
+  # worked reappears in tomorrow's priorities by itself. Runs LAST: it measures the cycle that
+  # just happened, including whatever this cycle wired.
   # Integrated residuals consume this cycle's real evidence; missing inputs remain UNMEASURED and
   # therefore enter max-push above partially measured work rather than disappearing as clean zeros.
   # Evolve the METHOD frontier before the completion report reads it: missing search methods,

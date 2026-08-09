@@ -23,7 +23,6 @@ from libs.autodiscovery.capacity_screen import (
 )
 from libs.autodiscovery.generators import net_returns, planned_hypotheses
 from libs.autodiscovery.lifecycle import promote
-from libs.autodiscovery.novelty import NoveltyGate
 from libs.autodiscovery.memory import (
     CandidateSeries,
     CandidateStore,
@@ -39,6 +38,7 @@ from libs.autodiscovery.models import (
     ValidationMetrics,
     ValidationVerdict,
 )
+from libs.autodiscovery.novelty import NoveltyGate
 from libs.autodiscovery.prioritization import prioritize
 from libs.autodiscovery.regime import regime_robust
 from libs.autodiscovery.validation import (

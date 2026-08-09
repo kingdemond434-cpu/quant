@@ -1,0 +1,127 @@
+{
+ "_note": "Declared authority for every autonomous component on this desk. Checked by libs/ops/agent_authority.py via scripts/run_opportunity_books.py. MODEL INTELLIGENCE IS NOT MODEL AUTHORITY: a model upgrade never moves a level here, and no edit to this file can arm trading -- principal_authorised is the principal's to set and every capital-sensitive rung is refused without it.",
+ "agents": [
+  {
+   "agent_id": "gpt_hunter",
+   "level": "L0_PUBLIC_READ",
+   "level_required_by_work": "L0_PUBLIC_READ",
+   "evidence": [
+    "fetches public transcripts and public performance records only",
+    "writes to data/intelligence/ ledgers via the GPT seat, never to research state"
+   ],
+   "blast": {
+    "financial": 0.0,
+    "position": 0.0,
+    "irrecoverable_data": false,
+    "operational": false,
+    "propagation": false,
+    "sandboxed": true,
+    "assessed": true
+   },
+   "notes": [
+    "Three missions -- video/transcript, extreme-return, systematic-practitioner -- and",
+    "none of them needs more than public read. Its output is a ledger, not an action."
+   ]
+  },
+  {
+   "agent_id": "claude_miners",
+   "level": "L2_RESEARCH_COMPUTE",
+   "level_required_by_work": "L2_RESEARCH_COMPUTE",
+   "evidence": [
+    "run studies and write research artifacts under data/ and docs/",
+    "no signer access; cannot reach an exchange credential"
+   ],
+   "blast": {
+    "financial": 0.0,
+    "position": 0.0,
+    "irrecoverable_data": false,
+    "operational": true,
+    "propagation": false,
+    "sandboxed": true,
+    "assessed": true
+   },
+   "notes": [
+    "operational=true: a runaway miner can starve the recorders, which write the one",
+    "asset on this box that cannot be re-acquired. That is the real blast radius here."
+   ]
+  },
+  {
+   "agent_id": "research_cycle",
+   "level": "L2_RESEARCH_COMPUTE",
+   "level_required_by_work": "L2_RESEARCH_COMPUTE",
+   "evidence": [
+    "ops/run_research_cycle.sh; niced throughout, reads bars and writes reports"
+   ],
+   "blast": {
+    "financial": 0.0,
+    "position": 0.0,
+    "irrecoverable_data": false,
+    "operational": true,
+    "propagation": false,
+    "sandboxed": true,
+    "assessed": true
+   }
+  },
+  {
+   "agent_id": "shadow_ladder",
+   "level": "L3_SHADOW_ACTION",
+   "level_required_by_work": "L3_SHADOW_ACTION",
+   "evidence": [
+    "scripts/run_live_ladder.py records shadow decisions; allocates no capital"
+   ],
+   "blast": {
+    "financial": 0.0,
+    "position": 0.0,
+    "irrecoverable_data": false,
+    "operational": false,
+    "propagation": false,
+    "sandboxed": true,
+    "assessed": true
+   }
+  },
+  {
+   "agent_id": "portfolio_admission",
+   "level": "L4_CANARY_PROPOSAL",
+   "level_required_by_work": "L4_CANARY_PROPOSAL",
+   "evidence": [
+    "scripts/run_portfolio_admission.py proposes sizing and cannot send an order"
+   ],
+   "blast": {
+    "financial": 0.0,
+    "position": 0.0,
+    "irrecoverable_data": false,
+    "operational": false,
+    "propagation": false,
+    "sandboxed": true,
+    "assessed": true
+   },
+   "notes": [
+    "A proposal is not an order. The gap between L4 and L5 is the whole safety margin."
+   ]
+  },
+  {
+   "agent_id": "execution_engine",
+   "level": "L4_CANARY_PROPOSAL",
+   "level_required_by_work": "L5_LIMITED_EXECUTION",
+   "principal_authorised": false,
+   "evidence": [
+    "libs/execution/ is built and tested; no live arming has been granted"
+   ],
+   "blast": {
+    "financial": 0.0,
+    "position": 0.0,
+    "irrecoverable_data": false,
+    "operational": false,
+    "propagation": false,
+    "sandboxed": true,
+    "assessed": true
+   },
+   "notes": [
+    "DELIBERATELY BELOW WHAT ITS WORK WOULD NEED. It holds L4 while its work would",
+    "require L5, so least_privilege_gap reads 0 and the shortfall is the safe direction.",
+    "Raising it is the principal's act and cannot be reached by editing this file:",
+    "principal_authorised is false, so every L5+ action is refused at the call site."
+   ]
+  }
+ ]
+}

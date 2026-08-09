@@ -21,6 +21,18 @@ a subsystem and evaluates AFTER; it auto-reverts on a REVERT verdict.
 
 from __future__ import annotations
 
+# PATH BOOTSTRAP. `python scripts/x.py` puts scripts/ on sys.path, NOT the repo root, so `libs`
+# resolves only if the project happens to be pip-installed into the interpreter in use. The daily
+# cycle invokes these by path. Without this the libs imports fail -- and in run_trade_forensics a
+# broad `except Exception` caught exactly that and shipped {"error": "ModuleNotFoundError"} into
+# the artifact, where an error string is indistinguishable from data to every reader downstream.
+import sys as _sys
+from pathlib import Path as _P
+
+if str(_P(__file__).resolve().parent.parent) not in _sys.path:
+    _sys.path.insert(0, str(_P(__file__).resolve().parent.parent))
+
+
 import contextlib
 import json
 import shutil

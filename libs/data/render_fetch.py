@@ -126,7 +126,7 @@ def _proxy() -> str:
 def render_available() -> tuple[bool, str]:
     """(usable, why not). Checked BEFORE a caller decides to spend a render on a source."""
     try:
-        import playwright  # noqa: F401
+        import playwright  # type: ignore[import-not-found]  # noqa: F401
     except ImportError as exc:
         return False, f"playwright not importable: {exc}"
     path = os.environ.get("PLAYWRIGHT_BROWSERS_PATH", "")
@@ -170,7 +170,7 @@ def render(url: str, *, wait_selector: str = "", timeout_s: float = 25.0,
                     "this run. Not a source failure -- raise RENDER_BUDGET_PER_RUN if the spend "
                     "is worth it, but a sweep that renders everything gets killed for being slow "
                     "and the lane then looks worthless rather than expensive.")
-    from playwright.sync_api import sync_playwright
+    from playwright.sync_api import sync_playwright  # type: ignore[import-not-found]
 
     _used += 1
     ctx_kw: dict[str, Any] = {

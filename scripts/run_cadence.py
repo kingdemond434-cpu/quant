@@ -22,6 +22,16 @@ CADENCE FLOORS below enforce the never-sleepier invariant; violations are paged.
 
 from __future__ import annotations
 
+# PATH BOOTSTRAP. `python scripts/x.py` puts scripts/ on sys.path, NOT the repo root, so `libs`
+# resolves only if the project happens to be pip-installed into the interpreter in use. The daily
+# cycle invokes this by path. See tests/scripts/test_cycle_scripts_are_runnable.py.
+import sys as _sys
+from pathlib import Path as _P
+
+if str(_P(__file__).resolve().parent.parent) not in _sys.path:
+    _sys.path.insert(0, str(_P(__file__).resolve().parent.parent))
+
+
 import contextlib
 import json
 import subprocess
