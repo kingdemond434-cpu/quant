@@ -314,6 +314,13 @@ _MAP: dict[str, list[str]] = {
     "L1.57": ["scripts/check_denominators.py", "libs/ops/denominator.py",
               "libs/ops/fence_exit.py", "tests/governance/test_denominators.py",
               "scripts/check_exploration.py", "scripts/check_calendar_gates.py"],
+    # L1.58 is the executable edge/P&L waterfall and loss investigation loop.
+    "L1.58": ["scripts/run_trade_forensics.py", "scripts/run_trade_review.py",
+              "libs/execution/execution_tape.py", "check_forensics_fresh"],
+    # L1.59 freezes doctrine growth and makes the mandate answerable to measured value.
+    "L1.59": ["scripts/build_enforcement_matrix.py", "scripts/module_justification.py",
+              "scripts/check_denominators.py", "scripts/check_ratchets.py",
+              "scripts/run_max_push.py", "scripts/check_doctrine_diff.py"],
     # R0123 decline grading: L1.29 says an ungraded prediction is a BELIEF that inflates the
     # apparent hit-rate by never counting its misses -- and a sleeve scored only on the trades it
     # CHOOSES to be graded on is that defect with a dominant strategy attached. Nine consecutive

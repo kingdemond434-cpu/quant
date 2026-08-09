@@ -937,6 +937,8 @@ SYSTEMD unit="quant-refresh.timer" on="*:0/3" exec=""
 #   20260729_infrastructure.md:317-319 ("dual schedulers for daily_research_cycle (cron 02:00
 #   + timer 08:01, absorbed by idempotency but drift-prone)")
 # CONFIDENCE: documented-cadence
+SYSTEMD unit="quant-research.timer" on="*-*-* 00:00:00 Europe/Dublin" exec="ops/run_midnight_frontier.sh"
+
 SYSTEMD unit="quant-cro.timer" on="*-*-* 08:01:00" exec="scripts/daily_research_cycle.py"
 
 # headless AI CRO (the brain) at 08:45 -- needs `claude setup-token` auth on the box.
