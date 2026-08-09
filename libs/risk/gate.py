@@ -14,6 +14,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 from libs.core.ids import generate_id
+from libs.core.logging import get_logger
 from libs.risk.config import RiskConfig
 from libs.risk.correlation import correlation_scalar
 from libs.risk.crisis import crisis_controller
@@ -41,6 +42,12 @@ class OrderIntent(BaseModel):
     cost: float | None = None
     alpha_id: str | None = None
     confidence: float = 1.0
+    #: §42: dollars the EDGE absorbs before its own impact eats it. None = uncapped by capacity,
+    #: which is correct for a deep instrument and WRONG for a thin one -- so a sleeve trading a
+    #: capacity-bound edge must carry it, and `check_capacity_intent_coverage` fires when a
+    #: declared sleeve reaches the gate without one. Every other cap here asks how much risk the
+    #: BOOK may take; this asks how much the EDGE can hold, and the two are independent.
+    edge_capacity_usd: float | None = None
     id: str = Field(default_factory=lambda: generate_id("intent"))
 
 
@@ -75,7 +82,15 @@ class RiskDecision(BaseModel):
         return self.approved
 
 
+# OBSERVABILITY (gap #56, 2026-07-29). EVERY rejection is logged here at the single choke point,
+# so "why did the desk not trade" is answerable after the fact from one place. Below the script
+# boundary there was no trail at all before this -- 1 of 318 library modules used logging, and
+# this is the module that decides whether capital moves. Library never configures handlers.
+_log = get_logger(__name__)
+
+
 def _reject(reason: str, checks: list[dict[str, Any]]) -> RiskDecision:
+    _log.warning("risk gate REJECTED: %s", reason)
     return RiskDecision(
         approved=False, risk_approval_id=None, sized_units=0.0, global_scalar=0.0,
         reasons=[reason], checks=checks,
@@ -167,6 +182,7 @@ def risk_gate(
             max_position_amount=position_cap,
             factor_headroom=factor_headroom,
             heat_headroom=heat_headroom,
+            edge_capacity_usd=intent.edge_capacity_usd,
         )
         checks.append(
             {"name": "sizing", "passed": not sizing.rejected, "binding": sizing.binding_constraint}

@@ -37,10 +37,64 @@ from __future__ import annotations
 import json
 import math
 import re
+import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
-OUT = Path(__file__).resolve().parent.parent / "reports" / "axis_screens"
+_ROOT = Path(__file__).resolve().parent.parent
+OUT = _ROOT / "reports" / "axis_screens"
 SHARPE_MIN, IC_MIN = 0.5, 0.03
+
+#: Horizon for a Stage-A forecast. 30d matches research_cycle's engineering horizon: long enough
+#: for a survivor to actually reach a forward slot, short enough that the check_calibration OVERDUE
+#: fence still bites inside a quarter.
+_FORECAST_HORIZON_DAYS = 30
+#: Pre-registered probability that a Stage-A survivor reaches Stage-B. LOW ON PURPOSE, and the
+#: number is the desk's own history: 420 price-family hypotheses, zero survivors. L1.6 says a
+#: screen hit is not an edge and screens carry zero promotion authority -- this forecast is the
+#: measurement of exactly how little a screen hit is worth, so that the claim stops being folklore.
+_P_SCREEN_REACHES_STAGE_B = 0.15
+
+
+def _log_screen_forecasts(axis: str, survivors: list[dict[str, Any]]) -> None:
+    """PRE-REGISTER what a SCREEN-INTERESTING verdict is implicitly predicting (R0112, L1.29a).
+
+    Stage A publishes verdicts and spends the desk's attention on them, but no screen has ever been
+    logged as a forecast -- so "screens have zero promotion authority" stayed an assertion nobody
+    could score. Every survivor here is an implicit claim that this hit is one of the few that
+    goes somewhere; this writes that claim down BEFORE the answer is known, with a resolve_by.
+
+    NEVER RESOLVED HERE. A forecast graded in the pass that logged it is the degenerate all-TRUE
+    row forecast_calibration._scoreable exists to exclude (30 such rows once inverted the desk's
+    measured bias into kelly_leverage). This function only ever pre-registers, and the outcome is
+    genuinely unknown today -- the 30 days have not passed.
+
+    One row per (axis, trial), resolve_by FIXED at first assertion: get_forecast() short-circuits
+    re-runs, so re-finalizing an axis cannot roll the deadline forward (a rolling deadline never
+    goes overdue, which would blind the check_calibration fence) or mint duplicate rows for what
+    is arithmetically one observation.
+    """
+    if not survivors:
+        return
+    if str(_ROOT) not in sys.path:
+        sys.path.insert(0, str(_ROOT))
+    try:
+        from libs.self_improvement import forecast_calibration as fc
+    except ImportError:
+        return
+    now = datetime.now(tz=UTC)
+    resolve_by = (now + timedelta(days=_FORECAST_HORIZON_DAYS)).isoformat()
+    for t in survivors:
+        key = f"screen:{axis}:{t['name']}"
+        if fc.get_forecast(key) is not None:
+            continue                                    # pre-registered already
+        fc.log_forecast(
+            key, _P_SCREEN_REACHES_STAGE_B, "screen_promotion", resolve_by=resolve_by,
+            claim=(f"Stage-A survivor {axis}/{t['name']} (corrected Sharpe "
+                   f"{t.get('sharpe_best_corrected')}, IC t={t.get('ic_t_stat')}) reaches a "
+                   f"Stage-B forward slot within {_FORECAST_HORIZON_DAYS}d of "
+                   f"{now.date().isoformat()}"))
 
 
 def _step(name: str) -> int:
@@ -79,7 +133,25 @@ def _bar(m: int) -> float:
     return round(abs(_norm_ppf(0.05 / (2 * m))), 2)
 
 
+#: The axes this correction layer was WRITTEN for. It is a historical record, not the work list:
+#: every screen the desk has shipped since is absent from it, and on 2026-08-05 all three names
+#: here referred to files that do not exist while the three screens that DO exist
+#: (announcement_diffusion, liquidation_reversion_BTCUSDT, unlock_supply_series) were invisible
+#: to this organ entirely. A hardcoded roster processes the desk that existed when it was typed.
 AXES = ("mining", "wikipedia", "fx")
+
+
+def _axes_on_disk() -> tuple[str, ...]:
+    """Every screen actually present, unioned with the historical AXES list.
+
+    THE WORK LIST IS WHAT IS ON DISK. Iterating a hardcoded tuple meant a screen shipped after
+    this file was written could never be corrected, could never receive `verdict_adjusted`, and
+    could therefore never be admitted to a forward slot -- so a new axis silently could not
+    produce a survivor no matter what it measured. The union keeps the historical names so their
+    ABSENCE is still reported rather than quietly forgotten.
+    """
+    found = sorted(p.stem for p in OUT.glob("*.json")) if OUT.exists() else []
+    return tuple(dict.fromkeys([*AXES, *found]))
 TOTAL_TRIALS = 37  # 12 mining + 13 wikipedia + 12 fx (+ etf_flows not screenable)
 CAMPAIGN_BAR = _bar(TOTAL_TRIALS)
 
@@ -160,10 +232,63 @@ NEXT = {
 
 
 def main() -> None:
+    # CONVERT FIRST. Every screen that writes its own schema is translated into the canonical
+    # `trials` shape before the correction layer looks at the directory, so a newer screen stops
+    # being INCOMPATIBLE-forever and starts being corrected like anything else. Measured
+    # 2026-08-05: 120 scored cells across four artifacts were sitting unreadable here while the
+    # desk reported "no survivors" -- output produced, never converted, never utilised.
+    if str(_ROOT) not in sys.path:
+        sys.path.insert(0, str(_ROOT))
+    from libs.research.screen_conversion import write_converted
+    conv = write_converted(_ROOT)
+    if conv["written"]:
+        print(f"converted {conv['n_cells']} scored cell(s) from {conv['n_artifacts']} artifact(s) "
+              f"into the canonical shape: {', '.join(conv['written'])}")
+    if conv["removed_stale"]:
+        print(f"  removed stale conversions (source gone): {', '.join(conv['removed_stale'])}")
+    for s in conv["skipped"]:
+        print(f"  NOT CONVERTED {s['path']}#{s['key']}: {s['why']}")
+
     summary = []
-    for axis in AXES:
+    missing: list[str] = []
+    incompatible: list[str] = []
+    unreadable: list[str] = []
+    for axis in _axes_on_disk():
         p = OUT / f"{axis}.json"
-        rep = json.loads(p.read_text("utf-8"))
+        # A MISSING SCREEN IS A SKIP, NOT A CRASH -- and this line was the single point of
+        # failure between the desk and its first forward clock.
+        #
+        # AXES is a hardcoded list of screens the desk expects to exist. When one of them has not
+        # been run (mining.json, on 2026-08-05), the unguarded read_text raised FileNotFoundError
+        # and this organ died before writing `verdict_adjusted` to ANY report -- including the
+        # three that were present and finished. run_paper_sleeve_spawner then refused with
+        # "NONE carries verdict_adjusted", so no Stage-A candidate could ever be admitted to a
+        # forward slot, so no clock ever started, so NOTHING COULD EVER SURVIVE. Ten of twelve
+        # Stage-B slots idle, 0 clocks accruing, none ever started -- all of it downstream of one
+        # unguarded read on a file nobody had produced.
+        #
+        # The missing screens are NAMED in the artifact rather than silently skipped: "this axis
+        # has not been screened" and "this axis was screened and corrected" are different facts,
+        # and collapsing them is how a gap in coverage reads as a completed sweep.
+        if not p.exists():
+            missing.append(axis)
+            continue
+        try:
+            rep = json.loads(p.read_text("utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            unreadable.append(f"{axis} ({type(exc).__name__})")
+            continue
+        # A THIRD STATE, and it must not collapse into either of the other two. This correction
+        # layer speaks ONE artifact schema -- a `trials` list from the axis-screen harness. The
+        # newer Stage-A screens (announcement_diffusion, unlock_supply_series, venue_subsidy...)
+        # write a different shape. Those are neither MISSING (they ran, and produced results) nor
+        # CORRECTED (this layer cannot read them), and calling them either one is a lie in a
+        # different direction: "missing" hides completed work, "corrected" claims a multiplicity
+        # charge that was never applied. Named as INCOMPATIBLE so the gap is a work item with an
+        # owner rather than a silence.
+        if not isinstance(rep.get("trials"), list):
+            incompatible.append(axis)
+            continue
         screened = [t for t in rep["trials"] if "verdict" in t and t.get("n")]
         axis_bar = _bar(len(screened))
         for t in screened:
@@ -186,12 +311,28 @@ def main() -> None:
             # SHIFT_*_plus1d feeds the signal from the FUTURE; a strong score there is evidence of
             # contemporaneous co-movement (an ARTIFACT), which rule 8 says is never an edge.
             nm = t["name"]
-            is_ctrl = ("DENOM-CONTROL" in nm or "LOOKAHEAD-CONTROL" in nm
-                       or "SHIFT_" in nm or "_LAG1d" in nm)
-            if is_ctrl:
-                kind = ("future-peeking shift diagnostic" if "plus1d" in nm else
-                        "denomination artifact control" if "DENOM-CONTROL" in nm else
-                        "look-ahead control" if "LOOKAHEAD-CONTROL" in nm else
+            up = nm.upper().replace("_", "-")
+            # CASE- AND SEPARATOR-INSENSITIVE, and it must be. The original test matched the exact
+            # uppercase-hyphen spellings this layer's first three screens happened to use. The
+            # converted screens spell the same thing `lookahead_control`, so the match missed,
+            # execution fell to the `else` branch below, and that branch set is_candidate=True --
+            # which SPAWNED TWO DECLARED LOOK-AHEAD CONTROLS AS FORWARD CLOCKS on 2026-08-05
+            # (etf_creation_pressure|lookahead_control, stablecoin_net_mint_usdc|lookahead_control).
+            # A control exists to MEASURE a leak; promoting one is the rule-8 artifact-as-edge
+            # failure, and it would have spent two of twelve Holm slots confirming that the future
+            # predicts the present.
+            is_ctrl = any(k in up for k in ("DENOM-CONTROL", "LOOKAHEAD-CONTROL", "SHIFT-",
+                                            "-LAG1D", "-CONTROL"))
+            # A CONVERTER'S EXPLICIT DISQUALIFICATION IS NEVER UPGRADED HERE. Upstream knows things
+            # this name-matcher cannot see -- `alignment.is_lookahead_control`, a diagnostic build
+            # form -- so `is_candidate: False` arriving on the row is a decision, not a default,
+            # and no branch below may overwrite it with True.
+            pre_disqualified = t.get("is_candidate") is False
+            if is_ctrl or pre_disqualified:
+                kind = (str(t.get("conversion_disqualified")) if pre_disqualified and not is_ctrl
+                        else "future-peeking shift diagnostic" if "plus1d" in nm.lower() else
+                        "denomination artifact control" if "DENOM-CONTROL" in up else
+                        "look-ahead control" if "LOOKAHEAD-CONTROL" in up else
                         "conservative-lag robustness check")
                 t["is_candidate"] = False
                 t["verdict_adjusted"] = (
@@ -223,13 +364,25 @@ def main() -> None:
         rep["multiplicity"] = {"axis_trials": len(screened), "axis_bonferroni_t": axis_bar,
                                "campaign_trials": TOTAL_TRIALS,
                                "campaign_bonferroni_t": CAMPAIGN_BAR}
-        rep["verdict"] = VERDICTS[axis]
+        # VERDICTS is hand-written prose per axis and only covers the three this layer was
+        # authored for. A screen without one is still CORRECTED -- the arithmetic above ran and
+        # verdict_adjusted is on every trial; what is absent is the human summary. Saying so is
+        # the honest gap, and it is a smaller one than crashing after doing all the work.
+        rep["verdict"] = VERDICTS.get(
+            axis, f"NO HAND-WRITTEN VERDICT for {axis}: the correction arithmetic ran and every "
+                  "trial carries verdict_adjusted, but nobody has written the prose summary that "
+                  "names what this axis measured and what it means. Mechanical result stands; "
+                  "the interpretation is owed.")
         rep["forward_clock"] = (
             "NO -- no construction survived; Stage A has zero promotion authority")
-        rep["next_step"] = NEXT[axis]
+        rep["next_step"] = NEXT.get(
+            axis, "NO NEXT STEP RECORDED for this axis -- write one. A corrected screen with no "
+                  "stated next move is where the pipeline stalls silently: the arithmetic is "
+                  "done, nobody is told what to do with it, and it sits.")
         p.write_text(json.dumps(rep, indent=1, default=str), "utf-8")
 
         surv = [t for t in screened if t["verdict_adjusted"].startswith("SCREEN-INTERESTING")]
+        _log_screen_forecasts(axis, surv)
         summary.append((axis, len(screened), len(surv)))
         print(f"\n=== {axis}: {len(screened)} trials, {len(surv)} survive correction+multiplicity "
               f"(axis bar t>{axis_bar}, campaign t>{CAMPAIGN_BAR}) ===")
@@ -237,6 +390,21 @@ def main() -> None:
             print(f"  {t['name']:46s} IC={t['ic']:+.4f} t={t['ic_t_stat']:.2f} "
                   f"Sh {t['sharpe_best_reported']:.2f}->{t['sharpe_best_corrected']:.2f}  "
                   f"{t['verdict_adjusted'][:58]}")
+    if incompatible:
+        print(f"\n  PRESENT BUT NOT CORRECTABLE BY THIS LAYER ({len(incompatible)}): "
+              f"{', '.join(incompatible)}")
+        print("  -- these screens RAN and produced results in a schema this correction layer "
+              "does not speak (no `trials` list). They are not missing and they are not "
+              "corrected. Until a reader exists for their shape they carry no verdict_adjusted, "
+              "so run_paper_sleeve_spawner cannot admit them to a forward slot -- which is the "
+              "difference between a screen that found nothing and a screen nobody can promote.")
+    if unreadable:
+        print(f"\n  UNREADABLE ({len(unreadable)}): {', '.join(unreadable)}")
+    if missing:
+        print(f"\n  NOT SCREENED ({len(missing)}): {', '.join(missing)}")
+        print("  -- named rather than skipped: an unscreened axis and a corrected one are "
+              "different facts, and collapsing them makes a coverage gap read as a finished "
+              "sweep. These produce no verdict_adjusted and can admit nothing to a forward slot.")
     print("\n", summary)
 
 

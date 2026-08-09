@@ -29,7 +29,6 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from libs.llm.effort import reasoning_payload  # noqa: E402
 from libs.research.strategic_director import (  # noqa: E402
     assemble_dossier,
     build_prompt,
@@ -40,6 +39,10 @@ from libs.research.strategic_director import (  # noqa: E402
 
 OUT = ROOT / "data/strategic_director.json"
 KEYS = ROOT / "data/secrets/llm_panel.json"
+
+from libs.doctrine.constitution import OBJECTIVE_PREAMBLE  # noqa: E402
+from libs.llm.effort import reasoning_payload  # noqa: E402
+
 # overridable; any reasoning model satisfies the contract -- but the DEFAULT is deliberately a
 # GPT model, not a Claude one (principal order 2026-07-31, and it was the design intent from the
 # start: "GPT Strategic Director"). Every other reasoning organ on this desk is Claude, so a
@@ -52,7 +55,19 @@ _CTX = ssl.create_default_context()
 
 
 def _ask(prompt: str, model: str, timeout: float = 360.0) -> tuple[str, str]:
-    """(response, error). Never raises -- a dead provider must not crash the cycle."""
+    """(response, error). Never raises -- a dead provider must not crash the cycle.
+
+    DOCTRINE INJECTED AS A SYSTEM MESSAGE (2026-08-01). scripts/doctrine.py's own three-surface
+    audit reported this caller at 9/10: it posted a bare user message to chat/completions with no
+    preamble, so the strategic director -- the organ that proposes what the desk should DO -- was
+    the one intelligence here running unconstrained. It therefore also missed the adversarial
+    review rubric that now rides along with the preamble, which is the specific reason this was
+    worth fixing today rather than logging.
+
+    Wrapped defensively because doctrine is an improvement to a working caller, never a
+    precondition for one: an import failure degrades to the previous behaviour rather than taking
+    down the cycle.
+    """
     try:
         providers = json.loads(KEYS.read_text("utf-8"))["providers"]
     except (OSError, ValueError, KeyError) as e:
@@ -61,10 +76,20 @@ def _ask(prompt: str, model: str, timeout: float = 360.0) -> tuple[str, str]:
         base, key = prov.get("base_url", ""), prov.get("key", "")
         if not base or not key:
             continue
+        try:
+            from scripts.doctrine import preamble as _doctrine
+            system = _doctrine("strategic director")
+        except Exception:
+            system = ""
+        system = OBJECTIVE_PREAMBLE + ("\n" + system if system else "")
+        messages = [{"role": "system", "content": system},
+                    {"role": "user", "content": prompt}]
         body = json.dumps({
             "model": model, "max_tokens": 8000, "temperature": 0.4,
+            # depth follows the roster's per-model caps, never a hardcoded literal -- the
+            # effort ladder lives in ONE place (libs/llm/effort) for every organ.
             "reasoning": reasoning_payload(model),
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": messages,
         }).encode()
         req = urllib.request.Request(
             base.rstrip("/") + "/chat/completions", data=body, method="POST",

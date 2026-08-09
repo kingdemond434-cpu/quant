@@ -27,7 +27,6 @@ Pure stdlib. import from libs.research.slot_registry.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -107,7 +106,14 @@ def _evidence(name: str, now: datetime, *, days: object = None,
     if days is None and updated is None:
         ref = _EVIDENCE.get(name)
         if ref is None:
-            return {"evidence": "UNMEASURED", "why": f"no evidence artifact mapped for {name}"}
+            # NOT A DEAD END, and treating it as one is what left every auto-spawned clock at
+            # UNMEASURED forever. `_EVIDENCE` is a fixed eight-name map written when eight clocks
+            # existed; a sleeve spawned afterwards appears in none of it, so it could never
+            # publish a day count, never accrue, and never resolve -- born, registered, charged
+            # its multiplicity, and structurally unable to finish. Paper sleeves publish through
+            # ONE artifact keyed by name, so a sleeve spawned tomorrow is covered with no map to
+            # edit (nothing hardcoded).
+            return _paper_sleeve_evidence(name, now)
         src = ref[0]
         doc = _read_json(src)
         if not isinstance(doc, dict):
@@ -132,12 +138,67 @@ def _evidence(name: str, now: datetime, *, days: object = None,
     return {"evidence": state, "days": n_days, "age_h": age_h, "source": src}
 
 
+#: Where scripts/run_paper_sleeve_forward.py publishes every paper sleeve's accrual, keyed by name.
+_PAPER_FORWARD = "web/paper_sleeve_forward.json"
+
+
+def _paper_sleeve_evidence(name: str, now: datetime) -> dict[str, Any]:
+    """Accrual for an auto-spawned paper sleeve, read from the one artifact that carries them all.
+
+    ROWS ARE THE CLOCK, not calendar days. A sleeve can sit alive for a week while its source
+    artifact is never regenerated, and counting those days as forward evidence would credit the
+    clock for observations that do not exist -- the fossil problem, one level in. So `days` here
+    is rows added since baseline, and a sleeve with none reads NO-EVIDENCE (distinct from STALLED,
+    which is about the artifact ageing).
+    """
+    doc = _read_json(_PAPER_FORWARD)
+    if not isinstance(doc, dict):
+        return {"evidence": "UNMEASURED",
+                "why": (f"{_PAPER_FORWARD} missing or unreadable -- no runner has published "
+                        f"accrual for {name}. A spawned clock nothing runs can never resolve."),
+                "source": _PAPER_FORWARD}
+    sleeves = doc.get("sleeves")
+    row = sleeves.get(name) if isinstance(sleeves, dict) else None
+    if not isinstance(row, dict):
+        return {"evidence": "UNMEASURED",
+                "why": f"{_PAPER_FORWARD} carries no row for {name}", "source": _PAPER_FORWARD}
+    ts = _parse_ts(row.get("observed_utc") or doc.get("updated"))
+    age_h = round((now - ts).total_seconds() / 3600.0, 1) if ts else None
+    state = str(row.get("evidence", "UNMEASURED"))
+    if state == "ACCRUING" and age_h is not None and age_h > STALE_AFTER_H:
+        state = "STALLED"                     # the runner stopped; a fossil is not evidence
+    return {"evidence": state, "days": row.get("rows_added"), "age_h": age_h,
+            "source": _PAPER_FORWARD,
+            "progress_to_resolution": row.get("progress_to_resolution"),
+            "why": row.get("why", "")}
+
+
 def _read_json(rel: str) -> Any | None:
     """Return parsed JSON, or None when the source cannot be trusted (missing/unreadable)."""
+    doc, _ = _read_source(rel)
+    return doc
+
+
+def _read_source(rel: str) -> tuple[Any | None, str]:
+    """(document, state) where state is OK / ABSENT / UNREADABLE.
+
+    THE DISTINCTION THIS DRAWS, and it was collapsed for the module's whole life. A file that does
+    NOT EXIST has never been written, so the clocks it would record were never born -- that is a
+    MEASURED ZERO. A file that exists and does not parse could hold anything -- that is genuinely
+    UNKNOWN. Treating both as unknown looks conservative and is not: it is what froze slot
+    admission permanently. On 2026-08-05 all eight "unknown" sources were simply ABSENT (no clock
+    had ever been started on this box), `complete` was therefore False forever, and
+    `paper_sleeves.free_slots` collapses to zero on an incomplete cohort -- so ten idle slots could
+    never be filled, no forward clock could ever start, and nothing could ever survive. An unknown
+    that can be RESOLVED must be resolved, not surrendered to (L1.54).
+    """
+    path = _ROOT / rel
+    if not path.exists():
+        return None, "ABSENT"
     try:
-        return json.loads((_ROOT / rel).read_text("utf-8"))
+        return json.loads(path.read_text("utf-8")), "OK"
     except (OSError, json.JSONDecodeError):
-        return None
+        return None, "UNREADABLE"
 
 
 def derive_slots() -> dict[str, Any]:
@@ -149,10 +210,18 @@ def derive_slots() -> dict[str, Any]:
     now = datetime.now(tz=UTC)
     slots: list[dict[str, Any]] = []
     unknown: list[str] = []
+    absent: list[str] = []
+    #: Per-source UPPER BOUND on clocks an unreadable source could be hiding. A single named
+    #: clock's state file can hide at most one; a CONTAINER (axis roster, sleeve roster) can hide
+    #: any number, so it saturates the cap. Summed into `m_upper` below.
+    bounds: dict[str, int] = {}
 
-    axis_doc = _read_json(_AXIS_STATE)
-    if axis_doc is None:
+    axis_doc, axis_state = _read_source(_AXIS_STATE)
+    if axis_state == "ABSENT":
+        absent.append(_AXIS_STATE)
+    elif axis_doc is None:
         unknown.append(_AXIS_STATE)
+        bounds[_AXIS_STATE] = MAX_FORWARD_SLOTS      # container: unbounded, so saturate
     else:
         rows = axis_doc.get("axes", axis_doc) if isinstance(axis_doc, dict) else axis_doc
         for row in rows if isinstance(rows, list) else []:
@@ -162,6 +231,11 @@ def derive_slots() -> dict[str, Any]:
                 continue
             slots.append({"name": str(row.get("axis", "?")), "kind": "axis",
                           "source": _AXIS_STATE, "state": str(row.get("verdict", "ACCRUING")),
+                          # `started` is the clock's DECLARED birth date, carried as a first-class
+                          # field so libs.research.promotion_history never has to parse it back out
+                          # of the `state` prose. None where the artifact does not declare one --
+                          # an absent start is UNKNOWN, never today (L1.30 phantom-birth rule).
+                          "started": row.get("shadow_start") or row.get("start"),
                           **_evidence(str(row.get("axis", "?")), now,
                                       days=row.get("forward_days", row.get("n", 0)),
                                       updated=row.get("updated")
@@ -169,24 +243,54 @@ def derive_slots() -> dict[str, Any]:
                                           if isinstance(axis_doc, dict) else None))})
 
     for name, rel in _STANDING_STATES.items():
-        doc = _read_json(rel)
+        doc, state = _read_source(rel)
+        if state == "ABSENT":
+            absent.append(rel)                       # this clock was never born on this box
+            continue
         if doc is None:
             unknown.append(rel)
+            bounds[rel] = 1                          # one named clock: at most one hidden
             continue
         if isinstance(doc, dict) and doc.get("shadow_start"):
             slots.append({"name": name, "kind": "standing", "source": rel,
-                          "state": f"since {doc['shadow_start']}", **_evidence(name, now)})
+                          "state": f"since {doc['shadow_start']}",
+                          "started": str(doc["shadow_start"]), **_evidence(name, now)})
 
-    roster = _read_json(_SLEEVE_ROSTER)
-    if roster is None:
-        unknown.append(_SLEEVE_ROSTER)
+    roster, roster_state = _read_source(_SLEEVE_ROSTER)
+    if roster_state == "ABSENT":
+        # The spawner's own convention, and the file it writes: `_spawn_one` reads an absent
+        # roster as `[]`. A registry that called the same absence unknown disagreed with the organ
+        # that owns the file.
+        absent.append(_SLEEVE_ROSTER)
         names: list[str] = list(_DERIVATIVE_BUILTIN)
+    elif roster is None:
+        unknown.append(_SLEEVE_ROSTER)
+        bounds[_SLEEVE_ROSTER] = MAX_FORWARD_SLOTS   # container: unbounded, so saturate
+        names = list(_DERIVATIVE_BUILTIN)
     else:
         extras = [str(x) for x in roster if str(x).strip()] if isinstance(roster, list) else []
         names = sorted({*_DERIVATIVE_BUILTIN, *extras})
     for name in names:
+        # A SPAWNED SLEEVE DOES DECLARE ITS BIRTH, and this loop could not see it. The spawner
+        # writes data/<name>_shadow_state.json carrying `shadow_start` -- the same birth
+        # certificate every standing clock uses -- but `started` was read only from the fixed
+        # _STANDING_STATES map, so every auto-spawned clock reported started=None forever. A clock
+        # with no birth date can never have its forward days counted, so it could never accrue and
+        # never resolve: born, registered, paying multiplicity, and structurally unable to finish.
+        #
+        # Where no such file exists the answer stays None, and deliberately: the built-in
+        # derivative sleeves publish only `days_accumulated`, and a start back-derived from an
+        # accrual counter is an UPPER bound on the birth date (a stalled clock accrues nothing
+        # while ageing), so it would make births look EARLIER and over-count forward evidence.
+        started: str | None = None
+        state_label = "roster"
+        spawned_doc, spawned_state = _read_source(f"data/{name}_shadow_state.json")
+        if spawned_state == "OK" and isinstance(spawned_doc, dict) and spawned_doc.get(
+                "shadow_start"):
+            started = str(spawned_doc["shadow_start"])
+            state_label = f"since {started}"
         slots.append({"name": name, "kind": "derivative", "source": _SLEEVE_ROSTER,
-                      "state": "roster", **_evidence(name, now)})
+                      "state": state_label, "started": started, **_evidence(name, now)})
 
     # m is deliberately UNCHANGED by any of this: a stalled clock stays in the cohort until it is
     # RETIRED by an explicit ledgered decision, because dropping it would SHRINK m and loosen every
@@ -195,91 +299,46 @@ def derive_slots() -> dict[str, Any]:
     # paying multiplicity for slots returning nothing.
     dead = [s for s in slots if s.get("evidence") in ("STALLED", "NO-EVIDENCE")]
     unmeasured = [s for s in slots if s.get("evidence") == "UNMEASURED"]
+    m_upper = len(slots) + sum(bounds.values())
     return {
         "updated": now.isoformat(),
         "m_concurrent": len(slots),
+        # THE NUMBER EVERY BAR MUST BE COMPUTED FROM. `m_concurrent` counts only what was READ, so
+        # it is a LOWER bound whenever a source is unreadable -- and understating m LOOSENS every
+        # Holm bar, the phantom-edge direction this module exists to prevent. `complete=False` was
+        # published next to the loose number rather than instead of it, and every caller of
+        # concurrent_m() kept using the loose one. m_upper adds each unreadable source's own
+        # maximum, so the bar is computed from the worst case and can only ever be too TIGHT.
+        "m_upper": m_upper,
+        "m_bounds": bounds,
         "complete": not unknown,
         "cap": MAX_FORWARD_SLOTS,
-        "over_cap": len(slots) > MAX_FORWARD_SLOTS,
-        "idle_slots": max(0, MAX_FORWARD_SLOTS - len(slots)),
+        "over_cap": m_upper > MAX_FORWARD_SLOTS,
+        "idle_slots": max(0, MAX_FORWARD_SLOTS - m_upper),
         "unknown_sources": unknown,
+        # ABSENT IS A MEASUREMENT, NOT AN UNKNOWN: the file was never written, so the clock it
+        # would record was never born. Kept in its own list so the two can never be re-merged.
+        "absent_sources": absent,
         "accruing": len(slots) - len(dead) - len(unmeasured),
         "not_accruing": [{"name": s["name"], "evidence": s.get("evidence"),
                           "days": s.get("days"), "age_h": s.get("age_h")} for s in dead],
         "unmeasured_slots": [s["name"] for s in unmeasured],
         "evidence_stale_after_h": STALE_AFTER_H,
         "slots": slots,
-        "note": ("Holm cohort for every Stage-B forward clock. Unreadable sources are counted as "
-                 "UNKNOWN, never zero: understating m loosens every bar. Dormant clocks stay "
-                 "counted until RETIRED by an explicit ledgered decision -- `not_accruing` names "
-                 "the slots paying multiplicity while returning no evidence, which is a cost to "
-                 "fix upstream, never by shrinking m."),
+        "note": ("Holm cohort for every Stage-B forward clock. UNREADABLE sources are bounded "
+                 "into `m_upper` (never counted as zero: understating m loosens every bar); "
+                 "ABSENT sources are a measured zero, because a file never written records a "
+                 "clock never born, and calling that unknown is what froze slot admission. "
+                 "Dormant clocks stay counted until RETIRED by an explicit ledgered decision -- "
+                 "`not_accruing` names the slots paying multiplicity while returning no evidence, "
+                 "which is a cost to fix upstream, never by shrinking m."),
     }
 
 
-@dataclass(frozen=True)
-class CohortM:
-    """The cohort size a Holm bar must be computed against, with WHY attached.
-
-    `m` is what you pass to holm_bar. `provenance` says how it was arrived at, because a bar
-    computed from a degraded cohort is still a bar and the caller has to be able to say so in its
-    own artifact.
-    """
-    m: int
-    provenance: str          # MEASURED | INCOMPLETE-FLOORED | REFUSED-FLOORED
-    detail: str
-
-    @property
-    def measured(self) -> bool:
-        return self.provenance == "MEASURED"
-
-
-def cohort_m_for_bar() -> CohortM:
-    """THE cohort size for every Stage-B Holm bar on this desk. Call this, never `len(anything)`.
-
-    EVERY FAILURE PATH TIGHTENS. This is the whole point of the function and the reason it is not
-    `len(derive_slots()["slots"])`. Understating m LOOSENS the bar, which is the phantom-edge
-    direction: at the measured 2026-08-05 values, judging the axis clocks at len(_AXES)=3 applies
-    holm_bar(3)=2.13 where the true cohort of 11 requires 2.61 -- alpha 0.0167 per clock against a
-    designed 0.0045, a family-wise error rate 3.67x the design, on the desk's only path from
-    research to capital.
-
-    So the degraded paths floor at the LAW CAP rather than falling back to a smaller number:
-      * cohort incomplete (a source unreadable => m is a LOWER bound) -> max(m, MAX_FORWARD_SLOTS)
-      * registry unusable entirely                                    -> MAX_FORWARD_SLOTS
-    Over-counting only costs us a real edge's promotion by a few days of clock; under-counting
-    admits noise as edge and sizes capital on it. Those are not symmetric, and this function
-    resolves every ambiguity toward the one that cannot manufacture an edge.
-    """
-    try:
-        snap = derive_slots()
-        derived = int(snap["m_concurrent"])
-        complete = bool(snap["complete"])
-        unknown = list(snap.get("unknown_sources") or [])
-    except (OSError, ValueError, KeyError, TypeError) as exc:
-        return CohortM(
-            MAX_FORWARD_SLOTS, "REFUSED-FLOORED",
-            f"slot registry unusable ({type(exc).__name__}: {exc}) -- floored at the law cap "
-            f"{MAX_FORWARD_SLOTS} because an unknown cohort must never produce a LOOSER bar than "
-            "a known one")
-    if not complete:
-        return CohortM(
-            max(derived, MAX_FORWARD_SLOTS), "INCOMPLETE-FLOORED",
-            f"{derived} clocks counted but {len(unknown)} source(s) unreadable "
-            f"({', '.join(unknown[:3])}) -- m is a LOWER bound, so it is floored at the law cap "
-            f"{MAX_FORWARD_SLOTS}; the true bar can only be higher, never lower")
-    return CohortM(max(derived, 1), "MEASURED",
-                   f"{derived} concurrently-accruing forward clocks, every source readable")
-
-
 def concurrent_m() -> int:
-    """The Holm cohort size. Never returns 0 -- a cohort of nothing would zero out multiplicity.
-
-    Delegates to `cohort_m_for_bar()` so that the fail-safe flooring applies to EVERY caller by
-    default. This function had zero callers for the whole period the axis clocks ran at a 3.67x
-    inflated error rate; a bare `len()` here would have been a footgun waiting for its first user.
-    """
-    return cohort_m_for_bar().m
+    """The Holm cohort size to correct EVERY forward bar by. Never 0 -- that would zero out
+    multiplicity -- and never the LOWER bound, which would loosen every bar it feeds."""
+    return max(1, int(derive_slots()["m_upper"]))
 
 
 def write_snapshot() -> dict[str, Any]:

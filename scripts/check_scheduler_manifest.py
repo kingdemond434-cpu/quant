@@ -131,6 +131,36 @@ def check_scripts_exist(root: Path, man: Manifest) -> list[str]:
     return [p for p in referenced_paths(man) if not (root / p).is_file()]
 
 
+_FLOCK_PATH = re.compile(r"\bflock\s+(?:-[a-zA-Z]+\s+)*(\S+)")
+
+
+def check_lock_coherence(man: Manifest) -> list[str]:
+    """(d) SAME-SCRIPT-DIFFERENT-LOCK fence (R0326). Until 2026-08-05 the manifest scheduled
+    ops/run_crypto_factory.sh twice -- 30 1 under data/.cron_crypto_factory.lock and an adopted
+    live twin at 30 3 under /tmp/crypto_factory.lock. Both lines LOOKED serialized because both
+    said `flock -n`, but flock only excludes holders of the SAME lock file, so the two runs
+    could overlap freely: mutual exclusion that reads as present and is not. A script scheduled
+    on multiple cron lines must either share ONE lock path on every line or carry no flock at
+    all anywhere (in which case the duplication is at least visible for what it is)."""
+    locks_by_script: dict[str, set[str | None]] = {}
+    lines_by_script: dict[str, list[int]] = {}
+    for c in man.cron:
+        m = _FLOCK_PATH.search(c.command)
+        lock = m.group(1) if m is not None else None
+        for script in _SCRIPT_REF.findall(c.command):
+            locks_by_script.setdefault(script, set()).add(lock)
+            lines_by_script.setdefault(script, []).append(c.line_no)
+    problems: list[str] = []
+    for script, locks in sorted(locks_by_script.items()):
+        if len(lines_by_script[script]) < 2 or len(locks) < 2:
+            continue
+        named = ", ".join(sorted(str(x) for x in locks))
+        lines = ", ".join(str(n) for n in lines_by_script[script])
+        problems.append(f"{script} scheduled on lines {lines} under different locks "
+                        f"({named}) -- flock cannot serialize across distinct lock files")
+    return problems
+
+
 def _exec_script_of(service_text: str) -> str | None:
     """Last .py/.sh token of the service's ExecStart line, or None when there is none."""
     for line in service_text.splitlines():
@@ -247,7 +277,8 @@ def main(argv: list[str] | None = None) -> int:
     man = parse_manifest(root / _MANIFEST_REL)
     missing = check_scripts_exist(root, man)
     timer_problems = check_committed_timers(root, man)
-    structural = list(man.parse_problems) + timer_problems
+    lock_problems = check_lock_coherence(man)
+    structural = list(man.parse_problems) + timer_problems + lock_problems
 
     live = read_live_crontab()
     drift_missing: list[str] = []
@@ -264,6 +295,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  MISSING {m} -- scheduled by the manifest but absent from the repo (dead cron)")
     for p in timer_problems:
         print(f"  TIMER   {p}")
+    for p in lock_problems:
+        print(f"  LOCK    {p}")
     if live is None:
         print("  live crontab: no live crontab readable (sandbox/fresh restore) -- "
               "repo-only checks (a)+(b) still ran")
@@ -293,6 +326,7 @@ def main(argv: list[str] | None = None) -> int:
             "checks": {
                 "scripts_exist": {"ok": not missing, "missing": missing},
                 "committed_timers": {"ok": not timer_problems, "problems": timer_problems},
+                "lock_coherence": {"ok": not lock_problems, "problems": lock_problems},
                 "parse": {"ok": not man.parse_problems, "problems": man.parse_problems},
                 "live_crontab": {
                     "readable": live is not None,

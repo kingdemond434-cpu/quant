@@ -8,6 +8,10 @@ would defund every area that produces DECISIVE REFUTATIONS -- yet closing a fami
 (M3 participant-behaviour, refuted at power 2026-07-27) is real value: it stops all future waste.
 So reward = INFORMATION GAIN:
 
+#  EXHAUSTION: allocation is uncapped upward. If one area earns 90% of the budget on
+#  measured information gain, give it 90% -- an artificial spread is a quota, and a
+#  quota is how a desk funds mediocrity to feel balanced.
+
     survivor              1.00   (a forward clock earned)
     decisive refutation   0.60   (powered null / mechanism closed -- prevents future waste)
     method upgrade        0.50   (a new rail: gapped-window, power reporting, stability check)

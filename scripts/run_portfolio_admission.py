@@ -82,36 +82,58 @@ def main() -> int:
         return 0
 
     with np.load(a.pnl) as z:
-        survivors = {n: np.asarray(z[n], dtype=float) for n in z.files}
+        # Keys beginning "__" are row-provenance arrays emitted by run_full_sweep. They are
+        # evidence ABOUT each return, not candidate return streams.
+        survivors = {n: np.asarray(z[n], dtype=float)
+                     for n in z.files if not n.startswith("__")}
     incumbents, cohort = load_incumbents(a.incumbents)
 
     rows: list[dict[str, object]] = []
     admitted = 0
     for name, series in sorted(survivors.items()):
+        raw_n = len(series)
         if incumbents.size:
             width = min(len(series), len(incumbents))
-            res = evaluate(series[-width:], incumbents[-width:],
-                           periods_per_year=a.periods_per_year)
-            ok = bool(res.admitted)
-            # The full verdict is retained rather than reduced to a boolean: rho,
-            # the hurdle it was gated on and the orthogonal IR are what let a
-            # rejection be argued with instead of merely accepted.
-            detail = (f"{res.reason} | rho_used {res.rho_used:.3f}, hurdle "
-                      f"{res.hurdle:.3f}, orthogonal IR {res.orthogonal_ir:.3f}, "
-                      f"gain {res.gain:+.4f}")
+            cand = series[-width:]
+            book = incumbents[-width:]
+            finite = np.isfinite(cand) & np.all(np.isfinite(book), axis=1)
+            clean = cand[finite]
+            clean_book = book[finite]
+            if len(clean) < 2:
+                ok = False
+                detail = ("UNMEASURED: fewer than two jointly finite candidate/incumbent "
+                          "observations; NaN is missing evidence, never a zero return")
+            else:
+                res = evaluate(clean, clean_book, periods_per_year=a.periods_per_year)
+                ok = bool(res.admitted)
+                # The full verdict is retained rather than reduced to a boolean: rho,
+                # the hurdle it was gated on and the orthogonal IR are what let a
+                # rejection be argued with instead of merely accepted.
+                detail = (f"{res.reason} | rho_used {res.rho_used:.3f}, hurdle "
+                          f"{res.hurdle:.3f}, orthogonal IR {res.orthogonal_ir:.3f}, "
+                          f"gain {res.gain:+.4f}")
         else:
             # THE DEGENERATE CASE, STATED. With no incumbents there is nothing to be incremental
             # TO, so this answers a strictly easier question and must never be banked as if it had
             # answered the hard one.
-            sd = float(np.std(series, ddof=1)) if len(series) > 1 else 0.0
-            sharpe = (float(np.mean(series)) / sd * a.periods_per_year ** 0.5) if sd > 0 else 0.0
-            ok = sharpe > 0
-            detail = (f"EMPTY BOOK: no live cohort, so 'improves the portfolio' degenerates to "
-                      f"'has positive Sharpe' ({sharpe:+.3f}). A real answer to a much easier "
-                      "question -- this is NOT evidence of incremental value")
+            clean = series[np.isfinite(series)]
+            if len(clean) < 2:
+                ok = False
+                detail = ("UNMEASURED: fewer than two finite returns. NaN is missing evidence, "
+                          "never a zero return or a zero Sharpe")
+            else:
+                sd = float(np.std(clean, ddof=1))
+                sharpe = (float(np.mean(clean)) / sd * a.periods_per_year ** 0.5
+                          if sd > 0 else 0.0)
+                ok = sharpe > 0
+                detail = (f"EMPTY BOOK: no live cohort, so 'improves the portfolio' degenerates "
+                          f"to 'has positive Sharpe' ({sharpe:+.3f}). A real answer to a much "
+                          "easier question -- this is NOT evidence of incremental value")
         admitted += int(ok)
+        finite_n = int(np.isfinite(series).sum())
         rows.append({"survivor": name, "admitted": ok, "why": detail,
-                     "observations": len(series)})
+                     "observations": raw_n, "finite_observations": finite_n,
+                     "missing_fraction": round(1.0 - finite_n / raw_n, 6) if raw_n else None})
 
     rep = {
         "ts": datetime.now(tz=UTC).isoformat(),

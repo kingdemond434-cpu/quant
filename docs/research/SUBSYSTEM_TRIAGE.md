@@ -148,7 +148,7 @@ them.
 1. Working kill switch on `quant-cashcarry.service` (needs root — principal only)
 2. Confirm the kill-latch/re-entry defect (book re-opened with `CASHCARRY_KILL` present)
 3. TCA fills accumulating → re-measure cost/funding vs the 7.75× baseline
-4. Aug 7 forward verdict — the first chance for the north star to leave 0.00
+4. Sept 1 forward verdict — the first chance for the north star to leave 0.00
 
 ## Re-verdict pass 2026-08-02 — all 46 blockers checked against the desk's actual state
 

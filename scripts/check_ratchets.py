@@ -93,6 +93,19 @@ def _mutation_at_bar(d: Any) -> float | None:
     return sum(1 for v in rates.values() if v >= 0.90) / len(rates)
 
 
+def _campaign_retained(d: Any) -> float | None:
+    """Observation-retention of the newest campaign (R0270).
+
+    Returns None -- UNMEASURED, never a pass -- whenever the producing fence could not read a
+    campaign. A retention number is only meaningful beside the plan it came from, and "no campaign
+    on record" must not enter the ratchet board as a value.
+    """
+    if not isinstance(d, dict):
+        return None
+    v = d.get("retained_fraction")
+    return float(v) if isinstance(v, (int, float)) else None
+
+
 def _findings_coverage(d: Any) -> float | None:
     if not isinstance(d, dict):
         return None
@@ -122,6 +135,36 @@ def _mypy_clean(d: Any) -> float | None:
         return None
     clean = sum(1 for v in per.values() if isinstance(v, (int, float)) and int(v) == 0)
     return clean / len(per)
+
+
+def _capability_wired(d: Any) -> float | None:
+    """Share of BUILT capability that is actually REACHABLE -- the engine's own strength (R0104).
+
+    THE METRIC THE ROW ASKS FOR, and why it is this one rather than a new artifact. R0104 wants
+    "the weekly capability composite" floored and fenced, so that self-improvement itself must
+    strengthen or explain itself. The desk already measures exactly that composite continuously:
+    check_utilisation's capability_wired ceiling counts units the import graph can actually reach
+    against units built. Minting a fresh "sweep output G" number would have been a phantom metric
+    with no producer -- the failure mode where a gate's inputs are computed by nobody and the gate
+    therefore never moves. Ratcheting the number that already exists is strictly better, and it
+    updates every 6h rather than weekly.
+
+    WHAT A FALL MEANS: capability was built and left unwired, or wired capability rotted out of
+    the graph. Either is engineering already paid for returning zero (L1.28a) -- and unlike a
+    coverage number it cannot be gamed by deleting the denominator, because deleting a built-but-
+    unreachable unit RAISES the ratio honestly: that unit really is gone.
+    """
+    if not isinstance(d, dict):
+        return None
+    for row in d.get("ceilings") or []:
+        if isinstance(row, dict) and row.get("name") == "capability_wired":
+            # UNMEASURED counts as ZERO by L1.28a -- but a zero here would install a zero FLOOR,
+            # which is a ratchet that permits anything. Refuse instead: no reading, no floor.
+            if not row.get("measured"):
+                return None
+            val = row.get("utilisation")
+            return float(val) if isinstance(val, (int, float)) else None
+    return None
 
 
 def _alert_delivery(path: Path) -> float | None:
@@ -159,6 +202,17 @@ _METRICS: dict[str, tuple[str, Callable[[Any], float | None], float | None, str]
     "scripts_mypy_clean": (
         "data/mypy_ratchet.json", _mypy_clean, None,
         "python scripts/check_mypy_ratchet.py"),
+    # R0104: self-improvement gets a floor and a fence like everything else. 12h max age = two
+    # cycles of its 6-hourly producer, so a dead utilisation fence reads STALE rather than green.
+    "capability_wired": (
+        "data/utilisation.json", _capability_wired, 12.0,
+        "python scripts/check_utilisation.py"),
+    # R0270: the share of available observations a campaign actually tested on. History length is
+    # the binding constraint on this desk's discovery power, so this is the ratchet that says the
+    # 82.9% min-length discard never comes back. 48h = two runs of the daily crypto factory.
+    "campaign_obs_retained": (
+        "data/campaign_retention.json", _campaign_retained, 48.0,
+        "python scripts/check_campaign_retention.py"),
 }
 # Artifacts read as raw files rather than parsed JSON documents.
 _FILE_METRICS: dict[str, tuple[str, Callable[[Path], float | None], float | None, str]] = {

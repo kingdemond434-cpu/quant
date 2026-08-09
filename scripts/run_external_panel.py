@@ -38,6 +38,12 @@ from libs.doctrine.constitution import OBJECTIVE_PREAMBLE
 from libs.llm.effort import reasoning_payload
 from libs.llm.push import PUSH_LADDER, push_rounds
 
+# APPEND-SAFE PAGING (2026-08-05). This script's two bare write_text calls are the ORIGIN CASE in
+# libs/ops/principal_page.py's docstring: on 2026-07-29 a credits-exhausted notice CLOBBERED a
+# pending Tier-3 YES/NO ask (GAP #71) off the only human-escalation channel. The shared helper was
+# built from that incident and this file was never migrated to it -- wired now.
+from libs.ops.principal_page import page as _principal_page
+
 _KEYS = Path("data/secrets/llm_panel.json")
 _MISSIONS = Path("prompts/panel_missions")
 _RESP_BUDGET = 20000  # widened to 40k for deep missions at runtime
@@ -306,12 +312,12 @@ def main() -> None:
             _alert = float(_bcfg.get("alert_at_usd", 90.0))
             print(f"panel: month-to-date spend ${_mtd:.2f} of ${_env:.2f} envelope")
             if _mtd + _need > _env:
-                Path("data/PRINCIPAL_ACTION.md").write_text(
+                _principal_page(
                     f"BUDGET DECISION: OpenRouter month-to-date ${_mtd:.2f} + this run "
                     f"~${_need:.2f} would exceed the ${_env:.2f}/mo envelope you set "
                     "(2026-07-24). Per your no-degradation order this run was ABORTED rather "
                     "than degraded -- raise the envelope in data/panel_budget.json or skip "
-                    "this cycle's paid panel.\n", encoding="utf-8")
+                    "this cycle's paid panel.", marker="BUDGET DECISION:")
                 _bstp.write_text(json.dumps(_bst, indent=1), encoding="utf-8")
                 raise SystemExit(
                     f"panel: ABORTED -- monthly envelope (${_env:.2f}) would be exceeded "
@@ -334,12 +340,12 @@ def main() -> None:
         except Exception as _be:
             print(f"panel: budget guard unavailable ({_be!r}) -- proceeding on balance check")
         if _left < _need:
-            Path("data/PRINCIPAL_ACTION.md").write_text(
+            _principal_page(
                 f"PURCHASE DECISION: OpenRouter credits exhausted (balance ${_left:.2f}, a "
                 f"panel run needs ~${_need:.2f}). The external review panel is DOWN and the "
                 "audit-coverage sweep is stalled until topped up at openrouter.ai -> Credits. "
                 "Recommended $25 (~6 weeks) or $50 (~3 months). No key change needed. Book, "
-                "rails, pager and brain are unaffected.\n", encoding="utf-8")
+                "rails, pager and brain are unaffected.", marker="PURCHASE DECISION:")
             # NO COST-DRIVEN DEGRADATION (principal 2026-07-20): we never CHOOSE a
             # cheaper roster to save money -- but an unfunded outage must not mean ZERO
             # external review. Fall back to the strongest FREE seats, label the output

@@ -43,29 +43,83 @@ THREE DESIGN CONSEQUENCES, each aimed at one of those failures:
        history, so the archive exists only because the desk was recording. Being early is the moat,
        not exclusivity.
 
-Pure stdlib + optional pandas (parquet). Import from ``libs.research.data_registry``; the CLI is
-``scripts/build_data_registry.py``.
+FOURTH CONSEQUENCE, added 2026-08-05: A SPAN IS NOT EVIDENCE UNTIL ITS HOLES ARE SUBTRACTED.
+``t = SR * sqrt(years)`` is the only lever ``docs/research/gate_power_audit.md`` measured as moving
+power at all, and ``data/type2_cost.json`` records 119 of 228 negatives UNDERPOWERED -- so the
+number an organ reads off this registry when it chooses what to test deeply is a number that
+directly sizes a t-stat. Reporting ``first..last`` alone repeats row #77's overstatement in a new
+place: the desk's own BTCUSDT daily cache runs 2020-12-01..2026-07-31 (2069 elapsed days) but is
+MISSING 2025-10 entirely -- 2038 observed days. Quoting 5.66 years there is a 1.6 % overstatement of
+sqrt-t on one series and a much larger one on any feed whose recorder died for a season. So every
+measured span now also carries ``observed_days``, the gap runs that separate them, and
+``evidence_years`` -- observed days, not elapsed days -- which is the term a power calculation may
+use. For a PANEL the same trap has a second shape: 25 symbols whose union spans 2069 days is not a
+25-symbol 2069-day panel if 4 of them start in 2023, so ``balanced_first/last/days`` report the
+window EVERY partition actually covers.
+
+FIFTH: NOT-READABLE-HERE IS A MEASUREMENT, WITH AN ADDRESS. This checkout is not the collecting box.
+The moat tape, the recorder output and most declared collector paths live only on the VPS, and an
+asset that cannot be opened here is recorded ``readable_here=False`` with ``missing_path`` naming
+the EXACT path that was absent -- never 0, never a guess, and never a span quietly omitted. The
+same ``scripts/build_data_registry.py`` run on the VPS completes exactly those rows, which is why
+the script bootstraps its own ``sys.path`` and holds no repo-root assumption.
+
+Pure stdlib + optional pandas (parquet) / numpy (npz). Import from ``libs.research.data_registry``;
+the CLI is ``scripts/build_data_registry.py``.
 """
 
 from __future__ import annotations
 
 import json
 import re
-from collections.abc import Mapping
-from dataclasses import asdict, dataclass, field
+from collections.abc import Iterable, Mapping
+from dataclasses import asdict, dataclass, field, replace
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
 _ROOT = Path(__file__).resolve().parents[2]
+#: this module, excluded from its own consumer grep -- declaring a path is not reading the data
+_SELF = "libs/research/data_registry.py"
 
 #: Column names that carry a row's date, most-specific first. A dataset whose date lives under a
 #: name absent here is reported ``no-date-column`` rather than silently spanless -- the whole point
 #: is that an unmeasured span is visible.
-_DATE_COLS = ("date", "day", "ts", "timestamp", "time", "open_time", "dt", "datetime")
+#:
+#: The tail of this tuple was added 2026-08-05 after four assets that ARE readable on this box read
+#: ``no-date-column`` and therefore counted as unmeasured: ``drill_log``/``copytrading_panel`` key
+#: their timestamp ``at``, ``exchange_announcements`` uses ``published_at``, ``model_upgrade_log``
+#: uses ``generated``. "The desk has no span for it" and "the desk did not look under the right
+#: key" are different findings and only one of them is about the data. ORDER IS LOAD-BEARING and
+#: the rule is OBSERVATION TIME BEFORE INGEST TIME: the scan stops at the first key present, so a
+#: record carrying both ``stamp`` and ``first_seen_utc`` must be read on the stamp -- a backfilled
+#: feed's first_seen is TODAY on every row and would report a 3-month series as one day. ``at`` is
+#: LAST because it is the least specific of all.
+_DATE_COLS = ("date", "day", "ts", "ts_ms", "timestamp", "time", "open_time", "dt", "datetime",
+              "published_at", "stamp", "generated", "created_at", "recorded_at", "as_of",
+              "run_at", "first_seen", "first_seen_utc", "at")
+
+#: Array names inside an ``.npz`` cache that carry the observation clock, most-specific first.
+_NPZ_TIME_KEYS = ("open_time", "time", "ts", "timestamp", "date", "funding_time")
 
 #: Where partitioned trees live. Depth-2 under the axis dir is ``<SYM>/<TF>/`` (the shape that was
 #: invisible to the flat inventory); depth-1 is ``<SYM>/``.
 _LAKE = "data/lake/bronze"
+
+#: Flat directories of ``<SYM>-<INTERVAL>-<START>-<END>.npz`` caches. Same row-#77 shape as the
+#: lake -- a panel invisible to a flat scan -- but partitioned by FILENAME rather than by
+#: directory, which is why the lake sweep alone never saw it. ``data/binance_vision`` is the
+#: longest PRICE history this checkout holds and was absent from the desk's own map entirely.
+_NPZ_CACHES = ("data/binance_vision",)
+
+#: Reported instead of a span when the declared path is not on this box. The house spelling
+#: (``libs/execution/economics.py``:51, ``libs/research/mechanism_census.py``:166) so an operator
+#: greps one token across every artifact that has to admit the same thing.
+NOT_READABLE_HERE = "NOT-READABLE-HERE"
+
+#: Days per year used to turn a day count into the ``sqrt(years)`` term of a t-stat. Julian, to
+#: match libs/validation's convention rather than inventing a second calendar here.
+DAYS_PER_YEAR = 365.25
 
 #: How hard is this to obtain if the desk lost it today? This decides MOAT, not size.
 REPL_REFETCHABLE = "public-refetchable"    #: anyone can re-download the full history -> no moat
@@ -83,16 +137,47 @@ _PROPRIETARY = ("moat", "orderbook", "book_snapshot", "venue_truth")
 
 @dataclass(frozen=True)
 class AssetSpan:
-    """A dataset's real time extent. ``None`` fields mean UNMEASURED, and ``status`` says why."""
+    """A dataset's real time extent. ``None`` fields mean UNMEASURED, and ``status`` says why.
+
+    The first four fields are the original contract and keep their positions -- callers construct
+    this positionally. Everything after them answers the question ``first..last`` cannot: how much
+    of that window is actually OBSERVED. ``days`` is elapsed calendar time; ``observed_days`` is
+    days carrying at least one row; the difference is ``gap_days``, broken out into the runs that
+    produced it. ``evidence_years`` is the honest input to ``t = SR*sqrt(years)`` -- a 5-year span
+    with a 2-year hole is 3 years of evidence and must never be quoted as 5.
+    """
 
     first: str | None = None
     last: str | None = None
     days: int | None = None
     status: str = "unmeasured"
+    #: elapsed years, first..last inclusive. Overstates evidence whenever gap_days > 0.
+    years: float | None = None
+    #: distinct calendar days carrying >=1 observation. None = the day set was sampled, not counted.
+    observed_days: int | None = None
+    gap_days: int | None = None
+    n_gaps: int | None = None
+    largest_gap_days: int | None = None
+    largest_gap_from: str | None = None      #: first missing day of the largest run
+    largest_gap_to: str | None = None        #: last missing day of the largest run
+    #: observed_days in years -- the term a power calculation may use. NEVER `years` when gapped.
+    evidence_years: float | None = None
+    #: PANEL ONLY: the window every partition covers. A union span flatters a ragged panel.
+    balanced_first: str | None = None
+    balanced_last: str | None = None
+    balanced_days: int | None = None
+    #: False when the declared path could not be opened on this box; missing_path names which.
+    readable_here: bool = True
+    missing_path: str | None = None
 
     @property
     def measured(self) -> bool:
         return self.status == "measured"
+
+    @property
+    def gapped(self) -> bool:
+        """True only when holes were MEASURED and found. Unmeasured gaps are not 'no gaps'."""
+        return self.gap_days is not None and self.gap_days > 0
 
 
 @dataclass(frozen=True)
@@ -176,7 +261,66 @@ def _iso_day(v: Any) -> str | None:
     return None
 
 
-def _span_from_days(days: list[str]) -> AssetSpan:
+def _years(days: int | None) -> float | None:
+    return None if days is None else round(days / DAYS_PER_YEAR, 3)
+
+
+@dataclass(frozen=True)
+class DayGaps:
+    """Internal holes in an observed day set. Every field measured from the days themselves."""
+
+    observed_days: int
+    gap_days: int
+    n_gaps: int
+    largest_gap_days: int
+    largest_gap_from: str | None
+    largest_gap_to: str | None
+
+
+def measure_gaps(days: Iterable[str]) -> DayGaps | None:
+    """Holes between the first and last observed day. ``None`` when there is nothing to measure.
+
+    A "gap" is a maximal run of consecutive calendar days carrying NO observation, strictly inside
+    first..last -- leading/trailing absence is not a hole, it is just where the record begins and
+    ends. ``gap_days`` is therefore exactly ``elapsed_days - observed_days``, which is the identity
+    that makes the two numbers impossible to quietly disagree.
+
+    This is deliberately cadence-blind. A daily bar series missing a month and an event log that is
+    simply quiet for a month produce the same numbers, and that is correct for the use this feeds:
+    both give the desk the same number of days on which it holds evidence, which is what sizes t.
+    """
+    from datetime import date, timedelta
+
+    ds = sorted({d for d in days if d})
+    if len(ds) < 2:
+        return None
+    try:
+        parsed = [date.fromisoformat(d) for d in ds]
+    except ValueError:
+        return None
+    runs: list[tuple[int, date, date]] = []
+    for prev, cur in pairwise(parsed):
+        missing = (cur - prev).days - 1
+        if missing > 0:
+            runs.append((missing, prev + timedelta(days=1), cur - timedelta(days=1)))
+    biggest = max(runs, default=None, key=lambda r: r[0])
+    return DayGaps(
+        observed_days=len(parsed),
+        gap_days=sum(r[0] for r in runs),
+        n_gaps=len(runs),
+        largest_gap_days=0 if biggest is None else biggest[0],
+        largest_gap_from=None if biggest is None else biggest[1].isoformat(),
+        largest_gap_to=None if biggest is None else biggest[2].isoformat(),
+    )
+
+
+def _span_from_days(days: Iterable[str], *, complete: bool = True) -> AssetSpan:
+    """Span from observed days. ``complete=False`` means the caller only knows the EXTREMES.
+
+    A sampled day set can prove where a record starts and ends but cannot prove there are no holes
+    between, so the gap fields stay ``None`` rather than reading as a clean panel. "Not measured"
+    and "measured and continuous" are the exact pair this module refuses to conflate.
+    """
     from datetime import date
 
     ds = sorted(d for d in days if d)
@@ -186,12 +330,32 @@ def _span_from_days(days: list[str]) -> AssetSpan:
         n = (date.fromisoformat(ds[-1]) - date.fromisoformat(ds[0])).days + 1
     except ValueError:
         return AssetSpan(first=ds[0], last=ds[-1], status="measured")
-    return AssetSpan(first=ds[0], last=ds[-1], days=n, status="measured")
+    span = AssetSpan(first=ds[0], last=ds[-1], days=n, status="measured", years=_years(n))
+    if not complete:
+        return span
+    g = measure_gaps(ds)
+    if g is None:
+        return replace(span, observed_days=len(set(ds)), gap_days=0, n_gaps=0,
+                       largest_gap_days=0, evidence_years=_years(len(set(ds))))
+    return replace(span, observed_days=g.observed_days, gap_days=g.gap_days, n_gaps=g.n_gaps,
+                   largest_gap_days=g.largest_gap_days, largest_gap_from=g.largest_gap_from,
+                   largest_gap_to=g.largest_gap_to, evidence_years=_years(g.observed_days))
 
 
-def _measure_jsonl(p: Path) -> tuple[AssetSpan, int | None, int | None]:
-    """Span/rows/breadth for newline-delimited JSON, streamed (these grow unbounded)."""
-    days: list[str] = []
+@dataclass(frozen=True)
+class Measurement:
+    """One file, opened and read. ``days`` is the FULL observed day set, which is what makes the
+    internal-gap numbers measurable rather than inferred from the two extremes."""
+
+    span: AssetSpan
+    rows: int | None = None
+    breadth: int | None = None
+    days: frozenset[str] = frozenset()
+
+
+def _measure_jsonl(p: Path) -> Measurement:
+    """Span/rows/breadth/days for newline-delimited JSON, streamed (these grow unbounded)."""
+    days: set[str] = set()
     syms: set[str] = set()
     rows = 0
     try:
@@ -210,55 +374,122 @@ def _measure_jsonl(p: Path) -> tuple[AssetSpan, int | None, int | None]:
                     if c in rec:
                         d = _iso_day(rec[c])
                         if d:
-                            days.append(d)
+                            days.add(d)
                         break
                 for k in ("symbol", "sym", "ticker", "pair", "asset"):
                     if rec.get(k):
                         syms.add(str(rec[k]))
                         break
     except OSError:
-        return AssetSpan(status="unreadable"), None, None
-    # keep only the extremes; holding every day of a multi-year feed is pointless memory
-    return _span_from_days(days), rows, len(syms) or None
+        return Measurement(AssetSpan(status="unreadable"))
+    # the DISTINCT day set, not one entry per row: it is bounded by the span in days, and it is the
+    # only thing that can prove a HOLE. Keeping just the extremes cannot, which is why it stopped.
+    return Measurement(_span_from_days(days), rows, len(syms) or None, frozenset(days))
 
 
-def _measure_parquet(p: Path) -> tuple[AssetSpan, int | None, int | None]:
+def _measure_parquet(p: Path) -> Measurement:
     try:
         import pandas as pd
     except ImportError:
-        return AssetSpan(status="no-parquet-reader"), None, None
+        return Measurement(AssetSpan(status="no-parquet-reader"))
     try:
         df = pd.read_parquet(p)
     except Exception:
-        return AssetSpan(status="unreadable"), None, None
+        return Measurement(AssetSpan(status="unreadable"))
     rows = len(df)
     col = next((c for c in _DATE_COLS if c in df.columns), None)
     if col is None:
         idx = df.index
         got = getattr(idx, "is_all_dates", False) or "datetime" in str(getattr(idx, "dtype", ""))
         if not got:
-            return AssetSpan(status="no-date-column"), rows, None
-        days = [d for d in (_iso_day(v) for v in (idx.min(), idx.max())) if d]
+            return Measurement(AssetSpan(status="no-date-column"), rows)
+        days = {d for d in (_iso_day(v) for v in idx) if d}
     else:
         s = df[col].dropna()
-        days = [d for d in (_iso_day(s.min()), _iso_day(s.max())) if d] if len(s) else []
+        days = {d for d in (_iso_day(v) for v in s) if d} if len(s) else set()
     breadth = None
     for k in ("symbol", "sym", "ticker", "pair", "asset"):
         if k in df.columns:
             breadth = int(df[k].nunique())
             break
-    return _span_from_days(days), rows, breadth
+    return Measurement(_span_from_days(days), rows, breadth, frozenset(days))
 
 
-def measure_span(path: Path) -> tuple[AssetSpan, int | None, int | None]:
-    """(span, rows, breadth) for one file. Absent is ``absent``, never a zero-length span."""
+#: ``date(1970, 1, 1).toordinal()`` -- epoch day zero, for the vectorised day extraction below.
+_EPOCH_ORDINAL = 719163
+
+
+def _days_from_epoch(arr: Any) -> set[str] | None:
+    """Distinct UTC days from a numeric epoch array, vectorised. ``None`` if it is not numeric.
+
+    Per-element ``_iso_day`` is fine for a jsonl ledger and wrong for a bar cache: the 5-minute
+    binance_vision panel is ~950k timestamps and this runs daily. The unit is inferred from the
+    array's own median with the same plausibility band ``_iso_day`` uses, so s/ms/us/ns all land.
+    """
+    from datetime import date
+
+    import numpy as np
+
+    try:
+        t = np.asarray(arr, dtype="float64").ravel()
+    except (TypeError, ValueError):
+        return None
+    t = t[np.isfinite(t)]
+    if not t.size:
+        return set()
+    mid = float(np.median(t))
+    div = next((d for d in (1.0, 1e3, 1e6, 1e9) if 3e8 < mid / d < 4e9), None)
+    if div is None:
+        return None
+    ordinals = np.unique(np.floor(t / div / 86400.0)).astype("int64")
+    return {date.fromordinal(_EPOCH_ORDINAL + int(o)).isoformat() for o in ordinals}
+
+
+def _measure_npz(p: Path) -> Measurement:
+    """Span/rows/days for a numpy ``.npz`` cache -- the shape ``data/binance_vision`` holds.
+
+    Only the time array is decompressed (``np.load`` on an npz is lazy per-array), so measuring a
+    3-year 5-minute cache costs one column rather than the whole file.
+    """
+    try:
+        import numpy as np
+    except ImportError:                                    # pragma: no cover - numpy is a hard dep
+        return Measurement(AssetSpan(status="no-npz-reader"))
+    try:
+        with np.load(p, allow_pickle=True) as z:
+            key = next((k for k in _NPZ_TIME_KEYS if k in z.files), None)
+            if key is None:
+                return Measurement(AssetSpan(status="no-date-column"))
+            arr = z[key]
+            rows = int(arr.shape[0]) if arr.ndim else 0
+            fast = _days_from_epoch(arr)
+            # a string/object clock (rare, but "date" is a legal key here) falls back to the
+            # per-element reader rather than being reported dateless
+            days = fast if fast is not None else {d for d in (_iso_day(v) for v in arr.tolist())
+                                                  if d}
+    except Exception:
+        return Measurement(AssetSpan(status="unreadable"))
+    return Measurement(_span_from_days(days), rows, None, frozenset(days))
+
+
+def measure(path: Path) -> Measurement:
+    """Open one file and measure it. An absent path is NOT-READABLE-HERE, never a zero-day span."""
     if not path.exists():
-        return AssetSpan(status="absent"), None, None
+        return Measurement(AssetSpan(status="absent", readable_here=False,
+                                     missing_path=path.as_posix()))
     if path.suffix == ".parquet":
         return _measure_parquet(path)
     if path.suffix in (".jsonl", ".ndjson"):
         return _measure_jsonl(path)
-    return AssetSpan(status="unsupported-format"), None, None
+    if path.suffix == ".npz":
+        return _measure_npz(path)
+    return Measurement(AssetSpan(status="unsupported-format"))
+
+
+def measure_span(path: Path) -> tuple[AssetSpan, int | None, int | None]:
+    """(span, rows, breadth) for one file -- the original 3-tuple contract, unchanged."""
+    m = measure(path)
+    return m.span, m.rows, m.breadth
 
 
 def measure_quality(path: Path, span: AssetSpan, rows: int | None,
@@ -353,31 +584,91 @@ def score(asset: DataAsset) -> tuple[float, float]:
 
 # --------------------------------------------------------------------------- discovery
 
-def _writers_and_readers(root: Path) -> tuple[dict[str, str], dict[str, list[str]]]:
+#: A data path written as ONE string literal, e.g. data slash name dot jsonl. Deliberately spelled
+#: out in prose rather than shown: this module is itself inside the corpus these patterns scan, and
+#: an EXAMPLE in a comment here was discovered as a declared asset and reported NOT-READABLE-HERE --
+#: the registry inflating its own denominator with a path nothing writes. ``_SELF`` now skips this
+#: file outright; the prose keeps the trap from being re-set by the next person to add an example.
+_SLASH_PATH = re.compile(r'["\']((?:data/)[A-Za-z0-9_./-]+\.(?:parquet|jsonl|ndjson|npz))["\']')
+#: The SAME asset spelled as a Path join of directory and filename. Missing this form is the
+#: flat-hand-list defect wearing a different hat: ``data/source_health.jsonl`` is a live ledger
+#: that ``scripts/hunt_source_alternatives.py`` reads every day and it was absent from the desk's
+#: own map because ``libs/research/source_health.py`` joins its path instead of spelling it.
+_JOIN_PATH = re.compile(
+    r'["\']data["\']\s*[,/]\s*["\']([A-Za-z0-9_.\-]+\.(?:parquet|jsonl|ndjson|npz))["\']')
+
+
+_WRITE_CALL = re.compile(r"to_parquet|write_text|open\([^)]*[\"']a|\.write\(|dump|append|savez")
+#: ``_CACHE = _ROOT / "data" / "binance_vision"`` -- the constant a module binds a directory to.
+_BINDS_DIR = re.compile(r"([A-Za-z_]\w*)\s*=[^=\n]*$")
+
+
+def _dir_ref_pattern(rel: str) -> re.Pattern[str]:
+    """Match a DIRECTORY asset named either as one literal or as a Path join of its segments.
+
+    A partitioned asset is addressed by its directory, never by a filename, so the file-path
+    patterns above cannot see its consumers: ``data/binance_vision`` is loaded by three research
+    scripts through ``_ROOT / "data" / "binance_vision"`` and the registry reported it as history
+    NOBODY READS -- row #77's own paralysis finding, produced by the registry's blind spot rather
+    than by the desk's behaviour. A false paralysis alarm spends exactly the attention a real one
+    needs.
+    """
+    segs = rel.split("/")
+    join = r"\s*[,/]\s*".join(f'["\']{re.escape(s)}["\']' for s in segs)
+    return re.compile(f'["\']{re.escape(rel)}["\']|{join}')
+
+
+def _writers_and_readers(
+    root: Path, dirs: Iterable[str] = (),
+) -> tuple[dict[str, str], dict[str, list[str]]]:
     """Map data paths -> the script that writes them, and -> scripts that read them.
 
     Grep-derived on purpose: a hand-kept owner column is the field most likely to be stale, and a
-    stale OWNER is how row #77's inventory drifted from reality in the first place.
+    stale OWNER is how row #77's inventory drifted from reality in the first place. ``dirs`` are
+    partitioned assets, addressed by directory rather than by filename.
     """
     writers: dict[str, str] = {}
     readers: dict[str, list[str]] = {}
-    pat = re.compile(r'["\']((?:data/)[A-Za-z0-9_./-]+\.(?:parquet|jsonl|ndjson))["\']')
+    dir_pats = [(d, _dir_ref_pattern(d)) for d in sorted(set(dirs))]
+
+    def record(path: str, rel: str, near: str) -> None:
+        if _WRITE_CALL.search(near):
+            writers.setdefault(path, rel)
+        else:
+            readers.setdefault(path, [])
+            if rel not in readers[path]:
+                readers[path].append(rel)
+
     for py in sorted((root / "scripts").glob("*.py")) + sorted((root / "libs").rglob("*.py")):
         try:
             src = py.read_text("utf-8", errors="replace")
         except OSError:
             continue
         rel = py.relative_to(root).as_posix()
-        for m in pat.finditer(src):
-            path = m.group(1)
+        if rel == _SELF:
+            # This module names data paths as PATTERNS and EXAMPLES, never as data it reads or
+            # writes. Scanning itself turned a comment's example into a declared-but-absent asset.
+            continue
+        for m in _SLASH_PATH.finditer(src):
             # a writer names the path near a write call; everything else is a reader
-            near = src[max(0, m.start() - 220):m.end() + 220]
-            if re.search(r"to_parquet|write_text|open\([^)]*[\"']a|\.write\(|dump|append", near):
-                writers.setdefault(path, rel)
-            else:
-                readers.setdefault(path, [])
-                if rel not in readers[path]:
-                    readers[path].append(rel)
+            record(m.group(1), rel, src[max(0, m.start() - 220):m.end() + 220])
+        for m in _JOIN_PATH.finditer(src):
+            record(f"data/{m.group(1)}", rel, src[max(0, m.start() - 220):m.end() + 220])
+        for d, pat in dir_pats:
+            for m in pat.finditer(src):
+                # A DIRECTORY asset defeats the proximity rule above: the fetcher binds the dir at
+                # module level and does its np.savez 90 lines later, while a reader passes the same
+                # dir as a kwarg next to unrelated dump/append text. The signal that separates them
+                # is mkdir -- a consumer never creates the directory it reads from.
+                line = src[src.rfind("\n", 0, m.start()) + 1:m.end()]
+                bind = _BINDS_DIR.match(line.strip())
+                name = bind.group(1) if bind is not None else None
+                if name is not None and re.search(rf"\b{re.escape(name)}\.mkdir\(", src):
+                    writers.setdefault(d, rel)
+                else:
+                    readers.setdefault(d, [])
+                    if rel not in readers[d]:
+                        readers[d].append(rel)
     return writers, readers
 
 
@@ -440,6 +731,19 @@ def _cadence_hours(root: Path) -> dict[str, float]:
     return out
 
 
+@dataclass(frozen=True)
+class _Panel:
+    """A dataset that is many files. ``partitions`` is the exact partition map, never a sample."""
+
+    id: str
+    rel: str                              #: repo-relative dir, used for writer/reader lookup
+    display: str                          #: what goes in the artifact's ``path``
+    files: list[Path]                     #: every member on disk
+    members: list[Path]                   #: the members actually opened
+    partitions: dict[str, list[Path]]     #: partition key -> its files
+    note: str
+
+
 def _partitioned_assets(root: Path) -> list[tuple[str, Path, list[Path]]]:
     """(id, axis_dir, member files) for each partitioned lake tree.
 
@@ -457,15 +761,125 @@ def _partitioned_assets(root: Path) -> list[tuple[str, Path, list[Path]]]:
     return out
 
 
-def build(root: Path | None = None, *, deep: bool = False) -> list[DataAsset]:
-    """Discover and MEASURE every data asset. ``deep`` measures every partition member.
+def _lake_panels(root: Path, *, deep: bool) -> list[_Panel]:
+    panels = []
+    for aid, axis_dir, files in _partitioned_assets(root):
+        sample = files[:1] + files[len(files) // 2:len(files) // 2 + 1] + files[-1:]
+        # dict.fromkeys dedupes while keeping order: a 1- or 2-file tree would otherwise "sample"
+        # the same file three times and then read as sampled when it was in fact read whole.
+        members = files if deep else list(dict.fromkeys(sample))
+        parts: dict[str, list[Path]] = {}
+        for f in files:
+            parts.setdefault(f.relative_to(axis_dir).parts[0], []).append(f)
+        rel = axis_dir.relative_to(root).as_posix()
+        panels.append(_Panel(
+            id=aid, rel=rel, display=rel + "/**", files=files, members=members, partitions=parts,
+            note=(f"{len(files)} partition file(s) across {len(parts)} partition(s)"
+                  + ("" if deep else f"; span sampled from {len(members)}, breadth exact"))))
+    return panels
 
-    Without ``deep`` a partitioned tree is measured from a sample of members (first/middle/last),
-    which is what makes a 267-symbol daily panel affordable to register every day. Breadth is
-    always exact -- it is a directory count, not a sample.
+
+#: ``<SYM>-<INTERVAL>-<START>-<END>.npz`` -- the fetcher writes provenance into the FILENAME
+#: (scripts/fetch_binance_vision.py:119), so the partition key is readable without opening anything.
+_NPZ_NAME = re.compile(r"^([A-Z0-9]+)-([0-9]+[smhdwM])-(\d{4}-\d{2})-(\d{4}-\d{2})$")
+
+
+def _npz_panels(root: Path) -> list[_Panel]:
+    """One panel per (cache dir, bar interval) -- row #77's shape a third time.
+
+    ``data/binance_vision`` is 55 files of 5.7-year daily and 3-year intraday USD-M perp history and
+    it was invisible to BOTH existing sweeps: the flat scan only knows parquet/jsonl, and the lake
+    sweep only walks ``data/lake/bronze``. It is the longest PRICE history this checkout holds,
+    three research scripts already load from it, and the desk's map carried no row for it at all.
+
+    Split by INTERVAL because a 5-minute panel and a daily panel bound completely different studies
+    and merging them would report one span for two datasets. Every member is opened -- an npz reads
+    one lazily-decompressed column, so exactness is affordable here in a way it is not for the lake.
+    """
+    panels = []
+    for cache in _NPZ_CACHES:
+        d = root / cache
+        if not d.is_dir():
+            continue
+        by_interval: dict[str, dict[str, list[Path]]] = {}
+        for f in sorted(d.glob("*.npz")):
+            m = _NPZ_NAME.match(f.stem)
+            key, sym = (m.group(2), m.group(1)) if m is not None else ("unkeyed", f.stem)
+            by_interval.setdefault(key, {}).setdefault(sym, []).append(f)
+        for interval, parts in sorted(by_interval.items()):
+            files = sorted(f for fs in parts.values() for f in fs)
+            panels.append(_Panel(
+                id=f"{d.name}_{interval}", rel=cache,
+                display=f"{cache}/*-{interval}-*.npz",
+                files=files, members=files, partitions=parts,
+                note=(f"{len(files)} cache file(s) across {len(parts)} symbol(s) at {interval}; "
+                      "every member measured")))
+    return panels
+
+
+def _balanced_window(firsts: list[str], lasts: list[str]) -> tuple[str | None, str | None,
+                                                                  int | None]:
+    """The window EVERY partition covers: latest start, earliest end.
+
+    A union span flatters a ragged panel and that flattery is expensive. ``binance_vision_1d`` is a
+    25-symbol panel whose union runs 2069 days, but 4 symbols only start in 2023-08: a study that
+    uses all 25 has 1096 days of cross-section, not 2069, and sizing it off the union would
+    overstate ``sqrt(years)`` by 38 %.
+    """
+    from datetime import date
+
+    if not firsts or not lasts or len(firsts) != len(lasts):
+        return None, None, None
+    lo, hi = max(firsts), min(lasts)
+    try:
+        n = (date.fromisoformat(hi) - date.fromisoformat(lo)).days + 1
+    except ValueError:
+        return None, None, None
+    return (lo, hi, n) if n > 0 else (lo, hi, 0)
+
+
+def _gap_notes(span: AssetSpan) -> list[str]:
+    """Say the overstatement out loud ON THE ROW, so nobody has to join two fields to see it."""
+    if not span.gapped or span.days is None or span.observed_days is None:
+        return []
+    return [f"GAPPED: {span.days}d elapsed but only {span.observed_days}d observed "
+            f"({span.gap_days}d missing in {span.n_gaps} run(s), largest {span.largest_gap_days}d "
+            f"{span.largest_gap_from}..{span.largest_gap_to}) -- this is "
+            f"{span.evidence_years}y of evidence, NOT {span.years}y"]
+
+
+def _partition_gap_note(holes: list[tuple[str, AssetSpan]], breadth: int) -> list[str]:
+    """A panel's UNION span hides a per-partition hole: one symbol's dead month is covered by the
+    other 24. That is the right union number and the wrong answer for a per-symbol study, so the
+    holes are named separately rather than averaged away."""
+    if not holes:
+        return []
+    named = "; ".join(f"{k} -{s.gap_days}d ({s.largest_gap_from}..{s.largest_gap_to})"
+                      for k, s in holes[:3])
+    tail = f" and {len(holes) - 3} more" if len(holes) > 3 else ""
+    return [f"PARTITION HOLES: {len(holes)}/{breadth} partition(s) have internal gaps the union "
+            f"span hides -- {named}{tail}"]
+
+
+def _not_readable_note(rel: str) -> str:
+    """One sentence, one address. An operator must be able to grep the token and get a path."""
+    return (f"{NOT_READABLE_HERE}: {rel} is declared by the desk's own code but NOT PRESENT on "
+            f"this box -- span UNMEASURED, not zero and not guessed (this box may not be the "
+            f"collecting box; the VPS run of scripts/build_data_registry.py completes this row)")
+
+
+def build(root: Path | None = None, *, deep: bool = False) -> list[DataAsset]:
+    """Discover and MEASURE every data asset. ``deep`` measures every lake partition member.
+
+    Without ``deep`` a lake tree is measured from a sample of members (first/middle/last), which is
+    what makes a 267-symbol daily panel affordable to register every day; the sampled span keeps its
+    gap fields UNMEASURED rather than reading as hole-free. Breadth is always exact -- it is a
+    partition count, not a sample. npz caches are always measured in full (one column per file).
     """
     root = root or _ROOT
-    writers, readers = _writers_and_readers(root)
+    # panels first: their directories are what the consumer grep must also look for
+    panels = _lake_panels(root, deep=deep) + _npz_panels(root)
+    writers, readers = _writers_and_readers(root, {p.rel for p in panels})
     cadence = _cadence_hours(root)
     assets: list[DataAsset] = []
     seen: set[str] = set()
@@ -479,7 +893,10 @@ def build(root: Path | None = None, *, deep: bool = False) -> list[DataAsset]:
             continue
         seen.add(rel)
         aid = Path(rel).stem
-        span, rows, breadth = measure_span(p)
+        m = measure(p)
+        span, rows, breadth = m.span, m.rows, m.breadth
+        if not span.readable_here:
+            span = replace(span, missing_path=rel)
         collector = writers.get(rel)
         cad = cad_for(collector)
         a = DataAsset(
@@ -495,46 +912,70 @@ def build(root: Path | None = None, *, deep: bool = False) -> list[DataAsset]:
             last_validated=_mtime_day(p),
         )
         if span.status == "absent":
-            a.notes.append("declared by a collector but NOT PRESENT on this box -- span "
-                           "unmeasured, not zero (this box may not be the collecting box)")
+            a.notes.append(_not_readable_note(rel))
+        a.notes += _gap_notes(span)
         a.moat_score, a.research_value = score(a)
         assets.append(a)
 
-    for aid, axis_dir, files in _partitioned_assets(root):
-        members = files if deep else (files[:1] + files[len(files) // 2:len(files) // 2 + 1]
-                                      + files[-1:])
-        days: list[str] = []
+    for panel in panels:
+        complete = len(panel.members) == len(panel.files)
+        days: set[str] = set()
+        firsts: list[str] = []
+        lasts: list[str] = []
         rows = 0
-        for f in members:
-            s, r, _ = measure_span(f)
-            rows += r or 0
-            days += [d for d in (s.first, s.last) if d]
-        # breadth is the EXACT partition count, never the sample size
-        breadth = len({f.relative_to(axis_dir).parts[0] for f in files})
-        rel = axis_dir.relative_to(root).as_posix()
-        coll = writers.get(rel)
+        owner = {f: k for k, fs in panel.partitions.items() for f in fs}
+        per_partition: dict[str, tuple[list[str], list[str]]] = {}
+        holes: list[tuple[str, AssetSpan]] = []
+        for f in panel.members:
+            mm = measure(f)
+            rows += mm.rows or 0
+            days |= mm.days
+            if mm.span.gapped:
+                holes.append((f.stem, mm.span))
+            if mm.span.first is not None and mm.span.last is not None:
+                lo, hi = per_partition.setdefault(owner.get(f, f.stem), ([], []))
+                lo.append(mm.span.first)
+                hi.append(mm.span.last)
+        holes.sort(key=lambda h: -(h[1].gap_days or 0))
+        for lo_list, hi_list in per_partition.values():
+            firsts.append(min(lo_list))
+            lasts.append(max(hi_list))
+        span = _span_from_days(days, complete=complete)
+        if complete and span.measured:
+            b_first, b_last, b_days = _balanced_window(firsts, lasts)
+            span = replace(span, balanced_first=b_first, balanced_last=b_last,
+                           balanced_days=b_days)
+        breadth = len(panel.partitions)          # EXACT partition count, never the sample size
+        coll = writers.get(panel.rel)
         cad = cad_for(coll)
-        span = _span_from_days(days)
         a = DataAsset(
-            id=aid, path=rel + "/**", kind="partitioned",
-            collector=coll, consumers=readers.get(rel, []),
-            dependencies=_dependencies_of(coll, rel, readers),
+            id=panel.id, path=panel.display, kind="partitioned",
+            collector=coll, consumers=readers.get(panel.rel, []),
+            dependencies=_dependencies_of(coll, panel.rel, readers),
             span=span,
             # quality is measured on ONE representative member: reading 267 symbol files to score
             # the panel would cost more than the score is worth, and the failure modes it catches
             # (recorder holes, echoed values) are per-file properties anyway
-            quality=measure_quality(members[0], span, rows, breadth) if members else DataQuality(),
-            rows=rows if deep else None,
+            quality=(measure_quality(panel.members[0], span, rows, breadth)
+                     if panel.members else DataQuality()),
+            rows=rows if complete else None,
             breadth=breadth,
-            bytes=sum(f.stat().st_size for f in files),
+            bytes=sum(f.stat().st_size for f in panel.files),
             cadence_h=cad,
-            replication=classify_replication(aid),
+            replication=classify_replication(panel.id),
             maintenance_runs_per_day=(round(24.0 / cad, 2) if cad else None),
             needs_credentials=_needs_credentials(root, coll),
-            last_validated=_mtime_day(members[0]) if members else None,
+            last_validated=_mtime_day(panel.members[0]) if panel.members else None,
         )
-        a.notes.append(f"{len(files)} partition file(s) across {breadth} partition(s)"
-                       + ("" if deep else f"; span sampled from {len(members)}, breadth exact"))
+        a.notes.append(panel.note)
+        if span.balanced_days is not None and span.days is not None \
+                and span.balanced_days < span.days:
+            a.notes.append(
+                f"RAGGED PANEL: the union runs {span.days}d but only "
+                f"{span.balanced_first}..{span.balanced_last} ({span.balanced_days}d) is covered "
+                f"by all {breadth} partition(s) -- a cross-sectional study on the full breadth has "
+                f"{_years(span.balanced_days)}y, not {span.years}y")
+        a.notes += _gap_notes(span) + _partition_gap_note(holes, breadth)
         a.moat_score, a.research_value = score(a)
         assets.append(a)
 

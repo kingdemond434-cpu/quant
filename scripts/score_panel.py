@@ -22,6 +22,7 @@ import json
 from collections import defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 _LOG = Path("data/external_panel_log.jsonl")
 _VERDICTS = Path("data/panel_verdicts.jsonl")
@@ -29,7 +30,7 @@ _OUT = Path("data/panel_scorecard.json")
 _MIN_SCORED = 5
 
 
-def _read_jsonl(p: Path) -> list[dict]:
+def _read_jsonl(p: Path) -> list[dict[str, Any]]:
     if not p.exists():
         return []
     out = []

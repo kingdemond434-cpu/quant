@@ -18,6 +18,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from libs.research.capacity_policy import DEFAULT_BOOK_USD, DEFAULT_SLEEVES, capacity_fit
+
 # Meta-learned priors (multiplicative on P(survive)), distilled from the desk's resolved outcomes.
 # Each is an economic pattern, not a fitted parameter -- update ONLY when the graveyard teaches a
 # new durable lesson. See docs/institutional_knowledge.md for the evidence behind each.
@@ -31,7 +33,16 @@ _PRIORS: dict[str, float] = {
     "crowded_known": 0.35,       # published/crowded -> decayed before we arrive
 }
 _BASE_P = 0.15                   # honest base rate: most rigorously-tested candidates fail
-_EV_THRESHOLD = 0.05            # below this, reject immediately (not worth the research-hours)
+# RECALIBRATED 2026-07-31 (R0023/R0034, gate-optimality): 0.05 was dimensionally wrong for this
+# formula. Scored HONESTLY, the desk's single validated family (carry-class: p≈0.2 after priors,
+# est_sharpe 0.8, breadth 60 -> breadth_f 1.73, capacity_f≈1, orth 1, ~20h/1.5x maint) yields
+# EV ≈ 0.009 -- the old bar sat 5x ABOVE the best real candidate ever measured, so honest inputs
+# auto-rejected and only inflated est_sharpe could pass: the gate trained optimism and BLOCKED
+# two generation cycles (R0034). Hard-kill junk (price_only+narrow: p≈0.02-0.03) scores ~0.0002,
+# two orders of magnitude below carry-class, so 0.002 separates cleanly: ~10x above measured
+# junk, ~4x below measured good. A calibration test locks both reference points. Re-tune ONLY
+# from the EV-gate self-audit at n>=50 scored verdicts (constitution item 9), never by feel.
+_EV_THRESHOLD = 0.002           # below this, reject immediately (not worth the research-hours)
 
 
 @dataclass
@@ -40,7 +51,12 @@ class Idea:
     name: str
     est_sharpe: float = 0.5      # honest prior on standalone Sharpe contribution (be conservative)
     breadth: int = 20            # number of independent bets/assets the signal spans
-    capacity_usd: float = 1e6    # rough $ the edge absorbs before decay
+    # Rough $ the edge absorbs before decay. Defaulted to bare sufficiency for this book, NOT to
+    # the old $1m: an unestimated idea is not a fund-scale idea, and a seven-figure default
+    # silently assumed every unmeasured candidate was one.
+    capacity_usd: float = 200_000.0
+    book_usd: float = DEFAULT_BOOK_USD   # WHOLE book; sleeved below, since one idea is one sleeve
+    n_sleeves: int = DEFAULT_SLEEVES
     orthogonality: float = 0.5   # 0..1 correlation-complement to book (1 = fully new)
     effort_h: float = 8.0        # engineering hours to test it properly
     maintenance: float = 1.0     # ongoing upkeep multiplier (1 = light, >1 = heavy)
@@ -59,7 +75,14 @@ def ev_score(idea: Idea) -> dict[str, Any]:
     """Expected-value score + a pre-research verdict. Higher EV = more log-growth per hour."""
     p = p_survive(idea)
     breadth_f = min(idea.breadth / 20.0, 3.0) ** 0.5           # IR ~ IC*sqrt(breadth); diminishing
-    capacity_f = min(idea.capacity_usd / 1e6, 5.0) ** 0.25     # capacity matters, but sub-linearly
+    # §42 PARITY. This was `min(cap/1e6, 5)**0.25`, monotone in raw size: a $50k-capacity edge was
+    # scored 0.47 and a $5M one 1.50, a 3.2x EV penalty on precisely the capacity-bound niche
+    # PROSPECTOR_SPEC calls this desk's one structural advantage. Capacity you cannot fill is not
+    # EV -- so it now scores as sufficiency for `book_usd` and is FLAT once sufficient.
+    # `sleeve=idea.name` is what lets a DECLARED allocation actually reach the score. Without
+    # it the parameter exists and nothing ever passes it -- a knob wired to nothing.
+    capacity_f = capacity_fit(idea.capacity_usd, idea.book_usd, idea.n_sleeves,
+                              sleeve=idea.name)
     denom = max(idea.effort_h, 0.5) * max(idea.maintenance, 0.5)
     ev = (p * max(idea.est_sharpe, 0.0) * breadth_f * capacity_f
           * max(idea.orthogonality, 0.0) / denom)

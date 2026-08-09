@@ -29,6 +29,7 @@ import itertools
 import json
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 _VENUE = Path("web/venue_equity.json")
 _MARK = Path("data/live_combined_state.json")
@@ -59,7 +60,7 @@ def _mark_nav() -> float | None:
         return None
 
 
-def sample() -> dict:
+def sample() -> dict[str, Any]:
     v, m = _venue_nav(), _mark_nav()
     va, ma = _age_s(_VENUE), _age_s(_MARK)
     # A STALE feed manufactures fake divergence -- excluding it from calibration is the whole

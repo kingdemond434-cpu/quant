@@ -50,7 +50,14 @@ _ROOT = Path(__file__).resolve().parent.parent
 # window) and pages-but-does-not-block, so a governance fault never silences an organ.
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from libs.ops.fence_exit import fence_exit  # noqa: E402
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
+
+#: This one gates on `verdict`, which is computed as a strict ALLOW/BLOCK binary, so it did not
+#: have the fall-through hole the other seven had. Routed through the same helper anyway so that
+#: a THIRD verdict value added later fails closed instead of joining the `else 0` branch -- the
+#: property is that no future editor has to remember this file. Zero behaviour change today.
+_PASSING = frozenset({"ALLOW"})
 
 #: The money path: code whose defects can only be discovered by losing money.
 MONEY_PATH = (
@@ -61,6 +68,10 @@ MONEY_PATH = (
 
 LAUNCH_WINDOW_DAYS = 7
 MIN_FILLS_FOR_CONFIDENCE = 20
+
+#: The executor's published book state (run_cashcarry_executor.py:43). NOT cashcarry_state.json,
+#: which nothing has ever written -- see _rail_live.
+_STATE_REL = "data/cashcarry_positions.json"
 
 
 def _capital_event_age_days(root: Path, now: datetime) -> float | None:
@@ -89,14 +100,36 @@ def _n_fills(root: Path) -> int | None:
         return None
 
 
-def _rail_live(root: Path) -> bool | None:
+def _rail_live(root: Path) -> tuple[bool | None, str]:
+    """Is a ruin/derisk rail live? (verdict, why) -- None means UNMEASURED, never "no rail".
+
+    R0333: this read pointed at data/cashcarry_state.json, a file no organ writes, so the
+    RAIL_BREACH window could only ever be measured through the kill file. The executor publishes
+    `last_risk_action` (run_cashcarry_executor.py, latched each tick) into
+    data/cashcarry_positions.json. The three failure modes are now named separately: an absent
+    file, a torn/unparseable one and one whose schema lacks the key are different facts about
+    the box, and none of them is evidence that no rail is live.
+    """
     if (root / "data/CASHCARRY_KILL").exists():
-        return True
+        return True, "CASHCARRY_KILL present"
+    p = root / _STATE_REL
     try:
-        st = json.loads((root / "data/cashcarry_state.json").read_text("utf-8"))
-    except (OSError, ValueError):
-        return None
-    return str(st.get("last_risk_action", "")) in ("flatten", "pause_opens")
+        raw = p.read_text("utf-8")
+    except FileNotFoundError:
+        return None, f"absent ({_STATE_REL} never written on this box)"
+    except OSError as exc:
+        return None, f"unreadable ({type(exc).__name__} on {_STATE_REL})"
+    try:
+        st = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        return None, f"unparseable ({_STATE_REL} is not valid JSON, line {exc.lineno})"
+    if not isinstance(st, dict):
+        return None, f"unparseable ({_STATE_REL} holds a {type(st).__name__}, not an object)"
+    try:
+        action = str(st["last_risk_action"])
+    except KeyError:
+        return None, f"schema-missing-key (`last_risk_action` absent from {_STATE_REL})"
+    return action in ("flatten", "pause_opens"), f"last_risk_action={action!r}"
 
 
 def touches_money_path(paths: list[str]) -> list[str]:
@@ -119,11 +152,12 @@ def build_report(root: Path | None = None, now: datetime | None = None,
         unmeasured.append("execution tape unreadable -- cannot count live fills")
     elif age is not None and fills < MIN_FILLS_FOR_CONFIDENCE:
         reasons.append(f"FIRST_FILLS: {fills} live fills recorded (< {MIN_FILLS_FOR_CONFIDENCE})")
-    rail = _rail_live(root)
+    rail, rail_why = _rail_live(root)
     if rail is None:
-        unmeasured.append("executor state unreadable -- cannot tell if a rail is live")
+        unmeasured.append(f"executor state {rail_why} -- cannot tell if a rail is live")
     elif rail:
-        reasons.append("RAIL_BREACH: a ruin/derisk rail is live -- the book is unwinding")
+        reasons.append(f"RAIL_BREACH: a ruin/derisk rail is live ({rail_why}) -- "
+                       "the book is unwinding")
 
     if age is None:
         # PRE-LAUNCH IS ALWAYS OPEN, even when tape/state are unreadable: with no capital event
@@ -181,7 +215,7 @@ def main() -> int:
             print(f"  {rep['verdict']}   money-path files: {rep['money_path_files_in_change']}")
     if args.report_only:
         return 0
-    return 2 if rep["verdict"] == "BLOCK" else 0
+    return fence_exit(rep["verdict"], _PASSING)
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 ---
 name: cro-daily-research-cycle
 description: Daily CRO institutional research + engineering cycle for the crypto quant platform
-model: claude-opus-4-8
+model: claude-opus-5
 ---
 
 ultrathink

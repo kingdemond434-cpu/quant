@@ -85,6 +85,11 @@ independence: YES — two different platforms (Hacker News, Bitcointalk), two di
 2011), found in separate sessions; plus a third surface pointing the same way, #54, where source
 grades written from search-engine SUMMARIES were wrong in BOTH directions and only opening the
 primary artifact was right.
+post-promotion confirmation: 2026-07-28 · EN session D, Quantopian In&Out thread — the OP was
+absent from the capture entirely, yet EVERY load-bearing finding lived in replies: the bond-beta
+decomposition (R15/R40/R41), the rebalance-artifact catch (R82/R83), the ratio-instability
+demonstration (R88), and the complete final code verbatim (R106). Fourth platform, fourth era,
+same direction — and this time the OP was not even needed.
 promotion-check: **CONVERGED -> PROMOTED 2026-07-26.** (i) Prospector query shapes must fetch
 THREAD BODIES, not OP text, and rank depth-N replies rather than discard them. (ii) It is the
 mechanical justification for new register row #64 (abandoned-by-capacity scanner), which is

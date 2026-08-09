@@ -53,7 +53,13 @@ if not _ROOT.exists():
     _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from libs.ops.fence_exit import fence_exit  # noqa: E402
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
+
+#: ATTRIBUTED is this fence's OK. UNMEASURED -- no rows, or every sleeve's mechanism term
+#: unreadable -- previously exited 0, so "we cannot tell whether any edge is attributed" was
+#: reported to cron as "every edge is attributed" (L1.16, L1.28a).
+_PASSING = frozenset({"ATTRIBUTED"})
 
 _OUT = "data/mechanism_attribution.json"
 
@@ -114,22 +120,62 @@ def attribute(name: str, spec: dict[str, str], state: dict[str, Any]) -> dict[st
                       "reverse. NOT survived, NOT promotable, whatever the return looks like.")}
 
 
+#: Where a deployed-state blob may live, in priority order. The second entry was
+#: data/cashcarry_state.json (R0333) -- a path NO organ writes, so the fallback could never fire
+#: and its silence was indistinguishable from a healthy read. The executor publishes its book
+#: state at data/cashcarry_positions.json (run_cashcarry_executor.py:43).
+_STATE_CANDIDATES = ("research_state.json", "data/cashcarry_positions.json")
+
+#: A blob is a deployed-state artifact only if it carries a deployed/molded block or at least one
+#: sleeve-shaped key. Treating ANY readable JSON object as the deployed state is how a positions
+#: file becomes a silent, sleeve-less "clean" attribution.
+_SHAPE_KEYS = ("sleeves", "live_sleeves", "net_pnl", "funding")
+
+
+def _load_state(root: Path, rel: str) -> tuple[dict[str, Any] | None, str]:
+    """One deployed-state candidate, with the failure NAMED (R0333).
+
+    "absent", "unparseable" and "schema-missing-key" are three different facts and the fence
+    reports which one it hit -- an UNDECIDABLE attribution must say WHY it is undecidable, or the
+    next reader assumes the artifact simply had nothing to report.
+    """
+    try:
+        raw = (root / rel).read_text("utf-8")
+    except FileNotFoundError:
+        return None, f"{rel}: absent"
+    except OSError as exc:
+        return None, f"{rel}: unreadable ({type(exc).__name__})"
+    try:
+        blob = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        return None, f"{rel}: unparseable (not valid JSON, line {exc.lineno})"
+    if not isinstance(blob, dict):
+        return None, f"{rel}: unparseable (holds a {type(blob).__name__}, not an object)"
+    for key in ("deployed", "molded"):
+        block = blob.get(key)
+        if isinstance(block, dict) and block:
+            return block, "ok"
+    if any(k in blob for k in _SHAPE_KEYS):
+        return blob, "ok"
+    return None, (f"{rel}: schema-missing-key (no deployed/molded block and none of "
+                  f"{', '.join(_SHAPE_KEYS)} -- not a deployed-state artifact)")
+
+
 def build_report(root: Path | None = None) -> dict[str, Any]:
     root = root or _ROOT
-    src, deployed = None, {}
-    for cand in ("research_state.json", "data/cashcarry_state.json"):
-        try:
-            blob = json.loads((root / cand).read_text("utf-8"))
-        except (OSError, ValueError):
-            continue
-        d = blob.get("deployed") or blob.get("molded") or blob
-        if isinstance(d, dict) and d:
-            src, deployed = cand, d
+    src: str | None = None
+    deployed: dict[str, Any] = {}
+    why: list[str] = []
+    for cand in _STATE_CANDIDATES:
+        blob, verdict = _load_state(root, cand)
+        if blob is not None:
+            src, deployed = cand, blob
             break
+        why.append(verdict)
     if src is None:
         return {"generated": datetime.now(tz=UTC).isoformat(), "status": "UNMEASURED",
                 "detail": "no deployed-state artifact readable on this host -- attribution "
-                          "UNDECIDABLE, which never reads as clean",
+                          "UNDECIDABLE, which never reads as clean; " + "; ".join(why),
                 "n_sleeves": 0, "sleeves": []}
 
     named = list(deployed.get("sleeves") or deployed.get("live_sleeves") or [])
@@ -181,7 +227,7 @@ def main() -> int:
                 print(f"  {r['sleeve']}: {r['state']} -- {r['why']}")
     if args.report_only:
         return 0
-    return 2 if rep["status"] == "UNATTRIBUTED" else 0
+    return fence_exit(rep["status"], _PASSING)
 
 
 if __name__ == "__main__":

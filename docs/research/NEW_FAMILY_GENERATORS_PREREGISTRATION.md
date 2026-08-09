@@ -1,0 +1,105 @@
+# Pre-registration — the new mechanism families entering the pooled campaign
+
+**Written 2026-08-04, before any of these generators ran on market data.** This is the content
+expansion the 2026-08-04 pooled measurement demanded: the incumbent 20 mechanisms are measured
+edge-free at daily frequency, so the marginal hour goes to NEW families — the pre-registered
+discretionary set (H3/H6/H7/H8) plus the intraday timeframe escalation. The multiplicity ledger
+grows accordingly and is declared here; it never resets.
+
+## A. New daily-campaign generator families (grid fixed now)
+
+| family | mechanism claim | params |
+|---|---|---|
+| `wyckoff_spring` | a failed break below (above) an N-bar range that closes back inside is absorption by informed buyers (sellers); continuation follows the failure direction | window ∈ {20, 40}, hold ∈ {5, 10} |
+| `vwap_reversion` | stretched deviation from rolling VWAP mean-reverts (inventory pressure) | window ∈ {20, 50}, z ∈ {1.5, 2.5} |
+| `vwap_trend` | the side of VWAP is the side of institutional inventory; follow it | window ∈ {20, 50} |
+| `supply_demand_retest` | the base before an impulsive departure (range > k×ATR) holds unfilled orders; first retest continues the departure | k ∈ {1.5, 2.0}, hold ∈ {5, 10} |
+| `ict_fvg_follow` | an unfilled three-bar imbalance (`libs/ict.fair_value_gap`) marks displacement; follow it | hold ∈ {3, 8} |
+| `ict_sweep_reversal` | a raid through equal highs/lows that closes back (`libs/ict.liquidity_sweep`) is engineered liquidity; fade it | confirm ∈ {2, 3}, hold ∈ {5, 10} |
+| `ict_mss_follow` | a market-structure shift (`libs/ict.market_structure_shift`) starts the new leg; follow it | confirm ∈ {2, 3}, hold ∈ {10, 20} |
+
+All enter `libs/autodiscovery/generators.GENERATORS`, so they flow through the IDENTICAL
+per-symbol + pooled campaign as every incumbent: same gates, same α, same per-candidate
+Romano-Wolf/CSCV, pooled-by-mechanism certification view. **New trial count**: 7 families × their
+variants × 10 symbols added to the campaign's n_trials; the pooled view adds one hypothesis per
+mechanism-variant. Nothing about the incumbents' recorded results changes.
+
+**Volume becomes REAL in the same change**: the campaign fetch now carries OKX's actual volume
+column instead of the flat 1e9 placeholder, because VWAP mechanisms on constant volume are an
+SMA in costume. This changes no incumbent mechanism (none of the 20 reads volume).
+
+## B. Intraday continuation re-test at 15m and 1h (the registered follow-up from
+INTRADAY_ROTATION_RESULT.md)
+
+Identical pre-registered logic and grid AS ALREADY FIXED (N/K/M in BARS, exit variants, costs,
+walk-forward 6m/2m, nulls, 540-config deflation per timeframe) — only the bar interval changes:
+Binance Vision 15m and 1h archives, same three symbols, same engine that passed its no-lookahead
+probes. Predicted mechanism: cost-in-R falls from ~1.1R (5m) to ~0.15–0.35R as stops widen 3–8×.
+Each timeframe is its OWN trial set (counted separately in the deflation, declared now); results
+are never pooled across timeframes post hoc.
+
+## C. Deferred, with the blocker named (desk convention: NOT-BUILT is recorded, never silent)
+
+- **H9 opening-range breakout**: needs an intraday session-anchored harness extension (UTC-day
+  opening range on 15m bars with volume confirmation). Deferred behind the 15m re-test result —
+  if continuation at 15m clears costs, ORB shares its economics and gets built next; if it does
+  not, ORB dies of the same arithmetic without being built. That conditional IS the decision.
+- **H4 volume profile / H5 order flow**: blocked on the moat L2/trades tape (operator: VPS
+  bringup). No public OHLCV substitute exists that would test the actual mechanism.
+
+## The standing rule, restated
+
+These are hypotheses. The expected outcome for most is death — on this desk a measured death
+retires search space and is paid for once. Any survivor must clear the pooled gauntlet at α=0.05
+with everything above declared. No result from this batch may be quoted without its trial count.
+
+---
+
+## MEASURED 2026-08-04 (same day) — outcomes against this registration
+
+**A. New families through the expanded pooled campaign** (436 candidates, 44 pooled mechanisms):
+still **0 clearing every gate**. The new families' pooled in-sample Sharpes land in the same
+0.4–0.7 band as the incumbents (vwap_trend 0.67, ict_fvg_follow 0.60, ict_mss_follow 0.63) and
+collapse OOS to +0.00–0.03 — the crowded-space result replicates on fresh mechanism classes.
+Two genuine gains: (1) pool independence improved dramatically — mean pairwise correlation fell
+0.047 → 0.010, effective bets 19.4 → **80.5** — the new families are near-orthogonal to the
+incumbents, exactly what a portfolio-of-mechanisms wants; (2) the admission screen refreshed the
+shadow book with 7 new-family entries (SOL ict_fvg, DOGE ict_mss ×4, AVAX vwap_trend, SOL
+supply_demand_retest), which now accrue forward evidence.
+
+**B. Intraday timeframe ladder, completed**: rotation cost-in-R improved monotonically exactly as
+predicted (5m −0.44R → 15m −0.25R → 1h −0.09R net) **and never crossed zero** — the gross edge is
+~0 at every interval, so shrinking costs converges to breakeven, not to profit. Continuation
+signals thin out to n=13 (15m) and n=0 (1h) OOS — too rare to certify at coarser bars. The
+ladder is closed: NO-GO at all three intervals.
+
+**C. The pre-registered conditional executes**: 15m continuation did NOT clear costs, therefore
+**H9 ORB is dead without being built**, per the rule fixed above before the data existed.
+H4/H5 remain blocked on the moat tape (operator).
+
+---
+
+## DECLARED 2026-08-04, before the run — universe expansion for pooled power
+
+The pooled certification test's power scales with symbols per mechanism (m/(1+(m−1)ρ)). The
+campaign universe expands 10 → 25 USDT-perps (adding BNB, TRX, DOT, NEAR, ATOM, UNI, FIL, APT,
+ARB, OP, INJ, ETC, XLM, ALGO, AAVE), fetched uniformly from the Binance Vision daily archive
+with REAL volume, venue recorded in the report. Mechanism set and grids UNCHANGED; n_trials
+grows mechanically with symbols and is priced in full as always. At the measured ρ=0.348 the
+effective-observation multiplier rises 2.42× → 3.15× (t-gain 1.56× → 1.77×); min detectable
+pooled Sharpe drops ~0.77 → ~0.68 — inside the real-edge band with margin.
+
+**1m fill verification: closed as NOT-RUN, with the reason on record.** Its pre-registered role
+was fill realism for GO-candidate configs; every interval returned NO-GO with the conservative
+(stop-first, level-fill) assumptions, which only *understate* performance. A 1m pass can raise a
+negative number toward zero; it cannot flip a sign. Running it would spend compute to make a
+NO-GO slightly less negative — no decision changes, so it is recorded here instead of run. It
+revives automatically if any future intraday config reaches the gate's neighbourhood.
+
+**CORRECTION, declared 2026-08-04 before the corrected run**: the first 25-symbol run used the
+fetcher's 2023-08 default start — a fetch artifact, not a design choice — halving elapsed-time
+evidence (t ∝ √years) and costing more power than the extra symbols added (×1.5 lost vs ×1.13
+gained). Corrected panel: the 21 of 25 symbols with Binance perp listings ≤ 2020-12 (drop APT,
+ARB, OP, INJ), fetched from 2020-12 → T≈5.6 years AND m=21, which strictly dominates both prior
+configurations. The 3-year run's numbers stand as recorded; the corrected run supersedes it for
+certification. n_trials priced in full as always.

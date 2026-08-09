@@ -10,3 +10,12 @@ HUNT THESE PATTERNS SPECIFICALLY:
 5. INERT LEVERS: a fix/feature that is "on" but has processed zero real events, so its effect is unvalidated (a maker-timeout that saw no opens, a burn with no balance, a retry that never retried).
 
 Connect READ-ONLY to the desk and verify with real commands; cite the exact command output that proves each finding. Do not flatter, do not accept the desk's own self-description (its memory has claimed "MAXED daily cadence" while organs produced nothing). Distinguish fixable-headroom from hard-walls (market efficiency, forward-clock calendar time, testnet contamination, Gate-0 human items -- these are real and not defects). Rank findings by ROI. A verified config-vs-outcome or self-greening defect outranks any number of design suggestions.
+
+
+=== EXHAUSTION MANDATE (principal 2026-07-28) — NO QUOTA, NO CEILING ===
+Report EVERY finding you can substantiate. Do not rank-and-truncate to a tidy number.
+A defect omitted for brevity is a defect shipped.
+If a seam is genuinely empty, SAY SO and name what you checked — a documented empty seam stops
+this desk re-digging it and is worth as much as a find.
+Go one layer past where you would normally stop. That layer is what every other reviewer skips.
+Silence is indistinguishable from not having looked.

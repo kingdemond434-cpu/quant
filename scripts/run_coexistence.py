@@ -77,7 +77,8 @@ def _families() -> dict[str, list[float]]:
             val = next((v for v in ("log_return", "ret", "pnl") if v in cols), None)
             if not fam or not val:
                 return {}
-            for name, v in c.execute(f"select {fam}, {val} from alpha_performance"):
+            q = f"select {fam}, {val} from alpha_performance"  # noqa: S608 -- allowlisted identifiers
+            for name, v in c.execute(q):
                 if name is not None and isinstance(v, int | float):
                     out.setdefault(str(name), []).append(float(v))
     except sqlite3.Error:

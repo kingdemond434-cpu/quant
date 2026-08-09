@@ -24,6 +24,7 @@ import time
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import certifi
 
@@ -38,6 +39,69 @@ _ROOT = Path(__file__).resolve().parent.parent / "data/moat/bybit"
 _HB = Path(__file__).resolve().parent.parent / "data/recorder_bybit_heartbeat"
 _CTX = ssl.create_default_context(cafile=certifi.where())
 
+#: FALLBACK universe only. Kept because a recorder that records NOTHING is the one failure this
+#: organ cannot come back from -- an unrecorded day does not exist free at any venue afterwards.
+_FALLBACK = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT",
+             "DOGEUSDT", "ADAUSDT", "AVAXUSDT", "LINKUSDT", "LTCUSDT",
+             "TRXUSDT", "DOTUSDT", "BCHUSDT", "NEARUSDT", "SUIUSDT",
+             "UNIUSDT", "APTUSDT", "FILUSDT", "ARBUSDT", "OPUSDT")
+_MAX_SYMBOLS = 20                # weight budget: 20 @ 4s depth + 20s trades = ~6 req/s
+
+
+def _listed_on_bybit(http=None) -> frozenset[str]:
+    """What Bybit actually lists. Keyless, one call.
+
+    Without this the traded universe would be copied across venue-blind and every name Bybit
+    does not list would burn two requests a cycle forever, returning nothing -- the recorder
+    would look busy and record less."""
+    try:
+        d = (http or _get)("/v5/market/instruments-info", "category=linear&limit=1000")
+        rows = ((d or {}).get("result") or {}).get("list") or []
+        return frozenset(str(r["symbol"]) for r in rows if r.get("symbol"))
+    except (OSError, KeyError, TypeError, ValueError):
+        return frozenset()
+
+
+def _universe(http=None) -> tuple[str, ...]:
+    """The SAME priority-ordered universe the Binance recorder derives, filtered to what Bybit
+    lists. Gap #39 was closed on run_recorder.py and this second-venue tape kept a hardcoded
+    list, so the two recorders drifted apart and this one could intersect the traded book at
+    ZERO -- which is the precise defect #39 named, still live on the venue nobody re-checked.
+
+    ORDER IS PRIORITY, same as the twin: benchmark, then held positions, then recently traded,
+    then majors. When the cap binds it is the MAJORS that get dropped and the traded names that
+    survive, because the whole point of a second-venue tape is cross-venue work on the book the
+    desk actually holds.
+
+    FALLS BACK RATHER THAN BLOCKS, and the asymmetry is deliberate. Elsewhere on this desk an
+    unknown must block the action; here the "action" is reading public data with no key and no
+    money at risk, while the harm of not acting is permanent -- an unrecorded day cannot be
+    bought back at any price. So an unreadable universe or an unreachable instrument list keeps
+    the fallback and says so loudly, rather than recording nothing while looking healthy."""
+    try:
+        from scripts.run_recorder import _universe as _binance_universe
+        wanted = _binance_universe()
+    except Exception as exc:
+        print(f"bybit recorder: universe underivable ({type(exc).__name__}: {exc}) -- "
+              "FALLBACK list in use; this is a degraded universe, not a healthy one")
+        return _FALLBACK
+    listed = _listed_on_bybit(http)
+    if not listed:
+        print("bybit recorder: instruments-info unreachable -- cannot filter to listed symbols; "
+              "FALLBACK list in use rather than recording nothing")
+        return _FALLBACK
+    keep = tuple(s for s in wanted if s in listed)[:_MAX_SYMBOLS]
+    if not keep:
+        print("bybit recorder: NO derived symbol is listed on bybit -- FALLBACK in use")
+        return _FALLBACK
+    dropped = [s for s in wanted if s not in listed]
+    print(f"bybit recorder universe: {len(keep)} symbols following the traded book"
+          + (f"; {len(dropped)} not listed on bybit ({', '.join(dropped[:6])})" if dropped else ""))
+    return keep
+
+
+_DEPTH_EVERY_S = 4.0
+_TRADES_EVERY_S = 20.0
 _SYMBOLS = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT",
             "DOGEUSDT", "ADAUSDT", "AVAXUSDT", "LINKUSDT", "LTCUSDT",
             "TRXUSDT", "DOTUSDT", "BCHUSDT", "NEARUSDT", "SUIUSDT",
@@ -67,7 +131,7 @@ def _assert_rate_budget() -> None:
                          "(Binance lesson 2026-07-21: silent venue cutoff after 6h.)")
 
 
-def _get(path: str, params: str) -> dict | None:
+def _get(path: str, params: str) -> dict[str, Any] | None:
     try:
         req = urllib.request.Request(f"{_BASE}{path}?{params}",
                                      headers={"User-Agent": "research-recorder/1.0"})
@@ -78,7 +142,12 @@ def _get(path: str, params: str) -> dict | None:
         return None                                   # a dropped poll is a gap, never a crash
 
 
-def _write(sym: str, rows: list[dict]) -> None:
+#: Derived AFTER _get exists -- the universe call needs the HTTP helper, and a module-level
+#: assignment above it raised NameError at import: the recorder would not start at all.
+_SYMBOLS = _universe()
+
+
+def _write(sym: str, rows: list[dict[str, Any]]) -> None:
     if not rows:
         return
     hour = datetime.now(tz=UTC).strftime("%Y%m%d_%H")
@@ -93,7 +162,7 @@ def main() -> None:
     _assert_rate_budget()
     _ROOT.mkdir(parents=True, exist_ok=True)
     print(f"bybit recorder v1 -> {_ROOT}/")
-    buf: dict[str, list[dict]] = {s: [] for s in _SYMBOLS}
+    buf: dict[str, list[dict[str, Any]]] = {s: [] for s in _SYMBOLS}
     last_trades = 0.0
     last_flush = time.time()
     disk_warned = False
@@ -124,22 +193,37 @@ def main() -> None:
             d = _get("/v5/market/orderbook", f"category=linear&symbol={sym}&limit=25")
             if d:
                 r = d["result"]
-                buf[sym].append({"t": int(time.time() * 1000), "k": "depth",
+                # L1.46: until now a Bybit depth row carried NO venue identifier of any kind --
+                # no time, no sequence -- so it could not be joined to the free first-party Bybit
+                # archive (200 levels / 100ms / 345d) and a dropped poll was indistinguishable
+                # from a quiet book. "vt" is result.ts (the venue's stamp, renamed to avoid
+                # colliding with our `t`), "u"/"sq" are the update id and sequence.
+                buf[sym].append({"t": int(time.time() * 1000), "k": "depth", "c": "recv",
+                                 "vt": r.get("ts"), "u": r.get("u"), "sq": r.get("seq"),
                                  "b": r.get("b", [])[:25], "a": r.get("a", [])[:25]})
         now = time.time()
         if now - last_trades >= _TRADES_EVERY_S:
             for sym in _SYMBOLS:
                 d = _get("/v5/market/recent-trade", f"category=linear&symbol={sym}&limit=200")
                 if d:
-                    buf[sym].append({"t": int(now * 1000), "k": "trades",
+                    # L1.46: stamp each batch at ITS OWN receipt, not at `now`. `now` is captured
+                    # once above, before this 20-symbol serial loop, so every symbol after the
+                    # first carried a receipt stamp EARLIER than the moment we received it -- a
+                    # look-ahead in our own receipt axis, and the same defect class as the R0060
+                    # leaky Upbit copies. Measured on the archive before this fix: 32.8% of
+                    # 877,314 batches had a receipt stamp PRECEDING the newest trade in them.
+                    buf[sym].append({"t": int(time.time() * 1000), "k": "trades", "c": "recv",
                                      "v": d["result"].get("list", [])})
             f = _get("/v5/market/tickers", "category=linear")
+            # L1.46: one call serves every symbol, so a shared stamp is correct here -- but it
+            # must be the receipt of THAT call, not the pre-loop `now` from ~20 requests ago.
+            meta_recv = int(time.time() * 1000)
             if f:
                 tk = {x["symbol"]: {"fr": x.get("fundingRate"), "oi": x.get("openInterest"),
                                     "mp": x.get("markPrice")}
                       for x in f["result"].get("list", []) if x["symbol"] in _SYMBOLS}
                 for sym, v in tk.items():
-                    buf[sym].append({"t": int(now * 1000), "k": "meta", **v})
+                    buf[sym].append({"t": meta_recv, "k": "meta", "c": "recv", **v})
             last_trades = now
 
         if now - last_flush >= 60:

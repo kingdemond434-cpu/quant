@@ -41,6 +41,7 @@ import json
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data/experiment_registry.jsonl"
@@ -93,11 +94,11 @@ def _git(*args: str) -> str:
     try:
         return subprocess.run(["git", *args], cwd=str(ROOT), capture_output=True, text=True,
                               check=False, timeout=90).stdout
-    except Exception:
+    except Exception:  # blind-except intentional (BLE001)
         return ""
 
 
-def _tag(text: str, table: dict) -> list[str]:
+def _tag(text: str, table: dict[str, Any]) -> list[str]:
     t = text.lower()
     return [k for k, kws in table.items() if any(w in t for w in kws)]
 
@@ -112,7 +113,7 @@ def _decide(text: str) -> str:
     return "UNCLASSIFIED"
 
 
-def harvest(days: int = 45) -> list[dict]:
+def harvest(days: int = 45) -> list[dict[str, Any]]:
     """One record per commit. The commit IS the reproducible unit -- it pins code + params."""
     raw = _git("log", f"--since={days} days ago", "--name-only",
                "--pretty=format:%x00%H%x1f%an%x1f%aI%x1f%s%x1f%b%x02")

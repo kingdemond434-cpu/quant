@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 
 from libs.autodiscovery.models import Family, Hypothesis
-from libs.autodiscovery.validation import campaign_pbo_rc, validate
+from libs.autodiscovery.validation import campaign_gate_stats, validate
 from libs.data.prediction_markets import (
     fetch_price_history,
     fetch_resolved_markets,
@@ -114,20 +114,29 @@ def main() -> None:
     min_len = min(len(r) for _, r in series)
     matrix = np.column_stack([r[-min_len:] for _, r in series])
     sharpes = np.array([sharpe_ratio(r) for _, r in series], dtype="float64")
-    pbo, rc = campaign_pbo_rc(matrix)
+    # per-candidate gates (gap #87 flip, principal-ruled 2026-07-29); thresholds unchanged
+    campaign = campaign_gate_stats(matrix)
 
     survivors = 0
     results = []
-    for (name, rets), spr in zip(series, sharpes, strict=True):
+    # enumerate order == column_stack order over `series`, so `col` is the variant's matrix column
+    for col, ((name, rets), spr) in enumerate(zip(series, sharpes, strict=True)):
         bets = rets[rets != 0.0]
         n_bets = len(bets)
         # The gauntlet needs >=250 obs; below that we report descriptive stats, not a verdict.
         if n_bets >= 250:
+            # NO BAR CLOCK, DECLARED AS SUCH (R0086). An observation here is one SETTLED MARKET,
+            # not a bar: the series is per-BET, the markets resolve at irregular times and several
+            # can settle on the same day, so there is no honest number of observations per year to
+            # annualise by. `None` reports annual_sharpe as UNMEASURED rather than manufacturing
+            # one -- which is what the old hourly constant did, silently, at 79x per-bet Sharpe.
+            # The report below quotes sharpe_per_bet, which is the unit these returns are in.
             v = validate(bets, hypothesis=Hypothesis(
                 family=Family.LIQUIDITY, subtype=f"pm_{name}", symbol="POLYMARKET", params={},
                 mechanism=MechanismType.BEHAVIORAL, edge_source="favorite-longshot bias",
-                failure_modes=_FAIL), n_trials=len(series), sharpe_estimates=sharpes,
-                returns_matrix=matrix, pbo=pbo, rc=rc)
+                failure_modes=_FAIL), periods_per_year=None,
+                n_trials=len(series), sharpe_estimates=sharpes,
+                returns_matrix=matrix, campaign=campaign, column=col)
             survived, reason = v.survived, v.rejection_reason
         else:
             survived, reason = False, f"below gauntlet minimum (n={n_bets}<250)"

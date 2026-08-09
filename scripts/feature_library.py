@@ -198,7 +198,7 @@ def _gate_verdicts() -> dict:
             k: v.get("verdict")
             for k, v in json.loads(GATE.read_text("utf-8")).get("datasets", {}).items()
         }
-    except Exception:
+    except Exception:  # blind-except intentional (BLE001)
         return {}
 
 
@@ -215,7 +215,7 @@ def main() -> None:
             live_mechs = {
                 m for m, v in mb.get("verdicts", {}).items() if v in ("ALIVE", "UNTESTED")
             }
-        except Exception:
+        except Exception:  # blind-except intentional (BLE001)
             pass
 
     rows = []

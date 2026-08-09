@@ -23,6 +23,7 @@ from libs.data.instruments import AssetClass, InstrumentSpec, register_instrumen
 from libs.data.lake import Layer, ParquetLake
 from libs.data.timeframe import Timeframe
 from libs.research.crypto_xsec import xsec_funding_returns
+from libs.research.event_density import forward_verdict
 from libs.validation.dsr import sharpe_ratio
 
 _CRYPTO = Path("data/lake/bronze/crypto")
@@ -69,13 +70,8 @@ def _snapshot_oi(universe: list[str]) -> None:
 
 
 def _verdict(fwd_days: int, fwd_sharpe: float, bt_sharpe: float) -> str:
-    if fwd_days < 90:
-        return f"ACCUMULATING ({fwd_days}/90+ days of forward evidence)"
-    if fwd_sharpe < 0:
-        return "FAILING FORWARD -> kill candidate"
-    if fwd_sharpe >= 0.5 and fwd_sharpe >= 0.5 * bt_sharpe:
-        return "ON TRACK -> eligible for TINY live on human approval (governance gate)"
-    return "WEAK forward -> continue shadow, do not deploy"
+    """EVIDENCE, NOT CALENDAR (L1.48) -- shared gate, so five runners cannot drift apart."""
+    return forward_verdict(fwd_days, fwd_sharpe, bt_sharpe, periods_per_year=_PPY)
 
 
 def main() -> None:

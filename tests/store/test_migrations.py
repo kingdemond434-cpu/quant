@@ -30,19 +30,20 @@ _EXPECTED_TABLES = {
     "lab_checkpoint",
     "campaigns",
     "workers",
+    "candidate_returns",
 }
 
 
 def test_run_migrations_applies_all(db: Database) -> None:
-    assert current_version(db) == 6
-    assert applied_versions(db) == [1, 2, 3, 4, 5, 6]
+    assert current_version(db) == 7
+    assert applied_versions(db) == [1, 2, 3, 4, 5, 6, 7]
 
 
 def test_migrations_are_idempotent(db_path: Path) -> None:
     database = Database(db_path)
     first = run_migrations(database, MIGRATIONS)
     second = run_migrations(database, MIGRATIONS)
-    assert first == [1, 2, 3, 4, 5, 6]
+    assert first == [1, 2, 3, 4, 5, 6, 7]
     assert second == []
     database.close()
 

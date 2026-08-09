@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd
 
 from libs.autodiscovery.models import Family, Hypothesis
-from libs.autodiscovery.validation import campaign_pbo_rc, validate
+from libs.autodiscovery.validation import campaign_gate_stats, validate
 from libs.data.crypto_source import list_liquid_perps
 from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
 from libs.data.lake import Layer, ParquetLake
@@ -32,6 +32,7 @@ from libs.validation.economic_prior import MechanismType
 _CRYPTO = Path("data/lake/bronze/crypto")
 _OUT = Path("reports/xsec_funding_max")
 _MIN_NAMES = 12
+_PPY = 365.0               # D1 crypto bars; perps trade 24/7 (R0086)
 _FAIL = ["funding dispersion compresses", "liquidity/borrow constraints",
          "correlated crypto crash", "edge decay"]
 
@@ -68,20 +69,30 @@ def main() -> None:
     min_len = min(len(r) for _, r in series)
     matrix = np.column_stack([r[-min_len:] for _, r in series])
     sharpes = np.array([sharpe_ratio(r[r != 0.0]) for _, r in series], dtype="float64")
-    pbo, rc = campaign_pbo_rc(matrix)
+    # per-candidate gates (gap #87 flip, principal-ruled 2026-07-29); thresholds unchanged
+    campaign = campaign_gate_stats(matrix)
 
     survivors = 0
     results = []
-    for (name, rets), spr in zip(series, sharpes, strict=True):
+    # enumerate order == column_stack order over `series`, so `col` is the variant's matrix column
+    for col, ((name, rets), spr) in enumerate(zip(series, sharpes, strict=True)):
         active = rets[rets != 0.0]
         v = validate(active, hypothesis=Hypothesis(
             family=Family.CARRY, subtype=f"xsec_max_{name}", symbol="CRYPTO_XSEC", params={},
             mechanism=MechanismType.RISK_PREMIUM, edge_source="x-sec funding (risk-parity, costed)",
-            failure_modes=_FAIL), n_trials=len(series), sharpe_estimates=sharpes,
-            returns_matrix=matrix, pbo=pbo, rc=rc) if len(active) >= 250 else None
+            failure_modes=_FAIL), periods_per_year=_PPY,   # D1 crypto bars, 24/7 (R0086)
+            n_trials=len(series), sharpe_estimates=sharpes,
+            returns_matrix=matrix, campaign=campaign, column=col,
+            # REAL PER-SYMBOL ADV (R0080). This script already measured dollar ADV per name at
+            # _panels() and fed it to the return model, then called validate() without it -- so
+            # the capacity verdict was computed from the old adv_usd=1e11 default while the real
+            # number sat in scope two frames up. Summed because this is a risk-parity basket over
+            # the whole panel: every name in `adv` is traded, so the strategy's tradeable volume
+            # is their total, not any single leg's.
+            adv_usd=float(sum(adv.values())) or None) if len(active) >= 250 else None
         survived = bool(v.survived) if v else False
         survivors += int(survived)
-        ann = round(float(spr) * np.sqrt(365), 2)
+        ann = round(float(spr) * np.sqrt(_PPY), 2)
         results.append({"variant": name, "days": len(active),
                         "ann_sharpe": ann, "survived": survived,
                         "reason": v.rejection_reason if v else "n<250"})

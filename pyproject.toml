@@ -30,11 +30,12 @@ dependencies = [
     "scipy>=1.17.1,<2",
     "scikit-learn>=1.4",  # libs/regime (GMM/HMM probabilistic regimes) — a LIVE entrypoint dep
     # UNDECLARED UNTIL 2026-08-03, AND IT IS ON THE MONEY PATH. Nine scripts import certifi —
-    # among them reconcile_venue.py, which builds the SSL context every venue reconciliation call
-    # goes through. It was pinned in requirements-vps.txt only, so production had it and any
-    # install of the declared package did not: `pip install -e .` produced a checkout whose
-    # reconciliation script raised ImportError at line 26. It stayed invisible because CI's lint
-    # step failed first and skipped the type check that names it.
+    # among them reconcile_venue.py, which imports it at module scope and calls certifi.where()
+    # at import time to build the SSL context every venue reconciliation call goes through. It was
+    # pinned in requirements-vps.txt only and present transitively elsewhere, so production had it
+    # and a clean `pip install -e .` did not — a DR restore producing a desk whose reconciler
+    # crashes on import. Both branches found this independently; the bounded pin follows this
+    # file's upper-bound doctrine.
     "certifi>=2026.5.20,<2027",
     # Same class as certifi, found by the same new test: pinned for the VPS, declared nowhere.
     "psutil>=7.2.2,<8",        # scripts/watchdog.py -- process reaping on the live box
@@ -42,11 +43,23 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# DEV TOOL VERSIONS ARE PART OF THE GATE, not incidental. A range wide enough to hold two
+# minor versions is a range wide enough for them to DISAGREE about whether the tree is clean:
+# mypy 2.1 cannot narrow Optional out of a membership test where 2.3 can, so the same file was
+# clean on a dev box and red on the VPS (2026-08-05, cost one deploy cycle; L0065 is the same
+# defect on pyarrow). The floors are NOT raised here -- forcing an upgrade mid-deploy on a live
+# box is the larger risk -- so the standing rule is instead: write code that does not depend on
+# version-specific inference (explicit None checks, never membership narrowing), and treat the
+# VPS gate as the arbiter when the two disagree.
 dev = [
     "ruff>=0.15.17,<0.16",
     "mypy>=2.1.0,<3",
     "pytest>=9.1.0,<10",
     "pytest-cov>=7.1.0,<8",
+    # NOT optional: `timeout` in [tool.pytest.ini_options] is an unknown ini key without it, and
+    # an unrecognised key is a warning rather than an error -- so a box missing this plugin would
+    # silently run the suite UNBOUNDED again, which is the exact failure the timeout exists to end.
+    "pytest-timeout>=2.4.0,<3",
     "hypothesis>=6.155.2,<7",
     "types-PyYAML>=6.0",
     "pre-commit>=3.7",
@@ -132,35 +145,13 @@ ignore = ["B008"]
 # Test fixtures deliberately construct the things these rules forbid: naive datetimes to prove
 # the aware/naive distinction is enforced, non-crypto RNG to prove determinism, a fixed tmp path
 # to assert on it. Flagging a test for exercising the hazard it guards is pure noise.
-"tests/**" = ["DTZ", "S311", "S108", "S105", "S106", "S608"]
+"tests/**" = ["DTZ", "S311", "S108", "S105", "S106"]
 # Table/column IDENTIFIERS are module constants and every call site passes a literal (verified
 # 2026-07-25); values are always bound with `?`. SQL identifiers cannot be parameterised, so an
 # f-string here is the only option, not a shortcut.
 "app/dashboard.py" = ["S608"]
 "libs/alpha_factory/research_memory.py" = ["S608"]
 "libs/autodiscovery/memory.py" = ["S608"]
-# SAME CLASS, provenance verified file-by-file 2026-08-04 (not assumed): every interpolated value
-# is a SQL IDENTIFIER (table/column) or an internal filesystem path, and none is reachable from
-# any external input -- this desk exposes no user-facing SQL surface. run_coexistence is the
-# strongest of them: `fam`/`val` are chosen from a hardcoded whitelist and then checked against
-# the table's real columns, which is safer than a constant. Values stay bound with `?`.
-# FALSIFIER: the day any of these paths takes a caller-supplied identifier from outside the desk,
-# this waiver is void -- parameterise or whitelist it instead.
-"libs/data/duckdb_client.py" = ["S608"]
-"scripts/estimate_contributions.py" = ["S608"]
-"scripts/run_allocator.py" = ["S608"]
-"scripts/run_coexistence.py" = ["S608"]
-# Env-var NAMES, not credentials: these constants hold the string key that is looked up in the
-# environment ("QUANT_SECRET_", "..._API_SECRET"), never a secret value.
-"libs/core/secrets.py" = ["S105"]
-"libs/execution/binance_spot_testnet.py" = ["S105"]
-"libs/execution/binance_testnet.py" = ["S105"]
-# DELIBERATE bind-all: both serve a LAN dashboard the principal reads from his phone (the
-# serve_dashboard flag says so inline). Waived because the bind is the intent, NOT because the
-# exposure was judged safe -- host-firewall reachability from the public internet is a separate
-# open question tracked as a finding, and if it is reachable the fix is the firewall, not the flag.
-"scripts/ops_server.py" = ["S104"]
-"scripts/serve_dashboard.py" = ["S104"]
 # Cadence jitter is deliberately non-cryptographic: a fixed 600s beat is detectable at size, and
 # unpredictability-to-a-front-runner is the requirement, not cryptographic strength.
 "scripts/run_cashcarry_executor.py" = ["S311"]
@@ -196,6 +187,15 @@ files = ["libs", "app", "migrations",
          "scripts/run_deadman_stranded_sweep.py",
          "scripts/reconcile_venue.py", "scripts/run_trade_forensics.py"]
 
+# PYARROW VERSION STRADDLE (2026-08-05). libs/data/lake.py carries two
+# `type: ignore[no-untyped-call]`s that are REQUIRED on the pinned pyarrow (>=24,<25) and read
+# as unused on 25.x. Without this override the two environments disagree about whether the file
+# is clean, and the disagreement surfaced as a deploy-gate failure rather than as a type error.
+# Scoped to the one module: warn_unused_ignores stays on everywhere else.
+[[tool.mypy.overrides]]
+module = ["libs.data.lake"]
+warn_unused_ignores = false
+
 [[tool.mypy.overrides]]
 module = [
     "numpy.*",
@@ -221,6 +221,43 @@ testpaths = ["tests"]
 # vs tests/factory/test_registry.py) without __init__.py churn or basename collisions.
 addopts = "-ra -q --strict-markers --import-mode=importlib"
 filterwarnings = ["error"]
+# A HANG MUST BE A FAILURE, NOT A WAIT.
+#
+# Until 2026-08-05 nothing in this repository bounded a test's runtime, and the consequence was
+# not theoretical: a whole-repo `pytest` run stalls in tests/scripts on a socket read (20 threads
+# sleeping, network-bound), and ops/deploy_vps.sh gates a live deploy on exactly that command with
+# no timeout of its own. On a box whose egress is filtered -- which is the VPS's normal condition,
+# and the reason five diggers sit credit-blocked -- the deploy does not fail. It waits, forever,
+# looking like a slow but healthy gate. Nobody is paged by a process that is still running.
+#
+# The number is deliberately generous. This is a ruin rail, not a performance budget: it exists to
+# convert "hung" into "named failing test", and a bound so tight that honest Monte Carlo and
+# hypothesis campaigns trip it would be promptly raised or deleted by whoever it inconvenienced.
+# A genuinely slow test states its own cost with @pytest.mark.timeout(N) rather than relaxing the
+# floor for everything -- the ratchet rule: one test's need is never the whole suite's licence.
+#
+# signal (SIGALRM) rather than the thread method on purpose: it interrupts a blocking syscall and
+# gives the offending test's own traceback. The thread method cannot, and would report the hang
+# without saying where -- which is most of the diagnostic value.
+timeout = 300
+timeout_method = "signal"
+# THE SUITE'S OWN SCRATCH WAS STARVING THE SUITE. /tmp here is a tmpfs, so every byte under
+# /tmp/pytest-of-quant is RESIDENT RAM on a 3.8GB box with NO SWAP that also carries the live
+# executor, three recorders and several agent sessions. Measured 2026-08-05: 35 orphaned run
+# directories holding 1021MB -- 26% of the machine -- against 189MB available.
+#
+# It is a closed loop, which is why it never self-corrected: a run killed by the OOM killer never
+# reaches its own cleanup, so its directory is orphaned; pytest's start-of-run garbage collection
+# keeps only the newest few but will not touch a directory whose lock looks live; the orphans
+# accumulate; RAM falls; the next run is likelier to be killed. That is precisely how the desk
+# arrived at a `tests (pytest)` red it could not reproduce -- the suite collects clean in 19s at
+# 326MB peak, flat in directory count, so there was never anything wrong with the tests.
+#
+# `failed` deletes the tmp_path of every PASSING test at teardown and keeps it only where someone
+# might actually need to read it. Retention is not a debugging loss: the scratch that survives is
+# exactly the scratch belonging to a failure. Reclaiming the orphans took available memory from
+# 189MB to 1555MB in one pass.
+tmp_path_retention_policy = "failed"
 
 [tool.coverage.run]
 source = ["libs"]

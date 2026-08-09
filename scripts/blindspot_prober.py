@@ -162,6 +162,23 @@ def main() -> None:
         ),
         "utf-8",
     )
+    # SECOND FAMILY (L1.33 / R0114, shared helper libs/llm/second_opinion.py): six lenses drawn
+    # from one model family still share that family's priors -- exactly the single-lens failure
+    # mode this organ exists to catch. Ask the independent family which LENS is missing, and
+    # record the verdict honestly: SOLO when the seat is dark, never passed off as confirmed.
+    try:
+        import sys
+        root = str(Path(__file__).resolve().parent.parent)
+        if root not in sys.path:
+            sys.path.insert(0, root)        # run as `python scripts/...`: root is not on sys.path
+        from libs.llm.second_opinion import consult_second_family
+        consult_second_family(
+            "blindspot_prober",
+            {"n_probes": n, "modality_bias": cov,
+             "lenses": {lid: lens["question"] for lid, lens in LENSES.items()}},
+            artifact=OUT)
+    except Exception as exc:  # the partner must never break the organ
+        print(f"  second family: SKIPPED ({exc})")
     print(f"\n-> {OUT}")
 
 

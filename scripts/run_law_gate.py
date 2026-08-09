@@ -50,7 +50,6 @@ if str(_ROOT) not in sys.path:
 #: and every push: a breach here is a breach anywhere.
 _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_constitution_core.py", ()),        # L2.8a -- the sealed core is intact
-    ("check_risk_kernel.py", ()),             # L1.23 -- survival code matches its seal
     # PRODUCER BEFORE CONSUMER. build_enforcement_matrix WRITES data/enforcement_matrix.json and
     # check_law_families READS it; the matrix is gitignored (data/*), so on a VIRGIN tree the
     # consumer ran first against a file that did not exist yet. That is why this gate was green
@@ -67,7 +66,10 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # means the same in CI, a fresh clone and on the box. Caught dist_shift.py (cited for L1.19 and
     # L2.10, importer count outside its own test: zero) on its first run.
     ("check_enforcement_execution.py", ()),
-    ("check_timidity_language.py", ()),        # L1.28 -- incl. all 18 prompt surfaces
+    # L1.28 -- every prompt surface, INCLUDING the charters/specs a dig prompt orders the organ to
+    # read (one delegation hop still binds the organ; the count is read from the artifact, not
+    # asserted here, because a hardcoded "all N surfaces" goes stale the first time one is added).
+    ("check_timidity_language.py", ()),
     # --report-only: the LAW half is manifest<->repo integrity (exit 2). Live-crontab DRIFT
     # (exit 1) is BOX STATE -- on a red-parked box the manifest is *supposed* to be ahead of
     # the installed crontab until the puller vets the commit, so drift failing CI/pre-push

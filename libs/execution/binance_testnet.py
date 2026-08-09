@@ -19,11 +19,12 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+from libs.execution.collateral import STABLE_COLLATERAL
 from libs.execution.idempotency import client_order_id
 
 _BASE = "https://testnet.binancefuture.com"   # PINNED testnet -- never live
 _KEY_ENV = "BINANCE_TESTNET_KEY"
-_SECRET_ENV = "BINANCE_TESTNET_SECRET"
+_SECRET_ENV = "BINANCE_TESTNET_SECRET"  # noqa: S105 -- env-var name, not the secret
 # Convenience: keys may live in env (preferred) OR a local untracked file (set once). NOT in code.
 _KEYFILE = Path("data/secrets/binance_testnet.json")
 
@@ -75,17 +76,24 @@ def _signed(path: str, params: dict[str, Any], *, method: str = "GET") -> Any:
 
 
 def exchange_filters() -> dict[str, dict[str, float]]:
-    """Per-symbol step size, min qty, and price/qty precision (for valid order sizing)."""
+    """Per-symbol step size, min qty, price/qty precision, and minimum order notional.
+
+    ``min_notional`` is the venue's minimum ORDER VALUE; 0.0 means no published minimum, so
+    callers must keep their own conservative floor for that case. USD-M futures publishes the
+    value under the key ``notional``, NOT spot's ``minNotional`` -- reading the spot key here
+    yields 0.0 for every symbol (tests/execution/test_filter_parity.py pins this)."""
     info = _get("/fapi/v1/exchangeInfo")
     out: dict[str, dict[str, float]] = {}
     for s in info.get("symbols", []):
         f = {flt["filterType"]: flt for flt in s.get("filters", [])}
         lot = f.get("LOT_SIZE", {})
         pf = f.get("PRICE_FILTER", {})
+        notl = f.get("MIN_NOTIONAL", {}) or f.get("NOTIONAL", {})
         out[s["symbol"]] = {
             "step": float(lot.get("stepSize", 0.001)), "min_qty": float(lot.get("minQty", 0.0)),
             "qty_prec": int(s.get("quantityPrecision", 3)),
             "tick": float(pf.get("tickSize", 0.01)), "price_prec": int(s.get("pricePrecision", 2)),
+            "min_notional": float(notl.get("notional") or notl.get("minNotional") or 0.0),
         }
     return out
 
@@ -163,12 +171,30 @@ def account_balance() -> float:
     return 0.0
 
 
+# the tuple lives in libs/execution/collateral.py -- two copies would drift
+_STABLE_COLLATERAL = STABLE_COLLATERAL
+
+
 def account_summary() -> dict[str, float]:
-    """Equity, wallet, unrealized PnL, available, and margin used (the live P&L snapshot)."""
+    """Equity, wallet, unrealized PnL, available, and margin used (the live P&L snapshot).
+
+    EQUITY is the MAX of two venue-derived measures: totalMarginBalance, and the face-value
+    sum of per-asset marginBalance across stable collateral. Under multiAssetsMargin=False
+    totalMarginBalance is USDT-only -- it hid $5,000 of USDC collateral, sizing the book at
+    1/25th of true wealth and feeding the deadman a high-water below its dust floor, which
+    disarmed the ruin rail at every equity (2026-07-30 deep sweep, R0053/R0054); the stable
+    sum covers that mode. Under multiAssetsMargin=True totalMarginBalance is the venue's own
+    USD-marked total including non-stables (which the stable sum cannot price) and wins the
+    max. Max never reads below either truth; a depegged stable can overstate by its depeg,
+    second-order next to the $5,000 blindness. `available` stays venue-reported because
+    wealth and order capacity are different quantities."""
     a = _signed("/fapi/v2/account", {})
+    eq = max(sum(float(x.get("marginBalance", 0.0)) for x in a.get("assets", [])
+                 if x.get("asset") in _STABLE_COLLATERAL),
+             float(a.get("totalMarginBalance", 0.0)))
     return {
         "wallet": float(a.get("totalWalletBalance", 0.0)),
-        "equity": float(a.get("totalMarginBalance", 0.0)),
+        "equity": eq,
         "unrealized_pnl": float(a.get("totalUnrealizedProfit", 0.0)),
         "available": float(a.get("availableBalance", 0.0)),
         "margin_used": float(a.get("totalInitialMargin", 0.0)),
@@ -245,6 +271,27 @@ def income_summary(since_ms: int = 0, fetch: Any = None) -> dict[str, float]:
 def realized_trades(since_ms: int = 0) -> list[float]:
     """Per-close realized-PnL amounts (for win rate). One row per position-reducing fill."""
     return [float(r.get("income", 0.0)) for r in _income_rows(since_ms, "REALIZED_PNL")]
+
+
+def commission_events(since_ms: int, symbol: str = "") -> list[dict[str, Any]]:
+    """Per-EVENT commission rows (symbol, time, commission) for per-trade fee attribution.
+
+    ``income_summary`` returns only the AGGREGATE commission, which cannot answer "what did THIS
+    round-trip cost". Per-trade attribution is what separates a bleeding hold-class from a
+    bleeding execution path, and the desk's own trade log cannot supply it: ``_tca`` records
+    slippage-vs-mid and no commission term at all, so every per-trade ``net`` in
+    data/cashcarry_trades.json is fee-blind by construction (2026-07-28 finding -- the venue
+    billed $1,750.65 while the log's aggregate net read +$0.16).
+
+    Read-only and paginated through the audited ``_income_rows`` path, which is the only
+    sanctioned way to read this endpoint (the 2026-07-26 truncation incident: a direct
+    limit=1000 call silently returned a page cap and understated commission by ~4.4x).
+    Commission is returned POSITIVE-MEANS-PAID, matching ``_tca``'s sign convention.
+    """
+    return [{"symbol": str(r.get("symbol") or ""),
+             "time": int(r.get("time") or 0),
+             "commission": abs(float(r.get("income") or 0.0))}
+            for r in _income_rows(since_ms, "COMMISSION", symbol=symbol)]
 
 
 def positions() -> dict[str, float]:

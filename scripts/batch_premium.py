@@ -11,13 +11,14 @@ import time
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
 from libs.research.axis_screen import stage_a_screen
 
 
-def _get(url: str, hdr: dict | None = None):
+def _get(url: str, hdr: dict[str, Any] | None = None):
     req = urllib.request.Request(url, headers=hdr or {"User-Agent": "Mozilla/5.0"})
     with urllib.request.urlopen(req, timeout=25) as r:
         return json.loads(r.read().decode())

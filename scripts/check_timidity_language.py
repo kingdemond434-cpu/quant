@@ -152,6 +152,28 @@ def _prompt_surfaces() -> list[Path]:
         p = _ROOT / rel
         if p.exists():
             out.append(p)
+    # A DOC A PROMPT ORDERS THE ORGAN TO READ *IS* A PROMPT SURFACE. The sweep above covers the
+    # files the desk hands an organ directly and stopped there, but every dig prompt opens by
+    # delegating: blindrediscovery_dig_prompt.txt:1 says "Read the Blind-Rediscovery companion
+    # section of docs/research/PROSPECTOR_SPEC.md and docs/DIGGING_CHARTER.md". Instructions
+    # reached by one hop of indirection bind the organ exactly as hard as inline ones and were
+    # invisible here -- the same transitive-reachability blindness check_orphan_code was fixed
+    # for. Measured on the day this was added: PROSPECTOR_SPEC.md:124 carried "invent up to 5
+    # mechanisms", a QUOTA-CAP that survived the principal's 2026-07-19 exhaustion order because
+    # that order was applied to the prompt and never followed through the delegation.
+    #
+    # NAMED EXPLICITLY, NOT GLOBBED, and the distinction is what keeps this fence trusted: the
+    # first draft derived this list by regexing prompt text for *SPEC*/*CHARTER* paths, which
+    # also swept docs/research/prospector_coverage.md and fired QUOTA-CAP on "up to 26 years" --
+    # a DATA SPAN in a coverage RECORD, not a bound on effort. Records describe what was found;
+    # only charters and specs instruct. A gate that cries wolf gets switched off, and a switched-
+    # off gate enforces nothing (L1.43), so records stay out until one is shown to instruct.
+    for rel in ("docs/DIGGING_CHARTER.md", "docs/research/PROSPECTOR_SPEC.md",
+                "docs/research/LITERATURE_SPEC.md",
+                "docs/research/FREE_DATA_ALTERNATIVES_SPEC.md"):
+        p = _ROOT / rel
+        if p.exists():
+            out.append(p)
     return out
 
 
@@ -294,8 +316,24 @@ def main() -> int:
             print("  NOT-INJECTED L1.28 is absent from ops/principal_doctrine.txt -- the law is "
                   "not reaching any organ (L2.1)")
         print(f"-> {_OUT.relative_to(_ROOT)}")
+    # THE TWO DENOMINATORS THIS VERDICT RESTS ON, NEITHER OF WHICH WAS CONSULTED (L1.57).
+    # `prompt_surfaces_scanned` was computed, published into the artifact, and then left out of
+    # the failure expression entirely: an empty glob yields zero hits, and zero hits read as full
+    # compliance. That matters here more than almost anywhere, because L1.36's aggression-family
+    # hardening rests on this sweep reaching ALL 18 prompt surfaces -- organ behaviour is set by
+    # prompts, so a silent zero-surface sweep certifies the one layer that decides how hard every
+    # organ pushes. `counts` is the same story for the constitution's own clauses.
+    n_surfaces = rep["prompt_surfaces_scanned"]
+    n_clauses = sum(rep["counts"].values()) if isinstance(rep["counts"], dict) else 0
+    blind = []
+    if not n_surfaces:
+        blind.append("ZERO prompt surfaces matched -- the L1.36 prompt sweep scanned nothing")
+    if not n_clauses:
+        blind.append("ZERO constitution clauses classified -- the L1.28 sweep scanned nothing")
+    for b in blind:
+        print(f"  UNMEASURED  {b}")
     failed = (rep["unclassified"] or rep["doctrine_timid_instructions"]
-              or rep["prompt_timid_hits"] or not rep["doctrine_injected"])
+              or rep["prompt_timid_hits"] or not rep["doctrine_injected"] or blind)
     return 0 if (args.report_only or not failed) else 1
 
 

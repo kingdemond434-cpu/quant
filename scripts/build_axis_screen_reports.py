@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -24,7 +25,7 @@ N_TRIALS_TOTAL = raw["n_trials"]
 DATES = {1: 1878, 5: 375, 20: 93}
 
 
-def enrich(t: dict) -> dict:
+def enrich(t: dict[str, Any]) -> dict[str, Any]:
     h = t.get("horizon_days", 1)
     o = dict(t)
     if "sharpe_momentum" in t:

@@ -14,6 +14,7 @@ import json
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, "/home/quant/quant-platform")
 import os
@@ -22,6 +23,8 @@ os.chdir("/home/quant/quant-platform")
 
 from scripts.build_audit_coverage import audit_payload  # noqa: E402 -- after chdir/sys.path
 from scripts.run_external_panel import _ask  # noqa: E402 -- after chdir/sys.path
+
+from libs.llm.push import build_turns  # noqa: E402
 
 payload, files = audit_payload()
 last_file = files[-1] if files else "?"
@@ -33,10 +36,15 @@ print(f"payload: {len(probe):,} chars (~{len(probe)//4:,} tokens) | {len(files)}
 print(f"expected answer contains: {last_file}\n")
 
 
-def test(pv):
+def test(pv: dict[str, Any]) -> tuple[str, str, int, str]:
     m = pv["model"]
     try:
-        r = _ask(pv["base_url"], pv["key"], m, "You are a precise assistant.", probe)
+        # Same orphaning as deep_review.py: 0debac3 moved `_ask`'s 4th parameter from `system` to
+        # a `messages` list and this caller kept passing (system, user). Every seat raised
+        # TypeError and the `except Exception` below rendered it as a per-model "ERROR" row --
+        # a capacity probe that reports every model dead looks exactly like an outage.
+        r = _ask(pv["base_url"], pv["key"], m,
+                 build_turns("You are a precise assistant.", probe))
         body = r.strip()
         if len(body) < 3:
             return (m, "BLANK", len(body), repr(r[:40]))

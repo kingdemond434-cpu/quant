@@ -47,7 +47,10 @@ class ResearchROIMonitor:
         self.store = store
 
     def report(self) -> ResearchROIReport:
-        records = self.store.all()
+        # Full history on purpose: ROI is spend accounting, and retired-for-capacity rows
+        # (status -> archived) were real research spend -- dropping them would flatter every
+        # family's yield and steer effort with falsified denominators.
+        records = self.store.all(include_retired=True)
         total = len(records)
         agg: dict[str, dict[str, int]] = {}
         for r in records:

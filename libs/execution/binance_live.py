@@ -32,7 +32,19 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+from libs.core.logging import get_logger
+from libs.execution.collateral import STABLE_COLLATERAL
 from libs.execution.idempotency import client_order_id
+
+# OBSERVABILITY (gap #56, 2026-07-29). The desk already OWNED a structured logger with
+# correlation ids and secret redaction (libs/core/logging.py) and NOTHING below the script
+# boundary used it -- 1 of 318 modules. That is an activation gap, not a missing capability, so
+# nothing new was built: this is the money path adopting the convention the desk already has.
+# The library NEVER configures handlers or levels (the owning script does, via
+# configure_logging), so importing this cannot change any current output.
+# NEVER LOG: api key, secret, signature, or the signed query string -- fenced by
+# tests/execution/test_obs_logging.py, which scans this file's log calls.
+_log = get_logger(__name__)
 
 _BASE = "https://fapi.binance.com"              # PINNED live futures -- verified against docs
 _KEYFILE = Path("data/secrets/binance_live.json")
@@ -78,6 +90,9 @@ def _get(path: str, params: dict[str, Any] | None = None) -> Any:
 def _signed(path: str, params: dict[str, Any], *, method: str = "GET") -> Any:
     armed, why = is_armed()
     if not armed:
+        # A refused signed call is a decision worth a trail: post-incident forensics needs to
+        # distinguish "the desk never tried" from "the venue rejected it".
+        _log.warning("signed call REFUSED, not armed: path=%s reason=%s", path, why)
         raise RuntimeError(f"binance_live not armed ({why}) -- refusing signed call {path}")
     key, secret = _creds()
     assert key is not None and secret is not None  # armed (checked above) => creds present
@@ -96,17 +111,24 @@ def _signed(path: str, params: dict[str, Any], *, method: str = "GET") -> Any:
 
 
 def exchange_filters() -> dict[str, dict[str, float]]:
-    """Per-symbol step size, min qty, and price/qty precision (for valid order sizing)."""
+    """Per-symbol step size, min qty, price/qty precision, and minimum order notional.
+
+    ``min_notional`` is the venue's minimum ORDER VALUE; 0.0 means no published minimum, so
+    callers must keep their own conservative floor for that case. USD-M futures publishes the
+    value under the key ``notional``, NOT spot's ``minNotional`` -- reading the spot key here
+    yields 0.0 for every symbol (tests/execution/test_filter_parity.py pins this)."""
     info = _get("/fapi/v1/exchangeInfo")
     out: dict[str, dict[str, float]] = {}
     for s in info.get("symbols", []):
         f = {flt["filterType"]: flt for flt in s.get("filters", [])}
         lot = f.get("LOT_SIZE", {})
         pf = f.get("PRICE_FILTER", {})
+        notl = f.get("MIN_NOTIONAL", {}) or f.get("NOTIONAL", {})
         out[s["symbol"]] = {
             "step": float(lot.get("stepSize", 0.001)), "min_qty": float(lot.get("minQty", 0.0)),
             "qty_prec": int(s.get("quantityPrecision", 3)),
             "tick": float(pf.get("tickSize", 0.01)), "price_prec": int(s.get("pricePrecision", 2)),
+            "min_notional": float(notl.get("notional") or notl.get("minNotional") or 0.0),
         }
     return out
 
@@ -170,9 +192,20 @@ def account_balance() -> float:
 def account_summary() -> dict[str, float]:
     """Equity, wallet, unrealized PnL, available, and margin used (the live P&L snapshot)."""
     a = _signed("/fapi/v2/account", {})
+    # EQUITY is the MAX of two venue-derived measures: totalMarginBalance, and the face-value sum
+    # of per-asset marginBalance across stable collateral. Under multiAssetsMargin=False
+    # totalMarginBalance is USDT-ONLY -- on 2026-07-30 it hid $5,000 of USDC, sized the book at
+    # 1/25th of true wealth and fed the dead-man a high-water below its dust floor, disarming the
+    # ruin rail at every equity. Under multiAssetsMargin=True the venue's own USD-marked total
+    # includes non-stables the stable sum cannot price, and wins the max. Max never reads below
+    # either truth; a depegged stable can overstate by its depeg, second-order next to $5,000 of
+    # blindness. Copied from the audited testnet client, NOT re-derived (R0234).
+    eq = max(sum(float(x.get("marginBalance", 0.0)) for x in a.get("assets", [])
+                 if x.get("asset") in STABLE_COLLATERAL),
+             float(a.get("totalMarginBalance", 0.0)))
     return {
         "wallet": float(a.get("totalWalletBalance", 0.0)),
-        "equity": float(a.get("totalMarginBalance", 0.0)),
+        "equity": eq,
         "unrealized_pnl": float(a.get("totalUnrealizedProfit", 0.0)),
         "available": float(a.get("availableBalance", 0.0)),
         "margin_used": float(a.get("totalInitialMargin", 0.0)),
@@ -330,6 +363,8 @@ def place_market(symbol: str, side: str, qty: float,
     opening the opposite position -- mandatory on any cover/close leg.
     """
     cap = _market_max_qty(symbol)
+    _log.info("place_market symbol=%s side=%s qty=%s reduce_only=%s chunk_cap=%s",
+              symbol, side, qty, reduce_only, cap)
     remaining, last, n = float(qty), None, 0
     # GAP #49: intent distinguishes a close from an open, so a cover and an entry on the same
     # symbol/side never share an ID inside one bucket.
@@ -348,6 +383,12 @@ def place_market(symbol: str, side: str, qty: float,
         last = _signed("/fapi/v1/order", params, method="POST")
         remaining -= chunk
         n += 1
+    if n >= 50:
+        # The split loop's own bound was silent: hitting it means the order did NOT fully place.
+        _log.error("place_market symbol=%s hit the 50-chunk bound with %s remaining -- "
+                   "order is INCOMPLETE", symbol, remaining)
+    _log.info("place_market DONE symbol=%s chunks=%s order_id=%s",
+              symbol, n, (last or {}).get("orderId") if isinstance(last, dict) else None)
     return dict(last) if isinstance(last, dict) else {"raw": last}
 
 
@@ -361,6 +402,9 @@ def place_post_only(symbol: str, side: str, qty: float, price: float,
         # not less: incident #6 was accumulated resting fills walking a short through zero.
         "newClientOrderId": client_order_id(symbol, side, "postonly", cycle=cycle),
     }, method="POST")
+    _log.info("place_post_only symbol=%s side=%s qty=%s price=%s order_id=%s",
+              symbol, side, qty, price,
+              res.get("orderId") if isinstance(res, dict) else None)
     return dict(res) if isinstance(res, dict) else {"raw": res}
 
 
@@ -371,6 +415,11 @@ def place_stop_market(symbol: str, side: str, qty: float, stop_price: float) -> 
         "symbol": symbol, "side": side, "type": "STOP_MARKET", "quantity": qty,
         "stopPrice": stop_price, "reduceOnly": "true",
     }, method="POST")
+    # The venue-side protective stop is the rail that survives host death: its placement is the
+    # single most important line in any live-session log.
+    _log.info("place_stop_market (RUIN RAIL) symbol=%s side=%s qty=%s stop=%s order_id=%s",
+              symbol, side, qty, stop_price,
+              res.get("orderId") if isinstance(res, dict) else None)
     return dict(res) if isinstance(res, dict) else {"raw": res}
 
 
@@ -382,8 +431,20 @@ def open_orders(symbol: str | None = None) -> list[dict[str, Any]]:
 
 
 def cancel_all(symbol: str) -> dict[str, Any]:
-    """Cancel all open orders for a symbol (clears stale maker quotes before re-pegging)."""
+    """Cancel all open orders for a symbol (clears stale maker quotes before re-pegging).
+
+    CAUTION (R0071c, 2026-07-31): this also cancels a resting protective STOP_MARKET. Paths
+    that must preserve the venue-side stop (the maker-pair fallback) cancel their own orders
+    individually via cancel_order instead."""
     res = _signed("/fapi/v1/allOpenOrders", {"symbol": symbol}, method="DELETE")
+    return dict(res) if isinstance(res, dict) else {"raw": res}
+
+
+def cancel_order(symbol: str, order_id: int) -> dict[str, Any]:
+    """Cancel ONE order by id -- surgical, so a maker-quote cleanup can never take the
+    protective stop down with it."""
+    res = _signed("/fapi/v1/order", {"symbol": symbol, "orderId": order_id}, method="DELETE")
+    _log.info("cancel_order symbol=%s order_id=%s", symbol, order_id)
     return dict(res) if isinstance(res, dict) else {"raw": res}
 
 

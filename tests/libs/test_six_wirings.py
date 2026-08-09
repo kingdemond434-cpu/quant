@@ -35,13 +35,21 @@ def test_a_candidate_that_loses_to_buy_and_hold_fails_the_gate() -> None:
 
 def test_the_baseline_gate_is_skipped_not_passed_when_no_benchmark_is_supplied() -> None:
     """A gate that defaults to True when nobody supplied its evidence is a gate that has been
-    removed. Absence must leave it ABSENT."""
-    import inspect
+    removed. The merged validate() goes one better than leaving it absent: the verdict RECORDS
+    that nobody looked (`unmeasured`), so a green artifact cannot silently stand in for a
+    measurement. Behavioural, not source-text -- the phrasing changed at the 2026-08-04 merge
+    and a phrase probe would have pinned prose rather than conduct."""
+    from types import SimpleNamespace
 
-    from libs.autodiscovery import validation
-    src = inspect.getsource(validation.validate)
-    assert "if buy_hold_returns is not None:" in src
-    assert '"beats_baseline"' in src
+    import numpy as np
+
+    from libs.autodiscovery.validation import validate
+    rng = np.random.default_rng(0)
+    m = rng.normal(0, 0.01, (400, 3))
+    hyp = SimpleNamespace(failure_modes=["chop"])
+    v = validate(m[:, 0], hypothesis=hyp, periods_per_year=365.0, n_trials=3,
+                 sharpe_estimates=np.zeros(3), returns_matrix=m)
+    assert "beats_baselines" in v.unmeasured
 
 
 # ------------------------------------------------------------------- edge_gate
@@ -88,15 +96,28 @@ def test_an_empty_book_imbalance_is_zero_not_nan() -> None:
 
 # --------------------------------------------------------------- stationarity
 
-def test_a_missing_stats_backend_skips_rather_than_passes() -> None:
+def test_a_missing_stats_backend_skips_rather_than_passes(monkeypatch) -> None:
     """The backend is an OPTIONAL dependency. A gate that returns True when its backend is absent
-    has been deleted by a packaging decision."""
-    import inspect
+    has been deleted by a packaging decision. Behavioural since the 2026-08-04 merge: the absent
+    backend must land the gate in `unmeasured` -- never in `gates` as passed, never silent."""
+    from types import SimpleNamespace
 
-    from libs.autodiscovery import validation
-    src = inspect.getsource(validation.validate)
-    assert "StatsBackendMissing" in src
-    assert "NOT recorded as passed" in src
+    import numpy as np
+
+    import libs.research.stationarity as st
+    from libs.autodiscovery.validation import validate
+
+    def _raise(_arr):
+        raise st.StatsBackendMissing("backend deliberately absent for this test")
+
+    monkeypatch.setattr(st, "adf_pvalue", _raise)
+    rng = np.random.default_rng(1)
+    m = rng.normal(0, 0.01, (400, 3))
+    hyp = SimpleNamespace(failure_modes=["chop"], requires_stationarity=True)
+    v = validate(m[:, 0], hypothesis=hyp, periods_per_year=365.0, n_trials=3,
+                 sharpe_estimates=np.zeros(3), returns_matrix=m)
+    assert "stationary" not in v.gates
+    assert "stationary" in v.unmeasured
 
 
 # ---------------------------------------------------------------- manufacture

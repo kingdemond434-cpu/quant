@@ -13,13 +13,13 @@
 #     that clobbers it destroys the only copy. Not deploying is always recoverable.
 #   * DIVERGED / BOX AHEAD -> refuse. This is FAST-FORWARD ONLY. Resolving a real merge
 #     unattended, on the box that owns the book, is not a thing a cron job may attempt.
-#   * CI RED -> pull is REVERTED to the exact prior commit, then exit non-zero. Leaving the box on
-#     code that fails its own gate is strictly worse than leaving it on the old code, and a
-#     half-applied deploy is the state nobody can reason about at 3am.
-#   * TREE MOVED MID-GATE -> the revert itself refuses. The CI window is minutes long; work that
-#     lands in it (a session's commit, an operator hotfix) is the only copy, and 2026-07-31 the
-#     unconditional revert destroyed exactly that. Red-but-newer code plus a loud record beats
-#     silently deleting someone's work; the next tick re-gates whatever the tree then holds.
+#   * CI RED -> nothing is merged. The gate runs in a DETACHED WORKTREE at the fetched commit, so
+#     the live tree never moved and there is nothing to revert (R0246). This also means the box is
+#     never, at any instant, sitting on code that failed its own gate.
+#   * TREE MOVED MID-GATE -> the MERGE refuses, and refusing costs nothing because the tree was
+#     never touched. The CI window is minutes long; work that lands in it (a session's commit, an
+#     operator hotfix) is the only copy, and on 2026-07-31 the then-unconditional revert destroyed
+#     exactly that. `git reset --hard` is no longer reachable from this script at all.
 #     (run_ci is invoked --fail-on-lock here: "another gate is mid-run" is not "green".)
 #   * RUIN RAIL CHANGED -> reported, never restarted. A deadman restart is a window with no ruin
 #     rail; no unattended script opens that window (libs/ops/deploy_plan.py explains the tiering).
@@ -62,6 +62,20 @@ PY="$ROOT/.venv/bin/python"
 [ -x "$PY" ] || PY=$(command -v python3) || { echo "pull-deploy: no python3" >&2; exit 2; }
 
 say() { echo "pull-deploy: $*"; }
+
+# ONE trap for the whole script, installed before anything it cleans up exists. Two `trap ... EXIT`
+# calls do not compose -- the second REPLACES the first -- and the gate worktree must be removed on
+# every path including a kill, or one crashed tick wedges every tick after it.
+CLEAN_GATE=""
+OUTCOMES=""
+cleanup() {
+    if [ -n "$CLEAN_GATE" ]; then
+        git worktree remove --force "$CLEAN_GATE" >/dev/null 2>&1 || rm -rf "$CLEAN_GATE"
+        git worktree prune >/dev/null 2>&1 || true
+    fi
+    [ -z "$OUTCOMES" ] || rm -f "$OUTCOMES"
+}
+trap cleanup EXIT INT TERM
 
 # Evidence artifact: one flat object, last run wins. max_audit fences it so a box that silently
 # stopped pulling -- or that is parked on a REVERTED red deploy -- cannot look healthy.
@@ -176,36 +190,92 @@ if [ "$DRY" -eq 1 ]; then
     exit 0
 fi
 
-# ---------------------------------------------------------------- apply, then gate, then revert
-git merge --ff-only FETCH_HEAD >/dev/null 2>&1 || {
-    say "fast-forward failed unexpectedly -- box left at $OLD_SHORT"
-    record ff-failed "$OLD_SHORT" "$NEW_SHORT" "git merge --ff-only failed"; exit 2; }
-say "fast-forwarded to $NEW_SHORT -- running the CI gate before restarting anything"
+# ---------------------------------------------------------------- gate ELSEWHERE, merge on green
+# THE ORDER IS THE WHOLE SECURITY PROPERTY (R0246). This block used to `git merge --ff-only` and
+# only THEN run the gate -- so the live tree held unreviewed upstream code, and the very first
+# thing to execute from it was that code's own copy of run_ci.py. The control the desk counted on
+# as its safety gate WAS the payload trigger, on the box that owns data/secrets/binance_live.json,
+# every 10 minutes. Two further paths inherited the same inversion by running from the live tree
+# on the NEXT tick: the pre-push hook this script copies into .git/hooks and chmods +x (line 110),
+# and reconstitute_cron.sh installing an arbitrary crontab on a manifest-hash change (line 126).
+# Gating a DETACHED WORKTREE and merging only on green means the live tree -- and therefore both
+# of those paths, and every supervised process that imports from it -- can only ever hold code
+# that has already passed. It also deletes the revert entirely: there is no window in which the
+# box sits on red code, so `git reset --hard` (which destroyed a session's only copy of its work
+# on 2026-07-31, R0144) is no longer reachable from this script at all.
+#
+# WHAT THIS IS NOT. A worktree is NOT A SANDBOX. Gating still EXECUTES the fetched commit as the
+# quant user, and an attacker who can push can trivially make a gate green by editing the gate.
+# The only control that stops execution is verifying WHO signed the commit before running it, and
+# this repo has no signing at all (`git log --format=%G?` is N for every commit) -- provisioning a
+# key is a principal decision, rowed separately. What is closed here is narrower and real: the
+# live tree, the hook, the crontab and the running daemons are no longer downstream of ungated
+# code, and the ~10-minute unvetted-execution window (G8a) is gone.
+GATE_DIR="$ROOT/../.pull_deploy_gate"
+
+# A crashed run leaves a worktree registered; prune before adding so a single bad tick cannot
+# wedge every tick after it (the deadlock class the refuse-on-dirty check was already bitten by).
+git worktree remove --force "$GATE_DIR" >/dev/null 2>&1 || true
+rm -rf "$GATE_DIR"
+git worktree prune >/dev/null 2>&1 || true
+
+if ! git worktree add --detach "$GATE_DIR" "$NEW" >/dev/null 2>&1; then
+    say "could not create the gate worktree -- box left at $OLD_SHORT, nothing merged"
+    record gate-setup-failed "$OLD_SHORT" "$NEW_SHORT" "git worktree add failed"; exit 2
+fi
+CLEAN_GATE="$GATE_DIR"
+
+# A BARE WORKTREE MAKES LIVE-STATE TESTS PASS FOR THE WRONG REASON, which in this position is a
+# FALSE GREEN in the gate that decides whether untrusted code reaches the box -- the worst possible
+# direction. Measured 2026-08-05 (desk lesson L0068): a bare worktree PASSED the enforcement tests
+# purely because data/moat was absent, while the same worktree with data/ linked in FAILED
+# identically to the real tree. So the box's real untracked state is linked in, per ENTRY and never
+# as a whole directory: data/ carries 18 TRACKED files that must come from the COMMIT BEING GATED,
+# and `ln -s` of the parent would both shadow those and (onto an existing dir) silently create
+# data/data.
+link_missing() {   # link_missing <relative-path>
+    if [ -e "$ROOT/$1" ] && [ ! -e "$GATE_DIR/$1" ]; then
+        ln -s "$ROOT/$1" "$GATE_DIR/$1"
+    fi
+}
+link_missing .venv          # run_ci resolves its interpreter relative to its own tree
+link_missing lake
+link_missing reports
+
+# The CI lock must be SHARED with the live tree, not re-created inside the gate. Two concurrent
+# pytest runs is not a style question on a 3.8GB swapless box: it is the measured cause of the
+# OOM kills behind ci-gate-red (513ba24). Touching it first guarantees there is a file to link.
+[ -e "$ROOT/data/.ci_run.lock" ] || : > "$ROOT/data/.ci_run.lock"
+mkdir -p "$GATE_DIR/data"
+for entry in "$ROOT"/data/* "$ROOT"/data/.[!.]*; do
+    [ -e "$entry" ] || continue
+    link_missing "data/$(basename "$entry")"
+done
+
+say "gating $NEW_SHORT in a detached worktree -- the live tree is still at $OLD_SHORT"
 
 # --fail-on-lock: a lock-skip exits 0 for organs, but "someone else is mid-gate" is NOT "green"
 # for a deploy decision -- without the flag this branch shipped unvetted commits (R0145, was R0136).
-if ! "$PY" "$ROOT/scripts/run_ci.py" --fail-on-lock; then
-    say "CI GATE NOT GREEN on $NEW_SHORT -- reverting to $OLD_SHORT"
-    # REVERT ONLY A TREE NOBODY ELSE TOUCHED. The CI window is minutes long; a session or an
-    # operator can legitimately commit or edit here mid-gate, and OLD was captured before all
-    # of that. An unconditional reset --hard destroyed exactly that work live on 2026-07-31
-    # (commit 80153c0 + uncommitted fixes, R0144, was R0135). Same philosophy as the refuse-on-dirty
-    # check at the top: not deploying (or not reverting) is always recoverable; destroyed
-    # work is not.
-    NOW_HEAD=$(git rev-parse HEAD)
-    if [ "$NOW_HEAD" != "$NEW" ] || [ -n "$(git status --porcelain --untracked-files=no 2>/dev/null)" ]; then
-        say "REFUSING REVERT -- the tree moved during the CI window (HEAD $(git rev-parse --short HEAD),"
-        say "expected $NEW_SHORT, or tracked files modified). A session is working here; a"
-        say "reset --hard now destroys the only copy. Box left as-is; next tick re-gates."
-        record refused-revert-tree-moved "$OLD_SHORT" "$NEW_SHORT" "gate not green but tree changed mid-gate; nothing reverted, nothing restarted"
-        exit 1
-    fi
-    git reset --hard "$OLD" >/dev/null 2>&1 || say "WARNING: revert failed -- box is on RED code"
-    say "nothing was restarted; the desk keeps running the code that passed its gate."
-    record ci-red "$OLD_SHORT" "$NEW_SHORT" "reverted -- run_ci.py not green on the new commit"
+GATE_PY="$GATE_DIR/.venv/bin/python"
+[ -x "$GATE_PY" ] || GATE_PY="$PY"
+if ! "$GATE_PY" "$GATE_DIR/scripts/run_ci.py" --fail-on-lock; then
+    say "CI GATE NOT GREEN on $NEW_SHORT -- nothing merged, box still at $OLD_SHORT"
+    say "no revert was needed: the live tree never moved."
+    record ci-red "$OLD_SHORT" "$NEW_SHORT" "gate red in worktree -- live tree untouched at $OLD_SHORT"
     exit 1
 fi
-say "CI gate green"
+say "CI gate green on $NEW_SHORT -- merging into the live tree"
+
+# ONLY NOW does the live tree move. --ff-only is what makes this safe against a session that
+# committed during the gate window: HEAD is then no longer an ancestor of NEW, the merge refuses,
+# and the next tick re-gates whatever the tree by then holds. Nothing is ever discarded.
+if ! git merge --ff-only "$NEW" >/dev/null 2>&1; then
+    say "REFUSING MERGE -- the tree moved during the CI window (HEAD $(git rev-parse --short HEAD),"
+    say "expected $OLD_SHORT). A session is working here; the next tick re-gates."
+    record refused-merge-tree-moved "$OLD_SHORT" "$NEW_SHORT" "gate green but tree changed mid-gate; nothing merged, nothing restarted"
+    exit 1
+fi
+say "fast-forwarded to $NEW_SHORT"
 
 # ---------------------------------------------------------------- restart only what changed
 # OUTCOMES, NOT INTENTIONS. The loop runs in a subshell (it is on the right of a pipe), so a
@@ -214,7 +284,6 @@ say "CI gate green"
 # refused for permissions. An evidence line that overstates what happened is the same lie this
 # whole path exists to end, so outcomes are journalled to a file and counted from that.
 OUTCOMES=$(mktemp) || exit 2
-trap 'rm -f "$OUTCOMES"' EXIT INT TERM
 
 if [ -n "$PLAN" ]; then
     printf '%s\n' "$PLAN" | while IFS='	' read -r verb target why; do
@@ -227,11 +296,23 @@ if [ -n "$PLAN" ]; then
             elif systemctl restart "$target" >/dev/null 2>&1; then
                 say "restarted $target   [$why]"
                 echo restarted >> "$OUTCOMES"
+            elif $PY "$ROOT/scripts/ship_restart.py" "$target" >/dev/null 2>&1; then
+                # This box denies systemctl to the quant user (scripts/watchdog.py:78). Printing
+                # the command used to be the whole deliverable, and the claimed backstop -- "the
+                # watchdog's 3-min heartbeat respawn" -- DOES NOT COVER THIS CASE: watchdog's
+                # _systemd_owns() deliberately refuses to spawn while systemd has a live MainPID,
+                # so it rescues a DEAD process and never an alive-but-STALE one. That is the
+                # entire failure mode here, and it left a money-path fix inert for 11.8h on
+                # 2026-08-05 ($4,805.61 misreported to hurdle_rate.py:97).
+                # ship_restart performs the restart deploy_plan ALREADY authorises for this tier,
+                # via SIGTERM + Restart=always, and refuses when the unit would not come back.
+                say "restarted $target via ship_restart (systemctl denied)   [$why]"
+                say "  RESTARTED is not FIXED -- confirm the new behaviour in the producer's own"
+                say "  output, against a key only the new code can write."
+                echo restarted >> "$OUTCOMES"
             else
-                # This box denies systemctl to the quant user (scripts/watchdog.py:78), so
-                # printing the exact command IS the deliverable -- and the watchdog's 3-min
-                # heartbeat respawn is the backstop until the operator runs it.
-                say "OWED (permission denied): sudo systemctl restart $target   [$why]"
+                say "OWED (permission denied, ship_restart refused): sudo systemctl restart $target   [$why]"
+                say "  reason:  $PY scripts/ship_restart.py $target"
                 echo owed >> "$OUTCOMES"
             fi
             ;;

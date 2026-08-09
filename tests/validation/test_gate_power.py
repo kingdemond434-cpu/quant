@@ -1,121 +1,130 @@
-"""A VALIDATOR NEVER MEASURED AGAINST A KNOWN EDGE IS UNCALIBRATED.
+"""Is the gauntlet too harsh -- and would the desk's OWN diagnosed fix have helped?
 
-The first complete sweep killed 750 of 762 screen-clearing cells at F3. False positives and false
-negatives are not symmetric in how they announce themselves: a loose gate ships a phantom edge and
-the rails eventually say so, while a tight gate destroys real alpha silently with every board green.
-The desk measures the first continuously and had never measured the second.
+Both halves are measured here rather than argued, because both were previously answered by
+assertion. The certification proved the gate ADMITS a true edge (SR_true=10 passes) and REJECTS
+noise (SR_true=0 fails five gates). It could not say how big an edge must be, and that is the
+number that decides whether "0 survivors from 420" is a fact about crypto or a fact about the
+campaign's resolution.
 """
-
 from __future__ import annotations
 
 import numpy as np
-import pytest
+from scripts.certify_gauntlet import design_power, dsr_hurdle_annual
 
-from libs.validation.gate_power import (
-    f3_both_arms_positive,
-    plant,
-    power_curve,
-    run_controls,
-    summarise,
-)
+from libs.validation.fdr import benjamini_hochberg, benjamini_yekutieli
+
+# The campaign the 0-of-420 record was measured on.
+_N, _T = 420, 310
 
 
-def test_THE_GATE_IS_TRANSCRIBED_FROM_THE_SWEEP_NOT_ITS_DOCS() -> None:
-    """Calibrating a rule the desk does not run is worthless. The sweep's condition is
-    `r_is <= 0 or sign(r_is) != sign(r_oos)`, which on arm means is 'both strictly positive'."""
-    ones, negs = np.ones(50), -np.ones(50)
-    assert f3_both_arms_positive(ones, ones).passed
-    assert not f3_both_arms_positive(ones, negs).passed
-    assert not f3_both_arms_positive(negs, negs).passed, "two negative arms share a sign"
-    assert not f3_both_arms_positive(np.zeros(50), ones).passed, "zero is not positive"
+def test_the_campaign_shape_cannot_resolve_a_world_class_edge():
+    """THE FINDING. A world-class systematic book runs a true annualised Sharpe of 2-3. At the
+    campaign's own shape the gate demands ~5 just to reach dsr>=0.95, so a genuine SR-2 strategy
+    clears it well under 1% of the time.
+
+    The consequence is the whole point: 0-of-420 is EXACTLY what an underpowered campaign returns
+    whether or not the 420 contained real edges, so the null result carries no information about
+    the price space and must not be read as 'crypto is picked clean'."""
+    d = design_power(_N + 1, _T)
+    assert d["hurdle_annual_sharpe"] > 4.5
+    assert d["power_by_true_annual_sharpe"]["2"] < 0.05
+    assert d["power_by_true_annual_sharpe"]["3"] < 0.10
+    assert d["underpowered_below_annual_sharpe"] >= 4.0
 
 
-def test_A_CONDITIONAL_PLANT_IS_ABSENT_NOT_REVERSED() -> None:
-    """Conflating the two would FLATTER the gate: rejecting an inverting mechanism is defensible,
-    rejecting an absent one is the false negative under investigation."""
-    rng = np.random.default_rng(0)
-    a, b = plant(rng, 4000, 0.5, kind="conditional")
-    assert float(np.mean(a)) > 0.3
-    assert abs(float(np.mean(b))) < 0.1, "the second arm must be noise, not a reversed edge"
+def test_shape_moves_the_hurdle_and_nothing_is_relaxed_to_do_it():
+    """The only legitimate response to an unpassable gate. Fewer, mechanism-motivated candidates
+    over longer history buy resolution while every threshold stays where it is -- lowering the
+    0.95 tolerance instead would manufacture survivors."""
+    wide_short = dsr_hurdle_annual(_N, _T)
+    narrow_long = dsr_hurdle_annual(30, 1250)
+    assert narrow_long < wide_short / 2.0
+    # both knobs pull independently, so neither alone is the answer
+    assert dsr_hurdle_annual(30, _T) < wide_short          # narrowing alone helps
+    assert dsr_hurdle_annual(_N, 1250) < wide_short        # lengthening alone helps
 
 
-def test_A_NULL_PLANT_HAS_NO_EFFECT_IN_EITHER_ARM() -> None:
-    rng = np.random.default_rng(0)
-    a, b = plant(rng, 4000, 0.5, kind="null")
-    assert abs(float(np.mean(a))) < 0.1 and abs(float(np.mean(b))) < 0.1
+def test_the_design_table_does_not_inherit_the_certifiers_trial_floor():
+    """REGRESSION PIN, on a defect this file's first draft shipped. The table applied
+    certify_gauntlet's own _FAMILY_TRIAL_BUDGET=120 to every cell, collapsing N=100/30/10/5 to a
+    single identical number -- which reads as 'narrowing a campaign below 120 buys nothing' and
+    would have argued the desk out of its only working lever. Production callers pass the real
+    candidate count with no floor (run_discovery n_trials=len(lib), run_crypto_portfolio
+    matrix.shape[1]), so the design question must use N directly."""
+    t = design_power(_N + 1, _T)["alternative_shapes"]["T=310"]
+    assert t["N=5"] < t["N=10"] < t["N=30"] < t["N=100"] < t["N=420"]
 
 
-def test_AN_UNKNOWN_PLANT_SHAPE_RAISES_RATHER_THAN_GUESSING() -> None:
-    with pytest.raises(ValueError, match="unknown planted kind"):
-        plant(np.random.default_rng(0), 100, 0.1, kind="vibes")
+def test_the_hurdle_tracks_the_gate_rather_than_restating_it():
+    """If the hurdle were a hardcoded 5.04 it would drift away from the gate the first time
+    anything upstream changed, and the table would confidently describe a gate that no longer
+    exists. It is derived from expected_max_sharpe and _DSR_THRESHOLD, so it moves with them."""
+    from libs.autodiscovery.validation import _DSR_THRESHOLD
+    assert design_power(_N + 1, _T)["dsr_threshold"] == _DSR_THRESHOLD
+    # monotone in both arguments, which a constant could not be
+    assert dsr_hurdle_annual(_N, _T) > dsr_hurdle_annual(_N, _T * 2)
+    assert dsr_hurdle_annual(_N, _T) > dsr_hurdle_annual(_N // 4, _T)
 
 
-def test_A_STABLE_EDGE_IS_KEPT_ALMOST_ALWAYS_AT_A_CLEAR_EFFECT() -> None:
-    """The gate must work for what it was designed for, or the comparison means nothing."""
-    c = power_curve(f3_both_arms_positive, name="F3", kind="stable",
-                    effects=(0.2,), n_obs=1200, n_trials=200, seed=3)
-    assert c.pass_rates[0] > 0.95
+# ---- gap #71's premise, corrected ---------------------------------------------------------------
+
+def test_fdr_buys_no_power_for_the_best_candidate():
+    """THE CORRECTION. gap #71 diagnosed the screen's Romano-Wolf FWER as a bar that rises with
+    generation volume -- true, and forbidden by TWO_STAGE_DISCOVERY_LAW -- and built
+    screen_select() to replace it with Benjamini-Hochberg/Yekutieli.
+
+    But a campaign asking 'did ANYTHING survive' is asking about its single best candidate, and at
+    rank 1 the BH threshold is q/m, which is Bonferroni EXACTLY. FDR is more powerful only when
+    many candidates are individually significant; it cannot rescue a lone edge. BY is worse still,
+    stricter by the harmonic factor H_m ~= 6.6 at m=420.
+
+    So switching the screen to FDR would not have lowered the detection floor -- which is why the
+    real constraint is the campaign's shape, measured above, and not the multiplicity method."""
+    m, q = 420, 0.05
+    hm = float(sum(1.0 / i for i in range(1, m + 1)))
+    # a lone candidate just inside the Bonferroni boundary, the rest pure noise
+    p = np.concatenate([[q / m * 0.99], np.linspace(0.2, 1.0, m - 1)])
+    assert benjamini_hochberg(p, alpha=q).rejected[0] is True
+    # ...and just outside it, BH rejects nothing -- identical to Bonferroni, not looser
+    p_out = np.concatenate([[q / m * 1.01], np.linspace(0.2, 1.0, m - 1)])
+    assert benjamini_hochberg(p_out, alpha=q).n_rejected == 0
+    # BY, which is what screen_select is actually wired with (method="by"), is STRICTER
+    assert benjamini_yekutieli(p, alpha=q).n_rejected == 0
+    assert q / (m * hm) < q / m
 
 
-def test_THE_CONDITIONAL_PLATEAU_IS_ARITHMETIC_NOT_POWER() -> None:
-    """THE CENTRAL FINDING. A conditional edge has NO effect in its second arm, so that arm is
-    pure noise and lands positive by chance about half the time. F3 therefore discards roughly
-    half of all conditional mechanisms HOWEVER STRONG they are -- more tape cannot fix it.
+def test_the_screen_selection_is_computed_but_does_not_gate():
+    """Stated so the wiring is a decision on the record rather than an oversight someone later
+    'fixes' without pricing it. validate() reads stepdown.rejected (FWER); CampaignGates.screen is
+    carried alongside as a diagnostic. Given the test above -- FDR buys no power at rank 1 -- the
+    unwired state costs nothing today, and rewiring it would shortlist false names without
+    lowering the floor.
+
+    ASSERTED ON THE GATE KEYS, NOT ON THE SOURCE TEXT. The original form of this test grepped the
+    body of validate() for the substring "screen" after `gates = {`, which made it fail the moment
+    an unrelated COMMENT used the word (it did, on 2026-08-01, in a note explaining that the
+    gauntlet is a screen with zero promotion authority). A test that a prose edit can break is a
+    test someone eventually deletes instead of reading, and it was checking a proxy anyway: what
+    matters is whether the screen selection appears among the gates that decide survival, and
+    that is directly observable from the verdict.
     """
-    c = power_curve(f3_both_arms_positive, name="F3", kind="conditional",
-                    effects=(0.1, 0.4, 1.0), n_obs=1200, n_trials=300, seed=5)
-    for rate in c.pass_rates:
-        assert 0.35 < rate < 0.65, f"expected a ~50% plateau, got {c.pass_rates}"
-    assert c.pass_rates[-1] < 0.65, "a huge effect must NOT rescue a conditional edge"
+    import inspect
 
+    import numpy as np
 
-def test_STABLE_AND_CONDITIONAL_DIVERGE_AT_THE_SAME_EFFECT_SIZE() -> None:
-    """The gate is selecting on a property the desk never intended to select on, and only the two
-    curves side by side make that visible rather than arguable."""
-    eff = (0.2,)
-    stable = power_curve(f3_both_arms_positive, name="F3", kind="stable",
-                         effects=eff, n_obs=1200, n_trials=300, seed=7)
-    cond = power_curve(f3_both_arms_positive, name="F3", kind="conditional",
-                       effects=eff, n_obs=1200, n_trials=300, seed=7)
-    assert stable.pass_rates[0] - cond.pass_rates[0] > 0.3
+    from libs.autodiscovery.models import Family, Hypothesis
+    from libs.autodiscovery.validation import validate
+    from libs.validation.economic_prior import MechanismType
 
-
-def test_HALF_POWER_IS_NONE_WHEN_THE_GATE_NEVER_REACHES_IT() -> None:
-    """None is the FINDING: a gate that never reaches 50% power over the swept range cannot
-    detect any edge there, and its kill counts say nothing about whether alpha was present."""
-    c = power_curve(f3_both_arms_positive, name="F3", kind="stable",
-                    effects=(0.0, 0.0001), n_obs=200, n_trials=60, seed=11)
-    assert c.half_power_effect in (None, 0.0001)
-
-
-def test_THE_NULL_POINT_IS_THE_FALSE_POSITIVE_RATE() -> None:
-    c = power_curve(f3_both_arms_positive, name="F3", effects=(0.0, 0.2),
-                    n_obs=800, n_trials=200, seed=13)
-    assert c.false_positive_rate == c.pass_rates[0]
-    assert 0.1 < c.false_positive_rate < 0.4, "a sign test on noise passes ~1/4 of the time"
-
-
-def test_FALSE_NEGATIVE_RATE_IS_NONE_FOR_AN_UNSWEPT_EFFECT() -> None:
-    c = power_curve(f3_both_arms_positive, name="F3", effects=(0.0, 0.2),
-                    n_obs=400, n_trials=50, seed=17)
-    assert c.false_negative_rate(0.2) is not None
-    assert c.false_negative_rate(0.777) is None
-
-
-def test_THE_SUMMARY_LEADS_WITH_THE_STRUCTURAL_GAP() -> None:
-    rep = summarise(run_controls(n_obs=1000, n_trials=200, seed=19))
-    head = str(rep["headline"])
-    assert "CONDITIONAL" in head
-    assert "ARITHMETIC, not power" in head or "gap that is a property of the RULE" in head
-
-
-def test_MEASURING_A_GATE_IS_NOT_LICENCE_TO_LOOSEN_IT() -> None:
-    """No function returns a recommended threshold, and the artifact says why -- this evidence is
-    most tempting to misuse as 'many cells died, so lower the bar'."""
-    rep = summarise(run_controls(n_obs=400, n_trials=50, seed=23))
-    note = str(rep["note"])
-    assert "never traded on" in note
-    assert "never because many cells died" in note
-    from pathlib import Path
-    src = Path("libs/validation/gate_power.py").read_text("utf-8").lower()
-    assert "recommended_threshold" not in src and "def suggest" not in src
+    rng = np.random.default_rng(0)
+    m = rng.normal(0.0004, 0.01, (600, 5))
+    hyp = Hypothesis(family=Family.LIQUIDITY, subtype="s", symbol="X", params={},
+                     mechanism=MechanismType.LIQUIDITY, edge_source="fixture",
+                     failure_modes=["decays"])
+    sh = np.array([m[:, i].mean() / m[:, i].std() for i in range(m.shape[1])])
+    verdict = validate(m[:, 0], hypothesis=hyp, periods_per_year=365.0, n_trials=5,
+                       sharpe_estimates=sh, returns_matrix=m)
+    assert not [g for g in verdict.gates if "screen" in g], (
+        f"the BY-FDR screen has become a survival gate: {sorted(verdict.gates)}")
+    # ...and the FWER stepdown IS the one that decides, on the per-candidate path.
+    assert "campaign.stepdown.rejected[column]" in inspect.getsource(validate)

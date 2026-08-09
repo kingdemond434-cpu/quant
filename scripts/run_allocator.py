@@ -123,7 +123,8 @@ def _exists(artifact: str) -> bool:
             return False
         try:
             with sqlite3.connect(f"file:{METRICS}?mode=ro", uri=True) as c:
-                return bool(c.execute(f"select count(*) from {table}").fetchone()[0])
+                return bool(c.execute(f"select count(*) from {table}"  # noqa: S608 -- internal constant
+                                      ).fetchone()[0])
         except sqlite3.Error:
             return False
     p = ROOT / artifact

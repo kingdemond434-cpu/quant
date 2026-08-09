@@ -49,7 +49,8 @@ def _table(db: Path, table: str, n: int) -> None:
     db.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(db) as c:
         c.execute(f"create table if not exists {table} (i integer)")
-        c.executemany(f"insert into {table} values (?)", [(i,) for i in range(n)])
+        c.executemany(f"insert into {table} values (?)",  # noqa: S608 -- test fixture
+                      [(i,) for i in range(n)])
 
 
 # ------------------------------------------------------------------ the map must not drift

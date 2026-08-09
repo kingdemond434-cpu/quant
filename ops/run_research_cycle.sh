@@ -56,6 +56,13 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # stranded one stage short of the only count that pays, waiting for a human to notice. Survivor
   # forwarding now runs in the same cycle that produced the survivors.
   nice -n 15 "$PY" scripts/run_portfolio_admission.py || true
+  # ZERO-CAPITAL FORWARD CONVERSION, SAME CYCLE. The spawner now consumes both corrected axis
+  # screens and the full sweep's measured independent clusters. Waiting for tomorrow's cron
+  # throws away the one input that cannot be backfilled: forward time. The runner publishes a
+  # day-zero NO-EVIDENCE row immediately, proving every new clock is runnable and cohort-counted.
+  nice -n 15 "$PY" scripts/run_paper_sleeve_spawner.py || true
+  nice -n 15 "$PY" scripts/run_paper_sleeve_forward.py || true
+  nice -n 15 "$PY" scripts/run_promotion_queue.py || true
   nice -n 15 "$PY" scripts/run_trade_forensics.py || true
   nice -n 15 "$PY" scripts/run_exec_monitor.py || true
   # THE LOOP CLOSES HERE. The intelligence cycle re-reads everything this run produced -- kills,

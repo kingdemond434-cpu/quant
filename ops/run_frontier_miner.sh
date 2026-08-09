@@ -5,6 +5,11 @@ set -uo pipefail
 cd /home/quant/quant-platform
 source ops/brain_env.sh
 REGION="${1:?region arg required (en|cn|ru|kr|jp|ar|br)}"
+dig_dry_run "frontier-$REGION" "ops/frontier_${REGION}_prompt.txt" && exit 0
+# ONE brain desk-wide. Deferring is safe here BY DESIGN: run_frontier_rotation.sh only skips a
+# region that produced a real (>=1500b) log today, so a deferred region stays owed and the next
+# rotation invocation resumes it -- the mutex composes with the existing resume point.
+brain_mutex "frontier-${REGION}"
 mkdir -p data/cro_ai_logs
 LOG="data/cro_ai_logs/frontier_${REGION}_$(date -u +%Y%m%dT%H%M).log"
 # DUAL-POOL ROUTING (principal 2026-07-25): try the fable-5 METERED pool FIRST, then fall back
@@ -13,8 +18,12 @@ LOG="data/cro_ai_logs/frontier_${REGION}_$(date -u +%Y%m%dT%H%M).log"
 # opus-5 automatically. Safe here and nowhere else: the rotation is RESUMABLE (a region without a
 # real log today is re-dug next invocation), so a mid-dig credit death costs nothing, and every
 # miner run on fable is Max-seat headroom preserved for the brain cycle and the deep sweep.
-export _BRAIN_MODEL_CHAIN="claude-fable-5 claude-opus-5 claude-opus-4-8"
-dig_dry_run "frontier-$REGION" "ops/frontier_${REGION}_prompt.txt" && exit 0
+#
+# The chain itself is NO LONGER re-declared here (2026-07-30). It arrives from brain_env.sh, which
+# sources the generated ops/model_chain.env. Re-exporting a literal at this line would silently
+# pin the miners to yesterday's models the first time run_model_upgrade.py adopts a newer flagship
+# -- the organ doing the most model-bound work would be the last to benefit from a better one.
+# The routing INTENT above is unchanged: fable head, walk down, auto-load-balance across regions.
 brain_auth_check || exit 1
 # §33 CONVERSION PRIORITY. `dig_prompt` (ops/brain_env.sh) prepends the conversion duty
 # to this organ's brief so the run spends its FIRST effort disposing of the backlog, then

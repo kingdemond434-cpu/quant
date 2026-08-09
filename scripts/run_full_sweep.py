@@ -731,7 +731,31 @@ def main() -> int:
     # emitted. Written as a sidecar because a return series per survivor does not belong inside a
     # verdict document, and a verdict is not a lake.
     if pnl:
-        np.savez_compressed(a.out.parent / "full_sweep_survivor_pnl.npz", **pnl)
+        # ROW PROVENANCE MAKES FORWARD EVIDENCE POSSIBLE. A flattened pooled vector is not
+        # append-only: when one symbol gains a bar, every later symbol's block shifts. Length
+        # differencing would therefore call old returns new. Timestamp + symbol identify the
+        # observation itself, and gap rows carry an impossible timestamp/symbol so no clock can
+        # accidentally count them.
+        time_blocks: list[np.ndarray] = []
+        symbol_blocks: list[np.ndarray] = []
+        gap_ts = np.iinfo(np.int64).min
+        sym_width = max(1, max(len(s) for s in symbols))
+        for i, symbol in enumerate(symbols):
+            if i:
+                time_blocks.append(np.full(_POOL_GAP, gap_ts, dtype=np.int64))
+                symbol_blocks.append(np.full(_POOL_GAP, "", dtype=f"<U{sym_width}"))
+            time_blocks.append(idx.asi8.astype(np.int64, copy=True))
+            symbol_blocks.append(np.full(len(idx), symbol, dtype=f"<U{sym_width}"))
+        row_times = np.concatenate(time_blocks)
+        row_symbols = np.concatenate(symbol_blocks)
+        expected = len(next(iter(pnl.values())))
+        if len(row_times) != expected or len(row_symbols) != expected:
+            raise RuntimeError(
+                f"survivor PnL provenance length mismatch: pnl={expected}, "
+                f"timestamps={len(row_times)}, symbols={len(row_symbols)}")
+        np.savez_compressed(
+            a.out.parent / "full_sweep_survivor_pnl.npz",
+            __timestamp_ns=row_times, __symbol=row_symbols, **pnl)
 
     div = cluster(pnl) if pnl else None
     families = {family_of([str(x) for x in row["key"]]) for row in survivors}  # type: ignore[arg-type]
@@ -791,6 +815,15 @@ def main() -> int:
         "killed_cells_truncated": sum(killed.values()) > len(killed_cells),
         "survivor_pnl_artifact": (
             str(a.out.parent / "full_sweep_survivor_pnl.npz") if pnl else None),
+        "survivor_pnl_schema": ({
+            "version": 2,
+            "candidate_keys": len(pnl),
+            "row_provenance": ["__timestamp_ns", "__symbol"],
+            "forward_contract": (
+                "a forward observation is a finite candidate return whose timestamp is strictly "
+                "later than the clock's immutable baseline window end; vector length is never "
+                "used as a clock because pooled symbol blocks shift as bars arrive"),
+        } if pnl else None),
         "killed_cells_note": (
             f"{len(killed_cells)} of {sum(killed.values())} killed cells retained with full "
             "statistics for kill audit; counts above are exact and unaffected by the cap"),

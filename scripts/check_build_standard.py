@@ -59,7 +59,10 @@ _GOVERNED: tuple[str, ...] = (
     "run_law_gate.py", "run_moat_backup.py", "run_capability_hunt.py",
     "screen_funding_spread.py", "screen_collateral_allocation.py",
     "check_build_standard.py",                              # this fence holds itself to it
+    "check_input_provenance.py",                            # L1.55 transitive freshness
+    "check_denominators.py",                                # L1.57 the denominator of a verdict
     "check_fence_yield.py",
+    "ship_restart.py",                                      # the actuator for stale-code daemons
     "derive_walcl_clock.py",                                # R0031 forward clock (2026-07-31)
     "run_llm_trader.py",
     "collect_announcements.py",
@@ -78,6 +81,7 @@ _GOVERNED: tuple[str, ...] = (
     "check_excitation.py",                                  # L1.45 fence (capability hunt s4)
     "check_clock_provenance.py",                            # L1.46 fence (capability hunt s0)
     "check_funding_capture.py",                             # L1.47 fence (capability hunt s1)
+    "check_idle_cost.py",                                   # L1.51 fence (capability hunt s1)
     "run_cost_identification.py",                           # L1.45 producer (capability hunt s4)
     "screen_carry_basis_path.py",                           # R0206 carry attribution (2026-07-31)
     "check_promotion_gate.py",
@@ -89,6 +93,21 @@ _GOVERNED: tuple[str, ...] = (
     "run_principal_benchmark.py",
     "run_organ_er.py",
     "check_enforcement_execution.py",       # L1.43 execution-vs-existence (capability hunt s3)
+    "check_campaign_retention.py",          # R0270 L1.0 campaign observation-retention ratchet
+    "build_event_calendar.py",              # R0276 scheduled-event calendar the guard reads
+    "check_doctrine_diff.py",               # R0093: doctrine order -> blind-spot row (L2.5)
+    "run_paper_sleeve_spawner.py",          # R0102 paper-sleeve auto-spawn (2026-08-05)
+    "collect_dexscreener.py",               # R0100 axis 3 (2026-08-05)
+    "collect_holder_concentration.py",      # R0100 axis 4 (2026-08-05)
+    "collect_perpdex_funding.py",           # R0100 axis 5 + screen-on-discovery (2026-08-05)
+    "retire_unfillable_candidates.py",      # §42 capacity retirement (2026-08-05)
+    "check_crowding.py",                    # R0119 residual crowding fence (2026-08-05)
+    "collect_funding_cross_section.py",     # R0119 producer: the crowding denominator
+    "screen_funding_interval_mismatch.py",  # R0121 Stage-A settlement-calendar screen (2026-08-05)
+    "resolve_llm_trader_book.py",           # R0123 decline grader (2026-08-05)
+    "run_natural_experiment.py",            # R0207 first causal study, DiD (2026-08-05)
+    "probe_bybit_archive.py",               # R0243 T7 retention alarm (2026-08-05)
+    "fit_passive_impact.py",                # R0267 passive-fill impact model (2026-08-06)
 )
 
 #: Organs that legitimately owe no cron line, with the reason. "No schedule" must be a DECISION.
@@ -107,6 +126,17 @@ _SCHEDULE_EXEMPT: dict[str, str] = {
                              "chain, immediately after collect_fred_macro refreshes its input "
                              "(phase-correct by construction); a separate cron line would race "
                              "the archive it reads",
+    "ship_restart.py": "an ACTUATOR, not a detector: it is invoked by deploy/pull_deploy.sh at "
+                       "the moment a pull invalidates a supervised process, and by an operator "
+                       "closing a daemon-stale-code defect. Putting it on a clock would restart "
+                       "daemons on a TIMER -- the opposite of event-driven, and a standing "
+                       "outage risk for the money path. Its detector (max_audit "
+                       "check_stale_daemons) is the scheduled half of the pair",
+    "check_doctrine_diff.py": "runs as the doctrine_diff step of daily_research_cycle's _STEPS "
+                              "chain, beside doctrine_guard; doctrine edits arrive at most a "
+                              "few per week, so the daily chain IS the information-arrival "
+                              "ceiling (L1.28c) and a second cron line would re-read unchanged "
+                              "state",
 }
 
 #: Organs that legitimately do not call guard(), with the reason. The gate organs THEMSELVES

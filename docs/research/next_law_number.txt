@@ -1,0 +1,3 @@
+60
+
+Next free law number, recomputed every sweep by max_audit.check_law_numbers_unique. Two accounts collided on 38/39 on 2026-07-26 because allocation was a guess; read this file instead of guessing.

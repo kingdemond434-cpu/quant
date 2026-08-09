@@ -50,7 +50,13 @@ class ParquetLake:
         out["year"] = out[TIMESTAMP].dt.year.astype("int32")
         out["month"] = out[TIMESTAMP].dt.month.astype("int32")
         table = pa.Table.from_pandas(out, preserve_index=False)
-        # pyarrow ships this function unannotated; the ignore is about THEIR stub, not ours.
+        # PYARROW STRADDLES TWO TYPE STORIES and the ignore must survive both (2026-08-05).
+        # On the PINNED pyarrow (>=24,<25) these calls are `no-untyped-call` and need the
+        # ignore; on 25.x the stubs land and mypy calls the same ignore UNUSED. A checkout
+        # whose environment drifted off the pin therefore reports the opposite verdict from
+        # CI -- which is how a deleted ignore reached the deploy gate. The ignore stays, and
+        # warn_unused_ignores is switched off for this module only (pyproject override) so
+        # both worlds pass without either weakening the type check elsewhere.
         ds.write_dataset(  # type: ignore[no-untyped-call]
             table,
             base_dir=str(path),
@@ -75,7 +81,7 @@ class ParquetLake:
         path = self.path(layer, symbol, timeframe)
         if not path.exists() or not any(path.rglob("*.parquet")):
             return empty_bars()
-        # pyarrow ships this function unannotated (see write_dataset above).
+        # pyarrow version straddle -- see write_dataset above.
         table = ds.dataset(  # type: ignore[no-untyped-call]
             str(path), format="parquet", partitioning="hive"
         ).to_table()

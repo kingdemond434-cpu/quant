@@ -1,0 +1,141 @@
+{
+  "valid_through": "2027-12-08",
+  "refresh_by": "2027-01-31",
+  "source": "federalreserve.gov/monetarypolicy/fomccalendars.htm",
+  "generated": "2026-08-06T01:26:17Z",
+  "generator": "scripts/build_event_calendar.py",
+  "law": "R0276 -- a stop is a promise the book cannot keep across a scheduled repricing. Entries are DEFERRED inside the window, never cancelled; costs zero statistical power because nothing here judges whether an edge is real.",
+  "note": "FOMC decision days only (the SECOND day of each two-day meeting, when the statement is released at 14:00 ET). Dates are tentative until confirmed at the preceding meeting -- re-pull annually; a revised date is a diff.",
+  "pending_sources": [
+    {
+      "series": "CPI",
+      "agency": "BLS",
+      "impact": "high",
+      "release_local": "08:30 America/New_York",
+      "source": "bls.gov/schedule/news_release/cpi.htm",
+      "why_absent": "bls.gov returned HTTP 403 to this host on every schedule path tried 2026-08-06; dates from aggregators are not verified stamps and were refused rather than written into a guard whose value is that its stamps are right"
+    },
+    {
+      "series": "Employment Situation (NFP)",
+      "agency": "BLS",
+      "impact": "high",
+      "release_local": "08:30 America/New_York",
+      "source": "bls.gov/schedule/news_release/empsit.htm",
+      "why_absent": "same 403 as CPI"
+    }
+  ],
+  "events": [
+    {
+      "utc": "2026-01-28T19:00:00Z",
+      "name": "FOMC decision",
+      "impact": "high",
+      "local": "2026-01-28 14:00 America/New_York",
+      "source": "federalreserve.gov/monetarypolicy/fomccalendars.htm"
+    },
+    {
+      "utc": "2026-03-18T18:00:00Z",
+      "name": "FOMC decision",
+      "impact": "high",
+      "local": "2026-03-18 14:00 America/New_York",
+      "source": "federalreserve.gov/monetarypolicy/fomccalendars.htm"
+    },
+    {
+      "utc": "2026-04-29T18:00:00Z",
+      "name": "FOMC decision",
+      "impact": "high",
+      "local": "2026-04-29 14:00 America/New_York",
+      "source": "federalreserve.gov/monetarypolicy/fomccalendars.htm"
+    },
+    {
+      "utc": "2026-06-17T18:00:00Z",
+      "name": "FOMC decision",
+      "impact": "high",
+      "local": "2026-06-17 14:00 America/New_York",
+      "source": "federalreserve.gov/monetarypolicy/fomccalendars.htm"
+    },
+    {
+      "utc": "2026-07-29T18:00:00Z",
+      "name": "FOMC decision",
+      "impact": "high",
+      "local": "2026-07-29 14:00 America/New_York",
+      "source": "federalreserve.gov/monetarypolicy/fomccalendars.htm"
+    },
+    {
+      "utc": "2026-09-16T18:00:00Z",
+      "name": "FOMC decision",
+      "impact": "high",
+      "local": "2026-09-16 14:00 America/New_York",
+      "source": "federalreserve.gov/monetarypolicy/fomccalendars.htm"
+    },
+    {
+      "utc": "2026-10-28T18:00:00Z",
+      "name": "FOMC decision",
+      "impact": "high",
+      "local": "2026-10-28 14:00 America/New_York",
+      "source": "federalreserve.gov/monetarypolicy/fomccalendars.htm"
+    },
+    {
+      "utc": "2026-12-09T19:00:00Z",
+      "name": "FOMC decision",
+      "impact": "high",
+      "local": "2026-12-09 14:00 America/New_York",
+      "source": "federalreserve.gov/monetarypolicy/fomccalendars.htm"
+    },
+    {
+      "utc": "2027-01-27T19:00:00Z",
+      "name": "FOMC decision",
+      "impact": "high",
+      "local": "2027-01-27 14:00 America/New_York",
+      "source": "federalreserve.gov/monetarypolicy/fomccalendars.htm"
+    },
+    {
+      "utc": "2027-03-17T18:00:00Z",
+      "name": "FOMC decision",
+      "impact": "high",
+      "local": "2027-03-17 14:00 America/New_York",
+      "source": "federalreserve.gov/monetarypolicy/fomccalendars.htm"
+    },
+    {
+      "utc": "2027-04-28T18:00:00Z",
+      "name": "FOMC decision",
+      "impact": "high",
+      "local": "2027-04-28 14:00 America/New_York",
+      "source": "federalreserve.gov/monetarypolicy/fomccalendars.htm"
+    },
+    {
+      "utc": "2027-06-09T18:00:00Z",
+      "name": "FOMC decision",
+      "impact": "high",
+      "local": "2027-06-09 14:00 America/New_York",
+      "source": "federalreserve.gov/monetarypolicy/fomccalendars.htm"
+    },
+    {
+      "utc": "2027-07-28T18:00:00Z",
+      "name": "FOMC decision",
+      "impact": "high",
+      "local": "2027-07-28 14:00 America/New_York",
+      "source": "federalreserve.gov/monetarypolicy/fomccalendars.htm"
+    },
+    {
+      "utc": "2027-09-15T18:00:00Z",
+      "name": "FOMC decision",
+      "impact": "high",
+      "local": "2027-09-15 14:00 America/New_York",
+      "source": "federalreserve.gov/monetarypolicy/fomccalendars.htm"
+    },
+    {
+      "utc": "2027-10-27T18:00:00Z",
+      "name": "FOMC decision",
+      "impact": "high",
+      "local": "2027-10-27 14:00 America/New_York",
+      "source": "federalreserve.gov/monetarypolicy/fomccalendars.htm"
+    },
+    {
+      "utc": "2027-12-08T19:00:00Z",
+      "name": "FOMC decision",
+      "impact": "high",
+      "local": "2027-12-08 14:00 America/New_York",
+      "source": "federalreserve.gov/monetarypolicy/fomccalendars.htm"
+    }
+  ]
+}

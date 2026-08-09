@@ -212,7 +212,7 @@ a purchase or human step) -- never silently rationed. DEPTH PARITY (§32): every
 
 ## 26. SCREEN-ON-DISCOVERY (principal approved 2026-07-23, binds every digger and miner)
 
-SCREEN-ON-DISCOVERY DUTY (principal APPROVED 2026-07-23, standing law -- closes the desk's oldest leak: diggers CATALOGUED datasets and stopped, so catalog breadth ran ~8.5/10 while ingested-AND-TESTED ran ~4.5/10). DISCOVERING A DATASET IS HALF A DELIVERABLE. Every digger and every miner that surfaces a new data axis MUST, IN THE SAME RUN, carry it through a Stage-A screen and report the survivor verdict -- do not queue it, do not hand it off, do not wait for a brain cycle. THE EVIDENCE THIS IS RIGHT: 420 price-family hypotheses produced 0 survivors, while ONE new axis (kimchi premium) screened in about an hour produced IC +0.148 and momentum timing Sharpe 1.3 -- beating every price-only sleeve the desk ever rejected. The edges are in untouched axes, not the picked-clean price space.
+SCREEN-ON-DISCOVERY DUTY (principal APPROVED 2026-07-23, standing law -- closes the desk's oldest leak: diggers CATALOGUED datasets and stopped, so catalog breadth ran ~8.5/10 while ingested-AND-TESTED ran ~4.5/10). DISCOVERING A DATASET IS HALF A DELIVERABLE. Every digger and every miner that surfaces a new data axis MUST, IN THE SAME RUN, carry it through a Stage-A screen and report the survivor verdict -- do not queue it, do not hand it off, do not wait for a brain cycle. THE EVIDENCE THIS IS RIGHT: 420 price-family hypotheses produced 0 survivors, while ONE new axis (kimchi premium) screened in about an hour produced IC +0.148 and momentum timing Sharpe 1.3 -- beating every price-only sleeve the desk ever rejected. **THOSE KIMCHI NUMBERS WERE REFUTED 2026-08-01 AND ARE LEFT HERE ONLY AS THE RECORD OF WHAT WAS BELIEVED (R0244).** At full depth -- 2,303 same-instant-aligned days rather than the ~200 the celebrated figure was measured on -- the axis reads IC +0.0148 against a detection floor of 0.041, with per-era signs that flip in all four regimes, and the h=5d cell is de-contamination-killed outright because the premium carries the Binance price in its own denominator (`docs/graveyard.md`, kimchi_premium KILLED 2026-08-01). **The duty below is UNCHANGED and the retraction strengthens it rather than weakening it:** the thing that killed kimchi was screening it properly -- to archive depth, through the artifact gate, with negative results reported -- which is precisely what this section orders. The surviving claim is the one that never depended on kimchi: 420 price-family hypotheses produced 0 survivors, so cataloguing without screening is what must stop. Do NOT cite the kimchi figures as evidence for anything; a dig that wants an exemplar should cite the 420/0 result or the exchange-netflow negative, both of which held up.
 
 HOW -- NON-NEGOTIABLE, because the discipline is the ONLY thing that keeps this from becoming a phantom-edge factory: (1) USE THE AUDITED HARNESS libs.research.axis_screen -- pass an aligned (signal, target) series and it runs z-score, IC, momentum/reversal Sharpe, the de-contamination (angle-20) artifact gate, residual IC, verdict, and forward-clock persistence. The artifact gate is BAKED IN: never bypass it, never hand-roll your own screen. It is what caught Coinbase-premium AND Turkey-premium as pure timing artifacts and graveyarded them. (2) MECHANISM PRIOR FIRST -- screen only axes with a STATED economic mechanism; screening everything catalogued is breadth-mining with extra steps, which the 420/0 result already refuted. (3) LOG EVERY CONSTRUCTION YOU TRY, not just the one that printed. If you test a USDT-denominated build and then an FX-denominated build, BOTH are trials and BOTH go in the record -- reporting only the winner is garden-of-forking-paths p-hacking and is the single easiest way for this duty to manufacture fake edges. (4) DECLARE TIMESTAMP ALIGNMENT for every cross-source series and flag look-ahead risk explicitly -- a daily FX close is NOT the crypto UTC close. Unstated alignment voids the screen. (5) ZERO PROMOTION AUTHORITY -- Stage A earns a pre-registered FORWARD CLOCK, never a cent; only Stage B (forward evidence + Holm slot) promotes to capital. (6) NEGATIVE SCREENS ARE FIRST-CLASS DELIVERABLES -- a failed screen is graveyarded WITH its reason. Silent drops are forbidden and 'I only report my hits' is the failure mode; negative results are free multiplicity budget and permanent knowledge.
 
@@ -430,3 +430,148 @@ producing.
 history depth, resolution — must grow monotonically in quantity AND quality. A source removed
 without replacement, a series left to rot, or history quietly dropped is a §34 regression by
 attrition. Coverage ratchets: today's holdings are the floor, never the target.
+
+## 42. CAPACITY-BOUND EDGE PRIMACY — HUNT WHAT IS TOO SMALL FOR FUNDS (2026-07-26, principal)
+
+_(Numbered 42, not 39: this law and the master trunk's §38/§39 were written the same day on separate branches and both claimed 38/39. The trunk landed first and keeps them; renumbering here is the only resolution that leaves every existing citation pointing at the text it was written about. Two laws sharing a number is not a formatting problem -- it is §36 'no ungoverned artifact' failing at the citation layer, since a reference to '§39' would resolve to whichever copy the reader happened to open.)_
+
+A ~$50k book has exactly ONE structural advantage over every fund on earth: it can profitably take trades that are too small to be worth anyone else's time. `PROSPECTOR_SPEC` already names this — "capacity-bound edges the fund ABANDONED for being too small… precisely this desk's one structural advantage" — and until 2026-07-26 the desk's own survival gate CONTRADICTED it: `_MIN_CAPACITY_USD = 1.0e5` hard-rejected any candidate that could not absorb $100,000, whatever its DSR, PBO or Sharpe. A perfect $20k-capacity listing dislocation failed on `capacity` alone. The niche the spec called the desk's advantage was unreachable by construction.
+
+(1) CAPACITY IS A RATIO, NOT A DOLLAR FIGURE. The gate's real job is to stop the desk being a large share of its OWN edge's capacity — impact, not size. That is a ratio to deployed equity and it protects a $5k book and a $5M book identically: `capacity_usd >= max(abs_floor, headroom_mult × deployed_equity)`. Both bounds live in the ThresholdBook, bounded and evidence-adjustable. The absolute floor is deliberately FREE rather than tighten-only, because the old fixed floor was itself the defect — the desk must be able to move it DOWN as it deliberately hunts smaller.
+
+(2) PERMISSION IS NOT PURSUIT. Removing the block is necessary and NOT sufficient: a desk merely allowed to hunt small will still default to fund-shaped ideas, because that is what the literature is written about and what the models have read. So the CAPACITY DISTRIBUTION of screened candidates is measured every sweep (`max_audit.check_capacity_hunt`). If EITHER band — the range this book can exploit, or the larger edges that will succeed them — falls below a quarter of the fillable funnel, that is a DEFECT: one whole class of alpha is going unhunted, and the objective is the maximum NUMBER of simultaneous uncorrelated alphas, not a preferred size of alpha. See (5)(c) below for why the check is symmetric rather than a niche floor.
+
+(3) THE NAMED GROUND. Day-1 perp listing funding spikes (one-sided spec flow, no arb capital yet — the `run_listing_watch` clock already runs for this), thin-pair cross-venue funding divergence, low-OI tails of the perp universe, delisting forced-unwind dislocations. What they share is that they pay BECAUSE they are too small to interest anyone with money, and they decay as the desk grows into them. That decay is DEFINITIONAL, not a risk to be mitigated: the sequence is edge → size → next edge, which is why breadth keeps earning its cost even when depth is what converts.
+
+(4) THE HONEST TRADE, RECORDED. Triple-digit returns and the current ruin discipline are not simultaneously available. Hunting smaller raises the ceiling for free and touches no rail. Loosening the rails also raises it, and buys the return with ruin probability. The first is doctrine; the second is a principal decision that must be made deliberately, never drifted into.
+
+(5) PARITY, NOT PERMISSION — AND ONE SOURCE OF TRUTH (2026-07-26, second pass). Clauses (1)-(2)
+removed a categorical EXCLUSION and measured the funnel. They did not deliver PARITY, and an audit
+of the scoring math showed why: the $100k floor was never one number in one place, it was FIVE
+copies of a policy that disagreed with each other. Fixing the survival gate left four intact —
+`discovery.objective` gave a $1m idea a 1.9x rank advantage over a $50k one, `alpha_economics` a
+3.2x EV advantage, `discovery.factory` still hard-failed acceptance below a flat $1e5, and
+`capacity_intelligence` scored scalability against a $10m reference so a niche edge scored ~0.5 out
+of 100. A candidate could therefore pass the fixed gate and still lose every ranking to a
+fund-shaped idea it beat on every dimension that actually pays. Being ALLOWED into the niche while
+being SCORED out of it is the same exclusion moved one layer down, where it is harder to see.
+
+The law has three parts, all mechanical:
+
+  (a) CAPACITY SCORES AS SUFFICIENCY, NEVER AS MAGNITUDE, AND NEVER TILTED EITHER WAY.
+  `libs/research/capacity_policy.py` is the single definition and every scorer imports it. The
+  score ramps to the headroom requirement, then goes FLAT — above sufficiency, size stops being a
+  tiebreaker and the edge is judged on Sharpe, orthogonality and persistence like everything else.
+  That flat region IS the parity. Capacity you cannot fill is not an advantage you own; rewarding
+  it is preferring an option you cannot exercise.
+
+  A first pass then discounted fund-scale capacity as a crowding prior. THE PRINCIPAL STRUCK IT
+  (2026-07-26) and was right twice over. First, the objective is the MAXIMUM NUMBER OF SIMULTANEOUS
+  UNCORRELATED ALPHAS — that is what compounds — so a sleeve declined for its SIZE is geometric
+  growth foregone, and being picky about the shape of an edge is not risk management. Second, it
+  DOUBLE-COUNTED: crowding is already priced by the `crowded_known` prior and re-tested by DSR, PBO
+  and persistence, so charging it again in the capacity term punished large edges twice for one
+  fact. The score is now flat for everything fillable, full stop. The mechanism survives, defaulted
+  to neutral and bounded in the ThresholdBook, so MEASURED decay-versus-capacity evidence could
+  reintroduce a discount later — evidence may move it, preference may not.
+
+  (b) NO EDGE IS FILLED WITH THE WHOLE BOOK. Capacity is judged against the equity ONE SLEEVE
+  receives, not against the desk total. Comparing every candidate to the full book silently assumes
+  an all-in single-strategy desk and inflates the requirement by the sleeve count — the flat-floor
+  bug in miniature. The divisor is explicit (`DEFAULT_SLEEVES`), never implied.
+
+  (c) BOTH BANDS ARE HUNTED, BOTH ARE RUN, AND THE CHECK IS SYMMETRIC. `check_capacity_hunt` fires
+  when EITHER band falls below a quarter of the fillable funnel. The first version enforced a niche
+  FLOOR, which is the same bias pointed the other way: it would have sat silent while the desk
+  hunted nothing but tiny edges. Hunting only small costs twice — the large alphas that would have
+  run ALONGSIDE the small ones are never found, and there is no successor inventory for the day the
+  book outgrows what is running. Nothing is ever declined to make room for something smaller.
+  Separately, candidates that cannot absorb even one sleeve are their own defect — small is the
+  advantage, too small to fill is not, and the two must never be scored as the same thing.
+
+  (c2) THE ONLY REASON A SLEEVE EVER STOPS IS ARITHMETIC. An edge is deployed while it is fillable
+  and retired when the book genuinely passes its capacity — never because something bigger came
+  along, and never because it was small. `outgrown_at` gives every edge the exact book size it dies
+  at and `growth_runway` gives the multiple of today's equity it survives, so the expiry is a date
+  rather than a surprise, and `check_capacity_runway` fires both when an edge has ALREADY been
+  outgrown and when nothing on the shortlist survives a doubling. That second one is the real
+  discipline: the replacement must be in the pipeline BEFORE the expiry arrives, which means
+  hunting the larger band concurrently rather than afterwards.
+
+  (c3) THE RATIO IS EVALUATED AGAINST THE LIVE BOOK, NOT A LITERAL. `live_book_usd` and
+  `live_sleeves` read the hash-chained NAV attestation, so the requirement rises by itself as
+  equity compounds and the desk outgrows small edges automatically. "Capacity is a ratio" and "the
+  ratio is measured against a hardcoded $50k" are the same bug one step apart. A missing, stale
+  (>7d) or corrupt ledger falls back to the CONSTANT and never to zero — an unreadable file must
+  never be the loosest possible gate, which is exactly what the old `deployed_equity_usd = 0.0`
+  default silently was. The live sleeve count is floored at the planned count, because running one
+  sleeve today means the desk has not diversified YET, not that one edge may swallow the book.
+
+  (d) THE GUARD IS STRUCTURAL, NOT NUMERIC. `check_capacity_single_source` enumerates every scorer
+  that judges capacity and fails if one does not import the shared policy, or carries a
+  fund-shaped dollar literal on a capacity line. Checking the SHAPE OF THE DEPENDENCY rather than
+  the value of a threshold is what makes the guard survive somebody legitimately re-tuning the
+  threshold. Five copies is the failure mode; one import is the invariant.
+
+(6) EVENT-SHAPED EDGES NEED AN EVENT-SHAPED GATE. Every promotion gate the desk owns scores a
+continuous daily return series. That is the right shape for carry and trend, and the WRONG shape
+for the edges (3) names: a day-1 listing funding spike is a few hours, a few times a week, and it
+is over. Thirty such events are thirty observations, but strung into a daily series they are ~2
+non-zero days in 30 flat ones and every continuous statistic reads that as noise. The desk could
+therefore COLLECT listing data forever and never be able to PROMOTE what it found — acquired but
+not convertible, which is a §33 failure wearing a statistics costume.
+
+`libs/validation/event_study.py` is that missing path, and the unit of evidence is the EVENT. It
+is not a weaker bar, it is a denser one: 30 events are 30 largely-independent draws where 40 daily
+returns are 40 autocorrelated ones, so the clock shortens because the EVIDENCE is denser, not
+because the standard moved. It carries the same discipline as everything else — a Brown-Warner
+cross-sectional t against a Holm bar deflated by the cohort actually screened, a bootstrap CI that
+must ALSO exclude zero (a parametric t alone is defeatable by crypto's fat tails), overlap measured
+and effective-N discounted by it exactly as §31 discounts trial counts, and a hard refusal below
+20 observations. A constant return series is refused as a DATA DEFECT rather than scored, because
+`std == 0` never fires in floating point and the t-stat would otherwise explode past every bar.
+
+The hypothesis is PRE-REGISTERED in code (`libs/research/listing_events.py`): direction, holding
+window and funding threshold are module constants, not arguments, because arguments get swept and
+the best result reported — and then the multiplicity correction is a lie, since the trials are
+invisible. A second window is a NEW hypothesis and must raise `VARIANTS_TRIED` so the bar rises
+with it. A PASS is EVIDENCE and nothing more; Gate-0 and the ordinary promotion path still stand
+between it and any allocation, and real capital is never allocated automatically.
+
+(7) THE NAMED GROUND, BUILT (2026-07-26). §42(3) listed the hunting grounds; two are now running
+rather than described.
+
+  (a) DAY-1 LISTING DISLOCATION. `run_listing_watch` collects, `libs/research/listing_events.py`
+  converts, `scripts/run_event_study.py` rules, all on the same daily cadence. TWO pre-registered
+  exits are run and BOTH are reported: a fixed 48h close-to-close, and a triple barrier
+  (profit-take / stop / time, whichever is touched first) which is how the trade would actually be
+  run. `VARIANTS_TRIED = 2` because two exit rules are two trials — running both and publishing the
+  better one is the garden of forking paths with extra steps, so the Holm bar prices both and both
+  verdicts are printed even when they disagree.
+
+  (b) THIN-TAIL CROSS-VENUE FUNDING. `libs/research/tail_funding.py` +
+  `scripts/collect_tail_funding_divergence.py` screen Binance against Bybit on the BOTTOM half of
+  the shared perp universe by open interest. The unit is the ANNUALISED SPREAD, because only the
+  gap is harvestable delta-neutral; capacity is the MINIMUM open interest of the two legs, because
+  a pair is only as large as its thinner side — taking the fatter leg would overstate what is
+  fillable, which is the §42 error itself. A spread above the credibility ceiling is FLAGGED, never
+  ranked first: the biggest number in a noisy cross-venue panel is the likeliest artifact, and a
+  screen that sorts on magnitude surfaces its own worst data every single day.
+
+(8) AN ORPHAN IS FIXED BY A CALLER, NOT BY DELETION — AND REACHABILITY IS TRANSITIVE. Four times in
+one day a mechanism was built, unit-tested green, and passed by nobody: the crowding floor, the
+sizer governor, `allocation_usd`, and `barrier_return`. Unit tests are precisely what makes this
+invisible — they prove the mechanism works and say nothing about whether anything runs it. So:
+
+  (a) `check_capacity_knobs_are_wired` requires every capacity knob to have a PRODUCTION caller. A
+  test does not count. It caught `allocation_usd` on its first run.
+
+  (b) `check_orphan_code` is now TRANSITIVE. The one-hop proxy reported `libs/features` as idle
+  while `run_event_study -> listing_events -> features.labels` genuinely ran it, and it counted a
+  package "used" when its only importer was itself an orphan. A check that fires on healthy code
+  gets acknowledged into silence, which costs more than the check ever earned. Making it a BFS from
+  the entry points cleared five false positives and surfaced real orphans hiding behind them.
+
+  (c) Imports that exist only to be reached must be TOP-LEVEL. A lazy import inside a function is
+  invisible to static reachability, so the checker keeps reporting a false orphan — the fix is the
+  import, not an exclusion list.

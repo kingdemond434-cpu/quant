@@ -5,7 +5,7 @@ Before this, the weekly panel depended on the AI brain remembering to fire it --
 LLM memory is a reliability hole. This script runs inside the daily cycle and deterministically
 fires what is due, per stage (data/stage_state.json):
 
-  S0 (pre-live, current):  panel every 7d (mission rotation) | tier1 every 28d |
+  S0 (pre-live, current):  panel every 7d (mission rotation) | tier1 every 14d (was documented as 28d while the constant read 14 -- that contradiction produced a 34-day error in a live briefing) |
                            generation DATA-TRIGGERED (a 40d clock maturing or a new family
                            landing flags a scoped generate run for the brain)
   S1/S2 (live, flipped by the live-connector deployment): all of the above PLUS generation
@@ -24,34 +24,11 @@ from __future__ import annotations
 
 import contextlib
 import json
-import os
 import subprocess
 import sys
-import time
 from datetime import UTC, datetime
 from pathlib import Path
-
-_T0 = time.monotonic()
-
-# WALL-CLOCK BUDGET (2026-08-04). This process has two callers with different allowances: the
-# brain's _STEPS gives it 900s, the systemd unit gives 1800s. Unset means uncapped, which is the
-# correct default for a hand-run. The parent exports its own per-step timeout as
-# QUANT_STEP_BUDGET_S so a duty can decline to start work it cannot finish, rather than being
-# killed halfway through and losing the run.
-_BUDGET_S = float(os.environ.get("CADENCE_BUDGET_S")
-                  or os.environ.get("QUANT_STEP_BUDGET_S") or 0)
-
-# The panel's own subprocess timeout is 720s; add the dossier regen and a margin. A run that
-# cannot seat the whole panel inside its remaining budget leaves the duty OWED instead of
-# burning the tail of the budget on a call that will be killed mid-flight.
-_PANEL_RESERVE_S = 780.0
-
-
-def _budget_left() -> float:
-    """Seconds of wall-clock left for this process; +inf when no budget was declared."""
-    if _BUDGET_S <= 0:
-        return float("inf")
-    return _BUDGET_S - (time.monotonic() - _T0)
+from typing import Any
 
 _STATE = Path("data/cadence_state.json")
 _STAGE = Path("data/stage_state.json")
@@ -92,7 +69,7 @@ _STATE_FLOORS_D = {"last_panel": 4.0, "last_tier1": 16.0, "last_prompt_review": 
                    "last_memory_consolidation": 100.0}
 
 
-def _load(p: Path, default: dict) -> dict:
+def _load(p: Path, default: dict[str, Any]) -> dict[str, Any]:
     try:
         d = json.loads(p.read_text("utf-8"))
         return d if isinstance(d, dict) else default
@@ -100,7 +77,7 @@ def _load(p: Path, default: dict) -> dict:
         return default
 
 
-def _days_since(state: dict, key: str) -> float:
+def _days_since(state: dict[str, Any], key: str) -> float:
     try:
         then = datetime.fromisoformat(str(state[key]))
         return (datetime.now(tz=UTC) - then).total_seconds() / 86400.0
@@ -134,8 +111,27 @@ def _run_panel(mission: str | None) -> bool:
         _before = _verdicts.stat().st_size
     except OSError:
         _before = -1
-    r2 = subprocess.run([sys.executable, "scripts/run_external_panel.py"],
-                        capture_output=True, text=True, timeout=720, check=False, env=env)
+    # A TIMED-OUT PANEL IS A FAILED PANEL, NOT A FAILED CADENCE RUN (2026-08-05). `timeout=720`
+    # raises subprocess.TimeoutExpired, which escaped `main()` uncaught -- and because cadence
+    # state is written ONCE at the end of main(), every duty that had already run this cycle had
+    # its timestamp DISCARDED with it. Measured today: OpenRouter balance -$0.59, the panel hung
+    # the full 720s on an unfunded API, TimeoutExpired propagated, and data/cadence_state.json
+    # was never rewritten (mtime stayed 07:13 while the run ended at 23:03).
+    #
+    # The whole cadence engine therefore had a single point of failure in an EXTERNAL PAID API:
+    # while credits are out, the panel cannot produce, so nothing downstream of it in main() can
+    # ever record that it ran. Returning False is the correct semantics and needs no other change
+    # -- the caller only stamps `last_panel` when this returns True, so a timed-out panel leaves
+    # the duty OWED exactly as an unproductive one does. This makes cadence stricter, never
+    # looser, and touches no floor.
+    try:
+        r2 = subprocess.run([sys.executable, "scripts/run_external_panel.py"],
+                            capture_output=True, text=True, timeout=720, check=False, env=env)
+    except subprocess.TimeoutExpired:
+        print("cadence: panel TIMED OUT after 720s -- duty stays OWED. This is the unfunded-API "
+              "signature (a live roster answers or 402s in seconds; a dead one hangs). The "
+              "cadence run CONTINUES: one external dependency may not discard the other duties.")
+        return False
     tail = (r2.stdout or r2.stderr or "").strip().splitlines()[-1:] or [""]
     try:
         _after = _verdicts.stat().st_size
@@ -215,7 +211,7 @@ def _run_model_upgrade() -> bool:
     return produced == 2
 
 
-def _assert_floors(state: dict, stage: str) -> None:
+def _assert_floors(state: dict[str, Any], stage: str) -> None:
     """Never-sleepier invariant: page (via run_alerts pickup) if any floor is stale."""
     import time
     floors = dict(_FLOORS_S0)
@@ -243,42 +239,132 @@ def _assert_floors(state: dict, stage: str) -> None:
         print("cadence: floor violation cleared")
 
 
+_ROOT_DIR = Path(__file__).resolve().parent.parent
+_FREEZE_STATUS = Path("data/freeze_exit_status.json")
+
+#: criterion -> (artifact it reads, the module/script that WRITES that artifact).
+#: The second element is the whole point. A deployment criterion reading a file with no writer is
+#: not a strict gate, it is an unsatisfiable one, and the two are indistinguishable from the
+#: outside: both simply read False forever. Naming the writer makes the claim checkable, and
+#: check_freeze_exit_sources() below turns it into a test.
+_FREEZE_SOURCES: dict[str, tuple[str, str]] = {
+    "gate0": ("data/gate0_complete", "scripts/max_audit.py"),
+    "fills_4wk": ("data/moat/execution_tape/cashcarry_trades.jsonl",
+                  "libs/execution/execution_tape.py"),
+    "cost_model": ("data/cost_model.json", "scripts/run_cost_model.py"),
+    "calib_10": ("data/forecast_log.json", "libs/self_improvement/forecast_calibration.py"),
+    "no_criticals": ("data/DEADMAN_FIRED", "scripts/run_deadman_switch.py"),
+}
+
+
+def check_freeze_exit_sources() -> list[str]:
+    """Every freeze-exit criterion must read an artifact something in this repo WRITES.
+
+    THE GENERALISED FORM of the 2026-07-30 defect. Three of five criteria read invented filenames
+    (fills.csv, weekly_cost_summary.json, calibration.csv) that no code anywhere produces. Each
+    read False forever, which is indistinguishable from "the desk has not earned it yet" -- so the
+    gate looked strict while being unsatisfiable, and nobody could tell the difference by looking
+    at the output. This checks the WRITER exists, not the artifact: pre-launch the artifacts are
+    legitimately absent, but their writer must be real today.
+    """
+    problems = []
+    for crit, (artifact, writer) in _FREEZE_SOURCES.items():
+        if not (_ROOT_DIR / writer).exists():
+            problems.append(f"{crit}: writer {writer} does not exist -- {artifact} can never "
+                            "appear, so this criterion is unsatisfiable, not strict")
+    return problems
+
+
 def _freeze_exit_met() -> tuple[bool, str]:
-    """The 5 lockdown exit criteria. All must hold. Returns (met, human-status)."""
-    import time
-    checks = {}
+    """The 5 lockdown exit criteria. All must hold. Returns (met, human-status).
+
+    REWRITTEN 2026-07-30. THREE of the five criteria read files that NOTHING IN THIS REPO WRITES,
+    so they could never become True no matter how well the desk performed:
+
+      fills_4wk   read `data/fills.csv`   -- no writer anywhere. Fills go to
+                  data/cashcarry_trades.json and data/moat/execution_tape/cashcarry_trades.jsonl.
+      cost_model  read `data/weekly_cost_summary.json` -- no writer. run_cost_model.py writes
+                  data/cost_model.json.
+      calib_10    read `data/calibration.csv` -- no writer. Forecast outcomes live in
+                  data/forecast_log.json via libs/self_improvement/forecast_calibration.py.
+
+    And fills_4wk was additionally INVERTED: it compared `now - file mtime > 28 days`, which reads
+    "this feed has been DEAD for a month". A healthy, actively-appended fill feed has mtime ~= now
+    and failed forever; only an abandoned one could pass. Satisfying the gate honestly would have
+    required creating a fills file and then abandoning it for four weeks.
+
+    Consequence, and it is the reason this is a launch blocker rather than a tidy-up: the desk's
+    whole research apparatus funnels into a deployment gate that was not merely unmet but
+    UNSATISFIABLE, and the only place that fact was stated was a status string nobody read. The
+    desk could have compiled a flawless track record and the freeze would never have lifted.
+
+    Every criterion now reads the artifact that actually exists, and `days` is measured from the
+    oldest ROW TIMESTAMP (execution_tape.coverage), never from a file's mtime.
+    """
+    checks: dict[str, bool] = {}
     checks["gate0"] = Path("data/gate0_complete").exists()
-    fills = Path("data/fills.csv")
-    checks["fills_4wk"] = (fills.exists()
-                           and time.time() - fills.stat().st_mtime < 1e9
-                           and sum(1 for _ in fills.open()) > 50
-                           and (time.time() - _oldest_line_age(fills)) > 28 * 86400)
-    checks["cost_model"] = Path("data/weekly_cost_summary.json").exists()
+
+    # >=4 weeks of live fills, measured on row timestamps in the tape that Gate 0 is scored on.
     try:
-        calib = Path("data/calibration.csv")
-        n = sum(1 for ln in calib.open() if "resolved" in ln.lower()) if calib.exists() else 0
-        checks["calib_10"] = n >= 10
-    except OSError:
+        from libs.execution.execution_tape import coverage
+        cov = coverage()
+        checks["fills_4wk"] = float(cov.get("days", 0.0)) >= 28.0 and int(cov.get("n", 0)) > 50
+    except (ImportError, OSError, ValueError, TypeError):
+        checks["fills_4wk"] = False
+
+    checks["cost_model"] = Path("data/cost_model.json").exists()
+
+    try:
+        from libs.self_improvement.forecast_calibration import report
+        checks["calib_10"] = int(report().get("n_resolved", 0)) >= 10
+    except (ImportError, OSError, ValueError, TypeError):
         checks["calib_10"] = False
+
     checks["no_criticals"] = not Path("data/DEADMAN_FIRED").exists()
     met = all(checks.values())
     return met, ", ".join(f"{k}={v}" for k, v in checks.items())
 
 
-def _oldest_line_age(p: Path) -> float:
-    """Best-effort mtime proxy for oldest fill; refined when fills.csv exists."""
-    import time
-    return p.stat().st_mtime if p.exists() else time.time()
-
-
 def main() -> None:
+    """Run every due cadence duty, and BANK WHAT COMPLETED even if a later one raises.
+
+    STATE-WRITTEN-LAST IS THE DEFECT, and the panel timeout above is only the instance that
+    exposed it. `state` is mutated in memory by every duty and persisted ONCE at the end, so ANY
+    exception anywhere in this function -- a network hang, a malformed artifact, an OOM kill, an
+    operator Ctrl-C -- discards the record of every duty that had already run. The duties then
+    re-fire next cycle and their timestamps stay stale forever, which is indistinguishable from
+    "the cadence engine is not running" and is exactly how cadence starvation has presented here
+    before (2026-08-04).
+
+    The `finally` makes progress durable without making failure quiet: `_assert_floors` still
+    raises through it, so a breached floor still fails the run loudly -- it just no longer takes
+    the completed duties down with it. No floor is loosened, added to, or removed; this only
+    changes whether work that ALREADY happened is remembered.
+    """
     now = datetime.now(tz=UTC)
     state = _load(_STATE, {})
     stage = str(_load(_STAGE, {"stage": "S0"}).get("stage", "S0"))
     fired: list[str] = []
+    try:
+        _main_body(now, state, stage, fired)
+    finally:
+        _STATE.write_text(json.dumps(state, indent=2), "utf-8")
+    print(f"cadence[{stage}]: fired={fired or 'nothing due'} | "
+          f"panel due in {max(0.0, _PANEL_EVERY_D - _days_since(state, 'last_panel')):.1f}d | "
+          f"tier1 due in {max(0.0, _TIER1_EVERY_D - _days_since(state, 'last_tier1')):.1f}d")
 
-    # THE ADVISORY PANEL USED TO RUN HERE, AND IT RAN FIRST. It now runs LAST, after the state
-    # write -- see the block at the end of main() for the measurement that moved it.
+
+def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str]) -> None:
+    """The duty sequence itself. Mutates `state` in place; `main` owns persisting it."""
+
+    if _days_since(state, "last_tier1") >= _TIER1_EVERY_D:
+        if _run_panel("tier1"):
+            state["last_tier1"] = now.isoformat()
+            state["last_panel"] = now.isoformat()     # tier1 counts as this week's panel
+            fired.append("tier1")
+    elif _days_since(state, "last_panel") >= _PANEL_EVERY_D and _run_panel(None):
+        state["last_panel"] = now.isoformat()
+        fired.append("panel")
 
     # META-RESEARCH REVIEW (§ docs/research/META_RESEARCH_DIRECTIVE.md). Mechanical half runs
     # EVERY cycle: it is seconds, no LLM, no context cost, and a prompt-only duty would be
@@ -786,49 +872,28 @@ def main() -> None:
     # is flagged for activation. No human or brain memory is the trigger -- the code is.
     if stage == "S0" and not state.get("post_gate0_activated"):
         met, why = _freeze_exit_met()
+        # ALWAYS write the status, and write it where something READS it. Previously this was set
+        # only in the else-branch, into a state key with ONE writer and ZERO readers -- no fence,
+        # no page, no dashboard. That is how three unsatisfiable criteria sat in the deployment
+        # gate unnoticed: the single place the failure was stated was a string nobody opened.
+        state["freeze_exit_status"] = why
+        _FREEZE_STATUS.parent.mkdir(parents=True, exist_ok=True)
+        _FREEZE_STATUS.write_text(json.dumps({
+            "generated": datetime.now(tz=UTC).isoformat(),
+            "met": met, "why": why,
+            "criteria_sources": _FREEZE_SOURCES,
+            "note": "Every criterion must read an artifact something in this repo WRITES. "
+                    "check_freeze_exit_sources() fences that; three criteria failed it on "
+                    "2026-07-30 (fills.csv, weekly_cost_summary.json, calibration.csv).",
+        }, indent=2), "utf-8")
         if met:
             due.append("FREEZE-EXIT CRITERIA MET -- activate docs/POST_GATE0_MANIFEST.md "
                        "top to bottom; flip stage_state to S1; set post_gate0_activated. "
                        "Nothing deferred may be skipped.")
-        else:
-            state["freeze_exit_status"] = why
+    # Floors stay EXACTLY here and stay raising: main()'s `finally` banks state around this call,
+    # so a breached floor still fails the run loudly while the duties that already completed are
+    # no longer forgotten. Tier-3-class -- never loosened, never deleted.
     _assert_floors(state, stage)
-    _STATE.write_text(json.dumps(state, indent=2), "utf-8")
-
-    # ADVISORY PANEL LAST, AND ONLY ON THE WALL-CLOCK THAT REMAINS (2026-08-04).
-    # It used to run FIRST, and that ordering was silently costing the desk its primary output.
-    # The panel has ZERO authority by constitution -- it augments the desk's own work, never
-    # replaces it -- yet it is the only duty in this file that costs minutes: measured 293.6s
-    # this cycle to return 0/4 substantive on the free roster (tencent 404, cohere 400, nvidia
-    # x2 malformed), and up to its full 720s timeout when seats hang instead of erroring.
-    # Because it produced nothing it never stamped, so it re-fired on EVERY run; and because
-    # this state file is written at the END of main(), the parent's 900s timeout killed the
-    # process mid-panel and discarded every duty stamp the run had already earned. The work ran
-    # and the record of it did not: last_live_generate sat at 2026-07-31 while generation duties
-    # executed, and the moat screen reported flat coverage across 40 runs for the same reason.
-    # Running it after the write makes the primary-output duties unstarvable -- a killed panel
-    # now loses only the panel, and the duty stays OWED so nothing is quietly marked done.
-    # No floor is touched: _assert_floors has already run above on the full duty state.
-    _panel_stamped = False
-    if (_left := _budget_left()) < _PANEL_RESERVE_S:
-        print(f"cadence: panel SKIPPED -- {_left:.0f}s wall-clock left of {_BUDGET_S:.0f}s "
-              f"(needs {_PANEL_RESERVE_S:.0f}s). Duty stays OWED.")
-    elif _days_since(state, "last_tier1") >= _TIER1_EVERY_D:
-        if _run_panel("tier1"):
-            state["last_tier1"] = now.isoformat()
-            state["last_panel"] = now.isoformat()     # tier1 counts as this week's panel
-            fired.append("tier1")
-            _panel_stamped = True
-    elif _days_since(state, "last_panel") >= _PANEL_EVERY_D and _run_panel(None):
-        state["last_panel"] = now.isoformat()
-        fired.append("panel")
-        _panel_stamped = True
-    if _panel_stamped:
-        _STATE.write_text(json.dumps(state, indent=2), "utf-8")   # persist the panel stamp too
-
-    print(f"cadence[{stage}]: fired={fired or 'nothing due'} | "
-          f"panel due in {max(0.0, _PANEL_EVERY_D - _days_since(state, 'last_panel')):.1f}d | "
-          f"tier1 due in {max(0.0, _TIER1_EVERY_D - _days_since(state, 'last_tier1')):.1f}d")
 
 
 if __name__ == "__main__":

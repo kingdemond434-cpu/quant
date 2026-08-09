@@ -27,6 +27,7 @@ from libs.data.lake import Layer, ParquetLake
 from libs.data.timeframe import Timeframe
 from libs.research.crossasset import trend_basket_returns
 from libs.research.crypto_xsec import adv_tier_cost
+from libs.research.event_density import forward_verdict
 from libs.validation.dsr import sharpe_ratio
 
 _CRYPTO = Path("data/lake/bronze/crypto")
@@ -63,13 +64,12 @@ def _ann(r: np.ndarray) -> float:
 
 
 def _verdict(days: int, fwd: float, bt: float) -> str:
-    if days < 90:
-        return f"ACCUMULATING ({days}/90+ days, challenger) -- zero capital until it holds"
-    if fwd < 0:
-        return "FAILING FORWARD -> kill challenger (regime gate did not help)"
-    if fwd >= 0.5 and fwd >= 0.5 * bt:
-        return "ON TRACK -> compare vs incumbent at review; better book wins (governance gate)"
-    return "WEAK forward -> continue shadow, do not deploy"
+    """EVIDENCE, NOT CALENDAR (L1.48) -- shared gate, so five runners cannot drift apart."""
+    return forward_verdict(
+        days, fwd, bt, periods_per_year=_PPY,
+        accruing_tail=" (challenger) -- zero capital until it holds",
+        kill_action="kill challenger (regime gate did not help)",
+        on_track_action="compare vs incumbent at review; better book wins (governance gate)")
 
 
 def main() -> None:

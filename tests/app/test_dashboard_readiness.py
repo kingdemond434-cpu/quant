@@ -16,7 +16,7 @@ def test_dashboard_has_all_sections(db: Database) -> None:
     assert state.risk["approvals_issued"] == 0
     assert state.execution["orders"] == 0
     assert state.monitoring["open_alerts"] == 0
-    assert state.system_health["schema_version"] == 6
+    assert state.system_health["schema_version"] == 7
     assert state.system_health["audit_chain_ok"] is True
 
 

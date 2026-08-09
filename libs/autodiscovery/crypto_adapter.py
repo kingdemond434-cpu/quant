@@ -25,7 +25,6 @@ import numpy as np
 
 from libs.autodiscovery.memory import CandidateStore
 from libs.autodiscovery.models import CycleResult, Family, MarketSeries
-from libs.autodiscovery.novelty import NoveltyGate
 from libs.autodiscovery.orchestrator import AutoDiscoveryLab
 from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
 from libs.data.lake import Layer, ParquetLake
@@ -79,17 +78,30 @@ def _provider_from_frames(frames: dict[str, Any], min_bars: int) -> DataProvider
     # BTC -- effectively never) leave ref_close None so the generator honestly skips (zeros).
     btc = frames.get("BTCUSDT")
     btc_close = btc["close"] if btc is not None else None
+    # The reference's RANGE too: intermarket differencing normalises each leg by its own ATR
+    # before subtracting, and a close-only reference cannot supply one.
+    btc_high = btc["high"] if btc is not None else None
+    btc_low = btc["low"] if btc is not None else None
 
     def provider(symbol: str) -> MarketSeries | None:
         df = frames.get(symbol)
         if df is None or len(df) < min_bars:
             return None
         funding = df["funding"].to_numpy("float64") if "funding" in df.columns else None
-        ref_close = None
+        ref_close = ref_high = ref_low = None
         if btc_close is not None and symbol != "BTCUSDT":
             ref = btc_close.reindex(df.index).ffill()
             if not ref.isna().any():
                 ref_close = ref.to_numpy("float64")
+                # ALL THREE OR NONE. A reference whose close is aligned but whose range is not
+                # would put the two legs of the difference on different bars, which reads as a
+                # signal and is a join bug.
+                if btc_high is not None and btc_low is not None:
+                    rh = btc_high.reindex(df.index).ffill()
+                    rl = btc_low.reindex(df.index).ffill()
+                    if not rh.isna().any() and not rl.isna().any():
+                        ref_high = rh.to_numpy("float64")
+                        ref_low = rl.to_numpy("float64")
         return MarketSeries(
             close=df["close"].to_numpy("float64"),
             high=df["high"].to_numpy("float64"),
@@ -97,6 +109,8 @@ def _provider_from_frames(frames: dict[str, Any], min_bars: int) -> DataProvider
             volume=df["volume"].to_numpy("float64"),
             hour=np.array([t.hour for t in df.index], dtype="float64"),
             ref_close=ref_close,
+            ref_high=ref_high,
+            ref_low=ref_low,
             funding=funding,
         )
 
@@ -129,13 +143,34 @@ def load_universe(
     """Select the TRADEABLE crypto universe (top-``limit`` by trailing dollar-volume) + a provider.
 
     Ranking is done OFFLINE from lake bars (median close*volume over the last ~180 bars) -- no live
-    API call, so no network/geo-block failure mode in the daily cycle. Capping to the liquid names
-    is economically honest AND statistically kinder: testing 200+ microcap perps is breadth-mining
-    that inflates the cumulative trial count (harshening the DSR deflation on the real hypotheses)
-    while adding near-zero-capacity candidates. It is also operationally robust -- the campaign-wide
-    Reality-Check bootstrap over an N-wide candidate matrix is memory-heavy, so an unbounded sweep
-    (~1000 candidates) OOM-crashes this box mid-cycle; ~30 liquid names keeps N bounded. The top ~30
-    perps hold essentially all real research capacity anyway. ``limit=None`` keeps every symbol.
+    API call, so no network/geo-block failure mode in the daily cycle.
+
+    WHY THE CAP EXISTS, RE-DERIVED 2026-08-05 (R0241b), because the reason on this docstring was
+    partly UNCONSTITUTIONAL and would have kept the cap forever.
+
+    RETIRED REASON -- "adds near-zero-capacity candidates". That is a capacity TILT, and §42
+    capacity parity is explicit that an edge is an edge: never prefer a large-capacity edge over a
+    small one, and "fund-shaped" and "niche-only" are the SAME defect pointed opposite ways. The
+    only legitimate capacity kill is SUB-VIABLE -- cannot support a handful of economic round-trips
+    at venue minimums -- which is a per-candidate test, not a universe filter. Small is the desk's
+    stated advantage (§42, L1.28a), so smallness may not be a reason to exclude.
+
+    THE REAL BINDING CONSTRAINT IS MEMORY, and it is now measured rather than asserted. 285 of the
+    lake's symbols clear ``min_bars`` today; at 48 hypotheses per symbol that is 13,680 candidates.
+    Profiling ``stratified_campaign_gates`` over exactly that many candidate series OOM-killed this
+    box (MemAvailable fell to 296 MB and took the CI pytest step down with it, SIGKILL). That is a
+    NAMED RESOURCE CEILING with a re-test condition -- raise the cap when the campaign holds
+    candidate series in a chunked/streaming form rather than all at once -- not a statistical or
+    economic preference.
+
+    THE MULTIPLICITY COST IS REAL BUT SMALL, AND IS NOT THE BLOCKER. Measured with the desk's own
+    preflight at full available depth: 30 symbols (N=1,440) gives hurdle annSR 1.41 at 98.2% power;
+    285 symbols (N=13,680) gives 1.57 at 93.5%. Both POWERED. So multiplicity alone would NOT
+    justify the cap -- 9.5x the candidate supply for 4.7 points of power is a trade the desk should
+    take, once the memory ceiling allows it.
+
+    ``limit=None`` keeps every symbol and is what the profiling above used; it is available for
+    deliberate, resourced runs, not for the daily cycle.
     """
     all_syms = crypto_symbols(timeframe, lake_root=lake_root)
     frames = _read_frames(all_syms, timeframe, lake_root)
@@ -157,22 +192,25 @@ def build_lab(
     db: Database,
     provider: DataProvider,
     *,
+    timeframe: Timeframe,
     families: Sequence[Family] | None = DEFAULT_FAMILIES,
     cost_per_side: float = COST_PER_SIDE,
 ) -> AutoDiscoveryLab:
     """Wire a crypto-fed :class:`AutoDiscoveryLab` (flat per-side cost, family-restricted).
 
-    The graveyard novelty gate is ON here because this is a PRODUCTION generation path (cron
-    01:30 / 03:30 via ops/run_crypto_factory.sh). `from_corpus` returns None when the corpus is
-    absent, so a host without data/graveyard_priors.json degrades to the previous behaviour
-    rather than failing the cycle.
+    ``timeframe`` is REQUIRED and must be the interval ``provider`` was built on
+    (:func:`lake_provider` / :func:`load_universe`). It is not defaulted to ``D1`` alongside them
+    on purpose: this is the argument that annualises every Sharpe the lab stores, and a D1 default
+    here would silently mis-annualise an H8 universe by sqrt(3) -- a smaller version of the exact
+    defect R0086 records (see libs/autodiscovery/validation.py). Crypto trades 24/7, so the lab's
+    365-day calendar default is the right one for every provider this module builds.
     """
     return AutoDiscoveryLab(
         db,
         provider,
+        bar=timeframe,
         cost_provider=lambda _s: cost_per_side,
         families=list(families) if families is not None else None,
-        novelty=NoveltyGate.from_corpus(),
     )
 
 
@@ -192,7 +230,9 @@ def web_payload(
         for r in store.survivors()
     ]
     rejection_hist: dict[str, int] = {}
-    for rec in store.all():
+    # Full history on purpose: a cumulative gate-kill tally must not shrink when candidates are
+    # later retired for capacity (status -> archived); their gate history really happened.
+    for rec in store.all(include_retired=True):
         if rec.survived or not rec.rejection_reason:
             continue
         body = rec.rejection_reason.removeprefix("failed: ")
@@ -202,6 +242,7 @@ def web_payload(
         "timeframe": timeframe,
         "cumulative_tested": store.total(),
         "cumulative_survivors": len(survivors),
+        "cumulative_screen_survivors": len(store.screen_survivors()),
         "by_family": store.family_counts(),
         "by_status": store.status_counts(),
         "rejection_by_gate": dict(sorted(rejection_hist.items(), key=lambda kv: -kv[1])),
@@ -214,8 +255,10 @@ def web_payload(
         },
         "survivors": survivors,
         "note": (
-            "Industrialized crypto hypothesis factory: same gauntlet, net of real perp cost, "
-            "cross-campaign DSR deflation. Zero survivors is the honest expected outcome; the "
+            "Industrialized crypto hypothesis factory: cumulative_survivors counts only fully "
+            "measured, positive-capacity survivors; cumulative_screen_survivors is weaker Stage-A "
+            "inventory with zero production authority. Same gauntlet, net of real perp cost and "
+            "cross-campaign DSR deflation. Zero validated survivors is an honest outcome; the "
             "funding_stress_reversal (LIQUIDITY) generator is the one crypto-native test."
         ),
     }

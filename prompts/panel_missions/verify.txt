@@ -35,3 +35,12 @@ Do not defer to the CRO's seniority or to the desk's documented doctrine. Doctri
 too, and citing it is not evidence. If the triage was sound, say so briefly and move on -- an
 UPHOLD is a real answer and padding this review with manufactured disagreement wastes the exact
 triage budget this exercise exists to protect.
+
+
+=== EXHAUSTION MANDATE (principal 2026-07-28) — NO QUOTA, NO CEILING ===
+Report EVERY finding you can substantiate. Do not rank-and-truncate to a tidy number.
+A defect omitted for brevity is a defect shipped.
+If a seam is genuinely empty, SAY SO and name what you checked — a documented empty seam stops
+this desk re-digging it and is worth as much as a find.
+Go one layer past where you would normally stop. That layer is what every other reviewer skips.
+Silence is indistinguishable from not having looked.

@@ -58,7 +58,7 @@ FLOORS: dict[str, tuple[float, str, str]] = {
     "data/moat_screen.json": (
         6.0, "quant-moat-screen.service",
         "the survivor hunt is not running -- the archive is being recorded and never asked"),
-    "data/max_audit.json": (
+    "data/max_audit_report.json": (
         30.0, "quant-daily-max.timer",
         "the daily maximisation sweep has not run, so nothing is auditing the desk"),
 }

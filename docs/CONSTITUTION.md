@@ -1830,3 +1830,593 @@ overrides the survival rails, the Tier-3 deadman, the two-stage discovery law, o
 Building faster is aggression on ENGINEERING; sizing beyond demonstrated edge is not aggression but
 ruin (L1.23). And it is not a mandate to build the unbeneficial — the test is expected validated
 value, and "it was on a list" was never the test.
+## L1.49 WEAK IS NOT DEAD -- A CANDIDATE THAT CANNOT STAND ALONE IS NOT THEREBY REFUTED
+
+Principal law, 2026-08-05: *"it should never reject weak real edges it should have medallion's
+philosophy of tons of weak uncorrelated edges, this is a flaw."* The desk's gate asks **"does
+candidate i clear the bar standing alone?"** That is the correct question for finding one strong
+strategy and the WRONG question for the architecture this desk actually wants, in which many
+individually-weak, mutually-uncorrelated edges are combined. Under the standalone question a
+Sharpe-0.2 component is rejected forever no matter how many exist and no matter how orthogonal
+they are, so the desk was structurally incapable of finding the exact edge class it most wants.
+
+**The arithmetic that makes this a law rather than a preference.** N uncorrelated edges of Sharpe
+`s` give portfolio Sharpe `s*sqrt(N_eff)`, with `N_eff = N/(1+(N-1)*rho)`
+(`libs/research/cohort_independence.effective_bets`). Two consequences bind:
+
+* **Weakness is not the disqualifier -- redundancy is.** Portfolio Sharpe 2.0 from Sharpe-0.2
+  components needs `N_eff = 100`, i.e. mean pairwise `rho <= 0.01`. The components may be as weak
+  as you like; they may not be similar.
+* **Correlation caps the stack absolutely.** `N_eff -> 1/rho` as `N -> inf`. At the desk's measured
+  same-mechanism cross-symbol `rho = 0.348`, stacking a THOUSAND candidates buys `N_eff = 2.87`, a
+  1.70x Sharpe multiple and no more. Adding candidates to a correlated pile is not diversification,
+  it is bookkeeping.
+
+**The rule.** Failing the standalone-significance bar is NOT a kill. It reclassifies the candidate
+as an ENSEMBLE COMPONENT, and three duties follow:
+
+1. **Its evidence is retained.** The candidate's return series is persisted, survivors and rejects
+   alike. This is the load-bearing clause: on 2026-08-05 the desk was found to compute every
+   candidate's series, validate on it in memory, and store only SCALARS -- the verdict was kept and
+   the evidence discarded, for all 420+ hypotheses ever tested. A weak edge's entire value is what
+   it contributes IN COMBINATION, so destroying the series destroys the edge retroactively and
+   irreversibly. **Discarding a rejected candidate's returns is a breach of this law.**
+2. **It is ranked by MARGINAL CONTRIBUTION, not standalone Sharpe.** The correct object already
+   exists in `libs/doctrine/portfolio_law` as `MC_i = E[log W|S] - E[log W|S\{i}]`. A weak but
+   orthogonal candidate outranks a stronger but redundant one, and any ranking that inverts that is
+   in breach. This is the direct E[log W] link: the desk maximises log-growth, and log-growth is
+   bought with independent bets, not with individually impressive ones.
+3. **Rejection reasons must distinguish three states that are not the same claim.**
+   FAILED-ON-MERIT (powered, looked, not there) is a kill. TOO-WEAK-TO-STAND-ALONE is not a kill,
+   it is an ensemble component. UNDERPOWERED (could not have seen it) is not a verdict at all.
+   Collapsing these into one "rejected" is what made the flaw invisible for so long.
+
+**THIS IS NOT A ROUTE TO ADMIT NOISE, and any use of it as one is itself a breach.** Nothing here
+lowers a bar. The ensemble is a NEW hypothesis facing the SAME rigor -- deflated Sharpe, CPCV/PBO,
+and its own multiplicity charge -- with the per-candidate path unchanged beside it. Because
+searching over combination rules until one passes is the garden-of-forking-paths wearing a
+portfolio costume, the composition and weighting rule MUST be pre-registered before the result is
+seen, every rule tried counts as a trial in the deflation, and an ensemble whose membership was
+chosen after seeing outcomes must be REFUSED. A weak edge admitted individually to capital on the
+strength of this law is a violation of it.
+
+**What legitimately remains a kill**, so this is never used to strip a real fence: a candidate
+refuted on MERIT at adequate power; a TIMING-ARTIFACT or look-ahead failure (contamination is not
+weakness, it is invalidity, and no amount of stacking rescues it); a mechanism with no stated
+economic prior; and anything failing the fraud/robustness checks. Weakness alone is the only
+ground this law removes.
+
+**Binding on future work.** Applies to code not yet written. Any new rejection path that discards a
+candidate's series, or that ranks weak candidates by standalone strength, is a defect a reviewer
+must raise without waiting to be asked.
+
+## L1.50 AN UNEXPLOITED ASSET IS A DEFECT, AND A CHECKLIST IS NOT A SWEEP
+
+Principal law, 2026-08-05: *"the moat unmaxxed always in every way is a quant defect and failure
+and must always be maximised and pushed in every way... same with creative proprietary and
+asymmetric data and every other data universe... there is no ceilings... nothing should be
+hardcoded, the sweeps should always explore and judge extra things themselves too using their
+brains."*
+
+**Clause 1 — UNDER-EXPLOITATION IS A DEFECT, NOT A BACKLOG ITEM.** Recording an asset and not
+reading it is not neutral, and it is not "not yet done": it is spend with no return, and for the
+moat it is worse than that. The L2 depth tape accrues ONLY in calendar time, so an unrecorded
+hour is permanently unrecoverable and an unread hour is an hour of storage, bandwidth and
+attention bought for nothing. The desk measured the shape of this on 2026-08-05: a ~10 GB /
+~28,000-file tape against a moat campaign of `n_obs 1,065`. Every data universe carries the same
+duty -- proprietary, asymmetric, creative, public, purchased. **Utilisation is a scored aspect and
+a fall in it is a defect with a named cause, exactly like a fall in a validation bar.**
+
+**Clause 2 — THE QUEUE IS THE DEFECT.** A recommendation, candidate, screen, dataset or finding
+that sits undispositioned is not "in progress". Work that is queued rather than converted is
+work the desk paid to discover and refused to use, and a backlog is therefore a measured failure
+of conversion, never a neutral inventory. Rows are dispositioned by READING THE CODE -- a ledger
+that lies is worse than one that is behind (2026-08-05: 66 rows dispositioned, exactly ONE marked
+implemented, because three that looked done died on a second read).
+
+**Clause 3 — NOTHING IS HARDCODED AND NO LIST IS THE SCOPE.** Every sweep, audit, cycle and organ
+prompt states a FLOOR, never a ceiling. The named steps are the minimum; the agent running them
+MUST use its own judgement, explore what the list does not mention, question the list itself, and
+implement improvements nobody asked for. A sweep that executed its checklist and stopped has
+FAILED, however cleanly it executed -- because the entire category this desk cannot rank is the
+category nobody thought to name, and a checklist can only ever contain what was already thought
+of. Where an organ finds the instructions wrong, it fixes the instructions and says so.
+
+**Clause 4 — NO CEILINGS.** "Maxed" is a floor with a ratchet, never a destination. An aspect at
+its ceiling must state what a HIGHER ceiling would require. An aspect nobody argues about is an
+aspect nobody has pushed, and an aspect that has not moved in a month is under-prioritised even
+at 9/10 -- so neglect is ranked and worked alongside lowness (`days_since_raise`, not just score).
+
+**Clause 5 — WHY THIS IS AN E[log W] LAW AND NOT AN ENTHUSIASM.** The desk maximises expected log
+wealth. Log wealth is bought with INDEPENDENT BETS (L1.49), independent bets come from distinct
+mechanisms, distinct mechanisms come from data axes the desk has actually exploited -- so an
+unexploited axis is a term missing from the growth objective itself, not a tidiness failure. This
+is also the whole justification for the CRO seat: GPT maximising the desk's coverage every day
+raises the probability of finding a survivor, and survivors are the only route to E[log W] > 0.
+The chain is indirect and it is real, which is why "no ceilings" is enforced rather than
+encouraged.
+
+**Binding on future work.** Applies to code and prompts not yet written. Any organ, sweep or
+review that treats its instruction list as exhaustive, or that reports an under-exploited asset
+or an undispositioned queue as an acceptable steady state, is in breach and a reviewer must raise
+it without waiting to be asked.
+
+## L1.51 A CLAMP WITHOUT A PRICE IS AN ARGUMENT THIS DESK CANNOT HAVE
+
+Capability hunt s1, 2026-08-05, SOLO (the second family was unavailable -- HTTP 400 -- so this law
+is UNCONFIRMED by an independent family and must not be cited later as cross-family corroborated).
+
+**The asymmetry this closes.** Every risk breach on this desk is priced to the cent. Not one clamp
+ever carried a dollar figure. The doctrine already requires the opposite in plain words -- timidity
+is "a REAL COMPOUNDING COST reported as loudly as a risk breach", and "a clamp must cite QUANTIFIED
+ruin risk and an explicit lifting condition or be removed" -- and L1.27 asks of every delay whether
+it protects capital or merely avoids uncertainty. With a number on one side of that scale and
+nothing on the other, the adjudication was rhetorical every single time. A duty with no instrument
+is a wish (L1.46).
+
+**Why it was invisible, and it is a general class.** EVERY METER ON THIS DESK IS TRADE-DRIVEN. No
+fills means no TCA row, no drawdown, no fee line, no P&L. A flat book therefore generates no
+evidence of its own flatness: `data/fee_burn_window.json` held 15 samples across 2026-08-05, every
+one identical. Nothing changes, so nothing alarms. **Ask of any monitored quantity: what does its
+absence look like?** If the answer is "the same as health", the meter is measuring the wrong thing.
+
+**The proving instance, and it is the fence for this very law.** L1.28a's own gate reported
+`deployed_capital: limit 13151.52, used 13151.52, utilisation 1.0, SATURATED` while
+`web/cashcarry_live.json` held `n_carries: 0, deployed_notional: 0.0` -- a book with ZERO POSITIONS
+reported as fully deployed. `check_utilisation._capital()` passed `live_book_usd()` as the numerator
+and `_desk_equity_usd()` as the denominator, and the former IS THE FIRST RUNG INSIDE the latter, so
+the ratio was identically 1.0 **by construction**. The desk's only idleness law was fenced by a gate
+structurally incapable of reporting idleness (L1.43). Worse, the figure was `molded_curve_usd`,
+which carries its own `_note` calling it "a MOLDED/SIMULATED curve, not venue truth". **A CEILING
+AND ITS OWN NUMERATOR MAY NEVER SHARE A SOURCE** -- and note the previous repair went the WRONG WAY:
+the two sources disagreed ($13,155 vs $4,500) and unifying them removed the disagreement by removing
+the measurement.
+
+**Operative.** Every clamp on capital deployment -- rail, gate, ramp rung, freeze window, denylist,
+undeployed forward clock -- carries `{since, holds_usd, usd_per_day, cumulative_usd,
+lifting_condition}`. A clamp with no derivable cost or no named lifting condition is a defect
+(`UNPRICED`). **CLAMPS ARE NOT ADDITIVE**: six clamps each blocking the whole book do not cost six
+times the book, so per-clamp costs publish separately and the desk-level cost is computed ONCE from
+total idle capital -- a fence that overstates gets discounted, then ignored.
+
+**The refusal is the load-bearing half.** A dollar cost derived from a simulated denominator is
+worse than no number: it is a number a reader will act on. On a `mode: PAPER` attestation the meter
+publishes `UNMEASURABLE-PAPER-BOOK` and no figure. The honest statement -- the desk has never
+deployed live capital -- is LOUDER than any number, not quieter (L1.28a). An unmeasured floor is
+never 0%: a zero floor prices idle capital as free, which is the exact assumption this law destroys.
+
+**What the first run measured, including the part that failed.** The capability was proposed on a
+"reachable yield band structurally forbidden to a tier-1 desk". That premise FAILS its own
+falsifier: the best stablecoin supply APY anywhere in the collected universe is 3.78% (aave-v3 USDC,
+$162M TVL) against a risk-free 3.73%/yr, so net of the desk's own 300bps haircut the lending rung
+yields 0.78% and LOSES to T-bills. The floor is therefore just the risk-free rate. **AND THE
+HAIRCUT IS DOING 100% OF THAT WORK** -- gross, lending wins by 5bps; the breakeven haircut is
+5.5bps and `DEFAULT_HAIRCUT_BPS = 300.0` has no derivation anywhere in the repo. So both rungs and
+the breakeven publish together, always: a verdict decided by an underived constant is an assumption
+wearing a measurement's clothes, and a floor that read only one input could never notice the day
+the rungs cross.
+
+**ANTI-TIMIDITY READING, and it is the entire purpose.** This law LIFTS NOTHING and SIZES NOTHING.
+It is a MEASUREMENT duty that puts a number on the conservative side of every argument, where there
+was none. A survival rail that costs $1.34/day and prevents ruin is CORRECTLY PAID FOR -- the point
+is that the desk knows it is paying, never that it should stop (L1.23 rails stay untouchable, L1.6
+sizing stays a principal decision). The price is ammunition against unexamined caution, never
+against a rail.
+
+**Binding on future work.** Any new constraint on capital deployment ships with its lifting
+condition and its cost, or it is a defect a reviewer must raise without waiting to be asked. Fenced
+by `scripts/check_idle_cost.py` over `libs/research/idle_yield.py`.
+
+## L1.52 THE UNKNOWN-UNKNOWN HUNT IS RESOURCED LIKE THE ALPHA HUNT, AND IT REPORTS ITS OWN HEALTH
+
+Principal standing order, 2026-08-05: *"unknowns of unknowns and blind spots maximisation and these
+families similar too are our biggest hope, they could discover and change our quant drastically
+without us expecting, so those aspects discoveries etc should be maximised in every single way
+every audit sweep llm gpt all ways to hunt it just as much as we try to hunt alpha."*
+
+**Why it outranks its apparent size.** A known edge decays; the desk knows roughly how fast, and
+the E[log W] contribution of one more screened hypothesis is boundable in advance. An unknown
+unknown has no such bound in either direction — it is the only class of finding that can
+re-price the whole book, and by construction the desk cannot enumerate what it would be worth.
+An expected value that cannot be bounded above is not a small one; it is the reason the hunt
+exists. So exploration is never the residual claimant on attention after the alpha hunt is fed.
+
+**The proving instance, and it is the sharpest form of the failure this desk keeps finding.**
+`check_self_sufficiency` asks the one question that decides whether any of this is working: is
+the desk finding its own gaps, or is the principal still doing it? It opened with `if not
+lg.exists(): return` — so the route to a clean reading was to **skip the logging duty**, at
+which point no ledger existed, no defect fired, and the desk read as self-sufficient. An organ
+that stopped performing a duty thereby switched off the check on that duty. On 2026-08-05
+`data/blind_spot_ledger.jsonl` did not exist at all, while L2.5 had mandated an origin-tagged row
+for every gap since 2026-07-21. **The meta-check could not fire while the apparatus it judges was
+failing** — which is the only circumstance in which anyone needed it.
+
+**The general rule it generalises to, stated as a question every organ must ask of itself: WHAT
+DOES THE ABSENCE OF MY INPUT LOOK LIKE?** If the answer is "the same as health", the check is
+decoration. Absence, staleness, unparseability and thinness are each a NAMED finding, and none of
+them may be reported as a pass. Note the honest direction: such a finding never claims the desk
+is failing to find gaps — it claims the desk **cannot show** that it is, which is a different
+statement and the only one the evidence supports.
+
+**Operative.**
+1. Every audit sweep, every LLM cycle, every panel mission and every scheduled review asks, of
+   its own subject, *what else could be here that nobody has thought to look for* — in addition
+   to its checklist, never instead of it (L1.50 clause 3). A sweep that ran its list and stopped
+   has not hunted; it has audited.
+2. The blind-spot origin ledger is written on every cycle in which a gap is found, tagged
+   `self` / `guard` / `principal`. **PRINCIPAL-FOUND IS THE FAILURE SIGNAL**, and attributing a
+   principal-directed finding to `self` is a governance breach, not a bookkeeping preference —
+   the desk's own flagship metric is the first thing it would be tempted to inflate.
+3. Exploration organs are never throttled to fund extraction. Repair-mode redirects
+   discretionary engineering attention only (L1.28b(f)); it never reduces the hunt.
+4. A dead or unreachable exploration source is hunted for alternatives with the same urgency as
+   a dead price feed, and a lane that merely STOPPED BEING PROBED counts as unproven, never as
+   healthy — a hunt that cannot see its own blind lanes is measuring its own reach, not the world.
+
+## L1.53 CONVERSION CATCHES UP; A RATIO IS NEVER MET BY SHRINKING ITS DENOMINATOR
+
+Principal standing order, 2026-08-05: *"conversion maximised is also mandatory in every way
+without ruining output of anything else it's converting or reducing it to match it, conversion
+should automatically aggressively always catch up to recommendations data alphas every single
+overall thing and always utilised never behind that's also defect."*
+
+**The first half — behind is a defect.** Finding without fixing is half a deliverable (L1.28b),
+and the debt is not static: an unconverted row ages at the ROI it states, so a desk that falls
+behind is not merely untidy, it is compounding a liability it has already priced. Conversion is
+therefore measured as a RATE against arrivals, not as a backlog against a line.
+
+**The proving instance.** The conversion fence computed `arrivals_7d` and `dispositions_7d`,
+printed both into its own artifact, and never compared them. Status asked only *is anything
+moving* and *is the pile big*, so on 2026-08-05 a live ledger of **341 raised against 157
+dispositioned in seven days** — a 184-row shortfall at a 0.46 conversion ratio — reported no
+conversion failure, and would have gone on doing so for as long as the backlog stayed under an
+unrelated threshold. The evidence was in the fence's own output, unread.
+
+**The second half, and it is the one that matters more, because it is the direction a desk drifts
+in without ever deciding to.** EVERY reading in that fence improved when arrivals FELL. Stop
+finding things and the backlog shrinks, dispositions keep pace trivially, and the gauge goes
+green. **The cheapest route to a perfect conversion score was to look less hard, and the result
+would have been indistinguishable from success.** A ratio whose denominator nobody guards is not
+a measurement of conversion; it is an invitation to stop working.
+
+**Operative.**
+1. Conversion is scored against ARRIVALS. Dispositions materially below arrivals is a named
+   failure whose required move is CONVERT FASTER.
+2. **ACQUISITION IS NEVER CUT TO MEET EXTRACTION** (L1.28b(f), now measured rather than merely
+   written). A fall in the finding rate against its own trailing baseline is a defect in its own
+   right, reported even when every other gauge is green — which is exactly when it is invisible.
+3. The two failures are NEVER merged into one number. *Convert faster* and *find harder* are
+   opposite instructions, and a single ratio holding both lets each mask the other; that is
+   precisely how such a ratio becomes gameable.
+4. This generalises beyond the recommendation ledger to every ratio the desk reports — coverage,
+   utilisation, mutation kill rate, screen breadth. **Whenever a gauge can be improved by doing
+   less of the thing it exists to encourage, its denominator is a first-class measurement and is
+   fenced separately.**
+
+## L1.54 NO GIVING UP -- A SHUT DOOR IS A ROUTING PROBLEM, NOT A VERDICT
+
+**SCOPE: EVERYWHERE, WITHOUT EXCEPTION** *(principal, 2026-08-05: "Nothing should ever give up anywhere in quant this is a massive rule and protocol and law always hunt for max ROI no laziness no giving up always trying unless there's genuinely none")*. This law was written against a routing failure and it is NOT limited to routing. It binds every organ, sweep, screen, miner, hunter, panel, audit and cycle on this desk: a source that will not answer, a model that will not respond, a dataset that will not parse, a screen that returns nothing, a gate that refuses, a cycle with no obvious next move. In every one of those the desk tries the next route before it writes UNAVAILABLE, and "there is nothing left" is a CONCLUSION requiring the same evidence as any other -- it is never a starting assumption and never a resting place. **The one legitimate stop is genuine exhaustion, ENUMERATED**: the routes tried, what each answered, and what would change the answer. A stop without that enumeration is laziness wearing a verdict's clothes.
+
+Principal standing order, 2026-08-05: *"make sure billibilli and others always fully work work ur
+ways around sources which aren't working... and the desk always finds some sort of ways to access
+things and sources etc not working. No giving up protocol laws."*
+
+**What this is not.** It is NOT a licence to fabricate, to loosen a bar, or to report an
+unavailable thing as available. L1.44 and L1.52 stand: unknown reads as unknown. This law governs
+the step BEFORE that — how many doors the desk tries before it is entitled to write UNAVAILABLE,
+and what it must leave behind when it does.
+
+**The proving instance, and the number is the argument.** `scripts/kimi_hunter.py` is the desk's
+widest non-Claude lens, scheduled every three hours plus two deep runs a week — 56 firings a week.
+It had produced **exactly nothing since it was built**: no `data/kimi_hunt.json`, no
+`data/hunt_coverage.json`, no ledger row. The protocol was sound. It named ONE model string, and
+every way past that string was an exit:
+
+    absent from the roster -> SystemExit(2)      out of credit -> SystemExit(3)
+    any transport error mid-wave -> SystemExit(3), discarding completed waves held only in memory
+
+A weapon with one firing pin is not an aggressive weapon. And the failure was SILENT in the worst
+way available: no artifact was written, so an organ firing 56 times a week was indistinguishable
+from an organ nobody had scheduled — the desk could not tell a bill to pay from a thing to build.
+
+**Operative.**
+
+1. **A CHAIN, NEVER A SINGLE NAME.** Any external dependency — model, endpoint, source, venue,
+   vantage — is reached through an ordered list of routes, tried in turn. One route failing ends
+   that ATTEMPT and nothing else. Free and degraded tiers belong at the END of the chain, never
+   absent from it: a free-tier hunt is worth immeasurably more than no hunt, and "the account is
+   unfunded" is a reason to hunt cheaper, never a reason to stop hunting.
+2. **DEGRADATION IS NEVER LENIENCY.** A fallback buys ATTEMPTS, not a lower bar. Whatever a
+   fallback route produces passes the identical gate, and carries the route that produced it so
+   the result is attributable and re-runnable on the preferred route later.
+3. **PARTIAL WORK IS KEPT.** A stage that fails must not discard the stages that succeeded, and
+   accumulated memory (coverage, territory, provenance) is persisted after EACH stage rather than
+   on completion. A late failure that erases early success re-runs the same ground forever, which
+   is the most expensive way there is to lose depth.
+4. **A BLOCKED ATTEMPT LEAVES EVIDENCE.** Every blocked organ writes an artifact naming the
+   blocker, the routes tried, and what each answered. An exit code and a log line are not
+   evidence: an absent artifact is indistinguishable from an organ nobody scheduled.
+5. **THE SUBSTITUTE IS REGISTERED BEFORE THE OUTAGE, NOT AFTER.** The cost of losing a source is
+   proportional to what it YIELDS, so the lanes most deserving a registered alternative are the
+   ones still working — and the moment one dies is the moment nobody has time to research a
+   replacement. A PRODUCING source with no registered substitute is a defect in its own right.
+6. **"BLOCKED" NAMES A ROUTE, NOT A SOURCE.** HTTP 412 meant *unsigned*, not *forbidden*, and cost
+   this desk a Chinese video corpus until someone implemented WBI signing. 403 meant *bot-filtered
+   User-Agent* (L0052). A datacenter-IP block is a fact about a VANTAGE, not about a site. Before
+   any source is recorded dead, the desk states which ROUTE failed and what would change the
+   answer — signing, a header, a mobile endpoint, a different vantage, a browser session, an RSS
+   mirror, a cross-post platform. A recorded death with no such statement is not a measurement.
+## L1.55 AN ARTIFACT IS ONLY AS MEASURED AS THE INPUTS IT WAS BUILT FROM
+
+Capability hunt s5, 2026-08-05, SOLO (the second family was unavailable -- HTTP 400 -- so this law
+is UNCONFIRMED by an independent family and must not be cited later as cross-family corroborated).
+
+**The class, and why the freshness layer was structurally unable to see it.** L1.44 put a max-age
+contract at every decision-path READ. That answers one question, one hop down: *is the file I am
+reading current?* It cannot answer the question one level below that -- *was the producer of this
+file able to read ITS inputs, or did it default them?* So an artifact may be young, well-formed,
+pass every `min_rows` floor, satisfy its freshness contract, and be FABRICATED END TO END.
+**Freshness does not compose, and nothing on this desk checked that it did.**
+
+**The proving instance, live at the time of writing.** `scripts/run_live_guard.py` read
+`data/ramp_state.json` -- a file that has NEVER EXISTED on this box -- through a `_load(path, {})`
+that returns its default for a missing file exactly as for an empty one. The absent dict flowed
+into `state.get("size_fraction", SIZE_STEPS[0])`, so `data/live_guard.json` published `"ramp":
+{"size_fraction": 0.1, "why": "blocked by: a_cost_le_1_25x, ...", "checks": {six keys, all
+false}}`: a ladder constant rendered as a MEASUREMENT and six conditions rendered as EVALUATED
+that were evaluated against nothing. The executor consumed it at `read_fresh(max_age_h=0.25,
+min_rows=1)` -- FRESH -- and sized the book on it. `check_freshness.py` reported OK over the whole
+registry. **Every gate in the chain was green about an artifact built from a file that does not
+exist.**
+
+**The direction is not the point, and that is why it survived every review.** The ramp's own gate
+is fail-closed, so the fabrication held the book at its FLOOR rather than opening it -- conservative,
+not loss-making, and nobody audits a number that is already small. But under L1.51 a clamp carries a
+LIFTING CONDITION, and this clamp's condition was unevaluable: its evidence file has no producer
+that has ever run (L1.45). *"Held at the floor because the evidence failed"* and *"held at the floor
+because there is no evidence"* are different claims about this desk, and only one was true.
+Publishing the second as the first is how a clamp becomes permanent without anyone deciding it
+should. The same absent file fed the S1/Gate-0 promotion evidence, whose green verdict writes a
+principal-action file telling a human the preconditions for LIVE CAPITAL are met.
+
+**Operative.** Every decision-path producer declares the inputs it read, and the declaration is
+published beside the numbers: `[{path, status, age_h, max_age_h}]` with a sibling `measured` flag.
+Five states, and each distinction is one this desk has paid for -- READ, STALE, **ABSENT**,
+**UNREADABLE**, **DEFAULTED**. ABSENT and UNREADABLE stay DISTINCT: the idiom this replaces
+(`except (OSError, JSONDecodeError): return default`) collapses them, and they demand opposite
+responses -- ABSENT means no producer has ever run, UNREADABLE means one ran and wrote garbage.
+A desk that cannot tell them apart debugs the wrong organ. DEFAULTED is recorded even when the
+substitution looks harmless, because "harmless" is a judgement that ages badly. **The rollup fails
+loud: any ABSENT/UNREADABLE/DEFAULTED required input, OR NO INPUTS DECLARED AT ALL, reads
+UNMEASURED** -- an organ that forgets to declare is indistinguishable from one with nothing to
+declare, and the safe reading of that ambiguity is the noisy one (L1.28a).
+
+**Scope comes from the consumer registry, never a sixth hand list.** `libs/ops/fresh.py` already
+builds `data/freshness_contracts.jsonl` from actual reads, so the set of artifacts that steer
+decisions is known and self-maintaining. The fence walks that set and asks each member the next
+question down. A hand-enumerated list would rot exactly as the desk's five producer-side registries
+rotted.
+
+**Honesty is not punished.** An artifact that declares an absent input AND says `measured: false`
+is CORRECT -- the defect is upstream, and it is named rather than hidden (`HONEST-GAP`). The
+failing state is the CONTRADICTION: a declared-absent input still presented as measured
+(`FABRICATED`). Coverage below 100% reports `PARTIAL` and exits 0, because coverage is a ratchet
+(L1.0) whose gap is the work queue, and a fence that fails red from its first day gets switched
+off (L1.43).
+
+**Anti-timidity reading, and it is the entire purpose.** This law LIFTS NOTHING, TIGHTENS NOTHING
+and SIZES NOTHING -- the first run changed not one number, and `effective_size_fraction` was
+bit-identical before and after. It is a MEASUREMENT duty in exactly L1.51's sense: it makes an
+absent input ARGUABLE instead of invisible. Nothing here can make the desk more timid; it can only
+make the desk honest about which of its restraints were chosen and which were inherited from a
+missing file. An unexamined clamp is the more expensive error (L1.27).
+
+**Binding on future work.** Any new decision-path producer declares its inputs in the same commit
+that creates it. Fenced by `scripts/check_input_provenance.py` over `libs/ops/input_provenance.py`.
+
+## L1.56 A SCREEN CANNOT GATE ITS OWN PROMOTION -- ADMISSION IS BY COST, NOT BY SIGNIFICANCE
+
+Found 2026-08-05 while hunting the desk's first survivor. Confirmed by direct measurement of the
+live artifacts, not by argument.
+
+**The state that prompted it.** 120 scored screen cells on disk. Twelve Stage-B forward slots.
+ZERO forward clocks ever started, in the desk's entire life. Every organ in the chain reported
+success, and the principal was told repeatedly that the desk had found no survivors. It had not
+found no survivors; it had never run the test.
+
+**Four independent breaks, each failing CLOSED and each silent.**
+
+1. **No converter.** `finalize_axis_screens` speaks one schema -- a `trials` list. Every newer
+   screen writes its own. 114 of 120 cells were UNREADABLE, which is not the same fact as refuted,
+   and the artifact said neither.
+2. **Admission gated on a Stage-A verdict.** `verdict_adjusted.startswith("SCREEN-INTERESTING")`.
+   NONE of the 120 carried it, so none was ever admitted.
+3. **Absent read as unknown.** Eight state files that had NEVER BEEN WRITTEN marked the slot
+   cohort `complete=False`, and free slots collapse to zero on an incomplete cohort -- permanently.
+4. **Evidence map hardcoded.** Eight names, eight artifacts. A sleeve spawned afterwards could
+   never publish a day count, so it could never accrue and never resolve.
+
+**The law that break 2 violated, in the desk's own words.** TWO_STAGE_DISCOVERY_LAW: *"The
+backtest gauntlet is a RANKING DEVICE only... nothing screened here is ever validated"* and
+*"Slots are filled by EV-rank (economics, orthogonality, capacity, measured cost)."* Gating
+admission on a Stage-A significance verdict hands the ranking device exactly the promotion
+authority the law withholds from it. The arithmetic shows why it is fatal rather than merely
+wrong: at ~1,096 Stage-A trials the data-snooping critical value is sqrt(2*ln(1096)) = 3.74 sigma,
+demanding an in-sample Sharpe near 2.2 on three years of daily bars. Requiring that BEFORE granting
+a COSTLESS forward clock means the desk only ever forward-tests hypotheses so strong they needed no
+confirmation. Every real, weak, exploitable edge is filtered out before it can be tested.
+
+**THE RULE.** A forward slot's scarce resource is CALENDAR TIME, not significance. Admission ranks
+by TIME-TO-RESOLUTION:
+
+    n_needed = (z_holm / |ic|)^2        resolve_days = n_needed * bar_length_days
+
+Measured on the desk's own store the same day: the 5-minute liquidation-reversion cell at
+|ic| 0.0172 settles in **45 days**; thirteen cells settle inside ninety. Those were the cells being
+reported as "no survivors". A weak IC on a fast bar is worth far more slot-time than a strong IC on
+a slow one, and significance-ranking inverts that exactly.
+
+**What is still refused, and it is not a strength bar.** Controls and diagnostics (a look-ahead
+control exists to MEASURE a leak; promoting one is the rule-8 artifact-as-edge failure) and BROKEN
+MEASUREMENTS -- TIMING-ARTIFACT, SUSPECT-LOOKAHEAD -- where the alignment gate fired and the number
+does not mean what it says. SCREEN-WEAK and SCREEN-UNDERPOWERED stay admissible: "underpowered"
+means the screen could not SEE, not that it looked and found nothing (L1.49). Of 228 recorded
+negatives only 50 were POWERED.
+
+**NO BAR MOVED, AND THE DIRECTION IS THE CONSERVATIVE ONE.** Stage B's Holm threshold, alpha=0.05
+and MAX_FORWARD_SLOTS=12 are untouched; the admission ranker READS the Holm bar to price the wait
+and never sets it. Admitting clocks RAISES m, which TIGHTENS every standing candidate's bar. What
+changed is only WHICH candidates get to attempt Stage B -- the one place the law says selection
+pressure is harmless.
+
+**The general class, beyond slots.** A pipeline can fail closed at every link and report nothing at
+every link, and the accumulated silence then reads as a finding about the world. *Zero results is a
+claim about the instrument until the instrument has been shown to work.* Before any zero is read as
+evidence, the chain that produces non-zeros must be demonstrated end to end.
+
+**Binding on future work.** No stage may gate admission to the next on a statistic the governing
+law denies it authority over. Every spawned clock declares the artifact it re-reads and a baseline
+captured at spawn, or it is not a clock. Fenced by `check_survivor_pipeline` in
+`scripts/max_audit.py` and `tests/research/test_survivor_pipeline.py`.
+
+## L1.57 A VERDICT WITHOUT A DENOMINATOR IS AN OPINION
+
+**The law was already written, for one ratio, and never carried to the place it does the most
+damage.** L1.53(4), 2026-08-05: *"whenever a gauge can be improved by doing less of the thing it
+exists to encourage, its denominator is a first-class measurement and is fenced separately."* It
+was written about the conversion ratio, fenced for the conversion ratio, and generalised in its
+own text to "every ratio the desk reports". Nobody carried it to a FENCE'S OWN VERDICT -- where
+the identical arithmetic decides whether the governance layer is believed. A duty with no
+instrument is a wish (L1.46).
+
+**What the existing instruments cannot see.** `libs/ops/fence_exit.py` (R0237, L1.28a) fixed the
+map from status to exit code: name the passing statuses, fail the rest. `check_fence_yield`
+(L1.43) asks whether a fence has ever FIRED. Neither can see the case where a fence runs, scans
+an EMPTY set, and honestly computes `OK` because zero violations were found in zero files:
+
+    files = list(root.rglob("*.py"))            # [] -- wrong root, moved dir, bad glob
+    violations = [f for f in files if bad(f)]   # [] , necessarily
+    return fence_exit("OK" if not violations else "DIRTY", {"OK"})   # 0
+
+Nothing there is a bug in the exit map. The status genuinely is OK. The DENOMINATOR is the lie,
+and no instrument read it. `all([])` is True, `0 < 0/2` is False, `min(survivors)` hides every
+absent sibling, and each renders as health.
+
+**Measured, 2026-08-05, 40 fences read by hand across two sweeps: 18 of 40 pass vacuously.** A
+further **10 publish an `n_*` key that reads as a denominator and is `len()` of a hardcoded
+module-level literal** -- a count of what the author wrote down, never of what the run found.
+Three published a measured count of what they actually examined.
+
+**The constant-denominator half is the nastier one.** `n_organs`, `n_fences`, `n_governed`,
+`n_criteria` all render as measurements in an artifact and in a report line, and they cannot fall
+when the thing they count disappears -- because they never counted it. The one event they exist to
+reveal is the one event they structurally cannot show. The proving instance was live when this was
+written: `check_exploration` computes `n = len(_FAMILY)` over a dict MUTATED AT IMPORT by
+`_FAMILY.pop()`, from a module loaded under `except: _secondary = {}`. Empty that dict and
+`len(fresh) < n / 2` is `0 < 0.0` -- False -- so the L1.32 exploration-family fence reported
+`status: OK` with `n_organs: 0` and exited 0. The desk would have read *"the unknown-unknown
+organs are healthy"* from a fence that had just been told there are none.
+
+**Operative.**
+1. Every fence declares, at its exit site, HOW MANY THINGS IT EXAMINED to earn its verdict:
+   `fence_exit(status, PASSING, scanned=n, of="...")`. A passing status over a count of zero --
+   or over a non-integer, which is what a failed scope discovery returns -- is **VACUOUS** and is
+   refused. The exit site is the only place that holds both halves.
+2. **A count of a hardcoded literal is not a denominator.** It must count what the RUN found.
+3. The registry is **self-building** (`data/denominator_contracts.jsonl`), on the L1.44 substrate
+   argument: the desk's hand-maintained lists rot, and a meta-fence about hardcoded denominators
+   that carried a hardcoded list of its own scope would be the defect it exists to detect.
+4. `check_denominators` is **subject to its own law**: it declares `scanned=n_fences`, so a scope
+   discovery returning nothing refuses its own pass. Zero declarations reads UNMEASURED, never OK
+   (L1.28a).
+5. Coverage below 100% is **PARTIAL and exits 0**. Coverage is a RATCHET (L1.0) whose gap is the
+   work queue; a fence that goes red on its first day gets switched off (L1.43), which is how the
+   fix becomes the next outage.
+
+**Anti-timidity reading (L1.28, required of every restraint clause).** This is a MEASUREMENT duty
+and a SCOPE EXPANSION. It lifts nothing, sizes nothing, promotes nothing, and loosens no
+statistical bar; it has no vocabulary for turning a failure into a pass, and `scanned` is consulted
+ONLY when the status was already going to pass. Its entire effect is to make *"I checked 900 files
+and found nothing"* distinguishable from *"I checked nothing"* -- two claims that were
+byte-identical on this desk, and only one of which is evidence. The error it catches always points
+the same way: toward false comfort.
+
+**Fenced by** `scripts/check_denominators.py` over `libs/ops/denominator.py`, with the refusal in
+`libs/ops/fence_exit.py` and `tests/governance/test_denominators.py`.
+
+## L1.58 PRESERVE THE EDGE FROM RESEARCH EXPECTATION TO REALISED NET P&L
+
+Discovery is incomplete until validated edge survives sizing, portfolio interaction, execution and
+live operation. Every material difference between expected and realised economic performance is
+investigated when the expected value of investigation is positive. The canonical chain is:
+
+    research expected edge -> signal realisation -> sizing -> portfolio interaction
+      -> order decision -> execution -> fees/funding/borrow -> impact -> realised net P&L
+
+For every economically meaningful strategy, survivor, sleeve, venue and portfolio period, maintain
+an evidence-linked edge waterfall. Attribute, where measurable: intended alpha; beta and factor
+exposure; regime exposure; sizing; entry and exit timing; spread; fees and rebates; funding and
+borrow; slippage; impact; latency; queue position; partial fills; adverse selection; liquidation and
+basis effects; collateral; operational and data failures; implementation defects; and an explicit
+unexplained residual. Report gross expected, gross realised and net realised P&L. UNKNOWN and
+UNMEASURED never become zero, and a research-profitable label is withdrawn when downstream
+monetisation persistently destroys the edge.
+
+Every material loss is classified against its predicted loss distribution: expected statistical
+loss, regime change, decay, model/data/timestamp error, execution/latency/spread/impact, sizing or
+portfolio interaction, concentration or tail dependence, venue/collateral/funding/liquidation,
+operational or implementation incident, external event, or unexplained. A loss is neither
+automatically a defect nor automatically variance. Unexplained losses create owned research tasks
+and may condition, reduce, pause, repair or retire a survivor only through the standing evidence
+rails; full lineage is preserved.
+
+Execution quality is continuously segmented by venue, strategy, asset, order type, time, volatility,
+liquidity and size. It measures expected versus actual fill, implementation shortfall, spread
+paid/captured, maker/taker mix, fill and rejection probability, cancellations, queue wait, partial
+fills, slippage, post-fill adverse movement, latency and impact. Real-time abnormality detection
+covers P&L, fills, costs, funding, latency, spread, correlations, volatility, drawdown, turnover,
+exposure and capacity. Survivor health moves through HEALTHY, DEGRADING, UNDER_INVESTIGATION,
+CONDITIONED_OR_REDUCED, PAUSED and RETIRED using realised-versus-expected alpha, uncertainty,
+IC/hit-rate/Sharpe, turnover, costs, execution, dependence, regime, capacity and decay evidence.
+
+Leakage hunting spans research contamination; data ordering and semantic errors; signal decay and
+processing latency; execution costs and failures; portfolio redundancy, concentration,
+fragmentation and turnover; operational downtime, stale jobs, duplicate actions and state
+divergence; and idle/trapped/misallocated capital. Loss concentration is tested across mechanism,
+factor, venue, asset, regime, time, liquidity and event state, including joint failure of apparently
+independent survivors. Monitoring is not complete unless it can answer what happened, why, whether
+it was expected, how much value disappeared, where it disappeared, what should change, and what
+evidence supports that change. Dashboards without an investigation-to-research-to-validation-to-live
+feedback path have no monitoring authority.
+
+## L1.59 DOCTRINE FREEZE, REALITY OVERRIDE, AND WHOLE-OPERATION OPPORTUNITY SEARCH
+
+The mandate is complete at the category level. Further prompt expansion is presumed negative ROI.
+New doctrine text is admitted only when it closes a demonstrated system-level loophole, replaces
+inferior text, or empirical evidence requires amendment. The next-order job is executable
+traceability: every mandate must map to a producer, durable state, consumer/decision, scheduler,
+test, freshness/failure signal and measured economic feedback. Prose-only coverage is UNWIRED.
+
+Five meta-rules close the remaining loopholes:
+
+1. **No silent failure.** Every miner, collector, test, job, worker and reasoning seat exposes
+   success/failure, freshness and last-valid-output. RUNNING is not evidence of WORKING.
+2. **No metric gaming.** Detect and refuse optimisation of candidate/test/data/commit/module counts,
+   scorecards or lexical survivor counts when they do not improve validated economic value.
+3. **No unbounded complexity debt.** Price maintenance, bug surface, latency, cognitive load and
+   operational coupling. Simplify, merge or retire capabilities whose marginal validated value no
+   longer exceeds that burden, subject to evidence and preservation of lineage.
+4. **Reality may rewrite doctrine.** The constitution is instrumental, not sacred. Repeated,
+   well-powered evidence that a rule causes worse decisions, Goodharting or waste triggers a
+   controlled amendment; survival and statistical-validity rails remain immutable absent a
+   demonstrated stronger protection.
+5. **Opportunity discovery covers the entire operation.** Continuously ask what fundamentally
+   different way of making money, acquiring information, allocating capital, researching,
+   executing or structuring the operation has not yet been conceived. Unknown search methods and
+   operating models are explored through bounded persistent serendipity, never assumed exhausted.
+
+The recursive controller objective is therefore: discover and close the highest-value unknowns,
+weaknesses, gaps, blind spots, missing capabilities and unrealised opportunities anywhere in the
+information-to-research-to-survivor-to-portfolio-to-execution-to-live-learning chain; implement and
+measure positive-EV improvements; simplify negative-value complexity; repeat without arbitrary
+termination, always subordinate to survival, evidence and long-term expected log wealth.

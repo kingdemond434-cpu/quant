@@ -122,7 +122,15 @@ def combined_equity(state: dict) -> float | None:
         return None
     try:
         acct = _signed(_FUT_BASE, "/fapi/v2/account", fut)
-        fut_eq = float(acct["totalMarginBalance"])
+        # MAX of two venue-derived measures. totalMarginBalance alone is USDT-only under
+        # multiAssetsMargin=False -- it hid $5,000 of USDC, pinned high_water at $209.43
+        # (< _MIN_HW dust floor) and DISARMED this rail at every equity while the service
+        # read green (2026-07-30 deep sweep, R0053); the stable face-value sum covers that
+        # mode. Under multiAssetsMargin=True the venue field is the complete USD-marked
+        # total (incl. non-stables) and wins the max. Never reads below either truth.
+        fut_eq = max(sum(float(x.get("marginBalance", 0.0)) for x in acct.get("assets", [])
+                         if x.get("asset") in _STABLES),
+                     float(acct.get("totalMarginBalance", 0.0)))
         if fut_eq <= 0.0:
             return None                                   # zero/absent margin = bad read, not ruin
         shorts = {p["symbol"] for p in _signed(_FUT_BASE, "/fapi/v2/positionRisk", fut)
@@ -190,7 +198,13 @@ def should_fire(equity: float | None, state: dict) -> bool:
     state["high_water"] = hw
     if hw < _MIN_HW:
         state["breaches"] = 0
+        # ARMEDNESS MADE VISIBLE (2026-07-30, R0053): below the dust floor this rail is OFF.
+        # With live positions that is a book running WITHOUT ruin protection -- the exact
+        # state that went unnoticed while every guard checked liveness, not armedness.
+        # Flag it here (pure logic, no side effects); main() pages once on the flag.
+        state["disarmed_live"] = bool(state.get("has_positions"))
         return False
+    state["disarmed_live"] = False
     if equity < _RUIN_FACTOR * hw:
         state["breaches"] = int(state.get("breaches", 0)) + 1
     else:
@@ -288,7 +302,18 @@ def main() -> None:
             else:
                 state["same_count"], state["stale_paged"] = 0, False
             state["last_eq"] = eq
-        if should_fire(eq, state) or state.get("fired") or _FIRED.exists():
+        fire = should_fire(eq, state)
+        # Page ONCE when the rail is disarmed on a live book (dust-floor guard active with
+        # open positions); re-arm clears the latch so a future disarm pages again.
+        if state.get("disarmed_live") and not state.get("disarmed_paged"):
+            _page("DEADMAN: ruin rail DISARMED on a live book -- high-water below the "
+                  f"{_MIN_HW:.0f} dust floor while positions are open. The equity read may "
+                  "be undercounting collateral. Investigate NOW; the rail fires at nothing "
+                  "in this state.")
+            state["disarmed_paged"] = True
+        elif not state.get("disarmed_live"):
+            state["disarmed_paged"] = False
+        if fire or state.get("fired") or _FIRED.exists():
             state["fired"] = True
             if not _FIRED.exists():                        # durable latch: survives state races;
                 _FIRED.write_text(time.strftime("%Y-%m-%dT%H:%M:%SZ"), "utf-8")

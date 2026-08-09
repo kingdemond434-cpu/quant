@@ -166,3 +166,57 @@ recursion rule), so the desk needs him to supply an angle exactly once.
     claimed total silence while the provider's own store showed 199 accepted messages, because the
     same fork had dropped the ledger write. Your instrument failing looks exactly like the world
     being quiet.
+11. SEED DISCIPLINE. For any sweep, probe or synthetic experiment, ask "is this smoothness evidence,
+    or one reused random seed?" A fixed seed across a parameter sweep measures ONE realisation, and
+    the result comes out perfectly monotone — which is precisely what makes it read as a systematic
+    wiring error instead of an unlucky draw. Then ask the companion question: "is the estimator's
+    standard error smaller than the effect range I am claiming to resolve?" (Origin 2026-07-30: the
+    gate-optimality probe reused seed=7 for 13 rows; at T=310 the SE of annualised Sharpe is 1.085,
+    so its whole 0.5–3.0 "good candidate" range sat inside one standard error. It concluded the
+    funnel cannot promote a good candidate. It had never asked one.)
+12. FAIL-SAFE DIRECTION PER USE, NOT PER VARIABLE. When one number feeds two decisions, ask "is the
+    safe direction of error the SAME for both?" If not, the number needs splitting — the conservative
+    choice for one use is silently the reckless choice for the other. (Origin 2026-07-30:
+    `m_concurrent` is both the Holm denominator, where over-counting is safe because it tightens the
+    bar, and the capacity count against MAX_FORWARD_SLOTS, where over-counting is a hard admission
+    block. A refuted clock nobody removed therefore starved 9 verified axes while the module's
+    docstring correctly argued its own fail-safety — for the other use.)
+13. IS THE KILL PROPAGATED? When anything is retracted, refuted or retired, ask "which DERIVED
+    registries still count it?" — capacity registries, multiplicity denominators, dashboards,
+    coverage maps, doctrine prose citing it as evidence. A graveyard entry is not a retirement.
+    (Origin 2026-07-30: kimchi was retracted 07-29 and spent the next day holding Stage-B slot 1 of
+    12 at forward Sharpe −5.13, and the doctrine still cites its IC +0.148 as the standing evidence
+    for SCREEN-ON-DISCOVERY.)
+
+14. IS THE GATE'S HISTORY RE-SCORED? (added 2026-07-31, found a live gap the day it was coined)
+    When any GATE, THRESHOLD or SCORING FORMULA is recalibrated, ask "what did the OLD calibration
+    kill that the new one would pass?" -- and re-verdict those victims in the SAME pass, under
+    L1.16a with the recalibration as the named enabling change. Proving instance: the EV gate's
+    0.05->0.002 recalibration (R0023) landed 07-30 and nobody swept its kills; 10 hypotheses with
+    recorded EV in [0.002, 0.05) -- including etf_flow_pressure at 0.0191, nearly 10x the honest
+    bar -- sat wrongly graveyarded until the 07-31 cycle swept them. The symmetric half: a gate
+    TIGHTENED must re-verdict what it previously ADMITTED (nothing live today enters that way,
+    but forward slots admitted under a looser bar would be the instance). A fixed gate that never
+    revisits its verdicts keeps its old miscalibration alive in the record forever.
+
+15. DORMANCY DISARM: DOES THIS GUARD READ A ROLLING WINDOW OF OUR OWN ACTIVITY?
+    (added 2026-08-05, found a live money-path no-op the day it was coined)
+    For every guard, denylist, gate or rail, ask "what FILLS its evidence source, and what happens
+    when that stops?" A guard conditioned on a rolling window of the desk's OWN recent activity
+    DISARMS ITSELF during any pause -- and the pause is very often CAUSED by the thing the guard
+    exists to prevent, so the protection is guaranteed absent exactly when it is most needed. The
+    artifact still looks healthy: a young mtime, a well-formed file, and an EMPTY list.
+    Proving instance: `_structurally_bleeding` read only `worst_symbols`, a 14-day rolling window
+    over the carry book's own closes. The book paused 2026-08-01 on a -17.6% drawdown; on a FRESHLY
+    REGENERATED artifact the list was empty and the gate returned False for COOKIEUSDT and
+    1000CATUSDT -- the two incident-#6 symbols its own comment calls "currently-blocked" -- while a
+    re-arm sat pending on the principal's page. The dated $100/3-probe re-entry protocol built for
+    exactly these symbols was unreachable code, consulted only for symbols the window still carried.
+    THE TEST IS NOT "is the file fresh" BUT "is the file NON-EMPTY FOR THE REASON IT SHOULD BE":
+    absence of a row means either "nothing qualifies" or "nothing was measured", and only one of
+    those is safe. Where a denial must outlive the activity that proved it, persist the denial and
+    release it through an explicit dated re-entry condition -- never through forgetting.
+    GENERALISES TO: any n>=K threshold whose n is fed by the very activity the guard can stop
+    (self-sealing verdicts), staleness fences that pass on an empty producer, and every
+    accept-side gate that is invisible in a rejection tally (L1.49's twin -- L1.49 covers gates
+    that NEVER ran, this covers gates that ran and were emptied).

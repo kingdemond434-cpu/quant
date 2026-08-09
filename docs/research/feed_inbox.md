@@ -30,25 +30,59 @@ collector; see research_agenda.json do_not_repeat). 1 DISTILLED AS A REFERENCE (
 Futures" -- folded into engineering_backlog.json's execution_tca_fill_log (GAP#4) as a design
 reference for when that item is built (liquidity STATE, not just level, predicts adverse selection). -->
 
-## Existence and convergence of discrete-time Kyle models with multiple insiders
-- 2026-07-16 · http://arxiv.org/abs/2607.15057v2
-- Foster and Viswanathan (1996) extend the discrete-time setting of Kyle (1985) to multiple informed traders who have partial information about the stock's terminal dividend. We resolve two long-standing open problems in this literature. First, we prove that an equilibrium exists in the setting of Foster and Viswanathan (1996). Second, as the number of trading times goes to infinity, we prove that the discrete-time equilibrium converges to the continuous-time equilibrium already proven to exist in Back, Cao, and Willard (2000).
+<!-- 2026-08-06 (R0269): THE BACKLOG DRAIN. All 27 remaining entries (2607.15057 .. 2607.27188,
+dated 07-09..07-29, oldest 28.0 days) triaged and cleared. This is the batch the row was raised
+about: the inbox is specified as a queue processed and CLEARED every cycle, and it had not been
+drained since 2026-08-01 while reporting nothing at all.
 
-## The Quarter-Hour Effect: Periodic Algorithmic Trading and Return Predictability in Cryptocurrency Futures
-- 2026-07-10 · http://arxiv.org/abs/2607.09426v2
-- Cryptocurrency markets exhibit periodic bursts in volatility and volume at one-minute, five-minute, and quarter-hour marks. Using trade data for six Binance perpetual contracts, we link these bursts to algorithmic participation: trade-size roundness declines sharply during them. The Autocorrelation Map, a clock-phase-resolved display, reveals serial dependence in order flow and returns at quarter-hour openings that conventional measures obscure. Opening returns are predictable out of sample, while opening order imbalance predicts returns over four to twelve hours, with much weaker effects at f
+2 GRAVEYARDED -- both are PRE-PAID NEGATIVES, the vein this desk most wants and most often skips:
+  * 2607.20093 "Retail Trader's Ruin" -> lit_retail_signal_families. Five retail signal families
+    (trend, oscillator, candlestick, volume, calendar) against three PRE-DECLARED gates ANDed:
+    multiplicity-corrected edge, cost viability, finite-bankroll survival. The desk's own DSR /
+    execution-physics / L1.23 triple, arrived at independently by an outside team. The reusable
+    half is the CONJUNCTION -- each family clears one or two gates and none clears all three,
+    which is exactly how a signal survives a blog post and fails a desk.
+  * 2607.19453 "Predictive Extrema, Unprofitable Policies" -> lit_candle_ml_timing_crypto. Candle
+    ML on Binance SPOT: the models predict and the policies still lose after costs. The desk's
+    oldest recurring trap (positive IC != tradeable P&L) replicated by outsiders on the desk's own
+    venue and bar type. Held as a CORROBORATING prior, not decisive: fixed-seed scripted runs with
+    AI-assisted evidence integrity is weaker provenance than a peer-reviewed replication.
 
-## AlphaZeroBeta: Deep Reinforcement Learning for Market-Neutral Portfolios
-- 2026-07-20 · http://arxiv.org/abs/2607.18001v1
-- Market-neutral portfolios aim to generate consistent returns while offsetting systematic market risk. Traditional approaches based on factor models or convex optimization often underperform during market regime shifts or when structural assumptions break down. We propose AlphaZeroBeta, a deep reinforcement learning framework designed to deliver benchmark-relative alpha (excess returns) with near-zero beta (market neutrality). AlphaZeroBeta combines a composite reward function that balances risk-adjusted excess return, benchmark correlation, and transaction costs with a CNN-GRU policy trained e
+1 DELETED AS AN ALREADY-JUDGED RE-DELIVERY:
+  * 2607.09426 "The Quarter-Hour Effect" -- EV-rejected 2026-07-17 (ev 0.0006, crowded_known) and
+    already in do_not_repeat. It came back because the collector keyed its seen-archive on the
+    VERSIONED arXiv URL, so a v2 read as a new paper. FIXED THIS RUN in collect_research_feed.py:
+    ids are version-stripped, and the collector now screens against do_not_repeat AND the
+    graveyard before writing an entry. Verified: 2607.09426 is now blocked.
 
-## Optimal Market Making in Prediction Markets
-- 2026-07-20 · http://arxiv.org/abs/2607.17991v1
-- Prediction markets are attracting growing attention as trading volumes rise and their practical relevance increases. To ensure efficient price discovery, liquidity provision becomes ever more important. Due to the binary settlement structure in prediction markets, optimal market making leads to an optimization problem that is fundamentally different from the ones studied in classical settings. In this paper, we develop a stochastic control framework for prediction markets in which the market price is modeled as a conditional probability of the outcome that is generated by a transformed latent 
+2 DUPLICATE PAIRS, same cause, same fix (2607.19005 v1+v2 "Observable Matrix Dynamics of Stocks";
+2607.17428 v1+v2 "Uniform-Loss AMM for Prediction Markets").
 
-## Uniform-Loss Automated Market Making for Prediction Markets
-- 2026-07-19 · http://arxiv.org/abs/2607.17428v1
-- Automated market makers (AMMs) for prediction markets descend from market scoring rules, where a mechanism operator subsidizes a market to aggregate beliefs about uncertain events. The existing literature has focused on bounding the total worst-case loss to the subsidizer, but has not addressed how that loss is distributed across price states or over time. We use the framework of loss-versus-rebalancing (LVR) to study this distribution and introduce \textit{uniform AMMs}, defined by the property that instantaneous LVR is proportional to pool value and independent of the current token price. In
+22 REJECTED WITH REASONS, grouped by why:
+  * WRONG ASSET CLASS (7): 2607.18001 equity DRL market-neutral; 2607.16450 Taiwan-exposed ETF
+    tail risk; 2607.19005 S&P correlation geometry; 2607.24410 equity-fundamental covariance;
+    2607.27461 three-matrices S&P; 2607.27188 NIFTY option RND recovery; 2607.23068 NN global-min-
+    variance (equity portfolio -- and desk sizing was answered by R0266's study, which measured
+    the boundary shrink at <=10% and concluded DO NOT WIRE).
+  * THEORY WITHOUT A FREE-DATA MECHANISM (6): 2607.15057 multi-insider Kyle existence proofs;
+    2607.16970 herding/liquidity ABM; 2607.16622 PoS price anchor macro model; 2607.18813 mixing-
+    law mean-variance mixtures; 2607.24114 expectation-constrained optimal control; 2607.25189
+    long-memory GARCH. Each is a model of a market, not a measurement of one.
+  * OFF THE STRATEGY SURFACE (5): 2607.17991 + 2607.17428 prediction-market MM/AMM design (and
+    see lit_prediction_market_microstructure_vs_book, graveyarded this same run -- the desk's
+    position on prediction markets is now recorded); 2607.26405-class multi-currency AMM;
+    2607.20762 DEX routing shortfall (2.98M swaps, 2.02bps -- real and empirical, but the desk
+    trades CEX perps and has no DEX order path); 2607.21170 TDA + FinBERT sentiment (needs
+    annotation infra, sentiment is off surface).
+  * METHOD-CURIOSITY, NO PATH TO A POSITION (4): 2607.16281 quantum reservoir phase detection;
+    2607.24065 variational quantum CRBM; 2607.25459 latent-state interpretability under
+    stochastic vol; 2607.27099 "Rainfall is rough" (Hawkes rainfall -- off-domain entirely).
+  * ALREADY PRICED (2): 2607.19497 "Science and Practice of Trend-Following" -- the desk runs
+    trend_30d/trend_regime and already carries the measured crypto TSMOM haircut (-58% to -65% vs
+    published, in the graveyard's standing McLean-Pontiff prior), so a taxonomy adds no decision;
+    2607.21826 LPPL/JLS crypto bubble detection -- directional timing on a crowded published
+    signal, and the desk's own measured lesson is that volatility is predictable while direction
+    is not.
 
 ## Herding and Liquidity in Order-Book Markets. II. Fundamental Anchoring and the Resilience of Liquidity
 - 2026-07-18 · http://arxiv.org/abs/2607.16970v1
@@ -217,3 +251,10 @@ reference for when that item is built (liquidity STATE, not just level, predicts
 ## Proper-score observation-driven filters: local geometry, estimation, and continuous-time limits
 - 2026-08-03 · http://arxiv.org/abs/2608.02828v1
 - Observation-driven filters update a time-varying parameter with the likelihood score, linking the recursion to the logarithmic scoring rule. We replace this update with the negative parameter derivative of a differentiable proper scoring rule, within a declared working family and predictable scaling. For a general rule, the conditional mean update is a pre-conditioned stochastic-gradient of conditional scoring risk; when an autoregressive pull is included, the centre is the zero of a composite mean field. We derive local realised-loss descent and conditional-mean contraction results, and decom
+THE DUTY THAT WAS SILENTLY NOT RUNNING NOW HAS AN INSTRUMENT: max_audit.check_feed_inbox_backlog
+counts live entries and the age of the oldest, and fires past 20 open / 3 days. Zero entries is
+the healthy state and reads clean, so draining is what the fence rewards. Separately, this doc was
+nominally inside the section-33 scanned set the whole time and contributed exactly ZERO parsed
+items -- listing a denominator is not counting one (L1.57). It is now in _DIG_DOCS_EXCLUDED with
+its real lifecycle stated, and check_mine_scope_vacuous fails if any doc in scope ever again
+carries content the parser cannot see. -->
