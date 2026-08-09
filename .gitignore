@@ -49,3 +49,9 @@ htmlcov/
 # Ignoring them makes the race harmless without weakening the test.
 libs/_deadlink_probe.py
 scripts/_deadlink_probe_caller.py
+
+# Positive-control probe planted and removed by tests/scripts/test_wiring_and_ratchets.py. It was
+# committed once by a `git add -A` that ran while the test held it on disk, and a committed probe
+# FAILS that test on every fresh clone (it asserts the probe is absent before planting one). The
+# ignore makes that race unrepeatable.
+libs/_orphan_probe_do_not_import.py
