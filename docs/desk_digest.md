@@ -1,14 +1,14 @@
 # Desk digest (auto-generated daily -- do not hand-edit)
-_updated 2026-08-10T02:19Z · companion to [[institutional_knowledge]]_
+_updated 2026-08-10T08:02Z · companion to [[institutional_knowledge]]_
 
 ## Book
-- Molded net: **$-1853.74** | funding **$113.06** | run-rate APR 0.0% | day 38.88
-- Root cause: **unknown_novel** (pause_and_page) | tracking error $2826.51
+- Molded net: **$-1863.74** | funding **$113.06** | run-rate APR 0.0% | day 39.11
+- Root cause: **unknown_novel** (pause_and_page) | tracking error $2828.89
 
 ## Validation clocks
-- **carry (DEPLOYED)**: 45/90d | bt 2.7 fwd 16.13
-- **perp L/S**: 38/90d | bt 1.2 fwd 0.53
-- **trend**: 38/90d | bt 1.29 fwd -0.68
+- **carry (DEPLOYED)**: 45/90d | bt 2.58 fwd 15.84
+- **perp L/S**: 38/90d | bt 1.24 fwd 0.26
+- **trend**: 38/90d | bt 1.29 fwd -0.33
 - **trend regime-gated**: 33/90d | bt 1.32 fwd 0.0
 - **OI/LS data**: 43/40d
 - **stablecoin data**: 39/40d
@@ -193,13 +193,13 @@ _updated 2026-08-10T02:19Z · companion to [[institutional_knowledge]]_
 - `2026-07-27-longterm-trader-skill-zero-predictive-power` -- review 2026-08-26: n/a -- rejected; zero predictive power on the primary criterion
 - `2026-07-27-highpower-skill-drawdown-persists-returns-do-not` -- review 2026-08-26: n/a -- returns/Sharpe persistence REJECTED with power; drawdown persistence CONFIRMED but 
 - `2026-07-27-elite-risk-filter-replicates-oos-plus-feature-factory` -- review 2026-08-26: elite risk filter holds on a THIRD independent cohort or a forward clock; behavioural feat
-- `2026-08-04-cadence-starvation-and-60pct-organ-outage` -- review ?: cadence completes inside its budget and persists stamps (MEASURED 443.3s, 29 fired, 3 new 
-- `2026-08-04-carryover-37-disposition-tooling-absent` -- review ?: After the merge, these items either close or produce a real result; if they still stall, t
-- `2026-08-04-scheduled-organ-outage-and-stale-code-daemons` -- review ?: scheduled-script-missing stays closed in max_audit; the restored organs write real artifac
-- `2026-08-05-severed-reply-channel-and-amnesiac-denylist` -- review ?: (a) data/principal_replies.jsonl gains a row, or data/PAGE_ACK is stamped, the next time t
-- `2026-08-05-l137-no-verify-push-record-5th` -- review ?: The bypass count STOPS rising. The 5 instances share one root cause -- the fork's laws/doc
-- `2026-08-05-generation-three-execution-hypotheses-and-a-miscalibrated-ev-gate` -- review ?: Each hypothesis reaches a Stage-A verdict with its full target/horizon trial accounting lo
-- `2026-08-05-l137-no-verify-push-record-6th` -- review ?: The bypass count STOPS at 6. R0018's scheduled merge (due 08-07) removes the BROKEN-REF cl
+- `2026-08-04-cadence-starvation-and-60pct-organ-outage` -- review 2026-09-03: cadence completes inside its budget and persists stamps (MEASURED 443.3s, 29 fired, 3 new 
+- `2026-08-04-carryover-37-disposition-tooling-absent` -- review 2026-09-03: After the merge, these items either close or produce a real result; if they still stall, t
+- `2026-08-04-scheduled-organ-outage-and-stale-code-daemons` -- review 2026-09-03: scheduled-script-missing stays closed in max_audit; the restored organs write real artifac
+- `2026-08-05-severed-reply-channel-and-amnesiac-denylist` -- review 2026-09-04: (a) data/principal_replies.jsonl gains a row, or data/PAGE_ACK is stamped, the next time t
+- `2026-08-05-l137-no-verify-push-record-5th` -- review 2026-09-04: The bypass count STOPS rising. The 5 instances share one root cause -- the fork's laws/doc
+- `2026-08-05-generation-three-execution-hypotheses-and-a-miscalibrated-ev-gate` -- review 2026-09-04: Each hypothesis reaches a Stage-A verdict with its full target/horizon trial accounting lo
+- `2026-08-05-l137-no-verify-push-record-6th` -- review 2026-09-04: The bypass count STOPS at 6. R0018's scheduled merge (due 08-07) removes the BROKEN-REF cl
 - `2026-07-28-fee-blind-pnl-and-page-destruction` -- review 2026-08-27: hold_buckets_net_of_fees present in web/trade_forensics.json each run; FEE INTENSITY fires
 - `2026-07-29-pbo-rc-are-campaign-constants-not-candidate-gates` -- review 2026-08-28: PRE-REGISTERED, both directions required: (a) a 100%-null synthetic campaign must admit <=
 - `2026-07-29-carry-book-absorbing-state-and-rail-undercount` -- review 2026-08-28: check_book_absorbing_state fires on the live state today (VERIFIED) and goes silent within
@@ -222,7 +222,7 @@ _updated 2026-08-10T02:19Z · companion to [[institutional_knowledge]]_
 - `2026-08-05-carry-denylist-forgot-itself-while-paused` -- review 2026-08-12T03:09:51.014009+00:00: On the next re-arm, zero opens in COOKIEUSDT/1000CATUSDT before 2026-08-15, and after that
 - `2026-08-05-stablecoin-supply-momentum-shift-keep-accruing` -- review 2026-09-04: The clock reaches its 40-observation wall and returns a verdict on post-break data. Either
 - `2026-08-05-ci-gate-attribution-tracked-vs-inflight` -- review 2026-08-19: ci-gate-red does not fire on a cycle whose only failures are another session's untracked f
-- `2026-08-09-panel-cost-recorded-100x-low` -- review ?: the ORIGINAL entry's metric stands and is half-met: '>=1 QUEUE-or-better finding' PASSED (
+- `2026-08-09-panel-cost-recorded-100x-low` -- review 2026-09-08: the ORIGINAL entry's metric stands and is half-met: '>=1 QUEUE-or-better finding' PASSED (
 
 ## Executive KPI snapshot
 - CRO: {"hypotheses_tested_lifetime": 20, "validated_survivors": 1, "survivor_note": "cash-carry (fwd 8/90); trend candidate gauntlet-passed (fwd 1/90); all else graveyarded", "survival_r
