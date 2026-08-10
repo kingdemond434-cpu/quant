@@ -2,8 +2,10 @@
     "schema_version":  1,
     "objective":  "Maximise validated expected log wealth by renewing the independent alpha frontier while preserving every survival and statistical-validity rail.",
     "schedule":  {
-                     "timezone":  "Europe/London",
+                     "timezone":  "Europe/Dublin",
                      "local_start":  "00:00",
+                     "systemd_timer":  "ops/quant-midnight-frontier.timer",
+                     "systemd_service":  "ops/quant-midnight-frontier.service",
                      "renewal":  "daily_and_never_terminal"
                  },
     "authority":  {
@@ -25,6 +27,8 @@
                      "ops/run_midnight_codex_controller.sh"
                  ],
     "required_artifacts":  [
+                               "docs/MASTER_QUANT_CONSTITUTION.md",
+                               "data/constitution_core.lock",
                                "data/full_sweep.json",
                                "data/study_status.json",
                                "data/research_review.json",
@@ -122,7 +126,8 @@
                                       "open_research_questions",
                                       "new_search_methods"
                                   ],
-    "controller_mandate":  "docs/research/TIER1_CONTROLLER_MANDATE.md",
+    "controller_mandate":  "docs/MASTER_QUANT_CONSTITUTION.md",
+    "implementation_mandate":  "docs/research/TIER1_CONTROLLER_MANDATE.md",
     "controller_continuity":  {
                                   "lease":  "data/controller_lease.json",
                                   "checkpoint":  "data/controller_checkpoint.json",

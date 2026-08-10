@@ -87,6 +87,55 @@ def test_expired_controller_is_reclaimed_without_stopping_workers(tmp_path: Path
     assert second["persistent_workers_controller_independent"] is True
 
 
+def test_expired_holder_is_fenced_from_every_control_plane_mutation(tmp_path: Path) -> None:
+    state, saved, history = _paths(tmp_path)
+    now = datetime(2026, 8, 9, tzinfo=UTC)
+    lease = claim("codex", state_path=state, now=now, ttl_seconds=30)
+    epoch, token = int(lease["epoch"]), str(lease["fencing_token"])
+    expired_at = now + timedelta(seconds=31)
+
+    with pytest.raises(ControllerLeaseError, match="lease expired"):
+        heartbeat("codex", epoch, token, state_path=state, now=expired_at)
+    with pytest.raises(ControllerLeaseError, match="lease expired"):
+        checkpoint(
+            "codex",
+            epoch,
+            token,
+            {},
+            state_path=state,
+            checkpoint_path=saved,
+            history_path=history,
+            now=expired_at,
+        )
+    with pytest.raises(ControllerLeaseError, match="lease expired"):
+        transfer(
+            "codex",
+            epoch,
+            token,
+            "claude",
+            {},
+            state_path=state,
+            checkpoint_path=saved,
+            history_path=history,
+            now=expired_at,
+        )
+    with pytest.raises(ControllerLeaseError, match="lease expired"):
+        release("codex", epoch, token, state_path=state, now=expired_at)
+
+    assert not saved.exists()
+    assert not history.exists()
+    assert read_state(state_path=state)["epoch"] == epoch
+
+
+def test_corrupt_existing_lease_fails_closed_without_overwrite(tmp_path: Path) -> None:
+    state, _, _ = _paths(tmp_path)
+    corrupt = "{not-valid-json"
+    state.write_text(corrupt, "utf-8")
+    with pytest.raises(ControllerLeaseError, match="corrupt"):
+        claim("codex", state_path=state, ttl_seconds=30)
+    assert state.read_text("utf-8") == corrupt
+
+
 def test_controller_inputs_fail_closed(tmp_path: Path) -> None:
     state, saved, history = _paths(tmp_path)
     with pytest.raises(ValueError, match="ttl_seconds"):

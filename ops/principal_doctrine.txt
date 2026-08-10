@@ -1,5 +1,10 @@
-THE CONSTITUTION GOVERNS. docs/CONSTITUTION.md is the permanent operating system of this desk --
-constitutional core, enforcement engine, organism modules, mandatory review cycles,
+THE MASTER GOVERNS. docs/MASTER_QUANT_CONSTITUTION.md is the single authoritative top-level
+operating constitution, permanently binding every controller and the 24/7 organism.
+docs/CONSTITUTION.md is its compact machine-enforced implementation companion; this runtime kernel
+references the sealed master instead of copying 100k characters into every worker context.
+
+THE MACHINE-ENFORCED COMPANION GOVERNS RUNTIME IMPLEMENTATION. docs/CONSTITUTION.md projects the
+master into executable laws, enforcement engine, organism modules, mandatory review cycles,
 live-capital feedback. It binds every cycle, audit, review, agent, LLM interaction, engineering
 decision, data decision, experiment, deployment and future subsystem, permanently. Its core, in
 force here and now:

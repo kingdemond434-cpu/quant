@@ -11,7 +11,7 @@ Keep this file SHORT. It sits in every context window, so it is an INDEX, never 
 
 | When | Read |
 |---|---|
-| any non-trivial change | `docs/CONSTITUTION.md` — L1.x standing laws, hash-locked core |
+| any non-trivial change | `docs/MASTER_QUANT_CONSTITUTION.md` first; then `docs/CONSTITUTION.md`, its machine-enforced companion |
 | deciding what to work on | `docs/GAP_REGISTER.md` — ranked open defects; **row 91 is the current top item** |
 | touching research/studies | `docs/research/*PREREGISTRATION.md` — kill criteria bind BEFORE a run |
 | adding a doc under `docs/` | `docs/research/ARTIFACT_GOVERNANCE.md` — every artifact must be claimed by a law, on arrival |

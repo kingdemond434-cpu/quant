@@ -21,6 +21,7 @@ ROOT = Path(__file__).resolve().parents[2]
 # real-repo guards (these are the point of the whole exercise)
 # ---------------------------------------------------------------------------------------------
 
+
 class TestRealManifest:
     def test_manifest_parses(self) -> None:
         man = c.parse_manifest(ROOT / "ops/crontab.manifest")
@@ -71,6 +72,7 @@ class TestRealManifest:
 # ---------------------------------------------------------------------------------------------
 # checker contract on fixture trees
 # ---------------------------------------------------------------------------------------------
+
 
 def _fixture_repo(tmp_path: Path, manifest: str, *, with_script: bool = True) -> Path:
     (tmp_path / "ops").mkdir()
@@ -143,6 +145,48 @@ class TestCheckerContract:
         man = c.parse_manifest(root / "ops/crontab.manifest")
         problems = c.check_committed_timers(root, man)
         assert problems and "absent from the manifest" in problems[0]
+
+    def test_oncalendar_must_exactly_match_manifest(
+            self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """A timezone/cadence mismatch is structural even when the right script is named."""
+        manifest = _GOOD + (
+            'SYSTEMD unit="quant-x.timer" on="*-*-* 00:00:00 Europe/London" '
+            'exec="ops/other_dig.sh"\n'
+        )
+        root = _fixture_repo(tmp_path, manifest)
+        (root / "ops/other_dig.sh").write_text("#!/bin/sh\n", "utf-8")
+        (root / "ops/quant-x.timer").write_text(
+            "[Timer]\nOnCalendar=*-*-* 00:00:00 Europe/Dublin\n", "utf-8"
+        )
+        (root / "ops/quant-x.service").write_text(
+            "[Service]\nExecStart=/bin/bash /srv/desk/ops/other_dig.sh\n", "utf-8"
+        )
+        monkeypatch.setattr(c, "read_live_crontab", lambda: None)
+        man = c.parse_manifest(root / "ops/crontab.manifest")
+        problems = c.check_committed_timers(root, man)
+        assert len(problems) == 1
+        assert "does not exactly match" in problems[0]
+        assert "Europe/Dublin" in problems[0] and "Europe/London" in problems[0]
+        assert c.main(["--root", str(root), "--report-only"]) == 2
+
+    def test_exact_oncalendar_match_is_clean(
+            self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        schedule = "*-*-* 00:00:00 Europe/Dublin"
+        manifest = _GOOD + (
+            f'SYSTEMD unit="quant-x.timer" on="{schedule}" exec="ops/other_dig.sh"\n'
+        )
+        root = _fixture_repo(tmp_path, manifest)
+        (root / "ops/other_dig.sh").write_text("#!/bin/sh\n", "utf-8")
+        (root / "ops/quant-x.timer").write_text(
+            f"[Timer]\nOnCalendar={schedule}\n", "utf-8"
+        )
+        (root / "ops/quant-x.service").write_text(
+            "[Service]\nExecStart=/bin/bash /srv/desk/ops/other_dig.sh\n", "utf-8"
+        )
+        monkeypatch.setattr(c, "read_live_crontab", lambda: None)
+        man = c.parse_manifest(root / "ops/crontab.manifest")
+        assert c.check_committed_timers(root, man) == []
+        assert c.main(["--root", str(root)]) == 0
 
     def test_drift_detected_both_directions(self, tmp_path: Path,
                                             monkeypatch: pytest.MonkeyPatch) -> None:

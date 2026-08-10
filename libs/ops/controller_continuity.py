@@ -55,6 +55,19 @@ def _read(path: Path) -> dict[str, object]:
     return value if isinstance(value, dict) else {}
 
 
+def _read_claim_state(path: Path) -> dict[str, object]:
+    """A lost lease may be reclaimed; a corrupt lease must be repaired, never guessed away."""
+    if not path.exists():
+        return {}
+    try:
+        value = json.loads(path.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ControllerLeaseError("controller lease state is unreadable or corrupt") from exc
+    if not isinstance(value, dict):
+        raise ControllerLeaseError("controller lease state is corrupt (expected an object)")
+    return value
+
+
 def _write_atomic(path: Path, value: Mapping[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
@@ -120,7 +133,7 @@ def claim(
         raise ValueError("controller is required and ttl_seconds must be >=30")
     stamp = _now(now)
     with _mutex(state_path):
-        prior = _read(state_path)
+        prior = _read_claim_state(state_path)
         expires = prior.get("expires_at")
         active = False
         if expires:
@@ -155,7 +168,12 @@ def claim(
 
 
 def _validate(
-    state: Mapping[str, object], *, controller: str, epoch: int, fencing_token: str
+    state: Mapping[str, object],
+    *,
+    controller: str,
+    epoch: int,
+    fencing_token: str,
+    now: datetime | None = None,
 ) -> None:
     if (
         state.get("controller") != controller
@@ -164,6 +182,12 @@ def _validate(
         or state.get("status") != "LEASED"
     ):
         raise ControllerLeaseError("stale or foreign fencing token")
+    try:
+        expires_at = datetime.fromisoformat(str(state["expires_at"]).replace("Z", "+00:00"))
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ControllerLeaseError("controller lease expired or has invalid expiry") from exc
+    if _now(expires_at) <= _now(now):
+        raise ControllerLeaseError("controller lease expired")
 
 
 def heartbeat(
@@ -175,10 +199,16 @@ def heartbeat(
     state_path: Path = DEFAULT_STATE,
     now: datetime | None = None,
 ) -> dict[str, object]:
-    stamp = _now(now)
     with _mutex(state_path):
+        stamp = _now(now)
         state = _read(state_path)
-        _validate(state, controller=controller, epoch=epoch, fencing_token=fencing_token)
+        _validate(
+            state,
+            controller=controller,
+            epoch=epoch,
+            fencing_token=fencing_token,
+            now=stamp,
+        )
         state.update(
             {
                 "heartbeat_at": _iso(stamp),
@@ -201,10 +231,16 @@ def checkpoint(
     now: datetime | None = None,
 ) -> dict[str, object]:
     """Atomically publish controller state after validating the current fencing token."""
-    stamp = _now(now)
     with _mutex(state_path):
+        stamp = _now(now)
         state = _read(state_path)
-        _validate(state, controller=controller, epoch=epoch, fencing_token=fencing_token)
+        _validate(
+            state,
+            controller=controller,
+            epoch=epoch,
+            fencing_token=fencing_token,
+            now=stamp,
+        )
         row = {
             "checkpointed_at": _iso(stamp),
             "controller": controller,
@@ -238,10 +274,16 @@ def transfer(
     """Checkpoint and atomically hand ownership to a successor with a higher fence epoch."""
     if not successor.strip() or successor == controller:
         raise ValueError("successor must be a different named controller")
-    stamp = _now(now)
     with _mutex(state_path):
+        stamp = _now(now)
         state = _read(state_path)
-        _validate(state, controller=controller, epoch=epoch, fencing_token=fencing_token)
+        _validate(
+            state,
+            controller=controller,
+            epoch=epoch,
+            fencing_token=fencing_token,
+            now=stamp,
+        )
         row = {
             "checkpointed_at": _iso(stamp),
             "controller": controller,
@@ -281,10 +323,16 @@ def release(
     state_path: Path = DEFAULT_STATE,
     now: datetime | None = None,
 ) -> dict[str, object]:
-    stamp = _now(now)
     with _mutex(state_path):
+        stamp = _now(now)
         state = _read(state_path)
-        _validate(state, controller=controller, epoch=epoch, fencing_token=fencing_token)
+        _validate(
+            state,
+            controller=controller,
+            epoch=epoch,
+            fencing_token=fencing_token,
+            now=stamp,
+        )
         state.update({"status": "RELEASED", "released_at": _iso(stamp), "expires_at": _iso(stamp)})
         _write_atomic(state_path, state)
         return state

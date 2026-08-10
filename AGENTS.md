@@ -6,6 +6,7 @@ changed.
 
 Before non-trivial work, read completely:
 
+- `docs/MASTER_QUANT_CONSTITUTION.md` — the single authoritative top-level operating constitution
 - `CLAUDE.md`
 - `docs/CONSTITUTION.md`
 - `ops/principal_doctrine.txt`

@@ -177,3 +177,9 @@ recorded in `max_audit.py` because they need code to be real. Zero remain ungove
 | Artifact | Class | Rationale | Staleness floor |
 |---|---|---|---|
 | `docs/research/TIER1_CONTROLLER_MANDATE.md` | **DOCTRINE** | Principal-supplied standing controller law shared by Claude and Codex. It governs continuation, survivor conversion, open-world coverage, risk/statistical invariants, and atomic handoff of one persistent operation. It changes only by a later principal mandate; a cadence must execute it through the controller cycle, never rewrite it to look current. | never |
+
+### Added 2026-08-09 (master constitution, classified on arrival)
+
+| Artifact | Class | Rationale | Staleness floor |
+|---|---|---|---|
+| `docs/MASTER_QUANT_CONSTITUTION.md` | **DOCTRINE** | Principal-supplied single top-level authority for the one 24/7 operation. It has no cadence and may change only through an explicit principal amendment. `scripts/check_constitution_core.py` seals its canonical SHA-256 and exact 0..217 section structure, every controller entry verifies it, and the midnight controller injects the verified text before mutation. Missing, truncated, unsealed, or drifted content fails closed without stopping controller-independent deterministic machinery. | never |

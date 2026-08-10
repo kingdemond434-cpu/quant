@@ -46,6 +46,12 @@ os.replace(tmp, path)
 PYEOF
 }
 
+if ! "$PY" scripts/check_constitution_core.py >>"$LOG" 2>&1; then
+    write_status "CONSTITUTION_BREACH" "Sealed master/core verification failed; controller mutation refused" 125
+    echo "midnight-codex: constitution verification failed; deterministic machinery remains active" | tee -a "$LOG"
+    exit 4
+fi
+
 if ! command -v codex >/dev/null 2>&1; then
     write_status "UNAVAILABLE" "Codex CLI is not installed on the VPS; deterministic cycle preserved" 127
     echo "midnight-codex: CLI unavailable; deterministic machinery remains active" | tee -a "$LOG"
@@ -79,6 +85,9 @@ QUANT_CONTROLLER_EPOCH=$("$PY" -c 'import json,sys; print(json.load(open(sys.arg
 QUANT_CONTROLLER_TOKEN=$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["fencing_token"])' "$CLAIM_FILE")
 
 {
+    printf '=== SEALED AUTHORITATIVE MASTER CONSTITUTION (verified before lease claim) ===\n'
+    cat docs/MASTER_QUANT_CONSTITUTION.md
+    printf '\n=== MIDNIGHT CONTROLLER OPERATING BRIEF ===\n'
     cat ops/midnight_codex_prompt.txt
     printf '\nRUNTIME STATE: deterministic pipeline exit code=%s; controller epoch=%s.\n' \
         "$PIPELINE_RC" "$QUANT_CONTROLLER_EPOCH"
@@ -104,16 +113,30 @@ CODEX_RC=$?
 kill "$HEARTBEAT_PID" >/dev/null 2>&1 || true
 wait "$HEARTBEAT_PID" 2>/dev/null || true
 
+CHECKPOINT_RC=0
 "$PY" scripts/controller_checkpoint.py checkpoint \
     --note "midnight Codex finished rc=$CODEX_RC after deterministic pipeline rc=$PIPELINE_RC" \
-    >>"$LOG" 2>&1 || true
-"$PY" scripts/controller_checkpoint.py transfer --successor claude-primary --ttl-seconds 60 \
-    --note "resume exact improved state; midnight Codex rc=$CODEX_RC" >>"$LOG" 2>&1 || true
+    >>"$LOG" 2>&1 || CHECKPOINT_RC=$?
 
-if [ "$CODEX_RC" -eq 0 ]; then
-    write_status "CHECKPOINTED_FOR_CLAUDE" "Midnight controller completed and atomically transferred" 0
+TRANSFER_RC=0
+if [ "$CHECKPOINT_RC" -eq 0 ]; then
+    "$PY" scripts/controller_checkpoint.py transfer --successor claude-primary --ttl-seconds 60 \
+        --note "resume exact improved state; midnight Codex rc=$CODEX_RC" \
+        >>"$LOG" 2>&1 || TRANSFER_RC=$?
 else
-    write_status "CONTROLLER_FAILED_CHECKPOINTED" "Inspect $LOG; deterministic state was preserved" "$CODEX_RC"
+    TRANSFER_RC=125
 fi
-echo "midnight-codex: rc=$CODEX_RC; log=$LOG; last-message=$LAST_MESSAGE"
-exit "$CODEX_RC"
+
+if [ "$CODEX_RC" -eq 0 ] && [ "$CHECKPOINT_RC" -eq 0 ] && [ "$TRANSFER_RC" -eq 0 ]; then
+    write_status "CHECKPOINTED_FOR_CLAUDE" "Midnight controller completed, checkpointed, and atomically transferred" 0
+    FINAL_RC=0
+elif [ "$CHECKPOINT_RC" -eq 0 ] && [ "$TRANSFER_RC" -eq 0 ]; then
+    write_status "CONTROLLER_FAILED_CHECKPOINTED" "Controller rc=$CODEX_RC; exact state checkpointed and transferred; inspect $LOG" "$CODEX_RC"
+    FINAL_RC="$CODEX_RC"
+else
+    FINAL_RC="$CHECKPOINT_RC"
+    [ "$FINAL_RC" -ne 0 ] || FINAL_RC="$TRANSFER_RC"
+    write_status "HANDOFF_INCOMPLETE" "controller_rc=$CODEX_RC checkpoint_rc=$CHECKPOINT_RC transfer_rc=$TRANSFER_RC; deterministic state remains active; inspect $LOG" "$FINAL_RC"
+fi
+echo "midnight-codex: controller_rc=$CODEX_RC checkpoint_rc=$CHECKPOINT_RC transfer_rc=$TRANSFER_RC; log=$LOG; last-message=$LAST_MESSAGE"
+exit "$FINAL_RC"
