@@ -258,3 +258,11 @@ nominally inside the section-33 scanned set the whole time and contributed exact
 items -- listing a denominator is not counting one (L1.57). It is now in _DIG_DOCS_EXCLUDED with
 its real lifecycle stated, and check_mine_scope_vacuous fails if any doc in scope ever again
 carries content the parser cannot see. -->
+
+## Certified High-Dimensional Wasserstein Robust Portfolio Optimization
+- 2026-08-07 · http://arxiv.org/abs/2608.07032v1
+- We develop a certified, scalable approximation for high-dimensional Wasserstein distributionally robust portfolio optimization. For expected-utility maximization under order-one Wasserstein ambiguity, standard duality yields a semi-infinite convex program. For long-only portfolios with box support under the one-norm ground metric, an exact sample-specific vertex reformulation provides an exponential-size computational benchmark. We then majorize the utility by supporting hyperplanes and dualize the support subproblems, obtaining a finite hyperplane--dual formulation over compact polyhedral sup
+
+## Beyond Co-Movement: Locality by Exposures Enables a Joint Factor-Graph Framework for Portfolio Diversification
+- 2026-08-06 · http://arxiv.org/abs/2608.06618v1
+- Current portfolio construction methods are either agnostic to the effects of idiosyncratic shocks (standard factor models) or to the latent data structure driving systematic returns (recent graph-based approaches). This presents an opportunity to combine the complementary market aspects captured by the factor and graph domains, allowing asset allocations to operate directly on the underlying market structure, rather than on its observed co-movement or its finite-sample artefacts. In this work, we introduce the Mutually-INformed Graph-Locality and Exposures framework (MINGLE), which mutually re

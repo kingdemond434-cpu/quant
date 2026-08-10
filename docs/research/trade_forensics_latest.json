@@ -1,6 +1,6 @@
 {
- "updated": "2026-08-07T03:16:10.741003+00:00",
- "n_closes": 27,
+ "updated": "2026-08-10T02:51:31.318040+00:00",
+ "n_closes": 13,
  "hold_buckets": {
   "<2h": {
    "n": 3,
@@ -21,10 +21,10 @@
    "bps": 0.0
   },
   ">24h": {
-   "n": 23,
-   "notional": 19361.96,
-   "net": -72.69,
-   "bps": -37.54
+   "n": 9,
+   "notional": 12368.99,
+   "net": -52.52,
+   "bps": -42.46
   }
  },
  "hold_buckets_net_of_fees": {
@@ -50,26 +50,26 @@
    "bps": 0.0
   },
   ">24h": {
-   "n": 23,
-   "notional": 19361.96,
-   "fee": 1549.41,
-   "net": -1622.1,
-   "bps": -837.78
+   "n": 9,
+   "notional": 12368.99,
+   "fee": 1458.65,
+   "net": -1511.17,
+   "bps": -1221.74
   }
  },
  "fee_attribution": {
-  "venue_commission": 1557.61,
-  "attributed": 1549.56,
-  "unattributed": 8.05,
-  "unattributed_share": 0.005,
-  "n_events": 8487,
-  "fee_bps_of_logged_notional": 796.5,
+  "venue_commission": 1459.59,
+  "attributed": 1458.81,
+  "unattributed": 0.79,
+  "unattributed_share": 0.001,
+  "n_events": 6832,
+  "fee_bps_of_logged_notional": 1161.84,
   "scope": "futures commission only (/fapi income); spot-leg fees not visible -> LOWER BOUND"
  },
  "baseline_funding_class": {
-  "n": 16,
-  "net": -20.43,
-  "bps": -28.64
+  "n": 2,
+  "net": -0.26,
+  "bps": -18.48
  },
  "post_gate_baseline_opens": 2,
  "maker_fill": {
@@ -90,10 +90,8 @@
  },
  "worst_symbols": [],
  "flags": [
-  "hold-class >24h bleeding: -37.54 bps over 23 trades (net $-72.69)",
-  "FEE INTENSITY hold-class >24h: $1549.41 on $19362 = 800 bps, 80x the ~10 bps a futures round-trip should bill -- the venue is charging for fills this book did not intend (churn-loop fingerprint; see max_audit check_close_retry_loop)",
   "ENTRY-GATE REGRESSION: 2 open(s) at baseline funding 0.0001 AFTER the gate shipped -- gate is not filtering"
  ],
  "origin": "recursion rule 2026-07-22: mechanization of the principal-supplied probes that found gaps #42/#43/#34",
- "written": "2026-08-07T03:16:10.746865+00:00"
+ "written": "2026-08-10T02:51:31.320743+00:00"
 }

@@ -1,104 +1,104 @@
 {
-    "findings_coverage":  {
-                              "artifact":  "docs/research/findings_coverage_record.json",
-                              "proving_command":  "python scripts/max_audit.py (check_findings_tracked)",
-                              "recorded":  "2026-07-30T07:19:13Z",
-                              "value":  1
-                          },
-    "miner_seats_productive":  {
-                                   "artifact":  "data/miner_runway.json",
-                                   "proving_command":  "python scripts/check_miner_runway.py --json --report-only",
-                                   "recorded":  "2026-08-01T07:07:02Z",
-                                   "value":  0.090909
-                               },
-    "pager_delivered_24h":  {
-                                "artifact":  "data/alert_delivery.jsonl",
-                                "proving_command":  "python scripts/run_alert_canary.py",
-                                "recorded":  "2026-07-31T07:07:01Z",
-                                "value":  1
-                            },
-    "scripts_mypy_clean":  {
-                               "artifact":  "data/mypy_ratchet.json",
-                               "proving_command":  "python scripts/check_mypy_ratchet.py",
-                               "recorded":  "2026-08-07T03:21:06Z",
-                               "value":  0.406844
-                           },
-    "test_strength::libs/execution/staging.py":  {
-                                                     "artifact":  "data/mutation_score.json",
-                                                     "proving_command":  "python scripts/run_mutation.py --target libs/execution/staging.py",
-                                                     "recorded":  "2026-07-30T23:45:27Z",
-                                                     "value":  1
-                                                 },
-    "test_strength::libs/risk/gate.py":  {
-                                             "artifact":  "data/mutation_score.json",
-                                             "proving_command":  "python scripts/run_mutation.py --target libs/risk/gate.py",
-                                             "recorded":  "2026-07-30T23:45:27Z",
-                                             "value":  1
-                                         },
-    "test_strength::libs/risk/sizing.py":  {
-                                               "artifact":  "data/mutation_score.json",
-                                               "proving_command":  "python scripts/run_mutation.py --target libs/risk/sizing.py",
-                                               "recorded":  "2026-07-30T23:45:27Z",
-                                               "value":  0.8621
-                                           },
-    "test_strength::libs/validation/stepwise.py":  {
-                                                       "artifact":  "data/mutation_score.json",
-                                                       "proving_command":  "python scripts/run_mutation.py --target libs/validation/stepwise.py",
-                                                       "recorded":  "2026-07-30T07:40:54Z",
-                                                       "value":  0.9
-                                                   },
-    "test_strength_min_kill_rate":  {
-                                        "artifact":  "data/mutation_score.json",
-                                        "proving_command":  "python scripts/run_mutation.py",
-                                        "recorded":  "2026-07-30T07:19:13Z",
-                                        "value":  0.9
-                                    },
-    "test_strength_targets_at_bar":  {
-                                         "artifact":  "data/mutation_score.json",
-                                         "proving_command":  "python scripts/run_mutation.py",
-                                         "recorded":  "2026-07-30T23:45:27Z",
-                                         "value":  0.75
-                                     },
-    "campaign_obs_retained":  {
-                                  "artifact":  "data/campaign_retention.json",
-                                  "proving_command":  "python scripts/check_campaign_retention.py",
-                                  "recorded":  "2026-08-06T07:07:01Z",
-                                  "value":  1.0
-                              },
-    "capability_wired":  {
-                             "artifact":  "data/utilisation.json",
-                             "proving_command":  "python scripts/check_utilisation.py",
-                             "recorded":  "2026-08-06T03:15:53Z",
-                             "value":  0.83
-                         },
-    "test_strength::libs/autodiscovery/validation.py":  {
-                                                            "artifact":  "data/mutation_score.json",
-                                                            "proving_command":  "python scripts/run_mutation.py --target libs/autodiscovery/validation.py",
-                                                            "recorded":  "2026-08-06T01:13:49Z",
-                                                            "value":  0.4764
-                                                        },
-    "test_strength::libs/execution/binance_live.py":  {
-                                                          "artifact":  "data/mutation_score.json",
-                                                          "proving_command":  "python scripts/run_mutation.py --target libs/execution/binance_live.py",
-                                                          "recorded":  "2026-08-06T01:13:49Z",
-                                                          "value":  0.5467
-                                                      },
-    "test_strength::libs/execution/binance_spot_live.py":  {
-                                                               "artifact":  "data/mutation_score.json",
-                                                               "proving_command":  "python scripts/run_mutation.py --target libs/execution/binance_spot_live.py",
-                                                               "recorded":  "2026-08-06T01:13:49Z",
-                                                               "value":  0.8721
-                                                           },
-    "test_strength::libs/execution/binance_spot_testnet.py":  {
-                                                                  "artifact":  "data/mutation_score.json",
-                                                                  "proving_command":  "python scripts/run_mutation.py --target libs/execution/binance_spot_testnet.py",
-                                                                  "recorded":  "2026-08-06T01:13:49Z",
-                                                                  "value":  0.8444
-                                                              },
-    "test_strength::libs/execution/binance_testnet.py":  {
-                                                             "artifact":  "data/mutation_score.json",
-                                                             "proving_command":  "python scripts/run_mutation.py --target libs/execution/binance_testnet.py",
-                                                             "recorded":  "2026-08-06T01:13:49Z",
-                                                             "value":  0.6558
-                                                         }
+  "campaign_obs_retained": {
+    "artifact": "data/campaign_retention.json",
+    "proving_command": "python scripts/check_campaign_retention.py",
+    "recorded": "2026-08-06T07:07:01Z",
+    "value": 1.0
+  },
+  "capability_wired": {
+    "artifact": "data/utilisation.json",
+    "proving_command": "python scripts/check_utilisation.py",
+    "recorded": "2026-08-10T02:49:53Z",
+    "value": 0.834
+  },
+  "findings_coverage": {
+    "artifact": "docs/research/findings_coverage_record.json",
+    "proving_command": "python scripts/max_audit.py (check_findings_tracked)",
+    "recorded": "2026-07-30T07:19:13Z",
+    "value": 1
+  },
+  "miner_seats_productive": {
+    "artifact": "data/miner_runway.json",
+    "proving_command": "python scripts/check_miner_runway.py --json --report-only",
+    "recorded": "2026-08-01T07:07:02Z",
+    "value": 0.090909
+  },
+  "pager_delivered_24h": {
+    "artifact": "data/alert_delivery.jsonl",
+    "proving_command": "python scripts/run_alert_canary.py",
+    "recorded": "2026-07-31T07:07:01Z",
+    "value": 1
+  },
+  "scripts_mypy_clean": {
+    "artifact": "data/mypy_ratchet.json",
+    "proving_command": "python scripts/check_mypy_ratchet.py",
+    "recorded": "2026-08-10T02:54:32Z",
+    "value": 0.406844
+  },
+  "test_strength::libs/autodiscovery/validation.py": {
+    "artifact": "data/mutation_score.json",
+    "proving_command": "python scripts/run_mutation.py --target libs/autodiscovery/validation.py",
+    "recorded": "2026-08-06T01:13:49Z",
+    "value": 0.4764
+  },
+  "test_strength::libs/execution/binance_live.py": {
+    "artifact": "data/mutation_score.json",
+    "proving_command": "python scripts/run_mutation.py --target libs/execution/binance_live.py",
+    "recorded": "2026-08-06T01:13:49Z",
+    "value": 0.5467
+  },
+  "test_strength::libs/execution/binance_spot_live.py": {
+    "artifact": "data/mutation_score.json",
+    "proving_command": "python scripts/run_mutation.py --target libs/execution/binance_spot_live.py",
+    "recorded": "2026-08-06T01:13:49Z",
+    "value": 0.8721
+  },
+  "test_strength::libs/execution/binance_spot_testnet.py": {
+    "artifact": "data/mutation_score.json",
+    "proving_command": "python scripts/run_mutation.py --target libs/execution/binance_spot_testnet.py",
+    "recorded": "2026-08-06T01:13:49Z",
+    "value": 0.8444
+  },
+  "test_strength::libs/execution/binance_testnet.py": {
+    "artifact": "data/mutation_score.json",
+    "proving_command": "python scripts/run_mutation.py --target libs/execution/binance_testnet.py",
+    "recorded": "2026-08-06T01:13:49Z",
+    "value": 0.6558
+  },
+  "test_strength::libs/execution/staging.py": {
+    "artifact": "data/mutation_score.json",
+    "proving_command": "python scripts/run_mutation.py --target libs/execution/staging.py",
+    "recorded": "2026-07-30T23:45:27Z",
+    "value": 1
+  },
+  "test_strength::libs/risk/gate.py": {
+    "artifact": "data/mutation_score.json",
+    "proving_command": "python scripts/run_mutation.py --target libs/risk/gate.py",
+    "recorded": "2026-07-30T23:45:27Z",
+    "value": 1
+  },
+  "test_strength::libs/risk/sizing.py": {
+    "artifact": "data/mutation_score.json",
+    "proving_command": "python scripts/run_mutation.py --target libs/risk/sizing.py",
+    "recorded": "2026-07-30T23:45:27Z",
+    "value": 0.8621
+  },
+  "test_strength::libs/validation/stepwise.py": {
+    "artifact": "data/mutation_score.json",
+    "proving_command": "python scripts/run_mutation.py --target libs/validation/stepwise.py",
+    "recorded": "2026-07-30T07:40:54Z",
+    "value": 0.9
+  },
+  "test_strength_min_kill_rate": {
+    "artifact": "data/mutation_score.json",
+    "proving_command": "python scripts/run_mutation.py",
+    "recorded": "2026-07-30T07:19:13Z",
+    "value": 0.9
+  },
+  "test_strength_targets_at_bar": {
+    "artifact": "data/mutation_score.json",
+    "proving_command": "python scripts/run_mutation.py",
+    "recorded": "2026-07-30T23:45:27Z",
+    "value": 0.75
+  }
 }
