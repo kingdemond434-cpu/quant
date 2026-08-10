@@ -135,6 +135,7 @@ UNITS=(
     quant-alerts.service   quant-alerts.timer
     quant-cadence.service  quant-cadence.timer
     quant-daily-max.service quant-daily-max.timer
+    quant-midnight-frontier.service quant-midnight-frontier.timer
     quant-dataaxis.service quant-dataaxis.timer
     quant-prospector.service quant-prospector.timer
     quant-litminer.service quant-litminer.timer
@@ -146,6 +147,13 @@ if have_sudo; then
     for u in "${UNITS[@]}"; do
         [ -f "ops/$u" ] && sudo cp "ops/$u" "$UNITS_DIR/" && echo "  installed $u"
     done
+    # Migration from the old colliding midnight unit. Retire ONLY its timer; the identically
+    # named deploy/quant-research.service is the autonomous supervisor and must remain intact.
+    if [ -e "$UNITS_DIR/quant-research.timer" ] || [ -L "$UNITS_DIR/quant-research.timer" ]; then
+        sudo systemctl disable --now quant-research.timer >/dev/null 2>&1 || true
+        sudo rm -f "$UNITS_DIR/quant-research.timer"
+        echo "  retired legacy quant-research.timer; preserved quant-research.service"
+    fi
     sudo systemctl daemon-reload
 else
     echo "  NO SUDO -- /etc/systemd/system is unreachable."
@@ -174,8 +182,8 @@ if [ "$FILES" -eq 0 ]; then
     echo "  A 403 on CONNECT to fapi.binance.com means this box cannot reach the venue."
 fi
 
-say "4. start the survival organs (these are what had NO launcher at all)"
-sudo systemctl enable --now quant-watchdog.timer quant-alerts.timer quant-cadence.timer
+say "4. start the survival organs and the unique midnight frontier timer"
+sudo systemctl enable --now quant-watchdog.timer quant-alerts.timer quant-cadence.timer quant-midnight-frontier.timer
 
 say "5. start the moat organs (mine describes the tape; screen interrogates it)"
 sudo systemctl enable --now quant-moat-miner quant-moat-screen

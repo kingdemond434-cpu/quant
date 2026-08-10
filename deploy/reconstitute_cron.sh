@@ -13,7 +13,7 @@
 #   * cron entries are installed inside a marker-fenced block -- re-running REPLACES the
 #     block, never appends (the append failure mode is how boxes end up running a job twice);
 #   * everything outside the fence in the user's crontab is preserved byte-for-byte;
-#   * the 5 committed quant-* units are enabled via systemctl when it exists (unit files are
+#   * the committed quant-* timer units are enabled via systemctl when it exists (unit files are
 #     copied into /etc/systemd/system only when that dir is writable, i.e. run as root;
 #     otherwise the exact sudo commands are printed -- this box denies systemctl to the quant
 #     user, scripts/watchdog.py:78, so printing the commands IS the deliverable there).
@@ -107,10 +107,10 @@ else
     exit 2
 fi
 
-# systemd plane: the 5 committed dig units. Copy+enable when we can, print the sudo
-# commands when we cannot -- never die here (the cron plane above already restored the
-# money-path watchdog backstop, which respawns executor/deadman/liquidations/dashboard).
-UNITS="quant-blindrediscovery quant-dataaxis quant-frontier quant-litminer quant-prospector"
+# systemd plane: committed dig units plus the collision-free midnight frontier. Copy+enable
+# when we can, print the sudo commands when we cannot -- never die here (the cron plane above
+# already restored the money-path watchdog backstop, which respawns the critical services).
+UNITS="quant-blindrediscovery quant-dataaxis quant-frontier quant-litminer quant-prospector quant-midnight-frontier"
 if command -v systemctl >/dev/null 2>&1; then
     COPIED=0
     if [ -d /etc/systemd/system ] && [ -w /etc/systemd/system ]; then
@@ -119,8 +119,16 @@ if command -v systemctl >/dev/null 2>&1; then
                 && COPIED=$((COPIED + 1)) \
                 || echo "reconstitute: copy of $u unit files failed" >&2
         done
+        # Migrate only the former midnight timer. quant-research.service belongs to the
+        # autonomous supervisor and is intentionally never removed or disabled here.
+        if [ -e /etc/systemd/system/quant-research.timer ] || \
+                [ -L /etc/systemd/system/quant-research.timer ]; then
+            systemctl disable --now quant-research.timer >/dev/null 2>&1 || true
+            rm -f /etc/systemd/system/quant-research.timer
+            echo "reconstitute: retired legacy quant-research.timer; preserved supervisor service"
+        fi
         systemctl daemon-reload || echo "reconstitute: daemon-reload failed" >&2
-        echo "reconstitute: copied $COPIED/5 unit pairs into /etc/systemd/system"
+        echo "reconstitute: copied $COPIED/6 unit pairs into /etc/systemd/system"
         echo "reconstitute: NOTE committed units hardcode /home/quant/quant-platform paths;"
         echo "reconstitute: if this checkout lives elsewhere, edit the copies before relying on them"
     else
@@ -128,6 +136,8 @@ if command -v systemctl >/dev/null 2>&1; then
         for u in $UNITS; do
             echo "  sudo cp $ROOT/ops/$u.timer $ROOT/ops/$u.service /etc/systemd/system/"
         done
+        echo "  sudo systemctl disable --now quant-research.timer  # legacy midnight timer only"
+        echo "  sudo rm -f /etc/systemd/system/quant-research.timer"
         echo "  sudo systemctl daemon-reload"
     fi
     for u in $UNITS; do

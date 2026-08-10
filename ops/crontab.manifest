@@ -903,9 +903,9 @@ SYSTEMD unit="quant-alerts.timer" on="15min tick" exec="scripts/run_alerts.py"
 # EVIDENCE: ops/quant-cadence.timer, ops/quant-cadence.service; CONFIDENCE: committed-unit
 SYSTEMD unit="quant-cadence.timer" on="hourly tick" exec="scripts/run_cadence.py"
 
-# daily-max loop: works the max_audit defect queue every 6h (committed unit).
+# daily-max loop: works the max_audit defect queue daily at 05:30 (committed unit).
 # EVIDENCE: ops/quant-daily-max.timer, ops/quant-daily-max.service; CONFIDENCE: committed-unit
-SYSTEMD unit="quant-daily-max.timer" on="6h tick" exec="scripts/daily_max.py"
+SYSTEMD unit="quant-daily-max.timer" on="*-*-* 05:30:00" exec="scripts/daily_max.py"
 
 # EVIDENCE: docs/PROJECT_HANDOFF.md:34; scripts/watchdog.py:61
 # CONFIDENCE: documented-cadence
@@ -931,6 +931,12 @@ SYSTEMD unit="quant-tunnel.service" on="always" exec=""
 # EVIDENCE: docs/PROJECT_HANDOFF.md:34 ("quant-refresh.timer (3-min feeds)")
 # CONFIDENCE: documented-cadence
 SYSTEMD unit="quant-refresh.timer" on="*:0/3" exec=""
+
+# Midnight renewable frontier controller. Its unique unit name deliberately cannot collide with
+# deploy/quant-research.service, which remains the autonomous research supervisor.
+# EVIDENCE: ops/quant-midnight-frontier.timer, ops/quant-midnight-frontier.service
+# CONFIDENCE: committed-unit
+SYSTEMD unit="quant-midnight-frontier.timer" on="*-*-* 00:00:00 Europe/Dublin" exec="ops/run_midnight_frontier.sh"
 
 # python research cycle at 08:01 -- the second head of the dual schedule (cron 02:00 above).
 # EVIDENCE: docs/PROJECT_HANDOFF.md:35 ("quant-cro.timer (08:01 UTC python research cycle)");

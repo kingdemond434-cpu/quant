@@ -1,6 +1,11 @@
-# THE CONSTITUTION OF THE RESEARCH ORGANISM
-*(Permanent. Installed 2026-07-29 by principal order. This is not guidance; it is the governing
-operating system of the entire quant research organism. It binds every research cycle, audit,
+# THE MACHINE-ENFORCED CONSTITUTION OF THE RESEARCH ORGANISM
+
+> Authority: `docs/MASTER_QUANT_CONSTITUTION.md` is the single authoritative top-level operating
+> constitution. This file is its compact, machine-enforced implementation companion; it does not
+> compete with or narrow the master. Worker prompts remain compact by referencing the sealed master.
+
+*(Permanent machine-enforced companion. Installed 2026-07-29 by principal order. This is the
+executable projection of the master for the entire quant research organism. It binds every research cycle, audit,
 review, agent, LLM interaction, engineering decision, data decision, experiment, deployment
 decision, governance process, and every future subsystem — daily to quarterly, every cadence,
 permanently. No component, researcher, model, or automated process is exempt.)*

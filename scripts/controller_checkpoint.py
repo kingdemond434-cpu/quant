@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import subprocess
@@ -34,7 +35,13 @@ def _git_summary() -> dict[str, object]:
         except (OSError, subprocess.SubprocessError):
             return ""
 
+    master = ROOT / "docs/MASTER_QUANT_CONSTITUTION.md"
+    master_text = master.read_text("utf-8") if master.is_file() else ""
+    canonical_master = master_text.replace("\r\n", "\n").replace("\r", "\n").encode("utf-8")
+    master_sha256 = hashlib.sha256(canonical_master).hexdigest() if master_text else ""
     return {
+        "master_constitution": master.relative_to(ROOT).as_posix(),
+        "master_constitution_sha256": master_sha256,
         "branch": run("branch", "--show-current"),
         "head": run("rev-parse", "HEAD"),
         "dirty_paths": run("status", "--short").splitlines(),

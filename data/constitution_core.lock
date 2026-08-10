@@ -1,5 +1,5 @@
 {
-  "sealed": "2026-07-30T17:16:53.203339+00:00",
+  "sealed": "2026-08-09T22:17:03.286314+00:00",
   "note": "L2.8a immutable core. Changing this file is a PRINCIPAL action; the organism may not reseal itself as part of an amendment.",
   "digests": {
     "L1.1": "9dba85aa16dce8771a846cd3576013d55fae860eedd0a29e4c35b208acb0b778",
@@ -7,5 +7,10 @@
     "L1.6": "b986eb8d15ea2365423a6c22890320c644edd1695c34f14a5edb14136ae47574",
     "L1.23": "3069dc4402a407f5d32793ea402199a1460fd0b8c2fc3bd4bb630ba4f9f62086",
     "L2.8a": "18ed03fd35c424ca6be53a4cdb9d3b1793b000553904bbbcd3009319bdfbf992"
+  },
+  "master": {
+    "path": "docs/MASTER_QUANT_CONSTITUTION.md",
+    "sha256": "b04d813e5ff24b0758160a584684c55a252da38ea59e2e180a4e59150e15b1db",
+    "sections": 218
   }
 }
