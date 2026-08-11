@@ -100,7 +100,7 @@ def rejection_shadow_audit(
         rid, m = item[0], item[1]
         if m is None:
             continue
-        n_obs = item[2] if len(item) > 2 else None  # type: ignore[misc]
+        n_obs = item[2] if len(item) > 2 else None
         norm.append((rid, float(m), n_obs))
     seen: set[float] = set()
     decided: list[tuple[str, float, int | None]] = []

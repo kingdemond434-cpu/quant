@@ -76,16 +76,17 @@ def build_shadow_report(
         # can noise-adjust the pay bar at the entry's actual window; a bare float (legacy, or a
         # caller asserting a judgment-ready metric) keeps the raw threshold.
         if isinstance(entry, Mapping):
-            try:
-                m = float(entry["sharpe"])
-                n_bars = entry.get("n_fwd_bars")
-                eligible.append((cid, m, int(n_bars) if n_bars else None))
-            except (KeyError, TypeError, ValueError):
+            raw_m = entry.get("sharpe")
+            raw_n = entry.get("n_fwd_bars")
+            if isinstance(raw_m, int | float):
+                n_bars = int(raw_n) if isinstance(raw_n, int | float) and raw_n else None
+                eligible.append((cid, float(raw_m), n_bars))
+            else:
                 eligible.append((cid, None, None))  # unreadable score == unscored, never guessed
-        elif entry is None:
-            eligible.append((cid, None, None))
-        else:
+        elif isinstance(entry, int | float):
             eligible.append((cid, float(entry), None))
+        else:
+            eligible.append((cid, None, None))
     n_pending = sum(1 for _, m, _ in eligible if m is None)
     audit = rejection_shadow_audit(
         eligible, deploy_threshold=deploy_threshold,
