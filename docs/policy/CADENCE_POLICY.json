@@ -157,5 +157,45 @@
    "3. The order-book asset context",
    "11. FINAL cross-round ranking"
   ]
+ },
+ "claude_local_cuts_2026_08_11": {
+  "directive": "principal: apply all Claude-local recommendations",
+  "measured_before_total_sessions_per_day": 96.6,
+  "measured_after_total_sessions_per_day": 40.3,
+  "reduction_pct": 58.3,
+  "cuts": {
+   "ops/run_recommendation_worker.sh": {
+    "from": "*/20 * * * * (72/day)",
+    "to": "0 * * * * (24/day)",
+    "saved_per_day": 48,
+    "roi": "~none lost. Drains owed-work queue 1 item/tick, exits early when empty. Queue is fed ~5 rows/day; hourly still drains 24/day = ~5x refill. Backlog (113 open + 88 scheduled) clears in ~9 days instead of ~3. Nothing dropped, only deferred.",
+    "real_fix_not_done": "this is a TIMER standing in for an EVENT trigger; firing on queue-append with a low-frequency heartbeat removes the cadence question entirely"
+   },
+   "ops/run_capability_hunt.sh": {
+    "from": "6/day (slices 0-5, one per run)",
+    "to": "2/day, slices spread Mon/Tue/Wed + repeated Thu/Fri/Sat",
+    "saved_per_day": 4.3,
+    "roi": "COVERAGE PRESERVED -- all six slices still run, twice weekly instead of daily. A naive frequency cut would have dropped four slices and called it a cadence change. 42 sessions/week -> 12."
+   },
+   "ops/run_cro_ai.sh": {
+    "from": "45 2,14,20 (3 runs = 6 claude calls/day)",
+    "to": "45 2 (1 run = 2 calls/day)",
+    "saved_per_day": 4,
+    "roi": "low loss. Each run makes 2 claude calls and feeds the 69,926-char principal doctrine. Input is desk artifact state, which moves on commits and daily measurements."
+   },
+   "ops/run_recommendation_worker.sh --effort": {
+    "from": "--effort max",
+    "to": "--effort high",
+    "saved_per_day": "30-50% of worker tokens, no cadence change",
+    "roi": "~none. The worker performs mechanical queue rows (wire this, register that). Max reasoning on a one-line registration is the same waste as a flagship model doing bulk extraction.",
+    "falsifier": "if queue rows return INCOMPLETE or exit-124 timeouts rise week-over-week, restore max -- one word on one line"
+   }
+  },
+  "left_alone_deliberately": {
+   "diggers": "dataaxis / frontier / prospector / litminer -- 3 scheduled lines each = 12 sessions/day, 30% of the remaining budget. These are the desk's actual discovery surface; cutting them is pure ROI loss for a modest saving. Pinned by test_diggers_were_left_alone.",
+   "blindrediscovery": "0.57/day, monthly-ish. Free.",
+   "safety_organs": "FLOOR_PROTECTED, untouched."
+  },
+  "correction": "an earlier count said ~88 sessions/day; the true figure was 96.6 because each digger has THREE cron lines (guarded by a systemd is-enabled check), not one."
  }
 }

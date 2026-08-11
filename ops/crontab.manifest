@@ -536,19 +536,24 @@ QUANT_ROOT=/home/quant/quant-platform
 # gaps rather than yesterday's.
 # EVIDENCE: scripts/run_capability_hunt.py -> docs/research/capability_hunt/; CONSTITUTION L1.31
 # CONFIDENCE: committed-script (new this cycle)
-30 9 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capability_hunt.lock /bin/bash ops/run_capability_hunt.sh 0 >> data/cro_ai_logs/capability_hunt.log 2>&1
+# CLAUDE-LIMIT CUT 2026-08-11 (principal directive): 6/day -> 2/day, COVERAGE PRESERVED.
+# The six runs are not six repeats -- each passes a different SLICE INDEX 0-5, so cutting runs
+# would have silently dropped four slices and called it a cadence change. Instead the same six
+# slices are spread across Mon/Tue/Wed and repeated Thu/Fri/Sat: every slice still runs, twice
+# a week instead of daily, at 2 sessions/day instead of 6. 42 sessions/week -> 12.
+30 5 * * 1,4 cd "$QUANT_ROOT" && flock -n data/.cron_capability_hunt.lock /bin/bash ops/run_capability_hunt.sh 0 >> data/cro_ai_logs/capability_hunt.log 2>&1
 # SIX SLOTS/DAY (principal 2026-07-31 'max out cadence for those gaps, exploration, claude+gpt duo, to max times possible a day'): every 4h, each on a DIFFERENT lens, so the day's draws span the whole 8-lens space instead of 3/8 of it. Two families x 6 slots x 2 boxes = up to 24 independent draws/day.
-30 1 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capability_hunt.lock /bin/bash ops/run_capability_hunt.sh 3 >> data/cro_ai_logs/capability_hunt.log 2>&1
-30 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capability_hunt.lock /bin/bash ops/run_capability_hunt.sh 4 >> data/cro_ai_logs/capability_hunt.log 2>&1
-30 17 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capability_hunt.lock /bin/bash ops/run_capability_hunt.sh 5 >> data/cro_ai_logs/capability_hunt.log 2>&1
+30 17 * * 2,5 cd "$QUANT_ROOT" && flock -n data/.cron_capability_hunt.lock /bin/bash ops/run_capability_hunt.sh 3 >> data/cro_ai_logs/capability_hunt.log 2>&1
+30 5 * * 3,6 cd "$QUANT_ROOT" && flock -n data/.cron_capability_hunt.lock /bin/bash ops/run_capability_hunt.sh 4 >> data/cro_ai_logs/capability_hunt.log 2>&1
+30 17 * * 3,6 cd "$QUANT_ROOT" && flock -n data/.cron_capability_hunt.lock /bin/bash ops/run_capability_hunt.sh 5 >> data/cro_ai_logs/capability_hunt.log 2>&1
 
 # EXPLORATION AT MAX (principal 2026-07-31: the capability hunt IS exploration --
 # max push it). Hunting is RESOURCE-bound, not information-bound (L1.28c): the space of
 # things we have not thought of never runs dry, so the ceiling is seat contention, and
 # flock -n makes an occupied seat a free skip. Three slots/day, each on a DIFFERENT
 # rotating lens, so the runs are independent draws rather than the same draw repeated.
-30 13 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capability_hunt.lock /bin/bash ops/run_capability_hunt.sh 1 >> data/cro_ai_logs/capability_hunt.log 2>&1
-30 21 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capability_hunt.lock /bin/bash ops/run_capability_hunt.sh 2 >> data/cro_ai_logs/capability_hunt.log 2>&1
+30 17 * * 1,4 cd "$QUANT_ROOT" && flock -n data/.cron_capability_hunt.lock /bin/bash ops/run_capability_hunt.sh 1 >> data/cro_ai_logs/capability_hunt.log 2>&1
+30 5 * * 2,5 cd "$QUANT_ROOT" && flock -n data/.cron_capability_hunt.lock /bin/bash ops/run_capability_hunt.sh 2 >> data/cro_ai_logs/capability_hunt.log 2>&1
 
 
 # CALIBRATION FENCE (L1.29, 2026-07-31): scores the desk's own probability forecasts against
@@ -855,7 +860,11 @@ QUANT_ROOT=/home/quant/quant-platform
 # run_cro_ai.sh in slots the timer does not cover. 3 cron slots + the 08:45 timer = 4/day;
 # exact live minutes unverified.
 # CONFIDENCE: inferred
-45 2,14,20 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cro_ai.lock /bin/bash ops/run_cro_ai.sh
+# CLAUDE-LIMIT CUT 2026-08-11 (principal directive): 3 runs/day -> 1. Each run makes TWO claude
+# calls and feeds the 69,926-char principal doctrine, so this is 6 large sessions/day -> 2.
+# Same argument as the CRO seat: its input is desk artifact state, which moves on commits and
+# daily measurements, not thrice daily.
+45 2 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cro_ai.lock /bin/bash ops/run_cro_ai.sh
 
 # --------------------------------------------------------------------------------------------
 # SYSTEMD PLANE -- committed units first (schedules exact, read from the unit files),
@@ -1757,7 +1766,17 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: ops/run_recommendation_worker.sh -> data/cro_ai_logs/recommendation_worker_*.log
 #   and the ledger's own implemented/rejected counts, which are the real proof.
 # CONFIDENCE: committed-script (new this cycle)
-*/20 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_recworker.lock /bin/bash ops/run_recommendation_worker.sh >> data/cro_ai_logs/recommendation_worker.log 2>&1
+# CLAUDE-LIMIT CUT 2026-08-11 (principal directive): */20 (72/day) -> hourly (24/day).
+# THE MEASUREMENT: this one line was 72 of the desk's ~97 daily `claude` sessions -- 74% of the
+# entire local Claude budget. It drains the owed-work queue ONE item per tick and exits early
+# when the queue is empty, so its cost is duty-cycle driven; with 113 open + 88 scheduled rows
+# the queue is never empty and it spent nearly every tick.
+# WHY ROI IS ~UNCHANGED: the queue is fed at roughly 5 rows/day by cycles and audits. Hourly
+# still drains 24/day -- ~5x the refill rate -- so the backlog shrinks either way; it just
+# clears in ~9 days instead of ~3. Nothing is dropped, only deferred.
+# THE REAL FIX, not done here: this is a TIMER standing in for an EVENT trigger. Firing on
+# queue-append with a low-frequency heartbeat would make the cadence question disappear.
+0 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_recworker.lock /bin/bash ops/run_recommendation_worker.sh >> data/cro_ai_logs/recommendation_worker.log 2>&1
 
 # CROSSASSET SHADOW CLOCK (2026-08-01). slot_registry counts `crossasset` in the concurrent Holm
 # cohort on the strength of data/crossasset_shadow_state.json -- which had not been written since

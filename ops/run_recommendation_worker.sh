@@ -125,7 +125,15 @@ echo "=== owed-work worker start $(date -u) ===" >> "$LOG"
 # tick, so the queue can never stall for more than one cycle. Exit 124 feeds the ratchet as a
 # ceiling signal and halves the batch, which is correct: a run that could not finish in 50
 # minutes was too big.
-timeout 3000 claude --effort max --append-system-prompt "$_DOCTRINE" -p "$PROMPT" \
+# EFFORT max -> high, 2026-08-11 (principal directive). The worker DRAINS a queue: most rows
+# are mechanical -- wire this module, register that check, add the missing law mapping. Paying
+# max reasoning to perform a one-line registration is the same waste as routing bulk source
+# hunting to a flagship model. The hard items in the queue are not made hard by reasoning
+# depth; they are made hard by missing data, and a deeper think does not conjure it.
+# FALSIFIER, and it is cheap to read: if queue rows start coming back INCOMPLETE or the
+# ratchet logs more exit-124 timeouts per week than before, raise it back to max. The effort
+# level is one word on one line and reverting costs nothing.
+timeout 3000 claude --effort high --append-system-prompt "$_DOCTRINE" -p "$PROMPT" \
     --dangerously-skip-permissions >> "$LOG" 2>&1
 RC=$?
 if [ "$RC" = "124" ]; then
