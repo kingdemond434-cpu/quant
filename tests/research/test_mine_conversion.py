@@ -781,3 +781,46 @@ class TestStableIdentityAcrossRegrades:
         fs = {stable_key("Grouping map — grade: UNVERIFIED"):
               datetime(2026, 7, 1, tzinfo=UTC).timestamp()}
         assert unbacked(i, backing={}, root=tmp_path, first_seen=fs) == tuple(i)
+
+
+class TestDeferredOwingClock:
+    """A DATED, UNEXPIRED deferral is a disposition (§33): it must silence the owing clock
+    without resetting it. The Upbit false positive: mine-flow-rotting fired at 17d on a card
+    carrying a legal deferred(2026-08-15) because append_snapshot dropped the date and
+    flow_stats counted every non-terminal item as owing."""
+
+    def _ledger(self, tmp: Path) -> Path:
+        lg = tmp / "led.jsonl"
+        base = datetime(2026, 7, 1, tzinfo=UTC)
+        append_snapshot(lg, [MinedItem(source="w.md", name="D"),
+                             MinedItem(source="w.md", name="B")], now=base)
+        append_snapshot(
+            lg, [MinedItem(source="w.md", name="D", disposition="deferred",
+                           deferred_until="2026-08-15"),
+                 MinedItem(source="w.md", name="B")],
+            now=datetime(2026, 7, 3, tzinfo=UTC))
+        return lg
+
+    def test_snapshot_retains_the_deferral_date(self, tmp_path: Path) -> None:
+        rows = load_ledger(self._ledger(tmp_path))
+        d_item = next(i for i in rows[-1]["items"] if i["n"] == "D")
+        assert d_item["u"] == "2026-08-15"
+
+    def test_unexpired_deferral_is_not_owing(self, tmp_path: Path) -> None:
+        f = flow_stats(load_ledger(self._ledger(tmp_path)),
+                       now=datetime(2026, 7, 20, tzinfo=UTC))
+        assert f.oldest_owing_name == "B", "the dated, unexpired deferral must not age as owing"
+
+    def test_expired_deferral_resumes_at_original_age_not_zero(self, tmp_path: Path) -> None:
+        f = flow_stats(load_ledger(self._ledger(tmp_path)),
+                       now=datetime(2026, 8, 20, tzinfo=UTC))
+        assert f.oldest_owing_name in ("D", "B")
+        assert f.oldest_owing_days == 50.0, "deferral buys silence, not youth: age is first_seen"
+
+    def test_undated_deferral_still_ages_as_owing(self, tmp_path: Path) -> None:
+        lg = tmp_path / "old.jsonl"
+        base = datetime(2026, 7, 1, tzinfo=UTC)
+        append_snapshot(lg, [MinedItem(source="w.md", name="OLD", disposition="deferred")],
+                        now=base)
+        f = flow_stats(load_ledger(lg), now=datetime(2026, 7, 20, tzinfo=UTC))
+        assert f.oldest_owing_name == "OLD", "old-format rows (no date) stay conservative"

@@ -474,8 +474,14 @@ def append_snapshot(path: Path, items: Sequence[MinedItem], *, now: datetime | N
     see the note in max_audit.check_mining_nonregression for what went wrong when it did not.
     """
     ts = (now or datetime.now(UTC)).timestamp()
-    row = {"ts": ts, "items": [{"n": i.name, "s": i.source, "d": i.disposition, "t": i.tier}
-                               for i in items]}
+    # "u" (deferred_until) is retained because flow_stats needs it: dropping it at snapshot time
+    # made every DATED deferral age as "owing" -- mine-flow-rotting fired on the Upbit card at
+    # 17d while the card carried a legal deferred(2026-08-15) the parser had understood and this
+    # writer then threw away (the flag-computed-and-dropped class, L1.47).
+    row = {"ts": ts, "items": [
+        {"n": i.name, "s": i.source, "d": i.disposition, "t": i.tier,
+         **({"u": i.deferred_until} if i.deferred_until else {})}
+        for i in items]}
     if carded is not None:
         row["carded"] = int(carded)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -521,6 +527,7 @@ def flow_stats(
     ts_now = (now or datetime.now(UTC)).timestamp()
     first_seen: dict[str, float] = {}
     converted_at: dict[str, float] = {}
+    deferred_until: dict[str, str] = {}
     for row in ledger:
         ts = float(row["ts"])
         for it in row["items"]:
@@ -530,8 +537,29 @@ def flow_stats(
             first_seen.setdefault(name, ts)
             if it.get("d") in _TERMINAL and name not in converted_at:
                 converted_at[name] = ts
+            # LATEST snapshot wins: a re-dated deferral supersedes, and a card that stops being
+            # deferred (tag edited away) drops back into owing.
+            if it.get("d") == "deferred":
+                deferred_until[name] = str(it.get("u", ""))
+            elif name in deferred_until:
+                del deferred_until[name]
     lat = sorted((converted_at[n] - first_seen[n]) / 86400.0 for n in converted_at)
-    owing = {n: t for n, t in first_seen.items() if n not in converted_at}
+
+    def _deferral_active(name: str) -> bool:
+        """A DATED, UNEXPIRED deferral is a disposition (§33): it silences the owing clock but
+        never resets it -- on expiry the item re-enters owing at its ORIGINAL first_seen age, so
+        deferral buys silence, not youth. Undated (old-format rows dropped "u") or expired
+        deferrals keep aging: the conservative direction for both."""
+        until = deferred_until.get(name, "")
+        if not until:
+            return False
+        try:
+            return date.fromisoformat(until) > datetime.fromtimestamp(ts_now, UTC).date()
+        except ValueError:
+            return False
+
+    owing = {n: t for n, t in first_seen.items()
+             if n not in converted_at and not _deferral_active(n)}
     oldest_name, oldest_days = "", 0.0
     if owing:
         oldest_name = min(owing, key=lambda n: owing[n])
