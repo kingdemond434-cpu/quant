@@ -327,6 +327,21 @@ _MAP: dict[str, list[str]] = {
     "L1.59": ["scripts/build_enforcement_matrix.py", "scripts/module_justification.py",
               "scripts/check_denominators.py", "scripts/check_ratchets.py",
               "scripts/run_max_push.py", "scripts/check_doctrine_diff.py"],
+    # R0287 capital-basis invariant (under L1.58's waterfall discipline): a return without its
+    # declared denominator is the Quantopian-2019 shape (190% headline, 58% on capital actually
+    # drawn) and this desk's own thrice-repeated class (R0234 ~25x equity undercount, R0235
+    # testnet-sizing-live, the 13,155/4,500 split). The fence holds the line on NEW artifacts and
+    # carries the dated 2026-08-11 bootstrap debt shrink-only.
+    "L1.58-r0287": ["scripts/check_capital_basis.py", "libs/research/capital_basis.py",
+                    "tests/research/test_capital_basis.py"],
+    # R0288 unlock-calendar conversion (L1.8 data-to-alpha): data/unlock_events.json sat with
+    # ZERO python readers and an expiring forward window; the collector accrues first-seen events
+    # with POINT-IN-TIME pct-of-float (the snapshot's pct_circ_now was a look-ahead in the
+    # conditioning variable), the reader gives the snapshot its first consumer, and forward
+    # events route through the event-study gate once enough accrue.
+    "L1.8-r0288": ["scripts/collect_unlock_calendar.py", "libs/research/unlock_calendar.py",
+                   "tests/research/test_unlock_calendar.py",
+                   "scripts/collect_circulating_supply.py"],
     # R0123 decline grading: L1.29 says an ungraded prediction is a BELIEF that inflates the
     # apparent hit-rate by never counting its misses -- and a sleeve scored only on the trades it
     # CHOOSES to be graded on is that defect with a dominant strategy attached. Nine consecutive

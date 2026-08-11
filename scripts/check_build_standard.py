@@ -61,6 +61,8 @@ _GOVERNED: tuple[str, ...] = (
     "check_build_standard.py",                              # this fence holds itself to it
     "check_input_provenance.py",                            # L1.55 transitive freshness
     "check_denominators.py",                                # L1.57 the denominator of a verdict
+    "check_capital_basis.py",                               # R0287 return-denominator invariant
+    "collect_unlock_calendar.py",                           # R0288 point-in-time unlock calendar
     "check_fence_yield.py",
     "ship_restart.py",                                      # the actuator for stale-code daemons
     "run_stale_daemon_repair.py",                           # detect->repair loop closed (L1.28b)

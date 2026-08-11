@@ -1873,6 +1873,14 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # silent zero-append). CONFIDENCE: measured (first live run 2026-08-11: 368 protocols, 38,770
 # events, 271 forward cliffs, horizon 2026-09-10).
 55 5 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_unlockcal.lock .venv/bin/python scripts/collect_unlock_calendar.py >> data/cro_ai_logs/unlock_calendar.log 2>&1
+
+# CAPITAL-BASIS FENCE (R0287, L1.58): no published return without its declared denominator --
+# the Quantopian-2019 class the desk has hit three times (R0234, R0235, 13,155/4,500). Holds the
+# line on NEW artifacts; the dated 2026-08-11 bootstrap debt (17 artifacts) may only shrink.
+# CEILING TYPE (L1.28c) is DATA-ARRIVAL: performance artifacts refresh on their producers'
+# cadences (minutes-hours), daily is sufficient to catch a new undeclared artifact within its
+# first day. EVIDENCE: scripts/check_capital_basis.py -> data/capital_basis_check.json.
+43 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_capital_basis.py >> data/cro_ai_logs/capital_basis.log 2>&1
 25 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_holderconc.lock .venv/bin/python scripts/collect_holder_concentration.py >> data/cro_ai_logs/collect_holder_concentration.log 2>&1
 35 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_perpdex.lock .venv/bin/python scripts/collect_perpdex_funding.py >> data/cro_ai_logs/collect_perpdex_funding.log 2>&1
 
