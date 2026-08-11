@@ -1,0 +1,16 @@
+{
+ "canonical_policy_version": "2026-08-07.1",
+ "canonical_policy_hash": "sha256:1d64276f52cf2bd9dae39dbd4548c60840d1a1a4c83775c6fb01fd733181e877",
+ "policy_id": "PRE_DEEPSEEK_MASTER_MANDATE",
+ "policy_file": "docs/policy/PRE_DEEPSEEK_MASTER_MANDATE.md",
+ "superior_to_this": ["docs/CONSTITUTION.md"],
+ "effective_utc": "2026-08-07T04:00:00+00:00",
+ "intake_edits_applied": [
+  "XXVI gate: ALL 28 -> ALL 34 MUST PASS",
+  "items 29-34 moved inside XXVI after item 28",
+  "XXV third dependency stage expanded (copy-trading, extreme-performer, universal edge capture)",
+  "midnight-Codex detect-and-repair block appended under XXI"
+ ],
+ "resolution_rule": "Agents resolve THIS file, verify the hash against the policy file, and FAIL VISIBLE on mismatch (II-B/II-D). The full mandate is loaded on demand, never injected wholesale (II-F).",
+ "note": "The hash covers the mandate file byte-for-byte. Any edit to the mandate REQUIRES regenerating this state file in the same commit, or every resolver reads HASH_MISMATCH and fails visible."
+}

@@ -1655,6 +1655,30 @@ def check_bnb_funded(defects) -> None:
                         "how the desk once paid rack rate for weeks believing otherwise."))
 
 
+def check_canonical_policy(defects) -> None:
+    """The PRE-DEEPSEEK mandate's II-B/II-D, enforced where a defect actually pages someone.
+
+    Persisting docs/policy/PRE_DEEPSEEK_MASTER_MANDATE.md and hashing it into POLICY_STATE.json
+    is the PERSISTED half; the mandate's own II-H rules that markdown alone is not implementation.
+    This check is the ENFORCED half: every audit run resolves the canonical policy and a
+    HASH_MISMATCH -- the file edited without regenerating the state record -- or a missing policy
+    becomes a named defect instead of a silent divergence. That is the FAIL VISIBLE the mandate
+    demands, wired into the organ that already runs daily and already escalates."""
+    try:
+        from libs.ops.canonical_policy import resolve
+        r = resolve()
+    except Exception as exc:
+        defects.append(("canonical-policy-unresolvable",
+                        f"policy resolver itself failed ({type(exc).__name__}: {str(exc)[:120]})"
+                        " -- UNKNOWN, never a pass: an unresolvable policy is indistinguishable"
+                        " from a stale one and both forbid consequential work on it."))
+        return
+    if r.get("verdict") != "RESOLVED":
+        defects.append(("canonical-policy-" + str(r.get("verdict", "UNKNOWN")).lower().replace("_", "-"),
+                        f"canonical policy did not resolve: {r.get('verdict')} -- "
+                        f"{str(r.get('why', ''))[:220]}"))
+
+
 def _git_age_h(rel: str) -> float:
     """Hours since this path's last COMMIT, or inf if git does not know it."""
     try:
@@ -5216,6 +5240,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("post-gate0-activation", check_post_gate0_activation),
                       ("production", check_production),
                       ("bnb-funded", check_bnb_funded),
+                      ("canonical-policy", check_canonical_policy),
                       ("self-sufficiency", check_self_sufficiency),
                       ("rs-detect", check_rubberstamp_detector),
                       ("rs-enforce", check_rubberstamp_enforcement)]

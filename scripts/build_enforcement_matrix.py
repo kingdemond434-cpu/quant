@@ -521,6 +521,10 @@ _FENCE_OWNERS: dict[str, str] = {
     # --- injection + fence integrity (L2.1 / L2.2): the enforcement layer auditing itself.
     "check_constitution": "L2.1",
     "check_universal_doctrine": "L2.1",
+    # The PRE-DEEPSEEK mandate's II-B/II-D: canonical policy must resolve (version, hash) or FAIL
+    # VISIBLE. Same law as check_constitution because it is the same duty one layer down -- the
+    # doctrine the desk runs under must be the doctrine on disk, verified, not remembered.
+    "check_canonical_policy": "L2.1",
     "check_registry_complete": "L2.2",   # an unregistered check is a law believed-but-not-enforced
     "check_artifact_governance": "L2.2",
     "check_ci_scope": "L2.2",            # a CI gate on a hardcoded subset is a map, not a territory
