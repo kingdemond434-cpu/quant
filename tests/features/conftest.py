@@ -9,7 +9,9 @@ from libs.features.definition import FeatureDefinition
 
 
 def make_bars(n: int = 60, *, seed: int = 0) -> pd.DataFrame:
-    """Synthetic daily OHLC bars (UTC), valid and strictly positive."""
+    """Synthetic daily bars (UTC) on the WIDEST real schema (bronze D1), strictly positive
+    prices. A fixture holding only the columns the guard covers is structurally incapable of
+    revealing what the guard is blind to (R0289) -- so every bronze column is here."""
     idx = pd.date_range("2026-01-05", periods=n, freq="1D", tz="UTC")
     rng = np.random.default_rng(seed)
     close = 200.0 + np.cumsum(rng.normal(0, 0.5, size=n))
@@ -19,7 +21,8 @@ def make_bars(n: int = 60, *, seed: int = 0) -> pd.DataFrame:
     volume = rng.integers(100, 1000, size=n).astype("float64")
     return pd.DataFrame(
         {"timestamp": idx, "open": open_, "high": high, "low": low, "close": close,
-         "volume": volume}
+         "volume": volume, "taker_buy_frac": rng.uniform(0.3, 0.7, size=n),
+         "funding": rng.normal(0.0, 1e-4, size=n), "basis": rng.normal(0.0, 5e-4, size=n)}
     )
 
 
