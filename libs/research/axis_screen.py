@@ -163,8 +163,25 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
     # a diagnostic; ic_ceiling stays caller-tunable per axis rather than one global guess.
     ic_exceeds_contemporaneous = abs(ic) > max(abs(same), ic_min) * 1.5 and abs(ic) >= 0.15
 
+    # THE SHARPE CEILING IS RESCALED FOR SUB-DAILY HORIZONS HERE, IN THE HARNESS, NOT AT EACH
+    # CALLER. `sharpe_ceiling=6.0` assumes horizon_days=1, and _sh ANNUALISES by
+    # sqrt(365/horizon_days), so at 60s the factor is ~725 and PURE NOISE scored sharpe_reversal
+    # 53.4 -> SUSPECT-LOOKAHEAD on six hypotheses whose ICs were 0.01-0.08. screen_moat.py found
+    # that and fixed it in its own call site; the liquidation-reversion screen then hit the
+    # identical wall from scratch, which is the tell that a correction living in one caller's
+    # comment is not a control (it fires on recall). Rescaling by the same sqrt(1/horizon) the
+    # annualisation applies keeps the rail at CONSTANT PER-PERIOD STRICTNESS instead of tightening
+    # it 725-fold by accident. The IC ceiling is left ALONE at every horizon: a correlation does
+    # not annualise, so 0.35 means the same thing at 60s as at a day.
+    # (Restored 2026-08-11: the 08-09 lineage merge took this file from the branch that predated
+    # d10a8b4 while keeping the caller that had already deleted its own copy of the rescale, so
+    # the rule existed NOWHERE and every strong sub-daily cell was branded SUSPECT-LOOKAHEAD.)
+    eff_sharpe_ceiling = float(sharpe_ceiling)
+    if float(horizon_days) < 1.0:
+        eff_sharpe_ceiling *= float(np.sqrt(1.0 / max(float(horizon_days), 1e-9)))
+
     decontam_fail = abs(same) > contam_max or abs(ic_res) < 0.5 * abs(ic) or stale_leg
-    implausible = abs(ic) > ic_ceiling or best > sharpe_ceiling    # alignment/lookahead rail
+    implausible = abs(ic) > ic_ceiling or best > eff_sharpe_ceiling   # alignment/lookahead rail
     if implausible or ic_exceeds_contemporaneous:
         verdict = "SUSPECT-LOOKAHEAD"                  # bithumb-class: too strong to be real
     elif stale_leg:
@@ -206,6 +223,7 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
            "horizon_days": float(horizon_days), "panel_width": int(panel_width),
            "n_eff": round(n_eff, 1),
            "min_detectable_ic": round(min_detectable_ic, 4), "powered": powered,
+           "sharpe_ceiling_applied": round(eff_sharpe_ceiling, 2),
            "ic_exceeds_contemporaneous": ic_exceeds_contemporaneous,
            "verdict": verdict, "current_z": round(float(z[-1]), 3),
            "stage": "A (zero promotion authority)"}

@@ -287,13 +287,11 @@ def screen_symbol(sym: str, bars: list[Bar], *, bar_ms: int) -> list[dict[str, A
                         why="the construction never varied on this cell")
             cells.append(cell)
             continue
-        # THE SHARPE RAIL IS DAILY-CALIBRATED AND DOES NOT TRANSFER. The harness annualises by
-        # sqrt(365/horizon_days) -- ~725x at 60s -- so a ceiling of 6.0 is tripped by noise.
-        # Rescaled by the same sqrt(1/hd) the annualisation applies, which holds the rail at
-        # constant PER-PERIOD strictness. Identical convention to scripts/screen_moat.py; the IC
-        # ceiling is left alone because a correlation does not annualise.
-        res = stage_a_screen(s_ok, r_ok, name=f"{sym}:{name}:{bar_ms}ms", horizon_days=hd,
-                             sharpe_ceiling=6.0 * math.sqrt(1.0 / hd))
+        # THE SHARPE RAIL'S SUB-DAILY RESCALE LIVES IN THE HARNESS (stage_a_screen applies
+        # sqrt(1/hd) itself whenever horizon_days<1). Passing a pre-rescaled ceiling here would
+        # DOUBLE-rescale -- ~38x too loose at 60s, which kills the lookahead rail on exactly the
+        # cells it exists for. The IC ceiling is left alone: a correlation does not annualise.
+        res = stage_a_screen(s_ok, r_ok, name=f"{sym}:{name}:{bar_ms}ms", horizon_days=hd)
         cost = _cost_diagnostic(s_ok, r_ok, spread[ok])
         # HONEST POWER. The harness computes n_eff = n / horizon_days, which assumes overlapping
         # daily-sampled returns; at 60s bars horizon_days is 6.9e-4 so it MULTIPLIES n by 1440 and
