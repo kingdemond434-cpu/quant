@@ -45,9 +45,45 @@ _BLEED_BPS = -1.0      # class net worse than this (bps of notional) = defect
 _FEE_RT_BPS = 10.0     # futures leg billed twice per round-trip at ~5 bps taker rack rate
 _FEE_BPS_MAX = 50.0    # 5x that -- generous for maker/taker mix + partials, so anything above
                        # is fills the book never intended, not an execution-quality gradient
-_BASELINE = 0.000100   # Binance default funding -- entry gate should keep these at zero
-# entry-gate ship time -- any open at baseline funding AFTER this is a gate regression
+_BASELINE = 0.000100   # Binance default funding -- carries no premium information by itself
+# entry-gate ship time. The CONTRACT CHANGED 2026-07-31 (R0057): the absolute funding floor was
+# deleted in favour of the executor's per-symbol arithmetic -- allow an open iff
+# funding * 1e4 * periods > pair_roundtrip_bps, periods = max(1, _MIN_HOLD_H/8) = 3. A baseline
+# open on a tight measured major (BTC rt < 3 bps) is that design WORKING; flagging every
+# baseline open forever re-litigates a ledgered decision and turns this flag into a
+# permanently-red light nobody reads (L1.43). The regression test below now mirrors the
+# executor's modelled cost (bucket-by-notional, legacy-500 fallback, p90 fail-closed default for
+# unmeasured names). KNOWN LOOSER EDGE, deliberate and named: the executor additionally floors
+# the model with each symbol's REALISED round-trip, which this reader cannot reconstruct -- so
+# this detector can under-fire only where realised costs exceed modelled. The durable close is
+# the executor stamping its gate arithmetic on the open row (rowed; blocked behind the pending
+# executor-lineage merge -- see F0021).
 _GATE_DATE = "2026-07-22T20:00:00+00:00"
+_GATE_PERIODS = 3.0             # max(1, 24h min-hold / 8h funding period)
+_GATE_DEFAULT_RT_BPS = 39.5     # p90 of measured round-trips; fail-closed for unmeasured names
+
+
+def _gate_rt_bps(sym: str, notional: float, cost_model: dict[str, Any]) -> float:
+    """Modelled pair round-trip for the entry-gate mirror. Bucket covering the per-leg notional,
+    legacy-500 fallback, larger buckets clamped tighten-only vs 500 -- the executor's _rt_bps
+    minus its realised floor (unavailable here; direction of the gap is documented above)."""
+    try:
+        pair = cost_model["symbols"][sym]["pair"]
+        sizes = sorted(float(k) for k in pair)
+        key = next((k for k in sizes if notional <= k), sizes[-1] if sizes else 500.0)
+        v = pair.get(f"{key:g}", {}).get("pair_roundtrip_bps")
+        if v is None:
+            v = pair.get("500", {}).get("pair_roundtrip_bps")
+        if v is None:
+            return _GATE_DEFAULT_RT_BPS
+        v = float(v)
+        if key > 500.0:
+            v500 = pair.get("500", {}).get("pair_roundtrip_bps")
+            if v500 is not None:
+                v = max(v, float(v500))
+        return v
+    except (KeyError, TypeError, ValueError):
+        return _GATE_DEFAULT_RT_BPS
 
 
 _BUCKETS = (("<2h", 0.0, 2.0), ("2-8h", 2.0, 8.0), ("8-24h", 8.0, 24.0), (">24h", 24.0, 1e9))
@@ -235,14 +271,35 @@ def main() -> None:
     base = [x for x in closes if abs(float(x.get("funding_rate") or 0) - _BASELINE) < 1e-9]
     bn = sum(float(x.get("net") or 0) for x in base)
     bnot = sum(float(x.get("notional") or 0) for x in base)
-    # entry-gate regression check: NEW opens at the exchange-default rate after the gate shipped
-    post_gate_base = [x for x in trades
-                      if x.get("event") == "open"
-                      and str(x.get("opened", "")) > _GATE_DATE
-                      and abs(float(x.get("funding_rate") or 0) - _BASELINE) < 1e-9]
+    # entry-gate regression check, R0057 contract: a post-gate open is a regression iff its
+    # funding could NOT beat the symbol's modelled round-trip over the minimum hold. Baseline
+    # funding on a tight measured major legitimately passes; baseline funding on an unmeasured
+    # or expensive book cannot.
+    _cm_path = Path("data/cost_model.json")
+    try:
+        _cost_model = json.loads(_cm_path.read_text("utf-8")) if _cm_path.exists() else {}
+    except (OSError, json.JSONDecodeError):
+        _cost_model = {}
+    # Same rolling window as every other flag in this file: the question is "is the gate
+    # filtering NOW", and judging pre-R0057 opens against today's contract and today's cost
+    # model is anachronistic on both axes (the 7 opens of 07-26/27 passed the gate as it stood
+    # then). Within 14d, model-at-read ~= model-at-open; the exact close is the executor
+    # stamping its gate arithmetic on the open row (rowed, behind the executor-lineage merge).
+    _gate_cutoff = max(_GATE_DATE, cutoff)
+    post_gate_base = []
+    n_gate_window_opens = 0
+    for x in trades:
+        if x.get("event") != "open" or str(x.get("opened", "")) <= _gate_cutoff:
+            continue
+        n_gate_window_opens += 1
+        f_open = float(x.get("funding_rate") or 0)
+        rt = _gate_rt_bps(str(x.get("symbol")), float(x.get("notional") or 500.0), _cost_model)
+        if f_open * 1e4 * _GATE_PERIODS <= rt:
+            post_gate_base.append(x)
     if post_gate_base:
-        flags.append(f"ENTRY-GATE REGRESSION: {len(post_gate_base)} open(s) at baseline funding "
-                     f"{_BASELINE} AFTER the gate shipped -- gate is not filtering")
+        flags.append(f"ENTRY-GATE REGRESSION: {len(post_gate_base)} open(s) whose funding could "
+                     f"not beat the symbol's modelled round-trip over the minimum hold "
+                     f"(R0057 per-symbol contract) -- gate is not filtering")
 
     per_sym: dict[str, list[float]] = defaultdict(lambda: [0, 0.0, 0.0])
     for x in closes:
@@ -311,7 +368,10 @@ def main() -> None:
         "fee_attribution": fee_attr,
         "baseline_funding_class": {"n": len(base), "net": round(bn, 2),
                                    "bps": round(1e4 * bn / bnot, 2) if bnot else 0.0},
+        # numerator AND denominator (L1.57): 0 violations over 0 window opens is "no evidence"
+        # (paused book), not "gate healthy" -- readers must be able to tell them apart
         "post_gate_baseline_opens": len(post_gate_base),
+        "post_gate_opens_examined": n_gate_window_opens,
         "maker_fill": maker,
         "execution_tape": tape,
         "worst_symbols": [{"symbol": s, "n": n, "net": round(net, 2), "bps": round(bps, 1)}
