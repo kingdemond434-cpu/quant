@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-11T15:48:07.982731+00:00",
+ "updated": "2026-08-11T16:08:53.924875+00:00",
  "n_closes": 0,
  "hold_buckets": {
   "<2h": {
@@ -91,5 +91,5 @@
  "worst_symbols": [],
  "flags": [],
  "origin": "recursion rule 2026-07-22: mechanization of the principal-supplied probes that found gaps #42/#43/#34",
- "written": "2026-08-11T15:48:07.986888+00:00"
+ "written": "2026-08-11T16:08:53.936383+00:00"
 }

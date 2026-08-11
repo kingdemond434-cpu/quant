@@ -2537,6 +2537,12 @@ _FINDING_DOCS = (
     # Excluding it on the panel-loop precedent while the panel loop holds none of its findings is
     # exactly the denominator trick 35 forbids, so it is scanned until those verdicts exist.
     "docs/research/PREMORTEM_20260805.md",
+    # 2026-08-11 (findings-scope-unmonitored): the halted failed-breakout study's write-up
+    # carries 5 numbered findings ("MECHANISM UNMEASURABLE -- study halted before the pattern
+    # search"). A HALTED study is not a closed one: its findings name work still owed (the
+    # measurability defect itself), so they owe register rows -- the INTRADAY_ROTATION exclusion
+    # precedent (a COMPLETED study is a record) explicitly does not apply to a halt.
+    "docs/research/FAILED_BREAKOUT_PREREGISTRATION.md",
 )
 #: Finding-bearing docs deliberately out of scope, with the reason -- so the scope check can tell
 #: "consciously excluded" from "quietly unmonitored".

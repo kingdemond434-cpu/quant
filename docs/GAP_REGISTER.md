@@ -891,3 +891,40 @@ available RAM 189MB→1555MB), and underneath both sat one genuine committed mon
 (eb74f48). Ranking rows against each other could not have surfaced that, because the register
 assumes its own measurements are trustworthy. **Staleness named, not carried silently:** the last
 stamp before this one was 07-30, six days ago._
+
+## 2026-08-11T17:10Z re-rank (repair-window cycle)
+_Re-ranked 2026-08-11T17:10Z_
+
+Top block CONFIRMED unchanged: #100/#101/#102 (observation-count-vs-sample-size; the two opposed
+substitution biases; the provenance ladder's structurally-unmeasurable trio) remain the ranked
+top -- nothing this cycle produced outranks them, and #93-class money-behind-noise rows stay
+closed. This cycle's work bears on the register as follows: the L1.6 cohort API restoration
+(commit 8e8ea23) closes the enforcement half of the multiplicity family that #100 sits in; the
+futclose tail repair un-starves every screen target feed (touches #78/#79 families).
+
+DEADLINE-PASSED rulings (10 rows; the register's own rule -- implement, re-defer with a NEW
+dated reason, or retire):
+- **#4 fill-quality ledger** -> re-deferred to **2026-08-30** with R0084 (moat conversion: tape
+  TCA fields) which subsumes it; R0371 (no fee field on any fill) is the prerequisite and is
+  next in the money-path queue behind R0422/R0415.
+- **#28 full-depth random-component audit** -> re-deferred **2026-09-03** behind R0088 (deep-sweep
+  cadence from measured marginal yield) -- same instrument family, one build.
+- **#60 ADL wrong-branch** -> money-path; L1.38-staged with the R0304-R0307 block, due
+  **2026-08-25** (window re-check).
+- **#69 NAVER DataLab never-run** -> first RUN scheduled with the generation queue
+  **2026-08-16** (collector exists; a never-run organ is one command, then its screen).
+- **#70 literature abstract-cap** -> rides the litminer's own timer; cap fix due **2026-08-19**.
+- **#73 panel 110k-char payload** -> deferred to panel-restore day (panel is DOWN on credits;
+  fixing its payload while it cannot run is polish on a stopped engine): **2026-08-21**.
+- **#74/#75 deep_sweep silent-fail + ungoverned tree** -> **2026-08-17** with R0015 (same tree,
+  one governance claim fixes all three).
+- **#78 Kaiko validation numbers** -> **2026-08-24**, behind R0081 (bronze owner) which rebuilds
+  the validation series it needs.
+- **#79 de-contam t-1 stale-leg hole** -> the SUSPECT-STALE-LEG verdict shipped in axis_screen
+  (verified in harness source this cycle) covers the screen path; the residual (recorder-side
+  staleness stamps) folds into L1.46 clock-provenance work, due **2026-08-27**.
+
+STARVED rows (17): named as next-cycle triage debt -- this cycle's budget went to the repair
+window (52 ledger dispositions, CI restoration, 2 collector/organ outage fixes). They are NOT
+silently carried: the mechanical pass re-lists them daily and the next cycle owes their pass
+first (§37 will show this paragraph as the dated ack).

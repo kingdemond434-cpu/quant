@@ -18,6 +18,7 @@ from libs.research.mine_conversion import (
     class_priors,
     conversion_report,
     feedback_applied,
+    first_seen_map,
     flow_stats,
     fuzzy_credited,
     infer_tier,
@@ -27,6 +28,7 @@ from libs.research.mine_conversion import (
     load_ledger,
     parse_dispositions,
     priors_payload,
+    stable_key,
     tier_calibration,
     unbacked,
     unbacked_reasons,
@@ -730,3 +732,52 @@ class TestSnapshotCountIsMachineLocal:
         led = load_ledger(self._led(tmp_path, ["A", "B"]))
         r = Ratchet(n_snapshots=5, earliest_ts=1000.0)
         assert ledger_regressed(r, led) == ledger_regressed(r, led, local_n_prior=None)
+
+
+class TestStableIdentityAcrossRegrades:
+    """A re-graded card is the same find under a new assessment, never a rename (2026-08-11:
+    one re-graded T3 card reported vanished and six same-run conversions reported unbacked)."""
+
+    def test_a_regrade_is_not_a_vanish(self, tmp_path: Path) -> None:
+        lg = tmp_path / "led.jsonl"
+        append_snapshot(lg, [MinedItem(
+            source="d", name="Foreign AI-quant systems — grade: UNVERIFIED", disposition="")],
+            now=datetime(2026, 7, 1, tzinfo=UTC))
+        after = parse_dispositions(
+            "### 1. Foreign AI-quant systems — grade: verified + MINED [§33: wired -> x.md]\n",
+            source="d")
+        assert vanished(after, load_ledger(lg), as_of=_TODAY) == ()
+
+    def test_a_regrade_does_not_reset_first_seen(self, tmp_path: Path) -> None:
+        lg = tmp_path / "led.jsonl"
+        append_snapshot(lg, [MinedItem(
+            source="d", name="Grouping map — grade: UNVERIFIED", disposition="")],
+            now=datetime(2026, 7, 1, tzinfo=UTC))
+        append_snapshot(lg, [MinedItem(
+            source="d", name="Grouping map — grade: BUILT 2026-08-11", disposition="wired")],
+            now=datetime(2026, 8, 11, tzinfo=UTC))
+        fs = first_seen_map(load_ledger(lg))
+        assert fs[stable_key("Grouping map — grade: anything at all")] == \
+            datetime(2026, 7, 1, tzinfo=UTC).timestamp()
+
+    def test_evidence_between_carding_and_regrade_is_credited(self, tmp_path: Path) -> None:
+        art = tmp_path / "map.json"
+        art.write_text("{}")
+        mid = datetime(2026, 8, 1, tzinfo=UTC).timestamp()
+        os.utime(art, (mid, mid))
+        i = parse_dispositions(
+            "### 1. Grouping map — grade: BUILT [§33: wired -> map.json]\n", source="d")
+        fs = {stable_key("Grouping map — grade: UNVERIFIED"):
+              datetime(2026, 7, 1, tzinfo=UTC).timestamp()}
+        assert unbacked(i, backing={}, root=tmp_path, first_seen=fs) == ()
+
+    def test_a_genuinely_preexisting_file_still_fails_after_the_fix(self, tmp_path: Path) -> None:
+        art = tmp_path / "old.json"
+        art.write_text("{}")
+        past = datetime(2026, 1, 1, tzinfo=UTC).timestamp()
+        os.utime(art, (past, past))
+        i = parse_dispositions(
+            "### 1. Grouping map — grade: BUILT [§33: wired -> old.json]\n", source="d")
+        fs = {stable_key("Grouping map — grade: UNVERIFIED"):
+              datetime(2026, 7, 1, tzinfo=UTC).timestamp()}
+        assert unbacked(i, backing={}, root=tmp_path, first_seen=fs) == tuple(i)

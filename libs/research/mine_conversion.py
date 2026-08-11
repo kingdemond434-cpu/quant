@@ -310,8 +310,8 @@ def backing_reason(
                 # pre-existing file in the repo was a valid receipt for any claim. Doing the actual
                 # work satisfies this for free -- including a graveyard entry, which touches
                 # graveyard.md.
-                if (first_seen and item.name in first_seen
-                        and p.stat().st_mtime <= first_seen[item.name]):
+                if (first_seen and stable_key(item.name) in first_seen
+                        and p.stat().st_mtime <= first_seen[stable_key(item.name)]):
                     return (f"stale-evidence: {path_s!r} has not been modified since before this "
                             "find was first carded, so it cannot be evidence OF it")
             except OSError as exc:
@@ -777,15 +777,46 @@ def feedback_applied(
 # it is VISIBLE.
 # --------------------------------------------------------------------------------------------
 
+#: A card's name is "<find> — grade: <mutable assessment>". The split tolerates em/en dashes and
+#: plain hyphens because the docs carry all three.
+_GRADE_SPLIT = re.compile(r"\s+[—–-]{1,2}\s*grade\s*:", re.IGNORECASE)  # noqa: RUF001 -- the en dash is a deliberate member of the class: live cards carry em/en/hyphen variants
+
+
+def stable_key(name: str) -> str:
+    """The find's durable identity: the card text BEFORE its grade.
+
+    Grades are DESIGNED to change ("re-graded 2026-07-25" appears in live cards), so an identity
+    that includes the grade makes every re-grade a RENAME: the old name fires mine-item-vanished
+    while the new name's first_seen resets to the re-grade instant, which turns every artifact
+    written before that instant into "stale-evidence". Measured 2026-08-11: one re-graded T3 card
+    reported vanished and six same-run conversions reported unbacked, all from this one identity
+    choice -- the work was real, the fence's name for it was not stable.
+    """
+    return _GRADE_SPLIT.split(name, 1)[0].strip()
+
+
 def first_seen_map(ledger: Sequence[LedgerRow]) -> dict[str, float]:
-    """Earliest snapshot timestamp per item name -- when the desk first knew about the find."""
+    """LOWER BOUND on each stable find identity's birth, from the snapshot ledger.
+
+    A find first appearing in snapshot N was born somewhere in the (N-1, N] window -- snapshot
+    N's own timestamp is an UPPER bound, and judging evidence against an upper bound fails the
+    exact flow section 33 mandates (screen-on-discovery: work and card land in the SAME run, and
+    the artifact write naturally precedes the doc write by minutes). So the value recorded is the
+    PREVIOUS snapshot's timestamp: an artifact older than that provably predates the find and
+    stays stale-evidence; one written inside the discovery window is credited. Items already
+    present in the very first snapshot keep that snapshot's timestamp -- with no earlier row
+    there is no window to reason about, and loosening the oldest cohort is not this fix's job.
+    """
     out: dict[str, float] = {}
+    prev_ts = None
     for row in ledger:
         ts = float(row["ts"])
+        lower = prev_ts if prev_ts is not None else ts
         for it in row["items"]:
             n = str(it.get("n", ""))
             if n:
-                out.setdefault(n, ts)
+                out.setdefault(stable_key(n), lower)
+        prev_ts = ts
     return out
 
 
@@ -803,12 +834,14 @@ def vanished(
     if not ledger:
         return ()
     prev = ledger[-1]
-    was_owing = {str(i.get("n", "")) for i in prev["items"]
-                 if i.get("d") not in _TERMINAL and str(i.get("n", ""))}
-    now_present = {i.name for i in current}
+    # Keyed on the STABLE identity: a re-graded card is the same find under a new assessment,
+    # not an erasure. The display name reported back is the one the last snapshot carried.
+    was_owing = {stable_key(n): n for i in prev["items"]
+                 if i.get("d") not in _TERMINAL and (n := str(i.get("n", "")))}
+    now_present = {stable_key(i.name) for i in current}
     # a terminal disposition in THIS pass is a legitimate exit, not an erasure
-    now_done = {i.name for i in current if is_disposed(i, as_of=as_of)}
-    return tuple(sorted(was_owing - now_present - now_done))
+    now_done = {stable_key(i.name) for i in current if is_disposed(i, as_of=as_of)}
+    return tuple(sorted(was_owing[k] for k in was_owing.keys() - now_present - now_done))
 
 
 def ledger_regressed(ratchet: Ratchet, ledger: Sequence[LedgerRow], *,
