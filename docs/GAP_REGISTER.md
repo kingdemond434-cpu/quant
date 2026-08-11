@@ -6,6 +6,21 @@ the newest overall, and the owner of the current RANK list — sits below the pr
 paragraph. That line's rows 81-87 are recorded here as 96-102; see the renumber notes at the
 foot of the register._
 
+_Re-ranked 2026-08-11T20:58Z (daily cycle, repair-mode)._ **#1 stays PRINCIPAL REARM + A/B/C**
+(human-gated; `web/cashcarry_live.json` read fresh this cycle: `n_carries 0`, `mode live-paper`,
+bleed verdict = the diagnosed re-base accounting echo, venue-ledger truth published). **Rank
+unchanged below #1; what moved this cycle moved by being CLOSED, not re-ordered:** the top
+instrument defect on the board (welded sub-daily sharpe-ceiling -- the merge dropped the rescale
+from BOTH lineages, every strong intraday cell auto-branded SUSPECT-LOOKAHEAD, moat positive
+control dead 6d) was fixed, live-verified, and its 1,220 welded-era verdicts reset (9e11c7d);
+crown-jewel recorder hang supervision now covers all three recorders (R0282); the OI/LS
+366-symbol universe ingestion is RUNNING (e2828b8, clears the #100-adjacent construction-mismatch
+precondition); the dated-deferral clock false-positive class is fixed at the root
+(mine_conversion "u" retention). #100/#101/#102 stand as ranked -- #100's remedy is partially
+delivered by the denominator now published on the entry-gate detector (post_gate_opens_examined);
+the general sweep it demands stays open. Ledger: 23 rows dispositioned this cycle, 3 added
+(R0442-R0444), backlog draining at 17.3/day vs 12.9 arrivals.**
+
 _Re-ranked 2026-08-05T03:40Z (daily cycle)._ **#1 stays PRINCIPAL REARM + A/B/C** (human-gated;
 `web/cashcarry_live.json` read fresh this cycle: `n_carries 0`, `deployed_notional 0.0`,
 `risk.action pause_opens`, `dd_from_peak_pct -17.61`). **#1b ENTERS AND IS CLOSED THIS CYCLE, and

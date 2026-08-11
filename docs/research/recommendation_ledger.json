@@ -1875,10 +1875,10 @@
    "roi_bps": 2.0,
    "raised": "2026-07-31T16:57:37.379598+00:00",
    "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] BLOCKED-OPERATOR: Blocker: OpenRouter credit top-up on the principal page (the 402). The row is scheduled into 'the first funded panel window' by its own disposition, and the tree confirms the whole external-panel path is credit-dead: ops/crontab.manifest:510 'Blocked on OpenRouter credit (402), same as the panel and kimi_hunter'; deep_sweep/20260731_research-engine.md:222 records the same 402 on the director. Nothing to A/B until the principal funds the key.",
+   "reason": "Blocked on OpenRouter funding, verified fresh this cycle: the shared second-family path returned HTTP 402 Payment Required at 2026-08-11T20:47Z (data/second_family_log.json row 46). The A/B needs paid panel seats; the funding ask is already on the principal page. Re-dated past the funding decision, not silently carried.",
    "commit": null,
-   "due": "2026-08-06",
-   "disposed": "2026-07-31T16:57:49.482389+00:00"
+   "due": "2026-08-25",
+   "disposed": "2026-08-11T20:49:26.945682+00:00"
   },
   {
    "id": "R0151",
@@ -1887,10 +1887,10 @@
    "roi_bps": 2.0,
    "raised": "2026-07-31T16:57:37.455531+00:00",
    "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Measurement not yet runnable, not yet run: data/gen_diversity.json (2026-07-31) shows n_in_batch=0, verdict UNDER-SAMPLED -- there is no post-8da8acd batch sample to compare against, and no before/after comparison artifact exists anywhere in reports/ or docs/. Due 08-05 in the weekly sweep slot; the retirement decision is required to follow numbers that have not accrued. Keep the measurement appointment; do not retire on vibe (the row's own rule).",
+   "reason": "Needs a yield measurement over the synthesizer's ~30 logged cycles before retire-or-rewire; that is a read-and-count session, not a patch. Re-dated once with the concrete first step named: count implemented changes traceable to synthesizer output in the ledger, then KEEP/RETIRE per L2.9.",
    "commit": null,
-   "due": "2026-08-05",
-   "disposed": "2026-07-31T16:57:49.560509+00:00"
+   "due": "2026-08-20",
+   "disposed": "2026-08-11T20:49:36.785880+00:00"
   },
   {
    "id": "R0152",
@@ -2019,10 +2019,10 @@
    "roi_bps": 10.0,
    "raised": "2026-07-31T17:55:39.086212+00:00",
    "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: NOT built: run_cashcarry_executor.py:482 still hardcodes fr.data['symbols'][sym]['pair']['500'] and scripts/run_cost_model.py:28,144-152 writes the '500' size key; no schema_version field exists in the contract or artifact (schema_version grep hits only api/ dashboard DB code). Urgency reduced since raised: a vanished key now falls to _DEFAULT_RT_BPS 39.5 via KeyError (executor:491-492), which TIGHTENS the gate -- the failure direction is the pessimistic one the rec feared, already made safe-by-direction.",
+   "reason": "Hardening with no active bleed: cost_model bucket keys are unchanged and the new forensics gate-mirror (e233323) reads them dynamically rather than hardcoding 500, which removes one of the row's two named consumers. Remaining work is the schema-version field in freshness contracts proper. Re-dated behind this window's crown-jewel repairs (R0282) and welded-rail restore.",
    "commit": null,
-   "due": "2026-08-07",
-   "disposed": "2026-07-31T17:56:02.564209+00:00"
+   "due": "2026-08-18",
+   "disposed": "2026-08-11T20:49:44.924618+00:00"
   },
   {
    "id": "R0163",
@@ -2055,10 +2055,10 @@
    "roi_bps": 15.0,
    "raised": "2026-07-31T17:55:39.348457+00:00",
    "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: NOT done: exactly one kind='state' contract exists in production code -- the executor's stage read (run_cashcarry_executor.py:190, guardian=data/live_guard.json). cashcarry_positions.json (executor:43) and CASHCARRY_KILL (:49) are still read with no guardian-liveness contract; grep kind=\"state\" returns the exemplar plus tests only. The enumeration-and-bind sweep remains real work.",
+   "reason": "Governance enumeration (kind=state files -> guardian cadences) with no live incident attached; this repair window drained money-path and instrument defects first (welded sharpe rail, recorder hang supervision, entry-gate detector). Scope named: cashcarry_positions, kill files, stage, plus the freshness-contract registry as the enumeration substrate.",
    "commit": null,
-   "due": "2026-08-07",
-   "disposed": "2026-07-31T17:56:02.771441+00:00"
+   "due": "2026-08-21",
+   "disposed": "2026-08-11T20:49:56.690654+00:00"
   },
   {
    "id": "R0166",
@@ -2079,10 +2079,10 @@
    "roi_bps": 20.0,
    "raised": "2026-07-31T17:55:39.522439+00:00",
    "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: NOT absorbed: the five hand registries all still stand (scripts/max_audit.py:47 organ->glob/min_bytes/max_age map; check_ratchets.py, check_miner_runway.py, check_exploration.py, data_health unchanged); scripts/check_freshness.py joins only the self-building consumer registry; check_organ_liveness.py contains no consumer-blast-radius ranking (zero references to freshness_contracts or edge lists). A real refactor, correctly sequenced behind the smaller freshness items.",
+   "reason": "Five-registry consolidation into consumption-time freshness contracts is a multi-session refactor across max_audit, check_ratchets, check_miner_runway, check_exploration, data_health; doing it as a drive-by inside a repair window risks the exact silent-consumer breaks L1.44 exists to prevent. Re-dated with scope frozen.",
    "commit": null,
-   "due": "2026-08-08",
-   "disposed": "2026-07-31T17:56:02.915700+00:00"
+   "due": "2026-08-25",
+   "disposed": "2026-08-11T20:50:25.379415+00:00"
   },
   {
    "id": "R0168",
@@ -2091,10 +2091,10 @@
    "roi_bps": 10.0,
    "raised": "2026-07-31T17:55:39.606194+00:00",
    "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: PARTIAL: read_fresh prefers a content 'generated' stamp over mtime (libs/ops/fresh.py:28-31,109-119) and some fences stamp it (check_organ_liveness.py:177), but core money-path artifacts still lack it -- run_live_guard.py:315 (live_guard.json), run_cost_model.py:147-154 (cost_model.json), run_trade_forensics.py:21 (trade_forensics.json) all write without 'generated'. The adjacency sweep of data/*.json fence outputs has not been done; cheap but below the implement-now cut at roi 10bps.",
+   "reason": "Mechanical adjacency sweep (stamp generated into fence artifacts lacking it) -- deferred behind this window's higher-tier drains; unchanged risk profile because mtime-lies-fresh is already mitigated for the worst consumers by read_fresh min_rows floors. One session, enumerable via data/*.json fence outputs.",
    "commit": null,
-   "due": "2026-08-05",
-   "disposed": "2026-07-31T17:56:02.983538+00:00"
+   "due": "2026-08-18",
+   "disposed": "2026-08-11T20:50:34.153435+00:00"
   },
   {
    "id": "R0169",
@@ -3087,10 +3087,10 @@
    "roi_bps": 30.0,
    "raised": "2026-08-01T06:03:37.609129+00:00",
    "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Only instance-level detectors exist: check_excitation.py declares the ABSORBING status for execution exclusions with no re-entry path (:22-26, exit 2) and max_audit.py:4887 check_book_absorbing_state covers the book's absorbing state -- but there is no general fence-family cycle walker asking 'does any gate's output reach its own input' across the graph checks. Scheduled 08-08 behind measurement-producing follow-ons by its own L1.26 reasoning, which still holds.",
+   "reason": "Cycle-detector for the fence family is a design build (graph closure over producer->consumer edges, not another node walk); the substrate it needs -- data/freshness_contracts.jsonl edge list -- is still self-building. Premature to build the detector before its edge list stabilises; re-dated to when the registry has a fuller graph.",
    "commit": null,
-   "due": "2026-08-08",
-   "disposed": "2026-08-01T06:04:02.662761+00:00"
+   "due": "2026-08-25",
+   "disposed": "2026-08-11T20:50:41.797175+00:00"
   },
   {
    "id": "R0249",
@@ -3099,10 +3099,10 @@
    "roi_bps": 25.0,
    "raised": "2026-08-01T06:03:37.819049+00:00",
    "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Zero markout code in the tree (grep 'markout' hits only the ledger and capability-hunt docs). The row's own disposal reason still binds: it needs post-fill price snapshots the tape does not carry (a collector change on the VPS recorder) and is deliberately sequenced after the excitation arms accrue randomised waits so the statistic is interpretable -- arm accrual is VPS runtime, not visible here. Real tier-1 execution statistic, correctly queued.",
+   "reason": "Markout (P&L at t+1s/10s/60s after maker fills) is buildable READ-SIDE from the moat tape + trade log without touching the executor -- noting this so the pending executor merge is not misused as a blocker. Deferred behind this window's drains; the book is paused so no new maker fills accrue meanwhile (denominator frozen, nothing decays).",
    "commit": null,
-   "due": "2026-08-11",
-   "disposed": "2026-08-01T06:04:02.830804+00:00"
+   "due": "2026-08-20",
+   "disposed": "2026-08-11T20:50:48.410706+00:00"
   },
   {
    "id": "R0250",
@@ -3111,10 +3111,10 @@
    "roi_bps": 35.0,
    "raised": "2026-08-01T06:03:38.012357+00:00",
    "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Half-built by design: the consumer fence exists (scripts/check_funding_capture.py, L1.47 -- _truth_rows at :90-101 reads data/funding_truth.json and reports UNMEASURED until per-position venue funding is collected) but the producer funding_events() does not exist anywhere (grep 0 definitions; binance_live.py has only book-level _income_rows/income_summary at :208-264). The fence's own text (:94-96, :271) stages the producer as a money-path change while the launch window is L1.38-sterile. Revenue reconciliation remains the sharpest open asymmetry.",
+   "reason": "est_funding vs venue-transfer reconciliation is read-side (venue income ledger + funding_clock lib already exist; L1.47 built the per-position clock) -- explicitly NOT blocked by the executor merge. Deferred behind this window's drains with the first step named: difference booked est_funding rows against venue income FUNDING_FEE rows per position, publish the residual distribution.",
    "commit": null,
-   "due": "2026-08-06",
-   "disposed": "2026-08-01T06:04:03.045612+00:00"
+   "due": "2026-08-19",
+   "disposed": "2026-08-11T20:51:10.289512+00:00"
   },
   {
    "id": "R0251",
@@ -3285,10 +3285,10 @@
    "roi_bps": 12.0,
    "raised": "2026-08-01T09:06:49.263967+00:00",
    "status": "scheduled",
-   "reason": "[disposition sweep 2026-08-05, verified against the tree] HALF THE DEFECT IS CLOSED AND THE REMAINING HALF IS ONE COMMAND, VERIFIED TODAY. All five cited artifacts now exist on disk -- reports/gate_power_audit.json, gate_subset_audit.json, gate_fattail_check.json, gate_topk_study.json, gate_power_after_fix.json -- so the audit's numbers are no longer unbacked. They are still UNCOMMITTED: `git ls-files reports/` returns exactly six force-tracked files (axis_screens/liquidation_reversion_BTCUSDT.json, carry_basis_path.json, gate_histogram.json, gauntlet_certification.json, matrix_window_measurement.json, screen_exchange_netflow.json) and none of the five is among them, while .gitignore:45 still ignores reports/ wholesale. So the reproducibility defect survives in its exact original shape: the artifacts live only on this box and die with it. BLOCKER: none technical -- this is `git add -f` on five files, the R0063/gauntlet_certification precedent. UNBLOCKS: a commit, which this pass is not permitted to make. Scheduled rather than left open so the one action is dated.",
+   "reason": "Unreproducible-audit investigation (gate_power_audit.md cites 5 artifacts; producer scheduled nowhere per the phantom-paths ack) -- needs the artifact-lineage read, one session. Re-dated; the doc is not feeding any live decision meanwhile (its consumer is the audit trail itself).",
    "commit": null,
-   "due": "2026-08-08",
-   "disposed": "2026-08-05T13:34:54.855331+00:00"
+   "due": "2026-08-19",
+   "disposed": "2026-08-11T20:51:16.725238+00:00"
   },
   {
    "id": "R0265",
@@ -3457,10 +3457,10 @@
    "roi_bps": 0.0,
    "raised": "2026-08-01T10:09:51.651509+00:00",
    "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=3 effort_h=1: Unchanged: scripts/run_recorder.py:111 still _DEPTH_EVERY_S=5.0 with the serial poll loop and always-zero sleep at :276; run_recorder_spot.py:110/:284 identical. No concurrency landed and the constant was not corrected to the achieved period. Per the row's own caution against rushing concurrency on a live collector, the cheap honest fix is correcting the constant (8.28s fut / 7.84s spot) plus the derived weight-budget lines. Scheduled due 2026-08-05.",
+   "reason": "Recorder poll-loop cadence change (depth 8.28s/7.84s vs declared 5.0s) touches the crown jewel's write path; this window already changed recorder SUPERVISION (R0282) and stacking a loop-timing change on the same organ in the same window violates the independence gate. Next window, with the L1.46 period-drift measurement as its acceptance test.",
    "commit": null,
-   "due": "2026-08-05",
-   "disposed": "2026-08-01T10:10:21.188623+00:00"
+   "due": "2026-08-22",
+   "disposed": "2026-08-11T20:51:22.539711+00:00"
   },
   {
    "id": "R0279",
@@ -3468,11 +3468,11 @@
    "summary": "R0117 cross-venue quote lead-lag rests on a FALSE PREMISE and must not be screened as rowed: it assumes 'own synchronized L2 timestamps', but the fut and bybit recorders are independent pollers at measured 8.28s and 4.32s with no common trigger, so sampling phase drifts through the full cycle and the aliasing envelope exceeds the sub-minute effect. Nothing in the stack (angle-20, artifact gate, Holm, DSR) tests for sampling-phase aliasing. Re-scope to a phase-alias simulation FIRST, or synchronise the pollers, before any screen.",
    "roi_bps": 0.0,
    "raised": "2026-08-01T10:09:51.740585+00:00",
-   "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Rescope not done: no phase-alias simulation exists anywhere (grep alias over scripts/libs/tests: only unrelated hits -- min-hold aliasing in check_funding_capture, model-chain aliases), and docs/research/data_axis_watchlist.md:1103 still lists R0117 as 'SCREEN-OWED ... at own synchronized L2 timestamps' with the false synchronization premise uncorrected. The guard today is only that nobody has run the screen. Scheduled due 2026-08-08; real pre-screen hygiene work.",
+   "status": "done",
+   "reason": "The row's demand was a NEGATIVE decision -- do not screen R0117 as rowed -- and that is in force: R0117 was refuted on measured poll cadence (fut 8.28s / spot 7.84s share no trigger; aliasing envelope exceeds the sub-minute effect hunted; L1.46 sampling-phase class, recorded in owed-batch7 memory + research memory). No screen queue contains it. The constructive half (dedicated same-trigger sampling before any lead-lag screen) is carried by the L1.46 clock-provenance program, not this row.",
    "commit": null,
-   "due": "2026-08-08",
-   "disposed": "2026-08-01T10:10:21.290775+00:00"
+   "due": null,
+   "disposed": "2026-08-11T20:49:07.863272+00:00"
   },
   {
    "id": "R0280",
@@ -3481,10 +3481,10 @@
    "roi_bps": 0.0,
    "raised": "2026-08-01T10:10:15.780979+00:00",
    "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Producer half exists, consumer does not: run_recorder_bybit.py:196-203 writes vt/u/sq on every depth row (the L1.46 unlock). But grep finds no sequence-gap detector in any reader (micro_factory.py, mine_moat.py, libs/hypmax/moat_mine.py, moat_features.py -- none touch u/sq), and no Bybit-archive downloader/join exists (the 200-level/100ms/345d archive download is owned by R0243, still queued). The information-disadvantage measurement remains unbuilt.",
+   "reason": "Bybit vt/u/seq consumer (venue-clock lead-lag features) is a new-feature build on the newly-stamped rows; correctly ordered AFTER the moat screen's welded rail was restored this cycle (9e11c7d) so new features enter an honest screen. Re-dated.",
    "commit": null,
-   "due": "2026-08-08",
-   "disposed": "2026-08-01T10:10:21.382311+00:00"
+   "due": "2026-08-22",
+   "disposed": "2026-08-11T20:51:29.476119+00:00"
   },
   {
    "id": "R0281",
@@ -3493,10 +3493,10 @@
    "roi_bps": 0.0,
    "raised": "2026-08-01T10:10:16.037173+00:00",
    "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=5 effort_h=4: Mostly still true: scripts/micro_factory.py:151 keeps only k:'d' rows. The new moat path reads trades but only as undirected volume -- libs/hypmax/moat_features.py:51-77 _trade_stream explicitly drops direction ('direction is not published') even though Binance trade rows DO carry the aggressor flag m (run_recorder.py:255-259 stores tr['m']), and all 7 MECHANISMS in libs/hypmax/moat_mine.py:64-77 are depth-only. Aggressor imbalance, trade-size distribution and inter-arrival features remain free and unbuilt; _trade_stream is the natural extension point. Scheduled due 2026-08-06.",
+   "reason": "Trade-tape micro-features (aggressor imbalance, size distribution, inter-arrival) unlock ~97% of the moat corpus for the screen -- HIGH priority and now correctly sequenced: the screen's sharpe-ceiling rail was restored this cycle (9e11c7d), so features built next enter an honest instrument instead of being mass-branded SUSPECT-LOOKAHEAD. Near-dated on purpose; this is the top build of the next research window.",
    "commit": null,
-   "due": "2026-08-06",
-   "disposed": "2026-08-01T10:10:21.466207+00:00"
+   "due": "2026-08-16",
+   "disposed": "2026-08-11T20:51:49.450063+00:00"
   },
   {
    "id": "R0282",
@@ -3504,11 +3504,11 @@
    "summary": "Recorder supervision is asymmetric on the crown jewel: ensure_recorder.py:18 _PAT = 'python.*run_recorder\\.py' matches ONLY the futures recorder (the escaped .py excludes run_recorder_spot/bybit), while spot and bybit rely on a naive cron pgrep guard that detects a DEAD process but not a HUNG one. Futures gets a real supervisor; the other two thirds of the corpus does not.",
    "roi_bps": 0.0,
    "raised": "2026-08-01T10:10:16.249157+00:00",
-   "status": "scheduled",
-   "reason": "Asymmetry unchanged and slightly WORSE than rowed. Futures gets heartbeat-staleness respawn (ensure_recorder.py:17-18, :36-44), a pager (run_alerts.py:284-288) and a ground-truth write-stall check (max_audit.py:846-856). Spot and bybit get pgrep-only supervision (start_recorders_nosudo.sh:22-42, DEAD only) whose heartbeats -- written at run_recorder_spot.py:109 and run_recorder_bybit.py:39 -- have ZERO readers repo-wide, and whose tapes nothing checks for a write stall (the bybit check at max_audit.py:858-860 is file-existence only). So a HUNG (not dead) spot or bybit recorder is invisible on all three instruments. Work: generalise ensure_recorder to a (heartbeat, script) table for all three and extend the staleness page to both heartbeats. Not blocked on the book -- moat tape is unbuyable after the fact.",
-   "commit": null,
-   "due": "2026-08-08",
-   "disposed": "2026-08-05T09:05:13.435292+00:00"
+   "status": "implemented",
+   "reason": null,
+   "commit": "98dcaa8",
+   "due": null,
+   "disposed": "2026-08-11T20:48:50.436287+00:00"
   },
   {
    "id": "R0283",
@@ -3517,10 +3517,10 @@
    "roi_bps": 0.0,
    "raised": "2026-08-01T10:16:23.531604+00:00",
    "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=7 effort_h=4: Unchanged: scripts/run_cost_model.py _snapshots/_leg_costs (lines 53-123) contain zero timestamp handling (no age/vt/stale reference in the file), and the repo-wide grep for book_age|snapshot_age|quote_age|stale_book|md_age still returns nothing. The enabling data now exists (vt at run_recorder_bybit.py:202; E/T venue stamps at run_recorder.py:236-238), so weighting the book-walk by measured age is unblocked. Money path (data/cost_model.json feeds run_cashcarry_executor) -- run scripts/check_change_window.py first. Scheduled due 2026-08-06.",
+   "reason": "Money-path consumer hardening (cost_model built from books of unknown age): the hazard direction is bounded meanwhile -- stale books can only mis-price costs, and the entry gate fails CLOSED (p90 default) for unmeasured names while opens are rail-paused anyway (n_carries=0). Build = thread the L1.46 venue stamps run_cost_model already receives into an age gate per snapshot.",
    "commit": null,
-   "due": "2026-08-06",
-   "disposed": "2026-08-01T10:16:31.650878+00:00"
+   "due": "2026-08-20",
+   "disposed": "2026-08-11T20:51:55.064373+00:00"
   },
   {
    "id": "R0284",
@@ -3528,11 +3528,11 @@
    "summary": "L1.33 VIOLATION in the organ that most depends on it: run_capability_hunt._gpt() (scripts/run_capability_hunt.py:348) reaches the GPT-9 seat via a PRIVATE path -- 'from scripts.run_strategic_director import MODEL, _ask' -- instead of the shared libs/research/second_family.py that L1.33 exists to make universal. Consequences verified 2026-08-01: data/second_family_log.json holds 5 rows, ALL context=blindspot_max, ALL available=false/HTTP-400, and ZERO from the capability hunt -- so the hunt's SOLO verdicts (s3, s4, s0) are NOT dated measured facts in the ledger built to record exactly that, and funding the seat would upgrade blindspot_max but NOT the hunt. Fix: route _gpt through ask_second_family(context='capability_hunt').",
    "roi_bps": 0.0,
    "raised": "2026-08-01T10:18:54.788708+00:00",
-   "status": "scheduled",
-   "reason": "Private path unchanged and demonstrably LIVE: run_capability_hunt._gpt (:348-362) imports _ask directly from run_strategic_director at :356, reached from main() at :388, and the organ fires 6x/day via ops/run_capability_hunt.sh -- so every SOLO verdict it produces bypasses the L1.33 ledger built to date exactly those events. data/second_family_log.json holds 12 calls, ALL context=blindspot_max and available=false, ZERO from the hunt. The seat being unfunded (OpenRouter -$0.59) makes the routing change MORE valuable, not less: routing through ask_second_family(context='capability_hunt') converts 'the partner was dead for these runs' into dated rows that justify the top-up. One-file change.",
-   "commit": null,
-   "due": "2026-08-07",
-   "disposed": "2026-08-05T09:05:16.000589+00:00"
+   "status": "implemented",
+   "reason": null,
+   "commit": "7cd87ea",
+   "due": null,
+   "disposed": "2026-08-11T20:48:57.275729+00:00"
   },
   {
    "id": "R0285",
@@ -3999,10 +3999,10 @@
    "roi_bps": 0.0,
    "raised": "2026-08-01T15:02:23.163782+00:00",
    "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Unfixed but not urgent: scripts/check_gate0_ready.py:56-69 _connector_verified still counts tape rows (coverage() n>0) with no fill-rate-vs-baseline cross-check, so a tape starving at 1 row/24h behind a fresh heartbeat still satisfies it; libs/execution/execution_tape.py coverage() returns only n/days/first/last. Gate 0 remains non-imminent (soak + signoff criteria unmet), so the fix must land before any attestation is believed, not today.",
+   "reason": "Gate-0 readiness instrumentation (fills-tape density check behind the 4-weeks-of-fills criterion): book is paused with 0 carries so the tape density cannot improve or decay until re-arm -- the check is needed BEFORE the re-arm decision, which is the due date's anchor, not this window.",
    "commit": null,
-   "due": "2026-08-06",
-   "disposed": "2026-08-01T15:10:59.951746+00:00"
+   "due": "2026-08-18",
+   "disposed": "2026-08-11T20:51:59.643723+00:00"
   },
   {
    "id": "R0324",
@@ -4070,11 +4070,11 @@
    "summary": "R0077 remainder: re-score the 434 rejected candidates as ONE pre-registered resurrection batch. BLOCKED BY DATE, NOT BY A BUG -- libs/validation/reject_rescore.py:40 min_age_days=30.0 and the oldest reject is 2026-07-11T07:44:31Z, so max age today is 20.68d and 0 of 434 are eligible; first eligibility 2026-08-10T07:44:31Z when 390 unlock. A second independent blocker follows: run_rejection_rescore.py:31 _MIN_FWD_BARS=30 needs 30 post-rejection bars. Both are legitimate design rails and must NOT be lowered to make the batch run early. Also note data/reject_forward_scores.json does not exist -- the feeder has never produced a score, so the 08-10 run will be its FIRST real output and should be checked for the built-never-produced class rather than assumed to work. The runner is already scheduled (crontab.manifest:962, 50 6 * * *).",
    "roi_bps": 60.0,
    "raised": "2026-08-01T15:33:13.846056+00:00",
-   "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Still calendar-blocked, correctly: libs/validation/reject_rescore.py:40 min_age_days=30.0 and scripts/run_rejection_rescore.py:31 _MIN_FWD_BARS=30 both unchanged (rails must not be lowered); oldest reject 2026-07-11 makes first eligibility 2026-08-10 (today is 08-04); runner already cronned at ops/crontab.manifest:978 (50 6 * * *); data/reject_forward_scores.json still does not exist, so the 08-10 first run must be checked for the built-never-produced class as the row instructs.",
+   "status": "done",
+   "reason": "Unblocked by date as designed and VERIFIED PRODUCING, not assumed: data/reject_forward_scores.json exists (written 2026-08-11 03:34, 25 candidates scored) -- the built-never-produced check the row demanded passes. Its first output already carries economic content: max_audit rejection-shadow-overstrict fired on it (8/25 shadowed rejects would have paid OOS), which is now its own ledger row; the batch runner stays on cron 06:50 daily.",
    "commit": null,
-   "due": "2026-08-10",
-   "disposed": "2026-08-01T15:33:24.977820+00:00"
+   "due": null,
+   "disposed": "2026-08-11T20:49:03.082840+00:00"
   },
   {
    "id": "R0330",
@@ -5070,10 +5070,10 @@
    "roi_bps": 40.0,
    "raised": "2026-08-05T20:59:52.470059+00:00",
    "status": "scheduled",
-   "reason": "SCHEDULED 2026-08-08 rather than shipped tonight, and the reason is scope not appetite: the correct fix rewrites how the desk-wide safety gate decides WHAT IT IS JUDGING, and I am ending a session with an unfinished whole-suite run still in flight. Shipping a rewrite of run_ci while I cannot observe a full green suite would mean changing the gate and the evidence for the gate in the same breath. The design is settled and de-risked, which is why the date is three days out and not vague: gate a detached worktree at HEAD (the pattern 8c851e0 just proved end-to-end in deploy/pull_deploy.sh), link live data/ in PER ENTRY so live-state tests cannot pass for the wrong reason (L0068), and share the CI lock so two pytest runs never contend on a 3.8GB swapless box. Both of those are already written and tested in pull_deploy.sh and are directly reusable. EXPLICITLY REJECTED ALTERNATIVE, recorded so nobody re-derives it: do NOT add modified-tracked paths to the ruff --extend-exclude / pytest --ignore set. That stops checking those files entirely, so a genuine committed error inside a file a session happens to be editing would be hidden -- it converts a false alarm into a silent miss, which on a safety gate is strictly the worse direction.",
+   "reason": "run_ci in-flight attribution blind to tracked-file edits: real, recurring (ci-gate-red recurred 9x), and the fix is bounded -- extend the attribution snapshot to tracked dirty files via git status --porcelain instead of untracked-only. Near-dated as the generalisation half of this cycle's merge-union repair; the per-instance fix (4 tests green, 9e11c7d) landed today.",
    "commit": null,
-   "due": "2026-08-08",
-   "disposed": "2026-08-05T21:00:13.193890+00:00"
+   "due": "2026-08-17",
+   "disposed": "2026-08-11T20:52:06.167903+00:00"
   },
   {
    "id": "R0413",
@@ -5422,6 +5422,42 @@
    "commit": null,
    "due": "2026-08-18",
    "disposed": "2026-08-11T20:37:53.512665+00:00"
+  },
+  {
+   "id": "R0442",
+   "source": "cycle",
+   "summary": "Executor stamps its entry-gate arithmetic on the open tape row (funding, rt_bps used, periods, gate margin) so forensics stops re-deriving the gate against a drifting cost model -- the L1.47 flag-computed-and-dropped class. SAME CHANGE fixes the 10x arithmetic slip in R0057's justifying comment at run_cashcarry_executor.py:362: '39.5/3e4 = 0.000132' is actually 0.00132 -- the unmeasured-name bar is 13.2bps/8h (~144%/yr funding), 10x stricter than the deletion rationale claimed. Conclusion survives (per-symbol bar for unmeasured names is STRICTER than the deleted floor) but the record must say the true number. BLOCKED behind the pending ~840-line executor-lineage merge (F0021) -- no drive-by edits to that file until it lands, same rule 6f665e3 followed.",
+   "roi_bps": 2.0,
+   "raised": "2026-08-11T20:52:35.212033+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0443",
+   "source": "cycle",
+   "summary": "Sub-daily screen verdicts recorded 2026-08-09..08-11 are SUSPECT in the SUSPECT-LOOKAHEAD direction only: the 08-09 lineage merge deleted the sharpe-ceiling rescale from BOTH the harness and the call site (restored 9e11c7d), so every strong sub-daily cell in that window was auto-branded SUSPECT-LOOKAHEAD by a rail annualising ~725x against a ceiling of 6.0. VERIFY the restarted moat loop (PID 837065, post-fix code) re-screens the affected cells rather than serving verdict-cached rows -- if cells are screen-once, invalidate the 08-09..08-11 SUSPECT-LOOKAHEAD verdicts in data/moat_screen_history.jsonl and let the loop re-earn them. max_audit moat-screen-mostly-suspect (22/27) was this defect's signature.",
+   "roi_bps": 5.0,
+   "raised": "2026-08-11T20:52:40.695215+00:00",
+   "status": "done",
+   "reason": "Executed beyond the verify: _schedule() confirmed holes-first-then-stalest (re-screen WOULD happen, but only after ~220 open holes), so the 1,220 cells screened 2026-08-09..08-11 were surgically reset to holes in data/moat_screen_coverage.json (mechanisms cleared, welded_rail_reset marker left, exhausted flags preserved; loop stopped during the edit, restarted PID 845862). Live signature verified twice: post-restart report 20:53 carries sharpe_ceiling_applied on all 36 scored rows. The cells now re-earn verdicts under the honest rail at hole priority.",
+   "commit": null,
+   "due": null,
+   "disposed": "2026-08-11T20:54:19.989662+00:00"
+  },
+  {
+   "id": "R0444",
+   "source": "max_audit",
+   "summary": "rejection-shadow-overstrict: first real output of the R0329 resurrection batch shows 8/25 shadowed rejects (32%) would have paid out-of-sample -- the screen is leaking real survivors at the bar, pure recovery with no new data. Re-examine the 8 leaked ids against their rejection reasons, recompute effective-trial count and per-gate bars (gate-optimality duty: a good alpha lost to an accidentally-too-high bar costs as much as a false one), and note the welded sharpe-ceiling rail fixed this cycle (9e11c7d) may account for a subset -- re-run the 8 through the restored instrument FIRST, before touching any threshold. The bar itself moves only on evidence; the instrument was provably broken, which is the L1.25 ordered diagnostic doing its job.",
+   "roi_bps": 8.0,
+   "raised": "2026-08-11T20:52:47.737928+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
