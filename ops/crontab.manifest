@@ -1604,6 +1604,14 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CN_ARTICLE_QUERIES), never with frequency. Depth likewise capped: --bili-pages defaults to 1,
 # measured 25x more new candidates per request than 4 pages.
 0 13 * * * cd "$QUANT_ROOT" && flock -n data/.cron_minerq.lock .venv/bin/python scripts/mine_research_queue.py >> data/cro_ai_logs/mine_research_queue.log 2>&1
+# EDGE INTAKE, 20 minutes after the miner writes its queue (gate items 30/31/34, mandate
+# Part III). Folds every queue row into data/edge_intake.jsonl with exactly one named
+# disposition, so a row that is never converted can no longer just age out of the report on
+# the next sweep -- which is precisely how discoveries were disappearing with nothing
+# counting the loss. Cheap: deterministic classification, no model call.
+# EVIDENCE: scripts/run_edge_intake.py -> data/edge_intake.jsonl. First live run 2026-08-11:
+# 21 rows stamped (14 BLOCKED_PENDING_DATA, 7 NEXT_BATCH_TEST), recall RECONCILES.
+20 13 * * * cd "$QUANT_ROOT" && flock -n data/.cron_edgeintake.lock .venv/bin/python scripts/run_edge_intake.py >> data/cro_ai_logs/edge_intake.log 2>&1
 # REAL CAMPAIGN (2026-08-01). Runs the ACTUAL gauntlet on the ACTUAL history and reports WHERE
 # EVERY CANDIDATE DIES. "Zero survivors" is not a finding, it is the absence of one; a per-gate
 # death count turns it into either "the mechanisms have no edge" or "one gate is eating

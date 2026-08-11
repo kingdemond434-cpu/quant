@@ -1679,6 +1679,27 @@ def check_canonical_policy(defects) -> None:
                         f"{str(r.get('why', ''))[:220]}"))
 
 
+def check_edge_intake_recall(defects) -> None:
+    """Mandate Part III / gate item 34: research recall must reconcile, daily.
+
+    EDGES_DISCOVERED must equal the sum of every disposition. An unexplained difference means a
+    discovery entered the funnel and left it without a disposition -- neither tested, nor
+    rejected, nor deferred, just gone. That is the silent dismissal Part III forbids, and it is
+    invisible unless something counts it."""
+    try:
+        from libs.research.edge_intake import recall_audit
+        a = recall_audit(queue_report="reports/research_queue.json")
+        if not a.get("reconciles"):
+            defects.append((
+                "edge-intake-recall",
+                f"{a.get('unaccounted')} discovered edge(s) carry no intake disposition: "
+                f"{a.get('unaccounted_idents', [])[:6]}. {str(a.get('verdict'))[:180]}"))
+    except Exception as exc:
+        defects.append(("edge-intake-unreadable",
+                        f"intake recall could not be evaluated ({type(exc).__name__}: "
+                        f"{str(exc)[:100]}) -- UNKNOWN, never a pass"))
+
+
 def check_alpha_lifecycle_gaps(defects) -> None:
     """Mandate III-J / gate item 8: regime-policy reality gaps become named defects daily.
 
@@ -5270,6 +5291,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("bnb-funded", check_bnb_funded),
                       ("canonical-policy", check_canonical_policy),
                       ("alpha-lifecycle", check_alpha_lifecycle_gaps),
+                      ("edge-intake", check_edge_intake_recall),
                       ("self-sufficiency", check_self_sufficiency),
                       ("rs-detect", check_rubberstamp_detector),
                       ("rs-enforce", check_rubberstamp_enforcement)]

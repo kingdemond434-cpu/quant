@@ -529,6 +529,9 @@ _FENCE_OWNERS: dict[str, str] = {
     # false negative L1.49 (weak is not dead) names -- a genuine specialist edge dying of neglect
     # rather than of evidence.
     "check_alpha_lifecycle_gaps": "L1.49",
+    # Mandate Part III / gate items 30-34: a discovery that leaves the funnel with no
+    # disposition is the silent dismissal the universal-edge-capture law forbids.
+    "check_edge_intake_recall": "L1.8",
     "check_registry_complete": "L2.2",   # an unregistered check is a law believed-but-not-enforced
     "check_artifact_governance": "L2.2",
     "check_ci_scope": "L2.2",            # a CI gate on a hardcoded subset is a map, not a territory
