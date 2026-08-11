@@ -47,6 +47,7 @@ if not _ROOT.exists():                                     # dev/CI checkout
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
+from libs.research.second_family import ask_second_family  # noqa: E402
 
 _OUT = _ROOT / "docs/research/capability_hunt"
 
@@ -346,20 +347,16 @@ def _claude(prompt: str, timeout: int = 2400) -> tuple[bool, str]:
 
 
 def _gpt(prompt: str) -> tuple[bool, str]:
-    """The GPT-9 seat -- a genuinely INDEPENDENT model family, reusing the strategic director's
-    provider chain (scripts/run_strategic_director.py:_ask, which never raises: a dead provider
-    must not crash a cycle). Dormant until OpenRouter is funded, and it says so rather than
-    silently degrading the hunt to one family."""
-    if str(_ROOT) not in sys.path:
-        sys.path.insert(0, str(_ROOT))
-    try:
-        from scripts.run_strategic_director import MODEL, _ask
-    except Exception as exc:
-        return False, f"GPT seat unimportable: {exc}"
-    text, err = _ask(prompt, MODEL)
-    if err or not text.strip():
-        return False, err or "empty response"
-    return True, text
+    """The GPT-9 seat via the ONE shared module L1.33 mandates (R0284). The private
+    strategic-director import this replaces bypassed libs/research/second_family, so the hunt's
+    SOLO verdicts never landed in data/second_family_log.json -- 'partner dead for want of
+    funding' was not a dated measured fact for exactly the organ that most depends on it, and
+    funding the seat would have upgraded blindspot_max but not the hunt. ask_second_family never
+    raises and logs every ask, available or not."""
+    op = ask_second_family(prompt, context="capability_hunt")
+    if not op.available:
+        return False, op.reason or "second family unavailable"
+    return True, op.text
 
 
 def main() -> int:
