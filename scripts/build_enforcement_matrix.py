@@ -525,6 +525,10 @@ _FENCE_OWNERS: dict[str, str] = {
     # VISIBLE. Same law as check_constitution because it is the same duty one layer down -- the
     # doctrine the desk runs under must be the doctrine on disk, verified, not remembered.
     "check_canonical_policy": "L2.1",
+    # Mandate III-J / gate item 8: a stalled revalidation or an ignored regime recurrence is the
+    # false negative L1.49 (weak is not dead) names -- a genuine specialist edge dying of neglect
+    # rather than of evidence.
+    "check_alpha_lifecycle_gaps": "L1.49",
     "check_registry_complete": "L2.2",   # an unregistered check is a law believed-but-not-enforced
     "check_artifact_governance": "L2.2",
     "check_ci_scope": "L2.2",            # a CI gate on a hardcoded subset is a map, not a territory

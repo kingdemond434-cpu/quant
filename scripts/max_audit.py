@@ -1679,6 +1679,34 @@ def check_canonical_policy(defects) -> None:
                         f"{str(r.get('why', ''))[:220]}"))
 
 
+def check_alpha_lifecycle_gaps(defects) -> None:
+    """Mandate III-J / gate item 8: regime-policy reality gaps become named defects daily.
+
+    The lifecycle ledger (libs/research/alpha_lifecycle) can record a hibernation perfectly and
+    still rot: a REVALIDATION_PENDING nobody spawns a clock for quietly converts hibernation to
+    retirement, and a favorable regime that returns while nothing moves is the false negative
+    L1.49 exists to prevent. This check folds the ledger every audit run and raises each gap by
+    name. Current regime labels are read from the classifier artifact when present; without
+    them REACTIVATION_DUE simply cannot fire, which is honest -- the other two gap classes do
+    not need the labels."""
+    try:
+        from libs.research.alpha_lifecycle import current_states, reality_gaps
+        if not current_states():
+            return                       # nothing tracked yet -- vacuously clean, not a defect
+        regime_now = None
+        doc = _j(ROOT / "data/regime_state.json", None)
+        if isinstance(doc, dict) and isinstance(doc.get("labels"), dict):
+            regime_now = {str(k): str(v) for k, v in doc["labels"].items()}
+        for gap in reality_gaps(regime_now=regime_now):
+            defects.append((f"alpha-lifecycle-{gap['gap'].lower().replace('_', '-')}",
+                            f"{gap['name']}: {gap['why'][:220]}"))
+    except Exception as exc:
+        defects.append(("alpha-lifecycle-unreadable",
+                        f"lifecycle ledger could not be evaluated ({type(exc).__name__}: "
+                        f"{str(exc)[:120]}) -- UNKNOWN, never a pass: an unreadable lifecycle "
+                        "hides exactly the stalled reactivations it exists to surface."))
+
+
 def _git_age_h(rel: str) -> float:
     """Hours since this path's last COMMIT, or inf if git does not know it."""
     try:
@@ -5241,6 +5269,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("production", check_production),
                       ("bnb-funded", check_bnb_funded),
                       ("canonical-policy", check_canonical_policy),
+                      ("alpha-lifecycle", check_alpha_lifecycle_gaps),
                       ("self-sufficiency", check_self_sufficiency),
                       ("rs-detect", check_rubberstamp_detector),
                       ("rs-enforce", check_rubberstamp_enforcement)]
