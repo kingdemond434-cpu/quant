@@ -230,14 +230,22 @@ def main() -> None:
     print(f"archive lists {len(allsyms)} USDT perp symbol dirs (incl. delisted)", flush=True)
     cohort = probe_cohort(allsyms)
     print(f"tranche-1 cohort (metrics by {COHORT_PROBE}): {len(cohort)} symbols", flush=True)
+    # TRANCHE 2 (directive oi-ls-universe-metrics-backfill: "the full universe 2021->now").
+    # The probe orders, it no longer excludes: deep-cohort symbols download first (they feed the
+    # cross-sectional OOS harness), then every later listing. Idempotent per-day skips make the
+    # first full pass the only expensive one; after that the daily cron only tops up.
+    tranche2 = [s for s in allsyms if s not in set(cohort)]
+    ordered = cohort + tranche2
+    print(f"tranche-2 (later listings): {len(tranche2)} symbols -- ingested after tranche 1",
+          flush=True)
     done = 0
     with ThreadPoolExecutor(WORKERS) as ex:
-        futs = [ex.submit(worker, s) for s in cohort]
+        futs = [ex.submit(worker, s) for s in ordered]
         for _ in as_completed(futs):
             done += 1
             if done % 10 == 0:
                 with _print_lock:
-                    print(f"--- {done}/{len(cohort)} symbols complete ---", flush=True)
+                    print(f"--- {done}/{len(ordered)} symbols complete ---", flush=True)
     print(f"DONE: {done} symbols", flush=True)
 
 
