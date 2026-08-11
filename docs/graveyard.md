@@ -682,3 +682,36 @@ richmanbtc-style" claim must name its bar size and post-2024-03 evidence or it i
 WHICH timeframe hosts the band next); (3) corroborates the desk's low-pass lesson from the
 other side — the hours-band reversion pocket existed for years AFTER daily-resolution price
 alpha died, and closed ~2024-03.
+
+## `cn_aigu_probitforge_unresolvable` — two principal-named CN sources that do not resolve to any address
+
+**KILLED 2026-08-11 (brain-hunter seat, §33 conversion of data_axis_watchlist card 22).**
+MECHANISM OF DEATH: unresolvable pointer, not disproven content. Four independent searches
+(English descriptive, English exact-handle, Chinese descriptive `爱谷 AI 量化 加密货币 实验室
+多智能体`, Chinese practitioner-corpus) return no entity named **aigu** (claimed: CN AI crypto
+quant lab, transparent paper trading, multi-agent experiments) or **ProBitForge** (claimed:
+engineering posts on AI-driven crypto research systems). The only near-name is ProBit Global —
+a TERMINATED exchange whose own help centre warns that accounts claiming its name are scams, so
+the name-space is an active impersonation surface. A miner pointed at an unresolvable handle
+either fabricates a source or silently mines nothing while coverage records EXPLORED — both
+worse than an honest kill (WS-005: absence must never resolve to a clean verdict; this entry IS
+the not-measured verdict, recorded durably). **THIS IS NOT A CLAIM THE SOURCES DO NOT EXIST** —
+a WeChat 公众号, private Telegram channel or very new handle would produce exactly this result.
+**RE-ENTRY CONDITION (L1.16a, named):** one line from the principal — a URL or exact platform
+handle — re-opens immediately as `pending-verification`; nothing else is needed.
+
+## `eodhd_paid_vendor` — EODHD.com $100/mo data subscription
+
+**KILLED 2026-08-11 (brain-hunter seat, §33 conversion of data_axis_watchlist card 25).**
+MECHANISM OF DEATH, three independent strikes: (1) **L1.11** — the moat is the transformation
+pipeline, never a purchased dataset; commercial data purchase is constitutionally barred; (2)
+the **free-first prerequisite is unmet** — paid is permitted only by the evidence-gated
+exception AFTER a documented free hunt fails, and no free hunt has ever been run on the equity
+axis this vendor would serve; (3) **for crypto it adds zero** — every series the desk uses is
+already free and keyless from Binance; the provenance poster's own sentence ("I purchased the
+data for $100 monthly and it just expired") is the reproducibility argument against renting.
+WHAT SURVIVES THE KILL: reading EODHD's public coverage documentation as a FREE INDEX of what
+data exists (validated technique, Search Operator Library) — no subscription required.
+**RE-ENTRY CONDITION (named):** the desk expands to an equity/cross-asset book AND the
+documented free hunt on that axis fails at the charter bar; then the evidence-gated paid
+exception may be argued on its merits.

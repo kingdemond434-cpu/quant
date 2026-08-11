@@ -3080,3 +3080,51 @@ is **unanswered** and belongs to ITEM 3.
 `docs/research/improvement_inbox.md` (**+3 engine ideas**), `docs/research/recommendation_ledger.json`
 (**R0316, R0317, R0318**), and this coverage doc (**the BR seat's first region row + first session
 note**). No graveyard entry: the BR premium was already there, which was the point.
+
+---
+
+## BRAIN HUNTER — session 1 (2026-08-11, dedicated daily organ, first run)
+
+**§33 CONVERT-FIRST drained 10 → 0 before digging (weighted 26 → 0, zero unbacked claims):**
+2 WIRED with artifacts postdating the finds (`data/cot_btc_panel.json` — CME BTC 435w + CBOE
+2017-2019 + micro/nano/perp-style COT, nonreportables net/OI; `data/stablecoin_run_variables.json`
+— USDT 3,178d + USDC 2,892d burn-signature, sanity PASS on Terra/SVB, price leg DECLARED ABSENT
+per L1.55), 2 KILLED to graveyard with mechanisms + L1.16a re-entry conditions (aigu/ProBitForge
+unresolvable; EODHD = L1.11), 1 WIRED via extraction (VeighNa/Qlib → operator library), 5 dated
+deferrals with named blockers (NAVER ×2 principal-key GAP #69 re-verified absent; CN corpus
+verified-reachable → CN seat 08-18; Kraken archive verified-live → collector 08-25; reg-timeline
+→ R0193 08-24 with the no-public-annex failed search documented). R0193 re-scheduled with two of
+three data legs landed. Ledger: R0437 raised+scheduled (grouping-map wiring). Lesson L0089.
+
+**GROUND OPENED AND CLAIMS, per the two-exhaustions rule:**
+- `microsoft/qlib` `qlib/data/ops.py` — **EXHAUSTED at operator-class level** (all 54 classes
+  enumerated from the raw file; 5 elided semantics extracted: N-type-keyed Rolling
+  {int/0=expanding/float=EWM-alpha}, min_periods=1 partial windows, future-Ref labels
+  verbatim `Ref($close,-2)/Ref($close,-1)-1`, negative-Ref-in-feature = mechanical leak kill,
+  Greater/Less = elementwise max/min). NOT claimed: per-operator NaN edge cases below class
+  level, the C++/cython accelerated paths.
+- `qlib/contrib/data/loader.py` — **EXHAUSTED at field-block level** (Alpha158 ~20 blocks ×
+  windows {5,10,20,30,60} mapped, crypto analogues assigned, price-only blocks flagged against
+  the graveyard prior). `handler.py` label + processor config read (CSZScoreNorm on the LABEL).
+- LICENCES READ FROM CANONICAL FILES: qlib MIT, vn.py MIT.
+- **THE BLOCKING INPUT IS CLOSED AT ARTIFACT LEVEL:** `data/crypto_grouping_map.json` — 4 maps,
+  296 symbols, quality measured (peer map intra +0.138 / inter −0.011 / floor −0.0034; raw map
+  measured-degenerate 268/296 = the N_eff≈1.5 lesson reproduced). Consumer wiring = R0437.
+- CoinGecko api_terms — **read FAILED (403), documented on card 28**; not a verdict on the terms.
+
+**Video: 0 fetched, 0 locked** — no video route tried this run (§33 backlog + the blocking input
+outranked it; BRAIN lecture corpus untouched and named below).
+
+**NEXT UN-EXHAUSTED GROUND, in order, for session 2 (L1.40 — named before closing):**
+1. `vnpy/vnpy` `vnpy.alpha` module tree — the DSL + factor sets in vnpy dialect (licence already
+   read; the module read is the owed half of card 24's method mining).
+2. The `wqb` Python library (BRAIN API wrapper) — operator/simulation semantics from the
+   platform's own API surface; plus open-source BRAIN simulators and alpha101 reimplementations
+   for group-operator + decay/turnover semantics the official docs elide.
+3. BRAIN lecture/tutorial VIDEO corpus via `scripts/fetch_video_transcript.py` (the video-first
+   mandate this run did not reach).
+4. CoinGecko ToS via docs subdomain + DeFiLlama licence page (two licence reads owed, card 28).
+5. Auer–Claessens WP-version annex (one more route for the 151-event list before R0193's
+   reconstruction burns labour).
+6. BRAIN community discussion of FAILED approaches (publicly documented negative results —
+   graveyard ore, the corpus's most neglected vein).

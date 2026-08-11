@@ -1320,3 +1320,69 @@ hosts, never the country.
 truncated head. My first pass cut at 1,200 bytes; GitHub's and MQL5's files are longer than that and
 a by-name block further down would have been invisible. A truncated read that finds nothing is
 **not** a clean verdict.
+
+## OPERATOR SEMANTICS — Qlib expression engine, exact reads (MIT, 2026-08-11) `qlib-alpha158`
+
+**PROVENANCE:** `microsoft/qlib` raw files read IN FULL this run — `qlib/data/ops.py` (1,681
+lines, every operator class enumerated), `qlib/contrib/data/loader.py` (Alpha158 field blocks),
+`qlib/contrib/data/handler.py` (label + processor config). LICENCE: **MIT, read from the
+canonical LICENSE file this run** (Microsoft). vn.py LICENSE also read: **MIT** (Xiaoyou Chen).
+DERIVES-FROM: WorldQuant-style expression DSL — this is the ALTERNATIVE-IMPLEMENTATION node the
+BRAIN charter ranks highest: a reimplementor had to make every elided semantic explicit in code.
+Converts data_axis_watchlist card 24 (VeighNa/Qlib) [§33 backing artifact for that card].
+
+**THE FIVE ELIDED SEMANTICS a summary would blur (each is a mechanical rule for reading ANY
+mined qlib-dialect expression):**
+1. **`Rolling(x, N)` has THREE semantics keyed on N's TYPE:** integer N → `rolling(N,
+   min_periods=1)`; **N=0 → EXPANDING window** (inception-to-date); **float 0<N<1 → EWM with
+   alpha=N**. A mined `Mean($close, 0.06)` is an EMA in disguise, not a bug.
+2. **`min_periods=1` everywhere:** every rolling stat emits from bar 1 on partial windows — a
+   mined backtest's early-window values rest on tiny samples; the desk convention (NaN until the
+   window fills) is STRICTER, so naive replication shifts early-sample behaviour.
+3. **Labels are future-Ref and CROSS-SECTIONALLY NORMALISED:** verbatim `Ref($close, -2)/
+   Ref($close, -1) - 1` (handler.py:90) — decide at t close, enter t+1, book t+2: ONE BAR of
+   execution slack built into the target; and `CSZScoreNorm` is applied to the LABEL
+   (handler.py:39) — Alpha158 models learn RELATIVE (cross-sectional) returns, which is this
+   desk's own TARGET/HORIZON duty arriving from an independent direction.
+4. **Negative `Ref` = future reference, legal ONLY in labels.** MECHANICAL LEAK RULE for every
+   mined expression: `Ref(x, -k)` inside a FEATURE is pre-falsified as leakage — kill on sight,
+   no screen owed.
+5. **`Greater/Less` are elementwise MAX/MIN, not comparisons** (`Gt/Ge/Lt/Le` are the booleans).
+   Reading a mined `Greater(a,b)` as a predicate silently rewrites the strategy.
+
+**VOCABULARY (crypto analogue + data-needed per the 3-question duty):**
+- **Regression trio `Slope/Rsquare/Resi(x,N)`** — rolling OLS of x on time index: trend rate,
+  trend QUALITY, deviation-from-trend. THE TRANSFORM AXIS THE DESK'S `combination_engine` LACKS.
+  Crypto analogue: apply to funding, basis, OI, taker_buy_frac (NOT price-only — graveyard
+  prior). Data needed: none new. Adoption = pre-registration (universe grows; the
+  `UNIVERSE_IF_ADOPTED` discipline in `wq_operators` prices the bar move BEFORE it is paid).
+- **`Rank(x,N)` is TS-RANK** — percentile of today within OWN trailing window, NOT
+  cross-sectional. The exact universe-vs-peer confusion class that spawned this organ, in the
+  reimplementation direction. Desk: `ts_rank` candidate; distinct from `rank` AND `group_rank`.
+- **`IdxMax/IdxMin/IMXD(x,N)`** — bars-since-high/low (Aroon family). Analogue: bars since
+  funding peak / OI peak. Data: none new.
+- **`RSV` (stochastic position in rolling hi-lo range), `QTLU/QTLD` (rolling 0.8/0.2 close
+  quantiles)** — price-only, LOW prior here (slow price-only is dead ground at daily res); log
+  for completeness, spend nothing.
+- **`Corr(x,y,N)/Cov` pair-rolling; Alpha158's `CORD` = Corr(returns, Δlog volume)** — the
+  volume-interaction block is the transferable half; desk analogue: Corr(funding change, taker
+  flow), Corr(basis, OI change). Data: owned.
+- **`WVMA`** — volume-weighted price-change volatility. Analogue on taker_buy_frac-weighted
+  moves. Data: owned.
+- **`ChangeInstrument(inst, expr)`** — evaluate expr on ANOTHER instrument (e.g. BTC state
+  inside an alt's signal). Desk analogue: regime conditioning on BTC/market factor — EXISTS
+  partially (combination_engine regimes); the operator generalises it to any pair.
+- **`Mask/If/And/Or` + `trade_when`** — conditional persistence family; desk has `trade_when`
+  (turnover-preserving hold) since 2026-08-07; `If` is its stateless sibling.
+- **KBAR block** (KMID/KLEN/KMID2/KUP/KLOW/KSFT wick anatomy) — intrabar shape features;
+  desk analogue exists on H8 bars; price-only prior applies.
+- **Alpha158 structure:** ~20 named blocks over windows {5,10,20,30,60} — a factor-set MAP of
+  what a production equities shop considers worth computing. The map is the asset; the
+  price-only factors are not (desk graveyard). Route: push the desk's OWN axes
+  (funding/basis/OI/taker flow) through the same transform blocks.
+
+**METHOD NOTE (routed to improvement inbox + ledger):** Qlib does cross-sectional normalisation
+in the PROCESSOR layer (`CSRankNorm/CSZScoreNorm`), never in the expression — features stay
+time-series, the cross-section is a TRAINING-TIME choice. Clean separation the desk can copy:
+`group_rank`-style ops stay in the feature layer ONLY when the peer set is part of the
+hypothesis; universe-relative normalisation belongs downstream.

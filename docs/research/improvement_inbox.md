@@ -1686,3 +1686,12 @@ Concrete free upgrade surfaced: Binance serves premium-index klines keyless (fin
 PI under the FR) — routed to data_axis_watchlist + universe map this run. Recommendation rowed
 via scripts/recommendations.py (fence checklist into the carry pipeline's verification layer).
 [§33: wired -> docs/research/data_axis_watchlist.md]
+
+- **2026-08-11 (brain-hunter):** Qlib separates cross-sectional normalisation into the PROCESSOR
+  layer (`CSRankNorm`/`CSZScoreNorm` — applied even to the LABEL, so models learn relative
+  returns) while every expression stays time-series. Clean architectural split the desk can copy:
+  peer-relative ops in the feature layer ONLY when the peer set IS the hypothesis; universe-
+  relative normalisation downstream at training time. Also: qlib's default label
+  `Ref($close,-2)/Ref($close,-1)-1` builds ONE BAR of execution slack into the target — the same
+  execution-realism discipline the desk enforces, arriving independently. Ledgered with R0437
+  (grouping-map wiring); operator extraction at search_operator_library.md `qlib-alpha158`.
