@@ -741,7 +741,29 @@ def main(argv: list[str] | None = None) -> int:
     for r in queue[:12]:
         print(f"  {r['score']:>5.1f}  {r['channel']:<18} {r['title'][:64]}")
     if blocked:
-        print(f"BLOCKED channels: {blocked}")
+        # COLLAPSED PER HOST. The ARTIFACT keeps every row -- source_health.observations_from_
+        # miner_report and the route-hunt ledger both read it per lane and must not lose one --
+        # but the PRINT was dumping ~100 near-identical sentences, ~6.5KB, every run. 18 of them
+        # said the same thing about hatena, 18 about note, 17 each about coinpan, tinhte and
+        # eksisozluk. That is one routing problem per host repeated seventeen times, which is
+        # exactly the framing _open_route_hunts already applies to the ledger ("Recorded per HOST,
+        # so seventeen blocked queries against one site are one routing problem rather than
+        # seventeen") -- the print was the one place still counting them as seventeen.
+        #
+        # A reader (human or model) pays for that repetition on every single run and learns
+        # nothing from rows 2..18. So: one line per host, the shared reason once, a sample query
+        # for the one thing that IS per-query, and the count. The full detail stays one grep away
+        # in the artifact.
+        by_host: dict[str, list[str]] = {}
+        for lane in blocked:
+            by_host.setdefault(lane.split(":")[0], []).append(lane)
+        print(f"BLOCKED: {len(blocked)} lane(s) across {len(by_host)} host(s)")
+        for host, lanes in sorted(by_host.items(), key=lambda kv: -len(kv[1])):
+            reasons = {blocked[x] for x in lanes}
+            why = next(iter(reasons)) if len(reasons) == 1 else (
+                f"{len(reasons)} distinct reasons, first: {blocked[lanes[0]]}")
+            more = f" (+{len(lanes) - 1} more lane(s))" if len(lanes) > 1 else ""
+            print(f"  {host:<14} x{len(lanes):<3}{more}  {why[:120]}")
     print(f"wrote {out}")
     return 0
 

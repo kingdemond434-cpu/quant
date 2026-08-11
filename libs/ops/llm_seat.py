@@ -129,7 +129,18 @@ _FAMILY_RANK = {name: i for i, (name, _) in enumerate(_FLAGSHIP_PATTERNS)}
 _DOWNGRADE_TOKENS: tuple[str, ...] = (
     "mini", "nano", "small", "lite", "tiny", "turbo", "instruct", "preview", "legacy",
     ":free", "-free", "8b", "7b", "3b", "flash", "haiku", "distill", "base", "audio",
-    "realtime", "transcribe", "tts", "image", "search", "embedding", "moderation", "codex",
+    "realtime", "transcribe", "tts", "image", "search", "embedding", "moderation",
+    # `codex` REMOVED 2026-08-07, and this is a correction rather than a loosening. The list's own
+    # stated job is to mark a CHEAPER, SMALLER or OLDER variant; that was true of the
+    # code-davinci/`*-instruct` era this token was written for, and it is false of the GPT-5-Codex
+    # family, which is flagship-tier reasoning. Measured before changing anything:
+    # `openai/gpt-5-codex` and `openai/gpt-5.1-codex-max` were both rejected as downgrades while
+    # plain `openai/gpt-5` passed. So the principal seating a Codex brain would have had it
+    # silently refused and the seat would report DARK or quietly fall back -- a seat that looks
+    # healthy while the model the principal chose is filtered out is exactly the silent-downgrade
+    # failure the rest of this list exists to prevent, pointed the wrong way.
+    # NOTHING IS WEAKENED: `mini`/`nano`/`preview` still stand, so `gpt-5-codex-mini` is still
+    # rejected, and a genuinely cheaper Codex tier cannot slip through on this change.
 )
 
 #: Reasoning effort requested. MAX BY DEFAULT: this seat runs four times a day against a $20/month
