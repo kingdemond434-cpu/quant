@@ -4142,11 +4142,11 @@
    "summary": "FENCE CONFLICT: the daemon-stale-code check has no L1.38 sterile-cockpit awareness, so it ORDERS a money-path breach during a launch window. Measured 2026-08-01: it told the operator to restart quant-cashcarry to ship f7becef, an entry-gate IMPROVEMENT committed 1h after the process started, while check_change_window.py simultaneously reported STERILE / GATE0_LAUNCH 0.2d into a 7d freeze. Two fences, opposite orders, same action, and the operator-facing one is the wrong one -- an operator who simply obeys the defect list breaches the sterile-cockpit law and ships an unproven money-path change onto live capital with no time to catch an error. FIX: daemon-stale-code should consult check_change_window and, when the stale imports are money-path files inside a live window, report the RESTART AS DEFERRED-BY-L1.38 with the window expiry rather than as an outstanding defect -- and should still fire loudly when the stale file is a REPAIR, which L1.38 always permits. Also worth splitting: a stale NON-money-path daemon has no such conflict and should keep firing immediately.",
    "roi_bps": 40.0,
    "raised": "2026-08-01T16:31:15.445836+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Unchanged: scripts/max_audit.py check_stale_daemons (:539-604) reports daemon-stale-code unconditionally \u2014 no consult of check_change_window, no DEFERRED-BY-L1.38 reporting when the stale import is money-path inside a live window, and no repair-vs-improvement split. The fence conflict stands as measured; not currently firing because live_guard is at S0 with no live window open, so it is real work but not today's top priority.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "run_stale_daemon_repair.py encodes the resolution: staleness detection stays unconditional (max_audit), but the ACTUATOR holds money-path restarts while check_change_window is not OPEN (SKIP-STERILE named verdict, tested). The detector no longer orders a breach; the repair path enforces the window.",
+   "commit": "8e8ea23",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-11T15:52:49.101076+00:00"
   },
   {
    "id": "R0336",
@@ -4649,11 +4649,11 @@
    "summary": "stageb_capacity.py:52 defines its OWN two-sided holm_bar(m) = |z(1 - ALPHA/(2m))| while libs/validation/forward_stats.holm_bar is ONE-sided (alpha/m). Two different numbers under one name, and the script prints them SIDE BY SIDE with the desk's observed one-sided bar read out of data/axis_shadow_state.json (:62, :74 'observed holm_bar ... desk own state file'). At m=12 the local version returns 2.88 against the real 2.64, so every capacity recommendation is computed against a bar that is not the one any clock faces. Direction is conservative (it understates how many slots are affordable, so it under-fills forward capacity rather than over-promoting), which is why it has survived unnoticed -- but it is exactly the drift that libs/validation/forward_stats.holm_alpha was added on 2026-08-05 to make impossible. FIX: delete the local _z/holm_bar and import holm_bar/holm_alpha from forward_stats; the local Acklam-style _z inverse-normal approximation goes with it. Found while wiring R0187.",
    "roi_bps": 25.0,
    "raised": "2026-08-05T14:13:00.030101+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "scripts/stageb_capacity.holm_bar now one-sided (alpha/m), matching libs/validation/forward_stats; stdlib purity kept, sidedness fixed. (Row cited libs/research path; file had moved to scripts/.)",
+   "commit": "8e8ea23",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-11T15:52:25.907142+00:00"
   },
   {
    "id": "R0378",
@@ -4757,11 +4757,11 @@
    "summary": "DEFECT (live, found while verifying the unwired-caller fix): the installed crontab has ~10 DUPLICATED entries -- verified with crontab -l | grep -v '^#' | sort | uniq -d. Duplicated lines include screen_orderbook_state.py, run_commit_audit.sh, collect_dexscreener.py, check_coverage_floors.py, resolve_llm_trader_book.py, collect_holder_concentration.py, check_idle_cost.py, collect_perpdex_funding.py, retire_unfillable_candidates.py, run_paper_sleeve_spawner.py. MOST are harmless because flock -n makes the second instance exit immediately, but TWO carry no flock at all and therefore genuinely run twice concurrently: '22 5 * * * check_coverage_floors.py' and '38 3 * * * retire_unfillable_candidates.py'. The second is the one that matters -- it RETIRES candidates, so two concurrent passes over the same queue is a write race on a decision artifact. Fix by de-duplicating the installed crontab against ops/crontab.manifest, and add the missing flock to those two manifest lines so a future double-install is inert. DO NOT reinstall via ops/reconstitute_cron.sh without checking box drift first (the manifest is role-selected and this box has none, so crontab.manifest is the right source).",
    "roi_bps": 20.0,
    "raised": "2026-08-05T16:48:01.236921+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Live crontab deduplicated in place (220 -> 205 non-comment entries, first occurrence kept, comments preserved); uniq -d now empty. Manifest untouched by the dedupe (it never carried the dupes).",
+   "commit": "8e8ea23",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-11T15:52:43.952679+00:00"
   },
   {
    "id": "R0387",
@@ -5093,11 +5093,11 @@
    "summary": "THE SECTION-42 FENCE WAS WELDED SHUT AND THAT IS WHY rec-ledger-backlog RECURRED 3x IN 5.1 DAYS. Measured over the ledger's entire life: the fence ('any row open past GRACE_H=24h is a DEFECT') read RED for 226 of its 226 informative hours -- the only 24 GREEN hours were before any row could age past grace. Median disposition latency is 37.8h against that 24h bar and only 41.8% of rows ever cleared it, so the bar sits below the desk's own demonstrated service time: unclearable in practice, exactly what GATE-OPTIMALITY DUTY says to investigate. It is MIS-APPLIED, not mis-calibrated: it puts a per-row deadline on a QUEUE, so a backlog being drained (2026-08-05: 61 in, 116 out) and one running away (2026-08-01: 131 in, 48 out) produce the identical verdict, and 3 quota-dead days age every row without showing it to anybody. The desk ALREADY had the discriminating measurement and this fence never read it: data/carryover_sweeps.jsonl carries an alive:true/false flag per sweep and the section-37 brief uses it to say 'survived N sweeps, N with the brain awake' -- two organs measuring ONE backlog, only one with the discipline. FIXED, and it is a net TIGHTENING: sweeps_shown() denominates the SKIP test in live sweeps per L1.48 (report shortfalls in observations, never days), and drain() adds a detector the desk did not have at all -- arrivals vs dispositions over a trailing window, the property a level cannot express. Every row still owes a disposition and every owed row is still printed; GRACE_H is untouched and now carries its L1.48 exemption as the DUTY horizon rather than the skip test. Report goes from an undifferentiated 70 DEFECTs to '70 owe a disposition; 10 of them are SKIPS', which agrees with the section-37 brief's independent count of 13. 8 tests including an explicit anti-loosening test.",
    "roi_bps": 800.0,
    "raised": "2026-08-05T21:09:21.537901+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Row's own text records the fix (sweeps_shown() live-sweep denominator + drain() arrivals-vs-dispositions detector) landed at 20f82d9; verified today by data/conversion_status.json publishing direction=DRAIN, debt_growing=false, conversion_ratio_7d=1.244.",
+   "commit": "20f82d9",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-11T15:52:37.251274+00:00"
   },
   {
    "id": "R0415",
@@ -5273,11 +5273,11 @@
    "summary": "RUIN THRESHOLD IS PASSED AS A LEVEL BUT NAMED AND DOCUMENTED AS A DROP, and the mismatch runs in the LOOSENING direction. libs/risk/dynamic_leverage.py:91 declares 'drawdown_ruin: float = 0.35,  # equity drop treated as ruin' and passes it at :54 as risk_of_ruin(..., threshold=drawdown_ruin). But risk_of_ruin's own docstring (libs/risk/growth_leverage.py:49-53) is explicit that threshold is an equity LEVEL: 'threshold=0.2 means an 80% drawdown is treated as ruin', and the body computes mean(eq.min(axis=1) < threshold) on eq starting at 1.0. So the sizer believes it caps P(35% drawdown) <= 2% and actually caps P(65% drawdown) <= 2%. A 65% drawdown is far rarer, so _ruin_cap binds much less and PERMITS HIGHER LEVERAGE THAN INTENDED. docs/research/GROWTH_UNLOCK_LADDER.md states the desk's intent as a '35%-drawdown ruin definition', which points at the VALUE being wrong (0.35 should be 0.65) rather than the comment -- but the two readings change a survival rail's strictness in opposite directions, so this needs a decision, not a drive-by edit. NOT CURRENTLY SIZING LIVE MONEY: run_cashcarry_executor._dynamic_capital is quarantined (:140-155) and ignores data/leverage_target.json in both directions, so today the defect reaches the dashboard and run_capital_plan only -- it becomes live the moment that quarantine is lifted, which is exactly when nobody will re-read this constant. FIX: pick the branch (almost certainly threshold=1.0-drawdown_ruin at the call site, preserving the documented 35%-drawdown intent), add a test pinning the equity-level-vs-drop semantics, and confirm the tightening is intended before the quarantine lifts. Found while measuring R0266.",
    "roi_bps": 12.0,
    "raised": "2026-08-05T23:18:33.120286+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Complement fix in dynamic_leverage._ruin_cap (threshold=1.0-drawdown_ruin) + 2 directional pin tests (tests/risk/test_ruin_threshold_semantics.py). Tightening-only by construction.",
+   "commit": "8e8ea23",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-11T15:52:21.575770+00:00"
   },
   {
    "id": "R0430",
@@ -5333,11 +5333,11 @@
    "summary": "NOVELTY GATE HAS 0% RECALL ON ITS OWN GRAVEYARD, RE-MEASURED 2026-08-06 AND STILL BROKEN 7 DAYS AFTER IT WAS FIRST FOUND. The mandated novelty gate (libs/alpha_factory/hypothesis_novelty) scores Jaccard token overlap and flags redundant at nearest_similarity >= 0.7. MEASURED: querying it with each killed hypothesis's OWN NAME -- the exact shape a generator emits -- flags 0 of 50 priors as redundant; median similarity 0.133, p90 0.286, MAX 0.667 against a 0.700 threshold. The threshold is structurally unreachable for the query shape the gate actually receives, because Jaccard between a short name and a 1500-char graveyard row is bounded by the length ratio. This is a WELDED GATE in the L1.43 sense and a textbook GATE-OPTIMALITY DUTY defect: it rejects ~100 percent of true redundancies, so it carries zero information and every re-test of dead ground passes it. Found once already on 2026-07-30 (recorded as 0/43 recall, 100 percent accept rate) and unfixed since -- an L1.28b found-unfixed defect aging at its stated ROI. DISTINCT FROM SCHEDULED R0004, which is about WIRING the gate into live generation and compiling a canonical machine graveyard; this row is that the scoring is mis-calibrated even where it IS wired, so R0004 landing would not fix it. THE FIX IS ALREADY IN THE REPO and was named by the 2026-07-30 audit: a TF-IDF/cosine scorer exists here and handles the asymmetric-length case Jaccard cannot. WORK: replace the similarity function, re-derive the threshold from a labelled set (the graveyard names are the positives, unrelated live sleeves the negatives), and publish the accept/reject histogram the gate-optimality duty requires so the calibration is auditable rather than assumed. EVIDENCE COMMAND: load screen_idle_axes._graveyard_priors(), query hypothesis_novelty with each prior id's leading name, count is_redundant.",
    "roi_bps": 6.0,
    "raised": "2026-08-06T00:18:59.090016+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "IDF-weighted containment for statement similarity (features keep Jaccard). Re-measured with scripts/replay_novelty_recall.py: 195/195 recall on redundant re-tests vs 0/195 before, 0/30 false positives on the new family, threshold unchanged at 0.7.",
+   "commit": "8e8ea23",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-11T15:52:30.855471+00:00"
   },
   {
    "id": "R0435",

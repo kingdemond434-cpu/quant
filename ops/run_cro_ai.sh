@@ -4,16 +4,23 @@
 set -uo pipefail
 cd /home/quant/quant-platform
 source ops/brain_env.sh
+LOG="data/cro_ai_logs/$(date -u +%Y%m%d_%H%M).log"
+# ATTEMPT-FIRST (dry-run still writes nothing): the stub keeps a deferred or auth-dead cycle
+# visible to organ_catchup, which reads "no logs today" as "not attempted" and never retried a
+# logless death -- one cause of the brain-cycle 36h-stale defect.
+if [ "${BRAIN_DRY_RUN:-0}" != "1" ]; then
+    mkdir -p data/cro_ai_logs
+    echo "=== cro_ai attempt $(date -u) ===" >> "$LOG"
+    export BRAIN_MUTEX_LOGFILE="$LOG"
+fi
 brain_mutex cro_ai   # ONE brain desk-wide; defers (exit 0) if another organ holds it
 # BRAIN_DRY_RUN=1 (CI shell-hygiene gate, 2026-07-20): exercise every expansion in this
 # script under `set -u` WITHOUT auth, network, tokens, or log writes -- the 2026-07-19
 # unescaped-\$300 crash class is caught statically by exactly this path.
 if [ "${BRAIN_DRY_RUN:-0}" != "1" ]; then
-    brain_auth_check || exit 1
+    brain_auth_check || { echo "auth unavailable -- next run resumes ($(date -u))" >> "$LOG"; exit 1; }
 fi
 export PATH="$HOME/.local/bin:$PATH"
-mkdir -p data/cro_ai_logs
-LOG="data/cro_ai_logs/$(date -u +%Y%m%d_%H%M).log"
 # §37 CARRY-OVER: work owed from previous cycles, recorded and handed back. The brain is a
 # metered session -- it dies on quota, and until now the cycle's owed work died with it. This
 # records the current sweep and prints what has been owed, how long, and how many of those

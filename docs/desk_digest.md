@@ -1,15 +1,15 @@
 # Desk digest (auto-generated daily -- do not hand-edit)
-_updated 2026-08-11T02:21Z · companion to [[institutional_knowledge]]_
+_updated 2026-08-11T08:03Z · companion to [[institutional_knowledge]]_
 
 ## Book
-- Molded net: **$-1896.74** | funding **$113.06** | run-rate APR 0.0% | day 39.88
-- Root cause: **unknown_novel** (pause_and_page) | tracking error $2817.59
+- Molded net: **$-1828.74** | funding **$113.06** | run-rate APR 0.0% | day 40.11
+- Root cause: **unknown_novel** (pause_and_page) | tracking error $2817.12
 
 ## Validation clocks
-- **carry (DEPLOYED)**: 46/90d | bt 3.09 fwd 15.35
-- **perp L/S**: 39/90d | bt 0.95 fwd -0.69
-- **trend**: 39/90d | bt 1.3 fwd 0.39
-- **trend regime-gated**: 34/90d | bt 1.27 fwd 0.0
+- **carry (DEPLOYED)**: 46/90d | bt 3.13 fwd 15.54
+- **perp L/S**: 39/90d | bt 0.84 fwd 2.46
+- **trend**: 39/90d | bt 1.26 fwd -0.68
+- **trend regime-gated**: 34/90d | bt 1.24 fwd 0.0
 - **OI/LS data**: 44/40d
 - **stablecoin data**: 40/40d
 
