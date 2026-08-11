@@ -440,6 +440,16 @@ def main() -> None:
             return {"provider": name, "model": pv["model"], "response": txt}
         except Exception as e:                       # one dead provider never kills the panel
             print(f"panel: {name} FAILED {e!r}"[:150])
+            # A HARD error is seat evidence exactly like a double-blank: until 2026-08-11 only
+            # the blank path called record_blank, so a seat dying with HTTP 400/404/KeyError
+            # left seat_blanks null and the seat-chronic fence + model_upgrade.regressed_seats
+            # were blind to the failure mode actually killing runs (measured: 4/4 free seats
+            # hard-erroring while seat_blanks stayed empty).
+            try:
+                from scripts.build_audit_coverage import record_blank
+                record_blank(pv.get("model", "?"))
+            except Exception:
+                pass
             return {"provider": name, "model": pv.get("model", "?"), "error": repr(e)[:200]}
 
     from concurrent.futures import ThreadPoolExecutor
