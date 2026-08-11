@@ -3128,3 +3128,25 @@ outranked it; BRAIN lecture corpus untouched and named below).
    reconstruction burns labour).
 6. BRAIN community discussion of FAILED approaches (publicly documented negative results —
    graveyard ore, the corpus's most neglected vein).
+
+---
+
+### 2026-08-11 session F (EN frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+MINE GATE: BACKLOG-CLEAR (19/19 carded finds disposed; header authorised). PRIOR STATE read:
+BRAIN hunter s1 ran TODAY and drained its §33 queue 10→0 — cards #23/#25 got their data legs
+(cot_btc_panel, stablecoin_run_variables), R0193 re-scheduled 08-24, NAVER re-deferred (GAP #69),
+Auer–Claessens public-annex search already run+failed (their next-ground #5 = WP annex; NOT
+poached here). Verify-queue reads 16 pending but ≥2 are PHANTOM: merge-union duplicate cards
+whose stale grade lines fail the parser open to pending (#3 bitFlyer line ~187 "RESTRICTED-BY-
+LICENCE — CLOSED" lacks a resolved-substring; #21 NAVER line ~988 "needs-monitoring (built,
+unrun)" shadows the real legitimacy-queue card at ~932).
+ITEMS THIS RUN (bounded per completion contract):
+1. BACKLOG HYGIENE (Tier-1 defect-closer — phantom pending items make every future cycle re-read
+   dead cards): dedupe cards #3 and #21 to ONE card each with the honest current grade; re-run
+   source_backlog_next to verify the queue drops; confirm R0193 live in the ledger.
+2. ELITETRADER + NUCLEAR PHYNANCE FIRST TOUCH (carried since 08-04 session D item 3; the last
+   never-touched EN deep/legacy forum grounds): robots/§13 gate first, ground survey, then ≥1
+   thread to reply-depth ≥2 on whichever ground is open. Nuclear Phynance expected dead →
+   era-archaeology route via Wayback CDX.
+3. IF BUDGET REMAINS: HN 9152332 contest-winner tree (Records family, unmined, named since 08-04).
+STATUS: items open. (Updated in place as each resolves.)
