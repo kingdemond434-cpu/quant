@@ -161,8 +161,8 @@
  "claude_local_cuts_2026_08_11": {
   "directive": "principal: apply all Claude-local recommendations",
   "measured_before_total_sessions_per_day": 96.6,
-  "measured_after_total_sessions_per_day": 40.3,
-  "reduction_pct": 58.3,
+  "measured_after_total_sessions_per_day": 17.3,
+  "reduction_pct": 82.1,
   "cuts": {
    "ops/run_recommendation_worker.sh": {
     "from": "*/20 * * * * (72/day)",
@@ -196,6 +196,21 @@
    "blindrediscovery": "0.57/day, monthly-ish. Free.",
    "safety_organs": "FLOOR_PROTECTED, untouched."
   },
-  "correction": "an earlier count said ~88 sessions/day; the true figure was 96.6 because each digger has THREE cron lines (guarded by a systemd is-enabled check), not one."
+  "correction": "an earlier count said ~88 sessions/day; the true figure was 96.6 because each digger has THREE cron lines (guarded by a systemd is-enabled check), not one.",
+  "firing_gate": {
+   "module": "libs/ops/owed_work_gate.py, called by ops/run_recommendation_worker.sh before the prompt is built",
+   "why_not_event_triggering": "firing on every ledger append sounds precise and is strictly WORSE: it starts a session for ONE row and destroys the batching that makes the worker efficient. Eight rows in one session share the repo context, the doctrine prompt and the test run; eight sessions pay all three eight times. The event is 'enough work accumulated to be worth a session' -- a threshold on state, not a hook on a write.",
+   "measured_over_provision": "the worker drains a BATCH of 8; the ledger is fed ~5 rows/day. Hourly supplied 24 x 8 = 192 row-slots/day against a 5-row refill = 38x. The 113-row backlog hid it -- the existing 'nothing owed' exit never triggered.",
+   "fires_on": [
+    "FULL BATCH: open rows >= batch",
+    "AGE FLOOR: oldest open row >= 20h (bounds latency; a lone row cannot rot behind a batch that never fills)",
+    "LIVE DEFECT: max_audit reporting a live defect -- fires immediately regardless of batch"
+   ],
+   "holds_otherwise": "and states its own arithmetic -- how many rows, how old, what would flip it. A silent no is indistinguishable from a broken worker.",
+   "fail_open": "any unreadable artifact FIRES rather than stalls; a row with an unparseable timestamp is treated as OLD, never new (L1.41).",
+   "steady_state_sessions_per_day": "~0.6-1 (simulated over a week of hourly ticks at the measured refill), against 24 ticks/day. The cron tick stays hourly and is now a cheap python stat that exits in milliseconds when gated.",
+   "authority": "decides only WHEN the drainer runs. Never drops, reprioritises or judges a row; the ledger's disposition rules are untouched."
+  },
+  "note_on_final_figure": "40.3/day was the post-cadence-cut figure with the worker at a flat 24/day. With the firing gate the worker settles to ~1/day in steady state, taking the desk to ~17.3 sessions/day -- an 82% cut from the measured 96.6 baseline. The worker's 24 hourly ticks still happen; they are now a python stat that exits in milliseconds, not a claude session."
  }
 }

@@ -41,6 +41,20 @@ if [ "${AVAIL:-0}" -lt 400 ]; then
     exit 0
 fi
 
+# ---------------------------------------------------------------- FIRING GATE (2026-08-11)
+# Decide whether this tick is worth a claude session BEFORE building the prompt. The worker
+# drains a BATCH of 8 rows; the ledger is fed ~5 rows/day. Hourly ticks therefore supplied 38x
+# more capacity than the arriving work, and the backlog hid it -- with 113 rows open the existing
+# "nothing owed" exit never fired. libs/ops/owed_work_gate holds the arithmetic and the reason
+# string; a hold prints WHY and what would flip it, because a silent no is indistinguishable from
+# a broken worker. Latency stays bounded: a lone row fires on the 20h age floor, and a live
+# max_audit defect fires immediately regardless of batch.
+GATE="$(.venv/bin/python -c 'import json;from libs.ops.owed_work_gate import gate_from_repo;print(json.dumps(gate_from_repo().as_dict()))' 2>/dev/null)"
+if [ -n "$GATE" ] && ! printf '%s' "$GATE" | grep -q '"fire": true'; then
+    echo "$(date -u +%FT%TZ) owed-work GATED: $GATE" >> "$LOG"
+    exit 0
+fi
+
 WORK="$(.venv/bin/python - <<'PYEOF'
 import json, datetime as dt
 from pathlib import Path
