@@ -21,7 +21,9 @@ Two audits from MAX_SURVIVORS Part 1, both pure gain (no new data, no trading ex
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping, Sequence
+from statistics import NormalDist
 
 from pydantic import BaseModel, ConfigDict
 
@@ -37,50 +39,115 @@ class RejectionShadowReport(BaseModel):
     leak_frac: float  # n_would_have_paid / n_rejects
     over_strict: bool  # leak_frac past tolerance on a sufficient sample -> re-calibrate the gate
     verdict: str
+    #: decided entries dropped because their forward metric was BIT-IDENTICAL to another's --
+    #: the same position series scored under two ids is one bet, not two (R0439 evidence:
+    #: two DOGE rejects shared forward Sharpe 1.2429320833719768 to the last digit).
+    n_duplicates_collapsed: int = 0
+    #: True when at least one entry carried its forward sample size and was judged against the
+    #: noise-adjusted bar rather than the raw deploy threshold.
+    noise_adjusted: bool = False
 
     def __bool__(self) -> bool:
         return not self.over_strict
 
 
+def _pay_bar(
+    deploy_threshold: float, n_obs: int | None, leak_tolerance: float, periods_per_year: float
+) -> float:
+    """The forward metric a reject must clear to count as PAID, at its actual sample size.
+
+    An annualized Sharpe over n periods has standard error ~ sqrt(periods_per_year / n) under
+    the zero-edge null, so at short windows the raw deploy threshold is deep inside the noise:
+    measured on the live artifact (2026-08-11), a bar of 0.5 at n=31 daily bars sat 0.15 SE
+    above zero and PURE NOISE cleared it ~44% of the time -- the audit was structurally
+    guaranteed to cry over-strict at any realistic window. Raising the per-entry bar to the
+    (1 - leak_tolerance) quantile of that null holds the false-pay rate at exactly the
+    tolerance the verdict tests against, which is what makes the comparison valid at every n:
+    the bar decays toward the raw threshold as the window grows (reaching it near
+    n = periods_per_year * (z / threshold)^2) instead of branding noise a leaked survivor at
+    short ones. This TIGHTENS the pay criterion and moves no gauntlet bar."""
+    if n_obs is None or n_obs <= 1:
+        return deploy_threshold
+    z = NormalDist().inv_cdf(1.0 - leak_tolerance)
+    return max(deploy_threshold, z * math.sqrt(periods_per_year / float(n_obs)))
+
+
 def rejection_shadow_audit(
-    rejects: Sequence[tuple[str, float | None]],
+    rejects: Sequence[tuple[str, float | None] | tuple[str, float | None, int | None]],
     *,
     deploy_threshold: float,
     leak_tolerance: float = 0.10,
     min_sample: int = 5,
+    periods_per_year: float = 365.0,
 ) -> RejectionShadowReport:
     """Shadow-track rejected candidates forward (MAX_SURVIVORS Part 1.2, rejection audit).
 
-    ``rejects`` is a sequence of ``(candidate_id, forward_metric)`` where ``forward_metric`` is the
-    realized out-of-sample metric measured on data that arrived AFTER the rejection (Sharpe / IC on
-    the honest holdout), or ``None`` if not enough forward data has accrued to judge yet. A reject
-    that clears ``deploy_threshold`` on that forward data is a survivor the gate leaked. If more
-    than ``leak_tolerance`` of a sufficient sample (``>= min_sample`` decided rejects) would pay,
-    the gate is over-strict and must be re-calibrated -- pure recovery, no new data.
+    ``rejects`` items are ``(candidate_id, forward_metric)`` or ``(candidate_id,
+    forward_metric, n_forward_obs)``, where ``forward_metric`` is the realized out-of-sample
+    metric measured on data that arrived AFTER the rejection (annualized Sharpe on the honest
+    holdout), or ``None`` if not enough forward data has accrued to judge yet.
+
+    A reject counts as PAID when its forward metric clears the pay bar. With a sample size
+    supplied, the bar is noise-adjusted (see ``_pay_bar``); the bare two-tuple form keeps the
+    raw threshold and is for callers whose metric is already judgment-ready. Bit-identical
+    forward metrics are collapsed to one entry -- the same forward series under two ids is one
+    bet. If more than ``leak_tolerance`` of a sufficient sample (``>= min_sample`` decided,
+    deduped rejects) would pay, the gate is over-strict and must be re-calibrated -- pure
+    recovery, no new data.
     """
-    decided = [(rid, m) for rid, m in rejects if m is not None]
-    paid = tuple(rid for rid, m in decided if m >= deploy_threshold)
+    norm: list[tuple[str, float, int | None]] = []
+    for item in rejects:
+        rid, m = item[0], item[1]
+        if m is None:
+            continue
+        n_obs = item[2] if len(item) > 2 else None  # type: ignore[misc]
+        norm.append((rid, float(m), n_obs))
+    seen: set[float] = set()
+    decided: list[tuple[str, float, int | None]] = []
+    n_dupes = 0
+    for rid, m, n_obs in norm:
+        if m in seen:
+            n_dupes += 1
+            continue
+        seen.add(m)
+        decided.append((rid, m, n_obs))
+    noise_adjusted = any(n_obs is not None for _, _, n_obs in decided)
+    paid = tuple(
+        rid for rid, m, n_obs in decided
+        if m >= _pay_bar(deploy_threshold, n_obs, leak_tolerance, periods_per_year)
+    )
     n = len(decided)
     frac = round(len(paid) / n, 3) if n else 0.0
     over_strict = n >= min_sample and frac > leak_tolerance
+    dup_note = f"; {n_dupes} duplicate forward series collapsed" if n_dupes else ""
     if n < min_sample:
         verdict = (
             f"only {n} decided rejects (<{min_sample}) -- insufficient forward sample to judge the "
-            "gate; keep shadowing"
+            f"gate; keep shadowing{dup_note}"
         )
     elif over_strict:
         verdict = (
             f"OVER-STRICT: {len(paid)}/{n} rejects ({frac:.0%}) would have paid out-of-sample -- "
-            "the gate is leaking survivors; re-calibrate (effective-trial count, per-gate bar)"
+            f"the gate is leaking survivors; re-calibrate (effective-trial count, per-gate bar)"
+            f"{dup_note}"
         )
     else:
         verdict = (
             f"calibrated: {len(paid)}/{n} rejects ({frac:.0%}) would have paid, within the "
-            f"{leak_tolerance:.0%} tolerance -- gate is not obviously leaking"
+            f"{leak_tolerance:.0%} tolerance -- gate is not obviously leaking{dup_note}"
         )
+    if noise_adjusted:
+        known_n = [n_obs for _, _, n_obs in decided if n_obs]
+        if known_n:
+            worst = _pay_bar(deploy_threshold, min(known_n), leak_tolerance, periods_per_year)
+            verdict += (
+                f" [pay bar noise-adjusted per entry; at the shortest window "
+                f"(n={min(known_n)}) it is {worst:.2f}]"
+            )
     return RejectionShadowReport(
         n_rejects=n, n_would_have_paid=len(paid), would_have_paid=paid,
         leak_frac=frac, over_strict=over_strict, verdict=verdict,
+        n_duplicates_collapsed=n_dupes, noise_adjusted=noise_adjusted,
     )
 
 

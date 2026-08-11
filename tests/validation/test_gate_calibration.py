@@ -40,6 +40,48 @@ class TestRejectionShadowAudit:
         assert r.n_rejects == 1  # only the decided one
         assert r.over_strict is False
 
+    # --- R0439: the pay bar must be noise-adjusted at the entry's forward sample size -------
+
+    def test_short_window_noise_does_not_fire_over_strict(self) -> None:
+        """The live false-fire, reproduced: 25 rejects scored on ~31 forward D1 bars, 8 with
+        annualized Sharpes 1.2-4.6 -- all inside the zero-edge noise envelope (SE ~3.4).
+        Under the raw 0.5 bar this read 32% leaked and fired; noise-adjusted it must not."""
+        sharpes = [4.578, 4.213, 3.406, 1.954, 1.568, 1.347, 1.243, 1.130]
+        sharpes += [-0.5 - 0.1 * i for i in range(17)]  # the rest lose money forward
+        rejects = [(f"c{i}", s, 31) for i, s in enumerate(sharpes)]
+        r = rejection_shadow_audit(rejects, deploy_threshold=0.5, leak_tolerance=0.10)
+        assert r.noise_adjusted is True
+        assert r.over_strict is False, r.verdict
+        # at n=31 the 10%-false-pay bar is ~4.40 annualized -- only the 4.578 can clear it
+        assert r.n_would_have_paid <= 1
+
+    def test_powered_window_keeps_full_sensitivity(self) -> None:
+        """As n grows the noise bar decays to the raw threshold: a genuinely paying reject
+        population at n=4000 must still fire the audit -- the fix must not weld the gate shut."""
+        rejects = [(f"c{i}", m, 4000) for i, m in
+                   enumerate([2.0, 1.5, 1.2, 1.1, 0.1, -0.5])]
+        r = rejection_shadow_audit(rejects, deploy_threshold=1.0, leak_tolerance=0.10)
+        assert r.over_strict is True
+        assert r.n_would_have_paid == 4
+
+    def test_bit_identical_forward_series_collapse_to_one(self) -> None:
+        """Two ids carrying the SAME forward metric to the last digit are one bet (the live
+        artifact held two DOGE rejects at 1.2429320833719768) -- the denominator dedupes."""
+        rejects = [("doge_a", 1.2429320833719768, 31), ("doge_b", 1.2429320833719768, 31),
+                   ("x1", -0.5, 31), ("x2", -0.7, 31), ("x3", -0.9, 31), ("x4", -1.1, 31)]
+        r = rejection_shadow_audit(rejects, deploy_threshold=0.5, leak_tolerance=0.10)
+        assert r.n_duplicates_collapsed == 1
+        assert r.n_rejects == 5
+
+    def test_two_tuple_form_keeps_raw_bar(self) -> None:
+        """Callers without a sample size keep the raw-threshold contract unchanged."""
+        r = rejection_shadow_audit(
+            [(f"c{i}", 0.6 + 0.01 * i) for i in range(6)], deploy_threshold=0.5,
+            leak_tolerance=0.10,
+        )
+        assert r.noise_adjusted is False
+        assert r.n_would_have_paid == 6
+
 
 class TestReconstructionVerified:
     def _matching(self, n: int) -> dict[str, float]:

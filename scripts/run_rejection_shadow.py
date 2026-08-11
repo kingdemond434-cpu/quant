@@ -54,11 +54,13 @@ def main() -> None:
     store = CandidateStore(Database(db_path, read_only=True))
     rejects = [(r.id, r.created_at) for r in store.rejects()]
 
-    scores: dict[str, float] = {}
+    # Entries are {"sharpe": float, "n_fwd_bars": int} (judged at the noise-adjusted bar for
+    # that window) or legacy bare floats (judged at the raw bar until the rescorer upgrades
+    # them in place). Both pass through; build_shadow_report normalizes.
+    scores: dict[str, object] = {}
     if _SCORES.exists():
         try:
-            raw = json.loads(_SCORES.read_text("utf-8"))
-            scores = {str(k): float(v) for k, v in raw.items()}
+            scores = {str(k): v for k, v in json.loads(_SCORES.read_text("utf-8")).items()}
         except Exception:
             scores = {}
 
