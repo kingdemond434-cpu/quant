@@ -114,7 +114,12 @@ QUANT_ROOT=/home/quant/quant-platform
 # 2026-07-24 incident class ($21.48 in one day from unbounded resend). Each run executes the full
 # wave 1->2->3 protocol; duplicate finds are suppressed by the graveyard + novelty gate, so extra
 # frequency cannot manufacture duplicate work.
-5 */3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/kimi_hunter.py >> data/cro_ai_logs/kimi_hunter.log 2>&1
+# CADENCE CUT 2026-08-11 (libs/ops/cadence_roi): 8/day -> 2/day. PUBLICATION-RATE-LIMITED --
+# external research ecosystems publish on their own clock and the --deep variant already runs
+# 2x/week for depth, so a 3-hourly shallow pass was polling a slower upstream eight times a day
+# and spending an LLM call each time. Falsifier: if the deep pass starts finding material the
+# shallow pass should have caught first, raise it back.
+5 1,13 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/kimi_hunter.py >> data/cro_ai_logs/kimi_hunter.log 2>&1
 # WEEKLY DEEP: longer budget, targets previously unexplored languages/regions/eras per L1.11a.
 35 5 * * 0,3 cd "$QUANT_ROOT" && .venv/bin/python scripts/kimi_hunter.py --deep >> data/cro_ai_logs/kimi_hunter_deep.log 2>&1
 
@@ -136,7 +141,10 @@ QUANT_ROOT=/home/quant/quant-platform
 # 2026-07-30 (39 unclaimed fences -> 0) and RATCHETED: a new fence must name the law it serves.
 # EVIDENCE: scripts/build_enforcement_matrix.py (built 2026-07-30); docs/CONSTITUTION.md L2.0/L2.2
 # CONFIDENCE: committed-script (new this cycle)
-13 */6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/build_enforcement_matrix.py >> data/cro_ai_logs/enforcement_matrix.log 2>&1
+# CADENCE CUT 2026-08-11 (libs/ops/cadence_roi): 4/day -> 1/day. EVENT-DRIVEN -- derives the
+# law<->check matrix from SOURCE FILES, which change on commits, not on a 6-hour clock. The
+# daily run is the fallback heartbeat that catches a commit nobody re-ran it after.
+13 4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/build_enforcement_matrix.py >> data/cro_ai_logs/enforcement_matrix.log 2>&1
 
 # IMMUTABLE CONSTITUTIONAL CORE (L2.8a): the organism may amend its own constitution, so five
 # clauses are SHA-256 sealed against it -- L1.1 (the objective function), L1.2 (the hierarchy),
@@ -595,7 +603,10 @@ QUANT_ROOT=/home/quant/quant-platform
 # touched, not even proposed. Idempotent: rewrites its own fenced block, never hand-written lines.
 # EVIDENCE: scripts/run_wiring_agent.py (built 2026-07-30); docs/CONSTITUTION.md L2.9
 # CONFIDENCE: committed-script (new this cycle)
-44 */6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_wiring_agent.py --apply >> data/cro_ai_logs/wiring_agent.log 2>&1
+# CADENCE CUT 2026-08-11 (libs/ops/cadence_roi): 4/day -> 1/day. EVENT-DRIVEN on repo state,
+# and it spends an LLM call whether or not anything changed. A timer is a poor approximation of
+# a commit hook; daily is the heartbeat, not the primary path.
+44 4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_wiring_agent.py --apply >> data/cro_ai_logs/wiring_agent.log 2>&1
 
 # MINER RUNWAY DOCTOR: daily. Distinguishes never-ran / creds-missing / not-scheduled / stale
 # per seat and reports the CAUSE with its blast radius -- 6 of 7 frontier regions had ZERO runs
@@ -1487,7 +1498,11 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # credential gets disabled, and a disabled organ recommends nothing.
 # EVIDENCE: scripts/run_cro.py -> data/cro_review.json + docs/research/cro_recommendations.jsonl
 # CONFIDENCE: committed-script (new; runs dark until OPENAI_API_KEY is exported, and says so)
-20 5,11,17,23 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cro.lock .venv/bin/python scripts/run_cro.py >> data/cro_ai_logs/cro.log 2>&1
+# CADENCE CUT 2026-08-11 (libs/ops/cadence_roi): 4/day -> 1/day. MEASURED, not argued: source
+# 'cro' produced 7 of 411 rows in docs/research/recommendation_ledger.json (1.7%) while
+# scheduled four times a day. The seat's input is the desk's own artifact state, which moves on
+# commits and daily measurements -- four passes read the same state four times.
+20 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cro.lock .venv/bin/python scripts/run_cro.py >> data/cro_ai_logs/cro.log 2>&1
 
 # SURVIVOR BOTTLENECK PANEL -- every seat argues about why nothing has ever survived.
 # The desk's root-cause finding (52 of 350 recorded negatives, 14.9%, were powered enough to mean
@@ -1570,6 +1585,13 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/mine_research_queue.py -> reports/research_queue.json
 # CONFIDENCE: committed-script (measured: 102 Bilibili videos ranked after the CJK word-boundary
 # fix; GitHub search is token-gated and reports it rather than failing)
+# CADENCE FLOOR 2026-08-11 (libs/ops/cadence_roi): stays 1/day and MUST NOT be raised.
+# MEASURED SATURATION: bilibili yield 0.1135 -> 0.0292 across one day on flat ~950 fetch/run;
+# two runs 7 minutes apart collapsed to 0.0011 while a pair 6 hours apart recovered. Yield is a
+# function of ELAPSED TIME, not run count, so frequency buys nothing and elapsed time is exactly
+# what a low cadence buys. Move the ratio with new TERRITORY (widen BILIBILI_QUERIES /
+# CN_ARTICLE_QUERIES), never with frequency. Depth likewise capped: --bili-pages defaults to 1,
+# measured 25x more new candidates per request than 4 pages.
 0 13 * * * cd "$QUANT_ROOT" && flock -n data/.cron_minerq.lock .venv/bin/python scripts/mine_research_queue.py >> data/cro_ai_logs/mine_research_queue.log 2>&1
 # REAL CAMPAIGN (2026-08-01). Runs the ACTUAL gauntlet on the ACTUAL history and reports WHERE
 # EVERY CANDIDATE DIES. "Zero survivors" is not a finding, it is the absence of one; a per-gate

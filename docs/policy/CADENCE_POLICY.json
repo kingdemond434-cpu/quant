@@ -1,0 +1,112 @@
+{
+ "what": "Measured cadence policy -- how often each organ runs, read off its yield rather than argued. Produced by libs/ops/cadence_roi.recommend_all(); installed in ops/crontab.manifest.",
+ "generated_utc": "2026-08-11T20:29:33+00:00",
+ "llm_runs_per_day_before": 20.0,
+ "llm_runs_per_day_after": 5.0,
+ "llm_runs_per_day_saved": 15.0,
+ "total_runs_per_day_saved": 19.0,
+ "installed_cuts": {
+  "scripts/kimi_hunter.py": {
+   "from": "5 */3 * * * (8/day)",
+   "to": "5 1,13 * * * (2/day)",
+   "regime": "PUBLICATION_RATE_LIMITED"
+  },
+  "scripts/build_enforcement_matrix.py": {
+   "from": "13 */6 * * * (4/day)",
+   "to": "13 4 * * * (1/day)",
+   "regime": "EVENT_DRIVEN"
+  },
+  "scripts/run_wiring_agent.py": {
+   "from": "44 */6 * * * (4/day)",
+   "to": "44 4 * * * (1/day)",
+   "regime": "EVENT_DRIVEN"
+  },
+  "scripts/run_cro.py": {
+   "from": "20 5,11,17,23 * * * (4/day)",
+   "to": "20 5 * * * (1/day)",
+   "regime": "PUBLICATION_RATE_LIMITED",
+   "measured": "source cro produced 7 of 411 recommendation-ledger rows (1.7 pct)"
+  }
+ },
+ "held_floors": {
+  "scripts/mine_research_queue.py": "1/day, MUST NOT be raised -- measured saturation (yield 0.1135 -> 0.0292 on flat fetch); move the ratio with new territory, never frequency. --bili-pages default 1 (25x more new per request than 4).",
+  "safety_organs": "watchdog, live_guard, deadman, recorders, organ_catchup, alert canary, law gate, pull_deploy, cadence engine -- EXEMPT by construction in FLOOR_PROTECTED. A quiet safety organ is a working one."
+ },
+ "miner_yield_trend": {
+  "status": "MEASURED",
+  "source": "bilibili",
+  "n_runs": 4,
+  "ratios": [
+   0.1135,
+   0.0627,
+   0.0011,
+   0.0223
+  ],
+  "fetched": [
+   1004,
+   957,
+   903,
+   941
+  ],
+  "early_mean_yield": 0.1135,
+  "recent_mean_yield": 0.0223,
+  "falling": true,
+  "fetch_flat": true,
+  "verdict": "SATURATING -- yield fell while fetch volume stayed flat, so the runs are re-reading a corpus the seen-ledger already holds"
+ },
+ "verdicts": [
+  {
+   "organ": "scripts/mine_research_queue.py",
+   "regime": "SATURATING",
+   "runs_per_day_now": 6.0,
+   "runs_per_day_recommended": 2.0,
+   "delta_runs_per_day": 4.0,
+   "why": "SATURATING: the marginal run re-reads a corpus the seen-ledger already holds. Only new TERRITORY or more ELAPSED TIME moves the ratio, and elapsed time is exactly what a lower cadence buys",
+   "evidence": "measured 2026-08-05/06: bilibili yield 0.1135 -> 0.0292 across one day on FLAT fetch (~950/run); two runs 7 minutes apart collapsed to 0.0011 while a pair 6 hours apart recovered to 0.0292 -- yield is a function of ELAPSED TIME, not of run count | trend: SATURATING -- yield fell while fetch volume stayed flat, so the runs are re-reading a corpus the seen-ledger already holds",
+   "protected": false
+  },
+  {
+   "organ": "scripts/kimi_hunter.py",
+   "regime": "PUBLICATION_RATE_LIMITED",
+   "runs_per_day_now": 8.0,
+   "runs_per_day_recommended": 2.0,
+   "delta_runs_per_day": 6.0,
+   "why": "PUBLICATION-RATE-LIMITED: upstream produces ~2/day. Polling faster than the source publishes cannot mint information, only calls",
+   "evidence": "external research/source ecosystems publish on their own clock; the deep variant already runs 2x/week for depth, so the 3-hourly shallow pass is polling a slower upstream eight times a day",
+   "protected": false
+  },
+  {
+   "organ": "scripts/run_cro.py",
+   "regime": "PUBLICATION_RATE_LIMITED",
+   "runs_per_day_now": 4.0,
+   "runs_per_day_recommended": 1.0,
+   "delta_runs_per_day": 3.0,
+   "why": "PUBLICATION-RATE-LIMITED: upstream produces ~1/day. Polling faster than the source publishes cannot mint information, only calls",
+   "evidence": "measured from docs/research/recommendation_ledger.json: source 'cro' produced 7 of 411 rows (1.7%) while scheduled 4x/day. The seat's input is the desk's own artifact state, which changes on commits and daily measurements, not on a 6-hour clock",
+   "protected": false
+  },
+  {
+   "organ": "scripts/run_wiring_agent.py",
+   "regime": "EVENT_DRIVEN",
+   "runs_per_day_now": 4.0,
+   "runs_per_day_recommended": 1.0,
+   "delta_runs_per_day": 3.0,
+   "why": "EVENT-DRIVEN: the correct trigger is the state change, not the clock. The timer should be a fallback heartbeat so a missed event still gets caught, not the primary path",
+   "evidence": "its input is repository state; repo state changes on COMMITS. Four timed passes a day is a poor approximation of a commit hook and spends an LLM call each time whether or not anything changed",
+   "protected": false
+  },
+  {
+   "organ": "scripts/build_enforcement_matrix.py",
+   "regime": "EVENT_DRIVEN",
+   "runs_per_day_now": 4.0,
+   "runs_per_day_recommended": 1.0,
+   "delta_runs_per_day": 3.0,
+   "why": "EVENT-DRIVEN: the correct trigger is the state change, not the clock. The timer should be a fallback heartbeat so a missed event still gets caught, not the primary path",
+   "evidence": "derives the law<->check matrix from source files; changes only when a check or law is added, which is a commit event",
+   "protected": false
+  }
+ ],
+ "in_session_rule": "The largest measured burn is NOT cron -- it is interactive session work. Standing rules: (1) NO parallel agent fan-out unless the task genuinely cannot be done sequentially AND the session has headroom -- the 2026-08-11 seven-agent fan-out spent 194k subagent tokens and returned ZERO usable output because the session limit hit mid-run. (2) COMMIT AND PUSH each unit of work immediately: the same restart that killed the fan-out also rolled local HEAD back two commits and destroyed an unpushed commit. (3) miner sweeps report ranked lists, never raw blocked-channel dumps. (4) prefer targeted python one-liners over full-file reads.",
+ "law": "Cadence is READ off yield, never argued. Safety floors are exempt by construction: a quiet watchdog is a working watchdog.",
+ "authority": "RECOMMENDS ONLY. ops/crontab.manifest is the authoritative schedule and a human installs it. An advisor that could rewrite the schedule could silently disable an organ nobody knew was load-bearing."
+}
