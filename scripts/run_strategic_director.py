@@ -49,8 +49,16 @@ from libs.llm.effort import reasoning_payload  # noqa: E402
 # Claude strategist re-reads the desk with the same eyes that built it -- same priors, same blind
 # spots, zero independence. The strategist exists precisely to be the OTHER model family: the
 # same reason the v8 8.2 bar demands a second-model-family fuzz report rather than more of the
-# first family's opinion. gpt-9 is the flagship seat the panel roster already vets.
-MODEL = "openai/gpt-9"
+# first family's opinion.
+#
+# 2026-08-11: `openai/gpt-9` returned HTTP 400 on EVERY call (data/second_family_log.json: 4/4
+# today) and the OpenRouter catalog carries NO gpt-9 id at all -- the id was retired upstream,
+# so the whole second family was dead irrespective of the credit outage. Repointed to the
+# catalog's top OpenAI tier (verified present, 1.05M ctx). terra-pro is excluded by the desk's
+# own panel-gauntlet record (0 parseable rows); sol-pro carries no such strike. UNPROBED until
+# credits land (balance was $-0.59; PRINCIPAL_ACTION purchase pending) -- its first live calls
+# ARE its gauntlet, and data/second_family_log.json records every verdict either way.
+MODEL = "openai/gpt-5.6-sol-pro"
 _CTX = ssl.create_default_context()
 
 

@@ -50,8 +50,18 @@ def _z(p: float) -> float:
 
 
 def holm_bar(m: int) -> float:
-    """Most stringent Holm threshold with m concurrent tests, two-sided."""
-    return abs(_z(1 - ALPHA / (2 * m)))
+    """Most stringent Holm threshold with m concurrent tests, ONE-sided.
+
+    R0377: this was `abs(_z(1 - ALPHA/(2m)))` -- a TWO-sided bar -- while the shipped
+    libs/validation/forward_stats.holm_bar the clocks are actually judged by is one-sided
+    (alpha/m). A divergent bar here is not conservative, it is a second opinion about a
+    constant-for-life threshold: this advisor reported clocks as farther from ELIGIBLE than the
+    law's own bar does. Stdlib on purpose (same reason as check_cohort_integrity: a fence/advisor
+    a missing dependency can silence is not one), so the SIDEDNESS is fixed rather than the
+    import added; check_cohort_integrity cross-checks the local recomputation against the shipped
+    implementation wherever numpy is importable.
+    """
+    return abs(_z(1 - ALPHA / m))
 
 
 def main() -> None:

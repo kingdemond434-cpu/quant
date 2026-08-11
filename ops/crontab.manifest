@@ -1851,14 +1851,28 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # with anything else this desk runs.
 # PACE IS MEASURED: at 2.5s the first live run lost 2 of 5 ids to HTTP 429, and a 429 here is an
 # unrecoverable row rather than a retryable one. 7s + a 20s retry; ~3 minutes for 24 ids.
-# STILL BLOCKED, AND RECORDED: DefiLlama /emissions and /emission/<protocol> both answer HTTP 402
-# Payment Required and defillama.com/api/emissions answers 403 -- the calendar is behind a paid
-# tier. NOT purchased: a licensed vendor feed is the principal's decision, never a collector's.
+# UNBLOCKED 2026-08-11 (R0288): the paid wall covers only the API (/emissions 402,
+# /api/emissions 403). The PUBLIC PAGE defillama.com/unlocks -- the same s13-passed source the
+# 2026-07-24 snapshot came from -- still serves the whole calendar in __NEXT_DATA__, and
+# collect_unlock_calendar.py below scrapes it free. No purchase needed.
 # EVIDENCE: scripts/collect_circulating_supply.py -> data/circulating_supply.jsonl +
 # data/circulating_supply_status.json (reports days_covered, never row count -- a thousand rows
 # collected in one afternoon is not a series).
 # CONFIDENCE: measured (6 of 6 ids written across two live runs 2026-08-05).
 10 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_circsupply.lock .venv/bin/python scripts/collect_circulating_supply.py >> data/cro_ai_logs/circulating_supply.log 2>&1
+
+# UNLOCK CALENDAR -- the recoverable half, now recurring (R0288). First-seen events append with
+# the supply OBSERVED AT COLLECTION, so a future event carries a genuine point-in-time
+# pct-of-float; the one-shot snapshot's forward window expired 2026-08-23 and its pct_circ_now
+# was a look-ahead for every historical row. CEILING TYPE (L1.28c) is DATA-ARRIVAL: schedules
+# change on team announcements, weekly matches the page's own effective churn; runs Monday 05:55
+# after the daily supply row (05:10) and before the 06:25/06:27 unlock screens so the screen
+# always sees a fresh calendar. EVIDENCE: scripts/collect_unlock_calendar.py ->
+# data/unlock_calendar.jsonl + data/unlock_calendar_status.json (n_forward_cliffs,
+# forward_horizon_utc; a parse failure exits non-zero with the error in the status, never a
+# silent zero-append). CONFIDENCE: measured (first live run 2026-08-11: 368 protocols, 38,770
+# events, 271 forward cliffs, horizon 2026-09-10).
+55 5 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_unlockcal.lock .venv/bin/python scripts/collect_unlock_calendar.py >> data/cro_ai_logs/unlock_calendar.log 2>&1
 25 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_holderconc.lock .venv/bin/python scripts/collect_holder_concentration.py >> data/cro_ai_logs/collect_holder_concentration.log 2>&1
 35 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_perpdex.lock .venv/bin/python scripts/collect_perpdex_funding.py >> data/cro_ai_logs/collect_perpdex_funding.log 2>&1
 
@@ -2265,3 +2279,25 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: committed-script + 10 tests, including the partial-outage case that would otherwise
 #   converge on a too-recent boundary and shout ROLLING
 20 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_bybit_archive.lock .venv/bin/python scripts/probe_bybit_archive.py >> data/cro_ai_logs/bybit_archive.log 2>&1
+
+# ---------------------------------------------------------------------------------------------
+# STALE-DAEMON REPAIR (L1.28b detect->repair; installed live 2026-08-11, cycle commit pending).
+# WHY: max_audit's daemon-stale-code-* class recurred 4x in 12d (carry-leak alarm inert 8.7h
+# 07-26; executor 139 commits stale 08-05; executor 127.3h stale 08-11) and every closure was
+# manual -- the detector had no actuator. run_stale_daemon_repair.py recomputes staleness with
+# max_audit's own instruments and restarts through ship_restart.ship(), which owns every refusal
+# (ruin tier, unknown unit, no-autorestart). TIER_RUIN is never auto-restarted; money-path units
+# hold during a non-OPEN L1.38 window (a restart ships disk state, which is what sterile forbids).
+# CEILING TYPE: information-arrival (staleness changes only when commits land while a daemon
+# persists); 2x/day gives the 48h escalation >=4 actuator firings of margin.
+40 7 * * * cd "$QUANT_ROOT" && flock -n data/.cron_stale_repair.lock .venv/bin/python scripts/run_stale_daemon_repair.py >> data/cro_ai_logs/stale_daemon_repair.log 2>&1
+40 19 * * * cd "$QUANT_ROOT" && flock -n data/.cron_stale_repair.lock .venv/bin/python scripts/run_stale_daemon_repair.py >> data/cro_ai_logs/stale_daemon_repair.log 2>&1
+
+# FRONTIER RETRY FIRINGS (installed live 2026-08-11). The 15:00 systemd rotation surrendered all
+# 7 regions for a full day whenever the desk-wide brain mutex was held at 15:00 (measured 7/7
+# DEFERRED 2026-08-11 to cro_ai pid 762669; organ-never-frontier-* recurred 3-4x over 14d). The
+# rotation is RESUMABLE (skips any region with a real >=1500b log today), so extra firings are
+# free retries and the defer-and-resume design regains its premise: invocations > collisions.
+# CEILING TYPE: phase raise, not a new cadence (L1.28c) -- still at most one real dig/region/day.
+30 5 * * * cd "$QUANT_ROOT" && flock -n /tmp/seat_frontier.lock /bin/bash ops/run_frontier_rotation.sh >> data/cro_ai_logs/seat_frontier.log 2>&1
+30 20 * * * cd "$QUANT_ROOT" && flock -n /tmp/seat_frontier.lock /bin/bash ops/run_frontier_rotation.sh >> data/cro_ai_logs/seat_frontier.log 2>&1

@@ -3734,11 +3734,11 @@
    "summary": "KR-s1 D: PRINCIPAL LEGITIMACY DECISION OWED on DCInside. Its robots.txt names ClaudeBot/anthropic-ai/Claude-Web with Disallow:/ (hard stop for this agent family, complied with) while its User-agent:* section says Allow:/ -- so a desk collector under its own UA is permitted on the file's face, against a stated intent to block AI crawlers. A miner must not self-grant this either way. Decide and record; do not leave it as a placeholder needs-legitimacy-review, which is how the gate rejects by default.",
    "roi_bps": 10.0,
    "raised": "2026-08-01T13:37:26.620775+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] BLOCKED-OPERATOR: Principal legitimacy decision still owed: docs/research/data_axis_watchlist.md:963 still grades Korean forums (Coinpan, DCInside) 'needs-legitimacy-review', and a scan of every entry in data/decision_ledger.json finds no DCInside ruling. The row itself states a miner must not self-grant either way (robots.txt names ClaudeBot Disallow:/ while User-agent:* says Allow:/ -- the conflict is a policy call). Exact blocker: principal records allow/deny in the decision ledger.",
+   "status": "rejected",
+   "reason": "Charter-13 legitimacy gate decides this WITHOUT the principal: robots.txt names ClaudeBot/anthropic-ai/Claude-Web with Disallow:/ -- a hard stop in every language, not a judgment call. Re-open only if DCInside's robots change (L1.16a named enabling change).",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-11T15:43:44.858151+00:00"
   },
   {
    "id": "R0302",
@@ -3902,11 +3902,11 @@
    "summary": "SHARED-WORKING-TREE COMMIT SWEEPING: concurrent sessions in /home/quant/quant-platform run tree-wide commits that absorb another live session's in-flight edits into unrelated commits. Observed 2026-08-01: the R0067 Upbit keying fix, its two new test files and the graveyard correction landed across four sibling commits (eaa8b84, dd191e5, 7c49c3b, 710ad77) whose messages are about JP MINER seats and a crossasset clock. Consequences: (a) git attribution is fiction, so 'which commit changed the keying' is unanswerable from the log; (b) --commit on a ledger disposition cites a sha whose message contradicts the work; (c) a half-finished edit can be committed mid-write by another session. Fix candidates: per-session git worktrees, or a commit lock, or teach organs to stage explicit paths instead of -a/-A.",
    "roi_bps": null,
    "raised": "2026-08-01T14:16:29.488842+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: No mitigation in tree: no per-session worktree tooling, no commit lock, no explicit-path staging discipline for organs (grep worktree hits only an unrelated CI-forensics comment at scripts/run_law_gate.py:59; max_audit.py:5324 still describes the 'git add -A' habit as live). The observed harm (four sibling commits absorbing the R0067 fix) is documented and the attribution/citation consequences are real. Ops design work on the shared VPS tree -- needs a chosen mechanism, not a quick patch.",
+   "status": "rejected",
+   "reason": "Consolidated duplicate: same class as R0423 (shared-tree commit sweep), which carries the concrete instance and stays the single open row for the class. One class, one row (L2.3).",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-11T15:43:50.163909+00:00"
   },
   {
    "id": "R0316",
@@ -4313,11 +4313,11 @@
    "summary": "THE FULL TEST SUITE CANNOT COMPLETE ON THIS BOX, so the local CI gate is structurally unsatisfiable. Measured 2026-08-01 immediately after repairing collection (6f54899): bare pytest over tests/ ran 23 minutes, reached ~94%, and died with RC=137 (SIGKILL). Two failures were already visible at the 80% mark but the summary never printed, so THEIR IDENTITY IS UNKNOWN. This matters because scripts/run_ci.py:41 and .github/workflows/ci.yml:49 BOTH invoke the whole tests/ tree: a gate that cannot finish can never go green, which is the permanently-unclearable-gate defect the GATE-OPTIMALITY DUTY names -- and it is worse than a red gate because it produces no verdict at all. CAUSE UNDETERMINED, AND SAYING SO RATHER THAN GUESSING: memory pressure is the leading hypothesis (free -m showed 164MB free of 3814, with a sibling session running its own pytest concurrently), but it is NOT established -- see the companion row on kernel-log access. Required, in order: (1) identify the 2 failures by running the ~80pc region alone; (2) establish the kill cause; (3) decide whether CI's pytest leg should shard or run under a memory cap, NOT whether it should narrow its scope -- a green gate bought by testing less is the denominator trick.",
    "roi_bps": null,
    "raised": "2026-08-01T17:31:36.204312+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: The structural decision is still owed: scripts/run_ci.py:41 still invokes the whole tests/ tree and .github/workflows/ci.yml:54 runs whole-tree pytest+coverage \u2014 no sharding or memory-cap decision landed (commit 207da72 recorded the finding only, and correctly refused to guess the kill cause: kernel log unreadable on the box, R0350). Severity has dropped \u2014 merge 9d456b7's verification records 'full pytest green (3 environment skips)' on 2026-08-04 and the previously hidden desk-memory failures are identified and fixed \u2014 but until CI's leg is sharded/capped the local gate can still be SIGKILLed into producing no verdict under memory pressure. Scope-narrowing remains forbidden per the row.",
+   "status": "rejected",
+   "reason": "Premise REFUTED by measurement this cycle (2026-08-11): the full suite ran to completion twice (~2min wall each) once two COLLECTION errors were fixed (half-landed cohort API + removed _spec_for). The gate was red from ImportError at collection, not from an un-runnable suite.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-11T15:43:36.723681+00:00"
   },
   {
    "id": "R0350",
@@ -4601,11 +4601,11 @@
    "summary": "R0349 NARROWED WITH NEW EVIDENCE: the local test gate does not fail because the suite is LARGE, it fails because something HANGS inside tests/research|scripts|ops. Two independent attempts this cycle both died without producing a report: (1) scripts/run_ci.py under a 1800s timeout wrote only '[PASS] lint (ruff)' -- 39 bytes, no CI_EXIT line; (2) a BOUNDED run of just three directories (pytest tests/research tests/scripts tests/ops) under 1500s stalled at 6pct (~268 tests in) and was killed with no summary and no exit code. A bounded subset stalling at the same place as the full run means the binding problem is a hanging test or an unbounded network/subprocess call, NOT suite size -- which is a different and much cheaper fix than it has been treated as. NEXT ACTION: bisect with -p no:cacheprovider --collect-only to confirm collection is clean, then run the three directories separately with --durations=20 to name the hang. NOTE the desk lesson this cycle re-proved twice: 'cmd | tail; echo dollar-question' reports TAIL's status, so both attempts initially looked like exit 0; and pytest-timeout is NOT installed, so --timeout is rejected as an unrecognised argument (a --timeout run silently does nothing).",
    "roi_bps": null,
    "raised": "2026-08-05T14:04:35.860635+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "Same refutation as R0349, measured 2026-08-11: full suite completes on this box (two full runs this cycle); no hang in tests/research reproduced after the collection-error fixes. If a hang recurs it is a NEW observation, not this row.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-11T15:43:40.588894+00:00"
   },
   {
    "id": "R0374",
@@ -5081,11 +5081,11 @@
    "summary": "CARRY BOOK REPORTED A PROFIT WHILE IT HAD LOST 1869.74 -- the ruin rail's re-based inception leaked into P&L reporting. web/cashcarry_live.json published net_pnl +2938.01; the venue income ledger (realized -3153.27 + funding +113.06 - commission 1750.88) says the futures leg is -4791.09. Gap +4807.75 = the 2026-08-01 principal-signed RESTART re-base 10547.78->5757.08 (+4790.70) plus 17.05 honest slack. Cause: fut_pnl = fut_eq - capital_events.effective_start_equity(), which is the RUIN RAIL inception -- correct for the rail, wrong for reporting, and one number served both. R0322 had pinned the executor and molded books to that same inception, so portfolio.json inherited it: pinning two books to one number made them agree without making them right. Consumers were reading the inflated field: hurdle_rate.py:97 feeds cc.net_pnl into the beats-T-bills gate (L1.5) on the desk's ONLY deployed sleeve, whose own note says it builds the forward track record the gate sizes on. It survived four days because the desk HAD already computed the exact error and filed it as leak_attribution.residual=4807.75 while the bleed alarm asserted a NAKED/UNTRACKED leg and ordered reconcile spot vs perp qty against a book holding ZERO open positions -- a remedy impossible to perform, so the search closed. FIXED: libs/execution/carry_accounting.reconcile_futures_leg publishes both measurements of the futures leg (equity delta = one re-baseable input; venue income ledger = none) plus their gap, verdicts AGREE / REBASE-LEAK / PHANTOM / UNMEASURED; net_pnl now carries the income-ledger number and the equity-delta reading keeps its own key so the two cannot silently re-converge; the bleed alarm can no longer assert a naked leg on a flat book. 8 new tests pin the live numbers.",
    "roi_bps": 4000.0,
    "raised": "2026-08-05T21:04:56.386595+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Verified by fresh read this cycle: web/cashcarry_live.json bleed_verdict names the REBASE-LEAK (+4790.70) and publishes the honest venue-income-ledger figure (-4791.09, net_pnl -1869.74 basis venue-income-ledger). The leak into P&L reporting is detected and subtracted at the publisher.",
+   "commit": "d971a08",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-11T15:43:28.209311+00:00"
   },
   {
    "id": "R0414",
@@ -5117,11 +5117,11 @@
    "summary": "LEDGER WRITE-PATH BYPASS: dispose() is the only writer that stamps a time, and it is not the only writer. Found while measuring R0259: 35 terminal rows carried disposed=None, and only 15 were the done/screened vocabulary drift that row was raised about. The other 20 had CLI-LEGAL statuses (implemented/rejected) and still arrived unstamped -- from bulk triage workflows ([triage 2026-08-04 wf_8e81833d-78a], [wave1/wave2 2026-08-04]) opening docs/research/recommendation_ledger.json and setting status directly. Several ids are recent (R0337/R0347/R0348), so the bypass is ONGOING, not historical. Cost is measurable: check_conversion differences arrivals against dispositions over a trailing window, so an unstamped terminal row is completed work no rate can see -- the 7d window read 173 dispositions where 209 had happened, biasing the queue verdict toward RUNNING AWAY and manufacturing repair-mode pressure out of work already done. R0259 backfilled the 35 from git history and tests/governance/test_tracked_json_integrity.py now fails loudly if any reappear, but that is a DETECTOR: nothing stops the next direct write. Nine modules import the ledger path (run_capability_hunt, run_strategy_coverage, max_audit, research_cycle, strategic_director, capability_ratchet, conversion_max, cro_role, funding_caps). FIX: give the ledger ONE write path -- a libs-level module owning load/mutate/save that stamps disposed on any terminal transition -- and make the direct writers call it, so the stamp is structural rather than a convention every future organ must remember. Same shape as R0254's half-parameterised store: isolation (or here, invariants) that depend on every caller remembering are not invariants.",
    "roi_bps": 900.0,
    "raised": "2026-08-05T21:38:16.175188+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Verified: data/conversion_status.json terminal_unstamped=0 (was 35). R0259 fix (20f82d9) made the write path stamp terminal rows.",
+   "commit": "20f82d9",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-11T15:43:32.198155+00:00"
   },
   {
    "id": "R0417",

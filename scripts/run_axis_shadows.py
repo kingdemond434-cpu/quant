@@ -46,7 +46,7 @@ import numpy as np
 
 from libs.research.anytime_valid import e_value
 from libs.research.evidence_clock import MIN_OBS, Sufficiency, sufficient
-from libs.research.slot_registry import concurrent_m
+from libs.research.slot_registry import cohort_m_for_bar
 from libs.validation.forward_stats import holm_alpha, holm_bar, nw_tstat
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -370,13 +370,18 @@ def _all_axes() -> tuple[dict[str, tuple[str, str, str, int]], list[dict]]:
 def main() -> None:
     # One cohort read for the whole run: every clock in this file is judged against the SAME
     # concurrent-m, and re-deriving per axis would let the bar drift mid-run.
-    m = concurrent_m()
+    cohort = cohort_m_for_bar()
+    m = cohort.m
     tracked, untracked = _all_axes()
     results = [_evaluate(k, *v, m) for k, v in tracked.items()]
     results.extend(untracked)
     for r in results:
         r.setdefault("auto_registered", r.get("axis") not in _AXES)
     payload = {"updated": datetime.now(tz=UTC).isoformat(), "min_observations": MIN_OBS,
+               # A bar is only auditable if its artifact says which cohort it was computed
+               # against, and with what provenance (MEASURED vs floored) -- L1.6 fence reads this.
+               "m_concurrent": cohort.m, "m_provenance": cohort.provenance,
+               "m_detail": cohort.detail,
                "axes": results,
                "note": ("Forward-only Stage-B tracking. P&L starts at the clock's first row, never "
                         "the screen sample. ELIGIBLE means the evidence bar is met and a promotion "
@@ -387,8 +392,11 @@ def main() -> None:
     _STATE.write_text(json.dumps(payload, indent=1), "utf-8")
     for r in results:
         extra = f"t={r.get('nw_t')} bar={r.get('holm_bar')}" if "nw_t" in r else r.get("note", "")
-        print(f"axis-shadow | {r['axis']}: {r['verdict']} "
-              f"({r['forward_days']}/{r['need']} obs) {extra}")
+        # .get(): untracked-registry rows carry no forward_days/need, and a KeyError HERE -- after
+        # both artifacts were already written -- made every cron run of this organ exit nonzero,
+        # which read as "organ always dies" while the artifact quietly aged.
+        print(f"axis-shadow | {r.get('axis')}: {r.get('verdict')} "
+              f"({r.get('forward_days', '-')}/{r.get('need', '-')} obs) {extra}")
     print(f"-> {_OUT}")
 
 

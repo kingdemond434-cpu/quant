@@ -151,7 +151,11 @@ _MAP: dict[str, list[str]] = {
     # restart needs a systemctl this box denies. Detection without an actuator IS the L1.28b
     # defect; this is the actuator.
     "L1.28b": ["scripts/check_conversion.py", "libs/ops/repair_mode.py", "ops/brain_env.sh",
-               "scripts/ship_restart.py"],
+               # run_stale_daemon_repair closes the remaining half-gap: ship_restart was an
+               # actuator a HUMAN still had to invoke; this invokes it on the detector's own
+               # verdict (cron 2x/day), with TIER_RUIN and the L1.38 sterile window as the two
+               # hard skips. Detection -> repair now needs nobody awake.
+               "scripts/ship_restart.py", "scripts/run_stale_daemon_repair.py"],
     # L1.28c: every cadence hunts its own ceiling. The manifest fence requires a decided cadence
     # with evidence per line; brain_seat_throughput measures the resource they all compete for,
     # so "raise the cron" vs "buy a second seat" is settled by measurement.

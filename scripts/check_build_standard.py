@@ -63,6 +63,7 @@ _GOVERNED: tuple[str, ...] = (
     "check_denominators.py",                                # L1.57 the denominator of a verdict
     "check_fence_yield.py",
     "ship_restart.py",                                      # the actuator for stale-code daemons
+    "run_stale_daemon_repair.py",                           # detect->repair loop closed (L1.28b)
     "derive_walcl_clock.py",                                # R0031 forward clock (2026-07-31)
     "run_llm_trader.py",
     "collect_announcements.py",

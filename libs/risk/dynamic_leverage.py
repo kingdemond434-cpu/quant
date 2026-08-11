@@ -51,7 +51,11 @@ def _ruin_cap(returns: np.ndarray, *, ruin_tol: float, drawdown_ruin: float) -> 
     """Largest grid leverage whose risk-of-ruin <= tolerance. The endogenous survival ceiling."""
     best = 0.0
     for lev in _GRID:
-        ror = risk_of_ruin(returns, float(lev), threshold=drawdown_ruin)
+        # R0429: `drawdown_ruin` is a DROP (0.35 = "a 35% drawdown is ruin") but risk_of_ruin's
+        # `threshold` is an equity LEVEL (P(equity < threshold)). Passing the drop raw computed
+        # P(equity < 0.35) = P(drawdown > 65%) -- a cap against a 65% crash where a 35% one was
+        # documented, looser than designed on the survival path. The complement is the fix.
+        ror = risk_of_ruin(returns, float(lev), threshold=1.0 - drawdown_ruin)
         if not np.isfinite(ror):
             return _MIN_OP                            # too little data to trust any leverage
         if ror <= ruin_tol:
