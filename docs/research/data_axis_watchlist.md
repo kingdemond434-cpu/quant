@@ -71,6 +71,19 @@ No prior data-axis watchlist exists (this is this mission's first run). Nothing 
 > - **UNBLOCKING STEP:** principal answers "research-only" or "full use" on the personal-vs-
 >   commercial scope. **Routed to GAP_REGISTER #67 (shared legitimacy-ruling row with the CC BY-NC
 >   question — one ruling session, two answers).**
+> - **THIRD INDEPENDENT RE-VERIFICATION 2026-08-11 (owed-work worker, web agent, robots-complied):**
+>   upbit.com robots.txt is a blanket `User-agent: * / Disallow: /` (allowlist: Googlebot/MSNBot/
+>   Yeti/Daumoa only — Claude not named, but `*` binds), so the portal FAQ itself was NOT re-fetched
+>   first-party; two independent search-index renderings agree clause-for-clause with the 07-25
+>   reading (provenance MEDIUM), and the first-party launch notice (api-manager.upbit.com notice
+>   5419, host §13-clean, fetched in full) itself PROMOTES backtesting as an intended use, restricts
+>   only "bulk download by abnormal means or causing system load", and re-confirms both hazards
+>   (listed-assets-only survivorship; files mutable without notice). Open API terms rev. 2023-10
+>   (first-party PDF, static.upbit.com): copyright in all data vests in Dunamu; no clause defines
+>   "commercial use". NOTHING found resolves own-account prop trading in either direction — the
+>   07-25 ambiguity STANDS, verbatim. **A written-clarification route exists and is stated in the
+>   notice: `historical_data@upbit.com` — the principal can get the answer in writing instead of
+>   ruling on ambiguity.**
 >
 > _Pre-deferral verification notes below (unchanged, still valid):_
 > **RE-VERIFIED 2026-07-25 (EN frontier miner, backlog burn-down). File downloaded, checksum

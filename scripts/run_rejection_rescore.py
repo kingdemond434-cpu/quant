@@ -72,7 +72,7 @@ def _spec_for(family: str, subtype: str) -> Any | None:
 
 
 def _forward_score(rec: object, frames: dict[str, Any] | None = None, *,
-                   min_forward_bars: int = _MIN_FWD_BARS) -> float | None:
+                   min_forward_bars: int = _MIN_FWD_BARS) -> tuple[float, int] | None:
     """Re-evaluate one rejected candidate on its post-rejection forward window.
 
     Rebuilds the stored (family, subtype, symbol, params) signal via the SAME generator registry
@@ -80,7 +80,11 @@ def _forward_score(rec: object, frames: dict[str, Any] | None = None, *,
     scores ONLY the bars strictly after ``rec.created_at`` -- genuinely out-of-sample relative to
     the rejection. Same cost model as the campaign default (net_returns, 3bps/turnover). Returns
     None when the lake cannot produce an honest forward series (missing frame, <min_forward_bars
-    forward bars, unknown generator) -- never a guess. Annualized daily Sharpe (sqrt(365)).
+    forward bars, unknown generator) -- never a guess. Otherwise ``(annualized daily Sharpe
+    (sqrt(365)), n_forward_bars)``: the sample size travels WITH the score, because an annualized
+    Sharpe stripped of its n is unjudgeable -- at n=31 its standard error is ~3.4, and the shadow
+    audit consuming bare floats was structurally guaranteed to brand noise a leaked survivor
+    (R0439).
 
     ``frames`` is injectable so the None-not-zero honesty paths are testable without a lake;
     None (production) reads through the lazy module cache exactly as before.
@@ -124,7 +128,7 @@ def _forward_score(rec: object, frames: dict[str, Any] | None = None, *,
         fwd = rets[mask]
         if len(fwd) < min_forward_bars or float(np.std(fwd)) == 0.0:
             return None
-        return float(np.mean(fwd) / np.std(fwd) * np.sqrt(365.0))
+        return float(np.mean(fwd) / np.std(fwd) * np.sqrt(365.0)), len(fwd)
     except Exception:
         return None  # unreadable inputs surface as unscored, never as a fabricated number
 
@@ -175,19 +179,23 @@ def main() -> None:
     print(f"rescore plan: {plan.verdict}")
 
     by_id = {r.id: r for r in store.rejects()}
-    scores: dict[str, float] = {}
+    # Score entries are {"sharpe": float, "n_fwd_bars": int}. LEGACY bare-float entries (written
+    # before the sample size travelled with the score) are treated as needing re-score, so the
+    # file upgrades itself in place instead of carrying unjudgeable numbers forever.
+    scores: dict[str, Any] = {}
     if _SCORES.exists():
         try:
-            scores = {str(k): float(v) for k, v in json.loads(_SCORES.read_text("utf-8")).items()}
+            scores = {str(k): v for k, v in json.loads(_SCORES.read_text("utf-8")).items()}
         except Exception:
             scores = {}
     n_new = 0
     for cid in plan.selected:
-        if cid in scores:
-            continue  # already scored -- incremental
+        if isinstance(scores.get(cid), dict):
+            continue  # already scored in the current schema -- incremental
         val = _forward_score(by_id.get(cid))
         if val is not None:
-            scores[cid] = val
+            sharpe, n_fwd = val
+            scores[cid] = {"sharpe": sharpe, "n_fwd_bars": n_fwd}
             n_new += 1
 
     if n_new:

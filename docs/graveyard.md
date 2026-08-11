@@ -44,6 +44,27 @@ once the module carrying the floor no longer exists.
 `test_optimizer_acceptance_pools.py` deleted wholesale (exclusively covered retired modules);
 `tests/discovery/test_robustness_engines.py` trimmed from 14 tests to the 7 covering survivors.
 
+**RESURRECTION NOTE (2026-08-11):** 12 of the 14 retired files plus the 3 deleted test files
+came back on disk without any re-adding commit — a lineage-merge resolution (present again by
+`40c0777`'s first parent, 2026-08-09) restored them, the same merge-union class as the `8e8ea23`
+CI incident. Re-census confirmed zero new consumers; re-deleted 2026-08-11 by the owed-work
+worker. TWO EXCEPTIONS now live legitimately: `portfolio_geometry.py` and `cagr_optimizer.py`
+gained a real production consumer after the retirement (`scripts/run_geometric_review.py:41,46`)
+— exactly the "fresh external importer" this section names as the lone re-activation condition,
+so those two are un-retired on the record. `__init__.py` was already in its post-retirement form
+and is unchanged.
+
+### `libs/alpha_factory/feature_drift_engine.py` — RETIRED 2026-08-11
+
+**Mechanism of death:** a 30-line wrapper around
+`libs/self_improvement/drift_detector.population_stability_index` with zero importers anywhere
+(production, tests, or its own package `__init__`) and no commit since the 2026-07-16 baseline.
+The capability it wrapped is alive twice over: `drift_detector` itself, and the wired
+distribution-shift screen `libs/research/dist_shift.py` (the only mode of that family sanctioned
+for wiring — capability hunt s3 2026-08-01: DRIFT is overpowered at large n). **Disposition:
+RETIRE** — re-activation condition per this section: a fresh external importer with a reason the
+two live supersessors cannot serve.
+
 **Kill-basis rule (2026-07-12, round-2 external review):** every kill must record its BASIS —
 `economic` (mechanism/statistics falsified: permanent) vs `data/infra` (killed by a broken feed,
 outage, or collection bug). An infra-killed hypothesis is NOT permanently dead: it becomes

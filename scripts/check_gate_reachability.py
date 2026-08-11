@@ -88,7 +88,8 @@ _POST_PROMOTE = ("libs/autodiscovery/orchestrator.py", r'reason = "failed: ([a-z
 #: is reported as UNSCANNED rather than silently skipped.
 _VERDICT_MODULES = (
     "libs/signal_engine/governance.py",
-    "libs/discovery/acceptance.py",
+    # libs/discovery/acceptance.py was RETIRED 2026-07-30 (graveyard: Alpha Discovery Factory);
+    # it re-entered this roster because a merge resurrected the dead file, re-deleted 2026-08-11.
     "libs/stage15/governance.py",
 )
 

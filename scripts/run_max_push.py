@@ -58,6 +58,9 @@ if str(_ROOT) not in sys.path:
 _OUT = _ROOT / "data/max_push_queue.json"
 _FRONTIER_OUT = _ROOT / "data/economic_frontier.json"
 
+from libs.research.alpha_frontier_gaps import queue_rows as alpha_frontier_queue_rows  # noqa: E402
+from libs.research.completion_program_gaps import load as load_completion_program  # noqa: E402
+from libs.research.completion_program_gaps import queue_rows as completion_queue_rows  # noqa: E402
 from libs.research.frontier import Action, ResourcePrices  # noqa: E402
 from libs.research.frontier import summarise as frontier_summary  # noqa: E402
 from libs.research.gap_contract import load_published, to_queue_rows  # noqa: E402
@@ -626,6 +629,13 @@ def build(*, refresh: bool = True) -> dict[str, Any]:
              + _from_tier_benchmark() + _from_calibration() + _from_freshness()
              + _from_stranding() + _from_wealth()
              + _from_books() + _from_practitioners()
+             # Restored 2026-08-11: the 08-09 lineage merge kept these two libs and their tests
+             # but resolved THIS file to the branch without their call sites, so both queue
+             # sources went dark with no removing commit (found by the §36 orphan census).
+             + completion_queue_rows(
+                 load_completion_program(_ROOT / "data/completion_program.json"), _item)
+             + alpha_frontier_queue_rows(
+                 _ROOT / "data/intelligence/daily_alpha_frontier.json", _item)
              # THE GENERIC CHANNEL. Every `_from_*` above is a bespoke reader that knows the shape
              # of one artifact, and adding the tenth made the cost visible: a detector written
              # today cannot influence tomorrow's priorities until somebody edits THIS file, which
