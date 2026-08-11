@@ -1,9 +1,9 @@
 {
  "what": "Measured cadence policy -- how often each organ runs, read off its yield rather than argued. Produced by libs/ops/cadence_roi.recommend_all(); installed in ops/crontab.manifest.",
  "generated_utc": "2026-08-11T20:29:33+00:00",
- "llm_runs_per_day_before": 20.0,
- "llm_runs_per_day_after": 5.0,
- "llm_runs_per_day_saved": 15.0,
+ "llm_runs_per_day_before": 22.6,
+ "llm_runs_per_day_after": 22.6,
+ "llm_runs_per_day_saved": 0.0,
  "total_runs_per_day_saved": 19.0,
  "installed_cuts": {
   "scripts/kimi_hunter.py": {
@@ -108,5 +108,33 @@
  ],
  "in_session_rule": "The largest measured burn is NOT cron -- it is interactive session work. Standing rules: (1) NO parallel agent fan-out unless the task genuinely cannot be done sequentially AND the session has headroom -- the 2026-08-11 seven-agent fan-out spent 194k subagent tokens and returned ZERO usable output because the session limit hit mid-run. (2) COMMIT AND PUSH each unit of work immediately: the same restart that killed the fan-out also rolled local HEAD back two commits and destroyed an unpushed commit. (3) miner sweeps report ranked lists, never raw blocked-channel dumps. (4) prefer targeted python one-liners over full-file reads.",
  "law": "Cadence is READ off yield, never argued. Safety floors are exempt by construction: a quiet watchdog is a working watchdog.",
- "authority": "RECOMMENDS ONLY. ops/crontab.manifest is the authoritative schedule and a human installs it. An advisor that could rewrite the schedule could silently disable an organ nobody knew was load-bearing."
+ "authority": "RECOMMENDS ONLY. ops/crontab.manifest is the authoritative schedule and a human installs it. An advisor that could rewrite the schedule could silently disable an organ nobody knew was load-bearing.",
+ "openrouter_cadence": "HELD AT ORIGINAL -- principal directive 2026-08-11: never cut GPT, DeepSeek or Kimi cadence. All four cuts applied earlier that day were REVERTED the same day.",
+ "reverted_cuts": {
+  "scripts/kimi_hunter.py": "restored 5 */3 * * * (8/day) + deep 2/week. Principal directive; and the cut rested on an ASSUMED publication rate -- no per-run yield ledger exists for kimi the way data/miner_yield.jsonl does for the miner, so UNMEASURED was being treated as a reason to cut (L1.41 violation).",
+  "scripts/run_cro.py": "restored 20 5,11,17,23 (4/day). Principal directive; and the 7-of-411 figure measured ledger ROWS not value, over a window in which the seat was DARK.",
+  "scripts/build_enforcement_matrix.py": "restored 13 */6 (4/day). MISCLASSIFICATION on my part: makes ZERO model calls (0 chat call sites; the grep matched the words 'model'/'claude' in comments). Cutting it saved no spend.",
+  "scripts/run_wiring_agent.py": "restored 44 */6 (4/day). Same misclassification: 0 model calls; the grep hit the string 'can SPEND (external model/API)' inside a PROPOSE verdict."
+ },
+ "true_llm_spenders": {
+  "scripts/run_cro.py": "1 chat_messages call site, pushed to MAX_ROUNDS=11",
+  "scripts/kimi_hunter.py": "direct urllib POST, model moonshotai/kimi-k3, max_tokens 16000",
+  "scripts/run_survivor_panel.py": "2 chat call sites, 2 rounds, dossier capped 9000 chars"
+ },
+ "measured_prompt_sizes": {
+  "run_cro": "150,451 chars = ~41,792 tokens input, 469 inventory rows (measured live 2026-08-11)",
+  "survivor_panel": "dossier hard-capped at 9,000 chars",
+  "kimi_hunter": "max_tokens 16,000 output"
+ },
+ "monthly_cost_estimate_usd": {
+  "run_cro_flagship_1_round": 25.47,
+  "run_cro_flagship_4_rounds": 116.28,
+  "run_cro_flagship_11_rounds": 412.16,
+  "run_cro_deepseek_4_rounds": 18.69,
+  "kimi_hunter_total": 11.18,
+  "survivor_panel": 0.73,
+  "TOTAL_flagship_typical": 128.18,
+  "note": "Input sizes MEASURED from the live dossier; prices are OpenRouter list ranges and are an ESTIMATE. libs/ops/llm_seat._record_spend writes data/llm_spend.jsonl on the first real call -- replace these with measured numbers then. Cap is DEFAULT_MONTHLY_CAP_USD=20.0, so at flagship pricing the cap BINDS and organs defer rather than overspend."
+ },
+ "open_risk_unbounded_prompt": "libs/research/cro_role._fit_budget sheds DETAIL but never sheds a ROW, and its final branch keeps every row regardless of the 60,000-char budget. Today that is 469 rows / 150KB. docs/research/CRO_BRIEFING.md on disk is 9.2MB from a run when the desk held 87,062 artifacts -- ~2.5M tokens, which would blow the context window and the cap in one call. The row dimension is uncapped and HAS blown before."
 }

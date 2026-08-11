@@ -74,27 +74,42 @@ def test_recommend_all_reports_the_llm_saving() -> None:
     assert all(v["evidence"] for v in r["verdicts"])       # no cut without grounds
 
 
-# ------------------------------------------------------------------ the manifest actually moved
-def test_manifest_matches_the_recommended_cadences() -> None:
-    """A recommendation nobody installed is a docstring. These four lines are the installed cut."""
+# ------------------------------------------------------------------ the manifest holds
+def test_openrouter_cadences_are_held_at_original() -> None:
+    """PRINCIPAL DIRECTIVE 2026-08-11: never cut GPT, DeepSeek or Kimi cadence.
+
+    Four cuts were applied and reverted the same day. Two of them (the enforcement matrix and the
+    wiring agent) rested on my own misclassification -- both make ZERO model calls, so cutting
+    them saved no spend at all. This test pins the restored schedule so a future 'optimisation'
+    cannot quietly re-cut a seat the principal has ruled is not to be cut.
+    """
     man = (_REPO / "ops/crontab.manifest").read_text("utf-8")
-    for sched, script in (("5 1,13 * * *", "scripts/kimi_hunter.py"),
-                          ("13 4 * * *", "scripts/build_enforcement_matrix.py"),
-                          ("44 4 * * *", "scripts/run_wiring_agent.py"),
-                          ("20 5 * * *", "scripts/run_cro.py")):
+    for sched, script in (("5 */3 * * *", "scripts/kimi_hunter.py"),
+                          ("13 */6 * * *", "scripts/build_enforcement_matrix.py"),
+                          ("44 */6 * * *", "scripts/run_wiring_agent.py"),
+                          ("20 5,11,17,23 * * *", "scripts/run_cro.py")):
         assert any(ln.startswith(sched) and script in ln for ln in man.splitlines()), script
+    assert "CADENCE CUT 2026-08-11" not in man, "a reverted cut left its marker behind"
+    assert "CADENCE HELD 2026-08-11" in man
 
 
 def test_miner_cadence_floor_is_documented_against_being_raised() -> None:
+    """The one genuine cadence decision that STANDS -- and it is a floor, not a cut: the miner was
+    already 1/day in the manifest. What changed is that raising it now has to argue with a
+    measurement."""
     man = (_REPO / "ops/crontab.manifest").read_text("utf-8")
-    assert "CADENCE FLOOR 2026-08-11" in man
-    assert "MUST NOT be raised" in man
-    # And the miner is still scheduled once daily -- documented, not deleted.
+    assert "CADENCE FLOOR 2026-08-11" in man and "MUST NOT be raised" in man
     assert any(ln.startswith("0 13 * * *") and "mine_research_queue" in ln
                for ln in man.splitlines())
 
 
-def test_llm_budget_state_is_json_and_declares_authority() -> None:
+def test_policy_artifact_records_the_hold_and_the_true_spenders() -> None:
     doc = json.loads((_REPO / "docs/policy/CADENCE_POLICY.json").read_text("utf-8"))
-    assert doc["llm_runs_per_day_after"] < doc["llm_runs_per_day_before"]
+    assert doc["llm_runs_per_day_saved"] == 0.0          # nothing was cut in the end
+    assert "HELD AT ORIGINAL" in doc["openrouter_cadence"]
+    # Only the three real spenders are named as such.
+    assert set(doc["true_llm_spenders"]) == {
+        "scripts/run_cro.py", "scripts/kimi_hunter.py", "scripts/run_survivor_panel.py"}
     assert "RECOMMEND" in doc["authority"].upper()
+    # And the unbounded-prompt risk is on the record rather than in a chat message.
+    assert "never sheds a ROW" in doc["open_risk_unbounded_prompt"]
