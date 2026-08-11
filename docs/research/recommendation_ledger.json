@@ -5458,6 +5458,90 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0445",
+   "source": "cycle",
+   "summary": "BR-11 SCREEN OWED (blind-rediscovery 2026-08-11): funding cross-section factor decomposition -- funding_i = beta_i*F + eps_i (F = cross-sectional mean / first PC of the funding panel); select carry on the IDIOSYNCRATIC residual eps_i instead of the raw level, so the payment stream diversifies (N_eff of funding, not of returns) and loads on structural name-specific payers (vesting hedgers, listing hype) instead of the fickle market-wide leverage factor. Opens the STATISTICAL-ARBITRAGE family (coverage: MENTIONED-NEVER-TESTED) on the funding surface, not dead price space. Screening owner: cycle org. Stage-A harness: libs.research.axis_screen on the residual construction + a funding-capture N_eff comparison vs level-rank (cohort_independence demeaning floor -1/(N-1) applies). Data already on disk: data/lake/bronze/crypto/{SYM}/D1 funding (279 sym, 2011-2026) + data/funding_cross_section.jsonl (855-sym venue-stamped snapshots). Spurious-first: residual may be a thin-name/liquidity split in disguise -- liquidity-matched control mandatory, cost-honest per BR-01's 0.018-vs-20.6bps curve. EV 0.0104, novelty 0.726.",
+   "roi_bps": 25.0,
+   "raised": "2026-08-11T21:19:18.442716+00:00",
+   "status": "scheduled",
+   "reason": "R0210(b) handoff: screening owner = cycle org; top EV of the 2026-08-11 blind-rediscovery batch (0.0104); panel + snapshots already on disk, no acquisition step",
+   "commit": null,
+   "due": "2026-08-25",
+   "disposed": "2026-08-11T21:20:18.258526+00:00"
+  },
+  {
+   "id": "R0446",
+   "source": "cycle",
+   "summary": "BR-12 SCREEN OWED (blind-rediscovery 2026-08-11): settlement-marking pressure on the premium index -- a large net funding receiver has a benchmark-fixing incentive (payoff scales with OI, cost with own trading) to push the premium index INTO the funding averaging window; detect signed taker pressure in the final averaging fraction that REVERTS after the stamp, scaling with |funding|*OI/depth incentive rank; below-incentive names must show NOTHING (the null-where-absent design). Distinct from BR-09 (dodge flow: no reversion) and BR-03 (venue sampling choice); prior-art collision declared with the 2026-08-04 SFD-class watchlist probe (venue-clock LAG game) -- this is the INCENTIVE/marking half of the same surface. Screening owner: cycle org. Stage-A harness: named alternative -- stamp-window event analysis on the moat trade tape (venue-stamped trades ONLY, never poll-phased book snapshots, R0117 aliasing lesson). Data already on disk: data/moat/fut/{SYM}/ trades ~5-10s, 30 sym x ~25d x 3 stamps/day (~2250 stamp-windows, accruing) + funding/OI in lake. EV 0.0103, novelty 0.772.",
+   "roi_bps": 15.0,
+   "raised": "2026-08-11T21:19:25.184097+00:00",
+   "status": "scheduled",
+   "reason": "R0210(b) handoff: screening owner = cycle org; EV 0.0103; ~2250 stamp-windows already on the moat tape and accruing 90/day",
+   "commit": null,
+   "due": "2026-08-25",
+   "disposed": "2026-08-11T21:20:26.444868+00:00"
+  },
+  {
+   "id": "R0447",
+   "source": "cycle",
+   "summary": "BR-15 SCREEN OWED (blind-rediscovery 2026-08-11): negative-funding borrow asymmetry -- positive funding is arbable by ANY spot holder (capital only) while negative-funding arb requires borrowing spot to short (unavailable/expensive on most alts) or thin dated futures, so arb supply is structurally asymmetric and negative episodes should be deeper and longer-lived per unit imbalance; the harvestable side is long-perp-receiving during negative episodes. Falsifier must difference against realized downside in capture windows: negative funding clusters in crashes and the premium may be fair knife-catching compensation (barrier-rent lesson transposed), in which case record compensation-not-inefficiency and kill. Screening owner: cycle org. Stage-A harness: libs.research.axis_screen (sign-conditional persistence/magnitude cells, all DSR-logged). Data already on disk: data/lake/bronze/crypto/{SYM}/D1 funding 279 sym + data/bitmex_funding.jsonl decade. EV 0.0095, novelty 0.779.",
+   "roi_bps": 20.0,
+   "raised": "2026-08-11T21:19:30.761909+00:00",
+   "status": "scheduled",
+   "reason": "R0210(b) handoff: screening owner = cycle org; EV 0.0095; pure panel arithmetic on lake funding",
+   "commit": null,
+   "due": "2026-09-01",
+   "disposed": "2026-08-11T21:20:35.642745+00:00"
+  },
+  {
+   "id": "R0448",
+   "source": "cycle",
+   "summary": "BR-13 SCREEN OWED (blind-rediscovery 2026-08-11): CME-closure weekend funding differential -- the institutional CME basis-arb balance sheet is absent Fri-close to Sun-open EVERY week (a repeating exogenous absence of the largest arb capital); prediction: weekend funding on CME-listed names departs further from weekday mean and reverts Monday, while non-CME tails show NO differential. The CME/non-CME CONTRAST is the load-bearing test (size confound declared: nothing is BTC-sized without CME, so a size-matched control may not exist -- report honestly if unidentifiable). Per-name weekday-weekend differential doubles as a measured institutional-arb-presence characteristic for Section-42 name selection. Screening owner: cycle org. Stage-A harness: libs.research.axis_screen. Data already on disk: data/lake/bronze/crypto/{SYM}/D1 funding (records all 7 days) + data/bitmex_funding.jsonl decade + H8 for 10 majors. EV 0.0074, novelty 0.726.",
+   "roi_bps": 10.0,
+   "raised": "2026-08-11T21:19:37.371069+00:00",
+   "status": "scheduled",
+   "reason": "R0210(b) handoff: screening owner = cycle org; EV 0.0074; cheapest screen of the batch (8h, on-disk panel)",
+   "commit": null,
+   "due": "2026-09-01",
+   "disposed": "2026-08-11T21:20:44.964600+00:00"
+  },
+  {
+   "id": "R0449",
+   "source": "cycle",
+   "summary": "BR-10 SCREEN OWED (blind-rediscovery 2026-08-11): perp delisting forced-unwind window -- Section-42's named-but-never-worked ground. Delisting announcement -> every OI holder MUST close by the settlement date (contract ceases; nobody can stop); forced one-sided flow with a public deadline dislocates funding/basis toward the settlement reference. The contract lifecycle's DEATH end has no instrument while the birth end (listing_events.py) is pre-registered -- half the lifecycle reads as covered. Screening owner: cycle org. Stage-A harness: libs/validation/event_study.py (event-shaped gate per Section-42; window/threshold as pre-registered constants BEFORE looking, listing_events precedent). PREREQUISITE STEP: assemble the historical Binance perp delisting event list (free, announcement archive; collector exists: data/exchange_announcements.jsonl, 472 rows, only 1 delist-tagged -- backfill needed) and verify klines for delisted perps are NOT purged (Upbit treatment-erasure trap). Data already on disk: data/lake/bronze/crypto (296 sym incl. early-enders) + data/lake/bronze/futclose_daily. Endogeneity declared: venue delists BECAUSE dead -- matched-control design mandatory. EV 0.0048, novelty 0.786.",
+   "roi_bps": 30.0,
+   "raised": "2026-08-11T21:19:44.355174+00:00",
+   "status": "scheduled",
+   "reason": "R0210(b) handoff: screening owner = cycle org; EV 0.0048; extra week for the delisting event-list assembly + kline-purge check that precede the event study",
+   "commit": null,
+   "due": "2026-09-08",
+   "disposed": "2026-08-11T21:20:53.993458+00:00"
+  },
+  {
+   "id": "R0450",
+   "source": "cycle",
+   "summary": "BR-16 SCREEN OWED (blind-rediscovery 2026-08-11): own-quote adverse-selection gauge -- the L1.45 excitation fills are PROBES: post-fill markout per name/window measures informed-flow intensity from our own quotes, a proprietary toxicity sensor nobody can buy (needs our fills). Use: defer rebalance crossings when toxicity high (certain cost save on trades we make anyway); toxicity-regime dispersion as a research observable. Must beat a plain vol control or it is redundant (spurious-first: markout dispersion may re-measure vol); universe-selection bias declared (we only quote carry names). Honest expected verdict TODAY: UNDERPOWERED (~500 fills) -- the deliverable is the pre-registered markout consumer + accrual clock at zero marginal cost. Screening owner: cycle org. Stage-A harness: named alternative -- markout curves on the execution tape by excitation arm. Data already on disk: data/moat/execution_tape/cashcarry_trades.jsonl (531 rows) + data/excitation_design.json (arms frozen 2026-08-01). EV 0.0070, novelty 0.767.",
+   "roi_bps": 10.0,
+   "raised": "2026-08-11T21:19:50.852991+00:00",
+   "status": "scheduled",
+   "reason": "R0210(b) handoff: screening owner = cycle org; EV 0.0070; markout computation due now, verdict expected UNDERPOWERED with an accrual clock -- the consumer is the deliverable",
+   "commit": null,
+   "due": "2026-09-08",
+   "disposed": "2026-08-11T21:21:01.574598+00:00"
+  },
+  {
+   "id": "R0451",
+   "source": "cycle",
+   "summary": "BR-17 SCREEN OWED (blind-rediscovery 2026-08-11): venue-clock delta congestion observable -- delta = t_recv - t_venue from our own recorders (L1.46: retained, structurally unbuyable) measures matching-engine/gateway congestion continuously; latency is convex in load, so right-tail delta excursions should lead short-horizon vol/spread widening. Consumer today: check_clock_provenance ONLY (a fence) -- zero hypotheses have ever read the series as DATA. Design: delta must add over a trade-rate control; cross-venue simultaneity EXCLUDES our-own-network spikes (a delta spike on all venues at once = our ISP, not their engine); poll-phase aliasing declared (R0117 lesson). Value is execution scheduling first (avoid crossing during congestion), vol observable second. Screening owner: cycle org. Stage-A harness: named alternative -- delta-percentile event analysis on moat tape where venue stamps retained (trades yes; depth recv_only on some venues, declared per venue/kind). Data already on disk: data/moat/** (17GB, 3 venues) + 7.5GB pre-marker tape with provenance graded per (venue,kind). EV 0.0059, novelty 0.797.",
+   "roi_bps": 8.0,
+   "raised": "2026-08-11T21:19:56.343013+00:00",
+   "status": "scheduled",
+   "reason": "R0210(b) handoff: screening owner = cycle org; EV 0.0059; needs the per-(venue,kind) stamp-retention map read before the delta panel builds",
+   "commit": null,
+   "due": "2026-09-08",
+   "disposed": "2026-08-11T21:21:11.494283+00:00"
   }
  ]
 }
