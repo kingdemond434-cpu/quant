@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-10T02:51:26.700274+00:00",
+  "generated": "2026-08-11T03:25:05.943186+00:00",
   "master_objective": "maximize expected lifetime geometric growth (log wealth), survival-c",
   "deployed": {
     "sleeves": [
@@ -7,17 +7,17 @@
       "perp_ls (paper)"
     ],
     "start_capital": 15000.0,
-    "equity": 17947.41,
-    "net_pnl": 2947.41,
-    "return_pct": 19.649,
-    "days_live": 38.9,
+    "equity": 17972.8,
+    "net_pnl": 2972.8,
+    "return_pct": 19.819,
+    "days_live": 39.92,
     "winrate_pct": 43.1,
     "n_closed_trades": 253,
-    "deployed_sharpe": 2.01,
+    "deployed_sharpe": 2.09,
     "funding": 113.06,
     "funding_measured": true,
     "n_carries": 0,
-    "perp_paper_net": 6.0
+    "perp_paper_net": 41.0
   },
   "binding_constraint": "calendar-time data accumulation (not engineering throughput)",
   "bottleneck_rankings": [
@@ -27,17 +27,17 @@
       "evidence": [
         {
           "edge": "oi_divergence",
-          "have_days": 43,
+          "have_days": 44,
           "needs_days": 40
         },
         {
           "edge": "ls_contrarian",
-          "have_days": 43,
+          "have_days": 44,
           "needs_days": 40
         },
         {
           "edge": "liquidation_reversal",
-          "have_days": 43,
+          "have_days": 44,
           "needs_days": 40
         }
       ],
@@ -59,16 +59,16 @@
   "retirement_candidates": [
     {
       "sleeve": "funding_momentum",
-      "marginal_sharpe": -0.17
+      "marginal_sharpe": -0.13
     },
     {
       "sleeve": "basis_carry",
-      "marginal_sharpe": -0.14
+      "marginal_sharpe": -0.13
     }
   ],
   "retirement_note": "SIGNAL ONLY \u2014 marginal-Sharpe swings ~\u00b10.15 between runs, so a single negative sign is within noise. Retire only on PERSISTENT negative contribution across runs, with promotion-grade rigor. No whipsaw.",
   "architecture_review_due": false,
-  "cycles_logged": 76,
+  "cycles_logged": 78,
   "completed_this_cycle": [
     "archive_integrity_ok",
     "watchdog_run_logged_off",
@@ -123,17 +123,17 @@
   "research_backlog": [
     {
       "edge": "oi_divergence",
-      "status": "data-blocked 43/40d",
+      "status": "data-blocked 44/40d",
       "info_value": "positive but not yet actionable"
     },
     {
       "edge": "ls_contrarian",
-      "status": "data-blocked 43/40d",
+      "status": "data-blocked 44/40d",
       "info_value": "positive but not yet actionable"
     },
     {
       "edge": "liquidation_reversal",
-      "status": "data-blocked 43/40d",
+      "status": "data-blocked 44/40d",
       "info_value": "positive but not yet actionable"
     }
   ],

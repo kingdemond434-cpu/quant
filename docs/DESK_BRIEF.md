@@ -1,4 +1,4 @@
-# DESK BRIEF -- 2026-08-10 02:54Z
+# DESK BRIEF -- 2026-08-11 03:30Z
 
 Machine-generated from measured desk state. Every number traces to an artifact in
 `data/`. Nothing here is an argument. Respond to the evidence, not to another model.
@@ -13,9 +13,9 @@ Machine-generated from measured desk state. Every number traces to an artifact i
    forward clocks promote.
 
 ## Experiment record (45d, harvested from git -- one row per commit)
-- experiments: **1359**; decided: 801
+- experiments: **1365**; decided: 801
 - survival rate: **5.6%** (45 survived / 701 refuted / 55 inconclusive)
-- unclassified commit decisions: 94 (commit-discipline defect)
+- unclassified commit decisions: 98 (commit-discipline defect)
 
 | mechanism | tested | survived | rate |
 |---|---:|---:|---:|
@@ -44,25 +44,25 @@ Machine-generated from measured desk state. Every number traces to an artifact i
 
 ## FAMILY KILLS -- mechanisms closed by evidence
 
-`M_PRICE_PATTERN`, `M_ATTENTION_DELAY`, `M_SKILL_PERSISTENCE`, `M_FLOW_PRESSURE`
+`M_PRICE_PATTERN`, `M_ATTENTION_DELAY`, `M_FLOW_PRESSURE`, `M_SKILL_PERSISTENCE`, `M_FUNDAMENTAL_PROXY`
 
 Every future variant inherits this evidence.
 
 ## Transferable lessons (family -> dominant failure mode)
 
-- **price-only/TA** -> `H_OVERFIT` (n=42)
-- **regional premium** -> `A_NO_MECHANISM` (n=20)
-- **funding/positioning** -> `E_DATA_QUALITY` (n=16)
-- **trader/behavioural** -> `C_WRONG_TIMING` (n=15)
-- **on-chain/flow** -> `C_WRONG_TIMING` (n=13)
-- **attention/social** -> `A_NO_MECHANISM` (n=9)
-- **other** -> `UNCLASSIFIED` (n=4)
-- **developer** -> `H_OVERFIT` (n=3)
+- **price-only/TA** -> `C_WRONG_TIMING` (n=56)
+- **funding/positioning** -> `G_TOO_EXPENSIVE` (n=30)
+- **regional premium** -> `A_NO_MECHANISM` (n=28)
+- **attention/social** -> `C_WRONG_TIMING` (n=26)
+- **on-chain/flow** -> `C_WRONG_TIMING` (n=26)
+- **trader/behavioural** -> `C_WRONG_TIMING` (n=19)
+- **other** -> `UNCLASSIFIED` (n=7)
+- **developer** -> `C_WRONG_TIMING` (n=7)
 
 ## Proprietary moat (4.4GB order books, 30 symbols, top-20 snapshots)
 
 M_LIQUIDITY_WITHDRAWAL, construction = negative z of near-touch depth vs 24h roll:
-- raw lead rho pooled: +0.0988
+- raw lead rho pooled: +0.1046
 - **after orthogonalising forward RV against current RV: residual rho +0.0154 (t +0.28), sign 1/5 -> the lead was vol clustering.**
 - ONE construction tested only. The mechanism is NOT refuted. Untested: replenishment rate, one-sided withdrawal, book shape, migration, recovery half-life, d(book)/dt.
 

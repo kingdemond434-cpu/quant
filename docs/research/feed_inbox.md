@@ -266,3 +266,35 @@ carries content the parser cannot see. -->
 ## Beyond Co-Movement: Locality by Exposures Enables a Joint Factor-Graph Framework for Portfolio Diversification
 - 2026-08-06 · http://arxiv.org/abs/2608.06618v1
 - Current portfolio construction methods are either agnostic to the effects of idiosyncratic shocks (standard factor models) or to the latent data structure driving systematic returns (recent graph-based approaches). This presents an opportunity to combine the complementary market aspects captured by the factor and graph domains, allowing asset allocations to operate directly on the underlying market structure, rather than on its observed co-movement or its finite-sample artefacts. In this work, we introduce the Mutually-INformed Graph-Locality and Exposures framework (MINGLE), which mutually re
+
+## Lower spectrum of financial correlation matrices: a new perspective on market synchronization
+- 2026-08-10 · http://arxiv.org/abs/2608.09641v1
+- In this paper we investigate the information content of the lower part of the spectrum of financial correlation matrices, as a source of information on market synchronization. In a financial context, a classical application of Principal Component Analysis and Random Matrix Theory identifies the largest eigenvalues as indicators of dominant market factors and synchronization patterns. We complement this perspective by showing that the smallest eigenvalues also contain relevant information about the effective structure of financial markets. The paper presents the methodological proposal and vali
+
+## Scaling laws of Stablecoin Transactions: Evidence from USDT and USDC on the Ethereum blockchain
+- 2026-08-10 · http://arxiv.org/abs/2608.09378v1
+- Stablecoins have rapidly emerged as an important class of digital assets and a component of the digital financial ecosystem. Despite their growing importance, the statistical properties of stablecoin transaction activity remain largely unexplored. To the best of our knowledge, this is the first study to investigate scaling behavior in stablecoin transaction data, focusing on USDT and USDC. We analyze approximately 370 million USDT and USDC transactions recorded on the Ethereum blockchain across six periods spanning June 2024 to February 2026. Based on interactions between Externally Owned Acco
+
+## When Cross-Venue Agreement Is Not Price Discovery: Disclosure Frontiers for 24/7 Equity-Perpetual Oracles
+- 2026-08-10 · http://arxiv.org/abs/2608.09188v1
+- Crypto-listed equity perpetuals trade while the primary cash market is closed, yet still need a mark for margin, funding, and liquidation. We model the closed-window mark as the fixed point of an oracle operator with two blocks: external anchoring and self/peer derivative reference. From marks and proxies alone the two are observationally equivalent: every reduced form admits infinitely many topology decompositions, and a path-law argument extends this to the full mark dynamics, so lead-lag and information-share estimators have power equal to size. Disclosure breaks the tie -- disclosed diagon
+
+## Hybrid Neural-Classical Correction for Frozen Time Series Foundation Models: A Comprehensive Ablation Study on High-Frequency Stock Prediction
+- 2026-08-09 · http://arxiv.org/abs/2608.08825v1
+- Foundation models for time series forecasting demonstrate impressive zero-shot generalization but often underperform on specialized domains such as high-frequency finance. We present a comprehensive study of hybrid neural-classical correction for adapting frozen TimesFM (200M parameters) to stock return prediction during the volatile opening trading hour. We compare two neural correction architectures - AttnCorrect (multi-head self-attention, approximately 471K parameters) and GatedLinear (low-rank bilinear projection with gating, approximately 49K parameters) - each augmented with Random Fore
+
+## Retained hidden excess generates memory in price-limited markets
+- 2026-08-09 · http://arxiv.org/abs/2608.08625v1
+- The daily return of a stock is often restricted to an exchange-imposed band to curb extreme fluctuations. Any attempted price movement beyond this band is clipped, leaving an unobserved excess. We introduce a minimal stochastic latent-state model in which a fraction of this hidden excess is retained for the next day. This retention generates memory, even though the daily stochastic driving shocks are independent. For symmetric driving shocks with regularly varying tails, the stationary latent return preserves the tail index of the noise, but has an enhanced tail amplitude. In the wide-band lim
+
+## Robustness or Crowding: Experimental Design for Trading Strategy Capacity
+- 2026-08-09 · http://arxiv.org/abs/2608.08405v1
+- How much capital a trading strategy can absorb before its edge disappears is a causal question about how much is deployed, but it is answered with observational proxies that rest on incompatible assumptions. We ask what experiment would answer it instead, and show that two features of the problem interact to constrain any answer. Deployed capital erodes the edge gradually, so a trial of fixed length measures less than the eventual effect; and parallel implementations of one strategy trade the same securities, so they are not independent units. Comparing implementations on the same date removes
+
+## Microstructural Foundation for the Rough Hawkes--Heston Model
+- 2026-08-07 · http://arxiv.org/abs/2608.07709v1
+- Hawkes-based microstructural foundations for rough volatility, leverage, and rough Heston-type limits were developed by El Euch et al. (2018, Finance Stoch., 22(2), 241--280) and connected to the affine rough Heston framework of El Euch and Rosenbaum (2019, Math. Finance, 29(1), 3--38). The rough Hawkes--Heston model with common price--volatility jumps of Bondi et al. (2024, Math. Finance, 34(4), 1197--1241) extends this framework by adding state-dependent common jumps to rough affine volatility. We provide a microstructural foundation for its variance and common-jump mechanism by constructing
+
+## On a Simple Relationship Between Order Imbalance, Skew and Width in Over-The-Counter Trading
+- 2026-08-07 · http://arxiv.org/abs/2608.07690v1
+- We consider a market maker who can only obtain and dispose of inventory by responding to a sequence of sealed-bid enquiries, and whose customers arrive with imbalanced intent: sellers more often than buyers, or the reverse. Under the assumption that the best competing response is exponentially distributed around a commonly discerned fair price, we observe a symmetry in the steady state solution that compresses the imbalanced problem onto the perfectly balanced one. Order imbalance is absorbed, exactly, by a translation of the market maker's skew, a widening of her quotes, and a multiplication 

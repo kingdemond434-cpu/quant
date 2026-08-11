@@ -1,6 +1,6 @@
 {
- "updated": "2026-08-10T02:51:31.318040+00:00",
- "n_closes": 13,
+ "updated": "2026-08-11T03:25:10.207112+00:00",
+ "n_closes": 8,
  "hold_buckets": {
   "<2h": {
    "n": 3,
@@ -21,10 +21,10 @@
    "bps": 0.0
   },
   ">24h": {
-   "n": 9,
-   "notional": 12368.99,
-   "net": -52.52,
-   "bps": -42.46
+   "n": 4,
+   "notional": 4497.58,
+   "net": -22.07,
+   "bps": -49.07
   }
  },
  "hold_buckets_net_of_fees": {
@@ -50,20 +50,20 @@
    "bps": 0.0
   },
   ">24h": {
-   "n": 9,
-   "notional": 12368.99,
-   "fee": 1458.65,
-   "net": -1511.17,
-   "bps": -1221.74
+   "n": 4,
+   "notional": 4497.58,
+   "fee": 482.25,
+   "net": -504.32,
+   "bps": -1121.31
   }
  },
  "fee_attribution": {
-  "venue_commission": 1459.59,
-  "attributed": 1458.81,
-  "unattributed": 0.79,
-  "unattributed_share": 0.001,
-  "n_events": 6832,
-  "fee_bps_of_logged_notional": 1161.84,
+  "venue_commission": 482.48,
+  "attributed": 482.4,
+  "unattributed": 0.08,
+  "unattributed_share": 0.0,
+  "n_events": 2791,
+  "fee_bps_of_logged_notional": 1028.43,
   "scope": "futures commission only (/fapi income); spot-leg fees not visible -> LOWER BOUND"
  },
  "baseline_funding_class": {
@@ -93,5 +93,5 @@
   "ENTRY-GATE REGRESSION: 2 open(s) at baseline funding 0.0001 AFTER the gate shipped -- gate is not filtering"
  ],
  "origin": "recursion rule 2026-07-22: mechanization of the principal-supplied probes that found gaps #42/#43/#34",
- "written": "2026-08-10T02:51:31.320743+00:00"
+ "written": "2026-08-11T03:25:10.223001+00:00"
 }
