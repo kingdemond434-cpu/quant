@@ -69,4 +69,8 @@ def test_the_real_repo_policy_resolves() -> None:
     turns every future edit-without-rehash into a red test instead of a silent divergence."""
     r = resolve(_REPO)
     assert r["verdict"] == "RESOLVED", r.get("why")
-    assert r["canonical_policy_version"] == "2026-08-07.1"
+    assert r["canonical_policy_version"] == "2026-08-11.1"
+    # Both mandates must verify -- the DeepSeek flywheel landed as a second canonical file and
+    # the verdict is the conjunction, so a stale edit to EITHER file turns this test red.
+    assert len(r["policies"]) == 2
+    assert all(row["verdict"] == "RESOLVED" for row in r["policies"])

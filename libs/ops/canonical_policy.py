@@ -57,25 +57,55 @@ def resolve(root: Path | None = None) -> dict[str, Any]:
         return out
 
     out["canonical_policy_version"] = state.get("canonical_policy_version")
-    declared = str(state.get("canonical_policy_hash", "")).removeprefix("sha256:")
-    rel = str(state.get("policy_file", ""))
-    out["policy_file"] = rel
-    try:
-        actual = _sha256(base / rel)
-    except OSError as exc:
-        out["why"] = f"policy file unreadable: {type(exc).__name__}: {str(exc)[:120]}"
-        return out
 
-    out["canonical_policy_hash"] = f"sha256:{actual}"
-    if actual == declared and declared:
+    # MULTI-POLICY STATE (2026-08-11): the DeepSeek second-flywheel mandate landed as a second
+    # canonical file, so the state record now carries a `policies` list and the verdict is the
+    # CONJUNCTION -- one stale mandate poisons the whole resolution, because an agent that reads
+    # "RESOLVED" must be entitled to trust every mandate it will consult, not just the first.
+    # The legacy single-file fields are kept as a fallback so an older state record still
+    # resolves; both shapes go through the same hash comparison.
+    entries = state.get("policies")
+    if not isinstance(entries, list) or not entries:
+        entries = [{"policy_file": state.get("policy_file"),
+                    "policy_hash": state.get("canonical_policy_hash")}]
+
+    checked: list[dict[str, Any]] = []
+    failures: list[str] = []
+    for e in entries:
+        rel = str((e or {}).get("policy_file", ""))
+        declared = str((e or {}).get("policy_hash", "")).removeprefix("sha256:")
+        row: dict[str, Any] = {"policy_file": rel}
+        try:
+            actual = _sha256(base / rel)
+        except OSError as exc:
+            row["verdict"] = "MISSING_POLICY"
+            failures.append(f"{rel}: unreadable ({type(exc).__name__}: {str(exc)[:80]})")
+            checked.append(row)
+            continue
+        row["policy_hash"] = f"sha256:{actual}"
+        if actual == declared and declared:
+            row["verdict"] = "RESOLVED"
+        else:
+            row["verdict"] = "HASH_MISMATCH"
+            failures.append(f"{rel}: declared={declared[:16]}... actual={actual[:16]}...")
+        checked.append(row)
+    out["policies"] = checked
+    out["policy_file"] = checked[0].get("policy_file")
+    out["canonical_policy_hash"] = checked[0].get("policy_hash")
+
+    if not failures:
         out["verdict"] = "RESOLVED"
-    else:
+    elif any(r["verdict"] == "HASH_MISMATCH" for r in checked):
         out["verdict"] = "HASH_MISMATCH"
         out["why"] = (
-            "the policy file on disk does not match the recorded hash -- it was edited without "
-            "regenerating POLICY_STATE.json in the same commit, or the state record is stale. "
-            f"declared={declared[:16]}... actual={actual[:16]}... The policy is UNVERIFIED and "
-            "consequential work must not proceed on it (mandate II-D: FAIL VISIBLE)")
+            "a policy file on disk does not match the recorded hash -- it was edited without "
+            "regenerating POLICY_STATE.json in the same commit, or the state record is stale: "
+            + "; ".join(failures)[:300]
+            + ". The policy is UNVERIFIED and consequential work must not proceed on it "
+            "(mandate II-D: FAIL VISIBLE)")
+    else:
+        out["verdict"] = "MISSING_POLICY"
+        out["why"] = "policy file unreadable: " + "; ".join(failures)[:300]
     return out
 
 
