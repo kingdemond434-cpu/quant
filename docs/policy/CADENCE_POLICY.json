@@ -136,5 +136,26 @@
   "TOTAL_flagship_typical": 128.18,
   "note": "Input sizes MEASURED from the live dossier; prices are OpenRouter list ranges and are an ESTIMATE. libs/ops/llm_seat._record_spend writes data/llm_spend.jsonl on the first real call -- replace these with measured numbers then. Cap is DEFAULT_MONTHLY_CAP_USD=20.0, so at flagship pricing the cap BINDS and organs defer rather than overspend."
  },
- "open_risk_unbounded_prompt": "libs/research/cro_role._fit_budget sheds DETAIL but never sheds a ROW, and its final branch keeps every row regardless of the 60,000-char budget. Today that is 469 rows / 150KB. docs/research/CRO_BRIEFING.md on disk is 9.2MB from a run when the desk held 87,062 artifacts -- ~2.5M tokens, which would blow the context window and the cap in one call. The row dimension is uncapped and HAS blown before."
+ "open_risk_unbounded_prompt": "libs/research/cro_role._fit_budget sheds DETAIL but never sheds a ROW, and its final branch keeps every row regardless of the 60,000-char budget. Today that is 469 rows / 150KB. docs/research/CRO_BRIEFING.md on disk is 9.2MB from a run when the desk held 87,062 artifacts -- ~2.5M tokens, which would blow the context window and the cap in one call. The row dimension is uncapped and HAS blown before.",
+ "push_rounds_cap": {
+  "MAX_ROUNDS": 4,
+  "was": 11,
+  "directive": "principal 2026-08-11: keep OpenRouter rounds at 4 always, not 11",
+  "basis": "input is re-sent whole each round, so cost grows superlinearly: at the CRO's measured 41,792-token dossier and 4 calls/day, 1 round ~= 5.0M input tok/mo, 4 rounds ~= 31.6M, 11 rounds ~= 160.8M -- roughly $25 / $116 / $412 per month at flagship list prices against a $20 cap.",
+  "monthly_total_now_bounded_usd": {
+   "cro_4_rounds": 116.28,
+   "kimi_total": 11.18,
+   "survivor_panel": 0.73,
+   "TOTAL": 128.19,
+   "note": "worst case is now ~$128/mo instead of ~$424/mo -- the 11-round tail is gone."
+  },
+  "silent_truncation_guard": "libs/llm/push._rungs_for keeps the FINAL synthesis rung whenever the cap is shorter than the ladder, so a capped run still ends on the cross-round ranking. Uncapped behaviour is identity. Pinned by tests.",
+  "what_is_genuinely_lost_at_4": "PUSH_LADDER rungs 5-10: adversarial (competitor with same data), invert (what to STOP), remove-constraints (10x), cross-domain transfer, horizon shift (3 years), second-order effects. Real, deliberate, recorded here rather than discovered later.",
+  "rungs_asked_at_cap_4": [
+   "1. Is that everything?",
+   "2. Highest-ROI items not yet said",
+   "3. The order-book asset context",
+   "11. FINAL cross-round ranking"
+  ]
+ }
 }

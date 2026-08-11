@@ -24,6 +24,7 @@ from libs.llm.push import (
     MAX_ROUNDS,
     MIN_NOVELTY,
     PUSH_LADDER,
+    _rungs_for,
     novelty,
     push_rounds,
 )
@@ -232,11 +233,23 @@ def test_the_six_standing_questions_are_a_rung() -> None:
         "throughput must never be bought by lowering the bar -- that is negative discovery")
 
 
-def test_the_round_cap_never_truncates_the_ladder() -> None:
-    """A cap below the rung count silently drops the last questions -- the same defect as a seat
-    count capped by a literal's length, which this session found four times."""
-    assert len(PUSH_LADDER) <= MAX_ROUNDS
-    assert len(GENERATION_LADDER) <= MAX_ROUNDS
+def test_the_round_cap_never_truncates_the_ladder_SILENTLY() -> None:
+    """THE INVARIANT CHANGED 2026-08-11 AND THIS TEST CHANGED WITH IT, deliberately.
+
+    It used to assert `len(PUSH_LADDER) <= MAX_ROUNDS` -- the cap may never be shorter than the
+    ladder. The principal capped rounds at 4 on measured cost (eleven rounds is ~$412/month of
+    re-sent context against a $20 cap), so the old invariant is now false BY DECISION, and
+    asserting it would just be a red test nobody could fix without overspending.
+
+    What survives is the part that actually protected the desk: a cap may truncate, but it may
+    never truncate SILENTLY -- the synthesis rung, which ranks everything produced across all
+    rounds, must still be asked. A run that generates material and never orders it has paid for
+    the expensive half and skipped the cheap half that makes it usable.
+    """
+    for ladder in (PUSH_LADDER, GENERATION_LADDER):
+        rungs = _rungs_for(ladder, MAX_ROUNDS)
+        assert len(rungs) == min(MAX_ROUNDS, len(ladder))
+        assert rungs[-1] == ladder[-1], "the capped ladder dropped its synthesis rung"
 
 
 def test_the_filter_forbids_proposing_a_control_that_only_says_no() -> None:
@@ -260,3 +273,39 @@ def test_the_filter_scores_timidity_on_every_axis_not_just_capital() -> None:
     assert "EVERY axis, not just capital" in f
     assert "same defect as idle cash" in f
     assert "ALWAYS to expand conversion, NEVER to throttle discovery" in f
+
+
+# ------------------------------------------------------------------ the 4-round cost cap
+# PRINCIPAL DIRECTIVE 2026-08-11: rounds capped at 4, a COST decision. The hazard of lowering a
+# ladder cap is silent truncation -- this file's own module warned about exactly that -- so these
+# pin the two properties that make a short ladder honest rather than broken.
+
+def test_cap_is_four_rounds() -> None:
+    from libs.llm.push import MAX_ROUNDS
+    assert MAX_ROUNDS == 4
+
+
+def test_capped_run_still_ends_on_the_synthesis_rung() -> None:
+    """A capped run must not stop mid-ladder having generated material and never ranked it."""
+    from libs.llm.push import PUSH_LADDER, _rungs_for
+    rungs = _rungs_for(PUSH_LADDER, 4)
+    assert len(rungs) == 4
+    assert rungs[-1] == PUSH_LADDER[-1], "the final cross-round ranking was truncated away"
+    assert rungs[:3] == PUSH_LADDER[:3]
+
+
+def test_uncapped_selection_is_identity() -> None:
+    from libs.llm.push import PUSH_LADDER, _rungs_for
+    assert _rungs_for(PUSH_LADDER, len(PUSH_LADDER)) == PUSH_LADDER
+    assert _rungs_for(PUSH_LADDER, 99) == PUSH_LADDER
+
+
+def test_zero_cap_asks_nothing_and_does_not_crash() -> None:
+    from libs.llm.push import PUSH_LADDER, _rungs_for
+    assert _rungs_for(PUSH_LADDER, 0) == ()
+
+
+def test_cap_of_one_is_the_synthesis_alone() -> None:
+    """At n=1 the head is empty, so the single rung must be the ranking -- not rung 1."""
+    from libs.llm.push import PUSH_LADDER, _rungs_for
+    assert _rungs_for(PUSH_LADDER, 1) == (PUSH_LADDER[-1],)

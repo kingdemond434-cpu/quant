@@ -47,10 +47,21 @@ __all__ = [
 ]
 
 #: Hard ceiling on rounds. Exhaustion normally stops the ladder well before this; the cap exists
-#: so a model that hallucinates novelty forever cannot bill indefinitely. Raised 10->11 when the
-#: principal's six standing questions became a rung of their own -- a cap that silently truncates
-#: the ladder is the same defect as a seat count capped by a literal's length.
-MAX_ROUNDS = 11
+#: so a model that hallucinates novelty forever cannot bill indefinitely.
+#:
+#: 11 -> 4, PRINCIPAL DIRECTIVE 2026-08-11, and it is a COST decision with a measured basis. The
+#: input side of a pushed call grows every round because the whole conversation is re-sent: with
+#: the CRO's measured 41,792-token dossier, one round costs ~5.0M input tokens/month at 4 calls a
+#: day, four rounds ~31.6M, and eleven ~160.8M. In list-price terms that is roughly $25 / $116 /
+#: $412 a month against a $20 monthly cap. Eleven rounds cannot be afforded; four can.
+#:
+#: THE CAP MUST NOT SILENTLY TRUNCATE THE LADDER -- this file's previous note named that defect
+#: exactly, and lowering the number is precisely when it bites. `_rungs_for` therefore keeps the
+#: FINAL rung whenever the cap is shorter than the ladder, so a capped run still ends on the
+#: cross-round ranking rather than stopping mid-ladder with no synthesis. What is genuinely lost
+#: at 4 is rungs 5-10 (adversarial, invert, remove-constraints, cross-domain, horizon, second-
+#: order); that loss is real, deliberate, and recorded here rather than discovered later.
+MAX_ROUNDS = 4
 
 #: A round must contribute at least this fraction of genuinely new content tokens or the model is
 #: treated as exhausted. 0.15 is deliberately low: late rounds are SHORTER (the easy material is
@@ -289,6 +300,22 @@ def build_turns(system: str, user: str) -> list[dict[str, str]]:
     return [{"role": "system", "content": system}, {"role": "user", "content": user}]
 
 
+def _rungs_for(ladder: tuple[str, ...], max_rounds: int) -> tuple[str, ...]:
+    """The rungs a capped run actually asks -- head of the ladder plus its FINAL rung.
+
+    WHY NOT JUST `ladder[:n]`. The last rung is the synthesis: "rank EVERYTHING you have produced
+    across all rounds". Truncating forward drops it, so a capped run would end mid-ladder having
+    generated material and never ordered it -- paying for the expensive half and skipping the
+    cheap half that makes it usable. Keeping the final rung costs nothing extra (it replaces a
+    head rung rather than adding one) and is the difference between a short ladder and a broken
+    one. Uncapped behaviour is unchanged: when the cap admits the whole ladder, this is identity.
+    """
+    n = max(0, min(int(max_rounds), len(ladder)))
+    if n == 0 or n >= len(ladder):
+        return ladder[:n]
+    return (*ladder[:n - 1], ladder[-1])
+
+
 def push_rounds(ask: Any, system: str, user: str, *,
                 ladder: tuple[str, ...] = PUSH_LADDER,
                 max_rounds: int = MAX_ROUNDS,
@@ -312,7 +339,8 @@ def push_rounds(ask: Any, system: str, user: str, *,
     Losing completed output because a follow-up failed would make pushing strictly worse than not
     pushing, which guarantees it gets switched off.
     """
-    n = max(0, min(int(max_rounds), len(ladder)))
+    rungs = _rungs_for(ladder, int(max_rounds))
+    n = len(rungs)
     msgs = build_turns(system, user)
     first = ask(msgs)
     if not (first or "").strip():
@@ -325,7 +353,7 @@ def push_rounds(ask: Any, system: str, user: str, *,
 
     for i in range(n):
         msgs = [*msgs, {"role": "assistant", "content": texts[-1]},
-                {"role": "user", "content": ladder[i]}]
+                {"role": "user", "content": rungs[i]}]
         try:
             nxt = ask(msgs)
         except Exception as e:
