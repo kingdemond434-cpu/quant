@@ -175,9 +175,30 @@ def select_roster(models: list[dict[str, Any]], key: str, base_url: str,
 
 def main() -> None:
     apply = "--apply" in sys.argv
-    cfg = json.loads(_KEYS.read_text("utf-8"))
-    key = cfg["providers"][0]["key"]
-    base = cfg["providers"][0].get("base_url", "https://openrouter.ai/api/v1")
+    # KEYLESS REPORT MODE. This organ was listed among the desk's dark seats and it did not need
+    # to be: the OpenRouter model CATALOGUE is a PUBLIC endpoint (verified 2026-08-12, HTTP 200,
+    # 664KB, no auth header). The key is never used for the fetch -- it is only copied FORWARD
+    # into the rewritten roster entries. So the whole live-model audit works with no credential
+    # at all, and the only thing a missing key prevents is WRITING a config that carries one.
+    #
+    # Before this, an absent data/secrets/llm_panel.json crashed at the first line and the organ
+    # produced nothing. That made it dark for a reason it does not have, and cost the desk the
+    # one answer it most wants BEFORE funding: which of its seats name models that no longer
+    # exist. Now the audit always runs; only --apply requires the key.
+    cfg: dict[str, Any]
+    try:
+        cfg = json.loads(_KEYS.read_text("utf-8"))
+        key = cfg["providers"][0]["key"]
+    except (OSError, ValueError, KeyError, IndexError):
+        cfg, key = {"providers": []}, ""
+        print(f"roster: {_KEYS} absent or unreadable -- REPORT-ONLY. The catalogue is public, so "
+              "the live-model audit below is fully valid; only writing a keyed config is blocked.")
+        if apply:
+            apply = False
+            print("roster: --apply IGNORED without a key file -- refusing to write a roster whose "
+                  "seats would carry no credential (that would read as configured and be dark)")
+    base = (cfg["providers"][0].get("base_url", "https://openrouter.ai/api/v1")
+            if cfg.get("providers") else "https://openrouter.ai/api/v1")
     try:
         with urllib.request.urlopen(urllib.request.Request(_CATALOG), timeout=30,
                                     context=_CTX) as r:
@@ -206,7 +227,7 @@ def main() -> None:
         "models": _caps,
     }, indent=1), "utf-8")
     print(f"roster: recorded capabilities for {len(_caps)} catalog model(s) -> {_CAPS_OUT}")
-    old = [p["model"] for p in cfg["providers"]]
+    old = [p["model"] for p in cfg.get("providers", [])]
     dead = [m for m in old if m not in catalog_ids]
     new_roster = select_roster(models, key, base, current=old)
     new = [p["model"] for p in new_roster]

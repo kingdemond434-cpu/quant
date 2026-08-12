@@ -90,10 +90,25 @@ def main() -> None:
     from scripts.run_external_panel import _ask
 
     from libs.llm.push import build_turns
+
     # risk-path depth passes run at MAX effort: this is the review standing between
     # the desk and real money, the one place where correctness outranks token cost
     # (elsewhere xhigh wins -- max is documented as prone to overthinking).
+    # SPEND CAP, CHECKED BEFORE THE FIRST CALL (pre-flight 2026-08-12 flagged this organ
+    # READY_BUT_UNCAPPED). This is the MAX-effort risk-path review across every funded seat, so
+    # it is the single most expensive organ on the desk per invocation -- exactly the one that
+    # must never be the reason a month's budget is gone by the 3rd. Checked here rather than
+    # inside _ask so the refusal costs nothing at all, not one call per seat.
+    from libs.ops.llm_seat import month_spend_usd, monthly_cap_usd
+    _spent, _cap = month_spend_usd(), monthly_cap_usd()
+    if _spent >= _cap:
+        print(f"deep_review: BUDGET EXHAUSTED ${_spent:.2f} of ${_cap:.2f} this month -- "
+              "refusing to start. Not a failure and not a silent skip: raise LLM_MONTHLY_CAP_USD "
+              "deliberately, or wait for the month to roll.")
+        raise SystemExit(0)
+
     providers = json.loads((ROOT / _PANELS[panel]).read_text())["providers"]
+    print(f"deep_review: ${_spent:.2f} of ${_cap:.2f} spent this month; {len(providers)} seat(s)")
     ts = datetime.now(tz=UTC).isoformat()
     OUT.parent.mkdir(parents=True, exist_ok=True)
 

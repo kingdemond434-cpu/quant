@@ -181,6 +181,18 @@ def validate(series: dict) -> tuple[bool, str]:
 
 
 def main() -> None:
+    # SPEND CAP BEFORE THE FIRST CALL (pre-flight 2026-08-12: READY_BUT_UNCAPPED). This organ is
+    # GENERATIVE and pushes a multi-round ladder across seats, so one invocation is not cheap.
+    # Checked here rather than per call so a refusal costs nothing at all.
+    from libs.ops.llm_seat import month_spend_usd, monthly_cap_usd
+    _spent, _cap = month_spend_usd(), monthly_cap_usd()
+    if _spent >= _cap:
+        print(f"collector_author: BUDGET EXHAUSTED ${_spent:.2f} of ${_cap:.2f} this month -- refusing to "
+              "start. Deliberate, not a silent skip: raise LLM_MONTHLY_CAP_USD or wait for the "
+              "month to roll.")
+        raise SystemExit(0)
+    print(f"collector_author: ${_spent:.2f} of ${_cap:.2f} spent this month")
+
     if not (KEYS.exists() and FEED.exists()):
         print("missing panel keys or breadth feed")
         return

@@ -854,6 +854,16 @@ QUANT_ROOT=/home/quant/quant-platform
 # it on a schedule matters because readiness ROTS -- an organ can lose its only consumer to a
 # refactor months after it was verified, and nothing else would notice.
 25 7 * * * cd "$QUANT_ROOT" && flock -n data/.cron_seatpreflight.lock .venv/bin/python -c "from libs.ops.seat_preflight import preflight; import json; print(json.dumps({k: v for k, v in preflight().items() if k != 'organs'}))" >> data/cro_ai_logs/seat_preflight.log 2>&1
+# TWO ORGANS THE PRE-FLIGHT FOUND BUILT, SEATED, CONSUMED -- AND FIRED BY NOTHING (2026-08-12).
+# meta_architect and collector_author each reach a paid seat and each write an artifact something
+# reads, and neither had a cron line or a scheduled parent. That is capability fully paid for and
+# returning zero (L2.9), and it would have stayed invisible after funding: a dark organ that
+# nobody schedules looks identical to one waiting on a key.
+# Both are GENERATIVE and therefore expensive per run, so they go on a weekly cadence rather than
+# a daily one -- enough to produce, not enough to be a budget line. Staggered off the 07:00 audit
+# block so they never contend with it for the brain mutex.
+40 8 * * 2 cd "$QUANT_ROOT" && flock -n data/.cron_metaarch.lock .venv/bin/python scripts/meta_architect.py >> data/cro_ai_logs/meta_architect.log 2>&1
+55 8 * * 5 cd "$QUANT_ROOT" && flock -n data/.cron_collauthor.lock .venv/bin/python scripts/collector_author.py >> data/cro_ai_logs/collector_author.log 2>&1
 
 # quota-free crypto hypothesis factory: pure python, 0 claude calls, so generation "always
 # runs". Its live log name is crypto_factory_cron.log (ops/run_crypto_factory.sh:17) proving

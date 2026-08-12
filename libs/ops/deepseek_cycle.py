@@ -49,6 +49,7 @@ __all__ = [
     "ESCALATION_STATES",
     "INHERITED_REGISTRIES",
     "SEED_ROLES",
+    "budget_gate",
     "cold_context",
     "escalation_mix",
     "fence",
@@ -197,6 +198,37 @@ def seat_state(env: dict[str, str] | None = None) -> Seat:
         deep_model=e.get("DEEPSEEK_DEEP_MODEL", ""),
         why="seat lit",
     )
+
+
+def budget_gate() -> dict[str, Any]:
+    """SPEND CAP BEFORE THE CYCLE, not inside it (pre-flight 2026-08-12: READY_BUT_UNCAPPED).
+
+    V's cadence is HOURLY, 24/7, and IV explicitly permits not capping call COUNT while positive
+    marginal information value remains. Those two together are exactly how a month's budget
+    disappears by the 3rd: 24 cycles a day against a $20 default needs only pennies each to
+    exhaust it. Inference is abundant, empirical truth is scarce, and CAPITAL IS SCARCER -- so
+    the cap is checked once, cheaply, before the cycle starts rather than per call.
+
+    EXHAUSTED IS EXIT 0, NEVER A CRASH. A budget that has run out is a normal, expected state of
+    a 24/7 organ; failing the scheduler on it would turn a spend limit into an outage and page
+    somebody about arithmetic.
+    """
+    try:
+        from libs.ops.llm_seat import month_spend_usd, monthly_cap_usd
+    except ImportError as exc:
+        return {"ok": False, "verdict": "CAP_UNREADABLE",
+                "why": f"cannot import the spend ledger ({exc}) -- refusing to spend against an "
+                       "unknown budget. UNKNOWN is not headroom"}
+    spent, cap = month_spend_usd(), monthly_cap_usd()
+    return {
+        "ok": spent < cap,
+        "verdict": "WITHIN_CAP" if spent < cap else "BUDGET_EXHAUSTED",
+        "month_spend_usd": spent, "monthly_cap_usd": cap,
+        "headroom_usd": round(cap - spent, 4),
+        "why": (f"${spent:.2f} of ${cap:.2f} spent this month" if spent < cap else
+                f"${spent:.2f} of ${cap:.2f} -- exhausted. Exit 0: a spent budget is a normal "
+                "state of a 24/7 organ, not an outage to page about"),
+    }
 
 
 def policy_gate(root: Path | None = None) -> dict[str, Any]:

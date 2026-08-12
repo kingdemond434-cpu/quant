@@ -50,6 +50,13 @@ OUT = "docs/research/openrouter_preflight.json"
 #: Every organ that goes live the moment OPENROUTER_API_KEY exists, with the artifact it produces.
 #: The artifact matters as much as the script: an organ whose output nobody reads is the dormancy
 #: defect, and it is invisible until you look for the READER.
+#: NON-SPENDING organs. They depend on OpenRouter but never buy inference, so judging them on
+#: "does it reach a seat" is a category error my first model made: refresh_panel_roster reads the
+#: PUBLIC /models catalogue (verified 2026-08-12: HTTP 200, 664KB, no auth) and uses a key only
+#: to copy it forward into the rewritten roster. Demanding a seat of it would have had the desk
+#: "fixing" an organ that was correct.
+NON_SPENDING: frozenset[str] = frozenset({"refresh_panel_roster"})
+
 DARK_ORGANS: tuple[tuple[str, str], ...] = (
     ("run_cro", "docs/research/CRO_BRIEFING.md"),
     ("run_external_panel", "data/panel_verdicts.jsonl"),
@@ -88,6 +95,7 @@ class OrganReadiness:
     scheduled: bool = False
     consumed: bool = False
     capped: bool = False
+    spends: bool = True
     import_error: str = ""
     consumers: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
@@ -109,6 +117,8 @@ class OrganReadiness:
             return "UNSCHEDULED"
         if not self.consumed:
             return "OUTPUT_UNREAD"
+        if not self.spends:
+            return "READY_NON_SPENDING"
         return "READY" if self.capped else "READY_BUT_UNCAPPED"
 
 
@@ -260,7 +270,8 @@ def readiness(script: str, artifact: str, *, manifest_text: str = "") -> OrganRe
                        "or remove the claim that it is waiting on a key")
         return r
     r.importable, r.import_error = _importable(script)
-    r.seated = _reaches_seat(script) or _reads_a_key(script)
+    r.spends = script not in NON_SPENDING
+    r.seated = (not r.spends) or _reaches_seat(script) or _reads_a_key(script)
     r.capped = any(m in src for m in _CAP_MARKERS)
     mt = manifest_text or (_ROOT / MANIFEST).read_text("utf-8", errors="ignore")
     direct = bool(re.search(rf"\b{re.escape(script)}\.py\b", mt))
@@ -282,7 +293,7 @@ def readiness(script: str, artifact: str, *, manifest_text: str = "") -> OrganRe
     if not r.consumed:
         r.notes.append(f"nothing reads {artifact} -- this organ would spend real money writing a "
                        "file nobody opens (L2.9 dormancy)")
-    if r.seated and not r.capped:
+    if r.spends and r.seated and not r.capped:
         r.notes.append("reaches a seat with no visible budget check -- one cycle can empty the "
                        "cap")
     return r

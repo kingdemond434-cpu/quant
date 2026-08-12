@@ -91,12 +91,24 @@ def test_the_producer_is_never_counted_as_its_own_consumer() -> None:
 
 
 # ------------------------------------------------------------------ the live answer
-def test_the_real_repo_is_mostly_ready_and_the_gaps_are_named() -> None:
+def test_every_dark_organ_is_ready_and_any_regression_is_explained() -> None:
+    """UPDATED, NOT RELAXED. This asserted `n_ready >= 8` while three organs were broken; all
+    thirteen are now READY, so the floor is raised to match reality and the surviving invariant
+    -- a non-READY organ must always say WHY -- is kept as the thing that actually protects the
+    desk when one regresses."""
     d = preflight(write=False)
-    assert d["n_ready"] >= 8, d["by_verdict"]
+    assert d["n_ready"] == d["n_organs"], d["by_verdict"]
     for o in d["organs"]:
-        if o["verdict"] != "READY":
+        if not o["verdict"].startswith("READY"):
             assert o["notes"], f"{o['organ']} is not READY and says nothing about why"
+
+
+def test_a_non_spending_organ_is_not_judged_on_seating() -> None:
+    """refresh_panel_roster reads the PUBLIC /models catalogue and buys no inference. Demanding
+    a seat of it was a category error that would have sent the desk to fix a correct organ."""
+    d = preflight(write=False)
+    row = next(o for o in d["organs"] if o["organ"] == "refresh_panel_roster")
+    assert row["verdict"] == "READY_NON_SPENDING"
 
 
 def test_every_organ_declares_the_artifact_it_produces() -> None:

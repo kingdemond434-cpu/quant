@@ -55,6 +55,17 @@ def main(argv: list[str] | None = None) -> int:
               f"DEEPSEEK BLOCKED: {gate['verdict']} -- {gate['why']}")
         return 2
 
+    # ---- 1b. BUDGET, before the seat and before any work. A 24/7 hourly organ against a $20
+    # default cap needs only pennies a cycle to exhaust the month, so the check is cheap and
+    # early. Exhausted is EXIT 0 -- a spent budget is a normal state, not an outage.
+    budget = ds.budget_gate()
+    report["budget"] = budget
+    if not budget["ok"]:
+        report["result"] = "BUDGET_EXHAUSTED"
+        print(json.dumps(report, indent=1) if args.json else
+              f"DEEPSEEK HOLD: {budget['why']}")
+        return 0
+
     # ---- 2. SEAT. Dark is a state, not a failure.
     seat = ds.seat_state()
     report["seat"] = {"lit": seat.lit, "provider": seat.provider, "why": seat.why}
