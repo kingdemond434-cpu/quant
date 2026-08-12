@@ -3669,11 +3669,11 @@
    "summary": "RU-01 [DEMONSTRATED] libs/data/multiexchange.py okx_inst() cross-venue join resolves only 260/653 Binance USDT perps and silently drops 5 liquid perps OKX DOES list (SHIB/PEPE/FLOKI/BONK/SATS): Binance encodes the re-denomination multiplier in the TICKER (1000SHIBUSDT), OKX in the CONTRACT SIZE (SHIB-USDT-SWAP ctVal=1e6). Coverage loss NOT corruption (funding is a dimensionless rate) and LATENT (only caller hardcodes 14 large caps), but it blocks the universe expansion R0296 requires. Fix: strip leading numeric multiplier and try both forms, compare ctVal before declaring a match; add a resolved/attempted counter so misses stop being silent.",
    "roi_bps": 15.0,
    "raised": "2026-08-01T13:20:49.255236+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: REFUTED as ALREADY-BUILT: partial coverage. The cited code exists (libs/data/multiexchange.py:28-47 okx_inst() strips 1000000/10000/1000/1M prefixes, docstring cites R0294/L0061, tests/data/test_multiexchange.py covers SHIB/PEPE/SATS/MOG/BABYDOGE + the 1INCH digit guard), but the ledgered ask (recommendation_ledger.json:3597) is three-part and only part one landed. Part two -- 'try both forms, compare ctVal before declaring a match' -- is built nowhere: no OKX instrument-list fetch, no ctVal comparison, no both-forms fallback in multiexchange.py or its sole caller (grep ctVal/instruments/attempted/resolved in scripts/run_crossexchange_backtest.py: zero hits). The blind strip declares a match without verifying the underlying, so e.g. 1000CATUSDT->CAT-USDT-SWAP / 1000XUSDT->X-USDT-SWAP would silently join a DIFFERENT asset if OKX ever lists a bare CAT/X token -- precisely the mismatch the ",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Parts 2+3 built: resolve_okx() verifies against the live OKX instrument list (literal form first, stripped form gated on ctVal >= ticker multiplier -- refuses the 1000CATUSDT->CAT collision class), OkxResolution counts attempted/resolved/dropped with per-symbol reasons, fetch_okx_funding takes the verified instId. 6 new tests incl. the collision trap.",
+   "commit": "1552931",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T02:10:09.841136+00:00"
   },
   {
    "id": "R0295",
@@ -5641,6 +5641,42 @@
    "summary": "litminer run6 inbox 2026-08-12 F (w6): organ reliability + memory \u2014 measured null: memory products lose to BM25 (do not adopt Mem0/Zep-class), vault+files+BM25 is the evidence-favored design; supersession ledgering load-bearing (selective forgetting <=28% universally); compaction = cost knob (structural masking over LLM re-summarization); after ANY organ model swap re-measure the organ completion/decay curve (two-source: capability gains give only small reliability gains; <=19% meltdown-by-ambition) \u2014 directly relevant to the live llm-auto-upgrade branch. Sources: MemoryAgentBench ICLR26, LongMemEval-V2, 2605.18854, 2603.29231, 2602.16666.",
    "roi_bps": null,
    "raised": "2026-08-12T01:58:02.647430+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0459",
+   "source": "deep_sweep",
+   "summary": "litminer run6 cards 27-29 build batch (arXiv sweep, dues aligned w/ R0193 lane): (27) 5-min copula-state BTC-hedged alt spread Stage-A screen \u2014 FIRST test of the n=0 stat-arb family; funding-accrual falsifier FIRST (paper omitted it; hourly rung graveyard-killed at all costs w/ funding modeled); (28) quarter-hour clock-phase imbalance screen on own-clock recorder + funding-window conditioning; cheapest leg = execution hygiene (avoid executing ON marks, feeds 66bps program, no alpha claim; executor change = money-path, L1.38 window applies); (29) Polymarket-vs-Deribit binary wedge MEASUREMENT (both feeds free; OpenMarket CC-BY corpus = backfill; trading leg separately gated needs-legitimacy-review). Litminer freeze bars runner code \u2014 alpha org owns constructions. Cards carry pre-registered falsifiers + graveyard priors.",
+   "roi_bps": 40.0,
+   "raised": "2026-08-12T02:07:10.562976+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0460",
+   "source": "deep_sweep",
+   "summary": "litminer run6 inbox G: adopt the lead-lag STANDING RULE \u2014 future cross-venue lead-lag proposals must use RAW TRADES w/ own-clock provenance (never marks/indices: arXiv 2608.09188 proves estimators on marks have power=size when venues cross-reference; R0117's aliasing kill was the shallower half) + Epps-correct sampling; OpenMarket ms-paired corpus (universe map 97) is the free compliant testbed. One-paragraph rule into the validation lane's checklist; pre-kills a whole class of future phantom proposals at zero cost.",
+   "roi_bps": 15.0,
+   "raised": "2026-08-12T02:07:14.014990+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0461",
+   "source": "deep_sweep",
+   "summary": "litminer run6 inbox H: execution+stats shelf \u2014 (a) liquidity-state-first prior for the 66bps program (classify pre-order L2 state from own recorder; design-hint grade, replicate on own data); (b) two 2026 decision-time-leakage formalisations (2605.23959 one-switch benchmark, 2607.04958 temporal non-interference) as candidate MECHANISED leakage gates (R0289 documented causal_guard's enumerated-subset blindness); (c) post-selection Sharpe estimation + tsbootstrap + HAC-over-rejects-at-cycle-scale (size 0.33 @ nominal 0.05, n~4 regimes) into the methods backlog.",
+   "roi_bps": 20.0,
+   "raised": "2026-08-12T02:07:18.186663+00:00",
    "status": "open",
    "reason": null,
    "commit": null,

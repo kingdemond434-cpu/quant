@@ -736,3 +736,82 @@ data exists (validated technique, Search Operator Library) — no subscription r
 **RE-ENTRY CONDITION (named):** the desk expands to an equity/cross-asset book AND the
 documented free hunt on that axis fails at the charter bar; then the evidence-gated paid
 exception may be argued on its merits.
+
+## `lit_hourly_copula_pairs_netneg` — copula/cointegration crypto pairs at HOURLY resolution (literature prior, interior-verified)
+
+**KILLED 2026-08-12 (litminer run 6, arXiv sweep — literature prior, not a desk test).**
+MECHANISM OF DEATH: gross-per-trade below cost drag at hourly signal cadence — structural, not
+statistical. Independent near-replication of the Tadi–Witzany family ("Adaptive copula-based
+pairs trading with market overlay", QFE 10(2) 2026, aimspress.com/article/doi/10.3934/QFE.2026016;
+10 Binance USDT perps, HOURLY, 2021-01→2023-12, **funding modeled**): all three market-neutral
+variants NET-NEGATIVE — Conservative −14.3% total / Sharpe −3.67, Balanced −16.3% / −3.29,
+Moderate −15.4% (interior table extracted 2026-08-12 via the stdlib PDF extractor; /tmp copy of
+PDF from run's fetch). Cost-sensitivity table is the kill's teeth: **net-negative at EVERY
+round-trip cost tested, including an optimistic 0.04% (−9.4%, Sharpe −1.88)** — raising entry
+thresholds to extreme deviations does not flip sign; authors' own diagnosis: "core mean-reversion
+signal has a low signal-to-noise ratio after costs". Corroborated by JSAI 2020 (Ohwada–Suzuki,
+J-STAGE 10.11517/pjsai.JSAI2020.0_2L4GS1305): crypto cointegration relations are unsustainable.
+STANDING IMPLICATION: the stat-arb family's live region (if any) is **5-min-or-faster** — the
+Tadi–Witzany 5-min claim (Sharpe 3.77, funding UNMODELED) is the only positive rung left and is
+run-6 card 1's screen target, carrying this kill as its prior. Hourly copula/cointegration pairs
+proposals are pre-falsified; a re-entry needs a NAMED cost or venue change (L1.16a).
+
+## `lit_polymarket_15min_binary_ml` — fast Polymarket-vs-spot microstructure ML (author's own honest negative)
+
+**KILLED 2026-08-12 (litminer run 6 — literature prior, author-published negative).**
+MECHANISM OF DEATH: the prediction-market book already impounds spot microstructure at short
+horizon. OpenMarket (arXiv 2607.26245): walk-forward logistic over 43 Binance-microstructure
+features on Polymarket 15-min BTC binaries does not beat the venue's own order-book-implied
+probability; simulated trading nets **−0.116 normalized payoff units per attempted trade** under
+stated fees/slippage. Resolution-adjacent bot flow patrols the fast end (practitioner
+corroboration: cryptodaily.co.uk 2026-07 desk note). STANDING IMPLICATION: do not propose fast
+(≤15-min) Polymarket-vs-spot constructions; the seam's only live region is long-maturity /
+low-probability threshold contracts (run-6 card 3, Portnaya wedge — different mechanism:
+regulatory segmentation, not speed). Also one more datum on the ML-wrapper shelf: 43 features
+add nothing over a liquid venue's own mid.
+
+## `lit_liquidation_csd_alarms` — per-event liquidation-cascade early-warning from critical-slowing-down
+
+**KILLED 2026-08-12 (litminer run 6 — literature prior).** MECHANISM OF DEATH: event
+heterogeneity — no variable is event-invariant. arXiv 2607.27070 (seven BTC cascades 2022–2025
+incl. 2025-10-10 $19B; 39 configs/variable/event, placebo-controlled): variance/lag-1-autocorr
+(CSD) ramps fire in 5/7 events and are SILENT in exactly the exogenous-news crashes; the
+celebrated Oct-2025 reading is "the outlier, not the rule"; cascades behave as shock-driven
+discontinuous transitions. Any desk "cascade early warning" keyed on price/leverage
+variance-autocorrelation inherits this kill unless it can classify endogenous-vs-exogenous
+ex ante (unobservable). SURVIVOR CLAUSE (rails-only, never alpha): the one population-level
+signal that survives placebo is pre-cascade taker order-flow variance COMPRESSION (Fisher
+p≈5e-6) — desk holds taker-flow + tick liquidation feeds to check it; legitimate consumer is
+the ruin-rail sizing prior ONLY.
+
+## `lit_intraday_ohlcv_mnq_14of14` — intraday OHLCV signal families at 5-min (cross-instrument prior extending 420/0 downward)
+
+**KILLED 2026-08-12 (litminer run 6 — literature prior, instrument ≠ crypto: recorded as strong
+cross-instrument prior, not a crypto measurement).** MECHANISM OF DEATH: gross-per-trade an
+order of magnitude below friction. arXiv 2605.04004 (Mesfin): 14 OHLCV signal families × 947
+days of 5-min MNQ 2021–2025, walk-forward OOS, positive controls INCLUDED and detected (RTH
+Confluence t=5.83; London-B t=5.15) — **0/14 families clear 2-pt round-trip friction** (max
+gross 0.07–1.50 pts/trade). Closes the "maybe intraday price-only survives" flank the desk's
+blind-rediscovery memory left open ("price-only alpha is dead really = no SLOW price alpha at
+daily resolution"): now also dead at 5-min OHLCV on an index future, by a harness that proved
+it could detect real edges. Crypto-side intraday price-only proposals carry this + the desk's
+own 420/0 as compound prior; the surviving intraday exceptions on the desk's record are
+FLOW-conditioned (quarter-hour imbalance, card 2), never price-only.
+
+## `lit_retraction_wave_2026_datestamping_naeem` — crypto-empirics retraction wave, wave-2 extension (provenance shelf)
+
+**RECORDED 2026-08-12 (litminer run 6, Retraction-Watch divergent ground — provenance kill, not
+a mechanism kill).** Delta beyond LIT_a F8's Dec-2025/Jan-2026 Lucey/Elsevier cluster:
+(1) **Corbet–Lucey–Yarovaya "Datestamping the Bitcoin and Ethereum Bubbles" (FRL 26, 2018) is
+RETRACTED** (notice sciencedirect.com/science/article/pii/S1544612326000140) — the GSADF/PSY
+crypto bubble-datestamping citation classic; mechanism: compromised editorial process
+(receiving-editor-on-own-paper pattern), not adjudicated data fraud — the empirics are
+unciteable either way. Any bubble-dating prior sourced to it is orphaned; GSADF-on-crypto
+literature is UNVERIFIED until independently re-run. (2) **Rahman–Naeem–Yarovaya–Mohapatra
+"Unravelling systemic risk commonality across cryptocurrency groups" (FRL 65, 2024) RETRACTED**
+(notice .../S1544612326006756; reason text [SUMMARY-ONLY] — ScienceDirect 403s this box;
+preprint SSRN 4366570) — extends the wave into the hyperprolific Naeem/Yarovaya connectedness
+cluster. STANDING IMPLICATION: FRL/connectedness-genre crypto empirics carry a provenance
+discount on top of their zero desk mapping; NEXT-GROUND holds the mechanised version (pull the
+public Retraction Watch/Crossref dataset, grade editorial-process vs data-fraud — the discount
+should differ by class).

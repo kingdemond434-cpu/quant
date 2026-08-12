@@ -1864,3 +1864,33 @@ organ's completion/decay curve — directly relevant to the live llm-auto-upgrad
 duration-bucketed reliability curves from existing organ logs and set checkpoint cadence BEFORE
 the measured meltdown onset; (c) constant-hazard prior (Ord 2505.05115): short duties compound
 reliability. [§33: wired -> docs/research/recommendation_ledger.json R-row (this entry)]
+
+### G [validation / lead-lag lane] Cross-venue lead-lag on venue MARKS is unidentified BY CONSTRUCTION — the R0117 refutation now has a second, deeper ground; standing rule proposed ◆compounding
+arXiv 2608.09188: venue marks are fixed points of an oracle operator (external anchor + self/peer
+reference) ⇒ "lead-lag and information-share estimators have power equal to size" — infinitely
+many topology decompositions fit the same reduced form when venues reference each other's prices
+(crypto mark/index prices DO). R0117 died on sampling-phase aliasing (desk-measured); this is the
+identification-theoretic kill of the same family one level down: even perfectly-sampled lead-lag
+on marks/indices is meaningless. Companion formalism: the Epps effect (coupled-LOB paper, q-fin.TR
+2026-06) is the named form of the sampling confound. STANDING RULE PROPOSED for the lead-lag
+family: any future proposal runs on RAW TRADES with own-clock provenance (desk recorder) — never
+mark/index series — AND Epps-corrects its sampling, or it is pre-killed twice over. The OpenMarket
+CC-BY ms-paired corpus (universe map 97) is the free testbed satisfying both conditions.
+[§33: wired -> docs/research/recommendation_ledger.json R-row (this entry)]
+
+### H [execution 66bps program + stats shelf] Liquidity-state-first execution prior; two 2026 decision-time-leakage formalisations; post-selection statistics shelf ◆compounding
+(1) arXiv 2607.09230 (Binance BTC/ETH futures L2, 2023–2026): "the first-order predictive signal
+is the pre-event L2 liquidity state" — a coarse pre-event state classifier predicts post-event
+liquidity REGIMES; order flow only adds on top. Not alpha — an execution-timing prior: classify
+liquidity state from the desk's own L2 recorder BEFORE placing child orders (predicts fill
+conditions, not returns). Single-author 8pp = design-hint grade; replicate on own data.
+(2) Backtest-leakage detector pair, independently formalised in 2026: 2605.23959 ("one-switch"
+decision-time leakage benchmark) + 2607.04958 (look-ahead-freedom as temporal non-interference) —
+candidate MECHANISED gate additions (the desk's leakage defence is currently design-review +
+causal_guard, whose enumerated-subset blindness R0289 documented). (3) Stats shelf for the
+methods backlog: tsbootstrap (2607.06690, distribution-free UQ); "Post Selection Estimation of
+Sharpe Ratios" (q-fin.TR 2026-06 — the desk selects before it reports, DSR does not price the
+selection FORM); "Lucky or Good? Outcome Noise, Effective Sample Size" (2607.27544 — same
+denominator discourse as effective-bets doctrine); HAC nugget from 2607.26188: HAC over-rejects
+at cycle scale (size 0.33 at nominal 0.05, n≈4 regimes) — binds any desk test with few
+independent regime observations. [§33: wired -> docs/research/recommendation_ledger.json R-row (this entry)]

@@ -4,21 +4,24 @@ _Seeded 2026-07-18; rotation rule: >=40% of budget to least-recently-covered._
 
 | Family | Last visited | Sessions | Yield | Notes |
 |---|---|---|---|---|
-| arXiv q-fin (full) | 2026-07-26 | 1 | 1 graveyard row (`lit_defi_tvl_crosssection`, primary-verified) | Reachable and productive. HTML route (`arxiv.org/html/<id>`, `ar5iv…`) is the workhorse; PDFs now also readable (OP-025). Still only a slice touched — the full q-fin subcategory sweep is UNMINED. |
+| arXiv q-fin (full) | **2026-08-12** | 2 | run 6 (FIRST full-subcat execution): **3 mechanism cards (27–29 → R0459: 5-min stat-arb copula, quarter-hour clock, Polymarket–Deribit wedge), 4 mechanism graveyard rows + retraction wave-2, 2 engine entries (R0460/R0461), OpenMarket CC-BY ms-corpus (map 97)**; prior run 1 graveyard row | Reachable and productive. HTML route (`arxiv.org/html/<id>`, `ar5iv…`) is the workhorse; PDFs now also readable (OP-025). Run 6 walked all 8 subcats (TR×4 months/128 titles; others 2026-07 full + targeted). ENUMERATION DEBT recorded: TR 2026-03/04, ST/PR 2026-02..06. export.arxiv.org API 429s from this box — use listing pages SERIALLY. |
 | SSRN (microstructure/anomalies/crypto) | 2026-07-26 | 1 | 0 — **blocked** | **HTTP 403 from this box on every attempt.** Logged as NK-005 with a validated substitute-route ladder (OP-026). One finding (F11) is stranded provisional solely because of this. Not a dead corpus — a routing problem. |
 | Practitioner research (AQR/Man/TwoSigma/BIS/IMF/Fed) | 2026-07-31 | 1 | **FIRST VISIT: 3 watchlist cards (23–25), 4 inbox items (#90–#93), 6 primary reads, the −58% prior measured in crypto, 4 loot entries** | The spec's "criminally under-mined" call VALIDATED on contact: BIS WP1087 (carry→liquidations, primary), NY Fed sr1073 (stablecoin runs, primary via mirror), sr1052 (macro-disconnect null, primary), AQR Trading Costs ($1.7T live-trade cost curve), Man/Harvey crypto TSMOM (primary via Duke archive). Sub-families still unmined: Two Sigma depth (no alt-data methodology published — measured thin), DE Shaw (not visited), ECB/BoE. |
 | Journals (JF/JFE/RFS/JPM preprints) | 2026-07-26 | 1 | 2 graveyard rows + the McLean–Pontiff standing haircut prior | Reached via NBER pages, author self-archives and institutional OA repos, never via the publisher (Wiley 403s). HXZ interior extracted and it **corrected three numbers** in the desk's record. |
 | Theses & dissertations | 2026-07-26 | 1 | see LIT_d | Opened this run as part of the non-English ground. The genre that must report negative results is the one nobody reads — free graveyard entries. |
-| Failed-replication literature | 2026-07-31 | 3 | **11 findings; 4 graveyard rows + 1 corroboration; 3 method rails; NK-004 at HIGH** | Richest family. Run 4 closed both stranded carry-overs: F11 upgraded via the OP-026 RePEc route (size-death corroboration into the graveyard), F8's PubPeer layer mined (+103% citation stacking quantified, author-level nodes named). Remaining un-exhausted: the "−0.31" digit in F4; systematic Retraction-DB sweep found NOTHING beyond the Lucey cluster (measured null — the cluster IS the crypto retraction story). |
-| Non-English academic | 2026-07-31 | 3 | see LIT_d + run-4 addendum | Run 4: J-STAGE `ファンディングレート` → **exactly 0 results** — the JP academic corpus has never used the funding-rate loanword; JP perp-mechanism knowledge lives ENTIRELY in the practitioner web. J-STAGE crypto-derivatives sub-corpus graded EXHAUSTED-BY-ABSENCE. NOTE: kimchi clock REFUTED 2026-07-30 (R0051) — the KR academic layer's load-bearing status is retired; 오정훈 resume point downgraded to context-only. |
-| AI/agent/LLM methods (cs.LG/cs.AI/evals) | 2026-07-31 | 2 | **Run 4: 8 findings → 5 inbox items (#85–#89) + R0187–R0191, aimed at LIVE wounds** | Paid again, harder: exact e-process recipe for the Stage-B ×4.9 peeking wound; IRT de-welding for the welded gauntlet (certify_gauntlet already emits the response matrix); calibrated soft-voting replacing the singleton-discarding plurality filter; debate cancellation RE-CONFIRMED on 2025-26 evidence. Venue verdicts logged (METR rich; Epoch thin-for-methods; OpenReview workshops rich — NeurIPS eval-of-agents deadline 08-29; MemAgents = unmined ground; CN tech reports thin-for-methods). |
+| Failed-replication literature | **2026-08-12** | 4 | **11 findings; 4 graveyard rows + 1 corroboration; 3 method rails; NK-004 at HIGH** | Richest family. Run 4 closed both stranded carry-overs: F11 upgraded via the OP-026 RePEc route (size-death corroboration into the graveyard), F8's PubPeer layer mined (+103% citation stacking quantified, author-level nodes named). Run 6 delta: **the wave GREW — "Datestamping the Bitcoin and Ethereum Bubbles" (FRL 2018, GSADF classic) RETRACTED + Naeem-cluster FRL 2024 retraction** (graveyard `lit_retraction_wave_2026_datestamping_naeem`); the 07-31 "nothing beyond the Lucey cluster" null is SUPERSEDED. Next: mechanise via the public RW/Crossref dataset, grade editorial-vs-fraud. Still open: the "−0.31" digit in F4. |
+| Non-English academic | **2026-08-12** | 4 | see LIT_d + run-4 addendum | Run 4: J-STAGE `ファンディングレート` → **exactly 0 results** — the JP academic corpus has never used the funding-rate loanword; JP perp-mechanism knowledge lives ENTIRELY in the practitioner web. J-STAGE crypto-derivatives sub-corpus graded EXHAUSTED-BY-ABSENCE. NOTE: kimchi clock REFUTED 2026-07-30 (R0051) — the KR academic layer's load-bearing status is retired; 오정훈 resume point downgraded to context-only. Run 6: J-STAGE 暗号資産裁定/仮想通貨裁定/マーケットメイク all policy-only (DRY, corroborates exhaustion-by-absence); ペアトレード the exception → JSAI 2020 cointegration-instability note (consumed into card 27's prior). CiNii proper + JP thesis layer still untouched. |
+| AI/agent/LLM methods (cs.LG/cs.AI/evals) | **2026-08-12** | 3 | **Run 4: 8 findings → 5 inbox items (#85–#89) + R0187–R0191, aimed at LIVE wounds** | Paid again, harder: exact e-process recipe for the Stage-B ×4.9 peeking wound; IRT de-welding for the welded gauntlet (certify_gauntlet already emits the response matrix); calibrated soft-voting replacing the singleton-discarding plurality filter; debate cancellation RE-CONFIRMED on 2025-26 evidence. Venue verdicts logged (METR rich; Epoch thin-for-methods; OpenReview workshops rich; CN tech reports thin-for-methods). Run 6: **13 findings → 6 entries (R0453–R0458), all 4 carry-overs closed, run-4's 2606.03437 record CORRECTED (ownership bias); COLM = richest never-visited venue (standing revisit); NeurIPS eval-of-agents = dated revisit ~2026-10; memory-products do-not-adopt null carded; MemAgents listing bot-gated, ground mined via citation graph.** |
 
-**Rotation note (the ≥40%-to-least-recently-covered rule), updated 2026-07-31.** Practitioner
-research is no longer at zero (visited run 4, and it paid). Least-recently-covered now: the FOUR
-families last touched 2026-07-26 — **arXiv q-fin (full subcategory sweep still unmined), SSRN
-(via the strengthened OP-026a ladder), journals, theses (layer B, still the weakest relative to
-its thesis)**. Next run's rotation-bound picks come from these four; the arXiv q-fin full sweep +
-theses layer are the named front of the queue.
+**Rotation note (the ≥40%-to-least-recently-covered rule), updated 2026-08-12 (run 6).** The
+four-run arXiv debt is PAID (first full-subcat execution, 3 cards). Least-recently-covered now:
+the THREE families last touched 2026-07-26 — **SSRN (via OP-026a ladder), journals, theses
+(layer B — now the standing weakest, carried since seeding)** — plus practitioner residuals
+(07-31: Two Sigma depth, DE Shaw, ECB/BoE). Next run's rotation-bound picks come from these;
+**theses layer B is the named front of the queue**, then the arXiv enumeration debt
+(TR 2026-03/04, ST/PR 2026-02..06). Dated revisits: NeurIPS eval-of-agents ~2026-10; COLM
+accepted-list every run; Molnar pre-registered halving-clock window resolves Oct–Nov 2026
+(zero-cost natural experiment — grade it by watching).
 
 ---
 
@@ -673,3 +676,65 @@ run is killed, what stands below is the durable progress._
 ledger; each writes ONLY its own file under `docs/research/deep_sweep/`; the parent routes
 serially at close. Litminer freeze: no writes outside docs/research/* and data/* catalogs.
 
+
+### ✅ ITEM 2 [rotation debt, carried 4 runs] arXiv q-fin FULL-subcategory sweep — **CLOSED** (first actual execution; the 08-05 seat died at header). Ground file `deep_sweep/20260812_litminer_arxiv.md` (646 lines, ~45 fetches). 8 subcats walked (TR×4mo/128 titles; others 2026-07 full + targeted); 2 divergent grounds executed. **3 mechanism cards at the cap — cards 27–29 → R0459** (5-min copula stat-arb: FIRST test of the desk's only n=0 family, funding-falsifier first; quarter-hour clock w/ funding-window conditioning + a no-alpha-claim execution-hygiene leg; Polymarket–Deribit binary wedge, measurement-free, trading leg legitimacy-gated). **5 graveyard entries banked** (hourly copula pairs — upgraded SAME-RUN to interior-verified via the re-derived extractor: net-negative at ALL costs incl. 0.04% RT with funding modeled; fast Polymarket ML −0.116/trade; liquidation-CSD alarms event-heterogeneous, rails-only survivor; intraday OHLCV 14/14 MNQ extends 420/0 to 5-min; retraction wave-2: Datestamping-Bubbles + Naeem FRL). **2 engine entries → R0460/R0461** (lead-lag marks-unidentifiability standing rule — R0117's second, deeper kill; execution liquidity-state prior + mechanised leakage-gate candidates + post-selection stats shelf). OpenMarket CC-BY ms-corpus catalogued (map 97). 6 documented nulls (J-STAGE academic crypto mechanics DRY — practitioner-web verdict corroborated from the academic side; q-fin.PR zero-crypto, VRP resolves to the EV-rejected shape, logged as watchlist breadth-evidence only, NOT re-carded).
+
+---
+
+## RUN 6 CLOSE — routing totals, depth line, honest defects, next ground
+
+**ROUTING TOTALS:** 3 mechanism cards (27–29, §33-deferred → **R0459**, due 08-24) · 8 inbox
+entries (2026-08-12 A–H) · **9 ledger rows R0453–R0461** · 5 graveyard entries · 12
+research-memory rows · 2 universe-map entries (96 graphsense-tagpacks, 97 OpenMarket) · §39
+CryptoQuant row OPEN→PARTIAL · 4 coverage-table rows + rotation note updated · cadence stamped ·
+2 record corrections (run-4's 2606.03437 mischaracterization; my own ledger-parser error →
+project memory) · 1 defect-closer contribution (GAP #70's lost stdlib PDF extractor RE-DERIVED,
+proven on two papers same-run, source preserved in inbox for the brain to land).
+
+**DEPTH LINE (mandated):** BIS/artifact verification — 5/5 primary-artifact reproductions, 0
+refuted (vs the historical 4/5 refutation rate). Saggu — surface→open-mirror→INTERIOR (extractor)
+same-run; depth surfaced the BTC-relative benchmark + insignificant-pre-CAR/abnormal-pre-VOLUME
+split + the 48-event table (turned R0193's reconstruction into an extraction). QFE near-replication
+— landing-page→INTERIOR same-run; depth turned "hourly dies at 0.08%" into "hourly never lives at
+ANY cost, funding modeled". Tadi–Witzany — PRIMARY full-PDF + 2-level citation chase + replication
+scan; depth collapsed the family's live region to 5-min-or-faster. Deliberative-Illusion /
+Hidden-Pitfalls / 2606.03437 — appendix-level passes; depth produced the cross-family table, the
+measured audit delta, and a CORRECTION of the desk's own record. Per-lead grades in both ground
+files; no lead advanced on an unread summary without [SUMMARY-ONLY].
+
+**HONEST DEFECTS OF THIS RUN:**
+1. **No Stage-A screen RAN** (same letter-vs-spirit gap run 4 named): cards 27–29 need runner
+   constructions the litminer freeze bars; the honest routing is dated §33 deferrals + R0459.
+   The deferral machinery resurfaces them 08-24 if the alpha org slips.
+2. **Ledger arrival +9 rows into a repair-mode backlog** (196 open at run start). Mitigation
+   applied: 13 AI-methods findings consolidated to 6 rows; 3 cards batched into ONE row; nulls
+   routed to research_memory (5 rows), not the ledger.
+3. **arXiv enumeration debt**, recorded not hidden: TR 2026-03/04 + ST/PR 2026-02..06 unwalked
+   (depth was traded for it; the queue's depth work paid — 2 of 5 graveyard kills came from it).
+4. **Extractor hex-string gap named**: bracketed windows/peak cells in hex-encoded Tj strings
+   remain unread (Saggu −17.2%/30d cell stays [remembered-not-reproduced]); fix spec'd in the
+   inbox entry for the landed version.
+5. **Two agent next-ground items were STALE on arrival** (S1 SEC-FRL / S2 IMF WP/23/163 — both
+   resolved by item 1 THIS run before the agent finished): the 08-05 header it inherited from
+   predates the resolution. De-duplicated here so run 7 does not re-chase them. S3 (2510.14435
+   negative-carry computation) remains genuinely open.
+
+**NEXT UN-EXHAUSTED GROUND (run 7, in order):**
+1. **Theses layer B** (DiVA / theses.fr / DART-Europe / CyberLeninka / CiNii+KCI theses) — the
+   standing weakest family, carried since seeding; JP thesis layer doubly named (arXiv agent's
+   J-STAGE null points there).
+2. **Portnaya + Hansen–Kim full texts** → extract the delta-hedged proxy construction and the
+   Autocorrelation-Map estimator; draft card-29's measurement-only pre-registration.
+3. arXiv enumeration debt (TR 03/04, ST/PR 02–06) + S3 (2510.14435 §negative-carry).
+4. COLM shortlisted full texts (CONCORD, Rubrics-as-Attack-Surface, TierMem, 56-benchmark MTMM).
+5. Retraction Watch MECHANISED (public Crossref dataset → crypto/finance slice, grade
+   editorial-vs-fraud).
+6. SSRN via OP-026a + practitioner residuals (Two Sigma depth, DE Shaw, ECB/BoE).
+7. Dated: NeurIPS eval-of-agents ~2026-10; Molnar halving-clock window Oct–Nov 2026 (watch-only).
+
+**WHICH ARTIFACT ON DISK IS DIFFERENT BECAUSE OF WHAT WAS MINED (§33 standing test):**
+`data_axis_watchlist.md` (+3 §33-carded finds w/ dispositions, +4 verification stamps),
+`graveyard.md` (+5), `improvement_inbox.md` (+8 entries + extractor source + correction),
+`recommendation_ledger.json` (R0453–R0461), `data_universe_map.json` (+2),
+`paid_dataset_targets.md` (CryptoQuant PARTIAL), 12 research-memory rows,
+`cadence_state.json` stamped, 2 ground files under `deep_sweep/`, and this coverage map.

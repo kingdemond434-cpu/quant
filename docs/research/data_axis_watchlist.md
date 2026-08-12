@@ -2118,3 +2118,98 @@ as underpowered, with the enabling change named above.**
 - **L1.16a re-entry:** a named orthogonal use that does NOT re-run the graveyarded construction —
   e.g. using the corpus as declared-provenance ground truth to validate the desk's own cross-venue
   timing methodology. Absent that, the 727M-row split stays un-ingested.
+
+## LITMINER RUN-6 CARDS (2026-08-12, arXiv q-fin full-subcategory sweep — first execution; ground file `deep_sweep/20260812_litminer_arxiv.md` carries full evidence + URLs)
+
+### 27. Copula-state BTC-hedged alt spread reversion at 5-min (STAT-ARB — the desk's only never-tested family, n=0) — grade: needs-monitoring (screen construction owed; hourly rung of the family is graveyard-KILLED) [§33: deferred(2026-08-24) tier:2]
+- **Provides:** the first testable construction for the STATISTICAL-ARBITRAGE family: 3-week
+  formation / 1-week trading rolling cycles on Binance USDT-M perps; spread = BTC − β·ALT
+  (Engle–Granger per cycle, re-selected — never static), copula conditional-probability entry
+  (h(1|2)>0.7, h(2|1)<0.3), 5-MIN bars only.
+- **Mechanism (desk-authored — the paper offers none, its weakest point):** coin-idiosyncratic
+  unhedged retail flow (momentum chasers, liquidation cascades) pushes the alt leg off its
+  BTC-cointegrated level; professionals don't close it because per-pair capacity ($3–11k,
+  RU-measured) is below their fixed costs. Loser: the impatient alt-leg taker. Persistence:
+  capacity-rationed competition. BTC-hedged by construction ⇒ the 1.54-effective-bets
+  directional kill does not bind; 5-min ⇒ the daily price-only grave does not bind.
+- **Evidence + replication state (honest):** Tadi–Witzany, Financial Innovation 11 (2025), OPEN
+  (PRIMARY full-PDF read; arXiv 2305.06961): 5-min net Sharpe 3.77 claimed 2021-01→2023-01 —
+  BUT in-paper baselines are net-negative (plain cointegration −18.7→−88.3%) and the
+  independent QFE 10(2) 2026 near-replication kills the HOURLY rung at ALL cost levels with
+  funding modeled (graveyard `lit_hourly_copula_pairs_netneg`, interior table extracted this
+  run). Read the 3.77 as the selection tail of a mostly-negative family; the 5-min rung is the
+  ONLY live region and it omitted funding.
+- **Falsifiers (pre-registerable, in order):** (1) add desk funding-panel accrual in the paper's
+  own window — flips ≤0 ⇒ dead as published; (2) OOS 2023-02→2026-08 net Sharpe <1 after −58%
+  haircut ⇒ decayed; (3) own-fill slippage calibration kills it ⇒ execution-bound, feeds
+  MM-execution family; (4) survives only 2021-22 alt-mania segment ⇒ regime artifact.
+- **Capacity:** $3–11k/pair, weekly top-2 — fund-invisible, book-sized (§42 lane).
+- **Graveyard-check:** family n=0; `statarb_kalman_hedge_ratio_refinement` kill is Kalman-β
+  (this is static-EG-per-cycle — no conflict); hourly kill above is the family PRIOR, not a
+  block on 5-min. JSAI-2020 instability caveat = why per-cycle re-selection is mandatory.
+- **§33 blocker, named:** Stage-A screen construction needs runner code the litminer freeze
+  bars; owed by the alpha org via **R0459** (due 2026-08-24). Novelty gate re-run
+  owed at screen time; every construction (bar size, α₁, copula family) logged as a charged trial.
+
+### 28. Quarter-hour clock: scheduled-algo order-imbalance leakage, 4–12h horizon (EVENT-AND-CALENDAR × ORDER-FLOW, sub-daily) — grade: needs-monitoring (dual-use; execution-hygiene leg needs NO alpha claim) [§33: deferred(2026-08-24) tier:2]
+- **Provides:** clock-phase-resolved order-imbalance at :00/:15/:30/:45 marks → 4–12h forward
+  returns, on the desk's OWN-CLOCK L2/trade recorder (the one instrument class R0117 taught the
+  desk to demand); funding-window (00/08/16 UTC) conditioning as the desk's differentiator.
+- **Mechanism:** interval-scheduled execution (TWAP/rebalance/funding-anchored bots) fires on
+  round marks; the printed imbalance leaks persistent parent flow. Loser: the principal behind
+  the clock-scheduled executor paying impact on a predictable schedule; persists because
+  cron-shaped execution is operationally standard and its leakage is invisible in the
+  executor's own benchmarks.
+- **Evidence + replication state:** Kim & Hansen arXiv 2607.09426 (abstract + v2 ack read):
+  OOS opening-return predictability; imbalance→4–12h; roundness drop = algo signature. Lineage
+  REPLICATED+published: Hansen–Kim–Kimbrough JFEC (arXiv 2109.12142) ties vol/volume periodicity
+  to algorithmic trading and FUNDING TIMES across three venues. Crowding caveat: QuantPedia
+  publicises the 2021 periodicity layer; the 2026 return-predictability layer is new. No cost
+  accounting in the abstract — net-tradability UNMEASURED, not claimed.
+- **Falsifiers:** (1) own-data clock-phase replication fails ⇒ sampling artifact, dead;
+  (2) predictability real but net<0 at desk size ⇒ demote to EXECUTION HYGIENE (don't execute
+  ON marks — negative capacity requirement, feeds the 66bps execution-gap program) — that leg
+  is valuable with NO alpha claim; (3) Binance-only ⇒ single-venue fragility; (4) sign flips
+  across funding windows ⇒ confounded with carry (hunted family), demote.
+- **Capacity:** most-liquid perps, hours-horizon — capacity unbinding; crowding is the risk.
+- **Graveyard-check:** EVENT-AND-CALENDAR n=1 thin; flow-conditioned intraday ≠ the price-only
+  graves (both 420/0-daily and the new `lit_intraday_ohlcv_mnq_14of14` 5-min OHLCV kill — this
+  card is imbalance-conditioned, exactly the exception class those kills leave open). CAUTION
+  for the builder: `libs/validation/event_study.py` is ONE-SIDED POSITIVE (desk memory) —
+  handle negative-direction effects explicitly.
+- **§33 blocker, named:** **R0459**, alpha org, due 2026-08-24; cheapest first build is
+  the hygiene leg (mark-avoidance in the executor's child-order timing — but executor code is
+  MONEY PATH: L1.38 change-window check applies to that consumer, not to the measurement).
+
+### 29. Polymarket-vs-Deribit binary wedge on BTC threshold contracts (VOL-AND-OPTIONS relative value — NOT the EV-rejected DVOL variance-carry) — grade: needs-legitimacy-review (TRADING leg only; measurement leg is free and §13-clean) [§33: deferred(2026-08-24) tier:2]
+- **Provides:** hourly wedge series = Polymarket Yes price − discounted option-implied binary
+  (Deribit surface the desk already holds) at matched strike/maturity; wedge as (a) tradeable
+  RV candidate, (b) zero-execution positioning-sentiment input to the options book.
+- **Mechanism:** favourite-longshot demand — prediction-market bettors overpay low-probability
+  Yes (lottery consumption); option MMs cannot close it: KYC/jurisdiction segmentation, no
+  cross-margin, Polygon rails, UMA oracle-resolution risk ⇒ a REGULATORY-segmentation moat that
+  does not decay via publication. Loser: the longshot bettor.
+- **Evidence + replication state:** Portnaya arXiv 2606.19517 (abstract-grade): 5.6pp mean gap
+  (t=6.46), pooled 6.3pp, **Deribit extension 11pp**, AR(1) half-life ≈4h, wedge concentrated
+  at low-prob/long-maturity; delta-hedged proxy "profitable after conservative costs, marginal
+  precision". No replication (2mo old). BOUNDARY mapped by an independent failure: the fast end
+  is DEAD (graveyard `lit_polymarket_15min_binary_ml`, −0.116/trade) — the wedge lives ONLY at
+  long-maturity/low-prob. 2026 practitioner corroboration logged in the ground file.
+- **Falsifiers:** (1) desk-rebuilt wedge |mean| < both legs' fees+spread ⇒ measurement-only
+  forever; (2) wedge only where Polymarket depth <$1k ⇒ below even this book, kill; (3) wedge
+  profile vs time-to-resolution shows it is UMA-risk compensation ⇒ not mispricing;
+  (4) legitimacy review refuses Polygon/Polymarket ops surface ⇒ signal-only permanently.
+- **Capacity:** threshold books $10²–10⁴ deep — fund-invisible, desk-sized; Deribit leg deep.
+- **Data leg [DATA-LOOT, catalogued this run]:** **OpenMarket** (arXiv 2607.26245) — CC-BY-4.0,
+  727M rows, ms-paired Polymarket/Binance, 2.9M explicit lead-lag pairs
+  (huggingface.co/datasets/gregyoung14/openmarket-btc-polymarket; verify LICENSE file at
+  ingest). Dual use: free wedge-measurement backfill AND an R0117-grade synchronized lead-lag
+  testbed (the named enabling-change class for that lane — subject to the raw-trades-not-marks
+  rule, inbox 2026-08-12 G).
+- **Graveyard-check:** VOL-AND-OPTIONS n=2 thin; distinct mechanism from the EV-rejected DVOL
+  vol-carry (variance-premium harvesting ≠ cross-venue RV on binaries); no prediction-market
+  graveyard rows. CLEAR for measurement.
+- **§33 blocker, named:** measurement construction in **R0459** (alpha org, 2026-08-24);
+  the TRADING leg additionally gated on a legitimacy/ops ruling (jurisdiction + Polygon rails +
+  UMA risk) — routed to the needs-legitimacy-review queue via this card's grade, decision lane
+  same as the KR/JP venue reads.
