@@ -82,17 +82,41 @@ def test_every_stage_carries_its_own_denominator(mod, tmp_path: Path) -> None:
         assert s["why"], f"{s['stage']} publishes a number with no explanation"
 
 
+def test_the_strongest_verdict_of_all_is_a_candidate(mod) -> None:
+    """THE BUG THIS FILE CAUGHT IN ITS OWN FIRST DRAFT, and it was the worst possible one.
+
+    The publisher hardcoded a POSITIVE candidate list -- UNDERPOWERED, UNRATED, WEAK -- which
+    silently excluded SCREEN-INTERESTING. axis_screen is explicit that SCREEN-INTERESTING is "the
+    ONLY verdict that starts a forward clock". So the first genuine survivor this desk ever
+    produced would have rendered on the dashboard as NOT A CANDIDATE, on the one view built to
+    show the principal that progress was happening.
+    """
+    assert mod.is_candidate("SCREEN-INTERESTING")
+
+
 def test_weak_and_underpowered_stay_candidates(mod) -> None:
     """L1.49 WEAK IS NOT DEAD. An underpowered screen has not measured anything yet, and a view
     that hid those trials would report a desk with no candidates when it has 84."""
-    assert set(mod.CANDIDATE_VERDICTS) == {"SCREEN-UNDERPOWERED", "SCREEN-UNRATED", "SCREEN-WEAK"}
+    for v in ("SCREEN-UNDERPOWERED", "SCREEN-UNRATED", "SCREEN-WEAK"):
+        assert mod.is_candidate(v), v
 
 
 def test_a_broken_measurement_is_not_a_candidate(mod) -> None:
     """Look-ahead and timing artifacts name a BROKEN number, not a weak one. Consistency of an
     artifact is not evidence."""
-    for bad in ("NOT-A-CANDIDATE", "TIMING-ARTIFACT", "SUSPECT-LOOKAHEAD"):
-        assert not bad.startswith(mod.CANDIDATE_VERDICTS)
+    for bad in ("NOT-A-CANDIDATE", "TIMING-ARTIFACT", "SUSPECT-LOOKAHEAD", "NOT-READABLE-HERE"):
+        assert not mod.is_candidate(bad), bad
+
+
+def test_the_dashboard_and_the_spawner_share_one_definition(mod) -> None:
+    """ONE QUANTITY, ONE DEFINITION. slot_registry exists because the Holm m was counted three
+    different ways by three files and the loosest copy won. A dashboard keeping its own idea of
+    what a candidate is would be that failure again, on the view the principal trusts to tell them
+    whether anything is happening."""
+    from libs.research.paper_sleeves import NON_ADMISSIBLE_PREFIXES
+    assert mod.NON_ADMISSIBLE_PREFIXES is NON_ADMISSIBLE_PREFIXES
+    src = (_REPO / "scripts/publish_pipeline.py").read_text("utf-8")
+    assert "CANDIDATE_VERDICTS = (" not in src, "the hardcoded positive list must not come back"
 
 
 def test_an_empty_box_reports_unmeasured_never_an_empty_pipeline(mod, tmp_path) -> None:

@@ -49,10 +49,22 @@ if str(_ROOT) not in sys.path:
 
 OUT = "web/pipeline.json"
 
-#: Stage-A verdicts that remain eligible for a forward clock. WEAK AND UNDERPOWERED STAY
-#: CANDIDATES (L1.49): a weak result is not a dead one, and an underpowered screen has not
-#: measured anything yet. Only a BROKEN measurement is disqualifying.
-CANDIDATE_VERDICTS = ("SCREEN-UNDERPOWERED", "SCREEN-UNRATED", "SCREEN-WEAK")
+#: ONE DEFINITION OF "CANDIDATE", AND IT IS THE ORGAN'S, NOT A SECOND COPY.
+#: The first draft of this file hardcoded a POSITIVE list -- UNDERPOWERED, UNRATED, WEAK -- which
+#: silently EXCLUDED SCREEN-INTERESTING, the only verdict that actually starts a forward clock
+#: (libs/research/axis_screen: "This is the ONLY verdict that starts a forward clock"). The first
+#: genuine survivor the desk ever produced would have rendered on the dashboard as NOT a
+#: candidate. That is the slot_registry failure repeated: one quantity counted differently by two
+#: files, and the dashboard's copy drifting toward the friendlier answer.
+#: The rule is a NEGATIVE list and it is imported: only a BROKEN measurement is disqualifying.
+#: WEAK and UNDERPOWERED stay candidates (L1.49) -- "underpowered" means the screen could not see,
+#: not that it looked and found nothing.
+from libs.research.paper_sleeves import NON_ADMISSIBLE_PREFIXES  # noqa: E402
+
+
+def is_candidate(verdict: str) -> bool:
+    """Delegates to the spawner's own admissibility rule. Never a second opinion."""
+    return not str(verdict).startswith(NON_ADMISSIBLE_PREFIXES)
 
 
 def _age_h(p: Path) -> float | None:
@@ -90,7 +102,8 @@ def _screen_rows(root: Path) -> list[dict[str, Any]]:
                 continue
             out.append({"axis": p.stem, "trial": r.get("trial") or r.get("name") or "?",
                         "verdict": str(v), "ic_t": r.get("ic_t"), "n_eff": r.get("n_eff"),
-                        "candidate": str(v).startswith(CANDIDATE_VERDICTS),
+                        "candidate": (r.get("is_candidate") is not False
+                                      and is_candidate(v)),
                         "age_h": _age_h(p)})
     return out
 
