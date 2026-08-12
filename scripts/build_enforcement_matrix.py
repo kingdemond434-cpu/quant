@@ -162,7 +162,9 @@ _MAP: dict[str, list[str]] = {
     # first-class output rather than a footnote.
     "L1.28a": ["scripts/check_utilisation.py", "check_idle_capability", "check_clock_saturation",
                "check_capacity_runway", "libs/research/conservation.py",
-               "tests/research/test_conservation.py"],
+               "tests/research/test_conservation.py",
+               "scripts/check_extractor_invariants.py",
+               "libs/research/extractor_invariants.py"],
     # L1.28b: conversion hunts 100% daily -- FLATLINE (7d of silence on a non-empty queue) fails.
     # The fence DETECTS the debt; the actuator is what makes the law's own remedy -- (d) "flips
     # the next audit/brain window from finding to fixing" -- actually reach an organ (L1.36).

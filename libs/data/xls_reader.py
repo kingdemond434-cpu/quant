@@ -46,6 +46,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
+#: R0318. The structural invariants this parse enforces on ITSELF, all of them refusals rather
+#: than repairs: the stream must end exactly on a record boundary (a 1-3 byte tail is a silent
+#: truncation), no record may run past the stream, no sector chain may cycle, and the BIFF version
+#: must be one this decoder actually implements. They bound the SHAPE of the parse; they cannot
+#: tell you the NUMBERS are right -- for that a caller pairs this with an arithmetic identity from
+#: inside the data (libs.research.conservation), which is what scripts/read_xls.py requires.
+EXTRACTOR_INVARIANT = (
+    "stream ends on a record boundary; no record overruns the stream; no sector chain cycles; "
+    "BIFF version is 0x0600 -- structural only, so callers add a conservation law for the values"
+)
+
 _OLE_SIG: Final = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
 
 # Sector chain sentinels (MS-CFB 2.2). Anything >= _MAXREGSECT is a marker, never an index.
