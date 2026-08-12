@@ -10,6 +10,7 @@ Four behaviours are pinned, because they are the four ways this screen could lie
 """
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime, timedelta
 
 import numpy as np
@@ -248,6 +249,85 @@ def test_run_screen_refuses_and_names_every_missing_input(tmp_path):
     assert "circulating_supply.jsonl" in blob
     assert "price panel" in blob
     assert "reentry_condition" in report
+
+
+# ------------------------------------------------- 4b. the REAL on-disk schema, not a friendly one
+#
+# These two fixtures are written from the field names the COLLECTORS actually emit, sampled from
+# `data/unlock_events.json` and `data/circulating_supply.jsonl`.  That is the whole point of them.
+# Every fixture above builds rows out of the field names the loader already understood, so the
+# suite was structurally incapable of noticing that neither loader read the real files: the
+# schedule chain omitted `ts` and the supply chain omitted `observed_utc`, and BOTH files parsed
+# to exactly zero rows for weeks while the weekly cron exited 0.  A fixture that only contains the
+# covered fields cannot reveal what its loader is blind to (desk lesson, R0289 class).
+
+
+def test_schedule_loader_reads_the_real_collector_schema(tmp_path):
+    """`ts` + naive `date` is what data/unlock_events.json actually carries.
+
+    `date` alone is naive and is CORRECTLY rejected -- the fix is that `ts` must be consulted,
+    not that naive stamps become acceptable.
+    """
+    p = tmp_path / "unlock_events.json"
+    p.write_text(
+        json.dumps(
+            [
+                {
+                    "symbol": "GLMUSDT",
+                    "protocol": "Golem Network",
+                    "ts": 1478822400,
+                    "date": "2016-11-11",
+                    "tokens": 820000000,
+                    "pct_max": 82.0,
+                    "category": "publicSale",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    load = load_unlock_schedule(p)
+    assert load.releases, "the real schedule schema must parse; `ts` is the only field dating it"
+    assert load.releases[0].symbol == "GLMUSDT"
+    assert load.releases[0].instant == datetime(2016, 11, 11, tzinfo=UTC)
+    assert not any("dropped" in d for d in load.defects)
+
+
+def test_supply_loader_reads_the_real_collector_schema(tmp_path):
+    """`observed_utc` is what collect_circulating_supply.py writes on every row."""
+    p = tmp_path / "circulating_supply.jsonl"
+    p.write_text(
+        json.dumps(
+            {
+                "observed_utc": "2026-08-06T05:10:05+00:00",
+                "coin_id": "aptos",
+                "symbol": "APT",
+                "circulating_supply": 845695519.4167547,
+                "source": "coingecko/coins",
+                "known_from": "2026-08-06T05:10:05+00:00",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    load = load_circulating_supply(p)
+    assert load.series, "the real supply schema must parse; `observed_utc` is the observation stamp"
+    assert load.series["APT"][0][0] == datetime(2026, 8, 6, 5, 10, 5, tzinfo=UTC)
+    assert not any("dropped" in d for d in load.defects)
+
+
+def test_a_naive_only_stamp_is_still_refused(tmp_path):
+    """The repair added field names; it did NOT loosen the timezone rail.
+
+    A row datable ONLY by a naive string must still drop, because guessing the zone of a vesting
+    cliff is the whole-day misalignment `_as_utc` exists to refuse.
+    """
+    p = tmp_path / "unlock_events.json"
+    p.write_text(
+        json.dumps([{"symbol": "XUSDT", "date": "2016-11-11", "tokens": 1.0}]), encoding="utf-8"
+    )
+    load = load_unlock_schedule(p)
+    assert load.releases == ()
+    assert any("dropped" in d for d in load.defects)
 
 
 def test_a_thin_cell_is_underpowered_not_refuted():
