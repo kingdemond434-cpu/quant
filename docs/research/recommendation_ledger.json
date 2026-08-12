@@ -3788,11 +3788,11 @@
    "summary": "KR-s1 E [DATED, EXPIRES 2026-08-03]: Upbit PURGES candle history on delisting -- verified 6/6 delisted markets (OXT/NKN/LOOM/QTCON/PCI/MARO) return HTTP 404 on /v1/candles/days. ~11.4 KRW markets/yr are erased at source. KRW-AQT and KRW-AERGO halt 2026-08-03 (2 days), KRW-SPURS 2026-08-18; NONE are in the desk's 176-symbol kr_perasset panel because its >=120-aligned-day filter excludes exactly the thin/new names that delist -- so the desk's KR dataset is survivorship-biased by its OWN construction filter, stacking with the venue's purge. ACTION: snapshot full daily+minute candles for ALL 277 live KRW markets BEFORE 08-03, then daily. Unrecoverable at any price after the halt (L1.46).",
    "roi_bps": 45.0,
    "raised": "2026-08-01T13:41:58.528580+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=5 effort_h=3: Not built and partially expired: zero Upbit candle-snapshot code (no api.upbit.com/candles consumer for the full KRW market list in scripts/ or libs/; libs/research/upbit_data.py serves the kimchi join only) and no KRW/upbit snapshot artifacts in data/. The 2026-08-03 AQT/AERGO window has passed (today 2026-08-04 -- that slice is likely purged, the cost the row predicted), but the premise survives: KRW-SPURS halts 2026-08-18 and Upbit purges ~11.4 markets/yr, so a daily full-market candle snapshot started TODAY still closes the desk's self-inflicted survivorship stack. Urgent, unrecoverable-after-halt work.",
-   "commit": null,
+   "status": "implemented",
+   "reason": null,
+   "commit": "2d8593c",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T07:22:48.737209+00:00"
   },
   {
    "id": "R0304",
@@ -3848,11 +3848,11 @@
    "summary": "est_funding uses ENTRY COST BASIS not mark notional: run_cashcarry_executor.py:869 sets notl = spot_qty * spot_cost, but funding is paid on MARK notional at each stamp. A third accounting error stacked on the discrete-vs-continuous one (L1.47) and on the book-level attribution gap, and unlike those two it GROWS WITH PRICE DRIFT rather than averaging out -- so it is the one term of the three that is NOT unbiased in expectation. Cheap to fix once per-position funding truth exists to validate against (R0304).",
    "roi_bps": 25.0,
    "raised": "2026-08-01T14:01:37.100108+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=3 effort_h=1: Defect verified still present: run_cashcarry_executor.py:908 'notl = float(p[\"spot_qty\"]) * float(p[\"spot_cost\"])' and :916 'est_funding = float(p.get(\"funding\", 0.0)) * notl * (held / 8.0)' -- entry cost basis, not mark notional, and the only one of the three stacked accounting errors that is biased (grows with price drift). Cheap; sequence immediately after R0304 lands so the fix validates against venue funding truth. Change window OPEN.",
-   "commit": null,
+   "status": "implemented",
+   "reason": null,
+   "commit": "ed3db50",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T07:12:20.314887+00:00"
   },
   {
    "id": "R0309",
@@ -3884,11 +3884,11 @@
    "summary": "JP-s1 DEFECT: data/data_universe_map.json -- the documented routing target for EVERY digger's data-source finds -- is GITIGNORED (.gitignore:11 'data/*', no '!' exception; 68 sources on disk, 0 tracked). Every seat's universe-map contribution is box-local, invisible to review and lost on reclone. 8 other data/ files have explicit '!' exceptions, so the convention exists and this file was simply never added to it.",
    "roi_bps": 25.0,
    "raised": "2026-08-01T14:10:32.751106+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=5 effort_h=0.25: Defect verified: .gitignore:11 'data/*' with NO '!data/data_universe_map.json' exception (the exception convention exists directly below -- nav_attestation, decision_ledger, unlock_event_screen, constitution_core.lock, gate0_signoff, excitation_design, execution_reentry all have '!' lines), and 'git ls-files data/data_universe_map.json' returns nothing. Every seat's universe-map contribution remains box-local and lost on reclone. One-line .gitignore edit + git add.",
-   "commit": null,
+   "status": "implemented",
+   "reason": null,
+   "commit": "010bef8",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T07:10:10.831761+00:00"
   },
   {
    "id": "R0312",
