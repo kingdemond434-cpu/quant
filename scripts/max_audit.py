@@ -222,6 +222,34 @@ def _tracked_set() -> set[str]:
 _TRACKED: set[str] | None = None
 
 
+def _committed_only(rels: list[str]) -> list[str]:
+    """Keep only paths git TRACKS -- governance applies to what is COMMITTED (2026-08-12).
+
+    check_artifact_governance already refuses to judge GITIGNORED files, for a reason it wrote
+    down: a gate whose verdict depends on which machine ran it cannot be trusted in either
+    direction. Untracked-but-not-ignored files are the same class and were never filtered, which
+    matters because this repo is a SHARED, CONTENDED checkout -- sibling sessions and organs hold
+    work-in-progress in the tree constantly. Measured while installing the birth-property fence:
+    a sibling's uncommitted `scripts/check_denominator_attrition.py` turned both this check and
+    the CI test that asserts on it RED, in a session that had never touched that file. A gate any
+    other worker's scratch can trip is a gate that gets bypassed, and one bypassed on a false
+    alarm is bypassed on the true one too.
+
+    NOTHING REAL IS HIDDEN. A file that is not tracked is not in the repository: it cannot be an
+    orphan in it, and it cannot be an ungoverned artifact of it. The instant it is committed --
+    the moment the property actually has to hold -- it is in scope again, which is precisely the
+    boundary this filter exists to sharpen.
+
+    AN EMPTY ANSWER IS NOT AN ANSWER (L1.28a). If git cannot be reached (no repo, tmp_path test
+    tree, subprocess failure) `_tracked_set` returns an empty set, and filtering against it would
+    remove EVERY candidate and render a clean verdict over nothing -- the vacuous pass L1.57
+    exists to refuse. So the filter applies only when git actually answered; otherwise the caller
+    judges the filesystem exactly as before.
+    """
+    tracked = _tracked_set()
+    return [r for r in rels if r in tracked] if tracked else rels
+
+
 def _split_evidence(paths: list[str]) -> tuple[list[str], list[str]]:
     """(tracked, untracked) repo-relative evidence paths, deduped and ordered."""
     global _TRACKED
@@ -2983,9 +3011,28 @@ _PRODUCER_CADENCE = {
     "docs/research/canary_searches.md": (
         4.0, "re-run each digging session; an unexpected shift triggers targeted rediscovery "
              "BEFORE the normal cadence -- nothing confirmed the canaries were re-run"),
-    "docs/research/generation_due.md": (
-        8.0, "the cadence engine flags scoped generate runs and the brain executes then marks "
-             "them -- nothing checked a flagged run was ever executed"),
+    # THE LIVE QUEUE, and this table pointed at the WRONG FILE for weeks (fixed 2026-08-12).
+    # `generation_due.md` sat here at an 8d bar while having ZERO writers anywhere in the repo
+    # (content frozen since 2026-07-29, header stamped 2026-07-16); it is now recorded terminal
+    # below. The file run_cadence ACTUALLY writes is this one -- scripts/run_cadence.py:46 sets
+    # _DUE_NOTE to it and :881 write_text's it on every hourly firing that has due items. So the
+    # producer-cadence-stale defect fired four times in a single sweep against a document nothing
+    # produces, and each ack reasoned about it as the live queue ("stale for exactly one reason --
+    # the generate run it is waiting on"), concluding it would clear with an OpenRouter top-up. A
+    # file with no writer cannot be freshened by unblocking its reader: that ack could never have
+    # come true. Read-without-writer (L1.40 lens 1) applied to a governance table.
+    # THE BAR'S ONE HONEST CAVEAT, stated rather than discovered later: run_cadence writes this
+    # file only under `if due:`, so a fully-drained queue stops refreshing it and would read as
+    # stale. That is the L1.51 "what does absence look like?" trap, and it is not live today --
+    # PROSPECTOR (7d) and the DATA-AXIS dig (7d) are standing recurring duties, so the queue has
+    # never been empty. If it ever drains, the right repair is to make run_cadence stamp an
+    # explicit empty queue, NOT to widen this bar until it cannot fire.
+    "docs/research/cadence_duties.md": (
+        3.0, "the LIVE generation-duty queue, rewritten by scripts/run_cadence.py:881 on each "
+             "hourly firing with due items. It goes stale in exactly one way that matters -- "
+             "run_cadence stopped firing -- and that is what this catches. The brain drains it "
+             "by executing the scoped generate runs and setting gen_done_<name> / "
+             "last_live_generate in data/cadence_state.json."),
     "docs/research/adoption_queue.md": (
         35.0, "trigger-gated methods (fracdiff, dollar bars, ...) -- nothing notices when a "
               "precondition ARRIVES, so a due adoption waits forever"),
@@ -3045,6 +3092,20 @@ _PRODUCER_CADENCE = {
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
 _TERMINAL_ARTIFACTS = {
+    "docs/research/generation_due.md":
+        "SUPERSEDED SNAPSHOT WITH NO PRODUCER (recorded 2026-08-12). Header stamped "
+        "2026-07-16T23:23Z, last content change 2026-07-29, and a repo-wide search for a writer "
+        "returns NOTHING -- no write_text, no append, no shell redirect. The live queue with the "
+        "same header template is docs/research/cadence_duties.md, which run_cadence.py:46/:881 "
+        "actually writes; this table governed THIS file on an 8d producer cadence instead, so "
+        "producer-cadence-stale fired against a document nothing produces and was acked four "
+        "times in one sweep on the theory it would clear when a generate run unblocked. It could "
+        "not: an unread reader cannot freshen an unwritten file. TERMINAL, NOT DELETED, because "
+        "it still has live READERS -- scripts/screen_fred_macro_axis.py:1/:325 cites its line 5 "
+        "as the provenance of the fred_macro scoped run, and scripts/build_audit_coverage.py:54 "
+        "lists it. Deleting it would break the audit trail of a duty that was actually executed. "
+        "It is an immutable record of what was owed on 2026-07-16, superseded by the live queue, "
+        "never edited.",
     "docs/research/PREMORTEM_20260805.md":
         "DATED PRE-MORTEM RECORD (run 1, 2026-08-05, R0105) -- the first time that mission has "
         "ever fired. Terminal because it is an immutable transcript of ONE dated adversarial "
@@ -3787,6 +3848,7 @@ def check_artifact_governance(defects) -> None:
         if ig.returncode in (0, 1):        # 0 = some ignored, 1 = none ignored; 128 = no git
             skip = {ln.strip() for ln in ig.stdout.splitlines() if ln.strip()}
             cands = [c for c in cands if c not in skip]
+    cands = _committed_only(cands)      # untracked WIP is not yet an artifact OF this repo
     unclaimed = []
     for rel in cands:
         if (rel in claimed or rel.startswith(claimed_prefixes)
@@ -4060,6 +4122,17 @@ _ONESHOT_SCRIPTS = frozenset({
     # it (multi-year horizons, to confirm the 1y framing is what inverted the sign), and that is
     # a re-run of the same decisive experiment rather than a schedule.
     "study_absorbing_kelly.py",
+    # classified 2026-08-12 ON THE DAY IT WAS WRITTEN (4c578e58), which is the point: R0345
+    # PRE-REGISTERED this falsifier in its own text ("measure disposition latency for compound
+    # versus atomic rows -- if compound rows do NOT age longer, this hypothesis is wrong"), and
+    # this script ran it BEFORE the admission-control build R0345 proposed. It refuted the
+    # hypothesis (p=0.93; compound rows are 6% of the ledger and cannot explain a 200-row backlog
+    # at any effect size), so the build was correctly NOT made and the backlog was re-diagnosed as
+    # a burst STOCK rather than a flow imbalance. A pre-registered falsifier is a decisive
+    # experiment, not a cadence: re-running it on the same ledger re-derives a settled number, and
+    # re-running it on a CHANGED ledger would answer a different question than the one registered.
+    # Its verdict is the durable artifact; the script is the transcript of how it was reached.
+    "check_row_atomicity.py",
     # classified 2026-08-12 (orphan-scripts defect): the OI/LS universe metrics BACKFILL half of
     # work order oi-ls-universe-metrics-backfill. Ran to completion 2026-08-12T01:35Z ->
     # data/oi_ls_universe.jsonl (365 symbols, 256,625 rows, every symbol current to the archive
@@ -4183,15 +4256,55 @@ def check_orphan_scripts(defects) -> None:
                     and "audit_shards" not in f.as_posix()):
                 with contextlib.suppress(OSError):
                     corpus.append(f.read_text("utf-8", errors="ignore"))
-    blob = "\n".join(corpus)
     cycle = set(re.findall(r'"scripts/([a-z_0-9]+\.py)"',
                            (sdir / "daily_research_cycle.py").read_text("utf-8", errors="ignore")))
+    # ONE PASS OVER THE CORPUS, NOT ONE PER SCRIPT (2026-08-12). This ran
+    # `re.search(rf"scripts/{name}|scripts\.{stem}\b|\b{stem}\b", blob)` for EVERY script, i.e.
+    # ~500 full scans of a multi-megabyte blob: 91.6s of check_orphan_scripts' 91.7s, and the
+    # dominant term in max_audit's whole runtime. That cost is why this check could only ever
+    # live on a daily cron -- at 90s it cannot be a push gate, and a law with no boundary is a
+    # law enforced periodically (L1.37).
+    #
+    # THE REWRITE IS AN IDENTITY, NOT AN APPROXIMATION, and the argument is the only reason it is
+    # safe to touch a detector this load-bearing: `\b` is defined against exactly [A-Za-z0-9_],
+    # so `\bSTEM\b` matches iff STEM appears as a MAXIMAL run of those characters -- which is
+    # precisely membership in the token set below. The two other alternatives are strict
+    # subcases: `scripts/foo.py` and `scripts.foo` both contain `foo` as a maximal token (`/` and
+    # `.` are not word characters), so neither can match where the third does not. Verified
+    # empirically against the old implementation over the real repo before landing: identical
+    # verdicts on all 496 scripts.
+    #
+    # A stem that is not a pure identifier (a dash, a dot) would break that equivalence, because
+    # `\b` could then match across a boundary the tokenizer split. Those keep the original regex
+    # -- correctness first, and they are rare enough that the speed is unaffected.
+    # MEMORY IS THE OTHER HALF OF "AFFORDABLE AT A BOUNDARY", and it nearly deleted this fence on
+    # its first wiring: `re.findall` over the joined corpus materialises a LIST of every token in
+    # the repo -- ~6M short strings at ~50B of object overhead each -- which peaked at 621MB RSS
+    # on a 3.8GB box with 616MB free. The law gate's subprocess came back rc=-9: the OOM killer,
+    # reported as "no output". Streaming per file with `finditer` keeps only the UNIQUE tokens
+    # (a few hundred thousand), and the 45MB joined blob is never built unless something actually
+    # needs it. A fence that dies under memory pressure is indistinguishable from a fence that
+    # passed, which is the worst of the available failure modes (L1.28a).
+    tokens: set[str] = set()
+    for _text in corpus:
+        tokens.update(mm.group() for mm in re.finditer(r"[A-Za-z0-9_]+", _text))
+    # A sibling session's uncommitted script is not an orphan of this repo -- see _committed_only.
+    committed = set(_committed_only([f"scripts/{f.name}" for f in sdir.glob("*.py")]))
+    cands = [f for f in sorted(sdir.glob("*.py"))
+             if f.name not in cycle and f.name not in _ONESHOT_SCRIPTS
+             and f.name != "daily_research_cycle.py" and f"scripts/{f.name}" in committed]
+    # The joined blob exists ONLY for the non-identifier fallback, which is empty in practice.
+    blob = ("\n".join(corpus)
+            if any(not re.fullmatch(r"[A-Za-z0-9_]+", f.stem) for f in cands) else "")
     dead = []
-    for f in sorted(sdir.glob("*.py")):
-        if f.name in cycle or f.name in _ONESHOT_SCRIPTS or f.name == "daily_research_cycle.py":
-            continue
-        stem = re.escape(f.stem)
-        if not re.search(rf"scripts/{re.escape(f.name)}|scripts\.{stem}\b|\b{stem}\b", blob):
+    for f in cands:
+        if re.fullmatch(r"[A-Za-z0-9_]+", f.stem):
+            referenced = f.stem in tokens
+        else:
+            stem = re.escape(f.stem)
+            referenced = bool(
+                re.search(rf"scripts/{re.escape(f.name)}|scripts\.{stem}\b|\b{stem}\b", blob))
+        if not referenced:
             dead.append(f.name)
     if dead:
         defects.append((

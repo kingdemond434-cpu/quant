@@ -96,6 +96,14 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # split as check_scheduler_manifest, and the half that belongs here is the right one: a
     # mandate leaves a prompt by an EDIT, so the edit is the moment to catch it.
     ("check_strategy_breadth.py", ("--surfaces-only",)),  # L1.32 -- never limit to one family
+    # §36/L2.9 -- a new object must be BORN with its properties, judged at the boundary where its
+    # author still exists. These predicates already ran, at 07:00 on cron and nowhere else, so an
+    # unclaimed doc or an unwired script was always found hours later by a session that had to
+    # reconstruct from cold why the file existed; four defect keys recurred that way for weeks
+    # (commit 9f3e2fcf: "fix artifact-ungoverned that MY OWN commit introduced"). Portable by
+    # construction -- it reads docs/, scripts/ and the tracked decision ledger, and judges only
+    # what git TRACKS, so it means the same in CI, a fresh clone and on the box.
+    ("check_birth_properties.py", ()),
 )
 
 #: STATE FENCES -- box-only. They measure LIVE STATE (artifacts, ledgers, organ freshness) that

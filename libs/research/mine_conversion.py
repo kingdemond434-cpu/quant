@@ -203,6 +203,35 @@ def _split_anchor(artifact: str) -> tuple[str, str]:
     return m.group("path"), (m.group("anchor") or "").strip()
 
 
+def _anchor_tokens(anchor: str) -> tuple[str, ...]:
+    """THE THIRD COSTUME (2026-08-12), and `_readings` below predicted it in its own docstring:
+    "a per-instance fix buys one cycle; the rule has to generalise or it returns in a third
+    costume." It did. The parser was taught backticked anchors, then bare anchors -- and the
+    CONTAINS assertion downstream stayed a single verbatim substring test, so a card naming TWO
+    entries was checked for a string that never existed anywhere.
+
+    MEASURED, and it was the dangerous direction. The J-Quants kill card cites
+    `data/data_universe_map.json` `100-jquants-api` + `101-jpx-investor-type-free`. Both keys are
+    in that file; the compound literal "`100-jquants-api` + `101-jpx-investor-type-free`" is not,
+    so a card whose work was genuinely DONE read as a fabricated claim. A false "unbacked" is worse
+    than a false pass here, because the defect's own prescribed remedy is "produce the artifact or
+    DOWNGRADE THE CLAIM" -- pointed at a true claim, that instructs a reader to either redo
+    finished work or retract something correct.
+
+    A CONJUNCTION, WHICH IS STRICTLY STRONGER, NEVER A DISCOUNT. Naming two entries asserts BOTH
+    exist and every one must appear; a single anchor keeps the exact behaviour it had. There is no
+    input on which this credits a card the old test rejected for a real absence -- it only stops
+    reading "A and B" as one nonexistent string. The laundering guard `_readings` names is intact:
+    an anchor is still an EXTRA assertion on top of exists / non-empty / postdates-the-find.
+
+    MISSING TOKENS ARE NAMED INDIVIDUALLY, per this module's own "a count is not a diagnosis"
+    rule: a half-done conversion now says WHICH half is absent instead of quoting the whole
+    citation back at the reader.
+    """
+    toks = tuple(t.strip() for t in re.findall(r"`([^`]+)`", anchor) if t.strip())
+    return toks or (anchor,)
+
+
 def _readings(artifact: str) -> tuple[tuple[str, str], ...]:
     """Every defensible (path, anchor) reading of a citation, STRONGEST FIRST.
 
@@ -303,8 +332,12 @@ def backing_reason(
                 # AN ANCHOR IS AN EXTRA ASSERTION, NEVER A DISCOUNT. Naming WHICH entry is strictly
                 # better evidence than naming the file -- a 388-line graveyard is non-empty no
                 # matter what you failed to write in it -- so the anchor must APPEAR in the file.
-                if anchor and anchor.lower() not in p.read_text("utf-8", errors="ignore").lower():
-                    return f"anchor-absent: {path_s!r} does not contain {anchor!r}"
+                if anchor:
+                    blob = p.read_text("utf-8", errors="ignore").lower()
+                    missing = [t for t in _anchor_tokens(anchor) if t.lower() not in blob]
+                    if missing:
+                        return (f"anchor-absent: {path_s!r} does not contain "
+                                + " + ".join(repr(t) for t in missing))
                 # ...and it must POSTDATE the find. Exact was not enough on its own:
                 # `-> pyproject.toml` named a real non-empty file and was credited, so any
                 # pre-existing file in the repo was a valid receipt for any claim. Doing the actual

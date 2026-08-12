@@ -3659,7 +3659,9 @@
    "unmeasured": "Whether un-welding the signal actually raises the conversion rate -- that is a behavioural claim about future brain windows and needs weeks of ledger history to test. The age percentiles were added precisely so it becomes measurable: under a real drain they fall, under treading water they rise 1d/day. Also unmeasured: whether the line of 25 is the right threshold for the OWED population, since it was calibrated against the older, larger one.",
    "expected_cost": "One governance fence touched, 70 lines. No risk, execution or sizing path. Independence gate: single subsystem. Neighbours audited and named in the commit -- run_max_push.py:251, check_fence_yield.py:51, libs/ops/repair_mode.py, capability_ratchet.py:935, orphan_scan.py:82; all read the artifact, none read the status population.",
    "success_metric": "backlog_age_p50_days and oldest_backlog_age_days FALL over the next 14 days while arrivals hold their baseline (L1.28b(f): the drain must never come from finding less). REPAIR-MODE clearing at least once when owed drops below 25 would confirm the gate can now carry information.",
-   "reversal_condition": "If REPAIR-MODE clears while owed rows are genuinely rotting -- i.e. status OK with oldest_backlog_age_days still rising -- the population is wrong and the line must move back toward the fuller backlog. Revert 4c578e58; the pre-fix behaviour is one line (`len(backlog) > REPAIR_MODE_BACKLOG`)."
+   "reversal_condition": "If REPAIR-MODE clears while owed rows are genuinely rotting -- i.e. status OK with oldest_backlog_age_days still rising -- the population is wrong and the line must move back toward the fuller backlog. Revert 4c578e58; the pre-fix behaviour is one line (`len(backlog) > REPAIR_MODE_BACKLOG`).",
+   "review_due": "2026-08-26",
+   "review_due_source": "success_metric"
   }
  ]
 }

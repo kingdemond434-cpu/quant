@@ -164,17 +164,18 @@ def main() -> None:
     # a blind-spot hunter that only ever thinks in ONE model's priors has the exact defect it
     # exists to detect. Ask the independent family what THIS run missed, and record the verdict
     # honestly -- SOLO when the partner is unavailable, never silently passed off as confirmed.
+    # THROUGH THE ONE SHARED CALL SITE, not a local re-implementation of it (L1.33). This organ
+    # open-coded the wrapper's body -- prompt, ask, merge_verdict, artifact-merge, print -- which
+    # is the per-organ copy L1.33 exists to forbid: five lines that must stay in step with two
+    # sibling organs forever, and the first place a verdict label would quietly drift. The shared
+    # helper does all of it, records to data/second_family_log.json, and never raises.
     try:
-        from libs.research.second_family import ask_second_family, blindspot_prompt, merge_verdict
-        own = json.dumps({"unread": unread, "unmodelled": unmodelled[:20],
-                          "pairs": pairs[:20], "never": never[:20]}, indent=1)
-        op = ask_second_family(blindspot_prompt("blindspot_max", own), context="blindspot_max")
-        verdict = merge_verdict(own, op)
-        d = json.loads(OUT.read_text("utf-8"))
-        d["second_family"] = {**verdict, "text": op.text[:4000] if op.available else ""}
-        OUT.write_text(json.dumps(d, indent=1), "utf-8")
-        print(f"  second family: {verdict['verdict']}"
-              + (f" -- {verdict.get('reason', '')}" if verdict["verdict"] == "SOLO" else ""))
+        from libs.llm.second_opinion import consult_second_family
+        consult_second_family(
+            "blindspot_max",
+            {"unread": unread, "unmodelled": unmodelled[:20],
+             "pairs": pairs[:20], "never": never[:20]},
+            artifact=OUT)
     except Exception as exc:               # the partner must never break the organ
         print(f"  second family: SKIPPED ({exc})")
     print(f"\n  -> {OUT}")
