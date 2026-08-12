@@ -81,7 +81,11 @@ _STEPS = [
     # every newly-shipped test ungated by default. GAP 31's stated blocker -- duplicate basenames
     # breaking collection -- EXPIRED once pyproject set --import-mode=importlib: the tree collects
     # and was run 100% GREEN this session (only optional-dep skips), so gating it is proven safe.
-    ("tests (pytest)", [_PY, "-m", "pytest", "tests/", "-q"], 1800),
+    # 7200s (2026-08-12): the full tree measured 60-80min under --cov in back-to-back runs
+    # (cycle memory 2026-08-11), so the old 1800s budget tripped on every HONEST run -- the
+    # marker read "HUNG >1800s" nightly and the gate was a wall no run could pass (L1.49).
+    # 2h keeps the wide "wedged, never busy" margin over the 80min observation.
+    ("tests (pytest)", [_PY, "-m", "pytest", "tests/", "-q"], 7200),
     # TYPES (2026-07-25): mypy --strict was configured in pyproject and run by NOBODY -- the
     # strictest tool in the repo was not in the gate, so nothing stopped a type regression
     # landing. Added the same day scripts/ entered its `files` list, because a type gate that
@@ -91,7 +95,7 @@ _STEPS = [
 ]
 #: Worst-case wall clock if every step wedges. Read by the cycle-budget invariant test rather
 #: than recomputed there, so the two cannot drift apart silently.
-STEP_BUDGET_TOTAL_S = sum(b for _, _, b in _STEPS)  # 3300s
+STEP_BUDGET_TOTAL_S = sum(b for _, _, b in _STEPS)  # 8700s
 
 
 _LOCK = _ROOT / "data/.ci_run.lock"

@@ -38,13 +38,14 @@ _STATUS = _ROOT / "data" / "research_chain_status.json"
 _STEPS = [
     # 1200s: the whole-tree gate (2026-07-25) runs ~8min; the old 300s was sized for the 4-file
     # gate and silently killed this step by timeout every run since (R0146, stale-consumer class).
-    # 3900s (2026-08-05): run_ci now bounds each of its OWN steps, summing to 3300s worst case,
-    # and this outer bound must lose that race -- an outer kill produces no [HUNG] line and no
+    # 9600s (2026-08-12): run_ci now bounds each of its OWN steps, summing to 8700s worst case
+    # (pytest honestly runs 60-80min under --cov, so its inner budget rose to 7200s), and this
+    # outer bound must lose that race -- an outer kill produces no [HUNG] line and no
     # red CI marker, which is precisely the stale-green blindness the inner bounds exist to end.
-    # This is a ceiling reached only when the gate is wedged (normal run is still ~8min), so the
+    # This is a ceiling reached only when the gate is wedged, so the
     # rise costs nothing on a healthy day and buys a NAMED failure on a bad one. The ordering is
     # asserted by tests/ops/test_ci_gate_timeouts.py against run_ci.STEP_BUDGET_TOTAL_S.
-    ("ci_gate",           "scripts/run_ci.py",             3900),
+    ("ci_gate",           "scripts/run_ci.py",             9600),
     ("recorder_watch",    "scripts/ensure_recorder.py",      60),  # data moat must never sleep
     ("stablecoin_flows",  "scripts/run_stablecoin_flows.py", 180),  # daily on-chain clock tick
     ("fred_macro",        "scripts/collect_fred_macro.py",   120),  # free US-macro (key-gated)
