@@ -4,9 +4,17 @@ WHAT IT DOES AND WHAT IT CANNOT, both measured from this box on 2026-08-01 rathe
 
     YouTube channel listings   REACHABLE -- video ids + titles parse out of the page (23/23 for
                                one channel)
-    YouTube captions           BLOCKED -- no `captionTracks` in the watch page, api/timedtext
-                               returns 0 bytes, youtube-transcript-api raises RequestBlocked.
-                               Datacenter-IP block; retrying does not fix it.
+    YouTube captions           BLOCKED -- re-probed 2026-08-12 and the DIAGNOSIS CHANGED while
+                               the capability did not, which is worth writing down precisely so
+                               nobody re-runs this probe hopefully. On 2026-08-01 the watch page
+                               carried no `captionTracks` at all. It now carries the full track
+                               list (en manual, en asr, de-DE, ja, pt-BR, es-419 ...) WITH signed
+                               timedtext baseUrls -- and fetching those signed URLs returns
+                               ZERO BYTES, as does a bare api/timedtext call. So the metadata is
+                               visible and the transcript body is not: the block moved from the
+                               listing to the fetch. Still a datacenter-IP block, still not
+                               retryable, and the video half of this miner remains a QUEUE for a
+                               human rather than a transcript pipeline.
     Xueqiu (雪球)              REACHABLE -- 110KB of real content with an embedded JSON payload
     Baidu                      BLOCKED -- returns a 1.5KB anti-bot shell, not results
     Zhihu (知乎)               BLOCKED -- HTTP 403
