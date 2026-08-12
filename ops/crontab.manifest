@@ -1619,6 +1619,32 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # before its cadence is lowered. Cutting a lane on a yield number produced by our own bug
 # would retire a working forest.
 0 13 * * * cd "$QUANT_ROOT" && flock -n data/.cron_minerq.lock .venv/bin/python scripts/mine_research_queue.py >> data/cro_ai_logs/mine_research_queue.log 2>&1
+# CHEAP CN COLLECTION, 2 EXTRA PASSES (principal directive 2026-08-12 §11: COLLECTION FREQUENCY
+# IS NOT REASONING FREQUENCY). Correcting an over-cut of my own from earlier today.
+#
+# WHAT I GOT WRONG. Cutting the Chinese Routine 3x/day -> 1x/day removed a Claude session, which
+# was the point -- but it also removed two COLLECTION passes, which cost yield for nothing.
+# scripts/mine_research_queue.py spends ZERO Claude tokens: it is HTTP plus local scoring. The
+# expensive half was always the Routine wrapping it.
+#
+# WHY THE PASSES ARE WORTH RESTORING, measured 2026-08-12: the CN lane returned 42 new rows at
+# 06:44 and 36 MORE at 08:57 on the same 658-row fetch volume. Bilibili, re-queried in the same
+# window, returned 0. So CN search ROTATES its ranking over a deep backlog rather than serving a
+# stable index -- each sweep drains a different slice, and sweeping once a day drains roughly a
+# third of what three passes drain. That is a real loss of corpus coverage and it is recoverable
+# for free.
+#
+# THE ROWS DO NOT GO STALE WAITING. Every pass stamps its rows into the append-only edge intake
+# (the miner stamps its own queue), and libs/ops/novelty_gate accumulates novel evidence until
+# the daily Claude cycle reads the whole batch at once -- one strong call over three passes'
+# evidence rather than three calls. Collection frequent, reasoning batched: exactly §11.
+#
+# SHARES data/.cron_minerq.lock WITH THE DAILY SWEEP ON PURPOSE. Two schedules for one script
+# under two locks is a race flock cannot serialise -- both passes would hit the same hosts at
+# once and both would write the seen ledger, which is how a source gets double-requested into a
+# refusal and how a ledger write gets lost. Sharing the lock means a collection pass that
+# collides with the daily sweep simply skips (flock -n, exit 0) and the next one picks it up.
+41 4,10,16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_minerq.lock .venv/bin/python scripts/mine_research_queue.py --only cn --out reports/research_queue_cn.json >> data/cro_ai_logs/mine_cn_collect.log 2>&1
 # EDGE INTAKE, 20 minutes after the miner writes its queue (gate items 30/31/34, mandate
 # Part III). Folds every queue row into data/edge_intake.jsonl with exactly one named
 # disposition, so a row that is never converted can no longer just age out of the report on
