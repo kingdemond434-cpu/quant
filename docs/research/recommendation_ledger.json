@@ -4781,11 +4781,11 @@
    "summary": "Derive DEFAULT_HAIRCUT_BPS from measured depeg/exploit base rates. Measured 2026-08-05 by check_idle_cost: the lending-vs-T-bill verdict is decided 55x over by this one underived constant -- best stablecoin APY 3.78% (aave-v3 USDC, 162M TVL) vs risk-free 3.73%/yr, so the BREAKEVEN haircut is 5.5bps against an assumed 300.0bps. Gross, lending WINS by 5bps. The constant has no derivation anywhere in the repo and it single-handedly closes a yield band. Derive it or the collateral-allocation screen (R0120) and the L1.50 floor both rest on an assumption wearing a measurement's clothes.",
    "roi_bps": 25.0,
    "raised": "2026-08-05T14:10:40.710508+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Derived: exploit 12.23bps point (147.00M net loss / 120.19B integrated TVL-years, 6-protocol reference set) widened to 38.50bps at the 95pct Poisson frequency bound on 2 events, plus 3.21bps measured USDC depeg shortfall = 41.71bps against the undefended 300. Verdict UNCHANGED (lending loses GROSS today too, -1bps), so the margin moved from assumption to measurement without moving a decision. Refusal value stays 300 so an absent/stale/partial input keeps the band shut (L1.55). Withdrawal-queue risk measured on our own tape (aave-v3 USDC at util>=0.99 in 23.8pct of 311 obs) and deliberately UNPRICED rather than given an invented severity.",
+   "commit": "88fec62b",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T20:39:11.735429+00:00"
   },
   {
    "id": "R0376",
@@ -4793,11 +4793,11 @@
    "summary": "L1.50 cascade, BLOCKED on Gate 0 not skipped: carry each clamp's usd_per_day from data/idle_cost.json into its GAP_REGISTER deferred(DATE) row and its SCHEDULED ledger row, so every delay is argued against an accruing dollar figure (L1.27). Built the meter and the clamp register this run; the cascade is deliberately not wired because the book is mode PAPER, so there is no honest number to cascade and a hypothetical one propagated into 85 past-due rows would be worse than none. Unblocks the moment data/LIVE_ENABLE exists.",
    "roi_bps": 20.0,
    "raised": "2026-08-05T14:10:48.175570+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "REJECTED ON THE MECHANISM, not on the Gate-0 blocker the row names -- and the three reasons below do NOT lift at Gate 0, so waiting for LIVE_ENABLE would not make this correct. (1) TARGET POPULATION ONE IS EMPTY: 'deferred(DATE)' appears ZERO times in docs/GAP_REGISTER.md (verified by grep 2026-08-12). That vocabulary is the section-33 MINING disposition and lives in data_axis_watchlist.md (17) and prospector_coverage.md (11) -- cards blocked by un-done screening work, not by a capital clamp. (2) TARGET POPULATION TWO IS THE WRONG KIND OF DELAY: all 131 SCHEDULED ledger rows are queued on engineering throughput ('EV-ordered re-schedule at measured build throughput, ~2 majors/week'), not on capital. A clamp's usd_per_day is idle capital forgone; it is not the cost of R0005 waiting for a build slot, and stamping it there would argue a delay against a number that has nothing to do with why it is delayed. (3) IT WOULD DOUBLE-COUNT BY 131x: check_idle_cost's own docstring forbids exactly this -- 'clamps are not additive; the desk-level cost is computed ONCE from total idle capital'. Cascading one non-additive desk-level figure onto 131 rows restates a single cost 131 times, which is the fence's named defect one level out. The honest desk-level figure is ALREADY published once, by the fence that owns it. THE L1.27 INTENT IS NOT DROPPED: a delay SHOULD be argued against an accruing figure -- but the accruing figure for a scheduled row is its OWN roi_bps over its own overdue days, and roi_bps is currently never multiplied by age anywhere in the repo (verified). Raised as a separate row so the intent survives the rejection of this mechanism.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T20:40:43.459214+00:00"
   },
   {
    "id": "R0377",
@@ -6586,6 +6586,42 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0526",
+   "source": "cycle",
+   "summary": "Price a DELAYED row against its OWN roi_bps, not against idle capital (the L1.27 intent R0376 was rejected for mis-implementing). Verified 2026-08-12: roi_bps is stored on every ledger row and is NEVER multiplied by age anywhere in scripts/ or libs/ -- so 131 SCHEDULED rows and 52 past-grace rows accrue a cost nothing computes. The correct meter is per-row and additive-safe (unlike a clamp's usd_per_day, which is one non-additive desk-level figure): delay_cost = roi_bps x days_overdue, summed across the backlog, published beside the repair-mode line in check_conversion so the queue depth carries a number instead of a count. This is what makes L1.27's question ('am I protecting capital, or avoiding uncertainty?') answerable for an ENGINEERING delay, which is what 100pct of the desk's scheduled rows are actually blocked on. Guard the obvious failure: roi_bps is a desk estimate, so the figure is an ESTIMATE-times-ESTIMATE and must be published as a rank-ordering signal, never as a dollar claim.",
+   "roi_bps": 18.0,
+   "raised": "2026-08-12T20:40:56.373925+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0527",
+   "source": "cycle",
+   "summary": "VIDEO FETCHER IS INERT DESK-WIDE, and every miner seat is mis-attributing the failure to source walls. scripts/fetch_video_transcript.py reaches YouTube ONLY via 4 hardcoded Piped proxies (_PIPED, lines 27-31) and ALL FOUR are down as measured 2026-08-12: api.piped.private.coffee 500, pipedapi.kavin.rocks 502, pipedapi.adminforge.de 301 (redirect not followed), api.piped.yt 000 (DNS NXDOMAIN). Meanwhile www.youtube.com returns 200 from this box, so the source is NOT walled -- the DESK-SIDE TOOL is dead. THE DEFECT IS THE MIS-ATTRIBUTION, not the outage: L1.34 makes video first-class for EVERY seat and the coverage protocol says log video_locked only for a route TRIED AND FAILED, so every seat that tries will now correctly record a failure and INCORRECTLY infer the platform is walled -- a desk-tool outage wearing a source-wall costume, and the same class as the desk lesson 'a verdict about the HOST is not a verdict about the DESK'. It fails silently and permanently: Piped instances rotate constantly (the module comment says so) and nothing monitors them. FIX, in order of durability: (1) the script must distinguish ALL-PROXIES-DOWN from CAPTIONS-ABSENT in its exit message so a seat cannot mis-log it; (2) refresh the instance list AND follow redirects (adminforge returns 301, so it may be alive behind a moved path); (3) add a non-Piped fallback -- the legacy timedtext endpoint returns 200/size=0 and the ANDROID innertube client returns 400, both verified dead today, so the fallback needs to be a maintained library rather than another hardcoded host; (4) fence it: a video-route liveness check, since a rotating-proxy dependency with no monitor is guaranteed to rot again. Found by BRAIN hunter s2 while executing its owed video obligation (Learn2Quant lessons kuIfHJEsPkY / A3RNoYAz_9U, the official BRAIN lecture corpus, still unfetched).",
+   "roi_bps": 45.0,
+   "raised": "2026-08-12T20:55:11.671195+00:00",
+   "status": "scheduled",
+   "reason": "Owned by the ops/tooling org: the fix is in scripts/fetch_video_transcript.py and the BRAIN-hunter seat is research-frozen out of scripts/ and libs/. Tight due date (3d, not the usual window) deliberately: the diagnosis is complete and the first repair is a URL-list refresh plus following the 301, so the work is cheap -- while the cost accrues DAILY and SILENTLY across every miner seat, because L1.34 makes video first-class for all of them and each one that tries will mis-record a desk-tool outage as a source-side wall.",
+   "commit": null,
+   "due": "2026-08-15",
+   "disposed": "2026-08-12T20:56:05.961114+00:00"
+  },
+  {
+   "id": "R0528",
+   "source": "cycle",
+   "summary": "ADD TWO STRUCTURAL SCREENS TO THE CANDIDATE PIPELINE, both cost-first, both LOWERING NO BAR (L1.6) -- imported as METHOD from the WorldQuant BRAIN corpus by BRAIN hunter s2, provenance in search_operator_library.md 'wq-brain-pipeline'. (1) SUB-UNIVERSE ROBUSTNESS: re-run every cross-sectional candidate on the MOST LIQUID TIER ALONE and require the edge to survive. BRAIN gates on this (LOW_SUB_UNIVERSE_SHARPE, reportedly their 3rd-largest failure cause at 51.0%) and the desk does not. It separates 'an edge we CHOSE to harvest in a small niche' (legitimate, sec 42) from 'an edge that exists ONLY because the illiquid tail is in the cross-section' (an artifact) -- and those two produce IDENTICAL backtests, so a desk that deliberately hunts small (L1.18a capacity parity) is the most exposed to the confusion and the least likely to see it. RUNNABLE TODAY WITH ZERO NEW DATA: data/crypto_grouping_map.json already carries liq_tier T1-T4 (quartiles of 120d median dollar volume, 296 symbols, built by this seat 08-11). Cost is one re-run of an existing candidate. (2) MARGIN = PnL / total traded value, i.e. profit per dollar traded, computed and reported on every candidate. Unlike their Sharpe/Fitness thresholds -- which are an IN-SAMPLE SUBMISSION FILTER for a platform that runs its own OOS stage and pays per accepted alpha, and are NOT adopted -- margin is ARITHMETIC, not inference: it is directly comparable to the desk's MEASURED round-trip cost in bps, and a candidate whose margin sits below measured cost is dead on arrival at any Sharpe. It is L1.5 execution physics as a single number and it would have flagged WS-006 (Holm-cleared t=+3.95, netted -0.656 bp/bar) BEFORE a forward slot was spent. Both are STRUCTURAL screens -- the class the desk's own gate-power audit says should block rather than rank -- and both ADD a check without touching any statistical bar, the two-stage law, or any rail.",
+   "roi_bps": 55.0,
+   "raised": "2026-08-12T20:55:52.804385+00:00",
+   "status": "scheduled",
+   "reason": "Owned by the alpha org (validation/screen path in libs/, seat is research-frozen out). Deliberately paired with R0437's due date -- that row wires the SAME artifact (data/crypto_grouping_map.json) into the same callers for group_rank/group_zscore, and liq_tier is one of its four maps, so the sub-universe screen and the grouping wiring are one visit to one module rather than two. Margin has no dependency and can land earlier.",
+   "commit": null,
+   "due": "2026-08-18",
+   "disposed": "2026-08-12T20:56:09.205721+00:00"
   }
  ]
 }

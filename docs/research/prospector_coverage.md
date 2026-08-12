@@ -4196,3 +4196,54 @@ STATUS: ALL THREE ITEMS RESOLVED + 2 side-checks. Run closed cleanly 2026-08-12 
 note, bounded scope, depth per item maxed, 1 new axis + 1 EV-gated mechanism + 1 WS + graveyard
 enrichment + OP-022 contribution routed; honest zeros: 0 new venues, 0 video, leaderboard-CSV
 dead, 148582 dead, 5 NP indices unarchived).
+
+---
+
+## BRAIN HUNTER — session 2 (2026-08-12, dedicated daily organ)
+
+**MINE GATE: BACKLOG-CLEAR** (17/17 carded finds disposed; header authorised). **PRIOR STATE READ:** s1's next-ground chain (6 items) inherited intact. R0437 verified live and correctly SCHEDULED (due 08-18) — the grouping map's consumer wiring is owed by the alpha org, not by this seat.
+
+**S1's BLOCKING-INPUT WORRY IS CLOSED, AND IT CLOSED BETTER THAN S1 THOUGHT.** S1 left "CoinGecko ToS read FAILED (403)" open as a possible §13 exposure on `data/crypto_grouping_map.json`. Re-read from the artifact: its `provenance.source` records **desk-owned D1 bars, NO vendor taxonomy consumed** — so the map has **zero licence surface** and the CoinGecko/DeFiLlama licence reads (s1 next-ground item 4) are **not blockers on it**. They remain owed only if the desk ever wants a *category* taxonomy. **This is L1.11 working as designed: the moat is the transformation, not the purchased dataset.**
+
+### GROUND OPENED, and the two-exhaustions rule applied
+
+- `efJerryYang/worldquant-brain-simulator` (**GPL-3.0**, 32★) — **EXHAUSTED at PIPELINE level.** `settings.yaml`, `expression.py`, `util.py` and `simulate.py` (389 lines) read in full. **NOT claimed:** `alpha_pool/alpha101.py` (43KB) — deliberately unmined, it is 101 equity *formulas* and this organ extracts *mechanisms* (brief: "a copied formula is a crowded expression over a universe the desk does not trade"); `datasource/database.py`.
+- `QuantML-Research/wq-alpha-research` `SKILL.md` (**NO LICENCE ⇒ all-rights-reserved**, 349★) — **EXHAUSTED §§1–6** (decision tree, field catalogue, operator table, templates, metrics, IS checks, diagnostics). **§§7+ NOT MINED AND WILL NOT BE: account-gated BRAIN API automation. §13 hard stop** — a credentialed account's contents are not public because an account exists. No credential was held, sought or used.
+- **`platform.worldquantbrain.com/learn/...` — WALLED.** Route tried 2026-08-12, returns a JS shell (title only). Logged as WALLED, not as absent. Naming what is behind it is legitimate; going behind it is not.
+
+### VIDEO: 0 fetched, 0 source-locked — and the distinction is the whole finding
+
+**1 id (`kuIfHJEsPkY`, Learn2Quant lesson 1) attempted through 3 independent routes, all failed — and NOT ONE failure is WorldQuant's.** The desk fetcher's 4 hardcoded Piped proxies are **all down** (500 / 502 / 301 / DNS-NXDOMAIN, each measured); the legacy timedtext endpoint returns 200 with a **zero-byte** body; the ANDROID innertube client returns 400. **`www.youtube.com` returns 200 from this box.**
+
+**So the corpus is REACHABLE and our tool is DEAD, and `video_locked` would have been the wrong log.** L1.34 makes video first-class for *every* seat, so this outage is silently degrading all of them and each one that tries will mis-attribute a desk-side failure to a source-side wall — the desk's own lesson inverted ("a verdict about the HOST is not a verdict about the DESK"). **Ledgered R0527, scheduled 08-15** with the full diagnosis and a 4-step fix. **The official BRAIN lecture corpus therefore remains UNMINED and is not claimed as thin.**
+
+### NEW VENUES (standing discovery obligation — the seed list is a floor)
+
+| venue | what lives there | how found | verdict |
+|---|---|---|---|
+| `rocky-d/wqb` (MIT, 272★) | the BRAIN **API wrapper** — platform semantics from its own API surface | search | **RICH, UNMINED** — s1 item 2's other half |
+| Learn2Quant YT playlist `PLmpIWlqVqfbf0F0sqUaYeOKoT_LFvB2yd` | official BRAIN lecture corpus | search | **RICH, TOOL-BLOCKED** (R0527) |
+| **IQC 2026 webinar series** (weekly, Thursdays) | official research webinars, **recurring** | search | **RICH, RECURRING** — the standing argument for a daily organ: the platform keeps publishing |
+| `jglazar/notes` (247★, **no licence**) | `worldquant_seminar.md`, `submitted_alphas.md` — PROCESS mining | search | **UNVERIFIED** — both guessed paths 404; needs a tree walk |
+| `laox1ao/Alpha101-WorldQuant`, `zhutoutoutousan/worldquant-miner`, `TonyMa1/wq_new`, `jdhruv1503/Brainiac`, `alexisdpc/WorldQuant-alpha-trading`, `dige04/WQ-Brainn`, `RussellDash332/WQ-Brain`, `xiegengcai/world-quant-brain`, `jingmouren/CrisperX-50_..._Alphathon` | reimplementations, miners, agent harnesses, a 50-alpha low-correlation example set | search | **UNTRIAGED** — the fork/reimplementation layer, exactly the recursive-expansion node the brief calls highest-yield |
+
+### §33 DISPOSITIONS — every find routed in-run (screen-on-discovery)
+
+- **Pipeline semantics** (neutralize→truncate→normalize; `rank` = uncentered [0,1]; `decay_linear` exact weights; 6 missing operators; the two-stage construct) **[§33: wired -> docs/research/search_operator_library.md `wq-brain-pipeline`, OP-058..067]**
+- **4,367-field taxonomy + 142 GROUP-typed fields + yield-by-category** **[§33: screened -> docs/research/data_axis_watchlist.md card 32]**
+- **4 process imports** **[§33: screened -> docs/research/improvement_inbox.md + ledgered R0528 scheduled 08-18]**
+- **3 defects in the public alpha101 lineage** (bfill look-ahead, neutralization dead-branch, gross-only PnL) **[§33: killed -> docs/graveyard.md]**
+- **Video-fetcher outage** **[§33: wired -> ledger R0527 scheduled 08-15]**
+
+**CONFIRMED, NOT ASSUMED:** the desk's `fitness()` matches the CN community source **exactly**, 0.125 floor included — independent corroboration of a formula previously held on one screenshot. **NO card added to `prospector_watchlist.md` (5/5 slots used, and nothing here earns a displacement).** The one construct worth trading — `group_rank(ts_rank(funding_carry, N), corr_cluster_residual)`, the platform's canonical two-stage form applied to the desk's only repeat survivor — is **not a new mechanism** and must not pretend to be one: it is a **variant dimension for the pre-registration R0437 already schedules**, and it is priced there in `VARIANTS_TRIED`, not smuggled in as a watchlist card.
+
+### NEXT UN-EXHAUSTED GROUND, in order, for session 3 (L1.35/L1.40 — named before closing)
+
+1. **`rocky-d/wqb` (MIT)** — the API wrapper's request/response models are the platform's **own** vocabulary for settings, checks and failure codes; MIT makes it the cleanest source on this ground. Carried from s1 item 2, half-done.
+2. **The reimplementation/fork layer** (table above, 9 repos) — triage for *elided semantics*, especially anyone who implements `group_neutralize`, `winsorize`, `ts_zscore` or `vec_*`, since those are the six operators the desk still lacks. **`CrisperX-50` is the specific prize:** 50 alphas selected to pass a *mutual correlation* test — that is a worked example of building a **low-correlation portfolio**, which is the desk's independence problem, not its signal problem.
+3. **BRAIN lecture corpus** — blocked on R0527, **re-attempt the day it lands** (do not re-log as walled).
+4. **`jglazar/notes` tree walk** — process/seminar mining; both guessed paths 404, so walk the tree rather than guessing again.
+5. **IQC 2026 webinar series** — recurring weekly; establish whether materials are published outside the login wall.
+6. **BRAIN community discussion of FAILED approaches** — s1 item 6, still the most neglected vein. This run took the *first* real bite (the failure-cause and yield-by-category tables) and it was the highest-value find of the session, which argues the vein is rich rather than worked.
+
+**A NULL WAS NOT AVAILABLE THIS RUN and none is claimed.** Ground remains wide open: 9 untriaged repos, an unmined official lecture corpus, a recurring webinar series, and a platform that keeps publishing. **Seat-exhaustion is false here as everywhere.**

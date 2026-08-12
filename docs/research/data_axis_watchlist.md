@@ -2666,3 +2666,41 @@ This item is graded **UNVERIFIED for content, verified for reachability + enumer
 4. **COIN-M `metrics` 285-vs-288 row question** — three missing 5-min buckets in the one day spot-
    checked; unknown whether that is routine or episodic. Cheap to characterise across 1,754 files.
 5. **Card 1 Upbit remains blocked on the principal**, not on research. Untouched by design.
+
+## 2026-08-12 — BRAIN hunter s2: the field taxonomy, and what it says about the desk's data surface
+
+### 32. WorldQuant BRAIN data-field catalogue (USA TOP3000, delay=1) — a competitor's ENTIRE feature surface, enumerated — grade: **structural-reference, no ingest possible (equities), routed for its SHAPE not its contents**
+
+**SOURCE:** `QuantML-Research/wq-alpha-research`, `references/wq_usa_top3000_delay1_data_fields_summary.json` — a machine-generated summary of a 219-page field enumeration. **NO LICENCE FILE ⇒ all-rights-reserved**; counts and categories are facts, extracted as such, **no verbatim text or bulk data reused**, nothing installed. DERIVES-FROM: **NONE (checked)** — no desk artifact references this repo.
+
+**THE FIELD SURFACE, 4,367 fields:**
+
+| category | fields | share | crypto analogue on this desk |
+|---|---:|---:|---|
+| fundamental | 1,652 | 37.8% | **near-total gap.** On-chain fundamentals: supply/emission schedules, unlocks, TVL, protocol revenue, treasury flows, staking ratio, active addresses |
+| analyst | 1,324 | 30.3% | no sell-side analogue, but the *forward-expectation* role maps to funding, basis term structure, options-implied, prediction markets |
+| news | 996 | 22.8% | exchange announcements (listing/delisting), governance votes, incident feeds |
+| pv (price-volume) | **195** | **4.5%** | **the desk's near-entire surface** |
+| option | 138 | 3.2% | Deribit IV surface, 25Δ skew, put/call — reachable and largely unmined |
+| model | 40 | 0.9% | derived/model factors |
+| socialmedia | 22 | 0.5% | the **smallest** category on a platform that has it |
+
+By **type**: MATRIX 2,828 · **VECTOR 1,387** · **GROUP 142** · UNIVERSE 6 · SYMBOL 4.
+
+**THE TWO NUMBERS THAT MATTER, AND THE THIRD THAT CONSTRAINS THEM.**
+
+**(1) GROUP is a first-class data TYPE, and there are 142 of them.** The desk's 08-07 gap was framed as "we have no sector column". That framing was too small: on a mature platform *grouping is a whole data family* — 142 distinct ways to partition the same universe. Session 1 built **4** maps (`data/crypto_grouping_map.json`). That is the correct start and it is 3% of the analogous surface. **The gap is not one map, it is a taxonomy axis**, and it is now the clearest instance of the desk's L1.11 moat law: groupings are *manufactured* from owned data, carry zero licence surface (session 1 built all four from desk-owned D1 bars), and each one is a new orthogonal question to ask of every existing signal.
+
+**(2) VECTOR-typed fields are 32% of the surface and the desk has no vector type at all.** Multi-venue funding, per-level L2 depth, multi-pool lending rates and per-exchange OI are all natively one-symbol-many-values, and the desk reduces them to a scalar *at ingest* — before any operator can choose the reduction. Keeping the vector and reducing late (`vec_avg`/`vec_sum`, OP-066) is an ENGINE change, routed to improvement_inbox, not a data acquisition.
+
+**(3) THE YIELD-BY-CATEGORY CLAIM, AND EXACTLY WHAT IT DOES NOT LICENSE.** The same repo reports submission pass rate by data type: **fundamental 40% > mixed 12.7% > pure technical 5.3% > other 0%**, with failure causes LOW_SHARPE 90.7% / LOW_FITNESS 66.2% / LOW_SUB_UNIVERSE_SHARPE 51.0%.
+
+**This is MINED ORE — a claim from an unlicensed repo, on US equities, against THEIR in-sample submission filter. It is not evidence and it has not been verified here.** Its denominator, sample and selection are all unstated, and a pass rate against a permissive in-sample bar is not a statement about alpha existence.
+
+**It must NOT be read as "price-only alpha is dead." L1.25 forbids that reading and the desk has already retracted that narrative once** (the 420/0 record was an instrument artifact; the kimchi screen passed and was then refuted at full depth). What it *is* legitimately: **an independent, differently-instrumented data point that yield-per-trial differs by roughly 7.5× across data classes, and that the desk is confined to the lowest-yield class.** Read that way it is a **generation prior** — it says where to spend trials, never what is true — and it converges with the desk's own measured record from a completely different direction: funding/carry, a *non-pv* axis, is the lone repeat survivor, while 129/129 price-only directional mechanisms failed at max OOS Sharpe 0.100.
+
+**AND THE MECHANISM IS NAMED, WHICH IS THE PART WORTH HAVING.** The failure is not "price carries no information" — it is **turnover**. Fitness = `Sharpe × sqrt(|R| / max(TO, 0.125))` divides by turnover; the same source's expected-turnover table puts technical factors at **15–35%** against fundamental at **2–8%**, and describes LOW_FITNESS as "the softer version of HIGH_TURNOVER". Price-derived signals decay fastest, so they trade most, so the churn eats them. **That is the desk's own most expensive lesson in another ecosystem's handwriting** — WS-006 order-flow momentum cleared Holm at t=+3.95 and still netted −0.656 bp/bar; the carry sleeve's loss was 88.3% **fees**, not thesis.
+
+**THE ACQUISITION IMPLICATION (L1.11, and it is the honest one):** the highest-yield categories are exactly the ones the desk cannot buy and must manufacture — on-chain fundamentals and forward-expectation series. **No purchase is proposed and none is needed**; every analogue above is public. **[§33: screened -> docs/research/search_operator_library.md `wq-brain-pipeline` + this card]** — screened, not wired: this is a reference axis (equities, un-ingestible), and its deliverable is the SHAPE it gives the crypto-side hunt, already routed.
+
+**RESIDUAL GAP, graded:** the 4,367-field *contents* (2.8MB JSON) were **not** pulled — no desk use for equity field IDs, and bulk-copying an unlicensed artifact is not defensible under §13. The category/type counts are the whole transferable payload. **Re-entry condition (L1.16a):** if the desk ever builds a fundamentals-shaped crypto surface, the GROUP-typed field list becomes worth enumerating as a taxonomy menu.

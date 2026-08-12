@@ -2137,3 +2137,45 @@ L1.55 ABSENT-vs-UNREADABLE law violated inside the instrument built to attribute
 instead of invisible. **MEASUREMENT-FIRST: repair the instrument and accumulate rows; this
 justifies NO size change and NO rail movement.** Money path + sterile-cockpit rules apply.
 **NOT APPLIED — litminer freeze bars `scripts/`.**
+
+## 2026-08-12 — BRAIN hunter s2: four process imports, one of them runnable today
+
+Provenance as in `search_operator_library.md` `wq-brain-pipeline` (GPL-3.0 simulator read as text + an unlicensed CN-language community skill; facts only, nothing installed or run, official platform docs WALLED). **Everything below is METHOD. No threshold from that platform is adopted — their bar is an in-sample submission filter for an operator that runs its own OOS stage and pays per accepted alpha (L1.6).**
+
+### 1. THE SUB-UNIVERSE ROBUSTNESS TEST — the desk has the inputs on disk and does not run it
+
+BRAIN gates every alpha on `LOW_SUB_UNIVERSE_SHARPE`: **the alpha must also work on the more liquid TOP1000 subset, not only on the full TOP3000.** It is reportedly the **3rd-largest failure cause at 51.0%**, and the prescribed repairs are "avoid `rank(-assets)`, use `group_rank`, add a liquidity filter".
+
+**WHAT IT ACTUALLY DETECTS, and why it is not a capacity gate in disguise:** it separates *an edge you chose to harvest in a small-cap niche* from *an edge that only exists because the illiquid tail is in your cross-section*. The desk deliberately hunts small (§42, capacity parity L1.18a) — so it is **structurally the most exposed desk to this failure mode and the least likely to notice it**, because a liquidity-tail artifact and a genuine small-name edge produce the same backtest.
+
+**RUNNABLE TODAY, ZERO NEW DATA:** `data/crypto_grouping_map.json` already carries `liq_tier` (T1–T4, quartiles of 120d median dollar volume, 296 symbols). Re-run any cross-sectional survivor on the top tier alone; a Sharpe that collapses is a liquidity artifact, one that holds is an edge.
+
+**THIS ADDS A CHECK, IT LOWERS NOTHING (L1.6).** It is a *structural* screen — the class the desk's own gate-power audit says should block forever rather than rank — and it costs one re-run of an existing candidate.
+
+### 2. DECAY IS MATCHED TO THE DATA'S ARRIVAL RATE, NOT SWEPT
+
+The community decision tree prescribes decay **by data type**, not by search: fundamental **0**, analyst **0–4**, technical **10–30**, sentiment **4–10** (expected turnover 2–8% / 9–16% / 15–35% / 8–30% respectively).
+
+**MECHANISM:** smoothing is set by how fast the underlying *information* arrives. Quarterly fundamentals already move slowly ⇒ no smoothing. Price/volume moves every bar and is mostly noise ⇒ heavy smoothing is what makes it survivable at all.
+
+**WHY THIS MATTERS HERE SPECIFICALLY:** a swept decay window is a **DSR-counted trial per value**; a decay *derived* from the axis's settlement/arrival cadence is **one** trial with a stated reason. That is multiplicity budget recovered for free. It also lands exactly on L1.47 (funding is counted in **settlements**, never elapsed hours) and L1.46 (a configured constant is not evidence of a cadence): for a funding-derived signal the principled decay is a function of the 8h/4h settlement clock, not a swept integer.
+
+### 3. `Margin = PnL / total traded value` — a cost-first statistic the desk should compute
+
+Reported as a core metric ("higher is better"), and it is the one metric on their list that is **not** a statistical bar: it is **profit per dollar traded**, i.e. bps of edge per unit of turnover.
+
+**WHY IT IS worth importing when their Sharpe/Fitness thresholds are not:** margin is directly comparable to a *measured* desk quantity — round-trip cost in bps. An alpha whose margin is below measured cost is dead on arrival regardless of Sharpe, and that verdict is **arithmetic, not inference**. It is L1.5 execution physics expressed as one number, it needs no significance argument, and it would have flagged WS-006 (Holm-cleared at t=+3.95, netted −0.656 bp/bar) *before* the forward slot was spent.
+
+### 4. SELF-CORRELATION IS MEASURED ON DAILY RETURNS, AND PARAMETER TUNING DOES NOT FIX IT
+
+Their independence check correlates **daily return series** (their stated cut: <0.7), not signal values — and the explicit instruction is **"do not just tune parameters"**, because a re-parameterised signal produces a near-identical PnL stream. The desk's independence question ("independent survivor?") should be asked of the **PnL series** for the same reason, and this is a direct argument against counting parameter variants as diversification. Converges with the desk's own demeaning-floor lesson: residual correlation must be compared to −1/(N−1), never to zero.
+
+### 5. CHEAP: VALIDATE A FIELD BEFORE SPENDING A TRIAL ON IT
+
+Their idiom is to simulate the trivial expression `rank(<candidate_field>)` first — a 201 response means the field exists and is populated; anything else means the field is absent or the arity is wrong. **Desk analogue:** before a new axis consumes a DSR-counted trial, run the trivial transform and confirm the series is present, aligned and non-degenerate. `axis_screen` could take this as a precondition rather than discovering it inside a scored run. Costs ~nothing; the failure it prevents is a *wasted* multiplicity slot, which is the expensive kind.
+
+### 6. ENGINE IDEA — keep VECTOR-shaped data vector-shaped until the operator reduces it
+
+1,387 of BRAIN's 4,367 fields are VECTOR-typed, with `vec_avg`/`vec_sum` as late reducers. The desk collapses multi-venue funding, per-level depth and per-venue OI to a scalar **at ingest**, which fixes the reduction before any hypothesis can choose it — mean vs sum vs dispersion vs max are different signals, and cross-venue *dispersion* is the one most obviously discarded. Routed as an engine idea (L1.34 §4), not a build order.
+
+**NOT APPLIED — BRAIN-hunter seat is research-frozen out of `scripts/` and `libs/`.** Items 1, 3 and the video-fetcher defect are ledgered so they are driven rather than filed here (this inbox does not drive work).

@@ -1700,3 +1700,58 @@ The check is one grep and should be run on any ground file whose numbers are abo
 *sometimes* fabricates is more dangerous than one that always fails, because the failure carries
 no signal. Ask of every fetch route: **what does its failure look like, and is that
 distinguishable from success?** If it is not, the route needs a second source or a quarantine mark.
+
+## OPERATOR SEMANTICS — WorldQuant BRAIN pipeline, exact reads (2026-08-12) `wq-brain-pipeline`
+
+**BRAIN HUNTER session 2.** Session 1 closed the *grouping* half of the 08-07 gap (`data/crypto_grouping_map.json`, R0437). This section closes the half nobody had asked about: **what the platform DOES with an alpha vector after your expression returns it.** The desk adopted four operators on 08-07 from a screenshot; it never had the pipeline they sit inside.
+
+**SOURCES + PROVENANCE (two independent lineages, no citation link between them — genuine convergence, not an echo):**
+- `efJerryYang/worldquant-brain-simulator` — **GPL-3.0**, 32★, pushed 2026-05-02. Read as TEXT for mechanism extraction; **no code copied, nothing installed or run** (supply-chain rule). Its own header credits `yli188/WorldQuant_alpha101_code` as the expression lineage.
+- `QuantML-Research/wq-alpha-research` `SKILL.md` — **NO LICENCE FILE ⇒ all-rights-reserved.** 349★. Facts and measurements extracted; **no verbatim text reused.** Chinese-language (L1.34 §5, the CN AI-quant layer).
+- DERIVES-FROM: the 08-07 principal screenshot — **checked, and this corroborates it from two directions.**
+- Official `platform.worldquantbrain.com/learn/...` — **WALLED (JS/login shell, returns title only). Route TRIED AND FAILED 2026-08-12.** Naming what is behind it is legitimate; going behind it is not (§13).
+
+### OP-058 — THE POST-PROCESSING PIPELINE: neutralize → truncate → normalize
+
+The order is the finding, and no public doc states it. Reconstructed from the simulator's `post_processing`, and consistent with the community settings payload:
+
+1. **NEUTRALIZATION** = subtract the cross-sectional mean of the alpha vector, per day.
+2. **TRUNCATION** = clip to ±`truncation` (platform default **0.08**, valid ≤0.1).
+3. **NORMALIZATION** = divide by `sum(|alpha|)`, so the book always satisfies **Σ|w| = 1**.
+
+**CRYPTO ANALOGUE — this is directly usable and the desk already has every input.** Step 1 is precisely the desk's own measured remedy for its worst structural problem: `reports/cross_section_breadth.json` records raw cross-sectional N_eff **1.54** vs leave-one-out-demeaned N_eff **29**. BRAIN neutralizes *by default, on every alpha, before anything else*. The desk's `combination_engine` does not.
+
+**WHAT THE DESK MUST NOT COPY VERBATIM:** truncation applied *before* normalization does **not** bound the final weight — normalization rescales afterwards, so the effective cap is `0.08 / Σ|clipped α|`, a number that moves with the cross-section. The correct construction caps *post*-normalization and must **iterate**, because clipping changes the sum that normalization divides by. **The simulator's own README flags this: truncation "not necessarily working".** Recorded so the next seat does not inherit a one-pass clip believing it enforces a cap.
+
+### OP-059 — `rank(x, rate=2)`: uncentered [0,1], and that is a long-only tilt
+
+The simulator quotes the platform doc directly and implements `(rank − 1)/(N − 1)`, giving floats **equally distributed on [0.0, 1.0] inclusive**.
+
+**THE TRAP, and it is a real portfolio consequence:** an uncentered rank is **non-negative everywhere**. Feed it straight to weights and every name is a LONG — the bottom-ranked name gets weight 0.0, not a short. `rank()` is only a long/short signal *because* neutralization (OP-058 step 1) subtracts the mean afterwards. **Any desk organ that applies a rank transform without a following demean is building a long-only book and calling it cross-sectional.** Worth one grep against `combination_engine`.
+
+### OP-060 — `decay_linear(x, n)`: exact weights, newest heaviest
+
+Weight vector `w_i = i / (n(n+1)/2)` for `i = 1..n` over the window ordered oldest→newest, so the **newest bar carries the largest weight** `n/(n(n+1)/2)` and `Σw = 1`. Precise enough to implement without the source.
+
+**CRYPTO ANALOGUE:** a turnover suppressant. See the improvement_inbox entry — decay is prescribed *by data-arrival rate*, not swept.
+
+### OP-061..066 — operators the desk still lacks (named, with analogues)
+
+The 08-07 screenshot named four (`group_rank`, `group_zscore`, `ts_backfill`, `trade_when`). The community operator table names these **additional** ones the desk has no equivalent for:
+
+| Operator | What it computes | Crypto analogue / desk note |
+|---|---|---|
+| **`group_neutralize(x, g)`** | subtract the **group** mean, not the universe mean | **The highest-value missing one.** Makes OP-058 step 1 available *inside* the expression against a *different* grouping than the portfolio uses. Runnable today against `corr_cluster_residual` in `data/crypto_grouping_map.json`. |
+| **`winsorize(x, std=4)`** | cross-sectional clip at ±4σ | Crypto cross-sections are fat-tailed (desk lesson: the `pd.cut` fat-tail trap). A 4σ winsorize *before* ranking is a cheap robustness transform the desk lacks. |
+| **`ts_zscore(x, n)`** | z-score against the symbol's **own** trailing window | Normalizes a signal against its own history rather than its peers — the time-series half of the two-stage construct in OP-067. |
+| **`group_backfill(x, g, n)`** | fill a symbol's hole from its **group's** value | Sparse crypto axes (funding on a thin pair, OI on a new listing) have holes a peer group can cover where ffill cannot. |
+| **`if_else(c, a, b)`** | elementwise branch | Distinct from `trade_when`: `if_else` substitutes, `trade_when` **holds**. Different turnover profiles ⇒ different hypotheses. |
+| **`vec_avg` / `vec_sum`** | reduce a **VECTOR-typed** field | See the data_axis_watchlist entry: 1,387 of BRAIN's 4,367 fields are VECTOR-typed. Multi-venue funding and L2 depth are natively vector-shaped and the desk flattens them at ingest. |
+
+### OP-067 — the canonical two-stage construct ("黄金组合")
+
+`group_rank(ts_rank(signal, N), group)` — with N=126 (≈6 months) in every published template.
+
+**MECHANISM, which is the transferable part:** `ts_rank` makes a signal comparable **across time for one asset** (strips level and scale drift); `group_rank` then makes it comparable **across assets within a peer set** (strips the group's common movement). Two orthogonal normalizations composed. The equity templates wrapped around it are fundamental ratios (ROE trend, EPS yield, FCF yield) and are **correctly not importable** — the *structure* is what transfers.
+
+**CONFIRMED, NOT ASSUMED — the desk's `fitness()` matches an independent source exactly.** `libs/alpha_factory/wq_operators.py` reproduces `Sharpe × sqrt(|annual return| / max(turnover, 0.125))` from the 08-07 screenshot; the CN skill states the identical formula **including the 0.125 floor**, from a separate lineage. Cross-source convergence on a formula the desk had from one screenshot only. **The thresholds attached to it remain FACTS ABOUT THEIR PROCESS and are not adopted** — the desk's bar is a deflated t of 5.236 (L1.6).
