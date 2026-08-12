@@ -4829,11 +4829,11 @@
    "summary": "R0124 successor: six of the seven external-critique items remain unbuilt after item (b) BLINDING landed at 4e1e65d. Ranked by evidence-per-effort against what already exists: (d) EV-PER-OPPORTUNITY is cheapest and unblocked -- decline_value.forgone_bps() already computes the signed bps magnitude on every graded row and filter_verdict() already aggregates mean/total, so EV is an accumulator beside the existing Brier loop at score_forecasts.py:172-187 plus a field on Decline. (c) SHADOW KEYWORD BOT is next -- the rules engine already exists as _TIER1/_TIER2/_KNOWN/_tier()/_symbols() in collect_announcements.py:71-120; the work is a book-path parameter on resolve_llm_trader_book.py:55 (currently a module-level constant) so the same grader scores both books, and the pre-registered comparison metric is the  field already on every row. (a) EVENT ANALOGUE MEMORY is the strongest moat item and the real build: retrieval is free (knowledge_engine.retrieve/_idf/_toks, a complete TF-IDF cosine retriever), but the REACTION PANEL does not exist -- no ret_1h/4h/24h/7d field anywhere -- and needs crypto_source.fetch_price_at over data/exchange_announcements.jsonl cached to disk. State the data limit on the record when built: only 42 of 224 rows carry a symbol, 31 are tradeable, and genuine first_seen spans 5 days, so the pre-2026 published_at tail was collected retroactively and has no true first_seen. (g) per-mechanism decay curves are near-free GIVEN (a) and blocked without it (mechanism_class is already a controlled 9-value vocabulary; libs/validation/event_study.py MIN_EVENTS=20 is the honest bar). (e) adversarial critic is cheap code but doubles latency and spend on a 4-hourly cron. (f) bull/bear/judge triad is most expensive and only worth having across DIFFERENT providers via libs/ops/llm_seat.py, which is a budget decision. THE SHARED CONSTRAINT, and it is not credits: the sleeve is 9/9 PASS with ZERO calls, so every performance-comparison item has nothing to compare until it trades.",
    "roi_bps": 20.0,
    "raised": "2026-08-05T14:13:33.995089+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "Re-ranked on measurement, and the row's own stated shared constraint was WRONG in both halves. It said 'the sleeve is 9/9 PASS with ZERO calls, so every performance-comparison item has nothing to compare until it trades'. Measured 2026-08-12: the book is 18 rows, 16 PASS / 2 CALL -- not zero calls -- and the binding constraint is not trade count but GRADEABILITY: of 16 declines exactly ONE is graded, because 5 of 7 skips in reports/llm_trader_decline_value.json are structurally ungradeable ('no symbol' x2, 'direction None' x3). Cause was a producer/consumer contract mismatch: decline_value.scoreable() requires symbol+direction+probability while the brief asked a PASS for passed_on+pass_reason only, despite promising the model its declines would be scored. FIXED at 8275fd81 -- the brief now asks for the declined counterfactual when the event is tradeable, with an ALL-THREE-OR-NONE write-time bar and an explicit refusal to invent one (omitting all three stays legitimate and is stamped ungradeable). That is item (d)'s DEPENDENCY, not item (d): an EV accumulator over the current n=1 graded decline would compute EV over one row, which is why building (d) first would have been decoration. NOW WAITING ON EVIDENCE, NOT ENGINEERING: libs/research/decline_value.MIN_DECLINES=20 and the pool holds 1. At the measured 1.31 PASS/day that is ~14 days if every decline becomes gradeable, so 2026-09-15 allows for the fraction that honestly cannot be. Accrual is itself throttled 4x by lost windows, raised as R0534. Items (a) event-analogue memory, (c) shadow keyword bot, (e) adversarial critic and (f) bull/bear/judge triad are unchanged in scope and all rank below closing the sample gap; (g) remains blocked on (a).",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-09-15",
+   "disposed": "2026-08-12T21:32:00.890005+00:00"
   },
   {
    "id": "R0380",
@@ -4901,11 +4901,11 @@
    "summary": "DEFECT (found while building R0207): libs/research/unlock_supply_series.py:299 silently drops ALL 24,201 unlock rows, so the WEEKLY unlock-supply screen wired into cron in 017912a has never read a single event and reports NOT-READABLE-HERE. The line is instant = _as_utc(row.get('instant') or row.get('timestamp') or row.get('date')) -- data/unlock_events.json carries NONE of instant/timestamp, so it falls through to date='2016-11-11', which _as_utc parses to a NAIVE datetime and then rejects on its own tzinfo check. The file's epoch-seconds field ts is never consulted and works: _as_utc(1478822400) -> 2016-11-11+00:00. Adding row.get('ts') to that chain recovers all 24,201 rows. THE REASON THIS IS A ROW AND NOT A ONE-LINE FIX SLIPPED INTO ANOTHER COMMIT: the screen is pre-registered, and taking its input from 0 rows to 24,201 changes its verdict -- that is a screen re-run with a real result, not a typo repair, and it must be done deliberately with its trial counted. Also fix the same file's data/binance_vision/ path, which no longer exists. NOTE THE CLASS: this is the exact shape of the desk's own 'exit code proves a process ended, never that it produced' lesson -- the organ ran weekly, exited 0, and produced an artifact saying it could not read anything, which is indistinguishable from a healthy quiet screen unless someone opens the file.",
    "roi_bps": 45.0,
    "raised": "2026-08-05T16:47:51.758390+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Fixed at 601d4762, and the row undercounted: the SAME defect was present TWICE in the same file. Line 299 omitted 'ts' (all 24,201 schedule rows dropped, as the row said); line 395 omitted 'observed_utc' and dropped all 78 circulating-supply observations too. Both chains now read the fields the collectors actually write, kept separate on purpose since a release instant and an observation instant are different facts. The row's PREMISE was wrong and that is what made this safe to do now: it argued the repair changes the verdict and so needed a deliberately counted trial, but the runner passes bars=None unconditionally, so the price panel blocks the screen independently of the data. Re-ran it -- verdict UNCHANGED at NOT-READABLE-HERE, cells_run 0, NO trial charged; the artifact now names ONE blocker (price panel) instead of three, and loads 24,160 releases + 78 supply rows. Stale data/binance_vision/ path also fixed with the measured replacement (data/bars/ = 45 symbols, 15min only, 18 of 165 unlock symbols). Three regression tests added from the REAL on-disk schema, which is what the old fixtures could not express; a naive-only stamp is still refused, so no rail was loosened. Two pre-existing failures in the file are NOT mine (verified at HEAD in a clean worktree) and are raised as R0533.",
+   "commit": "601d4762",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T21:27:09.090587+00:00"
   },
   {
    "id": "R0386",
@@ -4937,11 +4937,11 @@
    "summary": "DEFECT ON ORIGIN, pre-existing and not mine -- found when it refused my push: commit 6f96ac3 (sibling session, branch claude/wonderful-darwin-7uiobi) added ops/crontab.manifest entries for TWO scripts that exist NOWHERE -- scripts/check_prompt_ratchet.py and scripts/screen_venue_subsidy.py are absent from origin and from every working tree on this box. check_scheduler_manifest.py therefore reports MISSING ... scheduled by the manifest but absent from the repo (dead cron) and the whole check goes rc=2 BROKEN, which HARD-REFUSES every push to this branch via the L1.37 pre-push hook -- so the breach is not merely cosmetic, it blocks the branch for every other session until it is closed. THE LIKELY CAUSE, and it is a recognisable shape: the sibling committed the manifest WIRING but left the scripts themselves uncommitted in a working tree (exactly as libs/validation/campaign_design.py and tests/validation/test_campaign_design.py are sitting uncommitted right now) -- the manifest half of a two-part change got pushed and the code half did not. THE FIX IS THE SIBLING'S TO MAKE, in this order: commit the two scripts (preferred -- the wiring is already correct and the cadence is already declared), or remove the two manifest lines if the scripts were abandoned. DO NOT close this by deleting the manifest entries without checking with that session first: the entries are the only surviving record of the intended cadence, and deleting them silently discards a design decision. VERIFY WITH: .venv/bin/python scripts/check_scheduler_manifest.py -- it must leave BROKEN and return to DRIFT (drift is box state, BROKEN is a repo-integrity failure and the two are graded differently on purpose).",
    "roi_bps": 25.0,
    "raised": "2026-08-05T17:00:28.549846+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Fixed by the sibling exactly as the row prescribed (option 1: commit the two scripts, keep the wiring). Both scripts are on origin/master at 2f8b95f0 'Land four waves of finished research, and wire the seven organs that only ASKED to be scheduled'. Verified with the row's own VERIFY WITH command: check_scheduler_manifest.py now reports 0 MISSING entries and exits DRIFT (rc=1), no longer BROKEN (rc=2), so the L1.37 pre-push hook no longer hard-refuses the branch. DRIFT is box state and is graded separately, as the row itself notes.",
+   "commit": "2f8b95f0",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T21:21:11.561503+00:00"
   },
   {
    "id": "R0389",
@@ -6665,6 +6665,30 @@
    "summary": "The orderbook-state artifact is the NEXT memory wall now that R0378 removed the load-path one, and it is measured: 360 rows = 918KB, i.e. 2,613 B/row, so full-tape coverage (~1,356 cells x 30 = 40,680 rows) produces a ~106MB JSON with both the rows list and the complete json.dumps string resident at write time. The bulk is per-row constants -- every scored row carries its own copy of the ~600-character type2 note (type2_cost.as_dict emits it verbatim) plus a 10-key alignment dict that is identical across the whole run. Raising --files toward real coverage therefore just moves the OOM from the load path to the writer, and the screen currently reads 240 of 39,520 partitions (0.6pct), which is exactly why every cell reports UNDERPOWERED. FIX: hoist the run-constant fields (type2 note, alignment) to the report root and reference them per row, or stream the artifact write. Check the three downstream consumers first -- moat_utilisation._adapt_orderbook_state reads status/files_read and iterates obs['rows'] for r['construction'].",
    "roi_bps": 8.0,
    "raised": "2026-08-12T21:02:07.905822+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0533",
+   "source": "cycle",
+   "summary": "DEFECT (found while fixing R0385, systemic and pre-existing): the LOOKAHEAD-DETECTION rail `shift_translates` is asserted by FIVE tests across THREE pre-registered Stage-A screens and is emitted by ZERO source files. Referenced at tests/research/test_unlock_supply_series.py:155,191, tests/research/test_vol_risk_premium_screen.py:286, tests/research/test_announcement_diffusion.py:221,239; a repo-wide grep for the identifier outside tests/ returns NOTHING. All five tests fail with KeyError at HEAD (verified in a clean detached worktree, so this is not a working-tree artifact). WHAT MAKES IT MORE THAN A RED SUITE: the rail is the one that distinguishes a genuine lead from a look-ahead leak -- lag the signal and a leaked effect TRANSLATES, a real one does not -- so it is exactly the de-contamination check these three screens' de-contamination behaviour was supposed to be pinned by. Its absence means the assertions that would have caught a leaking screen have never once executed, which is the L1.49 shape one layer over: not a gate that never ran, but a gate that was never built while its tests claimed to exercise it. NOTE screen_cell is defined LOCALLY in each screen module (e.g. libs/research/unlock_supply_series.py:536) rather than imported from the audited libs/research/axis_screen.py, so the rail is missing three times and any fix must decide between implementing it thrice or routing these screens through the shared harness -- the latter is the L2.9 upgrade-before-build answer and is the reason this is a real build, not a key rename. IT IS NOT A ONE-LINE FIX AND MUST NOT BE SLIPPED INTO ANOTHER COMMIT: adding a rail to a PRE-REGISTERED screen changes screen behaviour and needs its own deliberate act. VERIFY WITH: .venv/bin/python -m pytest tests/research/test_unlock_supply_series.py tests/research/test_vol_risk_premium_screen.py tests/research/test_announcement_diffusion.py -q -- five failures must go green WITHOUT deleting the assertions.",
+   "roi_bps": 30.0,
+   "raised": "2026-08-12T21:26:54.901443+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0534",
+   "source": "cycle",
+   "summary": "DEFECT (measured while disposing R0379): the discretionary LLM trader is SCHEDULED 6x/day and PRODUCES 1.48 rows/day -- it loses roughly three quarters of its declared windows, and this is the binding throttle on the desk's only discretionary-evidence stream. MEASURED: ops/crontab.manifest:439 runs scripts/run_llm_trader.py at '15 */4 * * *' = 6 windows/day; data/llm_trader_book.jsonl holds 18 rows across a 12.2-day span = 1.48 rows/day. TWO NAMED CAUSES, both visible in data/cro_ai_logs/llm_trader.log: (1) 'brain_auth_check refused before the model was reached (exit 90)' -- repeated, the model is never reached; (2) subprocess.TimeoutExpired after 600 seconds on the 'claude --effort xhigh' call, which is the _ask_claude timeout in scripts/run_llm_trader.py around line 484. THE HANDLING IS HONEST AND IS NOT THE DEFECT: both are recorded as NO-CALL and explicitly 'never treated as a PASS', so the pass-rate statistic is not contaminated by infrastructure failure -- the defect is the LOST WINDOW, not a mismeasurement. WHY IT MATTERS BEYOND THIS ORGAN (L1.28a): 6 windows/day is a DECLARED CEILING and 1.48 is the MEASURED utilisation, so this is unbooked idleness on a ceiling the desk already pays for, and it directly sets the clock on every R0379 successor item -- the decline pool needs 20 graded rows (libs/research/decline_value.MIN_DECLINES) and holds 1, so a 4x window loss is a 4x delay on all of it. AN xhigh CALL THAT NEEDS MORE THAN 600s IS A CADENCE QUESTION, NOT ONLY A TIMEOUT QUESTION: raising the timeout past the 4-hourly period would let one window overrun into the next, so the flock is load-bearing and the honest options are a shorter effort setting, a longer period, or a retry inside the window -- pick deliberately rather than by raising a constant. VERIFY WITH: recompute rows/day from the book span after a week and compare to 6.0; the auth failures should also show in ops/brain_env.sh's auth path.",
+   "roi_bps": 35.0,
+   "raised": "2026-08-12T21:31:42.607993+00:00",
    "status": "open",
    "reason": null,
    "commit": null,

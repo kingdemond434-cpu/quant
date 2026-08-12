@@ -35,6 +35,41 @@ def test_the_semicolon_separator_is_parsed():
     assert rows[2]["artifacts"] == []          # no declared evidence -> not this fence's problem
 
 
+def test_an_output_this_fence_cannot_watch_is_COUNTED_not_silently_dropped(tmp_path):
+    """An organ declaring `reports/x.json` is neither green nor red -- it is ABSENT.
+
+    Until this was counted it shared a silent `continue` with an organ that declared nothing at
+    all, and the two demand opposite repairs: a missing EVIDENCE line is check_build_standard's
+    problem, an unwatchable path is this parser's scope. 14 of the desk's real organs sit here,
+    including resolve_llm_trader_book.py. n_checked read as full coverage and was not (L1.60).
+    """
+    man = (
+        '# EVIDENCE: scripts/a.py -> data/a.json\n'
+        '0 * * * * cd "$Q" && python scripts/a.py\n'
+        '# EVIDENCE: scripts/r.py -> reports/r.json\n'
+        '0 * * * * cd "$Q" && python scripts/r.py\n'
+        '# no evidence line at all\n'
+        '0 * * * * cd "$Q" && python scripts/n.py\n'
+    )
+    (tmp_path / "ops").mkdir()
+    (tmp_path / "ops/crontab.manifest").write_text(man, encoding="utf-8")
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data/a.json").write_text("{}", encoding="utf-8")
+
+    rows = parse_manifest(man)
+    assert rows[1]["artifacts"] == []                       # still not watched...
+    assert rows[1]["unwatchable"] == ["reports/r.json"]     # ...but no longer invisible
+
+    out = audit(tmp_path)
+    assert out["n_checked"] == 1
+    assert out["n_unwatchable_path"] == 1
+    assert out["n_skipped_no_evidence"] == 1
+    assert out["n_scheduled_seen"] == 3
+    assert out["unwatchable"] == [{"script": "scripts/r.py", "declared": ["reports/r.json"]}]
+    # The skip must NOT be laundered into a pass: an unwatchable organ is not counted fresh.
+    assert out["n_fresh"] == 1
+
+
 def test_cadence_is_derived_from_the_cron_expression():
     assert abs(cadence_hours("0 * * * *") - 1.0) < 1e-9
     assert abs(cadence_hours("*/15 * * * *") - 0.25) < 1e-9

@@ -121,6 +121,7 @@ def parse_manifest(text: str) -> list[dict[str, Any]]:
         if ms:
             script = ms.group(1)
         arts: list[str] = []
+        unwatchable: list[str] = []
         if evidence and "->" in evidence:
             tail = evidence.split("->", 1)[1]
             # SEPARATORS ARE '+', ',' AND ';' -- the first version missed the semicolon, so
@@ -140,10 +141,15 @@ def parse_manifest(text: str) -> list[dict[str, Any]]:
                     continue
                 tok = tok if "/" in tok else f"data/{tok}"
                 if not tok.startswith("data/"):
+                    # COUNTED, NOT DISCARDED (L1.60). This organ DID declare an output; this
+                    # fence just cannot watch it. Dropping it into the same silent `continue` as
+                    # an organ that declared nothing makes those two states byte-identical to
+                    # every reader, and only one of them is check_build_standard's problem.
+                    unwatchable.append(tok)
                     continue
                 arts.append(tok)
         out.append({"cron": cron, "script": script, "artifacts": arts,
-                    "cadence_h": cadence_hours(cron)})
+                    "unwatchable": unwatchable, "cadence_h": cadence_hours(cron)})
         evidence = None
     return out
 
@@ -157,8 +163,19 @@ def audit(root: Path | None = None, *, now: float | None = None) -> dict[str, An
         return {"status": "UNMEASURED", "detail": f"manifest unreadable: {exc}", "organs": []}
     rows = parse_manifest(text)
     organs: list[dict[str, Any]] = []
+    #: Organs this fence CANNOT watch, kept apart from organs that declared nothing at all.
+    #: Same `continue` until now, and the two demand opposite repairs: one is a missing EVIDENCE
+    #: line (check_build_standard's problem), the other is an output this parser refuses to look
+    #: at because it lives outside data/ -- so the organ is not green, not red, but ABSENT from a
+    #: denominator that reads as full coverage.
+    unwatchable: list[dict[str, Any]] = []
+    n_no_evidence = 0
     for r in rows:
         if not r["artifacts"] or not r["cadence_h"]:
+            if r.get("unwatchable") and r["cadence_h"]:
+                unwatchable.append({"script": r["script"], "declared": r["unwatchable"]})
+            else:
+                n_no_evidence += 1
             continue                       # no declared evidence: check_build_standard's problem
         tol = max(MIN_TOLERANCE_H, r["cadence_h"] * STALE_MULTIPLE)
         ages = []
@@ -186,6 +203,20 @@ def audit(root: Path | None = None, *, now: float | None = None) -> dict[str, An
                "is worth anything.",
         "status": status,
         "n_checked": len(organs), "n_fresh": len(organs) - len(dead) - len(stale),
+        # THE DENOMINATOR'S ATTRITION (L1.60). n_checked alone reads as full coverage of the
+        # scheduled desk; it is not, and the gap was invisible because the skip was silent.
+        "n_scheduled_seen": len(rows),
+        "n_skipped_no_evidence": n_no_evidence,
+        "n_unwatchable_path": len(unwatchable),
+        "unwatchable": unwatchable,
+        "unwatchable_note": (
+            "These organs DECLARED an output and this fence cannot watch it: parse_manifest "
+            "counts only data/ paths, on purpose, so that a law CITATION on an EVIDENCE line "
+            "cannot be mistaken for an output and read FRESH forever. The guard is right and the "
+            "SCOPE is too narrow -- a genuine reports/ or web/ output is refused by the same "
+            "rule. Widening it is a real change (a glob, and a false GREEN is strictly worse "
+            "than a false RED), so it is reported here rather than done silently."
+        ),
         "never_produced": [o["script"] for o in dead],
         "stale": [{"script": o["script"], "age_h": o["age_h"], "tolerance_h": o["tolerance_h"]}
                   for o in stale],
