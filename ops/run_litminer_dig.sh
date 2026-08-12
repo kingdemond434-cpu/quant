@@ -4,6 +4,11 @@ cd /home/quant/quant-platform
 source ops/brain_env.sh
 dig_dry_run litminer ops/litminer_dig_prompt.txt && exit 0
 brain_mutex litminer   # ONE brain desk-wide; defers (exit 0) if another organ holds it
+# MINER SEAT (principal 2026-08-12): fable head, walk down to the Max seat on
+# exhaustion. Resolved from libs.ops.model_chain.MINER_ORGANS, never a literal here --
+# a re-declared chain at this line is exactly how the miners got pinned to yesterday's
+# models before 07-30.
+brain_seat litminer
 brain_auth_check || exit 1
 # §33 CONVERSION PRIORITY. `dig_prompt` (ops/brain_env.sh) prepends the conversion duty
 # to this organ's brief so the run spends its FIRST effort disposing of the backlog, then

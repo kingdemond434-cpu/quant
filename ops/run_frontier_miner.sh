@@ -24,6 +24,11 @@ LOG="data/cro_ai_logs/frontier_${REGION}_$(date -u +%Y%m%dT%H%M).log"
 # pin the miners to yesterday's models the first time run_model_upgrade.py adopts a newer flagship
 # -- the organ doing the most model-bound work would be the last to benefit from a better one.
 # The routing INTENT above is unchanged: fable head, walk down, auto-load-balance across regions.
+# MINER SEAT (principal 2026-08-12): fable head, walk down to the Max seat on
+# exhaustion. Resolved from libs.ops.model_chain.MINER_ORGANS, never a literal here --
+# a re-declared chain at this line is exactly how the miners got pinned to yesterday's
+# models before 07-30.
+brain_seat frontier
 brain_auth_check || exit 1
 # §33 CONVERSION PRIORITY. `dig_prompt` (ops/brain_env.sh) prepends the conversion duty
 # to this organ's brief so the run spends its FIRST effort disposing of the backlog, then

@@ -57,6 +57,7 @@ from libs.ops.model_chain import (  # noqa: E402
     is_upgrade,
     parse_model,
     promote,
+    promote_into,
     read_chain,
     render_chain,
 )
@@ -160,12 +161,21 @@ def main() -> int:
             (rep["verified"] if ok else rep["rejected"]).append({"model": cand, "detail": detail})
             if ok:
                 new_chain = promote(cand, chain)
+                # BOTH SEATS GAIN THE MODEL, BUT ONLY ONE CHANGES ITS HEAD. The miner chain's
+                # head is fable by PRINCIPAL POLICY (2026-08-12), not by capability ranking, so
+                # prepending here would silently move every miner onto the Max seat at 03:00 with
+                # nobody awake to review it -- an unattended reversal of a routing decision.
+                # pin_head inserts the new flagship directly beneath fable instead: the miners
+                # still get it on walk-down, and the pool split survives the upgrade.
+                new_miner = promote_into(read_chain("_MINER_MODEL_CHAIN"), cand, pin_head=True)
                 CHAIN_FILE.write_text(render_chain(
                     new_chain, reason=f"auto-upgrade: {cand} verified answering, prepended above "
-                                      f"{chain[0]} (which is retained as the fallback)",
-                    sealed=rep["generated"]), "utf-8")
+                                      f"{chain[0]} (which is retained as the fallback); miner "
+                                      "seat keeps its pinned fable head and takes it on walk-down",
+                    sealed=rep["generated"], miner_chain=new_miner), "utf-8")
                 rep["adopted"] = cand
                 rep["chain"] = new_chain
+                rep["miner_chain"] = new_miner
                 _page(f"MODEL AUTO-UPGRADE: adopted {cand} (was {chain[0]}). "
                       f"Chain now: {' '.join(new_chain)}. Old head retained as fallback.")
                 break

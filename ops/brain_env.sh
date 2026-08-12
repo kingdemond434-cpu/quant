@@ -84,12 +84,21 @@ brain_auth_check() {
     # fable-5 draws a metered credit pool; on exhaustion we walk _BRAIN_MODEL_CHAIN to the next
     # model (opus-5, then opus-4-8 -- both on the Max subscription seat) and only then try the
     # metered API key. Tonight every organ died out-of-credits because no model fallback existed.
-    local out m
-    for m in ${_BRAIN_MODEL_CHAIN:-claude-fable-5 claude-opus-5 claude-opus-4-8}; do
+    # SEAT-AWARE (principal 2026-08-12). An organ on the miner seat exports _ORGAN_MODEL_CHAIN
+    # (via brain_seat below) before calling this; everything else walks the default Opus chain.
+    # Reading the override HERE rather than in each organ is what stops the seat policy drifting
+    # per-script the way the model chain itself drifted across three files before 07-30.
+    local out m _chain _head
+    _chain="${_ORGAN_MODEL_CHAIN:-${_BRAIN_MODEL_CHAIN:-claude-opus-5 claude-opus-4-8 claude-fable-5}}"
+    # PAGE AGAINST THIS ORGAN'S OWN HEAD, not the brain chain's. Comparing a miner (correct head
+    # fable-5) against the default head (opus-5) would fire "primary starved" on EVERY miner run
+    # -- a pager storm that trains the principal to ignore the one alert that means a pool died.
+    _head="${_chain%% *}"
+    for m in $_chain; do
         export ANTHROPIC_MODEL="$m"
         out="$(claude -p 'Reply with exactly: PING-OK' --dangerously-skip-permissions 2>&1 | tail -3)"
         if printf '%s' "$out" | grep -q "PING-OK"; then
-            if [ "$m" != "${_BRAIN_MODEL_CHAIN%% *}" ]; then
+            if [ "$m" != "$_head" ]; then
                 _brain_page "model fallback ACTIVE: primary starved, organs running on $m"
             fi
             return 0
@@ -125,25 +134,51 @@ brain_auth_check() {
 if [ -f /home/quant/quant-platform/ops/model_chain.env ]; then
     . /home/quant/quant-platform/ops/model_chain.env
 fi
-export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-claude-fable-5}"  # primary = FABLE 5 (principal 2026-07-30); _BRAIN_MODEL_CHAIN below walks to opus-5 on exhaustion and PAGES when it does. Fable draws a pool that CAN exhaust; opus-5/opus-4-8 sit on the Max subscription seat and carry the rest of the week.
-# MODEL ROUTING POLICY (principal 2026-07-30, supersedes the 2026-07-24 ordering):
-# "every claude cycle, mining, audit, everything uses FABLE 5 MAXIMUM always initially until the
-# full week's sessions of it end, then only OPUS 5 after that in the week."
-# So the chain is FABLE-FIRST and the walk-down IS the policy: fable is consumed to exhaustion,
-# then opus-5 carries the rest of the week, then opus-4-8. No capability is lost on a downgrade --
-# only model availability changes (effort stays --effort xhigh/max per organ).
+export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-claude-opus-5}"  # primary = OPUS 5 (principal 2026-08-12). Fable is no longer the global head: it is PINNED to the miner seat below.
+# MODEL ROUTING POLICY (principal 2026-08-12, supersedes the 2026-07-30 single-chain ordering):
+# "do opus 5 for all things always instead of fable except for miners locally -- miners, data,
+#  all similar families do fable."
 #
-# WHY REVERSING THIS IS NOW SAFE, and it was not on 07-24. The old order existed for a measured
-# reason: one max-effort dig drained the whole fable-5 metered pool (frontier-en 23:07-23:29 ->
-# out-of-credits) and EVERY organ died, because at that moment NO FALLBACK CHAIN EXISTED. The
-# chain above is that fallback: brain_auth_check walks it at cycle start, and pages
-# "model fallback ACTIVE: primary starved" the moment it steps past the primary. Exhaustion is
-# therefore a logged, paged, self-healing transition instead of an outage -- which is precisely
-# the behaviour the principal's policy assumes. The 07-24 evidence is preserved above, not erased:
-# it explains the failure this chain now absorbs.
-# NOTE the frontier miners already ran fable-first via their own export; this makes the global
-# default agree with them instead of contradicting them (the miners were right).
-export _BRAIN_MODEL_CHAIN="${_BRAIN_MODEL_CHAIN:-claude-fable-5 claude-opus-5 claude-opus-4-8}"
+# TWO SEATS, SPENT IN PARALLEL:
+#   _BRAIN_MODEL_CHAIN  opus-5 -> opus-4-8 -> fable-5   (everything: CRO, capability hunt,
+#                                                        recommendation worker, deep sweep,
+#                                                        audits, interactive sessions)
+#   _MINER_MODEL_CHAIN  fable-5 -> opus-5 -> opus-4-8   (the mining / data-collection family;
+#                                                        membership is DATA in
+#                                                        libs.ops.model_chain.MINER_ORGANS)
+#
+# WHY THIS IS THE RIGHT SPLIT, not merely the ordered one. Fable and Opus are PEERS at the
+# flagship tier, so this is a POOL decision rather than a capability one. Fable draws a metered
+# credit pool that CAN exhaust; opus-5/opus-4-8 sit on the Max subscription seat. Under the old
+# single fable-first chain BOTH families queued behind one pool, so whichever drained first
+# starved everything -- which is literally what happened on 07-24 (one max-effort frontier dig
+# drained fable at 23:07-23:29 and every organ died, because no fallback chain existed yet).
+#
+# The miners take the metered pool because their work is RESUMABLE BY CONSTRUCTION: a region
+# without a real log today is re-dug on the next rotation invocation, so a mid-dig credit death
+# costs a retry and nothing else. The reasoning organs are not resumable in that sense -- a
+# starved CRO or capability-hunt cycle is a LOST cycle -- so they take the seat that does not run
+# out. The 07-24 and 07-30 evidence above is preserved, not erased: it is why the walk-down exists
+# on both chains, and brain_auth_check still PAGES the moment either steps past its head.
+export _BRAIN_MODEL_CHAIN="${_BRAIN_MODEL_CHAIN:-claude-opus-5 claude-opus-4-8 claude-fable-5}"
+export _MINER_MODEL_CHAIN="${_MINER_MODEL_CHAIN:-claude-fable-5 claude-opus-5 claude-opus-4-8}"
+
+# brain_seat <organ-label> -- put THIS organ on its policy seat before brain_auth_check.
+# Resolution is delegated to libs.ops.model_chain.chain_for() so shell and python agree by
+# construction; if python is unavailable the organ keeps the default chain rather than guessing,
+# because a mis-seated organ on Opus costs headroom while one mis-seated onto Fable can silently
+# drain the pool the miners depend on. The cheaper mistake is the fallback.
+brain_seat() {
+    local organ="${1:?organ label required}" chain
+    chain="$(PYTHONPATH=/home/quant/quant-platform python3 -c \
+        'import sys; from libs.ops.model_chain import chain_for; print(" ".join(chain_for(sys.argv[1])))' \
+        "$organ" 2>/dev/null)" || chain=""
+    if [ -n "$chain" ]; then
+        export _ORGAN_MODEL_CHAIN="$chain"
+        export ANTHROPIC_MODEL="${chain%% *}"
+    fi
+    return 0
+}
 
 # LAW GATE AT ORGAN SPAWN (L1.37, principal order 2026-07-31 "enforced 24/7 with every
 # interaction"). Every organ sources this file, so this is the one place that runs before ALL of

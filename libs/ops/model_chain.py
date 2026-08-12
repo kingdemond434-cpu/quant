@@ -44,7 +44,10 @@ FLAGSHIP_TIER = 3
 # entry is another model whose failure mode nobody has seen.
 MAX_CHAIN = 4
 
-_FALLBACK_CHAIN = ("claude-fable-5", "claude-opus-5", "claude-opus-4-8")
+# The compiled-in floor used when ops/model_chain.env is missing or corrupt. It tracks
+# DEFAULT_CHAIN (opus-first, principal 2026-08-12) rather than the old fable-first order, so a
+# lost chain file degrades to the CURRENT policy instead of quietly restoring the previous one.
+_FALLBACK_CHAIN = ("claude-opus-5", "claude-opus-4-8", "claude-fable-5")
 
 
 def parse_model(model_id: str) -> tuple[int, float]:
@@ -107,9 +110,10 @@ def promote(candidate: str, chain: list[str]) -> list[str]:
     return out[:MAX_CHAIN]
 
 
-def read_chain() -> list[str]:
-    """The live chain. Falls back to the compiled-in constant so a missing/corrupt file can never
-    leave an organ with NO model -- the failure would be an outage, not a downgrade."""
+def read_chain(var: str = "_BRAIN_MODEL_CHAIN") -> list[str]:
+    """The live chain for one seat variable. Falls back to the compiled-in constant so a
+    missing/corrupt file can never leave an organ with NO model -- the failure would be an outage,
+    not a downgrade."""
     if CHAIN_FILE.exists():
         for raw in CHAIN_FILE.read_text("utf-8").splitlines():
             # The file is SHELL: every assignment carries an `export ` prefix. Matching without
@@ -117,22 +121,115 @@ def read_chain() -> list[str]:
             # compiled-in constant -- including the upgrader itself, which would then re-evaluate
             # against a stale head forever and never see its own promotion.
             line = raw.strip().removeprefix("export ").strip()
-            if line.startswith("_BRAIN_MODEL_CHAIN="):
+            if line.startswith(f"{var}="):
                 chain = line.split("=", 1)[1].strip().strip('"').split()
                 if chain:
                     return chain
-    return list(_FALLBACK_CHAIN)
+    return list(MINER_CHAIN if var == "_MINER_MODEL_CHAIN" else _FALLBACK_CHAIN)
 
 
-def render_chain(chain: list[str], *, reason: str, sealed: str) -> str:
+# ---------------------------------------------------------------------------- SEATS
+#
+# TWO CHAINS, NOT ONE (principal 2026-08-12, supersedes the single fable-first chain of 07-30):
+#   "do opus 5 for all things always instead of fable except for miners locally --
+#    miners, data, all similar families do fable."
+#
+# WHY THE DESK NEEDS TWO. Fable and Opus are PEERS at the flagship tier (FAMILY_TIER above), so
+# this is a POOL decision, not a capability one. Fable draws a metered credit pool that CAN
+# exhaust; opus-5/opus-4-8 sit on the Max subscription seat. Routing everything at one head means
+# whichever pool that is becomes the desk's single point of starvation -- which is exactly what
+# happened on 07-24, when one max-effort dig drained fable and every organ died at once.
+#
+# Splitting by seat spends the two pools in parallel instead of in series. The miners are the
+# right organs to hold on the metered pool because their work is RESUMABLE by construction (a
+# region without a real log today is re-dug next invocation), so a mid-dig credit death costs
+# nothing but a retry. Reasoning organs -- CRO, capability hunt, the recommendation worker, the
+# deep sweep, and interactive sessions -- are not resumable in that sense: a starved cycle there
+# is a LOST cycle, so they take the seat that does not run out.
+SEAT_DEFAULT = "default"
+SEAT_MINER = "miner"
+
+#: Everything not named a miner. Opus head, opus fallback, and fable LAST as an emergency floor:
+#: if both Max-seat models are unavailable the desk degrades to the metered pool rather than going
+#: dark, because an organ with no model at all is the worse failure (same argument as read_chain).
+DEFAULT_CHAIN: tuple[str, ...] = ("claude-opus-5", "claude-opus-4-8", "claude-fable-5")
+
+#: The mining / data-collection family. Fable head by principal policy; the opus seats remain
+#: beneath it so exhaustion is a paged, self-healing walk-down rather than an outage.
+MINER_CHAIN: tuple[str, ...] = ("claude-fable-5", "claude-opus-5", "claude-opus-4-8")
+
+#: Organs on the miner seat, by their organ label (the string each ops/ script passes to
+#: brain_mutex / dig_dry_run). MEMBERSHIP IS A DATA DECISION: adding a miner means adding a row
+#: here, never editing a shell script, so the seat policy cannot drift per-organ the way the model
+#: chain itself drifted across three files before 07-30.
+MINER_ORGANS: frozenset[str] = frozenset({
+    "frontier",            # ops/run_frontier_miner.sh -- 7 regional digs
+    "litminer",            # ops/run_litminer_dig.sh -- literature mining
+    "prospector",          # ops/run_prospector_dig.sh -- source prospecting
+    "dataaxis",            # ops/run_dataaxis_dig.sh -- new data-axis discovery (data family)
+    "blindrediscovery",    # ops/run_blindrediscovery_dig.sh -- blind rediscovery mining
+    "moatminer",           # ops/run_moat_miner.sh -- proprietary-moat collection
+    "crypto_factory",      # ops/run_crypto_factory.sh -- bulk candidate generation
+})
+
+
+def seat_for(organ: str) -> str:
+    """Which seat an organ runs on. Prefix-matched so `frontier-cn` resolves to `frontier`.
+
+    An UNKNOWN organ gets SEAT_DEFAULT -- Opus. That default is deliberate and asymmetric: a new
+    organ mis-seated onto Opus costs subscription headroom, while one mis-seated onto Fable can
+    silently drain the metered pool the miners depend on. The cheaper mistake is the default.
+    """
+    label = str(organ or "").strip().lower().replace("-", "_")
+    for m in MINER_ORGANS:
+        if label == m or label.startswith(m + "_"):
+            return SEAT_MINER
+    return SEAT_DEFAULT
+
+
+def chain_for(organ_or_seat: str) -> list[str]:
+    """The fallback chain for an organ label or a seat name. Never empty."""
+    s = str(organ_or_seat or "").strip().lower()
+    seat = s if s in (SEAT_DEFAULT, SEAT_MINER) else seat_for(s)
+    return list(MINER_CHAIN if seat == SEAT_MINER else DEFAULT_CHAIN)
+
+
+def promote_into(chain: list[str], candidate: str, *, pin_head: bool = False) -> list[str]:
+    """Promote a newly-adopted flagship into one chain, optionally keeping its head PINNED.
+
+    pin_head exists because of a defect this would otherwise reintroduce on the next auto-upgrade.
+    The miner chain's head is fable BY PRINCIPAL POLICY, not by capability ranking -- so an
+    unattended 03:00 adoption of, say, opus-6 would prepend it and silently move every miner onto
+    the Max seat, reversing a routing decision no human was awake to review. With pin_head the
+    candidate lands directly BENEATH the pinned head instead: the miners still gain the newer
+    model on walk-down, and the pool split survives the upgrade.
+    """
+    if not chain:
+        return [candidate]
+    if not pin_head:
+        return promote(candidate, chain)
+    head = chain[0]
+    rest = [m for m in chain[1:] if m != candidate]
+    return [head, candidate, *rest][:MAX_CHAIN]
+
+
+def render_chain(chain: list[str], *, reason: str, sealed: str,
+                 miner_chain: list[str] | None = None) -> str:
+    miner = list(miner_chain) if miner_chain else list(MINER_CHAIN)
     return (
         "# GENERATED by scripts/run_model_upgrade.py -- DO NOT HAND-EDIT.\n"
-        "# Single source of truth for the desk's model fallback chain (libs/ops/model_chain.py).\n"
-        "# Sourced by ops/brain_env.sh + ops/run_frontier_miner.sh; imported by python organs.\n"
+        "# Single source of truth for the desk's model fallback chains (libs/ops/model_chain.py).\n"
+        "# Sourced by ops/brain_env.sh + every ops/ organ; imported by python organs.\n"
         "# Order IS the policy: head is consumed to exhaustion, then the desk walks down. Every\n"
         "# step past the head pages the principal via brain_auth_check.\n"
+        "#\n"
+        "# TWO SEATS (principal 2026-08-12): OPUS 5 for all things; FABLE only for the miner /\n"
+        "# data-collection family. The two pools are spent in PARALLEL rather than in series, so\n"
+        "# neither is the desk's single point of starvation. Seat membership is data --\n"
+        "# libs.ops.model_chain.MINER_ORGANS -- never a per-script export.\n"
         f"# last change: {sealed}\n"
         f"# reason: {reason}\n"
         f'export _BRAIN_MODEL_CHAIN="{" ".join(chain)}"\n'
+        f'export _MINER_MODEL_CHAIN="{" ".join(miner)}"\n'
         f'export ANTHROPIC_MODEL="${{ANTHROPIC_MODEL:-{chain[0]}}}"\n'
     )
