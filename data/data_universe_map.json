@@ -1056,8 +1056,64 @@
    "source": "98-binance-coinm-dapi",
    "url": "GET https://dapi.binance.com/dapi/v1/exchangeInfo | /dapi/v1/premiumIndex?symbol=BTCUSD_PERP | /dapi/v1/{klines,markPriceKlines,indexPriceKlines,premiumIndexKlines,fundingRate} (all keyless)",
    "provides": "The home venue's ENTIRE coin-margined (inverse) futures book, zero desk coverage until now: 30 instruments = 20 COIN-M perps (BTC/ETH + 18 alts, own funding series) + 5 quarterly-delivery underlyings (BTC/ETH/BNB/SOL/XRP x current+next). Unlocks: (a) COIN-M vs USDT-M same-expiry basis differential vs its theoretical inverse-contract convexity value (NP 161162 translation, mechanism EV-REJECTED 0.0009 pending measurement trigger -- see data_axis_watchlist card 31); (b) 20-pair COIN-M-vs-USDT-M funding differential panel (collateral-clientele segmentation); (c) COIN-M OI share as positioning axis. Historical klines serve keyless => backfill needs no standing daemon.",
-   "status": "verified-live 2026-08-12 (premiumIndex + exchangeInfo probed keyless, funding 0.00003844 live); collector/backfill owed -- recommendation row filed 2026-08-12; same licence posture as existing fapi collection",
+   "status": "verified-clean 2026-08-12 (free_data_alternatives miner): the REST API probe of 2026-08-12 stands, and the BULK ARCHIVE half is now verified separately -- see 99-binance-coinm-vision-archive. IMPORTANT COLLECTOR CONSTRAINT discovered this run: the API's /dapi/v1/exchangeInfo returns only 30 LIVE instruments while the archive holds 272 kline symbols, so an exchangeInfo-driven collector (the pattern this card proposed) silently omits 242 expired/delisted instruments = 89% of instrument history, INCLUDING all 212 expired quarterlies the card's own convexity screen requires. Build the universe from the archive listing, never from exchangeInfo.",
    "added": "2026-08-12 en_frontier_miner_sG"
+  },
+  "99-binance-coinm-vision-archive": {
+   "source": "99-binance-coinm-vision-archive",
+   "url": "https://data.binance.vision/data/futures/cm/{monthly,daily}/... | listing: https://s3-ap-northeast-1.amazonaws.com/data.binance.vision?list-type=2&prefix=data/futures/cm/",
+   "provides": "Binance COIN-M (inverse) bulk historical archive, keyless, first-party. monthly: aggTrades, bookTicker, fundingRate, indexPriceKlines, klines(15 intervals 1m-1mo), markPriceKlines, premiumIndexKlines, trades. daily: the same MINUS fundingRate, PLUS bookDepth, liquidationSnapshot, metrics. 272 kline symbols incl. 30 delisted perps + 212 expired quarterlies. metrics = 5-min positioning panel (sum_open_interest, sum_open_interest_value, count_toptrader_long_short_ratio, sum_toptrader_long_short_ratio, count_long_short_ratio, sum_taker_long_short_vol_ratio). liquidationSnapshot = PER-ORDER records (time, side, order_type, time_in_force, original_quantity, price, average_price, order_status, last_fill_quantity, accumulated_fill_quantity).",
+   "replaces": "Coinglass paid OI + long/short history for this venue (metrics, 5y deep, T+1, free); aggregated liquidation feeds are BEATEN in granularity (per-order, not aggregated) for the frozen 2023-06-25..2024-10-14 window only. Tick/kline vendor coverage of COIN-M (Kaiko/Amberdata class).",
+   "depth_measured_2026_08_12": {
+    "klines_BTCUSD_PERP_1m": "2020-08 .. 2026-07 (72 monthly files, live)",
+    "metrics_BTCUSD_PERP": "2021-07-08 .. 2026-08-11 (1754 daily files, LIVE T+1)",
+    "fundingRate_BTCUSD_PERP": "2022-07 .. 2026-06 (48 monthly files, live)",
+    "liquidationSnapshot_BTCUSD_PERP": "2023-06-25 .. 2024-10-14 (472 files, FROZEN ~22mo, 6 interior gaps: 2023-09-09/23/25, 2024-06-01/11/12)"
+   },
+   "verification": "VERIFY-DON'T-TRUST EXECUTED. BTCUSD_PERP-1d-2024-01.zip: published SHA256 sidecar ef361aefa62aeca760623dad80fbbda04a334ae2d7f746b7efb3dae928da70b7 == computed (exact). Archive vs live dapi/v1/klines over the same 31 bars x 7 fields (open/high/low/close/volume/baseVol/trades) = 0 mismatches, identical to the last decimal.",
+   "failure_modes": [
+    "S3 LISTER TRUNCATES AT MaxKeys=1000 AND NEVER ERRORS: unpaginated listing of metrics returned 500 zips ending 2022-11-24; paginated (continuation-token) returns 1754 ending 2026-08-11. A 3.7-YEAR UNDERSTATEMENT THAT LOOKS COMPLETE. Every S3-derived depth claim is a lower bound until re-listed.",
+    "SCHEMA DRIFT AT A DATED BOUNDARY: CSV header row absent <=2022-06, present >=2022-07 (bisected; 12 cols throughout). header=0 SILENTLY DELETES the first real bar of every pre-2022-07 monthly file; header=None fails loudly instead.",
+    "TIERS ARE NOT NESTED: monthly has fundingRate and daily does not; daily has bookDepth+liquidationSnapshot+metrics and monthly does not. 'monthly = aggregated daily' is FALSE and costs you OI/liquidations or funding entirely.",
+    "UNIVERSE SURVIVORSHIP: exchangeInfo = 30 live; archive = 272. Reconstructing the instrument universe from today's exchangeInfo is a LOOK-AHEAD IN THE UNIVERSE (same class as the pct_circ_now denominator leak) and fails toward a FALSE NULL.",
+    "liquidationSnapshot exists for COIN-M (118 symbols) but NOT for USDT-M (um prefix returns bare self-prefix = empty).",
+    "OBSERVED, UNEXPLAINED: metrics 2026-08-11 file has 285 rows where a complete 5-min day is 288. Not characterised across the series."
+   ],
+   "genealogy": {
+    "method": "first-party S3 listing (paginated) + HTTPS zip fetch + SHA256 sidecar verify + REST diff",
+    "license": "Binance public data bucket, keyless, no auth, no robots restriction on data.binance.vision; same posture as the USDT-M archive already ingested",
+    "cadence": "monthly files ~monthly; daily files T+1; liquidationSnapshot DISCONTINUED after 2024-10-14",
+    "clock_provenance_L1_46": "venue event-time fields; stamp collection clock separately at ingest"
+   },
+   "status": "verified-clean 2026-08-12 (free_data_alternatives miner; checksum + ground-truth diff both executed)",
+   "yield": "HIGH -- closes card 31's 'full-history depth unknown until pulled'; supplies the 212 expired quarterlies the convexity screen needs; frozen per-order liquidation block is one-time-exhaustible DEAD DATA (mandate s7) worth Bronze archival because nobody will regenerate it",
+   "added": "2026-08-12 free_data_alternatives_miner"
+  },
+  "100-jquants-api": {
+   "source": "100-jquants-api",
+   "url": "https://api.jquants.com (v1 = HTTP 410 GONE) | plan matrix: https://www.jpx.co.jp/corporate/news/news-releases/6020/20250822-01.html",
+   "provides": "JPX-operated JP cash-equity data API. FREE tier: listed issues, daily OHLCV, financials, earnings dates, trading calendar -- 2 YEARS history at 12-WEEK DELAY.",
+   "status": "excluded-paid 2026-08-12 (free-first protocol; paid-data trigger NOT met)",
+   "why_excluded": "The axis card 29 wanted -- flow by investor category -- IS NOT ON THE FREE TIER. First-party plan matrix: 投資部門別情報 requires LIGHT Y1650/mo; 売買内訳データ requires PREMIUM Y16500/mo. Card 29 also equated the two ('売買内訳データ = flow by investor category') and they are DIFFERENT PRODUCTS at different price points. And the API card 29 describes is retired: /v1/* returns HTTP 410 'J-QuantsはV2に移行しました', so all four マケデコ Advent Calendar writeups it was built on document a dead surface. Desk trades Binance crypto; JP cash equities are the lowest rung of source priority. Marginal value ~ zero.",
+   "failure_modes": [
+    "App host jpx-jquants.com CloudFront-403s every non-browser client incl. WebFetch; the CORPORATE host www.jpx.co.jp does not -- use it for first-party policy reads.",
+    "Practitioner-writeup corpora (Advent Calendar) date SILENTLY: entries stay up and read as current after the API they document is withdrawn."
+   ],
+   "added": "2026-08-12 free_data_alternatives_miner"
+  },
+  "101-jpx-investor-type-free": {
+   "source": "101-jpx-investor-type-free",
+   "url": "https://www.jpx.co.jp/markets/statistics-equities/investor-type/ (JA) | https://www.jpx.co.jp/english/markets/statistics-equities/investor-type/ (EN)",
+   "provides": "投資部門別売買状況 / Trading by Type of Investors -- WEEKLY, free .xls + .pdf (stock_val_* = value, stock_vol_* = volume), no registration, no API key, no plan tier, no 12-week delay.",
+   "replaces": "J-Quants LIGHT tier (Y1650/mo) 投資部門別情報 -- the venue SELLS VIA API what it PUBLISHES FREE on its own website, in a worse format. Opened as the s38 replacement hunt for 100-jquants-api.",
+   "status": "needs-monitoring 2026-08-12 -- reachable + format-authentic, CONTENTS UNPARSED",
+   "verification": "HTTP 200, 99,840 bytes, magic d0cf11e0a1b11ae1 = genuine OLE2/BIFF (a real legacy Excel file, NOT an HTML error page with an .xls extension). COLUMN SEMANTICS NOT READ: box has no xlrd and this mission runs under the research freeze, so no install. The table's contents are NOT claimed.",
+   "failure_modes": [
+    "Legacy .xls (BIFF/OLE2) is unreadable by this desk: pandas.read_excel raises ImportError: Missing optional dependency 'xlrd'. Recurring format across JP/KR government + exchange publications.",
+    "ARCHIVE DEPTH UNMEASURED -- index carries recent weeks; a guessed back-number path 404'd. History length unknown."
+   ],
+   "yield": "Reusable SHAPE, not the JP axis: test 'venue sells via API what its website gives away free' against every venue the desk pays or would pay for.",
+   "added": "2026-08-12 free_data_alternatives_miner"
   }
  },
  "residual_gaps_unpurchasable": [

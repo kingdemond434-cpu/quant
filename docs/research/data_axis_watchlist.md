@@ -2329,7 +2329,7 @@ using this axis live than the archival decay is.
   UMA risk) — routed to the needs-legitimacy-review queue via this card's grade, decision lane
   same as the KR/JP venue reads.
 
-### 31. Binance COIN-M (dapi) public market data — the home venue's OTHER futures book, zero desk coverage — grade: **verified-live (keyless probe 2026-08-12); collector/backfill owed** [§33: deferred(2026-08-19) tier:2]
+### 31. Binance COIN-M (dapi) public market data — the home venue's OTHER futures book, zero desk coverage — grade: **verified-clean 2026-08-12 — the BULK ARCHIVE half is now verified separately (checksum + ground-truth diff executed); "full-history depth unknown until pulled" is CLOSED. Collector constraint found: build the universe from the ARCHIVE listing, never from `exchangeInfo` (30 live vs 272 archived = 89% of instrument history omitted, incl. all 212 expired quarterlies the convexity screen needs).** [§33: screened -> data/data_universe_map.json `99-binance-coinm-vision-archive`]
 > **PROBED 2026-08-12 (EN frontier miner session G, keyless, no auth):** `dapi.binance.com/dapi/v1/premiumIndex?symbol=BTCUSD_PERP` → live mark/index/funding (0.00003844) + `nextFundingTime`; `/dapi/v1/exchangeInfo` → **30 instruments: 20 COIN-M perps (BTC/ETH + 18 alts) + 5 quarterly-delivery underlyings (BTC/ETH/BNB/SOL/XRP × current+next quarter)**. Same endpoint family as the fapi (USDT-M) data the desk already collects — identical §13 posture, identical collector pattern; historical klines (`klines`, `markPriceKlines`, `indexPriceKlines`, `premiumIndexKlines`, `fundingRate`) serve keyless, so **backfill needs no standing daemon**. L1.46 note: dapi rows carry venue event-time fields exactly like fapi; stamp clock provenance at collection.
 > **WHY (mechanism found same run, NP 161162 translation — the 1990s convexity-adjustment-neglect family):** inverse contracts settle PnL in coin ⇒ convex USD payoff ⇒ fair COIN-M basis differs from USDT-M basis by a computable convexity adjustment (the FRA-vs-futures wedge, crypto edition). The screen: measured COIN-M-vs-USDT-M same-expiry basis differential vs its theoretical convexity value across the 5 quarterly underlyings; residual = collateral-clientele segmentation premium (coin-collateral hedgers — miners, coin-custody entities — cannot switch margin currency without changing custody posture: the who-must-trade story). Secondary unlocks: 20-pair COIN-M/USDT-M funding-differential panel; COIN-M OI share as a positioning axis.
 > **SCREEN-ON-DISCOVERY (run this session, at the only stage runnable without the data):** mechanism `coinm_usdtm_basis_convexity_rv` EV-gated honestly → **REJECT 0.0009** (p_survive 0.105, est_sharpe 0.5, breadth 5, orth 0.5, 12h/1.2×, tags funding_family+crowded_known; conservative narrow-tag reading also reported: 0.0002 — both logged, neither rescues). Mechanism → prospector_watchlist memory with a MEASUREMENT promotion trigger; the AXIS is the deliverable today: free, home-venue, feeds the screen the moment the panel exists. Full-history depth unknown until pulled (fapi-era caveat: gentle pulls, 429 discipline per entry 95).
@@ -2338,7 +2338,7 @@ using this axis live than the archival decay is.
 
 ## 2026-08-12 — JP miner: マケデコ (market-api) calendar opened; one axis worth a decision
 
-### 29. J-Quants API (JPX's own free JP-equity data, incl. 売買内訳データ = flow by investor category) — grade: **catalogued-unverified, NOT screened** [§33: deferred(2026-08-19) tier:3]
+### 29. J-Quants API (JPX's own free JP-equity data, incl. 売買内訳データ = flow by investor category) — grade: **excluded-paid, VERIFIED 2026-08-12. The title of this card is FALSE on two counts: the investor-category axis is NOT free (投資部門別情報 = LIGHT ¥1,650/mo; 売買内訳データ = PREMIUM ¥16,500/mo, and they are DIFFERENT datasets the card conflated), and the v1 API it describes returns HTTP 410 GONE. §38 replacement found: JPX publishes the investor-type table free on its own website.** [§33: killed -> data/data_universe_map.json `100-jquants-api` + `101-jpx-investor-type-free`]
 - **WHAT + HOW FOUND.** Surfaced by opening the マケデコ Advent Calendar (new ground this run,
   `qiita.com/advent-calendar/{2023,2024,2025}/market-api`, 74 entries mapped to
   `data/jp_makedeco_advent_calendar.jsonl`). J-Quants is **Japan Exchange Group's own** free API;
@@ -2401,3 +2401,268 @@ producing something. Everything else found this run is recorded as leads in
   `Content-Signal: ai-train=no` — **HARD STOP, archives included**. `bitoasis.net` runs an AI-agent
   **allowlist** (OAI-SearchBot/ChatGPT-User/PerplexityBot allowed, CCBot denied, ClaudeBot unnamed →
   permitted under `*`). Per-agent policy is emerging; re-probe rather than carrying a binary prior.
+
+---
+
+## SESSION SUMMARY — 2026-08-12T15:31Z (FREE-DATA-ALTERNATIVES miner, standing weekly run)
+
+**STATUS: IN PROGRESS — note written BEFORE researching per the COMPLETION CONTRACT (2026-07-25).**
+Items resolve in place below; if this run is killed, this note is the durable resume point.
+
+**Cadence defect found before any hunting:** `data/cadence_state.json.last_data_axis_dig` reads
+**2026-07-19** — 24 days stale on a **weekly** mission. Runs have happened since (07-24, 07-25,
+07-31, 08-12 seats all wrote cards here) but none stamped the key, so the desk's own cadence meter
+has been reporting this mission as ~3.4 cadences overdue while it was in fact running. An organ
+whose done-key is never stamped is indistinguishable from a dead one (L1.28a: unmeasured = zero).
+Stamped at close of this run.
+
+**WHY THESE ITEMS (§33 tier order, not convenience).** `source_backlog_next.py` reports 16 pending
+verification + 6 pending legitimacy. §33 says work the expensive tier first; deferral expiry breaks
+ties.
+
+- **NOT TAKEN — card 1 Upbit portal (T3, due 08-15, soonest expiry).** Deliberately skipped and this
+  is the disposition: it has been independently verified **three times** (07-25, 08-11, +1) and the
+  blocker is a **principal ruling on commercial-use scope**, not anything an agent can test. Its own
+  card says *"COST OF WAITING IS ZERO"* and *"DO NOT BUILD A COLLECTOR YET"*. A fourth verification
+  would be re-litigating settled evidence (L1.16a) wearing a productivity costume. **The one unused
+  lever is already named on the card and is the principal's to pull: written clarification from
+  `historical_data@upbit.com`.** No agent sends that mail.
+- **NOT TAKEN — card 23 中文 practitioner corpus (T2, due 08-18):** explicitly *"corpus dig owed to
+  the CN seat"*. Taking another seat's owed work would double-count the conversion.
+
+**ITEMS TAKEN THIS RUN (depth maxed, breadth bounded):**
+
+1. **Card 31 — Binance COIN-M (dapi) ARCHIVE depth (T2, due 08-19).** The 08-12 probe verified the
+   *live API*; the card states **"Full-history depth unknown until pulled"**. Category 1 of this
+   mission is *exchange-native dumps/archives* — the bulk `data.binance.vision` bucket, which is a
+   **different artifact from the REST API** and is the half that replaces a paid tick/kline vendor.
+   Deliverable: measured archive depth per COIN-M instrument + a verify-don't-trust diff of the
+   archive against the REST API for the same window.
+2. **Card 29 — J-Quants API (T3, due 08-19).** Genuinely **catalogued-unverified**: licence unread,
+   endpoint never hit, the claimed free-tier 12-week delay unconfirmed. Cheapest real close on the
+   board and it is owed the same day as item 1.
+3. **SEARCH-SPACE EXPANSION (≥25% reserve, mission §11/§12).** New source class, recorded below.
+
+### ITEM 1 — RESOLVED. Card 31 Binance COIN-M: the ARCHIVE is verified-clean, and it is a
+### materially different (and much larger) artifact than the API the 08-12 probe verified.
+
+**GRADE: verified-clean** (checksum + ground-truth diff both executed this run, first party, keyless).
+Card 31 is re-graded from *"verified-live; collector/backfill owed"* — the **"full-history depth
+unknown until pulled"** clause is now CLOSED. Universe-map entry `98-binance-coinm-dapi` updated.
+
+**VERIFY-DON'T-TRUST — EXECUTED, NOT PLANNED.** `BTCUSD_PERP-1d-2024-01.zip`:
+- Published SHA256 sidecar `ef361aef…70b7` vs computed → **exact match**.
+- Archive vs live `dapi/v1/klines` over the same 31 bars, 7 fields each (O/H/L/C/volume/baseVol/
+  trades) → **0 mismatches, identical to the last decimal**. 217 field comparisons.
+
+**MEASURED DEPTH (all first-party S3 listings, paginated):**
+
+| dataset | tier | span | n | state |
+|---|---|---|---|---|
+| klines (15 intervals 1m→1mo) | monthly | 2020-08 → 2026-07 | 72 mo | live |
+| metrics (OI + positioning) | daily | 2021-07-08 → **2026-08-11** | 1,754 d | **live, T+1** |
+| fundingRate | monthly | 2022-07 → 2026-06 | 48 mo | live |
+| liquidationSnapshot | daily | 2023-06-25 → **2024-10-14** | 472 d | **FROZEN ~22 mo** |
+
+**FOUR FAILURE MODES, EACH FOUND BY HITTING IT — these are the deliverable, not the depth table:**
+
+1. **THE S3 LISTING SILENTLY TRUNCATES AT `MaxKeys=1000`, AND IT NEVER THROWS.** The unpaginated
+   listing of `metrics` returned exactly 500 zips (+500 checksums = the 1000 cap) and reported the
+   series **ending 2022-11-24**. Paginated with `continuation-token`: **1,754 files ending
+   2026-08-11**. A **3.7-year understatement that looks like a complete answer** — the desk's own
+   documented lesson ("paginate every venue history endpoint; past the cap the numbers keep looking
+   plausible") reproduced exactly, on a different endpoint class than the one it was learned on
+   (Binance *income* REST). **Every S3-listing-driven depth claim in this file predating today
+   should be treated as a lower bound until re-listed with pagination.**
+2. **SCHEMA DRIFT AT A DATED BOUNDARY: the CSV header appears on 2022-07-01 and not before.**
+   Bisected: `2022-06` has no header, `2022-07` onward does; 12 columns throughout. **The dangerous
+   direction is silent:** a backfill hardcoding `header=0` (correct for everything after 2022-07)
+   **silently deletes the first real bar of every pre-2022-07 monthly file** — no error, no warning,
+   just a missing bar per month across the earliest 23 months, which is precisely the regime an OOS
+   split is starved for. `header=None` fails loudly instead, which is the safe way to be wrong.
+3. **THE MONTHLY AND DAILY TIERS ARE NOT NESTED — neither is a superset of the other.** monthly
+   carries `fundingRate` and daily does **not**; daily carries `bookDepth`, `liquidationSnapshot`
+   and `metrics` and monthly does **not**. A collector that reasonably assumes "monthly = aggregated
+   daily" (the near-universal convention) never collects OI, book depth or liquidations at all, and
+   one built off daily alone never collects funding. Verified on both `cm` and `um`.
+4. **`liquidationSnapshot` EXISTS FOR COIN-M AND NOT FOR USDT-M.** `futures/um/daily/
+   liquidationSnapshot/` returns the bare self-prefix (empty); `futures/cm/daily/` carries **118
+   symbols**. The COIN-M window is frozen (2023-06-25 → 2024-10-14) with **6 interior missing days**
+   (2023-09-09/23/25, 2024-06-01/11/12) — real gaps, not weekends, in a 24/7 market.
+
+**SURVIVORSHIP — AND IT POINTS THE OPPOSITE WAY FROM UPBIT (card 1), WHICH IS THE REUSABLE PART.**
+Archive holds **272 kline symbols; the live `exchangeInfo` returns 30**. So **242 instruments (89%)
+are expired or delisted and invisible to any collector driven off `exchangeInfo`** — which is
+exactly the collector pattern card 31 proposes ("identical collector pattern" to the fapi). Of the
+242: **30 delisted perps** (LUNA, FTM, MATIC, XMR, OP, WLD, WIF, APT, ENS…) and **212 expired
+quarterlies**. Set difference the other way is **empty** — no live instrument lacks an archive, so
+the archive strictly dominates the API for history.
+- **Upbit purges delisted candles (the desk's recorded lesson: "treatment group erased"). Binance
+  RETAINS them.** Two venues, opposite survivorship polarity, and the *archive-vs-API* axis is
+  where the difference lives — not the venue. **The rule this generalises to: for any venue, the
+  instrument list is a point-in-time object, and reconstructing it from today's `exchangeInfo` is a
+  look-ahead in the UNIVERSE rather than in the prices** — the same class as the `pct_circ_now`
+  denominator leak already on the desk's lesson list, and it fails toward a FALSE NULL.
+- **This is what makes the card-31 convexity screen buildable at all:** that mechanism prices
+  COIN-M-vs-USDT-M *same-expiry* basis across quarterly underlyings. The quarterlies it needs are
+  **212 expired contracts** — every one of them absent from the API and present in the archive. The
+  screen was EV-rejected (0.0009) on its alpha claim and that rejection stands; the point here is
+  narrower and it is a **data-availability** point: had the collector been built off `exchangeInfo`
+  as proposed, the panel would have been **structurally incapable** of ever testing it, and the
+  failure would have read as "no data" rather than "wrong collector".
+
+**WHAT IT REPLACES (category 6).** `metrics` is a **5-minute positioning panel** —
+`sum_open_interest`, `sum_open_interest_value`, `count_toptrader_long_short_ratio`,
+`sum_toptrader_long_short_ratio`, `count_long_short_ratio`, `sum_taker_long_short_vol_ratio` — free,
+5 years deep, T+1, first-party. That is the substance of **Coinglass's paid OI/long-short history**
+for this venue. `liquidationSnapshot` is **per-order** (side, order_type, TIF, price, average_price,
+fill quantities), i.e. **finer than the aggregated liquidation feeds vendors sell** — for its frozen
+472-day window. Honest residual: the frozen window means COIN-M liquidations are **dead data**
+(mandate §7) — one-time-exhaustible, will never extend, and worth archiving to Bronze *because*
+nobody will regenerate it. **Forward liquidation coverage is destroyed-at-source on both books**
+and is NOT replaced by this find.
+
+**GAP OBSERVED, NOT YET EXPLAINED:** the 2026-08-11 metrics file holds **285 rows where a complete
+5-min day is 288**. Three missing buckets in one spot-checked day; not characterised across the
+series, so it is recorded as an open question, not a rate.
+
+**§13:** first-party Binance public bucket, keyless, no auth, no robots restriction on
+`data.binance.vision`; same posture as the USDT-M archive the desk already ingests. Clean.
+
+**ROUTING.** No new alpha claim, so no EV-gate pre-registration is owed — the card-31 mechanism was
+already EV-rejected this morning and nothing here rescues it. The deliverables are (a) the re-grade,
+(b) the four failure modes, which are **collector-design constraints** and route to
+`improvement_inbox.md`, and (c) the pagination trap, which is a **method defect affecting prior
+depth claims in this very file** and is the highest-value thing found this run.
+
+### ITEM 2 — RESOLVED, AND IT IS A CLEAN KILL. Card 29 J-Quants: the one axis with an economic
+### story is the single most expensive rung on the venue's own price list.
+
+**GRADE: excluded-paid (free-first protocol; paid-data trigger NOT met).** Card 29 goes from
+*catalogued-unverified* to **CLOSED**. §13 question is moot — there is no licence dispute, there is
+a price tag.
+
+**FIRST-PARTY EVIDENCE** — JPX 総研 press release 2025-08-22, `www.jpx.co.jp/corporate/news/
+news-releases/6020/20250822-01.html`, fetched in full and parsed (the app host `jpx-jquants.com`
+CloudFront-403s every non-browser client including WebFetch; **the corporate host does not** — that
+host split is the reason three prior readers had to rely on search-index renderings). The complete
+plan matrix, verbatim from the release:
+
+| dataset | 無料 ¥0 | ライト ¥1,650 | スタンダード ¥3,300 | プレミアム ¥16,500 |
+|---|---|---|---|---|
+| データ提供期間 | **過去2年 [12週間遅延]** | 過去5年 | 過去10年 | 提供期間全て |
+| 上場銘柄一覧 / 株価四本値 / 財務情報 / 決算発表予定日 / 取引カレンダー | ✓ | ✓ | ✓ | ✓ |
+| **投資部門別情報** (investor-category flow) | **–** | ✓ | ✓ | ✓ |
+| **売買内訳データ** (the card's target axis) | **–** | **–** | **–** | **✓** |
+
+**THREE THINGS THE CARD GOT WRONG, AND THE SECOND IS THE ONE WORTH REMEMBERING:**
+
+1. **The 12-week free-tier delay was flagged "unconfirmed by me". It is now CONFIRMED first-party**
+   — and it comes with a second limit the card never mentioned: **free history is 2 years**, not
+   full depth.
+2. **THE CARD'S CENTRAL EQUATION IS FALSE.** It states *"売買内訳データ = flow by investor
+   category"*. These are **two different products at two different price points**: 売買内訳データ is
+   the **order-attribute breakdown** (proprietary vs brokerage, short-sale flags) and sits at
+   **PREMIUM ¥16,500/mo**; the by-investor-category flow the card actually wanted is **投資部門別情報**
+   at **LIGHT ¥1,650/mo**. The card fused a cheap dataset's *meaning* onto an expensive dataset's
+   *name* and then reasoned about the merged object. **Neither is free**, so the card's premise —
+   *"JPX's own **free** API, incl. flow by investor category"* — is false on both readings.
+3. **THE API THE CARD DESCRIBES NO LONGER EXISTS.** `api.jquants.com/v1/*` returns **HTTP 410 Gone**
+   — `{"message": "J-QuantsはV2に移行しました。"}` — on every v1 path probed (`/v1/listed/info`,
+   `/v1/token/auth_user`). V1 token auth is retired in favour of dashboard-issued API keys. **All
+   four マケデコ Advent Calendar entries the card was built from (2023 s1d20, 2023 s1d23, 2025
+   s2d22) document a dead API surface.** A practitioner-writeup corpus dates silently: the calendar
+   entry is still up, still reads as current, and its endpoints are gone.
+
+**§38 — THE EXCLUSION SPAWNED ITS HUNT, AND THE HUNT SUCCEEDED (partially).** Excluding a paid
+source without finding its free primary would shrink the universe by attrition. **The primary here
+is the exchange's own website, and it gives away what the API bills for:**
+- **`www.jpx.co.jp/markets/statistics-equities/investor-type/`** (JA) and
+  `…/english/markets/statistics-equities/investor-type/` (EN) — **投資部門別売買状況 published
+  WEEKLY as free `.xls` + `.pdf`, no registration, no API key, no plan tier, no 12-week delay.**
+  25 file links on the JA index (`stock_val_*` = value, `stock_vol_*` = volume, weekly stamps).
+- **VERIFIED THIS FAR AND NO FURTHER — stated precisely because the difference matters:** HTTP 200,
+  99,840 bytes, magic `d0cf11e0a1b11ae1` = **genuine OLE2/BIFF**, i.e. a real legacy Excel file and
+  not an HTML error page wearing an `.xls` extension. **The column semantics are UNPARSED**: the
+  box has no `xlrd` and this mission runs under the research freeze, so installing one is out of
+  scope. **I did not read the table, so I do not claim its contents.**
+- **Honest residual:** archive **depth UNMEASURED** — the current index carries recent weeks only
+  and my guess at a back-number path 404'd. Whether history runs to 2015 or to last quarter is
+  **unknown**, and the ¥1,650 tier's value is precisely that unknown.
+- **The general shape, which outlives this card:** *the venue sells via API what it publishes free
+  on its website, in a worse format.* Worth testing against every venue the desk pays or would pay
+  for. That is the reusable finding here, not the JP equity axis.
+
+**BUT THE HONEST BOTTOM LINE, AND IT IS NOT CLOSE.** This is **JP cash equities**; the desk trades
+**Binance crypto**. The card itself said so. Free J-Quants gives OHLCV + financials on a market the
+desk does not trade, 2 years deep, 12 weeks stale. Even the successful §38 replacement is a **weekly
+JP-equity flow table in legacy Excel**. **Marginal value to `max E[log W_T]`: indistinguishable from
+zero.** No screen is owed, no EV-gate pre-registration is owed, and no ingestion is proposed. The
+deliverable is the **kill plus the three corrections**, so no future reader re-opens this believing
+JPX hands out investor-flow data for free.
+
+**INGESTION NOTE (routes to improvement_inbox):** legacy `.xls` (BIFF/OLE2) is a **recurring**
+Japanese-government/exchange publication format and the desk cannot read it — `pandas.read_excel`
+raises `ImportError: Missing optional dependency 'xlrd'`. Any future JP/KR government or exchange
+ingestion hits this wall. Recording the dependency, not installing it.
+
+---
+
+### ITEM 3 — SEARCH-SPACE EXPANSION (≥25% reserve). New source class: **exchange-published
+### bulk archives as a CLASS, audited for the tier-asymmetry defect found in item 1.**
+
+Item 1 found that Binance's bulk bucket is **not** shaped the way a collector would assume: monthly
+and daily tiers are **non-nested**, one book has liquidations the other does not, and the S3 lister
+silently truncates at 1,000 keys. **That is a claim about `data.binance.vision`. It is worth knowing
+whether it is a claim about the CLASS** — because every finding in item 1 is a collector-design
+constraint the desk would otherwise re-learn per venue, at the cost of a silently-wrong backfill
+each time.
+
+**Probed this run (first-party, keyless, listing-only — no bulk pulls):**
+
+| venue | bulk archive | reachable | shape finding |
+|---|---|---|---|
+| Binance | `data.binance.vision` (S3-XML) | ✅ | tiers **non-nested**; lister truncates at 1000 keys; header drift 2022-07-01 |
+| Bybit | `public.bybit.com/trading/` | ✅ | **HTML directory listing** (`Directory listing for /trading/`), **1,889 symbol dirs in one response, no cap, no pagination** |
+| OKX | `www.okx.com/cdn/okex/traderecords/` | ✅ files, ❌ index | per-day zips fetch fine (`…/20260810/BTC-USDT-trades-2026-08-10.zip` → **200, 2.34 MB**; 2025-06-10 → **200, 5.41 MB**) but the directory itself returns **HTTP 200 with a ZERO-BYTE body** |
+
+**THE CLASS-LEVEL FINDING — a taxonomy of how bulk archives are ENUMERATED, which is the thing that
+actually breaks backfills:**
+- **S3-XML listers (Binance)** — enumerable, and **silently truncate**. Failure is *invisible*: you
+  get a plausible short answer.
+- **HTML directory listings (Bybit)** — enumerable, no key cap, but schema-fragile to site redesign.
+- **Soft-empty index (OKX)** — **not enumerable, and it lies in the safe-looking direction.** The
+  files are real and serve fine, but the directory returns **200 with a zero-byte body** rather than
+  404. **A liveness check written as `if resp.status_code == 200` passes against nothing at all** —
+  the exact heartbeat-vs-payload defect on the desk's lesson list ("a heartbeat proves the loop is
+  alive, never that the pipe is"), reappearing as an *archive* rather than a websocket. Every URL
+  must be constructed from a date grid and probed individually, so **absence of a file is
+  indistinguishable from a gap in the data** unless the venue documents its calendar — "absence
+  resolves to a clean verdict", WS-005, relocated into the data layer.
+- **The transferable rule:** *before trusting any bulk-archive depth figure, ask which of the three
+  enumeration modes produced it.* A depth claim from mode 1 is a **lower bound** (truncation), from
+  mode 3 it is a **guess** (construction). Only mode 2 gives a real count. **This desk has depth
+  claims from all three modes recorded in this file with no distinction between them.**
+
+**HONEST LIMIT ON THIS ITEM:** reachability and enumeration-mode were probed; **no cross-venue
+depth or content verification was performed** (that is the next run's work, and it is named below).
+This item is graded **UNVERIFIED for content, verified for reachability + enumeration mode**.
+
+---
+
+## NEXT UN-EXHAUSTED GROUND (L1.35 — named so the chain survives this run)
+
+1. **Re-list every S3-derived depth claim in this file with pagination.** Item 1 proved the
+   unpaginated lister understates by years and never errors. Prior depth figures here are lower
+   bounds of unknown tightness. **Highest-value item on the board** — it re-grades existing cards
+   rather than adding new ones, and it is pure verification, which is the desk's stated bottleneck.
+2. **Bybit + OKX bulk archives to item-1 depth** — checksum discipline, ground-truth diff, tier
+   nesting, survivorship (delisted instruments present or purged). Item 3 established *how to
+   enumerate* them; the verification itself is undone.
+3. **The archive-vs-API survivorship polarity test, run across venues.** Item 1 found Binance
+   retains 242 delisted/expired instruments the API hides (89%) while Upbit purges. **Neither is
+   the default.** Every venue the desk collects needs this checked, because the failure is a
+   look-ahead in the *universe* and it fails toward a false null.
+4. **COIN-M `metrics` 285-vs-288 row question** — three missing 5-min buckets in the one day spot-
+   checked; unknown whether that is routine or episodic. Cheap to characterise across 1,754 files.
+5. **Card 1 Upbit remains blocked on the principal**, not on research. Untouched by design.

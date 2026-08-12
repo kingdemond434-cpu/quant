@@ -1985,3 +1985,58 @@ once found to skip. I verified current state before citing it: `libs/autodiscove
 `libs/validation/robustness_filters.py` now resolve a missing benchmark to an explicit **UNMEASURED**
 state rather than a silent pass, which is the correct fix and is in place. **Confirmatory only — no
 row filed**, because filing one would manufacture a finding out of a lesson the desk already banked.
+
+---
+
+### #118 — BULK-ARCHIVE ENUMERATION IS A THREE-MODE TAXONOMY, AND EVERY DEPTH CLAIM ON THIS DESK IS UNLABELLED
+
+_Filed 2026-08-12 by the free-data-alternatives miner. Method/tooling finding; no build proposed
+under the research freeze. Evidence: `docs/research/data_axis_watchlist.md` session note 2026-08-12,
+universe-map entries `99-binance-coinm-vision-archive`, `101-jpx-investor-type-free`._
+
+**THE DEFECT IS IN HOW THE DESK MEASURES ARCHIVE DEPTH, NOT IN ANY ONE ARCHIVE.** Verifying the
+Binance COIN-M bucket produced a failure that generalises past Binance:
+
+**1. The S3 lister truncates at `MaxKeys=1000` and never errors.** Listing
+`data/futures/cm/daily/metrics/BTCUSD_PERP/` without a continuation token returned exactly 500 zips
+(+500 checksums = the cap) and reported the series **ending 2022-11-24**. Paginated, it is **1,754
+files ending 2026-08-11** — a **3.7-year understatement that looks like a complete answer**. This is
+the desk's existing pagination lesson (learned on the Binance *income* REST endpoint) reappearing on
+a completely different endpoint class, which is the argument for treating it as a *class* property.
+
+**2. The three enumeration modes, and what a depth number means under each:**
+
+| mode | example | depth claim is… |
+|---|---|---|
+| S3-XML lister | `data.binance.vision` | a **LOWER BOUND** — silently capped at 1000 keys |
+| HTML directory listing | `public.bybit.com/trading/` (1,889 dirs, one response, no cap) | a **real count** |
+| no index / soft-empty | `okx.com/cdn/okex/traderecords/` → **HTTP 200, zero-byte body** | a **GUESS** — URLs must be constructed from a date grid |
+
+**3. The OKX case is the dangerous one and it is a known desk failure class wearing new clothes.**
+The directory returns **200 with an empty body** rather than 404, so `if resp.status_code == 200`
+passes against nothing at all. That is the *heartbeat-vs-payload* defect already on the desk's lesson
+list ("a heartbeat proves the loop is alive, never that the pipe is"), relocated from a websocket to
+an archive. And because absence of a constructed URL is indistinguishable from a genuine gap in the
+data, **"no file" resolves to a clean verdict** — WS-005 in the data layer.
+
+**WHAT IS OWED (verification, not code):** every S3-derived depth figure recorded in
+`data_axis_watchlist.md` before 2026-08-12 is a lower bound of unknown tightness and should be
+re-listed with pagination. This re-grades existing cards rather than adding new ones, so it is
+pure backlog-burn against the desk's stated bottleneck.
+
+**TWO COLLECTOR-DESIGN CONSTRAINTS FROM THE SAME RUN, recorded so they are not re-learned per venue:**
+- **Archive tiers are not nested.** On both Binance books, `monthly` carries `fundingRate` and
+  `daily` does not; `daily` carries `bookDepth`/`liquidationSnapshot`/`metrics` and `monthly` does
+  not. The near-universal assumption "monthly = aggregated daily" silently costs a collector either
+  OI+liquidations or funding, entirely.
+- **Reconstructing an instrument universe from today's `exchangeInfo` is a look-ahead in the
+  UNIVERSE.** Binance COIN-M: 30 live instruments vs 272 in the archive → **89% of instrument
+  history invisible**, including all 212 expired quarterlies. Upbit does the opposite (purges
+  delisted candles). **Neither polarity is the default**, it must be checked per venue, and it fails
+  toward a **false null** — the same direction as the `pct_circ_now` denominator leak already banked.
+
+**MINOR, AND HONESTLY A DEPENDENCY NOTE RATHER THAN A DEFECT:** legacy `.xls` (BIFF/OLE2) is a
+recurring JP/KR government-and-exchange publication format and this desk cannot read it —
+`pandas.read_excel` raises `ImportError: Missing optional dependency 'xlrd'`. It blocked content
+verification of the free JPX investor-type table this run (format authenticated via OLE2 magic
+bytes; columns unread). Recording the dependency; not installing it under the freeze.
