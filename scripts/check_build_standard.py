@@ -184,6 +184,26 @@ def _has_silent_swallow(tree: ast.AST) -> bool:
     return False
 
 
+def _has_own_schedule_line(name: str, manifest: str) -> bool:
+    """A REAL executable cron or systemd line names this script -- never a mention anywhere else.
+
+    THE BUG THIS REPLACES, found 2026-08-12 chasing why run_discovery.py read as scheduled when
+    it has no cron/systemd line at all: both this check and `_scheduled_parent` below used a bare
+    `name not in manifest` substring test over the WHOLE file, comments included. This desk writes
+    "# EVIDENCE: scripts/X.py -> ..." on nearly every cron block as a matter of convention, so any
+    organ merely DOCUMENTED elsewhere -- which is most of them -- satisfied `name in manifest` and
+    skipped the scheduling check entirely, whether or not a real line existed. A comment mentioning
+    a script is not evidence it runs; only a line whose first character is a cron minute field or a
+    SYSTEMD directive is.
+    """
+    for ln in manifest.splitlines():
+        if name not in ln:
+            continue
+        if ln[:1] in "0123456789*" or ln.strip().startswith("SYSTEMD"):
+            return True
+    return False
+
+
 def _scheduled_parent(root: Path, name: str, manifest: str) -> str:
     """A scheduled script that invokes `name`, or "".
 
@@ -192,7 +212,7 @@ def _scheduled_parent(root: Path, name: str, manifest: str) -> str:
     recursion is a chain nobody can reason about at 3am.
     """
     for cand in sorted((root / "scripts").glob("*.py")):
-        if cand.name == name or cand.name not in manifest:
+        if cand.name == name or not _has_own_schedule_line(cand.name, manifest):
             continue
         try:
             if name in cand.read_text("utf-8", errors="ignore"):
@@ -215,7 +235,7 @@ def audit_organ(root: Path, name: str, *, manifest: str, matrix_src: str,
                  "organ cannot say 'I could not measure', so it will report OK on absent input")
     if Path(name).stem not in test_blob:
         v.append("UNTESTED (L2.2): no test file references it -- wiring nothing proves")
-    if name not in manifest and name not in _SCHEDULE_EXEMPT:
+    if not _has_own_schedule_line(name, manifest) and name not in _SCHEDULE_EXEMPT:
         # TRANSITIVE SCHEDULING COUNTS, and missing it cries wolf on a correctly-wired organ.
         # A plain substring test over the manifest sees only organs with their OWN cron line.
         # When run_paper_sleeve_spawner moved into scripts/run_pipeline_cycle -- which is what
