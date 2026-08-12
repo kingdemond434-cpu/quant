@@ -792,6 +792,33 @@ QUANT_ROOT=/home/quant/quant-platform
 # LOCK ported 2026-07-31 from the legacy line (same-minute twin under a split lock = parquet race):
 20 6 * * * cd "$QUANT_ROOT" && flock -n /tmp/dl_oils.lock .venv/bin/python scripts/dl_oi_ls_universe.py >> data/cro_ai_logs/oi_ls_universe_cron.log 2>&1
 
+# THE GENUINELY CROSS-SECTIONAL SCREEN THIS FEEDS -- HAD NEVER RUN.
+# PRINCIPAL ORDER 2026-08-12: after a proposed VRP cross-sectional reconstruction turned out not
+# to work (checked the numbers first -- VRP's "pooled" trial has the SAME accrual rate and
+# panel_width=1 as its per-market trials; it is one blended daily series, not a stack, and 4 of
+# the 6 single-name VRP clocks cannot pool at all because DVOL only exists for BTC/ETH), this is
+# the real one: screen_oi_ls_axes.py stacks 139 symbols symbol-major and computes ONE pooled
+# cross-sectional IC across the WHOLE panel per calendar day -- the actual breadth accelerant
+# libs.research.anytime_valid names as the only legitimate one, already built, never switched on.
+# TWO BUGS FOUND RUNNING IT FOR THE FIRST TIME, both fixed: missing sys.path preamble (same class
+# as run_derivative_shadow.py, found the same day) so `python scripts/X.py` died on
+# ModuleNotFoundError before ever reaching main; and a second, independent crash on the
+# BTCUSDT-only leg when its archive is empty (`pd.DataFrame([]).set_index("date")` -> KeyError) --
+# the exact state ANY fresh box hits on a first run, since data/ is gitignored.
+# ITS INPUT ALREADY HAS REAL DEPTH: dl_oi_ls_universe.py backfills the tranche-1 cohort from
+# 2022-07-01, so once this runs it is screening YEARS of cross-sectional history, not a fresh
+# 40-day clock like the run_derivative_shadow.py pair.
+# 06:35, fifteen minutes after dl_oi_ls_universe (06:20, threaded downloader over 906 symbol
+# dirs). finalize_axis_screens now runs INSIDE scripts/run_pipeline_cycle.py every 15 minutes
+# (see that block below), so a fresh trial here is corrected on the very next pass -- within
+# minutes, not held to a once-daily 07:08 line the way it would have been before that cycle
+# existed.
+# EVIDENCE: scripts/screen_oi_ls_axes.py -> reports/axis_screens/_raw_trials.json (48 trials
+#   logged on this box with the archive absent, every one correctly INSUFFICIENT-DATA rather than
+#   a crash). Schema matches what finalize_axis_screens.py globs and corrects.
+# CONFIDENCE: committed-script; pure local CPU/pandas, no venue call, no model.
+35 6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_oi_ls_axes.lock .venv/bin/python scripts/screen_oi_ls_axes.py >> data/cro_ai_logs/screen_oi_ls_axes.log 2>&1
+
 # EVIDENCE: .../20260729_data-intelligence.md:77 ("ingest_axes daily 06:40"); the log name is
 #   the live one (docs/research/deep_sweep/20260726_data-intelligence.md:153 "ingest_axes_cron.log")
 # CONFIDENCE: documented-cadence

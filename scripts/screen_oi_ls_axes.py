@@ -6,7 +6,9 @@ there is no "run more until something prints" loop. Screen verdicts come exclusi
 libs.research.axis_screen.stage_a_screen (angle-20 de-contam gate baked in). Anything computed
 here outside the harness is DESCRIPTIVE ONLY and is labelled as such.
 
-ALIGNMENT (verified, not assumed -- see reports/axis_screens/oi_ls_daily.json):
+ALIGNMENT (verified, not assumed -- see reports/axis_screens/_raw_trials.json, this organ's actual
+output; the filename was previously mis-stated here as oi_ls_daily.json, which this script has
+never written):
   archive `date`   = UTC calendar day; matches the 1d-kline UTC day and the forward collector.
   `oi_first`/`ls_first` = the 00:00:00 UTC 5-min bucket  -> known at the START of day t.
   `oi`/`ls`/`taker`     = mean of all 288 5-min buckets 00:00..23:55 UTC of day t
@@ -24,6 +26,15 @@ being handed to the harness. Then:
     harness sharpe  = PER-NAME long/short book Sharpe (undiversified, ~sqrt(N_eff) below the
                       diversified book) -- conservative, declared.
 Horizons use NON-OVERLAPPING h-day sampling (no overlapping-window t-stat inflation).
+
+MEASURED 2026-08-12: this organ had never been scheduled and could not have run as invoked --
+`from libs.research.axis_screen import stage_a_screen` died on ModuleNotFoundError, the same
+missing-sys.path-preamble defect found and fixed on run_derivative_shadow.py and
+collect_binance_metrics.py the same day. Its real input, dl_oi_ls_universe.py, HAS been scheduled
+daily (06:20) and backfills from 2022-07-01 for the tranche-1 cohort, so once this screen actually
+runs it has years of real cross-sectional history waiting, not a fresh 40-day clock -- unlike the
+run_derivative_shadow.py forward-only pair, this is a genuinely wide (139-symbol) construction
+that was simply never switched on.
 """
 from __future__ import annotations
 
@@ -38,9 +49,19 @@ import numpy as np
 import pandas as pd
 from scipy.stats import norm
 
-from libs.research.axis_screen import stage_a_screen
+_ROOT = Path("/home/quant/quant-platform")
+if not _ROOT.exists():
+    _ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    # WITHOUT THIS the script dies on `ModuleNotFoundError: No module named 'libs'` when invoked
+    # as `python scripts/screen_oi_ls_axes.py` -- exactly how a manifest line calls it. Every
+    # other scheduled organ on this desk carries this preamble; this one never did.
+    sys.path.insert(0, str(_ROOT))
 
-ROOT = Path("/home/quant/quant-platform")
+from libs.ops.lawful import guard as _law_guard  # noqa: E402
+from libs.research.axis_screen import stage_a_screen  # noqa: E402
+
+ROOT = _ROOT
 MET = ROOT / "data/lake/bronze/oi_ls_daily"
 PX = ROOT / "data/lake/bronze/futclose_daily"
 BM = ROOT / "data/lake/bronze/binance_metrics"
@@ -248,6 +269,20 @@ def screen_binance_metrics() -> dict:
                      "tt_count_ls": a[:, 1].mean(),
                      "tt_pos_ls": a[:, 2].mean(),
                      "retail_ls": a[:, 3].mean()})
+    if not rows:
+        # UNCAUGHT BEFORE THIS: pd.DataFrame([]).set_index("date") raised KeyError -- an empty
+        # archive (BM/BTCUSDT absent or no zip cleared the >=100-row floor) crashed the whole
+        # organ rather than reporting the same INSUFFICIENT-DATA every low-count trial below
+        # already does. Found running this for the first time -- the archive is absent on
+        # ephemeral containers by construction (data/ is gitignored), so this was the state ANY
+        # fresh box would hit on its very first run.
+        for h in (1, 5):
+            for cname in ("M4_smart_minus_retail_count", "M4_toptrader_position_ls",
+                         "M5_oi_intraday_drift"):
+                TRIALS.append({"name": f"{cname}|BTC_abs|{h}d", "verdict": "INSUFFICIENT-DATA",
+                               "n": 0, "horizon_days": h})
+        return {"symbols": 0, "days": 0, "range": None,
+                "why": f"{BM / 'BTCUSDT'} carries no usable archive"}
     df = pd.DataFrame(rows).set_index("date").sort_index()
     df.index = pd.to_datetime(df.index)
     print(f"\nbinance_metrics BTCUSDT: {len(df)} days "
@@ -282,6 +317,7 @@ def screen_binance_metrics() -> dict:
 
 
 if __name__ == "__main__":
+    _law_guard()
     which = sys.argv[1] if len(sys.argv) > 1 else "all"
     OUTDIR.mkdir(parents=True, exist_ok=True)
     meta = {}
