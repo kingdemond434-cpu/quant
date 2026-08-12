@@ -24,18 +24,16 @@ from pathlib import Path
 
 import numpy as np
 
-from libs.research.axis_integrity import (
-    check_move,
-    move_bar,
-    record_revision,
-    revision_report,
-)
+from libs.research import vintage
+from libs.research.axis_integrity import check_move, move_bar
 from libs.research.axis_screen import stage_a_screen
 
+_ROOT = Path(__file__).resolve().parent.parent
 _STABLES = "https://stablecoins.llama.fi/stablecoincharts/all"
 _BINANCE = "https://api.binance.com/api/v3/klines"
 _SERIES = Path("data/stablecoin_supply.jsonl")
-_REVISIONS = Path("data/vendor_revisions.jsonl")
+#: Vintage-store key. Same store R0316 built for the revising FRED/RFB series.
+_VINTAGE_SERIES = "stablecoin_supply"
 
 
 def _get(url: str) -> object:
@@ -93,27 +91,30 @@ def main() -> None:
     # over the 21 dates we hold both for: 18 of 20 comparable dates REVISED, every one UPWARD,
     # median +0.53% and max +1.04%. The point-in-time row is the as-of record and is never
     # rewritten here; the delta is recorded as its own series exactly as L1.46 makes
-    # t_recv - t_venue first-class. Where no point-in-time row exists (the 900-day history
-    # predating this collector) the revision is UNMEASURABLE, never zero.
+    # WHAT THE VENDOR SAID THEN vs WHAT IT SAYS NOW (R0389). DefiLlama silently rewrites its
+    # published history, so the screen above -- which recomputes on the FULL re-fetched series
+    # every run -- scores on numbers that did not exist at decision time. Measured 2026-08-12
+    # against our own point-in-time rows: 18 of 20 comparable dates REVISED, every one UPWARD,
+    # median +0.53% and max +1.04%, against a 20-day sd of ~0.5%. So a ROUTINE revision is a full
+    # sigma of the very signal being screened.
+    #
+    # THIS IS R0316's DEFECT ON A SECOND VENDOR, so it reuses R0316's store rather than a second
+    # implementation (L2.9): vintage.record keeps the as-of VALUES, append-on-change, so
+    # vintage.as_of(d) can later reconstruct what was genuinely knowable on date d. Recording the
+    # full re-fetched series (not just today's point) is deliberate -- it captures the vendor
+    # REWRITING history, which is the whole phenomenon, and a vintage not captured is gone.
     #
     # WHY THE SCREEN IS NOT "FIXED" BY SPLICING IN THE POINT-IN-TIME VALUES -- the obvious next
     # move, and it is wrong. We hold as-of rows for 21 days; the screen needs 900. A splice joins
     # 879 revised values to 21 systematically-lower as-of ones, and at the measured median
-    # revision of +0.53% against a 20-day sd of ~0.5% that join manufactures a ~1-SIGMA
-    # DISCONTINUITY -- a spurious signal at exactly the recent end the screen weights most. Mixing
-    # two bases is worse than either alone. So: the screen is computed on the REVISED series and
-    # says so in its output, the forward clock reads the un-rewritten point-in-time rows, and a
-    # genuine point-in-time screen becomes possible only once this collector has accrued the depth
-    # to run one. Recording the delta is what makes that eventual comparison auditable.
-    pit: dict[str, float] = {}
-    if _SERIES.exists():
-        for line in _SERIES.read_text("utf-8").splitlines():
-            if line.strip():
-                row = json.loads(line)
-                if row.get("supply_usd") is not None:
-                    pit[str(row["date"])] = float(row["supply_usd"])
-    rev = revision_report(pit, sup, axis="stablecoin_supply")
-    record_revision(rev, _REVISIONS)
+    # revision that join manufactures a ~1-SIGMA DISCONTINUITY -- a spurious signal at exactly the
+    # recent end the screen weights most. Mixing two bases is worse than either alone. So: the
+    # screen is computed on the REVISED series and says so in its output, the forward clock reads
+    # the un-rewritten point-in-time rows, and a genuine point-in-time screen becomes possible
+    # once the vintage store has accrued the depth to serve one.
+    today = datetime.now(tz=UTC).date().isoformat()
+    n_revised = vintage.record(_ROOT, _VINTAGE_SERIES, sup, vintage=today)
+    vsum = vintage.summarise(_ROOT, _VINTAGE_SERIES)
 
     # REFUSE AN IMPLAUSIBLE READ RATHER THAN STORE IT, against a bar this series MEASURES FROM
     # ITSELF rather than the hand-picked 10% that fixed the 2026-07-27 instance -- that constant
@@ -129,7 +130,6 @@ def main() -> None:
         raise SystemExit(f"REFUSED {dates[-1]}: {verdict.reason} -- almost certainly a bad vendor "
                          f"read; not writing to {_SERIES}")
 
-    today = datetime.now(tz=UTC).date().isoformat()
     rec = {"date": today, "supply_usd": round(float(sig[-1]), 0),
            "z20": round(float(z[-1]), 3), "n_hist": len(dates)}
     prev = _SERIES.read_text("utf-8").strip().splitlines() if _SERIES.exists() else []
@@ -141,10 +141,9 @@ def main() -> None:
     print(f"  current z20: {z[-1]:+.2f}   total supply ${sig[-1]:,.0f}")
     print(f"  plausibility bar (measured from this series): "
           f"{bar.value:.2%}" if bar.measured else f"  plausibility bar: {bar.basis}")
-    print(f"  VENDOR REVISION: {rev['verdict']} -- {rev['n_revised']}/{rev['n_compared']} "
-          f"point-in-time dates rewritten by the vendor, median |{rev['median_abs_rel']:.2%}| "
-          f"max |{rev['max_abs_rel']:.2%}| (screen above is computed on the REVISED series; "
-          f"the forward clock reads the point-in-time rows and is not)")
+    print(f"  VENDOR VINTAGE ({vsum['status']}): {n_revised} value(s) new-or-REWRITTEN this run; "
+          f"{vsum['detail']}. The screen above runs on the vendor's CURRENT (revised) history; "
+          f"the forward clock reads the un-rewritten point-in-time rows and does not.")
     print(f"  IC {scr['ic']:+.4f} | same-period {scr['same_period_corr']:+.3f} "
           f"| residual IC {scr['residual_ic']:+.4f}")
     print(f"  timing Sharpe -- MOMENTUM {scr['sharpe_momentum']}  "

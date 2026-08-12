@@ -11,16 +11,12 @@ from __future__ import annotations
 import json
 from typing import ClassVar
 
-import pytest
-
 from libs.research.axis_integrity import (
     Bar,
     check_coverage,
     check_move,
     coverage_bar,
     move_bar,
-    record_revision,
-    revision_report,
 )
 
 #: The live stablecoin series either side of the 2026-07-27 bad read.
@@ -146,75 +142,6 @@ class TestCoverage:
         bar = coverage_bar([10, 20])
         assert not bar.measured
         assert check_coverage(1, bar).ok
-
-
-class TestRevisionReport:
-    def test_detects_the_measured_defillama_revision(self) -> None:
-        """The real 2026-08-02/03 rewrite: 302.35bn -> 305.45bn (+1.03%)."""
-        pit = {"2026-08-02": 302349767927.0, "2026-08-03": 302188497553.0}
-        now = {"2026-08-02": 305451003573.0, "2026-08-03": 305340761339.0}
-        rep = revision_report(pit, now, axis="stablecoin_supply")
-        assert rep["verdict"] == "REVISED"
-        assert rep["n_compared"] == 2
-        assert rep["n_revised"] == 2
-        assert 0.010 < float(rep["max_abs_rel"]) < 0.011
-
-    def test_median_is_published_beside_the_max(self) -> None:
-        """The max is routinely the vendor correcting its own bad read (+151.68% on the real
-        first run); anchoring on it misjudges the ordinary revision by two orders of magnitude."""
-        pit = {"a": 100.0, "b": 100.0, "c": 100.0}
-        now = {"a": 100.5, "b": 101.0, "c": 250.0}      # one wild self-correction
-        rep = revision_report(pit, now, axis="x")
-        assert float(rep["max_abs_rel"]) == pytest.approx(1.5)
-        assert float(rep["median_abs_rel"]) == pytest.approx(0.01)
-
-    def test_stable_when_the_vendor_did_not_move(self) -> None:
-        s = {"2026-08-02": 1.0, "2026-08-03": 2.0}
-        rep = revision_report(s, dict(s), axis="x")
-        assert rep["verdict"] == "STABLE"
-        assert rep["n_revised"] == 0
-
-    def test_zero_overlap_is_unmeasured_never_stable(self) -> None:
-        """L1.28a. 'We hold no comparable date' and 'the vendor did not revise' are different
-        claims, and only one of them is evidence."""
-        rep = revision_report({"2026-01-01": 1.0}, {"2026-02-01": 1.0}, axis="x")
-        assert rep["verdict"] == "UNMEASURED"
-        assert rep["n_compared"] == 0
-        assert rep["n_pit_only"] == 1 and rep["n_vendor_only"] == 1
-
-    def test_history_predating_the_collector_is_counted_separately(self) -> None:
-        """900 days of vendor history we hold no as-of row for is UNMEASURABLE revision, and it
-        must not dilute the denominator of the dates we can actually check."""
-        pit = {"2026-08-02": 100.0}
-        now = {f"2024-01-{d:02d}": 50.0 for d in range(1, 29)} | {"2026-08-02": 100.0}
-        rep = revision_report(pit, now, axis="x")
-        assert rep["n_compared"] == 1
-        assert rep["n_vendor_only"] == 28
-
-    def test_never_rewrites_the_point_in_time_record(self) -> None:
-        """The as-of row IS the evidence; correcting it to the vendor's revised view would
-        destroy the only thing this comparison exists to produce."""
-        pit = {"2026-08-02": 302349767927.0}
-        before = dict(pit)
-        revision_report(pit, {"2026-08-02": 305451003573.0}, axis="x")
-        assert pit == before
-
-    def test_record_appends_a_readable_line(self, tmp_path) -> None:
-        p = tmp_path / "sub" / "vendor_revisions.jsonl"
-        rep = revision_report({"a": 1.0}, {"a": 1.0}, axis="x")
-        record_revision(rep, p)
-        record_revision(rep, p)
-        lines = p.read_text("utf-8").strip().splitlines()
-        assert len(lines) == 2
-        assert json.loads(lines[0])["axis"] == "x"
-
-    def test_record_raises_rather_than_swallowing(self, tmp_path) -> None:
-        """L1.41 no silent swallow: a revision record that vanished reads downstream as a series
-        that was never revised."""
-        blocked = tmp_path / "afile"
-        blocked.write_text("x", "utf-8")
-        with pytest.raises(OSError):
-            record_revision({"axis": "x"}, blocked / "nested" / "out.jsonl")
 
 
 class TestBarContract:

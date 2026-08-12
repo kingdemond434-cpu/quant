@@ -126,12 +126,16 @@ class TestImplausibleMoveDetection:
 
 class TestVendorRevisionIsRecorded:
     def test_the_collector_records_the_revision_delta(self) -> None:
-        """R0389: the screen recomputes on the vendor's REVISED history every run, so the delta
-        against our own point-in-time rows must be recorded rather than discarded."""
+        """R0389: the screen recomputes on the vendor's REVISED history every run, so the as-of
+        values must be captured rather than discarded -- via R0316's existing vintage store, not a
+        second implementation of it (L2.9 upgrade-before-build)."""
         import inspect
         body = inspect.getsource(cs.main)
-        assert "revision_report" in body and "record_revision" in body, (
-            "the vendor-revision comparison is not wired into the collector"
+        assert "vintage.record" in body and "vintage.summarise" in body, (
+            "the vendor-revision vintage store is not wired into the collector"
+        )
+        assert "revision_report" not in body, (
+            "R0389 must reuse libs/research/vintage.py (R0316), not a second implementation"
         )
 
 

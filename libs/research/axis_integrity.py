@@ -47,31 +47,24 @@ WHAT A REFUSAL MUST NOT DO IS VANISH. Two refusal shapes, chosen by what the cal
     position on it -- the observation stays visible on disk instead of being silently dropped
     (L1.60: a skip nobody counted is indistinguishable from a scope filter).
 
-VENDOR REVISION (R0389). DefiLlama silently rewrites its published history. Re-measured
-2026-08-12 against our own point-in-time rows: 2026-08-02 302.35bn -> 305.45bn (+1.03%),
-2026-08-03 302.19bn -> 305.34bn (+1.04%), and the bad 2026-07-27 read is now served as 307.99bn.
-Every consumer that RE-FETCHES and recomputes -- `stage_a_screen` inside the collector,
-`revalidate_clocks.stablesupply()` -- therefore scores on numbers THAT DID NOT EXIST AT DECISION
-TIME. This is the as-of-date class from desk memory (a `*_now` denominator joined to historical
-events) pointed at the SIGNAL rather than the conditioning variable, and it fails toward a false
-verdict in EITHER direction, which is the direction no gate here catches.
+VENDOR REVISION (R0389) IS **NOT** HERE, DELIBERATELY -- IT IS `libs/research/vintage.py`.
+DefiLlama silently rewrites its published history: measured 2026-08-12 against our own
+point-in-time rows, 18 of 20 comparable dates were revised, every one UPWARD, median +0.53% and
+max +1.04%. That is the same defect vintage.py was already built for under R0316 (Receita Federal:
+39/42 months revised within three months, worst +40.9%), down to the systematic upward sign.
 
-The desk already HOLDS the as-of record -- the per-day row each collector appends -- and nothing
-anywhere compared the two. `revision_report` does, and records the delta as a first-class series
-exactly as L1.46 makes `t_recv - t_venue` first-class. It grants no authority and changes no
-value: where the two disagree the point-in-time value is the one a screen may use, and where no
-point-in-time row exists (the 900-day history predating the collector) the honest statement is
-that the revision is UNMEASURABLE, never that it is zero.
+This module originally shipped its own `revision_report`, which was a DUPLICATE and a worse one:
+it stored a summary line, while `vintage.record` stores the as-of VALUES, so `vintage.as_of(d)`
+can reconstruct what was actually knowable on date d. Only the second one can ever support a true
+point-in-time screen, and the store is append-on-change, so keeping every vintage forever is
+close to free. Upgrade before build (L2.9) -- the collector calls vintage.record directly.
 
 Pure stdlib. Zero promotion authority: nothing here admits, promotes or sizes anything.
 """
 from __future__ import annotations
 
-import json
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import UTC, datetime
-from pathlib import Path
 from statistics import median
 
 #: Trailing observations the bar is measured over. Long enough to span a regime, short enough
@@ -100,11 +93,6 @@ MIN_OBS = 30
 #: computed over a different population. 0.5 admits the ordinary churn of a pool census
 #: (4014..7795 on the live defi series) and refuses the collapses (566, 2511, 2800).
 COVERAGE_FLOOR_FRAC = 0.5
-
-#: Relative move at which a re-fetched historical value counts as REVISED rather than as float
-#: noise in the vendor's own rounding.
-REVISION_TOL = 1e-4
-
 
 @dataclass(frozen=True)
 class Bar:
@@ -237,68 +225,3 @@ def check_coverage(latest_n: float, bar: Bar) -> Verdict:
                               f"different population and is not comparable to its own history",
                        bar)
     return Verdict(True, "", bar)
-
-
-def revision_report(point_in_time: Mapping[str, float], refetched: Mapping[str, float], *,
-                    axis: str, tol: float = REVISION_TOL) -> dict[str, object]:
-    """Diff what the vendor said THEN against what it says NOW, on the dates we hold both.
-
-    The denominator is `n_compared` -- dates present on BOTH sides -- and `n_pit_only` /
-    `n_vendor_only` are published beside it rather than folded in, because "the vendor dropped a
-    date we hold" and "the vendor serves history from before our collector existed" are different
-    facts with different repairs (L1.60).
-
-    Returns a record only. Nothing here rewrites a stored value: the point-in-time row IS the
-    as-of record, and correcting it to the vendor's revised view would destroy the only evidence
-    this comparison exists to produce.
-    """
-    common = sorted(set(point_in_time) & set(refetched))
-    revisions: list[dict[str, float | str]] = []
-    unusable = 0
-    for d in common:
-        was, now = float(point_in_time[d]), float(refetched[d])
-        if not (was > 0):
-            unusable += 1
-            continue
-        rel = now / was - 1.0
-        if abs(rel) > tol:
-            revisions.append({"date": d, "was": was, "now": now, "rel": rel})
-
-    def _mag(r: dict[str, float | str]) -> float:
-        rel_v = r["rel"]
-        return abs(rel_v) if isinstance(rel_v, float) else 0.0
-
-    worst = max(revisions, key=_mag, default=None)
-    return {
-        "axis": axis,
-        "checked_at": datetime.now(tz=UTC).isoformat(),
-        "n_compared": len(common) - unusable,
-        "n_unusable": unusable,
-        "n_pit_only": len(set(point_in_time) - set(refetched)),
-        "n_vendor_only": len(set(refetched) - set(point_in_time)),
-        "n_revised": len(revisions),
-        "max_abs_rel": _mag(worst) if worst else 0.0,
-        # The max is routinely a vendor correcting its OWN bad read (2026-07-27: +151.68%), and a
-        # reader anchoring on it misjudges the ordinary case by two orders of magnitude. The
-        # median is the number the look-ahead argument actually rests on: 0.53% on the first run,
-        # against a series whose 20-day sd is ~0.5% -- i.e. a routine revision is a FULL SIGMA of
-        # the signal being screened.
-        "median_abs_rel": median([_mag(r) for r in revisions]) if revisions else 0.0,
-        "worst": worst,
-        # UNMEASURED, never "clean": zero comparable dates says nothing about revision (L1.28a).
-        "verdict": ("UNMEASURED" if len(common) - unusable == 0
-                    else "REVISED" if revisions else "STABLE"),
-        "revisions": revisions[-50:],
-    }
-
-
-def record_revision(report: Mapping[str, object], path: str | Path) -> None:
-    """Append one revision report as a first-class series (L1.46's t_recv - t_venue, for vendors).
-
-    No silent swallow (L1.41): an unwritable path raises, because a revision record that vanished
-    reads downstream as a series that was never revised.
-    """
-    p = Path(path)
-    p.parent.mkdir(parents=True, exist_ok=True)
-    with p.open("a", encoding="utf-8") as fh:
-        fh.write(json.dumps(report, sort_keys=True) + "\n")
