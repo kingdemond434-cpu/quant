@@ -2669,7 +2669,7 @@ This item is graded **UNVERIFIED for content, verified for reachability + enumer
 
 ## 2026-08-12 — BRAIN hunter s2: the field taxonomy, and what it says about the desk's data surface
 
-### 32. WorldQuant BRAIN data-field catalogue (USA TOP3000, delay=1) — a competitor's ENTIRE feature surface, enumerated — grade: **structural-reference, no ingest possible (equities), routed for its SHAPE not its contents**
+### 32. WorldQuant BRAIN data-field catalogue (USA TOP3000, delay=1) — a competitor's ENTIRE feature surface, enumerated — grade: **structural-reference, no ingest possible (equities), routed for its SHAPE not its contents** [§33: screened -> docs/research/search_operator_library.md]
 
 **SOURCE:** `QuantML-Research/wq-alpha-research`, `references/wq_usa_top3000_delay1_data_fields_summary.json` — a machine-generated summary of a 219-page field enumeration. **NO LICENCE FILE ⇒ all-rights-reserved**; counts and categories are facts, extracted as such, **no verbatim text or bulk data reused**, nothing installed. DERIVES-FROM: **NONE (checked)** — no desk artifact references this repo.
 
