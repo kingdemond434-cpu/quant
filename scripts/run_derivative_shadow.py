@@ -8,8 +8,22 @@ ECONOMIC HYPOTHESES (pre-registered, no peeking):
 
 We have NO usable history for these (the derivative metrics only exist from when our own archiver
 started), so we DO NOT fabricate a backtest. Instead we accumulate forward and report progress. The
-moment >= MIN_DAYS distinct days exist, this computes real forward sleeve returns + Sharpe and the
-discovery gauntlet (CPCV/DSR/PBO) takes over. Writes web/derivative_shadow.json.
+moment >= MIN_DAYS distinct days exist, this computes real forward sleeve returns + Sharpe.
+
+NO ACTUATOR EXISTS YET FOR WHAT HAPPENS NEXT, and this line is corrected rather than left to
+mislead: the docstring used to say "the discovery gauntlet (CPCV/DSR/PBO) takes over" as though
+that were wired. Measured 2026-08-12: nothing consumes `status: "VALIDATING"` or `forward_sharpe`
+-- no CPCV/DSR/PBO pass runs, nothing reaches the promotion gate. A clock could clear MIN_DAYS with
+a strong Sharpe and sit there, same defect class as an axis-screen sleeve clearing its forward bar
+with nothing to receive the verdict (fixed for that pipeline in scripts/run_forward_resolution.py,
+NOT yet extended to this one). Until it is, `status == "VALIDATING"` is a finding for a person to
+act on, not a promotion.
+
+ALSO MEASURED 2026-08-12: neither this script nor its data source (collect_binance_metrics.py) had
+ever been scheduled -- 0 cron/systemd lines for either, anywhere. `days_accumulated` could not
+advance regardless of calendar time elapsed since these sleeves were pre-registered in 2026-07.
+
+Writes web/derivative_shadow.json.
 
     python scripts/run_derivative_shadow.py
 """
@@ -17,14 +31,26 @@ discovery gauntlet (CPCV/DSR/PBO) takes over. Writes web/derivative_shadow.json.
 from __future__ import annotations
 
 import json
+import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from libs.data.crypto_source import fetch_klines
-from libs.research.anytime_valid import e_value
+_ROOT = Path("/home/quant/quant-platform")
+if not _ROOT.exists():
+    _ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    # WITHOUT THIS the script dies on `ModuleNotFoundError: No module named 'libs'` when invoked
+    # as `python scripts/run_derivative_shadow.py` -- which is exactly how a manifest line would
+    # call it. Every other scheduled organ on this desk carries this preamble; this one never did,
+    # which is one of the two reasons it could never have completed a scheduled run.
+    sys.path.insert(0, str(_ROOT))
+
+from libs.data.crypto_source import fetch_klines  # noqa: E402
+from libs.ops.lawful import guard as _law_guard  # noqa: E402
+from libs.research.anytime_valid import e_value  # noqa: E402
 
 _METRICS = Path("data/crypto_metrics.parquet")
 _OUT = Path("web/derivative_shadow.json")
@@ -68,6 +94,7 @@ def _forward_returns(df: pd.DataFrame) -> dict[str, float]:
 
 
 def main() -> None:
+    _law_guard()
     now = datetime.now(tz=UTC)
     # REGISTRY-DRIVEN ROSTER (principal 2026-07-23): built-ins plus anything registered in
     # data/shadow_sleeves.json, so a new sleeve starts accruing forward evidence the moment it
@@ -81,6 +108,14 @@ def main() -> None:
             sleeves = sorted({*sleeves, *(str(x) for x in _extra if str(x).strip())})
     except Exception:
         pass
+    # UNCONDITIONALLY INITIALISED. This crashed with UnboundLocalError on every run where
+    # data/crypto_metrics.parquet did not exist yet -- the peek/e-value line below reads `series`
+    # regardless of which branch ran, but `series` was only ever assigned inside the `else`. On a
+    # box where the archiver has not written its first row (which is exactly the state this
+    # script's own docstring says to expect: "no backtest fabricated" before real history exists),
+    # this organ could never complete a single run, so `days_accumulated` could never be observed
+    # even once. Discovered 2026-08-12 by actually running it rather than trusting the schedule.
+    series: dict[str, np.ndarray] = {}
     if not _METRICS.exists():
         days, quality = 0, "no archive yet"
         result: dict[str, object] = {}

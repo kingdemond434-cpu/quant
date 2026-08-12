@@ -1039,6 +1039,33 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 24 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/research_alpha_optimizer.py >> data/cro_ai_logs/research_alpha_optimizer.log 2>&1
 # scripts/run_carry_crowding.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 5 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_carry_crowding.py >> data/cro_ai_logs/run_carry_crowding.log 2>&1
+
+# TWO PRE-REGISTERED FORWARD CLOCKS (oi_divergence, ls_contrarian) COULD NEVER COMPLETE A RUN.
+# MEASURED 2026-08-12, answering a direct question about why they had not moved in the ~40 days
+# since pre-registration: neither this archiver nor scripts/run_derivative_shadow.py (which reads
+# it) had ever been scheduled -- 0 cron/systemd lines for either, anywhere. AND both crashed on
+# the invocation form a manifest line actually uses (`python scripts/X.py`, no PYTHONPATH) --
+# missing the sys.path preamble every other scheduled organ on this desk carries, so even a
+# corrected schedule would have logged nothing but tracebacks. AND run_derivative_shadow.py had a
+# real bug independent of scheduling: UnboundLocalError on the exact state a fresh archive starts
+# in (data/crypto_metrics.parquet absent), because `series` was only ever assigned in the branch
+# that runs when the archive already exists. All three fixed together; see the commit.
+# 5:20 so this archiver's row lands before run_derivative_shadow reads it at 5:25.
+# EVIDENCE: scripts/collect_binance_metrics.py -> data/crypto_metrics.parquet (appended daily).
+# CONFIDENCE: committed-script; the universe-discovery call failed with HTTP 451 on THIS
+#   container specifically (many other organs share the same exchangeInfo dependency unwrapped,
+#   so this reads as a container/proxy restriction, not a code defect) -- now refuses cleanly
+#   (SystemExit, exit 1) instead of an uncaught traceback either way.
+20 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_binance_metrics.lock .venv/bin/python scripts/collect_binance_metrics.py >> data/cro_ai_logs/collect_binance_metrics.log 2>&1
+# EVIDENCE: scripts/run_derivative_shadow.py -> web/derivative_shadow.json (days_accumulated,
+#   forward_sharpe once >=40 days, anytime-valid e-process peek readable from day 12).
+# NOTE, NAMED RATHER THAN HIDDEN: even once this clock reaches 40 days and reports VALIDATING,
+#   nothing yet runs the CPCV/DSR/PBO gauntlet the module's docstring used to (falsely) claim was
+#   wired, or hands a verdict to the promotion gate -- same class of gap scripts/run_forward_
+#   resolution.py closed for the axis-screen sleeve family, not yet extended to this one. A
+#   VALIDATING status here is a finding for a person, not yet a promotion.
+# CONFIDENCE: committed-script; pure local CPU/pandas, no venue call once the archive exists.
+25 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_derivative_shadow.lock .venv/bin/python scripts/run_derivative_shadow.py >> data/cro_ai_logs/run_derivative_shadow.log 2>&1
 # scripts/carry_viability.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 47 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/carry_viability.py >> data/cro_ai_logs/carry_viability.log 2>&1
 # scripts/run_research_tick.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
