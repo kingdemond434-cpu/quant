@@ -1612,6 +1612,26 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/run_edge_intake.py -> data/edge_intake.jsonl. First live run 2026-08-11:
 # 21 rows stamped (14 BLOCKED_PENDING_DATA, 7 NEXT_BATCH_TEST), recall RECONCILES.
 20 13 * * * cd "$QUANT_ROOT" && flock -n data/.cron_edgeintake.lock .venv/bin/python scripts/run_edge_intake.py >> data/cro_ai_logs/edge_intake.log 2>&1
+
+# --- DEEPSEEK SECOND FLYWHEEL (mandate V: hourly, 24/7) ---
+# UNBLOCKED 2026-08-12: XXVI's gate reads 32 PASSED / 2 BLOCKED_VPS, and the two remaining items
+# are the principal's Codex bootstrap rather than desk capability.
+#
+# HOURLY IS THE HEARTBEAT, NOT THE ONLY TRIGGER. Every cycle re-verifies the canonical policy
+# hash BEFORE consequential work and exits 2 on a mismatch -- a visible failure, because research
+# conducted under rules nobody can name is research nobody can attribute.
+#
+# THE SEAT IS CURRENTLY DARK on this desk (no OPENROUTER_API_KEY), and the cycle EXITS 0 saying
+# so. That is deliberate: an organ that hard-fails on a missing credential takes the scheduler
+# down with it, and the desk's improvement rate must never depend on a key. Lighting the seat is
+# a matter of exporting OPENROUTER_API_KEY, DEEPSEEK_BULK_MODEL and DEEPSEEK_DEEP_MODEL -- the
+# model IDs are read from the environment and never hardcoded, because the mandate is explicit
+# that historical DeepSeek model IDs must not be assumed still valid.
+#
+# COST NOTE: this spends OpenRouter, not the Claude seats. The principal's standing instruction
+# is that OpenRouter cadences are held as-is, so this line is additive to that budget and does
+# not touch any Claude-local cadence.
+7 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_deepseek.lock .venv/bin/python scripts/run_deepseek_cycle.py >> data/cro_ai_logs/deepseek_cycle.log 2>&1
 # REAL CAMPAIGN (2026-08-01). Runs the ACTUAL gauntlet on the ACTUAL history and reports WHERE
 # EVERY CANDIDATE DIES. "Zero survivors" is not a finding, it is the absence of one; a per-gate
 # death count turns it into either "the mechanisms have no edge" or "one gate is eating
