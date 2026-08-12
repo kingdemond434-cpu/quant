@@ -222,7 +222,21 @@ def probe_all() -> list[dict[str, Any]]:
     for name, url, note in (
         ("xueqiu", "https://xueqiu.com/",
          "HTML reachable; API behind a WAF challenge a cookie handshake does not clear"),
-        ("zhihu", "https://www.zhihu.com/api/v4/search_v3", "HTTP 403 unauthenticated"),
+        # PROBE THE ENDPOINT AS A CLIENT WOULD, WITH ITS REQUIRED PARAMETERS. The bare URL was
+        # probed for months and answered 400 {"HitLabels":null} -- the server rejecting a
+        # MALFORMED request, which the report then filed as zhihu's status. It is not: asked
+        # properly (t/q/correction/offset/limit) the same endpoint answers 403 with
+        # {"code":10003, "upgrade your client and retry"}, measured 2026-08-12.
+        #
+        # THAT DIFFERENCE IS A LEAD, NOT A DETAIL. Code 10003 "upgrade your client" is a REQUEST-
+        # SIGNATURE gate, not a login wall -- the same class of obstacle as Bilibili's WBI signing,
+        # which this desk already reverse-engineered and runs today. A bare 400 says the door does
+        # not exist; a signature gate says the door is shut in a way this desk has opened before.
+        ("zhihu",
+         "https://www.zhihu.com/api/v4/search_v3?t=general&q=%E9%87%8F%E5%8C%96%20%E5%9B%9E%E6%B5%8B"
+         "&correction=1&offset=0&limit=20",
+         "HTTP 403 code=10003 request-signature gate (NOT a plain auth wall) -- same class as "
+         "Bilibili WBI, which this desk already signs"),
         ("joinquant", "https://www.joinquant.com/", "JS shell; API 404/auth"),
         ("csdn", "https://so.csdn.net/", "read timeout from this box"),
     ):
