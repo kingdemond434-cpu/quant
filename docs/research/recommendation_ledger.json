@@ -4749,11 +4749,11 @@
    "summary": "DEFECT (found while building R0207): libs/research/unlock_supply_series.py:299 silently drops ALL 24,201 unlock rows, so the WEEKLY unlock-supply screen wired into cron in 017912a has never read a single event and reports NOT-READABLE-HERE. The line is instant = _as_utc(row.get('instant') or row.get('timestamp') or row.get('date')) -- data/unlock_events.json carries NONE of instant/timestamp, so it falls through to date='2016-11-11', which _as_utc parses to a NAIVE datetime and then rejects on its own tzinfo check. The file's epoch-seconds field ts is never consulted and works: _as_utc(1478822400) -> 2016-11-11+00:00. Adding row.get('ts') to that chain recovers all 24,201 rows. THE REASON THIS IS A ROW AND NOT A ONE-LINE FIX SLIPPED INTO ANOTHER COMMIT: the screen is pre-registered, and taking its input from 0 rows to 24,201 changes its verdict -- that is a screen re-run with a real result, not a typo repair, and it must be done deliberately with its trial counted. Also fix the same file's data/binance_vision/ path, which no longer exists. NOTE THE CLASS: this is the exact shape of the desk's own 'exit code proves a process ended, never that it produced' lesson -- the organ ran weekly, exited 0, and produced an artifact saying it could not read anything, which is indistinguishable from a healthy quiet screen unless someone opens the file.",
    "roi_bps": 45.0,
    "raised": "2026-08-05T16:47:51.758390+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Fixed both defects: (1) unlock_supply_series.py:299 now consults row.get('ts') in the instant-parse fallback chain, recovering all 24,201 schedule rows previously dropped to a naive-datetime rejection. (2) screen_unlock_supply_series.py no longer passes bars=None unconditionally -- added _load_bars() wiring D1 closes from the bronze crypto lake for exactly the symbols the schedule names (register_instrument + ParquetLake.read_bars, relative path for chdir-test-safety), replacing the stale data/binance_vision/ claim. 27 new/updated tests pass, full regression suite green. Real verdict (0 rows -> real count is itself a re-run, not a typo fix) will only be known at the screen's next scheduled fire, Monday 06:25 UTC -- not assumed from this container.",
+   "commit": "f08e041",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T23:51:33.056647+00:00"
   },
   {
    "id": "R0386",
