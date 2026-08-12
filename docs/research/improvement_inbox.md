@@ -1695,3 +1695,23 @@ via scripts/recommendations.py (fence checklist into the carry pipeline's verifi
   `Ref($close,-2)/Ref($close,-1)-1` builds ONE BAR of execution slack into the target — the same
   execution-realism discipline the desk enforces, arriving independently. Ledgered with R0437
   (grouping-map wiring); operator extraction at search_operator_library.md `qlib-alpha158`.
+
+## 2026-08-12 (prospector, NP era-archaeology) — VR/Hurst regime instruments manufacture phantom mean-reversion on last-traded prices below ~15-min sampling
+SOURCE: Nuclear Phynance thread 161299 (2012-06/07, Wayback 20121015082004id_), practitioners
+Baltazar (1,653 posts) + cquand + MrMagoo; anchored to Lo's variance-ratio test (A Non-Random
+Walk Down Wall Street). THE FINDING, practitioner-stated and microstructure-standard: variance
+ratio / realized-vol frequency-structure / Hurst estimators read bid-ask BOUNCE as mean
+reversion when sampled on LAST-TRADED prices faster than ~15 min; midpoint sampling permits
+~1-min. WHY IT MATTERS HERE, NOW: data/strategy_coverage.json names STATISTICAL-ARBITRAGE the
+next family to open (state UNCOVERED, n_tested=0), and R0296 already directs its budget to
+cost/capacity first. The FIRST instrument any stat-arb opening builds is a mean-reversion
+quantifier — and the desk's bars are venue last-trade closes, so a naive VR/Hurst screen at
+sub-hour horizons starts life as a bounce detector with a green positive control (the same
+instrument-artifact class as coinbase_premium_timing's close-timestamp kill, L1.46). THE
+CONSTRAINT TO BAKE IN AT BUILD TIME: (a) sub-hour VR/Hurst constructions run on MIDPOINTS
+(the desk's own L2/tape corpus has them; GMO tick archive if cleared adds a JP venue) or on
+trades at ≥15-min sampling; (b) the screen ships a NEGATIVE control — a synthetic random walk
+with realistic bounce must NOT flag as mean-reverting — alongside the positive control (the
+2026-08-05 lesson: a positive control alone passed while the study was wrong). Ledgered same
+run via recommendations.py (prospector has no build authority; this is the consumer-carrying
+row the write-only-inbox failure class requires).

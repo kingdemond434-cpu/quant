@@ -287,3 +287,56 @@ grounds.**
   rails and sanctioned/offshore venues** — i.e. into exactly the leg the §13 gate forbids. There is
   no followable diaspora here for this desk. This is a genuine dead end, and naming it as one is
   the deliverable.
+
+---
+
+## SESSION SUMMARY — 2026-08-12 (standing daily run; brain seat)
+
+**STEP 0 — WATCHLIST REVIEW (one line each):**
+1. `kr_perasset_premium` — **DROP.** Its single trigger (R0069 adjudication) fired 2026-08-01:
+   decisive full-depth screen returned HONEST NULL (effective sign-z +1.15, 0/38 survivors,
+   37 underpowered + 1 timing-artifact), forward clock explicitly declined. Axis adjudicated —
+   nothing left to watch.
+2. POC volume-profile retest (RU 08-04 card) — **HOLD.** Stage-A falsification (rolling 96-bar
+   POC on owned 1h candles) still un-run; trigger unchanged.
+3. SFD-class venue-cadence probe (JP 08-04 card) — **HOLD.** The 48h mark/premium-index cadence
+   recording still un-run; the name-the-discontinuity precondition stands.
+
+**THIS SESSION'S DIG (Nuclear Phynance era-archaeology, first touch):** ground OPENED — 6,645
+distinct archived thread-page captures (2006→2021) via Wayback CDX; the live site is DEAD (000
+both schemes). Two threads mined to full depth (both Page-1-of-1, complete reply chains):
+161897 "VIX futures explanation" and 161299 "Quantifying how mean-reverting a market is?".
+EliteTrader: **CLOSED for this seat — ClaudeBot refused by name in robots.txt** (§13; archive
+side-door barred per the bitFlyer ruling). Wilmott: WALLED today (Cloudflare 403 both egresses).
+
+**Cards kept (survived graveyard + EV): 0.** One mechanism decomposed and EV-gated honestly:
+
+### dvol_futures_basis_carry — EV-REJECTED, logged as watchlist memory (not a card)
+- **Source + provenance:** NP thread 161897 (2012-07-24, practitioners filthy/ebal/athletico;
+  Wayback capture 20121015081431) — VERIFIED-mechanism (textbook-consistent, independently
+  derivable); instrument verified live 2026-08-12: Deribit BTC DVOL futures (USDC cash-settled,
+  60-min TWAP expiry; ETH not yet listed) — support.deribit.com 31424954825373.
+- **Mechanism:** VIX² (variance) is statically replicable by an option strip; VIX is its square
+  root — "you can't trade square roots": no static hedge exists, cash-and-carry cannot pin the
+  future, so the basis is an UNPINNED risk-neutral expectation E[vol] bearing a vol-of-vol
+  (convexity) premium. Same construction ⇒ same property for Deribit DVOL futures.
+- **Desk transfer, both directions:** (a) DVOL futures basis = candidate vol-carry sleeve,
+  structurally distinct from perp funding (counterparty = vol hedgers paying convexity, not
+  levered longs); (b) the inverse test CONFIRMS the desk's funding prior: perp basis IS
+  statically hedgeable (spot vs perp), so funding carry's edge must come from flow (leverage
+  demand), never from replication failure — consistent with `_PRIORS` funding_family.
+- **EV gate (honest, run this session):** est_sharpe 0.4, breadth 1 (BTC only), capacity ~$30k,
+  orthogonality 0.4 (short-vol tail-correlated with funding book), 10h effort, tags
+  funding_family+narrow_breadth → **EV 0.0003 < 0.002 REJECT** (p_survive 0.075, breadth_f
+  0.224). The single-instrument construction starves exactly like VRP — the prior working as
+  designed. No construction-shopping was done; this is the one construction scored.
+- **SINGLE PROMOTION TRIGGER:** breadth. ETHDVOL futures listing PLUS any second venue's vol
+  future (≥3 instruments), OR a validated ≥5-asset cross-sectional vol-carry construction —
+  then re-score; at breadth 5 the same honest inputs clear the gate (~0.0027).
+- **Strongest spurious argument (written first):** the premium is the most-published carry in
+  finance; in thin crypto vol futures the roll-down may be entirely consumed by spread + the
+  tail (short-vol blowups correlated with the funding book's own worst days), making the sleeve
+  additive risk, not additive alpha.
+
+**WATCHLIST (max 5 — active entries after this session): POC retest (hold), SFD cadence probe
+(hold), dvol_futures_basis_carry (new). 3/5 slots used.**

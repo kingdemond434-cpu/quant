@@ -5463,11 +5463,11 @@
    "summary": "rejection-shadow-overstrict: first real output of the R0329 resurrection batch shows 8/25 shadowed rejects (32%) would have paid out-of-sample -- the screen is leaking real survivors at the bar, pure recovery with no new data. Re-examine the 8 leaked ids against their rejection reasons, recompute effective-trial count and per-gate bars (gate-optimality duty: a good alpha lost to an accidentally-too-high bar costs as much as a false one), and note the welded sharpe-ceiling rail fixed this cycle (9e11c7d) may account for a subset -- re-run the 8 through the restored instrument FIRST, before touching any threshold. The bar itself moves only on evidence; the instrument was provably broken, which is the L1.25 ordered diagnostic doing its job.",
    "roi_bps": 8.0,
    "raised": "2026-08-11T20:52:47.737928+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Executed exactly as the row prescribed: re-ran the 8 through the RESTORED instrument (812b4ff noise-adjusted pay bar + duplicate collapse) via run_rejection_rescore + run_rejection_shadow on 2026-08-12; verdict flipped to calibrated 0/24 paid (0% < 10% tolerance), over_strict=False, 1 duplicate DOGE series collapsed, noise_adjusted=True in web/reject_shadow.json. No threshold touched; the 32% was the pre-fix artifact (pure-noise clears the raw 0.5 bar ~44% at n=31).",
+   "commit": "812b4ff",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T01:16:52.610186+00:00"
   },
   {
    "id": "R0445",
@@ -5552,6 +5552,18 @@
    "commit": null,
    "due": "2026-09-08",
    "disposed": "2026-08-11T21:21:11.494283+00:00"
+  },
+  {
+   "id": "R0452",
+   "source": "cycle",
+   "summary": "STAT-ARB OPENING CONSTRAINT (prospector 2026-08-12, NP 161299 practitioner testimony + Lo VR): any sub-hour mean-reversion quantifier (VR/Hurst/RV-frequency-structure) must sample MIDPOINTS (or last-trades at >=15min) and ship a bounce NEGATIVE control (synthetic random walk + realistic bid-ask bounce must NOT flag MR) \u2014 else the STATISTICAL-ARBITRAGE family (coverage next_family, n_tested=0) opens with a bounce detector wearing a green positive control (instrument-artifact class of coinbase_premium_timing/L1.46). Consumer: whichever organ opens stat-arb; pairs with R0296 (cost-first).",
+   "roi_bps": 0.0,
+   "raised": "2026-08-12T01:26:44.606347+00:00",
+   "status": "scheduled",
+   "reason": "Prospector is research-frozen (no scripts/libs writes). Constraint is recorded in improvement_inbox 2026-08-12 + this row; consumer = the organ that opens STATISTICAL-ARBITRAGE (coverage next_family). Due = re-check date: if the family opens earlier, the opener implements with the screen build; pairs with R0296.",
+   "commit": null,
+   "due": "2026-09-09",
+   "disposed": "2026-08-12T01:27:08.519539+00:00"
   }
  ]
 }

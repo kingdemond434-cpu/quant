@@ -3149,7 +3149,9 @@ ITEMS THIS RUN (bounded per completion contract):
    thread to reply-depth ≥2 on whichever ground is open. Nuclear Phynance expected dead →
    era-archaeology route via Wayback CDX.
 3. IF BUDGET REMAINS: HN 9152332 contest-winner tree (Records family, unmined, named since 08-04).
-STATUS: items open. (Updated in place as each resolves.)
+STATUS: session DIED MID-WORK (items never resolved here). CLOSED 2026-08-12 by the next
+prospector session, which inherited and finished items 1-2 (see its note below: hygiene commit
+4f902d2, EliteTrader/NP touched); item 3 (HN 9152332) remains un-mined and is re-named there.
 
 ---
 
@@ -3169,4 +3171,62 @@ ITEMS THIS RUN (bounded per completion contract):
 3. SESSION F ITEM 2 (first touch of the last never-touched EN legacy forums): EliteTrader +
    Nuclear Phynance — robots/§13 gate first, then ≥1 thread to reply-depth ≥2; NP expected dead
    → Wayback CDX era-archaeology route.
-STATUS: items open. (Updated in place as each resolves.)
+RESOLVED 1 (§33 DRAIN 2→0, both T3 licence reads DONE, commit 5361358): **Card 27 GMO** —
+kihon-yakkan.pdf (ver=20260725) extracted stdlib-only (zlib+ToUnicode CID decode; the PDF read
+needed no poppler and no install — method now reusable for any JP 約款 PDF). Art. 14(15) =
+consent-required off-service-use clause; Art. 7(1) deemed assent; NO API-specific terms exist
+(policy index + product page + archive index all enumerated). → needs-legitimacy-review, DECIDE
+queue, owed 08-19. **Card 28 bitbank** — the 08-04 "egress" diagnosis was WRONG-URL:
+`/error/terms` is the SPA's error route; canonical ToS at **`bitbank.cc/doc/tos`** server-renders
+to curl (686 KB, 86,728 chars extracted, double-entity-encoded). Art. 17 has NO data-reuse
+clause; Art. 20 excludes 公知 info; the one restrictive text is the site-footer 免責事項
+(私的利用のみ/非商用 over prices+data) — scope over public.bitbank.cc is the open question;
+venue support docs positively invite programmatic public-data retrieval. → needs-legitimacy-
+review, DECIDE queue, owed 08-19. R0309+R0310 → IMPLEMENTED. Gate: BACKLOG-CLEAR.
+RESOLVED 2 (session F item 1, backlog hygiene, commit 4f902d2): phantom pending cards deduped —
+card 3 bitFlyer (line-200 superseded ruling demoted h3→h4) + card 21 NAVER (needs-monitoring
+twin demoted; the real needs-legitimacy-review card stands). Verified: catalogued 32→30, verify
+queue 14→12, mine gate 19→18 finds still BACKLOG-CLEAR, no mine-item-vanished (stable_key
+preserved — checked vanished() keying BEFORE demoting). R0193 confirmed live: due 2026-08-24.
+RESOLVED 3 (session F item 2 — the last never-touched EN legacy forums, both gated then dug):
+- **ELITETRADER: CLOSED for this seat.** robots.txt names `User-agent: ClaudeBot / Disallow: /`
+  (GPTBot also refused — BOTH model families are barred by name, so the second-family seat is no
+  door either). Cloudflare content-signals for `*` read search=yes/ai-train=no/use=reference, but
+  the by-name refusal governs (KR-seat precedent). Archive side-door NOT taken — a standing
+  by-name refusal is not extinguished by Wayback (bitFlyer ruling). §38 REPLACEMENT, same run:
+  the same information class (EN practitioner-forum mechanisms) is served by the NP archive
+  corpus OPENED below + the already-rotating live grounds (r/algotrading, QuantConnect).
+  RESIDUAL, graded: EliteTrader's post-2012 content is unreachable for both bot families;
+  re-entry = robots change or a human read. Wilmott (live-forum replacement candidate): WALLED
+  today — Cloudflare 403 on robots.txt through BOTH egresses (curl + WebFetch); re-probe later,
+  not a refusal-by-name.
+- **NUCLEAR PHYNANCE: ERA-ARCHAEOLOGY GROUND OPENED (dead site, no standing operator).** Live
+  host dead (000 https+http). Wayback CDX: **6,645 distinct archived thread-page captures**
+  (`Show Post.aspx?PostIDKey=*`, 2006→2021) + forum indices (`Show Forum.aspx?ForumIDKey=1..13`,
+  captures 2009-2013 rich) + a 2004 `/beta/` era. Post-2009 domain-root captures are mostly
+  error pages — the thread-page pattern is where the corpus lives.
+- **DEPTH LINE (per the depth mandate):** forum-1 index (Sep-2012 capture) read to title level
+  (24 threads mapped w/ PostIDKeys); thread **161897 EXHAUSTED** (Page 1 of 1, 6 posts, full
+  reply chain ≥2 with quoted-reply refinement — yielded the no-static-hedge vol-carry mechanism
+  + the funding-is-flow-not-replication confirmation, which the SURFACE title never showed);
+  thread **161299 EXHAUSTED** (Page 1 of 1, 8 posts, reply chain ≥2 — yielded the ≥15-min/
+  midpoint VR discipline + the Lo reference + the "statistical quantities cannot label a
+  specific run" caveat, none visible from the title). 159928 (HFT Apology): NO captures — dead
+  seam, documented. Yield routed: 1 EV-gated mechanism (rejected 0.0003, watchlisted with
+  breadth trigger), 1 methodology constraint (inbox + R0452 scheduled 09-09), 2 research-memory
+  rows, 0 fabricated survivors.
+- **SECTION STATE CLAIMED:** NP forum-1 Sep-2012 snapshot = SURVEYED (24 titles); threads
+  161897 + 161299 = EXHAUSTED (2026-08-12). NOT claimed: the other ~6,600 captures, other
+  forum indices (2-13), other index years.
+NEXT UN-EXHAUSTED GROUND, in order (L1.35 — named before closing):
+1. NP forum indices ForumIDKey=2..13 (one CDX-captured snapshot each; map which are
+   Trading/Numerical vs Careers noise) + the 2013 forum-1 snapshots for post-2012 titles.
+2. NP high-value thread batch from the mapped titles: 161162 Convexity arbitrage, 161713
+   backtest-evaluation methodology (both capture-verified this run).
+3. Session F item 3, still un-mined: HN 9152332 contest-winner tree (Records family).
+4. bitFlyer/GMO decision follow-through: the two DECIDE-queue rows owe a ruling by 08-19
+   (cards 27/28) — the next session verifies the decision landed or escalates.
+5. Wilmott re-probe (WALLED today, not refused — a different day/egress may open robots).
+STATUS: ALL THREE ITEMS RESOLVED. Run closed cleanly 2026-08-12 (completion contract met:
+write-first note, bounded scope, §33 drained 2→0, dead session F's items finished, findings
+routed, dead ends logged).
