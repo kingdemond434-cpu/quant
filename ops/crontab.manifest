@@ -2022,166 +2022,50 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 25 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_holderconc.lock .venv/bin/python scripts/collect_holder_concentration.py >> data/cro_ai_logs/collect_holder_concentration.log 2>&1
 35 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_perpdex.lock .venv/bin/python scripts/collect_perpdex_funding.py >> data/cro_ai_logs/collect_perpdex_funding.log 2>&1
 
-# Spawner CEILING TYPE is INFORMATION-ARRIVAL: it converts corrected Stage-A survivors into paper
-# sleeves, and both of its inputs move at most daily -- screen verdicts (a screen campaign is a
-# daily-at-most event) and forward-slot retirements (ledgered decisions). The cohort is 12/12 at
-# the Holm cap today, so its steady state is QUEUED-AT-CAP; it drains as retirements free slots,
-# which is exactly why it must poll daily rather than fire once.
-# EVIDENCE: scripts/run_paper_sleeve_spawner.py first live run 2026-08-05 -> data/paper_sleeve_queue.json
-# (NO-CANDIDATES: 37 corrected trials, 0 qualifying survivors -- the honest idle state).
-# CONFIDENCE: measured (cohort 12/12 read from libs/research/slot_registry.derive_slots).
-45 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_paper_spawner.lock .venv/bin/python scripts/run_paper_sleeve_spawner.py >> data/cro_ai_logs/paper_sleeve_spawner.log 2>&1
-
-# SECOND SPAWNER PASS -- the 08:45 line was reading two of its three inputs a day late.
-# PRINCIPAL ORDER 2026-08-12: any survivor goes to shadow IMMEDIATELY. The screens that feed this
-# organ land at 00:17 (primary market flow), 06:40 (liquidation reversion, added above) and 10:37
-# (vol risk premium), and finalize_axis_screens corrects verdicts at 07:08. A single 08:45 pass
-# therefore sees the VRP campaign's survivors only on the FOLLOWING day: a survivor found at 10:37
-# waited 22 hours for a slot it could have taken in 28 minutes.
-# 11:05 is placed after the 10:37 screen and before the 11:15 forward runner, so a sleeve spawned
-# on this pass starts accruing on the SAME cycle rather than waiting another day to be observed.
-# SAFE BY CONSTRUCTION, not by care: a spawn is two IDEMPOTENT writes (an existing shadow_state is
-# never overwritten, because rewriting shadow_start would reset a clock's forward evidence), the
-# organ refuses rather than risking an uncounted clock if the roster is unreadable, and it NEVER
-# spawns over the cohort cap. Same flock as the morning pass, so a long first run makes this one a
-# no-op instead of a double-run. Pure local CPU: zero model tokens, so the extra pass costs nothing
-# the desk is short of.
-# WHAT THIS DOES NOT DO: it does not raise the 12-slot cap and it does not retire anything to make
-# room. Both shrink or break the fixed-for-life Holm bar the standing clocks were admitted under,
-# and automating that direction would turn a queue of survivors into a machine for manufacturing
-# them. The queue drains on ledgered retirements, and only on those.
-5 11 * * * cd "$QUANT_ROOT" && flock -n data/.cron_paper_spawner.lock .venv/bin/python scripts/run_paper_sleeve_spawner.py >> data/cro_ai_logs/paper_sleeve_spawner.log 2>&1
-
-# THE LAW POLICE -- who watches the watchmen. Every other check on this desk answers "are the laws
-# being broken today?"; this answers the question that decides whether their answers mean anything:
-# IS THE AUDIT STILL LOOKING? Three ways a law silently stops being enforced, none of which raises
-# a defect today -- a check deleted from CHECKS (its defects stop appearing and the report gets
-# BETTER), a check passing VACUOUSLY (it returns early because its artifact is gone, which is
-# indistinguishable from a clean pass), and a defect that disappears because the detector went
-# blind rather than because anything was fixed.
-# FOUND ON ITS FIRST TWO PASSES: `bnb-funded` and `fee-carry-ratio` both swallowed their own
-# failure (`except Exception: pass` / `return`) and reported all-clear having measured NOTHING --
-# so the §40 fee ratchet and the BNB rack-rate detector were unenforced for exactly as long as the
-# venue was unreachable, silently. Both now report UNKNOWN. It also cried wolf on four checks in
-# its first version (they consult the network, git and module globals rather than files); the
-# metric now counts any external consultation, because an alarm that is mostly false is an alarm
-# nobody hears, and this desk has already lost eleven and a half days to that.
-# CEILING TYPE (L1.28c) is INFORMATION-ARRIVAL: it grades the audit, so it runs once per audit
-# cycle and no more. 55 past the hour puts it AFTER max_audit's own daily pass, since grading a
-# sweep before it has run would measure yesterday's roster against yesterday's evidence.
-# AUTHORITY: repairs ONLY by re-running idempotent measurement organs from an explicit per-defect
-# allowlist, each additionally screened against a never-touch token list (deadman switch,
-# thresholds, gates, sizing, promotion, deletion). Everything else is reported for a person -- a
-# police force that can rewrite the law is not enforcing it.
-# EVIDENCE: scripts/run_law_police.py -> data/LAW_POLICE.json + reports/law_police.json. First
-# clean run 2026-08-05: WATCHING, 95 checks, 95 evaluating, 0 blind spots, 44 distinct defects.
-# CONFIDENCE: measured (counts read from the artifact). rc 1 on an unexplained fall pages.
-55 9 * * * cd "$QUANT_ROOT" && flock -n data/.cron_law_police.lock .venv/bin/python scripts/run_law_police.py >> data/cro_ai_logs/law_police.log 2>&1
-
-# PAPER-SLEEVE FORWARD RUNNER -- the organ that makes a spawned clock BREATHE, and the last link
-# in the chain between mining and a survivor. On 2026-08-05 the desk spawned ten forward clocks for
-# the first time in its life and every one read `evidence: UNMEASURED`, because nothing ran them:
-# slot_registry._EVIDENCE mapped eight hardcoded names to eight hardcoded artifacts, so any sleeve
-# spawned afterwards could never publish a day count, never accrue, and NEVER RESOLVE -- born,
-# registered, charged its multiplicity, structurally unable to finish.
-# CEILING TYPE (L1.28c) is DATA-ARRIVAL: a sleeve accrues only when its SOURCE SCREEN regenerates,
-# and the sources are daily at most (primary_market_flow 00:17, vol_risk_premium 10:37, unlock
-# series Mon 06:25). 11:15 is the first slot after the LAST of them lands, so a run always sees the
-# day's new rows; running earlier would read yesterday's VRP and record a false NO-EVIDENCE.
-# EVIDENCE: scripts/run_paper_sleeve_forward.py -> web/paper_sleeve_forward.json + the append-only
-# ledger data/paper_sleeve_forward.jsonl. First live run 2026-08-05: 10 sleeves, all NO-EVIDENCE
-# (correct -- spawned minutes earlier, no source had regenerated), each carrying its own
-# n_needed_for_forward_rejection: 116 rows for the fastest, 7,796 for the slowest.
-# CONFIDENCE: measured (row counts and n_needed read from the artifact, not estimated).
-15 11 * * * cd "$QUANT_ROOT" && flock -n data/.cron_paper_forward.lock .venv/bin/python scripts/run_paper_sleeve_forward.py >> data/cro_ai_logs/paper_sleeve_forward.log 2>&1
-
-# ...AND THE ORGAN THAT ASKS WHY A CLOCK IS NOT BREATHING, 20 minutes after the runner observes.
-# The forward runner already reports the SYMPTOM correctly on every run ("no rows added since the
-# baseline"), and that one sentence is true of a dead producer, a stale container, a fixed-window
-# screen and an ordinary day-one clock alike. Nothing distinguished them, so twelve slots sat at
-# ZERO accruing for 6.8 days with 26 Stage-A survivors queued behind them and no alarm anywhere.
-# Slot occupancy is the desk's scarcest resource -- each one is 1/12 of the only path to capital.
-# PAGES rather than exits red: a blocked slot is a compounding invisible cost (a queued survivor
-# loses forward days it never gets back), not an outage, and a red exit on a scheduler line is the
-# thing people learn to ignore.
-# AUTHORITY: NONE. It frees no slot and retires no clock. Retirement shrinks the Holm m and
-# loosens every standing bar, so it stays a ledgered decision with an owner (slot_registry).
-# EVIDENCE: scripts/check_slot_liveness.py -> data/slot_liveness.json. First run 2026-08-12 found
-#   liquidation_reversion_BTCUSDT PRODUCER_UNSCHEDULED -- repaired with the 06:40 line above, and
-#   the check then reclassified it, which is the fence responding to its own repair.
-# CONFIDENCE: committed-script; pure local CPU, no model, no venue call.
-35 11 * * * cd "$QUANT_ROOT" && flock -n data/.cron_slot_liveness.lock .venv/bin/python scripts/check_slot_liveness.py --page >> data/cro_ai_logs/slot_liveness.log 2>&1
-
-# AUTOMATIC RETIREMENT -- the queue drains without a human sweeping it.
-# PRINCIPAL ORDER 2026-08-12: retire what is not working, automatically. I had refused this on the
-# grounds that retirement shrinks the Holm m and loosens every standing bar. That was true of the
-# IMPLEMENTATION and false of the LAW: data/promotion_queue.json declares the correction is "over
-# all trailing-180d entrants INCLUDING KILLED ONES", while derive_slots() drops RETIRED rows. The
-# implementation was the loose one -- counting only survivors judges the last clock standing
-# against m=1 after eleven looks, which is the forking-paths garden exactly.
-# libs/research/forward_multiplicity implements the law as written, so a retirement moves a trial
-# between two terms of one sum: m is unchanged, every standing bar is unchanged, and freeing a slot
-# stops being a statistical act. The organ MEASURES the bar before and after its own batch and
-# REFUSES the lot if it moved down by any amount -- the safety is re-derived every run, not
-# asserted once in a docstring.
-# RETIRES ONLY the structurally unfinishable: SOURCE_FROZEN, and PRODUCER_UNSCHEDULED where NO
-# producer exists at all. A producer that merely needs a cron line is a BUILD defect and the clock
-# stays -- discarding a real candidate to hide a missing schedule is the wrong repair. Never
-# ACCRUING, never TOO_EARLY, never UNKNOWN.
-# 11:45, after the liveness check measures and before nothing else -- the freed slot is taken by
-# the 08:45/11:05 spawner passes on the next cycle.
-# EVIDENCE: scripts/run_slot_retirement.py -> data/slot_retirement.json + the append-only ledger
-#   data/slot_retirements.jsonl, which is what keeps a retired trial counted in m. An unwritable
-#   ledger REFUSES the retirement rather than proceeding, because that is the one path by which
-#   this organ could loosen anything.
-# CONFIDENCE: committed-script; pure local CPU, no model, no venue call.
-45 11 * * * cd "$QUANT_ROOT" && flock -n data/.cron_slot_retire.lock .venv/bin/python scripts/run_slot_retirement.py >> data/cro_ai_logs/slot_retirement.log 2>&1
-
-# THE PROMOTION LADDER FINALLY GETS AN ACTUATOR -- shadow to live with no human step.
-# check_promotion_gate has decided `granted_rung` since it was written, and a grep for its
-# CONSUMERS found two: the capability ratchet, which SCORES it, and run_cadence, which checks the
-# file EXISTS. Nothing read it and changed a size. Every criterion could pass in full and the
-# sleeve would sit on paper until a person noticed -- L0079 verbatim ("a published flag whose only
-# reader picks an advice string changes no behaviour") landing on the one transition the desk
-# exists to make.
-# This transmits the gate's verdict into data/live_authority.json, which the execution path reads.
-# IT DECIDES NOTHING: it computes no criterion, sets no threshold, and cannot grant a rung the gate
-# did not. Automating the actuation of a PASSING gate loosens nothing -- refusing to actuate just
-# moves the delay onto a person, and a verdict nothing obeys was never protecting anything.
-# ASYMMETRIC BY DESIGN: a FALLING rung applies on the spot (hesitating to reduce is the direction
-# that costs real money), while a RISING one must hold for 2 consecutive daily evaluations, so a
-# criterion oscillating across its threshold cannot deal real capital in and out on noise.
-# It opens no position, sends nothing to a venue, and cannot reach the ruin rail or the deadman
-# switch -- those bound everything it can grant. It pages on any change touching LIVE, because
-# nobody should learn the desk went live from a P&L statement.
-# 12:15, after the paper book is marked and the gate's inputs are fresh.
-# EVIDENCE: scripts/run_promotion_actuator.py -> data/live_authority.json + data/live_authority.jsonl
-# CONFIDENCE: committed-script; re-runs the gate itself so it can never act on a stale grant.
-15 12 * * * cd "$QUANT_ROOT" && flock -n data/.cron_promo_actuator.lock .venv/bin/python scripts/run_promotion_actuator.py >> data/cro_ai_logs/promotion_actuator.log 2>&1
-
-# THE DASHBOARD HAD NO IDEA ANY OF THIS EXISTED.
-# The principal asked why no candidates show on dash.quanttt.xyz. Measured 2026-08-12: index.html
-# and research.html load thirty-odd JSON feeds between them and NOT ONE is a shadow or candidate
-# feed -- not the roster, not the spawn queue, not the forward accrual, not the promotion gate,
-# not the live authority. web/paper_sleeve_forward.json was already sitting in the SERVED
-# directory and no page had ever fetched it. So 10 clocks in shadow and 26 queued survivors have
-# never had a view, and the honest answer to "none are on the dashboard" is that nothing on the
-# dashboard ever asked. Read-without-writer, inverted: written, served, and read by nobody.
-# publish_pipeline builds web/pipeline.json (the funnel, every sleeve with why it is or is not
-# breathing, the full queue in drain order, every screened trial, and the live authority);
-# web/pipeline.html renders it and is linked from both existing pages.
-# HOURLY, because the chain it reports on moves at 06:40/08:45/11:05/11:15/11:35/11:45/12:15 and
-# the only other thing writing web/ runs once at 06:04 -- a dashboard refreshed daily would show
-# yesterday's pipeline every time the principal looked at it.
-# A PURE READER. It runs no organ and writes nothing outside web/. The first draft invoked the
-# spawner as a subprocess to keep the queue fresh, which put a second unlocked writer on files the
-# spawner owns under its own flock -- the R0048 shape exactly. A dashboard must never be able to
-# change what it is displaying, so it reads the artifacts and publishes their AGES alongside the
-# counts: a stale queue has to look stale, not current.
-# EVIDENCE: scripts/publish_pipeline.py -> web/pipeline.json. First run 2026-08-12:
-#   128 screened, 84 candidates, 19 sleeve records, 10 in shadow, 26 queued, 0 accruing, 0 resolved.
-# CONFIDENCE: committed-script; pure local CPU, no model, no venue call.
-50 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_publish_pipeline.lock .venv/bin/python scripts/publish_pipeline.py >> data/cro_ai_logs/publish_pipeline.log 2>&1
+# ============================================================================================
+# THE RESEARCH-TO-CAPITAL CYCLE -- one ordered pass, every 15 minutes, ~6 seconds.
+#
+# PRINCIPAL ORDER 2026-08-12: everything as fast as possible and automatic. This replaces EIGHT
+# separate cron lines (finalize 07:08, spawner 08:45 and 11:05, forward 11:15, liveness 11:35,
+# retirement 11:45, actuator 12:15, publisher hourly) with one dependency-ordered cycle.
+#
+# CONSOLIDATION WAS NOT COSMETIC -- TWO OF THOSE EIGHT WERE IN THE WRONG ORDER, and neither
+# failure appeared in any log because every organ ran and every organ exited 0:
+#   * finalize_axis_screens ran 07:08; the vol-risk-premium screen ran 10:37. Its raw verdicts
+#     were not corrected until 07:08 the NEXT DAY, and the spawner admits only on
+#     verdict_adjusted -- so the 11:05 pass I had added to cut latency was reading corrections
+#     computed BEFORE the screen it was meant to catch. It bought nothing for that axis.
+#   * run_slot_retirement ran 11:45, forty minutes AFTER the last spawner pass. A slot freed by a
+#     retirement sat empty until 08:45 the next morning: 21 hours of the desk's scarcest resource
+#     idle, with 26 survivors queued for it.
+# Cron minutes are a terrible place to encode a dependency graph -- the order is invisible in the
+# file, nothing checks it, and every edit is a chance to invert one. The order now lives in
+# scripts/run_pipeline_cycle.STAGES and a test reads that list.
+#
+# EVERY 15 MINUTES IS NOT AGGRESSIVE, IT IS THE MEASURED COST. The whole chain is 6.5s of pure
+# local CPU: finalize 0.4, forward 1.1, liveness 1.5, retire 1.4, spawn 1.0, actuate 1.0, publish
+# 0.1. No model call, no venue call, no credit. The daily schedule was inherited from when each
+# organ was built alone and nothing revisited it once they formed a chain. A survivor now reaches
+# shadow within 15 minutes of its verdict being corrected, instead of up to 22 hours.
+#
+# THE ONE STAGE THAT IS RATE-LIMITED is the forward observer: it APPENDS a row per run, and at
+# this cadence that would be 96 rows per sleeve per day describing sources that regenerate at most
+# daily -- a ledger of the observer's cadence rather than of the desk's evidence. It runs at most
+# hourly and the skip is REPORTED, never silent.
+#
+# SPEED MUST NOT ERODE A SAFETY PROPERTY, and it nearly did. The actuator's promotion hold was
+# CONFIRM_RUNS=2, correct only because it ran daily. At 15 minutes that same constant would have
+# meant THIRTY MINUTES of required agreement instead of two days -- with no edit to the safety
+# logic and nothing to notice. It is CONFIRM_HOLD_H (wall-clock hours) now, so cadence and safety
+# are independent. De-risking stays immediate.
+#
+# ONE LOCK, so a slow cycle makes the next a no-op rather than a double-run, and a failing stage
+# never stops the rest (each is independently useful and idempotent).
+# EVIDENCE: scripts/run_pipeline_cycle.py -> data/pipeline_cycle.json. First run 2026-08-12:
+#   7/7 stages OK in 5.2s.
+# CONFIDENCE: measured (per-stage timings above, taken on this box).
+*/15 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_pipeline_cycle.lock .venv/bin/python scripts/run_pipeline_cycle.py >> data/cro_ai_logs/pipeline_cycle.log 2>&1
+# ============================================================================================
 
 # R0104 CAPABILITY RATCHET (owed-work, 2026-08-05). The principal's standing order -- every aspect
 # of the desk pushed toward 10/10 every day, non-exhaustively -- had NO INSTRUMENT: the per-aspect
@@ -2504,7 +2388,6 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: committed-script (first successful run 2026-08-05: corrected
 #   liquidation_reversion_BTCUSDT, 6 trials, 0 surviving -- and the spawner then reported
 #   NO-CANDIDATES, which is the honest state rather than a refusal)
-8 7 * * * cd "$QUANT_ROOT" && flock -n data/.cron_finalize_axis.lock .venv/bin/python scripts/finalize_axis_screens.py >> data/cro_ai_logs/finalize_axis_screens.log 2>&1
 
 # THE SCREEN THAT FEEDS THAT FINALIZER WAS ON NO SCHEDULE AT ALL, and one forward clock has been
 # paying for it. MEASURED 2026-08-12: all 12 forward slots occupied, ZERO accruing, 26 Stage-A

@@ -237,22 +237,42 @@ def test_a_falling_rung_derisks_immediately(actuator, tmp_path: Path) -> None:
     assert d["direction"] == "DERISK" and d["rung"] == 0 and d["mode"] == "PAPER"
 
 
-def test_a_rising_rung_must_hold_before_capital_follows(actuator, tmp_path: Path) -> None:
-    """A criterion oscillating across its threshold would otherwise deal real capital in and out
-    on noise. The asymmetry with de-risking is the design, not an oversight."""
+def _seed(tmp_path: Path, *, gate_rung: int, prev: dict, since_h: float | None = None) -> None:
     (tmp_path / "data").mkdir(parents=True, exist_ok=True)
     (tmp_path / "data/promotion_gate.json").write_text(json.dumps(
-        {"granted_rung": 2, "granted": "LIVE at 1%", "ladder": []}), "utf-8")
-    (tmp_path / "data/live_authority.json").write_text(json.dumps(
-        {"rung": 0, "mode": "PAPER", "confirm_streak": 3}), "utf-8")
+        {"granted_rung": gate_rung, "granted": f"rung {gate_rung}", "ladder": []}), "utf-8")
+    if since_h is not None:
+        prev = {**prev, "gate_rung_since":
+                (datetime.now(tz=UTC) - timedelta(hours=since_h)).isoformat()}
+    (tmp_path / "data/live_authority.json").write_text(json.dumps(prev), "utf-8")
 
+
+def test_a_rising_rung_must_hold_before_capital_follows(actuator, tmp_path: Path) -> None:
+    """A criterion oscillating across its threshold would otherwise deal real capital in and out
+    on noise. The asymmetry with de-risking is the design, not an oversight.
+
+    MEASURED IN WALL-CLOCK HOURS, not runs. When the pipeline moved to a 15-minute cycle a
+    run-counted hold would have shrunk from two days to thirty minutes with nothing to notice, so
+    the test seeds the elapsed time directly rather than counting calls."""
+    _seed(tmp_path, gate_rung=2, prev={"rung": 0, "gate_rung": 2, "mode": "PAPER"}, since_h=1.0)
     first = actuator.run(root=tmp_path)
     assert first["direction"] == "HOLD-PENDING-CONFIRM"
-    assert first["mode"] == "PAPER", "one good evaluation must not deploy real money"
+    assert first["mode"] == "PAPER", "one hour of agreement must not deploy real money"
 
+    _seed(tmp_path, gate_rung=2, prev={"rung": 0, "gate_rung": 2, "mode": "PAPER"},
+          since_h=actuator.CONFIRM_HOLD_H + 1.0)
     second = actuator.run(root=tmp_path)
     assert second["direction"] == "PROMOTE" and second["mode"] == "LIVE"
     assert second["book_fraction"] == 0.01
+
+
+def test_running_the_cycle_faster_cannot_shorten_the_hold(actuator, tmp_path: Path) -> None:
+    """THE EROSION THIS ALMOST SUFFERED. Under the old run-counted hold, four calls in a second
+    promoted to LIVE. Under a wall-clock hold they cannot, however many times the cycle fires --
+    which is the whole point of making the desk fast everywhere else."""
+    _seed(tmp_path, gate_rung=2, prev={"rung": 0, "gate_rung": 2, "mode": "PAPER"}, since_h=0.2)
+    modes = [actuator.run(root=tmp_path)["mode"] for _ in range(8)]
+    assert set(modes) == {"PAPER"}, f"speed bought a promotion it should not have: {modes}"
 
 
 def test_an_unreadable_gate_neither_promotes_nor_flattens(actuator, tmp_path) -> None:
@@ -291,28 +311,43 @@ def test_going_live_pages_a_person(actuator) -> None:
 
 
 # ================================================================== the wiring
-def test_both_organs_are_scheduled() -> None:
-    """L1.40. An actuator nobody runs is the defect it was built to fix, one level down."""
-    man = (_REPO / "ops/crontab.manifest").read_text("utf-8")
+def _cycle_stages():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "run_pipeline_cycle", _REPO / "scripts/run_pipeline_cycle.py")
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return [s[0] for s in m.STAGES]
+
+
+def test_both_organs_actually_run() -> None:
+    """L1.40. An actuator nobody runs is the defect it was built to fix, one level down.
+
+    UPDATED, NOT RELAXED. This asserted each organ had its OWN cron line. They no longer do --
+    they run inside scripts/run_pipeline_cycle, which is what fixed the ordering. The property
+    being protected is unchanged (these must actually fire); only where to look for it moved, and
+    the cycle's own schedule is asserted in tests/scripts/test_pipeline_cycle.py."""
+    stages = _cycle_stages()
     for script in ("run_slot_retirement.py", "run_promotion_actuator.py"):
-        assert any(script in ln and ln[:1].isdigit() for ln in man.splitlines()), script
+        assert script in stages, f"{script} runs nowhere"
 
 
-def test_the_retirer_runs_before_the_next_spawn_cycle() -> None:
-    """A freed slot that nothing claims is the same stall with an extra step."""
-    man = (_REPO / "ops/crontab.manifest").read_text("utf-8")
-    assert any("run_paper_sleeve_spawner.py" in ln and ln[:1].isdigit()
-               for ln in man.splitlines())
-    assert any("run_slot_retirement.py" in ln and ln[:1].isdigit() for ln in man.splitlines())
+def test_the_retirer_runs_before_the_spawner_in_the_same_pass() -> None:
+    """A freed slot that nothing claims until tomorrow is the same stall with an extra step --
+    and that is exactly what the separate cron lines did (retire 11:45, next spawn 08:45)."""
+    stages = _cycle_stages()
+    assert stages.index("run_slot_retirement.py") < stages.index("run_paper_sleeve_spawner.py")
 
 
-def test_the_actuator_is_not_given_a_dry_run_flag_in_cron() -> None:
-    """A scheduled actuator running --dry-run is an actuator that does nothing, and it would look
-    exactly like one that works."""
-    man = (_REPO / "ops/crontab.manifest").read_text("utf-8")
-    for ln in man.splitlines():
-        if "run_promotion_actuator.py" in ln and ln[:1].isdigit():
-            assert "--dry-run" not in ln, ln
+def test_the_actuator_is_never_run_in_dry_run_mode() -> None:
+    """An actuator invoked with --dry-run does nothing and looks exactly like one that works."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "run_pipeline_cycle", _REPO / "scripts/run_pipeline_cycle.py")
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    for script, args, _why in m.STAGES:
+        assert "--dry-run" not in args, script
 
 
 def test_a_pending_promotion_cannot_stall_forever(actuator, tmp_path: Path) -> None:
@@ -333,10 +368,13 @@ def test_a_pending_promotion_cannot_stall_forever(actuator, tmp_path: Path) -> N
     (tmp_path / "data/live_authority.json").write_text(json.dumps(
         {"rung": 0, "gate_rung": 0, "mode": "PAPER", "confirm_streak": 1}), "utf-8")
 
-    seen = [actuator.run(root=tmp_path)["mode"] for _ in range(4)]
-    assert "LIVE" in seen, f"the promotion never landed in four cycles: {seen}"
-    assert seen.index("LIVE") == actuator.CONFIRM_RUNS - 1, (
-        f"it landed at cycle {seen.index('LIVE') + 1}, not at CONFIRM_RUNS: {seen}")
+    # Held for longer than the bar: the promotion must actually land, not hold forever.
+    (tmp_path / "data/live_authority.json").write_text(json.dumps(
+        {"rung": 0, "gate_rung": 2, "mode": "PAPER",
+         "gate_rung_since": (datetime.now(tz=UTC)
+                             - timedelta(hours=actuator.CONFIRM_HOLD_H + 1)).isoformat()}), "utf-8")
+    d = actuator.run(root=tmp_path)
+    assert d["mode"] == "LIVE", f"the promotion never landed despite clearing the hold: {d}"
 
 
 def test_the_streak_resets_when_the_gate_actually_changes_its_mind(actuator, tmp_path) -> None:

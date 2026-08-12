@@ -31,10 +31,11 @@ WHAT THIS DOES NOT DO, AND THE DISTINCTION IS THE ENTIRE SAFETY ARGUMENT.
 
     DE-RISKING IS IMMEDIATE, PROMOTION IS NOT. A rung that FALLS is applied on the spot -- the
     gate re-evaluates every cycle, and if the evidence stops supporting live money the authority
-    drops that cycle. Going UP additionally requires the same rung to hold across
-    CONFIRM_RUNS consecutive evaluations, because a criterion that flickers across its threshold
-    would otherwise deal real capital in and out on noise. The asymmetry is deliberate and points
-    the safe way: fast down, deliberate up.
+    drops that cycle. Going UP additionally requires the same rung to hold for CONFIRM_HOLD_H
+    WALL-CLOCK HOURS, because a criterion that flickers across its threshold would otherwise deal
+    real capital in and out on noise. The asymmetry is deliberate and points the safe way: fast
+    down, deliberate up. The hold is in HOURS rather than a count of runs precisely so that making
+    the pipeline faster cannot shorten it -- see CONFIRM_HOLD_H.
 
     IT NEVER TOUCHES THE RUIN RAIL OR THE DEADMAN SWITCH. Those bound everything this can grant,
     and this file cannot reach them.
@@ -66,11 +67,20 @@ GATE = "data/promotion_gate.json"
 OUT = "data/live_authority.json"
 LEDGER = "data/live_authority.jsonl"
 
-#: Consecutive gate evaluations a HIGHER rung must hold before capital follows it. The gate runs
-#: daily, so this is two days of agreement -- enough that a criterion oscillating across its
-#: threshold cannot deal real money in and out, short enough that it is not a second manual step
-#: wearing a number. Falling rungs bypass this entirely.
-CONFIRM_RUNS = 2
+#: HOW LONG a HIGHER rung must hold before capital follows it -- WALL-CLOCK HOURS, not a count of
+#: runs, and that distinction is a safety property rather than a style choice.
+#:
+#: This was `CONFIRM_RUNS = 2` and it was correct only by accident: the actuator ran daily, so two
+#: runs meant two days. The moment the pipeline was moved to a 15-minute cycle -- which is exactly
+#: what "make everything as fast as possible" asks for -- the same constant would have meant
+#: THIRTY MINUTES, and a criterion flickering across its threshold could have dealt real capital
+#: in and out before anyone looked. A cadence change would have silently gutted the hold with no
+#: edit to the safety logic and nothing to notice.
+#:
+#: Expressed in hours, cadence and safety are independent: running the cycle more often makes the
+#: desk react faster to everything EXCEPT the one transition where haste is the hazard.
+#: Falling rungs bypass this entirely -- de-risking is immediate.
+CONFIRM_HOLD_H = 24.0
 
 #: rung -> (mode, fraction of book). Copied from check_promotion_gate._RUNGS `grants` prose into
 #: machine-readable form, and pinned by a test against that table so the two cannot drift -- a
@@ -151,6 +161,18 @@ def run(root: Path | None = None, *, dry_run: bool = False) -> dict[str, Any]:
     streak = streak + 1 if rung == prev_gate else 1
     doc["confirm_streak"] = streak
 
+    # WHEN this rung was FIRST seen, carried forward so the hold is measured in wall-clock time
+    # and cannot be shortened by running more often.
+    since = prev.get("gate_rung_since") if rung == prev_gate else None
+    if not since:
+        since = doc["generated_utc"]
+    doc["gate_rung_since"] = since
+    try:
+        held_h = (now - datetime.fromisoformat(str(since))).total_seconds() / 3600.0
+    except (TypeError, ValueError):
+        held_h = 0.0                      # unparseable stamp restarts the hold, never skips it
+    doc["held_h"] = round(held_h, 2)
+
     if rung < prev_rung:
         # DOWN IS IMMEDIATE. Evidence that stopped supporting the size stops supporting it now.
         applied = rung
@@ -158,19 +180,21 @@ def run(root: Path | None = None, *, dry_run: bool = False) -> dict[str, Any]:
         doc["why"] = (f"the gate dropped from rung {prev_rung} to {rung}; de-risking applies on "
                       "the spot, with no confirmation delay. Waiting to reduce is the one "
                       "direction where hesitation costs real money.")
-    elif rung > prev_rung and streak < CONFIRM_RUNS:
-        # UP WAITS. A criterion oscillating across its threshold would otherwise deal capital in
-        # and out on noise.
+    elif rung > prev_rung and held_h < CONFIRM_HOLD_H:
+        # UP WAITS, ON A CLOCK. A criterion oscillating across its threshold would otherwise deal
+        # capital in and out on noise, and a run-counted hold would shrink every time the cycle
+        # got faster.
         applied = prev_rung
         doc["direction"] = "HOLD-PENDING-CONFIRM"
-        doc["why"] = (f"the gate grants rung {rung}, held for {streak}/{CONFIRM_RUNS} consecutive "
-                      f"evaluations. Authority stays at rung {prev_rung} until it holds; a rung "
-                      "that flickers must not deal real capital in and out.")
+        doc["why"] = (f"the gate grants rung {rung}, held {held_h:.1f}h of the "
+                      f"{CONFIRM_HOLD_H:.0f}h required. Authority stays at rung {prev_rung} until "
+                      "it holds; a rung that flickers must not deal real capital in and out. The "
+                      "hold is wall-clock, so running the cycle more often cannot shorten it.")
     else:
         applied = rung
         doc["direction"] = "PROMOTE" if rung > prev_rung else "STEADY"
-        doc["why"] = (f"the gate grants rung {rung} ({gate.get('granted')}) and it has held for "
-                      f"{streak} consecutive evaluation(s)." if rung > prev_rung else
+        doc["why"] = (f"the gate grants rung {rung} ({gate.get('granted')}) and it has held "
+                      f"{held_h:.1f}h, past the {CONFIRM_HOLD_H:.0f}h bar." if rung > prev_rung else
                       f"unchanged at rung {rung} ({gate.get('granted')}).")
 
     mode, frac = _AUTHORITY[applied]
