@@ -3844,6 +3844,14 @@ _ONESHOT_SCRIPTS = frozenset({
     # it (multi-year horizons, to confirm the 1y framing is what inverted the sign), and that is
     # a re-run of the same decisive experiment rather than a schedule.
     "study_absorbing_kelly.py",
+    # classified 2026-08-12 (orphan-scripts defect): the OI/LS universe metrics BACKFILL half of
+    # work order oi-ls-universe-metrics-backfill. Ran to completion 2026-08-12T01:35Z ->
+    # data/oi_ls_universe.jsonl (365 symbols, 256,625 rows, every symbol current to the archive
+    # edge 2026-08-10) + data/oi_ls_universe_coverage.json. The FORWARD feed is
+    # collect_oi_ls_live.py's cadence, so a schedule here would re-download a static public
+    # archive daily. Idempotent and resumable by design: a future listing-gap fill is a manual
+    # re-invocation of the same script, not a cadence.
+    "dl_metrics_universe.py",
 })
 
 
