@@ -1167,6 +1167,16 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/check_gate0_ready.py -> data/gate0_readiness.json
 # CONFIDENCE: committed-script (new this cycle)
 9 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_gate0_ready.py >> data/cro_ai_logs/gate0_readiness.log 2>&1
+# MEASURED 2026-08-12: a Claude Code container has no SSH to this box and data/ is gitignored --
+#   every Gate 0 question that session asked was unanswerable from outside. dash.quanttt.xyz
+#   already serves web/*.json over HTTPS (confirmed live: discovery.json and trade_forensics.json
+#   both fetchable with zero VPS access); this republishes the readiness board through the same
+#   channel, stamped with its own source age so a stale read is visibly stale. 12 * * * * -- 3
+#   minutes after check_gate0_ready.py.
+# EVIDENCE: scripts/publish_gate0_status.py -> web/gate0_status.json (republish only, computes
+#   nothing -- see scripts/check_gate0_ready.py for the actual criteria).
+# CONFIDENCE: committed-script + 8 tests.
+12 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_gate0_publish.lock .venv/bin/python scripts/publish_gate0_status.py >> data/cro_ai_logs/gate0_publish.log 2>&1
 
 # GENERATION DIVERSITY (HYPOTHESIS_MAX #2/#3/#6, unblocked at Gate 0 entry 2026-07-30). The spec
 # deferred the collapse detector with an explicit trigger -- "build it when generation cadence
