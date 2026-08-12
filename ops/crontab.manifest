@@ -2032,6 +2032,26 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: measured (cohort 12/12 read from libs/research/slot_registry.derive_slots).
 45 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_paper_spawner.lock .venv/bin/python scripts/run_paper_sleeve_spawner.py >> data/cro_ai_logs/paper_sleeve_spawner.log 2>&1
 
+# SECOND SPAWNER PASS -- the 08:45 line was reading two of its three inputs a day late.
+# PRINCIPAL ORDER 2026-08-12: any survivor goes to shadow IMMEDIATELY. The screens that feed this
+# organ land at 00:17 (primary market flow), 06:40 (liquidation reversion, added above) and 10:37
+# (vol risk premium), and finalize_axis_screens corrects verdicts at 07:08. A single 08:45 pass
+# therefore sees the VRP campaign's survivors only on the FOLLOWING day: a survivor found at 10:37
+# waited 22 hours for a slot it could have taken in 28 minutes.
+# 11:05 is placed after the 10:37 screen and before the 11:15 forward runner, so a sleeve spawned
+# on this pass starts accruing on the SAME cycle rather than waiting another day to be observed.
+# SAFE BY CONSTRUCTION, not by care: a spawn is two IDEMPOTENT writes (an existing shadow_state is
+# never overwritten, because rewriting shadow_start would reset a clock's forward evidence), the
+# organ refuses rather than risking an uncounted clock if the roster is unreadable, and it NEVER
+# spawns over the cohort cap. Same flock as the morning pass, so a long first run makes this one a
+# no-op instead of a double-run. Pure local CPU: zero model tokens, so the extra pass costs nothing
+# the desk is short of.
+# WHAT THIS DOES NOT DO: it does not raise the 12-slot cap and it does not retire anything to make
+# room. Both shrink or break the fixed-for-life Holm bar the standing clocks were admitted under,
+# and automating that direction would turn a queue of survivors into a machine for manufacturing
+# them. The queue drains on ledgered retirements, and only on those.
+5 11 * * * cd "$QUANT_ROOT" && flock -n data/.cron_paper_spawner.lock .venv/bin/python scripts/run_paper_sleeve_spawner.py >> data/cro_ai_logs/paper_sleeve_spawner.log 2>&1
+
 # THE LAW POLICE -- who watches the watchmen. Every other check on this desk answers "are the laws
 # being broken today?"; this answers the question that decides whether their answers mean anything:
 # IS THE AUDIT STILL LOOKING? Three ways a law silently stops being enforced, none of which raises
@@ -2074,6 +2094,23 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # n_needed_for_forward_rejection: 116 rows for the fastest, 7,796 for the slowest.
 # CONFIDENCE: measured (row counts and n_needed read from the artifact, not estimated).
 15 11 * * * cd "$QUANT_ROOT" && flock -n data/.cron_paper_forward.lock .venv/bin/python scripts/run_paper_sleeve_forward.py >> data/cro_ai_logs/paper_sleeve_forward.log 2>&1
+
+# ...AND THE ORGAN THAT ASKS WHY A CLOCK IS NOT BREATHING, 20 minutes after the runner observes.
+# The forward runner already reports the SYMPTOM correctly on every run ("no rows added since the
+# baseline"), and that one sentence is true of a dead producer, a stale container, a fixed-window
+# screen and an ordinary day-one clock alike. Nothing distinguished them, so twelve slots sat at
+# ZERO accruing for 6.8 days with 26 Stage-A survivors queued behind them and no alarm anywhere.
+# Slot occupancy is the desk's scarcest resource -- each one is 1/12 of the only path to capital.
+# PAGES rather than exits red: a blocked slot is a compounding invisible cost (a queued survivor
+# loses forward days it never gets back), not an outage, and a red exit on a scheduler line is the
+# thing people learn to ignore.
+# AUTHORITY: NONE. It frees no slot and retires no clock. Retirement shrinks the Holm m and
+# loosens every standing bar, so it stays a ledgered decision with an owner (slot_registry).
+# EVIDENCE: scripts/check_slot_liveness.py -> data/slot_liveness.json. First run 2026-08-12 found
+#   liquidation_reversion_BTCUSDT PRODUCER_UNSCHEDULED -- repaired with the 06:40 line above, and
+#   the check then reclassified it, which is the fence responding to its own repair.
+# CONFIDENCE: committed-script; pure local CPU, no model, no venue call.
+35 11 * * * cd "$QUANT_ROOT" && flock -n data/.cron_slot_liveness.lock .venv/bin/python scripts/check_slot_liveness.py --page >> data/cro_ai_logs/slot_liveness.log 2>&1
 
 # R0104 CAPABILITY RATCHET (owed-work, 2026-08-05). The principal's standing order -- every aspect
 # of the desk pushed toward 10/10 every day, non-exhaustively -- had NO INSTRUMENT: the per-aspect
@@ -2397,6 +2434,22 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 #   liquidation_reversion_BTCUSDT, 6 trials, 0 surviving -- and the spawner then reported
 #   NO-CANDIDATES, which is the honest state rather than a refusal)
 8 7 * * * cd "$QUANT_ROOT" && flock -n data/.cron_finalize_axis.lock .venv/bin/python scripts/finalize_axis_screens.py >> data/cro_ai_logs/finalize_axis_screens.log 2>&1
+
+# THE SCREEN THAT FEEDS THAT FINALIZER WAS ON NO SCHEDULE AT ALL, and one forward clock has been
+# paying for it. MEASURED 2026-08-12: all 12 forward slots occupied, ZERO accruing, 26 Stage-A
+# survivors queued behind them -- and the liquidation-reversion clock's `n` had not moved in 6.8
+# days because NOTHING regenerates reports/axis_screens/liquidation_reversion_BTCUSDT.json. The
+# inputs were never the problem: quant-liquidations.service records Bybit allLiquidation
+# continuously and the bybit moat recorder is scheduled. The screen that turns them into rows was
+# simply never wired, so the clock was born unable to finish -- registered, paying full
+# multiplicity, structurally incapable of ever resolving. That is the desk's built-never-wired
+# class landing on the one pipeline whose entire purpose is to produce a survivor.
+# 06:40 so the fresh rows exist BEFORE finalize_axis_screens corrects verdicts at 07:08 and before
+# the spawner reads them at 08:45 -- a screen that lands after its own consumer buys a day of
+# latency for nothing.
+# EVIDENCE: libs/research/slot_liveness.report() -> PRODUCER_UNSCHEDULED, the only such clock.
+# CONFIDENCE: committed-script; pure CPU over our own captured tape, no venue call, no model.
+40 6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_liqrev_screen.lock nice -n 19 .venv/bin/python scripts/screen_liquidation_reversion.py >> data/cro_ai_logs/liquidation_reversion_screen.log 2>&1
 
 # ---------------------------------------------------------------------------------------------
 # BYBIT L2 ARCHIVE RETENTION ALARM -- is the free 349-day backfill EXPIRING while we wait?
