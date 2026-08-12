@@ -110,6 +110,12 @@ def build_report() -> dict[str, object]:
         "n_resolved_raw": sum(1 for f in store.values() if f.get("resolved")),
         "n_overdue": len(od),
         "overdue": od[:15],
+        #: Retired as UNANSWERABLE -- past the deadline, repeatedly unpriceable, and explicitly
+        #: neither a hit nor a miss (R0394). Published because this is the only path that clears a
+        #: row without grading it: if it climbs, the QUESTION GENERATOR is broken, and a fence that
+        #: let that drain away silently would be handing itself the escape hatch L1.29 exists to
+        #: deny. Excluded from n_eligible for the same reason -- see forecast_calibration.void.
+        "n_voided": sum(1 for f in store.values() if f.get("voided")),
         #: Forecasts with a deadline and NO grader -- reported while grading is still possible.
         #: OVERDUE already fails once the date passes; by then there is no move left.
         "n_unowned": len(unowned),

@@ -60,8 +60,8 @@ def log_forecast(key: str, p: float, kind: str, resolve_by: str | None = None,
     """
     d = _load(store)
     f = d["forecasts"].get(key, {})
-    if f.get("resolved"):
-        return                                            # never overwrite a scored forecast
+    if f.get("resolved") or f.get("voided"):
+        return                                            # never overwrite a terminal forecast
     f.update({"p": round(float(p), 4), "kind": kind,
               "updated": datetime.now(tz=UTC).isoformat()})
     if resolve_by is not None:
@@ -91,7 +91,7 @@ def overdue(now: datetime | None = None) -> list[dict[str, Any]]:
     out = []
     for key, f in _load()["forecasts"].items():
         rb = f.get("resolve_by")
-        if f.get("resolved") or not rb:
+        if f.get("resolved") or f.get("voided") or not rb:
             continue
         try:
             due = datetime.fromisoformat(rb)
@@ -142,7 +142,7 @@ def unowned(is_auto_resolvable: Any = None, root: Path | None = None,
     root = root or Path(".")
     out: list[dict[str, Any]] = []
     for key, f in _load(store)["forecasts"].items():
-        if f.get("resolved") or not f.get("resolve_by"):
+        if f.get("resolved") or f.get("voided") or not f.get("resolve_by"):
             continue
         if f.get("resolver"):
             continue
@@ -182,6 +182,42 @@ def calibrated_confidence(raw_p: float) -> dict[str, Any]:
             "applied": abs(bias) > 0.05, "bias": bias, "bias_label": rep.get("bias_label"),
             "why": f"desk is {rep.get('bias_label')} by {bias:+.3f} over {rep['n_resolved']} "
                    "resolved forecasts"}
+
+
+def void(key: str, why: str, store: Path | None = None) -> bool:
+    """Retire a forecast the WORLD cannot answer -- terminal, and explicitly NOT a hit or a miss.
+
+    THE MISSING STATE, AND THE WELD IT CAUSED (R0394). This store had exactly two states: open, or
+    ``resolved`` with an outcome. So a question whose symbol stops pricing -- delisted, renamed,
+    or never real -- could never leave the OVERDUE set: `run_calibration_probe.resolve_due` retries
+    it, gets no bars, keeps it open ("UNRESOLVABLE stays open, never guessed", which is the right
+    instinct and the wrong terminus), and `check_calibration` fails on OVERDUE forever. Measured
+    2026-08-05: 44 such rows held the L1.29 fence red until a human hand-quarantined them out of
+    the file. A fence that can never go green gets ignored (L1.43), and this is the one fence that
+    detects the desk being CONFIDENTLY WRONG.
+
+    WHY IT MUST NOT SET ``resolved``. Scoring a question nothing can answer -- either way -- writes
+    a fabricated outcome into the term that feeds :func:`calibrated_confidence` and from there
+    Kelly leverage. Voided rows are excluded from BOTH the numerator (they are not resolved) and
+    :func:`eligible`'s denominator (they can never enter it), because a gauge that gets worse when
+    the desk disposes of a dead row honestly is a gauge improvable by doing less of the thing it
+    exists to encourage -- L1.53(4), and the exact arithmetic that pinned this fence BLIND before.
+
+    THE COUNT IS PUBLISHED, NEVER SILENT. Voiding is the escape hatch that could hide a broken
+    question generator, so `report()` carries `n_excluded["voided"]` and the fence prints it: a
+    rising void count is a defect about the QUESTIONS, not a clean pass.
+
+    Returns True if this call voided the row; False if it was already terminal or unknown.
+    """
+    d = _load(store)
+    f = d["forecasts"].get(key)
+    if not f or f.get("resolved") or f.get("voided"):
+        return False                                       # never overwrite a terminal state
+    f["voided"] = True
+    f["void_reason"] = why
+    f["voided_at"] = datetime.now(tz=UTC).isoformat()
+    _save(d, store)
+    return True
 
 
 def resolve(key: str, outcome: bool, store: Path | None = None) -> None:
@@ -227,7 +263,12 @@ def eligible(forecasts: dict[str, Any]) -> list[dict[str, Any]]:
     Numerator-inside-denominator is guaranteed structurally, not by inspection: `_scoreable`'s
     rows satisfy strictly more predicates than these, and both dedup on `_claim_signature`.
     """
-    rows = [{**f, "_key": k} for k, f in forecasts.items() if f.get("resolve_by")]
+    # VOIDED ROWS LEAVE THE DENOMINATOR (R0394). They can never enter the numerator -- that is
+    # what voiding means -- so counting them here would make the resolved-ratio fall every time
+    # the desk honestly disposes of a dead question, pushing this fence toward BLIND for doing
+    # the right thing. Same failure this function was written to fix, one state later.
+    rows = [{**f, "_key": k} for k, f in forecasts.items()
+            if f.get("resolve_by") and not f.get("voided")]
     rows.sort(key=lambda f: str(f.get("updated") or ""))
     seen: set[str] = set()
     out: list[dict[str, Any]] = []
@@ -307,7 +348,10 @@ def report(*, exclude_kinds: tuple[str, ...] = NON_SIZING_KINDS) -> dict[str, An
                 - sum(1 for f in resolved if not f.get("resolve_by")),
                 "non_sizing_kind": sum(1 for f in d["forecasts"].values()
                                        if f.get("resolved")
-                                       and str(f.get("kind") or "") in exclude_kinds)}
+                                       and str(f.get("kind") or "") in exclude_kinds),
+                #: PUBLISHED, because voiding is the one escape hatch that could hide a broken
+                #: question generator. A rising count is a defect about the QUESTIONS.
+                "voided": sum(1 for f in d["forecasts"].values() if f.get("voided"))}
     if n < 5:
         return {"n_resolved": n, "n_eligible": n_eligible, "n_excluded": excluded,
                 "status": (f"insufficient outcomes ({n}/5) -- accumulating; "
