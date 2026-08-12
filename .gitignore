@@ -81,6 +81,15 @@ data/*
 # for the same reason as the botter calendar: the coverage row claims this ground is MAPPED, and an
 # untracked map makes that claim unverifiable and re-scannable by the next seat.
 !data/jp_makedeco_advent_calendar.jsonl
+
+# R0313 delisted-instrument rosters. Tracked for exactly the reason the file above is: the names
+# are IRREPLACEABLE the moment a venue ages one off its own dead list. BitMEX carries 3077 settled
+# contracts against 32 live ones, and nothing obliges it to serve them forever -- an untracked
+# roster wiped with data/ cannot be re-fetched, only re-lost. The registry rides along so a clone
+# can tell "this venue publishes nothing" from "this venue was never asked".
+!data/delisted_instruments.json
+!data/delisted_rosters/
+!data/delisted_rosters/*.json
 web/*
 !web/index.html
 reports/
