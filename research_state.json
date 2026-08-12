@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-12T04:23:35.583359+00:00",
+  "generated": "2026-08-12T09:39:52.777847+00:00",
   "master_objective": "maximize expected lifetime geometric growth (log wealth), survival-c",
   "deployed": {
     "sleeves": [
@@ -7,13 +7,13 @@
       "perp_ls (paper)"
     ],
     "start_capital": 15000.0,
-    "equity": 17893.61,
-    "net_pnl": 2893.61,
-    "return_pct": 19.291,
-    "days_live": 40.96,
+    "equity": 17895.34,
+    "net_pnl": 2895.34,
+    "return_pct": 19.302,
+    "days_live": 41.18,
     "winrate_pct": 43.1,
     "n_closed_trades": 253,
-    "deployed_sharpe": 9.5,
+    "deployed_sharpe": 9.55,
     "funding": 113.06,
     "funding_measured": true,
     "n_carries": 0,
@@ -58,17 +58,17 @@
   ],
   "retirement_candidates": [
     {
-      "sleeve": "basis_carry",
-      "marginal_sharpe": -0.12
+      "sleeve": "ts_trend",
+      "marginal_sharpe": -0.03
     },
     {
-      "sleeve": "funding_momentum",
-      "marginal_sharpe": -0.11
+      "sleeve": "xsec_price_mom",
+      "marginal_sharpe": -0.01
     }
   ],
   "retirement_note": "SIGNAL ONLY \u2014 marginal-Sharpe swings ~\u00b10.15 between runs, so a single negative sign is within noise. Retire only on PERSISTENT negative contribution across runs, with promotion-grade rigor. No whipsaw.",
   "architecture_review_due": false,
-  "cycles_logged": 81,
+  "cycles_logged": 82,
   "completed_this_cycle": [
     "archive_integrity_ok",
     "watchdog_run_logged_off",
@@ -144,19 +144,19 @@
     "DEFER heavy external paper search: info value < top backlog item this cycle."
   ],
   "forecast_calibration": {
-    "n_resolved": 63,
-    "n_eligible": 178,
+    "n_resolved": 64,
+    "n_eligible": 197,
     "n_excluded": {
       "retrospective": 30,
       "duplicate_claim": 1,
       "non_sizing_kind": 9
     },
     "status": "calibrated",
-    "brier": 0.2399,
-    "reliability": 0.7601,
-    "bias": 0.1351,
+    "brier": 0.2389,
+    "reliability": 0.7611,
+    "bias": 0.1264,
     "bias_label": "over-confident",
-    "hit_rate_posterior": 0.492,
+    "hit_rate_posterior": 0.5,
     "note": "Brier lower=better; reliability=1-Brier; bias>0 means forecasts were too high. Applied as a shrinkage on future p_success when |bias| is material."
   }
 }

@@ -1,17 +1,17 @@
 {
- "updated": "2026-08-12T06:45:10.149047+00:00",
- "n_closes": 0,
+ "updated": "2026-08-12T09:39:53.766122+00:00",
+ "n_closes": 4,
  "hold_buckets": {
   "<2h": {
-   "n": 0,
-   "notional": 0,
-   "net": 0,
-   "bps": 0.0
+   "n": 3,
+   "notional": 188.02,
+   "net": -0.25,
+   "bps": -13.3
   },
   "2-8h": {
-   "n": 0,
-   "notional": 0,
-   "net": 0,
+   "n": 1,
+   "notional": 5.79,
+   "net": 0.0,
    "bps": 0.0
   },
   "8-24h": {
@@ -29,18 +29,18 @@
  },
  "hold_buckets_net_of_fees": {
   "<2h": {
-   "n": 0,
-   "notional": 0,
-   "fee": 0,
-   "net": 0,
-   "bps": 0.0
+   "n": 3,
+   "notional": 188.02,
+   "fee": 0.15,
+   "net": -0.4,
+   "bps": -21.29
   },
   "2-8h": {
-   "n": 0,
-   "notional": 0,
-   "fee": 0,
-   "net": 0,
-   "bps": 0.0
+   "n": 1,
+   "notional": 5.79,
+   "fee": 0.0,
+   "net": -0.0,
+   "bps": -3.98
   },
   "8-24h": {
    "n": 0,
@@ -59,25 +59,25 @@
  },
  "fee_attribution": {
   "venue_commission": 0.23,
-  "attributed": 0.0,
-  "unattributed": 0.23,
-  "unattributed_share": 1.0,
+  "attributed": 0.15,
+  "unattributed": 0.08,
+  "unattributed_share": 0.333,
   "n_events": 41,
-  "fee_bps_of_logged_notional": null,
+  "fee_bps_of_logged_notional": 11.81,
   "scope": "futures commission only (/fapi income); spot-leg fees not visible -> LOWER BOUND"
  },
  "baseline_funding_class": {
-  "n": 0,
-  "net": 0,
-  "bps": 0.0
+  "n": 2,
+  "net": -0.26,
+  "bps": -18.48
  },
  "post_gate_baseline_opens": 0,
- "post_gate_opens_examined": 1,
+ "post_gate_opens_examined": 4,
  "maker_fill": {
-  "n_legs": 0,
-  "maker_share": null,
-  "spot": null,
-  "fut": null,
+  "n_legs": 30,
+  "maker_share": 0.6,
+  "spot": 0.294,
+  "fut": 1.0,
   "target": 0.6,
   "note": "instrumented 2026-07-26; records written before that carry no mode, so n_legs climbs from 0 as new fills land -- a null share is thin data, not a regression. n_legs counts only legs that PLACED AN ORDER: no-order legs ['', 'already-flat'] are excluded from the denominator (R0064)"
  },
@@ -85,12 +85,12 @@
   "taped": 531,
   "tape_days": 2404.91,
   "backfilled": 0,
-  "buffer_days": 0.0,
-  "window_margin_days": -14.0,
+  "buffer_days": 25.06,
+  "window_margin_days": 11.06,
   "buffer_squeezing_window": false
  },
  "worst_symbols": [],
  "flags": [],
  "origin": "recursion rule 2026-07-22: mechanization of the principal-supplied probes that found gaps #42/#43/#34",
- "written": "2026-08-12T06:45:10.149481+00:00"
+ "written": "2026-08-12T09:39:53.767262+00:00"
 }

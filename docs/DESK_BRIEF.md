@@ -1,4 +1,4 @@
-# DESK BRIEF -- 2026-08-12 04:27Z
+# DESK BRIEF -- 2026-08-12 09:42Z
 
 Machine-generated from measured desk state. Every number traces to an artifact in
 `data/`. Nothing here is an argument. Respond to the evidence, not to another model.
@@ -13,34 +13,34 @@ Machine-generated from measured desk state. Every number traces to an artifact i
    forward clocks promote.
 
 ## Experiment record (45d, harvested from git -- one row per commit)
-- experiments: **1410**; decided: 823
-- survival rate: **5.6%** (46 survived / 721 refuted / 56 inconclusive)
-- unclassified commit decisions: 99 (commit-discipline defect)
+- experiments: **1439**; decided: 839
+- survival rate: **5.5%** (46 survived / 737 refuted / 56 inconclusive)
+- unclassified commit decisions: 100 (commit-discipline defect)
 
 | mechanism | tested | survived | rate |
 |---|---:|---:|---:|
-| M_UNMAPPED | 665 | 39 | 6% |
+| M_UNMAPPED | 674 | 39 | 6% |
 | M_ATTENTION_DELAY | 46 | 2 | 4% |
-| M_LIQUIDITY_WITHDRAWAL | 36 | 1 | 3% |
-| M_FORCED_DELEVERAGE | 32 | 3 | 9% |
-| M_STRUCTURAL_BARRIER | 31 | 0 | 0% |
-| M_FLOW_PRESSURE | 12 | 0 | 0% |
+| M_STRUCTURAL_BARRIER | 38 | 0 | 0% |
+| M_LIQUIDITY_WITHDRAWAL | 37 | 1 | 3% |
+| M_FORCED_DELEVERAGE | 34 | 3 | 9% |
+| M_FLOW_PRESSURE | 13 | 0 | 0% |
 | M_SKILL_PERSISTENCE | 10 | 0 | 0% |
 | M_FUNDAMENTAL_PROXY | 10 | 0 | 0% |
 | M_PRICE_PATTERN | 5 | 1 | 20% |
 
 ### Why experiments died (45d)
 
-- `E_DATA_QUALITY` 381 (35%)
-- `B_WRONG_MEASUREMENT` 200 (18%)
-- `H_OVERFIT` 177 (16%)
-- `G_TOO_EXPENSIVE` 149 (14%)
+- `E_DATA_QUALITY` 388 (35%)
+- `B_WRONG_MEASUREMENT` 203 (19%)
+- `H_OVERFIT` 181 (16%)
+- `G_TOO_EXPENSIVE` 150 (14%)
 - `C_WRONG_TIMING` 87 (8%)
 - `F_REGIME_DEPENDENT` 67 (6%)
 - `D_ALREADY_ARBITRAGED` 16 (1%)
 - `A_NO_MECHANISM` 5 (0%)
 
-**581/1082 = 54% of refutations are MEASUREMENT failures (data quality + wrong construction), not absent alpha.**
+**591/1097 = 54% of refutations are MEASUREMENT failures (data quality + wrong construction), not absent alpha.**
 
 ## FAMILY KILLS -- mechanisms closed by evidence
 
