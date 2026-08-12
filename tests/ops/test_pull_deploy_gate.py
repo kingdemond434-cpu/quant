@@ -71,6 +71,9 @@ def desk(tmp_path):
     (src / "scripts/run_ci.py").write_text(_FAKE_CI, "utf-8")
     (src / "CI_GREEN").write_text("", "utf-8")
     (src / "payload.txt").write_text("original", "utf-8")
+    #: Tracked, and never touched by _push. Stands in for the organ-written artifacts that made
+    #: the live box permanently dirty (recommendation_ledger.json, reports/*, worktree gitlinks).
+    (src / "bystander.txt").write_text("original", "utf-8")
     _git(src, "add", "-A")
     _git(src, "commit", "-m", "base")
     _git(src, "remote", "add", "origin", str(origin))
@@ -187,6 +190,138 @@ class TestTheGateLeavesNothingBehind:
         _run(desk)
         assert not (desk["box"].parent / ".pull_deploy_gate").exists()
         assert "pull_deploy_gate" not in _git(desk["box"], "worktree", "list")
+
+
+class TestDirtIsJudgedAgainstTheIncomingDiff:
+    """THE REFUSAL MUST COST NOTHING WHEN NOTHING IS AT RISK (2026-08-12).
+
+    The refusal was written against ANY tracked modification, and the measured consequence was a
+    welded gate (L1.43): 1078 logged ticks from 08-04, 91.1% `refused-dirty`, and `deployed`
+    appearing ZERO times -- the desk's only inbound deploy path had never once deployed, so every
+    fix committed anywhere else was inert here. The dirt was never operator work: organs rewrite
+    tracked files on a cadence, and four agent worktrees had been recorded as gitlinks whose shas
+    move whenever a sibling session commits.
+
+    The property these tests pin is that the predicate is now the INTERSECTION of the dirty set
+    with the incoming diff -- which is the same rule git itself enforces, so the protection the
+    refusal exists for is preserved exactly while the false refusals are gone.
+    """
+
+    def test_dirt_outside_the_incoming_diff_no_longer_blocks_the_deploy(self, desk):
+        """THE REGRESSION THAT MATTERS. Under the old any-dirt test this deploy was refused."""
+        new = _push(desk, green=True)
+        (desk["box"] / "bystander.txt").write_text("organ rewrote me", "utf-8")
+        r = _run(desk)
+        assert _git(desk["box"], "rev-parse", "HEAD") == new, (
+            f"a deploy that could not have destroyed anything was refused: {r.stdout}{r.stderr}")
+        assert _state(desk)["status"].startswith("deployed")
+
+    def test_the_untouched_local_edit_survives_that_deploy(self, desk):
+        """Deploying is only correct if the bystander edit is still there afterwards."""
+        _push(desk, green=True)
+        (desk["box"] / "bystander.txt").write_text("organ rewrote me", "utf-8")
+        _run(desk)
+        assert (desk["box"] / "bystander.txt").read_text("utf-8") == "organ rewrote me"
+
+    def test_a_dirty_tree_is_declared_in_the_log_rather_than_passed_over_silently(self, desk):
+        """A reader of this log must never infer the tree was clean when it was not."""
+        _push(desk, green=True)
+        (desk["box"] / "bystander.txt").write_text("organ rewrote me", "utf-8")
+        r = _run(desk)
+        assert "none of them touched by this range" in r.stdout, r.stdout
+
+    def test_dirt_inside_the_incoming_diff_still_refuses(self, desk):
+        """THE PROTECTION IS NOT WEAKENED -- this is the case the refusal exists for."""
+        old = _git(desk["box"], "rev-parse", "HEAD")
+        _push(desk, green=True)
+        (desk["box"] / "payload.txt").write_text("operator hotfix", "utf-8")
+        r = _run(desk)
+        assert r.returncode == 2, r.stdout + r.stderr
+        assert _git(desk["box"], "rev-parse", "HEAD") == old, "the box moved over a live hotfix"
+        assert _state(desk)["status"] == "refused-dirty"
+
+    def test_the_operator_hotfix_is_still_on_disk_after_the_refusal(self, desk):
+        """The only copy of that work must survive; losing it is the whole failure mode."""
+        _push(desk, green=True)
+        (desk["box"] / "payload.txt").write_text("operator hotfix", "utf-8")
+        _run(desk)
+        assert (desk["box"] / "payload.txt").read_text("utf-8") == "operator hotfix"
+
+    def test_the_refusal_names_the_colliding_path(self, desk):
+        """The old message dumped 20 status lines and never said which path was at risk."""
+        _push(desk, green=True)
+        (desk["box"] / "payload.txt").write_text("operator hotfix", "utf-8")
+        r = _run(desk)
+        assert "payload.txt" in r.stdout
+        assert "bystander.txt" not in r.stdout, "a path that was not at risk was blamed"
+
+    def test_a_collision_refuses_before_the_gate_ever_executes(self, desk):
+        """Refusing early is free; running CI on a commit we cannot merge is not."""
+        _push(desk, green=True)
+        (desk["box"] / "payload.txt").write_text("operator hotfix", "utf-8")
+        _run(desk)
+        assert _observations(desk) == [], "the CI gate ran for a deploy that was already refused"
+
+    def test_a_staged_but_uncommitted_edit_counts_as_dirty(self, desk):
+        """`git diff HEAD` must be the dirty source: index-only changes are lost just as easily."""
+        _push(desk, green=True)
+        (desk["box"] / "payload.txt").write_text("staged hotfix", "utf-8")
+        _git(desk["box"], "add", "payload.txt")
+        r = _run(desk)
+        assert r.returncode == 2, r.stdout + r.stderr
+        assert _state(desk)["status"] == "refused-dirty"
+
+
+class TestTheMoneyPathIsHeldWhileTheCockpitIsSterile:
+    """L1.38 REACHED THIS PATH ONLY AFTER THE PATH STARTED WORKING (2026-08-12).
+
+    scripts/run_stale_daemon_repair.py consults the change window before restarting anything.
+    pull_deploy.sh -- which restarts supervised processes every 10 minutes on the box that owns the
+    book -- never did. Nobody had noticed because its dirty-tree refusal had made the whole script a
+    no-op for eight days, so the unguarded restart was unreachable. Repairing the refusal without
+    this gate would have ARMED it: the first commit touching libs/execution/ would have restarted
+    quant-cashcarry inside a live RAIL_BREACH window.
+    """
+
+    def test_the_executor_is_named_as_held_while_the_window_is_not_open(self):
+        from scripts.check_change_window import held_units
+        assert "quant-cashcarry.service" in held_units("STERILE")
+
+    def test_an_open_window_holds_nothing(self):
+        """The gate must be a window, not a wall -- it has to actually clear (L1.43)."""
+        from scripts.check_change_window import held_units
+        assert held_units("OPEN") == []
+
+    def test_an_unreadable_window_still_holds_the_money_path(self):
+        """UNMEASURED is not OPEN. A wrong OPEN is unbounded; a wrong hold is a delayed restart."""
+        from scripts.check_change_window import held_units
+        assert "quant-cashcarry.service" in held_units("UNMEASURED")
+
+    def test_money_path_units_are_found_through_the_import_closure_not_just_entry_points(self):
+        """The money path is mostly LIBRARIES no unit names as its entry (libs/risk/, execution/).
+
+        Asking only about entry points would answer "no money-path units" for a change to the
+        sizing code, which is exactly backwards.
+        """
+        from libs.ops.deploy_plan import units_touching
+        assert "quant-cashcarry.service" in units_touching(["libs/risk/"])
+
+    def test_an_unrelated_prefix_matches_nothing(self):
+        from libs.ops.deploy_plan import units_touching
+        assert units_touching(["docs/research/"]) == ()
+
+    def test_the_shell_consults_the_hold_list_before_restarting(self):
+        """Cheap structural backstop: the decision itself is unit-tested above, but the WIRING is
+        shell, and an unwired gate is the defect this whole cycle was about."""
+        src = _SCRIPT.read_text("utf-8")
+        assert "--held-units" in src
+        assert src.index("HELD_UNITS=") < src.index("RESTART)"), (
+            "the hold list must be computed before the restart loop reads it")
+
+    def test_a_held_restart_is_not_reported_as_a_clean_deploy(self):
+        """Deliberate-and-invisible is how a temporary hold becomes a permanent one."""
+        src = _SCRIPT.read_text("utf-8")
+        assert '[ "$HELD" -eq 0 ]' in src, "a held money-path restart must not read as `deployed`"
 
 
 class TestTheDestructiveRevertIsGoneByConstruction:

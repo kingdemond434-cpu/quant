@@ -194,13 +194,43 @@ def build_report(root: Path | None = None, now: datetime | None = None,
     }
 
 
+def held_units(status: str | None = None) -> list[str]:
+    """Supervised units an UNATTENDED deploy must not restart right now (L1.38).
+
+    THE GAP THIS CLOSES, found 2026-08-12 by asking what the deploy-path repair would switch on.
+    scripts/run_stale_daemon_repair.py consults this window before restarting anything, but
+    deploy/pull_deploy.sh -- which restarts supervised processes every 10 minutes on the box that
+    owns the book -- never did. That was invisible because its dirty-tree refusal had made it a
+    no-op for eight days, so the unguarded restart had simply never been reachable. Repairing the
+    deploy path without this would have ARMED it: the first commit touching libs/execution/ would
+    have restarted quant-cashcarry inside a live RAIL_BREACH window, which is exactly the
+    "ships whatever is on disk into the money path" move L1.38 exists to prevent.
+
+    An empty list means "restart freely". Deliberately NOT the deadman: that is TIER_RUIN and
+    deploy_plan already refuses to restart it by tier, a stronger guarantee than a window.
+    """
+    from libs.ops.deploy_plan import units_touching
+    status = status or str(build_report().get("status") or "UNMEASURED")
+    if status == "OPEN":
+        return []
+    return list(units_touching(MONEY_PATH))
+
+
 def main() -> int:
     _law_guard()
     ap = argparse.ArgumentParser()
     ap.add_argument("--paths", nargs="*", default=[], help="changed files to judge")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--report-only", action="store_true")
+    ap.add_argument("--held-units", action="store_true",
+                    help="print units an unattended deploy must not restart now, one per line")
     args = ap.parse_args()
+    if args.held_units:
+        # A QUERY, not a fence run: it must not write the report artifact and must not exit
+        # non-zero on a sterile window, or the caller cannot tell "held these" from "I crashed".
+        for unit in held_units():
+            print(unit)
+        return 0
     rep = build_report(paths=args.paths)
     out = _ROOT / "data/change_window.json"
     out.parent.mkdir(parents=True, exist_ok=True)
