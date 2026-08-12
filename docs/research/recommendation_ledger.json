@@ -6550,6 +6550,42 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0523",
+   "source": "cycle",
+   "summary": "BR-19 SCREEN OWED: venue risk-parameter metadata (fundingIntervalHours 4h/8h/1h + adjustedFundingRateCap) as a carry conditioning variable, controlling for the funding level -- the exchange risk desk sets these from the full position/liquidation distribution nobody else sees, and the desk reads them as plumbing constants. Screening owner cycle org, Stage-A harness libs.research.axis_screen, data already on disk: data/funding_caps.json (747 symbols, ZERO consumers), data/jp_funding_clamp_census.json (interval_mix), data/funding_cross_section.jsonl (862 syms), data/lake/bronze/crypto/*/D1 (funding+basis, 300 syms). EV 0.0029 (funding_family+new_orthogonal_data, p 0.48), novelty 0.691 vs 251 priors. DUE 2026-08-26.",
+   "roi_bps": 20.0,
+   "raised": "2026-08-12T20:11:38.911589+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0524",
+   "source": "cycle",
+   "summary": "BR-21 SCREEN OWED: order-book replenishment half-life / withdrawal rate as an EX-ANTE cost prior for symbols the desk has NEVER traded -- breaks the L1.45 never-traded/never-recorded/never-measured exclusion cycle that realised-cost predictors (H1, denylist) cannot reach by construction. Screening owner cycle org, Stage-A harness libs.research.axis_screen, data already on disk: data/moat_series.jsonl (93,345 symbol-days of withdrawal_rate/book_slope/replenishment_halflife, ZERO consumers), validated against data/fee_attribution.json (top4_share 0.8589) and data/print_impact.json. EV 0.0044 (new_orthogonal_data only -- funding_family tag deliberately NOT applied, it would be tag-laundering a cost mechanism), novelty 0.721. DUE 2026-08-26.",
+   "roi_bps": 35.0,
+   "raised": "2026-08-12T20:11:40.842087+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0525",
+   "source": "cycle",
+   "summary": "L1.28b/S33 DEFECT -- THE CONVERSION LAW CANNOT DISTINGUISH A WIRED ARTIFACT FROM AN ORPHANED ONE. libs/research/mine_conversion.py defines 'wired' as 'code exists AND executed AND wrote a real artifact' and backing_reason() corroborates it with exists + non-empty + mtime-postdates-the-find. NO CONSUMER CHECK EXISTS. So the maximally law-compliant dig writes a .jsonl, claims [S33: wired -> path], and the gate prints BACKLOG-CLEAR. Measured on disk today: print_impact.json (99 fitted impact curves), moat_series.jsonl (82MB/93,345 rows), geckoterminal_trades.jsonl (38,271 wallet-attributed DEX trades), tail_funding_divergence.jsonl (987 rows, its own docstring says it has no readers), carry_viability.json, funding_caps.json (747 syms) -- ALL zero-consumer, ALL creditable as 'wired' today. The desk has orphan detection for CODE (import-graph reachability) and NONE for DATA. FIX: extend the backing test with a reader check (a non-writer, non-check_* module must import or open the path) so 'wired' means wired; frozen out of scripts/ and libs/ this run. Owner: cycle org. DUE 2026-08-19.",
+   "roi_bps": 60.0,
+   "raised": "2026-08-12T20:11:42.881793+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
