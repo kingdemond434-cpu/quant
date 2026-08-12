@@ -1125,6 +1125,16 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 #   universe-discovery call refuses cleanly (SystemExit) instead of an uncaught traceback if
 #   list_liquid_perps fails, same fix already applied to collect_binance_metrics.py above.
 52 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_discovery.lock .venv/bin/python scripts/run_discovery.py >> data/cro_ai_logs/run_discovery.log 2>&1
+# MEASURED 2026-08-12: run_discovery.py's DEPLOYABLE/SHADOW sleeves have no Stage-B forward clock
+#   -- oi_divergence/ls_contrarian have run_derivative_shadow.py, these have nothing. A gauntlet
+#   pass on backtest data is Stage A (zero promotion authority); this accrues real out-of-sample
+#   days per sleeve so libs.risk.kelly_shrink has real N to size against once a gate exists.
+#   57 5 * * * -- 5 minutes after run_discovery.py writes web/discovery.json.
+# EVIDENCE: scripts/run_discovery_forward.py -> web/discovery_forward.json (days_forward per
+#   sleeve, peek-safe e-value, birth-date ledger at data/discovery_forward_birth.json).
+# CONFIDENCE: committed-script + 12 tests; ZERO promotion authority (measurement only, matching
+#   run_derivative_shadow.py's own standing).
+57 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_discovery_forward.lock .venv/bin/python scripts/run_discovery_forward.py >> data/cro_ai_logs/run_discovery_forward.log 2>&1
 # scripts/carry_viability.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 47 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/carry_viability.py >> data/cro_ai_logs/carry_viability.log 2>&1
 # scripts/run_research_tick.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
