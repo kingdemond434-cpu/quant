@@ -126,7 +126,7 @@ def test_fence_floor_is_never_raised_silently() -> None:
     which is the whole mechanism -- raising it to clear a red board is the failure to prevent."""
     src = (_ROOT / "scripts/check_citation_integrity.py").read_text("utf-8")
     line = next(ln for ln in src.splitlines() if ln.startswith("_FLOOR"))
-    assert int(line.split("=")[1].strip()) <= 15, (
+    assert int(line.split("=")[1].strip()) <= 3, (
         "the citation floor may only ever move DOWN, and only in a commit that repoints the "
         "rows it accounts for")
 

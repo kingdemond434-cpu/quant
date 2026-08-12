@@ -112,9 +112,17 @@
    "raised": "2026-07-26T11:45:42.421033+00:00",
    "status": "implemented",
    "reason": "341 phantom v1 campaigns terminal-marked (cancelled + dated note; cleanup collects per queue design) and web/discovery.json now mirrors the full graveyard: 85 entries (43 graveyard.md table rows + 42 do_not_repeat), verified in the regenerated artifact",
-   "commit": "HEAD",
+   "commit": "16af6487",
    "due": "2026-08-19",
-   "disposed": "2026-07-31T16:59:39.092205+00:00"
+   "disposed": "2026-07-31T16:59:39.092205+00:00",
+   "repoints": [
+    {
+     "was": "HEAD",
+     "now": "16af6487",
+     "at": "2026-08-12T19:21:04.856342+00:00",
+     "why": "cited the symbolic ref HEAD, which resolves per-clone; 16af6487 body documents this row's work (341 phantom v1 campaigns terminal-marked, discovery.json mirrors the graveyard) and is on origin/master"
+    }
+   ]
   },
   {
    "id": "R0010",
@@ -160,9 +168,17 @@
    "raised": "2026-07-26T20:26:09.605574+00:00",
    "status": "implemented",
    "reason": "funding_measured threaded executor->LivePortfolio->to_public with regression pin; a venue-outage zero is now labelled absence, not measurement",
-   "commit": "HEAD",
+   "commit": "16af6487",
    "due": "2026-08-08",
-   "disposed": "2026-07-31T16:55:09.621838+00:00"
+   "disposed": "2026-07-31T16:55:09.621838+00:00",
+   "repoints": [
+    {
+     "was": "HEAD",
+     "now": "16af6487",
+     "at": "2026-08-12T19:21:11.060901+00:00",
+     "why": "cited the symbolic ref HEAD; 16af6487 body documents this row's work (funding_measured threaded executor->live_book->to_public with pin) and is on origin/master"
+    }
+   ]
   },
   {
    "id": "R0014",
@@ -324,9 +340,17 @@
    "raised": "2026-07-28T20:26:42.266235+00:00",
    "status": "implemented",
    "reason": "DECOMPOSED from data/cashcarry_trades.json (254 closes): price_pnl is NOT structural -- pre-incident closes net +0.46 bps on 111k notional (n=229, delta-neutral behaving as designed); the drag concentrates in the 07-19..28 churn/incident era (07-25..28 window -54.6 bps on 18.9k; naked already-flat closes -68 bps on 4.7k; worst days 07-13/-21/-22 pre-window offset by winners). Forensics' -234 net == incident-era total. VERDICT: price leg does not block resume; binding sleeve question is fees-vs-funding (echo falsifier 08-03) + R0062 attribution fix",
-   "commit": "HEAD",
+   "commit": "16af6487",
    "due": "2026-08-06",
-   "disposed": "2026-07-31T16:57:27.238953+00:00"
+   "disposed": "2026-07-31T16:57:27.238953+00:00",
+   "repoints": [
+    {
+     "was": "HEAD",
+     "now": "16af6487",
+     "at": "2026-08-12T19:21:19.140370+00:00",
+     "why": "cited the symbolic ref HEAD; 16af6487 body carries this row's exact result (-51.74bps price_pnl decomposed as incident-era, clean-regime +0.46bps n=229) and is on origin/master"
+    }
+   ]
   },
   {
    "id": "R0027",
@@ -384,9 +408,17 @@
    "raised": "2026-07-28T20:31:40.766685+00:00",
    "status": "implemented",
    "reason": "walcl_reserve_impulse forward clock pre-registered + accruing (1/40d): derive_walcl_clock.py in the daily chain after fred_macro, _AXES entry with frozen construction (4wk log impulse, +2d release lag, z20, dir +1), build standard 26/26, matrix-mapped L1.25a(b); fills the slot kimchi's retirement freed -- cohort 12/12, idle 0",
-   "commit": "HEAD",
+   "commit": "14284422",
    "due": null,
-   "disposed": "2026-07-31T16:51:28.158989+00:00"
+   "disposed": "2026-07-31T16:51:28.158989+00:00",
+   "repoints": [
+    {
+     "was": "HEAD",
+     "now": "14284422",
+     "at": "2026-08-12T19:21:45.386684+00:00",
+     "why": "cited the symbolic ref HEAD; 14284422 is titled for this row (WALCL reserve-impulse forward clock fills the kimchi-freed Holm slot) and is on origin/master"
+    }
+   ]
   },
   {
    "id": "R0032",
@@ -636,9 +668,17 @@
    "raised": "2026-07-30T12:46:02.427501+00:00",
    "status": "implemented",
    "reason": "RUNNING checkpoint written after every ~50s bootstrap row; final write carries status COMPLETE; partial runs now survive kills",
-   "commit": "HEAD",
+   "commit": "16af6487",
    "due": null,
-   "disposed": "2026-07-31T16:54:10.479290+00:00"
+   "disposed": "2026-07-31T16:54:10.479290+00:00",
+   "repoints": [
+    {
+     "was": "HEAD",
+     "now": "16af6487",
+     "at": "2026-08-12T19:21:26.219475+00:00",
+     "why": "cited the symbolic ref HEAD; 16af6487 body documents this row's work (certify_gauntlet checkpoints every ~50s row) and is on origin/master"
+    }
+   ]
   },
   {
    "id": "R0053",
@@ -768,9 +808,17 @@
    "raised": "2026-07-30T17:32:56.049950+00:00",
    "status": "implemented",
    "reason": "certification artifact (21 rows, 04:55Z) force-tracked past the reports/ gitignore; R0017 corrected via reopen row; incremental checkpointing shipped (R0052)",
-   "commit": "HEAD",
+   "commit": "16af6487",
    "due": "",
-   "disposed": "2026-07-31T16:54:10.556388+00:00"
+   "disposed": "2026-07-31T16:54:10.556388+00:00",
+   "repoints": [
+    {
+     "was": "HEAD",
+     "now": "16af6487",
+     "at": "2026-08-12T19:21:32.604695+00:00",
+     "why": "cited the symbolic ref HEAD; 16af6487 body documents this row's work (certification artifact force-tracked past the reports/ gitignore) and is on origin/master"
+    }
+   ]
   },
   {
    "id": "R0064",
@@ -864,9 +912,17 @@
    "raised": "2026-07-31T03:45:45.001121+00:00",
    "status": "implemented",
    "reason": "all four repo legs closed: (a) capital-event venue-truth ladder + refusal of unverifiable equity, executor persists last_combined_equity; (b) reporting site honours recorded capital events; (c) protective stops planned+reconciled per tick, maker-pair fill-inference made stop-safe, per-id cancels added; (d) live_guard graded outputs consumed + guard scheduled 5-min. REMAINING (not repo-closeable): live verification against real fills at Gate 0; testnet connector stop parity is a recorded no-op",
-   "commit": "pending-this-commit",
+   "commit": "a0a475cc",
    "due": "",
-   "disposed": "2026-07-31T09:18:15.846284+00:00"
+   "disposed": "2026-07-31T09:18:15.846284+00:00",
+   "repoints": [
+    {
+     "was": "pending-this-commit",
+     "now": "a0a475cc",
+     "at": "2026-08-12T19:21:49.605482+00:00",
+     "why": "cited the placeholder pending-this-commit, which names no object; a0a475cc is titled R0071 CLOSED, the launch money-path cluster, and is on origin/master"
+    }
+   ]
   },
   {
    "id": "R0072",
@@ -1413,9 +1469,17 @@
    "raised": "2026-07-31T11:49:32.424659+00:00",
    "status": "implemented",
    "reason": "Stage-A screen BUILT and scheduled daily (scripts/screen_funding_spread.py + 7 tests): cross-venue join with symbol normalisation (XBTUSD/BTCUSDT/BTC) and hour bucketing, spread vs round-trip cost, HARVESTABLE-CANDIDATE vs UNHARVESTABLE verdict, NO-DATA reported as UNMEASURED never as a null. Screening itself is now automatic; the axis verdict lands from box data. Execution design for the paired-leg construction remains owed before any sizing",
-   "commit": "pending",
+   "commit": "8a831efc",
    "due": null,
-   "disposed": "2026-07-31T11:59:32.682214+00:00"
+   "disposed": "2026-07-31T11:59:32.682214+00:00",
+   "repoints": [
+    {
+     "was": "pending",
+     "now": "8a831efc",
+     "at": "2026-08-12T19:21:54.162499+00:00",
+     "why": "cited the placeholder pending; 8a831efc is titled for this row (built the top alpha candidate's screen, R0115 CLOSED) and is on origin/master"
+    }
+   ]
   },
   {
    "id": "R0116",
@@ -1461,9 +1525,17 @@
    "raised": "2026-07-31T11:59:50.146393+00:00",
    "status": "implemented",
    "reason": "Built the residual measure and the denominator it needs. The triage note was right that nothing existed, but the binding gap was narrower and deeper than 'no detector': current_funding() returns all ~855 perps at one instant and five callers discard it, so crowding had no cross-section to be residual AGAINST. collect_funding_cross_section.py now persists it (L1.46 clock declared, venue stamp kept, thin-payload refusal, malformed elements counted); libs/research/crowding.py takes residual-bps + unit-free rank and requires BOTH tells to agree; check_crowding.py fences it with FLAT-BOOK kept distinct from OK. Distinct from the incumbent run_carry_crowding.py, which measures the top-20 AVERAGE that CONTAINS our names -- there a regime and an adversary are the same number. Slippage tell reported as coverage-bound (12/531 TCA rows), not skipped. 19 tests; scheduled in manifest+crontab together with no new drift.",
-   "commit": "257d5be",
+   "commit": "bdbea0ba",
    "due": null,
-   "disposed": "2026-08-05T11:57:49.152287+00:00"
+   "disposed": "2026-08-05T11:57:49.152287+00:00",
+   "repoints": [
+    {
+     "was": "257d5be",
+     "now": "bdbea0ba",
+     "at": "2026-08-12T19:19:09.848645+00:00",
+     "why": "rebase orphaned 257d5be (no ref reaches it, gc-bound); bdbea0ba is the rebased twin -- identical patch-id 281969ee and identical diffstat -- and is reachable from origin"
+    }
+   ]
   },
   {
    "id": "R0120",
@@ -1473,9 +1545,17 @@
    "raised": "2026-07-31T11:59:50.190000+00:00",
    "status": "implemented",
    "reason": "Stage-A screen BUILT and scheduled daily (scripts/screen_collateral_allocation.py + 7 tests): reads the collected-but-unread defi_lending feed, splits funding into high/flat regimes, compares carry-net vs haircut-adjusted lending-net per regime, and emits CARRY-DOMINANT / LENDING-DOMINANT / REGIME-SWITCHED / UNMEASURED. Refuses to run at haircut=0 (contract/depeg/withdrawal-queue risk is real and correlated with needing the collateral back). UNMEASURED explicitly is NOT 'carry wins'. Moves no funds; the verdict is evidence for a principal allocation decision",
-   "commit": "pending",
+   "commit": "225140c1",
    "due": null,
-   "disposed": "2026-07-31T12:03:26.094486+00:00"
+   "disposed": "2026-07-31T12:03:26.094486+00:00",
+   "repoints": [
+    {
+     "was": "pending",
+     "now": "225140c1",
+     "at": "2026-08-12T19:21:56.612647+00:00",
+     "why": "cited the placeholder pending; 225140c1 is titled R0120 base-allocation screen BUILT, which is this row's substance, and is on origin/master"
+    }
+   ]
   },
   {
    "id": "R0121",
@@ -1497,9 +1577,17 @@
    "raised": "2026-07-31T12:33:16.979973+00:00",
    "status": "implemented",
    "reason": "Sleeve + its feed both BUILT and scheduled. collect_announcements.py runs every 15min against live public endpoints (OKX announcements verified working; Binance CMS 400s without a signed context, Bybit CloudFront blocks this egress country -- both RECORDED, and the Bybit one is a concrete argument for the second VPS in another region). It measures its OWN information latency (first_seen minus published_at) and gates on it: only fresh+material items reach the trader. First live run proved the gate necessary -- it ingested the 2021 CREAM exploit as breaking tier-1 news. Symbol extraction whitelisted after the regex returned ACROSS/AN/AS/LED as tickers. Sleeve runs 6x/day, paper-only, every call a scored forecast. REMAINING: paper P&L marking vs buy-and-hold + carry sleeve, and the 30-call calibration review that graveyards it if uncalibrated",
-   "commit": "pending",
+   "commit": "b442b6d3",
    "due": null,
-   "disposed": "2026-07-31T12:53:19.113549+00:00"
+   "disposed": "2026-07-31T12:53:19.113549+00:00",
+   "repoints": [
+    {
+     "was": "pending",
+     "now": "b442b6d3",
+     "at": "2026-08-12T19:21:58.902666+00:00",
+     "why": "cited the placeholder pending; b442b6d3 is titled R0122 LLM DISCRETIONARY SLEEVE, matching this row verbatim, and is on origin/master"
+    }
+   ]
   },
   {
    "id": "R0123",
@@ -1900,9 +1988,17 @@
    "raised": "2026-07-31T16:58:35.117130+00:00",
    "status": "implemented",
    "reason": "allocator now max-known-id over local + fetched origin/master (git show, no network), offline fallback local-max; 3 regression tests; race window shrinks from all-day to since-last-fetch",
-   "commit": "HEAD",
+   "commit": "16af6487",
    "due": null,
-   "disposed": "2026-07-31T16:59:39.161025+00:00"
+   "disposed": "2026-07-31T16:59:39.161025+00:00",
+   "repoints": [
+    {
+     "was": "HEAD",
+     "now": "16af6487",
+     "at": "2026-08-12T19:21:39.451083+00:00",
+     "why": "cited the symbolic ref HEAD; 16af6487 body carries this row's exact work (ledger ids allocate past max(local, fetched origin), 3 regression tests). NOTE 35eb57fc is a DIFFERENT pre-renumber R0152 and was rejected on summary mismatch"
+    }
+   ]
   },
   {
    "id": "R0153",
@@ -4613,11 +4709,11 @@
    "summary": "A DISPOSITION'S --commit SHA IS SILENTLY INVALIDATED BY ANY REBASE, AND THERE IS NO VERB TO RE-POINT IT. Hit live 2026-08-05: three rows were disposed implemented citing a4054a8/5b0cb81/3abe48b, then the branch had to be rebased onto origin (a sibling had pushed 13 commits to the same branch). Rebase rewrote all three SHAs. The cited commits survive only as orphaned local objects until gc and NEVER reach the remote, so the ledger's proof-of-work pointed at commits no other clone can resolve -- a false citation in exactly the dimension the --commit field exists to make true, and one that gets WORSE with time rather than announcing itself. scripts/recommendations.py:172 correctly refuses to re-dispose ('dispositions do not revert') and offers only 'correct', which re-OPENS the row and files the prior disposition as MISFILED. That is the wrong shape here: the disposition was right, only the pointer moved, and recording it as a misfiling would corrupt the correction history that verb exists to protect. Worked around this time by a surgical edit of the three commit fields, matching recommendations.py:69's exact serialization so the diff stayed at 6 lines. FIX, one of: (a) add a 'repoint --id --commit --reason' verb, which mutates only the commit field and appends to a repoints[] list -- cheap and exact; or (b) have dispose resolve the sha to a stable form at write time; or (c) a fence that walks implemented rows and reports any commit not reachable from the remote-tracking branch, which also catches the pre-existing rows nobody re-pointed. (c) is worth doing regardless of (a)/(b) because it MEASURES how many existing citations are already dangling -- currently unknown, and unmeasured counts as zero.",
    "roi_bps": 4.0,
    "raised": "2026-08-05T13:20:17.025660+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "84bc9f02",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T19:22:47.708182+00:00"
   },
   {
    "id": "R0370",
@@ -6329,6 +6425,18 @@
    "summary": "PRE-EXISTING RED SUITE, 8 failures across 3 unrelated tests/ops files, verified at HEAD 1d8a4e5c in a clean worktree (not caused by any 2026-08-12 owed-work commit): test_stale_code_daemons.py (5: test_proc_start_on_a_dead_pid_is_none, test_a_running_organ_outside_the_systemd_roster_is_discovered, test_stale_code_actually_raises_a_defect, test_a_freshly_started_organ_is_not_stale, test_import_closure_follows_the_api_package), test_maker_share_denominator.py (2: test_market_only_closes_are_excluded, test_all_excluded_reports_none_rather_than_a_perfect_score), test_brain_hunter.py (1: test_THE_RUNNER_FOLLOWS_THE_RESUMABLE_PATTERN_THE_OTHER_MINERS_USE, asserting _BRAIN_MODEL_CHAIN appears in ops/brain_hunter.sh -- it does not). The brain_hunter one is a code/test lineage split of exactly the shape recorded 2026-08-11 (merge kept one lineage's tests and the other's code); the stale-daemon cluster looks environment-coupled (/proc, systemd roster) which would make it a test that cannot pass in a container. WHY THIS IS ITS OWN ROW rather than backlog: a permanently-red suite is the L1.43 welded-gate failure applied to CI -- a gate that always fails carries zero information and gets ignored, and the desk's own push gate reads it. Each of the three needs a separate verdict: fix, mark environment-dependent with a skip that names the requirement, or delete as superseded by the merge. Cheap to triage, and the maker_share pair touches a DENOMINATOR the desk has been repairing all week.",
    "roi_bps": 3.0,
    "raised": "2026-08-12T18:55:27.329039+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0513",
+   "source": "cycle",
+   "summary": "THREE LEDGER CITATIONS REMAIN UNRESOLVABLE AND NEED ARCHAEOLOGY, NOT A GUESS (residual of R0369, floor held at 3 in scripts/check_citation_integrity.py). R0042, R0050 and R0149 are disposed implemented while citing the literal string 'HEAD', which resolves per-clone and so proves nothing to any reader but its author. The other 12 were repointed the same session on PER-ROW substance evidence -- a commit whose body or title documents that specific row's work, reachable from origin -- and that evidence does not exist for these three. THE NEAR-MISS IS THE POINT AND IS RECORDED SO IT IS NOT REPEATED: batch commit 16af6487's SUBJECT lists 'R0009/13/26/42/50/52/63 closed', which is enough to tempt a repoint of R0042 and R0050, but its diffstat touches neither defi_lending (R0042's substance: row count is not history depth) nor max_audit (R0050's: reconcile check_welded_gates). A subject-line closure list is a DISPOSITION claim, not proof the work is in that commit, and repointing on it would rebuild exactly the false citation R0369 exists to end -- one layer better hidden, because the new pointer WOULD resolve. R0149 is the R0017 correction row and no commit found carries its substance. WHAT WOULD CLOSE IT: for each row, find a commit touching the files its summary names, dated at or before its disposed stamp, and confirm the change is that row's work before running scripts/recommendations.py repoint. If no such commit exists the honest outcome is to say so on the row rather than cite anything -- an unresolvable citation that is KNOWN and rowed costs less than a resolvable one that points at the wrong work. Lower _FLOOR to match whatever is closed; it may only move DOWN.",
+   "roi_bps": 2.0,
+   "raised": "2026-08-12T19:23:06.505059+00:00",
    "status": "open",
    "reason": null,
    "commit": null,

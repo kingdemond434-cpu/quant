@@ -55,10 +55,16 @@ _LEDGER = _ROOT / "docs/research/recommendation_ledger.json"
 _OUT = _ROOT / "data" / "citation_integrity.json"
 _PASSING = frozenset({"OK", "BACKLOG"})
 
-#: Measured 2026-08-12 on the live ledger: 14 INVALID (10 `HEAD`, 4 `pending`) + 1 ORPHANED.
 #: RATCHET (L1.0): this number only ever moves DOWN, and only in a commit that repoints the rows
 #: it accounts for. Raising it to clear a red board is the failure the desk has paid for.
-_FLOOR = 15
+#: 2026-08-12: first measurement 15 (14 INVALID, 1 ORPHANED) -> 3, same session. The 12 repointed
+#: rows each carried PER-ROW substance evidence: a commit whose body or title documents that row's
+#: work, reachable from origin. R0042 and R0050 are NOT repointed although the batch commit
+#: 16af6487's subject lists them as closed -- its diffstat touches neither defi_lending nor
+#: max_audit, so the subject is a DISPOSITION claim and not proof the work is in that commit, and
+#: repointing on it would rebuild the same false citation one layer better hidden. R0149 names no
+#: commit that carries its substance. The remaining 3 need archaeology, not a guess.
+_FLOOR = 3
 
 
 def build_report(root: Path | None = None) -> dict[str, Any]:
