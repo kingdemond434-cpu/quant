@@ -3896,11 +3896,11 @@
    "summary": "JP-s1: p-mean (JP botter lineage) gives an ORDER-SENSITIVE decay bar our DSR/PSR structurally lack (they are order-invariant) -- directly on-objective under L1.30. Adopt the SHAPE, but the published error-rate formula is BROKEN (verified: returns 8.53 at p_mean=0.8/N=5, and the source's own headline run sits outside its Irwin-Hall validity region). Needs full alternating Irwin-Hall + domain guard + simulated null, and a PRE-REGISTERED window (a published exploit improves the metric 4 orders of magnitude by deleting a losing sub-period).",
    "roi_bps": 60.0,
    "raised": "2026-08-01T14:10:32.956649+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Not built: no p-mean/Irwin-Hall implementation anywhere (the only p_mean hits are the unrelated 'reality_p_mean_should_be_0.5_if_uniform' calibration field at scripts/audit_gate_power.py:324 / report_gate_audit.py:100). The row itself requires a corrected alternating Irwin-Hall derivation, a domain guard, a simulated null, and a PRE-REGISTERED window before adoption -- medium metrology work, additive to (never loosening) DSR/PSR. Real, on-objective under L1.30, not yet top priority against the money-path queue.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Built libs/research/order_sensitive_decay.py: exact-rational domain-guarded Irwin-Hall CDF, Edgington mean-p combination, and an early-vs-late decay verdict at a FROZEN pre-registered split with a pre-registered minimum period count. Validated against a 40k-draw Monte Carlo null at n=2/5/12/30 rather than asserted. The row's specific claim did NOT reproduce (correct value at p_mean=0.8/N=5 is 0.991667, not 8.53) and a test locks that so it is not inherited as fact -- but the defect class is real and worse than stated: it is a large-n catastrophic-cancellation failure returning -3733 at n=50 and -2.15e16 at n=80 as probabilities, invisible at the small n anyone checks by hand. Wired in the same commit to signal_halflife, replacing a bare +/-0.03 two-window threshold that had no null behind it. Found while wiring: mean-p assumes INDEPENDENT p-values and rolling_ic overlaps its windows two-thirds; the dependent version read the REFUTED kimchi axis as STRENGTHENING at 7.9e-05, and striding to non-overlapping windows correctly drops it to UNDERPOWERED. Grants no promotion authority and moves no bar. 23 tests.",
+   "commit": "da53431",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T08:34:07.573703+00:00"
   },
   {
    "id": "R0313",
@@ -3908,11 +3908,11 @@
    "summary": "JP-s1: for every venue we collect, check for a venue-side EXPIRED/DELISTED-INSTRUMENT endpoint (e.g. FTX publicGetExpiredFutures) before building a point-in-time universe by observation -- directly shortcuts R0239, and the KR seat's Upbit candle-purge finding is the same defect class.",
    "roi_bps": 35.0,
    "raised": "2026-08-01T14:10:33.156803+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Not adopted: zero hits for expiredFutures/expired-instrument endpoints across scripts/ and libs/; no venue collector checks a venue-side delisted-instrument endpoint before building point-in-time universes by observation. Its two named beneficiaries are handled separately (R0239 capture landed via snapshot_universe.py; the Upbit purge is R0303). Real per-venue checklist work -- a probe per collected venue -- worth doing as each venue is touched rather than as one batch now.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Built scripts/probe_delisted_instruments.py: probes all 7 collected venues, writes data/delisted_instruments.json plus per-venue dead rosters. Measured first run: bitmex 3077 dead vs 32 live, bybit 936 vs 808, coinbase 315 vs 517 (AVAILABLE), binance_futures 127 SETTLING (PARTIAL), okx/kraken_futures/upbit ABSENT -- 4455 dead names for 7 HTTP calls, two venues carrying MORE dead than live. This is the shortcut R0239's own docstring said did not exist (it routed the backward half to binance.vision archive reconstruction). Two bugs found by running it: BitMEX pagination truncated at the 500 cap and read 500-dead/0-live until walked (3077 after), and a roster schema change crashed the union on legacy files. Rosters are a monotone union and git-tracked so a venue ageing a name off cannot erase it (R0303 discipline); ABSENT vs UNREACHABLE kept distinct. 20 tests, daily cron, mapped L1.11a, build standard 68/68.",
+   "commit": "6914558",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T08:26:24.566063+00:00"
   },
   {
    "id": "R0314",
@@ -3920,11 +3920,11 @@
    "summary": "ADJACENCY of R0067: artifacts DERIVED from the mispaired Upbit keying between 2026-07-29T11:10 and 2026-08-01T14:00 are still on disk uncorrected. Confirmed: data/signal_halflife.jsonl carries kimchi_premium rows dated 2026-08-01 (ic_early 0.122 / ic_recent 0.0304 / status AGEING, written 08:24) and data/fusion_engine.json (12:51) fuses a 'kimchi' leg -- both computed through upbit_data's +1d shift, so their kimchi legs measure -r_binance, not a premium. The halflife rows are ALSO exact duplicates (same date+signal written twice), which is a second defect in the same file. Retract/re-run both now that the canon is same-instant; then sweep for any other consumer artifact written in that 3-day window.",
    "roi_bps": null,
    "raised": "2026-08-01T14:16:18.995811+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Upstream cause is fixed and closed (R0060/R0067 both status=implemented; scripts/signal_halflife.py:64-66 now delegates to upbit_data.upbit_daily_utc_keyed with the 'never re-derive it' comment), but the ASK -- retract/re-run the derived artifacts -- cannot be verified done: data/signal_halflife.jsonl and data/fusion_engine.json do not exist in this clone (data/ is box-local, gitignored), and no retraction record exists in the repo. The tainted rows live on the production box; the sweep of the 2026-07-29..08-01 window must run there. Real work, not principal-gated (the box's own organs can do it).",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Retracted the 3 unretracted 2026-08-01 kimchi rows, pinned to the git window 748cda4 (07-31T18:01Z) to 8408b48 (08-01T13:53Z) in which signal_halflife imported upbit_daily_close_keyed; coverage now runs contiguously 07-27..08-01 and stops at 08-02, the first post-fix day. Deduped the series through a new pure merge_series keyed on (date,signal) with atomic rewrite, wired into the writer so it cannot recur: 78 -> 34 rows, all 44 removed copies byte-identical. Sweep done: 65 kimchi-bearing derived artifacts, 56 recomputed post-fix (fusion_engine.json among them, regenerated 08-12T04:57 on upbit_daily_utc_keyed); of 9 frozen in-window, 7 are rollback snapshots and 1 is the quarantine file itself; the only real one, stage_a_verdicts kimchi_realign_h1, needs no re-run (SCREEN-UNDERPOWERED ic 0.0012 t 0.07, decontam FAILED -- a leak inflates skill, so removing it only pushes a null further null, and Stage A has zero promotion authority).",
+   "commit": "baf2fde",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T08:16:10.670154+00:00"
   },
   {
    "id": "R0315",
