@@ -2552,3 +2552,142 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: committed-script + 10 tests, including the partial-outage case that would otherwise
 #   converge on a too-recent boundary and shout ROLLING
 20 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_bybit_archive.lock .venv/bin/python scripts/probe_bybit_archive.py >> data/cro_ai_logs/bybit_archive.log 2>&1
+
+# ---------------------------------------------------------------------------------------------
+# ORPHAN RECLAMATION (2026-08-12): 56 real, runnable organs found built and never scheduled by
+#   scripts/check_orphan_organs.py's first full sweep -- the same defect class as
+#   run_derivative_shadow.py/screen_oi_ls_axes.py/run_discovery.py earlier this session, just at
+#   scale (75 candidates triaged in total). 19 needed the standard sys.path preamble fix (noted
+#   per line); 2 needed a real crash fix (uncaught FileNotFoundError on a missing upstream
+#   input -- now UNMEASURED, matching every other Stage-A organ's convention). 3 genuine
+#   MONEY-PATH scripts (run_live_demo.py, run_portfolio_live.py, run_cashcarry_testnet.py --
+#   real order-placement code, demo-gated but real) are deliberately EXCLUDED, not scheduled;
+#   they need principal review, not a cron line. ~12 one-off/manual tools (setup_*, backfill,
+#   a daemon, credential provisioning) are also deliberately excluded. screen_cme_basis.py is
+#   excluded too: hardcoded to a specific dated CSV with no ingester, looks like a one-time paid
+#   data drop -- needs a principal decision about the data source, not a blind schedule.
+# EVIDENCE: data/orphan_organs.json (this sweep's own record) + individual script docstrings.
+# CONFIDENCE: each organ verified importable+runnable in this container before scheduling (a
+#   ModuleNotFoundError under the desk's own `cd $QUANT_ROOT && python scripts/X.py` invocation
+#   was caught and fixed for every one listed here, not assumed away).
+# build_panel_rulings.py: digests panel_verdicts.jsonl -> docs/research/panel_rulings.md
+0 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_panel_rulings.lock .venv/bin/python scripts/build_panel_rulings.py >> data/cro_ai_logs/panel_rulings.log 2>&1
+# build_scoreboard.py: aggregates existing reports/*.json -> web/strategies.json
+1 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_scoreboard.lock .venv/bin/python scripts/build_scoreboard.py >> data/cro_ai_logs/scoreboard.log 2>&1
+# capacity_simulator.py: min viable per-carry notional from exchange lot rules -> data/capacity_floor.json
+2 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capacity_sim.lock .venv/bin/python scripts/capacity_simulator.py >> data/cro_ai_logs/capacity_sim.log 2>&1
+# check_shell_hygiene.py: syntax+regex gate over ops/*.sh, dry-run mode
+3 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_shell_hygiene.lock .venv/bin/python scripts/check_shell_hygiene.py >> data/cro_ai_logs/shell_hygiene.log 2>&1
+# cme_basis.py: CME-vs-offshore basis segmentation screen -> data/cme_basis_screen.json
+4 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cme_basis_screen.lock .venv/bin/python scripts/cme_basis.py >> data/cro_ai_logs/cme_basis_screen.log 2>&1
+# collateral_spread.py: USDT-vs-USDC funding spread screen -> data/collateral_spread.json
+5 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_collateral_spread.lock .venv/bin/python scripts/collateral_spread.py >> data/cro_ai_logs/collateral_spread.log 2>&1
+# backfill_oi_ls_oos.py: held-out OOS backtest of oi_divergence/ls_contrarian -- fixed: missing sys.path preamble
+6 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_oi_ls_oos.lock .venv/bin/python scripts/backfill_oi_ls_oos.py >> data/cro_ai_logs/oi_ls_oos.log 2>&1
+# batch_altdata.py: alt-data (Wikipedia/DefiLlama) vs BTC screen -- fixed: missing sys.path preamble
+7 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_batch_altdata.lock .venv/bin/python scripts/batch_altdata.py >> data/cro_ai_logs/batch_altdata.log 2>&1
+# collect_free_signals.py: Fear&Greed/dominance/HL-dispersion archiver -- fixed: missing sys.path preamble
+8 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_free_signals.lock .venv/bin/python scripts/collect_free_signals.py >> data/cro_ai_logs/free_signals.log 2>&1
+# collect_hyperliquid_funding.py: HL funding forward-only archive -- fixed: missing sys.path preamble
+9 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_hl_funding.lock .venv/bin/python scripts/collect_hyperliquid_funding.py >> data/cro_ai_logs/hl_funding.log 2>&1
+# funding_persistence.py: entry-time funding vs realised-funding persistence test
+10 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_funding_persist.lock .venv/bin/python scripts/funding_persistence.py >> data/cro_ai_logs/funding_persist.log 2>&1
+# hl_flow_alpha.py: HL trader-cohort signed taker-flow lead test -- fixed: missing sys.path preamble
+11 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_hl_flow_alpha.lock .venv/bin/python scripts/hl_flow_alpha.py >> data/cro_ai_logs/hl_flow_alpha.log 2>&1
+# hl_gapped.py: HL skill-persistence re-test with a gapped window
+12 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_hl_gapped.lock .venv/bin/python scripts/hl_gapped.py >> data/cro_ai_logs/hl_gapped.log 2>&1
+# hl_skill_persistence.py: HL trader past-PnL predicts future-PnL test
+13 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_hl_skill.lock .venv/bin/python scripts/hl_skill_persistence.py >> data/cro_ai_logs/hl_skill.log 2>&1
+# hold_optimizer.py: optimal hold bucket from the desk's own realised carry closes
+14 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_hold_optimizer.lock .venv/bin/python scripts/hold_optimizer.py >> data/cro_ai_logs/hold_optimizer.log 2>&1
+# horizon_search.py: cross-source horizon-discovery screen, Bonferroni-guarded
+15 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_horizon_search.lock .venv/bin/python scripts/horizon_search.py >> data/cro_ai_logs/horizon_search.log 2>&1
+# ingest_crypto_enriched.py: refreshes funding+flow+basis columns into the parquet lake -- fixed: missing sys.path preamble
+16 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_ingest_crypto_enriched.lock .venv/bin/python scripts/ingest_crypto_enriched.py >> data/cro_ai_logs/ingest_crypto_enriched.log 2>&1
+# iros_batch.py: 3 pre-registered hypothesis tests via GitHub/Binance/DefiLlama/Wikipedia
+17 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_iros_batch.lock .venv/bin/python scripts/iros_batch.py >> data/cro_ai_logs/iros_batch.log 2>&1
+# log_swaps.py: MT5 swap_long/swap_short snapshot -- fixed: missing sys.path preamble (needs MetaTrader5, VPS-only)
+18 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_log_swaps.lock .venv/bin/python scripts/log_swaps.py >> data/cro_ai_logs/log_swaps.log 2>&1
+# publish_dashboard_url.py: current tunnel URL -> web/dashboard_url.json, pages on change
+19 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_dashboard_url.lock .venv/bin/python scripts/publish_dashboard_url.py >> data/cro_ai_logs/dashboard_url.log 2>&1
+# reconstruct_kaiko_reference_rate.py: reconstructs Kaiko's published VWM/TWAP benchmark from 5 public venues
+20 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_kaiko_reference.lock .venv/bin/python scripts/reconstruct_kaiko_reference_rate.py >> data/cro_ai_logs/kaiko_reference.log 2>&1
+# reflexivity_m5.py: rolling OI/price reflexivity beta vs forward vol -- fixed: missing sys.path preamble
+21 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_reflexivity_m5.lock .venv/bin/python scripts/reflexivity_m5.py >> data/cro_ai_logs/reflexivity_m5.log 2>&1
+# run_capital_plan.py: sizing plan gated on forward-shadow t-stat evidence
+22 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capital_plan.lock .venv/bin/python scripts/run_capital_plan.py >> data/cro_ai_logs/capital_plan.log 2>&1
+# run_cot_screen.py: 26yr CFTC COT decay + GHR lag screen (fetch-cache path fixed separately)
+23 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cot_screen.lock .venv/bin/python scripts/run_cot_screen.py >> data/cro_ai_logs/cot_screen.log 2>&1
+# run_alpha_registry.py: persists sleeves as AlphaCards -> web/registry.json -- fixed: missing sys.path preamble + import order
+24 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_alpha_registry.lock .venv/bin/python scripts/run_alpha_registry.py >> data/cro_ai_logs/alpha_registry.log 2>&1
+# run_capture_analysis.py: capture-ratio diagnostic -> web/capture.json -- fixed: missing sys.path preamble
+25 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capture_analysis.lock .venv/bin/python scripts/run_capture_analysis.py >> data/cro_ai_logs/capture_analysis.log 2>&1
+# run_cashcarry_backtest.py: delta-neutral cash-carry vs perp-only funding carry -- fixed: missing sys.path preamble
+26 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cashcarry_backtest.lock .venv/bin/python scripts/run_cashcarry_backtest.py >> data/cro_ai_logs/cashcarry_backtest.log 2>&1
+# run_combined_stats.py: max-Sharpe/inverse-vol capital split report -- fixed: missing sys.path preamble
+27 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_combined_stats.lock .venv/bin/python scripts/run_combined_stats.py >> data/cro_ai_logs/combined_stats.log 2>&1
+# run_crossasset_robust.py: MT5 cross-asset gauntlet raw vs vol-target overlay -- fixed: missing sys.path preamble
+28 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_crossasset_robust.lock .venv/bin/python scripts/run_crossasset_robust.py >> data/cro_ai_logs/crossasset_robust.log 2>&1
+# run_crossexchange_backtest.py: cross-exchange funding-dispersion carry test -- fixed: missing sys.path preamble
+29 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_crossexchange_backtest.lock .venv/bin/python scripts/run_crossexchange_backtest.py >> data/cro_ai_logs/crossexchange_backtest.log 2>&1
+# run_derivative_backtest.py: OI-divergence/LS-contrarian backtest on real derivatives history -- fixed: missing sys.path preamble
+30 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_derivative_backtest.lock .venv/bin/python scripts/run_derivative_backtest.py >> data/cro_ai_logs/derivative_backtest.log 2>&1
+# run_factor_model.py: PCA factor-risk decomposition of the sleeve correlation matrix -- fixed: missing sys.path preamble
+31 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_factor_model.lock .venv/bin/python scripts/run_factor_model.py >> data/cro_ai_logs/factor_model.log 2>&1
+# run_reversal_costtest.py: reversal/lead-lag survives maker fees + wider bands? -- fixed: missing sys.path preamble
+32 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_reversal_costtest.lock .venv/bin/python scripts/run_reversal_costtest.py >> data/cro_ai_logs/reversal_costtest.log 2>&1
+# run_xsec_funding_max.py: max cross-sectional funding-carry sweep -- fixed: missing sys.path preamble
+33 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_xsec_funding_max.lock .venv/bin/python scripts/run_xsec_funding_max.py >> data/cro_ai_logs/xsec_funding_max.log 2>&1
+# screen_fred_macro_axis.py: 5 FRED macro series vs BTC screen -- fixed: uncaught crash on missing FRED key, now graceful-skip
+34 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_fred_macro_axis.lock .venv/bin/python scripts/screen_fred_macro_axis.py >> data/cro_ai_logs/fred_macro_axis.log 2>&1
+# run_factory.py: sleeve leaderboard / milestone view -> web/factory.json -- fixed: missing sys.path preamble
+35 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_factory.lock .venv/bin/python scripts/run_factory.py >> data/cro_ai_logs/factory.log 2>&1
+# run_factory_status.py: Information Advantage Score -> web/factory.json -- fixed: missing sys.path preamble
+36 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_factory_status.lock .venv/bin/python scripts/run_factory_status.py >> data/cro_ai_logs/factory_status.log 2>&1
+# run_firm_alphas_backtest.py: 4 new candidate alpha families through DSR gauntlet -- fixed: missing sys.path preamble
+37 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_firm_alphas_backtest.lock .venv/bin/python scripts/run_firm_alphas_backtest.py >> data/cro_ai_logs/firm_alphas_backtest.log 2>&1
+# run_freedata_backtest.py: Fear&Greed contrarian/de-risk overlay backtest -- fixed: missing sys.path preamble
+38 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_freedata_backtest.lock .venv/bin/python scripts/run_freedata_backtest.py >> data/cro_ai_logs/freedata_backtest.log 2>&1
+# run_funding_8h.py: funding carry re-test at native 8h resolution -- fixed: missing sys.path preamble
+39 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_funding_8h.lock .venv/bin/python scripts/run_funding_8h.py >> data/cro_ai_logs/funding_8h.log 2>&1
+# run_mt5_crossasset.py: MT5 cross-asset momentum/trend gauntlet -- fixed: missing sys.path preamble
+40 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_mt5_crossasset.lock .venv/bin/python scripts/run_mt5_crossasset.py >> data/cro_ai_logs/mt5_crossasset.log 2>&1
+# run_mt5_funding_bridge.py: Binance funding predicts MT5 crypto-CFD moves? -- fixed: missing sys.path preamble
+41 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_mt5_funding_bridge.lock .venv/bin/python scripts/run_mt5_funding_bridge.py >> data/cro_ai_logs/mt5_funding_bridge.log 2>&1
+# run_mt5_portfolio.py: multi-sleeve MT5 portfolio report, advisory leverage only -- fixed: missing sys.path preamble
+42 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_mt5_portfolio.lock .venv/bin/python scripts/run_mt5_portfolio.py >> data/cro_ai_logs/mt5_portfolio.log 2>&1
+# run_mutation_test.py: mutation-tests 5 money-path files against scratch copies, never the real tree
+43 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_mutation_test.lock .venv/bin/python scripts/run_mutation_test.py >> data/cro_ai_logs/mutation_test.log 2>&1
+# run_overlay_backtest.py: vol-target/beta-hedge overlay validation on the real perp book -- fixed: missing sys.path preamble
+44 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_overlay_backtest.lock .venv/bin/python scripts/run_overlay_backtest.py >> data/cro_ai_logs/overlay_backtest.log 2>&1
+# run_regime_allocation.py: SHADOW regime-tilt report, never auto-applied -- fixed: uncaught crash on missing upstream report
+45 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_regime_alloc.lock .venv/bin/python scripts/run_regime_allocation.py >> data/cro_ai_logs/regime_alloc.log 2>&1
+# run_research_lake.py: discovery lab over the 26yr FX daily lake -- fixed: missing sys.path preamble
+46 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_research_lake.lock .venv/bin/python scripts/run_research_lake.py >> data/cro_ai_logs/research_lake.log 2>&1
+# run_tournament.py: ranks registered alphas by marginal contribution x crowding
+47 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_tournament.lock .venv/bin/python scripts/run_tournament.py >> data/cro_ai_logs/tournament.log 2>&1
+# run_venue_reconcile.py: read-only testnet balance reconciliation vs the deadman rail
+48 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_venue_reconcile.lock .venv/bin/python scripts/run_venue_reconcile.py >> data/cro_ai_logs/venue_reconcile.log 2>&1
+# screen_etf_flows.py: spot-BTC-ETF net flows vs BTC returns, look-ahead controlled
+49 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_etf_flows_screen.lock .venv/bin/python scripts/screen_etf_flows.py >> data/cro_ai_logs/etf_flows_screen.log 2>&1
+# screen_fx_debasement.py: EM debasement basket + synthetic DXY vs BTC
+50 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_fx_debasement_screen.lock .venv/bin/python scripts/screen_fx_debasement.py >> data/cro_ai_logs/fx_debasement_screen.log 2>&1
+# screen_idle_axes.py: taker-flow absorption / on-chain throughput / stablecoin-rent screen
+51 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_idle_axes_screen.lock .venv/bin/python scripts/screen_idle_axes.py >> data/cro_ai_logs/idle_axes_screen.log 2>&1
+# screen_mining.py: hashrate/difficulty/hashprice forced-seller screen
+52 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_mining_screen.lock .venv/bin/python scripts/screen_mining.py >> data/cro_ai_logs/mining_screen.log 2>&1
+# screen_wikipedia.py: attention (pageview) screen vs crypto returns
+53 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_wikipedia_screen.lock .venv/bin/python scripts/screen_wikipedia.py >> data/cro_ai_logs/wikipedia_screen.log 2>&1
+# stageb_capacity.py: Holm-correction cost curve for concurrent Stage-B slot count
+54 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_stageb_capacity.lock .venv/bin/python scripts/stageb_capacity.py >> data/cro_ai_logs/stageb_capacity.log 2>&1
+# structural_spreads.py: stablecoin-peg / liquid-staking-discount persistence screen
+55 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_structural_spreads.lock .venv/bin/python scripts/structural_spreads.py >> data/cro_ai_logs/structural_spreads.log 2>&1
+# 3 MORE, added after re-triage: check_spot_testnet.py/check_testnet.py were classified ONE-OFF
+#   ("run once after adding keys") but are genuinely read-only, no-arg, graceful-on-missing-keys
+#   connectivity diagnostics -- reasonable as periodic health-checks, not just a manual step.
+#   screen_cme_basis.py was BROKEN (uncaught crash on its one-time paid CME data drop being
+#   absent) -- fixed to DATA-BLOCKED like every other screen with a missing input; the data
+#   itself is NOT re-ingested here (R0143: buying a licensed feed is a principal decision).
+56 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_spot_testnet_check.lock .venv/bin/python scripts/check_spot_testnet.py >> data/cro_ai_logs/spot_testnet_check.log 2>&1
+57 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_testnet_check.lock .venv/bin/python scripts/check_testnet.py >> data/cro_ai_logs/testnet_check.log 2>&1
+58 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cme_futures_basis_screen.lock .venv/bin/python scripts/screen_cme_basis.py >> data/cro_ai_logs/cme_futures_basis_screen.log 2>&1

@@ -13,15 +13,22 @@ drawdown reduction. Reports survivors AND rejects (most should fail -- the gaunt
 from __future__ import annotations
 
 import json
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from libs.data.crypto_source import daily_with_funding
-from libs.data.freesources import fear_greed
-from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
+_ROOT = Path("/home/quant/quant-platform")
+if not _ROOT.exists():
+    _ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from libs.data.crypto_source import daily_with_funding  # noqa: E402
+from libs.data.freesources import fear_greed  # noqa: E402
+from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E402
 
 _OUT = Path("web/freedata.json")
 _PPY = 365.0

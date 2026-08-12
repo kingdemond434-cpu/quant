@@ -10,11 +10,19 @@ taker-flow sleeves. One-time + daily-refreshable. Network-heavy (perp + spot kli
 from __future__ import annotations
 
 import argparse
+import sys
+from pathlib import Path
 
-from libs.data.crypto_source import daily_enriched, list_liquid_perps
-from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
-from libs.data.lake import Layer, ParquetLake
-from libs.data.timeframe import Timeframe
+_ROOT = Path("/home/quant/quant-platform")
+if not _ROOT.exists():
+    _ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from libs.data.crypto_source import daily_enriched, list_liquid_perps  # noqa: E402
+from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument  # noqa: E402
+from libs.data.lake import Layer, ParquetLake  # noqa: E402
+from libs.data.timeframe import Timeframe  # noqa: E402
 
 
 def main() -> None:

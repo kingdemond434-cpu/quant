@@ -6,13 +6,20 @@ Run from repo root."""
 from __future__ import annotations
 
 import json
+import sys
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
 
-from libs.research.axis_screen import stage_a_screen
+_ROOT = Path("/home/quant/quant-platform")
+if not _ROOT.exists():
+    _ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from libs.research.axis_screen import stage_a_screen  # noqa: E402
 
 
 def _get(url: str):

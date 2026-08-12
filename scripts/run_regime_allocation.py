@@ -23,6 +23,18 @@ _SLEEVES = ["funding_carry", "basis_carry", "taker_flow", "xsec_price_mom", "ts_
 
 
 def main() -> None:
+    if not _PORT.exists():
+        # NO SILENT CRASH ON A FRESH BOX. Found 2026-08-12: this was a bare .read_text() with no
+        # existence guard -- web/crypto_portfolio.json is produced by an unscheduled upstream
+        # organ, so a box that hasn't run it yet hit an uncaught FileNotFoundError instead of the
+        # UNMEASURED status every other Stage-A organ on this desk reports for a missing input.
+        _OUT.parent.mkdir(parents=True, exist_ok=True)
+        _OUT.write_text(json.dumps(
+            {"status": "UNMEASURED", "why": f"{_PORT} absent -- upstream portfolio engine "
+                                            "has not produced it on this box yet"},
+            indent=1), "utf-8")
+        print(f"regime allocation: UNMEASURED -- {_PORT} absent")
+        return
     port = json.loads(_PORT.read_text("utf-8"))
     regimes = port.get("regimes", {})
     reg = json.loads(_REG.read_text("utf-8")) if _REG.exists() else {}

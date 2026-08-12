@@ -14,6 +14,7 @@ Each runs through the deflated Sharpe ratio + Spearman IC. Honest survivors AND 
 from __future__ import annotations
 
 import json
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -21,13 +22,19 @@ import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
 
-from libs.data.crypto_source import list_liquid_perps
-from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
-from libs.data.lake import Layer, ParquetLake
-from libs.data.timeframe import Timeframe
-from libs.data.universe import RESEARCH_TOP_N
-from libs.research.crypto_xsec import adv_tier_cost
-from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
+_ROOT = Path("/home/quant/quant-platform")
+if not _ROOT.exists():
+    _ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from libs.data.crypto_source import list_liquid_perps  # noqa: E402
+from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument  # noqa: E402
+from libs.data.lake import Layer, ParquetLake  # noqa: E402
+from libs.data.timeframe import Timeframe  # noqa: E402
+from libs.data.universe import RESEARCH_TOP_N  # noqa: E402
+from libs.research.crypto_xsec import adv_tier_cost  # noqa: E402
+from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E402
 
 _CRYPTO = Path("data/lake/bronze/crypto")
 _OUT = Path("web/firm_alphas.json")

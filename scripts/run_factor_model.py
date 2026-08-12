@@ -13,12 +13,19 @@ web/factor_model.json. (Correlation-space / unit-variance; raw sleeve vols are n
 from __future__ import annotations
 
 import json
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
 
-from libs.portfolio.factor_model import FactorRiskModel
+_ROOT = Path("/home/quant/quant-platform")
+if not _ROOT.exists():
+    _ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from libs.portfolio.factor_model import FactorRiskModel  # noqa: E402
 
 _PORT = Path("web/crypto_portfolio.json")
 _OUT = Path("web/factor_model.json")

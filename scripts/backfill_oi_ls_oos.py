@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import sys
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
@@ -33,8 +34,14 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
-from libs.validation.forward_stats import nw_tstat
+_ROOT = Path("/home/quant/quant-platform")
+if not _ROOT.exists():
+    _ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E402
+from libs.validation.forward_stats import nw_tstat  # noqa: E402
 
 ROOT = Path("/home/quant/quant-platform")
 MET_DIR = ROOT / "data/lake/bronze/oi_ls_daily"

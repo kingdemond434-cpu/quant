@@ -15,10 +15,17 @@ from __future__ import annotations
 
 import json
 import math
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-from libs.factory.registry import (
+_ROOT = Path("/home/quant/quant-platform")
+if not _ROOT.exists():
+    _ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from libs.factory.registry import (  # noqa: E402
     EDGE_FAMILIES,
     SLEEVE_FAMILY,
     TARGET_PER_FAMILY,

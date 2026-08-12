@@ -12,14 +12,21 @@ No alpha claim yet -- the honest forward-archive for the next decorrelated bread
 from __future__ import annotations
 
 import json
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from libs.data.crypto_source import current_funding
-from libs.data.freesources import hyperliquid_funding
+_ROOT = Path("/home/quant/quant-platform")
+if not _ROOT.exists():
+    _ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from libs.data.crypto_source import current_funding  # noqa: E402
+from libs.data.freesources import hyperliquid_funding  # noqa: E402
 
 _ARCH = Path("data/hyperliquid_funding.parquet")
 _WEB = Path("web/hyperliquid.json")

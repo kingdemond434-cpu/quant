@@ -15,19 +15,26 @@ for the dashboard scoreboard.
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from libs.autodiscovery.models import Family, Hypothesis
-from libs.autodiscovery.validation import campaign_gate_stats, validate
-from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
-from libs.data.lake import Layer, ParquetLake
-from libs.data.timeframe import Timeframe
-from libs.research.crossasset import trend_basket_returns, xsec_momentum_returns
-from libs.validation.dsr import sharpe_ratio
-from libs.validation.economic_prior import MechanismType
+_ROOT = Path("/home/quant/quant-platform")
+if not _ROOT.exists():
+    _ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from libs.autodiscovery.models import Family, Hypothesis  # noqa: E402
+from libs.autodiscovery.validation import campaign_gate_stats, validate  # noqa: E402
+from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument  # noqa: E402
+from libs.data.lake import Layer, ParquetLake  # noqa: E402
+from libs.data.timeframe import Timeframe  # noqa: E402
+from libs.research.crossasset import trend_basket_returns, xsec_momentum_returns  # noqa: E402
+from libs.validation.dsr import sharpe_ratio  # noqa: E402
+from libs.validation.economic_prior import MechanismType  # noqa: E402
 
 _COVERAGE = Path("reports/multiasset_coverage.json")
 _OUT = Path("reports/mt5_crossasset")

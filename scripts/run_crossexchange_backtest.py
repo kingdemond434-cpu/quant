@@ -19,19 +19,26 @@ data, or a panel below the 6-symbol minimum, exits UNMEASURED instead of computi
 from __future__ import annotations
 
 import json
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from libs.autodiscovery.models import Family, Hypothesis
-from libs.autodiscovery.validation import campaign_gate_stats, validate
-from libs.data.crypto_source import fetch_funding, fetch_klines
-from libs.data.multiexchange import fetch_bybit_funding, fetch_okx_funding
-from libs.research.ic import evaluate_signal
-from libs.validation.dsr import sharpe_ratio
-from libs.validation.economic_prior import MechanismType
+_ROOT = Path("/home/quant/quant-platform")
+if not _ROOT.exists():
+    _ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from libs.autodiscovery.models import Family, Hypothesis  # noqa: E402
+from libs.autodiscovery.validation import campaign_gate_stats, validate  # noqa: E402
+from libs.data.crypto_source import fetch_funding, fetch_klines  # noqa: E402
+from libs.data.multiexchange import fetch_bybit_funding, fetch_okx_funding  # noqa: E402
+from libs.research.ic import evaluate_signal  # noqa: E402
+from libs.validation.dsr import sharpe_ratio  # noqa: E402
+from libs.validation.economic_prior import MechanismType  # noqa: E402
 
 _OUT = Path("web/crossexchange_backtest.json")
 _PPY = 3 * 365.0                              # 8h funding periods per year

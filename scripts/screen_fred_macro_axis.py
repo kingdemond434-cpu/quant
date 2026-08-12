@@ -72,6 +72,7 @@ signal[k] is observed strictly inside period k and predicts period k+1.
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 import urllib.parse
@@ -252,8 +253,31 @@ def transform(sid: str, s: pd.Series) -> pd.Series:
     return s.dropna()                                        # levels: VIXCLS / T10Y2Y / DGS10
 
 
+def _key() -> str | None:
+    """Same fallback order and graceful-skip contract as collect_fred_macro.py's own _key():
+    env var first, then the secrets file; an absent/unreadable key is UNMEASURED, never a crash."""
+    k = os.environ.get("FRED_API_KEY")
+    if k:
+        return k
+    try:
+        return str(json.loads((ROOT / "data/secrets/fred.json").read_text("utf-8"))["key"])
+    except (OSError, json.JSONDecodeError, KeyError):
+        return None
+
+
 def main() -> None:
-    key = json.loads((ROOT / "data/secrets/fred.json").read_text("utf-8"))["key"]
+    key = _key()
+    if key is None:
+        # NO SILENT CRASH, NO FABRICATED SCREEN. Found 2026-08-12: this call was a bare
+        # .read_text() with no try/except, unlike collect_fred_macro.py's own graceful skip on
+        # the identical file -- confirmed missing in a fresh checkout, which is exactly the state
+        # a box with no FRED key provisioned yet is in.
+        OUT.write_text(json.dumps(
+            {"status": "UNMEASURED", "why": "no FRED_API_KEY env var or data/secrets/fred.json"},
+            indent=1), "utf-8")
+        print("screen_fred_macro_axis: UNMEASURED -- no FRED key (env FRED_API_KEY or "
+              "data/secrets/fred.json)")
+        return
     btc = coinmetrics_btc()
     print(f"BTC leg (coinmetrics daily close): n={len(btc)} "
           f"{btc.index.min().date()} -> {btc.index.max().date()}\n")

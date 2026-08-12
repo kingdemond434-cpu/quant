@@ -13,15 +13,22 @@ not lie about it. Writes web/registry.json + data/alpha_registry.sqlite.
 from __future__ import annotations
 
 import json
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-from migrations import MIGRATIONS
+_ROOT = Path("/home/quant/quant-platform")
+if not _ROOT.exists():
+    _ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
-from libs.alpha.card import NewAlpha
-from libs.alpha.manager import AlphaLifecycleManager
-from libs.store.connection import Database
-from libs.store.migrations import run_migrations
+from migrations import MIGRATIONS  # noqa: E402
+
+from libs.alpha.card import NewAlpha  # noqa: E402
+from libs.alpha.manager import AlphaLifecycleManager  # noqa: E402
+from libs.store.connection import Database  # noqa: E402
+from libs.store.migrations import run_migrations  # noqa: E402
 
 _DB = Path("data/alpha_registry.sqlite")
 _PORT = Path("web/crypto_portfolio.json")

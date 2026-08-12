@@ -16,6 +16,7 @@ pass is low-confidence; forward validation is still required before production. 
 from __future__ import annotations
 
 import json
+import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -23,16 +24,22 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from libs.autodiscovery.models import Family, Hypothesis
-from libs.autodiscovery.validation import campaign_gate_stats, validate
-from libs.data.crypto_source import (
+_ROOT = Path("/home/quant/quant-platform")
+if not _ROOT.exists():
+    _ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from libs.autodiscovery.models import Family, Hypothesis  # noqa: E402
+from libs.autodiscovery.validation import campaign_gate_stats, validate  # noqa: E402
+from libs.data.crypto_source import (  # noqa: E402
     fetch_klines,
     fetch_long_short_hist,
     fetch_open_interest_hist,
     list_liquid_perps,
 )
-from libs.validation.dsr import sharpe_ratio
-from libs.validation.economic_prior import MechanismType
+from libs.validation.dsr import sharpe_ratio  # noqa: E402
+from libs.validation.economic_prior import MechanismType  # noqa: E402
 
 _OUT = Path("web/derivative_backtest.json")
 _PPY = 24 * 365.0                      # hourly annualisation

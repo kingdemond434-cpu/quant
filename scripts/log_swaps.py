@@ -11,12 +11,19 @@ to data/swap_log.parquet. Schedule daily (e.g. alongside QuantShadow).
 
 from __future__ import annotations
 
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
 
-from libs.data.cot_source import COT_MAP
+_ROOT = Path("/home/quant/quant-platform")
+if not _ROOT.exists():
+    _ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from libs.data.cot_source import COT_MAP  # noqa: E402
 
 _LOG = Path("data/swap_log.parquet")
 # Cross-asset universe to log (carry is meaningful per instrument; reuse the liquid set).

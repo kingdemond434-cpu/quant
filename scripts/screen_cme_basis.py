@@ -87,6 +87,22 @@ def _downsample(sig: np.ndarray, ret_1d: np.ndarray, step: int) -> tuple[np.ndar
 
 
 def main() -> None:
+    defs_csv = CME / "BTC_FUT_definition_2018-01-01_2026-07-20.csv"
+    ohlcv_csv = CME / "BTC_FUT_ohlcv-1d_2018-01-01_2026-07-20.csv"
+    if not (defs_csv.exists() and ohlcv_csv.exists()):
+        # NO SILENT CRASH ON A BOX WITHOUT THE DROP. This is a one-time paid data drop with no
+        # ingester -- CME futures history isn't a free/keyless source like its sibling screens,
+        # and R0143 makes buying a licensed feed a principal decision, never one this organ can
+        # make for itself. Missing is DATA-BLOCKED, same convention as every other Stage-A screen
+        # on a box that hasn't received its input yet -- never a bare traceback.
+        OUT.mkdir(parents=True, exist_ok=True)
+        (OUT / "cme_basis_20260724.json").write_text(json.dumps(
+            {"status": "DATA-BLOCKED",
+             "why": f"{defs_csv.name} / {ohlcv_csv.name} absent under {CME} -- one-time paid "
+                    "drop, no ingester refreshes it, not a free/keyless source"},
+            indent=1), "utf-8")
+        print(f"screen_cme_basis: DATA-BLOCKED -- CME drop absent under {CME}")
+        return
     front = _front_basis()
     spot = _spot()
     df = front.join(spot, how="inner").dropna(subset=["fut_close", "spot_close"])

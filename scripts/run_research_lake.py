@@ -21,26 +21,34 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from migrations import MIGRATIONS
 
-from libs.autodiscovery.models import Family, MarketSeries
-from libs.autodiscovery.orchestrator import AutoDiscoveryLab
-from libs.autodiscovery.reports import (
+_ROOT = Path("/home/quant/quant-platform")
+if not _ROOT.exists():
+    _ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from migrations import MIGRATIONS  # noqa: E402
+
+from libs.autodiscovery.models import Family, MarketSeries  # noqa: E402
+from libs.autodiscovery.orchestrator import AutoDiscoveryLab  # noqa: E402
+from libs.autodiscovery.reports import (  # noqa: E402
     failure_analysis_report,
     research_report,
     survivor_report,
 )
-from libs.autodiscovery.research_roi import ResearchROIMonitor
-from libs.autodiscovery.validation import SESSION_DAYS_PER_YEAR
-from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
-from libs.data.lake import Layer, ParquetLake
-from libs.data.timeframe import Timeframe
-from libs.store.connection import Database
-from libs.store.migrations import run_migrations
+from libs.autodiscovery.research_roi import ResearchROIMonitor  # noqa: E402
+from libs.autodiscovery.validation import SESSION_DAYS_PER_YEAR  # noqa: E402
+from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument  # noqa: E402
+from libs.data.lake import Layer, ParquetLake  # noqa: E402
+from libs.data.timeframe import Timeframe  # noqa: E402
+from libs.store.connection import Database  # noqa: E402
+from libs.store.migrations import run_migrations  # noqa: E402
 
 _BRONZE = Path("data/lake/bronze")
 _OUT = Path("reports/research_lake")
