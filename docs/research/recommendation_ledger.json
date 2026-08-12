@@ -4733,11 +4733,11 @@
    "summary": "MONEY-PATH MEASUREMENT GAP: the cash-carry tape records NO fee field on ANY fill. 0 of 500 rows in data/cashcarry_trades.json carry fee/commission/fee_usd, so cost-per-fill is structurally unmeasurable from the trade log -- while web/cashcarry_live.json attributes 1750.88 of futures commission = 88.7pct of the sleeve's entire -1973.82 non-funding loss. The desk can therefore see that fees are the dominant loss and CANNOT attribute them to a symbol, a leg, a mode, or a hold bucket. This blocks R0194 (sqrt-impact cost curve must calibrate on our own fills), blocks fee_concentration (the 96.5pct taker-minority statistic the fill monitor exists to track), and is why cost_drift reports 'only 0 trades carry TCA cost fields yet'. run_deadman_reconciliation.py:108-110 already sums commission per fill from binance_spot_testnet.my_trades, so the venue data is reachable -- the gap is that the executor does not stamp it onto the trade row at close time. FIX: stamp per-leg commission onto the close row, same place spot_mode/fut_mode are stamped.",
    "roi_bps": null,
    "raised": "2026-08-05T13:54:22.710150+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Per-symbol fee attribution shipped from venue truth and wired to run_execution_intel: libs/research/fee_attribution.py + scripts/run_fee_attribution.py, 13+5 tests, L1.58-r0371 in the matrix, daily cadence. Reconciles to the cent (11,194 events = 1750.878 vs the dashboard 1750.88); COOKIEUSDT/1000CATUSDT/MOVEUSDT/TSTUSDT carry 85.9%, so the repair is symbol selection not the execution path. DEVIATION FROM THE PROPOSED FIX, deliberate and evidenced: the row proposed stamping commission on the close row, but (a) commission_events already existed with ZERO callers -- the missing piece was a consumer, and (b) the tape logs only 7.1% of the notional the bill implies, so a fill-time stamp alone would have produced a well-formed 7%-complete cost model. Per-round-trip/mode/hold-bucket attribution is REFUSED not faked (income ledger emits one row per PARTIAL fill; median event-to-tape-instant gap 4.3h) and the spot leg is UNMEASURED (account reset). The staged money-path stamp and the 93% notional residual are rowed separately.",
+   "commit": "b3264133",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T19:54:31.284150+00:00"
   },
   {
    "id": "R0372",
@@ -4745,11 +4745,11 @@
    "summary": "CARRY REGIME CHANGE IN THE YEAR THE DESK DEPLOYED, measured not asserted: 2026 YTD BitMEX XBTUSD funding is -1.23pct/yr with 49.4pct of settlements negative (n=634 through 07-31), against a 2016-2025 mean of +11pct/yr. BTC carry is currently a coin flip. The alt tail is NOT compressed -- live 855-symbol Binance USDM cross-section shows median 5.47pct/yr and a top-decile mean of 34.39pct/yr over 87 symbols, with 40.8pct of the universe at or below zero. IMPLICATION FOR SIZING PRIORS: the carry sleeve's edge is concentrated in the section-42 small-cap tail and is roughly absent in majors this year, so a majors-weighted carry book is sized on a decade average that no longer describes its own universe. This is the sizing-prior half of R0192, deliberately rowed separately rather than claimed as done.",
    "roi_bps": null,
    "raised": "2026-08-05T13:54:29.020656+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "MEASUREMENT TRUE AND ALREADY BANKED; ITS STATED IMPLICATION REFUTED ON THIS DESK'S OWN TAPE. The regime numbers are real and were recorded under R0192 (research memory rm-20260805T135340-cb85e2), so the row's contribution would be the sizing-prior ACTION, and all three premises of that action fail. (1) 'a majors-weighted carry book' is FALSE: of 118,847 USD of deployed notional across 67 symbols opened, majors took 2,640 USD = 2.2pct; the top eight names by deployed notional are COOKIE/GTC/XVG/TST/HFT/MOVE/NOM/AT, all tail. The book is ALREADY ~98pct section-42 small caps. (2) 'sized on a decade average' is FALSE: _alloc weights per-name notional by the LIVE funding rate, capped at 35pct, and selection ranks by _net_bps (live funding minus measured cost) with _MIN_FUNDING deleted 2026-07-31 under R0057. grep finds NO sizing_prior / funding_prior / decay_slope / carry_prior consumer anywhere in scripts/ or libs/ -- there is no decade average to correct, and a live-funding-weighted book absorbs the regime change by construction. (3) WRONG BOTTLENECK (L1.13/L1.14, the higher-ERV alternative named): gross-carry priors cannot be the binding constraint when realized venue truth over 07-02..08-01 is funding +113.06 USDT against commission 1,750.88 USDT = net -1,637.82, a 15.5x fee-over-harvest ratio, with only 6 of 83 symbols net-positive after fees. COOKIEUSDT earned 7.01 of funding and paid 623.30 in fees. Re-sizing toward a tail the desk already holds at 98pct, while paying 15x the harvest in fees, optimises the wrong term. The per-symbol net decomposition this refutation rests on is rowed separately as the finding that survives.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T19:57:11.690712+00:00"
   },
   {
    "id": "R0373",
@@ -4769,11 +4769,11 @@
    "summary": "L1.50 falsifier (a), OPEN and highest-value: where does the principal-signed 5757.08 USD actually sit, and is it already earning at or above the reachable floor (3.73%/yr) there? If YES, check_idle_cost is a constant zero and should be RETIRED per its own falsifier. If NO, it prices roughly 215-490 USD/yr forgone. One question to the principal, costs nothing, and it decides whether a just-built organ lives. Blocks nothing else.",
    "roi_bps": 40.0,
    "raised": "2026-08-05T14:10:31.967481+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "SPLIT: the fixable half is DONE (975548f8), the answerable-only-by-you half is routed and dated. (1) FIXED NOW: the row is built around '5757.08', which was a HARDCODED STRING LITERAL in scripts/check_idle_cost.py:322 while the same payload reported the attested equity it had just read (17,945.20) three lines above -- a configured constant wearing a measurement's clothes (L1.46) in the one field a human acts on, aging invisibly. next_action now quotes the figure THIS RUN read, or UNKNOWN; two regression tests pin it (the literal must not reappear). (2) PREMISE CORRECTED: 'if YES, check_idle_cost is a constant zero and should be RETIRED' does NOT follow, independent of the answer. Falsifier (a) covers the idle-CASH rung only; the organ also prices CLAMPS and 4 of 4 are UNPRICED today (gate0_not_live, cashcarry_kill, guard_ladder_full_flatten_disarmed, ramp_size_fraction), so a YES retires one rung, not the meter -- and RETIREMENT NEEDS EVIDENCE of significant negative contribution, which a quiet rung is not. The organ is also NOT currently a constant zero: it publishes UNMEASURABLE-PAPER-BOOK and caught the molded-curve breach. (3) BLOCKED ON PRINCIPAL: where the signed capital physically sits is unknowable from this box -- no artifact on disk records the custody account, and the attestation chain is explicitly a MOLDED/SIMULATED curve. Posted to data/PRINCIPAL_ACTION.md as an A/B/C question (A: in T-bills/>=3.73pct -> cash rung is a constant zero; B: 0pct account -> prices ~215-490 USD/yr; C: not a cash balance -> keeps publishing UNMEASURABLE), with the corrected figure and the premise correction so a YES cannot over-deliver. Blocks nothing else.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-26",
+   "disposed": "2026-08-12T20:00:24.216054+00:00"
   },
   {
    "id": "R0375",
@@ -6509,6 +6509,42 @@
    "summary": "TWO ROUTE FACTS FROM THE THESES GROUND, both of which change how every miner reads a corpus (litminer run 7). (1) T-6 AGGREGATOR ROUTING IS WHY PRIOR SEATS READ FULL CORPORA AS EMPTY: from this box EVERY ETD aggregator refused -- OATD 403, CORE 403, NDLTD 503, IEEE 418, and DART-Europe is PERMANENTLY CLOSED since 2025-02-03 -- while EVERY institutional repository served full text at 200. Corroborated in the same run: the KOREAN thesis layer is NOT empty and the prior zeros were a routing artifact. ACTION: route thesis hunts to institutional repositories directly, never to aggregators, and RE-OPEN any corpus previously graded empty via an aggregator -- an aggregator silence is a ROUTE fact and was being recorded as a CORPUS verdict, which is the exhaustion-by-absence error the desk legislates against. (2) A SECOND SILENT-FABRICATION MODE, sibling to OP-057: a working local route for R0358 exists (WebFetch lands the raw PDF binary on disk even when its own summariser fails, then extract locally) BUT an extractor that MERGES /ToUnicode CMaps SILENTLY CORRUPTS Latin text while CJK looks perfect -- \"Journal of the Korea\" renders as \"Jousnam og uhe Kosea\". It produces CONFIDENT WRONG NUMBERS rather than erroring, so any landed pdf_text.py MUST be per-font and MUST carry a conservation-law self-check (R0318 precedent). A working per-font implementation was left at /tmp/pdfx2.py, OUTSIDE the repo and unwired, for whoever lands R0358.",
    "roi_bps": 28.0,
    "raised": "2026-08-12T19:41:54.502721+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0520",
+   "source": "cycle",
+   "summary": "R0371 RESIDUAL, and it is bigger than the row that found it: the cash-carry tape accounts for only 7.1pct of the futures notional its own fee bill implies. Venue commission 1750.878 USDT at the account's measured 5bp taker rate implies ~3.50M USD of traded notional; the 500 tape rows total 248,404 USD. This is NOT a window or universe mismatch -- 99.1pct of commission falls inside the tape's window and on symbols the tape already knows, so the executor is failing to log trading it actually did. CANDIDATE MECHANISM, unproven and stated as such: run_cashcarry_executor.py's OPEN-FAIL / CLOSE-FAIL / TOPUP-FAIL paths all 'continue' BEFORE _log_trade, so an order that filled partially but never reached CONFIRMED-FILLED bills commission at the venue and leaves no tape row at all -- the verify-before-track guard (correctly) refuses to TRACK it and (incorrectly) also declines to RECORD it. NEXT STEP is diagnostic not structural: reconcile per-symbol venue notional (userTrades quoteQty) against per-symbol tape notional to see whether the gap concentrates in the four names that paid 86pct of the fees, which would confirm the failed-fill path; the alternative hypothesis is trading by other organs sharing the same testnet futures account. Until it is explained, every per-trade cost number the desk computes from its own tape describes 7pct of its trading.",
+   "roi_bps": 60.0,
+   "raised": "2026-08-12T19:54:44.033357+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0521",
+   "source": "cycle",
+   "summary": "R0371 SECOND HALF, staged behind the L1.38 change window: stamp per-leg commission onto the trade row at fill time. This is the half of R0371 that survives its own measurement -- per-ROUND-TRIP, per-MODE and per-HOLD-BUCKET fee attribution are impossible from the income ledger retrospectively (it emits one COMMISSION row per PARTIAL fill; up to 48 events share one timestamp and the median gap from an event to the nearest same-symbol tape fill instant is 4.3h, p95 22.8h, so a nearest-in-time join assigns fees at random) and can ONLY be recovered by recording the fee at the moment the fill happens. WHY IT IS NOT DONE NOW: run_cashcarry_executor.py and libs/execution/ are both MONEY_PATH and check_change_window reports STERILE/RAIL_BREACH -- CASHCARRY_KILL is latched and the book is unwinding, which is exactly the window L1.38 exists to protect. This is an IMPROVEMENT, not a repair, so it stages. CHEAPEST CORRECT IMPLEMENTATION, already scouted: the close/open/topup paths ALREADY call spot.avg_fill/fut.avg_fill, which fetch the very venue rows carrying commission and commissionAsset and then discard them -- a sibling returning (avg_price, commission) from the SAME fetch adds a stamp with no extra venue round-trip. TRAP TO HANDLE: on Binance spot a BUY is billed in the BASE asset, so commission must be converted at the fill price, and an unknown commissionAsset (e.g. BNB) must publish None, never 0 -- run_deadman_reconciliation.py:113 currently filters to USDT/BUSD only, which silently understates spot buy commission. LIFTING CONDITION (L1.51): check_change_window reports OPEN.",
+   "roi_bps": 25.0,
+   "raised": "2026-08-12T19:54:58.266298+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0522",
+   "source": "cycle",
+   "summary": "CARRY SLEEVE PER-SYMBOL NET, first time computable (unlocked by R0371's fee attribution): venue truth 2026-07-02..08-01 is funding +113.06 USDT against commission 1750.88 USDT = NET -1637.82, and only 6 of 83 symbols were net-positive after fees. The aggregate 'the carry loss is fees not thesis' was already known; the PER-SYMBOL decomposition is new and it inverts the selection logic. The four names that paid 86pct of the fee bill are among the largest deployed positions and each is catastrophically net-negative: COOKIEUSDT earned 7.01 in funding and paid 623.30 in fees (89x), 1000CATUSDT 4.29 vs 413.03 (96x), MOVEUSDT 3.29 vs 245.95 (75x), TSTUSDT 20.64 vs 221.54 (11x). Meanwhile XVGUSDT earned 21.49 against 18.09 of fees and is one of the six survivors. THE MECHANISM IS TURNOVER, NOT RATE: the executor ranks by _net_bps which prices a SINGLE round trip, so a name whose funding beats one round trip is selected and then re-traded until cumulative fees swamp cumulative funding -- the churn guard (_MIN_HOLD_H) bounds hold time but nothing prices CUMULATIVE fee against CUMULATIVE harvest per name. PROPOSED INSTRUMENT, cheap and Stage-A only: a per-symbol lifetime fee-vs-funding ledger from the income endpoint (both series already fetched by run_fee_attribution.py) feeding a re-entry veto on names whose realized net is negative over their own history -- the L1.16a re-entry condition the current cooldown set lacks, since cooldown expires on TIME and never on ECONOMICS. NOTE the denominator caveat before acting: fees are on cumulative traded notional while funding is on held notional, so the ratio is a turnover statistic, not a per-unit-time edge; and this is testnet execution, where fills and the 5bp taker rate may not reproduce live.",
+   "roi_bps": 80.0,
+   "raised": "2026-08-12T19:57:27.908195+00:00",
    "status": "open",
    "reason": null,
    "commit": null,
