@@ -33,11 +33,14 @@ import time
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:          # fences import libs; a blind checker is a defect
     sys.path.insert(0, str(ROOT))
+
+if TYPE_CHECKING:                      # the libs import below needs the sys.path line above
+    from libs.ops.cycle_evidence import CycleEvidence
 LOGS = ROOT / "data/cro_ai_logs"
 REPORT = ROOT / "data/max_audit_report.json"
 ACKS = ROOT / "data/max_audit_acks.json"
@@ -1059,29 +1062,60 @@ def check_dig_depth(defects) -> None:
                             "evident. Depth mandate not honored."))
 
 
-def check_interrogation(defects) -> None:
-    """The last successful brain cycle must show evidence it ran the self-interrogation battery.
-    A cycle that did not probe is a cycle that trusted itself -- the exact failure this catches.
-    Only judged on cycles that ran AFTER the protocol existed."""
+def _cycle_evidence() -> CycleEvidence:
+    """The ONE evidence reading both cycle-quality fences judge, on the ONE log they both select.
+
+    Computed here rather than twice, because the fences below previously chose their own log by
+    their own window AND scored it by their own proxy, so they could -- and on 2026-08-01 did --
+    return contradictory verdicts about the same cycle. Sharing the selection and the scoring is
+    what makes that contradiction structurally impossible; see libs/ops/cycle_evidence.py.
+
+    A missing baseline is still bootstrapped (first run stamps it and declines to judge cycles
+    that predate the protocol), but "no judgeable log" is now UNMEASURED rather than a silent
+    clean return -- L1.28a, and the vacuous pass L1.57 exists to refuse."""
+    from libs.ops import cycle_evidence
+
     base_f = ROOT / "data/interrogation_baseline"
     if not base_f.exists():
         base_f.write_text(str(NOW))
-        return
+        return cycle_evidence.unmeasured("interrogation baseline just stamped -- no post-protocol "
+                                         "cycle exists to judge yet")
     try:
         base = float(base_f.read_text().strip())
-    except Exception:
-        return
+    except Exception as e:
+        return cycle_evidence.unmeasured(f"interrogation baseline unreadable ({e!r}) -- cannot "
+                                         "tell a pre-protocol cycle from a post-protocol one")
     cyc = [p for p in LOGS.glob("2026*_*.log")
            if p.stat().st_mtime >= base and p.stat().st_size >= 2000]
     if not cyc:
-        return                                        # no post-protocol successful cycle yet
+        return cycle_evidence.unmeasured(
+            f"no cycle log in {LOGS.name} is both post-protocol and >=2000 bytes -- the desk "
+            "cannot show that its last cycle interrogated anything")
     newest = max(cyc, key=lambda p: p.stat().st_mtime)
-    txt = newest.read_text("utf-8", errors="ignore").lower()
-    if not any(k in txt for k in ("interrogat", "probe", "verified with a fresh read",
-                                  "self-interrog", "angle")):
+    return cycle_evidence.score(newest.read_text("utf-8", errors="ignore"), log_name=newest.name)
+
+
+def check_interrogation(defects) -> None:
+    """The last successful brain cycle must show evidence it ran the self-interrogation battery.
+    A cycle that did not probe is a cycle that trusted itself -- the exact failure this catches.
+
+    FIRES ON TOTAL ABSENCE OF EVIDENCE, not on the absence of five magic words. The keyword grep
+    this replaces ('interrogat', 'probe', 'verified with a fresh read', 'self-interrog', 'angle')
+    fired on a cycle that had verified its headline finding from the journal with timestamps and
+    values and disproved a CI-red by isolation -- it had simply never typed one of the words.
+    Whether the interrogation was CITED is a different question and belongs to the fence below;
+    this one asks only whether it happened at all."""
+    ev = _cycle_evidence()
+    if not ev.measured:
+        defects.append(("cycle-evidence-unmeasured",
+                        f"cannot judge cycle interrogation: {ev.why_unmeasured}. UNMEASURED is "
+                        "not a pass -- absence of evidence was reading as evidence of health."))
+        return
+    if ev.substance == 0:
         defects.append(("cycle-skipped-interrogation",
-                        f"{newest.name}: last successful cycle shows no self-interrogation "
-                        "evidence -- it trusted itself instead of probing. Protocol not honored."))
+                        f"{ev.log}: last successful cycle shows no self-interrogation evidence -- "
+                        "no artifact cited with a value, no self-correction, no finding disproved. "
+                        "It trusted itself instead of probing. Protocol not honored."))
 
 
 def check_generation(defects) -> None:
@@ -1302,22 +1336,30 @@ def check_rubberstamp_detector(defects) -> None:
 
 def check_rubberstamp_enforcement(defects) -> None:
     """Active only when the flag exists: the newest successful cycle must show NAMED VERIFIED
-    READS (file-path citations proving it actually looked), not bare 'verified' prose."""
+    READS, not bare 'verified' prose.
+
+    A NAMED VERIFIED READ IS A PATH AND A VALUE, which is what the cycle prompt has always asked
+    for ("file path + the value/line you saw"). The count this replaces matched path-shaped
+    tokens only, so five filenames nobody opened passed it while a cycle that read carefully and
+    reported its numbers against bare module names failed. Same floor, better measurement: the
+    bar did not move, the instrument did.
+
+    It judges THE SAME LOG as check_interrogation above, by construction. Two fences that pick
+    their own log cannot be prevented from disagreeing about the cycle."""
     flag = ROOT / "data/ANTIRUBBERSTAMP_ACTIVE"
     if not flag.exists():
         return
-    cyc = [p for p in LOGS.glob("2026*_*.log")
-           if p.stat().st_size >= 2000 and (NOW - p.stat().st_mtime) < 2 * 86400]
-    if not cyc:
-        return
-    newest = max(cyc, key=lambda p: p.stat().st_mtime)
-    t = newest.read_text("utf-8", errors="ignore")
-    cites = len(set(re.findall(r"[\w/]+\.(?:py|json|md|sh|txt)", t)))
-    if cites < 5:
+    ev = _cycle_evidence()
+    if not ev.measured:
+        return                      # check_interrogation already raised cycle-evidence-unmeasured
+    if not ev.cited:
+        from libs.ops.cycle_evidence import CITED_FLOOR
         defects.append(("rubberstamp-enforced",
-                        f"{newest.name}: anti-rubber-stamp ACTIVE but the cycle cites only {cites} "
-                        "named reads -- interrogation lacks verified-read evidence. Cite the "
-                        "specific file+value per probe angle, do not rubber-stamp."))
+                        f"{ev.log}: anti-rubber-stamp ACTIVE but the cycle cites only "
+                        f"{ev.cited_claims} artifact(s) with a value (floor {CITED_FLOOR}; it "
+                        f"names {ev.artifacts} artifact(s) in total) -- interrogation lacks "
+                        "verified-read evidence. Cite the specific file+value per probe angle "
+                        "(web/growth_audit.json, capital_util=1.005), not a bare module name."))
 
 
 def check_clock_saturation(defects) -> None:
