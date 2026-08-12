@@ -528,7 +528,18 @@ def note(keyword: str, *, limit: int = 20) -> tuple[list[Article], str | None]:
     if hit is not None:
         return hit
     _pace("note")
-    url = ("https://note.com/api/v3/searchs?context=note&mode=search&size="
+    # `searches`, NOT `searchs` -- corrected 2026-08-12. The misspelling 404s, and an 18-query
+    # sweep recording "404 Not Found" every run reads as a DEAD ENDPOINT when the endpoint is
+    # alive and REFUSING us: the correct path answers 403 with a structured
+    # {"error":{"message":"Access denied","type":"forbidden"}}. Those are different problems with
+    # different fixes -- a 404 says stop looking, a 403 says find credentials or another route --
+    # and the desk was recording the one that closes the investigation.
+    #
+    # This is the eksisozluk defect in a second source, found the same day by the same question:
+    # does a UNIFORM failure across every query really describe the site, or does it describe our
+    # URL? Fixing it does not unblock note.com; it makes the recorded blocker TRUE, which is what
+    # decides whether the next reader hunts a route or writes the source off.
+    url = ("https://note.com/api/v3/searches?context=note&mode=search&size="
            f"{int(limit)}&q={quote(keyword)}")
     try:
         doc = json.loads(_get(url))
@@ -841,8 +852,25 @@ def probe_all() -> list[dict[str, Any]]:
     """One cheap query per source, for the health ledger. Same contract as cn_sources.probe_all.
 
     `ok` means the source returned USABLE ROWS, never merely that it answered with HTTP 200 -- a
-    200 carrying an anti-bot page or an empty result set is not a working source, and recording it
-    as one is how a dead lane stays green on a dashboard.
+    200 carrying an anti-bot page is not a working source, and recording it as one is how a dead
+    lane stays green on a dashboard.
+
+    THREE STATES, NOT TWO -- and the third was invisible until 2026-08-12. `ok` alone collapses
+    "answered cleanly, has nothing for THIS probe keyword" into the same cell as "returned
+    nothing and did not say why", so the report showed `ok:false, error:null` for eksisozluk
+    (healthy, genuinely no thread for the probe term) and for velog and vcru alike. That is the
+    L1.41 failure inside the health layer itself.
+
+    It is not cosmetic: source_health reads these rows and hunt_source_alternatives goes shopping
+    for replacements for whatever has been dead N runs running. A working-but-narrow source that
+    reads as indistinguishable-from-blocked sends the alternatives hunter after a source that
+    needs nothing, while a genuinely dead one looks identical to it. `state` separates them:
+
+        OK       usable rows returned
+        EMPTY    answered cleanly, no rows for this probe keyword -- NOT a fault
+        BLOCKED  refused, errored, or returned an unparseable body
+
+    `ok` keeps its old meaning for existing consumers; `state` is what a reader should trust.
     """
     out: list[dict[str, Any]] = []
     for name, (fn, lang) in SOURCES.items():
@@ -850,8 +878,16 @@ def probe_all() -> list[dict[str, Any]]:
         try:
             arts, err = fn(probe_kw)
         except Exception as exc:
-            out.append({"source": name, "lang": lang, "ok": False, "error": _err(exc)})
+            out.append({"source": name, "lang": lang, "ok": False, "n": 0,
+                        "state": "BLOCKED", "error": _err(exc)})
             continue
-        out.append({"source": name, "lang": lang, "ok": bool(arts) and err is None,
-                    "n": len(arts), "error": err})
+        state = "BLOCKED" if err else ("OK" if arts else "EMPTY")
+        row: dict[str, Any] = {"source": name, "lang": lang,
+                               "ok": bool(arts) and err is None,
+                               "n": len(arts), "state": state, "error": err}
+        if state == "EMPTY":
+            row["why"] = (f"answered cleanly with no rows for the probe keyword {probe_kw!r}. "
+                          "That is a fact about the KEYWORD, not a fault in the source -- do not "
+                          "hunt a replacement for it on this evidence")
+        out.append(row)
     return out
