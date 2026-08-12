@@ -5752,6 +5752,30 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0467",
+   "source": "cycle",
+   "summary": "signal_halflife still publishes its untested `status` field (AGEING/STABLE/STRENGTHENING from a bare +/-0.03 on a two-window IC difference, no null behind it) beside the new order-sensitive `decay` verdict added in da53431. Two verdicts on the same row that can disagree -- on 2026-08-12 live data the crude one and the tested one gave different answers for stablecoin_supply. Decide which is authoritative and retire or demote the other; a row carrying two contradictory statuses is worse than either alone because a reader will quote whichever suits.",
+   "roi_bps": 20.0,
+   "raised": "2026-08-12T08:44:32.827261+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0468",
+   "source": "proactive_battery",
+   "summary": "NEGATIVE-SPACE probe: nothing checks that a doc's cited MECHANISM exists. docs/research/axis_generation_20260805.md claimed 'Recurrence detector: scripts/check_axis_clocks.py (daily cron)' -- that file has never existed in any tree, is in no crontab, and the claim sat in a dated pre-registration doc for 7 days (fixed in bbfce84, at the doc AND the generator that writes the line). check_orphan_code walks code->code and check_organ_liveness walks scheduled->produced; neither walks DOC->CODE. A one-pass check for scripts/*.py paths cited in docs/ that do not resolve would have caught it in seconds, and the same pattern hid the phantom research_memory.db (x4 refs).",
+   "roi_bps": 25.0,
+   "raised": "2026-08-12T08:44:37.882435+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
