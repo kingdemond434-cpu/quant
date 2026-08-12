@@ -33,3 +33,37 @@ def test_refresh_closes_every_file_it_counts(tmp_path, monkeypatch):
     m = bac.refresh({"files": {}})
 
     assert m["files"]["a.py"]["loc"] == 3          # still counts what it counted before
+
+
+def test_a_budget_arm_that_cannot_move_says_so(tmp_path, monkeypatch):
+    """THE WELD (measured 2026-08-12). The budget sat at exactly CODE_BUDGET_MIN while the last
+    eight firings carried 2-4 blanks of 4: max(40_000, int(40_000*0.6)) is 40_000, so the shrink
+    arm moved nothing eight times and the history read `from 40000 to 40000` -- indistinguishable
+    from a budget that adapted. That weld is why the same free seats blank forever: they fail on
+    a 40k payload and the response that exists to shrink it cannot.
+
+    This asserts VISIBILITY, not slack -- `new` is unchanged and the floor is not lowered."""
+    monkeypatch.setattr(bac, "MANIFEST", tmp_path / "m.json")
+    monkeypatch.setattr(bac, "_eligible", lambda: [])
+    monkeypatch.setattr(bac, "ROOT", tmp_path)
+    bac.save({"files": {}, "code_budget_chars": bac.CODE_BUDGET_MIN})
+
+    new = bac.tune_budget(blanked=3, total=4)
+
+    assert new == bac.CODE_BUDGET_MIN                 # floor HELD -- nothing loosened
+    h = bac.load()["budget_history"][-1]
+    assert h["welded_at"] == "floor"                  # ...and the inertness is on the record
+    assert h["wanted"] < h["to"]
+
+
+def test_a_moving_arm_is_not_marked_welded(tmp_path, monkeypatch):
+    """The marker must appear only when the arm was actually inert, or it is noise."""
+    monkeypatch.setattr(bac, "MANIFEST", tmp_path / "m.json")
+    monkeypatch.setattr(bac, "_eligible", lambda: [])
+    monkeypatch.setattr(bac, "ROOT", tmp_path)
+    bac.save({"files": {}, "code_budget_chars": bac.CODE_BUDGET_MIN * 4})
+
+    new = bac.tune_budget(blanked=1, total=4)
+
+    assert new < bac.CODE_BUDGET_MIN * 4              # it really shrank
+    assert "welded_at" not in bac.load()["budget_history"][-1]

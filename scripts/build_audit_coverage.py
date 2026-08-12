@@ -165,16 +165,38 @@ def current_budget(m: dict) -> int:
 
 
 def tune_budget(blanked: int, total: int) -> int:
-    """Shrink hard on any blank, grow gently on a clean run. Called after every panel."""
+    """Shrink hard on any blank, grow gently on a clean run. Called after every panel.
+
+    THE WELD THIS NOW REPORTS (measured 2026-08-12). The budget sat at exactly CODE_BUDGET_MIN
+    while the last eight recorded firings carried 2-4 blanks of 4 -- `max(40_000, int(40_000 *
+    0.6))` is 40_000, so the shrink arm moved NOTHING, eight times, and the history rendered
+    `from 40000 to 40000` with no hint that a bound had been hit. A control that fires and
+    changes nothing is a welded gate (L1.43), and this one is the mechanistic reason the same
+    free seats blank forever: they fail on a 40k payload, the adaptive response that exists to
+    shrink it cannot, and the tally records the blanks while the budget records success.
+
+    NOTHING IS LOOSENED HERE. The floor is not lowered and neither arm is re-rated -- lowering a
+    floor to clear the violation it caught is the failure this desk has paid for repeatedly. The
+    fix is that "the budget adapted" and "the budget COULD NOT adapt" stop being byte-identical
+    in the record, which is the only way anyone can argue about whether the floor is right.
+    Whether these seats need a smaller tier or the floor needs re-deriving is a payload-design
+    decision with an owner; this makes it visible, it does not take it.
+    """
     m = refresh(load())
     cur = current_budget(m)
     if blanked:
         new = max(CODE_BUDGET_MIN, int(cur * 0.6))   # a blank is a real failure: cut deep
+        bound = "floor" if new >= cur else None
     else:
         new = min(CODE_BUDGET_CHARS, int(cur * 1.15))  # earn size back slowly
+        bound = "ceiling" if new <= cur else None
     m["code_budget_chars"] = new
     m.setdefault("budget_history", []).append(
-        {"blanked": blanked, "of": total, "from": cur, "to": new})
+        {"blanked": blanked, "of": total, "from": cur, "to": new,
+         # Present ONLY when the arm was inert, so a reader scanning the history sees the weld
+         # rather than having to re-derive it from two equal numbers.
+         **({"welded_at": bound, "wanted": int(cur * 0.6) if blanked else int(cur * 1.15)}
+            if bound else {})})
     m["budget_history"] = m["budget_history"][-30:]
     save(m)
     return new
