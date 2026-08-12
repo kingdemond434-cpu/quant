@@ -68,11 +68,16 @@ TRADEABLE_MAX_AGE_MIN = 24 * 60
 
 #: MATERIALITY TIERS -- a cheap pre-filter, deliberately not the decision. Tier 1 events FORCE
 #: someone to reposition, which is the mechanism class the sleeve is allowed to trade.
+#: Korean phrases (R0298) are Upbit's own standard wording, so the KR feed is pre-filtered at
+#: the same precision as English. 유의 종목/투자유의 (caution designation) is tier 1: a DAXA
+#: caution flag regularly precedes delisting and forces repositioning now, not later.
 _TIER1 = ("delist", "will be removed", "contract spec", "leverage tier", "margin tier",
           "funding rate will", "settlement", "hard fork", "chain split", "exploit", "hack",
-          "halt", "suspend", "emergency", "insolven")
+          "halt", "suspend", "emergency", "insolven",
+          "거래지원 종료", "유의 종목", "투자유의", "상장폐지", "하드포크", "입출금 중단")
 _TIER2 = ("list", "launch", "perpetual", "new pair", "airdrop", "snapshot", "upgrade",
-          "maintenance", "migration", "rebrand", "token swap")
+          "maintenance", "migration", "rebrand", "token swap",
+          "신규 거래지원", "디지털 자산 추가", "에어드랍", "에어드롭", "스냅샷", "점검", "토큰 스왑")
 
 #: KNOWN TICKERS. The first live run proved why a whitelist is mandatory: a bare
 #: "any uppercase word" regex extracted ACROSS, BANKS, AFFECT, AN, LED and AS as tradeable
@@ -156,6 +161,32 @@ def _rss_items(xml: str, source: str) -> list[dict[str, Any]]:
     return out
 
 
+def _upbit_items(doc: Any) -> list[dict[str, Any]]:
+    """api-manager payload -> items. published_at keys on FIRST_LISTED_AT, never listed_at:
+    Upbit bumps listed_at on every edit/re-pin, and the two differ on 42.5% of rows (median
+    2.08d, p90 9.30d, probed KR-s1 2026-08-01) -- keying on listed_at would mis-date 4 events
+    in 10 and fabricate freshness for re-pinned history (R0298)."""
+    out: list[dict[str, Any]] = []
+    if not isinstance(doc, dict):
+        return out
+    data = doc.get("data")
+    for n in (data.get("notices") if isinstance(data, dict) else None) or []:
+        if isinstance(n, dict) and n.get("title"):
+            out.append({"source": "upbit", "title": str(n["title"]),
+                        "body": str(n.get("category", "")),
+                        "url": f"https://upbit.com/service_center/notice?id={n.get('id')}",
+                        "published_at": _iso(n.get("first_listed_at"))})
+    return out
+
+
+#: Standing environment blocks, recorded on EVERY run so a missing exchange feed never looks
+#: like a quiet news day -- but excluded from the all-down count: they are constants of this
+#: egress, not today's outage. Before this split, 2 standing + 2 real failures read
+#: ALL-SOURCES-DOWN while both RSS feeds were healthy.
+_STANDING_BLOCKED = ("binance_announcements", "bybit_announcements")
+_N_LIVE_SOURCES = 5              # okx, upbit, defillama, coindesk, cointelegraph
+
+
 def fetch_all() -> tuple[list[dict[str, Any]], dict[str, str]]:
     """Every source, with per-source failures RECORDED (never silently absent)."""
     items: list[dict[str, Any]] = []
@@ -182,6 +213,19 @@ def fetch_all() -> tuple[list[dict[str, Any]], dict[str, str]]:
     errors.setdefault("bybit_announcements",
                       "CloudFront blocks this egress country (probed 2026-07-31) -- would need "
                       "the second VPS in a different region")
+
+    # Upbit (R0298) -- first KR venue on the feed, replacing the two permanently-blocked
+    # sources with a keyless first-party API. category=trade is the listing/delisting class
+    # (749 events back to 2017-10-24 at probe time). CAPS from the KR-s1 probe: per_page<=20
+    # and >=3s between pages (429s are hard) -- this collector reads ONE page per run (20
+    # newest; the */15 cadence plus content-hash dedup carries continuity), so it never pages
+    # and never sleeps. Any future backfill must honour both caps.
+    doc, err = _get("https://api-manager.upbit.com/api/v1/announcements"
+                    "?os=web&page=1&per_page=20&category=trade")
+    if err:
+        errors["upbit_announcements"] = err
+    else:
+        items.extend(_upbit_items(doc))
 
     # 2. DefiLlama hacks -- chain incidents move whole sectors, and they are pure prose events.
     doc, err = _get("https://api.llama.fi/hacks")
@@ -261,8 +305,8 @@ def collect(root: Path, items: list[dict[str, Any]], errors: dict[str, str]) -> 
         (root / _SEEN).write_text(json.dumps({"hashes": sorted(seen)[-5000:]}), "utf-8")
 
     measured = [f["latency_minutes"] for f in fresh if f["latency_minutes"] is not None]
-    n_src = 4
-    status = ("ALL-SOURCES-DOWN" if len(errors) >= n_src else
+    live_down = sum(1 for k in errors if k not in _STANDING_BLOCKED)
+    status = ("ALL-SOURCES-DOWN" if live_down >= _N_LIVE_SOURCES else
               "DEGRADED" if errors else
               "NO-NEW-ITEMS" if not fresh else "OK")
     return {
