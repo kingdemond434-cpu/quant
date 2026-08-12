@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import typing
+
 from libs.data.multiexchange import okx_inst
 
 
@@ -40,3 +42,64 @@ class TestOkxInstRedenomination:
         prefixes strip only when they are prefixes, never when they are the name."""
         from libs.data.multiexchange import okx_inst
         assert okx_inst("1INCHUSDT") == "1INCH-USDT-SWAP"
+
+
+class TestResolveOkx:
+    """R0294 parts 2+3: the blind strip declares a match without verifying the underlying.
+
+    resolve_okx() must check the instrument EXISTS, try both name forms, and refuse a
+    stripped-form match whose ctVal is too small to be a re-denomination -- that is the
+    1000CATUSDT -> CAT-USDT-SWAP collision, where OKX's bare CAT is a different asset."""
+
+    # Fixture mirrors real OKX shapes: micro-caps carry re-denomination-scale ctVal,
+    # majors carry sub-unit ctVal, and CAT is the name-collision trap (ordinary ctVal).
+    INSTRUMENTS: typing.ClassVar[dict[str, float]] = {
+        "BTC-USDT-SWAP": 0.01, "ETH-USDT-SWAP": 0.1, "1INCH-USDT-SWAP": 1.0,
+        "SHIB-USDT-SWAP": 1e6, "PEPE-USDT-SWAP": 1e7, "SATS-USDT-SWAP": 1e7,
+        "CAT-USDT-SWAP": 10.0,
+    }
+
+    def test_verified_matches_resolve_with_full_accounting(self) -> None:
+        from libs.data.multiexchange import resolve_okx
+        res = resolve_okx(["BTCUSDT", "1000SHIBUSDT", "10000SATSUSDT", "1INCHUSDT"],
+                          self.INSTRUMENTS)
+        assert res.resolved == {"BTCUSDT": "BTC-USDT-SWAP", "1000SHIBUSDT": "SHIB-USDT-SWAP",
+                                "10000SATSUSDT": "SATS-USDT-SWAP", "1INCHUSDT": "1INCH-USDT-SWAP"}
+        assert res.dropped == {}
+        assert res.attempted == 4
+
+    def test_name_collision_is_refused_not_joined(self) -> None:
+        """Bare CAT exists on OKX with ctVal=10: a blind strip would join a DIFFERENT asset.
+        The ctVal guard (ctVal >= ticker multiplier) must DROP it with the reason named."""
+        from libs.data.multiexchange import resolve_okx
+        res = resolve_okx(["1000CATUSDT"], self.INSTRUMENTS)
+        assert res.resolved == {}
+        assert "1000CATUSDT" in res.dropped
+        assert "ctVal" in res.dropped["1000CATUSDT"]
+
+    def test_genuine_redenomination_clears_the_ctval_guard(self) -> None:
+        from libs.data.multiexchange import resolve_okx
+        res = resolve_okx(["1000CATUSDT"], {"CAT-USDT-SWAP": 1000.0})
+        assert res.resolved == {"1000CATUSDT": "CAT-USDT-SWAP"}
+
+    def test_missing_instrument_is_counted_never_silent(self) -> None:
+        from libs.data.multiexchange import resolve_okx
+        res = resolve_okx(["NOPEUSDT", "1000GONEUSDT", "BTCBUSD"], self.INSTRUMENTS)
+        assert res.resolved == {}
+        assert res.attempted == 3
+        assert set(res.dropped) == {"NOPEUSDT", "1000GONEUSDT", "BTCBUSD"}
+
+    def test_attempted_always_equals_resolved_plus_dropped(self) -> None:
+        from libs.data.multiexchange import resolve_okx
+        syms = ["BTCUSDT", "1000SHIBUSDT", "1000CATUSDT", "NOPEUSDT", "1INCHUSDT"]
+        res = resolve_okx(syms, self.INSTRUMENTS)
+        assert res.attempted == len(syms) == len(res.resolved) + len(res.dropped)
+
+    def test_strip_multiplier_returns_the_multiplier(self) -> None:
+        from libs.data.multiexchange import strip_multiplier
+        assert strip_multiplier("1000SHIBUSDT") == ("SHIB", 1000.0)
+        assert strip_multiplier("10000SATSUSDT") == ("SATS", 10000.0)
+        assert strip_multiplier("1MBABYDOGEUSDT") == ("BABYDOGE", 1e6)
+        assert strip_multiplier("1000000MOGUSDT") == ("MOG", 1e6)
+        assert strip_multiplier("BTCUSDT") == ("BTC", 1.0)
+        assert strip_multiplier("1INCHUSDT") == ("1INCH", 1.0)
