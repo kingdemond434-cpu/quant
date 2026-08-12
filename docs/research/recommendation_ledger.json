@@ -5938,6 +5938,66 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0480",
+   "source": "cycle",
+   "summary": "Instrument EVERY cashcarry close with spot_slip_bps/fut_slip_bps: only 12 of 531 execution_tape rows carry them, which starves BOTH the L1.45 own-fills basis and the new print-impact falsifier (4 paired symbols, UNDERPOWERED). The executor already computes both values and writes them on 2.3% of rows -- this is evidence destroyed at zero saving (L1.47 pattern).",
+   "roi_bps": 40.0,
+   "raised": "2026-08-12T14:18:16.237426+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0481",
+   "source": "cycle",
+   "summary": "Wire data/print_impact.json into run_cashcarry_executor._rt_bps as a LABELLED third basis under the existing tighten-only max() rule. DELIBERATELY NOT DONE this run: the print basis reads CHEAPER than the book walk on thin books (CELRUSDT 0.40x, ZENUSDT 0.43x, TSTUSDT 0.44x) and its out-of-sample check is UNDERPOWERED at 4 symbols, so wiring it today could loosen the entry gate on exactly the books that produced COOKIEUSDT 130bps. Blocked on R0480.",
+   "roi_bps": 25.0,
+   "raised": "2026-08-12T14:18:29.110175+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0482",
+   "source": "cycle",
+   "summary": "Screen Bybit isBlockTrade/isRPITrade as a free institutional-vs-retail conditioning variable. Present on every bybit print the desk records, read by ZERO feature code. A microstructure mechanism that only works against retail flow is a different and more durable claim than one fitted to blended flow.",
+   "roi_bps": 15.0,
+   "raised": "2026-08-12T14:18:31.440846+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0483",
+   "source": "principal",
+   "summary": "PRINCIPAL DECISION OWED: L1.11(b) says the Execution Reality Model comes from 'our own fills'. That scope word was written to bar vendor coefficients but reads as barring third-party PRINTS -- which are realised execution data the desk records itself, ~2500/symbol/hour. fit_print_impact.py now uses them. The master constitution is hash-sealed, so clarifying L1.11(b) is the principal's act, not mine; flagging rather than editing.",
+   "roi_bps": 10.0,
+   "raised": "2026-08-12T14:18:43.985558+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0484",
+   "source": "cycle",
+   "summary": "Five OLDUSDT TEST-FIXTURE rows are welded into the live money-path execution tape (data/moat/execution_tape/cashcarry_trades.jsonl), each stamped closed=2020-01-01T00:00:00Z. They inflate execution_tape.coverage()[days] from ~31 real days to 2404.91 -- a 78x overstatement of the desk's execution track record, published by run_trade_forensics as tape_days and named load-bearing in libs/risk/capital_events.py. check_gate0_ready keys on n rather than days so live-readiness is NOT currently flipped, but the span is wrong everywhere it is read. Fix: purge the fixture symbol and add a fence forbidding test symbols in the money-path tape.",
+   "roi_bps": 20.0,
+   "raised": "2026-08-12T14:19:41.549340+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

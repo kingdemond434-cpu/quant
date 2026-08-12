@@ -134,6 +134,13 @@ _STEPS = [
     ("reject_rescore",    "scripts/run_rejection_rescore.py", 300),  # feed near-miss reject scores
     ("rejection_shadow",  "scripts/run_rejection_shadow.py",  60),  # gate-leak recovery audit
     ("cost_model",        "scripts/run_cost_model.py",      600),  # measured exec costs (daily)
+    # THE THIRD COST BASIS, and it runs IMMEDIATELY AFTER the book walk on purpose: it publishes
+    # the two side by side, so reading a stale cost_model.json here would compare today's prints
+    # against yesterday's depth and call the difference a finding (L1.44 at the read site).
+    # 1500s: the first full 3-venue 24h pass measured 11m34s wall, and bybit's batched-trade
+    # partitions are the growing half. A timeout sized AT the measurement is a timeout that starts
+    # killing the step the week the tape thickens (R0146, the stale-consumer class).
+    ("print_impact",      "scripts/fit_print_impact.py",   1500),  # L1.45 3rd basis: others' fills
     ("shadow_8h",         "scripts/run_shadow_8h.py",       420),  # 3x-obs challenger shadow
     ("leverage_opt",      "scripts/run_leverage_opt.py",    120),
     ("molded_refresh",    "scripts/run_live_combined.py",   120),

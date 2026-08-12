@@ -267,9 +267,15 @@ _MAP: dict[str, list[str]] = {
     # R0267 joins L1.45 rather than getting its own key: it is the FUNCTIONAL FORM the excitation
     # design has no vocabulary for, and its own-fill half refuses for exactly the reason L1.45
     # names -- an operating point the desk never visits, so go buy the observation.
+    # fit_print_impact is the THIRD basis: the counterfactual half is the book walk, the own-fills
+    # half is excitation, and neither reads the ~2,500 prints/symbol/hour of OTHER PEOPLE's
+    # completed executions sitting on the same tape. It serves L1.45 by refusing above its
+    # identified range -- the same "operating point never visited" discipline, applied to its own
+    # output -- and it explicitly does NOT claim the causal slope excitation exists to identify.
     "L1.45": ["scripts/check_excitation.py", "scripts/run_cost_identification.py",
               "libs/execution/excitation.py", "scripts/fit_passive_impact.py",
-              "libs/execution/passive_impact.py"],
+              "libs/execution/passive_impact.py", "scripts/fit_print_impact.py",
+              "libs/research/print_impact.py"],
     # L1.46: clock provenance. Every other data fence asks whether the COLLECTOR RAN -- gapless
     # collection was verified GOOD on the same corpus that is not monotonic in its own `t` field.
     # This one asks whether the TIMESTAMPS MEAN WHAT THE SCHEMA IMPLIES, which is the defect class

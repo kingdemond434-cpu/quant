@@ -87,6 +87,7 @@ _GOVERNED: tuple[str, ...] = (
     "check_funding_capture.py",                             # L1.47 fence (capability hunt s1)
     "check_idle_cost.py",                                   # L1.51 fence (capability hunt s1)
     "run_cost_identification.py",                           # L1.45 producer (capability hunt s4)
+    "fit_print_impact.py",                                  # L1.45 third cost basis (hunt s1)
     "screen_carry_basis_path.py",                           # R0206 carry attribution (2026-07-31)
     "check_promotion_gate.py",
     "run_discretionary_max.py",
@@ -249,6 +250,17 @@ def build_report(root: Path | None = None) -> dict[str, Any]:
             # NOT a silent pass (this fence's own rule): an unreadable manifest means every
             # scheduling verdict below is UNMEASURED, and that must surface, not vanish.
             unreadable.append(f"{m}: {exc}")
+    # A daily-cycle organ IS scheduled -- daily_research_cycle.py is itself on a manifest line, and
+    # its _STEPS chain invokes each member every run. Until now that fact could only be asserted in
+    # prose on _SCHEDULE_EXEMPT (derive_walcl_clock's entry says exactly this), which meant the
+    # claim was never CHECKED: delete an organ from _STEPS and its static exemption still reads
+    # fine. Reading the chain turns a prose assertion into a verified one, and the repair is
+    # upward -- the fence now recognises real scheduling instead of being told to look away.
+    for chain in ("scripts/daily_research_cycle.py",):
+        try:
+            manifest += (root / chain).read_text("utf-8", errors="ignore")
+        except OSError as exc:
+            unreadable.append(f"{chain}: {exc}")
     try:
         matrix_src = (root / "scripts/build_enforcement_matrix.py").read_text("utf-8")
     except OSError as exc:
