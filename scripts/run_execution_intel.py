@@ -147,6 +147,51 @@ def _surface_bottleneck(report: dict[str, Any]) -> None:
                             "summary": {k: eb[k] for k in list(eb)[:6]}}
 
 
+def _surface_fee_attribution(report: dict[str, Any]) -> None:
+    """WHICH SYMBOLS PAID THE FEE BILL -- the question the trade tape structurally cannot answer.
+
+    R0371: futures commission is 88.7% of the sleeve's non-funding loss and 0 of 500 tape rows
+    carry a fee field, so `cost_drift` above reports NO-DATA on "0 trades carry TCA cost fields".
+    `run_fee_attribution.py` answers it from the venue income ledger instead. Two things are
+    verdict-worthy here and they are different:
+
+      CONCENTRATION routes the repair. Four names carrying 86% of the bill means the fix is
+      symbol selection, not the execution path -- the opposite conclusion from a broad drag.
+      COVERAGE is the defect. The tape accounts for ~7% of the notional the bill implies, so the
+      sleeve's own cost record cannot audit its own dominant loss. That is DEGRADED regardless of
+      how the fees are distributed, and it is reported even when concentration looks benign.
+    """
+    fa = _read("data/fee_attribution.json")
+    if fa is None:
+        report["fee_attribution"] = {"verdict": "NO-DATA",
+                                     "detail": "data/fee_attribution.json unreadable -- run "
+                                               "scripts/run_fee_attribution.py"}
+        return
+    att = fa.get("attribution") or {}
+    if not fa.get("measured") or not att.get("measured"):
+        # UNMEASURED, never "no fees": an empty venue read is not a fee-free book (L1.28a).
+        report["fee_attribution"] = {"verdict": "NO-DATA", "age_h": _age_h(fa, "ran"),
+                                     "detail": str(fa.get("provenance_why")
+                                                   or att.get("note") or "venue read unmeasured")}
+        return
+    cov = att.get("tape_coverage")
+    top = list(att.get("by_symbol", {}).items())[:4]
+    degraded = isinstance(cov, (int, float)) and cov < 0.5
+    report["fee_attribution"] = {
+        "verdict": "DEGRADED" if degraded else "OK",
+        "age_h": _age_h(fa, "ran"),
+        "commission_usd": att.get("venue_commission_usd"),
+        "top_symbols": [{"symbol": s, "usd": v} for s, v in top],
+        "top4_share": att.get("top4_share"),
+        "tape_coverage": cov,
+        "concentration": fa.get("verdict"),
+        # Both refusals travel with the number so a reader cannot mistake either for a zero.
+        "spot_leg": att.get("spot_leg"),
+        "per_round_trip": att.get("row_level"),
+        "detail": (att.get("residual_note") if degraded else str(fa.get("why") or "")),
+    }
+
+
 def _recommend(report: dict[str, Any]) -> list[dict[str, Any]]:
     """Diagnose -> recommend. Recommendations carry the approved-limit bound they must respect;
     nothing here writes to executor state. A recommendation outside every bound is escalation."""
@@ -173,6 +218,7 @@ def main() -> int:
     _surface_hedge(report)
     _surface_forensics(report)
     _surface_cost_drift(report)
+    _surface_fee_attribution(report)
     _surface_bottleneck(report)
     report["recommendations"] = _recommend(report)
     verdicts = [v.get("verdict") for v in report.values() if isinstance(v, dict) and "verdict" in v]

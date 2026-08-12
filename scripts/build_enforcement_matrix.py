@@ -428,6 +428,15 @@ _MAP: dict[str, list[str]] = {
     "L1.8-r0288": ["scripts/collect_unlock_calendar.py", "libs/research/unlock_calendar.py",
                    "tests/research/test_unlock_calendar.py",
                    "scripts/collect_circulating_supply.py"],
+    # R0371 fee attribution (L1.58 edge preservation / P&L forensics): futures commission is
+    # 88.7% of the sleeve's non-funding loss and 0 of 500 trade-tape rows carry a fee field, so
+    # the desk could see the dominant loss and not attribute it. binance_testnet.commission_events
+    # already answered it and had zero callers; this is the consumer. Per-symbol truth reconciles
+    # to the cent ($1,750.878 vs the dashboard's $1,750.88) and four names carry 85.9% of it.
+    # Per-round-trip attribution stays REFUSED and the spot leg UNMEASURED -- both are published
+    # as refusals rather than zeros, and the 7.1% tape coverage is the defect the surface reports.
+    "L1.58-r0371": ["scripts/run_fee_attribution.py", "libs/research/fee_attribution.py",
+                    "tests/test_fee_attribution.py", "scripts/run_execution_intel.py"],
     # R0303 Upbit purge-proof snapshot (L1.46 unrecoverable-series duty): the venue erases a
     # market's candle history at delisting (~11.4 KRW markets/yr; AQT/AERGO lost 2026-08-03),
     # and the desk's own >=120-aligned-day panel filter stacks a second survivorship bias on

@@ -59,6 +59,66 @@ def test_cost_drift_detected_across_feeds(tmp_path: Path, monkeypatch: object) -
     assert rec["auto_apply"] is False
 
 
+def _fee_artifact(**over: object) -> str:
+    att = {"measured": True, "venue_commission_usd": 1750.878, "top4_share": 0.8589,
+           "by_symbol": {"COOKIEUSDT": 623.3, "1000CATUSDT": 413.03},
+           "tape_coverage": 0.0709, "spot_leg": "UNMEASURED", "row_level": "REFUSED",
+           "residual_note": "the tape accounts for 7.1% ..."}
+    att.update(over)
+    return json.dumps({"ran": "2026-08-12T00:00:00+00:00", "measured": att["measured"],
+                       "verdict": "CONCENTRATED", "attribution": att})
+
+
+def test_fee_attribution_absent_is_no_data_not_ok(tmp_path: Path, monkeypatch: object) -> None:
+    """R0371: the fee bill is 88.7% of the sleeve's non-funding loss. Its absence is never OK."""
+    rep = _run_in(tmp_path, monkeypatch)
+    assert rep["fee_attribution"]["verdict"] == "NO-DATA"
+    assert "run_fee_attribution" in rep["fee_attribution"]["detail"]
+
+
+def test_fee_attribution_surfaces_the_paying_symbols(tmp_path: Path, monkeypatch: object) -> None:
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data/fee_attribution.json").write_text(_fee_artifact(), "utf-8")
+    rep = _run_in(tmp_path, monkeypatch)
+    fa = rep["fee_attribution"]
+    # Low tape coverage is a DEGRADED verdict on its own: the sleeve cannot audit its own
+    # dominant loss from its own record, however the fees are distributed.
+    assert fa["verdict"] == "DEGRADED"
+    assert fa["top_symbols"][0]["symbol"] == "COOKIEUSDT"
+    assert fa["commission_usd"] == 1750.878
+    assert rep["overall"] == "DEGRADED"
+
+
+def test_fee_attribution_keeps_both_refusals_beside_the_number(
+        tmp_path: Path, monkeypatch: object) -> None:
+    """A reader must never mistake the unmeasured spot leg for a spot leg that paid nothing."""
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data/fee_attribution.json").write_text(_fee_artifact(), "utf-8")
+    fa = _run_in(tmp_path, monkeypatch)["fee_attribution"]
+    assert fa["spot_leg"] == "UNMEASURED"
+    assert fa["per_round_trip"] == "REFUSED"
+
+
+def test_fee_attribution_unmeasured_venue_read_is_not_zero_fees(
+        tmp_path: Path, monkeypatch: object) -> None:
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data/fee_attribution.json").write_text(
+        json.dumps({"ran": "2026-08-12T00:00:00+00:00", "measured": False,
+                    "provenance_why": "UNMEASURED: venue read failed",
+                    "attribution": {"measured": False, "note": "no usable commission events"}}),
+        "utf-8")
+    fa = _run_in(tmp_path, monkeypatch)["fee_attribution"]
+    assert fa["verdict"] == "NO-DATA"
+    assert "commission_usd" not in fa            # no number at all, not 0.0
+    assert "venue read failed" in fa["detail"]
+
+
+def test_fee_attribution_full_coverage_is_ok(tmp_path: Path, monkeypatch: object) -> None:
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data/fee_attribution.json").write_text(_fee_artifact(tape_coverage=0.95), "utf-8")
+    assert _run_in(tmp_path, monkeypatch)["fee_attribution"]["verdict"] == "OK"
+
+
 def test_no_recommendation_ever_auto_applies(tmp_path: Path, monkeypatch: object) -> None:
     (tmp_path / "data").mkdir()
     (tmp_path / "data/hedge_integrity.json").write_text(json.dumps(

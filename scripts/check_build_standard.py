@@ -66,6 +66,7 @@ _GOVERNED: tuple[str, ...] = (
     "check_birth_properties.py",                            # §36/L2.9 born with its properties
     "check_capital_basis.py",                               # R0287 return-denominator invariant
     "collect_unlock_calendar.py",                           # R0288 point-in-time unlock calendar
+    "run_fee_attribution.py",                               # R0371 who paid the fee bill
     "check_fence_yield.py",
     "ship_restart.py",                                      # the actuator for stale-code daemons
     "run_stale_daemon_repair.py",                           # detect->repair loop closed (L1.28b)

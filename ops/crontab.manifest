@@ -660,6 +660,17 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 */20 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_execution_intel.py >> data/cro_ai_logs/execution_intel.log 2>&1
 
+# FEE ATTRIBUTION: which SYMBOLS paid the $1,750.88 futures commission that is 88.7% of the
+# sleeve's non-funding loss. The trade tape carries no fee field on any of its 500 rows, so this
+# reads the venue income ledger instead and feeds run_execution_intel's fee_attribution surface.
+# CADENCE CEILING (L1.28c): DATA-ARRIVAL. Commission rows appear only when the sleeve fills, and
+# the book is currently flat under CASHCARRY_KILL -- firing faster re-reads unchanged state. The
+# read is also heavy (11,194 paginated income rows for one month), so a 20-minute cadence would
+# spend venue weight to learn nothing. Daily, ahead of the morning cycle.
+# EVIDENCE: scripts/run_fee_attribution.py (built 2026-08-12, R0371)
+# CONFIDENCE: committed-script (new this cycle -- cadence chosen here, not observed on the box)
+41 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_fee_attribution.py >> data/cro_ai_logs/fee_attribution.log 2>&1
+
 # REALITY GAP: backtest -> shadow -> live -> venue-truth chain comparison (constitution L2.10).
 # EVIDENCE: scripts/run_reality_gap.py (built 2026-07-29, triage #127)
 # CONFIDENCE: committed-script (new this cycle)
