@@ -3728,11 +3728,11 @@
    "summary": "KR-s1 A: collect_announcements.py is DEGRADED (binance HTTP 400, bybit CloudFront-blocked) and carries ZERO Korean venues. Add Upbit api-manager.upbit.com/api/v1/announcements -- keyless, first-party, 5,685 events back to 2017-10-24, category=trade -> 737 listing/delisting events. MUST key on first_listed_at not listed_at (differ on 42.5% of rows, median 2.08d, p90 9.30d) or 4 events in 10 are mis-dated. Caps: per_page<=20, >=3s between pages (429s hard). Replaces a broken source on a working feed.",
    "roi_bps": 40.0,
    "raised": "2026-08-01T13:37:26.175109+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=6 effort_h=2: Not built: scripts/collect_announcements.py fetch_all() carries okx (line 170), llama.fi hacks (187), coindesk/cointelegraph RSS (199-200), and hard-codes binance/bybit as standing errors (lines 180-182: errors.setdefault('binance_announcements'/'bybit_announcements')). Zero Korean venues, zero 'upbit' hits in the file. Adding the keyless first-party Upbit feed (keying on first_listed_at, per_page<=20, >=3s pacing) replaces a broken source on a working feed -- 737 listing/delisting events back to 2017.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Upbit source live on collect_announcements.py: keyless category=trade page-1 fetch inside the KR-s1 caps, published_at keyed on first_listed_at (test asserts the listed_at bump is never used), Korean tier phrases at Upbit's own wording, standing egress blocks split out of the all-down count. Live run landed 21 new items incl. tradeable PROM listing + tier-1 RVN caution.",
+   "commit": "a3ae6bcfa6323e84848071a3fc53361586b11471",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T06:08:50.058184+00:00"
   },
   {
    "id": "R0299",
@@ -3740,11 +3740,11 @@
    "summary": "KR-s1 B: START RECORDING the KR venue flag surface -- Upbit market/all?isDetails=true (warning + 5 caution flags incl CONCENTRATION_OF_SMALL_ACCOUNTS and GLOBAL_PRICE_DIFFERENCES) and Bithumb market/all + public/assetsstatus/ALL (per-asset deposit/withdrawal open-closed). ALL ARE SNAPSHOT-ONLY WITH NO HISTORY ENDPOINT, so every unrecorded hour is permanently lost (L1.46). Cost is a few hundred bytes/day, keyless. Bithumb rail state is an INDEPENDENT barrier-height regressor -- it breaks the circularity in which every prior KR premium study inferred the barrier from the premium itself.",
    "roi_bps": 35.0,
    "raised": "2026-08-01T13:37:26.314662+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=6 effort_h=2: Not built: zero hits for isDetails/assetsstatus/CONCENTRATION_OF_SMALL_ACCOUNTS across scripts/ and libs/ (only unrelated portfolio-concentration code). All three surfaces are snapshot-only with no history endpoint, so every unrecorded hour is permanently lost (L1.46); cost is a few hundred bytes/day, keyless, and cron scheduling is in-repo via ops/crontab.manifest + deploy/reconstitute_cron.sh. Bithumb rail state is the independent barrier-height regressor that breaks the KR-premium circularity.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "collect_kr_venue_flags.py live on 7-59/15 cron: Upbit market_event + Bithumb market_warning + assetsstatus rails, baseline+transition archive with recv_only clock (L1.46), failed fetch never diffed (absence != flags-cleared). First tick banked 831/493/511 markets incl 221 active Upbit flags. L1.41 all six conditions in one commit; build standard 66/66.",
+   "commit": "1be064c56a9604036ab1289339573be535af19c6",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T06:13:43.176017+00:00"
   },
   {
    "id": "R0300",
@@ -3752,11 +3752,11 @@
    "summary": "KR-s1 C: GAP #69 (free NAVER Developers key) is UNDER-VALUED at tier-3. Probing the sibling endpoints shows the SAME key also unlocks /v1/search/blog.json and /v1/search/cafearticle.json -- the only s13-LICENSED route into Naver blogs and cafes, both of which name ClaudeBot/Claude-SearchBot Disallow:/ in robots.txt. One free human registration converts two hard-stopped grounds PLUS the DataLab attention axis. Re-price and re-prioritise; stop re-verifying the 401 (done 4x, settled).",
    "roi_bps": 25.0,
    "raised": "2026-08-01T13:37:26.462714+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] BLOCKED-OPERATOR: The collector is already built and waiting: scripts/collect_naver_krsearch.py:47-54 reads NAVER_CLIENT_ID/NAVER_CLIENT_SECRET or data/secrets/naver.json and line 98 prints a skip when absent; data/secrets/ does not exist in the tree. Exact blocker: the principal must complete the free human NAVER Developers registration and drop client_id/client_secret into data/secrets/naver.json (or env). The re-pricing half of the row is paperwork; the unlock (search/blog.json, cafearticle.json, DataLab -- the only s13-licensed route past the robots.txt ClaudeBot Disallow) is key-gated.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Re-price executed: GAP #69 now names the full unlock (blog.json + cafearticle.json, only s13-licensed route past ClaudeBot robots Disallow, + DataLab) and prices it as highest value-per-operator-minute on the register; 401 marked SETTLED do-not-reverify (4x); due re-dated 2026-08-19. The key itself remains the operator's ~5-min human step -- tracked by register row 69, which is the escalating organ.",
+   "commit": "3c83b0b18cf66b97a37d1ccbebf78c103b44a797",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T06:14:58.422449+00:00"
   },
   {
    "id": "R0301",
@@ -5687,6 +5687,30 @@
    "summary": "litminer run6 inbox H: execution+stats shelf \u2014 (a) liquidity-state-first prior for the 66bps program (classify pre-order L2 state from own recorder; design-hint grade, replicate on own data); (b) two 2026 decision-time-leakage formalisations (2605.23959 one-switch benchmark, 2607.04958 temporal non-interference) as candidate MECHANISED leakage gates (R0289 documented causal_guard's enumerated-subset blindness); (c) post-selection Sharpe estimation + tsbootstrap + HAC-over-rejects-at-cycle-scale (size 0.33 @ nominal 0.05, n~4 regimes) into the methods backlog.",
    "roi_bps": 20.0,
    "raised": "2026-08-12T02:07:18.186663+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0462",
+   "source": "cycle",
+   "summary": "Backfill Binance COIN-M (dapi) mark/index/premium/funding klines for 5 quarterly underlyings + 20 perps (keyless history verified 2026-08-12, no daemon needed) and run the pre-registered convexity-differential screen vs USDT-M (data_axis_watchlist card 31; mechanism coinm_usdtm_basis_convexity_rv EV-rejected 0.0009 pending this measurement trigger). Engineering-enabled seat; EN miner seat is research-frozen.",
+   "roi_bps": null,
+   "raised": "2026-08-12T06:24:52.749382+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0463",
+   "source": "max_audit",
+   "summary": "GATE-0/LAUNCH ITEM (from bnb-burn-unfunded defect, 2026-08-12): the moment the carry book trades LIVE Binance futures, fund a small BNB balance in the futures wallet BEFORE first fill -- feeBurn:True without held BNB pays rack rate (the 2026-07-24 incident: desk believed the discount was live for weeks). On USDT-M futures the BNB discount is 10pct of commission, a pure cost lever with zero risk change. NOT actionable on the current TESTNET book: the futures testnet has no faucet API for BNB (web-UI faucet is a human step) and no cross-sandbox spot transfer; testnet fee realism is handled by the measured-fee accounting, not the discount flag. Owner: whoever executes the live-launch runbook; check_bnb_funded goes green on live funding by construction.",
+   "roi_bps": 3.0,
+   "raised": "2026-08-12T06:26:49.289076+00:00",
    "status": "open",
    "reason": null,
    "commit": null,

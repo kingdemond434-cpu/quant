@@ -206,6 +206,18 @@ adaptations: universal (HN is EN-centric but hosts practitioner comments in all 
   Zhihu answers via question API; habr comments endpoint. Same two-step shape everywhere.
 counterfactual: MED -- HN search is well known; walking the tree by DEPTH and scoring locally is not.
 
+_OP-022 field note (EN sG, 08-12): OPERATOR-DEFENSE MINING — in any platform/contest thread, the
+platform's OWN EMPLOYEES' defensive replies enumerate their validation design in public (HN
+9152332: fawce/dunster/jik laid out the full gate — 6 equal-weighted metrics, 2y backtest + 1mo
+paper, locked-since-submission, default commission+slippage, source unread). That enumeration is
+a free PRE-REGISTRATION of the platform's failure mode: pair it with the later outcome (the 2020
+fund capital-return) and you hold a complete natural experiment — design, defense, and refutation,
+all citable. Search key: site/thread + operator-handle replies, not the OP. Adaptations:
+JP/CN=JoinQuant/BigQuant/myquant staff replies in BBS threads; WorldQuant staff forum replies
+(their submission-bar defenses are FACTS ABOUT THEIR PROCESS, never gates for ours); KR=exchange
+"official" accounts defending listing/delisting rules in cafe threads — same structure: the
+defense names the gate, reality later grades it._
+
 ### OP-023 per-method RPC capability matrix (probe, never assume)   [active]
 class: verification
 origin: EN frontier miner (2026-07-25)   validated-gain: found the desk's registry RPC chain 3/4

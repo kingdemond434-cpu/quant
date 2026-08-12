@@ -6,11 +6,11 @@ _Seeded 2026-07-18; every family unvisited -- the first run biases per the rotat
 |---|---|---|---|
 | Podcasts/interviews | 2026-07-19 | 1 | 1 ep (Pavel Kycek, algoadvantage.substack.com) — CLAIM-grade, generic momentum+meanrev, no mechanism; 0 cards |
 | YouTube/talks | never | 0 | untouched this session — priority next run |
-| Forums (deep+legacy) | 2026-08-04 | 2 | s1 (07-25): Bitcointalk ERA-ARCHAEOLOGY opened — boards 8 (18,640 topics, 2011-14 era = offsets 14480-18640) + 78 (2,376 topics) mapped via OP-021; 6 topics mined to reply-depth → 3 graveyard entries + EN era lexicon. **s2 (08-04): QUANTOPIAN ARCHIVE OPENED — dead site (HTTP 000), 12 CDX pages of /posts/* slugs mapped (OP-034); olmar + in-and-out threads mined to reply-depth → 2 graveyard entries + diaspora answered (QuantConnect/IBridgePy/Slack/OSS org).** Wilmott/EliteTrader/Nuclear Phynance STILL never touched — first item next run |
+| Forums (deep+legacy) | 2026-08-12 | 4 | s1 (07-25): Bitcointalk ERA-ARCHAEOLOGY opened — boards 8 (18,640 topics, 2011-14 era = offsets 14480-18640) + 78 (2,376 topics) mapped via OP-021; 6 topics mined to reply-depth → 3 graveyard entries + EN era lexicon. **s2 (08-04): QUANTOPIAN ARCHIVE OPENED — dead site (HTTP 000), 12 CDX pages of /posts/* slugs mapped (OP-034); olmar + in-and-out threads mined to reply-depth → 2 graveyard entries + diaspora answered (QuantConnect/IBridgePy/Slack/OSS org).** **s3+s4 (08-12, two runs): NUCLEAR PHYNANCE OPENED + WORKED — 6,645 thread captures CDX-mapped; 4 threads EXHAUSTED (161897 vol-carry/no-static-hedge, 161299 VR discipline, 161162 convexity-neglect → COIN-M dapi axis card 31 + EV-rejected RV, 161713 2012 validation time capsule); forum indices 8/13 classified (f2 TRADING = next batch ground, 25 titles mapped 2011-02; f3/7/9/11/13 UNARCHIVED, 2 probes each). EliteTrader CLOSED for both bot families (robots by-name). Wilmott WALLED (CF 403 on robots, probed twice 08-12).** |
 | Social (X/Discord/Substack) | 2026-07-19 | 1 | 3 Substacks fetched (Maverick Quant, quantjourney [paywalled], algoadvantage) — 0 cards, mostly explainer/content-marketing grade |
 | Code (GitHub/Kaggle) | 2026-07-19 | 1 | operator-named dig: ai_quant_trade, Qbot, QuantDinger, Vibe-Trading (READMEs+issues) + Hummingbot/Freqtrade issues — all infra/framework shells or equity factor zoos, 0 crypto-perp strategy logic; 0 cards but confirmed funding-arb is now commoditized into hummingbot's v2_funding_rate_arb.py (crowding evidence) |
 | Academic (SSRN/arXiv) | never | 0 | untouched this session (RSRS is sell-side research, not SSRN/arXiv) — priority next run |
-| Records (contests/CTA) | 2026-08-04 | 2 | s1 (07-25): Bitcointalk "Automated Trading Contest" (CryptoTrader.org rounds #1-#5) → in-sample-vs-forward natural experiment entry. **s2 (08-04): the Quantopian FUND record mined via HN trees → graveyard `crowdsourced_backtest_selection_fund` (backtest-Sharpe>2.5 selection → −3% live vs SPX +6.6% → capital returned Feb-2020) — the at-scale companion to s1's entry.** Kaggle G-Research + Numerai post-mortems + HN 9152332 contest-winner tree still untouched |
+| Records (contests/CTA) | 2026-08-12 | 3 | s1 (07-25): Bitcointalk "Automated Trading Contest" (CryptoTrader.org rounds #1-#5) → in-sample-vs-forward natural experiment entry. **s2 (08-04): the Quantopian FUND record mined via HN trees → graveyard `crowdsourced_backtest_selection_fund` (backtest-Sharpe>2.5 selection → −3% live vs SPX +6.6% → capital returned Feb-2020) — the at-scale companion to s1's entry.** **s3 (08-12): HN 9152332 MINED (full tree, 28 comments, OP-022) — the 2015 CONTEST thread closes the family's era arc: in-thread 2015 predictions (max-risk selection wins contests; survivorship arithmetic) were confirmed by the 2020 outcome, and the operator's own defense named the gate that failed → graveyard entry enriched + OPERATOR-DEFENSE MINING field note on OP-022.** Kaggle G-Research + Numerai post-mortems still untouched |
 | Non-English forums | 2026-08-04 | 6 | s1 (07-19): Chinese RSRS + funding-arb (CSDN/VeighNa/BigQuant/Zhihu/FMZ) + JP note.com — RSRS EV-killed, ML-funding-rate graveyard-matched. s2 (07-26, CN frontier miner): axis #76 usdt-cny-otc-premium UN-PARKED — "no clean free API" REFUTED, 3 keyless routes, 591d history reconstructed (OP-031), Stage-A 4/4 cells → no promotable edge but SIGN and MAGNITUDE priors falsified. New: OP-031, OP-032, CN lexicon. **s3 (08-04, CN frontier miner): era-archaeology STARTED at depth — 8btc board CDX-mapped (993 urls, 39 boards), 3 era windows (2013 ban / 2017 freeze / 94 exodus) mined to reply-depth ≥2 → graveyard 5th instance adds the premium-SIGN law (coin-leg frozen → domestic discount; fiat-leg frozen → premium) + primary-source 94 diaspora record; LTW-2022 momentum "non-replication" REVERSED by code forensics (pd.cut fat-tail trap → OP-047); Gitee access-mapped (discovery-walled/content-open → OP-048); +12 lexicon rows. Board 233 (BitMEX 合约党, ~1000pp) surveyed, unmined.** **s4 (08-04, RU frontier miner s1-on-branch): forum.btcsec.com era corpus OPENED — 48 CDX pages, 1,570 topics mapped, 283 trading-tagged (data/btcsec_trading_topics.json); 3 threads reply-depth → grid-bot SECOND instance (correlated-outage failure mode) + barrier-rent SIXTH instance (Sep-2013 fee-ladder: ~12% route dispersion, Bitstamp anchor, "мы не в РФ" jurisdiction-arb); live successor forum.bits.media censused (sections 74/166/110) → 2022 diaspora ANSWERED (offshore-venue RU-language trading vs obnal-Telegram rails, double barrier) + corridor-tech-export weak signal + volume-profile POC watchlist card (novelty-clean). RU seat s1 proper lives on diverged master ledger.** **s5 (08-04, KR frontier miner s1-on-branch): the 3 routed legitimacy items RESOLVED (none seat-decidable; #67/#69 live+dated in GAP register; one gap — #69 priced at 1 axis vs 3 grounds — routed via recommendations R0020, scheduled 08-05); velog.io OPENED as ground (robots clean, GraphQL keyless) → OP-050 (Apollo-SSR route + 4 silent-failure traps), 6-post deep-read lake data/velog_kr_quant_posts.jsonl, Bithumb 2026-02-06 mis-credit DATA FENCE onto watchlist card #4, 2 weak signals (per-coin premium dispersion retail-tooled = KR twin of RU corridor-export, same day; order-flow stack commoditized + folk liquidation-long self-refuted at 45% WR), KR lexicon section STARTED (김프/GIMP collision the load-bearing entry); Ppomppu 가상화폐 board BOOTSTRAPPED as the era ground (robots-clean legal twin of hard-stopped DCInside: ~190k posts, 2014-07→live, no purge, universe row 91) — era-seek of the 2017-12/2018-01 mania+ban window is next run's first item. KR seat s1 proper lives on diverged master ledger.** **s6 (08-04, JP frontier miner s1-on-branch): Qiita 仮想通貨botter Advent Calendar OPENED+MAPPED — 187 entries / 5 years to data/jp_botter_advent_calendar.jsonl (note.com 91/qiita 45/zenn 24, robots-clean; adventar.org HARD STOP ClaudeBot-named, 3rd region hit by the Cloudflare rollout); 5 deep-reads → graveyard ×3: `jp_sfd_boundary_game` (SFD dead-at-source 2024-03 with full dated 2017→2024 lifecycle; venue-CLOCK boundary-game class extracted → SFD-class cadence-probe watchlist card), `jp_intraday_anomaly_pair` (hourly-mark reversal died 2022-04 community-documented; 24h-lag contrarian desk-screened SCREEN-WEAK powered BOTH cells at H8, sign flipped to momentum post-2024-04, 2 trials logged), `jp_atr_limit_reversion_timeframe_migration` (12H variant positive-fee lived 2022-mid→2024-03 then died — family migrates across timeframes; 2024-03 = triple JP era boundary); funding-mechanics fences → R0021 (FR is quantized/clamped/capped/lagged PI; read PI not FR; Binance premiumIndexKlines keyless catalogued, FR-vs-PI screen deferred 08-11); JP LEXICON started (13 rows, 2/4 s1 seeds verified: 養分+イナゴ; ガチホ unobserved stays SEED) + OP-051 annual-series-as-finite-corpus + OP-050 react-on-rails addendum; diaspora QUANTIFIED: on-chain topic share 4%→26% (2021→2024) but community consolidated on one venue — diaspora of TOPIC, not PLACE. JP seat s1 proper lives on diverged master ledger.** |
 | Forums (deep+legacy) | 2026-07-28 | 2 | s1 (07-25): Bitcointalk ERA-ARCHAEOLOGY opened — boards 8+78 mapped via OP-021; 6 topics mined to reply-depth → 3 graveyard entries + EN era lexicon. **s2 (07-28, session D): QUANTOPIAN ARCHIVE opened + mapped — 52,187 threads confirmed in Wayback (the whole forum); In&Out thread (108 posts) + its live-trade continuation (13) mined to EXHAUSTION → graveyard `era_inout_regime_rotation` (the community's own decomposition kills the crypto port), inbox #71, WS-003 4th confirmation, OP-034 + Quantopian-stratum lexicon, and the full named diaspora record (QC canonical / Quantiacs futures / self-host branch).** **s3 (2026-08-01, session E): OLMAR/OLPS cluster (20 captures, not the 9 logged) — 3 threads exhausted incl. the paper AUTHOR's in-thread admission; family killed on our own data AND the era's own kill reason refuted (crypto has 3.3–3.8× the dispersion of the sector ETFs OLMAR failed on). WILMOTT FIRST TOUCH DONE after a 4-session carry: 403 direct, 14,890 threads via Wayback, full board map recovered, verdict THIN-BUT-REAL (~5,868 mineable of 14,890; 68% Off-Topic/Politics noise).** EliteTrader/Nuclear Phynance still never touched |
 | Social (X/Discord/Substack) | 2026-07-19 | 1 | 3 Substacks fetched (Maverick Quant, quantjourney [paywalled], algoadvantage) — 0 cards, mostly explainer/content-marketing grade |
@@ -3230,3 +3230,91 @@ NEXT UN-EXHAUSTED GROUND, in order (L1.35 — named before closing):
 STATUS: ALL THREE ITEMS RESOLVED. Run closed cleanly 2026-08-12 (completion contract met:
 write-first note, bounded scope, §33 drained 2→0, dead session F's items finished, findings
 routed, dead ends logged).
+
+---
+
+### 2026-08-12 session G (EN frontier miner, seat rotation 05:30) — IN PROGRESS (write-first note; updated as items resolve)
+PRIOR STATE: the 08-12 PROSPECTOR (brain seat) run closed cleanly this morning — §33 drained 2→0,
+session F's items 1-2 finished, NP archaeology ground OPENED (6,645 thread captures mapped, forum-1
+Sep-2012 index surveyed, 2 threads EXHAUSTED). Mine gate: BACKLOG-CLEAR (no mining_suspended).
+Verify queue reads 14 pending but the cycle's 6 listed are OWNED IN-FLIGHT elsewhere: card 23 BIS
+1087 [§33: wired -> data/cot_btc_panel.json, screen=R0193 due 08-24], card 24 Auer–Claessens
+[§33: deferred(2026-08-24)], copula-5min + quarter-hour = litminer run 6 (commit cab49a0, R0459),
+KR venue-state + stablecoin-run = KR/brain seats. Not poached; my queue is the prior close's
+NEXT-UN-EXHAUSTED-GROUND list.
+ITEMS THIS RUN (bounded per completion contract; oldest debt first, so a dying run strands the
+least-carried item, not the most):
+1. HN 9152332 contest-winner tree (Records family) — carried since 08-04 session D, thrice-named,
+   never mined. OP-022 full-tree walk, depth labels, mechanism-keyword ranking, venue harvest.
+2. NP high-value thread batch: 161162 (Convexity arbitrage) + 161713 (backtest-evaluation
+   methodology), both capture-verified 08-12am. OP-019/OP-034 discipline (length-rank captures,
+   id_ fetch, gzip-sniff), reply-chain ≥2, then claim EXHAUSTED per-thread.
+3. NP forum indices ForumIDKey=2..13 (one CDX-captured snapshot each; classify Trading/Numerical
+   vs Careers noise) + forum-1 2013 snapshot for post-2012 titles — survey level, feeds the next
+   thread batch.
+SIDE-CHECKS (recorded, not items): Wilmott robots re-probe (WALLED this morning, one curl, honest
+record either way); venue-discovery harvest from every tree read (standing obligation).
+STATUS: items 1-3 OPEN.
+RESOLVED 1 (HN 9152332, Records family — carried since 08-04, now CLOSED): full tree via OP-022
+(28 comments, max depth 3, all read — mine-everything, no filter). Yield: the 2015 contest thread
+is the ERA COMPANION to graveyard `crowdsourced_backtest_selection_fund` — in-thread 2015
+predictions (learnstats2 max-risk selection; numlocked/im2w1l survivorship arithmetic) confirmed
+by the 2020 capital-return; fawce's defense named the failed gate; im2w1l's data-fingerprint
+attack on blackbox evaluation = the conditional-behavior overfit class forward-only promotion is
+immune to. Graveyard entry ENRICHED (era rider). Leaderboard-CSV lead probed and DEAD:
+/leaderboard/csv exists in CDX only as a 2020 301 — content never archived; per-contest HTML
+snapshots exist (e.g. /leaderboard/15, 20.9KB, 2017-03) but an equities IS-vs-paper panel is
+low-EV vs the desk's own measured 86% OOS decay — recorded, not carded (verification-bottleneck
+doctrine). New venue harvest from tree: ZERO (only quantopian.com self-refs). OP-022 field note
+added: OPERATOR-DEFENSE MINING (the platform's own defensive replies = free pre-registration of
+its failure mode; pair with outcome = complete natural experiment).
+RESOLVED 2 (NP threads 161162 + 161713, both EXHAUSTED 2026-08-12): **161162 "Convexity
+arbitrage"** (3 posts, Page 1 of 1) — mid-90s convexity-adjustment-neglect era lore (FRA-vs-
+futures ignored until a London desk arbitraged it; victim "no longer around"; Napoleon/reverse-
+cliquet rider → WS-007). TRANSLATED: inverse-contract convexity ⇒ COIN-M vs USDT-M fair-basis
+wedge ⇒ **NEW DATA AXIS: Binance COIN-M dapi, verified-live keyless this run (30 instruments:
+20 perps + 5 quarterly underlyings BTC/ETH/BNB/SOL/XRP), ZERO prior desk coverage** →
+data_axis_watchlist card 31 [§33: deferred(2026-08-19) tier:2] + universe map 98-binance-coinm-
+dapi + R0462 (backfill + pre-registered convexity-differential screen). Mechanism
+coinm_usdtm_basis_convexity_rv EV-gated honestly: REJECT 0.0009 (both tag readings reported,
+0.0009/0.0002) → watchlist memory with a MEASUREMENT promotion trigger (4/5 slots). **161713
+"Help needed with backtested results evaluation"** (14 posts, full reply chain) — a 2012
+validation time capsule CONFIRMING desk doctrine part-for-part: Maggette's random-tape harness
+placebo (= certify_gauntlet known-NULL, R0017 — already wired, NO inbox row spent), YukaRedux's
+live-vs-backtest same-window reconciliation (= L2.10 reality gap), IVolrev's slippage-feedback-
+into-cost-model (= L1.11(b) execution reality model), intradaybill's profit-factor≈1 noise-trading
+tell + "even 1 parameter suffices for curve-fitting" + the GP anecdote (1000 generations, "OOS
+was good", −70% — selection ON the OOS is still selection → graveyard rider). 3 research-memory
+rows logged (rm-20260812T062443-5b1577/-a9efcc/-4a0939).
+RESOLVED 3 (NP forum indices 2..13 survey): 8/13 CLASSIFIED from one snapshot each — **f2
+TRADING (RICH: 25 titles mapped @2011-02 incl. 112425 Price patterns, 147526 new-issue premium,
+4851 Renaissance watch — THE next thread-batch ground)**, f4 risk/VaR methods, f5 quant-theory
+(2005 capture), f8 books (2005), f6 careers NOISE, f10 off-topic NOISE, f12 general-misc (147620
+Kelly, 147696 Dynamic Correlation), f1 done prior. **f3/f7/f9/f11/f13: ZERO Wayback captures (2
+CDX probes each) — unarchived seams, documented.** Venue-discovery thread 148582 ("top 3 forums")
+= 0 replies at its only capture: dead seam, honest zero. CDX operational note: web.archive.org
+CDX threw intermittent 503s + 2 whole-loop stalls this run — single-shot retries recovered ~half;
+counts for f2/f4/f5 were limit-capped at 50 (spans 2005-12→2013/15/18).
+DEPTH LINE: HN 9152332 = full tree exhausted (28/28 comments, depth 3); NP 161162 = exhausted
+(3/3 posts + risk.net citation noted, not chased — era exotics, no desk options book); NP 161713
+= exhausted (14/14 posts, reply-chain ≥2 with quoted-reply refinement); NP indices = surveyed
+(title level, by design — survey item). Zero surface-only touches. video: 0 fetched, 0 locked —
+no video grounds hit this run.
+SIDE-CHECKS RESOLVED: Wilmott robots.txt 403 again (2nd probe, WALLED stands, not refusal-by-
+name; re-probe next run). Sibling-modified files NOT staged (CRO_BRIEFING.md,
+gauntlet_certification.json).
+NEXT UN-EXHAUSTED GROUND, in order (L1.35 — named before closing):
+1. NP forum-2 (TRADING) thread batch from the 25 mapped titles: 112425 "Price patterns", 147526
+   "corporate bond new issue premium" (translate: listing/unlock premium mechanics), 4851
+   "Renaissance Watch" (process lore) — via CDX per-thread captures.
+2. NP forum-1 2013 snapshots for post-2012 titles (from the 08-12am session's list) + forum-12's
+   147620 Kelly criterion + 147696 Dynamic Correlation Model threads.
+3. Records family: Kaggle G-Research crypto post-mortems + Numerai forum post-mortems (the two
+   never-touched Records grounds).
+4. Cards 27/28 (GMO/bitbank) DECIDE-queue follow-through owed 08-19; card 31 §33 deferral owed
+   2026-08-19 (R0462 disposition owed 24h — engineering seat).
+5. Wilmott re-probe (WALLED ×2; a robots change or different egress reopens it).
+STATUS: ALL THREE ITEMS RESOLVED + 2 side-checks. Run closed cleanly 2026-08-12 (write-first
+note, bounded scope, depth per item maxed, 1 new axis + 1 EV-gated mechanism + 1 WS + graveyard
+enrichment + OP-022 contribution routed; honest zeros: 0 new venues, 0 video, leaderboard-CSV
+dead, 148582 dead, 5 NP indices unarchived).

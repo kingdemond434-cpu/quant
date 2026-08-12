@@ -334,3 +334,10 @@ candidates.**
 **NEXT TEST, if the family is pursued:** restrict to the top decile by book depth, re-run with the
 trial budget declared for THAT universe only, and require the net-positive arms to clear the
 deflated bar rather than be selected by it. Any other continuation is fitting the 450.
+
+### WS-007 issuer-hedging flow from packaged short-vol products is a standing crypto flow axis nobody on the desk owns   [observations: 1]
+first-seen: 2026-08-12 EN frontier miner sG (NP 161162, sas reply: Napoleon/reverse cliquets "quite notorious" — retail-packaged short-vol whose issuer hedging flows became predictable)
+latest: same
+direction: the crypto analogue is DOV/covered-call-vault settlement flow (weekly auction pressure on Deribit vols) + dual-currency-note hedging on CEXs; the TRADFI version was documented tradeable era lore. Desk expression unclear (no options venue) — perp-level vol/funding patterns around vault settlement windows would be the testable shadow.
+independence: single path (one 2012 NP reply). Known-published for 2021-22 DOVs (Paradigm/QCP commentary) ⇒ crowded_known prior applies to any direct port; the WEAK part worth retaining is the perp-shadow expression, which nobody published.
+promotion-check: converged-with: none yet. If a second independent path (different region/era) names vault-settlement flow bleeding into PERP funding/vol, promote to hypothesis with the event-study gate (libs/validation/event_study.py — it is event-shaped, ~weekly).

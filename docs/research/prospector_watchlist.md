@@ -340,3 +340,58 @@ side-door barred per the bitFlyer ruling). Wilmott: WALLED today (Cloudflare 403
 
 **WATCHLIST (max 5 — active entries after this session): POC retest (hold), SFD cadence probe
 (hold), dvol_futures_basis_carry (new). 3/5 slots used.**
+
+---
+
+## SESSION SUMMARY — 2026-08-12 session G (EN frontier miner, seat rotation)
+
+**THIS SESSION'S DIG (NP era-archaeology continuation + HN Records family close):** three items,
+all closed. (1) **HN 9152332** (2015 Quantopian contest-winner thread, 28 comments, full tree via
+OP-022, max depth 3) — the ERA COMPANION to graveyard `crowdsourced_backtest_selection_fund`: the
+mechanism of death was predicted IN the operator's own 2015 thread (learnstats2: "the algorithm
+you need to win a contest is the highest-risk algorithm you can get away with"; fawce's defense
+named the exact machinery — backtest + 1-month paper — that the 2020 fund outcome refuted).
+Graveyard entry enriched, no new mechanism. (2) **NP threads 161162 + 161713 EXHAUSTED** (3 and
+14 posts, full reply chains): 161162 → convexity-adjustment-neglect mechanism, translated and
+EV-gated below; 161713 → 2012 validation time capsule (random-tape harness placebo, live-vs-
+backtest same-window reconciliation, selection-on-OOS death anecdote) — CONFIRMATORY of desk
+doctrine (certify_gauntlet already runs known-GOOD/known-NULL controls, R0017), no inbox row
+spent. (3) **NP forum indices surveyed:** 8 of 13 classified (f2 TRADING rich — 25 titles mapped
+2011-02; f4 risk/VaR; f5 quant-theory; f8 books; f6 careers noise; f10 off-topic noise; f12
+general mixed; f1 done prior); f3/f7/f9/f11/f13 = ZERO Wayback captures (2 probes each,
+unarchived seams). Venue-discovery thread 148582 ("top 3 forums you spend time on"): 0 replies at
+capture — dead seam, documented. **DATA AXIS FOUND: Binance COIN-M (dapi), zero desk coverage,
+verified-live keyless** → data_axis_watchlist card 31 + universe map 98-binance-coinm-dapi.
+
+**Cards kept (survived graveyard + EV): 0.** One mechanism decomposed and EV-gated honestly:
+
+### coinm_usdtm_basis_convexity_rv — EV-REJECTED, logged as watchlist memory (not a card)
+- **Source + provenance:** NP thread 161162 "Convexity arbitrage" (2012-06-20, Wayback
+  20121015082245, MrKlugh/gill/sas) — era lore: mid-90s convexity adjustments (FRA-vs-futures,
+  in-arrears) ignored by the street until a London desk arbitraged them; one victim "no longer
+  around". MECHANISM_ONLY tier at source; instrument layer verified live this run (dapi probe).
+  DERIVES-FROM: NONE (checked) — 3-post thread, no citations beyond a risk.net cliquet feature.
+- **Mechanism:** inverse (coin-margined) futures settle PnL in coin ⇒ convex USD payoff ⇒ fair
+  COIN-M basis ≠ USDT-M basis by a computable convexity adjustment (∝ σ²T). Clienteles are
+  segmented by collateral custody (coin-only hedgers cannot use USDT-M), so the differential can
+  sit away from fair value persistently. Trade = same-expiry basis spread, market-neutral to
+  first order, 5 quarterly underlyings (BTC/ETH/BNB/SOL/XRP).
+- **EV gate (honest, run this session, libs.research.alpha_economics):** est_sharpe 0.5, breadth
+  5, capacity $200k (COIN-M BTC/ETH deep), orth 0.5, 12h effort, 1.2× maint, tags
+  funding_family + crowded_known (the spread is a known pro-desk trade even though the
+  convexity-MISPRICING test framing is not published) → **EV 0.0009 < 0.002 REJECT** (p_survive
+  0.105). Conservative variant WITH narrow_breadth tag also scored and reported: 0.0002. Two
+  constructions considered, both logged (VARIANTS_TRIED discipline): quarterly-convexity (scored,
+  mechanism-true) and 20-pair perp funding-differential (named, weaker mechanism — clientele
+  demand, not convexity; NOT scored as a rescue).
+- **SINGLE PROMOTION TRIGGER (measurement, not construction-shopping):** once the COIN-M axis is
+  backfilled (card 31), compute the measured quarterly basis differential minus theoretical
+  convexity value, net of 2× taker fees both legs. If |residual| persists on ≥3 of 5 underlyings
+  across ≥2 quarterly rolls, re-score with MEASURED est_sharpe in place of the 0.5 prior —
+  measured inputs, not tag relitigation, are the only path back.
+- **Strongest spurious argument (written first):** every delta-neutral basis desk already watches
+  this spread; post-2022 COIN-M OI share shrank (the coin-collateral clientele thinned), so the
+  residual may be exactly fee-sized — the axis measurement decides, not this card.
+
+**WATCHLIST (max 5 — active entries after this session): POC retest (hold), SFD cadence probe
+(hold), dvol_futures_basis_carry (hold), coinm_usdtm_basis_convexity_rv (new). 4/5 slots used.**

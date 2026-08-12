@@ -580,6 +580,20 @@ largest crowd-sourced attempt ever made bought negative live alpha with exactly 
 two-stage law forbids. Microstructure rider (depth-5 reply, justrobert): OHLC backtests are
 structurally blind to crash-day bid/ask breakdown and broker margin-call liquidation — an
 execution-reality prior for any stress-period backtest claim.
+Era rider (2026-08-12, EN frontier sG — HN 9152332, the 2015 CONTEST thread, full tree): the
+mechanism of death was predicted in the operator's own thread FIVE YEARS before the outcome —
+learnstats2: *"The algorithm you need to win a contest is the highest risk algorithm you can get
+away with"* (selection-on-max ⇒ selects variance, not skill); numlocked/im2w1l stated the
+survivorship arithmetic outright. The operator's own defense (fawce, 9153904) named the exact
+gate that later failed: *"2 years of backtesting + live trading for a month — I don't think it is
+likely you can both overfit and be lucky"* — one month of paper is statistically nothing, and the
+2020 capital-return proved it at scale. Adversarial bonus (im2w1l, 9153953): a blackbox-tested
+candidate can FINGERPRINT the evaluation data ("include signatures of past data; if detected you
+know the future, else go for blind luck") — conditional-behavior overfit, the attack class the
+desk's forward-only promotion is immune to by construction and any backtest-weighted gate is not.
+Same-family NP corroboration (161713, intradaybill, 2012): 1000-generation GP curve-picking died
+70% down WITH out-of-sample testing — "the guy who wrote the software is the king of selection
+bias"; selection ON the OOS is still selection.
 
 ### era_grid_ladder_vol_bot — SECOND INSTANCE (RU 2014, sold-to-retail variant) — CORROBORATED + FAILURE MODE ADDED
 Source: forum.btcsec.com topic 5499 ("Бесплатный btc-e бот от MensFreedom", 2014, Wayback
