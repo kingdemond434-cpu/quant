@@ -4142,11 +4142,11 @@
    "summary": "R0075 remainder: the REPAIR-CAPACITY metrics are still unmeasured and therefore, per L1.28a, count as zero. MTTR (found->disposed), P(fix | row survives a session), and backlog stock-growth rate have NO producer anywhere -- grep for mttr/p_fix/stock_growth across scripts/ libs/ data/ returns nothing. Every OTHER part of R0075 is now built: top-10 rows reach the brain (f0cc401), the past-due gate fires as max_audit's rec-ledger-backlog, and repair-mode backpressure is live (data/conversion_status.json REPAIR-MODE, backlog 226, past_due 54, threshold 25). Without the three rates the desk cannot tell whether the repair capacity it just added is WORKING -- it can see the queue length but not the service rate, which is the exact arrival-vs-service comparison L1.28b was written from (lambda/mu ~4). Born-fence them on first measurement per L1.0/L2.0: value, floor, measuring command, and a check that fires when the floor falls. Also still open from R0075: split roi_bps into measured-vs-rank (today one field carries both, so a guessed rank is indistinguishable from a measured return) and the disposition-in-same-commit duty.",
    "roi_bps": 50.0,
    "raised": "2026-08-01T15:42:07.849202+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=5 effort_h=4: Still unmeasured: grep mttr|p_fix|stock_growth across scripts/ and libs/ returns zero producers, so MTTR, P(fix|survives) and backlog stock-growth still count as zero per L1.28a while the desk sits in REPAIR-MODE (data/conversion_status.json) able to see queue length but not service rate. All inputs exist in docs/research/recommendation_ledger.json (raised/disposed timestamps), so the producer + born-fence is a small, unblocked build.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Built libs/research/repair_capacity.py + scripts/check_repair_capacity.py -> data/repair_metrics.json, born-fenced as ratchet metric repair_p_fix (floor 0.5278 in data/ratchet_floors.json, 30h staleness bound, scheduled 07:03 before check_ratchets at 07:07). MEASURED on the live ledger before writing the producer, three traps the naive build would have fallen into: (1) SURVIVORSHIP -- 42.8pct of rows are censored, naive completed-only median 3.37d vs Kaplan-Meier 5.27d, and 64 of 83 open rows had already waited longer than the typical repair time it reported; KM is the headline, naive published beside it, p75 reads NOT-REACHED. (2) IDLE-DAY DENOMINATOR -- 2026-08-07..08-10 carried zero arrivals AND zero dispositions because no session ran; rates are per ACTIVE ledger day (L1.48). (3) FIX IS NOT DISPOSITION -- p_fix counts implemented only, p_disposed published separately, so the number cannot be raised by rejecting more. 15 legacy rows stamped disposed-before-raised are excluded and counted. 18 tests. Remaining sub-asks (roi_bps measured-vs-rank split, disposition-in-same-commit duty) carried to their own rows.",
+   "commit": "05ac70d",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T13:29:12.206728+00:00"
   },
   {
    "id": "R0331",
@@ -4154,11 +4154,11 @@
    "summary": "R0073 remainder: the DISK metric has no floor artifact and no ratchet. A 15pct free-disk fuse exists inside run_moat_backup.py (FUSE_PCT, now exits 2, scheduled daily 03:55) and an 80pct used guard pauses the recorders (run_recorder.py:113 _DISK_MAX_FRAC), so the desk is not blind -- but per L1.0/L2.0 a number with no recorded floor is a defect: nothing writes disk_free_pct into a committed floor artifact, so nobody can see the TREND, only the current value at the moment a fence happens to run. MEASURED 2026-08-01: 37.69pct used, 58.07pct free, fill rate 0.673 GB/day measured two independent ways (mtime histogram of 21,483 moat files agreeing with the backup manifest's own 11.71h delta). Binding event is the 80pct recorder guard at 25.1 days (~2026-08-26), NOT the 29 days R0073 claims and NOT the 8pct line it names -- the row computed its runway against a threshold it did not name. Build: disk_free_pct into check_ratchets with its floor, its measuring command and a check that fires when it falls or goes stale.",
    "roi_bps": 30.0,
    "raised": "2026-08-01T15:47:32.491132+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: REFUTED ALREADY-BUILT \u2014 partial coverage. The cited evidence all exists (libs/ops/disk.py:38 PAUSE_FRAC=0.80, :43 WARN_DAYS=21.0, days_to_pause with UNKNOWN-not-never; mine_moat.py:56,258 consumes it each pass; max_audit.py:5524-5530 fires tape-disk-deadline on URGENT/PAUSED; run_recorder_bybit.py:35 imports PAUSE_FRAC; tests/libs/test_disk.py passes), but it covers only the alarm half of the row. The row's explicit build was 'disk_free_pct into check_ratchets with its floor, its measuring command and a check that fires when it falls or goes stale', against the L1.0/L2.0 premise 'nothing writes disk_free_pct into a COMMITTED floor artifact, so nobody can see the TREND' \u2014 and that half does not exist: scripts/check_ratchets.py contains zero disk entries (grep disk = 0 hits), the committed floor artifact data/ratchet_floors.json (git-tracked) carries no disk metric, COVERAGE_RATCHET.json n",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Built as disk_headroom_ratio in scripts/check_ratchets.py (floor 0.142857 born in data/ratchet_floors.json, 6h staleness bound, 6 tests). NOT disk_free_pct as the row asked: free space MUST fall every second the recorders run -- that is the tape doing its job -- so a floor under it reports a REGRESSION daily for correct behaviour, and a fence red by construction gets switched off (L1.43), taking the real signal with it. The quantity that legitimately ratchets is PREPAREDNESS: days_to_pause as a share of WARN_DAYS, the lead time the only non-destructive fix actually needs. Reuses days_to_pause rather than minting a second disk producer (L2.9). THE ROW'S OWN NUMBERS ARE STALE AND THE GAP IS THE PROOF IT WAS RIGHT: it quotes 25.1 days runway to ~2026-08-26; measured 2026-08-12 the true figure is 3.0 days. The fill rate stepped up 53pct on ~08-05 (0.69 -> 1.03 GB/day, confirmed two ways: mtime histogram over 39,098 moat files, and the miner own growth_bytes_per_day at 1.07) and nothing recorded the trend, so an eleven-day-old estimate was still being read as current. Escalated separately as a live operational deadline.",
+   "commit": "a0b39cc",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T13:29:25.181101+00:00"
   },
   {
    "id": "R0332",
@@ -4190,11 +4190,11 @@
    "summary": "EXECUTION-QUALITY DECOMPOSITION + post-trade interrogation (principal 2026-08-01). Record R-multiples per close in data/conviction_book.jsonl, then score SIX components separately rather than one blended hit-rate: entry quality, stop quality, target quality, sizing, trade management, exit timing. A mediocre forecast with excellent execution beats the reverse, and a blended score cannot tell you which one you have. Then interrogate every close and feed answers to the research engine: why did it beat/miss expectation, was the stop inside the noise band, was the target too conservative, should it have pyramided or scaled out, which regime, which features contributed. Objective is L1.1 max E[log W] -- so payoff asymmetry (reward:risk) outranks hit rate, and size must AUTO-REDUCE when measured expectancy decays, not only ratchet up.",
    "roi_bps": null,
    "raised": "2026-08-01T16:15:42.951426+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Not built: no r_multiple field or six-component (entry/stop/target/sizing/management/exit-timing) scoring anywhere (grep r_multiple over scripts/run_conviction_trader.py, run_trade_review.py, resolve_paper_book.py = 0). run_trade_review.py classifies closes into causes (THESIS-WRONG/LEVEL-WRONG/NOISE-STOP...) which covers part of the interrogation ask but not the R-multiple decomposition, and data/conviction_book.jsonl has no closes yet. Real multi-part build, also the input dependency for R0340.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Built libs/research/execution_quality.py + scripts/run_execution_quality.py -> data/execution_quality.json, WIRED into run_trade_review.sleeve_profile so every review brief carries the sleeve profile (13 tests). Six components over 14 closed PAPER trades: entry -0.046R heat, stop 1.27x noise floor, target UNMEASURABLE-BY-DESIGN, sizing rank-corr 0.04, management 0.33 of ladder, exit_timing 0.335 capture. HEADLINE: the median trade keeps a THIRD of the peak R its thesis earned, corroborating the resolver own trail_sweep (best_trail_r 0.5 vs live 1.0) which nothing was reading -- exactly what a blended hit-rate cannot show. Row corrected on two points: conviction_book.jsonl has no close writer and never will (closes live in paper_book_pnl.json marks, realised_R already computed -- join on book.at == mark.key), and TARGET QUALITY HAS NO GROUND TRUTH because management_plan forbids take-profits on purpose. The R-multiple the row asks to record already existed; what was missing was the decomposition. SIZES NOTHING: the auto-reduce-on-decay ask is deliberately not wired -- on 14 paper closes an expectancy estimate is noise and kill_condition at n=50 already owns it; wiring size to this would be sizing on unproven edge.",
+   "commit": "8339639",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T13:29:38.495175+00:00"
   },
   {
    "id": "R0335",
@@ -5885,6 +5885,54 @@
    "summary": "THE .xls READER CANNOT OPEN A FILE ABOVE ~7.1 MB, AND NO TEST CAN BUILD ONE -- which is exactly the size class R0317 targets (multi-year government/regulator panels). libs/data/xls_reader.py:184-190 follows the DIFAT chain when a file needs more than the 109 FAT-sector pointers the OLE2 header holds; at 512-byte sectors that ceiling is ~7.1 MB. tests/data/xls_builder.py:300-301 always writes n_difat=0 and uses only the 109 header slots, so build_xls(pad_to=7_500_000) yields n_fat=116 against 109 available and the READER REFUSES IT -- the DIFAT-chain branch is unreachable by any fixture, i.e. a decoder path with zero coverage guarding the exact input the module exists for. Two other builder gaps in the same family: the 4096-byte sector path is never built (SECTOR is hardcoded 512), and encode_rk can never emit RK flag 0x01 (double-divided-by-100) because the branch order routes every value to 0x00/0x02/0x03, so test_rk_encodings_round_trip's 'covers all RK branches' is 3 of 4 -- the 4th was verified correct by hand but is untested. Fix: teach build_ole2 to emit DIFAT sectors and parametrise the sector size, then assert a >7.1MB workbook round-trips. Until then the reader's fitness for its stated target file class is UNMEASURED, not known-good.",
    "roi_bps": null,
    "raised": "2026-08-12T12:33:11.647937+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0476",
+   "source": "owed-work",
+   "summary": "PRINCIPAL ACTION -- THE RECORDERS PAUSE IN ~3 DAYS. Measured 2026-08-12: used_frac 0.7195 against PAUSE_FRAC 0.80, headroom 3.22 GB, fill rate 1.03-1.07 GB/day => days_to_pause 3.0 (URGENT, well inside WARN_DAYS 21). The desk's own alarm IS firing correctly in data/moat_mine.json closure.disk and max_audit raises tape-disk-deadline; what was missing was any TREND record, now fixed by R0331's disk_headroom_ratio floor. THE ROOT EVENT: the moat fill rate STEPPED UP 53pct on ~2026-08-05, from ~0.69 to ~1.03 GB/day, confirmed two independent ways (mtime histogram over 39,098 moat files agreeing with the miner's own growth_bytes_per_day). R0073/R0331 quoted a 25.1-day runway to ~08-26 and that estimate is now 8x wrong, but nothing recompared it because no organ held the trend. WHY THIS NEEDS THE PRINCIPAL AND CANNOT BE SELF-SERVED: libs/ops/disk.py is explicit that deleting mined tape is NOT an option (the seven reconstructions are the first seven, so raw tape must stay re-readable), and buying storage is a procurement act with a latency -- which is precisely why WARN_DAYS is 21 days and we are at 3. L1.28b(f) makes this acute: pausing a collector spends irreplaceable data, the one currency the desk cannot re-earn, and a paused recorder keeps its heartbeat fresh so the stop is SILENT. Non-moat reclaimables are small change against the arithmetic: /var/log 1.1 GB and /tmp 221 MB together buy about 1.3 days. ACTION: add storage and move cold tape onto it, or accept a dated, deliberate decision to stop growing the archive.",
+   "roi_bps": 400.0,
+   "raised": "2026-08-12T13:30:10.618168+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0477",
+   "source": "owed-work",
+   "summary": "R0330 remainder: split roi_bps into a MEASURED field and a RANK field. One field carries two populations -- deep-sweep rows encode descending rank as 9999/9000/8000/7500 while cycle rows carry measured 5-120 bps -- so a guessed rank is indistinguishable from a measured return. Already documented at libs/research/recommendation_forecast.py:20 (which deliberately refuses to condition on roi_bps for exactly this reason) and in the 07-31 meta sweep. VERIFIED CHEAP: nothing reads roi_bps off a ledger row anywhere in the repo -- it is write-only, so no consumer breaks. The only code paths are scripts/recommendations.py --roi-bps and strategic_director.to_ledger_commands/rank (which sorts in-memory Recommendation objects, never ledger rows). Needs a consumer to avoid being an unwired field: publish the declared-basis share as a coverage number so the backfill gap is visible and drives itself.",
+   "roi_bps": 40.0,
+   "raised": "2026-08-12T13:30:40.854915+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0478",
+   "source": "owed-work",
+   "summary": "R0330 remainder: the disposition-in-same-commit duty has NO mechanism. scripts/recommendations.py:199 validates only that --commit is NON-EMPTY when status=implemented; nothing ever reads row['commit'] back, and nothing checks the sha exists, is reachable, or touches anything related to the row. MEASURED: 2 of 204 implemented rows carry the literal string 'HEAD' as their commit, which would satisfy the current check forever. Build: validate the sha resolves (git cat-file -e) at dispose time and fail loudly if not, then a fence that re-verifies reachability across the ledger so a rebase or a dropped branch cannot silently turn a proven row into an unprovable one. NOTE the interaction already in desk memory -- dispose-then-rebase invalidates a row's --commit sha, which is why merges are used instead of rebases here; a checker makes that failure visible instead of latent.",
+   "roi_bps": 35.0,
+   "raised": "2026-08-12T13:30:44.862597+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0479",
+   "source": "owed-work",
+   "summary": "TRAIL WIDTH: the conviction sleeve gives back two-thirds of what its theses earn. MEASURED 2026-08-12 by the new R0334 decomposition over 14 closed PAPER trades: median capture ratio 0.335 -- the median trade keeps a THIRD of the peak R it reached -- and the capture figure is an UPPER bound because MFE is sampled from hourly re-marks, so a peak given back between marks is invisible. This is independently corroborated by resolve_paper_book.trail_sweep, which already re-walks every trade at six trail widths and reports best_trail_r 0.5 against a live_trail_r of 1.0, and which NOTHING was reading (state THIN, n_trades 9). Two candidate mechanisms and they need separating before any change: the trail is genuinely too wide, OR the ladder is rarely climbed (median share of ladder reached is 0.33) so most exits never get a trail at all. THIS IS PAPER AND n=14: the sleeve's own kill_condition needs n=50, realised_payoff is still labelled ASSUMED at 13/20, and a trail width fitted to 14 closes is curve-fitting. The deliverable is a pre-registered forward test of the narrower width, not a config edit.",
+   "roi_bps": 120.0,
+   "raised": "2026-08-12T13:30:47.974928+00:00",
    "status": "open",
    "reason": null,
    "commit": null,
