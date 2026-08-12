@@ -500,9 +500,11 @@ def main() -> None:
                 f"; revisit: {r['_revisit']}\n")
     doc += ("\n## Cadence\n"
             f"gen_done_<axis> stamped {NOW} for: {', '.join(sorted(set(stamped_axes)))}. "
-            "Recurrence detector: scripts/check_axis_clocks.py (daily cron) pages the cycle "
-            "when any verified axis's clock exceeds 7d again -- generation stays a judgement "
-            "call, never cadence-automated (see batch-1's dedupe comment for why).\n")
+            "Recurrence detector: max_audit's check_clock_saturation, which reads the ACCRUAL "
+            "stores (data/forward_slots.json for a live clock, the `axis=` trail in "
+            "research_agenda.json for a ledgered one) -- never gen_done_<axis>, which is a "
+            "one-way presence latch this script deliberately refuses to re-stamp. Generation "
+            "stays a judgement call, never cadence-automated (see batch-1's dedupe comment).\n")
     DOC.write_text(doc, "utf-8")
 
     for r in queued + rejected:

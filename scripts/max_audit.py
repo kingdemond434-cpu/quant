@@ -1329,15 +1329,33 @@ def check_clock_saturation(defects) -> None:
 
     This duty shipped as prompt text only -- and prompt-only duties are aspirations. The desk's
     recursion rule is that every manual probe becomes a standing automatic check, so it is fenced
-    here. Axes are read from the Bronze lake (what was actually ingested, not what a doc claims);
-    clocks are read from cadence_state gen_done_* (what actually ran)."""
+    here. Axes are read from the Bronze lake (what was actually ingested, not what a doc claims).
+
+    WHAT IT READS, AND WHY THAT CHANGED (2026-08-12). The first cut graded `gen_done_<axis>` in
+    cadence_state as a RECENCY clock. That key is a one-way PRESENCE latch, and its own producer
+    refuses to re-stamp it when a run pre-registers nothing new -- run_axis_generate.py:196: "
+    writing 'done at <now>' for work not done this run is the same lie in a quieter file". So 7
+    days after the last NEW axis this fired on every axis forever, and the only way to clear it
+    was the re-stamp its producer calls a lie. It also misread the QUANTITY: on 2026-08-12 it
+    reported `crossasset` as having NO hypothesis accruing while data/forward_slots.json carried
+    a standing crossasset clock ACCRUING since 2026-06-21 -- 52 days. All 9 flagged axes in fact
+    held dated EV-gate cards in two pre-registration docs (2026-07-22 and 2026-08-05), which is
+    the duty's own second branch ("or ledger why the axis is not yet testable") already satisfied.
+    A gate that rejects 100% on a quantity it does not measure carries zero information
+    (GATE-OPTIMALITY DUTY, L1.43), and its only available remedy was fabrication.
+
+    So it now reads the two stores that actually hold the answer -- the Holm cohort
+    (data/forward_slots.json) for ACCRUING, and the `axis=` trail run_axis_generate stamps into
+    research_agenda.json for LEDGERED -- and it stays able to FIRE, on two genuine breaches:
+    an ingested axis with NEITHER (nobody ever authored a hypothesis for paid-for data), and a
+    ledgered-but-unclocked axis while the cohort has IDLE SLOTS, which is the literal L1.28a
+    idleness this duty exists to catch -- a free slot next to an authored hypothesis. At 12/12
+    with zero idle slots the clocks ARE saturated (the metric this check is named for) and no
+    axis can start one without displacing another: the Holm cap binds, not researcher idleness,
+    and MAX_FORWARD_SLOTS is a validation bar that is never widened to clear a defect. The
+    cohort file's own freshness is L1.44's job, not a second uncoordinated rule here."""
     bronze = ROOT / "data/lake/bronze"
-    cad_p = ROOT / "data/cadence_state.json"
-    if not bronze.exists() or not cad_p.exists():
-        return
-    try:
-        cad = json.loads(cad_p.read_text("utf-8"))
-    except Exception:
+    if not bronze.exists():
         return
     # INPUT STORES are not axes: raw price/metrics lakes feed constructions but cannot carry
     # a hypothesis themselves (the constructions built FROM them do). Excluding them keeps this
@@ -1346,26 +1364,46 @@ def check_clock_saturation(defects) -> None:
     axes = sorted(d.name for d in bronze.iterdir() if d.is_dir() and d.name not in _input_stores)
     if not axes:
         return
-    stale = []
-    for ax in axes:
-        ts = cad.get(f"gen_done_{ax}") or cad.get(f"gen_done_{ax}_family")
-        if not ts:
-            stale.append(f"{ax}(never)")
-            continue
-        try:
-            age_d = (NOW - datetime.fromisoformat(ts).timestamp()) / 86400.0
-            if age_d > 7:
-                stale.append(f"{ax}({age_d:.0f}d)")
-        except Exception:
-            stale.append(f"{ax}(unparsable)")
-    if stale:
+    # UNMEASURED is a real answer (L1.28a): an absent accrual store is not an empty one, and
+    # treating it as empty would manufacture a breach on every axis -- the exact failure above.
+    try:
+        fs = json.loads((ROOT / "data/forward_slots.json").read_text("utf-8"))
+        slots = [s for s in fs.get("slots") or [] if isinstance(s, dict)]
+        idle = int(fs.get("idle_slots") or 0)
+    except Exception:
         defects.append((
             "clock-saturation",
-            f"OBJECTIVE #2 breach: {len(stale)}/{len(axes)} verified axes have NO hypothesis "
-            f"accruing within 7d -- {', '.join(stale[:8])}"
-            f"{' ...' if len(stale) > 8 else ''}. An empty forward clock is idle research "
-            "capital: pre-register a hypothesis on each, or ledger why the axis is not yet "
-            "testable (e.g. forward history under the gauntlet minimum)."))
+            f"UNMEASURED: data/forward_slots.json is absent or unreadable, so the accrual state "
+            f"of {len(axes)} verified axes cannot be read at all. Absence is not health and is "
+            "not idleness either -- repair the cohort producer before grading this duty."))
+        return
+    accruing = {str(s.get("name", "")) for s in slots}
+    # The ledger branch the duty explicitly allows. run_axis_generate stamps `axis=<name>` into
+    # every pre-registration it routes -- QUEUED or EV-rejected-with-a-revisit-condition alike --
+    # so this is the machine-readable trail of "a hypothesis was actually authored for this axis".
+    try:
+        ledgered = set(re.findall(
+            r"axis=([a-z_]+)", (ROOT / "research_agenda.json").read_text("utf-8")))
+    except Exception:
+        ledgered = set()
+    ungenerated = [a for a in axes if a not in accruing and a not in ledgered]
+    unclocked = [a for a in axes if a not in accruing and a in ledgered]
+    if ungenerated:
+        defects.append((
+            "clock-saturation",
+            f"OBJECTIVE #2 breach: {len(ungenerated)}/{len(axes)} verified axes have NEITHER a "
+            f"forward clock NOR a pre-registered hypothesis -- {', '.join(ungenerated[:8])}"
+            f"{' ...' if len(ungenerated) > 8 else ''}. Ingest cost was paid and nothing was ever "
+            "authored against it: pre-register a hypothesis on each, or ledger why the axis is "
+            "not yet testable (e.g. forward history under the gauntlet minimum)."))
+    if unclocked and idle > 0:
+        defects.append((
+            "clock-saturation",
+            f"OBJECTIVE #2 breach: {idle} forward slot(s) sit IDLE while {len(unclocked)}/"
+            f"{len(axes)} axes hold an authored-but-unclocked hypothesis -- "
+            f"{', '.join(unclocked[:8])}{' ...' if len(unclocked) > 8 else ''}. An empty forward "
+            "clock beside a ready hypothesis is idle research capital (L1.28a): start the clock. "
+            "Slots are the scarce input, so spend them shortest-capacity-runway first."))
 
 
 def check_vendor_replacement(defects) -> None:
