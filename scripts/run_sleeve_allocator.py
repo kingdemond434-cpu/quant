@@ -60,6 +60,13 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
 
+# THE PRINCIPAL'S EVIDENCE LADDER, IMPORTED RATHER THAN RE-STATED (R0357). It was implemented in
+# libs/risk/sleeve_allocation.py on 2026-08-01 and NOTHING imported it, so the tiers governed
+# nothing while appearing implemented and tested. Measured on this artifact before the wiring:
+# `conviction` held 27.3% of heat on 15 closes -- UNPROVEN by the ladder, whose cap there is 2%.
+# A second copy of the rungs here is how the two drift apart, so this file owns none of them.
+from libs.risk.sleeve_allocation import Sleeve, evidence_tier  # noqa: E402
+
 _STATE = "data/sleeve_allocation.json"
 
 #: The registered discretionary sleeves and where their marked returns live. A sleeve absent from
@@ -88,15 +95,20 @@ TOTAL_HEAT = 0.30
 SEED_SHARE = 0.10
 
 
-def _series(root: Path, mark_key: str) -> list[tuple[str, float]]:
-    """(exit timestamp, net return) for a sleeve's closed, marked trades."""
+def _marks(root: Path, mark_key: str) -> list[dict[str, Any]]:
+    """A sleeve's closed, marked trades as RAW rows, so the ladder can read their setup tags."""
     try:
         marks = json.loads((root / "data/paper_book_pnl.json").read_text("utf-8"))["marks"]
     except (OSError, ValueError, KeyError):
         return []
-    return [(m.get("exit_at") or m.get("key") or "", float(m.get("equity_return") or 0.0))
-            for m in marks
+    return [m for m in marks
             if m.get("closed") and m.get("kind") == mark_key and m.get("equity_return") is not None]
+
+
+def _series(root: Path, mark_key: str) -> list[tuple[str, float]]:
+    """(exit timestamp, net return) for a sleeve's closed, marked trades."""
+    return [(m.get("exit_at") or m.get("key") or "", float(m.get("equity_return") or 0.0))
+            for m in _marks(root, mark_key)]
 
 
 def _corr(a: list[float], b: list[float]) -> float | None:
@@ -132,6 +144,86 @@ def standalone_growth(rets: list[float]) -> float | None:
     measured flat result rather than as absence."""
     live = [r for r in rets if r > -0.999]
     return round(sum(math.log(1 + r) for r in live) / len(live), 6) if live else None
+
+
+def _t_stat(rets: list[float]) -> float:
+    """t of the mean per-trade return. 0.0 below two trades -- the value that FAILS every rung."""
+    n = len(rets)
+    if n < 2:
+        return 0.0
+    mean = sum(rets) / n
+    var = sum((r - mean) ** 2 for r in rets) / (n - 1)
+    if var <= 0:
+        return 0.0
+    return round(mean / math.sqrt(var / n), 4)
+
+
+def _max_drawdown(rets: list[float]) -> float:
+    """Worst peak-to-trough of the COMPOUNDED equity curve, as a fraction.
+
+    1.0 (total loss) on an empty record rather than 0.0: `Sleeve.max_drawdown` defaults to 1.0 for
+    the same reason, because a sleeve with no history must not clear a drawdown rung by having no
+    drawdown to show. Absence is not evidence of shallow losses.
+    """
+    if not rets:
+        return 1.0
+    equity, peak, worst = 1.0, 1.0, 0.0
+    for r in rets:
+        equity *= (1.0 + max(r, -0.999))
+        peak = max(peak, equity)
+        worst = max(worst, (peak - equity) / peak if peak > 0 else 0.0)
+    return round(worst, 4)
+
+
+def _persistence(rets: list[float], *, chunks: int = 4) -> float:
+    """Fraction of equal sub-periods with positive mean return -- 0.0 when it cannot be measured.
+
+    Only the DURABLE rung reads this (min_persistence 0.60) and that rung already demands 150
+    closes, so refusing to compute it on a short record costs nothing and prevents a two-trade
+    sleeve scoring 1.0 persistence off a single lucky pair.
+    """
+    if len(rets) < chunks * 2:
+        return 0.0
+    size = len(rets) // chunks
+    good = sum(1 for i in range(chunks)
+               if sum(rets[i * size:(i + 1) * size]) > 0)
+    return round(good / chunks, 4)
+
+
+def _regimes_positive(marks: list[dict[str, Any]]) -> int:
+    """Distinct entry volatility regimes in which this sleeve's realised expectancy is positive.
+
+    Read from the SAME `setup.vol_regime` tag check_promotion_gate.py already uses, so the ladder
+    and the gate cannot disagree about how many tapes a record spans. UNKNOWN is discarded rather
+    than counted as a regime -- an untagged trade is not evidence of breadth.
+    """
+    by_regime: dict[str, float] = {}
+    for m in marks:
+        reg = (m.get("setup") or {}).get("vol_regime")
+        if not reg or reg == "UNKNOWN":
+            continue
+        by_regime[reg] = by_regime.get(reg, 0.0) + float(m.get("equity_return") or 0.0)
+    return sum(1 for v in by_regime.values() if v > 0)
+
+
+def _evidence(name: str, rets: list[float], marks: list[dict[str, Any]],
+              rho_to_base: float) -> Sleeve:
+    """The sleeve's measured state, in the shape the principal's ladder reads.
+
+    Every statistic the ladder gates on is computed here from the realised record, and each one
+    defaults to the value that FAILS the higher rungs. That direction is deliberate: a rung bought
+    by a statistic nobody measured is exactly the unearned size the ladder exists to refuse.
+    """
+    return Sleeve(
+        name=name,
+        sharpe=(standalone_growth(rets) or 0.0),
+        n_closes=len(rets),
+        rho_to_base=rho_to_base,
+        max_drawdown=_max_drawdown(rets),
+        regimes_positive=_regimes_positive(marks),
+        t_stat=_t_stat(rets),
+        persistence=_persistence(rets),
+    )
 
 
 def allocate(root: Path | None = None) -> dict[str, Any]:
@@ -188,9 +280,33 @@ def allocate(root: Path | None = None) -> dict[str, Any]:
     var = sum(u[a] * u[b] * rho_between(a, b) for a in names for b in names)
     port = math.sqrt(var) if var > 0 else 1.0
     scale = TOTAL_HEAT / port if port > 0 else TOTAL_HEAT
+    # THE EVIDENCE CEILING (R0357). Everything above splits heat by marginal contribution; none of
+    # it asks whether the sleeve has earned ANY size. Those are different questions, and only the
+    # correlation one was being answered: `conviction` drew 27.3% of heat on 15 closed trades, a
+    # record too short for the ladder's lowest evidenced rung. The ladder is applied here as a
+    # CEILING and never as a floor -- it can only ever reduce a budget, so a wiring mistake in it
+    # cannot hand a sleeve size the correlation arithmetic did not already grant.
     for name in names:
+        marks = _marks(root, _SLEEVES[name]["mark_key"])
+        sleeve = _evidence(name, [r for _, r in series[name]], marks,
+                           max((rho_between(name, o) for o in names if o != name), default=1.0))
+        tier, cap, blocker = evidence_tier(sleeve)
+        uncapped = min(u[name] * scale, TOTAL_HEAT)
         rows[name]["share"] = round(u[name], 4)
-        rows[name]["risk_budget"] = round(min(u[name] * scale, TOTAL_HEAT), 4)
+        rows[name]["risk_budget_uncapped"] = round(uncapped, 4)
+        rows[name]["risk_budget"] = round(min(uncapped, cap), 4)
+        rows[name]["evidence"] = {
+            "tier": tier, "tier_cap": cap, "blocker": blocker,
+            "t_stat": sleeve.t_stat, "max_drawdown": sleeve.max_drawdown,
+            "regimes_positive": sleeve.regimes_positive, "persistence": sleeve.persistence,
+            "rho_to_base": round(sleeve.rho_to_base, 4),
+            # L1.51: a clamp with no price and no lifting condition is an argument the desk cannot
+            # have. `blocker` names the ONE statistic to move and `held_back` prices the clamp in
+            # the unit that matters here -- heat the correlation arithmetic granted and evidence
+            # refused. Both are zero when the ladder is not binding, which is how a reader tells
+            # "the ceiling is not costing anything" from "nobody measured what it costs".
+            "held_back": round(max(0.0, uncapped - min(uncapped, cap)), 4),
+        }
     rows_total = sum(r["risk_budget"] for r in rows.values())
 
     measured = [p for p in pairs.values() if p["state"] == "MEASURED"]
@@ -206,6 +322,12 @@ def allocate(root: Path | None = None) -> dict[str, Any]:
                    "DUPLICATION" if n_ind < len(measured) else "DIVERSIFIED"),
         "total_heat_cap": TOTAL_HEAT,
         "total_deployed": round(rows_total, 4),
+        "evidence_ladder": {
+            "source": "libs/risk/sleeve_allocation.EVIDENCE_LADDER (principal 2026-08-01)",
+            "applied_as": "CEILING on risk_budget -- never a floor",
+            "held_back_total": round(
+                sum(r["evidence"]["held_back"] for r in rows.values()), 4),
+        },
         "correlation_scaling": round(scale, 3),
         "sleeves": rows, "pairs": pairs,
         "effective_independent_sleeves": effective_n,
@@ -238,8 +360,11 @@ def main() -> int:
     else:
         print(f"sleeve allocator (R0141): {rep['status']} -- {rep['detail']}")
         for n, r in rep["sleeves"].items():
+            ev = r["evidence"]
             print(f"  {n:<12} n={r['n_closed']:<4} g={r['standalone_g']} "
-                  f"budget={r['risk_budget']:.1%}")
+                  f"budget={r['risk_budget']:.1%} [{ev['tier']} cap={ev['tier_cap']:.0%}"
+                  + (f", -{ev['held_back']:.1%} held back: {ev['blocker']}"
+                     if ev["held_back"] > 0 else "") + "]")
     return 0
 
 
