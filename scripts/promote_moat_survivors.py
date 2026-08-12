@@ -54,12 +54,15 @@ import argparse
 import json
 import math
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+
+from libs.research.evidence_clock import MIN_OBS  # noqa: E402
+from libs.self_improvement import forecast_calibration as fc  # noqa: E402
 
 REGISTRY = ROOT / "data/moat_survivors.json"
 SCREEN = ROOT / "data/moat_screen.json"
@@ -85,6 +88,13 @@ MIN_SIGN_STABILITY = 0.8
 #: desk's prior is 420 screened, 420 dead; a sweep promoting a third of everything it sees is
 #: mis-calibrated, and promoting off it would industrialise the error.
 MAX_CREDIBLE_BASE_RATE = 0.25
+
+#: L1.29 FORECAST NAMESPACE (R0363 decision point B). Every promotion here is the desk asserting,
+#: with its own money-adjacent judgement, that a candidate will keep surviving. Unlogged, that
+#: assertion is a BELIEF: it inflates the apparent hit-rate by never counting its misses, and a
+#: Kelly bettor sized on beliefs converges to ruin with probability one.
+FORECAST_KIND = "moat_persistence"
+FORECAST_NS = "moat_persist"
 
 
 def binom_tail(k: int, n: int, p: float) -> float:
@@ -224,6 +234,92 @@ def start_clock(row: dict, *, clock_dir: Path) -> str:
     return str(p.relative_to(ROOT))
 
 
+def forecast_p(row: dict) -> float:
+    """P(this candidate survives its NEXT screening), as a Laplace-smoothed persistence rate.
+
+    NOT `p_persistence`, AND THE DISTINCTION IS THE WHOLE POINT. R0363 proposed logging
+    p_persistence directly because it is already computed and already varies. It is a P-VALUE --
+    binom_tail returns P(X >= k) UNDER THE NULL that this candidate is no better than the sweep's
+    base rate. "0.003 surprising under the null" is not "0.3% chance it survives forward"; the two
+    quantities do not even point the same way, since a SMALLER p_persistence means a STRONGER
+    candidate. Feeding it to the calibration store would grade the desk against a curve that means
+    nothing, and L1.29 exists precisely to detect the desk being confidently wrong -- an instrument
+    fed the wrong quantity does not just fail to help, it manufactures false reassurance.
+
+    (k+1)/(n+2) is the posterior mean under a uniform prior. The +1/+2 is not decoration: the raw
+    rate k/n is 1.0 for every candidate that has never missed, and logging a stream of p=1.0
+    forecasts is maximal overconfidence -- unfalsifiable upward, maximally punished by Brier when
+    wrong, and exactly the failure this law was written to catch.
+    """
+    k = int(row["times_survived"])
+    n = int(row["times_screened"])
+    return (k + 1.0) / (n + 2.0)
+
+
+def _clock_rows(rel: str) -> list[dict]:
+    """Every parseable observation on a candidate's forward clock, oldest first."""
+    out: list[dict] = []
+    p = ROOT / rel
+    if not p.exists():
+        return out
+    for line in p.read_text("utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            out.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return out
+
+
+def grade_due_forecasts(prereg: dict, *, now: datetime, store: Path | None = None) -> list[dict]:
+    """THE RESOLVER, shipped in the same commit as the hook it grades (R0363's own condition).
+
+    An ungraded prediction is worse than no prediction: it counts in no denominator, so the desk's
+    apparent hit-rate rises by never recording a miss. check_calibration was already OVERDUE on 44
+    rows when this was written, so adding a writer without a grader would have deepened the exact
+    hole the row was raised about.
+
+    THE EVENT, resolvable from an artifact that already exists. A clock row carries the running
+    (times_survived, times_screened) at each daily append, so between the first and last row:
+        screened again at all?   no  -> UNRESOLVABLE. Say so and grade NOTHING.
+        survived at least once?  yes -> the forecast was right; no -> it was wrong.
+    A candidate that was never re-screened has produced no evidence either way, and scoring that
+    as a miss would penalise the desk for the SCREEN's silence rather than for its own judgement.
+    UNMEASURED is a real answer, and it is the answer here.
+    """
+    graded: list[dict] = []
+    for key, rec in sorted(prereg.items()):
+        fkey = f"{FORECAST_NS}:{key}"
+        due = rec.get("forecast_resolve_by")
+        if not due or rec.get("forecast_graded"):
+            continue
+        try:
+            if datetime.fromisoformat(due) > now:
+                continue                       # not due yet; grading early is peeking
+        except ValueError:
+            continue
+        rows = _clock_rows(str(rec.get("clock") or ""))
+        if len(rows) < 2:
+            graded.append({"key": key, "outcome": None, "why": "clock has <2 observations"})
+            continue
+        d_screened = int(rows[-1].get("times_screened") or 0) - int(
+            rows[0].get("times_screened") or 0)
+        d_survived = int(rows[-1].get("times_survived") or 0) - int(
+            rows[0].get("times_survived") or 0)
+        if d_screened <= 0:
+            graded.append({"key": key, "outcome": None,
+                           "why": "never re-screened during the clock -- no evidence either way"})
+            continue
+        outcome = d_survived > 0
+        fc.resolve(fkey, outcome, store=store)
+        rec["forecast_graded"] = now.isoformat()
+        rec["forecast_outcome"] = outcome
+        graded.append({"key": key, "outcome": outcome,
+                       "why": f"{d_survived} survival(s) in {d_screened} re-screening(s)"})
+    return graded
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--dry-run", action="store_true",
@@ -272,6 +368,22 @@ def main() -> int:
             rec["clock_days"] = len(
                 (ROOT / rec["clock"]).read_text("utf-8").splitlines())
             clocks.append(rec["clock"])
+            # L1.29 (R0363-B). The deadline is EVIDENCE-derived, not calendar comfort: MIN_OBS
+            # observations at one clock append per day is the soonest the forward record could
+            # carry enough to grade. L1.48 -- report shortfalls in observations, never in days.
+            rec.setdefault("forecast_resolve_by",
+                           (datetime.now(tz=UTC) + timedelta(days=MIN_OBS)).isoformat())
+            p_fwd = forecast_p(row)
+            rec["forecast_p"] = round(p_fwd, 4)
+            fc.log_forecast(
+                f"{FORECAST_NS}:{row['key']}", p_fwd, FORECAST_KIND,
+                resolve_by=rec["forecast_resolve_by"],
+                claim=(f"moat candidate {row['key']} survives its next screening "
+                       f"({row['times_survived']}/{row['times_screened']} so far)"),
+                resolver="scripts/promote_moat_survivors.py grade_due_forecasts() -- reads the "
+                         "candidate's own forward clock and grades on re-screening outcome",
+            )
+    graded = [] if a.dry_run else grade_due_forecasts(prereg, now=datetime.now(tz=UTC))
     if not a.dry_run:
         PREREG.write_text(json.dumps(prereg, indent=1, sort_keys=True, default=str), "utf-8")
 
@@ -281,6 +393,10 @@ def main() -> int:
         "promoted": promoted, "refused": refused,
         "pre_registered_total": len(prereg),
         "clocks_advanced": len(clocks),
+        # PUBLISHED, so "the desk logged forecasts and never graded them" is visible here rather
+        # than only in the L1.29 fence. UNRESOLVABLE rows are named, never counted as misses.
+        "forecasts_graded": [g for g in graded if g["outcome"] is not None],
+        "forecasts_unresolvable": [g for g in graded if g["outcome"] is None],
         "note": ("A promotion here buys a FORWARD CLOCK and nothing else -- no capital, no weight, "
                  "no gate change. The bar is the sweep's OWN measured promotion rate, so it "
                  "tightens automatically when the screen gets looser. Zero promotions is the "
