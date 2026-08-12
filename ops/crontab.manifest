@@ -1040,6 +1040,27 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 43 4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_geometric_review.py >> data/cro_ai_logs/run_geometric_review.log 2>&1
 # scripts/slot_budget_analysis.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 18 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/slot_budget_analysis.py >> data/cro_ai_logs/slot_budget_analysis.log 2>&1
+
+# WHY DID THE DESK NOT NOTICE run_derivative_shadow.py FOR WEEKS -- and how do we stop needing a
+# direct question to find the next one.
+# PRINCIPAL ORDER 2026-08-12. check_build_standard._GOVERNED audits 61 of 463 scripts by hand.
+# run_derivative_shadow.py and screen_oi_ls_axes.py were both built, runnable, and exercised by
+# NOTHING for weeks because neither was ever added to that list -- found only because a direct
+# question sent someone looking at them specifically. The first run of this sweep over the other
+# 402 found 55 MORE scripts in exactly that shape: a real entrypoint, no schedule, no test.
+# PAGES ONLY ON A NAME NEW SINCE THE LAST RUN, never on the standing backlog -- reporting all 55
+# as a daily alert would train everyone to ignore it, which is worse than no alert. What has to
+# reach a person immediately is the NEXT orphan, not the 55 nobody has triaged yet.
+# NEVER SCHEDULES OR EXEMPTS ANYTHING ITSELF (measurement only, like check_slot_liveness.py) --
+# it names candidates; scheduling one is a targeted commit same as this one, exempting one is a
+# stated, reviewed decision, and pre-guessing either from this organ would recreate the exact
+# blind spot it exists to close.
+# 3:33, alongside the other daily local-only audits; reuses check_build_standard's own transitive-
+# scheduling detector so the two fences cannot quietly disagree about what "scheduled" means.
+# EVIDENCE: scripts/check_orphan_organs.py -> data/orphan_organs.json. First run 2026-08-12:
+#   386 audited, 176 healthy, 143 scheduled-untested, 12 unscheduled-tested, 55 ORPHAN.
+# CONFIDENCE: committed-script; pure local CPU, reads scripts/ and the manifest, no venue call.
+33 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_orphan_organs.lock .venv/bin/python scripts/check_orphan_organs.py --page >> data/cro_ai_logs/orphan_organs.log 2>&1
 # scripts/record_desk_metrics.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 1 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/record_desk_metrics.py >> data/cro_ai_logs/record_desk_metrics.log 2>&1
 # scripts/run_portfolio_risk.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
