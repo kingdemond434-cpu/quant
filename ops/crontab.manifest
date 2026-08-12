@@ -83,6 +83,24 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 5 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_campaign_retention.py >> data/cro_ai_logs/campaign_retention.log 2>&1
 
+# REPAIR CAPACITY FENCE (R0330; L1.28b conversion parity, L1.0 ratchet): the SERVICE RATE behind
+# the queue. check_conversion publishes backlog, arrivals and dispositions -- the queue's LENGTH,
+# which is equally consistent with fast repair under heavy arrival and slow repair under light
+# arrival. So the desk could not tell whether repair capacity it had just added was working, which
+# is exactly the arrival-vs-service comparison L1.28b was written from; per L1.28a all three rates
+# counted as ZERO for want of a producer. Publishes a censoring-aware MTTR (the naive completed-only
+# median reads 3.37d against a true 5.27d -- it conditions on having been disposed, and 42.8% of
+# rows have not been), P(fix) separated from P(disposed) so the number cannot be raised by rejecting
+# more, and stock growth per ACTIVE ledger day so a quiet stretch does not read as improving.
+# CADENCE CEILING: DATA-ARRIVAL (L1.28c). The input is the ledger, which changes only when a worker
+# session disposes rows -- measured as bursty, with four consecutive zero-event days in the last
+# fortnight. Daily is already faster than the state changes; placed at 07:03 so the artifact is
+# four minutes fresh when check_ratchets reads it at 07:07 (30h max_age gives a day of slack).
+# EVIDENCE: scripts/check_repair_capacity.py -> data/repair_metrics.json; floor repair_p_fix
+# recorded in data/ratchet_floors.json from the 2026-08-12 ledger (460 rows, 263 completed).
+# CONFIDENCE: committed-script (new this cycle)
+3 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_repair_capacity.py >> data/cro_ai_logs/repair_capacity.log 2>&1
+
 # EVENT CALENDAR REBUILD (R0276): regenerates data/event_calendar.json, which libs/execution/
 # event_guard.py reads to defer conviction entries across FOMC windows. IDEMPOTENT -- the dates
 # are held in the generator with their source, so a run either reproduces the committed file
@@ -1227,6 +1245,22 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/run_trade_review.py -> data/trading_playbook.json + data/trade_review.json
 # CONFIDENCE: committed-script (new this cycle)
 40 2,10,18 * * * cd "$QUANT_ROOT" && flock -n data/.cron_review.lock .venv/bin/python scripts/run_trade_review.py >> data/cro_ai_logs/trade_review.log 2>&1
+
+# EXECUTION-QUALITY DECOMPOSITION (R0334, principal 2026-08-01): the sleeve's six execution
+# decisions -- entry, stop, target, sizing, trade management, exit timing -- scored SEPARATELY.
+# The only scoreboard before this was a blended win_rate and mean_R, which cannot tell a good
+# thesis exited badly from a bad thesis rescued by the trailing ladder, and therefore cannot say
+# which of the two the desk has. First run measured a median capture ratio of 0.335: the median
+# trade keeps a third of the peak R its thesis earned, corroborating the resolver's own trail
+# sweep (best_trail_r 0.5 against a live 1.0). Target quality reports UNMEASURABLE-BY-DESIGN --
+# this sleeve forbids take-profits on purpose, so there is no target decision to score.
+# CADENCE CEILING: DATA-ARRIVAL (L1.28c). The input is resolve_paper_book's marks, refreshed at
+# :20 each hour; placed at :30 so the decomposition is ten minutes fresh when run_trade_review
+# reads it at :40, and every review brief carries the current sleeve profile.
+# EVIDENCE: scripts/run_execution_quality.py -> data/execution_quality.json, consumed by
+# scripts/run_trade_review.sleeve_profile; 14 closed PAPER trades at first measurement.
+# CONFIDENCE: committed-script (new this cycle)
+30 1,9,17 * * * cd "$QUANT_ROOT" && flock -n data/.cron_execquality.lock .venv/bin/python scripts/run_execution_quality.py >> data/cro_ai_logs/execution_quality.log 2>&1
 
 # COPYTRADING SCREEN (R0140): Stage A, ZERO promotion authority. Two hypotheses live under the
 # word "copytrading" and they get opposite verdicts. H1 FOLLOW A LEAD TRADER is NOT TESTABLE from

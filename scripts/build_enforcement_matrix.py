@@ -190,7 +190,13 @@ _MAP: dict[str, list[str]] = {
                # actuator a HUMAN still had to invoke; this invokes it on the detector's own
                # verdict (cron 2x/day), with TIER_RUIN and the L1.38 sterile window as the two
                # hard skips. Detection -> repair now needs nobody awake.
-               "scripts/ship_restart.py", "scripts/run_stale_daemon_repair.py"],
+               "scripts/ship_restart.py", "scripts/run_stale_daemon_repair.py",
+               # R0330: check_conversion measures the QUEUE, this measures the CAPACITY that
+               # drains it. A long queue is equally consistent with fast repair under heavy
+               # arrival and slow repair under light arrival, so queue length alone cannot say
+               # whether repair capacity is improving -- which is the comparison L1.28b is
+               # written from. MTTR is censoring-aware; P(fix) excludes rejections on purpose.
+               "scripts/check_repair_capacity.py", "libs/research/repair_capacity.py"],
     # L1.28c: every cadence hunts its own ceiling. The manifest fence requires a decided cadence
     # with evidence per line; brain_seat_throughput measures the resource they all compete for,
     # so "raise the cron" vs "buy a second seat" is settled by measurement.
@@ -357,7 +363,13 @@ _MAP: dict[str, list[str]] = {
               "scripts/check_exploration.py", "scripts/check_calendar_gates.py"],
     # L1.58 is the executable edge/P&L waterfall and loss investigation loop.
     "L1.58": ["scripts/run_trade_forensics.py", "scripts/run_trade_review.py",
-              "libs/execution/execution_tape.py", "check_forensics_fresh"],
+              "libs/execution/execution_tape.py", "check_forensics_fresh",
+              # R0334 (principal 2026-08-01): the sleeve's only scoreboard was a blended win_rate
+              # and mean_R, which cannot separate a good thesis exited badly from a bad thesis
+              # rescued by the ladder. Six components, each with its own denominator and its own
+              # refusal -- target quality is UNMEASURABLE-BY-DESIGN on a sleeve that forbids
+              # take-profits, and the stop check reports itself as a constant-pass gate (L1.49).
+              "scripts/run_execution_quality.py", "libs/research/execution_quality.py"],
     # L1.59 freezes doctrine growth and makes the mandate answerable to measured value.
     "L1.59": ["scripts/build_enforcement_matrix.py", "scripts/module_justification.py",
               "scripts/check_denominators.py", "scripts/check_ratchets.py",

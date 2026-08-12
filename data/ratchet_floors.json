@@ -11,6 +11,12 @@
     "recorded": "2026-08-12T03:14:57Z",
     "value": 0.842
   },
+  "disk_headroom_ratio": {
+    "artifact": "data/moat_mine.json",
+    "proving_command": "python -c \"import json;print(json.load(open('data/moat_mine.json'))['closure']['disk'])\"",
+    "recorded": "2026-08-12T13:10:08Z",
+    "value": 0.142857
+  },
   "findings_coverage": {
     "artifact": "docs/research/findings_coverage_record.json",
     "proving_command": "python scripts/max_audit.py (check_findings_tracked)",
@@ -29,10 +35,16 @@
     "recorded": "2026-07-31T07:07:01Z",
     "value": 1
   },
+  "repair_p_fix": {
+    "artifact": "data/repair_metrics.json",
+    "proving_command": "python scripts/check_repair_capacity.py",
+    "recorded": "2026-08-12T13:18:58Z",
+    "value": 0.5278
+  },
   "scripts_mypy_clean": {
     "artifact": "data/mypy_ratchet.json",
     "proving_command": "python scripts/check_mypy_ratchet.py",
-    "recorded": "2026-08-12T09:42:34Z",
+    "recorded": "2026-08-12T13:18:58Z",
     "value": 0.406844
   },
   "test_strength::libs/autodiscovery/validation.py": {
