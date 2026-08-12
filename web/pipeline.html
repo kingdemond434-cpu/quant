@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>QUANT DESK · Pipeline</title>
+<style>
+:root{--bg:#04070a;--ln:#11331f;--neon:#39ff14;--dim:#5f8f73;--txt:#cfeede;--red:#ff4d5e;--amb:#ffd23f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:ui-sans-serif,system-ui,sans-serif;
+  background-image:radial-gradient(1000px 400px at 70% -10%,#0c2a17 0,transparent 60%),
+    linear-gradient(#ffffff0d 1px,transparent 1px),linear-gradient(90deg,#ffffff0d 1px,transparent 1px);
+  background-size:auto,30px 30px,30px 30px}
+.mono{font-family:ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+header{display:flex;justify-content:space-between;align-items:center;padding:16px 26px;border-bottom:1px solid var(--ln);flex-wrap:wrap;gap:10px}
+.brand{font-weight:800;letter-spacing:.18em;display:flex;gap:10px;align-items:center}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--neon);box-shadow:0 0 10px var(--neon),0 0 22px var(--neon)}
+main{max-width:1180px;margin:0 auto;padding:22px 26px}
+.card{background:linear-gradient(180deg,#0a1014,#0d161b);border:1px solid var(--ln);border-radius:12px;margin-bottom:18px}
+.ph{padding:11px 16px;border-bottom:1px solid var(--ln);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.tw{width:100%;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+th,td{padding:9px 14px;text-align:left;border-bottom:1px solid #0c241544;vertical-align:top}
+th{color:var(--dim);font-size:10px;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.pos{color:var(--neon)}.dim{color:var(--dim)}.red{color:var(--red)}.amb{color:var(--amb)}
+.tag{display:inline-block;padding:1px 7px;border-radius:5px;font-size:10px;border:1px solid #1e5a36;color:var(--neon);white-space:nowrap}
+.tag.red{border-color:#5a1e22;color:var(--red)}.tag.amb{border-color:#5a4a11;color:var(--amb)}
+.tag.dim{border-color:#20402c;color:var(--dim)}
+.k{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;padding:16px}
+.kk{background:#06140d;border:1px solid var(--ln);border-radius:9px;padding:10px 12px}
+.kk .l{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.kk .v{font-size:22px;font-weight:700;margin-top:3px}
+.kk .s{font-size:10px;color:var(--dim);margin-top:4px;line-height:1.35}
+.note{padding:0 16px 14px;font-size:11px;color:var(--dim);line-height:1.5}
+.why{font-size:11px;color:var(--dim);line-height:1.4;max-width:520px}
+nav{display:flex;gap:14px;overflow-x:auto;padding-top:4px}
+nav a{color:var(--dim);font-size:12px;text-decoration:none;white-space:nowrap}
+.big{font-size:13px;padding:14px 16px;line-height:1.6}
+.hr{height:1px;background:var(--ln);margin:0}
+</style></head><body>
+<header><div class="brand"><span class="dot"></span>QUANT&nbsp;DESK · PIPELINE</div>
+  <nav>
+    <a href="index.html">Performance</a>
+    <a href="research.html">Research &amp; Shadow</a>
+    <a href="pipeline.html" style="color:var(--neon);border-bottom:1px solid var(--neon)">Pipeline</a>
+    <span class="mono dim" id="ts">loading…</span>
+  </nav></header>
+<main>
+
+  <div class="card"><div class="ph">● Discovery → shadow → live</div>
+    <div class="k" id="funnel"></div>
+    <div class="note" id="funnelnote"></div>
+  </div>
+
+  <div class="card"><div class="ph">● Live authority — what real capital may do right now</div>
+    <div class="big" id="auth">loading…</div>
+    <div class="note" id="authnote"></div>
+  </div>
+
+  <div class="card"><div class="ph">● In shadow — every forward clock and whether it is breathing</div>
+    <div class="tw"><table id="sleeves"><thead><tr>
+      <th>Clock</th><th>Evidence</th><th>Rows added</th><th>Progress</th><th>Health</th><th>Why</th>
+    </tr></thead><tbody></tbody></table></div>
+    <div class="note">ROWS are the clock, never calendar days. A sleeve can sit alive for a week
+      while its source artifact is never regenerated; counting those days as forward evidence would
+      credit the clock for observations that do not exist.</div>
+  </div>
+
+  <div class="card"><div class="ph">● Queued — corrected survivors waiting on a forward slot</div>
+    <div class="tw"><table id="queue"><thead><tr>
+      <th>#</th><th>Candidate</th><th>Axis</th><th>Why it is waiting</th>
+    </tr></thead><tbody></tbody></table></div>
+    <div class="note">The cap is a CONCURRENCY budget — how many clocks the desk can watch at once
+      — never a judgement on the candidates behind it. Order is capacity runway, shortest first: a
+      long-runway edge loses nothing by waiting, a short-runway one loses everything.</div>
+  </div>
+
+  <div class="card"><div class="ph">● Stage-A verdicts — the full denominator</div>
+    <div class="tw"><table id="tally"><thead><tr><th>Verdict</th><th>N</th><th>Candidate?</th></tr></thead><tbody></tbody></table></div>
+    <div class="note">WEAK and UNDERPOWERED stay candidates (L1.49): a weak result is not a dead
+      one, and an underpowered screen has not measured anything yet. Only a BROKEN measurement
+      — look-ahead, timing artifact — is disqualifying. Stage A ranks and has ZERO promotion
+      authority.</div>
+  </div>
+
+  <div class="card"><div class="ph">● Every screened trial</div>
+    <div class="tw"><table id="screened"><thead><tr>
+      <th>Axis</th><th>Trial</th><th>Verdict</th><th>ic_t</th><th>n_eff</th>
+    </tr></thead><tbody></tbody></table></div>
+    <div class="note">All of them, never a top-N — a view that truncates recreates the situation
+      it was built to fix.</div>
+  </div>
+
+  <div class="card"><div class="ph">● Freshness</div>
+    <div class="note" id="ages"></div>
+  </div>
+
+</main>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+const num = v => (v === null || v === undefined || v === '') ? '—' : v;
+
+function ageTag(h){
+  if (h === null || h === undefined) return '<span class="tag red">UNKNOWN AGE</span>';
+  const cls = h <= 26 ? '' : (h <= 72 ? 'amb' : 'red');
+  return `<span class="tag ${cls}">${h < 48 ? h.toFixed(1)+'h' : (h/24).toFixed(1)+'d'} old</span>`;
+}
+
+function evTag(e){
+  const m = {ACCRUING:'', 'NO-EVIDENCE':'amb', STALLED:'red', UNMEASURED:'dim'};
+  return `<span class="tag ${m[e] ?? 'dim'}">${esc(e)}</span>`;
+}
+
+function healthTag(h){
+  const m = {ACCRUING:'', TOO_EARLY:'dim', SOURCE_STALE_HERE:'amb',
+             SOURCE_FROZEN:'red', PRODUCER_UNSCHEDULED:'red', UNKNOWN:'dim'};
+  return `<span class="tag ${m[h] ?? 'dim'}">${esc(h)}</span>`;
+}
+
+fetch('pipeline.json?' + Date.now()).then(r => r.json()).then(d => {
+  $('#ts').textContent = (d.generated_utc || '').replace('T', ' ');
+
+  $('#funnel').innerHTML = (d.funnel || []).map(s => `
+    <div class="kk"><div class="l">${esc(s.stage).replace(/_/g,' ')}</div>
+      <div class="v ${s.n > 0 ? 'pos' : 'dim'}">${s.n}</div>
+      <div class="s">${esc(s.why)}</div></div>`).join('');
+  $('#funnelnote').textContent = d.law || '';
+
+  const a = d.authority || {};
+  const live = a.mode === 'LIVE';
+  $('#auth').innerHTML =
+    `<span class="tag ${live ? '' : 'dim'}" style="font-size:13px;padding:3px 10px">${esc(a.mode ?? 'UNMEASURED')}</span>
+     &nbsp;<span class="mono">${((a.book_fraction ?? 0) * 100).toFixed(0)}% of book</span>
+     &nbsp;<span class="dim">rung ${num(a.rung)}</span>
+     ${a.direction ? `&nbsp;<span class="tag ${a.direction === 'DERISK' ? 'red' : 'dim'}">${esc(a.direction)}</span>` : ''}
+     <div class="why" style="margin-top:8px">${esc(a.why ?? '')}</div>`;
+  const blocked = (a.blocked_by || []);
+  $('#authnote').innerHTML = blocked.length
+    ? `Blocked at rung ${num(a.blocked_at_rung)} by: ${blocked.map(b => `<span class="tag amb">${esc(b)}</span>`).join(' ')}`
+    : 'The promotion gate is the sole authority; the actuator transmits its verdict and cannot grant more.';
+
+  const st = $('#sleeves tbody');
+  st.innerHTML = (d.sleeves || []).map(s => {
+    const pr = (s.n_needed && s.n_now !== null && s.n_needed > 0)
+      ? `${Math.max(0, s.rows_added ?? 0)} / ${Math.round(s.n_needed - (s.n_baseline ?? 0))} rows`
+      : '—';
+    return `<tr><td class="mono" style="font-size:11px">${esc(s.name)}</td>
+      <td>${evTag(s.evidence)}</td><td class="mono">${num(s.rows_added)}</td>
+      <td class="mono dim">${pr}</td><td>${healthTag(s.health)}</td>
+      <td class="why">${esc(s.why)}${s.repair ? `<br><span class="amb">FIX: ${esc(s.repair)}</span>` : ''}</td></tr>`;
+  }).join('') || '<tr><td colspan="6" class="dim">no forward clock on this box — UNMEASURED, not zero</td></tr>';
+
+  $('#queue tbody').innerHTML = (d.queue || []).map(q => `
+    <tr><td class="mono dim">${q.pos}</td><td class="mono" style="font-size:11px">${esc(q.name)}</td>
+    <td class="dim" style="font-size:11px">${esc(q.axis)}</td>
+    <td class="why">${esc(q.why)}</td></tr>`).join('')
+    || '<tr><td colspan="4" class="dim">queue empty</td></tr>';
+
+  $('#tally tbody').innerHTML = (d.verdict_tally || []).map(t => {
+    const cand = ['SCREEN-UNDERPOWERED','SCREEN-UNRATED','SCREEN-WEAK'].includes(t.verdict);
+    return `<tr><td class="mono" style="font-size:11px">${esc(t.verdict)}</td>
+      <td class="mono">${t.n}</td>
+      <td>${cand ? '<span class="tag">candidate</span>' : '<span class="tag red">not a candidate</span>'}</td></tr>`;
+  }).join('');
+
+  $('#screened tbody').innerHTML = (d.screened || []).map(s => `
+    <tr><td class="dim" style="font-size:11px">${esc(s.axis)}</td>
+    <td class="mono" style="font-size:11px">${esc(s.trial)}</td>
+    <td>${s.candidate ? '<span class="tag">' : '<span class="tag red">'}${esc(String(s.verdict).split(' (')[0])}</span></td>
+    <td class="mono">${num(s.ic_t)}</td><td class="mono">${num(s.n_eff)}</td></tr>`).join('');
+
+  const ages = d.source_ages_h || {};
+  $('#ages').innerHTML = Object.entries(ages).map(([k, v]) =>
+    `${esc(k)} ${ageTag(v)}`).join(' &nbsp; ') +
+    `<div style="margin-top:8px">${esc(d.freshness_warning || '')}</div>`;
+}).catch(e => {
+  $('#ts').textContent = 'feed unavailable';
+  $('#auth').innerHTML = '<span class="tag red">FEED UNAVAILABLE</span>' +
+    '<div class="why" style="margin-top:8px">pipeline.json could not be read. This is UNMEASURED, ' +
+    'never an empty pipeline — run scripts/publish_pipeline.py on the VPS.</div>';
+});
+</script>
+</body></html>

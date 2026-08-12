@@ -2159,6 +2159,30 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: committed-script; re-runs the gate itself so it can never act on a stale grant.
 15 12 * * * cd "$QUANT_ROOT" && flock -n data/.cron_promo_actuator.lock .venv/bin/python scripts/run_promotion_actuator.py >> data/cro_ai_logs/promotion_actuator.log 2>&1
 
+# THE DASHBOARD HAD NO IDEA ANY OF THIS EXISTED.
+# The principal asked why no candidates show on dash.quanttt.xyz. Measured 2026-08-12: index.html
+# and research.html load thirty-odd JSON feeds between them and NOT ONE is a shadow or candidate
+# feed -- not the roster, not the spawn queue, not the forward accrual, not the promotion gate,
+# not the live authority. web/paper_sleeve_forward.json was already sitting in the SERVED
+# directory and no page had ever fetched it. So 10 clocks in shadow and 26 queued survivors have
+# never had a view, and the honest answer to "none are on the dashboard" is that nothing on the
+# dashboard ever asked. Read-without-writer, inverted: written, served, and read by nobody.
+# publish_pipeline builds web/pipeline.json (the funnel, every sleeve with why it is or is not
+# breathing, the full queue in drain order, every screened trial, and the live authority);
+# web/pipeline.html renders it and is linked from both existing pages.
+# HOURLY, because the chain it reports on moves at 06:40/08:45/11:05/11:15/11:35/11:45/12:15 and
+# the only other thing writing web/ runs once at 06:04 -- a dashboard refreshed daily would show
+# yesterday's pipeline every time the principal looked at it.
+# A PURE READER. It runs no organ and writes nothing outside web/. The first draft invoked the
+# spawner as a subprocess to keep the queue fresh, which put a second unlocked writer on files the
+# spawner owns under its own flock -- the R0048 shape exactly. A dashboard must never be able to
+# change what it is displaying, so it reads the artifacts and publishes their AGES alongside the
+# counts: a stale queue has to look stale, not current.
+# EVIDENCE: scripts/publish_pipeline.py -> web/pipeline.json. First run 2026-08-12:
+#   128 screened, 84 candidates, 19 sleeve records, 10 in shadow, 26 queued, 0 accruing, 0 resolved.
+# CONFIDENCE: committed-script; pure local CPU, no model, no venue call.
+50 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_publish_pipeline.lock .venv/bin/python scripts/publish_pipeline.py >> data/cro_ai_logs/publish_pipeline.log 2>&1
+
 # R0104 CAPABILITY RATCHET (owed-work, 2026-08-05). The principal's standing order -- every aspect
 # of the desk pushed toward 10/10 every day, non-exhaustively -- had NO INSTRUMENT: the per-aspect
 # rating existed only in conversation, so it could not ratchet, a fall left no trace, and nothing

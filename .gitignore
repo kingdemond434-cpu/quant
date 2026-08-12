@@ -52,8 +52,16 @@ data/*
 # the rolling-retention alarm the file exists to raise can never fire -- a detector that cannot
 # fire is the class L0070 is named for. The seeded BTCUSDT prior carries its own provenance.
 !data/bybit_archive_retention.json
+# THE DASHBOARD PAGES ARE SOURCE, the JSON feeds under web/ are generated. `web/*` ignores the
+# lot and each page needs an explicit negation -- and research.html did NOT have one. It is
+# tracked today only because somebody once force-added it, so a `git rm --cached`, a re-clone off
+# rewritten history, or a fresh checkout that never ran the publisher would silently drop the
+# desk's research view with nothing complaining. That is L0088's shape on a served page rather
+# than a guard's input: tracked-by-accident is not tracked.
 web/*
 !web/index.html
+!web/research.html
+!web/pipeline.html
 reports/
 lake/
 docs/EXTERNAL_PANEL_DOSSIER.md
