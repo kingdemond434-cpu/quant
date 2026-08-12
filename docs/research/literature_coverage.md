@@ -1327,3 +1327,18 @@ listing→full text→**appendix**→**adversarial re-test of its own tool**.
 proposed**), `recommendation_ledger.json` (R0514–R0519), `literature_coverage.md` (6 family rows,
 rotation note replaced, 2 verification stamps, licence correction), 3 research-memory rows,
 `cadence_state.json` stamped, and 4 new ground files under `deep_sweep/`.
+
+**CLOSING NOTE — TWO DESK LESSONS DELIBERATELY *NOT* ADDED, and why the refusal is correct.**
+`scripts/learn.py` refused both candidate lessons from this run: the corpus is at its **12,000-char
+injected budget**, so a new row *"would be recorded and reach NO organ — a diary entry, not
+memory."* It offers two honest exits, `--enforced-by <test>` or `--accept-uninjected <why no test
+is possible>`. **Neither applies truthfully here, so neither was used.** (1) The classification/
+enforcement-coupling lesson **can** be enforced by a test — R0514 specifies that exact property
+test — so claiming "no test is possible" would be a false record, and naming a test that does not
+yet exist would be worse. Its correct home is **shipping as `--enforced-by` when R0514 lands.**
+(2) The instrument-landing-date lesson is a third member of an *already-injected* family (the
+L1.57/L1.60 denominator lessons); adding it would displace something at a full budget for a
+marginal restatement. **Both lessons are durably recorded where they act** — R0514/R0517 and inbox
+#119/#120, with the failure mode and the patch — and this paragraph exists so the omission is an
+auditable decision rather than a silent gap. **The gate was right and was not routed around**; a
+budget fence that gets bypassed on the first inconvenient day is not a fence.
