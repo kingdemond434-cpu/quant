@@ -3944,11 +3944,11 @@
    "summary": "VINTAGE STORE (point-in-time reader for revised datasets). MEASURED on 3 vintages of the RFB Brazil national crypto panel: 39/42 months revised within 3 months, 42/42 by latest vintage, worst Marco-2023 R$15,828mn->R$22,308mn (+40.9%), still moving on a month 2.4y old; revisions systematically upward (late/amended tax filings). Backtesting the CURRENT file embeds look-ahead IN THE CONDITIONING VARIABLE (R0289 class) which every return-series leak check passes cleanly and which fails toward a FALSE POSITIVE, costing a Holm slot. Build a vintage store keyed (reference_period, vintage_date) + as_of(d) reader. Extends R0239 (that covers WHICH instruments existed; this covers WHAT the values were). Vintages are FREE: 23+ publication dates in Wayback CDX, and a live-404 vintage was recovered intact via the web.archive.org/<ts>id_/ raw-replay modifier. L2.7 multiplier: makes a class of slow-moving axes usable that are currently unusable-or-leaky. See OP-047, data_axis_watchlist entry 29.",
    "roi_bps": 0.0,
    "raised": "2026-08-01T14:34:05.553266+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Not built: libs/store/snapshots.py is a database/dataset snapshot catalog (SQLite backup + Parquet version refs), not a (reference_period, vintage_date)+as_of(d) vintage store; the only vintage awareness in the tree is prose warnings at scripts/screen_fred_macro_axis.py:40 and :161 that current-vintage backtests leak. The RFB revision measurements make the premise solid and the L2.7 multiplier is real (unblocks a class of slow-moving axes), but it is a medium build (Wayback CDX harvest + store + reader + tests) competing against the money-path queue.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Built libs/research/vintage.py: (reference_period, vintage_date) append-only revision log + as_of(d) reader, generalising the unlock_calendar.supply_at shape. Wired into collect_fred_macro.py, which was overwriting AND rolling-window-truncating data/fred_macro.json every run -- destroying one FRED vintage per day permanently. 19 tests incl. the collector driven end to end with the network faked. M2SL stays excluded from the screen (history starts today, cannot be back-filled) but its reason changes from structural-forever to an accruing sample with an evidence-based release condition. Wayback RFB vintage harvest NOT done -- rowed separately.",
+   "commit": "2ec65be",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T11:45:50.949431+00:00"
   },
   {
    "id": "R0317",
@@ -3956,11 +3956,11 @@
    "summary": "LAND A STDLIB .xls (OLE2/BIFF8) READER - the xlrd blocker is false. pandas.read_excel cannot open legacy .xls without xlrd; this box has no xlrd/openpyxl/olefile and installs are frozen, so gov/regulator/central-bank publications (disproportionately legacy .xls, which is WHY they stay under-mined) read as unreadable. A ~200-line pure-stdlib reader (prototype /tmp/xls_stdlib.py, technique = OP-046) parsed a 576KB Receita Federal file: 5 sheets, 77 months x 4 tables, 4206-row per-asset panel, validated by in-data conservation law (78/78 rows, worst residual 0.00e+00). SAME LANDING FAILURE AS OP-025: its pdf_text.py prototype has sat in /tmp as GAP_REGISTER #70 since 2026-07-26 and later runs keep re-deriving it. TWO prototypes now rot in /tmp; landing both is one small commit. The BR seat is research-frozen and cannot write scripts/.",
    "roi_bps": 0.0,
    "raised": "2026-08-01T14:34:05.650563+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=6 effort_h=4: Not landed: no xls/BIFF/OLE2 reader anywhere in scripts/ or libs/ (grep BIFF|OLE2|xlrd = 0 hits) and no scripts/pdf_text.py (GAP_REGISTER #70 row still open, docs/GAP_REGISTER.md:647). Technique fully preserved as OP-046 in docs/research/search_operator_library.md:979-1005 (format offsets + both plausible-wrong-output bugs) and inbox #B (improvement_inbox.md:1558), so re-landing is a bounded rewrite, and the row's point stands: prototypes keep rotting in /tmp and being re-derived.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Landed libs/data/xls_reader.py (stdlib OLE2+BIFF8, zero deps) + scripts/read_xls.py as the reachable consumer for research-frozen seats, + tests/data/xls_builder.py fixture writer. 80 tests, ruff+mypy clean, registered in _GOVERNED (69/69 build standard) and mapped to L1.11a. The inherited draft had never run: fixed a KeyError that made every call fail, the SST CONTINUE flag-byte bug the module existed to prevent, and a silent 1-3 byte truncation drop.",
+   "commit": "0a2f478",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T11:18:41.090174+00:00"
   },
   {
    "id": "R0318",
@@ -3968,11 +3968,11 @@
    "summary": "REQUIRE AN IN-DATA CONSERVATION-LAW CHECK ON ANY HAND-ROLLED EXTRACTOR feeding a research artifact. The .xls parser was validated NOT by diffing its PDF twin but by arithmetic identities inside the data (PF+PJ=Subtotal; Sub1+Sub2+Domestic=TotalGeral): 78/78 monthly rows, worst residual exactly 0.00e+00 - strictly stronger than text agreement because it spans three independent column groups AND both RK- and NUMBER-encoded cells, so a decoder bug cannot cancel. It also caught a real bug first: cells keyed on (row,col) silently MERGED ALL 5 SHEETS into one plausible-looking grid (a header spliced onto another report's numbers). Proposal: any extractor feeding a research artifact ships with an in-data invariant check; 'it looks right' is refused as validation - OP-025's own phantom-evidence-factory warning, now with a cheap general mechanism.",
    "roi_bps": 0.0,
    "raised": "2026-08-01T14:34:05.742662+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: The discipline is documented but not mechanized: OP-024 'conservation-law reconciliation as data verification [active]' at docs/research/search_operator_library.md:224 and inbox #C proposal at docs/research/improvement_inbox.md:1567; no max_audit check, check_build_standard rule, or any enforcement that an extractor feeding a research artifact ships an in-data invariant (grep conservation|invariant over scripts/max_audit.py, check_build_standard.py, data_sanity.py = nothing relevant).",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Mechanized: libs/research/conservation.py (identities + the three refusals) landed in 0a2f478, and b9715f5 adds the enforcement the row asked for -- scripts/check_extractor_invariants.py discovers hand-rolled extractors from source (population 32, declared 1, coverage 3%) and reports PARTIAL as a ratchet. Detector calibrated against an independent 15-module census (14/15) after the first run was wrong in both directions; both false-positive classes pinned as tests. Registered in _GOVERNED (70/70) and mapped to L1.28a.",
+   "commit": "b9715f5",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T11:32:52.285977+00:00"
   },
   {
    "id": "R0319",
@@ -5812,6 +5812,18 @@
    "commit": "2271f0d",
    "due": null,
    "disposed": "2026-08-12T08:54:10.717826+00:00"
+  },
+  {
+   "id": "R0472",
+   "source": "owed-work batch3 R0316 follow-up 2026-08-12",
+   "summary": "HARVEST THE RECOVERABLE RFB VINTAGES FROM THE WAYBACK CDX. R0316 built the point-in-time store (libs/research/vintage.py) and wired FRED capture, but the store's history starts 2026-08-12 and cannot be back-filled -- so every axis needing a test window that predates today is still blocked on SAMPLE, not on machinery. The RFB Brazil crypto panel has 23+ publication dates recoverable from the Wayback CDX and a live-404 vintage was already recovered intact via the web.archive.org/<ts>id_/ raw-replay modifier (OP-047). That is a one-off backfill worth years of point-in-time depth: pair the CDX harvest with libs.data.xls_reader (the files are legacy .xls, landed in R0317) and libs.research.conservation (PF+PJ=Subtotal, the identity that validated the original parse), then record each recovered publication under its OWN vintage date, never today's. ALSO IN SCOPE: audit which other collectors overwrite a revised source the way collect_fred_macro did -- the FRED defect was found by scoping R0316, not by any fence, so the same shape is likely live elsewhere.",
+   "roi_bps": 4.0,
+   "raised": "2026-08-12T11:46:07.822299+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
