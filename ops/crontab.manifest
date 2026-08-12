@@ -386,6 +386,18 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle, verified against live endpoints)
 */15 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_announcements.lock .venv/bin/python scripts/collect_announcements.py >> data/cro_ai_logs/announcements.log 2>&1
 
+# KR VENUE FLAG RECORDER (R0299, KR-s1 B): Upbit market_event (warning + 5 caution flags incl.
+# the venue's own kimchi-premium detector GLOBAL_PRICE_DIFFERENCES) + Bithumb market_warning +
+# per-asset deposit/withdrawal rails -- the independent barrier-height regressor that breaks the
+# KR-premium circularity. ALL THREE SURFACES ARE SNAPSHOT-ONLY WITH NO HISTORY ENDPOINT: every
+# unrecorded transition is permanently lost (L1.46), so transition timestamps inherit this poll
+# interval. CADENCE (L1.28c, data-arrival ceiling): flags flip at most a few times a day, but
+# the +/-15min stamp precision is what an event study consumes; 3 keyless GETs/tick is far
+# inside every documented limit. Phase-offset from the :00 announcements tick to spread load.
+# EVIDENCE: scripts/collect_kr_venue_flags.py -> data/kr_venue_flags.jsonl (baseline+transitions)
+# CONFIDENCE: committed-script (verified against all three live endpoints 2026-08-12)
+7-59/15 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_krflags.lock .venv/bin/python scripts/collect_kr_venue_flags.py >> data/cro_ai_logs/kr_venue_flags.log 2>&1
+
 # LLM DISCRETIONARY SLEEVE (R0122, principal request 2026-07-31 "a strategy where Claude acts
 # like a human trader with a brain, 24/7"). PAPER ONLY -- places no orders, imports no connector,
 # and a test asserts both. Every 4h so it covers the hours a human sleeps, which IS the stated

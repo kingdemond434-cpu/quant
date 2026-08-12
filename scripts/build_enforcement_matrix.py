@@ -375,6 +375,13 @@ _MAP: dict[str, list[str]] = {
     # (L1.28b(f): acquisition never throttled). Dual clocks per L1.46 (chain stamp + receipt),
     # per-pool window-overflow flagged so sampling truncation is measured, never silent.
     "L1.11-r0291": ["scripts/collect_geckoterminal_trades.py"],
+    # R0299 (2026-08-12, KR-s1 B): the KR venue flag surface -- Upbit warning + 5 caution flags
+    # and Bithumb market_warning + per-asset deposit/withdrawal rails. All three surfaces are
+    # SNAPSHOT-ONLY with no history endpoint, so this recorder is the only source of the series
+    # (L1.46: recv_only clock declared, unrecorded transitions permanently lost). Bithumb rail
+    # state is the independent barrier-height regressor that breaks the KR-premium circularity.
+    # A failed fetch is never diffed -- absence must not read as 'all flags cleared' (L1.51).
+    "L1.46-r0299": ["scripts/collect_kr_venue_flags.py"],
     # R0102 paper-sleeve auto-spawn: converts corrected Stage-A survivors into costless paper
     # sleeves. L1.6 bounds it (zero promotion authority, zero capital) and L1.18a orders its queue
     # (deployment race -- shortest capacity runway first). It NEVER spawns over the Holm cap: a
