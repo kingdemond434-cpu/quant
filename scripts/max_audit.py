@@ -39,6 +39,8 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:          # fences import libs; a blind checker is a defect
     sys.path.insert(0, str(ROOT))
 
+from libs.research import path_refs  # noqa: E402  (needs the sys.path line above)
+
 if TYPE_CHECKING:                      # the libs import below needs the sys.path line above
     from libs.ops.cycle_evidence import CycleEvidence
 LOGS = ROOT / "data/cro_ai_logs"
@@ -4098,61 +4100,6 @@ _PHANTOM_ALLOWED = {
 #: they are written by redirection from cron, not by python, so they would all read as phantoms.
 _PHANTOM_EXTS = (".json", ".jsonl", ".db", ".sqlite", ".csv", ".pkl", ".parquet")
 
-_PATH_LIT = re.compile(r'["\'](?P<p>(?:data|reports)/[A-Za-z0-9_./-]+'
-                       r'(?:\.json|\.jsonl|\.db|\.sqlite|\.csv|\.pkl|\.parquet))["\']')
-
-#: Verbs that indicate the line PRODUCES the path rather than consuming it.
-_WRITE_VERBS = ("write_text", "write_bytes", "open(", "json.dump", "to_csv", "to_json",
-                "savefig", "copyfile", "copy2", "dump(", "mkdir", "touch", "backup(",
-                "to_parquet", "np.save", "pickle.dump", "connect(")
-
-
-def _resolve_writers(lines: list[str], bound: dict[str, str]) -> set[str]:
-    """Paths written THROUGH A VARIABLE, which is how almost all of them are actually written.
-
-    THE FALSE-POSITIVE THIS FIXES (2026-08-01). The original test was LINE-LOCAL: a path counted as
-    written only if a write verb appeared on the same line as the string literal. But the ordinary
-    Python idiom is a module constant written later through its name --
-
-        QUAR = ROOT / "data/defi_lending_quarantine.json"     # literal here, no write verb
-        ...
-        QUAR.write_text(json.dumps(...))                      # writer here, no literal
-
-    -- so the detector could not see the writer and reported perfectly correct code as
-    READ-WITHOUT-WRITER. Measured on this tree: of 53 reported phantoms, the majority were this
-    shape (collect_defi_lending.py:62, protective_stops.py:143, collect_oi_ls_live.py, ...). That
-    matters more than the miscount: a fence that fires on healthy code gets acknowledged into
-    silence, and an acknowledged fence enforces nothing. The narrowness the docstring claims was
-    real in intent and absent in implementation.
-
-    ALIASES TOO. A constant is frequently passed as a default and written through the parameter
-    name (`def append(*, path: Path = LEDGER): path.write_text(...)`), so a name bound to a known
-    path as a default argument inherits that path for the purposes of this check.
-
-    Deliberately still textual rather than a full dataflow analysis. The remaining blind spot is a
-    path written through a name this never sees bound; that direction fails toward REPORTING a
-    phantom, which is the safe direction for a detector whose entire job is to notice absence.
-    """
-    if not bound:
-        return set()
-    written: set[str] = set()
-    # `def f(..., path: Path = LEDGER)` -> `path` also refers to LEDGER's target.
-    alias = dict(bound)
-    for line in lines:
-        for name, p in bound.items():
-            for m in re.finditer(rf"(\w+)\s*(?::[^=,)]+)?=\s*{re.escape(name)}\b", line):
-                if m.group(1).isidentifier():
-                    alias.setdefault(m.group(1), p)
-    for line in lines:
-        for name, p in alias.items():
-            if not re.search(rf"\b{re.escape(name)}\b", line):
-                continue
-            if any(v in line for v in _WRITE_VERBS) or re.search(
-                    rf"\b{re.escape(name)}\s*\.\s*(unlink|rename|replace|parent)\b", line):
-                written.add(p)
-    return written
-
-
 def check_phantom_paths(defects) -> None:
     """READ-WITHOUT-WRITER: a path some organ reads that NOTHING on this desk ever writes.
 
@@ -4171,41 +4118,19 @@ def check_phantom_paths(defects) -> None:
     them by shell redirection, so every one would read as a phantom and the check would be
     switched off within a week.
     """
+    # RESOLVED FROM THE SYNTAX TREE (R0356). This was a line-text scan, and a path in Python is an
+    # EXPRESSION -- `_ROOT / "data" / "x.json"` is invisible to any regex needing `data/` inside one
+    # string, in the READ position as much as the write position. Measured on this tree: swapping
+    # the textual scan for libs/research/path_refs resolved 12 reported paths (7 by finding the
+    # writer, 5 by recognising a provenance LABEL that opens nothing) and surfaced 12 genuine
+    # read-without-writers it had never been able to see. One of those was
+    # `data/trade_forensics.json`, read by run_exec_monitor while the producer writes
+    # `web/trade_forensics.json` -- the desk's most prolific defect class, sitting unreported
+    # inside its own detector because the read was a split literal.
     root = ROOT
-    refs: dict[str, set[str]] = {}
-    writers: set[str] = set()
-    for py in list((root / "scripts").rglob("*.py")) + list((root / "libs").rglob("*.py")):
-        try:
-            text = py.read_text("utf-8", errors="ignore")
-        except OSError:
-            continue
-        rel_py = str(py.relative_to(root))
-        lines = text.splitlines()
-        # NAME -> path, for module-constant style bindings. See _resolve_writers.
-        bound: dict[str, str] = {}
-        for line in lines:
-            # A path named only in a COMMENT is not read by anything. This check reported
-            # `data/x.json` -- a placeholder inside two explanatory comments, one of them in this
-            # very function -- as a phantom store with two readers.
-            if line.lstrip().startswith("#"):
-                continue
-            for m in _PATH_LIT.finditer(line):
-                p = m.group("p")
-                refs.setdefault(p, set()).add(rel_py)
-                if any(v in line for v in _WRITE_VERBS):
-                    writers.add(p)
-                lhs = line.split("=", 1)[0].strip() if "=" in line else ""
-                if lhs.isidentifier():
-                    bound[lhs] = p
-        writers |= _resolve_writers(lines, bound)
-
-    phantoms = sorted(
-        p for p, _ in refs.items()
-        if p not in _PHANTOM_ALLOWED
-        and p.endswith(_PHANTOM_EXTS)
-        and not (root / p).exists()
-        and p not in writers
-    )
+    found = path_refs.scan(root)
+    refs = found.reads
+    phantoms = found.phantoms(root, allowed=set(_PHANTOM_ALLOWED))
     if phantoms:
         shown = "; ".join(f"{p} (read by {', '.join(sorted(refs[p])[:2])})" for p in phantoms[:5])
         defects.append((
