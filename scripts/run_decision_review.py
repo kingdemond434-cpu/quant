@@ -66,7 +66,11 @@ def main() -> int:
                 r["review_due_source"] = source      # never let derived look deliberate
         if isinstance(doc, dict):
             doc["decisions"] = rows
-            _LEDGER.write_text(json.dumps(doc, indent=1), "utf-8")
+            # ensure_ascii=False for the same reason as scripts/recommendations.py:_save (R0368):
+            # this ledger's escapes are `§`, `→`, `λ`/`μ` and `≈` -- the notation its own rows
+            # argue in. Fixed here rather than left as the sibling instance, because half a fix
+            # leaves the next reader believing the class was closed.
+            _LEDGER.write_text(json.dumps(doc, indent=1, ensure_ascii=False), "utf-8")
 
     rv = reviews(rows, today)
     h = health(rows, today)

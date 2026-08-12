@@ -76,7 +76,13 @@ def _load() -> dict[str, Any]:
 def _save(d: dict[str, Any]) -> None:
     LEDGER.parent.mkdir(parents=True, exist_ok=True)
     tmp = LEDGER.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(d, indent=1), "utf-8")
+    # ensure_ascii=False IS LOAD-BEARING, not cosmetic (R0368). ~60 of the escapes this used to
+    # emit were CJK: the Chinese search operators the non-English mining rows are ABOUT. As
+    # `韭菜` a reviewer cannot read the row and -- the half that costs something -- no
+    # grep for 韭菜 can find it, so a term already mined returns a clean zero and reads as
+    # unexplored ground. That is the false-exhaustion mode L1.11a exists to prevent, arriving
+    # through the serializer. Every consumer goes through json.loads and is indifferent.
+    tmp.write_text(json.dumps(d, indent=1, ensure_ascii=False), "utf-8")
     tmp.replace(LEDGER)          # atomic: a torn ledger would lose the very rows it protects
 
 
