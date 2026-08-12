@@ -41,6 +41,7 @@ from pathlib import Path
 from typing import Any
 
 from libs.data import bilibili, cn_sources, foreign_sources, papers
+from libs.ops import checkpoint
 from libs.research import conversion_ledger, source_health
 from libs.research.video_triage import SURFACE_THRESHOLD, score_title, triage
 
@@ -496,6 +497,10 @@ def main(argv: list[str] | None = None) -> int:
     #
     # FALSIFIER: if a 1-page sweep's new-per-request falls below a 2-page sweep's on a like-for-
     # like pair, raise it. Depth is not forbidden, it is currently just the worse buy.
+    ap.add_argument("--no-resume", dest="resume", action="store_false",
+                    help="ignore any durable checkpoint and refetch every bilibili query. The "
+                         "checkpoint only ever SKIPS completed network units, so this is for "
+                         "forcing a genuinely fresh sample, not for correctness")
     ap.add_argument("--bili-pages", type=int, default=1, metavar="N",
                     help="Bilibili search pages per query (20 rows/page). Default 1: measured "
                          "25x more new candidates per request than 4, because the source "
@@ -529,7 +534,41 @@ def main(argv: list[str] | None = None) -> int:
     # a durable block (source_health says so in its own threshold comment), and the queries lost
     # here are the TAIL of the list, which is where the newest territory sits.
     bili_refused = ""
+
+    # DURABLE RESUME (gate item 16, mandate V-A). This lane is the desk's most expensive: 24
+    # queries x up to 4 signed pages is ~96 rate-limited requests, and it is exactly the lane
+    # that dies mid-sweep. Before this, a death at query 18 threw away 17 completed queries and
+    # the next run refetched all of them -- which by this lane's OWN backoff doctrine (above) is
+    # how a temporary refusal becomes a durable block. Now each query's rows are checkpointed as
+    # they land, so a resumed run re-issues only what never completed.
+    #
+    # The signature pins the query list, page depth and threshold: change any of them and the
+    # checkpoint is STALE_SIGNATURE rather than a silent splice of two different sweeps.
+    _ck_name = "miner_bilibili"
+    _ck_sig = checkpoint.signature_of(list(BILIBILI_QUERIES), int(args.bili_pages),
+                                      float(args.threshold))
+    _ck = (checkpoint.load(_ck_name, _ck_sig, root=_ROOT)
+           if (args.resume and _runs("bilibili")) else None)
+    _done: dict[str, Any] = dict(_ck.done) if (_ck and _ck.resumable) else {}
+    if _ck and _ck.status == "CORRUPT":
+        # RESTART, but never silently: this work is idempotent and cheap enough to redo, and
+        # refusing outright would stop the sweep entirely. The loss still gets printed.
+        print(f"  checkpoint CORRUPT, restarting bilibili from zero: {_ck.why}")
+        checkpoint.clear(_ck_name, root=_ROOT)
+        _done = {}
+    _ck_resumed = len(_done)
+
     for kw in BILIBILI_QUERIES if _runs("bilibili") else ():
+        cached = _done.get(kw)
+        if cached is not None:
+            # Rows already in durable state. Re-scored rather than re-fetched: scoring is free and
+            # the threshold may have moved, but the NETWORK unit is what this protects.
+            bili[kw] = int(cached.get("n", 0))
+            all_ids.update(cached.get("ids") or ())
+            for row in cached.get("rows") or ():
+                if row.get("video_id") not in seen:
+                    queue.append(row)
+            continue
         if bili_refused:
             blocked[f"bilibili:{kw}"] = (
                 "bilibili soft-refused earlier in this run -- backed off for the rest of it rather "
@@ -553,19 +592,35 @@ def main(argv: list[str] | None = None) -> int:
             vids.extend(got)
             time.sleep(0.4)
         if err:
+            # A REFUSED QUERY IS NEVER CHECKPOINTED. Failure is not completion -- recording it as
+            # done would turn a transient 429 into a query no later run ever retries.
             blocked[f"bilibili:{kw}"] = err
             continue
         bili[kw] = len(vids)
         all_ids.update(v.bvid for v in vids)
+        _fresh: list[dict[str, Any]] = []
         for v in vids:
             if v.bvid in seen:
                 continue
             s, hits = score_title(v.searchable)
             if s >= args.threshold:
-                queue.append({"channel": f"bilibili:{kw}", "video_id": v.bvid,
-                              "title": v.title[:160], "score": round(s, 1), "url": v.url,
-                              "author": v.author, "views": v.views, "why": hits})
+                _fresh.append({"channel": f"bilibili:{kw}", "video_id": v.bvid,
+                               "title": v.title[:160], "score": round(s, 1), "url": v.url,
+                               "author": v.author, "views": v.views, "why": hits})
+        queue.extend(_fresh)
+        if args.resume:
+            _done[kw] = {"n": len(vids), "ids": [v.bvid for v in vids], "rows": _fresh}
+            checkpoint.save(_ck_name, _ck_sig, _done, root=_ROOT)
         time.sleep(0.5)
+
+    if _runs("bilibili") and args.resume:
+        _complete = len(_done) >= len(BILIBILI_QUERIES)
+        if _complete:
+            checkpoint.clear(_ck_name, root=_ROOT)     # nothing left to resume
+        if _ck_resumed:
+            print(f"  bilibili RESUMED {_ck_resumed}/{len(BILIBILI_QUERIES)} queries from durable "
+                  f"state -- {_ck_resumed * max(1, int(args.bili_pages))} signed requests not "
+                  "re-issued")
 
     # --- Chinese article sources: Juejin (掘金) and WeChat via Sogou.
     cn_hits: dict[str, int] = {}
