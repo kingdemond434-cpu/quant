@@ -5776,6 +5776,42 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0469",
+   "source": "cycle",
+   "summary": "OP-054 native-key blindness: 'pairs trading brasil' returns 0 GitHub repos while the native PT key 'cointegracao' returns 30 (mostly genuine statarb, several crypto-native). STATISTICAL-ARBITRAGE is the desk's ONLY never-hunted family (0/14 in strategy_coverage.json), so the family most needing ground was hidden by vocabulary. Mine the 30-repo corpus: Vido/zecontinha fork tree (14 stars, 6 forks) + crypto-native subset (JohanseneEngle-GrangerCode, Testes-de-Raiz-Unitaria---Crypto, mcp-analytics, Cointegration-Portfolio).",
+   "roi_bps": 0.0,
+   "raised": "2026-08-12T08:50:37.797964+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0470",
+   "source": "cycle",
+   "summary": "OP-056 invariance screen for mined validation code: pedhsm/systematic-research-framework's MCPT permutes realised returns and scores sharpe/cagr/vol, all order-invariant (verified: max-min across 500 perms = 1.1e-15), so its p-value is a floating-point rounding hash (winner p=0.978, catastrophe p=0.618). Killed pre-emptively to graveyard. NO BUILD OWED: libs/validation/bar_permutation.py already permutes bars with a measured _TIE_RTOL and add-one correction. Recorded as genuine cross-ecosystem convergence CONFIRMING an existing desk design.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-12T08:50:51.093675+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0471",
+   "source": "cycle",
+   "summary": "RFB criptoativos vintage stack: s1's 'decaying deadline' was an inferred rate from a 4-item sample. Census 2026-08-12: 23 publication dates, 12 live (2023-05-03..2026-04-15), 12 dead (<=2023-03-02), 4 with no Wayback capture at all. Rate remains UNMEASURED - keep-last-12 vs one-time 2023 CMS migration fit equally and imply opposite urgency; falsifier recorded (if a new publication moves the live floor off 2023-05-03, rolling deletion is confirmed). Separately the series is ~4 months unpublished against a documented 13-month hiatus precedent, which constrains live use more than archival decay does.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-12T08:51:01.318656+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

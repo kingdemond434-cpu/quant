@@ -1945,3 +1945,43 @@ Both seats caught it themselves at the cost of an item — but the catch depende
 to check first, which is not enforced anywhere. **Standing implication:** a region's *stereotype* is
 the least informative thing about it; the BR seat's actual win was a **government dataset**, not a
 premium, and the AR analogue (GCC regulators, VARA/ADGM/SCA/CMA, the exchange layer) is still unmined.
+
+---
+
+### ENGINE IDEA — screen a mined validation framework by INVARIANCE before importing anything from it (BR frontier miner, 2026-08-12)
+
+Miners are explicitly told to route AI-quant structures and validation frameworks here as ENGINE
+ideas. This run mined one, and the screen that killed it is worth more than the artifact was.
+
+**The one-line test:** for any mined backtest/validation library, ask whether the statistic it
+scores is mathematically **invariant** to the resampling it performs. If it is, the gate carries
+zero information however sophisticated it looks. Permute twice; check the statistic moved by more
+than machine epsilon.
+
+**The proving instance** (`pedhsm/systematic-research-framework`, PT-BR, self-described as a
+*validation* library implementing MCPT): `mcp/tester.py` permutes the **realised return series** and
+scores `sharpe = mean/std*√252`, `cagr = exp(sum r)**(1/years)−1`, `vol = std*√252`. Mean, std and
+sum are each permutation-invariant, so the permuted statistic *is* the real statistic — measured
+**max−min = 1.1e-15** across 500 permutations × 4 synthetic series. Because floating-point summation
+is not associative, the p-value then resolves on rounding order: **winner p=0.978, catastrophe
+p=0.618**. Full kill in `docs/graveyard.md` (`mcpt_return_permutation`); screen filed as OP-056.
+
+**The general rule worth carrying:** *a permutation null must destroy the thing the statistic is
+supposed to measure.* Permuting realised strategy returns to test a Sharpe destroys nothing — the
+P&L is already computed. The correct null permutes the **price path** and re-runs the strategy, or
+permutes the **signal** against fixed returns.
+
+**NO BUILD IS OWED, AND THAT IS THE FINDING.** `libs/validation/bar_permutation.py` already permutes
+**bars** rather than returns, and already handles the floating-point tie problem this repo falls
+into, via a measured `_TIE_RTOL = 1e-4` plus the add-one correction `(sum(s ≥ real − tol) + 1)/(n+1)`.
+Two ecosystems, no citation link in either direction, same trap — one solved, one not. Per the
+provenance rule that is **genuine cross-ecosystem convergence**, and what it buys here is
+**confirmation of an existing desk design**, not a new subsystem. Recording the no-build explicitly
+so a future reader does not mistake the graveyard entry for an open gap.
+
+**Checked and NOT claimed as a defect:** the mined thesis (`mateusmartinelli/tcc`) loads a T-bill
+series and computes excess returns, which is the discipline the desk's own `beats_baselines` was
+once found to skip. I verified current state before citing it: `libs/autodiscovery/models.py` and
+`libs/validation/robustness_filters.py` now resolve a missing benchmark to an explicit **UNMEASURED**
+state rather than a silent pass, which is the correct fix and is in place. **Confirmatory only — no
+row filed**, because filing one would manufacture a finding out of a lesson the desk already banked.

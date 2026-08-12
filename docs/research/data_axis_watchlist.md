@@ -2139,6 +2139,54 @@ files are published under Brazil's open-data policy (LAI 12.527/2011). **CLEAN �
 residual **exactly 0.00**) · licence clean ✓ · **ingest NOT started** · **screen deliberately withheld
 as underpowered, with the enabling change named above.**
 
+---
+
+**UPDATE 2026-08-12 (BR frontier miner s2) — THE VINTAGE STACK'S "DECAYING DEADLINE" IS NOW A
+MEASURED LEVEL, AND ITS RATE IS EXPLICITLY UNMEASURED. s1's urgency claim was not evidenced.**
+
+s1 called this *"the one item with a decaying deadline"* on the strength of **2 of 4** probed
+vintages being live-404. That is a LEVEL observed on a 4-item sample, and a decay *rate* was
+inferred from it that nobody had measured. Full census run this session (every known publication
+date, both `.xls` and `.pdf`, ranged-GET against the live RFB server):
+
+| | count | range |
+|---|---|---|
+| distinct publication dates known (Wayback CDX) | **23** | 2021-09-02 … 2025-11-12 |
+| **LIVE on the RFB server** | **11** (+ `20260415` = **12**) | **2023-05-03 … 2026-04-15** |
+| **404 on the RFB server** | **12** | 2021-09-02 … 2023-03-02 |
+| of the dead, a DIRECT Wayback file capture exists | 8 | recoverable |
+| of the dead, **no direct capture — AT RISK** | **4** | 2021-09-02, 2022-07-05, 2023-02-06, 2023-03-02 |
+
+**The boundary is perfectly clean: everything published ≤ 2023-03-02 is dead, everything ≥
+2023-05-03 is live.** The public page links **only** `20260415`; the other 11 are unlinked but
+still served, so they are reachable only if you already know the filename — which is what makes the
+date list above the actual asset.
+
+**TWO HYPOTHESES FIT THIS EQUALLY WELL AND THEY IMPLY OPPOSITE URGENCY. Naming both instead of
+picking the exciting one:**
+- **(A) Rolling keep-last-N (N≈12).** 12 live / 12 dead is a suspiciously exact split. If true,
+  **every new publication kills the oldest survivor** and mirroring is genuinely urgent.
+- **(B) A one-time 2023-04/05 CMS migration cutoff.** gov.br has form for platform migrations, and
+  a single cut at that boundary explains the data exactly as well. If true the live set is
+  **stable** and there is no ongoing decay at all.
+
+**I could not discriminate them, and I am recording that rather than resolving it** (L1.28a —
+UNMEASURED is a real answer). The reason is concrete: Wayback captured these files essentially
+**once each, at publication**, so the CDX status timeline cannot date any file's death.
+**THE DISCRIMINATOR IS A SECOND CENSUS, AND THIS ENTRY EXISTS TO MAKE IT POSSIBLE** — s1 recorded
+no date list, so no delta was computable this run; the table above is the baseline. **Falsifier:**
+if a publication occurs after 2026-04-15 and the live floor moves from 2023-05-03 to 2023-06-08,
+hypothesis (A) is confirmed and mirroring becomes urgent; if the floor holds, (B) is confirmed.
+Re-probe: ranged-GET `.../criptoativos_dados_abertos_{DATE}.xls` for each date above.
+
+**A SECOND, UNRELATED OBSERVATION WORTH MORE THAN THE DECAY QUESTION: the series may be in a
+publication hiatus right now.** The newest vintage is **2026-04-15** — unchanged since s1 probed it
+on 2026-08-01 and **~4 months old today**. This dataset has a documented prior hiatus
+(2023-09 → 2024-10, i.e. **13 months**). So "the current file is 3.5 months lagged" may understate
+the problem: the lag is not a fixed publication delay but a **variable one with a 13-month
+precedent**, which matters for any conditioner built on it and is a far more serious constraint on
+using this axis live than the archival decay is.
+
 ### 30. OpenMarket — synchronized millisecond Polymarket↔Binance BTC corpus (arXiv:2607.26245, HuggingFace, Apache-2.0) — grade: **verified-live, licence CLEAN for the data, sample ingested and measured; DEAD AS AN ALPHA AXIS by the authors' own out-of-sample null, KEPT as a clock-provenance reference** [§33: killed -> docs/graveyard.md lit_prediction_market_microstructure_vs_book]
 - **Provides:** the first public millisecond-level paired Polymarket-BTC / Binance-BTCUSDT corpus
   with explicit pairing metadata. 727,098,247 deduplicated rows across 202 archival snapshots;

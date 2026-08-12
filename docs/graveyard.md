@@ -928,3 +928,159 @@ baseline, trade fee 0.2%, crypto withdrawals at network cost (BTC 0.001). Rail l
 card ≈ 20 min + 10 min after a manual name-confirm step (2047). **Standing implication
 unchanged:** persistent premium = barrier rent, information/timing only, never sized as arb;
 nothing here reopens axis #76 (L1.16a).
+
+### era_crossvenue_fiat_premium_arb — NINTH INSTANCE (KR 2017-12→2018-02, mania+ban window, primary text) — NATIONALITY-SELECTIVE MEMBRANE + PREMIUM DISPERSION AS A FRICTION SURFACE
+
+**RECORDED 2026-08-12 (KR frontier miner s2-on-branch, era-archaeology: Ppomppu 가상화폐 board,
+era-seek per OP-021 KR — site search robots-forbidden, post-no binary search).** Sources, primary
+era text, threads mined to full comment layer (archived data/ppomppu_kr_era_threads.jsonl; title
+tape 2,130 rows in data/ppomppu_bitcoin_era_map.json): no 22072 (12-24, premium supply chain),
+22069 (12-24, congestion), 55179 (01-12, token premium), 77951 (02-01, 환치기 legality), 76535
+(01-29, beehive kill), 54482 (01-12, rail workarounds), 77829 (01-31, bots), 51139/54653/78040
+(tooling + flow + folk tape). DERIVES-FROM: news threads quote Yonhap verbatim (76535, 76972);
+every mechanism comment is folk-original, cites nothing (checked). **(a) THE BARRIER IS A
+NATIONALITY-SELECTIVE MEMBRANE, NOT A WALL:** resident outbound remittance capped ~$50-60k/yr
+(attested twice, 77951: "년에 6만불 제재", "송금은 연 오만불 한도") while FOREIGN NATIONALS
+legally carry coins in, sell the premium, file a source-of-funds declaration and exit KRW
+**unlimited** ("외국 큰손들은... 코인만 집어넣는거죠... 출금은... 무제한"; the Japanese
+gold-carry precedent cited in-thread). Extends the 8th instance's legal-capacity-cap: the cap is
+priced PER NATIONALITY, which names the marginal arbitrageur (foreign-KYC banking capacity, not
+domestic capital) and explains 40%+ persisting for weeks — the legal channel was capacity-bounded
+by non-resident won-account issuance, precisely the §42 too-small-for-funds shape. **(b) PREMIUM
+DISPERSION IS A FRICTION SURFACE WITH TWO AXES, folk-stated as rules:** per-COIN — dispersion ∝
+transfer friction: ERC-20 tokens arb tight ("토큰이라서그래요" — why EOS/BTG premium was LOW,
+55179) while congested-chain coins ride wide (mempool congestion throttles the 보따리상
+coin-carry supply pipe: "코인들 전송이 안됩니다... 수요는 높은데 공급이 낮아", 22072; same-day
+title tape shows EOS 9-25% vs XRP 34%); per-VENUE — dispersion ∝ rail state: "지갑 없이
+신규상장시 타거래소보다 매우 높은 시세" (deposit-closed listing = 가두리 captive market, stated
+as a RULE with live example BTG-Coinone 66, 22072); the real-name law bound each big-4 venue to
+EXACTLY ONE bank (Upbit-IBK, Bithumb-NH — 76756/76863) so bank-level throttles create
+venue-level basis; the beehive-account kill (01-29) forced captive users at rail-terminated
+venues into mass selling — the frozen-leg discount, CN 5th-instance sign law's KR instance
+("중소거래소 거래하던 사람들이 집단 매도하면서 일시적 하락세", 76535). A market can be fenced
+ON PURPOSE (venue lists without wallets) or BY ACCIDENT (bank terminates the rail): same
+mechanism, opposite premium signs — fenced-DEMAND pumps, fenced-EXIT dumps. **(c) BOTS-FIRST
+PRIOR CORROBORATED IN A THIRD ECOSYSTEM, WITH SPOOF TEXTURE:** per-second fake-wall bots
+(허매수매도벽) pegging KR books premium-adjusted to global charts by 2018-01 (77829: "봇들도...
+해외 차트 맞추는거라"), a dawn bot-lull, and folk suspicion the venue itself ran them — later
+prosecuted (Upbit wash-volume case), so era KR volume figures are UPPER BOUNDS on real flow.
+**Modern spin routed to prospector_watchlist (EV 0.0061 QUEUE, novelty 0.772):** per-coin
+rail-state transitions are COLLECTED LIVE by the desk's venue-state layer (data_axis_watchlist
+card #26) — the era evidence supplies the screen design that row still owes. **Standing
+implication unchanged:** persistent premium = barrier rent, information/timing only, never sized
+as arb; the KR premium remains usable exactly as the desk uses kimchi — a signal, not a trade.
+
+---
+
+### hijri_ramadan_calendar_axis (AR frontier miner, 2026-08-12) — `unmeasurable_by_construction`, **NOT refuted**
+
+_Filed under the `unlock_events` precedent: UNMEASURABLE and DEAD are different verdicts and only one
+of them retires search space. This entry retires a **method**, not the mechanism._
+
+**THE CLAIM (published, not folk):** *"Ramadan effect in the cryptocurrency markets"*, Review of
+Behavioral Finance 14(4):508 (2022), DOI `10.1108/rbf-09-2021-0173` — significant Ramadan return
+effect for ETH/XRP/XLM/BNB, BTC under AR(1) only, none for LTC, no volatility effect.
+**DERIVES-FROM:** Białkowski, Etebari & Wiśniewski (2012, *JBF*) "Piety and Profits" — the equity
+Ramadan anomaly, which the crypto paper explicitly extends. **It is an ECHO of one equity literature,
+not an independent discovery, and therefore elevates nothing** (GAP #85).
+
+**COSTS: NOT ACCOUNTED.** No fees, funding, slippage, spread or impact anywhere; no strategy is
+tested — only the significance of a calendar **dummy**. Per WS-006 this is a *different quantity*
+from the desk's, not a weaker one.
+
+**MECHANISM (the strongest available form, so the kill is not aimed at a straw man).** Sharia rulings
+consistently prohibit derivatives, deferred settlement and margin (*gharar*/*maysir*/*riba*) — the
+fatwa formula «مع التقابض الفوري وتحريم التداول الآجل والمشتقات» — making an observant pool
+**spot-only by construction**. The pool does not switch instruments during Ramadan (it never held
+perps), so the only coherent channel is a change in its **activity level**; the sharpest version is
+**zakat**, a mandatory 2.5% annual wealth levy applied to crypto by most contemporary rulings and
+commonly discharged in Ramadan — a genuine obligation-bearing forced flow at a calendar-predictable
+date, landing **spot-side** and therefore in **funding/basis** rather than direction. MENA is a
+material 7.5% of global on-chain value received ($338.7bn, Chainalysis 2024), 93% of it in $10k+
+transactions.
+
+**DESK TEST — `data/ar_ramadan_power_check.json`** (BTCUSDT D1, 2019-09-09→2026-08-12, 2,530 days,
+208 Ramadan-days, **7 episodes**; moon-sighted windows ±1d by jurisdiction):
+
+| channel | naive daily t | episode-level t | ICC | design effect | observed vs 80%-power MDE |
+|---|---|---|---|---|---|
+| return | −0.561 | −0.948 | 0.000 | 1.00 | −0.142 %/day vs 0.493 → **0.29×** |
+| funding | +1.314 | +0.691 | 0.525 | 16.07 | +0.627 bps/8h vs 2.982 → **0.21×** |
+| basis | +1.165 | +0.574 | 0.695 | 20.96 | +0.696 bps vs 3.989 → **0.17×** |
+
+**WHY THIS IS A METHOD KILL AND NOT A MECHANISM KILL.** All three channels are null and the return
+sign is *negative* (opposite the published claim) — but **n=7 cannot detect anything real**: the MDE
+is 3–6× the observed effect, requiring **≈+0.49%/day (≈500%/yr)** on returns to clear. **It does not
+improve with patience:** MDE scales 1/√n, so halving it needs **28 episodes = 21 more years**. An
+annual event is **permanently underpowered as an annual event study**, and no forward clock fixes
+that. L1.25 in full: this is not evidence the effect is absent.
+
+**RETIRED:** the *annual-event-study design* on any Hijri-calendar axis. **NOT retired:** the
+mechanism. The only enabling changes (L1.16a) that reopen it are (a) **cross-sectional** — many
+assets/venues where MENA exposure varies, turning 7 events into 7×N cells, or (b) a **within-Ramadan
+daily-structure** test, which must clear the clustering problem below.
+
+**THE TRANSFERABLE FINDING — and a refutation of the seat's own critique, recorded because the
+self-correction is the evidence.** I predicted the published result was an artifact of counting
+Ramadan-DAYS as independent (gap row 85: *count events in the world, never readings of the world*).
+**On returns that is REFUTED — ICC = 0.000**, so a daily dummy on returns is roughly honest and the
+paper's method is not broken the way I claimed. **On persistent series it is severe:** funding ICC
+0.525 and basis ICC 0.695 give design effects of **16 and 21**, inflating a naive daily-dummy t by
+**≈4.0× and ≈4.6×**. The standing rule:
+
+> **Any calendar/event test on a PERSISTENT series (funding, basis, OI, spread) must cluster at the
+> event level — a daily dummy inflates t by ~4× on this desk's own data. On returns (ICC≈0) it does
+> not.** The error depends on the SERIES, not the TEST, which is why it is invisible on inspection.
+
+This binds the desk's whole EVENT-AND-CALENDAR family, where funding and basis are precisely the
+direction-agnostic targets the desk should prefer (129/129 directional mechanisms failed, 2026-08-01).
+
+---
+
+## `mcpt_return_permutation` — a published "Monte Carlo permutation test" whose null cannot move its own statistic (BR frontier miner, 2026-08-12)
+
+**PRE-EMPTIVE FALSIFICATION — a third-party validation method, killed before any desk time was
+spent importing it.** Mined from `pedhsm/systematic-research-framework` (PT-BR, no licence),
+self-described as a *"Biblioteca de validação de estratégias quantitativas implementando ETL, PCA,
+Cointegração e testes de Monte Carlo (MCPT)"*. Its `mcp/tester.py` is the validation layer the whole
+library reports through.
+
+**THE DESIGN AS READ:** permute the **realised return series** (`rng.permutation(vals)`), recompute
+the score, and report `p = mean(perm_scores >= real_score)`. The three available scores are
+`sharpe = mean/std*sqrt(252)`, `cagr = exp(sum(r))**(1/years)-1`, and `vol = std*sqrt(252)`.
+
+**WHY IT IS DEAD:** mean, std and sum are each **invariant under permutation**, so all three scores
+are order-invariant and the permuted statistic *is* the real statistic. Verified numerically by
+independent reimplementation of the arithmetic (not by executing the repo — supply-chain rule),
+500 permutations × 4 synthetic return series: **max−min spread across permutations = 1.1e-15**,
+i.e. machine epsilon.
+
+**AND THE FAILURE IS WORSE THAN UNINFORMATIVE.** Floating-point summation is not associative, so
+`perm >= real` resolves on rounding order and the p-value becomes a hash of FP dust rather than a
+statistic. Measured: a strong winner (μ=+0.15%/d) scored **p = 0.978**; a catastrophe (μ=−0.20%/d)
+scored **p = 0.618** — **the disaster outranked the winner.** At any conventional α nothing ever
+passes. It is a **wall, not a bar** (L1.49), and the ordering it induces among candidates is pure
+artifact.
+
+**THE RULE THIS PRESERVES (L1.17 — the graveyard is sacred, and a failure with a named cause is
+evidence rather than opinion):**
+
+> **A permutation null must destroy the thing the statistic is supposed to measure.** Permuting
+> realised strategy returns to test a Sharpe destroys nothing — the P&L has already been computed.
+> The correct null permutes the **price path** and re-runs the strategy (killing timing skill while
+> preserving the marginal distribution), or permutes the **signal** against fixed returns.
+
+**THE DESK IS ALREADY ON THE RIGHT SIDE OF THIS, AND THAT IS THE POINT OF RECORDING IT.**
+`libs/validation/bar_permutation.py` independently documents the identical trap (*"total log return
+over the permuted window EQUALS the real total log return ... buy-and-hold scores identically on the
+permutation and gets p ~ 1"*), permutes **bars** rather than returns, and handles the FP-dust ties
+this repo falls into with a measured `_TIE_RTOL = 1e-4` and the add-one correction
+`(sum(s >= real − tol) + 1)/(n + 1)`. Two ecosystems, **no citation link in either direction**,
+same trap — one solved, one not. Per the provenance rule that is genuine convergence and it buys a
+**queue place, not a lower bar**; here what it buys is **confirmation of an existing desk design**,
+so the disposition is NO BUILD. Routed as OP-056 (the reusable invariance screen) rather than as a
+repair, because there is nothing on this desk to repair.
+
+**STATUS: DEAD ON ARRIVAL — never imported, never scheduled, no desk time owed.** Recorded so the
+next seat that meets an "MCPT" validation layer in any language tests its invariance in one grep
+instead of adopting it.

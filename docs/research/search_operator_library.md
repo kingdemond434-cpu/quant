@@ -1528,3 +1528,130 @@ CN OP-037 lesson (0/7 unverified seeds survived there — unobserved terms are n
 | حلال / حرام + تداول | halal/haram + trading | all | **OBSERVED** — the retail-facing framing; high volume, mostly SEO-grade, but it names the constraint retail actually applies |
 | حوامير | "whales" (lit. groupers) — **and the name of the largest Gulf forum** | all | **OBSERVED** — `حوامير` is both the slang for big players and the brand `hawamer.com`. **Note the §13 status: that forum is a HARD STOP (ClaudeBot denied by name)**, so the term is a search key for *other* venues quoting it, not for mining the forum itself |
 | سيولة / السيولة | liquidity | all | SEED — standard finance vocabulary, low discrimination |
+
+---
+
+### OP-054 the native key is not the translated key — verify the search term against the ground before grading it THIN   [active]
+class: search / instrument hygiene
+origin: BR frontier miner session 2 (2026-08-12)
+validated-gain: measured on GitHub repo search, same corpus, same minute:
+  - `pairs+trading+brasil` -> **0 repos**
+  - `cointegracao` (the native PT term) -> **30 repos**, essentially all genuine pairs-trading /
+    statistical-arbitrage work, several crypto-native
+  A seat that queried the English term and stopped would have graded BR statistical arbitrage a
+  DEAD GROUND on a clean zero. The ground holds at least 30 repos. **Zero was a property of the
+  QUERY, not of the forest.**
+technique: for every family you hunt, the region names it with a NATIVE technical term that is
+  usually NOT the translation of the English one. Before recording any ground as thin or
+  exhausted, find the term the practitioners themselves use — normally by reading one known-good
+  artifact from that ground and harvesting its vocabulary, not by translating your own.
+  In PT-BR the family keys are `cointegração` (the method, and the highest-yield single key),
+  `long e short` / `long&short` (the retail name of the trade — B3 retail culture calls the trade
+  after its LEGS, not after the statistic), `arbitragem estatística`, `pares` / `par cointegrado`.
+  **`pairs trading` is not used.**
+adaptations: universal, and it composes with OP-030 (negative-control every zero-hit) and OP-037
+  (negative-control a supplied glossary). OP-030 says a zero needs a control; OP-037 says a
+  supplied TERM may be fake; **OP-054 says a REAL, correct, well-formed English term can still
+  return a structural zero because the ground does not speak it.** All three failure modes end in
+  the same artifact — a false EXHAUSTED — and that is the one verdict this desk cannot afford,
+  because a ground graded dead is never re-entered.
+counterfactual: HIGH. STATISTICAL-ARBITRAGE is the desk's **only NEVER-HUNTED family**
+  (`data/strategy_coverage.json`: 0 of 14 hunted), so the one family most in need of ground was
+  the one being hidden by vocabulary.
+
+### OP-055 in a mined replication repo, DIFF THE CONFIG COMMENTS AGAINST THE CONFIG VALUES   [active]
+class: extraction / evidence grading
+origin: BR frontier miner session 2 (2026-08-12)
+validated-gain: `mateusmartinelli/tcc` (crypto pairs trading, 3 method implementations,
+  ~1,384-1,464 lines each). **Three contradictions, all in the config block, found in under a
+  minute by one grep:**
+  - `TRANSACTION_COST = 0.001  # 0.05% por trade` — 0.001 is **0.1%**, i.e. **2x** the commented
+    intent. Identical in all three files (copy-pasted), so the whole comparison shares it.
+  - `Z_ENTRY_THRESHOLD = 1.5  # 2 standard deviations for entry (as per paper)` — the value is
+    **1.5σ**, the comment claims **2σ "as per paper"**. Looser entry ⇒ more trades ⇒ interacts
+    directly with the mis-stated cost.
+  - `LOOKBACKS = [90]  # 12 months formation period (252 trading days)` — the formation window is
+    **90 days**, not the paper's 252.
+technique: the comment is the author's statement of INTENT; the value is what actually RAN. On a
+  replication or thesis repo the two drift apart silently, and the write-up is generated from the
+  intent. One grep over the config block prices the gap between what a paper-replication claims to
+  have replicated and what it executed. Do this BEFORE reading any result the repo reports.
+  Grade the direction too: charging 2x cost is conservative and does not inflate a result, while a
+  looser entry threshold and a shorter formation window are NOT conservative.
+adaptations: universal — any language, any replication repo, thesis code, notebook, or bot config.
+  Pairs with the backtest-miner cost-accounting duty: absence of a cost model is a finding, and a
+  cost model that contradicts its own comment is a **better** one, because it is evidence about
+  the author's process rather than about their taste.
+counterfactual: MEDIUM-HIGH — the artifact reads as unusually rigorous on the surface (it loads a
+  T-bill series and computes excess returns, which most retail backtests never do), so it is
+  precisely the kind of repo a seat would quote approvingly without opening the config.
+
+### OP-056 a mined VALIDATION module is tested by INVARIANCE: does its null actually move its statistic?   [active]
+class: extraction / adversarial verification
+origin: BR frontier miner session 2 (2026-08-12)
+validated-gain: `pedhsm/systematic-research-framework` — "Biblioteca de validação de estratégias
+  quantitativas ... e testes de Monte Carlo (MCPT)". Its `mcp/tester.py` permutes the **realised
+  return series** and recomputes `sharpe = mean/std*sqrt(252)`, `cagr = exp(sum(r))**(1/years)-1`,
+  `vol = std*sqrt(252)`. **All three are order-invariant** (mean, std and sum are each invariant
+  under permutation), so the permuted statistic IS the real statistic.
+  Verified numerically by independent reimplementation of the arithmetic (NOT by executing the
+  repo — supply-chain rule), 500 permutations x 4 synthetic return series:
+  **max-min spread across permutations = 1.1e-15 (machine epsilon).**
+  The consequence is worse than an uninformative test. Because floating-point summation is not
+  associative, `perm_score >= real_score` resolves on ROUNDING ORDER, so the p-value is a hash of
+  FP dust rather than a statistic: measured p = 0.978 for a strong winner (mu=+0.15%/d) and
+  p = 0.618 for a catastrophe (mu=-0.20%/d) — **the disaster scored "better" than the winner**.
+  At any conventional alpha nothing ever passes: it is a **WALL, not a bar** (L1.49's exact case).
+technique: for any mined backtest/validation library, do not read its null — TEST it. Ask whether
+  the statistic it scores is mathematically invariant to the resampling it performs. If it is, the
+  gate carries zero information no matter how sophisticated it looks. The test is cheap: permute
+  twice and check the statistic moved by more than machine epsilon.
+  **The general rule the desk should carry outward: a permutation null must destroy the thing the
+  statistic is supposed to measure.** Permuting realised strategy returns to test a Sharpe destroys
+  nothing, because the P&L has already been computed. The correct null permutes the PRICE PATH and
+  re-runs the strategy (destroying timing skill while preserving the marginal distribution), or
+  permutes the SIGNAL against fixed returns.
+adaptations: universal — every language, every mined validation/backtest framework.
+  **CROSS-ECOSYSTEM CONVERGENCE, and it is genuine rather than an echo:** this desk's own
+  `libs/validation/bar_permutation.py` independently documents the identical trap (its docstring:
+  total log return over the permuted window EQUALS the real one, so buy-and-hold "scores
+  identically on the permutation and gets p ~ 1"), permutes bars rather than returns, and handles
+  the FP-dust tie problem the BR repo falls into via a measured `_TIE_RTOL = 1e-4` plus the
+  add-one correction `(sum(s >= real - tol) + 1)/(n + 1)`. Two ecosystems, no citation link in
+  either direction, same trap, one solved and one not. Per the provenance rule that buys the
+  finding a QUEUE PLACE, not a lower bar — and here it buys **confirmation of an existing desk
+  design**, not a new build. The desk is AHEAD on this one; the value is the operator, not a fix.
+counterfactual: HIGH for the fleet — miners are explicitly told to route AI-quant structures and
+  validation frameworks to the improvement inbox as ENGINE ideas, and this is the screen that
+  separates an engine idea worth importing from one that would import a welded gate.
+
+---
+
+## NATIVE LEXICON — BR / PT-BR (Brazilian Portuguese)
+_Charter dark-forest deliverable #2, BR seat, session 2 (2026-08-12). No BR lexicon existed before
+this run (`grep -c alavancado` = 0). OBSERVED = seen in live PT-BR artifacts this session (repo
+titles/descriptions in the 30-repo `cointegração` corpus); SEED = supplied/inferred and NOT yet
+verified. Per OP-037, a SEED is a lead, never a search key._
+
+| term | gloss | era | note / example query |
+|---|---|---|---|
+| **cointegração** | cointegration | all | **OBSERVED — the single highest-yield PT-BR quant key found this run.** 30 repos vs **0** for `pairs trading brasil`. This is OP-054's proving instance |
+| **long e short** / **long&short** | the pairs trade, named after its LEGS | all | **OBSERVED** — B3 retail culture names the TRADE, not the statistic. **Two collisions poison it as a bare key** (see below) — always pair with `cointegração` or `ações` |
+| par cointegrado / pares | cointegrated pair / pairs | all | **OBSERVED** |
+| arbitragem estatística | statistical arbitrage | all | **OBSERVED** (as `arbitragem estatistica`, unaccented, in repo text) — lower volume than `cointegração` |
+| **TCC** | *trabalho de conclusão de curso* — undergraduate final thesis | all | **OBSERVED — a high-value STRUCTURAL key, not a topic key.** BR students publish thesis code to GitHub under this name. A `TCC` repo is a full methods replication with code, and it is exactly L1.34 #6 material: rigorous-looking, never out-of-sample validated, never read by the English-speaking crowd |
+| ações | equities/stocks | all | **OBSERVED** — the disambiguator that rescues `long short` from the LSTM collision |
+| criptomoedas | cryptocurrencies | all | **OBSERVED** — note `cripto` alone did NOT conjoin usefully in repo search (`cointegracao+cripto` = 0 while crypto repos exist in the `cointegracao` corpus): search the broad key and filter, do not conjoin |
+| alavancado | leveraged | all | **SEED — NEGATIVE-CONTROLLED AND DOWNGRADED (OP-037).** The word is real standard Portuguese, but it is *standard financial vocabulary*, not slang, so it carries no discrimination as a search key — the CN `亏损/kuisun` case exactly. Not a dark-forest key |
+| laranja | lit. "orange" — a nominee / straw-man account holder | all | **SEED — real BR term, but §13 AWARENESS ONLY.** It indexes fraud and money-laundering material, not trading mechanism. Not a research key for this desk |
+| HODLar | to HODL, verbified with the PT infinitive `-ar` | 2017→ | **SEED — NOT CONFIRMED.** A targeted search surfaced BR Bitcoin communities but no evidence of this specific coinage in use. Morphologically plausible (PT productively verbifies loanwords) but **unobserved**; do not spend query budget on it until seen in live text |
+
+**THE TWO COLLISIONS THAT POISON `long short` IN A PT-BR CORPUS** — measured this run, and either
+one alone is enough to make a rich ground look picked clean:
+1. **LSTM.** `Long Short-Term Memory` is written out in full in Portuguese ML repo descriptions.
+   `long+short+acoes` returned 18 repos of which **3 of the top 5 were neural-network repos**.
+2. **C/C++ type keywords.** `"long e short"` returns `MODIFICADORES-DE-TIPOS-DE-DADOS-Unsigned-Long-e-Short`
+   — teaching repos about integer types. Two of the top 5.
+The rescue is the native method key (`cointegração`), not a better English phrasing. This is the
+vocabulary-collision sibling of the RU seat's TICKER-collision finding: same failure mode
+(a homonym silently empties a result set), different layer of the stack.

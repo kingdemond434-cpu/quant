@@ -19,7 +19,8 @@ _Seeded 2026-07-18; every family unvisited -- the first run biases per the rotat
 | Records (contests/CTA) | 2026-07-25 | 1 | partial, via forum route: Bitcointalk "Automated Trading Contest" (topic 261086, CryptoTrader.org rounds #1-#5) mined as a contest RECORD — produced the in-sample-vs-forward natural experiment graveyard entry. Kaggle G-Research + Numerai post-mortems still untouched |
 | Non-English forums | 2026-07-26 | 2 | s1 (07-19): Chinese RSRS + funding-arb (CSDN/VeighNa/BigQuant/Zhihu/FMZ) + JP note.com — RSRS EV-killed, ML-funding-rate graveyard-matched. **s2 (07-26, CN frontier miner): axis #76 usdt-cny-otc-premium UN-PARKED — "no clean free API" REFUTED, 3 keyless routes, 591d history reconstructed (OP-031 CDX-replay of a capped JSON API), Stage-A screened 4/4 cells → no promotable edge but the catalogued mechanism's SIGN and MAGNITUDE priors both falsified. New: OP-031, OP-032, CN lexicon.** Era-archaeology (banzhuan/8btc/ChainNode/Tieba) still UNSTARTED — first item next run. **s3 (2026-08-01): T1 instrument repair — the 7 supplied unverified slang terms negative-controlled, 0/7 survived, 6 with the real form named; +14 verified lexicon rows; OP-036 (evasion slang has a BIRTH DATE — 大饼 born of the 2017-09-04 "94" ban, so the search key is a function of the ERA, and our era ground straddles it), OP-037 (negative-control a supplied glossary), OP-038 (a JS wall on the HTML is not a wall on the API — unblocked the Gitee chain carried 3 sessions). CN OSS tranche: AlphaGPT paper + NOFX "3 mechanisms" both REFUTED, Vibe-Trading crypto layer weaker than ours (honest null). Screened `unlock_events.json` (24,201 events, 0 readers) 0/27 cells → UNMEASURABLE not dead, 2 measurement defects. VERIFIED on live API: a 123-event Binance delisting forced-close panel discarded by a `status=="TRADING"` filter (R0292). R0288–R0293. Era: 8btc thread-44638 mined to reply-depth, CN-side corroboration of the cross-venue-premium kill. DIASPORA ANSWERED: CN discussion migrated into paid/ID-gated enclosures — §13 puts it permanently out of reach, so the open CN layer worth mining is repos + era archives + platform 文库, NOT live community.** |
 | Non-English forums — **JP** | 2026-08-12 | 3 | **s3 (2026-08-12, JP frontier miner): §13 REGRESSION — note.com + zenn.dev now serve 403 to ClaudeBot/GPTBot/CCBot/Bytespider AT THE CDN EDGE while BOTH robots.txt files are clean of any such rule (Googlebot/curl/SomeRandomBot get 200 ⇒ a curated AI-crawler denylist, not a WAF heuristic). HARD STOP, archives included; NOT routed around (Claude-User returns 200 and was deliberately not used). Closes 116/187 (62%) of the mapped botter corpus incl. all 3 planned targets; rollout DATED between 08-04 and 08-12 by this seat's own successful prior reads → **OP-052** (probe the CONTENT PATH with a UA matrix; robots.txt is necessary, not sufficient) + lesson **L0096** + **R0466** (a blocked ground and an exhausted ground are byte-identical to any fetch path that treats non-200 as no-content — a FALSE NULL that silently retires a region). **Past-due PI-vs-FR deferral RESOLVED** (`data/jp_funding_clamp_census.json`): clamp verified by positive control (BTC 49/60, DOGE 46/60); **41.6% of the owned 8h panel and 68.8% of the live 812-symbol cross-section sit on a censoring constant**, 74.9 bps of real premium dispersion hides inside one 56-name tie group — the root cause of the already-paid-for "42 perps at the 1bp floor" churn incident; censoring DECAYS 68.8%(2019)→10.7%(2026) ⇒ **backtest-integrity upgrade first, live-signal second**; EV 0.0193 QUEUE, novelty 0.726, NOT promoted (screen still owed). **L1.47 corroborated with a count → R0465: 426/812 (52.4%) of live perps settle on 4h, only 385 on the 8h that `held/8.0` assumes** ("many" is the majority); ranking damage honestly modest (Spearman 0.959). JP funding-settlement sandwich (qiita/lud-botter, DERIVES-FROM: NONE checked ⇒ genuine independent convergence with L1.47) **EV 0.0006 REJECT** as published — dead at source, venue changed settlement rules mid-operation — with the observation routed as execution-timing **EV 0.0087 QUEUE**; JP **Travel Rule 2023-06-01** era marker (domestic↔overseas arb killed by regulation, not competition). **マケデコ (`market-api`) NEW GROUND opened + mapped: 74 entries 2023–2025 (2021/22 = 404, series began 2023), JP EQUITIES not crypto, 74% on the closed hosts**; J-Quants axis catalogued-unverified (row 29). Video: 0 fetched, 0 locked.** — **s1 (2026-08-01, JP frontier miner, seat's first run).** §13: **5ch.net + all sister hosts REFUSE `ClaudeBot` by name** (Cloudflare-*managed* block → treat as a platform rollout, not a site decision; re-check on entry, never cache); note/qiita/zenn/GMO/bitbank clean. **bitFlyer axis CLOSED after 4 deferrals** — the "403/WAF/needs-a-human" record was a **tarpit**, the block is **per-hostname** (api+lightning serve 200 from the *same edge IP*), the "never archived" claim was a wrong CDX host+slug, and the ToS was then read: it retains rights in *"data such as transaction prices"* → **`restricted-by-licence`**, which pre-emptively killed `getchats`, `getfundingratehistory` and an archived keyless 15-min BTC/JPY series (2014-10→, Wayback-only) before any were carded. **Replacements found same run: GMO Coin free keyless tick tape (2018-09-05→, 28 spot + 12 margin, JP-only MONA/XYM/FCR/NAC/WILD) and bitbank — both licence-unread, no ingest (R0309/R0310).** **richmanbtc lineage (the C62 "gem", unstarted 12 days) KILLED**: the edge is a bare ATR×0.5 limit, the ML adds ~nothing, and the maker fee was **zero-or-negative across the whole backtest** → a venue-subsidy harvest, dead on 3 venues. Salvaged 3 CC0 tools (p-mean order-sensitive decay bar — **published error-rate formula reproduced BROKEN**; time-adversarial feature screen; `publicGetExpiredFutures` for R0239). New: **OP-043/044/045** + OP-041 refinement. Era-archaeology (2017 bitFlyer-FX **SFD**, Mt.Gox 5ch) **UNSTARTED**; JP lexicon seeds still **unverified**. Next: **the 仮想通貨botter Qiita Advent Calendar 2021–2025, never touched.** |
-| Non-English forums — **BR** | 2026-08-01 | 1 | **s1 (2026-08-01, BR frontier miner, seat's first run).** **§13: the KR/JP by-name-block pattern does NOT generalise** — 18 hosts swept full-file over 17 AI-crawler tokens, **zero BR blocks**; the community layer (bastter, InfoMoney, MQL5-PT, Investing BR, bitcointalk, YouTube, Telegram) is **open**, so KR/JP was a property of *those* consumer portals, not a global rollout (OP-041 corrected). One **HARD STOP: `reddit.com` `Disallow: /`** to everyone — a *global* decision that bites BR hard (r/investimentos, r/farialimabets, r/BrasilBitcoin). **Pre-emptive graveyard check killed one third of my own brief before any searching:** the seat's era target "BR P2P premium" is already `mercado_br` **REJECTED** (graveyard:81) inside a family killed **5×** whose lone survivor (kimchi) was itself refuted 07-30 — no L1.16a enabling change exists, so the **seed list** is the defect. **THE FIND: RFB `criptoativos_dados_abertos`** — Brazil's **mandatory** national crypto-reporting panel (every domestic exchange reports **every** operation, no minimum; P2P + foreign venues >R$30k), free and keyless: **77 months Ago-2019→Dez-2025, 66 assets, 4,206 asset-months**; Dez-2025 = **3,544,986 taxpayers / R$43.1bn**; all-time **USDT R$1.004tn vs BTC R$269bn (3.7×)** ⇒ a **dollarization**, not speculation, mechanism. **Deliberately NOT screened** — n=77 monthly + 3.5mo lag vs a ~4,268-obs bar would manufacture a false null (L1.25); reported **UNDERPOWERED** with the cross-sectional enabling change named. **The depth layer was the prize: a FREE POINT-IN-TIME VINTAGE STACK** — RFB republishes monthly under a dated filename and **42/42 common months are revised** (worst Março-2023 **+40.9%**; a month **2.4y old** still moved), systematically upward, so backtesting today's file is a **+41% look-ahead in the CONDITIONING variable** (R0289 class — passes every return-series leak check, fails toward a FALSE POSITIVE). Proven recoverable: 23+ dates in CDX, and a **live-404 vintage restored intact** via `web.archive.org/<ts>id_/`. Read at all only by writing a **stdlib OLE2+BIFF8 reader** (no xlrd on this box) validated by the data's **own conservation law: 78/78 rows, residual 0.00e+00**. New **OP-046 / OP-047 / OP-035-BR**; R0316–R0318. Incidental: a **BR-only tokenized-RWA universe** in a government dataset (**MBPRK = tokenized *precatórios***, MBCONS, IMOB01, MCO2; **BRZ = 92.4M ops**, a payment rail). **ITEM 3 (PT-BR practitioner ground) explicitly DEFERRED to 08-04, not dropped.** Next: practitioner ground first, then **mirror the vintage stack before it decays**, B3, Pix fraud stats. |
+| Non-English forums — **BR** | 2026-08-12 | 2 | **s2 (2026-08-12) — THE NATIVE KEY WAS HIDING THE DESK'S ONLY NEVER-HUNTED FAMILY.** Cleared s1's 8-day-overdue ITEM 3. Measured, same corpus same minute: `pairs trading brasil` → **0 repos**, `cointegração` (native PT key) → **30**, essentially all genuine statarb, several crypto-native — so a seat querying the English term grades BR statistical arbitrage DEAD on a clean zero, and `strategy_coverage.json` reports **STATISTICAL-ARBITRAGE as the only never-hunted family (0/14)**. `long short` is unusable bare in PT-BR via **two independent collisions** (LSTM written out in full; C's `unsigned long/short`) — the vocabulary sibling of the RU ticker collision. **OP-054.** Depth on `mateusmartinelli/tcc` (crypto pairs trading; Gatev + Caldeira–Moura + Rad–Low–Faff): more rigorous than average (loads T-bills, computes excess returns) yet **three code/comment contradictions all in the config block** — cost 0.001 commented "0.05%" (**2×**, conservative), entry **1.5σ** commented "2σ as per paper" (**not** conservative), formation **90d** commented "252" — plus **zero funding accounting** and top-10 pairs from ~4,950 candidates at p<0.10 with **no multiplicity correction** (~495 expected false pairs). **OP-055.** Killed `pedhsm/systematic-research-framework`'s MCPT: it permutes **realised returns** and scores sharpe/cagr/vol, **all order-invariant** — verified by independent reimplementation, 500 perms × 4 series, **max−min = 1.1e-15**; FP non-associativity then makes the p-value a rounding-order hash (**winner p=0.978, catastrophe p=0.618**). A **wall, not a bar** → graveyard + **OP-056**. **The desk was already ahead** (`bar_permutation.py` permutes bars, with a measured `_TIE_RTOL` + add-one) ⇒ genuine cross-ecosystem convergence, **NO BUILD**. RFB: s1's *"decaying deadline"* was an inferred rate — census gives **23 dates, 12 live / 12 dead, clean boundary at 2023-03-02|2023-05-03, 4 with no capture at all**; **rate UNMEASURED** (two rival hypotheses, opposite urgency, falsifier recorded) and the series is **~4 months unpublished against a 13-month hiatus precedent**. BR lexicon opened (none existed); supplied seeds scored **0/3 as dark-forest keys**. Video: **0 fetched, 0 locked — not attempted**, named in next ground. Next: `Vido/zecontinha` fork tree + crypto subset, `TCC` as a structural key, PT-BR video, B3 (still unprobed), era-archaeology (still not started). |
+| _(BR s1 history)_ | 2026-08-01 | 1 | **s1 (2026-08-01, BR frontier miner, seat's first run).** **§13: the KR/JP by-name-block pattern does NOT generalise** — 18 hosts swept full-file over 17 AI-crawler tokens, **zero BR blocks**; the community layer (bastter, InfoMoney, MQL5-PT, Investing BR, bitcointalk, YouTube, Telegram) is **open**, so KR/JP was a property of *those* consumer portals, not a global rollout (OP-041 corrected). One **HARD STOP: `reddit.com` `Disallow: /`** to everyone — a *global* decision that bites BR hard (r/investimentos, r/farialimabets, r/BrasilBitcoin). **Pre-emptive graveyard check killed one third of my own brief before any searching:** the seat's era target "BR P2P premium" is already `mercado_br` **REJECTED** (graveyard:81) inside a family killed **5×** whose lone survivor (kimchi) was itself refuted 07-30 — no L1.16a enabling change exists, so the **seed list** is the defect. **THE FIND: RFB `criptoativos_dados_abertos`** — Brazil's **mandatory** national crypto-reporting panel (every domestic exchange reports **every** operation, no minimum; P2P + foreign venues >R$30k), free and keyless: **77 months Ago-2019→Dez-2025, 66 assets, 4,206 asset-months**; Dez-2025 = **3,544,986 taxpayers / R$43.1bn**; all-time **USDT R$1.004tn vs BTC R$269bn (3.7×)** ⇒ a **dollarization**, not speculation, mechanism. **Deliberately NOT screened** — n=77 monthly + 3.5mo lag vs a ~4,268-obs bar would manufacture a false null (L1.25); reported **UNDERPOWERED** with the cross-sectional enabling change named. **The depth layer was the prize: a FREE POINT-IN-TIME VINTAGE STACK** — RFB republishes monthly under a dated filename and **42/42 common months are revised** (worst Março-2023 **+40.9%**; a month **2.4y old** still moved), systematically upward, so backtesting today's file is a **+41% look-ahead in the CONDITIONING variable** (R0289 class — passes every return-series leak check, fails toward a FALSE POSITIVE). Proven recoverable: 23+ dates in CDX, and a **live-404 vintage restored intact** via `web.archive.org/<ts>id_/`. Read at all only by writing a **stdlib OLE2+BIFF8 reader** (no xlrd on this box) validated by the data's **own conservation law: 78/78 rows, residual 0.00e+00**. New **OP-046 / OP-047 / OP-035-BR**; R0316–R0318. Incidental: a **BR-only tokenized-RWA universe** in a government dataset (**MBPRK = tokenized *precatórios***, MBCONS, IMOB01, MCO2; **BRZ = 92.4M ops**, a payment rail). **ITEM 3 (PT-BR practitioner ground) explicitly DEFERRED to 08-04, not dropped.** Next: practitioner ground first, then **mirror the vintage stack before it decays**, B3, Pix fraud stats. |
 | Non-English forums — **AR** | 2026-08-12 | 1 | **s1 (2026-08-12, AR frontier miner, seat's first run) — IN PROGRESS.** No AR row existed before this run (`grep -ic arabic` = 0). **Pre-emptive graveyard check killed the seat brief's ENTIRE era target before any searching:** MENA/Egypt/Lebanon P2P-premium-under-FX-restriction is `era_crossvenue_fiat_premium_arb` (buried **7×**) inside the regional-premium class the desk declared **exhausted** (`try_premium_timing` — the Turkey capital-control analog, the closest MENA case that exists — REJECTED; kimchi, the lone survivor, itself KILLED 08-01); `strategy_coverage.json` has CROSS-VENUE-PREMIUM = HUNTED/9. Second consecutive seat (after BR) handed a dead era target ⇒ **the seed list is the defect**. Items: (1) §13 UA-matrix access map (OP-052) — AR unmapped in BOTH directions, and R0466 makes an unmapped ground's null uninterpretable; (2) report+replace the dead brief; (3) **replacement axis: Hijri/Ramadan calendar + Sharia-compliance forced-flow** — novelty-clean at **0 hits** across graveyard/both watchlists/universe map/vault, maps to NONE of the 24 CRYPTO_MECHANISMS, and lunar-vs-Gregorian drift (~11d/yr) makes it orthogonal to every Gregorian calendar effect by construction. See session note below. |
 | AI/HF documentation | 2026-07-19 | 1 | touched only incidentally via Vibe-Trading (AI trading-agent platform) + ai_quant_trade (LLM module) — both infra, not alpha-discovery-process documentation; weak coverage, revisit properly next run |
 
@@ -3472,6 +3473,202 @@ is **unanswered** and belongs to ITEM 3.
 `docs/research/improvement_inbox.md` (**+3 engine ideas**), `docs/research/recommendation_ledger.json`
 (**R0316, R0317, R0318**), and this coverage doc (**the BR seat's first region row + first session
 note**). No graveyard entry: the BR premium was already there, which was the point.
+
+---
+
+### 2026-08-12 session 2 (BR frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+
+**RESUMING, NOT RESTARTING.** Read before searching: `source_backlog_next.py` (16 pending
+verification, 6 pending a legitimacy decision — **none BR**, so the backlog does not redirect this
+seat), the BR region row, and my own s1 close. s1 left an explicit, dated carry:
+
+> `#### ITEM 3 — NOT DONE. Named, not disguised. [§33: deferred(2026-08-04)]`
+> *"It is the first item next run."*
+
+**That deferral is 8 days PAST DUE** (dated 2026-08-04, today is 2026-08-12; no BR session ran in
+between). Under the RESUME mandate — *"if a previous run died mid-work, finish ITS unfinished item
+before opening new ones"* — ITEM 3 is item 1 of this run and nothing new opens ahead of it. The §33
+gate reads BACKLOG-CLEAR, so the obligation is **schedule debt, not a carded-find block**: the gate
+tracks carded finds, and a deferred *item* is invisible to it. That asymmetry is itself worth
+naming — a dig item can rot for 8 days without any fence noticing, which is the §37 silent-carry
+defect one level up from the one s1 guarded against.
+
+**ITEMS TAKEN THIS RUN (bounded per the completion contract; depth per item unbounded):**
+
+1. **ITEM 3, CARRIED AND OVERDUE — PT-BR practitioner ground, to fork/issue/reply depth.**
+   BR GitHub quant repos, MQL5's Portuguese section (B3 algo traders; robots-clean per s1),
+   PT-BR practitioner writeups. Hunting **untested alphas** (L1.34 #6) and **process** (the
+   PROCESS MANDATE half s1 never reached). **Aimed deliberately at STATISTICAL-ARBITRAGE**, which
+   `data/strategy_coverage.json` reports as the desk's **only NEVER-HUNTED family (n=0 of 14)** —
+   and BR is the right ground for it: B3 retail culture has a large, old, native *long&short*
+   (pairs) practice, so this is the one place where an unhunted family and my region's actual
+   density coincide. L1.35: prefer an unhunted family over deepening a worked one.
+
+2. **RFB VINTAGE STACK — the DECAYING-DEADLINE item, now 11 days older.** s1 measured 23+ Wayback
+   publication dates and found **2 of 4 probed already live-404**. s1 flagged this as *"the one
+   item with a decaying deadline; everything else waits patiently"* and then nobody came back for
+   11 days. **Measure the decay first** (how many of the known dates are still live *today* vs
+   2026-08-01) — that number is unrecoverable once it decays further, and it converts "we should
+   mirror this" from an opinion into a dated rate.
+
+3. **BR LEXICON NEGATIVE CONTROL (OP-037) — a prerequisite, not a deliverable.** My brief supplies
+   `alavancado`, `laranja`, "HODLar PT-isms" as search keys; s1 recorded them **UNVERIFIED**. The
+   CN seat's supplied glossary scored **0/7**. Negative-control them *before* item 1 spends query
+   budget on them, because an unobserved term is not a search key and a zero-hit from a dead term
+   is indistinguishable from a thin ground (OP-030).
+
+**STANDING OPEN QUESTION (diaspora), unchanged and still unanswered:** where did the BR crypto
+community go — 2017-mania boards → ? → local venues vs Binance BRL.
+
+**VIDEO:** PT-BR YouTube fintwit/algo channels are in my brief and were untouched by s1. If a
+mechanism is video-only I fetch it (`scripts/fetch_video_transcript.py`) and record the explicit
+zero or the locked row; an empty `video_locked_log.md` is ambiguous and the zero is what
+disambiguates it.
+
+_Status: note written 2026-08-12 before any searching. Items resolve below._
+
+#### ITEM 3 (lexicon control) — CLOSED FIRST, because it gates the other two. **1 of 3 supplied seeds survives, and none as a dark-forest key.** [§33: wired -> search_operator_library.md BR lexicon table]
+
+Ran OP-037 on the three seeds my brief supplies. **No BR lexicon existed in the library before this
+run** (`grep -c alavancado` = 0), so this also opens the region's dark-forest deliverable #2.
+
+| seed | verdict |
+|---|---|
+| `alavancado` | **REAL BUT WORTHLESS AS A KEY.** Standard Portuguese for "leveraged" — ordinary financial vocabulary, zero discrimination. The CN `亏损/kuisun` case exactly: a real word is not automatically a search key |
+| `laranja` | **REAL, BUT OUT OF SCOPE.** A genuine BR term (nominee/straw-man account) that indexes fraud and laundering material, not trading mechanism. §13 awareness only |
+| `HODLar` | **UNOBSERVED.** Targeted search surfaced BR Bitcoin communities but no instance of the coinage. Morphologically plausible; **not a key until seen in live text** |
+
+The replacements are worth far more than the seeds, and they were found by reading the ground
+rather than by translating into it — see ITEM 1, which is where they came from.
+
+#### ITEM 1 — CLOSED, AND IT IS THE RUN'S FIND. **The desk's only never-hunted family was being hidden by vocabulary.** [§33: wired -> search_operator_library.md OP-054/055/056 + docs/graveyard.md mcpt_return_permutation]
+
+**THE MEASUREMENT, same corpus, same minute:**
+- `pairs+trading+brasil` → **0 repos**
+- `cointegracao` (the native PT key) → **30 repos**, essentially all genuine pairs-trading /
+  statistical-arbitrage work, several crypto-native
+
+**A seat that queried the English term and stopped would have graded BR statistical arbitrage a
+DEAD GROUND on a clean zero.** That matters more than usual here: `data/strategy_coverage.json`
+reports **STATISTICAL-ARBITRAGE as the desk's ONLY never-hunted family (0 of 14)** — so the one
+family most in need of ground was the one being made invisible. Filed as **OP-054**.
+
+And `long short` is unusable as a bare key in PT-BR because of **two independent collisions**,
+either of which alone would empty the result set: **LSTM** (`Long Short-Term Memory` is written out
+in full in PT ML repos — 3 of the top 5 hits on `long+short+acoes`) and **C type keywords**
+(`MODIFICADORES-DE-TIPOS-DE-DADOS-Unsigned-Long-e-Short` — 2 of the top 5 on `"long e short"`).
+This is the vocabulary-collision sibling of the RU seat's ticker-collision finding: same failure
+mode, different layer.
+
+**DEPTH — `mateusmartinelli/tcc` (crypto pairs trading; Gatev distance + Caldeira–Moura +
+Rad–Low–Faff, ~1,384–1,464 lines each; no licence, so mined as TEXT only).** Read the code, not the
+title. It is **more rigorous than the retail average** — it loads a T-bill series (`Rf.csv`) and
+computes excess returns, which is the `beats_baselines` discipline this desk found *unwired in its
+own gauntlet* — and it is **broken in three places, all in the config block**:
+- `TRANSACTION_COST = 0.001  # 0.05% por trade` → 0.001 is **0.1%**, **2× the commented intent**
+  (identical in all three files — copy-pasted, so the whole comparison shares it). Direction is
+  conservative, so it does not inflate results.
+- `Z_ENTRY_THRESHOLD = 1.5  # 2 standard deviations for entry (as per paper)` → the value is
+  **1.5σ**, not the paper's 2σ. **Not conservative:** looser entry ⇒ more trades ⇒ interacts
+  directly with the mis-stated cost.
+- `LOOKBACKS = [90]  # 12 months formation period (252 trading days)` → **90 days, not 252.**
+Generalised as **OP-055**: the comment is the author's INTENT, the value is what RAN, and the
+write-up is generated from the intent. One grep prices the gap. **The two gaps that are not
+comment-vs-value are larger still:** zero funding accounting anywhere (a market-neutral crypto
+long/short is most cheaply expressed in perps, where funding routinely exceeds the edge — WS-006),
+and top-10 pairs selected from ~100 tickers (≈4,950 candidates) at `ADF_PVALUE_THRESHOLD = 0.10`
+with **no multiplicity correction** — ~495 expected false positives at that threshold.
+Author chain followed: 2 repos total, 10 commits, no forks, no issues — **chain EXHAUSTED**.
+
+**DEPTH — `pedhsm/systematic-research-framework`, and this one I killed.** Self-described as a
+*validation* library implementing MCPT. Its `mcp/tester.py` permutes the **realised return series**
+and scores `sharpe`/`cagr`/`vol` — **all three order-invariant**, so the permuted statistic *is* the
+real one. Verified by independent reimplementation of the arithmetic (not by executing the repo —
+supply-chain rule), 500 permutations × 4 synthetic series: **max−min spread = 1.1e-15**, machine
+epsilon. **The failure is worse than uninformative:** FP summation is not associative, so
+`perm >= real` resolves on rounding order and the p-value is a hash of FP dust — measured **p=0.978
+for a strong winner and p=0.618 for a catastrophe**, i.e. the disaster outranked the winner. A
+**wall, not a bar** (L1.49). → graveyard `mcpt_return_permutation`, operator **OP-056**.
+
+**AND THE HONEST HALF: the desk is already ahead here, so this is NOT a repair.**
+`libs/validation/bar_permutation.py` independently documents the identical trap, permutes **bars**
+rather than returns, and handles the FP-dust ties this repo falls into via a measured
+`_TIE_RTOL = 1e-4` plus the add-one correction `(sum(s >= real − tol) + 1)/(n + 1)`. Two
+ecosystems, **no citation link either way**, same trap — one solved, one not. Per the provenance
+rule that is genuine convergence and it buys a **queue place, not a lower bar**; here it buys
+**confirmation of an existing desk design**. Disposition: **NO BUILD.** I checked before claiming a
+defect, which is the only reason this note says "confirmed" instead of "found".
+
+#### ITEM 2 — CLOSED. **The "decaying deadline" was never measured. Now it is a level, and its rate is explicitly UNMEASURED.** [§33: wired -> docs/research/data_axis_watchlist.md entry 29 update]
+
+Full census of every known RFB publication date against the live server: **23 dates known, 12 live
+(2023-05-03 … 2026-04-15), 12 dead (≤ 2023-03-02), of the dead 8 Wayback-recoverable and 4 with no
+direct capture at all** (2021-09-02, 2022-07-05, 2023-02-06, 2023-03-02). The boundary is perfectly
+clean, and the public page links **only** the current file — the other 11 are served but unlinked,
+so the date list itself is the asset.
+
+**Two hypotheses fit equally and imply OPPOSITE urgency:** (A) rolling keep-last-12 ⇒ every new
+publication kills the oldest ⇒ mirror now; (B) a one-time 2023-04/05 gov.br CMS migration ⇒ the
+live set is stable ⇒ no ongoing decay. **I could not discriminate them and did not pretend to:**
+Wayback captured these files ~once each at publication, so no death can be dated from CDX. s1
+recorded no date list, so no delta was computable — **the census above is the baseline that makes
+the second measurement possible**, with the falsifier written down. Correcting s1's inferred *rate*
+to a measured *level* is the actual deliverable.
+
+**A bigger constraint surfaced incidentally:** the newest vintage is still **2026-04-15**,
+unchanged since s1 probed it on 08-01 and **~4 months stale**, against a documented prior hiatus of
+**13 months** (2023-09 → 2024-10). The publication lag is not fixed but **variable with a 13-month
+precedent** — a far more serious limit on using this axis live than the archival decay is.
+
+### SESSION CLOSE 2026-08-12 session 2 (BR frontier miner)
+
+**DEPTH LINE (per promising lead):**
+| Lead | Depth reached | What depth surfaced that the surface did not |
+|---|---|---|
+| PT-BR statarb ground | **corpus EXHAUSTED at repo-search level** (30 repos enumerated, ranked, crypto subset identified) | Surface = `pairs trading brasil` → **0**, i.e. "dead ground". Depth = **30 repos under the native key**, and the whole OP-054 finding |
+| `mateusmartinelli/tcc` | **EXHAUSTED** (3 files read at config+method level, 10 commits, author profile → 2 repos, no forks/issues) | Surface = a tidy thesis title. Depth = **three code/comment contradictions**, no funding model, and ~495 expected false pairs from uncorrected multiplicity |
+| `pedhsm/...framework` | **EXHAUSTED for its validation layer** (read `mcp/tester.py` in full, then numerically refuted) | Surface = "MCPT validation library". Depth = **the null cannot move its own statistic** — a wall, not a bar |
+| RFB vintage stack | **EXHAUSTED as a census** (23 dates × 2 extensions probed live; CDX timelines attempted and found insufficient) | Surface = s1's "decaying deadline". Depth = **12/12 split, a clean boundary, two rival hypotheses, and no rate** |
+| BR lexicon seeds | **EXHAUSTED** (3 seeds controlled; replacements harvested from live text) | Supplied seeds scored **0 usable dark-forest keys of 3**; the real keys came from reading the ground |
+
+**NOT breadth-theater:** 3 items closed to genuine depth, one of them by **refuting** an artifact
+numerically rather than describing it, and one by **correcting my own predecessor's unevidenced
+urgency claim**. One negative result (lexicon seeds) and one no-build (the desk was already right)
+are recorded as first-class outcomes.
+
+**VIDEO: 0 fetched, 0 locked — and the zero is explicit because an empty log is ambiguous.**
+PT-BR YouTube/algo channels are in my brief and I did **not** enter that ground this run; budget
+went to the overdue ITEM 3 and the census. This is a **not-attempted**, NOT a block — nothing is
+owed to `video_locked_log.md`, which records only routes tried and failed. It is named in the next
+ground below so the omission cannot read as coverage.
+
+**NEW VENUES / GROUND recorded for the next run:**
+| venue | what lives there | how found | verdict |
+|---|---|---|---|
+| GitHub `cointegração` corpus (30 repos) | BR statarb/pairs implementations, several crypto-native | OP-054 native-key search | **RICH — the seat's primary open ground** |
+| `Vido/zecontinha` (14★, 6 forks, active 2026-07) | PairTrading proof-of-concept, the corpus's most-starred + only real fork tree | corpus ranking | **UNMINED — fork depth owed** |
+| `GustavoDMentz/JohanseneEngle-GrangerCode`, `moliveirasilv/Testes-de-Raiz-Unitaria---Crypto` | Johansen/Engle-Granger + VECM **on crypto** | corpus | **UNMINED, crypto-native ⇒ desk priority** |
+| `Moreti2002/mcp-analytics`, `Novalt/Cointegration-Portfolio` | active 2026 statarb systems | corpus | **UNMINED** |
+| `TCC` as a structural key | BR undergraduate thesis code — full replications, never OOS-validated | this run | **RICH SEAM, L1.34 #6** |
+
+**NEXT UN-EXHAUSTED GROUND, in order, for BR session 3:**
+1. **`Vido/zecontinha` fork tree (6 forks) + the crypto-native subset** of the `cointegração`
+   corpus. Diverged forks first. This is the live ground for the desk's only unhunted family.
+2. **`TCC` as a structural search key across BR quant topics** — thesis code is rigorous-looking,
+   uniformly un-out-of-sampled, and unread by the English crowd.
+3. **PT-BR video ground — explicitly owed, not attempted this run.**
+4. **B3** — still robots-clean and **still unprobed** after two sessions (open interest / positions
+   by investor type is the target: a real positioning axis, paid almost everywhere else).
+5. **BCB `EstatisticasFraudesPix`** — carried from s1, untouched.
+6. **Era-archaeology: STILL NOT STARTED** (Mercado Bitcoin early era, 2017-mania boards) — hunt
+   microstructure/workflow lore, *not* the premium, which is graveyarded.
+
+**Which artifact on disk is different because of what was mined?**
+`docs/research/search_operator_library.md` (**OP-054, OP-055, OP-056** + the **BR native lexicon
+table**, which did not exist), `docs/graveyard.md` (**`mcpt_return_permutation`**, a pre-emptive
+kill), `docs/research/data_axis_watchlist.md` (**entry 29 census update** correcting s1's rate
+claim), `docs/research/improvement_inbox.md`, `docs/research/recommendation_ledger.json`, and this
+coverage doc.
 
 ---
 
