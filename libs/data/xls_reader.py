@@ -81,6 +81,15 @@ _RK: Final = 0x027E
 _MULRK: Final = 0x00BD
 _FORMULA: Final = 0x0006
 _BOOLERR: Final = 0x0205
+_FILEPASS: Final = 0x002F
+
+#: BIFF8's hard column limit. A column past this is not a wide spreadsheet, it is a misread record
+#: -- and left unchecked it is the expensive kind: ``Sheet.rows()`` densifies to
+#: ``n_rows x n_cols``, so one junk cell at column 65535 asks for billions of slots and takes the
+#: box down rather than raising. Bounding it refuses the corrupt file AND caps the allocation.
+#: Only the column is checked: rows arrive as a u16 and BIFF8 allows all 65536 of them, so that
+#: bound is structural and a row guard would be a branch that can never fire.
+_MAX_COLS: Final = 256
 
 _BIFF8_VERSION: Final = 0x0600
 
@@ -159,8 +168,18 @@ def read_ole2_streams(data: bytes) -> dict[str, bytes]:
     if len(data) < 512 or not data.startswith(_OLE_SIG):
         raise XlsError("not an OLE2 compound file (bad signature)")
 
-    sector_size = 1 << _u16(data, 0x1E)
-    mini_size = 1 << _u16(data, 0x20)
+    # VALIDATE THE EXPONENT, NOT THE SHIFTED VALUE. These fields are log2 sizes, so a corrupt
+    # header turns `1 << n` into an integer with thousands of digits -- and the refusal below then
+    # raised ValueError while FORMATTING it into its own error message ("Exceeds the limit (4300
+    # digits) for integer string conversion"), escaping as a non-XlsError from a module whose
+    # contract is that it raises XlsError on anything it cannot decode. Found by fuzzing: 9 escapes
+    # in 4000 corrupted files, all of them this. The check has to happen before the shift.
+    log_sector = _u16(data, 0x1E)
+    log_mini = _u16(data, 0x20)
+    if not 7 <= log_sector <= 20 or not 4 <= log_mini <= 20:
+        raise XlsError(f"implausible sector size exponents: 2^{log_sector}/2^{log_mini}")
+    sector_size = 1 << log_sector
+    mini_size = 1 << log_mini
     n_fat = _u32(data, 0x2C)
     dir_start = _u32(data, 0x30)
     mini_cutoff = _u32(data, 0x38)
@@ -200,6 +219,8 @@ def read_ole2_streams(data: bytes) -> dict[str, bytes]:
 
     def read_chain(start: int, size: int) -> bytes:
         raw = b"".join(sector_bytes(s) for s in _chain(fat, start))
+        if size and len(raw) < size:
+            raise XlsError(f"stream chain is short ({len(raw)}/{size} B) -- truncated container")
         return raw[:size] if size else raw
 
     directory = read_chain(dir_start, 0)
@@ -224,10 +245,26 @@ def read_ole2_streams(data: bytes) -> dict[str, bytes]:
         minifat = [_u32(raw, 4 * i) for i in range(len(raw) // 4)]
 
     def read_mini(start: int, size: int) -> bytes:
+        """The mini path needs the SAME truncation refusal as ``sector_bytes``, and needs it more.
+
+        Slicing past the end of the mini stream yields a SHORT bytes object rather than an error,
+        so ``out[:size]`` quietly returned fewer bytes than the directory promised and the workbook
+        lost its trailing rows with nothing raised anywhere. The conservation checks this module
+        prescribes cannot catch it either: the rows that survive still balance perfectly, so a
+        truncated sheet passes every in-data identity it is asked to satisfy. Granularity is what
+        makes this the more exposed path -- 64-byte mini sectors against 512-byte big ones.
+        """
         out = bytearray()
         for index in _chain(minifat, start):
             off = index * mini_size
-            out += mini_stream[off : off + mini_size]
+            chunk = mini_stream[off : off + mini_size]
+            if len(chunk) != mini_size:
+                raise XlsError(
+                    f"mini sector {index} is truncated ({len(chunk)}/{mini_size} B)"
+                )
+            out += chunk
+        if len(out) < size:
+            raise XlsError(f"mini stream is short ({len(out)}/{size} B) -- truncated container")
         return bytes(out[:size])
 
     streams: dict[str, bytes] = {}
@@ -340,10 +377,22 @@ class _SstReader:
 
 
 def _unicode_string(payload: bytes, off: int) -> str:
-    """Decode an inline BIFF8 unicode string (LABEL, BOUNDSHEET names)."""
+    """Decode an inline BIFF8 ``XLUnicodeRichExtendedString`` (LABEL).
+
+    THE RICH-TEXT AND PHONETIC FIELDS SIT BETWEEN THE FLAGS AND THE CHARACTERS. ``cRun`` (2 bytes,
+    when fRichSt is set) and ``cbExtRst`` (4 bytes, when fExtSt is set) are counted here, exactly
+    as :meth:`_SstReader.read_string` counts them for the shared-string table. Jumping straight
+    from the flag byte to the text reads those headers AS text: the character count still works
+    out, so the string comes back shortened and prefixed with binary and nothing raises -- the
+    same silence signature as the CONTINUE bug. Excel itself prefers LABELSST, so a bare LABEL
+    tends to come from a third-party writer, which is precisely the kind that sets these bits.
+    """
+    if off + 3 > len(payload):
+        raise XlsError("inline string header runs past the end of its record")
     n_chars = _u16(payload, off)
     flags = payload[off + 2]
-    body = payload[off + 3 :]
+    cursor = off + 3 + (2 if flags & 0x08 else 0) + (4 if flags & 0x04 else 0)
+    body = payload[cursor:]
     if flags & 0x01:
         return body[: n_chars * 2].decode("utf-16-le", "replace")
     return body[:n_chars].decode("latin-1")
@@ -357,6 +406,15 @@ def _short_string(payload: bytes, off: int) -> str:
     if flags & 0x01:
         return body[: n_chars * 2].decode("utf-16-le", "replace")
     return body[:n_chars].decode("latin-1")
+
+
+def _coord(row: int, col: int) -> tuple[int, int]:
+    """Refuse a cell coordinate outside the BIFF8 grid rather than densifying it later."""
+    if col >= _MAX_COLS:
+        raise XlsError(
+            f"cell column {col} is outside the BIFF8 grid (max {_MAX_COLS - 1}) -- misread record"
+        )
+    return row, col
 
 
 def _records(stream: bytes) -> list[tuple[int, int, bytes]]:
@@ -397,6 +455,18 @@ def _parse_biff(stream: bytes) -> list[Sheet]:
             "a 'Book' stream from Excel 5/95 needs a different record layout"
         )
 
+    # ENCRYPTION IS INVISIBLE FROM THE PAYLOADS. BIFF8 RC4 leaves every record HEADER in plaintext
+    # and encrypts only the bodies, so the record walk above succeeds perfectly and each payload
+    # decodes into a number that is pure ciphertext -- measured on a scrambled fixture, the reader
+    # returned {(23130, 23130): 1.779e+127} with the sheet name intact and refused nothing. This
+    # includes the write-protected files Excel opens transparently with the standard password, so
+    # it is not an exotic input. Every mainstream BIFF reader refuses here, and so does this one.
+    if any(opcode == _FILEPASS for _, opcode, _ in records):
+        raise XlsError(
+            "workbook is encrypted (FILEPASS record) -- BIFF8 leaves record headers in plaintext, "
+            "so decoding would return ciphertext as plausible numbers rather than failing"
+        )
+
     # Pass 1: sheet directory and the shared-string table, both of which live in the globals
     # substream and must be complete before any cell record can be interpreted.
     boundsheets: list[tuple[int, str]] = []
@@ -408,6 +478,8 @@ def _parse_biff(stream: bytes) -> list[Sheet]:
             boundsheets.append((_u32(payload, 0), _short_string(payload, 6)))
             collecting = False
         elif opcode == _SST:
+            if len(payload) < 8:
+                raise XlsError("SST record is too short to carry its own header")
             sst_chunks = [payload[8:]]
             collecting = True
         elif opcode == _CONTINUE and collecting:
@@ -422,16 +494,26 @@ def _parse_biff(stream: bytes) -> list[Sheet]:
 
     if not boundsheets:
         raise XlsError("workbook declares no sheets (no BOUNDSHEET record)")
-    boundsheets.sort()
-    starts = [off for off, _ in boundsheets]
+    # TWO DIFFERENT ORDERS, AND CONFLATING THEM SILENTLY RENUMBERS THE TABS. Excel's tab order is
+    # BOUNDSHEET DECLARATION order; the order the substreams happen to be laid out in the stream is
+    # not required to match it. `sheet_of` genuinely needs offsets ascending to attribute a record,
+    # but sorting the list that is also RETURNED means `--sheet 0` hands back whichever sheet was
+    # written first rather than the one Excel shows first. Names travel with their grids, so
+    # selection BY NAME was always safe and only index selection was wrong -- which is the quiet
+    # kind: a caller asking for sheet 0 gets a real sheet full of real numbers, just not that one.
+    by_offset = sorted(range(len(boundsheets)), key=lambda i: boundsheets[i][0])
+    starts = [boundsheets[i][0] for i in by_offset]
     cells: list[dict[tuple[int, int], object]] = [{} for _ in boundsheets]
 
     def sheet_of(offset: int) -> int:
-        """Attribute a record to a sheet by absolute offset -- never by record order (bug a)."""
+        """Attribute a record to a sheet by absolute offset -- never by record order (bug a).
+
+        Returns an index into ``boundsheets`` (declaration order), not into the offset-sorted scan.
+        """
         index = -1
-        for i, start in enumerate(starts):
+        for rank, start in enumerate(starts):
             if offset >= start:
-                index = i
+                index = by_offset[rank]
             else:
                 break
         return index
@@ -444,32 +526,38 @@ def _parse_biff(stream: bytes) -> list[Sheet]:
             continue
         grid = cells[index]
         if opcode == _NUMBER and len(payload) >= 14:
-            grid[_u16(payload, 0), _u16(payload, 2)] = float(
+            grid[_coord(_u16(payload, 0), _u16(payload, 2))] = float(
                 struct.unpack_from("<d", payload, 6)[0]
             )
         elif opcode == _RK and len(payload) >= 10:
-            grid[_u16(payload, 0), _u16(payload, 2)] = _rk_to_number(_u32(payload, 6))
+            grid[_coord(_u16(payload, 0), _u16(payload, 2))] = _rk_to_number(_u32(payload, 6))
         elif opcode == _MULRK and len(payload) >= 6:
             row = _u16(payload, 0)
             first = _u16(payload, 2)
             for n in range((len(payload) - 6) // 6):
-                grid[row, first + n] = _rk_to_number(_u32(payload, 4 + 6 * n + 2))
+                grid[_coord(row, first + n)] = _rk_to_number(_u32(payload, 4 + 6 * n + 2))
         elif opcode == _LABELSST and len(payload) >= 10:
             index_sst = _u32(payload, 6)
-            grid[_u16(payload, 0), _u16(payload, 2)] = (
-                sst[index_sst] if index_sst < len(sst) else None
-            )
-        elif opcode == _LABEL and len(payload) >= 8:
-            grid[_u16(payload, 0), _u16(payload, 2)] = _unicode_string(payload, 6)
+            if index_sst >= len(sst):
+                # Storing None here would hand back a grid with a hole in it, from a module whose
+                # contract is that it never returns a partial workbook. An index past the table is
+                # a misread SST, not a blank cell.
+                raise XlsError(
+                    f"LABELSST references string {index_sst} of {len(sst)} -- shared-string table "
+                    f"is short or was misread"
+                )
+            grid[_coord(_u16(payload, 0), _u16(payload, 2))] = sst[index_sst]
+        elif opcode == _LABEL and len(payload) >= 9:
+            grid[_coord(_u16(payload, 0), _u16(payload, 2))] = _unicode_string(payload, 6)
         elif opcode == _FORMULA and len(payload) >= 20:
             # Only the CACHED result is read. 0xFFFF in the high word marks a non-numeric result
             # (string/bool/error) whose value lives in a following record -- refused, not guessed.
             if _u16(payload, 12) != 0xFFFF:
-                grid[_u16(payload, 0), _u16(payload, 2)] = float(
+                grid[_coord(_u16(payload, 0), _u16(payload, 2))] = float(
                     struct.unpack_from("<d", payload, 6)[0]
                 )
         elif opcode == _BOOLERR and len(payload) >= 8 and payload[7] == 0:
-            grid[_u16(payload, 0), _u16(payload, 2)] = bool(payload[6])
+            grid[_coord(_u16(payload, 0), _u16(payload, 2))] = bool(payload[6])
 
     paired = zip(boundsheets, cells, strict=True)
     return [Sheet(name=name, cells=grid) for (_, name), grid in paired]

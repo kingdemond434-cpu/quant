@@ -33,6 +33,7 @@ _BOUNDSHEET: Final = 0x0085
 _SST: Final = 0x00FC
 _CONTINUE: Final = 0x003C
 _LABELSST: Final = 0x00FD
+_LABEL: Final = 0x0204
 _NUMBER: Final = 0x0203
 _RK: Final = 0x027E
 _MULRK: Final = 0x00BD
@@ -111,15 +112,38 @@ def cell_sst(row: int, col: int, index: int) -> bytes:
     return _rec(_LABELSST, struct.pack("<HHHI", row, col, 0, index))
 
 
-def encode_sst(strings: list[str], max_payload: int = 8216) -> list[bytes]:
-    """Encode the shared-string table, splitting into CONTINUE chunks at ``max_payload``.
+def cell_label(row: int, col: int, text: str, *, rich: bool = False, ext: bool = False) -> bytes:
+    """An inline LABEL record -- the decoder path the SST cannot reach.
 
-    THE RULE THIS EXISTS TO REPRODUCE: a string may be cut at any character boundary, and the
-    continuation then restarts with a FRESH 1-byte option flag before the remaining characters.
-    Drop that byte and the reader's character count still works out -- which is exactly why the
-    corruption is silent. Pass a small ``max_payload`` to force splits in a tiny fixture.
+    ``rich`` and ``ext`` set fRichSt/fExtSt, which insert ``cRun`` (2 B) and ``cbExtRst`` (4 B)
+    BETWEEN the flag byte and the characters. A reader that jumps straight to the text reads those
+    headers as characters and returns a shortened, binary-prefixed string with no error. Excel
+    itself prefers LABELSST, so bare LABELs come from third-party writers -- the ones that set
+    these bits.
+    """
+    wide = any(ord(ch) > 0xFF for ch in text)
+    flags = (0x01 if wide else 0x00) | (0x08 if rich else 0x00) | (0x04 if ext else 0x00)
+    body = struct.pack("<HB", len(text), flags)
+    if rich:
+        body += struct.pack("<H", 0)          # cRun: zero runs, but the field is still present
+    if ext:
+        body += struct.pack("<I", 0)          # cbExtRst
+    body += text.encode("utf-16-le" if wide else "latin-1")
+    return _rec(_LABEL, struct.pack("<HHH", row, col, 0) + body)
+
+
+def encode_sst_detailed(strings: list[str], max_payload: int = 8216) -> tuple[list[bytes], int]:
+    """Encode the shared-string table, and report how many splits landed MID-STRING.
+
+    THE COUNT IS THE POINT, NOT DECORATION. A table can span several CONTINUE records while every
+    boundary falls neatly BETWEEN strings, and such a fixture exercises none of the repeated-flag
+    logic the reader exists to get right -- ``len(chunks) > 1`` is satisfied and the control passes
+    while testing nothing. Measured on this fixture: cap 40 -> 4 mid-string splits, cap 64 -> 1,
+    cap 97 -> 0 despite producing multiple chunks. Only a caller that can SEE the difference can
+    assert on it (L1.57).
     """
     chunks: list[bytearray] = [bytearray()]
+    mid_string_splits = 0
 
     def room() -> int:
         return max_payload - len(chunks[-1])
@@ -138,11 +162,23 @@ def encode_sst(strings: list[str], max_payload: int = 8216) -> list[bytes]:
             if available <= 0:
                 chunks.append(bytearray())
                 chunks[-1] += bytes([flag])  # the repeated flag byte, mid-string
+                mid_string_splits += 1
                 continue
             take = min(len(text) - written, available)
             chunks[-1] += data[written * width : (written + take) * width]
             written += take
-    return [bytes(chunk) for chunk in chunks]
+    return [bytes(chunk) for chunk in chunks], mid_string_splits
+
+
+def encode_sst(strings: list[str], max_payload: int = 8216) -> list[bytes]:
+    """Encode the shared-string table, splitting into CONTINUE chunks at ``max_payload``.
+
+    THE RULE THIS EXISTS TO REPRODUCE: a string may be cut at any character boundary, and the
+    continuation then restarts with a FRESH 1-byte option flag before the remaining characters.
+    Drop that byte and the reader's character count still works out -- which is exactly why the
+    corruption is silent. Pass a small ``max_payload`` to force splits in a tiny fixture.
+    """
+    return encode_sst_detailed(strings, max_payload)[0]
 
 
 def build_workbook(
@@ -150,8 +186,15 @@ def build_workbook(
     strings: list[str] | None = None,
     *,
     sst_max_payload: int = 8216,
+    layout: list[int] | None = None,
 ) -> bytes:
-    """Assemble a BIFF8 ``Workbook`` stream from per-sheet cell records."""
+    """Assemble a BIFF8 ``Workbook`` stream from per-sheet cell records.
+
+    ``layout`` writes the substreams in a DIFFERENT order from the BOUNDSHEET declarations, which
+    is legal and which Excel does. Tab order is declaration order; stream order need not match. A
+    fixture that always writes them in the same order cannot tell a reader that sorts by offset
+    from one that preserves tab order -- both return the same list.
+    """
     strings = strings or []
     globals_head = _bof(0x0005)
     sst_records = b""
@@ -173,16 +216,18 @@ def build_workbook(
             )
         return out + sst_records + _rec(_EOF, b"")
 
+    order = list(range(len(sheets))) if layout is None else layout
+    if sorted(order) != list(range(len(sheets))):
+        raise ValueError(f"layout {order} is not a permutation of {len(sheets)} sheets")
     placeholder = globals_block([0] * len(sheets))
-    offsets: list[int] = []
+    offsets = [0] * len(sheets)
     cursor = len(placeholder)
-    bodies: list[bytes] = []
-    for _, records in sheets:
-        offsets.append(cursor)
-        body = _bof(0x0010) + records + _rec(_EOF, b"")
-        bodies.append(body)
-        cursor += len(body)
-    return globals_block(offsets) + b"".join(bodies)
+    bodies: dict[int, bytes] = {}
+    for index in order:
+        offsets[index] = cursor
+        bodies[index] = _bof(0x0010) + sheets[index][1] + _rec(_EOF, b"")
+        cursor += len(bodies[index])
+    return globals_block(offsets) + b"".join(bodies[i] for i in order)
 
 
 def build_ole2(streams: dict[str, bytes]) -> bytes:
@@ -309,13 +354,16 @@ def build_xls(
     *,
     sst_max_payload: int = 8216,
     pad_to: int = 0,
+    layout: list[int] | None = None,
 ) -> bytes:
     """One-call fixture: sheets plus shared strings out to a complete ``.xls`` file.
 
     ``pad_to`` inflates the workbook past :data:`MINI_CUTOFF` so the ordinary-FAT path is exercised
     as well as the miniFAT one; both are real and a reader can implement exactly one of them.
     """
-    workbook = build_workbook(sheets, strings, sst_max_payload=sst_max_payload)
+    workbook = build_workbook(
+        sheets, strings, sst_max_payload=sst_max_payload, layout=layout
+    )
     if pad_to and len(workbook) < pad_to:
         workbook += filler(pad_to - len(workbook))
     return build_ole2({"Workbook": workbook})
