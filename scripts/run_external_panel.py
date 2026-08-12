@@ -27,6 +27,8 @@ import contextlib
 import json
 import random
 import ssl
+import time as _time
+import urllib.error
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
@@ -204,8 +206,8 @@ def singletons(responses: list[dict[str, str]],
     return out
 
 
-def _ask(base_url: str, key: str, model: str, messages: list[dict[str, str]],
-         timeout: float = 360.0) -> str:                # 6min: high-effort reasoning runs long
+def _ask_once(base_url: str, key: str, model: str, messages: list[dict[str, str]],
+              timeout: float = 360.0) -> str:           # 6min: high-effort reasoning runs long
     # (a 180s cap cut deepseek mid-stream with IncompleteRead on the 2026-07-12 max-thinking run)
     body = json.dumps({
         # MAX THINKING (2026-07-12): reasoning.effort=high forces every reasoning-capable model
@@ -224,6 +226,36 @@ def _ask(base_url: str, key: str, model: str, messages: list[dict[str, str]],
         out = json.loads(r.read())
     msg = out["choices"][0]["message"]
     return str(msg.get("content") or msg.get("reasoning") or "")
+
+
+# FREE-POOL RETRY (coverage-risk-stale root cause, measured 2026-08-12): a :free seat's 400/429
+# is TRANSIENT pool saturation, not a dead model -- the identical seat flipped 400 at 03:36 and
+# answered 'ready' at 07:30, and quorum failed 1/4 on every overnight run since 08-04 while the
+# 20:41 run (2 seats up) passed and stamped. Paid seats are NOT retried: a genuine bad request
+# would re-bill the ~40k-char context for nothing, and their errors were never the flappy class.
+_FREE_RETRIES = 2
+_FREE_BACKOFF_S = 75.0
+_FREE_TRANSIENT = (400, 408, 429, 500, 502, 503, 524)
+
+
+def _ask(base_url: str, key: str, model: str, messages: list[dict[str, str]],
+         timeout: float = 360.0) -> str:
+    attempts = 1 + (_FREE_RETRIES if model.endswith(":free") else 0)
+    for i in range(attempts):
+        if i:
+            _time.sleep(_FREE_BACKOFF_S * i)
+        try:
+            return _ask_once(base_url, key, model, messages, timeout)
+        except urllib.error.HTTPError as e:
+            if e.code not in _FREE_TRANSIENT or i >= attempts - 1:
+                raise
+        except (KeyError, TypeError):
+            # 200 whose payload has no usable choices: absent key -> KeyError('choices');
+            # `"choices": null` -> TypeError on the [0]. Both mean the upstream failed inside
+            # a success envelope -- the same transient class as the 400s.
+            if i >= attempts - 1:
+                raise
+    raise RuntimeError("unreachable: retry loop exits by return or raise")
 
 
 def _ask_pushed(base_url: str, key: str, model: str, system: str, user: str) -> tuple[str, str]:
