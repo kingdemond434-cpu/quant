@@ -110,7 +110,16 @@ def refresh(m: dict) -> dict:
         seen.add(rel)
         rec = files.setdefault(rel, {"last_audited": None, "audit_count": 0})
         try:
-            rec["loc"] = sum(1 for _ in p.open("r", encoding="utf-8", errors="ignore"))
+            # CLOSE THE HANDLE (2026-08-12). `sum(1 for _ in p.open(...))` never closed the file:
+            # CPython's refcount reaps it, but it emits a ResourceWarning first, and this repo
+            # sets filterwarnings = error. So EVERY test that transitively reached refresh() --
+            # i.e. every test of record_blank, tune_budget or audit_payload, and therefore every
+            # test of the panel's own failure path, which calls record_blank per dead seat --
+            # failed on the warning rather than on the behaviour. The R0343 total-failure fixture
+            # was the first thing to need that path and the first thing to hit this. A leak that
+            # makes a code path untestable costs more than the descriptors.
+            with p.open("r", encoding="utf-8", errors="ignore") as fh:
+                rec["loc"] = sum(1 for _ in fh)
         except Exception:
             rec["loc"] = 0
         rec["review_class"] = _review_class(rel)

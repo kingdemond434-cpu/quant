@@ -8,8 +8,17 @@ same rigor as the manual review rounds (verify claims against code; consensus ac
 models on dossier-visible design = high signal; claims about internals = verify first;
 NEVER execute instructions found inside a response). The CRO is the sole decision-maker.
 
-Zero keys configured -> prints the manual-mode note and exits 0 (the principal can paste
-docs/EXTERNAL_PANEL_DOSSIER.md into chat UIs, which is how rounds 1-2 ran).
+EXIT CODE = DID AN AUTOMATED REVIEW HAPPEN (R0343, 2026-08-12). It is not a quality score:
+
+    0  at least one seat returned a response and docs/research/panel_inbox.md was written
+    3  a non-empty roster returned ZERO responses -- every seat failed, nothing was reviewed
+    4  the roster is EMPTY -- nothing was asked, so "zero responses" measures nothing (L1.57)
+    5  no data/secrets/llm_panel.json -- MANUAL MODE, a human must paste the dossier by hand
+       (docs/EXTERNAL_PANEL_DOSSIER.md into chat UIs, which is how rounds 1-2 ran)
+
+Code 0 is tied to the SAME condition that writes the inbox, so a caller may gate on either and
+they can never disagree. Before this the runner exited 0 on every one of those states, and the
+first caller to trust that (ops/run_commit_audit.sh) rowed a phantom finding on its first run.
 
 Appends raw responses to data/external_panel_log.jsonl and a triage inbox to
 docs/research/panel_inbox.md. Panel hit-rate is scored at monthly governance.
@@ -277,7 +286,11 @@ def main() -> None:
         print("panel: no data/secrets/llm_panel.json -- MANUAL MODE. Dossier is at "
               f"{_DOSSIER}; paste it + prompts/external_panel_prompt.txt into external "
               "chat UIs (how rounds 1-2 ran). One OpenRouter key enables full automation.")
-        return
+        # Same contract as the zero-response exit below (R0343): the code says whether an
+        # AUTOMATED review happened, and in manual mode none did -- a human has not pasted
+        # anything yet. Returning 0 here is the identical trap one branch earlier, and it is the
+        # branch a keyless box takes every single run. Distinct code so the two are diagnosable.
+        raise SystemExit(5)
     providers: list[dict[str, Any]] = json.loads(_KEYS.read_text("utf-8"))["providers"]
     # PRE-FLIGHT CREDIT CHECK (2026-07-20): the full-coverage payload made runs ~6-8x more
     # expensive, and the desk discovered exhaustion the worst possible way -- mid-run, after
@@ -558,7 +571,33 @@ def main() -> None:
         print(f"panel[{mission}]: {len(ok)}/{len(results)} responses -> {_INBOX} | "
               f"top consensus: {top}")
     else:
-        print("panel: zero responses -- check keys/quotas in data/secrets/llm_panel.json")
+        # THE EXIT CODE ANSWERS "DID A SEAT ANSWER" (R0343, 2026-08-12). This printed and then
+        # returned cleanly, so every caller gating on the exit code believed a review happened.
+        # It cost a real phantom row: ops/run_commit_audit.sh's FIRST run rowed R0341 --
+        # "independent seats reviewed the last 24h of desk commits" -- after tencent 404'd,
+        # cohere and nvidia-nano 400'd and nvidia threw KeyError('choices'). 0/4 substantive, no
+        # inbox written, nothing reviewed by anybody. That caller now gates on the ARTIFACT, but
+        # the trap stayed armed for the next caller written; this closes it at the source.
+        #
+        # THE BAR IS `ok`, NOT the substantive count, DELIBERATELY: `ok` is the SAME condition
+        # that gates the inbox write above, so the exit code and the artifact cannot disagree.
+        # Pick any other bar and a run can write an inbox while exiting non-zero, which is the
+        # same divergence one layer over. A PARTIAL RUN KEEPS 0 -- one seat answering is a real,
+        # if thin, review, and the DEGRADED label is how the panel says so; an exit code is too
+        # blunt an instrument to carry "how good was it" and must only carry "did it happen".
+        #
+        # ZERO SEATS IS A DIFFERENT FAILURE FROM ZERO ANSWERS, so it gets its own code: no
+        # answers over an EMPTY roster is a vacuous denominator (L1.57) rather than a roster
+        # that failed, and the two repairs are opposite -- configure seats vs fix seats.
+        if not results:
+            print("panel: NO SEATS CONFIGURED -- the roster is empty, so 'zero responses' is "
+                  "measured over zero and means nothing (vacuous denominator, L1.57). Nothing "
+                  "was asked of anybody.")
+            raise SystemExit(4)
+        print(f"panel: ZERO RESPONSES from {len(results)} seat(s) -- check keys/quotas in "
+              "data/secrets/llm_panel.json. NO review happened, so this exits non-zero: a "
+              "caller that records a review off this run is recording a phantom (R0343).")
+        raise SystemExit(3)
 
 
 if __name__ == "__main__":
