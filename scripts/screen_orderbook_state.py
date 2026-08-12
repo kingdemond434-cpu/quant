@@ -197,6 +197,7 @@ from libs.research.moat_microstructure import read_partition  # noqa: E402
 from libs.research.orderbook_state import (  # noqa: E402
     CONSTRUCTIONS,
     FORMS,
+    STATE_NAMES,
     Alignment,
     bar_close_states,
     boundary_prices,
@@ -419,16 +420,100 @@ def trade_arrays(rows: list[dict[str, Any]]) -> tuple[np.ndarray, np.ndarray]:
             np.array([x[1] for x in tr], dtype="float64"))
 
 
+#: What one partition's PARSED TAPE costs in memory, measured on this box: a 338KB hourly
+#: fut/BTCUSDT partition is 17,426 rows = 23.0MB of live Python objects. The derived state below
+#: is 56 bytes per snapshot and 16 per print -- about 1.5% of it. That ratio is the whole fix.
+def cell_inputs(paths: list[Path]) -> tuple[np.ndarray, dict[str, np.ndarray],
+                                            np.ndarray, np.ndarray, int]:
+    """Derive one cell's state and trade arrays WITHOUT ever holding its tape (R0378).
+
+    THE DEFECT THIS REPLACES. `main` did `recs.extend(read_partition(f))` over every partition in
+    the cell, which drains a lazy generator into one flat list of raw dicts: ~23MB per hourly
+    partition, so a 24-partition day-cell held ~550MB before a single number was computed. On this
+    3.8GB box (~3.2GB resident in desk processes, no swap) the kernel OOM-killed the run at
+    --files 48/96/160/240 in four consecutive probes, and peak RSS was FLAT in --files -- the cost
+    was the load path, not the budget. The organ was scheduled with `choom -n 1000` so it
+    self-nominates as the OOM victim rather than risking the six cashcarry_executor processes,
+    which made the cron line SAFE, not PRODUCTIVE: it screened 2 of 1356 cells and both reported
+    NO-INPUT.
+
+    THE TRANSFORM IS EXACTLY OUTPUT-PRESERVING, and that is provable rather than hoped. Both
+    derivations are per-row maps followed by ONE stable sort on the timestamp:
+      * `snapshot_states` -> `_depth_snaps` ends in `out.sort(key=lambda x: x[0])`
+      * `trade_arrays` ends in `tr.sort(key=lambda x: x[0])`
+    A stable sort of a concatenation of stably-sorted sublists, taken in the same order, equals a
+    stable sort of the whole -- so deriving per partition and stable-sorting the concatenation is
+    bit-identical to parsing everything and sorting once. `test_streaming_matches_monolithic`
+    pins that against the old path on real tape rather than trusting the argument.
+
+    WHY NOT `yield from` OVER THE PARTITIONS. That is `run_moat_campaign._stream`, and it is lazy
+    at the wrong layer: the consumer still buckets every record, so the peak is unchanged. The
+    reduction has to happen INSIDE the per-partition scope, which is what this function does and
+    what `screen_moat_microstructure.py:152-165` already did for the neighbouring screen.
+    """
+    ms_parts: list[np.ndarray] = []
+    state_parts: list[dict[str, np.ndarray]] = []
+    tms_parts: list[np.ndarray] = []
+    tpx_parts: list[np.ndarray] = []
+    n_prints = 0
+    for f in paths:
+        # ONE partition resident at a time. `recs` is rebound each iteration, so the previous
+        # partition's dicts are collectable before the next is parsed.
+        recs = list(read_partition(f))
+        ms, states = snapshot_states(recs)
+        if ms.size:
+            ms_parts.append(ms)
+            state_parts.append(states)
+        tr: list[tuple[int, float, float]] = []
+        for r in recs:
+            tr.extend(trades_from(r))
+        n_prints += len(tr)
+        if tr:
+            tms_parts.append(np.array([x[0] for x in tr], dtype="int64"))
+            tpx_parts.append(np.array([x[1] for x in tr], dtype="float64"))
+        del recs, tr
+
+    if ms_parts:
+        snap_ms = np.concatenate(ms_parts)
+        order = np.argsort(snap_ms, kind="stable")
+        snap_ms = snap_ms[order]
+        out_states = {k: np.concatenate([p[k] for p in state_parts])[order]
+                      for k in STATE_NAMES}
+    else:
+        snap_ms = np.zeros(0, dtype="int64")
+        out_states = {k: np.zeros(0) for k in STATE_NAMES}
+
+    # The `< 2` floor is charged on the CELL, exactly as trade_arrays charges it on the cell's
+    # rows -- not per partition, which would silently drop a boundary print.
+    if n_prints < 2:
+        return snap_ms, out_states, np.zeros(0, dtype="int64"), np.zeros(0), n_prints
+    t_ms = np.concatenate(tms_parts)
+    torder = np.argsort(t_ms, kind="stable")
+    return snap_ms, out_states, t_ms[torder], np.concatenate(tpx_parts)[torder], n_prints
+
+
 def screen_cell(label: str, rows: list[dict[str, Any]], *,
                 decision_lag_ms: int) -> list[dict[str, Any]]:
+    """Every pre-registered (construction x form x horizon) cell, from raw rows.
+
+    Retained as the row-taking entry point for tests and any caller holding a parsed partition;
+    `main` goes through `cell_inputs` so the tape is never accumulated.
+    """
+    snap_ms, states = snapshot_states(rows)
+    t_ms, t_px = trade_arrays(rows)
+    return screen_prepared(label, snap_ms, states, t_ms, t_px,
+                           decision_lag_ms=decision_lag_ms)
+
+
+def screen_prepared(label: str, snap_ms: np.ndarray, states: dict[str, np.ndarray],
+                    t_ms: np.ndarray, t_px: np.ndarray, *,
+                    decision_lag_ms: int) -> list[dict[str, Any]]:
     """Every pre-registered (construction x form x horizon) cell for one (venue, symbol, day).
 
     EVERY cell produces a row, including the ones that could not be screened. A construction that
     silently vanishes from the record is indistinguishable from one that was never tried, and the
     difference is exactly what clause 3 exists to preserve.
     """
-    snap_ms, states = snapshot_states(rows)
-    t_ms, t_px = trade_arrays(rows)
     out: list[dict[str, Any]] = []
     if snap_ms.size == 0 or t_ms.size == 0:
         return [{"cell": label, "verdict": "NO-INPUT", "snapshots": int(snap_ms.size),
@@ -734,11 +819,11 @@ def main(argv: list[str] | None = None) -> int:
         take = cfiles[:budget]
         budget -= len(take)
         used += 1
-        recs: list[dict[str, Any]] = []
-        for f in take:
-            recs.extend(read_partition(f))
-        rows.extend(screen_cell(f"{key[0]}:{key[1]}@{key[2]}", recs,
-                                decision_lag_ms=int(a.decision_lag_ms)))
+        # R0378: derive per partition and keep only the derived arrays. The old path built one
+        # flat list of every raw dict in the cell and OOM-killed this box at every budget tried.
+        snap_ms, states, t_ms, t_px, _n = cell_inputs(take)
+        rows.extend(screen_prepared(f"{key[0]}:{key[1]}@{key[2]}", snap_ms, states, t_ms, t_px,
+                                    decision_lag_ms=int(a.decision_lag_ms)))
 
     report = build_report(rows, alignment=alignment,
                           files_read=int(a.files) - budget, files_on_disk=len(files),

@@ -258,3 +258,48 @@ def test_THE_BUCKET_WIDTH_IS_DERIVED_FROM_THE_FREQUENCY() -> None:
     """A hardcoded 900_000 beside a configurable `freq` is a bug waiting for whoever changes one."""
     assert B._bucket_ms("15min") == 900_000
     assert B._bucket_ms("1h") == 3_600_000
+
+
+def test_bybit_price_time_shape_is_read_R0378() -> None:
+    """THE SHAPE THE RECORDER ACTUALLY WROTE, which this reader dropped 100% of.
+
+    The parser accepted only Bybit's compressed WS labels (p/T/v). Measured 2026-08-12 over six
+    sampled partitions: 221,000 nested entries, every one of them price/time/size, and ZERO
+    prints parsed -- the entire bybit trade tape (10,814 partitions, 27% of data/moat) was
+    invisible to every consumer of this function. It failed silently because an unparseable entry
+    is skipped rather than counted, so `screen_orderbook_state` reported NO-INPUT on every bybit
+    cell and looked like a data-poor venue rather than a parse bug.
+    """
+    row = {"t": T0 + 6_461, "k": "trades", "c": "recv",
+           "v": [{"execId": "e7b", "symbol": "QTUMUSDT", "price": "0.6429", "size": "209.4",
+                  "side": "Sell", "time": str(T0), "isBlockTrade": False}]}
+    assert B.trades_from(row) == [(T0, 0.6429, 209.4)]
+
+
+def test_bybit_print_uses_the_VENUE_stamp_not_our_receipt_R0378() -> None:
+    """One `trades` row is a BATCH: up to ~200 prints sharing a single receipt stamp.
+
+    Measured recv-minus-venue on the real tape: depth is a tight +219ms median, but the trade
+    batch stamp spans -2,443ms to +88,858ms (p10/p90) because the batch covers a long window.
+    Stamping every print in a batch with the batch's receipt would misplace prints by up to 89
+    SECONDS on a 60-second bar. The venue stamp is per-print and is the only correct one.
+    """
+    row = {"t": T0 + 88_858, "k": "trades",
+           "v": [{"price": "1.0", "size": "1.0", "time": str(T0)},
+                 {"price": "2.0", "size": "1.0", "time": str(T0 + 30_000)}]}
+    assert [ms for ms, _p, _q in B.trades_from(row)] == [T0, T0 + 30_000]
+
+
+def test_compressed_bybit_labels_still_win_when_present_R0378() -> None:
+    """Widening the reader must not un-read the shape it already read."""
+    row = {"t": T0 + 5, "k": "trades",
+           "v": [{"T": T0, "p": "100.5", "v": "0.3", "price": "999.0", "size": "9.9",
+                  "time": str(T0 + 77)}]}
+    assert B.trades_from(row) == [(T0, 100.5, 0.3)]
+
+
+def test_a_priceless_bybit_entry_is_still_dropped_R0378() -> None:
+    """The widening must not turn a missing price into a zero-price print."""
+    assert B.trades_from({"t": T0, "k": "trades", "v": [{"size": "1.0", "time": str(T0)}]}) == []
+    assert B.trades_from({"t": T0, "k": "trades",
+                          "v": [{"price": "0", "size": "1.0", "time": str(T0)}]}) == []
