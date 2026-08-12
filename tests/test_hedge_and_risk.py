@@ -69,6 +69,23 @@ def test_alloc_zero_funding_is_equal_weight():
     assert abs(alloc["A"] - alloc["B"]) < 1e-6
 
 
+# ---------------- funding notional: MARK basis, not entry cost (R0308) ----------------
+def test_funding_notional_is_mark_based_not_entry_cost():
+    from scripts.run_cashcarry_executor import _funding_notional
+    # Price doubled over the hold: entry-basis books funding on 100, the venue charged it on
+    # the mark path. The trapezoid (150) removes the first-order drift bias.
+    p = {"perp_qty": -1.0, "perp_entry": 100.0, "spot_cost": 100.0}
+    assert abs(_funding_notional(p, fpx=200.0) - 150.0) < 1e-9
+    # No drift -> identical to entry notional: the fix changes nothing when nothing moved.
+    assert abs(_funding_notional(p, fpx=100.0) - 100.0) < 1e-9
+
+
+def test_funding_notional_falls_back_to_spot_cost_for_legacy_positions():
+    from scripts.run_cashcarry_executor import _funding_notional
+    p = {"perp_qty": -2.0, "spot_cost": 50.0}       # legacy: no perp_entry recorded
+    assert abs(_funding_notional(p, fpx=60.0) - 2.0 * 55.0) < 1e-9
+
+
 # ---------------- dynamic leverage: never over-lever an unproven edge ----------------
 def test_leverage_floors_on_no_data():
     d = optimize_sleeve("x", np.array([]), fwd_sharpe=0.0, fwd_days=0.0)

@@ -866,6 +866,20 @@ def _net_bps(sym: str, funding: float, min_hold_h: float = _MIN_HOLD_H) -> float
     return funding * 1e4 * (min_hold_h / 8.0) - _rt_bps(sym)
 
 
+def _funding_notional(p: dict[str, Any], fpx: float) -> float:
+    """Average PERP mark notional over a hold -- the base funding is actually charged on (R0308).
+
+    Funding is paid on the perp's MARK notional at each settlement stamp, never on entry cost
+    basis. Entry basis is the one funding-accounting error of the three stacked at the close
+    site that is BIASED: it grows with price drift instead of averaging out. With no mark path
+    stored per position, the trapezoid of entry and exit perp marks is drift-unbiased to first
+    order. Falls back to spot_cost for legacy positions without perp_entry (same fallback the
+    liquidation-distance path uses).
+    """
+    entry = float(p.get("perp_entry") or p["spot_cost"])
+    return abs(float(p["perp_qty"])) * (entry + float(fpx)) / 2.0
+
+
 def _ranked() -> list[tuple[str, float]]:
     """All positive-funding USDT perps tradeable on BOTH testnets, ranked high->low funding."""
     f = current_funding()
@@ -1209,9 +1223,16 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
             # TRUTH at the end of every rebalance (_reconcile_spot_realized) -- a stale/crashed
             # executor or duplicate close-log can then never let it silently drift and fabricate a
             # dashboard loss (the 2026-07-10 phantom). price_pnl (logged below) is the basis input.
-            est_funding = float(p.get("funding", 0.0)) * notl * (held / 8.0)
+            # R0308: funding is charged on the perp's MARK notional (see _funding_notional),
+            # never on entry cost basis. `notional` (entry basis) stays: it measures capital
+            # deployed, not the base funding is paid on. (held/8.0 stays too: the
+            # settlements-clock switch is R0304/L1.47, staged behind the L1.38 window with the
+            # venue truth it validates against -- see libs/research/funding_clock.py.)
+            fund_notl = _funding_notional(p, fpx)
+            est_funding = float(p.get("funding", 0.0)) * fund_notl * (held / 8.0)
             _log_trade({"event": "close", "symbol": sym, "qty": p["spot_qty"],
                         "notional": round(notl, 2), "funding_rate": p.get("funding"),
+                        "funding_notional": round(fund_notl, 2),
                         "opened": p.get("opened"), "closed": datetime.now(tz=UTC).isoformat(),
                         "held_hours": held, "price_pnl": round(price_pnl, 2),
                         "est_funding": round(est_funding, 2),
