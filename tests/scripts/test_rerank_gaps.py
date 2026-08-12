@@ -130,6 +130,101 @@ def test_verdicts_are_ordered_worst_first() -> None:
     assert [r["verdict"] for r in rows][:2] == ["DEADLINE-PASSED", "PARKED"]
 
 
+# ------------------------------------------------ re-deferral: BOTH facts, never one (R0365)
+
+
+def test_a_re_deferred_row_reports_the_new_promise_AND_the_miss() -> None:
+    """`min()` over every date let the FIRST miss dominate forever.
+
+    A row re-deferred with a new dated reason has taken one of the register's three legal exits,
+    and printing DEADLINE-PASSED anyway left exactly one way to clear it: delete the old date,
+    which erases the miss. That is the denominator trick §34 forbids. Both facts, or neither is
+    trustworthy.
+    """
+    text = HEADER + _row(1, "slipped", "DEADLINE 2026-07-01, re-deferred to DEADLINE 2026-09-01")
+    rows = R.classify(text, date(2026, 8, 2))
+    assert rows[0]["verdict"] == "RE-DEFERRED"
+    assert rows[0]["deadline"] == "2026-09-01"          # the promise that is actually live
+    assert rows[0]["missed_deadlines"] == 1             # and the one that was broken
+    assert rows[0]["missed"] == ["2026-07-01"]
+
+
+def test_the_nearest_future_deadline_wins_not_the_furthest() -> None:
+    """The anti-`max()` guard, and the reason the obvious fix was the wrong one.
+
+    Live row #64 carries 2026-08-15 (implement) and 2026-11-15 (fold it if nothing survives).
+    Ranking on the latest date would hide a near milestone behind a far backstop -- a LOOSENING
+    dressed as a correction, which is the failure this desk pays for most often.
+    """
+    text = HEADER + _row(1, "two", "IMPLEMENT BY 2026-08-15 ... fold by 2026-11-15")
+    rows = R.classify(text, date(2026, 8, 2))
+    assert rows[0]["deadline"] == "2026-08-15"
+    assert rows[0]["verdict"] == "ON-CLOCK"
+    assert rows[0]["missed_deadlines"] == 0
+
+
+def test_a_row_with_only_passed_deadlines_is_unchanged() -> None:
+    """The half that must NOT move. Nothing here may let an overdue row off."""
+    text = HEADER + _row(1, "late", "DEADLINE 2026-06-01 and DEADLINE 2026-07-01")
+    rows = R.classify(text, date(2026, 8, 2))
+    assert rows[0]["verdict"] == "DEADLINE-PASSED"
+    assert rows[0]["deadline"] == "2026-06-01"          # the WORST miss, as before
+    assert rows[0]["missed_deadlines"] == 2
+    assert "2 deadlines missed" in rows[0]["why"]
+
+
+def test_a_re_deferred_row_does_not_sink_below_the_parked_ones() -> None:
+    """The miss count must not be bought with the urgency it is evidence of."""
+    text = (HEADER
+            + _row(1, "parked", "no date at all")
+            + _row(2, "slipped", "DEADLINE 2026-07-01 re-deferred DEADLINE 2026-09-01"))
+    rows = R.classify(text, date(2026, 8, 2))
+    assert [r["id"] for r in rows] == [2, 1]
+
+
+def test_one_miss_is_the_register_working_and_two_is_a_treadmill() -> None:
+    """A count, not a duration: L1.48 forbids gating on elapsed calendar time, and how many
+    promises a row has broken is evidence in a way that how long it has been open is not."""
+    once = R.classify(HEADER + _row(1, "a", "DEADLINE 2026-07-01 then DEADLINE 2026-09-01"),
+                      date(2026, 8, 2))[0]
+    twice = R.classify(HEADER + _row(1, "b", "DEADLINE 2026-06-01 DEADLINE 2026-07-01 "
+                                             "now DEADLINE 2026-09-01"), date(2026, 8, 2))[0]
+    assert once["verdict"] == twice["verdict"] == "RE-DEFERRED"
+    assert not R.needs_decision(once), "re-committing once is the exit working, not a defect"
+    assert R.needs_decision(twice), "a second miss is a treadmill and needs a decision"
+    assert R.classify(HEADER + _row(1, "c", "DEADLINE 2026-07-01 DEADLINE 2026-06-15 "
+                                            "DEADLINE 2026-09-01"),
+                      date(2026, 8, 2))[0]["missed_deadlines"] == 2
+
+
+# ------------------------------------------------ an id is a label; the text belongs to the row
+
+
+def test_duplicate_ids_do_not_swap_their_deadlines() -> None:
+    """MEASURED on the live register 2026-08-12: a branch merge unioned two lineages without
+    renumbering, so 17 ids named two findings each. The old lookup scanned for `| <id> |` and took
+    the FIRST hit, so six open rows were ranked on ANOTHER row's deadline -- including one that
+    read TRACKED with no deadline while its own plan promised today's date.
+    """
+    text = (HEADER
+            + _row(7, "first", "DEADLINE 2026-12-01", status="closed")
+            + _row(7, "second", "DEADLINE 2026-01-01"))
+    rows = R.classify(text, date(2026, 8, 2))
+    assert [r["title"] for r in rows] == ["second"]
+    assert rows[0]["deadline"] == "2026-01-01", "the row was read through the other row's text"
+    assert rows[0]["verdict"] == "DEADLINE-PASSED"
+
+
+def test_a_shared_id_is_reported_because_no_citation_of_it_resolves() -> None:
+    """This organ cannot renumber the register, so the one thing it owes is to say so. Silence
+    leaves the register looking addressable while two readers of "#100" reach different rows."""
+    text = HEADER + _row(9, "a", "DEADLINE 2026-12-01") + _row(9, "b", "DEADLINE 2026-12-02")
+    rows = R.classify(text, date(2026, 8, 2))
+    assert all(r["id_ambiguous"] for r in rows)
+    assert R.classify(HEADER + _row(9, "solo", "DEADLINE 2026-12-01"),
+                      date(2026, 8, 2))[0]["id_ambiguous"] is False
+
+
 # ------------------------------------------------------------------ against the LIVE register
 
 

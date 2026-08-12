@@ -68,13 +68,23 @@ _STAMP = "_Mechanical gap-pass"
 #: ordering.
 STARVATION_DAYS = 21.0
 
+#: Missed deadlines past which a re-deferred row needs a DECISION rather than another date. One
+#: miss followed by a dated re-commitment is the register working; a second is a treadmill, and
+#: the count is the only thing that can tell them apart. A COUNT, deliberately, not a duration --
+#: L1.48 forbids gating on elapsed calendar time, and how many promises a row has broken is
+#: evidence in a way that how long it has been open is not.
+TREADMILL_MISSES = 2
 
-def _row_text(text: str, row_id: int) -> str:
-    """The full table line for a row, so the plan column can be searched for a deadline."""
-    for line in text.splitlines():
-        if line.startswith(f"| {row_id} |"):
-            return line
-    return ""
+#: Verdicts that mean a human has to decide something. RE-DEFERRED is here only past the
+#: treadmill count: a row that re-committed once has taken a legal exit and listing it would
+#: punish the honest act this change exists to make possible.
+_NEEDS_DECISION = ("DEADLINE-PASSED", "PARKED", "UNOWNED", "STARVED")
+
+
+def needs_decision(r: dict) -> bool:
+    return (r["verdict"] in _NEEDS_DECISION
+            or (r["verdict"] == "RE-DEFERRED"
+                and r.get("missed_deadlines", 0) >= TREADMILL_MISSES))
 
 
 def _added_date(added: str) -> date | None:
@@ -99,21 +109,46 @@ def classify(text: str, today: date) -> list[dict]:
     importance against another's -- that is the judgment half, and pretending otherwise is how a
     mechanical pass quietly becomes a bad re-rank.
     """
+    parsed = parse_register(text)
+    # An id that names two rows breaks the register's ADDRESSING, which is the one thing every
+    # other organ relies on: the desk-state hook prints "#100", the doctrine says "row 91 is the
+    # current top item", and a citation that resolves to two different findings is not a citation.
+    seen: dict[int, int] = {}
+    for r in parsed:
+        seen[r.row_id] = seen.get(r.row_id, 0) + 1
+    ambiguous = {k: v for k, v in seen.items() if v > 1}
     rows = []
-    for r in parse_register(text):
+    for r in parsed:
         if not r.is_open:
             continue
-        line = _row_text(text, r.row_id)
-        deadlines = [date.fromisoformat(x) for x in _DEADLINE_RE.findall(line)
-                     if _valid_iso(x)]
-        worst = min(deadlines) if deadlines else None
+        deadlines = sorted({date.fromisoformat(x) for x in _DEADLINE_RE.findall(r.body)
+                            if _valid_iso(x)})
+        # BOTH FACTS, NEVER ONE. `min()` over every date in a row let the FIRST missed deadline
+        # dominate forever, so a row re-deferred with a new dated reason -- one of the register's
+        # three legal exits -- printed DEADLINE-PASSED anyway and could be cleared only by
+        # deleting the old date, which erases the miss (the denominator trick §34 forbids). The
+        # current promise is the NEAREST date still ahead; the misses are carried as a count, so
+        # a row on its fourth re-deferral is LOUDER under this scheme rather than quieter.
+        #
+        # Nearest-future, NOT latest: row #64 carries 2026-08-15 and 2026-11-15, and ranking on
+        # the latest would hide a near milestone behind a far backstop -- a loosening, and the
+        # reason the obvious `max()` is wrong here.
+        missed = [d for d in deadlines if d < today]
+        ahead = [d for d in deadlines if d >= today]
+        worst = ahead[0] if ahead else (missed[0] if missed else None)
         added = _added_date(r.added)
         age = float((today - added).days) if added else -1.0
-        if worst and worst < today:
+        if ahead and missed:
+            verdict, why = "RE-DEFERRED", (
+                f"{len(missed)} deadline(s) missed ({', '.join(d.isoformat() for d in missed)}), "
+                f"now promised {ahead[0].isoformat()}. Re-deferring with a NEW dated reason is a "
+                "legal exit; doing it repeatedly is a treadmill, which is what the count is for.")
+        elif missed and not ahead:
             verdict, why = "DEADLINE-PASSED", (
-                f"promised {worst.isoformat()}, now {today.isoformat()} -- a deferral whose date "
-                "has passed is not deferred, it is parked with extra steps. Implement, re-defer "
-                "with a NEW dated reason, or retire it.")
+                f"promised {missed[0].isoformat()}, now {today.isoformat()} -- a deferral whose "
+                "date has passed is not deferred, it is parked with extra steps. Implement, "
+                "re-defer with a NEW dated reason, or retire it."
+                + (f" {len(missed)} deadlines missed on this row." if len(missed) > 1 else ""))
         elif not r.plan_has_date:
             verdict, why = "PARKED", (
                 "no date anywhere in the plan, so the row took none of the register's three legal "
@@ -132,10 +167,20 @@ def classify(text: str, today: date) -> list[dict]:
             "id": r.row_id, "title": r.title[:80], "owner": r.owner, "added": r.added,
             "status": r.status, "age_days": age, "verdict": verdict, "why": why,
             "deadline": worst.isoformat() if worst else None,
+            # The miss history, kept beside the current promise rather than instead of it.
+            "missed_deadlines": len(missed),
+            "missed": [d.isoformat() for d in missed],
+            # Reported as a FLAG, not a verdict: 34 rows collide today, and making that a verdict
+            # would bury the 9 genuine deadline misses under a numbering accident.
+            "id_ambiguous": r.row_id in ambiguous,
         })
-    order = {"DEADLINE-PASSED": 0, "PARKED": 1, "UNOWNED": 2, "STARVED": 3,
-             "ON-CLOCK": 4, "TRACKED": 5}
-    rows.sort(key=lambda x: (order.get(x["verdict"], 9), -x["age_days"], x["id"]))
+    # RE-DEFERRED sits directly below DEADLINE-PASSED, never at the bottom. A row that missed a
+    # date and re-committed is still the desk's most urgent class; sinking it to ON-CLOCK would
+    # buy the honesty of the miss count at the price of the urgency it is evidence of.
+    order = {"DEADLINE-PASSED": 0, "RE-DEFERRED": 1, "PARKED": 2, "UNOWNED": 3, "STARVED": 4,
+             "ON-CLOCK": 5, "TRACKED": 6}
+    rows.sort(key=lambda x: (order.get(x["verdict"], 9), -x["missed_deadlines"],
+                             -x["age_days"], x["id"]))
     return rows
 
 
@@ -154,7 +199,7 @@ def stamp_line(rows: list[dict], today: date) -> str:
     human skimming and by any future check that pattern-matches loosely, and the duty would be
     discharged by a pass that never weighed a single row against another.
     """
-    need = [r for r in rows if r["verdict"] in ("DEADLINE-PASSED", "PARKED", "UNOWNED", "STARVED")]
+    need = [r for r in rows if needs_decision(r)]
     return (
         f"{_STAMP} {today.isoformat()}: {len(rows)} open rows checked mechanically -- "
         f"{len(need)} need a decision "
@@ -174,16 +219,20 @@ def main() -> int:
     rows = classify(text, today)
     health = register_health(text, today=today)
 
-    need = [r for r in rows if r["verdict"] in ("DEADLINE-PASSED", "PARKED", "UNOWNED", "STARVED")]
+    need = [r for r in rows if needs_decision(r)]
     out = {
         "ts": datetime.now(tz=UTC).isoformat(),
         "seconds": round(time.time() - t0, 2),
         "open_rows": len(rows),
         "need_decision": len(need),
         "by_verdict": {v: sum(1 for r in rows if r["verdict"] == v)
-                       for v in ("DEADLINE-PASSED", "PARKED", "UNOWNED", "STARVED",
-                                 "ON-CLOCK", "TRACKED")},
+                       for v in ("DEADLINE-PASSED", "RE-DEFERRED", "PARKED", "UNOWNED",
+                                 "STARVED", "ON-CLOCK", "TRACKED")},
         "rows": rows,
+        # Reported, because until the ids are unique every citation of one is ambiguous and this
+        # organ has no authority to renumber the register. Silence here would leave the register
+        # looking addressable while two organs reading "#100" reach different findings.
+        "ambiguous_ids": sorted({r["id"] for r in rows if r["id_ambiguous"]}),
         # The judgment half's state, reported here so one artifact answers "is the register being
         # driven?" -- never so this organ can be mistaken for having done it.
         "judgment_rerank_age_days": health.rerank_age_days,
@@ -204,6 +253,11 @@ def main() -> int:
 
     print(f"gap-rerank: {len(rows)} open rows | {len(need)} need a decision | "
           f"judgment re-rank {health.rerank_age_days:.0f}d old | {out['seconds']}s")
+    if out["ambiguous_ids"]:
+        print(f"  AMBIGUOUS IDS: {len(out['ambiguous_ids'])} open row(s) share an id with "
+              f"another row -- {', '.join('#' + str(i) for i in out['ambiguous_ids'][:12])}"
+              f"{' ...' if len(out['ambiguous_ids']) > 12 else ''}. Every citation of these "
+              "resolves to two findings; renumber them in the register.")
     for r in rows[:6]:
         print(f"  [{r['verdict']:<15}] #{r['id']:<3} {r['title'][:62]}")
     return 0

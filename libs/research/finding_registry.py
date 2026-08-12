@@ -280,6 +280,12 @@ class RegisterRow(BaseModel):
     added: str
     status: str
     plan_has_date: bool
+    #: THIS row's why+plan text, carried from the match that produced the row. Consumers used to
+    #: re-find it by scanning for `| <id> |` and taking the first hit, which is correct only while
+    #: ids are unique -- and on 2026-08-12 a branch merge unioned two register lineages without
+    #: renumbering, leaving 17 ids naming two findings each. Under the old lookup, id 100's OPEN
+    #: row was read through the CLOSED row's text. An id is a label; the text belongs to the row.
+    body: str = ""
 
     @property
     def is_open(self) -> bool:
@@ -337,6 +343,7 @@ def parse_register(text: str) -> list[RegisterRow]:
             owner=m.group("owner").strip(), added=m.group("added").strip(),
             status=m.group("status").strip(),
             plan_has_date=bool(_HAS_DATE.search(m.group("body") or "")),
+            body=m.group("body") or "",
         ))
     return out
 
