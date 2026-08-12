@@ -642,6 +642,13 @@ _FENCE_OWNERS: dict[str, str] = {
     # --- survival rails (L1.23): states that read HEALTHY while being terminal.
     "check_book_collapse": "L1.23",
     "check_book_absorbing_state": "L1.23",   # a rail that can never release the book is not safety
+    # L1.44 is the freshness law, and this is its sharpest case: the published rail verdict is a
+    # produced artifact whose consumers (dashboard, pager, check_idle_cost) cannot see its age,
+    # because `_emit` copies `rb['risk']` forward onto a file whose mtime keeps advancing. The
+    # feed's own freshness is a heartbeat, and a heartbeat proves the loop is alive, never that
+    # the pipe is. Compares the recomputed decision against the published one rather than asking
+    # its age -- a fresh-and-wrong verdict passes every age bound there is.
+    "check_rail_verdict_published": "L1.44",
     # --- injection + fence integrity (L2.1 / L2.2): the enforcement layer auditing itself.
     "check_constitution": "L2.1",
     "check_universal_doctrine": "L2.1",

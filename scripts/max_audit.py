@@ -5786,7 +5786,7 @@ def check_book_absorbing_state(defects) -> None:
     if not (feed.exists() and st_p.exists()):
         return
     try:
-        from libs.risk import risk_controls
+        from libs.risk import capital_events, risk_controls
         fd = json.loads(feed.read_text("utf-8"))
         st = json.loads(st_p.read_text("utf-8"))
     except Exception:
@@ -5795,7 +5795,24 @@ def check_book_absorbing_state(defects) -> None:
     if fut_leg is None:                       # futures equity unmeasured this tick -> stay silent
         return
     try:
-        start = float(st["start_futures_equity"])
+        # THE THIRD SITE OF THE TWO-SITES/ONE-TRUTH BUG (R0364). The docstring above promises this
+        # monitor recomputes through the SAME pure function the executor calls; it did, and then
+        # fed it a DIFFERENT inception. `start_futures_equity` is the raw inception, written once
+        # and never re-based, while `fut_leg_net` is published as `fut_eq - effective_start_equity`
+        # (run_cashcarry_executor.py:1833) -- so `raw + fut_leg_net` adds a delta measured against
+        # one baseline to another baseline and over-states equity by exactly the ledgered re-base.
+        # Measured 2026-08-12: this monitor believed $13,472.67 while the book's own published
+        # equity was $8,682.22, a $4,790.70 gap equal to the recorded capital event to the cent.
+        #
+        # The direction is the dangerous one. `flatten` comes ONLY from the ruin rail
+        # (risk_controls.evaluate:319, dd_start = eq/start - 1), so over-stating equity means this
+        # check goes SILENT while the real rail is firing: at a true -36% the raw arithmetic reads
+        # -19.7% and reports a healthy book. An absorbing-state monitor that cannot see the
+        # absorbing state is worse than absent, because its silence is read as an all-clear.
+        #
+        # `flow_adjusted_equity` and `venue_equity` are deliberately still omitted: both feed only
+        # the pause/breach branches, and this check returns early on anything but `flatten`.
+        start = capital_events.effective_start_equity(float(st["start_futures_equity"]))
         fut_eq = start + float(fut_leg)
         # Flat book: unrealised spot is 0, so the spot side is exactly the banked realised PnL.
         eq_c = fut_eq + float(st.get("realized_spot_pnl", 0.0))
@@ -5819,6 +5836,100 @@ def check_book_absorbing_state(defects) -> None:
         f"${start:,.2f} inception). Every other check reads this as a healthy flat book. "
         f"Re-baselining a fired ruin rail is TIER-3 (principal-only) -- do NOT self-clear it; "
         f"page the principal with the attribution of what caused the drawdown."))
+
+
+#: How far the recomputed ruin-channel drawdown may sit from the published one before the
+#: published block is treated as describing DIFFERENT INPUTS. Both sides are `equity/start - 1`
+#: off the same snapshot, so agreement is exact up to one tick of equity drift; the failure this
+#: catches was 68 percentage points wide. A NUMERIC tolerance on a ratio, not a clock.
+_RAIL_DD_TOL_PCT = 1.0
+
+
+def check_rail_verdict_published(defects) -> None:
+    """THE RAIL VERDICT EVERY CONSUMER READS MUST BE ONE SOMETHING ACTUALLY EVALUATED (R0364).
+
+    `web/cashcarry_live.json["risk"]` is the desk's published rail state: the dashboard renders it,
+    `check_idle_cost` prices the clamp from it, and a human reads `action` to decide whether the
+    book is stopped. It is published by `_emit` as `rb.get("risk")` -- a key set ONLY by
+    `_rebalance`. Two ways that lies, and NOTHING could tell either from a healthy verdict:
+
+      ABSENT   On any tick that did not rebalance, `rb` is `_book_snapshot()`, which has no "risk"
+               key at all, so `_emit` publishes `"risk": null`. At `--interval 600` against a 60s
+               heartbeat that is ~9 ticks in 10. `check_idle_cost` reads `live.get("risk") or {}`
+               -> action "" -> the rail clamp is recorded INACTIVE and priced at zero, so a live
+               pause is invisible to the one fence built to price it.
+      STALE    When `_rebalance` stops completing, the last block it set is copied forward every
+               tick onto a file whose mtime keeps advancing. Measured 2026-08-05: the feed was
+               fresh at 08:52Z carrying `dd_from_start_pct -17.64 / pause_opens`, which reproduces
+               ONLY against the RAW inception, while the running code computes +50.90 against the
+               ledgered one -- and `last_combined_equity_at` sat 11 hours behind a process that
+               republishes every 600s. A frozen pause verdict was steering the dashboard, the
+               pager and the Gate-0 clock.
+
+    This is the desk's oldest lesson pointed at a rail: A HEARTBEAT PROVES THE LOOP IS ALIVE, NEVER
+    THAT THE PIPE IS. The feed's own freshness is the heartbeat and it stayed green through both.
+
+    So the check does what R0364 asked for and compares the RECOMPUTED decision against the
+    published one, rather than asking either how old it is -- an age bound would need a threshold
+    and would still pass a verdict that was fresh and wrong. Only the RUIN channel is compared:
+    `dd_start = equity/start - 1` depends on nothing this monitor omits, while the pause and
+    breach channels take `flow_adjusted_equity` and `venue_equity` that only the executor holds,
+    so comparing `action` outright would fire on a venue breach that is entirely correct.
+
+    Reports; changes nothing. Reads that fail leave it SILENT -- an unmeasurable feed must never
+    manufacture a rail defect (the 07-26 "no measurement beats a confident wrong one" lesson).
+    """
+    feed = ROOT / "web/cashcarry_live.json"
+    st_p = ROOT / "data/cashcarry_positions.json"
+    if not (feed.exists() and st_p.exists()):
+        return
+    try:
+        from libs.risk import capital_events
+        fd = json.loads(feed.read_text("utf-8"))
+        st = json.loads(st_p.read_text("utf-8"))
+    except Exception:
+        return
+    fut_leg = fd.get("fut_leg_net")
+    if fut_leg is None:                       # futures equity unmeasured this tick -> stay silent
+        return
+    try:
+        start = capital_events.effective_start_equity(float(st["start_futures_equity"]))
+        eq_c = start + float(fut_leg) + float(st.get("realized_spot_pnl", 0.0))
+        dd_start_pct = (eq_c / max(1e-9, start) - 1.0) * 100.0
+    except (KeyError, TypeError, ValueError):
+        return
+    risk = fd.get("risk")
+    if not isinstance(risk, dict):
+        defects.append((
+            "rail-verdict-absent",
+            f"NO RAIL VERDICT IS PUBLISHED: web/cashcarry_live.json carries `risk: {risk!r}` on a "
+            f"feed that is otherwise current (n_carries={fd.get('n_carries')}, equity "
+            f"${eq_c:,.2f}). `_emit` publishes `rb.get('risk')` and only `_rebalance` sets that "
+            f"key, so every non-rebalance tick republishes the whole book with the rail state "
+            f"blanked. Downstream cannot tell this from 'no breach': check_idle_cost reads "
+            f"`live.get('risk') or {{}}` and prices the clamp at zero. UNMEASURED IS NOT OK "
+            f"(L1.28a) -- the executor must publish the last EVALUATED decision with the time it "
+            f"was evaluated, or publish an explicit UNEVALUATED marker."))
+        return
+    pub = risk.get("dd_from_start_pct")
+    if pub is None:
+        return
+    try:
+        gap = abs(float(pub) - dd_start_pct)
+    except (TypeError, ValueError):
+        return
+    if gap > _RAIL_DD_TOL_PCT:
+        defects.append((
+            "rail-verdict-stale",
+            f"THE PUBLISHED RAIL VERDICT DISAGREES WITH ITS OWN INPUTS by {gap:.2f} points: the "
+            f"feed says dd_from_start {float(pub):+.2f}% / action {risk.get('action')!r}, and "
+            f"recomputing it from the SAME snapshot against the ledgered inception "
+            f"(${start:,.2f}) gives {dd_start_pct:+.2f}%. `_emit` copies `rb['risk']` forward "
+            f"every tick, so a `_rebalance` that stops completing publishes a FROZEN verdict onto "
+            f"a file whose mtime keeps advancing -- state last stamped "
+            f"{st.get('last_combined_equity_at')!r}. The dashboard, the pager and the idle-cost "
+            f"clamp price are all reading a rail nothing is recomputing. Do NOT re-baseline "
+            f"anything: find why _rebalance stopped writing."))
 
 
 DOCTRINE = ROOT / "ops/principal_doctrine.txt"
@@ -5876,6 +5987,7 @@ CHECKS += [("fee-carry-ratio", check_fee_carry_ratio),
            ("paid-target-registry", check_paid_target_registry),
            ("holdings-ratchet", check_holdings_never_shrink),
            ("book-absorbing-state", check_book_absorbing_state),
+           ("rail-verdict-published", check_rail_verdict_published),
            ("universal-doctrine", check_universal_doctrine)]
 
 
