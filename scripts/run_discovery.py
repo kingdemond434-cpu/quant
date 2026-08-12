@@ -8,41 +8,59 @@ shadow-eligible automatically; the rest are recorded as candidates or rejected (
 Data-gated mechanisms (OI/long-short divergence) are listed as PENDING until their forward archive
 matures. Re-run daily: as archives grow, new edges light up on their own. Writes web/discovery.json.
 
+MEASURED 2026-08-12: this is the organ dash.quanttt.xyz's Discovery panel (#disc) actually reads,
+and it had never run. Two independent reasons stacked: missing the sys.path preamble every other
+scheduled organ carries, so `python scripts/run_discovery.py` died on ModuleNotFoundError before
+main ever ran; and a separate bug in check_build_standard.py's scheduling detector (a bare
+substring match over the whole manifest, comments included) meant this organ's own COMMENT
+mentions elsewhere satisfied "is this scheduled" without a real cron line ever existing --
+reading as fine to the one fence that might have caught it.
+
     python scripts/run_discovery.py
 """
 
 from __future__ import annotations
 
 import json
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from libs.autodiscovery.models import Family, Hypothesis
-from libs.autodiscovery.validation import (
+_ROOT = Path("/home/quant/quant-platform")
+if not _ROOT.exists():
+    _ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    # WITHOUT THIS the script dies on `ModuleNotFoundError: No module named 'libs'` when invoked
+    # as `python scripts/run_discovery.py`, exactly how a manifest line would call it.
+    sys.path.insert(0, str(_ROOT))
+
+from libs.autodiscovery.models import Family, Hypothesis  # noqa: E402
+from libs.autodiscovery.validation import (  # noqa: E402
     blocking_constant_gates,
     campaign_gate_stats,
     counterfactual_survivors,
     gate_discrimination,
     validate,
 )
-from libs.data.crypto_source import list_liquid_perps
-from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
-from libs.data.lake import Layer, ParquetLake
-from libs.data.timeframe import Timeframe
-from libs.data.universe import RESEARCH_TOP_N
-from libs.research.crossasset import trend_basket_returns, xsec_momentum_returns
-from libs.research.crypto_sleeves import (
+from libs.data.crypto_source import list_liquid_perps  # noqa: E402
+from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument  # noqa: E402
+from libs.data.lake import Layer, ParquetLake  # noqa: E402
+from libs.data.timeframe import Timeframe  # noqa: E402
+from libs.data.universe import RESEARCH_TOP_N  # noqa: E402
+from libs.ops.lawful import guard as _law_guard  # noqa: E402
+from libs.research.crossasset import trend_basket_returns, xsec_momentum_returns  # noqa: E402
+from libs.research.crypto_sleeves import (  # noqa: E402
     basis_carry_returns,
     funding_momentum_returns,
     taker_flow_returns,
     xsec_lowvol_returns,
 )
-from libs.research.crypto_xsec import adv_tier_cost, xsec_funding_returns
-from libs.validation.dsr import sharpe_ratio
-from libs.validation.economic_prior import MechanismType
+from libs.research.crypto_xsec import adv_tier_cost, xsec_funding_returns  # noqa: E402
+from libs.validation.dsr import sharpe_ratio  # noqa: E402
+from libs.validation.economic_prior import MechanismType  # noqa: E402
 
 _CRYPTO = Path("data/lake/bronze/crypto")
 _METRICS = Path("data/crypto_metrics.parquet")
@@ -61,7 +79,18 @@ _PENDING = [
 def _panels() -> tuple[pd.DataFrame, ...]:
     lake = ParquetLake("data/lake")
     closes, funding, basis, taker, adv = {}, {}, {}, {}, {}
-    for s in list_liquid_perps(top_n=RESEARCH_TOP_N):
+    try:
+        universe = list_liquid_perps(top_n=RESEARCH_TOP_N)
+    except Exception as exc:
+        # SAME CLASS as collect_binance_metrics.py's universe-discovery fix (2026-08-12): this
+        # call was previously unwrapped and would surface a bare traceback instead of the desk's
+        # standard fail-visible refusal. Observed in this container as HTTP 451 on
+        # fapi.binance.com/fapi/v1/exchangeInfo -- unverified here whether that is a genuine
+        # Binance restriction or specific to this container's egress; either way the organ must
+        # fail loud, not silently produce an empty discovery.json.
+        raise SystemExit(f"REFUSED: could not list the tradeable universe "
+                         f"({type(exc).__name__}: {exc}) -- no candidates tested") from exc
+    for s in universe:
         if not (_CRYPTO / s / Timeframe.D1.value).exists():
             continue
         register_instrument(InstrumentSpec(symbol=s, asset_class=AssetClass.CRYPTO, description=s))
@@ -134,6 +163,7 @@ def _measured_side_cost(sym: str, adv_usd: float) -> float:
 
 
 def main() -> None:
+    _law_guard()
     close, funding, basis, taker, adv = _panels()
     if close.shape[1] < 12:
         raise SystemExit("need a liquid perp panel")

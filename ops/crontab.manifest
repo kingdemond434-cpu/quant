@@ -1114,6 +1114,17 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 #   VALIDATING status here is a finding for a person, not yet a promotion.
 # CONFIDENCE: committed-script; pure local CPU/pandas, no venue call once the archive exists.
 25 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_derivative_shadow.lock .venv/bin/python scripts/run_derivative_shadow.py >> data/cro_ai_logs/run_derivative_shadow.log 2>&1
+# MEASURED 2026-08-12: this is dash.quanttt.xyz's Discovery panel (#disc) actual producer -- it
+#   had never run. Missing sys.path preamble (same fix as every organ above), and a separate bug
+#   in check_build_standard.py's scheduling detector meant this organ's own COMMENT mentions
+#   elsewhere satisfied "is this scheduled" without a real cron line ever existing (see
+#   tests/governance/test_build_standard.py). 5:52 -- after the price/funding lake refresh and
+#   the derivative-metrics archiver both land, before the 6:xx axis-screen block.
+# EVIDENCE: scripts/run_discovery.py -> web/discovery.json (tested sleeves, shadow_eligible,
+#   pending data-gated clocks with live day-counts). CONFIDENCE: committed-script; the
+#   universe-discovery call refuses cleanly (SystemExit) instead of an uncaught traceback if
+#   list_liquid_perps fails, same fix already applied to collect_binance_metrics.py above.
+52 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_discovery.lock .venv/bin/python scripts/run_discovery.py >> data/cro_ai_logs/run_discovery.log 2>&1
 # scripts/carry_viability.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 47 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/carry_viability.py >> data/cro_ai_logs/carry_viability.log 2>&1
 # scripts/run_research_tick.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
