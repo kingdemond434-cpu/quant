@@ -6694,6 +6694,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0535",
+   "source": "cycle",
+   "summary": "FOLLOW-ON to e130e096 (organ-liveness attrition now published): WIDEN check_organ_liveness's artifact scope so the 14 organs declaring an output outside data/ are actually WATCHED, not merely counted. TODAY'S STATE: parse_manifest at scripts/check_organ_liveness.py:142 keeps only tokens starting with 'data/', so 14 of 100 organs with a declared EVIDENCE artifact are invisible -- resolve_llm_trader_book.py (reports/llm_trader_decline_value.json), run_weekly_desk_grade.py, run_real_campaign.py, run_moat_campaign.py, measure_admission_power.py, mine_research_queue.py, report_mechanism_supply.py, screen_carry_basis_path.py, screen_funding_interval_mismatch.py, ingest_principal_drop.py, harvest_join_links.py, run_paper_sleeve_forward.py (web/), check_prompt_ratchet.py (docs/research/PROMPT_RATCHET.json) and finalize_axis_screens.py (reports/axis_screens/*.json). e130e096 made the gap VISIBLE and deliberately did not close it. WHY IT IS NOT A ONE-LINE WIDENING, and this is the whole reason it is its own row: the data/-only rule exists to stop a LAW CITATION on an EVIDENCE line ('-> data/x.json; docs/CONSTITUTION.md L1.37') being parsed as an output, which would read FRESH forever off a static file -- the code says plainly that a false GREEN is strictly worse than the false RED an earlier separator bug produced, and that judgement is correct. So the widening needs (a) a positive rule for what counts as an OUTPUT rather than a citation -- extension alone is insufficient since docs/research/PROMPT_RATCHET.json is a genuine output and a .json citation would not be, (b) GLOB handling for reports/axis_screens/*.json, where the honest freshness reading is the NEWEST match and an empty glob is NEVER-PRODUCED, and (c) a decision on gitignored trees: reports/ and data/ are both gitignored, so freshness is box-state and a fresh clone reads every organ dark -- which is exactly the L1.36 'verdict about the HOST is not a verdict about the DESK' lesson and must be a distinct UNOBSERVABLE state, never folded into NEVER-PRODUCED. SECOND AND SEPARABLE: the two axis screens whose manifest EVIDENCE path is simply WRONG (screen_unlock_supply_series -> data/unlock_supply_series_screen.json, screen_announcement_diffusion -> data/announcement_diffusion_screen.json) both actually write reports/axis_screens/<name>.json; once the scope is widened those two lines should be corrected to the real paths, which turns two standing false NEVER-PRODUCED verdicts green on evidence rather than by edit. VERIFY WITH: .venv/bin/python scripts/check_organ_liveness.py then read n_unwatchable_path in data/organ_liveness.json -- it must fall to 0 with no organ newly reading FRESH off a citation.",
+   "roi_bps": 20.0,
+   "raised": "2026-08-12T21:38:30.365600+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
