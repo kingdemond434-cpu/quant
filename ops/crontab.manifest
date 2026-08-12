@@ -846,6 +846,14 @@ QUANT_ROOT=/home/quant/quant-platform
 # 2 MB -- this is a measurement mirror, not a backup, and a repo is not a place for credentials.
 # Runs right after max_audit so the mirror carries that run's fresh report.
 15 7 * * * cd "$QUANT_ROOT" && flock -n data/.cron_deskstate.lock .venv/bin/python scripts/sync_desk_state.py >> data/cro_ai_logs/desk_state.log 2>&1
+# OPENROUTER PRE-FLIGHT. Twelve organs are dark and all of them wake the moment the key is
+# funded. The expensive failure is not a dark organ -- it is one that LOOKS wired, wakes, and
+# discovers it was never finished: no cron line, output nobody reads, a crash on import, or no
+# budget check. Finding that mid-cycle costs the money AND the cycle.
+# Runs daily and SPENDS NOTHING: imports, file reads and a manifest grep, no model call. Keeping
+# it on a schedule matters because readiness ROTS -- an organ can lose its only consumer to a
+# refactor months after it was verified, and nothing else would notice.
+25 7 * * * cd "$QUANT_ROOT" && flock -n data/.cron_seatpreflight.lock .venv/bin/python -c "from libs.ops.seat_preflight import preflight; import json; print(json.dumps({k: v for k, v in preflight().items() if k != 'organs'}))" >> data/cro_ai_logs/seat_preflight.log 2>&1
 
 # quota-free crypto hypothesis factory: pure python, 0 claude calls, so generation "always
 # runs". Its live log name is crypto_factory_cron.log (ops/run_crypto_factory.sh:17) proving

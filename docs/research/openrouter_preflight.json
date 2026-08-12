@@ -1,0 +1,270 @@
+{
+ "what": "static readiness of every organ that wakes when OPENROUTER_API_KEY is funded",
+ "generated_utc": "2026-08-12T11:50:49+00:00",
+ "spend_incurred": "ZERO -- imports, file reads and a manifest grep. No model is called.",
+ "n_organs": 13,
+ "n_ready": 10,
+ "by_verdict": {
+  "READY": [
+   "run_cro",
+   "run_external_panel",
+   "run_strategic_director",
+   "llm_code_auditor",
+   "breadth_expander",
+   "kimi_hunter",
+   "run_micro_audit",
+   "llm_blind_researcher"
+  ],
+  "UNSCHEDULED": [
+   "meta_architect",
+   "collector_author"
+  ],
+  "READY_BUT_UNCAPPED": [
+   "deep_review",
+   "run_deepseek_cycle"
+  ],
+  "NEVER_ASKS_FOR_A_SEAT": [
+   "refresh_panel_roster"
+  ]
+ },
+ "organs": [
+  {
+   "organ": "run_cro",
+   "verdict": "READY",
+   "artifact": "docs/research/CRO_BRIEFING.md",
+   "importable": true,
+   "seated": true,
+   "scheduled": true,
+   "consumed": true,
+   "capped": true,
+   "import_error": "",
+   "n_consumers": 2,
+   "consumers": [
+    "libs/ops/seat_preflight.py",
+    "scripts/max_audit.py"
+   ],
+   "notes": []
+  },
+  {
+   "organ": "run_external_panel",
+   "verdict": "READY",
+   "artifact": "data/panel_verdicts.jsonl",
+   "importable": true,
+   "seated": true,
+   "scheduled": true,
+   "consumed": true,
+   "capped": true,
+   "import_error": "",
+   "n_consumers": 9,
+   "consumers": [
+    "libs/ops/seat_preflight.py",
+    "scripts/build_panel_rulings.py",
+    "scripts/data_vitals.py",
+    "scripts/max_audit.py"
+   ],
+   "notes": [
+    "no cron line of its own; fired by scheduled parent(s): ['check_gate0_ready', 'run_cadence']"
+   ]
+  },
+  {
+   "organ": "run_strategic_director",
+   "verdict": "READY",
+   "artifact": "data/strategic_director.json",
+   "importable": true,
+   "seated": true,
+   "scheduled": true,
+   "consumed": true,
+   "capped": true,
+   "import_error": "",
+   "n_consumers": 1,
+   "consumers": [
+    "libs/ops/seat_preflight.py"
+   ],
+   "notes": []
+  },
+  {
+   "organ": "llm_code_auditor",
+   "verdict": "READY",
+   "artifact": "data/llm_code_audit.json",
+   "importable": true,
+   "seated": true,
+   "scheduled": true,
+   "consumed": true,
+   "capped": true,
+   "import_error": "",
+   "n_consumers": 1,
+   "consumers": [
+    "libs/ops/seat_preflight.py"
+   ],
+   "notes": [
+    "no cron line of its own; fired by scheduled parent(s): ['run_strategic_director']"
+   ]
+  },
+  {
+   "organ": "meta_architect",
+   "verdict": "UNSCHEDULED",
+   "artifact": "data/meta_architect.json",
+   "importable": true,
+   "seated": true,
+   "scheduled": false,
+   "consumed": true,
+   "capped": false,
+   "import_error": "",
+   "n_consumers": 1,
+   "consumers": [
+    "libs/ops/seat_preflight.py"
+   ],
+   "notes": [
+    "no cron line fires it; a built organ with no schedule produces nothing forever",
+    "reaches a seat with no visible budget check -- one cycle can empty the cap"
+   ]
+  },
+  {
+   "organ": "breadth_expander",
+   "verdict": "READY",
+   "artifact": "data/breadth_expander.json",
+   "importable": true,
+   "seated": true,
+   "scheduled": true,
+   "consumed": true,
+   "capped": true,
+   "import_error": "",
+   "n_consumers": 1,
+   "consumers": [
+    "libs/ops/seat_preflight.py"
+   ],
+   "notes": [
+    "no cron line of its own; fired by scheduled parent(s): ['daily_research_cycle', 'run_cadence']"
+   ]
+  },
+  {
+   "organ": "kimi_hunter",
+   "verdict": "READY",
+   "artifact": "data/kimi_hunter.json",
+   "importable": true,
+   "seated": true,
+   "scheduled": true,
+   "consumed": true,
+   "capped": true,
+   "import_error": "",
+   "n_consumers": 1,
+   "consumers": [
+    "libs/ops/seat_preflight.py"
+   ],
+   "notes": []
+  },
+  {
+   "organ": "collector_author",
+   "verdict": "UNSCHEDULED",
+   "artifact": "data/collector_author.json",
+   "importable": true,
+   "seated": true,
+   "scheduled": false,
+   "consumed": true,
+   "capped": false,
+   "import_error": "",
+   "n_consumers": 1,
+   "consumers": [
+    "libs/ops/seat_preflight.py"
+   ],
+   "notes": [
+    "no cron line fires it; a built organ with no schedule produces nothing forever",
+    "reaches a seat with no visible budget check -- one cycle can empty the cap"
+   ]
+  },
+  {
+   "organ": "deep_review",
+   "verdict": "READY_BUT_UNCAPPED",
+   "artifact": "data/deep_review.json",
+   "importable": true,
+   "seated": true,
+   "scheduled": true,
+   "consumed": true,
+   "capped": false,
+   "import_error": "",
+   "n_consumers": 1,
+   "consumers": [
+    "libs/ops/seat_preflight.py"
+   ],
+   "notes": [
+    "no cron line of its own; fired by scheduled parent(s): ['build_enforcement_matrix', 'check_enforcement_execution', 'max_audit']",
+    "reaches a seat with no visible budget check -- one cycle can empty the cap"
+   ]
+  },
+  {
+   "organ": "run_micro_audit",
+   "verdict": "READY",
+   "artifact": "data/micro_audit.json",
+   "importable": true,
+   "seated": true,
+   "scheduled": true,
+   "consumed": true,
+   "capped": true,
+   "import_error": "",
+   "n_consumers": 1,
+   "consumers": [
+    "libs/ops/seat_preflight.py"
+   ],
+   "notes": [
+    "no cron line of its own; fired by scheduled parent(s): ['daily_research_cycle']"
+   ]
+  },
+  {
+   "organ": "refresh_panel_roster",
+   "verdict": "NEVER_ASKS_FOR_A_SEAT",
+   "artifact": "data/panel_roster.json",
+   "importable": true,
+   "seated": false,
+   "scheduled": true,
+   "consumed": true,
+   "capped": true,
+   "import_error": "",
+   "n_consumers": 1,
+   "consumers": [
+    "libs/ops/seat_preflight.py"
+   ],
+   "notes": [
+    "reaches no seat machinery -- it will stay dark after funding and look like a scheduling problem"
+   ]
+  },
+  {
+   "organ": "llm_blind_researcher",
+   "verdict": "READY",
+   "artifact": "data/blind_researcher.json",
+   "importable": true,
+   "seated": true,
+   "scheduled": true,
+   "consumed": true,
+   "capped": true,
+   "import_error": "",
+   "n_consumers": 1,
+   "consumers": [
+    "libs/ops/seat_preflight.py"
+   ],
+   "notes": [
+    "no cron line of its own; fired by scheduled parent(s): ['max_audit']"
+   ]
+  },
+  {
+   "organ": "run_deepseek_cycle",
+   "verdict": "READY_BUT_UNCAPPED",
+   "artifact": "data/deepseek_evidence.jsonl",
+   "importable": true,
+   "seated": true,
+   "scheduled": true,
+   "consumed": true,
+   "capped": false,
+   "import_error": "",
+   "n_consumers": 2,
+   "consumers": [
+    "libs/ops/deepseek_cycle.py",
+    "libs/ops/seat_preflight.py"
+   ],
+   "notes": [
+    "reaches a seat with no visible budget check -- one cycle can empty the cap"
+   ]
+  }
+ ],
+ "law": "READY means importable AND seated AND scheduled AND its output is read. An uncapped organ is reported separately -- a budget hole must never hide behind a green wiring tick",
+ "authority": "MEASUREMENT ONLY. Lights no seat, calls no model, ranks no organ by value."
+}
