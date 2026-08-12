@@ -14,7 +14,12 @@ mkdir -p data/cro_ai_logs
 LOG="data/cro_ai_logs/brain_hunter_$(date -u +%Y%m%dT%H%M).log"
 # Same dual-pool routing as the regional rotation: fable's metered pool first, then the Max seat.
 # Safe for the same reason -- the run is resumable, so a mid-dig credit death costs a log, not work.
-export _BRAIN_MODEL_CHAIN="claude-fable-5 claude-opus-5 claude-opus-4-8"
+# The chain is NOT re-declared here. It arrives from brain_env.sh above, which sources the
+# generated ops/model_chain.env -- see the same note in ops/run_frontier_miner.sh. This organ
+# carried a literal copy from 2026-08-11 (d48c6408) until 2026-08-12, which is exactly the pin
+# the single-source fence exists to stop: the hunter would have kept running yesterday's models
+# the first time run_model_upgrade.py adopted a newer flagship, and nothing would have said so.
+# The routing INTENT above is unchanged: fable head, walk down on exhaustion.
 dig_dry_run "brain-hunter" "ops/brain_hunter_prompt.txt" && exit 0
 # ATTEMPT-FIRST + the mutex this launcher never took: without it the hunter ran in parallel with
 # the CRO brain (both drawing the same pool -- the exact drain brain_mutex exists to stop), and a

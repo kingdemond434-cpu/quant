@@ -67,6 +67,21 @@ _DEFAULT_RE = re.compile(r'(export ANTHROPIC_MODEL="\$\{ANTHROPIC_MODEL:-)([a-z0
 # against that export (fable-first vs opus-first), which is precisely how a dormant fallback
 # becomes a surprise: the day it fires, it runs a model nobody chose.
 _INLINE_CHAIN_RE = re.compile(r'(\$\{_BRAIN_MODEL_CHAIN:-)([^}]+)(\})')
+# A SEAT DEFINITION pins its model in markdown frontmatter, not in shell:
+#   ---
+#   name: cro-daily-research-cycle
+#   model: claude-opus-5
+#   ---
+# ops/CRO_CONSTITUTION.md carried claude-opus-4-8 that way for its whole life while chain_files()
+# scanned only .sh/.py, so the verified opus-4-8 -> opus-5 promotion had NO SURFACE TO LAND ON and
+# sat unadopted -- the desk's highest-effort seat running a superseded model with every upgrade
+# path reporting success. Scoped to the LEADING frontmatter block so a `model:` line in prose or
+# in a fenced example is never rewritten into config.
+_SEAT_MODEL_RE = re.compile(r'^(model:[ \t]*)(claude-[a-z0-9.\-]+)[ \t]*$', re.MULTILINE)
+_FRONTMATTER_RE = re.compile(r'\A(---\n)(.*?)(\n---\n)', re.DOTALL)
+#: A real model id is lowercase alphanumerics and hyphens. Anything else is debris
+#: picked up by a regex, never a model (see parse_model).
+_ID_CHARSET = re.compile(r"[a-z0-9-]+")
 _PROBE = "Reply with exactly: UPGRADE-OK"
 
 
@@ -79,6 +94,14 @@ def parse_model(model_id: str) -> tuple[str, tuple[int, ...]] | None:
     unparseable or oddly-named model can never be mistaken for an upgrade candidate.
     """
     if not model_id.startswith("claude-"):
+        return None
+    # CHARSET FIRST. Without this, `claude-opus-4-8}` -- which _CHAIN_RE produces from the shell
+    # default `"${_BRAIN_MODEL_CHAIN:-... claude-opus-4-8}"` by splitting on whitespace -- parses
+    # as ('opus', (4,)) rather than None, because the loop below treats the `}` token as a
+    # terminator and keeps the version it had so far. So a malformed id became a REAL pin at the
+    # WRONG version (4 instead of 4.8), silently. The docstring already claimed this could not
+    # happen and pinned_models already relied on it; only `...` was actually being rejected.
+    if not _ID_CHARSET.fullmatch(model_id):
         return None
     parts = model_id[len("claude-"):].split("-")
     if not parts or not parts[0] or parts[0].isdigit():
@@ -188,9 +211,21 @@ def rewrite_text(text: str, approved: dict[str, str]) -> tuple[str, list[str]]:
             changes.append(f"inline chain default: {' '.join(chain)}  ->  {' '.join(new)}")
         return f"{m.group(1)}{' '.join(new)}{m.group(3)}"
 
+    def _seat_sub(m: re.Match[str]) -> str:
+        cur = m.group(2)
+        new = approved.get(cur, cur)
+        if new != cur:
+            changes.append(f"seat frontmatter model: {cur} -> {new}")
+        return f"{m.group(1)}{new}"
+
     out = _CHAIN_RE.sub(_chain_sub, text)
     out = _DEFAULT_RE.sub(_default_sub, out)
     out = _INLINE_CHAIN_RE.sub(_inline_chain_sub, out)
+    # Frontmatter only: rewrite the leading --- block and paste the body back untouched.
+    fm = _FRONTMATTER_RE.match(out)
+    if fm is not None:
+        out = fm.group(1) + _SEAT_MODEL_RE.sub(_seat_sub, fm.group(2)) + fm.group(3) \
+            + out[fm.end():]
     return out, changes
 
 
@@ -200,15 +235,27 @@ def chain_files() -> list[Path]:
     out = []
     for d in ("ops", "scripts"):
         for p in sorted((ROOT / d).glob("*")):
-            if p.suffix not in (".sh", ".py") or p.name == Path(__file__).name:
+            # .md is here for SEAT DEFINITIONS. Adding the regex without adding the suffix would
+            # have been a rewriter that can never reach the only file that needs it.
+            if p.suffix not in (".sh", ".py", ".md") or p.name == Path(__file__).name:
                 continue
             try:
                 body = p.read_text("utf-8")
             except (OSError, UnicodeDecodeError):
                 continue
-            if "_BRAIN_MODEL_CHAIN" in body or _DEFAULT_RE.search(body):
+            if "_BRAIN_MODEL_CHAIN" in body or _DEFAULT_RE.search(body) \
+                    or _seat_pin(body) is not None:
                 out.append(p)
     return out
+
+
+def _seat_pin(body: str) -> str | None:
+    """The model id pinned in a file's LEADING frontmatter block, or None."""
+    fm = _FRONTMATTER_RE.match(body)
+    if fm is None:
+        return None
+    m = _SEAT_MODEL_RE.search(fm.group(2))
+    return m.group(2) if m is not None else None
 
 
 def pinned_models(paths: list[Path]) -> list[str]:
@@ -237,6 +284,9 @@ def pinned_models(paths: list[Path]) -> list[str]:
         for m in _DEFAULT_RE.finditer(body):
             if m.group(2) not in seen:
                 seen.append(m.group(2))
+        pin = _seat_pin(body)
+        if pin is not None:
+            _add(pin)
     return seen
 
 
