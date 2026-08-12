@@ -4457,11 +4457,11 @@
    "summary": "PHANTOM-PATHS FENCE IS 50 PERCENT NOISE, which is how a fence gets acknowledged into silence (its own docstring at max_audit.py:3514 says exactly this). Measured 2026-08-05 over all 26 reported paths: 7 genuine, 11 false positives, 2 dead readers, 8 optional-by-design. Four structural blind spots, each verified in the wild: (1) SPLIT LITERALS -- _ROOT / 'data' / 'x.json' never matches _PATH_LIT (:3491) which needs data/ inside ONE string, so the name is never bound and its writer is invisible (this alone explains ramp_state.json, research_chain_status.json, live_book_concentration.json, permutation_null.json, real_campaign.json); (2) a path handed to a constructor and written via self.attr.write_text, or passed POSITIONALLY to a helper that writes through a parameter; (3) the alias regex requires the RHS to START with the name, so out = root / _REPORT_REL is not seen as an alias; (4) a path-shaped string counts as a READ even when it is only a provenance label never opened (audit_reality_check.py:201). FIX in yield order: bind names built from split literals, match aliases where the bound name appears anywhere on the RHS, treat self.<attr>.write_text as a writer when <attr> comes from a constructor parameter, and stop counting dict-value labels as reads.",
    "roi_bps": 10.0,
    "raised": "2026-08-05T07:14:13.092151+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "IMPLEMENTED as an AST rewrite (libs/research/path_refs.py) rather than four regex patches, because all four named blind spots are one root cause: the scan matched LINE TEXT and a path in Python is an EXPRESSION. All four reproduced in the wild first. Fixed in the row's stated yield order: split literals now bind (measure_permutation_null.py:48, run_real_campaign.py:37), a path passed POSITIONALLY to a helper that writes through the parameter is now seen (run_cost_identification.py:430 -> data/ramp_state.json, the L1.55 file, was a false phantom), aliases match wherever the name appears on the RHS, and a dict-value provenance label is no longer a read (audit_reality_check.py:201). THE COUNT BARELY MOVED, 108->107, and that is the honest result: 12 false reports removed AND 12 genuine read-without-writers surfaced that the regex could never see, because the READ side was equally invisible when built from split literals. 404 paths now resolve a writer, 140 resolve as labels. ONE OF THE 12 WAS A LIVE DEFECT: run_exec_monitor.py read data/trade_forensics.json while the producer writes web/trade_forensics.json -- the monitor reported UNMEASURED forever; repointed at the tracked docs/research/trade_forensics_latest.json. The safety property is that resolving more writers can only REMOVE a report, so _resolve returns None rather than guessing, pinned by two tests. 9 tests total. Tests caught two bugs in my own code (absolute anchors dropped every reference; 4 ast.walk passes cost 23.8s). Superseded scanner deleted. Test failures in test_max_audit_sight/channel_and_latch/intelligence_cycle_honesty verified PRE-EXISTING at 9f8feb7b in a worktree.",
+   "commit": "29bfc3df",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T17:08:00.456512+00:00"
   },
   {
    "id": "R0357",
@@ -4469,11 +4469,11 @@
    "summary": "LIVE CAPITAL LAW EXISTS ONLY IN DEAD CODE: the principal's 2026-08-01 evidence-dependent ceiling ladder (UNPROVEN/STRONG/DURABLE tiers with conjunctive statistical rungs) is implemented ONLY in libs/risk/sleeve_allocation.py, which NOTHING imports. The organ that actually writes data/sleeve_allocation.json -- read live by scripts/check_promotion_gate.py:179 and scripts/run_discretionary_max.py:112,180 -- is scripts/run_sleeve_allocator.py, whose own allocate() at :137 contains NONE of it (grep count of STRONG/DURABLE/UNPROVEN: lib 9, script 0). So the ladder governs nothing while appearing implemented and tested. FIX: make run_sleeve_allocator.py:137 delegate to libs.risk.sleeve_allocation.allocate/evidence_tier/marginal_ir and delete the local copy. RELATED unwired safety module: libs/execution/event_guard.py is fail-closed by construction (returns allowed=False on EMPTY/STALE/BLACKOUT, refusing entries -30/+15min around high-impact releases) with ZERO callers and no data/event_calendar.json, so the hourly conviction sleeve opens into FOMC/CPI windows with a stop a gap jumps straight through. Populate the calendar FIRST, then wire -- until the file exists the guard blocks everything.",
    "roi_bps": 22.0,
    "raised": "2026-08-05T07:14:13.225523+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Primary half IMPLEMENTED: run_sleeve_allocator.py now imports Sleeve/evidence_tier from libs.risk.sleeve_allocation and applies the ladder as a CEILING on risk_budget. Measured breach before the wiring, exactly as the row predicted: conviction drew 27.3% of heat on 15 closes against a 2% UNPROVEN cap (13.6x). After: 2.0%, with the blocker published as 'INITIAL blocked: needs 20 closes, has 15' and the clamp priced at held_back_total 0.26 (L1.51). Ladder inputs are computed from the realised record and every one defaults to the value that FAILS higher rungs. Regime breadth reads setup.vol_regime, the same tag check_promotion_gate uses. status is untouched so the gate's independent_of_carry criterion is unaffected (verified: gate still reports rung 0). 7 new tests including the anti-drift bar that fails if the rungs are ever re-declared locally. The row's 'delete the local copy' was not literal -- the two allocate() functions answer DIFFERENT questions (correlation-scaled heat split vs base-vs-booster capital split needing a base sleeve that is not registered), so the ceiling is delegated and the correlation arithmetic kept. SECOND HALF SPLIT TO R0494: event_guard.py is libs/execution/ = MONEY_PATH inside a STERILE window (RAIL_BREACH, CASHCARRY_KILL present) and data/event_calendar.json has no producer, so wiring it now would refuse every entry forever.",
+   "commit": "64d03d39",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T16:31:38.986350+00:00"
   },
   {
    "id": "R0358",
