@@ -6221,11 +6221,11 @@
    "summary": "MAX_AUDIT ACKS ARE KEYED ON THE DEFECT NAME, NOT THE INSTANCE, SO ONE REASONED ACK BURIES A WHOLE CLASS. data/max_audit_acks.json holds a single key 'producer-cadence-stale' whose reason discusses ONLY generation_due.md. That defect fires once PER STALE DOCUMENT: today it fired 4x, and the other three -- canary_searches.md (10d vs a 4d bar), EXECUTION_QUEUE.md (13d vs 7d), DATA_UNIVERSE_TAXONOMY.md (8d vs 7d) -- were suppressed by an ack that never mentions them and whose stated lifting condition (an OpenRouter top-up) has nothing to do with them. An ack is supposed to be a dated reasoned decision about a SPECIFIC below-potential state; keyed this way it is a mute button for every future instance of its class. FIX: key acks on (defect, instance) so an ack covers only what it argued about, and an unargued instance keeps firing.",
    "roi_bps": 0.0,
    "raised": "2026-08-12T18:11:40.580987+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "SCHEDULED. Re-keying acks to (defect, instance) changes the shape of data/max_audit_acks.json, which 31 live acks depend on, so it needs a migration that preserves every existing reasoned ack rather than a drive-by. Named the three documents this ack was burying so they cannot hide again while it waits. 7d.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-19",
+   "disposed": "2026-08-12T18:18:11.505008+00:00"
   },
   {
    "id": "R0504",
@@ -6233,11 +6233,11 @@
    "summary": "SECTION-33 CONVERSION EVIDENCE IS VERIFIABLE ONLY ON THE BOX THAT PRODUCED IT. Measured 2026-08-12 by running check_mine_conversion in a clean 'git worktree' at the same sha: 0 defects on this box, 10 in the fresh tree. Two independent causes, both structural. (1) Cards cite artifacts like data/coinmetrics_flows.jsonl that are GITIGNORED -- they exist on the producing box and in no clone, so the receipt cannot be checked by CI, by a reviewer, or by a future session on a rebuilt box. (2) The postdates-the-find test compares p.stat().st_mtime against the card's first sighting; a checkout stamps every file at checkout time, so that comparison carries NO information in any fresh tree and reports 'stale-evidence' for cards whose work was genuinely done. This is why the check cannot join the L1.37 boundary battery (it would be green on the box and red in CI -- the environment-dependent gate check_artifact_governance already warns about in its own source). It also means the desk's conversion ledger -- the thing section 33 credits from 'artifacts on disk, never from a report' -- rests on evidence no second party can audit. FIX: make conversion receipts portable (commit them, or key recency on something a clone preserves such as a git commit date), then the check can move to the boundary.",
    "roi_bps": 0.0,
    "raised": "2026-08-12T18:11:53.592970+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "SCHEDULED at 14d because it is an evidence-MODEL question, not a bug: making section-33 receipts portable means deciding what counts as a receipt when the artifact is deliberately gitignored (commit a hash? a manifest? a signed digest?), and keying recency on something a clone preserves. Wrong answers here either weaken conversion crediting or make honest conversions unprovable. The measurement is banked in the row so the next pass starts from evidence.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-26",
+   "disposed": "2026-08-12T18:18:16.045001+00:00"
   },
   {
    "id": "R0505",
@@ -6245,11 +6245,11 @@
    "summary": "GOVERNANCE-BY-INCIDENTAL-MENTION: check_artifact_governance treats a filename appearing ANYWHERE in max_audit.py source -- including inside a COMMENT -- as a governance claim (scripts/max_audit.py, 'if Path(rel).name in audit_src: continue'). That is not a claim, it is a coincidence, and it fails in both directions: a doc is silently GOVERNED by an unrelated sentence, and silently UNGOVERNED the day someone edits that sentence. Proving instance found this cycle: docs/research/cadence_duties.md was added 2026-07-16 and only began firing now, because the only occurrence of the token in max_audit.py is a prose comment at line 358 ('cadence_duties by run_cadence') which does not contain the '.md' the check matches on. The desk believed that file was claimed by a law for ~4 weeks; nothing had ever decided it. Same class as L1.57's 'a count of a hardcoded literal is not a denominator', applied to governance claims. FIX: a claim must be an ENTRY IN A TABLE (_PRODUCER_CADENCE / _TERMINAL_ARTIFACTS / _DIG_DOCS / _FINDING_DOCS), never a substring of the checker's own prose.",
    "roi_bps": 0.0,
    "raised": "2026-08-12T18:12:06.829252+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "SCHEDULED, not done now, and the reason is that the safe fix is not the obvious one. Deleting the 'name appears in max_audit source' clause is one line, but every doc currently governed ONLY by an incidental mention would fire the same day -- an unknown number, on a fence now wired into the push boundary, which is precisely how a gate goes red on arrival and gets switched off (L1.43). The correct sequence is: measure how many docs depend on that clause, classify each into a real table, THEN delete the clause. That is a bounded piece of work and it wants its own pass, not the tail of this one. 7d.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-19",
+   "disposed": "2026-08-12T18:18:06.136958+00:00"
   },
   {
    "id": "R0506",
@@ -6269,11 +6269,11 @@
    "summary": "SCOPE DECISION OWED: does the L1.34/L1.35 HUNTING mandate bind a reasoning CONTROLLER? tests/governance/test_source_universality.py globs ops/*prompt*.txt and asserts every match carries RAW-INFORMATION UNIVERSALITY + DEEP-FOREST EXHAUSTIVENESS. Two of the three failures were REAL reaching breaches and are FIXED this cycle (ops/brain_hunter_prompt.txt and ops/gpt_video_hunter_prompt.txt are daily HUNTING seats that had been running without either mandate since the laws were written; verbatim blocks injected from frontier_en so no seat carries a drifting paraphrase). The third, ops/midnight_codex_prompt.txt, is NOT a hunting seat -- 46 lines describing a 'reasoning controller for ONE persistent quantitative research operation'. I deliberately did NOT resolve it, because both available unilateral moves are forbidden shapes: pasting a 144-line deep-forest HUNTING mandate into a controller satisfies the gate while teaching the organ nothing (mandate-as-decoration), and narrowing the test's glob is fitting the guard to the violation it caught. THE ACTUAL QUESTION, for a decision: is 'every seat' in L1.34 every PROMPT, or every seat that DIGS? If the former, the controller needs a genuine controller-shaped statement of the mandate; if the latter, the test needs an explicit exemption list with a reason per entry, which is strictly better than a glob because it makes each seat's classification a decision on the record. Until then this test stays RED on one id and that is the honest state.",
    "roi_bps": 0.0,
    "raised": "2026-08-12T18:15:17.676642+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "SCHEDULED. Two of three instances are FIXED in 66feaa26 (the genuine hunting seats); the residue is a single scope question whose two unilateral answers are both forbidden shapes (mandate-as-decoration, or fitting the guard to the violation). It stays visibly RED on one test id until decided, which is the honest state. 7d.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-19",
+   "disposed": "2026-08-12T18:18:21.930366+00:00"
   },
   {
    "id": "R0508",

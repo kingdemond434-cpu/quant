@@ -3662,6 +3662,19 @@
    "reversal_condition": "If REPAIR-MODE clears while owed rows are genuinely rotting -- i.e. status OK with oldest_backlog_age_days still rising -- the population is wrong and the line must move back toward the fuller backlog. Revert 4c578e58; the pre-fix behaviour is one line (`len(backlog) > REPAIR_MODE_BACKLOG`).",
    "review_due": "2026-08-26",
    "review_due_source": "success_metric"
+  },
+  {
+   "id": "2026-08-12-birth-properties-boundary",
+   "ts": "2026-08-12T18:17:29.597014+00:00",
+   "decision": "Moved three of the four RECURRING birth-property predicates (artifact-ungoverned, orphan-scripts, decision-ledger-undated) onto the L1.37 push/CI boundary via scripts/check_birth_properties.py in run_law_gate._LAW_FENCES, after clearing all four live instances. Fixed the fourth (mine-conversion-unbacked) at the CLASS level in libs/research/mine_conversion._anchor_tokens rather than at its instance. Commit 66feaa26.",
+   "why": "The \u00a737 brief marked all four RECURRING and said a per-instance fix buys exactly one cycle. They are one class -- a new object born without a required property -- and they recurred BY CONSTRUCTION: all four live in max_audit, which runs at 07:00 on cron and in neither run_law_gate, the pre-push hook, nor CI, so the authoring context is always gone by the time the question is asked (commit 9f3e2fcf: 'fix artifact-ungoverned that MY OWN commit introduced'). The detector was already correct; only the boundary was wrong.",
+   "measured": "check_orphan_scripts 91.56s of 91.66s total and 621MB peak RSS -> 3.4s and 204MB, verified an IDENTITY differentially against the replaced regex (406 real candidates + 15 adversarial cases, zero mismatches). Law gate 41s/11 fences -> 65s/12. _PRODUCER_CADENCE governed generation_due.md (ZERO writers repo-wide, content frozen 2026-07-29) while the live cadence_duties.md (run_cadence.py:881) was unclaimed. check_mine_conversion: 0 defects on this box vs 10 in a clean worktree at the same sha. max_audit acks are keyed on defect NAME, so one ack about generation_due.md suppressed three other stale documents.",
+   "unmeasured": "Whether the ~24s the new fence adds to every push measurably slows the desk's commit cadence -- not instrumented, and cheap to revisit if anyone notices. Whether mine-conversion-unbacked can be made portable at all without changing what \u00a733 accepts as a receipt (rowed R0504, not attempted). Whether L1.34/L1.35 bind a reasoning controller as well as a digging seat (rowed R0507, deliberately left RED rather than decided unilaterally).",
+   "expected_cost": "+24s on every push and CI run, against ~90s saved on every max_audit sweep. One more fence to maintain. Whole-tree scope means the fence goes red for whatever ANY worker commits unclassified -- intended, but it makes the gate a shared dependency.",
+   "success_metric": "None of artifact-ungoverned / orphan-scripts / decision-ledger-undated / mine-conversion-unbacked appears as a RECURRING item in a \u00a737 carry-over brief again. They may still FIRE -- that is the fence working -- but they should be fixed by the session that caused them, in the same push, not carried to a later cycle.",
+   "reversal_condition": "If the fence proves red more often from cross-worker contention than from real unclassified arrivals (i.e. it is mostly tripped by objects the tripping session did not author), the whole-tree scope is wrong and it should be narrowed to a diff against the push range, accepting the shallow-clone UNMEASURED case. If the recurrence continues in a \u00a737 brief despite the boundary, the boundary was not the mechanism and the diagnosis in this row is wrong.",
+   "review_due": "2026-09-11",
+   "review_due_source": "chosen -- 30d is ~2 \u00a737 brief cycles, enough for a recurrence to reappear if the diagnosis is wrong"
   }
  ]
 }
