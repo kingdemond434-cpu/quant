@@ -4335,11 +4335,11 @@
    "summary": "A DESK LESSON THAT DOES NOT FIT THE INJECTION BUDGET IS A WISH, AND THE LEDGER KNOWS IT AT WRITE TIME. Demonstrated 2026-08-01 with an unusually clean causal chain: commit 0240cfa recorded L0057 ('a red pytest leg can mean zero tests ran'), stated in its own message that the lesson renders at 659 chars against 156 chars of free budget and so 'does not fit and reaches no organ' -- and the class then recurred THREE times within 21 minutes (6c81187, ba19f22, and the recommendation-worker at 17:05Z), killing pytest collection repo-wide each time. The graduate path exists and works (L0057 is now graduated against tests/test_suite_collectable.py and enforced at ~0 context cost), but NOTHING forces the choice at the moment a lesson is written. Required: scripts/learn.py add reports, at write time, whether the new lesson fits the injected budget, and when it does not, demands either a graduating test or an explicit recorded 'no mechanism possible -- accepted as un-injected' note. Rationale: 32 of 57 lessons are currently over budget, so this is not a corner case -- it is the majority state of the desk's memory, and every one of them is a lesson the desk believes it has learned and has not.",
    "roi_bps": null,
    "raised": "2026-08-01T17:13:14.442459+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=4 effort_h=2: Not built: scripts/learn.py cmd_add (:76-88) records the lesson and prints 'recorded' with no write-time report of whether it fits the injected budget, and no demand for a graduating test or an explicit 'no mechanism possible' note; the overflow is only surfaced at render/audit time (:64-73, :163-187). Small, additive guard on an existing choke point; the majority-state problem (32/57 lessons over budget when rowed) shrank via the merge's graduations but the write-time forcing function still does not exist.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Implemented exactly as specified: scripts/learn.py cmd_add now reports at WRITE time whether the lesson fits the injected budget, and when it does not it demands either a graduating test (--enforced-by, VERIFIED against disk via the existing _test_exists so a path resolving to nothing cannot buy its way in) or an explicit recorded note (--accept-uninjected, which is stored on the ledger row as accepted_uninjected so the decision is auditable later). Raising BUDGET_CHARS is deliberately NOT offered as a third option -- that is how the doctrine file reached 95k. HOW FIT IS COMPUTED, and this mattered more than it looks: would_reach_organs runs the REAL packer over a scratch ledger containing the existing rows plus the candidate, rather than estimating free budget locally. corpus() is a strict-rank pack with a latch, so 'does it fit' is NOT a question about this lesson's length -- a short lesson is dropped when a longer higher-scoring one ahead of it closed the latch, and any local free-budget estimate would be wrong precisely in the cases that matter, and wrong silently. That required desk_memory.load/corpus to accept root=, or every enforced_by in the scratch file would resolve against the scratch dir, fail closed, and silently re-inflate every graduated lesson's score -- the probe would have answered a different question from the one asked. Verified byte-identical corpus output before and after the root= change (89 dropped, same ids, 11528 chars) so no existing behaviour moved. Displacement is also named, because the latch means a new lesson evicts the tail and a silent eviction is the same defect one row down. 7 tests in tests/ops/test_learn_budget_forcing.py. MEASURED CONTEXT: the ledger is now 114 active lessons with 89 over budget, so this bites immediately -- which is the point. It does NOT retroactively fix the 89 already recorded-but-uninjected; two pre-existing tests in tests/test_desk_memory.py fail on exactly that backlog and are unrelated to this change.",
+   "commit": "d20c8467",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T15:59:50.087864+00:00"
   },
   {
    "id": "R0347",
@@ -4409,11 +4409,11 @@
    "summary": "CARRY BLEED ALARM IS ABSORBING -- it measures a CUMULATIVE LIFETIME ratio, so it can never clear and therefore carries zero information (L1.43 welded gate). Chain confirmed on live artifacts 2026-08-05: the drawdown rail set risk.action=pause_opens at -17.6% (correct -- do NOT touch the rail), so n_carries=0 and deployed_notional=0.0; with opens paused no new funding can accrue, which FREEZES both terms of bleed = non_funding_pnl(-1971.80) / funding_harvested(+113.06). max_audit fires carry-bleed-alarm every cycle on a number that is arithmetically incapable of moving. The attribution the alarm demands is ALREADY on disk (web/cashcarry_live.json leak_attribution: fut_fees 1750.88 = 88.8% of the loss, basis -231.92, residual 11.0) and both root causes are implemented (R0018 churn loop, R0025 windowed cost-rate breaker). FIX (do NOT loosen the bleed threshold -- that is the forbidden direction): make the alarm WINDOWED over recent closes, the same shape R0025 already established for the circuit breaker, so it separates 'bleeding NOW' from 'bled once, fixed, now flat'; and give it a distinct FLAT/NO-EXPOSURE verdict so a zero-position book cannot read as a bleeding one. Same absorbing-state class as the pause_opens defect in desk memory.",
    "roi_bps": 18.0,
    "raised": "2026-08-05T07:00:04.098456+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Implemented, with the FLAT/NO-EXPOSURE verdict the row asked for, and repaired in the GOVERNANCE CONSUMER rather than the executor. Why there: libs/execution/ is MONEY_PATH and scripts/check_change_window.py reports STERILE right now (RAIL_BREACH -- data/CASHCARRY_KILL live since 2026-08-01), so a money-path IMPROVEMENT is frozen under L1.38. carry_bleed_report and its 0.5 alert_frac are therefore UNTOUCHED -- the forbidden direction is not taken. THE ARITHMETIC THAT MAKES THIS EXACT, and it is why no window state file was needed: a book with n_carries 0 and deployed_notional 0.0 cannot accrue new funding or new non-funding P&L, so BOTH terms are frozen by construction and zero exposure alone proves the ratio can never move -- confirmed on the live artifact, where funding_harvested still reads exactly the 113.06 this row cited 7 days ago. max_audit.check_carry_funding_measured now splits three ways: any exposure -> the original carry-bleed-alarm unchanged and full strength; flat + fut_leg_reconciliation explained AND measured -> a CLOSED, already-attributed accounting episode (the live case: explained true, gap 4795.41 matching the ledgered re-base 4790.70) so no economic defect; flat + UNEXPLAINED -> a new carry-bleed-unattributed defect that is genuinely satisfiable by attributing the gap, so this is not muting. Absence is not zero: both exposure keys must be PRESENT and zero, or the live alarm stands (WS-005). Proven: the check now returns [] against the real web/cashcarry_live.json, which had been suppressed by an ACK rather than a fix. 8 tests in tests/ops/test_carry_bleed_absorbing.py. NOTE: the sibling fence check_mechanism_attribution.py breaches the law gate on the SAME frozen +2782.28/113.06 ratio and was outside this row's scope -- rowed as R0493.",
+   "commit": "d20c8467",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T15:59:32.613177+00:00"
   },
   {
    "id": "R0353",
@@ -4421,11 +4421,11 @@
    "summary": "FALSELY-GREEN PROMOTION GATE: the eight-gate barrier has NEVER judged a candidate and reports success every cycle. scripts/promotion_gate.py:44 reads data/gauntlet_survivors.json, which NOTHING writes; :106-108 catches the absence, prints 'unavailable -- no candidates' and returns rc 0. scripts/run_cadence.py:417-421 then tests Path('data/promotion_gate.json').exists() -- true, but written hourly by a DIFFERENT script (scripts/check_promotion_gate.py:61, keys granted_rung/ladder, not verdicts) -- so cadence records fired.append('promotion-gate') every cycle. A no-op is laundered into a green step by a filename collision. FIX: give promotion_gate.py its own output name so it stops colliding with check_promotion_gate.py, make run_cadence assert the artifact promotion_gate ACTUALLY writes, and build a producer for the survivor list. This is the L1.43 welded-gate class in its most expensive form -- a gate that accepts 0% AND reports OK.",
    "roi_bps": 30.0,
    "raised": "2026-08-05T07:13:55.704465+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Implemented 2 of the 3 named fixes; the 3rd is a build I am NOT claiming. DONE: (a) promotion_gate.py OUT is now data/promotion_gate_verdicts.json, so it no longer collides with check_promotion_gate.py:61 which rewrites data/promotion_gate.json hourly with granted_rung/ladder keys -- verified no consumer breaks, since CAPABILITY_RATCHET.json and tests/research/test_capability_ratchet.py read the LADDER keys and that writer is untouched. (b) run_cadence.py now asserts the artifact promotion_gate ACTUALLY writes AND that its mtime advanced, so a stale or sibling-written file can no longer be scored as this cycle's work. (c) beyond the row: the artifact is now written on EVERY path carrying n_candidates as a declared denominator (L1.57), and only status JUDGED returns rc 0 -- so the no-op reports rc 1 NO-PRODUCER and the cadence line stays visibly OWED instead of green. Proven live: running the gate now emits status NO-PRODUCER, measured false, n_candidates 0, rc 1. NOT DONE, and deliberately not faked: the survivor-list producer. data/gauntlet_survivors.json has exactly ONE reference repo-wide and no source on disk carries per-candidate cpcv/pbo/dsr/reality_check/mechanism/capacity/fragility/walk_forward evidence -- moat_survivors.json is a different pipeline (microstructure IC state). Manufacturing that evidence would be worse than the defect. It is now LOUD rather than invisible, which is the L1.49 upward repair. 4 regression tests in tests/scripts/test_promotion_gate.py, the first of which pins the filename collision itself.",
+   "commit": "d20c8467",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T15:59:14.448243+00:00"
   },
   {
    "id": "R0354",
@@ -6070,6 +6070,42 @@
    "commit": null,
    "due": "2026-08-14",
    "disposed": "2026-08-12T15:22:43.984986+00:00"
+  },
+  {
+   "id": "R0491",
+   "source": "cro",
+   "summary": "CREDENTIAL HYGIENE, PRINCIPAL-ONLY ACTION: the git remote for origin embeds a GitHub personal access token in plaintext inside the URL, so it is readable by any process that runs 'git remote -v' or reads .git/config -- including every LLM organ on this box, and it lands verbatim in any transcript or log that captures that command's output. It is already in at least one session transcript for exactly that reason. This is NOT autonomously fixable: rotating or replacing credentials is a FOREVER-HUMAN hard stop, and so is any change that could break the deploy puller's auth. RECOMMENDED ASK for the principal: move the token to a git credential helper or ~/.git-credentials with 0600 perms and set the remote to a bare https URL, then rotate the exposed token. Scope note kept honest: the repo is private and the token's blast radius is that repo, so this is hygiene rather than an active incident -- but a token that appears in logs is one grep away from being an incident, and the desk cannot rotate it itself.",
+   "roi_bps": 2.0,
+   "raised": "2026-08-12T15:23:56.995391+00:00",
+   "status": "scheduled",
+   "reason": "Routed to the principal channel rather than fixed here: credential rotation and placement are on the FOREVER-HUMAN hard-stop list, so no disposition available to this seat can close it. Not paged immediately because data/PRINCIPAL_ACTION.md already carries a live purchase ask (OpenRouter top-up) plus a max-audit escalation, and burying a funded-panel outage under a hygiene item would cost more than the item saves. One week: it rides along with the next principal touch. Scope is bounded -- private repo, single-repo blast radius.",
+   "commit": null,
+   "due": "2026-08-19",
+   "disposed": "2026-08-12T15:24:08.086892+00:00"
+  },
+  {
+   "id": "R0492",
+   "source": "owed-work",
+   "summary": "PANEL SEAT-BLANK COUNTER IS ABSORBING -- same L1.43 welded-gate class as R0352, one subsystem over, and NOT covered by R0487. build_audit_coverage.py:205-209 record_blank() stores a bare integer per seat with NO timestamp, NO window, NO decay and NO reset path anywhere in the repo (one writer, three readers: max_audit.py:799, model_upgrade.py:301, check_free_roster.py:106). max_audit fires seat-chronic at >=3, so once a seat reaches 3 the defect fires on EVERY run forever until a human hand-edits the JSON -- it is arithmetically incapable of clearing, which is exactly the property R0352 was raised and fixed for. Measured 2026-08-12: nemotron-3-ultra sits at 3 and every one of those 3 blanks predates commit 2c4d72c1 (07:34 today), which added free-seat retry for the transient class (_FREE_TRANSIENT includes 400/429/503) that caused them; the seat answered a full 40k-dossier review at 2026-08-11T20:41 and the live canary had it alive at 14:55 today. So the counter is reporting a chronic failure that the code no longer produces, and cannot ever un-report it. SECOND, CONFLATED FAULT: run_external_panel.py:487-496 (added 582d5358) routes ANY hard exception -- HTTP 400, KeyError('choices'), IncompleteRead, JSONDecodeError -- into the same integer as a genuine empty body, while the defect text still asserts 'chronic capacity failure'. Of the 8 recorded failures for this seat, ZERO were empty bodies or timeouts. FIX: store per-blank timestamps and have readers count within a rolling window (the R0025 windowed-breaker shape), and separate transient-transport failures from capacity blanks so the message names the fault it measured. Do NOT lower the >=3 threshold -- that is the forbidden direction.",
+   "roi_bps": 6.0,
+   "raised": "2026-08-12T15:57:31.821044+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0493",
+   "source": "owed-work",
+   "summary": "MECHANISM-ATTRIBUTION FENCE IS ABSORBING ON THE SAME FROZEN RATIO R0352 JUST FIXED -- the sibling fence nobody checked. check_mechanism_attribution.py breaches the law gate today with 'cash_and_carry: UNATTRIBUTED -- unexplained WIN +2,782.28 is 2461% of the +113.06 mechanism term'. Those are the SAME two frozen numbers as the carry-bleed alarm: web/cashcarry_live.json holds n_carries 0 and deployed_notional 0.0, so no new funding and no new non-funding P&L can accrue and BOTH terms of the ratio are pinned by construction -- funding_harvested has read exactly 113.06 since 2026-08-05. R0352 repaired max_audit's consumer (flat book + an EXPLAINED fut_leg_reconciliation is a closed accounting episode, not a live leak) and this fence was not in that row's scope, so it keeps firing on a number arithmetically incapable of moving, in the LAW GATE, where a permanently-red fence is the thing L1.43 says gets switched off. THE CAUSE IS ALREADY ON DISK AND STRUCTURED: fut_leg_reconciliation reports explained=true measured=true gap=4795.41 rebase_usd=4790.70 -- the ledgered inception re-base, i.e. ACCOUNTING, NOT EDGE. FIX: give it the same flat-book + attributed-recon reading max_audit now has (scripts/max_audit.py check_carry_funding_measured, commit this session, tests/ops/test_carry_bleed_absorbing.py), reading the structured recon fields rather than parsing the verdict string. Do NOT touch the 0.5 alert_frac -- the threshold is not the defect and lowering it is forbidden.",
+   "roi_bps": 5.0,
+   "raised": "2026-08-12T15:57:50.995458+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
