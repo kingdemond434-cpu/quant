@@ -1,0 +1,70 @@
+{
+  "generated": "2026-08-12",
+  "asset": "BTCUSDT",
+  "source": "data/lake/bronze/crypto/BTCUSDT/D1",
+  "sample_start": "2019-09-09",
+  "sample_end": "2026-08-12",
+  "n_days": 2530,
+  "n_ramadan_days": 208,
+  "n_ramadan_episodes": 7,
+  "caveat": "moon-sighting => window +/-1d by jurisdiction; ZERO promotion authority (two-stage law), this is a POWER/METHOD demonstration not a screen",
+  "results": {
+    "return": {
+      "col": "ret",
+      "t_naive": -0.5614,
+      "n_days": 208,
+      "t_episode": -0.9476,
+      "n_events": 7,
+      "icc": 0.0,
+      "design_effect": 1.0,
+      "ram_mean": -0.0005618343048337826,
+      "non_mean": 0.0008318015462281818
+    },
+    "funding": {
+      "col": "funding",
+      "t_naive": 1.3145,
+      "n_days": 208,
+      "t_episode": 0.6913,
+      "n_events": 7,
+      "icc": 0.5247,
+      "design_effect": 16.067,
+      "ram_mean": 0.0003699374038461538,
+      "non_mean": 0.00031386482342807926
+    },
+    "basis": {
+      "col": "basis",
+      "t_naive": 1.1647,
+      "n_days": 208,
+      "t_episode": 0.5742,
+      "n_events": 7,
+      "icc": 0.6953,
+      "design_effect": 20.964,
+      "ram_mean": -0.00011006902196553626,
+      "non_mean": -0.0001590904965463541
+    }
+  },
+  "mde_80pct": {
+    "return": {
+      "observed": -0.14218577672532193,
+      "mde_80pct": 0.4934875460357632,
+      "unit": "%/day",
+      "ratio": 0.28812434653622987,
+      "verdict": "UNDERPOWERED-BELOW-MDE"
+    },
+    "funding": {
+      "observed": 0.6267837267243466,
+      "mde_80pct": 2.9821697460124676,
+      "unit": "bps/8h",
+      "ratio": 0.21017707914260564,
+      "verdict": "UNDERPOWERED-BELOW-MDE"
+    },
+    "basis": {
+      "observed": 0.6963579908556086,
+      "mde_80pct": 3.988939357387043,
+      "unit": "bps",
+      "ratio": 0.17457221794210437,
+      "verdict": "UNDERPOWERED-BELOW-MDE"
+    }
+  },
+  "mde_note": "MDE at 80% power/two-sided 5% on n=7 episode-level effects. Halving MDE requires n=28 episodes (+21 years)."
+}

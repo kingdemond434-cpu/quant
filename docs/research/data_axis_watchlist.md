@@ -2314,3 +2314,42 @@ as underpowered, with the enabling change named above.**
   ratio and top-trader ratios — which are the closest existing analogue — so the honest prior is
   that this axis is **already partly held** and its marginal value is the JP-equity cross-section,
   which the desk does not trade. Recorded so the next reader does not re-discover it as novel.
+
+---
+
+## SESSION SUMMARY — 2026-08-12 (AR frontier miner, seat's first run)
+
+**One axis carded, and it is carded WITH ITS CEILING** — the point of the card is to stop the desk
+re-deriving a design that cannot work. Deliberately **no bulk-add** of the AR seed list: the desk's
+measured bottleneck is verification, not cataloguing, and a source earns a graded card only by
+producing something. Everything else found this run is recorded as leads in
+`prospector_coverage.md` (AR row + session note), not as cards.
+
+- **`hijri_calendar_overlay` — VERIFIED-CLEAN, and PERMANENTLY UNDERPOWERED AS AN ANNUAL EVENT.**
+  Free and self-computable (no vendor, no key, no licence): the Hijri→Gregorian mapping is public
+  and the Ramadan windows are tabulated. Produced a real artifact this run:
+  **`data/ar_ramadan_power_check.json`** (BTCUSDT D1, 2019-09-09→2026-08-12, 2,530 days,
+  208 Ramadan-days, **7 episodes**).
+  - **Verified use:** as a **conditioning/exclusion variable** and for **cross-sectional** designs
+    (7 events × N assets/venues), where it retains power.
+  - **Killed use:** the **annual event study** — 80%-power MDE is **3–6× the observed effect** on
+    returns, funding and basis; halving the MDE needs **28 episodes = 21 more years**. Graveyarded
+    as `hijri_ramadan_calendar_axis` → `unmeasurable_by_construction` (**not** refuted; L1.25).
+  - **Measurement caveat that is also a tradability caveat:** windows are **moon-sighted**, so the
+    start date varies ±1 day by jurisdiction and is **not deterministic ex ante** — any design
+    keying on the exact first day inherits an irreducible ±1d alignment error.
+  - **Companion measurement (the reusable part):** within-event **ICC 0.000 / 0.525 / 0.695** for
+    returns / funding / basis → design effects 1.0 / 16.1 / 21.0. See **OP-053** and inbox **#116**.
+
+- **Leads found, NOT carded (unverified — recorded so they are not lost, not so they are trusted):**
+  GCC regulator/exchange layer (VARA, ADGM, SCA, CMA Saudi, `bitoasis.net`, CoinMENA) — the AR
+  analogue of the BR seat's government-dataset win, and the direction the AR ground actually
+  rewards now that its premium axis is dead. Chainalysis MENA regional figures (7.5% of global
+  on-chain value received, $338.7bn 2024; 93% in $10k+ transactions) are **summary-grade, read
+  through search results, primary not opened** — do not cite as verified.
+
+- **§13 note affecting future data digs:** `hawamer.com` (largest Gulf trading forum) **denies
+  `ClaudeBot` by name** under Cloudflare-managed rules with an EU DSM Art.4 reservation and
+  `Content-Signal: ai-train=no` — **HARD STOP, archives included**. `bitoasis.net` runs an AI-agent
+  **allowlist** (OAI-SearchBot/ChatGPT-User/PerplexityBot allowed, CCBot denied, ClaudeBot unnamed →
+  permitted under `*`). Per-agent policy is emerging; re-probe rather than carrying a binary prior.

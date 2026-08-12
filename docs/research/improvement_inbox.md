@@ -1894,3 +1894,54 @@ selection FORM); "Lucky or Good? Outcome Noise, Effective Sample Size" (2607.275
 denominator discourse as effective-bets doctrine); HAC nugget from 2607.26188: HAC over-rejects
 at cycle scale (size 0.33 at nominal 0.05, n≈4 regimes) — binds any desk test with few
 independent regime observations. [§33: wired -> docs/research/recommendation_ledger.json R-row (this entry)]
+
+---
+
+### #116 — CLUSTER EVERY CALENDAR/EVENT TEST ON A PERSISTENT SERIES (measured: ~4× t-inflation)
+_AR frontier miner, 2026-08-12. Measured on this desk's own BTCUSDT D1, not imported._
+
+The desk's EVENT-AND-CALENDAR family tests dummies against daily series. Whether that is honest
+depends entirely on the **persistence of the series being tested**, and the two cases differ by 4×:
+
+| series | ICC (within-event) | design effect | naive daily-dummy t is inflated by |
+|---|---|---|---|
+| returns | **0.000** | 1.00 | **1.00× — a daily dummy is fine** |
+| funding | **0.525** | 16.07 | **≈4.01×** |
+| basis | **0.695** | 20.96 | **≈4.58×** |
+
+So *"is a daily calendar dummy valid?"* has **no general answer**. It is fine on returns and badly
+broken on funding/basis/OI/spread. **The trap sits on the good path:** the desk should prefer
+direction-agnostic channels (129/129 directional mechanisms failed 2026-08-01; funding/carry is the
+only repeat survivor), and those are exactly the persistent series where the naive test manufactures
+significance. A calendar edge "found" on funding at t≈2.6 is t≈0.65 once clustered.
+
+**FIX:** any event/calendar test must cluster at the **event** level (or report the ICC and design
+effect alongside the naive t). This is gap-register row 85 — *count EVENTS IN THE WORLD, never
+READINGS OF THE WORLD* — instantiated with a measured multiplier for the calendar family.
+Evidence: `data/ar_ramadan_power_check.json`. Instrument: **OP-053**.
+
+---
+
+### #117 — GRAVEYARD-CHECK SEAT BRIEFS BEFORE DISPATCH (two consecutive seats sent at dead ground)
+_AR frontier miner, 2026-08-12._
+
+**BR s1 (08-01):** its era target "BR P2P premium" was already `mercado_br` REJECTED, inside a family
+killed 5×. **AR s1 (08-12):** its era target — *"LocalBitcoins MENA-era P2P premium, Egypt/Lebanon
+premium episodes"* — is `era_crossvenue_fiat_premium_arb` (buried **7×**) inside the regional-premium
+class the desk itself declared **exhausted**, whose closest MENA-adjacent case (`try_premium_timing`,
+Turkey capital-control) was REJECTED and whose lone survivor (kimchi) was KILLED 08-01. The desk's own
+cross-era synthesis even states the rule that forecloses the replacement search: *"do not hunt for a
+region whose barrier is low enough to arb — that region's premium is already zero."*
+
+**The failure is structural, not clerical:** seat briefs are written from a **region stereotype**
+("this region has capital controls → hunt its premium"), which generates the *same* mechanism for
+every region, and the desk has now tested that mechanism in KR/JP/BR/TR/CN/RU/Coinbase. Each new seat
+therefore arrives pre-loaded with a hypothesis the graveyard already answered, and spends its scarce
+first item rediscovering that.
+
+**FIX (cheap, one step):** run the seat brief's era target through the graveyard + `strategy_coverage.json`
+**at brief-writing time**, and where the family is HUNTED, replace the target rather than dispatch it.
+Both seats caught it themselves at the cost of an item — but the catch depended on the seat choosing
+to check first, which is not enforced anywhere. **Standing implication:** a region's *stereotype* is
+the least informative thing about it; the BR seat's actual win was a **government dataset**, not a
+premium, and the AR analogue (GCC regulators, VARA/ADGM/SCA/CMA, the exchange layer) is still unmined.

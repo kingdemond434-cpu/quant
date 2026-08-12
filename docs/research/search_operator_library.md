@@ -1467,3 +1467,64 @@ in the PROCESSOR layer (`CSRankNorm/CSZScoreNorm`), never in the expression — 
 time-series, the cross-section is a TRAINING-TIME choice. Clean separation the desk can copy:
 `group_rank`-style ops stay in the feature layer ONLY when the peer set is part of the
 hypothesis; universe-relative normalisation belongs downstream.
+
+### OP-053 a calendar axis has a HARD event ceiling — compute the MDE before you spend the run   [active]
+class: power / pre-flight arithmetic
+origin: AR frontier miner (2026-08-12), found by testing the seat's own replacement axis
+validated-gain: killed an entire axis design in one command **after** the literature search and
+  **before** any screen, and produced the number that makes the kill permanent: an annual event over
+  a 7-year liquid history is **n=7**, and its 80%-power MDE was **3–6× the observed effect** on all
+  three channels tested. Halving that MDE needs **28 episodes = 21 more years**, so the design can
+  never be rescued by waiting — a fact no screen output would have stated.
+technique: for any calendar/seasonal/event axis, the sample size is **the number of EVENTS, never the
+  number of DAYS inside them** (gap-register row 85). Before mining or screening, compute:
+  ```
+  n_events  = occurrences of the event in the liquid sample      # annual => 7-10, monthly => 80+
+  MDE_80    = (t_crit(n-1) + 0.842) * sd(per-event effect) / sqrt(n_events)
+  ratio     = |observed| / MDE_80        # < 1  =>  the test CANNOT see a real effect
+  years_to_halve_MDE = 3 * current_span  # MDE ~ 1/sqrt(n)
+  ```
+  **READ THE RATIO, NOT THE p-VALUE.** A null with ratio 0.2 says *the instrument is blind*, not
+  *the effect is absent* — and the two demand opposite responses (L1.25: re-aim vs retire).
+  Report `unmeasurable_by_construction`, retire the **DESIGN**, and name the enabling change that
+  would restore power — for an annual event that is almost always **cross-sectional expansion**
+  (n_events × N assets/venues), never a longer wait.
+  **THE COMPANION TRAP, which is the half that surprises:** the same run must check the **ICC** of
+  the series being tested, because the naive daily-dummy test is honest on some series and badly
+  broken on others. Measured on this desk's BTCUSDT D1:
+  * **returns: ICC 0.000, design effect 1.00** — a daily dummy is fine.
+  * **funding: ICC 0.525 (DE 16.1)**, **basis: ICC 0.695 (DE 21.0)** — a daily dummy inflates t by
+    **≈4.0× and ≈4.6×**.
+  So *"is a daily calendar dummy valid?"* has no general answer: it depends on the **persistence of
+  the series**, not on the test. Any event test on funding, basis, OI or spread must cluster at the
+  event level. This matters most precisely where the desk should be hunting — the direction-agnostic
+  channels — so the trap sits on the good path, not the bad one.
+adaptations: AR=Hijri/Ramadan (n=7, killed as a design); universal — applies to halving cycles (n≈4),
+  quarterly expiries (n≈28), CME rolls (n≈80, the first annual-class axis with real power), unlock
+  events (n=24,201 but see the `pct_circ_now` conditioning-variable trap, R0289).
+counterfactual: HIGH — without the MDE the run would have reported "Ramadan shows no effect in
+  crypto" as a finding. That sentence is false in a specific and expensive way: it reads as *tested
+  and dead* when the truth is *never testable this way*, which would have retired the mechanism
+  along with the design and blocked the cross-sectional version that is still open.
+
+## LEXICON — AR crypto/trading jargon (dark-forest search keys)
+_Charter dark-forest deliverable #2, AR seat, session 1. Convention per EN/CN/KR/JP/RU tables.
+OBSERVED = seen in live AR text this session; SEED = supplied/inferred and NOT yet verified, per the
+CN OP-037 lesson (0/7 unverified seeds survived there — unobserved terms are not search keys yet)._
+
+| term | gloss | era | note / example query |
+|---|---|---|---|
+| المراجحة | arbitrage | all | **OBSERVED** — the standard AR term; `المراجحة العملات الرقمية` finds AR arb writeups |
+| العقود الدائمة | perpetual contracts (perps) | 2020→ | **OBSERVED** — the AR perp term; pairs with `التمويل` for funding-rate content |
+| التمويل / معدل التمويل | funding / funding rate | 2020→ | **OBSERVED** — note the collision: التمويل is also "financing" in the Islamic-finance sense, so this key returns BOTH trading and fiqh material. **That collision is a feature** — it is the bridge to the doctrinal layer |
+| التداول الشبكي | grid trading | 2021→ | **OBSERVED** — AR grid-bot content |
+| تتبع الاتجاه | trend following | all | **OBSERVED** |
+| بوت تداول / التداول الآلي | trading bot / automated trading | 2020→ | **OBSERVED** — `التداول الآلي` is the higher-yield of the two |
+| الرافعة المالية | leverage | all | **OBSERVED** — in fiqh contexts it is the flag for the riba objection |
+| التقابض / التقابض الفوري | possession / immediate possession (settlement) | doctrinal | **OBSERVED** — **the load-bearing doctrinal term**: the requirement that kills deferred settlement and derivatives. The precise key for the participant-exclusion layer |
+| الغرر / الميسر | gharar (uncertainty) / maysir (gambling) | doctrinal | **OBSERVED** — the two named grounds for the derivatives prohibition |
+| الربا | riba (interest) | doctrinal | **OBSERVED** — the ground for the margin/funding objection |
+| زكاة العملات الرقمية | zakat on digital currencies | 2018→ | **OBSERVED** — the forced-flow key; finds the 2.5%-levy rulings and calculators |
+| حلال / حرام + تداول | halal/haram + trading | all | **OBSERVED** — the retail-facing framing; high volume, mostly SEO-grade, but it names the constraint retail actually applies |
+| حوامير | "whales" (lit. groupers) — **and the name of the largest Gulf forum** | all | **OBSERVED** — `حوامير` is both the slang for big players and the brand `hawamer.com`. **Note the §13 status: that forum is a HARD STOP (ClaudeBot denied by name)**, so the term is a search key for *other* venues quoting it, not for mining the forum itself |
+| سيولة / السيولة | liquidity | all | SEED — standard finance vocabulary, low discrimination |
