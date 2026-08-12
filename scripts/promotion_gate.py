@@ -40,7 +40,15 @@ sys.path.insert(0, str(ROOT))
 
 from libs.stage15.governance import alpha_governance_gate  # noqa: E402
 
-OUT = ROOT / "data/promotion_gate.json"
+#: THIS GATE'S OWN OUTPUT NAME, and the rename is the fix rather than a tidy-up (R0352 class,
+#: L1.43). Until 2026-08-12 this wrote `data/promotion_gate.json` -- the SAME path
+#: `scripts/check_promotion_gate.py:61` rewrites hourly with entirely different keys
+#: (granted_rung/ladder, not verdicts). `run_cadence` then credited the step by testing that
+#: filename's mere existence, so the sibling's hourly write laundered this gate's no-op into a
+#: green cadence line every single cycle. A filename collision between two scripts is not a
+#: cosmetic clash when a third script reads existence as success: it is a gate reporting a pass it
+#: never computed.
+OUT = ROOT / "data/promotion_gate_verdicts.json"
 CANDIDATES = ROOT / "data/gauntlet_survivors.json"
 
 # The eight gates, with the evidence key each is read from. Order matches the governance
@@ -79,7 +87,7 @@ def judge(name: str, ev: dict[str, Any]) -> dict[str, Any]:
     return d
 
 
-def main() -> None:
+def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--self-test", action="store_true")
     args = ap.parse_args()
@@ -100,18 +108,29 @@ def main() -> None:
         # the critical one: a gate with NO evidence must not pass by default
         assert judge("c", cases["unchecked_capacity"])["accepted"] is False
         print("  fail-closed confirmed: an UNCHECKED gate rejects, it does not pass by default")
-        return
+        return 0
 
+    print("=== PROMOTION GATE ===")
     try:
         raw = json.loads(CANDIDATES.read_text("utf-8"))
-    except (OSError, json.JSONDecodeError):
-        print(f"promotion-gate: {CANDIDATES.relative_to(ROOT)} unavailable -- no candidates")
-        return
+    except (OSError, json.JSONDecodeError) as exc:
+        # NO PRODUCER IS NOT NO CANDIDATES, and the two demanded opposite responses while this
+        # branch collapsed them (L1.55's ABSENT-vs-UNREADABLE discipline). `gauntlet_survivors.json`
+        # has exactly ONE reference repo-wide -- the read on the line above -- so nothing has ever
+        # written it and this gate has never judged a single candidate. It printed one line and
+        # returned rc 0, which `run_cadence` scored as a fired duty.
+        return _publish("NO-PRODUCER", [], measured=False, note=(
+            f"{CANDIDATES.relative_to(ROOT)} is UNREADABLE ({type(exc).__name__}) -- nothing in "
+            f"this repo writes it, so the eight-gate barrier has judged NOTHING. This is an owed "
+            f"BUILD (a screen-survivor producer), not a quiet pass: an empty denominator can "
+            f"never be a green gate."))
     cands = raw if isinstance(raw, dict) else {}
-    print("=== PROMOTION GATE ===")
     if not cands:
-        print("  no screen survivors awaiting the gate")
-        return
+        # PRESENT BUT EMPTY is a genuinely different claim from ABSENT: a producer ran and found
+        # no survivors. Still not a pass -- it is a measured zero, and it says so.
+        return _publish("NO-CANDIDATES", [], measured=True, note=(
+            f"{CANDIDATES.relative_to(ROOT)} is present and EMPTY -- a producer ran and no screen "
+            f"survivor is awaiting the gate. Zero judged is not zero rejected."))
 
     rows = [judge(n, ev if isinstance(ev, dict) else {}) for n, ev in sorted(cands.items())]
     for d in rows:
@@ -121,13 +140,40 @@ def main() -> None:
             print(f"      {r}")
     n_ok = sum(1 for d in rows if d["accepted"])
     print(f"\n  {n_ok}/{len(rows)} cleared all eight gates")
+    return _publish("JUDGED", rows, measured=True, note=(
+        "Screen-side prerequisite only. Promotion authority remains with pre-registered FORWARD "
+        "evidence under the Two-Stage Discovery Law."))
+
+
+def _publish(status: str, rows: list[dict[str, Any]], *, measured: bool, note: str) -> int:
+    """Write the verdict ALWAYS, carrying the denominator, and return the process exit code.
+
+    THE ARTIFACT IS WRITTEN ON EVERY PATH, including the paths that judged nothing. The old code
+    returned early without writing whenever candidates were missing, so the only evidence a run
+    had happened was a filename that a DIFFERENT script kept fresh -- and `run_cadence` tested
+    exactly that filename's existence. Writing an honest "I judged 0 of 0" is what makes the
+    difference visible.
+
+    `n_candidates` IS THE DENOMINATOR AND IT IS DECLARED AT THE EXIT SITE (L1.57). A status that
+    would read as success over an empty scan is refused here: anything other than JUDGED returns
+    rc 1, so the cadence line stays OWED rather than green. That is deliberately loud and it is
+    the only honest state -- the gate genuinely cannot run until a survivor producer exists.
+    """
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps({"ran": datetime.now(tz=UTC).isoformat(), "verdicts": rows},
-                              indent=1), "utf-8")
-    print(f"  -> {OUT.relative_to(ROOT)}")
-    print("  Screen-side prerequisite only. Promotion authority remains with pre-registered")
-    print("  FORWARD evidence under the Two-Stage Discovery Law.")
+    OUT.write_text(json.dumps({
+        "ran": datetime.now(tz=UTC).isoformat(),
+        "status": status,
+        "measured": measured,
+        "n_candidates": len(rows),
+        "n_accepted": sum(1 for d in rows if d["accepted"]),
+        "candidates_source": str(CANDIDATES.relative_to(ROOT)),
+        "note": note,
+        "verdicts": rows,
+    }, indent=1), "utf-8")
+    print(f"  {status}: judged {len(rows)} candidate(s) -> {OUT.relative_to(ROOT)}")
+    print(f"  {note}")
+    return 0 if status == "JUDGED" else 1
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

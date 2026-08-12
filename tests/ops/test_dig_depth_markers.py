@@ -77,3 +77,65 @@ def test_the_real_br_log_is_no_longer_theatre():
         import pytest
         pytest.skip(f"{_REAL_BR_LOG.name} reaped -- cannot re-measure, which is not a pass")
     assert _score(_REAL_BR_LOG.read_text("utf-8", errors="ignore")) >= 2
+
+
+# --- A STUB MUST NOT BLIND THE FAMILY BEHIND IT (2026-08-12) ------------------------------------
+#
+# check_dig_depth took `logs[0]` and then skipped it when it was under 1500 bytes, so ONE tiny
+# "DEFERRED -- brain mutex held by cro_ai" notice exempted every frontier dig from depth judgement.
+# Measured live: frontier_kr_20260812T1500.log was 171 bytes and the newest of its glob, while four
+# substantial digs from that morning went unread. The fence reported no defect over a set it never
+# opened -- a pass on an empty scan (L1.57), not a threshold that was too loose.
+
+
+def _judge(tmp_path, monkeypatch, files: dict[str, str]) -> dict[str, str]:
+    """Run check_dig_depth over a synthetic log dir. `files` maps name -> contents, oldest first."""
+    import os
+    import time
+
+    logs = tmp_path / "logs"
+    logs.mkdir(parents=True)
+    (tmp_path / "data").mkdir(parents=True)
+    (tmp_path / "data/depth_mandate_baseline").write_text("0", "utf-8")
+    now = time.time()
+    for i, (name, body) in enumerate(files.items()):
+        p = logs / name
+        p.write_text(body, "utf-8")
+        os.utime(p, (now - (len(files) - i) * 60, now - (len(files) - i) * 60))
+    monkeypatch.setattr(max_audit, "LOGS", logs)
+    monkeypatch.setattr(max_audit, "ROOT", tmp_path)
+    monkeypatch.setattr(max_audit, "NOW", now)
+    defects: list[tuple[str, str]] = []
+    max_audit.check_dig_depth(defects)
+    return dict(defects)
+
+
+_SHALLOW = "we looked at many sources and listed them. " * 60      # >1500b, 0 depth markers
+_DEEP = "we reimplemented the permutation census and filed a falsifier. " * 40
+
+
+def test_a_stub_newest_log_does_not_exempt_the_substantial_dig_behind_it(tmp_path, monkeypatch):
+    """THE REGRESSION. The stub is newest; the shallow dig behind it must still be judged."""
+    ids = _judge(tmp_path, monkeypatch, {
+        "frontier_br_1.log": _SHALLOW,
+        "frontier_kr_2.log": "frontier-kr DEFERRED -- brain mutex held by cro_ai pid=1097905\n",
+    })
+    assert "dig-shallow-frontier_br_1" in ids, (
+        "a 171-byte mutex-deferral notice must not blind the fence to the substantial dig "
+        "behind it -- that is a passing verdict over a set the fence never opened")
+
+
+def test_a_deep_dig_behind_a_stub_still_passes(tmp_path, monkeypatch):
+    """The widened selection must not manufacture defects either -- depth still clears."""
+    assert _judge(tmp_path, monkeypatch, {
+        "frontier_br_1.log": _DEEP,
+        "frontier_kr_2.log": "frontier-kr DEFERRED -- brain mutex held\n",
+    }) == {}
+
+
+def test_stubs_alone_are_still_not_judged_for_depth(tmp_path, monkeypatch):
+    """check_organs owns quota-deaths. A family with NO substantial dig raises nothing here."""
+    assert _judge(tmp_path, monkeypatch, {
+        "frontier_br_1.log": "DEFERRED\n",
+        "frontier_kr_2.log": "DEFERRED\n",
+    }) == {}

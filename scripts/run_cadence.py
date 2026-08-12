@@ -469,14 +469,24 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
     # PROMOTION GATE (every cycle). Renders the eight-gate barrier explicitly and records the
     # verdict, so a promotion prerequisite can be audited after the fact instead of being
     # assembled implicitly per screen. Fail-closed: unchecked gates reject.
+    # THE ARTIFACT ASSERTED HERE MUST BE THE ONE THIS STEP WRITES (R0353). This tested
+    # `data/promotion_gate.json` -- which scripts/check_promotion_gate.py rewrites HOURLY with
+    # unrelated keys -- so the existence test was satisfied by a sibling script's output and the
+    # step was credited every cycle while promotion_gate.py returned early having judged nothing.
+    # An existence test against a filename a DIFFERENT producer keeps fresh is not a check.
+    # Asserting freshness as well as existence closes the other half: a stale verdict from a run
+    # that died last week would otherwise still read as this cycle's work.
+    _pg = Path("data/promotion_gate_verdicts.json")
+    _pg_before = _pg.stat().st_mtime if _pg.exists() else -1.0
     _r = subprocess.run([sys.executable, "scripts/promotion_gate.py"],
                         capture_output=True, text=True, timeout=180, check=False)
     _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
-    if _r.returncode != 0 or not Path("data/promotion_gate.json").exists():
+    if _r.returncode != 0 or not _pg.exists() or _pg.stat().st_mtime <= _pg_before:
         # SILENT STEPS ARE UNMONITORED STEPS. These three were fired with their output
         # discarded, so a crash or an empty run looked identical to success -- the same
         # state-touched-but-nothing-produced class _run_panel exists to catch.
-        print(f"cadence: promotion-gate rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
+        print(f"cadence: promotion-gate rc={_r.returncode} NO VERDICT -- duty stays OWED "
+              f"| {_tail[0][:110]}")
     else:
         fired.append("promotion-gate")
 

@@ -351,7 +351,15 @@ def _fenced(fn, defects, label):
 # having produced when its log is substantial OR a declared artifact advanced. Keep in sync with
 # libs/ops/organ_catchup.py ORGANS.
 ORGAN_ARTIFACTS: dict[str, tuple[str, ...]] = {
-    "brain-cycle": ("data/decision_ledger.json", "docs/research/cadence_duties.md"),
+    # EXCLUSIVITY, and this drifted from its own sibling for weeks. libs/ops/organ_catchup.py
+    # dropped BOTH of these for the brain on 2026-07-26 with the reason spelled out -- the ledger
+    # is written by every commit and several organs, cadence_duties by run_cadence -- so each made
+    # a DEAD cycle read as produced. This table kept them, and because the reported age is
+    # min(log_age, artifact_age) the shared artifact made the number OPTIMISTIC: on 2026-08-12 the
+    # brain had been dead 17.9h through four consecutive failures and this reported 13h. A
+    # liveness signal a dozen other writers can emit is not evidence THIS organ ran. No exclusive
+    # artifact exists, so fall back to log size: weaker, but honest (L1.28a).
+    "brain-cycle": (),
     "dataaxis-dig": ("docs/research/data_axis_watchlist.md", "data/data_universe_map.json"),
     "prospector-dig": ("docs/research/prospector_watchlist.md",
                        "docs/research/prospector_coverage.md"),
@@ -400,9 +408,24 @@ def check_organs(defects) -> None:
             continue                      # artifacts prove production; stub log is expected
         age_h = min((NOW - max(p.stat().st_mtime for p in ok)) / 3600, art_h)
         if age_h > max_h:
+            # IN-FLIGHT IS NOT SILENTLY DEGRADED. `_producer_running` already encodes this for
+            # products ("a monitor that cries wolf on healthy work is how a desk learns to ignore
+            # its own pager") and this check never consulted it: on 2026-08-12 it paged
+            # `organ-stale-brain-cycle ... silently degraded` at 14:54 about a cycle that was
+            # running at that moment and exited 0 at 15:26. A claude organ's log stays tiny until
+            # exit, so a healthy long run looks exactly like a dead one to a size-and-mtime rule.
+            #
+            # BOUNDED, because forgiving an in-flight run forever would hide a HUNG organ -- the
+            # failure this check exists to catch. Past 2x the cadence window a still-running
+            # producer IS the defect, and the message says which of the two it is.
+            running = _organ_running(organ)
+            if running and age_h <= 2 * max_h:
+                continue
+            hung = (" -- and its producer is STILL RUNNING, so this is a HUNG run, not a missed "
+                    "one") if running else ""
             defects.append((f"organ-stale-{organ}",
                             f"{organ}: last SUCCESSFUL run {age_h:.0f}h ago "
-                            f"(cadence expects <= {max_h:.0f}h) -- silently degraded"))
+                            f"(cadence expects <= {max_h:.0f}h) -- silently degraded{hung}"))
 
 
 # A real death SAYS so. A ~58b log is the normal signature of a SUCCESSFUL claude organ (it writes
@@ -441,13 +464,37 @@ def _producer_running(label: str) -> bool:
     its own pager -- the same blindness the stub-death check exists to prevent.
     """
     pat = _PRODUCER_PGREP.get(label)
-    if not pat:
-        return False
+    return bool(pat) and _pgrep(pat)
+
+
+def _pgrep(pat: str) -> bool:
     try:
         return subprocess.run(["pgrep", "-f", pat], capture_output=True,
                               timeout=10, check=False).returncode == 0
     except (OSError, subprocess.SubprocessError):
         return False               # cannot prove it is alive -> fall through and report
+
+
+#: organ -> pgrep pattern for the shell entrypoint that writes its log. Mirrors the `pgrep` field
+#: of libs/ops/organ_catchup.ORGANS, which has guarded exactly this way since 2026-07-26.
+_ORGAN_PGREP = {
+    "brain-cycle":      "run_cro_ai[.]sh",
+    "dataaxis-dig":     "run_dataaxis_dig[.]sh",
+    "litminer-dig":     "run_litminer_dig[.]sh",
+    "prospector-dig":   "run_prospector_dig[.]sh",
+    "blindrediscovery": "run_blind_rediscovery",
+}
+
+
+def _organ_running(organ: str) -> bool:
+    """True while THIS organ is mid-run, so a healthy long cycle is not filed as a dead one.
+
+    FAILS TOWARD REPORTING. An organ with no known pattern, or a pgrep that cannot run, returns
+    False and the staleness defect fires as before -- an unprovable liveness claim must never
+    silence a fence (L1.28a: unmeasured is not OK).
+    """
+    pat = _ORGAN_PGREP.get(organ) or ("run_frontie[r]" if organ.startswith("frontier-") else "")
+    return bool(pat) and _pgrep(pat)
 
 
 def check_stub_deaths(defects) -> None:
@@ -1062,7 +1109,6 @@ def check_dig_depth(defects) -> None:
         logs = sorted(LOGS.glob(pat), key=lambda p: p.stat().st_mtime, reverse=True)
         if not logs:
             continue
-        newest = logs[0]
         _mand = ROOT / "data/depth_mandate_baseline"
         if not _mand.exists():
             _mand.write_text(str(NOW))
@@ -1070,12 +1116,20 @@ def check_dig_depth(defects) -> None:
             _base = float(_mand.read_text().strip())
         except Exception:
             _base = NOW
-        if newest.stat().st_mtime < _base:
-            continue                                  # pre-mandate dig -- not judged
-        if (NOW - newest.stat().st_mtime) > 4 * 86400:
-            continue                                  # stale digs handled by check_organs
-        if newest.stat().st_size < 1500:
-            continue                                  # stub/quota-death handled elsewhere
+        # JUDGE THE NEWEST *JUDGEABLE* DIG, NOT THE NEWEST FILE. This took `logs[0]` and then
+        # `continue`d if it was a stub -- so one 171-byte "DEFERRED -- brain mutex held by cro_ai"
+        # notice, written seconds ago, silently exempted the ENTIRE frontier family from depth
+        # judgement while four substantial digs from that morning sat unread. The fence reported
+        # no defect over a set it never opened: a passing verdict on an empty scan, which is the
+        # vacuous-denominator class (L1.57) rather than a threshold being too loose. Stubs are
+        # still not judged for depth -- check_organs owns quota-deaths -- they just no longer
+        # blind the family behind them.
+        newest = next((p for p in logs
+                       if p.stat().st_size >= 1500                      # substantial dig
+                       and p.stat().st_mtime >= _base                   # post-mandate
+                       and (NOW - p.stat().st_mtime) <= 4 * 86400), None)  # not stale
+        if newest is None:
+            continue
         txt = newest.read_text("utf-8", errors="ignore").lower()
         hits = sum(1 for m in markers if m in txt)
         if hits < 2:
@@ -1569,9 +1623,42 @@ def check_carry_funding_measured(defects) -> None:
     # nothing, so a book whose non-funding P&L was 3146% of its harvest could read as a SURVIVOR.
     # A fence firing into a field nobody reads is not a fence.
     if cc.get("bleed_alert") is True:
-        defects.append((
-            "carry-bleed-alarm",
-            f"carry leak alarm FIRING and unactioned -- {str(cc.get('bleed_verdict', ''))[:200]}"))
+        # AN ABSORBING ALARM CARRIES ZERO INFORMATION (R0352, L1.43 welded gate). `bleed_alert` is
+        # computed from CUMULATIVE-LIFETIME totals, and a book holding no positions cannot accrue
+        # new funding or new non-funding P&L -- so with exposure at zero BOTH terms of the ratio
+        # are frozen by construction and the alarm is arithmetically incapable of ever clearing.
+        # Measured: it fired every cycle for 7+ days against `funding_harvested` pinned at the
+        # same 113.06 while `n_carries` was 0. That is not a leak, it is a stuck needle.
+        #
+        # THE THRESHOLD IS NOT TOUCHED, and that direction is forbidden -- the bar in
+        # carry_bleed_report is unchanged and a book with ANY exposure alarms exactly as before.
+        # What changes is only WHICH CLAIM is made about a book that cannot move the number.
+        #
+        # ABSENCE IS NOT ZERO. `n_carries`/`deployed_notional` must both be PRESENT and zero to
+        # earn the flat reading; an executor predating those keys falls through to the live alarm,
+        # because "no exposure" and "we cannot see the exposure" are opposite states and only one
+        # of them is safe to quieten (WS-005, the desk's most-repeated defect class).
+        legs, notl = cc.get("n_carries"), cc.get("deployed_notional")
+        flat = (isinstance(legs, int) and legs == 0
+                and isinstance(notl, int | float) and float(notl) == 0.0)
+        recon = cc.get("fut_leg_reconciliation") or {}
+        attributed = recon.get("explained") is True and recon.get("measured") is True
+        verdict = str(cc.get("bleed_verdict", ""))[:200]
+        if not flat:
+            defects.append((
+                "carry-bleed-alarm",
+                f"carry leak alarm FIRING and unactioned -- {verdict}"))
+        elif not attributed:
+            # STILL A DEFECT, AND DELIBERATELY A DIFFERENT ONE. The leak is historical rather than
+            # live, but nobody has said where it went -- and unlike the cumulative ratio this IS
+            # satisfiable: attributing the gap clears it. A quiet fence here would be the muting
+            # this repair exists to avoid.
+            defects.append((
+                "carry-bleed-unattributed",
+                f"carry book is FLAT (0 carries, 0 notional) but a lifetime bleed is UNATTRIBUTED "
+                f"-- the futures-leg reconciliation does not explain it "
+                f"(explained={recon.get('explained')!r} measured={recon.get('measured')!r}). "
+                f"Closed episode, open question: {verdict}"))
 
 
 def check_memory_hygiene(defects) -> None:
