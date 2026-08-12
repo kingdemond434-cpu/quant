@@ -1514,6 +1514,11 @@ NOT mean capital (L1.6 -- a candidate is not an edge). R-rows: R0115-R0118.
 > owner): the Stage-A screen construction (carry_z → forward liquidation intensity, h∈{5d,20d})
 > stays with **R0193** (re-scheduled 2026-08-24 this session), zero promotion authority, novelty
 > gate re-run owed at screen time per the card's own note.
+> **RE-VERIFIED 2026-08-12 (litminer run 6, §33(8) artifact check):** `data/cot_btc_panel.json`
+> exists (845KB, mtime 2026-08-11 postdates find), provenance block present (CFTC legacy
+> annual-archive URLs), 1,715 rows spanning 2017-12-19→2026-08-04 — matches the CBOE-1712→CME
+> claim exactly. R0193 confirmed in the ledger: status=scheduled, due=2026-08-24, summary names
+> this build. First-pass claims checked: 0 refuted.
 - **Provides:** mechanism priors on data the desk ALREADY holds — basis, multi-venue funding
   (incl. BitMEX 2016–2026 decade), tick liquidation stream — plus a near-zero-cost extension of
   the EXISTING COT ingestion (`scripts/run_cot_screen.py`, public-domain archives) to the CME BTC
@@ -1550,6 +1555,28 @@ NOT mean capital (L1.6 -- a candidate is not an edge). R-rows: R0115-R0118.
 > the card's own free-reconstruction claim), not an extraction — it stays with **R0193**
 > (re-scheduled 2026-08-24 this session). Blocker named: reconstruction labour by the alpha org;
 > nothing external blocks it.
+> **STRANDING RESOLVED 2026-08-12 (litminer run 6):** the [SUMMARY-ONLY — both routes 403'd]
+> FRL follow-on is identified and has an OPEN author-archived version:
+> **Saggu, Ante & Kopiec (2024), "Uncertain Regulations, Definite Impacts" — arxiv.org/abs/2412.02452**
+> (FRL version sciencedirect S1544612324014429 stays paywalled; the arXiv copy is the legitimate
+> route). Abstract-grade numbers verified verbatim: SEC classification-as-security events →
+> **returns −12% over one week post-announcement, persisting for a month** (no reversal =
+> underreaction gradient extends to the SEC era); **ex-ante abnormal VOLUME = pre-announcement
+> informed trading**; severity conditions on sentiment, size, age, volatility, illiquidity —
+> the heterogeneity conditioning for this card's event gate. **INTERIOR READ DONE SAME-RUN**
+> (GAP #70's stdlib zlib extractor re-derived — the "needs poppler" claim was the exact
+> inherited-false-limit #70 documents; 57,370 chars recovered): **48 events (IDs 1–48, DAO
+> 25/07/2017 →), sub-samples Binance+Coinbase / Coinbase-insider / Bittrex; market model
+> benchmarked on BITCOIN log returns ⇒ CARs are BTC-RELATIVE (the desk's own residualisation
+> convention — these numbers survive the narrow-breadth kill by construction); pre-announcement
+> CARs −2.4% INSIGNIFICANT while pre-announcement VOLUME is abnormal (the information is in
+> volume, not price, ex-ante); insider subsample pre-AR −3.9% ("potential leaks"); gradient
+> from −5.2% intensifying, −12%/1wk abstract-confirmed, persists a month.** The −17.2%/30d peak
+> cell + exact window brackets sit in hex-encoded Tj strings the current extractor skips
+> (limitation named in inbox 2026-08-12 entry). **BUILD SHORTCUT for R0193: the paper CONTAINS
+> the dated 48-event table with tickers + reference documentation — the SEC-classification
+> subset of this card is an EXTRACTION from an open source, not a regulator-site
+> reconstruction.** McLean–Pontiff −58% haircut applies to all magnitudes as standing prior.
 - **Provides:** dated, classified regulatory-event timeline (AML/CFT, interoperability-restricting,
   legal-status, CBDC, general-warning classes), reconstructable FREE from regulator sites/archives.
 - **Mechanism (BIS QR Sep-2018 page-read + Dallas Fed WP 381 PDF read; 151 events 2015–18):**
@@ -1579,6 +1606,11 @@ NOT mean capital (L1.6 -- a candidate is not an edge). R-rows: R0115-R0118.
 > owner, R0193 re-scheduled 2026-08-24): treasury-Transfer mint/burn PAIR (classifies which risk
 > source is live), safe-coin premium off the desk's own 4-venue tape (better clock provenance than
 > any vendor price anyway, L1.46), per-chain split if the family needs it.
+> **RE-VERIFIED 2026-08-12 (litminer run 6, §33(8) artifact check):** column-oriented store
+> reproduces every claim — USDT 3,178 rows 2017-11-29→2026-08-11, USDC 2,892; `peg_dev_bps`
+> non-null count 0 (declared-absent honoured); sanity probes RECOMPUTED from the artifact:
+> Terra worst USDT d7 = −10.23% (2022-05-18), SVB worst USDC d7 = −15.17% (2023-03-17) vs
+> claimed −10.2/−15.2. First-pass claims checked: 0 refuted.
 - **Provides:** episodic run-state classifier from data the desk can already reconstruct free:
   USDT/USDC treasury-Transfer mint/burn (the desk's corroborated reconstruction path), DefiLlama
   per-chain stablecoin circulation, CoinGecko stablecoin mcap (both free; sr1073's own sources),
@@ -1708,6 +1740,11 @@ step 1), obtained for free.
 ### 26. KR venue-state layer — Upbit + Bithumb event archive, market flags and rail state — grade: needs-monitoring (verified live, ingest STARTED, screen owed) [§33: screened -> data/upbit_trade_announcements.jsonl]
 _Discovered and verified by the KR frontier miner, session 1, 2026-08-01. All endpoints keyless,
 first-party, §13-clean (public documented venue APIs, no login, no paywall, no scraping)._
+> **RE-VERIFIED 2026-08-12 (litminer run 6, §33(8) artifact check):**
+> `data/upbit_trade_announcements.jsonl` exists (199KB), **737 rows** — the card's
+> category=trade count exactly — spanning 2017-10-27→2026-07-31 (KST stamps), consistent with
+> the 2017-10-24 open-beta claim (first *trade* announcement 3 days after open). Screen still
+> owed (unchanged owner). First-pass claims checked: 0 refuted.
 
 - **Provides — four distinct surfaces, all free:**
   1. `api-manager.upbit.com/api/v1/announcements` — **5,685 dated, categorised announcements back

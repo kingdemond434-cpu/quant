@@ -574,3 +574,88 @@ Parallel ground-diggers are **READ-ONLY on every shared ledger** (`recommendatio
 locking; ID races have already cost this desk a renumber). Each writes ONLY its own file under
 `docs/research/deep_sweep/`. The parent does ALL routing serially at close.
 
+---
+
+## SESSION NOTE 2026-08-12 (literature deep-miner — run 6; STANDING DAILY)
+
+_Written BEFORE any searching (completion contract §1). Updated as each item resolves. If this
+run is killed, what stands below is the durable progress._
+
+### State at run start (recomputed, not remembered)
+- **RUN 5 (2026-08-05) DIED MID-RUN**: its note above opens 4 items and closes NONE. Honest
+  accounting: no litminer close exists between 08-05 and today. Its verification targets were
+  since dispositioned by the **brain-hunter seat 2026-08-11** (watchlist cards 22–26: two
+  `wired` with named artifacts, one `screened`, one `killed→graveyard`, two `deferred` with
+  dates to R0193/CN-seat). `source_backlog_next.py` still lists them "pending verification"
+  because their GRADES are non-terminal — the residual litminer duty is ARTIFACT-VERIFICATION
+  of the 08-11 claims (§33(8): first-pass grades are not evidence), not re-doing the digs.
+- `source_backlog_next.py` → 30 catalogued, 12 resolved, 12 pending verification, 6 pending
+  legitimacy decision (policy items incl. GMO/bitbank ToS reads owed 08-19 — principal/brain
+  ground, not litminer's).
+- `mine_gate.py` → BACKLOG-CLEAR, all 18 carded finds disposed; mining authorised.
+- `data/mine_generation_priors.json` (read per §33.14): one measured class,
+  `data_axis_watchlist.md` converting at 51.6% — favoured; no starve list.
+- Rotation debt: **arXiv q-fin FULL subcategory sweep now carried FOUR runs** — the standing
+  debt and this run's centre. Theses layer B still the family's weakest (unsearched).
+- `data/strategy_coverage.json` → STATISTICAL-ARBITRAGE remains the ONE
+  `MENTIONED-NEVER-TESTED` family (n=0); THIN: vol-and-options, event-and-calendar,
+  market-making-execution, attention-sentiment, level-reaction, lead-lag. Literature aim
+  points at these, not at hunted carry/trend.
+
+### ITEMS TAKEN THIS RUN (bounded breadth; depth MAXED per item)
+1. **[BACKLOG — verification-first]** Artifact-verify the six 08-11 dispositions on disk
+   (cot_btc_panel.json · stablecoin_run_variables.json · upbit_trade_announcements.jsonl ·
+   graveyard `cn_aigu_probitforge_unresolvable` · the two dated deferrals), postdate + content
+   checks, and upgrade/downgrade grades on evidence. Plus run-4's two [SUMMARY-ONLY]
+   strandings (SEC-interventions FRL; IMF WP 2023/163) via OP-026a routes. — **STATUS: ✅ CLOSED.**
+   **All five checkable 08-11 claims REPRODUCE (0 refuted — logged against the §33(8) first-pass
+   error rate, which historically ran 4-of-5 refuted):** COT panel 845KB/1,715 rows
+   2017-12-19→2026-08-04 w/ CFTC provenance; stablecoin store column-oriented USDT 3,178/USDC
+   2,892 rows, peg leg all-null as declared, Terra/SVB probes RECOMPUTED −10.23%/−15.17% vs
+   claimed −10.2/−15.2; Upbit archive 737 rows exactly; graveyard entry at line 707; R0193
+   scheduled due 2026-08-24. Verification stamps written into cards 23/25/26.
+   **Both strandings RESOLVED:** (a) FRL = **Saggu–Ante–Kopiec, open arXiv 2412.02452** —
+   −12%/1wk persisting a month, ex-ante informed volume, heterogeneity conditioning; then
+   **INTERIOR READ COMPLETED SAME-RUN** by re-deriving GAP #70's lost stdlib extractor (my
+   first draft repeated the false "needs poppler" limit — #70's re-test rule caught it):
+   48-event dated table present, BTC-benchmarked market model (CARs are BTC-relative),
+   pre-CARs insignificant vs abnormal pre-VOLUME, −3.9% insider-subsample pre-AR; extractor
+   source preserved in improvement_inbox (2026-08-12 entry) for the brain to land as
+   scripts/pdf_text.py; (b) IMF WP/23/163 = "The Crypto Cycle and US Monetary
+   Policy" — imf.org+elibrary both 403 from here, but the **authors' own Econbrowser summary
+   carries the interior numbers**: dynamic-factor on longest-lived tokens ≈75% mcap, factor
+   explains ~80% variance, Wu–Xia +1pp → −0.15sd crypto factor/2wk (equity −0.1sd),
+   institutional volume +1700% 2020Q2→2021Q2, risk-aversion correlation explains ≤65% —
+   external corroboration of the desk's OWN N_eff≈1.54 raw cross-section and the FRED-overlay
+   kills; routed to research_memory at close, no new card (corroboration, not mechanism).
+   **§39 advance folded in: graphsense-tagpacks VERIFIED (MIT, BTC-side labels)** → CryptoQuant
+   row PARTIAL, universe map entry 96. My own parser bug corrected in project memory
+   (recommendation_ledger is `{recommendations:[...]}`, decision_ledger is `{policy,decisions}`).
+2. **[ROTATION-BOUND, carried 4 runs] arXiv q-fin FULL subcategory sweep** (TR/PM/RM/ST/MF/
+   CP/PR/GN + stat.ML methods slice), aimed at STATISTICAL-ARBITRAGE (never-tested) and the
+   THIN families; replication scans + 2-level citation chains mandatory; ≤3 mechanism cards.
+   — STATUS: below.
+3. **[LIT-c + ≥25% SEARCH-SPACE EXPANSION] AI/autonomous-research METHODS frontier** — run-4/5
+   carry-overs (MemAgents ground, Search-Time Contamination 2606.05241, appendix deltas
+   2606.03032/2509.08713/2606.03437, NeurIPS eval-of-agents) + NEW venues never visited,
+   aimed at the desk's live wounds (welded gates, calibration, panel design). — STATUS: below.
+   §39 advance folded here: free exchange-address label corpora (CryptoQuant/Nansen/Arkham
+   rows) — GraphSense TagPacks class. — STATUS: below.
+
+### STEP -1 DIVERGENT QUERIES (3 a different searcher would run; ≥2 funded)
+1. J-STAGE/CiNii native-operator sweep: 暗号資産 裁定取引 / ペアトレード (JP academic stat-arb
+   on crypto — the litminer's own non-EN academic ground, parity with the venue miners).
+2. Retraction Watch + failed-replication finance sweep (standing mandate, never yet executed
+   as a query family): retracted crypto/finance empirics = free graveyard entries.
+3. "Agentic benchmark construct validity / eval contamination" (an evals engineer's query, not
+   a quant's) — maps to the desk's own gauntlet-design wounds.
+
+### NEXT RUN PICKS UP AT (updated at close)
+- Whatever of items 1–3 stays open, named precisely at close.
+- Theses layer B (DiVA/theses.fr/DART-Europe/CyberLeninka/J-STAGE theses) — still unsearched.
+- Practitioner residuals: Two Sigma depth, DE Shaw, ECB/BoE crypto notes; journals family.
+
+### DISCIPLINE (unchanged, learned): parallel ground-diggers are READ-ONLY on every shared
+ledger; each writes ONLY its own file under `docs/research/deep_sweep/`; the parent routes
+serially at close. Litminer freeze: no writes outside docs/research/* and data/* catalogs.
+

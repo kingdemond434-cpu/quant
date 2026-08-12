@@ -1715,3 +1715,45 @@ with realistic bounce must NOT flag as mean-reverting — alongside the positive
 2026-08-05 lesson: a positive control alone passed while the study was wrong). Ledgered same
 run via recommendations.py (prospector has no build authority; this is the consumer-carrying
 row the write-only-inbox failure class requires).
+
+## 2026-08-12 (litminer run 6) — GAP #70's lost extractor RE-DERIVED, WORKING, source preserved here
+
+**The register row's own defect recurred and was caught in-run:** this run first wrote "interior
+CAR table unread — no PDF extractor, installs frozen" into a watchlist card, i.e. inherited the
+exact false capability claim GAP #70 documents (asserted once, re-tested never). Re-tested it
+same-run per #70's standing rule: the premise is still true (no pypdf/fitz/pdfminer/poppler) and
+the conclusion is still false — **~30 lines of stdlib re-derive the run-3 prototype that /tmp
+recycled**. Evidence: ran against arXiv 2412.02452 (Saggu–Ante–Kopiec, SEC classifications):
+**57,370 chars extracted**; recovered interior facts a summary never carried (48-event dated
+table with tickers incl. DAO 25/07/2017; market model benchmarked on **Bitcoin log returns** ⇒
+CARs are BTC-relative; pre-announcement CARs −2.4% insignificant while pre-announcement VOLUME is
+abnormal; −3.9% pre-AR in the insider-trading subsample "hinting at potential leaks").
+
+**Source (stdlib-only; the durable copy #70 lacked — land as `scripts/pdf_text.py`, owner brain;
+litminer freeze bars scripts/ writes):**
+```python
+import re, sys, zlib
+raw = open(sys.argv[1], 'rb').read()
+texts = []
+for m in re.finditer(rb'stream\r?\n(.*?)endstream', raw, re.S):
+    try:
+        d = zlib.decompress(m.group(1))
+    except Exception:
+        continue
+    if b'Tj' not in d and b'TJ' not in d:
+        continue
+    out = []
+    for tm in re.finditer(rb'\((?:\\.|[^\\()])*\)\s*Tj|\[(?:[^\]\\]|\\.)*\]\s*TJ', d, re.S):
+        for s in re.finditer(rb'\((?:\\.|[^\\()])*\)', tm.group(0)):
+            t = s.group(0)[1:-1]
+            t = t.replace(b'\\(', b'(').replace(b'\\)', b')').replace(b'\\\\', b'\\')
+            out.append(re.sub(rb'\\[0-7]{1,3}', b'?', t))
+        out.append(b' ')
+    if out:
+        texts.append(b''.join(out))
+sys.stdout.write(b'\n'.join(texts).decode('latin-1', 'replace'))
+```
+**Known limitation, named:** parenthesis-literal strings only — `<hex>` Tj strings are skipped,
+which is where 2412.02452 keeps its bracketed event-windows and the −17.2% peak cell. The landed
+version should add hex-string decode (one extra `re.finditer(rb'<[0-9A-Fa-f\s]+>')` branch +
+font-agnostic best-effort). Octal escapes currently degrade to `?` (lossy-but-honest).
