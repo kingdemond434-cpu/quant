@@ -281,3 +281,83 @@ class TestLockCoherence:
         """The live regression this row closed: keeps it closed."""
         man = c.parse_manifest(ROOT / "ops/crontab.manifest")
         assert c.check_lock_coherence(man) == []
+
+
+# ---------------------------------------------------------------------------------------------
+# (e) THE SILENT-IMPORTERROR FENCE (R0359)
+#
+# The regression these reproduce is REAL and is reconstructed from the actual history, not
+# invented: scripts/run_geometric_review.py imported libs.discovery.cagr_optimizer and
+# libs.discovery.portfolio_geometry, both of which had been retired on this lineage, and it was
+# dead from 2026-07-30 to 2026-08-05 while every freshness check read a fresh log and reported
+# it healthy. Existence checks (a) cannot see this: the file is right there.
+# ---------------------------------------------------------------------------------------------
+
+_IMPORTS = """# fixture manifest
+QUANT_ROOT=/srv/desk
+*/5 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_geometric_review.py >> data/x.log 2>&1
+"""
+
+
+def _importer_repo(tmp_path: Path, *, callee_present: bool) -> Path:
+    (tmp_path / "ops").mkdir()
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "libs/discovery").mkdir(parents=True)
+    (tmp_path / "libs/__init__.py").write_text("", "utf-8")
+    (tmp_path / "libs/discovery/__init__.py").write_text("", "utf-8")
+    if callee_present:
+        (tmp_path / "libs/discovery/cagr_optimizer.py").write_text(
+            "def optimize_allocation():\n    return None\n", "utf-8")
+    (tmp_path / "scripts/run_geometric_review.py").write_text(
+        "from libs.discovery.cagr_optimizer import optimize_allocation\n"
+        "import numpy as np\n"          # third-party: NOT checked, and must not be reported
+        "print(optimize_allocation, np)\n", "utf-8")
+    (tmp_path / "ops/crontab.manifest").write_text(_IMPORTS, "utf-8")
+    return tmp_path
+
+
+class TestImportsResolve:
+    def test_a_present_script_with_a_deleted_callee_is_BROKEN(
+            self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """THE POSITIVE CONTROL. A fence never shown to fire is not a fence.
+
+        Run against the real tree at b86cf5c^ this fires exactly twice, on
+        run_geometric_review.py's two dead imports, and nowhere else.
+        """
+        root = _importer_repo(tmp_path, callee_present=False)
+        monkeypatch.setattr(c, "read_live_crontab", lambda: None)
+        assert c.main(["--root", str(root)]) == 2, (
+            "a scheduled script that cannot import is a silent nightly death and must exit 2 -- "
+            "the same severity as a missing file, because downstream they are indistinguishable"
+        )
+        man = c.parse_manifest(root / "ops/crontab.manifest")
+        problems, _, _ = c.check_imports_resolve(root, man)
+        assert len(problems) == 1
+        assert "cagr_optimizer" in problems[0]
+        # --report-only tolerates live drift, NEVER a structurally dead organ.
+        assert c.main(["--root", str(root), "--report-only"]) == 2
+
+    def test_the_same_tree_with_the_callee_present_is_clean(
+            self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """The negative control: only the deletion moved between these two trees."""
+        root = _importer_repo(tmp_path, callee_present=True)
+        monkeypatch.setattr(c, "read_live_crontab", lambda: None)
+        assert c.main(["--root", str(root)]) == 0
+
+    def test_third_party_imports_are_counted_not_silently_passed(self, tmp_path: Path) -> None:
+        """A guard that checks a subset must SAY so. `0 problems` over an unstated denominator
+        reads as 'everything resolves' when the truth may be 'almost nothing was examined'."""
+        root = _importer_repo(tmp_path, callee_present=True)
+        man = c.parse_manifest(root / "ops/crontab.manifest")
+        problems, n_checked, n_skipped = c.check_imports_resolve(root, man)
+        assert problems == []
+        assert n_checked >= 1, "the first-party import must be counted in the denominator"
+        assert n_skipped >= 1, "`import numpy` must be reported as UNCHECKED, not as resolved"
+
+    def test_the_live_repo_has_no_unresolvable_scheduled_import(self) -> None:
+        """The standing invariant. This is what the 2026-08-04 merge broke and nothing caught."""
+        root = Path(__file__).resolve().parents[2]
+        man = c.parse_manifest(root / "ops/crontab.manifest")
+        problems, n_checked, _ = c.check_imports_resolve(root, man)
+        assert n_checked > 0, "zero checks means the fence examined nothing -- vacuous, not clean"
+        assert problems == [], f"scheduled organs that cannot import: {problems}"

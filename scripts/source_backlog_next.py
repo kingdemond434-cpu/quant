@@ -36,7 +36,8 @@ def main() -> None:
     rep = backlog_from_file(path, limit=a.limit)
     print(f"SOURCE BACKLOG: {rep.n_total} catalogued, {rep.n_resolved} resolved (excluded), "
           f"{rep.n_verification_pending} pending verification, "
-          f"{rep.n_legitimacy_pending} pending a legitimacy decision")
+          f"{rep.n_legitimacy_pending} pending a legitimacy decision, "
+          f"{rep.n_deferred} deferred to a future date")
     print(f"  {rep.verdict}")
     if rep.next_verification:
         print("  VERIFY this cycle (technical check -- docs + endpoint):")
@@ -46,6 +47,12 @@ def main() -> None:
         print("  DECIDE this cycle (policy/legal, not a technical test):")
         for name in rep.next_legitimacy:
             print(f"    - {name}")
+    if rep.deferred:
+        # NAMED, never hidden: a deferral is pending work with a return date. Printing it is what
+        # keeps "blocked until the 24th" distinguishable from "quietly dropped" (F0002).
+        print("  DEFERRED (not workable this cycle -- returns on its own date):")
+        for name, until in rep.deferred:
+            print(f"    - {until}  {name}")
 
 
 if __name__ == "__main__":
