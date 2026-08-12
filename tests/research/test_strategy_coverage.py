@@ -190,3 +190,14 @@ def test_the_fence_runs_at_both_boundaries_with_the_right_halves():
     state = dict(_STATE_FENCES)
     assert law.get("check_strategy_breadth.py") == ("--surfaces-only",)
     assert state.get("check_strategy_breadth.py") == ()
+
+
+def test_stat_arb_carries_its_test_time_prior(tmp_path):
+    """R0296: an operative prior must ride WITH the gap it governs. The stat-arb family row in
+    the artifact -- the thing the next tester opens -- must carry the cost/capacity-first prior,
+    and families without a declared prior must not grow a fabricated one."""
+    _grave(tmp_path, [])
+    fams = coverage(tmp_path)["families"]
+    prior = fams["STATISTICAL-ARBITRAGE"].get("test_prior", "")
+    assert "COST/CAPACITY" in prior and "estimator" in prior
+    assert "test_prior" not in fams["LEAD-LAG"]
