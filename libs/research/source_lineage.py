@@ -104,10 +104,17 @@ class Field:
     reliability: str = ""
     existing_desk_coverage: str = ""
     unique_incremental_information: str = ""
+    observation: str = ""            # WHAT is measured; defaults to data_field
     redistribution_chain: tuple[str, ...] = ()
 
     def missing_stations(self) -> list[str]:
         return [s for s in STATIONS if not str(getattr(self, s, "")).strip()]
+
+    def observation_kind(self) -> str:
+        """WHAT is being measured, independent of who serves it. Defaults to data_field so a
+        registry that never sets it still behaves sensibly; set it explicitly when two terminals
+        name the same measurement differently (`price` vs `ohlcv` vs `last_trade`)."""
+        return (self.observation or self.data_field or "").strip().lower()
 
     def fidelity_rank(self) -> int:
         try:
@@ -154,32 +161,48 @@ def reconstruct(fields: list[Field]) -> dict[str, Any]:
 def effective_independent_sources(fields: list[Field]) -> dict[str, Any]:
     """GATE ITEM 18. SOURCE_COUNT vs EFFECTIVE_INDEPENDENT_INFORMATION_SOURCE_COUNT.
 
-    Independence is keyed on UPSTREAM_SOURCE_ID -- who originally observed the thing -- not on the
-    hostname the desk happens to call. Five dashboards reading Binance are one observation of the
-    world and five ways to fetch it.
+    TWO COUNTS, BECAUSE THERE ARE TWO QUESTIONS, and reporting only one is the error this
+    function was originally guilty of. Grouping by upstream_source_id ALONE said Binance's spot
+    price and Binance's funding rate were the same source -- they are the same VENUE and utterly
+    different OBSERVATIONS, and collapsing them would have deleted a whole mechanism class from
+    the count. So:
 
-    Within an upstream group the RETAINED representative is the HIGHEST-FIDELITY route (XIX-C):
-    if the desk can get the raw print and also a heatmap of it, the raw print is the source and
-    the heatmap is redundancy. Ties break toward the shorter redistribution chain, because every
-    extra hop is another party who can silently revise, delay or drop a field.
+      EFFECTIVE_INDEPENDENT_INFORMATION_SOURCE_COUNT keys on (upstream, observation). It answers
+      "how many distinct measurements of the world does the desk hold?" -- a funding rate and a
+      price from one venue are two, and a dashboard's copy of that price is not a third.
+
+      INDEPENDENT_PROVIDER_COUNT keys on upstream alone. It answers the correlated-failure
+      question: "how many parties could independently be wrong?" DefiLlama's TVL, yields and
+      stablecoin series are three observations and ONE methodology -- if that methodology is
+      wrong, all three are wrong together.
+
+    Both belong in an effective-N. The first bounds how much information exists; the second
+    bounds how much of it can fail at once.
+
+    Within a group the RETAINED representative is the HIGHEST-FIDELITY route (XIX-C): if the desk
+    can get the raw print and also a heatmap of it, the raw print is the source and the heatmap is
+    redundancy. Ties break toward the shorter redistribution chain, because every extra hop is
+    another party who can silently revise, delay or drop a field.
     """
     if not fields:
         return {"status": "UNMEASURED", "source_count": 0,
                 "effective_independent_information_source_count": 0,
+                "independent_provider_count": 0,
                 "why": "nothing examined -- an unmeasured count is UNKNOWN, never zero (L1.41)"}
 
-    groups: dict[str, list[Field]] = {}
+    groups: dict[tuple[str, str], list[Field]] = {}
     for f in fields:
-        groups.setdefault(f.upstream_source_id, []).append(f)
+        groups.setdefault((f.upstream_source_id, f.observation_kind()), []).append(f)
 
     independent: list[dict[str, Any]] = []
     redundant: list[dict[str, Any]] = []
-    for upstream, members in sorted(groups.items()):
+    for (upstream, observation), members in sorted(groups.items()):
         ranked = sorted(members, key=lambda f: (f.fidelity_rank(), len(f.redistribution_chain),
                                                 f.terminal))
         primary = ranked[0]
         independent.append({
             "upstream_source_id": upstream,
+            "observation": observation,
             "retained_route": f"{primary.terminal}:{primary.data_field}",
             "derivation_layer": primary.derivation_layer,
             "why": "highest-fidelity route to this upstream observation; ties break toward the "
@@ -189,6 +212,7 @@ def effective_independent_sources(fields: list[Field]) -> dict[str, Any]:
         for dup in ranked[1:]:
             redundant.append({
                 "upstream_source_id": upstream,
+                "observation": observation,
                 "route": f"{dup.terminal}:{dup.data_field}",
                 "derivation_layer": dup.derivation_layer,
                 "classification": "USEFUL_BUT_NOT_INDEPENDENT",
@@ -202,13 +226,20 @@ def effective_independent_sources(fields: list[Field]) -> dict[str, Any]:
 
     n_routes = len(fields)
     n_eff = len(independent)
+    n_providers = len({f.upstream_source_id for f in fields})
     return {
         "generated_utc": _now(),
         "status": "MEASURED",
         "source_count": n_routes,
         "effective_independent_information_source_count": n_eff,
+        "independent_provider_count": n_providers,
         "false_diversity": n_routes - n_eff,
         "inflation_factor": round(n_routes / n_eff, 3) if n_eff else None,
+        "correlated_failure_note": (
+            f"{n_eff} distinct observation(s) rest on {n_providers} independent provider(s). The "
+            "first bounds how much information the desk holds; the second bounds how much of it "
+            "can be wrong AT ONCE, since one provider's methodology error takes all of its "
+            "series down together"),
         "independent": independent,
         "redundant": redundant,
         "law": "counting endpoints instead of observations inflates the effective-N the desk's "
@@ -291,6 +322,7 @@ DESK_FIELDS: tuple[Field, ...] = (
           history="years via klines endpoint", rights="public API, ToS-bound, no redistribution",
           cost="free (rate-limited)", reliability="high, occasional 418/429",
           existing_desk_coverage="primary spot tape",
+          observation="price",
           unique_incremental_information="the venue's own prints"),
     Field(terminal="binance_futures", data_field="funding_rate", upstream_source_id="binance",
           derivation_layer="RAW_OBSERVATION", upstream_origin="fapi.binance.com",
@@ -298,6 +330,7 @@ DESK_FIELDS: tuple[Field, ...] = (
           update_frequency="8h settlement, 1m mark", latency="sub-second",
           history="since listing", rights="public API, ToS-bound", cost="free (rate-limited)",
           reliability="high", existing_desk_coverage="funding/basis mechanism class",
+          observation="funding_rate",
           unique_incremental_information="the settlement the desk is actually paid or charged"),
     Field(terminal="coingecko", data_field="price", upstream_source_id="binance",
           derivation_layer="AGGREGATED", upstream_origin="api.coingecko.com",
@@ -307,6 +340,7 @@ DESK_FIELDS: tuple[Field, ...] = (
           history="long, daily granularity", rights="free tier, attribution",
           cost="free tier rate-limited", reliability="medium",
           existing_desk_coverage="already covered by the venue tape",
+          observation="price",   # SAME measurement as binance_spot, one hop later
           unique_incremental_information="",
           redistribution_chain=("binance", "coingecko")),
     Field(terminal="defillama_tvl", data_field="protocol_tvl", upstream_source_id="defillama",
@@ -316,6 +350,7 @@ DESK_FIELDS: tuple[Field, ...] = (
           history="multi-year", rights="free, open", cost="free",
           reliability="medium; methodology revisions occur",
           existing_desk_coverage="none direct",
+          observation="protocol_tvl",
           unique_incremental_information="cross-protocol TVL the desk does not compute itself"),
     Field(terminal="defillama_yields", data_field="pool_apy", upstream_source_id="defillama",
           derivation_layer="MODEL_DERIVED", upstream_origin="yields.llama.fi",
@@ -323,6 +358,7 @@ DESK_FIELDS: tuple[Field, ...] = (
           aggregation="per-pool", update_frequency="hourly", latency="~1h",
           history="multi-year", rights="free, open", cost="free",
           reliability="medium", existing_desk_coverage="same provider as TVL",
+          observation="pool_apy",
           unique_incremental_information="",
           redistribution_chain=("defillama",)),
     Field(terminal="defillama_stables", data_field="stablecoin_supply",
@@ -331,6 +367,7 @@ DESK_FIELDS: tuple[Field, ...] = (
           transformation="chain balances summed per issuer", aggregation="per-chain",
           update_frequency="hourly", latency="~1h", history="multi-year", rights="free, open",
           cost="free", reliability="medium", existing_desk_coverage="same provider as TVL",
+          observation="stablecoin_supply",
           unique_incremental_information="",
           redistribution_chain=("defillama",)),
     Field(terminal="ethereum_rpc", data_field="unlock_transfers", upstream_source_id="ethereum_l1",
@@ -342,6 +379,7 @@ DESK_FIELDS: tuple[Field, ...] = (
           history="full chain via archive calls", rights="public chain data, no licence",
           cost="free, keyless", reliability="medium (public endpoint)",
           existing_desk_coverage="token-unlock mechanism class",
+          observation="unlock_transfers",
           unique_incremental_information="the settlement itself, not a report about it"),
     Field(terminal="bybit", data_field="funding_rate", upstream_source_id="bybit",
           derivation_layer="RAW_OBSERVATION", upstream_origin="api.bybit.com",
@@ -349,6 +387,7 @@ DESK_FIELDS: tuple[Field, ...] = (
           update_frequency="8h settlement", latency="sub-second", history="since listing",
           rights="public API, ToS-bound", cost="free (rate-limited)", reliability="high",
           existing_desk_coverage="cross-venue funding dispersion",
+          observation="funding_rate",
           unique_incremental_information="a SECOND venue's own settlement -- genuinely "
                                          "independent of Binance's"),
 )

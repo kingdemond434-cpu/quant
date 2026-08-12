@@ -1700,6 +1700,78 @@ def check_edge_intake_recall(defects) -> None:
                         f"{str(exc)[:100]}) -- UNKNOWN, never a pass"))
 
 
+def check_source_independence(defects) -> None:
+    """Mandate XIX-B / gate item 18: SOURCE_COUNT is not information, and the difference is
+    dangerous in one direction.
+
+    The desk's cross-mechanism work depends on an effective-N. If that N is computed over ROUTES
+    rather than over independent OBSERVATIONS, it says the portfolio is more diversified than it
+    is -- an error that makes the desk bolder, never more careful. So this folds the collector
+    registry every audit and raises the inflation as a named number rather than leaving it to be
+    rediscovered.
+
+    NOT A DELETE ORDER. Redundant routes keep their place for failover, latency comparison, gap
+    filling, quality verification and revision detection; what they lose is INFORMATION credit.
+    The defect is raised only when the inflation is large enough to distort an effective-N.
+    """
+    try:
+        from libs.research.source_lineage import DESK_FIELDS, effective_independent_sources
+        out = effective_independent_sources(list(DESK_FIELDS))
+    except Exception as exc:
+        defects.append(("source-independence-unreadable",
+                        f"effective independent source count could not be computed "
+                        f"({type(exc).__name__}: {str(exc)[:100]}) -- UNKNOWN, never a pass"))
+        return
+    n = out.get("source_count", 0)
+    eff = out.get("effective_independent_information_source_count", 0)
+    providers = out.get("independent_provider_count", 0)
+    if eff and (n / eff) >= 1.5:
+        dups = [r["route"] for r in out.get("redundant", [])][:6]
+        defects.append((
+            "source-diversity-inflated",
+            f"XIX-B: {n} collector route(s) carry only {eff} distinct OBSERVATION(s) "
+            f"({n / eff:.1f}x). Redundant: {dups}. These stay useful for failover, latency "
+            "comparison and revision detection -- but an effective-N computed over ROUTES "
+            "overstates diversification, which errs toward boldness. Count observations."))
+    if providers and (eff / providers) >= 2.0:
+        defects.append((
+            "source-provider-concentration",
+            f"XIX-B correlated failure: {eff} observation(s) rest on only {providers} independent "
+            f"provider(s) ({eff / providers:.1f} series per provider). One provider's methodology "
+            "error takes all of its series down TOGETHER, so the desk holds less independent "
+            "evidence than the observation count suggests. This is a diversification fact, not a "
+            "reason to drop a source."))
+
+
+def check_capability_challengers(defects) -> None:
+    """Mandate V-C / gate item 15: a challenger stuck PROVISIONAL is a benchmark nobody cashed.
+
+    V-C says no elite-factory capability is complete without RUNTIME EVIDENCE. A challenger that
+    wins its controlled benchmark and then sits at PROVISIONAL_PENDING_RUNTIME_EVIDENCE forever
+    is the most expensive shape of unfinished work on this desk: the engineering is paid for, the
+    measurement says it wins, and the desk never collects. Named here so it cannot rot quietly.
+    """
+    try:
+        from libs.research.capability_challenger import rows
+        recorded = rows()
+    except Exception as exc:
+        defects.append(("capability-challengers-unreadable",
+                        f"challenger ledger unreadable ({type(exc).__name__}: {str(exc)[:100]})"
+                        " -- UNKNOWN, never a pass"))
+        return
+    stuck = [r for r in recorded
+             if str(r.get("benchmark", {}).get("verdict")) ==
+             "PROVISIONAL_PENDING_RUNTIME_EVIDENCE"]
+    if stuck:
+        names = [str(r.get("capability", {}).get("name")) for r in stuck][:5]
+        defects.append((
+            "capability-challenger-uncashed",
+            f"{len(stuck)} elite-capability challenger(s) won a controlled benchmark and still "
+            f"await RUNTIME EVIDENCE: {names}. V-C treats a bench win as a PREDICTION about "
+            "production, not an observation of it -- the engineering is already paid for, so "
+            "collecting the evidence is the cheapest remaining step, not the optional one."))
+
+
 def check_alpha_lifecycle_gaps(defects) -> None:
     """Mandate III-J / gate item 8: regime-policy reality gaps become named defects daily.
 
@@ -5292,6 +5364,8 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("canonical-policy", check_canonical_policy),
                       ("alpha-lifecycle", check_alpha_lifecycle_gaps),
                       ("edge-intake", check_edge_intake_recall),
+                      ("source-independence", check_source_independence),
+                      ("capability-challengers", check_capability_challengers),
                       ("self-sufficiency", check_self_sufficiency),
                       ("rs-detect", check_rubberstamp_detector),
                       ("rs-enforce", check_rubberstamp_enforcement)]

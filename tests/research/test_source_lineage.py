@@ -53,8 +53,8 @@ def test_derivation_layers_run_best_to_worst() -> None:
 
 
 # ------------------------------------------------------------------ item 18: no false diversity
-def test_item18_three_routes_to_one_upstream_count_as_one_source() -> None:
-    """THE POINT. Five dashboards consuming Binance data are one observation of the world."""
+def test_item18_three_routes_to_one_observation_count_as_one_source() -> None:
+    """THE POINT. Five dashboards consuming Binance's price are one observation of the world."""
     out = effective_independent_sources([_RAW, _DASH, _DASH2])
     assert out["source_count"] == 3
     assert out["effective_independent_information_source_count"] == 1
@@ -83,15 +83,40 @@ def test_item18_a_duplicate_loses_information_credit_not_its_place() -> None:
     assert "NOT its place on the desk" in dup["why"]
 
 
-def test_item18_the_real_desk_routes_are_inflated_and_the_count_says_so() -> None:
-    """RUNTIME EVIDENCE on the desk's own collectors: 8 routes, 4 upstream observations.
-    The three llama subdomains are one provider, and coingecko's price is Binance's."""
+def test_item18_the_real_desk_routes_carry_both_counts() -> None:
+    """RUNTIME EVIDENCE on the desk's own collectors: 8 routes -> 7 distinct OBSERVATIONS ->
+    4 independent PROVIDERS. Only coingecko:price is genuine redundancy (it is Binance's price
+    one hop later); the three llama series are three real measurements behind one methodology."""
     out = effective_independent_sources(list(DESK_FIELDS))
     assert out["source_count"] == 8
-    assert out["effective_independent_information_source_count"] == 4
-    assert out["false_diversity"] == 4
-    upstreams = {r["upstream_source_id"] for r in out["independent"]}
-    assert upstreams == {"binance", "bybit", "defillama", "ethereum_l1"}
+    assert out["effective_independent_information_source_count"] == 7
+    assert out["independent_provider_count"] == 4
+    assert [r["route"] for r in out["redundant"]] == ["coingecko:price"]
+
+
+def test_item18_one_venues_price_and_funding_are_not_the_same_observation() -> None:
+    """THE BUG THIS FIXES. Keying independence on upstream ALONE said Binance's spot price and
+    Binance's funding rate were one source -- same VENUE, utterly different MEASUREMENTS. That
+    collapse would have deleted a whole mechanism class from the desk's effective-N."""
+    price = Field(terminal="binance_spot", data_field="ohlcv", upstream_source_id="binance",
+                  observation="price")
+    funding = Field(terminal="binance_futures", data_field="funding_rate",
+                    upstream_source_id="binance", observation="funding_rate")
+    out = effective_independent_sources([price, funding])
+    assert out["effective_independent_information_source_count"] == 2
+    assert out["independent_provider_count"] == 1
+    assert out["redundant"] == []
+
+
+def test_item18_provider_count_bounds_correlated_failure() -> None:
+    """Three series from one provider are three observations and ONE methodology: if that
+    methodology is wrong they are wrong together, and an effective-N must know it."""
+    fs = [Field(terminal="llama", data_field=f, upstream_source_id="defillama", observation=f)
+          for f in ("tvl", "apy", "stables")]
+    out = effective_independent_sources(fs)
+    assert out["effective_independent_information_source_count"] == 3
+    assert out["independent_provider_count"] == 1
+    assert "wrong AT ONCE" in out["correlated_failure_note"]
 
 
 def test_item18_nothing_examined_is_unmeasured_never_zero() -> None:
