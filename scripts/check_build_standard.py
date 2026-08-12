@@ -118,6 +118,7 @@ _GOVERNED: tuple[str, ...] = (
     "read_xls.py",                          # R0317 stdlib .xls extraction, L1.11a (2026-08-12)
     "check_extractor_invariants.py",        # R0318 OP-024 in-data invariants (2026-08-12)
     "check_repair_capacity.py",             # R0330 L1.28b repair service rate (2026-08-12)
+    "run_execution_quality.py",             # R0334 six-component exec quality (2026-08-12)
 )
 
 #: Organs that legitimately owe no cron line, with the reason. "No schedule" must be a DECISION.
