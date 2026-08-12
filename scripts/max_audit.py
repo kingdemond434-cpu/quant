@@ -5619,7 +5619,34 @@ _CONSTITUTION_ORGANS = ("run_external_panel", "hypothesis_generator", "breadth_e
                         "collector_author", "deep_review", "run_micro_audit",
                         # added at the 2026-08-04 merge: this branch's organs, caught by the
                         # sibling's coverage net (they held the panel keys with no objective)
-                        "kimi_hunter", "run_strategic_director")
+                        "kimi_hunter", "run_strategic_director",
+                        # caught by the panel-keys net 2026-08-11: both send reasoning prompts
+                        "gpt_hunter", "run_survivor_panel")
+
+
+def _carries_objective(script: Path) -> bool:
+    """Does this organ's prompt carry the objective -- in the script, or one hop into `libs/`?
+
+    A FLAT GREP ON scripts/ WAS WRONG IN BOTH DIRECTIONS, and the second direction is the one that
+    matters. `run_strategic_director` builds its prompt in `libs.research.strategic_director.
+    build_prompt`, so the preamble is correctly injected and the grep would have called it NAKED
+    forever. A fence that reports a defect which cannot be cleared is a fence that gets ignored --
+    this desk has already retired two for exactly that ("Two fences that cried wolf").
+
+    ONE HOP, NOT A FULL IMPORT GRAPH. The prompt of an organ lives either where the organ is or in
+    the module it delegates prompt-building to; chasing transitively would start finding the string
+    in unrelated dependencies and turn a specific check into one that can never go red.
+    """
+    src = script.read_text("utf-8", errors="ignore")
+    if "OBJECTIVE_PREAMBLE" in src:
+        return True
+    for mod in re.findall(r"^from (libs[.\w]+) import", src, re.M):
+        p = ROOT / (mod.replace(".", "/") + ".py")
+        if p.exists():
+            with contextlib.suppress(OSError):
+                if "OBJECTIVE_PREAMBLE" in p.read_text("utf-8", errors="ignore"):
+                    return True
+    return False
 
 
 def check_constitution(defects) -> None:
@@ -5658,7 +5685,7 @@ def check_constitution(defects) -> None:
         if not p.exists():
             continue
         with contextlib.suppress(OSError):
-            if "OBJECTIVE_PREAMBLE" not in p.read_text("utf-8", errors="ignore"):
+            if not _carries_objective(p):
                 naked.append(name)
     if naked:
         defects.append((

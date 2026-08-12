@@ -39,6 +39,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from libs.doctrine.constitution import OBJECTIVE_PREAMBLE
+
 __all__ = [
     "FORBIDDEN",
     "Proposal",
@@ -232,6 +234,7 @@ def round_one_prompt(dossier: dict[str, Any]) -> tuple[str, str]:
     """(system, user) for the independent round."""
     classes = "\n".join(f"  {k} -- {v}" for k, v in BOTTLENECK_CLASSES)
     system = (
+        OBJECTIVE_PREAMBLE + "\n"
         "You are a seat on a quantitative research desk's bottleneck panel. You are handed the "
         "desk's REAL measured artifacts. Your job is root-cause analysis, not encouragement and "
         "not a literature review.\n\n"
@@ -264,6 +267,7 @@ def cross_examination_prompt(dossier: dict[str, Any],
     cannot -- not to poll reputations.
     """
     system = (
+        OBJECTIVE_PREAMBLE + "\n"
         "You are the same seat, now in cross-examination. Below are the other seats' answers, "
         "anonymised. Do NOT summarise them and do NOT try to be agreeable.\n\n"
         "Your job:\n"

@@ -68,6 +68,14 @@ _NOT_ORGANS = {
                              "each key is present and well-shaped, and deliberately never reads a "
                              "value or calls a model. An objective preamble would be text nothing "
                              "sends anywhere",
+    "build_audit_shards":    "payload ASSEMBLER -- it assigns code files to seats and writes shard "
+                             "bundles; the prompts that wrap them are built and sent by "
+                             "run_external_panel, which is on the organ list and injects the "
+                             "preamble once. Injecting here too would duplicate the objective in "
+                             "every shard body",
+    "check_llm_routing":     "routing FENCE -- it greps organ sources for how they resolve models "
+                             "and sends nothing to any of them. An objective preamble would be "
+                             "text nothing sends anywhere",
 }
 
 

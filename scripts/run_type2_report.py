@@ -316,24 +316,49 @@ def _screen_cell(
 ) -> Type2Cost:
     """Label one axis-screen-shaped cell, reproducing the screen's own n_eff and power convention.
 
-    The screen's `powered` flag is computed at N=1 with a two-sided 1.96, so `n_tests` is 1 here and
-    the agreement with the recorded flag is asserted in the note. Re-judging the cell under a
-    different multiplicity would REPLACE the screen's verdict instead of labelling it, which this
-    instrument is forbidden from doing.
+    The screen's `powered` flag is `1.96/sqrt(n_eff) <= ic_min` -- a 50%-power detectability floor
+    at alpha=.05 two-sided, N=1 -- so `n_tests` is 1 and `power_target` is 0.5 here, and the
+    agreement with the recorded flag is asserted in the note. Re-judging the cell under a different
+    multiplicity OR a different power target would REPLACE the screen's verdict instead of
+    labelling it, which this instrument is forbidden from doing. (Left at the 80% default, every
+    honest cell whose mde sat between the two floors read as a contradiction -- a false fire
+    manufactured by this instrument's own convention, not by the screen.)
+
+    THE CELL'S OWN RECORDED n_eff IS THE INPUT when it carries one. Recomputing from (n,
+    horizon_days, panel_width) silently re-judges any cell whose deflation inputs were lost in
+    conversion -- measured on conv_idle_axis_screen__trials.json, whose source screen deflated
+    136,931 raw rows to an honest n_eff of 1,711 that a recompute-from-n read as 136,931 and
+    branded POWERED. The recompute survives only as the fallback for cells that recorded no n_eff,
+    and it honours `overlap_periods` (non-overlapping grids, recorded by the harness) over the
+    annualisation horizon.
 
     `declared_trials` is therefore reported and never applied. When a cell clears its own power
     floor at N=1 but would not clear it at the trial count the artifact itself declares, the note
     says so -- the reader gets the fact, the screen keeps its verdict.
     """
-    cost = correlation_negative(
-        name,
-        source=source,
-        n_obs=float(cell.get("n") or 0.0),
-        horizon_periods=float(cell.get("horizon_days") or 1.0),
-        panel_width=int(cell.get("panel_width") or 1),
-        n_tests=n_tests,
-        note="",
-    )
+    rec_n_eff = cell.get("n_eff")
+    if isinstance(rec_n_eff, (int, float)) and float(rec_n_eff) > 0.0:
+        cost = correlation_negative(
+            name,
+            source=source,
+            n_obs=float(rec_n_eff),
+            n_tests=n_tests,
+            power_target=0.5,
+            note="",
+        )
+    else:
+        cost = correlation_negative(
+            name,
+            source=source,
+            n_obs=float(cell.get("n") or 0.0),
+            horizon_periods=float(
+                cell.get("overlap_periods") or cell.get("horizon_days") or 1.0
+            ),
+            panel_width=int(cell.get("panel_width") or 1),
+            n_tests=n_tests,
+            power_target=0.5,
+            note="",
+        )
     rec_powered = cell.get("powered")
     rec_mdi = cell.get("min_detectable_ic")
     # THREE STATES, NOT TWO. A screen that recorded NO `powered` flag has not disagreed with
@@ -352,7 +377,7 @@ def _screen_cell(
     fragile = ""
     if cost.label == POWERED and declared_trials > 1:
         at_declared = correlation_negative(
-            name, n_obs=cost.n_eff, n_tests=declared_trials, source=source
+            name, n_obs=cost.n_eff, n_tests=declared_trials, source=source, power_target=0.5
         )
         if at_declared.label != POWERED:
             fragile = (

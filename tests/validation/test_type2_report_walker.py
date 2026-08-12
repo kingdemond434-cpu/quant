@@ -347,3 +347,75 @@ class TestTheMoatReaderHandlesBothShapes:
         costs, _ = _MOD.read_moat(root)
         row = next(c for c in costs if c.source.endswith("#rows"))
         assert "absent from bars_per_symbol" in row.note
+
+
+def test_a_converted_cell_is_judged_on_its_own_recorded_n_eff(tmp_path: Path) -> None:
+    """THE conv_idle REGRESSION. A converted screen deflated 136,931 raw rows to an honest
+    n_eff of 1,711 -- but recorded no panel_width, because the conversion had none to carry.
+    Recomputing from raw n branded the cell POWERED and its honest powered=False flag a
+    contradiction. The cell's own recorded n_eff is the screen's convention; reproducing the
+    screen means using it."""
+    _write(tmp_path, "reports/axis_screens/converted__trials.json", {
+        "trials": [{
+            "name": "conv::cell::h1d", "n": 136931, "n_eff": 1711.6, "horizon_days": 1.0,
+            "ic": 0.0106, "min_detectable_ic": 0.0474, "powered": False,
+            "verdict": "SCREEN-UNDERPOWERED",
+        }],
+    })
+    costs, unread = _MOD.read_axis_screens(tmp_path)
+    assert unread == []
+    assert len(costs) == 1
+    assert "DISAGREES" not in costs[0].note, costs[0].note
+    assert "screen agrees" in costs[0].note
+
+
+def test_a_real_contradiction_still_fires_on_the_recorded_n_eff(tmp_path: Path) -> None:
+    """The detection must survive the fix: a cell whose recorded powered flag contradicts its
+    OWN recorded n_eff (1.96/sqrt(50) = 0.277 >> 0.03) is a genuinely broken artifact, and the
+    walker must say so."""
+    _write(tmp_path, "reports/axis_screens/broken__trials.json", {
+        "trials": [{
+            "name": "broken::cell::h1d", "n": 9000, "n_eff": 50.0, "horizon_days": 1.0,
+            "ic": 0.001, "min_detectable_ic": 0.277, "powered": True,
+            "verdict": "SCREEN-WEAK",
+        }],
+    })
+    costs, _ = _MOD.read_axis_screens(tmp_path)
+    assert len(costs) == 1
+    assert "DISAGREES" in costs[0].note, costs[0].note
+
+
+def test_the_powered_flag_is_reproduced_at_the_screens_own_power_convention(
+        tmp_path: Path) -> None:
+    """The screen's `powered` is a 50%-power detectability floor (1.96/sqrt(n_eff) <= 0.03,
+    so n_eff >= ~4270). Judging it at this module's 80% default (n_eff >= ~8710) manufactured a
+    contradiction on every honest cell in between -- a false fire produced by the instrument's
+    own convention, not by the screen."""
+    _write(tmp_path, "reports/axis_screens/between__trials.json", {
+        "trials": [{
+            "name": "between::cell::h1d", "n": 6000, "n_eff": 6000.0, "horizon_days": 1.0,
+            "ic": 0.002, "min_detectable_ic": 0.0253, "powered": True,
+            "verdict": "SCREEN-WEAK",
+        }],
+    })
+    costs, _ = _MOD.read_axis_screens(tmp_path)
+    assert len(costs) == 1
+    assert "DISAGREES" not in costs[0].note, costs[0].note
+    assert "screen agrees" in costs[0].note
+
+
+def test_a_cell_without_recorded_n_eff_recomputes_honouring_overlap_periods(
+        tmp_path: Path) -> None:
+    """Fallback path: no recorded n_eff. The recompute must use the recorded overlap deflation
+    (non-overlapping grid -> 1), not the annualisation horizon -- 8000/(1*100)=80, not
+    8000/(20*100)=4."""
+    _write(tmp_path, "reports/axis_screens/legacy__trials.json", {
+        "trials": [{
+            "name": "legacy::cell::h20d", "n": 8000, "horizon_days": 20.0,
+            "overlap_periods": 1.0, "panel_width": 100,
+            "ic": 0.001, "verdict": "SCREEN-UNDERPOWERED",
+        }],
+    })
+    costs, _ = _MOD.read_axis_screens(tmp_path)
+    assert len(costs) == 1
+    assert abs(costs[0].n_eff - 80.0) < 1.0, costs[0].n_eff

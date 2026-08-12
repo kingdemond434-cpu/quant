@@ -28,6 +28,7 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
                    sharpe_min: float = 0.5, ic_ceiling: float = 0.35,
                    sharpe_ceiling: float = 6.0, clock: str | None = None,
                    horizon_days: float = 1.0, panel_width: int = 1,
+                   overlap_periods: float | None = None,
                    target_symbol: str = "",
                    registry: str = "data/axis_clock_registry.json") -> dict[str, Any]:
     """Screen a signal against NEXT-period target returns with the mandatory angle-20 gate.
@@ -69,6 +70,12 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
       scores 0.55 against the 0.5 floor) and slackens the sharpe_ceiling rail by the same factor.
     panel_width: number of cross-sectional units stacked into the flat arrays (1 = single series).
       Only n_eff/power use it; it does not change IC or Sharpe.
+    overlap_periods: how many consecutive rows share one target window on the TIME axis. None
+      (default) = horizon_days, the historical behaviour for daily-sampled overlapping targets. A
+      caller that already sampled a non-overlapping h-day grid ([::h]) passes 1.0: its rows are
+      time-independent, and deflating them by horizon_days again would double-count -- while
+      lying horizon_days=1 to dodge that would break the Sharpe annualisation instead. Recorded
+      in the output as `overlap_periods` so a downstream reader can reproduce the deflation.
     """
     s = np.asarray(signal, dtype="float64")
     r = np.asarray(target_ret, dtype="float64")
@@ -147,7 +154,16 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
     # bars over a 45-symbol panel, horizon_days*panel_width = 0.031, which clamps to 1.0 and
     # silently discards the 45x cross-sectional stacking correction entirely. Each factor floors
     # at "no correction" on its own, then they compose.
-    deflator = max(float(horizon_days), 1.0) * max(int(panel_width), 1)
+    #
+    # `overlap_periods` SEPARATES THE TWO MEANINGS horizon_days was carrying. Annualisation needs
+    # the TRUE period of the target (a year holds 365/h of them regardless of sampling), but the
+    # time-axis deflation needs the OVERLAP between consecutive rows -- and a caller that already
+    # sampled on a non-overlapping h-day grid ([::h]) has overlap 1, not h. Conflating them
+    # double-deflates that caller by h, and the only escape it had was lying about horizon_days,
+    # which broke the annualisation instead. None passed = deflate by horizon_days, the historical
+    # behaviour for daily-sampled overlapping callers.
+    t_deflator = float(horizon_days) if overlap_periods is None else float(overlap_periods)
+    deflator = max(t_deflator, 1.0) * max(int(panel_width), 1)
     n_eff = max(len(zv) / deflator, 1.0)
     min_detectable_ic = float(1.96 / np.sqrt(n_eff))
     # 'powered' asks whether the SAMPLE could have detected an effect worth caring about (ic_min),
@@ -221,6 +237,7 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
            "stale_leg": bool(stale_leg), "residual_ic": round(ic_res, 4),
            "decontam_passed": not decontam_fail, "implausible_leak": implausible,
            "horizon_days": float(horizon_days), "panel_width": int(panel_width),
+           "overlap_periods": round(t_deflator, 6),
            "n_eff": round(n_eff, 1),
            "min_detectable_ic": round(min_detectable_ic, 4), "powered": powered,
            "sharpe_ceiling_applied": round(eff_sharpe_ceiling, 2),
