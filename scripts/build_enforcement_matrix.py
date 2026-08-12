@@ -77,7 +77,15 @@ _MAP: dict[str, list[str]] = {
     "L1.9": ["check_blind_trigger", "check_interrogation", "check_dig_depth"],
     "L1.10": ["check_mine_conversion", "check_mine_gate"],
     "L1.11": ["moat_audit.py", "check_vendor_replacement", "run_recorder.py"],
-    "L1.11a": ["ops/run_frontier_rotation.sh", "kimi_hunter.py"],
+    # L1.11a ranks ground by REVERSE-ENGINEERING COST PER UNIT OF EFFORT, and delisted rosters are
+    # the cheapest high-cost ground the desk had never asked for: R0239's own docstring routed the
+    # backward half of survivorship to "a reconstruction from binance.vision archives, a separate
+    # and much larger job", while three venues publish their dead instruments outright. One call
+    # each returned 4455 names (bitmex 3077 vs 32 live, bybit 936 vs 808, coinbase 315 vs 517) --
+    # accessibility was the barrier, and L1.11a says a barrier is a search dimension.
+    "L1.11a": ["ops/run_frontier_rotation.sh", "kimi_hunter.py",
+               "scripts/probe_delisted_instruments.py",
+               "tests/scripts/test_probe_delisted_instruments.py"],
     "L1.12": ["check_orphan_code", "check_idle_capability", "libs/self_improvement/dormancy.py"],
     "L1.13": ["check_gap_register_health", "run_execution_intel.py"],
     "L1.14": ["check_directives", "research_erv.py"],

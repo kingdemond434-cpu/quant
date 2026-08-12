@@ -2321,6 +2321,26 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 #   converge on a too-recent boundary and shout ROLLING
 20 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_bybit_archive.lock .venv/bin/python scripts/probe_bybit_archive.py >> data/cro_ai_logs/bybit_archive.log 2>&1
 
+# R0313 VENUE-SIDE DELISTED-INSTRUMENT PROBE -- the dead names, asked for rather than reconstructed.
+# WHY IT EXISTS: snapshot_universe (R0239) fixes survivorship FORWARD and its own docstring leaves
+# the backward half to "a reconstruction from binance.vision archives, a separate and much larger
+# job". Three venues simply publish their dead instruments, and nothing here had ever asked.
+# Measured first run 2026-08-12: bitmex 3077 dead vs 32 live, bybit 936 vs 808, coinbase 315 vs
+# 517 -- 4455 dead names, two venues carrying MORE dead than live. Those are systematically the
+# LOSERS, so every cross-section conditioned on today's listings is biased upward.
+# CADENCE (L1.28c): INFORMATION-ARRIVAL. Delistings land in daily batches, so daily is the ceiling;
+# faster re-reads an unchanged roster. The roster is a monotone UNION (never overwritten), so the
+# only irreversible loss is a name that appears AND ages off between two runs -- daily bounds that
+# to 24h. 03:35 -- after the bybit retention probe, same venue-truth block.
+# A network failure records UNREACHABLE per venue, never ABSENT: "we could not ask" and "there is
+# nothing there" demand opposite responses, and only an ENTIRELY unreachable run exits non-zero.
+# EVIDENCE: scripts/probe_delisted_instruments.py -> data/delisted_instruments.json (registry)
+#   + data/delisted_rosters/<venue>.json (the dead names themselves -- a count would be a
+#   catalogue, and a catalogue is half a deliverable)
+# CONFIDENCE: 18 tests, including the pagination case that read "500 dead, 0 live" until the
+#   walk was fixed (3077 after), and the purge case where a venue drops a name it once reported
+35 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_delisted_probe.lock .venv/bin/python scripts/probe_delisted_instruments.py >> data/cro_ai_logs/delisted_probe.log 2>&1
+
 # ---------------------------------------------------------------------------------------------
 # STALE-DAEMON REPAIR (L1.28b detect->repair; installed live 2026-08-11, cycle commit pending).
 # WHY: max_audit's daemon-stale-code-* class recurred 4x in 12d (carry-leak alarm inert 8.7h

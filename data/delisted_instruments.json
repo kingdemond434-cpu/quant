@@ -1,0 +1,87 @@
+{
+ "probed": "2026-08-12T08:24:41.993336+00:00",
+ "venues": {
+  "binance_futures": {
+   "endpoint": "GET fapi.binance.com/fapi/v1/exchangeInfo",
+   "states": {
+    "TRADING": 731,
+    "SETTLING": 127,
+    "PENDING_TRADING": 1
+   },
+   "n_live": 732,
+   "note": "SETTLING/DELIVERING are dated delivery contracts mid-retirement; a perp that was delisted disappears from exchangeInfo entirely, so this does not recover already-dead perps -- binance.vision archives remain the route for those.",
+   "partial": true,
+   "n_new_this_run": 0,
+   "verdict": "PARTIAL",
+   "n_dead": 127
+  },
+  "bitmex": {
+   "endpoint": "GET www.bitmex.com/api/v1/instrument (paginated)",
+   "states": {
+    "Settled": 1377,
+    "Open": 32,
+    "Delisted": 13,
+    "Unlisted": 1687
+   },
+   "n_live": 32,
+   "n_new_this_run": 0,
+   "verdict": "AVAILABLE",
+   "n_dead": 3077
+  },
+  "bybit": {
+   "endpoint": "GET api.bybit.com/v5/market/instruments-info?category=linear&status={Trading,Closed}",
+   "states": {
+    "Trading": 808,
+    "Closed": 936
+   },
+   "n_live": 808,
+   "n_new_this_run": 0,
+   "verdict": "AVAILABLE",
+   "n_dead": 936
+  },
+  "coinbase": {
+   "endpoint": "GET api.exchange.coinbase.com/products",
+   "states": {
+    "delisted": 315,
+    "online": 517
+   },
+   "n_live": 517,
+   "n_new_this_run": 0,
+   "verdict": "AVAILABLE",
+   "n_dead": 315
+  },
+  "kraken_futures": {
+   "endpoint": "GET futures.kraken.com/derivatives/api/v3/instruments",
+   "states": {
+    "tradeable": 298
+   },
+   "n_live": 298,
+   "verdict": "ABSENT",
+   "n_dead": 0
+  },
+  "okx": {
+   "endpoint": "GET www.okx.com/api/v5/public/instruments?instType=SWAP",
+   "states": {
+    "live": 445,
+    "preopen": 2
+   },
+   "n_live": 447,
+   "verdict": "ABSENT",
+   "n_dead": 0
+  },
+  "upbit": {
+   "endpoint": "GET api.upbit.com/v1/market/all",
+   "states": {
+    "live": 831
+   },
+   "n_live": 831,
+   "note": "no state field is published at all; Upbit also PURGES candles on delisting, so the treatment group is erased at the source -- R0303 snapshots forward because there is nothing to ask for after the fact.",
+   "verdict": "ABSENT",
+   "n_dead": 0
+  }
+ },
+ "n_venues": 7,
+ "n_reached": 7,
+ "n_available": 4,
+ "n_dead_total": 4455
+}

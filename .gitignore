@@ -72,6 +72,15 @@ data/*
 # the rolling-retention alarm the file exists to raise can never fire -- a detector that cannot
 # fire is the class L0070 is named for. The seeded BTCUSDT prior carries its own provenance.
 !data/bybit_archive_retention.json
+
+# R0313 delisted-instrument rosters. Tracked for exactly the reason the file above is: the names
+# are IRREPLACEABLE the moment a venue ages one off its own dead list. BitMEX carries 3077 settled
+# contracts against 32 live ones, and nothing obliges it to serve them forever -- an untracked
+# roster wiped with data/ cannot be re-fetched, only re-lost. The registry rides along so a clone
+# can tell "this venue publishes nothing" from "this venue was never asked".
+!data/delisted_instruments.json
+!data/delisted_rosters/
+!data/delisted_rosters/*.json
 web/*
 !web/index.html
 reports/

@@ -1,0 +1,517 @@
+{
+ "venue": "binance_futures",
+ "endpoint": "GET fapi.binance.com/fapi/v1/exchangeInfo",
+ "probed": "2026-08-12T08:24:41.993336+00:00",
+ "n_dead": 127,
+ "n_new_this_run": 0,
+ "symbols": {
+  "1000WHYUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "1000XUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "42USDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "A2ZUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "ACXUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "AGIXUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "AI16ZUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "AIUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "ALPACAUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "ALPHAUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "AMBUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "ATAUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "B3USDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "BADGERUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "BAKEUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "BALUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "BIDUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "BLZUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "BNXUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "BOBUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "BONDUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "BSWUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "CHESSUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "COMBOUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "COMMONUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "COSUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "CUDISUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "DAMUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "DARUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "DEFIUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "DEGENUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "DEGOUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "DENTUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "DFUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "DGBUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "DMCUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "DUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "EPTUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "FIOUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "FISUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "FLMUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "FORTHUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "FTMUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "FTTUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "FUNUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "FXSUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "GHSTUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "GLMRUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "HFTUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "HIFIUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "HIGHUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "HIPPOUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "HOOKUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "IDEXUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "IPUSDC": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "IPUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "IRUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "KDAUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "KEYUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "KLAYUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "LEVERUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "LINAUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "LOKAUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "LOOMUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "LRCUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "MBOXUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "MDTUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "MEMEFIUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "MILKUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "MKRUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "MLNUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "MYROUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "NEIROETHUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "NFPUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "NKNUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "NTRNUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "NULSUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "OBOLUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "OCEANUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "OLUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "OMGUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "OMNIUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "OMUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "ORBSUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "OXTUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "PERPUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "PHBUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "PONKEUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "PORT3USDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "PUFFERUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "QUICKUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "RADUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "RAYUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "RDNTUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "REEFUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "REIUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "RENUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "RLSUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "RVVUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "SCUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "SKATEUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "SLERFUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "SNTUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "STMXUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "STPTUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "STRAXUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "SWELLUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "SYSUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "TANSSIUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "TOKENUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "TONUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "TROYUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "TRUUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "UNFIUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "UXLINKUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "VANRYUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "VFYUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "VICUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "VIDTUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "VINEUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "VOXELUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "WAVESUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "XCNUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "XEMUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "YALAUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "ZKJUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  },
+  "ZRCUSDT": {
+   "first_seen": "unknown",
+   "last_seen": "2026-08-12T08:24:41.993336+00:00"
+  }
+ }
+}
