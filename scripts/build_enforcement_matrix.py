@@ -532,6 +532,15 @@ _FENCE_OWNERS: dict[str, str] = {
     # Mandate Part III / gate items 30-34: a discovery that leaves the funnel with no
     # disposition is the silent dismissal the universal-edge-capture law forbids.
     "check_edge_intake_recall": "L1.8",
+    # Mandate XIX-B / gate item 18: counting ROUTES instead of independent OBSERVATIONS overstates
+    # diversification, and it errs toward boldness -- the desk believes it holds more independent
+    # evidence than it does. L1.41's shape exactly: an unmeasured quantity reported as a confident
+    # number, where the confident number is the dangerous direction.
+    "check_source_independence": "L1.41",
+    # Mandate V-C / gate item 15: a challenger that WON its controlled benchmark and never had its
+    # runtime evidence collected is an asset the desk paid for and does not use. L1.50 names that
+    # exactly -- an unexploited asset is a defect, not a neutral state.
+    "check_capability_challengers": "L1.50",
     "check_registry_complete": "L2.2",   # an unregistered check is a law believed-but-not-enforced
     "check_artifact_governance": "L2.2",
     "check_ci_scope": "L2.2",            # a CI gate on a hardcoded subset is a map, not a territory
