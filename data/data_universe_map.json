@@ -576,7 +576,7 @@
   "44-exchange-announcement-calendars": {
    "class": "event-timestamps",
    "grade": "adopted-pending-verify",
-   "note": "Binance/Bybit/OKX listing/delisting/contract-change with timestamps; own Bronze = integrity layer",
+   "note": "Binance/Bybit/OKX listing/delisting/contract-change with timestamps; own Bronze = integrity layer. COLLECTOR ROUTES FOUND (RU miner 2026-08-12, from github.com/roman-boop/bybit-trading-on-delistings — working practitioner code): Binance CMS news endpoint (bot parses Binance news articles for tickers) + Telegram @Bybit_Announcements as machine-readable feed (telethon). Mechanism EV-gated this run: delisting_announcement_unwind_window EV 0.0013 REJECT at prior, measurement trigger = this row's verify (see prospector_watchlist 2026-08-12 RU entry).",
    "origin": "principal-addenda-BCD-2026-07-20"
   },
   "45-kraken-csv-dumps": {
@@ -987,7 +987,7 @@
    "url": "http://web.archive.org/cdx/search/cdx?url=forum.btcsec.com*&filter=original:.*topic.* (48 CDX pages domain-wide; replay with id_ + -L)",
    "provides": "ERA CORPUS: dead Russian bitcoin forum (btcsec.com, IPB3, UTF-8 — no 1251 trap), 2011-2015, renamed bits.media in 2015 (live successor forum.bits.media, robots User-agent:* only, no bot-name blocks). 1,570 unique topics captured with HTTP 200; 283-topic trading shortlist with best-capture timestamps on disk at data/btcsec_trading_topics.json.",
    "mechanism": "OP-034 CDX map + slug-keyword triage; Wayback replay of IPB topic URLs needs curl -L (302 to exact ts). 'arbitr' scores ZERO slug hits across all 1,570 topics — arb lore lives INSIDE obmen/birzha/bot threads (OP-030: lexical zero, not absence).",
-   "finding": "3 threads mined to reply-depth on 2026-08-04 yielded: grid-bot short-gamma instance #2 with correlated-outage failure mode (topic 5499), barrier-rent route-dispersion quantification ~12% with Bitstamp-anchor fact (topic 1987), real-time Gox-untradeable knowledge 6wk pre-collapse (topic 4083) — all in docs/graveyard.md era entries. 280 shortlisted topics remain unmined.",
+   "finding": "3 threads mined to reply-depth on 2026-08-04 yielded: grid-bot short-gamma instance #2 with correlated-outage failure mode (topic 5499), barrier-rent route-dispersion quantification ~12% with Bitstamp-anchor fact (topic 1987), real-time Gox-untradeable knowledge 6wk pre-collapse (topic 4083) — all in docs/graveyard.md era entries. +6 threads 2026-08-12 (obmen/birzha class: 3426/6157/5848/2047/4382/8115) yielded: barrier-rent 8th instance (demand-direction sign on a dealer menu, 15k-RUB legal capacity cap, fraud-premium term), WS-009 (BTC-E public tape display-rounded + hidden MT4 channel + no history API — era-tape provenance prior), WS-010 (strategy-file monoculture syncs retail flow). 274 shortlisted topics remain unmined.",
    "grade": "T3-era-corpus (finite, one-time-exhaustible; zero ongoing collection cost)",
    "license": "public web archive of a public forum; charter s13 PASS (no login wall, no closed group, robots permissive on both era and successor domains)",
    "value": "era-mechanism provenance + free falsification context; NOT a price/series source",

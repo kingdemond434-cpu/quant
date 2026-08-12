@@ -895,3 +895,36 @@ leveraged holder → 2014-15 blowup → rebuilt as the market's fiat rail). **St
 unchanged:** persistent premium = barrier rent, information/timing only, never sized as arb. This
 does NOT reopen axis #76 (USDT-CNY OTC premium, screened 4/4 cells 2026-07-26, no promotable
 edge); re-entry needs a named enabling change per L1.16a.
+
+### era_crossvenue_fiat_premium_arb — EIGHTH INSTANCE (RU 2013-14, dealer fee-ladder) — DEMAND-DIRECTION SIGN PRICED ON A MENU + LEGAL CAPACITY CAP
+
+**RECORDED 2026-08-12 (RU frontier miner s2-on-branch, era-archaeology: forum.btcsec.com
+obmen/birzha class, Wayback id_ UTF-8 reads).** Sources, all mined to reply-depth: topic 3426
+(MRaven BTC-E-code exchanger ladder, Samara, Dec-2013; 20140924id_), topic 6157 (EXMO launch
+thread as exmoney.com, Feb-2014; 20140701id_), topic 5848 (exchanger thread + impersonation-scam
+dispute, Feb-2014; 20140709id_), topic 2047 (btc-trade.ru auto-exchanger, Sep-2013;
+20140813id_). **(a) THE 7th INSTANCE'S DEMAND-DIRECTION VARIABLE, PRICED ON ONE DEALER'S MENU
+(sharpest form yet):** MRaven's simultaneous two-sided ladder — BTC-E **RUB codes IN: customer
+RECEIVES a premium** ("от 3% премия"; verified in reply 6: paid 9,000 RUB → received 9,090 in
+codes = +1%), **RUB codes OUT: 7% commission**; USD codes near-symmetric (IN 2.5%, OUT 0-0.5%).
+One instrument, both directions, priced at one instant: the rent's SIGN and MAGNITUDE follow net
+retail flow PER CURRENCY-LEG (RUB leg one-directional cash-out post-Nov-2013 top; USD leg
+balanced). The CN 7th instance derived this variable from a policy analysis; here it sits on a
+dealer's price list. **(b) THE LEGAL CAPACITY CAP — why the rent could not be arbed away:** RF
+e-money law capped anonymous e-wallet payments at **15,000 RUB single-payment** with >100k RUB
+transactions subject to up-to-72h review (EXMO launch thread, primary); exchanger floats were
+tiny (a 15k RUB trade EXHAUSTED one dealer's reserve, 5848; "price QIWI at 2% and you will be
+refilling the deposit nonstop", 2047) — per-transaction legal caps × per-dealer float = rail
+capacity bounded BY CONSTRUCTION, so the premium persists at exactly the size that cannot be
+institutionalised. §42's "too small for funds" ground, in its 2013 form. **(c) RENT
+DECOMPOSITION GAINS A FRAUD TERM:** the rail carried organised counterparty fraud —
+impersonation infrastructure (fake Skype handles one glyph off the dealer's: mraven/nigmar/
+lmksar-vs-imksar; the coinbox scam), the two-account manipulator pattern (clean handle for
+reputation, dirty twin for theft), and "grateful testimonials serve as scammers' target lists"
+(5848 reply 14). Part of the 2.5-7% spread is an expected-fraud-loss premium, not pure barrier
+rent. Rail-share census number: ~60% of withdrawals requested to QIWI, ~20% Sberbank (5848
+reply 16). Venue-side fee baseline: EXMO fiat rails 2.5%/side vs 0.8% WebMoney private-transfer
+baseline, trade fee 0.2%, crypto withdrawals at network cost (BTC 0.001). Rail latency: BTC-E →
+card ≈ 20 min + 10 min after a manual name-confirm step (2047). **Standing implication
+unchanged:** persistent premium = barrier rent, information/timing only, never sized as arb;
+nothing here reopens axis #76 (L1.16a).

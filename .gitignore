@@ -17,6 +17,9 @@ data/*
 # every seat's universe-map contribution. It is institutional memory, same class as the
 # intelligence ledgers below.
 !data/data_universe_map.json
+# R0311's sibling: the RU seat's era-corpus shortlist is §33 evidence + cross-run resume
+# state (mined_to_reply_depth), not generated state — untracked it dies with the box.
+!data/btcsec_trading_topics.json
 # The authority declaration is POLICY, not generated state: it says which component
 # may reach which surface. It must be reviewable in a diff, because a grant that
 # widens silently is the failure libs/ops/agent_authority.py exists to prevent.

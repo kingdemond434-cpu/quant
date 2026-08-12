@@ -948,6 +948,108 @@ does not exist on this forked branch (ENOENT verified by running the hook manual
 as EN s4's 08-04 record; the law gate lives on master, 419 ahead). Pushed ccfa013 + priors with
 --no-verify per the standing fork corollary; nothing was bypassed that exists here to run.
 
+### 2026-08-12 session 2-on-this-branch (RU frontier miner) — COMPLETE (write-first note, finalized end of run)
+BACKLOG (resume step 1): 15 pending-verification items are ALL cross-desk mechanism/vendor items
+(BIS WP 1087, Auer–Claessens taxonomy, stablecoin-run conditioning, KR venue-state, copula
+stat-arb, quarter-hour clock) — none is RU-ground; owned by the research organs / KR seat per the
+08-04 routing note above. Recorded, not silence. §33 header this run: backlog clear, mining
+authorised.
+ITEMS THIS RUN (bounded scope, depth-maxed; drawn from the 08-04 NEXT RUN queue in order):
+  1. btcsec shortlist continuation — obmen/birzha class FIRST (159 unmined of 283 trading-tagged;
+     data/btcsec_trading_topics.json). Bounded slice: 4-6 threads to reply depth, length-ranked
+     per OP-034; hunting barrier-rent PRIMARY NUMBERS (fee ladders, deposit-premium structure)
+     + venue-microstructure lore (btc-e anomaly threads). STATUS: DONE — 6 threads to full
+     depth (3426, 6157, 5848, 2047, 4382, 8115; extractor hit OP-034 trap 3 mixed-quote markup,
+     fixed in-run). YIELD: (a) barrier-rent EIGHTH INSTANCE [§33: killed -> docs/graveyard.md
+     era_crossvenue_fiat_premium_arb 8th instance]: demand-direction sign variable PRICED ON ONE
+     DEALER'S MENU (RUB-codes IN pays customer +1..3% premium, RUB OUT charges 7%, USD codes
+     near-symmetric — the CN 7th instance's variable, on a price list), legal capacity cap
+     (15,000 RUB e-money single-payment law + tiny dealer floats = rail capacity bounded BY
+     CONSTRUCTION, §42's too-small-for-funds ground in 2013 form), fraud-premium term in the
+     rent decomposition, rail-share census (60% QIWI / 20% Sber), EXMO launch-day fee schedule
+     (2.5%/side vs 0.8% private baseline). (b) WS-009 [§33: wired ->
+     docs/research/weak_signal_registry.md]: BTC-E public tape is DISPLAY-ROUNDED (trades print
+     at prices absent from the book; venue API returned rounded fills), has a HIDDEN MT4-bridge
+     order channel invisible in public depth, and NO history API existed — an era-tape
+     provenance prior for every archived pre-2017 tape the moat ingests. (c) WS-010 [§33:
+     wired]: vendor strategy-FILE monoculture (identical rule-tables mass-distributed, group-buy
+     складчина distribution) syncs retail flow at encoded thresholds; modern echo = copy-trade/
+     signal-channel monoculture. (d) catalog updated [§33: wired -> data/btcsec_trading_topics.json
+     mined 9/283, 274 remain].
+  2. cryptomaniac_dt chain (owed from the 08-04 watchlist card, depth mandate): GitHub repo +
+     Habr author page per OP-005/OP-013 fork/citation discipline. STATUS: DONE — chain CLOSED
+     and it widened: live topic → github.com/roman-boop → 50-repo profile sweep (Dec-2025..
+     Aug-2026, all strategy code public). FINDS: (a) bybit-trading-on-delistings +
+     bybyt-tokensplash-long = EXECUTABLE-tier practitioner code for §42's NAMED ground
+     (delisting unwinds / day-1 listings): telethon on @Bybit_Announcements + Binance CMS parse
+     → short mentioned perps at announcement latency. Mechanism EV-GATED THIS RUN [§33:
+     screened -> docs/research/prospector_watchlist.md delisting_announcement_unwind_window]:
+     EV 0.0013 < 0.002 HONEST REJECT at prior (crowded_known, thin-by-selection capacity);
+     measurement trigger named = universe-map row 44 verify, which now carries the CONCRETE
+     collector routes from this repo [§33: wired -> data/data_universe_map.json row 44]. The
+     listing-side twin is already desk-owned (listing_events.py pre-registered — no new trial
+     burned). (b) BingX-affiliate tell CONFIRMED (4 BingX tooling repos) — the 08-04 card's
+     venue-economics suspicion is now documented fact, raising the sponsored-content discount
+     on the whole genre. (c) aggregator-of-aggregators pattern: his event bots parse OTHER
+     Telegram bots' output (a bot parsing a bot-parser) — the retail event-reaction chain
+     stacks ≥2 latency hops, which LENGTHENS the exploitable window for direct feed readers.
+     (d) NEW VENUE GROUND recorded: @crypto_maniacdt YouTube channel (video walkthroughs of
+     each repo), Habr author page + Yandex Dzen (volume.py "для яндекс дзена" — Dzen hosts a
+     RU quant-content layer the desk has never touched), quikpy-grid-bot- (MOEX/QUIK retail
+     algo layer — RU stock-market tooling community, out of tradeable scope, in scope as
+     process/data ground). thirdeye_strategy_algo ("350%/yr backtest" BARE_CLAIM + code =
+     cheap-to-refute EXECUTABLE) noted for a future run, NOT carded (bounded scope).
+  3. (stretch) smart-lab.ru algo section FIRST TOUCH: robots read, then census. STATUS: DONE
+     (first pass; ground NOT exhausted). robots.txt fetched: `User-agent: *` disallows only
+     /r.php + /blog/offtop/, NO by-name AI blocks — s13 PASS (named blocks are SEO crawlers
+     only). /algotrading/ title census (30 links): verdict RICH-BUT-VENDOR-HEAVY — dominated by
+     autofollow/track-record vendors (AITRUST/ABIGTRUST/CGT/Trading Bot PRO weekly-results
+     genre), loose moderation (spam present). BUT: (a) cryptomaniac_dt cross-posts HERE too
+     (1335751 = supply_demand, 1335689 = trendline_bot) — smart-lab is his FOURTH surface;
+     cross-region convergence dedup: forum/Habr/YouTube/Dzen/smart-lab sightings of this corpus
+     are ONE source (provenance discipline, GAP #85 class). (b) three depth targets named for
+     next run: 1336741 ("downloaded 30y of history in an evening, spent half a year fixing the
+     data" — data-quality war story, process-mandate material), 1335532 ("built a platform that
+     REJECTED all 231 of my strategies — the project's best result" — a retail practitioner
+     independently landing on the desk's own 420/0 discipline; mine his gauntlet design),
+     1335574 (independent tick-level refutation of a sold MQL5 scalping robot — free graveyard
+     genre). Also 1338486 "Арбитражные пары в криптоактивах на рынке РФ" — RF-onshore crypto
+     instruments (MOEX layer) — new seam.
+VENUE DISCOVERY (standing obligation, recorded for inheritance): NEW — Yandex Dzen quant-content
+layer (roman-boop's volume.py is "для яндекс дзена"; Dzen hosts RU retail-quant long-reads the
+desk has NEVER touched; discovery route: repo description) | first-pass verdict UNTOUCHED-RICH?
+(unprobed). NEW — @crypto_maniacdt YouTube channel (video walkthroughs paired 1:1 with repos;
+route: repo README) | video ground, transcript-fetchable next run. NEW — MOEX/QUIK retail algo
+community (quikpy ecosystem; route: repo sweep) | out of tradeable scope, in scope as
+process/data ground. smart-lab.ru | RICH-BUT-VENDOR-HEAVY (above). VIDEO LINE: 0 fetched, 0
+locked this run — no video dug (YouTube channel found and NAMED as next-run ground; honesty
+per the video mandate: the zero is a not-tried zero, not a blocked zero).
+DEPTH LINE (mandate report): 6 era threads mined at full capture depth (16-20 posts each,
+quote-chains preserved; the load-bearing facts were reply-layer AGAIN: +1% premium verification
+in 3426 reply 6, taker-only design rationale in 4382 reply 6, rail-share census in 5848 reply
+16, MT4-hidden-channel in 8115 replies 5+9); fork/citation chain WALKED to close the 08-04
+debt: live topic → author profile → 50 repos → 2 READMEs deep + sibling repos + 4th-surface
+cross-post discovery on smart-lab. Zero-hit checks: none needed this run (no zero results).
+Breadth-theater check: 3 items, all closed to depth or honest first-pass verdict — no
+surface-touch-and-move.
+PROACTIVE BATTERY (moves run): #2 ADJACENCY — the CN seat's 7th-instance demand-direction
+variable was hunted deliberately in RU ground and found PRICED ON A MENU (8th instance;
+cross-region instance-compounding as designed). #6 GENERALISE-THE-RULE — the fee-ladder
+sign-asymmetry became an OP-049 extension (two-sided ladders as flow-direction gauges,
+all regions). #8 NEGATIVE SPACE — WS-009 exists because nobody had asked what the era's
+public tape DIDN'T contain (hidden MT4 channel, unrounded precision); the absence was the
+finding. #3 CONFIG-VS-OUTCOME — smart-lab s13 verdict cites the fetched robots.txt, not
+assumption. Moves producing nothing: #5 COST-INVERSION (nothing paid touched this run).
+NEXT RUN (in order): (1) smart-lab depth targets 1335532 (the 231-rejections platform — mine
+the gauntlet design) + 1336741 (data-repair war story) + 1335574 (MQL5 refutation → graveyard);
+(2) btcsec 274 remaining shortlist topics — bot/strategy class next (grid/ladder instances
+compound; obmen class's richest veins now banked); (3) @crypto_maniacdt YouTube transcripts
+(fetch_video_transcript.py) — pair each video with its repo, hunt the stated-but-uncoded
+failures; (4) Yandex Dzen quant layer first probe (robots + census); (5) MMGP forum
+era-archaeology (still untouched region era target); (6) habr full sweep via master OP-039.
+PUSH RECORD: see end-of-run commit; law-gate presence checked at push time per the 08-04 fork
+corollary (record below if --no-verify was needed).
+
 ## SESSION NOTES — KR frontier miner
 
 ### 2026-08-04 session 1-on-this-branch (KR frontier miner) — IN PROGRESS (write-first note; updated as items resolve)

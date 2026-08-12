@@ -479,6 +479,10 @@ marked [UNVERIFIED] and must be negative-controlled before budget is spent on th
 | физлицо / физик | "natural person" — the P2P/tax-rail term for a retail individual counterparty | perennial | [UNVERIFIED] seat brief | `физлицо P2P лимиты банк` |
 | календарный арбитраж | calendar spread arb (near vs far future) — the dominant RU statarb form on MOEX | perennial | [V] smart-lab 707565 | `календарный арбитраж фьючерс проскальзывание` |
 | проскальзывание | slippage — the RU practitioner's named killer of statarb | perennial | [V] smart-lab 707565 | `статарбитраж проскальзывание не работает` |
+| связка | "the link-chain" — a payment ROUTE tested end-to-end (venue→processor→bank/card); the folk term for rail combinations, and THE search key for corridor/obnal genre ("проверял связку") | 2013- | [V] btcsec 2047 reply 7 | `связка вывод биржа карта` |
+| резерв(ы) | exchanger float/inventory — the capacity variable of the whole dealer layer; "резервов нет" = rail at capacity | 2013- | [V] btcsec 5848/3426 ("Апдейт, резервы актуальны") | `обменник резервы направление` |
+| складчина | group-buy / cost-sharing (of bots, courses, signals) — finds the retail tooling-distribution layer and its monoculture (WS-010) | perennial | [V] btcsec 4382 reply 20 | `складчина бот стратегия торговый` |
+| стенка | order-book wall (large limit order); "ловить стенку" = wall-catching, the era's book-reading verb — era bots shipped wall-filters with spoof-ignore limits | 2013- | [V] btcsec 4382 OP | `стенка стакан бот ловить` |
 
 ## ARCHIVED
 (none yet)
@@ -727,6 +731,16 @@ adaptations: RU=forum.bits.media sections 74/166 (done 08-04); CN=public layer t
 counterfactual: HIGH — the diaspora question stood open across multiple RU sessions; the answer
   was one public GET away the whole time. The class error was hunting DISCUSSIONS about where
   people went instead of reading the market that formed where they arrived.
+
+_OP-049 EXTENSION (RU s2-on-branch, 08-12): a dealer's TWO-SIDED fee ladder is a FLOW-DIRECTION
+gauge, not just a rent quote. Read IN vs OUT fees per instrument-leg: symmetric fees = balanced
+flow; a SIGN FLIP (customer PAID a premium on one side — btcsec 3426: BTC-E RUB-codes IN "от 3%
+премия" while RUB OUT charged 7%) = one-directional net retail flow, with the asymmetry
+magnitude pricing the direction. This is the graveyard demand-direction variable (7th/8th
+instances) read as an INSTRUMENT: era fee-ladders are point-in-time flow-direction records no
+vendor archives, and modern P2P ad ladders (the OP-049 census) carry the same readable sign.
+Per-region: works on any dealer-ad genre with quoted two-sided pricing. Trap: slug/URL numbers
+are punctuation-stripped ("ot-18" = 1.8%) — read the thread body, never the slug, for fees._
 
 _OP-034 field note (RU s1-on-branch, 08-04): Wayback REPLAY of querystring URLs (IPB/IPS
 `index.php?/topic/...`) 302s to the canonical capture timestamp — curl WITHOUT -L writes 0

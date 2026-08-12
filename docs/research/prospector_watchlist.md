@@ -395,3 +395,41 @@ verified-live keyless** → data_axis_watchlist card 31 + universe map 98-binanc
 
 **WATCHLIST (max 5 — active entries after this session): POC retest (hold), SFD cadence probe
 (hold), dvol_futures_basis_carry (hold), coinm_usdtm_basis_convexity_rv (new). 4/5 slots used.**
+
+## SESSION SUMMARY — 2026-08-12 session 2-on-branch (RU frontier miner)
+
+### delisting_announcement_unwind_window — EV-REJECTED at prior, logged as watchlist memory (not a card; measurement trigger named)
+- **Source + provenance:** github.com/roman-boop/bybit-trading-on-delistings (RU practitioner
+  cryptomaniac_dt, the POC-retest card's author — chain walked live topic 2130528 → GitHub
+  profile → 50-repo sweep, 2026-08-12). The bot is EXECUTABLE-tier evidence of the RETAIL SNIPE
+  layer: telethon on @Bybit_Announcements + Binance CMS news parse → market SHORT on mentioned
+  USDT-perps at announcement latency. Sibling repo bybyt-tokensplash-long = the listing-side
+  twin (already desk-owned ground: listing_events.py is pre-registered; not a new trial).
+  DERIVES-FROM: NONE (checked) — no citations in either repo; practitioner-native genre.
+- **Mechanism:** delisting announcement opens a PRE-ANNOUNCED, DATED forced-unwind window
+  (holders must exit; market-makers pull; perp contracts get settled/removed) ⇒ predictable
+  sell pressure with published equities index-deletion analogues and a crypto study already
+  quoted on the Upbit axis row (−12%/wk post-announcement, no reversal). §42 names "delisting
+  unwinds" as desk ground. The desk angle is the multi-day WINDOW, never the t=0 snipe (that
+  layer is measurably occupied — this repo IS the evidence).
+- **EV gate (honest, run this session, libs.research.alpha_economics):** est_sharpe 0.5, breadth
+  30 (batch-clustered events counted conservatively), capacity $50k (delisted names are thin BY
+  SELECTION), orth 0.8, 16h effort (event-list collector + event study), 1.2× maint, tags
+  crowded_known (index-deletion effect is published; snipe layer crowded) → **EV 0.0013 < 0.002
+  REJECT** (p_survive 0.0525). Sensitivity at est_sharpe 0.7 also rejects (0.0019) — reported,
+  not adopted. VARIANTS_TRIED: window-drift (scored); announcement-latency snipe (named, NOT
+  scored — a latency race vs colocated retail bots at zero prior, naming it is not a rescue).
+- **SINGLE PROMOTION TRIGGER (measurement, not construction-shopping):** universe-map row 44
+  (exchange-announcement-calendars, adopted-pending-verify) now carries the CONCRETE collector
+  routes this dig surfaced (Binance CMS news endpoint; @Bybit_Announcements as machine-readable
+  feed). When that owed verify lands and the event list exists, the event study against bronze
+  candles is ~free: if measured window drift nets positive after funding-spike carry cost +
+  spread blowout (the two named killers — shorts crowd delisting perps, funding goes deeply
+  negative), re-score with MEASURED est_sharpe via libs/validation/event_study.py (event-shaped
+  gate, both exit rules = two trials). Nothing promotes from this entry directly.
+- **Strongest spurious argument (written first):** the visible drift may be entirely the
+  UNSHORTABLE segment — by the time a perp short is practical, funding cost ≈ the drift
+  (barrier-rent shape again: the return accrues to whoever bears the constraint, and a
+  crowded-short funding print IS that constraint priced).
+
+**WATCHLIST (max 5): unchanged — 4/5 slots used; this entry holds no slot.**
