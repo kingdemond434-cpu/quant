@@ -24,12 +24,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
+from scipy import stats
 
+from libs.research.order_sensitive_decay import decay_verdict
 from libs.research.upbit_data import upbit_daily_utc_keyed
 
 SERIES = Path("data/signal_halflife.jsonl")
 REPORT = Path("data/signal_halflife_report.json")
 MIN_POINTS_TO_FIT = 8  # refuse to estimate a half-life below this
+IC_WINDOW = 60  # rolling_ic's window length -- the sample size behind each window's IC
 
 
 def _get(u, t=40):
@@ -76,7 +79,7 @@ def kimchi(gb):
     return {d: kb[d] / fx[d] / gb[d] - 1.0 for d in (set(kb) & set(fx) & set(gb))}
 
 
-def rolling_ic(sig: dict, gb: dict, win: int = 60, step: int = 20):
+def rolling_ic(sig: dict, gb: dict, win: int = IC_WINDOW, step: int = 20):
     """IC computed over successive non-overlapping-ish windows -> the ageing curve."""
     dates = sorted(set(sig) & set(gb))
     if len(dates) < win + 25:
@@ -111,6 +114,22 @@ def half_life(ics: list[float]) -> float | None:
     if b >= -1e-6:
         return None  # flat or improving -- no decay to report
     return float(-np.log(2) / b)
+
+
+def _window_pvalues(ics: list[float], n_obs: int) -> list[float]:
+    """One-sided p-value per rolling window: is THIS window's IC better than chance?
+
+    Sub-period p-values are what the mean-p combination needs, and they have to be real ones --
+    feeding it something merely p-shaped makes the Uniform(0,1) null false and the combined error
+    rate meaningless. n_obs is the window LENGTH (the correlation's sample size), not the number
+    of windows.
+    """
+    out = []
+    for r in ics:
+        rc = min(max(float(r), -0.999999), 0.999999)
+        t = rc * np.sqrt(max(n_obs - 2, 1) / (1.0 - rc * rc))
+        out.append(float(stats.t.sf(t, df=max(n_obs - 2, 1))))
+    return out
 
 
 def merge_series(existing: list[dict], new: list[dict]) -> list[dict]:
@@ -160,6 +179,20 @@ def main() -> None:
         trend = recent - early
         hl = half_life(ics) if len(ics) >= MIN_POINTS_TO_FIT else None
         status = "AGEING" if trend < -0.03 else "STRENGTHENING" if trend > 0.03 else "STABLE"
+        # R0312: `status` above is a bare +/-0.03 on a two-window difference, with no null behind
+        # it -- it will call noise AGEING and has been publishing that verdict daily. The
+        # order-sensitive bar keeps it (continuity) and adds a verdict that a null can refuse:
+        # each window's IC becomes a one-sided p-value, and the early and late halves are
+        # combined SEPARATELY at a pre-registered split. DSR/PSR cannot do this at all -- they
+        # are order-invariant, so decay is invisible to them by construction.
+        # NON-OVERLAPPING windows only. rolling_ic strides 20 through a 60-wide window, so
+        # consecutive ICs share two thirds of their data and their p-values are strongly
+        # positively dependent -- and mean-p's Irwin-Hall null assumes INDEPENDENCE. Feeding it
+        # the overlapping series would produce an error rate that looks like a probability and is
+        # not one, which is worse than no number. Taking every (win/step)-th window costs
+        # resolution and buys a null that is actually true.
+        stride = max(1, -(-IC_WINDOW // 20))                  # ceil(win / step)
+        decay = decay_verdict(_window_pvalues(ics[::stride], IC_WINDOW))
         rows.append(
             {
                 "date": today,
@@ -170,6 +203,7 @@ def main() -> None:
                 "trend": round(trend, 4),
                 "half_life_windows": hl,
                 "status": status,
+                "decay": decay,
                 "curve": [round(v, 4) for v in ics],
             }
         )
@@ -188,6 +222,12 @@ def main() -> None:
             f"| trend {trend:+.4f} | half-life {hl_s} | {status}"
         )
         print(f"{'':22s} curve: " + " ".join(f"{v:+.3f}" for v in ics))
+        if decay["verdict"] == "UNDERPOWERED":
+            print(f"{'':22s} decay: UNDERPOWERED -- {decay['why']}")
+        else:
+            print(f"{'':22s} decay: {decay['verdict']} (order-sensitive, mean-p at a "
+                  f"pre-registered split: early {decay['error_rate_early']:.4f} -> late "
+                  f"{decay['error_rate_late']:.4f} over {decay['n_periods']} windows)")
 
     if rows:
         existing = []
