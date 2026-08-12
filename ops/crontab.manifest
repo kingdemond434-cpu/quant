@@ -833,6 +833,19 @@ QUANT_ROOT=/home/quant/quant-platform
 # chosen here (07:00, clear of the 02:00 cycle and the 06:20/06:40 collectors).
 # CONFIDENCE: inferred
 0 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/max_audit.py >> data/cro_ai_logs/max_audit_cron.log 2>&1
+# DESK-STATE MIRROR (principal question 2026-08-12: "how do I make you able to measure from a
+# container?"). data/ is gitignored, so a fresh clone inherits none of the desk's measurement
+# reports -- and worse, a container reset reverts TRACKED files while leaving untracked ones on
+# disk, so data/ accumulates a FOSSIL LAYER: real files, real shapes, real numbers, all long dead.
+# Measured 2026-08-12 on a container: 26/27 artifacts present, 23 of them over 48h old, one 12.5
+# DAYS old. The ratchet read them without asking their age and reported 21 aspects FELL.
+#
+# This mirrors the ~27 kilobyte JSON/JSONL reports into docs/state/ WITH each file's source age at
+# sync time, so libs/ops/desk_state.read() can report SNAPSHOT + age and no consumer can score a
+# fossil as current fact. NEVER mirrors data/secrets, the moat tape, the lake, or any store over
+# 2 MB -- this is a measurement mirror, not a backup, and a repo is not a place for credentials.
+# Runs right after max_audit so the mirror carries that run's fresh report.
+15 7 * * * cd "$QUANT_ROOT" && flock -n data/.cron_deskstate.lock .venv/bin/python scripts/sync_desk_state.py >> data/cro_ai_logs/desk_state.log 2>&1
 
 # quota-free crypto hypothesis factory: pure python, 0 claude calls, so generation "always
 # runs". Its live log name is crypto_factory_cron.log (ops/run_crypto_factory.sh:17) proving
