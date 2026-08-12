@@ -25,6 +25,17 @@ def mod(monkeypatch, tmp_path):
     spec.loader.exec_module(m)
     monkeypatch.setattr(m, "_BOOK", tmp_path / "llm_trader_book.jsonl")
     monkeypatch.setattr(m, "_ROOT", tmp_path)
+    # NO TEST IN THIS FILE MAY REACH A VENUE, and one of them did. `run()` prices every gradeable
+    # row, so any test that did not stub `fetch_price_at` fell through to the real HTTPS fetcher:
+    # `test_a_malformed_line_is_counted_not_silently_dropped` took 15.3 SECONDS of the file's 16,
+    # and leaked SSL sockets that Python's GC surfaced later as PytestUnraisableExceptionWarning
+    # -- attributed to whichever test happened to be RUNNING when the collection ran, not to the
+    # one that opened them. That is why the suite reported a different innocent test failing on
+    # each run, and it is L0066's shape exactly: attribute a red gate before fixing anything.
+    #
+    # The default is NO VENUE PRICE, which is the honest offline answer and the state the grader
+    # is required to refuse on. Tests that need prices declare them through `_prices`.
+    monkeypatch.setattr(m, "fetch_price_at", lambda symbol, ms: None)
     import libs.self_improvement.forecast_calibration as fc
     monkeypatch.setattr(fc, "_LOG", tmp_path / "forecast_log.json")
     return m
@@ -162,3 +173,20 @@ def test_the_key_matches_record_calls_scheme(mod) -> None:
     same decision -- and an ungradeable forecast past its deadline fails check_calibration."""
     assert mod._key(_row()) == "llm_trader:2026-08-01T00:00:00+00:00"
     assert mod._key(_row(forecast_key="llm_trader:explicit")) == "llm_trader:explicit"
+
+
+def test_no_test_in_this_file_can_reach_a_venue(mod) -> None:
+    """THE REGRESSION STOP for a flake that pointed at the wrong test for two sessions.
+
+    `run()` prices every gradeable row, so a test that forgets to stub the fetcher silently goes
+    to the network. The cost was not only 15s of a 16s file: the leaked SSL sockets surfaced as an
+    unraisable-exception failure on whichever test was running when the GC got to them, so the
+    suite blamed a different innocent test on each run and the real cause never appeared in the
+    output. A unit test that is quietly a network test is also measuring the venue's mood.
+    """
+    import libs.data.crypto_source as cs
+
+    assert mod.fetch_price_at is not cs.fetch_price_at, (
+        "the module under test is holding the REAL venue fetcher -- every test in this file that "
+        "does not stub it will open sockets and blame a bystander")
+    assert mod.fetch_price_at("BTCUSDT", 0) is None, "the default must be 'no venue price'"
