@@ -2066,11 +2066,11 @@
    "summary": "Silent-except sweep of money-path files specifically: L1.40 names SILENT-EXCEPT as the desk's most expensive class (USD 2150 stranded-inventory instance); audit except-return/pass on executor+connectors",
    "roi_bps": 20.0,
    "raised": "2026-07-31T17:55:39.435334+00:00",
-   "status": "scheduled",
-   "reason": "PREMISE VERIFIED: both silent-swallow detectors require a Pass body (max_audit.py:6122-6124 and check_build_standard.py:157-165 _has_silent_swallow), so 'except Exception: return <default>' -- the shape that produced the _market_max_qty cap-disable bug -- is INVISIBLE to enforcement on the money path. Own AST scan of the fence's own ten rail files found 29 broad single-return handlers, 20 with no comment in the fence's window, including run_cashcarry_executor.py:194,203,487,1281,1311,1392 and binance_live.py:158,174,295. The naive count overstates it -- several are load-bearing fail-safe reads explained in an enclosing docstring the except-to-body comment window cannot see. The dangerous subset is the LOOSENING-direction returns, clearest at run_cashcarry_executor.py:1311 inside _refresh_guard where the swallow leaves the guard at the full-size/takers-allowed neutral value reset at :1293. Work: direction-aware classification of the 29, fix the fail-open ones, extend the fence to single-Return bodies with a docstring-aware window.",
-   "commit": null,
-   "due": "2026-08-15",
-   "disposed": "2026-08-05T09:03:08.958205+00:00"
+   "status": "implemented",
+   "reason": "IMPLEMENTED as L1.60. The premise this row verified in prose on 2026-07-31 -- both swallow detectors require a Pass body, so except-return/continue is invisible to enforcement -- is now an instrument: scripts/check_denominator_attrition.py over libs/ops/attrition.py, scheduled daily, mapped in the matrix, 24 tests. Scoped to the sharpest half of the class this row named: handlers and guards that drop an item from a SCOPE DENOMINATOR, where the swallow silently moves a published verdict. First run found 3 of 54 governed fences leaking, all three repaired in the same commit, including the money-path one where an absent module RAISED money_path_pct and the L1.50 ratchet locked the inflated floor in permanently. The residual this row also named -- direction-aware classification of the 29 broad single-return handlers on the ten rail files -- is NOT covered here and is rowed separately as a money-path sweep.",
+   "commit": "5271aa14",
+   "due": null,
+   "disposed": "2026-08-12T18:14:46.546317+00:00"
   },
   {
    "id": "R0167",
@@ -6161,11 +6161,11 @@
    "summary": "target_horizon_sweep in libs/research/axis_screen has ZERO production callers: ~20 scripts import axis_screen and every one takes stage_a_screen only. Its skip accounting is exemplary (attempted incremented before every guard, n_trials/n_skipped published) so the UNIVERSAL DUTY's honest DSR trial denominator exists correctly and no live path can reach it. Wire it into the screening path so the multiplicity count reaching deflated_sharpe_ratio is the real one.",
    "roi_bps": 15.0,
    "raised": "2026-08-12T18:10:47.988390+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "Rowed by the L1.60 builder with full context and deliberately not built in that run: each is a real, verified item that changes something OUTSIDE the fence being shipped (statistical multiplicity authority, a second fence's denominator basis, the mypy baseline, constitutional numbering, the governed scope, or another organ entirely), and riding any of them along in a fence commit would mix a measurement change with an authority change. Due date is enforced; the evidence and the exact repair are in the summary.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-15",
+   "disposed": "2026-08-12T18:15:36.408093+00:00"
   },
   {
    "id": "R0499",
@@ -6173,11 +6173,11 @@
    "summary": "check_input_provenance coverage = declared/len(examinable) is computed over SURVIVORS: an artifact that becomes MISSING leaves examinable, so coverage RISES as artifacts vanish. L1.60 correctly does not flag it (the discard IS counted and published as by[MISSING]), so this is the weaker residual: publish coverage against the full row count, or state the survivor basis at the read site.",
    "roi_bps": 5.0,
    "raised": "2026-08-12T18:10:53.046435+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "Rowed by the L1.60 builder with full context and deliberately not built in that run: each is a real, verified item that changes something OUTSIDE the fence being shipped (statistical multiplicity authority, a second fence's denominator basis, the mypy baseline, constitutional numbering, the governed scope, or another organ entirely), and riding any of them along in a fence commit would mix a measurement change with an authority change. Due date is enforced; the evidence and the exact repair are in the summary.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-19",
+   "disposed": "2026-08-12T18:15:38.861793+00:00"
   },
   {
    "id": "R0500",
@@ -6185,11 +6185,11 @@
    "summary": "check_mypy_ratchet: a file uncheckable on its FIRST EVER run never enters base_per, so it is permanently absent from the ratchet denominator with nothing reporting it. Already-baselined files are protected (--rebaseline seeds merged from base_per); this is the narrow residual the s5 proposal identified after correcting its own overstatement.",
    "roi_bps": 5.0,
    "raised": "2026-08-12T18:10:59.014009+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "Rowed by the L1.60 builder with full context and deliberately not built in that run: each is a real, verified item that changes something OUTSIDE the fence being shipped (statistical multiplicity authority, a second fence's denominator basis, the mypy baseline, constitutional numbering, the governed scope, or another organ entirely), and riding any of them along in a fence commit would mix a measurement change with an authority change. Due date is enforced; the evidence and the exact repair are in the summary.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-19",
+   "disposed": "2026-08-12T18:15:41.135525+00:00"
   },
   {
    "id": "R0501",
@@ -6197,11 +6197,11 @@
    "summary": "docs/CONSTITUTION.md double-books three law numbers: L1.57, L1.58 and L1.59 each name TWO unrelated laws (economic-objective laws near line 1839 and instrument laws near 2367). Any tool keying on a law id resolves ambiguously. L1.60 was checked free in both namespaces before use. Renumber or namespace deliberately.",
    "roi_bps": 3.0,
    "raised": "2026-08-12T18:11:02.940213+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "Rowed by the L1.60 builder with full context and deliberately not built in that run: each is a real, verified item that changes something OUTSIDE the fence being shipped (statistical multiplicity authority, a second fence's denominator basis, the mypy baseline, constitutional numbering, the governed scope, or another organ entirely), and riding any of them along in a fence commit would mix a measurement change with an authority change. Due date is enforced; the evidence and the exact repair are in the summary.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-19",
+   "disposed": "2026-08-12T18:15:44.252632+00:00"
   },
   {
    "id": "R0502",
@@ -6209,11 +6209,11 @@
    "summary": "L1.60 scope ratchet: check_denominator_attrition governs scripts/check_*.py (where a leaking denominator moves a VERDICT). --scope repo already finds more in libs/research/capability_ratchet.py, recommendation_forecast.py, vol_risk_premium.py, repair_capacity.py and scripts/run_cost_model.py. Widen the governed scope once those are triaged; the flag exists and the gap is the work queue (L1.0).",
    "roi_bps": 8.0,
    "raised": "2026-08-12T18:11:07.226391+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "Rowed by the L1.60 builder with full context and deliberately not built in that run: each is a real, verified item that changes something OUTSIDE the fence being shipped (statistical multiplicity authority, a second fence's denominator basis, the mypy baseline, constitutional numbering, the governed scope, or another organ entirely), and riding any of them along in a fence commit would mix a measurement change with an authority change. Due date is enforced; the evidence and the exact repair are in the summary.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-19",
+   "disposed": "2026-08-12T18:15:47.304971+00:00"
   },
   {
    "id": "R0503",
@@ -6257,11 +6257,35 @@
    "summary": "PRE-EXISTING and unrelated to L1.60: tests/scripts/test_kimi_hunter_no_giving_up.py has 2 red tests asserting on scripts/kimi_hunter.py source -- the obfuscated coverage lookup was replaced but the expected 'cov.get(vectors, {})' form is absent, and the wave loop no longer persists coverage inside the loop. Found while sweeping suites for the L1.60 build; kimi_hunter was not touched by that work. Either the organ regressed or the tests pin a superseded shape.",
    "roi_bps": 4.0,
    "raised": "2026-08-12T18:12:33.252879+00:00",
+   "status": "scheduled",
+   "reason": "Rowed by the L1.60 builder with full context and deliberately not built in that run: each is a real, verified item that changes something OUTSIDE the fence being shipped (statistical multiplicity authority, a second fence's denominator basis, the mypy baseline, constitutional numbering, the governed scope, or another organ entirely), and riding any of them along in a fence commit would mix a measurement change with an authority change. Due date is enforced; the evidence and the exact repair are in the summary.",
+   "commit": null,
+   "due": "2026-08-15",
+   "disposed": "2026-08-12T18:15:50.502202+00:00"
+  },
+  {
+   "id": "R0507",
+   "source": "cycle",
+   "summary": "SCOPE DECISION OWED: does the L1.34/L1.35 HUNTING mandate bind a reasoning CONTROLLER? tests/governance/test_source_universality.py globs ops/*prompt*.txt and asserts every match carries RAW-INFORMATION UNIVERSALITY + DEEP-FOREST EXHAUSTIVENESS. Two of the three failures were REAL reaching breaches and are FIXED this cycle (ops/brain_hunter_prompt.txt and ops/gpt_video_hunter_prompt.txt are daily HUNTING seats that had been running without either mandate since the laws were written; verbatim blocks injected from frontier_en so no seat carries a drifting paraphrase). The third, ops/midnight_codex_prompt.txt, is NOT a hunting seat -- 46 lines describing a 'reasoning controller for ONE persistent quantitative research operation'. I deliberately did NOT resolve it, because both available unilateral moves are forbidden shapes: pasting a 144-line deep-forest HUNTING mandate into a controller satisfies the gate while teaching the organ nothing (mandate-as-decoration), and narrowing the test's glob is fitting the guard to the violation it caught. THE ACTUAL QUESTION, for a decision: is 'every seat' in L1.34 every PROMPT, or every seat that DIGS? If the former, the controller needs a genuine controller-shaped statement of the mandate; if the latter, the test needs an explicit exemption list with a reason per entry, which is strictly better than a glob because it makes each seat's classification a decision on the record. Until then this test stays RED on one id and that is the honest state.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-12T18:15:17.676642+00:00",
    "status": "open",
    "reason": null,
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0508",
+   "source": "capability_hunt_s5",
+   "summary": "R0166 RESIDUAL, explicitly NOT covered by L1.60: direction-aware classification of the 29 broad single-return exception handlers on the ten money-path rail files (20 uncommented), e.g. run_cashcarry_executor.py:194,203,487,1281,1311,1392 and binance_live.py:158,174,295. L1.60 fences handlers that drop an item from a SCOPE DENOMINATOR; it does NOT see  where the default LOOSENS a guard -- the clearest being _refresh_guard at run_cashcarry_executor.py:1311, where the swallow leaves the guard at the full-size/takers-allowed neutral value. Money path: check_change_window first, but a fail-open swallow is a REPAIR and proceeds inside a freeze (L1.38).",
+   "roi_bps": 20.0,
+   "raised": "2026-08-12T18:15:33.493118+00:00",
+   "status": "scheduled",
+   "reason": "SUMMARY REPAIR (backticks in the add --summary were shell-expanded, eating one clause): the sentence should read \"it does NOT see the shape except-Exception-return-default where the default LOOSENS a guard\". That is the half of R0166 L1.60 does not cover -- L1.60 fences handlers that drop an item from a SCOPE DENOMINATOR, i.e. swallows that shrink a count feeding a published ratio. A fail-open swallow on the rails moves no denominator at all; it returns a permissive default and the caller proceeds as though the guard passed. Different detector, different repair, and it is on the money path, so it gets its own row rather than riding along in a fence commit. Scheduled 2026-08-15 behind the same evidence R0166 already gathered: 29 broad single-return handlers on the ten rail files, 20 uncommented, clearest at run_cashcarry_executor.py:1311.",
+   "commit": null,
+   "due": "2026-08-15",
+   "disposed": "2026-08-12T18:16:32.530760+00:00"
   }
  ]
 }
