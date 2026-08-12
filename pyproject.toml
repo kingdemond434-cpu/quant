@@ -76,6 +76,18 @@ stats = [
     "statsmodels>=0.14",
     "arch>=6.3",
 ]
+# JS-rendered source lane. libs/data/render_fetch import-guards this and degrades VISIBLY
+# ("RENDER-UNAVAILABLE: playwright not importable") rather than raising, so it was surviving
+# undeclared -- but undeclared is exactly what breaks DR RECONSTITUTION: a rebuilt box comes back
+# with the render lane dark and five sources reading as dead when nothing is wrong with them.
+# Declaring it means the capability is reinstallable, which is the whole point of the pins.
+#
+# INSTALL THE PYTHON PACKAGE ONLY. Do NOT run `playwright install` -- this image already ships a
+# browser bundle under PLAYWRIGHT_BROWSERS_PATH and render_fetch._executable() probes for it, so a
+# download would spend a fixed disk allowance on a second copy of a browser that is already there.
+render = [
+    "playwright>=1.55,<2",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["libs", "app"]

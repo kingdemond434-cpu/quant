@@ -103,3 +103,45 @@ def test_tier_lookup_agrees_with_the_planner_map() -> None:
     for _entry, (unit, tier) in deploy_plan._OWNED.items():
         assert deploy_plan.tier_for_unit(unit) == tier
     assert deploy_plan.tier_for_unit("quant-deadman.service") == deploy_plan.TIER_RUIN
+
+
+# ----------------------------------------------------------------- L0083 graduation
+def test_a_restart_is_never_reported_as_a_verified_fix(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """GRADUATES L0083. A new pid proves new CODE is loaded. It does not prove the new BEHAVIOUR
+    reached the artifact, and the desk has already paid to learn the difference: on 2026-08-05 a
+    SIGTERM'd cashcarry daemon emitted one final tick whose timestamp advanced seconds after the
+    restart, still carrying the OLD net_pnl and still missing the new fut_leg_reconciliation key.
+    A verification that stopped at "updated moved" would have recorded a false VERIFIED.
+
+    So the success verdict is RESTARTED, never FIXED or VERIFIED, and the obligation it prints
+    must name the trap rather than gesturing at it -- an operator who reads "restarted, all good"
+    stops looking, which is exactly how the wrong number reaches the record.
+    """
+    _wire(monkeypatch, props={"Restart": "always", "ActiveState": "active"},
+          restart_rc=1, pids=[111, 222], killed=[])
+    rep = ship_restart.ship("quant-cashcarry.service")
+    assert rep["verdict"] == "RESTARTED", rep
+    for forbidden in ("FIXED", "VERIFIED"):
+        assert forbidden not in rep["verdict"]
+
+    ob = ship_restart._VERIFY_OBLIGATION
+    assert "RESTARTED is not FIXED" in ob
+    # The two halves that make it actionable rather than decorative: what the false signal LOOKS
+    # like, and what to check instead. Either alone leaves the operator where they started.
+    assert "timestamp" in ob.lower(), "the obligation must name the signal that lied"
+    assert "ONLY the new code" in ob, "and must name the class of key that does not lie"
+
+
+def test_the_verify_obligation_is_printed_on_every_success(capsys) -> None:
+    """A rule that lives only in a module constant is a comment. It has to reach the operator on
+    the run itself, which is the only moment they are deciding whether to stop looking."""
+    import scripts.ship_restart as sr
+    orig = sr.ship
+    try:
+        sr.ship = lambda unit, **kw: {"verdict": "RESTARTED", "detail": "d", "unit": unit}
+        assert sr.main(["quant-cashcarry.service"]) == 0
+    finally:
+        sr.ship = orig
+    printed = capsys.readouterr().out
+    assert "RESTARTED is not FIXED" in printed

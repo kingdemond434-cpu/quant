@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 from libs.execution.event_guard import check
 
@@ -74,3 +75,41 @@ def test_a_malformed_timestamp_is_skipped_not_crashed(tmp_path):
     cal = _cal(tmp_path, [{"utc": "not-a-date", "name": "junk", "impact": "high"},
                           {"utc": "2026-09-17T18:00:00Z", "name": "FOMC", "impact": "high"}])
     assert not check(_T, calendar=cal).allowed        # the good row still fires
+
+
+# ----------------------------------------------------------------- L0088 graduation
+def test_the_calendar_this_guard_fails_closed_on_is_tracked_in_git():
+    """GRADUATES L0088. This guard BLOCKS on a missing or expired calendar, which is the correct
+    design -- an unknown event window must never wave an entry through. But `data/` is gitignored
+    wholesale here, so on a fresh checkout a fail-closed guard reading an untracked file finds
+    nothing and refuses EVERY entry. The sleeve then looks exactly like a sleeve finding no
+    setups: no error, no alarm, no trades. R0276 caught this before it shipped; nothing stopped
+    it coming back.
+
+    The pairing is the invariant, not the file: fail-closed + gitignored input = a guard that
+    silently owns the whole strategy on any clone. Either the file travels with the repo or the
+    guard must not fail closed, and the first is what the desk chose (a `!data/event_calendar.json`
+    exception plus a monthly idempotent rebuild).
+    """
+    import subprocess
+
+    from libs.execution.event_guard import CALENDAR
+
+    root = Path(__file__).resolve().parents[2]
+    r = subprocess.run(["git", "ls-files", "--error-unmatch", str(CALENDAR)],
+                       cwd=root, capture_output=True, text=True, timeout=60)
+    assert r.returncode == 0, (
+        f"{CALENDAR} is NOT tracked, and event_guard.check() blocks when it cannot read it. A "
+        "fresh clone would refuse every conviction entry and look like a quiet market. Add a "
+        f"`!{CALENDAR}` exception to .gitignore and commit the file.")
+
+    # And the exception has to be in .gitignore rather than resting on the file happening to be
+    # in the index -- a future `git rm --cached` or a re-clone off a rewritten history would
+    # otherwise put it back in the ignored set with nothing complaining.
+    assert f"!{CALENDAR}" in (root / ".gitignore").read_text("utf-8"), (
+        "the file is tracked today but nothing keeps it tracked -- .gitignore must carry the "
+        "explicit negation")
+    # The other half of the pairing lives above in
+    # `test_a_missing_calendar_blocks_rather_than_waving_through`: if the guard ever stops
+    # refusing on an unreadable calendar, this requirement stops being load-bearing. Both have to
+    # hold, and they are in one file so a future edit cannot drop one without seeing the other.

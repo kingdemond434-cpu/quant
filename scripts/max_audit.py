@@ -5751,7 +5751,13 @@ _CONSTITUTION_ORGANS = ("run_external_panel", "hypothesis_generator", "breadth_e
                         "collector_author", "deep_review", "run_micro_audit",
                         # added at the 2026-08-04 merge: this branch's organs, caught by the
                         # sibling's coverage net (they held the panel keys with no objective)
-                        "kimi_hunter", "run_strategic_director")
+                        "kimi_hunter", "run_strategic_director",
+                        # 2026-08-12, caught by test_constitution_reach's over-inclusive net. The
+                        # organ that asks five seats WHY NOTHING HAS EVER SURVIVED was the one
+                        # running without the objective in frame -- the single worst place for it
+                        # to be missing, because "how do we get survivors" has one easy wrong
+                        # answer and a naked seat has nothing to aim at instead.
+                        "run_survivor_panel")
 
 
 def check_constitution(defects) -> None:

@@ -46,6 +46,7 @@ if not _ROOT.exists():
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+from libs.doctrine.constitution import OBJECTIVE_PREAMBLE  # noqa: E402
 from libs.ops import llm_seat  # noqa: E402
 from libs.research.survivor_panel import (  # noqa: E402
     Proposal,
@@ -101,7 +102,16 @@ def run(root: Path | None = None, *, max_seats: int = 6,
                 "consequence": "no seat was called; nothing was spent and nothing was learned",
                 "dossier": dossier, "seats": [], "proposals": []}
 
+    # CONSTITUTION FIRST, MISSION SECOND. This organ was on NEITHER constitution list -- it held
+    # the panel keys and asked five seats "why has nothing survived" with the desk's sole
+    # objective absent from the frame. That is the worst organ in the desk to run naked: a seat
+    # optimising an unstated objective, asked how to produce survivors, reaches for the one answer
+    # always available (lower the bar). The per-prompt fences already refuse that proposal, but a
+    # refusal only says NO -- it never tells the seat what YES looks like, so every seat spends
+    # its reasoning near the fence instead of on dE[log W_T]. Stating the objective is what makes
+    # a proposal SCORABLE rather than merely permissible.
     sys_1, user_1 = round_one_prompt(dossier)
+    sys_1 = OBJECTIVE_PREAMBLE + "\n" + sys_1
     round1: list[dict[str, Any]] = []
     proposals: list[Proposal] = []
     for seat in available[: max(1, int(max_seats))]:
@@ -129,6 +139,7 @@ def run(root: Path | None = None, *, max_seats: int = 6,
             if not others:
                 continue
             sys_2, user_2 = cross_examination_prompt(dossier, others)
+            sys_2 = OBJECTIVE_PREAMBLE + "\n" + sys_2
             text, err = llm_seat.chat(user_2, system=sys_2, seat=seat, max_tokens=4000)
             if err:
                 round2.append({"seat": mine, "error": err[:300]})
