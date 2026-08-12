@@ -824,3 +824,40 @@ class TestDeferredOwingClock:
                         now=base)
         f = flow_stats(load_ledger(lg), now=datetime(2026, 7, 20, tzinfo=UTC))
         assert f.oldest_owing_name == "OLD", "old-format rows (no date) stay conservative"
+
+
+class TestRegradeIsNotANewFind:
+    """A re-grade renames the card, and on raw names the old name became an immortal owing
+    ghost: first_seen kept it, no later snapshot could convert or defer it, and
+    mine-flow-rotting fired forever on a find whose CURRENT card was already killed with an
+    artifact (bitFlyer, killed 08-04, still 'owing 17d' under its pre-regrade name).
+    stable_key landed for vanished/stale-evidence on 08-11; flow_stats was the one reader
+    still keying raw names."""
+
+    def test_regraded_then_killed_find_converts_with_its_original_age(
+            self, tmp_path: Path) -> None:
+        lg = tmp_path / "led.jsonl"
+        day = 86400.0
+        base = datetime(2026, 7, 1, tzinfo=UTC)
+        append_snapshot(lg, [MinedItem(
+            source="w.md", name="bitFlyer feed — grade: needs-legitimacy-review")], now=base)
+        append_snapshot(lg, [MinedItem(
+            source="w.md", name="bitFlyer feed — grade: CLOSED restricted-by-licence",
+            disposition="killed")],
+            now=datetime.fromtimestamp(base.timestamp() + 3 * day, UTC))
+        f = flow_stats(load_ledger(lg), now=datetime(2026, 7, 20, tzinfo=UTC))
+        assert f.n_converted == 1 and f.median_latency_days == 3.0
+        assert f.oldest_owing_name == "" and f.oldest_owing_days == 0.0
+
+    def test_deferral_under_the_new_grade_silences_the_old_name_too(
+            self, tmp_path: Path) -> None:
+        lg = tmp_path / "led.jsonl"
+        base = datetime(2026, 7, 1, tzinfo=UTC)
+        append_snapshot(lg, [MinedItem(
+            source="w.md", name="Upbit portal — grade: fresh find")], now=base)
+        append_snapshot(lg, [MinedItem(
+            source="w.md", name="Upbit portal — grade: re-graded, licence pending",
+            disposition="deferred", deferred_until="2026-08-15")],
+            now=datetime.fromtimestamp(base.timestamp() + 86400.0, UTC))
+        f = flow_stats(load_ledger(lg), now=datetime(2026, 8, 1, tzinfo=UTC))
+        assert f.oldest_owing_name == "" and f.oldest_owing_days == 0.0

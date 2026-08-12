@@ -525,24 +525,33 @@ def flow_stats(
 ) -> FlowStats:
     """Derive find->conversion latency and the age of the oldest still-owing item."""
     ts_now = (now or datetime.now(UTC)).timestamp()
+    # KEYED ON stable_key, NOT THE RAW NAME (2026-08-12). A re-grade renames the card, and on
+    # raw names the old name became an immortal owing ghost: first_seen kept it, no snapshot
+    # could ever convert or defer it, and mine-flow-rotting fired forever on a find whose
+    # CURRENT card was already killed with an artifact (bitFlyer, killed 08-04, "owing 17d").
+    # The identity fix landed for vanished/stale-evidence on 08-11 and this function was the
+    # one reader still on raw names.
     first_seen: dict[str, float] = {}
     converted_at: dict[str, float] = {}
     deferred_until: dict[str, str] = {}
+    display: dict[str, str] = {}
     for row in ledger:
         ts = float(row["ts"])
         for it in row["items"]:
             name = str(it.get("n", ""))
             if not name:
                 continue
-            first_seen.setdefault(name, ts)
-            if it.get("d") in _TERMINAL and name not in converted_at:
-                converted_at[name] = ts
+            key = stable_key(name)
+            display[key] = name          # latest sighting carries the find's current card text
+            first_seen.setdefault(key, ts)
+            if it.get("d") in _TERMINAL and key not in converted_at:
+                converted_at[key] = ts
             # LATEST snapshot wins: a re-dated deferral supersedes, and a card that stops being
             # deferred (tag edited away) drops back into owing.
             if it.get("d") == "deferred":
-                deferred_until[name] = str(it.get("u", ""))
-            elif name in deferred_until:
-                del deferred_until[name]
+                deferred_until[key] = str(it.get("u", ""))
+            elif key in deferred_until:
+                del deferred_until[key]
     lat = sorted((converted_at[n] - first_seen[n]) / 86400.0 for n in converted_at)
 
     def _deferral_active(name: str) -> bool:
@@ -562,8 +571,9 @@ def flow_stats(
              if n not in converted_at and not _deferral_active(n)}
     oldest_name, oldest_days = "", 0.0
     if owing:
-        oldest_name = min(owing, key=lambda n: owing[n])
-        oldest_days = (ts_now - owing[oldest_name]) / 86400.0
+        oldest_key = min(owing, key=lambda n: owing[n])
+        oldest_name = display.get(oldest_key, oldest_key)
+        oldest_days = (ts_now - owing[oldest_key]) / 86400.0
     worsening = False
     if len(lat) >= 6:
         # ordered by latency, not time -- compare the halves of the CHRONOLOGICAL series instead

@@ -4613,6 +4613,7 @@ def check_mine_flow(defects) -> None:
         load_ledger,
         load_ratchet,
         priors_payload,
+        stable_key,
         tier_calibration,
         update_ratchet,
     )
@@ -4622,7 +4623,9 @@ def check_mine_flow(defects) -> None:
         return  # a single snapshot cannot measure flow -- not a defect, just no history yet
     thr = _mine_thresholds()
     flow = flow_stats(ledger)
-    n_names = len({str(i.get("n", "")) for r in ledger for i in r["items"]})
+    # Stable identities, matching flow_stats: raw names count every re-grade as a fresh find,
+    # which inflates the denominator and understates the conversion rate.
+    n_names = len({stable_key(str(i.get("n", ""))) for r in ledger for i in r["items"]})
     rate = (flow.n_converted / n_names) if n_names else 0.0
 
     priors = class_priors(ledger)
