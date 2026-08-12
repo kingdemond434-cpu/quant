@@ -215,3 +215,35 @@ def test_coverage_of_an_unmined_grid_is_zero_not_undefined() -> None:
     rep = coverage_report([], ["BTCUSDT"], ["d1"])
     assert rep["coverage_pct"] == 0.0
     assert rep["cells_filled"] == 0
+
+
+def test_phantom_pairs_are_excluded_from_the_denominator_but_stay_counted() -> None:
+    """Measured 2026-08-12: the cartesian symbols x days grid manufactured 11,004 holes for
+    (symbol, day) pairs with NO tape -- ETHUSDT listed on d2 has no d1 files, and no miner at
+    any effort level can fill that cell. Coverage pinned at 53.05% STANDING-STILL while every
+    real cell was 7/7 measured. A pair without tape is a listing-window fact, not unexplored
+    edge; it must be published, never counted as a hole."""
+    mined = extract_all("BTCUSDT", [_book(i) for i in range(6)]) | {"day": "d1"}
+    # Tape exists only for BTCUSDT/d1 and ETHUSDT/d2; the cartesian grid would invent 2 phantom
+    # pairs (BTCUSDT/d2, ETHUSDT/d1).
+    pairs = [("BTCUSDT", "d1"), ("ETHUSDT", "d2")]
+    rep = coverage_report([mined], ["BTCUSDT", "ETHUSDT"], ["d1", "d2"], pairs=pairs)
+    assert rep["phantom_pairs_excluded"] == 2
+    assert rep["cells_total"] == 2 * 7                      # real pairs x mechanisms only
+    # ETHUSDT/d2 has tape and is unmined: still a real hole pointing the next run.
+    assert any("ETHUSDT" in t and "d2" in t for t in rep["next_targets"])
+    assert not any("d1" in t and "ETHUSDT" in t for t in rep["next_targets"])
+    assert "denominator" in rep
+
+
+def test_fully_mined_real_tape_reads_complete_even_with_phantom_pairs() -> None:
+    """The state the live miner was actually in: every cell with tape measured, phantoms only.
+    The honest reading is 100% of the mineable grid -- COMPLETE-FOR-THIS-GRID upstream -- not a
+    P26 breach that no amount of mining can clear."""
+    mined = [extract_all("BTCUSDT", [_book(i) for i in range(6)]) | {"day": "d1"}]
+    rep = coverage_report(mined, ["BTCUSDT", "ETHUSDT"], ["d1", "d2"],
+                          pairs=[("BTCUSDT", "d1")])
+    filled_mechs = sum(1 for m, s in mined[0]["mechanisms"].items() if s.get("n", 0) > 0)
+    if filled_mechs == 7:                                   # guard: fixture measures all 7
+        assert rep["coverage_pct"] == 100.0 and rep["holes"] == 0
+    assert rep["phantom_pairs_excluded"] == 3

@@ -408,11 +408,15 @@ def main() -> int:
     COVERAGE.write_text(json.dumps(cov, indent=1), "utf-8")
 
     # Cumulative coverage across every run ever, not just this one -- the number the principal
-    # asked to drive to 100%.
+    # asked to drive to 100%. The universe is the cells that EXIST on tape (pairs=), not the
+    # symbols x days cartesian product: measured 2026-08-12, the product manufactured 11,004
+    # phantom holes for (symbol, day) pairs never recorded, pinning coverage at 53.05%
+    # STANDING-STILL while every real cell was 7/7 measured. Phantoms remain published in the
+    # report as phantom_pairs_excluded -- visible, never counted as unmined edge.
     grid_results = [{"symbol": k.split("|")[0], "day": k.split("|")[1],
                      "mechanisms": {m: {"n": 1} for m in v.get("mechanisms", [])}}
                     for k, v in filled.items()]
-    rep = coverage_report(grid_results, symbols, days)
+    rep = coverage_report(grid_results, symbols, days, pairs=list(cells.keys()))
 
     degenerate = [f"{r['symbol']}/{m}" for r in results for m, s in r["mechanisms"].items()
                   if int(s.get("n", 0)) > 0 and _dispersion(s) <= _DEGENERATE_CV]
