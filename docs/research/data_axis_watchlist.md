@@ -1772,8 +1772,41 @@ first-party, §13-clean (public documented venue APIs, no login, no paywall, no 
 
 ---
 
-### 27. GMO Coin free tick-trade archive (JP venue, keyless, 2018-09-05 →) — grade: **verified-technically-clean, LICENCE UNREAD (reachable, not blocked)** [§33: deferred(2026-08-12) tier:3]
+### 27. GMO Coin free tick-trade archive (JP venue, keyless, 2018-09-05 →) — grade: **verified-technically-clean, LICENCE READ 2026-08-12 — needs-legitimacy-review: the customer 基本約款 Art. 14(15) requires company consent for off-service use of service-obtained information; whether the anonymous keyless archive is inside 本サービス scope is a policy decision, not a technical read. Ingest stays gated.** [§33: deferred(2026-08-19) tier:3]
 _Found by JP frontier miner session 1, 2026-08-01, as the licensed replacement for the §13-restricted bitFlyer axis._
+
+> **§33 DISPOSITION 2026-08-12 — THE OWED READ IS DONE (R0309). LICENCE UNREAD → LICENCE READ.**
+> The blocker named on 08-05 ("one PDF read, not a wall") was real and is now closed:
+> - **WHAT WAS READ:** `kihon-yakkan.pdf?ver=20260725` (ＧＭＯコインサービス基本約款, 12 pp,
+>   updated 2026-07-25), harvested from `coin.z.com/jp/corp/policy/terms/` this run. The PDF is a
+>   subset-font/CID document; text was recovered stdlib-only (zlib streams + per-font ToUnicode
+>   bfchar/bfrange maps, literal-string Tj decode) — 16,053 chars, all 26 articles legible.
+>   Method reproducible from the URL; no install, no proxy.
+> - **THE OPERATIVE CLAUSES, quoted:** Art. 14(15) 禁止事項: 「当社の承諾を得ることなく、本サービス
+>   により取得した情報を本サービス利用以外の目的で利用し、又は第三者に開示し、若しくは漏洩する行為」
+>   (without the company's consent, using information obtained through the Service for purposes
+>   other than Service use, or disclosing it to third parties, is prohibited). Art. 7(1): use of
+>   the Service is DEEMED ASSENT to the terms (「利用した場合は…同意しているものとみなします」).
+>   Art. 7(3): customers acquire no IP or other rights in the Service.
+> - **NO OTHER GOVERNING DOCUMENT EXISTS — searched, not assumed:** the policy index
+>   (`/jp/corp/policy/`, all 9 documents enumerated) has no API約款, no site-use terms, no
+>   copyright page; the API product page (`/jp/corp/product/info/api/`) links no API terms; the
+>   archive index (`api.coin.z.com/data/trades/`) carries zero terms/notice text. The 基本約款 is
+>   the whole licence surface.
+> - **WHY THIS IS A DECISION AND NOT A VERDICT:** the archive is branded APIドキュメント (inside
+>   the 暗号資産API surface) yet requires no account, no key, no click-through, robots explicitly
+>   permissive. EITHER it is 本サービス — then Art. 7(1) deems the download assent and Art. 14(15)
+>   gates desk research use on GMO's consent — OR it is outside 本サービス — then no licence
+>   attaches to a public publication of non-copyrightable facts (JP has no sui generis database
+>   right; 著作権法12条の2 needs creative selection/arrangement raw tick CSVs lack). The two
+>   readings give opposite answers and choosing between them is a §13 POLICY call, same class as
+>   the Upbit-portal row already in the DECIDE queue. Re-graded `needs-legitimacy-review` so the
+>   backlog surfaces it there — the queue built for exactly this shape.
+> - **Deferral is dated 2026-08-19 with the decision as the lifting condition.** This is not
+>   flow-rot: the deferral's CONTENT changed (unread → read, clause identified, routed). If the
+>   decision rules the 約款 governs, the honest next tag is `killed` (§13 hard stop, L1.16a
+>   re-entry = written GMO consent); if it rules the archive public-unlicensed, next tag is
+>   `wired` via a collector. Until then: **no collector, no ingest.**
 
 > **§33 DISPOSITION 2026-08-12 — CORRECTED FROM `screened`, WHICH THIS CARD NEVER WAS.** The tag
 > read `screened -> docs/research/prospector_coverage.md JP-s1` and was counted unbacked. Both
@@ -1825,14 +1858,46 @@ _Found by JP frontier miner session 1, 2026-08-01, as the licensed replacement f
   terms host *refuses us*; GMO's *serves us* and we simply have not rendered the body. Next action
   is an OP-038-class fetch of the JSON/API behind the JS shell, **not** a human page-read and **not**
   a proxy purchase.
-- **NEXT ACTION (dated):** render `coin.z.com/jp/corp/policy/terms/`, grep for the IP/データ/
-  再配布/API clause, and re-grade. **Owed by 2026-08-05.** Until then: **no collector, no ingest.**
+- **NEXT ACTION (dated):** ~~render the terms page and re-grade~~ **DONE 2026-08-12** (see
+  disposition block above — the 約款 is read; what remains is the §13 scope DECISION, owed by
+  2026-08-19 via the legitimacy queue). Until decided: **no collector, no ingest.**
   Technically verified ≠ cleared.
 
 ---
 
-### 28. bitbank public candlestick API (JP venue, keyless, whole-year-per-call) — grade: **verified-technically-clean WITH A CONFIRMED PHANTOM-HISTORY TRAP, licence unread — ATTEMPTED 2026-08-04 from the research container: bitbank.cc/error/terms serves a JS shell to curl (200, no body) and resets rendered fetches (Chromium+proxy ERR_CONNECTION_RESET); support.bitbank.cc same. The licence body is only reachable from a box with direct egress — VPS or the JP miner session. Grade stays licence-unread; ingest stays gated.** [§33: deferred(2026-08-12) tier:3]
+### 28. bitbank public candlestick API (JP venue, keyless, whole-year-per-call) — grade: **verified-technically-clean WITH A CONFIRMED PHANTOM-HISTORY TRAP, LICENCE READ 2026-08-12 — needs-legitimacy-review: the ToS (Art. 17/19/20) contains NO data-reuse restriction and the venue's own support docs invite programmatic public-data retrieval; the one restrictive text is the site-footer disclaimer ("private use only, not for commercial purposes" over news/prices/data), whose scope over the public.bitbank.cc API subdomain is the open policy question. Ingest stays gated.** [§33: deferred(2026-08-19) tier:3]
 _Found by JP frontier miner session 1, 2026-08-01._
+
+> **§33 DISPOSITION 2026-08-12 — THE OWED READ IS DONE (R0310), AND THE EGRESS DIAGNOSIS IS
+> CORRECTED.** The 08-04 attempt failed because it fetched the WRONG URL, not (only) the wrong box:
+> `bitbank.cc/error/terms` is the SPA's error route — the 6,500 B "JS shell" IS the error page.
+> The canonical terms live at **`bitbank.cc/doc/tos`**, which server-renders to plain curl from
+> this box: HTTP 200, 686,453 B, the full 規約 embedded (double-entity-encoded; 86,728 chars
+> extracted stdlib-only, ~4 service copies: spot/margin/lending/auto-invest).
+> - **WHAT THE ToS SAYS (users = account holders):** Art. 17 禁止行為 has **no data-reuse,
+>   no redistribution, no off-service-use clause** — prohibitions target account abuse, AML,
+>   reverse-engineering the service (逆アセンブル…リバースエンジニアリング), competing-service
+>   use, and 金商法 market-abuse articles. Art. 19 知的財産権: standard IP-ownership (no use
+>   restriction beyond infringement). Art. 20 秘密保持 covers non-public information and
+>   **excludes 公知 information by its own carve-outs** — public API data is outside it.
+> - **THE ONE RESTRICTIVE TEXT, quoted:** the site-footer 免責事項: 「当サイトにおけるニュース、
+>   取引価格、データ及びその他の情報などのコンテンツは…あくまでもお客様の私的利用のみのために
+>   当社が提供しているものであって、商用目的のために提供されているものではありません」 (site
+>   content incl. trading prices and data is provided solely for private use, not for commercial
+>   purposes). Shape is standard JP editorial not-investment-advice boilerplate (the surrounding
+>   sentences are about authors' views and solicitation), but the text names データ.
+> - **AGAINST reading it as an API ban:** the API host `public.bitbank.cc` carries no terms, no
+>   robots directives, no disclaimer; the official support article (support.bitbank.cc
+>   360019410033) **positively describes programmatic retrieval of 板情報/チャートデータ as the
+>   API's purpose**; the official api-docs repo (`bitbankinc/bitbank-api-docs`, no LICENSE file)
+>   documents the public API for bot use. A reading that bans commercial API consumption would
+>   make every bitbank trading bot a ToS breach — contradicting the venue's own documentation.
+> - **No API-specific 約款 exists** — searched (policy pages, support KB, api-docs repo).
+> - **ROUTED: needs-legitimacy-review** — same DECIDE queue as GMO (card 27) and the Upbit
+>   portal, decision owed by **2026-08-19**. bitbank's case is cleaner than GMO's (no
+>   consent-required reuse clause; positive invitation to programmatic use); if the decision
+>   clears it, next tag is `wired` via a collector **with the 2017-02-14 true-start guard**
+>   (the phantom-history trap below stands as an independent technical gate regardless).
 
 > **§33 DISPOSITION 2026-08-12 — CORRECTED FROM `screened`, WHICH CONTRADICTED THIS CARD'S OWN
 > GRADE.** The tag claimed a screen while the grade in the same heading reads *licence unread,
@@ -1863,9 +1928,11 @@ _Found by JP frontier miner session 1, 2026-08-01._
 - **§13:** `bitbank.cc/robots.txt` → 200, **no ClaudeBot block**; `public.bitbank.cc/robots.txt` →
   404. The API docs repo `github.com/bitbankinc/bitbank-api-docs` (126★) carries **no LICENSE file**
   (`license: None` via the GitHub API), so the docs are unlicensed and the governing document is the
-  site 規約 (`bitbank.cc/error/terms`, 200, 6,500 B — body not yet extracted). **LICENCE UNREAD.**
-- **NEXT ACTION (dated):** extract the 規約 body and re-grade. **Owed by 2026-08-05.** No ingest until
-  then.
+  site 規約 — canonical URL **`bitbank.cc/doc/tos`** (the earlier `/error/terms` URL was the SPA's
+  error route). **LICENCE READ 2026-08-12** — see the disposition block above for the clauses.
+- **NEXT ACTION (dated):** ~~extract the 規約 body and re-grade~~ **DONE 2026-08-12** (see
+  disposition block above — full ToS read from `bitbank.cc/doc/tos`; what remains is the §13
+  scope DECISION, owed by 2026-08-19 via the legitimacy queue). No ingest until decided.
 - **Standing value even if the licence fails:** the phantom-history finding is venue-independent
   knowledge and is already generalised into **OP-045**.
 

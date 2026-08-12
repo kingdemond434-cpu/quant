@@ -3150,3 +3150,23 @@ ITEMS THIS RUN (bounded per completion contract):
    era-archaeology route via Wayback CDX.
 3. IF BUDGET REMAINS: HN 9152332 contest-winner tree (Records family, unmined, named since 08-04).
 STATUS: items open. (Updated in place as each resolves.)
+
+---
+
+### 2026-08-12 PROSPECTOR session (standing daily; brain seat, real egress) — IN PROGRESS (write-first note; updated as items resolve)
+PRIOR STATE: session F (2026-08-11 EN frontier) died mid-work — its note still reads "items open"
+(coverage doc untouched since 08-11 16:26 UTC, no concurrent miner in ps). Its items are inherited
+here per RESUME-DO-NOT-RESTART (3). MINE GATE at start: CONVERT-FIRST, 2 owed (both T3, both
+licence-read blockers, both deferred(2026-08-12) — the deferrals matured today).
+ITEMS THIS RUN (bounded per completion contract):
+1. §33 DRAIN (first, per CONVERT-FIRST): card 27 GMO Coin tick archive — read kihon-yakkan.pdf
+   (URL harvested this run from coin.z.com/jp/corp/policy/terms/, ver=20260725) + hunt the API
+   terms doc; re-grade + dispose R0309. Card 28 bitbank — the brain seat has real egress the
+   research container lacked; try direct/Wayback/underlying-JSON routes for the 規約 body;
+   re-grade + dispose R0310.
+2. SESSION F ITEM 1 (backlog hygiene, Tier-1 defect-closer): dedupe phantom pending cards #3
+   bitFlyer + #21 NAVER in data_axis_watchlist.md; verify source_backlog_next count drops.
+3. SESSION F ITEM 2 (first touch of the last never-touched EN legacy forums): EliteTrader +
+   Nuclear Phynance — robots/§13 gate first, then ≥1 thread to reply-depth ≥2; NP expected dead
+   → Wayback CDX era-archaeology route.
+STATUS: items open. (Updated in place as each resolves.)
