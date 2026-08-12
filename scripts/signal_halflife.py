@@ -113,6 +113,32 @@ def half_life(ics: list[float]) -> float | None:
     return float(-np.log(2) / b)
 
 
+def merge_series(existing: list[dict], new: list[dict]) -> list[dict]:
+    """One row per (date, signal). The last write for a day WINS; order is (date, signal).
+
+    THE DEFECT THIS CLOSES (R0314). This file was APPENDED once per RUN while its only time key
+    is the DATE, and the daily cycle fires more than once a day -- so by 2026-08-12, 32 of its 34
+    (date, signal) keys carried 2-3 byte-identical copies. Nothing reads the file yet, and that is
+    precisely why it had to be fixed rather than left: its whole stated purpose is to BE the decay
+    series a future fit runs on ("a decay curve needs a TIME SERIES THAT STARTS NOW"), so the
+    duplicates would have weighted those days 2-3x in that fit, silently, long after anyone
+    remembered the writer appended per-run. Observation count is not sample size.
+
+    A RETRACTION IS NEVER SILENTLY DROPPED. Re-running a past date cannot happen today (the script
+    only ever writes `today`), but if it ever did, last-write-wins would quietly un-retract a row
+    that was judged contaminated. The judgement survives the value.
+    """
+    out: dict[tuple[str, str], dict] = {}
+    for r in [*existing, *new]:
+        key = (str(r.get("date", "")), str(r.get("signal", "")))
+        prior = out.get(key)
+        if prior and prior.get("retracted_lookahead") and not r.get("retracted_lookahead"):
+            r = {**r, "retracted_lookahead": prior["retracted_lookahead"],
+                 "retraction": prior.get("retraction", "")}
+        out[key] = r
+    return [out[k] for k in sorted(out)]
+
+
 def main() -> None:
     gb = binance()
     sigs = {}
@@ -164,9 +190,16 @@ def main() -> None:
         print(f"{'':22s} curve: " + " ".join(f"{v:+.3f}" for v in ics))
 
     if rows:
-        with SERIES.open("a", encoding="utf-8") as fh:
-            for r in rows:
-                fh.write(json.dumps({k: v for k, v in r.items() if k != "curve"}) + "\n")
+        existing = []
+        if SERIES.exists():
+            existing = [json.loads(ln) for ln in SERIES.read_text("utf-8").splitlines() if ln.strip()]
+        merged = merge_series(
+            existing, [{k: v for k, v in r.items() if k != "curve"} for r in rows])
+        # Rewrite via a temp file: a half-written series is worse than a stale one, and this is
+        # the artifact a future decay fit is supposed to trust.
+        tmp = SERIES.with_name(SERIES.name + ".tmp")
+        tmp.write_text("".join(json.dumps(r) + "\n" for r in merged), "utf-8")
+        tmp.replace(SERIES)
         REPORT.write_text(
             json.dumps({"updated": datetime.now(tz=UTC).isoformat(), "signals": report}, indent=1),
             "utf-8",
