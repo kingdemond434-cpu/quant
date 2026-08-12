@@ -11,7 +11,7 @@ _Seeded 2026-07-18; every family unvisited -- the first run biases per the rotat
 | Code (GitHub/Kaggle) | 2026-07-19 | 1 | operator-named dig: ai_quant_trade, Qbot, QuantDinger, Vibe-Trading (READMEs+issues) + Hummingbot/Freqtrade issues — all infra/framework shells or equity factor zoos, 0 crypto-perp strategy logic; 0 cards but confirmed funding-arb is now commoditized into hummingbot's v2_funding_rate_arb.py (crowding evidence) |
 | Academic (SSRN/arXiv) | never | 0 | untouched this session (RSRS is sell-side research, not SSRN/arXiv) — priority next run |
 | Records (contests/CTA) | 2026-08-12 | 3 | s1 (07-25): Bitcointalk "Automated Trading Contest" (CryptoTrader.org rounds #1-#5) → in-sample-vs-forward natural experiment entry. **s2 (08-04): the Quantopian FUND record mined via HN trees → graveyard `crowdsourced_backtest_selection_fund` (backtest-Sharpe>2.5 selection → −3% live vs SPX +6.6% → capital returned Feb-2020) — the at-scale companion to s1's entry.** **s3 (08-12): HN 9152332 MINED (full tree, 28 comments, OP-022) — the 2015 CONTEST thread closes the family's era arc: in-thread 2015 predictions (max-risk selection wins contests; survivorship arithmetic) were confirmed by the 2020 outcome, and the operator's own defense named the gate that failed → graveyard entry enriched + OPERATOR-DEFENSE MINING field note on OP-022.** Kaggle G-Research + Numerai post-mortems still untouched |
-| Non-English forums | 2026-08-04 | 6 | s1 (07-19): Chinese RSRS + funding-arb (CSDN/VeighNa/BigQuant/Zhihu/FMZ) + JP note.com — RSRS EV-killed, ML-funding-rate graveyard-matched. s2 (07-26, CN frontier miner): axis #76 usdt-cny-otc-premium UN-PARKED — "no clean free API" REFUTED, 3 keyless routes, 591d history reconstructed (OP-031), Stage-A 4/4 cells → no promotable edge but SIGN and MAGNITUDE priors falsified. New: OP-031, OP-032, CN lexicon. **s3 (08-04, CN frontier miner): era-archaeology STARTED at depth — 8btc board CDX-mapped (993 urls, 39 boards), 3 era windows (2013 ban / 2017 freeze / 94 exodus) mined to reply-depth ≥2 → graveyard 5th instance adds the premium-SIGN law (coin-leg frozen → domestic discount; fiat-leg frozen → premium) + primary-source 94 diaspora record; LTW-2022 momentum "non-replication" REVERSED by code forensics (pd.cut fat-tail trap → OP-047); Gitee access-mapped (discovery-walled/content-open → OP-048); +12 lexicon rows. Board 233 (BitMEX 合约党, ~1000pp) surveyed, unmined.** **s4 (08-04, RU frontier miner s1-on-branch): forum.btcsec.com era corpus OPENED — 48 CDX pages, 1,570 topics mapped, 283 trading-tagged (data/btcsec_trading_topics.json); 3 threads reply-depth → grid-bot SECOND instance (correlated-outage failure mode) + barrier-rent SIXTH instance (Sep-2013 fee-ladder: ~12% route dispersion, Bitstamp anchor, "мы не в РФ" jurisdiction-arb); live successor forum.bits.media censused (sections 74/166/110) → 2022 diaspora ANSWERED (offshore-venue RU-language trading vs obnal-Telegram rails, double barrier) + corridor-tech-export weak signal + volume-profile POC watchlist card (novelty-clean). RU seat s1 proper lives on diverged master ledger.** **s5 (08-04, KR frontier miner s1-on-branch): the 3 routed legitimacy items RESOLVED (none seat-decidable; #67/#69 live+dated in GAP register; one gap — #69 priced at 1 axis vs 3 grounds — routed via recommendations R0020, scheduled 08-05); velog.io OPENED as ground (robots clean, GraphQL keyless) → OP-050 (Apollo-SSR route + 4 silent-failure traps), 6-post deep-read lake data/velog_kr_quant_posts.jsonl, Bithumb 2026-02-06 mis-credit DATA FENCE onto watchlist card #4, 2 weak signals (per-coin premium dispersion retail-tooled = KR twin of RU corridor-export, same day; order-flow stack commoditized + folk liquidation-long self-refuted at 45% WR), KR lexicon section STARTED (김프/GIMP collision the load-bearing entry); Ppomppu 가상화폐 board BOOTSTRAPPED as the era ground (robots-clean legal twin of hard-stopped DCInside: ~190k posts, 2014-07→live, no purge, universe row 91) — era-seek of the 2017-12/2018-01 mania+ban window is next run's first item. KR seat s1 proper lives on diverged master ledger.** **s6 (08-04, JP frontier miner s1-on-branch): Qiita 仮想通貨botter Advent Calendar OPENED+MAPPED — 187 entries / 5 years to data/jp_botter_advent_calendar.jsonl (note.com 91/qiita 45/zenn 24, robots-clean; adventar.org HARD STOP ClaudeBot-named, 3rd region hit by the Cloudflare rollout); 5 deep-reads → graveyard ×3: `jp_sfd_boundary_game` (SFD dead-at-source 2024-03 with full dated 2017→2024 lifecycle; venue-CLOCK boundary-game class extracted → SFD-class cadence-probe watchlist card), `jp_intraday_anomaly_pair` (hourly-mark reversal died 2022-04 community-documented; 24h-lag contrarian desk-screened SCREEN-WEAK powered BOTH cells at H8, sign flipped to momentum post-2024-04, 2 trials logged), `jp_atr_limit_reversion_timeframe_migration` (12H variant positive-fee lived 2022-mid→2024-03 then died — family migrates across timeframes; 2024-03 = triple JP era boundary); funding-mechanics fences → R0021 (FR is quantized/clamped/capped/lagged PI; read PI not FR; Binance premiumIndexKlines keyless catalogued, FR-vs-PI screen deferred 08-11); JP LEXICON started (13 rows, 2/4 s1 seeds verified: 養分+イナゴ; ガチホ unobserved stays SEED) + OP-051 annual-series-as-finite-corpus + OP-050 react-on-rails addendum; diaspora QUANTIFIED: on-chain topic share 4%→26% (2021→2024) but community consolidated on one venue — diaspora of TOPIC, not PLACE. JP seat s1 proper lives on diverged master ledger.** |
+| Non-English forums | 2026-08-12 | 7 | s1 (07-19): Chinese RSRS + funding-arb (CSDN/VeighNa/BigQuant/Zhihu/FMZ) + JP note.com — RSRS EV-killed, ML-funding-rate graveyard-matched. s2 (07-26, CN frontier miner): axis #76 usdt-cny-otc-premium UN-PARKED — "no clean free API" REFUTED, 3 keyless routes, 591d history reconstructed (OP-031), Stage-A 4/4 cells → no promotable edge but SIGN and MAGNITUDE priors falsified. New: OP-031, OP-032, CN lexicon. **s3 (08-04, CN frontier miner): era-archaeology STARTED at depth — 8btc board CDX-mapped (993 urls, 39 boards), 3 era windows (2013 ban / 2017 freeze / 94 exodus) mined to reply-depth ≥2 → graveyard 5th instance adds the premium-SIGN law (coin-leg frozen → domestic discount; fiat-leg frozen → premium) + primary-source 94 diaspora record; LTW-2022 momentum "non-replication" REVERSED by code forensics (pd.cut fat-tail trap → OP-047); Gitee access-mapped (discovery-walled/content-open → OP-048); +12 lexicon rows. Board 233 (BitMEX 合约党, ~1000pp) surveyed, unmined.** **s4 (08-04, RU frontier miner s1-on-branch): forum.btcsec.com era corpus OPENED — 48 CDX pages, 1,570 topics mapped, 283 trading-tagged (data/btcsec_trading_topics.json); 3 threads reply-depth → grid-bot SECOND instance (correlated-outage failure mode) + barrier-rent SIXTH instance (Sep-2013 fee-ladder: ~12% route dispersion, Bitstamp anchor, "мы не в РФ" jurisdiction-arb); live successor forum.bits.media censused (sections 74/166/110) → 2022 diaspora ANSWERED (offshore-venue RU-language trading vs obnal-Telegram rails, double barrier) + corridor-tech-export weak signal + volume-profile POC watchlist card (novelty-clean). RU seat s1 proper lives on diverged master ledger.** **s5 (08-04, KR frontier miner s1-on-branch): the 3 routed legitimacy items RESOLVED (none seat-decidable; #67/#69 live+dated in GAP register; one gap — #69 priced at 1 axis vs 3 grounds — routed via recommendations R0020, scheduled 08-05); velog.io OPENED as ground (robots clean, GraphQL keyless) → OP-050 (Apollo-SSR route + 4 silent-failure traps), 6-post deep-read lake data/velog_kr_quant_posts.jsonl, Bithumb 2026-02-06 mis-credit DATA FENCE onto watchlist card #4, 2 weak signals (per-coin premium dispersion retail-tooled = KR twin of RU corridor-export, same day; order-flow stack commoditized + folk liquidation-long self-refuted at 45% WR), KR lexicon section STARTED (김프/GIMP collision the load-bearing entry); Ppomppu 가상화폐 board BOOTSTRAPPED as the era ground (robots-clean legal twin of hard-stopped DCInside: ~190k posts, 2014-07→live, no purge, universe row 91) — era-seek of the 2017-12/2018-01 mania+ban window is next run's first item. KR seat s1 proper lives on diverged master ledger.** **s6 (08-04, JP frontier miner s1-on-branch): Qiita 仮想通貨botter Advent Calendar OPENED+MAPPED — 187 entries / 5 years to data/jp_botter_advent_calendar.jsonl (note.com 91/qiita 45/zenn 24, robots-clean; adventar.org HARD STOP ClaudeBot-named, 3rd region hit by the Cloudflare rollout); 5 deep-reads → graveyard ×3: `jp_sfd_boundary_game` (SFD dead-at-source 2024-03 with full dated 2017→2024 lifecycle; venue-CLOCK boundary-game class extracted → SFD-class cadence-probe watchlist card), `jp_intraday_anomaly_pair` (hourly-mark reversal died 2022-04 community-documented; 24h-lag contrarian desk-screened SCREEN-WEAK powered BOTH cells at H8, sign flipped to momentum post-2024-04, 2 trials logged), `jp_atr_limit_reversion_timeframe_migration` (12H variant positive-fee lived 2022-mid→2024-03 then died — family migrates across timeframes; 2024-03 = triple JP era boundary); funding-mechanics fences → R0021 (FR is quantized/clamped/capped/lagged PI; read PI not FR; Binance premiumIndexKlines keyless catalogued, FR-vs-PI screen deferred 08-11); JP LEXICON started (13 rows, 2/4 s1 seeds verified: 養分+イナゴ; ガチホ unobserved stays SEED) + OP-051 annual-series-as-finite-corpus + OP-050 react-on-rails addendum; diaspora QUANTIFIED: on-chain topic share 4%→26% (2021→2024) but community consolidated on one venue — diaspora of TOPIC, not PLACE. JP seat s1 proper lives on diverged master ledger.** **s7 (08-12, CN frontier miner): 8btc era continuation — 2013-12 ban window mined (4 threads to depth) → NEW graveyard class `era_selfref_mark_liquidation_796` (liquidation vs venue's own unanchored last-trade; 插针 birth class; OP+moderator dual corroboration) + 7th instance of era_crossvenue_fiat_premium_arb (venue-credit share, bots-first prior, DEMAND-DIRECTION sign variable from the SAFE analysis) + 94-rail no-RMB-leg detail (thread-73825 EXHAUSTED); board 233 size CORRECTED (~31 threads not 1000pp — Discuz out-of-range page aliasing → OP-034 addendum; board-page layer SECTION-EXHAUSTED) with 2 threads to depth → card-31 COIN-M second independent mechanism prior (synthetic-dollar demand → funding skew; converges with EN 08-12 convexity prior, neither derives from the other) + WS-008 (funding-settlement phase reaches into the liquidation boundary); diaspora question CLOSED by probe (Gate WALLED edge-403, Binance Square CN THIN influencer surface, OKX no community layer — open CN layer = repos + era archives + platform 文库, confirmed); +2 lexicon (塞舌尔人/对敲); new dead-venue era grounds btcicc.com + coinsbbs.com. Unreadable named: 136734 (BitMEX大战796), 129162.** |
 | Forums (deep+legacy) | 2026-07-28 | 2 | s1 (07-25): Bitcointalk ERA-ARCHAEOLOGY opened — boards 8+78 mapped via OP-021; 6 topics mined to reply-depth → 3 graveyard entries + EN era lexicon. **s2 (07-28, session D): QUANTOPIAN ARCHIVE opened + mapped — 52,187 threads confirmed in Wayback (the whole forum); In&Out thread (108 posts) + its live-trade continuation (13) mined to EXHAUSTION → graveyard `era_inout_regime_rotation` (the community's own decomposition kills the crypto port), inbox #71, WS-003 4th confirmation, OP-034 + Quantopian-stratum lexicon, and the full named diaspora record (QC canonical / Quantiacs futures / self-host branch).** **s3 (2026-08-01, session E): OLMAR/OLPS cluster (20 captures, not the 9 logged) — 3 threads exhausted incl. the paper AUTHOR's in-thread admission; family killed on our own data AND the era's own kill reason refuted (crypto has 3.3–3.8× the dispersion of the sector ETFs OLMAR failed on). WILMOTT FIRST TOUCH DONE after a 4-session carry: 403 direct, 14,890 threads via Wayback, full board map recovered, verdict THIN-BUT-REAL (~5,868 mineable of 14,890; 68% Off-Topic/Politics noise).** EliteTrader/Nuclear Phynance still never touched |
 | Social (X/Discord/Substack) | 2026-07-19 | 1 | 3 Substacks fetched (Maverick Quant, quantjourney [paywalled], algoadvantage) — 0 cards, mostly explainer/content-marketing grade |
 | Code (GitHub/Kaggle) | 2026-07-19 | 1 | operator-named dig: ai_quant_trade, Qbot, QuantDinger, Vibe-Trading (READMEs+issues) + Hummingbot/Freqtrade issues — all infra/framework shells or equity factor zoos, 0 crypto-perp strategy logic; 0 cards but confirmed funding-arb is now commoditized into hummingbot's v2_funding_rate_arb.py (crowding evidence) |
@@ -733,6 +733,120 @@ OPEN QUESTION CARRIED (diaspora, standing): unchanged from s1, now with the 94-e
 conversion moved to PRIVATE QQ/WeChat groups within 48h of the ban — the public-ground thinness is
 structural, so the probe should target overseas-hosted CN communities (OKX/Gate CN boards, CN X),
 not mainland mirrors.
+
+### 2026-08-12 session (CN frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+RESUME STATE: mine gate BACKLOG-CLEAR (all 22 prior cards disposed). source_backlog 08-12: 6 verify
+items (BIS WP 1087 carry↔liquidation, Auer–Claessens regulatory taxonomy, stablecoin-run
+conditioning, KR venue-state layer, copula stat-arb 5-min, quarter-hour clock) — all desk-level
+screens or KR-region, none CN-actionable by this seat; 6 legitimacy decisions all KR/JP/vendor.
+Named here, not silently skipped. Generation priors favour data_axis_watchlist (0.444) — data
+surfaces hunted alongside era lore. Predecessor note (08-04) closed RUN COMPLETE; its named
+next-run items are this run's items, verbatim:
+1. **ERA-ARCHAEOLOGY continuation (8btc):** thread-73825 (Bitfinex BVI structure explainer, 2 full
+   captures, cross-referenced twice by 94-era threads) + the 2013-12 ban-reaction window (`-L`
+   302-retry on 20131225 forum-2-6). OP-034 CDX triage, OP-033 GBK, reply-chain ≥2.
+2. **Board 233 (BitMEX 合约党) era-seek** — ~1000pp, surveyed 08-04, unmined. Era-seek by CAPTURE
+   TIMESTAMP of pages 1–9 (08-04 method note), then mine highest-value perp-mechanics threads to
+   reply-depth ≥2. This is the CN perp/funding-lore ground — closest era ground to the desk's only
+   repeat-survivor family (funding/carry).
+3. **Diaspora probe — DO IT OR KILL IT (recarried twice, third carry forbidden by own note):** one
+   bounded probe at overseas-hosted CN grounds (OKX/Gate CN boards, Binance Square CN), verdict
+   RICH/THIN/WALLED routed to the venue table; if WALLED confirms the s3 enclosure finding, the
+   standing question closes with that structural answer.
+STATUS: RUN COMPLETE — items 1–3 all closed to depth; blocks below.
+
+#### ITEM 1 — CLOSED. 8btc era continuation: BVI thread + 2013-12 ban window, 4 threads to depth. [§33: killed -> docs/graveyard.md era_selfref_mark_liquidation_796] [§33: killed -> docs/graveyard.md era_crossvenue_fiat_premium_arb 7th instance]
+- **thread-73825 (Bitfinex BVI profile, 2017-09) EXHAUSTED** (9/9 posts, single page, both captures
+  cross-checked): the 94 exit rail explained from the CN side — BVI holding + Taiwan ops after
+  Wells Fargo cut USD wires (spring 2017), "萬一交易所被關了…還有Bitfinex" a week before the ban's
+  full force, and the depth payout at post #5: **"不支持人民币充值提现"** — the rail had NO fiat
+  leg, which is WHY the 承兑商 network (5th instance dates its birth 09-16/17) had to exist. Plus
+  offshore maker-taker vs domestic 0.2%-flat fee contrast, and Bitfinex phishing clones in the
+  migration window. → enrichment (d) of the 7th-instance graveyard entry.
+- **2013-12 ban window (forum-2-6 @ 20131225003502, the `-L` retry the 08-04 note owed):** 40-thread
+  era board page read; 4 threads triaged mechanism-first, 3 mined to full depth:
+  **thread-2352 「796离奇爆仓」** → NEW graveyard class `era_selfref_mark_liquidation_796`
+  (liquidation against the venue's own unanchored last-trade; OP + moderator corroboration;
+  matched-book exit failure; hedged-but-per-contract-margined kills the hedge leg; 插针 lore's
+  birth class; residue = thin index constituents on tails + the both-legs lesson).
+  **thread-1983 「btc-e搬砖第一站」** (full 14-reply chain incl. 2014-15 tail) + **thread-2353**
+  (SAFE FX-control analysis) + **thread-1940** (赵东 1M→13M origin document) → **7th instance** of
+  era_crossvenue_fiat_premium_arb: venue-credit share of persistent discounts (btc-e), the
+  practitioner-voiced bots-first prior ("机器人才不愿意去"), and the DEMAND-DIRECTION variable
+  (SAFE analysis documents INBOUND USD→CNY bridge demand in the RMB-appreciation era — the mirror
+  of 2016-17 outbound flight; sign law now: barrier side sets who pays, net demand direction sets
+  sign).
+- UNREADABLE (zero CDX captures, do not re-find): none new in this window — all 4 targeted threads
+  had captures (1989 top-holder-cohort thread has none; noted, low value).
+#### ITEM 2 — CLOSED. Board 233 (BitMEX 合约党): size estimate CORRECTED, board fully enumerated, 2 threads to depth. [§33: wired -> docs/research/data_axis_watchlist.md card 31 rider] [§33: wired -> docs/research/weak_signal_registry.md WS-008]
+- **CORRECTION of the 08-04 survey: board 233 is ~31 threads, NOT 1000 pages.** forum-233-1000.html
+  renders the same thread list as page 1 — out-of-range Discuz page URLs alias to the last real
+  page (→ OP-034 addendum; the board map's page counts for OTHER boards are now suspect the same
+  way and must be diff-verified before any deep-dig budget is allocated on them). Board 233
+  archived inventory = pages 1 (2018-07) + 1000 (2018-09), union ~31 unique threads, fully listed
+  this run → **SECTION-EXHAUSTED at the board-page layer 2026-08-12** (thread layer: 2 mined, 2
+  unreadable, remainder triaged low-value: shills, access complaints, flow-number reposts).
+- **thread-166158 (instant liquidation on releverage, 2018-05) mined to depth:** the mechanism
+  reply — mark≠last AND **"爆仓线好像要算一期的资金费率"** (liquidation line embeds the upcoming
+  funding payment) → WS-008: funding-settlement-phase → liquidation clustering on the paying side
+  at tails; desk holds both instrument halves (own liquidation tape + funding_clock). Lexicon:
+  塞舌尔人. Era color: the 50x-minimum mock-slogan.
+- **thread-172717 (1x inverse short = USD?, 2018-05) mined to depth (11 replies):** the CN crowd
+  deriving inverse-perp convexity in public — linear-logic reply ("coin doubles ⇒ ruin") corrected
+  by OP's TESTNET EXPERIMENT (liq price ≈ +∞), closed by the carry statement: "比换成USDT更稳定
+  更省手续费…做空的资金费率会更划算" → **second, independent mechanism prior for card 31's
+  COIN-M/USDT-M funding-differential panel: synthetic-dollar demand** (capital-control clientele
+  → structural short flow → persistent funding skew, widening on rail barriers + stablecoin
+  distrust). Genuine cross-ecosystem convergence with the EN miner's 08-12 convexity prior
+  (2012 US forum vs 2018 CN forum, neither derives from the other) — recorded on the card with
+  SOURCE/DERIVES-FROM. Discovery counterfactual (charter §17): LOW — the EN crowd does not read
+  8btc; the demand-side clientele story exists nowhere in the NP-thread lineage.
+- **UNREADABLE (zero CDX captures, do not re-find): thread-136734 (BitMEX大战796 strategy
+  commentary — the direct 796 sequel, honest loss), thread-129162 (funding-sign-as-positioning,
+  2018).** Same class as thread-73564/50836.
+#### ITEM 3 — CLOSED (probe MADE; standing question ANSWERED structurally). [§33: killed -> diaspora probe: all three named overseas grounds probed, verdicts recorded; open CN layer = repos + era archives + platform 文库, confirmed]
+- **Gate 广场: WALLED** — edge-403 on robots.txt itself (both gate.io and gate.com); cannot even
+  read the access policy; no routing around (§13).
+- **Binance Square CN: OPEN but THIN** — robots allows content paths + publishes a Square sitemap
+  (utility paths + `*/comments` disallowed); server-rendered and readable, but the feed is
+  influencer/news (and served EN content to a zh-CN request) — positioning-intelligence surface
+  only, not practitioner mechanism ground.
+- **OKX: NO public community layer** — zh-hans surface is official one-way content; community
+  pointer goes to official X accounts.
+- VERDICT (closes the question carried since s1): post-ban CN practitioner discussion at depth
+  lives in private/paid enclosures (§13-unreachable, per s3), CN-language X/Telegram (API-walled
+  for reading at depth), and exchange squares that are influencer surfaces. **The open CN layer
+  worth mining is repos, era archives, and platform 文库 — now confirmed by probe, not inference.**
+  Re-entry condition (L1.16a): a named enabling change (a new open CN board emerging; X read
+  access changing; an enclosure opening its archive).
+DEPTH LINE (per mandate): thread-73825 EXHAUSTED (9/9 posts + both captures); forum-2-6 2013-12
+window: board page read in full, 3/4 mechanism threads mined to reply-depth (2352 both replies =
+full; 1983 full 14-reply chain to its 2015 tail; 2353 zero replies — OP analysis mined; 1940
+identity extracted, capture truncates the interview); board 233: board-page layer SECTION-EXHAUSTED
+(31/31 threads enumerated + triaged), 2 threads full-depth (166158 8/8, 172717 11/11), 2 unreadable
+named. Depth surfaced what surface could not: the no-RMB-leg detail (post #5), the funding-in-
+liquidation-line mechanism (reply #3), the testnet-experiment correction (replies #2–#10), the
+moderator's hedge-leg liquidation (reply #2 of 2352).
+VENUE DISCOVERY (standing obligation): **btcicc.com** (dead CN board, 796-thread cross-post source
+— CDX-check as era ground next run) | **coinsbbs.com** (dead CN board, the banzhuan tutorial's
+"full version" host — same) | Gate 广场 WALLED | Binance Square CN THIN-open | OKX no-community.
+PROACTIVE BATTERY (#3 config-vs-outcome): the 08-04 board map's page counts were CONFIG (URL
+existence), not OUTCOME (content) — corrected via OP-034 addendum; every other board's count in
+that map is now flagged suspect in-place. (#10 ratchet): lexicon 26→**28** verified rows; operators
+library +1 addendum; graveyard instances 6→**7** + 1 new class; board-233 enumeration 0→100%.
+VIDEO: 0 fetched, 0 locked — no CN video ground was in this run's three items; explicit zero per
+mandate (ambiguity between never-hit and never-tried resolved: never-tried this run).
+WHICH ARTIFACT ON DISK IS DIFFERENT (§33 closing question): docs/graveyard.md (new class entry +
+7th instance), docs/research/weak_signal_registry.md (WS-008), docs/research/data_axis_watchlist.md
+(card 31 second mechanism prior), docs/research/search_operator_library.md (OP-034 addendum + 2
+lexicon rows), data/research_memory (3 rows this run), this file.
+NEXT RUN TAKES FIRST: (1) **diff-verify the 08-04 board map's page counts** (boards 2/82/61 claimed
+~1000pp — same aliasing trap suspect; board 2's count is load-bearing for the era plan); (2) board 2
+era windows still owed: 2013-12 window has 30+ unmined board-page captures (33 in 2013-09..12);
+(3) btcicc.com + coinsbbs.com CDX survey (new dead-venue era grounds found this run); (4) the
+JoinQuant/BigQuant/UQER 文库 ground (carried since s3, still the largest untouched open-CN layer).
+OPEN QUESTION: none carried — the diaspora question is closed above; the era grounds are now the
+enumerated work queue.
 
 ## SESSION NOTES — RU frontier miner
 

@@ -578,6 +578,8 @@ marked ✓ were CONFIRMED IN USE this run (2026-07-26) against live CN pages/API
 | 插针 / 瀑布 / 阴跌 / 腰斩 | chazhen / pubu / yindie / yaozhan | wick / waterfall dump / grinding decline / halved | ✓ price-action lore keys |
 | 洗盘 / 控盘 / 诱多 / 诱空 / 砸盘 | xipan / kongpan / youduo / youkong / zapan | shakeout / float-control / bull trap / bear trap / dumping | ✓ **the manipulation-mechanics key set** — 控盘 (float control) is the mechanism-bearing one |
 | 套牢 / 踏空 / 割肉 / 装死 / 纸手 / 钻石手 | taolao / takong / gerou / zhuangsi / zhishou / zuanshishou | trapped / missed the rally / cut losses / play dead / paper hands / diamond hands | ✓ retail POSITIONING/sentiment keys |
+| 塞舌尔人 | saisheerren | "the Seychellois" = BitMEX + its degen crowd (Seychelles incorporation); era mock-slogan "塞舌尔人最低五十倍杠杆起步…唯有爆仓止损" | ✓(08-12) 8btc thread-166158 (2018-05) — the 2018 合约党 era key; finds BitMEX-era leverage lore official terms never reach |
+| 对敲 | duiqiao | self-matched/wash prints — in era derivatives context, the manipulation allegation term (bots printing against themselves to move the mark) | ✓(08-12) 8btc thread-2352 (2013-12, 796 incident) — pairs with 插针/控盘 as the DERIVATIVES manipulation key |
 
 ### OP-033 legacy regional forums are NOT UTF-8 — decode before you judge     [active]
 class: extraction
@@ -632,6 +634,15 @@ adaptations: universal to any dead board (Discuz/phpBB/vBulletin/Rails/Discourse
 counterfactual: LOW-MED — Wayback digging is common; ranking captures by CDX LENGTH to dodge
   JS shells and the gzip magic-byte sniff are both desk discipline that turns "archive is broken"
   false negatives into reads.
+addendum (CN miner 2026-08-12, board-233 measurement): **a max page-number URL in CDX is NOT board
+  size — out-of-range Discuz page URLs alias to the last real page.** 8btc forum-233-1000.html
+  (captured 2018-09) renders a thread list ~identical to forum-233-1.html: the board held ~31
+  threads, not 1000 pages, and the 08-04 board map's "233 = 1000 pages" was this trap. Before
+  budgeting a deep dig on a CDX-implied page count, fetch the claimed-distant page and DIFF THE
+  EXTRACTED THREAD-ID SETS against page 1 — near-identical sets mean the board is small and fully
+  enumerable in one pass (which is a GOOD outcome: section-exhaustion becomes claimable same-run).
+  Regional adaptations: any Discuz/phpBB derivative (CN/KR/RU legacy boards) aliases the same way;
+  vBulletin 404s instead, so absence-of-404 is itself the Discuz signature.
 
 ### OP-047 equal-width binning on fat tails voids a factor test (pd.cut ≠ pd.qcut)   [active]
 _(numbered past OP-046: this working tree is the forked branch whose library ends at OP-034, but

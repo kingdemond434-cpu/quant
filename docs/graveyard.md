@@ -829,3 +829,69 @@ cluster. STANDING IMPLICATION: FRL/connectedness-genre crypto empirics carry a p
 discount on top of their zero desk mapping; NEXT-GROUND holds the mechanised version (pull the
 public Retraction Watch/Crossref dataset, grade editorial-process vs data-fraud — the discount
 should differ by class).
+
+## `era_selfref_mark_liquidation_796` — liquidation against the venue's own unanchored last-trade (796, 2013-12) — the 插针 lore's birth-class, dead at tier-1, residue on thin-index tails
+
+**RECORDED 2026-08-12 (CN frontier miner, era-archaeology, 8btc 2013-12 ban-window board page).**
+Source: 8btc thread-2352 「关于796离奇爆仓事件」 (2013-12-24, Wayback 20140328095543id_, GBK), OP
+小排量板车 + **moderator 大头 corroborating with his own case in-reply within 4 hours** — two
+independent accounts, one thread; OP cross-posted from btcicc.com/article-302 (dead site, logged
+as era ground). **The incident:** on 796 (the era's main CN BTC futures venue), "MT当前行情价最高
+没有高过730，当时796交易价格一路从710涨到782. 账户在762价格离奇爆仓" — MtGox spot never exceeded
+730 while 796's own book ran 710→782; the OP's short liquidated at 762; OP alleges 机器人+对敲
+(bots + self-matched prints). **The moderator's case is the richer document:** weekly LONG in
+profit → "找不到对收盘" (matched-book venue, NO exit liquidity) → hedged with an intraday SHORT to
+lock the profit → **the hedge leg liquidated** when 796 decoupled "tens of dollars" from MtGox —
+"我当时一直盯着mt的k线在看盘" (he was watching the reference venue while his liquidation trigger
+read the internal price). **Mechanism class, three failure modes in one incident:** (1)
+liquidation trigger = the venue's OWN last-trade with no external anchor ⇒ whoever can push a thin
+internal book harvests the liquidation bands at will and the price snaps back — the manipulation
+cost is bounded by book thinness, the harvest by open interest; (2) offsetting positions across
+contracts at one venue are NOT a hedge when each leg margins independently against that
+manipulable internal price — cross-contract basis blowout kills one leg of a "locked" book (the
+desk's NOMUSDT/dead-man mark-vs-fill lesson, 13 years earlier); (3) the trader's reference series
+and the venue's liquidation series were different numbers, and only one of them settles.
+**Why this is pre-emptive falsification:** index-composite mark-price marking at every modern
+tier-1 venue exists precisely to kill (1) — any "liquidation hunt via last-price manipulation"
+claim on a tier-1 book is dead at source; do not spend a test slot on it. **The residue that is
+NOT dead, named:** (a) thin INDEX CONSTITUENTS on tail perps — moving a thin constituent moves
+the index itself (§42's low-OI-tail ground; the credibility-ceiling flag in the tail screen
+already guards the data side); (b) failure mode (2) is alive wherever margin is per-contract
+(isolated margin, cross-venue two-leg books) — corroborates the both-legs-same-way accounting law
+from the era side; (c) lexicon: this incident class is the birth context of 插针 (wick/stop-hunt)
+and 狗庄-in-derivatives vocabulary. SOURCE: as above. DERIVES-FROM: NONE (checked — forum-native
+first-person accounts; the btcicc cross-post is the OP's own text).
+
+### era_crossvenue_fiat_premium_arb — SEVENTH INSTANCE (CN 2013, mainland side) — VENUE-CREDIT SHARE + DEMAND-DIRECTION VARIABLE + BOTS-FIRST PRIOR
+
+**RECORDED 2026-08-12 (CN frontier miner, era-archaeology: 8btc 2013-12 ban window + 94-era
+follow-up).** Sources, all Wayback id_ GBK reads: thread-1983 「btc-e.com——搬砖的第一站」
+(2013-12-06 OP, replies through 2015-09; 20170207105349), thread-2353 「浅议比特币对目前中国
+外汇管制体系的影响」 (2013-12-24 repost of a 比特时代 analysis; 20131226235233), thread-73825
+(Bitfinex CEO/BVI profile, 2017-09; 20171021031939), thread-1940 (赵东 interview, 2013-12-08;
+20131208153930). **(a) CN mirror of instance (a)'s Gox↔BTC-e route:** btc-e pitched as the cheap
+external leg ("让外盘和国盘价格拉近"); its persistent DISCOUNT read by practitioners as
+hard-fiat-leg friction ("几百元人民币先转美元再转充值平台，还有每天的限额", 2015) plus venue
+credit risk — moderator capeta 2014-11: "btc-e最近有点问题，搬砖的话要注意异常情况"; the venue
+was seized 2017-07, so the discount's collectors were accumulating balances at the venue that
+vanished. Identical lesson to the Gox instance, CN-voiced, opposite side of the same route.
+**(b) BOTS-FIRST PRIOR, practitioner-stated (2014-11):** "肯定是因为不好搬。所以机器人才不愿意
+去吧？" — a VISIBLE persistent spread implies an INVISIBLE barrier because bots already took every
+easy route. The family's efficient-barrier corollary from the era's own mouth. **(c)
+DEMAND-DIRECTION VARIABLE (the SAFE analysis):** SAFE's control surface is the BANKING channel
+("SAFE是大脑而各家银行是触手"); BTC bridges it in BOTH directions, and the 2013 document's binding
+use case is INBOUND (foreign USD→BTC→CN exchange→CNY, evading per-transaction 结汇 limits in the
+RMB-appreciation era) — the mirror of 2016-17 OUTBOUND flight. So the family's sign law gains its
+second variable: **barrier SIDE sets who pays the rent (5th instance); NET BRIDGE-DEMAND
+direction, itself a function of currency expectations, sets the premium's sign and magnitude.**
+**(d) 94-rail enrichment of the 5th instance:** Bitfinex was named the successor venue a week
+before the ban's full force ("萬一交易所被關了，不用擔心還有Bitfinex") BUT "不支持人民币充值提现"
+— the exit rail had NO fiat leg, which is WHY the 承兑商 network (birth dated 09-16/17 in the 5th
+instance) had to exist: coin moves through the venue, fiat moves through people. Plus: offshore
+maker-taker vs domestic 0.2%-flat fee regime (post-freeze), Bitfinex phishing clones in the
+migration window, 求翻墙 as standing access friction, and 赵东's Dec-2013 leveraged-holder origin
+document (the future largest 承兑商 enters the record as a 2000-BTC hodler — the canonical arc:
+leveraged holder → 2014-15 blowup → rebuilt as the market's fiat rail). **Standing implication
+unchanged:** persistent premium = barrier rent, information/timing only, never sized as arb. This
+does NOT reopen axis #76 (USDT-CNY OTC premium, screened 4/4 cells 2026-07-26, no promotable
+edge); re-entry needs a named enabling change per L1.16a.
