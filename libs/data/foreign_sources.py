@@ -23,7 +23,10 @@ route that worked when the obvious one failed:
   Habr (RU)       habr.com/ru/rss/search/      -> RSS, 20 items/query.                USED
   DCInside (KR)   search.dcinside.com/post/q/  -> server-rendered HTML, 25 rows.      USED
   Naver (KR)      openapi.naver.com            -> HTTP 401, needs an API key.         out of scope
-  note.com (JP)   /api/v3/searchs              -> HTTP 404, endpoint moved.           unresolved
+  note.com (JP)   /api/v3/searches             -> HTTP 403 {"error":"Access denied"}.  BLOCKED
+                  (the old `/searchs` spelling 404s; corrected + re-probed 2026-08-12.
+                   403 with a STRUCTURED json error is the endpoint refusing us, not a
+                   missing route -- a different problem needing a different fix)
 
 THE HABR LINE IS THE POINT OF L1.54 CLAUSE 6. The search PAGE is a JS shell and a desk that
 stopped there would have recorded "Habr: blocked, client-rendered" and lost a Russian corpus
@@ -767,15 +770,43 @@ def eksisozluk(keyword: str) -> tuple[list[Article], str | None]:
     if hit is not None:
         return hit
     _pace("eksisozluk")
-    url = f"https://eksisozluk.com/?q={quote(keyword)}"
+    # SEARCH PATH, MEASURED 2026-08-12 -- not the site root. `/?q=` answered 404 on all 17 queries
+    # of the 2026-08-12 sweep and 403 on a direct probe, which had been read as "Turkey blocks us".
+    # It is neither: the root simply is not the search route. `/basliklar/ara?SearchForm.Keywords=`
+    # answers 200 with 60KB of real threads. A uniform 404 across every query of a live site is the
+    # signature of a URL bug, never of a hostile source -- the same class as the CJK \b bug and the
+    # Sogou attribute-order bug, and the third time this desk has mistaken its own construction
+    # error for a blocked forest.
+    url = f"https://eksisozluk.com/basliklar/ara?SearchForm.Keywords={quote(keyword)}"
     try:
         page = _get(url)
     except Exception as exc:
         _note_429("eksisozluk", exc)
         return [], _err(exc)
-    rows = re.findall(r'<a[^>]+href="(/[^"?]+--(\d+))"[^>]*>(.*?)</a>', page, flags=re.S)
+    # SCOPED TO THE RESULTS LIST, not the whole page. Matching every `--<id>` link site-wide
+    # also collects the footer's "sozluk kurallari" and "kariyer" -- permanent chrome that would
+    # be re-surfaced as a fresh candidate on every query of every run, quietly poisoning the seen
+    # ledger and the yield ratio with two rows that are never research.
+    #
+    # THE SOURCE DECLARES ITS OWN RESULT COUNT in its results heading, and that count is the
+    # arbiter of the three states L1.41 insists on separating. A zero-result query renders NO
+    # topic-list at all (just a short "nothing here" line), so "no container" cannot by itself
+    # tell a genuine empty result from a markup change. Reading the declared count settles it:
+    #   N == 0 and no rows  -> RAN AND FOUND NOTHING (empty, no error)
+    #   N  > 0 and no rows  -> PARSER DEFECT (loud), because the source says it has threads
+    declared = re.search(r'<h2 title="(\d+)\s+başlık"', page)  # noqa: RUF001
+    n_declared = int(declared.group(1)) if declared else None
+    block = re.search(r'<ul class="topic-list[^"]*"[^>]*>(.*?)</ul>', page, flags=re.S)
+    rows = (re.findall(r'<a[^>]+href="(/[^"?]+--(\d+))"[^>]*>(.*?)</a>', block.group(1), flags=re.S)
+            if block else [])
     if not rows:
-        return [], "eksisozluk fetched but no entry links parsed -- markup changed or challenged"
+        if n_declared == 0:
+            return [], None
+        if n_declared is None:
+            return [], ("eksisozluk fetched but neither a result count nor a topic-list parsed -- "
+                        "markup changed or challenged")
+        return [], (f"eksisozluk declares {n_declared} thread(s) but none parsed -- PARSER DEFECT, "
+                    "not an empty source")
     out: list[Article] = []
     seen: set[str] = set()
     for href, ident, raw_title in rows:
