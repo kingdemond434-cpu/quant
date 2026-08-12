@@ -15,6 +15,8 @@ What is pinned here is the DISCRIMINATOR, not that day's answer:
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 from libs.research.token_premium import (
     AGREE_BPS,
     CROSS_ISSUER,
@@ -110,3 +112,37 @@ def test_the_twin_is_from_a_different_issuer_which_is_the_whole_mechanism() -> N
     assert peer_for("XAUTUSDT") == "PAXGUSDT"
     for underlying, peers in CROSS_ISSUER.items():
         assert len(set(peers)) >= 2, f"{underlying} has no cross-check at all"
+
+
+# ------------------------------------------------------------------ it must actually RUN
+def test_the_check_is_reached_by_the_sleeve_that_paid_for_the_lesson() -> None:
+    """L0039: a module with passing tests and no PRODUCTION importer is DRAFTED, not built. This
+    graduation would have shipped as exactly that -- a tidy library whose only caller was its own
+    test file -- so the reach is asserted, not assumed.
+
+    The seat that misread PAXG is `run_conviction_trader`, and the cross-issuer state has to be in
+    the brief it reads BEFORE it forms a thesis. A check that runs after the call is written is a
+    post-mortem.
+    """
+    from scripts import run_conviction_trader as rct
+
+    assert "PAXGUSDT" in rct.INSTRUMENTS, "the instrument the lesson is about left the universe"
+    assert callable(rct.cross_issuer_check)
+    body = Path(rct.__file__).read_text("utf-8")
+    assert 'brief["context"]["cross_issuer"]' in body, (
+        "the check exists but the brief does not carry it -- the seat would still be reading one "
+        "chart, which is the whole defect")
+
+
+def test_the_brief_check_never_becomes_a_veto_by_accident() -> None:
+    """DELIBERATE, AND WORTH PINNING. This is information, not a risk gate. A data outage must not
+    turn into a position decision, and adding a refusal path to a live sleeve is a larger risk
+    than the one it closes. If the desk ever DOES want the veto, that is a decision with an owner
+    -- it must not arrive as a side effect of someone tightening this function."""
+    from scripts import run_conviction_trader as rct
+
+    out = rct.cross_issuer_check(fetch=lambda *a, **k: ([], "stub"))
+    assert out["state"] == "MEASURED"
+    assert out["by_symbol"]["PAXGUSDT"]["state"] == "UNMEASURED"
+    # No bars for either leg, and still no exception and no refusal -- just a named unknown.
+    assert "unknown" in out["by_symbol"]["PAXGUSDT"]["why"]

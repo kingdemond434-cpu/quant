@@ -118,7 +118,7 @@ if str(_ROOT) not in sys.path:
 from scripts.run_trade_review import N_SUPPORT  # noqa: E402
 
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
-from libs.research import liquidation_brief  # noqa: E402
+from libs.research import liquidation_brief, token_premium  # noqa: E402
 
 _BOOK = "data/conviction_book.jsonl"
 _STATE = "data/conviction_trader.json"
@@ -1210,8 +1210,70 @@ def ensemble_consensus(reads: list[dict[str, Any] | None]) -> tuple[dict[str, An
     return winner, detail
 
 
+def cross_issuer_check(*, hours: float = 24.0, fetch=None) -> dict[str, Any]:
+    """For every tokenized commodity the desk trades: did the METAL move, or did the WRAPPER?
+
+    L0077, paid for on 2026-08-05. PAXGUSDT +4.002%/24h was read as a breakout in gold. That
+    reading is only right if the underlying repriced -- if the Paxos wrapper had gone to a premium
+    the chart looks identical and the correct trade is the OPPOSITE one, short the premium. The
+    discriminator costs one extra quote: Tether Gold on the same metal from a different issuer.
+    That night XAUT printed +3.957%, 4.5bp apart, so the metal moved and the momentum read stood.
+
+    INFORMATION, NOT A VETO, and that is deliberate. This publishes the cross-issuer state INTO
+    the brief so the seat cannot form a gold thesis on one chart the way the desk did. It does not
+    refuse anything: a data outage must never become a position decision, and a new refusal path
+    on a live sleeve is a bigger risk than the one it would close. If the desk later wants the
+    veto, `Verdict.confirmed` is the boolean and DISLOCATION is the state to refuse on.
+    """
+    if fetch is None:
+        try:
+            from scripts.resolve_paper_book import fetch_bars as fetch
+        except ImportError as exc:
+            return {"state": "UNMEASURED", "why": f"price source unavailable ({exc})"}
+    now_ms = int(datetime.now(tz=UTC).timestamp() * 1000)
+    span = int(hours * 3600 * 1000)
+
+    def _move(sym: str) -> float | None:
+        bars, _src = fetch(sym, now_ms - span, now_ms)
+        if len(bars) < 2 or not bars[0][4]:
+            return None
+        return (bars[-1][4] - bars[0][4]) / bars[0][4] * 100.0
+
+    out: dict[str, Any] = {}
+    for sym in INSTRUMENTS:
+        peer = token_premium.peer_for(sym)
+        if peer is None:
+            continue
+        mine = _move(sym)
+        if mine is None:
+            out[sym] = {"state": "UNMEASURED",
+                        "why": f"no bars for {sym} over {hours:g}h -- the move itself is unknown"}
+            continue
+        v = token_premium.classify(sym, mine, _move(peer))
+        out[sym] = {"state": v.state, "gap_bps": v.gap_bps, "why": v.why, "implication": v.trade}
+    if not out:
+        return {"state": "NOT-APPLICABLE",
+                "why": "no instrument in the universe has an independently-issued twin"}
+    return {"state": "MEASURED", "window_hours": hours, "by_symbol": out,
+            "meaning": "a tokenized commodity's move is only a move in the UNDERLYING when a "
+                       "token from a DIFFERENT issuer on the same metal agrees. Disagreement is "
+                       "an issuer/venue premium and inverts the trade to convergence. "
+                       "UNVERIFIABLE is not confirmation -- it is the single-chart evidence that "
+                       "caused the 2026-08-05 misread"}
+
+
 def build_brief(root: Path) -> dict[str, Any]:
     brief: dict[str, Any] = {"generated": datetime.now(tz=UTC).isoformat(), "context": {}}
+    # L0077: the seat must not be able to form a gold thesis off one chart. Never blocks -- see
+    # cross_issuer_check for why a data outage is not allowed to become a position decision.
+    try:
+        brief["context"]["cross_issuer"] = cross_issuer_check()
+    except (OSError, ValueError) as exc:
+        brief["context"]["cross_issuer"] = {
+            "state": "UNMEASURED",
+            "why": f"cross-issuer quote failed ({type(exc).__name__}) -- a gold move in this "
+                   "brief is SINGLE-CHART evidence and cannot tell a metal move from a wrapper "
+                   "premium"}
     # See run_llm_trader.build_brief -- same defect, same cure (R0245). The old entry read
     # data/liquidations.jsonl, which has never existed, inside the except OSError below, so this
     # sleeve has built every conviction brief of its life with no liquidation context and said so
