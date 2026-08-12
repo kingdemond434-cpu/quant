@@ -214,3 +214,39 @@ def test_expensive_reasoning_is_not_wasted_on_formatting() -> None:
     out = escalation_mix()
     assert "formatting" in out["never_escalate_for"]
     assert "survivor assassination" in out["escalate_for"]
+
+
+# ------------------------------------------------------------------ CXCV-38 inheritance
+def test_deepseek_inherits_rather_than_refounds_the_desks_registries() -> None:
+    """CXCV-38: consume existing edge intake, conditional-survivor state, capability challengers
+    and free-data verdicts WITHOUT creating parallel registries."""
+    from libs.ops.deepseek_cycle import inheritance_check
+    out = inheritance_check()
+    assert out["ok"] and out["parallel_registries_found"] == []
+    assert "INHERITS" in out["verdict"]
+
+
+def test_a_deepseek_shadow_of_a_canonical_registry_is_a_named_defect(tmp_path: Path) -> None:
+    """THE FAILURE THE MANDATE WARNS ABOUT: a second statistical universe assembled one
+    well-meaning convenience at a time."""
+    from libs.ops.deepseek_cycle import inheritance_check
+    (tmp_path / "data").mkdir(parents=True)
+    (tmp_path / "data/deepseek_survivors.jsonl").write_text("{}", "utf-8")
+    out = inheritance_check(tmp_path)
+    assert not out["ok"]
+    assert "PARALLEL REGISTRY DEFECT" in out["verdict"]
+    assert "data/deepseek_survivors.jsonl" in out["parallel_registries_found"]
+
+
+def test_an_absent_canonical_registry_is_not_an_inheritance_failure(tmp_path: Path) -> None:
+    """Asymmetric on purpose: absence of a canonical file is a fact about the desk's history;
+    presence of a parallel one is a fact about this agent's behaviour."""
+    from libs.ops.deepseek_cycle import inheritance_check
+    out = inheritance_check(tmp_path)
+    assert out["ok"] and out["inherited_absent"]
+
+
+def test_the_inherited_list_names_what_each_registry_carries() -> None:
+    from libs.ops.deepseek_cycle import INHERITED_REGISTRIES
+    assert len(INHERITED_REGISTRIES) >= 6
+    assert all(path.strip() and what.strip() for path, what in INHERITED_REGISTRIES)

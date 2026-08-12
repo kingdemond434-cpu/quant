@@ -47,10 +47,12 @@ from typing import Any
 __all__ = [
     "CONTAMINATION_KEYS",
     "ESCALATION_STATES",
+    "INHERITED_REGISTRIES",
     "SEED_ROLES",
     "cold_context",
     "escalation_mix",
     "fence",
+    "inheritance_check",
     "policy_gate",
     "seal",
     "seat_state",
@@ -366,3 +368,65 @@ class CycleReport:
         return {"started_utc": self.started_utc, "seat": self.seat, "policy": self.policy,
                 "roles_run": self.roles_run, "findings": self.findings,
                 "blocked": self.blocked, "why": self.why}
+
+
+#: CXCV-38. The canonical registries DeepSeek INHERITS. Every one is written by the pre-DeepSeek
+#: machinery and READ here -- listing them is what makes "no parallel registry" checkable rather
+#: than promised. A DeepSeek-only copy of any of these would be a second statistical universe
+#: assembled one well-meaning convenience at a time.
+INHERITED_REGISTRIES: tuple[tuple[str, str], ...] = (
+    ("data/edge_intake.jsonl", "universal edge intake -- every discovery's disposition"),
+    ("data/alpha_lifecycle.jsonl", "conditional-survivor + hibernation state"),
+    ("docs/research/capability_challengers.jsonl", "elite-factory capability challengers"),
+    ("docs/research/research_auction.jsonl", "research-capital auction decisions"),
+    ("docs/research/free_substitute_comparisons.json", "paid/free substitution verdicts"),
+    ("docs/research/blowup_library.jsonl", "failure / blow-up negative memory"),
+    ("docs/graveyard.md", "permanent rejection memory"),
+    ("docs/research/recommendation_ledger.json", "the desk's open recommendation queue"),
+)
+
+#: Paths a DeepSeek implementation must NEVER create. Each would shadow an inherited registry.
+_FORBIDDEN_PARALLELS: tuple[str, ...] = (
+    "data/deepseek_edge_intake.jsonl",
+    "data/deepseek_lifecycle.jsonl",
+    "data/deepseek_survivors.jsonl",
+    "data/deepseek_graveyard.jsonl",
+    "docs/research/deepseek_recommendation_ledger.json",
+    "data/deepseek_auction.jsonl",
+)
+
+
+def inheritance_check(root: Path | None = None) -> dict[str, Any]:
+    """CXCV-38. Prove DeepSeek INHERITS the pre-DeepSeek capability rather than re-founding it.
+
+    Two halves, and the second is the one with teeth. The first reports which canonical
+    registries are READABLE -- a missing one is NOT a failure here, because a registry with no
+    rows yet is a desk that has not produced that artifact, not a broken inheritance. The second
+    fails on any DEEPSEEK-PREFIXED SHADOW of an inherited registry existing on disk.
+
+    That asymmetry is deliberate. Absence of a canonical file is a fact about the desk's history;
+    presence of a parallel one is a fact about this agent's behaviour, and it is the failure mode
+    the mandate actually warns about -- a second statistical universe assembled one well-meaning
+    convenience at a time.
+    """
+    base = root or _ROOT
+    readable, absent = [], []
+    for rel, what in INHERITED_REGISTRIES:
+        (readable if (base / rel).exists() else absent).append({"path": rel, "carries": what})
+    shadows = [p for p in _FORBIDDEN_PARALLELS if (base / p).exists()]
+    return {
+        "checked_utc": _now(),
+        "inherited_readable": readable,
+        "inherited_absent": absent,
+        "parallel_registries_found": shadows,
+        "ok": not shadows,
+        "verdict": ("INHERITS -- reads the canonical registries and founds none of its own"
+                    if not shadows else
+                    f"PARALLEL REGISTRY DEFECT: {shadows}. DeepSeek must consume existing "
+                    "frontier-hunter findings, copy-trader findings, universal edge intake, "
+                    "conditional-survivor state, micro-capacity state, free-data state and "
+                    "elite-capability challengers WITHOUT creating competing stores (CXCV-38)"),
+        "why_absent_is_not_a_failure": "a canonical registry with no rows yet is a desk that has "
+                                       "not produced that artifact, not a broken inheritance; a "
+                                       "PARALLEL one is this agent misbehaving",
+    }
