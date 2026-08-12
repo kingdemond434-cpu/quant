@@ -184,10 +184,28 @@ class TestFloor:
         with pytest.raises(ValueError, match="haircut_bps must be > 0"):
             iy.reachable_floor(tmp_path, haircut_bps=0.0)
 
-    def test_the_haircut_is_imported_not_copied(self) -> None:
-        """One definition. A second literal would drift silently -- both look reasonable."""
-        from scripts.screen_collateral_allocation import DEFAULT_HAIRCUT_BPS
-        assert iy.reachable_floor(_root_of_repo()).haircut_bps == float(DEFAULT_HAIRCUT_BPS)
+    def test_the_haircut_is_derived_not_copied(self) -> None:
+        """One definition. A second literal would drift silently -- both look reasonable.
+
+        R0375 moved the definition from a bare `DEFAULT_HAIRCUT_BPS = 300.0` to a derivation over
+        measured base rates. The invariant is unchanged and is the point of the test: whatever the
+        number is, BOTH consumers must land on the same one.
+        """
+        from libs.research.lending_haircut import derive_haircut
+        root = _root_of_repo()
+        assert iy.reachable_floor(root).haircut_bps == derive_haircut(root).bps
+
+    def test_an_unreadable_base_rate_artifact_keeps_the_band_shut(self, tmp_path: Path) -> None:
+        """The failure DIRECTION is the whole design: no base rates must give the LARGE haircut.
+
+        A fabricated small one would open a yield band on nothing (L1.55), which is strictly worse
+        than leaving it shut -- the same argument that keeps the ramp pinned on too few fills.
+        """
+        from libs.research.lending_haircut import LAST_RESORT_HAIRCUT_BPS
+
+        _hurdle(tmp_path)
+        _defi(tmp_path)
+        assert iy.reachable_floor(tmp_path).haircut_bps == LAST_RESORT_HAIRCUT_BPS
 
     def test_no_measurable_rung_yields_no_floor_never_zero(self, tmp_path: Path) -> None:
         fl = iy.reachable_floor(tmp_path)

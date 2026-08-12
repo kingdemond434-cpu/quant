@@ -484,6 +484,17 @@ _MAP: dict[str, list[str]] = {
     # state is the independent barrier-height regressor that breaks the KR-premium circularity.
     # A failed fetch is never diffed -- absence must not read as 'all flags cleared' (L1.51).
     "L1.46-r0299": ["scripts/collect_kr_venue_flags.py"],
+    # R0375 (2026-08-12): the haircut that decides whether idle dollars may earn was
+    # `DEFAULT_HAIRCUT_BPS = 300.0` with no derivation anywhere in the repo, against a measured
+    # 5.5bps breakeven -- L1.51's own defect class (a clamp nobody could argue with because
+    # nobody had computed it) sitting on the desk's only idle-capital decision. Now derived from
+    # net-of-returned-funds exploit losses over integrated TVL-years at a 95% Poisson frequency
+    # bound, plus the measured depeg shortfall: 41.7bps. The refusal value is still 300, so an
+    # unreadable input keeps the band SHUT rather than opening it on a fabricated small number
+    # (L1.55). Risks measured but deliberately unpriced are named, never inferred as zero.
+    "L1.51-r0375": ["scripts/collect_lending_risk_base_rates.py",
+                    "libs/research/lending_haircut.py",
+                    "tests/research/test_lending_haircut.py"],
     # R0102 paper-sleeve auto-spawn: converts corrected Stage-A survivors into costless paper
     # sleeves. L1.6 bounds it (zero promotion authority, zero capital) and L1.18a orders its queue
     # (deployment race -- shortest capacity runway first). It NEVER spawns over the Holm cap: a

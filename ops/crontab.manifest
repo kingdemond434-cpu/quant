@@ -2468,3 +2468,24 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/check_citation_integrity.py -> data/citation_integrity.json; CONSTITUTION L2.3
 # CONFIDENCE: committed-script (new this cycle); first run found 15 and they are ledgered as a row
 47 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_citation_integrity.py --report-only >> data/cro_ai_logs/citation_integrity.log 2>&1
+
+# ---------------------------------------------------------------------------------------------
+# R0375 LENDING RISK BASE RATES (L1.51) -- the evidence under the haircut that decides whether
+# idle dollars may earn. `DEFAULT_HAIRCUT_BPS = 300.0` had no derivation anywhere in the repo and
+# closed the lending band 55x over against a 5.5bps breakeven; measured, the defensible number is
+# 41.7bps (exploit 12.2bps point -> 38.5bps at a 95% Poisson frequency bound on 2 events, plus a
+# 3.2bps measured USDC depeg shortfall). The verdict did not move -- what moved is that the margin
+# is now a measurement instead of an assumption wearing one's clothes (L1.47).
+# CADENCE: WEEKLY, and the ceiling is INFORMATION-ARRIVAL (L1.28c). Every input is a multi-year
+# aggregate: a 6-year hack record, integrated TVL-years, 2046 days of prices. One more day of
+# tape moves the estimate by ~0.1%, so a daily line would re-download ~100MB to re-derive an
+# unchanged number. Phased to Sun 03:12, clear of the 04:00 deep sweep.
+# MEMORY: the per-protocol payloads are 3-29MB of JSON each and a full parse would be several
+# hundred MB -- this box OOM-killed screen_orderbook_state four times at ~500MB free (R0378). The
+# collector streams and parses only the top-level `tvl` array; measured peak RSS 134MB for the
+# whole run, and a test pins the extractor against the nested-key trap.
+# EVIDENCE: scripts/collect_lending_risk_base_rates.py -> data/lending_risk_base_rates.json,
+# consumed by libs/research/lending_haircut.py <- idle_yield.reachable_floor +
+# screen_collateral_allocation.build_report; CONSTITUTION L1.51 (a clamp without a price)
+# CONFIDENCE: committed-script (new 2026-08-12); first run READ 6/6 protocols, $120.2B TVL-years
+12 3 * * 0 cd "$QUANT_ROOT" && flock -n data/.cron_lending_base_rates.lock .venv/bin/python scripts/collect_lending_risk_base_rates.py >> data/cro_ai_logs/lending_base_rates.log 2>&1
