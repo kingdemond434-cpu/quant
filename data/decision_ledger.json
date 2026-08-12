@@ -93,7 +93,8 @@
    "success_metric": "net_pnl ~= funding - fees +- basis drift as closes accumulate",
    "reversal_condition": "spot-wallet audit contradicts the banked realized by > $50",
    "review_due": "2026-08-08",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): CORRECT. Held: attribution closes -- web/cashcarry_live.json leak_attribution fut_fees 1750.88 + basis -231.92 with residual 4798.1, and the residual IS the 2026-08-01 RESTART capital event (+4790.70; delta 7.4 = 0.15%), so net = marks + banked realized + futures delta reconciles to funding-fees-basis as the metric demanded. The phantom -$394 class never recurred."
   },
   {
    "id": "2026-07-09-income-pagination",
@@ -106,7 +107,8 @@
    "success_metric": "income totals stable vs manual venue export",
    "reversal_condition": "n/a (pure correctness fix, CI-tested)",
    "review_due": "2026-08-08",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): PARTIAL. Held: pagination shipped and busy-week income totals stopped understating (the <=1000-row truncation class is in desk memory as PAID-for). Failed/undone: the stated verification -- 'income totals stable vs manual venue export' -- has no diff artifact anywhere; the claim rests on code-read, not on the comparison the metric named."
   },
   {
    "id": "2026-07-09-carry-hysteresis-hold-while-positive",
@@ -119,7 +121,8 @@
    "success_metric": "closes/day < 3 and commissions < 20% of funding by 2026-07-23",
    "reversal_condition": "avg held-name funding decays materially below the open-candidate set for >1wk (then add a fee-aware rotation rule instead)",
    "review_due": "2026-08-08",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): PARTIAL. Held: rank-churn closes collapsed (hold-while-positive removed the top-60 lottery; the 159-closes/week class ended). Failed: 'commissions < 20% of funding by 07-23' -- fee-vs-funding reached 75.99x on the 7d window (2026-07-31 row) and leak_attribution shows fut_fees 1750.88 = the dominant loss term; the fee bleed had additional drivers (min-hold aliasing, rail churn) this lever could not touch."
   },
   {
    "id": "2026-07-09-liquidation-source-swap-binance-to-bybit",
@@ -169,7 +172,7 @@
    "success_metric": "first auto-deployed sleeve reaches step-2 (10%) without gate breach",
    "reversal_condition": "any live sleeve loses > its base allocation before demotion fires -> re-instate per-sleeve approval",
    "review_due": "at live connect + 60d",
-   "outcome": null
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): UNCLEAR (never exercised): no sleeve has ever reached the auto-deploy ladder -- zero Stage-B promotions (forward slots 0/12 promoted) and the launch itself was later found to be a NO-OP (launch-readiness sweep 08-01: no module could order). The pre-authorization stands untested; nothing it authorized has happened. Re-review when a sleeve first clears Stage B."
   },
   {
    "id": "2026-07-09-adaptive-validation-windows",
@@ -185,7 +188,7 @@
    "success_metric": "first fast-tracked sleeve survives its first 30 live days without demotion",
    "reversal_condition": "any fast-tracked sleeve demoted within 30 live days -> restore 90d standard for its class",
    "review_due": "first fast-track + 30d",
-   "outcome": null
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): PARTIAL. Held: the decision's PRINCIPLE -- evidence beats calendar -- was adopted into law (L1.48 evidence-is-the-clock, libs/research/evidence_clock.sufficient(); calendar gates are now defects desk-wide), a stronger form than the 40d fast-track it proposed. Failed/unexercised: 'first fast-tracked sleeve survives 30 live days' never ran -- no sleeve has ever been fast-tracked because none cleared the forward stage at all."
   },
   {
    "id": "2026-07-10-carry-executor-restart-apply-holdtop",
@@ -234,7 +237,7 @@
    "success_metric": "0 unresolved NONE-defects older than 1 cycle; >=90 hypotheses scored by 2026-08-10 with graveyard growth",
    "reversal_condition": "audit drives a size-up that breaches a survival constraint, or quota measurably degrades hypothesis quality",
    "review_due": "2026-08-10",
-   "outcome": null
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): PARTIAL. Held (exceeded): >=90 hypotheses scored by 08-10 -- the desk scored 434 candidates by 08-05 and the graveyard grew +36 entries since 07-31 (blind_trigger baseline delta). Failed: '0 unresolved NONE-defects older than 1 cycle' -- the recommendation queue sits in repair-mode with 101 rows past grace (2026-08-12 banner); detection outran repair by ~4:1 exactly as L1.28b measured."
   },
   {
    "id": "2026-07-11-crypto-autodiscovery-factory-wired",
@@ -252,7 +255,7 @@
    "success_metric": "factory runs green in the daily cycle and auto-produces gauntleted candidates for each new data axis without bespoke code; any future survivor is DSR/PBO/RC-clean, not a breadth-mining artifact",
    "reversal_condition": "if the factory ever promotes a candidate that later fails forward validation as a multiple-testing artifact, or if daily runtime/instability becomes material -> narrow the universe further or gate the step behind new-symbol detection",
    "review_due": "2026-08-10",
-   "outcome": "pending"
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): PARTIAL. Held: the factory runs in the daily cycle and auto-produced ~430 gauntleted candidates across axes without bespoke per-axis code. Failed: the 'DSR/PBO/RC-clean' half -- the 07-31/08-01 audits found the gauntlet WELDED (SR-3 fails/SR-5 passes), pbo and reality_check were CAMPAIGN CONSTANTS vetoing per-candidate, and the screen ran at ~0.25% power; the 420/0 record was an instrument artifact (L1.25), so cleanliness was asserted, not delivered, until the redesign."
   },
   {
    "id": "2026-07-11-rail-autonomy-tiers",
@@ -268,7 +271,7 @@
    "success_metric": "first Tier-1/2 rail move is evidence-clean at its 30d review",
    "reversal_condition": "any rail move followed within 30d by a breach it would have prevented -> revert tier system to explicit-yes",
    "review_due": "first rail move + 30d",
-   "outcome": null
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): WRONG on the metric, and the miss was caught and banked: the FIRST live Tier-1 rail move (08-01 12:10Z RISK-PAUSE-OPENS at -17.6% <= -15%) was NOT evidence-clean -- a +4790.70 capital-event re-baseline at 12:22 dissolved the rail's denominator and opens resumed at 14:19 with zero trades in between (journalctl evidence, desk lesson L: 'a drawdown rail measures a RATIO'). The corridor pre-authorization itself behaved as designed; the un-pause path did not, and the re-arm-must-be-explicit fix is the surviving artifact."
   },
   {
    "id": "2026-07-12-external-review-fixes",
@@ -297,7 +300,8 @@
    "success_metric": "first live inversion episode: realized DD <= 2x model expectation",
    "reversal_condition": "first live funding-inversion episode with DD > 2x model expectation -> rule goes back to the principal with the realized numbers",
    "review_due": "2026-08-11",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): UNCLEAR (unresolvable): the metric needs a live funding-inversion episode; none occurred before the 08-01 drawdown-rail pause and the book has been flat since (n_carries 0). Same-day superseded by the ADOPTED row; re-review after re-arm."
   },
   {
    "id": "2026-07-12-first-inversion-rule-adopted",
@@ -313,7 +317,8 @@
    "success_metric": "first live inversion episode DD <= model expectation at capped size; cap lifts correctly on survival or day-60",
    "reversal_condition": "none needed -- rule self-expires at day 60; supersedes 2026-07-12-first-inversion-rule-declined",
    "review_due": "2026-08-11",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): UNCLEAR (unresolvable): probation never tested -- no live inversion episode occurred in the ~19 live days before the 08-01 rail pause froze the book (n_carries 0, armed=False), and day-60 (09-10) is unreached. NOTE for the re-review: the cap's 60-day clock is calendar-based; L1.48 (evidence is the clock) would count inversion-episode observations instead. Re-review on re-arm or 09-10."
   },
   {
    "id": "2026-07-12-round2-review-fixes",
@@ -329,7 +334,8 @@
    "success_metric": "carry day-40 gate evaluates with regime evidence available; no false dead-man events; CI green",
    "reversal_condition": "vif noise causes sizing to oscillate >20% day-over-day -> smooth vif with 10d EMA",
    "review_due": "2026-08-11",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): PARTIAL. Held: zero dead-man FALSE fires since (the 07-13 NOM fire was TRUE by mark-vs-fill accounting); NW/vif sizing fix survived later review. Failed: 'CI green' -- the gate was red 08-05..08-11 (merge-union lineage plus a pytest budget that killed every honest 60-80min run as HUNG>1800s; both fixed 08-11/08-12)."
   },
   {
    "id": "2026-07-12-deadman-false-fire-incident",
@@ -345,7 +351,8 @@
    "success_metric": "zero deadman false fires; single pid-stamped writer verified after every daemon deploy",
    "reversal_condition": "n/a (defect fix)",
    "review_due": "2026-08-11",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): CORRECT. Held: zero false fires in 31 days since state versioning + pid-stamped single-writer; the one subsequent fire (07-13 NOM) was a TRUE fire on venue equity -40.9%, which is the rail working. The zombie-inheritance class has not recurred."
   },
   {
    "id": "2026-07-12-multi-model-advisory-panel",
@@ -361,7 +368,8 @@
    "success_metric": "first automated panel run produces >=1 QUEUE-or-better finding; provider hit-rate measurable by month 2",
    "reversal_condition": "two consecutive panels produce zero surviving findings -> drop to biweekly; persistent injection attempts from a provider -> drop provider",
    "review_due": "2026-08-11",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): CORRECT. Held: the panel runs on mission rotation with findings triaged through track_findings (external_panel_log.jsonl: 199 mission rows incl. 64 audit / 65 tier1); provider hit-rate is measurable (seat-chronic fence, 582d535, exists precisely because per-seat performance is tracked). The same-author blind spot has a standing structural counter."
   },
   {
    "id": "2026-07-12-vps-migration-complete",
@@ -378,7 +386,8 @@
    "success_metric": "7 continuous days of clean VPS heartbeats -> live connector enable gate opens",
    "reversal_condition": "VPS instability -> laptop un-retire = remove data/FREEZE + re-enable QuantWatchdog",
    "review_due": "2026-08-11",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): CORRECT. Held: the desk has run continuously on the Hetzner box since migration (every organ log under data/cro_ai_logs is this host); the 7-day clean-heartbeat gate passed and live connectors were subsequently enabled (testnet carry book traded)."
   },
   {
    "id": "2026-07-12-panel-max-roi-upgrade",
@@ -394,7 +403,8 @@
    "success_metric": "first generate-mission produces >=1 EV-gate-QUEUE hypothesis; first data-mission surfaces >=1 verified new source",
    "reversal_condition": "generate/data missions produce zero survivors across 3 rotations -> drop those missions, keep audit+premortem",
    "review_due": "2026-08-11",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): PARTIAL. Held: weekly mission rotation is real (13 benchmark / 16 maximization / 11 synthesize / 4 premortem rows in external_panel_log.jsonl). Failed/unevidenced: 'first generate-mission produces >=1 EV-gate-QUEUE hypothesis' has no traceable queue row crediting a panel generate-mission as origin; the premortem lane also sat unfired for its first 3 weeks (batch5 memory) before its 4 rows landed."
   },
   {
    "id": "2026-07-12-monthly-tier1-panel",
@@ -410,7 +420,8 @@
    "success_metric": "first monthly tier1 review produces >=1 EV-positive achievable move implemented or queued",
    "reversal_condition": "3 monthly tier1 runs yield only resource-bound or zero-EV suggestions -> drop to quarterly",
    "review_due": "2026-08-11",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): PARTIAL. Held: the tier1 mission is not decorative -- 65 tier1 rows in external_panel_log.jsonl. Failed/unevidenced: no artifact ties the FIRST monthly tier1 review to a specific implemented-or-queued EV-positive move (the metric's yield half); panel findings and ledger rows do not carry a tier1-origin marker to audit it."
   },
   {
    "id": "2026-07-12-panel-roster-refresh-and-memory",
@@ -426,7 +437,8 @@
    "success_metric": "roster stays >=10 distinct labs with zero dead IDs; no rejected finding re-triaged after it enters panel_rulings.md",
    "reversal_condition": "roster refresh proposes only downgrades 3 months running -> make it drop-dead-only",
    "review_due": "2026-08-11",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): PARTIAL. Held: roster maintenance runs (desk-state: 397/400 seats at advertised max) and rulings memory exists. Failed: 'zero dead IDs' -- the 08-11 20:41 panel run drew HTTP 400s from free-tier seats (free-nemotron-super, free-laguna-s) and 73 error rows sit in external_panel_log.jsonl; the paid-seat 402 outage since ~08-08 is a funding failure, not a roster one, but dead free IDs are roster debt."
   },
   {
    "id": "2026-07-16-nom-thin-book-sizing-fix",
@@ -1828,7 +1840,8 @@
    "success_metric": "first sweep completes ~22d post-funding; cadence set from measured re-review yield, not opinion",
    "reversal_condition": "if a real bug is found in a stale unchanged file before the sweep completes, tighten immediately -- that is evidence the floor is too loose",
    "review_due": "2026-08-12",
-   "review_due_source": "success_metric"
+   "review_due_source": "success_metric",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): UNCLEAR (matures today): the ~22d-post-funding first sweep window lands 2026-08-12; no long-tail sweep-completion artifact exists yet to measure re-review yield against. The HOLD half of the decision (refuse to tune cadence on opinion) has cost nothing measurable. Re-review when the first sweep report lands."
   },
   {
    "id": "2026-07-21-rulings-feed-and-stale-seat",
@@ -2712,7 +2725,8 @@
    "success_metric": "next panels: 13/13 non-blank with named-file findings; gemini-3.6-flash earns a positive hit-rate on track_findings within 2 weeks",
    "reversal_condition": "if gemini-3.6-flash blanks or scores zero validated findings over 2 weeks, swap to openai/gpt-5.6-sol-pro (capacity-PASSED backup) and accept the concentration cost",
    "review_due": "2026-08-07",
-   "review_due_source": "success_metric"
+   "review_due_source": "success_metric",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): PARTIAL. Held: the capacity claim itself -- 12/13 seats ingested the full 750,805-char payload with proof-of-read; that measurement stands and is what the A/B directive builds on. Failed: 'next panels 13/13 non-blank' -- OpenRouter credits died again (HTTP 402 by ~08-08; second_family_log row 46), seats blanked, and the seat-chronic fence had to learn to count hard errors as blanks (582d535). The forward metric failed for the same reason the capacity was idle: funding, now re-asked on the principal page."
   },
   {
    "id": "2026-07-24-budget-incident-and-envelope-guard",
@@ -3296,7 +3310,8 @@
    "rails_touched": "NONE. Dead-man switch untouched and read-only this cycle.",
    "growth_audit_link": "Indirect: restores the research-throughput that every growth item depends on. capital_util GAP (justified_by NONE, $0 of $4,500 deployed) was diagnosed this cycle to the _MIN_FUNDING absolute floor and ledgered as R0066, not closed.",
    "review_due": "2026-08-06",
-   "review_due_source": "success_metric"
+   "review_due_source": "success_metric",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): PARTIAL. Held: the mutex bites -- deferrals are real (frontier 7/7 DEFERRED behind the 15:00 brain, brain_mutex.log), and the two-brains-one-tree corruption class (07-30 incident) has not recurred. Failed: 'stub-deaths fall toward zero over 7 days' -- 12 stub-deaths in the last 48h; the dominant cause moved from overlap to session-limit exhaustion with no metered fallback (keyfile absent), which the mutex cannot fix. The falsifier half-fired too: deferral-to-retry latency reached 24h for frontier seats (defer-retry memory), which is starvation-shaped and is why organ_catchup now re-fires every 5 minutes."
   },
   {
    "id": "2026-07-31-money-path-restore-min-funding-deletion",
@@ -3312,7 +3327,8 @@
    "independence_argument": "entry-gate only shapes NEW opens; hold/close paths, hedging, sizing untouched. The other risk-path change this window (fccc580) was authored by a prior session and only SHIPPED here by restart -- no new interaction surface",
    "rails_touched": "NONE. Dead-man untouched. Ruin rail reads fixed equity (re-armed by prior session).",
    "opportunity_cost": "displaced the R0031 slot wire (deferred 1 day with named evidence bar) -- money-path restoration outranks a new clock under L1.2",
-   "review_due": "2026-08-07"
+   "review_due": "2026-08-07",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): UNCLEAR (unresolvable on a flat book): the metric tracks 7d fee-vs-funding falling from 75.99x toward 6.84x, but the 08-01 drawdown rail paused opens and both terms froze (fee_burn_window.json: identical samples; n_carries 0). No re-entry of the flatten absorbing state occurred -- vacuously, since nothing traded. Re-review after re-arm; the churn-window arithmetic cannot be graded on zero flow."
   },
   {
    "id": "2026-07-31-rec-queue-x1-wire-and-ev-recalibration",
@@ -3328,7 +3344,8 @@
    "independence_argument": "check is read-only over the ledger json; EV gate touches no validation/promotion path (Stage-A ordering only, zero promotion authority under the two-stage law)",
    "rails_touched": "NONE",
    "opportunity_cost": "displaced doctrine consolidation R0002 (rescheduled 08-01 under the new enforcement -- it will sit in tomorrow's brief with a survival count)",
-   "review_due": "2026-08-07"
+   "review_due": "2026-08-07",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): WRONG. The wire did not hold the queue: 7d arrivals 101 vs dispositions 93 with 101 rows past grace and repair-mode ON (2026-08-12 banner) -- fresh accumulation of undisposed rows is exactly what the metric said must not happen. The x1 wiring existed but service rate never caught arrival rate; L1.28b's capacity-and-admission analysis stands."
   },
   {
    "id": "2026-07-31-bitmex-decade-spec-and-funding-phase1",
@@ -3360,7 +3377,8 @@
    "independence_argument": "no money path; detector change only narrows corpus (fail-toward-reporting)",
    "rails_touched": "NONE",
    "opportunity_cost": "none material -- unblocked CI which everything else ships through",
-   "review_due": "2026-08-07"
+   "review_due": "2026-08-07",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): CORRECT. Held: digest_page.log shows sustained daily delivery ('digest paged' through 08-11 08:30), and the orphan census stayed honest for the full 30d window -- it fired at 60 on real merge-resurrections and was burned back to the 45 budget by wiring/retiring (21946ff), not by laundering the count."
   },
   {
    "id": "2026-07-31-freeze-response-commit-scheduler-unification-reject-loop-l116a-reopens",
@@ -3379,7 +3397,8 @@
    "confidence": 0.85,
    "success_metric": "REARM reply observed lifting freeze + book resumes within one tick; zero duplicate-organ fires in 7d of logs; reject scores >0 rows by 08-12; >=4 of 12 queue items screened by 08-04 (R0126)",
    "reversal_condition": "reply channel abused or misfires -> revert run_alerts poll block + move to authed ntfy; stagger causes a collector collision -> re-pin explicit slots; re-opened items that fail screens return to graveyard with BOTH kill records",
-   "review_due": "2026-08-12"
+   "review_due": "2026-08-12",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): PARTIAL. Held: reject shadow scores >0 rows by 08-12 (data/reject_forward_scores.json: 25 scored, regenerated 08-12); no duplicate-organ double-fires in the window (mutex + hang-supervision R0282). Failed/unresolved: 'REARM reply observed lifting freeze' -- no REARM has occurred (armed=False to this day) and the reply channel itself was severed for 3 days (severed-reply memory); queue screening hit 6 of 12 seeded axes by the deadline, not >=4-and-rolling for all."
   },
   {
    "id": "2026-07-31-ci-red-deploy-pipeline-repair",
@@ -3420,7 +3439,8 @@
    "reversal_condition": "revert the grace commit if a genuinely-unpushed dig output survives >6h unflagged; retire the walcl clock only by ledgered decision (slot law)",
    "review_due": "2026-08-07",
    "review_due_source": "one week of puller ticks + clock rows is decisive for all five sub-decisions",
-   "verified_by_fresh_read": "pull_deploy_state.json up-to-date@ffdf929 16:43Z; axis_shadow_state walcl ACCRUING 1/40d; forward_slots m=12 idle=0; max_audit live=[carry-bleed-alarm(acked)]; conversion_status 112 backlog 40 disp/7d"
+   "verified_by_fresh_read": "pull_deploy_state.json up-to-date@ffdf929 16:43Z; axis_shadow_state walcl ACCRUING 1/40d; forward_slots m=12 idle=0; max_audit live=[carry-bleed-alarm(acked)]; conversion_status 112 backlog 40 disp/7d",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): PARTIAL. Held: the puller stayed green (pull_deploy logs through this morning), the recovered 35-file fix set survived, no R-id collision by 08-07 (the R0170+ renumber convention held). Failed: 'dig-output-uncommitted stays clear' -- it re-fired 4x on awake sweeps in the following week (carryover brief 2026-08-12), the exact class this cycle existed to end; walcl accrual is thin but alive (data/walcl_impulse.jsonl, last row 08-11)."
   },
   {
    "id": "2026-07-31-cycle5-repairmode-conversion-batch",
@@ -3547,7 +3567,8 @@
    "independence": "Both edits are in the AUDIT/GOVERNANCE subsystem, not the risk/execution/sizing path, and they are causally linked (same failure shape, second found by the first). Non-interaction argument: split_acked is a pure function over (defects, ack registry) with max_audit.main()'s partition verified byte-identical before/after; the check_generation edit only widens an OR over timestamp sources and was positive/negative-control tested (fires when screens are hidden, silent when present). Neither touches a rail, a gate threshold, or any capital path.",
    "review_due": "2026-08-08",
    "review_due_source": "cycle+7d",
-   "verified_by_fresh_read": true
+   "verified_by_fresh_read": true,
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): UNCLEAR. The metric window ('next 5 cycles' = ~08-02..08-06) left no per-cycle brief snapshots to audit, so the promise is unverifiable as stated. Outside the window, today's brief lists ci-gate-red (acked 08-11 20:58 until 08-13) among carryover-skipped items -- either the listing predates the ack or the ack filter is leaking again; flagged for the next cycle rather than scored on out-of-window evidence."
   },
   {
    "id": "2026-08-05-carry-denylist-forgot-itself-while-paused",
@@ -3571,7 +3592,8 @@
    "independence": "Single subsystem (execution entry path), single causal change, plus one measurement-only edit to the fence that audits it. Non-interaction argument: the fence edit is read-only and cannot influence the executor; the executor edit is strictly tighten-only (symbols in the rolling window are decided before the new branch, and symbols in neither source are allowed exactly as before), so it cannot loosen any existing denial.",
    "review_due": "2026-08-12T03:09:51.014009+00:00",
    "review_due_source": "cycle+7d",
-   "verified_by_fresh_read": true
+   "verified_by_fresh_read": true,
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): UNCLEAR (vacuously held): no re-arm has occurred, so 'zero opens in COOKIEUSDT/1000CATUSDT before 08-15' held over zero opportunities -- a pass over an empty denominator is not evidence (L1.57). The code half (denylist keyed on lifetime forensics, not the rolling window) is committed; the behavioural half is only testable at re-arm. Re-review on re-arm."
   },
   {
    "id": "2026-08-05-stablecoin-supply-momentum-shift-keep-accruing",

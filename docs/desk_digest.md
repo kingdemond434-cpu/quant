@@ -1,39 +1,23 @@
 # Desk digest (auto-generated daily -- do not hand-edit)
-_updated 2026-08-11T08:03Z · companion to [[institutional_knowledge]]_
+_updated 2026-08-12T02:18Z · companion to [[institutional_knowledge]]_
 
 ## Book
-- Molded net: **$-1828.74** | funding **$113.06** | run-rate APR 0.0% | day 40.11
-- Root cause: **unknown_novel** (pause_and_page) | tracking error $2817.12
+- Molded net: **$-1888.74** | funding **$113.06** | run-rate APR 0.0% | day 40.88
+- Root cause: **unknown_novel** (pause_and_page) | tracking error $2816.6
 
 ## Validation clocks
-- **carry (DEPLOYED)**: 46/90d | bt 3.13 fwd 15.54
-- **perp L/S**: 39/90d | bt 0.84 fwd 2.46
-- **trend**: 39/90d | bt 1.26 fwd -0.68
-- **trend regime-gated**: 34/90d | bt 1.24 fwd 0.0
-- **OI/LS data**: 44/40d
-- **stablecoin data**: 40/40d
+- **carry (DEPLOYED)**: 47/90d | bt 3.5 fwd 16.92
+- **perp L/S**: 40/90d | bt 0.83 fwd -0.4
+- **trend**: 40/90d | bt 1.15 fwd -6.52
+- **trend regime-gated**: 35/90d | bt 1.12 fwd 0.0
+- **OI/LS data**: 45/40d
+- **stablecoin data**: 41/40d
 
 ## Open decisions (ledger)
 - `2026-07-04-levered-lab-3x` -- review 2026-10-02: by day 90: sim vs real comparison decisively answers the leverage question
 - `2026-07-04-trend-promotion` -- review 2026-10-02: forward Sharpe >= 0.7 (>=0.5x backtest) at day 90
 - `2026-07-09-trend-unblend-and-regime-challenger` -- review 2026-10-07: challenger fwd Sharpe > incumbent fwd Sharpe AND >=0.5 at day 90
-- `2026-07-09-carry-accounting-symmetric-realized` -- review 2026-08-08: net_pnl ~= funding - fees +- basis drift as closes accumulate
-- `2026-07-09-income-pagination` -- review 2026-08-08: income totals stable vs manual venue export
-- `2026-07-09-carry-hysteresis-hold-while-positive` -- review 2026-08-08: closes/day < 3 and commissions < 20% of funding by 2026-07-23
-- `2026-07-09-live-autodeploy-preauthorization` -- review at live connect + 60d: first auto-deployed sleeve reaches step-2 (10%) without gate breach
-- `2026-07-09-adaptive-validation-windows` -- review first fast-track + 30d: first fast-tracked sleeve survives its first 30 live days without demotion
-- `2026-07-10-max-growth-mandate-discovery-engine` -- review 2026-08-10: 0 unresolved NONE-defects older than 1 cycle; >=90 hypotheses scored by 2026-08-10 with gr
-- `2026-07-11-rail-autonomy-tiers` -- review first rail move + 30d: first Tier-1/2 rail move is evidence-clean at its 30d review
 - `2026-07-12-external-review-fixes` -- review 2026-10-10: zero false dead-man fires in 90d; first promotion decision uses NW t + regime evidence; li
-- `2026-07-12-first-inversion-rule-declined` -- review 2026-08-11: first live inversion episode: realized DD <= 2x model expectation
-- `2026-07-12-first-inversion-rule-adopted` -- review 2026-08-11: first live inversion episode DD <= model expectation at capped size; cap lifts correctly o
-- `2026-07-12-round2-review-fixes` -- review 2026-08-11: carry day-40 gate evaluates with regime evidence available; no false dead-man events; CI g
-- `2026-07-12-deadman-false-fire-incident` -- review 2026-08-11: zero deadman false fires; single pid-stamped writer verified after every daemon deploy
-- `2026-07-12-multi-model-advisory-panel` -- review 2026-08-11: first automated panel run produces >=1 QUEUE-or-better finding; provider hit-rate measurab
-- `2026-07-12-vps-migration-complete` -- review 2026-08-11: 7 continuous days of clean VPS heartbeats -> live connector enable gate opens
-- `2026-07-12-panel-max-roi-upgrade` -- review 2026-08-11: first generate-mission produces >=1 EV-gate-QUEUE hypothesis; first data-mission surfaces 
-- `2026-07-12-monthly-tier1-panel` -- review 2026-08-11: first monthly tier1 review produces >=1 EV-positive achievable move implemented or queued
-- `2026-07-12-panel-roster-refresh-and-memory` -- review 2026-08-11: roster stays >=10 distinct labs with zero dead IDs; no rejected finding re-triaged after i
 - `2026-07-16-nom-thin-book-sizing-fix` -- review 2026-08-15: 30d post-restart: zero opens >35% of book capital, zero thin-book fills, and dead-man equi
 - `2026-07-16-level5-factory-prompt-triage` -- review 2026-08-15: by pilot day-30 (~2026-08-15): scale-or-not decided from survivors-per-1000 evidence; zero
 - `2026-07-16-audit-max-roi-upgrade` -- review 2026-08-15: 30d: >=1 micro-audit finding leads to a verified fix or a logged ruling; brain_down pager 
@@ -121,7 +105,6 @@ _updated 2026-08-11T08:03Z · companion to [[institutional_knowledge]]_
 - `2026-07-20-no-cost-degradation` -- review 2026-08-19: zero cost-motivated config reductions in the ledger; full roster restored automatically po
 - `2026-07-20-full-capacity-roster` -- review 2026-08-19: capacity test Friday: 13/13 ingest the full payload and correctly answer the probe
 - `2026-07-21-payload-sizing-decision` -- review 2026-08-20: A/B shows tiered >= full-payload on accepted-finding rate per dollar; sweep completes in ~
-- `2026-07-21-longtail-cadence-held` -- review 2026-08-12: first sweep completes ~22d post-funding; cadence set from measured re-review yield, not op
 - `2026-07-21-rulings-feed-and-stale-seat` -- review 2026-08-20: next funded panel: reject rate below the 07-20 baseline of 7/27, and zero repeats of alrea
 - `2026-07-21-audit-loop-closed` -- review 2026-08-20: within 2 funded weeks: findings_ledger non-empty with real hit-rates; all 5 money-path fil
 - `2026-07-21-maximization-checker` -- review 2026-08-20: next 30d: >=1 real below-max state caught by the checker BEFORE the principal notices it; 
@@ -179,7 +162,6 @@ _updated 2026-08-11T08:03Z · companion to [[institutional_knowledge]]_
 - `2026-07-23-dev-momentum-factor-v1-insignificant` -- review 2026-08-22: n/a -- rejected at Stage-A screen (insignificant)
 - `2026-07-23-backfill-oos-onchain-killed` -- review 2026-08-22: axes that pass held-out OOS then also pass the forward clock; axes that fail held-out are 
 - `2026-07-23-backfill-is-axis-limited` -- review 2026-08-22: OI/LS OOS runs faithfully once universe metrics are ingested; daily diggers resume produci
-- `2026-07-24-panel-capacity-sweep-and-seat-swap` -- review 2026-08-07: next panels: 13/13 non-blank with named-file findings; gemini-3.6-flash earns a positive h
 - `2026-07-24-budget-incident-and-envelope-guard` -- review 2026-08-23: no month exceeds the envelope without an explicit principal decision; zero silent degradat
 - `2026-07-24-fable5-and-max-effort-everywhere` -- review 2026-08-23: 48h of cycles/digs completing (no 163-byte stubs) at fable-5/max; quota_verdict stays clea
 - `2026-07-24-cny-premium-axis-unparked` -- review 2026-09-02: premium 30d std lands nearer KRW-class than TRY-class AND the forward clock clears the Hol
@@ -207,19 +189,11 @@ _updated 2026-08-11T08:03Z · companion to [[institutional_knowledge]]_
 - `2026-07-29-largest-closure-cycle-plus-the-universal-ratchet` -- review 2026-08-28: 
 - `2026-07-30-holm-cohort-was-m4-while-12-clocks-accrued` -- review 2026-08-29: web/axis_shadows.json holm_bar tracks the derived cohort; run_alerts fires slot_budget_exc
 - `2026-07-30-the-positive-control-was-never-asked-and-a-refuted-clock-blocked-nine-axes` -- review 2026-08-29: reports/gauntlet_certification.json states, per gate path, the minimum TRUE Sharpe admitte
-- `2026-07-30-global-brain-mutex-two-brains-one-tree-one-quota` -- review 2026-08-06: stub-deaths from quota/auth causes fall toward zero over the next 7 days, and data/cro_ai_
-- `2026-07-31-money-path-restore-min-funding-deletion` -- review 2026-08-07: 7d fee-vs-funding ratio falls from 75.99x toward the 6.84x best-ever as the churn window r
-- `2026-07-31-rec-queue-x1-wire-and-ev-recalibration` -- review 2026-08-07: P1 check 08-02: of the 9 rows due 08-01, fewer than 6 past-due (prediction was >=6 WITHOUT
 - `2026-07-31-bitmex-decade-spec-and-funding-phase1` -- review 2026-08-14: phase 2: bitmex_xbtusd_1m.parquet spans 2014-11->now with both verifications green; first 
-- `2026-07-31-page-digest-governance-and-detector-unlaundering` -- review 2026-08-07: digest_page.log shows delivered daily incl. after-retry lines; orphan check stays honest (
-- `2026-07-31-freeze-response-commit-scheduler-unification-reject-loop-l116a-reopens` -- review 2026-08-12: REARM reply observed lifting freeze + book resumes within one tick; zero duplicate-organ f
 - `2026-07-31-ci-red-deploy-pipeline-repair` -- review 2026-08-30: within 1h of push: puller tick reports up-to-date (or deployed) with CI marker green, cron
-- `2026-07-31-cycle4-recovery-merge-walcl` -- review 2026-08-07: next puller ticks stay green+up-to-date; walcl clock accrues daily rows; no new id collisi
 - `2026-07-31-cycle6-r0206-carry-attribution-and-inert-moneypath-fix` -- review 2026-08-31: R0206: the ~66 bps gap decomposes with execution as the DOMINANT term when measured agains
 - `2026-08-01-cycle-calibration-sign-inversion-and-asserted-forward-clocks` -- review 2026-09-01: (a) calibration bias stays positive over pre-registered-only forecasts at the 2026-09-01 g
 - `2026-08-01-cycle-stratified-campaign-window-ends-min-len-truncation` -- review 2026-09-01: (a) HONESTY, checkable now: the next campaign's audit-log campaign_strata row shows strata
-- `2026-08-01-cycle-carryover-ack-blindness-and-generation-third-store` -- review 2026-08-08: The §37 brief's top-12 contains ZERO currently-acked items on the next 5 cycles (was 12/12
-- `2026-08-05-carry-denylist-forgot-itself-while-paused` -- review 2026-08-12T03:09:51.014009+00:00: On the next re-arm, zero opens in COOKIEUSDT/1000CATUSDT before 2026-08-15, and after that
 - `2026-08-05-stablecoin-supply-momentum-shift-keep-accruing` -- review 2026-09-04: The clock reaches its 40-observation wall and returns a verdict on post-break data. Either
 - `2026-08-05-ci-gate-attribution-tracked-vs-inflight` -- review 2026-08-19: ci-gate-red does not fire on a cycle whose only failures are another session's untracked f
 - `2026-08-09-panel-cost-recorded-100x-low` -- review 2026-09-08: the ORIGINAL entry's metric stands and is half-met: '>=1 QUEUE-or-better finding' PASSED (

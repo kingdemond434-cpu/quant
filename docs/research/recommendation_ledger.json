@@ -3681,11 +3681,21 @@
    "summary": "RU-02 [DESIGN INVERSION] scripts/run_crossexchange_backtest.py measures cross-venue funding DISPERSION over a hardcoded 14-symbol large-cap universe -- the cohort most heavily cross-venue arbitraged, where venue funding converges by construction, so the signal is sampled where its variance is minimised. Directly opposite to \u00a742's named ground 'thin-pair cross-venue funding'. Corroborated independently by RU practitioners who name thin venues that drift 1-4% for 15-45min on shitcoins as where divergence lives. A null from this backtest is evidence about the cohort, not the mechanism. Needs R0294 fixed first as the enabling ingredient.",
    "roi_bps": 40.0,
    "raised": "2026-08-01T13:20:49.380845+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Design inversion still present: scripts/run_crossexchange_backtest.py:36-37 hardcodes the same 14 large-cap _UNIVERSE (BTC/ETH/SOL...). Its enabling ingredient R0294 has now landed (multiexchange.py:28-47), so the row is UNBLOCKED, but re-running over the thin-pair cohort is a study redesign consuming gauntlet trials, not a small patch. Should be picked up soon after R0297's counters land.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Universe redesigned per the row: discovered thin-pair cohort (bottom-40 by quote volume among OKX-verified perps) replaces the 14-cap hardcode; 2-of-3-venue panel so thin names survive admission; UNMEASURED refusal instead of silent large-cap fallback; constructions trial-accounted (n_trials=4). First thin-cohort run: dispersion annSharpe 1.62 / IC_IR 4.53 / 7-of-10 gates vs 0.44 carry baseline -- screen-only, rm-20260812T021649-dd98be.",
+   "commit": "66c40f8",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T02:17:45.327175+00:00",
+   "corrections": [
+    {
+     "was": "implemented",
+     "was_reason": "Universe redesigned per the row: discovered thin-pair cohort (bottom-40 by quote volume among OKX-verified perps) replaces the 14-cap hardcode; 2-of-3-venue panel so thin names survive admission; UNMEASURED refusal instead of silent large-cap fallback; constructions trial-accounted (n_trials=4). First thin-cohort run: dispersion annSharpe 1.62 / IC_IR 4.53 / 7-of-10 gates (fails the statistical trio on ~285d) vs 0.44 carry baseline -- screen-only, logged rm-20260812T021649-dd98be.",
+     "was_commit": "HEAD",
+     "was_due": null,
+     "corrected": "2026-08-12T02:17:38.340352+00:00",
+     "why": "commit field recorded the literal string HEAD instead of the sha -- reversing to re-dispose with the resolvable commit 66c40f8; implementation itself unchanged"
+    }
+   ]
   },
   {
    "id": "R0296",
@@ -3693,11 +3703,11 @@
    "summary": "RU-03 STATISTICAL-ARBITRAGE is the desk's only MENTIONED-NEVER-TESTED family (strategy_coverage.json n_tested=0). RU practitioner corpus supplies the first prior: 4.78%/yr gross per contract across 80 cointegrated pairs; practitioner capacity ceiling 0.3-1.0M RUB (~USD 3-11k) per pair before market makers take it -- which under L1.18a is this desk's band, not a disqualifier; slippage+colocation named as the binding constraint by every source; and estimator sophistication (Kalman/polynomial) worth ~zero over OLS+sigma per the reply chains. NOT a forward-slot request. Operative: when this family is next tested, spend the budget on cost/capacity measurement, never on the estimator.",
    "roi_bps": 25.0,
    "raised": "2026-08-01T13:20:49.484227+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Premise intact: data/strategy_coverage.json still shows STATISTICAL-ARBITRAGE state=MENTIONED-NEVER-TESTED, n_tested=0, tested=[] ('discussed, never tested'). The row is explicitly NOT a forward-slot request -- it is an operative prior (spend budget on cost/capacity, never the estimator) that binds when the family is next tested. Nothing to build now; keep it open so the prior is applied at test time.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "The operative prior now BINDS instead of resting in an open row: strategy_coverage.json's STATISTICAL-ARBITRAGE family row carries test_prior (cost/capacity first, estimator ~worthless, 4.78%/yr gross prior, USD 3-11k/pair = desk band per L1.18a), pinned by test; research_memory row rm-20260812T021443-9274c7. Litminer's R0459 (5-min copula stat-arb card) makes this the family's live entry point.",
+   "commit": "4fc528e",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T02:15:28.522233+00:00"
   },
   {
    "id": "R0297",

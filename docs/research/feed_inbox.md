@@ -124,3 +124,23 @@ discipline -- a card without its same-run screen would re-suspend mining): Publi
 free orthogonal flow axis; the dataaxis dig should card AND screen it in one run. Recorded as a
 research_memory dataset row (pending).
 -->
+
+## Universality and Heterogeneity of Stylized Facts in Cryptocurrency and Equity Markets
+- 2026-08-11 · http://arxiv.org/abs/2608.10852v1
+- This study investigates whether the macroscopic statistical maturity of cryptocurrencies implies dynamical equivalence with traditional equity markets. We analyze high-frequency data (2020--2025) using the Complexity--Entropy Causality Plane (CECP) and directed horizontal visibility graphs (directed HVG) to uncover complex temporal patterns and time-directed structures in the return series. While conventional stylized facts show striking convergence across all assets, structural diagnostics reveal a compelling paradox: cryptocurrencies appear more locally random than the equity benchmark durin
+
+## The Triadic Stress Index in Financial Markets
+- 2026-08-11 · http://arxiv.org/abs/2608.10788v1
+- The Triadic Stress Index (TSI) takes a network index whose four factors were first observed in soil microbiome co-occurrence networks and applies it, without alteration, to the correlation network of financial assets. We test it on five markets spanning 2006-2026 (equities including banking crises and the AI sector, cryptocurrencies, commodities, foreign exchange and sovereign debt), against three independent definitions of a crisis episode, at a fixed alarm budget, out of sample, with block-bootstrap intervals and a Holm correction across the family of tests. The benchmarks are the Absorption
+
+## When the Fed Speaks: Dynamics and Forecasts of the Volatility Surface
+- 2026-08-11 · http://arxiv.org/abs/2608.10693v1
+- Our primary goal is to forecast and empirically examine the evolution of the implied volatility (IV) surface, with particular focus on the dates of scheduled meetings of the Federal Open Market Committee (FOMC). Firstly, we check if IV increases before the announcement and if thes effect is stronger for short-dated, out-the-money (OTM) options in high volatility regimes. In the second part, we turn the focus to verifying if the ML framework can beat the benchmark random walk in forecasting this effect. A feature related to dates of scheduled FOMC meetings augments the model, which allows us to
+
+## Objective-oriented quantitative investment: A specification-driven framework for automated synthesis of trading strategy pipelines
+- 2026-08-11 · http://arxiv.org/abs/2608.10410v1
+- Automated quantitative research has made striking progress, yet each system answers the same question: which strategy scores highest on a scalar metric? We argue this question is incomplete. Professional investors do not order "the highest return"; they order an identity--pure stock-selection alpha uncontaminated by style exposure, resilient in unilateral market declines, within turnover and capacity budgets. We call the incumbent paradigm result-oriented and propose Objective-Oriented Quantitative Investment (OOQI): a specification-driven framework in which (i) the full strategy pipeline is m
+
+## Beyond Cash Flows: A Multi-Agent AI Framework for Valuing Clinical-Stage, Cross-Border Biotechnology
+- 2026-08-10 · http://arxiv.org/abs/2608.10175v1
+- A new class of software systems is transforming investment analysis. Large language model agents assembled into collaborative team structures including analysts, researchers, and risk managers are increasingly deployed across financial markets. Yet current multi-agent frameworks share a critical limitation: they rely on the foundational assumption that companies can be valued through traditional cash flows. This paradigm fails in clinical-stage biotechnology, where enterprise value depends entirely on binary scientific and regulatory milestones. To bridge this gap, this paper introduces a spec
