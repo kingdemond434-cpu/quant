@@ -2396,3 +2396,23 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CEILING TYPE: phase raise, not a new cadence (L1.28c) -- still at most one real dig/region/day.
 30 5 * * * cd "$QUANT_ROOT" && flock -n /tmp/seat_frontier.lock /bin/bash ops/run_frontier_rotation.sh >> data/cro_ai_logs/seat_frontier.log 2>&1
 30 20 * * * cd "$QUANT_ROOT" && flock -n /tmp/seat_frontier.lock /bin/bash ops/run_frontier_rotation.sh >> data/cro_ai_logs/seat_frontier.log 2>&1
+
+# FREE-ROSTER CANARY (R0344) -- prove the degraded fallback is alive BEFORE the outage needs it.
+# Measured 2026-08-01T16:58Z: OpenRouter unfunded (-$0.59), the panel dropped to its 4 free seats,
+# and ALL FOUR failed (tencent 404, cohere 400, nvidia-nano 400, nvidia KeyError('choices')). The
+# desk had NO independent-review capability at all and nothing would have said so until the next
+# outage asked. The NO-COST-DRIVEN-DEGRADATION promise -- "runs the strongest FREE fallback and
+# labels it DEGRADED" -- was simply false, unobservably.
+# WHY A PROBE AND NOT A LOG READ: the free roster only RUNS when unfunded, so while funded no free
+# run enters external_panel_log.jsonl and a log-reading check learns nothing and rots. The seats
+# are FREE; asking them costs $0.
+# CEILING TYPE: INFORMATION-ARRIVAL -- a model id dies when a catalog drifts, a weekly-scale event.
+# A RESOURCE ceiling points the same way: free-tier pools saturate, that saturation IS the desk's
+# measured 400/429 class, and an hourly canary would BECOME the failure it detects. Daily, phased
+# 09:40 -- 30min ahead of the 10:10 commit-audit panel, so a dead roster is known before the run
+# that would need it rather than during it.
+# EVIDENCE: scripts/check_free_roster.py -> data/free_roster_canary.json; CONSTITUTION L1.43
+# CONFIDENCE: committed-script (first live run 2026-08-12: 4/4 seats alive, which also VERIFIED
+# the seat-id repair R0344 asked for -- and separated the two failure modes, since 3 of those 4
+# reachable seats have blanked under the real ~40k payload).
+40 9 * * * cd "$QUANT_ROOT" && flock -n data/.cron_freeroster.lock .venv/bin/python scripts/check_free_roster.py --report-only >> data/cro_ai_logs/free_roster.log 2>&1

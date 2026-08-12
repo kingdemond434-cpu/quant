@@ -1033,8 +1033,31 @@ def check_dig_depth(defects) -> None:
     chain, followed a fork, or chased a citation) is breadth-theater -- flag it. Depth quality
     ultimately shows in output and is judged by red-team/maximization; this catches the gross
     wide-and-shallow case mechanically."""
+    # TWO CLASSES OF DEPTH, because the original list encoded only one and misgraded the other.
+    # CORPUS depth is following a source down: reply chains, forks, citations, threads. The list
+    # below it is VERIFICATION depth -- re-deriving a claim rather than repeating it -- which
+    # costs at least as much and looks nothing like the first in prose.
+    #
+    # WIDENED ON A MEASURED FALSE POSITIVE (2026-08-12), the same remedy check_timidity_language
+    # records for its own vocabulary. frontier_br_20260812T0827 scored 1/11 and was flagged
+    # breadth-theater. What it actually did: reimplemented a repo's "MCPT validation" to show it
+    # permutes order-invariant statistics (max-min across 500 permutations = 1.1e-15, so the
+    # p-value is a floating-point rounding hash), censused 23 archive vintages to RETRACT its own
+    # predecessor's inferred decay rate, ran the native-key control that exposed a structural
+    # zero, and recorded a falsifier instead of picking the exciting hypothesis. Grading that as
+    # theatre is not a harmless miss: a lexical fence teaches seats to WRITE the words it counts,
+    # so a list blind to verification depth actively pushes digs toward comment-tree breadth --
+    # the fence causing the failure it detects.
+    #
+    # THE BAR IS UNCHANGED at <2 hits. This adds sight, not slack, and it stays a GROSS detector
+    # by its own docstring -- lexical markers are fakeable by construction and real depth quality
+    # is judged downstream by red-team/maximization. FALSIFIER: if a dig ever clears this bar on
+    # verification words alone while its output shows no re-derivation, the class is noise and
+    # comes back out.
     markers = ("repl", "comment", "thread", "fork", "citation", "issue", "discussion",
-               ">=2", "deep", "exhaust", "debunk")
+               ">=2", "deep", "exhaust", "debunk",
+               "permut", "reimplement", "replicat", "census", "falsifier",
+               "positive control", "graveyard", "wayback", "retract")
     for pat in ("frontier_*.log", "dataaxis_*.log", "prospector_*.log", "litminer_*.log"):
         logs = sorted(LOGS.glob(pat), key=lambda p: p.stat().st_mtime, reverse=True)
         if not logs:

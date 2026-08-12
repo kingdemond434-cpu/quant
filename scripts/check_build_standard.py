@@ -88,6 +88,7 @@ _GOVERNED: tuple[str, ...] = (
     "check_idle_cost.py",                                   # L1.51 fence (capability hunt s1)
     "run_cost_identification.py",                           # L1.45 producer (capability hunt s4)
     "fit_print_impact.py",                                  # L1.45 third cost basis (hunt s1)
+    "check_free_roster.py",                                 # R0344 degraded-fallback canary
     "screen_carry_basis_path.py",                           # R0206 carry attribution (2026-07-31)
     "check_promotion_gate.py",
     "run_discretionary_max.py",

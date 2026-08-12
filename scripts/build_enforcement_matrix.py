@@ -247,7 +247,13 @@ _MAP: dict[str, list[str]] = {
     "L1.42": ["libs/ops/lawful.py", "scripts/check_build_standard.py",
               "scripts/run_cashcarry_executor.py"],
     # L1.43: governance measured like everything else -- has each fence ever caught anything?
-    "L1.43": ["scripts/check_fence_yield.py", "scripts/check_enforcement_execution.py"],
+    # check_free_roster is the same logic pointed at a governance CAPABILITY rather than a fence:
+    # the degraded free-seat fallback is only ever exercised while unfunded, so its health was
+    # invisible by construction and 2026-08-01 found all four seats dead during the outage they
+    # exist for. NEVER-RUN is the status L1.43 already names; this makes it observable on a
+    # cadence, for free, because the seats cost nothing to ask.
+    "L1.43": ["scripts/check_fence_yield.py", "scripts/check_enforcement_execution.py",
+              "scripts/check_free_roster.py"],
     # L1.44: consumption-time freshness -- every decision-path read declares its max tolerated
     # age at the read site; the fence fails on STALE-CONSUMED (a live decision steered by a
     # frozen input) and on UNWIRED (a bootstrap contract deleted from the executor/alerts).
