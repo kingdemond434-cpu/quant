@@ -6034,6 +6034,42 @@
    "commit": null,
    "due": "2026-08-26",
    "disposed": "2026-08-12T15:14:22.894259+00:00"
+  },
+  {
+   "id": "R0488",
+   "source": "cro",
+   "summary": "WELDED REPAIR-MODE: the L1.28b(d) line counted every non-terminal ledger row, so lawfully-SCHEDULED work was booked as repair debt and the gate fired on 100% of runs for 15 consecutive days (backlog crossed 25 on 2026-07-28, reconstructed from the ledger's own raised/disposed stamps). Its actuator is a behaviour change -- flip the brain window from finding to fixing -- and an always-on flip is not a flip; the section-37 brief measured the cost as 15 items shown to a live cycle twice in a row and walked past. FIXED: the line now counts rows that OWE a decision (untriaged past grace + schedule run out), which is the population L1.28b(d) names. Not a loosening -- open=83 and owed=70 are both far above 25, so today's verdict is unchanged; what changes is that the signal can ever clear. Also publishes backlog_age_p50/p90, the drain this fence computed and never read, which is the only thing separating a desk draining a burst stock from one servicing new arrivals only.",
+   "roi_bps": 12.0,
+   "raised": "2026-08-12T15:20:29.714963+00:00",
+   "status": "implemented",
+   "reason": "Fixed and merged (4c578e58, merged 8cc510bd). The repair-mode line now counts OWED rows -- untriaged past grace plus schedules that have run out -- which is the population L1.28b(d) names ('25 OPEN ROWS'). backlog keeps its old meaning and stays published so every consumer is untouched; neighbours audited and named in the commit (run_max_push.py:251, check_fence_yield.py:51, libs/ops/repair_mode.py, capability_ratchet.py:935, orphan_scan.py:82). Verified not a loosening: live run after merge reads REPAIR-MODE at owed=70 against a line of 25. 29/29 tests in test_conversion_fence.py, and the new regression class was verified to FAIL against pre-fix behaviour before being kept (it asserted REPAIR-MODE on 75 correctly-scheduled rows).",
+   "commit": "4c578e58",
+   "due": null,
+   "disposed": "2026-08-12T15:20:39.592308+00:00"
+  },
+  {
+   "id": "R0489",
+   "source": "cro",
+   "summary": "NEW ORGAN ops/run_brain_hunter.sh FAILS THREE GOVERNANCE FENCES ON HEAD, and the failures are load-bearing rather than cosmetic: test_source_universality::test_every_miner_brief_carries_the_mandate and ::test_every_seat_carries_the_deep_forest_mandate both fail for brain_hunter_prompt, gpt_video_hunter_prompt and midnight_codex_prompt (L1.34 every-form-of-raw-information and L1.35 deep-forest mandates are absent from three miner briefs, so those seats are hunting without the doctrine that makes the hunt exhaustive), and test_model_chain::test_model_chain_is_declared_in_exactly_one_place fails on ops/run_brain_hunter.sh (a second declaration site is exactly how 12d's in-place upgrade silently amputates a seat). Reproduced on unmodified HEAD in the main tree, so this is not a worktree artifact. NOT FIXED HERE DELIBERATELY: ops/run_brain_hunter.sh is a sibling lineage's in-flight work and the recommendation worker is committing to the same branch concurrently -- editing it would race an unlocked file. Whoever owns that organ closes it; the fences already name the exact missing strings.",
+   "roi_bps": 4.0,
+   "raised": "2026-08-12T15:20:46.447687+00:00",
+   "status": "scheduled",
+   "reason": "Verified real and reproduced on unmodified HEAD, but deliberately NOT fixed in this cycle: ops/run_brain_hunter.sh belongs to a sibling lineage that is committing to this same branch right now (it landed 4990e416 mid-cycle), and scripts/recommendations.py plus the organ files have no locking -- editing a file another agent is mid-edit on is how this desk loses work. Tight due date rather than a park: the fences name the exact missing strings, so it is a small edit for whoever owns the organ, and one day is enough for that lineage to finish.",
+   "commit": null,
+   "due": "2026-08-13",
+   "disposed": "2026-08-12T15:21:10.365104+00:00"
+  },
+  {
+   "id": "R0490",
+   "source": "cro",
+   "summary": "CI-GATE-RED VERDICT IS IN, and it is the answer max_audit's own ack was waiting for ('ci-gate-red: ROOT-CAUSED AND FIXED THIS CYCLE, full-suite verdict pending tonight's background run'). Ran tests/governance + tests/ops on HEAD 2026-08-12: 20 FAILED. The prior root-cause (sub-daily sharpe-ceiling rescale) is indeed fixed -- these are DIFFERENT tests, so the ack was accurate and the gate is still red for new reasons. Breakdown, all reproduced on unmodified HEAD in the main tree: test_stale_code_daemons 5 (proc-start on dead pid, systemd roster discovery, stale-code defect, fresh-organ, import closure), test_source_universality 6 + test_model_chain 1 (rowed separately as R0489, new organ ops/run_brain_hunter.sh), test_maker_share_denominator 2, test_exploration_family 1 (organs importing a copy of the second-family partner instead of the shared module -- an L1.33 drift the law exists to prevent), test_ledger_format_canonical 1 (data/decision_ledger.json is not byte-identical to its canonical writer, so the next append rewrites every line and a deletion cannot be seen in the diff), test_fence_exit_map 3. Each names its own fix in its assertion text. NOT batched into one blind pass: five of these are separate subsystems and the independence gate applies.",
+   "roi_bps": 8.0,
+   "raised": "2026-08-12T15:21:17.132999+00:00",
+   "status": "scheduled",
+   "reason": "Verdict recorded and ONE of the twenty closed in the same run: data/decision_ledger.json was rewritten in its canonical form (indent=1, no trailing newline, matching run_decision_review.py:69), content verified identical across the rewrite at 230 decisions, and test_ledger_format_canonical is now 3/3 green. That one was fixed rather than filed because it sat on this cycle's own critical path -- the contract requires a decision-ledger append, and appending to a non-canonical file rewrites every line and hides deletions in the diff, which is the audit-integrity failure the fence exists to catch. The remaining 19 span five independent subsystems (stale-code daemons, maker-share denominator, exploration-family second-partner drift, fence exit map, plus the R0489 organ) and the independence gate forbids batching them into one blind pass; each assertion names its own fix. Two days, not parked indefinitely.",
+   "commit": null,
+   "due": "2026-08-14",
+   "disposed": "2026-08-12T15:22:43.984986+00:00"
   }
  ]
 }
