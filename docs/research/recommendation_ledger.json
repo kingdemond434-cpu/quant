@@ -4949,11 +4949,21 @@
    "summary": "VENDOR-REVISION LOOK-AHEAD on every DefiLlama-sourced axis (found closing R0230). DefiLlama silently REVISES its published history: for the SAME dates, our point-in-time data/stablecoin_supply.jsonl holds z20 -3.715/-3.518 on 2026-08-02/03 while a clean re-fetch today yields -2.295/-2.100, and 2026-07-27 moved 122.37bn -> 307.96bn. Both scripts/collect_stablecoin_supply.py (stage_a_screen on the full re-fetched series) and scripts/revalidate_clocks.py (stablesupply() re-fetch, then _z + split_and_check) recompute on the REVISED series every run, so the screen and the SHIFT verdict are computed on numbers that DID NOT EXIST at decision time. This is the as-of-date class from desk memory (a *_now denominator joined to historical events) pointed at the SIGNAL rather than the conditioning variable, and it fails toward a FALSE verdict in either direction with nothing to catch it. defi_utilisation is the same vendor and presumed exposed. The desk already HOLDS the as-of record (the per-day jsonl each collector appends) and nothing anywhere compares the two. FIX: diff the point-in-time series against a re-fetch on every collector run and record the revision delta as a first-class series, exactly as L1.46 makes t_recv - t_venue first-class; where they disagree the point-in-time value is the one a screen may use.",
    "roi_bps": null,
    "raised": "2026-08-05T17:38:39.620742+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Implemented across 04e3d6cf + 8df80793. Premise re-measured and CONFIRMED STRONGER than written: 18 of 20 comparable point-in-time dates REVISED, every one UPWARD, median +0.53% max +1.04% against a 20-day sd of ~0.5% -- so a ROUTINE revision is a full sigma of the signal being screened. Fix uses R0316s existing vintage store (libs/research/vintage.py) rather than a second implementation: 3,179 as-of values recorded at vintage 2026-08-12, append-on-change, so vintage.as_of(d) can reconstruct what was knowable on date d and the depth for a genuine point-in-time screen accrues from today. TWO CORRECTIONS TO THE ROW: (1) run_axis_shadows reads the point-in-time jsonl, so the FORWARD CLOCK was never computing on revised data -- only the collector screen and revalidate_clocks re-fetch, which narrows the blast radius the row assumed; (2) the prescribed remedy \"the point-in-time value is the one a screen may use\" is NOT safely implementable for the 900-day screen, because joining 879 revised values to 21 systematically-lower as-of ones manufactures a ~1-sigma DISCONTINUITY at exactly the recent end the screen weights most -- mixing bases is worse than either alone. Documented in code; the screen declares its basis instead. NOT DONE, carded separately: revalidate_clocks.stablesupply() still re-fetches and recomputes SHIFT on the revised series, and defi_utilisation is fed from our own archive so it is NOT exposed.",
+   "commit": "8df80793",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T22:27:23.172599+00:00",
+   "corrections": [
+    {
+     "was": "implemented",
+     "was_reason": "Built libs/research/axis_integrity.revision_report + record_revision, wired into collect_stablecoin_supply.py; delta lands in data/vendor_revisions.jsonl every run. Premise re-measured and CONFIRMED STRONGER than written: 18 of 20 comparable point-in-time dates REVISED, every one UPWARD, median +0.53% max +1.04% against a 20-day sd of ~0.5%. Point-in-time rows are never rewritten -- they are the only evidence the comparison produces. TWO CORRECTIONS TO THE ROW: (1) run_axis_shadows reads the point-in-time jsonl, so the FORWARD CLOCK was never computing on revised data -- only the collector screen and revalidate_clocks re-fetch; (2) the prescribed remedy \"the point-in-time value is the one a screen may use\" is NOT safely implementable for the 900-day screen, because joining 879 revised values to 21 systematically-lower as-of ones manufactures a ~1-sigma DISCONTINUITY at exactly the recent end the screen weights most -- mixing bases is worse than either alone. Documented in code; the screen now declares its basis instead.",
+     "was_commit": "04e3d6cf",
+     "was_due": null,
+     "corrected": "2026-08-12T22:27:08.710027+00:00",
+     "why": "CORRECTION to the disposition above (superseding commit 8df80793): the first implementation shipped its own revision_report, which DUPLICATED libs/research/vintage.py -- built under R0316 for this exact defect on FRED/Receita Federal, down to the systematically-UPWARD revision sign. Caught in self-review, not by a fence. Refactored to call vintage.record/summarise: it stores the as-of VALUES rather than my summary line, so vintage.as_of(d) can reconstruct what was knowable on date d, which is the only thing that can ever support a true point-in-time screen. 3,179 values recorded at vintage 2026-08-12; append-on-change so every future vintage is near-free, and the collector now reports ACCRUING honestly (one vintage cannot show a revision). Removed data/vendor_revisions.jsonl since its writer no longer exists. A test pins that revision_report cannot be re-introduced. LESSON: I did not run the upgrade-before-build check (L2.9) before minting the module -- grep for the capability, not just the law."
+    }
+   ]
   },
   {
    "id": "R0390",
@@ -4961,11 +4971,11 @@
    "summary": "GENERALISE THE COLLECTOR PLAUSIBILITY GATE (found closing R0230; the specific instance is fixed in 4756a10). scripts/collect_stablecoin_supply.py stored a 60% one-day collapse in aggregate stablecoin supply with z20=-239.803 into the live input of a Holm forward slot, and NOTHING fired -- there was no plausibility check of any kind between the vendor API and the artifact. That collector now refuses moves past 10%, but the other axis clocks feeding run_axis_shadows.py have the same shape and no such gate: data/defi_util_axis.jsonl, data/cny_premium.jsonl, data/walcl_impulse.jsonl. The damage in the measured instance was zero ONLY because run_axis_shadows.py:241 takes np.sign(z), so the corrupt -239.803 and the true -0.950 gave the same position; a bad read in the other direction flips the sign and books that day's forward return inverted, in the one artifact whose whole purpose is to be unpolluted forward evidence. Sign-preserving corruption is luck, not a control. FIX: one shared plausibility helper applied at every axis collector's write, with a per-axis bar derived from that series' own measured history rather than a copied constant.",
    "roi_bps": null,
    "raised": "2026-08-05T17:38:42.431329+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Built libs/research/axis_integrity (move_bar/check_move/coverage_bar/check_coverage) and wired it into all four axis collectors named in the row. The bar is DERIVED FROM EACH SERIES OWN HISTORY as the row required, not a copied constant: a rolling window is mandatory because DefiLlamas full 3178-day max daily move is 27,280% (2020 tiny-float era), so a full-history max is a licence not a bar; on the last 900 days it derives 3.15%, refusing the real -60.11% read AND the sign-flipping high direction while refusing 0 of 900 real days. One stored corruption cannot widen the bar (observed max capped at 3x the robust scale) -- it matters on a series that HAS stored one. FOUND AND FIXED A LIVE SECOND INSTANCE THE ROW DID NOT NAME: defi_utilisation n_pools ran 6691->2511->566->6538 while every day still wrote a z20 the evaluator booked as a position; a ratio of two collapsed sums stays in range so a 92% census failure is INVISIBLE on the value axis. Those days now carry z20=null plus their reason (kept visible per L1.60, structurally un-bookable since _evaluate counts null-z as unusable) and are excluded from later z-windows -- live effect 10->8 observations, i.e. only ever SUBTRACTING evidence. cny_premium and walcl are guarded on inputs/level rather than their signed zero-crossing outputs, where a relative bar is meaningless and where the bad read actually enters. 36 tests, ruff+mypy clean.",
+   "commit": "04e3d6cf",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T22:22:03.817471+00:00"
   },
   {
    "id": "R0391",
@@ -4973,11 +4983,11 @@
    "summary": "DOCTRINE SIZE CEILING IS ON A COLLISION COURSE WITH MONOTONIC LAW GROWTH -- needs a principal decision on the INSTRUMENT, not another compression pass. Measured 2026-08-05: ops/principal_doctrine.txt is 62,807c / 863 commitments = 72.8 chars per commitment against max_audit's bloat bar of 400, so the file is 5.5x denser than 'bloated' and the prompt-doctrine-oversized ceiling (60,000, breached by 2,807c) is the only thing red. Mechanical slack measured at ~126c total (one repeated phrase >=45c, zero repeated sentences, zero overlap with docs/CONSTITUTION.md, zero trailing whitespace). The redundancy harvest already happened: 469be48 took the file 113,210 -> 59,884c with commitments RISING 823 -> 832, and the ceiling was evidently pinned to that achieved value. Everything added since is legislated law (L1.48, L1.51). So the structure is: law count only ever rises, density is at floor, ceiling is fixed => this defect will re-fire permanently and each firing demands either cutting law or raising the guard, both forbidden. THE FENCE'S OWN REMEDY IS BLOCKED BY L1.36: 'split law out to a referenced document' collides with REACHING, which requires law ids to be in the file brain_env.sh:183 injects at organ spawn, and ~10 governance tests assert exact ids are present. A referenced doc nothing injects is a recall-based control (the ADVERSARIAL_REVIEW_RUBRIC failure). OPTIONS NEEDING A RULING: (a) re-derive the ceiling from a MEASURED context cost per organ call rather than the last consolidation's high-water mark, (b) a two-tier injection where the operative imperative stays and the proving-instance narrative moves to a doc that is ALSO injected but only to organs that can act on it, (c) actually retire superseded laws so the count can fall. Acked to 2026-09-04 in data/max_audit_acks.json with the full measurement.",
    "roi_bps": null,
    "raised": "2026-08-05T17:46:30.105109+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "NEEDS THE PRINCIPAL -- all three options require authority this seat does not have, and the row says so itself. Re-measured 2026-08-12 and THE BREACH IS 10x WORSE THAN THE ROW RECORDS: 88,145 chars / 1,020 commitments = 86.4 c/c, now 28,145 chars over the 60,000 ceiling against the 2,807 measured on 2026-08-05, having gained 25,338 chars / 157 commitments / 8 commits in 7 days (~3,600 chars/day). Density did NOT degrade (86.4 is still 4.6x UNDER the 400 bloat bar), so every added char is legislated law -- the rows structural claim is no longer a forecast but a measurement: law count only rises, density sits at floor, ceiling is fixed, defect re-fires permanently, gap accelerates. WHY NOT UNILATERAL: (a) re-deriving the ceiling upward is moving a guard that is currently red -- the exact pattern this desk has repeatedly paid for; (b) two-tier injection collides with L1.36 REACHING plus ~10 governance tests asserting exact law ids in the injected file, and a referenced doc nothing injects is the ADVERSARIAL_REVIEW_RUBRIC recall-control failure; (c) retiring law needs evidence of negative contribution. WHAT I DID DO within authority: measured the decision-critical input option (a) asks for -- the doctrine is ~23,800 tokens per organ spawn (ops/brain_env.sh:268), order $0.12/call uncached at Opus-class input pricing, ~a tenth of that cached, so order $1-12/day desk-wide; the daily spawn count remains the one unmeasured term. Updated data/max_audit_acks.json prompt-doctrine-oversized with the full re-measurement (expiry left at 2026-09-04 untouched) so the ruling is made on current evidence rather than 7-day-stale numbers. Due 2026-09-04 = ack expiry, when this must be ruled on or re-acked.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-09-04",
+   "disposed": "2026-08-12T22:23:42.965786+00:00"
   },
   {
    "id": "R0392",
@@ -6766,6 +6776,30 @@
    "commit": null,
    "due": null,
    "disposed": "2026-08-12T22:01:30.017669+00:00"
+  },
+  {
+   "id": "R0541",
+   "source": "cycle",
+   "summary": "A FORWARD CLOCK WHOSE POSITION NEVER CHANGES SIGN IS MEASURING THE TARGET DRIFT, NOT THE SIGNAL -- and nothing detects it (found building R0389/R0390). MEASURED 2026-08-12: stablecoin_supply_momentum holds a live Holm forward slot at 20 observations with ann_sharpe 1.19, and ALL 20 took a SHORT. Zero longs. P=9.5e-07 under a fair coin. The axis has never once tested its own hypothesis (supply-z up -> higher forward return) in the direction the hypothesis is about, so the 1.19 is a measurement of BTC drift over those 20 days wearing a signal costume. I FALSIFIED THE OBVIOUS CAUSE BEFORE CARDING THIS: the vendor-revision asymmetry is NOT responsible -- recomputing z20 on the fully-revised basis gives 21/21 negative too (mean -1.30 vs -1.46 point-in-time), so the one-sidedness is a real property of z-scoring a slow trending level against its own 20-day trailing mean during a downtrend, not an artifact. THE GAP: run_axis_shadows._evaluate already subtracts non-observations -- RE-STAMPED rows (R0257) and FLAT sign(0) rows -- on exactly the reasoning that one measurement counted twice is not two observations. A signal that varies in VALUE but never crosses zero produces ONE DISTINCT POSITION repeated N times, which is the same defect one level up and is not subtracted or even reported. FIX: report per-axis position entropy / sign-balance beside forward_days, and treat a degenerate-position clock as an instrument fault (the DEGENERATE verdict already exists for the 0-distinct-observation case) rather than as accruing evidence. This is cheap, applies to every axis, and protects the one artifact with promotion authority.",
+   "roi_bps": null,
+   "raised": "2026-08-12T22:27:39.111478+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0542",
+   "source": "cycle",
+   "summary": "revalidate_clocks.stablesupply() STILL RECOMPUTES THE SHIFT VERDICT ON THE VENDOR REVISED SERIES (residual of R0389, scoped out deliberately). scripts/revalidate_clocks.py:172 re-fetches DefiLlama live and feeds _z + split_and_check, so the SHIFT-SENSITIVITY test -- the one that killed bithumb_KR and exists to detect look-ahead -- is itself computed on numbers that did not exist at decision time. Measured revision on this series 2026-08-12: 18 of 20 comparable dates rewritten, all upward, median +0.53% against a 20-day sd of ~0.5%. A shift test asks whether the signal already contained future price; running it on a series the vendor has since backfilled UPWARD is asking that question with some of the future already mixed in, and it fails toward a FALSE verdict in either direction. NOW CHEAPLY FIXABLE AND IT WAS NOT BEFORE: 8df80793 started a vintage store for this series, so once two vintages exist revalidate_clocks can call vintage.as_of(d) and run the shift test on what was actually knowable, or state UNMEASURABLE for the pre-store history rather than silently using the revised values. Blocked only on vintage depth, not on engineering. Same treatment is owed to any other consumer that re-fetches rather than reading the point-in-time rows.",
+   "roi_bps": null,
+   "raised": "2026-08-12T22:27:51.923339+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
