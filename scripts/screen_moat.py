@@ -79,7 +79,7 @@ from scripts.build_bars import trades_from  # noqa: E402
 
 from libs.hypmax.moat_features import MANUFACTURED  # noqa: E402
 from libs.hypmax.moat_mine import _EXTRACTORS, DEPTH_KINDS, _depth_snaps  # noqa: E402
-from libs.research.axis_screen import stage_a_screen  # noqa: E402
+from libs.research.axis_screen import SCREEN_WARMUP_ROWS, stage_a_screen  # noqa: E402
 from libs.validation.per_candidate import romano_wolf  # noqa: E402
 
 MOAT = ROOT / "data/moat"
@@ -328,10 +328,15 @@ def screen_symbol(sym: str, rows: list[dict]) -> list[dict]:
             # after the signal -- so it is the safe direction to be wrong in, and the count is
             # reported rather than buried so a candidate resting on a shredded series is visible.
             breaks = int((~_contiguous(fts, h)[1:]).sum())
-            if int(ok.sum()) < 60:
+            # The floor promises 60 SCORED points, so it must add the harness warmup
+            # (zwin z-seed + forward-roll tail): a bare 60 delivered n=39 to stage_a, and
+            # the implausibility rail then fired on small-sample noise -- underpowered
+            # 900s cells were branded SUSPECT-LOOKAHEAD instead of "cannot tell yet".
+            if int(ok.sum()) < 60 + SCREEN_WARMUP_ROWS:
                 out.append({"symbol": sym, "mechanism": name, "horizon_s": h,
                             "verdict": "SCREEN-UNDERPOWERED", "n": int(ok.sum()),
-                            "why": "too few paired observations to resolve the question"})
+                            "why": "too few paired observations to resolve the question "
+                                   f"(floor {60 + SCREEN_WARMUP_ROWS} incl. harness warmup)"})
                 continue
             # THE SHARPE-RAIL RESCALE THAT USED TO LIVE HERE NOW LIVES IN THE HARNESS
             # (libs/research/axis_screen.py), applied automatically whenever horizon_days<1. It was

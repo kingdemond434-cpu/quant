@@ -18,4 +18,10 @@ brain_auth_check || { echo "auth unavailable -- next run resumes ($(date -u))" >
 # variable that was computed here and never referenced, under this exact comment.
 # ALL digs at max effort (principal 2026-07-24: Max plan, max everything).
 _DIG_EFFORT=max
+_DIG_START_TS=$(date -u +%s)
 claude --effort "$_DIG_EFFORT" --append-system-prompt "$_DOCTRINE" -p "$(dig_prompt ops/blindrediscovery_dig_prompt.txt)" --dangerously-skip-permissions >> "$LOG" 2>&1
+# Stamp the trigger state ONLY on verified production (deliverable advanced past run
+# start): runs 1 and 2 completed without updating the baseline, so the due-by-state
+# trigger kept demanding digs over ground fresh eyes had already seen. stamp() refuses
+# on a dead run -- an exit code proves the process ended, never that it produced.
+.venv/bin/python -c "from libs.ops.blind_trigger import stamp; print(stamp(min_artifact_ts=$_DIG_START_TS))" >> "$LOG" 2>&1

@@ -22,9 +22,18 @@ from typing import Any
 
 import numpy as np
 
+_ZWIN_DEFAULT = 20
+#: Rows stage_a_screen consumes before scoring begins at the default zwin: the first `zwin`
+#: rows seed the rolling z-score and the last row has no next-period target. A caller that
+#: floors its PAIRED-observation count must add this overhead or it delivers fewer scored
+#: points than its floor promises -- a 60-point floor handed the harness n=39, and on that
+#: sample the implausibility rail fired on small-sample noise, branding underpowered cells
+#: SUSPECT-LOOKAHEAD (moat-screen-mostly-suspect, 2026-08-12).
+SCREEN_WARMUP_ROWS = _ZWIN_DEFAULT + 1
+
 
 def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
-                   zwin: int = 20, contam_max: float = 0.20, ic_min: float = 0.03,
+                   zwin: int = _ZWIN_DEFAULT, contam_max: float = 0.20, ic_min: float = 0.03,
                    sharpe_min: float = 0.5, ic_ceiling: float = 0.35,
                    sharpe_ceiling: float = 6.0, clock: str | None = None,
                    horizon_days: float = 1.0, panel_width: int = 1,

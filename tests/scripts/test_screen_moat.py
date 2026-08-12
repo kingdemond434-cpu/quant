@@ -507,3 +507,27 @@ def test_the_screen_and_the_miner_key_cells_the_same_way() -> None:
             "mine_moat keys on stem.split('_')[0]; the two must not drift")
     assert "split(\"_\")" in Path(MM.__file__).read_text("utf-8"), (
         "the miner's rule changed -- re-check that this organ still matches it")
+
+
+def test_the_screen_floor_covers_the_harness_warmup(tmp_path) -> None:
+    """BUG 6 (2026-08-12). The caller floored PAIRED observations at 60, but stage_a_screen
+    consumes zwin+1 rows (z-score seed + forward-roll tail) before scoring, so a cell that
+    just cleared the floor was scored on n=39 -- and at that sample size the implausibility
+    rail fires on pure noise, branding underpowered cells SUSPECT-LOOKAHEAD (the false-alarm
+    channel that tripped moat-screen-mostly-suspect). The floor must deliver what it
+    promises: no cell the harness actually scored may carry fewer points than the floor."""
+    from libs.research.axis_screen import SCREEN_WARMUP_ROWS, stage_a_screen
+
+    rng = np.random.default_rng(7)
+    n_in = 60 + SCREEN_WARMUP_ROWS
+    res = stage_a_screen(rng.normal(size=n_in), rng.normal(scale=1e-3, size=n_in),
+                         name="warmup-floor-probe", horizon_days=900 / 86400.0)
+    assert res["n"] >= 60, "minimum admissible cell no longer delivers its promised floor"
+
+    root = tmp_path / "moat_r"
+    _tape(root, predictive=False)
+    rep = _run(tmp_path, root)
+    scored = [r for r in rep["results"] if "sharpe_ceiling_applied" in r]
+    assert scored, "no cell was scored at all -- the floor is over-tight, not warmup-aware"
+    thin = [r for r in scored if r.get("n", 0) < 60]
+    assert not thin, f"scored below the promised 60-point floor: {thin[:3]}"

@@ -361,6 +361,10 @@ ORGAN_ARTIFACTS: dict[str, tuple[str, ...]] = {
     "frontier-jp": ("docs/research/prospector_coverage.md",),
     "frontier-ar": ("docs/research/prospector_coverage.md",),
     "frontier-br": ("docs/research/prospector_coverage.md",),
+    # Its shell log is ~always a stub (auth deferrals) or reaped; the deliverable is the
+    # committed log doc -- run 2 (8278e31) wrote 234 lines there while every .log stayed
+    # under 200b, and this check read that as "organ has never fired" (2026-08-12).
+    "blindrediscovery": ("docs/research/blind_rediscovery_log.md",),
 }
 
 
@@ -871,16 +875,16 @@ def check_verify_lag(defects) -> None:
 def check_blind_trigger(defects) -> None:
     """Blind Rediscovery is state-driven, not clock-driven: fire it early when the desk has
     materially new internal raw material (data axes / graveyard entries) since its last run."""
+    from libs.ops.blind_trigger import counts as _blind_counts
+
     state = _j(ROOT / "data/cadence_state.json", {})
     last = state.get("last_blind_rediscovery")
     seen = _j(ROOT / "data/blind_trigger_baseline.json", {})
 
-    umap = _j(ROOT / "data/data_universe_map.json", {})
-    srcs = umap.get("sources", {})
-    n_sources = len(srcs) if isinstance(srcs, (dict, list)) else 0
-    gy = ROOT / "docs/graveyard.md"
-    n_grave = (sum(1 for ln in gy.read_text("utf-8").splitlines() if ln.startswith("| "))
-               if gy.exists() else 0)
+    # ONE counting rule, shared with the actuator that clears this trigger
+    # (libs/ops/blind_trigger.stamp, called by the dig on verified production) --
+    # two copies of the count is how the detector and the clearer drift apart.
+    n_sources, n_grave = _blind_counts(ROOT)
 
     base_src = int(seen.get("sources", 0))
     base_grave = int(seen.get("graveyard", 0))
@@ -6729,8 +6733,10 @@ def check_moat_screened(defects) -> None:
             "moat-screen-mostly-suspect",
             f"{len(suspect)} of {d.get('scored')} scored hypotheses came back SUSPECT-LOOKAHEAD. "
             "On a causally clean tape that is a statement about the HARNESS, not the features -- "
-            "alignment, horizon calibration or target construction. Four such bugs were found and "
-            "fixed on 2026-08-03; a fifth would look exactly like this."))
+            "alignment, horizon calibration or target construction. Five such bugs were found and "
+            "fixed on 2026-08-03 (1595bd4), the sub-daily ceiling rescale was re-welded 2026-08-11 "
+            "(9e11c7d) after a merge deleted it from BOTH sides, and the warmup-blind screen floor "
+            "fell 2026-08-12; the next one would look exactly like this."))
 
     # THE RATE, NOT THE LEVEL (P18) -- APPLIED TO THE HUNT, NOT ONLY TO THE MINE. The miner has
     # carried a closure check since it was built; the screen shipped with a coverage frontier and
