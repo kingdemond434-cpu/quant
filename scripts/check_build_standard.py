@@ -145,7 +145,10 @@ _SCHEDULE_EXEMPT: dict[str, str] = {
                                      "and check_return_targeting -- an extractor gains or loses its "
                                      "invariant at COMMIT time, so the commit gate is the "
                                      "information-arrival ceiling (L1.28c) and an hourly line would "
-                                     "re-parse an unchanged tree 24 times a day",
+                                     "re-parse an unchanged tree 24 times a day. IT IS IN THAT GATE: "
+                                     "run_law_gate.py _LAW_FENCES, beside both peers named above. "
+                                     "This exemption spent a week citing a gate that did not invoke "
+                                     "it, which is a cron exemption resting on nothing",
     "read_xls.py": "a TOOL, not an organ: it reads a file a seat hands it, so there is no state "
                    "for a clock to re-read (L1.28c information-arrival ceiling). Scheduling it "
                    "would mean scheduling it against WHAT -- there is no standing input, and a "

@@ -78,6 +78,17 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_build_standard.py", ()),           # L1.41 -- nothing enters below standard
     ("check_sizing_derivation.py", ()),        # L1.41 -- no money number chosen by feel
     ("check_return_targeting.py", ()),         # handoff 2026-07-12 -- no CAGR target
+    # L1.49/R0318 -- every hand-rolled extractor declares an invariant its own output must satisfy.
+    # A LAW fence: it AST-walks libs/ and scripts/, all committed, so it means the same in CI, a
+    # fresh clone and on the box. It is here because it was NOWHERE: built, tested, registered in
+    # _GOVERNED, exempted from the scheduler on the grounds that it "reads SOURCE, not state,
+    # exactly like check_sizing_derivation and check_return_targeting ... so the commit gate is the
+    # information-arrival ceiling" -- and both named peers sit two lines above while this one had
+    # zero invocation sites anywhere in the repo. The exemption cited a gate that never ran it.
+    # data/enforcement_execution.json recorded it EXECUTED off a string literal in a dict in
+    # build_enforcement_matrix.py, which invokes nothing -- crediting a mention as a run, the exact
+    # error its own library refuses at extractor_invariants.py:201.
+    ("check_extractor_invariants.py", ()),     # L1.49 -- 'it looks right' is not validation
     # --surfaces-only: the PORTABLE half (is the breadth mandate still on every hunting prompt?)
     # reads committed files, so it means the same in CI, a fresh clone and the box. The breadth
     # MEASUREMENT reads live coverage state no clean checkout has, so it runs in _STATE_FENCES --

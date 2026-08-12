@@ -221,6 +221,46 @@ def test_fence_next_action_names_a_specific_module(tmp_path: Path) -> None:
     assert "libs/a.py" in fence._next_action(fence.build(tmp_path))
 
 
+def test_a_deleted_declaration_regresses_the_fence() -> None:
+    """THE GAP THE FLOOR CLOSES. Coverage below 100% is PARTIAL and exits 0 on purpose, which made
+    0-declared and 1-declared the identical verdict AND the identical exit code: every declaration
+    in the repo could be deleted and this fence would still report a clean board.
+
+    Driven off a synthetic report rather than a scan -- the floor is arithmetic on two integers,
+    and the real walk is a full AST parse of libs/ and scripts/ that one test already pays for.
+    """
+    fence = _load_fence()
+    passing = {"status": "PARTIAL", "n_extractors": 32, "n_declared": 1}
+
+    held = fence.apply_floor(dict(passing), 1)
+    assert held["status"] == "PARTIAL"                       # at the mark, nothing owed
+    assert held["declared_floor"] == 1
+
+    regressed = fence.apply_floor(dict(passing) | {"n_declared": 0}, 1)
+    assert regressed["status"] == "REGRESSED"
+    assert regressed["status"] not in fence._PASSING         # and REGRESSED is a non-zero exit
+    assert "restore" in fence._next_action(regressed)
+
+
+def test_the_floor_never_grades_a_foreign_tree(tmp_path: Path) -> None:
+    """A repo-global high-water mark applied to a fixture would be a claim about the fixture."""
+    _module(tmp_path, "libs/a.py", 'import re\nre.findall(r"<item>x</item>", b)')
+    (tmp_path / "scripts").mkdir()
+    report = _load_fence().build(tmp_path)
+    assert report["status"] == "PARTIAL"
+    assert "declared_floor" not in report
+
+
+def test_the_fence_denominator_comes_from_the_scan_that_made_the_verdict(tmp_path: Path) -> None:
+    """One scan, not two: certifying a verdict with a count from a different walk is the
+    provenance error, and the second full AST parse also doubled the fence's runtime.
+    """
+    source = (Path(__file__).resolve().parents[2] / "scripts"
+              / "check_extractor_invariants.py").read_text("utf-8")
+    assert 'scanned=report["n_extractors"]' in source
+    assert "scanned=len(discover(" not in source
+
+
 def test_fence_next_action_on_a_broken_detector(tmp_path: Path) -> None:
     """UNMEASURED must route to repairing the DETECTOR, not to annotating modules."""
     (tmp_path / "libs").mkdir()
@@ -229,9 +269,24 @@ def test_fence_next_action_on_a_broken_detector(tmp_path: Path) -> None:
     assert "detector" in fence._next_action(fence.build(tmp_path))
 
 
-def test_fence_coverage_is_a_ratchet_not_a_cliff() -> None:
+def test_fence_coverage_is_a_ratchet_not_a_cliff(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """PARTIAL exits 0 on purpose: a fence that goes red on day one gets switched off (L1.43)."""
+    import libs.ops.denominator as denominator
     from libs.ops.fence_exit import fence_exit
+
+    # fence_exit's telemetry appends to the LIVE L1.57 registry, and it resolves `record` by
+    # attribute at call time, so redirecting it here keeps the real code path while sending the
+    # write to tmp_path. Letting it through leaves permanent {"fence": "t"} rows in
+    # data/denominator_contracts.jsonl -- the test suite writing to the governance store it is
+    # supposed to be measuring, which is how the L1.29 forecast store was corrupted before.
+    real = denominator.record
+    monkeypatch.setattr(
+        denominator, "record", lambda *a, **k: real(*a, **{**k, "root": tmp_path})
+    )
 
     assert fence_exit("PARTIAL", frozenset({"OK", "PARTIAL"}), scanned=32, of="x", fence="t") == 0
     assert fence_exit("UNMEASURED", frozenset({"OK", "PARTIAL"}), scanned=0, of="x", fence="t") != 0
+    # and the redirect actually held -- otherwise this test silently resumes polluting the live one
+    assert (tmp_path / "data" / "denominator_contracts.jsonl").exists()
