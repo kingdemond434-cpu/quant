@@ -12,5 +12,10 @@
     "path": "docs/MASTER_QUANT_CONSTITUTION.md",
     "sha256": "b04d813e5ff24b0758160a584684c55a252da38ea59e2e180a4e59150e15b1db",
     "sections": 218
+  },
+  "doctrine": {
+    "path": "ops/principal_doctrine.txt",
+    "sha256": "aa3cf0adbe3f51cd9f45282a7608de0cedafd31f9c3dbd66078651e1109e917e",
+    "lines": 27
   }
 }
