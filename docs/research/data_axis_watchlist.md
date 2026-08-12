@@ -174,7 +174,7 @@ _Superseded original grading below (kept for the record):_
   failure modes: non-uniform start dates per data type (do not assume uniform depth).
 - **Grade: verified-clean** (portal existence + categories), pending format/auth confirmation.
 
-### 3. bitFlyer getexecutions + self-recorded candles — grade: CLOSED restricted-by-licence, destroyed-at-source for desk use (ToS READ 2026-08-01 by the JP miner; card synced 2026-08-04) [§33: killed -> docs/graveyard.md]
+### 3. bitFlyer getexecutions + self-recorded candles — grade: CLOSED restricted-by-licence, destroyed-at-source for desk use (ToS READ 2026-08-01 by the JP miner; card synced 2026-08-04; deduped 2026-08-12 — the superseded ruling below is demoted to h4 so it no longer parses as a second pending card) [§33: killed -> docs/graveyard.md `jp_bitflyer_direct_recording`]
 > **CLOSED 2026-08-04 (EN frontier miner, backlog sync) — THE LICENCE WAS READ 2026-08-01 AND IT
 > FORBIDS THE USE. The JP miner's seat-1 run resolved what four deferrals could not, by a fully
 > §13-clean route: the "never archived" claim was a WRONG CDX HOST+SLUG (`bitflyer.jp` not `.com`,
@@ -197,7 +197,7 @@ _Superseded original grading below (kept for the record):_
 >   free 1st-of-month (2019-08-30→); GMO Coin keyless ticks (2018-09-05→); bitbank candles.
 >
 > _Superseded deferral block below, kept for the record:_
-### 3. bitFlyer getexecutions + self-recorded candles — grade: **RESTRICTED-BY-LICENCE — CLOSED 2026-08-01, DO NOT BUILD** [§33: killed -> docs/graveyard.md `jp_bitflyer_direct_recording`]
+#### 3-RULING (2026-08-01 JP miner original, superseded by the sync card above — demoted from h3 2026-08-12 so the parser sees ONE card 3). bitFlyer getexecutions + self-recorded candles — RESTRICTED-BY-LICENCE — CLOSED 2026-08-01, DO NOT BUILD
 
 > **§33 DISPOSITION 2026-08-01 (JP frontier miner session 1) — THE DEFERRAL IS OVER. THE LICENCE HAS
 > BEEN READ AND IT FORBIDS THE USE. The human page-read dependency below is DISCHARGED — nobody
@@ -998,7 +998,7 @@ here as excluded, not silently dropped (charter s27 "log every negative").
   click-through on the route; these are the exchange's OWN settlement prices (no vendor value
   redisseminated — the Kaiko-index distinction from T1a holds).
 
-### 21. NAVER DataLab (Korean search-attention) — grade: needs-monitoring (built, unrun) [§33: deferred(2026-08-25) tier:3]
+#### 21-RECORD (superseded twin, demoted from h3 2026-08-12 so the parser sees ONE card 21 — the live card with the honest needs-legitimacy-review grade is above the CFE entry). NAVER DataLab (Korean search-attention) — needs-monitoring (built, unrun)
 > **§33 THIRD DEFERRAL 2026-08-11:** same single blocker as the twin card above — key absent
 > (`data/secrets/` checked this run), principal-blocked (GAP #69). Re-check 2026-08-25.
 > **§33 DISPOSITION 2026-08-09 — THE COLLECTOR WAS RUN 2026-07-26. It did not produce an artifact,

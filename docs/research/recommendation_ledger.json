@@ -3588,11 +3588,11 @@
    "summary": "DEFECT (verified by reading source, libs/features/validation.py:91-99): run_leakage_test mutates ONLY ['open','high','low','close'] future bars. Any feature computed from a NON-OHLC input is never perturbed and therefore ALWAYS PASSES the future-invariance test regardless of whether it leaks. Our own bronze D1 schema is timestamp/open/high/low/close/volume/taker_buy_frac/funding/basis -- so 4 of 9 columns (volume, taker_buy_frac, funding, basis) are invisible to the guard, and FUNDING/CARRY IS THE DESK'S ONLY REPEAT SURVIVOR. causal_guard.py's docstring claims the test 'rejects future leakage, lookahead bias, hindsight labels, and full-sample normalization' -- false for any non-OHLC input. This is the UNMEASURED-REPORTED-AS-OK class (L1.40): the guard returns PASS, not UNKNOWN, on inputs it cannot test. FIX: mutate every numeric column present in bars except the index, or refuse loudly (return UNTESTABLE) when a definition consumes a column the mutation does not cover. Found by CN miner session 3 via the Vibe-Trading dig.",
    "roi_bps": 40.0,
    "raised": "2026-08-01T12:57:17.080739+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=4 effort_h=2: Defect verified still present after the merge: libs/features/validation.py:91-100 mutates only ohlc=['open','high','low','close'] ('mutated.loc[...:, have] * 1000.0'), so volume/taker_buy_frac/funding/basis features always pass; libs/features/causal_guard.py:7 still claims the test 'rejects future leakage, lookahead bias, hindsight labels, and full-sample normalization'. Fix (mutate every numeric non-index column or return UNTESTABLE) tightens the guard -- no gate loosening. Guards the desk's only repeat-survivor family (funding/carry).",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Implemented in 2855b6d: run_leakage_test now perturbs EVERY perturbable column (numeric scaled+shifted, bool flipped, datetime displaced) and refuses UNTESTABLE when a definition consumes an unperturbable dtype; tests/features/test_validation.py covers it (93-test file suite green today).",
+   "commit": "2855b6d",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T01:07:55.117161+00:00"
   },
   {
    "id": "R0290",
@@ -3624,11 +3624,21 @@
    "summary": "VERIFIED MYSELF against the live API: fapi/v1/exchangeInfo carries 123 PERPETUAL symbols with a REAL deliveryDate (!= sentinel 4133404800000), ALL status=SETTLING, spanning 2022-06-17..2026-07-02 (2022:3, 2024:21, 2025:45, 2026:54 -- accelerating, ~1/wk). scripts/run_listing_watch.py:33 filters status=='TRADING', so 0 of 123 survive; delistings are caught only as a set-difference AFTER the symbol vanishes, and deliveryDate is discarded. grep deliveryDate across scripts/+libs/ = ZERO hits over 11 exchangeInfo consumers. So a complete 123-event DELISTING FORCED-CLOSE panel with exact settlement timestamps is retroactively buildable TODAY from one keyless call we already make daily -- no new feed, no s13 question, on a venue we actually trade. Same defect class as min_len truncation and limit=30: the data was already in a payload we fetch and a filter threw it away. Mechanism: delisting forces every holder to close by a hard published deadline. Test THREE hypotheses separately (initial impulse / drift to settlement / rebound) -- they may have opposite signs; some tokens fully recover within 24h. CAUTION: delisting candidates are by construction the illiquid cohort our execution layer is worst at (the 2 execution-denylisted symbols are exactly this type), so any edge must be net of a real slippage model.",
    "roi_bps": 45.0,
    "raised": "2026-08-01T13:05:21.568008+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Capture half landed: scripts/snapshot_universe.py:68 now records deliveryDate/onboardDate for every status daily (ops/crontab.manifest:1379, 00:20 flock job). But scripts/run_listing_watch.py:34 still filters status=='TRADING' and no 123-event delisting forced-close panel or 3-hypothesis study exists (grep 'forced.close|delist_panel' hits only docs). Remaining work is a real event study net of a slippage model on the illiquid cohort -- medium research effort, not small.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "run_listing_watch now extracts real deliveryDates from the same exchangeInfo read: forward schedule artifact + delist_scheduled events at announcement (funding/mark enriched), quarterlies excluded, first-run/legacy baseline semantics preserved; 5 new tests green.",
+   "commit": "2a010b9",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T01:10:57.705471+00:00",
+   "corrections": [
+    {
+     "was": "implemented",
+     "was_reason": "run_listing_watch now extracts real deliveryDates from the same exchangeInfo read: forward schedule artifact + delist_scheduled events at announcement (funding/mark enriched), quarterlies excluded, first-run/legacy baseline semantics preserved; 5 new tests green.",
+     "was_commit": "HEAD",
+     "was_due": null,
+     "corrected": "2026-08-12T01:10:57.586058+00:00",
+     "why": "commit field recorded the literal string HEAD instead of the sha; re-disposing with the real commit 2a010b9"
+    }
+   ]
   },
   {
    "id": "R0293",
@@ -3830,11 +3840,11 @@
    "summary": "JP-s1: READ THE GMO COIN LICENCE (coin.z.com/jp/corp/policy/terms/, 200 + not bot-blocked but JS-rendered) then re-grade data_axis_watchlist entry 27. Unlocks a free keyless JP tick tape 2018-09-05-> across 28 spot + 12 margin symbols incl. JP-only MONA/XYM/FCR/NAC/WILD. Blocks all ingest until done. OP-038-class fetch, NOT a human page-read.",
    "roi_bps": 40.0,
    "raised": "2026-08-01T14:10:32.506909+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=7 effort_h=1: Still undone: docs/research/data_axis_watchlist.md:1357 entry 27 (GMO Coin) still graded 'verified-technically-clean, LICENCE UNREAD' and :1389 records the body was never rendered. The row itself classifies this as an OP-038-class agent fetch, NOT a human page-read, so it is not operator-blocked: fetch/render coin.z.com terms, read, re-grade entry 27. Unlocks a free keyless JP tick tape 2018-09-05-> incl. JP-only symbols; all ingest blocked until the read happens.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Licence READ done 2026-08-12: kihon-yakkan.pdf (ver=20260725) extracted stdlib-only (CID/ToUnicode decode, 16,053 chars, 26 articles). Art.14(15) = consent-required off-service reuse clause; Art.7(1) deemed assent. No API-specific terms exist (policy index + API product page + archive index all searched). Card 27 re-graded needs-legitimacy-review, decision owed 2026-08-19 via source-backlog DECIDE queue.",
+   "commit": "5361358",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T01:13:57.399651+00:00"
   },
   {
    "id": "R0310",
@@ -3842,11 +3852,11 @@
    "summary": "JP-s1: READ THE BITBANK LICENCE (bitbank.cc/error/terms, 200, 6500B) then re-grade data_axis_watchlist entry 28. Docs repo has NO LICENSE file so the site kiyaku governs.",
    "roi_bps": 10.0,
    "raised": "2026-08-01T14:10:32.619346+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=10 effort_h=0.5: Still undone: docs/research/data_axis_watchlist.md:1398/1420 entry 28 (bitbank) still 'verified-technically-clean ... licence unread', 'body not yet extracted' -- a 6,500-byte page fetch + read + re-grade. Same agent-doable class as R0309; the watchlist entry already documents the phantom-history trap (true usable start 2017-02-14), so only the licence read gates ingest. || ATTEMPTED 2026-08-04: terms body unreachable from this container (JS shell to curl; connection reset to rendered fetch). Executable only from direct-egress box (VPS). Stays queued for the JP miner/VPS.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Licence READ done 2026-08-12: canonical ToS found at bitbank.cc/doc/tos (the 08-04 target /error/terms was the SPA error route \u2014 wrong-URL diagnosis, not egress). 86,728 chars extracted; Art.17 has NO data-reuse clause; Art.20 excludes public info; footer disclaimer is the one restrictive text (private-use-only over prices/data). Venue support docs positively invite programmatic public-data retrieval. Card 28 re-graded needs-legitimacy-review, decision owed 2026-08-19.",
+   "commit": "5361358",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T01:14:00.071266+00:00"
   },
   {
    "id": "R0311",
