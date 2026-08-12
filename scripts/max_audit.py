@@ -1658,8 +1658,18 @@ def check_bnb_funded(defects) -> None:
 def check_canonical_policy(defects) -> None:
     """The PRE-DEEPSEEK mandate's II-B/II-D, enforced where a defect actually pages someone.
 
-    Persisting docs/policy/PRE_DEEPSEEK_MASTER_MANDATE.md and hashing it into POLICY_STATE.json
-    is the PERSISTED half; the mandate's own II-H rules that markdown alone is not implementation.
+    GOVERNS BOTH CANONICAL MANDATES, and both are named here on purpose:
+      * docs/policy/PRE_DEEPSEEK_MASTER_MANDATE.md
+      * docs/policy/DEEPSEEK_SECOND_FLYWHEEL_MANDATE.md
+    resolve() verifies EVERY file listed in POLICY_STATE.json and its verdict is the CONJUNCTION,
+    so a hash drift in either one fails the whole resolution. The second mandate was already
+    covered by that conjunction from the day it landed, but it was not NAMED in any check, so
+    §36(2)'s artifact-governance fence correctly reported it as claimed by no law -- an artifact
+    nothing points at is one nobody notices going stale, which is the exact failure §36(2) exists
+    to catch. Naming it here is the claim, and the conjunction is the enforcement.
+
+    Persisting those files and hashing them into POLICY_STATE.json is the PERSISTED half; the
+    mandate's own II-H rules that markdown alone is not implementation.
     This check is the ENFORCED half: every audit run resolves the canonical policy and a
     HASH_MISMATCH -- the file edited without regenerating the state record -- or a missing policy
     becomes a named defect instead of a silent divergence. That is the FAIL VISIBLE the mandate

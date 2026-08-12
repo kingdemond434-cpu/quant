@@ -132,6 +132,15 @@ _ALLOWED = {
     # as this file must contain the pattern it greps for. NOT a config pinning an organ to
     # yesterday's models, which is the only thing this fence exists to stop.
     "tests/scripts/test_model_upgrade.py",
+    # The SEAT POLICY's own test (principal 2026-08-12, two chains). Same argument as the two
+    # entries above and worth stating rather than inheriting: this file asserts WHICH model heads
+    # each seat is declared to run -- opus for everything, fable pinned to the miner family -- so
+    # it must name them to pin them. That is the opposite of the drift this fence stops. A literal
+    # is dangerous in an ORGAN, where it silently keeps running yesterday's model after an
+    # upgrade; in a test it is the thing that makes an unattended upgrade detectable at all, and
+    # test_pinned_promotion_keeps_fable_at_the_miner_head exists precisely to catch the 03:00
+    # auto-upgrader reversing the seat split.
+    "tests/ops/test_model_seats.py",
 }
 
 
