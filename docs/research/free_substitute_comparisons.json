@@ -1,0 +1,206 @@
+{
+ "what": "XXIV-(6)/(7) structured free-substitute comparisons, one row per USE",
+ "generated_utc": "2026-08-12T01:49:42+00:00",
+ "law": "downstream economic information is a VETO dimension; UNKNOWN is never a pass; 'free' is judged on total economic cost, not purchase price",
+ "comparisons": [
+  {
+   "generated_utc": "2026-08-12T01:49:42+00:00",
+   "use": "unlock ANTICIPATION study",
+   "question": "does price drift ahead of a scheduled unlock?",
+   "paid_source": "defillama_emissions_paid",
+   "free_source": "own_circulating_supply_delta",
+   "dimensions": [
+    {
+     "dimension": "timestamp_fidelity",
+     "paid": "dated schedule rows with known_from",
+     "free": "daily supply observation",
+     "required": null,
+     "status": "NOT_REQUIRED",
+     "why": "this use does not depend on timestamp_fidelity; a difference here is not a weakness"
+    },
+    {
+     "dimension": "history",
+     "paid": 36,
+     "free": 36,
+     "required": 24,
+     "status": "MEETS",
+     "why": "free route provides 36, use requires 24"
+    },
+    {
+     "dimension": "latency",
+     "paid": "ahead of the event",
+     "free": "after the event",
+     "required": null,
+     "status": "NOT_REQUIRED",
+     "why": "this use does not depend on latency; a difference here is not a weakness"
+    },
+    {
+     "dimension": "accuracy",
+     "paid": "vendor-curated",
+     "free": "chain-derived",
+     "required": null,
+     "status": "NOT_REQUIRED",
+     "why": "this use does not depend on accuracy; a difference here is not a weakness"
+    },
+    {
+     "dimension": "missingness",
+     "paid": "per-protocol coverage gaps",
+     "free": "none for covered assets",
+     "required": null,
+     "status": "NOT_REQUIRED",
+     "why": "this use does not depend on missingness; a difference here is not a weakness"
+    },
+    {
+     "dimension": "rights",
+     "paid": "paid licence",
+     "free": "no licence",
+     "required": "no licence",
+     "status": "MEETS",
+     "why": "free route provides 'no licence', use requires 'no licence'"
+    },
+    {
+     "dimension": "reliability",
+     "paid": "vendor SLA",
+     "free": "own collector",
+     "required": null,
+     "status": "NOT_REQUIRED",
+     "why": "this use does not depend on reliability; a difference here is not a weakness"
+    },
+    {
+     "dimension": "downstream_economic_information",
+     "paid": "forward_looking",
+     "free": "contemporaneous",
+     "required": "forward_looking",
+     "status": "FAILS",
+     "why": "free route provides 'contemporaneous' but this use requires 'forward_looking'"
+    }
+   ],
+   "fails": [
+    "downstream_economic_information"
+   ],
+   "unknown": [],
+   "free_total_economic_cost": {
+    "source": "own_circulating_supply_delta",
+    "horizon_months": 12,
+    "cash_usd": 0.0,
+    "engineering_hours": 12.0,
+    "labour_usd": 600.0,
+    "total_usd": 600.0,
+    "why": "",
+    "note": ""
+   },
+   "paid_total_economic_cost": {
+    "source": "defillama_emissions_paid",
+    "horizon_months": 12,
+    "cash_usd": 3600.0,
+    "engineering_hours": 0.0,
+    "labour_usd": 0.0,
+    "total_usd": 3600.0,
+    "why": "",
+    "note": ""
+   },
+   "authority": "MEASUREMENT + RECOMMENDATION ONLY. Buying a licensed vendor feed is the principal's decision, never a collector's.",
+   "verdict": "NO_FREE_EQUIVALENT_YET",
+   "veto": "downstream_economic_information",
+   "why": "the free route answers a DIFFERENT economic question than the paid source (paid: what unlocks WILL happen, and when; free: what unlocks ALREADY happened, visible as a supply jump). Scoring well on the other seven dimensions cannot repair that -- booking it as REPLACED would retire a capability in exchange for a series that cannot answer the question asked. It may still be an honest FREE_PROXY for a DIFFERENT use; run that use through this comparison separately rather than averaging the two"
+  },
+  {
+   "generated_utc": "2026-08-12T01:49:42+00:00",
+   "use": "unlock REACTION study",
+   "question": "how does price behave after a realised unlock?",
+   "paid_source": "defillama_emissions_paid",
+   "free_source": "own_circulating_supply_delta",
+   "dimensions": [
+    {
+     "dimension": "timestamp_fidelity",
+     "paid": "dated schedule rows with known_from",
+     "free": "daily supply observation",
+     "required": null,
+     "status": "NOT_REQUIRED",
+     "why": "this use does not depend on timestamp_fidelity; a difference here is not a weakness"
+    },
+    {
+     "dimension": "history",
+     "paid": 36,
+     "free": 36,
+     "required": 24,
+     "status": "MEETS",
+     "why": "free route provides 36, use requires 24"
+    },
+    {
+     "dimension": "latency",
+     "paid": "ahead of the event",
+     "free": "after the event",
+     "required": null,
+     "status": "NOT_REQUIRED",
+     "why": "this use does not depend on latency; a difference here is not a weakness"
+    },
+    {
+     "dimension": "accuracy",
+     "paid": "vendor-curated",
+     "free": "chain-derived",
+     "required": null,
+     "status": "NOT_REQUIRED",
+     "why": "this use does not depend on accuracy; a difference here is not a weakness"
+    },
+    {
+     "dimension": "missingness",
+     "paid": "per-protocol coverage gaps",
+     "free": "none for covered assets",
+     "required": null,
+     "status": "NOT_REQUIRED",
+     "why": "this use does not depend on missingness; a difference here is not a weakness"
+    },
+    {
+     "dimension": "rights",
+     "paid": "paid licence",
+     "free": "no licence",
+     "required": "no licence",
+     "status": "MEETS",
+     "why": "free route provides 'no licence', use requires 'no licence'"
+    },
+    {
+     "dimension": "reliability",
+     "paid": "vendor SLA",
+     "free": "own collector",
+     "required": null,
+     "status": "NOT_REQUIRED",
+     "why": "this use does not depend on reliability; a difference here is not a weakness"
+    },
+    {
+     "dimension": "downstream_economic_information",
+     "paid": "forward_looking",
+     "free": "contemporaneous",
+     "required": "contemporaneous",
+     "status": "MEETS",
+     "why": "free route provides 'contemporaneous', use requires 'contemporaneous'"
+    }
+   ],
+   "fails": [],
+   "unknown": [],
+   "free_total_economic_cost": {
+    "source": "own_circulating_supply_delta",
+    "horizon_months": 12,
+    "cash_usd": 0.0,
+    "engineering_hours": 12.0,
+    "labour_usd": 600.0,
+    "total_usd": 600.0,
+    "why": "",
+    "note": ""
+   },
+   "paid_total_economic_cost": {
+    "source": "defillama_emissions_paid",
+    "horizon_months": 12,
+    "cash_usd": 3600.0,
+    "engineering_hours": 0.0,
+    "labour_usd": 0.0,
+    "total_usd": 3600.0,
+    "why": "",
+    "note": ""
+   },
+   "authority": "MEASUREMENT + RECOMMENDATION ONLY. Buying a licensed vendor feed is the principal's decision, never a collector's.",
+   "verdict": "FREE_EXACT_EQUIVALENT",
+   "why": "meets every stated requirement on every dimension, from a single upstream source, at lower total economic cost"
+  }
+ ]
+}
