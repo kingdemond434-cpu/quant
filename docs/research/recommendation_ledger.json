@@ -3945,10 +3945,20 @@
    "roi_bps": 0.0,
    "raised": "2026-08-01T14:34:05.553266+00:00",
    "status": "implemented",
-   "reason": "Built libs/research/vintage.py: (reference_period, vintage_date) append-only revision log + as_of(d) reader, generalising the unlock_calendar.supply_at shape. Wired into collect_fred_macro.py, which was overwriting AND rolling-window-truncating data/fred_macro.json every run -- destroying one FRED vintage per day permanently. 19 tests incl. the collector driven end to end with the network faked. M2SL stays excluded from the screen (history starts today, cannot be back-filled) but its reason changes from structural-forever to an accruing sample with an evidence-based release condition. Wayback RFB vintage harvest NOT done -- rowed separately.",
-   "commit": "2ec65be",
+   "reason": "Built libs/research/vintage.py (2ec65be): append-only (reference_period, vintage_date) revision log + as_of(d) reader, wired into collect_fred_macro.py which had been overwriting and rolling-window-truncating data/fred_macro.json every run, destroying one FRED vintage per day. VERIFIED-AND-REPAIRED (7c6e3b2): the landed reader resolved its log POSITIONALLY -- as_of/latest_known took the last matching row, revisions() the first -- which holds only while the file is chronological. That is true of the live collector and false of the module's entire premise: backfilling vintages recovered from the Wayback CDX index (23+ RFB publication dates), where a backfilled vintage lands at the END of a file describing a date near its START. On the module's own headline case (RFB March 2023, 15828 -> 22308) latest_known returned the superseded 15828 as current belief and revisions() reported the +40.9pct move as -29.0pct, SIGN FLIPPED -- and the sign is the finding, since systematically upward revisions are what make a current-vintage backtest optimistic rather than merely noisy. _resolve() now takes each period's highest vintage with file position as tie-break; record() dedups against what was known AT the vintage being written, or a backfill agreeing with today would be dropped and the period would read as unknowable when it demonstrably was known (L1.28a). 4 of 5 new tests fail against the previous reader. 132 tests green, ruff+mypy clean.",
+   "commit": "7c6e3b2",
    "due": null,
-   "disposed": "2026-08-12T11:45:50.949431+00:00"
+   "disposed": "2026-08-12T12:19:04.797651+00:00",
+   "corrections": [
+    {
+     "was": "implemented",
+     "was_reason": "Built libs/research/vintage.py: (reference_period, vintage_date) append-only revision log + as_of(d) reader, generalising the unlock_calendar.supply_at shape. Wired into collect_fred_macro.py, which was overwriting AND rolling-window-truncating data/fred_macro.json every run -- destroying one FRED vintage per day permanently. 19 tests incl. the collector driven end to end with the network faked. M2SL stays excluded from the screen (history starts today, cannot be back-filled) but its reason changes from structural-forever to an accruing sample with an evidence-based release condition. Wayback RFB vintage harvest NOT done -- rowed separately.",
+     "was_commit": "2ec65be",
+     "was_due": null,
+     "corrected": "2026-08-12T12:09:50.883471+00:00",
+     "why": "Built libs/research/vintage.py (2ec65be): append-only (reference_period, vintage_date) revision log + as_of(d) reader, wired into collect_fred_macro.py which was previously overwriting and rolling-window-truncating data/fred_macro.json every run, destroying one FRED vintage per day. VERIFIED-AND-REPAIRED 2026-08-12 (7c6e3b2): the landed reader resolved the log POSITIONALLY -- as_of/latest_known took the last matching row, revisions() the first -- which is correct only while the file is chronological. That is true of the live collector and false of this module's entire premise, backfilling old vintages recovered from the Wayback CDX index (23+ RFB publication dates), where a backfilled vintage lands at the end of a file describing a date near its start. On the module's own headline case (RFB March 2023, 15828 -> 22308) latest_known returned the superseded 15828 as current belief and revisions() reported the +40.9 pct move as -29.0 pct, SIGN FLIPPED -- and the sign is the finding, since upward revisions are what make a current-vintage backtest optimistic rather than merely noisy. _resolve() now selects each period's highest vintage with file position as tie-break, and record() dedups against what was known AT the vintage written rather than the latest. 4 of 5 new tests fail against the previous reader; 132 green, ruff+mypy clean."
+    }
+   ]
   },
   {
    "id": "R0317",
@@ -3957,10 +3967,20 @@
    "roi_bps": 0.0,
    "raised": "2026-08-01T14:34:05.650563+00:00",
    "status": "implemented",
-   "reason": "Landed libs/data/xls_reader.py (stdlib OLE2+BIFF8, zero deps) + scripts/read_xls.py as the reachable consumer for research-frozen seats, + tests/data/xls_builder.py fixture writer. 80 tests, ruff+mypy clean, registered in _GOVERNED (69/69 build standard) and mapped to L1.11a. The inherited draft had never run: fixed a KeyError that made every call fail, the SST CONTINUE flag-byte bug the module existed to prevent, and a silent 1-3 byte truncation drop.",
-   "commit": "0a2f478",
+   "reason": "Landed libs/data/xls_reader.py (stdlib OLE2+BIFF8, zero deps) + scripts/read_xls.py as the reachable consumer for research-frozen seats, + tests/data/xls_builder.py fixture writer (0a2f478). VERIFIED-AND-REPAIRED (d189709): adversarial review found SIX silent-wrong-output defects the landing missed. The two headline bugs OP-046 names (sheet merging, SST CONTINUE) were genuinely fixed and survived every attempt to break them, including inputs the writer cannot produce. The rest got past: (1) _unicode_string ignored fRichSt/fExtSt, whose cRun and cbExtRst fields sit BETWEEN the flag byte and the characters, so a LABEL of Total geral returned a shortened binary-prefixed string raising nothing, while the SST decoder 100 lines away handled it correctly -- an internal inconsistency, not a judgement call; (2) boundsheets.sort() ordered the RETURNED list by stream offset, but Excel tab order is BOUNDSHEET declaration order, so --sheet 0 returned a real sheet of real numbers that was not the one Excel shows first; (3) read_mini had no length check -- sweeping the fixture, 40 of 599 truncations returned a short grid SILENTLY, and the in-data conservation identities this module prescribes cannot catch it because surviving rows still balance perfectly; (4) no FILEPASS check, so an encrypted workbook decoded as ciphertext-looking numbers with the sheet name intact; (5) one junk cell at column 65535 made Sheet.rows() densify to billions of slots; (6) a LABELSST past the table stored None, holing a grid from a module contracted never to return a partial one. Fuzzing 4000 seeded corrupt files found a seventh: 1<<u16 on a corrupt exponent builds a thousands-of-digits integer and the refusal raised ValueError while FORMATTING it into its own error message. THE FIXTURE COULD NOT SEE MOST OF IT, which is the more useful finding: the SST-split control asserted only len(chunks)>1 and at cap 97 splits fall entirely BETWEEN strings (0 mid-string cuts), the fixture strings were all latin-1 so the per-segment width claim was never exercised, the wide-string test used a cap the 17-byte table never reached (1 chunk, no CONTINUE), and the writer emitted no LABEL at all -- the set holding the confirmed decoder bug. 13 new tests, 8 fail against the previous reader; 151 green, ruff+mypy clean.",
+   "commit": "d189709",
    "due": null,
-   "disposed": "2026-08-12T11:18:41.090174+00:00"
+   "disposed": "2026-08-12T12:32:07.884988+00:00",
+   "corrections": [
+    {
+     "was": "implemented",
+     "was_reason": "Landed libs/data/xls_reader.py (stdlib OLE2+BIFF8, zero deps) + scripts/read_xls.py as the reachable consumer for research-frozen seats, + tests/data/xls_builder.py fixture writer. 80 tests, ruff+mypy clean, registered in _GOVERNED (69/69 build standard) and mapped to L1.11a. The inherited draft had never run: fixed a KeyError that made every call fail, the SST CONTINUE flag-byte bug the module existed to prevent, and a silent 1-3 byte truncation drop.",
+     "was_commit": "0a2f478",
+     "was_due": null,
+     "corrected": "2026-08-12T12:31:49.995364+00:00",
+     "why": "Superseded by a verification pass -- re-disposed below with the six defects found in the landed reader."
+    }
+   ]
   },
   {
    "id": "R0318",
@@ -3969,10 +3989,20 @@
    "roi_bps": 0.0,
    "raised": "2026-08-01T14:34:05.742662+00:00",
    "status": "implemented",
-   "reason": "Mechanized: libs/research/conservation.py (identities + the three refusals) landed in 0a2f478, and b9715f5 adds the enforcement the row asked for -- scripts/check_extractor_invariants.py discovers hand-rolled extractors from source (population 32, declared 1, coverage 3%) and reports PARTIAL as a ratchet. Detector calibrated against an independent 15-module census (14/15) after the first run was wrong in both directions; both false-positive classes pinned as tests. Registered in _GOVERNED (70/70) and mapped to L1.28a.",
-   "commit": "b9715f5",
+   "reason": "Mechanized: libs/research/conservation.py (identities plus the three refusals) and libs/research/extractor_invariants.py landed in 0a2f478/b9715f5, with scripts/check_extractor_invariants.py discovering hand-rolled extractors from source by AST walk (population 32 discovered, not listed) rather than carrying the hardcoded list that would BE the defect it detects. VERIFIED-AND-REPAIRED (307851f): the fence had ZERO INVOCATION SITES. Built, tested, registered in _GOVERNED, mapped to a law -- and run by nothing: not run_law_gate, not run_ci, not max_audit, not cron, not the pre-push hook. Its scheduler exemption argued it reads SOURCE exactly like check_sizing_derivation and check_return_targeting so the commit gate is the information-arrival ceiling, and BOTH named peers were already in that gate while this one was not: the exemption cited a gate that never invoked it. Worse, the L1.49 instrument reported it healthy -- data/enforcement_execution.json carried verdict EXECUTED with evidence invoked by build_enforcement_matrix.py, where that invocation is a string inside a module-level dict literal in a file containing no subprocess, import_module or exec. Crediting a mention as a run, which is the exact error this submission own library refuses at extractor_invariants.py:201. Now in run_law_gate._LAW_FENCES beside the two peers its exemption named: 10 fences to 11, gate PASS. Two further defects fixed: fence_exit received scanned=len(discover(_ROOT)), a SECOND full AST walk, so the fence certified a verdict from scan A with a denominator from scan B and paid 54s instead of 20.8s; and the ratchet was a word in a docstring -- PARTIAL exits 0 by design, which made 0/32 and 1/32 the identical verdict AND exit code, so every declaration could be deleted and the board still read clean. apply_floor() adds a high-water mark on the DECLARED COUNT rather than the percentage, because the population is discovered and grows whenever anyone writes a parser, so a percentage floor would fall on its own with no declaration lost. Also cleaned 94 stray test rows the suite had written into the live L1.57 registry. 54 tests green, ruff+mypy clean, law gate 11/11 PASS.",
+   "commit": "307851f",
    "due": null,
-   "disposed": "2026-08-12T11:32:52.285977+00:00"
+   "disposed": "2026-08-12T12:32:29.790575+00:00",
+   "corrections": [
+    {
+     "was": "implemented",
+     "was_reason": "Mechanized: libs/research/conservation.py (identities + the three refusals) landed in 0a2f478, and b9715f5 adds the enforcement the row asked for -- scripts/check_extractor_invariants.py discovers hand-rolled extractors from source (population 32, declared 1, coverage 3%) and reports PARTIAL as a ratchet. Detector calibrated against an independent 15-module census (14/15) after the first run was wrong in both directions; both false-positive classes pinned as tests. Registered in _GOVERNED (70/70) and mapped to L1.28a.",
+     "was_commit": "b9715f5",
+     "was_due": null,
+     "corrected": "2026-08-12T12:32:26.499785+00:00",
+     "why": "Superseded by a verification pass -- re-disposed below with the wiring defect."
+    }
+   ]
   },
   {
    "id": "R0319",
@@ -5819,6 +5849,42 @@
    "summary": "HARVEST THE RECOVERABLE RFB VINTAGES FROM THE WAYBACK CDX. R0316 built the point-in-time store (libs/research/vintage.py) and wired FRED capture, but the store's history starts 2026-08-12 and cannot be back-filled -- so every axis needing a test window that predates today is still blocked on SAMPLE, not on machinery. The RFB Brazil crypto panel has 23+ publication dates recoverable from the Wayback CDX and a live-404 vintage was already recovered intact via the web.archive.org/<ts>id_/ raw-replay modifier (OP-047). That is a one-off backfill worth years of point-in-time depth: pair the CDX harvest with libs.data.xls_reader (the files are legacy .xls, landed in R0317) and libs.research.conservation (PF+PJ=Subtotal, the identity that validated the original parse), then record each recovered publication under its OWN vintage date, never today's. ALSO IN SCOPE: audit which other collectors overwrite a revised source the way collect_fred_macro did -- the FRED defect was found by scoping R0316, not by any fence, so the same shape is likely live elsewhere.",
    "roi_bps": 4.0,
    "raised": "2026-08-12T11:46:07.822299+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0473",
+   "source": "owed-work batch3 verification 2026-08-12",
+   "summary": "check_enforcement_execution.py CREDITS A MENTION AS A RUN, so the L1.43/L1.49 reachability instrument has a false-GREEN mode. Measured: data/enforcement_execution.json records scripts/check_extractor_invariants.py as verdict EXECUTED with evidence 'invoked by scripts/build_enforcement_matrix.py', while that file invokes nothing -- the citation is a string inside a module-level dict literal mapping law ids to citation paths, and grep over build_enforcement_matrix.py finds no subprocess, Popen, import_module or exec anywhere. The fence had genuinely zero invocation sites at the time. This is the same error libs/research/extractor_invariants.py:201 explicitly refuses ('a module that only MENTIONS the conservation helper has not used it, and crediting prose as validation would let the fence be satisfied by writing about the fix'), committed by the desk's own reachability checker. Scope: check_enforcement_execution reports EXECUTED=151, and any of those 151 resting on a citation-in-a-literal is equally unproven -- the count is the thing to audit first, since a reachability instrument that can be satisfied by a string literal cannot cash any of its claims. Fix direction: resolve an invocation by walking the import/subprocess graph from an entry point (the check_gate_reachability.py idiom, declaration-site not tally), never by substring presence.",
+   "roi_bps": null,
+   "raised": "2026-08-12T12:32:42.275842+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0474",
+   "source": "owed-work batch3 verification 2026-08-12",
+   "summary": "THE TEST SUITE WRITES TO THE LIVE L1.57 GOVERNANCE REGISTRY. libs/ops/fence_exit.fence_exit() appends a row to data/denominator_contracts.jsonl via libs.ops.denominator.record() whenever scanned= is passed, and it exposes no way to redirect that write. Measured 2026-08-12: 94 of 670 rows (14 pct) in the live registry were test artifacts under the synthetic fence name 't'. Cleaned to 576 and the R0318 test redirected via monkeypatch, but the PRE-EXISTING writers remain: tests/governance/test_denominators.py calls fence_exit with scanned= at lines 38, 39, 51, 56, 57, 70, 71 (fence unset, so denominator.caller_name() files them under the TEST FUNCTION's name, which is worse than 't' because those look like real fences) and at 173, 174 with fence='t'. This is the same class as the L1.29 incident where the suite wrote to the live forecast store. Two candidate fixes: an autouse conftest fixture redirecting denominator._root() for the whole suite (broad, one place, cannot be forgotten by a new test), or threading root= through fence_exit (explicit, but every future caller must remember). Prefer the fixture -- a governance store that any test can silently append to will be polluted again by the next fence that ships.",
+   "roi_bps": null,
+   "raised": "2026-08-12T12:32:57.540274+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0475",
+   "source": "owed-work batch3 verification 2026-08-12",
+   "summary": "THE .xls READER CANNOT OPEN A FILE ABOVE ~7.1 MB, AND NO TEST CAN BUILD ONE -- which is exactly the size class R0317 targets (multi-year government/regulator panels). libs/data/xls_reader.py:184-190 follows the DIFAT chain when a file needs more than the 109 FAT-sector pointers the OLE2 header holds; at 512-byte sectors that ceiling is ~7.1 MB. tests/data/xls_builder.py:300-301 always writes n_difat=0 and uses only the 109 header slots, so build_xls(pad_to=7_500_000) yields n_fat=116 against 109 available and the READER REFUSES IT -- the DIFAT-chain branch is unreachable by any fixture, i.e. a decoder path with zero coverage guarding the exact input the module exists for. Two other builder gaps in the same family: the 4096-byte sector path is never built (SECTOR is hardcoded 512), and encode_rk can never emit RK flag 0x01 (double-divided-by-100) because the branch order routes every value to 0x00/0x02/0x03, so test_rk_encodings_round_trip's 'covers all RK branches' is 3 of 4 -- the 4th was verified correct by hand but is untested. Fix: teach build_ole2 to emit DIFAT sectors and parametrise the sector size, then assert a >7.1MB workbook round-trips. Until then the reader's fitness for its stated target file class is UNMEASURED, not known-good.",
+   "roi_bps": null,
+   "raised": "2026-08-12T12:33:11.647937+00:00",
    "status": "open",
    "reason": null,
    "commit": null,
