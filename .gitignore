@@ -72,6 +72,15 @@ data/*
 # the rolling-retention alarm the file exists to raise can never fire -- a detector that cannot
 # fire is the class L0070 is named for. The seeded BTCUSDT prior carries its own provenance.
 !data/bybit_archive_retention.json
+# JP miner 2026-08-12. Disposition evidence for the premium-index axis: how much information the
+# SETTLED funding print destroys (41.6% of owned 8h windows sit on a censoring constant; 68.8% of
+# the live 812-symbol cross-section sits on one of three). Tracked because the axis card cites it
+# as the reason the tie-break is worth building, and an untracked citation is an unverifiable one.
+!data/jp_funding_clamp_census.json
+# JP miner 2026-08-12. The マケデコ (market-api) calendar ground map, 74 entries 2023-2025. Tracked
+# for the same reason as the botter calendar: the coverage row claims this ground is MAPPED, and an
+# untracked map makes that claim unverifiable and re-scannable by the next seat.
+!data/jp_makedeco_advent_calendar.jsonl
 web/*
 !web/index.html
 reports/

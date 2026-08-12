@@ -1160,8 +1160,65 @@ undocumented. The desk's own recorder must stay primary; btc126 is backfill, not
   both cells count).
 - STATUS: catalogued + routed; Stage-A comparison NOT run this run (bounded-scope: this run's
   screen budget went to the 24h-lag contrarian cells, both logged SCREEN-WEAK; Binance 429 ban
-  expired 08-02 so pulls must be gentle). [§33: deferred(2026-08-11) — blocker: needs a
-  polite multi-day PI pull + carry-family owner's window choice; tier:2]
+  expired 08-02 so pulls must be gentle). [SUPERSEDED 2026-08-12 — see disposition below]
+
+**DISPOSITION 2026-08-12 (JP miner, matured deferral worked on its due date+1). The 08-04
+mechanism prior is CONFIRMED and the prize is MEASURED. `[§33: screened -> data/jp_funding_clamp_census.json]`**
+
+- **THE CLAMP IS VERIFIED, NOT ASSUMED (positive control).** `F = P + clamp(I − P, ±0.05%)`, so
+  `P ∈ [I−0.05%, I+0.05%]` collapses to `F = I` EXACTLY. Reconstructed the settled rate from 1m
+  `premiumIndexKlines` averaged over the preceding window: **BTCUSDT 49/60 and DOGEUSDT 46/60**
+  windows match to 2e-5. The residual misses are the averaging method (Binance uses an
+  impact/time-weighted average; a plain mean of 1m PI closes is an approximation) — the model is
+  verified, the misses are explained.
+- **ALIGNMENT, DECLARED (L1.46):** `fundingTime` = PI-kline open **+1 ms**, so the rate settled at
+  T is computed from the window **[T−8h, T)** — it belongs to the PRECEDING bar. Joining it to the
+  bar that OPENS at T is a one-window look-ahead. (08-04 flagged OKX/BitMEX pay one period late;
+  this is the Binance-side statement, now measured rather than asserted.)
+- **HOW MUCH INFORMATION THE PRINT DESTROYS — owned panel** (SCANNED denominator: **10 symbols /
+  68,893 8h windows / 2019-09-08→2026-06-20**; 10 is a small denominator and is declared, L1.57):
+  **35.6% of settled prints are exactly 0.0001 and 6.1% exactly 0.0 → 41.6% carry ZERO magnitude
+  information.** The censoring is INFORMATIVE, not random: the dead band *is* the low-premium
+  region, so precisely the small-premium observations are collapsed onto a constant. Any
+  regression or IC using settled FR as a continuous regressor is fitting a variable that is FLAT
+  across its entire middle range.
+- **AND IT DECAYS — the finding that changes what this axis is FOR.** Share exactly 0.0001 by year:
+  **2019 68.8% → 2020 43.4% → 2021 41.1% → 2022 31.3% → 2023 43.9% → 2024 39.6% → 2025 26.1% →
+  2026 10.7%.** So the PI upgrade is worth most to HISTORICAL work (up to two-thirds of windows
+  censored) and least to live signalling today (~11%). **This is a backtest-integrity upgrade
+  first, a live-signal upgrade second** — the opposite of how the 08-04 card framed it.
+- **LIVE WHOLE-UNIVERSE CROSS-SECTION (one instant, 812 USDT-M perps, BTCDOM excluded):**
+  **559/812 = 68.8% sit on one of THREE tie constants** — 0.00005 (n=270, of which 268 are 4h
+  interval), 0.00000 (n=234, 227 8h), 0.00010 (n=56, all 8h). Only **255 distinct funding values
+  exist across 812 symbols.**
+- **THE TIE-BREAK TEST — why this is worth doing at all.** Inside the 56-name group ALL printing
+  the identical `0.00010000`, the mark-vs-index premium still spans **−45.4 bps to +29.5 bps (74.9
+  bps of dispersion)**. The tie is an artifact of the clamp, not an economic equality, and PI
+  orders it. **This is the root cause of a defect the desk has already PAID for:** desk memory
+  records "42 perps sat exactly at the 1bp floor; 'hold while in top-60' made membership random →
+  159 closes in week one, fees −$60 against +$39 of funding". Those names were not at a *floor* —
+  they were **censored at the dead-band constant**, and the fix was applied to the hysteresis
+  rather than to the ranking variable. CAVEAT, stated because it decides deployability: the
+  dispersion is concentrated in THIN names (ONE, MTL, BNT, BAND, GTC) where this desk has been
+  burned on fees and capacity — the tie-break is real information, **not automatically tradeable**.
+- **BONUS FINDING, and it corroborates L1.47 with a COUNT.** L1.47 warns that `held / 8.0`
+  under-counts because "Binance sets 4h for many high-funding alts". Measured: **426 of 812
+  (52.4%) are on a 4-hour interval and 2 on 1-hour — only 385 (47.4%) are actually on the 8h the
+  arithmetic assumes.** "Many" is the MAJORITY. 4h names also carry more funding per day (median
+  +0.000300/day vs +0.000000/day for 8h names), confirming the "4h is set for the hot alts"
+  direction. Cross-sectional ranking on the RAW print mixes units, but honestly: the effect on
+  top-N selection is **modest** (Spearman 0.959 vs a per-day rank; top-40 overlap 37/40) — the
+  large error is in the ACCRUAL, which is L1.47's ground, not the ranking.
+- **EV + novelty, run BEFORE any further screen (fixing 08-04's recorded ordering slip):**
+  premium-index tie-break on the censored cross-section → **EV 0.0193 QUEUE** (p_survive 0.48,
+  breadth_f 1.673, tags funding_family+new_orthogonal_data), **novelty 0.726, not redundant**
+  (nearest `grave:cross-exchange funding dispersion`, sim 0.274, n=231 priors).
+- **NOT PROMOTED, AND THE SCREEN IS NOT DONE.** This run measured the PRIZE (how much information
+  the print destroys) — it did NOT run the construction-vs-construction IC comparison, because
+  that needs a multi-day polite PI backfill the H8 lake does not hold. Two-stage law: zero
+  promotion authority here regardless. **Next owner's job:** backfill 8h PI for the 10-symbol H8
+  cohort, then screen PI-construction vs FR-construction on the SAME windows — both cells are
+  DSR-counted trials (§26 construction logging).
 - ALIGNMENT NOTE for whoever runs it: OKX/BitMEX apply FR one period LATE; Binance immediate —
   declare per venue before any join (§26(4)).
 
@@ -1806,10 +1863,20 @@ first-party, §13-clean (public documented venue APIs, no login, no paywall, no 
   limits observed and respected throughout (the 429s in this run were backed off, never evaded).
 - **Routed:** `data/upbit_trade_announcements.jsonl`, `data/upbit_announcements.jsonl`,
   `data/data_universe_map.json` (4 entries), R0298–R0301, **R0303 (dated 08-03)**.
-
----
-
-### 27. GMO Coin free tick-trade archive (JP venue, keyless, 2018-09-05 →) — grade: **verified-technically-clean, LICENCE READ 2026-08-12 — needs-legitimacy-review: the customer 基本約款 Art. 14(15) requires company consent for off-service use of service-obtained information; whether the anonymous keyless archive is inside 本サービス scope is a policy decision, not a technical read. Ingest stays gated.** [§33: deferred(2026-08-19) tier:3]
+- **ERA MECHANISM PRIOR FOR THE OWED SCREEN (KR miner s2, 2026-08-12 — Ppomppu mania-window
+  primary text, archived `data/ppomppu_kr_era_threads.jsonl`):** the 2017-18 era folk record
+  states the rail-state→premium mechanism as RULES, not speculation: (1) "지갑 없이 신규상장시
+  타거래소보다 매우 높은 시세" — a deposit-closed listing forms a fenced (가두리) captive market
+  with structurally elevated venue price (live era example: BTG on Coinone at 66 vs global);
+  (2) per-coin premium dispersion ∝ transfer friction (ERC-20 tokens tight, congested chains
+  wide — same-day tape EOS 9-25% vs XRP 34%, Jan 2018); (3) venue↔bank binding makes rail
+  throttles VENUE-level basis events (real-name era: Upbit-IBK, Bithumb-NH; beehive-kill forced
+  selling = frozen-leg discounts). So the screen this card owes should key on **rail-state
+  TRANSITIONS per asset** (deposit close/reopen), not on flag LEVELS — the levels are the fence
+  standing, the transitions are the fence going up or coming down, and the era record says the
+  price action lives at the transitions. Pre-registered design + falsifier + EV gate (0.0061
+  QUEUE, novelty 0.772) live on `prospector_watchlist.md` card `kr_rail_state_transition_global_leg`
+  (2026-08-12); the screen obligation stays HERE, one owner, now with its design. (JP venue, keyless, 2018-09-05 →) — grade: **verified-technically-clean, LICENCE READ 2026-08-12 — needs-legitimacy-review: the customer 基本約款 Art. 14(15) requires company consent for off-service use of service-obtained information; whether the anonymous keyless archive is inside 本サービス scope is a policy decision, not a technical read. Ingest stays gated.** [§33: deferred(2026-08-19) tier:3]
 _Found by JP frontier miner session 1, 2026-08-01, as the licensed replacement for the §13-restricted bitFlyer axis._
 
 > **§33 DISPOSITION 2026-08-12 — THE OWED READ IS DONE (R0309). LICENCE UNREAD → LICENCE READ.**
@@ -2220,3 +2287,30 @@ as underpowered, with the enabling change named above.**
 > **SCREEN-ON-DISCOVERY (run this session, at the only stage runnable without the data):** mechanism `coinm_usdtm_basis_convexity_rv` EV-gated honestly → **REJECT 0.0009** (p_survive 0.105, est_sharpe 0.5, breadth 5, orth 0.5, 12h/1.2×, tags funding_family+crowded_known; conservative narrow-tag reading also reported: 0.0002 — both logged, neither rescues). Mechanism → prospector_watchlist memory with a MEASUREMENT promotion trigger; the AXIS is the deliverable today: free, home-venue, feeds the screen the moment the panel exists. Full-history depth unknown until pulled (fapi-era caveat: gentle pulls, 429 discipline per entry 95).
 > **SOURCE:** NP thread 161162 (2012-06-20→07-04, Wayback 20121015082245, posters MrKlugh/gill/sas) + first-party Binance API docs/probe. **DERIVES-FROM:** the 161162 thread cites nothing (checked — 3 posts, era lore + one risk.net link on reverse cliquets); the convexity-adjustment mechanism is textbook (independently derivable); the crypto translation is this desk's. Universe map: `98-binance-coinm-dapi`. Recommendation row filed this run (screen construction, engineering-enabled seat).
 > **SECOND, INDEPENDENT mechanism prior (CN frontier miner 2026-08-12, era-archaeology — genuine cross-ecosystem convergence, queue place not lower bar):** the funding-differential panel has a DEMAND-side clientele the convexity story doesn't name: **synthetic-dollar holders**. 8btc thread-172717 (2018-05-26, BitMEX board, Wayback 20180902020842id_) shows CN practitioners deriving in public that a 1x coin-margined inverse short = USD account with no liquidation boundary (OP ran the testnet experiment: liq price "一亿", ≈+∞) and CHOOSING it over USDT — "比换成USDT更稳定更省手续费…做空的资金费率会更划算" (more stable than USDT, cheaper fees, and the short side's funding pays). Capital-control-barriered traders using inverse shorts as their dollar account = structural short-side flow on COIN-M ⇒ **persistent COIN-M-vs-USDT-M funding skew, widening when fiat rails are barriered and when stablecoin trust degrades**. Falsifier the era text supplies: the clientele needs coin-native holders barred from clean USD rails — if the skew doesn't co-move with rail-barrier proxies (stablecoin discount episodes, regional rail closures), the prior is wrong. SOURCE: 8btc thread-172717. DERIVES-FROM: NONE (checked — forum-native reasoning + testnet experiment; predates nothing it cites, independent of NP 161162's 1990s IR lore). Era corroboration for the linear-vs-inverse convexity confusion: the thread's first reply applies linear logic ("coin doubles ⇒ ruin") and is corrected by experiment — the exact confusion the convexity screen prices.
+
+## 2026-08-12 — JP miner: マケデコ (market-api) calendar opened; one axis worth a decision
+
+### 29. J-Quants API (JPX's own free JP-equity data, incl. 売買内訳データ = flow by investor category) — grade: **catalogued-unverified, NOT screened** [§33: deferred(2026-08-19) tier:3]
+- **WHAT + HOW FOUND.** Surfaced by opening the マケデコ Advent Calendar (new ground this run,
+  `qiita.com/advent-calendar/{2023,2024,2025}/market-api`, 74 entries mapped to
+  `data/jp_makedeco_advent_calendar.jsonl`). J-Quants is **Japan Exchange Group's own** free API;
+  four separate calendar entries are practitioner writeups of it, including a **V2 release**
+  (2025 s2d22), an **index OHLC endpoint** (2023 s1d20) and — the interesting one —
+  **売買内訳データ, trading value broken down BY INVESTOR CATEGORY** (2023 s1d23).
+- **WHY THE FLOW TABLE IS THE ONLY PART THAT MATTERS HERE.** Per the translate-don't-copy duty,
+  `commitment of traders → OI by venue + long/short account ratio`. JP equity flow-by-investor-type
+  (foreign / individual / institution / prop) is a **positioning panel published by the exchange
+  itself**, which is the structurally-unbuyable venue-truth class the moat doctrine prefers. That
+  is a real orthogonal axis, not another price feed.
+- **BUT BE HONEST ABOUT PRIORITY AND ABOUT WHAT I DID NOT DO.** This desk trades **Binance crypto**;
+  JP cash equities are the lowest rung of the standing source priority. The axis is **CATALOGUED,
+  NOT VERIFIED**: I did not read the licence, did not hit the endpoint, did not check the
+  registration wall (J-Quants has free and paid tiers, and the free tier is understood to carry a
+  **12-week data delay** — unconfirmed by me, so it stays a claim). No screen is owed on an axis
+  whose licence has not been read.
+- **§13 STATUS: UNREAD.** Decision owed 2026-08-19 alongside the other JP venue items.
+- **THE TRANSFERABLE QUESTION IT RAISES (worth more than the axis itself):** does Binance publish
+  any equivalent *category* breakdown of flow? The desk already collects the long/short **account**
+  ratio and top-trader ratios — which are the closest existing analogue — so the honest prior is
+  that this axis is **already partly held** and its marginal value is the JP-equity cross-section,
+  which the desk does not trade. Recorded so the next reader does not re-discover it as novel.

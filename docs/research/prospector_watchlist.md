@@ -433,3 +433,122 @@ verified-live keyless** → data_axis_watchlist card 31 + universe map 98-binanc
   crowded-short funding print IS that constraint priced).
 
 **WATCHLIST (max 5): unchanged — 4/5 slots used; this entry holds no slot.**
+
+## SESSION SUMMARY — 2026-08-12 session 2-on-branch (KR frontier miner)
+
+### kr_rail_state_transition_global_leg — NEW CARD (slot 5) — EV 0.0061 QUEUE, novelty 0.772 [§33: wired -> data/ppomppu_kr_era_threads.jsonl]
+- **Source + provenance:** Ppomppu 가상화폐 era corpus, mania+ban window threads mined to full
+  comment layer this session (era-seek per OP-021 KR; archive data/ppomppu_kr_era_threads.jsonl,
+  era map + 2,130-row title tape data/ppomppu_bitcoin_era_map.json). Load-bearing primary posts:
+  22072 (2017-12-24: "지갑 없이 신규상장시 타거래소보다 매우 높은 시세" — deposit-closed listing
+  = captive-market premium, stated as a RULE with live example BTG-Coinone 66; 보따리상 supply
+  pipe throttled by chain congestion), 55179 (2018-01-12: ERC-20 tokens arb tight — per-coin
+  premium ∝ transfer friction), 76535/76756/76863 (2018-01-29/30: venue↔bank binding + beehive
+  kill → venue-level rail dispersion, frozen-leg discounts). DERIVES-FROM: NONE for the mechanism
+  comments (checked — folk-original; news threads quote Yonhap). CONVERGENCE (genuinely
+  independent, three instances): era folk rule (2017-12) + modern Cocoa per-coin premium
+  route-optimizer (velog, s5 2026-08-04) + CN 7th-instance venue-credit share (8btc 2013) —
+  different eras, languages, authors; none derives from another.
+- **Mechanism:** per-coin deposit/withdrawal suspensions and resumptions on Upbit/Bithumb create
+  and release fenced-market (가두리) venue premium dispersion. KR retail is KRW-rail-captive; when
+  a coin's deposit rail closes, KR demand cannot import supply (보따리상 pipe cut) → venue-local
+  premium builds; on rail REOPEN the premium converges through the first deposits. The desk
+  cannot touch the KR leg (no KRW rail — the membrane cuts against us too) — the tradeable
+  transmission is the GLOBAL leg: KR-dominated alts' Binance price/flow around KR rail-state
+  transitions (KR venues are the marginal bid in many alt books; a rail state change gates that
+  bid's transmission). The regressor is the venue's OWN label, structurally unbuyable (card #26).
+- **EV gate (honest, run this session, libs.research.alpha_economics):** est_sharpe 0.5, breadth
+  30 (rail-transition events/yr, batch-clustered counted conservatively), capacity $100k (Binance
+  leg, mid-cap alts), orth 0.8 (no desk signal reads per-coin/per-venue KR rail state; kimchi =
+  aggregate BTC premium only), 16h effort (announcement-category collector extension + event
+  study), 1.2× maint, tags new_orthogonal_data → **EV 0.0061 ≥ 0.002 QUEUE** (p_survive 0.24,
+  breadth_f 1.225). Novelty vs 231 graveyard priors: **0.772, not redundant** (nearest:
+  illiquidity_premium 0.228). Capacity runway: event-shaped overlay on liquid Binance perps —
+  no runway conflict; REACHES-LIVE class if it survives.
+- **Pre-registration owed BEFORE any screen (two-stage law, zero promotion authority here):**
+  event = per-asset rail-state TRANSITION on a KR big-2 venue (deposit close / deposit reopen —
+  from the announcement archive's suspension notices + the live market/all + assetsstatus flags
+  now accruing since 08-01); direction = close→global-leg underperformance of KR-dominated alts
+  (KR bid transmission cut), reopen→recovery; window = announcement t0 to t+3d; target =
+  cross-sectional relative return vs Binance alt universe (asset-selection signal per the
+  target/horizon duty). BOTH event_study exit rules = two trials, logged. FALSIFIER: if
+  close-events show no cross-sectional deficit vs matched controls (or the sign is random across
+  the 8.8y announcement archive), the transmission is dead and the card dies — the KR-internal
+  premium may be real while the global transmission is nil, and only the transmission is
+  tradeable here. THE SCREEN IS CARD #26's OWED SCREEN — same owner, now with a design; this
+  card adds no second screen obligation (§33: this find is WIRED as era evidence + design;
+  the screen disposition lives on card #26, unchanged owner).
+- **Strongest spurious argument (written first):** KR-dominated alts are SELECTED FOR
+  manipulation-heavy books (the era's own bots were part venue-manufactured volume, and Upbit
+  wash-volume was prosecuted) — a measured "KR bid transmission" may be the echo of paint, not
+  flow; the control set must match on volume-quality, and any survivor owes a mechanism check
+  against per-venue REAL-flow proxies before it is believed.
+
+**WATCHLIST (max 5): POC retest (hold), SFD cadence probe (hold), dvol_futures_basis_carry
+(hold), coinm_usdtm_basis_convexity_rv (hold), kr_rail_state_transition_global_leg (NEW). 5/5
+slots used.**
+
+## SESSION SUMMARY — 2026-08-12 (JP frontier miner)
+
+### jp_funding_settlement_sandwich — EV-REJECTED as published, logged as watchlist memory (not a card); the OBSERVATION is routed instead
+- **Source + provenance (mandatory fields).** SOURCE: `qiita.com/lud-botter/items/6b4412fe2c7b3a9578a5`
+  — 「金利をサンドイッチするBotのアイデア」, 仮想通貨botter Advent Calendar 2023 day 12, posted
+  2023-12-11, updated 2024-03-10, 34 likes, **0 comments** (checked, not assumed — no reply layer
+  to mine). Host qiita.com is the OPEN half of the JP corpus (note.com/zenn.dev closed this run,
+  OP-052). **DERIVES-FROM: NONE (checked)** — the post cites no paper, repo or thread; it is a
+  first-person account triggered by watching the 2023-08/09 alt-pump wave. This matters: it makes
+  the agreement with the desk's own L1.47 finding **genuine independent convergence, not an echo**
+  (the desk's usual false-convergence trap, GAP #85).
+- **Mechanism as published.** On perps carrying large NEGATIVE funding (< −1% per settlement,
+  common on 2023 alt pumps), price drops sharply AT the settlement stamp — the author reports the
+  same down-candle at 1m, 1s AND ms resolution. Trade: hold a LONG for ~10 ms spanning the stamp,
+  collect the payment, eat only the tiny price drop. Win iff |funding| > drop over the hold. WHO IS
+  FORCED: the funding-harvesting long cohort, synchronised by the VENUE'S CLOCK — they are paid at
+  a common instant and exit together, so the payment itself triggers the move.
+- **EV gate (honest, run this session):** est_sharpe 0.6, breadth 30, capacity $25k, orth 0.85,
+  60h effort, 2.5× maintenance, tags funding_family + high_turnover_no_maker → **EV 0.0006 <
+  0.002 → REJECT.** Novelty 0.797 (not redundant, nearest `grave:cross-exchange funding
+  dispersion` 0.203) — so it is rejected on ECONOMICS, not as re-tested ground.
+- **WHY IT IS DOA HERE SPECIFICALLY, beyond the EV arithmetic.** (1) It needs millisecond execution
+  against a stamp the author measured jittering **50–100 ms** on his own main venue; this desk has
+  no HFT execution path and its one abandoned HFT attempt is in the same corpus. (2) The author's
+  own sizing was **20× leverage**, which the survival rails forbid on an unproven edge — and his
+  stated failure mode is a **−50% trade** when the funding is missed. (3) **The delay is worst
+  exactly when funding is most extreme** ("金利-3%など、加熱している時ほど遅延しやすく"): payoff
+  and execution risk are POSITIVELY correlated, so the fat left tail is concentrated on the
+  best-looking opportunities. (4) **Dead at source with a dated cause:** ~¥500k over 2 months, then
+  "エッジが消えた"; one venue **changed its funding-settlement rules mid-operation** — the same
+  venue-rule-change death mode as the SFD class (graveyard `jp_sfd_boundary_game`, 08-04). (5) The
+  author was also front-run on his BUY leg once his timing became regular.
+- **WHAT IS ACTUALLY WORTH KEEPING — routed, not carded.** The tradeable bot is dead; the
+  OBSERVATION behind it is a measurable claim about market structure that bears on the desk's
+  DEPLOYED sleeve: *is there a systematic price move in the minutes around a funding settlement,
+  conditional on funding sign/magnitude?* L1.47 already measured that the desk's own closes cluster
+  near settlement stamps (22.3% within an hour of a payment) but never measured whether PRICE moves
+  there. → **EV 0.0087 QUEUE** as `funding_settlement_phase_execution_timing` (est_sharpe 0.35,
+  breadth 40, capacity $200k, orth 0.7, 12h, tags funding_family). This is an EXECUTION-TIMING
+  measurement for an existing sleeve, not a new alpha — which is exactly the class L1.5/the
+  bottleneck law says is usually cheaper and more certain than another signal.
+- **UNTESTED ALPHA the author names and never tried (L1.34 #6, the unpriced option):** "if you can
+  characterise the CONDITIONS under which the settlement delay occurs, you can build the mirror bot
+  — short WITHOUT paying funding." Logged as his stated open question, not as a desk claim.
+- **PROCESS EXTRACTION (process mandate).** DISCOVERY PATH: noticed an EXTREME in an already-visible
+  observable (funding < −1% during alt pumps) and reasoned "a large discrete payment must create a
+  distortion" — a mechanism-first trigger, not a data-mining sweep. THE NOTICING: confirmed the same
+  artifact at THREE resolutions (1m/1s/ms) before trading it — a cheap, transferable robustness
+  check the desk does not routinely run on microstructure claims. WHAT HE COULD NOT TEST: the
+  venue's internal order-processing/settlement mechanics (his addendum section is a stub). HIS OTHER
+  BOTS, with outcomes — a rare practitioner P&L ledger: CEX-CEX domestic↔overseas arb (**quit at the
+  JP Travel Rule revision**, barely profitable), DEX shitcoin bot (atomic arb + sandwich, tens of
+  thousands USD over months, chain dying), MEV sandwich via Flashbots (abandoned: gas + competition),
+  spread-detection bot (manual execution, ~¥10k/mo), HFT (1+ month, **no valid indicator found**,
+  abandoned), ML swing bot (backtest-good, untested live).
+- **ERA MARKER for the JP map (dark-forest deliverable 3):** the JP **Travel Rule revision (in force
+  2023-06-01)** killed this practitioner's domestic↔overseas CEX arb. That is a dated regulatory
+  boundary closing the JP corridor-rent surface — the JP instance of the barrier-rent family the RU
+  (8th instance) and KR seats keep hitting, and it closes the same way: **by regulation, not by
+  competition**. Consistent with the JP premium axis already being graveyarded near zero.
+
+**WATCHLIST (max 5): POC retest (hold), SFD cadence probe (hold), dvol_futures_basis_carry (hold),
+coinm_usdtm_basis_convexity_rv (hold), kr_rail_state_transition_global_leg (hold). 5/5 slots used
+— this session added NO card (one EV-reject, one measurement routed to the funding axis owner).**

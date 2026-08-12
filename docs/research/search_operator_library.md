@@ -826,6 +826,50 @@ platforms check BOTH the state blob and the rendered DOM before concluding conte
 API-only. note.com bodies: `div.note-common-styles__textnote-body` in plain HTML (robots-legal
 page route; its /api/* is disallowed)._
 
+### OP-052 robots.txt is NOT the access policy: probe the CONTENT PATH with your own UA   [active]
+class: legitimacy-gate / §13 instrument
+origin: JP frontier miner (2026-08-12), found by re-verifying robots on entry per standing law
+validated-gain: caught note.com + zenn.dev refusing this desk's named agent AT THE CDN EDGE while
+  both robots.txt files are CLEAN of any ClaudeBot rule. 116 of the JP seat's 187-entry mapped
+  corpus (62%) is out of bounds, including all three of that run's planned deep-read targets. Two
+  prior JP sessions (08-01, 08-04) read note.com bodies successfully, so the change is DATED to
+  between 2026-08-04 and 2026-08-12 — a live rollout, not a standing condition.
+technique: every seat establishes §13 posture by reading `robots.txt`. **That is necessary and no
+  longer sufficient.** A CDN can carry an access policy the published robots.txt does not state,
+  and the two can disagree in either direction. Establish the posture with a UA MATRIX against a
+  real content path, not a policy file:
+  ```
+  for ua in ClaudeBot GPTBot CCBot Bytespider Claude-User Googlebot SomeRandomBot/1.0 curl/8.0; do
+    curl -s -o /dev/null -w "$ua %{http_code}\n" -A "$ua" "<a real article url>"; done
+  ```
+  READ THE SHAPE, because the shape is the finding:
+  * **our agent 403, generic bot 200, Googlebot 200** → a CURATED AI-CRAWLER DENYLIST. This is a
+    deliberate, legible policy about bulk AI collection. Measured on note.com: ClaudeBot/GPTBot/
+    CCBot/Bytespider all 403 while `SomeRandomBot/1.0` and `curl/8.0` get 200 — which PROVES it is
+    not a generic "non-browser UA" heuristic. **HARD STOP, archives included** (origin-domain
+    policy governs Wayback mining too, per the RU/btcsec fleet ruling).
+  * **everything 403 including browsers** → infrastructure/WAF, may be transient; re-probe later.
+  * **robots.txt itself 403s to our UA** → the edge is filtering before the policy layer; read the
+    policy with a neutral UA (you cannot comply with a policy you cannot read) and then apply the
+    content-path verdict. Reading the POLICY is not routing around access control; fetching BODIES
+    under a different UA is, and it is forbidden.
+  **THE TRAP THAT MAKES THIS URGENT, and it is not about robots at all:** a blocked ground and an
+  exhausted ground look IDENTICAL to a digger whose fetch path treats a non-200 as "no content".
+  The seat then records **"this ground is thin"** when the truth is **"we are blocked"** — opposite
+  facts, and the wrong one silently retires a whole region (WS-005 / L1.28a: absence must never
+  resolve to a clean verdict). Any seat reporting thinning ground on a previously-rich source must
+  run the UA matrix BEFORE writing that verdict.
+  **`Claude-User` returning 200 is a FACT TO RECORD, NEVER A ROUTE TO USE.** It is the
+  user-initiated-fetch agent; bulk-mining 91 posts under it is the same activity the venue denied,
+  wearing a different name. Log it so a future principal decision has the evidence, and stop.
+adaptations: JP=note.com **CLOSED** (2026-08-12), zenn.dev **CLOSED**, qiita.com **OPEN** (article
+  body served, 145 kB), adventar.org CLOSED (robots-stated, 08-04); KR=re-probe velog/tistory,
+  DCInside already robots-stated; CN=Gate WALLED at edge-403 (CN seat 08-12 — SAME CLASS, found
+  independently the same day and previously read as a site-specific quirk rather than an instance);
+  RU=re-probe habr/smart-lab; EN=Wilmott CF-403 on robots (08-12) is this shape one layer earlier.
+counterfactual: HIGH — without the matrix this run would have recorded "note.com deep-reads
+  returned nothing" and the JP ground would have looked exhausted rather than closed.
+
 ## LEXICON — JP crypto-trading jargon (dark-forest search keys)
 _Charter dark-forest deliverable #2, JP seat. Convention per EN/CN/KR tables. OBSERVED =
 verified in a real post/text this session (CN OP-037 lesson: 0/7 unverified seeds survived —

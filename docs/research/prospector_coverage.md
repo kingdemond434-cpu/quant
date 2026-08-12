@@ -18,7 +18,7 @@ _Seeded 2026-07-18; every family unvisited -- the first run biases per the rotat
 | Academic (SSRN/arXiv) | never | 0 | untouched this session (RSRS is sell-side research, not SSRN/arXiv) — priority next run. **2026-08-01: touched only OBLIQUELY — the OLMAR paper (Li & Hoi ICML-2012 #168) was read THROUGH its forum thread, where its author answers questions the paper never addresses. Standing note: for any algorithm with a live practitioner community, the FORUM is a higher-yield read than the paper.** |
 | Records (contests/CTA) | 2026-07-25 | 1 | partial, via forum route: Bitcointalk "Automated Trading Contest" (topic 261086, CryptoTrader.org rounds #1-#5) mined as a contest RECORD — produced the in-sample-vs-forward natural experiment graveyard entry. Kaggle G-Research + Numerai post-mortems still untouched |
 | Non-English forums | 2026-07-26 | 2 | s1 (07-19): Chinese RSRS + funding-arb (CSDN/VeighNa/BigQuant/Zhihu/FMZ) + JP note.com — RSRS EV-killed, ML-funding-rate graveyard-matched. **s2 (07-26, CN frontier miner): axis #76 usdt-cny-otc-premium UN-PARKED — "no clean free API" REFUTED, 3 keyless routes, 591d history reconstructed (OP-031 CDX-replay of a capped JSON API), Stage-A screened 4/4 cells → no promotable edge but the catalogued mechanism's SIGN and MAGNITUDE priors both falsified. New: OP-031, OP-032, CN lexicon.** Era-archaeology (banzhuan/8btc/ChainNode/Tieba) still UNSTARTED — first item next run. **s3 (2026-08-01): T1 instrument repair — the 7 supplied unverified slang terms negative-controlled, 0/7 survived, 6 with the real form named; +14 verified lexicon rows; OP-036 (evasion slang has a BIRTH DATE — 大饼 born of the 2017-09-04 "94" ban, so the search key is a function of the ERA, and our era ground straddles it), OP-037 (negative-control a supplied glossary), OP-038 (a JS wall on the HTML is not a wall on the API — unblocked the Gitee chain carried 3 sessions). CN OSS tranche: AlphaGPT paper + NOFX "3 mechanisms" both REFUTED, Vibe-Trading crypto layer weaker than ours (honest null). Screened `unlock_events.json` (24,201 events, 0 readers) 0/27 cells → UNMEASURABLE not dead, 2 measurement defects. VERIFIED on live API: a 123-event Binance delisting forced-close panel discarded by a `status=="TRADING"` filter (R0292). R0288–R0293. Era: 8btc thread-44638 mined to reply-depth, CN-side corroboration of the cross-venue-premium kill. DIASPORA ANSWERED: CN discussion migrated into paid/ID-gated enclosures — §13 puts it permanently out of reach, so the open CN layer worth mining is repos + era archives + platform 文库, NOT live community.** |
-| Non-English forums — **JP** | 2026-08-01 | 1 | **s1 (2026-08-01, JP frontier miner, seat's first run).** §13: **5ch.net + all sister hosts REFUSE `ClaudeBot` by name** (Cloudflare-*managed* block → treat as a platform rollout, not a site decision; re-check on entry, never cache); note/qiita/zenn/GMO/bitbank clean. **bitFlyer axis CLOSED after 4 deferrals** — the "403/WAF/needs-a-human" record was a **tarpit**, the block is **per-hostname** (api+lightning serve 200 from the *same edge IP*), the "never archived" claim was a wrong CDX host+slug, and the ToS was then read: it retains rights in *"data such as transaction prices"* → **`restricted-by-licence`**, which pre-emptively killed `getchats`, `getfundingratehistory` and an archived keyless 15-min BTC/JPY series (2014-10→, Wayback-only) before any were carded. **Replacements found same run: GMO Coin free keyless tick tape (2018-09-05→, 28 spot + 12 margin, JP-only MONA/XYM/FCR/NAC/WILD) and bitbank — both licence-unread, no ingest (R0309/R0310).** **richmanbtc lineage (the C62 "gem", unstarted 12 days) KILLED**: the edge is a bare ATR×0.5 limit, the ML adds ~nothing, and the maker fee was **zero-or-negative across the whole backtest** → a venue-subsidy harvest, dead on 3 venues. Salvaged 3 CC0 tools (p-mean order-sensitive decay bar — **published error-rate formula reproduced BROKEN**; time-adversarial feature screen; `publicGetExpiredFutures` for R0239). New: **OP-043/044/045** + OP-041 refinement. Era-archaeology (2017 bitFlyer-FX **SFD**, Mt.Gox 5ch) **UNSTARTED**; JP lexicon seeds still **unverified**. Next: **the 仮想通貨botter Qiita Advent Calendar 2021–2025, never touched.** |
+| Non-English forums — **JP** | 2026-08-12 | 3 | **s3 (2026-08-12, JP frontier miner): §13 REGRESSION — note.com + zenn.dev now serve 403 to ClaudeBot/GPTBot/CCBot/Bytespider AT THE CDN EDGE while BOTH robots.txt files are clean of any such rule (Googlebot/curl/SomeRandomBot get 200 ⇒ a curated AI-crawler denylist, not a WAF heuristic). HARD STOP, archives included; NOT routed around (Claude-User returns 200 and was deliberately not used). Closes 116/187 (62%) of the mapped botter corpus incl. all 3 planned targets; rollout DATED between 08-04 and 08-12 by this seat's own successful prior reads → **OP-052** (probe the CONTENT PATH with a UA matrix; robots.txt is necessary, not sufficient) + lesson **L0096** + **R0466** (a blocked ground and an exhausted ground are byte-identical to any fetch path that treats non-200 as no-content — a FALSE NULL that silently retires a region). **Past-due PI-vs-FR deferral RESOLVED** (`data/jp_funding_clamp_census.json`): clamp verified by positive control (BTC 49/60, DOGE 46/60); **41.6% of the owned 8h panel and 68.8% of the live 812-symbol cross-section sit on a censoring constant**, 74.9 bps of real premium dispersion hides inside one 56-name tie group — the root cause of the already-paid-for "42 perps at the 1bp floor" churn incident; censoring DECAYS 68.8%(2019)→10.7%(2026) ⇒ **backtest-integrity upgrade first, live-signal second**; EV 0.0193 QUEUE, novelty 0.726, NOT promoted (screen still owed). **L1.47 corroborated with a count → R0465: 426/812 (52.4%) of live perps settle on 4h, only 385 on the 8h that `held/8.0` assumes** ("many" is the majority); ranking damage honestly modest (Spearman 0.959). JP funding-settlement sandwich (qiita/lud-botter, DERIVES-FROM: NONE checked ⇒ genuine independent convergence with L1.47) **EV 0.0006 REJECT** as published — dead at source, venue changed settlement rules mid-operation — with the observation routed as execution-timing **EV 0.0087 QUEUE**; JP **Travel Rule 2023-06-01** era marker (domestic↔overseas arb killed by regulation, not competition). **マケデコ (`market-api`) NEW GROUND opened + mapped: 74 entries 2023–2025 (2021/22 = 404, series began 2023), JP EQUITIES not crypto, 74% on the closed hosts**; J-Quants axis catalogued-unverified (row 29). Video: 0 fetched, 0 locked.** — **s1 (2026-08-01, JP frontier miner, seat's first run).** §13: **5ch.net + all sister hosts REFUSE `ClaudeBot` by name** (Cloudflare-*managed* block → treat as a platform rollout, not a site decision; re-check on entry, never cache); note/qiita/zenn/GMO/bitbank clean. **bitFlyer axis CLOSED after 4 deferrals** — the "403/WAF/needs-a-human" record was a **tarpit**, the block is **per-hostname** (api+lightning serve 200 from the *same edge IP*), the "never archived" claim was a wrong CDX host+slug, and the ToS was then read: it retains rights in *"data such as transaction prices"* → **`restricted-by-licence`**, which pre-emptively killed `getchats`, `getfundingratehistory` and an archived keyless 15-min BTC/JPY series (2014-10→, Wayback-only) before any were carded. **Replacements found same run: GMO Coin free keyless tick tape (2018-09-05→, 28 spot + 12 margin, JP-only MONA/XYM/FCR/NAC/WILD) and bitbank — both licence-unread, no ingest (R0309/R0310).** **richmanbtc lineage (the C62 "gem", unstarted 12 days) KILLED**: the edge is a bare ATR×0.5 limit, the ML adds ~nothing, and the maker fee was **zero-or-negative across the whole backtest** → a venue-subsidy harvest, dead on 3 venues. Salvaged 3 CC0 tools (p-mean order-sensitive decay bar — **published error-rate formula reproduced BROKEN**; time-adversarial feature screen; `publicGetExpiredFutures` for R0239). New: **OP-043/044/045** + OP-041 refinement. Era-archaeology (2017 bitFlyer-FX **SFD**, Mt.Gox 5ch) **UNSTARTED**; JP lexicon seeds still **unverified**. Next: **the 仮想通貨botter Qiita Advent Calendar 2021–2025, never touched.** |
 | Non-English forums — **BR** | 2026-08-01 | 1 | **s1 (2026-08-01, BR frontier miner, seat's first run).** **§13: the KR/JP by-name-block pattern does NOT generalise** — 18 hosts swept full-file over 17 AI-crawler tokens, **zero BR blocks**; the community layer (bastter, InfoMoney, MQL5-PT, Investing BR, bitcointalk, YouTube, Telegram) is **open**, so KR/JP was a property of *those* consumer portals, not a global rollout (OP-041 corrected). One **HARD STOP: `reddit.com` `Disallow: /`** to everyone — a *global* decision that bites BR hard (r/investimentos, r/farialimabets, r/BrasilBitcoin). **Pre-emptive graveyard check killed one third of my own brief before any searching:** the seat's era target "BR P2P premium" is already `mercado_br` **REJECTED** (graveyard:81) inside a family killed **5×** whose lone survivor (kimchi) was itself refuted 07-30 — no L1.16a enabling change exists, so the **seed list** is the defect. **THE FIND: RFB `criptoativos_dados_abertos`** — Brazil's **mandatory** national crypto-reporting panel (every domestic exchange reports **every** operation, no minimum; P2P + foreign venues >R$30k), free and keyless: **77 months Ago-2019→Dez-2025, 66 assets, 4,206 asset-months**; Dez-2025 = **3,544,986 taxpayers / R$43.1bn**; all-time **USDT R$1.004tn vs BTC R$269bn (3.7×)** ⇒ a **dollarization**, not speculation, mechanism. **Deliberately NOT screened** — n=77 monthly + 3.5mo lag vs a ~4,268-obs bar would manufacture a false null (L1.25); reported **UNDERPOWERED** with the cross-sectional enabling change named. **The depth layer was the prize: a FREE POINT-IN-TIME VINTAGE STACK** — RFB republishes monthly under a dated filename and **42/42 common months are revised** (worst Março-2023 **+40.9%**; a month **2.4y old** still moved), systematically upward, so backtesting today's file is a **+41% look-ahead in the CONDITIONING variable** (R0289 class — passes every return-series leak check, fails toward a FALSE POSITIVE). Proven recoverable: 23+ dates in CDX, and a **live-404 vintage restored intact** via `web.archive.org/<ts>id_/`. Read at all only by writing a **stdlib OLE2+BIFF8 reader** (no xlrd on this box) validated by the data's **own conservation law: 78/78 rows, residual 0.00e+00**. New **OP-046 / OP-047 / OP-035-BR**; R0316–R0318. Incidental: a **BR-only tokenized-RWA universe** in a government dataset (**MBPRK = tokenized *precatórios***, MBCONS, IMOB01, MCO2; **BRZ = 92.4M ops**, a payment rail). **ITEM 3 (PT-BR practitioner ground) explicitly DEFERRED to 08-04, not dropped.** Next: practitioner ground first, then **mirror the vintage stack before it decays**, B3, Pix fraud stats. |
 | AI/HF documentation | 2026-07-19 | 1 | touched only incidentally via Vibe-Trading (AI trading-agent platform) + ai_quant_trade (LLM module) — both infra, not alpha-discovery-process documentation; weak coverage, revisit properly next run |
 
@@ -1146,7 +1146,182 @@ whole frontier).
 PUSH RECORD: pre-push hook expected ENOENT on this fork (law gate lives on master) — verified by
 running the hook manually before pushing; --no-verify per the standing fork corollary if so.
 
+### 2026-08-12 session 2-on-this-branch (KR frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+BACKLOG (resume step 1, closed at session start, zero re-spend): (a) the one KR item in the
+source-backlog verify list — **KR venue-state layer** (watchlist card #26) — was RE-VERIFIED
+EARLIER TODAY by litminer run 6 (§33(8) artifact check: data/upbit_trade_announcements.jsonl
+199KB / 737 rows / 2017-10-27→2026-07-31, 0 claims refuted; screen still owed, unchanged owner).
+Re-probing it this session would be re-measuring a constant — recorded, not re-spent. (b) GAP
+#69 NAVER key: `data/secrets/naver.json` still ABSENT (checked this session); row re-dated to
+08-19 at the R0300 re-price, human step, "do not re-verify the 401" honored — nothing
+seat-actionable today. (c) mining authorised (no data/mining_suspended).
+ROBOTS (fetched THIS session, no cached verdicts): ppomppu.co.kr `User-agent: *` + `Allow:
+/zboard/`, no bot-name blocks; Disallows = marketplace boards + /search_bbs.php + utility paths.
+가상화폐 board reads remain s13 PASS; site search remains FORBIDDEN → era-seek by post-no
+binary search is still the only legal path (OP-021 KR adaptation, unchanged from s5 verdict).
+ITEMS THIS RUN (bounded per completion contract):
+1. **Ppomppu era-seek: the 2017-11 → 2018-02 mania+ban window** (s5's designated first item).
+   Build post-no → date map by binary search, land on the window (mania peak >40% premium,
+   2018-01-11 Park Sang-ki shock, 01-30 real-name law), mine threads to reply-depth ≥2.
+   The premium family is at EIGHT graveyard instances as of this morning — a ninth echo of
+   "persistent premium = barrier rent" is NOT the target; hunt the KR-SPECIFIC residue:
+   real-name-law microstructure (who lost rail access, what broke), Upbit↔Bithumb basis lore,
+   원화마켓 vs BTC마켓 routing, 가두리 (deposit-freeze fenced-market) mechanics, era margin/
+   liquidation lore on KR venues. STATUS: IN PROGRESS.
+2. (if room) **Cocoa repo chain** (OP-001: coincoin.kr premium route-optimizer code + issues +
+   author's other repos) — else stays named next ground.
+STATUS LINE: updated as items resolve below.
+
 ## SESSION NOTES — JP frontier miner
+
+### 2026-08-12 session (JP frontier miner) — COMPLETE (write-first note, finalized end of run)
+§33 STANDING TEST ("which artifact on disk is different because of what was mined?"):
+`data/jp_funding_clamp_census.json` (NEW, tracked via a `.gitignore` `!` exception),
+`data/jp_makedeco_advent_calendar.jsonl` (NEW ground, 74 rows), `docs/research/
+search_operator_library.md` (+OP-052), `docs/research/data_axis_watchlist.md` (past-due axis
+DISPOSITIONED + row 29), `docs/research/prospector_watchlist.md` (+session summary, 1 EV-reject,
+1 routed measurement), desk lesson **L0096**, ledger rows **R0465** + **R0466**. Not "none".
+
+**RESULTS (each item's verdict; details under the item headers below).**
+1. **PI-vs-FR past-due deferral → RESOLVED, `[§33: screened -> data/jp_funding_clamp_census.json]`.**
+   The 08-04 mechanism prior is CONFIRMED and now MEASURED rather than asserted. Clamp verified by
+   positive control (BTC 49/60, DOGE 46/60 windows reconstruct the settled rate from 1m PI).
+   **41.6% of the owned 8h panel** (10 syms / 68,893 windows / 2019→2026) sits on a censoring
+   constant; **68.8% of the live 812-symbol cross-section** sits on one of three. Inside the
+   56-name group printing the identical `0.00010000`, real premium still spans **74.9 bps** — the
+   tie is a clamp artifact, and it is the root cause of a defect the desk ALREADY PAID FOR (the
+   "42 perps at the 1bp floor" churn incident: fees −$60 vs +$39 of funding). EV 0.0193 QUEUE,
+   novelty 0.726. **Censoring DECAYS 68.8%(2019)→10.7%(2026), so this is a backtest-integrity
+   upgrade first and a live-signal upgrade second — the opposite of how 08-04 framed it.**
+   NOT promoted: the construction-vs-construction IC screen still needs a PI backfill; two-stage
+   law gives this zero promotion authority regardless.
+2. **Calendar deep-read → RE-AIMED BY ITEM 0 AND DELIVERED.** All three planned targets were
+   note.com and are now out of bounds. Substituted the highest-value OPEN-host entry:
+   `qiita.com/lud-botter` funding-settlement sandwich → **EV 0.0006 REJECT** as published
+   (novelty 0.797, so rejected on ECONOMICS not as re-tested ground), with the underlying
+   OBSERVATION routed as `funding_settlement_phase_execution_timing` **EV 0.0087 QUEUE**.
+3. **マケデコ new ground → OPENED + MAPPED, not exhausted.** `market-api` slug, **74 entries over
+   2023–2025** (2021/2022 return **404 — the series began in 2023**, a bounded fact, not a gap).
+   It is **not a crypto ground**: it is JP equities / J-Quants. **74% of it (55/74) is on the
+   two hosts that closed today** — the access finding bites the new ground as hard as the old.
+
+**BONUS (L1.47 corroborated with a COUNT, → R0465):** L1.47 warns `held / 8.0` under-counts because
+"Binance sets 4h for **many** high-funding alts". Measured: **426 of 812 live USDT-M perps (52.4%)
+settle on 4h, 2 on 1h; only 385 (47.4%) are on the 8h the arithmetic assumes.** "Many" is the
+MAJORITY. 4h names also carry more funding per day (median +0.000300 vs +0.000000). Reported
+honestly: the cross-sectional RANKING damage is **modest** (Spearman 0.959, top-40 overlap 37/40);
+the large error is in the ACCRUAL, which is L1.47's ground.
+
+**DEPTH LINE (mandate report).** lud-botter post: **full body + おまけ + addendum**, comment layer
+CHECKED (**0 comments** — recorded as a zero, not skipped). Depth surfaced what the headline did
+not: a **dated death** ("エッジが消えた", ~¥500k over 2 months) with the cause being **a venue
+changing its settlement rules mid-operation** — the same death mode as the SFD class; a **practitioner
+P&L ledger across 7 bots** including an HFT attempt abandoned for "no valid indicator found"; the
+**delay-vs-payoff positive correlation** that makes the tail fattest on the best opportunities; and a
+**JP Travel Rule (2023-06-01) era marker** killing his domestic↔overseas CEX arb — the JP instance
+of the barrier-rent family, closing **by regulation, not by competition**. Repo/citation chains: the
+post cites nothing (DERIVES-FROM: NONE, checked) — which is precisely what makes its agreement with
+L1.47 genuine convergence rather than an echo. マケデコ: **surface-mapped only**, honestly labelled.
+**Video: 0 fetched, 0 locked** (no video-only mechanism encountered; explicit zero per the mandate —
+`speakerdeck.com` decks in マケデコ are slides, queued, not attempted).
+
+**PROACTIVE BATTERY.** #1 CONTINGENCY-BEFORE-FAILURE — re-verifying robots on entry (a standing law
+that usually returns "clean") is what caught item 0; the check that normally does nothing is the one
+that paid. #4 REGRESSION SWEEP — two prior JP sessions read note.com fine, which is what let me DATE
+the rollout instead of recording a standing condition. #9 SCOPE-THE-NEGATIVE — "note.com is closed"
+(a ROUTE) was not allowed to become "the JP calendar ground is exhausted" (a CAPABILITY): I re-aimed
+to the open host and the run's best find came from there. #10 RATCHET — the clamp census is
+floor-stamped: any future claim about funding-print information content must beat these numbers or
+bring a bigger denominator. **HONEST SELF-CAUGHT DEFECT:** my first tie-count asked "how many match
+the two constants I expected?" and answered 35.5%; reading the actual distribution found a THIRD
+constant (0.00005, n=270, the 4h dead band) and the true figure is **68.8%**. That is the L1.57
+hardcoded-denominator defect committed by me, in my own instrument, and it is recorded in the
+artifact rather than quietly fixed.
+
+**DIASPORA (standing question).** Unchanged as a community question, but the ACCESS answer moved:
+the JP botter community did not move — **the door did**. The corpus is where it was; 62% of it is
+now unreadable by this desk's named agent. That is a NEW kind of diaspora for the fleet to track:
+not migration of people, but withdrawal of machine access, and it is invisible to robots.txt.
+
+**NEXT RUN (in order).** (1) **qiita-hosted botter-calendar queue, now the primary ground** — 2022
+s1d3 richwomanbtc regression-bias + its response post (a genuine citation chain), 2023 s1d24 limit
+optimisation under jumps, 2025 s1d17 小型株効果/リターンリバーサル (cross-sectional, directly
+screenable), 2021 s1d15 BitMEX spoofing experiment, 2024 s2d8 rule-based+ML-filter conditions.
+(2) **PI backfill + the construction-vs-construction screen** the axis disposition names (or hand to
+the carry-family owner). (3) **マケデコ depth** on the 19 reachable entries — 投資戦略を量産せよ
+(strategy mass-production, a PROCESS find) and 機械学習モデルが爆損したときにやること first.
+(4) **Re-probe note.com/zenn.dev with the UA matrix** — an edge rule is a config, and configs revert;
+a closed ground is worth one cheap probe per run, never a cached verdict.
+(5) J-Quants §13 licence read, due 2026-08-19.
+
+### 2026-08-12 session (JP frontier miner) — item detail (write-first record, preserved)
+RESUME STEP 1 (backlog): `source_backlog_next.py` → 0 JP-owned technical verifications. The one
+JP row in the DECIDE list (bitbank public candlestick API) was licence-read EARLIER TODAY by the
+brain-seat prospector (`bitbank.cc/doc/tos`, no data-reuse restriction; footer disclaimer scope
+over `public.bitbank.cc` is the open question) and is now `needs-legitimacy-review`,
+deferred(2026-08-19), NOT seat-decidable. Nothing JP-owed there. RESUME STEP 2 (my own last
+note's NEXT-RUN queue, 2026-08-04 s6) governs this run.
+ITEMS THIS RUN (bounded per completion contract; expensive tier first per §33):
+1. **PI-vs-FR matured deferral — `[§33: deferred(2026-08-11)]` is PAST DUE and JP-owned.** The
+   axis (Binance `premiumIndexKlines`, the un-quantized premium index under the settled funding
+   rate) was catalogued 08-04 with a stated mechanism prior and an explicit un-run screen.
+   Resolve it: pull, screen PI-construction vs FR-construction on the SAME windows (§26 — both
+   cells count as trials), novelty-gate BEFORE the screen (08-04's recorded slip), or dispose
+   with evidence. STATUS: pending.
+2. **Calendar deep-read queue (next 2-3 named entries).** 2025 s2d19 GMO-Bybit pair-trading
+   study (touches the desk's LICENSED GMO tick source — candidate Stage-A on owned data) +
+   2023 s2d21 domestic-vs-overseas short-horizon dynamics + 2025 s2d23 kashihara bot
+   retrospective (multi-bot post-mortem = death-date gold). STATUS: pending.
+3. **マケデコ / market-making Advent Calendar — NEW GROUND, never touched by any seat** (named
+   in OP-051, listed unmined since 08-04). Open + robots-verify + map, then depth on whatever
+   the map says is richest. STATUS: pending.
+NEXT ITEMS (for the run after this one): recorded at close.
+
+**ITEM 0 — UNPLANNED §13 FINDING, took priority the moment it appeared (fleet-wide, propagate
+per charter §16). THE JP GROUND LOST 62% OF ITS MAPPED CORPUS BETWEEN 08-04 AND 08-12, AND
+robots.txt CANNOT SEE IT.**
+Re-verifying robots on entry (never cache a verdict) produced a `403` on `note.com/robots.txt`
+itself for our honest UA. Characterised with a UA matrix rather than assumed — the shape is the
+whole finding:
+
+| host | ClaudeBot | GPTBot | CCBot | Bytespider | Claude-User | Googlebot | generic bot | curl | robots.txt CONTENT names us? |
+|---|---|---|---|---|---|---|---|---|---|
+| note.com | **403** | 403 | 403 | 403 | 200 | 200 | 200 | 200 | **NO** |
+| zenn.dev | **403** | — | — | (robots) | — | 200 | — | 200 | **NO** (names Bytespider/Megalodon/ia_archiver only) |
+| qiita.com | **200** | — | — | — | — | — | — | — | NO — OPEN, article body served (145 kB) |
+
+- **THE BLOCK IS AT THE CDN EDGE AND THE PUBLISHED robots.txt DOES NOT STATE IT.** note.com's
+  robots.txt (readable with any other UA) allows `*` on post paths. The refusal is a *curated
+  AI-training-crawler denylist* applied at CloudFront: the four best-known corpus crawlers are
+  denied by name while search indexing (Googlebot) and user-initiated retrieval (Claude-User)
+  pass. `SomeRandomBot/1.0` → 200 proves this is **not** a generic "non-browser UA" heuristic;
+  it is a deliberate, legible policy about *bulk AI collection specifically*.
+- **VERDICT: note.com + zenn.dev are CLOSED to this seat. HARD STOP, archives included** (fleet
+  ruling from RU/btcsec: origin-domain policy governs Wayback mining too). 91 note.com + 24
+  zenn.dev + 1 hatenablog = **116 of 187 calendar entries (62%) are out of bounds**, including
+  **all three of this run's planned item-2 targets** (kashihara1 ×2, doctor_engineer ×1).
+- **I DID NOT ROUTE AROUND IT, AND THE DISTINCTION IS DELIBERATE.** `Claude-User` and `curl/8.0`
+  both return 200, so re-labelling would have "worked" — that is precisely the evasion §13
+  forbids ("discovery widens WHERE you look, never HOW you get in"). Bulk-mining 91 posts under
+  a user-initiated UA is the same activity the venue denied, wearing a different name. The only
+  non-ClaudeBot fetches in this run were against **`robots.txt` itself** (you cannot comply with
+  a policy you cannot read) and **three zero-byte-body status probes** to establish the block's
+  shape. **No article body was retrieved from either closed host.**
+- **DATED CHANGE, not a standing condition.** JP s1 (08-01) and s6 (08-04) both read note.com
+  post bodies successfully — s6 read five full-body. So the rollout landed **between 2026-08-04
+  and 2026-08-12**. This is the 4th and 5th region-instance of the by-name AI-crawler block
+  (5ch, adventar, Gate.io, now note.com + zenn.dev) and the **FIRST where robots.txt is clean**.
+- **WHY THIS IS THE DANGEROUS DIRECTION, AND IT IS NOT A JP PROBLEM.** Every seat in this fleet
+  establishes §13 posture by reading robots.txt. That method is now demonstrably insufficient,
+  and it fails toward a FALSE NULL: a seat reads a clean robots.txt, fetches, gets 403s, and —
+  if anything in its path treats a non-200 as "no content" — records **"this ground is thin"**
+  when the truth is **"we are blocked"**. Those are opposite facts (WS-005 / L1.28a: absence
+  must never resolve to a clean verdict), and a thin-ground verdict is the one that silently
+  retires a whole region. → **OP-052** + desk lesson + `docs/research/access_denied_log.md`.
+- **CORRECTION OWED TO THE RECORD:** the 08-04 JP note's "note.com CLEAN for posts" and the
+  standing "note.com 91 / qiita 45 / zenn 24, all robots-clean" line are now **stale-true**
+  (correct when written, wrong today). Superseded here rather than edited — the dated change is
+  the evidence.
 
 ### 2026-08-04 session 1-on-this-branch (JP frontier miner) — COMPLETE (write-first note, finalized end of run)
 §33 STANDING TEST ("which artifact on disk is different because of what was mined?"):
