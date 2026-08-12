@@ -62,6 +62,64 @@ def test_corpus_depth_still_counts():
     assert _score(corpus) >= 2
 
 
+def test_archive_verification_depth_is_depth():
+    """THE SECOND MODALITY, found the same way as the first (2026-08-12).
+
+    The list above was community mining plus code replication. A dig into a BULK ARCHIVE or an
+    API does its depth in a third vocabulary entirely, so it could not clear this bar however far
+    it went -- a gate that rejects ~100% of a category carries zero information about it.
+
+    MEASURED: dataaxis_20260812T1530 scored 1. It verified a published sha256 sidecar, ran
+    archive-vs-live to 0 mismatches over 31 bars x 7 fields, and found the S3 lister truncates at
+    1000 keys and never errors -- a 3.7-year silent understatement, now a desk lesson.
+    """
+    archive = ("Paginated the lister and the span moved 2022-11 -> 2026-08; the published sha256 "
+               "sidecar matched byte-for-byte and archive-vs-live returned 0 mismatches.")
+    assert _score(archive) >= 2
+
+
+def test_the_observed_intention_word_was_refused_admission():
+    """THE SELECTION RULE FOR NEW MARKERS, pinned as the decision it actually was.
+
+    `backfill` was tested for the archive family and REFUSED: its only occurrence across all nine
+    substantial digs on disk is "still needs a pi backfill" -- work NOT done -- and admitting it
+    would have flipped frontier_jp_20260812T0747 from firing to passing on that one word. This
+    pins the exclusion so a later widening cannot quietly re-admit it.
+    """
+    assert "backfill" not in _markers()
+
+
+def test_the_fence_cannot_tell_a_performed_act_from_a_promised_one():
+    """A CHARACTERISATION TEST: this pins a KNOWN BLIND SPOT, not a property the fence has.
+
+    Written because the honest version of the rule above ("markers name acts, never intentions")
+    turned out to be UNENFORCEABLE and this test failed on its first run, which is how it was
+    found. `_score` is a bag-of-words match, so a log that PROMISES two verification acts scores
+    exactly what a log that PERFORMED them scores. Excluding `backfill` narrowed the observed
+    exposure; it did not close the hole, and no vocabulary edit can -- the fence has no syntax.
+
+    So the residual is written down here rather than believed solved. The fence's own docstring
+    already concedes lexical markers are fakeable by construction and that real depth quality is
+    judged downstream by red-team/maximization; this is the concrete demonstration of that
+    concession, and it is why the marker score must never become the ONLY depth authority.
+
+    IF THIS EVER FAILS, something gained the ability to distinguish the two -- revisit the rule
+    above, because it would then be enforceable and should be enforced.
+    """
+    promised = ("Rich ground here. I plan to paginate the archive and checksum it on a later "
+                "pass once time allows.")
+    assert _score(promised) >= 2          # scores as depth despite performing nothing
+
+
+def test_the_real_dataaxis_log_is_no_longer_theatre():
+    """REGRESSION FIXTURE for the archive modality. Skipped, never silently passed, if reaped."""
+    log = _REAL_BR_LOG.parent / "dataaxis_20260812T1530.log"
+    if not log.exists():
+        import pytest
+        pytest.skip(f"{log.name} reaped -- cannot re-measure, which is not a pass")
+    assert _score(log.read_text("utf-8", errors="ignore")) >= 2
+
+
 def test_a_genuinely_shallow_log_still_fails():
     """THE BAR IS UNCHANGED. If this ever passes, the widening became slack."""
     shallow = ("Searched 40 sites. Listed 200 repositories by name. Catalogued the results. "

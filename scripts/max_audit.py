@@ -1101,10 +1101,34 @@ def check_dig_depth(defects) -> None:
     # is judged downstream by red-team/maximization. FALSIFIER: if a dig ever clears this bar on
     # verification words alone while its output shows no re-derivation, the class is noise and
     # comes back out.
+    # THE VOCABULARY ENCODED ONE DIG MODALITY AND SCORED EVERY OTHER ONE AS THEATRE. Every marker
+    # above the second line is community/text mining (reply, comment, thread, fork, citation) or
+    # code replication (permut, reimplement, census). A dig into a BULK ARCHIVE or an API does its
+    # depth with a different vocabulary entirely, so it was structurally incapable of clearing this
+    # bar however deep it went -- a gate that rejects ~100% of a category carries zero information
+    # about that category, which is the welded-gate class this desk hunts (L1.43/L1.49).
+    #
+    # MEASURED, 2026-08-12: dataaxis_20260812T1530 scored 1. That dig verified a published sha256
+    # sidecar, ran archive-vs-live to 0 mismatches over 31 bars x 7 fields, and found that the S3
+    # lister truncates at 1000 keys and never errors -- a 3.7-YEAR silent understatement of the
+    # archive's depth, now a recorded desk lesson. That is the depth mandate honoured exactly, and
+    # the fence called it breadth-theater.
+    #
+    # THIS IS NOT THE BAR BEING LOWERED TO FIT THE VIOLATION IT CAUGHT, and the distinction is the
+    # whole point: the threshold stays at >=2, and every added marker names a VERIFICATION ACT
+    # PERFORMED rather than an adjective or an intention. `backfill` was tried and REJECTED for
+    # exactly that reason -- its only occurrence in the corpus is "still needs a pi backfill",
+    # which names work NOT done, and a marker that passes on intent is how this becomes theatre.
+    # Measured over all 9 substantial digs on disk: exactly ONE flips, and the shallow log still
+    # fires. FALSIFIER, inherited from the rule above and unchanged: if a dig ever clears the bar
+    # on verification words alone while its output shows no re-derivation, the class comes out.
     markers = ("repl", "comment", "thread", "fork", "citation", "issue", "discussion",
                ">=2", "deep", "exhaust", "debunk",
                "permut", "reimplement", "replicat", "census", "falsifier",
-               "positive control", "graveyard", "wayback", "retract")
+               "positive control", "graveyard", "wayback", "retract",
+               # archive / API verification: the act, never the adjective
+               "paginat", "sha256", "checksum", "mismatch", "sidecar", "cross-check",
+               "byte-for-byte", "truncat")
     for pat in ("frontier_*.log", "dataaxis_*.log", "prospector_*.log", "litminer_*.log"):
         logs = sorted(LOGS.glob(pat), key=lambda p: p.stat().st_mtime, reverse=True)
         if not logs:
