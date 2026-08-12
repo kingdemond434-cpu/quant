@@ -36,8 +36,11 @@ WHAT RUNS EVERY CYCLE, and why in this order:
                              which is the whole point -- a freed slot is claimed in the same cycle
                              rather than the next morning.
   5. run_paper_sleeve_spawner  corrected survivors -> paper sleeves, into whatever slots are free.
-  6. run_promotion_actuator  the gate's verdict -> what real capital may do.
-  7. publish_pipeline        the dashboard, last, so it shows the state after everything moved.
+  6. run_forward_resolution  a clock that CLEARED its pre-registered forward bar becomes a
+                             SURVIVOR. Before the actuator, so the moment shadow is done the
+                             promotion gate sees it on the SAME pass -- no overnight wait.
+  7. run_promotion_actuator  the gate's verdict -> what real capital may do.
+  8. publish_pipeline        the dashboard, last, so it shows the state after everything moved.
 
 THE FORWARD OBSERVER IS RATE-LIMITED AND NOTHING ELSE IS. It APPENDS an observation row per run;
 at a 15-minute cycle that is 96 rows per sleeve per day describing sources that regenerate at most
@@ -91,6 +94,9 @@ STAGES: tuple[tuple[str, tuple[str, ...], str], ...] = (
      "release slots that cannot accrue BEFORE the spawner, so a freed slot is claimed this cycle"),
     ("run_paper_sleeve_spawner.py", (),
      "corrected survivors -> paper sleeves, into whatever slots are now free"),
+    ("run_forward_resolution.py", (),
+     "a clock that CLEARED its pre-registered bar becomes a SURVIVOR here, in this pass -- "
+     "before the actuator, so a survivor reaches the promotion gate on the cycle it resolves"),
     ("run_promotion_actuator.py", (),
      "the gate's verdict -> what real capital may do"),
     ("publish_pipeline.py", (),
