@@ -1169,10 +1169,98 @@ ITEMS THIS RUN (bounded per completion contract):
    "persistent premium = barrier rent" is NOT the target; hunt the KR-SPECIFIC residue:
    real-name-law microstructure (who lost rail access, what broke), Upbit↔Bithumb basis lore,
    원화마켓 vs BTC마켓 routing, 가두리 (deposit-freeze fenced-market) mechanics, era margin/
-   liquidation lore on KR venues. STATUS: IN PROGRESS.
+   liquidation lore on KR venues. STATUS: **DELIVERED** (see RESUMED RUN below).
 2. (if room) **Cocoa repo chain** (OP-001: coincoin.kr premium route-optimizer code + issues +
-   author's other repos) — else stays named next ground.
-STATUS LINE: updated as items resolve below.
+   author's other repos) — else stays named next ground. STATUS: **NOT TAKEN** — displaced by the
+   §33 defect below, which outranked new ground (L1.28b: conversion before new findings). Stays
+   the named next ground.
+
+### 2026-08-12 session 2-on-this-branch — RESUMED RUN (the first attempt died mid-item-1; this is its continuation, not a new session)
+§33 STANDING TEST ("which artifact on disk is different because of what was mined?"):
+`data/ppomppu_bitcoin_era_map.json` + `data/ppomppu_kr_era_threads.jsonl` (**NEWLY TRACKED** —
+they existed on the box but were untracked; commit 5b6ff73d), `docs/research/
+weak_signal_registry.md` (**WS-011**), `docs/research/search_operator_library.md` (+6 KR lexicon
+rows), this note. Not "none".
+
+**0. THE DEFECT THIS RUN EXISTS TO FIX (found while resuming, fixed first, outranked all new ground).**
+The died run's card `kr_rail_state_transition_global_leg` was written with
+`[§33: wired -> data/ppomppu_kr_era_threads.jsonl]` — and **both cited paths were untracked**,
+caught by `data/*` in `.gitignore:11`. §33 credits an artifact ON DISK and §32 depth-parity
+requires the commit: *uncommitted output did not happen*, so the card was citing evidence that
+existed on this box and nowhere else. The RU seat (`btcsec_trading_topics.json`) and JP seat
+(`jp_funding_clamp_census.json`, `jp_makedeco_advent_calendar.jsonl`) had already set the `!`
+exception precedent; **the KR seat had not followed it.** Fixed in 5b6ff73d with the reason
+recorded inline. Cost of not fixing: the era map is the ONLY legal seek index for this board
+(site search is robots-forbidden) and rebuilding it costs a fresh binary search.
+**Second-order finding, worth more than the fix:** the card was committed inside **d917b3c4,
+whose subject is the JP miner's session** — a sibling agent working the same checkout swept my
+uncommitted card into its commit. So a card can be "committed" while its author never committed
+anything, and the §33 disposition then points at paths the sweeping commit never staged. A seat
+that trusts `git status` clean as evidence its own output landed is reading a sibling's work.
+
+**1. Item 1 — DELIVERED, and deliberately NOT a ninth barrier-rent echo.** The died run had
+already built the ground map (post-no→date calibration, head 190,509; three era slices; 2,130-row
+title tape) and 13 threads to comment depth, but wrote **zero findings** — the extraction was the
+owed half. Mining what was already on disk cost zero fetches.
+- **A scan-bug caught before it became a false null:** my first title-tape scan returned **0 hits
+  on all 8 residue patterns**. That was my own off-by-one (I matched `r[2]`, the *timestamp*
+  column, after prepending the slice key — titles are `r[3]`), not an empty ground. Re-scanned
+  correctly: 46 wallet/deposit-closed, 22 real-name/bank-rail, 11 margin/futures, 3 Upbit↔Bithumb.
+  Recording it because a zero from the wrong column is indistinguishable from an exhausted seam,
+  and this seat's standing failure mode is exactly that (BR-miner s2, 3rd false-exhaustion mode).
+- **The residue found (Upbit↔Bithumb basis lore, the note's own named target) → WS-011.** Thread
+  **52389** (2018-01-11, shock day), OP + an independent commenter both naming it: the intra-KR
+  spread inverted to ~140,000 KRW because **Bithumb's matching engine froze during the crash** —
+  the stale venue did not fall, it stalled. Plus **5835** (~1.6% intra-KR gap as routine) and
+  **6465** (Bithumb-rich in Dec-2017 vs Upbit-rich by Jan-2018 → the intra-KR sign is
+  regime-dependent, not structural). **Why this is the valuable residue and not lore:** the
+  confounder is *correlated with the treatment* — tapes freeze during crashes and volume spikes,
+  which is exactly when premium extremes and rail-state transitions happen, so it biases the
+  event window specifically instead of averaging out.
+- **Verified against live desk code rather than asserted:** `libs/research/upbit_data.py:64`
+  returns `{date: trade_price}` and **discards `candle_acc_trade_volume`** — the one field that
+  separates "price stable" from "venue not trading" is dropped at the boundary; and
+  `data/kr_perasset_premium_history.jsonl` carries **`fx_ffill`** (FX-leg staleness flagged) with
+  **no venue-price-leg equivalent**. The two legs of one ratio are instrumented asymmetrically and
+  the uninstrumented leg is the one the era says froze. Honest limit stated in WS-011: era
+  evidence is INTRADAY, the desk series is DAILY, so this is a prior to MEASURE, not to assume.
+- **This sharpens my own card's falsifier rather than supporting it.** Thread **77829**'s best
+  reply — "해외 차트 고스란히 반영 되요... 봇들도 사람처럼 해외 차트 맞추는거라" (the bots just
+  track the overseas chart) — says the KR book FOLLOWS global. If so, the card's KR→global
+  transmission may be the wrong direction, and a measured effect could be outage-staleness. Both
+  routed as adversarial context on the card, not as support for it.
+- **Legality boundary, cleanly stated by the era (55701 + 77951):** "원화로 사고 원화로 출금하면
+  상관없습니다" — intra-KR arbitrage was legally unencumbered; only the CROSS-BORDER leg triggered
+  외환법 (Korean nationals: ~$50k/yr cap, and "virtual currency purchase" a refused declared
+  purpose; foreign nationals: unrestricted inbound, unlimited outbound on source declaration).
+  **Consequence for method:** the intra-KR spread sits behind the SAME capital control on both
+  legs, so the barrier-rent term *differences out* — which is precisely what makes it a cleaner
+  control than the KR-vs-global premium that the desk already retracted as ~73% artifact.
+  Deliberately NOT carded as a ninth barrier-rent instance; it is a control-construction note.
+- **+6 KR lexicon rows** (charter §16): 가두리, 보따리상, 벌집계좌, 허매수/허매도, and 한프/코프
+  recorded as **SEED with gloss UNVERIFIED** rather than guessed — if those are per-venue premium
+  words, the era had folk vocabulary for intra-KR dispersion, i.e. the WS-011 axis itself.
+  Second-corpus confirmation of an existing row: 재정거래 hit **1 of 2,130** era titles, matching
+  the velog lexical-zero verdict in a different corpus and era (the formal term finds textbooks).
+
+**VIDEO: 0 fetched, 0 locked** — no video ground was touched this run (the item was a text
+archive). Recording the explicit zero because an empty log is otherwise ambiguous between "never
+hit" and "never tried".
+
+**DEPTH LINE (honest).** Ppomppu era corpus: **reply-chain ≥2 / comment-layer exhausted on 5
+threads read this run** (52389, 6465, 5835, 55701, 55357) on top of the died run's 13, plus the
+full 2,130-row title tape mined by pattern. Depth surfaced what the surface could not: 52389's
+*title* reads as ordinary premium chatter and only the body+comment layer carries the outage
+cause; 55357's title asks why banks blocked accounts and only its 4-comment argument carries the
+zero-interest-float economics. **Not exhausted, and not claimed as such** — 46 wallet/deposit and
+22 rail threads from the tape remain unread, and the board's 2018-02→2018-12 tail is unmapped.
+The tape itself is the reusable asset: those 68 named post-numbers are a work queue, not a search.
+
+**NEXT UN-EXHAUSTED GROUND (in order).** (1) The 46 wallet/deposit-closed + 22 real-name/bank-rail
+threads already named in the tape — direct evidence for card #26's rail-state event list, zero
+search cost. (2) The Cocoa repo chain (item 2, untaken). (3) The 2018-02→2018-12 post-no range,
+uncalibrated between no 85000 (2018-02-16) and 100000 (2018-12-06) — the post-ban bear era, the
+cheapest remaining binary-search extension.
 
 ## SESSION NOTES — JP frontier miner
 

@@ -483,6 +483,22 @@ verified-live keyless** → data_axis_watchlist card 31 + universe map 98-binanc
   wash-volume was prosecuted) — a measured "KR bid transmission" may be the echo of paint, not
   flow; the control set must match on volume-quality, and any survivor owes a mechanism check
   against per-venue REAL-flow proxies before it is believed.
+- **ADDENDUM 2026-08-12 (same seat, resumed run) — two era findings that cut AGAINST this card,
+  recorded here because the screen must not be run without them.** (1) **WS-011 outage-staleness
+  confound.** The same era corpus documents (thread 52389, OP + independent commenter) a KR venue
+  whose matching engine FROZE during a crash, manufacturing a ~140,000 KRW intra-KR spread out of
+  nothing. Tapes freeze during crashes and volume spikes — exactly when rail-state transitions
+  cluster — so this confounder is *correlated with the treatment* and biases the event window
+  rather than averaging out. The pre-registered screen above must therefore carry a liveness
+  filter (venue volume / tape advance) on both legs, or a "rail state → premium" result is
+  unidentifiable from "venue stopped trading". Note `libs/research/upbit_data.py:64` currently
+  discards `candle_acc_trade_volume`, so that filter is not available from the stored series
+  as-built. (2) **Direction risk.** Thread 77829's best reply — "해외 차트 고스란히 반영 되요"
+  (the KR bots simply track the overseas chart) — is era testimony that the KR book FOLLOWS
+  global. This card's tradeable claim is KR→global transmission; if the era reply generalises,
+  the causal arrow points the other way and the card's mechanism is absent even if the correlation
+  is present. Neither finding kills the card; both mean a naive positive result should be
+  disbelieved first. The FALSIFIER above is unchanged and still binding.
 
 **WATCHLIST (max 5): POC retest (hold), SFD cadence probe (hold), dvol_futures_basis_carry
 (hold), coinm_usdtm_basis_convexity_rv (hold), kr_rail_state_transition_global_leg (NEW). 5/5
