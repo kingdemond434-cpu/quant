@@ -788,6 +788,37 @@ def main(argv: list[str] | None = None) -> int:
     # -- it reads the finished report and changes nothing about what was mined.
     source_health.record_from_report(doc)
 
+    # EDGE INTAKE RUNS HERE, IN THE PRODUCER -- gate items 30/34, and it is here rather than in a
+    # separate consumer because of a defect that bit on 2026-08-12 within an hour of the intake
+    # organ shipping.
+    #
+    # WHAT HAPPENED. A dedicated bilibili sweep wrote 92 new rows to reports/research_queue.json.
+    # A second sweep ran twenty minutes later, OVERWROTE that file with its own 40 rows, and the
+    # intake cron -- which fires once, after the daily run -- stamped only the 40. The 92 bilibili
+    # ids were already in the seen ledger, so they can never be re-surfaced, and they carried no
+    # intake record, so nothing counted them as missing. Ninety-two genuine candidates became
+    # invisible, which is the EXACT research-recall failure Part III exists to prevent, and the
+    # recall audit could not see it because the audit compares against the queue file that no
+    # longer contained them.
+    #
+    # A CONSUMER THAT RUNS ON ITS OWN SCHEDULE CANNOT CLOSE THIS. Any ad-hoc invocation, any
+    # second run in a cycle, any --only lane fired by hand slips between two cron ticks. The
+    # producer stamping its own output is the only placement with no gap: the rows are stamped
+    # before this function returns, so the file that is about to be overwritten has already been
+    # folded into the append-only ledger.
+    #
+    # NEVER FATAL. A stamping failure must not fail the mine -- the queue file and the seen ledger
+    # are already written by this point, and losing the sweep to a ledger error would cost far
+    # more than the missing stamps it is complaining about.
+    try:
+        from libs.research import edge_intake
+        stamped = edge_intake.stamp_queue(out)
+        print(f"edge intake: {stamped.get('status')} n={stamped.get('n_stamped')} "
+              f"{stamped.get('by_disposition') or ''}")
+    except Exception as exc:                     # reported, never fatal
+        print(f"edge intake FAILED (non-fatal, queue already written): "
+              f"{type(exc).__name__}: {exc}")
+
     if not args.all:
         _save_seen(seen | all_ids)
 

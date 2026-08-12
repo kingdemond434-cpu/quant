@@ -1603,6 +1603,29 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # what a low cadence buys. Move the ratio with new TERRITORY (widen BILIBILI_QUERIES /
 # CN_ARTICLE_QUERIES), never with frequency. Depth likewise capped: --bili-pages defaults to 1,
 # measured 25x more new candidates per request than 4 pages.
+#
+# CONFIRMED 2026-08-12 by the strongest test available -- a SEVEN-DAY elapsed gap. Bilibili
+# returned yield 0.0893 (1,030 fetched, 92 new at threshold 3.0), recovering nearly all of the
+# 0.1135 that the widened query set produced on 2026-08-05. Against the 0.0011 of two runs seven
+# minutes apart, that is an 81x spread driven purely by elapsed time. The instrument is
+# PUBLICATION-RATE-LIMITED, exactly like arXiv, and the 1/day floor is right.
+#
+# LANE YIELDS, same day, so they are comparable:
+#   bilibili   1,030 fetched   92 new   0.0893
+#   cn         659   fetched   32 new   0.0486   (juejin + wechat; 9 of the top 12 rows)
+#   search     205   fetched    7 new   0.0341
+#   academic   69    fetched    0 new   0.0      (arXiv 429/timeouts)
+#   youtube    143   fetched    0 new   0.0
+#   foreign    1,626 fetched    0 new   0.0
+#
+# THE CHINESE LANES PRODUCED 124 OF THE DAY'S 132 NEW ROWS -- 94%. Any proposal to cut the
+# Chinese miner to save limits is backwards: it is the desk's discovery engine, and it costs
+# network requests rather than Claude sessions, so it does not compete with the seat budget at
+# all. THE LANE THAT COSTS 1,626 FETCHES FOR ZERO NEW ROWS IS FOREIGN, and it is the honest
+# cut candidate -- though note eksisozluk's 17 "404s" turned out to be the desk asking the
+# wrong URL (fixed 2026-08-12), so the foreign lane must be RE-MEASURED after the repair
+# before its cadence is lowered. Cutting a lane on a yield number produced by our own bug
+# would retire a working forest.
 0 13 * * * cd "$QUANT_ROOT" && flock -n data/.cron_minerq.lock .venv/bin/python scripts/mine_research_queue.py >> data/cro_ai_logs/mine_research_queue.log 2>&1
 # EDGE INTAKE, 20 minutes after the miner writes its queue (gate items 30/31/34, mandate
 # Part III). Folds every queue row into data/edge_intake.jsonl with exactly one named
