@@ -44,6 +44,14 @@ data/*
 # guard on the VPS reads it, so it must travel with the repo or the gate never
 # sees it. Revocation = delete the file and commit that too.
 !data/gate0_signoff.json
+# REPO-scope max_audit acks are DISPOSITIONS OF A COMMITTED FACT, not runtime state (R0393). A
+# REPO defect is identically true in every checkout, so an ack living only in the untracked
+# registry left it firing on the VPS -- where the doctrine's own ">48h un-acked ESCALATES to the
+# principal page" rule pages him for a defect that already carries a full reasoned disposition in
+# another checkout. That is the exact failure the ack mechanism exists to prevent, and it fires
+# hardest on the most carefully dispositioned items. RUNTIME acks stay untracked and per-box,
+# where their truth genuinely differs by machine.
+!data/max_audit_acks_repo.json
 # The L1.45 excitation design is the PRE-REGISTERED HYPOTHESIS, not state. An uncommitted
 # pre-registration is not a pre-registration: arms/epsilon/cap could be edited after seeing the
 # fills with no trace, which is the exact confounding the design exists to remove. Its diff IS

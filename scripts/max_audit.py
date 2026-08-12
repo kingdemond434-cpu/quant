@@ -45,7 +45,19 @@ if TYPE_CHECKING:                      # the libs import below needs the sys.pat
     from libs.ops.cycle_evidence import CycleEvidence
 LOGS = ROOT / "data/cro_ai_logs"
 REPORT = ROOT / "data/max_audit_report.json"
+#: PER-BOX acks: the defect's truth genuinely differs by machine, so its disposition should too.
+#: Untracked by design (`data/*` is gitignored) -- a RUNTIME defect acked here is acked exactly
+#: where it fires and nowhere else, which is correct.
 ACKS = ROOT / "data/max_audit_acks.json"
+#: TRACKED acks, and the distinction is R0393. A REPO-scope defect is a property of a COMMITTED
+#: file, so it is identically true in every checkout -- but its ack lived only in the untracked
+#: file, so acking it here left it firing on the VPS, where the doctrine's own escalation rule
+#: ("defects persisting >48h un-acked ESCALATE to the principal page") pages the principal for a
+#: defect that HAS a full reasoned disposition sitting in another checkout. That is the exact
+#: failure the ack mechanism exists to prevent, and it fires hardest on the most carefully
+#: dispositioned items. The scope needed to route this was already computed per defect
+#: (`scope_of`) and simply never applied to ack STORAGE.
+ACKS_REPO = ROOT / "data/max_audit_acks_repo.json"
 PA = ROOT / "data/PRINCIPAL_ACTION.md"
 
 ESCALATE_H = 48.0
@@ -7256,6 +7268,64 @@ def check_constitution_review(defects) -> None:
 CHECKS += [("constitution-review", check_constitution_review)]   # registered BELOW its definition
 
 
+def _read_one(path: Path) -> tuple[dict, str]:
+    """One ack registry -> (acks, state). An ABSENT registry is known-empty; an UNPARSEABLE one is
+    "unknown", never silently empty -- guessing "nothing is acked" writes a permanent false
+    accusation and guessing "all acked" buries real work."""
+    if not path.exists():
+        return {}, "known"
+    try:
+        acks = json.loads(path.read_text("utf-8"))
+    except Exception:
+        return {}, "unknown"
+    return (acks, "known") if isinstance(acks, dict) else ({}, "unknown")
+
+
+def _read_acks() -> tuple[dict, str]:
+    """Both registries as one view. TRACKED WINS on a duplicate id: it is the copy every checkout
+    can see and a reviewer can read in the diff, so a local entry must not be able to quietly
+    shorten or extend a disposition the repo has already recorded. Either registry failing to
+    parse degrades the WHOLE view to "unknown" -- a half-read ack table is not a known one."""
+    repo, s1 = _read_one(ACKS_REPO)
+    local, s2 = _read_one(ACKS)
+    merged = {**local, **repo}
+    return merged, ("known" if s1 == "known" and s2 == "known" else "unknown")
+
+
+def misfiled_acks(defects: Sequence[tuple], *, now_iso: str | None = None) -> list[tuple[str, str]]:
+    """REPO-scope defects acked ONLY in the per-box registry -- acks that do not travel (R0393).
+
+    Reported rather than fixed silently, because moving an ack between files is a disposition and
+    disposition is not this function's to make. Each entry is (defect id, scope).
+
+    DEDUPED BY ID, because an ack is keyed by id and one check emits many defects under the same
+    one: `producer-cadence-stale` fires five times in a normal run, and a list that repeated it
+    five times would report 17 misfilings where 12 acks need moving -- inflating a queue is the
+    same class of error as hiding one.
+    """
+    now_iso = now_iso or datetime.now(tz=UTC).isoformat()
+    repo, _ = _read_one(ACKS_REPO)
+    local, _ = _read_one(ACKS)
+    out: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    for d in defects:
+        did = d[0]
+        if did in seen:
+            continue
+        seen.add(did)
+        scope = d[2] if len(d) > 2 else "UNSCOPED"
+        if scope == "RUNTIME":
+            continue                                    # per-box defect, per-box ack: correct
+        a = local.get(did)
+        if not (isinstance(a, dict) and a.get("until", "") > now_iso):
+            continue                                    # not acked locally; nothing to misfile
+        b = repo.get(did)
+        if isinstance(b, dict) and b.get("until", "") > now_iso:
+            continue                                    # already carried by the tracked registry
+        out.append((did, scope))
+    return out
+
+
 def split_acked(
     defects: Sequence[tuple], *, now_iso: str | None = None
 ) -> tuple[list[tuple], list[tuple[str, str]], str]:
@@ -7270,6 +7340,12 @@ def split_acked(
     A brief whose top of queue is 100% false gets walked past, which the brief then counted as
     avoidance and escalated. Sharing this function is what stops that drift for good.
 
+    TWO REGISTRIES, ONE VIEW (R0393). Acks are split by the scope max_audit already computes:
+    REPO-scope dispositions live in the TRACKED registry so they travel with the commit that
+    reasons about them, RUNTIME ones stay per-box where their truth actually differs. An id acked
+    in EITHER is acked here -- the split governs where a disposition is WRITTEN, never whether it
+    counts, so no existing ack was invalidated by the split landing.
+
     Returns ``(live, acked, ack_state)``. ``ack_state`` is the REFUSAL PATH (L1.41): "known" when
     the registry was genuinely read, "unknown" when it exists but could not be parsed. An ABSENT
     registry is known-empty -- "nothing has been acked" is a fact, not an unknown. Callers that
@@ -7277,17 +7353,7 @@ def split_acked(
     writes a permanent false accusation and guessing "all acked" buries real work.
     """
     now_iso = now_iso or datetime.now(tz=UTC).isoformat()
-    if not ACKS.exists():
-        acks: Any = {}
-        state = "known"
-    else:
-        try:
-            acks = json.loads(ACKS.read_text("utf-8"))
-            state = "known"
-        except Exception:
-            acks, state = {}, "unknown"
-    if not isinstance(acks, dict):
-        acks, state = {}, "unknown"
+    acks, state = _read_acks()
 
     # WIDTH-PRESERVING (merge 2026-08-04): defects arrive as (did, msg) from bare callers and as
     # (did, msg, scope, tracked, untracked) after _fenced's evidence recording. The ack rule reads
@@ -7310,6 +7376,7 @@ def main() -> None:
         _fenced(fn, defects, label)
 
     live, acked, _ack_state = split_acked(defects)
+    misfiled = misfiled_acks(defects)
 
     prev = _j(REPORT, {})
     first_seen = prev.get("first_seen", {})
@@ -7325,7 +7392,11 @@ def main() -> None:
          "live": [{"id": d, "msg": m, "scope": s, "evidence_tracked": tr,
                    "evidence_untracked": un} for d, m, s, tr, un in live],
          "by_scope": by_scope,
-         "acked": [d for d, _ in acked], "first_seen": first_seen,
+         "acked": [d for d, _ in acked],
+         #: Acks that do not travel: REPO-scope defects disposed of only in the untracked
+         #: per-box registry, so they keep firing (and escalating) on every other checkout.
+         "acked_misfiled": [{"id": d, "scope": s} for d, s in misfiled],
+         "first_seen": first_seen,
          "scope_note": (
              "REPO: the check consulted a git-tracked file, so the defect is verifiable and "
              "closable from any checkout. RUNTIME: it consulted only untracked paths (data/, "
