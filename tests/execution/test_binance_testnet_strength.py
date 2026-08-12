@@ -206,13 +206,19 @@ def test_positions_keeps_shorts_and_drops_flat_symbols(venue, monkeypatch) -> No
 def test_flatten_all_sends_the_OPPOSITE_side_at_absolute_size(monkeypatch) -> None:  # type: ignore[no-untyped-def]
     """The emergency path. Closing a long with another BUY doubles the exposure it was called to
     remove, and a negative quantity is rejected outright -- leaving the position open in an
-    emergency."""
+    emergency. reduce_only=True is asserted too: without it a position that shrank between the
+    positions() read and the fill is sold THROUGH zero into the opposite side (the deliberate
+    'Money path batch 17' change this test's old 3-arg mock silently swallowed -- flatten_all's
+    per-symbol except turned the mock's TypeError into error dicts and sent stayed empty, so
+    the suite read a signature mismatch as the emergency path being broken)."""
     monkeypatch.setattr(bt, "positions", lambda: {"BTCUSDT": 2.0, "ETHUSDT": -3.0})
-    sent: list[tuple[str, str, float]] = []
-    monkeypatch.setattr(bt, "place_market",
-                        lambda s, side, q: sent.append((s, side, q)) or {"orderId": 1})
+    sent: list[tuple[str, str, float, bool]] = []
+    monkeypatch.setattr(
+        bt, "place_market",
+        lambda s, side, q, reduce_only=False, cycle=None:
+        sent.append((s, side, q, reduce_only)) or {"orderId": 1})
     bt.flatten_all()
-    assert sent == [("BTCUSDT", "SELL", 2.0), ("ETHUSDT", "BUY", 3.0)]
+    assert sent == [("BTCUSDT", "SELL", 2.0, True), ("ETHUSDT", "BUY", 3.0, True)]
 
 
 # ------------------------------------------------------------------------- the equity
