@@ -2566,3 +2566,64 @@ that skips be COUNTED, which strictly increases what the desk can see. Every err
 points the same way: toward a fence looking better covered than it ever was.
 
 FENCED by `scripts/check_denominator_attrition.py` over `libs/ops/attrition.py`.
+
+## L1.61 THE DESK RECONCILES ITS BOOK AGAINST THE VENUE AND HAS NEVER ONCE RECONCILED IT AGAINST ITSELF
+
+After a 13-model panel demanded it, this desk built double-entry reconciliation against the
+VENUE (`run_venue_reconcile.py`). It never built one against ITSELF, and the reason it never
+occurred to anyone is structural rather than careless: **every instrument here is single-artifact
+BY CONSTRUCTION.** `path_refs.phantoms` asks whether a writer exists. `fresh` asks whether a file
+is old. `input_provenance` (L1.55) asks whether MY inputs were present. `denominator` (L1.57) and
+`attrition` (L1.60) ask whether I scanned anything. An organ reads its inputs successfully,
+computes honestly, publishes a well-formed fresh artifact, and passes ALL FIVE while asserting
+the exact opposite of what the organ beside it asserts about the same fact.
+
+**CONTRADICTION IS NOT A PROPERTY OF ANY SINGLE ARTIFACT.** It exists only in the RELATION
+between two, and until now nothing on this desk ever held two at once. This is the same blind
+spot as L1.45's cycle -- every fence walked nodes, none walked edges.
+
+**THE PROVING INSTANCE WAS LIVE, ON THE ONLY PATH TO CAPITAL.** `data/gate0_readiness.json` names
+its own subject -- "S1 entry (Gate 0) -- `libs/execution/staging.py:s1_entry_met`" -- and
+`data/live_guard.json` evaluates the same five criteria through the same function. FOUR OF FIVE
+DISAGREED. The board a HUMAN reads reported `principal_signoff`, `keys_present`,
+`connector_verified` and `symbol_count_4_5` all READY; the executor-side evaluator reported all
+four False. Each side read its own source successfully, so no fence could fire. The principal
+signed off on 2026-07-30 and `run_live_guard` structurally cannot see it: it reads
+`data/stage_state.json['principal_signoff']`, **a key no code anywhere writes**, while consent
+actually lives in `data/gate0_signoff.json`. Two incompatible encodings of the same human act.
+
+**THE GENERAL VERSION WAS REFUTED BY ITS OWN PRE-REGISTERED FALSIFIER, AND THAT IS WHY THIS LAW
+IS NARROW.** The first design indexed every leaf key across `data/**.json`. Measured 2026-08-12:
+590 artifacts, 10,003 distinct leaf names, 4,523 published by >=2 artifacts, 418 in scalar
+disagreement -- and a random sample of 25 of those contained **ZERO** genuine same-meaning
+contradictions. `why` has 78 publishers of free text; `window_days` is 1.0 in one artifact and 90
+in another and BOTH ARE CORRECT; `ready` is a bool in one and a count in another. A fence
+emitting 418 findings of which ~all are noise gets acked into silence -- exactly how the
+phantom-paths fence spent its first months (R0356). **A DETECTOR THAT CRIES WOLF ENFORCES
+NOTHING (L1.37).** The registry is therefore HAND-BUILT and MONEY-PATH ONLY.
+
+**OPERATIVE.** Every claim is a fact two organs genuinely both assert, registered with what each
+side ACTUALLY MEASURES read from its code -- never from the name it publishes under. Three
+contradiction classes, because they demand different repairs: **FABRICATED-SIDE** (one side's
+value came from an absent input -- repair the INPUT, not the verdict); **SAME-NAME-
+DIFFERENT-QUESTION** (both measured honestly and answer different questions under one name, so
+the ambiguous evidence CONTRACT is the defect and neither reading is wrong on its own terms);
+**GENUINE-DISAGREEMENT** (both measured the same question and one is simply wrong). A claim that
+stops resolving goes UNRESOLVED rather than quietly dropping out of the denominator, and a run
+that compares NOTHING reads UNMEASURED, never OK (L1.28a).
+
+**THE FENCE MUST NOT OVER-CLAIM ITS OWN ATTRIBUTION, AND ITS FIRST RUN DID.** L1.55's `measured`
+flag is BLOCK-level; four of the five Gate-0 criteria are computed after -- and therefore
+override -- the absent input. Inheriting the block flag labelled two genuine measurements
+FABRICATED and would have sent a reader to repair an input those values never read. **An
+inference wearing a measurement's clothes is the defect this fence exists to catch**, so the
+taint is registered per criterion from a read of the producer's code, and a regression test
+pins it.
+
+**ANTI-TIMIDITY READING, THE ENTIRE PURPOSE (L1.28).** A MEASUREMENT duty and a SCOPE EXPANSION.
+It lifts nothing, sizes nothing, promotes nothing, OPENS NO GATE and loosens no bar -- it has no
+vocabulary for changing any value it reads. Its whole effect is to make "these two boards agree"
+distinguishable from "these two boards have never been compared", which were byte-identical on
+this desk until now, and only one of them is evidence.
+
+FENCED by `scripts/check_claim_consistency.py` over `libs/ops/claim_registry.py`.

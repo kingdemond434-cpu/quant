@@ -404,6 +404,16 @@ _MAP: dict[str, list[str]] = {
     "L1.60": ["scripts/check_denominator_attrition.py", "libs/ops/attrition.py",
               "scripts/check_coverage_floors.py", "scripts/check_calendar_gates.py",
               "scripts/check_llm_routing.py"],
+    # L1.61: the desk reconciles its book against the VENUE every cycle and had never once
+    # reconciled its own artifacts against EACH OTHER. Every instrument is single-artifact BY
+    # CONSTRUCTION -- phantoms asks "does a writer exist", fresh asks "is it old",
+    # input_provenance asks "were MY inputs present" -- so contradiction, which exists only in
+    # the RELATION between two artifacts, was invisible to all of them. Proving instance was
+    # live on the only path to capital: gate0_readiness and live_guard evaluate the same five
+    # Gate-0 criteria through the same function and FOUR disagreed. The general index was
+    # REFUTED by its own falsifier (418 disagreements, ~0 genuine), so the registry is
+    # hand-built and money-path only.
+    "L1.61": ["scripts/check_claim_consistency.py", "libs/ops/claim_registry.py"],
     # R0369 (under L2.3/§42): an implemented row's --commit is the ledger's whole proof mechanism,
     # and it was enforced only at WRITE time -- `dispose` refuses an empty field and asks nothing
     # else. A rebase rewrites SHAs and the citation quietly names an object no other clone can

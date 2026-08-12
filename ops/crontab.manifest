@@ -2446,6 +2446,25 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: committed-script (new this cycle); first run found 3 defects and all 3 are fixed
 41 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_denominator_attrition.py >> data/cro_ai_logs/denominator_attrition.log 2>&1
 
+# --- INTERNAL CLAIM CONSISTENCY (L1.61) --------------------------------------------------------
+# WHY: the desk reconciles its book against the VENUE every cycle (run_venue_reconcile, after a
+# 13-model panel demanded it) and has never once reconciled its own published artifacts against
+# EACH OTHER. Every existing instrument is single-artifact BY CONSTRUCTION: phantoms asks whether
+# a writer exists, fresh asks whether a file is old, input_provenance asks whether MY inputs were
+# present, denominator/attrition ask whether I scanned anything. An organ can pass all five while
+# asserting the opposite of the organ beside it, because CONTRADICTION IS NOT A PROPERTY OF ANY
+# SINGLE ARTIFACT -- it exists only in the relation between two, and nothing held two at once.
+# STATUS: OK / PARTIAL (exit 0, gap is a work queue) / CONTRADICTED (exit 2) / UNMEASURED (exit 2
+# -- an empty comparison set is the one result that must never read as agreement, L1.28a).
+# Subject to L1.57 via scanned=n_compared, which counts what the RUN compared, never len(CLAIMS).
+# CADENCE: daily. Its inputs are the Gate-0 board and the live guard; the guard republishes every
+# few minutes but the CLAIMS only move when a human changes config or consent, so it is
+# INFORMATION-ARRIVAL bound (L1.28c). Phased to 06:47, after the 06:41 attrition fence.
+# EVIDENCE: scripts/check_claim_consistency.py -> data/claim_consistency.json; CONSTITUTION L1.61
+# CONFIDENCE: committed-script (new this cycle); first run found 4 live contradictions on the
+# Gate-0 path -- 2 FABRICATED-SIDE, 2 SAME-NAME-DIFFERENT-QUESTION (R0536/R0537).
+47 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_claim_consistency.py >> data/cro_ai_logs/claim_consistency.log 2>&1
+
 # --- CITATION INTEGRITY (R0369, under L2.3/§42) ------------------------------------------------
 # WHY: `dispose --status implemented` refuses an empty --commit, so the ledger's proof-of-work was
 # checked at WRITE time and never at READ time, where it is actually spent. A rebase rewrites SHAs

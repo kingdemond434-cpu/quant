@@ -6706,6 +6706,66 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0536",
+   "source": "cycle",
+   "summary": "L1.61 FABRICATED-SIDE: run_live_guard reads principal_signoff from data/stage_state.json, a key NO code writes; consent actually lives in data/gate0_signoff.json (principal signed 2026-07-30). The guard therefore reports the Gate-0 consent criterion False permanently and structurally cannot ever see a signoff. REPAIR IS THE INPUT, and the direction is OPENING, so it is a money-path IMPROVEMENT: staged under L1.38 (window STERILE, CASHCARRY_KILL live). Repoint the guard at the same source check_gate0_ready uses, or have staging write the key.",
+   "roi_bps": null,
+   "raised": "2026-08-12T22:01:08.615658+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0537",
+   "source": "cycle",
+   "summary": "L1.61 FABRICATED-SIDE: run_live_guard's symbol_count reaches s1_entry_met ONLY via the data/ramp_state.json evidence spread, a file that has never existed, so int(...) defaults to 0 and symbol_count_4_5 is permanently False while cashcarry_config has top=4. Same staged/opening-direction treatment as the signoff row.",
+   "roi_bps": null,
+   "raised": "2026-08-12T22:01:11.630912+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0538",
+   "source": "cycle",
+   "summary": "L1.61 SAME-NAME-DIFFERENT-QUESTION on the Gate-0 contract: keys_present means 'credential FILES on disk' to check_gate0_ready and 'the venue CONNECTOR OBJECT was constructed' to run_live_guard; connector_verified means '531 fills in the execution tape' vs 'a CANARY PROBE succeeded'. Both readings are honest and both feed ONE function (staging.s1_entry_met), whose evidence dict has NO declared contract. Fix the CONTRACT -- document/typed-declare what each evidence key means -- not either reading.",
+   "roi_bps": null,
+   "raised": "2026-08-12T22:01:13.933961+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0539",
+   "source": "cycle",
+   "summary": "L1.61 fallout: the desk holds THREE incompatible values for the book that every Kelly fraction, capacity runway (L1.18a live_book_usd/live_sleeves) and idle-cost figure divides by -- gate0_readiness $17,945, gate0_signoff froze $13,155 (its authorized 10% ceiling = $1,315), run_growth_audit defaults $4,500 (10% = $450, where print-impact measured the desk is a SPREAD TAKER). NOT registered as an L1.61 claim because no two artifacts publish it STRUCTURALLY (only prose), which is itself the finding: the sizing denominator has no machine-readable publisher.",
+   "roi_bps": null,
+   "raised": "2026-08-12T22:01:15.850947+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0540",
+   "source": "cycle",
+   "summary": "NOT BUILT this run (L1.61 falsifier fired): the GENERAL cross-artifact contradiction index over all data/**.json. Measured 590 artifacts / 10,003 leaf names / 4,523 shared / 418 disagreements, and 0 of a random 25 were genuine same-meaning contradictions -- >70% collision kill criterion met decisively. Rejected in favour of the hand-registered money-path registry that shipped. Revisit ONLY with a per-name semantic declaration, never by widening the index.",
+   "roi_bps": null,
+   "raised": "2026-08-12T22:01:17.782025+00:00",
+   "status": "rejected",
+   "reason": "Killed by its own pre-registered falsifier, measured before a line was written: 590 artifacts, 10,003 leaf names, 4,523 published by >=2 artifacts, 418 in scalar disagreement, and 0 of a random sample of 25 were genuine same-meaning contradictions. why has 78 publishers of free text; window_days is 1.0 in one artifact and 90 in another and BOTH ARE CORRECT; ready is a bool in one and a count in another. A fence emitting ~418 noise findings gets acked into silence (R0356). Shipped the hand-registered money-path registry instead, which found 4 real contradictions on the Gate-0 path at 100pct precision.",
+   "commit": null,
+   "due": null,
+   "disposed": "2026-08-12T22:01:30.017669+00:00"
   }
  ]
 }
