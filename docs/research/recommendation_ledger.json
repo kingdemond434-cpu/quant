@@ -4553,11 +4553,11 @@
    "summary": "INTEGRITY-WATCH P1: the published risk block contradicts the code that computes it. MEASURED, mechanism NOT established. web/cashcarry_live.json (fresh 08:52Z) publishes dd_from_start_pct -17.64 / pause_opens, which reproduces ONLY under the RAW inception 10547.78 (8687.61/10547.78-1 = -17.64%). But capital_events.effective_start_equity(10547.78) returns 5757.08 when executed in this checkout, under which dd_from_start would be +50.90%. The rail wiring is NOT stale code: effective_start_equity landed in the executor 2026-07-30/07-31 (8281fba, a0a475c), the sole running process (PID 3237887) started 2026-08-05 02:44:13, and the only later commit (9e3ff47, 03:07Z desk snapshot) added 24 lines without touching effective_start_equity, peak_combined_equity or risk_controls.evaluate. Two further facts narrow it: data/cashcarry_positions.json still holds last_risk_action 'ok' and last_combined_equity_at 2026-08-04T21:58 -- ELEVEN HOURS STALE against a process started at 02:44 that republishes the web artifact every 600s -- and the published risk key at run_cashcarry_executor.py:1699 is 'rb.get(risk)', a block COPIED FORWARD from a prior _rebalance rather than a fresh evaluation (the fresh one is :1156). Leading hypothesis, UNPROVEN: _rebalance has not completed a state write since 21:58 and _mark is echoing a frozen risk verdict, so the dashboard, the pager and run_growth_audit are all reading a rail verdict nothing is recomputing. This is the read-without-writer class pointed at a rail. NOT claiming the mechanism: verify by instrumenting one _rebalance tick and comparing the recomputed RiskDecision against the published block before changing any behaviour. Book is FLAT and PAPER so no capital is at risk this instant; the cost is that every downstream instrument may be trusting a stale pause verdict, and the Gate-0 forward clock is frozen behind it. Adjacent and separately real: max_audit.py:5006 reads RAW start_futures_equity instead of effective_start_equity, so the absorbing-state monitor does not honour recorded capital events at all.",
    "roi_bps": 0.0,
    "raised": "2026-08-05T09:08:56.471313+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "b2473964",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T18:54:30.792287+00:00"
   },
   {
    "id": "R0365",
@@ -4565,11 +4565,11 @@
    "summary": "GENERALISE THE RULE (proactive battery move 6): the gap register carries the SAME defect class fixed in the carry-over brief today, and its prior triage rejected the fix on an objection the new design answers. rerank_gaps.py:109 takes worst = min(deadlines) over every date in a row, so an ORIGINAL missed deadline permanently dominates any later deferral -- rows #70/#74/#75 were re-deferred to 2026-08-12 and 2026-08-19 by the 08-04 cycle and still print DEADLINE-PASSED today, exactly as libs/ops/carryover.py:181 printed a defect fixed 7 times as 'shown the work and not done'. THE PRIOR CYCLE'S OBJECTION WAS SOUND AND IS NOW OBSOLETE: it declined to clear the flag because 'overwriting the passed date erases the fact that the desk missed it -- the denominator trick section 34 forbids'. Correct, and that is precisely why min() is the wrong operator rather than the right one: the fix is NOT to overwrite the miss but to report BOTH facts, which is strictly more information than either alone. Design, mirroring the carry-over fix shipped this cycle: rank on the CURRENT (latest) deadline, and carry missed_deadlines as its own distinct field, so a row renders 'DEFERRED 2026-08-12 (1 deadline missed)' instead of a permanent DEADLINE-PASSED that cannot be cleared by any honest act. Preserves the full history, keeps the treadmill visible via the miss COUNT (a row on its fourth re-deferral is louder under this scheme, not quieter), and restores the register's ability to distinguish parked from re-committed. Cheap: one operator change, one field, one render line, plus tests asserting a re-deferred row shows its miss count and a never-deferred overdue row is unchanged. Precedent and test pattern: tests/ops/test_carryover.py::TestRecurrenceIsNotASkip.",
    "roi_bps": 0.0,
    "raised": "2026-08-05T09:11:51.517769+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "337f8ebc",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T18:39:11.468658+00:00"
   },
   {
    "id": "R0366",
@@ -4577,11 +4577,11 @@
    "summary": "check_calendar_gates.py counts DOCSTRING PROSE as calendar gates, inflating its own migration checklist. The scanner skips lines starting with '#' but not lines inside a triple-quoted string, so libs/research/evidence_clock.py:4,5,6,16 -- the module docstring DESCRIBING the habit it exists to kill ('days < 90', 'fwd_days >= 30', 'live_days >= 60', 'days >= 90') -- are reported as four untagged defects. Same trap caught libs/research/event_density.py:6,213 on 2026-08-05 (reworded to dodge it, which is a workaround, not a fix). Cost: the checklist IS the migration work queue, so ~4 of 58 items are noise that can never be closed, and the only ways to 'fix' a false positive are to reword correct prose or to tag it CLOCK-EXEMT, which would be a false exemption claim on a non-gate. Fix: track triple-quote state in scan() and skip string bodies -- code inside a docstring cannot execute, so nothing real is lost.",
    "roi_bps": 3.0,
    "raised": "2026-08-05T12:22:26.376041+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "de646dc2",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T18:33:26.122112+00:00"
   },
   {
    "id": "R0367",
@@ -6286,6 +6286,54 @@
    "commit": null,
    "due": "2026-08-15",
    "disposed": "2026-08-12T18:16:32.530760+00:00"
+  },
+  {
+   "id": "R0509",
+   "source": "self",
+   "summary": "The GAP_REGISTER has 17 DUPLICATED row ids -- 105 rows, 88 distinct ids -- from a branch merge that unioned two lineages without renumbering (ids 81,82,83,84,88,90,92,93,94,95,96,97,98,99,100,101,102). rerank_gaps was fixed to read each row's OWN text (337f8ebc) so the mechanical pass no longer swaps deadlines, but THE REGISTER ITSELF IS STILL AMBIGUOUS and this organ has no authority to renumber it. Every citation of a colliding id resolves to two findings: CLAUDE.md points at 'row 91' (not colliding, so safe today), .claude/desk-state.sh prints '#100 #101 #102' as the top open rows, and each of those three names one 08-02 finding AND one 08-07 finding. FIX: renumber the LATER lineage's colliding rows to fresh ids at the tail (>=105), preserving both texts -- the same union+renumber-once convention the miner merges use -- and leave a one-line note in the register mapping old->new so existing citations can be resolved rather than silently re-pointed. Cheap and mechanical, but it is a CONTENT edit to the register, which is the judgment half's artifact: rerank_gaps deliberately cannot write it. Detection is already wired: rerank_gaps prints AMBIGUOUS IDS and data/gap_rerank.json carries ambiguous_ids, so the fix is verifiable by that list going empty.",
+   "roi_bps": 4.0,
+   "raised": "2026-08-12T18:39:18.799595+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0510",
+   "source": "self",
+   "summary": "MONEY-PATH RESIDUAL of R0364, blocked on the L1.38 window: run_cashcarry_executor._emit publishes 'risk': rb.get('risk') and only _rebalance ever sets that key, so on every tick served by _book_snapshot() (which has NO risk key) the whole book is republished with the rail state blanked -- ~9 ticks in 10 at --interval 600 against _HB_TICK=60. Invisible today ONLY because data/CASHCARRY_KILL has stood since 2026-08-01 and the kill branch calls _rebalance every tick. Downstream cannot tell 'null' from 'no breach': check_idle_cost.py:188 reads live.get('risk') or {} -> action '' -> the rail clamp is recorded INACTIVE and priced at ZERO by the very L1.51 fence built to price clamps. FIX (two lines, no decision change): carry the last EVALUATED RiskDecision on the executor's state and publish it with the ISO timestamp of the evaluation that produced it, so a copy-forward is self-declaring; or publish an explicit UNEVALUATED marker on snapshot ticks. BLOCKED: scripts/run_cashcarry_executor.py is MONEY_PATH and check_change_window reports STERILE / RAIL_BREACH while CASHCARRY_KILL is present -- this is an IMPROVEMENT (observability), not a repair, so it waits. DETECTION IS ALREADY WIRED so the gap is not silent meanwhile: max_audit.check_rail_verdict_published (b2473964) fires rail-verdict-absent on the null case and rail-verdict-stale on the frozen case.",
+   "roi_bps": 6.0,
+   "raised": "2026-08-12T18:54:43.725419+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0511",
+   "source": "self",
+   "summary": "PRE-EXISTING RED SURVIVAL GUARD, found while working R0364, NOT introduced by it and NOT touched: tests/risk/test_capital_events.py::test_this_module_is_NEVER_called_automatically FAILS at HEAD (verified in a clean worktree at 1d8a4e5c). The guard scans every scripts/ and libs/ file that calls rebase() and asserts each contains the literal 'LEDGER =', on the theory that any legitimate caller is a DRILL redirecting CE.LEDGER to a throwaway path. scripts/record_capital_event.py calls CE.rebase() at :214 and refers to CE.LEDGER at :224 by ATTRIBUTE, never by assignment, so it fails the literal-string net -- yet it is THE principal-only command the rail's re-entry path is supposed to run against the real ledger. So the guard as written can never pass while its own intended user exists: it is either missing an explicit exclusion for record_capital_event.py or the file once carried a local 'LEDGER =' that was removed. DELIBERATELY NOT FIXED BY ME: this guards a Tier-3 ruin rail's re-entry, and editing a guard to fit the violation it caught is the failure this desk has paid for repeatedly. It needs a decision about WHICH of the two readings is right, and that decision belongs with whoever owns the rail. Until then the suite is red on a survival-rail assertion, which trains readers to ignore it (L1.43).",
+   "roi_bps": 3.0,
+   "raised": "2026-08-12T18:54:51.365857+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0512",
+   "source": "self",
+   "summary": "PRE-EXISTING RED SUITE, 8 failures across 3 unrelated tests/ops files, verified at HEAD 1d8a4e5c in a clean worktree (not caused by any 2026-08-12 owed-work commit): test_stale_code_daemons.py (5: test_proc_start_on_a_dead_pid_is_none, test_a_running_organ_outside_the_systemd_roster_is_discovered, test_stale_code_actually_raises_a_defect, test_a_freshly_started_organ_is_not_stale, test_import_closure_follows_the_api_package), test_maker_share_denominator.py (2: test_market_only_closes_are_excluded, test_all_excluded_reports_none_rather_than_a_perfect_score), test_brain_hunter.py (1: test_THE_RUNNER_FOLLOWS_THE_RESUMABLE_PATTERN_THE_OTHER_MINERS_USE, asserting _BRAIN_MODEL_CHAIN appears in ops/brain_hunter.sh -- it does not). The brain_hunter one is a code/test lineage split of exactly the shape recorded 2026-08-11 (merge kept one lineage's tests and the other's code); the stale-daemon cluster looks environment-coupled (/proc, systemd roster) which would make it a test that cannot pass in a container. WHY THIS IS ITS OWN ROW rather than backlog: a permanently-red suite is the L1.43 welded-gate failure applied to CI -- a gate that always fails carries zero information and gets ignored, and the desk's own push gate reads it. Each of the three needs a separate verdict: fix, mark environment-dependent with a skip that names the requirement, or delete as superseded by the merge. Cheap to triage, and the maker_share pair touches a DENOMINATOR the desk has been repairing all week.",
+   "roi_bps": 3.0,
+   "raised": "2026-08-12T18:55:27.329039+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
