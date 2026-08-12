@@ -49,6 +49,7 @@ __all__ = [
     "GateOutcome",
     "attribute",
     "concentration",
+    "recoverable",
     "report",
 ]
 
@@ -176,11 +177,71 @@ def concentration(att: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
+def recoverable(outcomes: list[GateOutcome], *,
+                metrics: dict[str, dict[str, float]] | None = None,
+                thresholds: dict[str, Any] | None = None) -> dict[str, Any]:
+    """WHICH OF THE DEAD ARE RECOVERABLE -- delegated to libs.validation.near_miss, not rebuilt.
+
+    THE DEFECT THIS CLOSES, and it is not a missing capability but an UNUSED one. The desk built
+    a full near-miss triage in libs/validation/near_miss.py -- shortfall per gate, structural vs
+    statistical failure, improvement hints, an append-only ledger, and a verdict whose __bool__ is
+    hard-wired False so it can never be misread as a pass. It then wired it to NOTHING. Its only
+    importer in the entire repo is its own test file, so every one of the ~1,673 candidates died
+    as a bare PASS/FAIL and no near-miss was ever recorded.
+
+    That is the L1.50 shape exactly: capability already paid for, returning zero. And it is the
+    expensive one to leave unwired, because this desk's own accounting says 53% of refutations
+    were MEASUREMENT failures rather than absent alpha -- so the discarded near-misses are
+    disproportionately the FIXABLE half of the pile.
+
+    IT CHANGES NO VERDICT. Every candidate reaching here has already failed. This adds a ranking
+    over the dead -- how close, and which route back -- so a near-miss becomes a work item instead
+    of a corpse. A re-test still costs a full search-accounting entry at the unchanged bar.
+    """
+    try:
+        from libs.validation.near_miss import triage
+    except ImportError as exc:
+        return {"status": "UNAVAILABLE", "why": f"near-miss triage unimportable: {exc}"}
+    if not outcomes:
+        return {"status": "UNMEASURED",
+                "why": "no outcomes -- nothing was triaged, which is not 'nothing is recoverable'"}
+    if not metrics or not thresholds:
+        return {"status": "UNMEASURED",
+                "n_dead": sum(1 for o in outcomes if o.first_failing_gate),
+                "why": "per-candidate METRICS and gate THRESHOLDS are required to measure how far "
+                       "short each candidate fell. Without them the desk knows only THAT they "
+                       "died, never HOW CLOSE -- and 'we did not measure the shortfall' must not "
+                       "read as 'none was close' (L1.41)"}
+    buckets: dict[str, list[str]] = {}
+    verdicts = []
+    for o in outcomes:
+        if not o.first_failing_gate:
+            continue
+        m = metrics.get(o.candidate_id) or {}
+        gates = {g: (g not in o.failed_gates) for g in o.reached_gates}
+        v = triage(gates, m, thresholds, name=o.candidate_id)
+        verdicts.append(v)
+        buckets.setdefault(str(v.classification), []).append(o.candidate_id)
+    return {
+        "status": "MEASURED",
+        "n_triaged": len(verdicts),
+        "by_classification": {k: len(v) for k, v in buckets.items()},
+        "near_miss_ids": buckets.get("NEAR_MISS", [])[:50],
+        "verdicts": verdicts,
+        "law": "changes no verdict -- every candidate here has already failed. A NEAR_MISS is a "
+               "WORK ITEM, not a pass, and a re-test costs a full search-accounting entry at the "
+               "unchanged bar (III-10: do not torture noise into alpha)",
+    }
+
+
 def report(outcomes: list[GateOutcome], *, gate_order: list[str],
+           metrics: dict[str, dict[str, float]] | None = None,
+           thresholds: dict[str, Any] | None = None,
            root: Path | None = None, write: bool = True) -> dict[str, Any]:
     """The full artifact: attribution + concentration + the action it implies."""
     att = attribute(outcomes, gate_order=gate_order)
     con = concentration(att)
+    rec = recoverable(outcomes, metrics=metrics, thresholds=thresholds)
     doc = {
         "what": "per-gate rejection attribution over the REAL candidate cohort -- which gate "
                 "killed each candidate, and which gates never got to judge one",
@@ -191,6 +252,7 @@ def report(outcomes: list[GateOutcome], *, gate_order: list[str],
                "neither reads the actual cohort",
         "attribution": att,
         "concentration": con,
+        "recoverable": rec,
         "authority": "MEASUREMENT ONLY -- proposes no threshold change and ranks no gate by the "
                      "candidates it costs.",
     }

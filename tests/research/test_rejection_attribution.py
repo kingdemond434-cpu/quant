@@ -144,3 +144,47 @@ def test_the_artifact_is_written_only_when_measured(tmp_path: Path) -> None:
 def test_the_alarm_threshold_is_explicit() -> None:
     assert 0.5 < CONCENTRATION_ALARM < 1.0
 
+
+# ------------------------------------------ recoverability (near-miss wiring)
+def test_recoverable_delegates_to_the_existing_triage_rather_than_rebuilding_it() -> None:
+    """THE DEFECT THIS CLOSES is an UNUSED capability, not a missing one. near_miss was fully
+    built -- shortfall, structural-vs-statistical, hints, ledger, a verdict whose __bool__ is
+    hard-wired False -- and its only importer in the whole repo was its own test."""
+    from libs.research.rejection_attribution import recoverable
+    from libs.validation.near_miss import Threshold
+    outs = [GateOutcome("near1", "dsr", ("dsr",), ("cpcv", "dsr")),
+            GateOutcome("far1", "dsr", ("dsr",), ("cpcv", "dsr")),
+            GateOutcome("struct1", "capacity", ("capacity",), ("cpcv", "capacity"))]
+    th = {"dsr": Threshold(1.0, True, "dsr"), "capacity": Threshold(5000.0, True, "capacity")}
+    mt = {"near1": {"dsr": 0.93}, "far1": {"dsr": 0.20}, "struct1": {"capacity": 100.0}}
+    out = recoverable(outs, metrics=mt, thresholds=th)
+    assert out["status"] == "MEASURED"
+    assert out["by_classification"] == {"NEAR_MISS": 1, "FAR_MISS": 1, "STRUCTURAL_DEAD": 1}
+    assert out["near_miss_ids"] == ["near1"]
+
+
+def test_a_near_miss_verdict_is_still_false_and_can_never_read_as_a_pass() -> None:
+    """Every candidate reaching here has ALREADY FAILED. Ranking the dead must not resurrect one."""
+    from libs.research.rejection_attribution import recoverable
+    from libs.validation.near_miss import Threshold
+    outs = [GateOutcome("near1", "dsr", ("dsr",), ("cpcv", "dsr"))]
+    out = recoverable(outs, metrics={"near1": {"dsr": 0.93}},
+                      thresholds={"dsr": Threshold(1.0, True, "dsr")})
+    assert all(not bool(v) for v in out["verdicts"])
+    assert "not a pass" in out["law"] and "unchanged bar" in out["law"]
+
+
+def test_missing_metrics_is_unmeasured_never_nothing_was_close() -> None:
+    """'We did not measure the shortfall' must not read as 'none was close' (L1.41)."""
+    from libs.research.rejection_attribution import recoverable
+    out = recoverable([GateOutcome("a", "dsr", ("dsr",), ("dsr",))])
+    assert out["status"] == "UNMEASURED" and out["n_dead"] == 1
+    assert "none was close" in out["why"]
+
+
+def test_survivors_are_not_triaged_as_recoverable() -> None:
+    from libs.research.rejection_attribution import recoverable
+    from libs.validation.near_miss import Threshold
+    outs = [GateOutcome("alive", None, (), ("cpcv", "dsr"))]
+    out = recoverable(outs, metrics={"alive": {}}, thresholds={"dsr": Threshold(1.0, True, "d")})
+    assert out["n_triaged"] == 0, "a survivor is not a near-miss"
