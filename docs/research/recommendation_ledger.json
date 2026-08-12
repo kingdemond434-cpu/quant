@@ -6442,6 +6442,78 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0514",
+   "source": "deep_sweep",
+   "summary": "TIER-1 DEFECT-CLOSER (litminer run 7): the source-verification queue every digging organ is ordered to clear FIRST is 100 percent noise, and the obvious fix silently disables a gate. libs/research/source_backlog._classify reads the [S33:] marker for killed/deferred ONLY; S33 defines FOUR verbs, so wired/screened fall to the fail-open return \"verification\" unless unrelated PROSE matches. MEASURED on the live watchlist: all 5 cards in the VERIFY-this-cycle queue carry a terminal S33 marker (4 wired, 1 screened); wired cards scatter across resolved(2)/verification(4)/legitimacy(1) by prose accident. The module docstring states the rule it breaks (\"THE DISPOSITION IS READ FROM THE MARKER, NEVER FROM PROSE\") and documents this class (F0002, fixed 07-28 for the other two verbs). UPGRADE-BEFORE-BUILD: sibling libs/research/mine_conversion already defines _TERMINAL=(wired,screened,killed) and artifact-checks each via backing_reason; source_backlog imports nothing from it. DO NOT APPLY THE OBVIOUS PATCH: max_audit._mine_items uses the picker CATEGORY as an ENFORCEMENT predicate, dropping resolved cards from the S33 population -- simulated, wired/screened->resolved takes the artifact-checked set 17->11 and strips backing_reason from 6 cards incl. the two hand-verified this run (L1.49 gate-that-never-ran). CORRECT PATCH: a THIRD category \"converted\" that leaves the verify queue but STAYS in the S33 population; _mine_items keeps filtering on resolved only. NO TEST CAN CATCH IT: fixtures hold deferred x4, killed x1, wired/screened ZERO, while 13 of 30 live markers (43pct) use those two verbs -- write a PROPERTY test asserting every verb in the live watchlist appears in the fixture. BLAST RADIUS MEASURED: 10 organ prompts invoke source_backlog_next.py (litminer, prospector, dataaxis + 7 frontier seats), all carrying the identical \"clear those PENDING VERIFICATION items first\" order.",
+   "roi_bps": 45.0,
+   "raised": "2026-08-12T19:36:07.327404+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0515",
+   "source": "deep_sweep",
+   "summary": "LIVE AND LOAD-BEARING (litminer run 7, AI-methods ground): scripts/model_upgrade.py cannot tell a worse model from a re-batched pool, and the desk is auto-upgrading its own LLM seats right now. Its gauntlet() is four SINGLE-TURN probes on a static payload and regressed_seats() has NO SAME-MODEL CONTROL ARM. Evidence, full text + appendices, arXiv 2608.08239 (Replay Gap): early-swap replay evaluation scores 92-97 pct of post-fork decisions against states that NEVER OCCUR; the stitched evaluator went 0-for-5 on success-relevant calls; and the load-bearing catch -- 90-96 pct of SAME-MODEL control forks diverge at temperature 0. Without a paired incumbent control fork, every regression verdict this organ emits is uninterpretable. FIX: branched re-execution with a paired incumbent control arm, and report the control-arm divergence rate alongside every verdict so a null result is distinguishable from an unmeasurable one (L1.28a).",
+   "roi_bps": 40.0,
+   "raised": "2026-08-12T19:36:12.699080+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0516",
+   "source": "deep_sweep",
+   "summary": "COMPUTE-FROM-DISK BATCH (litminer run 7, AI-methods ground; the seat closed by judging that literature is NO LONGER the bottleneck -- seven findings across runs 6-7 compute from artifacts ALREADY ON DISK and none has been run). FOUR items, each needing no new data: (F4) \"Anytime validity is free\" arXiv 2501.03982 -- for any valid fixed-N test there EXISTS an anytime-valid sequential test COINCIDING WITH IT AT N, so the desk can sequentialize its existing t-test, gain unlimited peeking, and keep the bar BIT-FOR-BIT IDENTICAL. Satisfies the never-loosen law BY CONSTRUCTION and is far cheaper than the full e-process rebuild open since 07-31 (repairs the measured x4.9 Stage-B peeking inflation). (F5) Chen-Dim arXiv 2311.10685 on 136,000 real strategies: multiple-testing methods popular in finance FAIL to identify most out-of-sample performers. Empirical Bayes over the desk OWN REJECTED 434 would finally separate \"the gate is welded\" from \"the generator is empty\" -- two diagnoses that have emitted the identical zero for a year. DIAGNOSTIC ONLY, moves no threshold. (F10) E-backtesting, Wang-Wang-Ziegel Management Science 72(6) / preprint 2209.00991v5 full text: model-free distribution-free e-processes for VaR/ES readable DAILY without alpha inflation, GREE/GREL/GREM formulas extracted. STRICTLY A SHADOW MONITOR -- no rail touched, run_deadman_switch.py untouched (Tier-3). (F16) QUALIFIES R0455 -- do NOT implement the ownership-bias fix as written: it repairs calibration LEVEL on an axis where confidence separates correct from plausible-wrong by only +0.021. Report AUROC alongside ECE or the fix optimises a number that cannot discriminate.",
+   "roi_bps": 35.0,
+   "raised": "2026-08-12T19:36:38.288463+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0517",
+   "source": "deep_sweep",
+   "summary": "EXECUTION 66bps PROGRAM (litminer run 7 parent; extends inbox entry H): an independent LIVE deployment measured the open/close asymmetry the desk cannot yet measure, and the desk instrument built to attribute its largest loss discards 37 pct of its own evidence. EXTERNAL PRIMARY arXiv 2605.05089 (Krestenko et al., full interior via HTML route): 1,924 live basis trades, ~8.95M USD notional, 2025-04..2025-12 -- buy-basis median 18.2 bps vs SELL-basis median 38.9 bps (p90 ~25 vs ~50+), i.e. the CLOSING side costs ~2.1x the opening side with a much thicker right tail. Upper rebalance boundary given economically as (alpha_U - alpha_dagger)*D*kappa_h = K_reb with the authors stating it \"may disappear entirely under realistic execution costs\" -- independent corroboration that the desk churn problem (GAP 42) is STRUCTURAL and its min-hold fix has the right form. WHY IT MATTERS: the sleeve wound is price_pnl -51.74 bps/round-trip on a delta-neutral pair, FLAT across every hold bucket -- exactly the signature a close-side asymmetry produces. GRADED HYPOTHESIS NOT PRIOR: citation chase shows it cites NO prior asymmetry study and none exists; one vault, DeFi venues, so LEVELS DO NOT TRANSFER to a CEX book, only the STRUCTURE. DESK-SIDE SCREEN RUN SAME SESSION, verdict UNIDENTIFIED and correct: the _tca wrapper landed 2026-07-27 so 430 of 449 event rows predate it -- the fair denominator is 19 rows (6 opens, 13 closes), book flat since 08-01. THE REAL DEFECT, cheap: on those 19, spot_slip_bps is lost on 7 (36.8 pct) and the cause is 100 pct mid-read failure, never a missing fill -- _mid_of (run_cashcarry_executor.py:1590) returns None on ANY exception AND on a zero/empty book, so \"the venue read threw\" and \"the book was empty\" are byte-identical downstream (L1.55 ABSENT-vs-UNREADABLE, inside the instrument built to attribute the biggest loss). PATCH: record the failure REASON beside the None. MEASUREMENT-FIRST -- justifies NO size change and NO rail movement; money-path + sterile-cockpit rules apply.",
+   "roi_bps": 30.0,
+   "raised": "2026-08-12T19:36:40.422863+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0518",
+   "source": "deep_sweep",
+   "summary": "RETRACTION CORPUS MECHANISED, AND IT SHIPS WITH ITS OWN CONTRAINDICATION (litminer run 7). ROUTE EXECUTED not catalogued: the full Crossref/Retraction-Watch corpus (71,743 rows, 65 MB) was downloaded and parsed FROM THIS BOX -- gitlab.com/crossref/retraction-watch-data raw CSV (git-versioned, so ARRIVALS are diffable) and api.labs.crossref.org/data/retractionwatch (fresher). LICENCE graded honestly: Crossref general position is CC0/public-domain-facts but NO explicit CC0 string exists for this CSV -- cleared for internal screening, NOT for redistribution. SLICING TRAP CAUGHT BEFORE IT FIRED: RW has no \"Business - Finance\" category, finance is under \"Business - Economics\", so a script grepping Finance returns a confident wrong ZERO. THE LOAD-BEARING SPLIT: core finance journals hold 55 retractions in the entire database history -- 45 INTEGRITY-ONLY (82 pct) vs 10 FRAUD/DATA; wider economics 1.2 pct pure fraud; all 12 Lucey-cluster rows carry a BYTE-IDENTICAL rogue-editor/COI reason string with ZERO data-side tokens. The mechanisms are UNTOUCHED and must not be harvested as mechanism kills. DO NOT BUILD THE NAIVE SCREEN: \"VPIN and the flash crash\" (Andersen-Bondarenko) IS in the database and the desk cites it in inbox 66 and in its EXHAUSTED order-flow verdict -- it is a FALSE POSITIVE, a TECHNICAL retraction to permit added material, republished as JFM 17:1-46 (2014), confirmed by stdlib extraction of the CREATES 2013-42 PDF. Desk citation CLEAN. A retracted-implies-discard screen would have destroyed a valid live prior on day one. BONUS RAIL: un-optimised realised volatility posts a 0.0 pct false-positive rate at its 95th pct vs VPIN 7 pct at its 99th -- a benchmark-free-alarm admission test mapping onto the lit_liquidation_csd_alarms row. MEASURED NULLS: citation contamination is real and rising (37 in 2025) but 0 of 221 rows touch crypto or asset pricing, so no second wave is coming; the quoted \"226 crypto retractions\" is ~95 pct the Hindawi blockchain paper mill. CARRY-OVER CLOSED after 4 runs: the \"-0.31\" digit is Brigida Table 13, Level-1, delta(TVL/MarketCap), Q4 alpha -0.31 p=0.45 -- run 2 record VINDICATED. NEXT GROUND: published replication/comment papers (Critical Finance Review, JF/JFE/RFS Comment-on), never walked, and a published replication is what forced the one genuine JF retraction found.",
+   "roi_bps": 25.0,
+   "raised": "2026-08-12T19:37:03.293118+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0519",
+   "source": "deep_sweep",
+   "summary": "TWO ROUTE FACTS FROM THE THESES GROUND, both of which change how every miner reads a corpus (litminer run 7). (1) T-6 AGGREGATOR ROUTING IS WHY PRIOR SEATS READ FULL CORPORA AS EMPTY: from this box EVERY ETD aggregator refused -- OATD 403, CORE 403, NDLTD 503, IEEE 418, and DART-Europe is PERMANENTLY CLOSED since 2025-02-03 -- while EVERY institutional repository served full text at 200. Corroborated in the same run: the KOREAN thesis layer is NOT empty and the prior zeros were a routing artifact. ACTION: route thesis hunts to institutional repositories directly, never to aggregators, and RE-OPEN any corpus previously graded empty via an aggregator -- an aggregator silence is a ROUTE fact and was being recorded as a CORPUS verdict, which is the exhaustion-by-absence error the desk legislates against. (2) A SECOND SILENT-FABRICATION MODE, sibling to OP-057: a working local route for R0358 exists (WebFetch lands the raw PDF binary on disk even when its own summariser fails, then extract locally) BUT an extractor that MERGES /ToUnicode CMaps SILENTLY CORRUPTS Latin text while CJK looks perfect -- \"Journal of the Korea\" renders as \"Jousnam og uhe Kosea\". It produces CONFIDENT WRONG NUMBERS rather than erroring, so any landed pdf_text.py MUST be per-font and MUST carry a conservation-law self-check (R0318 precedent). A working per-font implementation was left at /tmp/pdfx2.py, OUTSIDE the repo and unwired, for whoever lands R0358.",
+   "roi_bps": 28.0,
+   "raised": "2026-08-12T19:41:54.502721+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

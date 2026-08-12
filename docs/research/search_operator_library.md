@@ -1655,3 +1655,43 @@ one alone is enough to make a rich ground look picked clean:
 The rescue is the native method key (`cointegração`), not a better English phrasing. This is the
 vocabulary-collision sibling of the RU seat's TICKER-collision finding: same failure mode
 (a homonym silently empties a result set), different layer of the stack.
+
+### OP-057 the arXiv `/pdf/` route SILENTLY FABRICATES from this box — HTML/ar5iv is the only trusted route   [active]
+class: routing / source integrity
+origin: litminer run 7 (2026-08-12), AI-methods seat + parent adversarial re-test
+validated-gain: prevented an unknown number of fabricated figures from entering desk artifacts,
+  and bounded the retroactive damage to ZERO for the prior run.
+
+**THE FINDING.** `WebFetch` against `arxiv.org/pdf/<id>` does not reliably return the paper. The
+AI-methods seat measured **4 of 4 PDF fetches producing figures the VERBATIM ABSTRACTS
+CONTRADICT**, and on `2311.10685` the fabricated number pointed the **OPPOSITE DIRECTION** from
+the real headline. The same seat measured `arxiv.org/html/` clean **11 of 11**.
+
+**THE PARENT'S ADVERSARIAL RE-TEST, AND WHY IT MAKES THE RULE STRONGER RATHER THAN WEAKER.**
+Re-tested independently on `2605.05089v1`: the PDF route **REFUSED** — twice — returning PDF
+object structure and stating it could not locate the section. **So the failure mode is NOT
+uniform.** The route sometimes refuses honestly (safe) and sometimes confabulates (catastrophic),
+**and the caller cannot tell which one they received.** That is precisely the desk's own
+ABSENT-vs-UNREADABLE collapse (L1.55) — arriving at the TOOL layer, where every organ is exposed.
+A route that fails loudly can be trusted; a route that fails loudly *most of the time* cannot.
+
+**THE RULE.**
+1. **Read arXiv via `arxiv.org/html/<id>` or `ar5iv.labs.arxiv.org/html/<id>`. Always.** Both were
+   measured clean and both need no extractor. The parent pulled a full interior — boundary
+   formulas, per-asset tables, live-execution figures — from the HTML route today.
+2. **A `/pdf/`-sourced number is QUARANTINED** unless independently confirmed against the abstract,
+   the HTML mirror, or a stdlib extraction. Mark it `[UNVERIFIED-PDF-ROUTE]` rather than dropping
+   it silently — the mark is what lets a later run re-check it.
+3. **A LOCAL extraction is a different mechanism and is NOT covered by this rule.** The retraction
+   seat stdlib-extracted a CREATES PDF successfully the same day; that path parses bytes this box
+   holds, rather than asking a summariser what a binary said.
+4. `export.arxiv.org` **429s from this box** — walk listing pages serially, never the API.
+
+**RETROACTIVE DAMAGE, BOUNDED NOT ASSERTED.** run 6's arXiv ground file contains **zero**
+`arxiv.org/pdf/` URLs (grep count 0) against 2 html/ar5iv routes, so its figures are uncontaminated.
+The check is one grep and should be run on any ground file whose numbers are about to be relied on.
+
+**THE GENERAL LESSON, worth more than the arXiv instance:** an information channel that
+*sometimes* fabricates is more dangerous than one that always fails, because the failure carries
+no signal. Ask of every fetch route: **what does its failure look like, and is that
+distinguishable from success?** If it is not, the route needs a second source or a quarantine mark.

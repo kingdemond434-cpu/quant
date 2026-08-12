@@ -2040,3 +2040,100 @@ recurring JP/KR government-and-exchange publication format and this desk cannot 
 `pandas.read_excel` raises `ImportError: Missing optional dependency 'xlrd'`. It blocked content
 verification of the free JPX investor-type table this run (format authenticated via OLE2 magic
 bytes; columns unread). Recording the dependency; not installing it under the freeze.
+
+## 2026-08-12 (litminer run 7 — parent seat; full evidence in `literature_coverage.md` run-7 note)
+
+### #119 — THE SOURCE-VERIFICATION QUEUE IS 100% NOISE, THE OBVIOUS FIX SILENTLY DISABLES A GATE, AND NO TEST CAN CATCH EITHER ◆◆compounding
+_Litminer run 7, 2026-08-12. Found by doing the queue's own work: every item it handed me was
+already done. Run 6 noticed this in prose and moved on, so the desk has now paid for the
+diagnosis twice — this entry measures it instead._
+
+**(1) THE QUEUE.** `libs/research/source_backlog._classify` reads the `[§33: ...]` marker for
+`killed` and `deferred` only. §33 defines **four** verbs. `wired`/`screened` fall through to the
+fail-open `return "verification"` unless the card's PROSE happens to contain "verified-clean" /
+"destroyed-at-source" / "needs-legitimacy-review". **Measured over the live watchlist (34 cards):
+all 5 cards in the "VERIFY this cycle" queue carry a terminal §33 marker (4 `wired`, 1
+`screened`) — the organ the desk's doctrine calls its BOTTLENECK has been fed a queue with zero
+verification work in it.** Classification is decided by prose accident: `wired` cards scatter
+across resolved(2)/verification(4)/legitimacy(1), `screened` across resolved(2)/verification(1).
+The module's own docstring states the rule it breaks — *"THE DISPOSITION IS READ FROM THE §33
+MARKER, NEVER FROM PROSE"* — and documents this exact class (F0002, fixed 2026-07-28 for the
+other two verbs, measured cost then: three sessions re-deriving the same non-workability by hand).
+**Upgrade-before-build (L2.9): the sibling module `libs/research/mine_conversion` already defines
+`_TERMINAL = ("wired","screened","killed")` and artifact-checks each (`backing_reason`: exists /
+non-empty / postdates / anchor). `source_backlog` imports nothing from it.**
+
+**(2) THE TRAP — DO NOT APPLY THE OBVIOUS PATCH.** `max_audit._mine_items` uses the picker's
+*presentation* category as an *enforcement* predicate: it drops every card `parse_watchlist` calls
+`resolved` from the §33 population. **Simulated directly: the naive fix (`wired`/`screened` →
+`resolved`) takes the artifact-checked population 17 → 11 and strips `backing_reason` from 6
+cards** — including cards 23 and 27, the ones this seat hand-verified this morning. It would trade
+a visible nuisance for invisible loss of enforcement (L1.49, "a gate that never ran").
+**CORRECT PATCH:** a THIRD category (`converted`) that leaves the verify queue but stays inside
+the §33 population; `_mine_items` keeps filtering on `resolved` ONLY.
+
+**(3) WHY NO TEST FAILS.** 20 tests, two fixtures. Verb coverage: **`deferred` ×4, `killed` ×1,
+`wired`/`screened` ZERO.** The live watchlist uses `deferred` 12, `killed` 5, `screened` 5,
+`wired` 8 — **13 of 30 production markers (43%) use verbs no fixture contains.** The fixture was
+extended exactly as far as the F0002 fix reached and no further, so the suite is structurally
+incapable of failing on this bug. Same lesson as `libs/features/validation.py` / R0289 ("a fixture
+containing only the covered columns cannot reveal what the guard is blind to"), now in a second
+organ. **The test to write is a PROPERTY, not a case:** assert every §33 verb present in the live
+watchlist is represented in the fixture, so the next verb added to §33 cannot be silently
+unhandled.
+
+**BLAST RADIUS, MEASURED not asserted:** `source_backlog_next.py` is invoked by **10 organ
+prompts** — `ops/litminer_dig_prompt.txt`, `ops/prospector_dig_prompt.txt`,
+`ops/dataaxis_dig_prompt.txt` and the seven frontier seats (`ar/br/cn/en/jp/kr/ru`) — plus
+`CLAUDE.md` and `max_audit.py`. All ten carry the byte-identical order: *"clear those PENDING
+VERIFICATION items first -- the desk's bottleneck is verification, not cataloguing"*. **So the
+FIRST ACTION of every digging organ on this desk is currently aimed at a queue containing zero
+verification work.** This is not a cosmetic report bug; it is a standing misdirection of the
+desk's declared bottleneck effort, paid once per organ per run.
+**NOT APPLIED — litminer freeze bars `libs/`.**
+
+### #120 — THE DESK'S BIGGEST LIVE WOUND HAS AN INSTRUMENT THAT DISCARDS 37% OF ITS OWN EVIDENCE, AND ONLY 19 ROWS OF IT EXIST ◆◆compounding
+_Litminer run 7, 2026-08-12. Extends entry **H** (execution 66bps program) with an external live
+measurement and a desk-side instrument defect. NOT an alpha claim; must never enter the gauntlet._
+
+**EXTERNAL PRIMARY:** `arXiv 2605.05089` "Dynamic Collateral Control for Permissionless
+Spot-Perpetual Basis Trading" (Krestenko et al., 2026-05-06), read in full via the
+`arxiv.org/html/` route. **1,924 live basis trades, ~$8.95M notional, Arbitrum ERC-4626 vault,
+2025-04→2025-12: buy-basis median 18.2 bps (p90 ~25) vs sell-basis median 38.9 bps (p90 ~50+) —
+the CLOSING side costs ~2.1× the opening side, with a much thicker right tail.** Upper rebalance
+boundary given economically: `(α_U − α†)·D·κ̃_h = K_reb` — rebalance only when carry recovered over
+horizon h exceeds full round-trip cost; the authors state it **"may disappear entirely under
+realistic execution costs"**, which independently corroborates that the desk's churn problem
+(GAP #42) is STRUCTURAL and that its min-hold fix has the right economic form. Lower boundary:
+`α_L := inf{α : Π_liq(α;h_liq) ≤ ε_liq}`, h_liq=3h, ε_liq=1e-4.
+
+**WHY IT MATTERS:** the sleeve's wound is `price_pnl` −51.74 bps/round-trip on a delta-neutral
+pair, **flat across every hold bucket** — a cost paid once per round trip, which is exactly the
+signature a close-side execution asymmetry produces. R0219 hunts this ~66 bps gap.
+
+**GRADE — HYPOTHESIS, NOT PRIOR (citation chase, 2 levels):** 2605.05089 cites NO prior study
+measuring open/close asymmetry and presents its own as novel; no independent second measurement
+exists. It is one vault, one venue class, 8 months. **And it is DeFi (Hyperliquid + 1inch/
+Arbitrum): gas and AMM routing inflate DEX sell-side cost in ways a Binance CEX book does not
+share. The LEVELS do not transfer; only the STRUCTURE does.** Adopting 18.2/38.9 bps on a CEX book
+would import a cost structure the desk does not trade (L1.55 fabricated input).
+
+**SCREEN-ON-DISCOVERY, RUN SAME SESSION → UNIDENTIFIED, correctly.** `data/cashcarry_trades.json`
+carries the per-leg decomposition, so the falsifier is runnable in principle. But the `_tca`
+wrapper landed **2026-07-27** and **430 of 449 event rows predate it**; the fair denominator is
+**19 rows (6 opens, 13 closes)**, book flat since 2026-08-01. **The desk cannot answer its own
+66 bps attribution question from its own tape — n=19, not a broken instrument. UNIDENTIFIED is
+the honest verdict (L1.45), and reading an external n=1,924 is exactly what a desk in that
+position should do.** Direction agrees as a POINTER ONLY: close-leg spot slip median +10.39 bps
+(n=8) vs open-leg +0.04 (n=4) — n=8 supports no claim and is recorded only to justify repair.
+
+**THE REAL, CHEAP DEFECT:** on the fair denominator `spot_slip_bps` is present on 4/6 opens and
+8/13 closes — **7 of 19 rows (36.8%) lost, cause 100% mid-read failure, never a missing fill**
+(`spot_mid is None` on all 7; `spot_fill` missing on 0). `_mid_of`
+(`run_cashcarry_executor.py:1590`) returns `None` on ANY exception AND on a zero/empty book, so
+**"the venue read threw" and "the book was empty" are byte-identical downstream** — the desk's own
+L1.55 ABSENT-vs-UNREADABLE law violated inside the instrument built to attribute its largest loss.
+**PATCH:** record the failure REASON beside the `None` so a 37% instrument loss is attributable
+instead of invisible. **MEASUREMENT-FIRST: repair the instrument and accumulate rows; this
+justifies NO size change and NO rail movement.** Money path + sterile-cockpit rules apply.
+**NOT APPLIED — litminer freeze bars `scripts/`.**
