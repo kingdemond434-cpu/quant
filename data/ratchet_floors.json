@@ -20,8 +20,8 @@
   "miner_seats_productive": {
     "artifact": "data/miner_runway.json",
     "proving_command": "python scripts/check_miner_runway.py --json --report-only",
-    "recorded": "2026-08-01T07:07:02Z",
-    "value": 0.090909
+    "recorded": "2026-08-12T04:27:59Z",
+    "value": 0.909091
   },
   "pager_delivered_24h": {
     "artifact": "data/alert_delivery.jsonl",
@@ -32,7 +32,7 @@
   "scripts_mypy_clean": {
     "artifact": "data/mypy_ratchet.json",
     "proving_command": "python scripts/check_mypy_ratchet.py",
-    "recorded": "2026-08-12T03:14:57Z",
+    "recorded": "2026-08-12T04:27:59Z",
     "value": 0.406844
   },
   "test_strength::libs/autodiscovery/validation.py": {
