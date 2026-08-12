@@ -69,6 +69,7 @@ _GOVERNED: tuple[str, ...] = (
     "derive_walcl_clock.py",                                # R0031 forward clock (2026-07-31)
     "run_llm_trader.py",
     "collect_announcements.py",
+    "run_upbit_snapshot.py",                                # R0303 purge-proof candle archive
     "run_conviction_trader.py",
     "resolve_paper_book.py",
     "build_chart_context.py",

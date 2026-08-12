@@ -38,6 +38,7 @@ from __future__ import annotations
 
 import json
 import time as _time
+import urllib.error
 import urllib.request
 from typing import Any
 
@@ -94,6 +95,92 @@ def upbit_daily_history(market: str = "KRW-BTC", pages: int = 40, timeout: int =
         cursor = str(rows[-1]["candle_date_time_utc"])
         _time.sleep(pause)                           # courtesy: Upbit allows ~10 req/s
     return out
+
+
+_MARKETS_URL = "https://api.upbit.com/v1/market/all?isDetails=true"
+
+
+def candle_key(row: dict[str, Any]) -> str:
+    """The venue's FULL candle stamp (ISO, lexicographically ordered) -- the raw-row key.
+
+    Raw-row consumers (the R0303 snapshot) compare and store this string; joins slice it to a
+    date via `_key`. Kept here so the alignment policy and the storage key are one field read
+    in one module -- the single-source fence pins every executable use of the field name here.
+    """
+    return str(row["candle_date_time_utc"])
+
+
+def fetch_markets(timeout: int = 35) -> list[dict[str, Any]]:
+    """All Upbit markets with venue flags (/v1/market/all?isDetails=true). Raises on failure:
+    an unreachable universe must never read as an empty universe (L1.28a)."""
+    req = urllib.request.Request(_MARKETS_URL, headers=_UA)
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        rows = json.loads(r.read())
+    if not isinstance(rows, list) or not rows:
+        raise ValueError(f"upbit market list malformed/empty ({type(rows).__name__})")
+    return rows
+
+
+def _fetch_raw(path: str, market: str, count: int, to: str, timeout: int) -> list[dict[str, Any]]:
+    """One raw candle page from /v1/candles/{path}, with a bounded 429 backoff."""
+    url = f"https://api.upbit.com/v1/candles/{path}?market={market}&count={count}"
+    if to:
+        url += f"&to={to}"
+    req = urllib.request.Request(url, headers=_UA)
+    for attempt in range(4):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                rows = json.loads(r.read())
+            return rows if isinstance(rows, list) else []
+        except urllib.error.HTTPError as e:
+            if e.code == 429 and attempt < 3:          # venue backpressure: honour it, bounded
+                _time.sleep(1.5 * (attempt + 1))
+                continue
+            raise
+    return []                                          # unreachable; keeps mypy honest
+
+
+def walk_candles_raw(market: str, *, path: str = "days", stop_before_key: str = "",
+                     exclude_from_key: str = "", max_pages: int = 400, timeout: int = 35,
+                     pause: float = 0.12) -> tuple[list[dict[str, Any]], bool]:
+    """FULL raw candle rows for `market`, walked back via the `to=` cursor.
+
+    Returns (rows ASCENDING by venue stamp, complete). Rows with key <= `stop_before_key`
+    (already stored) and >= `exclude_from_key` (the in-progress candle: storing a partial row
+    as final is the L1.46 class) are dropped. `complete=False` means a page failed or
+    `max_pages` was hit -- the partial is returned LOUDLY, never silently truncated: pagination
+    truncation is the failure mode that never throws.
+    """
+    out: dict[str, dict[str, Any]] = {}
+    cursor = ""
+    complete = True
+    for page in range(max_pages):
+        try:
+            rows = _fetch_raw(path, market, 200, cursor, timeout)
+        except Exception as e:
+            print(f"  upbit {path} walk {market} page {page} failed ({e!r}) -- "
+                  f"partial at {len(out)} rows")
+            complete = False
+            break
+        if not rows:
+            break                                      # history exhausted: a genuine end
+        oldest = min(candle_key(r) for r in rows)
+        for r in rows:
+            k = candle_key(r)
+            if (not stop_before_key or k > stop_before_key) \
+                    and (not exclude_from_key or k < exclude_from_key):
+                out[k] = r
+        if stop_before_key and oldest <= stop_before_key:
+            break                                      # reached what is already stored
+        if cursor == oldest:
+            break                                      # cursor stalled: history exhausted
+        cursor = oldest
+        _time.sleep(pause)                             # courtesy: Upbit allows ~10 req/s
+    else:
+        complete = False
+        print(f"  upbit {path} walk {market}: max_pages={max_pages} hit -- partial, "
+              f"no silent cap (L1.57)")
+    return [out[k] for k in sorted(out)], complete
 
 
 def upbit_hourly_utc(market: str = "KRW-BTC", count: int = 200, to: str = "",

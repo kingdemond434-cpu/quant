@@ -342,6 +342,13 @@ _MAP: dict[str, list[str]] = {
     "L1.8-r0288": ["scripts/collect_unlock_calendar.py", "libs/research/unlock_calendar.py",
                    "tests/research/test_unlock_calendar.py",
                    "scripts/collect_circulating_supply.py"],
+    # R0303 Upbit purge-proof snapshot (L1.46 unrecoverable-series duty): the venue erases a
+    # market's candle history at delisting (~11.4 KRW markets/yr; AQT/AERGO lost 2026-08-03),
+    # and the desk's own >=120-aligned-day panel filter stacks a second survivorship bias on
+    # top. The collector holds full daily history for every market plus flagged-market 1m,
+    # and its manifest's delist ledger is the treatment group the purge erases.
+    "L1.46-r0303": ["scripts/run_upbit_snapshot.py", "libs/research/upbit_data.py",
+                    "tests/research/test_upbit_snapshot.py"],
     # R0123 decline grading: L1.29 says an ungraded prediction is a BELIEF that inflates the
     # apparent hit-rate by never counting its misses -- and a sleeve scored only on the trades it
     # CHOOSES to be graded on is that defect with a dominant strategy attached. Nine consecutive
