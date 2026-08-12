@@ -5711,11 +5711,23 @@
    "summary": "GATE-0/LAUNCH ITEM (from bnb-burn-unfunded defect, 2026-08-12): the moment the carry book trades LIVE Binance futures, fund a small BNB balance in the futures wallet BEFORE first fill -- feeBurn:True without held BNB pays rack rate (the 2026-07-24 incident: desk believed the discount was live for weeks). On USDT-M futures the BNB discount is 10pct of commission, a pure cost lever with zero risk change. NOT actionable on the current TESTNET book: the futures testnet has no faucet API for BNB (web-UI faucet is a human step) and no cross-sandbox spot transfer; testnet fee realism is handled by the measured-fee accounting, not the discount flag. Owner: whoever executes the live-launch runbook; check_bnb_funded goes green on live funding by construction.",
    "roi_bps": 3.0,
    "raised": "2026-08-12T06:26:49.289076+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "Waits on the live-launch act itself (principal arms live trading; Gate-0 readiness in progress). Not executable on the testnet book: no faucet API for BNB, no cross-sandbox transfer -- ledgered as the launch-runbook step so the fee lever is armed before the first live fill. Re-dated automatically if launch slips past due.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-09-11",
+   "disposed": "2026-08-12T06:27:11.014130+00:00"
+  },
+  {
+   "id": "R0464",
+   "source": "max_audit",
+   "summary": "BUY STORAGE FOR COLD TAPE (surfaced from mine_moat's per-run DISK URGENT line, which has been printing 'buy storage and move COLD tape onto it' every 15s into a log nobody actions): / is 73pct full, 9.8G free, recorders pause in ~4.1 days on the R0073 disk fence (<15pct page, <8pct hard). Deleting mined tape is barred -- the seven reconstructions are the first seven, not the last; raw tape must stay re-readable as mechanisms are added (L1.11 moat). PRINCIPAL PURCHASE DECISION per the constitution (a binding resource constraint is answered by buying more of it, and the ask is never declined silently): a Hetzner storage box / attached volume at ~EUR4-15/mo covers years of tape at current ~1GB/day growth. Interim mitigation already live: moat backup off-box (R0073). If not purchased before the fence pages, the recorders pause and every unrecorded hour is permanently lost (L1.46) -- that loss is priced, the storage is cheaper.",
+   "roi_bps": 20.0,
+   "raised": "2026-08-12T06:35:16.140717+00:00",
+   "status": "scheduled",
+   "reason": "Principal purchase decision -- due set INSIDE the 4.1-day runway so the row escalates before the recorders pause. Waits on: principal approves ~EUR4-15/mo storage volume. Everything the desk can do without money is done (off-box backup live per R0073; tape deletion barred by L1.11).",
+   "commit": null,
+   "due": "2026-08-16",
+   "disposed": "2026-08-12T06:35:28.363872+00:00"
   }
  ]
 }
