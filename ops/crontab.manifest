@@ -1153,6 +1153,28 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 0 7 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-litminer.timer >/dev/null 2>&1 || flock -n /tmp/seat_litminer.lock /bin/bash ops/run_litminer_dig.sh >> data/cro_ai_logs/seat_litminer.log 2>&1; }
 0 5 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-dataaxis.timer >/dev/null 2>&1 || flock -n /tmp/seat_dataaxis.lock /bin/bash ops/run_dataaxis_dig.sh >> data/cro_ai_logs/seat_dataaxis.log 2>&1; }
 
+# MIDDAY + EVENING DIG SLOTS -- RESTORED 2026-08-12 after I cut them and was caught by the fence
+# that exists for exactly this (tests/ops/test_cadence_roi.py::test_diggers_were_left_alone).
+# I removed these eight lines under the cadence directive on the ASSUMPTION that a digger's 2nd
+# and 3rd daily pass were saturating. I had no measurement saying so. The directive's own rule is
+# that cadence follows MEASURED information refill and marginal ROI, and the principal's standing
+# order is to cut low-ROI cadences only, never ones that buy system growth. The four diggers ARE
+# the desk's discovery surface -- an earlier cadence sweep measured them, RECOMMENDED leaving them
+# alone, and pinned that recommendation as a test so a later sweep could not quietly take them.
+# It worked. The saving that directive actually wanted comes from the Bilibili miner's removal and
+# from novelty_gate suppressing zero-novelty sweeps before they reach a model, not from here.
+# A future cut of these lines is legitimate ONLY with per-slot yield in data/miner_yield.jsonl
+# showing the later passes return nothing new -- and libs/ops/miner_roi.cadence_hours() is the
+# thing that would say so.
+0 10 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-dataaxis.timer >/dev/null 2>&1 || flock -n /tmp/seat_dataaxis.lock /bin/bash ops/run_dataaxis_dig.sh >> data/cro_ai_logs/seat_dataaxis.log 2>&1; }
+0 11 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-frontier.timer >/dev/null 2>&1 || flock -n /tmp/seat_frontier.lock /bin/bash ops/run_frontier_rotation.sh >> data/cro_ai_logs/seat_frontier.log 2>&1; }
+0 12 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-prospector.timer >/dev/null 2>&1 || flock -n /tmp/seat_prospector.lock /bin/bash ops/run_prospector_dig.sh >> data/cro_ai_logs/seat_prospector.log 2>&1; }
+0 13 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-litminer.timer >/dev/null 2>&1 || flock -n /tmp/seat_litminer.lock /bin/bash ops/run_litminer_dig.sh >> data/cro_ai_logs/seat_litminer.log 2>&1; }
+0 14 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-dataaxis.timer >/dev/null 2>&1 || flock -n /tmp/seat_dataaxis.lock /bin/bash ops/run_dataaxis_dig.sh >> data/cro_ai_logs/seat_dataaxis.log 2>&1; }
+0 15 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-frontier.timer >/dev/null 2>&1 || flock -n /tmp/seat_frontier.lock /bin/bash ops/run_frontier_rotation.sh >> data/cro_ai_logs/seat_frontier.log 2>&1; }
+0 18 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-prospector.timer >/dev/null 2>&1 || flock -n /tmp/seat_prospector.lock /bin/bash ops/run_prospector_dig.sh >> data/cro_ai_logs/seat_prospector.log 2>&1; }
+0 19 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-litminer.timer >/dev/null 2>&1 || flock -n /tmp/seat_litminer.lock /bin/bash ops/run_litminer_dig.sh >> data/cro_ai_logs/seat_litminer.log 2>&1; }
+
 # BLIND-SPOT ORGANS WIRED (principal order 2026-07-31: "unknown of unknown everything too").
 # Both existed, both ran clean when invoked, NEITHER was scheduled -- unknown-unknown hunting was
 # itself a dormant capability, which is the joke L2.9 exists to stop. Both are pure-local, no LLM,
@@ -1667,30 +1689,27 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # 21 rows stamped (14 BLOCKED_PENDING_DATA, 7 NEXT_BATCH_TEST), recall RECONCILES.
 20 13 * * * cd "$QUANT_ROOT" && flock -n data/.cron_edgeintake.lock .venv/bin/python scripts/run_edge_intake.py >> data/cro_ai_logs/edge_intake.log 2>&1
 
-# CLAUDE-LOCAL CADENCE CUT (principal directive 2026-08-12). The four digger organs ran THREE
-# Claude sessions a day each -- 03:00/05:00/06:00/07:00 plus a midday pass plus an evening pass.
-# Each firing is a full --effort max Claude session on the plan the principal also needs for
-# interactive work, and §26 makes that capacity scarce capital rather than a free input.
-# Cut to ONE substantive cycle per day each (the early-morning line, which lands before the
-# working day). Removed: dataaxis 10:00+14:00, frontier 11:00+15:00, prospector 12:00+18:00,
-# litminer 13:00+19:00 -- EIGHT Claude sessions/day.
-# The digs are RESUMABLE by construction (a region without a real log today is re-dug next
-# invocation), so a single daily pass loses coverage only if the source refills faster than
-# daily -- which libs/ops/miner_roi.cadence_hours() now measures per miner rather than assuming.
-# CLAUDE-LOCAL CADENCE CUT (principal directive 2026-08-12, §8/§26/§27).
-# The four digger organs each ran THREE Claude sessions a day (an early pass, a midday pass and
-# an evening pass). Every firing is a full --effort max Claude session drawing the same plan the
-# principal needs for interactive work, and §26 makes that capacity scarce capital rather than a
-# free input. Cut to ONE substantive cycle per day each, keeping the EARLY line so the day's
-# evidence is on disk before the working day starts.
-# REMOVED: dataaxis 10:00+14:00, frontier 11:00+15:00, prospector 12:00+18:00,
-#          litminer 13:00+19:00 -- EIGHT Claude sessions/day.
-# Safe because the digs are RESUMABLE by construction: a region without a real log today is
-# re-dug on the next invocation, so one daily pass loses coverage only where a source refills
-# faster than daily -- and libs/ops/miner_roi.cadence_hours() now MEASURES that per miner
-# instead of assuming it, stretching or tightening the interval on observed yield.
-# Zero-novelty sweeps no longer reach a model at all (libs/ops/novelty_gate), so a cheap
-# collection can still run often without buying premium reasoning it does not need.
+# CLAUDE-LOCAL CADENCE (principal directive 2026-08-12, §8/§26/§27) -- AND ITS ONE REVERSAL.
+# The directive's rule is that cadence follows MEASURED information refill and marginal ROI, and
+# that zero novelty must never buy premium reasoning. Two things were done under it:
+#
+#   KEPT   the Bilibili miner's removal (measured: 0.0893 new/fetch at a 7-day gap vs 0.0011 at
+#          7 minutes -- 81x, i.e. publication-rate-limited, so frequency bought nothing) and the
+#          novelty gate, which stops an unchanged sweep reaching a model at all. That is where the
+#          saving actually came from, and neither costs a single discovery.
+#
+#   REVERTED  the eight digger slots I cut here. I removed dataaxis 10:00+14:00, frontier
+#          11:00+15:00, prospector 12:00+18:00 and litminer 13:00+19:00 on the ASSUMPTION that a
+#          digger's later daily passes saturate. I had no measurement saying so, and an earlier
+#          cadence sweep had already measured these four, recommended leaving them alone, and
+#          PINNED that recommendation as a test. The test caught me. The lines are back above.
+#
+# The general shape of the error is worth keeping: "resumable, so once a day is enough" conflates
+# NOT LOSING WORK with NOT LOSING TIME. A resumable dig re-digs the region it missed -- tomorrow.
+# Latency to discovery is the thing being spent, and it does not show up as a failed run.
+# libs/ops/miner_roi.cadence_hours() is the instrument that would justify a future cut here: it
+# stretches or tightens an interval on OBSERVED yield per miner rather than on an assumption.
+# Until it reports a later slot returning nothing new, the slot stays.
 # --- DEEPSEEK SECOND FLYWHEEL (mandate V: hourly, 24/7) ---
 # UNBLOCKED 2026-08-12: XXVI's gate reads 32 PASSED / 2 BLOCKED_VPS, and the two remaining items
 # are the principal's Codex bootstrap rather than desk capability.
