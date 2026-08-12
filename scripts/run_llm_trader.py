@@ -130,6 +130,19 @@ mechanism / not tradeable / unclear direction). Those declines are marked agains
 horizon as a real call, so the desk can measure whether your filter ADDS value or merely avoids
 deciding. Passing is allowed; passing without saying what you passed on is not.
 
+A DECLINE IS ONLY GRADEABLE IF YOU STATE THE COUNTERFACTUAL YOU ARE DECLINING. So when the event
+you passed on HAS a tradeable symbol AND you hold a directional view on it, a PASS must also
+carry `symbol`, `direction` and `probability` -- read as "had I called this, I would have gone
+{{direction}} on {{symbol}} with P={{probability}}". They are scored exactly as a call would be,
+in a SEPARATE pool that never moves live position size.
+  NEVER INVENT ONE. If the event genuinely has no tradeable symbol, or your view genuinely has
+  no direction, OMIT these three fields and say which in `pass_reason`. An ungradeable decline
+  recorded honestly is a real answer and is stamped as such; a fabricated counterfactual is
+  strictly worse than no counterfactual, because it enters the scored pool as though it were a
+  belief you actually held.
+  ALL THREE OR NONE. A decline carrying a symbol but no direction cannot be graded either way,
+  and is REFUSED at write time as a half-stated forecast.
+
 FIELDS REQUIRED ON EVERY CALL, in addition to the above:
   "mechanism_class": one of {mechs}
   "forced_participant": one of {parts} -- who MUST transact, not who might want to
@@ -358,6 +371,29 @@ def validate_call(call: dict[str, Any]) -> tuple[bool, str]:
         if not call.get("pass_reason"):
             return False, ("REFUSED: a PASS must say WHY -- an unjustified pass is how a model "
                            "farms a clean Brier score while contributing nothing")
+        # THE COUNTERFACTUAL IS ALL-THREE-OR-NONE. A decline is graded by pricing the direction
+        # it declined, so symbol+direction+probability stand or fall together: a symbol with no
+        # direction cannot be graded either way, and admitting the half-stated version is how an
+        # ungradeable row enters the pool looking like a forecast. Omitting all three remains
+        # fully legitimate -- `scoreable()` stamps it ungradeable and record_call declines to log
+        # it -- because the fix for an unpriceable decline is an honest one, never an invented
+        # symbol. This ADDS a consistency bar; it does not make any decline easier to record.
+        cf = [f for f in ("symbol", "direction", "probability") if call.get(f) not in (None, "")]
+        if cf and len(cf) < 3:
+            return False, (
+                f"REFUSED: half-stated decline counterfactual -- got {sorted(cf)} but a gradeable "
+                "decline needs symbol+direction+probability together, or none of them. Omit all "
+                "three and say why in pass_reason; never invent the missing one"
+            )
+        if cf:
+            if call["direction"] not in ("LONG", "SHORT"):
+                return False, "REFUSED: declined direction must be LONG or SHORT"
+            try:
+                p_cf = float(call["probability"])
+            except (TypeError, ValueError):
+                return False, "REFUSED: declined probability not numeric"
+            if not 0.0 <= p_cf <= 1.0:
+                return False, f"REFUSED: declined probability {p_cf} outside [0,1]"
         return True, f"PASS recorded and scored: {str(call.get('pass_reason'))[:80]}"
     for field in ("symbol", "direction", "horizon_hours", "probability", "mechanism",
                   "falsifier", "mechanism_class", "forced_participant"):

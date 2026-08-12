@@ -121,6 +121,55 @@ def test_an_ungradeable_pass_is_stamped_and_NOT_logged(tmp_path, monkeypatch):
     assert not (tmp_path / "data/forecast_log.json").exists()   # nothing logged at all
 
 
+def test_a_half_stated_decline_counterfactual_is_refused():
+    """symbol+direction+probability stand or fall TOGETHER on a decline.
+
+    A decline is graded by pricing the direction it declined, so a symbol with no direction
+    cannot be graded either way. Admitting the half-stated version is how an ungradeable row
+    enters the scored pool looking like a forecast. This is an ADDED bar: omitting all three
+    stays fully legitimate.
+    """
+    base = {"action": "PASS", "pass_reason": "already priced", "passed_on": "some event"}
+    for partial in ({"symbol": "BTCUSDT"},
+                    {"direction": "LONG"},
+                    {"symbol": "BTCUSDT", "direction": "LONG"},
+                    {"symbol": "BTCUSDT", "probability": 0.6}):
+        ok, why = validate_call({**base, **partial})
+        assert not ok, f"half-stated counterfactual {sorted(partial)} must be refused"
+        assert "half-stated" in why
+
+
+def test_a_fully_stated_decline_counterfactual_is_accepted_and_graded():
+    """The whole point of asking: a complete counterfactual makes the decline gradeable."""
+    ok, why = validate_call({"action": "PASS", "pass_reason": "already priced",
+                             "passed_on": "some event", "symbol": "BTCUSDT",
+                             "direction": "LONG", "probability": 0.62})
+    assert ok, why
+    from libs.research.decline_value import scoreable
+    graded, _ = scoreable({"symbol": "BTCUSDT", "direction": "LONG", "probability": 0.62,
+                           "at": "2026-08-12T00:00:00+00:00",
+                           "resolve_by": "2026-08-12T08:00:00+00:00"})
+    assert graded, "a complete counterfactual must satisfy the grader it exists to feed"
+
+
+def test_omitting_the_counterfactual_entirely_remains_legitimate():
+    """An honest ungradeable decline is a REAL answer and must never be forced into inventing one.
+
+    This is the rail that keeps the new requirement from manufacturing fake beliefs: the desk
+    would rather record 'no tradeable symbol' than score a symbol the model made up.
+    """
+    ok, why = validate_call({"action": "PASS", "passed_on": "a BIS speech",
+                             "pass_reason": "not tradeable -- no symbol"})
+    assert ok, why
+
+
+def test_a_declined_direction_must_still_be_long_or_short():
+    """The added bar does not admit a junk direction just because all three fields are present."""
+    ok, why = validate_call({"action": "PASS", "pass_reason": "already priced",
+                             "symbol": "BTCUSDT", "direction": "MAYBE", "probability": 0.6})
+    assert not ok and "LONG or SHORT" in why
+
+
 def test_every_decision_reaches_the_book_gradeable_or_not(tmp_path, monkeypatch):
     """The book is the recovery story: it is written BEFORE the forecast log, so a logging failure
     is repairable from the row. An ungradeable decline still lands -- unmeasured counts as zero,
