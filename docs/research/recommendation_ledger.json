@@ -4263,11 +4263,11 @@
    "summary": "WIRE libs/risk/sleeve_allocation.allocate INTO THE CAPITAL PATH -- built and tested 18/18 but consulted by NOTHING, same unwired state as marginal_admission (R0338). Required: (1) call it where sleeve capital is decided so the carry book is the base (is_base=True) and conviction is a booster; (2) feed it REAL measured inputs -- base sharpe/n_closes from web/trade_forensics.json, conviction sharpe/n_closes from data/conviction_book.jsonl once R-multiples exist (R0334), and rho_to_base from the two sleeves realised return series row-aligned on identical timestamps (same-ruler law); (3) persist the Plan so any artifact reporting sleeve size reads the stored allocation rather than recomputing it; (4) NOTE the current live reading -- the carry base is loss-making (76 closes, 4/4 hold buckets negative) so base_proven is False and the allocator will correctly hold conviction to its 2 percent learning stake until carry is fixed. That is the intended behaviour, not a bug to route around.",
    "roi_bps": null,
    "raised": "2026-08-01T16:54:53.292127+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Still unwired: libs/risk/sleeve_allocation.allocate is imported only by tests (tests/test_sleeve_allocation.py:20, tests/test_sleeve_ladder.py:20). data/sleeve_allocation.json is written by scripts/run_sleeve_allocator.py (R0141, discretionary conviction/event sleeves, artifact dated 2026-07-31) which does not call allocate() and does not model the carry base (is_base). Its required input \u2014 conviction R-multiples (R0334) \u2014 is also unbuilt, so wiring now would feed it nothing; keep behind R0334.",
+   "status": "scheduled",
+   "reason": "BLOCKED BY A RAIL WINDOW, not by effort, and the row's own gating premise is factually stale. (1) THE BLOCKER, measured today: libs/risk/ IS money path (check_change_window.MONEY_PATH:64) and check_change_window reports STERILE -- RAIL_BREACH, data/CASHCARRY_KILL present since 2026-08-01, the book is unwinding. L1.38 freezes money-path IMPROVEMENTS inside that window; wiring an unwired allocator into the capital path is an improvement, not a repair, so it must not ship here. LIFTING CONDITION, checkable in one command: scripts/check_change_window.py reports OPEN. (2) PREMISE CORRECTION so the next worker does not repeat my investigation: this row gates item (2) on conviction sharpe/n_closes from data/conviction_book.jsonl 'once R-multiples exist (R0334)'. R0334 IS implemented (8339639) but it does NOT put R-multiples there -- conviction_book.jsonl holds 19 rows, ZERO closed, ZERO r_multiple, all open forecasts; execution_quality.json computes its 14 closes from data/paper_book_pnl.json instead. The named input never arrives in the named place, so waiting for it is waiting forever; the honest substitute is paper_book_pnl.json, and at 14 closes < MIN_CLOSES=20 the conviction sleeve is UNPROVEN and takes the 2pct learning stake either way -- exactly what this row's own note (4) predicted. (3) DUPLICATE RELATIONSHIP: R0357 (open) is the strictly better-scoped statement of the same build -- it names the organ (run_sleeve_allocator.py), the line (:137), the consumers (check_promotion_gate.py:179, run_discretionary_max.py:112,180) and the grep evidence, re-verified today: STRONG/DURABLE/UNPROVEN appears 9x in the lib and 0x in the script, and nothing outside tests imports the lib. Do the build ONCE, under R0357, when the window opens.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-26",
+   "disposed": "2026-08-12T15:08:08.026653+00:00"
   },
   {
    "id": "R0341",
@@ -4299,11 +4299,11 @@
    "summary": "PANEL EXITS 0 WHEN EVERY SEAT FAILS -- fix the panel, not just its callers. scripts/run_external_panel.py prints 'panel: zero responses' and returns cleanly, so any caller gating on its exit code believes a review happened. ops/run_commit_audit.sh was the first caller to hit this and rowed a phantom finding (R0341) on its very first run; that caller is fixed (gates on panel_inbox.md's mtime), but EVERY OTHER CALLER STILL TRUSTS THE EXIT CODE and the next one written will hit the identical trap. Required: run_external_panel.py returns non-zero when zero seats returned a response, keeping 0 for a genuine partial run, plus a test asserting the code on a total-failure fixture. ADJACENCY: audit every caller of run_external_panel.py for exit-code trust before changing it, since some may currently depend on the 0.",
    "roi_bps": null,
    "raised": "2026-08-01T17:13:14.055306+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=5 effort_h=2: Unfixed: scripts/run_external_panel.py:513 still prints 'panel: zero responses -- check keys/quotas...' and main() falls through to a clean exit 0 \u2014 no sys.exit/non-zero on total failure, no test on a total-failure fixture. Every exit-code-trusting caller remains exposed to the exact trap that produced phantom row R0341. Small: non-zero on zero substantive responses + audit callers + one fixture test.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Fixed at the source: main() now raises SystemExit(3) on zero responses from a non-empty roster, 4 on an empty roster (vacuous denominator L1.57), 5 in manual mode; 0 stays tied to the SAME condition that writes panel_inbox.md so exit code and artifact cannot diverge, and a partial run keeps 0 as the row required. Caller audit done FIRST as the ADJACENCY note demanded -- run_commit_audit.sh (no set -e, already artifact-gated), run_cadence.py:138 (check=False, rc==0 and _produced, so non-zero only makes the duty stay OWED), capacity_test/run_micro_audit (import _ask only, never main), cron (shell ends on an echo): nothing depended on the 0. 5 exit-code tests on a total-failure fixture plus a live-store guard, all verified to fail without the fix. Enabling fix: build_audit_coverage.refresh() leaked the file handle it counted lines with, and under filterwarnings=error that made record_blank -- hence the panel's per-dead-seat path -- structurally untestable.",
+   "commit": "4990e416",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T14:53:15.512378+00:00"
   },
   {
    "id": "R0344",
@@ -4311,11 +4311,11 @@
    "summary": "THE DEGRADED PANEL FALLBACK IS ITSELF DEAD, so the desk has NO independent-review capability at all -- funded or not. Measured 2026-08-01T16:58Z on a real run: OpenRouter unfunded (-0.59 USD), panel dropped to its 4 FREE seats, and ALL FOUR failed -- tencent HTTP 404 (model id gone), cohere HTTP 400, nvidia-nano HTTP 400, nvidia KeyError('choices') (response shape changed). 0/4 substantive, quorum failed, 26 files NOT credited as audited. This matters beyond the outage: the NO-COST-DRIVEN-DEGRADATION corollary promises the desk 'runs the strongest FREE fallback available and labels its output DEGRADED', and that promise is currently FALSE -- the fallback returns nothing. Two distinct fixes: (1) repair or replace the 4 free seat ids (a 404 is a dead model id, a 400 is a payload/params mismatch, the KeyError is an unhandled response shape -- three different causes, do not treat as one); (2) a canary that FAILS when the free roster's substantive count is 0, so a dead fallback is discovered before it is needed rather than during the outage it exists for.",
    "roi_bps": null,
    "raised": "2026-08-01T17:13:14.171558+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Partially addressed, capability still unproven: refresh_panel_roster.py landed (drops dead 404 model ids from the live OpenRouter catalog, monthly) and run_canaries.py landed \u2014 but no canary fails when the FREE roster's substantive count is 0 (canary_searches.md C1-C9 are data-ecosystem checks; check_panel in max_audit.py:606 fires only on staleness), and the 4 free seat ids live in data/secrets/llm_panel_free.json (run_external_panel.py:348-350), a box-local secrets file absent from this tree, so their repair cannot be verified here. The NO-COST-DRIVEN-DEGRADATION promise remains unverified-false until a free-roster canary exists.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "BOTH halves delivered, and the half triage called unverifiable is now measured. (1) SEAT IDS REPAIRED -- VERIFIED not assumed: first live run of the new instrument probed 4/4 free seats ALIVE (nemotron-3-ultra/-super/-3.5-lightning/poolside-laguna-s); the 2026-08-01 dead set (tencent 404, cohere 400, nvidia-nano 400, nvidia KeyError) is gone. (2) CANARY BUILT: scripts/check_free_roster.py, daily 09:40, 30min ahead of the 10:10 commit-audit panel, exits non-zero at zero answers. It PROBES rather than reading the panel log, because the free roster only runs when unfunded -- a log reader learns nothing while funded and would discover the dead fallback during the outage it exists for. Free seats cost 0 dollars so there is no argument against exercising them. It also SEPARATED two faults that looked like one: all 4 seats answer a two-token probe while 3 of those 4 have blanked under the real 40k dossier, so reachability and capacity-under-load are different repairs; blank history is reported as evidence and never gates the verdict. Four no-answer states kept apart (UNCONFIGURED/EMPTY-vacuous-L1.57/NOT-PROBED/DEAD), none exits 0. Retry policy imported from the panel so canary and panel cannot drift. 7 tests, 74/74 build standard, matrix ENFORCED, manifest line carries its ceiling type.",
+   "commit": "ac6394c2",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T15:06:51.322028+00:00"
   },
   {
    "id": "R0345",
@@ -4323,11 +4323,11 @@
    "summary": "COMPOUND LEDGER ROWS ARE STRUCTURALLY UNDISPOSABLE, and that is a measurable part of the conversion backlog this desk is in repair-mode over. Every SYNTH0731 row (R0079-R0092, 14 rows, undisposed 1.5d and named in the carry-over brief) bundles 3-5 independent builds behind one id -- 'do X AND Y AND Z'. Such a row can never be marked implemented by any single action, so it can only ever be re-scheduled, and it ages forever while genuinely atomic rows around it convert. That is a defect in the LEDGER's admission, not in the worker: L1.28b says only capacity and admission control drain a queue at an arrival-to-service ratio near 4, and this is the admission-control half. Required: scripts/recommendations.py add REFUSES a summary that bundles independent deliverables (or splits it into linked child rows at creation), so a row is atomic by construction. FALSIFIER, and check it before building: measure disposition latency for compound versus atomic rows in the existing ledger -- if compound rows do NOT age longer, this hypothesis is wrong and the backlog is explained by something else.",
    "roi_bps": null,
    "raised": "2026-08-01T17:13:14.291450+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Not built: scripts/recommendations.py add() (:99-114) has only the (source,summary) dedupe \u2014 no refusal or splitting of compound multi-deliverable summaries \u2014 and the row's own pre-registered falsifier (compound vs atomic disposition latency, measurable from the existing ledger) has not been run. Check the falsifier before building, exactly as the row demands.",
+   "status": "rejected",
+   "reason": "REFUTED BY ITS OWN PRE-REGISTERED FALSIFIER, which is why this is a rejection and not a build. R0345 asked for admission control in recommendations.py add to refuse compound 'do X AND Y AND Z' rows, and pre-registered the test: 'measure disposition latency for compound versus atomic rows -- if compound rows do NOT age longer, this hypothesis is wrong'. Ran it (scripts/check_row_atomicity.py, Kaplan-Meier with open/scheduled rows right-censored, since a completed-only mean drops precisely the never-converting rows the hypothesis is about): compound KM-median 6.07d vs atomic 5.04d, log-rank chi2=0.008 p=0.9289. Every alternative classifier agrees -- enum3 p=0.176, semicolon p=0.621, conjunction p=0.735, length p=0.791 -- and within-source (the SYNTH0731 confound R0345's own evidence rests on) p=0.120. THE ARITHMETIC IS DECISIVE INDEPENDENT OF THE P-VALUE: compound rows are 29 of 486 rows (6%), so they cannot explain a 200-row backlog at any effect size. The medians do lean compound-slower in every definition, so the honest verdict is 'too small to be the cause', not 'proven zero'. WHAT THE BACKLOG ACTUALLY IS, found by the same run: a STOCK from two burst days (+66 on 07-31, +107 on 08-01), not a flow imbalance -- since 08-04 the desk has served 157 against 136 arrivals, i.e. net draining. Root cause rowed and FIXED this cycle: the repair-mode line counted every non-terminal row, so lawfully-scheduled work was booked as repair debt and the gate welded ON for 15 consecutive days.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T15:08:40.271368+00:00"
   },
   {
    "id": "R0346",
@@ -6022,6 +6022,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0487",
+   "source": "cro",
+   "summary": "PANEL PAYLOAD BUDGET IS WELDED AT ITS FLOOR, and it is the mechanistic cause of the chronic free-seat blanking the seat-chronic fence keeps prescribing a SWAP for. Measured 2026-08-12: data/audit_coverage.json code_budget_chars sits at exactly CODE_BUDGET_MIN=40000 while the last EIGHT recorded tune_budget firings carried 2-4 blanks of 4 -- max(40000, int(40000*0.6)) is 40000, so the shrink arm moved nothing, eight times, and the history rendered from-40000-to-40000 with no hint a bound was hit (L1.43 welded gate). The seats fail on a 40k payload and the adaptive response that exists to shrink it CANNOT. Two things follow. (a) The seat-chronic remedy is wrong: a live probe today had 4/4 free seats answering a two-token prompt (scripts/check_free_roster.py), so nemotron-3-ultra is NOT a dead model id and swapping it fixes nothing -- reachability and capacity-under-load are different faults and the fence conflates them. (b) The real question has an owner and I did not take it: does the rotating tier need a smaller payload for low-capacity seats, or does CODE_BUDGET_MIN=40000 need re-deriving against what these seats actually survive? Commit ac6394c2+ makes the weld visible (welded_at/wanted in budget_history) WITHOUT lowering the floor -- lowering a floor to clear the violation it caught is forbidden. Required: decide the payload design, and give the seat-chronic check the reachability signal so it stops prescribing swaps for a load problem.",
+   "roi_bps": null,
+   "raised": "2026-08-12T15:10:51.010342+00:00",
+   "status": "scheduled",
+   "reason": "SCHEDULED, not implemented: the diagnosis is complete and committed (4dad27a1 makes the weld visible via welded_at/wanted without lowering CODE_BUDGET_MIN), but the remaining question is a payload-DESIGN decision I deliberately did not take unilaterally -- does the rotating tier need a smaller payload for low-capacity seats, or does the 40000 floor need re-deriving against what those seats actually survive? Both change what every panel seat receives, and picking one to close a row would be exactly the 'edit the guard to fit the violation' move the desk forbids. Due 2026-08-26. UNBLOCKED WORK, no external dependency: the evidence needed to decide is already on disk -- data/audit_coverage.json budget_history now marks inert arms, data/free_roster_canary.json gives per-seat reachability, and external_panel_log.jsonl gives per-seat behaviour under the real dossier. The second half (teach the seat-chronic check to consult reachability so it stops prescribing swaps for a load fault) is small and rides with whichever design is chosen.",
+   "commit": null,
+   "due": "2026-08-26",
+   "disposed": "2026-08-12T15:14:22.894259+00:00"
   }
  ]
 }
