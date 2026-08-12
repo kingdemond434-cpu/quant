@@ -81,6 +81,14 @@ data/*
 # for the same reason as the botter calendar: the coverage row claims this ground is MAPPED, and an
 # untracked map makes that claim unverifiable and re-scannable by the next seat.
 !data/jp_makedeco_advent_calendar.jsonl
+# KR miner 2026-08-12. The Ppomppu 가상화폐 era corpus: a post-no -> date calibration of the whole
+# 12-year board (site search is robots-FORBIDDEN, so this map is the ONLY legal seek index and
+# rebuilding it costs a fresh binary search) plus the 2,130-row title tape and the threads mined to
+# comment depth. Tracked because watchlist card kr_rail_state_transition_global_leg cites both paths
+# as its §33 evidence and its primary sources -- untracked, the card cites something no other clone
+# can see, which is the one thing §33 says did not happen.
+!data/ppomppu_bitcoin_era_map.json
+!data/ppomppu_kr_era_threads.jsonl
 
 # R0313 delisted-instrument rosters. Tracked for exactly the reason the file above is: the names
 # are IRREPLACEABLE the moment a venue ages one off its own dead list. BitMEX carries 3077 settled
