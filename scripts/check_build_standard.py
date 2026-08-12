@@ -101,6 +101,7 @@ _GOVERNED: tuple[str, ...] = (
     "check_doctrine_diff.py",               # R0093: doctrine order -> blind-spot row (L2.5)
     "run_paper_sleeve_spawner.py",          # R0102 paper-sleeve auto-spawn (2026-08-05)
     "collect_dexscreener.py",               # R0100 axis 3 (2026-08-05)
+    "collect_geckoterminal_trades.py",      # R0291 signed DEX flow (2026-08-12)
     "collect_holder_concentration.py",      # R0100 axis 4 (2026-08-05)
     "collect_perpdex_funding.py",           # R0100 axis 5 + screen-on-discovery (2026-08-05)
     "retire_unfillable_candidates.py",      # §42 capacity retirement (2026-08-05)

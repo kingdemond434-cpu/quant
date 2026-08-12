@@ -370,6 +370,11 @@ _MAP: dict[str, list[str]] = {
     "L1.11-r0100": ["scripts/collect_dexscreener.py",
                     "scripts/collect_holder_concentration.py",
                     "scripts/collect_perpdex_funding.py"],
+    # R0291 (2026-08-12): wallet-resolved signed DEX flow, the one axis where waiting IS the
+    # loss -- venue retention ~300 trades/pool, so capture is forward-only-unrecoverable
+    # (L1.28b(f): acquisition never throttled). Dual clocks per L1.46 (chain stamp + receipt),
+    # per-pool window-overflow flagged so sampling truncation is measured, never silent.
+    "L1.11-r0291": ["scripts/collect_geckoterminal_trades.py"],
     # R0102 paper-sleeve auto-spawn: converts corrected Stage-A survivors into costless paper
     # sleeves. L1.6 bounds it (zero promotion authority, zero capital) and L1.18a orders its queue
     # (deployment race -- shortest capacity runway first). It NEVER spawns over the Holm cap: a

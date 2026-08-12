@@ -1838,6 +1838,14 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: measured (row counts above are from the runs, not estimates).
 15 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_dexscreener.lock .venv/bin/python scripts/collect_dexscreener.py >> data/cro_ai_logs/collect_dexscreener.log 2>&1
 
+# GECKOTERMINAL SIGNED DEX TRADES (R0291) -- HOURLY, the OPPOSITE cadence argument to the
+# history collectors above: the venue serves only the LAST ~300 trades per pool (no paging,
+# no history endpoint), so every hour NOT captured is permanently unrecoverable (L1.28b(f)).
+# The ceiling type is DATA-ARRIVAL from the retention side: hourly is the floor that bounds
+# loss, and the collector flags per-pool window overflow so the residual loss is MEASURED,
+# never silent. ~14 keyless calls/run at 2.6s pacing vs the documented 30/min limit.
+43 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_geckoterminal.lock .venv/bin/python scripts/collect_geckoterminal_trades.py >> data/cro_ai_logs/collect_geckoterminal.log 2>&1
+
 # CIRCULATING-SUPPLY HISTORY -- the half of the unlock screen that can ONLY be built forward.
 # screen_unlock_supply_series is blocked on two inputs and they are NOT symmetric: the unlock
 # CALENDAR is a published schedule that can be obtained later with its history intact, while the
