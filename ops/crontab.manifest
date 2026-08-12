@@ -1135,6 +1135,20 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: committed-script + 12 tests; ZERO promotion authority (measurement only, matching
 #   run_derivative_shadow.py's own standing).
 57 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_discovery_forward.lock .venv/bin/python scripts/run_discovery_forward.py >> data/cro_ai_logs/run_discovery_forward.log 2>&1
+# The last link: turns discovery_forward.json's real forward days into a fraction of full Kelly
+#   (libs.risk.kelly_shrink.shrink_fraction, already principal-adopted 2026-07-12 -- no new rung
+#   table invented). REPORTS A FRACTION ONLY, never a dollar figure or a percent of book; no
+#   execution path reads its output yet. 59 5 * * * -- 2 minutes after the forward clock updates.
+# EVIDENCE: scripts/check_discovery_gate.py -> data/discovery_promotion_gate.json.
+# CONFIDENCE: committed-script + 13 tests (shared with the actuator below).
+59 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_discovery_gate.lock .venv/bin/python scripts/check_discovery_gate.py >> data/cro_ai_logs/discovery_gate.log 2>&1
+# Transmits the gate above with run_promotion_actuator.py's exact asymmetry (immediate-down,
+#   wall-clock-24h-gated-up) per sleeve. Writes data/discovery_authority.json -- an authorized
+#   fraction only; nothing executes against it (that wiring does not exist yet, and building it
+#   is a separate, larger, still-unbuilt piece). 6:01 -- after the gate above.
+# EVIDENCE: scripts/run_discovery_actuator.py -> data/discovery_authority.json.
+# CONFIDENCE: committed-script + 13 tests (shared with the gate above).
+1 6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_discovery_actuator.lock .venv/bin/python scripts/run_discovery_actuator.py >> data/cro_ai_logs/discovery_actuator.log 2>&1
 # scripts/carry_viability.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 47 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/carry_viability.py >> data/cro_ai_logs/carry_viability.log 2>&1
 # scripts/run_research_tick.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
