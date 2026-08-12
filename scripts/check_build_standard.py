@@ -184,6 +184,24 @@ def _has_silent_swallow(tree: ast.AST) -> bool:
     return False
 
 
+def _scheduled_parent(root: Path, name: str, manifest: str) -> str:
+    """A scheduled script that invokes `name`, or "".
+
+    The parent must ITSELF be on a manifest line: a runner that nothing schedules cannot lend its
+    children a schedule it does not have. One level only -- a chain of runners deep enough to need
+    recursion is a chain nobody can reason about at 3am.
+    """
+    for cand in sorted((root / "scripts").glob("*.py")):
+        if cand.name == name or cand.name not in manifest:
+            continue
+        try:
+            if name in cand.read_text("utf-8", errors="ignore"):
+                return cand.name
+        except OSError:
+            continue
+    return ""
+
+
 def audit_organ(root: Path, name: str, *, manifest: str, matrix_src: str,
                 test_blob: str) -> dict[str, Any]:
     p = root / "scripts" / name
@@ -198,8 +216,21 @@ def audit_organ(root: Path, name: str, *, manifest: str, matrix_src: str,
     if Path(name).stem not in test_blob:
         v.append("UNTESTED (L2.2): no test file references it -- wiring nothing proves")
     if name not in manifest and name not in _SCHEDULE_EXEMPT:
-        v.append("UNSCHEDULED (L1.28c): no manifest line and no recorded exemption -- "
-                 "built-never-scheduled is this desk's most expensive recurring defect")
+        # TRANSITIVE SCHEDULING COUNTS, and missing it cries wolf on a correctly-wired organ.
+        # A plain substring test over the manifest sees only organs with their OWN cron line.
+        # When run_paper_sleeve_spawner moved into scripts/run_pipeline_cycle -- which is what
+        # fixed two inverted orderings -- it still fired every 15 minutes and this fence called it
+        # BUILT-NEVER-SCHEDULED, the desk's most expensive defect class, about an organ running
+        # more often than it ever had. A readiness check that cries wolf sends the desk to repair
+        # what works, and the wasted afternoon looks like diligence (the same correction
+        # seat_preflight already needed).
+        # NOT AN EXEMPTION: exemptions suppress the signal for every future organ too. The parent
+        # must itself be scheduled, so an unscheduled runner cannot launder its children.
+        parent = _scheduled_parent(root, name, manifest)
+        if not parent:
+            v.append("UNSCHEDULED (L1.28c): no manifest line, no scheduled parent, and no "
+                     "recorded exemption -- built-never-scheduled is this desk's most expensive "
+                     "recurring defect")
     if name not in matrix_src:
         v.append("UNMAPPED (L2.0): absent from the enforcement matrix -- its failures carry no "
                  "authority and no law claims it")

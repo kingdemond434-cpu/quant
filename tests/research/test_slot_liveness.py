@@ -186,15 +186,28 @@ def test_the_live_desk_report_is_shaped_for_a_decision(tmp_path: Path) -> None:
 
 
 # ------------------------------------------------------------------ the wiring
-def test_the_checker_is_scheduled_and_pages() -> None:
-    """L1.40: a detector nobody runs is a comment. This one exists because twelve slots sat at
-    zero for 6.8 days with nothing looking."""
+def _cycle():
+    import importlib.util
     root = Path(__file__).resolve().parents[2]
-    man = (root / "ops/crontab.manifest").read_text("utf-8")
-    lines = [ln for ln in man.splitlines()
-             if "check_slot_liveness.py" in ln and ln[:1].isdigit()]
-    assert lines, "the liveness check is on no schedule"
-    assert any("--page" in ln for ln in lines), "it must page; a log nobody reads is not an alarm"
+    spec = importlib.util.spec_from_file_location(
+        "run_pipeline_cycle", root / "scripts/run_pipeline_cycle.py")
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m
+
+
+def test_the_checker_runs_every_cycle_and_pages() -> None:
+    """L1.40: a detector nobody runs is a comment. This one exists because twelve slots sat at
+    zero for 6.8 days with nothing looking.
+
+    UPDATED, NOT RELAXED. It had its own cron line at 11:35; it now runs inside
+    scripts/run_pipeline_cycle every 15 minutes, which is where it has to be -- its output is the
+    evidence retirement acts on, and a separate schedule is what let retirement run AFTER the
+    spawner for a day. Both halves of the original property still hold: it fires, and it pages."""
+    cyc = _cycle()
+    stage = next((s for s in cyc.STAGES if s[0] == "check_slot_liveness.py"), None)
+    assert stage, "the liveness check runs nowhere"
+    assert "--page" in stage[1], "it must page; a log nobody reads is not an alarm"
 
 
 def test_the_producer_that_was_missing_is_now_scheduled() -> None:
@@ -206,31 +219,28 @@ def test_the_producer_that_was_missing_is_now_scheduled() -> None:
                for ln in man.splitlines()), "the born-dead clock's producer is unscheduled again"
 
 
-def test_the_spawner_runs_after_the_screens_that_feed_it() -> None:
-    """A survivor found at 10:37 used to wait 22 hours for the next 08:45 pass. The second pass
-    exists to make 'promote to shadow immediately' mean minutes rather than a day."""
-    root = Path(__file__).resolve().parents[2]
-    man = (root / "ops/crontab.manifest").read_text("utf-8")
-    hhmm = []
-    for ln in man.splitlines():
-        if "run_paper_sleeve_spawner.py" in ln and ln[:1].isdigit():
-            mi, hr = ln.split()[0], ln.split()[1]
-            hhmm.append(int(hr) * 60 + int(mi))
-    assert len(hhmm) >= 2, f"only {len(hhmm)} spawner pass(es) -- the late screens are unread"
-    # The VRP screen lands at 10:37; a pass must follow it on the SAME day.
-    assert max(hhmm) > 10 * 60 + 37, "no spawner pass reads the 10:37 screen on the day it runs"
-    # ...and before the 11:15 forward runner, so a new sleeve is observed on the same cycle.
-    assert max(hhmm) < 11 * 60 + 15, ("the late pass spawns AFTER the forward runner, so a new "
-                                      "sleeve waits another day just to be observed")
+def test_the_spawner_reads_corrected_verdicts_from_the_same_pass() -> None:
+    """THE STALL THIS REPLACED, and my own two-pass fix did not actually cure it.
+
+    A survivor found by the 10:37 screen waited for the 08:45 spawner. I added an 11:05 pass to
+    catch it -- but finalize_axis_screens ran at 07:08, so that pass read corrections computed
+    BEFORE the screen it was meant to catch, and the spawner admits only on verdict_adjusted. Two
+    cron passes bought nothing for that axis.
+
+    Both now run in one ordered cycle, correction first, every 15 minutes. That is the property:
+    not 'how many passes' but 'is the correction fresh when the spawner reads it'."""
+    cyc = _cycle()
+    order = [s[0] for s in cyc.STAGES]
+    assert order.index("finalize_axis_screens.py") < order.index("run_paper_sleeve_spawner.py")
 
 
-def test_the_second_pass_shares_the_first_passes_lock() -> None:
-    """Two schedules, one organ, one lock. A race a flock cannot serialise is the R0048 shape."""
+def test_one_organ_holds_one_lock() -> None:
+    """Two schedules, one organ, different locks is a race a flock cannot serialise -- R0048.
+    Consolidating into one cycle removes the possibility rather than managing it."""
     root = Path(__file__).resolve().parents[2]
-    locks = {ln.split("flock -n ")[1].split()[0]
-             for ln in (root / "ops/crontab.manifest").read_text("utf-8").splitlines()
-             if "run_paper_sleeve_spawner.py" in ln and ln[:1].isdigit() and "flock -n " in ln}
-    assert len(locks) == 1, f"the spawner's passes use different locks: {locks}"
+    lines = [ln for ln in (root / "ops/crontab.manifest").read_text("utf-8").splitlines()
+             if ln[:1] in "0123456789*" and "run_paper_sleeve_spawner.py" in ln]
+    assert lines == [], "the spawner has a cron line AND runs in the cycle -- two launchers"
 
 
 def test_no_pass_raises_the_cohort_cap() -> None:

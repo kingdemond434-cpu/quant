@@ -195,13 +195,20 @@ def test_the_page_shows_why_each_clock_is_not_breathing() -> None:
 
 
 # ------------------------------------------------------------------ the wiring
-def test_the_publisher_is_scheduled_often_enough_to_be_current() -> None:
-    """The chain it reports on moves seven times between 06:40 and 12:15, and the only other
-    writer of web/ runs once at 06:04. Daily publication would show yesterday's pipeline every
-    time the principal looked."""
+def test_the_publisher_runs_last_in_every_cycle() -> None:
+    """UPDATED, NOT RELAXED. It had its own hourly cron line; it is now the FINAL stage of
+    scripts/run_pipeline_cycle, which runs every 15 minutes -- strictly fresher, and guaranteed to
+    render the state AFTER everything upstream moved rather than whenever the hour happened to
+    turn. The property protected is unchanged: the dashboard must not lag the chain it reports on.
+    """
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "run_pipeline_cycle", _REPO / "scripts/run_pipeline_cycle.py")
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    assert [s[0] for s in m.STAGES][-1] == "publish_pipeline.py", (
+        "the dashboard must publish after the stages that change what it shows")
+
     man = (_REPO / "ops/crontab.manifest").read_text("utf-8")
-    lines = [ln for ln in man.splitlines()
-             if "publish_pipeline.py" in ln and ln[:1].isdigit()]
-    assert lines, "the pipeline feed is on no schedule"
-    assert any(ln.split()[1] == "*" for ln in lines), (
-        "publishing less often than hourly leaves the dashboard behind the chain it reports on")
+    assert not any("publish_pipeline.py" in ln and ln[:1] in "0123456789*"
+                   for ln in man.splitlines()), "a second launcher on the same feed"
