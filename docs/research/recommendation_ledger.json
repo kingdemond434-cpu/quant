@@ -4995,11 +4995,11 @@
    "summary": "A 6,400-CHAR BLOCK LABELLED 'CONSTITUTION (immutable, governs every answer you give)' IS COVERED BY NO SEAL. ops/principal_doctrine.txt carries a block delimited '=== CONSTITUTION (immutable ...) ===' / '=== END CONSTITUTION ===' whose 28 substantive lines appear NOWHERE in docs/CONSTITUTION.md (checked whitespace-normalised, 0/28 matched). scripts/check_constitution_core.py seals docs/CONSTITUTION.md ONLY (_CONST at line 42) and reports 'core intact (5 clauses verified)' while this text is unwatched. So the desk holds two disjoint bodies of self-declared immutable constitutional text, one sealed and one not, and the unsealed one is the copy that is actually injected into every organ at spawn (brain_env.sh:183) -- the one that steers behaviour. Any agent editing principal_doctrine.txt can silently alter text that calls itself immutable and no seal fires; L2.8a bars core edits in EITHER direction but has no instrument here. This is the desk's own 'a duty with no instrument is a wish' class pointed at its own constitutional core. FIX: either seal the doctrine's constitution block by hash in check_constitution_core.py alongside docs/CONSTITUTION.md, or reconcile the two documents so there is exactly one sealed core and the doctrine references it. Found while measuring the prompt-doctrine-oversized defect.",
    "roi_bps": null,
    "raised": "2026-08-05T17:46:32.895904+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "0a2fb66e13963d0864a2f01dbf1d558e52079192",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T23:08:08.326742+00:00"
   },
   {
    "id": "R0393",
@@ -5007,11 +5007,11 @@
    "summary": "MAX_AUDIT ACKS ARE GITIGNORED, SO A REPO-LEVEL DEFECT CAN NEVER BE ACKED WHERE IT PAGES. data/max_audit_acks.json is untracked (.gitignore data/*, and it carries none of the ! exceptions that data/decision_ledger.json, data/constitution_core.lock, data/gate0_signoff.json and 6 others do), and it has never appeared in git log. Acks are therefore PER-BOX. That is defensible for a runtime-state defect, whose truth genuinely differs per machine -- and wrong for a REPO-level one, whose truth is identical everywhere: prompt-doctrine-oversized is a property of a committed file, so acking it here leaves it firing on the VPS, where the doctrine's own escalation rule ('defects persisting >48h un-acked ESCALATE to the principal page') will page the principal for a defect that HAS a full reasoned disposition sitting in another checkout. That is the exact failure mode the ack mechanism exists to prevent, and it fires hardest on the desk's most carefully dispositioned items. max_audit already distinguishes RUNTIME from REPO scope internally (see the _fenced evidence-recording comment at scripts/max_audit.py:166 and the scope-aware tuple width at :6368), so the distinction needed to fix this is already computed and simply not applied to ack storage. FIX: split the ack file by scope -- REPO-scope acks tracked via a ! exception so they travel with the commit that reasons about them, RUNTIME-scope acks left local where they belong. Found while acking prompt-doctrine-oversized (R0391).",
    "roi_bps": null,
    "raised": "2026-08-05T17:50:33.164312+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "263365f4a1b3c1ef1cd542f825d5d0eef6afd3e6",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T23:13:13.551999+00:00"
   },
   {
    "id": "R0394",
@@ -5019,11 +5019,11 @@
    "summary": "THE L1.29 CALIBRATION FENCE IS WELDED RED BY 44 FORECASTS ABOUT A SYMBOL THAT DOES NOT EXIST -- and R0367's fix, now committed, was necessary but NOT sufficient. Measured 2026-08-05: check_calibration.py reports OVERDUE with 44 forecasts past deadline; every one is the claim 'Will S2USDT trade ABOVE 102.0 in 24 hours time?'. S2USDT returns HTTP 400 from BOTH api.binance.com/api/v3/klines and fapi.binance.com/fapi/v1/klines while BTCUSDT returns rows from both, so the symbol is not delisted, it never existed -- 'S2' is a placeholder/hallucinated ticker (and 102.0 a placeholder price) emitted by the calibration probe. With R0367's alphabet fix in place score_forecasts.py now PARSES the symbol and reports '0 resolvable, 44 skipped -- no venue price for S2USDT', so the row moves from unparseable to unresolvable and the fence stays red either way. THIS IS THE EXPENSIVE DIRECTION: L1.29 exists because a Kelly bettor sized on over-confident estimates converges to ruin with probability one, and an ungraded forecast never counts its miss, so the measured hit-rate can only rise. A fence that can never go green gets ignored (L1.43), which disables the desk's only detector of being confidently wrong. TIES TO AN UNDISPOSED ROW: R0254 (undisposed 4.4d) already found this probe re-logs ONE identical claim 17x in 14h -- same probe, same claim; that is why the count is 44 rather than 1. FIX, TWO HALVES: (1) validate the symbol against a venue exchangeInfo AT LOG TIME so an unpriceable claim is refused rather than banked -- a forecast nothing can resolve is not a forecast; (2) dispose the existing 44 as UNRESOLVABLE-BY-CONSTRUCTION with the reason recorded, explicitly NOT as hits or misses, since scoring a placeholder either way corrupts the calibration term that feeds calibrated_confidence and from there Kelly leverage. Found while running the law gate for owed-work batch 3.",
    "roi_bps": null,
    "raised": "2026-08-05T18:00:39.651959+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "2708c719beb576b482dd5835d83ccd99ae482ce8",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T23:19:20.345910+00:00"
   },
   {
    "id": "R0395",
@@ -6795,6 +6795,18 @@
    "summary": "revalidate_clocks.stablesupply() STILL RECOMPUTES THE SHIFT VERDICT ON THE VENDOR REVISED SERIES (residual of R0389, scoped out deliberately). scripts/revalidate_clocks.py:172 re-fetches DefiLlama live and feeds _z + split_and_check, so the SHIFT-SENSITIVITY test -- the one that killed bithumb_KR and exists to detect look-ahead -- is itself computed on numbers that did not exist at decision time. Measured revision on this series 2026-08-12: 18 of 20 comparable dates rewritten, all upward, median +0.53% against a 20-day sd of ~0.5%. A shift test asks whether the signal already contained future price; running it on a series the vendor has since backfilled UPWARD is asking that question with some of the future already mixed in, and it fails toward a FALSE verdict in either direction. NOW CHEAPLY FIXABLE AND IT WAS NOT BEFORE: 8df80793 started a vintage store for this series, so once two vintages exist revalidate_clocks can call vintage.as_of(d) and run the shift test on what was actually knowable, or state UNMEASURABLE for the pre-store history rather than silently using the revised values. Blocked only on vintage depth, not on engineering. Same treatment is owed to any other consumer that re-fetches rather than reading the point-in-time rows.",
    "roi_bps": null,
    "raised": "2026-08-12T22:27:51.923339+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0543",
+   "source": "cycle",
+   "summary": "THE SUITE RECORD RATCHETS ON COLLECTION, NEVER ON PASS/FAIL -- so a test file can go red and no standing instrument on this desk can see it. docs/research/test_suite_record.json holds max_collected=708 with the note 'high-water mark of COLLECTABLE test modules; ratchets UP only'. COLLECTABLE is the operative word: a test that imports fine and FAILS is still collected, so the ratchet cannot fall when the thing it exists to protect breaks -- the L1.57 constant-denominator class pointed at the test suite. MEASURED 2026-08-12, and this is not hypothetical: 13 tests in tests/self_improvement/test_forecast_calibration.py had been RED since d13999b1 (2026-08-01, 11 days), verified pre-existing by running the same file in a clean HEAD worktree (identical 13 failures). WHICH 13 IS THE POINT: d13999b1 is 'The calibration bias was INVERTED and inflating Kelly sizing on a live sleeve'. It taught _scoreable to exclude rows with no resolve_by; the test fixture still logged bare rows, so every row fell below the n>=5 gate and every test of the SIGN CONVENTION THAT COMMIT EXISTED TO FIX spent 11 days asserting against a report of Nones. A fix that silently retires the tests pinning the behaviour it changed is the most expensive shape a green suite can hide. THE ONLY DETECTOR WAS CI, AND IT IS ACKED RED: the ci-gate-red ack (expires 2026-08-13) reasons 'All 4 red tests shared one cause... full-suite verdict pending tonight's background run' -- measurably incomplete, since 13 more sat in a file that ack never looked at. A red gate hides new red, which is why acking one is different from acking anything else. FIX: record a PASS/FAIL high-water mark beside max_collected (n_passed ratchets UP, n_failed is a floor of ZERO), so a newly-red file fails a fence that is not the CI gate itself. The 13 are already repaired (commit 2708c719); this row is the instrument that would have caught them on day one.",
+   "roi_bps": null,
+   "raised": "2026-08-12T23:23:35.317518+00:00",
    "status": "open",
    "reason": null,
    "commit": null,
