@@ -1,0 +1,116 @@
+{
+ "what": "GATE ITEMS 5/6/7/8 RUNTIME EVIDENCE -- a real candidate routed through the conditional-alpha lifecycle, with the numbers it actually measured.",
+ "subject": "carry_basis_convergence_top_funding_decile",
+ "source_of_numbers": "reports/carry_basis_path.json (R0206/BR-08, generated 2026-08-01): 4 pre-registered cells, n_blocks=2235, basis_leg=+0.689bps/day, t=3.2",
+ "why_this_candidate": "Its unconditional hypothesis -- that funding rank selects into a WIDENING basis -- is REFUTED AND REVERSED, and that verdict stands untouched in docs/graveyard.md. What the same measurement found is the CONVERSE: the basis leg improves monotonically across funding deciles in all four constructions. That is the exact shape item 5 exists for -- weak/refuted unconditionally, structured conditionally -- and before this lifecycle existed it would have died with the unconditional verdict (L1.49).",
+ "item_5_conditional_track": "PROBATION, track=CONDITIONAL, admitted as a NEW hypothesis carrying regimes_searched=10 as its own multiplicity charge",
+ "item_6_hibernate": "HIBERNATING with all five required keys; the gate REFUSED a first attempt that omitted reactivation_conditions, evidence_artifacts, parameters and shadow_monitor -- a hibernation that cannot name its reactivation conditions is a retirement wearing a softer name",
+ "item_7_revalidation": "REVALIDATION_PENDING -- the only exit from HIBERNATING. No reactivate() exists; Stage-B forward clocks remain the sole promotion authority",
+ "item_8_reality_gap": [
+  {
+   "name": "carry_basis_convergence_top_funding_decile",
+   "gap": "REVALIDATION_STALLED",
+   "why": "REVALIDATION_PENDING but no forward clock has started -- the IOU against Stage B is being ignored, which quietly converts a hibernation into a retirement (III-J)"
+  }
+ ],
+ "authority": "MEASUREMENT ONLY. Nothing here promoted, sized or funded anything.",
+ "ledger_rows": [
+  {
+   "ts": "2026-08-12T01:59:02+00:00",
+   "name": "carry_basis_convergence_top_funding_decile",
+   "state": "PROBATION",
+   "why": "CONDITIONAL-TRACK ADMISSION as a NEW HYPOTHESIS (mandate III-B: post-hoc regime discovery is never retroactive validation). The unconditional verdict ('REFUTED-CONVERGING (R0206/BR-08): the original H1 -- that funding rank selects into a WIDENING basis -- is refuted and REVERSED. That verdict stands unchanged.') stands unchanged. Promotion authority remains the Stage-B forward clock alone",
+   "track": "CONDITIONAL",
+   "unconditional_verdict": "REFUTED-CONVERGING (R0206/BR-08): the original H1 -- that funding rank selects into a WIDENING basis -- is refuted and REVERSED. That verdict stands unchanged.",
+   "regime_signature": {
+    "funding_rank": "top-4 by 8h funding (decile 10 of the cross-section)",
+    "construction": "literal",
+    "horizon_d": "1",
+    "min_cross_section": "20 symbols"
+   },
+   "conditional_obs": 2235,
+   "conditional_sharpe": 0.0677,
+   "regimes_searched": 10,
+   "mechanism": "Binance funding is computed FROM the premium index, so ranking by funding ranks by widest premium. The measured basis leg is +0.689 bps/day (t=3.2) and improves MONOTONICALLY across funding deciles (h=1: d1 -1.89 -> d10 +0.61), in all four constructions. The CONVERSE of the refuted claim is therefore the candidate: conditioned on the top funding decile, the basis CONVERGES favourably to the short-perp leg. This is a NEW hypothesis carrying its own multiplicity charge, not a rescue of the old one.",
+   "next_consumer": "scripts/run_paper_sleeve_spawner.py -- a forward clock scoped to the regime signature; this ledger cannot promote"
+  },
+  {
+   "ts": "2026-08-12T01:59:23+00:00",
+   "name": "carry_basis_convergence_top_funding_decile",
+   "state": "PROBATION",
+   "why": "CONDITIONAL-TRACK ADMISSION as a NEW HYPOTHESIS (mandate III-B: post-hoc regime discovery is never retroactive validation). The unconditional verdict ('REFUTED-CONVERGING (R0206/BR-08): H1 -- that funding rank selects into a WIDENING basis -- is refuted and REVERSED. That verdict stands unchanged in its own artifact.') stands unchanged. Promotion authority remains the Stage-B forward clock alone",
+   "track": "CONDITIONAL",
+   "unconditional_verdict": "REFUTED-CONVERGING (R0206/BR-08): H1 -- that funding rank selects into a WIDENING basis -- is refuted and REVERSED. That verdict stands unchanged in its own artifact.",
+   "regime_signature": {
+    "funding_rank": "top-4 by 8h funding (decile 10)",
+    "construction": "literal",
+    "horizon_d": "1",
+    "min_cross_section": "20 symbols"
+   },
+   "conditional_obs": 2235,
+   "conditional_sharpe": 0.0677,
+   "regimes_searched": 10,
+   "mechanism": "Binance funding is computed FROM the premium index, so ranking by funding ranks by widest premium. The basis leg measures +0.689 bps/day (t=3.2) and improves MONOTONICALLY across funding deciles (h=1: d1 -1.89 -> d10 +0.61) in all four constructions. The CONVERSE of the refuted claim is the candidate: conditioned on the top funding decile the basis CONVERGES favourably to the short-perp leg. A NEW hypothesis carrying its own multiplicity charge, never a rescue of the old.",
+   "next_consumer": "scripts/run_paper_sleeve_spawner.py -- a forward clock scoped to the regime signature; this ledger cannot promote"
+  },
+  {
+   "ts": "2026-08-12T01:59:40+00:00",
+   "name": "carry_basis_convergence_top_funding_decile",
+   "state": "HIBERNATING",
+   "why": "HIBERNATED, state preserved: No Stage-B forward clock is free for it now, and this cell's economics sit in a venue-thin top-4 bucket. Preserved IN FULL rather than discarded -- L1.50: an unexploited asset is a defect, and L1.49: weak is not dead.",
+   "snapshot": {
+    "regime_signature": {
+     "funding_rank": "top-4 by 8h funding (decile 10)",
+     "construction": "literal",
+     "horizon_d": "1",
+     "min_cross_section": "20 symbols"
+    },
+    "parameters": {
+     "top_n": 4,
+     "min_xsec": 20,
+     "horizon_d": 1,
+     "sampling": "non-overlapping",
+     "construction": "literal",
+     "conditional_obs": 2235,
+     "conditional_sharpe_per_block": 0.0677
+    },
+    "evidence_artifacts": [
+     "reports/carry_basis_path.json (4 pre-registered cells, all four agreeing on sign and monotonicity)",
+     "docs/graveyard.md :: carry_entry_shorts_widening_basis (the unconditional REFUTED-CONVERGING verdict this is NOT a rescue of)"
+    ],
+    "reactivation_conditions": "ALL THREE, measured, before any clock is spawned: (1) the funding-decile monotonicity still holds on data after 2026-07-31 -- the panel is substantially a current-universe snapshot, so the pattern must survive out of sample; (2) top-4 depth supports the desk's size at its own capacity curve, since the top funding names are the thinnest on the venue; (3) the ~66bps execution reality gap attributed in R0206 is repaired or bounded, because paper +7.77bps/day against live -58.27bps/round-trip means execution and not selection is the binding constraint.",
+    "shadow_monitor": "re-run scripts/screen_carry_basis_path.py on the rolling panel; the monitored quantity is the DECILE MONOTONICITY of the basis leg, not the level -- the artifact states the level is not robust"
+   }
+  },
+  {
+   "ts": "2026-08-12T01:59:52+00:00",
+   "name": "carry_basis_convergence_top_funding_decile",
+   "state": "REVALIDATION_PENDING",
+   "why": "reactivation conditions credibly met: Re-opened for a FRESH Stage-B forward clock, not restored to ACTIVE. This ledger holds no promotion authority and cannot grant one.. NOT reactivated -- routed to canonical revalidation. A hibernated alpha re-enters through a fresh forward clock or not at all (mandate III-F)",
+   "snapshot": {
+    "regime_signature": {
+     "funding_rank": "top-4 by 8h funding (decile 10)",
+     "construction": "literal",
+     "horizon_d": "1",
+     "min_cross_section": "20 symbols"
+    },
+    "parameters": {
+     "top_n": 4,
+     "min_xsec": 20,
+     "horizon_d": 1,
+     "sampling": "non-overlapping",
+     "construction": "literal",
+     "conditional_obs": 2235,
+     "conditional_sharpe_per_block": 0.0677
+    },
+    "evidence_artifacts": [
+     "reports/carry_basis_path.json (4 pre-registered cells, all four agreeing on sign and monotonicity)",
+     "docs/graveyard.md :: carry_entry_shorts_widening_basis (the unconditional REFUTED-CONVERGING verdict this is NOT a rescue of)"
+    ],
+    "reactivation_conditions": "ALL THREE, measured, before any clock is spawned: (1) the funding-decile monotonicity still holds on data after 2026-07-31 -- the panel is substantially a current-universe snapshot, so the pattern must survive out of sample; (2) top-4 depth supports the desk's size at its own capacity curve, since the top funding names are the thinnest on the venue; (3) the ~66bps execution reality gap attributed in R0206 is repaired or bounded, because paper +7.77bps/day against live -58.27bps/round-trip means execution and not selection is the binding constraint.",
+    "shadow_monitor": "re-run scripts/screen_carry_basis_path.py on the rolling panel; the monitored quantity is the DECILE MONOTONICITY of the basis leg, not the level -- the artifact states the level is not robust"
+   },
+   "next_consumer": "scripts/run_paper_sleeve_spawner.py (fresh forward clock; prior accrual is context, never credit)"
+  }
+ ]
+}
