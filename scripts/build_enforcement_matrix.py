@@ -190,7 +190,13 @@ _MAP: dict[str, list[str]] = {
                # actuator a HUMAN still had to invoke; this invokes it on the detector's own
                # verdict (cron 2x/day), with TIER_RUIN and the L1.38 sterile window as the two
                # hard skips. Detection -> repair now needs nobody awake.
-               "scripts/ship_restart.py", "scripts/run_stale_daemon_repair.py"],
+               "scripts/ship_restart.py", "scripts/run_stale_daemon_repair.py",
+               # R0330: check_conversion measures the QUEUE, this measures the CAPACITY that
+               # drains it. A long queue is equally consistent with fast repair under heavy
+               # arrival and slow repair under light arrival, so queue length alone cannot say
+               # whether repair capacity is improving -- which is the comparison L1.28b is
+               # written from. MTTR is censoring-aware; P(fix) excludes rejections on purpose.
+               "scripts/check_repair_capacity.py", "libs/research/repair_capacity.py"],
     # L1.28c: every cadence hunts its own ceiling. The manifest fence requires a decided cadence
     # with evidence per line; brain_seat_throughput measures the resource they all compete for,
     # so "raise the cron" vs "buy a second seat" is settled by measurement.

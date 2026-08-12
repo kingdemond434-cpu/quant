@@ -172,6 +172,30 @@ def _capability_wired(d: Any) -> float | None:
     return None
 
 
+def _repair_p_fix(d: Any) -> float | None:
+    """Share of raised rows actually FIXED within the horizon -- repair capacity (R0330).
+
+    WHY THIS ONE OF THE THREE. R0330 asks for MTTR, P(fix) and stock growth to be born with floors.
+    Only P(fix) is ratchet-shaped: it is already a fraction in [0,1] where higher is better. MTTR is
+    a latency in days (lower is better, unbounded above) and stock growth is a signed rate -- both
+    are published in data/repair_metrics.json as trend numbers, and inventing a [0,1] transform for
+    them would have produced two metrics whose floors nobody could interpret.
+
+    WHY FIX AND NOT DISPOSITION. A reasoned rejection IS a conversion under L1.28b(b) and the queue
+    genuinely drains, but a rejection consumes no repair capacity. Flooring the disposition rate
+    would let the desk raise this number by rejecting more, which is the denominator trick one
+    level in. p_disposed is published beside it so both stay visible.
+
+    A fall means rows are arriving faster than they are being repaired, or repairs are being
+    replaced by rejections. INSUFFICIENT reads as None: a probability from a handful of eligible
+    rows is noise, and a zero floor is a ratchet that permits anything (L1.28a).
+    """
+    if not isinstance(d, dict):
+        return None
+    val = d.get("p_fix")
+    return float(val) if isinstance(val, (int, float)) and not isinstance(val, bool) else None
+
+
 def _disk_headroom(d: Any) -> float | None:
     """Runway before the recorders pause, as a share of the lead time needed to act (R0331).
 
@@ -262,6 +286,12 @@ _METRICS: dict[str, tuple[str, Callable[[Any], float | None], float | None, str]
     "campaign_obs_retained": (
         "data/campaign_retention.json", _campaign_retained, 48.0,
         "python scripts/check_campaign_retention.py"),
+    # R0330: repair capacity, not just queue length. check_conversion measures the queue; this is
+    # the service rate that drains it, and until now it counted as zero for want of a producer
+    # (L1.28a). 30h = a day's slack on the daily producer, so a dead fence reads STALE.
+    "repair_p_fix": (
+        "data/repair_metrics.json", _repair_p_fix, 30.0,
+        "python scripts/check_repair_capacity.py"),
     # R0331: the archive's deadline gets a floor. The alarm half already existed (days_to_pause
     # -> max_audit's tape-disk-deadline) but nothing recorded the TREND, so a 53% step-up in the
     # fill rate on ~2026-08-05 went unnoticed for a week and the row's own 25.1-day runway was

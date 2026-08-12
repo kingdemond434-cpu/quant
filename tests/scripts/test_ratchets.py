@@ -231,3 +231,35 @@ def test_disk_headroom_is_registered_and_carries_a_staleness_bound() -> None:
     assert artifact == "data/moat_mine.json"
     assert max_age is not None and max_age > 0
     assert cmd.strip()
+
+
+# --------------------------------------------------------------- R0330: repair capacity ratchet
+
+
+def test_repair_p_fix_reads_the_capacity_artifact() -> None:
+    from scripts.check_ratchets import _repair_p_fix
+    assert _repair_p_fix({"p_fix": 0.5278, "p_disposed": 0.6389}) == 0.5278
+
+
+def test_repair_p_fix_refuses_an_insufficient_sample() -> None:
+    """INSUFFICIENT publishes p_fix=None. A 0.0 here would install a zero floor -- a ratchet that
+    permits anything -- which is the same trap as the capability and disk metrics."""
+    from scripts.check_ratchets import _repair_p_fix
+    assert _repair_p_fix({"status": "INSUFFICIENT", "p_fix": None}) is None
+    assert _repair_p_fix({"status": "UNMEASURED"}) is None
+    assert _repair_p_fix("not a dict") is None
+
+
+def test_repair_p_fix_rejects_a_bool_masquerading_as_a_rate() -> None:
+    """bool is an int subclass, so a stray True would read as a perfect 1.0 repair rate."""
+    from scripts.check_ratchets import _repair_p_fix
+    assert _repair_p_fix({"p_fix": True}) is None
+
+
+def test_repair_p_fix_is_registered_and_carries_a_staleness_bound() -> None:
+    from scripts.check_ratchets import _METRICS
+    assert "repair_p_fix" in _METRICS
+    artifact, _fn, max_age, cmd = _METRICS["repair_p_fix"]
+    assert artifact == "data/repair_metrics.json"
+    assert max_age is not None and max_age > 0
+    assert "check_repair_capacity" in cmd

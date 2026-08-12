@@ -83,6 +83,24 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 5 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_campaign_retention.py >> data/cro_ai_logs/campaign_retention.log 2>&1
 
+# REPAIR CAPACITY FENCE (R0330; L1.28b conversion parity, L1.0 ratchet): the SERVICE RATE behind
+# the queue. check_conversion publishes backlog, arrivals and dispositions -- the queue's LENGTH,
+# which is equally consistent with fast repair under heavy arrival and slow repair under light
+# arrival. So the desk could not tell whether repair capacity it had just added was working, which
+# is exactly the arrival-vs-service comparison L1.28b was written from; per L1.28a all three rates
+# counted as ZERO for want of a producer. Publishes a censoring-aware MTTR (the naive completed-only
+# median reads 3.37d against a true 5.27d -- it conditions on having been disposed, and 42.8% of
+# rows have not been), P(fix) separated from P(disposed) so the number cannot be raised by rejecting
+# more, and stock growth per ACTIVE ledger day so a quiet stretch does not read as improving.
+# CADENCE CEILING: DATA-ARRIVAL (L1.28c). The input is the ledger, which changes only when a worker
+# session disposes rows -- measured as bursty, with four consecutive zero-event days in the last
+# fortnight. Daily is already faster than the state changes; placed at 07:03 so the artifact is
+# four minutes fresh when check_ratchets reads it at 07:07 (30h max_age gives a day of slack).
+# EVIDENCE: scripts/check_repair_capacity.py -> data/repair_metrics.json; floor repair_p_fix
+# recorded in data/ratchet_floors.json from the 2026-08-12 ledger (460 rows, 263 completed).
+# CONFIDENCE: committed-script (new this cycle)
+3 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_repair_capacity.py >> data/cro_ai_logs/repair_capacity.log 2>&1
+
 # EVENT CALENDAR REBUILD (R0276): regenerates data/event_calendar.json, which libs/execution/
 # event_guard.py reads to defer conviction entries across FOMC windows. IDEMPOTENT -- the dates
 # are held in the generator with their source, so a run either reproduces the committed file
