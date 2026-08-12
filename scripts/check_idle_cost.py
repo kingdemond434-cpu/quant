@@ -312,16 +312,28 @@ def build_report(root: Path | None = None) -> dict[str, Any]:
                         "cost is the top-level usd_per_day, computed once from total idle.",
         "breaches": breaches,
         "why": cost.get("why"),
-        "next_action": _next_action(status, clamps),
+        "next_action": _next_action(status, clamps, bs),
     }
 
 
-def _next_action(status: str, clamps: list[dict[str, Any]]) -> str:
+def _next_action(status: str, clamps: list[dict[str, Any]],
+                 book: dict[str, Any] | None = None) -> str:
     if status == "UNMEASURABLE-PAPER-BOOK":
+        # THE FIGURE IS READ, NEVER TYPED (R0374). This line used to name a hardcoded $5,757.08
+        # while the very same payload reported a different attested equity -- a configured
+        # constant wearing a measurement's clothes (L1.46), in the one field a human is meant to
+        # act on. It also ages invisibly: an operator asked "where does $5,757.08 sit" about a
+        # book that had not held that figure for weeks would be answering a question about
+        # nothing. Quote what this run actually read, or say UNKNOWN.
+        eq = (book or {}).get("equity_usd")
+        amt = (f"${eq:,.2f}" if isinstance(eq, (int, float))
+               else "THE ATTESTED EQUITY (this run could not read a figure)")
         return ("Answer the one question that decides whether this meter ever reads non-zero: "
-                "WHERE DOES THE PRINCIPAL-SIGNED $5,757.08 ACTUALLY SIT, and is it already "
-                "earning at or above the reachable floor there? If yes, this meter is a constant "
-                "zero and should be retired (its own falsifier (a)). That is a question for the "
+                f"WHERE DOES THE PRINCIPAL-SIGNED {amt} ACTUALLY SIT, and is it already "
+                "earning at or above the reachable floor there? A YES does NOT retire this "
+                "meter: falsifier (a) covers only the idle-cash rung, while the clamp register "
+                f"below is live work ({sum(1 for c in clamps if not c['priced'])} of "
+                f"{len(clamps)} clamp(s) currently UNPRICED). That is a question for the "
                 "principal and costs nothing to ask.")
     if status == "UNPRICED":
         bad = [c["clamp"] for c in clamps if not c["priced"]
