@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 import time
 from collections.abc import Callable
 from datetime import datetime
@@ -33,6 +34,10 @@ from pathlib import Path
 from typing import Any
 
 _ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+from libs.ops import disk as _disk_mod  # noqa: E402  (WARN_DAYS is the disk metric's denominator)
+
 _FLOORS = _ROOT / "data/ratchet_floors.json"
 _OUT = _ROOT / "data/ratchet_report.json"
 
@@ -167,6 +172,50 @@ def _capability_wired(d: Any) -> float | None:
     return None
 
 
+def _disk_headroom(d: Any) -> float | None:
+    """Runway before the recorders pause, as a share of the lead time needed to act (R0331).
+
+    WHY NOT disk_free_pct, WHICH IS WHAT THE ROW ASKED FOR. Free space MUST fall here: the tape
+    grows every second the recorders run, and that growth is the desk's only unreplicable asset.
+    A floor under free-pct would therefore report a REGRESSION every single day for doing exactly
+    the right thing -- and a fence that is red by construction gets switched off (L1.43), taking
+    the real signal with it. The quantity that legitimately ratchets is PREPAREDNESS: how much of
+    the honest lead time for the only non-destructive fix (buy storage, move cold tape) the desk
+    still has. That falls only when the situation genuinely deteriorates, and it rises when
+    capacity is added or growth slows.
+
+    WHY THIS ARTIFACT. days_to_pause already exists and has exactly one caller -- the moat miner,
+    which reads the archive every pass and is therefore the cheapest place on the desk to notice
+    the deadline. Minting a second disk producer would put two numbers on one fact (L2.9:
+    upgrade before build). The miner runs continuously, so a 6h bound reads STALE long before the
+    number could mislead.
+
+    WHAT A FALL MEANS: the archive's deadline moved closer without anyone deciding it should.
+    MEASURED 2026-08-12 at 0.143 (3.0 days of a 21-day lead time) -- the fill rate had stepped up
+    53% on ~08-05, from 0.69 to 1.03 GB/day, and nothing recorded the trend, so R0331's own
+    runway estimate of 25.1 days was still being quoted eleven days after it stopped being true.
+    That is the failure this floor exists to make impossible to repeat.
+    """
+    if not isinstance(d, dict):
+        return None
+    disk = ((d.get("closure") or {}) if isinstance(d.get("closure"), dict) else {}).get("disk")
+    if not isinstance(disk, dict):
+        return None
+    state = disk.get("state")
+    if state == "PAUSED":
+        # The recorders have STOPPED. Zero preparedness is the honest reading, not a refusal:
+        # this is measured, it is the worst possible value, and the fence must fire.
+        return 0.0
+    if state == "UNKNOWN":
+        # Growth not measurable yet -- a percentage, not a date. Refusing beats inventing a
+        # runway, and beats a 0.0 that would install a floor permitting anything (L1.28a).
+        return None
+    days = disk.get("days")
+    if not isinstance(days, (int, float)):
+        return None
+    return min(1.0, max(0.0, float(days) / _disk_mod.WARN_DAYS))
+
+
 def _alert_delivery(path: Path) -> float | None:
     try:
         lines = path.read_text("utf-8").splitlines()[-500:]
@@ -213,6 +262,14 @@ _METRICS: dict[str, tuple[str, Callable[[Any], float | None], float | None, str]
     "campaign_obs_retained": (
         "data/campaign_retention.json", _campaign_retained, 48.0,
         "python scripts/check_campaign_retention.py"),
+    # R0331: the archive's deadline gets a floor. The alarm half already existed (days_to_pause
+    # -> max_audit's tape-disk-deadline) but nothing recorded the TREND, so a 53% step-up in the
+    # fill rate on ~2026-08-05 went unnoticed for a week and the row's own 25.1-day runway was
+    # still being quoted when the true figure was 3.0 days. 6h = many passes of the continuously
+    # running miner, so a dead miner reads STALE rather than green on a frozen runway.
+    "disk_headroom_ratio": (
+        "data/moat_mine.json", _disk_headroom, 6.0,
+        "python -c \"import json;print(json.load(open('data/moat_mine.json'))['closure']['disk'])\""),
 }
 # Artifacts read as raw files rather than parsed JSON documents.
 _FILE_METRICS: dict[str, tuple[str, Callable[[Path], float | None], float | None, str]] = {
