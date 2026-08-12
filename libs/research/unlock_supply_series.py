@@ -296,7 +296,8 @@ def load_unlock_schedule(path: Path | None = None) -> ScheduleLoad:
         if not isinstance(row, dict):
             continue
         symbol = str(row.get("symbol") or row.get("ticker") or "").upper().strip()
-        instant = _as_utc(row.get("instant") or row.get("timestamp") or row.get("date"))
+        instant = _as_utc(row.get("instant") or row.get("timestamp") or row.get("ts")
+                          or row.get("date"))
         raw_tokens = row.get("tokens", row.get("amount"))
         tokens = float(raw_tokens) if isinstance(raw_tokens, int | float) else float("nan")
         if not symbol or instant is None:
@@ -624,9 +625,11 @@ def run_screen(
     panel: dict[str, tuple[tuple[datetime, ...], np.ndarray]] = {} if bars is None else bars
     if not panel:
         missing.append(
-            "price panel: no per-symbol daily bars supplied for the unlocking universe.  The "
-            "on-disk price lake (`data/binance_vision/`) covers 25 large-cap majors; an unlock "
-            "screen needs bars for the symbols that actually have vesting cliffs."
+            "price panel: no per-symbol daily bars supplied for the unlocking universe. "
+            "scripts/screen_unlock_supply_series.py loads D1 closes from the bronze crypto lake "
+            "for exactly the schedule's symbols (fixed 2026-08-12, R0385 -- the caller "
+            "previously passed bars=None unconditionally); an empty panel here means none of "
+            "those symbols have lake history yet, not a wiring gap."
         )
 
     if missing:

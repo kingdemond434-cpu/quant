@@ -10,6 +10,7 @@ Four behaviours are pinned, because they are the four ways this screen could lie
 """
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime, timedelta
 
 import numpy as np
@@ -228,6 +229,23 @@ def test_missing_supply_history_is_reported_not_invented(tmp_path):
     assert not load.readable
     assert load.series == {}
     assert any("absent from this checkout" in m for m in load.missing)
+
+
+def test_a_real_shaped_row_with_only_ts_and_date_is_no_longer_dropped(tmp_path):
+    """R0385 (raised 2026-08-05, fixed 2026-08-12): data/unlock_events.json carries neither
+    `instant` nor `timestamp`, only an epoch-seconds `ts` and a bare `date` string that _as_utc
+    correctly rejects as naive. The parser never consulted `ts`, so all 24,201 real rows were
+    silently dropped -- the screen ran weekly, exited 0, and reported NOT-READABLE-HERE every
+    time, indistinguishable from a healthy quiet screen unless someone opened the artifact."""
+    rows = [{"symbol": "ARB", "ts": 1789516800, "date": "2026-09-16",
+            "tokens": 92650000.0, "known_from": "2023-03-16T00:00:00+00:00"}]
+    p = tmp_path / "unlock_events.json"
+    p.write_text(json.dumps(rows), "utf-8")
+    load = load_unlock_schedule(p)
+    assert load.readable
+    assert len(load.releases) == 1
+    assert load.releases[0].symbol == "ARB"
+    assert load.releases[0].instant == datetime(2026, 9, 16, tzinfo=UTC)
 
 
 def test_run_screen_refuses_and_names_every_missing_input(tmp_path):
