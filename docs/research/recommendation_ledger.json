@@ -4817,11 +4817,11 @@
    "summary": "scripts/screen_orderbook_state.py cannot complete on this box: peak RSS 510-650MB and essentially FLAT in --files (580MB at 24 files, 652MB at 240), so the cost is the LOAD PATH, not the budget. Measured 2026-08-05: SIGKILLed by the kernel OOM killer at --files 48/96/160/240 in four consecutive probes with ~490-530MB available (3.8GB box, ~3.2GB resident in desk processes, no swap). It was wired into ops/crontab.manifest and the live crontab the same day with choom -n 1000 so it self-nominates as the OOM victim rather than risking the six cashcarry_executor processes that live here -- that makes the line SAFE, not PRODUCTIVE. At a budget small enough to survive it screens 2 of 1356 cells on disk and both report NO-INPUT, so the highest-ranked untested mechanism class in run_mechanism_census (orderbook_microstructure_state, gap 0.396, ~10GB of L2 tape, 29020 partitions) is still effectively unscreened. FIX: a bounded-memory load path -- stream partitions and accumulate per-cell statistics incrementally instead of holding the parsed tape, so peak RSS is O(1) in --files. That is the difference between a scheduled organ and a scheduled organ that produces. NOTE the pre-registration docstring is frozen and must not be edited to accommodate the fix.",
    "roi_bps": 30.0,
    "raised": "2026-08-05T14:13:16.545294+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Both halves done and measured on the real 39,520-partition tape. (1) LOAD PATH: cell_inputs derives per partition and retains only derived arrays (1.5pct of parsed tape); peak RSS 255MB at 24 files / 257 at 96 / 258 at 240 -- FLAT and completes, against 580-652MB and SIGKILL before. The transform is bit-identical by construction (per-row maps + one stable sort; a stable sort of a concatenation of stably-sorted sublists equals a stable sort of the whole) and a test compares the full 30-cell verdict table old-vs-new. (2) THE ORGAN STILL PRODUCED NOTHING once memory was fixed, because build_bars.trades_from accepted only bybit's compressed WS labels p/T/v while the recorder wrote price/time/size: 221,000 nested entries sampled, 100pct the unread shape, 0 prints parsed -- the whole bybit tape (10,814 partitions, 27pct of data/moat) invisible to every consumer, failing silently because an unparseable entry is skipped not counted. Fixed with the venue per-print stamp (the batch receipt is off by up to 89s on a 60s bar). RESULT: 12 NO-INPUT rows -> 360 real verdicts. 0 survivors, all 275 scored cells UNDERPOWERED at 0.6pct tape coverage -- honest, not a refutation. Pre-registration docstring untouched. 9 new tests.",
+   "commit": "02f2e24a",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T21:01:31.123952+00:00"
   },
   {
    "id": "R0379",
@@ -6622,6 +6622,54 @@
    "commit": null,
    "due": "2026-08-18",
    "disposed": "2026-08-12T20:56:09.205721+00:00"
+  },
+  {
+   "id": "R0529",
+   "source": "cycle",
+   "summary": "BYBIT TAPE BLAST RADIUS beyond the screen fixed in R0378: build_bars.trades_from dropped 100pct of bybit prints (221,000 of 221,000 nested entries sampled, wrong field labels) and it has THREE production consumers -- build_bars.py:186 (the canonical bar builder), screen_moat.py:255 and screen_orderbook_state. Every bar, every moat screen result and every graveyard verdict computed over bybit since the recorder started is therefore built on ZERO trades for that venue, and each looked like a legitimate data-poor null rather than a parse failure. AUDIT AND RE-RUN: identify which committed results and graveyard rows rest on bybit tape and re-run them now the prints parse; a kill recorded on unreadable data is not a kill (L1.25 -- failure to discover is never evidence none exists, and the ordered diagnostic starts at 'is the instrument broken'). Also add the missing instrument: trades_from skips an unparseable entry silently, so a 100pct parse loss is indistinguishable from a quiet venue -- it must COUNT what it drops (L1.60 attrition) and a fence must fire when a venue's parse rate collapses.",
+   "roi_bps": 22.0,
+   "raised": "2026-08-12T21:01:45.151206+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0530",
+   "source": "cycle",
+   "summary": "POSITIVE CONTROL FAILING on the orderbook-state screen: tests/research/test_orderbook_state_screen.py::test_a_leading_book_state_is_detected asserts a PLANTED leading book state is classified SCREEN-INTERESTING and it now returns SUSPECT-LOOKAHEAD. Verified 2026-08-12 as PRE-EXISTING at HEAD in a clean git worktree (not introduced by R0378). This is the desk's own recorded lesson -- 'a gauntlet that has never been shown to PASS a known-good alpha has not been validated, only its rejections have been observed' -- firing on the #1-ranked untested mechanism class. Until it is resolved the screen's zero-survivor record is UNINTERPRETABLE: it cannot be distinguished from an instrument that rejects everything (L1.25 diagnostic step 1, and the 420/0 instrument-artifact class). Diagnose whether the SUSPECT-LOOKAHEAD rule is mis-calibrated or the fixture genuinely trips a real look-ahead guard; do NOT loosen the verdict rule to make the test pass.",
+   "roi_bps": 12.0,
+   "raised": "2026-08-12T21:01:49.894088+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0531",
+   "source": "cycle",
+   "summary": "The orderbook-state screen's SIGNAL and TARGET legs now run on DIFFERENT CLOCKS and nothing declares it (L1.46). Depth snapshots are timestamped with our receipt (moat_mine._depth_snaps reads r['t']) while bybit prints, after R0378, use the venue per-print stamp -- the only correct choice, since a trades batch receipt is off by up to 88,858ms on a 60,000ms bar. Measured recv-minus-venue on the real tape: depth +219ms median (122/581 p10/p90). The direction is SAFE and that is why R0378 shipped it: recv runs late, so the state paired with a bar is from at least 219ms BEFORE the boundary, which attenuates an IC toward zero and cannot leak. But 'safe' is not 'declared', and section 6 of the frozen pre-registration names no clock at all. FIX: align both legs on the venue stamp -- depth rows already carry a vt venue-time field and it is unused -- or record the offset in the artifact's alignment block with its measured distribution. Note the blast radius: _depth_snaps is shared, so switching it touches every moat screen, which is why this is its own row rather than scope inside R0378.",
+   "roi_bps": 10.0,
+   "raised": "2026-08-12T21:02:01.339153+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0532",
+   "source": "cycle",
+   "summary": "The orderbook-state artifact is the NEXT memory wall now that R0378 removed the load-path one, and it is measured: 360 rows = 918KB, i.e. 2,613 B/row, so full-tape coverage (~1,356 cells x 30 = 40,680 rows) produces a ~106MB JSON with both the rows list and the complete json.dumps string resident at write time. The bulk is per-row constants -- every scored row carries its own copy of the ~600-character type2 note (type2_cost.as_dict emits it verbatim) plus a 10-key alignment dict that is identical across the whole run. Raising --files toward real coverage therefore just moves the OOM from the load path to the writer, and the screen currently reads 240 of 39,520 partitions (0.6pct), which is exactly why every cell reports UNDERPOWERED. FIX: hoist the run-constant fields (type2 note, alignment) to the report root and reference them per row, or stream the artifact write. Check the three downstream consumers first -- moat_utilisation._adapt_orderbook_state reads status/files_read and iterates obs['rows'] for r['construction'].",
+   "roi_bps": 8.0,
+   "raised": "2026-08-12T21:02:07.905822+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
