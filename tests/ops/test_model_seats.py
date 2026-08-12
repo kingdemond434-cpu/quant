@@ -27,17 +27,33 @@ def test_every_non_miner_organ_lands_on_opus() -> None:
         assert chain_for(organ)[0] == "claude-opus-5", organ
 
 
-def test_miner_family_lands_on_fable() -> None:
-    for organ in ("frontier", "litminer", "prospector", "dataaxis", "blindrediscovery",
-                  "moatminer", "crypto_factory"):
+def test_only_chinese_miners_hold_the_fable_seat_by_default() -> None:
+    """SUPERSEDED POLICY, UPDATED NOT DELETED. Until 2026-08-12 this asserted that EVERY miner
+    landed on Fable -- the pool-splitting argument. The principal's directive inverted it: Opus 5
+    is the default for all local Claude work, and Fable is reserved for Chinese miners plus
+    miners that have EARNED it on measured downstream value. The surviving invariant is that the
+    Fable seat is a small, named, defensible set rather than 'every miner'."""
+    for organ in ("cn_sources", "chinese_miner", "bilibili", "juejin", "wechat"):
         assert seat_for(organ) == SEAT_MINER, organ
         assert chain_for(organ)[0] == "claude-fable-5", organ
+    for organ in ("frontier", "litminer", "prospector", "dataaxis", "blindrediscovery",
+                  "crypto_factory"):
+        assert seat_for(organ) == SEAT_DEFAULT, organ
+        assert chain_for(organ)[0] == "claude-opus-5", organ
+
+
+def test_a_non_chinese_miner_reaches_fable_only_when_measured_elite() -> None:
+    """Eligibility is DYNAMIC (miner_roi.rank_elite) and never hardcoded -- a static list is how
+    'currently best' silently becomes 'chosen once'."""
+    assert chain_for("litminer")[0] == "claude-opus-5"
+    assert chain_for("litminer", elite={"litminer"})[0] == "claude-fable-5"
 
 
 def test_regional_suffixes_resolve_to_their_family() -> None:
-    """The frontier miner runs as frontier-cn / frontier-kr / ... -- seven labels, one seat."""
+    """The frontier miner runs as frontier-cn / frontier-kr / ... -- seven labels, one seat, and
+    after the inversion that seat is Opus."""
     for region in ("cn", "en", "ru", "kr", "jp", "ar", "br"):
-        assert seat_for(f"frontier-{region}") == SEAT_MINER, region
+        assert seat_for(f"frontier-{region}") == SEAT_DEFAULT, region
 
 
 def test_an_unknown_organ_defaults_to_opus_not_fable() -> None:

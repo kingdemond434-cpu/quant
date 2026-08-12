@@ -149,48 +149,55 @@ def read_chain(var: str = "_BRAIN_MODEL_CHAIN") -> list[str]:
 SEAT_DEFAULT = "default"
 SEAT_MINER = "miner"
 
-#: Everything not named a miner. Opus head, opus fallback, and fable LAST as an emergency floor:
-#: if both Max-seat models are unavailable the desk degrades to the metered pool rather than going
-#: dark, because an organ with no model at all is the worse failure (same argument as read_chain).
+#: Everything local and Claude-run. Opus head, opus fallback, fable LAST as an emergency floor.
 DEFAULT_CHAIN: tuple[str, ...] = ("claude-opus-5", "claude-opus-4-8", "claude-fable-5")
 
-#: The mining / data-collection family. Fable head by principal policy; the opus seats remain
-#: beneath it so exhaustion is a paged, self-healing walk-down rather than an outage.
+#: The FABLE-EARNED seat: Chinese miners, plus any non-Chinese miner currently ranked elite by
+#: measured downstream value per token (libs.ops.miner_roi). Fable head, opus beneath it.
 MINER_CHAIN: tuple[str, ...] = ("claude-fable-5", "claude-opus-5", "claude-opus-4-8")
 
-#: Organs on the miner seat, by their organ label (the string each ops/ script passes to
-#: brain_mutex / dig_dry_run). MEMBERSHIP IS A DATA DECISION: adding a miner means adding a row
-#: here, never editing a shell script, so the seat policy cannot drift per-organ the way the model
-#: chain itself drifted across three files before 07-30.
+#: SUPERSEDED 2026-08-12 (principal). This set was every miner; it is now the CHINESE miners
+#: only, because the directive inverted the default: OPUS 5 for all local Claude work, Fable
+#: reserved for Chinese miners and for miners that have EARNED it on measurement.
+#:
+#: The earlier reasoning -- put resumable work on the metered pool so a starved dig costs only a
+#: retry -- was about WHICH POOL starves first. The principal's constraint is different and
+#: supersedes it: the Claude/Fable plan as a whole is scarce capital, and background miners were
+#: consuming it before the day's interactive work could start. The question is no longer which
+#: pool but whether a given run deserves a premium model at all, which libs.ops.novelty_gate now
+#: answers before either seat is reached.
+#:
+#: Non-Chinese eligibility is DYNAMIC and lives in miner_roi.rank_elite() -- never hardcoded
+#: here, because a static list is exactly how "currently best" silently becomes "chosen once".
 MINER_ORGANS: frozenset[str] = frozenset({
-    "frontier",            # ops/run_frontier_miner.sh -- 7 regional digs
-    "litminer",            # ops/run_litminer_dig.sh -- literature mining
-    "prospector",          # ops/run_prospector_dig.sh -- source prospecting
-    "dataaxis",            # ops/run_dataaxis_dig.sh -- new data-axis discovery (data family)
-    "blindrediscovery",    # ops/run_blindrediscovery_dig.sh -- blind rediscovery mining
-    "moatminer",           # ops/run_moat_miner.sh -- proprietary-moat collection
-    "crypto_factory",      # ops/run_crypto_factory.sh -- bulk candidate generation
+    "cn_sources", "chinese_miner", "bilibili", "juejin", "wechat",
 })
 
 
-def seat_for(organ: str) -> str:
+def seat_for(organ: str, *, elite: frozenset[str] | set[str] | None = None) -> str:
     """Which seat an organ runs on. Prefix-matched so `frontier-cn` resolves to `frontier`.
 
-    An UNKNOWN organ gets SEAT_DEFAULT -- Opus. That default is deliberate and asymmetric: a new
-    organ mis-seated onto Opus costs subscription headroom, while one mis-seated onto Fable can
-    silently drain the metered pool the miners depend on. The cheaper mistake is the default.
+    UNKNOWN ORGANS GET OPUS, and after the 2026-08-12 inversion so does every organ that has not
+    earned otherwise. The asymmetry is deliberate: a new organ mis-seated onto Opus costs
+    subscription headroom, while one mis-seated onto Fable spends a metered pool the principal
+    has reserved for Chinese and measured-elite work. The cheaper mistake is the default.
+
+    `elite` accepts the CURRENT dynamic winners from miner_roi.rank_elite(); passing nothing
+    means only the Chinese miners reach the Fable seat.
     """
     label = str(organ or "").strip().lower().replace("-", "_")
+    if label in (elite or frozenset()):
+        return SEAT_MINER
     for m in MINER_ORGANS:
         if label == m or label.startswith(m + "_"):
             return SEAT_MINER
     return SEAT_DEFAULT
 
 
-def chain_for(organ_or_seat: str) -> list[str]:
+def chain_for(organ_or_seat: str, *, elite: frozenset[str] | set[str] | None = None) -> list[str]:
     """The fallback chain for an organ label or a seat name. Never empty."""
     s = str(organ_or_seat or "").strip().lower()
-    seat = s if s in (SEAT_DEFAULT, SEAT_MINER) else seat_for(s)
+    seat = s if s in (SEAT_DEFAULT, SEAT_MINER) else seat_for(s, elite=elite)
     return list(MINER_CHAIN if seat == SEAT_MINER else DEFAULT_CHAIN)
 
 

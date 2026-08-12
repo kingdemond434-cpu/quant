@@ -246,10 +246,6 @@ QUANT_ROOT=/home/quant/quant-platform
 # flock -n makes an occupied seat a FREE instant skip, so extra slots cost nothing when the
 # brain seat is busy and convert idle seat windows into digs when it is not. With the research
 # twin online these mostly execute there; here they scavenge whatever the mutex leaves free.
-0 10 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-dataaxis.timer >/dev/null 2>&1 || flock -n /tmp/seat_dataaxis.lock /bin/bash ops/run_dataaxis_dig.sh >> data/cro_ai_logs/seat_dataaxis.log 2>&1; }
-0 11 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-frontier.timer >/dev/null 2>&1 || flock -n /tmp/seat_frontier.lock /bin/bash ops/run_frontier_rotation.sh >> data/cro_ai_logs/seat_frontier.log 2>&1; }
-0 12 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-prospector.timer >/dev/null 2>&1 || flock -n /tmp/seat_prospector.lock /bin/bash ops/run_prospector_dig.sh >> data/cro_ai_logs/seat_prospector.log 2>&1; }
-0 13 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-litminer.timer >/dev/null 2>&1 || flock -n /tmp/seat_litminer.lock /bin/bash ops/run_litminer_dig.sh >> data/cro_ai_logs/seat_litminer.log 2>&1; }
 
 # LIVE GUARD (R0071d, 2026-07-31): computes the graded degradation response -- effective_size_
 # fraction, limit_only canary mode, and the KILL freeze. It was BUILT and never scheduled, so
@@ -1076,10 +1072,6 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: ops/quant-*.timer OnCalendar lines (dataaxis 14:00, frontier 15:00, prospector 18:00,
 #           litminer 19:00, blindrediscovery monthly 1st 20:00); runners ops/run_*_dig.sh
 # CONFIDENCE: committed-script (cadence copied from the committed timer units)
-0 14 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-dataaxis.timer >/dev/null 2>&1 || flock -n /tmp/seat_dataaxis.lock /bin/bash ops/run_dataaxis_dig.sh >> data/cro_ai_logs/seat_dataaxis.log 2>&1; }
-0 15 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-frontier.timer >/dev/null 2>&1 || flock -n /tmp/seat_frontier.lock /bin/bash ops/run_frontier_rotation.sh >> data/cro_ai_logs/seat_frontier.log 2>&1; }
-0 18 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-prospector.timer >/dev/null 2>&1 || flock -n /tmp/seat_prospector.lock /bin/bash ops/run_prospector_dig.sh >> data/cro_ai_logs/seat_prospector.log 2>&1; }
-0 19 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-litminer.timer >/dev/null 2>&1 || flock -n /tmp/seat_litminer.lock /bin/bash ops/run_litminer_dig.sh >> data/cro_ai_logs/seat_litminer.log 2>&1; }
 0 20 * * 1,3,5,6 cd "$QUANT_ROOT" && { systemctl is-enabled quant-blindrediscovery.timer >/dev/null 2>&1 || flock -n /tmp/seat_blindrediscovery.lock /bin/bash ops/run_blindrediscovery_dig.sh >> data/cro_ai_logs/seat_blindrediscovery.log 2>&1; }
 
 # SUB-ACCOUNT CAPABILITY PROBE (principal order 2026-07-30: "allow our system to create automated
@@ -1636,6 +1628,30 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # 21 rows stamped (14 BLOCKED_PENDING_DATA, 7 NEXT_BATCH_TEST), recall RECONCILES.
 20 13 * * * cd "$QUANT_ROOT" && flock -n data/.cron_edgeintake.lock .venv/bin/python scripts/run_edge_intake.py >> data/cro_ai_logs/edge_intake.log 2>&1
 
+# CLAUDE-LOCAL CADENCE CUT (principal directive 2026-08-12). The four digger organs ran THREE
+# Claude sessions a day each -- 03:00/05:00/06:00/07:00 plus a midday pass plus an evening pass.
+# Each firing is a full --effort max Claude session on the plan the principal also needs for
+# interactive work, and §26 makes that capacity scarce capital rather than a free input.
+# Cut to ONE substantive cycle per day each (the early-morning line, which lands before the
+# working day). Removed: dataaxis 10:00+14:00, frontier 11:00+15:00, prospector 12:00+18:00,
+# litminer 13:00+19:00 -- EIGHT Claude sessions/day.
+# The digs are RESUMABLE by construction (a region without a real log today is re-dug next
+# invocation), so a single daily pass loses coverage only if the source refills faster than
+# daily -- which libs/ops/miner_roi.cadence_hours() now measures per miner rather than assuming.
+# CLAUDE-LOCAL CADENCE CUT (principal directive 2026-08-12, §8/§26/§27).
+# The four digger organs each ran THREE Claude sessions a day (an early pass, a midday pass and
+# an evening pass). Every firing is a full --effort max Claude session drawing the same plan the
+# principal needs for interactive work, and §26 makes that capacity scarce capital rather than a
+# free input. Cut to ONE substantive cycle per day each, keeping the EARLY line so the day's
+# evidence is on disk before the working day starts.
+# REMOVED: dataaxis 10:00+14:00, frontier 11:00+15:00, prospector 12:00+18:00,
+#          litminer 13:00+19:00 -- EIGHT Claude sessions/day.
+# Safe because the digs are RESUMABLE by construction: a region without a real log today is
+# re-dug on the next invocation, so one daily pass loses coverage only where a source refills
+# faster than daily -- and libs/ops/miner_roi.cadence_hours() now MEASURES that per miner
+# instead of assuming it, stretching or tightening the interval on observed yield.
+# Zero-novelty sweeps no longer reach a model at all (libs/ops/novelty_gate), so a cheap
+# collection can still run often without buying premium reasoning it does not need.
 # --- DEEPSEEK SECOND FLYWHEEL (mandate V: hourly, 24/7) ---
 # UNBLOCKED 2026-08-12: XXVI's gate reads 32 PASSED / 2 BLOCKED_VPS, and the two remaining items
 # are the principal's Codex bootstrap rather than desk capability.
