@@ -227,8 +227,16 @@ _MAP: dict[str, list[str]] = {
     # via the doctrine, and guarded by a family-level check. A gate, not a report.
     "L1.36": ["scripts/check_law_families.py"],
     # L1.37: the gate itself -- four boundaries (organ spawn, pre-push, CI, hourly cron).
+    # L1.37 carries the BOUNDARIES themselves, and check_birth_properties is the §36/L2.9
+    # birth-property predicates moved onto them. They ran at 07:00 on cron and nowhere else, so
+    # four defect keys (artifact-ungoverned 6x, orphan-scripts 4x, mine-conversion-unbacked 3x,
+    # decision-ledger-undated 2x) recurred by construction: the object was authored, committed and
+    # pushed, and the question "why does this file exist?" reached a session that had to
+    # reconstruct the answer from cold hours later. Same predicates, one source of truth
+    # (max_audit's tables are imported, never copied) -- only the boundary is new.
     "L1.37": ["scripts/run_law_gate.py", "deploy/git_hooks/pre-push", "ops/brain_env.sh",
-              ".github/workflows/ci.yml"],
+              ".github/workflows/ci.yml", "scripts/check_birth_properties.py",
+              "tests/ops/test_birth_properties.py"],
     # L1.38: the money path freezes to IMPROVEMENTS (never repairs) inside launch/first-fills/
     # rail-breach windows. Part of the survival family in spirit; fenced standalone.
     "L1.38": ["scripts/check_change_window.py"],
@@ -386,6 +394,16 @@ _MAP: dict[str, list[str]] = {
     "L1.59": ["scripts/build_enforcement_matrix.py", "scripts/module_justification.py",
               "scripts/check_denominators.py", "scripts/check_ratchets.py",
               "scripts/run_max_push.py", "scripts/check_doctrine_diff.py"],
+    # L1.60: L1.57 asks whether the denominator is an int >= 1; nothing asked what it LOST. A
+    # fence that reads 1000 files, drops 991 in `except OSError: continue` and declares
+    # scanned=9 is recorded DECLARED, non-vacuous and CLEAN. The proving instance is L1.57's own
+    # supplier -- check_calendar_gates' `n += 1` sat one line BELOW its handler. Both existing
+    # swallow detectors require a Pass body, so the whole `continue`/`return <default>` class was
+    # invisible (R0166, prose-only for twelve days). The three repaired fences are listed: each
+    # is a regression site, and reverting an `attempted` counter turns the tests red.
+    "L1.60": ["scripts/check_denominator_attrition.py", "libs/ops/attrition.py",
+              "scripts/check_coverage_floors.py", "scripts/check_calendar_gates.py",
+              "scripts/check_llm_routing.py"],
     # R0287 capital-basis invariant (under L1.58's waterfall discipline): a return without its
     # declared denominator is the Quantopian-2019 shape (190% headline, 58% on capital actually
     # drawn) and this desk's own thrice-repeated class (R0234 ~25x equity undercount, R0235

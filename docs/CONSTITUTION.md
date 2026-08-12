@@ -2505,3 +2505,64 @@ weaknesses, gaps, blind spots, missing capabilities and unrealised opportunities
 information-to-research-to-survivor-to-portfolio-to-execution-to-live-learning chain; implement and
 measure positive-EV improvements; simplify negative-value complexity; repeat without arbitrary
 termination, always subordinate to survival, evidence and long-term expected log wealth.
+
+## L1.60 A DENOMINATOR THAT LOSES ITS MEMBERS IN SILENCE IS A COVERAGE CLAIM THE DESK CANNOT CASH
+
+L1.57 put a count at every fence's exit site and asked one question of it: is it an `int >= 1`?
+That is a test on the NUMBER. It is blind to the only other way a denominator lies -- by being
+perfectly honest about what it counted and perfectly silent about what it LOST on the way there.
+
+    for p in files:                       # 1000
+        try:
+            text = p.read_text("utf-8")
+        except OSError:
+            continue                      # <- 991 leave the count entirely
+        n += 1                            # 9
+    return fence_exit(status, PASSING, scanned=n, of="*.py")   # DECLARED. Not vacuous. CLEAN.
+
+Nine is an `int >= 1`, so L1.57 records the row green. The fence read 1% of its scope and said so
+nowhere.
+
+**THE PROVING INSTANCE IS L1.57'S OWN SUPPLIER.** `check_calendar_gates.py` declares
+`scanned=N_SCANNED`, and `N_SCANNED` came from an `n += 1` sitting one line BELOW
+`except (OSError, UnicodeDecodeError): continue`. The denominator built to reveal a hollow verdict
+was itself hollowed by the same mechanism, one level up. A law's own instrument being defeated by
+the law's own failure mode is the strongest available evidence that the MECHANISM, not the
+diligence, is what needs fixing.
+
+**WHY EVERY SWALLOW DETECTOR ON THE DESK WAS BLIND TO IT.** Both -- `check_build_standard.
+_has_silent_swallow` and `max_audit.check_silent_swallows_on_the_rails` -- require a `Pass` body.
+Every instance in this class uses `continue` or `return <default>`. R0166 recorded exactly this in
+prose on 2026-07-31 and scheduled the widening; nothing was built for twelve days. A DUTY WITH NO
+INSTRUMENT IS A WISH (L1.46).
+
+**MEASURED THE DAY THIS WAS BUILT** (2026-08-12, 54 governed fences): three leaking denominators,
+each feeding a published verdict -- `check_coverage_floors.money_path_pct` (an absent money-path
+module left numerator AND denominator, so the percentage ROSE as the order path went dark, and the
+L1.50 ratchet then locked that inflated floor in **permanently**); `check_calendar_gates.N_SCANNED`;
+`check_llm_routing.routed_fraction`, where an organ that stopped parsing RAISED the fraction and
+could flip the fence from BACKLOG to OK by breaking. All three were repaired in the same run.
+
+**OPERATIVE -- ONE RULE, ONE REPAIR.** A loop producing a scope denominator publishes how many
+iterations it ATTEMPTED. The law does not forbid a single skip: skipping is often correct, and a
+scope filter that drops 900 of 1000 files is fine. What is never correct is skipping INVISIBLY,
+because it makes two different facts byte-identical to every reader -- *this file was out of
+scope* and *this fence could not read this file* -- and only one of them is a defect. The repair
+is one counter above the first exit, which is what the desk already does where it does this well
+(`extractor_invariants.py` turns a `SyntaxError` into a row that STAYS in the denominator;
+`check_funding_capture.py` writes `malformed += 1; continue`). Those sites are recognised and left
+alone: a fence that punished the practice it exists to encourage would be switched off (L1.43).
+An exemption is available, must carry a REASON (`# attrition-ok: <why>`), and is REPORTED rather
+than hidden -- an invisible exemption is this defect wearing a comment.
+
+**SCOPE IS THE L1.57 GOVERNED SET, DISCOVERED AND NEVER ENUMERATED** -- it reuses
+`libs.ops.denominator.governed_fences` verbatim, so this law and L1.57 cannot disagree about which
+fences exist. The wider repo is a measured ratchet gap, not a silence.
+
+**ANTI-TIMIDITY READING, THE ENTIRE PURPOSE (L1.28).** A MEASUREMENT duty and a SCOPE EXPANSION.
+It lifts nothing, sizes nothing, promotes nothing, loosens no statistical bar, and has no
+vocabulary for turning a failing verdict into a passing one. It forbids no skip -- it requires
+that skips be COUNTED, which strictly increases what the desk can see. Every error it catches
+points the same way: toward a fence looking better covered than it ever was.
+
+FENCED by `scripts/check_denominator_attrition.py` over `libs/ops/attrition.py`.

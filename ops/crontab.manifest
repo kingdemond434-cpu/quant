@@ -2416,3 +2416,21 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # the seat-id repair R0344 asked for -- and separated the two failure modes, since 3 of those 4
 # reachable seats have blanked under the real ~40k payload).
 40 9 * * * cd "$QUANT_ROOT" && flock -n data/.cron_freeroster.lock .venv/bin/python scripts/check_free_roster.py --report-only >> data/cro_ai_logs/free_roster.log 2>&1
+
+# DENOMINATOR ATTRITION (L1.60) -- L1.57 asks whether the fence's count is an int >= 1; this asks
+# what that count LOST getting there. A fence that walks 1000 files, drops 991 in an
+# `except OSError: continue`, and declares scanned=9 is recorded DECLARED, non-vacuous and CLEAN.
+# The proving instance was L1.57's OWN SUPPLIER: check_calendar_gates published scanned=N_SCANNED
+# from an `n += 1` one line below its handler. Both existing swallow detectors require a Pass
+# body, so the entire `continue` / `return <default>` class was invisible to enforcement (R0166,
+# prose-only since 2026-07-31). First run: 3 leaking denominators over 54 governed fences, the
+# sharpest on the money path (an absent module RAISED money_path_pct and the L1.50 ratchet locked
+# it in); all three repaired the same day, fence now OK. Verdicts: OK / PARTIAL (unparsed files,
+# surfaced not hidden) / ATTRITION (exit 2) / UNMEASURED (exit 2 -- an empty scope never reads
+# clean, L1.28a). Subject to its own law via scanned=n_examined, which counts unreadable files too.
+# CADENCE: daily. It is pure static analysis over ~54 files that change only when someone edits a
+# fence, so it is INFORMATION-ARRIVAL bound (L1.28c) -- hourly would re-read unchanged ASTs.
+# Phased to 06:41, clear of the hourly fence block and of the 06:00 cycle.
+# EVIDENCE: scripts/check_denominator_attrition.py -> data/denominator_attrition.json; CONSTITUTION L1.60
+# CONFIDENCE: committed-script (new this cycle); first run found 3 defects and all 3 are fixed
+41 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_denominator_attrition.py >> data/cro_ai_logs/denominator_attrition.log 2>&1

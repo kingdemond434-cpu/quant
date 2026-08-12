@@ -7,6 +7,12 @@ from scripts import check_build_standard
 
 # Explicit by design: check_build_standard requires each governed organ to be named by a test.
 # Updating _GOVERNED without extending this contract must fail.
+#
+# ROTTED AND RESYNCED 2026-08-12. This mirror had drifted to 42 entries against a _GOVERNED of
+# 75 -- 33 organs were added without it, so the test was red at HEAD and had stopped being a
+# contract at all. Found while wiring L1.60, which is the same failure shape one level up: a
+# hand-maintained list that cannot fall when the thing it counts changes. If it rots again,
+# derive it instead of re-typing it.
 GOVERNED = {
     "check_conversion.py",
     "check_calibration.py",
@@ -50,6 +56,41 @@ GOVERNED = {
     "run_principal_benchmark.py",
     "run_organ_er.py",
     "check_enforcement_execution.py",
+    # --- added to _GOVERNED without this contract, resynced 2026-08-12 ---
+    "build_event_calendar.py",
+    "check_birth_properties.py",
+    "check_campaign_retention.py",
+    "check_capital_basis.py",
+    "check_crowding.py",
+    "check_denominator_attrition.py",
+    "check_denominators.py",
+    "check_doctrine_diff.py",
+    "check_extractor_invariants.py",
+    "check_free_roster.py",
+    "check_idle_cost.py",
+    "check_input_provenance.py",
+    "check_repair_capacity.py",
+    "collect_dexscreener.py",
+    "collect_funding_cross_section.py",
+    "collect_geckoterminal_trades.py",
+    "collect_holder_concentration.py",
+    "collect_kr_venue_flags.py",
+    "collect_perpdex_funding.py",
+    "collect_unlock_calendar.py",
+    "fit_passive_impact.py",
+    "fit_print_impact.py",
+    "probe_bybit_archive.py",
+    "probe_delisted_instruments.py",
+    "read_xls.py",
+    "resolve_llm_trader_book.py",
+    "retire_unfillable_candidates.py",
+    "run_execution_quality.py",
+    "run_natural_experiment.py",
+    "run_paper_sleeve_spawner.py",
+    "run_stale_daemon_repair.py",
+    "run_upbit_snapshot.py",
+    "screen_funding_interval_mismatch.py",
+    "ship_restart.py",
 }
 
 

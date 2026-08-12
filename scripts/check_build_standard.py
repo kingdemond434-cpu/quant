@@ -61,6 +61,8 @@ _GOVERNED: tuple[str, ...] = (
     "check_build_standard.py",                              # this fence holds itself to it
     "check_input_provenance.py",                            # L1.55 transitive freshness
     "check_denominators.py",                                # L1.57 the denominator of a verdict
+    "check_denominator_attrition.py",                       # L1.60 what that denominator LOST
+    "check_birth_properties.py",                            # §36/L2.9 born with its properties
     "check_capital_basis.py",                               # R0287 return-denominator invariant
     "collect_unlock_calendar.py",                           # R0288 point-in-time unlock calendar
     "check_fence_yield.py",
@@ -153,6 +155,17 @@ _SCHEDULE_EXEMPT: dict[str, str] = {
                                      "run_law_gate.py _LAW_FENCES, beside both peers named above. "
                                      "This exemption spent a week citing a gate that did not invoke "
                                      "it, which is a cron exemption resting on nothing",
+    "check_birth_properties.py": "reads the REPO -- docs/, scripts/ and the tracked decision "
+                                 "ledger -- not live state, so an object gains or loses a birth "
+                                 "property at COMMIT time and the commit gate is the "
+                                 "information-arrival ceiling (L1.28c); an hourly line would "
+                                 "re-scan an unchanged tree 24 times a day. IT IS IN THAT GATE: "
+                                 "run_law_gate.py _LAW_FENCES, beside check_extractor_invariants "
+                                 "and check_build_standard -- and it ALSO runs hourly there, via "
+                                 "the same battery, so the cadence is covered without a second "
+                                 "line. Whole-tree scope was chosen over a git-diff of added "
+                                 "files because a merge-base is not resolvable on the shallow "
+                                 "clone actions/checkout produces by default",
     "read_xls.py": "a TOOL, not an organ: it reads a file a seat hands it, so there is no state "
                    "for a clock to re-read (L1.28c information-arrival ceiling). Scheduling it "
                    "would mean scheduling it against WHAT -- there is no standing input, and a "
@@ -175,6 +188,8 @@ _GUARD_EXEMPT: dict[str, str] = {
     "check_sizing_derivation.py": "runs inside the law gate, which has already verified the core "
                                   "before this fence executes",
     "check_return_targeting.py": "runs inside the law gate, which has already verified the core "
+                                 "before this fence executes",
+    "check_birth_properties.py": "runs inside the law gate, which has already verified the core "
                                  "before this fence executes",
 }
 

@@ -136,9 +136,19 @@ def measure(report: dict) -> dict[str, float]:
         else {}
     )
     stmts = covered = 0
+    attempted = 0
+    missing: list[str] = []
     for rel in MONEY_PATH:
+        # EVERY DISCARD IS COUNTED (L2.4/L1.60). `attempted` is incremented BEFORE the guard, and
+        # an absent module is NAMED rather than skipped. The bug this closes: a money-path file
+        # that stops appearing in the report -- renamed, its test file deleted, or the run dying
+        # before it imports -- used to leave the numerator AND the denominator, so money_path_pct
+        # ROSE while a fifth of the order path went dark, and the L1.50 ratchet then locked that
+        # inflated floor in permanently. The denominator has to say how many it lost.
+        attempted += 1
         s = files.get(rel, {}).get("summary")
         if not s:
+            missing.append(rel)
             continue
         stmts += int(s["num_statements"])
         covered += int(s["covered_lines"])
@@ -146,6 +156,9 @@ def measure(report: dict) -> dict[str, float]:
         "repo_pct": round(float(report["totals"]["percent_covered"]), 2),
         "money_path_pct": round(100.0 * covered / stmts, 2) if stmts else 0.0,
         "money_path_statements": stmts,
+        "money_path_attempted": attempted,
+        "money_path_measured": attempted - len(missing),
+        "money_path_missing": missing,
     }
 
 
@@ -193,6 +206,18 @@ def main() -> int:
     print(stall_report(rec))
 
     breaches = []
+    if now["money_path_missing"]:
+        # A SHRINKING DENOMINATOR IS NOT AN IMPROVEMENT (L1.60). Absent modules leave both sides
+        # of the ratio, so the percentage RISES as the money path goes dark. Refuse the reading
+        # outright rather than compare a subset against a floor earned by the whole set.
+        breaches.append(
+            f"MONEY PATH UNMEASURED: {len(now['money_path_missing'])} of "
+            f"{now['money_path_attempted']} module(s) absent from the coverage report "
+            f"({', '.join(now['money_path_missing'])}). The {now['money_path_pct']}% above is "
+            "over the SURVIVORS only -- an absent module leaves numerator and denominator "
+            "together, so this number rises as the order path goes dark. Run pytest over the "
+            "whole tree, or fix the path in MONEY_PATH if a module moved."
+        )
     if now["repo_pct"] < repo_floor - SLACK:
         breaches.append(f"repo coverage {now['repo_pct']}% fell below its {repo_floor}% mark")
     if now["money_path_pct"] < money_floor - SLACK:
@@ -201,6 +226,14 @@ def main() -> int:
             "this is the code that places orders, and it is the one number a repo-wide average "
             "would have hidden"
         )
+
+    if a.update and now["money_path_missing"]:
+        # The ratchet is permanent, so a floor raised from a partial measurement is a permanent
+        # error. Refuse to write rather than lock in a number earned by a smaller money path.
+        print("  REFUSING --update: the money-path measurement is missing "
+              f"{len(now['money_path_missing'])} module(s); a floor raised from a shrinking "
+              "denominator can never be lowered again (L1.50/L1.60)")
+        return 1
 
     if a.update:
         floors["repo_pct"] = max(repo_floor, now["repo_pct"])

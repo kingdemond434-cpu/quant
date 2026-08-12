@@ -73,12 +73,23 @@ def _tagged(lines: list[str], i: int) -> str | None:
 #: mis-parsed skip pattern or an unreadable tree all render as a clean codebase.
 N_SCANNED = 0
 
+#: How many paths the walk OFFERED, and how many it could not read (L1.60). N_SCANNED alone
+#: cannot distinguish "897 files were out of scope" from "897 files could not be opened"; both
+#: leave it unchanged, and only one is a defect.
+N_ATTEMPTED = 0
+N_UNREADABLE = 0
+
 
 def scan() -> tuple[list[tuple[str, int, str, str]], list[tuple[str, int, str, str]]]:
-    global N_SCANNED
+    global N_SCANNED, N_ATTEMPTED, N_UNREADABLE
     violations, exempt = [], []
-    n = 0
+    n = attempted = unreadable = 0
     for p in sorted(_ROOT.rglob("*.py")):
+        # EVERY DISCARD IS COUNTED (L2.4/L1.60): `attempted` moves before any skip, so an
+        # out-of-scope file and a file this fence COULD NOT READ stop being byte-identical to a
+        # reader of N_SCANNED. Previously `n += 1` sat below the handler, which meant the
+        # denominator L1.57 added here to reveal a hollow verdict was hollowed the same way.
+        attempted += 1
         rel = p.relative_to(_ROOT).as_posix()
         if any(part in _SKIP_DIRS for part in p.relative_to(_ROOT).parts[:-1]):
             continue
@@ -87,6 +98,7 @@ def scan() -> tuple[list[tuple[str, int, str, str]], list[tuple[str, int, str, s
         try:
             lines = p.read_text("utf-8").splitlines()
         except (OSError, UnicodeDecodeError):
+            unreadable += 1
             continue
         n += 1
         for i, ln in enumerate(lines):
@@ -105,7 +117,7 @@ def scan() -> tuple[list[tuple[str, int, str, str]], list[tuple[str, int, str, s
                 continue
             tag = _tagged(lines, i)
             (exempt if tag else violations).append((rel, i + 1, hit, tag or ""))
-    N_SCANNED = n
+    N_SCANNED, N_ATTEMPTED, N_UNREADABLE = n, attempted, unreadable
     return violations, exempt
 
 
@@ -138,6 +150,11 @@ def main() -> int:
         return 1
     print(f"  CLEAN: no untagged calendar gate remains in {N_SCANNED} file(s) scanned "
           f"({len(exempt)} exempt, all declared).")
+    # The denominator says what it LOST as well as what it counted (L1.60). An unreadable file
+    # is a fence that did not check, not a fence that found nothing.
+    print(f"  denominator: {N_ATTEMPTED} offered -> {N_SCANNED} scanned, "
+          f"{N_ATTEMPTED - N_SCANNED - N_UNREADABLE} out of scope, {N_UNREADABLE} UNREADABLE"
+          + ("  <- these were not checked" if N_UNREADABLE else ""))
     # A clean verdict now carries its denominator (L1.57). Zero files read is not a clean tree,
     # and until this line the two printed the same sentence and returned the same code.
     return fence_exit("CLEAN", _PASSING, scanned=N_SCANNED, of="repo *.py files",
