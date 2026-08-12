@@ -75,12 +75,40 @@ def read_log(root: Path, series: str) -> list[dict[str, Any]]:
     return rows
 
 
+def _resolve(rows: list[dict[str, Any]], *, upto: str | None = None) -> dict[str, dict[str, Any]]:
+    """Per period, the row with the HIGHEST vintage -- resolved by vintage, never by file order.
+
+    THE ORDER A ROW WAS WRITTEN IN IS NOT THE ORDER IT WAS PUBLISHED IN, and reading the log
+    positionally quietly assumes it is. The live collector appends today's vintage today, so its
+    file is chronological -- but the whole premise of this module is that OLD vintages are
+    recoverable after the fact (23+ publication dates in the Wayback CDX index), and a backfilled
+    vintage lands at the END of a file describing a date near its START. Resolving positionally
+    then returns the OLDEST value as current, inverts the sign of every measured revision, and
+    hands ``as_of`` a number from the wrong decade -- the exact look-ahead class the module exists
+    to prevent, pointed backwards.
+
+    Ties break on file position, so re-recording a period at a vintage already present supersedes:
+    that is a correction to a vintage, and the later write is the better-informed one.
+    """
+    best: dict[str, tuple[str, int]] = {}
+    out: dict[str, dict[str, Any]] = {}
+    for index, row in enumerate(rows):
+        vintage = str(row["vintage"])
+        if upto is not None and vintage[:10] > upto[:10]:
+            continue
+        period = str(row["period"])
+        rank = (vintage, index)
+        if period not in best or rank >= best[period]:
+            best[period] = rank
+            out[period] = row
+    return out
+
+
 def latest_known(root: Path, series: str) -> dict[str, float]:
     """The most recent value recorded for each period -- what the desk believes TODAY."""
-    out: dict[str, float] = {}
-    for row in read_log(root, series):
-        out[str(row["period"])] = float(row["value"])
-    return out
+    return {
+        period: float(row["value"]) for period, row in _resolve(read_log(root, series)).items()
+    }
 
 
 def record(
@@ -96,7 +124,14 @@ def record(
     the caller is about to report a healthy collection over nothing; zero on a later run is the
     normal, expected state. The two are told apart by the log's own length, never by this number.
     """
-    known = latest_known(root, series)
+    # Dedup against what the log said AT THIS VINTAGE, not against the globally-latest value.
+    # Comparing to the latest would drop a backfilled vintage whose value happens to match today's,
+    # recording the period as NOT KNOWABLE then when it demonstrably was -- absence manufactured
+    # out of agreement (L1.28a).
+    known = {
+        period: float(row["value"])
+        for period, row in _resolve(read_log(root, series), upto=vintage).items()
+    }
     fresh = [
         {"series": series, "period": str(period), "value": float(value), "vintage": vintage}
         for period, value in sorted(observations.items())
@@ -124,11 +159,10 @@ def as_of(root: Path, series: str, when: str) -> dict[str, float]:
         back-filled. It was not knowable, and an absent input must stay distinguishable from a
         measured one (L1.28a).
     """
-    out: dict[str, float] = {}
-    for row in read_log(root, series):
-        if str(row["vintage"])[:10] <= when[:10]:
-            out[str(row["period"])] = float(row["value"])
-    return out
+    return {
+        period: float(row["value"])
+        for period, row in _resolve(read_log(root, series), upto=when).items()
+    }
 
 
 def revisions(root: Path, series: str) -> list[dict[str, Any]]:
@@ -141,7 +175,13 @@ def revisions(root: Path, series: str) -> list[dict[str, Any]]:
     first: dict[str, float] = {}
     last: dict[str, float] = {}
     count: dict[str, int] = {}
-    for row in read_log(root, series):
+    # Ordered by VINTAGE, so "first" is the earliest PUBLISHED value rather than the earliest
+    # written one. Positional order would report a backfilled series' revision with its sign
+    # flipped -- and the sign is the finding: revisions run systematically upward, which is what
+    # makes a current-vintage backtest optimistic rather than merely noisy.
+    # (sorted() is stable, so equal vintages keep file order -- the same tie-break as _resolve)
+    ordered = sorted(read_log(root, series), key=lambda r: str(r["vintage"]))
+    for row in ordered:
         period = str(row["period"])
         value = float(row["value"])
         if period not in first:

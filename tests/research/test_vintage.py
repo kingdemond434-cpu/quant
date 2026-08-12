@@ -75,6 +75,56 @@ def test_as_of_accepts_a_full_timestamp(store: Path) -> None:
     assert as_of(store, "M2SL", "2026-08-10T23:59:59+00:00") == as_of(store, "M2SL", _V1)
 
 
+# ------------------------------------------------------- vintages recovered OUT OF ORDER (R0316) --
+# The live collector appends today's vintage today, so its file is chronological and every test
+# above passes on a reader that just takes the last matching row. But the premise of the whole
+# module is that OLD vintages are recoverable after the fact -- 23+ publication dates sit in the
+# Wayback CDX index -- and a backfilled vintage lands at the END of the file describing a date near
+# its START. Resolving positionally returns the wrong number in the wrong direction, silently.
+def test_a_backfilled_older_vintage_does_not_become_current_belief(tmp_path: Path) -> None:
+    """The measured Receita Federal case: March 2023 published 15828, restated to 22308."""
+    record(tmp_path, "RFB", {"2023-03": 22308.0}, vintage="2026-08-12")  # today's file, first
+    record(tmp_path, "RFB", {"2023-03": 15828.0}, vintage="2023-06-01")  # Wayback vintage, after
+    assert latest_known(tmp_path, "RFB") == {"2023-03": 22308.0}
+
+
+def test_as_of_reads_the_backfilled_vintage_at_its_own_date(tmp_path: Path) -> None:
+    record(tmp_path, "RFB", {"2023-03": 22308.0}, vintage="2026-08-12")
+    record(tmp_path, "RFB", {"2023-03": 15828.0}, vintage="2023-06-01")
+    assert as_of(tmp_path, "RFB", "2023-06-01") == {"2023-03": 15828.0}
+    assert as_of(tmp_path, "RFB", "2026-08-12") == {"2023-03": 22308.0}
+    assert as_of(tmp_path, "RFB", "2023-01-01") == {}
+
+
+def test_a_backfilled_vintage_keeps_the_revision_sign(tmp_path: Path) -> None:
+    """THE SIGN IS THE FINDING. Revisions run systematically UPWARD, which is what makes a
+    current-vintage backtest optimistic rather than merely noisy; a positional reader reports
+    this +40.9% move as -29.0% and reverses the conclusion.
+    """
+    record(tmp_path, "RFB", {"2023-03": 22308.0}, vintage="2026-08-12")
+    record(tmp_path, "RFB", {"2023-03": 15828.0}, vintage="2023-06-01")
+    (moved,) = revisions(tmp_path, "RFB")
+    assert moved["first"] == 15828.0
+    assert moved["latest"] == 22308.0
+    assert moved["pct_change"] == pytest.approx(40.94, abs=0.01)
+
+
+def test_a_backfilled_vintage_agreeing_with_today_is_still_recorded(tmp_path: Path) -> None:
+    """Dedup keys on what was known AT THAT VINTAGE. Comparing against the latest value would
+    drop this row and report the period as unknowable in 2023 when it demonstrably was known.
+    """
+    record(tmp_path, "RFB", {"2023-03": 22308.0}, vintage="2026-08-12")
+    assert record(tmp_path, "RFB", {"2023-03": 22308.0}, vintage="2023-06-01") == 1
+    assert as_of(tmp_path, "RFB", "2023-06-01") == {"2023-03": 22308.0}
+
+
+def test_re_recording_a_vintage_supersedes_it(tmp_path: Path) -> None:
+    """A correction to a vintage: same date, later write, better informed."""
+    record(tmp_path, "RFB", {"2023-03": 1.0}, vintage="2023-06-01")
+    record(tmp_path, "RFB", {"2023-03": 2.0}, vintage="2023-06-01")
+    assert as_of(tmp_path, "RFB", "2023-06-01") == {"2023-03": 2.0}
+
+
 # --------------------------------------------------------------------------- the append-only log --
 def test_only_changed_values_are_appended(store: Path) -> None:
     """Re-recording an unchanged panel must cost nothing, or keeping every vintage is
