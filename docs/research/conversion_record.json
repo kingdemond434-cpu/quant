@@ -1,8 +1,8 @@
 {
   "best_median_latency_days": 0.0,
-  "best_conversion_rate": 0.5882352941176471,
-  "best_at": "2026-08-06T07:02:11.314576+00:00",
-  "n_records": 4,
+  "best_conversion_rate": 0.6,
+  "best_at": "2026-08-12T02:11:02.975311+00:00",
+  "n_records": 5,
   "n_snapshots": 320,
   "earliest_ts": 1785005355.597255
 }
