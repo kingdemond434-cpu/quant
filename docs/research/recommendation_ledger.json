@@ -4601,11 +4601,11 @@
    "summary": "LEDGER WRITES RE-ENCODE ~40 UNRELATED ROWS ON EVERY APPEND, making the one file two writers share unreviewable. scripts/recommendations.py:69 does json.dumps(d, indent=1) with ensure_ascii at its default True, but docs/research/recommendation_ledger.json was previously written with non-ASCII preserved. So the first recommendations.py write after any other writer flips every em-dash, section sign, arrow and CJK character in the file to a \\\\uXXXX escape -- measured 2026-08-05: a single 'add' produced a 104-line diff of which ~40 lines were pure re-encoding of rows nobody touched, burying the two real changes. Three costs, all real: (1) a reviewer cannot see what actually changed, which is how a bad disposition slips through; (2) the churn maximises merge-conflict surface on a file the desk has ALREADY corrupted once (R0175) and which parallel agents are told to treat as read-only precisely because it has no locking; (3) it oscillates -- whichever writer runs last wins, so the diff noise recurs indefinitely rather than settling. EXACT PATCH: json.dumps(d, indent=1, ensure_ascii=False) at scripts/recommendations.py:69, then one normalising commit that rewrites the file in that encoding so the escapes are gone for good. CHECK FIRST whether any other writer of this file also needs the flag (grep for recommendation_ledger.json writers) -- fixing one of two writers leaves the oscillation in place, which is the failure mode that makes this look fixed while it is not.",
    "roi_bps": 2.0,
    "raised": "2026-08-05T13:14:53.812384+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "7f54c3d7",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T19:07:35.629274+00:00"
   },
   {
    "id": "R0369",

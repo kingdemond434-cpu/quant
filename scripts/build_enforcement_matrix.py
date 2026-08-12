@@ -404,6 +404,15 @@ _MAP: dict[str, list[str]] = {
     "L1.60": ["scripts/check_denominator_attrition.py", "libs/ops/attrition.py",
               "scripts/check_coverage_floors.py", "scripts/check_calendar_gates.py",
               "scripts/check_llm_routing.py"],
+    # R0369 (under L2.3/§42): an implemented row's --commit is the ledger's whole proof mechanism,
+    # and it was enforced only at WRITE time -- `dispose` refuses an empty field and asks nothing
+    # else. A rebase rewrites SHAs and the citation quietly names an object no other clone can
+    # resolve. Measured over 227 citing rows: 14 INVALID (10 the literal `HEAD`, 4 `pending`) and
+    # 1 ORPHANED. `HEAD` is the half no existence check could ever catch: it resolves everywhere,
+    # to a different commit for every reader. The repair is UPWARD and wired -- `repoint` moves a
+    # pointer without disturbing the disposition and refuses an unresolvable replacement.
+    "L2.3-r0369": ["scripts/check_citation_integrity.py", "libs/research/citation_integrity.py",
+                   "scripts/recommendations.py"],
     # R0287 capital-basis invariant (under L1.58's waterfall discipline): a return without its
     # declared denominator is the Quantopian-2019 shape (190% headline, 58% on capital actually
     # drawn) and this desk's own thrice-repeated class (R0234 ~25x equity undercount, R0235

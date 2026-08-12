@@ -62,6 +62,7 @@ _GOVERNED: tuple[str, ...] = (
     "check_input_provenance.py",                            # L1.55 transitive freshness
     "check_denominators.py",                                # L1.57 the denominator of a verdict
     "check_denominator_attrition.py",                       # L1.60 what that denominator LOST
+    "check_citation_integrity.py",                          # R0369 can the proof-of-work be cashed
     "check_birth_properties.py",                            # §36/L2.9 born with its properties
     "check_capital_basis.py",                               # R0287 return-denominator invariant
     "collect_unlock_calendar.py",                           # R0288 point-in-time unlock calendar

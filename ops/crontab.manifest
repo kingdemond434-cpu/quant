@@ -2434,3 +2434,26 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/check_denominator_attrition.py -> data/denominator_attrition.json; CONSTITUTION L1.60
 # CONFIDENCE: committed-script (new this cycle); first run found 3 defects and all 3 are fixed
 41 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_denominator_attrition.py >> data/cro_ai_logs/denominator_attrition.log 2>&1
+
+# --- CITATION INTEGRITY (R0369, under L2.3/§42) ------------------------------------------------
+# WHY: `dispose --status implemented` refuses an empty --commit, so the ledger's proof-of-work was
+# checked at WRITE time and never at READ time, where it is actually spent. A rebase rewrites SHAs
+# -- this branch gets rebased whenever a sibling pushes to it -- and the citation silently becomes
+# an orphaned object no other clone can resolve, getting worse with time rather than announcing
+# itself. First run over 227 citing rows: 208 OK, 14 INVALID, 1 ORPHANED. Ten of the fourteen cite
+# the literal string `HEAD` and four cite `pending`; none was ever valid, and none was reachable by
+# the write-time check, which only asks whether the field is non-empty. `HEAD` is the nastier half:
+# it RESOLVES in every clone, to something different each time, so an existence check reads healthy.
+# Verdicts: OK / BACKLOG (at or below the recorded floor -- the historical stock is a work queue,
+# and a fence red from day one gets switched off, L1.43) / DEGRADED (exit 2 -- the count ROSE, a new
+# unresolvable citation was written) / UNMEASURED (exit 2 -- git or ledger unreadable, L1.28a).
+# The floor is a constant in the fence, not a value read back from its own artifact, which would
+# ratify whatever drift had landed. It only ever moves DOWN, paired with the repointing that earned
+# it, and a test pins it. REPAIR IS WIRED, not notified: `recommendations.py repoint` moves the
+# pointer without touching the disposition, and refuses a replacement that does not resolve.
+# CADENCE: daily. Two `git rev-list` calls plus one `cat-file --batch-check` regardless of row
+# count (~60ms), but it is INFORMATION-ARRIVAL bound (L1.28c): citations change only when a row is
+# disposed or the branch is rebased. Phased to 06:47, clear of the 06:41 attrition fence.
+# EVIDENCE: scripts/check_citation_integrity.py -> data/citation_integrity.json; CONSTITUTION L2.3
+# CONFIDENCE: committed-script (new this cycle); first run found 15 and they are ledgered as a row
+47 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_citation_integrity.py --report-only >> data/cro_ai_logs/citation_integrity.log 2>&1

@@ -239,6 +239,56 @@ def correct(a: argparse.Namespace) -> None:
           "a fresh disposition is now owed")
 
 
+def repoint(a: argparse.Namespace) -> None:
+    """Re-point a disposition's --commit at the commit that actually carries the work (R0369).
+
+    WHY `correct` IS THE WRONG VERB FOR THIS. A rebase rewrites SHAs -- and this branch gets
+    rebased whenever a sibling pushes to it -- so a citation written honestly this morning can
+    name an orphaned object by tonight. `correct` re-OPENS the row and files the prior
+    disposition as MISFILED, which is a lie about what happened: the decision was right and only
+    the pointer moved. Recording it as a misfiling would corrupt the correction history that
+    verb exists to protect, so the two are kept distinct.
+
+    WHAT THIS MAY NOT BECOME. It mutates the commit field and NOTHING else -- never the status,
+    never the reason. And it refuses a new citation that does not resolve to a real commit
+    object, because a verb that laundered one unresolvable pointer into another would give the
+    ledger a way to look repaired while proving nothing. Every repoint is appended to the row's
+    `repoints` list with its reason, so the old pointer stays readable forever.
+    """
+    d = _load()
+    row = next((r for r in d["recommendations"] if r["id"] == a.id), None)
+    if row is None:
+        raise SystemExit(f"no such recommendation: {a.id}")
+    if a.expect and a.expect.lower() not in row["summary"].lower():
+        raise SystemExit(
+            f"{a.id} does not match --expect {a.expect!r}. Its summary is:\n  "
+            f"{row['summary'][:200]}\nAnother writer may have taken the id you assumed.")
+    if row["status"] != "implemented":
+        raise SystemExit(f"{a.id} is {row['status']}, not implemented -- only an implemented "
+                         "row cites a commit, so there is no pointer to move")
+    if len((a.reason or "").strip()) < _MIN_REASON:
+        raise SystemExit(f"a repoint needs a real reason (>={_MIN_REASON} chars): why the old "
+                         "citation stopped resolving, and how the new one was identified")
+    import subprocess
+    try:
+        p = subprocess.run(["git", "rev-parse", "--verify", f"{a.commit}^{{commit}}"],
+                           capture_output=True, text=True, timeout=30, cwd=ROOT)
+    except (OSError, subprocess.SubprocessError) as e:
+        raise SystemExit(f"cannot verify {a.commit}: {type(e).__name__}: {e}") from e
+    if p.returncode != 0:
+        raise SystemExit(
+            f"REFUSING: {a.commit!r} does not resolve to a commit in this clone. Re-pointing a "
+            "citation at something unresolvable would make the ledger look repaired while still "
+            "proving nothing -- find the real commit first.")
+    row.setdefault("repoints", []).append({
+        "was": row.get("commit"), "now": a.commit,
+        "at": datetime.now(tz=UTC).isoformat(), "why": a.reason})
+    row["commit"] = a.commit
+    _save(d)
+    print(f"{a.id} repointed -> {a.commit} (was {row['repoints'][-1]['was']}); "
+          "status and reason untouched")
+
+
 def sweeps_shown() -> dict[str, int]:
     """Row id -> how many sweeps the brain was AWAKE for have carried it.
 
@@ -385,6 +435,13 @@ def main() -> None:
     p.add_argument("--id", required=True)
     p.add_argument("--reason", required=True)
     p.set_defaults(func=correct)
+    p = sub.add_parser("repoint", help="move an implemented row's --commit after a rebase, "
+                                       "without touching the disposition itself")
+    p.add_argument("--id", required=True)
+    p.add_argument("--commit", required=True, help="the commit that carries the work TODAY")
+    p.add_argument("--reason", required=True)
+    p.add_argument("--expect", help="substring the target summary must contain")
+    p.set_defaults(func=repoint)
     p = sub.add_parser("report", help="orphans and overdue -- both are defects, not backlog")
     p.set_defaults(func=report)
     a = ap.parse_args()
