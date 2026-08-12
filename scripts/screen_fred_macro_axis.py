@@ -160,7 +160,16 @@ NOT_SCREENED = {
     "M2SL": "monthly (~192 obs once aligned to BTC), ~25-day publication lag, and FRED serves the "
             "CURRENT VINTAGE of a REVISED series -- a backtest would use numbers that were not "
             "knowable at the time (look-ahead through revision, which no alignment can fix). "
-            "Untestable honestly from this archive; NOT a null result.",
+            "Untestable honestly from this archive; NOT a null result. "
+            "STATUS CHANGED 2026-08-12 (R0316): the blocker is no longer structural, it is a "
+            "SAMPLE. collect_fred_macro now records every vintage to libs.research.vintage, so "
+            "libs.research.vintage.as_of(root, 'M2SL', d) answers what was knowable on d. The "
+            "history starts 2026-08-12 and cannot be back-filled, so this stays excluded until "
+            "the store spans the test window -- and the release condition is EVIDENCE, not a "
+            "date (L1.48): re-open when vintage.summarise reads OK rather than ACCRUING and the "
+            "covered span reaches the intended sample. Screening it before then would read "
+            "today's restatements as contemporaneous knowledge, which is the exact leak this "
+            "exclusion exists to prevent.",
 }
 
 

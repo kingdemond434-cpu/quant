@@ -76,7 +76,17 @@ _MAP: dict[str, list[str]] = {
              "scripts/check_campaign_retention.py", "libs/research/campaign_retention.py"],
     "L1.9": ["check_blind_trigger", "check_interrogation", "check_dig_depth"],
     "L1.10": ["check_mine_conversion", "check_mine_gate"],
-    "L1.11": ["moat_audit.py", "check_vendor_replacement", "run_recorder.py"],
+    # R0316 adds HISTORICAL MONOPOLISATION, which L1.11 names outright and nothing implemented.
+    # A point-in-time history is the cheapest proprietary state available: everyone can fetch M2SL,
+    # almost nobody keeps what it SAID last month. FRED serves only the current vintage, so the
+    # archive was overwritten AND truncated to a rolling window on every run -- each day destroying
+    # a vintage that cannot be re-earned at any price, which is the one currency the desk cannot
+    # buy back. Measured on the RFB Brazil panel: 42/42 months revised between vintages, worst
+    # +40.9%, systematically upward. The store makes the daily overwrite lossless and turns "this
+    # source is revised" from a disqualification into a dataset.
+    "L1.11": ["moat_audit.py", "check_vendor_replacement", "run_recorder.py",
+              "libs/research/vintage.py", "scripts/collect_fred_macro.py",
+              "tests/research/test_vintage.py"],
     # L1.11a ranks ground by REVERSE-ENGINEERING COST PER UNIT OF EFFORT, and delisted rosters are
     # the cheapest high-cost ground the desk had never asked for: R0239's own docstring routed the
     # backward half of survivorship to "a reconstruction from binance.vision archives, a separate

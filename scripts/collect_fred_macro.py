@@ -23,10 +23,16 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import urllib.parse
 import urllib.request
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+from libs.research.vintage import record  # noqa: E402
 
 _KEYFILE = Path("data/secrets/fred.json")
 _ARCHIVE = Path("data/fred_macro.json")
@@ -75,6 +81,19 @@ def main() -> None:
     if not series:
         raise SystemExit("fred-macro: zero series fetched -- check the key")
     ts = datetime.now(tz=UTC).isoformat()
+
+    # R0316: RECORD THE VINTAGE BEFORE OVERWRITING THE ARCHIVE. `_ARCHIVE.write_text` replaces the
+    # file wholesale AND `_LOOKBACK_DAYS` truncates to a rolling window, so until now every run
+    # destroyed the previous vintage permanently -- on a box that has network, for series FRED
+    # revises (M2SL and WALCL both restate). That is why screen_fred_macro_axis drops M2SL outright
+    # as "untestable honestly from this archive": the archive could not answer what was knowable at
+    # the time. The store appends only CHANGED values, so a run that revises nothing costs nothing,
+    # and the daily overwrite below is now lossless rather than destructive. Vintages cannot be
+    # back-filled -- a day not captured is gone -- which is why this sits ahead of the write.
+    revised = 0
+    for sid, rows in series.items():
+        revised += record(_ROOT, sid, dict(rows), vintage=ts)
+
     _ARCHIVE.parent.mkdir(parents=True, exist_ok=True)
     _ARCHIVE.write_text(json.dumps({"updated": ts, "series": series}), "utf-8")
     latest = {sid: {"date": rows[-1][0], "value": rows[-1][1],
@@ -88,7 +107,8 @@ def main() -> None:
                  "from day one -- backtestable immediately, no forward clock needed."),
     }, indent=2), "utf-8")
     n = sum(len(r) for r in series.values())
-    print(f"fred-macro: {len(series)}/{len(_SERIES)} series, {n} obs -> {_ARCHIVE}")
+    print(f"fred-macro: {len(series)}/{len(_SERIES)} series, {n} obs -> {_ARCHIVE}; "
+          f"{revised} new-or-revised values -> {_ROOT / 'data/vintages'}")
 
 
 if __name__ == "__main__":
