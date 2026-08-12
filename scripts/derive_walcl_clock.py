@@ -38,6 +38,7 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
+from libs.research.axis_integrity import check_move, move_bar  # noqa: E402
 
 _ARCHIVE = _ROOT / "data" / "fred_macro.json"
 _CLOCK = _ROOT / "data" / "walcl_impulse.jsonl"
@@ -63,7 +64,29 @@ def _series() -> list[tuple[str, float]]:
     except (OSError, json.JSONDecodeError):
         return []
     rows = doc.get("series", {}).get("WALCL", [])
-    out = [(str(d), float(v)) for d, v in rows if v]
+    # The refusal path this docstring promises was only half true: a malformed row raised
+    # ValueError out of the comprehension instead of being filtered, so an archive with one bad
+    # entry took the clock down rather than degrading. Rows are filtered AND COUNTED (L1.60) --
+    # a dropped row must never be indistinguishable from a row that was never there.
+    out: list[tuple[str, float]] = []
+    dropped = 0
+    for row in rows:
+        if not isinstance(row, (list, tuple)) or len(row) != 2:
+            dropped += 1
+            continue
+        d, v = row
+        try:
+            fv = float(v)
+        except (TypeError, ValueError):
+            dropped += 1
+            continue
+        if fv > 0:                      # a non-positive balance sheet is a bad read, not a level
+            out.append((str(d), fv))
+        else:
+            dropped += 1
+    if dropped:
+        print(f"walcl-clock: dropped {dropped} unusable WALCL row(s) of {len(rows)}",
+              file=sys.stderr)
     out.sort()
     return out
 
@@ -78,6 +101,17 @@ def signal_for(today: str, rows: list[tuple[str, float]]) -> dict | None:
              if (datetime.fromisoformat(d) + timedelta(days=_RELEASE_LAG_DAYS)).date().isoformat()
              <= today]
     if len(avail) < _MIN_OBS:
+        return None
+    # PLAUSIBILITY ON THE LEVEL, WHERE THE BAD READ WOULD ENTER (R0390). The impulse is a signed
+    # log-difference that crosses zero, so a relative bar on it is meaningless; WALCL itself is a
+    # strictly positive weekly level and a mis-scaled or mis-parsed FRED observation shows up
+    # there first. Refusing returns None -- the caller's existing refusal path -- because a
+    # corrupt level enters _IMPULSE_WEEKS impulses and then _ZWIN z-windows, so storing it would
+    # poison up to 24 subsequent rows rather than just today's.
+    lv = [v for _, v in avail]
+    verdict = check_move(lv[-1], lv[-2], move_bar(lv, min_obs=20))
+    if not verdict.ok:
+        print(f"walcl-clock: REFUSED {avail[-1][0]} -- {verdict.reason}", file=sys.stderr)
         return None
     imp = [math.log(avail[i][1]) - math.log(avail[i - _IMPULSE_WEEKS][1])
            for i in range(_IMPULSE_WEEKS, len(avail))]

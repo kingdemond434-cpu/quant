@@ -31,9 +31,16 @@ from __future__ import annotations
 
 import json
 import statistics
+import sys
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
+
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from libs.research.axis_integrity import check_move, move_bar  # noqa: E402
 
 _P2P = ("https://www.okx.com/v3/c2c/tradingOrders/books?t=1&quoteCurrency=CNY"
         "&baseCurrency=USDT&side=sell&paymentMethod=all&userType=all&showTrade=false"
@@ -76,6 +83,25 @@ def main() -> None:
                 hist.append(json.loads(ln))
             except Exception:
                 continue
+    # GUARD THE INPUTS, NOT THE PREMIUM (R0390). The premium is a small signed number that
+    # crosses zero, so a RELATIVE move bar on it is meaningless (division by ~0). Both vendor
+    # inputs are strictly positive and well-behaved, and they are also where the bad read would
+    # actually enter: `premium = p2p/fx - 1` is a difference of two ~6.7 quantities, so a wrong
+    # FX or a wrong P2P median does not merely mis-size the premium, IT FLIPS ITS SIGN -- and
+    # run_axis_shadows takes np.sign(z). This is the sign-flipping direction that the stablecoin
+    # instance escaped only by luck, in its most direct form.
+    #
+    # Refuses the WRITE rather than nulling z: a corrupt level would sit in the trailing z-window
+    # for the next 20 days, not just its own row.
+    for label, latest, series in (("p2p_cny", p2p, [h.get("p2p_cny") for h in hist]),
+                                  ("fx_cny", fx, [h.get("fx_cny") for h in hist])):
+        vals = [float(v) for v in series if isinstance(v, (int, float))]
+        if not vals:
+            continue
+        v = check_move(latest, vals[-1], move_bar([*vals, latest], min_obs=20))
+        if not v.ok:
+            raise SystemExit(f"REFUSED {label}: {v.reason} -- not writing to {_SERIES}")
+
     prem_hist = [float(h["premium"]) for h in hist if h.get("premium") is not None]
     z20 = None
     if len(prem_hist) >= 20:

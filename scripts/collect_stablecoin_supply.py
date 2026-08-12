@@ -24,43 +24,18 @@ from pathlib import Path
 
 import numpy as np
 
+from libs.research.axis_integrity import (
+    check_move,
+    move_bar,
+    record_revision,
+    revision_report,
+)
 from libs.research.axis_screen import stage_a_screen
 
 _STABLES = "https://stablecoins.llama.fi/stablecoincharts/all"
 _BINANCE = "https://api.binance.com/api/v3/klines"
 _SERIES = Path("data/stablecoin_supply.jsonl")
-
-#: Largest day-over-day move in AGGREGATE stablecoin supply this collector will accept as real.
-#: Measured, not chosen: over DefiLlama's full 3,172-day history the last |move| above 10% was
-#: 2020-04-03, back when the whole float was ~$7bn. At today's ~$306bn a 10% day is a $30bn mint
-#: or burn -- an event that would be the story of the year, not a Tuesday. So a breach is a bad
-#: READ with overwhelming prior, and the collector's job is to refuse it rather than store it.
-_MAX_DAILY_MOVE = 0.10
-
-
-def _implausible(latest: float, prev: float) -> str:
-    """Non-empty reason iff `latest` cannot be a real successor to `prev`.
-
-    WHY THIS EXISTS (found 2026-08-05 while deciding R0230). On 2026-07-27 this collector stored
-    supply_usd=122.37bn between two ~306bn days -- a 60% collapse and a full recovery the next
-    morning -- carrying z20=-239.803 into data/stablecoin_supply.jsonl, which is the live input
-    to a Holm forward slot. DefiLlama's own history now serves 307.96bn for that date, so it was
-    a transient bad read that the vendor itself has since corrected. Nothing fired: there was no
-    plausibility check of any kind between the API and the artifact.
-
-    THE DAMAGE WAS ZERO PURELY BY LUCK, WHICH IS NOT A CONTROL. run_axis_shadows takes
-    `np.sign(z)`, so -239.803 and the true -0.950 produce the identical position. Had the bad
-    read come back HIGH instead of low the sign would have flipped and that day's forward return
-    would have been booked inverted -- in the one artifact whose whole purpose is to be the
-    unpolluted forward evidence a promotion decision is made on.
-    """
-    if prev <= 0:
-        return ""
-    move = latest / prev - 1.0
-    if abs(move) > _MAX_DAILY_MOVE:
-        return (f"day-over-day move {move:+.1%} exceeds the {_MAX_DAILY_MOVE:.0%} plausibility "
-                f"bar (${prev/1e9:.2f}bn -> ${latest/1e9:.2f}bn)")
-    return ""
+_REVISIONS = Path("data/vendor_revisions.jsonl")
 
 
 def _get(url: str) -> object:
@@ -112,13 +87,47 @@ def main() -> None:
 
     scr = stage_a_screen(sig, ret, name="stablecoin_supply_momentum")
 
-    # REFUSE AN IMPLAUSIBLE READ RATHER THAN STORE IT. The check runs against the API's OWN
-    # previous day, so it is independent of whatever this artifact happens to already hold, and
-    # it exits nonzero so a bad vendor day surfaces as a failed collector run instead of a
-    # silently poisoned row (L1.41: a refusal path, and no silent swallow).
-    if len(sig) >= 2 and (why := _implausible(float(sig[-1]), float(sig[-2]))):
-        raise SystemExit(f"REFUSED {dates[-1]}: {why} -- almost certainly a bad vendor read; "
-                         f"not writing to {_SERIES}")
+    # WHAT THE VENDOR SAID THEN vs WHAT IT SAYS NOW (R0389). DefiLlama silently rewrites its
+    # published history, so the screen above -- which recomputes on the FULL re-fetched series
+    # every run -- scores on numbers that did not exist at decision time. Measured 2026-08-12
+    # over the 21 dates we hold both for: 18 of 20 comparable dates REVISED, every one UPWARD,
+    # median +0.53% and max +1.04%. The point-in-time row is the as-of record and is never
+    # rewritten here; the delta is recorded as its own series exactly as L1.46 makes
+    # t_recv - t_venue first-class. Where no point-in-time row exists (the 900-day history
+    # predating this collector) the revision is UNMEASURABLE, never zero.
+    #
+    # WHY THE SCREEN IS NOT "FIXED" BY SPLICING IN THE POINT-IN-TIME VALUES -- the obvious next
+    # move, and it is wrong. We hold as-of rows for 21 days; the screen needs 900. A splice joins
+    # 879 revised values to 21 systematically-lower as-of ones, and at the measured median
+    # revision of +0.53% against a 20-day sd of ~0.5% that join manufactures a ~1-SIGMA
+    # DISCONTINUITY -- a spurious signal at exactly the recent end the screen weights most. Mixing
+    # two bases is worse than either alone. So: the screen is computed on the REVISED series and
+    # says so in its output, the forward clock reads the un-rewritten point-in-time rows, and a
+    # genuine point-in-time screen becomes possible only once this collector has accrued the depth
+    # to run one. Recording the delta is what makes that eventual comparison auditable.
+    pit: dict[str, float] = {}
+    if _SERIES.exists():
+        for line in _SERIES.read_text("utf-8").splitlines():
+            if line.strip():
+                row = json.loads(line)
+                if row.get("supply_usd") is not None:
+                    pit[str(row["date"])] = float(row["supply_usd"])
+    rev = revision_report(pit, sup, axis="stablecoin_supply")
+    record_revision(rev, _REVISIONS)
+
+    # REFUSE AN IMPLAUSIBLE READ RATHER THAN STORE IT, against a bar this series MEASURES FROM
+    # ITSELF rather than the hand-picked 10% that fixed the 2026-07-27 instance -- that constant
+    # was reasoned from this series' float and transfers to no other axis (R0390). The check runs
+    # against the API's OWN previous day, so it is independent of whatever this artifact happens
+    # to already hold, and it exits nonzero so a bad vendor day surfaces as a failed collector run
+    # instead of a silently poisoned row (L1.41: a refusal path, and no silent swallow). A stored
+    # corrupt LEVEL would also poison the trailing z-window for the next 20 days, not just its
+    # own row, which is why this refuses the WRITE rather than nulling the z.
+    bar = move_bar([float(x) for x in sig])
+    verdict = check_move(float(sig[-1]), float(sig[-2]), bar) if len(sig) >= 2 else None
+    if verdict is not None and not verdict.ok:
+        raise SystemExit(f"REFUSED {dates[-1]}: {verdict.reason} -- almost certainly a bad vendor "
+                         f"read; not writing to {_SERIES}")
 
     today = datetime.now(tz=UTC).date().isoformat()
     rec = {"date": today, "supply_usd": round(float(sig[-1]), 0),
@@ -130,6 +139,12 @@ def main() -> None:
 
     print(f"STABLECOIN-SUPPLY SCREEN | {len(dates)} aligned days")
     print(f"  current z20: {z[-1]:+.2f}   total supply ${sig[-1]:,.0f}")
+    print(f"  plausibility bar (measured from this series): "
+          f"{bar.value:.2%}" if bar.measured else f"  plausibility bar: {bar.basis}")
+    print(f"  VENDOR REVISION: {rev['verdict']} -- {rev['n_revised']}/{rev['n_compared']} "
+          f"point-in-time dates rewritten by the vendor, median |{rev['median_abs_rel']:.2%}| "
+          f"max |{rev['max_abs_rel']:.2%}| (screen above is computed on the REVISED series; "
+          f"the forward clock reads the point-in-time rows and is not)")
     print(f"  IC {scr['ic']:+.4f} | same-period {scr['same_period_corr']:+.3f} "
           f"| residual IC {scr['residual_ic']:+.4f}")
     print(f"  timing Sharpe -- MOMENTUM {scr['sharpe_momentum']}  "

@@ -24,8 +24,14 @@ from __future__ import annotations
 import json
 import pathlib
 import statistics as st
+import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from libs.research.axis_integrity import check_coverage, coverage_bar  # noqa: E402
+
 SRC = ROOT / "data/defi_lending.jsonl"
 OUT = ROOT / "data/defi_util_axis.jsonl"
 _Z = 20
@@ -56,24 +62,51 @@ def main() -> None:
         sup = sum(x[0] for x in daily[d])
         bor = sum(x[1] for x in daily[d])
         if sup > 0:
-            series.append((d, bor / sup))
+            series.append((d, bor / sup, len(daily[d])))
 
+    # THE SECOND WAY AN AGGREGATE STOPS BEING COMPARABLE TO ITSELF (R0390). A ratio of two
+    # collapsed sums stays perfectly in range, so a census failure is INVISIBLE on the value
+    # axis: live on this series, n_pools ran 6691 -> 2511 -> 566 -> 6538 while every day still
+    # wrote a z20 that run_axis_shadows booked as a position. 566 of ~6800 pools is 92% of the
+    # aggregate missing. An unmeasurable day booked as evidence is worse than a missing one.
+    #
+    # A short-coverage day is kept with z20=null and its reason, NOT dropped: _evaluate counts a
+    # null-z row `unusable` and structurally cannot take a position on it, so the refusal is
+    # enforced and stays visible on disk (L1.60 -- a skip nobody counted is indistinguishable
+    # from a scope filter). It is also excluded from every later z-window, because a
+    # non-comparable level poisons the next _Z days as well as its own row.
+    #
+    # The floor is derived from STRICTLY PRIOR counts, so a collapse can never lower the floor
+    # it is judged against, and no day is scored using a census that had not happened yet.
     rows = []
-    for i, (d, u) in enumerate(series):
-        w = [v for _, v in series[max(0, i - _Z + 1):i + 1]]
+    clean: list[float] = []
+    for i, (d, u, n_pools) in enumerate(series):
+        cov = check_coverage(n_pools, coverage_bar([c for _, _, c in series[:i]]))
+        if not cov.ok:
+            rows.append({"date": d, "utilisation": round(u, 6), "z20": None,
+                         "n_pools": n_pools, "refused": cov.reason})
+            continue
+        w = [*clean[-(_Z - 1):], u]
         z = 0.0
         if len(w) >= 5:
             sd = st.pstdev(w)
             z = (u - st.fmean(w)) / sd if sd > 0 else 0.0
+        clean.append(u)
         rows.append({"date": d, "utilisation": round(u, 6), "z20": round(z, 4),
-                     "n_pools": len(daily[d])})
+                     "n_pools": n_pools})
 
     OUT.write_text("".join(json.dumps(r) + "\n" for r in rows), "utf-8")
     print("=== DEFI UTILISATION AXIS FEED ===")
     print(f"  {len(rows)} daily observations from {sum(len(v) for v in daily.values())} pool-rows")
+    refused = [r for r in rows if r.get("z20") is None]
     for r in rows[-3:]:
-        print(f"    {r['date']}  util {r['utilisation']:.4f}  z20 {r['z20']:+.3f}  "
-              f"pools {r['n_pools']}")
+        z = "REFUSED (null)" if r["z20"] is None else f"{r['z20']:+.3f}"
+        print(f"    {r['date']}  util {r['utilisation']:.4f}  z20 {z}  pools {r['n_pools']}")
+    if refused:
+        print(f"\n  COVERAGE REFUSALS: {len(refused)}/{len(rows)} days written with z20=null "
+              f"(kept visible, un-bookable by the evaluator):")
+        for r in refused:
+            print(f"    {r['date']}  {r['refused']}")
     print("\n  system utilisation = TOTAL borrow / TOTAL supply, not a mean of per-pool ratios --")
     print("  a mean over-weights tiny pools and would let a $2m vault move the axis.")
     print(f"  z20 needs 5+ days before it is meaningful; currently {len(rows)}.")
