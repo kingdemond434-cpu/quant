@@ -152,3 +152,14 @@ ops/role
 data/inbox/
 data/inbox/**
 reports/principal_drop.json
+
+# AGENT WORKTREE SCRATCH -- and this one is not tidiness, it is the deploy path.
+# `git worktree add .claude/worktrees/<name>` leaves a directory containing a `.git` FILE, which
+# `git add -A` (scripts/git_snapshot.py:25) records as a GITLINK (mode 160000) even though this
+# repo has no .gitmodules and these are not submodules. A gitlink's recorded sha changes the
+# instant that worktree commits anything, so the parent tree reads ` M .claude/worktrees/<name>`
+# permanently and CANNOT BE CLEANED: committing the gitlink only re-points it, and the next
+# worktree commit re-dirties it. deploy/pull_deploy.sh refused on any tracked dirt, so this
+# turned the box's only inbound deploy path into a permanent no-op (measured 2026-08-12:
+# 0 deploys in 1078 ticks). Four gitlinks were untracked the same day.
+.claude/worktrees/
