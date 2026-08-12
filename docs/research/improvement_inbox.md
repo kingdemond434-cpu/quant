@@ -1266,7 +1266,12 @@ ConfidenceBench (Jul 2026, arxiv.org/html/2607.20526): Brier — Claude Opus 4.6
 better-calibrated ⇒ (a) calibrate PER FAMILY and PER TASK-TYPE, never one global shrinkage;
 (b) RE-BASELINE on every model upgrade — a calibration fitted on the old model is stale input
 steering live sizing (L1.44 class). Elicitation: self-critique + consistency sampling beat naive
-verbalization (arXiv:2606.03437; exact deltas minable from saved PDF next run). Adopt the
+verbalization (arXiv:2606.03437; exact deltas minable from saved PDF next run).
+**[CORRECTED 2026-08-12, litminer run 6: that characterization of 2606.03437 was WRONG — the
+paper isolates OWNERSHIP BIAS (models rate their own answers up to +26.8% more confident;
+ΔECE 0.098–0.261 by elicitation format; fix = frame the answer as USER input). See the
+2026-08-12 entry C below; the elicitation-method-ranking claim should not be cited to this
+paper.]** Adopt the
 per-claim (confidence − evidence-quality) gap as a logged metric (StatefulDiscovery
 arXiv:2606.11851 — the literature converged on the desk's ledger design). Secondary idea, same
 program: benchmark verbalized confidence against an EXTERNAL feature-based success predictor
@@ -1757,3 +1762,105 @@ sys.stdout.write(b'\n'.join(texts).decode('latin-1', 'replace'))
 which is where 2412.02452 keeps its bracketed event-windows and the −17.2% peak cell. The landed
 version should add hex-string decode (one extra `re.finditer(rb'<[0-9A-Fa-f\s]+>')` branch +
 font-agnostic best-effort). Octal escapes currently degrade to `?` (lossy-but-honest).
+
+## 2026-08-12 (litminer run 6 — AI-methods frontier; full evidence + URLs in `deep_sweep/20260812_litminer_aimethods.md`; all 8 live wounds received mapped findings)
+
+### A [w8/w1] Validation-integrity instrumentation: trajectory logs as evidence-of-record; condition on leakage, never average; audits read logs+code ◆◆compounding
+STC (arXiv 2606.05241, full read): agents doing live search during validation retrieve the answer —
+3-level taxonomy (metadata/question-context/explicit-answer) with a cheap detector stack (URL regex ·
+normalized-LCS · positive-control-validated LLM judge). The load-bearing depth catch: headline
+inflation "up to 4%" is the AGGREGATE; conditional on an answer-leakage event, accuracy hits ~100%
+(HLE 12.75%→100%). Recipe: (1) every hypothesis-validating agent run persists (query, URL, snippet)
+tuples — a verdict without its trajectory is the L1.49 class; (2) desk analogs: retrieving the
+hypothesis's SOURCE paper = circular confirmation; retrieving a decay study = conclusion leakage;
+(3) verdicts with leakage-class events are VOID and re-run search-blind, not down-weighted;
+(4) standing search-off ablation separates search-borne from model-borne verdict content.
+Companions, same theme measured: rubric-scanner transcript audits (2607.27518 — scanner F1 is
+ASYMMETRIC: guessing 0.93 sens / tool-failure 0.14, so structural detectors stay primary for
+env-failure; Docent lineage: 9.4pp of "capability" was harness bugs) and the appendix-measured
+audit delta: LLM-audit from the paper alone 51.4% vs logs+code 74.0% (2509.08713) — "assert the
+built artifact" now has an external effect size. [§33: wired -> docs/research/recommendation_ledger.json R-row (this entry)]
+
+### B [w1] Gate-battery validity trio — composes with #86 (IRT): per-gate information ≠ ordering transfer ≠ construct structure; all three computable from ledgers already on disk ◆◆compounding
+(1) PREDICTIVE validity (2606.19704): does the gauntlet's ranking TRANSFER? Field exemplar: a
+competently-run 149-team leaderboard had ρ=−0.13 vs its own hidden set. Port: Spearman(gate-time
+ranking, realized OOS ranking) per cohort; time-fold rank rotation; pre-registered falsification
+thresholds. Position paper — the MEASUREMENT is evidence-backed, the composite PV formula is
+CLAIM-grade. (2) CONSTRUCT validity checklist (2511.04703, NeurIPS 2025, 445 benchmarks): field
+base rates (21.8% define no phenomenon; only 16% run any statistical test) say construct failure
+is the NORM. Two desk gaps: a one-paragraph per-gate CONSTRUCT STATEMENT (phenomenon, confounds,
+known false-kill modes — would have caught the DSR-bar design defect BEFORE 420 hypotheses were
+spent) and a standing killed-population error analysis (the 86%-OOS-decay-of-rejects measurement,
+made per-cohort — which is also the empirical input PV and IRT both need). (3) MTMM
+convergent/discriminant (Campbell–Fiske; CogArena 2607.24999, 2505.10573): gate-score correlation
+matrix — gates claiming DIFFERENT constructs correlating ≈1 = fictional breadth that silently
+breaks multiplicity accounting; the desk's "12 slots = 4.56 effective bets" measured the symptom,
+this names the diagnostic. [§33: wired -> docs/research/recommendation_ledger.json R-row (this entry)]
+
+### C [w4/w5/w3] Panel independence & elicitation batch — the two-family doctrine now has published numbers; ownership bias is the calibration-inversion mechanism class ◆◆compounding
+Deliberative Illusion APPENDIX (2606.03032): discussion erases up to 72% of critical facts,
+attrition MONOTONE per round (cap any shared-context stage at ≤1 round; independent elicitation +
+calibrated aggregation #87 stays right); same-family majorities match the base model's direct
+output 65–76% (marginal same-family seat ≈ n_eff 1); **cross-family teams retain 0.598 vs
+same-family 0.357** (+67% — the cleanest published support for L1.31/L1.33 yet); one malicious
+seat → 58.9% of outputs carry the injection (panel stages must never share context). BEI
+entanglement audit (2604.07650, COLM): excess-co-failure-given-difficulty statistic, fully
+portable to the desk's per-seat logs — turns "is our 400-seat panel n_eff≈4?" into a statistic;
+judge–target entanglement predicts judge bias ρ≈0.5 ⇒ CROSS-FAMILY VERIFICATION BY DEFAULT,
+same-family verification gets a measured haircut; HONEST NULL carried: entanglement-aware
+reweighting beat competence weighting by +0.001 — spend on the audit and judge-assignment policy,
+not a fancier voting formula; caveat: frontier closed models show cross-family CIG convergence
+(shared data/distillation), so cross-family independence is measurable, not assumable.
+OWNERSHIP BIAS (2606.03437 — run-4 record corrected below): models rate their OWN answers up to
++26.8% more confident; ΔECE 0.098 (P(True)) → 0.261 (linguistic Likert). Fixes, all free:
+elicit confidence with the item framed as USER-provided third-party text; prefer P(True) over
+qualitative conviction labels (2.7× worse); keep generator/grader in separate fresh contexts
+(the split alone is worth ECE ~0.1–0.26). Independent COLM line: "Self-Preference Bias in
+Rubric-Based Evaluation". A/B-able on the desk's own logged forecasts at zero cost.
+[§33: wired -> docs/research/recommendation_ledger.json R-row (this entry)]
+
+### D [ENGINE-UPDATE #85, w2] The e-process rebuild now has its OPERATIONS MANUAL — formulas sufficient to reimplement in-repo, no package import ◆◆compounding
+2602.06379 (Feb 2026, + mature Ramdas-school corpus): construction by data type (betting
+martingale for bounded; mixtures for continuous; calibrators for existing p-values); design
+calibration BEFORE the run: GROW-optimal λ* with **expected N ≈ log(1/α)/g(λ*)** — replaces
+"how long must a forward clock run" guesswork with a formula tied to the pre-registered kill
+criterion; the 8.8×-wound fix stated as law: threshold E_t ≥ 1/α is CONSTANT under any peeking
+cadence (Ville), always-valid p = 1/sup E is monotone — re-reading cannot inflate; CONSTRAINT
+that binds the desk's self-tuning organs: every adaptation must be a predictable function of
+PAST data (timestamp tuning inputs strictly before the data they bet on); multiplicity for a
+CORRELATED hypothesis book: e-BH, and the arithmetic mean of arbitrarily-dependent e-values is
+still an e-value (products need independence); frozen e-processes for killed hypotheses.
+Practice evidence: enterprise A/B deployment (2302.10108). [§33: wired -> docs/research/recommendation_ledger.json R-row (this entry)]
+
+### E [w7] Generation-side quality — grade the GENERATOR; menus, not models, may be doing the choosing ◆compounding
+Appendix-measured (2509.08713): metric selection was 100% LIST-ORDER dependent and 82.4% of
+benchmark picks were the first four listed — any desk organ presenting candidate lists
+(hypotheses, axes, metrics, lenses) must RANDOMIZE order per call and LOG the permutation, then
+measure the desk's own ordering sensitivity (if selection is order-driven, the 420 were never
+chosen — the menu chose). Silent protocol drift: 25% of runs quietly subsampled/substituted data
+⇒ machine-checkable protocol block (universe, dates, n) attached at GENERATION time, diffed at
+gate time. ForeSci (2606.00644, CC-BY): temporal-cutoff backtesting OF THE GENERATION ORGAN —
+run it as-of historical dates on pre-T vault/data only, score picks against the desk's own
+realized OOS ledger = a generation-quality time series independent of the gauntlet (fixes
+generation without touching gates); adopt the evidence–decision decoupling check (the named
+failure mode: right evidence cited, wrong object concluded — audit that cited evidence supports
+the SPECIFIC hypothesis). [§33: wired -> docs/research/recommendation_ledger.json R-row (this entry)]
+
+### F [w6] Organ reliability & memory — external evidence CONVERGES on the desk's existing design; the binding constraint is supersession; reliability never follows capability for free ◆compounding
+Measured null worth carding so it never reopens: memory PRODUCTS lose to plain BM25 (60.5% vs
+Mem0 32.6 / Zep 37.5 / Cognee 28.3, MemoryAgentBench ICLR26 MIT) — do not adopt Mem0/Letta/Zep-class
+tooling. File-based coding-agent memory beats RAG 72.5% vs 48.5% at 115M-token horizon
+(LongMemEval-V2, CC-BY) — the vault+BM25+MEMORY.md stack is the evidence-favored architecture.
+Selective forgetting fails UNIVERSALLY (≤28% multi-hop for every method) ⇒ explicit supersession
+ledgering is load-bearing: every memory write that invalidates a prior fact must NAME the
+superseded row — no reader model can be assumed to resolve conflicting rows itself. Compaction is
+a COST knob not a quality knob (8 condensation strategies, none changed hypothesis quality;
+LLM-summary condensers cost +24–94%): prefer structural masking of stale tool outputs; keep
+write-ahead state files (run 5 of this organ died costing a header, not knowledge — the protocol
+works). Reliability is its own dimension (two-source: 2603.29231; Princeton HAL 2602.16666
+ICML26): capability gains yield only small reliability gains, frontier models MELT DOWN more
+(≤19%) by attempting ambitious multi-step plans ⇒ (a) after ANY organ model swap re-measure the
+organ's completion/decay curve — directly relevant to the live llm-auto-upgrade branch; (b) fit
+duration-bucketed reliability curves from existing organ logs and set checkpoint cadence BEFORE
+the measured meltdown onset; (c) constant-hazard prior (Ord 2505.05115): short duties compound
+reliability. [§33: wired -> docs/research/recommendation_ledger.json R-row (this entry)]

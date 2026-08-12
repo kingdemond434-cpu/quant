@@ -3612,11 +3612,21 @@
    "summary": "TIME-SENSITIVE CAPTURE: GeckoTerminal /trades (api.geckoterminal.com/api/v2, KEYLESS, verified live) returns WALLET-RESOLVED SIGNED DEX FLOW -- tx_from_address, buy/sell kind, volume_in_usd, block_number, tx_hash. True signed order flow WITH counterparty identity, free. Retention is only ~300 trades and ~17h of 1m bars, so it is FORWARD-ONLY-UNRECOVERABLE: every hour not recorded is permanently gone at any price (the one currency the desk cannot re-earn, L1.28b(f)). data/data_universe_map.json has ZERO entries for geckoterminal/birdeye/dexscreener and the collector inventory has NO DEX-native host at all -- the whole pool-level and trade-level on-chain axis is uncovered. Measured burst limit ~3 rapid keyless calls then 429 (documented 30/min) so a collector must pace. Licence: free tier, link attribution requested (satisfiable). Contrast with R0290: this one has NO legitimacy blocker. Found by CN miner session 3.",
    "roi_bps": 25.0,
    "raised": "2026-08-01T12:58:31.823249+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=7 effort_h=3.5: Zero geckoterminal/birdeye/dexscreener hits in scripts/ or libs/ (only docs and the ledger); no DEX-native collector exists anywhere in the collector inventory. Retention ~300 trades/~17h makes every unrecorded hour permanently unrecoverable (L1.46/L1.28b(f) -- the doctrine the desk itself prices highest). Keyless, no s13 blocker per the row; scheduling is in-repo (ops/crontab.manifest installed by deploy/reconstitute_cron.sh, no operator paste needed). Build paced collector (~30/min) + manifest entry.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Built scripts/collect_geckoterminal_trades.py to the L1.41 standard (guard, refusal ladder, overflow honesty, dual clocks L1.46), 4 tests, matrix-mapped L1.11-r0291, scheduled hourly in manifest + live crontab (:43), first live run captured 1200 rows / 6 trending pools; 429-burst limiter measured and paced (4.5s + one backoff retry).",
+   "commit": "6eeec8c",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-12T01:35:05.711418+00:00",
+   "corrections": [
+    {
+     "was": "implemented",
+     "was_reason": "PLACEHOLDER",
+     "was_commit": "HEAD~0",
+     "was_due": null,
+     "corrected": "2026-08-12T01:35:05.139878+00:00",
+     "why": "disposed with a placeholder reason and a relative commit ref by mistake; re-disposing with the real sha 6eeec8c and the substantive reason"
+    }
+   ]
   },
   {
    "id": "R0292",
@@ -5564,6 +5574,78 @@
    "commit": null,
    "due": "2026-09-09",
    "disposed": "2026-08-12T01:27:08.519539+00:00"
+  },
+  {
+   "id": "R0453",
+   "source": "deep_sweep",
+   "summary": "litminer run6 inbox 2026-08-12 A (w8/w1): validation-integrity instrumentation \u2014 persist validation-search trajectories as evidence-of-record (query,URL,snippet), port STC 3-level leakage taxonomy w/ cheap detector stack, VOID+rerun-search-blind on answer-leakage events (conditional inflation ~100% masks 4% aggregate), standing search-off ablation; audits read logs+code not summaries (74.0 vs 51.4 measured). Sources: arXiv 2606.05241, 2607.27518, 2509.08713.",
+   "roi_bps": null,
+   "raised": "2026-08-12T01:57:47.990104+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0454",
+   "source": "deep_sweep",
+   "summary": "litminer run6 inbox 2026-08-12 B (w1): gate-battery validity trio composing with the IRT fit (#86) \u2014 predictive-validity rank-transfer (Spearman gate-time vs realized OOS ranking; exemplar leaderboard rho=-0.13 vs own hidden set), per-gate construct statements + standing killed-population error analysis (would have caught the DSR-bar design defect pre-420), MTMM discriminant audit of gate-score correlations (fictional breadth breaks multiplicity accounting). All computable from existing ledgers, zero new runs. Sources: 2606.19704, 2511.04703, 2607.24999.",
+   "roi_bps": null,
+   "raised": "2026-08-12T01:57:50.339992+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0455",
+   "source": "deep_sweep",
+   "summary": "litminer run6 inbox 2026-08-12 C (w4/w5/w3): panel independence + elicitation batch \u2014 cap shared-context panel stages at <=1 round (monotone 72% fact erasure), same-family majorities match base prior 65-76% (marginal same-family seat n_eff~1), cross-family retention 0.598 vs 0.357 = published support for L1.31/33; BEI co-failure audit on own seat logs, cross-family verification by default (judge-target entanglement predicts bias rho~0.5), honest null: entanglement reweighting +0.001 \u2014 audit not voting formula; ownership-bias fix for L1.29 elicitation (frame as USER text, P(True) over Likert, ECE 0.1-0.26 free). Sources: 2606.03032, 2604.07650, 2606.03437(corrected).",
+   "roi_bps": null,
+   "raised": "2026-08-12T01:57:53.293740+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0456",
+   "source": "deep_sweep",
+   "summary": "litminer run6 inbox 2026-08-12 D (ENGINE-UPDATE #85, w2): e-process operations manual \u2014 GROW-optimal lambda*, expected-N=log(1/alpha)/g replaces forward-clock guesswork, constant 1/alpha threshold under any peeking (the 8.8x fix as law), predictability constraint binds self-tuning organs (timestamp tuning inputs before data bet on), e-BH + dependent-mean-of-e-values for the correlated hypothesis book. Reimplement in-repo, no package import. Source: 2602.06379.",
+   "roi_bps": null,
+   "raised": "2026-08-12T01:57:55.901377+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0457",
+   "source": "deep_sweep",
+   "summary": "litminer run6 inbox 2026-08-12 E (w7): generation-side quality \u2014 randomize+log candidate-list order in every list-presenting organ (measured 100% metric order-dependence; the 420 may have been menu-chosen), machine-checkable protocol block at generation diffed at gate (25% silent drift rate), ForeSci-style temporal-cutoff backtest of the GENERATION organ against own realized ledger + evidence-decision decoupling check. Sources: 2509.08713 appendix, 2606.00644.",
+   "roi_bps": null,
+   "raised": "2026-08-12T01:57:59.132942+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0458",
+   "source": "deep_sweep",
+   "summary": "litminer run6 inbox 2026-08-12 F (w6): organ reliability + memory \u2014 measured null: memory products lose to BM25 (do not adopt Mem0/Zep-class), vault+files+BM25 is the evidence-favored design; supersession ledgering load-bearing (selective forgetting <=28% universally); compaction = cost knob (structural masking over LLM re-summarization); after ANY organ model swap re-measure the organ completion/decay curve (two-source: capability gains give only small reliability gains; <=19% meltdown-by-ambition) \u2014 directly relevant to the live llm-auto-upgrade branch. Sources: MemoryAgentBench ICLR26, LongMemEval-V2, 2605.18854, 2603.29231, 2602.16666.",
+   "roi_bps": null,
+   "raised": "2026-08-12T01:58:02.647430+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

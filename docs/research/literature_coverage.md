@@ -638,9 +638,23 @@ run is killed, what stands below is the durable progress._
 3. **[LIT-c + ≥25% SEARCH-SPACE EXPANSION] AI/autonomous-research METHODS frontier** — run-4/5
    carry-overs (MemAgents ground, Search-Time Contamination 2606.05241, appendix deltas
    2606.03032/2509.08713/2606.03437, NeurIPS eval-of-agents) + NEW venues never visited,
-   aimed at the desk's live wounds (welded gates, calibration, panel design). — STATUS: below.
+   aimed at the desk's live wounds (welded gates, calibration, panel design). — **STATUS:
+   ✅ CLOSED** (ground file `deep_sweep/20260812_litminer_aimethods.md`, 662 lines; ~36 web ops,
+   expansion 40%). All 4 carry-overs closed; **run-4's 2606.03437 record was WRONG (ownership
+   bias, not elicitation ranking) — corrected inline in the inbox**. 13 findings → 6 consolidated
+   inbox entries (2026-08-12 A–F) → **R0453–R0458**. Headlines: STC conditional-inflation ~100%
+   (aggregate 4% masks it) + trajectory-as-evidence recipe; cross-family panels retain 0.598 vs
+   0.357 same-family + same-family majorities ≈ base prior 65–76% (published support for
+   L1.31/33); e-process OPERATIONS MANUAL for #85 (N≈log(1/α)/g, constant-threshold peeking law);
+   menu-order drove 100% of metric "choices" (generation-side wound); memory products measurably
+   LOSE to the desk's own BM25+files design (do-not-adopt null carded); reliability ≠ capability
+   two-source ⇒ re-measure organ curves after any model swap (live llm-auto-upgrade relevance).
+   Honest nulls: Apollo/BAAI thin (1 query deep), MemAgents listing bot-gated (ground mined via
+   its citation graph instead), NeurIPS-eval-of-agents pre-deadline → dated revisit ~2026-10.
+   New standing venues: **COLM accepted-list (richest never-visited venue — revisit every run)**,
+   HF weekly-trending (leads only), Epoch hub (quarterly), METR (quarterly).
    §39 advance folded here: free exchange-address label corpora (CryptoQuant/Nansen/Arkham
-   rows) — GraphSense TagPacks class. — STATUS: below.
+   rows) — GraphSense TagPacks class. — STATUS: ✅ done in item 1 (verified MIT, catalogued).
 
 ### STEP -1 DIVERGENT QUERIES (3 a different searcher would run; ≥2 funded)
 1. J-STAGE/CiNii native-operator sweep: 暗号資産 裁定取引 / ペアトレード (JP academic stat-arb
