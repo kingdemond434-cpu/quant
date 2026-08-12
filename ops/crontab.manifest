@@ -2112,6 +2112,53 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: committed-script; pure local CPU, no model, no venue call.
 35 11 * * * cd "$QUANT_ROOT" && flock -n data/.cron_slot_liveness.lock .venv/bin/python scripts/check_slot_liveness.py --page >> data/cro_ai_logs/slot_liveness.log 2>&1
 
+# AUTOMATIC RETIREMENT -- the queue drains without a human sweeping it.
+# PRINCIPAL ORDER 2026-08-12: retire what is not working, automatically. I had refused this on the
+# grounds that retirement shrinks the Holm m and loosens every standing bar. That was true of the
+# IMPLEMENTATION and false of the LAW: data/promotion_queue.json declares the correction is "over
+# all trailing-180d entrants INCLUDING KILLED ONES", while derive_slots() drops RETIRED rows. The
+# implementation was the loose one -- counting only survivors judges the last clock standing
+# against m=1 after eleven looks, which is the forking-paths garden exactly.
+# libs/research/forward_multiplicity implements the law as written, so a retirement moves a trial
+# between two terms of one sum: m is unchanged, every standing bar is unchanged, and freeing a slot
+# stops being a statistical act. The organ MEASURES the bar before and after its own batch and
+# REFUSES the lot if it moved down by any amount -- the safety is re-derived every run, not
+# asserted once in a docstring.
+# RETIRES ONLY the structurally unfinishable: SOURCE_FROZEN, and PRODUCER_UNSCHEDULED where NO
+# producer exists at all. A producer that merely needs a cron line is a BUILD defect and the clock
+# stays -- discarding a real candidate to hide a missing schedule is the wrong repair. Never
+# ACCRUING, never TOO_EARLY, never UNKNOWN.
+# 11:45, after the liveness check measures and before nothing else -- the freed slot is taken by
+# the 08:45/11:05 spawner passes on the next cycle.
+# EVIDENCE: scripts/run_slot_retirement.py -> data/slot_retirement.json + the append-only ledger
+#   data/slot_retirements.jsonl, which is what keeps a retired trial counted in m. An unwritable
+#   ledger REFUSES the retirement rather than proceeding, because that is the one path by which
+#   this organ could loosen anything.
+# CONFIDENCE: committed-script; pure local CPU, no model, no venue call.
+45 11 * * * cd "$QUANT_ROOT" && flock -n data/.cron_slot_retire.lock .venv/bin/python scripts/run_slot_retirement.py >> data/cro_ai_logs/slot_retirement.log 2>&1
+
+# THE PROMOTION LADDER FINALLY GETS AN ACTUATOR -- shadow to live with no human step.
+# check_promotion_gate has decided `granted_rung` since it was written, and a grep for its
+# CONSUMERS found two: the capability ratchet, which SCORES it, and run_cadence, which checks the
+# file EXISTS. Nothing read it and changed a size. Every criterion could pass in full and the
+# sleeve would sit on paper until a person noticed -- L0079 verbatim ("a published flag whose only
+# reader picks an advice string changes no behaviour") landing on the one transition the desk
+# exists to make.
+# This transmits the gate's verdict into data/live_authority.json, which the execution path reads.
+# IT DECIDES NOTHING: it computes no criterion, sets no threshold, and cannot grant a rung the gate
+# did not. Automating the actuation of a PASSING gate loosens nothing -- refusing to actuate just
+# moves the delay onto a person, and a verdict nothing obeys was never protecting anything.
+# ASYMMETRIC BY DESIGN: a FALLING rung applies on the spot (hesitating to reduce is the direction
+# that costs real money), while a RISING one must hold for 2 consecutive daily evaluations, so a
+# criterion oscillating across its threshold cannot deal real capital in and out on noise.
+# It opens no position, sends nothing to a venue, and cannot reach the ruin rail or the deadman
+# switch -- those bound everything it can grant. It pages on any change touching LIVE, because
+# nobody should learn the desk went live from a P&L statement.
+# 12:15, after the paper book is marked and the gate's inputs are fresh.
+# EVIDENCE: scripts/run_promotion_actuator.py -> data/live_authority.json + data/live_authority.jsonl
+# CONFIDENCE: committed-script; re-runs the gate itself so it can never act on a stale grant.
+15 12 * * * cd "$QUANT_ROOT" && flock -n data/.cron_promo_actuator.lock .venv/bin/python scripts/run_promotion_actuator.py >> data/cro_ai_logs/promotion_actuator.log 2>&1
+
 # R0104 CAPABILITY RATCHET (owed-work, 2026-08-05). The principal's standing order -- every aspect
 # of the desk pushed toward 10/10 every day, non-exhaustively -- had NO INSTRUMENT: the per-aspect
 # rating existed only in conversation, so it could not ratchet, a fall left no trace, and nothing
