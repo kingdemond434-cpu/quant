@@ -115,6 +115,7 @@ _GOVERNED: tuple[str, ...] = (
     "fit_passive_impact.py",                # R0267 passive-fill impact model (2026-08-06)
     "collect_kr_venue_flags.py",            # R0299 KR flag surface, snapshot-only (2026-08-12)
     "probe_delisted_instruments.py",        # R0313 venue-side dead rosters (2026-08-12)
+    "read_xls.py",                          # R0317 stdlib .xls extraction, L1.11a (2026-08-12)
 )
 
 #: Organs that legitimately owe no cron line, with the reason. "No schedule" must be a DECISION.
@@ -139,6 +140,10 @@ _SCHEDULE_EXEMPT: dict[str, str] = {
                        "daemons on a TIMER -- the opposite of event-driven, and a standing "
                        "outage risk for the money path. Its detector (max_audit "
                        "check_stale_daemons) is the scheduled half of the pair",
+    "read_xls.py": "a TOOL, not an organ: it reads a file a seat hands it, so there is no state "
+                   "for a clock to re-read (L1.28c information-arrival ceiling). Scheduling it "
+                   "would mean scheduling it against WHAT -- there is no standing input, and a "
+                   "cron line over an empty argument is a line that fails every minute",
     "check_doctrine_diff.py": "runs as the doctrine_diff step of daily_research_cycle's _STEPS "
                               "chain, beside doctrine_guard; doctrine edits arrive at most a "
                               "few per week, so the daily chain IS the information-arrival "

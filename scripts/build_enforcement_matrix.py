@@ -83,9 +83,18 @@ _MAP: dict[str, list[str]] = {
     # and much larger job", while three venues publish their dead instruments outright. One call
     # each returned 4455 names (bitmex 3077 vs 32 live, bybit 936 vs 808, coinbase 315 vs 517) --
     # accessibility was the barrier, and L1.11a says a barrier is a search dimension.
+    # The same argument one format across (R0317): a legacy `.xls` is an ACCESSIBILITY barrier, and
+    # government, regulator and central-bank publications are disproportionately served as one
+    # PRECISELY because they are old institutional pipelines -- which is the same reason they stay
+    # under-mined. The desk had recorded "this box cannot read .xls" (no xlrd/openpyxl/olefile,
+    # installs frozen) as a fact about the world; it was a fact about a missing library. OLE2+BIFF8
+    # are two documented byte-level layers and the stdlib ships `struct`, so the moat here is made
+    # of tedium rather than secrecy -- maximum reverse-engineering cost per unit of effort.
     "L1.11a": ["ops/run_frontier_rotation.sh", "kimi_hunter.py",
                "scripts/probe_delisted_instruments.py",
-               "tests/scripts/test_probe_delisted_instruments.py"],
+               "tests/scripts/test_probe_delisted_instruments.py",
+               "scripts/read_xls.py", "libs/data/xls_reader.py",
+               "tests/data/test_xls_reader.py"],
     "L1.12": ["check_orphan_code", "check_idle_capability", "libs/self_improvement/dormancy.py"],
     "L1.13": ["check_gap_register_health", "run_execution_intel.py"],
     "L1.14": ["check_directives", "research_erv.py"],
@@ -146,8 +155,14 @@ _MAP: dict[str, list[str]] = {
     "L1.28": ["scripts/check_timidity_language.py", "tests/governance/test_timidity_fence.py",
               "ops/principal_doctrine.txt"],
     # L1.28a is measured, not asserted: every ceiling reports utilisation or counts as zero.
+    # R0318 adds the extractor case, where the absence-reads-as-health failure is at its sharpest:
+    # `all([])` is True, so a hand-rolled parse that returned nothing but headers scores "0
+    # violations" and the report reads as a clean bill. check_identities refuses that -- zero
+    # usable rows is UNMEASURED, and the count of rows the law actually closed over is a
+    # first-class output rather than a footnote.
     "L1.28a": ["scripts/check_utilisation.py", "check_idle_capability", "check_clock_saturation",
-               "check_capacity_runway"],
+               "check_capacity_runway", "libs/research/conservation.py",
+               "tests/research/test_conservation.py"],
     # L1.28b: conversion hunts 100% daily -- FLATLINE (7d of silence on a non-empty queue) fails.
     # The fence DETECTS the debt; the actuator is what makes the law's own remedy -- (d) "flips
     # the next audit/brain window from finding to fixing" -- actually reach an organ (L1.36).
