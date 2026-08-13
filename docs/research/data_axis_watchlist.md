@@ -2731,3 +2731,65 @@ By **type**: MATRIX 2,828 · **VECTOR 1,387** · **GROUP 142** · UNIVERSE 6 · 
 **THE ACQUISITION IMPLICATION (L1.11, and it is the honest one):** the highest-yield categories are exactly the ones the desk cannot buy and must manufacture — on-chain fundamentals and forward-expectation series. **No purchase is proposed and none is needed**; every analogue above is public. **[§33: screened -> docs/research/search_operator_library.md `wq-brain-pipeline` + this card]** — screened, not wired: this is a reference axis (equities, un-ingestible), and its deliverable is the SHAPE it gives the crypto-side hunt, already routed.
 
 **RESIDUAL GAP, graded:** the 4,367-field *contents* (2.8MB JSON) were **not** pulled — no desk use for equity field IDs, and bulk-copying an unlicensed artifact is not defensible under §13. The category/type counts are the whole transferable payload. **Re-entry condition (L1.16a):** if the desk ever builds a fundamentals-shaped crypto surface, the GROUP-typed field list becomes worth enumerating as a taxonomy menu.
+
+### 33. VARA (Dubai) crypto regulatory-event stream — dated licence register + named unlicensed-VASP blacklist + enforcement notices — grade: **verified-reachable, PARTIAL input to the R0193 owed build (one jurisdiction, not the panel)** [§33: deferred(2026-08-24) tier:3]
+
+**WHY THIS IS CARDED AT ALL, AND IT IS NOT "a regulator publishes things".** Card 24
+(`Regulatory-event timeline, 5-class taxonomy, Auer–Claessens`) is graded *"event gate EXISTS; the
+timeline dataset is the owed build"*, and its note records a **targeted web search for a published
+Auer–Claessens event list that FAILED** — the desk needs a dated regulatory-event dataset, could not
+find one, and scheduled a reconstruction (**R0193, due 2026-08-24**). This card exists **because that
+build has a documented data hole**, not because a source was spotted.
+
+**VERIFIED FIRST-HAND THIS RUN (honest UA `ClaudeBot`, s13 gate passed — `vara.ae/robots.txt` 200 and
+contains ZERO non-comment directive lines, so nothing is disallowed and no agent is named):**
+| artifact | URL | HTTP | verified content |
+|---|---|---|---|
+| public register | `/en/licenses-and-register/public-register/` | **200** | **51 licence refs** `VL/YY/MM/NNN` — the ref itself encodes **year/month** (`VL/26/08/002`, `VL/26/07/002`…), server-rendered, plus per-row issue date, licence type, activities, status |
+| **unlicensed-VASP blacklist** | `/en/enforcement/unlicensed-vasps/` | **200** | **38 dated rows**, named entities, `YYYY/MM/DD`, spanning **2023/04/12 → 2025/05/15** |
+| enforcement + warning notices | `/en/enforcement/`, `/en/regulations/regulatory-notices/` | **200** | dated notices, split Enforcement / Warning |
+| sitemap | `/sitemap/sitemap-index.xml` → `/sitemap/sitemap-0.xml` | **200** | 311 URLs (**no `lastmod`** — so the sitemap dates nothing; the dates live in the page bodies) |
+
+**THE ONE GENUINELY NICE PROPERTY:** every register row carries **its own issue date**, so a *single*
+pull already yields a point-in-time panel on the **entry** side — no repeated capture needed to know
+when each licence was granted. **Exits/revocations still require snapshots**, because a row that
+disappears leaves no trace; that asymmetry is the collector's design constraint, not a nice-to-have.
+
+**HONEST LIMITS — stated because the card is worth less than it first looks and the next reader must
+not inherit my enthusiasm:**
+1. **ONE JURISDICTION.** Auer–Claessens is a multi-country policy panel; VARA is Dubai. This is *a*
+   column, never the table.
+2. **WRONG EVENT CLASS, mostly.** The 5-class taxonomy classifies **national policy** actions (bans,
+   restrictions, AML/CFT regimes). VARA's stream is dominated by **entity-level** licensing and
+   small-VASP enforcement. The classes overlap only partially, and pretending otherwise would
+   contaminate the panel with events of a different kind.
+3. **ALMOST CERTAINLY NOT DIRECTLY TRADEABLE.** A Dubai enforcement notice against a small unlicensed
+   VASP has no plausible channel to BTC/ETH on Binance. **No mechanism is claimed here**, and none
+   should be inferred: this is timeline *material* for a build that already exists, not an axis.
+4. **NOT A PREMIUM PLAY.** The obvious GCC-venue idea is graveyarded — `era_crossvenue_fiat_premium_arb`
+   is buried 7×, the class is declared exhausted, and kimchi (its lone survivor) was killed 2026-08-01.
+
+**DISPOSITION:** `deferred(2026-08-24)` — deliberately aligned to **R0193's own due date**, because this
+is an *input* to that build and dating it separately would just create a second clock for one piece of
+work. This is alignment, not a snooze: the consuming recommendation is live, dated and owned.
+
+**ALSO ENUMERATED, GRADED, AND DELIBERATELY NOT CARDED** (the desk's measured bottleneck is
+verification, not cataloguing — a source earns a card by serving a named need):
+- **Saudi CMA open-data API** (`opendataapi.cma.gov.sa`, OpenAPI 3.0.1, **no auth**): 2,156 private
+  funds **fully dated**, 382 public funds, 230 institutions. Real and free — but **equities/funds, zero
+  crypto or virtual-asset content**. No desk need it serves. *(Trap worth recording: `PublicFunds`
+  advertises the same date keys as `PrivateFunds` and they are **null in 382/382** — a consumer keyed
+  on "the API returns dates" passes silently and gets nothing.)*
+- **`api.bitoasis.net`** — live AED trade tape (`/v1/exchange/trades/BTC-AED` **200**, real `id/type/
+  price/amount/timestamp`). Collectible, but its natural mechanism is the graveyarded regional-premium
+  family, so it gets **no card without a mechanism that is not already dead**.
+- **ADGM** — `sitemap.xml` 200 with **1,109 dated announcement URLs carrying `lastmod`** (FSRA fines,
+  fraud alerts, licence cancellations). The **second-best** artifact in the set and the natural next
+  jurisdiction column if R0193 wants one; the index page is client-side-paginated and useless, the
+  sitemap is the route.
+- **UNMEASURED, and kept distinct from empty:** SCA/UAE CMA (pages **200**, register data behind a
+  **401** API), QFMA (**200** Handlebars shells, 0 dates, and **zero** occurrences of "virtual asset"/
+  "crypto"/"VASP"), `rain.bh` / `cbb.gov.bh` / `saudiexchange.sa` (**403** on every path; `saudiexchange.sa`
+  apex has **no DNS record at all**), `coinmena.com` (`robots.txt` returns **200 with a Next.js error
+  shell and zero directives**). None of these is "closed" and none is "empty" — they are unmeasured,
+  and a status-code-only crawl would have scored several of them as open and harvested nothing.

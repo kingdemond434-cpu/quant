@@ -2287,3 +2287,51 @@ document URL and re-check it against the disallow list *before* claiming a corpu
 `Allow: /` on the host and `Disallow:` on its media root is a **CLOSED corpus on an OPEN site**, and it
 is the single most common shape on the WordPress-hosted institutional web — regulators, standards
 bodies, central banks and exchanges are overwhelmingly WordPress.
+
+### OP-076 PERMISSION AND REACHABILITY ARE INDEPENDENT — IN BOTH DIRECTIONS, ON THE SAME HOST   [active]
+class: access / §13 posture
+origin: AR frontier miner s2 (2026-08-13), GCC exchange + regulator layer, honest UA `ClaudeBot`
+validated-gain: caught a host that **permits us by name and serves us nothing**, and a sibling host that
+**refuses its own robots.txt and serves a full JSON trade tape** — the same venue, opposite failures.
+
+**THE PROVING INSTANCE — one venue, `bitoasis.net`, measured the same minute:**
+| surface | robots.txt | content | reading |
+|---|---|---|---|
+| `bitoasis.net` | **200 — `User-agent: ClaudeBot` / `Allow: /`** (and `anthropic-ai` Allow; `CCBot` Disallow) | **403** on `/`, `/en/`, `/en/prices`, `/en_sitemap.xml`, `blog.` | **permitted and unreachable** |
+| `api.bitoasis.net` | **403 — the policy file itself is refused** | **200 JSON**, incl. a real trade tape (`id/type/price/amount/timestamp`) | **unstated and fully reachable** |
+
+**Neither surface's policy predicts its own reachability, and the two point opposite ways.** The
+edge/CDN layer and the policy layer are configured by different teams with different intents, and
+nothing reconciles them — so a seat that infers one from the other is wrong roughly half the time,
+in whichever direction it happens to guess.
+
+**THE §13 CONSEQUENCE, AND IT IS NOT SYMMETRIC.** These two errors are *not* equally bad and must not
+be traded off:
+- Inferring **permission from reachability** ("it served me, so I may") is the one that **breaches
+  §13**. A 200 is never an authorisation.
+- Inferring **unreachability from refusal** ("robots 403s, so the host is closed") merely **loses
+  ground** — here it would have cost a live venue tape.
+So: **read the policy where it is stated, and measure reachability separately — never substitute
+either for the other.** Where policy is genuinely unstated (a 403 or 404 on `robots.txt`), that is
+**UNMEASURED**, not permission, and the honest move is to record it as such.
+
+**AND TWO FALSE-200 CLASSES FOUND IN THE SAME SWEEP** (both extend OP-068 — a 200 that is not content):
+1. **`coinmena.com/robots.txt` → HTTP 200, `text/html`, a Next.js `__next_error__` shell, ZERO
+   directives.** A parser reading this as "permissive robots, no rules" gets the answer exactly
+   backwards: nothing is served at all. **A robots.txt that is not `text/plain` is not a robots.txt** —
+   check the content type before parsing a permission from it.
+2. **`sca.gov.ae` (now `uaecma.gov.ae`) open-data section → every page HTTP 200, every dataset behind
+   `POST /api/PublicApi/GetContentList` returning 401.** The 200s are real; the data is not retrievable
+   through them. A status-code-only crawl scores this host **open and productive** and harvests nothing.
+
+**THE RULE THAT COVERS ALL THREE:** a host has **three independent properties** — *stated policy*,
+*reachability*, and *whether the reachable thing is the payload* — and this desk had instruments for
+only the first two. Grade all three, and let **UNMEASURED** stand where you only measured some
+(L1.28a: absence must never resolve to a clean verdict).
+
+**FLEET NOTE — the positive half is worth carrying too:** `bitoasis.net` is the **first host in the
+fleet's whole access map to name `ClaudeBot` with `Allow: /`**. Every by-name mention found until now
+was a refusal (hawamer, 5ch, DCInside, EliteTrader, Gate). Per-agent policy is real and it cuts **both**
+ways, so re-probe rather than carrying a binary open/closed prior — and note that AR s1 read this same
+file on 2026-08-12 as *"ClaudeBot unnamed, falls to `*`"*. Either it misread or the file changed inside
+24h; **either way the lesson is the same — a policy read is a dated observation, not a standing fact.**

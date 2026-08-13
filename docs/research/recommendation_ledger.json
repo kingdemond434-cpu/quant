@@ -7503,6 +7503,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0594",
+   "source": "deep_sweep",
+   "summary": "AR seat re-aimed on measurement (OP-075): the AR language is not a moat -- AR-script repo search returns arbitrage 1/0/0 and quant-trading 0 vs CN 1174/RU 24/KR 6, while AR-region devs mentioning trading number ~99 (UAE 67 > Korea control 59). Population exists and writes in English, so its output is already in the EN seat's ground. Recommend every regional seat run the same ~8-query probe (native-key repo search + developer-search by LOCATION + sibling-language control) to test whether its own language-is-the-moat premise holds, since every seat has been assuming it.",
+   "roi_bps": null,
+   "raised": "2026-08-13T08:33:45.717624+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

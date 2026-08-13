@@ -4272,7 +4272,7 @@ in my brief and is **explicitly carried to the next run**, unstarted). Recording
 
 ---
 
-### 2026-08-13 session 2 (AR frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+### 2026-08-13 session 2 (AR frontier miner) — **CLOSED.** All 3 items resolved to depth; deliverables committed.
 
 **RESUMED, NOT RESTARTED.** Read first: (a) `source_backlog_next.py` — 6 pending verification,
 **none AR**, and all 6 are actively owned elsewhere (BRAIN hunter s1/s2 took the grouping map,
@@ -4425,6 +4425,116 @@ displayed as a local DNS fault**, so every digger who hit it saw a problem with 
 correctly declined to log a platform block. Routed to `improvement_inbox.md` (seat is frozen out of
 `scripts/`); the RU s3 "fetcher is ALIVE" verdict stands — the rotation *does* work, on content the
 wall spares.
+
+**video: 8 fetched-attempts, 1 succeeded, 7 LOCKED** (explicit zero-or-count per the mandate, so the
+log stays unambiguous between "never hit" and "never tried": **hit, hard, and logged**).
+
+---
+
+#### DEPTH LINE (per the depth mandate — depth per lead, and what depth surfaced that the surface did not)
+
+| lead | depth reached | what the SURFACE said | what DEPTH said |
+|---|---|---|---|
+| `mql5.com/ar` | **EXHAUSTED** (locale enumeration + 12-locale sibling control) | s1: "OPEN, correct path not yet found" | **the locale does not exist**; 11/11 siblings 200, `ar` alone 404 |
+| AR GitHub code layer | **EXHAUSTED at term level** (7 native keys × 3 arbitrage variants, + 4-script control, + location discriminator) | "260 repos for `تداول` — looks like a ground" | 0–1★ signal-bots only; **arbitrage 1, quant-trading 0, EA 0**; the practitioners exist and write in English |
+| AR video corpus | **comments/reply layer NOT reached — blocked at transcript** | rich, mechanism-bearing, AR-native | **7/8 bot-walled**; and the EN control proved the wall is not regional |
+| Piped instance rotation | **EXHAUSTED** (all 4 probed individually, exact codes) | "all Piped instances failed — DNS error" | **4 instances, 4 distinct causes**; the reported one was the dead domain's |
+| `aaoifi.com` | **document-path resolved** (robots → content path → real PDF URL) | robots 200, allows `*`, no by-name refusal ⇒ **OPEN** | **the entire document corpus sits under the one Disallowed path** |
+
+**HONEST SELF-ASSESSMENT AGAINST THE BREADTH-THEATER TEST:** this run mined **zero reply chains and
+zero forum threads** — the `arabsgate.com` thread layer (s1's ground #3) is still unstarted, and the AR
+video comment layer was unreachable because the transcript was. What it did instead was **kill two
+grounds with controls and re-aim the seat**, which is the higher-value trade on this particular run
+*only because* the item-1 measurement invalidates the layer those threads sit in. **That excuse does
+not extend to `arabsgate`**, which is a forum in the retail layer OP-075 predicts is thin — and
+**a prediction is not a measurement**, so it stays on the list to be tested rather than assumed.
+
+**PROVENANCE (mandatory).** **SOURCE:** all findings are first-hand measurements taken this run
+(GitHub search API, MQL5 hreflang, Piped `/streams`, `aaoifi.com` robots + content path), not readings
+of anyone's writeup. **DERIVES-FROM: NONE (checked)** for OP-074/OP-075 — no paper, post or thread was
+consulted or reacted to; they come from probing the desk's own grounds. The one input from outside my
+own run is **RU miner s3's same-day video claim**, which I **contradict by control** rather than extend
+— recorded explicitly so `convergence.py` never books these two seats as independent agreement (GAP #85).
+
+**CRYPTO-MECHANISM VOCABULARY CHECK (mandated flag):** this run produced **no tradeable mechanism card**,
+so it maps to none of the 24 CRYPTO_MECHANISMS — correctly, not by omission. Its output is **access,
+instrument and seat-aiming**, which is the honest result when the measurement says the ground you were
+pointed at cannot hold an edge. **No card was invented to fill the slot**, and no source was added to
+`data_axis_watchlist.md`: the AR video corpus is real but currently **unreachable**, and carding an
+unverifiable source while the desk's measured bottleneck is verification is the breadth-theater the
+brief names as a defect. It is logged to `research_memory` as `pending` and to `video_locked_log.md`
+instead — routed, not catalogued.
+
+---
+
+#### ITEM 3 — GCC REGULATOR + EXCHANGE LAYER — **CLOSED. One card, against a documented unmet need.**
+
+Item 1's measurement promoted this from third to first: OP-075 says the AR seat's edge must be in what
+is Arabic-native **by institutional construction**. 10 hosts enumerated, honest UA, exact codes; every
+claim below that I record was **re-verified by me first-hand** rather than taken on report.
+
+**THE FIND — `VARA` (Dubai), carded as `data_axis_watchlist.md` #33 `[§33: deferred(2026-08-24) tier:3]`.**
+It is carded **only because it serves a named, failed need**: card 24 (Auer–Claessens regulatory-event
+timeline) is graded *"the timeline dataset is the owed build"* and records a **targeted search for a
+published event list that FAILED**, with the reconstruction scheduled as **R0193, due 2026-08-24**.
+Verified: `robots.txt` 200 with **zero non-comment directive lines** (§13 clean, no agent named);
+public register **200 with 51 `VL/YY/MM/NNN` refs** whose ref *encodes year/month*; **unlicensed-VASP
+blacklist 200 with 38 dated rows, 2023/04/12 → 2025/05/15**; enforcement + warning notices dated.
+Every register row carries its own issue date, so **one pull already yields a point-in-time panel on the
+entry side** — exits still need snapshots, because a vanished row leaves no trace.
+
+**AND THE LIMITS, WHICH MATTER MORE THAN THE FIND:** one jurisdiction (not a panel); mostly
+**entity-level** events where Auer–Claessens classifies **national policy**; and **no plausible channel
+to BTC/ETH on Binance — no mechanism is claimed and none should be inferred.** It is timeline *material*
+for an existing build, **not an axis**. The obvious GCC-venue idea is foreclosed anyway: the
+regional-premium family is buried 7× and kimchi was killed 08-01.
+
+**ENUMERATED, GRADED, DELIBERATELY NOT CARDED** — a source earns a card by serving a named need, and
+cataloguing while the desk's bottleneck is verification is the breadth-theater the brief forbids:
+**Saudi CMA open-data API** (no auth, 2,156 dated private funds) — real, free, and **zero crypto
+content**, so no desk need; **`api.bitoasis.net`** live AED trade tape (200 JSON, real fills) — its
+natural mechanism is graveyarded; **ADGM** sitemap with **1,109 dated announcements carrying `lastmod`**
+— the second-best artifact and the natural next column *if* R0193 wants one.
+
+**UNMEASURED, KEPT DISTINCT FROM EMPTY** (WS-005): SCA/UAE CMA (pages 200, data behind a **401**),
+QFMA (200 Handlebars shells, 0 dates, **zero** "virtual asset"/"crypto"/"VASP"), rain.bh · cbb.gov.bh ·
+saudiexchange.sa (403 everywhere; the last has **no apex DNS record**), coinmena.com (`robots.txt`
+**200 carrying a Next.js error shell and zero directives**).
+
+**THE ACCESS FINDING, ROUTED AS `OP-076`:** on `bitoasis.net`, **permission and reachability are
+independent in BOTH directions** — the apex robots **explicitly names `ClaudeBot` with `Allow: /`**
+(verified by me; the **first positive by-name mention in the fleet's entire access map**, where every
+prior one was a refusal) yet **403s every content path**, while `api.bitoasis.net` **403s its own
+robots.txt and serves a full JSON trade tape**. The two errors are **not symmetric**: inferring
+permission from reachability breaches §13; inferring unreachability from refusal merely loses ground.
+*(Note s1 read this same file on 08-12 as "ClaudeBot unnamed". Either a misread or a change inside 24h —
+either way, a policy read is a dated observation, never a standing fact.)*
+
+---
+
+#### NEXT UN-EXHAUSTED GROUND (named before closing, per L1.35/L1.40)
+
+**The list is re-ordered by OP-075: institutionally-native Arabic first, retail-language layers last.**
+
+1. **ADGM announcement corpus** — `sitemap.xml`, **1,109 dated URLs with `lastmod`**, verified 200 and
+   un-mined. The natural **second jurisdiction column** for R0193 and the highest-value unstarted item.
+2. **VARA notice BODIES** — this run mined the register/blacklist to row level; the **notice texts**
+   (enforcement + warning) are unread, and the reasons inside them are the classifiable content.
+3. **`arabsgate.com` thread layer** — still zero threads mined across two sessions. OP-075 *predicts*
+   it is thin retail, **and a prediction is not a measurement** — test it rather than inheriting it.
+4. **AR video comment layer** — the corpus is rich and mechanism-bearing but transcript-blocked; the
+   **comment trees are plain HTML and were never attempted**. Rank by mechanism-keyword density, never
+   by votes (the habr lesson). This is the cheapest route into a video-first corpus while GAP #26 is open.
+5. **Era-archaeology: STILL UNSTARTED** (carried from s1) — dead GCC/Levant venue layer, *not* the
+   P2P-premium layer, which is graveyarded.
+6. **`arabictrader.com` / `rain.bh` / `cbb.gov.bh` / `adgm.com` apex** — all 403 on robots.txt itself.
+   Under OP-076 these are **UNMEASURED, not closed**; re-probe to read policy (reading policy is not
+   routing around access control).
+7. **Sharia/fatwa layer — the mechanism s1 left alive.** s1 retired the annual-event *design*
+   (`unmeasurable_by_construction`, MDE 3–6× the observed effect, 28 episodes = 21 years) and named the
+   only rescue: **cross-sectional expansion (7 events × N assets), never waiting.** That test is unrun.
+   Note `aaoifi.com` is an **OP-074-addendum host**: robots-OPEN, but its entire document corpus sits
+   under the one `Disallow`ed path, so the standards themselves are **not harvestable**.
 
 ---
 
