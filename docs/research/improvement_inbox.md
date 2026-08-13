@@ -2179,3 +2179,98 @@ Their idiom is to simulate the trivial expression `rank(<candidate_field>)` firs
 1,387 of BRAIN's 4,367 fields are VECTOR-typed, with `vec_avg`/`vec_sum` as late reducers. The desk collapses multi-venue funding, per-level depth and per-venue OI to a scalar **at ingest**, which fixes the reduction before any hypothesis can choose it — mean vs sum vs dispersion vs max are different signals, and cross-venue *dispersion* is the one most obviously discarded. Routed as an engine idea (L1.34 §4), not a build order.
 
 **NOT APPLIED — BRAIN-hunter seat is research-frozen out of `scripts/` and `libs/`.** Items 1, 3 and the video-fetcher defect are ledgered so they are driven rather than filed here (this inbox does not drive work).
+
+## 2026-08-13 — JP frontier miner s4 (two engine items; the first is the run's best find and it is NOT a trade)
+
+### 1. BOOK IMBALANCE AND AGGRESSOR FLOW MAY BE ONE AXIS, NOT TWO — and a practitioner ran the intervention that separates them
+
+**SOURCE:** `qiita.com/blog_UKI/items/d01367ff01ffbd64c863`, 「仮想通貨ボット：BitMEXの板でスプーフィングを
+試みた話」, 2021-12-14 (仮想通貨botter Advent Calendar 2021 d15), 37 likes, **comment layer checked: 0
+comments**. **DERIVES-FROM:** 杉原 (the JP-language exposition of Cont/Kukanov/Stoikov order-flow imbalance)
++ the author's own 2018 note. Pre-2023, so **not** LLM-contaminated (OP-072).
+
+**WHAT HE DID, AND WHY IT OUTRANKS AN OBSERVATIONAL STUDY.** He built a bitFlyer HFT bot whose direction
+signal was **OFI computed from the BitMEX book** (chosen because "海外取引所のほうが価格が先行する" and
+because bitFlyer's ¥1 tick made its own book too thin to compute OFI from). He then asked whether he could
+*manufacture* the signal: regression said **~$500k of BitMEX book change moved bitFlyer ~¥100**, and since
+spoofed orders are never meant to fill, **~$5,000 of margin at 100× would suffice.** He built it and ran it.
+**It did not work — large passive orders on BitMEX did not move bitFlyer.**
+
+**THE DECOMPOSITION THAT EXPLAINS THE NULL — this is the transferable part.** Writing every quantity positive:
+```
+ΔBid = (1) new limit-buy inflow − (2) cancellation of resting buy limits − (3) market-SELL take
+ΔAsk = (4) new limit-sell inflow − (5) cancellation of resting sell limits − (6) market-BUY take
+OFI  = ΔBid − ΔAsk = (1−2−3) − (4−5−6)
+```
+His finding: **"このうち説明力として支配的なものは(3)と(6)の成行注文なのでした"** — components **(3) and
+(6), the MARKET orders, dominate the explanatory power.** The quote-side components (1)(2)(4)(5) do carry
+some, and combining them improves overall performance, **but the displayed book is not where the information
+is.** Hence the null: to move price you must actually cross, which is ordinary manipulation — taker fees plus
+an adversely-selected position, "旨味はありません".
+
+**WHY THIS MATTERS HERE, CONCRETELY.** The desk's crypto mechanism vocabulary lists **`book imbalance`** and
+**`order flow` / aggressor-side trade intensity** as separate entries, and L1.18 (ALPHA DIVERSITY) counts
+*independent* sources. If OFI's predictive content is mostly the take component, then a book-imbalance
+feature and a taker-flow feature are **substantially the same signal wearing two names** — two features, one
+bet, and a diversity count that is too high by one. That is the demeaning-floor lesson in a different
+costume: apparent independence that is an artefact of construction.
+
+**THE DECISIVE TEST IS CHEAP AND RUNS ON DATA THE DESK ALREADY HOLDS.** The depth tape and the trade tape are
+both recorded (they are the whole subject of L1.46 clock provenance). Decompose ΔBid/ΔAsk per interval into
+take (reconcilable against the trade tape by aggressor side) vs quote-side residual, then regress forward
+return on each **separately** and report the incremental R² of the quote-side component over the take
+component alone. **Both constructions are DSR-counted trials** and must be logged as such. Three outcomes,
+all useful: quote-side adds nothing → collapse the two axes into one and correct the diversity count;
+quote-side adds materially → the desk has a genuinely separate axis and now knows it; underpowered →
+UNMEASURED, and the honest answer is instrumentation.
+
+**NOT A TRADE, AND THE GATES SAY SO.** `ofi_taker_component_dominance`: **EV 0.0002 → REJECT**
+(`high_turnover_no_maker` + `crowded_known`), novelty 0.851. An HFT-horizon OFI signal is DOA for a
+latency-disadvantaged spread-taker at this equity, and the EV gate is right. **The value is as a
+FEATURE-REDUNDANCY fact and an execution-model input**, which is why it is filed here and not carded.
+
+**AND THE HARD LINE ON THE STRATEGY ITSELF:** spoofing is prohibited market conduct (JP FIEA; US CEA §6(c);
+every major venue's terms). Nothing here is implementable and nothing here is proposed. What is extracted is
+**evidence about market structure produced by an intervention** — the author's own conclusion was that the
+exercise's real purpose was *"BitMEXの板を参照するボットを殺すボットを作る"*, i.e. probing whether bots that
+read the book can be farmed.
+
+**THE VOCABULARY GAP THIS EXPOSES (flagged per the extraction mandate — a mechanism mapping to NONE of the
+desk's families is the interesting case).** His closing line — *"市場がボットで飽和すると、必ずボットを食い物
+にするボットが現れる"* ("when a market saturates with bots, a bot that preys on bots will inevitably appear")
+— is a **PREDATION / adversarial-counterparty** mechanism family. Every entry in `CRYPTO_MECHANISMS` describes
+*market state*; none asks **"is my own order pattern a farmable, recognisable signature?"** The desk has this
+lens for its own *process* (L1.32's "the adversary") but not as a *market* family. It is not idle: this desk's
+carry sleeve opens and closes on a schedule tied to funding phase and rank exit, which is precisely a
+recognisable signature. **L1.45's excitation design already randomises *how* the desk orders — so the desk has
+partially defended against a mechanism it has never named.** Naming it is free; measuring it is the open
+question.
+
+### 2. THE DESK CHECKS FEATURE-DISTRIBUTION STATIONARITY AND (APPARENTLY) NEVER CHECKS THE TARGET'S
+
+**SOURCE:** `qiita.com/pip_pip_pip_p/items/3b86e36ca536e99d26e0` (2024-12-07) — full provenance and the
+strategy-side corroboration in `docs/graveyard.md` under the `jp_mlbot_atr_limit_reversion` addendum.
+
+His observation, aimed at the most-copied ML-bot tutorial in the JP ecosystem: *"mlbotチュートリアルでは特徴量
+の分布が時間で変化しないことをチェックしていますが、似たようなことを目的変数に対して行うといいかもしれま
+せん"* — **the tutorial checks that the FEATURE distribution is time-invariant; nobody checks the TARGET's.**
+He ranks target-stationarity **② ≫ ③ simple > ④ strong**, second only to ① sufficient samples, in what makes
+a rule-based base layer usable under an ML meta-label filter.
+
+**WHY IT LANDS ON THIS DESK.** The desk carries the feature-side check (the `richman` non-stationarity score
+is in this seat's own standing brief) and `dist_shift` from capability-hunt s3 (2026-08-01, "only SHIFT may be
+wired — DRIFT is overpowered at large n"). Both are **feature-side**. A screen whose *target* distribution
+moves between train and test — forward-return vol regime, funding regime, the censoring share this seat
+measured on 2026-08-12 (68.8% → 10.7% from 2019 to 2026) — is mis-specified in a way no feature-side check
+can see, and it fails toward **a false null in a quiet regime and a false positive in a violent one**.
+
+**PROPOSED, NOT BUILT (seat is research-frozen out of `libs/` and `scripts/`):** run the existing
+distribution-shift instrument against the **target** series, per screen cell, and publish the verdict beside
+the IC. **UNMEASURED must stay a real answer** — if the shift statistic is underpowered on a cell's sample,
+it says so rather than certifying stationarity. Cost is small (the instrument exists); the failure it prevents
+is a graveyard-grade verdict issued on a target that changed underneath the split.
+
+**Verification owed before anyone acts on this:** I did **not** read `libs/` to confirm the desk lacks a
+target-side check — the seat is frozen out of that tree and a grep from a research seat proves a name exists,
+never that a code path runs (the desk's own most-repeated lesson). **The claim "the desk does not check
+target stationarity" is UNVERIFIED and is the first thing the implementing seat should falsify.**
