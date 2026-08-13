@@ -40,6 +40,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -176,6 +177,60 @@ def _dirty(root: Path) -> list[str]:
         if out.returncode == 0 else []
 
 
+#: A lawgate HEAD checkout CANNOT outlive its own run: the re-exec is capped at timeout=1800 and
+#: the `worktree add` at 300, so ~35min is the ceiling on a live one. Two hours is >3x that, which
+#: keeps the reaper off a sibling law gate that is merely slow -- the only way to be wrong here is
+#: to delete a checkout still being read, so the threshold is deliberately far past the maximum.
+_ORPHAN_AFTER_S = 2 * 60 * 60
+
+
+def _reap_stale_checkouts(root: Path, *, now: float | None = None) -> int:
+    """Delete lawgate HEAD checkouts left by runs that DIED before reaching their own cleanup.
+
+    THE DEFECT THIS CLOSES (R0407 one producer further on). `_at_head` allocates a 150MB detached
+    worktree under /tmp and `full_gate` removes it in a `finally` -- which covers every path the
+    interpreter walks out of, and NOT the one that actually leaks: SIGKILL. A law gate killed by
+    the OOM killer never runs `finally`, so its checkout becomes 150MB of tmpfs owned by no
+    process, and tmpfs is never reclaimed under pressure. That closes a loop on itself: low memory
+    makes the kill likelier, the kill orphans another 150MB, and the next run starts poorer. Two
+    such orphans (300MB, both clean, neither open by any process) were measured on 2026-08-13 with
+    MemAvailable at 270MB against a 400MB floor -- the box could not have run its own test suite.
+
+    WHY THE REAPER LIVES HERE AND NOT IN THE FENCE. `max_audit.check_host_memory_headroom` watches
+    total /tmp occupancy and deliberately deletes NOTHING, because /tmp is shared with the live
+    executor, three recorders and several concurrent agent sessions, and reaping another process's
+    scratch mid-run is a worse failure than the one it fixes. That reasoning is right, and it is
+    exactly why the cleanup belongs to the PRODUCER: this function touches only the `lawgate-head-`
+    prefix it alone creates, and only past a lifetime a live run cannot reach. A watcher of a
+    shared resource cannot safely free it; the process that allocated it can.
+
+    Best-effort by construction. A reaper that raised would turn a disk-hygiene problem into a
+    refused push, and the law gate's verdict must never depend on whether /tmp was tidy.
+    """
+    now = now if now is not None else time.time()
+    reaped = 0
+    try:
+        candidates = sorted(Path(tempfile.gettempdir()).glob("lawgate-head-*"))
+    except OSError:
+        return 0                            # unreadable /tmp is not this gate's verdict to fail
+    for d in candidates:
+        try:
+            if not d.is_dir() or now - d.stat().st_mtime < _ORPHAN_AFTER_S:
+                continue
+        except OSError:
+            continue                        # vanished under us -- a concurrent reaper is fine
+        subprocess.run(["git", "worktree", "remove", "--force", str(d / "t")],
+                       cwd=root, capture_output=True, text=True, timeout=120, check=False)
+        shutil.rmtree(d, ignore_errors=True)
+        reaped += 1
+    if reaped:
+        # Leave no stale registration behind: `git worktree list` would keep naming a path that
+        # no longer exists, and a later `worktree add` at the same path then fails outright.
+        subprocess.run(["git", "worktree", "prune"], cwd=root, capture_output=True,
+                       text=True, timeout=120, check=False)
+    return reaped
+
+
 def _at_head(root: Path) -> tuple[Path, str, list[str]]:
     """(where to run, what that place IS, why it is not HEAD). A pristine checkout when dirty.
 
@@ -195,6 +250,7 @@ def _at_head(root: Path) -> tuple[Path, str, list[str]]:
     dirt = _dirty(root)
     if not dirt:
         return root, "cwd==HEAD (tree clean)", []
+    _reap_stale_checkouts(root)             # sweep our own dead before allocating another 150MB
     tmp = Path(tempfile.mkdtemp(prefix="lawgate-head-"))
     wt = tmp / "t"
     try:
