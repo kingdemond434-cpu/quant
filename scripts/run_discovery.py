@@ -65,6 +65,7 @@ from libs.validation.economic_prior import MechanismType  # noqa: E402
 _CRYPTO = Path("data/lake/bronze/crypto")
 _METRICS = Path("data/crypto_metrics.parquet")
 _WEB = Path("web/discovery.json")
+_OOS_VERDICTS = Path("reports/reconstructed_oos/oi_ls_cross_sectional.json")
 _PPY = 365.0
 _ORTHO = 0.40                 # max |corr| to the rest of the book to count as orthogonal
 _FAIL = ["edge crowds/decays", "regime shift", "correlated crash", "cost exceeds edge"]
@@ -74,6 +75,34 @@ _PENDING = [
     ("ls_contrarian", "long/short ratio", 40),
     ("liquidation_reversal", "liquidations", 40),
 ]
+
+
+def _oos_verdicts() -> dict[str, dict]:
+    """Completed frozen-holdout OOS verdicts for the data-gated _PENDING sleeves, by sleeve name.
+
+    R0130 (disposed 2026-08-05, commit f7cc022): oi_divergence and ls_contrarian already ran a
+    pre-registered, embargoed OOS backtest (scripts/backfill_oi_ls_oos.py, holdout ending
+    2026-05-31) and FAILED (oi_divergence net Sharpe -2.815 t=-5.74; ls_contrarian net Sharpe
+    0.207 t=0.42). They are not waiting on more archive depth -- they are REJECTED. Showing them
+    as perpetually "PENDING (Nd/40d archived)" once that depth is crossed misreports a completed,
+    negative result as still-undecided, which understates the desk's own knowledge rather than
+    overstating it, but is dishonest either direction (2026-08-13, found investigating whether
+    #disc's PENDING sleeves were genuinely idle).
+
+    Absent/unreadable is simply no verdict recorded yet -- never a crash, never assumed to mean
+    anything about the sleeve itself. This artifact carries zero promotion authority (its own
+    "authority" field says so); it only prevents PENDING from lying about what is already known.
+    """
+    if not _OOS_VERDICTS.exists():
+        return {}
+    try:
+        doc = json.loads(_OOS_VERDICTS.read_text("utf-8"))
+    except Exception:
+        return {}
+    rows = doc.get("results") if isinstance(doc, dict) else None
+    if not isinstance(rows, list):
+        return {}
+    return {r["sleeve"]: r for r in rows if isinstance(r, dict) and "sleeve" in r}
 
 
 def _panels() -> tuple[pd.DataFrame, ...]:
@@ -226,8 +255,18 @@ def main() -> None:
     results.sort(key=_rank, reverse=True)
     archive_days = (int(pd.read_parquet(_METRICS)["ts"].dt.date.nunique())
                     if _METRICS.exists() else 0)
-    pending = [{"sleeve": n, "dataset": ds, "needs_days": d, "have_days": archive_days,
-                "status": f"PENDING ({archive_days}/{d}d archived)"} for n, ds, d in _PENDING]
+    oos = _oos_verdicts()
+    pending = []
+    for n, ds, d in _PENDING:
+        row = {"sleeve": n, "dataset": ds, "needs_days": d, "have_days": archive_days}
+        v = oos.get(n)
+        if v is not None:
+            row["status"] = (f"{v['verdict']} (frozen-holdout OOS, R0130): net Sharpe "
+                             f"{v['ann_sharpe_net']:+.2f} t={v['nw_t_net']:+.2f} -- already "
+                             f"tested, not data-gated; see #shadow for the live forward clock")
+        else:
+            row["status"] = f"PENDING ({archive_days}/{d}d archived)"
+        pending.append(row)
 
     shadow = [r["sleeve"] for r in results if r["status"].startswith(("SHADOW", "DEPLOY"))]
     payload = {"updated": datetime.now(tz=UTC).isoformat(), "tested": len(results),

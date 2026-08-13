@@ -819,6 +819,19 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script; pure local CPU/pandas, no venue call, no model.
 35 6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_oi_ls_axes.lock .venv/bin/python scripts/screen_oi_ls_axes.py >> data/cro_ai_logs/screen_oi_ls_axes.log 2>&1
 
+# MEASURED 2026-08-13: scripts/run_stablecoin_flows.py's 40-day forward clock crossed its own
+# pre-registered threshold (41/40d) with no organ anywhere ever screening it against forward
+# returns -- the archiver computes netflow/supply deltas for DISPLAY only and contains zero
+# validation logic. Mechanism, trial grid (5 cells) and a tempering prior against the related,
+# already-negative screen_exchange_netflow.py (R0024) finding are pre-registered in this file's
+# own module docstring, written before any result was read.
+# 04:30, 2.5h after daily_research_cycle.py's 02:00 start -- comfortably past even a worst-case
+# ci_gate timeout (3900s) plus every step ahead of the stablecoin_flows step in that cycle's
+# table, so the day's archive row is always written before this screen reads it.
+# EVIDENCE: scripts/screen_stablecoin_flows.py -> reports/axis_screens/stablecoin_flows_20260813.json
+# CONFIDENCE: committed-script; pure local CPU/pandas, no venue call, no model.
+30 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_stablecoin_screen.lock .venv/bin/python scripts/screen_stablecoin_flows.py >> data/cro_ai_logs/screen_stablecoin_flows.log 2>&1
+
 # EVIDENCE: .../20260729_data-intelligence.md:77 ("ingest_axes daily 06:40"); the log name is
 #   the live one (docs/research/deep_sweep/20260726_data-intelligence.md:153 "ingest_axes_cron.log")
 # CONFIDENCE: documented-cadence

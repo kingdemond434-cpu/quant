@@ -20,6 +20,7 @@ This organ had the identical unwrapped call; fixed the same way.
 """
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -89,11 +90,52 @@ def test_writes_the_exact_file_the_disc_panel_reads(mod) -> None:
 
 
 def test_pending_entries_carry_the_data_gated_clocks(mod) -> None:
-    """oi_divergence and ls_contrarian are still accumulating (see
-    tests/scripts/test_derivative_shadow.py) -- #disc must show them as PENDING with real
-    accrued-day counts, never silently omit them or claim they are live."""
+    """oi_divergence and ls_contrarian are named in the data-gated list -- #disc must show them
+    as PENDING (absent a completed OOS verdict) with real accrued-day counts, never silently
+    omit them or claim they are live."""
     names = {n for n, _ds, _d in mod._PENDING}
     assert {"oi_divergence", "ls_contrarian"} <= names
+
+
+# ------------------------------------------------------- R0130: PENDING must not outlive a verdict
+def test_oos_verdicts_reads_a_completed_frozen_holdout_result(mod, tmp_path: Path) -> None:
+    """R0130 (disposed 2026-08-05, commit f7cc022): oi_divergence/ls_contrarian already ran a
+    pre-registered, embargoed OOS backtest and FAILED. #disc showed them as perpetual
+    'PENDING (Nd/40d archived)' even after that verdict existed -- found 2026-08-13 investigating
+    whether the desk's data-gated candidates were genuinely idle. They were not idle; the
+    dashboard was just not reading what already existed."""
+    out = tmp_path / "reports/reconstructed_oos/oi_ls_cross_sectional.json"
+    out.parent.mkdir(parents=True)
+    out.write_text(json.dumps({"results": [
+        {"sleeve": "oi_divergence", "verdict": "OOS-FAILS",
+         "ann_sharpe_net": -2.815, "nw_t_net": -5.74},
+        {"sleeve": "ls_contrarian", "verdict": "OOS-FAILS",
+         "ann_sharpe_net": 0.207, "nw_t_net": 0.42},
+    ]}), "utf-8")
+    verdicts = mod._oos_verdicts()
+    assert verdicts["oi_divergence"]["verdict"] == "OOS-FAILS"
+    assert verdicts["oi_divergence"]["ann_sharpe_net"] == -2.815
+    assert verdicts["ls_contrarian"]["nw_t_net"] == 0.42
+
+
+def test_oos_verdicts_absent_file_is_not_a_crash(mod) -> None:
+    """No artifact yet (this container, or liquidation_reversal which has never been tested)
+    means no verdict -- an empty dict, never a fabricated one and never a traceback."""
+    assert mod._oos_verdicts() == {}
+
+
+def test_oos_verdicts_unparseable_file_is_not_a_crash(mod, tmp_path: Path) -> None:
+    out = tmp_path / "reports/reconstructed_oos/oi_ls_cross_sectional.json"
+    out.parent.mkdir(parents=True)
+    out.write_text("not json", "utf-8")
+    assert mod._oos_verdicts() == {}
+
+
+def test_oos_verdicts_wrong_shape_is_not_a_crash(mod, tmp_path: Path) -> None:
+    out = tmp_path / "reports/reconstructed_oos/oi_ls_cross_sectional.json"
+    out.parent.mkdir(parents=True)
+    out.write_text(json.dumps({"results": "not-a-list"}), "utf-8")
+    assert mod._oos_verdicts() == {}
 
 
 # ------------------------------------------------------------------ the live desk

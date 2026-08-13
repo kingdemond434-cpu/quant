@@ -11,6 +11,7 @@ import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+from libs.ops.repair_mode import DIRECTION_FOR_STATUS
 from scripts.check_conversion import REPAIR_MODE_BACKLOG, build_report
 
 NOW = datetime(2026, 7, 31, 12, 0, tzinfo=UTC)
@@ -179,7 +180,19 @@ def test_real_repo_ledger_produces_valid_report():
     # waiting on data rather than on anyone's edit.
     assert rep["status"] in ("OK", "REPAIR-MODE", "FLATLINE",
                              "DEBT-GROWING", "ARRIVALS-COLLAPSED")
-    if rep["backlog"] is not None and rep["backlog"] > REPAIR_MODE_BACKLOG:
+    # MEASURED 2026-08-13: the live ledger is genuinely ARRIVALS-COLLAPSED (frozen since
+    # 2026-08-06 per this session's own investigation) with backlog > REPAIR_MODE_BACKLOG, and
+    # this assertion failed -- `repair_mode` read False. That is not a regression: check_conversion
+    # .build_report deliberately does NOT set repair_mode for ARRIVALS-COLLAPSED (":274-275, "
+    # "'ARRIVALS-COLLAPSED deliberately does NOT set it; that state owes the HUNT its time'") --
+    # the exact inversion-bug fix libs/ops/repair_mode.py's own module docstring documents
+    # ("wiring the actuator to repair_mode unchanged would redirect the brain away from finding
+    # at the exact moment finding has collapsed"). This test asserted the PRE-FIX invariant and
+    # was never updated when DIRECTION_FOR_STATUS became the one source of truth. A backlog past
+    # the line only implies repair_mode for the DRAIN-direction statuses; ARRIVALS-COLLAPSED is
+    # FIND-HARDER, deliberately not DRAIN, and must not assert repair_mode True.
+    if (rep["backlog"] is not None and rep["backlog"] > REPAIR_MODE_BACKLOG
+            and DIRECTION_FOR_STATUS.get(rep["status"]) == "DRAIN"):
         assert rep["repair_mode"] is True
 
 
