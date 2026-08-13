@@ -328,10 +328,21 @@ def admit(candidates: list[dict[str, object]], *, idle_slots: int,
         blocked_list = [g for g in STRUCTURAL_GATES if g in gates and not gates[g]]
         # UNCHANGED BEHAVIOUR, NEWLY VISIBLE (R0419). `g in gates` still governs blocking -- an
         # absent gate must not kill a candidate. What changes is that the absence is now RECORDED
-        # instead of being indistinguishable from a pass. Measured on the production path
-        # (run_real_campaign.py, the only non-test caller): `capacity` and `break_even_win_rate`
-        # were absent for 100% of candidates, so 2 of 6 structural gates had never once blocked
-        # anything and nothing said so.
+        # instead of being indistinguishable from a pass.
+        #
+        # MEASURED against every site that can write a gate in `libs.autodiscovery.validation`
+        # (the literal at :760 plus the three conditional `gates[...] =` assignments), not against
+        # the declaration here: of the six structural gates, exactly ONE -- `break_even_win_rate`
+        # -- is written by NOTHING anywhere in the repo. It is declared structural, so it reads as
+        # part of the gauntlet, and it has never once evaluated. `capacity` and `sample_adequacy`
+        # are conditional on caller-supplied inputs and validate() already records their absence
+        # in `unmeasured`, which is the honest state and not this defect.
+        #
+        # THE COUNT IS STATED BECAUSE IT WAS WRONG TWICE ON THE WAY HERE -- "2 of 6", then "3 of
+        # 6" -- both from reading the unconditional gates literal and stopping. That is the row's
+        # own point turned on the row: a claim about which gates fire, asserted rather than
+        # measured. The histogram below exists so the next reader does not have to trust this
+        # comment at all.
         unmeasured_list = [g for g in (*STRUCTURAL_GATES, *STATISTICAL_GATES) if g not in gates]
         for g in (*STRUCTURAL_GATES, *STATISTICAL_GATES):
             cell = histogram.setdefault(g, {"pass": 0, "fail": 0, "unmeasured": 0})

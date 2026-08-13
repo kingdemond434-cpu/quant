@@ -148,6 +148,14 @@ def run_level(true_sr: float, *, reps: int, seed0: int, n: int = _BASE_N, n_obs:
             # of rows, so the published rate was computed over 4 of 6 declared gates while
             # reading as though it covered all six.
             #
+            # AND ONE OF THOSE FOUR IS STILL FABRICATED, one file upstream: `audit_gate_power`
+            # builds each row as `{g: bool(v.gates.get(g, True)) for g in GATES}`, so `capacity`
+            # -- which validate() only emits when an ADV input exists, and records as UNMEASURED
+            # otherwise -- arrives here as a constant True. Measured on this harness: capacity
+            # 80/80 pass, 0 fail. The histogram below shows it as a CONSTANT-PASS gate rather
+            # than hiding it, but the fix belongs upstream and is rowed separately (R0553): it
+            # moves audit_gate_power's own published power numbers and needs its own re-run.
+            #
             # The evaluated gates still decide struct_ok -- an absent gate must not FAIL a
             # candidate either (that is the beats_baselines defect pointed the other way). What
             # changes is that the denominator is now honest about what it measured.
