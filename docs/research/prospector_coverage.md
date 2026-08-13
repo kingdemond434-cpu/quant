@@ -1402,6 +1402,137 @@ search cost. (2) The Cocoa repo chain (item 2, untaken). (3) The 2018-02→2018-
 uncalibrated between no 85000 (2018-02-16) and 100000 (2018-12-06) — the post-ban bear era, the
 cheapest remaining binary-search extension.
 
+### 2026-08-13 session 3 (KR frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+Own worktree `/home/quant/qp-kr-s3`, branch `claude/kr-miner-s3-20260813` (R0423: the main checkout
+has 13 sibling worktrees and s2 was already swept once by a sibling's commit — not sharing again).
+`.venv` symlinked from the main checkout per RU-s3's finding (a fresh worktree fails the L1.37 law
+gate on `ModuleNotFoundError: pydantic`, and `--no-verify` is the wrong reach).
+
+BACKLOG (resume step 1, closed at session start): `source_backlog_next.py --limit 6` lists ONE
+KR-ground item — **KR venue-state layer** (watchlist card #26). Checked on disk rather than
+re-probed: the card is disposed `[§33: screened -> data/upbit_trade_announcements.jsonl]`, and a
+LIVE collector now exists (`data/kr_venue_flags.jsonl`, 586 rows, first write 2026-08-12T06:12Z,
+last 2026-08-13T07:07Z). Re-verifying it would be re-measuring a constant. The other five verify
+items are not KR ground. `data/mining_suspended` absent ⇒ mining authorised.
+
+ITEMS THIS RUN (bounded per completion contract; depth per item unbounded):
+1. **The 68 named rail/wallet threads in the s2 title tape** — s2's own designated next ground #1.
+   Post numbers are already known, so this is extraction, not search. Target: a DATED KR
+   rail-state event list for 2017-11→2018-02, i.e. the independent barrier-height regressor that
+   R0299 says breaks the KR-premium circularity, for an era the live flag collector cannot reach.
+   NOT a ninth barrier-rent echo. STATUS: pending.
+2. **The Cocoa repo chain** (coincoin.kr premium route-optimizer; OP-001 repo-chain discipline) —
+   named next ground #2, untaken twice. STATUS: **NOT TAKEN** — item 1 opened a live regulatory
+   mechanism and its measurement chain, and following that to depth outranked opening new ground
+   (depth mandate; L1.28b conversion before new findings). Stays the named next ground.
+3. (standing, not an item) venue discovery + lexicon + data axes harvested en route.
+
+### 2026-08-13 session 3 (KR frontier miner) — **COMPLETE** (results appended to the write-first note above)
+§33 STANDING TEST ("which artifact on disk is different because of what was mined?"):
+`data/ppomppu_kr_rail_corpus.json` (**NEW**, 85 threads / 334 comments, tracked via a `.gitignore`
+`!` exception — the s2 defect, not repeated), `data/kr_venue_bank_rail.json` (**NEW**),
+`docs/research/data_axis_watchlist.md` (**card #33 NEW** + a clock fence on card #4),
+`docs/research/prospector_watchlist.md` (1 EV-rejected mechanism, logged as memory),
+`docs/research/weak_signal_registry.md` (**WS-011 → 2 observations**),
+`docs/research/search_operator_library.md` (**OP-072** + 벌집계좌 lexicon row enriched). Not "none".
+
+**1. ITEM 1 — DELIVERED, and it turned out not to be era archaeology at all.**
+The 85 post-numbers were already known from s2's tape, so this was extraction over a fixed queue,
+not a search: **85/85 fetched, 0 errors, 334 of 454 declared comments read.**
+- **THE FIND: the KR fiat rail is a REGULATORY EXCLUSIVITY, and it is still in force.** Primary,
+  2018-01-30, corroborated across five threads: *"거래소마다 입금계좌는 한개의 은행밖에 안되죠 /
+  업비트는 기업이고"* — **one exchange, one bank, exclusive**. Verified live: the rule is current
+  2026 regulation (Upbit→K-Bank, Bithumb→KB, Coinone→Kakao, Korbit→Shinhan, Gopax→Jeonbuk) and is
+  under active political challenge. So a bank-level event is a **venue-asymmetric** shock to one
+  venue's KRW rail — exactly the barrier regressor R0299 wants, and the one that survives the
+  intra-KR differencing s2 established. Routed as data-axis **card #33**.
+- **AND IT HAS A MEASURED FOOTPRINT.** Bithumb's 1m tape has a **10.50h hole** across its
+  2025-03-24 NH→KB migration (+51bp over the halt) while Upbit ran continuous. The rail event is
+  visible in price data **as an absence**. → WS-011 observation 2, which **retires that entry's own
+  "2017-18 reliability is not 2026 reliability" caveat** with a 2025 measurement.
+- **EV GATE RUN, NOT ASSERTED: REJECT at 0.0019 (thresh 0.002), breadth-killed at ~6 transitions/yr;
+  novelty 0.899.** Rejected on ECONOMICS, not as re-tested ground. **And the rejection is
+  knife-edge** — breadth 8 or sharpe 0.5 flips it to QUEUE — so the verdict measures my hand
+  estimate, not the world. Recorded as such, with a precise re-open condition (**≥8 transitions/yr**
+  from the notice archives) rather than a pass or a kill. **NOT SCREENED, deliberately: n=1
+  treatment is an anecdote with a timestamp, and L1.62 forbids certifying on an unmeasured n.**
+- **What the comment layer paid for, and nothing else could have.** 76535's headline ("7 beehive
+  venues cut off, >1M users") was **disputed by two named venues within 44 minutes** (76551), and a
+  commenter observes the cut venues *"어차피 현금 입금 안되던 곳"* — the rail had already died quietly.
+  **The announcement date is NOT the treatment date.** That fence now binds card #33's enumeration;
+  an event study keyed on press timestamps would mis-date its treatment and inherit press errors as
+  events. It also recovered the full primary venue list + user counts into the 벌집계좌 lexicon row.
+
+**2. THE DEFECT I ALMOST SHIPPED, recorded because the catch is the point.** Measuring the venues'
+clocks, I found Upbit dailies are UTC-days and Bithumb dailies are KST-days, and drafted it as a
+find. **It is already in the graveyard as `bithumb_kr_premium_lookahead`** (named in
+`libs/research/upbit_data.py:25`). The novelty gate working is not a finding. **But the check that
+killed my claim also produced the real one:** the *request* parameter `to=` is **KST on Bithumb and
+UTC on Upbit** — 9h apart, response fields honest UTC, no error and no anomalous value, so it passes
+every provenance gate the desk owns. That is a **different fact** from the bar boundary and is not
+covered by the kill. → **OP-072** ("a request parameter carries its own timezone claim, separate
+from the response field — and only the response field is ever audited"), plus a clock fence on
+data-axis card #4, whose selling point is precisely *"the desk's Upbit pagination code shape works
+nearly verbatim"* — the sentence that makes this bite. **And the remedy widens the ground rather
+than closing it:** 1m bars are honest UTC on both venues and align to the minute once +9h is applied,
+so the intra-KR spread WS-011 asked for is constructible after all (L1.25a: a blocked ROUTE is not a
+dead CAPABILITY).
+
+**3. A LIVE LEAK, FOUND BY VERIFYING A CLAIM I HAD ALREADY LEDGERED AS FACT (→ F0001, R0584).**
+Writing OP-072 up I asserted in ledger row **R0583** that "no repo code calls api.bithumb.com
+candles". It is checkable in one command, so I checked it, and **it was false**:
+`scripts/batch_premium.py:43` does. Reading it found a live instance of the leak the desk already
+killed. `bithumb()` keys Bithumb 24h candles by the **UTC date of the bar's START** epoch — but
+Bithumb bars start **15:00 UTC (00:00 KST)** while the Binance leg starts 00:00 UTC, so on a shared
+date key **the Bithumb close sits 15h AFTER the Binance close** and the premium mechanically
+contains future Bithumb price. That is verbatim the cause recorded for graveyard entry
+`bithumb_kr_premium_lookahead` (IC 0.72 / Sharpe 10.0). **The axis was killed in 2026-07; the code
+that manufactured it was never touched**, so any re-run re-manufactures it. Verified against the
+live endpoint, not inferred. **Coinone CHECKED and CLEAN** (00:00 UTC bars) — so the graveyard's
+"correctly aligned" note on `coinone_kr_premium` stands, and the day boundary is **per-venue, not a
+KR rule**; I had assumed the two KR venues would match and they do not. **NOT FIXED HERE** — this
+seat runs under the research freeze (docs/ + data/ only), so the exact patch is named and chased in
+F0001 rather than applied. R0583's parenthetical is withdrawn in R0584.
+**The generalisable half → blind-spot log:** a graveyard kill retires the **axis** and nothing links
+it to the **producer** of the killed number. Ask of every graveyard entry with a mechanical cause
+(leak, clock, alignment, denominator): *which file produced this, and was IT changed?*
+
+**4. A DENOMINATOR FINDING IN MY OWN INSTRUMENT (L1.60).** Ppomppu publishes `total_comment` as a
+stored aggregate that **does not decrement on deletion**, so it is an UPPER BOUND: across 85 threads,
+**454 declared vs 334 readable = 26.4% attrition**, and it is not uniform (11 threads declare 0;
+77938 reads 19 of 42). Both numbers are recorded per thread in the corpus rather than the readable
+count alone — reporting `n_read` as the corpus size would have understated deletion by a quarter.
+Also caught: my first parser returned body-and-comment chrome for every thread (the comments load
+from an embedded `initialCommentData` blob + `/zboard/comment.php?cmd=get_comment_json`, not the
+DOM), and **`initialCommentData` is only the LAST page** — 76535 gives 10 of 20 until page 1 is
+fetched too. A parse failure and an empty board are byte-identical (OP-033/068/069 family).
+
+**DEPTH LINE (honest).** Ppomppu rail queue: **85 threads to full comment depth, paginated** — not a
+skim; the venue↔bank structure, the 농협중앙회-only detail, the 300k비대면 limit, the 44-minute
+correction and the "already dead" observation are **all comment-layer or body-layer**, and every one
+of them is invisible from the titles. Depth beyond the corpus: the mechanism was **carried forward
+8 years** (2018 era claim → 2026 live regulation → 2025 measured tape outage), which is the chain
+that turned era lore into a live axis. **Not exhausted:** 2,045 of the tape's 2,130 titles are
+outside this rail filter, the board's 2018-02→2018-12 tail is still unmapped, and the Cocoa repo
+chain is untouched for the third run.
+**VIDEO: 0 fetched, 0 locked** — no video ground touched this run (text archive + REST APIs).
+Explicit zero per the mandate.
+**SCOPE HONESTY on the lexicon:** 가두리/보따리상/허매수/한프 all return **0 hits in this corpus** —
+but this is an **85-thread rail-FILTERED subset**, selected by a bank/deposit regex, so a zero here
+says nothing about the board. Recording the filter as the denominator because "absent from my
+sample" and "absent from the ground" is exactly the confusion this seat keeps paying for.
+**MECHANISM-VOCABULARY FLAG (mandate):** the conditioning variable — *venue-exclusive banking rail*
+— maps to **NONE** of `CRYPTO_MECHANISMS`. Per the mandate that is the interesting case, not the
+discardable one: the effect it conditions (cross-exchange spread) is in the vocabulary, the
+**regressor is not**, so it widens the desk's feature space rather than re-searching it.
+
+**NEXT UN-EXHAUSTED GROUND (in order).** (1) **Enumerate KR venue↔bank rail transitions since 2018**
+from `data/upbit_trade_announcements.jsonl` + the Bithumb notice feed — this is now the single
+blocking measurement for card #33 and it flips a knife-edge EV verdict either way; the
+announcement≠treatment fence above binds it. (2) The **Cocoa repo chain** (third deferral — take it
+before it becomes a standing skip). (3) The 46 wallet/deposit threads' **non-rail** residue and the
+board's 2018-02→2018-12 tail (post-no 85000→100000, uncalibrated).
+
 ## SESSION NOTES — JP frontier miner
 
 ### 2026-08-12 session (JP frontier miner) — COMPLETE (write-first note, finalized end of run)

@@ -1,0 +1,59 @@
+{
+ "generated": "2026-08-13",
+ "producer": "KR frontier miner session 3 (research freeze -- catalog only, no collector written)",
+ "what": "The KR venue<->bank real-name-account (실명확인 입출금계정) registry. Korean regulation binds each licensed VASP to EXACTLY ONE partner bank for KRW deposit/withdrawal. That makes every bank-level event a VENUE-ASYMMETRIC shock to one venue's fiat rail and not the other's -- an exogenous shifter of the intra-KR basis that is not a function of crypto price.",
+ "why_it_matters": "R0299 wants an independent barrier-height regressor to break the KR-premium circularity. KR-s2 showed the intra-KR (Upbit-Bithumb) spread DIFFERENCES OUT the cross-border capital control that made kimchi ~73% artifact, because both legs sit behind the SAME control. What remains after that differencing is venue-specific, and the fiat rail is the largest venue-specific state variable there is. This file is the conditioning variable, not the signal.",
+
+ "regulatory_basis": {
+  "rule": "one exchange <-> one partner bank, exclusive",
+  "origin": "2018-01-30 real-name account system (실명제) launch",
+  "status_2026": "STILL IN FORCE and under active political challenge -- Woori Bank's CEO publicly called for the single-bank rule to be lifted (2025-04). A repeal would END the asymmetry this axis rests on, so the axis carries a NAMED KILL CONDITION rather than an assumed persistence.",
+  "evidence_era": "primary, contemporaneous, ppomppu 2018-01-30: '거래소마다 입금계좌는 한개의 은행밖에 안되죠 / 업비트는 기업이고' (post 76756, corroborated by an independent commenter in the same thread and by posts 76746/76863/76875/55174)"
+ },
+
+ "mapping_current_2026": [
+  {"venue": "Upbit",   "bank": "K-Bank (케이뱅크)",        "note": "contract expires OCTOBER 2026 -- a forward-dated, pre-announced, venue-asymmetric rail event ~2 months out", "confidence": "reported, not venue-confirmed"},
+  {"venue": "Bithumb", "bank": "KB Kookmin (국민은행)",     "note": "migrated FROM NH Nonghyup on 2025-03-24; see measured_events below", "confidence": "reported + corroborated by a measured tape outage on the stated date"},
+  {"venue": "Coinone", "bank": "Kakao Bank (카카오뱅크)",   "confidence": "reported"},
+  {"venue": "Korbit",  "bank": "Shinhan (신한은행)",        "confidence": "reported"},
+  {"venue": "Gopax",   "bank": "Jeonbuk (전북은행)",        "confidence": "reported"}
+ ],
+ "mapping_2018_era": [
+  {"venue": "Upbit",   "bank": "IBK (기업은행)",  "as_of": "2018-01-30", "source_post": 76746},
+  {"venue": "Bithumb", "bank": "NH (농협)",       "as_of": "2018-01-30", "source_post": 76756,
+   "detail": "농협중앙회 ONLY -- 지역농협 (regional NH co-ops) are 2금융권 and were REJECTED at registration (post 76875). The rail is narrower than the bank name suggests."},
+  {"venue": "Bithumb", "bank": "Shinhan (신한)",  "as_of": "2018-01-30", "status": "ANNOUNCED-NOT-DELIVERED ('신한은 준비중이라고 공지했습니다', post 76756). An announced rail is not a live rail."}
+ ],
+
+ "measured_events": [
+  {
+   "event": "Bithumb NH -> KB real-name-account migration",
+   "date": "2025-03-24",
+   "measurement": "Bithumb KRW-BTC 1m tape has a 10.50h HOLE: last bar 2025-03-23T15:30:00Z (00:30 KST 03-24), next bar 2025-03-24T02:00:00Z (11:00 KST). Price jumped +51bp across the halt. Upbit's 1m tape is CONTINUOUS through the same window (verified bar-by-bar).",
+   "clock": "venue-stamped candle_date_time_utc, both venues; verified aligned to the minute outside the gap",
+   "why_recorded": "the rail event is OBSERVABLE IN PRICE DATA AS AN ABSENCE. This is WS-011's confounder made concrete: the venue that halts is the venue with the rail event, so tape staleness is CORRELATED WITH THE TREATMENT and biases the event window specifically instead of averaging out.",
+   "reproduce": "GET https://api.bithumb.com/v1/candles/minutes/1?market=KRW-BTC&count=200&to=2025-03-24T13:00:00  (note: `to` is KST -- see the trap below)"
+  }
+ ],
+
+ "THE_TRAP": {
+  "name": "bithumb `to` parameter is KST; upbit `to` is UTC",
+  "severity": "silent -- no error, no gap, no warning; the returned candle_date_time_utc values are HONEST UTC and look perfectly normal, they are simply not the window you asked for",
+  "measured": "asking both venues for to=2024-01-15T12:00:00 returns upbit 2024-01-15T11:59:00Z and bithumb 2024-01-15T02:59:00Z -- exactly 9h apart. Adding 9h to the bithumb request realigns them TO THE MINUTE (verified on 2024-01-15, 2020-03-13, 2018-01-11; the 4th test date failed only because it landed inside the 2025-03-24 outage above).",
+  "why_it_is_dangerous_here": "data_axis_watchlist card #4 sells Bithumb as 'Upbit-SCHEMA-COMPATIBLE ... the desk's Upbit pagination code shape works'. That is TRUE of field names and pagination shape and FALSE of request-parameter semantics. A backfill loop written against Upbit and pointed at Bithumb walks a 9h-shifted window on EVERY call and compounds it across the whole paginated history.",
+  "separate_and_already_known": "the DAILY bar boundary (upbit = UTC days, bithumb = KST days) is a DIFFERENT fact and the desk already killed it as `bithumb_kr_premium_lookahead` (docs/graveyard.md). This entry is about the REQUEST parameter, which that kill does not cover.",
+  "remedy": "1-MINUTE bars are honest UTC on both venues and align exactly once the +9h request offset is applied, so the intra-KR spread is constructible cleanly from 1m. The graveyard's framing reads as 'this venue is hazardous'; the measurement says 'this ENDPOINT is hazardous and the hazard is removable'."
+ },
+
+ "history_depth_measured_2026-08-13": {
+  "upbit_days": "EMPTY [] before ~2017-10 (venue launch); to=2016-01-01 and to=2014-06-01 both return []",
+  "bithumb_days": "to=2016-01-01 -> 2015-12-30T15:00:00Z ; to=2014-06-01 -> 2014-05-15T15:00:00Z. Corroborates card #4's claim that Bithumb is the deeper free KRW archive.",
+  "consequence": "any intra-KR spread is bounded by the SHALLOWER leg (Upbit, ~2017-10), not by Bithumb's depth."
+ },
+
+ "screen_status": "NOT SCREENED -- and deliberately not, see below.",
+ "why_not_screened": "The tradeable claim would be 'venue-asymmetric fiat rail state moves the intra-KR basis'. The desk has exactly ONE clean dated instance of the treatment (2025-03-24). n=1 is not an event study, it is an anecdote with a timestamp, and L1.62 forbids certifying a verdict on a sample size nobody measured. Running a screen on it would manufacture either a phantom edge or a false SCREEN-WEAK kill on a real one. The honest next step is to COUNT THE TREATMENT INSTANCES first (see next_step).",
+ "next_step": "Enumerate the full set of KR venue<->bank rail transitions since 2018 (contract signings, renewals, migrations, terminations) from venue notice archives -- the desk already collects data/upbit_trade_announcements.jsonl (737 rows, 2017-10-27 ->) and Bithumb's feed.bithumb.com notice feed is catalogued on watchlist card #4. That converts n=1 into a countable event set, which is the precondition for a powered event study, not a substitute for one.",
+
+ "governing_laws": ["L1.46 clock provenance", "L1.60 denominator attrition", "L1.62 measured panel breadth", "R0299 barrier-height regressor"]
+}

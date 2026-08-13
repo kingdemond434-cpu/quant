@@ -7359,6 +7359,42 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0582",
+   "source": "cycle",
+   "summary": "KR fiat-rail axis (data_axis_watchlist card #33): enumerate KR venue<->bank rail transitions since 2018 from data/upbit_trade_announcements.jsonl + feed.bithumb.com notices. This is the BLOCKING measurement -- the EV gate is knife-edge (0.0019 REJECT at breadth 6/yr, QUEUE at 8), so the transition count decides the axis either way. Fence: announcement date != treatment date (Ppomppu 76535 headline disputed by 2 named venues in 44min; cut venues' rail already dead).",
+   "roi_bps": null,
+   "raised": "2026-08-13T07:38:17.521857+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0583",
+   "source": "cycle",
+   "summary": "OP-072 clock trap: bithumb 'to=' pagination param is KST-interpreted, upbit's is UTC -- 9h window shift, response fields honest UTC so it passes every provenance gate silently. Any collector reusing the Upbit pagination shape against Bithumb (which data_axis card #4 explicitly recommends) walks a shifted window on every call. Fence added to card #4; no collector currently affected (checked: no repo code calls api.bithumb.com candles).",
+   "roi_bps": null,
+   "raised": "2026-08-13T07:38:23.491349+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0584",
+   "source": "cycle",
+   "summary": "CORRECTS R0583's parenthetical, which was FALSE as written. R0583 claimed 'no repo code calls api.bithumb.com candles'; scripts/batch_premium.py:43 does. Verified this session: it is a LIVE instance of the graveyard-known bithumb_kr_premium_lookahead leak (Bithumb 24h bars start 15:00 UTC, keyed by start-date, joined to 00:00-UTC Binance bars => Bithumb close 15h ahead of the Binance close on the same key). Axis killed 2026-07, producer never fixed. Finding F0001. OP-072's substantive claim is unaffected (batch_premium uses the legacy no-'to' endpoint, so the KST-'to' trap does not apply to it) -- but the parenthetical was an unchecked assertion and is withdrawn.",
+   "roi_bps": null,
+   "raised": "2026-08-13T07:39:57.592680+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
