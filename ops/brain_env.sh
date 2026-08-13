@@ -357,3 +357,30 @@ if [ -n "$_REPAIR_DUTY" ]; then
 
 ${_REPAIR_DUTY}"
 fi
+
+# --- PART III-31 EDGE INTAKE ACTUATOR -----------------------------------------------------------
+#
+# THE SAME SHAPE OF DEFECT AS THE BLOCK ABOVE, ONE LAW OVER (2026-08-13, found while tracing why
+# ARRIVALS-COLLAPSED wasn't draining). libs.research.edge_intake.next_batch() (gate item 31) is
+# named in its own module docstring as "the real consumer" for NEXT_BATCH_TEST rows -- but its
+# only caller anywhere in the tree was scripts/run_edge_intake.py, which printed the batch to
+# data/cro_ai_logs/edge_intake.log inside a once-daily cron run and nothing else ever read that
+# log. admit() -- the function that marks a row genuinely picked up -- had exactly one caller in
+# the whole repo: its own unit test. A queue whose "scheduled" state has a consumer that writes
+# only to a file nobody opens is the graveyard the module's own docstring says item 31 prevents.
+#
+# INJECTED HERE for the identical reason L1.36 gives the repair-mode block above: a duty that
+# never reaches an organ cannot change behaviour however well it is fenced. Every organ sources
+# this file, so present and future organs inherit it.
+#
+# ADDS WORK, REMOVES NONE, NEVER AUTO-ADMITS. libs.research.edge_intake.intake_duty() does not
+# call admit() itself -- marking a row admitted without a real experiment behind it would shrink
+# the backlog by pretending, which is the principal's own standing instruction (2026-08-13): "do
+# not delete, suppress, or deprioritize candidates just to make the backlog look smaller."
+_INTAKE_DUTY="$(cd "$_BRAIN_ROOT" 2>/dev/null && \
+    .venv/bin/python -m libs.research.edge_intake 2>/dev/null || true)"
+if [ -n "$_INTAKE_DUTY" ]; then
+    _DOCTRINE="${_DOCTRINE}
+
+${_INTAKE_DUTY}"
+fi

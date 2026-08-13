@@ -35,7 +35,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-__all__ = ["DISPOSITIONS", "LEDGER", "next_batch", "recall_audit", "rows", "stamp_queue"]
+__all__ = ["DISPOSITIONS", "LEDGER", "intake_duty", "next_batch", "recall_audit", "rows",
+          "stamp_queue"]
 
 _ROOT = Path(__file__).resolve().parents[2]
 LEDGER = "data/edge_intake.jsonl"
@@ -137,8 +138,32 @@ def classify(row: dict[str, Any], *, seen: dict[str, dict[str, Any]]) -> tuple[s
             "they cannot stop). Not a rejection -- a fact about our inputs (mandate III-2)")
 
 
+def _same_utc_day(a: str, b: str) -> bool:
+    return bool(a) and bool(b) and a[:10] == b[:10]
+
+
 def stamp_queue(report_path: str | Path, *, root: Path | None = None) -> dict[str, Any]:
-    """GATE ITEM 30. Fold a miner queue report into the intake ledger. Nothing disappears."""
+    """GATE ITEM 30. Fold a miner queue report into the intake ledger. Nothing disappears.
+
+    IDEMPOTENT WITHIN A UTC DAY (2026-08-13 fix). scripts/mine_research_queue.py stamps its own
+    output inline (added 2026-08-12 to close a race between two same-day miner runs), and
+    ops/crontab.manifest ALSO fires scripts/run_edge_intake.py -- which called this same function
+    on the same default report file -- twenty minutes later as a documented, deliberate replay
+    path ("the accounting can be re-run over a queue report the miner wrote days ago"). Both
+    callers are legitimate, but a naive re-stamp folded `classify()`'s dedup rule over ITS OWN
+    prior output: every ident already carried a same-day disposition, so `classify()` saw them as
+    "seen" and downgraded a fresh NEXT_BATCH_TEST to DUPLICATE_OF_EXISTING_TEST before
+    next_batch() ever ran -- reproduced directly: n_stamped=1 NEXT_BATCH_TEST, then a second
+    identical stamp -> n_stamped=1 DUPLICATE_OF_EXISTING_TEST, next_batch() empty. Every intake
+    row genuinely stopped moving forward the same day it arrived.
+
+    THE FIX PRESERVES THE REPLAY DESIGN INTENT: a row that already carries a REAL disposition
+    (not itself a duplicate stub) from LATER THAN OR EQUAL TO the same UTC day is left untouched
+    -- re-stamping an unchanged report is a no-op, not new evidence. A sighting from an EARLIER
+    day still creates a genuine DUPLICATE_OF_EXISTING_TEST link, because that IS a second,
+    independent discovery and the module's own contract says so ("a second source finding the
+    same thing is evidence about the finding").
+    """
     base = root or _ROOT
     path = Path(report_path)
     if not path.is_absolute():
@@ -150,18 +175,24 @@ def stamp_queue(report_path: str | Path, *, root: Path | None = None) -> dict[st
                 "n_stamped": 0}
 
     seen = _current(root)
+    today = _now()
     counts: dict[str, int] = {}
     stamped = 0
     for r in doc.get("queue") or []:
         ident = str(r.get("video_id") or "")
         if not ident:
             continue
+        prior = seen.get(ident)
+        if (prior is not None and prior.get("disposition") != "DUPLICATE_OF_EXISTING_TEST"
+                and _same_utc_day(str(prior.get("ts") or prior.get("discovered_at") or ""),
+                                  today)):
+            continue  # idempotent replay of an already-classified-today row -- not new evidence
         disp, why = classify(r, seen=seen)
         row = {
-            "ts": _now(), "ident": ident, "disposition": disp, "why": why,
+            "ts": today, "ident": ident, "disposition": disp, "why": why,
             "title": str(r.get("title", ""))[:200], "channel": str(r.get("channel", "")),
             "score": r.get("score"), "url": r.get("url"),
-            "discovered_at": _now(), "admitted_at": None,
+            "discovered_at": today, "admitted_at": None,
             "deferrals": 0, "deferral_reason": None,
             "source_class": str(r.get("channel", "")).split(":")[0],
         }
@@ -186,6 +217,47 @@ def next_batch(*, limit: int = 8, root: Path | None = None) -> list[dict[str, An
                and not r.get("admitted_at")]
     pending.sort(key=lambda r: (-int(r.get("deferrals") or 0), -float(r.get("score") or 0.0)))
     return pending[:limit]
+
+
+def intake_duty(*, root: Path | None = None, limit: int = 8) -> str:
+    """The injectable block for organ spawn -- GATE ITEM 31's actual reach.
+
+    THE GAP THIS CLOSES (2026-08-13, found tracing why NEXT_BATCH_TEST never drained).
+    scripts/run_edge_intake.py called next_batch() and printed it to
+    data/cro_ai_logs/edge_intake.log inside a once-daily cron run -- and nothing else in the
+    repo ever read that log. admit() (the function that marks a row genuinely picked up) had
+    exactly one caller anywhere in the tree: its own unit test. A queue whose "scheduled" state
+    has a consumer that only writes to a file nobody opens is the graveyard this module's own
+    docstring says item 31 exists to prevent.
+
+    MIRRORS libs.ops.repair_mode's injection exactly, because that module already solved the
+    identical shape of problem (L1.28b(d): a remedy legislated, fenced, and never wired to reach
+    an organ) for the recommendation ledger's backlog. Same fix, same law (L1.36): a duty that
+    never reaches an organ cannot change behaviour however well it is fenced.
+
+    STEADY (empty string) when nothing is waiting -- this ADDS a duty and REMOVES none; it never
+    tells an organ to do less (L1.28b(f), same clause repair_mode.py carries verbatim).
+
+    THIS DOES NOT CALL admit() ITSELF. Marking a row admitted without a real experiment behind it
+    would shrink the backlog by pretending, which is the exact failure mode the principal
+    explicitly forbade (2026-08-13): "do not delete, suppress, or deprioritize candidates just to
+    make the backlog look smaller." admit()/defer()/scripts/recommendations.py add are for
+    whoever reads this duty and does the real work.
+    """
+    batch = next_batch(limit=limit, root=root)
+    if not batch:
+        return ""
+    named = "; ".join(f"[{r.get('score')}] {str(r.get('title'))[:50]}" for r in batch[:5])
+    more = f" (+{len(batch) - 5} more)" if len(batch) > 5 else ""
+    return (
+        f"[Part III-31] EDGE INTAKE -- {len(batch)} candidate(s) in NEXT_BATCH_TEST with no "
+        f"consumer yet: {named}{more}\n"
+        f"  READ THEM (python3 scripts/run_edge_intake.py --json), then for each: raise a "
+        f"genuine finding with scripts/recommendations.py add, or call "
+        f"libs.research.edge_intake.defer(ident, reason) with a real reason, or .admit(ident) "
+        f"once a real experiment has actually started on it.\n"
+        f"  THIS ADDS A DUTY AND REMOVES NONE (L1.28b(f)): collectors, recorders, miners, "
+        f"diggers, screens and forward clocks run at FULL CADENCE regardless.")
 
 
 def admit(idents: list[str], *, root: Path | None = None) -> int:
@@ -259,4 +331,21 @@ def recall_audit(root: Path | None = None, *,
                     "disposition is the silent-dismissal failure Part III forbids"),
         "authority": "MEASUREMENT ONLY.",
     }
+
+
+def main() -> int:
+    """Print the injectable duty block. Exit 0 always -- a prompt producer, not a gate.
+
+    Wired into ops/brain_env.sh's _DOCTRINE exactly like libs.ops.repair_mode (L1.37: PAGES,
+    never KILLS -- an organ spawn must never be blocked by this queue's state).
+    """
+    from libs.ops.lawful import guard as _law_guard  # L1.42: no act exempt
+
+    _law_guard()
+    print(intake_duty(), end="")
+    return 0
+
+
+if __name__ == "__main__":  # pragma: no cover - CLI
+    raise SystemExit(main())
 

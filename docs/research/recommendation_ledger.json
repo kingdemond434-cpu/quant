@@ -5366,6 +5366,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0437",
+   "source": "cycle",
+   "summary": "DEFECT (found tracing ARRIVALS-COLLAPSED at principal request): libs/research/edge_intake.py's Part III-31 pipeline (edge intake -> NEXT_BATCH_TEST -> scheduler -> experiment -> verdict) was structurally broken in two ways, though NOT the cause of the recommendation-ledger's own ARRIVALS-COLLAPSED status (that ledger and edge_intake.jsonl are separate, unconnected systems -- confirmed no code path joins them). (1) scripts/mine_research_queue.py stamps its own output inline (added 2026-08-12 to close a same-day double-miner race), but ops/crontab.manifest's separate run_edge_intake.py cron line (20 13 * * *) ALSO called stamp_queue() on the identical report file 20 minutes later -- classify() saw every ident as already seen (by itself, minutes earlier) and downgraded every fresh NEXT_BATCH_TEST to DUPLICATE_OF_EXISTING_TEST before next_batch() ever ran. Reproduced directly: n_stamped=1 NEXT_BATCH_TEST then n_stamped=1 DUPLICATE_OF_EXISTING_TEST, next_batch() empty. (2) admit() -- the function that marks a row genuinely picked up for testing -- had exactly one caller anywhere in the repo: its own unit test. next_batch()'s only reader printed to data/cro_ai_logs/edge_intake.log, which nothing else ever read. docs/policy/GATE_LEDGER.json item 31 certified 'NEXT_BATCH_TEST has a real scheduler consumer' as PASSED on the strength of the cron line existing, which was false -- the same class of comment/cron-existence-vs-actually-reaches-a-consumer conflation check_build_standard.py's own scheduling detector was fixed for on 2026-08-12.",
+   "roi_bps": 25.0,
+   "raised": "2026-08-13T02:39:36.509495+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
