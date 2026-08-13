@@ -54,6 +54,12 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # THE REVIEW CONSUMES THE SWEEP: funnel, near-survivor bank, evidence tiers, convergence. Four
   # modules that had zero importers until this line existed -- inventory until something reads them.
   nice -n 15 "$PY" scripts/run_research_review.py || true
+  # BEFORE the ladder: the ladder recommends which survivors are owed a clock, and that
+  # recommendation is worthless while every seat is occupied. Measured 2026-08-13: m=15 against a
+  # cap of 12 with ZERO idle, at least one seat held by a DEGENERATE instrument fault that cannot
+  # resolve however long it runs. The sweep SURFACES those; retiring one stays a ledgered decision
+  # because dropping a row shrinks m and loosens every neighbour's bar.
+  nice -n 15 "$PY" scripts/run_clock_retirement_sweep.py || true
   nice -n 15 "$PY" scripts/run_live_ladder.py
   # EXECUTION HEALTH runs every cycle, including days the research half found nothing. The money
   # path is where the desk is currently LOSING (27 closes, all three hold buckets negative net of
