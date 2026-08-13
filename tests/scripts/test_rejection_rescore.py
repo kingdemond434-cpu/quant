@@ -47,7 +47,7 @@ def test_generator_lookup_is_by_stored_string_not_enum() -> None:
 def test_a_real_forward_window_produces_a_real_score() -> None:
     got = _forward_score(_rec(), {"TESTUSDT": _frame()}, min_forward_bars=30)
     assert got is not None
-    sharpe, n = got
+    sharpe, _n = got
     assert abs(sharpe) > 0.0
 
 

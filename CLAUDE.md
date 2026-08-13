@@ -52,14 +52,27 @@ with the vocabulary the document itself would use.
   trading is the principal's act. It is deliberately absent from mypy's `files`.
 - `data/secrets/**` never leaves the box, and no tool ever prints a key.
 
-## Gates (all three, before any push)
+## Gates (all four, before any push)
 
 ```
 ruff check .          # NOT `ruff | tail` — tail exits 0 whatever ruff found
+python -m pytest --co -q      # 8s. RUN THIS FIRST — see below
 python -m mypy        # bare mypy; uses files=[] from pyproject, not --strict .
 python -m pytest --cov=libs --cov-branch --cov-report=json:coverage.json
 python scripts/check_coverage_floors.py --report coverage.json
 ```
+
+**COLLECTION IS A SEPARATE GATE AND RUFF+MYPY DO NOT COVER IT.** An uncollectable module is not
+a failing test — it is a test that does not run, and the suite reports it as an error count next
+to a green pass count. mypy's `files` excludes `tests/`, and ruff does not resolve names, so a
+dropped function or a changed return type passes both while the suite cannot start. That is how
+the 08-09 merge shipped with the L1.6 Holm-bar fence reading `m=0 [REFUSED]` for four days, and
+how three later batches landed with a test that raises `TypeError` on import of its own subject.
+It costs **8 seconds**. There is no run too small for it.
+
+(mypy over `tests/` was measured as the alternative and rejected on evidence: 6345 errors, ~550
+with every style check off, and the `attr-defined` signal is drowned by `ast.AST` false positives
+and legitimate monkeypatch access. Silencing that is not a gate.)
 
 `filterwarnings = error` is set: a RuntimeWarning is a test failure.
 

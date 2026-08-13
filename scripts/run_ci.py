@@ -76,6 +76,25 @@ _PY = venv_python(_ROOT)
 # on the next -- the two numbers live in different files and nothing else relates them.
 _STEPS = [
     ("lint (ruff)", [_PY, "-m", "ruff", "check", "scripts", "libs", "tests"], 300),
+    # COLLECTION IS ITS OWN GATE, AND IT RUNS BEFORE THE EXPENSIVE ONE (2026-08-13). Measured at
+    # 8 SECONDS against the full-suite step's 7200s budget, which is the whole argument: a
+    # collection break is the cheapest failure in the repo to detect and was being detected last,
+    # buried up to two hours into a step nobody runs before pushing.
+    #
+    # It is not redundant with `tests (pytest)` -- an uncollectable module is not a failing test,
+    # it is a test that DOES NOT RUN, and the suite reports that as an error count separate from
+    # its pass count. Three interfaces were dropped by the 8b981a5 merge (slot_registry's
+    # cohort_m_for_bar, run_rejection_rescore's _spec_for, _forward_score's signature) and the
+    # tree stayed green on ruff and mypy through all of it, because mypy's `files` excludes
+    # tests/ and ruff does not resolve names. The L1.6 fence on the Holm bar -- the only
+    # multiplicity control on the path to capital -- ran `m=0 [REFUSED]` for four days.
+    #
+    # mypy over tests/ was measured as the alternative and REJECTED on evidence, not taste: 6345
+    # errors, ~550 with every style check disabled, and the `attr-defined` class that would carry
+    # the signal is dominated by `ast.AST has no attribute value` and legitimate monkeypatch
+    # module access. That is a silencing campaign, and a gate green because everything is
+    # silenced is worse than no gate (the rule this file's own `files` list already follows).
+    ("collect (pytest --co)", [_PY, "-m", "pytest", "--co", "-q", "tests/"], 300),
     # WHOLE TREE (2026-07-25): was 4 named files + tests/execution = ~147 of ~1099 tests, leaving
     # tests/risk (the ruin path) and tests/validation (the anti-false-positive path) ungated, and
     # every newly-shipped test ungated by default. GAP 31's stated blocker -- duplicate basenames
@@ -95,7 +114,7 @@ _STEPS = [
 ]
 #: Worst-case wall clock if every step wedges. Read by the cycle-budget invariant test rather
 #: than recomputed there, so the two cannot drift apart silently.
-STEP_BUDGET_TOTAL_S = sum(b for _, _, b in _STEPS)  # 8700s
+STEP_BUDGET_TOTAL_S = sum(b for _, _, b in _STEPS)  # 9000s
 
 
 _LOCK = _ROOT / "data/.ci_run.lock"
