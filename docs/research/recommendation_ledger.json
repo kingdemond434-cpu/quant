@@ -5031,11 +5031,11 @@
    "summary": "L1.54 follow-up: run_max_push._refresh() runs every producer with check=False, capture_output=True and except (OSError, TimeoutExpired): return -- a producer that crashes, exits non-zero or blows the 300s timeout is silently skipped, and build() then reads whatever stale file is on disk and stamps the merged queue generated:now. Widest blast radius on the desk: this is the DAILY WORK QUEUE. _item() already carries a measured flag and _UNMEASURED_PRIORITY, so the fix is to record the producer exit status as an input state (libs.ops.input_provenance) rather than discard it. Verified live 2026-08-05 at scripts/run_max_push.py:111-118.",
    "roi_bps": 0.0,
    "raised": "2026-08-05T18:01:38.650125+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "_refresh now returns a per-producer outcome (REFRESHED/NOT-REWRITTEN/TIMEOUT/UNRUNNABLE) keyed on whether the ARTIFACT was rewritten, not on rc -- five of the six producers are fences and rc=2 is a catch, so check=True would have blanked the queue on the desk's worst days. build() declares all six artifacts via libs.ops.input_provenance and publishes inputs_status/input_provenance/refresh_runs; a non-READ input becomes an unmeasured QUEUE ROW so the failure is ranked, not logged. 8 tests, each verified failing at HEAD. Live: inputs_status OK, 6/6 READ.",
+   "commit": "c1611fa3",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T00:05:15.199523+00:00"
   },
   {
    "id": "R0396",
@@ -5043,11 +5043,11 @@
    "summary": "L1.54 follow-up: check_excitation._bleeding_symbols() returns [] when web/trade_forensics.json is unreadable, so the fence publishes execution_denylist: [] -- breaking the promise its own docstring makes three lines above (read from the same artifact the executor reads, so the fence and the gate can never disagree about who is blocked). An unreadable forensics file makes the fence report NOBODY is blocked while the executor keeps blocking. Fail-open, and it is the L1.45 excitation fence. Fix: route through libs.ops.input_provenance and publish UNMEASURED rather than an empty denylist. Verified live 2026-08-05 at scripts/check_excitation.py:59-69.",
    "roi_bps": 0.0,
    "raised": "2026-08-05T18:01:48.962516+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Both denylist inputs are declared through libs.ops.input_provenance. New UNMEASURED status (exit 2) sits immediately above the ABSORBING slot, since an unmeasurable denylist is the ABSORBING question one level down. execution_denylist/absorbing_exclusions now publish None (cannot know) vs [] (measured, nobody blocked) via inp.derived(). execution_reentry.json declared NOT required (absent = nothing has a way back, a real measurement) but promoted to required on UNREADABLE. 5 tests, 4 verified failing at HEAD. Live: UNIDENTIFIED unchanged, denylist_status OK, both inputs READ.",
+   "commit": "c1611fa3",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T00:05:29.786626+00:00"
   },
   {
    "id": "R0397",
@@ -5067,11 +5067,11 @@
    "summary": "L1.54 follow-up: check_freshness.py folds MISSING into STALE-UNREAD at :160-161 and exits 0 for it (:210 returns 2 only for STALE-CONSUMED, UNWIRED, UNMEASURED). So a decision-path artifact that a consumer declared a contract for and that DOES NOT EXIST passes the L1.44 fence green. Coverage is also 5 of ~279 artifacts with 494 of 781 registry rows being pytest temp paths. Two fixes: make MISSING a non-zero verdict, and widen _WIRED beyond run_cashcarry_executor and run_alerts. Verified live 2026-08-05.",
    "roi_bps": 0.0,
    "raised": "2026-08-05T18:02:12.573118+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Both named fixes done. MISSING is now its own status ranked above STALE-UNREAD and below STALE-CONSUMED, and it exits 2 -- STALE-UNREAD exits 0 because the producer-side fences own chasing a dead producer, which is false of a path nothing has ever produced. _WIRED widened from the two bootstrap sites to every non-test decision-path read_fresh caller (run_conviction_trader cost gate, lending_haircut base rates), tokens naming the CONTRACT so re-pointing a read is also a regression. 6 tests, 4 verified failing at HEAD. Live: STALE-UNREAD unchanged, 0 MISSING of 8 judged, 0 new UNWIRED. The 1089 pytest-tmp registry rows are FOREIGN and excluded from the denominator; the write-path leak that creates them is raised separately.",
+   "commit": "c1611fa3",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T00:05:43.335643+00:00"
   },
   {
    "id": "R0399",
@@ -6807,6 +6807,42 @@
    "summary": "THE SUITE RECORD RATCHETS ON COLLECTION, NEVER ON PASS/FAIL -- so a test file can go red and no standing instrument on this desk can see it. docs/research/test_suite_record.json holds max_collected=708 with the note 'high-water mark of COLLECTABLE test modules; ratchets UP only'. COLLECTABLE is the operative word: a test that imports fine and FAILS is still collected, so the ratchet cannot fall when the thing it exists to protect breaks -- the L1.57 constant-denominator class pointed at the test suite. MEASURED 2026-08-12, and this is not hypothetical: 13 tests in tests/self_improvement/test_forecast_calibration.py had been RED since d13999b1 (2026-08-01, 11 days), verified pre-existing by running the same file in a clean HEAD worktree (identical 13 failures). WHICH 13 IS THE POINT: d13999b1 is 'The calibration bias was INVERTED and inflating Kelly sizing on a live sleeve'. It taught _scoreable to exclude rows with no resolve_by; the test fixture still logged bare rows, so every row fell below the n>=5 gate and every test of the SIGN CONVENTION THAT COMMIT EXISTED TO FIX spent 11 days asserting against a report of Nones. A fix that silently retires the tests pinning the behaviour it changed is the most expensive shape a green suite can hide. THE ONLY DETECTOR WAS CI, AND IT IS ACKED RED: the ci-gate-red ack (expires 2026-08-13) reasons 'All 4 red tests shared one cause... full-suite verdict pending tonight's background run' -- measurably incomplete, since 13 more sat in a file that ack never looked at. A red gate hides new red, which is why acking one is different from acking anything else. FIX: record a PASS/FAIL high-water mark beside max_collected (n_passed ratchets UP, n_failed is a floor of ZERO), so a newly-red file fails a fence that is not the CI gate itself. The 13 are already repaired (commit 2708c719); this row is the instrument that would have caught them on day one.",
    "roi_bps": null,
    "raised": "2026-08-12T23:23:35.317518+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0544",
+   "source": "cycle",
+   "summary": "R0398 follow-up: the test suite writes 1089 of the 1097 rows in the LIVE data/freshness_contracts.jsonl. Measured 2026-08-12: 1089 distinct contracts carry /tmp/pytest-of-quant/... paths, leaving n_contracts=8 as the real denominator of the L1.44 fence. The two suites that own the fence DO pin QUANT_FRESH_ROOT; the leak is from every OTHER test that calls read_fresh on a tmp PATH without pinning the ROOT, so libs.ops.fresh._record resolves root from cwd (the repo) and writes the tmp path into the production registry. The FOREIGN verdict correctly quarantines them, so this is not a wrong verdict -- it is a 99.3% noise denominator, and deleting the rows would blind the very guard that makes the leak visible. Fix at the writer, not the reader: an autouse fixture pinning QUANT_FRESH_ROOT for the whole suite (there is no tests/conftest.py today), which keeps the FOREIGN guard live for a real production leak. Same class as the 2026-08-05 finding that the suite was writing to the live L1.29 calibration store.",
+   "roi_bps": null,
+   "raised": "2026-08-13T00:05:59.090850+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0545",
+   "source": "cycle",
+   "summary": "check_freshness (L1.44) is absent from check_fence_yield._FENCES, so the L1.43 fence-yield census -- which classifies every fence FIRED/QUIET/NEVER-RUN -- has never asked whether the consumption-time freshness fence has ever caught anything. Found 2026-08-12 while adding the excitation fence's new UNMEASURED status to that same map: excitation, conversion, calibration, replacement_rate, exploration, law_families, build_standard, utilisation, clock_provenance, cohort_integrity, law_gate, change_window and moat_backup are all registered; check_freshness, check_input_provenance and check_denominators are not. A fence outside the yield census is exactly the 'governance measured like everything else' hole L1.43 exists to close, one level up: the census itself has an unmeasured denominator. Fix: register the missing fences with their firing verdicts (freshness -> STALE-CONSUMED/UNWIRED/UNMEASURED/MISSING) and check whether the roster is hand-maintained -- if so it will drift again, and it should be derived from the law-gate roster instead.",
+   "roi_bps": null,
+   "raised": "2026-08-13T00:06:13.230157+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0546",
+   "source": "cycle",
+   "summary": "Eight tests are RED at HEAD on this box and were red before this batch touched anything (verified 2026-08-12 by running them in the clean main checkout at b59ea1c0): tests/ops/test_brain_hunter.py::test_THE_RUNNER_FOLLOWS_THE_RESUMABLE_PATTERN_THE_OTHER_MINERS_USE, tests/ops/test_maker_share_denominator.py::{test_market_only_closes_are_excluded, test_all_excluded_reports_none_rather_than_a_perfect_score}, and five in tests/ops/test_stale_code_daemons.py ({test_proc_start_on_a_dead_pid_is_none, test_a_running_organ_outside_the_systemd_roster_is_discovered, test_stale_code_actually_raises_a_defect, test_a_freshly_started_organ_is_not_stale, test_import_closure_follows_the_api_package}). Two of these guard organs the desk has already paid for: maker_share_denominator is an L1.57 denominator guard, and stale_code_daemons is the actuator built after the 2026-08-05 finding that a committed money-path fix was 100% INERT because nothing restarted the process. A red suite is a suite nobody reads, and these being red is how the next real regression gets waved through. Needs triage per file: genuine regression, environment drift, or an assertion that outlived its subject.",
+   "roi_bps": null,
+   "raised": "2026-08-13T00:06:28.807433+00:00",
    "status": "open",
    "reason": null,
    "commit": null,
