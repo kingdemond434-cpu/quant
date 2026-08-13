@@ -23,6 +23,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
@@ -89,7 +91,7 @@ def test_wired_fences_declare_a_denominator_at_their_exit_site() -> None:
     test_fence_exit_map: behavioural tests only cover the fences someone remembered.
     """
     wired = ["check_exploration.py", "check_llm_routing.py", "check_calendar_gates.py",
-             "check_denominators.py"]
+             "check_denominators.py", "check_utilisation.py", "check_mypy_ratchet.py"]
     for name in wired:
         src = (_ROOT / "scripts" / name).read_text("utf-8")
         assert "scanned=" in src, f"{name} no longer declares a denominator (L1.57)"
@@ -172,3 +174,88 @@ def test_unmeasured_never_reads_as_ok() -> None:
     passing = frozenset({"OK", "PARTIAL"})
     assert fence_exit("UNMEASURED", passing, scanned=42, of="t", fence="t") == FAIL
     assert fence_exit("VACUOUS", passing, scanned=42, of="t", fence="t") == FAIL
+
+
+# --------------------------------------------------------------------------------------------
+# R0417 -- the two highest-blast-radius fences named by the coverage queue. Behavioural, not
+# source-level: both failure modes are "the fence ran, measured NOTHING, and exited 0", which a
+# grep for `scanned=` cannot distinguish from a fence that measured everything.
+# --------------------------------------------------------------------------------------------
+
+@pytest.fixture
+def _isolated_registry(tmp_path, monkeypatch):
+    """These tests call a real fence's main() under a SYNTHETIC scope, so their `scanned=` counts
+    are fiction. `fence_exit` records every declaration to data/denominator_contracts.jsonl and
+    takes no root, so without this they would append rows under the fences' REAL names -- e.g.
+    "check_mypy_ratchet.py scanned 1 file" -- and check_denominators reads the LAST row per
+    fence. The suite would then be publishing the desk's coverage evidence, which is the same
+    defect as a test writing to the live calibration store.
+    """
+    monkeypatch.setattr("libs.ops.denominator._root", lambda: tmp_path)
+
+
+def test_a_fully_dark_utilisation_board_does_not_exit_zero(
+        tmp_path, monkeypatch, _isolated_registry) -> None:
+    """Every ceiling UNMEASURED must never render as "no ceiling is unexplainedly idle".
+
+    `Ceiling.status` returns UNMEASURED before any idle branch, so an unmeasured ceiling cannot
+    enter `idle_unexplained`. Kill every reading and the old expression was `not []` -> exit 0:
+    a board that measured nothing reported the same verdict as a fully saturated one, inverting
+    this fence's own law (L1.28a -- unmeasured utilisation counts as ZERO).
+    """
+    import scripts.check_utilisation as U
+
+    dark = [U.Ceiling(name=f"c{i}", limit=100.0, used=0.0, unit="u", measured=False,
+                      binding_constraint="", why_it_matters="t") for i in range(10)]
+    monkeypatch.setattr(U, "collect", lambda: dark)
+    monkeypatch.setattr(U, "_OUT", tmp_path / "utilisation.json")
+    # --json, because the human-readable branch prints `_OUT.relative_to(_ROOT)` and _OUT is
+    # redirected into tmp_path here. Same main(), same exit expression.
+    monkeypatch.setattr(sys, "argv", ["check_utilisation.py", "--json"])
+
+    rep = U.build()
+    assert rep["idle_unexplained"] == [], "precondition: the dark board looks clean to the old test"
+    assert len(rep["unmeasured"]) == 10
+    assert U.main() != 0, "a board with zero live readings must not exit 0 (L1.57)"
+
+
+def test_a_measured_utilisation_board_still_passes(
+        tmp_path, monkeypatch, _isolated_registry) -> None:
+    """The other direction, so the fix cannot be 'fail always' (L1.43: a fence red from day one
+    gets switched off)."""
+    import scripts.check_utilisation as U
+
+    live = [U.Ceiling(name=f"c{i}", limit=100.0, used=100.0, unit="u", measured=True,
+                      binding_constraint="", why_it_matters="t") for i in range(3)]
+    monkeypatch.setattr(U, "collect", lambda: live)
+    monkeypatch.setattr(U, "_OUT", tmp_path / "utilisation.json")
+    # --json, because the human-readable branch prints `_OUT.relative_to(_ROOT)` and _OUT is
+    # redirected into tmp_path here. Same main(), same exit expression.
+    monkeypatch.setattr(sys, "argv", ["check_utilisation.py", "--json"])
+    assert U.main() == 0
+
+
+def test_mypy_ratchet_with_nothing_checkable_does_not_exit_zero(
+        tmp_path, monkeypatch, _isolated_registry) -> None:
+    """Uncheckable files are POPPED from `counts`, so "mypy could not run" and "mypy found no
+    errors" produced byte-identical reports: total_errors 0, n_files_checked 0, exit 0. The
+    ratchet it feeds would then record that phantom perfection as the new floor."""
+    import scripts.check_mypy_ratchet as M
+
+    targets = ["scripts/a.py", "scripts/b.py"]
+    monkeypatch.setattr(M, "_targets", lambda: targets)
+    monkeypatch.setattr(M, "measure", lambda t: ({}, list(t)))   # every target uncheckable
+    monkeypatch.setattr(M, "_BASELINE", tmp_path / "mypy_ratchet.json")
+    monkeypatch.setattr(sys, "argv", ["check_mypy_ratchet.py"])
+    assert M.main() != 0, "zero files checked must not read as a clean ratchet (L1.57)"
+
+
+def test_mypy_ratchet_passes_when_files_were_actually_checked(
+        tmp_path, monkeypatch, _isolated_registry) -> None:
+    import scripts.check_mypy_ratchet as M
+
+    monkeypatch.setattr(M, "_targets", lambda: ["scripts/a.py"])
+    monkeypatch.setattr(M, "measure", lambda t: ({"scripts/a.py": 0}, []))
+    monkeypatch.setattr(M, "_BASELINE", tmp_path / "mypy_ratchet.json")
+    monkeypatch.setattr(sys, "argv", ["check_mypy_ratchet.py"])
+    assert M.main() == 0

@@ -63,6 +63,7 @@ from typing import Any
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from libs.ops.fence_exit import fence_exit  # noqa: E402
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
 
 #: Below this many tested candidates the tally cannot distinguish "never ran" from "small
@@ -342,7 +343,12 @@ def main() -> int:
                 print(f"  {g['state']:<14} {name}: {g['note']}")
     if args.report_only:
         return 0
-    return 0 if rep["status"] == "OK" else 2
+    # L1.57 (R0417): the denominator is the gates DISCOVERED at their declaration sites by the
+    # ast walk -- which is this fence's whole method (L1.49: reachability is measured from the
+    # declaration site, never from a tally). If the parse finds no gates the roster is empty,
+    # and "no gate is unreachable" over zero gates is the vacuous pass this law refuses.
+    return fence_exit(rep["status"], {"OK"}, scanned=rep["n_declared"],
+                      of="gates declared in source", fence="check_gate_reachability.py")
 
 
 if __name__ == "__main__":

@@ -50,6 +50,7 @@ from typing import Any
 _ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_ROOT))
 
+from libs.ops.fence_exit import fence_exit  # noqa: E402
 from libs.ops.input_provenance import _FABRICATING  # noqa: E402
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
 
@@ -218,7 +219,12 @@ def main() -> int:
 
     if args.report_only:
         return 0
-    return 2 if rep["status"] in ("FABRICATED", "UNMEASURED") else 0
+    # Existing pass/fail preserved exactly; only the L1.57 vacuity refusal is added (R0417).
+    # Denominator = producers this run could actually examine, so a scope discovery that finds
+    # nothing cannot report clean provenance over an empty set.
+    code = 2 if rep["status"] in ("FABRICATED", "UNMEASURED") else 0
+    return fence_exit("OK" if code == 0 else rep["status"], {"OK"}, scanned=rep["n_examinable"],
+                      of="decision-path producers examinable", fence="check_input_provenance.py")
 
 
 if __name__ == "__main__":

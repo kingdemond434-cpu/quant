@@ -5115,11 +5115,11 @@
    "summary": "THE LAWS-ONLY GATE JUDGES THE DIRTY WORKING TREE, AND ITS OWN TEST NAME SAYS IT SHOULD NOT. tests/governance/test_law_families.py::test_laws_only_gate_passes_in_a_fresh_checkout asserts a property of a FRESH CHECKOUT but evaluates full_gate(laws_only=True) against the shared working tree. PROVEN 2026-08-05: in the shared tree the gate returns rc=2 (9 scripts 'scheduled by the manifest but absent from the repo'), and every one of those manifest lines exists ONLY in the working tree -- git show HEAD:ops/crontab.manifest has 0 occurrences of check_llm_routing/check_prompt_ratchet/run_moat_utilisation/screen_vol_risk_premium while the worktree has 2 each, because a concurrent session is mid-build on L1.54 and declares cron entries before writing the scripts. Run against a pristine 'git worktree add --detach HEAD', the SAME gate on the SAME commit returns 'LAW GATE -- 10 fences: PASS', rc=0. CONSEQUENCE: the pre-push hook (L1.37) refuses EVERY push on this box for a breach owned by somebody else's uncommitted files, so the only way to commit is --no-verify, which trains the desk to bypass its own law gate -- the exact 'gate that cries wolf gets disabled' failure L1.37 rule 1 was written to prevent. This is the SAME defect class as R0400 one layer up: a gate claiming to judge committed state while reading a mutable shared surface. FIX DIRECTION (deliberately not done at the end of this cycle, and this is a named defer not a skip): make the laws-only path judge HEAD in a detached worktree, or at minimum make the test do what its name says. That change decides what may block every push on a live box while sibling sessions are actively pushing, so it wants a deliberate decision, not a drive-by patch.",
    "roi_bps": 0.0,
    "raised": "2026-08-05T18:39:43.515726+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Both halves shipped in be0f1d27: full_gate(laws_only=True) now judges HEAD in a detached worktree (re-execing so the fence ROSTER is HEAD too), and test_laws_only_gate_passes_in_a_fresh_checkout now asserts 'HEAD' in rep['subject'] so its name and its assertion describe the same artifact. Verified green 2026-08-13: 4/4 in tests/governance/test_law_families.py covering fresh-checkout, dirty-tree-judged-at-HEAD, clean-tree-pays-no-checkout, and unavailable-checkout-is-REPORTED-never-silently-ignored.",
+   "commit": "be0f1d27",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T01:25:05.475545+00:00"
   },
   {
    "id": "R0403",
@@ -5199,11 +5199,11 @@
    "summary": "GROWTH-AUDIT LEDGER-JUSTIFICATION + a mis-signal in the desk's own anti-timidity instrument. web/growth_audit.json (updated 2026-08-05T20:00:02Z) reports carry_capital_utilization as the cycle's ONLY conservatism_defect: $0 deployed against $200 authorized, utilization 0.0, justified_by 'NONE'. JUSTIFIED HERE, per the contract's ledger-justify path: the book is frozen (web/cashcarry_live.json read this cycle: mode live-paper, n_carries 0, deployed_notional 0.0) and data/PRINCIPAL_ACTION.md names 'the S1 re-arm' as one of 4 decisions ONLY THE PRINCIPAL CAN MAKE. Deploying is not available to this seat, so this is a human-pending gap, not timidity -- exactly the class the audit's own live_deployment_path row already labels HUMAN-PENDING. THE ROW EXISTS FOR THE SECOND HALF, WHICH IS A REAL DEFECT: the audit renders justified_by NONE for a gap whose actual cause is a principal-gated freeze, and its own rule text says 'every NONE-gap is a DEFECT: close it same-cycle'. An instrument built to attack timidity is therefore instructing readers to re-deploy a book that a drawdown rail and a principal decision deliberately froze -- the one direction L1.23 forbids. It should read the freeze/arm state and emit HUMAN-PENDING (a state it already has) rather than NONE. NOT FIXED THIS CYCLE and deliberately not a drive-by: it decides what the desk is told about deploying capital.",
    "roi_bps": 12.0,
    "raised": "2026-08-05T20:27:17.909032+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Closed under R0274 (80262838), which is the same defect. Verified live in web/growth_audit.json (updated 2026-08-13T01:30Z): carry_capital_utilization now reads justified_by 'RAIL (CASHCARRY_KILL) -- live_guard freeze 2026-08-01T21:55 ... NOT a conservatism defect ... Lifting condition: principal re-arm', carries a full L1.51 clamp block, and conservatism_defects is now []. DELIBERATE DIVERGENCE FROM THIS ROW'S PROPOSAL, and the implementation is the better one: the verdict stays GAP rather than becoming HUMAN-PENDING, because relabelling under-deployment as a non-gap would be the denominator trick pointed at verdicts. What changed is the JUSTIFICATION, which is what conservatism_defects derives from and therefore what an organ acts on -- so the audit no longer instructs a reader to re-deploy a book a fired rail and a principal decision froze.",
+   "commit": "80262838",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T01:39:17.440187+00:00"
   },
   {
    "id": "R0410",

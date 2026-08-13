@@ -59,6 +59,7 @@ _ROOT = Path(__file__).resolve().parent.parent
 # the organ that reports on the money path's inputs.
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from libs.ops.fence_exit import fence_exit  # noqa: E402
 from libs.ops.fresh import REGISTRY_REL, _age_of  # noqa: E402
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
 
@@ -249,7 +250,15 @@ def main() -> int:
             print(f"  registry: {rep['n_registry_lines_dropped']} unparseable line(s) dropped")
     if args.report_only:
         return 0
-    return 2 if rep["status"] in ("STALE-CONSUMED", "UNWIRED", "UNMEASURED", "MISSING") else 0
+    # The existing pass/fail decision is preserved EXACTLY and re-expressed as a status
+    # fence_exit can judge; only the L1.57 vacuity refusal is added (R0417). Converting the
+    # fail-list into a pass-list here would be a second, unrelated change to what this fence
+    # blocks on, and folding two decisions into one line is how the desk loses track of which
+    # one it made. The denominator is the contracts this run actually read: zero contracts is a
+    # registry that discovered nothing, which must never render as "everything is fresh".
+    code = 2 if rep["status"] in ("STALE-CONSUMED", "UNWIRED", "UNMEASURED", "MISSING") else 0
+    return fence_exit("OK" if code == 0 else rep["status"], {"OK"}, scanned=rep["n_contracts"],
+                      of="decision-path freshness contracts", fence="check_freshness.py")
 
 
 if __name__ == "__main__":

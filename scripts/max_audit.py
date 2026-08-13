@@ -3631,6 +3631,86 @@ def check_naive_datetime(defects) -> None:
 TEST_RECORD = ROOT / "docs/research/test_suite_record.json"
 
 
+#: MemAvailable below this is a real risk of the next probe being OOM-killed rather than run. A
+#: full pytest collection peaked at 326MB here (R0407b), so a floor at 400MB is "one more probe
+#: fits"; 189MB was the reading on the day two consecutive runs were killed.
+MEM_FLOOR_MB = 400
+
+#: tmpfs is RAM owned by NO PROCESS, so it appears in no RSS check and is never reclaimed under
+#: pressure -- the whole reason this class was invisible. 1021MB (26% of a 3.8GB box) was the
+#: orphan pile that closed R0407's loop; 600MB is well below that and well above steady state.
+TMPFS_CEILING_MB = 600
+
+
+def check_host_memory_headroom(defects) -> None:
+    """THE MEMORY THAT BELONGS TO NO PROCESS (R0407a). Every other memory check watches RSS.
+
+    `libs/ops/host_resources` was built for R0407 and wired only REACTIVELY -- run_ci and
+    max_audit's collection probe call `pressure_note()` to annotate a death that has already
+    happened. That makes the instrument a coroner. Nothing on this desk asks the question BEFORE
+    the kill, so the closed loop R0407 documented (an OOM-killed run never reaches its own
+    cleanup -> its scratch is orphaned -> free RAM falls -> the next run is likelier to be killed)
+    still had no detector, only a better autopsy.
+
+    MEASURED WHEN THIS WAS WIRED (2026-08-13): MemAvailable 205MB, 798MB held under /tmp. The
+    R0407 prevention (`tmp_path_retention_policy=failed`, 513ba24) worked on the population it
+    targeted -- pytest orphans are no longer the bulk -- and the occupancy came back anyway from
+    a DIFFERENT population: agent-session scratch and stray research artifacts (a 178MB mentions
+    dump, a 63MB CSV, a 63MB probe file). So the fence must watch TOTAL tmpfs occupancy, not
+    pytest directories; fixing the one producer that was caught is not the same as watching the
+    resource, which is exactly why R0407 left this half open.
+
+    IT REPORTS AND DOES NOT DELETE, deliberately. `/tmp` on this box is shared with the live
+    executor, three recorders and several concurrent agent sessions; an automatic reaper here
+    would race a sibling's scratch mid-run, and destroying another process's working state to
+    reclaim memory is a larger failure than the one it fixes. The actionable half is carried in
+    the message: the exact command, the two numbers, and which threshold was crossed.
+
+    UNMEASURED IS A DEFECT, NOT SILENCE (L1.28a). A box whose /proc cannot be read is not a box
+    with plenty of memory. `None` from `tmpfs_used_mb` is kept distinct from `0`: it means /tmp
+    is not a tmpfs here, so there is no hidden RAM to report -- a different fact, not a low
+    reading, and folding them together would invent pressure on a normal disk-backed host.
+    """
+    from libs.ops.host_resources import mem_available_mb, tmpfs_used_mb
+
+    avail = mem_available_mb()
+    tmp_mb = tmpfs_used_mb()
+    where = "check tmpfs occupancy with `du -sm /tmp/* | sort -rn | head`"
+
+    if avail is None:
+        defects.append((
+            "host-memory-unmeasured",
+            "MemAvailable could not be read from /proc/meminfo, so host memory headroom is "
+            "UNMEASURED this cycle. That is not a clean bill: the OOM class this check exists "
+            "for (R0407) is invisible by construction to every RSS-based check on the desk, so "
+            "an unreadable /proc leaves it invisible again. Confirm /proc is mounted."))
+        return
+
+    # S108 guards against WRITING predictable paths into a world-writable dir; these are message
+    # strings about a mount this check only reads, same exemption as libs/ops/host_resources.
+    tmp_note = (
+        "/tmp is not a tmpfs on this host (no RAM hidden there)"  # noqa: S108
+        if tmp_mb is None else f"{tmp_mb}MB of RAM held by files under /tmp (tmpfs)")
+
+    if avail < MEM_FLOOR_MB:
+        defects.append((
+            "host-memory-low",
+            f"MemAvailable is {avail}MB, below the {MEM_FLOOR_MB}MB floor -- {tmp_note}. A full "
+            f"pytest collection peaks near 326MB here, so the next probe is a coin-flip against "
+            f"the OOM killer, and a killed probe reports as a broken test suite (R0407b). This "
+            f"is memory no RSS check can see. First move: {where}; free the largest entries that "
+            f"no live process owns, NEVER by deleting another session's scratch blind."))
+
+    if tmp_mb is not None and tmp_mb > TMPFS_CEILING_MB:
+        defects.append((
+            "host-tmpfs-bloated",
+            f"{tmp_mb}MB of RAM is held by files under /tmp, above the {TMPFS_CEILING_MB}MB "
+            f"ceiling (MemAvailable {avail}MB). tmpfs pages are resident memory owned by no "
+            f"process: they are never reclaimed under pressure and never appear in a process "
+            f"memory check. R0407's prevention fixed pytest's orphans specifically; occupancy "
+            f"returning from other producers is the same resource going unwatched. {where}."))
+
+
 def check_test_suite_collectable(defects) -> None:
     """THE SUITE MUST ACTUALLY RUN, AND MUST NOT SHRINK. Coverage theater in its purest form.
 
@@ -5491,6 +5571,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("llm-exhaustion", check_llm_exhaustion),
                       ("dependency-drift", check_dependency_drift),
                       ("naive-datetime", check_naive_datetime),
+                      ("host-memory", check_host_memory_headroom),
                       ("test-suite", check_test_suite_collectable),
                       ("triage-disposition", check_triage_disposition),
                       ("artifact-governance", check_artifact_governance),

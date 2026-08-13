@@ -384,3 +384,62 @@ class TestRailVerdictPublished:
         """Four checks once sat defined-and-unregistered in this module. A rail monitor nothing
         calls is a claim the desk cannot cash (L1.49)."""
         assert ("rail-verdict-published", m.check_rail_verdict_published) in m.CHECKS
+
+
+class TestHostMemoryHeadroom:
+    """R0407a -- the memory that belongs to no process.
+
+    `host_resources` was built for R0407 and wired only into death reports, so the desk had a
+    better autopsy and still no detector. These pin the three readings apart, because the whole
+    defect class was two of them being indistinguishable in a log line.
+    """
+
+    @staticmethod
+    def _patch(monkeypatch, avail: int | None, tmpfs: int | None) -> None:
+        import libs.ops.host_resources as hr
+
+        monkeypatch.setattr(hr, "mem_available_mb", lambda: avail)
+        monkeypatch.setattr(hr, "tmpfs_used_mb", lambda *a, **k: tmpfs)
+
+    def test_healthy_box_raises_nothing(self, monkeypatch) -> None:
+        self._patch(monkeypatch, avail=2000, tmpfs=100)
+        defects: list[tuple[str, str]] = []
+        m.check_host_memory_headroom(defects)
+        assert defects == []
+
+    def test_low_memory_is_a_defect_naming_the_hidden_ram(self, monkeypatch) -> None:
+        """The measured state of the box on 2026-08-13: 205MB free, 798MB in tmpfs."""
+        self._patch(monkeypatch, avail=205, tmpfs=798)
+        defects: list[tuple[str, str]] = []
+        m.check_host_memory_headroom(defects)
+        keys = [k for k, _ in defects]
+        assert "host-memory-low" in keys
+        assert "host-tmpfs-bloated" in keys       # both thresholds crossed -> both reported
+        msg = dict(defects)["host-memory-low"]
+        assert "205MB" in msg and "798MB" in msg, msg
+        assert "du -sm /tmp" in msg, "the defect must carry the command that acts on it"
+
+    def test_tmpfs_bloat_fires_even_while_memory_looks_fine(self, monkeypatch) -> None:
+        """The leading indicator. Occupancy climbs first; MemAvailable falls later, which is why
+        watching only the second one detects the problem after it has already bitten."""
+        self._patch(monkeypatch, avail=3000, tmpfs=1021)
+        defects: list[tuple[str, str]] = []
+        m.check_host_memory_headroom(defects)
+        assert [k for k, _ in defects] == ["host-tmpfs-bloated"]
+
+    def test_unreadable_proc_is_a_defect_not_a_clean_bill(self, monkeypatch) -> None:
+        """L1.28a: UNMEASURED never reads as OK -- the class is invisible to every other check."""
+        self._patch(monkeypatch, avail=None, tmpfs=None)
+        defects: list[tuple[str, str]] = []
+        m.check_host_memory_headroom(defects)
+        assert [k for k, _ in defects] == ["host-memory-unmeasured"]
+
+    def test_a_non_tmpfs_tmp_is_not_reported_as_zero_pressure(self, monkeypatch) -> None:
+        """None and 0 are different answers. On a disk-backed /tmp there is no hidden RAM at all;
+        rendering that as "0MB" would invent a healthy reading for a measurement that does not
+        apply, and the two are one word apart in a log line."""
+        self._patch(monkeypatch, avail=205, tmpfs=None)
+        defects: list[tuple[str, str]] = []
+        m.check_host_memory_headroom(defects)
+        assert [k for k, _ in defects] == ["host-memory-low"]
+        assert "not a tmpfs" in dict(defects)["host-memory-low"]

@@ -31,6 +31,10 @@ from pathlib import Path
 from typing import Any
 
 _ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+from libs.ops.fence_exit import fence_exit  # noqa: E402
+
 _BASELINE = _ROOT / "data/mypy_ratchet.json"
 
 # NEVER type-checked here, and the exclusion is load-bearing, not convenience.
@@ -156,7 +160,28 @@ def main() -> int:
             for row in rows[:12]:
                 print(f"  {label:12} {row}")
     bad = bool(regressions or new_dirty)
-    return 0 if args.report_only else (1 if bad else 0)
+
+    # THE DENOMINATOR IS THE FILES THAT WERE ACTUALLY CHECKED (L1.57, R0417), and here that is
+    # strictly smaller than the target list: `measure()` pops every UNCHECKABLE file out of
+    # `counts`, so a file mypy could not read is not merely unjudged, it has left the ratchet.
+    # Uninstall mypy (or let every batch time out) and every target becomes uncheckable ->
+    # `counts` is empty -> `total_errors` 0, `n_files_checked` 0, `regressions` [] ,
+    # `new_dirty` [] -> exit 0. A type-checker that never ran publishes a perfect score, and the
+    # ratchet it feeds records the improvement.
+    #
+    # This is why the count must be `len(counts)` and not `len(targets)`: `targets` is what we
+    # INTENDED to check and never falls when checking fails, which is the constant-denominator
+    # half of the same defect. The attrition is already reported (`uncheckable` is in the report
+    # and printed), per L1.60 -- what was missing is that the verdict never consulted it.
+    # --report-only returns before the verdict, per the house pattern (check_conversion,
+    # check_denominators): it is the explicit "write the artifact, do not gate" switch, and
+    # daily_research_cycle.py:121 runs this fence that way. A denominator refuses a PASS; where
+    # there is no verdict there is nothing to refuse.
+    if args.report_only:
+        return 0
+    return fence_exit("REGRESSION" if bad else "OK", {"OK"},
+                      scanned=len(counts), of="scripts/*.py files mypy actually checked",
+                      fence="check_mypy_ratchet.py")
 
 
 if __name__ == "__main__":
