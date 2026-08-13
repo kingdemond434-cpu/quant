@@ -2261,3 +2261,29 @@ _Search keys, not trivia. Counts are GitHub repo-search totals under the honest 
 **THE LEXICON'S OWN LESSON (s2):** `أربيتراج` returns **0 GitHub repos and a full page of YouTube
 results**. A term's count is **per-surface**, and grading a term dead from one surface is the
 false-exhaustion mode OP-054 names. Record the surface beside the count, always.
+
+#### OP-074 ADDENDUM (AR miner s2, 2026-08-13): on WordPress, `Disallow: /wp-content/uploads/` DISALLOWS THE ENTIRE DOCUMENT CORPUS
+
+**MEASURED:** `aaoifi.com` (AAOIFI — the Islamic-finance standards body, and under **OP-075** exactly
+the institutionally-native Arabic layer an AR seat should hunt). `robots.txt` = **200**, `User-agent: *`,
+**no by-name refusal of any AI agent** — a host any seat would grade **OPEN**. Its disallow list is the
+stock WordPress boilerplate: `/wp-admin/`, `/wp-content/`, **`/wp-content/uploads/`**, `/uploads/`.
+
+Then the content path: `https://aaoifi.com/shariaa-standards/?lang=en` = **200**, fully readable — and
+**every single document link on it** resolves to `https://aaoifi.com/wp-content/uploads/YYYY/MM/*.pdf`.
+
+**THE POINT:** on WordPress, `/wp-content/uploads/` **is** the media store. A host that allows `*`
+everywhere *except* uploads has therefore **disallowed its whole PDF/document corpus** while presenting
+as open. The HTML is browsable; the standards, rulings, research papers and conference reports — the
+only part with research value — are not fetchable under §13.
+
+**WHY IT BITES PRECISELY THE CAREFUL SEAT:** the boilerplate exists to stop media-file indexing, not to
+protect a corpus, so it reads as housekeeping and gets skimmed. A seat that grades the host OPEN from
+the preamble and then harvests PDFs **is violating robots while believing it is compliant** — the
+§13 gate failing silently in the one direction the gate cannot self-report.
+
+**THE RULE:** grade the **path the documents actually live on**, never the host. Resolve one real
+document URL and re-check it against the disallow list *before* claiming a corpus is reachable.
+`Allow: /` on the host and `Disallow:` on its media root is a **CLOSED corpus on an OPEN site**, and it
+is the single most common shape on the WordPress-hosted institutional web — regulators, standards
+bodies, central banks and exchanges are overwhelmingly WordPress.
