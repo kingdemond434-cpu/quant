@@ -2121,10 +2121,20 @@
    "roi_bps": 20.0,
    "raised": "2026-07-31T17:55:38.739879+00:00",
    "status": "implemented",
-   "reason": "ALREADY BUILT AND NEVER DISPOSED. run_cashcarry_executor._structurally_bleeding docstring (:492-495) states the R0158 contract in force: an unreadable forensics file no longer falls back to a bare allow -- it falls back to the last good window AND still consults the persistent graveyard; read_fresh carries min_rows=1 so a truncated {} is a recorded stale_read, not a silent un-deny. Covered by tests/execution/test_structural_bleed_persistence.py. Verified by fresh read this cycle.",
-   "commit": "9e3ff478",
+   "reason": "IMPLEMENTED, verified by fresh read of run_cashcarry_executor.py:488-495: the R0158 contract is stated and in force -- an unreadable forensics file no longer falls back to a bare allow, it falls back to the last good window AND control always reaches the persistent graveyard beneath it; read_fresh carries min_rows=1 so a truncated {} is a recorded stale_read rather than a silent un-deny. Closed by a concurrent session in this shared worktree at 03:18 today (decision-ledger 2026-08-13-denylist-merge-union-restore, commit 9f6206a9), alongside restoring the all-time bleeding_symbols key that merge 8b981a50 had silently reverted. Covered by tests/execution/test_structural_bleed_persistence.py.",
+   "commit": "9f6206a9",
    "due": null,
-   "disposed": "2026-08-13T04:28:02.284422+00:00"
+   "disposed": "2026-08-13T04:41:54.206612+00:00",
+   "corrections": [
+    {
+     "was": "implemented",
+     "was_reason": "ALREADY BUILT AND NEVER DISPOSED. run_cashcarry_executor._structurally_bleeding docstring (:492-495) states the R0158 contract in force: an unreadable forensics file no longer falls back to a bare allow -- it falls back to the last good window AND still consults the persistent graveyard; read_fresh carries min_rows=1 so a truncated {} is a recorded stale_read, not a silent un-deny. Covered by tests/execution/test_structural_bleed_persistence.py. Verified by fresh read this cycle.",
+     "was_commit": "9e3ff478",
+     "was_due": null,
+     "corrected": "2026-08-13T04:41:37.095639+00:00",
+     "why": "COMMIT CITATION CORRECTED. My disposition cited 9e3ff478 (the test file's earlier snapshot). The R0158 fail-open was actually closed at 03:18 today by a concurrent session in this shared worktree -- decision-ledger id 2026-08-13-denylist-merge-union-restore, carried in commit 9f6206a9 -- which restored the all-time denylist that merge 8b981a50 had silently reverted AND made control always reach the persistent graveyard beneath the early return. The IMPLEMENTED verdict stands and was verified by fresh read of run_cashcarry_executor.py:488-495; only the sha was wrong."
+    }
+   ]
   },
   {
    "id": "R0159",
