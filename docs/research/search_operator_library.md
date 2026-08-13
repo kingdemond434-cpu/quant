@@ -483,6 +483,11 @@ marked [UNVERIFIED] and must be negative-controlled before budget is spent on th
 | резерв(ы) | exchanger float/inventory — the capacity variable of the whole dealer layer; "резервов нет" = rail at capacity | 2013- | [V] btcsec 5848/3426 ("Апдейт, резервы актуальны") | `обменник резервы направление` |
 | складчина | group-buy / cost-sharing (of bots, courses, signals) — finds the retail tooling-distribution layer and its monoculture (WS-010) | perennial | [V] btcsec 4382 reply 20 | `складчина бот стратегия торговый` |
 | стенка | order-book wall (large limit order); "ловить стенку" = wall-catching, the era's book-reading verb — era bots shipped wall-filters with spoof-ignore limits | 2013- | [V] btcsec 4382 OP | `стенка стакан бот ловить` |
+| автоследование / автослед | **copy-trading / signal-following — and the English term finds NOTHING on RU ground.** The whole RU retail copy-flow layer (broker-hosted follower products, published track records, "Реформа автоследа в Т-банке") is titled with this word. Direct key to WS-010's modern echo | 2015- | [V] smart-lab 1335532 comment 19779413 + /algotrading/ section titles (2026-08-13) | `автоследование статистика просадка` |
+| поделка / поделки | "shoddy knock-off" — the RU reviewer's standard word for a worthless commercial bot/EA. **The key to the REFUTATION genre**: independent teardowns of sold robots title themselves with it, and refutations are free graveyard material | perennial | [V] smart-lab 1335574 opening line (2026-08-13) | `поделки MQL5 независимый тест советник` |
+| грааль / форекс грааль | "the grail" — the RU retail name for a supposed holy-grail system. Doubles as a **site keyword tag**, so it enumerates the whole over-claim corpus (and therefore the refutation corpus that answers it) | perennial | [V] smart-lab 1335532 body + 1335574 keyword tags (2026-08-13) | `форекс грааль разбор эквити` |
+| ошибка выжившего | survivorship bias — the RU term, and a smart-lab keyword tag. Finds the RU data-hygiene corpus, which is where the point-in-time/universe discussion actually lives | perennial | [V] smart-lab 1336741 keyword tags (2026-08-13) | `ошибка выжившего бэктест состав индекса` |
+| переподгонка | overfitting — RU practitioner term (not "оверфиттинг"); pairs with `подгонка` (fitting). Finds the validation-discipline layer rather than the vendor layer | perennial | [V] smart-lab 1335532 body (2026-08-13) | `переподгонка walk-forward количество попыток` |
 
 ## ARCHIVED
 (none yet)
@@ -2039,3 +2044,115 @@ appear; page depth then walks *backwards* from it.
 `<author> 发表于 <date>` header, so a naive post count **double-counts** a reply chain — dedupe on
 the quote header before claiming a thread depth. GBK throughout.
 
+
+### OP-072 a CAPABILITY verdict needs a repeat and a control — and YouTube's bot gate is a FULL-SIZE HTTP 200 hollow shell   [active]
+
+origin: RU frontier miner s3 (2026-08-13)   validated-gain: re-opened a ground the whole fleet had
+been told was closed, then correctly closed it again for a *different* reason with the evidence a
+purchase decision needs.
+
+**FIFTH MEMBER of the false-null family** — OP-033 (encoding) / OP-034 (compression) / OP-068 (SPA
+shell) / OP-069 (transport) / **OP-072 (anti-bot gate)**. All five make live ground read as
+exhausted. This one is the nastiest of the five because *the body is the right size*.
+
+**PART 1 — THE CAPABILITY VERDICT.** On 2026-08-12 a seat probed the video fetcher's four hardcoded
+Piped proxies, measured 4/4 down, and wrote a **permanent desk-wide verdict** ("the fetcher is
+INERT for YouTube") into memory and a ledger row. **Refuted on the first call the next day**: the
+*first* proxy in the rotation returned a full transcript, twice, three minutes apart.
+
+> A capability graded from a **single-instant probe of N endpoints** is a measurement with no
+> repeat. Rotating public infrastructure is *expected* to have members down; the correct question
+> is never "are all N up?" but **"does the ROTATION succeed?"** — which is what the tool already
+> does and what the probe bypassed.
+
+**RE-PROBE BEFORE INHERITING A CAPABILITY VERDICT.** A dated "X is dead" in seat memory is a
+hypothesis with a timestamp, not a fact — and it is the *expensive* kind of wrong, because unlike a
+false find it produces no artifact anyone will ever audit. It just quietly removes a ground.
+
+**PART 2 — WHAT THE WALL ACTUALLY IS, AND WHY THE FIRST DIAGNOSIS INVERTED IT.** The 08-12 row
+argued: `www.youtube.com` returns 200 from this box ⇒ the source is not walled ⇒ the desk-side tool
+is dead. **The 200 is a hollow shell.** Measured from one box, one minute, one UA, one route:
+
+| video | bytes | `captionTracks` | `LOGIN_REQUIRED` | `<title>` |
+|---|---|---|---|---|
+| `dQw4w9WgXcQ` (1.6B views) | 1,312,898 | **yes** | no | full |
+| `VseWNnQmmy0` (RU algo, cold) | 1,265,891 | no | **yes** | **empty** |
+| `eb5ywYlw6E4` (RU algo, cold) | 1,204,592 | no | **yes** | **empty** |
+
+**A blocked body is ~96% the size of a good one.** Status code, byte count, "did it return
+something", `len(html) > 0`, even `len(html) > 1_000_000` — every cheap liveness test passes on the
+shell. Only **content inspection against a known-good field** separates them.
+
+Proxy side shows the identical split *and adds a third state*: the popular video returns 6 subtitle
+tracks; one RU video returns HTTP 500 `SignInConfirmNotBotException ... LOGIN_REQUIRED: "Sign in to
+confirm that you're not a bot"`; the other returns **HTTP 200 with `subtitles: []` and an empty
+title** — a *hollow success*, which any fetcher reports identically to "this video genuinely has no
+captions". That is the desk's most-repeated defect shape (absence resolving to a clean verdict)
+arriving from outside.
+
+**THE GATE IS KEYED TO POPULARITY, NOT TO YOUR IP.** Cached/popular videos resolve through the same
+egress that is refused for cold ones. **So the capability is INVERTED against the dark-forest
+mandate**: video access works where the desk has no edge (popular English content) and fails where
+its edge would be (cold, low-view, non-English). Any seat that tests the capability on a video it
+picked *because it was easy to find* will measure GREEN and conclude the ground is open.
+
+**THE REFEREE, and it is one extra call:** fetch a **known-good control through the SAME route in
+the SAME minute**. Control passes + target fails ⇒ per-record, and the ground may still be
+partially open. Control fails too ⇒ your route or your egress. Getting this backwards is OP-069's
+lesson (a *different* URL is an invalid control) one level up — at the capability layer instead of
+the record layer.
+
+adaptations: **all regions.** The desk's video grounds are RU YouTube, CN Bilibili, JP note/YouTube,
+KR YouTube, EN conference talks. Only the *content* check is platform-specific: YouTube =
+`captionTracks` present and `<title>` non-empty; Piped = `subtitles` non-empty **and** `title`
+non-null (the empty-title tell is what distinguishes a hollow success from a genuinely
+caption-less video). Bilibili is untested against this and should not inherit the verdict.
+
+### OP-073 `t.me/s/<channel>` — the keyless public text mirror, and the video→Telegram substitution   [active]
+
+origin: RU frontier miner s3 (2026-08-13)   validated-gain: recovered a readable practitioner
+surface from a channel whose video layer is bot-gated (OP-072), and supplied the "why text mirrors
+were insufficient" column that makes a `video_locked` row decision-grade instead of anecdotal.
+
+**THE ROUTE.** `https://t.me/s/<channel>` renders a **public** Telegram channel's recent posts as
+plain server-side HTML — no auth, no API key, no app, no join. Messages sit in
+`class="tgme_widget_message_text"`. Verified 2026-08-13: `t.me/s/crypto_maniacdt` → 26 messages,
+101 KB, keyless.
+
+**§13 IS SATISFIED AND THE DISTINCTION IS LOAD-BEARING:** `/s/` is the channel owner's own public
+web preview, served to anonymous browsers by design. It is **not** a route around access control —
+a channel that is private, invite-only or has disabled the preview returns **0 bytes**, and a
+0-byte response is a **HARD STOP, never a prompt to find another way in**. Measured the same run:
+`t.me/s/cryptomaniac_products_bt` (the advertised "free 85-page algotrading course") → **0 bytes**.
+Note the failure mode is the *opposite* of OP-072's: here absence is honest and unambiguous.
+
+**THE PATTERN WORTH GENERALISING — WHEN THE VIDEO IS LOCKED, FIND THE AUTHOR'S TEXT SURFACE.** A RU
+practitioner's output is typically mirrored across **YouTube + Telegram + GitHub + a forum
+cross-post** (this author: 5 surfaces, incl. smart-lab and Dzen). Video being gated says nothing
+about the other four. **Check them before logging `video_locked`** — the log's "why text mirrors
+were insufficient" column is what turns it into purchase evidence, and a row that never checked is
+not evidence.
+
+**BUT MIRRORS ARE NOT COPIES, AND THAT IS THE FINDING.** Same author, same week: the **video** layer
+carries the funding-arbitrage screener build; the **Telegram** layer carries discretionary
+`XAU m5 / SMT` calls; the **GitHub** layer carries event-announcement bots. Three surfaces, three
+disjoint content classes. So "the mechanism is mirrored in text" must be **verified per mechanism**,
+never assumed from the author having a blog.
+
+adaptations: RU/global = Telegram `t.me/s/`. CN = the author's 公众号 mirror or Gitee README. JP =
+note.com/Zenn cross-post. KR = velog/tistory. EN = Substack. **Same two-step shape as OP-039** —
+discover the handle on the video/repo page, then read the keyless mirror endpoint.
+
+**ENUMERATION FOOTNOTE (YouTube channels, measured 2026-08-13):** three of four listing routes are
+dead from this box — `/channel/<id>/videos` **302s to 0 bytes**, `feeds/videos.xml?channel_id=`
+**404s**, and Piped `/channels/tabs` throws a NewPipe `NullPointerException`. What works is **Piped
+`/search?q=<terms>&filter=videos`, then filter on `uploaderName`** — a search-shaped route to a
+listing-shaped question. Composite: **enumerate via Piped search → transcribe via Piped
+`/streams/`** (subject to OP-072).
+
+**METHOD CAVEAT on mechanism-keyword density ranking** (the habr lesson, now fleet-standard): on a
+page where the comment container is the **last** block, a naive split leaves the final comment
+absorbing the page's sidebar and "read next" chrome. Measured on smart-lab 1335532: the top-ranked
+comment scored `density=20` with roughly half its tokens from nav furniture, against `13` for the
+genuine best. **Truncate each block at the site's nav marker** (smart-lab: `Читайте на SMART-LAB:`)
+before scoring, or the ranker systematically promotes whichever comment is last.

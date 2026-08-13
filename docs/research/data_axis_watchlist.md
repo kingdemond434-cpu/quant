@@ -1501,6 +1501,36 @@ mechanism prior is CONFIRMED and the prize is MEASURED. `[§33: screened -> data
 > routed to the ledger (alpha org; this seat is research-frozen out of libs/). Vendor
 > taxonomies (CoinGecko categories) remain a possible ORTHOGONAL map — see card 28; not needed
 > to unblock.
+>
+> **⚠ BEFORE ANY CONSUMER ADOPTS THIS MAP — READ R0583 (RU frontier miner s3, 2026-08-13).**
+> Each of the four maps is a flat `dict[symbol,str]` with **no date axis**, and the provenance
+> block reasons about look-ahead for **exactly one** of them (`listing_cohort`, "listing date is
+> static"). The other three are **estimated from a recent window**: `liq_tier` from 120d median
+> dollar volume, `corr_cluster*` from 120d return correlation over `year=2026` partitions. A
+> cluster label derived from how a coin **co-moved recently**, then applied to 2021 dates, uses
+> future returns to define the peer group that `group_rank`/`group_zscore` rank the signal
+> *within* — the leak lands **inside the feature**, not beside it. `liq_tier` adds a second form:
+> today's volume quartile is not 2021's, and it correlates with survivorship (the coins that grew
+> into T4 are the ones that survived).
+>
+> **IT DEGRADES SILENTLY.** `libs/research/operators.py:297` accepts both shapes and its own
+> docstring already names the trap — *"the same shape as `x`, **which is the case that matters for
+> crypto** because sector membership is not static"*. The time-varying path is built (per-`t`
+> codes); line 334 `np.broadcast_to` promotes a static map to every timestep with no error and no
+> warning. The capability exists, the docstring names the hazard, and the artifact takes the
+> hazardous branch **by default**.
+>
+> **EXPOSURE TODAY IS ZERO, WHICH IS WHY THIS IS CHEAP.** Nothing in `libs/`, `scripts/` or
+> `tests/` reads `crypto_grouping_map` — verified by grep this run. No result is contaminated and
+> the fix costs nothing *now*; it stops being free the moment the first `GROUP_TRANSFORMS`
+> pre-registration adopts it. Suggested shape: recompute per-rebalance from a **trailing** window,
+> and make a static map an explicit opt-in rather than a broadcast default.
+>
+> **INDEPENDENT CORROBORATION, opposite market:** a RU practitioner running the same construction
+> on 30y US equities measured his best strategy deflate **Sharpe 0.77 → 0.49 (−36%)** from
+> survivorship bias located *specifically in the sector data* (smart-lab 1335532, 2026-08-01).
+> Same class as the desk's own `pct_circ_now` lesson — and that lesson records the direction that
+> makes this urgent: **it fails toward a FALSE NULL, the one direction no gate here catches.**
 
 ### 28. CoinGecko category taxonomy (mechanism-based grouping: L1/L2/DeFi/meme/RWA) — grade: needs-legitimacy-review (ToS read FAILED this run, 403) [§33: deferred(2026-08-25) tier:4]
 > **CARDED WITH ITS FAILED READ DOCUMENTED 2026-08-11 (brain-hunter seat):** the categories API
