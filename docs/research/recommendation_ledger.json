@@ -5866,11 +5866,11 @@
    "summary": "litminer run6 inbox 2026-08-12 E (w7): generation-side quality — randomize+log candidate-list order in every list-presenting organ (measured 100% metric order-dependence; the 420 may have been menu-chosen), machine-checkable protocol block at generation diffed at gate (25% silent drift rate), ForeSci-style temporal-cutoff backtest of the GENERATION organ against own realized ledger + evidence-decision decoupling check. Sources: 2509.08713 appendix, 2606.00644.",
    "roi_bps": null,
    "raised": "2026-08-12T01:57:59.132942+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "PART (a) BUILT AND WIRED (aee2bc86); parts (b) and (c) split to R0597 and the remaining (a) coverage to R0596, so nothing here is closed by assertion. SHIPPED: libs/research/list_order.shuffled_with_log -- randomises a candidate list per call and LOGS the permutation plus its seed to data/list_order_log.jsonl. THE LOG IS THE POINT AND IT IS THE HALF THE DESK WAS MISSING: run_external_panel.py:538 already shuffles (GAP #72(4), correct diagnosis in its own comment) but is UNSEEDED AND UNLOGGED, so the permutation is unrecoverable and 'how order-sensitive is this desk?' has been unanswerable since it shipped -- a shuffle without a log de-biases the estimate and DESTROYS THE RESIDUAL. WIRED AT THE TWO SITES WHERE THE DESK COUNTS LLM ANSWERS AS EVIDENCE, which is where the row's 100%-ordering-dependence finding actually bites: (1) survivor_panel.BOTTLENECK_CLASSES -- a hardcoded tuple, so SAMPLE_LENGTH led the menu on every run this panel has ever done while run_survivor_panel.py:200 TALLIES bottleneck_votes ACROSS SEATS; an unshuffled tally cannot distinguish 'the seats agree' from 'the seats all read the same first line', on a panel whose question is WHY HAS NOTHING EVER SURVIVED. (2) run_llm_trader MECHANISMS/PARTICIPANTS -- the taxonomy exists so 'after N calls the desk can retire the families that never pay', and with FORCED_LIQUIDATION leading every call ever made the desk was on course to retire GOVERNANCE_CHANGE for being listed NINTH rather than for failing. Also shuffles round-two seat order, the same bias one level up (roster order is stable, so the same model was SEAT A every week while the prompt asks the reader to REFUTE and then DECIDE). Seeded from os.urandom not a clock, because two seats starting in the same second drawing one permutation would read as agreement -- the bias wearing a fix's clothes. NOT applied to ORDINAL menus (EVIDENCE_CLASSES weakest-to-strongest, prior turns oldest-to-newest) where order carries meaning, nor to ranked payloads where the rank is a real prior. 6 tests pin RECOVERABILITY rather than randomness, including one asserting the wired organs actually route through the logger; ruff + mypy(629 files) clean. run_conviction_trader.py is named in R0596 and deliberately NOT bundled: it is the only site that sizes.",
+   "commit": "aee2bc86",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T08:51:08.847973+00:00"
   },
   {
    "id": "R0458",
@@ -5878,11 +5878,11 @@
    "summary": "litminer run6 inbox 2026-08-12 F (w6): organ reliability + memory — measured null: memory products lose to BM25 (do not adopt Mem0/Zep-class), vault+files+BM25 is the evidence-favored design; supersession ledgering load-bearing (selective forgetting <=28% universally); compaction = cost knob (structural masking over LLM re-summarization); after ANY organ model swap re-measure the organ completion/decay curve (two-source: capability gains give only small reliability gains; <=19% meltdown-by-ambition) — directly relevant to the live llm-auto-upgrade branch. Sources: MemoryAgentBench ICLR26, LongMemEval-V2, 2605.18854, 2603.29231, 2602.16666.",
    "roi_bps": null,
    "raised": "2026-08-12T01:58:02.647430+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "RECORDED AS A MEASURED NULL, WHICH IS THIS ROW'S OWN EXPLICIT ASK ('carding this as a measured null so no future session re-opens it'). Two artifacts: research-memory row rm-20260813T083328-e3d8ea [method/rejected], and the tracked+injected copy in docs/institutional_knowledge.md (661acf24) carrying the numbers so a future session meets EVIDENCE rather than an opinion -- MemoryAgentBench (2507.05257, ICLR 2026, peer-reviewed, MIT code) accurate-retrieval Mem0 32.6 / Cognee 28.3 / Zep 37.5 / MIRIX 47.5 vs BM25 60.5; LongMemEval-V2 file-memory 72.5 vs RAG 48.5 at 115M tokens; 2605.18854 across 480 evals no condenser alters hypothesis quality while LLM-summary condensers cost +24-94% tokens. NO DESK CHANGE IS WARRANTED AND THAT IS THE FINDING, not an evasion: every arm the literature favours is the arm the desk already runs -- retrieval IS BM25 (libs/research/vault_index.py behind vault_search, the same index the MCP tool serves), memory IS files, and the desk does no LLM re-summarization compaction to remove. The binding constraint the benchmark names (selective forgetting, multi-hop consolidation <=28% for EVERY method) is already load-bearing law and was exercised this session: findings_ledger carries superseded_by F0004->F0020 and F0007->F0008, and track_findings.py:89 documents supersession as the legal exit that stops a refuted row rotting. THE ONE HALF NOT SATISFIED IS SPLIT RATHER THAN BURIED: 'after ANY organ model swap re-measure the organ completion/decay curve' has ZERO producers repo-wide (grep completion_rate/decay_curve/organ_completion across scripts/ and libs/) while scripts/model_upgrade.py gauntlets only single-shot CAPABILITY -- rowed as R0595 with the mechanism and the already-existing denominator (record_attempts, 95289be5) named. Claiming this row fully done would have hidden that.",
+   "commit": "661acf24",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T08:49:50.202703+00:00"
   },
   {
    "id": "R0459",
@@ -7510,6 +7510,42 @@
    "summary": "AR seat re-aimed on measurement (OP-075): the AR language is not a moat -- AR-script repo search returns arbitrage 1/0/0 and quant-trading 0 vs CN 1174/RU 24/KR 6, while AR-region devs mentioning trading number ~99 (UAE 67 > Korea control 59). Population exists and writes in English, so its output is already in the EN seat's ground. Recommend every regional seat run the same ~8-query probe (native-key repo search + developer-search by LOCATION + sibling-language control) to test whether its own language-is-the-moat premise holds, since every seat has been assuming it.",
    "roi_bps": null,
    "raised": "2026-08-13T08:33:45.717624+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0595",
+   "source": "cycle",
+   "summary": "MODEL-SWAP RELIABILITY GAP (split from R0458(e), the one half of that row not already satisfied). scripts/model_upgrade.py gauntlets a candidate seat on CAPABILITY at swap time -- A LIVE (non-empty answer), C FORMAT (parseable finding rows), D HONESTY (says ABSENT about a file not in the payload), B CAPACITY (names the last file of a real full payload) -- and nothing anywhere measures the organ's COMPLETION/DECAY curve after the swap lands (grep for completion_rate/decay_curve/organ_completion across scripts/ and libs/ returns ZERO producers). The literature R0458 carries says these are different quantities and the gap is in the dangerous direction: capability gains buy only SMALL reliability gains, and up to 19% of failures are meltdown-by-ambition -- a MORE capable model attempts more ambitious work and completes its runs LESS reliably. So a candidate can pass all four probes, be adopted correctly on capability, and then quietly lower the seat's finished-run rate, which is the quantity the panel actually consumes. The four probes are single-shot and cannot see it by construction: reliability is a rate over runs, not a property of one answer. WORK: record the swap as a dated event and compare the seat's completed-run rate over the N runs before vs after, so an upgrade that trades reliability for capability is MEASURABLE rather than invisible. Note the desk already owns the denominator this needs -- build_audit_coverage.record_attempts (95289be5) counts every seat call whether it answers or dies, so the before/after rate is computable from an artifact that already exists. NOT a proposal to slow or block upgrades (L1.28c/L1.21a): model_upgrade.py's evidence-gated adoption is correct and stays; this only makes the post-swap direction observable, and UNMEASURED currently counts as zero (L1.28a).",
+   "roi_bps": null,
+   "raised": "2026-08-13T08:36:47.468158+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0596",
+   "source": "cycle",
+   "summary": "COMPLETE THE LIST-ORDER COVERAGE (the rest of R0457(a); mechanism shipped aee2bc86, libs/research/list_order.shuffled_with_log). A full map of list-presenting organs found ~10 order-sensitive sites; three fields across two organs are wired. REMAINING TIER-1 (LLM picks exactly one item from a fixed-order menu): scripts/run_conviction_trader.py:1573 INSTRUMENTS (18 perps, BTCUSDT always first) -- HIGHEST real cost because it is the only one that SIZES, and its ENSEMBLE_N draws share the single positional prior so the ensemble cannot average out a bias every member holds; deliberately left for a change of its own rather than bundled. libs/research/cro_role.py:667-676 -- FIVE menus in one prompt (DELIVERABLES 13, GROWTH_LEVERS, KINDS, EVIDENCE_CLASSES, CONFIDENCE) x 12 recommendations, and cro_role.py:832 computes a mandate-COVERAGE SCORE directly off the fixed order. scripts/run_trade_review.py:285 _CAUSES (7 post-mortem labels, hard-validated at :286) which feed the sleeve playbook that feeds the conviction trader, so the bias compounds across organs. TIER-2: libs/research/hunt_frontier.py:265-270 -- shuffle BEFORE the [:limit] slice or truncation bias survives the shuffle. RETROFIT: run_external_panel.py:538 already shuffles but unseeded and unlogged, so its GAP #72(4) claim has never been measurable -- route it through the logger. DO NOT SHUFFLE ordinal menus (EVIDENCE_CLASSES is weakest-to-strongest, prior turns are oldest-to-newest) or ranked payloads (build_audit_coverage.py:393 is risk-class-first, a real prior -- shuffle WITHIN tier). ONCE >=200 rows accumulate in data/list_order_log.jsonl, run the reanalysis the log exists for: regress chosen-item on shown-POSITION to measure this desk's own ordering sensitivity, which is currently UNMEASURED and therefore zero (L1.28a).",
+   "roi_bps": null,
+   "raised": "2026-08-13T08:50:23.714618+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0597",
+   "source": "cycle",
+   "summary": "THE OTHER TWO THIRDS OF R0457 (part (a), list-order, shipped aee2bc86; these two were NOT built and are split so they are not buried by that commit). (b) SILENT PROTOCOL DRIFT IS A GENERATION-SIDE DEFECT CLASS: arXiv 2509.08713 measured 5/20 AI-Scientist-v2 runs quietly subsampling or substituting synthetic data with no report of having done so -- a 25% silent-drift rate. Desk analog: a generation organ that quietly narrows universe or date-range emits hypotheses that LOOK testable but are not, and nothing compares what was PROMISED at generation with what was DELIVERED at gate. Build: attach a machine-checkable protocol block (universe, date range, n) at GENERATION time and DIFF it at gate time; a mismatch is a defect on the candidate, not a note. Note the desk already has the shape of this elsewhere -- axis_screen bakes its de-contamination gate in rather than trusting the caller -- so this is a known-good pattern applied one stage earlier. (c) TEMPORAL-CUTOFF BACKTEST OF THE GENERATION ORGAN (ForeSci, arXiv 2606.00644, CC-BY, 500 cutoff-aligned research-judgment tasks): score the generator by whether its pre-cutoff judgments TRANSFER, using the desk's own realized ledger as ground truth -- i.e. ask the generator to rank hypotheses as of date T using only pre-T information and compare against what the desk subsequently measured. This is the one instrument that could answer whether the 420/0 campaign was a generator failure or a screen failure, which L1.25's ordered diagnostic (instrument? search space? hypotheses?) currently answers only by elimination. Also carries an evidence-decision decoupling check: whether the organ's stated evidence actually drove its choice. PRIORITISE (b): it is far cheaper, it is a defect-CLOSER rather than a measurement, and 25% is a measured rate on systems of the same shape.",
+   "roi_bps": null,
+   "raised": "2026-08-13T08:50:44.962362+00:00",
    "status": "open",
    "reason": null,
    "commit": null,
