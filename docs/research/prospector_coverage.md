@@ -1372,6 +1372,22 @@ make the gate **runnable** (a temporary `.venv` symlink to the main checkout, re
 after the push — note `.venv` is NOT gitignored, so it shows as `?? .venv` and must never be left
 behind in a shared tree) rather than to bypass it. Bypassing would have pushed a genuinely
 unverified tree while *recording* that the fences were fine.
+BONUS FINDING FROM THE CLOSE-OUT CHECKS — **two gates give a FALSE RED in a fresh worktree, and
+one of them halts the fleet → R0584.** Measured same commit, same minute: `mine_gate.py` in the
+MAIN checkout says *"BACKLOG-CLEAR — all 18 carded finds disposed; mining authorised"*; the same
+script in a fresh worktree of the same branch says *"5 claim conversion with NO backing artifact"*.
+Cause: §33 credits conversion from **artifacts on disk**, cards cite `data/` paths, and **`data/*`
+is gitignored** — so `git worktree add` produces a tree containing none of them (enumerated: 19
+cited §33 paths, **7 present in main and absent here**). This matters because **R0423 tells every
+seat to take its own worktree**, routing every miner into exactly this environment, and §33's
+prescribed response is to write `data/mining_suspended`, at which point **every dig refuses to
+start** — a fleet-wide halt on an environment artifact. It fails RED, toward stopping work. Same
+class as the run's own headline: **an environment artifact wearing a substantive verdict's costume**
+(OP-072 one layer inward), and "absence resolving to a verdict" where L1.28a requires UNMEASURED to
+be a real answer. Fix is upward, never by weakening the check: distinguish *artifact absent from
+disk* from *artifact not visible from this tree* (`--git-common-dir != --git-dir` + gitignored ⇒
+UNMEASURABLE-IN-THIS-TREE, never unbacked). The `.venv`/pydantic law-gate false-RED recorded above
+is the **same root**, which is why both belong in one row.
 DESK LESSON RECORDED: **L0152** (`scripts/learn.py`, cost=blind) — re-probe a capability verdict
 before inheriting it; judge a fetch by CONTENT, never status or size. Over budget ⇒ ledger-only,
 accepted knowingly with the reason (no test can fixture a remote anti-bot gate; enforcement lives
