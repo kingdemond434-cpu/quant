@@ -7239,6 +7239,18 @@
    "commit": "50bd5ef4",
    "due": null,
    "disposed": "2026-08-13T04:20:59.153319+00:00"
+  },
+  {
+   "id": "R0572",
+   "source": "cycle",
+   "summary": "GROWTH-AUDIT MISLABELS A HUMAN-GATED STATE AS DESK TIMIDITY. run_growth_audit.py:170-172 sets promotion_latency to ACT-NOW / justified_by NONE ('eligible sleeve not promoted = pure foregone growth') purely on web/cashcarry_shadow.json fast_track starting with ELIGIBLE. Verified today the eligibility is REAL (forward day 48, NW t 2.92 vs the 1.65 bar, regime evidence OK, backtest Sharpe 4.17) -- but promotion is blocked on two acts the desk cannot perform: the one-time live account/keys/deposit (the SAME file's live_deployment_path item already reads HUMAN-PENDING) and the manual re-arm of the latched derisk ladder holding data/CASHCARRY_KILL since 2026-08-01. The check has no term for 'blocked on a named human act', so a NONE defect fires every run while the desk is powerless -- a permanently-firing gate carries zero information (gate-optimality duty) and trains the reader to skip the one field that is supposed to separate timidity from a real block. FIX: cross-reference live_deployment_path/clamp state and emit HUMAN-PENDING with the lifting condition (L1.51) instead of NONE; keep NONE for the case it exists for -- eligible, unblocked, and not promoted. Also surface the specific fact on the principal page: what his re-arm now unblocks is a fast-track-ELIGIBLE sleeve, which lines 70-74 do not say.",
+   "roi_bps": 2.0,
+   "raised": "2026-08-13T04:47:17.037108+00:00",
+   "status": "scheduled",
+   "reason": "Rowed with a near due rather than patched at the end of a long cycle: the fix must read the clamp/human-pending state to decide the label, and getting that wrong in the OTHER direction would silence the one field that exists to catch real timidity -- strictly worse than the current over-firing. Growth-audit contract point 2 is discharged for THIS cycle by ledger-justification: promotion_latency is verified genuinely eligible (cashcarry_shadow.json forward_days 48, forward_tstat 2.92, regime evidence OK) and verified genuinely blocked on two human acts already on data/PRINCIPAL_ACTION.md (live keys/deposit; manual re-arm of the latched derisk ladder holding CASHCARRY_KILL since 2026-08-01). Not desk conservatism, and no rail was touched to make it read better.",
+   "commit": null,
+   "due": "2026-08-20",
+   "disposed": "2026-08-13T04:47:40.586656+00:00"
   }
  ]
 }
