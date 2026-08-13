@@ -973,14 +973,26 @@ def check_findings(defects) -> None:
     # do -- and it had no legal exit before, leaving `fix` (a false claim that also credits the
     # seat with a hit it did not earn) as the only way to stop it firing. It stays listed in
     # `track_findings report`, so closing it is visible rather than a disappearance.
+    # ONE THRESHOLD, ONE ROUNDING. `timedelta.days` TRUNCATES, so this fence used to disagree with
+    # `track_findings report` -- which measures the same ledger against the same bar in float days
+    # -- by up to 24h. Measured 2026-08-13: the report printed "3 ACCEPTED FINDINGS UNFIXED >14d
+    # -- these are DEFECTS" (F0005/F0006/F0008 at 14.0d) while this fence returned NONE on the same
+    # file in the same second. A human reading one and a gate reading the other is the shared-
+    # constant divergence L1.61 exists for, and it errs toward silence, which is the direction
+    # nobody notices. The constant is now imported rather than re-typed, so they cannot drift.
+    from scripts.track_findings import UNFIXED_DEFECT_D
+
+    now = datetime.now(tz=UTC)
     old = [f for f in d.get("findings", [])
            if f.get("ruling") == "accepted" and not f.get("fixed")
            and not f.get("superseded_by")
-           and (datetime.now(tz=UTC) - datetime.fromisoformat(f["raised"])).days > 14]
+           and (now - datetime.fromisoformat(f["raised"])).total_seconds() / 86400.0
+           > UNFIXED_DEFECT_D]
     if old:
         ids = ", ".join(f["id"] for f in old[:5])
         defects.append(("findings-rotting",
-                        f"{len(old)} ACCEPTED panel findings unfixed >14d ({ids}) -- the loop "
+                        f"{len(old)} ACCEPTED panel findings unfixed >{UNFIXED_DEFECT_D:.0f}d "
+                        f"({ids}) -- the loop "
                         "the audit system exists for is open"))
 
 

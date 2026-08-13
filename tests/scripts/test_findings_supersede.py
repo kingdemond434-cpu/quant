@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 from argparse import Namespace
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -87,6 +88,54 @@ class TestSupersessionRequiresSomethingToSupersedeTo:
     def test_an_unknown_subject_is_refused(self, ledger):
         with pytest.raises(SystemExit, match="not found"):
             _supersede("F9999", "F0002")
+
+
+class TestTheFenceAndTheReportAgreeOnTheSameBar:
+    """ONE THRESHOLD, ONE ROUNDING. max_audit.check_findings used timedelta.days, which TRUNCATES,
+    while track_findings.report uses float days -- so the two consumers of one bar disagreed by up
+    to 24h. Measured 2026-08-13: the report printed '3 ACCEPTED FINDINGS UNFIXED >14d -- these are
+    DEFECTS' (F0005/F0006/F0008 at 14.0d) while the fence returned NONE on the same file in the
+    same second. It erred toward SILENCE, which is the direction nobody notices."""
+
+    def _at_age(self, ledger, days):
+        raised = (datetime.now(tz=UTC) - timedelta(days=days)).isoformat()
+        d = json.loads(ledger.read_text("utf-8"))
+        d["findings"] = [d["findings"][0]]
+        d["findings"][0]["raised"] = raised
+        ledger.write_text(json.dumps(d), "utf-8")
+
+    def _fence_count(self, ledger, monkeypatch):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("ma_bar", tf.Path(
+            __file__).resolve().parents[2] / "scripts/max_audit.py")
+        ma = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(ma)
+        monkeypatch.setattr(ma, "_j", lambda p, default: json.loads(ledger.read_text("utf-8")))
+        out: list = []
+        ma.check_findings(out)
+        return len(out)
+
+    def _report_says_defect(self, ledger, capsys):
+        tf.report(None)
+        return "these are DEFECTS" in capsys.readouterr().out
+
+    def test_a_fourteen_and_a_half_day_finding_is_a_defect_to_BOTH(self, ledger, monkeypatch,
+                                                                   capsys):
+        """The exact window the truncation hid: .days == 14 so `> 14` was False, while the report
+        already called it a defect."""
+        self._at_age(ledger, 14.5)
+        assert self._fence_count(ledger, monkeypatch) == 1
+        assert self._report_says_defect(ledger, capsys)
+
+    def test_a_thirteen_day_finding_is_a_defect_to_NEITHER(self, ledger, monkeypatch, capsys):
+        self._at_age(ledger, 13.0)
+        assert self._fence_count(ledger, monkeypatch) == 0
+        assert not self._report_says_defect(ledger, capsys)
+
+    def test_the_bar_itself_is_imported_not_retyped(self):
+        """A second copy of 14.0 is how they drifted; the fence must read the constant."""
+        src = (tf.Path(__file__).resolve().parents[2] / "scripts/max_audit.py").read_text("utf-8")
+        assert "from scripts.track_findings import UNFIXED_DEFECT_D" in src
 
 
 class TestTheClosureIsVisibleNotADisappearance:
