@@ -14,7 +14,12 @@ from pathlib import Path
 import pytest
 from scripts.check_campaign_retention import _verdict, build
 
-from libs.research.campaign_retention import audit_dbs, newest_reading
+from libs.research.campaign_retention import (
+    MIN_CAMPAIGNS_FOR_BAND,
+    SUBJECT_DB,
+    audit_dbs,
+    newest_reading,
+)
 from libs.validation.campaign_window import CAMPAIGN_ALPHA
 
 _SCHEMA = """
@@ -184,9 +189,9 @@ def test_malformed_row_is_not_read_past_to_a_greener_one(root: Path) -> None:
 
     rd, n_dbs, n_rows = newest_reading(root)
     assert rd is None and n_rows == 1
-    status, why, _ = _verdict(rd, n_dbs, n_rows, 0.858)
+    status, why, _ = _verdict(rd, n_dbs, n_rows, 0.858, n_malformed=1)
     assert status == "ABSENT"
-    assert "malformed" in why or "none carried the fields" in why
+    assert "malformed" in why
 
 
 def test_stale_plan_fires(root: Path) -> None:
@@ -219,9 +224,135 @@ def test_zero_available_observations_has_no_denominator(root: Path) -> None:
 
 def test_artifact_carries_the_untested_share_it_does_not_fence(root: Path) -> None:
     """Published so the band can be calibrated later (R0435) -- unmeasured is not omitted."""
-    _make_db(root / "data" / "a.sqlite", [_now_row(_HEALTHY, _HEALTHY_OUTCOME)])
+    _make_db(root / "data" / SUBJECT_DB, [_now_row(_HEALTHY, _HEALTHY_OUTCOME)])
     _floors(root, campaign_obs_retained=0.858)
     rep = build(root)
     assert rep["untested_fraction"] == pytest.approx(297 / 810)
     assert rep["k_strata"] == 32
     assert rep["n_audit_dbs"] == 1
+
+
+# ------------------------------------------------- R0435: two populations, one event name
+
+
+#: A research-lake plan: one stratum over everyone at full retention. Untested is 0.0 BY
+#: CONSTRUCTION, which is what makes this population useless for calibrating a band.
+_LAKE = {
+    "campaign_id": "camp_lake", "n_candidates": 27, "n_tested": 27, "n_untested": 0,
+    "obs_retained": 8_019, "obs_available": 8_019, "strata_alpha": CAMPAIGN_ALPHA,
+}
+
+
+class TestTheSubjectCannotBeOutbidByAnotherPopulation:
+    """THE LIVE DEFECT (measured 2026-08-13). The lake writes ~90 rows a day and the crypto
+    factory one; the fence took the newest row across ALL stores, so it reported a 23h-old lake
+    plan at 100% retention while its actual subject had been silent for SEVEN DAYS.
+    """
+
+    def test_a_fresher_foreign_plan_does_not_hide_a_stale_subject(self, root: Path) -> None:
+        """The exact shape of the defect: subject old, other population fresh."""
+        _make_db(root / "data" / SUBJECT_DB, [("2020-01-01T00:00:00Z", _HEALTHY, "old plan")])
+        _make_db(root / "data" / "sor_research.sqlite", [_now_row(_LAKE, "1 strata")])
+
+        rep = build(root)
+        assert rep["status"] == "STALE", rep["detail"]
+        assert rep["campaign"]["db"] == SUBJECT_DB
+        # ...and the pre-fix reading is still available, so nothing was lost, only re-subjected.
+        newest, _, _ = newest_reading(root)
+        assert newest is not None and newest.db == "sor_research.sqlite"
+
+    def test_a_foreign_population_alone_is_absent_not_healthy(self, root: Path) -> None:
+        """L1.28a: 92 campaigns from somewhere else is not evidence about the subject."""
+        _make_db(root / "data" / "sor_research.sqlite", [_now_row(_LAKE, "1 strata")])
+        rep = build(root)
+        assert rep["status"] == "ABSENT"
+        assert SUBJECT_DB in rep["detail"]
+
+    def test_a_floor_the_subject_has_never_reached_is_refused_not_called_a_regression(
+            self, root: Path) -> None:
+        """THE FLOOR CAME FROM THE OTHER POPULATION (live: 100% floor, 99.96% subject best).
+
+        Without this the re-subjected fence would publish REGRESSED -- a true-sounding verdict
+        with the wrong cause, sending the reader to audit a length distribution that is fine.
+        """
+        _make_db(root / "data" / SUBJECT_DB, [_now_row(_HEALTHY, _HEALTHY_OUTCOME)])
+        _floors(root, campaign_obs_retained=1.0)
+        rep = build(root)
+        assert rep["status"] == "FLOOR-MIS-SUBJECTED", rep["detail"]
+        assert rep["floor_mis_subjected"] is True
+        assert "--ratchet" in rep["next_action"]
+
+    def test_the_mis_subjecting_is_published_even_when_staleness_outranks_it(
+            self, root: Path) -> None:
+        """L1.60: a ladder reports the FIRST true thing, and here two are true at once.
+
+        If the mis-subjecting were only ever a status, fixing the staleness would surface it as a
+        surprise REGRESSED on a campaign that never changed.
+        """
+        _make_db(root / "data" / SUBJECT_DB, [("2020-01-01T00:00:00Z", _HEALTHY, "old")])
+        _floors(root, campaign_obs_retained=1.0)
+        rep = build(root)
+        assert rep["status"] == "STALE"
+        assert rep["floor_mis_subjected"] is True
+
+    def test_a_reachable_floor_is_not_flagged(self, root: Path) -> None:
+        """The refusal must not fire on an ordinary floor, or it is noise on every healthy run."""
+        _make_db(root / "data" / SUBJECT_DB, [_now_row(_HEALTHY, _HEALTHY_OUTCOME)])
+        _floors(root, campaign_obs_retained=0.858)
+        rep = build(root)
+        assert rep["floor_mis_subjected"] is False
+        assert rep["status"] == "OK", rep["detail"]
+
+
+class TestTheUntestedBandIsCalibratedPerPopulationOrNotAtAll:
+    """R0435 asked for a band once ~10 campaigns exist. 95 now exist and the band is STILL not
+    settable, which is the finding: 92 of them have zero variance by construction.
+    """
+
+    def test_a_degenerate_population_is_not_calibratable_however_many_rows_it_has(
+            self, root: Path) -> None:
+        """THE TRAP: the count clears the bar and the evidence does not."""
+        rows = [(f"2026-08-{d:02d}T00:00:00Z", dict(_LAKE, campaign_id=f"c{d}"), "1 strata")
+                for d in range(1, 21)]
+        _make_db(root / "data" / "sor_research.sqlite", rows)
+        rep = build(root)
+        [lake] = [p for p in rep["populations"] if p["db"] == "sor_research.sqlite"]
+        assert lake["n_campaigns"] == 20 >= MIN_CAMPAIGNS_FOR_BAND
+        assert lake["untested_sd"] == 0.0
+        assert lake["untested_band_verdict"].startswith("DEGENERATE")
+        assert rep["untested_band"]["n_populations_calibratable"] == 0
+
+    def test_a_short_population_reports_its_shortfall_in_campaigns_not_days(
+            self, root: Path) -> None:
+        """L1.48 -- evidence is the clock. The shortfall is a COUNT, never a wait."""
+        _make_db(root / "data" / SUBJECT_DB, [_now_row(_HEALTHY, _HEALTHY_OUTCOME)])
+        [subj] = [p for p in build(root)["populations"] if p["is_subject"]]
+        assert subj["untested_band_verdict"] == (
+            f"UNMEASURED-BAND (1/{MIN_CAMPAIGNS_FOR_BAND} campaigns)")
+
+    def test_real_variance_over_enough_campaigns_reads_calibratable(self, root: Path) -> None:
+        """The positive control: the band becomes settable when the evidence actually arrives."""
+        rows = [(f"2026-08-{d:02d}T00:00:00Z",
+                 dict(_HEALTHY, campaign_id=f"c{d}", n_untested=200 + 10 * d), "32 strata")
+                for d in range(1, 13)]
+        _make_db(root / "data" / SUBJECT_DB, rows)
+        rep = build(root)
+        [subj] = [p for p in rep["populations"] if p["is_subject"]]
+        assert subj["untested_band_verdict"].startswith("CALIBRATABLE")
+        assert subj["untested_sd"] > 0
+        assert rep["untested_band"]["n_populations_calibratable"] == 1
+        # Measured, published -- and still NOT wired. Publishing a band is not enforcing one.
+        assert rep["untested_band"]["wired"] is False
+        assert subj["untested_band_wired"] is False
+
+    def test_pooling_the_two_populations_is_not_what_gets_measured(self, root: Path) -> None:
+        """The whole point: a pooled sd measures the population MIX, not any campaign's drift."""
+        _make_db(root / "data" / SUBJECT_DB, [_now_row(_HEALTHY, _HEALTHY_OUTCOME)])
+        _make_db(root / "data" / "sor_research.sqlite",
+                 [(f"2026-08-{d:02d}T00:00:00Z", dict(_LAKE, campaign_id=f"c{d}"), "1 strata")
+                  for d in range(1, 21)])
+        pops = {p["db"]: p for p in build(root)["populations"]}
+        assert pops[SUBJECT_DB]["untested_mean"] == pytest.approx(297 / 810)
+        assert pops["sor_research.sqlite"]["untested_mean"] == 0.0
+        # A pooled mean would be ~0.017 and belong to neither population.
+        assert len(pops) == 2
