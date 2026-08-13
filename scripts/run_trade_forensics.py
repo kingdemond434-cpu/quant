@@ -31,6 +31,7 @@ from pathlib import Path
 from typing import Any
 
 from libs.execution import leg_modes
+from libs.ops.desk_host import is_owning_host
 
 _TRADES = Path("data/cashcarry_trades.json")
 _OUT = Path("web/trade_forensics.json")
@@ -435,10 +436,26 @@ def main() -> None:
     _OUT.parent.mkdir(parents=True, exist_ok=True)
     _OUT.write_text(json.dumps(out, indent=1), "utf-8")
     # same doc plus a "written" stamp: a checkout must be able to cite WHEN the evidence was
-    # captured, not merely that it exists
-    _TRACKED.parent.mkdir(parents=True, exist_ok=True)
-    _TRACKED.write_text(
-        json.dumps({**out, "written": datetime.now(tz=UTC).isoformat()}, indent=1), "utf-8")
+    # captured, not merely that it exists.
+    #
+    # ONLY FROM THE HOST THAT HOLDS THE TRADES (GAP 113). `data/cashcarry_trades.json` is
+    # gitignored, so on any other box this analysis runs over nothing and produces a perfectly
+    # well-formed document reporting `n_closes: 0` with every net at zero -- then commits it over
+    # the real one. Measured 2026-08-13: a `pytest` run did exactly that, replacing 27 closes with
+    # zero. That is WS-005 written into a TRACKED artifact by merely observing the system, and it
+    # is undetectable afterwards: an empty forensics doc and a desk that closed nothing are the
+    # same bytes.
+    #
+    # The untracked `_OUT` above is written unconditionally and deliberately -- it is this host's
+    # own runtime state, the executor's denylist reads it, and a stale denylist is the dangerous
+    # direction. What is guarded is only the shared, committed copy.
+    owns, why = is_owning_host()
+    if owns:
+        _TRACKED.parent.mkdir(parents=True, exist_ok=True)
+        _TRACKED.write_text(
+            json.dumps({**out, "written": datetime.now(tz=UTC).isoformat()}, indent=1), "utf-8")
+    else:
+        print(f"trade forensics: tracked copy NOT written -- {why}")
     print(f"trade forensics: {len(closes)} closes | flags: {len(flags)}")
     for fl in flags:
         print("  !", fl)

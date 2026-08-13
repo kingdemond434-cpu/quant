@@ -39,6 +39,13 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # then discovered the dead-man switch had changed would have spent the day on a book with no
   # floor under it.
   "$PY" scripts/check_risk_kernel.py || echo "RISK-KERNEL DRIFT -- review before trusting this cycle"
+  # BEFORE ANY ORGAN READS THE COHORT. This box owns the runtime state under data/, and nothing
+  # could previously say so: two organs each inferred it from the artifacts, and on a clone the
+  # evidence and its absence look identical. `derive_slots` therefore read six missing birth
+  # certificates as six clocks never born and published a small Holm m as MEASURED -- a LOOSER
+  # bar on the only path to capital -- while a test run recomputed tracked ratchets DOWNWARD from
+  # whatever the host could see. Both are the same missing fact, stated once here.
+  "$PY" scripts/stamp_desk_host.py || echo "DESK-HOST STAMP FAILED -- the cohort will floor at the cap (safe, but tighter than reality)"
   OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 nice -n 15 "$PY" scripts/build_bars.py
   bash ops/run_study_on_vps.sh
   nice -n 15 "$PY" scripts/study_status.py || true

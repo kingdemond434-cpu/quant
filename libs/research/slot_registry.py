@@ -22,7 +22,12 @@ zero -- they mark the cohort `complete=False`, which run_alerts surfaces. Likewi
 is counted until it is RETIRED by an explicit ledgered decision: over-counting only tightens the
 bar (the safe error), under-counting admits noise as edge.
 
-Pure stdlib. import from libs.research.slot_registry.
+Stdlib plus ONE in-repo import: `libs.ops.desk_host`, which answers whether this box owns the
+runtime state under `data/`. That question cannot be settled from the artifacts themselves --
+on a clone the evidence and its absence look identical -- and guessing it wrong publishes a small
+cohort as MEASURED, which is a LOOSER bar. The import is the price of not guessing.
+
+import from libs.research.slot_registry.
 """
 from __future__ import annotations
 
@@ -31,6 +36,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+from libs.ops.desk_host import is_owning_host
 
 _ROOT = Path(__file__).resolve().parents[2]
 
@@ -361,11 +368,20 @@ def derive_slots() -> dict[str, Any]:
     # does not have, and GUESSING one would be worse than the gap -- a wrong "this is the owning
     # host" would restore exactly the false MEASURED this block removes. Tracked as a gap row;
     # the all-absent case is the one that is provable from here.
-    # Keyed on SOURCES READ, never on `slots` being empty: the two derivative built-ins are
-    # hardcoded names, so a bare clone still produces two rows and `slots` is never empty. Rows
-    # that exist because a tuple literal exists are not evidence that a desk ran here.
+    # THE QUESTION IS NOW READ RATHER THAN INFERRED (GAP 111 closed). `desk_host` carries a marker
+    # the running cycle stamps, so "absent" can mean a measured zero HERE and a fact about the
+    # host everywhere else. The all-sources-unreadable test below is kept as a second, independent
+    # trigger: it catches a box whose marker is missing AND whose state is gone, which is the
+    # bare-clone case the marker was introduced to cover, so neither mechanism depends on the
+    # other being correct.
+    #
+    # This closes the residual the first version named honestly and could not fix: a clone where
+    # ONE organ has run used to read the six missing sleeve births as measured zeros and publish
+    # MEASURED at m=6 against a live cohort near 12. That host now fails the marker check and
+    # floors at the cap like any other non-owning box.
+    _owns, _owns_why = is_owning_host(_ROOT)
     _all_sources = {_AXIS_STATE, *_STANDING_STATES.values(), _SLEEVE_ROSTER}
-    if _all_sources and not (_all_sources - set(absent) - set(unknown)):
+    if absent and (not _owns or not (_all_sources - set(absent) - set(unknown))):
         for rel in absent:
             bounds.setdefault(rel, MAX_FORWARD_SLOTS if rel in (_AXIS_STATE, _SLEEVE_ROSTER) else 1)
         unknown.extend(absent)
@@ -388,6 +404,9 @@ def derive_slots() -> dict[str, Any]:
         "over_cap": m_upper > MAX_FORWARD_SLOTS,
         "idle_slots": max(0, MAX_FORWARD_SLOTS - m_upper),
         "unknown_sources": unknown,
+        # Published so a reader can tell a measured zero from a host without state, which is
+        # the whole distinction the ABSENT/UNKNOWN split turns on (L1.28a).
+        "owning_host": _owns, "owning_host_why": _owns_why,
         # ABSENT IS A MEASUREMENT, NOT AN UNKNOWN: the file was never written, so the clock it
         # would record was never born. Kept in its own list so the two can never be re-merged.
         "absent_sources": absent,

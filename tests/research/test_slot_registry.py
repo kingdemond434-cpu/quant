@@ -10,6 +10,7 @@ import json
 
 import pytest
 
+from libs.ops import desk_host
 from libs.research import slot_registry as sr
 from libs.validation.forward_stats import holm_bar
 
@@ -19,6 +20,14 @@ def fake_root(tmp_path, monkeypatch):
     """A throwaway repo root so tests never read (or write) the live clock artifacts."""
     (tmp_path / "data").mkdir()
     monkeypatch.setattr(sr, "_ROOT", tmp_path)
+    # STAMPED AS THE OWNING HOST, because that is what every test using this fixture is about.
+    # Since GAP 111 the registry asks `desk_host.is_owning_host` before treating an absent
+    # artifact as a measured zero -- a clone cannot tell "clock never born" from "gitignored
+    # elsewhere", so it floors the cohort at the cap instead. These tests exercise the
+    # MEASUREMENT arithmetic, which only runs on a box that owns its state; without the stamp
+    # they would silently re-test the fail-closed floor. The non-owning path is covered by
+    # tests/ops/test_desk_host.py.
+    desk_host.stamp(tmp_path)
     return tmp_path
 
 
@@ -198,16 +207,26 @@ class TestAbsentIsNotTheSameAsGitignored:
         assert snap["m_concurrent"] == 2, "the hardcoded builtins still produce rows"
         assert snap["complete"] is False, "and those rows must not make the cohort look complete"
 
-    def test_A_READABLE_SOURCE_KEEPS_THE_ABSENT_SEMANTICS_INTACT(self, tmp_path, monkeypatch):
+    def test_A_STAMPED_HOST_KEEPS_THE_ABSENT_SEMANTICS_INTACT(self, tmp_path, monkeypatch):
         """NEGATIVE CONTROL. On the owning host a genuinely un-born clock must still read ABSENT
-        -- otherwise this fix would floor the live desk's bar forever on a real measured zero."""
+        -- otherwise this fix would floor the live desk's bar forever on a real measured zero.
+
+        THE PREMISE MOVED, AND THAT IS THE UPGRADE. This used to assert that ONE READABLE SOURCE
+        proves the host owns the artifacts. It does not: a clone where a single organ has run
+        satisfies exactly that and still holds five missing births it cannot interpret -- the
+        residual GAP 111 named and could not close. Ownership is now stated by the running cycle
+        and read here, so the control tests what it always meant to test.
+        """
         import json
         sr = self._bare(tmp_path, monkeypatch)
         (tmp_path / "data").mkdir()
         (tmp_path / "data" / "axis_shadow_state.json").write_text(
             json.dumps({"axes": [{"axis": "a", "verdict": "ACCRUING", "forward_days": 5}]}),
             "utf-8")
+        desk_host.stamp(tmp_path)
 
         snap = sr.derive_slots()
-        assert snap["absent_sources"], "one readable source proves the host owns the artifacts"
-        assert sr._SLEEVE_ROSTER in snap["absent_sources"] or snap["absent_sources"]
+        assert snap["owning_host"] is True
+        assert snap["absent_sources"], (
+            "on the owning host a file never written IS a clock never born, and stays ABSENT")
+        assert snap["complete"] is True

@@ -585,6 +585,87 @@ _DAEMONS = {
 }
 
 
+
+# ---------------------------------------------------------------------------------------------
+# RESTORED 2026-08-13, second pass. The first sweep compared PUBLIC names only and found five;
+# these are private helpers the same merge dropped, surfaced by their tests rather than by the
+# sweep. Recorded because it corrects the earlier claim that the casualty list was complete: it
+# was complete for public names and not for the module's internals.
+# ---------------------------------------------------------------------------------------------
+
+_ORGAN_MIN_UP_H = 1.0                         # below this it is a one-shot CLI run, not an organ
+# THE SLOP WAS SIZED AGAINST THE SMALLER OF TWO QUANTISATIONS. `_proc_start` is
+# `btime + starttime/HZ`, and the note here accounted only for the second term -- clock ticks,
+# 10ms, rounding down. But `btime` in /proc/stat is printed in WHOLE SECONDS, so `_BOOT_TS` is
+# truncated by up to 1s and every derived start time inherits that error in the direction that
+# makes a process look OLDER than it is. Measured on this box: a probe written and immediately
+# exec'd reported its own source as 0.72s NEWER than its start -- physically impossible, and it
+# fired `daemon-stale-code` on a process 1.2 seconds old.
+#
+# Which direction that matters in: the error only ever manufactures FALSE staleness, never hides
+# real staleness, so nothing was missed -- but a fence that cries wolf is one nobody reads, and
+# this desk has already retired two for exactly that. 2.0s covers btime truncation (<=1s), tick
+# rounding (10ms) and the write-then-exec ordering of an ordinary deploy, and still sits orders of
+# magnitude below any genuine deploy-then-restart gap, which is minutes at its very shortest.
+_START_SLOP_S = 2.0
+
+
+def _live_organs() -> dict[str, list[int]]:
+    """{repo-relative script -> pids} for every python process running a script from this repo.
+
+    WHY NOT `_DAEMONS`: that map holds four systemd units, and a census of the box found EIGHT
+    long-lived organ processes. ops_server.py (up 122h), run_recorder{,_bybit,_spot}.py and
+    mine_moat.py have no unit, so no amount of fixing the clock would have made the old loop look
+    at them -- the coverage hole is independent of the clock bug and had to be closed too.
+
+    Discovery is from the process table for the same reason `_worker_pids` is: systemd only knows
+    the children it started, and an orphan that outlived a unit restart is exactly the process
+    most likely to be running code nobody can replace.
+
+    THE SELF-MATCH TRAP: brain/subagent processes carry the whole doctrine through
+    `--append-system-prompt`, and the doctrine QUOTES script paths. Matching a path as a substring
+    of any argv element therefore returns claude processes as desk organs and measures a brain's
+    uptime as a daemon's. So the script must be an argv element IN ITS OWN RIGHT and must resolve
+    to a file in this repo.
+    """
+    out: dict[str, list[int]] = {}
+    with contextlib.suppress(OSError):
+        for d in Path("/proc").iterdir():
+            if not d.name.isdigit():
+                continue
+            try:
+                argv = [a for a in (d / "cmdline").read_bytes()
+                        .decode("utf-8", "replace").split("\0") if a]
+            except OSError:
+                continue                      # exited while we were walking
+            if not argv or "python" not in Path(argv[0]).name:
+                continue
+            if any(a.startswith("--append-system-prompt") for a in argv):
+                continue
+            for a in argv[1:]:
+                if not a.endswith(".py") or len(a) > 200:
+                    continue
+                cand = (ROOT / a) if not a.startswith("/") else Path(a)
+                with contextlib.suppress(OSError, ValueError):
+                    if cand.is_file() and cand.resolve().is_relative_to(ROOT):
+                        rel = cand.resolve().relative_to(ROOT).as_posix()
+                        if rel.startswith("tests/"):
+                            break             # a pytest invocation is not an organ
+                        out.setdefault(rel, []).append(int(d.name))
+                        break
+    return out
+
+def _last_commit_ts(rels: list[str]) -> float:
+    """Commit time of the most recent commit touching any of these paths (0 when unknown)."""
+    import subprocess
+    with contextlib.suppress(OSError, subprocess.SubprocessError, ValueError):
+        out = subprocess.run(["git", "log", "-1", "--format=%ct", "--", *rels[:300]],
+                             cwd=str(ROOT), capture_output=True, text=True,
+                             timeout=20, check=False).stdout.strip()
+        if out:
+            return float(out)
+    return 0.0
+
 def _import_closure(entry: Path, seen: set[Path] | None = None) -> set[Path]:
     """Repo-local modules an entry point actually imports, followed transitively.
 
@@ -608,7 +689,14 @@ def _import_closure(entry: Path, seen: set[Path] | None = None) -> set[Path]:
         elif isinstance(n, ast.ImportFrom) and n.module and not n.level:
             mods.add(n.module)
     for m in mods:
-        if m.split(".")[0] not in {"libs", "app", "scripts"}:
+        # `api` BELONGS HERE AND ITS ABSENCE WAS SILENT. `scripts/ops_server.py`'s only repo
+        # import is `from api import adapters`, so with api/ missing from this set the server's
+        # entire closure was ITSELF ALONE -- every change under api/ was invisible to the
+        # stale-code detector, and a long-running ops_server executing superseded adapter code
+        # would never be flagged. The detector reported healthy because it was looking at one
+        # file. Pinned by tests/ops/test_stale_code_daemons.py, which survived a merge that
+        # dropped this line.
+        if m.split(".")[0] not in {"libs", "app", "scripts", "api"}:
             continue
         for cand in (ROOT / (m.replace(".", "/") + ".py"),
                      ROOT / m.replace(".", "/") / "__init__.py"):
@@ -617,7 +705,7 @@ def _import_closure(entry: Path, seen: set[Path] | None = None) -> set[Path]:
     return seen
 
 
-def _proc_start(pid: int) -> float:
+def _proc_start(pid: int) -> float | None:
     """Wall-clock epoch a process actually started. THE ONLY CORRECT SOURCE ON LINUX.
 
     `Path("/proc/<pid>").stat().st_mtime` LOOKS like a process start time and is not one. It is
@@ -636,12 +724,23 @@ def _proc_start(pid: int) -> float:
     Field 22 of /proc/<pid>/stat is starttime in clock ticks since boot; /proc/stat's `btime` is
     the boot epoch. comm (field 2) can contain spaces and parens, so the split starts after the
     LAST ')' -- the standard parse, and the reason this is a helper rather than four inline
-    copies. Raises OSError/ValueError on an exited pid, which every caller already handles.
+    copies.
+
+    RETURNS None ON AN EXITED PID RATHER THAN RAISING. A scan walks a pid list assembled a moment
+    earlier, so a process exiting between the listing and the read is ORDINARY, not exceptional --
+    and the previous contract ("raises OSError/ValueError, which every caller already handles")
+    made the routine case an exception that any caller forgetting to wrap would turn into a crashed
+    sweep. A fence that dies partway through reports nothing about the organs it never reached, and
+    the desk reads a missing defect as no defect. None says "this process is gone" in a value the
+    type system carries to every caller.
     """
-    st = Path(f"/proc/{pid}/stat").read_text("utf-8")
-    starttime = int(st[st.rindex(")") + 2:].split()[19])
-    btime = next(int(ln.split()[1]) for ln in Path("/proc/stat").read_text("utf-8").splitlines()
-                 if ln.startswith("btime "))
+    try:
+        st = Path(f"/proc/{pid}/stat").read_text("utf-8")
+        starttime = int(st[st.rindex(")") + 2:].split()[19])
+        btime = next(int(ln.split()[1]) for ln in Path("/proc/stat").read_text("utf-8").splitlines()
+                     if ln.startswith("btime "))
+    except (OSError, ValueError, StopIteration, IndexError):
+        return None
     return btime + starttime / os.sysconf("SC_CLK_TCK")
 
 
@@ -763,56 +862,79 @@ def check_stale_daemons(defects) -> None:
     ownership mismatch is itself a defect -- an unsupervised worker means restarts do not ship
     fixes and crash-recovery is an illusion.
     """
-    import subprocess
-    for svc, rel in _DAEMONS.items():
+    # DISCOVERY COMES FROM THE PROCESS TABLE, NOT FROM A HARDCODED SERVICE MAP. Iterating
+    # `_DAEMONS` can only ever see organs somebody remembered to register, and the commonest way
+    # code goes inert is work being done by a process systemd does not own -- exactly the
+    # population a roster cannot enumerate. `_live_organs()` reads what is actually RUNNING.
+    by_script = {rel: svc for svc, rel in _DAEMONS.items()}
+    # Live clock, not the module-level NOW: that is snapshotted at import, so a process started
+    # after the sweep began measures as NEGATIVE uptime and gets skipped as "too young".
+    now = time.time()
+    for rel, pids in sorted(_live_organs().items()):
         entry = ROOT / rel
         if not entry.exists():
             continue
-        sd_pid, state = "", ""
-        with contextlib.suppress(OSError, subprocess.SubprocessError):
-            sd_pid = subprocess.run(["systemctl", "show", "-p", "MainPID", "--value", svc],
-                                    capture_output=True, text=True, timeout=10).stdout.strip()
-            state = subprocess.run(["systemctl", "show", "-p", "ActiveState", "--value", svc],
-                                   capture_output=True, text=True, timeout=10).stdout.strip()
-        workers = _worker_pids(rel)
-        if not workers:
-            continue                                  # not running -- check_organs owns that
-        # OWNERSHIP first: a fix cannot ship into a process the supervisor does not control.
-        if sd_pid not in {str(p) for p in workers}:
-            try:
-                oldest = min(workers, key=_proc_start)
-                age = (NOW - _proc_start(oldest)) / 3600.0
-            except (OSError, ValueError, StopIteration, IndexError):
-                continue                              # exited mid-audit; next run sees it
-
-            storm = (" and the unit is stuck in auto-restart, respawning against it"
-                     if state == "activating" else "")
-            defects.append((f"daemon-unsupervised-{svc}",
-                            f"{svc} work is being done by pid {oldest} (up {age:.1f}h) which "
-                            f"systemd does NOT own (MainPID={sd_pid or 'unknown'}, "
-                            f"state={state or 'unknown'}){storm}. `systemctl restart` cannot "
-                            "replace this process, so fixes do not ship and crash-recovery is "
-                            "an illusion. Stop the unit, kill the orphan, start the unit, and "
-                            "verify MainPID matches the worker."))
-        try:
-            eldest = sorted(workers, key=_proc_start)[:1]
-        except (OSError, ValueError, StopIteration, IndexError):
+        svc = by_script.get(rel)
+        starts = [s for s in (_proc_start(p) for p in pids) if s is not None]
+        if not starts:
+            continue                       # every pid exited mid-audit; next run sees them
+        started = min(starts)
+        pid = min(pids, key=lambda p: _proc_start(p) or now)
+        age = (now - started) / 3600.0
+        if age < _ORGAN_MIN_UP_H:
+            continue        # a one-shot CLI run or a just-restarted organ -- it loaded fresh code
+        label = svc or rel.rsplit("/", 1)[-1].removesuffix(".py")
+        # OWNERSHIP: a fix cannot ship into a process the supervisor does not control. Only
+        # meaningful for scripts that HAVE a unit -- the rest are cron/loop organs by design.
+        if svc:
+            sd_pid, state = "", ""
+            with contextlib.suppress(OSError, subprocess.SubprocessError):
+                sd_pid = subprocess.run(["systemctl", "show", "-p", "MainPID", "--value", svc],
+                                        capture_output=True, text=True, timeout=10).stdout.strip()
+                state = subprocess.run(["systemctl", "show", "-p", "ActiveState", "--value", svc],
+                                       capture_output=True, text=True, timeout=10).stdout.strip()
+            if sd_pid not in {str(p) for p in pids}:
+                storm = (" and the unit is stuck in auto-restart, respawning against it"
+                         if state == "activating" else "")
+                defects.append((f"daemon-unsupervised-{svc}",
+                                f"{svc} work is being done by pid {pid} (up {age:.1f}h) which "
+                                f"systemd does NOT own (MainPID={sd_pid or 'unknown'}, "
+                                f"state={state or 'unknown'}){storm}. `systemctl restart` cannot "
+                                "replace this process, so fixes do not ship and crash-recovery is "
+                                "an illusion. Stop the unit, kill the orphan, start the unit, and "
+                                "verify MainPID matches the worker."))
+        closure = _import_closure(entry)
+        # THE UNION OF BOTH SIGNALS, DELIBERATELY, BECAUSE THE TWO MISS IN OPPOSITE DIRECTIONS
+        # AND ONLY ONE OF THOSE DIRECTIONS IS SAFE. Content-vs-commit-date (`_sources_changed_
+        # since`) ignores an mtime a checkout rewrote without changing a byte -- fewer false
+        # alarms, but it MISSES a pull/restore that genuinely swapped the file under a running
+        # process. Raw mtime catches that and cries wolf after ordinary git operations. A
+        # staleness detector guarding processes near live capital must never miss; an extra alarm
+        # costs a restart, a missed one runs superseded code against money. So: flag if EITHER
+        # says changed.
+        # THE SLOP APPLIES TO BOTH SIGNALS OR THE UNION CRIES WOLF ON EVERY FRESH START.
+        # `_proc_start` is `btime + starttime/HZ`: btime truncates to the second and starttime
+        # quantises to clock ticks, so a process launched microseconds after its own file was
+        # written can measure as having started BEFORE it. `_sources_changed_since` carried no
+        # slop of its own, so folding it in raw flagged a freshly started organ as running stale
+        # code -- the cry-wolf failure that gets a fence switched off, taking the real signal with
+        # it (L1.43). 2.0s covers both quantisations and sits orders of magnitude below any
+        # genuine deploy-then-restart gap, which is minutes at its shortest.
+        floor = started + _START_SLOP_S
+        by_mtime = {p for p in closure if p.exists() and p.stat().st_mtime > floor}
+        stale = sorted(by_mtime | set(_sources_changed_since(closure, floor)))
+        if not stale:
             continue
-        for pid in eldest:
-            try:
-                started = _proc_start(pid)
-            except (OSError, ValueError, StopIteration, IndexError):
-                continue
-            stale = _sources_changed_since(_import_closure(entry), started)
-            if stale:
-                age = (NOW - started) / 3600.0
-                names = ", ".join(p.relative_to(ROOT).as_posix() for p in stale[:4])
-                defects.append((f"daemon-stale-code-{svc}",
-                                f"{svc} (pid {pid}, up {age:.1f}h) imports {len(stale)} file(s) "
-                                f"MODIFIED SINCE IT STARTED: {names} -- python loaded the old "
-                                "module at start, so every fix in those files is INERT in the "
-                                "running process. Restart the unit and verify the new behaviour "
-                                "appears in its output; a committed fix is not a shipped fix."))
+        names = ", ".join(p.relative_to(ROOT).as_posix() for p in stale[:4])
+        cts = _last_commit_ts([p.relative_to(ROOT).as_posix() for p in stale])
+        when = (f", last committed {datetime.fromtimestamp(cts, tz=UTC):%Y-%m-%d %H:%M}Z"
+                if cts else "")
+        defects.append((f"daemon-stale-code-{label}",
+                        f"{rel} (pid {pid}, up {age:.1f}h) imports {len(stale)} file(s) CHANGED "
+                        f"SINCE IT STARTED: {names}{when} -- python loaded the old module at "
+                        "start, so every fix in those files is INERT in the running process. "
+                        "Restart it and verify the new behaviour appears in its output; a "
+                        "committed fix is not a shipped fix."))
 
 
 def check_panel(defects) -> None:
@@ -3196,6 +3318,15 @@ _PRODUCER_CADENCE = {
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
 _TERMINAL_ARTIFACTS = {
+    "docs/research/ELITE_QUANT_INTELLIGENCE_MANDATE.md":
+        "STANDING PRINCIPAL DOCTRINE (2026-08-13), terminal by nature rather than by exhaustion. "
+        "It accumulates no inventory and has no producer: it is the principal's directive on "
+        "elite-firm capability recovery, extreme-outlier forensics and future-frontier search, "
+        "binding on all three builder seats, and it changes only by principal decision. A "
+        "producer cadence here would be actively wrong -- it would imply the law goes stale and "
+        "invite a scheduled rewrite of something no schedule owns. Classified DOCTRINE in "
+        "ARTIFACT_GOVERNANCE.md and indexed in CLAUDE.md so a fresh session can find it, which is "
+        "the only freshness property a standing law has.",
     "docs/research/generation_due.md":
         "SUPERSEDED SNAPSHOT WITH NO PRODUCER (recorded 2026-08-12). Header stamped "
         "2026-07-16T23:23Z, last content change 2026-07-29, and a repo-wide search for a writer "
@@ -4651,6 +4782,21 @@ def check_law_numbers_unique(defects) -> None:
     if titles:
         nxt = max(titles) + 1
         marker = ROOT / "docs/research/next_law_number.txt"
+        # THIS NUMBER IS A HIGH-WATER MARK AND WAS BEING RECOMPUTED AS A CURRENT READING (GAP 113).
+        # Measured 2026-08-13: a full pytest run drove it 60 -> 43, because `_LAW_DOCS` entries
+        # that are absent or unreadable on a given host are SKIPPED above -- so the max falls with
+        # them and the file confidently hands the next two laws a number already in use, which is
+        # the exact collision it exists to prevent.
+        #
+        # A RATCHET, NOT A HOST GUARD, deliberately: allocation must never go backwards on ANY
+        # host, including this one after a doc is renamed or temporarily unreadable. Reading the
+        # existing value costs one open and makes the write correct everywhere rather than correct
+        # only where a marker happens to be stamped.
+        try:
+            prev_txt = marker.read_text("utf-8").strip().split("\n", 1)[0]
+            nxt = max(nxt, int(prev_txt) if prev_txt.lstrip("-").isdigit() else nxt)
+        except (OSError, ValueError):
+            pass                                   # no prior mark: this reading is the first one
         with contextlib.suppress(OSError):
             marker.parent.mkdir(parents=True, exist_ok=True)
             marker.write_text(
