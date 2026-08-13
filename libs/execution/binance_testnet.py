@@ -412,6 +412,41 @@ def place_post_only(symbol: str, side: str, qty: float, price: float,
     return dict(res) if isinstance(res, dict) else {"raw": res}
 
 
+def place_stop_market(symbol: str, side: str, qty: float, stop_price: float) -> dict[str, Any]:
+    """Reduce-only STOP_MARKET -- the venue-side rail that survives total host death.
+
+    R0217. This existed ONLY on `binance_live`, and the executor reaches its stop reconciler
+    through `binance_testnet as fut` (run_cashcarry_executor.py:30). The guard at
+    `_reconcile_protective_stops` is `hasattr(fut, "place_stop_market")`, so on every environment
+    the desk has ever actually run, the reconciler returned [] on its first line and the
+    host-death rail did not exist -- disclosed in that function's docstring as a "testnet parity
+    gap" and never converted into a rail, which is an open defect rather than documentation.
+
+    Porting it here (rather than only paging on the missing capability) is what puts the rail in
+    the environment being VALIDATED: a rail first exercised on the day real capital arrives has
+    never been exercised. Paper-safe -- testnet fills are not money.
+    """
+    res = _signed("/fapi/v1/order", {
+        "symbol": symbol, "side": side, "type": "STOP_MARKET", "quantity": qty,
+        "stopPrice": stop_price, "reduceOnly": "true",
+    }, method="POST")
+    return dict(res) if isinstance(res, dict) else {"raw": res}
+
+
+def cancel_order(symbol: str, order_id: int) -> dict[str, Any]:
+    """Cancel ONE order by id -- surgical, so a maker-quote cleanup can never take the
+    protective stop down with it.
+
+    Shipped WITH `place_stop_market` deliberately: `_reconcile_protective_stops` takes its
+    canceller via `getattr(fut, "cancel_order", None)` and degrades to placement-only when it is
+    absent. Adding the placer alone would therefore leave drifted stops uncancelled and re-place
+    a fresh one every pass -- unbounded stop accumulation on the money path, strictly worse than
+    the no-op it replaces. The pair is the unit.
+    """
+    res = _signed("/fapi/v1/order", {"symbol": symbol, "orderId": order_id}, method="DELETE")
+    return dict(res) if isinstance(res, dict) else {"raw": res}
+
+
 def open_orders(symbol: str | None = None) -> list[dict[str, Any]]:
     """Resting (unfilled) orders, optionally for one symbol."""
     params = {"symbol": symbol} if symbol else {}
