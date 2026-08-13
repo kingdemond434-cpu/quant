@@ -419,3 +419,205 @@ EXECUTION HISTORY PROPRIETARY DATA. MAKE FAILURE LEARNED, NOT FORGOTTEN.
 The purpose is not to say "we now know how Citadel / Prodigy / Two Sigma / Man works". The purpose
 is: PUBLIC CLUE → TESTABLE ECONOMIC HYPOTHESIS → INDEPENDENT IMPLEMENTATION → REAL EMPIRICAL
 RESULT → BETTER RESEARCH FACTORY → MORE ROBUST INDEPENDENT ALPHA → HIGHER SUSTAINABLE E[log W].
+
+---
+
+# PART II — ARTIFICIAL QUANT INVESTOR / BRIDGEWATER-AIA REPLICATION / X CREATOR GRAPH / EXTERNAL STRATEGY-ENGINE EXPLOITATION
+
+**STATUS: PERMANENT STANDING POLICY.** Principal directive, 2026-08-13, issued as three
+successive deltas (extreme-outlier hunter; X/Horizon maximum-ROI; Bridgewater-AIA replication).
+Binding on CLAUDE, CODEX and DEEPSEEK equally. Inherits every law in Part I and repeals none.
+
+## The supreme objective of Part II
+
+Extend the canonical factory toward a continuously improving **ARTIFICIAL QUANT INVESTOR** that
+performs the whole economically relevant investment function, not merely strategy generation:
+
+OBSERVE WORLD → FILTER INFORMATION → UNDERSTAND CAUSAL STRUCTURE → FORM BELIEFS → GENERATE
+MECHANISMS → FORECAST → GENERATE HYPOTHESES → IMPLEMENT → FALSIFY → VALIDATE → PORTFOLIO-EVALUATE
+→ EXECUTE UNDER HARD CONTROLS → COMPARE EXPECTED VS REALITY → LEARN → IMPROVE THE RESEARCH SYSTEM
+→ REPEAT.
+
+The target is never to copy any firm's undisclosed positions, private models or private data. It
+is to independently reproduce every **lawfully observable superior economic function**.
+
+## The twelve layers
+
+1. **WORLD STATE** — PIT state across all authorized data: prices, books, funding, basis, OI,
+   liquidations, options, ETF flows, stablecoin flows, on-chain, tokenomics, macro, rates,
+   liquidity, regulation, news, events, market structure, and our own executions.
+2. **CAUSAL WORLD MODEL** — PARTICIPANT → INCENTIVE → CONSTRAINT → ACTION/FLOW → MARKET
+   TRANSMISSION → ASSET EFFECT → EXPECTED HORIZON → FALSIFICATION CONDITION.
+3. **INVESTMENT MEMORY** — research, papers, claims, hypotheses, experiments, failures, survivors,
+   decay, live outcomes, postmortems, execution, portfolio consequences.
+4. **INVESTMENT-TASTE MODELS** — learn what deserves attention.
+5. **ADAPTIVE RESEARCH AGENTS** — search dynamically for the evidence that would change a decision.
+6. **FORECAST POPULATION** — multiple independent probabilistic forecasts.
+7. **SUPERVISOR / ADVERSARY** — resolve disagreement by targeted search, never by voting.
+8. **EMPIRICAL ENGINE** — turn reasoning into falsifiable hypotheses.
+9. **PORTFOLIO ENGINE** — marginal E[log W], never standalone profitability.
+10. **SHADOW/LIVE REALITY** — controlled real-world evidence.
+11. **TRAINING / IMPROVEMENT** — verified trajectories into stronger challengers.
+12. **REPEAT** — every layer reusing canonical infrastructure where it already exists.
+
+## The clauses that bind hardest in Part II
+
+- **CAUSAL REASONING IS FIRST-CLASS, AND NEVER SUFFICIENT.** Statistical edge remains mandatory
+  evidence. A causal story generates better hypotheses; it never establishes alpha. Every material
+  hypothesis answers: who is acting, why, what constraint forces it, what transmits it, who takes
+  the other side, how long it should last, and what would prove the story wrong. Causal claims are
+  graded DIRECTLY OBSERVED / ECONOMICALLY PLAUSIBLE / INDIRECTLY INFERRED / SPECULATIVE, and an
+  eloquent story never inherits the confidence of a measured relationship.
+- **BITEMPORAL / POINT-IN-TIME WORLD STATE.** Store EVENT_TIME and KNOWLEDGE_TIME separately. The
+  system must distinguish what happened from when we could have known it — against revisions,
+  future classifications, future wallet labels, future universe membership, edited pages,
+  restated macro.
+- **TIME-TRAVEL RESEARCH ENVIRONMENT.** For historical agent evaluation set AS_OF_TIME = T and
+  technically PREVENT the agent from consuming anything published or learned after T. Historical
+  agent performance without this protection is not trusted evidence. A foreknowledge auditor scans
+  research traces for future dates, revisions, resolutions and post-event wording; a hit marks
+  CONTAMINATED_EVAL rather than silently keeping the score.
+- **INVESTMENT TASTE IS A MODELABLE CAPABILITY, TRAINED ON DOWNSTREAM TRUTH.** What is worth
+  reading, testing, killing cheaply, repairing. Labels derive from eventual outcomes — an obscure
+  paper that produced an independent survivor is HIGH_TASTE; a backtest winner that failed the
+  lockbox is FALSE_POSITIVE. The training target is useful investment judgment, never textual
+  similarity to today's preferences.
+- **ACTIVE LABEL CLEANING.** Cheap labels are often wrong. Where label and model AGREE, process
+  cheaply; where they DISAGREE or uncertainty is high, escalate to stronger models, independent
+  seats, or empirical re-check. Difficult examples deserve expensive verification; easy ones do
+  not.
+- **DISAGREEMENT IS INFORMATION.** Model vs model, AI vs market consensus, researcher vs falsifier,
+  paper vs reproduction, external engine vs canonical engine, causal model vs statistical result,
+  creator claim vs artifact. Do not average it away — search into it.
+- **SPECIALIZED SMALL-MODEL ECONOMICS.** Do not assume the most expensive frontier model should do
+  every routine task. Benchmark specialists for source relevance, claim classification, failure
+  taxonomy, regime classification, paper triage, dedup, leakage triage, execution anomalies.
+  Cascade: LOCAL DETERMINISTIC → SMALL SPECIALIST → STRONG SPECIALIST → FRONTIER → MULTI-MODEL
+  ADVERSARIAL REVIEW, escalating on uncertainty and decision importance. Reserve frontier
+  intelligence for novel unknowns, deep synthesis and adversarial review.
+- **JUDGMENTAL FORECASTER.** QUESTION → PIT EVIDENCE SEARCH → MULTIPLE INDEPENDENT RUNS →
+  SUPERVISOR → ADDITIONAL DISAGREEMENT SEARCH → PROBABILITY → CALIBRATION → OUTCOME SCORING →
+  LEARNING. Never one stochastic LLM forecast for an important question. Every forecast must later
+  resolve and be scored; no selective memory of correct predictions.
+- **MARKET CONSENSUS IS THE BASELINE, AND THE RESIDUAL IS THE SIGNAL.** Do not ask whether the AI
+  beats the market. Ask whether it carries INCREMENTAL information conditional on the market.
+  AI_FORECAST − MARKET_IMPLIED is itself the candidate signal, tested for calibration, persistence
+  and value after costs.
+- **CALIBRATED ABSTENTION.** Agents may output INSUFFICIENT EVIDENCE. Correct abstention is
+  rewarded; confident fabrication is penalised.
+- **LEARNING THROUGH DEPLOYMENT, CONTROLLED.** LIVE OUTCOME → ATTRIBUTION → TRAJECTORY LABEL →
+  CHALLENGER UPDATE → HIDDEN/FRESH EVAL → SHADOW → PROMOTION GATE. Production policy NEVER rewrites
+  itself because one outcome occurred. Trajectory labels distinguish process quality from raw PnL:
+  GOOD_ABSTENTION, CORRECT_REJECTION, FALSE_POSITIVE, LEAKAGE, GOOD_REPAIR, LUCKY_SUCCESS,
+  UNLUCKY_VALID_DECISION. Never train agents to imitate lucky mistakes.
+- **PROPRIETARY KNOWLEDGE COMPOUNDS OR IT IS BEING WASTED.** We cannot copy fifty years of another
+  firm's corpus; we manufacture the solo-scale equivalent by archiving everything now — every PIT
+  state, paper, result, failure, survivor, regime, execution, postmortem, forecast and portfolio
+  decision. Each year of operation must increase archive depth, failure knowledge, execution
+  knowledge and source-quality knowledge.
+
+## The X creator graph — seeds, never a universe
+
+X is a permanent first-class PUBLIC research surface, mined for mechanisms and capabilities rather
+than sentiment. Current high-value seed nodes: **@antpalkin** (autoresearch loops, mass
+generate→kill→autopsy→repair, Horizon workflows), **@L1vsun** (PCA/latent-factor residual
+stat-arb, OU/s-scores, crowding, alpha half-life, post-publication decay, capacity),
+**@shmidtqq** (self-improving loops, prediction-market systems, negative-result preservation).
+
+**THESE ARE DISCOVERY ROUTERS, NOT AUTHORITIES.** The mandated path is always POST → PRIMARY
+SOURCE → PAPER/CODE/DATA → MECHANISM → CANONICAL TEST → VERDICT. Never stop at the thread. Every
+finding is graded (DIRECT_PRIMARY_SOURCE … SCREENSHOT_ONLY … MARKETING … CONTRADICTED) and these
+grades never collapse into one confidence level. Rank creators by UNIQUE_MECHANISMS_SURFACED,
+PAPERS_DISCOVERED, EXPERIMENTS_TRIGGERED and SURVIVORS_ATTRIBUTABLE — never by follower count. A
+200-view technical post can dominate a 10M-view trading thread. The graph must expand
+automatically: accounts they cite, authors they reference, repos they use. If the next important
+researcher has 80 followers, the system must surface them rather than rereading today's seeds
+forever.
+
+**EDGE HALF-LIFE AS FIRST-CLASS STATE (the L1vsun lesson).** Public edges are decaying assets. For
+every survivor track EDGE_AT_DISCOVERY, EDGE_POST_PUBLICATION, EDGE_POST_DEPLOYMENT,
+EDGE_AFTER_CROWDING, and distinguish FALSE DISCOVERY from GENUINE DECAY. Maintain the SURVIVOR
+REPLENISHMENT RATIO — new validated alpha capacity created ÷ capacity lost to decay, crowding and
+failure. A ratio persistently below 1 is strategic decay of the factory itself, and the durable
+moat is the replenishment rate, never a single immortal strategy.
+
+## External strategy engines — workers, never validators
+
+Horizon and its successors are additional research workers: strategy structuring, generation,
+rule compilation, variant generation, simplification, red-teaming, repair, backtest challenge,
+paper-trading challenge. **They may produce HYPOTHESIS, CANDIDATE, DESCENDANT or EXTERNAL BACKTEST
+EVIDENCE. They may never produce CANONICAL SURVIVOR or LIVE CAPITAL ALLOCATION.** External metrics
+carry provenance (ENGINE, DATA, CONFIG, DATE, ASSUMPTIONS) and canonical validation reproduces
+them independently where possible. Material engine disagreement is investigated, never resolved by
+taking the highest number — it may reveal bar semantics, fill assumptions, look-ahead or fragile
+alpha.
+
+**NEVER TRUST THE "14 OF 1,262" PATTERN.** A tiny survivor fraction is either good falsification or
+massive multiple testing followed by selection bias, and the two look identical from the outside.
+Whenever mass generation is used, compute NUMBER GENERATED, NUMBER SEMANTICALLY UNIQUE, NUMBER
+ACTUALLY TESTED, EFFECTIVE SEARCH BREADTH, EXPECTED FALSE DISCOVERIES, and FINAL OOS SURVIVORS.
+**Search harder; believe more conservatively.**
+
+**MECHANISMS BEFORE PARAMETERS.** Prefer a new forced-flow hypothesis over RSI 29 vs 30. Once a
+mechanism survives, seek robust PLATEAUS, never sharp peaks.
+
+**SELF-MODIFICATION IS NOT SELF-IMPROVEMENT.** A strategy or agent that rewrote itself must beat
+its FROZEN PARENT on FRESH evidence net of cost and risk; otherwise it is classified
+SELF-MODIFICATION WITHOUT PROVEN IMPROVEMENT. The same standard applies to prompts, miners,
+routing, queries and schedulers: "changed" is not "improved".
+
+**PROTECT THE MOAT.** Never auto-upload private survivor logic, private datasets, execution
+footprint, credentials, live positions, alpha genealogy or internal negative memory to a third
+party. Send sanitized mechanisms, abstract strategies or synthetic examples. External research
+leverage must not destroy internal information advantage.
+
+## Universal better-system assimilation law
+
+Every discovery of a potentially superior capability — from a fund, lab, startup, paper,
+open-source architecture, solo quant or agent system — follows: DISCOVERY → PRIMARY EVIDENCE →
+ATOMIC CAPABILITY → ECONOMIC FUNCTION → OUR CURRENT ANALOGUE → MATURITY COMPARISON → MEASURABLE
+GAP → SOLO-SCALE CHALLENGER → CONTROLLED TEST → KEEP / MODIFY / REJECT. This rule applies forever.
+
+**COPY FUNCTIONS, NEVER BRAND NAMES.** Do not "build Bridgewater" — independently test causal world
+modelling, taste training, adaptive forecasting search, ensembling, calibration. Do not "build
+Prodigy" — test domain post-training and quant evals. Do not "build EdotEnv" — test progressive
+environments, sealed OOS, tool decay. Brand is provenance; capability is the unit of assimilation.
+Decompose every system into DATA, MODEL, TRAINING, REPRESENTATION, MEMORY, SEARCH, TOOLS, AGENTS,
+EVALUATION, VALIDATION, PORTFOLIO, EXECUTION, FEEDBACK, ORGANIZATION, so one impressive company
+never forces an all-or-nothing architecture decision.
+
+**MATURITY IS SCORED 0-6** (ABSENT / DOCTRINE_ONLY / IMPLEMENTED / WIRED / OPERATING /
+BEHAVIORALLY_PROVEN / ECONOMICALLY_PROVEN) and only runtime evidence counts. A global champion
+does not automatically win: it may look better because of marketing, a different metric, or more
+capital. Always benchmark locally.
+
+**FRONTIER LEAPFROG.** Move GENERAL SCIENCE/AI FRONTIER → OUR QUANT directly where lawful, rather
+than waiting for FRONTIER → HEDGE FUND → PUBLIC POST → US. Remove the middleman. And periodically
+ask what a solo digital-native artificial investor would do DIFFERENTLY because it lacks a large
+firm's constraints: 24/7 crypto, micro-capacity edges, faster experimentation, no bureaucracy,
+on-chain transparency, rapid model switching. Compete where small size helps.
+
+## Scorecard for Part II
+
+FORECAST_CALIBRATION · CAUSAL_HYPOTHESES_TESTED · TASTE_MODEL_VALUE · SEARCH_VALUE · SURVIVORS ·
+SURVIVOR_QUALITY · FALSE_POSITIVES · FALSE_NEGATIVES · INFORMATION_PER_TOKEN ·
+PORTFOLIO_ELOGW_CONTRIBUTION · EXECUTION_CAPTURE · RESEARCH_REPLENISHMENT_RATE ·
+DISCOVERY_TO_HYPOTHESIS · HYPOTHESIS_TO_CODE · CODE_TO_FIRST_TEST · FIRST_TEST_TO_VERDICT ·
+VERDICT_TO_SURVIVOR · SURVIVOR_TO_SHADOW · SHADOW_TO_PORTFOLIO.
+
+**A FAST PIPELINE PRODUCING FALSE SURVIVORS IS WORSE THAN A SLOW ONE.** Optimise VALIDATED
+ECONOMIC INFORMATION / TIME, never raw throughput. Maximum ROI does not mean maximum activity:
+not the most posts, generations, strategies or agents, but the maximum marginal robust E[log W]
+per unit scarce research resource.
+
+## Terminal law of Part II
+
+DO NOT JUST COPY. LEARN WHY A CAPABILITY IS ECONOMICALLY USEFUL, REPRODUCE THE FUNCTION,
+BENCHMARK IT, IMPROVE IT, COMBINE IT WITH BETTER FUNCTIONS FROM OTHER SYSTEMS, THEN MOVE BEYOND
+IT. Apply this to Bridgewater, Prodigy, EdotEnv, EquiLibre, AgonAlpha, Horizon, Man, Two Sigma,
+Citadel, WorldQuant, Standard Signal, KelAI, ATLAS, Podium, @shmidtqq, @L1vsun, @antpalkin — and
+to every future system or researcher not yet known.
+
+The objective is not MAXIMUM AI. It is MAXIMUM DIFFERENTIATED, REALITY-VALIDATED INVESTMENT
+INTELLIGENCE converted into MORE INDEPENDENT SURVIVOR CAPACITY, and ultimately into MAXIMUM ROBUST
+SUSTAINABLE LONG-RUN E[log W].
