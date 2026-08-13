@@ -360,8 +360,19 @@ def zenn(keyword: str) -> tuple[list[Article], str | None]:
     except Exception as exc:
         _note_429("zenn", exc)
         return [], _err(exc)
+    # R0466: THE SHAPE GUARD ITS SIBLINGS ALL HAVE. Without it a 200 carrying anything that is
+    # not the expected document -- an anti-bot interstitial, a changed API, an error envelope --
+    # fell through the `if isinstance(doc, dict)` into an empty list and returned ([], None): a
+    # CLEAN NULL, byte-identical to "searched Zenn and it really has nothing on this". Those are
+    # opposite facts and only one of them is a reason to stop digging a ground (WS-005/L1.28a).
+    # zenn.dev is one of the two hosts R0466 measured 403ing our named agent at the CDN edge
+    # while its robots.txt stayed clean, so this is the exact path where a BLOCKED ground would
+    # have recorded as a THIN one.
+    rows = doc.get("articles") if isinstance(doc, dict) else None
+    if not isinstance(rows, list):
+        return [], "zenn returned no `articles` list -- API shape changed or the reply is not JSON"
     out: list[Article] = []
-    for r in (doc.get("articles") or []) if isinstance(doc, dict) else []:
+    for r in rows:
         if not isinstance(r, dict):
             continue
         title, path = _text(str(r.get("title") or "")), str(r.get("path") or "")
@@ -812,6 +823,19 @@ def probe_all() -> list[dict[str, Any]]:
     `ok` means the source returned USABLE ROWS, never merely that it answered with HTTP 200 -- a
     200 carrying an anti-bot page or an empty result set is not a working source, and recording it
     as one is how a dead lane stays green on a dashboard.
+
+    `posture` SPLITS THE TWO WAYS `ok=False` HAPPENS, WHICH DEMAND OPPOSITE RESPONSES (R0466):
+
+      OK      -- rows came back.
+      WALLED  -- the source refused or answered with something unusable. The ground is UNKNOWN,
+                 and the next move is a UA matrix against a real content path (OP-052), never a
+                 verdict about the ground.
+      EMPTY   -- the source answered cleanly and genuinely has nothing for this probe keyword.
+                 Only THIS one is evidence about the ground, and even then only about the keyword.
+
+    A single boolean made a BLOCKED ground and an EXHAUSTED ground byte-identical to any reader,
+    which is how a whole region gets silently retired on evidence that never existed. The error
+    string always carried the distinction; nothing surfaced it, so nothing could act on it.
     """
     out: list[dict[str, Any]] = []
     for name, (fn, lang) in SOURCES.items():
@@ -819,8 +843,10 @@ def probe_all() -> list[dict[str, Any]]:
         try:
             arts, err = fn(probe_kw)
         except Exception as exc:
-            out.append({"source": name, "lang": lang, "ok": False, "error": _err(exc)})
+            out.append({"source": name, "lang": lang, "ok": False, "posture": "WALLED",
+                        "n": 0, "error": _err(exc)})
             continue
         out.append({"source": name, "lang": lang, "ok": bool(arts) and err is None,
+                    "posture": "WALLED" if err is not None else ("OK" if arts else "EMPTY"),
                     "n": len(arts), "error": err})
     return out
