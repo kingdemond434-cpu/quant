@@ -968,8 +968,14 @@ def _check_chronic_seats(defects, m: dict) -> None:
 
 def check_findings(defects) -> None:
     d = _j(ROOT / "data/findings_ledger.json", {})
+    # A SUPERSEDED FINDING IS CLOSED, NOT OWED. Its mechanism was refuted by a later finding that
+    # carries the live version of the concern, so the work this row asks for is work nobody should
+    # do -- and it had no legal exit before, leaving `fix` (a false claim that also credits the
+    # seat with a hit it did not earn) as the only way to stop it firing. It stays listed in
+    # `track_findings report`, so closing it is visible rather than a disappearance.
     old = [f for f in d.get("findings", [])
            if f.get("ruling") == "accepted" and not f.get("fixed")
+           and not f.get("superseded_by")
            and (datetime.now(tz=UTC) - datetime.fromisoformat(f["raised"])).days > 14]
     if old:
         ids = ", ".join(f["id"] for f in old[:5])
