@@ -81,3 +81,50 @@ class TestLiveFileShape:
         rows = [json.loads(ln) for ln in p.read_text("utf-8").splitlines() if ln.strip()]
         keys = [(r.get("date"), r.get("signal")) for r in rows]
         assert len(keys) == len(set(keys)), "duplicate (date, signal) rows are back"
+
+
+#: Date `status` was retired from the writer (R0467). Rows dated on or before this may carry both
+#: verdicts -- they are what was published at the time and are left alone.
+_RETIRED_ON = "2026-08-13"
+
+
+class TestOneVerdictPerRow:
+    """R0467: the row published TWO verdicts on one question and they disagreed on live data.
+
+    `status` (AGEING/STABLE/STRENGTHENING off a bare +/-0.03 two-window IC difference, no null
+    behind it) sat beside the order-sensitive `decay`. On 2026-08-12 and 08-13 stablecoin_supply
+    read STABLE by one and STRENGTHENING then DECAYING by the other. Whichever suits an argument
+    is always available, so two labels are worse than either alone.
+    """
+
+    def test_the_writer_no_longer_emits_the_untested_status_label(self) -> None:
+        import ast
+        producer = Path(__file__).resolve().parents[2] / "scripts/signal_halflife.py"
+        tree = ast.parse(producer.read_text("utf-8"))
+        emitted = {k.value for node in ast.walk(tree) if isinstance(node, ast.Dict)
+                   for k in node.keys if isinstance(k, ast.Constant) and isinstance(k.value, str)}
+        assert "decay" in emitted, "the surviving verdict must still be published"
+        assert "status" not in emitted, "the retired verdict is being written again"
+        # The MEASUREMENT under the retired label stays: retiring a verdict is not a reason to
+        # stop publishing the number it was thresholding.
+        assert {"trend", "ic_early", "ic_recent"} <= emitted
+
+    def test_the_live_series_carries_at_most_one_verdict_going_forward(self) -> None:
+        import json
+        p = Path(__file__).resolve().parents[2] / "data/signal_halflife.jsonl"
+        if not p.exists():
+            pytest.skip("data/signal_halflife.jsonl is box-local and absent in this clone")
+        rows = [json.loads(ln) for ln in p.read_text("utf-8").splitlines() if ln.strip()]
+        # THE PAST IS NOT REWRITTEN. Four rows (2026-08-12/13, kimchi_premium and
+        # stablecoin_supply) were written in the window where da53431 had added `decay` and
+        # `status` had not yet been retired; they carry both, and they are the record of what the
+        # desk actually published on those days. Deleting a field from them to make a fence green
+        # would edit the evidence rather than the producer -- the failure this desk has paid for
+        # (the moat-tape contamination fix went at the WRITE chokepoint, not at the rows).
+        # The property with teeth is forward-looking: nothing written after the retirement may
+        # carry two verdicts.
+        both = [r for r in rows
+                if "decay" in r and "status" in r and str(r.get("date", "")) > _RETIRED_ON]
+        assert not both, (
+            f"{len(both)} row(s) written after {_RETIRED_ON} publish two verdicts on one "
+            f"question: {[(r.get('date'), r.get('signal')) for r in both[:5]]}")

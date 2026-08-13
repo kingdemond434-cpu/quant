@@ -178,13 +178,24 @@ def main() -> None:
         early = float(np.mean(ics[:2])) if len(ics) >= 2 else ics[0]
         trend = recent - early
         hl = half_life(ics) if len(ics) >= MIN_POINTS_TO_FIT else None
-        status = "AGEING" if trend < -0.03 else "STRENGTHENING" if trend > 0.03 else "STABLE"
-        # R0312: `status` above is a bare +/-0.03 on a two-window difference, with no null behind
-        # it -- it will call noise AGEING and has been publishing that verdict daily. The
-        # order-sensitive bar keeps it (continuity) and adds a verdict that a null can refuse:
-        # each window's IC becomes a one-sided p-value, and the early and late halves are
-        # combined SEPARATELY at a pre-registered split. DSR/PSR cannot do this at all -- they
-        # are order-invariant, so decay is invisible to them by construction.
+        # R0467: `status` -- a bare +/-0.03 cut on a two-window IC difference, with no null behind
+        # it -- IS RETIRED HERE, and `trend` (the number it was thresholding) is kept. R0312 added
+        # the order-sensitive `decay` bar beside it "for continuity", which left every row
+        # carrying TWO verdicts on one question that could and did disagree: on 2026-08-12 and
+        # again on 08-13 stablecoin_supply read STABLE by `status` and STRENGTHENING then DECAYING
+        # by `decay`. Two labels a reader can choose between is worse than either alone, because
+        # whichever suits the argument is always available and is always quotable as "the" verdict.
+        #
+        # `decay` is the survivor because it can be REFUSED: each window's IC becomes a one-sided
+        # p-value, and the early and late halves are combined SEPARATELY at a pre-registered
+        # split, so a null record reads STABLE. `status` had no null and could not refuse. DSR and
+        # PSR cannot answer this question at all -- they are order-invariant, so decay is
+        # invisible to them by construction.
+        #
+        # THE RAW NUMBER SURVIVES THE LABEL. `trend`, `ic_early` and `ic_recent` are still
+        # published: retiring an unfounded VERDICT is not a reason to stop publishing the
+        # MEASUREMENT under it, and a reader who wants the crude two-window difference can still
+        # compute it and see the +/-0.03 for the arbitrary cut it always was.
         # NON-OVERLAPPING windows only. rolling_ic strides 20 through a 60-wide window, so
         # consecutive ICs share two thirds of their data and their p-values are strongly
         # positively dependent -- and mean-p's Irwin-Hall null assumes INDEPENDENCE. Feeding it
@@ -202,7 +213,6 @@ def main() -> None:
                 "ic_recent": round(recent, 4),
                 "trend": round(trend, 4),
                 "half_life_windows": hl,
-                "status": status,
                 "decay": decay,
                 "curve": [round(v, 4) for v in ics],
             }
@@ -219,7 +229,7 @@ def main() -> None:
         )
         print(
             f"{name:22s} windows={len(ics):2d} | IC early {early:+.4f} -> recent {recent:+.4f} "
-            f"| trend {trend:+.4f} | half-life {hl_s} | {status}"
+            f"| trend {trend:+.4f} | half-life {hl_s}"
         )
         print(f"{'':22s} curve: " + " ".join(f"{v:+.3f}" for v in ics))
         if decay["verdict"] == "UNDERPOWERED":
