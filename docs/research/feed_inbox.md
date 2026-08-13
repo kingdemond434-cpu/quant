@@ -125,22 +125,36 @@ free orthogonal flow axis; the dataaxis dig should card AND screen it in one run
 research_memory dataset row (pending).
 -->
 
-## Universality and Heterogeneity of Stylized Facts in Cryptocurrency and Equity Markets
-- 2026-08-11 · http://arxiv.org/abs/2608.10852v1
-- This study investigates whether the macroscopic statistical maturity of cryptocurrencies implies dynamical equivalence with traditional equity markets. We analyze high-frequency data (2020--2025) using the Complexity--Entropy Causality Plane (CECP) and directed horizontal visibility graphs (directed HVG) to uncover complex temporal patterns and time-directed structures in the return series. While conventional stylized facts show striking convergence across all assets, structural diagnostics reveal a compelling paradox: cryptocurrencies appear more locally random than the equity benchmark durin
+<!-- 2026-08-13 (owed-work batch5): backlog drain, 5 live entries (2026-08-10..08-11,
+oldest 3.0d) triaged and cleared, closing the live `feed-inbox-backlog` defect. The bars are 20
+open / 3d, so this fired on AGE, not depth -- the queue was shallow and simply not being worked.
 
-## The Triadic Stress Index in Financial Markets
-- 2026-08-11 · http://arxiv.org/abs/2608.10788v1
-- The Triadic Stress Index (TSI) takes a network index whose four factors were first observed in soil microbiome co-occurrence networks and applies it, without alteration, to the correlation network of financial assets. We test it on five markets spanning 2006-2026 (equities including banking crises and the AI sector, cryptocurrencies, commodities, foreign exchange and sovereign debt), against three independent definitions of a crisis episode, at a fixed alarm budget, out of sample, with block-bootstrap intervals and a Holm correction across the family of tests. The benchmarks are the Absorption
+2 DISTILLED as mechanism-prior references into research_memory (method rows, 2026-08-13):
+  * Triadic Stress Index (2608.10788) -- a 4-factor network index carried unaltered from soil
+    microbiome co-occurrence networks to asset correlation networks; 5 markets 2006-2026, 3
+    independent crisis definitions, FIXED alarm budget, OOS, block-bootstrap intervals, Holm
+    across the family. Routed as a REGIME/RISK conditioning prior, never an alpha: it predicts
+    stress, and this desk's measured lesson is that volatility is predictable while direction is
+    not. Two live consumers -- `regime_robustness` is a DEAD-BRANCH gate (L1.49) whose repair is
+    UPWARD and needs a defensible regime variable, and L1.58 joint tail-loss monitoring. Its
+    inputs are free: a correlation network, which cohort_independence already builds.
+  * OOQI (2608.10410) -- specification-driven synthesis of strategy pipelines; the argument is
+    that optimising a single scalar metric is the wrong question. An AI-QUANT STRUCTURE, mined as
+    TEXT and never installed (L1.34 supply-chain rule). Kept as outside corroboration of the
+    gauntlet's SHAPE (multi-gate specification, capacity sufficiency flat above the bar, turnover
+    priced) plus a source of gate ideas -- explicitly NOT a licence to add gates, since a gate
+    nobody can fail is not a standard (L1.49).
 
-## When the Fed Speaks: Dynamics and Forecasts of the Volatility Surface
-- 2026-08-11 · http://arxiv.org/abs/2608.10693v1
-- Our primary goal is to forecast and empirically examine the evolution of the implied volatility (IV) surface, with particular focus on the dates of scheduled meetings of the Federal Open Market Committee (FOMC). Firstly, we check if IV increases before the announcement and if thes effect is stronger for short-dated, out-the-money (OTM) options in high volatility regimes. In the second part, we turn the focus to verifying if the ML framework can beat the benchmark random walk in forecasting this effect. A feature related to dates of scheduled FOMC meetings augments the model, which allows us to
-
-## Objective-oriented quantitative investment: A specification-driven framework for automated synthesis of trading strategy pipelines
-- 2026-08-11 · http://arxiv.org/abs/2608.10410v1
-- Automated quantitative research has made striking progress, yet each system answers the same question: which strategy scores highest on a scalar metric? We argue this question is incomplete. Professional investors do not order "the highest return"; they order an identity--pure stock-selection alpha uncontaminated by style exposure, resilient in unilateral market declines, within turnover and capacity budgets. We call the incumbent paradigm result-oriented and propose Objective-Oriented Quantitative Investment (OOQI): a specification-driven framework in which (i) the full strategy pipeline is m
-
-## Beyond Cash Flows: A Multi-Agent AI Framework for Valuing Clinical-Stage, Cross-Border Biotechnology
-- 2026-08-10 · http://arxiv.org/abs/2608.10175v1
-- A new class of software systems is transforming investment analysis. Large language model agents assembled into collaborative team structures including analysts, researchers, and risk managers are increasingly deployed across financial markets. Yet current multi-agent frameworks share a critical limitation: they rely on the foundational assumption that companies can be valued through traditional cash flows. This paradigm fails in clinical-stage biotechnology, where enterprise value depends entirely on binary scientific and regulatory milestones. To bridge this gap, this paper introduces a spec
+3 REJECTED WITH REASONS:
+  * NO ECONOMIC MECHANISM, PRICE-ONLY (1): 2608.10852 stylized-facts universality via
+    complexity-entropy causality plane + directed horizontal visibility graphs. It measures that
+    crypto return series are more locally random than equities -- a descriptive fact about price
+    with nobody forced to trade against it. Every price-only family this desk screened has died,
+    and _PRIORS treats a missing mechanism as a hard kill, not a discount.
+  * OFF THE STRATEGY SURFACE, NO DATA (1): 2608.10693 FOMC implied-volatility surface dynamics.
+    The desk holds no options data and has no options order path; same class as the options and
+    DEX entries rejected in the 2026-08-11 drain.
+  * WRONG ASSET CLASS (1): 2608.10175 multi-agent LLM valuation of clinical-stage biotech.
+    Milestone-driven equity valuation, no crypto surface; the multi-agent structure itself is
+    generic and adds nothing to what L1.31/L1.33 already run.
+-->

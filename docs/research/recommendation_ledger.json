@@ -5127,11 +5127,11 @@
    "summary": "CONCURRENT SESSIONS DUPLICATED THE SAME FIX WITHIN ONE HOUR, WITH NO CLAIM MECHANISM. On 2026-08-05 two sessions on this box independently (a) fixed the SAME two mypy errors in libs/research/natural_experiment.py, (b) diagnosed the SAME leaked flock handle in run_ci.main, and (c) reached the SAME try/finally-around-an-extracted-_run_steps structure -- discovered only when my push was rejected and the merge conflicted in exactly the three files I had touched. The duplicated engineering is the cheap part; the expensive part is that the two fixes DISAGREED on a safety-relevant detail and a blind merge would have silently picked one: they deleted the type:ignore[arg-type] (correct on mypy 2.1, wrong on other in-pin versions -- the pyarrow straddle pyproject already had to paper over with a scoped override) while I replaced the call with model_validate (version-independent). Whoever merged second by reflex would have shipped the fragile one. NOTE THE ASYMMETRY THAT MAKES THIS WORTH FIXING RATHER THAN ACCEPTING: the union of the two CI fixes is strictly better than either -- their per-step timeouts catch a wedge, my attribution catches the shared-tree false alarm, and neither session knew the other half existed. So the defect is not that two agents worked at once, it is that nothing publishes WHAT IS BEING WORKED ON, so collision is discovered at merge time and complementary work is found by accident. Cheapest candidate: a claims file written at task start and read at task start, checked the way data/mining_suspended already gates the diggers.",
    "roi_bps": 0.0,
    "raised": "2026-08-05T18:40:00.918921+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "SUPERSEDED IN ITS DANGEROUS HALF, AND THE PROPOSED MECHANISM IS ONE THIS DESK ALREADY RETIRED. (1) The corruption class this row fears -- a blind merge silently picking the fragile fix, a tree mutated under a read -- is closed by two mechanisms now live: ops/brain_env.sh brain_mutex (flock on a held FD, desk-wide, since 2026-07-30) is ENFORCING, with 34 deferrals logged and 5 on 2026-08-12, and its own comment names the identical damage ('max_audit.py mutated underneath a read in progress; git status went from 4 dirty files to clean mid-cycle'); and agent sessions now run in git worktrees (5 live: brain-s2, owed-b3-fences, owed-b3-xls, owed-batch3, s3-inventory-yield), so they no longer share a working tree at all. (2) The proposed fix -- 'a claims file written at task start and read at task start, checked the way data/mining_suspended already gates the diggers' -- names a pattern the desk has since RETIRED: check_mine_gate replaced data/mining_suspended precisely because 'a file is something rm defeats', and a claim honoured only when a session remembers to read it is a recall-based control, which this desk has recorded as not being a control at all. (3) What genuinely remains is narrower than the row: two sessions can still pick the SAME LEDGER ROW, discovered at merge. That is a claim on the unit of assignment (the ledger row), not a file, and it wants the owed-work brief generator as its consumer so it fires without anyone remembering. Re-specified and raised as its own row rather than built to this row's obsolete design.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T01:47:23.439688+00:00"
   },
   {
    "id": "R0404",
@@ -5175,11 +5175,11 @@
    "summary": "TMPFS IS MEMORY THAT BELONGS TO NO PROCESS, AND NOTHING ON THIS DESK WATCHES IT. /tmp is a tmpfs, so pytest's tmp_path scratch is RESIDENT RAM on a 3.8GB swapless box carrying the live executor, three recorders and several agent sessions. Measured 2026-08-05: 35 orphaned pytest run dirs holding 1021MB (26% of the machine) against 189MB available; reclaiming took available to 1555MB. CLOSED LOOP, which is why it never self-corrected: an OOM-killed run never reaches its own cleanup, its stale lock makes pytest's GC skip the orphan, orphans accumulate, RAM falls, the next run is likelier to be killed. Prevention shipped (513ba24, tmp_path_retention_policy=failed) and the orphans cleared by hand. WHAT IS STILL OPEN AND IS THE REASON FOR THIS ROW: (a) no fence measures tmpfs occupancy or free RAM on this box at all -- every memory check watches PROCESS RSS, so this class is invisible by construction and 149MB of other stale /tmp artifacts remain uninspected; (b) max_audit's own _check_test_suite still mis-reads rc<0 as a collection error AND returns early past the test-suite-shrank ratchet, so a genuine suite shrink during a contended window is invisible -- deliberately not edited this cycle because scripts/max_audit.py was dirty under a concurrent session; (c) a whole-suite pytest verdict is STILL UNOBTAINED -- two full runs died and a batched run was in flight at cycle end, with one F sighted at 14% that has not been identified.",
    "roi_bps": 30.0,
    "raised": "2026-08-05T20:18:22.789807+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Parts (a) and (b) closed; (c) split to R0555 because it is an operational verdict, not a code change, and it is blocked on the very condition (a) now measures. (b) was ALREADY DONE before this cycle: check_test_suite_collectable splits rc<0 into test-suite-probe-killed with its own message and states the ratchet's silence out loud instead of an invisible early return (docstring 'A THIRD STATE, ADDED 2026-08-05 (R0407b)'). (a) BUILT AND VERIFIED THIS CYCLE in 70296dbe: max_audit.check_host_memory_headroom, registered in the battery as host-memory. libs/ops/host_resources existed but was wired only REACTIVELY -- run_ci and the collection probe call pressure_note() to annotate a death that already happened, which made the instrument a coroner; nothing asked before the kill, so R0407's closed loop had a better autopsy and still no detector. It fires on the real box right now: host-tmpfs-bloated, 798MB against the 600MB ceiling. THE COMPOSITION HAS CHANGED, which is the finding worth keeping: the R0407 prevention (tmp_path_retention_policy=failed, 513ba24) worked on pytest orphans, and occupancy came back from a different population -- agent scratch, a 178MB mentions dump, a 63MB CSV. Fixing the one producer that was caught is not the same as watching the resource. It reports and does NOT delete: /tmp is shared with the live executor, three recorders and concurrent agent sessions, and reaping a sibling's scratch mid-run is a larger failure than the one it fixes. None stays distinct from 0 (a disk-backed /tmp has no hidden RAM -- a different fact, not a low reading) and an unreadable /proc raises host-memory-unmeasured, never a clean bill (L1.28a). 5 tests, tests/scripts/test_max_audit_checks.py::TestHostMemoryHeadroom, all green.",
+   "commit": "70296dbe",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T01:49:02.772367+00:00"
   },
   {
    "id": "R0408",
@@ -5295,11 +5295,11 @@
    "summary": "L1.57 coverage ratchet: wire scanned= into the remaining 38 fences, highest blast radius first -- check_utilisation.py:548 (every ceiling UNMEASURED leaves idle_unexplained empty, so a fully dark board exits 0) and check_mypy_ratchet.py:89 (uncheckable files are popped from the denominator, so mypy uninstalled yields total_errors 0 / n_files_checked 0 / exit 0, and a file that becomes uncheckable can never regress again). Coverage is at 4/42; data/denominators.json next_action names the queue.",
    "roi_bps": null,
    "raised": "2026-08-05T22:02:07.285052+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Both fences this row NAMED as highest blast radius are wired and behaviourally pinned, plus four more; coverage 13/56 -> 18/56 (23% -> 32%, measured by check_denominators). Residual queue split to R0556 rather than left implicit, because it is not homogeneous: most of the 38 are a kwarg, but check_build_standard's n_governed = len(_GOVERNED) is a hardcoded tuple whose honest denominator needs a DISCOVERED roster, i.e. a design change, and waving that through as wiring would leave a constant denominator wearing a measurement's clothes. check_utilisation: denominator is the MEASURED ceilings, since Ceiling.status returns UNMEASURED before any idle branch, so an unmeasured ceiling cannot enter idle_unexplained and a fully dark board exited 0 -- inverting the fence's own law (L1.28a). len(rows) would have been the other half of the same defect: collect() is ten hardcoded builder calls and can never fall when a reading dies. check_mypy_ratchet: measure() pops uncheckable files out of counts, so a type-checker that never ran published a perfect score into a ratchet that records it as the floor. The four others preserve their existing pass/fail decision EXACTLY and add only the vacuity refusal, and all six take .get(key, 0) so an absent key degrades to a refusal rather than to None (which means UNDECLARED and would silently restore the pass). fence= is explicit because caller_name() reads __main__.__file__ -- misattribution raised separately as R0554 (417 registry rows filed under __main__.py). Verified live: all six run and record measured counts; check_gate_reachability (DEAD-BRANCH) and check_clock_provenance (MIXED-CLOCK) kept their pre-existing verdicts. 16/16 in tests/governance/test_denominators.py.",
+   "commit": "70296dbe",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T01:49:51.774620+00:00"
   },
   {
    "id": "R0418",
@@ -6915,6 +6915,54 @@
    "summary": "PRE-EXISTING RED TEST, NOT MINE, AND IT IS THE HAND-MAINTAINED-MIRROR SHAPE AGAIN: tests/scripts/test_build_standard_contract.py::test_every_governed_organ_meets_the_shared_build_contract fails at HEAD. Verified pre-existing by running it in a detached worktree at b2a6585f, which predates every commit in this batch. THE BREACH IS THE MIRROR, NOT THE ORGANS: check_build_standard.build_report() is GREEN -- status OK, n_failing 0, 80 governed organs -- so all four 'extra' entries (check_citation_integrity.py, check_claim_consistency.py, collect_lending_risk_base_rates.py, run_fee_attribution.py, the last added by f3ca387c/R0371) genuinely MEET the L1.41 build contract. What failed is the test's hand-copied GOVERNED set, which asserts set(check_build_standard._GOVERNED) == GOVERNED. THE FILE ALREADY DIAGNOSED ITSELF AND WAS IGNORED: its own header says 'ROTTED AND RESYNCED 2026-08-12. This mirror had drifted to 42 entries against a _GOVERNED of 75 -- 33 organs were added without it, so the test was red at HEAD and had stopped being a contract at all... If it rots again, derive it instead of re-typing it.' It rotted again in ONE DAY. Re-typing four names is therefore a KNOWN non-fix and is deliberately not done here. WHY THE MIRROR SHOULD GO RATHER THAN BE RESYNCED: its stated purpose is that 'each governed organ must be named by a test', but the mirror is a duplicate of _GOVERNED living inside the test file, so it verifies only that somebody typed the name twice -- it names no test and checks no property. Meanwhile it goes red on EVERY legitimate registration, which is the L1.43 death: a gate red from day one gets switched off, and this one is already being pushed past. The two contracts in the file that carry real information are self-maintaining and derived (report status OK / n_failing 0, and ast.parse over each governed organ). FIX DIRECTION: delete the mirror and, if the 'named by a test' property is actually wanted, DERIVE it -- walk the tests/ tree and assert every _GOVERNED organ is referenced by at least one test file. NOT DONE HERE because it is another session's guard and deleting a guard on someone else's behalf needs their intent confirmed, not inferred.",
    "roi_bps": 0.0,
    "raised": "2026-08-13T00:56:34.287862+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0553",
+   "source": "cycle",
+   "summary": "LEDGER-ROW CLAIMS, THE RE-SPECIFIED REMAINDER OF R0403 (rejected 2026-08-13). R0403's dangerous half is closed -- brain_mutex serialises organ brains desk-wide (flock, 34 deferrals logged, live 2026-08-12) and agent sessions now run in git worktrees, so the shared-tree corruption class is gone. What survives is narrow and real: two sessions can independently pick the SAME ledger row and discover it at merge, which is what happened on 2026-08-05 (same two mypy errors, same flock diagnosis, same try/finally structure, reached within one hour). THE DESIGN CONSTRAINT THAT KILLED R0403'S OWN PROPOSAL AND BINDS THIS ONE: a claims FILE read by convention is a recall-based control, and check_mine_gate already retired data/mining_suspended for exactly that reason ('a file is something rm defeats'). So the claim must attach to the UNIT OF ASSIGNMENT -- the ledger row -- and its consumer must be the owed-work brief GENERATOR, which already reads the ledger to build a batch: a row claimed by a live session is simply not offered to the next batch. That makes it fire without anyone remembering, which is the only version worth building. Needs: a TTL (a dead session must not hold a row forever -- the flock lesson: prefer a liveness signal the kernel drops over a pid file), and a decision on whether a claim survives across a session's own compaction.",
+   "roi_bps": 8.0,
+   "raised": "2026-08-13T01:47:54.897627+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0554",
+   "source": "cycle",
+   "summary": "L1.57 REGISTRY IS 417 ROWS OF MISATTRIBUTED TELEMETRY, AND THE MISATTRIBUTION IS SILENT. libs/ops/denominator.caller_name() resolves a fence's identity from __main__.__file__, which is correct for the cron invocation and WRONG for every in-process one: under pytest it resolves to pytest's own __main__.py. Measured 2026-08-13: data/denominator_contracts.jsonl holds 417 rows filed under fence '__main__.py'. Two consequences, and the second is the one that matters. (a) Junk accumulates in the registry, harmless on its own. (b) A fence exercised ONLY in tests never records under its real name, so it is counted UNDECLARED against the L1.57 coverage ratchet forever -- the declaration exists in the source and is invisible to the meta-fence, which is the same shape as the defect L1.49 names (absence from a tally is ambiguous between never-ran and ran-but-unrecorded, and only the declaration site can tell them apart). Worked around this cycle by passing fence= explicitly in the six fences wired for R0417, but that is a per-caller fix for a helper-level defect: the next fence wired without the kwarg re-opens it silently. FIX DIRECTION: caller_name() should walk the stack for the nearest scripts/check_*.py frame rather than trusting __main__, and record() should refuse (or tag) a fence name that is not a governed fence, so a misattributed row is loud instead of a row. ALSO: tests that drive a real fence's main() must redirect the registry -- tests/governance/test_denominators.py now does via an _isolated_registry fixture, because without it the SUITE publishes the desk's own coverage evidence.",
+   "roi_bps": 6.0,
+   "raised": "2026-08-13T01:48:11.990103+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0555",
+   "source": "cycle",
+   "summary": "R0407(c) SPLIT OUT: A WHOLE-SUITE PYTEST VERDICT IS STILL UNOBTAINED, AND THE REASON IS NOW MEASURED RATHER THAN GUESSED. R0407 recorded that two full runs died and a batched run was in flight at cycle end with one F sighted at 14% that was never identified; parts (a) and (b) of that row are closed (host-memory fence built 2026-08-13, rc<0 split shipped as R0407b), this half is not. WHAT CHANGED: check_host_memory_headroom now measures the constraint that keeps killing the run -- on 2026-08-13 the box read MemAvailable 205MB against 798MB of RAM held under /tmp, and the composition has SHIFTED away from the pytest orphans R0407's prevention targeted (tmp_path_retention_policy=failed) toward agent-session scratch and stray research artifacts. So this is not 'run the suite again': a full run launched under that pressure is the exact behaviour R0407 warns against, since re-running a memory-killed probe doubles the shortage it is reporting. THE ORDER IS THEREFORE FIXED: reclaim tmpfs to under the 600MB ceiling FIRST (du -sm /tmp/* | sort -rn, freeing only what no live process owns -- never blind, the box carries the live executor, three recorders and concurrent agent sessions), confirm the fence is green, THEN take one uninterrupted whole-suite verdict and identify the F. Until that verdict exists the desk's coverage floors (repo 93.24% / money path 89.44%) rest on runs that have never once completed end to end in one piece, which is a denominator question about the suite itself (L1.57).",
+   "roi_bps": 25.0,
+   "raised": "2026-08-13T01:48:45.556831+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0556",
+   "source": "deep_sweep",
+   "summary": "L1.57 COVERAGE RATCHET, RESIDUAL AFTER R0417: 18/56 fences declare a denominator (32%, up from 13/56 on 2026-08-13). R0417 is closed on the two it named as highest blast radius -- check_utilisation (every ceiling UNMEASURED left idle_unexplained empty, so a fully dark board exited 0) and check_mypy_ratchet (uncheckable files are POPPED from counts, so mypy uninstalled yielded total_errors 0 / n_files_checked 0 / exit 0) -- plus check_freshness, check_input_provenance, check_gate_reachability and check_clock_provenance. THE REMAINING 38 ARE NOT ALL ONE-LINERS, and the two shapes need different work. MOST are a kwarg at the exit site once you pick a count the RUN found. But at least one is a genuine design change and must not be waved through as wiring: check_build_standard publishes n_governed = len(_GOVERNED), a HARDCODED tuple, and len(organs) is identical to it by construction because organs is built by iterating that tuple -- so neither expression counts anything discovered, and both are exactly the constant-denominator half L1.57 names ('it must count what the RUN found'). Giving that fence an honest denominator means making its roster DISCOVERED, which is a real change to what it governs, not a kwarg. data/denominators.json next_action names the queue in order. Working rule learned in R0417: pick the count that would FALL if the scan died, never the count of what the author wrote down -- and prefer preserving an existing fail-list verdict exactly while adding only the vacuity refusal, since converting a fail-list to a pass-list is a second unrelated change to what a fence blocks on.",
+   "roi_bps": 15.0,
+   "raised": "2026-08-13T01:49:34.510297+00:00",
    "status": "open",
    "reason": null,
    "commit": null,

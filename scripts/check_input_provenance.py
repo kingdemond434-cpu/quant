@@ -223,7 +223,7 @@ def main() -> int:
     # Denominator = producers this run could actually examine, so a scope discovery that finds
     # nothing cannot report clean provenance over an empty set.
     code = 2 if rep["status"] in ("FABRICATED", "UNMEASURED") else 0
-    return fence_exit("OK" if code == 0 else rep["status"], {"OK"}, scanned=rep["n_examinable"],
+    return fence_exit("OK" if code == 0 else rep["status"], {"OK"}, scanned=rep.get("n_examinable", 0),
                       of="decision-path producers examinable", fence="check_input_provenance.py")
 
 

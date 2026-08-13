@@ -256,8 +256,14 @@ def main() -> int:
     # blocks on, and folding two decisions into one line is how the desk loses track of which
     # one it made. The denominator is the contracts this run actually read: zero contracts is a
     # registry that discovered nothing, which must never render as "everything is fresh".
+    #
+    # `.get(..., 0)` rather than `rep[...]`: a report that cannot say what it scanned has not
+    # earned a pass, so the absent key degrades to a REFUSAL rather than to a KeyError traceback
+    # (loud but ugly, and thrown after the artifact is already written) or to `None`, which means
+    # UNDECLARED and would silently restore the pass -- the one direction this law forbids.
     code = 2 if rep["status"] in ("STALE-CONSUMED", "UNWIRED", "UNMEASURED", "MISSING") else 0
-    return fence_exit("OK" if code == 0 else rep["status"], {"OK"}, scanned=rep["n_contracts"],
+    return fence_exit("OK" if code == 0 else rep["status"], {"OK"},
+                      scanned=rep.get("n_contracts", 0),
                       of="decision-path freshness contracts", fence="check_freshness.py")
 
 

@@ -744,6 +744,12 @@ _FENCE_OWNERS: dict[str, str] = {
     "check_silent_swallows_on_the_rails": "L1.41",  # a bare except on the money path is a refusal-path hole
     "check_survivor_pipeline": "L1.56",       # zero results is a claim about the INSTRUMENT until it is shown to work
     "check_test_suite_collectable": "L2.2",   # a suite that cannot collect enforces nothing
+    # Same family as the line above, one cause upstream (R0407a): an OOM-killed probe reports as a
+    # broken suite, so the box running out of memory is a condition under which the desk's evidence
+    # stops being evidence -- exactly what check_dependency_drift and check_test_suite_collectable
+    # each say about their own precondition. Not L1.28a: that law is about running a ceiling AT its
+    # limit, and RAM at 100% is the failure, not the goal.
+    "check_host_memory_headroom": "L2.2",     # a verdict the box had no memory to produce is not one
     "check_triage_disposition": "L1.17",      # self-dispositioning registers stay honest or lose the exclusion
     "check_under_exploration": "L1.32",       # under-exploration is a breach, not a preference
     "check_unwired_modules": "L2.9",          # built-but-unreachable, the third shape of dormancy

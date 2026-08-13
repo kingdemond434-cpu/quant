@@ -231,8 +231,12 @@ def test_exit_code_agrees_with_the_verdict(froot, monkeypatch, status, expect_rc
     the producer-side fences genuinely do own chasing the dead producer."""
     import scripts.check_freshness as cf
 
+    # n_contracts is part of every real report (see test_unparseable_registry_lines_...), and
+    # since R0417 the exit site declares it as the verdict's denominator. It belongs in the
+    # fixture for the same reason `status` does: this test asserts the status->exit-code ladder,
+    # and a report that scanned nothing is refused for a SEPARATE reason that would mask it.
     canned = {"status": status, "detail": "", "stale_consumed": [], "unwired": [],
-              "missing": [], "n_registry_lines_dropped": 0}
+              "missing": [], "n_registry_lines_dropped": 0, "n_contracts": 3}
     monkeypatch.setattr(cf, "_ROOT", froot)
     monkeypatch.setattr(cf, "build_report", lambda *a, **k: canned)
     monkeypatch.setattr("sys.argv", ["check_freshness.py"])

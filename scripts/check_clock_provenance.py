@@ -324,7 +324,7 @@ def main() -> int:
     # L1.57 (R0417): denominator = market-data files this run actually opened. A collector
     # directory that has moved or emptied yields zero files, zero unmarked streams, and an OK
     # verdict about clock provenance the run never observed.
-    return fence_exit(rep["status"], {"OK"}, scanned=rep["files_read"],
+    return fence_exit(rep["status"], {"OK"}, scanned=rep.get("files_read", 0),
                       of="market-data files read", fence="check_clock_provenance.py")
 
 

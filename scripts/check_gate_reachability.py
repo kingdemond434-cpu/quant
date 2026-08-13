@@ -347,7 +347,7 @@ def main() -> int:
     # ast walk -- which is this fence's whole method (L1.49: reachability is measured from the
     # declaration site, never from a tally). If the parse finds no gates the roster is empty,
     # and "no gate is unreachable" over zero gates is the vacuous pass this law refuses.
-    return fence_exit(rep["status"], {"OK"}, scanned=rep["n_declared"],
+    return fence_exit(rep["status"], {"OK"}, scanned=rep.get("n_declared", 0),
                       of="gates declared in source", fence="check_gate_reachability.py")
 
 
