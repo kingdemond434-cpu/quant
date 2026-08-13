@@ -459,6 +459,14 @@ def main() -> None:
 
     def _one(pv: dict[str, Any]) -> dict[str, str]:
         name = pv.get("name", pv.get("model", "?"))
+        # THE DENOMINATOR (R0570). Exactly one attempt per seat per run, recorded BEFORE the call
+        # so a seat that dies mid-request still counts as having been asked -- otherwise the
+        # failures that matter most would be the ones missing from the denominator.
+        try:
+            from scripts.build_audit_coverage import record_attempt
+            record_attempt(pv.get("model", "?"))
+        except Exception:
+            pass
         try:
             txt, _stop = _ask_pushed(pv["base_url"], pv["key"], pv["model"],
                                      system, dossier)

@@ -259,6 +259,84 @@ def recent_blanks(m: dict[str, object], *, window_days: int) -> dict[str, int] |
     return out
 
 
+#: Attempts are kept as a per-seat, per-DAY tally rather than one event per call: attempts
+#: outnumber blanks by ~2 orders of magnitude, and a capped event list would evict the oldest
+#: attempts first -- shrinking exactly the denominator this exists to protect. Days retained; the
+#: window queries only ever look back `SEAT_BLANK_WINDOW_DAYS`.
+_ATTEMPT_DAY_CAP = 30
+
+
+def record_attempt(model: str) -> None:
+    """One call to one seat. THE DENOMINATOR (R0570) that makes the blank tally a rate.
+
+    "Blanked 4x" is not a measurement. Four failures out of four calls is a dead seat; four out of
+    four hundred is a 1% flake on a free tier, and until now nothing counted the calls, so the two
+    were byte-identical to every reader -- L1.57's missing denominator, one subsystem over from
+    where it was written.
+
+    IT ALSO UN-WELDS THE FENCE, which is the half that bites today. `seat-chronic-*-unmeasured`
+    can currently only clear when a seat BLANKS AGAIN: with no events, recency is unmeasured and
+    the defect fires forever, so the fence is lit precisely while the seats are healthy and goes
+    quiet only on new failure. That is the inverted-gate class R0492 named, reappearing one level
+    up in the instrument built to fix it. An attempt is recorded whether the seat succeeds or
+    fails, so health becomes measurable from success -- the only direction that can honestly
+    clear it.
+
+    ATTEMPTS ARE THEIR OWN EPOCH, which is why no separate "instrumented since" stamp is needed:
+    an attempt recorded at T proves the instrumentation was live at T, so attempts inside the
+    window with no blank events inside the window means zero blanks, MEASURED -- not unknown.
+    """
+    m = refresh(load())
+    today = datetime.now(tz=UTC).date()
+    att = m.setdefault("seat_attempts", {})
+    if not isinstance(att, dict):
+        att = m["seat_attempts"] = {}
+    per = att.setdefault(model, {})
+    per[today.isoformat()] = int(per.get(today.isoformat(), 0)) + 1
+    cutoff = (today - timedelta(days=_ATTEMPT_DAY_CAP)).isoformat()
+    for mdl in list(att):
+        kept = {d: c for d, c in (att[mdl] or {}).items() if d >= cutoff}
+        if kept:
+            att[mdl] = kept
+        else:
+            del att[mdl]
+    save(m)
+
+
+def recent_attempts(m: dict[str, object], *, window_days: int) -> dict[str, int] | None:
+    """Calls per seat inside `window_days`, or ``None`` when nothing has been recorded.
+
+    ``None`` rather than ``{}`` for the same reason `recent_blanks` returns it: a box that has
+    never counted an attempt has no rate evidence, and zero-attempts would read as a 0/0 rate that
+    a caller could round to "fine".
+    """
+    att = m.get("seat_attempts")
+    if not isinstance(att, dict) or not att:
+        return None
+    cutoff = (datetime.now(tz=UTC).date() - timedelta(days=window_days)).isoformat()
+    out: dict[str, int] = {}
+    for model, days in att.items():
+        if not isinstance(days, dict):
+            continue  # attrition-ok: a malformed seat block carries no dated counts to window
+        n = sum(int(c) for d, c in days.items() if str(d) >= cutoff)
+        if n:
+            out[str(model)] = n
+    return out or None
+
+
+def blank_rate(m: dict[str, object], *, window_days: int) -> dict[str, tuple[int, int]] | None:
+    """{seat: (blanks, attempts)} inside the window, or ``None`` when attempts are unrecorded.
+
+    Keyed on ATTEMPTS, never on blanks: a seat that answered every call in the window has no blank
+    events at all, and that is the healthy case the caller most needs to be able to see.
+    """
+    attempts = recent_attempts(m, window_days=window_days)
+    if attempts is None:
+        return None
+    blanks = recent_blanks(m, window_days=window_days) or {}
+    return {seat: (blanks.get(seat, 0), n) for seat, n in attempts.items()}
+
+
 def audit_payload() -> tuple[str, list[str]]:
     """Return (text_to_append_to_dossier, files_included). Sanitized, budget-bounded."""
     m = refresh(load())

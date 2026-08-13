@@ -912,6 +912,12 @@ def check_coverage(defects) -> None:
 #: seat cannot hide between panel runs, short enough that a seat which has since recovered clears.
 SEAT_BLANK_WINDOW_DAYS = 7
 
+#: Calls needed inside the window before a rate is allowed to mean anything. Below this the fence
+#: says UNMEASURED rather than grading: on 2 calls a single blank reads as a 50% failure rate and
+#: would prescribe swapping a healthy seat, which is the wrong direction to be confident in
+#: (L1.62 -- an underpowered sample earns no verdict, and refusing to grade is a real answer).
+SEAT_MIN_ATTEMPTS = 5
+
 
 def _check_chronic_seats(defects, m: dict) -> None:
     """A SEAT IS SWAPPED ON WHAT IT IS DOING NOW, NOT ON WHAT IT HAS EVER DONE.
@@ -933,27 +939,31 @@ def _check_chronic_seats(defects, m: dict) -> None:
     seat with a lifetime tally has no recency evidence, and silently clearing the fence there
     would be absence resolving to a clean verdict on the exact history that raised it.
     """
-    from scripts.build_audit_coverage import recent_blanks
+    from scripts.build_audit_coverage import blank_rate
 
     lifetime = {k: int(v) for k, v in (m.get("seat_blanks") or {}).items()}
-    recent = recent_blanks(m, window_days=SEAT_BLANK_WINDOW_DAYS)
+    rate = blank_rate(m, window_days=SEAT_BLANK_WINDOW_DAYS) or {}
     for seat, n in lifetime.items():
         if n < 3:
             continue
         tag = f"seat-chronic-{seat.split('/')[-1]}"
-        if recent is None:
+        blanks, attempts = rate.get(seat, (0, 0))
+        if attempts < SEAT_MIN_ATTEMPTS:
             defects.append((
                 f"{tag}-unmeasured",
-                f"panel seat {seat} carries a LIFETIME blank tally of {n} and no timestamped "
-                f"blank events exist yet, so whether it is failing NOW is UNMEASURED. Do not "
-                f"swap on this: the tally never resets, so it says only that the seat failed at "
-                f"some point in its history. Recency becomes measurable on the next blank."))
-        elif recent.get(seat, 0) >= 3:
+                f"panel seat {seat} carries a LIFETIME blank tally of {n} and only {attempts} "
+                f"recorded call(s) in {SEAT_BLANK_WINDOW_DAYS}d, below the {SEAT_MIN_ATTEMPTS} "
+                f"needed to tell a dead seat from a flake, so whether it is failing NOW is "
+                f"UNMEASURED. Do not swap on this: the tally never resets, so it says only that "
+                f"the seat failed at some point in its history. Clears on its own once the panel "
+                f"has run {SEAT_MIN_ATTEMPTS}x -- from SUCCESS, not only from a new blank."))
+        elif blanks >= 3:
             defects.append((
                 tag,
-                f"panel seat {seat} blanked {recent[seat]}x in the last "
-                f"{SEAT_BLANK_WINDOW_DAYS}d (lifetime {n}) -- chronic capacity failure that is "
-                f"still happening, swap-candidate with evidence"))
+                f"panel seat {seat} blanked {blanks}x of {attempts} calls "
+                f"({blanks / attempts:.0%}) in the last {SEAT_BLANK_WINDOW_DAYS}d (lifetime {n}) "
+                f"-- chronic capacity failure that is still happening, swap-candidate with "
+                f"evidence"))
 
 
 def check_findings(defects) -> None:
