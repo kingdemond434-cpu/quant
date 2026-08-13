@@ -568,3 +568,42 @@ slots used.**
 **WATCHLIST (max 5): POC retest (hold), SFD cadence probe (hold), dvol_futures_basis_carry (hold),
 coinm_usdtm_basis_convexity_rv (hold), kr_rail_state_transition_global_leg (hold). 5/5 slots used
 — this session added NO card (one EV-reject, one measurement routed to the funding axis owner).**
+
+## 2026-08-13 — JP frontier miner s4 (deep-forest self-hosted layer): 4 candidates scored, 1 clears, 0 new cards
+
+All four were novelty-gated against the graveyard BEFORE scoring (universal duty; none redundant,
+nearest-prior similarity 0.149–0.189) and then run through the pre-registered EV gate with honest
+inputs. Verdicts, so the trials are counted rather than the survivor reported alone:
+
+| candidate | novelty | EV | p_survive | verdict | disposition |
+|---|---|---|---|---|---|
+| `venue_fee_volume_credibility` | 0.816 | **0.0058** | 0.24 | **QUEUE** | → universe-map source **102** (data-integrity axis, not a sleeve) |
+| `ofi_taker_component_dominance` | 0.851 | 0.0002 | 0.026 | REJECT (below thresh) | → `improvement_inbox.md` item 1 (feature-redundancy fact, not a trade) |
+| `option_flow_informedness` | 0.828 | 0.0002 | 0.060 | REJECT (below thresh) | → held below as an untested-alpha lead + vocabulary flag |
+| `rev_calendar_spread_iv_convergence` | 0.811 | 0.0000 | 0.013 | REJECT | → `docs/graveyard.md` (also refuted at source) |
+
+**NO NEW CARD. The watchlist stays at 5/5: POC retest (hold), SFD cadence probe (hold),
+`dvol_futures_basis_carry` (hold), `coinm_usdtm_basis_convexity_rv` (hold),
+`kr_rail_state_transition_global_leg` (hold).** The one gate survivor is a *conditioning variable*,
+not a sleeve, so it takes an axis row rather than a card slot — carding it would consume a scarce
+slot with something that can never be promoted on its own.
+
+**THE ONE LEAD HELD RATHER THAN DISCARDED — `option_flow_informedness`, flagged per the extraction
+mandate as mapping to NO entry in `CRYPTO_MECHANISMS`.** From `perp-screener.com/posts/btc-bot`
+(2025-12-04), stated as the author's reason for choosing options at all: *"「意志のある取引」が多いの
+では？"* — **option order flow carries more intent per unit notional than perp flow, because
+selecting a strike AND an expiry encodes direction, timing and magnitude simultaneously, whereas
+`BTCUSDT` gets bought on a vibe.** The desk's vocabulary has `options skew` and `derivatives
+positioning`, which are *state* variables; this is a claim about the **informedness of flow
+conditional on instrument complexity**, and it is a different quantity. Testable in principle (does
+option trade imbalance lead perp price by more than perp trade imbalance does?), and it **fails the
+EV gate today on `narrow_breadth`** — BTC/ETH options are ~2–3 independent bets — which is an honest
+rejection, not a hidden one. **Enabling change that would re-open it (L1.16a):** a materially wider
+liquid crypto option cross-section, or a construction that pools the option-flow signal across many
+perps rather than trading the options themselves. Held here, not carded, not screened.
+
+**PROVENANCE NOTE ON THE WHOLE SESSION (OP-072, new this run):** the options post's *mechanism
+analysis* is self-disclosed LLM output (*"チャッピーの解説によると"*), so it is **not** an independent
+practitioner node and must never be counted as convergence. Its *observations* — realised P&L, greeks
+snapshot, the expiry failure mode — stand. The other three sources are pre-2023 or carry no LLM
+disclosure, checked.
