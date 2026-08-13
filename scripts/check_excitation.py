@@ -19,6 +19,9 @@ FENCE STATUS (exit 2 on the first four -- a gate, not a report):
   NO-DATA        design artifact absent or unreadable -- the experiment cannot run.
   NO-EXCITATION  epsilon=0, cap=0, or the budget has gone unspent while the book traded.
                  An unspent declared budget is an IDLENESS defect (L1.28a), never prudence.
+  UNMEASURED     the denylist inputs could not be read, so WHO IS BLOCKED is unknown and the
+                 ABSORBING question below cannot be asked at all (L1.55/L1.28a). See the
+                 provenance note on `_bleeding_symbols`.
   ABSORBING      an execution exclusion with NO PATH BACK -- a denylisted symbol whose `n` is
                  frozen by the very block that denylisted it (L1.16a: every kill records its
                  re-entry condition; the alpha graveyard has that discipline, the EXECUTION
@@ -48,6 +51,7 @@ if str(_ROOT) not in sys.path:
 # L1.42 LAWFUL ENTRY: TTL-cached, pages but does not block -- a governance fault must never
 # silence the fence that reports on the desk's only execution experiment.
 from libs.execution import excitation, execution_tape  # noqa: E402
+from libs.ops.input_provenance import UNREADABLE, Inputs  # noqa: E402
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
 
 # Days a denylisted symbol may sit blocked before the absence of a re-entry condition is a
@@ -56,37 +60,49 @@ from libs.ops.lawful import guard as _law_guard  # noqa: E402
 REENTRY_GRACE_DAYS = 30.0
 
 
-def _bleeding_symbols(root: Path) -> list[dict[str, Any]]:
+def _bleeding_symbols(root: Path, inp: Inputs, reentry: dict[str, Any]) -> list[dict[str, Any]]:
     """Symbols the executor's `_structurally_bleeding` currently blocks from NEW OPENS.
 
     Read from the same artifact the executor reads, so the fence and the gate can never disagree
     about who is blocked -- a fence reading a different file would be measuring a different desk.
+
+    THAT PROMISE WAS UNENFORCEABLE UNTIL 2026-08-12 (R0396). The read was
+    `except (OSError, JSONDecodeError): return []`, so an unreadable forensics file made this
+    function say NOBODY IS BLOCKED while the executor went on blocking -- the exact disagreement
+    the docstring above forbids, in the fail-OPEN direction, on the L1.45 execution fence. An
+    empty denylist and an unmeasurable one were byte-identical to every caller, and only one of
+    them is evidence. The read is now DECLARED (L1.55): the caller gets `None` for "cannot know"
+    and a list for "measured", and `build_report` refuses to publish a denylist it did not read.
     """
-    path = root / "web/trade_forensics.json"
-    try:
-        data = json.loads(path.read_text("utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return []
-    rows = data.get("worst_symbols")
+    data = inp.read_json(root / "web/trade_forensics.json", default=None, required=True)
+    rows = data.get("worst_symbols") if isinstance(data, dict) else None
     if not isinstance(rows, list):
         rows = []
     out = []
     seen: set[str] = set()
+    malformed = 0
     for r in rows:
         try:
             if int(r.get("n", 0)) >= 5 and float(r.get("bps", 0.0)) <= -20.0:
                 out.append({"symbol": str(r.get("symbol")), "n": int(r.get("n", 0)),
                             "bps": float(r.get("bps", 0.0))})
                 seen.add(str(r.get("symbol")))
-        except (TypeError, ValueError):
+        except (AttributeError, TypeError, ValueError):
+            # L1.60: a skip is fine, an INVISIBLE skip is not -- a row this loop could not parse
+            # is a symbol whose block status is unknown, and dropping it silently reads exactly
+            # like a symbol that is not blocked.
+            malformed += 1
             continue
+    if malformed:
+        inp.defaulted("web/trade_forensics.json#worst_symbols",
+                      detail=f"{malformed} row(s) unparseable -- their block status is unknown")
     # PERSISTENT HALF OF THE SAME DENYLIST (2026-08-05). `worst_symbols` is a 14-day ROLLING
     # window, so it empties while the book is paused and this fence would report ZERO exclusions
     # while the executor was still denying -- the exact "fence and gate disagree about who is
     # blocked" failure this function's docstring promises cannot happen. It could, because the
     # executor now also denies on a recorded re-entry row (see `_structurally_bleeding`), which
     # outlives the window. Read both, so the fence keeps measuring the desk it audits.
-    for symbol, row in _reentry_state(root).items():
+    for symbol, row in reentry.items():
         if symbol.startswith("_") or not isinstance(row, dict) or symbol in seen:
             continue
         verdict = row.get("original_verdict")
@@ -117,18 +133,23 @@ def _executor_wired(root: Path) -> bool | None:
         return None
 
 
-def _reentry_state(root: Path) -> dict[str, Any]:
+def _reentry_state(root: Path, inp: Inputs) -> dict[str, Any]:
     """Recorded re-entry conditions for execution-denylisted symbols.
 
     Absent file is NOT an error and NOT OK: it means no exclusion has ever been given a way back,
-    which is exactly the ABSORBING finding this fence reports.
+    which is exactly the ABSORBING finding this fence reports -- so it is declared NOT required
+    and an empty dict is a genuine measurement of "nothing has a way back".
+
+    UNREADABLE is the opposite case and is promoted to required (R0396): a file that exists but
+    does not parse means a producer ran and wrote garbage, and the symbols inside it may each
+    hold a re-entry condition this fence would then wrongly report as absent -- ABSORBING on a
+    symbol that is not, or silence on one that is. ABSENT and UNREADABLE demand opposite
+    responses and the idiom this replaces collapsed them (L1.55).
     """
-    path = root / "data/execution_reentry.json"
-    try:
-        data = json.loads(path.read_text("utf-8"))
-        return data if isinstance(data, dict) else {}
-    except (OSError, json.JSONDecodeError):
-        return {}
+    data = inp.read_json(root / "data/execution_reentry.json", default=None, required=False)
+    if inp.records and inp.records[-1].status == UNREADABLE:
+        inp.records[-1].required = True
+    return data if isinstance(data, dict) else {}
 
 
 def build_report(root: Path | None = None, now: datetime | None = None) -> dict[str, Any]:
@@ -147,9 +168,14 @@ def build_report(root: Path | None = None, now: datetime | None = None) -> dict[
     opens = [r for r in tape if r.get("event") == "open"]
 
     wired = _executor_wired(root)
-    bleeding = _bleeding_symbols(root)
-    reentry = _reentry_state(root)
-    absorbing = [b for b in bleeding if b["symbol"] not in reentry]
+    # THE DENYLIST IS A DECLARED READ (R0396, L1.55). `denylist_inp` covers exactly the two files
+    # that answer "who is blocked"; if either is unmeasurable the fence must say so rather than
+    # publish an empty list, because an empty denylist is a CLAIM about the executor.
+    denylist_inp = Inputs("check_excitation._bleeding_symbols")
+    reentry = _reentry_state(root, denylist_inp)
+    bleeding = _bleeding_symbols(root, denylist_inp, reentry)
+    denylist_measured = denylist_inp.measured()
+    absorbing = [b for b in bleeding if b["symbol"] not in reentry] if denylist_measured else []
 
     unidentified = design.unidentified_cells
     spent = excitation.spent_today(tape, now=now)
@@ -163,6 +189,15 @@ def build_report(root: Path | None = None, now: datetime | None = None) -> dict[
         detail = (f"epsilon={design.epsilon}, cap=${design.daily_notional_cap_usd:.0f} -- "
                   f"excitation is switched off; a declared budget that is never spent is an "
                   f"idleness defect (L1.28a), not prudence")
+    elif not denylist_measured:
+        # BEFORE the ABSORBING slot, because this is the same question asked one level down:
+        # ABSORBING says "these symbols are blocked with no way back", and an unmeasurable
+        # denylist means the fence cannot say WHO is blocked at all. Falling through to
+        # UNIDENTIFIED/OK would have been the fail-open the docstring forbids.
+        status = "UNMEASURED"
+        detail = (f"the execution denylist could not be read, so the fence cannot say who the "
+                  f"executor is blocking -- {denylist_inp.why()}. An empty denylist is a CLAIM "
+                  f"about the executor and this run has no evidence for it (L1.55/L1.28a)")
     elif absorbing:
         status = "ABSORBING"
         detail = (f"{len(absorbing)} execution exclusion(s) with NO re-entry condition: "
@@ -209,14 +244,22 @@ def build_report(root: Path | None = None, now: datetime | None = None) -> dict[
         "n_randomised": len(randomised),
         "spent_today_usd": round(spent, 2),
         "unidentified_cells": unidentified,
-        "execution_denylist": bleeding,
-        "absorbing_exclusions": absorbing,
+        # THE REFUSAL PATH (R0396). `None` means "not measured"; `[]` means "measured, and nobody
+        # is blocked". Those were the same value until 2026-08-12 and only one of them is
+        # evidence -- a reader that cannot tell them apart audits the wrong organ.
+        "execution_denylist": denylist_inp.derived(bleeding),
+        "absorbing_exclusions": denylist_inp.derived(absorbing),
+        "denylist_provenance": denylist_inp.block(),
+        "denylist_status": denylist_inp.status(),
         "reentry_recorded": sorted(reentry),
         "next_action": (
             "Write data/excitation_design.json (pre-registered arms/epsilon/cap)"
             if status == "NO-DATA" else
             "Raise epsilon above 0 -- the budget exists to be spent (L1.28a)"
             if status == "NO-EXCITATION" else
+            f"Repair the denylist inputs before trusting any exclusion verdict: "
+            f"{denylist_inp.why()}"
+            if status == "UNMEASURED" else
             "Record a re-entry condition per blocked symbol in data/execution_reentry.json: "
             "m minimum-size probes after d days (L1.16a)"
             if status == "ABSORBING" else
@@ -245,12 +288,16 @@ def main() -> int:
         print(f"excitation (L1.45): {rep['status']} -- {rep['detail']}")
         print(f"  tape {rep['n_tape_rows']} rows | stamped {rep['n_stamped']} | "
               f"randomised {rep['n_randomised']} | epsilon {rep['epsilon']}")
-        for b in rep["absorbing_exclusions"]:
+        for b in rep["absorbing_exclusions"] or []:
             print(f"  ABSORBING: {b['symbol']} n={b['n']} bps={b['bps']} -- no re-entry condition")
+        for r in rep["denylist_provenance"]:
+            if r["status"] != "READ":
+                print(f"  INPUT {r['status']}: {r['path']} -- {r.get('detail', '')}")
         print(f"  next: {rep['next_action']}")
     if args.report_only:
         return 0
-    return 2 if rep["status"] in ("NO-DATA", "NO-EXCITATION", "ABSORBING", "UNIDENTIFIED") else 0
+    return 2 if rep["status"] in ("NO-DATA", "NO-EXCITATION", "UNMEASURED", "ABSORBING",
+                                  "UNIDENTIFIED") else 0
 
 
 if __name__ == "__main__":

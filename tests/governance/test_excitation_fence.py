@@ -8,6 +8,7 @@ fails if the executor wiring is torn out, so excitation cannot silently become d
 from __future__ import annotations
 
 import json
+import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -209,6 +210,80 @@ def test_recording_a_reentry_condition_clears_absorbing(tmp_path: Path) -> None:
     rep = build_report(root=root, now=_NOW)
     assert rep["status"] != "ABSORBING"
     assert rep["absorbing_exclusions"] == []
+
+
+# ------------------------------------------------- R0396: the denylist may not be fabricated
+
+
+@pytest.mark.parametrize(
+    ("mangle", "expect_state"),
+    [(lambda p: p.unlink(), "ABSENT"),
+     (lambda p: p.write_text("{not json", "utf-8"), "UNREADABLE")],
+    ids=["absent", "unreadable"])
+def test_an_unreadable_forensics_file_is_UNMEASURED_never_an_empty_denylist(
+        tmp_path: Path, mangle, expect_state: str) -> None:
+    """R0396. The old read was `except (OSError, JSONDecodeError): return []`, so the fence
+    published `execution_denylist: []` -- NOBODY IS BLOCKED -- while the executor went on
+    blocking off the same file. Fail-open on the L1.45 execution fence, and it broke the promise
+    `_bleeding_symbols` makes in its own docstring three lines above the swallow."""
+    root = _fixture(tmp_path, design=_GOOD_DESIGN, tape=[], forensics=[], reentry=_reentry())
+    mangle(root / "web/trade_forensics.json")
+
+    rep = build_report(root=root, now=_NOW)
+
+    assert rep["status"] == "UNMEASURED", rep["status"]
+    # THE WHOLE POINT: `None` (cannot know) is distinguishable from `[]` (measured, nobody
+    # blocked). Before the fix both were `[]`.
+    assert rep["execution_denylist"] is None
+    assert rep["absorbing_exclusions"] is None
+    assert rep["denylist_status"] == "UNMEASURED"
+    states = {Path(r["path"]).name: r["status"] for r in rep["denylist_provenance"]}
+    assert states["trade_forensics.json"] == expect_state, states
+    assert "who the executor is blocking" in rep["detail"]
+
+
+def test_a_readable_but_empty_forensics_file_still_measures_an_empty_denylist(
+        tmp_path: Path) -> None:
+    """The other half of the same distinction: a file that IS readable and lists nobody is a
+    real measurement, and must NOT be downgraded to UNMEASURED. A fence that cried wolf on the
+    healthy case would be switched off inside a week (L1.43)."""
+    root = _fixture(tmp_path, design=_GOOD_DESIGN, tape=[], forensics=[], reentry={})
+    rep = build_report(root=root, now=_NOW)
+    assert rep["status"] != "UNMEASURED"
+    assert rep["execution_denylist"] == []
+    assert rep["denylist_status"] == "OK"
+
+
+def test_an_absent_reentry_file_is_a_measurement_not_a_blindness(tmp_path: Path) -> None:
+    """`data/execution_reentry.json` absent means NOTHING has a way back -- exactly the
+    ABSORBING finding. It is declared not-required so its absence cannot mask ABSORBING behind
+    UNMEASURED, which would swap a loud true verdict for a quiet one."""
+    root = _fixture(tmp_path, design=_GOOD_DESIGN, tape=[], forensics=_BLED, reentry=None)
+    rep = build_report(root=root, now=_NOW)
+    assert rep["status"] == "ABSORBING"
+    assert rep["denylist_status"] != "UNMEASURED"
+
+
+def test_an_unparseable_reentry_file_is_UNMEASURED_not_an_absent_one(tmp_path: Path) -> None:
+    """ABSENT and UNREADABLE demand opposite responses (L1.55): no producer has ever run vs one
+    ran and wrote garbage. A garbage re-entry file may hide the very conditions that would clear
+    ABSORBING, so it may not be read as 'nothing recorded'."""
+    root = _fixture(tmp_path, design=_GOOD_DESIGN, tape=[], forensics=_BLED, reentry=_reentry())
+    (root / "data/execution_reentry.json").write_text("{oops", "utf-8")
+    rep = build_report(root=root, now=_NOW)
+    assert rep["status"] == "UNMEASURED"
+    assert rep["execution_denylist"] is None
+
+
+def test_unmeasured_exits_nonzero(tmp_path: Path, monkeypatch) -> None:
+    """A status that does not fail the gate is a report, not a fence."""
+    import scripts.check_excitation as ce
+
+    root = _fixture(tmp_path, design=_GOOD_DESIGN, tape=[], forensics=[], reentry=None)
+    (root / "web/trade_forensics.json").unlink()
+    monkeypatch.setattr(ce, "_ROOT", root)
+    monkeypatch.setattr(sys, "argv", ["check_excitation.py"])
+    assert ce.main() == 2
 
 
 def _write_executor(root: Path, *, wired: bool) -> None:

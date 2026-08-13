@@ -20,12 +20,22 @@ PER-CONTRACT VERDICTS:
   FOREIGN         an absolute path outside the repo leaked into the registry (test hygiene
                   guard) -- skipped from verdicts, reported so the leak is visible.
 
-FENCE STATUS (exit 2 on the first three -- a gate, not a report):
+FENCE STATUS (exit 2 on the first four -- a gate, not a report):
   STALE-CONSUMED  any contract in that state.
-  UNWIRED         the bootstrap read sites (executor, alerts) no longer reference their
-                  contracts -- the wiring-regression check, so deleting a call site is loud.
+  UNWIRED         a declared decision-path read site no longer references its contract -- the
+                  wiring-regression check, so deleting a call site is loud.
   UNMEASURED      zero contracts recorded. An empty registry must never read OK (L1.28a):
                   it means the helper is unwired or no consumer has ticked since deploy.
+  MISSING         a consumer declared a contract for an artifact THAT DOES NOT EXIST. Until
+                  2026-08-12 (R0398) this was folded into STALE-UNREAD and exited 0, which is
+                  the wrong reading in both directions: STALE-UNREAD says "a producer ran once
+                  and has since died, and the producer-side fences own chasing it", but nothing
+                  produces this path at all, so no producer-side fence has a row to fire on --
+                  the artifact is invisible to EVERY fence on the desk while a decision-path
+                  consumer reads it. That is the L1.55 fabrication precondition (a consumer
+                  reading a file with no producer takes its default and publishes the result as
+                  a measurement), and ABSENT and STALE demand opposite repairs: build or
+                  schedule the producer vs revive the one that stopped.
   STALE-UNREAD    stale artifacts exist but nothing consumed them -- reported, exit 0.
   OK              every contract fresh.
 
@@ -52,40 +62,56 @@ if str(_ROOT) not in sys.path:
 from libs.ops.fresh import REGISTRY_REL, _age_of  # noqa: E402
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
 
-#: WIRING-REGRESSION CHECK. These call sites are the bootstrap migration (capability hunt
-#: 2026-07-31); if a token vanishes from its file the contract was deleted, and that must fail
-#: the fence rather than silently return the read site to uncontracted blindness. Checked
-#: against the REPO the fence lives in (law surface), never the state root (state surface) --
-#: the same law/state split that keeps state fences out of commit gates.
+#: WIRING-REGRESSION CHECK. These call sites are the decision-path reads whose contracts must
+#: not silently disappear; if a token vanishes from its file the contract was deleted, and that
+#: must fail the fence rather than silently return the read site to uncontracted blindness.
+#: Checked against the REPO the fence lives in (law surface), never the state root (state
+#: surface) -- the same law/state split that keeps state fences out of commit gates.
+#:
+#: WIDENED 2026-08-12 (R0398) from the two bootstrap sites to every non-test decision-path
+#: caller of `read_fresh`. Two entries was the migration's beachhead, not a scope: it made the
+#: regression check cover the executor and the pager while the conviction trader's cost gate and
+#: the lending-haircut base rates -- both of which steer money -- could have their contracts
+#: deleted with the fence still green. The tokens name the CONTRACT, not just the helper, so
+#: re-pointing a read at a different artifact is a regression too.
 _WIRED: tuple[tuple[str, str], ...] = (
     ("scripts/run_cashcarry_executor.py", "read_fresh"),
     ("scripts/run_alerts.py", "live_guard_dead"),
+    ("scripts/run_conviction_trader.py", 'read_fresh("data/cost_hunt.json"'),
+    ("libs/research/lending_haircut.py", "read_fresh(BASE_RATES_PATH"),
 )
 
 _CONSUMED_WINDOW_H = 26.0     # a stale read within this window counts as "consumed while stale"
 
 
-def _parse_registry(reg: Path) -> tuple[dict[tuple[str, str], dict], dict[tuple[str, str], str]]:
-    """(latest contract per (caller, path), latest stale/unreadable event ts per (caller, path)).
-    Malformed lines are counted by the caller via the returned dicts staying sparse -- a corrupt
-    line loses one record, never the fence."""
+def _parse_registry(
+        reg: Path) -> tuple[dict[tuple[str, str], dict], dict[tuple[str, str], str], int]:
+    """(latest contract per (caller, path), latest stale/unreadable event ts, lines dropped).
+
+    A corrupt line loses one record, never the fence -- but the drop is COUNTED and published
+    (L1.60). "Counted by the caller via the returned dicts staying sparse", as this said before
+    2026-08-12, is not a count: a registry whose lines all fail to parse and a registry that was
+    never written produce the same sparse dicts, and only one of them is a corrupt writer.
+    """
     contracts: dict[tuple[str, str], dict] = {}
     events: dict[tuple[str, str], str] = {}
+    dropped = 0
     try:
         lines = reg.read_text("utf-8").splitlines()
     except OSError:
-        return {}, {}
+        return {}, {}, 0
     for ln in lines:
         try:
             r = json.loads(ln)
         except ValueError:
+            dropped += 1
             continue
         key = (str(r.get("caller", "")), str(r.get("path", "")))
         if r.get("event") == "contract":
             contracts[key] = r
         elif r.get("event") in ("stale_read", "unreadable_read"):
             events[key] = str(r.get("ts", ""))
-    return contracts, events
+    return contracts, events, dropped
 
 
 def _recent(ts: str, now: datetime) -> bool:
@@ -144,7 +170,7 @@ def _unwired(repo: Path) -> list[str]:
 def build_report(root: Path | None = None, now: datetime | None = None) -> dict[str, Any]:
     root = root or _ROOT
     now = now or datetime.now(tz=UTC)
-    contracts, events = _parse_registry(root / REGISTRY_REL)
+    contracts, events, dropped_lines = _parse_registry(root / REGISTRY_REL)
     rows = [_verdict(root, c, events.get(k), now) for k, c in sorted(contracts.items())]
     unwired = _unwired(_ROOT)
 
@@ -157,7 +183,14 @@ def build_report(root: Path | None = None, now: datetime | None = None) -> dict[
         status = "UNWIRED"
     elif not judged:
         status = "UNMEASURED"
-    elif n_by["STALE-UNREAD"] or n_by["MISSING"]:
+    elif n_by["MISSING"]:
+        # R0398. MISSING ranks ABOVE STALE-UNREAD and fails the fence. It used to be folded into
+        # STALE-UNREAD, whose whole justification for exiting 0 is that "the producer-side
+        # fences own chasing the dead producer" -- true of a stale artifact, false of an absent
+        # one, because a path nothing has ever written appears in no producer-side registry and
+        # therefore has no owner anywhere on the desk.
+        status = "MISSING"
+    elif n_by["STALE-UNREAD"]:
         status = "STALE-UNREAD"
     else:
         status = "OK"
@@ -172,7 +205,9 @@ def build_report(root: Path | None = None, now: datetime | None = None) -> dict[
         "status": status,
         "n_contracts": len(judged), "by_verdict": n_by,
         "fresh_fraction": fresh_fraction,
+        "n_registry_lines_dropped": dropped_lines,   # L1.60: a skip that is counted, not hidden
         "unwired": unwired,
+        "missing": [f"{r['caller']} <- {r['path']}" for r in rows if r["verdict"] == "MISSING"],
         "contracts": rows,
         "detail": (f"{len(judged)} contract(s): " + ", ".join(f"{k}={v}" for k, v in
                    n_by.items() if v) if judged else
@@ -183,6 +218,9 @@ def build_report(root: Path | None = None, now: datetime | None = None) -> dict[
         "next_action": ("revive the dead producer or re-wire the caller through "
                         "libs.ops.fresh.read_fresh; the offender list names both ends of every "
                         "stale edge" if offenders or unwired else
+                        "BUILD OR SCHEDULE THE PRODUCER -- a contracted artifact that has never "
+                        "existed has no producer-side fence to chase it, and its consumer is "
+                        "steering on a default right now (L1.55)" if n_by["MISSING"] else
                         "extend contracts to the next uncontracted decision-path read"),
     }
 
@@ -205,9 +243,13 @@ def main() -> int:
             print(f"  STALE-CONSUMED: {line}")
         for line in rep["unwired"]:
             print(f"  UNWIRED: {line}")
+        for line in rep["missing"]:
+            print(f"  MISSING: {line}")
+        if rep["n_registry_lines_dropped"]:
+            print(f"  registry: {rep['n_registry_lines_dropped']} unparseable line(s) dropped")
     if args.report_only:
         return 0
-    return 2 if rep["status"] in ("STALE-CONSUMED", "UNWIRED", "UNMEASURED") else 0
+    return 2 if rep["status"] in ("STALE-CONSUMED", "UNWIRED", "UNMEASURED", "MISSING") else 0
 
 
 if __name__ == "__main__":
