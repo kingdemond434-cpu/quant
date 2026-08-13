@@ -5103,11 +5103,11 @@
    "summary": "TIER-3, PRINCIPAL SIGN-OFF REQUIRED: the dead-man switch pages when the equity feed is STALE but not when it is ABSENT. scripts/run_deadman_switch.py:295 guards its blindness detector with the condition \"eq is not None and state.get(has_positions)\", so the 12-consecutive-identical-readings pager (written for 'the missed-fire scenario is a venue returning stale-but-valid data during the exact outage the rail exists for') cannot see the case where combined_equity() returns None outright -- venue 5xx, DNS failure, auth error, JSON parse, maintenance, all funnelled into the bare \"except Exception: return None\" at line 172. should_fire correctly neither fires nor resets on None (the review seat that surfaced this claimed it resets breaches; that is false, verified at line 180), so the rail does not DISARM -- it goes silently BLIND, with open positions, and run_alerts.py has a deadman_latched pager for the rail having FIRED and no counterpart for it being unable to read. Desk memory names this exact class: a heartbeat proves the loop is alive, never that the pipe is. PROPOSAL: count consecutive None reads while has_positions and page once at a threshold, mirroring the existing same_count/stale_paged pattern; do NOT auto-fire on unreadability, since firing on a network blip is its own ruin path and the existing 'never auto-fire on it' rule for the stale detector is the right precedent. NOT IMPLEMENTED HERE: run_deadman_switch.py is Tier-3 and untouchable without principal sign-off. Surfaced by the first successful run of scripts/deep_review.py (R0231) and verified against the code.",
    "roi_bps": null,
    "raised": "2026-08-05T18:08:22.966873+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "TIER-3, BLOCKED ON PRINCIPAL SIGN-OFF -- scripts/run_deadman_switch.py is a ruin rail and is never modified autonomously (CLAUDE.md standing law; arming and altering the dead-man is the principal's act). VERIFIED AGAINST THE CODE THIS CYCLE, all three claims hold: (1) the stale-feed detector at run_deadman_switch.py:295 is guarded by 'eq is not None and state.get(has_positions)', so the 12-identical-readings pager cannot observe the eq-is-None case at all; (2) combined_equity funnels venue 5xx, DNS, auth, JSON-parse and maintenance into a bare 'except Exception: return None' at line 172; (3) should_fire returns False on None WITHOUT resetting state[breaches] (line 176-180), so the rail does NOT disarm -- it goes silently blind with open positions, which is the correct and more dangerous reading. Nothing in run_alerts.py pages on the rail being unable to READ; it pages only on it having FIRED (deadman_latched). The row's own proposal is the right one and is deliberately conservative: count consecutive None reads while has_positions and page ONCE at a threshold, mirroring the existing same_count/stale_paged pattern, and NEVER auto-fire on unreadability -- firing on a network blip is its own ruin path. Estimated change is ~6 lines inside the existing poll loop. WHAT IT WAITS ON: principal sign-off to touch a Tier-3 file, nothing else -- the design is settled and needs no further research. Exposure is not live today (data/deadman_state.json has has_positions false, flat book), which is why this schedules rather than escalates; it becomes live the moment the book carries a short leg.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-09-12",
+   "disposed": "2026-08-13T00:48:49.668037+00:00"
   },
   {
    "id": "R0402",
@@ -6843,6 +6843,42 @@
    "summary": "Eight tests are RED at HEAD on this box and were red before this batch touched anything (verified 2026-08-12 by running them in the clean main checkout at b59ea1c0): tests/ops/test_brain_hunter.py::test_THE_RUNNER_FOLLOWS_THE_RESUMABLE_PATTERN_THE_OTHER_MINERS_USE, tests/ops/test_maker_share_denominator.py::{test_market_only_closes_are_excluded, test_all_excluded_reports_none_rather_than_a_perfect_score}, and five in tests/ops/test_stale_code_daemons.py ({test_proc_start_on_a_dead_pid_is_none, test_a_running_organ_outside_the_systemd_roster_is_discovered, test_stale_code_actually_raises_a_defect, test_a_freshly_started_organ_is_not_stale, test_import_closure_follows_the_api_package}). Two of these guard organs the desk has already paid for: maker_share_denominator is an L1.57 denominator guard, and stale_code_daemons is the actuator built after the 2026-08-05 finding that a committed money-path fix was 100% INERT because nothing restarted the process. A red suite is a suite nobody reads, and these being red is how the next real regression gets waved through. Needs triage per file: genuine regression, environment drift, or an assertion that outlived its subject.",
    "roi_bps": null,
    "raised": "2026-08-13T00:06:28.807433+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0547",
+   "source": "cycle",
+   "summary": "L1.60 DEFERRAL VISIBILITY: recommendations.py dispose() overwrote a scheduled row's due date in place with no history and no counter, so re-snoozing a row the day before it came due removed it from the owed population with no work done and no trace left -- defeating the file's own stated anti-gaming guarantee. Measured over first-parent ledger git history: 39 of 152 ever-scheduled rows (26%) given more than one distinct due date, 38 still scheduled. Closed by libs/ops/deferral.py: every move recorded with its reason, unreasoned re-schedule refused, chronically deferred rows can no longer leave owed by moving the date. Adds zero rows on the day it lands.",
+   "roi_bps": 8.0,
+   "raised": "2026-08-13T00:37:44.941013+00:00",
+   "status": "implemented",
+   "reason": "built, tested and pushed this cycle: libs/ops/deferral.py + refusal path in dispose() + owed() teeth + 6 tests; ruff/mypy clean, law gate 12/12, 78 governance tests green",
+   "commit": "6c64b608",
+   "due": null,
+   "disposed": "2026-08-13T00:37:57.109116+00:00"
+  },
+  {
+   "id": "R0548",
+   "source": "cycle",
+   "summary": "MAX_AUDIT'S LIVE-DEFECT SET IS NOT STABLE WITHIN A CYCLE, so a §37 brief built from one snapshot lists items a later reader cannot find. Measured 2026-08-13: the 00:30 run reported 14 live defects with ZERO occurrences of 'paywall' anywhere (live or acked); re-running the identical CHECKS list at 01:5x gives 17 live including paywall-unhunted, which check_paywalls_registered emits deterministically from libs.data.paywall.vendors_encountered (llama.fi, free_replacement_status=UNHUNTED). The three-defect delta is exactly the three items the §37 brief listed as SKIPPED-surviving-6-sweeps (paywall-unhunted, promotion-no-routes-registered, blocked-routes-idle). Cause is input mutation by collectors between runs, not a swallowed branch -- _fenced() isolates every check. CONSEQUENCE: absence from a max_audit snapshot is being read as fixed when it means not-yet-observed (L1.49). Publish the input mtimes the run observed alongside the defect list so two snapshots are comparable.",
+   "roi_bps": 3.0,
+   "raised": "2026-08-13T00:49:11.586534+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0549",
+   "source": "cycle",
+   "summary": "§42 PAYWALL-UNHUNTED (VERIFIED LIVE 2026-08-13, survived 6 §37 sweeps with no dated ack): llama.fi is registered in docs/research/paid_dataset_targets.md but carries free_replacement_status=UNHUNTED in the encounter ledger. DefiLlama's emissions endpoint returned HTTP 402. Listed is not hunted -- §42's deliverable is the REPLACEMENT, not the row. Free-first protocol owed: primary-source reconstruction (facts are not copyrightable) from the open DefiLlama endpoints plus on-chain unlock schedules, verified against ground truth before any pipeline trusts it.",
+   "roi_bps": 5.0,
+   "raised": "2026-08-13T00:49:20.225932+00:00",
    "status": "open",
    "reason": null,
    "commit": null,
