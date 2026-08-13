@@ -67,11 +67,14 @@ _MAP: dict[str, list[str]] = {
     # shortest candidate leaves observations already on disk untested -- idle data manufactured by
     # the validator rather than by a lazy collector. check_campaign_retention.py floors the share
     # a campaign actually tests on, so the 82.9% min-length discard cannot come back in silence.
-    # NOTE THE `scripts/` PREFIX -- it is load-bearing, not decoration. `_exists` short-circuits
-    # any ref starting with `check_` into max_audit's FUNCTION table, so the bare
-    # `check_campaign_retention.py` form resolves against a registry a standalone script can
-    # never be in, and reports BROKEN-REF without saying why. Every standalone fence here is
-    # written path-first for that reason. R0436 rows the short-circuit itself.
+    # THE `scripts/` PREFIX IS THE HOUSE STYLE AND IS NO LONGER LOAD-BEARING (R0436, fixed).
+    # `_exists` used to short-circuit any ref starting with `check_` into max_audit's FUNCTION
+    # table, so the bare `check_campaign_retention.py` form resolved against a registry a
+    # standalone script can never be in and reported BROKEN-REF without saying why. It now
+    # discriminates on the `.py` suffix -- which a function name cannot carry -- so both forms
+    # resolve. Path-first is kept everywhere here because it says WHERE the fence lives at a
+    # glance; the suffixless `check_campaign_retention` form is still a function-table request
+    # and still fails, now with a hint that names the suffix.
     "L1.8": ["check_no_mining_throttle", "check_mining_nonregression", "check_mine_flow",
              "scripts/check_campaign_retention.py", "libs/research/campaign_retention.py"],
     "L1.9": ["check_blind_trigger", "check_interrogation", "check_dig_depth"],
@@ -833,9 +836,30 @@ def _fence_names() -> set[str]:
 
 
 def _exists(ref: str) -> bool:
-    """Does the enforcing artifact actually exist? A mapping to a deleted file is worse than none."""
+    """Does the enforcing artifact actually exist? A mapping to a deleted file is worse than none.
+
+    TWO REGISTRIES, AND THE `.py` SUFFIX IS THE ONLY THING THAT SEPARATES THEM (R0436). A ref
+    beginning `check_` can mean either of two entirely different objects: a FUNCTION inside
+    scripts/max_audit.py, or a standalone fence SCRIPT on disk. This used to short-circuit ANY
+    `check_`-prefixed ref into the function table, so `check_denominators.py`, `check_freshness.py`
+    and every other standalone fence written in the bare form was resolved against a registry it
+    can never appear in -- reported BROKEN-REF, which exits 1 and hard-blocks every push (L1.37),
+    with a message naming the ref and nothing about why.
+
+    `_fence_names()` regexes `^def (check_[a-z_0-9]+)`, and `.` is not in that character class, so
+    a max_audit function name can NEVER end in `.py`. That makes the suffix an exact discriminator
+    rather than a heuristic: with it, the ref means the script; without it, the function. Both
+    forms are now askable, which is what the old code had no way to express.
+
+    THE ACCEPT DIRECTION IS THE SAFE ONE and it loosens nothing: the file branch still requires the
+    path to EXIST on disk, so a mapping to a deleted or misspelled fence fails exactly as before. A
+    max_audit function mistakenly written `check_foo.py` has no `scripts/check_foo.py` behind it
+    and still reports BROKEN-REF. What changes is only that a real fence, mapped by its real
+    filename, stops being unmappable -- and an unmappable fence is one a future author is cheapest
+    to leave unmapped, which is the outcome this matrix exists to prevent (L2.0).
+    """
     bare = ref.split(":")[0].split(" ")[0]
-    if bare.startswith("check_"):
+    if bare.startswith("check_") and not bare.endswith(".py"):
         return bare in _fence_names()
     return any(cand.exists() for cand in (_ROOT / bare, _ROOT / "scripts" / bare))
 
@@ -886,8 +910,12 @@ def build() -> dict[str, Any]:
                      "enforced_by": live, "broken_references": broken,
                      "scheduled": _scheduled(live), "note": note})
 
+    # ORPHANS ARE COMPUTED OVER FUNCTION REFS ONLY. `fences` holds max_audit FUNCTION names, which
+    # never carry a `.py` suffix, so a script ref could never have cancelled an orphan anyway --
+    # but leaving `check_foo.py` in this set would quietly claim it might, and a set whose members
+    # cannot match its counterpart is the kind of near-miss that reads as coverage (R0436).
     mapped_fences = {r.split(":")[0] for refs in _MAP.values() for r in refs
-                     if r.startswith("check_")}
+                     if r.startswith("check_") and not r.split(":")[0].endswith(".py")}
     orphan_fences = sorted(fences - mapped_fences)
     counts: dict[str, int] = {}
     for r in rows:
@@ -946,21 +974,38 @@ def _orphan_remediation(orphans: list[str]) -> str:
 
 
 def _broken_ref_hints(refs: list[str]) -> list[str]:
-    """Explain the short-circuit that makes a standalone fence report BROKEN-REF (R0427/R0436).
+    """Explain a BROKEN-REF whose artifact is sitting right there on disk (R0427/R0436).
 
-    `_exists` routes ANY ref starting with `check_` into max_audit's function table, so a
-    standalone script written in the bare `check_foo.py` form is resolved against a registry it
-    can never be in. The status is correct and the reason is invisible, which sends the author
-    hunting a missing file that is sitting right there on disk.
+    `_exists` resolves a `check_`-prefixed ref against max_audit's FUNCTION table unless it carries
+    a `.py` suffix. That is now an exact rule rather than a short-circuit, but it is still a rule
+    the author cannot see from the failure, and the surviving failure mode is the SUFFIXLESS one:
+    `check_foo` when the fence is a standalone `scripts/check_foo.py`. The status is correct and
+    the reason is invisible, which sends the author hunting a file that already exists.
+
+    The `.py` case is kept because a fence at the REPO ROOT rather than under `scripts/` still
+    fails, and because a repo that reverts `_exists` must not silently lose the explanation.
     """
     hints = []
     for ref in refs:
         bare = ref.split(":")[0].split(" ")[0]
-        if bare.startswith("check_") and bare.endswith(".py") and (_ROOT / "scripts" / bare).exists():
+        if not bare.startswith("check_"):
+            continue
+        if bare.endswith(".py"):
+            if (_ROOT / "scripts" / bare).exists():
+                hints.append(
+                    f"{bare} EXISTS at scripts/{bare} -- write it path-first as `scripts/{bare}`. "
+                    f"A ref starting with `check_` and carrying no `.py` suffix is resolved "
+                    f"against max_audit's FUNCTION table, which a standalone script can never "
+                    f"appear in.")
+        elif (_ROOT / "scripts" / f"{bare}.py").exists():
+            # THE AMBIGUITY R0436 NAMES, from the other side: a bare `check_foo` is a request for
+            # the FUNCTION registry, and max_audit has no such function -- but a fence SCRIPT of
+            # that name is on disk. Two registries, one spelling, and the author gets a refusal
+            # about a fence they can see. Name the suffix that asks for the other one.
             hints.append(
-                f"{bare} EXISTS at scripts/{bare} -- write it path-first as `scripts/{bare}`. A "
-                f"ref starting with `check_` is resolved against max_audit's FUNCTION table, "
-                f"which a standalone script can never appear in.")
+                f"{bare} is not a function in scripts/max_audit.py, but scripts/{bare}.py EXISTS. "
+                f"A suffixless `check_` ref asks for max_audit's FUNCTION table; add the suffix "
+                f"(`scripts/{bare}.py`) to ask for the standalone fence script instead.")
     return hints
 
 

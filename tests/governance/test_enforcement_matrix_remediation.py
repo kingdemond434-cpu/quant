@@ -74,6 +74,66 @@ class TestBrokenRefExplainsTheShortCircuit:
         assert bem._broken_ref_hints(["check_phantom_paths"]) == []
 
 
+class TestAStandaloneFenceResolvesInBothForms:
+    """R0436: `check_` meant ONE registry, so a real fence mapped by its real filename was
+    unmappable -- BROKEN-REF, exit 1, every push blocked, and a message that named the ref and
+    nothing about why. The `.py` suffix discriminates exactly (`_fence_names` regexes
+    `check_[a-z_0-9]+`, which cannot contain a dot), so both registries are now askable.
+
+    Mapped BOTH WAYS here, which is the test the row asked for: the path-first form the desk
+    already writes, and the bare filename a new author reaches for first.
+    """
+
+    def test_path_first_form_resolves(self):
+        assert bem._exists("scripts/check_campaign_retention.py")
+
+    def test_bare_filename_form_resolves(self):
+        """The form that used to be routed into max_audit's FUNCTION table and could never win."""
+        assert bem._exists("check_campaign_retention.py")
+
+    def test_a_max_audit_function_still_resolves_by_bare_name(self):
+        """The suffixless form must keep meaning the function registry -- 102 refs depend on it."""
+        assert bem._exists("check_phantom_paths")
+
+    def test_a_missing_fence_script_still_fails(self):
+        """THE ACCEPT DIRECTION MUST NOT BECOME A FREE PASS: disk existence is still required."""
+        assert not bem._exists("check_this_fence_was_never_written.py")
+
+    def test_a_function_name_misspelled_with_a_py_suffix_still_fails(self):
+        """`check_phantom_paths.py` is not a file and not a function -- it is a typo, and loud."""
+        assert not bem._exists("check_phantom_paths.py")
+
+    def test_a_suffixless_ref_to_a_standalone_fence_fails_but_explains_itself(self):
+        """The surviving ambiguity, and the whole point of R0436: two registries, one spelling.
+
+        `check_denominators` asks for max_audit's function table, which has no such function,
+        while `scripts/check_denominators.py` sits on disk. The refusal is CORRECT -- the ref
+        genuinely does not resolve -- so the fix is the message, not the verdict.
+        """
+        assert not bem._exists("check_denominators")
+        [hint] = bem._broken_ref_hints(["check_denominators"])
+        assert "scripts/check_denominators.py" in hint
+        assert "suffix" in hint
+
+    def test_a_py_suffixed_ref_cannot_claim_a_max_audit_function(self, monkeypatch):
+        """A script ref must never look like it claims a max_audit FUNCTION of the same stem.
+
+        Now that `check_foo.py` resolves off disk, the tempting shortcut for an author refused by
+        the orphan gate is to write the function's name with a `.py` on it -- which would resolve
+        (a file of that name may well exist) and, if it landed in the mapped set, silence the
+        orphan without the function ever being claimed by a law. Pinned by removing a fence's real
+        mapping and offering only the suffixed form: it must still be reported unclaimed.
+        """
+        victim = "check_phantom_paths"
+        assert victim in bem._fence_names()
+        patched = {pid: [r for r in refs if r.split(":")[0] != victim]
+                   for pid, refs in bem._MAP.items()}
+        pid = next(iter(patched))
+        patched[pid] = [*patched[pid], f"{victim}.py"]
+        monkeypatch.setattr(bem, "_MAP", patched)
+        assert victim in bem.build()["fences_without_a_principle"]
+
+
 class TestTheGateItselfStillHolds:
     def test_the_repo_currently_has_no_orphan_fence(self):
         """The ratchet this message serves: zero orphans is the committed state (L1.0)."""
