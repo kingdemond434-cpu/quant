@@ -16,6 +16,7 @@ Keep this file SHORT. It sits in every context window, so it is an INDEX, never 
 | touching research/studies | `docs/research/*PREREGISTRATION.md` — kill criteria bind BEFORE a run |
 | adding a doc under `docs/` | `docs/research/ARTIFACT_GOVERNANCE.md` — every artifact must be claimed by a law, on arrival |
 | data sources | `docs/research/data_axis_watchlist.md`, `scripts/source_backlog_next.py` |
+| frontier / competitor / outlier hunting | `docs/research/ELITE_QUANT_INTELLIGENCE_MANDATE.md` — standing principal law, all three seats |
 
 ## Search the vault before deciding — 208k lines, one hop
 
@@ -53,6 +54,14 @@ with the vocabulary the document itself would use.
 - `data/secrets/**` never leaves the box, and no tool ever prints a key.
 
 ## Gates (all four, before any push)
+
+```
+./ops/gates.sh          # the three fast gates, ~1 min — RUN THIS
+./ops/gates.sh --full   # adds the suite + coverage floors (~60-80 min)
+git config core.hooksPath ops/githooks   # once per clone: pre-push runs the fast gates
+```
+
+Equivalent by hand, if you need one step in isolation:
 
 ```
 ruff check .          # NOT `ruff | tail` — tail exits 0 whatever ruff found
