@@ -39,6 +39,29 @@ class TestTheFourStates:
             ["Tardis.dev historical book data, or reconstruct from a free public feed"], tmp_path)
         assert state == "BLOCKED" and blocked
 
+
+class TestCensusMustNotDescribeAFixedDefectAsOpen:
+    """R0385 (commit f08e041) fixed the exact 'snapshot not series' schedule-parser defect the
+    census's own mechanical_supply_release entry once cited as an open, unchecked gap -- the
+    census does not dynamically re-check code state, so an edit that fixes the underlying defect
+    does nothing to the artifact unless someone also updates the prose. Found 2026-08-13 running
+    a CRO cycle: the desk was fooling itself about its own already-shipped work."""
+
+    def test_the_schedule_time_series_dataset_no_longer_reads_unchecked(self) -> None:
+        from libs.research.mechanism_census import TAXONOMY
+
+        row = next(r for r in TAXONOMY if r.id == "mechanical_supply_release")
+        joined = " ".join(row.data.datasets).lower()
+        assert "resolved 2026-08-13" in joined
+        assert "r0385" in joined
+        # classify() needs an "on disk"/"free"-class marker to stop reading this as NEEDS-A-LOOK
+        _state, reach, unchecked, _blocked = classify(list(row.data.datasets), Path("."))
+        schedule_ds = next(d for d in row.data.datasets if "time series" in d.lower())
+        # classify() truncates each entry to 200 chars, so compare by prefix, not exact equality.
+        prefix = schedule_ds[:200]
+        assert prefix in reach
+        assert prefix not in unchecked
+
     def test_a_mixed_gap_keeps_the_reachable_half_visible(self, tmp_path: Path) -> None:
         state, reach, _u, blocked = classify(
             ["public governance event logs", "Nansen wallet labels"], tmp_path)

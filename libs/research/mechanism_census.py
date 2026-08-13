@@ -331,12 +331,20 @@ TAXONOMY: tuple[MechanismClass, ...] = (
         plausibility=0.80, orthogonality=0.75,
         data=DataRequirement(
             datasets=("data/unlock_events.json (ON DISK, already screened at one construction)",
-                      "the vesting SCHEDULE as a time series, not a current snapshot -- the "
-                      "screen artifact names 'snapshot not series' as its own defect",
+                      "the vesting SCHEDULE as a time series -- RESOLVED 2026-08-13 (R0385, "
+                      "commit f08e041): the parser only consulted instant/timestamp, silently "
+                      "dropping all 24,201 rows to the 'current snapshot' fallback that is "
+                      "defect_1; adding the schedule's real ts (epoch-seconds) field recovers "
+                      "the full series. libs/research/unlock_supply_series.py now reads it as a "
+                      "genuine time series, ON DISK, not a snapshot",
                       "circulating-supply history to compute pct-of-float AT the event date"),
             availability=DataAvailability.ON_DISK,
-            note="The one screen run reads NULL where powered and UNTESTABLE at the "
-                 "mechanism-relevant float threshold, which is a depth problem, not a kill."),
+            note="MEASURED 2026-08-13: the schedule-parsing and price-panel-wiring defects "
+                 "(R0385) are both fixed and tested (27 tests); the first real run against the "
+                 "recovered 24,201-row schedule is this screen's own next scheduled fire "
+                 "(Monday 06:25 UTC) -- taking the input from 0 rows to a real count is itself a "
+                 "re-run with a real result, so the verdict must be read then, not assumed. The "
+                 "remaining genuine gap is pct-of-float normalization (dataset 3)."),
         priority=4),
     MechanismClass(
         id="primary_market_creation_flow",
