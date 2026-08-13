@@ -24,7 +24,9 @@ from __future__ import annotations
 
 import contextlib
 import json
+import os
 import shutil
+import sys
 from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
@@ -32,6 +34,48 @@ from typing import Any
 
 _TAPE = Path("data/moat/execution_tape/cashcarry_trades.jsonl")
 _DISK_MAX_FRAC = 0.80  # same guard as the moat recorders -- never fill the disk for a log
+
+
+def _under_test() -> bool:
+    """Are we inside a test harness? `PYTEST_CURRENT_TEST` is set by pytest per test phase;
+    `sys.modules` also catches collection/fixture time, where the env var is not yet set."""
+    return "PYTEST_CURRENT_TEST" in os.environ or "pytest" in sys.modules
+
+
+def _writable(path: Path | None) -> Path:
+    """Resolve a writer's target, REFUSING the live default from inside a test harness.
+
+    WHY THIS IS A HARD RAISE AND NOT A SILENT SKIP (found 2026-08-13). The tape is append-only
+    FOREVER and is the desk's one irreplaceable dataset, so a fabricated row is not a transient
+    error -- it is permanent. `tests/execution/test_carry_entry_gate.py` drives
+    `run_trade_forensics.main()`, which calls `backfill(trades)` with no path; the test carefully
+    monkeypatches the forensics module's `_TRADES`/`_OUT`/`_TRACKED`/`_COST_MODEL` but cannot
+    redirect a default that lives in a DIFFERENT module. 15 fixture rows reached the live tape,
+    and because the fixture stamps `opened` as `now - 1 day`, `_key()` differs on every run, so
+    dedupe could never collapse them: every CI run added two more, forever.
+
+    The cost was not cosmetic. One fixture carries `closed: 2020-01-01`, and `coverage()["days"]`
+    -- the number Gate 0's ">=4 weeks of live fills" is measured against (see
+    `libs/risk/capital_events.py:12`) -- read 2415.15 days against a true 30.69. The desk
+    published 6.6 years of fill history it did not have.
+
+    The guard sits at the WRITE CHOKEPOINT rather than in the offending test, because patching
+    the test fixes one caller and leaves the next test author the same invisible trap. Under a
+    test harness a writer must name its path; production never sets `PYTEST_CURRENT_TEST` and
+    never imports pytest, so the live executor path is untouched. Raising (not returning False)
+    is deliberate: `append()` swallows exceptions so the observer can never break the executor,
+    and a silent refusal here would let a contaminating test pass green -- the failure this
+    guard exists to make loud. It is therefore checked BEFORE that try-block.
+    """
+    if path is not None:
+        return path
+    if _under_test():
+        raise RuntimeError(
+            "execution_tape: refusing to write the LIVE moat tape from a test harness. "
+            "Pass an explicit `path=` (e.g. tmp_path). The tape is append-only forever, so a "
+            "fixture row written here is permanent contamination of the desk's own fill history."
+        )
+    return _TAPE
 
 
 def _disk_ok(path: Path = _TAPE) -> bool:
@@ -71,8 +115,13 @@ def _key(rec: dict[str, Any]) -> str:
                       sort_keys=True, default=str)
 
 
-def append(rec: dict[str, Any], *, path: Path = _TAPE) -> bool:
-    """Append one fill event to the permanent tape. Never raises -- returns success."""
+def append(rec: dict[str, Any], *, path: Path | None = None) -> bool:
+    """Append one fill event to the permanent tape. Never raises -- returns success.
+
+    The one exception is `_writable`'s test-harness refusal, which is raised deliberately and
+    from OUTSIDE the try below: see its docstring for why a silent skip would defeat it.
+    """
+    path = _writable(path)
     try:
         if not _disk_ok(path):
             return False
@@ -102,7 +151,7 @@ def read(*, path: Path = _TAPE) -> list[dict[str, Any]]:
     return out
 
 
-def backfill(records: list[dict[str, Any]], *, path: Path = _TAPE) -> int:
+def backfill(records: list[dict[str, Any]], *, path: Path | None = None) -> int:
     """Seed the tape from the surviving rolling buffer, skipping anything already taped.
 
     Dedupe is by MULTIPLICITY, not set membership. The executor legitimately emits byte-identical
@@ -111,6 +160,7 @@ def backfill(records: list[dict[str, Any]], *, path: Path = _TAPE) -> int:
     path. Counting occurrences keeps backfill faithful AND idempotent: re-running adds only the
     shortfall. Returns the number of NEW records written.
     """
+    path = _writable(path)
     have = Counter(_key(r) for r in read(path=path))
     n = 0
     for rec in records:
