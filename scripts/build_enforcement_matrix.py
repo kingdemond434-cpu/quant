@@ -432,9 +432,19 @@ _MAP: dict[str, list[str]] = {
     # documents itself as a deliberate copy "so the two cannot disagree", so a fix in one file
     # leaves the other authoritative. The screen caller is a regression site -- removing its
     # measure_panel_breadth call turns the tests red.
+    # The CROSS-SECTION FLOOR joins this family rather than minting a law of its own (L1.59
+    # freezes doctrine expansion; L2.9 says upgrade before building). It is the SAME defect one
+    # axis over: L1.62 caught a denominator that ASSUMED how many independent bets a date carries,
+    # this catches one that counts the panel's DECLARED WIDTH (`shape[1]`) instead of the finite
+    # symbols a date actually has. A 373-column panel clears `shape[1] >= 8` on a date carrying
+    # six names. Measured 2026-08-13: 12 of 311 dates carried 98.1% of a lag-1 statistic, reading
+    # rho=+0.856 against a floored truth of -0.06. run_derivative_shadow is a regression site --
+    # it is the declared locked mirror of backfill_oi_ls_oos and was the unfloored half.
     "L1.62": ["scripts/check_panel_breadth.py", "libs/research/panel_breadth.py",
               "libs/research/axis_screen.py", "libs/validation/type2_cost.py",
-              "scripts/screen_oi_ls_axes.py"],
+              "scripts/screen_oi_ls_axes.py",
+              "scripts/check_cross_section_floor.py", "libs/research/cross_section_floor.py",
+              "scripts/run_derivative_shadow.py"],
     # R0369 (under L2.3/§42): an implemented row's --commit is the ledger's whole proof mechanism,
     # and it was enforced only at WRITE time -- `dispose` refuses an empty field and asks nothing
     # else. A rebase rewrites SHAs and the citation quietly names an object no other clone can

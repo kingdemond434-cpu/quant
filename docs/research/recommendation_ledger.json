@@ -7342,11 +7342,11 @@
    "summary": "Cross-section floor ratchet gap (L1.62 family): 32 of 49 per-date cross-sectional collapse sites lack a per-date finiteness floor -- 13 NEAR-MISS (guard shape[1] only, which cannot fall when a date's cross-section empties) and 19 unfloored. Work NEAR-MISS first: they already look guarded so a future session trusts them unchecked. Sharpest is libs/alpha_factory/wq_operators.py:105/118/119 -- narrow peer groups can yield a one-name z-score into the 898,560-cell sweep. Fence: scripts/check_cross_section_floor.py",
    "roi_bps": null,
    "raised": "2026-08-13T06:23:23.864112+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "The coverage ratchet gap of the capability shipped this run. PARTIAL exits 0 by design: roughly half this repo's collapses are unguarded and a fence red on day one gets switched off (L1.43). Floor recorded at 17/49 in docs/research/CROSS_SECTION_FLOOR_RATCHET.json; it ratchets UP only. Work NEAR-MISS before UNFLOORED -- a near-miss already reads as guarded, so it is the one a future session trusts without checking.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-27",
+   "disposed": "2026-08-13T06:24:10.734954+00:00"
   },
   {
    "id": "R0581",

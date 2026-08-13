@@ -2483,6 +2483,22 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # caught a double-counted denominator in its own scan scope before it shipped.
 53 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_panel_breadth.py >> data/cro_ai_logs/panel_breadth.log 2>&1
 
+# --- CROSS-SECTION FLOOR (L1.62 family) --------------------------------------------------------
+# A per-date cross-sectional collapse over a thin cross-section is one symbol's noise, and
+# consecutive thin dates give the resulting SERIES structure the data never had. The dominant
+# guard in this repo is `if panel.shape[1] < N`, which counts DECLARED COLUMNS -- a 373-column
+# panel clears it on a date carrying six finite names. It reads like a breadth guard and checks a
+# number that cannot fall when the cross-section empties.
+# CADENCE: daily. Its input is the repo's own source, which changes on every push, so it is
+# INFORMATION-ARRIVAL bound (L1.28c). Phased to 06:57, after the 06:53 panel-breadth fence it
+# extends. A pre-push hook would be the event-driven end state; daily is the honest start.
+# EVIDENCE: scripts/check_cross_section_floor.py -> data/cross_section_floor.json; CONSTITUTION
+# L1.62 family (matrix entry in build_enforcement_matrix.py).
+# CONFIDENCE: committed-script (new this cycle); first run scanned 1,106 files and found 49
+# collapse sites -- 17 floored, 13 near-miss, 19 unfloored -- and caught a false positive in
+# itself (a COMMENT describing the fix scored as the fix) before it shipped.
+57 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_cross_section_floor.py >> data/cro_ai_logs/cross_section_floor.log 2>&1
+
 # --- CITATION INTEGRITY (R0369, under L2.3/§42) ------------------------------------------------
 # WHY: `dispose --status implemented` refuses an empty --commit, so the ledger's proof-of-work was
 # checked at WRITE time and never at READ time, where it is actually spent. A rebase rewrites SHAs
