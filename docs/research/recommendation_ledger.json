@@ -5914,11 +5914,11 @@
    "summary": "litminer run6 inbox H: execution+stats shelf — (a) liquidity-state-first prior for the 66bps program (classify pre-order L2 state from own recorder; design-hint grade, replicate on own data); (b) two 2026 decision-time-leakage formalisations (2605.23959 one-switch benchmark, 2607.04958 temporal non-interference) as candidate MECHANISED leakage gates (R0289 documented causal_guard's enumerated-subset blindness); (c) post-selection Sharpe estimation + tsbootstrap + HAC-over-rejects-at-cycle-scale (size 0.33 @ nominal 0.05, n~4 regimes) into the methods backlog.",
    "roi_bps": 20.0,
    "raised": "2026-08-12T02:07:18.186663+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "REASONED NO on a bundled shelf row: each of its three parts already has a disposition that is not 'build something new', and none is a discrete implementable unit. (c) the stats shelf -- post-selection SR, tsbootstrap, HAC-over-rejects-at-cycle-scale -- asked to be put 'into the methods backlog', and it already is: docs/research/deep_sweep/20260812_litminer_arxiv.md lines 505-507 log exactly those titles under 'Stats shelf (titles logged for the methods backlog)'. The ask was satisfied by the artifact that raised it. (b) the two 2026 decision-time-leakage formalisations (2605.23959 one-switch benchmark, 2607.04958 temporal non-interference) are motivated in the row itself by R0289's causal_guard enumerated-subset blindness -- and R0289 is IMPLEMENTED (2855b6d, disposed 2026-08-12). Verified in code today rather than taken from the ledger: libs/features/validation.py _perturbable now splits EVERY column by dtype into scalable / flippable / shiftable / untestable and refuses UNTESTABLE on an unperturbable input; the hardcoded ['open','high','low','close'] mutation is gone. Importing a formalism for a gate already repaired is tooling competing with, and losing to, work carrying measured EV (L1.26). No named enabling change re-opens it (L1.16a). (a) the liquidity-state-first prior is explicitly design-hint grade and must be replicated on our own recorder data inside the 66bps execution program -- that is R0219's ground, not a standalone build, and it is not lost by closing this row. Nothing here is discarded: the shelf doc holds all three and is the durable record.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T10:22:56.430808+00:00"
   },
   {
    "id": "R0462",
@@ -5926,11 +5926,11 @@
    "summary": "Backfill Binance COIN-M (dapi) mark/index/premium/funding klines for 5 quarterly underlyings + 20 perps (keyless history verified 2026-08-12, no daemon needed) and run the pre-registered convexity-differential screen vs USDT-M (data_axis_watchlist card 31; mechanism coinm_usdtm_basis_convexity_rv EV-rejected 0.0009 pending this measurement trigger). Engineering-enabled seat; EN miner seat is research-frozen.",
    "roi_bps": null,
    "raised": "2026-08-12T06:24:52.749382+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "RE-SPECIFIED, not deferred: the row's own universe is the one its source card forbids. R0462 says '5 quarterly underlyings + 20 perps', which is exactly the dapi exchangeInfo set -- and data_axis_watchlist card 31's grade line records the collector constraint 'build the universe from the ARCHIVE listing, never from exchangeInfo (30 live vs 272 archived = 89 pct of instrument history omitted, incl. all 212 expired quarterlies the convexity screen needs)'. Re-measured live today and it corroborates exactly: dapi exchangeInfo returns 30 instruments (20 PERPETUAL, 5 CURRENT_QUARTER, 5 NEXT_QUARTER). A same-expiry COIN-M-vs-USDT-M convexity-differential screen run on that universe sees only the currently-live window and none of the expired quarterly history, so it would be structurally underpowered and could mint a SCREEN-WEAK refutation on a sample nobody measured -- the L1.62 false-null direction, on an axis the desk has already EV-gated once. UNBLOCKED, and the blocker in the row's premise is stale: dapi keyless history verified working from this box today (klines / markPriceKlines / premiumIndexKlines / fundingRate all 200), so the standing 'Binance is 451 from this container' assumption recorded 2026-08-04 no longer holds here. Scheduled to backfill from the Vision archive listing (universe map 99-binance-coinm-vision-archive) rather than exchangeInfo.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-27",
+   "disposed": "2026-08-13T10:22:17.780672+00:00"
   },
   {
    "id": "R0463",
@@ -5962,11 +5962,11 @@
    "summary": "Funding accrual assumes an 8h interval that MOST of the universe no longer uses: measured 2026-08-12, 426 of 812 live Binance USDT-M perps (52.4%) settle on a 4h interval and 2 on 1h; only 385 (47.4%) are on 8h. L1.47 flagged that held/8.0 under-counts 'many high-funding alts' by 2x and that fundingIntervalHours had zero repo-wide occurrences -- this puts a COUNT on 'many' (it is the majority) and confirms 4h names carry more funding per day (median +0.000300 vs +0.000000). Fix: read fundingIntervalHours per symbol; never hardcode /8.0. Evidence data/jp_funding_clamp_census.json",
    "roi_bps": 8.0,
    "raised": "2026-08-12T08:04:35.079012+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "b27edc10: libs/data/funding_caps.py now carries fundingIntervalHours through parse, cache write and cache read, and exposes venue_intervals() -- the producer funding_clock.interval_hours() always required and never had (its refusal branch was the only one that had ever run, L1.49). The field was already arriving daily in the /fapi/v1/fundingInfo payload this module fetches and was discarded at parse time; the missing piece was never a fetch. VERIFIED AGAINST VENUE TRUTH, not only the fixture: live pull today returned 747 rows all carrying the field, parsed to 747 intervals, mix 4h:443 / 8h:302 / 1h:2, and data/funding_caps.json now holds the map. interval_for() returns None, never 8.0, for an undescribed symbol. Money-path consumers NOT switched: the change window is STERILE with a live kill file and run_cashcarry_executor.py stages the settlements-clock switch behind L1.38/R0304 -- this builds the map that switch needs. Row is off by one against its own evidence: the census says 384 on 8h, not 385.",
+   "commit": "b27edc10",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T10:21:45.943583+00:00"
   },
   {
    "id": "R0466",
@@ -5974,11 +5974,11 @@
    "summary": "Every digger seat establishes S13 posture from robots.txt, which is no longer sufficient: note.com and zenn.dev 403 our named agent AT THE CDN EDGE while both robots.txt files are clean of any ClaudeBot rule (measured 2026-08-12, UA matrix; Googlebot/curl/SomeRandomBot get 200, so it is a curated AI-crawler denylist, not a WAF heuristic). Risk is a FALSE NULL: if any digger fetch path treats a non-200 as no-content, a BLOCKED ground records as a THIN ground and a whole region is silently retired (WS-005/L1.28a). Fix: OP-052 UA-matrix probe on a real content path before any thin-ground verdict, and audit the shared fetch helpers so a non-200 raises rather than returning empty. docs/research/search_operator_library.md OP-052",
    "roi_bps": 5.0,
    "raised": "2026-08-12T08:04:44.153283+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "5f18aaab. The audit the row asked for comes back CLEAN and its premise is partly wrong: requests is not used anywhere in libs/ or scripts/, every fetch goes through urllib.urlopen which RAISES on non-200, and every digger source already returns (rows, error) with the error half non-None on a wall -- there was no swallow-a-403-into-empty defect to fix. But the false-null risk the row is about was live in two other places, both now closed: (1) zenn() was the one JSON source with NO shape guard, so a 200 carrying a changed shape or an anti-bot page returned ([], None), byte-identical to a genuine empty -- and zenn.dev is one of the two hosts the row measured 403ing our named agent while robots.txt stayed clean, i.e. exactly where a BLOCKED ground would have recorded as a THIN one; (2) probe_all collapsed both causes of ok=False into one boolean, so WALLED and EMPTY -- which demand opposite responses -- were indistinguishable to every reader; now published as posture OK/WALLED/EMPTY. Both directions pinned: a genuine empty must still read EMPTY, since making everything an error destroys the same distinction from the other side. NOT done here and worth their own rows: OP-052 has no implementation (zero UA-matrix code repo-wide), no robots.txt handling exists in code at all, and libs/data/render_fetch.py has zero importers.",
+   "commit": "5f18aaab",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T10:22:04.764931+00:00"
   },
   {
    "id": "R0467",
@@ -5986,11 +5986,11 @@
    "summary": "signal_halflife still publishes its untested `status` field (AGEING/STABLE/STRENGTHENING from a bare +/-0.03 on a two-window IC difference, no null behind it) beside the new order-sensitive `decay` verdict added in da53431. Two verdicts on the same row that can disagree -- on 2026-08-12 live data the crude one and the tested one gave different answers for stablecoin_supply. Decide which is authoritative and retire or demote the other; a row carrying two contradictory statuses is worse than either alone because a reader will quote whichever suits.",
    "roi_bps": 20.0,
    "raised": "2026-08-12T08:44:32.827261+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "94d870df. Answering which verdict is authoritative required measuring the tested one first, and it did not survive: decay_verdict compared the halves with a bare > so STABLE required EXACT float equality and was UNREACHABLE -- over 20,000 pure-null records it returned DECAYING 10,045 / STRENGTHENING 9,955 / STABLE 0. Promoting it as-is would have made a coin flip authoritative. Its own null test asserted SYMMETRY (which held) rather than REFUSAL (which never did), which is why it survived review. Fixed both halves: (1) a null band derived in closed form, not tuned -- each half is exactly Uniform(0,1) under the null by the probability integral transform and the halves are independent, so the difference is triangular and P(|D|>t)=(1-t)^2 gives t=1-sqrt(0.05)=0.776393; measured empirical 0.0484 vs the 0.0500 target. This TIGHTENS what the bar claims and loosens nothing. (2) status is retired from the writer -- no null, zero tests, zero consumers -- while trend/ic_early/ic_recent stay, because retiring an unfounded VERDICT is no reason to drop the MEASUREMENT under it. The cited stablecoin_supply disagreement resolves to STABLE: its DECAYING rested on a 0.036 gap between halves reading ~0.32 and ~0.35. The four rows already on disk carrying both verdicts are left alone -- the fix belongs at the writer, not in the published record.",
+   "commit": "94d870df",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T10:21:59.502477+00:00"
   },
   {
    "id": "R0468",
@@ -7618,6 +7618,54 @@
    "summary": "TMPFS'S DOMINANT PRODUCER BY COUNT IS THE AGENT HARNESS, AND NOTHING REAPS IT. Freeing host-tmpfs-bloated today reclaimed 255 dead agent-session scratch dirs under /tmp/claude-1000 (179MB), the oldest 188h and accumulating continuously since 2026-07-26 -- 316 dirs total. Every desk-side producer of tmpfs has a cleanup owner (run_law_gate reaps its own lawgate-head-* checkouts past 2h; pytest got tmp_path_retention_policy=failed in 513ba24), and this one has none because ITS PRODUCER IS NOT DESK CODE: the Claude Code harness writes each session's task outputs and tool results there and never removes them, so the occupancy R0407 closed keeps returning from outside the repo. max_audit's fence correctly reports rather than deletes (a watcher of a shared resource cannot safely free it) and now names desk-OWNED git worktrees with their reclaim command (268c7f50), but harness scratch carries no ownership evidence the desk can act on automatically. THE SAFE DISCRIMINATOR IS MEASURED AND CHEAP: cron seats run under 'timeout 3000' (50min), so a session dir untouched for >=24h cannot belong to a live session, and a live-holder fd/cwd scan confirmed only 2 of 316 were held. WHAT THIS NEEDS IS A DECISION, NOT A DISCOVERY: either a desk-side janitor with that 24h+no-holder rule (cheap, and the rule is already validated by today's reclaim), or an accepted recurring manual reclaim, or a harness-level retention setting if one exists. Left unfixed the fence will re-fire on a schedule set by agent-session volume, and the failure mode is the R0407 loop: low memory makes an OOM kill likelier, the kill orphans more scratch, the next run starts poorer.",
    "roi_bps": 5.0,
    "raised": "2026-08-13T09:37:13.822328+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0604",
+   "source": "cycle",
+   "summary": "check_funding_capture.py (the L1.47 fence) is STRUCTURALLY BLIND to the interval error it exists near: all four funding_clock calls (settlements_in, continuous_settlements, phase_hours, hours_to_settlement at :174/:175/:182/:183) omit interval_h and so take DEFAULT_INTERVAL_H=8.0, and :188 hardcodes the forfeit null as FORFEIT_WINDOW_H/8.0 = 12.5 pct. It applies the same 8.0 to BOTH sides of its own difference, so an interval error is common-mode and cancels; phase_octiles is a fixed 8-slot list. For a 4h symbol the true null is 25 pct, so a normal close distribution is inflated toward FORFEITING. Its own governance test (tests/governance/test_funding_capture_fence.py:190-205) asserts the fence body contains no '/ 8.0' literal and passes -- it enforces the SYNTAX of single-sourcing while the SEMANTICS of the hardcoded 8 survive inside the imported constant. Now actionable: R0465 (b27edc10) built the per-symbol map, and data/funding_caps.json carries 747 intervals (4h:443, 8h:302, 1h:2). Fix: read the interval per symbol via funding_caps.venue_intervals(); where a closed symbol's cadence is unknown, report UNMEASURED rather than computing an 8h-based z.",
+   "roi_bps": 12.0,
+   "raised": "2026-08-13T10:23:19.148592+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0605",
+   "source": "cycle",
+   "summary": "The standing 'every Binance host answers HTTP 451 from this container' assumption is STALE and is silently degrading collectors. Measured 2026-08-13 from this box: fapi.binance.com/fapi/v1/ping 200, fapi/v1/fundingInfo 200 with 747 rows, dapi.binance.com/dapi/v1/exchangeInfo 200 (30 instruments), and dapi klines / markPriceKlines / premiumIndexKlines / fundingRate all 200 keyless. The 451 measurement is dated 2026-08-04 and is recorded as a live constraint in libs/data/funding_caps.py:52-53 and in the header of tests/data/test_funding_caps.py, and it is the stated premise of several 'no daemon needed, VPS only' plans. RISK IS A FALSE NULL IN THE OPPOSITE DIRECTION TO THE USUAL ONE: a box that CAN reach the venue but believes it cannot will keep serving cached or static-default values that look exactly like fetched ones (funding_caps degrades live -> cache -> static tiers, all labelled honestly in .source but nothing alerts on the degrade). Audit which collectors are running on cache/static because of a geo-block that has lifted, and re-measure the block on a cadence rather than pinning it in a comment.",
+   "roi_bps": 6.0,
+   "raised": "2026-08-13T10:23:26.223594+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0606",
+   "source": "cycle",
+   "summary": "OP-052 (UA-matrix probe on a real content path before any thin-ground verdict) has ZERO implementation, and there is no robots.txt handling anywhere in the repo. Measured 2026-08-13 while closing R0466: grep for ClaudeBot / GPTBot / CCBot / Bytespider / Googlebot / ua_matrix returns zero hits across every .py; robotparser, can_fetch and the literal robots.txt return zero hits. S13 posture is established entirely in prose (search_operator_library.md, prospector_coverage.md) and executed by the seat agent by hand, so the duty fires only when a seat remembers it -- a checklist that fires on recall is not a control (the ADVERSARIAL_REVIEW_RUBRIC lesson, same class). Two related gaps found in the same pass: libs/data/render_fetch.py, written specifically to reach the five blocked forests and naming note.com in its docstring, has ZERO importers repo-wide (built-never-wired, L1.45 orphan); and every automated digger sends a browser UA (Mozilla/5.0 Chrome/124) rather than our named agent, so the 403 R0466 measured lands on the SEAT's own named fetch and not on foreign_sources -- two different grounds with two different remedies, which the row conflated.",
+   "roi_bps": 5.0,
+   "raised": "2026-08-13T10:23:38.814214+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0607",
+   "source": "cycle",
+   "summary": "signal_halflife._window_pvalues is ONE-SIDED IN THE POSITIVE DIRECTION (stats.t.sf) and is applied to signals whose IC is negative at both ends, so the decay bar tests a hypothesis whose sign the signal does not have. Measured 2026-08-13: stablecoin_supply has ic_early -0.0199 and ic_recent -0.0260, i.e. every window's p-value is being scored against 'is the IC positive?' when the mechanism's own sign is negative -- so the p-values run high by construction and both halves read ~0.32-0.35 (0.5 is pure null). This does not affect the R0467 verdict (the new null band reads it STABLE either way, and a common sign error is largely differenced out between the halves) but it makes the published error_rate_early / error_rate_late uninterpretable as evidence about THAT signal, and it will matter the moment the bar is asked about a genuinely negative-IC edge. Fix: take the p-value against the signal's PRE-REGISTERED direction, or two-sided, and record which -- never the raw positive tail for every signal. Related unpinned wiring in the same function: stride = ceil(IC_WINDOW/20) hardcodes rolling_ic's step of 20 as a literal, so if that default ever changes the windows silently overlap again and mean-p's independence assumption fails without any test noticing.",
+   "roi_bps": 8.0,
+   "raised": "2026-08-13T10:23:46.857077+00:00",
    "status": "open",
    "reason": null,
    "commit": null,
