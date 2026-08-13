@@ -58,6 +58,7 @@ if str(_ROOT) not in sys.path:
 _OUT = _ROOT / "data/max_push_queue.json"
 _FRONTIER_OUT = _ROOT / "data/economic_frontier.json"
 
+from libs.ops.input_provenance import Inputs  # noqa: E402
 from libs.research.alpha_frontier_gaps import queue_rows as alpha_frontier_queue_rows  # noqa: E402
 from libs.research.completion_program_gaps import load as load_completion_program  # noqa: E402
 from libs.research.completion_program_gaps import queue_rows as completion_queue_rows  # noqa: E402
@@ -116,14 +117,66 @@ def _json(rel: str) -> Any:
         return None
 
 
-def _refresh(script: str) -> None:
-    """Re-run a producer so the queue is built on today's numbers, not last week's."""
+#: (producer, the artifact it writes). DECLARED, because "did the refresh work?" is answerable
+#: only against the file the producer was supposed to write -- an exit code proves a process
+#: ended, never that it produced (desk lesson, and the reason `_refresh` no longer trusts one).
+_REFRESHERS: tuple[tuple[str, str], ...] = (
+    ("check_ratchets.py", "data/ratchet_report.json"),
+    ("check_utilisation.py", "data/utilisation.json"),
+    ("build_enforcement_matrix.py", "data/enforcement_matrix.json"),
+    ("check_conversion.py", "data/conversion_status.json"),
+    ("check_calibration.py", "data/calibration_status.json"),
+    ("check_freshness.py", "data/freshness_status.json"),
+)
+
+#: How old a refreshed artifact may be before the queue built on it is DEGRADED. Generous: the
+#: cron cadence for these producers is hourly-to-daily, so this catches a producer that has been
+#: dead for a day, not one that ran forty minutes ago.
+_ARTIFACT_MAX_AGE_H = 26.0
+
+
+def _refresh(script: str, artifact: str) -> dict[str, Any]:
+    """Re-run a producer and REPORT WHAT HAPPENED. See R0395.
+
+    Until 2026-08-12 this was `check=False, capture_output=True, except (OSError,
+    TimeoutExpired): return` -- three separate ways for a producer to die with the failure
+    discarded at the call site. `build()` then read whatever stale file was on disk and stamped
+    the merged queue `generated: <now>`, so the DAILY WORK QUEUE could be assembled entirely
+    from last week's numbers and say nothing. Widest blast radius on the desk, because every
+    organ and every session reads this to decide what to work on.
+
+    THE EXIT CODE IS NOT THE TEST, AND GETTING THAT WRONG WOULD HAVE BEEN WORSE THAN THE BUG.
+    Five of the six producers here are FENCES, and a fence exits 2 when it CATCHES something --
+    that is the organ working, not failing. `check=True` would have made the work queue refuse
+    to build precisely on the days the desk had the most to work on. The honest question is
+    whether the artifact was REWRITTEN, so that is what is measured; rc is recorded beside it as
+    context, never as the verdict.
+    """
+    target = _ROOT / artifact
+    before = target.stat().st_mtime if target.exists() else None
+    out: dict[str, Any] = {"script": script, "artifact": artifact}
     try:
-        subprocess.run([sys.executable, str(_ROOT / "scripts" / script), "--report-only"],
-                       check=False, capture_output=True, timeout=300, cwd=_ROOT,
-                       env={**dict(__import__("os").environ), "PYTHONPATH": str(_ROOT)})
-    except (OSError, subprocess.TimeoutExpired):
-        return
+        proc = subprocess.run(
+            [sys.executable, str(_ROOT / "scripts" / script), "--report-only"],
+            check=False, capture_output=True, timeout=300, cwd=_ROOT,
+            env={**dict(__import__("os").environ), "PYTHONPATH": str(_ROOT)})
+        out["rc"] = proc.returncode
+        out["stderr_tail"] = proc.stderr.decode("utf-8", "replace").strip()[-300:]
+    except subprocess.TimeoutExpired:
+        out["status"], out["detail"] = "TIMEOUT", "exceeded the 300s budget"
+        return out
+    except OSError as e:
+        out["status"], out["detail"] = "UNRUNNABLE", repr(e)
+        return out
+
+    after = target.stat().st_mtime if target.exists() else None
+    if after is not None and (before is None or after > before):
+        out["status"] = "REFRESHED"
+    else:
+        out["status"] = "NOT-REWRITTEN"
+        out["detail"] = (f"exited rc={out['rc']} without rewriting {artifact}"
+                         + (f": {out['stderr_tail']}" if out["stderr_tail"] else ""))
+    return out
 
 
 def _item(aspect: str, source: str, current: float | None, ceiling: float, detail: str,
@@ -619,11 +672,35 @@ def _frontier(items: list[dict[str, Any]]) -> dict[str, Any]:
     return rep
 
 
+def _queue_inputs(refresh: bool) -> tuple[Inputs, list[dict[str, Any]]]:
+    """Refresh every producer, then DECLARE the artifacts the queue is about to be built from.
+
+    R0395. The queue is stamped `generated: <now>`; that stamp is a claim about the QUEUE, and
+    it was being read as a claim about the NUMBERS IN IT. These two lines are what make the
+    difference sayable: what the refresh did, and how old each input actually is.
+    """
+    runs = [_refresh(script, artifact) for script, artifact in _REFRESHERS] if refresh else []
+    by_artifact = {r["artifact"]: r for r in runs}
+
+    inp = Inputs("run_max_push.build")
+    for _script, artifact in _REFRESHERS:
+        # Absolute, so the declaration follows THIS module's `_ROOT` rather than the provenance
+        # helper's own -- identical in production, and a function that takes a root must honour
+        # it for every output or its tests are measuring a different desk.
+        inp.read_json(_ROOT / artifact, default=None, max_age_h=_ARTIFACT_MAX_AGE_H)
+        run = by_artifact.get(artifact)
+        if run and run["status"] != "REFRESHED":
+            # Attach the producer's fate to the input record. An artifact can be young AND its
+            # producer dead (cron wrote it an hour ago, this run's invocation crashed); the two
+            # facts belong on the same row or the reader has to join them by hand.
+            rec = inp.records[-1]
+            rec.detail = (f"{rec.detail}; " if rec.detail else "") + \
+                f"producer {run['script']} {run['status']}: {run.get('detail', '')}"
+    return inp, runs
+
+
 def build(*, refresh: bool = True) -> dict[str, Any]:
-    if refresh:
-        for s in ("check_ratchets.py", "check_utilisation.py", "build_enforcement_matrix.py",
-                  "check_conversion.py", "check_calibration.py", "check_freshness.py"):
-            _refresh(s)
+    inp, refresh_runs = _queue_inputs(refresh)
     items = (_from_ratchets() + _from_utilisation() + _from_matrix()
              + _from_wiring() + _from_register() + _from_conversion()
              + _from_tier_benchmark() + _from_calibration() + _from_freshness()
@@ -643,6 +720,24 @@ def build(*, refresh: bool = True) -> dict[str, Any]:
              # data/published_gaps/ and are ranked with no edit here. The readers above stay --
              # rewriting working producers to prove a point is the bloat this contract avoids.
              + to_queue_rows(load_published(), _item))
+    # THE PRODUCER FAILURE IS ITSELF QUEUE WORK (R0395), not a footnote under the queue. A dead
+    # producer bounds how much of everything below it the desk can trust, so it goes in the same
+    # ranked list as the gaps it was supposed to measure -- unmeasured, which is where
+    # _UNMEASURED_PRIORITY puts it: at the top. Detect implies repair; a provenance block nobody
+    # is scheduled to act on is the found-never-fixed defect one layer up.
+    for bad in inp.records:
+        if bad.status == "READ":
+            continue
+        items.append(_item(
+            f"meta::queue_input::{Path(bad.path).stem}", "measurement_quality", None, 1.0,
+            f"{bad.path} is {bad.status}"
+            + (f" ({bad.age_h:.1f}h vs {bad.max_age_h}h)" if bad.age_h is not None else "")
+            + (f" -- {bad.detail}" if bad.detail else ""),
+            f"Re-run the producer for {bad.path} and read its stderr. Every queue row derived "
+            f"from this artifact is built on numbers this run did not refresh, while the queue "
+            f"itself is stamped with today's date (L1.55).",
+            bad.path))
+
     items.sort(key=lambda r: -float(r["score"]))
     at_ceiling = [i for i in items if i["measured"] and i["gap_fraction"] <= 0.0]
     unmeasured = [i for i in items if not i["measured"]]
@@ -664,6 +759,13 @@ def build(*, refresh: bool = True) -> dict[str, Any]:
         "law": "L1.0 -- the gap between today's value and 100% IS the work queue. This organ "
                "never reports done: all-green escalates to MEASUREMENT-SET-TOO-SMALL.",
         "verdict": verdict,
+        # WHAT THE `generated` STAMP ABOVE ACTUALLY COVERS (R0395). `OK` = every input was
+        # refreshed and is inside its age contract, so the stamp describes the NUMBERS too;
+        # anything else = the stamp describes only when this file was ASSEMBLED.
+        "inputs_status": inp.status(),
+        "inputs_why": inp.why(),
+        "input_provenance": inp.block(),
+        "refresh_runs": refresh_runs,
         "n_aspects": len(items), "n_unmeasured": len(unmeasured),
         "n_at_ceiling": len(at_ceiling),
         "mean_completion": round(
@@ -687,6 +789,11 @@ def main() -> int:
     if args.json:
         print(json.dumps(rep, indent=2))
     else:
+        for r in rep["refresh_runs"]:
+            if r["status"] != "REFRESHED":
+                print(f"  PRODUCER {r['status']}: {r['script']} -- {r.get('detail', '')}")
+        if rep["inputs_status"] != "OK":
+            print(f"  QUEUE INPUTS {rep['inputs_status']}: {rep['inputs_why']}")
         print(f"MAX PUSH [{rep['verdict']}] {rep['n_aspects']} aspects | "
               f"mean completion {rep['mean_completion']:.1%} | "
               f"{rep['n_unmeasured']} UNMEASURED | {rep['n_at_ceiling']} at ceiling")

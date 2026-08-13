@@ -167,6 +167,90 @@ def test_fence_ok_when_all_fresh(froot):
     assert rep["status"] == "OK" and rep["fresh_fraction"] == 1.0
 
 
+# ------------------- R0398: a contracted artifact that has never existed ----------------------
+
+
+def _vanished(froot, rel: str, caller: str) -> None:
+    """Contract an artifact while it exists, then let it vanish -- the state that exited 0.
+
+    A consumer that reads an ABSENT path right now records an `unreadable_read`, so the fence
+    already calls that STALE-CONSUMED. The hole R0398 names is the quieter one: the contract is
+    on the registry, the artifact is gone, and no read is recent -- so no consumer event points
+    at it and no producer-side fence has a row for a path nothing ever produced.
+    """
+    _write(froot, rel, {"v": 1})
+    read_fresh(rel, 1.0, caller=caller, root=froot)     # fresh read -> contract, no event
+    (froot / rel).unlink()
+
+
+def test_fence_fails_on_a_contract_whose_artifact_does_not_exist(froot):
+    """R0398. MISSING was folded into STALE-UNREAD and exited 0, so a decision-path consumer
+    contracted to a path that no longer exists passed the L1.44 fence green -- the exact
+    precondition of the L1.55 fabrication (run_live_guard reading data/ramp_state.json, a file
+    that has never existed, and publishing the resulting defaults as evaluated conditions)."""
+    _write(froot, "data/x.json", {"v": 1})
+    read_fresh("data/x.json", 1.0, caller="t.real", root=froot)
+    _vanished(froot, "data/never_written.json", "t.phantom")
+
+    rep = build_report(root=froot)
+
+    assert rep["status"] == "MISSING", rep["status"]
+    assert rep["by_verdict"]["MISSING"] == 1
+    assert rep["missing"] == ["t.phantom <- data/never_written.json"]
+    assert "BUILD OR SCHEDULE THE PRODUCER" in rep["next_action"]
+
+
+def test_missing_outranks_stale_unread(froot):
+    """Both present: the absent artifact must not be hidden behind the merely-old one, because
+    they carry different repairs (build a producer vs revive one)."""
+    _write(froot, "data/stale.json", {"v": 1})
+    read_fresh("data/stale.json", 1.0, caller="t.ok", root=froot)
+    old = time.time() - 10 * 3600
+    os.utime(froot / "data/stale.json", (old, old))      # stale, unread
+    _vanished(froot, "data/gone.json", "t.phantom")
+    rep = build_report(root=froot)
+    assert rep["status"] == "MISSING"
+    assert rep["by_verdict"]["STALE-UNREAD"] == 1 and rep["by_verdict"]["MISSING"] == 1
+
+
+def test_missing_does_not_outrank_stale_consumed(froot):
+    """Ladder order is load-bearing in the other direction too: an artifact being CONSUMED while
+    frozen is the smoking gun and must not be masked by an absent one elsewhere."""
+    _write(froot, "data/stale.json", {"v": 1}, mtime_ago_s=10 * 3600)
+    read_fresh("data/stale.json", 1.0, caller="executor.site", root=froot)   # stale_read event
+    _vanished(froot, "data/gone.json", "t.phantom")
+    assert build_report(root=froot)["status"] == "STALE-CONSUMED"
+
+
+@pytest.mark.parametrize(("status", "expect_rc"),
+                         [("MISSING", 2), ("STALE-CONSUMED", 2), ("UNWIRED", 2),
+                          ("UNMEASURED", 2), ("STALE-UNREAD", 0), ("OK", 0)])
+def test_exit_code_agrees_with_the_verdict(froot, monkeypatch, status, expect_rc):
+    """The verdict and the exit code are two claims and they must agree: a status that never
+    fails the gate is a report, not a fence (L1.28a). STALE-UNREAD stays 0 deliberately -- there
+    the producer-side fences genuinely do own chasing the dead producer."""
+    import scripts.check_freshness as cf
+
+    canned = {"status": status, "detail": "", "stale_consumed": [], "unwired": [],
+              "missing": [], "n_registry_lines_dropped": 0}
+    monkeypatch.setattr(cf, "_ROOT", froot)
+    monkeypatch.setattr(cf, "build_report", lambda *a, **k: canned)
+    monkeypatch.setattr("sys.argv", ["check_freshness.py"])
+    assert cf.main() == expect_rc
+
+
+def test_unparseable_registry_lines_are_counted_not_hidden(froot):
+    """L1.60: a corrupt line may cost one record, but a drop nobody counts makes 'this registry
+    was never written' and 'this registry does not parse' byte-identical to the reader."""
+    _write(froot, "data/x.json", {"v": 1})
+    read_fresh("data/x.json", 1.0, caller="t.ok", root=froot)
+    reg = froot / REGISTRY_REL
+    reg.write_text(reg.read_text("utf-8") + "{not json\n" + "also not json\n", "utf-8")
+    rep = build_report(root=froot)
+    assert rep["n_registry_lines_dropped"] == 2
+    assert rep["n_contracts"] == 1
+
+
 def test_fence_state_contract_judged_by_guardian(froot):
     _write(froot, "data/stage.json", {"stage": "S0"}, mtime_ago_s=400 * 3600)
     _write(froot, "data/guard.json", {"ok": True})
