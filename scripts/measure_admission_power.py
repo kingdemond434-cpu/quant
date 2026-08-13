@@ -153,7 +153,7 @@ def run_level(true_sr: float, *, reps: int, seed0: int, n: int = _BASE_N, n_obs:
             # -- which validate() only emits when an ADV input exists, and records as UNMEASURED
             # otherwise -- arrives here as a constant True. Measured on this harness: capacity
             # 80/80 pass, 0 fail. The histogram below shows it as a CONSTANT-PASS gate rather
-            # than hiding it, but the fix belongs upstream and is rowed separately (R0553): it
+            # than hiding it, but the fix belongs upstream and is rowed separately (R0569): it
             # moves audit_gate_power's own published power numbers and needs its own re-run.
             #
             # The evaluated gates still decide struct_ok -- an absent gate must not FAIL a
