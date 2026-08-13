@@ -1192,6 +1192,27 @@ era-archaeology (still untouched region era target); (6) habr full sweep via mas
 PUSH RECORD: see end-of-run commit; law-gate presence checked at push time per the 08-04 fork
 corollary (record below if --no-verify was needed).
 
+### 2026-08-13 session 3-on-this-branch (RU frontier miner) — IN PROGRESS (write-first note; updated as each item resolves)
+WORKTREE: own tree /home/quant/qp-ru-s3 on `claude/ru-miner-s3-20260813` (session start printed
+SHARED TREE, 2 other live sessions in the main checkout — R0423 has 4 recorded instances of a
+sibling's broad commit sweeping another session's staged files; never `git stash`).
+BACKLOG (resume step 1): 6 pending-verification + 1 pending-legitimacy items read via
+source_backlog_next.py. NONE is RU ground — BIS WP 1087 carry↔liquidation, stablecoin-run
+conditioning, KR venue-state (KR seat), foreign AI-quant research systems (CN seat closed the
+vnpy.alpha half 08-13), crypto grouping map, WQ BRAIN field catalogue, Glassnode/CryptoQuant
+vendor decision (principal-gated). Recorded, not silence — same routing verdict as 08-04/08-12.
+§33 header this run: BACKLOG-CLEAR, 18/18 carded finds disposed, mining authorised.
+ITEMS THIS RUN (bounded scope, depth-maxed; taken from the 08-12 NEXT RUN queue in order):
+  1. smart-lab.ru depth targets — 1335532 (the "platform that REJECTED all 231 of my strategies"
+     — mine the GAUNTLET DESIGN, process-mandate material), 1336741 (30y data-repair war story),
+     1335574 (independent tick-level refutation of a sold MQL5 robot → free graveyard genre).
+     Comment layer ≥2 per the depth mandate. STATUS: PENDING
+  2. @crypto_maniacdt YouTube transcripts (video ground; named as next-run ground by BOTH prior
+     sessions and never executed — the RU video line is a two-session NOT-TRIED zero, which the
+     video mandate says is the ambiguous case). Pair each video with its repo; hunt the
+     stated-but-uncoded failures. STATUS: PENDING
+  3. (stretch) btcsec 274 remaining shortlist topics — bot/strategy class. STATUS: PENDING
+
 ## SESSION NOTES — KR frontier miner
 
 ### 2026-08-04 session 1-on-this-branch (KR frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
