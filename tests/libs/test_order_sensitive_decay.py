@@ -8,12 +8,14 @@ implementation it replaces is kept here as a regression fixture showing why.
 """
 from __future__ import annotations
 
+import collections
 import random
 from math import comb, factorial, floor
 
 import pytest
 
 from libs.research.order_sensitive_decay import (
+    _NULL_BAND,
     DECAYING,
     STABLE,
     STRENGTHENING,
@@ -147,4 +149,39 @@ class TestDecayVerdictIsOrderSensitive:
         rng = random.Random(20260812)
         n_decay = sum(decay_verdict([rng.random() for _ in range(8)])["verdict"] == DECAYING
                       for _ in range(2000))
-        assert 850 <= n_decay <= 1150, f"asymmetric under the null: {n_decay}/2000"
+        assert n_decay <= 1150, f"asymmetric under the null: {n_decay}/2000"
+
+    def test_a_null_record_mostly_reads_STABLE_not_a_direction(self) -> None:
+        """R0467: symmetry was asserted, REFUSAL never was, and only refusal was the point.
+
+        The sibling test above passed throughout on a verdict that called a direction on 100% of
+        null records -- a fair coin is still a coin. Measured before the band: DECAYING 10,045 /
+        STRENGTHENING 9,955 / STABLE 0 over 20,000 records. This pins the property whose absence
+        that test could not see.
+        """
+        rng = random.Random(20260813)
+        mix = collections.Counter(
+            decay_verdict([rng.random() for _ in range(14)])["verdict"] for _ in range(2000))
+        assert mix[STABLE] >= 1800, f"the null must mostly read STABLE, got {dict(mix)}"
+        directional = mix[DECAYING] + mix[STRENGTHENING]
+        assert directional <= 160, f"false-direction rate above the 5% design: {directional}/2000"
+
+    def test_the_band_is_the_closed_form_not_a_tuned_number(self) -> None:
+        # Each half's error rate is Uniform(0,1) under the null (probability integral transform)
+        # and the halves are independent, so the difference is triangular: P(|D|>t) = (1-t)^2.
+        assert pytest.approx(1.0 - 0.05**0.5) == _NULL_BAND
+        assert decay_verdict([0.5] * 8)["null_band"] == pytest.approx(_NULL_BAND, abs=1e-6)
+
+    def test_a_gap_inside_the_band_is_reported_but_not_called(self) -> None:
+        """The live row that raised R0467: two halves at ~0.32 and ~0.35 read DECAYING."""
+        r = decay_verdict([0.5894, 0.0883, 0.2715, 0.0164, 0.6407, 0.7252, 0.7997,
+                           0.7674, 0.5722, 0.2233, 0.4788, 0.3266, 0.2632, 0.5755])
+        assert r["verdict"] == STABLE
+        assert 0.0 < abs(r["diff"]) < _NULL_BAND     # the evidence is still published
+        # Both halves sit near a third, i.e. both say "nothing here" (0.5 is pure null). The old
+        # code called a DIRECTION off the ~0.036 gap between them. Not pinned to more precision
+        # than the inputs carry: these p-values are the published 4dp curve, so an exact-value
+        # assertion here would pin a rounding artifact rather than the behaviour.
+        assert 0.30 < r["error_rate_early"] < 0.36
+        assert 0.30 < r["error_rate_late"] < 0.40
+        assert r["error_rate_late"] > r["error_rate_early"]

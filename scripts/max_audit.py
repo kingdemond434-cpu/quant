@@ -5521,15 +5521,31 @@ def check_dig_uncommitted(defects) -> None:
     # Asked exactly, via git's own index -- NOT file mtimes. A fresh clone stamps every file with
     # the checkout time, so an mtime-vs-commit-time comparison reports the entire research surface
     # as uncommitted on any re-clone. `git status --porcelain` answers the real question.
+    #
+    # `-b` COSTS NOTHING AND NAMES THE TREE. This box runs a dozen registered worktrees at once
+    # (cron starts several), and this check reports whichever one it happened to run in -- ROOT is
+    # relative to max_audit.py's own location. A bare basename is therefore unactionable from
+    # anywhere else, and the way it fails is expensive rather than merely unhelpful: a reader who
+    # resolves `absorbing_kelly_study.json[M]` in their OWN checkout finds it clean, goes looking,
+    # finds it dirty in a sibling's tree, and commits another live session's in-progress work.
+    # That is R0423, which this desk has recorded four times. Measured 2026-08-13: the handed
+    # defect named absorbing_kelly_study.json, clean in the canonical checkout and dirty in two
+    # sibling worktrees mid-study.
     try:
-        out = subprocess.run(["git", "status", "--porcelain", "--", *_DIG_TRACKED],
+        out = subprocess.run(["git", "status", "--porcelain", "-b", "--", *_DIG_TRACKED],
                              cwd=ROOT, capture_output=True, text=True, timeout=20)
     except (OSError, subprocess.SubprocessError):
         return  # no git available -- the check simply does not apply here
     if out.returncode != 0:
         return
     stale = []
+    branch = ""
     for line in out.stdout.splitlines():
+        # `## <branch>...<upstream>` from -b. Skipping it explicitly matters: the parse below
+        # would otherwise read it as a file with status code "##".
+        if line.startswith("##"):
+            branch = line[2:].strip().split("...")[0].strip()
+            continue
         if len(line) > 3:
             code, path = line[:2].strip() or "??", line[3:].strip()
             # RATCHET GRACE (R0147): conversion/holdings records are re-ticked by cron every
@@ -5551,11 +5567,15 @@ def check_dig_uncommitted(defects) -> None:
                     pass                     # grace unreadable -> file stays counted (fail firm)
             stale.append(f"{Path(path).name}[{code}]")
     if stale:
+        where = f"{ROOT}{f' ({branch})' if branch else ''}"
         defects.append((
             "dig-output-uncommitted",
-            f"§33: dig output UNCOMMITTED -- {', '.join(stale[:8])}. Output not "
+            f"§33: dig output UNCOMMITTED in {where} -- {', '.join(stale[:8])}. Output not "
             "committed and pushed by end of cycle DID NOT HAPPEN and earns zero credit: git is "
-            "the institutional memory, VPS disk is not. Commit, push, and VERIFY the push."))
+            "the institutional memory, VPS disk is not. Commit, push, and VERIFY the push -- IN "
+            "THAT TREE. Several worktrees are live on this box and the same path is a different "
+            "session's work in each, so resolving the basename in your own checkout commits "
+            "someone else's (R0423)."))
 
 
 MINING_RECORD = ROOT / "docs/research/mining_record.json"   # tracked in git, like the §33 record

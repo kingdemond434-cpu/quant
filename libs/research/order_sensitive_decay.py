@@ -36,9 +36,21 @@ kindest window. _SPLIT and _MIN_PERIODS are frozen constants for that reason, an
 `decay_verdict` takes its segmentation from the caller only so tests can drive it -- production
 callers pass nothing and get the frozen values.
 
+A DIRECTION IS ONLY CALLED OUTSIDE THE NULL BAND (R0467). The first version compared the two
+halves with a bare `>`, which sounds conservative and is the opposite: STABLE then required exact
+float equality of two continuous quantities, so it was UNREACHABLE, and every real record got a
+direction. Measured over 20,000 pure-null records: DECAYING 10,045 / STRENGTHENING 9,955 /
+STABLE 0. The verdict was a fair coin wearing a statistic's clothes -- and being fair is exactly
+what made it survive review, because the module's own null test asserted symmetry (which held)
+rather than refusal (which never did). ASK OF ANY VERDICT WHETHER ITS QUIETEST OUTCOME CAN
+HAPPEN AT ALL: an outcome with zero probability is not a bar, and a gate that cannot return
+"nothing here" carries no information about anything (L1.43).
+
 NOTHING HERE PROMOTES ANYTHING. This is a DECAY detector for records the desk already has, not a
 gauntlet gate. It grants no promotion authority, moves no threshold, and returns UNDERPOWERED
-rather than a verdict when there are too few sub-periods to say anything (L1.28a).
+rather than a verdict when there are too few sub-periods to say anything (L1.28a). The band added
+by R0467 tightens what it will CLAIM and loosens nothing: strictly fewer directional calls than
+before, never more.
 """
 from __future__ import annotations
 
@@ -49,6 +61,22 @@ from math import comb, factorial, floor
 #: after seeing a verdict is the window-shopping exploit this module documents.
 _SPLIT = 0.5          # early half vs late half
 _MIN_PERIODS = 4      # below this, the mean-p combination has no resolution worth reporting
+
+#: Two-sided rate at which a PURE NULL record is allowed to be called DECAYING or STRENGTHENING.
+_DIRECTION_ALPHA = 0.05
+
+#: The band inside which the two halves are NOT DISTINGUISHABLE, so the verdict is STABLE.
+#:
+#: DERIVED, NOT TUNED. `mean_p_error_rate` is the CDF of the p-sum, so under the null the
+#: probability integral transform makes each half's error rate EXACTLY Uniform(0,1), and the two
+#: halves are built from disjoint p-values, hence independent. Their difference is therefore
+#: triangular on [-1, 1] with density (1-|d|), giving the closed form
+#:
+#:     P(|D| > t) = (1 - t)^2   ->   t = 1 - sqrt(alpha)
+#:
+#: Measured against this module's own code over 20,000 null records of 14 windows: empirical
+#: P(|D| > t) = 0.0484 against the 0.0500 target.
+_NULL_BAND = 1.0 - _DIRECTION_ALPHA**0.5      # == 0.776393...
 
 UNDERPOWERED = "UNDERPOWERED"
 DECAYING = "DECAYING"
@@ -116,11 +144,22 @@ def decay_verdict(pvals: list[float], *, split: float = _SPLIT,
     # The error rate is a CDF of the p-sum: HIGHER means the sub-periods looked WORSE. So decay
     # is late > early. Reported as the raw pair, never as a single collapsed score, because the
     # two halves are the evidence and a reader must be able to see both.
+    #
+    # THE BAND IS WHAT MAKES STABLE REACHABLE (R0467). Before it, the comparison was a bare `>`,
+    # so STABLE required EXACT float equality of two continuous quantities and was therefore
+    # unreachable on any real record: measured over 20,000 pure-null records, this function
+    # returned DECAYING 10,045 times and STRENGTHENING 9,955 times and STABLE ZERO times -- a
+    # coin flip published as a verdict, which is precisely the "manufacture decay out of noise"
+    # failure the docstring of its own null test names. Live proof it was not theoretical: the
+    # stablecoin_supply row flipped STRENGTHENING -> DECAYING overnight on 2026-08-12/13 off a
+    # 0.036 gap between two halves that both read ~0.33, i.e. both saying nothing is there.
+    diff = e_late - e_early
     verdict = STABLE
-    if e_late > e_early:
+    if diff > _NULL_BAND:
         verdict = DECAYING
-    elif e_early > e_late:
+    elif -diff > _NULL_BAND:
         verdict = STRENGTHENING
     return {"verdict": verdict, "n_periods": n, "split_at": cut,
             "error_rate_early": round(e_early, 6), "error_rate_late": round(e_late, 6),
+            "diff": round(diff, 6), "null_band": round(_NULL_BAND, 6),
             "n_early": len(early), "n_late": len(late)}

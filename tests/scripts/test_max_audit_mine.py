@@ -188,6 +188,45 @@ class TestDigUncommitted:
         m.check_dig_uncommitted(defects)
         assert defects == []
 
+    def test_the_defect_names_the_tree_that_owes_the_commit(self, tmp_path: Path,
+                                                            monkeypatch) -> None:
+        """A basename alone is unactionable on a box running a dozen worktrees, and the way it
+        fails is expensive: measured 2026-08-13, the handed defect named a file that was CLEAN in
+        the canonical checkout and dirty in two sibling worktrees running an active study. A
+        reader who resolves the basename in their own tree commits another session's work (R0423,
+        four recorded instances). The message must say WHICH tree.
+        """
+        import os
+        import time
+        f = self._repo(tmp_path)
+        f.write_text("### 1. A [§33: killed]\n### 2. NEW UNCOMMITTED FIND\n")
+        future = time.time() + 7200
+        os.utime(f, (future, future))
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        defects: list[tuple[str, str]] = []
+        m.check_dig_uncommitted(defects)
+        assert defects and defects[0][0] == "dig-output-uncommitted"
+        assert str(tmp_path) in defects[0][1], "the defect must name the tree it audited"
+
+    def test_the_branch_header_is_not_counted_as_a_dirty_file(self, tmp_path: Path,
+                                                              monkeypatch) -> None:
+        """`-b` prepends `## <branch>`, which the porcelain parse would read as a file whose
+        status code is `##`. Pin it: exactly the one real file is reported, never a phantom.
+        """
+        import os
+        import time
+        f = self._repo(tmp_path)
+        f.write_text("### 1. A [§33: killed]\n### 2. NEW UNCOMMITTED FIND\n")
+        future = time.time() + 7200
+        os.utime(f, (future, future))
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        defects: list[tuple[str, str]] = []
+        m.check_dig_uncommitted(defects)
+        assert defects
+        msg = defects[0][1]
+        assert f.name in msg
+        assert "[##]" not in msg, "the -b header leaked into the dirty-file list"
+
 
 class TestMineFlow:
     def test_no_history_no_op(self, tmp_path: Path, monkeypatch) -> None:
