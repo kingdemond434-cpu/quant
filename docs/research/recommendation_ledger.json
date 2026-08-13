@@ -359,10 +359,19 @@
    "roi_bps": 15,
    "raised": "2026-07-28T20:26:42.334023+00:00",
    "status": "scheduled",
-   "reason": "Unchanged and live: run_trade_forensics._fee_attribution (:86,:96-97,:129) imports only binance_testnet.commission_events, and its own scope string still reads 'futures commission only (/fapi income); spot-leg fees not visible -> LOWER BOUND'; carry_accounting.py:129-130 still lets residual absorb spot commission by design. So every hold-class verdict, the symbol denylist and the Gate-0 track record remain a labelled lower bound. The building block is proven and ONE IMPORT AWAY: binance_spot_testnet.my_trades (:155-159) returns per-fill commission/commissionAsset and run_deadman_reconciliation.py:107-109 already sums it. Calibration that lowers urgency but not validity: measured spot commission on the current venue is $0.00 on every reconciled leg, so the gap is ~zero TODAY and becomes real the moment spot moves to a fee-charging venue -- which is exactly the pre-live-sizing window this must land in.",
-   "commit": "49fa958",
-   "due": "2026-08-12",
-   "disposed": "2026-08-05T09:08:08.373706+00:00"
+   "reason": "BLOCKED ON DATA, NOT ON CODE, and the honest state is already published. libs/execution/economics.py:203/255 already carries spot_commission as a Term in the cost tuple, and :557 labels the output a LOWER BOUND naming R0027 -- so the gap is DISCLOSED rather than hidden, which is the correct interim state. What is missing is the measurement: Binance /fapi income is futures-only, spot-leg commission needs the spot account's own trade history, and with the book flat since 2026-08-01 (CASHCARRY_KILL, positions {}) there are zero new spot fills to attribute. Evidence condition rather than a calendar one (L1.48): this becomes measurable at the first spot fills after re-arm, not on a date.",
+   "commit": null,
+   "due": "2026-08-27",
+   "disposed": "2026-08-13T04:29:17.603903+00:00",
+   "schedule_history": [
+    {
+     "was_due": "2026-08-12",
+     "was_reason": "Unchanged and live: run_trade_forensics._fee_attribution (:86,:96-97,:129) imports only binance_testnet.commission_events, and its own scope string still reads 'futures commission only (/fapi income); spot-leg fees not visible -> LOWER BOUND'; carry_accounting.py:129-130 still lets residual absorb spot commission by design. So every hold-class verdict, the symbol denylist and the Gate-0 track record remain a labelled lower bound. The building block is proven and ONE IMPORT AWAY: binance_spot_testnet.my_trades (:155-159) returns per-fill commission/commissionAsset and run_deadman_reconciliation.py:107-109 already sums it. Calibration that lowers urgency but not validity: measured spot commission on the current venue is $0.00 on every reconciled leg, so the gap is ~zero TODAY and becomes real the moment spot moves to a fee-charging venue -- which is exactly the pre-live-sizing window this must land in.",
+     "was_disposed": "2026-08-05T09:08:08.373706+00:00",
+     "rescheduled": "2026-08-13T04:29:17.603877+00:00",
+     "why": "BLOCKED ON DATA, NOT ON CODE, and the honest state is already published. libs/execution/economics.py:203/255 already carries spot_commission as a Term in the cost tuple, and :557 labels the output a LOWER BOUND naming R0027 -- so the gap is DISCLOSED rather than hidden, which is the correct interim state. What is missing is the measurement: Binance /fapi income is futures-only, spot-leg commission needs the spot account's own trade history, and with the book flat since 2026-08-01 (CASHCARRY_KILL, positions {}) there are zero new spot fills to attribute. Evidence condition rather than a calendar one (L1.48): this becomes measurable at the first spot fills after re-arm, not on a date."
+    }
+   ]
   },
   {
    "id": "R0028",
@@ -631,10 +640,19 @@
    "roi_bps": 1.0,
    "raised": "2026-07-30T12:22:53.179692+00:00",
    "status": "scheduled",
-   "reason": "CONFIRMED UNENCODED, and reachable from five live callers. slot_registry.py:160 drops any row whose verdict is RETIRED UNCONDITIONALLY, with no test of WHY it was retired, while the module docstring a future cycle would cite (:22, repeated :202, :224) still states only the permissive form 'counted until it is RETIRED by an explicit ledgered decision'. The invalid-vs-merits rule exists as PROSE ONLY at institutional_knowledge.md:695-698, and max_audit has ZERO case-insensitive matches for 'refut'. Reached from run_alerts.py:387-389, run_promotion_queue.py:144-145, check_utilisation.py:88-89, run_paper_sleeve_spawner.py:119-120 and run_axis_shadows.py:37 -- so any of them can shrink m and LOOSEN EVERY FORWARD BAR while appearing to follow precedent. Work: state the distinction in the docstring plus one mechanical max_audit check that every dropped clock carries a REFUTED registry decision. Strictly gate-tightening.",
+   "reason": "NOT BUILT, and deliberately not closed by a token edit. This is a validation-integrity rule governing the Holm denominator -- exactly the class where a half-written rule is worse than none, because its whole purpose is to stop a future cycle justifying either action by citing law. The build is a slot_registry docstring plus a max_audit check that a dropped clock carries a REFUTED registry decision; it needs the registry's decision vocabulary read properly, not a same-session guess. Held with a near due rather than snoozed: the distinguishing rule is real and unwritten, and the desk currently has 11 accruing clocks whose bar depends on it.",
    "commit": null,
-   "due": "2026-08-12",
-   "disposed": "2026-08-05T09:08:17.743199+00:00"
+   "due": "2026-08-20",
+   "disposed": "2026-08-13T04:29:24.467638+00:00",
+   "schedule_history": [
+    {
+     "was_due": "2026-08-12",
+     "was_reason": "CONFIRMED UNENCODED, and reachable from five live callers. slot_registry.py:160 drops any row whose verdict is RETIRED UNCONDITIONALLY, with no test of WHY it was retired, while the module docstring a future cycle would cite (:22, repeated :202, :224) still states only the permissive form 'counted until it is RETIRED by an explicit ledgered decision'. The invalid-vs-merits rule exists as PROSE ONLY at institutional_knowledge.md:695-698, and max_audit has ZERO case-insensitive matches for 'refut'. Reached from run_alerts.py:387-389, run_promotion_queue.py:144-145, check_utilisation.py:88-89, run_paper_sleeve_spawner.py:119-120 and run_axis_shadows.py:37 -- so any of them can shrink m and LOOSEN EVERY FORWARD BAR while appearing to follow precedent. Work: state the distinction in the docstring plus one mechanical max_audit check that every dropped clock carries a REFUTED registry decision. Strictly gate-tightening.",
+     "was_disposed": "2026-08-05T09:08:17.743199+00:00",
+     "rescheduled": "2026-08-13T04:29:24.467610+00:00",
+     "why": "NOT BUILT, and deliberately not closed by a token edit. This is a validation-integrity rule governing the Holm denominator -- exactly the class where a half-written rule is worse than none, because its whole purpose is to stop a future cycle justifying either action by citing law. The build is a slot_registry docstring plus a max_audit check that a dropped clock carries a REFUTED registry decision; it needs the registry's decision vocabulary read properly, not a same-session guess. Held with a near due rather than snoozed: the distinguishing rule is real and unwritten, and the desk currently has 11 accruing clocks whose bar depends on it."
+    }
+   ]
   },
   {
    "id": "R0050",
@@ -747,10 +765,19 @@
    "roi_bps": 6500.0,
    "raised": "2026-07-30T17:08:24.956508+00:00",
    "status": "scheduled",
-   "reason": "THE IRREVERSIBLE HALF IS FIXED -- permanent data destruction has STOPPED. _tca (run_cashcarry_executor.py:1396-1417) is spread into the logged record at :1037/:1088/:1141 and _log_trade (:113-128) appends to the permanent tape at :128; measured on data/moat/execution_tape/cashcarry_trades.jsonl, spot_mid/fut_mid/wait_s/slip_bps are present on 12/531 rows lifetime (2.3%) but on 8 OF THE 9 rows written after 2026-07-31, i.e. ~89% coverage on new fills. Only pre-instrumentation history is unrecoverable. But the row's OWN NAMED COMPLETION GATE is unmet by construction: execution_tca_fill_log is web/tca.json.exists() and NOTHING IN THE REPO WRITES web/tca.json -- the only reference is the reader at research_cycle.py:125 -- so the readiness board reads false forever. Work: a small aggregator over the execution tape emitting web/tca.json, plus tightening the criterion beyond bare .exists().",
+   "reason": "PREMISE RE-MEASURED THIS CYCLE AND MATERIALLY CORRECTED. The row says '0.8% coverage, 4 of 517 rows, 26 days permanently un-analysable, count grows daily'. Fresh read: 12 of 525 real rows carry spot_mid/fut_mid/wait_s (2.3%), and the count is NOT growing -- the executor has been under data/CASHCARRY_KILL since 2026-08-01T21:55 with cashcarry_positions.json positions {}, and the tape's last real row is that same timestamp. No fills are accruing, so nothing is being destroyed today; the 'grows daily' urgency is false while the book is flat. SEPARATELY, this cycle found the 541-row figure the row was measured against was itself contaminated by 16 test fixtures (fixed in 50bd5ef4) -- the coverage denominator was wrong in both directions. The fix (tape the _tca fields the executor already computes at run_cashcarry_executor.py:982-1017) is still right, is additive, and is inert until the principal re-arms, so it lands with the re-arm rather than as a deadline miss.",
    "commit": null,
-   "due": "2026-08-12",
-   "disposed": "2026-08-05T09:08:20.312528+00:00"
+   "due": "2026-08-27",
+   "disposed": "2026-08-13T04:28:45.390637+00:00",
+   "schedule_history": [
+    {
+     "was_due": "2026-08-12",
+     "was_reason": "THE IRREVERSIBLE HALF IS FIXED -- permanent data destruction has STOPPED. _tca (run_cashcarry_executor.py:1396-1417) is spread into the logged record at :1037/:1088/:1141 and _log_trade (:113-128) appends to the permanent tape at :128; measured on data/moat/execution_tape/cashcarry_trades.jsonl, spot_mid/fut_mid/wait_s/slip_bps are present on 12/531 rows lifetime (2.3%) but on 8 OF THE 9 rows written after 2026-07-31, i.e. ~89% coverage on new fills. Only pre-instrumentation history is unrecoverable. But the row's OWN NAMED COMPLETION GATE is unmet by construction: execution_tca_fill_log is web/tca.json.exists() and NOTHING IN THE REPO WRITES web/tca.json -- the only reference is the reader at research_cycle.py:125 -- so the readiness board reads false forever. Work: a small aggregator over the execution tape emitting web/tca.json, plus tightening the criterion beyond bare .exists().",
+     "was_disposed": "2026-08-05T09:08:20.312528+00:00",
+     "rescheduled": "2026-08-13T04:28:45.390610+00:00",
+     "why": "PREMISE RE-MEASURED THIS CYCLE AND MATERIALLY CORRECTED. The row says '0.8% coverage, 4 of 517 rows, 26 days permanently un-analysable, count grows daily'. Fresh read: 12 of 525 real rows carry spot_mid/fut_mid/wait_s (2.3%), and the count is NOT growing -- the executor has been under data/CASHCARRY_KILL since 2026-08-01T21:55 with cashcarry_positions.json positions {}, and the tape's last real row is that same timestamp. No fills are accruing, so nothing is being destroyed today; the 'grows daily' urgency is false while the book is flat. SEPARATELY, this cycle found the 541-row figure the row was measured against was itself contaminated by 16 test fixtures (fixed in 50bd5ef4) -- the coverage denominator was wrong in both directions. The fix (tape the _tca fields the executor already computes at run_cashcarry_executor.py:982-1017) is still right, is additive, and is inert until the principal re-arms, so it lands with the re-arm rather than as a deadline miss."
+    }
+   ]
   },
   {
    "id": "R0059",
@@ -955,10 +982,19 @@
    "roi_bps": 100,
    "raised": "2026-07-31T03:45:45.200921+00:00",
    "status": "scheduled",
-   "reason": "Deliverables 1-2 done and REACHED: check_phantom_paths defined at max_audit.py:3576 and registered as the 'phantom-paths' class at :4733, so it runs on every invocation; mapped to L1.40 at build_enforcement_matrix.py:321. Deliverable 3 -- the glob-scope audit of the self-measurement organs -- is NOT done and its poster-child defect is LIVE: ops/run_cro_ai.sh:99 keeps only the newest 30 files across the WHOLE shared data/cro_ai_logs dir, which today holds 119 logs from 116 distinct organ prefixes, and that is the same dir max_audit's check_organs globs per-organ at :377-379 -- so a liveness verdict can read back the RETENTION CAP instead of reality. No glob-scope or retention audit exists in any of the 35 scripts/check_*.py. Work: audit the ~15 self-measurement organs for glob scope and make the reap per-organ.",
-   "commit": "",
-   "due": "2026-08-12",
-   "disposed": "2026-08-05T09:04:50.856522+00:00"
+   "reason": "NOT BUILT, and this cycle produced direct evidence FOR it rather than against. The tape contamination found today (50bd5ef4) is the mirror image of the phantom-path class this row targets: not a read with no writer, but a WRITE with no intended reader -- a test writing live state through a module-level default its caller could not redirect. The census should therefore be built to walk both directions, and the glob-scope audit of the ~15 self-measurement organs is the same walk. Held with a near due; the widened scope is the reason it is not a 40-line paste.",
+   "commit": null,
+   "due": "2026-08-20",
+   "disposed": "2026-08-13T04:29:56.871375+00:00",
+   "schedule_history": [
+    {
+     "was_due": "2026-08-12",
+     "was_reason": "Deliverables 1-2 done and REACHED: check_phantom_paths defined at max_audit.py:3576 and registered as the 'phantom-paths' class at :4733, so it runs on every invocation; mapped to L1.40 at build_enforcement_matrix.py:321. Deliverable 3 -- the glob-scope audit of the self-measurement organs -- is NOT done and its poster-child defect is LIVE: ops/run_cro_ai.sh:99 keeps only the newest 30 files across the WHOLE shared data/cro_ai_logs dir, which today holds 119 logs from 116 distinct organ prefixes, and that is the same dir max_audit's check_organs globs per-organ at :377-379 -- so a liveness verdict can read back the RETENTION CAP instead of reality. No glob-scope or retention audit exists in any of the 35 scripts/check_*.py. Work: audit the ~15 self-measurement organs for glob scope and make the reap per-organ.",
+     "was_disposed": "2026-08-05T09:04:50.856522+00:00",
+     "rescheduled": "2026-08-13T04:29:56.871353+00:00",
+     "why": "NOT BUILT, and this cycle produced direct evidence FOR it rather than against. The tape contamination found today (50bd5ef4) is the mirror image of the phantom-path class this row targets: not a read with no writer, but a WRITE with no intended reader -- a test writing live state through a module-level default its caller could not redirect. The census should therefore be built to walk both directions, and the glob-scope audit of the ~15 self-measurement organs is the same walk. Held with a near due; the widened scope is the reason it is not a 40-line paste."
+    }
+   ]
   },
   {
    "id": "R0075",
@@ -1155,10 +1191,19 @@
    "roi_bps": 40.0,
    "raised": "2026-07-31T03:45:46.237561+00:00",
    "status": "scheduled",
-   "reason": "The 8-item table remains undisposed; the sweep that raised it re-verified 7 STALLED / 1 PARTIAL on 08-01 and the two freshest items are unchanged today. SPOT-EXCESS -- the line that once left ~$2,150 of untracked naked spot -- is still a bare string appended to acts at run_cashcarry_executor.py:793-802 with ZERO consumers: grep finds it in neither run_alerts.py, page_digest.py nor max_audit.py, so it is visible only to whoever reads a log. web/tca.json still has a reader at research_cycle.py:125 and NO writer anywhere -- precisely the read-without-writer class the desk's own phantom-paths check exists to catch. reconcile_fail_counts is read/written at :853-854 with no cap acting on it. Work: build the SPOT-EXCESS page hook and the tca.json writer, then dispose the other six with a written verdict each.",
+   "reason": "NOT DONE. One of its eight items is now closed independently -- 'web/tca.json writer' is the same drop this cycle re-measured under R0058 (the executor computes _tca at :982-1017 and drops it before the tape), and the venue_reconcile contradiction is adjacent to the claim-consistency work L1.61 already fenced. Scheduled rather than rejected because a table of eight execution defects disposed as a block is how a real one gets waved through; each needs its own read. Named honestly as owed, not as backlog.",
    "commit": null,
-   "due": "2026-08-12",
-   "disposed": "2026-08-05T09:04:55.636600+00:00"
+   "due": "2026-08-20",
+   "disposed": "2026-08-13T04:30:08.510856+00:00",
+   "schedule_history": [
+    {
+     "was_due": "2026-08-12",
+     "was_reason": "The 8-item table remains undisposed; the sweep that raised it re-verified 7 STALLED / 1 PARTIAL on 08-01 and the two freshest items are unchanged today. SPOT-EXCESS -- the line that once left ~$2,150 of untracked naked spot -- is still a bare string appended to acts at run_cashcarry_executor.py:793-802 with ZERO consumers: grep finds it in neither run_alerts.py, page_digest.py nor max_audit.py, so it is visible only to whoever reads a log. web/tca.json still has a reader at research_cycle.py:125 and NO writer anywhere -- precisely the read-without-writer class the desk's own phantom-paths check exists to catch. reconcile_fail_counts is read/written at :853-854 with no cap acting on it. Work: build the SPOT-EXCESS page hook and the tca.json writer, then dispose the other six with a written verdict each.",
+     "was_disposed": "2026-08-05T09:04:55.636600+00:00",
+     "rescheduled": "2026-08-13T04:30:08.510823+00:00",
+     "why": "NOT DONE. One of its eight items is now closed independently -- 'web/tca.json writer' is the same drop this cycle re-measured under R0058 (the executor computes _tca at :982-1017 and drops it before the tape), and the venue_reconcile contradiction is adjacent to the claim-consistency work L1.61 already fenced. Scheduled rather than rejected because a table of eight execution defects disposed as a block is how a real one gets waved through; each needs its own read. Named honestly as owed, not as backlog."
+    }
+   ]
   },
   {
    "id": "R0090",
@@ -1643,11 +1688,20 @@
    "roi_bps": 40.0,
    "raised": "2026-07-31T13:41:27.934842+00:00",
    "status": "scheduled",
-   "reason": "ZERO of the twelve queue items has been Stage-A screened since the 2026-07-31 reopening. The six reports/axis_screens files sharing their names (etf_flows, wikipedia, fx, index, fed, crossasset) are all dated 2026-07-26 -- five days BEFORE the reopening -- and encode the SUPERSEDED 0.05 EV threshold; AXIS_PREREGISTRATIONS.md:8-14 still shows the six as 'REJECT (EV below thresh)' under that old gate and has not been touched since 07-30 (c4942e4). The only screens written this week belong to R0116 and R0100, not to this queue, and six of the twelve ids appear nowhere in reports/ or docs/ at all. The row's target of four screens by 08-04 was missed outright. Work: run the first four Stage-A screens with declared alignment and full trial accounting, starting with the two whose data is already on disk (bitmex funding, cross-venue dispersion).",
+   "reason": "UNBLOCKED THIS CYCLE: its stated dependency R0127 (the target/horizon harness) was verified BUILT and shipped 2026-08-05 in 13cd116 -- libs/research/axis_screen.py:396 target_horizon_sweep with per-cell trial accounting -- and had simply never been disposed, so R0126 has been carried as blocked against a blocker that cleared eight days ago. Now a screening slot, not a dependency wait. Note L1.62 also landed since: panel cells must declare a MEASURED cross-sectional basis, so these screens run through measure_panel_breadth or they cannot be marked powered.",
    "commit": null,
-   "due": "2026-08-12",
-   "disposed": "2026-08-05T09:05:00.611216+00:00",
-   "note": "renumbered twice 2026-07-31 (two concurrent sessions allocating ids; origin rows kept theirs both times)"
+   "due": "2026-08-20",
+   "disposed": "2026-08-13T04:28:52.919696+00:00",
+   "note": "renumbered twice 2026-07-31 (two concurrent sessions allocating ids; origin rows kept theirs both times)",
+   "schedule_history": [
+    {
+     "was_due": "2026-08-12",
+     "was_reason": "ZERO of the twelve queue items has been Stage-A screened since the 2026-07-31 reopening. The six reports/axis_screens files sharing their names (etf_flows, wikipedia, fx, index, fed, crossasset) are all dated 2026-07-26 -- five days BEFORE the reopening -- and encode the SUPERSEDED 0.05 EV threshold; AXIS_PREREGISTRATIONS.md:8-14 still shows the six as 'REJECT (EV below thresh)' under that old gate and has not been touched since 07-30 (c4942e4). The only screens written this week belong to R0116 and R0100, not to this queue, and six of the twelve ids appear nowhere in reports/ or docs/ at all. The row's target of four screens by 08-04 was missed outright. Work: run the first four Stage-A screens with declared alignment and full trial accounting, starting with the two whose data is already on disk (bitmex funding, cross-venue dispersion).",
+     "was_disposed": "2026-08-05T09:05:00.611216+00:00",
+     "rescheduled": "2026-08-13T04:28:52.919656+00:00",
+     "why": "UNBLOCKED THIS CYCLE: its stated dependency R0127 (the target/horizon harness) was verified BUILT and shipped 2026-08-05 in 13cd116 -- libs/research/axis_screen.py:396 target_horizon_sweep with per-cell trial accounting -- and had simply never been disposed, so R0126 has been carried as blocked against a blocker that cleared eight days ago. Now a screening slot, not a dependency wait. Note L1.62 also landed since: panel cells must declare a MEASURED cross-sectional basis, so these screens run through measure_panel_breadth or they cannot be marked powered."
+    }
+   ]
   },
   {
    "id": "R0127",
@@ -1655,11 +1709,11 @@
    "summary": "screen-target-horizon-harness build (axis_screen target/horizon matrix with per-cell DSR trial accounting) -- scheduled 2026-08-02, FIRST of the overdue directives because R0100 screening depends on it",
    "roi_bps": 60.0,
    "raised": "2026-07-31T13:43:42.297220+00:00",
-   "status": "scheduled",
-   "reason": "Harness genuinely does not exist: libs/research/axis_screen.py is 212 lines exposing ONLY stage_a_screen(signal, target_ret, ..., horizon_days=1.0) -- read in full, it contains no matrix, no cell enumeration and no DSR call. fusion_search is NOT a substitute: it enumerates k-way COMBINATIONS of axes that have already earned breadth (plan_search :320-345), defaults to k=3, and data/fusion_search.json is currently REFUSED ('0 axis/axes have earned breadth; a width-3 search needs 3') -- it is downstream of the single-axis matrix, not a replacement. Meanwhile a dozen screen scripts re-implement their own horizon loop and trial count with no DSR hurdle (screen_fred_macro_axis.py:229-233, collect_perpdex_funding.py:473-482, screen_wikipedia.py:119-141). Work: lift the FusionPlan/effective_n_trials/expected_max_sharpe pattern into axis_screen so the hurdle is fixed from grid size BEFORE any cell is judged.",
-   "commit": null,
-   "due": "2026-08-12",
-   "disposed": "2026-08-05T09:05:03.286439+00:00",
+   "status": "implemented",
+   "reason": "ALREADY BUILT AND NEVER DISPOSED. libs/research/axis_screen.py:396 target_horizon_sweep() with the mandated grid at :367 and per-cell trial accounting at :488; shipped 2026-08-05 in 13cd116 ('build the mandated target/horizon sweep'). Verified by fresh read this cycle.",
+   "commit": "13cd116",
+   "due": null,
+   "disposed": "2026-08-13T04:27:55.887105+00:00",
    "note": "renumbered twice 2026-07-31 (two concurrent sessions allocating ids; origin rows kept theirs both times)"
   },
   {
@@ -2066,11 +2120,11 @@
    "summary": "Keep-last-good denylist: executor _structurally_bleeding returns False (allows opens) when forensics unreadable -- cache last good worst_symbols so corrupt/missing file cannot silently re-open proven bleeders (NOMUSDT -149bps class)",
    "roi_bps": 20.0,
    "raised": "2026-07-31T17:55:38.739879+00:00",
-   "status": "scheduled",
-   "reason": "STILL OPEN and the hole is SHARPER than the row states. run_cashcarry_executor.py:417-421: an unreadable/corrupt forensics read returns None and takes an early 'return False' that ALLOWS opens AND bypasses the 2026-08-05 persistent-graveyard branch at :442-467 -- so the newest denial layer is unreachable on exactly the path that most needs it. Verified live: web/trade_forensics.json currently parses to an EMPTY worst_symbols list, which DOES reach the graveyard and correctly denies both incident-#6 symbols (data/execution_reentry.json holds 1000CATUSDT and COOKIEUSDT) -- so the protection depends entirely on the file staying parseable, and repo-wide grep confirms no last-good cache exists anywhere. Work, DENY-DIRECTION ONLY: consult the persistent graveyard BEFORE the unreadable-file early return, and add a write-through last-good cache consulted when the read fails.",
-   "commit": null,
-   "due": "2026-08-12",
-   "disposed": "2026-08-05T09:03:03.915649+00:00"
+   "status": "implemented",
+   "reason": "ALREADY BUILT AND NEVER DISPOSED. run_cashcarry_executor._structurally_bleeding docstring (:492-495) states the R0158 contract in force: an unreadable forensics file no longer falls back to a bare allow -- it falls back to the last good window AND still consults the persistent graveyard; read_fresh carries min_rows=1 so a truncated {} is a recorded stale_read, not a silent un-deny. Covered by tests/execution/test_structural_bleed_persistence.py. Verified by fresh read this cycle.",
+   "commit": "9e3ff478",
+   "due": null,
+   "disposed": "2026-08-13T04:28:02.284422+00:00"
   },
   {
    "id": "R0159",
@@ -2645,10 +2699,19 @@
    "roi_bps": 120.0,
    "raised": "2026-07-31T20:16:50.610310+00:00",
    "status": "scheduled",
-   "reason": "ACCEPTED AS A REAL GATE-OPTIMALITY DEFECT, scheduled rather than patched at the end of a cycle. ev_score has no term through which avoided ruin enters E[log W], so every left-tail-removal candidate is rejected on est_sharpe and narrow_breadth however valuable -- a gate that rejects ~100pct of a class carries zero information, which is the defect the gate-optimality duty names. NOT DONE AS A DRIVE-BY because this is the gate that decides what the desk researches at all: widening it wrongly admits noise into the multiplicity budget, and the correct shape (a separate risk-side path scored on ruin-probability reduction, NOT a fudge factor on the return-side score) needs the existing _PRIORS read alongside libs/risk before it is written. Blocking nothing meanwhile: BR-04 is a known concrete test case to re-score once the path exists.",
+   "reason": "NOT BUILT; premise re-read and it stands. alpha_economics.ev_score has no ruin-reduction term, so any left-tail-removal candidate is structurally rejected however valuable -- a return-alpha gate applied to everything. This is a live gate-optimality defect under the standing duty (a gate rejecting ~100% of a class carries zero information about that class). Scheduled rather than rushed because the fix is a design choice between adding a ruin term and routing risk-side candidates to a separate gate, and picking wrong bakes a second wrong scorer into the desk. Explicitly NOT closed by tuning BR-04's inputs to pass, which would be gaming the gate.",
    "commit": null,
-   "due": "2026-08-12",
-   "disposed": "2026-08-05T13:54:53.281185+00:00"
+   "due": "2026-08-20",
+   "disposed": "2026-08-13T04:29:33.060646+00:00",
+   "schedule_history": [
+    {
+     "was_due": "2026-08-12",
+     "was_reason": "ACCEPTED AS A REAL GATE-OPTIMALITY DEFECT, scheduled rather than patched at the end of a cycle. ev_score has no term through which avoided ruin enters E[log W], so every left-tail-removal candidate is rejected on est_sharpe and narrow_breadth however valuable -- a gate that rejects ~100pct of a class carries zero information, which is the defect the gate-optimality duty names. NOT DONE AS A DRIVE-BY because this is the gate that decides what the desk researches at all: widening it wrongly admits noise into the multiplicity budget, and the correct shape (a separate risk-side path scored on ruin-probability reduction, NOT a fudge factor on the return-side score) needs the existing _PRIORS read alongside libs/risk before it is written. Blocking nothing meanwhile: BR-04 is a known concrete test case to re-score once the path exists.",
+     "was_disposed": "2026-08-05T13:54:53.281185+00:00",
+     "rescheduled": "2026-08-13T04:29:33.060607+00:00",
+     "why": "NOT BUILT; premise re-read and it stands. alpha_economics.ev_score has no ruin-reduction term, so any left-tail-removal candidate is structurally rejected however valuable -- a return-alpha gate applied to everything. This is a live gate-optimality defect under the standing duty (a gate rejecting ~100% of a class carries zero information about that class). Scheduled rather than rushed because the fix is a design choice between adding a ruin term and routing risk-side candidates to a separate gate, and picking wrong bakes a second wrong scorer into the desk. Explicitly NOT closed by tuning BR-04's inputs to pass, which would be gaming the gate."
+    }
+   ]
   },
   {
    "id": "R0205",
@@ -2804,11 +2867,11 @@
    "summary": "[renumbered R0211->R0217 at merge: concurrent session took R0211] MONEY-PATH RAIL INERT: venue-side protective stop (run_cashcarry_executor.py:1015) is a no-op under current wiring -- fut=binance_testnet lacks place_stop_market, which only binance_live defines. The host-death-survival rail does not exist in practice. Either add place_stop_market to binance_testnet (paper-safe, restores the rail in the environment actually being validated) or make the missing-capability path PAGE instead of silently returning []. MUST be closed before REARM puts capital behind it.",
    "roi_bps": 90.0,
    "raised": "2026-07-31T21:00:41.902240+00:00",
-   "status": "scheduled",
-   "reason": "CONFIRMED STILL INERT with the full chain walked, and it is a REARM BLOCKER. run_cashcarry_executor.py:30 binds 'from libs.execution import binance_testnet as fut' and grep finds NO rebinding anywhere in the file; _reconcile_protective_stops is genuinely called every tick at :1149, but :1238-1244 returns [] unless hasattr(fut,'place_stop_market') -- and binance_testnet defines only place_market (:373) and place_post_only (:398). place_stop_market exists SOLELY at binance_live.py:401. So the host-death-survival stop is never placed in the environment actually being validated. The green test is what keeps this invisible: test_money_path_wiring.py:90-108 monkeypatches ex.fut with a STUB CLASS that defines place_stop_market, so the suite exercises reconcile logic that cannot run against the real module. Work: add place_stop_market to binance_testnet (paper-safe), make the missing-capability branch PAGE rather than silently return [], and assert the REAL bound connector satisfies the capability.",
-   "commit": null,
-   "due": "2026-08-12",
-   "disposed": "2026-08-05T09:03:15.823778+00:00"
+   "status": "implemented",
+   "reason": "Ported place_stop_market AND cancel_order to binance_testnet (the connector the executor actually binds as fut), restoring the host-death rail in the environment being validated rather than only paging on the missing capability. cancel_order ships in the same commit because the reconciler degrades to placement-only without it, which would accumulate resting stops every pass. Fenced generally by tests/execution/test_connector_capability_parity.py, which ast-parses the executor for every hasattr/getattr probe on fut rather than pinning this one function; 4 tests verified failing at pre-fix HEAD.",
+   "commit": "43f579b1",
+   "due": null,
+   "disposed": "2026-08-13T04:28:07.707316+00:00"
   },
   {
    "id": "R0218",
@@ -3062,10 +3125,19 @@
    "roi_bps": 5000.0,
    "raised": "2026-08-01T03:34:09.317506+00:00",
    "status": "scheduled",
-   "reason": "SCHEDULED 2026-08-12, and this session raised its priority with a measured instance rather than an argument. NEW EVIDENCE, today: max_audit.check_stale_daemons -- the detector for 'a committed fix did not ship', a class the desk has paid for at least three times -- had ZERO recall on its own target class and had never once fired. It took process start from Path('/proc/<pid>').stat().st_mtime, which tracks directory access and so reads ~now for any polled process, i.e. every supervised daemon. With started ~= now, 'files newer than started' could only match a file edited in the last minute. Nothing in the desk would ever have reported this, because a check that finds nothing and a check that CANNOT find anything are indistinguishable from the outside -- which is precisely R0238's thesis, now with an exemplar instead of a hypothesis. Fixed in 38ec6e2, but the general measurement is still owed. WHAT THE TRIAGE GOT WRONG: it said the measurement is only honest with both halves (max_audit + one blind sweep seat) and so deferred on R0231's LLM-credit blocker. That conflates two different denominators. max_audit recall is a real, self-standing number about the AUTOMATED layer and is fully runnable today with no credits; it is dishonest only if LABELLED as desk-wide audit recall. Build the max_audit half now, label it max_audit_recall, and add the seat half when credits return. THREE BLOCKERS THE BUILD MUST HANDLE, found while doing adjacent work today and not obvious from the row: (1) max_audit sets ROOT from __file__, so running scripts/max_audit.py FROM a scratch worktree audits that worktree -- this is the mechanism that makes planting safe, and it means NO changes to max_audit are needed. (2) A bare worktree has no data/, and many checks read it, so planted defects in those checks would read as detected for the wrong reason -- the live data/ must be symlinked in, and ln -sfn into an existing dir creates data/data instead of replacing it (desk lesson L0068, the one lesson still over the memory budget). (3) HOLD OUT 4 OF 12 as the row says: I would otherwise plant the classes I already know max_audit checks, and the denominator inflates by construction. Draw the held-out 4 from docs/desk_lessons.jsonl entries that have NO named fence, which is a source independent of the harness author. Precedents to copy: scripts/certify_gauntlet.py (alpha gate) and data/mutation_score.json (tests) -- audits are the third layer and the only one still uncertified.",
+   "reason": "NOT BUILT; premise re-read and it stands -- the desk plants controls to certify its alpha gate (positive_control.py) and mutants to certify its tests (mutation_score.json) and has never planted a defect to certify its AUDITS. This cycle is itself a data point on the open side: the tape contamination had been live for 8 days, was written to 10 more times this morning, and no fence caught it -- max_audit, check_freshness, check_input_provenance and check_denominators were all green against an artifact publishing 2415 days of fill history that did not exist. That is one uncounted miss, which is exactly the denominator this row exists to measure. Scheduled with the hold-out design intact (4 of 12 unseen, or d is inflated by construction).",
    "commit": null,
-   "due": "2026-08-12",
-   "disposed": "2026-08-05T19:03:57.529142+00:00"
+   "due": "2026-08-27",
+   "disposed": "2026-08-13T04:30:22.013151+00:00",
+   "schedule_history": [
+    {
+     "was_due": "2026-08-12",
+     "was_reason": "SCHEDULED 2026-08-12, and this session raised its priority with a measured instance rather than an argument. NEW EVIDENCE, today: max_audit.check_stale_daemons -- the detector for 'a committed fix did not ship', a class the desk has paid for at least three times -- had ZERO recall on its own target class and had never once fired. It took process start from Path('/proc/<pid>').stat().st_mtime, which tracks directory access and so reads ~now for any polled process, i.e. every supervised daemon. With started ~= now, 'files newer than started' could only match a file edited in the last minute. Nothing in the desk would ever have reported this, because a check that finds nothing and a check that CANNOT find anything are indistinguishable from the outside -- which is precisely R0238's thesis, now with an exemplar instead of a hypothesis. Fixed in 38ec6e2, but the general measurement is still owed. WHAT THE TRIAGE GOT WRONG: it said the measurement is only honest with both halves (max_audit + one blind sweep seat) and so deferred on R0231's LLM-credit blocker. That conflates two different denominators. max_audit recall is a real, self-standing number about the AUTOMATED layer and is fully runnable today with no credits; it is dishonest only if LABELLED as desk-wide audit recall. Build the max_audit half now, label it max_audit_recall, and add the seat half when credits return. THREE BLOCKERS THE BUILD MUST HANDLE, found while doing adjacent work today and not obvious from the row: (1) max_audit sets ROOT from __file__, so running scripts/max_audit.py FROM a scratch worktree audits that worktree -- this is the mechanism that makes planting safe, and it means NO changes to max_audit are needed. (2) A bare worktree has no data/, and many checks read it, so planted defects in those checks would read as detected for the wrong reason -- the live data/ must be symlinked in, and ln -sfn into an existing dir creates data/data instead of replacing it (desk lesson L0068, the one lesson still over the memory budget). (3) HOLD OUT 4 OF 12 as the row says: I would otherwise plant the classes I already know max_audit checks, and the denominator inflates by construction. Draw the held-out 4 from docs/desk_lessons.jsonl entries that have NO named fence, which is a source independent of the harness author. Precedents to copy: scripts/certify_gauntlet.py (alpha gate) and data/mutation_score.json (tests) -- audits are the third layer and the only one still uncertified.",
+     "was_disposed": "2026-08-05T19:03:57.529142+00:00",
+     "rescheduled": "2026-08-13T04:30:22.013098+00:00",
+     "why": "NOT BUILT; premise re-read and it stands -- the desk plants controls to certify its alpha gate (positive_control.py) and mutants to certify its tests (mutation_score.json) and has never planted a defect to certify its AUDITS. This cycle is itself a data point on the open side: the tape contamination had been live for 8 days, was written to 10 more times this morning, and no fence caught it -- max_audit, check_freshness, check_input_provenance and check_denominators were all green against an artifact publishing 2415 days of fill history that did not exist. That is one uncounted miss, which is exactly the denominator this row exists to measure. Scheduled with the hold-out design intact (4 of 12 unseen, or d is inflated by construction)."
+    }
+   ]
   },
   {
    "id": "R0239",
@@ -3123,10 +3195,19 @@
    "roi_bps": 5000.0,
    "raised": "2026-08-01T03:34:09.792912+00:00",
    "status": "scheduled",
-   "reason": "HALF DONE AND THE URGENT HALF IS THE HALF THAT IS DONE. The row's own T7 was the deadline question, and it is ANSWERED against the row's premise: scripts/probe_bybit_archive.py (27a226c) is a committed, scheduled, bisecting instrument and data/bybit_archive_retention.json records status FIXED across BTCUSDT/ETHUSDT/SOLUSDT -- the earliest date has NOT moved across 11 probes while the recent end grew to 349 days. Retention is a FIXED floor, not a rolling window, so the 2026-08-01 sweep's rolling inference is REFUTED and NOT ONE DAY OF FREE HISTORY EXPIRES WHILE THIS WAITS. The row's stated urgency was the entire argument for doing it now, and it is gone; a refutation that withdraws a deadline is worth as much as one that creates it. WHAT REMAINS is the ingest/reduce pipeline, scheduled 2026-08-12, de-risked by what I measured today so the next worker does not rediscover it: (1) FORMAT IS SNAPSHOT+DELTA, NOT SNAPSHOTS. topic orderbook.200.SYMBOL, type snapshot|delta, data.b/data.a as [price, size] string pairs, size '0' means DELETE the level. Features REQUIRE maintaining book state across the stream -- a naive per-line read produces silently-wrong depth, which is the failure class that poisons everything built on top and never announces itself. (2) SIZE: one symbol-day is 155MB zipped and 938,870,889 bytes RAW. Streaming is mandatory, not an optimisation; the book state itself is trivial (~200 levels/side). (3) TWO VENUE CLOCKS, BOTH MUST BE KEPT (L1.46): every record carries ts (publish) AND cts (matching-engine), measured 1ms apart on the first record. Neither is our receipt -- this is archived third-party history, so provenance is CLOCK_VENUE with NO recv stamp, a class libs/research/clock_provenance.py should be extended to name explicitly rather than defaulted into. (4) The 149MB sample already downloaded was sitting in /tmp, which is a TMPFS on this 3.8GB swapless box -- 149MB of resident RAM belonging to no process, the exact class behind today's OOM defects. MOVED (not deleted -- it is someone else's download and re-fetchable) to data/bybit_l2_samples/bybit_ob200_20250821.zip; tmpfs went 644MB->496MB and MemAvailable 761MB->1101MB. NOT BUILT THIS SESSION, deliberately and not for want of effort: a book-reconstruction bug is silent, and building it against a stalled test suite on a box at 686MB available while a ruin rail is unwinding the book is how you get a corrupt feature set that looks fine. The deadline that would have overridden that judgement was measured out of existence by our own instrument.",
+   "reason": "T7 IS DONE AND ITS PREMISE IS REFUTED -- which is the material change, because the row's urgency rested on it. scripts/probe_bybit_archive.py is built and standing; it ran today and published data/bybit_archive_retention.json: status FIXED, 11 probes across BTC/ETH/SOL, earliest UNMOVED at 2025-08-21, span GROWN to 357d, n_unreachable 0. So 'every day of delay destroys a day of free history permanently' is FALSE -- retention is a fixed floor and the ingest carries NO expiry deadline. A first sample zip (bybit_ob200_20250821, 149MB) is already on disk. Rescheduled WITHOUT the false emergency: the remaining work is the stream-reduce-delete pipeline to 1-min OFI/queue-imbalance/depth-slope features, which is a real build and now competes on ordinary EV rather than a deadline that does not exist.",
    "commit": null,
-   "due": "2026-08-12",
-   "disposed": "2026-08-05T20:48:37.123156+00:00"
+   "due": "2026-08-27",
+   "disposed": "2026-08-13T04:28:38.359993+00:00",
+   "schedule_history": [
+    {
+     "was_due": "2026-08-12",
+     "was_reason": "HALF DONE AND THE URGENT HALF IS THE HALF THAT IS DONE. The row's own T7 was the deadline question, and it is ANSWERED against the row's premise: scripts/probe_bybit_archive.py (27a226c) is a committed, scheduled, bisecting instrument and data/bybit_archive_retention.json records status FIXED across BTCUSDT/ETHUSDT/SOLUSDT -- the earliest date has NOT moved across 11 probes while the recent end grew to 349 days. Retention is a FIXED floor, not a rolling window, so the 2026-08-01 sweep's rolling inference is REFUTED and NOT ONE DAY OF FREE HISTORY EXPIRES WHILE THIS WAITS. The row's stated urgency was the entire argument for doing it now, and it is gone; a refutation that withdraws a deadline is worth as much as one that creates it. WHAT REMAINS is the ingest/reduce pipeline, scheduled 2026-08-12, de-risked by what I measured today so the next worker does not rediscover it: (1) FORMAT IS SNAPSHOT+DELTA, NOT SNAPSHOTS. topic orderbook.200.SYMBOL, type snapshot|delta, data.b/data.a as [price, size] string pairs, size '0' means DELETE the level. Features REQUIRE maintaining book state across the stream -- a naive per-line read produces silently-wrong depth, which is the failure class that poisons everything built on top and never announces itself. (2) SIZE: one symbol-day is 155MB zipped and 938,870,889 bytes RAW. Streaming is mandatory, not an optimisation; the book state itself is trivial (~200 levels/side). (3) TWO VENUE CLOCKS, BOTH MUST BE KEPT (L1.46): every record carries ts (publish) AND cts (matching-engine), measured 1ms apart on the first record. Neither is our receipt -- this is archived third-party history, so provenance is CLOCK_VENUE with NO recv stamp, a class libs/research/clock_provenance.py should be extended to name explicitly rather than defaulted into. (4) The 149MB sample already downloaded was sitting in /tmp, which is a TMPFS on this 3.8GB swapless box -- 149MB of resident RAM belonging to no process, the exact class behind today's OOM defects. MOVED (not deleted -- it is someone else's download and re-fetchable) to data/bybit_l2_samples/bybit_ob200_20250821.zip; tmpfs went 644MB->496MB and MemAvailable 761MB->1101MB. NOT BUILT THIS SESSION, deliberately and not for want of effort: a book-reconstruction bug is silent, and building it against a stalled test suite on a box at 686MB available while a ruin rail is unwinding the book is how you get a corrupt feature set that looks fine. The deadline that would have overridden that judgement was measured out of existence by our own instrument.",
+     "was_disposed": "2026-08-05T20:48:37.123156+00:00",
+     "rescheduled": "2026-08-13T04:28:38.359967+00:00",
+     "why": "T7 IS DONE AND ITS PREMISE IS REFUTED -- which is the material change, because the row's urgency rested on it. scripts/probe_bybit_archive.py is built and standing; it ran today and published data/bybit_archive_retention.json: status FIXED, 11 probes across BTC/ETH/SOL, earliest UNMOVED at 2025-08-21, span GROWN to 357d, n_unreachable 0. So 'every day of delay destroys a day of free history permanently' is FALSE -- retention is a fixed floor and the ingest carries NO expiry deadline. A first sample zip (bybit_ob200_20250821, 149MB) is already on disk. Rescheduled WITHOUT the false emergency: the remaining work is the stream-reduce-delete pipeline to 1-min OFI/queue-imbalance/depth-slope features, which is a real build and now competes on ordinary EV rather than a deadline that does not exist."
+    }
+   ]
   },
   {
    "id": "R0244",
@@ -7136,6 +7217,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0571",
+   "source": "cycle",
+   "summary": "MOAT TAPE CONTAMINATED BY THE TEST SUITE: tests/execution/test_carry_entry_gate.py -> run_trade_forensics.main() -> execution_tape.backfill(trades) wrote 16 fixture rows into the append-only live tape (the test redirects the forensics module's paths; the tape default lives in another module). coverage()['days'] published 2415.15 vs a true 30.69 -- the metric Gate 0's '>=4 weeks of live fills' is measured against. Fixed at the write chokepoint (_writable refuses the live default under a test harness), 16 rows quarantined by a kill-boundary cut, regression test verified failing at pre-fix HEAD.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-13T04:20:48.132773+00:00",
+   "status": "implemented",
+   "reason": "Chokepoint guard + kill-boundary decontamination + regression test verified failing at pre-fix HEAD; moat replica resynced; tape_days corrected 2415.14 -> 30.69 in the tracked mirror.",
+   "commit": "50bd5ef4",
+   "due": null,
+   "disposed": "2026-08-13T04:20:59.153319+00:00"
   }
  ]
 }
