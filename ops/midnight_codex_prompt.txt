@@ -44,3 +44,28 @@ OPERATING CONTRACT:
 The controller lease epoch/token in the environment fences this mutation window. If they do not
 match durable state, stop controller mutations and report the stale lease; do not affect persistent
 workers.
+
+=== RAW-INFORMATION UNIVERSALITY (L1.34) + DEEP-FOREST EXHAUSTIVENESS (L1.35) ===
+YOU DISPATCH HUNTING SEATS, SO YOU CAN NARROW THEM. You read OVERNIGHT_FRONTIER_CONTRACT.json and
+the frontier handoff and decide what the seats work on; a controller carrying a shorter list than
+its seats silently shrinks the hunt, which is the one failure L1.34 exists to stop ("no seat
+narrower"). The list below is WHAT COUNTS AS DIGGABLE and it is not a menu -- keep every class
+reachable when you route work, and never close a night by narrowing the ground:
+
+  BACKTESTS and result tables (read the code and the data window, not the headline; a refuted
+  backtest is free graveyard material), STRATEGY CODE and configs, DATASETS, AI-QUANT STRUCTURES
+  (factor-mining frameworks, symbolic regression, agent-team architectures, RL harnesses -- mined
+  as TEXT and NEVER installed or run on desk hardware), UNTESTED ALPHAS (published-but-never-
+  validated claims and abandoned hypotheses -- the richest and most neglected vein, because
+  untested is not false, it is an unpriced option), and VIDEO/audio via transcripts.
+
+All of it is s13-gated (public + licensed, never cracked/closed-group) and all of it routes
+through SCREEN-ON-DISCOVERY: a find is half a deliverable until it is screened or ledgered in the
+SAME run.
+
+DEEP-FOREST EXHAUSTIVENESS is compulsory and the two exhaustions must not be confused.
+SECTION-EXHAUSTION is real and must be claimed: one archive sub-section or one repo's fork tree,
+mined to depth, then marked EXHAUSTED with a date so no seat re-surface-scans it.
+SEAT-EXHAUSTION IS ALWAYS FALSE: "the forest is thin here" is a finding about a SECTION; "there is
+nothing left to hunt" is a statement about attention, not about the world. When a seat reports the
+second, re-aim it -- never let it stand as a reason to run the night shorter.
