@@ -94,6 +94,26 @@ def _parse_ts(raw: object) -> datetime | None:
     return ts if ts.tzinfo else ts.replace(tzinfo=UTC)
 
 
+def _sleeve_verdict(name: str) -> str:
+    """The Stage-B verdict a sleeve's own runner published, or "" when it publishes none.
+
+    THE FIVE `FAILING FORWARD -> kill` VERDICTS WERE INERT BECAUSE THEY NEVER REACHED A SLOT ROW.
+    `forward_verdict()` (libs/research/event_density.py) is shared by five shadow runners and each
+    writes its string into `web/<sleeve>_shadow.json`. `derive_slots` read those artifacts for
+    `forward_days` and `updated` and dropped the verdict on the floor, so every sleeve slot
+    reached `slot_displacement.classify_slot` carrying `state="since <date>"` -- a birth date,
+    never an outcome. The classifier could not see a kill because a kill was never in the row.
+
+    Axis rows already carry their verdict (the axis branch reads `row["verdict"]`), which is why
+    the axis half of the cohort could be reclaimed and the sleeve half could not.
+    """
+    ref = _EVIDENCE.get(name)
+    if ref is None:
+        return ""
+    doc = _read_json(ref[0])
+    return str(doc.get("verdict", "")) if isinstance(doc, dict) else ""
+
+
 def _evidence(name: str, now: datetime, *, days: object = None,
               updated: object = None) -> dict[str, Any]:
     """Is this clock BREATHING? Never asserts -- reports UNMEASURED when it cannot tell.
@@ -262,7 +282,11 @@ def derive_slots() -> dict[str, Any]:
             continue
         if isinstance(doc, dict) and doc.get("shadow_start"):
             slots.append({"name": name, "kind": "standing", "source": rel,
+                          # `state` stays the birth date: promotion_history and the dashboard
+                          # parse it. The OUTCOME travels in its own field so neither has to
+                          # change and neither can confuse a start with a verdict.
                           "state": f"since {doc['shadow_start']}",
+                          "verdict": _sleeve_verdict(name),
                           "started": str(doc["shadow_start"]), **_evidence(name, now)})
 
     roster, roster_state = _read_source(_SLEEVE_ROSTER)
@@ -299,7 +323,8 @@ def derive_slots() -> dict[str, Any]:
             started = str(spawned_doc["shadow_start"])
             state_label = f"since {started}"
         slots.append({"name": name, "kind": "derivative", "source": _SLEEVE_ROSTER,
-                      "state": state_label, "started": started, **_evidence(name, now)})
+                      "state": state_label, "verdict": _sleeve_verdict(name),
+                      "started": started, **_evidence(name, now)})
 
     # m is deliberately UNCHANGED by any of this: a stalled clock stays in the cohort until it is
     # RETIRED by an explicit ledgered decision, because dropping it would SHRINK m and loosen every

@@ -178,3 +178,75 @@ def test_an_empty_cohort_is_unmeasured_not_wide_open():
     assert plan.waiting == ("c",)
     assert plan.m_before == plan.m_after == 0
     assert any("UNMEASURED" in n for n in plan.notes)
+
+
+# --- the pre-registered kill: the five inert verdicts, wired -----------------------------------
+
+_KILL = "FAILING FORWARD -> kill candidate (Sharpe -0.42 on 61 observations, t=-1.83)"
+
+
+def _sleeve(name, *, verdict="", state="since 2026-06-01", evidence="ACCRUING", days=61):
+    """A SLEEVE row, which is shaped differently from an axis row and that is the whole defect.
+
+    `state` is a BIRTH DATE here, not a verdict -- so a classifier reading only `state` sees a
+    healthy-looking clock no matter what its runner concluded.
+    """
+    return {"name": name, "state": state, "verdict": verdict, "evidence": evidence, "days": days}
+
+
+def test_A_SLEEVE_THAT_REACHED_ITS_OWN_KILL_IS_RECLAIMABLE():
+    """THE WIRE. Five runners have emitted this verdict since the shared gate shipped and nothing
+    could act on it, because the string never reached a slot row."""
+    state, why = classify_slot(_sleeve("crypto_combined", verdict=_KILL))
+    assert state == RECLAIMABLE
+    assert "pre-registered" in why
+
+
+def test_the_same_sleeve_WITHOUT_the_verdict_field_is_protected():
+    """The exact pre-fix state, kept as a test so the defect cannot return silently: a healthy
+    birth date in `state` and the outcome dropped on the floor."""
+    assert classify_slot(_sleeve("crypto_combined"))[0] == PROTECTED
+
+
+def test_A_KILL_IS_FILED_AS_REFUTED_AND_AN_INSTRUMENT_FAULT_IS_NOT():
+    """L1.17 turns on the mechanism of death, and the two errors point opposite ways.
+
+    Filing a refutation as UNTESTED buys the same dead axis again forever; filing an instrument
+    fault as REFUTED retires live ground that was never actually measured.
+    """
+    killed = _sleeve("crypto_combined", verdict=_KILL)
+    jammed = _slot("defi_utilisation", state="DEGENERATE", evidence="ACCRUING", days=1)
+    slots = [*_healthy(10), killed, jammed]
+    plan = plan_displacement(slots, [{"name": "a", "runway": 1.0},
+                                     {"name": "b", "runway": 2.0}], cap=12)
+
+    by_slot = {d.slot: d.requeue_as for d in plan.displaced}
+    assert by_slot["crypto_combined"] == "REFUTED"
+    assert by_slot["defi_utilisation"] == "UNTESTED"
+
+
+def test_A_KILLED_CLOCK_STILL_NEVER_MOVES_THE_HOLM_BAR():
+    """The invariant that must survive this feature. Reclaiming a killed clock frees a SEAT; it
+    is not a route to a smaller cohort, because a smaller cohort is a looser bar for everyone
+    still running -- the phantom-edge direction."""
+    slots = [*_healthy(11), _sleeve("crypto_combined", verdict=_KILL)]
+    plan = plan_displacement(slots, [{"name": "challenger", "runway": 1.0}], cap=12)
+
+    assert plan.count_neutral
+    assert plan.m_before == plan.m_after
+
+
+def test_A_HEALTHY_SLEEVE_IS_NEVER_EVICTED_BY_A_KILL_LOOKALIKE():
+    """The verdict must be the runner's own, not any string mentioning failure. `forward_verdict`
+    also emits ACCUMULATING and WEAK forward, and neither ends a clock."""
+    for verdict in ("WEAK forward -> continue shadow, do not deploy (t=2.10 clears 1.96 ...)",
+                    "ACCUMULATING (12/40 observations -- too few for the t to be trusted)",
+                    "ON TRACK -> eligible for TINY live on human approval; t=2.4 >= 1.96"):
+        assert classify_slot(_sleeve("x", verdict=verdict))[0] == PROTECTED, verdict
+
+
+def test_an_axis_row_still_classifies_from_state_alone():
+    """Axis rows put the verdict IN `state` and carry no `verdict` key. Reading the new field
+    must not break the half of the cohort that already worked."""
+    assert classify_slot({"name": "a", "state": _KILL, "evidence": "ACCRUING",
+                          "days": 61})[0] == RECLAIMABLE
