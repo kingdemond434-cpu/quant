@@ -2542,3 +2542,13 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # screen_collateral_allocation.build_report; CONSTITUTION L1.51 (a clamp without a price)
 # CONFIDENCE: committed-script (new 2026-08-12); first run READ 6/6 protocols, $120.2B TVL-years
 12 3 * * 0 cd "$QUANT_ROOT" && flock -n data/.cron_lending_base_rates.lock .venv/bin/python scripts/collect_lending_risk_base_rates.py >> data/cro_ai_logs/lending_base_rates.log 2>&1
+
+# --- PARTITION POWER (L1.63) -------------------------------------------------------------------
+# CADENCE: daily. Its input is the D1 funding panel, which appends one bar per symbol per day, so
+# it is DATA-ARRIVAL bound (L1.28c) -- firing faster would re-grade an unchanged panel. Phased to
+# 07:11, after the 06:53 panel-breadth fence so both power measurements land in one morning.
+# EVIDENCE: scripts/check_partition_power.py -> data/partition_power.json; CONSTITUTION L1.63
+# CONFIDENCE: committed-script (new this cycle); first run graded 4 robustness partitions over
+# 213 symbols x 2,384 days and found ALL FOUR WELDED -- including the vol-tercile axis that gates
+# REGISTRY promotion, sleeve sizing and LIVE at 15% of book.
+11 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_partition_power.py >> data/cro_ai_logs/partition_power.log 2>&1

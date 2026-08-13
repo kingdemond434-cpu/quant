@@ -7623,6 +7623,42 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0604",
+   "source": "cycle",
+   "summary": "REFUSED (capability hunt 2026-08-13 s0): funding-state axis wired into regime_robust/sleeve_allocation/two_regimes. Refuted by its own pre-registered falsifier -- on 213 symbols x 2384 days the funding axis is WELDED (2/2 groups positive), so it would certify identically to the vol axis and add a second zero-information gate. Evidence: data/partition_power.json, reports/falsify_funding_state_axis.json.",
+   "roi_bps": null,
+   "raised": "2026-08-13T10:01:59.630805+00:00",
+   "status": "rejected",
+   "reason": "Refuted by its own pre-registered falsifier before a line was written. The proposal's three STRUCTURAL claims are all true (regime_robust/min_regimes_positive/two_regimes are vol-terciles-only; crypto_regime.regime_labels computes a funding axis wired into no gate; state_conditional_candidates.json has a consumer and no producer). Its ECONOMIC premise -- that carry dies in a funding state the vol axis cannot see -- is false on 213 symbols x 2384 days: the funding axis is itself WELDED (2/2 groups net-positive), so wiring it would add a second gate that certifies identically and carries zero information (L1.43 gate-optimality). The measured reason is that daily top-10 cross-sectional selection absorbs market-wide funding state (unselected 40.6pct of days non-positive vs 3.0pct selected). The general capability the falsifier revealed WAS built instead: L1.63 partition power.",
+   "commit": null,
+   "due": null,
+   "disposed": "2026-08-13T10:02:26.721698+00:00"
+  },
+  {
+   "id": "R0605",
+   "source": "cycle",
+   "summary": "L1.63 first run: ALL FOUR robustness partitions WELDED on the desk's only surviving edge -- vol terciles (WIRED: gates REGISTRY promotion, sleeve sizing, LIVE at 15pct of book) 3/3 positive, funding 2/2, trend 2/2, breadth 3/3 over 6.5y. Repair is UPWARD (L1.49): the certificate needs an axis able to go negative, or an explicit record that it carries no information for carry. Measured cause: daily top-10 selection is itself the hedge (unselected 40.6pct of days non-positive vs 3.0pct selected).",
+   "roi_bps": null,
+   "raised": "2026-08-13T10:02:06.836328+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0606",
+   "source": "cycle",
+   "summary": "PHANTOM PATH: data/state_conditional_candidates.json is READ by scripts/run_wealth_report.py:74 and written by NOTHING -- libs/validation/state_conditional.Preregistration is structurally unfeedable, so the conditional-alpha branch (GAP row 105) is unfed by construction, not by neglect.",
+   "roi_bps": null,
+   "raised": "2026-08-13T10:02:11.935142+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

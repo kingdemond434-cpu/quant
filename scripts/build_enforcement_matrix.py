@@ -440,6 +440,10 @@ _MAP: dict[str, list[str]] = {
     # six names. Measured 2026-08-13: 12 of 311 dates carried 98.1% of a lag-1 statistic, reading
     # rho=+0.856 against a floored truth of -0.06. run_derivative_shadow is a regression site --
     # it is the declared locked mirror of backfill_oi_ls_oos and was the unfloored half.
+    "L1.63": ["scripts/check_partition_power.py", "libs/validation/partition_power.py",
+              "libs/autodiscovery/regime.py", "libs/risk/sleeve_allocation.py",
+              "scripts/check_promotion_gate.py", "libs/research/crypto_regime.py",
+              "scripts/falsify_funding_state_axis.py"],
     "L1.62": ["scripts/check_panel_breadth.py", "libs/research/panel_breadth.py",
               "libs/research/axis_screen.py", "libs/validation/type2_cost.py",
               "scripts/screen_oi_ls_axes.py",
