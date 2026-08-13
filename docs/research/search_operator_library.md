@@ -2140,3 +2140,124 @@ section — and in this run it held a **year-over-year venue microstructure surv
 **§13 UNCHANGED AND EXPLICITLY SO:** this widens WHERE you look and never HOW you get in. `note.com`
 and `zenn.dev` remain HARD STOP including their archives; the only fetches made against them this
 run were `robots.txt` and zero-body status probes to re-verify the block.
+
+### OP-074 `robots.txt` ANSWERS "MAY I?", NEVER "IS THERE ANYTHING HERE?" — GRADE EXISTENCE SEPARATELY   [active]
+class: access / ground validation
+origin: AR frontier miner s2 (2026-08-13), correcting the AR seat's own s1 grade
+validated-gain: killed a #1-priority ground that never existed, before it consumed a second run.
+
+**THE ERROR, and it is mine.** AR s1 (2026-08-12) ran the OP-052 UA matrix over 16 hosts and graded
+`mql5.com/ar` **OPEN — "correct path not yet found (`/ar/code` is a uniform 404)"**, then carried it
+to the **top** of the next-ground list as the region's EXECUTABLE-tier prize. Measured this run:
+MQL5 publishes **11 hreflang locales** (`en ru zh es pt de ja ko fr it tr`) and **`ar` is not one of
+them**. Control: `/{loc}/code` returns **200 for 11/11 real locales, 404 for `ar` alone`**.
+**There is no Arabic MQL5.** The 404 was never a wrong sub-path — it was the site saying the locale
+does not exist, and a whole run was queued against a ground that was never there.
+
+**THE MECHANISM.** `robots.txt` is served by the **policy layer**, which answers a question about
+*permission* and is completely indifferent to whether any content sits behind the path. A clean
+`robots.txt` on `example.com` says nothing whatever about `example.com/ar`. OP-052 already warned
+that robots is necessary and not sufficient **for access** — this is the same gap pointed at
+**existence**, one axis over, and it is easier to fall into because a clean robots feels like good news.
+
+**THE OPERATIONAL RULE — two independent gradings, never one:**
+| question | instrument | failure if skipped |
+|---|---|---|
+| *May I fetch it?* | `robots.txt` + content-path probe under the honest UA (OP-052) | you dig a ground that refuses you |
+| *Does it exist at all?* | **the site's own enumeration** — `hreflang`, sitemap, locale switcher, API index — plus a **sibling control** | you queue runs against a ground that was never there |
+
+**THE SIBLING CONTROL IS THE CHEAP HALF AND IT IS WHAT SETTLES IT.** A bare 404 is ambiguous between
+*wrong path* and *no such thing*. Probe the **same path shape across every sibling** the site does
+publish: 11/11 siblings 200 and yours alone 404 converts an ambiguous 404 into a **measurement**.
+This is the L1.62 discipline (a denominator that was assumed is not a measurement) applied to a ground.
+
+**FLEET NOTE:** a ground graded from robots alone must carry the grade **`OPEN (existence UNMEASURED)`**,
+never bare `OPEN`. Absence of a block is not presence of a corpus, and a next-ground list is exactly
+where that conflation gets expensive — it is inherited and acted on by a future run that cannot see
+how the grade was reached.
+
+---
+
+### OP-075 THE LANGUAGE IS NOT ALWAYS THE MOAT — MEASURE WHETHER THE REGION'S PRACTITIONERS WRITE IN IT   [active]
+class: region strategy / seat aiming
+origin: AR frontier miner s2 (2026-08-13); calibrated against CN/RU/KR on the same instrument
+validated-gain: re-aimed the AR seat off a layer that structurally cannot hold an edge.
+
+**THE PREMISE EVERY REGIONAL SEAT INHERITS:** dig in language X and you reach material the
+English-speaking crowd cannot read. **It is true for CN/KR/JP/RU/PT and it is FALSE for AR**, and no
+seat can tell which case it is in without measuring.
+
+**MEASURED — native-key repo search (OP-054), one instrument, four scripts:**
+| script | "arbitrage" term | repos | max ★ |
+|---|---|---|---|
+| **CN** | `套利` | **1,174** | 671 |
+| **RU** | `арбитраж` | 24 | 12 |
+| **KR** | `차익거래` | 6 | 2 |
+| **AR** | `المراجحة` / `مراجحة` / `أربيتراج` | **1 / 0 / 0** | 0 |
+
+AR `التداول الكمي` (quantitative trading) = **0**; `اكسبيرت` (expert advisor) = **0**. Every hit
+across seven AR terms has **0–1 stars** and is a Telegram signal-bot promising *نسبة نجاح ٩٥٪*.
+
+**TWO HYPOTHESES SURVIVE THAT TABLE AND THEY DEMAND OPPOSITE ACTIONS — SO RUN THE DISCRIMINATOR:**
+**H1** the practitioner population does not exist → the region is genuinely empty, deprioritise it.
+**H2** it exists and **writes in English** → the region is fine, the *language layer* is the wrong door.
+**Discriminator: search the developer population by LOCATION instead of by language**, with a control:
+| location + "trading" | users | | control | users |
+|---|---|---|---|---|
+| **UAE** | **67** | | **Korea** | **59** |
+| Egypt | 24 | | Egypt + "quant" | 7 |
+| Saudi Arabia | 8 | | Saudi + "quant" | 1 |
+
+**H1 REFUTED, H2 CONFIRMED:** ~99 AR-region developers mention trading — **UAE alone exceeds the KR
+control** — while the AR-language corpus is 0–1. The people are there; the *language* is not where
+they write. *(`location:` is self-reported and sparse and I queried `UAE`/`Korea` rather than the
+full names, so both sides are undercounted **by the same mechanism** — a lower bound on each, which
+is why the direction is robust while the levels are not.)*
+
+**THE CONSEQUENCE, and it is the operator:**
+> Where a region's technical class writes in English, its native-language layer is **not a hidden
+> technical corpus — it is the retail/promotional layer**, and that is exactly and only what a
+> native-key search will return. Worse, anything technical those practitioners *do* produce is
+> **already inside the EN seat's ground**, so there is no language arbitrage to win, and further
+> native-key digging cannot create one.
+
+**WHAT A SEAT IN THIS POSITION SHOULD HUNT INSTEAD:** what is native-language **by institutional
+construction** and therefore *cannot* migrate to English — regulator publications, exchange notices
+and rulebooks, court/enforcement records, national statistics, and any religious/legal certification
+layer. Those are written in the local language because an institution is **required** to write them
+that way, which is a far more durable moat than a preference a developer can drop at any time.
+
+**RUN THIS PROBE ON EVERY REGIONAL SEAT — IT IS ~8 CHEAP QUERIES** and it decides whether the seat's
+entire premise holds. **AND DO NOT GENERALISE THE AR ANSWER**: the CN column is a 1,174-repo corpus
+where the language absolutely is the moat. The point is not that language never matters — it is that
+**which case you are in is a measurement, and every seat has been assuming it.**
+
+---
+
+### AR (ARABIC) LEXICON — dark-forest deliverable #2, seeded s1, extended s2 (2026-08-13)
+_Search keys, not trivia. Counts are GitHub repo-search totals under the honest UA, 2026-08-13._
+
+| term | gloss | era | status / example query |
+|---|---|---|---|
+| `تداول` | trading | all | 260 repos — **the broad key**; retail-dominated |
+| `تداول آلي` | automated trading | all | 11 repos — the closest AR key to "algo trading" |
+| `بوت تداول` | trading bot | 2020→ | dominant AR framing; almost always Telegram-signal shaped |
+| `المراجحة` / `مراجحة` | arbitrage (formal) | all | **1 / 0** — and the 1 is car pricing, not markets |
+| `أربيتراج` | arbitrage (transliterated) | 2017→ | **0 on GitHub, ABUNDANT on YouTube** — the AR arb vocabulary lives in video, not code |
+| `فرق السعر بين المنصات` | "price difference between platforms" | all | **the folk term for cross-venue arb** — outperforms `المراجحة` on video search by a wide margin |
+| `التداول الكمي` | quantitative trading | — | **0** — the concept has no AR-language footprint |
+| `اكسبيرت` | expert advisor (MT4/5 EA) | MT4 era | **0** — note KR/RU/CN all have EA corpora; AR does not |
+| `العقود الآجلة` | futures contracts | all | the standard AR term; high-volume on video |
+| `العقود الدائمة` | perpetual contracts | 2019→ | perps specifically — distinguishes from `الآجلة` |
+| `رسوم التمويل` | funding fees | 2020→ | **the funding key** — maps to the desk's only repeat-survivor family |
+| `التصفية` / `التصفية القسرية` | liquidation / forced liquidation | all | liquidation-cascade vocabulary |
+| `السيولة` | liquidity | all | general |
+| `تحليل فني` | technical analysis | all | 12 repos; the dominant retail frame |
+| `عملات رقمية` / `العملات المشفرة` | digital currencies / cryptocurrencies | all | 27 repos; the broad crypto key |
+| `مضاربة` | speculation / short-term trading | all | folk term, carries a mildly pejorative/religious charge |
+| `تقابض فوري` | immediate possession (Sharia) | doctrinal | **the fatwa-layer key** (s1) — the constraint that makes a doctrinal pool spot-only |
+| `زكاة` | zakat (2.5% mandatory wealth levy) | doctrinal | s1's forced-flow candidate; calendar-predictable obligation |
+
+**THE LEXICON'S OWN LESSON (s2):** `أربيتراج` returns **0 GitHub repos and a full page of YouTube
+results**. A term's count is **per-surface**, and grading a term dead from one surface is the
+false-exhaustion mode OP-054 names. Record the surface beside the count, always.

@@ -2274,3 +2274,52 @@ is a graveyard-grade verdict issued on a target that changed underneath the spli
 target-side check — the seat is frozen out of that tree and a grep from a research seat proves a name exists,
 never that a code path runs (the desk's own most-repeated lesson). **The claim "the desk does not check
 target stationarity" is UNVERIFIED and is the first thing the implementing seat should falsify.**
+
+---
+
+## 2026-08-13 — AR frontier miner s2: the video-transcript fetcher misreports WHY it failed, and that is why the purchase-evidence log sat empty
+
+**SOURCE:** measured this run, honest UA, against `scripts/fetch_video_transcript.py` and the four Piped
+instances it rotates. Seat is research-frozen out of `scripts/`, so this is **PROPOSED, NOT BUILT**.
+
+**THE DEFECT.** `youtube()` loops the 4 instances and on each failure overwrites a single `last = <error>`
+string, finally raising `SystemExit(f"all Piped instances failed -- last: {last}")`. Only the **last**
+instance's error ever reaches the operator. Measured causes, same minute, same box, same video:
+
+| instance | HTTP | actual cause |
+|---|---|---|
+| `api.piped.private.coffee` | **500** | YouTube bot-wall: `SignInConfirmNotBotException … LOGIN_REQUIRED` |
+| `pipedapi.kavin.rocks` | **502** | instance-side gateway failure |
+| `pipedapi.adminforge.de` | **301** | API moved off-host (redirects to `adminforge.de/search?…`) |
+| `api.piped.yt` | **000** | **dead domain — DNS NXDOMAIN** |
+
+Four distinct causes demanding four different responses, collapsed into one message — and because the **dead
+domain is last in `_PIPED`**, every failure of every cause is reported as `URLError … Name or service not
+known`. **A platform bot-wall is displayed as a local DNS fault.**
+
+**WHY IT MATTERS BEYOND TIDINESS — it silently defeated a standing principal mandate.** `video_locked_log.md`
+is the *sole* evidence gate for GAP #26 (paid transcript/proxy unlock) and it had **zero rows** after weeks of
+daily digs across seven regions. The mandate text reads that emptiness as diggers skipping the duty. The
+measured cause is the instrument: a digger who hit the wall saw a message indicating a problem on **their own
+box**, not a platform refusal, and correctly declined to log a platform block. **The log was empty because the
+error message was wrong**, and an artifact whose only job is to justify a purchase was being fed a false
+premise. This is the desk's UNMEASURED-REPORTED-AS-OK class pointed at a *cause* field rather than a value.
+
+**PROPOSED FIX (three lines of behaviour, no new capability):**
+1. Collect **per-instance** `(host, http_code, cause)` and report **all** of them, never just the last.
+2. Drop `api.piped.yt` (dead domain) or move it last-but-report-separately, so a permanently-dead host stops
+   being the default explanation for every failure.
+3. Classify `LOGIN_REQUIRED` / `SignInConfirmNotBotException` explicitly as **PLATFORM-WALL** and say so in the
+   exit message, with a pointer to `video_locked_log.md` — the operator is at that moment holding exactly the
+   evidence the log exists to collect, and nothing tells them so.
+
+**VERIFICATION OWED BEFORE ANYONE ACTS:** I read `scripts/fetch_video_transcript.py` directly and measured all
+four endpoints with `curl`, so the instance table is first-hand. What I did **not** do is check whether any
+other organ consumes this exit string (a caller keying on the message text would change with it). One grep
+from a seat with write access to `scripts/` settles it.
+
+**RELATED, and it corrects a same-day sibling claim:** RU miner s3 (2026-08-13) recorded that video access
+*"works on popular English content and fails on cold non-English"*. The English half is **refuted by control**:
+EN crypto videos at 142k / 50k / 33k views wall identically to AR videos at 538k / 47k / 31k. Language is
+orthogonal; only a ~1.6bn-view control passed. Full table and the GAP #26 consequence in
+`docs/research/video_locked_log.md`.

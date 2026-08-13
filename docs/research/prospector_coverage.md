@@ -21,7 +21,7 @@ _Seeded 2026-07-18; every family unvisited -- the first run biases per the rotat
 | Non-English forums — **JP** | 2026-08-13 | 4 | **s4 (2026-08-13, JP frontier miner): THE DEEP-FOREST SELF-HOSTED TAIL OPENED — after 08-12 closed 62% of the mapped corpus, a UA-matrix probe over 10 hosts found **8/9 self-hosted botter blogs serve 200 to ClaudeBot and 4 have no robots.txt at all** → **OP-073** (an AI-crawler denylist is a PLATFORM product decision; re-scope the HOST COLUMN, never the region — the JP ground went from "thinning" to a fresh 20-entry queue across 12 open domains with one group-by). **zenn.dev sharpened the §13 finding into its worst form: robots.txt now returns 200 AND explicitly allows `*`, while the content path returns 403 — every standard §13 check comes back green and permissive over a closed ground.** **OP-072, the run's best find and fleet-wide: the post-2023 practitioner corpus is LLM-CONTAMINATED** — the mined options post's entire mechanism analysis is self-disclosed ChatGPT output (チャッピー), so practitioners in unrelated regions now converge because they queried the same weights, not because the world taught them; worse than the arXiv echo GAP #85 models (a paper echo leaves a citation, an LLM echo leaves nothing), fixed by per-region markers + an observation/explanation split + `NONE (checked)` made illegal post-2023 (→ UNVERIFIABLE), and it hands era-archaeology a new argument: **pre-2023 archives are structurally uncontaminated.** MINING: `blog_UKI`'s BitMEX spoofing **intervention** (not an observation) decomposes OFI → **the market-order take components dominate; the displayed book is not where the information is**, so `book imbalance` and `aggressor flow` may be ONE axis and the desk's L1.18 independence count too high by one (EV 0.0002 REJECT as a trade → routed to improvement_inbox as a feature-redundancy fact; the strategy is prohibited conduct and is not proposed). `pip_pip_pip_p` **corroborates the 08-01 richmanbtc kill from the opposite fee sign** (the rule-based core is down-sloping on Binance in every period since 2021, incl. the 2024-11/12 bull) + names a live desk gap: **the desk checks FEATURE-distribution stationarity, apparently never the TARGET's**. `gitan.dev`'s 2023↔2024 venue-survey **pair** (a free longitudinal diff) → **WS-013**: a 13-month +2% JP margin dislocation, a venue REPLACING an SFD divergence penalty with a funding rate, and its resting long-pays-short constant **numerically identical to Binance's 0.01%/8h interest component** — an independent venue corroborating this seat's 08-12 clamp census that the 1bp print is a copied CONVENTION. Graveyard ×1 (`rev_calendar_spread_iv_convergence`, refuted at source: vega-neg + theta-neg has no favourable regime; its transferable half is **a hedged leg with a contractual expiry un-hedges itself on a schedule** — a risk-rail event for any future dated-future-vs-perp basis trade). Universe source **102** (venue fee schedule as the conditioning variable for every volume feature; EV 0.0058 QUEUE, the session's only gate survivor of 4 scored). +8 OBSERVED JP lexicon rows (鞘/アビトラ/見せ板/お蔵入り/反面教師/チャッピー/限月/爆損). **Self-caught defect: my own 08-12 next-run queue was 40% dead on arrival** — titled "qiita-hosted", it named 3 zenn.dev entries I had ruled HARD STOP in the same note. Video: 0 fetched, 0 locked.** —  **s3 (2026-08-12, JP frontier miner): §13 REGRESSION — note.com + zenn.dev now serve 403 to ClaudeBot/GPTBot/CCBot/Bytespider AT THE CDN EDGE while BOTH robots.txt files are clean of any such rule (Googlebot/curl/SomeRandomBot get 200 ⇒ a curated AI-crawler denylist, not a WAF heuristic). HARD STOP, archives included; NOT routed around (Claude-User returns 200 and was deliberately not used). Closes 116/187 (62%) of the mapped botter corpus incl. all 3 planned targets; rollout DATED between 08-04 and 08-12 by this seat's own successful prior reads → **OP-052** (probe the CONTENT PATH with a UA matrix; robots.txt is necessary, not sufficient) + lesson **L0096** + **R0466** (a blocked ground and an exhausted ground are byte-identical to any fetch path that treats non-200 as no-content — a FALSE NULL that silently retires a region). **Past-due PI-vs-FR deferral RESOLVED** (`data/jp_funding_clamp_census.json`): clamp verified by positive control (BTC 49/60, DOGE 46/60); **41.6% of the owned 8h panel and 68.8% of the live 812-symbol cross-section sit on a censoring constant**, 74.9 bps of real premium dispersion hides inside one 56-name tie group — the root cause of the already-paid-for "42 perps at the 1bp floor" churn incident; censoring DECAYS 68.8%(2019)→10.7%(2026) ⇒ **backtest-integrity upgrade first, live-signal second**; EV 0.0193 QUEUE, novelty 0.726, NOT promoted (screen still owed). **L1.47 corroborated with a count → R0465: 426/812 (52.4%) of live perps settle on 4h, only 385 on the 8h that `held/8.0` assumes** ("many" is the majority); ranking damage honestly modest (Spearman 0.959). JP funding-settlement sandwich (qiita/lud-botter, DERIVES-FROM: NONE checked ⇒ genuine independent convergence with L1.47) **EV 0.0006 REJECT** as published — dead at source, venue changed settlement rules mid-operation — with the observation routed as execution-timing **EV 0.0087 QUEUE**; JP **Travel Rule 2023-06-01** era marker (domestic↔overseas arb killed by regulation, not competition). **マケデコ (`market-api`) NEW GROUND opened + mapped: 74 entries 2023–2025 (2021/22 = 404, series began 2023), JP EQUITIES not crypto, 74% on the closed hosts**; J-Quants axis catalogued-unverified (row 29). Video: 0 fetched, 0 locked.** — **s1 (2026-08-01, JP frontier miner, seat's first run).** §13: **5ch.net + all sister hosts REFUSE `ClaudeBot` by name** (Cloudflare-*managed* block → treat as a platform rollout, not a site decision; re-check on entry, never cache); note/qiita/zenn/GMO/bitbank clean. **bitFlyer axis CLOSED after 4 deferrals** — the "403/WAF/needs-a-human" record was a **tarpit**, the block is **per-hostname** (api+lightning serve 200 from the *same edge IP*), the "never archived" claim was a wrong CDX host+slug, and the ToS was then read: it retains rights in *"data such as transaction prices"* → **`restricted-by-licence`**, which pre-emptively killed `getchats`, `getfundingratehistory` and an archived keyless 15-min BTC/JPY series (2014-10→, Wayback-only) before any were carded. **Replacements found same run: GMO Coin free keyless tick tape (2018-09-05→, 28 spot + 12 margin, JP-only MONA/XYM/FCR/NAC/WILD) and bitbank — both licence-unread, no ingest (R0309/R0310).** **richmanbtc lineage (the C62 "gem", unstarted 12 days) KILLED**: the edge is a bare ATR×0.5 limit, the ML adds ~nothing, and the maker fee was **zero-or-negative across the whole backtest** → a venue-subsidy harvest, dead on 3 venues. Salvaged 3 CC0 tools (p-mean order-sensitive decay bar — **published error-rate formula reproduced BROKEN**; time-adversarial feature screen; `publicGetExpiredFutures` for R0239). New: **OP-043/044/045** + OP-041 refinement. Era-archaeology (2017 bitFlyer-FX **SFD**, Mt.Gox 5ch) **UNSTARTED**; JP lexicon seeds still **unverified**. Next: **the 仮想通貨botter Qiita Advent Calendar 2021–2025, never touched.** |
 | Non-English forums — **BR** | 2026-08-12 | 2 | **s2 (2026-08-12) — THE NATIVE KEY WAS HIDING THE DESK'S ONLY NEVER-HUNTED FAMILY.** Cleared s1's 8-day-overdue ITEM 3. Measured, same corpus same minute: `pairs trading brasil` → **0 repos**, `cointegração` (native PT key) → **30**, essentially all genuine statarb, several crypto-native — so a seat querying the English term grades BR statistical arbitrage DEAD on a clean zero, and `strategy_coverage.json` reports **STATISTICAL-ARBITRAGE as the only never-hunted family (0/14)**. `long short` is unusable bare in PT-BR via **two independent collisions** (LSTM written out in full; C's `unsigned long/short`) — the vocabulary sibling of the RU ticker collision. **OP-054.** Depth on `mateusmartinelli/tcc` (crypto pairs trading; Gatev + Caldeira–Moura + Rad–Low–Faff): more rigorous than average (loads T-bills, computes excess returns) yet **three code/comment contradictions all in the config block** — cost 0.001 commented "0.05%" (**2×**, conservative), entry **1.5σ** commented "2σ as per paper" (**not** conservative), formation **90d** commented "252" — plus **zero funding accounting** and top-10 pairs from ~4,950 candidates at p<0.10 with **no multiplicity correction** (~495 expected false pairs). **OP-055.** Killed `pedhsm/systematic-research-framework`'s MCPT: it permutes **realised returns** and scores sharpe/cagr/vol, **all order-invariant** — verified by independent reimplementation, 500 perms × 4 series, **max−min = 1.1e-15**; FP non-associativity then makes the p-value a rounding-order hash (**winner p=0.978, catastrophe p=0.618**). A **wall, not a bar** → graveyard + **OP-056**. **The desk was already ahead** (`bar_permutation.py` permutes bars, with a measured `_TIE_RTOL` + add-one) ⇒ genuine cross-ecosystem convergence, **NO BUILD**. RFB: s1's *"decaying deadline"* was an inferred rate — census gives **23 dates, 12 live / 12 dead, clean boundary at 2023-03-02|2023-05-03, 4 with no capture at all**; **rate UNMEASURED** (two rival hypotheses, opposite urgency, falsifier recorded) and the series is **~4 months unpublished against a 13-month hiatus precedent**. BR lexicon opened (none existed); supplied seeds scored **0/3 as dark-forest keys**. Video: **0 fetched, 0 locked — not attempted**, named in next ground. Next: `Vido/zecontinha` fork tree + crypto subset, `TCC` as a structural key, PT-BR video, B3 (still unprobed), era-archaeology (still not started). |
 | _(BR s1 history)_ | 2026-08-01 | 1 | **s1 (2026-08-01, BR frontier miner, seat's first run).** **§13: the KR/JP by-name-block pattern does NOT generalise** — 18 hosts swept full-file over 17 AI-crawler tokens, **zero BR blocks**; the community layer (bastter, InfoMoney, MQL5-PT, Investing BR, bitcointalk, YouTube, Telegram) is **open**, so KR/JP was a property of *those* consumer portals, not a global rollout (OP-041 corrected). One **HARD STOP: `reddit.com` `Disallow: /`** to everyone — a *global* decision that bites BR hard (r/investimentos, r/farialimabets, r/BrasilBitcoin). **Pre-emptive graveyard check killed one third of my own brief before any searching:** the seat's era target "BR P2P premium" is already `mercado_br` **REJECTED** (graveyard:81) inside a family killed **5×** whose lone survivor (kimchi) was itself refuted 07-30 — no L1.16a enabling change exists, so the **seed list** is the defect. **THE FIND: RFB `criptoativos_dados_abertos`** — Brazil's **mandatory** national crypto-reporting panel (every domestic exchange reports **every** operation, no minimum; P2P + foreign venues >R$30k), free and keyless: **77 months Ago-2019→Dez-2025, 66 assets, 4,206 asset-months**; Dez-2025 = **3,544,986 taxpayers / R$43.1bn**; all-time **USDT R$1.004tn vs BTC R$269bn (3.7×)** ⇒ a **dollarization**, not speculation, mechanism. **Deliberately NOT screened** — n=77 monthly + 3.5mo lag vs a ~4,268-obs bar would manufacture a false null (L1.25); reported **UNDERPOWERED** with the cross-sectional enabling change named. **The depth layer was the prize: a FREE POINT-IN-TIME VINTAGE STACK** — RFB republishes monthly under a dated filename and **42/42 common months are revised** (worst Março-2023 **+40.9%**; a month **2.4y old** still moved), systematically upward, so backtesting today's file is a **+41% look-ahead in the CONDITIONING variable** (R0289 class — passes every return-series leak check, fails toward a FALSE POSITIVE). Proven recoverable: 23+ dates in CDX, and a **live-404 vintage restored intact** via `web.archive.org/<ts>id_/`. Read at all only by writing a **stdlib OLE2+BIFF8 reader** (no xlrd on this box) validated by the data's **own conservation law: 78/78 rows, residual 0.00e+00**. New **OP-046 / OP-047 / OP-035-BR**; R0316–R0318. Incidental: a **BR-only tokenized-RWA universe** in a government dataset (**MBPRK = tokenized *precatórios***, MBCONS, IMOB01, MCO2; **BRZ = 92.4M ops**, a payment rail). **ITEM 3 (PT-BR practitioner ground) explicitly DEFERRED to 08-04, not dropped.** Next: practitioner ground first, then **mirror the vintage stack before it decays**, B3, Pix fraud stats. |
-| Non-English forums — **AR** | 2026-08-12 | 1 | **s1 (2026-08-12, AR frontier miner, seat's first run) — IN PROGRESS.** No AR row existed before this run (`grep -ic arabic` = 0). **Pre-emptive graveyard check killed the seat brief's ENTIRE era target before any searching:** MENA/Egypt/Lebanon P2P-premium-under-FX-restriction is `era_crossvenue_fiat_premium_arb` (buried **7×**) inside the regional-premium class the desk declared **exhausted** (`try_premium_timing` — the Turkey capital-control analog, the closest MENA case that exists — REJECTED; kimchi, the lone survivor, itself KILLED 08-01); `strategy_coverage.json` has CROSS-VENUE-PREMIUM = HUNTED/9. Second consecutive seat (after BR) handed a dead era target ⇒ **the seed list is the defect**. Items: (1) §13 UA-matrix access map (OP-052) — AR unmapped in BOTH directions, and R0466 makes an unmapped ground's null uninterpretable; (2) report+replace the dead brief; (3) **replacement axis: Hijri/Ramadan calendar + Sharia-compliance forced-flow** — novelty-clean at **0 hits** across graveyard/both watchlists/universe map/vault, maps to NONE of the 24 CRYPTO_MECHANISMS, and lunar-vs-Gregorian drift (~11d/yr) makes it orthogonal to every Gregorian calendar effect by construction. See session note below. |
+| Non-English forums — **AR** | 2026-08-13 | 2 | **s2 (2026-08-13) — THE SEAT IS RE-AIMED, on measurement.** (1) **`mql5.com/ar` DOES NOT EXIST** — MQL5 publishes 11 hreflang locales and `ar` is not one; `/{loc}/code` = 200 for 11/11 real locales, 404 for `ar` alone. s1 graded it OPEN **from robots.txt**, which answers *may I*, never *is there anything here* → **OP-074**. (2) **THE AR LANGUAGE IS NOT A MOAT** — AR-script repo search: arbitrage **1/0/0**, quant-trading **0**, EA **0**, all hits 0–1★ Telegram signal-bots, against **CN 1,174 / RU 24 / KR 6** on the same instrument. Discriminator by developer LOCATION: **UAE 67 > Korea control 59** (~99 AR-region devs) ⇒ population EXISTS and **writes in English**, so its output is already in the EN seat's ground → **OP-075**. **Not "the ground is thin"** — a precise verdict on ONE layer (AR-script *code*); the seat's edge must be what is native-language **by institutional construction** (regulators, exchanges, courts, the Sharia layer). (3) **VIDEO: 8 attempted, 1 fetched, 7 LOCKED — `video_locked_log.md` has its FIRST ROWS EVER**, and the **EN control** (142k/50k/33k views, walled identically to AR 538k/47k/31k) proves the block is **not regional**: GAP #26 must buy a **general** authenticated route. The log was empty because `fetch_video_transcript.py` reports only the LAST instance's error and that instance is a **dead domain** — a platform bot-wall displayed as a local DNS fault (R0592). **AR corpus is VIDEO-FIRST**, which is the natural complement to OP-075. See s2 session note. || **s1 (2026-08-12, seat's first run) — CLOSED.** No AR row existed before this run (`grep -ic arabic` = 0). **Pre-emptive graveyard check killed the seat brief's ENTIRE era target before any searching:** MENA/Egypt/Lebanon P2P-premium-under-FX-restriction is `era_crossvenue_fiat_premium_arb` (buried **7×**) inside the regional-premium class the desk declared **exhausted** (`try_premium_timing` — the Turkey capital-control analog, the closest MENA case that exists — REJECTED; kimchi, the lone survivor, itself KILLED 08-01); `strategy_coverage.json` has CROSS-VENUE-PREMIUM = HUNTED/9. Second consecutive seat (after BR) handed a dead era target ⇒ **the seed list is the defect**. Items: (1) §13 UA-matrix access map (OP-052) — AR unmapped in BOTH directions, and R0466 makes an unmapped ground's null uninterpretable; (2) report+replace the dead brief; (3) **replacement axis: Hijri/Ramadan calendar + Sharia-compliance forced-flow** — novelty-clean at **0 hits** across graveyard/both watchlists/universe map/vault, maps to NONE of the 24 CRYPTO_MECHANISMS, and lunar-vs-Gregorian drift (~11d/yr) makes it orthogonal to every Gregorian calendar effect by construction. See session note below. |
 | AI/HF documentation | 2026-07-19 | 1 | touched only incidentally via Vibe-Trading (AI trading-agent platform) + ai_quant_trade (LLM module) — both infra, not alpha-discovery-process documentation; weak coverage, revisit properly next run |
 
 ## COVERAGE REALITY vs DIRECTIVE (honesty record, 2026-07-20)
@@ -4269,6 +4269,162 @@ in my brief and is **explicitly carried to the next run**, unstarted). Recording
    to read the policy (reading policy is not routing around access control; fetching bodies would be).
 6. **Era-archaeology: UNSTARTED.** With the premium target dead, the AR era ground needs a different
    question — the dead-venue layer (defunct GCC/Levant exchanges) rather than the P2P-premium layer.
+
+---
+
+### 2026-08-13 session 2 (AR frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+
+**RESUMED, NOT RESTARTED.** Read first: (a) `source_backlog_next.py` — 6 pending verification,
+**none AR**, and all 6 are actively owned elsewhere (BRAIN hunter s1/s2 took the grouping map,
+COT-BTC and stablecoin legs on 08-11/08-12; KR venue-state is the KR seat's). Re-verifying another
+seat's live item would be duplicated labour, not backlog burn-down, so this run resumes at my own
+chain. (b) My **s1 note (08-12)** and its named next-ground list. (c) §33 gate: BACKLOG-CLEAR,
+18/18 disposed, mining authorised.
+
+**ITEMS THIS RUN** (bounded per the completion contract; depth per item unbounded):
+
+1. **`mql5.com/ar` — RESOLVE THE GROUND, and re-measure my own s1 premise.** s1 graded it
+   *"OPEN, correct path not yet found (`/ar/code` is a uniform 404)"*. First probe this run:
+   `https://www.mql5.com/ar` **404s at the ROOT** with a browser UA. A 404 at the locale root is not
+   a wrong sub-path — it is evidence the **AR locale may not exist at all**, which would make my #1
+   priority ground a ground that was never there. **OP-054 discipline applied to myself**: verify the
+   key against the ground before grading it. If there is no AR locale, the real question replaces it:
+   *where does the AR-language algo-code layer actually live?*
+2. **AR VIDEO — the route this seat has NEVER TRIED.** s1 recorded an honest `video: 0 fetched,
+   0 locked — never tried`. The fleet-wide `video_locked_log.md` still has **zero rows** after weeks
+   of digs across seven regions, which the mandate names as either implausible or a silent skip. AR
+   video posture is **UNMEASURED**, not open and not closed. Exercise
+   `scripts/fetch_video_transcript.py` on real AR trading content and record the result **either way**.
+3. **GCC REGULATOR + EXCHANGE DATA LAYER — the BR-analogue.** The BR seat's actual win was a
+   *government dataset*, not a community mechanism; s1 named this as the AR analogue and it is
+   unmined. Hunt **DATA AXES** (what does each venue/regulator publish, what does its API expose),
+   not strategies — a dig returning zero strategies and one new data axis is a good dig.
+
+STATUS: opened 2026-08-13. Updated in place as each item resolves.
+
+---
+
+#### ITEM 1 — **CLOSED, and it OVERTURNS my own s1 grade AND re-aims the seat.**
+
+**(a) `mql5.com/ar` DOES NOT EXIST.** s1 recorded *"OPEN, correct path not yet found (`/ar/code` is a
+uniform 404)"* and put it at **#1 priority** for this run. That was wrong, and the control is clean:
+MQL5 publishes **11 hreflang locales** (`en ru zh es pt de ja ko fr it tr`) and **`ar` is not among
+them**; `/{loc}/code` returns **200 for 11/11 real locales and 404 for `ar` alone**. It was never a
+wrong sub-path — **there is no Arabic MQL5**. A seat inheriting my s1 line would have spent this run
+hunting for the "correct path" to a ground that was never there. *(Lesson: s1 graded a ground OPEN
+from its **robots.txt** — but robots.txt answers "may I?", never "is there anything here?". OP-052
+told me to probe the content path and I probed the **policy** path. → OP-074 below.)*
+
+**(b) SO WHERE IS THE AR ALGO-CODE LAYER? — MEASURED, NOT ASSUMED.** Replaced the dead ground with
+the brief's own "AR-language GitHub topics". Native-key search (OP-054 — verify the key against the
+ground before grading THIN), honest UA, GitHub search API:
+
+| AR term | gloss | repos | max ★ |
+|---|---|---|---|
+| `المراجحة` / `مراجحة` / `أربيتراج` | arbitrage (3 variants) | **1 / 0 / 0** | 0 |
+| `التداول الكمي` | quantitative trading | **0** | — |
+| `اكسبيرت` | expert advisor (MT4/5 EA) | **0** | — |
+| `تداول آلي` | automated trading | 11 | 0 |
+| `تحليل فني` | technical analysis | 12 | 0 |
+| `عملات رقمية` | cryptocurrencies | 27 | 1 |
+| `بينانس` | Binance (AR script) | **1** | 0 |
+
+The single `المراجحة` hit is an **AI car-pricing engine in Egypt**, not markets. **Every** hit across
+all seven terms has **0 or 1 stars**; the population is Telegram signal-bots, *"نسبة نجاح 95٪"*
+(95% success rate), *"أرباح مضمونة"* (guaranteed profits). **Zero backtests, zero cost accounting,
+zero out-of-sample anything.**
+
+**(c) THE CALIBRATED DENOMINATOR — because "1 repo" means nothing without one** (L1.62: a denominator
+that was assumed is not a measurement). Same term, same instrument, four scripts:
+
+| script | arbitrage term | repos | max ★ |
+|---|---|---|---|
+| **CN** | `套利` | **1,174** | 671 |
+| **RU** | `арбитраж` | 24 | 12 |
+| **KR** | `차익거래` | 6 | 2 |
+| **AR** | `المراجحة` | **1** | 0 |
+
+**(d) TWO HYPOTHESES SURVIVED (c), AND THEY DEMAND OPPOSITE CONCLUSIONS — so I ran the
+discriminator instead of picking one.** **H1**: the AR algo-trading developer population does not
+exist. **H2**: it exists and writes in **English** (the OP-054 trap at full strength — a correct
+native key returning a true zero because the *practitioners* left the language, not the field).
+GitHub **users** search, self-reported location + "trading", with a KR control on the same instrument:
+
+| location | users | | location | users |
+|---|---|---|---|---|
+| **UAE** | **67** | | **Korea (control)** | **59** |
+| Egypt | 24 | | Egypt + "quant" | 7 |
+| Saudi Arabia | 8 | | Saudi + "quant" | 1 |
+
+**H1 IS REFUTED. H2 IS CONFIRMED.** AR-region developers who mention trading number **≈99 across
+three countries — UAE alone (67) EXCEEDS the Korean control (59)** — while the AR-*language* corpus
+sits at 0–1. *(Instrument caveat, stated because it cuts both ways: `location:` is self-reported and
+sparse, and I queried `UAE` not `United Arab Emirates`, `Korea` not `South Korea` — so **both sides
+are undercounted by the same mechanism**. The comparison is a lower bound on each, and AR already
+≥ the control, so the direction is robust even though the levels are not.)*
+
+**THE FINDING, AND IT RE-AIMS THIS SEAT** — routed to the operator library as **OP-075**:
+
+> **For CN/KR/JP/RU/PT the language IS the moat: the corpus exists natively and the crowd cannot read
+> it. FOR AR IT IS NOT.** The AR technical layer is written **in English by the same developers**, so
+> (i) an AR-script search is not a window into a hidden technical corpus — it is a window into the
+> **retail/promotional** layer, which is exactly and only what it returned; and (ii) whatever those
+> ~99 developers do produce **is already inside the EN seat's ground**. There is **no language
+> arbitrage in AR code**, and no amount of further AR-script GitHub digging will create one.
+
+**WHAT THIS DOES NOT SAY (L1.25, and it is the load-bearing half):** this is **not** "the AR ground is
+thin" — that is the exact R0466/WS-005 false null s1 built the §13 access map to prevent. It is a
+**precise statement about ONE layer**: AR-script *code*. It says the seat's edge cannot be in code or
+in language-as-such, and must instead be in what is **Arabic-only by INSTITUTIONAL construction** and
+therefore cannot migrate to English — regulator publications, exchange notices, the Sharia/fatwa
+layer, GCC government data. **That is item 3, and this measurement promotes it from third to first.**
+
+---
+
+#### ITEM 2 — VIDEO — **CLOSED. The log has its FIRST ROWS EVER, and they say DO NOT buy a regional proxy.**
+
+**video: 8 attempted, 1 fetched, 7 LOCKED.** Full table, controls and the GAP #26 consequence written
+to `docs/research/video_locked_log.md` (previously **zero rows** since creation).
+
+**(a) THE AR VIDEO GROUND IS RICH — richer than the AR text ground, which inverts my item-1 finding
+in a useful way.** Piped search served AR queries perfectly: `المراجحة`/`أربيتراج` return full pages of
+AR-native arbitrage walkthroughs (`Alcrybto` 31k views, `Dr Crypto` 538k, `كريبتو بالعربي` 47k). **The AR
+corpus is VIDEO-FIRST.** That is the natural complement to OP-075: the AR technical layer is not
+absent from the world, it is absent from *text* — the practitioners talk instead of writing.
+
+**(b) AND IT IS UNREADABLE.** `api.piped.private.coffee` is genuinely UP — its `/search` endpoint
+answered these very queries — but `/streams/<id>` returns **HTTP 500** carrying
+`SignInConfirmNotBotException … LOGIN_REQUIRED: "Sign in to confirm that you're not a bot"`.
+
+**(c) THE CONTROL IS THE DELIVERABLE, AND IT CORRECTS A SAME-DAY SIBLING.** RU miner s3 (2026-08-13)
+recorded video access *"works on popular English content and fails on cold non-English"*. I ran the
+discriminating control — **EN crypto videos in the same view range**:
+
+| video | lang | views | result | | video | lang | views | result |
+|---|---|---|---|---|---|---|---|---|
+| dQw4w9WgXcQ | EN | ~1.6bn | **OK (6 tracks)** | | IpN5Oof6Kbc | **EN** | 142,551 | BOT-WALL |
+| AoGDmyI2eAY | AR | 538,494 | BOT-WALL | | OEuI_stZKUc | **EN** | 50,775 | BOT-WALL |
+| _MSNqMjT9ng | AR | 234,541 | BOT-WALL | | fYncVOgQolg | **EN** | 33,421 | BOT-WALL |
+| SAZeeuxuo1k | AR | 47,625 | BOT-WALL | | O0gZL-wrH2k | AR | 31,217 | BOT-WALL |
+
+**The English half of the sibling claim is REFUTED: language is ORTHOGONAL.** EN at 142k/50k/33k walls
+identically to AR at 538k/47k/31k; the only pass is a ~1.6bn-view control. **Had I logged only my AR
+rows, this log would have argued for an AR/regional unlock — the wrong purchase, on the one artifact
+whose entire job is to decide what to buy.** The boundary sits between 538k and 1.6bn views and the
+**mechanism is UNIDENTIFIED** (popularity? cache residency? age?) — stated as unidentified rather than
+guessed. GAP #26 should therefore price a **general authenticated/residential YouTube route**; the EN
+seat is affected exactly as much as every regional seat.
+
+**(d) WHY THE LOG SAT EMPTY FOR WEEKS — AN INSTRUMENT FAULT, NOT DIGGER LAZINESS.** The mandate reads
+the empty log as seats silently skipping the duty. Measured cause: `fetch_video_transcript.py` loops 4
+instances overwriting one `last = <error>` and raises only that. The four fail for **four different
+reasons** — private.coffee **500** (bot-wall), kavin.rocks **502** (down), adminforge.de **301** (API
+moved), api.piped.yt **000** (**dead domain, NXDOMAIN**) — and since the dead domain is **last in the
+tuple**, every failure of any cause surfaces as `Name or service not known`. **A platform bot-wall is
+displayed as a local DNS fault**, so every digger who hit it saw a problem with their own box and
+correctly declined to log a platform block. Routed to `improvement_inbox.md` (seat is frozen out of
+`scripts/`); the RU s3 "fetcher is ALIVE" verdict stands — the rotation *does* work, on content the
+wall spares.
 
 ---
 

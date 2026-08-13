@@ -7479,6 +7479,30 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0592",
+   "source": "deep_sweep",
+   "summary": "fetch_video_transcript.py reports only the LAST Piped instance's error, and the last instance (api.piped.yt) is a dead domain -- so every failure of any cause presents as a local DNS fault. Measured 4 distinct causes same minute: private.coffee 500 YouTube LOGIN_REQUIRED bot-wall, kavin.rocks 502, adminforge.de 301 API-moved, api.piped.yt 000 NXDOMAIN. This is why video_locked_log.md sat at ZERO rows for weeks: a platform bot-wall was displayed to every digger as a problem on their own box. Fix: report per-instance (host,code,cause); drop the dead domain; classify LOGIN_REQUIRED as PLATFORM-WALL and point the operator at the log.",
+   "roi_bps": null,
+   "raised": "2026-08-13T08:26:34.283770+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0593",
+   "source": "deep_sweep",
+   "summary": "GAP #26 (paid video unlock) must buy a GENERAL authenticated/residential YouTube route, NOT a regional/language proxy. Measured control 2026-08-13: EN crypto videos at 142k/50k/33k views bot-wall IDENTICALLY to AR videos at 538k/47k/31k; only a ~1.6bn-view control passed. Language is orthogonal; the blocked class is all practitioner-scale video in every language, so the EN seat is affected as much as every regional seat. Refutes the English half of RU miner s3's same-day 'works on popular English, fails on cold non-English' claim.",
+   "roi_bps": null,
+   "raised": "2026-08-13T08:26:37.664200+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
