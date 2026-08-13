@@ -46,7 +46,17 @@ def test_THE_RUNNER_FOLLOWS_THE_RESUMABLE_PATTERN_THE_OTHER_MINERS_USE() -> None
     assert "-size +1500c" in rot
     src = RUNNER.read_text("utf-8")
     assert "brain_auth_check" in src and "dig_dry_run" in src
-    assert "_BRAIN_MODEL_CHAIN" in src, "the hunter does not share the dual-pool routing"
+    # THE ROUTING IS INHERITED, AND ASSERTING THE LITERAL DEMANDED THE OPPOSITE. This required
+    # `_BRAIN_MODEL_CHAIN` to appear in the runner -- which is precisely the pin the single-source
+    # fence exists to prevent. This organ carried a literal copy from 2026-08-11 (d48c6408) until
+    # it was removed a day later, and with it the hunter would keep running yesterday's models the
+    # first time run_model_upgrade.py adopts a newer flagship, silently. So the assertion is that
+    # the chain ARRIVES from the one place that generates it, not that it is restated here.
+    assert "source ops/brain_env.sh" in src, (
+        "the hunter does not inherit the dual-pool routing from brain_env.sh")
+    assert "_BRAIN_MODEL_CHAIN=" not in src, (
+        "the hunter re-declares the model chain -- a local copy goes stale the moment "
+        "run_model_upgrade.py adopts a newer flagship, and nothing would report it")
 
 
 def test_IT_HUNTS_RECURSIVELY_RATHER_THAN_SEARCHING_ONE_LABEL() -> None:

@@ -103,6 +103,15 @@ def test_public_market_data_and_filters_are_parsed(monkeypatch) -> None:
         "qty_prec": 5,
         "tick": 0.1,
         "price_prec": 1,
+        # 0.0 because this fixture publishes no NOTIONAL/MIN_NOTIONAL filter, and 0.0 is the
+        # documented "no published minimum" answer -- callers keep their own conservative floor
+        # for that case. The KEY must be present regardless: it was added to binance_spot_live
+        # only, while the money path imports THIS module, so the executor sized every order
+        # without the venue's minimum order value. An order can clear stepSize and minQty and
+        # still be rejected on value, and on a two-legged carry a leg rejected while its partner
+        # fills is a naked directional position. tests/execution/test_filter_parity.py pins the
+        # two parsers together so the divergence cannot silently return.
+        "min_notional": 0.0,
     }
     assert spot._prec_of(1.0) == 0
 

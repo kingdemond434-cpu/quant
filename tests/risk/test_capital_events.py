@@ -375,7 +375,32 @@ def test_this_module_is_NEVER_called_automatically() -> None:
         # throwaway ledger. That is the correct use and the opposite of an automated exit, so the
         # net is on the real ledger rather than on the function name -- naming `rebase` is not the
         # danger, reaching the principal's append-only record unattended is.
-        assert "LEDGER =" in src, (
-            f"{path} calls rebase() against the REAL ledger -- the ruin rail must have no "
-            "automated exit"
-        )
+        if "LEDGER =" in src:
+            continue
+        # THE INVARIANT IS "NO AUTOMATED EXIT", AND THE LEDGER-REDIRECT TEST WAS ONLY A PROXY FOR
+        # IT. `scripts/record_capital_event.py` is the principal's own CLI -- clearing a ruin stop
+        # by hand is its ENTIRE PURPOSE -- so it legitimately reaches the real ledger and can
+        # never satisfy a drill-shaped check. Demanding the redirect there would have forced
+        # either a fake redirect in the one honest caller or the deletion of the guard.
+        #
+        # So the check moves to what actually matters: a real-ledger caller must be UNREACHABLE
+        # BY ANY SCHEDULER. Not named in ops/, not in a crontab line in the repo, and not
+        # importable as a module by another organ. If someone later wires this into the cycle,
+        # THIS fires -- which the redirect proxy could never do, because scheduling a file does
+        # not change whether it contains "LEDGER =".
+        name = Path(path).stem
+        scheduled = [
+            sh.as_posix() for sh in Path("ops").rglob("*.sh")
+            if f"{name}.py" in sh.read_text("utf-8", errors="ignore")
+        ]
+        assert not scheduled, (
+            f"{path} calls rebase() against the REAL ledger and is invoked by {scheduled} -- "
+            "the ruin rail would have an automated exit (L1.23 / L2.8a immutable core)")
+        importers = [
+            q.as_posix() for q in source_paths
+            if q != path and (f"import {name}" in q.read_text("utf-8", errors="ignore")
+                              or f"from {name}" in q.read_text("utf-8", errors="ignore"))
+        ]
+        assert not importers, (
+            f"{path} calls rebase() against the REAL ledger and is IMPORTED by {importers} -- "
+            "an importable rebase is an automated exit waiting for its first caller")

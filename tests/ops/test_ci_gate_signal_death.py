@@ -109,10 +109,17 @@ class TestSignalDeathIsNotACodeVerdict:
         # Scratch files present is what makes _attribute re-run steps at all.
         monkeypatch.setattr(run_ci, "_inflight_py", lambda: ["tests/scratch_wip.py"])
         run_ci._run_steps()
-        pytest_runs = [c for c in calls if any("pytest" in x for x in c)]
-        assert len(pytest_runs) == 1, (
-            f"the killed pytest step was re-run {len(pytest_runs)}x under the same memory "
-            "pressure that killed it")
+        # COUNTED PER DISTINCT COMMAND, NOT PER TOOL. This asserted `len(pytest_runs) == 1`, which
+        # silently encoded "there is exactly ONE pytest step in _STEPS" -- so adding the 8-second
+        # collection gate ahead of the full suite failed it, on the gate being ADDED rather than on
+        # anything being re-run. The invariant was never about how many pytest steps exist; it is
+        # that a step killed by the OOM killer is not immediately re-run under the same shortage.
+        pytest_runs = [tuple(c) for c in calls if any("pytest" in x for x in c)]
+        repeated = {c for c in pytest_runs if pytest_runs.count(c) > 1}
+        assert not repeated, (
+            f"a memory-killed pytest step was re-run under the same pressure that killed it: "
+            f"{sorted(repeated)}")
+        assert pytest_runs, "guard the guard: no pytest step ran at all, so nothing was proved"
 
     @pytest.mark.parametrize("rc", [1, 2])
     def test_an_ordinary_red_is_untouched(self, monkeypatch, rc, tmp_path):
