@@ -109,22 +109,52 @@ class TestOneVerdictPerRow:
         # stop publishing the number it was thresholding.
         assert {"trend", "ic_early", "ic_recent"} <= emitted
 
-    def test_the_live_series_carries_at_most_one_verdict_going_forward(self) -> None:
+    def test_the_live_artifacts_carry_at_most_one_verdict_going_forward(self) -> None:
+        """Both artifacts the producer writes, with the denominator DECLARED (L1.57).
+
+        THE PAST IS NOT REWRITTEN. Four series rows (2026-08-12/13, kimchi_premium and
+        stablecoin_supply) were written in the window where da53431 had added `decay` and `status`
+        had not yet been retired; they carry both, and they are the record of what the desk
+        actually published on those days. Deleting a field from them to make a fence green would
+        edit the evidence rather than the producer -- the failure this desk has paid for (the
+        moat-tape contamination fix went at the WRITE chokepoint, not at the rows). So the
+        property with teeth is forward-looking: nothing written after the retirement may carry two
+        verdicts.
+
+        WHICH MAKES THE DENOMINATOR THE WHOLE PROBLEM, and the first version of this fence had
+        none. On the day `status` was retired, ZERO rows are dated after the retirement, so the
+        filter returned an empty list and the assertion passed over an empty set -- the vacuous
+        green L1.57 exists to refuse, and refused explicitly forty lines above this one by the
+        sibling guard. A fence that cannot go red yet must SAY SO rather than report success.
+
+        THE REPORT IS SCANNED TOO. `signal_halflife_report.json` is the artifact a human opens,
+        it is rewritten wholesale each run rather than appended, and the original fence did not
+        look at it at all -- so on 2026-08-13 it still published `status: STABLE` beside
+        `decay: DECAYING` for stablecoin_supply, which is R0467's exact defect, live, in the
+        readable copy, while the fence for R0467 was green.
+        """
         import json
-        p = Path(__file__).resolve().parents[2] / "data/signal_halflife.jsonl"
-        if not p.exists():
-            pytest.skip("data/signal_halflife.jsonl is box-local and absent in this clone")
-        rows = [json.loads(ln) for ln in p.read_text("utf-8").splitlines() if ln.strip()]
-        # THE PAST IS NOT REWRITTEN. Four rows (2026-08-12/13, kimchi_premium and
-        # stablecoin_supply) were written in the window where da53431 had added `decay` and
-        # `status` had not yet been retired; they carry both, and they are the record of what the
-        # desk actually published on those days. Deleting a field from them to make a fence green
-        # would edit the evidence rather than the producer -- the failure this desk has paid for
-        # (the moat-tape contamination fix went at the WRITE chokepoint, not at the rows).
-        # The property with teeth is forward-looking: nothing written after the retirement may
-        # carry two verdicts.
-        both = [r for r in rows
-                if "decay" in r and "status" in r and str(r.get("date", "")) > _RETIRED_ON]
+        root = Path(__file__).resolve().parents[2]
+        series = root / "data/signal_halflife.jsonl"
+        report = root / "data/signal_halflife_report.json"
+        if not series.exists() and not report.exists():
+            # data/ is gitignored, so in a clean clone this guard has nothing to examine.
+            pytest.skip("signal_halflife artifacts are box-local and absent in this clone")
+        published: list[tuple[str, dict]] = []
+        if series.exists():
+            published += [("signal_halflife.jsonl", json.loads(ln))
+                          for ln in series.read_text("utf-8").splitlines() if ln.strip()]
+        if report.exists():
+            published += [("signal_halflife_report.json", s)
+                          for s in json.loads(report.read_text("utf-8")).get("signals", [])]
+        scanned = [(src, r) for src, r in published if str(r.get("date", "")) > _RETIRED_ON]
+        if not scanned:
+            pytest.skip(
+                f"UNMEASURED, not clean: 0 of {len(published)} published rows are dated after the "
+                f"{_RETIRED_ON} retirement, so this fence has no denominator yet. It starts biting "
+                f"on the first producer run dated after {_RETIRED_ON}.")
+        both = [(src, r) for src, r in scanned if "decay" in r and "status" in r]
         assert not both, (
-            f"{len(both)} row(s) written after {_RETIRED_ON} publish two verdicts on one "
-            f"question: {[(r.get('date'), r.get('signal')) for r in both[:5]]}")
+            f"{len(both)} of {len(scanned)} row(s) written after {_RETIRED_ON} publish two "
+            f"verdicts on one question: "
+            f"{[(src, r.get('date'), r.get('signal')) for src, r in both[:5]]}")
