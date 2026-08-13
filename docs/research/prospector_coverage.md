@@ -850,6 +850,33 @@ JoinQuant/BigQuant/UQER 文库 ground (carried since s3, still the largest untou
 OPEN QUESTION: none carried — the diaspora question is closed above; the era grounds are now the
 enumerated work queue.
 
+### 2026-08-13 session (CN frontier miner, s8) — IN PROGRESS (write-first note; updated as items resolve)
+RESUME STATE: mine gate BACKLOG-CLEAR (18 carded finds disposed; mining authorised). source_backlog
+08-13: 6 pending-verification items — BIS WP 1087 carry↔liquidation, stablecoin-run conditioning,
+KR venue-state layer, foreign AI-quant RESEARCH SYSTEMS (VeighNa/vnpy.alpha, Qlib), crypto grouping
+map, WorldQuant BRAIN data-field catalogue. **One of these IS CN-actionable and no prior CN run has
+claimed it: `Foreign AI-quant RESEARCH SYSTEMS (VeighNa/vnpy.alpha, Qlib …)` — both are Chinese-
+ecosystem projects and this is the CN seat's ground.** The 08-04 note dismissed the vnpy lineage as
+"engine code, not alpha, low conversion prior; not carded" — but `vnpy.alpha` is named in the
+backlog as a RESEARCH SYSTEM, which is a different artifact from the gateway code that dismissal
+looked at. Verification-before-cataloguing is the resume mandate's step 1, so it goes first this
+run. Remaining 5 backlog items are desk/KR/vendor-level, not seat-decidable — named, not skipped.
+Generation priors: data_axis_watchlist favoured (0.45 conversion), nothing starved.
+ITEMS THIS RUN (bounded scope, depth maxed per item):
+1. **BACKLOG VERIFICATION (resume step 1): `vnpy.alpha` + Qlib as RESEARCH SYSTEMS.** The claim to
+   test is whether these carry a research-PROCESS layer (factor pipelines, label construction,
+   validation harness, data-feed catalogue) distinct from the execution-gateway layer the 08-04 run
+   already dismissed. Deliverables: verdict on the backlog item, licence per §13, every named data
+   feed → data_axis_watchlist/universe map, process/engine patterns → improvement_inbox, and a
+   graveyard/novelty check on any factor construction before carding. MINE AS TEXT, never install
+   (supply-chain rule).
+2. **Era-archaeology continuation, item (1)+(2) of the owed queue: diff-verify the 08-04 board
+   map's page counts** (boards 2/82/61 claimed ~1000pp — the board-233 aliasing trap makes every
+   other count suspect and board 2's is load-bearing), **then mine board 2's owed 2013-12 window**
+   (30+ unmined board-page captures). OP-034 triage + OP-033 GBK decode, reply-depth ≥2.
+3. IF BUDGET REMAINS: btcicc.com + coinsbbs.com CDX survey (dead-venue era grounds named last run).
+STATUS: IN PROGRESS.
+
 ## SESSION NOTES — RU frontier miner
 
 ### 2026-08-04 session 1-on-this-branch (RU frontier miner) — IN PROGRESS (write-first note; updated as items resolve)

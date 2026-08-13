@@ -1313,7 +1313,34 @@ mechanism prior is CONFIRMED and the prize is MEASURED. `[§33: screened -> data
   rules, these are read by hand or not at all — the ruling is not pre-empted by pointing a crawler
   at them first.
 
-### 24. Foreign AI-quant RESEARCH SYSTEMS (VeighNa/vnpy.alpha, Qlib, JP/KR equivalents) — grade: verified + MINED (licences read, operator semantics extracted 2026-08-11) [§33: wired -> docs/research/search_operator_library.md `qlib-alpha158`]
+### 24. Foreign AI-quant RESEARCH SYSTEMS (VeighNa/vnpy.alpha, Qlib, JP/KR equivalents) — grade: verified + MINED (Qlib 2026-08-11; **vnpy.alpha code mined 2026-08-13**) [§33: wired -> docs/research/search_operator_library.md `qlib-alpha158` + `vnpy-alpha-dsl`]
+> **§33 CONVERTED 2026-08-13 (CN frontier miner s8) — the vnpy HALF, which the 08-11 run left
+> unread.** The 08-11 conversion read vn.py's LICENCE but mined only Qlib files (`qlib/data/ops.py`,
+> `contrib/data/loader.py`, `contrib/data/handler.py` — all three Qlib paths). `vnpy/alpha` itself
+> — a 12-file research system with a feature-expression DSL, a factor library, models, a
+> backtester and an artifact store — was never opened. Now read in full → operator library anchor
+> `vnpy-alpha-dsl`. **§13: MIT, read from the canonical LICENSE this run.**
+> **THREE THINGS THAT CHANGE WHAT THIS CARD CLAIMS:**
+> 1. **"Remaining diff" #2 below is REFUTED for vnpy.alpha.** It claims these systems have *"a
+>    rolling walk-forward harness wired to the enumerator"*. vnpy.alpha has **none** — zero hits
+>    for rolling/walk-forward/refit/retrain/expanding/fold across the whole module; it has a
+>    STATIC three-way split and `lab.py` is a persistence layer, not a harness. The desk's gap is
+>    real, but this system is not evidence for it and there is nothing here to port. (The Qlib
+>    half of the claim was not re-tested this run and stands unexamined.)
+> 2. **"Remaining diff" #1 (the feature-expression DSL) now has a 285-line reference
+>    implementation**, and its architecture is the finding: an operator-overloaded proxy class +
+>    `eval()`, no parser, no AST. Copy the proxy pattern; **reject `eval`** — generated or
+>    LLM-authored expressions flowing into `eval()` is arbitrary code execution.
+> 3. **The DERIVES-FROM is recorded so this is never miscounted as convergence:** `alpha_158.py`'s
+>    own docstring says *"158 basic factors from Qlib"*. The factor set is DERIVED; only the
+>    polars ENGINE is independent, so the divergences carry the information (GAP-#85 echo trap).
+> **Corroborations worth their place:** the negative-delay leak rule is now confirmed in a second
+> independently-written framework (family-level, not a qlib quirk); the Slope/Rsquare/Resi trio is
+> independently present (strengthens its ranking as the real transform gap, with a closed-form
+> recipe); and **neither framework ships group operators** — both presuppose a sector map, which
+> corroborates the crypto grouping map as THE blocking input rather than a nicety.
+> **The binding-constraint caveat stands UNCHANGED** — 16,560 trials blocked on transport. This
+> extraction widens nothing until that moves.
 > **§33 CONVERTED 2026-08-11 (brain-hunter seat).** The card's own owed verification axis is
 > CLOSED: **Qlib LICENSE read = MIT (Microsoft); vn.py LICENSE read = MIT (Xiaoyou Chen)** —
 > both from the canonical files this run, not "understood to be" (the row-#79 discipline). And

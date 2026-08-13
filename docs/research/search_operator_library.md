@@ -1819,3 +1819,124 @@ velog case, KR). **CN/JP/KR/RU/BR seats: when a ground reads THIN through a fetc
 operator is the first thing to rule out before writing the null** — the JP seat's R0466 exists
 because a blocked ground and an exhausted one look identical, and a shell-served ground looks
 identical to BOTH.
+
+---
+
+## OPERATOR SEMANTICS — VeighNa `vnpy.alpha` expression engine, exact reads (MIT, 2026-08-13) `vnpy-alpha-dsl`
+
+**PROVENANCE:** `vnpy/vnpy` raw files read IN FULL this run — `vnpy/alpha/dataset/utility.py`
+(285 lines, the whole DSL), `dataset/template.py` (305), `dataset/processor.py`,
+`dataset/ts_function.py`, `dataset/cs_function.py`, `dataset/math_function.py`,
+`datasets/alpha_158.py`, `datasets/alpha_101.py` (100 features), `lab.py`. LICENCE: **MIT, read
+from the canonical LICENSE file this run** (Xiaoyou Chen) — §13 PASS, and read, not "understood
+to be" (the row-#79 discipline).
+**DERIVES-FROM — READ THIS BEFORE COUNTING IT AS CONVERGENCE:** `alpha_158.py`'s own docstring
+says *"158 basic factors from Qlib"*. The FACTOR SET is **derived from Qlib**, so it is NOT an
+independent confirmation node and must never be counted as one (the GAP-#85 echo trap). The
+**ENGINE** is an independent polars reimplementation, and it is the DIVERGENCES below that carry
+information. Sibling anchor to `qlib-alpha158`; closes the vnpy half of data_axis_watchlist
+card 24, which had the LICENCE read but the CODE unread.
+
+**THE ARCHITECTURE — a 285-line reference implementation of the desk's named gap #1.**
+A feature-expression DSL with **no parser and no AST**: `DataProxy` wraps a 3-column polars frame
+(`datetime`, `vt_symbol`, `data`) and overloads every dunder (`+ - * / // % ** abs neg > >= < <=
+== !=`); `calculate_by_expression` builds a dict mapping every data column → `DataProxy` and every
+operator → function, then calls `eval(expression, {}, d)`. Open operator set via
+`register_functions([...])` keyed on `func.__name__`.
+**COPY THE PATTERN, REJECT THE MECHANISM.** `eval()` on an expression string is arbitrary code
+execution. The desk's `combination_engine` enumerates expressions and any LLM-generated expression
+would land in the same call — so an operator-overloaded proxy is the right design, and the
+evaluator must be an `ast.parse` walk with a whitelisted node set (Name/Call/BinOp/UnaryOp/Constant,
+names resolved only from the registry), never `eval`.
+
+**THE DIVERGENCES FROM QLIB — each a mechanical rule for reading a mined vnpy-dialect expression:**
+1. **`ts_delay(x, n)` is polars `shift(n)`; NEGATIVE n = FUTURE.** Same leak rule as qlib's
+   negative `Ref`, now confirmed in a SECOND, independently-written framework — so it is a
+   **family-level property of the whole expression-DSL class**, not a qlib quirk. Kill any mined
+   feature containing a negative delay on sight; no screen owed.
+2. **The label is NOT qlib's label, despite the "from Qlib" docstring.** Verbatim (both datasets):
+   `ts_delay(close, -3) / ts_delay(close, -1) - 1` — decide at t, enter t+1, book t+3: **two bars
+   held** with one bar of execution slack. Qlib's is `-2/-1` (one bar held). Mining the two as the
+   same target silently doubles the horizon.
+3. **`min_samples` is INCONSISTENT WITHIN THE LIBRARY** — qlib's is uniformly 1, this one is three
+   different conventions: `min_samples=1` (ts_min, ts_max, ts_mean, ts_std, ts_corr) emit from bar
+   1 on partial windows; polars default `=window` (ts_sum, ts_argmax, ts_argmin, ts_rank,
+   ts_quantile, ts_decay_linear, ts_product) null until full; explicit `=window` (ts_slope,
+   ts_rsquare, ts_resi). **CONSEQUENCE:** a composite like `ts_std(close,60)/ts_mean(close,60)`
+   returns non-null numbers computed on TWO observations in the early window, while a sibling term
+   in the same expression is still null. The early sample is silently garbage rather than absent —
+   **WS-005's shape (absence resolving to a clean value) at the FEATURE layer**, and no null-filter
+   downstream can catch it.
+4. **`cs_rank` is NOT Alpha101 `rank`.** It is bare polars `rank()` → **1..N, un-normalised**, with
+   no divide-by-count. Demonstrable from their own code, which is why this is a fact and not a
+   reading: `process_cs_rank_norm` writes `rank("average") / count` when it wants [0,1], and their
+   Alpha101 `alpha1` centres with `cs_rank(...) - 0.5`, an idiom that presupposes [0,1].
+   **165 `cs_rank` call sites across their 100-feature Alpha101 port inherit the mismatch**, and it
+   is worse in crypto than in equities: a raw rank's scale moves with the number of listed symbols,
+   so in a time-varying universe the feature is not comparable across dates. RULE: read any mined
+   vnpy-dialect `cs_rank` as a raw rank and re-normalise before use.
+5. **`ts_rank(x,N)` = `percentileofscore(window, window[-1])/100`** → [0,1] TS percentile (qlib's
+   TS-rank sense, NOT cross-sectional). `ts_argmax/argmin` return `arg_max()+1` → 1-indexed, and
+   Alpha158 divides by w → (0,1]. Off-by-one conventions are exactly what silently rewrites a
+   mined factor's meaning.
+6. **`ts_less`/`ts_greater` are elementwise MIN/MAX, not comparisons** (same trap as qlib's
+   `Greater/Less`). The real comparisons (`>`, `<`) return **Int32 0/1 series**, which is a
+   deliberate masking idiom: `ts_mean(close > ts_delay(close,1), w)` is the up-bar fraction.
+7. **Regression trio `ts_slope`/`ts_rsquare`/`ts_resi` present INDEPENDENTLY of qlib** and
+   implemented **closed-form** — rolling sums with `(window-1-j)*shift(j)` building `sum_xy`
+   against a linear time index, so no per-window fit. Its independent presence in a second
+   framework corroborates card 24's ranking of the trio as the desk's real transform gap, and this
+   is a directly usable implementation recipe.
+8. **`quesval(threshold, x, a, b)` / `quesval2`** — ternary, `a if threshold < x else b`. The
+   conditional family. **Argument order is threshold-FIRST** and the comparison is a strict `<`;
+   easy to mis-port silently.
+9. **`cs_scale`** = `x / Σ|x|` per date (Alpha101 `scale`) — the gross-exposure normaliser for
+   cross-sectional weights.
+10. **NO group operators — and that is the informative absence.** vnpy.alpha ships zero
+    `group_rank`/`group_zscore`, exactly like the desk. Two mature frameworks independently lack
+    them because both presuppose a sector map. This corroborates that the **crypto grouping map is
+    THE blocking input** (data_axis_watchlist backlog), not an optional nicety.
+
+**THE PROCESSOR LEAK SURFACE — the half a summary never mentions.**
+- **The fit window is OPTIONAL and defaults to None.** `process_ts_norm` and
+  `process_robust_zscore_norm` take `fit_start_time`/`fit_end_time`; when omitted they compute
+  mean/std over the **ENTIRE panel including valid and test**. Full-sample z-score is look-ahead,
+  and here it is the DEFAULT.
+- **`process_replace_inf` has no fit window at all** and replaces infinities with a per-symbol mean
+  computed over ALL time — an **unconditional** full-sample leak, worse than the two above because
+  it offers no control to omit.
+- **SAFE BY CONSTRUCTION:** `process_cs_norm`, `process_cs_rank_norm`, `process_cs_fill_na` — all
+  `.over("datetime")`, within-timestamp only, so they use no future information.
+- **THE GENERAL RULE, worth more than the instances:** *a transform that aggregates ACROSS TIME
+  needs a fit window; a transform that aggregates WITHIN a timestamp is causally safe by
+  construction.* Useful as a triage rule when reading ANY mined feature pipeline: you can classify
+  a transform's leak risk from its aggregation axis alone, before reading its fit logic.
+- **AND THE DESK IS AHEAD HERE — checked this run, not assumed.** A draft of this note claimed the
+  desk's causal guard is blind to full-sample normalisation, citing R0289. **That claim is STALE
+  and was removed before it was published.** R0289 is `implemented`, and
+  `libs/features/validation.py:_perturbable` now perturbs **every** numeric/bool/datetime column
+  (with an explicit `untestable` bucket — absence stays absence). Because `run_leakage_test`
+  mutates FUTURE bars and asserts PAST values are invariant, a full-sample mean/std recomputed over
+  a perturbed panel moves, so **the desk's guard would catch exactly the default that vnpy.alpha
+  ships**. The finding is therefore a foreign framework confirming a class the desk has already
+  closed — not a live blind spot. Recorded because the near-miss is the lesson: a recalled defect
+  is a claim about the past, and R0289's row said `implemented` one grep away.
+- **HONEST SCOPE, do not overstate:** Alpha158 and Alpha101 add NO processors in their
+  constructors, so the shipped datasets do not trip any of this. It is a latent footgun the user
+  opts into, not a shipped leak.
+
+**CORRECTION TO data_axis_watchlist CARD 24 (load-bearing).** The card's "remaining diff" #2 says
+these systems have *"a rolling walk-forward harness wired to the enumerator"* the desk lacks.
+**vnpy.alpha has no such harness** — zero hits for rolling / walk-forward / refit / retrain /
+expanding / fold across the entire module. It has a **static three-way split** (`Segment.TRAIN/
+VALID/TEST`, fixed date tuples), and `lab.py` is a **persistence layer** (save/load bars, datasets,
+models, signals), not a harness. The desk's gap is real; this system is not evidence for it, and
+porting from here would be porting a thing that is not there.
+
+**THE ONE PROCESS PATTERN WORTH TAKING — point-in-time universe membership.**
+`lab.load_component_filters` reconstructs, per symbol, the **contiguous intervals** during which it
+was an index constituent, correctly emitting **multiple (start, end) spells** for a symbol that was
+added, dropped and re-added; `prepare_data(filters=...)` then slices the panel by them. That is a
+survivorship-bias control at the universe layer, and it is the correct shape of the fix for the
+desk's own recorded defect that **`exchangeInfo` is a look-ahead in the UNIVERSE** (free-data
+miner, 2026-08-12) — same defect class, solved.
