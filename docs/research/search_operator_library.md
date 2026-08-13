@@ -889,6 +889,14 @@ only observed terms enter as active keys; unobserved seeds stay marked SEED)._
 | 億り人 | "100-millionaire" (made ≥¥100M) | 2017→live | OBSERVED in derived form only (億ウォレ pun, 2024 calendar title). Seed WEAK-VERIFIED |
 | ガチホ | hard hold (gachi-hold) | 2017→live | SEED — NOT observed this run; do not build queries on it yet |
 | 爆益 / 退場 | explosive profit / blown-out exit | 2017→live | OBSERVED (Ros) — 退場 finds ruin post-mortems |
+| 鞘 (さや) | the arb spread itself; 鞘取り = arbitrage | all | OBSERVED (shidokamo, DEX-CEX post: 「DEX-CEXの鞘が10%」). THE JP word for a spread — 乖離 is the *state*, 鞘 is the *harvestable gap*. Query: 鞘取り bot finds arb writeups that 裁定取引 misses |
+| アビトラ | arbitrage (katakana clip of arbitrage) | 2017→live | OBSERVED (shidokamo title 「DEX-CEXアビトラの思ひ出」). Retail/botter register; the formal 裁定取引 finds academic/broker content instead. HIGH-VALUE KEY |
+| 見せ板 | spoofing (lit. "show board") | all | OBSERVED (blog_UKI, BitMEX spoofing post). The folk term; スプーフィング is the loan-word used in titles. Query 見せ板 finds manipulation-mechanics discussion |
+| お蔵入り | shelved / never shipped (of a strategy) | all | OBSERVED (blog_UKI: 「この戦略はお蔵入りしたのでした」). **A NEGATIVE-RESULT KEY** — finds abandoned strategies with stated reasons, i.e. free graveyard material |
+| 反面教師 | cautionary counter-example ("teacher by negative example") | all | OBSERVED (perp-screener: 「反面教師になればうれしい」). Authors flag their own failures with it — pairs with お蔵入り as the JP failure-post search pair |
+| チャッピー | ChatGPT (JP affectionate nickname) | 2023→live | OBSERVED (perp-screener: 「チャッピーの解説によると」). **NOT a trading term — an LLM-CONTAMINATION MARKER (OP-072).** Grep it to demote a page from independent node to echo |
+| 限月 | contract expiry month (futures/options) | all | OBSERVED (perp-screener). 期近 = near expiry, 期先 = far expiry — the JP calendar-spread vocabulary |
+| 爆損 | catastrophic loss (mirror of 爆益) | 2018→live | OBSERVED (マケデコ title 「機械学習モデルが爆損したときにやること」). Ruin-post key |
 ### OP-034 Quantopian forum archaeology — the extraction recipe                [active]
 class: extraction
 origin: EN frontier miner session D (2026-07-28), first two threads mined to exhaustion
@@ -2039,3 +2047,96 @@ appear; page depth then walks *backwards* from it.
 `<author> 发表于 <date>` header, so a naive post count **double-counts** a reply chain — dedupe on
 the quote header before claiming a thread depth. GBK throughout.
 
+### OP-072 THE POST-2023 PRACTITIONER CORPUS IS LLM-CONTAMINATED, AND THE CONVERGENCE MODULE CANNOT SEE IT   [active]
+class: provenance / anti-echo
+origin: JP frontier miner s4 (2026-08-13), `perp-screener.com/posts/btc-bot` (2025-12-04)
+validated-gain: one carded mechanism demoted from "independent practitioner node" to "LLM echo"
+BEFORE it could be counted as convergence; a detectable, datable contamination boundary (~2023)
+established for every seat's corpus.
+
+**THE PROBLEM, AND IT IS THE PROVENANCE MANDATE'S OWN FAILURE MODE ARRIVING BY A NEW ROUTE.** The
+desk elevates a mechanism when researchers in unrelated ecosystems reach it independently, and the
+provenance mandate already names the trap: three regions describing one effect are usually three
+readings of one English paper (GAP #85). **Since ~2023 there is a second and much larger shared
+upstream: the frontier LLMs.** A JP botter, a KR botter and a BR botter who each ask ChatGPT to
+explain their spread's greeks will produce three writeups that agree — **because they queried the
+same weights**, not because the market taught them the same thing. Their agreement is a fact about
+the model, and `libs/research/convergence.py` cannot distinguish it from a fact about the world.
+This is strictly worse than the paper-echo case: an arXiv echo leaves a citation, an LLM echo
+leaves **nothing** unless the author volunteers it.
+
+**THE TELL IS TEXTUAL, CHEAP AND HIGH-PRECISION.** Practitioners disclose it casually, in the body,
+in their own language. Grep every mined page for:
+| region | markers |
+|---|---|
+| JP | チャッピー (ChatGPT's JP nickname), ChatGPTに聞く／聞いた, GPTに, AIに聞いて, 生成AI, ～によると（AI） |
+| EN | "I asked ChatGPT/Claude", "per GPT", "ChatGPT says", "according to the AI", "o3/4o told me" |
+| CN | 问了ChatGPT, 用GPT分析, 让AI解释, 大模型说, 豆包／文心 |
+| KR | 지피티／챗지피티에게 물어보니, AI에게 물어봤다 |
+| RU | спросил у ChatGPT, GPT говорит |
+| BR/PT | perguntei ao ChatGPT, segundo o GPT |
+
+**THE RULE — three parts, and the third is the one that keeps this from becoming an excuse to skip
+sources.**
+1. **A `DERIVES-FROM` field is INCOMPLETE unless it records LLM consultation.** Write
+   `DERIVES-FROM: <cites> + LLM (ChatGPT, self-disclosed)`. A page with no disclosure and no
+   citations is `DERIVES-FROM: NONE (checked)` **only for pre-2023 material**; post-2023 the honest
+   value is **`UNVERIFIABLE`**, because absence of disclosure is not evidence of absence (L1.28a —
+   absence must never resolve to a clean verdict, and "independent" is the clean verdict here).
+2. **SEPARATE THE OBSERVATION LAYER FROM THE EXPLANATION LAYER, then grade them differently.** What
+   the practitioner *did, ran, held and lost* is a first-class observation and LLM contamination
+   does not touch it. What the page *concludes about why* may be model output. In the proving
+   instance the kill stands at full strength (his realised P&L and his own greeks snapshot) while
+   the surrounding mechanism prose is demoted — **the same page yields evidence at one layer and an
+   echo at the other**, so this is never a reason to discard a source.
+3. **A CONVERGENCE CLAIM ACROSS TWO POST-2023 PAGES MUST NAME THE OBSERVATION THEY SHARE, not the
+   conclusion.** If both nodes' agreement lives only in the explanation, it is one node.
+
+**WHY THIS IS A SCOPE EXPANSION AND NOT A FILTER (the mine-everything rule is untouched).** Nothing
+here rejects a page, ranks a source lower, or excuses a skipped read. It changes exactly one number:
+how much a *second* agreeing source raises confidence. Under-counting real convergence costs a queue
+place; over-counting it promotes a mechanism above its evidence, and that reaches capital.
+
+**COROLLARY FOR THE ERA MANDATE, and it makes dead ground MORE valuable rather than less.** Every
+archive with a hard end-date before ~2023 — 8btc, btcsec, Ppomppu's legal era, Mt.Gox-era 2ch, the
+Quantopian corpus — is **structurally uncontaminated**. Era-archaeology now buys a provenance
+guarantee that no living-web source can offer, which is a new and independent reason to keep
+digging it.
+
+### OP-073 WHEN A REGION'S BIG HOSTS CLOSE, THE SAME COMMUNITY'S SELF-HOSTED TAIL IS STILL WIDE OPEN   [active]
+class: access / §13 posture
+origin: JP frontier miner s4 (2026-08-13), UA-matrix probe over 10 hosts
+validated-gain: recovered a mineable JP ground the day after 62% of the mapped corpus was ruled
+CLOSED — 8/9 self-hosted blogs serve 200 to `ClaudeBot`, and the run's two best finds came from them.
+
+**MEASURED (2026-08-13, honest UA `ClaudeBot`, content path per OP-052):**
+| layer | hosts | robots.txt | content path |
+|---|---|---|---|
+| big platforms | note.com | **403** (robots itself) | **403** |
+| big platforms | zenn.dev | **200, and it ALLOWS `*`** | **403** `{"message":"Please contact the site owner for access."}` |
+| big platforms | qiita.com | 200 | **200** (122 kB article body) |
+| self-hosted tail | gitan.dev, perp-screener.com, blog.shidokamo.com, pasokon.blog | **404 — no robots.txt at all** | **200** |
+| self-hosted tail | rarirure.rip, mirumi.me, yard.tips, coin-news.xyz | 200, clean | **200** |
+
+**THE MECHANISM, WHICH IS WHY THIS GENERALISES.** A curated AI-crawler denylist is a **product
+decision made by a platform's legal/infra function**. An individual practitioner running WordPress
+on their own domain has no such function, no incentive, and usually **no robots.txt at all**. So the
+closure of a region's community layer is a property of the *hosting concentration*, never of the
+region — and the writers did not leave, only their landlord changed the lock.
+
+**THE OPERATIONAL RULE:** when a big host closes, **do not re-scope the region — re-scope the HOST
+COLUMN.** Any corpus map with a `host` field converts to a work queue in one pass. The JP calendar
+map (`data/jp_botter_advent_calendar.jsonl`, 187 rows) went from "62% closed, ground thinning" to
+"20 entries across 12 open self-hosted domains, never touched by any seat in four sessions" with a
+single group-by. **Build the host column into every corpus map for exactly this reason** — a map
+without one cannot be re-aimed when access changes, and access now changes on a timescale of days.
+
+**AND THE PRIZE IS BETTER, NOT JUST AVAILABLE.** The self-hosted tail is written by people who
+maintain their own domain to write about one thing for years. It is the deep-forest layer by
+construction: no recommendation algorithm, no engagement incentive, no SEO, frequently no comment
+section — and in this run it held a **year-over-year venue microstructure survey by the same author**
+(`gitan.dev`, 2023 and 2024 editions, a free longitudinal diff) that no platform-hosted post matched.
+
+**§13 UNCHANGED AND EXPLICITLY SO:** this widens WHERE you look and never HOW you get in. `note.com`
+and `zenn.dev` remain HARD STOP including their archives; the only fetches made against them this
+run were `robots.txt` and zero-body status probes to re-verify the block.
