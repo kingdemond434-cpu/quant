@@ -8,7 +8,9 @@ A rule that lives only in the prompt is advisory, and a persuasive model reworde
 from __future__ import annotations
 
 import json
+from unittest import mock
 
+from libs.research import cro_role
 from libs.research.cro_role import (
     DELIVERABLES,
     EVIDENCE_CLASSES,
@@ -276,6 +278,91 @@ def test_detail_is_shed_before_any_artifact_is(tmp_path) -> None:
     assert len(inv) == 1500
     assert all(r.get("path") and r.get("kb") is not None for r in inv)
     assert not all(r.get("keys") for r in inv), "nothing was shed despite being over budget"
+
+
+class TestBulkRollup:
+    """R0468: the inventory ran to 102,252 rows / 10.5 MB against a 60,000-char budget -- 176x
+    over -- because `_fit_budget` never shed a row and deferred to a downstream prompt cap that
+    was never written. 78.9% of those rows were daily partitions of a handful of feeds.
+    """
+
+    def _partitioned(self, tmp_path, n: int):
+        d = tmp_path / "data" / "lake" / "bronze"
+        d.mkdir(parents=True)
+        for i in range(n):
+            (d / f"part-{i:05d}.zip").write_bytes(b"x" * 100)
+        return d
+
+    def test_a_partitioned_feed_becomes_one_row_carrying_its_count(self, tmp_path) -> None:
+        self._partitioned(tmp_path, 60)
+        inv = assemble_dossier(tmp_path)["inventory"]
+        rollups = [r for r in inv if r.get("rollup")]
+        assert len(rollups) == 1
+        assert rollups[0]["path"] == "data/lake/bronze/**"
+        assert rollups[0]["n_files"] == 60
+        # BOTH bounds: a dead feed shows as a large oldest_age_days rather than hiding behind a
+        # recent neighbour. A rollup carrying only the newest age would conceal the staleness
+        # this inventory exists to surface.
+        assert "oldest_age_days" in rollups[0] and "age_days" in rollups[0]
+
+    def test_a_small_directory_is_still_enumerated_file_by_file(self, tmp_path) -> None:
+        # The rollup folds PARTITIONED FEEDS, not ordinary nested artifacts; a handful of files
+        # is still individually visible, which is what blind-spot discovery actually needs.
+        self._partitioned(tmp_path, 5)
+        inv = assemble_dossier(tmp_path)["inventory"]
+        assert not [r for r in inv if r.get("rollup")]
+        assert len([r for r in inv if r["path"].endswith(".zip")]) == 5
+
+    def test_the_rollup_never_shrinks_the_coverage_denominator(self, tmp_path) -> None:
+        # Compressing the PRESENTATION must not let the desk report better coverage by showing
+        # fewer rows -- the denominator trick (L1.57/L1.60).
+        self._partitioned(tmp_path, 60)
+        cov = assemble_dossier(tmp_path)["coverage"]
+        assert cov["artifacts_found"] == 60
+        assert cov["rolled_up"] == 60
+        assert cov["inventoried"] == 1
+
+    def test_coverage_reconciles_exactly_with_all_three_buckets_live(self, tmp_path) -> None:
+        # rolled_up + individual rows + omitted FILES == artifacts_found, with no slack. The
+        # first cut of this rewrite was 18,738 files short because the truncation marker counted
+        # ROWS while artifacts_found counted FILES, and an omitted rollup row takes its whole
+        # feed with it. Budget forced down so all three buckets are non-zero -- reconciling only
+        # the easy case is what let the mixed-unit bug through.
+        self._partitioned(tmp_path, 60)
+        for i in range(300):
+            (tmp_path / "data" / f"solo{i}.json").write_text('{"a":1}', "utf-8")
+        with mock.patch.object(cro_role, "_INVENTORY_CHAR_BUDGET", 3_000):
+            d = assemble_dossier(tmp_path)
+        inv, cov = d["inventory"], d["coverage"]
+        individual = [r for r in inv if not r.get("rollup") and not r.get("truncated")]
+        accounted = (sum(int(r["n_files"]) for r in inv if r.get("rollup"))
+                     + len(individual) + int(cov["truncated"]))
+        assert cov["truncated"] > 0 and individual, "forcing the cap did not exercise both paths"
+        assert accounted == cov["artifacts_found"] == 360
+
+    def test_the_payload_actually_fits_its_declared_budget(self, tmp_path) -> None:
+        # The invariant that failed: a cap enforced somewhere else is a cap enforced nowhere.
+        # The old code returned every row here on the strength of a prompt cap that did not
+        # exist, so this asserts the fit is enforced WHERE IT IS DECLARED.
+        self._partitioned(tmp_path, 400)
+        for i in range(600):
+            (tmp_path / "data" / f"solo{i}.json").write_text('{"a":1}', "utf-8")
+        with mock.patch.object(cro_role, "_INVENTORY_CHAR_BUDGET", 5_000):
+            inv = assemble_dossier(tmp_path)["inventory"]
+        chars = len(json.dumps(inv, default=str))
+        assert chars <= 5_000 * 1.10, f"{chars} chars over a 5,000 budget"
+
+    def test_truncation_when_it_bites_is_counted_in_files_and_published(self, tmp_path) -> None:
+        # Silent truncation reads as coverage. Force the cap down so the backstop fires.
+        self._partitioned(tmp_path, 60)
+        for i in range(400):
+            (tmp_path / "data" / f"solo{i}.json").write_text('{"a":1}', "utf-8")
+        with mock.patch.object(cro_role, "_INVENTORY_CHAR_BUDGET", 2_000):
+            d = assemble_dossier(tmp_path)
+        marker = [r for r in d["inventory"] if r.get("truncated")]
+        assert len(marker) == 1, "an omitted tail must announce itself"
+        assert marker[0]["truncated"] == d["coverage"]["truncated"] > 0
+        assert marker[0]["truncated"] >= marker[0]["truncated_rows"]
 
 
 # ------------------------------------------------------- the CRO audits itself, on evidence

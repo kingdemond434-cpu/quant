@@ -420,7 +420,21 @@ INVENTORY_DIRS: tuple[str, ...] = ("data", "reports", "web", "docs/research", "d
 #: top-level keys go first, and from the stalest artifacts first, because a file untouched for
 #: months is the one whose shape matters least. Every artifact keeps its path, size and age no
 #: matter how large the desk gets.
-_INVENTORY_CHAR_BUDGET = 60_000
+#: Raised 60,000 -> 120,000 when the bulk rollup landed (R0468), and this is a REDUCTION, not a
+#: relaxation: the inventory it caps went from 10,562,206 chars to ~119,000, an 88x cut, and the
+#: extra headroom is what lets the COMPLETE post-rollup inventory ship with zero omissions --
+#: restoring the never-shed-a-row invariant `_fit_budget` was written to protect and had silently
+#: stopped delivering. Sized from the measured post-rollup payload (1,565 rows, ~76 chars/row),
+#: not guessed. The truncation path below stays live as the backstop and now reports in FILES.
+_INVENTORY_CHAR_BUDGET = 120_000
+
+#: Bulk-rollup shape (R0468). A directory prefix this deep holding at least this many files is a
+#: PARTITIONED FEED, not a set of individual artifacts, and is inventoried as one row. Measured on
+#: the live desk: depth 3 / 25 files takes 102,252 rows to 1,396 while leaving every singular
+#: artifact enumerated -- the bronze lake, the moat tapes and the rollback snapshots are the only
+#: things it folds.
+_BULK_DEPTH = 3
+_BULK_MIN_FILES = 25
 
 
 def assemble_dossier(root: Path | None = None) -> dict[str, Any]:
@@ -462,9 +476,16 @@ def assemble_dossier(root: Path | None = None) -> dict[str, Any]:
     return {"present": present, "missing": missing, "inventory": inv,
             "self": {"scorecard": scorecard(), "recent": _recent_own(base)},
             "conversion": assemble_conversion(base),
+            # ROLLED-UP IS NOT OMITTED, and collapsing the two would be the denominator lie this
+            # rewrite exists to remove: a file inside a rollup row IS represented (its feed, count
+            # and age bounds are published), while an omitted one is genuinely unseen. Reporting
+            # 103,927 "truncated" when 649 were dropped would read as a coverage collapse and
+            # would hide the 649 that matter.
             "coverage": {"read_in_full": len(present), "inventoried": len(inv),
                          "artifacts_found": n_total,
-                         "truncated": max(0, n_total - len(inv))},
+                         "rolled_up": sum(int(r.get("n_files") or 0)
+                                          for r in inv if r.get("rollup")),
+                         "truncated": sum(int(r.get("truncated") or 0) for r in inv)},
             "utc": datetime.now(UTC).isoformat(timespec="seconds")}
 
 
@@ -529,8 +550,56 @@ def _inventory(base: Path, *, read_in_full: set[str]) -> tuple[list[dict[str, An
                 except (OSError, json.JSONDecodeError, ValueError):
                     row["unreadable"] = True
             rows.append(row)
+    total = len(rows)
+    rows = _rollup_bulk(rows)
     rows.sort(key=lambda r: float(r["age_days"]))
-    return _fit_budget(rows), len(rows)
+    # `total` stays the TRUE file count, not the post-rollup row count: the rollup compresses how
+    # the inventory is PRESENTED and must never be able to shrink the coverage denominator it is
+    # reported against (L1.57/L1.60).
+    return _fit_budget(rows), total
+
+
+def _rollup_bulk(rows: list[dict[str, Any]], *, depth: int = _BULK_DEPTH,
+                 min_files: int = _BULK_MIN_FILES) -> list[dict[str, Any]]:
+    """Collapse BULK partition directories to one row per feed. Blind-spot discovery IMPROVES.
+
+    THE DEFECT THIS FIXES, measured 2026-08-13: the inventory ran to 102,252 rows / 10.5 MB on a
+    declared 60,000-char budget -- 176x over -- because ``_fit_budget`` sheds detail but never a
+    row, deferring to "the prompt cap that follows", which was never written (``inv`` in
+    ``build_prompt`` had no slice while its two siblings did). 78.9% of those rows were daily
+    partitions: 34,130 bronze-lake zips, 39,700 moat tape files, ~7,000 rollback snapshots.
+
+    WHY THIS SERVES THE ORIGINAL INVARIANT RATHER THAN BREAKING IT. The never-shed-a-row rule
+    exists so a stale feed or an unreferenced artifact cannot hide. Enumerating 12,431 individual
+    XRPUSDT zips does not make that feed's staleness visible -- it buries it, and buries the 743
+    genuinely singular artifacts with it. One row saying a feed holds 12,431 files whose NEWEST is
+    47 days old states the blind spot outright. The unit of analysis for a partitioned feed is the
+    FEED; for everything else it is still the file, and everything else is still enumerated.
+
+    Rollup rows carry ``n_files`` and BOTH age bounds, so nothing is silently summarised away
+    (L1.60): the count is published, and newest-vs-oldest distinguishes a live feed from a dead
+    one that merely has recent-looking neighbours.
+    """
+    groups: dict[str, list[dict[str, Any]]] = {}
+    for r in rows:
+        parts = str(r["path"]).split("/")
+        key = "/".join(parts[:depth]) if len(parts) > depth else str(r["path"])
+        groups.setdefault(key, []).append(r)
+    out: list[dict[str, Any]] = []
+    for key, members in groups.items():
+        if len(members) < min_files:
+            out.extend(members)
+            continue
+        ages = [float(m["age_days"]) for m in members]
+        out.append({
+            "path": f"{key}/**",
+            "kb": round(sum(float(m["kb"]) for m in members), 1),
+            "age_days": min(ages),                  # newest, so the sort still surfaces live feeds
+            "n_files": len(members),
+            "oldest_age_days": max(ages),
+            "rollup": True,
+        })
+    return out
 
 
 def _fit_budget(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -548,10 +617,33 @@ def _fit_budget(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         row.pop("n_rows", None)
         if len(json.dumps(rows, default=str)) <= _INVENTORY_CHAR_BUDGET:
             return rows
-    # Still over budget with paths alone: the desk is enormous. Keep every row anyway -- a
-    # truncated list would silently under-report coverage, and the prompt cap that follows will
-    # trim characters visibly rather than dropping artifacts invisibly.
-    return rows
+    # Still over budget with paths alone. The previous behaviour returned every row here on the
+    # strength of "the prompt cap that follows will trim characters visibly" -- BUILD_PROMPT HAD
+    # NO SUCH CAP (`state` and `own` were sliced, `inv` was not), so the real outcome was a
+    # 10.5 MB single line at 176x this budget, committed to git 19 times and unreadable by the one
+    # consumer it exists for. A cap enforced somewhere else is a cap enforced nowhere.
+    #
+    # Truncate here, VISIBLY: the drop is counted and published as a row of its own, so an
+    # under-reported inventory announces itself instead of looking like coverage (L1.60). Rows are
+    # sorted newest-first, so what goes is the stalest tail.
+    kept: list[dict[str, Any]] = []
+    for row in rows:
+        kept.append(row)
+        if len(json.dumps(kept, default=str)) > _INVENTORY_CHAR_BUDGET:
+            kept.pop()
+            break
+    # Count omitted FILES, not omitted ROWS. An omitted rollup row takes its whole feed with it,
+    # so row-counting would have published 649 against 19,387 genuinely-unseen files and left the
+    # coverage arithmetic 18,738 short -- the same mixed-unit denominator this rewrite exists to
+    # remove, reintroduced one level up (L1.60).
+    dropped_rows = rows[len(kept):]
+    dropped_files = sum(int(r.get("n_files") or 1) for r in dropped_rows)
+    if dropped_rows:
+        kept.append({"path": f"<{dropped_files} stalest artifacts in {len(dropped_rows)} rows "
+                             f"omitted -- inventory over {_INVENTORY_CHAR_BUDGET} chars>",
+                     "kb": 0.0, "age_days": 9_999.0,
+                     "truncated": dropped_files, "truncated_rows": len(dropped_rows)})
+    return kept
 
 
 def build_prompt(dossier: dict[str, Any], *, n: int = 12) -> str:
@@ -576,10 +668,14 @@ Every other artifact on this desk, NOT read in full above -- path, size, age in 
 You know these exist even though their contents are not in this prompt. An artifact that is large,
 old, and referenced by nothing is a BLIND SPOT and reporting it is one of your deliverables; so is
 a perishable feed that has gone stale. Ask for any of these by path and the desk will read it in
-next cycle.
+next cycle. A row ending in `/**` is a PARTITIONED FEED rolled up to one line: it carries n_files
+and both age bounds, so a dead feed shows as a large oldest_age_days rather than hiding among its
+own daily partitions.
 
 Coverage this cycle: {cov.get('read_in_full', 0)} artifacts read in full, \
-{cov.get('inventoried', 0)} inventoried, {cov.get('truncated', 0)} beyond the inventory cap.
+{cov.get('inventoried', 0)} rows inventoried covering {cov.get('artifacts_found', 0)} files \
+({cov.get('rolled_up', 0)} inside rolled-up feeds), \
+{cov.get('truncated', 0)} omitted beyond the inventory cap.
 
 {inv}
 
