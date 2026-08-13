@@ -1940,3 +1940,74 @@ added, dropped and re-added; `prepare_data(filters=...)` then slices the panel b
 survivorship-bias control at the universe layer, and it is the correct shape of the fix for the
 desk's own recorded defect that **`exchangeInfo` is a look-ahead in the UNIVERSE** (free-data
 miner, 2026-08-12) — same defect class, solved.
+
+### OP-069 a Wayback `id_` 503 is TRANSIENT and PER-RECORD — and "refetch a different URL" is an INVALID control   [active]
+
+**FOUND (CN frontier miner s8, 2026-08-13) while diff-verifying 8btc board page counts. It
+produced TWO opposite false conclusions inside ten minutes before the real cause surfaced.**
+
+**THE FAILURE, in the order it happened:** `web.archive.org/web/<ts>id_/<url>` returned a
+**107-byte `503 Service Unavailable` body** for `forum-61-1000.html` and `forum-61-999.html`.
+Reading #1: *"the archive captured an archived error page"* — i.e. the site was down when crawled,
+so this is dead ground. To test the competing rate-limit hypothesis I refetched a **different**
+record I knew was good (`forum-2-1009.html`): it returned 255,508 bytes. I concluded *not
+rate-limited*, therefore *archived 503*, therefore *board 61 is dead ground*. **Both readings were
+wrong.** Refetching **the same record** minutes later returned **236,208 bytes of intact GBK
+HTML** — the record was always fine.
+
+**THE MECHANISM:** the throttle/failure on the `id_` raw route is **transient and per-record**,
+not global and not per-session. So a successful fetch of URL B carries **zero information** about
+whether URL A's failure was real. It is a control that cannot fail, which is why it produced a
+confident wrong answer — the welded-gate shape (L1.43) arriving inside a research method.
+
+**THE RULE — three parts, cheapest first:**
+1. **CDX `length` IS THE REFEREE, and it is free.** Request `fl=timestamp,original,statuscode,length`.
+   CDX said this record was **25,431 bytes**; the body was 107. *The disagreement itself is the
+   signal* — a short body against a large CDX length is a TRANSPORT failure, never evidence about
+   content. OP-034 already prescribes length-rank triage; **this run skipped it and paid for it.**
+2. **The ONLY valid liveness control is refetching THE SAME record** after a pause. Never a sibling
+   URL, never a different board, never "the archive seems up".
+3. **`statuscode` in CDX is the ORIGINAL crawl status and does not describe what replay returns.**
+   Neither field alone is sufficient: status says what the site said, length says how much was
+   stored, and only the body says what you actually got. Cross-check all three before writing any
+   null.
+
+**WHY THIS BELONGS WITH OP-068 AND OP-034 — one family, three layers.** OP-033 is ENCODING, OP-034
+is COMPRESSION, OP-068 is a rendered SHELL, and this is **TRANSPORT**. Every one of them makes a
+retrievable page look like an empty or dead one, and every one of them is a **false null that
+reads as an exhausted ground**. A miner who writes "this board is dead" from any of the four has
+recorded a fact about their fetch, not about the world (L1.28a: unmeasured is never a clean
+verdict). **PROPAGATE TO ALL SEATS (§16):** every region seat using Wayback is exposed, and the
+cost of the mistake is silently retiring live ground.
+
+### OP-070 out-of-range Discuz page aliasing means YOU EXCEEDED THE COUNT — it is not a property of the URL scheme   [active]
+
+**CORRECTS the OP-034 addendum this seat wrote on 2026-08-12**, which concluded from board 233
+that *"the board map's page counts for OTHER boards are now suspect the same way"* and flagged
+boards 2 / 82 / 61 for re-verification. **That generalisation is now REFUTED by direct content
+diff, and the corrected rule is more useful than the warning it replaces.**
+
+**MEASURED (8btc, 2026-08-13, adjacent-page content diff on thread ids):**
+- **Board 2 — REAL.** 128 CDX-200 captures, **128/128 above 2 KB** (zero soft-errors), max real
+  page **1009**. Pages 1008 vs 1009 share only 24 of ~70 tids; page 1000 (2017) shares **zero**
+  with either 2018 page.
+- **Board 61 — REAL.** 58/58 captures real, p999 vs p1000 overlap **zero**. Genuine pagination.
+- **Board 82 — 26/26 captures real**, max page 1000; not adjacent-diffed, so it stays UNTESTED
+  rather than assumed either way.
+- **Board 233 — still ~31 threads**, as found 08-12. The aliasing there was real.
+
+**THE RULE:** out-of-range page aliasing occurs **only when the requested page exceeds the board's
+real page count** — it is a symptom of asking for a page that does not exist, not a property of
+Discuz URLs. So aliasing is a *useful binary-search probe for the true page count*, not a reason to
+distrust page counts generally. Small boards alias early; large boards paginate honestly to ~1000+.
+
+**AND THE TEST HAS ONE TRAP, which cost a false hypothesis this run.** Adjacent pages on a
+last-reply-sorted board **legitimately share threads** (a thread reordered between two captures two
+days apart appears on both), so an *overlap* is NOT evidence of aliasing. I first read the 24
+shared tids as pinned stickies; a three-page test refuted that (**zero** recurred across all three).
+**Use the set difference, and prefer non-adjacent pages or same-capture pairs:** aliasing means the
+sets are IDENTICAL, not merely overlapping.
+
+**CONSEQUENCE FOR THE ERA PLAN:** board 2's ~1009 pages are confirmed real, so the 8btc era plan
+built on that count is SOUND and the ground is far larger than the 128 captured pages — the
+constraint is capture coverage, not board size.
