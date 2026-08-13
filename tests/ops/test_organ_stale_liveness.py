@@ -20,6 +20,7 @@ HUNG run, which is the failure this check exists to catch.
 
 from __future__ import annotations
 
+import collections
 import time
 
 import pytest
@@ -97,3 +98,31 @@ def test_liveness_is_unprovable_means_report_not_excuse(monkeypatch):
     """An organ with no known pgrep pattern must not be silently forgiven (L1.28a)."""
     monkeypatch.setattr(max_audit, "_ORGAN_PGREP", {})
     assert max_audit._organ_running("no-such-organ") is False
+
+
+def test_a_shared_artifact_is_evidence_for_NOBODY(monkeypatch):
+    """R0418. The brain fix above was applied by hand, to one organ, once.
+
+    Eight organs still declared `docs/research/prospector_coverage.md` (prospector-dig plus
+    frontier-en/cn/ru/kr/jp/ar/br), so any ONE frontier seat writing it made the other seven read
+    as having produced -- the identical false GREEN the brain fix removed, multiplied by eight.
+    Exclusivity is now computed FROM the table rather than curated, so a future organ declaring a
+    shared artifact cannot silently re-open it.
+    """
+    monkeypatch.setattr(max_audit, "ORGAN_ARTIFACTS", {
+        "seat-a": ("docs/shared.md", "docs/only_a.md"),
+        "seat-b": ("docs/shared.md",),
+    })
+    assert max_audit._exclusive_artifacts("seat-a") == ("docs/only_a.md",)
+    # seat-b is left with NOTHING -- and that is the honest answer, not a bug: it falls back to
+    # log size, weaker but true, exactly as brain-cycle does.
+    assert max_audit._exclusive_artifacts("seat-b") == ()
+
+
+def test_no_organ_in_the_real_table_rests_on_a_shared_artifact():
+    """The live table, not a fixture -- this is the assertion that would have caught the drift."""
+    shared = {a for a, n in collections.Counter(
+        a for arts in max_audit.ORGAN_ARTIFACTS.values() for a in arts).items() if n > 1}
+    for organ in max_audit.ORGAN_ARTIFACTS:
+        assert not set(max_audit._exclusive_artifacts(organ)) & shared, (
+            f"{organ} would be credited with production by an artifact another organ writes")

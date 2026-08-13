@@ -178,31 +178,62 @@ def audit(root: Path | None = None, *, now: float | None = None) -> dict[str, An
                 n_no_evidence += 1
             continue                       # no declared evidence: check_build_standard's problem
         tol = max(MIN_TOLERANCE_H, r["cadence_h"] * STALE_MULTIPLE)
-        ages = []
+        per_artifact: dict[str, float | None] = {}
         for a in r["artifacts"]:
             p = root / a
-            ages.append((now - p.stat().st_mtime) / 3600.0 if p.exists() else None)
-        fresh = [x for x in ages if x is not None]
+            per_artifact[a] = (now - p.stat().st_mtime) / 3600.0 if p.exists() else None
+        # ABSENT SIBLINGS ARE NAMED, NOT AVERAGED AWAY (R0418, L1.28a/L1.60). `min()` over the
+        # SURVIVING artifacts was the whole verdict, so one live file hid every absent sibling in
+        # the same EVIDENCE block and the row read FRESH. The fence already calls a wholly-absent
+        # artifact NEVER-PRODUCED and pages on it; the identical artifact, absent alongside a live
+        # one, was invisible. Same fact, opposite verdict, decided by a neighbour.
+        missing = [a for a, v in per_artifact.items() if v is None]
+        fresh = [x for x in per_artifact.values() if x is not None]
         if not fresh:
             state, age = "NEVER-PRODUCED", None
         else:
             age = min(fresh)
             state = "FRESH" if age <= tol else "STALE"
+            if missing and state == "FRESH":
+                # PARTIAL, not FRESH and not STALE: this organ IS producing something, so it is
+                # not dead -- but a declared output of its has never once appeared, which is a
+                # WIRING diagnosis (the NEVER-PRODUCED one) about that artifact, not a cadence
+                # slip about the organ.
+                state = "PARTIAL"
+        # THE OPTIMISM IS PUBLISHED RATHER THAN REMOVED. `min()` is deliberately KEPT: on the 9
+        # multi-artifact organs the second output is a CONDITIONAL append-only log
+        # (run_organ_er.py:244 appends only on a treatment attempt, run_conviction_trader.py:1442
+        # only on a fill), so `max()` measured 2 live FRESH->STALE flips on 2026-08-13 that are
+        # both healthy quiet, not death. A board that is red most mornings is one nobody reads.
+        # So the spread is reported instead: age_h stays the freshest, age_h_stalest names the
+        # laggard, and a reader can see the gap that the scalar used to swallow.
         organs.append({"script": r["script"], "cron": r["cron"],
                        "cadence_h": round(r["cadence_h"], 2), "tolerance_h": round(tol, 2),
                        "artifacts": r["artifacts"],
-                       "age_h": None if age is None else round(age, 2), "state": state})
+                       "missing_artifacts": missing,
+                       "age_h": None if age is None else round(age, 2),
+                       "age_h_stalest": round(max(fresh), 2) if fresh else None,
+                       "artifact_age_h": {a: (None if v is None else round(v, 2))
+                                          for a, v in per_artifact.items()},
+                       "state": state})
     dead = [o for o in organs if o["state"] == "NEVER-PRODUCED"]
     stale = [o for o in organs if o["state"] == "STALE"]
+    partial = [o for o in organs if o["state"] == "PARTIAL"]
     status = ("UNMEASURED" if not organs else
-              "DARK" if dead or stale else "OK")
+              "DARK" if dead or stale or partial else "OK")
     return {
         "generated": datetime.now(tz=UTC).isoformat(),
         "law": "L1.28a/L1.28c -- a scheduled line that produces nothing is not a running organ. "
                "Installed, running, and PRODUCING are three different facts and only the third "
                "is worth anything.",
         "status": status,
-        "n_checked": len(organs), "n_fresh": len(organs) - len(dead) - len(stale),
+        # PARTIAL IS SUBTRACTED FROM THE NUMERATOR TOO. It was not, and the first run of the R0418
+        # test caught it: an organ could be reported PARTIAL, drive the status to DARK, and still
+        # be counted in n_fresh -- the skip laundered into a pass one field over (L1.60).
+        "n_checked": len(organs),
+        "n_fresh": len(organs) - len(dead) - len(stale) - len(partial),
+        "n_partial": len(partial),
+        "partial": [{"script": o["script"], "missing": o["missing_artifacts"]} for o in partial],
         # THE DENOMINATOR'S ATTRITION (L1.60). n_checked alone reads as full coverage of the
         # scheduled desk; it is not, and the gap was invisible because the skip was silent.
         "n_scheduled_seen": len(rows),

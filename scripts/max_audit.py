@@ -22,6 +22,7 @@ Rules of the sweep:
 """
 from __future__ import annotations
 
+import collections
 import contextlib
 import importlib.util
 import json
@@ -421,10 +422,29 @@ ORGAN_ARTIFACTS: dict[str, tuple[str, ...]] = {
 }
 
 
+def _exclusive_artifacts(organ: str) -> tuple[str, ...]:
+    """Declared artifacts only THIS organ writes.
+
+    R0418. The brain-cycle note above states the principle -- "a liveness signal a dozen other
+    writers can emit is not evidence THIS organ ran" -- and it was applied by hand, to one organ,
+    once. Eight organs still shared `docs/research/prospector_coverage.md` (measured 2026-08-13:
+    prospector-dig + frontier-en/cn/ru/kr/jp/ar/br), so any ONE frontier seat writing it made the
+    other seven read as having produced. That is the same false GREEN the brain fix removed,
+    multiplied by eight and left in place because exclusivity was a comment rather than a rule.
+
+    Computed from the table instead of curated, so a future organ that declares a shared artifact
+    cannot silently re-open the hole -- the drift this docstring's own sibling suffered for weeks.
+    An organ left with no exclusive artifact falls back to log size: weaker, but honest (L1.28a).
+    """
+    shared = {a for a, n in collections.Counter(
+        a for arts in ORGAN_ARTIFACTS.values() for a in arts).items() if n > 1}
+    return tuple(a for a in ORGAN_ARTIFACTS.get(organ, ()) if a not in shared)
+
+
 def _artifact_age_h(organ: str) -> float:
-    """Hours since this organ's freshest declared artifact advanced (inf if none)."""
+    """Hours since this organ's freshest EXCLUSIVE declared artifact advanced (inf if none)."""
     best = 0.0
-    for rel in ORGAN_ARTIFACTS.get(organ, ()):
+    for rel in _exclusive_artifacts(organ):
         try:
             best = max(best, (ROOT / rel).stat().st_mtime)
         except OSError:
