@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import json
 import subprocess
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -202,11 +202,61 @@ def tune_budget(blanked: int, total: int) -> int:
     return new
 
 
+#: Timestamped blanks kept beside the lifetime tally. Bounded so the ledger cannot grow without
+#: limit; 400 covers months of panel runs at this desk's cadence and the window queries only ever
+#: look back days.
+_BLANK_EVENT_CAP = 400
+
+
 def record_blank(model: str) -> None:
-    """Per-seat blank tally -- turns a flaky seat into an evidence-backed swap decision."""
+    """Per-seat blank tally -- turns a flaky seat into an evidence-backed swap decision.
+
+    THE TALLY ALONE COULD NOT SUPPORT THAT DECISION, WHICH IS WHY THE EVENTS EXIST.
+    `seat_blanks` is a LIFETIME counter that nothing anywhere resets or decays, so a seat that
+    blanked three times months ago and has answered every call since is permanently
+    indistinguishable from one that is dying right now. The fence keyed on it (`seat-chronic-*`)
+    therefore fires on every run forever once a seat crosses the threshold -- a gate that cannot
+    clear carries zero information, and its recommendation is to SWAP a seat that may be
+    perfectly healthy. Measured 2026-08-13: nemotron-3-super-120b had a lifetime 4 and the live
+    canary reported it alive and answering, 4/4 seats up.
+
+    The tally is KEPT and keeps incrementing -- `check_free_roster` and `model_upgrade` read it,
+    and it is honest as history. What is added is the timestamp, so a reader can ask "is this
+    seat failing NOW" instead of only "has it ever failed".
+    """
     m = refresh(load())
     m.setdefault("seat_blanks", {})[model] = int(m.get("seat_blanks", {}).get(model, 0)) + 1
+    events = m.setdefault("seat_blank_events", [])
+    events.append({"model": model, "ts": datetime.now(tz=UTC).isoformat()})
+    m["seat_blank_events"] = events[-_BLANK_EVENT_CAP:]
     save(m)
+
+
+def recent_blanks(m: dict[str, object], *, window_days: int) -> dict[str, int] | None:
+    """Blanks per seat inside `window_days`, or ``None`` when recency cannot be measured.
+
+    ``None`` IS THE LOAD-BEARING RETURN AND MUST NOT COLLAPSE INTO AN EMPTY DICT. Until the
+    event log has been written to, a seat with a lifetime tally has NO recency evidence at all,
+    and `{}` would read as "zero recent blanks -- the seat is fine", quietly clearing a fence on
+    a box where nothing has been measured. That is absence resolving to a clean verdict, this
+    desk's most-repeated defect class. A caller that gets ``None`` must say UNMEASURED.
+    """
+    events = m.get("seat_blank_events")
+    if not isinstance(events, list) or not events:
+        return None
+    cutoff = datetime.now(tz=UTC) - timedelta(days=window_days)
+    out: dict[str, int] = {}
+    for e in events:
+        if not isinstance(e, dict):
+            continue  # attrition-ok: a malformed row carries no timestamp to place in a window
+        try:
+            when = datetime.fromisoformat(str(e.get("ts", "")))
+        except ValueError:
+            continue  # attrition-ok: same -- an unparseable stamp is not evidence of recency
+        if when >= cutoff:
+            model = str(e.get("model", "?"))
+            out[model] = out.get(model, 0) + 1
+    return out
 
 
 def audit_payload() -> tuple[str, list[str]]:

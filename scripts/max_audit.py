@@ -905,11 +905,55 @@ def check_coverage(defects) -> None:
         defects.append(("coverage-budget-floor",
                         "adaptive review payload pinned at its 40k floor -- seats are blanking "
                         "repeatedly; coverage is crawling"))
-    for seat, n in (m.get("seat_blanks") or {}).items():
-        if int(n) >= 3:
-            defects.append((f"seat-chronic-{seat.split('/')[-1]}",
-                            f"panel seat {seat} blanked {n}x -- chronic capacity failure, "
-                            "swap-candidate with evidence"))
+    _check_chronic_seats(defects, m)
+
+
+#: A blank inside this window is evidence about the seat NOW. Wide enough that a genuinely dying
+#: seat cannot hide between panel runs, short enough that a seat which has since recovered clears.
+SEAT_BLANK_WINDOW_DAYS = 7
+
+
+def _check_chronic_seats(defects, m: dict) -> None:
+    """A SEAT IS SWAPPED ON WHAT IT IS DOING NOW, NOT ON WHAT IT HAS EVER DONE.
+
+    This fence read `seat_blanks`, a LIFETIME counter that nothing anywhere resets or decays. So
+    once a seat crossed 3 it fired on every run forever, whatever the seat was currently doing --
+    a gate that cannot clear carries zero information, and this one's recommendation is to SWAP,
+    which costs a live seat. Measured 2026-08-13: nemotron-3-super-120b-a12b sat at a lifetime 4
+    while the free-roster canary reported it ALIVE and answering with all 4 seats up, and the
+    session banner reported panel depth already under-driven at 403/406 seats. Acting on the
+    fence would have removed a working seat to fix a failure that had stopped happening.
+
+    THE COUNTER IS ALSO DENOMINATOR-FREE, and that half is not repaired here: "blanked 4x" out of
+    four calls is a dead seat, out of four hundred it is a 1% flake rate on a free tier, and
+    nothing records the attempts. Recency is the half that is measurable from what the panel
+    already writes; the rate needs a success counter at the call site and is rowed separately.
+
+    UNMEASURED RECENCY IS REPORTED, NEVER TREATED AS QUIET. Until the event log has entries, a
+    seat with a lifetime tally has no recency evidence, and silently clearing the fence there
+    would be absence resolving to a clean verdict on the exact history that raised it.
+    """
+    from scripts.build_audit_coverage import recent_blanks
+
+    lifetime = {k: int(v) for k, v in (m.get("seat_blanks") or {}).items()}
+    recent = recent_blanks(m, window_days=SEAT_BLANK_WINDOW_DAYS)
+    for seat, n in lifetime.items():
+        if n < 3:
+            continue
+        tag = f"seat-chronic-{seat.split('/')[-1]}"
+        if recent is None:
+            defects.append((
+                f"{tag}-unmeasured",
+                f"panel seat {seat} carries a LIFETIME blank tally of {n} and no timestamped "
+                f"blank events exist yet, so whether it is failing NOW is UNMEASURED. Do not "
+                f"swap on this: the tally never resets, so it says only that the seat failed at "
+                f"some point in its history. Recency becomes measurable on the next blank."))
+        elif recent.get(seat, 0) >= 3:
+            defects.append((
+                tag,
+                f"panel seat {seat} blanked {recent[seat]}x in the last "
+                f"{SEAT_BLANK_WINDOW_DAYS}d (lifetime {n}) -- chronic capacity failure that is "
+                f"still happening, swap-candidate with evidence"))
 
 
 def check_findings(defects) -> None:
