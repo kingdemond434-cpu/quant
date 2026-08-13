@@ -6,6 +6,23 @@ the newest overall, and the owner of the current RANK list — sits below the pr
 paragraph. That line's rows 81-87 are recorded here as 96-102; see the renumber notes at the
 foot of the register._
 
+_Re-ranked 2026-08-13T02:05Z (daily cycle, repair-mode)._ **#1 stays PRINCIPAL REARM + A/B/C**
+(human-gated; `web/cashcarry_live.json` read fresh: `n_carries 0`, `mode live-paper`, bleed verdict
+the diagnosed re-base accounting echo; `web/growth_audit.json` `conservatism_defects: []`, every
+gap RAIL- or HUMAN-justified). **Rank unchanged below #1; what moved this cycle moved by being
+CLOSED:** the §37 brief's dominant RECURRING class -- seven `rec-owed-R00xx` items -- had one
+mechanism, and it is now fenced. `scripts/recommendations.py dispose()` moved a scheduled row's
+due date IN PLACE with no history and no counter, so a row re-snoozed the day before it came due
+left the `owed` population with no work done and no trace, defeating the file's own stated
+anti-gaming guarantee. Measured over `--first-parent` ledger history: **39 of 152 ever-scheduled
+rows (26%) had their due date moved and 38 are still scheduled**. Closed by `libs/ops/deferral.py`
+(6c64b608): every move recorded with its reason, unreasoned re-schedule refused, chronically
+deferred rows can no longer leave `owed` by moving the date. Adds ZERO rows on the day it lands
+(owed 40 / backlog 226 bit-identical before and after), so it cannot be red-from-day-one and
+switched off. NEW this cycle: R0548 (max_audit's live-defect set is not stable within a cycle --
+14 at 00:30 vs 17 on re-run, the delta being exactly the three §37 SKIPPED items, so
+absent-from-audit was reading as fixed) and R0549 (`paywall-unhunted` VERIFIED live, llama.fi).
+
 _Re-ranked 2026-08-11T20:58Z (daily cycle, repair-mode)._ **#1 stays PRINCIPAL REARM + A/B/C**
 (human-gated; `web/cashcarry_live.json` read fresh this cycle: `n_carries 0`, `mode live-paper`,
 bleed verdict = the diagnosed re-base accounting echo, venue-ledger truth published). **Rank

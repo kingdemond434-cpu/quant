@@ -6867,11 +6867,11 @@
    "summary": "MAX_AUDIT'S LIVE-DEFECT SET IS NOT STABLE WITHIN A CYCLE, so a §37 brief built from one snapshot lists items a later reader cannot find. Measured 2026-08-13: the 00:30 run reported 14 live defects with ZERO occurrences of 'paywall' anywhere (live or acked); re-running the identical CHECKS list at 01:5x gives 17 live including paywall-unhunted, which check_paywalls_registered emits deterministically from libs.data.paywall.vendors_encountered (llama.fi, free_replacement_status=UNHUNTED). The three-defect delta is exactly the three items the §37 brief listed as SKIPPED-surviving-6-sweeps (paywall-unhunted, promotion-no-routes-registered, blocked-routes-idle). Cause is input mutation by collectors between runs, not a swallowed branch -- _fenced() isolates every check. CONSEQUENCE: absence from a max_audit snapshot is being read as fixed when it means not-yet-observed (L1.49). Publish the input mtimes the run observed alongside the defect list so two snapshots are comparable.",
    "roi_bps": 3.0,
    "raised": "2026-08-13T00:49:11.586534+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "diagnosis is complete and recorded (input mutation between runs, not a swallowed branch -- _fenced isolates each check); the build is a small change to max_audit's report writer to stamp observed input mtimes, deferred to keep this cycle's single structural change independent per the interaction-safety gate",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-15",
+   "disposed": "2026-08-13T00:49:32.927373+00:00"
   },
   {
    "id": "R0549",
@@ -6879,6 +6879,30 @@
    "summary": "§42 PAYWALL-UNHUNTED (VERIFIED LIVE 2026-08-13, survived 6 §37 sweeps with no dated ack): llama.fi is registered in docs/research/paid_dataset_targets.md but carries free_replacement_status=UNHUNTED in the encounter ledger. DefiLlama's emissions endpoint returned HTTP 402. Listed is not hunted -- §42's deliverable is the REPLACEMENT, not the row. Free-first protocol owed: primary-source reconstruction (facts are not copyrightable) from the open DefiLlama endpoints plus on-chain unlock schedules, verified against ground truth before any pipeline trusts it.",
    "roi_bps": 5.0,
    "raised": "2026-08-13T00:49:20.225932+00:00",
+   "status": "scheduled",
+   "reason": "free-replacement hunt needs live web research (open DefiLlama endpoints + on-chain unlock reconstruction + verify-vs-ground-truth), which does not fit this cycle's remaining budget after the L1.60 build. Scheduled at 3d rather than acked so it stays visible; under the fence landed this cycle (6c64b608) any move of this date is now RECORDED with its reason and a second move puts the row permanently back in owed.",
+   "commit": null,
+   "due": "2026-08-16",
+   "disposed": "2026-08-13T00:49:30.621151+00:00"
+  },
+  {
+   "id": "R0550",
+   "source": "cycle",
+   "summary": "L1.55 INPUT-PROVENANCE COVERAGE, split out of R0399 whose stamp-key half closed in 131695d9. data/input_provenance.json reads PARTIAL at coverage 0.25: 6 of 8 decision-path-consumed artifacts publish no provenance block (data/cost_hunt.json, data/cost_model.json, data/lending_risk_base_rates.json, data/stage_state.json, web/trade_forensics.json, web/venue_equity.json). THIS IS NOT MECHANICAL WIRING AND THAT IS WHY IT IS ITS OWN ROW. TWO DISTINCT BLOCKERS, measured 2026-08-13. (1) THREE ARE MONEY-PATH AND THE WINDOW IS SHUT: stage_state.json and venue_equity.json come off run_cashcarry_executor.py / run_live_combined.py and trade_forensics.json off the executor's forensics path; check_change_window reports STERILE (RAIL_BREACH, CASHCARRY_KILL present, book unwinding), and declaring provenance is an IMPROVEMENT not a repair, so L1.38 stages it. LIFTING CONDITION: change window OPEN -- re-check with scripts/check_change_window.py, no other dependency. (2) THE OTHER THREE ARE NETWORK-FED AND Inputs CANNOT CURRENTLY EXPRESS THEM: run_cost_hunt.py:82 and collect_lending_risk_base_rates.py:166 read HTTP responses, not files, and libs.ops.input_provenance.Inputs models a {path,status,age_h,max_age_h} record over a filesystem path. A URL has no mtime and no stamp, so its five states (READ/STALE/ABSENT/UNREADABLE/DEFAULTED) do not map without a decision about what STALE means for a fetch -- which is exactly the kind of thing that must be DECIDED rather than improvised per producer, or the desk gets three incompatible encodings of one concept, the L1.61 defect. Do the fetch-provenance design FIRST, then wire all three. Coverage is a RATCHET (L1.0) whose gap is the work queue; the fence exits 0 on PARTIAL by design, so nothing is red -- the cost of leaving this is that six decision artifacts remain unable to say whether their numbers were measured or defaulted.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-13T00:50:27.980104+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0551",
+   "source": "cycle",
+   "summary": "EVERY DECISION-PATH .get(key, default) IS AN UNRECORDED ASSUMPTION -- split out of R0399, part (b), whose part (a) closed in 131695d9. THE SHAPE OF THE DEFECT, and R0399's first run found the examples all pointing the SAME WAY: entries_allowed=True, frac=1.0, denylist=[], size_fraction=0.10-as-measured. A missing key resolves to the LOOSENING side, silently, and the artifact then publishes the default as though it were a reading. PROVEN AT FULL COST THIS CYCLE, which is why this is worth a row rather than a note: run_alerts.py:297 read the live guard's age from lg.get('generated', '1970-01-01T00:00:00+00:00') against a file that has never carried a 'generated' key, so the default was taken on 100% of runs and live_guard_dead paged 'stale 29776345min' (56 years) three minutes after the guard wrote the file. The key was sitting in _paged. That default did not loosen a threshold -- it WELDED a money-path pager ON, which destroys the signal just as completely, and no fence could see it because the read succeeded, the artifact was fresh, and the code looked defensive. THE ASK: sweep decision-path .get(k, default) sites and require each to declare a DEGRADE DIRECTION the way libs.ops.fresh.read_fresh already requires mode= -- i.e. the caller states whether absence should fail open or closed, and a default whose direction is unstated is the defect. Note the sweep must judge DIRECTION not presence: a stale denylist STILL DENIES (L1.44) and plenty of defaults are correct, so a fence that merely counts .get calls would be the welded gate it is hunting. START FROM data/freshness_contracts.jsonl, which already self-builds the decision-path consumer edge list from actual reads -- a sixth hand-maintained list is the thing L1.44 exists to avoid.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-13T00:50:46.178723+00:00",
    "status": "open",
    "reason": null,
    "commit": null,
