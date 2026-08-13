@@ -1114,6 +1114,20 @@
    ],
    "yield": "Reusable SHAPE, not the JP axis: test 'venue sells via API what its website gives away free' against every venue the desk pays or would pay for.",
    "added": "2026-08-12 free_data_alternatives_miner"
+  },
+  "102-venue-fee-schedule-volume-credibility": {
+   "source": "102-venue-fee-schedule-volume-credibility",
+   "url": "https://gitan.dev/?p=325 (2023-12-05) + https://gitan.dev/?p=365 (2024-12-03) | Binance fee schedule: https://www.binance.com/en/fee/schedule | Binance zero-fee/promotional campaigns: https://www.binance.com/en/support/announcement",
+   "provides": "A CONDITIONING VARIABLE FOR EVERY VOLUME-BASED FEATURE, not a price series. The mechanism, stated by a JP HFT practitioner surveying 12 venues two years running: where the taker fee is ZERO or the maker fee is NEGATIVE, wash trading is costless or profitable, so REPORTED VOLUME IS NOT A MEASUREMENT of economic activity. He gives dated evidence rather than suspicion: BtcBox volume was 'unnaturally constant regardless of price movement' until a REGIME BREAK at ~2024-05-01 after which it reads natural (~1 BTC/day); BitTrade volume 'disquieting since 2023-01, the same smell', with his own explanation -- 'fees are 0% so volume can be inflated without limit'. His diagnostic is itself the transferable artifact: NORMAL VENUES SHOW VOLUME RISING WITH VOLATILITY; a venue whose volume is flat across a large price move is reporting something other than trading.",
+   "desk_relevance": "DIRECT, and it is NOT about Japan. Binance runs ZERO-FEE PROMOTIONAL CAMPAIGNS on selected pairs (the BTC/TUSD and FDUSD families are the well-known cases) and tiered maker rebates at high VIP levels. Any cross-sectional feature built on volume, turnover, volume-share or a volume-normalised quantity across the desk's ~812-symbol perp panel is comparing promo-fee and normal-fee names as if the denominators were the same measurement. The fix is a per-symbol, POINT-IN-TIME fee-regime flag used as a conditioning variable or an exclusion -- not a new alpha, an integrity input to the ones that exist.",
+   "cost": "FREE (venue fee schedules + announcement archives are public; the JP survey is a public blog post)",
+   "status": "catalogued-unverified 2026-08-13 (JP frontier miner s4) -- NOT ingested, NOT screened",
+   "grade": "needs-verification",
+   "value": "MEDIUM-HIGH (data-integrity / conditioning; gates existing volume features rather than adding one)",
+   "ev_gate": "venue_fee_volume_credibility: EV 0.0058 p_survive 0.24 -> QUEUE (top-EV -> research); novelty 0.816, nearest graveyard prior sim 0.184. The ONLY one of this session's four scored candidates to clear the gate.",
+   "decisive_test": "Point-in-time fee regime per symbol from Binance's announcement archive, then (a) test whether volume/volatility elasticity differs between promo-fee and normal-fee names, which is the practitioner's own diagnostic, and (b) re-run any live volume-based feature with promo-fee names excluded and compare. THE LOOK-AHEAD TRAP IS NAMED IN ADVANCE: today's fee schedule applied to history is a look-ahead in the CONDITIONING variable -- the same defect class as pct_circ_now (R0289) and the RFB vintage stack, and it fails toward a FALSE NULL, the direction no gate here catches.",
+   "provenance": "SOURCE: gitan.dev (seekseek77), 'ビットコインbotterにとっての各マーケットの特徴', 2023 and 2024 editions. DERIVES-FROM: NONE (checked) -- the posts cite no paper, no repo and no other writeup; they are first-hand venue observation by an operator who trades them. Pre-2023 for the first edition and no LLM disclosure in either (OP-072 checked).",
+   "residual_gap": "The practitioner's evidence is JP venues; the Binance analogue is ASSERTED here, not measured. The first task is to establish that a promo-fee cohort exists on the desk's own panel with a recoverable point-in-time history -- if the announcement archive does not support point-in-time reconstruction, this axis is UNMEASURABLE rather than dead, and must be recorded that way."
   }
  },
  "residual_gaps_unpurchasable": [
