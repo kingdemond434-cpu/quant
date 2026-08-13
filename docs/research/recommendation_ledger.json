@@ -7551,6 +7551,42 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0598",
+   "source": "cycle",
+   "summary": "RED TEST AT HEAD, AND IT IS THE SECOND ROT OF THE SAME HAND-MAINTAINED MIRROR IN 24 HOURS. tests/scripts/test_build_standard_contract.py::test_every_governed_organ_meets_the_shared_build_contract fails: set(check_build_standard._GOVERNED) has SIX entries the test's hardcoded GOVERNED literal lacks -- run_cadence.py (5e9db644), check_claim_consistency.py (54bf5a2b), check_citation_integrity.py, check_panel_breadth.py (757c2d79), collect_lending_risk_base_rates.py, run_fee_attribution.py (b3264133) -- all added 2026-08-12/13 by sibling sessions landing L1.61, L1.62, R0425 and R0371. NOT INTRODUCED BY THIS SEAT (no commit here touches check_build_standard.py or its test) and reported rather than silently absorbed. THE FILE PREDICTED ITS OWN FAILURE: its header records 'ROTTED AND RESYNCED 2026-08-12 ... this mirror had drifted to 42 entries against a _GOVERNED of 75 ... IF IT ROTS AGAIN, DERIVE IT INSTEAD OF RE-TYPING IT'. It rotted again the next day, so re-typing the six names is the fix that is already known not to hold. THE TRAP IN THE OBVIOUS DERIVATION, which is why this needs a decision rather than a patch: deriving GOVERNED from _GOVERNED makes the assertion set(_GOVERNED)==set(_GOVERNED), vacuously true, and DESTROYS the contract -- the exact L1.57 vacuous-pass shape, inside the fence built to detect it. The contract's real content is check_build_standard's own requirement that EACH GOVERNED ORGAN IS NAMED BY A TEST, so the honest derivation is over the TEST CORPUS (assert every _GOVERNED entry is named somewhere under tests/), which cannot go vacuous because its two sides have independent sources. PRIORITY: a red test at HEAD is a gate every future push must either fix or bypass, and a fence that is red on arrival gets switched off (L1.43); this one guards the build standard itself.",
+   "roi_bps": null,
+   "raised": "2026-08-13T08:52:25.343456+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0599",
+   "source": "cycle",
+   "summary": "Any desk statarb work must use statsmodels.tsa.stattools.coint(), never adfuller() on OLS residuals: measured 17.97% vs 7.60% rejection on n=120 (BR miner s3, OP-077). STATISTICAL-ARBITRAGE is THIN n=1 of 14 for INSTRUMENT reasons -- the 1.54-independent-bets breadth kill applies to DIRECTIONAL cross-sectional mechanisms and a cointegration pair is beta-neutral by construction (lands on the 29 side).",
+   "roi_bps": null,
+   "raised": "2026-08-13T09:02:41.722384+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0600",
+   "source": "cycle",
+   "summary": "Build a point-in-time universe from git history of hardcoded ticker lists in public repos: answers the recorded 'exchangeInfo is a look-ahead in the UNIVERSE' gap. Measured 8.7% true USDT survivorship erasure over 2023-03 -> today, and separates RENAMES (MATIC->POL, RNDR->RENDER, TOMO->VIC -- continuing series) from DELISTINGS, which the desk currently has no artifact to distinguish. Cost: a directory of old repos and a diff. (universe map source 103)",
+   "roi_bps": null,
+   "raised": "2026-08-13T09:02:47.010621+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
