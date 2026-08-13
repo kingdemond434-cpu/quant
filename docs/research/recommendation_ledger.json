@@ -5319,11 +5319,11 @@
    "summary": "Validation-layer welded-gate audit (capability hunt s2, NOT built -- separable work): screen_admission.py:296 uses g in gates, so an ABSENT structural gate cannot appear in blocked_list and cannot block; break_even_win_rate is declared structural at :70 and is written by NOTHING in the repo -- a structural gate that has never once evaluated; and measure_admission_power.py:143 uses all(gates.get(g, True)), so the harness that produced the \"structural gates pass 73-100pct of true alphas\" evidence reproduces the bug it would have caught. Until re-measured, every claim that the screen is calibrated is unsupported. Needs the per-gate accept/reject histogram the gate-optimality duty demands and admit() does not have.",
    "roi_bps": null,
    "raised": "2026-08-05T22:02:21.877204+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "ef4e0661",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T04:08:10.348557+00:00"
   },
   {
    "id": "R0420",
@@ -5415,11 +5415,11 @@
    "summary": "MAX_AUDIT FENCE WIRING IS A TRAP THAT HAS NOW REFUSED PUSHES TWICE IN FOUR COMMITS. A max_audit fence is a FUNCTION inside scripts/max_audit.py, so it is wired by adding the function NAME to _FENCE_OWNERS in build_enforcement_matrix.py. Adding the SCRIPT PATH to _MAP looks equivalent and reads equivalent in review, but does nothing -- there is no script path for a function. Miss it and build_enforcement_matrix exits 1 with 'fences with no governing principle', which is one of the 10 law fences in the L1.37 pre-push hook, so EVERY push on the branch is refused for everyone sharing it. Instances: c8983b1 (check_paywalls_registered) and cc28734 (check_blocked_routes_hunted + check_verified_alternatives_promoted), three commits apart, different authors. The per-instance fix is to map the fence; the GENERALISATION is that the author should not have to remember which registry: make build_enforcement_matrix's failure message NAME the registry and the exact line to add (it currently prints only the unmapped fence names), and/or have check_build_standard require a law mapping in the same commit that adds a max_audit check_* function -- L1.41 already requires LAW-MAPPED as a build condition, it just cannot see max_audit's internal functions.",
    "roi_bps": 3.0,
    "raised": "2026-08-05T23:00:03.754345+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "9f6206a9",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T04:08:24.757480+00:00"
   },
   {
    "id": "R0428",
@@ -5451,11 +5451,11 @@
    "summary": "SHADOW-BEFORE-SWAP: the PAIRED half of R0265 is still unbuilt, and it is blocked on a missing field rather than on design. R0265 delivered dead-slot reclamation (libs/research/slot_displacement.py: a clock that cannot resolve is reclaimable, an accruing one is PROTECTED). The other half -- displacing a HEALTHY incumbent on a paired comparison scored on the SAME next window of delayed labels -- is deliberately not built, because it needs something that does not exist: the incumbent's PRE-REGISTERED DECISION POINT as a readable field. Without it a challenger would be scored against a horizon nobody wrote down, which is optional stopping with extra steps. THE PREREQUISITE IS THE WORK: forward clocks currently publish forward_days/verdict but no pre-registered end date or decision rule per slot, so nothing can say whether an incumbent has reached a legitimate decision point. Add that field to the slot registry first (the standing states already carry shadow_start, so the end date is the natural sibling), THEN the paired test becomes safe to build: warm-refit the challenger off the serving path, score challenger vs maintained incumbent on identical labels, swap only on a fixed paired advantage AND only once the incumbent's own terms allow a decision. DO NOT WIRE libs/signal_engine/champion_challenger.py for this -- it differences two absolute Sharpes each measured over its own window, which is precisely the period-effect confound the paired construction exists to remove; it is also orphaned (sole reference libs/signal_engine/__init__.py) and about signal-engine variants, not forward slots.",
    "roi_bps": 10.0,
    "raised": "2026-08-05T23:23:41.203798+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "9f6206a9",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T04:08:32.938632+00:00"
   },
   {
    "id": "R0431",
@@ -7107,6 +7107,30 @@
    "summary": "THE FULL TEST SUITE COULD NOT BE RUN THIS CYCLE, AND THAT IS A GATE-AVAILABILITY DEFECT, NOT A BAD DAY. Measured 2026-08-13: box is 3814MB total with NO SWAP; with one concurrent agent session resident, MemAvailable sat at 441-599MB and BOTH full-suite attempts died at ~2% (~300 of ~14k tests) with no summary line -- once with --cov (coverage.json never written) and once without. The pytest process ran at 13-37% CPU against a sibling at 66%. run_ci.py:239 ALREADY handles this correctly (negative returncode -> failed, never green -- verified by fresh read, not re-litigated), so the gate fails CLOSED and nothing is silently passing. THE DEFECT IS AVAILABILITY: if the desk routinely runs two agent sessions on this box, the primary safety gate is unrunnable whenever they overlap, and the predictable adaptation is sessions learning to push on partial evidence -- which is how a fails-closed gate becomes a gate nobody runs (L1.43). Options to price: a swap file (cheapest, removes the hard OOM wall), pytest-xdist with bounded workers, a serialising flock across agent sessions for the suite specifically, or a bigger box. Needs a MEASUREMENT first: peak RSS of a solo full-suite run, which nobody has recorded.",
    "roi_bps": 8.0,
    "raised": "2026-08-13T03:25:24.748824+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0569",
+   "source": "cycle",
+   "summary": "audit_gate_power.score_cohort builds each simulated row as {g: bool(v.gates.get(g, True)) for g in GATES}, so a gate validate() did NOT emit arrives at every downstream consumer as a PASS. Measured 2026-08-13 on the admission-power harness: capacity 80/80 pass, 0 fail -- validate() only emits capacity when an ADV input exists and otherwise records it as unmeasured, so that 100% pass rate is fabricated by the .get default, not measured. This is the R0419 defect one file upstream and it feeds the published structural pass rates. GATES at audit_gate_power.py:61 is also documented as 'every gate validate() reports, in the order it reports them' and is wrong in BOTH directions: it lists capacity (conditional, not unconditional) and omits not_too_lucky (real, unconditional), so the harness is blind to a live gate. Fix: build the row from gates actually present and correct GATES to what validate() emits; lines 244/254/271/297 index r['gates'][g] over GATES so the tuple and the row must be corrected together, and a KeyError there is the correct loud failure rather than a True default. Separated from R0419 because it MOVES audit_gate_power's own published power numbers and needs its own re-measurement run.",
+   "roi_bps": 4.0,
+   "raised": "2026-08-13T04:07:45.761026+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0570",
+   "source": "cycle",
+   "summary": "seat_blanks has NO DENOMINATOR: build_audit_coverage.record_blank counts failures and nothing counts attempts, so 'blanked 4x' cannot distinguish a dead seat (4 of 4 calls) from a 1% flake on a free tier (4 of 400) -- and the desk's own recorded lesson is that free-seat failures are usually transient pool saturation where the right response is RETRY, not reroster. The recency half is fixed (blanks are now timestamped and the seat-chronic fence keys on a 7d window instead of a lifetime tally that never resets); the RATE half needs a success counter at the panel call site, scripts/run_external_panel.py around :478 and :494 where record_blank is already called on the failure path. Add record_call(model) on every seat attempt, publish blanks/attempts per seat, and let the fence read a rate with its denominator declared (L1.57: a verdict without a denominator is an opinion). Until then the fence can only say a seat IS failing now, never how often it succeeds.",
+   "roi_bps": 3.0,
+   "raised": "2026-08-13T04:11:49.272306+00:00",
    "status": "open",
    "reason": null,
    "commit": null,
