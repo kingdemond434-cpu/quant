@@ -194,6 +194,107 @@ def build_report(root: Path | None = None, now: datetime | None = None,
     }
 
 
+#: The ONLY way a money-path commit is read as a repair. Deliberately an EXPLICIT marker and not
+#: a keyword sniff: "fix" appears in most commit subjects on this desk, so a keyword list would
+#: classify ~everything as REPAIR and weld this gate permanently OPEN -- a gate that accepts ~100%
+#: carries zero information (L1.43), which is the failure this was built to avoid, not cause.
+#: Requiring the operator to WRITE the declaration is the point: it is an assertion that a live
+#: defect exists, and an undeclared money-path commit stays frozen by default (fail-closed).
+REPAIR_MARKER = "L1.38: repair"
+
+
+def classify_commits(base: str, head: str = "HEAD", root: Path | None = None) -> list[dict]:
+    """Classify every commit in base..head as REPAIR / IMPROVEMENT / NON-MONEY-PATH.
+
+    R0426. This fence judged a WINDOW and a PATH SET and never a DIFF, so it could not answer the
+    only question an operator actually has: *can I restart this process right now?* The unit of
+    deployment is a PROCESS RESTART, not a commit -- so a repair sitting behind a deliberately
+    withheld improvement cannot be shipped without also shipping the improvement, and the fence
+    had no vocabulary for saying which pending commits were which.
+
+    UNDECLARED IS AN IMPROVEMENT, NEVER A REPAIR. That is the conservative direction and the one
+    that matches the law: the cost of wrongly staging a repair is a delayed fix, the cost of
+    wrongly shipping an improvement into a live window is unbounded.
+    """
+    root = root or _ROOT
+    import subprocess
+    try:
+        raw = subprocess.run(
+            ["git", "log", "--no-merges", "--format=%H%x1f%s%x1f%b%x1e", f"{base}..{head}"],
+            cwd=root, capture_output=True, text=True, timeout=30, check=True).stdout
+    except (subprocess.SubprocessError, OSError) as exc:
+        return [{"sha": None, "kind": "UNMEASURED",
+                 "why": f"git log {base}..{head} failed: {type(exc).__name__}"}]
+    out: list[dict] = []
+    for rec in (r.strip() for r in raw.split("\x1e") if r.strip()):
+        sha, subject, body = [*rec.split("\x1f"), "", ""][:3]
+        try:
+            files = subprocess.run(
+                ["git", "show", "--pretty=", "--name-only", sha],
+                cwd=root, capture_output=True, text=True, timeout=30, check=True
+            ).stdout.split()
+        except (subprocess.SubprocessError, OSError) as exc:
+            # NOT swallowed to NON-MONEY-PATH: a commit whose files cannot be listed is UNKNOWN,
+            # and treating unknown as harmless is precisely the false-OPEN this law forbids.
+            out.append({"sha": sha[:8], "subject": subject[:90], "kind": "UNMEASURED",
+                        "why": f"cannot list files ({type(exc).__name__})"})
+            continue
+        money = touches_money_path(files)
+        if not money:
+            kind, why = "NON-MONEY-PATH", "touches no money-path file -- the freeze does not apply"
+        elif REPAIR_MARKER.lower() in f"{subject}\n{body}".lower():
+            kind, why = "REPAIR", f"declares {REPAIR_MARKER!r} -- repairs are always allowed"
+        else:
+            kind, why = "IMPROVEMENT", (
+                f"touches the money path and does NOT declare {REPAIR_MARKER!r}, so it is "
+                "treated as an improvement and stays staged inside a window")
+        out.append({"sha": sha[:8], "subject": subject[:90], "kind": kind, "why": why,
+                    "money_path_files": money})
+    return out
+
+
+def restart_verdict(base: str, head: str = "HEAD", root: Path | None = None,
+                    status: str | None = None) -> dict[str, Any]:
+    """Can the money-path units be restarted onto HEAD right now, and if not, which commit blocks?
+
+    Turns 'can I restart?' from an argument into a lookup. `base` is what the RUNNING process has
+    -- the sha it was started from (max_audit._proc_start gives the start time when the sha is
+    not recorded; a restart-time sha stamp is the better input and is what a caller should pass).
+    """
+    status = status or str(build_report(root=root).get("status") or "UNMEASURED")
+    commits = classify_commits(base, head, root=root)
+    blocking = [c for c in commits if c["kind"] in ("IMPROVEMENT", "UNMEASURED")]
+    repairs = [c for c in commits if c["kind"] == "REPAIR"]
+    if status == "OPEN":
+        verdict, why = "ALLOW", "the change window is OPEN -- nothing is frozen"
+    elif not commits:
+        verdict, why = "ALLOW", f"no commits between {base[:8]} and {head}"
+    elif not blocking and not repairs:
+        # DISTINCT FROM "all repairs". The first run printed "0 pending money-path commit(s), ALL
+        # declared repairs", which reads as a judgement about repairs when the real answer is that
+        # the freeze never applied -- two different facts, and only one of them involves L1.38.
+        verdict, why = "ALLOW", (
+            f"none of the {len(commits)} pending commit(s) touch the money path -- the freeze "
+            "does not apply to any of them")
+    elif not blocking:
+        verdict, why = "ALLOW", (
+            f"{len(repairs)} pending money-path commit(s), ALL declared repairs -- a repair is "
+            "always allowed to deploy, even inside a window")
+    else:
+        verdict, why = "BLOCK", (
+            f"{len(blocking)} pending money-path change(s) are not declared repairs, so a restart "
+            f"would ship them into a {status} window alongside any repair")
+    return {"verdict": verdict, "why": why, "window_status": status, "base": base[:8],
+            "n_commits": len(commits), "n_repairs": len(repairs), "n_blocking": len(blocking),
+            "blocking": blocking, "commits": commits,
+            "next_action": (
+                "land the repair on its own by declaring "
+                f"{REPAIR_MARKER!r} in its commit and restarting onto a tree that carries only "
+                "declared repairs; or wait for the window to close. Never restart onto a tree "
+                "holding an undeclared money-path change." if verdict == "BLOCK" else
+                "restart is permitted by L1.38")}
+
+
 def held_units(status: str | None = None) -> list[str]:
     """Supervised units an UNATTENDED deploy must not restart right now (L1.38).
 
@@ -224,7 +325,23 @@ def main() -> int:
     ap.add_argument("--report-only", action="store_true")
     ap.add_argument("--held-units", action="store_true",
                     help="print units an unattended deploy must not restart now, one per line")
+    ap.add_argument("--can-restart", metavar="BASE_SHA",
+                    help="classify commits BASE_SHA..HEAD as repair/improvement and answer "
+                         "whether the money-path units can be restarted onto HEAD (R0426)")
     args = ap.parse_args()
+    if args.can_restart:
+        # A QUERY like --held-units: it must not write the fence artifact. Its exit code IS the
+        # answer (0 = restart allowed, 1 = blocked) so a deploy script can gate on it directly.
+        rv = restart_verdict(args.can_restart)
+        if args.json:
+            print(json.dumps(rv, indent=2))
+        else:
+            print(f"restart onto HEAD: {rv['verdict']} -- {rv['why']}")
+            for c in rv["commits"]:
+                print(f"  {c['kind']:<16}{c.get('sha') or '?':<10}{c.get('subject', '')[:64]}")
+            if rv["verdict"] == "BLOCK":
+                print(f"  next: {rv['next_action']}")
+        return 0 if rv["verdict"] == "ALLOW" else 1
     if args.held_units:
         # A QUERY, not a fence run: it must not write the report artifact and must not exit
         # non-zero on a sterile window, or the caller cannot tell "held these" from "I crashed".
