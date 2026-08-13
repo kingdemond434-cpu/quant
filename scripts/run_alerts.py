@@ -26,6 +26,9 @@ from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from libs.ops.fresh import stamp_age_h
+
 # alerts that a brain cycle can actually REMEDIATE (auto-heal event trigger). Deliberately
 # EXCLUDES growth_defect/data_health (slow/justified -- would loop the brain forever) and
 # deadman_latched/kill/principal_action (human-only -- the brain cannot resolve them).
@@ -291,14 +294,36 @@ def _checks() -> list[tuple[str, str]]:
     # documented stale-guard behavior is fail-OPEN (full size, takers allowed). Its freeze path
     # cannot save it: the KILL file is written BY the guard, so a dead guard can never write its
     # own freeze -- both degradations point toward MORE aggressive execution, and until this
-    # check nothing paged on the file's age. Content `generated` over mtime (deploys lie fresh).
+    # check nothing paged on the file's age. Content stamp over mtime (deploys lie fresh).
+    #
+    # WELDED FOR AS LONG AS IT HAS EXISTED (R0399, proven 2026-08-13). This read was
+    # `lg.get("generated", "1970-01-01T00:00:00+00:00")` and data/live_guard.json has never had a
+    # `generated` key -- run_live_guard.py stamps `ts`. So the default fired every time and the
+    # page read "live guard stale 29776345min" (56 years) three minutes after the guard wrote the
+    # file. A pager that fires on 100% of runs carries zero information (L1.43) and gets acked
+    # into silence, which is exactly how the one signal it exists to carry -- the size governor
+    # being dead while the executor fail-opens to full size -- would have been lost. The absent
+    # key resolved to a LOOSENING default in the sense that matters: not a missed page, but a
+    # permanent one, which is the same thing to a reader. Now resolved through the shared
+    # stamp-key zoo, so coining a sixth name upstream cannot silently re-weld it.
+    lg_age: float | None = None
+    lg_absent = ""
     try:
         lg = json.loads(Path("data/live_guard.json").read_text("utf-8"))
-        lg_at = datetime.fromisoformat(str(lg.get("generated", "1970-01-01T00:00:00+00:00")))
-        lg_age = (datetime.now(tz=UTC) - lg_at).total_seconds()
-    except (OSError, ValueError, TypeError):
-        lg_age = None
-        out.append(("live_guard_missing", "data/live_guard.json missing/unreadable -- size "
+        lg_age_h, _lg_key = stamp_age_h(lg)
+        if lg_age_h is None:
+            # UNMEASURABLE is kept DISTINCT from missing (L1.28a): a guard that is running but
+            # publishing no stamp needs its PRODUCER fixed, an absent one needs starting, and
+            # collapsing them sends the operator to the wrong organ. Never fall back to mtime
+            # here -- that is the direction the whole check exists to distrust.
+            lg_absent = ("present but carries no parseable stamp key -- its age is "
+                         "UNMEASURABLE, so liveness is unknown rather than fine")
+        else:
+            lg_age = lg_age_h * 3600.0
+    except (OSError, ValueError, TypeError) as exc:
+        lg_absent = f"missing/unreadable ({type(exc).__name__})"
+    if lg_absent:
+        out.append(("live_guard_missing", f"data/live_guard.json {lg_absent} -- size "
                     "governor and stage tripwires UNEVALUATED; executor fail-opens to full "
                     "size; start: .venv/bin/python scripts/run_live_guard.py"))
     if lg_age is not None and lg_age > 900:
