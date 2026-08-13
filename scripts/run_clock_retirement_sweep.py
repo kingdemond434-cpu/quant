@@ -44,19 +44,18 @@ from pathlib import Path as _P
 if str(_P(__file__).resolve().parent.parent) not in _sys.path:
     _sys.path.insert(0, str(_P(__file__).resolve().parent.parent))
 
-import json  # noqa: E402
-from datetime import UTC, datetime  # noqa: E402
-from pathlib import Path  # noqa: E402
-from typing import Any  # noqa: E402
+import json
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
 
-from libs.research.slot_displacement import (  # noqa: E402
+from libs.research.slot_displacement import (
     BLOCKED,
-    PROTECTED,
     RECLAIMABLE,
     _requeue_for,
     classify_slot,
 )
-from libs.research.slot_registry import MAX_FORWARD_SLOTS, derive_slots  # noqa: E402
+from libs.research.slot_registry import MAX_FORWARD_SLOTS, derive_slots
 
 _OUT = Path("data/clock_retirement_proposals.json")
 
