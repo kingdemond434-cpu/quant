@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+from typing import Any
 
 from libs.autodiscovery.memory import CandidateStore
 from libs.core.time import from_iso8601, utcnow
@@ -56,15 +57,37 @@ def _frame(symbol: str):
     return _FRAMES.get(symbol)
 
 
-def _forward_score(rec: object) -> float | None:
+def _spec_for(family: str, subtype: str) -> Any | None:
+    """The generator that produced this candidate, by its STORED (family, subtype) strings.
+
+    Named rather than inlined into `_forward_score` so it is testable on its own. A miss here
+    returns None and the candidate goes unscored, which is indistinguishable at the call site
+    from "the lake had no data" -- so the lookup needs its own test, not coverage borrowed from
+    the scorer wrapped around it.
+    """
+    from libs.autodiscovery.generators import GENERATORS
+    for g in GENERATORS:
+        if g.family.value == family and g.subtype == subtype:
+            return g
+    return None
+
+
+def _forward_score(rec: object, frames: dict[str, Any] | None = None, *,
+                   min_forward_bars: int = _MIN_FWD_BARS) -> float | None:
     """Re-evaluate one rejected candidate on its post-rejection forward window.
 
     Rebuilds the stored (family, subtype, symbol, params) signal via the SAME generator registry
     the campaign used, on the full lake series (causal rolling windows need their warmup), then
     scores ONLY the bars strictly after ``rec.created_at`` -- genuinely out-of-sample relative to
     the rejection. Same cost model as the campaign default (net_returns, 3bps/turnover). Returns
-    None when the lake cannot produce an honest forward series (missing frame, <30 forward bars,
-    unknown generator) -- never a guess. Annualized daily Sharpe (sqrt(365), crypto clock).
+    None when the lake cannot produce an honest forward series (missing frame, too few forward
+    bars, unknown generator) -- never a guess. Annualized daily Sharpe (sqrt(365), crypto clock).
+
+    ``frames`` IS INJECTABLE AND THAT IS NOT A TEST CONVENIENCE. Reading the module-level lake
+    cache unconditionally made every property below -- the warm-up floor, the never-traded guard,
+    the cutoff alignment -- assertable only on a host that happens to carry a populated lake. The
+    guards that stop this function reporting noise as a Sharpe were therefore the exact guards no
+    fresh clone could check. Passing None keeps the production path (read the lake, cache it).
     """
     if rec is None:
         return None
@@ -73,15 +96,17 @@ def _forward_score(rec: object) -> float | None:
         import pandas as pd
 
         from libs.autodiscovery.crypto_adapter import _provider_from_frames
-        from libs.autodiscovery.generators import GENERATORS, net_returns
-        spec = next((g for g in GENERATORS
-                     if g.family.value == rec.family and g.subtype == rec.subtype), None)
-        df = _frame(rec.symbol)
+        from libs.autodiscovery.generators import net_returns
+        spec = _spec_for(rec.family, rec.subtype)
+        if frames is None:
+            _frame(rec.symbol)
+            _frame("BTCUSDT")  # cross-asset generators need the reference leg in the cache
+            frames = _FRAMES
+        pool = {k: v for k, v in frames.items() if v is not None}
+        df = pool.get(rec.symbol)
         if spec is None or df is None:
             return None
-        _frame("BTCUSDT")  # cross-asset generators need the reference leg in the frame cache
-        provider = _provider_from_frames({k: v for k, v in _FRAMES.items() if v is not None},
-                                         min_bars=_MIN_FWD_BARS)
+        provider = _provider_from_frames(pool, min_bars=min_forward_bars)
         series = provider(rec.symbol)
         if series is None:
             return None
@@ -98,7 +123,7 @@ def _forward_score(rec: object) -> float | None:
         # align the cutoff mask to the TRAILING len(rets) bars so rets[j] pairs with its own bar.
         mask = np.asarray(idx > cutoff)[-len(rets):]
         fwd = rets[mask]
-        if len(fwd) < _MIN_FWD_BARS or float(np.std(fwd)) == 0.0:
+        if len(fwd) < min_forward_bars or float(np.std(fwd)) == 0.0:
             return None
         return float(np.mean(fwd) / np.std(fwd) * np.sqrt(365.0))
     except Exception:

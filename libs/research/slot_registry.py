@@ -27,6 +27,7 @@ Pure stdlib. import from libs.research.slot_registry.
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -335,10 +336,81 @@ def derive_slots() -> dict[str, Any]:
     }
 
 
+@dataclass(frozen=True)
+class CohortM:
+    """The cohort size a Holm bar must be computed against, with WHY attached.
+
+    `m` is what you pass to holm_bar. `provenance` says how it was arrived at, because a bar
+    computed from a degraded cohort is still a bar and the caller has to be able to say so in its
+    own artifact. A number without its provenance is exactly what let a bar run on an
+    unverifiable m for weeks while every artifact recorded it as though it were measured.
+    """
+    m: int
+    provenance: str          # MEASURED | INCOMPLETE-FLOORED | REFUSED-FLOORED
+    detail: str
+
+    @property
+    def measured(self) -> bool:
+        return self.provenance == "MEASURED"
+
+
+def cohort_m_for_bar() -> CohortM:
+    """THE cohort size for every Stage-B Holm bar on this desk. Call this, never `len(anything)`.
+
+    EVERY FAILURE PATH TIGHTENS. This is the whole point of the function and the reason it is not
+    `len(derive_slots()["slots"])`. Understating m LOOSENS the bar, which is the phantom-edge
+    direction: at the measured 2026-08-05 values, judging the axis clocks at len(_AXES)=3 applies
+    holm_bar(3)=2.13 where the true cohort of 11 requires 2.61 -- alpha 0.0167 per clock against a
+    designed 0.0045, a family-wise error rate 3.67x the design, on the desk's only path from
+    research to capital.
+
+    TWO BOUNDS ARE AVAILABLE AND THIS TAKES THE LARGER OF THEM, never one or the other. The
+    per-source bound `m_upper` (counted slots plus each unreadable source's own maximum) is the
+    sharper statistic and is preferred where present; the law cap is the blunt floor. They are not
+    ordered in general -- `m_upper` is smaller when few sources are unreadable and larger when the
+    cohort has genuinely outgrown the cap -- so taking the max is the only choice that cannot
+    produce a LOOSER bar than either bound alone. That property is what makes this safe to
+    reinstate over a differently-derived number without re-auditing every caller.
+
+    Degraded paths:
+      * cohort incomplete (a source unreadable => m is a LOWER bound) -> max(m_upper, cap)
+      * registry unusable entirely                                    -> the cap
+    Over-counting only costs a real edge its promotion by a few days of clock; under-counting
+    admits noise as edge and sizes capital on it. Those are not symmetric, and this function
+    resolves every ambiguity toward the one that cannot manufacture an edge.
+    """
+    try:
+        snap = derive_slots()
+        derived = int(snap["m_concurrent"])
+        complete = bool(snap["complete"])
+        unknown = list(snap.get("unknown_sources") or [])
+        # Absent on a caller-supplied or older snapshot; the cap floor below still bounds it.
+        upper = int(snap.get("m_upper") or derived)
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        return CohortM(
+            MAX_FORWARD_SLOTS, "REFUSED-FLOORED",
+            f"slot registry unusable ({type(exc).__name__}: {exc}) -- floored at the law cap "
+            f"{MAX_FORWARD_SLOTS} because an unknown cohort must never produce a LOOSER bar than "
+            "a known one")
+    if not complete:
+        return CohortM(
+            max(upper, MAX_FORWARD_SLOTS), "INCOMPLETE-FLOORED",
+            f"{derived} clocks counted, per-source upper bound {upper}, but {len(unknown)} "
+            f"source(s) unreadable ({', '.join(unknown[:3])}) -- m is a LOWER bound, so it is "
+            f"floored at the law cap {MAX_FORWARD_SLOTS}; the true bar can only be higher")
+    return CohortM(max(derived, upper, 1), "MEASURED",
+                   f"{derived} concurrently-accruing forward clocks, every source readable")
+
+
 def concurrent_m() -> int:
     """The Holm cohort size to correct EVERY forward bar by. Never 0 -- that would zero out
-    multiplicity -- and never the LOWER bound, which would loosen every bar it feeds."""
-    return max(1, int(derive_slots()["m_upper"]))
+    multiplicity -- and never the LOWER bound, which would loosen every bar it feeds.
+
+    Delegates to `cohort_m_for_bar()` so the fail-safe flooring applies to EVERY caller by
+    default. This function had zero callers for the whole period the axis clocks ran at a 3.67x
+    inflated error rate; a bare `len()` here would be a footgun waiting for its first user.
+    """
+    return max(1, cohort_m_for_bar().m)
 
 
 def write_snapshot() -> dict[str, Any]:

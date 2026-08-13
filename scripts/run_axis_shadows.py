@@ -46,7 +46,7 @@ import numpy as np
 
 from libs.research.anytime_valid import e_value
 from libs.research.evidence_clock import MIN_OBS, Sufficiency, sufficient
-from libs.research.slot_registry import concurrent_m
+from libs.research.slot_registry import cohort_m_for_bar, derive_slots
 from libs.validation.forward_stats import holm_alpha, holm_bar, nw_tstat
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -370,14 +370,41 @@ def _all_axes() -> tuple[dict[str, tuple[str, str, str, int]], list[dict]]:
 def main() -> None:
     # One cohort read for the whole run: every clock in this file is judged against the SAME
     # concurrent-m, and re-deriving per axis would let the bar drift mid-run.
-    m = concurrent_m()
+    #
+    # `cohort_m_for_bar` rather than the bare int, because the bar is only auditable if the
+    # artifact records HOW m was arrived at. A REFUSED-FLOORED m and a MEASURED one produce
+    # identically-shaped rows, and a reader cannot tell a verified cohort from a fallback unless
+    # the provenance travels with the number (L1.28a).
+    cohort = cohort_m_for_bar()
     tracked, untracked = _all_axes()
+
+    # THIS RUN IS PART OF ITS OWN COHORT, AND READING m BEFORE BUILDING THE ROSTER UNDERSTATED IT.
+    # `derive_slots` counts one slot per row of data/axis_shadow_state.json -- the file THIS
+    # function writes at the end. So the cohort read above describes the PREVIOUS run's roster,
+    # and every time the roster grows, the new clocks are judged against an m that excludes them:
+    # a looser bar, the phantom-edge direction this module exists to prevent. It was latent while
+    # the roster was a hardcoded dict and became live the moment owed survivors began registering
+    # themselves into it.
+    #
+    # Substitute this run's own axis count for the stale one and keep the registry's number as a
+    # floor, so the correction can only ever TIGHTEN.
+    try:
+        prior_axis = sum(1 for s in derive_slots().get("slots", []) if s.get("kind") == "axis")
+    except (OSError, ValueError, KeyError, TypeError):
+        # Cannot count what we cannot read. 0 makes the substitution ADD this run's roster on top
+        # of the registry's number instead of replacing part of it -- an over-count, which costs
+        # clock time and cannot manufacture an edge.
+        prior_axis = 0
+    own_axis = len(tracked) + len(untracked)
+    m = max(1, cohort.m, cohort.m - prior_axis + own_axis)
+
     results = [_evaluate(k, *v, m) for k, v in tracked.items()]
     results.extend(untracked)
     for r in results:
         r.setdefault("auto_registered", r.get("axis") not in _AXES)
     payload = {"updated": datetime.now(tz=UTC).isoformat(), "min_observations": MIN_OBS,
                "axes": results,
+               "m_concurrent": m, "m_provenance": cohort.provenance, "m_detail": cohort.detail,
                "note": ("Forward-only Stage-B tracking. P&L starts at the clock's first row, never "
                         "the screen sample. ELIGIBLE means the evidence bar is met and a promotion "
                         "decision may be taken -- it is NOT an automatic deployment. Eligibility "
