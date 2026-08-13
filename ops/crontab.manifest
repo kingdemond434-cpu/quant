@@ -2465,6 +2465,24 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # Gate-0 path -- 2 FABRICATED-SIDE, 2 SAME-NAME-DIFFERENT-QUESTION (R0536/R0537).
 47 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_claim_consistency.py >> data/cro_ai_logs/claim_consistency.log 2>&1
 
+# --- PANEL BREADTH (L1.62) ---------------------------------------------------------------------
+# WHY: the Stage-A screen's cross-sectional power denominator was an ASSUMPTION at BOTH endpoints,
+# one change apart. Pre-2026-08-11 panel_width was not passed (K symbols = K independent
+# observations, every t-stat inflated sqrt(K) ~ 11.8x at K=139); the fix passed the full width,
+# which asserts K symbols = ONE observation per bar. Measured on the desk's own 139-symbol panel
+# the answer is ~93, so the honest divisor is 1.50 and the detection floor was running 9.6x too
+# high. It stayed invisible because the surviving error ran CONSERVATIVE: its only symptom is
+# SCREEN-UNDERPOWERED, which writes no graveyard entry, no ledger row, no alert and no clock, and
+# holds 380 of 711 recorded verdicts. This fence watches the BASIS, not the number: an unmeasured
+# panel that claims `powered` or banks a graveyard-grade SCREEN-WEAK is the failure.
+# CADENCE: daily. Its input is the set of screen artifacts on disk, which only changes when a
+# screen runs, so it is INFORMATION-ARRIVAL bound (L1.28c) -- firing faster would re-read
+# unchanged verdicts. Phased to 06:53, after the 06:47 claim-consistency fence.
+# EVIDENCE: scripts/check_panel_breadth.py -> data/panel_breadth_coverage.json; CONSTITUTION L1.62
+# CONFIDENCE: committed-script (new this cycle); first run found 48 panel cells, 0 measured, and
+# caught a double-counted denominator in its own scan scope before it shipped.
+53 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_panel_breadth.py >> data/cro_ai_logs/panel_breadth.log 2>&1
+
 # --- CITATION INTEGRITY (R0369, under L2.3/§42) ------------------------------------------------
 # WHY: `dispose --status implemented` refuses an empty --commit, so the ledger's proof-of-work was
 # checked at WRITE time and never at READ time, where it is actually spent. A rebase rewrites SHAs

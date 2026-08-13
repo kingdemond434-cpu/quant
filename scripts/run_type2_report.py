@@ -355,6 +355,12 @@ def _screen_cell(
                 cell.get("overlap_periods") or cell.get("horizon_days") or 1.0
             ),
             panel_width=int(cell.get("panel_width") or 1),
+            # L1.62: carry the cell's MEASURED cross-sectional breadth, or this recompute uses a
+            # divisor the screen did not use and manufactures a DISAGREES on every measured panel
+            # cell -- an L1.61 contradiction created by the reader rather than found by it. The
+            # key is absent on every pre-L1.62 cell, which correctly keeps the conservative
+            # full-panel_width divisor those cells were actually scored with.
+            xs_neff=cell.get("xs_neff"),
             n_tests=n_tests,
             power_target=0.5,
             note="",

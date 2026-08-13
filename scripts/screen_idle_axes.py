@@ -23,9 +23,16 @@ Passing daily-sampled OVERLAPPING h-day returns instead would put h-1 FUTURE day
 de-contamination variable and mechanically destroy any genuinely slow signal.
 
 Consequence, declared: with block sampling the observations are already independent, so the
-harness's ``n_eff = n/(horizon_days*panel_width)`` over-corrects for overlap by a factor h at
-h>1. That is the SAFE direction (it can only turn a "refuted" into a "could not tell"), and each
-cell also records ``mdi_block`` = the honest 1.96/sqrt(n_blocks_eff) for the block design.
+harness's TIME-axis deflator over-corrects for overlap by a factor h at h>1. That is the SAFE
+direction (it can only turn a "refuted" into a "could not tell"), and each cell also records
+``mdi_block`` = the honest 1.96/sqrt(n_blocks_eff) for the block design.
+
+The CROSS-SECTIONAL factor is no longer assumed (L1.62). ``n_eff = n/(horizon_days * K/xs_neff)``
+where ``xs_neff`` is this panel's MEASURED independent bets per bar, from
+``libs.research.panel_breadth``. Dividing by the full K -- the behaviour here until 2026-08-13 --
+asserts that K symbols carry ONE independent observation per bar, which on a cross-sectionally
+demeaned target is wrong by roughly the panel width. An UNMEASURABLE panel keeps the full-K
+divisor: absence resolves to the tighter reading, never to a clean one.
 
 z-window is scaled so the lookback is a comparable calendar length at every horizon:
 h=1 -> zwin 20 (20d), h=5 -> zwin 12 (60d), h=20 -> zwin 6 (120d).
@@ -49,6 +56,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from libs.alpha_factory.hypothesis_novelty import PriorIdea, hypothesis_novelty
 from libs.research.axis_screen import stage_a_screen
+from libs.research.panel_breadth import measure_panel_breadth
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data/idle_axis_screen.json"
@@ -105,10 +113,18 @@ def novelty(name: str, statement: str, features: tuple[str, ...]) -> dict:
 
 # --------------------------------------------------------------------------------- helpers ----
 def cell(axis: str, construction: str, signal: np.ndarray, ret: np.ndarray, h: int,
-         *, target_kind: str, panel_width: int = 1, extra: dict | None = None) -> dict:
-    """One DSR-counted trial: run the audited harness and record it whatever the verdict."""
+         *, target_kind: str, panel_width: int = 1, xs_neff: float | None = None,
+         extra: dict | None = None) -> dict:
+    """One DSR-counted trial: run the audited harness and record it whatever the verdict.
+
+    `xs_neff` is the MEASURED cross-sectional breadth of the panel these flat arrays were stacked
+    from (L1.62). Omitting it keeps the conservative full-`panel_width` divisor -- which asserts
+    that K symbols carry ONE independent observation per bar, an assumption that ran unmeasured on
+    this desk in both directions until 2026-08-13.
+    """
     r = stage_a_screen(signal, ret, name=f"{axis}::{construction}::h{h}d",
-                       zwin=ZWIN[h], horizon_days=float(h), panel_width=panel_width)
+                       zwin=ZWIN[h], horizon_days=float(h), panel_width=panel_width,
+                       xs_neff=xs_neff)
     n_blocks = len(signal) / max(panel_width, 1)
     r.update({"axis": axis, "construction": construction, "horizon_days_target": h,
               "target_kind": target_kind, "zwin": ZWIN[h],
@@ -206,7 +222,7 @@ def screen_crypto(panel: dict) -> None:
                 c2.loc[d, m[m].index] = y[m].to_numpy() - (b[0] * x[m].to_numpy() + b[1])
         for cname, sig in (("C1_raw_xsec_taker_buy_share", c1),
                            ("C2_return_residualised_taker_buy", c2)):
-            S, R, used = [], [], 0
+            S, R, used, kept = [], [], 0, []
             for s in syms:
                 a, b = sig[s].to_numpy(), rel_ret[s].to_numpy()
                 ok = ~(np.isnan(a) | np.isnan(b))
@@ -226,11 +242,20 @@ def screen_crypto(panel: dict) -> None:
                 S.append(aa)
                 R.append(bb)
                 used += 1
+                kept.append(s)
             sig_f, ret_f = np.concatenate(S), np.concatenate(R)
+            # L1.62: measure this panel's cross-sectional breadth on the SAME symbols that were
+            # stacked, from the date-aligned frames the stacking flattened. `panel_width=used`
+            # alone asserts these `used` names carry ONE independent observation per bar; the
+            # target here is the cross-sectionally DEMEANED return, whose product terms are very
+            # nearly independent across names, so that assumption inflates the detection floor by
+            # roughly sqrt(breadth). UNMEASURABLE keeps the conservative full-K divisor.
+            b = measure_panel_breadth(sig[kept].to_numpy(), rel_ret[kept].to_numpy(),
+                                      min_obs=ZWIN[h] + 32)
             cell("crypto", cname, sig_f, ret_f, h,
                  target_kind="cross-sectional RELATIVE return (xsec-demeaned)",
-                 panel_width=used,
-                 extra={"symbols_stacked": used,
+                 panel_width=used, xs_neff=b.xs_neff if b.measured else None,
+                 extra={"symbols_stacked": used, "breadth": b.as_dict(),
                         "stack_boundary_z_rows": ZWIN[h] * (used - 1),
                         "stack_boundary_fwd_rows": used - 1,
                         "stack_boundary_frac": round(ZWIN[h] * (used - 1) / max(len(sig_f), 1), 4)})

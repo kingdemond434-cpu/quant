@@ -414,6 +414,20 @@ _MAP: dict[str, list[str]] = {
     # REFUTED by its own falsifier (418 disagreements, ~0 genuine), so the registry is
     # hand-built and money-path only.
     "L1.61": ["scripts/check_claim_consistency.py", "libs/ops/claim_registry.py"],
+    # L1.62: the Stage-A screen's cross-sectional power denominator was an ASSUMPTION at both
+    # endpoints, one change apart, and neither was ever measured. Pre-08-11 panel_width was not
+    # passed (K symbols = K observations, t inflated sqrt(K)); the fix passed the full width
+    # (K symbols = ONE observation). Measured on the desk's own 139-symbol panel the answer is
+    # ~93, so the divisor is 1.50 not 139 and the detection floor ran 9.6x high. Invisible
+    # because the error ran CONSERVATIVE and its only symptom is SCREEN-UNDERPOWERED -- "could
+    # not tell", which writes no graveyard entry, no clock and no alert, and holds 380 of 711
+    # verdicts on disk. Both copies of the expression are listed: type2_cost.correlation_n_eff
+    # documents itself as a deliberate copy "so the two cannot disagree", so a fix in one file
+    # leaves the other authoritative. The screen caller is a regression site -- removing its
+    # measure_panel_breadth call turns the tests red.
+    "L1.62": ["scripts/check_panel_breadth.py", "libs/research/panel_breadth.py",
+              "libs/research/axis_screen.py", "libs/validation/type2_cost.py",
+              "scripts/screen_oi_ls_axes.py"],
     # R0369 (under L2.3/§42): an implemented row's --commit is the ledger's whole proof mechanism,
     # and it was enforced only at WRITE time -- `dispose` refuses an empty field and asks nothing
     # else. A rebase rewrites SHAs and the citation quietly names an object no other clone can

@@ -39,6 +39,7 @@ import pandas as pd
 from scipy.stats import norm
 
 from libs.research.axis_screen import stage_a_screen
+from libs.research.panel_breadth import measure_panel_breadth
 
 ROOT = Path("/home/quant/quant-platform")
 MET = ROOT / "data/lake/bronze/oi_ls_daily"
@@ -128,9 +129,21 @@ def run(name: str, sig: pd.DataFrame, tgt: pd.DataFrame, meta: dict, *,
         # so every recorded n_eff was raw symbol-days and `powered` was certified on a sample
         # inflated by the full panel width -- 42 "graveyard-grade" SCREEN-WEAK verdicts the
         # screen lacked the power to make (the false-null direction no other gate catches).
+        #
+        # AND THE 08-11 FIX REPLACED ONE ASSUMPTION WITH THE OPPOSITE ONE. panel_width alone says
+        # these 139 symbols carry ONE independent observation per day. Measured on this very
+        # panel (2026-08-13) they carry ~93: the product terms the pooled IC sums correlate at
+        # rho=+0.0036 across names, because the target is the cross-sectionally DEMEANED return.
+        # So the divisor is 1.50, not 139, and every cell here was reading a detection floor 9.6x
+        # too high. Measured per panel and per cell -- asserting a constant would re-create the
+        # error in a third place. UNMEASURABLE keeps the conservative full-K divisor.
+        breadth = measure_panel_breadth(sig.to_numpy(), tgt.to_numpy(),
+                                        min_obs=MIN_OBS_PER_SYM)
         out = stage_a_screen(s, t, name=name,
                              horizon_days=float(meta.get("horizon_days") or 1.0),
-                             panel_width=panel_width, overlap_periods=1.0)
+                             panel_width=panel_width, overlap_periods=1.0,
+                             xs_neff=breadth.xs_neff if breadth.measured else None)
+        out["breadth"] = breadth.as_dict()
     out.update(meta)
     out.update(info)
     TRIALS.append(out)

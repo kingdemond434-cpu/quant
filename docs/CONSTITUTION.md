@@ -2627,3 +2627,79 @@ distinguishable from "these two boards have never been compared", which were byt
 this desk until now, and only one of them is evidence.
 
 FENCED by `scripts/check_claim_consistency.py` over `libs/ops/claim_registry.py`.
+
+## L1.62 A POWER FIGURE WHOSE DENOMINATOR WAS ASSUMED IS NOT A MEASUREMENT
+
+The Stage-A screen turns a stacked (symbol x date) panel into a power verdict by dividing the row
+count by a cross-sectional factor, and that factor decides `powered` -- the single bit separating
+the desk's two negative verdicts. **SCREEN-WEAK** is "tested and refuted", graveyard-grade
+negative knowledge. **SCREEN-UNDERPOWERED** is "could not tell": no graveyard entry, no ledger
+row, no alert, no clock -- the only exit from the pipeline that leaves NO TRACE. **380 of 711
+recorded verdicts on disk sit in it, the largest class by 2.4x, and no fence read that ratio.**
+
+**BOTH ENDPOINTS OF THIS ERROR WERE LIVE WITHIN ONE CHANGE OF EACH OTHER, AND NEITHER WAS EVER
+MEASURED.** Until 2026-08-11 `panel_width` was not passed at all, so K symbols carried K
+independent observations and every t-stat was inflated by sqrt(K) ~ 11.8x at K=139. The fix
+passed the full width, which asserts the opposite: K symbols carry exactly ONE independent
+observation per bar. `scripts/screen_oi_ls_axes.py:126` records the cost of the first endpoint in
+its own words -- "42 'graveyard-grade' SCREEN-WEAK verdicts the screen lacked the power to make".
+The desk swung from one assumption to its inverse and measured neither, on a quantity that is
+cheap to compute from the panel already in memory.
+
+**WHY THE SURVIVING ERROR WAS INVISIBLE, AND IT GENERALISES.** Dividing by the full K can only
+LOWER n_eff, and a low n_eff produces only SCREEN-UNDERPOWERED, which claims nothing and alerts
+nobody. **An error whose only symptom is silence is invisible by construction** -- L1.55's own
+lesson, "nobody audits a number that is already small", and the L1.25 diagnostic's first
+question, *instrument?*, one layer below the two campaign-constant gates already found. Ask of
+any conservative-running quantity: WHAT WOULD ITS BEING WRONG LOOK LIKE? If the answer is "a
+verdict nobody records", it is unaudited however often it runs.
+
+**WHAT IS MEASURED, AND WHY IT IS THE PRODUCT TERMS.** A pooled IC is the mean of
+`signal[i,d] * target[i,d]` over every cell, so the variance of that mean is set by the
+cross-sectional correlation of the SUMMANDS -- not of the raw returns, and not of the demeaned
+returns. Measured 2026-08-13 on the desk's own 139-symbol futclose panel over 1,897 dates, and
+each row refutes a different tempting shortcut:
+
+| series | mean pairwise rho | effective breadth |
+|---|---|---|
+| RAW returns | +0.5288 | 1.88 |
+| RELATIVE (demeaned) returns | -0.0069 (floor -0.00725) | 139.00, capped |
+| **PRODUCT TERMS signal*target** | **+0.0036** | **92.76** |
+
+The RAW row is why the 2026-08-11 change looked right: against a raw-return target, K names
+really are worth ~1.9 bets. The RELATIVE row is why it is wrong here -- the screen's target IS
+the demeaned return, whose residual correlation sits at 95% of the way to the arithmetic floor --
+and it is ALSO why the pre-08-11 endpoint is wrong, because reading breadth off it returns the
+full K by construction, the exact misreading `cohort_independence.effective_bets` was clamped to
+prevent after it reported "64.4 independent bets from 29 perps". Only the PRODUCT row is both
+measured and relevant, and **it lands near neither endpoint**: the honest divisor is 1.50, not
+139, so n_eff was understated 93x and the detection floor ran 9.6x too high.
+
+**OPERATIVE.** Every panel cell declares the BASIS of its cross-sectional denominator --
+`MEASURED` (from `libs/research/panel_breadth.measure_panel_breadth` on that caller's own panel),
+`SINGLE-SERIES`, or `UNMEASURED`. Measured per panel and per cell: asserting a desk-wide constant
+would re-create the same error in a third place. **AN UNMEASURED PANEL CAN NEVER BE `powered`**,
+and that is the load-bearing half -- `powered` is what licenses SCREEN-WEAK, and certifying
+"tested and refuted" on a sample size nobody measured is the false-null direction no other gate
+catches. An unmeasurable panel keeps the CONSERVATIVE full-K divisor: absence resolves to the
+tighter reading, never to a clean one (L1.28a). The fix lands in BOTH copies of the expression --
+`libs/research/axis_screen.py` and `libs/validation/type2_cost.correlation_n_eff`, which
+documents itself as a deliberate copy "so the two cannot disagree" -- because one bug in two
+files means fixing one leaves the other authoritative.
+
+**COVERAGE IS A RATCHET, NOT A CLIFF.** Legacy cells resting on the assumed divisor are
+conservative, so they over-claim nothing; they read PARTIAL and exit 0, and the gap is the work
+queue (L1.0). A fence red on the day it is built gets switched off (L1.43). Only an OVERCLAIMED
+cell -- `powered: true` or SCREEN-WEAK on an unmeasured basis -- is a failure. A run finding zero
+panel cells reads UNMEASURED, never OK.
+
+**ANTI-TIMIDITY READING (L1.28).** This is a MEASUREMENT duty and a SCOPE EXPANSION. It lifts
+nothing, sizes nothing, promotes nothing, opens no gate and loosens no statistical bar --
+`ic_min`, `sharpe_min`, the angle-20 de-contamination gate, Holm, alpha and MAX_FORWARD_SLOTS are
+all untouched, and the change moved not one recorded number by itself. The measurement is capable
+of moving the divisor in EITHER direction and says so: on a raw-return panel it CONFIRMS the
+full-K divisor. Its whole effect is to make "this panel's power rests on a measurement"
+distinguishable from "this panel's power rests on an assumption nobody checked" -- byte-identical
+on this desk until now, and only one of them is evidence.
+
+FENCED by `scripts/check_panel_breadth.py` over `libs/research/panel_breadth.py`.
