@@ -37,6 +37,8 @@ ROOT = Path(__file__).resolve().parent.parent
 # not a permanently silent no-op wearing a green tick.
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+from libs.ops.deferral import is_chronic, record_reschedule  # noqa: E402
+
 LEDGER = ROOT / "docs/research/recommendation_ledger.json"
 
 # A recommendation may sit undisposed for one cycle -- long enough to be triaged in the next
@@ -205,6 +207,25 @@ def dispose(a: argparse.Namespace) -> None:
     if a.status == "implemented" and not a.commit:
         raise SystemExit("an implemented recommendation needs --commit: the desk's standing rule "
                          "is that an artifact proves the work, never a claim")
+    # RE-SCHEDULING A ROW IS A DEFERRAL, AND A DEFERRAL THAT LEAVES NO TRACE IS A SKIP (L1.60).
+    # This file's docstring claims "scheduled" cannot become where rows go to die because an
+    # overdue schedule fires like an orphan -- true, unless the due date moves first, which this
+    # very function did in place with no history and no counter. Measured over the ledger's
+    # first-parent git history 2026-08-13: 39 of 152 ever-scheduled rows (26%) were given more
+    # than one distinct due date and 38 of them are STILL scheduled -- they never converted, they
+    # only moved. See libs/ops/deferral.py for the census and why it had to come from git.
+    #
+    # DEFERRING AGAIN STAYS FULLY AVAILABLE -- a row blocked on Gate 0 or a forward clock is not
+    # repair debt, and forcing it terminal would manufacture a false rejection. What is refused is
+    # deferring INVISIBLY: say what changed, and the move is recorded rather than erased.
+    if a.status == "scheduled" and row["status"] == "scheduled":
+        if len((a.reason or "").strip()) < _MIN_REASON:
+            raise SystemExit(
+                f"{a.id} is already scheduled (due {row.get('due')}) -- moving that date is a "
+                f"DEFERRAL and needs --reason (>={_MIN_REASON} chars) naming what changed. "
+                "Re-scheduling is always available; doing it silently is not, because a row "
+                "snoozed for the fourth time and a row scheduled once are otherwise identical.")
+        record_reschedule(row, a.reason)
     row.update(status=a.status, reason=a.reason, commit=a.commit, due=a.due,
                disposed=datetime.now(tz=UTC).isoformat())
     _save(d)
@@ -351,13 +372,24 @@ def drain(d: dict[str, Any], window_h: float = 72.0) -> dict[str, float]:
 
 
 def owed(d: dict[str, Any]) -> tuple[list[Any], list[Any]]:
-    """(undisposed past grace, scheduled past due) -- the two ways a row goes stale."""
+    """(undisposed past grace, scheduled past due OR chronically deferred) -- how a row goes stale.
+
+    THE THIRD WAY A ROW GOES STALE WAS INVISIBLE UNTIL 2026-08-13. An overdue schedule fires here,
+    so a row that keeps its date owes a decision the day it arrives -- but a row whose date is
+    MOVED the day before never arrives at all, and 26% of ever-scheduled rows had exactly that
+    done to them (libs/ops/deferral.py). A chronically re-scheduled row is therefore counted as
+    owed whatever its due date says: it does not lose the right to be deferred again, only the
+    ability to leave the desk's attention while it happens.
+    """
     now = datetime.now(tz=UTC)
     orphans = [r for r in d["recommendations"]
                if r["status"] == "open" and _age_h(r["raised"]) > GRACE_H]
     overdue = []
     for r in d["recommendations"]:
         if r["status"] != "scheduled" or not r.get("due"):
+            continue
+        if is_chronic(r):
+            overdue.append(r)
             continue
         try:
             if datetime.fromisoformat(str(r["due"])).replace(tzinfo=UTC) < now:

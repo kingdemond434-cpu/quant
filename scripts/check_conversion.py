@@ -87,6 +87,7 @@ _ROOT = Path(__file__).resolve().parent.parent
 # window) and pages-but-does-not-block, so a governance fault never silences an organ.
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from libs.ops.deferral import CHRONIC_RESCHEDULES, is_chronic, reschedule_count  # noqa: E402
 from libs.ops.fence_exit import FAIL, fence_exit  # noqa: E402
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
 from libs.ops.repair_mode import DIRECTION_FOR_STATUS  # noqa: E402  (L1.28b(d): one mapping)
@@ -180,8 +181,18 @@ def build_report(root: Path, now: datetime | None = None) -> dict[str, Any]:
     #       a due date. That branch was structurally dead in production, hiding every untriaged
     #       row. The unit test that "proved" it worked used an open row WITH a due date, a fixture
     #       the CLI cannot produce.
+    # A SCHEDULE THAT KEEPS MOVING NEVER COMES DUE, so this test alone could never see it. The
+    # `owed` population was the fix for counting lawful schedules as debt; its blind spot is the
+    # opposite error -- a row re-snoozed the day before it arrives leaves `owed` with no work done
+    # and no trace left, which is the one escape scripts/recommendations.py's docstring claims is
+    # closed. Measured 2026-08-13: 39 of 152 ever-scheduled rows had their due date moved, 38 are
+    # still scheduled. Chronic deferrals are counted as owed regardless of date (libs/ops/deferral).
+    # ADDS ZERO ROWS ON THE DAY IT LANDS -- `schedule_history` is born empty, so it can only bite
+    # on a future snooze, which is what keeps it from being red from day one and switched off.
+    chronic = [r for r in backlog if is_chronic(r)]
     overdue = [r for r in backlog
-               if (d := _parse_ts(r.get("due"))) is not None and d < now]
+               if is_chronic(r)
+               or ((d := _parse_ts(r.get("due"))) is not None and d < now)]
     orphans = [r for r in backlog
                if r.get("status") == "open"
                and (t := _parse_ts(r.get("raised"))) is not None
@@ -354,6 +365,17 @@ def build_report(root: Path, now: datetime | None = None) -> dict[str, Any]:
         "backlog_open": len(open_rows),
         "backlog_scheduled": len(backlog) - len(open_rows),
         "owed": owed,
+        # THE DEFERRAL CHANNEL, which no gauge here could see. `reschedules_recorded` counts
+        # forward from 2026-08-13 only: the prior moves were overwritten one dispose at a time and
+        # are unrecoverable per row, so a 0 here means "none since the instrument existed", NEVER
+        # "none ever" (L1.28a -- a limitation must not read as health). The historical rate is on
+        # record in libs/ops/deferral.py: 39 of 152 ever-scheduled rows, 38 still scheduled.
+        "chronic_deferrals": len(chronic),
+        "chronic_deferral_ids": [r.get("id") for r in chronic][:20],
+        "chronic_reschedule_line": CHRONIC_RESCHEDULES,
+        "reschedules_recorded": sum(reschedule_count(r) for r in rows),
+        "reschedules_measured_from": "2026-08-13 (schedule_history born empty; prior moves were "
+                                     "overwritten in place and are unrecoverable per row)",
         "backlog_age_p50_days": _pct(0.50),
         "backlog_age_p90_days": _pct(0.90),
         "queue_dispositioned": round(terminal / max(len(rows), 1), 4),
