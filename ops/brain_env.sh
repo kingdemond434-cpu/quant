@@ -384,3 +384,26 @@ if [ -n "$_INTAKE_DUTY" ]; then
 
 ${_INTAKE_DUTY}"
 fi
+
+# --- II-B/II-C CANONICAL POLICY RESOLUTION ------------------------------------------------------
+#
+# THE SAME SHAPE OF DEFECT, A THIRD LAW (R0438, 2026-08-13, found verifying the principal's
+# Claude/Codex shared-mandate question). docs/policy/PRE_DEEPSEEK_MASTER_MANDATE.md section II-C
+# requires EVERY agent -- named explicitly: CLAUDE, CODEX, CODEX MIDNIGHT, GPT, KIMI, DEEPSEEK --
+# to resolve canonical policy and verify its hash before consequential work, failing visible on a
+# material mismatch. libs.ops.canonical_policy.resolve() implements this correctly and is real,
+# tested (6/6 tests, tests/ops/test_canonical_policy.py) -- but its only production caller was
+# libs.ops.deepseek_cycle.policy_gate(), which reaches the DeepSeek cycle alone. Every other organ
+# on the desk never resolved policy at all before this line existed.
+#
+# PAGES, NEVER KILLS, matching libs.ops.lawful.guard()'s own established split for organ-spawn
+# governance checks -- a stale policy hash is a governance fault, not a reason to stop every
+# collector and screen on the desk (L1.2: that trades a real outage for a paperwork fault). The
+# money path keeps its own strict gate (deepseek_cycle.policy_gate(), unchanged by this).
+_POLICY_DUTY="$(cd "$_BRAIN_ROOT" 2>/dev/null && \
+    .venv/bin/python -m libs.ops.canonical_policy 2>/dev/null || true)"
+if [ -n "$_POLICY_DUTY" ]; then
+    _DOCTRINE="${_DOCTRINE}
+
+${_POLICY_DUTY}"
+fi

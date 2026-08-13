@@ -832,6 +832,18 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script; pure local CPU/pandas, no venue call, no model.
 30 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_stablecoin_screen.lock .venv/bin/python scripts/screen_stablecoin_flows.py >> data/cro_ai_logs/screen_stablecoin_flows.log 2>&1
 
+# MEASURED 2026-08-13: screen_cme_basis.py is DATA-BLOCKED (CME futures history is a one-time
+# paid drop, R0143 makes buying it a principal decision, not purchased). Hunted a free
+# alternative for the same regulated-vs-offshore mechanism per the desk's own FREE-DATA-FIRST
+# principle: Coinbase-vs-Binance BTC spot premium, built from data ALREADY collected by
+# collect_primary_market_flow.py's Coinbase leg (23:41 UTC daily, ~1450-day bootstrap) joined to
+# the bronze crypto lake's Binance leg -- zero new network dependency, zero new collector.
+# 00:05, 24 minutes after collect_primary_market_flow.py's 23:41 run, so the day's Coinbase
+# observation is always on disk before this screen reads it.
+# EVIDENCE: scripts/screen_coinbase_premium.py -> reports/axis_screens/coinbase_premium_20260813.json
+# CONFIDENCE: committed-script; pure local CPU/pandas, no new venue call, no model.
+5 0 * * * cd "$QUANT_ROOT" && flock -n data/.cron_coinbase_premium.lock .venv/bin/python scripts/screen_coinbase_premium.py >> data/cro_ai_logs/screen_coinbase_premium.log 2>&1
+
 # EVIDENCE: .../20260729_data-intelligence.md:77 ("ingest_axes daily 06:40"); the log name is
 #   the live one (docs/research/deep_sweep/20260726_data-intelligence.md:153 "ingest_axes_cron.log")
 # CONFIDENCE: documented-cadence

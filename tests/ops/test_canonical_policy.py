@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from libs.ops.canonical_policy import POLICY_STATE, resolve
+from libs.ops.canonical_policy import POLICY_STATE, policy_duty, resolve
 
 _REPO = Path(__file__).resolve().parents[2]
 
@@ -61,6 +61,48 @@ def test_resolver_never_raises_on_garbage_state(tmp_path: Path) -> None:
     (tmp_path / POLICY_STATE).parent.mkdir(parents=True)
     (tmp_path / POLICY_STATE).write_text("{not json", "utf-8")
     assert resolve(tmp_path)["verdict"] == "MISSING_POLICY"
+
+
+# --------------------------------------------------------------------- R0438: policy_duty()
+def test_policy_duty_empty_when_resolved(tmp_path: Path) -> None:
+    """STEADY: no text at all when policy is verified -- matches libs.ops.repair_mode's own
+    convention, and ops/brain_env.sh only injects a non-empty block."""
+    _seed(tmp_path)
+    assert policy_duty(tmp_path) == ""
+
+
+def test_policy_duty_names_the_mismatched_file(tmp_path: Path) -> None:
+    pol = _seed(tmp_path)
+    pol.write_text("THE POLICY\nedited without regenerating the state record\n", "utf-8")
+    text = policy_duty(tmp_path)
+    assert "[II-D]" in text and "HASH MISMATCH" in text
+    assert "docs/policy/MANDATE.md" in text
+
+
+def test_policy_duty_reports_missing_policy(tmp_path: Path) -> None:
+    text = policy_duty(tmp_path)
+    assert "[II-B]" in text and "UNRESOLVED" in text
+
+
+def test_policy_duty_adds_work_and_removes_none(tmp_path: Path) -> None:
+    """Same banned-verb discipline libs.ops.repair_mode._BANNED_VERBS asserts, and the same test
+    shape tests/governance/test_repair_actuator.py uses -- checks the EMITTED TEXT, never the
+    docstring (which legitimately discusses "stop"/"cut" while explaining why the function does
+    not emit them). A duty producer must never teach an organ to do less."""
+    from libs.ops.repair_mode import _BANNED_VERBS
+    pol = _seed(tmp_path)
+    pol.write_text("edited\n", "utf-8")
+    mismatch_text = policy_duty(tmp_path)
+    missing_text = policy_duty(tmp_path.parent / "nonexistent")
+    for verb in _BANNED_VERBS:
+        assert verb not in mismatch_text.lower(), f"HASH_MISMATCH text contains {verb!r}"
+        assert verb not in missing_text.lower(), f"MISSING_POLICY text contains {verb!r}"
+
+
+def test_main_calls_the_lawful_guard() -> None:
+    src = Path("libs/ops/canonical_policy.py").read_text("utf-8")
+    assert "from libs.ops.lawful import guard as _law_guard" in src
+    assert "_law_guard()" in src
 
 
 def test_the_real_repo_policy_resolves() -> None:

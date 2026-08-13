@@ -64,14 +64,23 @@ _UA = {"User-Agent": ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
 #: Channels whose output has actually converted on this desk, plus near neighbours. Ordered by
 #: measured conversion: neurotrader and Algovibes produced essentially everything that shipped
 #: from the 2026-08-01 batch.
+#: @quantopian RETIRED 2026-08-13: HTTP 404, the channel is gone (not blocked -- actually deleted
+#: or renamed). Kept as a dead entry would waste a fetch every run for nothing recoverable.
 YOUTUBE_CHANNELS = (
     "@neurotrader888",
     "@Algovibes",
     "@quantprogram",
     "@TheTransparentTrader",
     "@PartTimeLarry",
-    "@quantopian",
 )
+
+#: Source categories this miner does not attempt BY DEFAULT (2026-08-13, principal decision):
+#: every YouTube path is datacenter-IP-blocked on this box for the part that matters (captions --
+#: discovery/ranking still parse, reading does not), and the principal has assigned YouTube
+#: coverage to a GPT-based hunter with different network access. Still reachable explicitly via
+#: `--only youtube` / `--only search` -- this only changes what an unqualified run attempts, so a
+#: deliberate override is never silently dropped.
+_YOUTUBE_SRCS = frozenset({"youtube", "search"})
 
 #: Chinese-language sources. Only the ones measured reachable are enabled; the rest are declared
 #: here WITH their block reason so the next reader does not re-diagnose them.
@@ -309,8 +318,22 @@ def probe_cn() -> list[dict[str, Any]]:
     RE-MEASURED RATHER THAN TRUSTED because a block is a fact about today. The desk has already
     been burned once by treating a recorded HTTP failure as permanent when it was a header
     problem, so the declared status is the PRIOR and the probe is the evidence.
+
+    NEEDS_BROWSER SOURCES ALSO GET A REAL RENDER ATTEMPT (2026-08-13). joinquant/bigquant/
+    ricequant were declared needs_browser and left there -- libs.data.render_fetch already exists,
+    is tested, and Chromium is already installed, but nothing called it for these three. This adds
+    that call: render_available() reports honestly when Chromium's egress is blocked (measured
+    true of THIS container, per render_fetch's own docstring; unverified from here whether the VPS
+    differs), so this never crashes on a sandboxed box -- it converts "needs_browser, nobody
+    tried" into "a browser was tried, and here is exactly what happened", which is new evidence
+    either way. Parsing the rendered DOM into real listings is a SEPARATE next step once someone
+    can read the actual rendered markup -- fabricating a CSS-selector parser against markup nobody
+    here has seen would be exactly the unverified-construction failure this desk graveyards.
     """
+    from libs.data.render_fetch import render, render_available
+
     rows: list[dict[str, Any]] = []
+    render_ok, render_why = render_available()
     for src in CN_SOURCES:
         row: dict[str, Any] = {"name": src["name"], "declared": src["status"],
                                "reason": src.get("reason")}
@@ -326,6 +349,15 @@ def probe_cn() -> list[dict[str, Any]]:
         except Exception as exc:
             row["reachable"] = False
             row["error"] = f"{type(exc).__name__}: {str(exc)[:120]}"
+        if src["status"] == "needs_browser":
+            if not render_ok:
+                row["render"] = {"attempted": False, "why": render_why}
+            else:
+                html, err = render(src["url"], timeout_s=25.0)
+                row["render"] = {
+                    "attempted": True, "error": err or None, "bytes": len(html),
+                    "looks_like_content": bool(html) and not err and len(html) > 20_000,
+                }
         rows.append(row)
         time.sleep(0.4)
     return rows
@@ -522,7 +554,9 @@ def main(argv: list[str] | None = None) -> int:
         ap.error(f"unknown --only source(s): {sorted(unknown)}; valid: {sorted(_valid)}")
 
     def _runs(src: str) -> bool:
-        return not only or src in only
+        if not only:
+            return src not in _YOUTUBE_SRCS  # 2026-08-13: YouTube left to the GPT hunter by default
+        return src in only
 
     seen = set() if args.all else _load_seen()
     channels = [c.strip() for c in str(args.channels).split(",") if c.strip()]
@@ -753,8 +787,11 @@ def main(argv: list[str] | None = None) -> int:
             "available": False,
             "reason": ("every caption path is blocked from this IP: no captionTracks in the watch "
                        "page, api/timedtext returns 0 bytes, youtube-transcript-api raises "
-                       "RequestBlocked. Discovery and ranking work; reading does not."),
-            "implication": "the queue names what to paste in; it cannot read it",
+                       "RequestBlocked. Discovery and ranking work; reading does not. 2026-08-13: "
+                       "YouTube (channels + search) is not attempted by this miner by default any "
+                       "more -- assigned to a GPT-based hunter with different network access."),
+            "implication": "this miner's queue no longer names YouTube candidates by default; "
+                           "run with --only youtube to override",
         },
         "channels_scanned": counts,
         "search_discovered": discovered,
