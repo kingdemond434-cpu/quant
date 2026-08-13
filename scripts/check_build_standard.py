@@ -54,6 +54,7 @@ _ROOT = Path(__file__).resolve().parent.parent
 #: Organs built to the standard. EVERY new organ joins this list in the same commit that creates
 #: it -- that is the whole mechanism. Adding a file here and failing the checks is a red build.
 _GOVERNED: tuple[str, ...] = (
+    "run_cadence.py",
     "check_conversion.py", "check_calibration.py", "check_replacement_rate.py",
     "check_exploration.py", "check_law_families.py", "check_change_window.py",
     "run_law_gate.py", "run_moat_backup.py", "run_capability_hunt.py",

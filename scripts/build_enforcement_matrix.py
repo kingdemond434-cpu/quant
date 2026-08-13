@@ -200,7 +200,11 @@ _MAP: dict[str, list[str]] = {
     # L1.28c: every cadence hunts its own ceiling. The manifest fence requires a decided cadence
     # with evidence per line; brain_seat_throughput measures the resource they all compete for,
     # so "raise the cron" vs "buy a second seat" is settled by measurement.
-    "L1.28c": ["scripts/check_scheduler_manifest.py", "scripts/check_utilisation.py"],
+    # run_cadence.py IS the cadence engine this law governs, and it was mapped by NOTHING -- so
+    # the one organ that decides what fires and enforces the never-sleepier floors was also the
+    # one organ outside the build standard and the L1.42 law boundary (R0425).
+    "L1.28c": ["scripts/check_scheduler_manifest.py", "scripts/check_utilisation.py",
+               "scripts/run_cadence.py"],
     # L1.29: the desk scores its own confidence or its confidence is fiction. The fence fails
     # on ungraded predictions; the shrinkage closes the loop back into sizing/promotion.
     "L1.29": ["scripts/check_calibration.py",
