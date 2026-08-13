@@ -161,16 +161,30 @@ def _row_to_reading(db: Path, row: sqlite3.Row) -> Reading | None:
         return None
 
 
-def newest_reading(root: Path | None = None) -> tuple[Reading | None, int, int]:
-    """The most recent `campaign_strata` row across every audit store.
+#: The store this fence was BUILT to floor: the daily crypto factory, whose min-length truncation
+#: was discarding 82.9% of the observations on disk. Named here because a subject that is only
+#: implied by a docstring is a subject the code can silently change (R0435).
+SUBJECT_DB = "sor_crypto.sqlite"
 
-    Returns (reading, n_dbs_scanned, n_rows_seen). The counts are the fence's denominator (L1.57):
-    "scanned four stores and found no campaign" and "found no stores to scan" are different
-    claims, and only the first is evidence about campaigns.
+
+def series_by_db(root: Path | None = None) -> tuple[dict[str, list[Reading]], int, int, int]:
+    """EVERY `campaign_strata` row, grouped by the store that wrote it.
+
+    WHY THE PARTITION IS THE WHOLE POINT (R0435). `newest_reading` took the newest row across ALL
+    stores, and the desk turned out to run two entirely different campaign populations under one
+    `campaign_strata` name: the daily crypto factory (`sor_crypto`, k=32, 85.8% retention, 36.7%
+    untested) and the research lake (`sor_research`, k=1, 100% retention, 0% untested, ~90 rows a
+    day). Every read was honest and the SUBJECT silently changed -- the newest row is always a
+    research-lake row, so the crypto factory's retention, the only quantity R0270 built this fence
+    to floor, became structurally unreadable, and its 7-day silence read as a 23h-old healthy plan.
+
+    Returns (by_db, n_dbs, n_rows_seen, n_malformed). Malformed rows are COUNTED, never skipped
+    into invisibility (L1.60): a store whose rows stopped parsing must not read as a store with
+    fewer campaigns.
     """
     dbs = audit_dbs(root)
-    best: Reading | None = None
-    seen = 0
+    by_db: dict[str, list[Reading]] = {}
+    seen = malformed = 0
     for db in dbs:
         try:
             con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
@@ -180,7 +194,7 @@ def newest_reading(root: Path | None = None) -> tuple[Reading | None, int, int]:
         try:
             rows = con.execute(
                 "SELECT created_at, outcome, inputs_json FROM audit_log "
-                "WHERE decision_type='campaign_strata' ORDER BY created_at DESC LIMIT 1"
+                "WHERE decision_type='campaign_strata' ORDER BY created_at"
             ).fetchall()
         except sqlite3.Error:
             continue
@@ -189,6 +203,67 @@ def newest_reading(root: Path | None = None) -> tuple[Reading | None, int, int]:
         for row in rows:
             seen += 1
             rd = _row_to_reading(db, row)
-            if rd is not None and (best is None or rd.created_at > best.created_at):
-                best = rd
-    return best, len(dbs), seen
+            if rd is None:
+                malformed += 1
+            else:
+                by_db.setdefault(db.name, []).append(rd)
+    return by_db, len(dbs), seen, malformed
+
+
+class UntestedStats(NamedTuple):
+    """The calibration input R0435 asks for, per POPULATION -- never pooled.
+
+    Pooling is the trap the row half-saw. 92 of the desk's 95 recorded campaigns are research-lake
+    plans whose untested share is 0.0 BY CONSTRUCTION (one stratum holding everyone), so a pooled
+    standard deviation measures the mix of two populations, not the drift of either. A band set
+    from it is a fabricated constant (L1.55) that fires on a change of campaign TYPE and is blind
+    to the shape drift it was built for -- welded in both directions at once (L1.43).
+    """
+
+    n: int
+    mean: float | None
+    sd: float | None
+    degenerate: bool          # every observation identical -- no variance to calibrate against
+
+    @property
+    def calibratable(self) -> bool:
+        """R0435's own bar: ~10 campaigns AND real variance. Both, or the band is invented."""
+        return self.n >= MIN_CAMPAIGNS_FOR_BAND and not self.degenerate
+
+    @property
+    def verdict(self) -> str:
+        if self.n < MIN_CAMPAIGNS_FOR_BAND:
+            return f"UNMEASURED-BAND ({self.n}/{MIN_CAMPAIGNS_FOR_BAND} campaigns)"
+        if self.degenerate:
+            return f"DEGENERATE ({self.n} campaigns, zero variance -- nothing to calibrate)"
+        return f"CALIBRATABLE ({self.n} campaigns, sd {self.sd:.4f})"
+
+
+#: R0435's bar, stated as a COUNT of observations rather than a wait (L1.48 -- evidence is the
+#: clock). Nothing here is gated on a date; the band becomes settable when the campaigns exist.
+MIN_CAMPAIGNS_FOR_BAND = 10
+
+
+def untested_stats(readings: list[Reading]) -> UntestedStats:
+    """n / mean / sd of the untested share over one population, and whether it has any variance."""
+    vals = [r.untested_fraction for r in readings if r.untested_fraction is not None]
+    if not vals:
+        return UntestedStats(0, None, None, degenerate=True)
+    mean = sum(vals) / len(vals)
+    sd = (sum((v - mean) ** 2 for v in vals) / (len(vals) - 1)) ** 0.5 if len(vals) > 1 else 0.0
+    return UntestedStats(len(vals), mean, sd, degenerate=(sd == 0.0))
+
+
+def newest_reading(root: Path | None = None) -> tuple[Reading | None, int, int]:
+    """The most recent `campaign_strata` row across every audit store.
+
+    KEPT AS-IS AND NO LONGER THE FENCE'S JUDGEMENT PATH. "Whatever wrote last" is a legitimate
+    question and a useless subject: see `series_by_db` for what reading it across two campaign
+    populations did to this fence.
+    """
+    by_db, n_dbs, seen, _malformed = series_by_db(root)
+    best: Reading | None = None
+    for readings in by_db.values():
+        if readings and (best is None or readings[-1].created_at > best.created_at):
+            best = readings[-1]
+    return best, n_dbs, seen
