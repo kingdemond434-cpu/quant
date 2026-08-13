@@ -1106,3 +1106,82 @@ instead of adopting it.
 **STATUS: DEAD ON ARRIVAL — nothing imported, nothing scheduled, no desk time owed.** The *semantics* extracted from this repo (pipeline order, `rank` scaling, `decay_linear` weights) are recorded in the operator library and stand on their own; the three defects above are why **no result, curve or Sharpe from this lineage is quotable**, and why the extraction was mechanism-only.
 
 **USEFUL BY-PRODUCT — one structural fact worth keeping:** the platform's book is **$20M ($10M per side, dollar-neutral long/short)**, cross-checked two ways (the simulator's fixed `booksize`, and the community metric sheet quoting returns against $10M). That is their capacity calibration point, ~$6.7k average position across 3,000 names — **comparable to this desk's entire book.** Recorded as a fact about their process (L1.18a capacity parity: it makes their turnover and cost assumptions inapplicable here in both directions, not just one).
+
+## 2026-08-13 — `rev_calendar_spread_iv_convergence` (BTC/ETH options): REFUTED AT SOURCE by its own author, with the code public
+
+**JP frontier miner s4.** Free graveyard material — killed by the practitioner who built it and ran it live,
+not by us. **SOURCE:** `perp-screener.com/posts/btc-bot`, 儲からないBTCオプションbot (「the BTC options bot
+that does not make money」), 仮想通貨botter Advent Calendar 2025 day 16, posted 2025-12-04. Code public:
+`bybit_rev_calendar_live`. **DERIVES-FROM:** Saxo Bank JP official channel (the calendar-spread explainer)
++ **ChatGPT** — see the provenance warning at the bottom, which is the more important half of this entry.
+
+**THE CLAIMED MECHANISM.** A *reverse* calendar spread — buy the NEAR expiry, sell the FAR expiry, strikes
+and right matched — held to harvest convergence of the near/far implied-vol difference. The author's stated
+reason for choosing options at all is worth preserving independently of the kill (see the watchlist card):
+option order flow carries more *intent* per trade than perp flow, because nobody buys
+`BTCUSDT-5DEC25-96000-C` on a vibe.
+
+**WHY IT DIES, AND IT IS STRUCTURAL RATHER THAN STATISTICAL.** The author's own greeks at a live snapshot:
+delta ≈ 0, gamma ≈ 0, **vega negative, theta negative** (θ = −5.43). That combination has **no regime in
+which both legs help**: quiet tape bleeds it via theta, and any vol event hurts it via negative vega — which
+is precisely the state ("急落局面・イベント直前") where a crypto book most wants to be long convexity. He
+describes the realised failure exactly that way: *"『IV差の収束を狙う』と言いながら、実態は「ベガマイナス
+＋セータマイナス」を抱えたまま、相場が動かない時間に削られる"* — it was named as an IV-convergence trade
+and was in fact two decaying legs. **A position whose two dominant greeks are both adverse is not an edge
+awaiting better parameters; the label was wrong about what was being held.** Desk gates agree without
+needing the anecdote: **EV 0.0000 REJECT** (`narrow_breadth` — BTC/ETH options are ~2–3 independent bets —
+plus `crowded_known`), novelty 0.811 so this is an economics rejection, not re-tested ground.
+
+**THE OPERATIONAL FAILURE MODE IS THE PART THAT TRANSFERS, AND IT IS NOT ABOUT OPTIONS.** The author names
+the worst outcome explicitly: *"期近満期を跨いで放置 → 期近が消えて期先ショートだけ残る（これが一番危険）"*
+— **hold through the near leg's expiry and the hedge VANISHES on a schedule, leaving a naked short.** The
+general form is: *any hedged pair in which one leg has a contractual disappearance date is unhedged by
+default, and the un-hedging is driven by the calendar rather than by the market.* This desk's live sleeve is
+spot+perp and perps do not expire, so it is not exposed today — **but `publicGetExpiredFutures` was salvaged
+for R0239 on 2026-08-01, and a dated-future-vs-perp basis trade has this exact failure mode.** If that is
+ever built, the expiry of the dated leg is a **risk-rail event**, not a P&L event, and must be handled by
+the rail rather than by the strategy.
+
+**ALSO RECORDED — the author's blocker, which is a shopping-list item and a JP era marker.** He wanted to
+backtest on historical IV and did not, because *"日本からBYBITグローバルが使えなくなるかも"* — Bybit Global
+possibly becoming unusable from Japan (~2025-12). Two facts for the desk: **historical crypto option IV is
+the named missing input** for anyone testing this family, and **a JP-access regime event lands ~2025-12**,
+which joins the 2023-06-01 Travel Rule and the 2024-03 bitFlyer product replacement on the JP era timeline.
+
+**PROVENANCE WARNING — THIS ENTRY IS ALSO THE FIRST RECORDED INSTANCE OF LLM-MEDIATED PSEUDO-CONVERGENCE.**
+The greeks reasoning in the post is not the author's: it is introduced as *"チャッピーの解説によると"*
+("according to ChatGPT's explanation"), and he twice tells the reader to ask an LLM instead of him
+(*"詳細な解説はChatGPTなどに聞いた方がいい"*). **The mechanism analysis in this post is therefore NOT an
+independent practitioner node** and must never be counted as one by `libs/research/convergence.py`. The kill
+above still stands at full strength — it rests on his *realised P&L and his own greeks snapshot*, which are
+observations, not on the LLM's commentary. → **OP-072**.
+
+## 2026-08-13 — `jp_mlbot_atr_limit_reversion`: CORROBORATION ADDENDUM (independent, different venue, opposite fee sign)
+
+**JP frontier miner s4.** The 2026-08-01 kill said the richmanbtc `mlbot_tutorial` edge was a **maker-rebate /
+venue-subsidy harvest** (the fee was zero-or-negative across the whole backtest). A second JP practitioner
+independently produced the complementary half of that evidence, on a venue where the maker fee is **positive**.
+
+**SOURCE:** `qiita.com/pip_pip_pip_p/items/3b86e36ca536e99d26e0`, 「ルールベース戦略+MLフィルターが機能する
+条件は？」, 2024-12-07, 仮想通貨botter Advent Calendar 2024 s2d8. **DERIVES-FROM:** the `mlbot` tutorial
+itself (`note.com/btcml`) + López de Prado, *Advances in Financial Machine Learning* (triple-barrier). Not
+independent of the tutorial — it is a direct critique of it — but **fully independent of this desk**, which
+is what matters here.
+
+**THE MEASUREMENT:** he plots the tutorial's rule-based core, **alone, on Binance BTCUSDT**, and reports it is
+**up only in 2021 and down-sloping in every period since — including the bull tape of 2024-11/12**. The desk's
+kill and this practitioner's curve are the *same fact seen from two venues*: on bitFlyer (maker ≤ 0) the rule
+printed; on Binance (maker > 0 for retail) it does not, in any regime, bull included. **A strategy that
+survives only where the venue pays you to quote is a subsidy harvest, and the cleanest possible confirmation
+is that it fails where the subsidy is absent.** No change to the kill; its confidence rises and its stated
+mechanism is now corroborated rather than inferred.
+
+**AND THE HALF THAT IS NOT ABOUT THIS STRATEGY AT ALL** — his four desiderata for a rule-based base layer
+under an ML meta-label filter, ranked by him as **② ≫ ③ > ④** with ① mandatory: ① abundant samples,
+② **the TARGET's distribution is time-invariant**, ③ simple, ④ strong. His pointed observation:
+*"mlbotチュートリアルでは特徴量の分布が時間で変化しないことをチェックしていますが、似たようなことを目的
+変数に対して行うといいかもしれません"* — **the tutorial checks FEATURE-distribution stationarity; nobody
+checks TARGET-distribution stationarity.** That is a live gap on this desk too and is routed to
+`improvement_inbox.md`, not left in the graveyard. (His own claim that his filter rescues a down-sloping base
+rule "thanks to property ②" is **unverified** — a practitioner assertion with no shared code or data, recorded
+as claimed, never as evidence.)
