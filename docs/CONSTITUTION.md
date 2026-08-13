@@ -2703,3 +2703,65 @@ distinguishable from "this panel's power rests on an assumption nobody checked" 
 on this desk until now, and only one of them is evidence.
 
 FENCED by `scripts/check_panel_breadth.py` over `libs/research/panel_breadth.py`.
+
+## L1.63 A ROBUSTNESS CERTIFICATE WHOSE PARTITION CANNOT FAIL IS A WELDED GATE
+
+Three wired gates certify that an edge is "regime robust", and all three implement one rule: split
+the return series into groups and require it to be net-positive in at least K of them.
+`libs/autodiscovery/regime.regime_robust` blocks REGISTRY promotion, `libs/risk/sleeve_allocation`
+min_regimes_positive sets a sizing ceiling, and `scripts/check_promotion_gate` two_regimes stands
+between a candidate and LIVE at 15% of book. **All three partition by realized-volatility terciles,
+and no instrument on this desk could ask whether that partition is capable of returning False.**
+
+**WHY EVERY EXISTING INSTRUMENT WAS BLIND, AND IT IS A THIRD BLINDNESS, NOT A REPEAT.** L1.43's
+`check_fence_yield` asks whether a gate ever FIRED. L1.49's `check_gate_reachability` asks whether
+a gate ever RAN, measured from the declaration site precisely because a gate that never ran emits
+no tally row. `gate_discrimination` reads a per-gate accept/reject histogram. Each of those reads
+the gate's OUTCOME. None can see the case where the gate runs on every candidate, is perfectly
+reachable, emits a row every time, and returns True on all of them **because the partition it uses
+cannot produce a negative group for the edge in front of it**. That gate is neither dead nor
+mis-calibrated; it is WELDED OPEN by its choice of axis, and an accept/reject tally cannot separate
+"passed because the edge is robust" from "passed because this partition was never able to fail".
+L1.49 said absence from a rejection tally is ambiguous; this is the same ambiguity at the far end,
+where a gate that rejects nothing looks identical to a bar being cleared honestly.
+
+**THE PROVING INSTANCE IS THIS LAW'S OWN FALSIFIER.** The capability hunt of 2026-08-13 proposed
+adding a funding-state axis to the robustness certificate, and its falsifier was run first, as the
+desk requires. That falsifier's FIRST version declared `finds_dead_state` its decisive criterion
+and then measured a carry proxy that is non-positive on 3.0% of days -- so the criterion could not
+fire for EITHER axis, and the verdict fell through to a spread comparison answering a different
+question. **It would have published REFUTED from a test structurally incapable of returning
+anything else**, and it was caught only by re-reading the instrument instead of its output. The
+identical defect, one level up, in the very run built to find it.
+
+**MEASURED THE DAY THIS WAS BUILT**, on 213 symbols x 2,384 days (2020-02-03 -> 2026-08-13) of the
+desk's own D1 funding panel, carry sleeve = daily top-10 by trailing funding net of 6bps/turn:
+vol terciles 3/3 groups positive; funding state 2/2; trend state 2/2; funding breadth 3/3.
+**Four axes, 6.5 years, and not one could produce the failing group its certificate claims to test
+for.** The measured reason is that daily cross-sectional selection is itself the hedge: unselected,
+the market's funding is non-positive on 40.6% of days; after top-10 selection, 3.0%. The
+certificate is not wrong -- it is EMPTY, and nothing here could say so. This also REFUTES the
+proposal that produced it: the missing axis was never the defect, the rule was.
+
+**OPERATIVE.** Every partition behind a robustness certificate is graded on the desk's own data via
+`libs/validation/partition_power.partition_power` -- DISCRIMINATING (some graded group came out
+non-positive, so a pass carries information), WELDED (every graded group positive, so the
+certificate would have passed anything), or UNMEASURED. **UNMEASURED and WELDED stay distinct**:
+"every group was positive" and "no group had enough observations to tell" are different claims and
+only one is evidence (L1.28a), so a partition below `MIN_GROUP_OBS` refuses to grade rather than
+manufacture a verdict. Unlabelled observations are counted, never silently dropped (L1.60).
+
+**THE REPAIR IS UPWARD, NEVER DOWNWARD (L1.49).** A WELDED reading never justifies deleting a gate,
+lowering a bar, or calling the gauntlet smaller. It justifies giving the certificate an axis able
+to produce a negative group, or recording out loud that it carries no information for this edge. A
+smaller gauntlet that runs is not an improvement on a larger one that does not.
+
+**ANTI-TIMIDITY READING (L1.28).** This is a MEASUREMENT duty and a SCOPE EXPANSION. It lifts
+nothing, sizes nothing, promotes nothing, opens no gate and loosens no statistical bar;
+`regime_robust`, `min_regimes_positive` and `two_regimes` behave identically before and after, and
+it moved not one recorded number by itself. It has no vocabulary for turning a failing verdict into
+a passing one. Its whole effect is to make "this edge survived a test that could have killed it"
+distinguishable from "this edge passed a test that has never killed anything" -- byte-identical on
+this desk until now, and only one of them is evidence.
+
+FENCED by `scripts/check_partition_power.py` over `libs/validation/partition_power.py`.
