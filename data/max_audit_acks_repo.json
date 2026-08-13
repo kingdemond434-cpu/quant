@@ -65,5 +65,19 @@
     "reason": "TWO SEPARATE CLAIMS UNDER ONE KEY, dispositioned separately. (1) Kaiko has NO ground_truth_for_diff, so verify-don't-trust is impossible -- this is REAL and unfixed, and it is the correct blocker to hold: the desk's own EN-miner work put the Kaiko prose-ambiguity replication floor at +-4.7bps, and without a free reference series to diff a reconstruction against, buying or trusting it violates verify-don't-trust. The free-first protocol has not been exhausted here (a first-party venue sample on any single covered venue would serve as the diff reference), so the action is a targeted free-sample hunt, not a purchase. (2) last_free_dig 13.1d old against a DAILY data-axis dig is the same organ-outage class this branch has been repairing all cycle -- the dig is scheduled and not landing map updates. NOT ACKED AS ACCEPTABLE: 14d, and if last_free_dig has not moved by then the right conclusion is that the dig is dead rather than slow, which is a defect about the SCHEDULER and not about vendors. Both halves are genuinely un-fixed; this ack buys a window, it does not close anything.",
     "until": "2026-08-19T02:29:03.335480+00:00",
     "scope": "REPO"
+  },
+  "seat-chronic-nemotron-3-super-120b-a12b:free-unmeasured": {
+    "reason": "INSTRUMENT BUILT THIS SESSION (9df0a9f2), clears itself on panel runs. The fence was inverted: with no event log it read UNMEASURED forever, so it could only go quiet on a NEW BLANK -- lit precisely while the seat was healthy. record_attempt now fires on every call whether the seat answers or dies, so health clears it from SUCCESS. The live store has zero recorded attempts because the counter shipped minutes ago, and the fence honestly says UNMEASURED below SEAT_MIN_ATTEMPTS=5 rather than grading a rate off 0-2 calls. The panel runs several times daily, so this clears within ~1d without anyone touching it; 7d is the outer bracket, not the expectation. NOT swapping the seat: the free-roster canary reports it alive and answering, panel depth is already under-driven at 403/406, and the lifetime tally is the very evidence this repair proved unfit to swap on.",
+    "by": "owed-work-batch5-20260813",
+    "acked": "2026-08-13T07:32:11.726534+00:00",
+    "until": "2026-08-20T07:32:11.726534+00:00",
+    "scope": "REPO"
+  },
+  "seat-chronic-nemotron-3-ultra-550b-a55b:free-unmeasured": {
+    "reason": "INSTRUMENT BUILT THIS SESSION (9df0a9f2), clears itself on panel runs. The fence was inverted: with no event log it read UNMEASURED forever, so it could only go quiet on a NEW BLANK -- lit precisely while the seat was healthy. record_attempt now fires on every call whether the seat answers or dies, so health clears it from SUCCESS. The live store has zero recorded attempts because the counter shipped minutes ago, and the fence honestly says UNMEASURED below SEAT_MIN_ATTEMPTS=5 rather than grading a rate off 0-2 calls. The panel runs several times daily, so this clears within ~1d without anyone touching it; 7d is the outer bracket, not the expectation. NOT swapping the seat: the free-roster canary reports it alive and answering, panel depth is already under-driven at 403/406, and the lifetime tally is the very evidence this repair proved unfit to swap on.",
+    "by": "owed-work-batch5-20260813",
+    "acked": "2026-08-13T07:32:11.789516+00:00",
+    "until": "2026-08-20T07:32:11.789516+00:00",
+    "scope": "REPO"
   }
 }
