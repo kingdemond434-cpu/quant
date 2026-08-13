@@ -6968,6 +6968,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0557",
+   "source": "cycle",
+   "summary": "A SPAWN SURFACE CARRIES NEITHER THE MINER MANDATE NOR DEEP-FOREST EXHAUSTIVENESS, AND IT IS A CONTROLLER. ops/midnight_codex_prompt.txt fails tests/governance/test_source_universality.py twice -- test_every_miner_brief_carries_the_mandate and test_every_seat_carries_the_deep_forest_mandate -- measured 2026-08-13 on a full tests/governance run. The prompt arrived in 320a4af0/0d314696 ('seal the master constitution and harden midnight continuity', 'wire the continuous open-world frontier and controller handoff'); this row's author touched neither it nor the test, so it is pre-existing rather than fallout. WHY THIS IS NOT A TEST-HYGIENE NIT: L1.36 makes REACHING a condition of every law family -- 'a law that never reaches an organ cannot change behaviour however well fenced' -- and L1.35 is the law that forbids a hunter from ever declaring itself exhausted. A controller seat spawned without it is precisely the failure L1.36's own proving instance describes (L2.3 was in the constitution, mapped in the matrix, ABSENT FROM THE DOCTRINE). The seat in question is a CONTROLLER that hands off continuity across the midnight boundary, so whatever it does or fails to do propagates to the workers it schedules. TWO READINGS AND THEY NEED DIFFERENT FIXES, so establish which before patching: either the prompt genuinely should carry the mandate (inject it, and the fence goes green), or a continuity controller is not a hunting seat and the test's _PROMPTS discovery is over-broad (then the exemption is declared IN the test with its reason, never by quietly narrowing the glob -- an invisible exemption is the defect wearing a comment, L1.60). Do not resolve it by deleting the assertion.",
+   "roi_bps": 10.0,
+   "raised": "2026-08-13T01:57:09.312376+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
