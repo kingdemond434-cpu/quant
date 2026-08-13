@@ -2323,3 +2323,53 @@ from a seat with write access to `scripts/` settles it.
 EN crypto videos at 142k / 50k / 33k views wall identically to AR videos at 538k / 47k / 31k. Language is
 orthogonal; only a ~1.6bn-view control passed. Full table and the GAP #26 consequence in
 `docs/research/video_locked_log.md`.
+
+---
+
+## 2026-08-13 — BR frontier miner s3: STATISTICAL-ARBITRAGE is thin for INSTRUMENT reasons, not verdict reasons
+
+**THE OBSERVATION.** `data/strategy_coverage.json` reports STATISTICAL-ARBITRAGE as **THIN, n=1 of
+14** — the desk's least-worked family. Mining the BR corpus for it, I checked the standing objection
+that would justify leaving it there, and **it does not apply**.
+
+**THE DESK'S OWN BREADTH LESSON, READ CAREFULLY:** *"the crypto cross-section is 1.54 independent bets
+RAW and 29 market-neutral. Any **directional** cross-sectional mechanism is hard-killed by
+narrow_breadth before it starts — neutralise BTC beta or do not build it."* A cointegration pair is
+long *y* / short *βx*: **beta-neutral by construction.** It therefore lands on the **29** side of that
+measurement, not the 1.54 side. **The argument that ends every directional cross-sectional mechanism
+on this desk is not an argument against this family — it is closer to an argument for it.**
+*(Caveat: `reports/cross_section_breadth.json` is gitignored and unreadable from this checkout, so
+1.54/29 are cited from the desk-lesson text and were not re-verified here.)*
+
+**AND THE INSTRUMENT THE FAMILY NEEDS IS ONE IMPORT.** The refutation I filed today
+(`graveyard.md: zecontinha_eg_pairs_screen`, OP-077) measured a live public pairs screen rejecting
+**17.97%** of pure-noise pairs against its own nominal 5%, because it took p-values from
+`adfuller(OLS.resid)`. **Any desk statarb work must use `statsmodels.tsa.stattools.coint()`**, whose
+MacKinnon critical values are derived for residuals of an *estimated* cointegrating vector. Measured
+side by side on n=120: 17.97% vs 7.60%. Note also that the correct test is itself **7.6% at n=120**,
+not 5% — short windows are not exact even done right, which is worth knowing before anyone sets a bar.
+
+**A SECOND, ORTHOGONAL SELECTION STATISTIC, ARRIVING FROM TWO BR SOURCES:** rank candidate pairs by
+the **stability of the rolling hedge ratio** (`beta_rotation`), not by the in-sample ADF p-value. It
+appears as a code function in `Vido/zecontinha` (`analysis.py`, window=40) and as the stated primary
+criterion of a PT-BR practitioner (*"beta rotation mais estável"*, video `vaDLuXYDSJ8`). The argument
+is mechanical rather than statistical — **an unstable β means the cointegrating relationship is not
+structural** — which is exactly the property an in-sample p-value cannot see.
+**PROVENANCE, STATED SO IT CANNOT BE MISREAD AS CONVERGENCE:** both sources sit inside the **same BR
+retail "Long&Short quantitativo" teaching tradition. This is ONE ecosystem node, not two**, and under
+GAP #85 it elevates nothing. It is a lead of exactly singleton weight.
+
+**NOT PROPOSED FOR CAPITAL, AND NOT SCREENED.** This is a note that a thin family is thin for
+correctable instrument reasons. Under the two-stage law it would owe a pre-registered screen and then
+a forward clock; neither is claimed here.
+
+## 2026-08-13 — BR miner s3: a cheap point-in-time universe the desk does not build
+
+`exchangeInfo` returns **today's** symbol set, which the desk has already recorded as *"a look-ahead in
+the UNIVERSE"*. **Git history of hardcoded ticker lists in public repos is a free, dated substitute**
+(universe map source **103**). Measured on one repo: vintages at 2020-06-28 / 2023-03-07 / 2023-12-05 /
+2025-11-14, and **8.7% of the 2023 USDT-perp cross-section is absent from live exchangeInfo** — of
+which **3 names are rebrands with a continuing price series** (MATIC→POL, RNDR→RENDER, TOMO→VIC), not
+deaths. **A rename and a delisting are opposite events that look identical in a symbol-set diff**, and
+the desk currently has no artifact that distinguishes them. Cost to build: a directory of old repos and
+a diff. No ingest built (research freeze).

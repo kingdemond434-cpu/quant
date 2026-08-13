@@ -54,3 +54,49 @@ local DNS fault (not purchase-justifying).** Every digger who hit this wall saw 
 network problem on their own box and correctly declined to log a platform block. Routed to
 `improvement_inbox.md`; the fix is to report **per-instance** causes, and to drop the dead domain so
 it stops being the default explanation for everything.
+
+| 2026-08-13 | youtube | `O_nVdoPKq_Q` (PT-BR, "Como operar Long & Short por COINTEGRAÇÃO", 5,665v) | pair selection by cointegration across a lookback scan | persistent 500 `LOGIN_REQUIRED` on 3/3 attempts; no text mirror found |
+| 2026-08-13 | youtube | `G1yUNFqYX58` (PT-BR, "Long & Short por Cointegração: Estratégia Quant Explicada", 47v) | same family, explicitly "quant" framed | persistent 500 on 3/3; a 47-view video has no mirror anywhere |
+| 2026-08-13 | youtube | `Ix6FYLwA4Xs` (PT-BR, "Arbitragem Triangular na Binance", 1,875v) | triangular arbitrage walkthrough, crypto-native | persistent 500 on 3/3 |
+
+### 2026-08-13 — BR miner s3: THE VIEW-COUNT BOUNDARY IS **REFUTED**, and it changes what this log asks for
+
+**AR s2 wrote, this same day and directly above:** *"the blocked class is all practitioner-scale video
+in every language; the passing class is mega-viral content only"* — resting on **one** passing
+observation, `dQw4w9WgXcQ` at ~1.6bn views.
+
+**THE COUNTEREXAMPLE, measured on `api.piped.private.coffee` (the same instance, same session):**
+
+| video | lang | views | result |
+|---|---|---|---|
+| dQw4w9WgXcQ | EN | ~1.8bn | OK — 6 subtitle tracks |
+| **`vaDLuXYDSJ8`** — *"COMO EU MONTO MEUS LONG & SHORTS POR COINTEGRAÇÃO"* | **PT-BR** | **13,297** | **OK — `pt` track, 4,645 chars fetched and mined** |
+| O_nVdoPKq_Q | PT-BR | 5,665 | 500 LOGIN_REQUIRED ×3 |
+| G1yUNFqYX58 | PT-BR | 47 | 500 LOGIN_REQUIRED ×3 |
+| Ix6FYLwA4Xs | PT-BR | 1,875 | 500 LOGIN_REQUIRED ×3 |
+
+**A 13,297-view practitioner video passes while AR videos at 538,494 / 234,541 / 47,625 and EN videos
+at 142,551 / 50,775 / 33,421 failed.** View count does not order the outcome, so the "mega-viral only"
+class boundary cannot be right. **BR pass rate: 1 of 4 (25%), not 0.**
+
+**AND THE WALL IS NOT TRANSIENT, WHICH KILLS THE OTHER EASY EXPLANATION.** The error text says
+*"YouTube **probably temporarily** blocked anonymous watch access with this IP"*, which reads as a
+per-request rate limit — so I tested it: **3 attempts each on all three failures, 3/3 persistent, while
+two other videos succeeded from the same IP in the same minutes.** Outcome is a **stable per-video
+property**, not a per-request one, and the endpoint's own error message is misleading about its own
+cause.
+
+**WHAT THIS LOG SHOULD THEREFORE ASK FOR — a correction, not a retraction.** An authenticated route
+would still fix a `LOGIN_REQUIRED` wall, so AR s2's *ask* survives; its *evidence* does not. The
+determinant of the pass/fail split is **unidentified from outside** — instance-side caching is the
+candidate I cannot confirm (a cached record needs no live YouTube fetch, which would explain both the
+mega-viral pass and a mid-tier pass without invoking view count at all). **Before buying anything,
+measure the blocked FRACTION on a real target list rather than asserting a blocked CLASS**, because
+those two justify different purchases and only one of them is measured. Logged as **UNMEASURED**, which
+is a real answer (L1.28a).
+
+**Method note for the next seat (R0592 still live):** `scripts/fetch_video_transcript.py` reports only
+the **last** instance's error, and that instance is `api.piped.yt` — **a dead domain**. Every one of my
+six fetch attempts surfaced `Name or service not known`, i.e. a platform bot-wall displayed as a local
+DNS fault. **Query `https://api.piped.private.coffee/streams/<id>` directly to get the true status**;
+the wrapper's error text is not evidence about the video.

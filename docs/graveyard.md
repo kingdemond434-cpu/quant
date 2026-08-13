@@ -1185,3 +1185,64 @@ checks TARGET-distribution stationarity.** That is a live gap on this desk too a
 `improvement_inbox.md`, not left in the graveyard. (His own claim that his filter rescues a down-sloping base
 rule "thanks to property ②" is **unverified** — a practitioner assertion with no shared code or data, recorded
 as claimed, never as evidence.)
+
+---
+
+## `zecontinha_eg_pairs_screen` — REFUTED AT SOURCE, by measurement, before any desk compute was spent
+**Killed:** 2026-08-13, BR frontier miner s3. **Class:** STATISTICAL-ARBITRAGE (the desk's thinnest
+family — `data/strategy_coverage.json`: THIN, n=1 of 14). **Tier:** EXECUTABLE (code + params + a live
+deployment), which is why it could be settled in an afternoon rather than argued about.
+
+**SOURCE:** `github.com/Vido/zecontinha` (Apache-2.0, 14★, 8 forks listed / 6 live, active 2019→2026-02),
+live at `zecontinha.com.br`, broadcasting to the public PT-BR Telegram `@pythonfinancas`.
+**DERIVES-FROM:** Engle–Granger (1987) two-step, via the standard BR retail *"Long&Short"* pairs
+literature; no paper cited in-repo. The implementation is conventional, not novel — **which is the point:
+this kill is about the convention, not about one Brazilian hobbyist.**
+
+**THE PUBLISHED RULE, fully specified** (`src/bin/bot.py:select_pairs`): keep pairs with
+ADF `p < 0.05` **and** Hurst `< 0.3` **and** `|z| ≥ 2.0` at `periods=120`; rank by **lowest Hurst**;
+broadcast the top 3. Universe: a hardcoded 100-symbol Binance USDT-perp list → 4,950 pairs, each tested
+at **10 lookback windows** (`PERIODOS_CALCULO = range(60,260,20)`) = **49,500 tests per run**, with no
+multiplicity correction anywhere in the codebase.
+
+**THE KILL — MEASURED, not asserted** (4,000 trials, two *independent* random walks, n=120, seed 20260813):
+
+| gate as implemented | realised rejection rate under the null | nominal |
+|---|---|---|
+| `adfuller(sm.OLS(y, add_constant(x)).fit().resid)` | **17.97%** [16.8, 19.2] | 5% |
+| `statsmodels.tsa.stattools.coint(y, x)` (MacKinnon) | 7.60% [6.8, 8.4] | 5% |
+
+**The screen's 5% cointegration gate actually operates at 18% — 3.59× its own nominal size** (OP-077).
+The cause is textbook and unambiguous: ADF critical values do not apply to residuals of an *estimated*
+cointegrating vector, because OLS picked β to minimise exactly the variance the test then examines.
+Full published screen (ADF **and** |z|≥2) fires on **0.88%** of pure-noise pairs against 0.43% for the
+correctly-sized test → **≈44 spurious pairs per run at the broadcast window alone**, from which the bot
+publishes the 3 with the lowest Hurst — i.e. it ranks the survivors of a noise filter by a statistic
+(R/S Hurst at n=120) whose sampling error at that length is large. **Selection on noise, ranked by noise.**
+The null used is *independent* walks; co-moving perps make spurious residual stationarity more likely,
+so 17.97% is a **conservative floor**.
+
+**WHAT IS *NOT* KILLED, AND THIS MATTERS MORE THAN THE KILL** — I checked whether the desk's standing
+breadth objection applies here and **it does not**. The recorded desk lesson is *"the crypto cross-section
+is 1.54 independent bets RAW and 29 market-neutral … any **directional** cross-sectional mechanism is
+hard-killed by narrow_breadth before it starts — neutralise BTC beta or do not build it."* A cointegration
+pair is long *y* / short *βx*: **beta-neutral by construction**, so it lands on the **29** side, not the
+1.54 side. The breadth argument that ends every directional cross-sectional mechanism on this desk
+**is not an argument against this family** — it is closer to an argument *for* it. Routed to
+`improvement_inbox.md`; **no kill claimed**, and the family stays open.
+(Caveat recorded honestly: `reports/cross_section_breadth.json` is gitignored and **not readable from
+this checkout**, so the 1.54/29 figures are cited from the desk-lesson text, not re-verified here.)
+
+**WHAT SURVIVES THE KILL AND IS WORTH KEEPING:**
+1. **The correct instrument is one import away** — `coint()` vs `adfuller(resid)`. Any future desk
+   statarb work must use the former; this entry is the reason.
+2. **Half-life and Hurst as *descriptors*, not gates** — the repo computes an OU half-life
+   (`-ln2 / β` from Δs on lagged s) and publishes it beside every pair. Sound construction, wrong role:
+   it is a ranking input here, and ranking thousands of candidates by a noisy in-sample statistic is
+   the selection problem again.
+3. **A free control arm** (OP-080): the same channel broadcast a **uniform random draw** before
+   PR #30 (2025-11-06) and a screened selection after — a dated, public, timestamped random-selection
+   baseline for pair trading. Whoever tests a pairs screen here has the "does it beat a hat?" arm already.
+
+**COST OF THIS KILL: one afternoon of Monte Carlo, zero desk data, zero forward slots.** Pre-emptive
+falsification of a mined artifact is free graveyard material and this is what it looks like.

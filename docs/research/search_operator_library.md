@@ -1652,7 +1652,11 @@ verified. Per OP-037, a SEED is a lead, never a search key._
 | **long e short** / **long&short** | the pairs trade, named after its LEGS | all | **OBSERVED** — B3 retail culture names the TRADE, not the statistic. **Two collisions poison it as a bare key** (see below) — always pair with `cointegração` or `ações` |
 | par cointegrado / pares | cointegrated pair / pairs | all | **OBSERVED** |
 | arbitragem estatística | statistical arbitrage | all | **OBSERVED** (as `arbitragem estatistica`, unaccented, in repo text) — lower volume than `cointegração` |
-| **TCC** | *trabalho de conclusão de curso* — undergraduate final thesis | all | **OBSERVED — a high-value STRUCTURAL key, not a topic key.** BR students publish thesis code to GitHub under this name. A `TCC` repo is a full methods replication with code, and it is exactly L1.34 #6 material: rigorous-looking, never out-of-sample validated, never read by the English-speaking crowd |
+| **TCC** | *trabalho de conclusão de curso* — undergraduate final thesis | all | **OBSERVED and now MEASURED (s3) — a STRUCTURAL key, and a PRECISION one, not a recall one.** `TCC bitcoin` **29**, `TCC trading` **18**, `TCC criptomoedas` **15** — but `TCC cointegração` **1** against **30** for `cointegração` alone. **Never AND it with a topical key** (OP-081); union instead. Everything it returns is genuine thesis code (L1.34 #6: rigorous-looking, never out-of-sampled, unread by the English crowd), but counts **overstate** — student repos are disproportionately vendored framework forks |
+| **dissertação** | dissertation (the *formal* thesis word) | all | **OBSERVED-NEGATIVE (s3) — a measured ZERO: `dissertação trading` = 0 repos.** Recorded precisely because a clean zero on a correct, well-formed native word reads exactly like an empty ground (OP-054's third false-exhaustion mode). Within one country only the **colloquial abbreviation** survives as a repo label. Do not spend budget here |
+| **prazo** | lit. "term/deadline" — in BR pairs practice, **the lookback window** | all | **OBSERVED (s3, video `vaDLuXYDSJ8`)** — *"no prazo de 240"*. The window length is called a *prazo*, not a *janela*. A query for `janela` misses the practitioner layer |
+| **beta rotation** | rolling hedge-ratio stability | all | **OBSERVED (s3) — an ENGLISH term used untranslated inside PT-BR practice**, and independently a function name in `zecontinha` (`analysis.py:beta_rotation`). Selection criterion, not just a diagnostic: *"beta rotation mais estável"*. A PT-only query misses it — this is OP-079's boundary running through the vocabulary itself |
+| **enquadrado** | "well-fitted / well-framed" (of a pair) | all | **OBSERVED (s3)** — *"o par está melhor enquadrado"*, i.e. the best-fitting pair. Folk term for the selection step; no English equivalent in the literature |
 | ações | equities/stocks | all | **OBSERVED** — the disambiguator that rescues `long short` from the LSTM collision |
 | criptomoedas | cryptocurrencies | all | **OBSERVED** — note `cripto` alone did NOT conjoin usefully in repo search (`cointegracao+cripto` = 0 while crypto repos exist in the `cointegracao` corpus): search the broad key and filter, do not conjoin |
 | alavancado | leveraged | all | **SEED — NEGATIVE-CONTROLLED AND DOWNGRADED (OP-037).** The word is real standard Portuguese, but it is *standard financial vocabulary*, not slang, so it carries no discrimination as a search key — the CN `亏损/kuisun` case exactly. Not a dark-forest key |
@@ -2335,3 +2339,229 @@ was a refusal (hawamer, 5ch, DCInside, EliteTrader, Gate). Per-agent policy is r
 ways, so re-probe rather than carrying a binary open/closed prior — and note that AR s1 read this same
 file on 2026-08-12 as *"ClaudeBot unnamed, falls to `*`"*. Either it misread or the file changed inside
 24h; **either way the lesson is the same — a policy read is a dated observation, not a standing fact.**
+
+---
+
+### OP-077 AN ADF p-VALUE ON OLS RESIDUALS IS NOT A COINTEGRATION p-VALUE — AND THE GAP IS 3.6× NOMINAL   [active]
+class: mined-artifact validation / statistical
+origin: BR frontier miner s3 (2026-08-13), `Vido/zecontinha` (Apache-2.0, 14★, live since 2019)
+validated-gain: **measured** the actual size of a live public pair-trading screen at **17.97% against
+its own nominal 5%**, by Monte Carlo on its exact window, rather than asserting the textbook objection.
+
+**THE PATTERN, and it is the single most common defect in mined pairs-trading code.** An
+Engle–Granger implementation does:
+
+```python
+X   = sm.add_constant(series_x.values)
+res = sm.OLS(series_y, X).fit()
+adf = adfuller(res.resid, autolag='AIC')     # <-- p-value taken from HERE
+```
+
+`adfuller` returns Dickey–Fuller p-values, which are correct for a series **given in advance**. These
+residuals are not given in advance: OLS *chose* β to minimise their variance, so they are the most
+stationary-looking linear combination available in-sample. The test therefore over-rejects "no
+cointegration". `statsmodels.tsa.stattools.coint()` exists precisely to apply the MacKinnon critical
+values that correct for the estimated cointegrating vector.
+
+**MEASURED (4,000 trials, two INDEPENDENT random walks, n=120 — the exact window this system
+broadcasts; seed 20260813):**
+
+| pipeline | rejections at α=0.05 | rate | 95% CI |
+|---|---|---|---|
+| `adfuller(OLS.resid)` — theirs | 719 / 4000 | **0.1797** | [0.168, 0.192] |
+| `coint(y, x)` — MacKinnon | 304 / 4000 | 0.0760 | [0.068, 0.084] |
+
+**3.59× its own nominal size; 2.37× the correctly-sized test.** (`coint()` at 7.6% is itself a little
+above 5% at n=120 — finite sample — which is worth knowing before anyone treats the correct test as
+exact at short windows.) The null used here is *independent* random walks; real crypto perps are
+strongly co-moving, which makes spurious residual stationarity **more** likely, so 17.97% is a
+conservative floor rather than a worst case.
+
+**THE OPERATOR:** in any mined pairs/statarb artifact, grep for `adfuller` applied to a regression
+residual. If the residual came from a fitted model and the p-value came from `adfuller`, **the stated
+significance is wrong in a known direction and can be re-priced in minutes**. Do not argue it — run the
+null through their own window and report the realised size. Applies identically to
+`ts.OLS → adfuller`, `np.polyfit → adfuller`, and any hand-rolled "spread" z-test.
+
+**TRANSFERS BEYOND COINTEGRATION:** the general form is *a test statistic evaluated against critical
+values derived for a quantity that was not estimated from the same data*. Same error class as scoring
+an in-sample-selected feature with textbook t critical values.
+
+---
+
+### OP-078 A FORK TREE AND A FILE HISTORY BOTH LOSE MEMBERS SILENTLY — COUNT THE ATTRITION (L1.60 applied to MINING)   [active]
+class: enumeration / denominator integrity
+origin: BR frontier miner s3 (2026-08-13), `Vido/zecontinha` fork tree + `binance_futures.py` history
+validated-gain: two independent silent-loss channels found in one repo walk, both of which make a
+ground look **smaller and duller than it is**, and one of which makes a 404 indistinguishable from a null.
+
+**CHANNEL 1 — TOMBSTONE FORKS. `/forks` over-reports; the count under-reports; neither is the tree.**
+`Vido/zecontinha` publishes `forks_count: 6`. The `/forks` endpoint returns **8**. The two extra
+(`yoshimorimori`, `igor110055`) are **HTTP 404 on both API and HTML** — deleted or renamed accounts
+still served as fork entries. Divergence over the 6 live forks:
+
+| fork | status |
+|---|---|
+| bryantoken, marcosilvaa | identical (ahead 0) |
+| kenanfint | behind 10 |
+| marcusfreire0504, IlmerO, webclinic017 | behind 144 |
+| yoshimorimori, igor110055 | **404 — tombstone** |
+
+**ZERO forks ahead by even one commit.** So "6 forks" was a *popularity* signal, not a development
+signal — and a fork-walker that treats non-200 as "skip" drops the tombstones out of its denominator
+and reports "6 forks, all clean" when what it measured was 6 of 8. **A tombstone 404, a rate-limit
+block and a network failure are byte-identical to that walker** — R0466's false-null, and exactly the
+attrition L1.60 fences inside this desk, here firing on a mining instrument instead.
+**Count the 404s and name them as a third state.**
+
+**CHANNEL 2 — `?path=` IS RENAME-BLIND, AND IT COST 73% OF THE HISTORY.**
+`GET /repos/{r}/commits?path=src/coint/binance_futures.py` → **3 commits, oldest 2025-11-18**.
+That oldest commit is *"Moves django files to src/"*. Re-querying the pre-move path
+`coint/binance_futures.py` → **8 more, oldest 2020-06-28**. True history **11**; the obvious query
+reports **3**. A seat dating an artifact from the current path would have called a 2020 file a 2025
+one and mis-dated everything derived from it.
+**Operator: when the oldest commit a path returns is a move/rename/restructure commit, that is not the
+beginning — it is the seam. Re-query the old path (and repeat).**
+
+---
+
+### OP-079 IN A NON-ENGLISH REPO, THE CODE LAYER AND THE NEGOTIATION LAYER ARE IN DIFFERENT LANGUAGES — QUERY BOTH   [active]
+class: lexicon / language routing — refines OP-075 from the opposite direction
+origin: BR frontier miner s3 (2026-08-13), `Vido/zecontinha` PR threads #27/#28/#30/#35
+validated-gain: names *where inside one artifact* the native-language moat actually sits, after
+AR s2's OP-075 established that a region's practitioners may simply write in English.
+
+**THE PROVING INSTANCE — one repo, one thread, two languages, stated as policy by the maintainer:**
+
+> **Vido (2025-10-22):** *"I believe all public communications (and code base) should be in English.
+> Hopefully this will grant this project the greatest reach and it will be accessible to the most
+> developers — **not just the lusophones**."*
+
+…written in reply to a Brazilian contributor who had just asked, **in Portuguese**, which language to
+use (*"Salve @Vido, você prefere que eu siga com as mensagens dos PR em ingles ou portugues?"*).
+
+So on this artifact: **code, identifiers, commit messages and PR titles are English by explicit policy;
+the human negotiation around them is Portuguese.** OP-075 measured that an AR-region population writes
+its *code* in English and concluded the language is not a moat there. This is the refinement: the
+language boundary does not run around the repo, **it runs through it**, and it separates the layer that
+is easy to find from the layer that carries the reasoning.
+
+**THE CONSEQUENCE FOR SEARCH:** an English-key search finds this repo and its code. A Portuguese-key
+search finds the *discussion*. They are the same artifact and only the second contains the maintainer
+explaining what the system actually does (see OP-080). A seat that queries one key and grades the
+ground has measured **half** of it — and it is the half the crowd already has.
+
+**Residual traces even under an English-only policy** (these are the greppable seams): early
+identifiers the policy was adopted too late to remove — `gera_pares`, `calcula_modelo`, `PERIODOS_CALCULO`,
+`ativo_x`/`ativo_y` — plus Portuguese code comments (`# limpa o canvas`, `# TODO: descobrir qual é correto`).
+**Grep the identifiers, not the prose:** a project can enforce English on prose far more easily than it
+can rename its own variables.
+
+---
+
+### OP-080 THE MAINTAINER'S OWN WORDS IN A PR THREAD OUTRANK THE README — AND SOMETIMES REFUTE THE SYSTEM   [active]
+class: depth / comment layer
+origin: BR frontier miner s3 (2026-08-13), `Vido/zecontinha` PR #30
+validated-gain: a single reply established that a public signal feed had been **broadcasting a uniform
+random draw** — a fact absent from the README, the code comments, and every surface description.
+
+**THE COMMENT (PR #30, maintainer, 2025-10-21), and nothing else on the artifact says it:**
+
+> *"`select_pair(n)` was just a silly function to **draw a pair**, to show case it on Telegram.
+> What ends up happening was **Telegram folks see it as recommendations. Which they are NOT!**
+> Let's face it: this silly function is now a major interaction point with the users.
+> I don't think a random draw is applicable any more."*
+
+The surface — a live site, a Telegram channel, a cointegration engine, an ADF/Hurst/half-life panel —
+reads as a signal service. The comment layer says the selection step was **`order_by('?')`**, Django's
+random ordering, and that the audience had been reading noise as advice for years.
+
+**THE OPERATOR:** on any mined system that emits a signal, find the code path from *table* to
+*published output* and then find the **maintainer's own commentary on that specific function**. The
+README describes the machinery; the PR thread is where someone admits what the machinery is *for* and
+what it is *not*. Ranked by yield, on this artifact: PR review comments ≫ issues ≫ commit messages ≫ README.
+
+**AND THE RESEARCH ASSET IT CREATES — a documented control arm, which is the rarer half of this find.**
+Because the switch from random draw to screened selection is **dated and attributable** (PR #30 merged
+2025-11-06; template versioned `v3`, now `v4`), the channel's own public history contains a
+**random-pair-selection baseline followed by a screened one, on the same universe, published with
+timestamps**. Any future test of "does a cointegration screen beat drawing a pair out of a hat" has its
+control arm already broadcast in public. **Look for the regime change, not just the current behaviour.**
+
+---
+
+### OP-081 A GENRE KEY AND A TOPIC KEY SELECT ON DIFFERENT AXES — UNION THEM, NEVER `AND` THEM   [active]
+class: query construction / lexicon — the structural sibling of OP-054
+origin: BR frontier miner s3 (2026-08-13), `TCC` as a search key over BR quant repos
+validated-gain: graded a queue item predicted "RICH SEAM" as **narrow**, with the number that shows why,
+and salvaged the key's real use instead of discarding it.
+
+**MEASURED, one instrument, same minute (GitHub repo search):**
+
+| query | repos | |
+|---|---|---|
+| `TCC bitcoin` | **29** | the genre key works |
+| `TCC trading` | **18** | works |
+| `TCC criptomoedas` | **15** | works |
+| `TCC cointegração` | **1** | **genre ∩ topic ≈ ∅** |
+| `cointegração` alone (BR s2) | **30** | the topic key alone |
+| `dissertação trading` | **0** | the *formal* genre word is dead |
+| `"undergraduate thesis" trading` (EN control) | 8 | the EN genre word is weaker |
+
+**THE RULE.** A **genre/structural key** (`TCC`, thesis, dissertation, 卒論, 졸업논문, 毕业设计,
+дипломная работа) selects on *document type*. A **topical key** (`cointegração`) selects on *subject*.
+They are near-independent, so **ANDing them multiplies two already-small selectivities** and collapsed a
+30-repo corpus to **1**. Union them; run each separately and merge.
+
+**A GENRE KEY IS A PRECISION KEY, NOT A RECALL KEY.** Everything `TCC` returns really is thesis code —
+which is worth having, because thesis code is rigorous-looking, uniformly never out-of-sampled, and
+unread by the English crowd (L1.34 #6). Use it to *characterise* a corpus you found some other way,
+never as your way in.
+
+**TEST EVERY GENRE WORD; DO NOT ASSUME THE FORMAL ONE.** `dissertação` → **0** while `TCC` → 29, in the
+same country, in the same language. Only one of a region's several thesis words survives as a repo
+label, and it is generally the **colloquial abbreviation**, not the formal noun. Guessing costs a clean
+zero that reads exactly like an empty ground — the OP-054 false-exhaustion failure arriving through the
+genre axis instead of the topic axis.
+
+**AND GRADE BY NON-UPSTREAM PATHS, NOT BY REPO COUNT.** `cadilhe/freqtrade_2020_tcc` is a **vendored
+fork of freqtrade** — 428 blobs, of which the student's own work is a handful of files under
+`user_data/`. Student repos are disproportionately whole-framework forks, so a genre key's raw counts
+**overstate** the corpus. Open one before believing the number.
+
+---
+
+### OP-082 WHEN A BACKTEST PUBLISHES AN IMPLAUSIBLE WIN RATE, LOOK FOR THE TRADES IT PUT IN A DIFFERENT FILE   [active]
+class: backtest mining / survivorship
+origin: BR frontier miner s3 (2026-08-13), `cadilhe/freqtrade_2020_tcc` backtest artifacts
+validated-gain: turned an **87.1% win rate, +8.78%** headline into a measured **+5.87%** in one fetch —
+a **49.6% overstatement** — using only arithmetic already present in the repo.
+
+**THE PATTERN.** Backtesting frameworks report positions still open when the run ended **separately**
+from closed trades, because they have no exit price for them. The headline table is therefore a table
+of **trades that closed**, and in any strategy that exits winners on a target while letting losers run,
+**closing is correlated with winning**. The open-trade file is where the losers accumulate.
+
+**MEASURED on one artifact** (freqtrade, Binance spot /BTC, 23 pairs, 5m):
+
+| file | trades | win | loss | win rate | tot profit |
+|---|---|---|---|---|---|
+| `backtesting_report_*.txt` (headline) | 411 | 358 | 53 | **87.1%** | **+8.78%** |
+| `left_open_*.txt` (a *separate file*) | 14 | 1 | **13** | 7.1% | **−2.91%** |
+| **true combined** | 425 | 359 | 66 | 84.5% | **+5.87%** |
+
+Average duration gives it away independently: **4d23h** for the left-open set against **1d0h** for the
+closed set — the trapped losers are ~5× older than the trades that got counted.
+
+**THE OPERATOR:** an implausible win rate (>80%) with a **small average profit per trade** is the
+signature. Before reading anything else, (1) find the open-trades/unclosed report and add it back;
+(2) check for an exit rule that can only fire in profit (`sell_profit_only`, "only sell green",
+take-profit-without-stop) — that is the mechanism that *manufactures* the pattern; (3) compare average
+durations between the two sets. **Do not report the headline number even to dismiss it** — recompute
+and report the combined one.
+
+**AND KEEP THE MECHANISM SEPARATE FROM THE ARITHMETIC.** On this artifact the arithmetic is certain and
+the *cause* is not: `Strategy001.py` sets `sell_profit_only = True` while `config.binance.json` sets it
+`false`, and **config overrides strategy** — so which was live is undeterminable from the repo. State
+the recomputed number as fact and the mechanism as a hypothesis with its falsifier. (The vendored OHLCV
+under `user_data/data/` makes that falsifier genuinely runnable, which is what EXECUTABLE tier means.)
