@@ -55,6 +55,14 @@ from libs.research.decline_detector import (
 
 _OUT = Path("data/decline_events.json")
 _LAKE = "data/lake"
+#: THE DESK'S OWN OPEN-INTEREST ARCHIVE, and the reason this strategy can exist at all.
+#: `scripts/collect_binance_metrics.py` snapshots OI daily precisely BECAUSE Binance serves only
+#: ~30 days of it -- so this file is history the desk manufactured and nobody else has. Measured
+#: on the live box 2026-08-13 without it: 1093 declines detected across five symbols and ZERO
+#: actionable, every one falling to IDIOSYNCRATIC_ASSET_FAILURE or MIXED_UNKNOWN, because OI is
+#: what the classifier calls the single best cascade signature -- forced selling DESTROYS open
+#: interest and informed selling does not have to.
+_OI_ARCHIVE = Path("data/crypto_metrics.parquet")
 #: Enriched per-bar columns the classifier needs to name a cascade. Absent columns stay None and
 #: the event falls to MIXED_UNKNOWN rather than being guessed into a tradeable answer.
 _ENRICHED = {
@@ -66,6 +74,41 @@ _ENRICHED = {
     "cross_venue_divergence": ("cross_venue_divergence",),
     "breadth_down": ("breadth_down",),
 }
+
+
+def _oi_cleared_series(symbol: str, index: Any) -> np.ndarray | None:
+    """Fraction of open interest destroyed over the trailing window, aligned to the bar index.
+
+    ONLY WHERE THE ARCHIVE ACTUALLY COVERS THE BAR. The desk began snapshotting OI on a date, so
+    every decline before that date has no OI evidence and MUST stay unclassified -- returning 0.0
+    there would be a measured "no OI was cleared", which reads as evidence AGAINST a cascade
+    rather than as absence of evidence. NaN is carried through instead, and `_at` in the detector
+    leaves the field at its UNMEASURED default for those bars.
+
+    The drop is measured peak-to-trough over a trailing window rather than day-over-day: a cascade
+    clears OI across the whole fall, and a single-day difference would miss a two-day flush and
+    understate every one of them.
+    """
+    if not _OI_ARCHIVE.exists():
+        return None
+    try:
+        import pandas as pd
+        df = pd.read_parquet(_OI_ARCHIVE)
+        rows = df[df["symbol"] == symbol]
+        if rows.empty or "open_interest" not in rows.columns:
+            return None
+        s = (rows.set_index(pd.to_datetime(rows["ts"], utc=True))["open_interest"]
+             .astype("float64").sort_index())
+        s = s[~s.index.duplicated(keep="last")]
+        idx = pd.to_datetime(index, utc=True)
+        aligned = s.reindex(idx.normalize(), method=None)
+        peak = aligned.rolling(7, min_periods=2).max()
+        cleared = (peak - aligned) / peak.where(peak > 0)
+        return np.asarray(cleared.to_numpy(), dtype="float64")
+    except Exception:
+        # Reported by absence, never by a zero: an unreadable archive must not manufacture the
+        # claim that no open interest was cleared.
+        return None
 
 
 def _column(df: Any, names: tuple[str, ...]) -> np.ndarray | None:
@@ -98,6 +141,10 @@ def detect_for(symbol: str, df: Any) -> list[Any]:
         vm = _volume_multiple(df)
         if vm is not None:
             kw["volume_multiple"] = vm
+    if "oi_cleared" not in kw:
+        oi = _oi_cleared_series(symbol, df.index)
+        if oi is not None:
+            kw["oi_cleared"] = oi
     return detect_declines(close, symbol=symbol, **kw)
 
 

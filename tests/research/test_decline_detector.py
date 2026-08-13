@@ -156,3 +156,45 @@ class TestTheBookCanNowBeEstimated:
 def test_an_empty_or_tiny_series_is_no_events_not_a_crash() -> None:
     assert detect_declines(np.array([]), symbol="T") == []
     assert detect_declines(np.full(5, 100.0), symbol="T") == []
+
+
+# --- the OI wire: absence must never read as "no OI was cleared" -------------------------------
+
+class TestOpenInterestIsEvidenceOrItIsAbsent:
+    """THE MEASURED BLOCKER, and the shape of its fix.
+
+    On the live box with OHLCV only: 1093 declines across five symbols, ZERO actionable, every one
+    falling to IDIOSYNCRATIC_ASSET_FAILURE or MIXED_UNKNOWN. Not a weak edge -- no evidence. OI is
+    what `classify` calls the single best cascade signature, because forced selling DESTROYS open
+    interest and informed selling does not have to.
+
+    The dangerous fix would have been to default missing OI to 0.0. That is not "unknown", it is a
+    measured claim that NO open interest was cleared -- evidence AGAINST a cascade, manufactured
+    out of an archive that simply does not reach back that far.
+    """
+
+    def test_MISSING_OI_IS_NOT_ZERO_OI(self) -> None:
+        """NaN must leave the field UNMEASURED, not assert a clean 'no cascade here'."""
+        c = _crash()
+        st = _cascade_state(c.size, 120)
+        st["oi_cleared"] = np.full(c.size, np.nan)          # archive does not cover these bars
+        found = detect_declines(c, symbol="T", **st)
+        assert found
+        assert all(d.mechanism not in REBOUND_FAVOURABLE for d in found), (
+            "a NaN OI reading was treated as evidence rather than as absence")
+
+    def test_oi_present_and_large_names_the_cascade(self) -> None:
+        """POSITIVE CONTROL for the wire: with OI evidence the same fall IS classifiable."""
+        c = _crash()
+        found = detect_declines(c, symbol="T", **_cascade_state(c.size, 120))
+        assert any(d.mechanism in REBOUND_FAVOURABLE for d in found)
+
+    def test_oi_present_but_small_still_refuses(self) -> None:
+        """Below the classifier's threshold is a real measurement that says NOT a cascade -- and
+        it must refuse just as firmly as absence does, for the opposite reason."""
+        c = _crash()
+        st = _cascade_state(c.size, 120)
+        st["oi_cleared"] = np.zeros(c.size)
+        st["oi_cleared"][120] = 0.01                        # 1% cleared: nothing was liquidated
+        found = detect_declines(c, symbol="T", **st)
+        assert all(d.mechanism not in REBOUND_FAVOURABLE for d in found)
