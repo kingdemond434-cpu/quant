@@ -42,6 +42,12 @@ with the vocabulary the document itself would use.
   WS-005, the desk's most-repeated defect class.
 - **A gate that never ran is a claim the desk cannot cash** (L1.49).
 - **"Exhausted" requires per-axis evidence** (L1.51) — for hypotheses as well as sources.
+- **Never share a worktree with another live session** (R0423). Cron starts several: if session
+  start printed `SHARED TREE`, either stage EXPLICIT PATHS on every commit (never `git commit -a`)
+  or take your own — `git worktree add -b <branch> ../qp-<branch>` — and merge back. **Never
+  `git stash`**: it restores to the index and a sibling can check the tree out from under you.
+  Three recorded instances of a sibling's broad commit sweeping another session's staged files
+  into an unrelated commit; the code survived every time, the rationale did not.
 - **Tier-3 ruin rail** (`scripts/run_deadman_switch.py`) is never modified autonomously. Arming live
   trading is the principal's act. It is deliberately absent from mypy's `files`.
 - `data/secrets/**` never leaves the box, and no tool ever prints a key.
