@@ -3279,6 +3279,25 @@ _TERMINAL_ARTIFACTS = {
         "kind that constrain one. It never accumulates inventory; the hypothesis it pins either "
         "gets tested through the standard gauntlet (its outcome ledgered like any candidate) or "
         "dies untested. Editing it after data arrives would destroy the instrument.",
+    "docs/research/COINM_CONVEXITY_PREREGISTRATION.md":
+        "PRE-REGISTRATION (2026-08-13, R0462) of the COIN-M-vs-USDT-M convexity-differential "
+        "measurement + the two screen constructions, written BEFORE the backfill was read. Same "
+        "instrument and same immutability rationale as FAILED_BREAKOUT_PREREGISTRATION.md: "
+        "thresholds fixed before data are the only kind that constrain anything. It records one "
+        "additional thing the others do not -- a STRUCTURAL kill measured before the run (Binance "
+        "has never listed a USDT-M quarterly for BNB/SOL/XRP, so the standing trigger's '>=3 of 5 "
+        "underlyings' clause can never fire; ceiling 2 of 5). Its conversion is "
+        "COINM_CONVEXITY_RESULT.md; nothing learned goes back into this file. Superseded BY A "
+        "NAMED CONDITION, not a date: if Binance ever lists a USDT-M quarterly for BNB, SOL or "
+        "XRP, a new pre-registration must supersede it by name.",
+    "docs/research/COINM_CONVEXITY_RESULT.md":
+        "DATED MEASUREMENT RECORD (2026-08-13, R0462) of the screen the file above pre-registered "
+        "-- same pairing as INTRADAY_ROTATION_PREREGISTRATION.md / INTRADAY_ROTATION_RESULT.md. "
+        "It exists as a TRACKED artifact because its regenerable twin "
+        "(reports/axis_screens/coinm_convexity_20260813.json) sits under a gitignored path, and a "
+        "gitignored evidence path is a dangling citation on every box but the one that ran it. "
+        "Regenerable from scripts/screen_coinm_convexity.py. NOTHING in it licenses moving a "
+        "threshold or re-scoring the standing EV REJECT.",
     "docs/research/THREE_MECHANISM_PREREGISTRATION.md":
         "PRE-REGISTRATION of the desk's named mechanism set (trial count declared in advance), "
         "same instrument and same immutability rationale as FAILED_BREAKOUT_PREREGISTRATION.md. "
