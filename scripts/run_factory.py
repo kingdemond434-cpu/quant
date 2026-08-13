@@ -70,7 +70,14 @@ def _confidence(sharpe: float, gates: str) -> float:
 
 def main() -> None:
     if not _REPORT.exists():
-        raise SystemExit("run scripts/run_mt5_portfolio.py first")
+        # ITS PRODUCER IS GONE (R0421, 2026-08-13). scripts/run_mt5_portfolio.py was retired as
+        # dead MT5-stack code, so this input can never be regenerated and this script cannot run
+        # again. Left in place rather than deleted -- it is already on REPO_MAP's DEPRECATED list
+        # and cascading deletions past the MT5 chain is a bigger decision than this row -- but the
+        # message must not send a reader chasing a path that no longer exists.
+        raise SystemExit(
+            f"{_REPORT} is absent and its producer (scripts/run_mt5_portfolio.py) was RETIRED "
+            "on 2026-08-13 (R0421). This script is deprecated and cannot be re-run.")
     rep = json.loads(_REPORT.read_text("utf-8"))
     results = rep["results"]
     incr = rep.get("incremental_sharpe", {})

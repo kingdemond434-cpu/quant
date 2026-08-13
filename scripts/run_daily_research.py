@@ -1,10 +1,14 @@
-"""Daily research batch -- one entry point for the scheduler (Windows Task: QuantDaily).
+"""Daily research batch -- CRYPTO-ONLY, spawned by the always-on executor.
 
 Runs the forward-accumulating pipeline in order, isolating each step so one failure does not abort
-the rest: (1) log broker swap rates (seeds the carry sleeve), (2) refresh the liquid crypto lake +
-funding shadow, (3) cross-asset combo shadow, (4) the MT5 alpha-portfolio campaign, (5) rebuild the
-dashboard scoreboard. Steps needing the MT5 terminal (1) are best-effort; the research steps run on
-cached data regardless.
+the rest. The authoritative step list is `_STEPS` below -- read that, not this paragraph.
+
+THIS DOCSTRING USED TO DESCRIBE A DIFFERENT PROGRAM (R0421, corrected 2026-08-13). It advertised a
+five-step chain built around "(4) the MT5 alpha-portfolio campaign" and a Windows Task scheduler,
+while the code 40 lines below has been crypto-only for months and says so in its own comment
+("MT5 abandoned."). Three of the steps it named no longer exist. A stale docstring is how a dead
+path keeps looking alive: it is the first thing a reader trusts and the last thing anyone updates,
+and here it survived the deletion of the very scripts it pointed at.
 
     python scripts/run_daily_research.py
 """
