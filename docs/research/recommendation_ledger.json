@@ -5566,11 +5566,11 @@
    "summary": "THE KELLY SHRINK IS THE RIGHT FORMULA WITH THE WRONG RATIONALE ATTACHED, AND THE TWO CALIBRATE DIFFERENTLY. Measured by R0266's study (CONTROL A, 12/12 cells): with an UNBIASED mu, estimation noise ALONE leaves the growth optimum at exactly full Kelly, f* = 1.00. That is not a simulation artifact -- E[log W_T] = T(L*mu - L^2 sigma^2/2) is LINEAR in mu, so averaging over symmetric unbiased parameter noise cannot move the argmax. The rationale carried in libs/risk/kelly_shrink.py and echoed in the constitution -- 'Kelly's penalty is asymmetric, so shrinkage RAISES expected log growth on an estimated edge' -- does not survive that test: the asymmetry is already inside the quadratic term, and symmetric noise about a correct mean does not shift the optimum. THE SHRINK IS STILL CORRECT, and this row must not be read as an argument to bet more. What justifies it is that mu-hat is NOT unbiased for the quantity the desk bets on: candidates are selected BECAUSE they measured well, so mu-hat carries a winner's curse, and the correct input is the POSTERIOR MEAN under a prior that most candidates have no edge. S^2/(S^2+SE^2) is exactly the James-Stein / normal-posterior shrinkage factor toward a zero-edge prior, so the FORM is right. WHY IT MATTERS PRACTICALLY: the two stories calibrate differently. A posterior-mean shrink should be tuned to (a) how strong the zero-edge prior is -- this desk has 420 tested / 0 survivors of evidence for a very strong one -- and (b) how SELECTED the particular candidate was, i.e. how many trials it won against. Neither is an input today; the shrink sees only S and N, so it applies the same haircut to an edge picked from 1 trial and one picked from 420, when the winner's curse differs enormously between them. WORK: restate the docstring rationale, then decide whether to feed the trial count (already tracked for DSR multiplicity) into the shrink. Direction of any change is TIGHTER for heavily-selected candidates, never looser.",
    "roi_bps": 12.0,
    "raised": "2026-08-05T23:28:45.668521+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Docstring rationale restated (asymmetry story refuted by CONTROL A; posterior-mean/James-Stein story kept). The trial-count question is DECIDED and the row's direction REJECTED with cause: the shrink is fed fwd_sharpe/fwd_days from the pre-registered forward clock, data that took no part in screen selection, so charging the 420-trial winner's curse against it prices one selection twice. Proven docstring-only via AST comparison (money path, sterile window). Residual best-of-12 forward selection rowed separately.",
+   "commit": "e56c6d95",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T04:56:36.785649+00:00"
   },
   {
    "id": "R0433",
@@ -5602,11 +5602,11 @@
    "summary": "CALIBRATE THE UNTESTED-SHARE BAND ON THE CAMPAIGN PARTITION, which R0270 measured but deliberately refused to fence. check_campaign_retention.py floors observation-retention (the headline, 85.8% on 2026-08-05) and names plan_strata's min-length FALLBACK, but publishes untested_fraction WITHOUT a threshold. Two reasons, both still live: (1) DIRECTION -- the fallback drives n_untested DOWN to zero, so the rising-only check R0270 asked for would have read the sharp regression as the campaign becoming more inclusive; any band must be two-sided. (2) NO VARIANCE TO CALIBRATE AGAINST -- the desk has exactly ONE distinct campaign shape on record (810 candidates, k=32, 36.7% untested; the two audit rows are identical). A tolerance picked from n=1 is a fabricated constant (L1.55) that either never fires or fires on ordinary shape drift, i.e. a welded gate in one direction or the other (L1.43). WORK: once ~10 campaigns have written campaign_strata rows, measure the day-to-day sd of untested_fraction and set a two-sided band at a multiple of it, then wire it as a status in _verdict. The axis is genuinely independent of retention -- a partition that drops many SHORT-history candidates while keeping the long ones tests far fewer candidates at unchanged observation-retention, so retention alone cannot see it. LOW PRIORITY and say so: retention plus the FALLBACK status already cover both known failure modes; this closes the third.",
    "roi_bps": 2.0,
    "raised": "2026-08-06T01:30:51.612556+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Row premise re-measured and found stale in a way that looks like the blocker clearing: 95 campaigns now exist, not 1, but 92 are research-lake plans with untested share 0.0 BY CONSTRUCTION. Pooling them sets a tolerance from the population MIX, not campaign drift. Stats now computed PER POPULATION with CALIBRATABLE/UNMEASURED-BAND/DEGENERATE verdicts; band still not wired and the artifact says why. Also repaired the live defect this exposed: the fence judged the newest row across ALL stores, so the lake outbid the crypto factory and a 170.9h silence read as OK.",
+   "commit": "814d01fd",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T04:56:32.160633+00:00"
   },
   {
    "id": "R0436",
@@ -5614,11 +5614,11 @@
    "summary": "THE ENFORCEMENT MATRIX CANNOT MAP A STANDALONE FENCE BY ITS OWN FILENAME, and it fails in the direction that teaches nothing. build_enforcement_matrix._exists() reads: bare = ref.split(chr(58))[0]; if bare.startswith(check underscore): return bare in _fence_names(). _fence_names() regexes 'def check_*' out of scripts/max_audit.py ONLY, so the prefix short-circuit routes ANY ref beginning check_ into max_audit's FUNCTION table -- including 'check_denominators.py', 'check_freshness.py' and every other standalone fence SCRIPT, which can never be in that table. The result is a BROKEN-REF whose message names the ref and says nothing about why, and build_enforcement_matrix exits 1, which hard-blocks every push (L1.37 pre-push hook). MEASURED 2026-08-06: mapping the new check_campaign_retention.py as 'check_campaign_retention.py' produced exactly this; rewriting it as 'scripts/check_campaign_retention.py' resolved it, because the path form does not start with check_ and falls through to the file-exists branch. The existing standalone fences are all written path-first, so the convention is real but UNWRITTEN and enforced only by a message that does not explain itself. THE DEFECT IS THE SILENT AMBIGUITY, not the convention: a name that is BOTH a valid max_audit function name and a valid script name is resolved against one registry with no way to ask for the other. FIX: try both branches in _exists (function table OR scripts/NAME on disk) and, when a bare check_*.py resolves as a FILE, either accept it or refuse with a message that names the path form. Add a test that maps a standalone fence both ways. WHY IT MATTERS BEYOND TIDINESS: the failure mode is a NEW FENCE being unmappable, which under L2.0 means its failures carry no authority -- so the cheapest response for a future author is to leave the fence unmapped, which is the outcome the matrix exists to prevent.",
    "roi_bps": 3.0,
    "raised": "2026-08-06T01:31:16.208279+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "_exists now discriminates on the .py suffix, which a max_audit function name can never carry, so both registries are askable. Accept direction still requires disk existence. Standalone fence mapped BOTH ways in tests; suffixless form keeps a refusal plus a hint naming the suffix.",
+   "commit": "689dc855",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T04:56:18.644017+00:00"
   },
   {
    "id": "R0437",
@@ -5686,11 +5686,11 @@
    "summary": "Executor stamps its entry-gate arithmetic on the open tape row (funding, rt_bps used, periods, gate margin) so forensics stops re-deriving the gate against a drifting cost model -- the L1.47 flag-computed-and-dropped class. SAME CHANGE fixes the 10x arithmetic slip in R0057's justifying comment at run_cashcarry_executor.py:362: '39.5/3e4 = 0.000132' is actually 0.00132 -- the unmeasured-name bar is 13.2bps/8h (~144%/yr funding), 10x stricter than the deletion rationale claimed. Conclusion survives (per-symbol bar for unmeasured names is STRICTER than the deleted floor) but the record must say the true number. BLOCKED behind the pending ~840-line executor-lineage merge (F0021) -- no drive-by edits to that file until it lands, same rule 6f665e3 followed.",
    "roi_bps": 2.0,
    "raised": "2026-08-11T20:52:35.212033+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "SPLIT. The comment half shipped (53a34d68): 39.5/3e4 is 0.00132 not 0.000132 -- at the printed value the per-symbol bar sat BELOW the 0.00015 floor being deleted, so the record read the change as a loosening; the true bar is 8.78x stricter. Proven comment-only by AST comparison. The stamping half is a money-path IMPROVEMENT and is blocked by L1.38, not by F0021: the executor-lineage merge HAS landed (master is an ancestor of HEAD, all 11 named functions present), but check_change_window reports STERILE via RAIL_BREACH. Unblocks when that window reads OPEN -- prove with: python scripts/check_change_window.py --paths scripts/run_cashcarry_executor.py",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-27",
+   "disposed": "2026-08-13T04:57:05.053621+00:00"
   },
   {
    "id": "R0443",
@@ -7251,6 +7251,66 @@
    "commit": null,
    "due": "2026-08-20",
    "disposed": "2026-08-13T04:47:40.586656+00:00"
+  },
+  {
+   "id": "R0573",
+   "source": "cycle",
+   "summary": "THE STERILE-COCKPIT WINDOW HAS BEEN LATCHED OPEN FOR 11.7 DAYS BY A DISARMED FILE, AND IT IS AN UNPRICED CLAMP (L1.43 welded gate + L1.51). check_change_window reports STERILE / verdict BLOCK for every money-path path, on the single window RAIL_BREACH: 'a ruin/derisk rail is live (CASHCARRY_KILL present) -- the book is unwinding'. THE EVIDENCE SAYS THE BOOK IS NOT UNWINDING: data/CASHCARRY_KILL is dated 2026-08-01T21:55 (11.7 days), its own contents read 'live_guard freeze ...: pager ladder at 4h rung (disarmed)', data/cashcarry_positions.json carries positions {} (zero open carries) and last_risk_action 'ok'. So the window is keyed on the PRESENCE of a file whose own text says the thing it names is disarmed, over a flat book. THE FENCE IS CORRECT AND THE INPUT IS STALE -- this is not a request to loosen L1.38, which is a real law and whose freeze direction is right. Two defects: (1) a gate that has BLOCKED 100 percent of money-path improvements for 11.7 days carries zero information and is the welded-gate class the desk hunts elsewhere; (2) L1.51 requires every clamp to carry {since, holds_usd, usd_per_day, cumulative_usd, lifting_condition} and this one carries NONE, so the cost of every deferred money-path fix is invisible. MEASURED CONSEQUENCE THIS CYCLE: R0442's tape-stamping half was scheduled rather than built, and it is the second row deferred behind this window. WORK: (a) decide whether _rail_live should key on an ARMED rail (a live drawdown action or a non-empty book) rather than file presence, or whether CASHCARRY_KILL is simply stale and clearing it is a principal act -- NEITHER is a threshold change; (b) price the clamp per L1.51. On mode PAPER the honest holds_usd is UNMEASURABLE-PAPER-BOOK, never 0 -- a zero prices the deferral as free.",
+   "roi_bps": 9.0,
+   "raised": "2026-08-13T04:57:26.269859+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0574",
+   "source": "cycle",
+   "summary": "PROMOTION SELECTS ON FORWARD EVIDENCE AND NOTHING DE-BIASES THE EFFECT SIZE IT THEN SIZES ON (R0432 residual, and the version of that question that survives). R0432 asked whether the screen's 420-trial count should tighten libs/risk/kelly_shrink. It must not, and that is now decided in the docstring (commit e56c6d95): shrink_fraction is fed fwd_sharpe/fwd_days from the pre-registered forward clock (dynamic_leverage.py:112), data that took no part in screen selection, so charging the screen's winner's curse there prices one selection twice. BUT A SMALLER SELECTION IS REAL AND UNPRICED: promotion picks winners from at most MAX_FORWARD_SLOTS=12 concurrent forward slots, and Holm corrects the p-value of that DECISION without de-biasing the point ESTIMATE. A candidate that just cleared the bar therefore carries an upward-biased forward Sharpe, and that Sharpe is exactly what sizes the book. Selection intensity is best-of-12, not best-of-420: E[max of 12 std normals] is about 1.63 SEs versus 3.05 at 420, so the correction is real and roughly half. THE OPEN QUESTION IS WHETHER S^2/(S^2+SE^2) ALREADY ABSORBS IT -- it shrinks toward zero and is increasing in evidence, so it may; that is measurable and must not be assumed in either direction. WORK: simulate promotion under the desk's own regime -- k candidates on concurrent forward clocks, Holm at the live bar, size the winner with the current shrink -- and compare realised log-growth against sizing on the de-biased posterior mean. Reuse scripts/study_absorbing_kelly.py's harness and its positive control. DIRECTION OF ANY CHANGE IS TIGHTER, NEVER LOOSER, and a null result is a first-class outcome that retires the question.",
+   "roi_bps": 5.0,
+   "raised": "2026-08-13T04:57:45.012825+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0575",
+   "source": "cycle",
+   "summary": "A RATCHET FLOOR WAS RECORDED FROM A POPULATION IT WAS NEVER MEANT TO JUDGE, AND ONLY A HUMAN CAN UNWIND IT. data/ratchet_floors.json carries campaign_obs_retained value 1.0, recorded 2026-08-06T07:07:01Z. The metric's subject is the daily crypto factory (sor_crypto), whose BEST retention ever recorded is 0.9996 and whose normal shape is 0.858 at k=32. The 1.0 came from a research-lake plan (sor_research, k=1) that retains everything by construction, because check_campaign_retention judged the newest row across ALL audit stores and the lake writes about 90 rows a day. Commit 814d01fd re-subjects the fence and publishes FLOOR-MIS-SUBJECTED plus a floor_mis_subjected field, so the condition is now loud rather than silent. WHAT IS STILL OWED IS THE FLOOR ITSELF, AND IT IS DELIBERATELY NOT DONE HERE: the recorded value is unreachable for its subject, so the moment the crypto factory runs again the fence would read REGRESSED on a perfectly healthy 85.8 percent campaign. Correcting it means REPLACING a recorded floor with a lower number, which is the one edit L1.0 forbids doing quietly and which check_ratchets --ratchet will refuse. It needs an explicit decision: either retire campaign_obs_retained and record a per-population key from the subject's own history, or re-record under a declared subject with the provenance written down. NOTE THE FAILURE WAS NOT A BAD THRESHOLD -- every read was honest and the SUBJECT changed underneath the metric (L1.61), so the general lesson is that a ratchet floor must record WHAT it measured and not only the number.",
+   "roi_bps": 4.0,
+   "raised": "2026-08-13T04:58:03.768546+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0576",
+   "source": "cycle",
+   "summary": "MODEL ABSORPTION AS FORFEITED GROWTH RATE, NOT AS A BANKED CONSTANT -- the fix R0431 proposed was measured and REFUTED, and this is the half of its own suggestion that survives. R0431 asserted the joint-cell artifact in docs/research/absorbing_kelly_study.json was a property of the ONE-YEAR horizon and asked for a multi-year re-run to confirm f*_joint falls toward f*_absorbing. Pre-registered falsifier, and it FIRED (2026-08-13, 6 cells, positive control 6/6): the gap GREW, +0.75 to +1.30 at S=0.75 and +0.15 to +0.25 at S=2.3 over 1y/3y/10y. THE REASONING ERROR IS THE REUSABLE PART: it compared the constant floor log(barrier) against the LEVEL of the surviving upside, which does grow like T*S^2/2. But the option value is set by the SLOPE IN MU, and E[log W_T] = T(L*mu - L^2 sigma^2/2) is linear in mu with slope T*L -- so dispersion is worth MORE at longer horizons while the downside stays pinned at a constant. More horizon, more convexity. The controls localise it: f*_no_barrier holds at 1.00 at every horizon and f*_absorbing correctly FALLS (0.95 to 0.85, 0.85 to 0.80), so the artifact belongs to the FREEZE MODEL and not to the framing. WORK: optimise the time-average growth rate E[log W_T]/T, or carry an explicit continuation value, so an absorbed path earns a growth rate of ZERO forever instead of banking log(barrier). P(absorb) rises with f and would then enter the objective directly, pushing f* DOWN -- the direction theory expects and the freeze model cannot produce. SAME LOW PRIORITY AS ITS PARENT AND SAY SO: gamma_boundary at the desk's real barrier is 0.80-0.95, an order of magnitude below the estimation shrink already applied, and _ruin_cap already binds the same barrier from the constraint side. Nothing about deployed sizing turns on it; this exists so the artifact stops carrying an explanation its own data refutes.",
+   "roi_bps": 4.0,
+   "raised": "2026-08-13T05:00:27.341285+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0577",
+   "source": "deep_sweep",
+   "summary": "WS-012 (EN miner sH): screen_moat.py:317 builds a per-symbol RAW forward return at 60s-900s horizons with no cross-sectional demeaning, while libs/research/panel_breadth.py records the desk's own measurement that raw-return panels carry 1.88 effective bets vs 139 demeaned and states the panel screen's target IS the demeaned return -- the two screen layers disagree on target construction and nothing compares them (L1.61 class). External corroboration with DERIVES-FROM: NONE: G-Research's public 1946-team crypto task, models frozen and forward-scored 3 months, defined its target as 15-minute RESIDUALIZED returns at almost exactly this horizon. ACTION: re-run one screen_moat cell family with the cross-sectionally demeaned target alongside the raw one, same features same horizons, log BOTH as DSR-counted trials (never swap silently), and compare IC distributions. This is an un-swept TARGET/HORIZON cell, not a defect -- raw is the traded quantity, but the residualised construction has never been screened once.",
+   "roi_bps": null,
+   "raised": "2026-08-13T05:49:16.799243+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

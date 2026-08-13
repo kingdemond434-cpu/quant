@@ -1755,3 +1755,67 @@ The 08-07 screenshot named four (`group_rank`, `group_zscore`, `ts_backfill`, `t
 **MECHANISM, which is the transferable part:** `ts_rank` makes a signal comparable **across time for one asset** (strips level and scale drift); `group_rank` then makes it comparable **across assets within a peer set** (strips the group's common movement). Two orthogonal normalizations composed. The equity templates wrapped around it are fundamental ratios (ROE trend, EPS yield, FCF yield) and are **correctly not importable** — the *structure* is what transfers.
 
 **CONFIRMED, NOT ASSUMED — the desk's `fitness()` matches an independent source exactly.** `libs/alpha_factory/wq_operators.py` reproduces `Sharpe × sqrt(|annual return| / max(turnover, 0.125))` from the 08-07 screenshot; the CN skill states the identical formula **including the 0.125 floor**, from a separate lineage. Cross-source convergence on a formula the desk had from one screenshot only. **The thresholds attached to it remain FACTS ABOUT THEIR PROCESS and are not adopted** — the desk's bar is a deflated t of 5.236 (L1.6).
+
+---
+
+### OP-068 SPA archaeology: the archive stores the SHELL, so a 200 with no content is a THIRD false-null class   [active]
+
+**Origin:** EN frontier miner s H (2026-08-13), opening the Kaggle competition ground (never touched
+by any seat since 07-25). Generalises OP-052 (probe the CONTENT PATH, not robots) one layer down:
+OP-052 assumes that once you reach the content path with a 200 you have the content. On a
+JS-rendered platform you do not, and **neither robots.txt nor the status code nor the byte count
+tells you** — the shell is a plausible 5–6 KB of HTML.
+
+**THE THREE FALSE-NULL CLASSES, now complete** (R0466 named the first two; this is the third):
+| class | what a fetch-only route sees | why it is dangerous |
+|---|---|---|
+| WALLED (403/robots) | non-200 | loud, gets logged correctly |
+| EXHAUSTED (genuinely empty) | 200, no matter | the true null |
+| **REACHABLE-BUT-CONTENTLESS** | **200 + rendered shell** | **indistinguishable from EXHAUSTED to any pipeline that treats 200 as success** |
+
+**MEASURED ON KAGGLE, 2026-08-13** (every line a probe run this session, not an inference):
+- `robots.txt` → **404 for every UA** (ClaudeBot / curl / Googlebot alike). No exclusion exists, so
+  §13 is clean on the robots axis — and a seat that stops at robots concludes "open ground".
+- `/competitions/<slug>/discussion/<id>` → **200, 5.6 KB, JS shell.** Zero topic content.
+- `/competitions/<slug>/writeups/<slug>` → 200, 6.2 KB. `og:title` carries the writeup TITLE,
+  `og:description` is **empty** — so search engines index a title the fetcher cannot back with a body.
+- **`/c/<compId>/publicleaderboarddata.zip` → HTTP 200, `content-type: text/html`, 5,593 bytes.**
+  The single nastiest case: a naive `curl -o lb.zip` **succeeds**, writes a file with the right
+  name, and the ground reads as harvested. **Always assert the content-type and magic bytes on any
+  archive/export route** (`od -c | head -1` — a real zip starts `PK`).
+- Live gRPC-web API: `POST /api/i/discussions.DiscussionsService/GetTopicListByForumId` → **400**
+  (route exists, body/session wrong); sibling method names → 404. **400 vs 404 is the method-name
+  oracle** — 400 means you found a real endpoint and only the body is wrong.
+
+**THE ASYMMETRY THAT MAKES THE GROUND PARTLY MINEABLE — and it is not guessable, only measurable:**
+Kaggle embeds `Kaggle.State.push({...})` in the served HTML, and **what it contains depends on the
+page type**:
+- **discussion / leaderboard pages → competition-level state ONLY.** The topic body and the
+  leaderboard rows are XHR-loaded, so **they never entered Wayback at all**, at any timestamp. No
+  amount of re-probing recovers them; this is a property of the capture, not of the crawl.
+- **notebook (`/code/<user>/<slug>`) pages → FULL kernel state** (`kernel`, `kernelRun`, `author`,
+  `versions`, `dataSources`, `renderedOutputUrl`, `downloadAllFilesUrl`, vote counts). **So on this
+  platform the notebook layer is archived and the forum layer is not** — which inverts the usual
+  digging order: go to the CODE tab first, and treat forum prose as the walled half.
+- `renderedOutputUrl` is a **signed** `kaggleusercontent.com` URL and returns **403** years later —
+  recoverable metadata pointing at unrecoverable content. Record it as a lead, never as a source.
+
+**THE ROUTE, reusable as-is** (worked this session on a 2022 capture):
+1. CDX-map the ground: `web.archive.org/cdx/search/cdx?url=<host>/<path>*&fl=timestamp,original,statuscode,length&collapse=urlkey`.
+2. **Rank captures by LENGTH, not recency** — the 20 KB 2021–22 captures carry state; the 4–5 KB
+   2023+ ones are the modern shell. A ground can be archived and still be *unreadable at the wrong
+   timestamp*, so a single recent probe under-reads it.
+3. Fetch with the `id_` suffix (`/web/<ts>id_/<url>`) to get raw stored bytes.
+4. **Gzip-sniff and decompress** — `id_` returns the stored encoding, so the file is gzip and every
+   text tool reports binary garbage (OP-034's discipline; it cost a wasted probe again this run).
+5. Extract state by **brace-matching** from `Kaggle.State.push(` — a regex to the closing paren
+   fails on nested objects. Same shape as `__NEXT_DATA__` / `__APOLLO_STATE__` (OP-050).
+
+**REGIONAL ADAPTATION (charter §16 — the fleet upgrades together):** the pattern is the platform
+class, not the platform. Any React/Vue/Rails-SPA community serves this shape; the state key is the
+only thing that changes. Known keys to try in order: `__NEXT_DATA__`, `__NUXT__`, `__APOLLO_STATE__`,
+`window.__INITIAL_STATE__`, `Kaggle.State.push` (Kaggle), Rails `data-react-props`/`gon` (OP-050's
+velog case, KR). **CN/JP/KR/RU/BR seats: when a ground reads THIN through a fetch-only route, this
+operator is the first thing to rule out before writing the null** — the JP seat's R0466 exists
+because a blocked ground and an exhausted one look identical, and a shell-served ground looks
+identical to BOTH.
