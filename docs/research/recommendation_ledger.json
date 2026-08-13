@@ -5962,11 +5962,11 @@
    "summary": "Funding accrual assumes an 8h interval that MOST of the universe no longer uses: measured 2026-08-12, 426 of 812 live Binance USDT-M perps (52.4%) settle on a 4h interval and 2 on 1h; only 385 (47.4%) are on 8h. L1.47 flagged that held/8.0 under-counts 'many high-funding alts' by 2x and that fundingIntervalHours had zero repo-wide occurrences -- this puts a COUNT on 'many' (it is the majority) and confirms 4h names carry more funding per day (median +0.000300 vs +0.000000). Fix: read fundingIntervalHours per symbol; never hardcode /8.0. Evidence data/jp_funding_clamp_census.json",
    "roi_bps": 8.0,
    "raised": "2026-08-12T08:04:35.079012+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "3ad580ea",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T10:22:19.133549+00:00"
   },
   {
    "id": "R0466",
@@ -5998,11 +5998,11 @@
    "summary": "NEGATIVE-SPACE probe: nothing checks that a doc's cited MECHANISM exists. docs/research/axis_generation_20260805.md claimed 'Recurrence detector: scripts/check_axis_clocks.py (daily cron)' -- that file has never existed in any tree, is in no crontab, and the claim sat in a dated pre-registration doc for 7 days (fixed in bbfce84, at the doc AND the generator that writes the line). check_orphan_code walks code->code and check_organ_liveness walks scheduled->produced; neither walks DOC->CODE. A one-pass check for scripts/*.py paths cited in docs/ that do not resolve would have caught it in seconds, and the same pattern hid the phantom research_memory.db (x4 refs).",
    "roi_bps": 25.0,
    "raised": "2026-08-12T08:44:37.882435+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "fecccabd",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T10:42:22.201179+00:00"
   },
   {
    "id": "R0469",
@@ -7654,6 +7654,18 @@
    "summary": "PHANTOM PATH: data/state_conditional_candidates.json is READ by scripts/run_wealth_report.py:74 and written by NOTHING -- libs/validation/state_conditional.Preregistration is structurally unfeedable, so the conditional-alpha branch (GAP row 105) is unfed by construction, not by neglect.",
    "roi_bps": null,
    "raised": "2026-08-13T10:02:11.935142+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0607",
+   "source": "panel",
+   "summary": "COMMIT AUDIT 2026-08-13: independent seats (2/4 substantive) reviewed the last 24h of desk commits -- triage every finding in data/cro_ai_logs/commit_audit_20260813T1010.log, row the real ones, and reject the rest with reasons",
+   "roi_bps": null,
+   "raised": "2026-08-13T10:42:59.397550+00:00",
    "status": "open",
    "reason": null,
    "commit": null,
