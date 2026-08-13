@@ -443,3 +443,60 @@ class TestHostMemoryHeadroom:
         m.check_host_memory_headroom(defects)
         assert [k for k, _ in defects] == ["host-memory-low"]
         assert "not a tmpfs" in dict(defects)["host-memory-low"]
+
+
+class TestTmpfsHoldersNameTheirProducer:
+    """The note told the reader that "age plus a known producer is the evidence to act on" and
+    then named no producer. Measured 2026-08-13: 150MB of the 838MB pile was a worktree THIS repo
+    had registered and abandoned, and proving that took four commands under memory pressure.
+    """
+
+    @staticmethod
+    def _rows(monkeypatch, entries) -> None:
+        import libs.ops.host_resources as hr
+
+        monkeypatch.setattr(hr, "tmpfs_top_holders", lambda *a, **k: entries)
+        monkeypatch.setattr(hr, "fd_scan_coverage", lambda *a, **k: (42, 175))
+
+    def test_a_desk_owned_worktree_carries_its_reclaim_command(self, monkeypatch) -> None:
+        """THE DISCRIMINATING ASSERTION: size, age and holder were all already printed, so a test
+        on those would pass against the old note. What was missing is WHOSE it is."""
+        from libs.ops.host_resources import TmpEntry
+
+        self._rows(monkeypatch, [TmpEntry(path="/tmp/wt-head", mb=150, age_h=6.5, held=False)])
+        monkeypatch.setattr(m, "_desk_owned_worktrees", lambda: {"/tmp/wt-head": "/tmp/wt-head"})
+        note = m._tmpfs_holders_note()
+        assert "DESK-OWNED" in note, note
+        assert "git worktree remove /tmp/wt-head" in note, note
+        assert "--force" not in note, "a dirty worktree must refuse, not be forced blind"
+
+    def test_ownership_matches_by_containment_not_equality(self, monkeypatch) -> None:
+        """A lawgate checkout registers at <entry>/t while the ENTRY is what holds the RAM. Equality
+        matching would silently attribute nothing for the desk's most frequent producer."""
+        from libs.ops.host_resources import TmpEntry
+
+        self._rows(monkeypatch, [TmpEntry(path="/tmp/lawgate-head-ab", mb=150, age_h=3.0,
+                                          held=None)])
+        monkeypatch.setattr(m, "_desk_owned_worktrees",
+                            lambda: {"/tmp/lawgate-head-ab/t": "/tmp/lawgate-head-ab/t"})
+        note = m._tmpfs_holders_note()
+        assert "git worktree remove /tmp/lawgate-head-ab/t" in note, note
+
+    def test_an_unowned_entry_is_not_claimed(self, monkeypatch) -> None:
+        """The failure that would matter: attributing a sibling's scratch to the desk invites the
+        reader to delete something this repo never allocated."""
+        from libs.ops.host_resources import TmpEntry
+
+        self._rows(monkeypatch, [TmpEntry(path="/tmp/somebody-else", mb=200, age_h=9.0,
+                                          held=None)])
+        monkeypatch.setattr(m, "_desk_owned_worktrees", lambda: {"/tmp/wt-head": "/tmp/wt-head"})
+        note = m._tmpfs_holders_note()
+        assert "DESK-OWNED" not in note, note
+        assert "holder UNKNOWN" in note, note
+
+    def test_the_main_checkout_is_never_offered_for_reclaim(self) -> None:
+        """Live, against real git: `git worktree list` names the repo itself first, and offering
+        `git worktree remove` on the desk's own checkout is the one attribution that must never
+        appear. Runs against the actual repo, so it also proves the parse works."""
+        owned = m._desk_owned_worktrees()
+        assert str(m.ROOT.resolve()) not in owned, owned

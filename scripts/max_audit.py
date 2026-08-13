@@ -3804,6 +3804,54 @@ def check_host_memory_headroom(defects) -> None:
             f"{_tmpfs_holders_note()} {where}."))
 
 
+def _desk_owned_worktrees() -> dict[str, str]:
+    """Realpath -> registered path, for THIS repo's own git worktrees living outside the repo.
+
+    THE ONE PRODUCER THE NOTE ASKS FOR AND NEVER SUPPLIED. `_tmpfs_holders_note` closes by
+    telling the reader that "age plus a known producer is the evidence to act on" -- and then
+    names no producer, so the reader has to establish ownership by hand at the exact moment the
+    box is short of memory. Measured 2026-08-13: /tmp held 838MB against a 600MB ceiling, and
+    150MB of it was a detached checkout at /tmp/wt-head that THIS REPO had registered 6.5h
+    earlier and abandoned. Establishing that took `git worktree list`, a read of the entry's
+    `.git` pointer, a diff of its one dirty artifact against the main tree, and a holder scan.
+    The fence had already computed the size, the age and the holder, and stopped one fact short
+    of the one that actually decides the deletion.
+
+    A REGISTERED WORKTREE IS OWNERSHIP EVIDENCE, which is precisely what a bare directory under
+    a shared /tmp does not carry. It is a checkout of a COMMITTED sha of this repo, so reclaiming
+    it destroys no unique work unless the tree is dirty -- and `git worktree remove` refuses a
+    dirty tree by itself, which is why the command named below is the plain one and never
+    `--force`. The reader who needs `--force` is then making that call knowingly.
+
+    THE FENCE STILL DELETES NOTHING. Naming a reclaimable entry and reaping it are different
+    acts, and only the second can race a live sibling: an agent session's `git worktree add`
+    (which CLAUDE.md itself instructs, in preference to `git stash`) holds no descriptor while
+    the model is thinking, so "no holder" cannot distinguish an abandoned checkout from one
+    between commands. Age plus ownership is evidence for a HUMAN decision, not a licence to
+    automate one -- the same reason `libs/ops/host_resources` reports and does not reap.
+
+    Best-effort: a repo without git, or a git that errors, yields no attribution and the note
+    degrades to exactly what it printed before.
+    """
+    try:
+        r = subprocess.run(["git", "worktree", "list", "--porcelain"], cwd=ROOT,
+                           capture_output=True, text=True, timeout=30, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return {}
+    if r.returncode != 0:
+        return {}
+    main = os.path.realpath(str(ROOT))
+    owned: dict[str, str] = {}
+    for line in r.stdout.splitlines():
+        if not line.startswith("worktree "):
+            continue
+        p = line.split(" ", 1)[1].strip()
+        rp = os.path.realpath(p)
+        if rp != main:                      # the main checkout is the desk, not its scratch
+            owned[rp] = p
+    return owned
+
+
 def _tmpfs_holders_note() -> str:
     """The largest /tmp entries with the one fact that makes freeing them a safe decision.
 
@@ -3824,14 +3872,34 @@ def _tmpfs_holders_note() -> str:
         return ""
     readable, total = fd_scan_coverage()
     seen = f"{readable}/{total} pids' descriptors readable" if total else "no pid table readable"
+    owned = _desk_owned_worktrees()
     parts = []
+    n_owned = 0
     for r in rows:
         holder = ("HELD by a live process" if r.held
                   else "held by nothing" if r.held is False else "holder UNKNOWN")
-        parts.append(f"{r.path} {r.mb}MB {r.age_h:.0f}h {holder}")
+        # A lawgate checkout registers at <entry>/t while the entry itself is what holds the RAM,
+        # so ownership is matched by CONTAINMENT, not equality: the reclaim command has to name
+        # the registered path and the size next to it is the whole subtree's.
+        target = os.path.realpath(r.path).rstrip("/")
+        mine = [reg for rp, reg in sorted(owned.items())
+                if rp == target or rp.startswith(target + "/")]
+        own = ""
+        if mine:
+            n_owned += 1
+            own = f" DESK-OWNED git worktree -- reclaim: git worktree remove {mine[0]}"
+        parts.append(f"{r.path} {r.mb}MB {r.age_h:.0f}h {holder}{own}")
+    # THE ATTRIBUTION SENTENCE IS CONDITIONAL, and that is not cosmetic. Printed unconditionally
+    # it appears on every firing including the ones where nothing is reclaimable, so the reader
+    # cannot tell from the message whether the desk owns any of the pile -- which is the single
+    # question it was added to answer. Its presence IS the signal.
+    tail = ("" if not n_owned else
+            f" {n_owned} of these are DESK-OWNED: this repo registered them, each is a checkout "
+            f"of a committed sha, and `git worktree remove` refuses one whose tree is dirty -- "
+            f"the one class the reader can free without first reconstructing where it came from.")
     return (f"Largest entries: {'; '.join(parts)}. Holder scan saw {seen}, so 'holder UNKNOWN' "
             f"means NOT CHECKABLE from here, never 'safe to delete' -- age plus a known producer "
-            f"is the evidence to act on.")
+            f"is the evidence to act on.{tail}")
 
 
 def check_test_suite_collectable(defects) -> None:
