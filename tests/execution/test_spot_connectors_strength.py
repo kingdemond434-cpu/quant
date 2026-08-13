@@ -55,9 +55,17 @@ def test_place_market_sends_a_MARKET_order_in_BASE_units(mod, monkeypatch) -> No
     c = calls[0]
     assert c["method"] == "POST", "an order sent as a GET is not an order"
     assert c["path"] == "/api/v3/order"
-    assert c["params"] == {"symbol": "BTCUSDT", "side": "BUY", "type": "MARKET",
-                           "quantity": 0.25}
+    # SUBSET, NOT EXACT EQUALITY. This compared the whole params dict, so it failed the day the
+    # connectors began stamping `newClientOrderId` -- an idempotency token, i.e. the mechanism
+    # that stops a retry becoming a SECOND order and leaving one leg of a carry naked. A test
+    # that goes red on a safety field being added teaches readers to discount red, and the field
+    # is asserted below rather than merely tolerated.
+    for k, v in {"symbol": "BTCUSDT", "side": "BUY", "type": "MARKET", "quantity": 0.25}.items():
+        assert c["params"].get(k) == v, f"{k} wrong: {c['params'].get(k)!r} != {v!r}"
     assert "quoteOrderQty" not in c["params"]
+    assert c["params"].get("newClientOrderId"), (
+        "no client order id: a retry of this order is a SECOND order to the venue, and on a "
+        "two-legged carry that is a naked directional position")
 
 
 @pytest.mark.parametrize("mod", MODS, ids=IDS)
@@ -66,9 +74,11 @@ def test_place_market_quote_sends_QUOTE_units_and_never_a_quantity(mod, monkeypa
     base quantity is an order for 5000 BTC."""
     calls = _recorder(mod, monkeypatch)
     mod.place_market_quote("BTCUSDT", "BUY", 5000.0)
-    assert calls[0]["params"] == {"symbol": "BTCUSDT", "side": "BUY", "type": "MARKET",
-                                  "quoteOrderQty": 5000.0}
+    for k, v in {"symbol": "BTCUSDT", "side": "BUY", "type": "MARKET",
+                 "quoteOrderQty": 5000.0}.items():
+        assert calls[0]["params"].get(k) == v, f"{k} wrong"
     assert "quantity" not in calls[0]["params"]
+    assert calls[0]["params"].get("newClientOrderId"), "quote-sized orders need dedup too"
 
 
 @pytest.mark.parametrize("mod", MODS, ids=IDS)

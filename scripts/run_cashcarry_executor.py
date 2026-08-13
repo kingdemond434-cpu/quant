@@ -39,6 +39,11 @@ from libs.execution.carry_accounting import (
 )
 from libs.ops.fresh import read_fresh  # L1.44: decision-path reads carry freshness contracts
 from libs.ops.lawful import guard as _law_guard  # L1.42: no act exempt
+from libs.ops.production_contract import (
+    deterministic_hot_path,
+    preflight_contract,
+    strategy_manifest,
+)
 from libs.risk import capital_events, risk_controls
 
 _STATE = Path("data/cashcarry_positions.json")
@@ -49,6 +54,23 @@ _WEB = Path("web/cashcarry_live.json")
 _HB = Path("data/cashcarry_exec_heartbeat")
 _KILL = Path("data/CASHCARRY_KILL")
 _ERR = Path("data/cashcarry_error.log")          # visible cycle-error log (not swallowed to null)
+# RESTORED 2026-08-13. Added by 0d31469 -- an ANCESTOR of HEAD -- and dropped by a later merge
+# together with the two functions below, so the executor lost its FAIL-CLOSED PREFLIGHT and its
+# frozen replay path while every test naming them stayed in the tree. Nothing broke loudly: the
+# names simply stopped existing, which is how a safety gate leaves the money path in silence.
+_PREFLIGHT = Path("data/preflight_checks.json")
+_HOT_REPLAY = Path("data/hot_path_replay.json")
+_VENUE_CAPABILITIES = Path("data/venue_capabilities.json")
+_MANIFEST = strategy_manifest(
+    {
+        "strategy_id": "cashcarry",
+        "signal": "positive-funding-net-of-realised-round-trip-cost",
+        "allocator": "free-capital-funding-weighted-concentration-capped",
+        "risk_policy": "risk_controls.evaluate-ruin-boundary-v1",
+        "execution_policy": "paired-maker-first-verified-fills-v1",
+    },
+    version="1",
+)
 _LAST_ARCHIVE = Path("data/.last_metrics_archive")  # once-per-day data-flywheel marker
 _HB_TICK = 60                                    # heartbeat cadence (decoupled from rebalance work)
 _MAKER = True                                     # maker-first execution (set via --no-maker)
@@ -1645,7 +1667,7 @@ def _refresh_guard() -> None:
 
 
 def _maker_pair(sym: str, qty: float, spot_side: str, fut_side: str,
-                *, wait: float) -> dict[str, Any]:
+                *, wait: float, cycle: str | None = None) -> dict[str, Any]:
     """Quote BOTH legs post-only (maker), wait, then taker-fill whatever didn't rest+fill.
 
     Same qty on both legs -> the pair ends delta-neutral; the wait bounds any transient exposure.
@@ -1661,7 +1683,12 @@ def _maker_pair(sym: str, qty: float, spot_side: str, fut_side: str,
     for name, mod, side, bk, fl in legs:
         px = _passive_price(bk, fl, sym, side)
         with _safe():
-            o = mod.place_post_only(sym, side, qty, px) if px else {}
+            # THE SAME CYCLE ON THE QUOTE AND ON ITS OWN FALLBACK. Without it a retry of this
+            # post-only -- including the market fallback below that catches it -- is a SECOND
+            # order to the venue, and on a two-legged delta-neutral trade a duplicated leg is an
+            # unhedged directional position. The `_pair_cycle` docstring already says this; the
+            # maker path simply never received the token.
+            o = mod.place_post_only(sym, side, qty, px, cycle=cycle) if px else {}
             modes[name] = "maker_pending" if o.get("orderId") else "taker"
     end = time.time() + wait
     while time.time() < end:                               # wait for the resting quotes to fill
@@ -1689,7 +1716,9 @@ def _maker_pair(sym: str, qty: float, spot_side: str, fut_side: str,
                     # in a degraded venue state, paying taker to force a fill is the leak.
                     modes[name] = "limit_only_unfilled"
                 else:
-                    res = mod.place_market(sym, side, qty)
+                    # SAME identity as the quote it replaces: this fallback exists because the
+                    # quote did not fill, and the two must never be able to both land.
+                    res = mod.place_market(sym, side, qty, cycle=cycle)
                     modes[name] = "taker_fallback"
                     ok[name] = _filled(res)
             elif modes.get(name) == "maker_pending":
@@ -1854,6 +1883,95 @@ def _exc_fields(arm: excitation.Arm, spot_side: str) -> dict[str, Any]:
 _CYCLE_S = 300
 
 
+def _deterministic_pair_intent(
+    *,
+    symbol: str,
+    qty: float,
+    spot_side: str,
+    fut_side: str,
+    observation: dict[str, Any],
+    rationale: str,
+) -> dict[str, Any]:
+    """Materialise the exact paired order through the frozen production path before submission."""
+    signal = {"symbol": symbol, "rationale": rationale}
+    desired = {"symbol": symbol, "qty": qty, "spot_side": spot_side, "fut_side": fut_side}
+    replay = deterministic_hot_path(
+        _MANIFEST,
+        observation,
+        lambda _observation, _manifest: signal,
+        lambda _signal, _manifest: desired,
+        lambda order, _manifest: order,
+        lambda approved, _manifest: approved,
+    )
+    payload = {
+        "manifest": _MANIFEST,
+        "observation": observation,
+        "signal": signal,
+        "desired_order": desired,
+        "risk_output": replay["order"],
+        "adapter_order": replay["order"],
+        "stage_hashes": replay["stage_hashes"],
+        "path_hash": replay["path_hash"],
+        "recorded_at": datetime.now(tz=UTC).isoformat(),
+    }
+    _HOT_REPLAY.parent.mkdir(parents=True, exist_ok=True)
+    _HOT_REPLAY.write_text(json.dumps(payload, indent=2), "utf-8")
+    order = replay.get("order")
+    if not isinstance(order, dict):
+        raise RuntimeError("deterministic hot path did not return a concrete order")
+    return dict(order)
+
+def _execution_preflight(
+    *,
+    ranked: list[tuple[str, float]],
+    spot_prices: dict[str, float],
+    fut_prices: dict[str, float],
+    spot_filters: dict[str, Any],
+    fut_filters: dict[str, Any],
+    reconciled: bool,
+    risk_measured: bool,
+    authenticated: bool,
+    dry: bool,
+) -> dict[str, Any]:
+    """Fail closed for NEW RISK only; reconciliation and exits remain available.
+
+    A successful signed account read is also evidence that venue clock skew is within Binance's
+    receive window. The artifact lets the completion program compare the production contract to
+    reality instead of reconstructing it after the fact.
+    """
+    checks = {
+        "data_fresh": bool(ranked and spot_prices and fut_prices),
+        "clock_synchronised": bool(dry or authenticated),
+        "manifest_hash_valid": bool(_MANIFEST.get("immutable") and _MANIFEST.get("manifest_hash")),
+        "venue_eligible": bool(spot_filters and fut_filters),
+        "auth_valid": bool(dry or authenticated),
+        "reconciled": bool(reconciled),
+        "risk_kernel_valid": bool(dry or risk_measured),
+        "journal_writable": bool(os.access(_TRADES.parent, os.W_OK)),
+    }
+    venue_doc = {
+        "capabilities": {
+            "spot_symbols_available": bool(spot_filters),
+            "futures_symbols_available": bool(fut_filters),
+            "paired_symbol_count": len(set(spot_filters) & set(fut_filters)),
+            "maker_first": bool(_MAKER),
+            "paired_fill_verification": True,
+        },
+        "measured_at": datetime.now(tz=UTC).isoformat(),
+    }
+    _VENUE_CAPABILITIES.parent.mkdir(parents=True, exist_ok=True)
+    _VENUE_CAPABILITIES.write_text(json.dumps(venue_doc, indent=2), "utf-8")
+    report = {
+        **preflight_contract(checks),
+        "manifest_hash": _MANIFEST["manifest_hash"],
+        "checked_at": datetime.now(tz=UTC).isoformat(),
+        "scope": "NEW_OPENS_AND_TOPUPS; exits/reconciliation always remain available",
+    }
+    _PREFLIGHT.parent.mkdir(parents=True, exist_ok=True)
+    _PREFLIGHT.write_text(json.dumps(report, indent=2), "utf-8")
+    return report
+
+
 def _pair_cycle(sym: str, spot_side: str, qty: float) -> str:
     """Stable identity for ONE logical pair execution, used to make order IDs idempotent.
 
@@ -1880,6 +1998,17 @@ def _execute_pair_impl(sym: str, qty: float, spot_side: str, fut_side: str) -> d
     # A close is a CERTAINTY problem, not a fee problem; the desk's own note already says
     # "patient on OPENS, fast on CLOSES". Opens keep the maker rebate, which is where it pays.
     _CLOSE_IS_MARKET_ONLY = spot_side == "SELL"
+    # GAP #49: ONE cycle token per logical pair execution, computed HERE -- before the maker
+    # attempt -- because the maker path and the market fallback that catches it must carry the
+    # SAME identity. It used to be computed after the maker attempt returned, so a maker quote
+    # and the market pair that replaced it were two different orders to the venue across the
+    # maker wait, and a retry could land both.
+    #
+    # Retries of this pair reproduce the same client order IDs regardless of how long the retry
+    # took, so the venue dedupes them. A wall-clock bucket alone would not: an order placed just
+    # before a bucket rolls has a sub-second retry window, after which the duplicate is placed --
+    # and a duplicated leg on a delta-neutral book is an unhedged directional position.
+    _cycle = _pair_cycle(sym, spot_side, qty)
     arm = _excitation_arm(sym, spot_side, qty)
     if _MAKER and not _CLOSE_IS_MARKET_ONLY:
         try:
@@ -1891,7 +2020,7 @@ def _execute_pair_impl(sym: str, qty: float, spot_side: str, fut_side: str) -> d
             # previous behaviour exactly. Closes are never excited: `assign()` refuses the SELL
             # side outright, and this branch is unreachable for closes anyway.
             _w = arm.maker_wait_s if spot_side == "BUY" else _MAKER_WAIT
-            res = _maker_pair(sym, qty, spot_side, fut_side, wait=_w)
+            res = _maker_pair(sym, qty, spot_side, fut_side, wait=_w, cycle=_cycle)
             return {**res, **_exc_fields(arm, spot_side)}
         except Exception as e:  # maker machinery failed -> safe market fallback
             with contextlib.suppress(Exception):
@@ -1908,9 +2037,8 @@ def _execute_pair_impl(sym: str, qty: float, spot_side: str, fut_side: str) -> d
     # A wall-clock bucket alone would not: an order placed just before a bucket rolls has a
     # sub-second retry window, after which the duplicate is placed -- and a duplicated leg on a
     # delta-neutral book is an unhedged directional position.
-    _cycle = _pair_cycle(sym, spot_side, qty)
     with _safe():
-        spot_res = spot.place_market(sym, spot_side, qty)
+        spot_res = spot.place_market(sym, spot_side, qty, cycle=_cycle)
     with _safe():
         fut_res = fut.place_market(sym, fut_side, qty, reduce_only=_reduce_only_leg,
                                    cycle=_cycle)

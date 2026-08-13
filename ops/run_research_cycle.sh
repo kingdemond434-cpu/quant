@@ -39,6 +39,13 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # then discovered the dead-man switch had changed would have spent the day on a book with no
   # floor under it.
   "$PY" scripts/check_risk_kernel.py || echo "RISK-KERNEL DRIFT -- review before trusting this cycle"
+  # BEFORE ANY ORGAN READS THE COHORT. This box owns the runtime state under data/, and nothing
+  # could previously say so: two organs each inferred it from the artifacts, and on a clone the
+  # evidence and its absence look identical. `derive_slots` therefore read six missing birth
+  # certificates as six clocks never born and published a small Holm m as MEASURED -- a LOOSER
+  # bar on the only path to capital -- while a test run recomputed tracked ratchets DOWNWARD from
+  # whatever the host could see. Both are the same missing fact, stated once here.
+  "$PY" scripts/stamp_desk_host.py || echo "DESK-HOST STAMP FAILED -- the cohort will floor at the cap (safe, but tighter than reality)"
   OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 nice -n 15 "$PY" scripts/build_bars.py
   bash ops/run_study_on_vps.sh
   nice -n 15 "$PY" scripts/study_status.py || true
@@ -47,6 +54,12 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # THE REVIEW CONSUMES THE SWEEP: funnel, near-survivor bank, evidence tiers, convergence. Four
   # modules that had zero importers until this line existed -- inventory until something reads them.
   nice -n 15 "$PY" scripts/run_research_review.py || true
+  # BEFORE the ladder: the ladder recommends which survivors are owed a clock, and that
+  # recommendation is worthless while every seat is occupied. Measured 2026-08-13: m=15 against a
+  # cap of 12 with ZERO idle, at least one seat held by a DEGENERATE instrument fault that cannot
+  # resolve however long it runs. The sweep SURFACES those; retiring one stays a ledgered decision
+  # because dropping a row shrinks m and loosens every neighbour's bar.
+  nice -n 15 "$PY" scripts/run_clock_retirement_sweep.py || true
   nice -n 15 "$PY" scripts/run_live_ladder.py
   # EXECUTION HEALTH runs every cycle, including days the research half found nothing. The money
   # path is where the desk is currently LOSING (27 closes, all three hold buckets negative net of

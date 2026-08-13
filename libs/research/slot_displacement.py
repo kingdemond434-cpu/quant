@@ -45,14 +45,26 @@ TWO INVARIANTS, BOTH ENFORCED IN CODE AND PINNED BY TESTS
 2. NO HEALTHY EVICTION. A slot that is accruing real observations is PROTECTED and cannot appear
    in ``displaced``, whatever a challenger looks like.
 
-AND THE RECLAIMED HYPOTHESIS GOES BACK IN THE QUEUE, NOT IN THE GRAVEYARD
-------------------------------------------------------------------------
+THE RECLAIMED HYPOTHESIS IS FILED BY ITS MECHANISM OF DEATH, AND THERE ARE TWO
+-----------------------------------------------------------------------------
 A DEGENERATE clock has told the desk nothing about its axis. Retiring it as REFUTED would file a
 data-availability exclusion under a false mechanism of death and corrupt the family survival
 statistics that steer future search (L1.17) -- the identical error ``stratified_campaign_gates``
-already refuses to make with untested candidates. Every reclamation therefore carries
-``requeue_as: UNTESTED``, and the instrument fault is named so the axis is re-run rather than
-re-argued.
+already refuses to make with untested candidates. Instrument-fault reclamations therefore carry
+``requeue_as: UNTESTED``, and the fault is named so the axis is re-run rather than re-argued.
+
+A clock carrying ``FAILING FORWARD -> kill`` is the opposite case and gets ``REFUTED``. It reached
+the decision point IT pre-registered and lost there, so the desk holds real evidence about the
+hypothesis, and re-queueing it as untested would guarantee paying to rediscover a dead axis
+forever. Both labels are wrong in opposite directions if swapped, which is why the mechanism of
+death travels with the reclamation instead of being defaulted (see ``_requeue_for``).
+
+THAT ROUTE IS WHY THE FIVE KILL VERDICTS WERE INERT. ``forward_verdict()`` is shared by five
+shadow runners and each writes its string into ``web/<sleeve>_shadow.json``; ``derive_slots`` read
+those artifacts for ``forward_days`` and ``updated`` and dropped the verdict, so every sleeve slot
+arrived here carrying ``state="since <date>"`` -- a birth date, never an outcome. The classifier
+could not see a kill because no kill was ever in the row. Axis rows always carried theirs, which
+is exactly why the axis half of the cohort was reclaimable and the sleeve half was not.
 
 WHAT THIS DOES NOT DO. It does not displace a healthy incumbent on a paired comparison -- the
 Shadow-Before-Swap half of R0265. That needs the incumbent's pre-registered decision point to
@@ -73,6 +85,8 @@ __all__ = [
     "BLOCKED",
     "PROTECTED",
     "RECLAIMABLE",
+    "REQUEUE_REFUTED",
+    "REQUEUE_UNTESTED",
     "Displacement",
     "DisplacementPlan",
     "at_decision_point",
@@ -93,6 +107,23 @@ BLOCKED = "BLOCKED-UNMEASURED"
 #: be added here deliberately -- a slot becoming reclaimable is a decision, never a spelling.
 _INSTRUMENT_FAULT_VERDICTS = frozenset({"DEGENERATE"})
 
+#: The clock reached ITS OWN pre-registered kill. `forward_verdict()` issues this when forward
+#: Sharpe is negative, and it is the ONE reclamation that is not a judgement call by a challenger:
+#: the incumbent ended on the terms it registered before the data arrived, which is exactly the
+#: condition R0265 requires ("the incumbent's kill must be on its own pre-registered terms, not on
+#: a challenger's arrival"). Matched as a prefix because the verdict carries its statistics inline
+#: ("FAILING FORWARD -> kill candidate (Sharpe -0.42 on 61 observations, t=-1.83)").
+_PREREGISTERED_KILL_PREFIX = "FAILING FORWARD"
+
+#: Distinct from RECLAIMABLE's default because the mechanism of death is DIFFERENT and L1.17 turns
+#: on that difference. A DEGENERATE clock measured nothing, so its hypothesis returns UNTESTED. A
+#: FAILING-FORWARD clock was tested and lost, so it returns REFUTED -- and filing a refutation as
+#: untested would re-open dead ground forever, while filing an instrument fault as a refutation
+#: would retire live ground on a false death. Both errors corrupt family survival statistics; they
+#: just corrupt them in opposite directions.
+REQUEUE_REFUTED = "REFUTED"
+REQUEUE_UNTESTED = "UNTESTED"
+
 #: Evidence labels the registry publishes when it cannot see whether a clock is breathing.
 _UNMEASURABLE_EVIDENCE = frozenset({"UNMEASURED"})
 
@@ -104,9 +135,14 @@ class Displacement:
     slot: str
     challenger: str
     why: str
-    requeue_as: str = "UNTESTED"
-    """How the OUTGOING hypothesis is recorded. Never REFUTED: a broken instrument measured
-    nothing, and filing it as a refutation retires live research ground on a false death."""
+    requeue_as: str = REQUEUE_UNTESTED
+    """How the OUTGOING hypothesis is recorded, and it is derived, never assumed.
+
+    UNTESTED is the DEFAULT and the safe error for every route except one: a broken instrument
+    measured nothing, and filing that as a refutation retires live research ground on a false
+    death. REFUTED is set only for a clock that reached its own pre-registered kill, where the
+    desk genuinely does hold evidence against the hypothesis and calling it untested would buy
+    the same dead axis again. See ``_requeue_for``."""
 
 
 @dataclass(frozen=True)
@@ -143,10 +179,25 @@ def classify_slot(slot: dict[str, Any]) -> tuple[str, str]:
     * Everything else with at least one real observation is PROTECTED.
     """
     name = str(slot.get("name", "?"))
+    # `state` for an axis row IS its verdict; for a sleeve row it is a birth date and the verdict
+    # arrives in its own field. Read both so one classifier serves both halves of the cohort --
+    # the sleeve half was unreachable while only `state` was consulted.
     verdict = str(slot.get("state", "") or "")
+    outcome = str(slot.get("verdict", "") or "") or verdict
     evidence = str(slot.get("evidence", "") or "")
     days = slot.get("days")
     obs = int(days) if isinstance(days, (int, float)) else None
+
+    # CHECKED BEFORE EVERYTHING, INCLUDING THE INSTRUMENT FAULT. A clock that reached its own
+    # pre-registered kill has the strongest possible claim to its seat being free, and it is the
+    # only branch here whose reclamation carries a REFUTATION rather than a re-queue. Ordering it
+    # first also means a killed clock is never mislabelled by a later, weaker branch.
+    if outcome.upper().startswith(_PREREGISTERED_KILL_PREFIX):
+        return RECLAIMABLE, (
+            f"{name}: {outcome} -- this clock reached the decision point IT pre-registered and "
+            "FAILED there. Reclaiming it is not optional stopping and not a challenger's "
+            "judgement: the terms were fixed before the data arrived, which is the one condition "
+            "under which ending an incumbent cannot be a garden-of-forking-paths move")
 
     if verdict in _INSTRUMENT_FAULT_VERDICTS:
         return RECLAIMABLE, (
@@ -212,6 +263,21 @@ def at_decision_point(slot: dict[str, Any]) -> tuple[bool | None, str]:
         f"({obs}/{point}) -- its own terms have not yet allowed a decision")
 
 
+def _requeue_for(slot: dict[str, Any]) -> str:
+    """How the OUTGOING hypothesis is filed. REFUTED only when the clock was actually tested.
+
+    L1.17 turns on this distinction: family survival statistics steer future search, so filing an
+    unmeasured axis as REFUTED retires live ground on a false death, and filing a genuinely
+    refuted one as UNTESTED guarantees the desk pays to rediscover it. The default stays UNTESTED
+    because that is the safe error for every reclamation route EXCEPT the pre-registered kill --
+    which is the only one carrying evidence about the hypothesis rather than about the instrument.
+    """
+    outcome = str(slot.get("verdict", "") or slot.get("state", "") or "")
+    if outcome.upper().startswith(_PREREGISTERED_KILL_PREFIX):
+        return REQUEUE_REFUTED
+    return REQUEUE_UNTESTED
+
+
 def plan_displacement(slots: list[dict[str, Any]], challengers: list[dict[str, Any]],
                       *, cap: int) -> DisplacementPlan:
     """Match challengers to slots that cannot resolve. Never touches a slot that can.
@@ -244,7 +310,10 @@ def plan_displacement(slots: list[dict[str, Any]], challengers: list[dict[str, A
                    "read failure, so nothing is placed until the registry is readable",))
 
     states = [(s, *classify_slot(s)) for s in slots]
-    reclaimable = [(str(s.get("name", "?")), why) for s, st, why in states if st == RECLAIMABLE]
+    # The mechanism of death travels with the reclamation, because the requeue label is derived
+    # from it and the two are not interchangeable (see REQUEUE_REFUTED).
+    reclaimable = [(str(s.get("name", "?")), why, _requeue_for(s))
+                   for s, st, why in states if st == RECLAIMABLE]
     protected = tuple(str(s.get("name", "?")) for s, st, _ in states if st == PROTECTED)
     blocked_rows = [(str(s.get("name", "?")), why) for s, st, why in states if st == BLOCKED]
 
@@ -263,8 +332,9 @@ def plan_displacement(slots: list[dict[str, Any]], challengers: list[dict[str, A
     pairs = [
         Displacement(slot=slot_name, challenger=str(c.get("name", "?")),
                      why=f"{why}; replaced by {c.get('name', '?')} "
-                         f"(runway {c.get('runway', 'UNMEASURED')})")
-        for (slot_name, why), c in zip(reclaimable, rest, strict=False)
+                         f"(runway {c.get('runway', 'UNMEASURED')})",
+                     requeue_as=requeue)
+        for (slot_name, why, requeue), c in zip(reclaimable, rest, strict=False)
     ]
     waiting = tuple(str(c.get("name", "?")) for c in rest[len(pairs):])
 

@@ -46,7 +46,7 @@ import numpy as np
 
 from libs.research.anytime_valid import e_value
 from libs.research.evidence_clock import MIN_OBS, Sufficiency, sufficient
-from libs.research.slot_registry import cohort_m_for_bar
+from libs.research.slot_registry import cohort_m_for_bar, derive_slots
 from libs.validation.forward_stats import holm_alpha, holm_bar, nw_tstat
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -438,8 +438,28 @@ def main() -> None:
     # One cohort read for the whole run: every clock in this file is judged against the SAME
     # concurrent-m, and re-deriving per axis would let the bar drift mid-run.
     cohort = cohort_m_for_bar()
-    m = cohort.m
     tracked, untracked = _all_axes()
+
+    # THIS RUN IS PART OF ITS OWN COHORT, AND READING m BEFORE BUILDING THE ROSTER UNDERSTATED IT.
+    # `derive_slots` counts one slot per row of data/axis_shadow_state.json -- the file THIS
+    # function writes at the end. So the cohort read above describes the PREVIOUS run's roster,
+    # and every time the roster grows the new clocks are judged against an m that excludes them:
+    # a looser bar, the phantom-edge direction this module exists to prevent. Measured 2026-08-13:
+    # m=5 while 6 clocks accrued, bar 2.33 against a required 2.39, alpha 0.0100/clock against a
+    # designed 0.0083. Latent while the roster was a hardcoded _AXES dict; live since owed
+    # survivors began registering themselves into it.
+    #
+    # Substitute this run's own axis count for the stale one and keep the registry's number as a
+    # floor, so the correction can only ever TIGHTEN.
+    try:
+        prior_axis = sum(1 for s in derive_slots().get("slots", []) if s.get("kind") == "axis")
+    except (OSError, ValueError, KeyError, TypeError):
+        # Cannot count what we cannot read. 0 makes the substitution ADD this run's roster on top
+        # of the registry's number instead of replacing part of it -- an over-count, which costs
+        # clock time and cannot manufacture an edge.
+        prior_axis = 0
+    own_axis = len(tracked) + len(untracked)
+    m = max(1, cohort.m, cohort.m - prior_axis + own_axis)
     # Read the standing pre-registrations ONCE, before anything is recomputed. A decision point
     # that already exists is carried forward verbatim; only a clock that has never had one gets
     # stamped. This is what stops the bar moving with the data (see `_decision_point`).
@@ -451,8 +471,11 @@ def main() -> None:
     payload = {"updated": datetime.now(tz=UTC).isoformat(), "min_observations": MIN_OBS,
                # A bar is only auditable if its artifact says which cohort it was computed
                # against, and with what provenance (MEASURED vs floored) -- L1.6 fence reads this.
-               "m_concurrent": cohort.m, "m_provenance": cohort.provenance,
-               "m_detail": cohort.detail,
+               # `m`, not `cohort.m`: the artifact must record the cohort the bar was ACTUALLY
+               # computed against, which includes this run's own roster (see main() above).
+               "m_concurrent": m, "m_provenance": cohort.provenance,
+               "m_detail": (f"{cohort.detail}; bar computed at m={m} after substituting this "
+                            f"run's {own_axis} axis row(s) for the {prior_axis} on disk"),
                "axes": results,
                "note": ("Forward-only Stage-B tracking. P&L starts at the clock's first row, never "
                         "the screen sample. ELIGIBLE means the evidence bar is met and a promotion "

@@ -69,3 +69,196 @@ mined to depth, then marked EXHAUSTED with a date so no seat re-surface-scans it
 SEAT-EXHAUSTION IS ALWAYS FALSE: "the forest is thin here" is a finding about a SECTION; "there is
 nothing left to hunt" is a statement about attention, not about the world. When a seat reports the
 second, re-aim it -- never let it stand as a reason to run the night shorter.
+=== THE TWO UNIVERSAL SEAT MANDATES (L1.34 + L1.35) ===
+CARRIED VERBATIM FROM ops/frontier_en_prompt.txt, NOT SUMMARISED. `tests/governance/
+test_source_universality.py` fences EVERY ops/*prompt*.txt on these, and the law it enforces
+is 'no seat narrower' -- a controller that dispatches research is a seat. This file shipped
+without them, so the one organ deciding what the others work on was the only organ that
+could not see the full source universe. Paraphrasing would defeat the fence and, worse,
+would let the controller's idea of scope drift from the miners' while both looked compliant.
+
+=== RAW-INFORMATION UNIVERSALITY (L1.34, principal order 2026-07-31: "miners get EVERY form of raw
+info -- backtests, strategies, niche Chinese AI quants, datasets, AI quant structures, untested
+alphas, video info, everything") ===
+NO SOURCE CLASS IS OUT OF SCOPE FOR ANY SEAT. Your region/ground is WHERE you dig; this list is
+WHAT counts as diggable, and it is not a menu -- a seat that returns only one class of artifact
+is under-mining its ground. All of it is s13-gated (public + licensed, never cracked/closed-group)
+and all of it routes through SCREEN-ON-DISCOVERY: a find is half a deliverable until it is
+screened or ledgered in the SAME run.
+
+ 1. BACKTESTS AND RESULTS, not just claims -- published equity curves, notebooks, result tables,
+    competition entries, journal replication packs. Read the CODE and the DATA WINDOW, not the
+    headline: the interesting artifact is usually the leak, the survivorship, or the cost model
+    they forgot. A refuted backtest is FREE GRAVEYARD MATERIAL and a real deliverable (L1.17).
+ 2. STRATEGY CODE AND CONFIGS -- repos, gists, forum attachments, bot configs, TradingView/QC/
+    vn.py/backtrader scripts, exchange-provided sample bots. Mechanism first: card only what
+    carries a stated economic story (a parameter set is not a mechanism).
+ 3. DATASETS AND FEED CATALOGUES -- every dataset a tool aggregates is a candidate axis. Follow
+    the collector code, not the marketing page: the endpoint list IS the find.
+ 4. AI-QUANT STRUCTURES -- factor-mining frameworks, symbolic-regression setups, agent-team and
+    multi-model architectures, RL trading harnesses, feature stores, prompt/graph designs. These
+    route to docs/research/improvement_inbox.md as ENGINE ideas. NEVER install or run third-party
+    agent tooling on desk hardware (supply-chain rule; mine it as TEXT).
+ 5. NICHE AI-QUANT COMMUNITIES, explicitly including the Chinese ecosystem -- Gitee/Chinese
+    GitHub, Zhihu, Xueqiu, JoinQuant/BigQuant/myquant BBSs, WeChat mirrors, Bilibili lectures,
+    and the equivalent layer in YOUR language. The contributor networks around these tools are
+    themselves the ground: follow forks, starred lists, issues and discussions.
+ 6. UNTESTED ALPHAS -- the richest vein and the most neglected: published-but-never-validated
+    claims, abandoned hypotheses, half-finished threads, "this worked for me" posts with no
+    out-of-sample, thesis appendices nobody replicated. Untested is not the same as false; it is
+    an unpriced option. Log the mechanism and the falsifier even when you cannot screen it today.
+ 7. VIDEO AND AUDIO -- conference talks, regional quant lectures, botter walkthroughs, podcast
+    interviews. Transcripts ARE readable: scripts/fetch_video_transcript.py <url|id> and
+    --bilibili <BVid>. Video-origin mechanisms are FIRST-CLASS material, never a logged blocker;
+    only log video_locked for a platform you actually tried and failed.
+ 8. EVERYTHING ELSE THAT CARRIES INFORMATION -- exchange docs/changelogs/announcement archives,
+    regulatory filings and enforcement actions, patents, job postings (they leak infrastructure
+    and strategy families), conference agendas, university theses, archived APIs, dead products'
+    documentation.
+THE STANDING TEST: if a source carries information a competitor would have to pay to reconstruct,
+it is in scope regardless of its format, language, age, or how unglamorous it looks (L1.11a).
+
+
+=== DEEP-FOREST EXHAUSTIVENESS (L1.35, principal order 2026-07-31: "deep forest hunting is a MUST
+for all exhaustive raw info in every way -- the hunters, diggers and miners should be the most
+aggressive maxxing exploring NON-EXHAUSTIVE part of the quant") ===
+YOU ARE THE PART OF THIS DESK THAT IS NEVER FINISHED. Every other organ has a completion state:
+a fence passes, a gate rules, a clock fills. YOURS DOES NOT. "I have covered this ground" is a
+claim about a SECTION with a date, never about your ground, and never about your seat.
+
+THE TWO EXHAUSTIONS, and confusing them is the defect:
+  SECTION-EXHAUSTION is REAL and is CLAIMED: a dead forum's 2015 board, one archive's sub-section,
+  one repo's fork tree. Mine it section by section to genuine depth, then mark it EXHAUSTED with
+  a date in your coverage doc so no seat ever re-surface-scans it. This is the only place "done"
+  exists, and claiming it is a DELIVERABLE.
+  SEAT-EXHAUSTION IS ALWAYS FALSE. There is no state in which your ground holds nothing more.
+  "The forest is thin here" is a finding about a section; "there is nothing left to hunt" is a
+  statement about your ATTENTION, not the world, and it is a scored defect (L1.25a).
+
+DEEP FOREST MEANS: the layer the crowd cannot reach OR cannot be bothered to reach --
+non-English, dead, archived, unindexed, video-only, comment-buried, fork-diverged, paywalled-then-
+freed, superseded, badly-titled, wrongly-tagged, or simply BORING. Boring is the most reliable
+edge left: everyone skips the changelog, the appendix, the job posting, the 400-comment thread.
+
+THE STANDING OBLIGATIONS EVERY RUN:
+  - GO ONE LAYER PAST WHERE YOU WOULD STOP. The layer past "finished" is where the unnamed things
+    live and it is the layer every other researcher skips.
+  - NAME THE NEXT GROUND before you close. A session note without "next un-exhausted ground"
+    breaks the chain that makes exhaustion achievable ACROSS runs.
+  - A NULL IS A RESULT, NEVER A REASON TO SLOW: an empty seam documented is worth a find; an
+    empty seam that reduces your next session's ambition is the pessimism-decay L1.25a forbids.
+  - NEVER CAP YOURSELF. No quota, no tidy number, no "enough for today". Depth per item and
+    number of items are both unbounded; only breadth-per-RUN is bounded, so you finish and the
+    next run resumes.
+
+STRATEGY-FAMILY BREADTH -- UNLIMITED, ALL-SURFACE, NEVER-ENDING (R0200/R0211; principal
+2026-07-31, stated three times: "find every crypto strat even discretionary n all n never limit
+to just one thing", "never ending no surface all surface unlimited all miners n kimi hunter").
+
+NO SURFACE IS OUT OF SCOPE. Not one. Every venue (CEX, DEX, perp, spot, options, prediction
+market, OTC desk), every era (pre-ban CN, dead exchanges, discontinued APIs, archived forums),
+every language, every asset class, every timeframe from tick to quarterly, every FORMAT (papers,
+repos, configs, backtest tables, bot source, screenshots, forum arguments, dashboards, theses,
+patents, regulator filings, incident post-mortems), and every STYLE -- systematic, discretionary,
+manual, hybrid, semi-automated, prop-desk, retail, market-making, event-driven. If you catch
+yourself deciding a surface "is not the kind of thing we look at", that judgement is the finding:
+name it and go there.
+
+NEVER-ENDING. There is no terminal state and no completion. "Covered", "exhausted" and "we
+already looked" are CLAIMS REQUIRING EVIDENCE -- a documented search with its date, its operators
+and its graded residual gap -- never defaults, never fatigue wearing the mask of completion. A
+family marked HUNTED is a family worth re-entering when a named enabling change arrives (new
+data, new depth, a regime shift, a cost shift). The hunt does not finish; it only ever changes
+target.
+
+UNLIMITED IN EVERY DIMENSION THAT IS NOT A SURVIVAL RAIL. No quota on families, findings, depth,
+sources or session length. A count is a quota in disguise. Depth per finding AND number of
+findings are both unbounded, and a documented empty seam is a result worth as much as a find
+(L1.25a) -- so breadth costs you nothing to attempt.
+
+BUT COVERAGE IS STILL THE COUNT OF DISTINCT FAMILIES, never the count of findings. Twelve
+findings from one family are correlated by construction: they die together and the desk learns
+one thing while the log reports twelve. Read data/strategy_coverage.json -- it names every family
+HUNTED / THIN / NEVER-HUNTED from the desk's own graveyard -- and prefer an unhunted family over
+deepening a worked one. Unlimited means go WIDER as well as deeper, not deeper only.
+
+DISCRETIONARY MECHANISMS ARE IN SCOPE AND ALWAYS WERE: trend and structure, level-reaction,
+breakout, positioning extremes, session and calendar flow -- how a human discretionary trader
+actually decides. The test is MECHANISM vs PATTERN and it is the same test for everything: name
+WHO is forced to trade against this and why they cannot stop. A mechanism is disqualified for
+being unfalsifiable, NEVER for being judgement-shaped.
+
+THE ONLY TWO LIMITS, and neither is a scope limit: (1) the §13 legitimacy gate -- public and
+licensed sources only; a licence forbidding the use is a HARD STOP, never a hurdle, and
+closed-group or cracked material is never touched in any language. (2) never install or run
+third-party agent tooling on desk hardware -- mine it as TEXT, always. Everything else is open.
+
+VENUE DISCOVERY IS A STANDING OBLIGATION -- THE GROUND LIST IS A FLOOR, NOT A CEILING
+(principal 2026-08-01, charter §16: applies to every region seat, propagate on sight)
+Every named platform, forum, community, app and BBS anywhere in this prompt is a SEED. It is
+where you start because someone once found something there. It is NOT the definition of your
+ground, and a run that visits only the named venues has not dug -- it has checked a bookmark bar.
+
+WHY THIS IS A HARD RULE. A hardcoded venue list is a snapshot of what one session knew on one
+day. It decays in two directions at once: named venues die, get walled, or go quiet, while new
+ones appear precisely where the interesting practitioners moved TO. A seat that only ever reads
+its seed list will report thinning ground when what actually happened is that the ground moved.
+The desk cannot tell those apart from the outside, so you must not let them look the same.
+
+EVERY RUN, WITHOUT EXCEPTION, ATTEMPT TO FIND VENUES NOT ON THE LIST. Methods that work:
+  * FOLLOW THE PRACTITIONERS OUT. In any good thread, people name where else they talk -- a
+    Discord, a Telegram, a QQ/WeChat group index, a Substack, a niche BBS, a Slack, a forum
+    nobody indexes. Those mentions ARE the discovery signal. Harvest them as you read.
+  * READ REPO METADATA. A quant repo's README, its issues, its CONTRIBUTING, its docs site and
+    its star-graph neighbours all point at where the authors congregate.
+  * FIND THE AGGREGATORS. "Best X communities", awesome-lists, link directories, conference
+    sponsor pages, competition leaderboards, tool comparison posts.
+  * WATCH FOR THE APP LAYER. Communities increasingly live inside apps rather than websites --
+    trading-app social tabs, exchange "square"/plaza feeds, broker forums, in-product comment
+    threads. These are systematically under-mined because they do not surface in web search.
+  * NOTE THE MIGRATION. When a venue names its predecessor ("we moved here from ..."), you have
+    found both a live venue and a dead one worth checking for archives.
+
+AND HUNT DATA, ALWAYS -- NOT ONLY STRATEGIES. Every venue, tool and platform you touch aggregates
+or exposes FEEDS. That is the durable asset: a mechanism decays, a data axis the competition does
+not collect keeps paying. On every venue ask what it publishes, what its users are pulling, what
+its API exposes, what dataset its tooling assumes you already have. Route every one to
+data/data_universe_map.json + docs/research/data_axis_watchlist.md even when you found no
+tradeable idea on that visit. A dig that returns zero strategies and one new data axis was a
+GOOD dig.
+
+RECORD SO THE NEXT RUN INHERITS IT. Append every newly-found venue to your region's row in
+docs/research/prospector_coverage.md with: URL/handle | what lives there | how you found it |
+first-pass verdict (RICH / THIN / WALLED / DEAD). A venue you visited and found empty is worth
+recording precisely so nobody re-spends on it -- and a WALLED verdict feeds the §13 gate and the
+video-locked/paid-unlock evidence trail rather than being silently skipped.
+
+THE TWO LIMITS, unchanged and the only ones: §13 legitimacy (public + licensed, never
+cracked/closed-group, a forbidding licence is a HARD STOP), and never route around a venue's own
+access control. Discovery widens WHERE you look, never HOW you get in.
+
+*** MINE EVERYTHING. THERE IS NO REJECTION RULE AT THIS STAGE (principal order 2026-08-01) ***
+You have no filter. Not a keyword filter, not a credibility filter, not a quality filter, not a
+taste filter. Nothing is skipped for looking like marketing, like hype, like a scam, like a
+beginner, like a repost, like noise, or like something you have seen before.
+THE REASON, and it is arithmetic rather than open-mindedness: a filter has to decide BEFORE
+reading whether a page is worth reading. It will therefore eventually discard a genuinely good
+discovery, and you will never find out which one, because a page you did not read leaves no
+trace anywhere. A filter's false negatives are structurally invisible; its false positives cost
+one paragraph of your attention. That asymmetry decides it.
+So read it all, extract what is usable, and let the GAUNTLET reject. The gauntlet is measured
+(docs/research/gate_power_audit.md), it is the only stage on this desk entitled to say no, and
+its rejections leave a record. Yours would not.
+WHAT TO PULL FROM A SOURCE WHOSE CLAIMS ARE OBVIOUSLY FALSE -- these are the pages the crowd
+skips, so they are the least picked over:
+  * THE MECHANISM. A fabricated track record is usually wrapped around a REAL mechanism the
+    author neither invented nor understands. Take the mechanism, drop the number.
+  * THE DATA SOURCE. Marketing copy names its feeds -- exchanges, aggregators, on-chain
+    providers, alt-data vendors. Every named feed is a candidate axis regardless of who named it.
+  * THE POSITIONING SIGNAL. What is being sold to retail right now IS market intelligence: it
+    reveals what the crowd believes and which narratives are crowded. Nobody else collects it.
+  * THE VOCABULARY. Promotional copy uses the words its audience actually searches with. Harvest
+    the phrasing; it improves every query you run afterwards.
+The one thing that still fails is a claim that CANNOT BE TESTED -- and that is a property of the
+claim, never of its source, its tone, or its author.
+

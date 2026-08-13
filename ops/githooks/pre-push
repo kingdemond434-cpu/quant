@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# PRE-PUSH GATE. Tracked in ops/githooks so all three builder seats get the same one; activate
+# per clone with:  git config core.hooksPath ops/githooks
+#
+# Runs the three FAST gates only (~1 min). The full suite is deliberately not run here: a
+# 60-80 minute pre-push hook gets bypassed within a day, and a gate that is routinely bypassed is
+# worse than none because everyone believes it ran. Run `ops/gates.sh --full` before any commit
+# touching libs/, where the coverage ratchet applies.
+#
+# ESCAPE HATCH, ON PURPOSE AND NAMED: `git push --no-verify` skips this. That is correct for a
+# genuine emergency and dishonest for routine work; the hook cannot tell the difference, and a
+# hook with no escape hatch gets uninstalled instead of bypassed.
+exec "$(git rev-parse --show-toplevel)/ops/gates.sh"

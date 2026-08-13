@@ -45,9 +45,27 @@ def test_generator_lookup_is_by_stored_string_not_enum() -> None:
 
 
 def test_a_real_forward_window_produces_a_real_score() -> None:
-    score = _forward_score(_rec(), {"TESTUSDT": _frame()}, min_forward_bars=30)
-    assert score is not None
-    assert abs(score) > 0.0
+    got = _forward_score(_rec(), {"TESTUSDT": _frame()}, min_forward_bars=30)
+    assert got is not None
+    sharpe, _n = got
+    assert abs(sharpe) > 0.0
+
+
+def test_THE_SAMPLE_SIZE_TRAVELS_WITH_THE_SCORE() -> None:
+    """R0439: an annualized Sharpe stripped of its n is unjudgeable.
+
+    At n=31 its standard error is ~3.4, so a bare float hands the shadow audit a number it cannot
+    distinguish from noise -- which is how it was structurally guaranteed to brand noise a leaked
+    survivor. The return type was widened to carry n; this asserts the n is REAL rather than a
+    placeholder riding along, because a constant in that slot would restore the original defect
+    while passing any test that merely unpacks two values.
+    """
+    frame = _frame()
+    early = _forward_score(_rec("2024-06-01T00:00:00Z"), {"TESTUSDT": frame}, min_forward_bars=30)
+    late = _forward_score(_rec("2025-06-01T00:00:00Z"), {"TESTUSDT": frame}, min_forward_bars=30)
+    assert early is not None and late is not None
+    assert early[1] > late[1], "a later cutoff leaves fewer forward bars; n must track the window"
+    assert late[1] >= 30, "n must be the count actually scored, never the requirement"
 
 
 def test_too_short_a_forward_window_scores_none_not_zero() -> None:

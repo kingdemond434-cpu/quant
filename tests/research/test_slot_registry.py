@@ -10,6 +10,7 @@ import json
 
 import pytest
 
+from libs.ops import desk_host
 from libs.research import slot_registry as sr
 from libs.validation.forward_stats import holm_bar
 
@@ -19,6 +20,14 @@ def fake_root(tmp_path, monkeypatch):
     """A throwaway repo root so tests never read (or write) the live clock artifacts."""
     (tmp_path / "data").mkdir()
     monkeypatch.setattr(sr, "_ROOT", tmp_path)
+    # STAMPED AS THE OWNING HOST, because that is what every test using this fixture is about.
+    # Since GAP 111 the registry asks `desk_host.is_owning_host` before treating an absent
+    # artifact as a measured zero -- a clone cannot tell "clock never born" from "gitignored
+    # elsewhere", so it floors the cohort at the cap instead. These tests exercise the
+    # MEASUREMENT arithmetic, which only runs on a box that owns its state; without the stamp
+    # they would silently re-test the fail-closed floor. The non-owning path is covered by
+    # tests/ops/test_desk_host.py.
+    desk_host.stamp(tmp_path)
     return tmp_path
 
 
@@ -149,3 +158,75 @@ def test_stalled_clocks_never_shrink_the_cohort(fake_root):
     assert len(out["not_accruing"]) == len(sr._STANDING_STATES)   # every standing clock is dead
     assert out["m_concurrent"] == len(out["slots"])               # ...and m still counts them all
     assert sr.concurrent_m() == out["m_concurrent"]
+
+
+# --- ABSENT means "never born" only on the host that owns the artifacts (L1.28a / WS-005) ------
+
+class TestAbsentIsNotTheSameAsGitignored:
+    """`data/` is gitignored, so absence on a clone is a fact about the HOST, not the desk.
+
+    The ABSENT/UNKNOWN split is right reasoning on the owning box and false everywhere else, and
+    it fails in the LOOSER direction on the desk's most load-bearing integer: six missing birth
+    certificates read as six clocks never born, so m shrinks and every Holm bar drops with it.
+    """
+
+    def _bare(self, tmp_path, monkeypatch):
+        import libs.research.slot_registry as sr
+        monkeypatch.setattr(sr, "_ROOT", tmp_path)
+        return sr
+
+    def test_A_HOST_WITH_NO_DESK_STATE_REFUSES_TO_CALL_THE_COHORT_MEASURED(
+            self, tmp_path, monkeypatch):
+        """THE ONE THAT MATTERS. Before this, a fresh clone published complete=True with a small
+        m and the L1.6 fence went green against a bar the live desk does not use."""
+        sr = self._bare(tmp_path, monkeypatch)
+        snap = sr.derive_slots()
+
+        assert snap["complete"] is False, (
+            "zero readable sources is a host without desk state, never N measured zeros")
+        assert snap["absent_sources"] == [], "absent must convert to unknown, not sit beside it"
+        assert len(snap["unknown_sources"]) == 8
+        assert sr.cohort_m_for_bar().provenance != "MEASURED"
+
+    def test_the_floored_m_is_TIGHTER_than_the_false_measured_one(self, tmp_path, monkeypatch):
+        """The whole point is the direction. If this made the bar looser it would be the defect
+        it was written to remove."""
+        sr = self._bare(tmp_path, monkeypatch)
+        snap = sr.derive_slots()
+
+        assert snap["m_upper"] > snap["m_concurrent"]
+        assert sr.cohort_m_for_bar().m >= sr.MAX_FORWARD_SLOTS
+
+    def test_the_two_hardcoded_derivative_rows_are_not_evidence_a_desk_ran(
+            self, tmp_path, monkeypatch):
+        """The first draft keyed this on `slots` being empty and was silently dead: the built-in
+        derivative names are a tuple literal, so a bare clone always yields two rows."""
+        sr = self._bare(tmp_path, monkeypatch)
+        snap = sr.derive_slots()
+
+        assert snap["m_concurrent"] == 2, "the hardcoded builtins still produce rows"
+        assert snap["complete"] is False, "and those rows must not make the cohort look complete"
+
+    def test_A_STAMPED_HOST_KEEPS_THE_ABSENT_SEMANTICS_INTACT(self, tmp_path, monkeypatch):
+        """NEGATIVE CONTROL. On the owning host a genuinely un-born clock must still read ABSENT
+        -- otherwise this fix would floor the live desk's bar forever on a real measured zero.
+
+        THE PREMISE MOVED, AND THAT IS THE UPGRADE. This used to assert that ONE READABLE SOURCE
+        proves the host owns the artifacts. It does not: a clone where a single organ has run
+        satisfies exactly that and still holds five missing births it cannot interpret -- the
+        residual GAP 111 named and could not close. Ownership is now stated by the running cycle
+        and read here, so the control tests what it always meant to test.
+        """
+        import json
+        sr = self._bare(tmp_path, monkeypatch)
+        (tmp_path / "data").mkdir()
+        (tmp_path / "data" / "axis_shadow_state.json").write_text(
+            json.dumps({"axes": [{"axis": "a", "verdict": "ACCRUING", "forward_days": 5}]}),
+            "utf-8")
+        desk_host.stamp(tmp_path)
+
+        snap = sr.derive_slots()
+        assert snap["owning_host"] is True
+        assert snap["absent_sources"], (
+            "on the owning host a file never written IS a clock never born, and stays ABSENT")
+        assert snap["complete"] is True

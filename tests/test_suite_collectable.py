@@ -63,6 +63,25 @@ def _test_modules() -> list[Path]:
 _NO_IMPORT_TIME_BODY = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)
 
 
+def _is_main_guard(node: ast.AST) -> bool:
+    """`if __name__ == "__main__":` -- a body that CANNOT run while pytest imports the module.
+
+    Under collection `__name__` is the module's dotted name, never "__main__", so the branch is
+    dead by construction. Pruning it is not a relaxation of this fence: the guard was flagging
+    `raise SystemExit(pytest.main([__file__]))`, the standard run-this-file-directly idiom, in
+    three modules. A fence that fires on the safe spelling of the thing it is policing teaches
+    people to delete the fence rather than the defect, and its positive control below still
+    proves it fires on the real shape -- a BARE module-level SystemExit.
+    """
+    if not isinstance(node, ast.If):
+        return False
+    t = node.test
+    return (isinstance(t, ast.Compare) and len(t.ops) == 1 and isinstance(t.ops[0], ast.Eq)
+            and isinstance(t.left, ast.Name) and t.left.id == "__name__"
+            and len(t.comparators) == 1 and isinstance(t.comparators[0], ast.Constant)
+            and t.comparators[0].value == "__main__")
+
+
 def _executes_at_import(node: ast.AST):
     """Yield every node reachable at IMPORT time, pruning bodies that only run when called.
 
@@ -70,6 +89,14 @@ def _executes_at_import(node: ast.AST):
     those are FunctionDefs the pruning already covers. Decorators and default arguments also run
     at import, so they are walked even on a pruned def.
     """
+    if _is_main_guard(node):
+        # ONLY THE BODY IS DEAD. The `else:` of a main guard runs when __name__ is NOT
+        # "__main__" -- which is exactly the collection case -- so it must still be walked.
+        # The first draft of this prune returned here and swallowed it; the negative control
+        # below is what caught that, one edit after the prune was added.
+        for child in node.orelse:
+            yield from _executes_at_import(child)
+        return
     if isinstance(node, _NO_IMPORT_TIME_BODY):
         for dec in getattr(node, "decorator_list", []):
             yield from _executes_at_import(dec)
@@ -159,6 +186,30 @@ def test_the_detector_fires_on_the_shape_it_was_built_for() -> None:
         "def main():\n    sys.exit(1)",
         "import pytest\n\ndef test_x():\n    assert True",
         "class T:\n    def run(self):\n        exit(1)",
+        # The run-this-file-directly idiom. Dead under collection: `__name__` is the dotted
+        # module name there, never "__main__".
+        'if __name__ == "__main__":\n    raise SystemExit(pytest.main([__file__]))',
+        'if __name__ == "__main__":\n    sys.exit(main())',
     ]
     for src in quiet:
         assert not _fatal_at_module_level(ast.parse(src)), f"false positive on: {src!r}"
+
+
+def test_THE_MAIN_GUARD_PRUNE_DOES_NOT_HIDE_THE_REAL_SHAPE() -> None:
+    """NEGATIVE CONTROL ON THE PRUNE ITSELF -- the part that could quietly disarm the fence.
+
+    Pruning `if __name__ == "__main__":` is only safe while it stays that narrow. A prune keyed
+    on "an If whose test mentions __name__", or one that swallowed the else-branch, would let a
+    genuinely fatal module-level exit ride through under a lookalike header -- and it would do so
+    silently, because this fence's whole job is to be the thing that notices.
+    """
+    still_fires = [
+        # else runs when the guard is FALSE, which is exactly the collection case
+        'if __name__ == "__main__":\n    pass\nelse:\n    raise SystemExit(1)',
+        'if __name__ != "__main__":\n    raise SystemExit(1)',      # inverted comparison
+        'if __name__ == "__not_main__":\n    raise SystemExit(1)',  # lookalike constant
+        'if __name__:\n    raise SystemExit(1)',                    # mentions __name__ only
+        'if x == "__main__":\n    raise SystemExit(1)',             # different left operand
+    ]
+    for src in still_fires:
+        assert _fatal_at_module_level(ast.parse(src)), f"prune swallowed a real exit: {src!r}"

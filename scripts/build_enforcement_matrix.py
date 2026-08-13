@@ -656,6 +656,29 @@ _MAP: dict[str, list[str]] = {
 # These are appended into _MAP rather than written inline above so the read direction stays clean:
 # above answers "what enforces this law", below answers "why does this check exist at all".
 _FENCE_OWNERS: dict[str, str] = {
+    # --- RESTORED 2026-08-13, and three of these four had NEVER been mapped even before the
+    # merge dropped them. The 8b981a5 resolution took the other branch's max_audit.py wholesale,
+    # so all four check_* functions AND their dispatch entries vanished together: no import broke,
+    # no test named three of them, and four audits simply stopped running while the auditor kept
+    # reporting green. An audit that vanishes is strictly worse than one that fails -- a failure
+    # is a signal, an absence is a silence that reads exactly like a pass. The orphan fence caught
+    # them the moment they came back, which is the fence doing precisely its job.
+    #
+    # L1.49 (a gate that never ran is a claim the desk cannot cash) owns two of them, because both
+    # assert EXECUTION rather than configuration: one proves the scheduled organ's file exists to
+    # be run at all, the other proves the CIO review actually ran rather than being a directive
+    # that lives in prose. That is L1.49's exact shape.
+    "check_scheduled_scripts": "L1.49",
+    "check_meta_research": "L1.49",
+    # L1.28a: the §35 exclusion for self-disposing dig logs is a CLAIM ABOUT A DOCUMENT, and an
+    # unchecked claim is how absence resolves to a clean verdict -- the next session adds an item,
+    # forgets the tag, and the item is governed by nothing while the exclusion still says
+    # otherwise. The check is what makes the exclusion honest rather than trusted.
+    "check_dig_log_disposition": "L1.28a",
+    # L1.23, carried from its original mapping: a page is half a channel. The desk verified
+    # DELIVERY for weeks and never verified the principal could ANSWER, so when a fork deleted
+    # _poll_replies the pager went one-way and four decisions gating the book sat unanswerable.
+    "check_principal_page_unanswerable": "L1.23",
     # --- READ-WITHOUT-WRITER (L1.40): the defect lens L1.40 names FIRST and calls this desk's most
     # prolific class -- "the capital-event equity bug was exactly this". check_phantom_paths is its
     # detector: a path read by code, absent from disk, written by nothing. Such a reader does not

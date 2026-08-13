@@ -229,12 +229,32 @@ class TestLink3SlotsAndTheBoundedUnknown:
     def test_the_bar_is_computed_from_the_upper_bound_never_the_counted_one(self) -> None:
         """UNDERSTATING m LOOSENS EVERY BAR -- the phantom-edge direction. `complete=False` was
         published NEXT TO the loose number rather than instead of it, and every caller kept using
-        the loose one."""
+        the loose one.
+
+        ASSERTED ON BEHAVIOUR, NOT ON SOURCE TEXT. This read `"m_upper" in body and
+        "m_concurrent" not in body` of `concurrent_m`, which broke the moment that function was
+        refactored to delegate to `cohort_m_for_bar()` -- a change that STRENGTHENED the property
+        (the fail-safe flooring now applies to every caller, not just this one) while making the
+        grep report a violation. A test that fails on a strictly better implementation is
+        measuring the spelling, not the invariant.
+        """
         import libs.research.slot_registry as sr
-        src = Path(sr.__file__).read_text("utf-8")
-        body = src.split("def concurrent_m", 1)[1].split("def ", 1)[0]
-        code = "\n".join(ln for ln in body.splitlines() if not ln.strip().startswith("#"))
-        assert "m_upper" in code and "m_concurrent" not in code
+
+        # A cohort where the two numbers DISAGREE: 2 counted, one unreadable container that could
+        # be hiding up to the cap. Using the counted number here is the loosening bug.
+        monkey = {"m_concurrent": 2, "m_upper": 11, "complete": False,
+                  "unknown_sources": ["data/axis_shadow_state.json"]}
+        real = sr.derive_slots
+        try:
+            sr.derive_slots = lambda: monkey       # type: ignore[assignment]
+            assert sr.concurrent_m() > 2, (
+                "concurrent_m returned the COUNTED cohort while a source was unreadable -- "
+                "understating m loosens every bar it feeds")
+            assert sr.concurrent_m() >= monkey["m_upper"]
+            assert sr.cohort_m_for_bar().provenance != "MEASURED", (
+                "an incomplete cohort must never be published as a measurement")
+        finally:
+            sr.derive_slots = real                 # type: ignore[assignment]
 
 
 class TestLink4EVRankingIsByTimeNotStrength:

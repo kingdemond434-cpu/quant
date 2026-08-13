@@ -31,6 +31,7 @@ from pathlib import Path
 from typing import Any
 
 from libs.execution import leg_modes
+from libs.ops.desk_host import is_owning_host
 
 _TRADES = Path("data/cashcarry_trades.json")
 _OUT = Path("web/trade_forensics.json")
@@ -196,11 +197,27 @@ def _fee_attribution(closes: list[dict[str, Any]], since_ms: int) -> dict[str, A
 def _leg_share(trades: list[dict[str, Any]], key: str) -> float | None:
     """Maker share of one leg. None when no record carries a measurable mode for it.
 
-    Legs that placed no order (`already-flat`) are excluded from the denominator -- see the R0064
-    note at the `maker` block below; `libs.execution.leg_modes` owns the vocabulary for both this
-    organ and scripts/fill_quality_monitor.
+    TWO EXCLUSIONS, AND BOTH ARE THE DENOMINATOR RATHER THAN THE NUMERATOR (R0029). A fill rate
+    may only count legs where a fill was ATTEMPTED, and a third of the logged legs never sent an
+    order:
+
+      * `already-flat` -- the leg was square, so nothing was placed. `libs.execution.leg_modes`
+        owns that vocabulary for this organ and for scripts/fill_quality_monitor.
+      * `close` events -- closes BYPASS the maker path DELIBERATELY. A post-only close carries
+        neither reduceOnly nor a venue size cap, and twice accumulated resting fills that bought
+        a short through zero into a long (+916,772 and +1,138,985 units). "Patient on opens, fast
+        on closes" is the rule; counting a close as a failed maker fill scores a SAFETY POLICY as
+        an execution defect.
+
+    THE CLOSE EXCLUSION WAS DROPPED AND THE DISTORTION WAS UNEVEN, which is what made it
+    dangerous rather than merely wrong: futures carries roughly twice as many excluded legs as
+    spot, so the two legs were understated by different amounts and the real shape was hidden.
+    R0029 read "spot maker share 23.8% vs a 60% target, futures 61.9%" and the true picture on
+    genuine attempts is futures converting 100% with the entire gap sitting in the spot quote --
+    a different problem, pointing at different work.
     """
-    modes = [x[key] for x in trades if leg_modes.placed_order(x.get(key))]
+    attempted = [x for x in trades if str(x.get("event") or "").lower() != "close"]
+    modes = [x[key] for x in attempted if leg_modes.placed_order(x.get(key))]
     return round(sum(leg_modes.is_maker(m) for m in modes) / len(modes), 3) if modes else None
 
 
@@ -435,10 +452,26 @@ def main() -> None:
     _OUT.parent.mkdir(parents=True, exist_ok=True)
     _OUT.write_text(json.dumps(out, indent=1), "utf-8")
     # same doc plus a "written" stamp: a checkout must be able to cite WHEN the evidence was
-    # captured, not merely that it exists
-    _TRACKED.parent.mkdir(parents=True, exist_ok=True)
-    _TRACKED.write_text(
-        json.dumps({**out, "written": datetime.now(tz=UTC).isoformat()}, indent=1), "utf-8")
+    # captured, not merely that it exists.
+    #
+    # ONLY FROM THE HOST THAT HOLDS THE TRADES (GAP 113). `data/cashcarry_trades.json` is
+    # gitignored, so on any other box this analysis runs over nothing and produces a perfectly
+    # well-formed document reporting `n_closes: 0` with every net at zero -- then commits it over
+    # the real one. Measured 2026-08-13: a `pytest` run did exactly that, replacing 27 closes with
+    # zero. That is WS-005 written into a TRACKED artifact by merely observing the system, and it
+    # is undetectable afterwards: an empty forensics doc and a desk that closed nothing are the
+    # same bytes.
+    #
+    # The untracked `_OUT` above is written unconditionally and deliberately -- it is this host's
+    # own runtime state, the executor's denylist reads it, and a stale denylist is the dangerous
+    # direction. What is guarded is only the shared, committed copy.
+    owns, why = is_owning_host()
+    if owns:
+        _TRACKED.parent.mkdir(parents=True, exist_ok=True)
+        _TRACKED.write_text(
+            json.dumps({**out, "written": datetime.now(tz=UTC).isoformat()}, indent=1), "utf-8")
+    else:
+        print(f"trade forensics: tracked copy NOT written -- {why}")
     print(f"trade forensics: {len(closes)} closes | flags: {len(flags)}")
     for fl in flags:
         print("  !", fl)

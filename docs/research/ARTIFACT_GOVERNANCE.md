@@ -41,6 +41,7 @@ cleared rather than merely described.
 | Artifact | Class | Rationale |
 |---|---|---|
 | `META_RESEARCH_DIRECTIVE.md` | **DOCTRINE** | Standing CIO law. Changes only by principal decision; its computable half is executed by `scripts/meta_research_review.py`, which is itself cadence-enforced. |
+| `ELITE_QUANT_INTELLIGENCE_MANDATE.md` | **DOCTRINE** | Standing principal directive (2026-08-13) on elite-firm capability recovery, extreme-outlier forensics and future-frontier search, binding on all three builder seats. Stored VERBATIM rather than summarised: a policy paraphrase drifts from the policy while both look compliant, the same reason miner briefs carry their mandates in full. Changes by principal decision only, never on a schedule — a cadence floor here would imply the law expires. |
 | `ARTIFACT_GOVERNANCE.md` | **DOCTRINE** | This register. Governs itself — a classification list that is not itself classified is the miner problem in miniature. |
 | `UNREACHABLE_LAYER_TRIAGE.md` | **TERMINAL** | Record of a completed triage with named unlock conditions. Superseded by a new triage if the conditions fire; never refreshed in place. |
 

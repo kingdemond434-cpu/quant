@@ -31,7 +31,11 @@ svg text{fill:var(--dim);font-size:9px}
   <div style="display:flex;gap:18px;align-items:center">
     <a href="index.html" style="color:var(--dim);font-size:12px;text-decoration:none">◂ Performance</a>
     <a href="research.html" style="color:var(--neon);font-size:12px;text-decoration:none;border-bottom:1px solid var(--neon)">Research &amp; Shadow</a>
-    <a href="factory.html" style="color:var(--dim);font-size:12px;text-decoration:none">Factory</a>
+    <!-- The "Factory" link pointed at web/factory.html, which git history shows was NEVER
+         created -- a dead nav entry since this page was written. Removed rather than papered over
+         with a stub: a link to a missing page reads as a BROKEN dashboard, which sends a reader
+         looking for a pipeline fault that does not exist. Fenced by
+         tests/ops/test_dashboard_navigation.py so a nav entry can never again outlive its page. -->
     <span class="mono dim" id="ts" style="font-size:12px">loading…</span>
   </div></header>
 <main>

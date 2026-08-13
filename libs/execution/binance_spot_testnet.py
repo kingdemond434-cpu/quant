@@ -85,17 +85,38 @@ def _prec_of(step: float) -> int:
 
 
 def exchange_filters() -> dict[str, dict[str, float]]:
-    """Per-symbol step, min qty, base precision, price tick + precision (for valid spot sizing)."""
+    """Per-symbol step, min qty, base precision, price tick + precision (for valid spot sizing).
+
+    ``min_notional`` is the venue's minimum ORDER VALUE -- a gate quantity filters cannot express:
+    an order can satisfy stepSize AND minQty and still be rejected for being worth too little.
+    Binance publishes it as NOTIONAL (current) or MIN_NOTIONAL (legacy); 0.0 means this symbol has
+    no published minimum, so callers must keep their own conservative floor for that case.
+
+    THIS IS THE MODULE THE MONEY PATH ACTUALLY IMPORTS, and the field was added only to
+    `binance_spot_live` -- whose own docstring warned, in as many words, that
+    `run_cashcarry_executor` and `run_stranded_recovery` import the TESTNET modules, so a field
+    added only there "reaches NOTHING". It then reached nothing for the executor: every sizing
+    decision on the live path ran without the venue's minimum order value, so an order could
+    clear both quantity filters and still be rejected on value -- and on a two-legged carry a leg
+    rejected while its partner fills is a naked directional position, not a no-op.
+
+    `tests/execution/test_filter_parity.py` pins the two parsers' key sets AND their values so
+    this divergence fails a test instead of shipping inert. Futures publishes the same filter
+    under the key ``notional``, NOT ``minNotional`` -- copying this line there yields 0.0 for
+    every symbol.
+    """
     info = _get("/api/v3/exchangeInfo")
     out: dict[str, dict[str, float]] = {}
     for s in info.get("symbols", []):
         f = {flt["filterType"]: flt for flt in s.get("filters", [])}
         lot = f.get("LOT_SIZE", {})
         tick = float(f.get("PRICE_FILTER", {}).get("tickSize", 0.0) or 0.0)
+        notl = f.get("NOTIONAL", {}) or f.get("MIN_NOTIONAL", {})
         out[s["symbol"]] = {
             "step": float(lot.get("stepSize", 0.0001)), "min_qty": float(lot.get("minQty", 0.0)),
             "qty_prec": int(s.get("baseAssetPrecision", 6)),
             "tick": tick, "price_prec": _prec_of(tick) if tick else 8,
+            "min_notional": float(notl.get("minNotional", 0.0) or 0.0),
         }
     return out
 
