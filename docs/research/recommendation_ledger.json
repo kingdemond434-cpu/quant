@@ -5385,11 +5385,11 @@
    "summary": "DEFECT (found 2026-08-13 verifying the principal's Codex/Claude shared-mandate question): docs/policy/PRE_DEEPSEEK_MASTER_MANDATE.md section II-C requires Codex (and by its own text, all agents including Claude) to resolve the authoritative live lineage and verify the canonical_policy_hash before every consequential cycle, failing visible on material mismatch. libs/ops/canonical_policy.py implements this (real, tested, 6/6 tests pass) but is NOT wired into ops/brain_env.sh -- the one file every organ spawn actually sources, and the exact mechanism libs.ops.repair_mode and (as of R0437) libs.research.edge_intake use to reach every organ. grep for 'canonical_policy' in ops/brain_env.sh returns zero hits. Same 'legislated, never wired' shape as the two defects R0437 and the earlier repair_mode.py history both describe: a hard requirement written in a mandate document that nothing forces to actually run. Until wired, a stale, tampered, or divergent policy state on either agent's side would not be caught before consequential work, contradicting the mandate's own II-C text.",
    "roi_bps": 15.0,
    "raised": "2026-08-13T02:57:50.628429+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Added canonical_policy.policy_duty(), wired into ops/brain_env.sh's _DOCTRINE the same way libs.ops.repair_mode and libs.research.edge_intake already are -- every organ spawn now resolves canonical policy and gets a loud, non-blocking alert on HASH_MISMATCH/MISSING_POLICY. PAGES never KILLS, matching the desk's established split for governance checks; the money path's existing strict gate (deepseek_cycle.policy_gate()) is unchanged. 11 tests, full suite green.",
+   "commit": "f85c25b",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T04:47:47.105342+00:00"
   }
  ]
 }
