@@ -69,11 +69,20 @@ class FundingCaps:
 
     ``caps`` maps symbol -> (cap, floor) as SIGNED per-interval fractions (cap > 0 > floor), i.e.
     the ADJUSTED symbols from fundingInfo. Everything else falls to the tier defaults.
+
+    ``intervals`` maps symbol -> fundingIntervalHours, the venue's PER-SYMBOL settlement period.
+    It arrives in the very same fundingInfo row as the clamp and was discarded here until R0465:
+    measured 2026-08-13 the live list is 443 symbols at 4h, 302 at 8h and 2 at 1h, so the desk's
+    hardcoded ``/ 8.0`` under-counts the MAJORITY of the universe by 2x -- and by construction it
+    under-counts the high-funding alts hardest, which are exactly the names carry selects. The
+    field costs no extra call and cannot be re-earned for a day once dropped (L1.46), so it is
+    retained here even though the money-path switch that consumes it stays staged behind L1.38.
     """
 
     source: str                                  # "live:<url>" | "cache:<path>" | "static-defaults"
     fetched_at: str | None                       # ISO ts of the underlying live fetch, None=static
     caps: Mapping[str, tuple[float, float]] = field(default_factory=dict)
+    intervals: Mapping[str, float] = field(default_factory=dict)
 
     def clamp_for(self, symbol: str, rate: float = 1.0) -> float:
         """The ABSOLUTE clamp binding a print of this sign: cap for rate>=0, |floor| for rate<0.
@@ -86,6 +95,19 @@ class FundingCaps:
             cap, floor = pair
             return abs(cap) if rate >= 0 else abs(floor)
         return DEFAULT_CAP_MAJOR if symbol in MAJORS else DEFAULT_CAP_OTHER
+
+    def interval_for(self, symbol: str) -> float | None:
+        """Venue settlement period in hours, or None when the venue has not told us.
+
+        REFUSES rather than defaulting, deliberately matching
+        ``libs.research.funding_clock.interval_hours``: silently assuming 8h for an unknown
+        symbol IS the 2x under-count R0465 exists to surface, so a caller that wants the default
+        must ask for it and own that choice. Absence here is genuinely UNKNOWN and not 8h --
+        fundingInfo enumerates only symbols the venue has adjusted, so a symbol missing from the
+        list has an unstated interval, which is a different claim from a stated 8h (L1.28a).
+        """
+        v = self.intervals.get(symbol)
+        return float(v) if v else None
 
 
 def _parse_funding_info(payload: Any) -> dict[str, tuple[float, float]]:
@@ -101,6 +123,33 @@ def _parse_funding_info(payload: Any) -> dict[str, tuple[float, float]]:
         except (KeyError, TypeError, ValueError):
             continue
         out[sym] = (cap, floor)
+    return out
+
+
+def _parse_funding_intervals(payload: Any) -> dict[str, float]:
+    """fundingInfo rows -> {symbol: fundingIntervalHours}; absent/malformed rows are OMITTED.
+
+    A SEPARATE pass over the same payload rather than a second field in ``_parse_funding_info``,
+    because the two quantities have INDEPENDENT validity: a row with a good clamp and a junk
+    interval must still yield its clamp, and vice versa. Folding both into one try/except would
+    let either malformed field silently delete the other's good value -- the attrition class
+    L1.60 exists to stop, and the reason the "BROKEN" fixture row (a cap error, no interval at
+    all) must not change the interval map at all.
+
+    Omission is the honest encoding of "the venue did not say": ``interval_for`` then refuses
+    rather than defaulting, so an unstated interval can never be read as a stated 8h.
+    """
+    out: dict[str, float] = {}
+    for row in payload if isinstance(payload, list) else []:
+        if not isinstance(row, dict):
+            continue
+        try:
+            sym = str(row["symbol"])
+            hours = float(row["fundingIntervalHours"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if hours > 0:                     # a non-positive period is malformed, never a default
+            out[sym] = hours
     return out
 
 
@@ -120,7 +169,8 @@ def fetch_live_caps(get: Callable[[str], Any] | None = None) -> FundingCaps:
             continue
         return FundingCaps(source=f"live:{url}",
                            fetched_at=datetime.now(tz=UTC).isoformat(),
-                           caps=_parse_funding_info(payload))
+                           caps=_parse_funding_info(payload),
+                           intervals=_parse_funding_intervals(payload))
     raise RuntimeError("no fundingInfo mirror reachable from this box -- "
                        + " | ".join(errors))
 
@@ -131,8 +181,12 @@ def _write_cache(caps: FundingCaps, path: Path) -> None:
         "fetched_at": caps.fetched_at,
         "source": caps.source,
         "caps": {s: [c, f] for s, (c, f) in caps.caps.items()},
+        "intervals": dict(caps.intervals),
         "note": ("per-symbol ADJUSTED Binance funding clamps from /fapi/v1/fundingInfo; symbols "
-                 "absent here run the default tier (see libs/data/funding_caps.py, R0293)"),
+                 "absent here run the default tier (see libs/data/funding_caps.py, R0293). "
+                 "`intervals` is venue fundingIntervalHours per symbol (R0465): a symbol ABSENT "
+                 "from it has an UNSTATED period, which is not the same claim as a stated 8h -- "
+                 "never default it silently, that is the 2x under-count L1.47 named."),
     }, indent=1) + "\n", encoding="utf-8")
 
 
@@ -142,7 +196,12 @@ def load_cached_caps(path: Path = CACHE_PATH) -> FundingCaps | None:
     try:
         d = json.loads(path.read_text(encoding="utf-8"))
         caps = {str(s): (float(p[0]), float(p[1])) for s, p in dict(d["caps"]).items()}
-        return FundingCaps(source=f"cache:{path.name}", fetched_at=d.get("fetched_at"), caps=caps)
+        # A pre-R0465 cache has no "intervals" key; that reads as UNKNOWN (empty), never as 8h,
+        # so an old cache degrades into refusal rather than into a fabricated period.
+        intervals = {str(s): float(v) for s, v in dict(d.get("intervals") or {}).items()
+                     if float(v) > 0}
+        return FundingCaps(source=f"cache:{path.name}", fetched_at=d.get("fetched_at"),
+                           caps=caps, intervals=intervals)
     except Exception:
         return None
 
@@ -173,3 +232,9 @@ if __name__ == "__main__":                                    # manual refresh e
     got = get_caps(refresh=True)
     print(f"[funding-caps] source={got.source} adjusted_symbols={len(got.caps)} "
           f"fetched_at={got.fetched_at or 'n/a (static tier table)'}")
+    hist: dict[float, int] = {}
+    for _h in got.intervals.values():
+        hist[_h] = hist.get(_h, 0) + 1
+    print(f"[funding-caps] intervals_stated={len(got.intervals)} "
+          f"histogram={dict(sorted(hist.items()))} "
+          f"(R0465: symbols absent from this map have an UNSTATED period, not 8h)")

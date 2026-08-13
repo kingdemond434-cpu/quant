@@ -9,6 +9,7 @@ venue would be a test of the geo-block, not of the code.
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -101,3 +102,63 @@ class TestCacheRoundTrip:
         assert load_cached_caps(cache) is None
         caps = get_caps(refresh=False, cache_path=cache)
         assert caps.source == "static-defaults"
+
+
+class TestFundingIntervalCapture:
+    """R0465: fundingIntervalHours rides in the SAME row as the clamp and was discarded.
+
+    Measured against the live venue 2026-08-13: 443 symbols at 4h, 302 at 8h, 2 at 1h -- so the
+    desk's hardcoded ``/ 8.0`` under-counts the majority of the universe by 2x, worst on exactly
+    the high-funding alts carry selects. These pin the CAPTURE and the REFUSAL; the money-path
+    switch that consumes them stays staged behind the L1.38 window.
+    """
+
+    def test_the_interval_is_kept_not_dropped(self) -> None:
+        caps = fetch_live_caps(lambda url: _FUNDING_INFO)
+        assert caps.interval_for("BLZUSDT") == pytest.approx(4.0)
+        assert caps.interval_for("LOOMUSDT") == pytest.approx(8.0)
+
+    def test_an_unstated_interval_refuses_rather_than_defaulting_to_8h(self) -> None:
+        # The whole point: absence is UNKNOWN, not 8h. Defaulting here would re-create the 2x
+        # under-count silently, which is the one failure mode this capture exists to prevent.
+        caps = fetch_live_caps(lambda url: _FUNDING_INFO)
+        assert caps.interval_for("BROKEN") is None
+        assert caps.interval_for("NEVER-LISTED-USDT") is None
+
+    def test_a_junk_interval_does_not_delete_that_rows_good_clamp(self) -> None:
+        # Independent validity (L1.60): coupling the two fields in one try/except would let a
+        # malformed interval silently drop a perfectly good cap, and vice versa.
+        payload = [
+            {"symbol": "AUSDT", "adjustedFundingRateCap": "0.02",
+             "adjustedFundingRateFloor": "-0.02", "fundingIntervalHours": "junk"},
+            {"symbol": "BUSDT", "adjustedFundingRateCap": "nope",
+             "adjustedFundingRateFloor": "-0.02", "fundingIntervalHours": 4},
+            {"symbol": "CUSDT", "adjustedFundingRateCap": "0.01",
+             "adjustedFundingRateFloor": "-0.01", "fundingIntervalHours": 0},
+        ]
+        caps = fetch_live_caps(lambda url: payload)
+        assert caps.caps["AUSDT"] == (0.02, -0.02)      # junk interval, clamp survives
+        assert caps.interval_for("AUSDT") is None
+        assert caps.interval_for("BUSDT") == pytest.approx(4.0)   # junk clamp, interval survives
+        assert "BUSDT" not in caps.caps
+        assert caps.interval_for("CUSDT") is None       # non-positive period is malformed
+
+    def test_the_interval_survives_the_cache_round_trip(self, tmp_path) -> None:
+        cache = tmp_path / "funding_caps.json"
+        get_caps(refresh=True, cache_path=cache, get=lambda url: _FUNDING_INFO)
+        again = load_cached_caps(cache)
+        assert again is not None
+        assert again.interval_for("BLZUSDT") == pytest.approx(4.0)
+
+    def test_a_pre_r0465_cache_reads_as_unknown_never_as_8h(self, tmp_path) -> None:
+        # A legacy cache file predates the field entirely; degrading it into a fabricated 8h
+        # would be the L1.55 defect (a constant rendered as a measurement).
+        cache = tmp_path / "funding_caps.json"
+        cache.write_text(json.dumps({
+            "fetched_at": "2026-08-01T00:00:00+00:00", "source": "live:legacy",
+            "caps": {"BLZUSDT": [0.03, -0.03]},
+        }), encoding="utf-8")
+        legacy = load_cached_caps(cache)
+        assert legacy is not None
+        assert legacy.caps["BLZUSDT"] == (0.03, -0.03)
+        assert legacy.interval_for("BLZUSDT") is None
