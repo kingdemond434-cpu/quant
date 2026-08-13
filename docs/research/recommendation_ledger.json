@@ -5818,11 +5818,11 @@
    "summary": "litminer run6 inbox 2026-08-12 A (w8/w1): validation-integrity instrumentation — persist validation-search trajectories as evidence-of-record (query,URL,snippet), port STC 3-level leakage taxonomy w/ cheap detector stack, VOID+rerun-search-blind on answer-leakage events (conditional inflation ~100% masks 4% aggregate), standing search-off ablation; audits read logs+code not summaries (74.0 vs 51.4 measured). Sources: arXiv 2606.05241, 2607.27518, 2509.08713.",
    "roi_bps": null,
    "raised": "2026-08-12T01:57:47.990104+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "PREMISE DOES NOT HOLD ON THIS DESK'S ARCHITECTURE, verified by reading the code rather than the proposal. The row's mechanism is answer-leakage by an LLM VALIDATOR that can search: it searches, finds the answer, and reports inflated validation accuracy. This desk's alpha validation contains no LLM and no search at all -- grep for openrouter|llm|_ask|anthropic over libs/validation/, libs/autodiscovery/ and libs/research/axis_screen.py returns ZERO files. The gauntlet, the axis screens, DSR/PBO/Romano-Wolf and the forward clocks are pure numpy/scipy over price and funding series, so there is no query for an answer to leak through and no search-off ablation to run: the ablation is the permanent state. Web search exists only in the MINING layer (libs/research/source_alternatives.py, scripts/mine_research_queue.py, scripts/collect_research_feed.py), which generates hypotheses and has zero promotion authority under the two-stage law -- a leaked answer there costs a wasted screen, never a phantom edge reaching capital. The fourth sub-item, audits reading logs+code rather than summaries (74.0 vs 51.4), is ALREADY SATISFIED: build_audit_coverage.audit_payload ships the raw git diff (its own comment calls it 'the curation-proof part') plus every tier-0 file IN FULL, budget-exempt. Not a duplicate of a named row and not superseded -- rejected because the defect it describes cannot occur in the subsystem it names. The one genuinely applicable residue, per-claim evidence-of-record for MINED claims, is carved out and rowed separately rather than dropped.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T07:43:01.335031+00:00"
   },
   {
    "id": "R0454",
@@ -5830,11 +5830,11 @@
    "summary": "litminer run6 inbox 2026-08-12 B (w1): gate-battery validity trio composing with the IRT fit (#86) — predictive-validity rank-transfer (Spearman gate-time vs realized OOS ranking; exemplar leaderboard rho=-0.13 vs own hidden set), per-gate construct statements + standing killed-population error analysis (would have caught the DSR-bar design defect pre-420), MTMM discriminant audit of gate-score correlations (fictional breadth breaks multiplicity accounting). All computable from existing ledgers, zero new runs. Sources: 2606.19704, 2511.04703, 2607.24999.",
    "roi_bps": null,
    "raised": "2026-08-12T01:57:50.339992+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "ALL THREE LIMBS FAIL ON EVIDENCE, and the row's own load-bearing claim -- 'All computable from existing ledgers, zero new runs' -- is FALSE. (a) PREDICTIVE-VALIDITY RANK-TRANSFER IS NOT COMPUTABLE AS SPECIFIED. Zero candidates have EVER reached a forward clock: all 12 Stage-B slots in data/forward_slots.json hold axes and standing sleeves, none is a row in research_candidates, and check_gate_reachability.py:31 says so outright ('No candidate has EVER reached REGISTRY'). The only realized-OOS population is 25 REJECTS in data/reject_forward_scores.json. The statistic was actually RUN on them: rho = +0.10 (annual_sharpe), +0.25 (dsr), +0.39 (pbo), +0.39 (reality_p), +0.19 (oos_sharpe), +0.04 (fragility), +0.06 (capacity) at n=25, SE~0.20 -- not one distinguishable from zero, on a range-restricted sample that is entirely on the reject side of the bar, which is a different question from the one asked. pbo and reality_p return IDENTICAL rho because both are 2-valued campaign constants on that subset (the known broadcast defect), not because they measure the same construct. Scaling past n=25 needs the 365 eligible rejects rescored, and run_rejection_rescore.py:8 states the boundary itself: rebuilding a stored candidate's signal on post-rejection data needs the lake AND the generator. That is a run. (b) KILLED-POPULATION ANALYSIS IS ALREADY BUILT, TESTED AND CRON-WIRED DAILY at 06:50 -- libs/validation/reject_rescore.plan_rescore, rejection_shadow.build_shadow_report, gate_calibration.rejection_shadow_audit, monitored at max_audit.py:2240. Live verdict: 1652 rejects, 24 audited, 0 would have paid, leak_frac 0.0, over_strict false. Two factual errors in the row: its cited '86% OOS decay of rejects' appears NOWHERE in the repo (measured is 0/24), and the DSR-bar defect it claims this would have caught pre-420 is R0224, found by SIMULATION in audit_gate_power.py and documented at validation.py:684-707, not by killed-population analysis. (c) THE MTMM PREMISE IS ALREADY REFUTED BY PRIOR ART IN THE SAME FILE. counterfactual_survivors (validation.py:913) measured observed survivors 0 against an independence estimate of ~9 on the 420, and its docstring at :941 names the direction explicitly: observed BELOW independent means gate passes are NEGATIVELY associated, which is what a well-designed battery looks like, and it calls the positive case 'one gate wearing five hats' -- exactly R0454's premise, measured and found backwards. A real instrumentation gap DOES sit underneath all three limbs and is carved out to its own row rather than dropped.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T07:46:36.297647+00:00"
   },
   {
    "id": "R0455",
@@ -5842,11 +5842,11 @@
    "summary": "litminer run6 inbox 2026-08-12 C (w4/w5/w3): panel independence + elicitation batch — cap shared-context panel stages at <=1 round (monotone 72% fact erasure), same-family majorities match base prior 65-76% (marginal same-family seat n_eff~1), cross-family retention 0.598 vs 0.357 = published support for L1.31/33; BEI co-failure audit on own seat logs, cross-family verification by default (judge-target entanglement predicts bias rho~0.5), honest null: entanglement reweighting +0.001 — audit not voting formula; ownership-bias fix for L1.29 elicitation (frame as USER text, P(True) over Likert, ECE 0.1-0.26 free). Sources: 2606.03032, 2604.07650, 2606.03437(corrected).",
    "roi_bps": null,
    "raised": "2026-08-12T01:57:53.293740+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "FOUR OF SIX SUB-ITEMS DUPLICATE NAMED EXISTING LAW OR ARE THE ROW'S OWN DECLARED NULL; verified in code, not assumed. (1) 'cap shared-context panel stages at <=1 round (72% fact erasure)' is SATISFIED BY CONSTRUCTION and cannot be improved: run_external_panel._one calls every seat in parallel on the same immutable dossier with ZERO cross-seat context -- there is no round 2 and no shared transcript to erase facts through. push_rounds is a per-seat output-length continuation, not a debate round, and reading it as one is the only way this item looks open. (2) 'cross-family verification by default' IS L1.33, implemented in libs/research/second_family.py and wired into 8 organs (run_capability_hunt, run_deep_sweep, blindspot_max, blindspot_prober, run_strategic_director, check_strategy_breadth, check_timidity_language, build_enforcement_matrix) with exactly the CONFIRMED/SOLO/CONTESTED labelling the row asks for. (3) 'same-family n_eff~1, cross-family retention 0.598 vs 0.357' is the row's own words PUBLISHED SUPPORT for L1.31/L1.33 -- confirmatory evidence for law already in force is not work. (4) 'entanglement reweighting +0.001' is declared an honest null in the row itself. (5) The BEI co-failure audit is REAL and already measured and rowed elsewhere: budget_history shows 70 blanks of 148 seat-calls (47%) with 3-4 of 4 seats failing TOGETHER on common cause (payload size), which is R0487 (scheduled, due 2026-08-26) plus new row R0583. (6) The L1.29 ownership-bias half does NOT apply to the pathway it names -- recommendation_forecast.on_add derives p from base_rate(rows), a MEASURED implementation rate, never an LLM self-report. It DOES apply to a different pathway the row never names, and that measurement is carved out to its own row rather than dropped.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T07:44:48.295344+00:00"
   },
   {
    "id": "R0456",
@@ -5854,11 +5854,11 @@
    "summary": "litminer run6 inbox 2026-08-12 D (ENGINE-UPDATE #85, w2): e-process operations manual — GROW-optimal lambda*, expected-N=log(1/alpha)/g replaces forward-clock guesswork, constant 1/alpha threshold under any peeking (the 8.8x fix as law), predictability constraint binds self-tuning organs (timestamp tuning inputs before data bet on), e-BH + dependent-mean-of-e-values for the correlated hypothesis book. Reimplement in-repo, no package import. Source: 2602.06379.",
    "roi_bps": null,
    "raised": "2026-08-12T01:57:55.901377+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "THE GENUINE RESIDUE IS BUILT; MOST OF THE ROW WAS ALREADY RUNNING, verified in code. ALREADY EXISTED, so no work was owed: (1) the e-process itself -- libs/research/anytime_valid.py, in-repo and dependency-free exactly as the row asks, with four live consumers (run_axis_shadows, run_derivative_shadow, run_shadow_8h, forward_stats); (2) the constant 1/alpha threshold under ANY peeking, which is already LAW at run_axis_shadows.py:230 with _THR == 1.0/_ALPHA pinned by test_one_alpha_feeds_both_gates, and the row's own '8.8x fix' is the desk's committed measurement (single-look 0.0042, peeking 0.0367, peek+e 0.0017 at run_axis_shadows.py:178); (3) expected-N = log(1/alpha)/g, already implemented algebraically rearranged at run_axis_shadows.py:151-163 as need = ceil(n*log(thr)/log(e)) -- and the 'forward-clock guesswork' it was to replace was already deleted on 2026-08-05, when _MIN_DAYS = 40 was removed in favour of evidence-driven length; (4) Holm (forward_stats.py:69,82), BH (fdr.py:42) and correlated-hypothesis control via Benjamini-Yekutieli (fdr.py:51, wired at screen_select.py:93). BUILT THIS SESSION: e-BH and the dependent-mean-of-e-values merge (libs/validation/fdr.py, 14 tests including a 300-trial Monte Carlo verifying FDR control at rho=0.64 with a positive control), closing an absence the desk logged on 2026-07-26 and called one of the two that matter most. REJECTED ON DESIGN, and this is the one item deliberately NOT built: GROW-optimal lambda* would replace anytime_valid's uniform mixture over 40 lambdas with a single growth-optimised bet. The mixture is there for a stated reason ('Mixing means we never have to pick one') and is the robust choice on fat-tailed crypto returns -- a GROW lambda tuned on the same data it then bets on is the predictability violation this very row warns about, so adopting it would trade robustness for speed on a desk whose own measurement says e-processes are rigorous rather than fast. NOT CLOSED, and it is the row's sharpest surviving point: the predictability constraint on self-tuning organs has no enforcement -- adaptive_thresholds.py:179 logs a change timestamp with NO linkage to the data window the tuned threshold is then evaluated on, and run_axis_shadows.py:192 already admits its own e-process standardises by full-sample sigma. Rowed separately rather than left inside a closed row.",
+   "commit": "5481fbf4",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T07:51:00.699971+00:00"
   },
   {
    "id": "R0457",
@@ -6286,11 +6286,11 @@
    "summary": "PANEL SEAT-BLANK COUNTER IS ABSORBING -- same L1.43 welded-gate class as R0352, one subsystem over, and NOT covered by R0487. build_audit_coverage.py:205-209 record_blank() stores a bare integer per seat with NO timestamp, NO window, NO decay and NO reset path anywhere in the repo (one writer, three readers: max_audit.py:799, model_upgrade.py:301, check_free_roster.py:106). max_audit fires seat-chronic at >=3, so once a seat reaches 3 the defect fires on EVERY run forever until a human hand-edits the JSON -- it is arithmetically incapable of clearing, which is exactly the property R0352 was raised and fixed for. Measured 2026-08-12: nemotron-3-ultra sits at 3 and every one of those 3 blanks predates commit 2c4d72c1 (07:34 today), which added free-seat retry for the transient class (_FREE_TRANSIENT includes 400/429/503) that caused them; the seat answered a full 40k-dossier review at 2026-08-11T20:41 and the live canary had it alive at 14:55 today. So the counter is reporting a chronic failure that the code no longer produces, and cannot ever un-report it. SECOND, CONFLATED FAULT: run_external_panel.py:487-496 (added 582d5358) routes ANY hard exception -- HTTP 400, KeyError('choices'), IncompleteRead, JSONDecodeError -- into the same integer as a genuine empty body, while the defect text still asserts 'chronic capacity failure'. Of the 8 recorded failures for this seat, ZERO were empty bodies or timeouts. FIX: store per-blank timestamps and have readers count within a rolling window (the R0025 windowed-breaker shape), and separate transient-transport failures from capacity blanks so the message names the fault it measured. Do NOT lower the >=3 threshold -- that is the forbidden direction.",
    "roi_bps": 6.0,
    "raised": "2026-08-12T15:57:31.821044+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "534bbdc3",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T07:41:34.418648+00:00"
   },
   {
    "id": "R0493",
@@ -7222,11 +7222,11 @@
    "summary": "seat_blanks has NO DENOMINATOR: build_audit_coverage.record_blank counts failures and nothing counts attempts, so 'blanked 4x' cannot distinguish a dead seat (4 of 4 calls) from a 1% flake on a free tier (4 of 400) -- and the desk's own recorded lesson is that free-seat failures are usually transient pool saturation where the right response is RETRY, not reroster. The recency half is fixed (blanks are now timestamped and the seat-chronic fence keys on a 7d window instead of a lifetime tally that never resets); the RATE half needs a success counter at the panel call site, scripts/run_external_panel.py around :478 and :494 where record_blank is already called on the failure path. Add record_call(model) on every seat attempt, publish blanks/attempts per seat, and let the fence read a rate with its denominator declared (L1.57: a verdict without a denominator is an opinion). Until then the fence can only say a seat IS failing now, never how often it succeeds.",
    "roi_bps": 3.0,
    "raised": "2026-08-13T04:11:49.272306+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "9df0a9f2",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T07:29:44.515068+00:00"
   },
   {
    "id": "R0571",
@@ -7354,6 +7354,126 @@
    "summary": "MULTI-SUBJECT WATCHLIST CARDS HAVE AN UNDECLARED DENOMINATOR: a card can read 'verified + MINED' with half its NAMED subject never opened, and card grade, source backlog and mine gate all read GREEN. MEASURED 2026-08-13 (CN miner s8): data_axis_watchlist card 24 names VeighNa/vnpy.alpha AND Qlib; the 08-11 conversion read vn.py's LICENCE then mined ONLY Qlib paths (qlib/data/ops.py, contrib/data/loader.py, contrib/data/handler.py), so the 12-file vnpy/alpha research system was never opened. Opening it this run REFUTED a claim the card was actively making -- remaining-diff #2 asserts these systems carry a rolling walk-forward harness the desk lacks, and vnpy.alpha has NONE (zero hits for rolling/walk-forward/refit/expanding/fold module-wide; static 3-way split, lab.py is persistence). So the unread half was not inert: it was propagating a false premise into the desk's own gap list, and any port planned against it would have chased a thing that is not there. This is L1.57's denominator problem aimed at a research card -- 'mined' computed over a denominator nobody declared. FIX, cheap and mechanical: a card naming N subjects declares them as a list, and a conversion names WHICH it covered; coverage < N reads PARTIAL, never MINED. Absence of a subject-level denominator must not resolve to a clean grade (L1.28a). ROI is in avoided waste plus recovered ground: the same 08-11 pattern may have left other multi-subject cards half-read, and this one was found only because a seat happened to take the card as a backlog item.",
    "roi_bps": 0.0,
    "raised": "2026-08-13T06:23:48.108464+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0582",
+   "source": "cycle",
+   "summary": "FINDINGS DEFECT BAR DISAGREES WITH ITS OWN REPORT BY UP TO A DAY. max_audit.check_findings uses (now - raised).days > 14 -- timedelta.days TRUNCATES -- while track_findings.report uses _age_d() > UNFIXED_DEFECT_D on a float. Measured 2026-08-13: the report printed '3 ACCEPTED FINDINGS UNFIXED >14d -- these are DEFECTS' (F0005/F0006/F0008 at 14.0d) while the fence returned NONE on the same ledger in the same second. A human reading the report sees defects the fence says do not exist, which is the boundary/off-by-one lens: the two consumers of one threshold must not round it differently. Fix is one line -- have the fence call track_findings._age_d, or compare total_seconds()/86400 -- plus a test pinning a 14.5d finding as a defect in BOTH. Low ROI on its own (max one day of lag, and it errs toward silence rather than noise), but it is a shared-constant divergence in the governance layer, which is the class L1.61 exists for.",
+   "roi_bps": 3.0,
+   "raised": "2026-08-13T07:35:56.194768+00:00",
+   "status": "implemented",
+   "reason": null,
+   "commit": "7f76219d",
+   "due": null,
+   "disposed": "2026-08-13T07:56:14.043172+00:00"
+  },
+  {
+   "id": "R0583",
+   "source": "cycle",
+   "summary": "THE PANEL'S BLANK DENOMINATOR ALREADY EXISTED AND NO CONSUMER EVER READ IT. Distinct from R0487 (budget weld) and R0570 (per-seat denominator, implemented 9df0a9f2): data/audit_coverage.json budget_history has recorded {blanked, of} per panel run for 28 runs, i.e. 70 blanks of 148 seat-calls = a 47% AGGREGATE blank rate, and 20 of 28 runs welded at from==to. Three organs reason about seat health without ever reading it -- the seat-chronic fence (prescribes SWAP off a lifetime integer), check_free_roster (canary, small prompt) and model_upgrade.regressed_seats. THE TWO BOARDS CONTRADICT AND BOTH ARE HONEST (L1.61): the canary reports 4/4 seats ALIVE while budget_history reports 3-4 of 4 BLANKING, because the canary sends a small prompt and the panel sends a 40k payload -- the seat is alive and cannot carry the payload, which is R0487's mechanism seen from the other side. CONSEQUENCE, and it is the expensive part: the desk's external panel is its cross-family check (L1.31/L1.33), and it has been running at roughly one of four seats for 28 recorded runs while every seat-health instrument reported something else. WORK: have the seat fence and model_upgrade read the aggregate rate as context beside the per-seat rate, and make the canary's payload size match the panel's or declare that it does not test the failing condition.",
+   "roi_bps": 25.0,
+   "raised": "2026-08-13T07:42:00.743625+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0584",
+   "source": "deep_sweep",
+   "summary": "EVIDENCE-OF-RECORD FOR MINED CLAIMS (carved out of R0453, which was rejected because its LLM-validator leakage mechanism has no surface on this desk's statistical validation path -- but this residue is real and has a PAID incident). The mining layer searches the web and writes cards that cite sources; nothing persists the (query, URL, retrieved-snippet) triple that a claim was actually derived from, so a cited number cannot be re-checked against what the page said at fetch time. THE DESK HAS ALREADY PAID FOR THIS TWICE, both recorded in desk memory: (1) WebFetch on an arxiv /pdf/ URL SILENTLY FABRICATES numbers while the /html/ of the same paper is clean -- a fabricated figure enters a card wearing a real citation; (2) a dead run's card cited evidence living at a GITIGNORED path, so the citation resolved for its author and for nobody afterwards. Both are undetectable today because the card carries a URL and never the SNIPPET, and re-fetching later answers a different question (the page may have changed, or the fetcher may fabricate differently). WORK, small and bounded: a per-claim append-only record of (query, url, fetched_at, sha256 of the retrieved text, the quoted snippet the claim rests on), written by the miner at claim time, with the card referencing the record id. That makes a fabricated or vanished citation a MEASURABLE defect instead of an unfalsifiable one, and it is the same discipline the desk already applies at the SOURCE level in source_alternatives.recorded_reason, one level down at the CLAIM level.",
+   "roi_bps": 18.0,
+   "raised": "2026-08-13T07:43:19.871526+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0585",
+   "source": "deep_sweep",
+   "summary": "DECISION-LEDGER CONFIDENCE IS SELF-ELICITED AND PILED AT TWO VALUES (carved out of R0455, whose ownership-bias item pointed at the wrong pathway: recommendation_forecast.on_add uses a MEASURED base_rate and is immune, while THIS store is not). MEASURED 2026-08-13 over data/decision_ledger.json: 226 of 234 decisions carry a self-stated confidence, and the distribution is 0.8:127, 0.9:67 -- 86% of every confidence this desk has ever stated sits on exactly two values, with 56% on 0.8 alone. Nothing between 0.81 and 0.89 has ever been said. That is not a belief distribution, it is an anchor, and it is the ownership-bias signature: the same agent that made the decision states the confidence in it, in the same breath, in its own output. WHY IT MATTERS UNDER L1.29: these numbers are the desk's record of how well it decides, and a Kelly bettor sized on over-confident estimates converges to ruin with probability one. run_decision_review already prints 'mean 0.817, 56.2% in the 0.8 bucket -- untestable until outcomes exist' every run, so the desk has been publishing the symptom without anyone reading it as one. 47 of 234 now carry outcomes, so the honest first step is CHEAP AND AVAILABLE: score the 47 against their stated confidence and report the Brier/ECE. If 0.8 turns out to mean 0.55, every future decision's stated confidence is a known-biased input and can be shrunk by a measured factor. The elicitation redesign R0455 proposes (state the item as USER text, elicit P(True) rather than a Likert-ish round number, ideally from a different family) is the SECOND step and should not be built before the first one says whether there is a bias and which way it points.",
+   "roi_bps": 15.0,
+   "raised": "2026-08-13T07:45:19.927620+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0586",
+   "source": "deep_sweep",
+   "summary": "GATE VERDICTS ARE BOOLEANS AND ARE NEVER PERSISTED AT ALL -- the instrumentation gap under R0454's three limbs (carved out; R0454 itself rejected because its statistic is not computable, its killed-population half already runs daily, and its MTMM premise is refuted by counterfactual_survivors). MEASURED 2026-08-13: ValidationVerdict.gates is dict[str, bool] (libs/autodiscovery/models.py:97) and is written to NO store -- libs/autodiscovery/memory.py:53 persists 7 numerics from the SEPARATE ValidationMetrics object plus survived and rejection_reason, and drops expected_value. So 8 of 13 gates have no numeric score anywhere in the desk's history: economic_mechanism, cpcv (its positive-fraction is computed at validation.py:356 and DISCARDED on the next line), walk_forward, beats_baselines, not_too_lucky, sample_adequacy, stationary, expected_value. Per-gate outcomes are recoverable today ONLY by string-parsing the rejection_reason prose, which succeeds on 1353 of 1654 rows -- an 18% silent attrition in the denominator of every gate statistic the desk computes (L1.60). CONSEQUENCE: any future question of the form 'is this gate discriminating, redundant, or mis-calibrated' is answerable for 5 gates and unanswerable for 8, and that is why R0454's limbs (a) and (c) are half-blind rather than merely underpowered -- the data was thrown away at write time, once per candidate, 1654 times. WORK, small and purely additive: persist the gates dict beside the metrics (one column, JSON), and keep cpcv's positive-fraction instead of discarding it. Costs one schema column and changes no gate, no threshold and no verdict. TWO ADJACENT FACTS FOUND WHILE MEASURING THIS, both worth their own look: data/alpha_registry.sqlite holds ZERO rows while the live store is data/sor_crypto.sqlite at 1654 -- a phantom artifact any reader would open first; and reports/gate_power_audit.json has never been generated, so scripts/audit_gate_power.py is built-never-run.",
+   "roi_bps": 20.0,
+   "raised": "2026-08-13T07:46:55.953088+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0587",
+   "source": "deep_sweep",
+   "summary": "THE PREDICTABILITY CONSTRAINT HAS NO ENFORCEMENT ON SELF-TUNING ORGANS (carved out of R0456, whose other limbs were already built or are now built at 5481fbf4). An e-value or a threshold is only valid if the bet was fixed BEFORE the data it is scored on; the desk has the doctrine (pre-registration machinery at run_axis_shadows.py:244-295, decision_at_obs carried forward verbatim, ensemble_gate.py:192 'fixed BEFORE any outcome is observed') and no instrument binding its SELF-TUNING organs to it. MEASURED 2026-08-13: libs/self_improvement/adaptive_thresholds.py:179 _append_log writes {ts, name, before, target, after} -- a CHANGE timestamp and nothing else. There is no record of which data window the tuned threshold was subsequently evaluated on, so nobody can tell a threshold tuned on 2026-07 data and bet on 2026-08 (legitimate) from one tuned on the same window it was then scored against (circular, and it inflates every downstream statistic silently). A SECOND, ALREADY-ADMITTED INSTANCE sits on the promotion path: run_axis_shadows.py:192-194 states outright that its e-process 'standardises by the full-sample sigma (not strictly predictable)' and argues it is safe only because it is ANDed with a Newey-West leg -- an argument that may well be right, and is currently carried in a comment rather than in a check. WORK: record the evaluation window alongside every tuning event, and fail when they overlap. This is a MEASUREMENT duty and loosens nothing: it can only reveal that a number the desk already trusts was fitted to its own test set, which is the direction that costs money and raises no error today.",
+   "roi_bps": 14.0,
+   "raised": "2026-08-13T07:51:20.864863+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0588",
+   "source": "cycle",
+   "summary": "PANEL SEAT TELEMETRY LOST 87% OF ITS INCREMENTS TO A LOST-UPDATE RACE (found and FIXED this session at 95289be5; rowed because the measurement outlives the fix and because two consumers have been reading the corrupted tally for 24 days). record_blank was called from inside run_external_panel._one under ThreadPoolExecutor(max_workers=5), doing load-mutate-save on one shared JSON per seat. MEASURED 2026-08-13, and the comparison is airtight because both counters shipped in the SAME commit (14131c33, 2026-07-20) over the SAME 28 runs: tune_budget, which runs once AFTER the fan-out, recorded 70 blanks of 148 seat-calls; seat_blanks, incremented inside the threads, summed to 9. Age cannot explain a 61-blank gap; only the race can. THE CONSEQUENCE THAT OUTLIVES THE FIX: check_free_roster and model_upgrade.regressed_seats have both been reading seat_blanks as seat-health evidence for 24 days, and it undercounts by ~8x -- so every judgement either made about which seats are dying was made on a tally missing seven of every eight events, in the direction that makes a dying seat look healthy. Neither should be trusted on pre-2026-08-13 history; the honest read of the existing tally is a LOWER BOUND. WORTH CHECKING NEXT: this is a load-mutate-save pattern on a shared JSON, and data/audit_coverage.json also carries the coverage ledger that mark_audited writes -- a stale in-thread read could have overwritten coverage credit the same way, which would make the coverage ratchet (L1.50) understate too. Not measured here; the fix removes the mechanism going forward either way.",
+   "roi_bps": 12.0,
+   "raised": "2026-08-13T08:03:07.953726+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0589",
+   "source": "cycle",
+   "summary": "OFI decomposition test: split delta-bid/delta-ask into limit-inflow, cancellation and market-take components and regress forward return on each separately on the depth+trade tapes already held. Decides whether 'book imbalance' and 'aggressor-side trade intensity' are one axis or two -- if one, the desk's L1.18 independence count is too high by one. Source: JP miner s4, blog_UKI's failed spoofing INTERVENTION (the take components dominate). Both constructions are DSR-counted trials; UNMEASURED is a legal verdict.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-13T08:04:25.771901+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0590",
+   "source": "cycle",
+   "summary": "Run the existing distribution-shift instrument against the screen TARGET series, per cell, and publish the verdict beside the IC. The desk checks FEATURE-distribution stationarity (richman score, dist_shift) and -- UNVERIFIED, and the first thing to falsify -- appears to have no target-side check; a target whose distribution moves between train and test is mis-specified in a way no feature-side check can see, failing to a false null in quiet regimes and a false positive in violent ones. Source: JP miner s4, qiita/pip_pip_pip_p.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-13T08:04:42.405902+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0591",
+   "source": "cycle",
+   "summary": "OP-072 wiring: teach libs/research/convergence.py that post-2023 practitioner sources may be LLM-echoes. Two parts: (a) DERIVES-FROM: NONE (checked) must resolve to UNVERIFIABLE, not to independent, on post-2023 material; (b) a self-disclosed LLM-consultation marker (per-region list in the operator library) demotes a page's EXPLANATION layer to echo while leaving its OBSERVATION layer at full weight. Changes exactly one number -- how much a second agreeing source raises confidence. Rejects no source.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-13T08:04:48.827727+00:00",
    "status": "open",
    "reason": null,
    "commit": null,
