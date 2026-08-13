@@ -1360,8 +1360,22 @@ teardown archive as a refutation-genre corpus (harvest the METHOD — real-tick 
 not the individual verdicts); (5) Yandex Dzen quant layer first probe (robots + census, carried);
 (6) MMGP forum era-archaeology (still-untouched region era target, carried 3 runs — if it slips
 again, say so out loud rather than re-listing it).
-PUSH RECORD: see end-of-run commits on `claude/ru-miner-s3-20260813` (own worktree
-`/home/quant/qp-ru-s3`, taken because session start printed SHARED TREE with 2 live siblings).
+PUSH RECORD: pushed `claude/ru-miner-s3-20260813` @ `02b04b7e`, **LAW GATE — 12 fences: PASS, no
+`--no-verify`**; verified landed (local == `origin/...`, 7 files / 578 insertions, all under
+`docs/research/`). Own worktree `/home/quant/qp-ru-s3`, taken because session start printed SHARED
+TREE with 2 live siblings (R0423, 4 recorded sweeps). **FORK COROLLARY UPDATED — the 08-04
+`--no-verify` precedent was NOT needed and should not be reached for first:** the first push was
+refused with 5 fences `ModuleNotFoundError: pydantic`, which is a **fresh worktree having no
+`.venv`**, not a law breach. All 5 pass `rc=0` under the main checkout's interpreter. Since L1.37
+holds that an unrunnable fence counts as FAILED rather than skipped, the honest resolution is to
+make the gate **runnable** (a temporary `.venv` symlink to the main checkout, removed immediately
+after the push — note `.venv` is NOT gitignored, so it shows as `?? .venv` and must never be left
+behind in a shared tree) rather than to bypass it. Bypassing would have pushed a genuinely
+unverified tree while *recording* that the fences were fine.
+DESK LESSON RECORDED: **L0152** (`scripts/learn.py`, cost=blind) — re-probe a capability verdict
+before inheriting it; judge a fetch by CONTENT, never status or size. Over budget ⇒ ledger-only,
+accepted knowingly with the reason (no test can fixture a remote anti-bot gate; enforcement lives
+in OP-072, which is injected at every miner seat's spawn).
 
 ## SESSION NOTES — KR frontier miner
 
