@@ -56,6 +56,7 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
 from libs.research import liquidation_brief  # noqa: E402
+from libs.research.list_order import shuffled_with_log  # noqa: E402
 
 _BOOK = "data/llm_trader_book.jsonl"
 _STATE = "data/llm_trader.json"
@@ -566,10 +567,19 @@ def main() -> int:
                          if arm == "BLIND" else brief, indent=2))
         return 0
 
+    # BOTH TAXONOMIES ARE SHUFFLED PER CALL (R0457), and this is the site where the bias would do
+    # the most damage. MECHANISMS exists precisely so "which families produce alpha" becomes
+    # measurable "after N calls" -- but it is a hardcoded tuple, so FORCED_LIQUIDATION led the menu
+    # on every call ever made, and arXiv 2509.08713 measured 100% ordering dependence in this exact
+    # shape. A fixed-order menu means the desk would retire GOVERNANCE_CHANGE for being listed
+    # ninth rather than for failing to pay. The permutation is logged, so the ordering sensitivity
+    # of the surviving tally is a reanalysis rather than an experiment nobody runs.
+    mechs, _mp = shuffled_with_log(MECHANISMS, organ="llm_trader", field="mechanisms")
+    parts, _pp = shuffled_with_log(PARTICIPANTS, organ="llm_trader", field="participants")
     raw = _ask_claude(_CALL_BRIEF.format(brief=json.dumps(brief, indent=1)[:6000],
                                          lo=MIN_PROB, hi=MAX_PROB,
-                                         mechs=" | ".join(MECHANISMS),
-                                         parts=" | ".join(PARTICIPANTS)))
+                                         mechs=" | ".join(mechs),
+                                         parts=" | ".join(parts)))
     call = parse_call(raw)
     if call is not None:
         # The arm rides on the row so the eventual comparison is possible; it CANNOT be assigned
