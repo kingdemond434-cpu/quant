@@ -356,12 +356,53 @@ direction: this is the L1.46 provenance family at the PRECISION layer rather tha
 independence: single path (one 2014 RU thread, but with in-thread primary captures — closer to a measurement than a claim). The desk's own L1.45 lesson ("a book-walk measures DISPLAYED depth") is the live-market twin derived independently from own fills.
 promotion-check: not a tradeable signal — a DATA-QUALITY prior. Consume it wherever an era-tape axis is screened (the moat's historical-monopolisation program); if a second era venue's hidden-channel/rounding evidence surfaces, harden from prior to rule in the era-tape screen harness.
 
-### WS-010 strategy-file monoculture: mass-distributed identical rule-sets synchronize retail flow   [observations: 1]
+### WS-010 strategy-file monoculture: mass-distributed identical rule-sets synchronize retail flow   [observations: 2]
 first-seen: 2026-08-12 RU frontier miner s2-on-branch (forum.btcsec.com topic 4382, Jan-2014, page 1 of 75: the 1b-bot vendor shipped downloadable strategy FILES ("Скачиваем стратегию с сайта... работала на реальных деньгах, практически безрисковая") loaded verbatim into identical rule-table engines (book-imbalance thresholds like deltaVolume5m, 5× bid/ask volume ratios, wall-detection with spoof-ignore limits); N buyers ran the SAME triggers on the same venue; group-buys ("складчина") widened distribution further)
 latest: same
 direction: identical-rule herding turns a private trigger into a synchronized flow event: when the shared condition fires, the crowd's orders arrive together, amplifying imbalance cascades at exactly the thresholds the files encode. Modern echoes with the same structure: copy-trading leaders on Bybit/Binance/BingX, Telegram signal channels, TradingView public scripts with alert-webhook bridges (the RU diaspora census already found webhook bridges standard tooling). Desk-testable shadow: order-flow bursts time-clustered around round-number indicator thresholds on high-copy-trade symbols; also an ecology prior — any public backtest genre popular enough to be mass-copied degrades ITSELF (crowding-at-threshold), which is a decay mechanism to price into any mined-from-public mechanism.
 independence: single path (2014 RU vendor thread; the era's monoculture is documented, its flow effect is inferred, not measured). Adjacent but distinct from known copy-trading literature: the WEAK part is threshold-synchronization as a MEASURABLE microstructure event, not the social fact of copying.
 promotion-check: converged-with: none yet. Promote to hypothesis if a second independent path names threshold-time flow clustering on copy-traded symbols, or if a desk look at trade-intensity around canonical indicator levels (from own tape) shows the clustering; event-shaped ⇒ event-study gate.
+
+**OBSERVATION 2 — 2026-08-13 RU frontier miner s3 (smart-lab [1335574](https://smart-lab.ru/blog/1335574.php), `EA Forex Lab` independent tick-level teardown of a commercially sold MT5 scalper).** This
+supplies the **selection mechanism** observation 1 lacked — *why* the mass-distributed strategies
+are systematically the bad ones, rather than merely identical.
+
+MEASURED BY THE REVIEWER (broker RannForex real ticks, 2,627 trades): profit factor **0.60**,
+drawdown **~79%**, net loss — against a vendor equity curve described as "almost perfect". The
+decisive number is the shape, not the loss: **win rate 58.9%, average win $0.77, average loss
+$1.65.** It wins more often and loses much bigger — negative expectancy wearing a high win rate.
+
+**THE MECHANISM, and it generalises far past MQL5:** the reviewer explains the 80+ sales/month and
+near-maximum rating as *"if the EA shows a small profit several days running, the buyer gets a good
+first impression and leaves a positive review. The bigger loss shows up later. So the rating
+reflects **first impressions**, not long-run behaviour."* Formally: **any rating or track-record
+aggregator whose review-sampling time is short relative to the strategy's loss-arrival time
+systematically over-rates negative-skew strategies** — and high-win-rate/negative-skew is exactly
+the family that looks best early. A second survivorship layer sits on top: the vendor's public
+monitoring account **was replaced with a shorter-history one after the original blew up**, i.e.
+track-record survivorship at the *account* level, the same error as trading today's index
+constituents.
+
+**WHY THIS MATTERS TO THE DESK RATHER THAN BEING A FOREX ANECDOTE.** Observation 1 named
+copy-trading leaderboards as the modern echo of file-monoculture but treated copying as neutral
+transmission. This says the transmission is **filtered, and filtered adversely**: the strategies
+that reach the largest number of followers are preferentially those whose losses arrive *after* the
+rating forms. Combined, the two observations say follower flow on public leaderboards is
+concentrated in strategies with a **predictable blow-up profile** — which is a positioning/crowding
+statement, not a moral one, and it is measurable: Binance/Bybit/OKX/Bitget leaderboards and
+copy-trading feeds are already catalogued as a scrapeable free axis (`FREE_DATA_ADDENDA_BCD` C3
+item 55, "DECAYING-edge class — forward-collect to Bronze"), and **that axis is still uncollected.**
+
+**independence:** genuinely separate path — different decade (2014 vs 2026), different market
+(crypto vs forex), different venue class (forum vendor vs MQL5 marketplace), different observer.
+The shared claim is structural (mass distribution + adverse selection by review timing), not a
+shared source. DERIVES-FROM: none cited by the reviewer (checked — the post cites no prior work).
+**promotion-check (updated):** still not promoted. The threshold-synchronization half remains
+unmeasured. But the adverse-selection half now has a **cheap decisive test on an axis the desk can
+collect for free**: snapshot leaderboard composition + follower counts over time, and measure
+whether entrants' realised return distributions are negative-skew and whether follower inflow peaks
+*before* the tail. Event-shaped ⇒ event-study gate. **The collection is the blocker, and it has been
+catalogued-but-uncollected since 2026-07-20.**
 
 ### WS-011 venue OUTAGE freezes the tape and manufactures a cross-venue spread — a provenance prior for every KR premium/spread axis   [observations: 1]
 first-seen: 2026-08-12 KR frontier miner s2-on-branch (Ppomppu 가상화폐 era corpus, intra-KR basis threads mined to comment depth). Load-bearing primary: **52389** (2018-01-11, the Park Sang-ki shock day) — OP: "항상 업비트가 더 높았는데, 아까전 폭락할때 **빗썸 서버 터지면서 멈추더니** 하락않고 정체되어 이젠 거의 14만원 차이 나네요" (Upbit was ALWAYS higher, but during the crash **Bithumb's server blew up and froze** — it did not fall, it stalled — and now they are ~140,000 KRW apart), with independent in-thread corroboration from a commenter: "서버다운 됐어요" (the server went down). Supporting: **5835** (2017-12-09) a routine ~300k KRW Upbit-vs-Bithumb gap (~1.6% on a ~18.5M KRW BTC); **6465** (2017-12-10) asks why 빗썸 is dearer on everything — i.e. the persistent intra-KR sign was BITHUMB-rich in Dec-2017 and the same board reports UPBIT-rich by Jan-2018, so the intra-KR sign is REGIME-DEPENDENT, not structural.

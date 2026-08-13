@@ -2179,3 +2179,153 @@ Their idiom is to simulate the trivial expression `rank(<candidate_field>)` firs
 1,387 of BRAIN's 4,367 fields are VECTOR-typed, with `vec_avg`/`vec_sum` as late reducers. The desk collapses multi-venue funding, per-level depth and per-venue OI to a scalar **at ingest**, which fixes the reduction before any hypothesis can choose it — mean vs sum vs dispersion vs max are different signals, and cross-venue *dispersion* is the one most obviously discarded. Routed as an engine idea (L1.34 §4), not a build order.
 
 **NOT APPLIED — BRAIN-hunter seat is research-frozen out of `scripts/` and `libs/`.** Items 1, 3 and the video-fetcher defect are ledgered so they are driven rather than filed here (this inbox does not drive work).
+
+---
+
+## 2026-08-13 — RU frontier miner s3: a retail practitioner's 231/0 gauntlet, mined for PROCESS
+
+Source: smart-lab.ru [1335532](https://smart-lab.ru/blog/1335532.php) + [1336741](https://smart-lab.ru/blog/1336741.php)
+(Иван Недомолков, 2026-08-01/08-05) + the 84-comment reply layer. 30y US equities, daily, 231
+candidates, **zero survivors** — the desk's own 420/0 situation reached independently, in another
+market, by one person. DERIVES-FROM: Bailey & López de Prado (Deflated Sharpe), Jobson–Korkie
+(1981); the *bottleneck-shift* result below he states he has never seen written down, and I have
+not found it elsewhere either. **This is an EQUITIES, DAILY, LONG-HORIZON stack — every item is a
+process transfer, never a result transfer.**
+
+### 1. A Sharpe DIFFERENCE deserves a test, not a comparison — Jobson–Korkie
+
+His gate demands Sharpe/CAGR/drawdown beat **each of three benchmarks simultaneously**, *and* that
+the Sharpe superiority be **statistically significant (Jobson–Korkie, p<0.05)**, *and* that block
+bootstrap intervals (5,000 reps) exclude zero. The desk's `beats_baselines` is a **point
+comparison** — and the desk's own recorded lesson is that it had **zero production callers**, so it
+passed unconditionally for every candidate ever screened. A point comparison of two noisy Sharpes
+is a coin flip dressed as a gate; JK gives the difference a standard error. **Cheap, standard,
+and it strengthens a gate rather than loosening one (L1.6-safe).**
+
+### 2. THE BOTTLENECK MIGRATES WITH A CONSTRUCTION CHOICE — so a POOLED gate histogram is meaningless
+
+The genuinely novel result, and it lands directly on the desk's GATE-OPTIMALITY DUTY and L1.49.
+With thousands of machine-readable fold-level rejection reasons, **the rejections become data**:
+
+| weighting scheme | rejected on STATISTICS | rejected on OUTPERFORMANCE |
+|---|---|---|
+| equal-weighted | **60.7%** | — (outperformance exists, cannot be proven) |
+| cap-weighted | 16.4% | **74.5%** (weight by cap → you *are* the index) |
+
+Same candidates, same gate; **flip one construction knob and the binding constraint moves to the
+other end of the funnel.** The desk reads per-gate accept/reject tallies **pooled**. A pooled
+histogram averages over sub-populations whose binding gate differs, so it can look healthy while
+every sub-population is welded — the L1.57/L1.62 denominator family, aimed at the gate layer.
+**Condition the histogram on candidate construction family, or it is an average of two different
+machines.**
+
+### 3. …AND A TALLY CAN ONLY REPORT A BOTTLENECK IT HAS A BUCKET FOR (one level past L1.49)
+
+In the reply layer the author states the attribution **his own published histogram cannot show**:
+
+> "Of the 231, the bulk died **not on predictive power** but on this step [costs + volume limit].
+> Many had decile monotonicity; survival after costs and capacity — no." (comment 19783968)
+
+Neither published bucket is *costs* or *capacity*. **His histogram's "bottleneck" is an artifact of
+its own taxonomy.** L1.49 catches a gate that never ran; this catches a **killer that was never a
+gate** — invisible to every instrument the desk owns, because all of them enumerate *declared*
+gates. Ask of any rejection tally: *what kills candidates that this taxonomy has no bucket for?*
+
+### 4. IN-SAMPLE RANK DOES NOT SURVIVE OUT-OF-SAMPLE — a testable claim about the desk's own queue
+
+> "In-sample leaders look respectable, but out-of-sample **the ordering barely survives — what was
+> first drifts to the middle**. A list of 'momentum did X%/yr' says little: it is a **ranking of
+> fit, not a ranking of strategies**." (comment 19792055)
+
+The desk's forward-slot queue is ordered by **expiry** (L1.18a, shortest runway first) — correct
+and untouched by this. But **anywhere the desk ranks candidates by screen performance to allocate a
+scarce slot, this says the ordering is close to random.** Directly measurable on desk history:
+rank-correlate screen Sharpe against subsequent forward Sharpe. A near-zero Spearman would mean
+slot allocation should be by mechanism prior and capacity runway only — never by screen rank.
+
+### 5. THE DATA FENCE THAT FOUND THE MOST BUGS WAS A CLOSED IDENTITY, NOT A PIPELINE
+
+> "The most useful thing I built is not the pipeline, it is the **identity autotest**: raw price
+> plus every dividend and split over the period **must** reconcile with total return. It caught my
+> errors more often than anything else — and **unlike me, it does not get tired and does not want
+> to prove anything.**"
+
+Reconciles to **<0.1%/yr**. **Crypto analogue is exact and L1.47 already demands it:** raw perp
+price change + funding settlements + fees **must** reconcile to booked PnL, differenced against
+per-position venue truth. The desk has paid for the absence twice (the phantom −$394 from measuring
+two legs differently; L1.47's `held/8.0` accrual). His framing is the transferable part: **a closed
+identity between two independently-sourced quantities, run as an automated test — not a review
+step.** Same law as the desk's own "a checklist that fires on recall is not a control", and he
+states the reason better: *"build honesty into the data schema, not into willpower — willpower
+gives up first."*
+
+### 6. A FREE FEED THAT LIES DOES NOT RAISE — and disagreement between feeds is the detector
+
+His trap #5, the one he says nobody writes about because it is boring: a free source **does not
+fail, it just returns** a missing day, a zero volume, **a close below the day's low**, or **a
+ticker that changed owner and now means a different company**. "If you pull once a day with a
+script, you will never notice." His fix: multiple sources (yfinance/Stooq/EDGAR/FRED) with
+auto-switch **when one goes silent *or starts disagreeing with another*** + physically-impossible-
+candle checks. **That is L1.61 (cross-artifact contradiction) at the FEED layer** — the desk built
+the verdict-layer twin on 2026-08-12 and scoped its registry to money-path verdicts. The
+symbol-identity case is the crypto-sharp one: perp symbols get reused and delisted history gets
+purged (the desk already records "Upbit purges candles on delisting 6/6"), so **a symbol is not a
+stable key** and nothing currently asserts that it is.
+
+### 7. CALIBRATED ARTIFACT THRESHOLD, and it is an independent instance
+
+> "'High Sharpe = go look for the bug' is **wired in as a heuristic** — everything above **~1.5
+> in-sample** on my data turned out to be an artifact." (comment 19778297)
+
+Second instance of the desk's own prior (the 9.84 in-sample Sharpe that DSR killed). Worth carrying
+as a *stated numeric prior for a clean 30y daily equity stack* — **not** importable as a crypto
+threshold, but the shape (an in-sample level above which the correct action is a bug hunt, not a
+promotion) is.
+
+### 8. THE DSR BAR CROSS-CHECK CONFIRMS "THE DESIGN, NOT THE THRESHOLD"
+
+He needs an honest **Sharpe ≈1.7+** to clear DSR at ~7,500 daily observations with a trial counter
+that grew 30→48→96→120. The desk's own audit records needing **true SR ≈5 at T=310, N=420**. The
+gap is driven by **T, not N** (√(7500/310) ≈ 4.9). **This independently corroborates the desk's
+recorded verdict that "the design, not the threshold, is the defect"**, and it points at the same
+remedy L1.18a already names as one of only two honest accelerants: **more observations per day.**
+His reply layer states the mechanism unprompted: *"the longer the horizon, the fewer independent
+observations in the same 30 years — hence the harsh DSR bar."*
+
+**CAVEAT THAT CUTS THE OTHER WAY, and it is the L1.62 shape:** his 231 are **families × parameter
+variants**, not 231 independent ideas ("231 is not 231 different ideas but families with parameter
+variants"). Counting parameter variants as independent trials **over-deflates**, which pushes toward
+a **false null** — the direction no gate catches. His 0/231 is therefore a *ceiling* on the true
+survivor count, not a measurement of it. The desk's own multiplicity denominator deserves the same
+question.
+
+### 9. AN ILLIQUIDITY-RANKED SIGNAL SORTS YOU INTO THE COHORT WHERE YOUR COST MODEL IS WEAKEST
+
+> "Amihud by construction ranks by **illiquidity** — it sorts you into exactly the names where
+> slippage is hardest to compute. As a filter 'do not go here', excellent; as a signal 'go here',
+> it needs an honest cost model and a capacity ceiling." (comment 19783968)
+
+**This names a standing tension between two desk laws that is nowhere written down.** §42 sends the
+desk deliberately at *low-OI tails, thin pairs, day-1 listings, delisting unwinds* — precisely the
+cohort where the Execution Reality Model has the **fewest own fills**, so L1.45's counterfactual
+problem is at its worst exactly where §42 hunts. Neither law is wrong and §42 is not weakened by
+this; the point is that **§42 ground carries a systematically wider cost-model error bar, and that
+belongs in the sizing argument rather than being discovered after the fills.** Related and
+corroborating: his short-leg finding — the 10th decile sits in the least borrowable names, so
+"before costs the picture is as you say, after — zero", and **long-short factor candidates died
+consistently worse than long-only**.
+
+### 10. STOP-FREE CONSTRUCTION AS AN ATTACK-SURFACE ARGUMENT
+
+His single surviving family (regime-adaptive momentum-reversion, 5 regimes from S&P trend + VIX +
+SPY/TLT + HYG/LQD credit stress, with anti-chatter hysteresis) is deliberately **stop-free**: "it
+has **no stops that could be triggered** — it rebalances on calendar and regime change, not on
+price levels." In crypto that argument is stronger than in equities: **a strategy with no
+price-level exits cannot be the fuel of a liquidation cascade** (a named mechanism in the desk's own
+vocabulary) and cannot be stop-hunted. The desk's own hysteresis lesson is the same shape from the
+other side — *"hysteresis must key on the ECONOMIC condition, never on a rank cut."*
+
+**NOT APPLIED — miner seat is research-frozen out of `scripts/` and `libs/`.** Items 2, 3 and 5 are
+the ones with a defect shape rather than an idea shape; nothing here is a build order, and per this
+file's own standing note **this inbox does not drive work** — anything that must be driven belongs
+in the recommendation ledger.
