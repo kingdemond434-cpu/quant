@@ -21,10 +21,24 @@ import pytest
 import scripts.max_audit as m
 
 
-def _live(tmp: Path, action: str, dd_pct: float) -> None:
+def _live(tmp: Path, action: str, dd_pct: float, *, fut_leg: float | None = None,
+          n_carries: int = 0, gross: float = 0.0) -> None:
+    """The live feed.
+
+    `fut_leg_net` IS THE LOAD-BEARING FIELD NOW, and `dd_from_peak_pct` no longer is. The check
+    used to trust the published drawdown; R0364 showed that number is measured against a
+    different inception than `start_futures_equity`, so the monitor believed $13,472.67 while the
+    book's own published equity was $8,682.22 -- and the error runs in the direction that makes
+    an absorbing book look healthy. It now recomputes through `risk_controls.evaluate`, so these
+    fixtures supply what that path actually reads. `action`/`dd_pct` are still written because the
+    feed carries them and a fixture that omitted them would not resemble the real artifact.
+    """
     (tmp / "web").mkdir(parents=True, exist_ok=True)
-    (tmp / "web/cashcarry_live.json").write_text(json.dumps(
-        {"risk": {"action": action, "dd_from_peak_pct": dd_pct}}), "utf-8")
+    body: dict = {"risk": {"action": action, "dd_from_peak_pct": dd_pct},
+                  "n_carries": n_carries, "deployed_notional": gross}
+    if fut_leg is not None:
+        body["fut_leg_net"] = fut_leg
+    (tmp / "web/cashcarry_live.json").write_text(json.dumps(body), "utf-8")
 
 
 def _positions(tmp: Path, n: int, *, start: float = 10547.78, peak: float = 8690.92) -> None:
@@ -36,23 +50,31 @@ def _positions(tmp: Path, n: int, *, start: float = 10547.78, peak: float = 8690
 
 class TestBookAbsorbingState:
     def test_flags_the_real_2026_08_05_lock(self, tmp_path: Path, monkeypatch) -> None:
-        """The measured instance: pause_opens at -17.65% with zero positions."""
-        _live(tmp_path, "pause_opens", -17.65)
-        _positions(tmp_path, 0)
+        """The measured instance: a flat book held down by pause_opens.
+
+        THE PAUSE HALF IS THE POINT. A later rewrite narrowed this check to `flatten` alone,
+        which is the rarer branch -- `pause_opens` bars new opens, and on a book already holding
+        nothing that is the same trap by a gentler name: no carries, no funding, so equity cannot
+        rise, so the drawdown never shrinks and the pause never lifts.
+        """
+        from libs.risk import risk_controls
+        start, peak = 10000.0, 10000.0
+        eq = 0.80 * start                                  # -20%: past DD_PAUSE, short of ruin
+        _live(tmp_path, "pause_opens", -20.0, fut_leg=eq - start)
+        _positions(tmp_path, 0, start=start, peak=peak)
         monkeypatch.setattr(m, "ROOT", tmp_path)
         defects: list[tuple[str, str]] = []
         m.check_book_absorbing_state(defects)
+
         assert defects and defects[0][0] == "book-absorbing-state"
         msg = defects[0][1]
-        assert "ZERO positions" in msg
-        # Assert the ARITHMETIC, parsed -- the gap is the number that decides whether this is
-        # recoverable, so a brittle substring would let a wrong figure through unnoticed.
-        gap = float(re.search(r"\$([\d,]+\.\d\d)", msg).group(1).replace(",", ""))
-        peak = 10547.78                                   # max(start, peak_stored)
-        assert gap == pytest.approx(0.85 * peak - (1 - 0.1765) * peak, abs=0.02)
+        assert "PAUSE_OPENS" in msg
+        # Assert the ARITHMETIC, parsed -- the gap decides whether this is recoverable at all, so
+        # a brittle substring would let a wrong figure through unnoticed.
+        gap = float(re.search(r"rise the \$([\d,]+\.\d\d)", msg).group(1).replace(",", ""))
+        assert gap == pytest.approx((1 - risk_controls.DD_PAUSE) * peak - eq, abs=0.02)
         assert "re-arm does NOT touch it" in msg
-        # must NOT read as authorisation to move a rail
-        assert "principal" in msg.lower()
+        assert "principal" in msg.lower()          # must NOT read as authorisation to move a rail
 
     def test_silent_while_the_book_holds_inventory(self, tmp_path: Path, monkeypatch) -> None:
         """A paused book that still HOLDS carries keeps harvesting funding, so equity can move and
@@ -73,13 +95,26 @@ class TestBookAbsorbingState:
         assert defects == []
 
     def test_flatten_uses_the_ruin_bar_not_the_pause_bar(self, tmp_path: Path, monkeypatch) -> None:
-        """Different bars; reporting the wrong gap would misprice the decision."""
-        _live(tmp_path, "flatten", -40.0)
-        _positions(tmp_path, 0)
+        """Different bars AND different denominators; either one wrong misprices the decision.
+
+        The ruin rail measures equity against INCEPTION (`risk_controls.evaluate`, dd_start =
+        eq/start - 1); the pause rail measures against PEAK. Reporting the pause gap for a
+        flattened book would understate what recovery costs.
+        """
+        from libs.risk import risk_controls
+        start, peak = 10000.0, 12000.0                     # peak above start: the two bases differ
+        eq = 0.55 * start                                  # -45%: past the ruin rail
+        _live(tmp_path, "flatten", -45.0, fut_leg=eq - start)
+        _positions(tmp_path, 0, start=start, peak=peak)
         monkeypatch.setattr(m, "ROOT", tmp_path)
         defects: list[tuple[str, str]] = []
         m.check_book_absorbing_state(defects)
+
         assert defects and "35%" in defects[0][1]
+        raw = re.search(r"rise the \$([\d,]+\.\d\d)", defects[0][1]).group(1)
+        gap = float(raw.replace(",", ""))
+        assert gap == pytest.approx((1 - risk_controls.DRAWDOWN_RUIN) * start - eq, abs=0.02), (
+            "the ruin gap must be measured off inception, not off peak")
 
 
 class TestPrincipalPageUnanswerable:

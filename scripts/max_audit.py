@@ -3997,6 +3997,16 @@ _TRIAGE_VERDICTS = ("BUILT", "BUILD", "QUEUE", "REJECT")
 #: check exists to prevent, so they are counted back out loud.
 _TRIAGE_OPEN = ("BUILD", "QUEUE")
 
+#: Miner session logs excluded from §35 on the SAME premise as _TRIAGE_DOCS -- they disposition
+#: their own items inline, with a `[§33: ...]` tag rather than a verdict heading. The premise is
+#: what the exclusion rests on, so it is checked (check_dig_log_disposition) rather than trusted.
+_SELF_DISPOSING_DIG_LOGS = ("docs/research/prospector_coverage.md",)
+#: PRESENCE probe for the §33 inline tag. Deliberately only the OPENER: the parser of record is
+#: ``libs.research.mine_conversion._DISP_RE`` and duplicating its full grammar here would be a
+#: second parser to keep in sync (the desk has been bitten by exactly that). Tolerant of
+#: "S33"/"section 33" for the same reason the real parser is -- an ASCII-only writer still counts.
+_DIG_TAG_RE = re.compile(r"\[(?:§|S|section\s*)33:", re.IGNORECASE)
+
 
 def check_triage_disposition(defects) -> None:
     """§35(8): the triage registers are excluded from the findings scan ONLY while they still
@@ -5742,6 +5752,185 @@ def check_recommendation_rows(defects) -> None:
                     f"enforced --due. Deleting rows is the denominator trick and is detected."))
 
 
+
+
+
+# ---------------------------------------------------------------------------------------------
+# RESTORED 2026-08-13. These four checks were dropped by the 8b981a5 merge -- DEFINITION AND
+# DISPATCH ENTRY BOTH -- because that resolution took the other branch's max_audit.py wholesale
+# and these existed only on this one. No import broke and no test named three of them, so four
+# audits simply stopped running and the auditor kept reporting green. An audit that vanishes is
+# strictly worse than one that fails: a failure is a signal, an absence is a silence that reads
+# exactly like a pass.
+# ---------------------------------------------------------------------------------------------
+
+def check_meta_research(defects) -> None:
+    """The CIO review must RUN. §12 of META_RESEARCH_DIRECTIVE, made mechanical.
+
+    A directive that lives only in prose is skipped on a busy cycle and the skip is invisible --
+    this desk's own recursion rule says every manual probe becomes a standing automatic check.
+    """
+    st = _j(ROOT / "data/meta_research_review.json", {})
+    ran = st.get("ran")
+    if not ran:
+        defects.append(("meta-research-never",
+                        "META_RESEARCH_DIRECTIVE review has never run -- research capital is "
+                        "being allocated without the CIO layer that prices it"))
+        return
+    try:
+        age_d = (datetime.now(tz=UTC) - datetime.fromisoformat(ran)).days
+    except (TypeError, ValueError):
+        return
+    if age_d > 3:
+        defects.append(("meta-research-stale",
+                        f"meta-research review last ran {age_d}d ago (floor 3d) -- the desk is "
+                        "allocating engineering hours without a current ERV ranking"))
+
+
+def check_principal_page_unanswerable(defects) -> None:
+    """RETURN-PATH CHECK (self-interrogation angle 11, mechanised 2026-08-05).
+
+    A page is half a channel. This desk verified DELIVERY for weeks and never once verified that
+    the principal could ANSWER -- so when the branch fork deleted `_poll_replies` from
+    run_alerts.py, the pager went strictly one-way on 2026-08-02 and nothing noticed. Four
+    decisions, two of them gating the entire book and the entire promotion funnel, sat "awaiting
+    principal" across 33 sweeps; the `gate-optimality` ack read *"lifts on his reply"* while he
+    had no way to send one.
+
+    Fires when there is an open ask AND the reply poller has not run recently. Deliberately keyed
+    on the POLL STATE rather than on the presence of replies: silence is the expected state of a
+    healthy reply channel, so "no replies" can never be the trigger. What must never happen is the
+    desk waiting on an answer down a pipe that nobody is reading.
+    """
+    ask = ROOT / "data/PRINCIPAL_ACTION.md"
+    if not ask.exists() or not ask.read_text("utf-8", errors="ignore").strip():
+        return                                    # nothing is blocked on him
+    state = ROOT / "data/.reply_poll_state.json"
+    if not state.exists():
+        defects.append((
+            "principal-page-unanswerable",
+            "data/PRINCIPAL_ACTION.md carries an open ask but data/.reply_poll_state.json does "
+            "NOT EXIST -- nothing on this box is reading the reply channel, so the page cannot be "
+            "answered by any means. Restore _poll_replies in scripts/run_alerts.py."))
+        return
+    try:
+        polled = json.loads(state.read_text("utf-8")).get("polled")
+        age_h = (NOW - datetime.fromisoformat(str(polled)).timestamp()) / 3600.0
+    except Exception:
+        age_h = None
+    if age_h is None or age_h > 6:
+        shown = "unparsable" if age_h is None else f"{age_h:.1f}h"
+        defects.append((
+            "principal-page-unanswerable",
+            f"data/PRINCIPAL_ACTION.md carries an open ask but the reply poll last ran {shown} "
+            "ago (watchdog fires run_alerts every 3 min, so anything over ~6h means the poller is "
+            "dead). The desk is waiting on an answer down a pipe nobody is reading -- verify "
+            "_poll_replies still runs in scripts/run_alerts.py main()."))
+
+
+def check_dig_log_disposition(defects) -> None:
+    """§35(9): a miner session log stays out of §35 only while it DISPOSES ITS OWN ITEMS.
+
+    `prospector_coverage.md` is excluded from the §35 scan because every numbered item in a
+    session note closes in place with an inline `[§33: ...]` tag. That is a CLAIM ABOUT THE
+    DOCUMENT, and a claim nobody checks is exactly the shape the scope law exists to forbid --
+    the next session writes one more item, forgets the tag, and the item is now governed by
+    nothing at all while the exclusion comment still says otherwise. The same reasoning already
+    stands behind _TRIAGE_DOCS ("the exclusion is only honest while that stays TRUE, so it is
+    checked rather than trusted"); this is that instrument applied to the other self-disposing
+    surface, so the two exclusions cost the same to hold.
+
+    A FLOOR, NOT A MATCHER, and said out loud: counting tags per session cannot prove tag #2
+    belongs to item #2 (the seats write the tag on the item's own line, on a later `#### ITEM n`
+    header, or at the end of the item's block, and all three are legal). What it CANNOT be
+    satisfied by is a session that adds an item and no disposition -- which is the entire failure
+    mode the exclusion must not be allowed to hide. Item parsing reuses ``parse_findings`` on each
+    section, so the set counted here is exactly the set §35 would have scanned; a second item
+    parser that drifted from the first would reintroduce the blind spot one level down.
+    """
+    from libs.research.finding_registry import parse_findings
+
+    short = []
+    for rel in _SELF_DISPOSING_DIG_LOGS:
+        p = ROOT / rel
+        if not p.exists():
+            continue
+        try:
+            text = p.read_text("utf-8")
+        except OSError:
+            continue
+        # Sections are the `### ` session notes. `#### ITEM n` sub-headers stay INSIDE their
+        # session on purpose: that is where two of the five seats write their dispositions.
+        heads = [(m.start(), m.group(1).strip())
+                 for m in re.finditer(r"^###\s+(.+?)\s*$", text, re.MULTILINE)]
+        bounds = [h[0] for h in heads] + [len(text)]
+        for i, (pos, title) in enumerate(heads):
+            block = text[pos:bounds[i + 1]]
+            n_items = len(parse_findings(block, source=rel))
+            n_tags = len(_DIG_TAG_RE.findall(block))
+            if n_items and n_tags < n_items:
+                short.append(f"{Path(rel).name} '{title[:60]}' "
+                             f"({n_items} item(s), {n_tags} §33 tag(s))")
+    if short:
+        defects.append((
+            "dig-log-undisposed",
+            f"§35(9): {len(short)} miner session(s) carry numbered items with FEWER §33 "
+            f"dispositions than items -- {'; '.join(short[:6])}. The doc is excluded from the §35 "
+            "findings scan PRECISELY because it dispositions its own items inline; an item with "
+            "no tag is governed by neither law. Write the item's "
+            "`[§33: wired|screened|killed|deferred(DATE)|n/a -> artifact]` tag, or move the doc "
+            "into _FINDING_DOCS so §35 takes it and every item owes a GAP_REGISTER row instead."))
+
+
+def check_scheduled_scripts(defects) -> None:
+    """Every scheduled command must NAME A FILE THAT EXISTS in this checkout.
+
+    Found live 2026-08-04: the working tree sat on a branch forked from master at 3bf89cd, and
+    75 of the 125 scripts the crontab invokes existed only on master -- 60% of the desk's
+    scheduled organs, run_live_guard.py among them, had been dying instantly on ENOENT. Nothing
+    reported it, because each organ still APPENDED TO ITS LOG on every fire: the log's mtime was
+    minutes old and its contents were 'can't open file'. Every freshness-shaped check the desk
+    owns read that mtime and passed. deploy/pull_deploy.sh was itself missing, so the mechanism
+    that would have re-synced the tree was part of the outage.
+
+    This is the config-vs-outcome class: a schedule proves intent, never execution. The check is
+    deliberately the cheapest possible statement of the real requirement -- resolve what is
+    scheduled, then stat it -- because that is the assertion no freshness signal can fake.
+    """
+    import re
+    import subprocess as _sp
+
+    refs: dict[str, str] = {}                     # script path -> where it was scheduled
+    try:
+        _cr = _sp.run(["crontab", "-l"], capture_output=True, text=True, timeout=20, check=False)
+        for ln in (_cr.stdout or "").splitlines():
+            if ln.strip().startswith("#"):
+                continue
+            for m in re.findall(r"(?:scripts|ops|deploy)/[A-Za-z0-9_./-]+\.(?:py|sh)", ln):
+                refs.setdefault(m, "crontab")
+    except (OSError, _sp.SubprocessError):
+        pass                                       # no crontab on this box: unit files still count
+    for unit in sorted(Path("ops").glob("*.service")):
+        try:
+            for ln in unit.read_text("utf-8").splitlines():
+                if ln.strip().startswith("ExecStart"):
+                    for m in re.findall(r"(?:scripts|ops|deploy)/[A-Za-z0-9_./-]+\.(?:py|sh)", ln):
+                        refs.setdefault(m, unit.name)
+        except OSError:
+            continue
+
+    missing = sorted(p for p in refs if not Path(p).exists())
+    if missing:
+        shown = ", ".join(missing[:6]) + ("..." if len(missing) > 6 else "")
+        defects.append((
+            "scheduled-script-missing",
+            f"{len(missing)}/{len(refs)} scheduled script(s) DO NOT EXIST in this checkout: "
+            f"{shown}. Every one of these fires on schedule, dies on ENOENT, and still touches "
+            f"its log -- so freshness checks read minutes-old logs and report the organ healthy. "
+            f"A schedule is intent, not execution. Restore the files (usually a branch/deploy "
+            f"divergence: compare against the mainline) or remove the schedule."))
+
+
 CHECKS = [("carryover-skipped", check_carryover_skipped),
           ("recommendation-rows", check_recommendation_rows),
           ("organs", check_organs), ("stubs", check_stub_deaths),
@@ -5759,6 +5948,10 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       # reports once.
                       ("ci-gate", check_ci_gate),
                       ("dig-depth", check_dig_depth),
+                      ("meta-research", check_meta_research),
+                      ("principal-page", check_principal_page_unanswerable),
+                      ("dig-log-disposition", check_dig_log_disposition),
+                      ("scheduled-scripts", check_scheduled_scripts),
                       ("interrogation", check_interrogation),
                       ("generation", check_generation),
                       ("clock-saturation", check_clock_saturation),
@@ -6126,20 +6319,39 @@ def check_book_absorbing_state(defects) -> None:
     except (KeyError, TypeError, ValueError):
         return
     verdict = risk_controls.evaluate(eq_c, start, peak, gross, ruin_cap_lev=8.0)
-    if verdict.action != "flatten":
+    # BOTH HOLDING ACTIONS ARE ABSORBING ON A FLAT BOOK, and narrowing this to `flatten` made the
+    # monitor blind to the commoner half. `pause_opens` bars NEW opens; on a book already holding
+    # nothing that is the same trap by a gentler name -- no carries, so no funding, so equity
+    # cannot rise, so the drawdown never shrinks and the pause never lifts. The measured 2026-08-05
+    # instance was exactly this: pause_opens at -17.65% with zero positions, and it is the state
+    # this check was originally written for.
+    if verdict.action not in ("flatten", "pause_opens"):
         return
     if n_carries > 0 or gross > 0:
-        # Flatten WITH inventory is the rail doing its job mid-unwind -- transient, not absorbing.
+        # Holding inventory is the rail doing its job mid-unwind -- transient, not absorbing, and
+        # a book with carries still earns funding, so its equity genuinely can move.
         return
+    # The bar is IMPORTED, never re-stated. This docstring promises the monitor recomputes through
+    # the same rule the executor uses, and a second copy of 0.35/0.15 here is precisely how the
+    # monitor and the book end up disagreeing about the book's own state.
+    ruin = verdict.action == "flatten"
+    bar = risk_controls.DRAWDOWN_RUIN if ruin else risk_controls.DD_PAUSE
+    # Distance to clear, measured against the denominator each rail actually uses: the ruin rail
+    # is equity/START - 1 (risk_controls.evaluate:319), the pause rail is off PEAK.
+    base = start if ruin else peak
+    gap = (1.0 - bar) * base - eq_c
     defects.append((
         "book-absorbing-state",
         f"BOOK DEAD, NOT IDLE: the carry book is flat (n_carries=0) while risk_controls still "
-        f"returns FLATTEN -- {'; '.join(verdict.reasons)}. A flat book earns no funding, so equity "
-        f"cannot rise, so the verdict never clears: this state is ABSORBING and the forward track "
-        f"record the live gate sizes on has STOPPED ACCRUING (combined equity ${eq_c:,.2f} vs "
-        f"${start:,.2f} inception). Every other check reads this as a healthy flat book. "
-        f"Re-baselining a fired ruin rail is TIER-3 (principal-only) -- do NOT self-clear it; "
-        f"page the principal with the attribution of what caused the drawdown."))
+        f"returns {verdict.action.upper()} -- {'; '.join(verdict.reasons)}. A flat book earns no "
+        f"funding, so equity cannot rise the ${gap:,.2f} needed to clear the {bar:.0%} bar, so "
+        f"the verdict never clears: this state is ABSORBING and the forward track record the live "
+        f"gate sizes on has STOPPED ACCRUING (combined equity ${eq_c:,.2f} vs ${start:,.2f} "
+        f"inception, peak ${peak:,.2f}). Every other check reads this as a healthy flat book. "
+        f"Re-baselining a fired rail is TIER-3 (principal-only) -- a re-arm does NOT touch it and "
+        f"this is NOT a licence to move one; a prior re-baseline dissolved a live DD rail, because "
+        f"the rail is a ratio. Page the principal with the attribution of what caused the "
+        f"drawdown, or ledger the decision to sit flat. What is forbidden is neither."))
 
 
 #: How far the recomputed ruin-channel drawdown may sit from the published one before the
