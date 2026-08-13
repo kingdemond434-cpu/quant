@@ -333,6 +333,44 @@ def derive_slots() -> dict[str, Any]:
     # paying multiplicity for slots returning nothing.
     dead = [s for s in slots if s.get("evidence") in ("STALLED", "NO-EVIDENCE")]
     unmeasured = [s for s in slots if s.get("evidence") == "UNMEASURED"]
+
+    # ABSENT MEANS "NEVER BORN" ONLY ON THE HOST THAT OWNS THE ARTIFACTS (L1.28a / WS-005).
+    #
+    # A file never written records a clock never born -- true, and the reasoning the ABSENT/UNKNOWN
+    # split is built on. It is false on every OTHER host: `data/` is gitignored, so a fresh clone
+    # or a CI runner sees all six standing state files absent and derives `complete=True` with six
+    # clocks "never born". Measured on a clone 2026-08-13: m=6, MEASURED, complete=True, with 7
+    # absent sources, while the live desk cohort is ~12. The L1.6 fence then reports OK at bar 2.39
+    # where the desk requires 2.64 -- absence resolving to the CLEAN verdict, on the single most
+    # load-bearing integer, in the LOOSER direction.
+    #
+    # A host cannot distinguish "never written" from "not shipped here" file by file. It CAN
+    # distinguish it in aggregate: a desk that has run has written at least one of these. Zero of
+    # N present is not N independent measured zeros, it is a host with no desk state -- so the
+    # whole set converts to UNKNOWN and each bounds itself, which floors m at the cap rather than
+    # publishing a small number as measured.
+    #
+    # COSTS NOTHING WHERE IT MATTERS: on the VPS the files exist, no branch is taken, m is
+    # unchanged. What it removes is a false green in CI, and a `MEASURED` provenance on a cohort
+    # nobody measured.
+    #
+    # RESIDUAL, NAMED RATHER THAN PAPERED OVER: this catches the ALL-absent host, not the mixed
+    # one. A clone where a single organ has run (writing, say, axis state and nothing else) still
+    # reads the six missing sleeve births as measured zeros and publishes MEASURED at m=6 against
+    # a live cohort near 12. Distinguishing that case needs a host-identity marker the registry
+    # does not have, and GUESSING one would be worse than the gap -- a wrong "this is the owning
+    # host" would restore exactly the false MEASURED this block removes. Tracked as a gap row;
+    # the all-absent case is the one that is provable from here.
+    # Keyed on SOURCES READ, never on `slots` being empty: the two derivative built-ins are
+    # hardcoded names, so a bare clone still produces two rows and `slots` is never empty. Rows
+    # that exist because a tuple literal exists are not evidence that a desk ran here.
+    _all_sources = {_AXIS_STATE, *_STANDING_STATES.values(), _SLEEVE_ROSTER}
+    if _all_sources and not (_all_sources - set(absent) - set(unknown)):
+        for rel in absent:
+            bounds.setdefault(rel, MAX_FORWARD_SLOTS if rel in (_AXIS_STATE, _SLEEVE_ROSTER) else 1)
+        unknown.extend(absent)
+        absent = []
+
     m_upper = len(slots) + sum(bounds.values())
     return {
         "updated": now.isoformat(),

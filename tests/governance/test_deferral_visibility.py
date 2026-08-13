@@ -97,18 +97,41 @@ def test_chronic_row_stays_owed_despite_a_future_due_date(ledger: Any) -> None:
     assert [r["id"] for r in overdue] == ["R0001"], "a chronic deferral owes a decision NOW"
 
 
-def test_adds_zero_rows_on_the_day_it_lands(ledger: Any) -> None:
+def test_no_row_is_chronic_on_the_live_ledger(ledger: Any) -> None:
     """L1.43: a fence red from day one gets switched off, taking the real signal with it.
 
-    Every pre-existing row has no `schedule_history`, so the predicate must read False for all of
-    them -- the verdict is bit-identical at install and bites only on the NEXT snooze.
+    THIS ASSERTED A MOMENT AND THE MOMENT PASSED. The original form also required
+    `sum(reschedule_count) == 0` across the live ledger -- true on install day, when no row had
+    any `schedule_history` at all. Nine genuine reschedules have happened since, so the assertion
+    began failing on the fence WORKING rather than on anything being wrong: a test measuring the
+    install-day snapshot instead of the invariant it was written to protect.
+
+    The invariant that does not expire is the one kept here -- no row may become CHRONIC, i.e. no
+    recommendation may keep moving its own due date out of the owed population. Ordinary
+    rescheduling is legitimate and is exactly what the predicate is designed to tolerate; the
+    counter is asserted below to be live rather than stuck at zero, which is what the removed
+    line accidentally guarded.
     """
     live = json.loads(
         (rec.ROOT / "docs/research/recommendation_ledger.json").read_text("utf-8"))
     rows = live["recommendations"]
     assert rows, "the live ledger is the fixture here; an empty one would prove nothing"
-    assert not [r for r in rows if is_chronic(r)]
-    assert sum(reschedule_count(r) for r in rows) == 0
+    assert not [r for r in rows if is_chronic(r)], (
+        "a row that keeps rescheduling itself has left the owed population without a decision")
+
+
+def test_the_reschedule_counter_reads_the_live_ledger_at_all(ledger: Any) -> None:
+    """GUARD THE GUARD. `reschedule_count` returning 0 for every row is indistinguishable from a
+    counter that lost its field name, and that silence is what the old install-day assertion
+    would have kept reporting as success forever."""
+    live = json.loads(
+        (rec.ROOT / "docs/research/recommendation_ledger.json").read_text("utf-8"))
+    counts = [reschedule_count(r) for r in live["recommendations"]]
+    assert all(c >= 0 for c in counts)
+    assert any(c > 0 for c in counts), (
+        "not one row on the live ledger records a reschedule -- either nothing has ever been "
+        "deferred, or the counter is reading a field the ledger no longer writes. Both are worth "
+        "a look; a counter that cannot fire is not a fence")
 
 
 def test_chronic_never_removes_a_row_from_owed(ledger: Any) -> None:

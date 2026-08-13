@@ -287,8 +287,16 @@ def build_report(now: datetime | None = None) -> dict[str, Any]:
             "Point the named consumer at slot_registry; its slot count steers the bottleneck "
             "ranking and record_desk_metrics"
             if status == "DIVERGENT" else
-            "Hold. Next: wire the five inert `FAILING FORWARD -> kill` verdicts to a reader so a "
-            "dead clock VACATES its seat instead of taxing every neighbour's bar forever"),
+            # The kill-verdict wire landed 2026-08-13: sleeve rows now publish their runner's
+            # verdict and `slot_displacement` reclaims a clock that reached its own pre-registered
+            # kill, filing it REFUTED rather than UNTESTED. Leaving that sentence here would hand
+            # every future session a solved problem as the top item, which is how a next-step line
+            # becomes decoration.
+            "Hold. Next: the reclamation path exists but only a CHALLENGER triggers it -- "
+            "`plan_displacement` is called with a queue, so a killed clock keeps its seat while "
+            "the queue is empty. What is owed is a sweep that SURFACES retirement candidates with "
+            "their evidence; retiring from `m` stays a ledgered decision, because dropping a row "
+            "shrinks the cohort and loosens every neighbour's bar"),
     }
 
 
