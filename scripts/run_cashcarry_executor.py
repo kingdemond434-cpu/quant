@@ -359,7 +359,14 @@ def _churn_guard(held_h: float, funding: float, rail_forced: bool) -> bool:
 # _MIN_FUNDING DELETED 2026-07-31 (R0057). The absolute per-8h floor (0.00015, derived from the
 # desk-MEDIAN round-trip when the cost gate still used the median default) became redundant the
 # day the cost gate went per-symbol with a p90 fail-closed default: unmeasured names now need
-# funding > 39.5/3e4 = 0.000132 anyway, and thin proven losers are on the bleed denylist. The
+# funding > 39.5/3e4 = 0.00132 anyway, and thin proven losers are on the bleed denylist. The
+# ARITHMETIC CORRECTED 2026-08-13 (R0442) -- this line read 0.000132, ten times too small, and the
+# error inverted what the record CLAIMED about the change. 39.5/3e4 = 0.0013167: 13.2 bps per 8h,
+# ~144%/yr funding. At 0.000132 the per-symbol bar would sit BELOW the 0.00015 floor being
+# deleted, i.e. the deletion would read as a LOOSENING that was waved through; the true bar is
+# 8.78x ABOVE it. The conclusion survives and is strengthened -- the per-symbol check is far
+# stricter for unmeasured names than the floor it replaced -- but a future reader arriving at the
+# wrong number could reinstate a floor, or loosen this gate, on a premise that was never true.
 # floor's only remaining effect, measured 2026-07-30: vetoing the 4 net-positive MAJORS (tight
 # measured books whose funding capture beats their own round-trip below 0.00015) -- 245/245
 # candidates rejected with the floor on. Protection lives in the per-symbol check below.
