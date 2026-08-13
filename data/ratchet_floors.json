@@ -26,8 +26,8 @@
   "miner_seats_productive": {
     "artifact": "data/miner_runway.json",
     "proving_command": "python scripts/check_miner_runway.py --json --report-only",
-    "recorded": "2026-08-12T04:27:59Z",
-    "value": 0.909091
+    "recorded": "2026-08-13T07:07:10Z",
+    "value": 1.0
   },
   "pager_delivered_24h": {
     "artifact": "data/alert_delivery.jsonl",
@@ -38,13 +38,13 @@
   "repair_p_fix": {
     "artifact": "data/repair_metrics.json",
     "proving_command": "python scripts/check_repair_capacity.py",
-    "recorded": "2026-08-12T13:18:58Z",
-    "value": 0.5278
+    "recorded": "2026-08-13T07:07:10Z",
+    "value": 0.5814
   },
   "scripts_mypy_clean": {
     "artifact": "data/mypy_ratchet.json",
     "proving_command": "python scripts/check_mypy_ratchet.py",
-    "recorded": "2026-08-13T03:29:45Z",
+    "recorded": "2026-08-13T07:07:10Z",
     "value": 0.406844
   },
   "test_strength::libs/autodiscovery/validation.py": {

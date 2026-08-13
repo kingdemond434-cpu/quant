@@ -48,6 +48,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Final
 
+# The producer of the `posture` field this module reads. Imported rather than re-typed so the
+# reader cannot silently drift off the writer's vocabulary (R0466).
+from libs.data.foreign_sources import (
+    POSTURE_EMPTY as _POSTURE_EMPTY,
+)
+from libs.data.foreign_sources import (
+    POSTURE_WALLED as _POSTURE_WALLED,
+)
+
 _ROOT = Path(__file__).resolve().parent.parent.parent
 LEDGER_PATH: Final[Path] = _ROOT / "data" / "source_health.jsonl"
 
@@ -589,6 +598,14 @@ _LANE_COUNTS: Final[tuple[tuple[str, str | None], ...]] = (
     ("bilibili_discovered", "bilibili"),    # keys are bare search queries
     ("cn_article_discovered", None),        # keys are "juejin:<kw>" / "wechat:<kw>"
     ("academic_discovered", None),          # keys are "arxiv:<cat>" / "ssrn:..." / "hn"
+    # R0466. `foreign_discovered` was MISSING, and the asymmetry is the defect, not the omission:
+    # `channels_blocked` carries foreign lanes too and WAS read, so a JP/KR/RU/VI/TR source's
+    # FAILURES reached the ledger while its SUCCESSES did not exist. Measured: a run with four
+    # successful note.com queries and one 403 recorded `note` as ok=False, and a run where every
+    # foreign lane succeeded produced NO OBSERVATION AT ALL, so last_ok_utc never advanced and the
+    # region drifted to STALE -> DEAD -> "replaced" while it was working the whole time. Same
+    # outcome R0466 names -- a whole region silently retired -- reached from the other side.
+    ("foreign_discovered", None),           # keys are "note:<kw>" / "zenn:<kw>" / "habr:<kw>"
 )
 
 
@@ -637,10 +654,27 @@ def _probe_ok(row: Mapping[str, Any]) -> tuple[bool, str | None]:
     """
     err = row.get("error")
     reason: str | None = str(err) if err is not None else None
+    posture = str(row.get("posture") or "")
     flag = row.get("ok")
     if isinstance(flag, bool):
         if flag:
             return True, None
+        # R0466 AT THE READER. foreign_sources.probe_all publishes WALLED vs EMPTY -- the two
+        # causes of ok=False that demand OPPOSITE responses -- and until now NOTHING read it, so
+        # the distinction was written to a report and died there (L1.46: a duty with no instrument
+        # is a wish). Both still count as "not usable this run"; what changes is that the recorded
+        # reason can no longer be mistaken for the other fact. An EMPTY row used to arrive here
+        # with error=None and come out as "probe reported ok=false, no reason given" -- a source
+        # that ANSWERED CLEANLY, reading as a broken lane.
+        if posture == _POSTURE_WALLED:
+            return False, (f"WALLED -- the source refused or served something unusable, so the "
+                           f"ground is UNKNOWN and this is NOT evidence it is thin; next move is "
+                           f"an OP-052 UA matrix against a real content path"
+                           + (f" ({reason})" if reason is not None else ""))
+        if posture == _POSTURE_EMPTY:
+            return False, ("EMPTY -- the source answered cleanly and genuinely had nothing for "
+                           "the probe keyword; the LANE is up, and this says nothing about any "
+                           "other keyword")
         return False, reason if reason is not None else "probe reported ok=false, no reason given"
     if str(row.get("declared", "")) == "needs_browser":
         note = str(row.get("reason") or reason or "listings require a browser")
@@ -693,7 +727,10 @@ def observations_from_miner_report(doc: Mapping[str, Any]) -> list[Observation]:
         _note(_platform_of(str(lane)), False, str(why)[:200])
 
     # Probes fill in only the platforms no lane spoke for -- rule 1.
-    for key in ("cn_source_probe", "academic_probe", "cn_sources"):
+    # `foreign_source_probe` added by R0466: mine_research_queue has written it every run since
+    # the foreign lane opened and no reader ever named the key, so the one probe that carries
+    # WALLED-vs-EMPTY was the one probe the ledger could not see.
+    for key in ("cn_source_probe", "academic_probe", "cn_sources", "foreign_source_probe"):
         for row in _rows(doc, key):
             raw_name = str(row.get("source") or row.get("name") or "").strip()
             name = canonical(raw_name)

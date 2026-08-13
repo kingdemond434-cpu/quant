@@ -29,6 +29,7 @@ import io
 import json
 import re
 import threading
+import urllib.error
 import urllib.request
 import zipfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -54,14 +55,26 @@ def _get(url: str, timeout: int = 20) -> bytes:
         return r.read()
 
 
-def _head_ok(url: str) -> bool:
+def _head_ok(url: str) -> bool | None:
+    """True/False for the object, and None when the network could not answer (R0466).
+
+    None IS A THIRD STATE ON PURPOSE. `except Exception: return False` made a 403, a 429, a 5xx
+    and a timeout indistinguishable from the 404 that means "this symbol genuinely has no metrics
+    at the cohort date". Every one of those silently DROPPED the symbol from the tranche-1 cohort,
+    so a venue throttling a 20-thread HEAD sweep -- the single most likely thing to happen to this
+    exact code -- would hand the study a quietly smaller universe and nothing anywhere would say
+    so. A blocked ground reading as an empty one is WS-005/L1.28a, and here it is also a silent
+    change to the UNIVERSE a result is computed over.
+    """
     try:
         req = urllib.request.Request(url, method="HEAD",
                                      headers={"User-Agent": "quant-oils-backfill"})
-        urllib.request.urlopen(req, timeout=8)
-        return True
-    except Exception:
-        return False
+        with urllib.request.urlopen(req, timeout=8) as r:
+            return 200 <= r.status < 300
+    except urllib.error.HTTPError as exc:
+        return False if exc.code == 404 else None      # only 404 is "it is not there"
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError):
+        return None
 
 
 def enumerate_symbols() -> list[str]:
@@ -70,17 +83,28 @@ def enumerate_symbols() -> list[str]:
     return sorted(s for s in syms if s.endswith("USDT"))
 
 
-def probe_cohort(symbols: list[str]) -> list[str]:
-    """Symbols whose metrics exist by the tranche-1 depth date (threaded HEAD probes)."""
+def probe_cohort(symbols: list[str]) -> tuple[list[str], list[str]]:
+    """(cohort, unknown) -- symbols whose metrics exist by the tranche-1 depth date, and the ones
+    the archive would not answer for.
+
+    THE SECOND LIST IS THE POINT. It used to not exist: an unanswered probe fell into the same
+    bucket as a confirmed-absent one and the caller could not have told the difference if it had
+    wanted to. Returning them separately is what lets main() refuse to treat a probe outage as a
+    universe definition (R0466).
+    """
     keep: list[str] = []
+    unknown: list[str] = []
     with ThreadPoolExecutor(WORKERS) as ex:
         futs = {ex.submit(
             _head_ok, f"{BASE}/daily/metrics/{s}/{s}-metrics-{COHORT_PROBE}.zip"): s
             for s in symbols}
         for f in as_completed(futs):
-            if f.result():
+            got = f.result()
+            if got is None:
+                unknown.append(futs[f])
+            elif got:
                 keep.append(futs[f])
-    return sorted(keep)
+    return sorted(keep), sorted(unknown)
 
 
 def _months() -> list[str]:
@@ -228,8 +252,18 @@ def main() -> None:
     PX_DIR.mkdir(parents=True, exist_ok=True)
     allsyms = enumerate_symbols()
     print(f"archive lists {len(allsyms)} USDT perp symbol dirs (incl. delisted)", flush=True)
-    cohort = probe_cohort(allsyms)
+    cohort, unknown = probe_cohort(allsyms)
     print(f"tranche-1 cohort (metrics by {COHORT_PROBE}): {len(cohort)} symbols", flush=True)
+    if unknown:
+        # LOUD, and it stops the run. A cohort built while the archive was refusing some fraction
+        # of the probes is not a smaller cohort, it is an UNKNOWN one, and backfilling against it
+        # would bake a probe outage into the universe every downstream number is computed over.
+        raise SystemExit(
+            f"REFUSING TO DEFINE THE UNIVERSE: {len(unknown)} of {len(allsyms)} cohort probes "
+            f"were not answered (not a 404 -- refused, timed out, or the transport failed), so "
+            f"whether these symbols belong in tranche-1 is UNMEASURED, not False: "
+            f"{', '.join(unknown[:12])}{' ...' if len(unknown) > 12 else ''}. Re-run when the "
+            f"archive answers; a cohort silently shrunk by a throttle is a false universe.")
     done = 0
     with ThreadPoolExecutor(WORKERS) as ex:
         futs = [ex.submit(worker, s) for s in cohort]

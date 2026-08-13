@@ -19,6 +19,7 @@ import argparse
 import csv
 import io
 import json
+import urllib.error
 import urllib.request
 import zipfile
 from datetime import UTC, datetime
@@ -49,12 +50,31 @@ def _months(start: str, end: str) -> list[str]:
 
 
 def _get(url: str) -> bytes | None:
+    """Bytes, or None for a month the archive says is GENUINELY ABSENT (HTTP 404). Anything else
+    raises.
+
+    R0466. This was `except Exception: return None`, and the comment on it -- "absent month
+    (listing gaps)" -- was the defect written down: a 403, a 429, a 5xx and a read timeout all
+    became "absent month" and were appended to `missing`. The caller then built a price history
+    with holes in it and reported those holes as the archive's, so a venue refusing or throttling
+    this box produced a SHORT SERIES rather than a loud failure, and every downstream statistic
+    was computed over a silently truncated sample. Only a 404 is evidence about the archive; the
+    rest is evidence about the connection (WS-005/L1.28a).
+    """
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
     try:
         with urllib.request.urlopen(req, timeout=120) as r:
             return r.read()
-    except Exception:
-        return None                     # absent month (listing gaps) -- recorded, never fatal
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            return None                 # the archive answered: this month is not published
+        raise RuntimeError(
+            f"binance-vision refused {url}: HTTP {exc.code} {exc.reason}. This is NOT an absent "
+            f"month -- treating it as one would silently shorten the series.") from exc
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        raise RuntimeError(
+            f"binance-vision unreachable for {url}: {type(exc).__name__}: {exc}. Whether this "
+            f"month exists is UNMEASURED, not absent.") from exc
 
 
 def fetch_klines(symbol: str, interval: str, months: list[str]) -> dict[str, np.ndarray]:

@@ -52,6 +52,14 @@ from dataclasses import dataclass
 from typing import Any, Final
 from urllib.parse import quote
 
+#: The three postures `probe_all` publishes, NAMED HERE because the reader must not re-type them.
+#: libs/research/source_health imports these rather than matching string literals, so renaming a
+#: posture cannot silently stop the reader matching -- the failure this desk calls actuatorless:
+#: a producer that keeps writing and a consumer that quietly stops recognising what it wrote.
+POSTURE_OK: Final[str] = "OK"
+POSTURE_WALLED: Final[str] = "WALLED"
+POSTURE_EMPTY: Final[str] = "EMPTY"
+
 #: Minimum seconds between requests to one source. NOT one global number: Hatena answered 429 to
 #: EVERY query in the first live sweep at 1.2s spacing while Qiita and Habr were untroubled by it,
 #: so a single pace either wastes time on the tolerant sources or keeps losing the strict one.
@@ -843,10 +851,11 @@ def probe_all() -> list[dict[str, Any]]:
         try:
             arts, err = fn(probe_kw)
         except Exception as exc:
-            out.append({"source": name, "lang": lang, "ok": False, "posture": "WALLED",
+            out.append({"source": name, "lang": lang, "ok": False, "posture": POSTURE_WALLED,
                         "n": 0, "error": _err(exc)})
             continue
         out.append({"source": name, "lang": lang, "ok": bool(arts) and err is None,
-                    "posture": "WALLED" if err is not None else ("OK" if arts else "EMPTY"),
+                    "posture": (POSTURE_WALLED if err is not None
+                                else (POSTURE_OK if arts else POSTURE_EMPTY)),
                     "n": len(arts), "error": err})
     return out

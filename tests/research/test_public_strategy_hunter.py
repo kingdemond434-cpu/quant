@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 import json
+import urllib.error
 
 import pytest
 
 from libs.research.public_strategy_hunter import (
+    TRANSCRIPT_BLOCKED,
+    TRANSCRIPT_UNKNOWN_STATES,
+    TRANSCRIPT_UNREADABLE,
     Source,
     discover,
     evidence_tier,
+    extraction_prompt,
     feed_items,
     load_sources,
     missions,
@@ -145,3 +150,81 @@ def test_reputation_and_emergence_use_independent_sources_not_follower_count() -
     assert report["emergence_watch"][0]["source_count"] == 2
     assert report["source_reputation"]["tiny-zh"]["reproducible"] == 1
     assert set(report["source_coverage"]["languages"]) == {"ru", "zh"}
+
+
+class TestR0466RefusalIsNotAbsence:
+    """R0466 / OP-052. A caption endpoint answering 403 and a video with no captions both
+    returned ``transcript_state: UNAVAILABLE``, and ``extraction_prompt`` reads that field and
+    nothing else -- so at the one place the state is consumed, a ground the desk is BLOCKED FROM
+    was byte-identical to a ground with nothing on it (WS-005 / L1.28a).
+    """
+
+    CAPTIONED = (b'{"captionTracks":[{"languageCode":"en","baseUrl":"https://captions"}],'
+                 b'"audioTracks":[]}')
+
+    def _refuse(self, code: int):
+        def getter(url: str) -> bytes:
+            raise urllib.error.HTTPError(url, code, "Forbidden", {}, None)  # type: ignore[arg-type]
+        return getter
+
+    def test_a_403_on_the_caption_track_is_not_the_same_value_as_no_captions(self) -> None:
+        absent = youtube_transcript(b"a page with no caption tracks at all")
+        walled = youtube_transcript(self.CAPTIONED, self._refuse(403))
+        assert absent["transcript_state"] == "UNAVAILABLE"
+        assert walled["transcript_state"] != absent["transcript_state"], (
+            "a wall and an empty ground are the same value again")
+        assert walled["transcript_state"] == TRANSCRIPT_BLOCKED
+        assert walled["http_status"] == 403
+
+    def test_the_status_survives_because_403_and_429_need_different_next_moves(self) -> None:
+        # 403 = a curated denylist, run the OP-052 UA matrix. 429 = pace, come back later.
+        # "blocked" alone cannot tell a reader which, so the code is carried, not just a flag.
+        assert youtube_transcript(self.CAPTIONED, self._refuse(429))["http_status"] == 429
+        assert youtube_transcript(self.CAPTIONED, self._refuse(503))["http_status"] == 503
+
+    def test_a_timeout_is_blocked_not_absent(self) -> None:
+        def getter(url: str) -> bytes:
+            raise TimeoutError("read timed out")
+        got = youtube_transcript(self.CAPTIONED, getter)
+        assert got["transcript_state"] == TRANSCRIPT_BLOCKED
+        assert got["http_status"] is None       # no venue said anything; do not invent a code
+
+    def test_an_antibot_page_served_with_200_is_unreadable_not_absent(self) -> None:
+        # OP-068's third false-null class: a 200 carrying a challenge page. We were served
+        # something and it was not captions -- which is not "this video has no captions".
+        got = youtube_transcript(self.CAPTIONED, lambda _: b"<html>Access denied</html>")
+        assert got["transcript_state"] == TRANSCRIPT_UNREADABLE
+        assert got["transcript_state"] in TRANSCRIPT_UNKNOWN_STATES
+
+    def test_a_genuinely_empty_caption_body_is_still_not_called_blocked(self) -> None:
+        # The other half, and the one that keeps this honest: making every thin answer a wall
+        # destroys the same distinction from the opposite side.
+        got = youtube_transcript(self.CAPTIONED, lambda _: b"<transcript></transcript>")
+        assert got["transcript_state"] == "PARTIAL"
+        assert got["transcript_state"] not in TRANSCRIPT_UNKNOWN_STATES
+
+    def test_the_run_loop_does_not_flatten_a_blocked_watch_page(self) -> None:
+        """THE CALLER HALF. Hardening the helper alone fixes nothing if run()'s handler still
+        collapses everything to UNAVAILABLE -- the L1.60 invisible-attrition shape."""
+        def getter(url: str) -> bytes:
+            if "@channel" in url:
+                return b'{"channelId":"UC123"}'
+            if "feeds" in url:
+                return FEED
+            raise urllib.error.HTTPError(url, 403, "Forbidden", {}, None)  # type: ignore[arg-type]
+
+        report = run([Source("channel", "https://www.youtube.com/@channel", "youtube")], {},
+                     lambda _: json.dumps({"mechanism": "m", "evidence_class": "BACKTEST"}),
+                     getter=getter)
+        item = report["items"][0]
+        assert item["transcript_state"] == TRANSCRIPT_BLOCKED, (
+            "run() is still recording a refused watch page as a video without captions")
+        assert item["http_status"] == 403
+
+    def test_the_extraction_prompt_shows_the_model_that_it_was_blocked(self) -> None:
+        # extraction_prompt reads transcript_state and nothing else, so this is the ONLY place
+        # the distinction can actually reach a consumer. If it prints UNAVAILABLE for a wall,
+        # every fix above is cosmetic.
+        walled = youtube_transcript(self.CAPTIONED, self._refuse(403))
+        prompt = extraction_prompt({"url": "u", "title": "t", **walled}, "", ["PUBLIC_STRATEGY"])
+        assert f"TRANSCRIPT_STATE: {TRANSCRIPT_BLOCKED}" in prompt

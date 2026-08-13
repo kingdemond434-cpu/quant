@@ -172,6 +172,18 @@ brain_auth_check() {
             _brain_page "Brain hit subscription quota -- FELL BACK to metered API key; cycles continue on metered spend"
             return 0
         fi
+    elif printf '%s' "$out" | grep -qiE "limit|usage credits"; then
+        # R0360: the quota fallback above is gated on a keyfile that HAS NEVER EXISTED
+        # (data/secrets/ holds claude_oauth_token and no anthropic_api_key), so on a credit
+        # outage the documented escape hatch cannot fire and every claude-invoking organ dies
+        # with it. Until now that was SILENT -- the compound `if` simply evaluated false and fell
+        # through, so the desk believed it had a fallback and the one event that would disprove
+        # that belief produced no signal. A documented fallback that cannot fire is worse than
+        # none, because nobody looks for it. Deliberately NOT deleting the branch: it becomes
+        # live the moment the principal drops the key at that path, and removing a capability to
+        # silence a warning is the wrong direction. Page instead, so the gap is dated and loud.
+        _brain_page "Brain hit subscription quota and the metered fallback is UNREACHABLE -- no \
+anthropic_api_key at data/secrets/; organs are down until the subscription resets or the key lands (R0360)"
     fi
     # LAST RESORT BEFORE GIVING THE SLOT AWAY: if the failure names its own reset time, wait for
     # it once and re-run the whole chain. Strictly after every existing fallback has been tried,

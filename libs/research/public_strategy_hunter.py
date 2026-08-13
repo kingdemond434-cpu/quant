@@ -38,6 +38,14 @@ _ELITE = re.compile(
     re.I,
 )
 
+#: Transcript states that mean "the desk did not get to look", as opposed to UNAVAILABLE, which
+#: means "we looked and this video has no captions". R0466: a reader that cannot tell these apart
+#: reads a WALL as a THIN ground and retires the ground (WS-005/L1.28a). Exported so a consumer
+#: can test membership instead of re-deriving the list from string literals and drifting.
+TRANSCRIPT_BLOCKED = "BLOCKED"
+TRANSCRIPT_UNREADABLE = "UNREADABLE"
+TRANSCRIPT_UNKNOWN_STATES = frozenset({TRANSCRIPT_BLOCKED, TRANSCRIPT_UNREADABLE})
+
 EVIDENCE_TIERS = {
     "MARKETING_CLAIM": 0,
     "SCREENSHOT_SELECTED_RESULT": 1,
@@ -148,9 +156,45 @@ def discover(source: Source, getter: Callable[[str], bytes] = fetch) -> list[dic
     ]
 
 
+def _refused(exc: BaseException, what: str) -> dict[str, object]:
+    """The transcript record for a fetch the network REFUSED, as distinct from one that was empty.
+
+    ``http_status`` is carried when the venue named one, because 403 (a curated denylist -- run the
+    OP-052 UA matrix) and 429 (a pace problem -- come back later) demand different next moves, and
+    a reader that only sees "blocked" cannot pick between them.
+    """
+    status = getattr(exc, "code", None)
+    return {
+        "transcript_state": TRANSCRIPT_BLOCKED,
+        "text": "",
+        "http_status": status,
+        "reason": (f"{what} refused: HTTP {status}" if status is not None
+                   else f"{what} failed at the transport: {type(exc).__name__}: {exc}"),
+    }
+
+
 def youtube_transcript(
     watch_page: bytes, getter: Callable[[str], bytes] = fetch
 ) -> dict[str, object]:
+    """Caption text, with REFUSAL kept distinct from ABSENCE (R0466 / OP-052).
+
+    THE DEFECT THIS FIXES, measured. A caption endpoint answering 403 and a video that genuinely
+    carries no captions both returned ``transcript_state: UNAVAILABLE``. ``extraction_prompt``
+    reads that field and nothing else, so at the only place the state is consumed a ground the
+    desk is BLOCKED FROM was byte-identical to a ground with nothing on it. That is WS-005 /
+    L1.28a exactly: absence resolving to a clean verdict. It is also the trap OP-052 names -- a
+    seat whose fetch path treats a non-200 as no-content records "this ground is thin" when the
+    truth is "we are not allowed to look", and those retire a region in opposite directions.
+
+    Three states, because there are three facts:
+
+      UNAVAILABLE -- the watch page ITSELF says there are no caption tracks. A content fact, and
+                     the only one of the three that is evidence about the video.
+      BLOCKED     -- the transport refused (403/429/5xx/timeout/DNS). The ground is UNKNOWN.
+      UNREADABLE  -- we were served something, and it was not captions: a shape change, or the
+                     200-carrying-an-anti-bot-page class. Also UNKNOWN, but a parser problem
+                     rather than an access one, so it is worth its own name.
+    """
     text = watch_page.decode("utf-8", errors="ignore")
     match = re.search(r'"captionTracks":(\[.*?\])(?:,"audioTracks"|,"videoDetails")', text)
     if not match:
@@ -160,20 +204,32 @@ def youtube_transcript(
         track = next(
             (t for t in tracks if str(t.get("languageCode", "")).startswith("en")), tracks[0]
         )
-        raw = getter(str(track["baseUrl"]))
+        url = str(track["baseUrl"])
+    except (KeyError, IndexError, ValueError) as exc:
+        return {"transcript_state": TRANSCRIPT_UNREADABLE, "text": "",
+                "reason": f"caption track list unusable: {type(exc).__name__}: {exc}"}
+    try:
+        # HTTPError, URLError, TimeoutError and socket errors are all OSError, and every one of
+        # them means "we did not get to look", never "there was nothing there".
+        raw = getter(url)
+    except OSError as exc:
+        return _refused(exc, "caption track")
+    try:
         xml = ET.fromstring(raw)
-        transcript = " ".join(
-            html.unescape("".join(x.itertext()))
-            for x in xml.iter()
-            if x.tag.rsplit("}", 1)[-1] in {"text", "p"}
-        )
-        return {
-            "transcript_state": "FULL" if len(transcript) >= 1000 else "PARTIAL",
-            "text": transcript,
-            "reason": "public caption track",
-        }
-    except (KeyError, IndexError, ValueError, ET.ParseError, OSError) as exc:
-        return {"transcript_state": "UNAVAILABLE", "text": "", "reason": str(exc)}
+    except ET.ParseError as exc:
+        return {"transcript_state": TRANSCRIPT_UNREADABLE, "text": "",
+                "reason": (f"caption body is not XML ({len(raw)} bytes) -- a challenge page or a "
+                           f"format change, not a video without captions: {exc}")}
+    transcript = " ".join(
+        html.unescape("".join(x.itertext()))
+        for x in xml.iter()
+        if x.tag.rsplit("}", 1)[-1] in {"text", "p"}
+    )
+    return {
+        "transcript_state": "FULL" if len(transcript) >= 1000 else "PARTIAL",
+        "text": transcript,
+        "reason": "public caption track",
+    }
 
 
 def missions(item: Mapping[str, object]) -> list[str]:
@@ -339,10 +395,18 @@ def run(
             mission_set = missions(item)
             content = str(item.get("description", ""))
             if "VIDEO_TRANSCRIPT" in mission_set:
+                # THE CALLER HALF OF R0466. This handler used to flatten every failure of the
+                # WATCH-PAGE fetch to UNAVAILABLE, so hardening youtube_transcript alone would
+                # have fixed nothing: a 403 on the watch page never reached it and still read as
+                # "this video has no captions" (the L1.60 invisible-attrition shape -- a helper
+                # that starts distinguishing into a caller that does not).
                 try:
                     transcript = youtube_transcript(getter(url), getter)
+                except OSError as exc:
+                    transcript = _refused(exc, "watch page")
                 except Exception as exc:
-                    transcript = {"transcript_state": "UNAVAILABLE", "text": "", "reason": str(exc)}
+                    transcript = {"transcript_state": TRANSCRIPT_UNREADABLE, "text": "",
+                                  "reason": f"watch page unusable: {type(exc).__name__}: {exc}"}
                 item.update(transcript)
                 content = str(transcript.get("text") or content)
             prompt = extraction_prompt(item, content, mission_set)

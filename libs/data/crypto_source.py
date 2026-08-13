@@ -76,12 +76,22 @@ def _get(url: str, *, tries: int = 4) -> Any:
 
 
 def _klines(
-    base: str, path: str, symbol: str, interval: str, start_ms: int, *, limit: int
+    base: str, path: str, symbol: str, interval: str, start_ms: int, *, limit: int,
+    param: str = "symbol",
 ) -> pd.DataFrame:
+    """Paginated kline fetch. ``param`` is the venue's name for the instrument selector.
+
+    ``param="pair"`` exists for the index-price endpoints: BOTH books spell that one differently
+    (``/dapi/v1/indexPriceKlines?pair=BTCUSD``, ``/fapi/v1/indexPriceKlines?pair=BTCUSDT``) and
+    answer HTTP 400 -1102 to ``symbol=``. Threading it here rather than forking the function keeps
+    ONE paginator -- and the paginator is the part that matters, because truncation past the
+    per-call cap is the venue failure mode that never throws.
+    """
     rows: list[list[Any]] = []
     cur = start_ms
     while True:
-        url = f"{base}{path}?symbol={symbol}&interval={interval}&limit={limit}&startTime={cur}"
+        url = (f"{base}{path}?{param}={symbol}&interval={interval}"
+               f"&limit={limit}&startTime={cur}")
         batch = _get(url)
         if not batch:
             break
@@ -188,12 +198,18 @@ def fetch_open_interest(symbol: str) -> float:
     return float(data.get("openInterest", 0.0)) if isinstance(data, dict) else 0.0
 
 
-def fetch_funding(symbol: str, *, start_ms: int = 0) -> pd.DataFrame:
-    """Paginated funding-rate history (every 8h). Returns (timestamp, funding)."""
+def _funding(base: str, path: str, symbol: str, start_ms: int) -> pd.DataFrame:
+    """Paginated funding-rate history for either book. (timestamp, funding).
+
+    THE PAGINATION IS THE POINT. Binance caps this endpoint at 1000 rows and returns the cap
+    without any signal that more exists; a single unpaginated call on a 2020-listed perp reads as
+    ~2.3 years of a 6-year series and every derived total silently understates. Same recorded
+    failure mode as the S3 lister's MaxKeys=1000 truncation.
+    """
     rows: list[dict[str, Any]] = []
     cur = start_ms
     while True:
-        url = f"{_FAPI}/fapi/v1/fundingRate?symbol={symbol}&limit=1000&startTime={cur}"
+        url = f"{base}{path}?symbol={symbol}&limit=1000&startTime={cur}"
         batch = _get(url)
         if not batch:
             break
@@ -208,6 +224,97 @@ def fetch_funding(symbol: str, *, start_ms: int = 0) -> pd.DataFrame:
         "timestamp": pd.to_datetime([r["fundingTime"] for r in rows], unit="ms", utc=True),
         "funding": [float(r["fundingRate"]) for r in rows],
     })
+
+
+def fetch_funding(symbol: str, *, start_ms: int = 0) -> pd.DataFrame:
+    """Paginated funding-rate history (every 8h) for a USD-M perp. (timestamp, funding)."""
+    return _funding(_FAPI, "/fapi/v1/fundingRate", symbol, start_ms)
+
+
+# ------------------------------------------------------------------ COIN-M (dapi), card 31 -----
+# The home venue's OTHER futures book: coin-margined (inverse) contracts. Same endpoint family and
+# the same keyless posture as the fapi above, so it reuses THIS module's paginator and THIS
+# module's cross-process rate-ban latch rather than opening a second, unlatched HTTP path -- a
+# collector that retried its way through a 418 on a private helper would extend the ban for every
+# other organ on the box.
+#
+# TWO PROPERTIES THAT ARE NOT SYMMETRIC WITH THE fapi, BOTH MEASURED 2026-08-13:
+#
+#   1. `/dapi/v1/klines` REFUSES EXPIRED SYMBOLS -- `symbol=BTCUSD_250926` answers HTTP 400
+#      {"code":-1121,"msg":"Invalid symbol."} while the fapi serves its own expired quarterlies
+#      over REST quite happily. COIN-M delivered-contract history is therefore ARCHIVE-ONLY
+#      (data.binance.vision, `99-binance-coinm-vision-archive`). A collector built symmetrically
+#      on REST reads "COIN-M has no quarterly history" and is wrong.
+#   2. VOLUME COLUMNS MEAN SOMETHING ELSE. On an inverse contract index 5 is volume in CONTRACTS
+#      (USD notional), index 7 is BASE-asset volume (coin) and index 10 is taker-buy BASE volume.
+#      The `taker_buy_frac` this module computes is therefore a coin-denominated taker-buy share
+#      here and a quote-denominated one on the fapi. Both are valid fractions; they are not the
+#      same statistic, and averaging them across books would be a units error that looks fine.
+_DAPI = "https://dapi.binance.com"
+
+
+def coinm_instruments() -> list[dict[str, Any]]:
+    """LIVE COIN-M instruments from `/dapi/v1/exchangeInfo`.
+
+    NOT A UNIVERSE BUILDER, AND THE DISTINCTION IS LOAD-BEARING (card 31). Measured 2026-08-13:
+    exchangeInfo returns 30 instruments while the archive holds 272 kline symbols, so 242 (89%)
+    of instrument history -- including all 212+ expired quarterlies -- is invisible here. Building
+    a research universe from this call is a LOOK-AHEAD IN THE UNIVERSE, the same class as a
+    `pct_circ_now` denominator leak, and it fails toward a FALSE NULL. Use it for what it is: the
+    live contract SPECIFICATIONS (contractSize, deliveryDate, pair), which the archive does not
+    carry.
+    """
+    info = _get(f"{_DAPI}/dapi/v1/exchangeInfo")
+    syms = info.get("symbols", []) if isinstance(info, dict) else []
+    return [s for s in syms if isinstance(s, dict)]
+
+
+def fetch_coinm_klines(symbol: str, *, interval: str = "1d", start_ms: int = 0) -> pd.DataFrame:
+    """Paginated COIN-M klines. LIVE symbols only -- expired contracts answer -1121 (see above)."""
+    return _klines(_DAPI, "/dapi/v1/klines", symbol, interval, start_ms, limit=1500)
+
+
+def fetch_coinm_mark_klines(symbol: str, *, interval: str = "1d",
+                            start_ms: int = 0) -> pd.DataFrame:
+    """Paginated COIN-M MARK-price klines (the venue's own fair price, what liquidation uses)."""
+    return _klines(_DAPI, "/dapi/v1/markPriceKlines", symbol, interval, start_ms, limit=1500)
+
+
+def fetch_coinm_index_klines(pair: str, *, interval: str = "1d",
+                             start_ms: int = 0) -> pd.DataFrame:
+    """Paginated COIN-M INDEX-price klines. Keyed by PAIR (e.g. ``BTCUSD``), never by symbol.
+
+    This is the coin/USD index -- note it is a USD index, while the fapi's same-named endpoint
+    returns a coin/USDT index. Any COIN-M-minus-USDT-M basis built from the two therefore carries
+    the USDT-vs-USD basis inside it. That is a real component, not an error, but it must be
+    declared by anything that differences them.
+    """
+    return _klines(_DAPI, "/dapi/v1/indexPriceKlines", pair, interval, start_ms, limit=1500,
+                   param="pair")
+
+
+def fetch_coinm_premium_klines(symbol: str, *, interval: str = "1d",
+                               start_ms: int = 0) -> pd.DataFrame:
+    """Paginated COIN-M PREMIUM-INDEX klines -- the pre-quantisation input to funding.
+
+    Read this in preference to the realised funding rate where the mechanism is about premium:
+    the published funding rate is a CLAMPED, CAPPED, QUANTISED and lagged function of the premium
+    index (R0021), so it discards exactly the variation a premium hypothesis is about.
+    """
+    return _klines(_DAPI, "/dapi/v1/premiumIndexKlines", symbol, interval, start_ms, limit=1500)
+
+
+def fetch_coinm_funding(symbol: str, *, start_ms: int = 0) -> pd.DataFrame:
+    """Paginated COIN-M funding-rate history. (timestamp, funding). Perps only -- a delivery
+    contract has no funding, and the endpoint returns an empty list for one rather than erroring."""
+    return _funding(_DAPI, "/dapi/v1/fundingRate", symbol, start_ms)
+
+
+def fetch_index_klines(pair: str, *, interval: str = "1d", start_ms: int = 0) -> pd.DataFrame:
+    """Paginated USD-M INDEX-price klines, keyed by PAIR (e.g. ``BTCUSDT``). The USDT-M twin of
+    ``fetch_coinm_index_klines`` -- present so a cross-book basis uses one code path per leg."""
+    return _klines(_FAPI, "/fapi/v1/indexPriceKlines", pair, interval, start_ms, limit=1500,
+                   param="pair")
 
 
 def bars_with_funding(

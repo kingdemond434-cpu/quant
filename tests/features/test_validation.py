@@ -166,3 +166,81 @@ def test_unperturbable_consumed_column_refuses_loudly() -> None:
     report = run_leakage_test(causal_feature(), bars)
     assert report.ok
     assert "venue" in report.untested_columns
+
+
+# --- R0461: the refusal is MEASURED, and the denominator is published -------------------
+
+
+def test_object_dtype_funding_leak_refused_despite_wrong_declaration() -> None:
+    """R0461. THE R0289 DEFECT, ONE LEVEL UP.
+
+    R0289 made the mutation cover every column and made a consumed-unperturbable column a
+    loud UNTESTABLE. But it keyed that refusal on ``definition.inputs`` -- a DECLARATION --
+    and ``causal_guard.as_feature`` defaults it to ``("close",)``. So the moment funding
+    arrives as object dtype (a CSV/mixed load, which is how it arrives off several of this
+    desk's collectors), ``funding.shift(-1)`` was unperturbable, un-declared, and therefore
+    passed ok=True n_leaked=0 again -- the exact leak, the exact family, the exact verdict
+    R0289 was raised to kill.
+
+    Before the fix this asserted-on result was ok=True / n_leaked=0.
+    """
+    bars = make_bars()
+    bars["funding"] = bars["funding"].map(lambda x: f"{x:.10f}").astype(object)
+    leaky = FeatureDefinition(
+        "peek_funding_object", 1, lambda df: df["funding"].astype(float).shift(-1),
+        inputs=("close",),  # the default `as_feature` declaration: WRONG, and that is the point
+        min_periods=1,
+    )
+    leakage = run_leakage_test(leaky, bars)
+    assert not leakage.ok, "an unperturbable column the feature READS cannot yield a pass"
+    assert "UNTESTABLE" in leakage.message
+    assert "funding" in leakage.consumed_untestable_columns
+    assert "funding" in leakage.untested_columns
+
+
+def test_pass_over_zero_perturbed_columns_is_vacuous() -> None:
+    """R0461/L1.57. With nothing perturbable every mutant frame equals the baseline, so
+    ``n_leaked == 0`` is an identity. Before the fix this returned ok=True."""
+    bars = make_bars()[["funding"]].map(lambda x: f"{x:.10f}").astype(object)
+    leaky = FeatureDefinition(
+        "peek_funding_no_denominator", 1, lambda df: df["funding"].astype(float).shift(-1),
+        inputs=("close",), min_periods=1,
+    )
+    leakage = run_leakage_test(leaky, bars)
+    assert not leakage.ok
+    assert "VACUOUS" in leakage.message
+    assert leakage.n_perturbed_columns == 0
+
+
+def test_leakage_result_publishes_its_perturbation_denominator() -> None:
+    """R0461/L1.57. A verdict without a denominator is an opinion: the count must be
+    measured off the frame handed in, not a module-level literal."""
+    bars = make_bars()
+    report = run_leakage_test(causal_feature(), bars)
+    assert report.ok
+    assert report.n_perturbed_columns == len(bars.columns)
+    assert set(report.perturbed_columns) == set(bars.columns)
+    assert report.n_checked >= 1, "a pass over zero evaluated points is vacuous"
+    # the count must FALL when the frame narrows -- a constant is not a denominator
+    narrow = run_leakage_test(causal_feature(), bars[["close"]])
+    assert narrow.n_perturbed_columns == 1
+
+
+def test_measured_refusal_does_not_over_refuse_bystander_object_columns() -> None:
+    """R0461. The probe must refuse only columns the feature is MEASURED to read; a fence
+    that goes red on everything gets switched off (L1.43), which is how the fix becomes the
+    next outage."""
+    bars = make_bars()
+    bars["venue"] = "binance"
+    bars["interval"] = "1d"
+    report = run_leakage_test(causal_feature(), bars)
+    assert report.ok, report.message
+    assert report.consumed_untestable_columns == ()
+    assert report.n_perturbed_columns == len(bars.columns) - 2
+
+
+def test_causal_guard_self_test_covers_the_widest_schema() -> None:
+    """The guard's own fixture must be able to fail. `self_test` raises on any regression."""
+    from libs.features.causal_guard import self_test
+
+    self_test()

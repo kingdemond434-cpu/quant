@@ -470,3 +470,74 @@ class TestAHealthyVerdictIsAClaimAboutThePresent:
         sh.record_run([_ok("newer")], path=p, now=_T0 + timedelta(days=5))
         names = [s.source for s in sh.unproven_sources(p, now=_T0 + timedelta(days=40))]
         assert names == ["older", "newer"], "oldest evidence must sort first"
+
+
+class TestR0466ForeignLanesAndWallVsEmpty:
+    """R0466. A BLOCKED ground and a THIN ground must not be the same value AT THE READER.
+
+    `foreign_sources.probe_all` was taught to publish WALLED vs EMPTY, and then nothing in the
+    repo read the field -- a producer with no consumer, which the desk calls actuatorless (L1.46:
+    a duty with no instrument is a wish). These pin the reader end, plus the asymmetry that made
+    the foreign lane worse off than the Chinese one it was copied from.
+    """
+
+    def test_a_successful_foreign_lane_is_observed_at_all(self) -> None:
+        # `foreign_discovered` was absent from _LANE_COUNTS while `channels_blocked` -- which
+        # carries foreign lanes too -- was read. A fully successful JP/KR/RU run therefore
+        # produced NO OBSERVATION, so last_ok_utc never advanced and the region drifted to STALE
+        # while it was working. Absence of an observation is not absence of a source.
+        doc = {"foreign_discovered": {"note:botter 手法": 12, "zenn:バックテスト": 7}}
+        obs = {o.source: o for o in sh.observations_from_miner_report(doc)}
+        assert set(obs) == {"note", "zenn"}
+        assert obs["note"].ok and obs["zenn"].ok
+
+    def test_one_blocked_query_cannot_condemn_a_source_that_answered_four(self) -> None:
+        # The asymmetry, stated as the failure it caused: only the failures were readable, so
+        # four good note.com queries plus one 403 recorded `note` as DOWN. Rule 2 (any lane up
+        # means the platform is up) was silently not applying to the foreign lane at all.
+        doc = {"foreign_discovered": {"note:a": 12, "note:b": 9, "note:c": 4, "note:d": 6},
+               "channels_blocked": {"note:e": "HTTPError: HTTP Error 403: Forbidden"}}
+        obs = {o.source: o for o in sh.observations_from_miner_report(doc)}
+        assert obs["note"].ok, "a working source is being retired on one blocked query"
+
+    def test_a_walled_probe_is_never_readable_as_thin_ground(self) -> None:
+        doc = {"foreign_source_probe": [
+            {"source": "zenn", "lang": "ja", "ok": False, "posture": "WALLED", "n": 0,
+             "error": "HTTPError: HTTP Error 403: Forbidden"}]}
+        obs = {o.source: o for o in sh.observations_from_miner_report(doc)}
+        assert not obs["zenn"].ok
+        assert obs["zenn"].error is not None
+        assert "WALLED" in obs["zenn"].error
+        assert "OP-052" in obs["zenn"].error, "the reader must name the next move, not just fail"
+        assert "403" in obs["zenn"].error
+
+    def test_an_empty_probe_says_the_source_answered_not_that_it_broke(self) -> None:
+        # An EMPTY row arrives with error=None and used to come out as "probe reported ok=false,
+        # no reason given" -- a source that answered CLEANLY, recorded as an unexplained failure.
+        doc = {"foreign_source_probe": [
+            {"source": "tinhte", "lang": "vi", "ok": False, "posture": "EMPTY", "n": 0,
+             "error": None}]}
+        obs = {o.source: o for o in sh.observations_from_miner_report(doc)}
+        assert obs["tinhte"].error is not None
+        assert "EMPTY" in obs["tinhte"].error
+        assert "no reason given" not in obs["tinhte"].error
+
+    def test_wall_and_empty_do_not_produce_the_same_observation(self) -> None:
+        """THE WHOLE ROW, in one assertion. Both are ok=False -- that was all a reader ever got,
+        and it is why "we are blocked" and "this ground is thin" were the same fact."""
+        def _one(posture: str, error: str | None) -> sh.Observation:
+            doc = {"foreign_source_probe": [{"source": "note", "ok": False, "n": 0,
+                                             "posture": posture, "error": error}]}
+            return sh.observations_from_miner_report(doc)[0]
+
+        walled = _one("WALLED", "HTTPError: HTTP Error 403: Forbidden")
+        empty = _one("EMPTY", None)
+        assert walled.ok == empty.ok is False          # the old signal: identical
+        assert walled.error != empty.error             # the new one: not
+
+    def test_the_reader_uses_the_producers_own_posture_names(self) -> None:
+        # Imported, not re-typed: a renamed posture must break loudly here rather than quietly
+        # stop matching, which is how a wired consumer becomes an unwired one without a diff.
+        from libs.data import foreign_sources as fs
+        assert sh._POSTURE_WALLED == fs.POSTURE_WALLED
+        assert sh._POSTURE_EMPTY == fs.POSTURE_EMPTY
