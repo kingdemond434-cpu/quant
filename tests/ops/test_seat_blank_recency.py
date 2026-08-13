@@ -145,34 +145,56 @@ class TestTheWriterIsActuallyWired:
     functions above would pass identically if `record_attempt` were never called by anything, so
     these drive the real store (redirected to tmp_path -- never the live ledger)."""
 
-    def test_record_attempt_round_trips_into_a_gradeable_denominator(self, tmp_path,
-                                                                     monkeypatch):
+    def test_record_attempts_round_trips_into_a_gradeable_denominator(self, tmp_path,
+                                                                      monkeypatch):
         from scripts import build_audit_coverage as bac
 
         monkeypatch.setattr(bac, "ROOT", tmp_path)
         monkeypatch.setattr(bac, "MANIFEST", tmp_path / "coverage.json")
         monkeypatch.setattr(bac, "_eligible", lambda: [])
 
-        for _ in range(ma.SEAT_MIN_ATTEMPTS):
-            bac.record_attempt(_SEAT)
+        bac.record_attempts([_SEAT] * ma.SEAT_MIN_ATTEMPTS)
 
         m = bac.load()
         assert recent_attempts(m, window_days=7) == {_SEAT: ma.SEAT_MIN_ATTEMPTS}
         m["seat_blanks"] = {_SEAT: 4}
         assert _seat_defects(m) == []                 # graded healthy off real recorded calls
 
-    def test_the_panel_records_an_attempt_for_every_seat_it_asks(self):
-        """The call site, by inspection: one `record_attempt` at the top of `_one`, before the
-        request, so a seat that dies mid-call still lands in its own denominator."""
+    def test_a_batch_of_blanks_is_one_write_and_loses_nothing(self, tmp_path, monkeypatch):
+        """THE RACE THIS REPLACES, in one assertion. Per-seat writes under a max_workers=5 pool
+        lost 87% of the tally (70 blanks recorded by tune_budget vs 9 by record_blank, same
+        commit, same 28 runs). A batch write cannot lose an increment to a sibling."""
+        from scripts import build_audit_coverage as bac
+
+        monkeypatch.setattr(bac, "ROOT", tmp_path)
+        monkeypatch.setattr(bac, "MANIFEST", tmp_path / "coverage.json")
+        monkeypatch.setattr(bac, "_eligible", lambda: [])
+
+        bac.record_blanks([_SEAT, _SEAT, _OTHER])
+
+        m = bac.load()
+        assert m["seat_blanks"] == {_SEAT: 2, _OTHER: 1}
+        assert len(m["seat_blank_events"]) == 3
+        assert recent_blanks(m, window_days=7) == {_SEAT: 2, _OTHER: 1}
+
+    def test_the_panel_never_writes_seat_telemetry_from_inside_a_thread(self):
+        """The property, enforced at the call site rather than trusted. `_one` runs under
+        ThreadPoolExecutor(max_workers=5); any recorder called from it races every sibling on one
+        shared JSON, which is how the 87% went missing."""
         import ast
         from pathlib import Path
 
         src = Path(ma.ROOT / "scripts/run_external_panel.py").read_text("utf-8")
-        fn = next(n for n in ast.walk(ast.parse(src))
+        tree = ast.parse(src)
+        fn = next(n for n in ast.walk(tree)
                   if isinstance(n, ast.FunctionDef) and n.name == "_one")
-        calls = [n for n in ast.walk(fn) if isinstance(n, ast.Call)
-                 and getattr(n.func, "id", "") == "record_attempt"]
-        assert len(calls) == 1, "exactly one attempt per seat per run, or the rate is wrong"
+        inside = {getattr(n.func, "id", "") for n in ast.walk(fn) if isinstance(n, ast.Call)}
+        assert not (inside & {"record_blank", "record_blanks",
+                              "record_attempt", "record_attempts"}), \
+            "seat telemetry written inside the parallel fan-out -- the lost-update race"
+        # ...and it IS written, once, somewhere else in the module.
+        whole = {getattr(n.func, "id", "") for n in ast.walk(tree) if isinstance(n, ast.Call)}
+        assert {"record_attempts", "record_blanks"} <= whole, "the recorders lost their caller"
 
     def test_pruning_keeps_the_window_intact(self, tmp_path, monkeypatch):
         """The cap bounds growth; it must never evict a day the 7d window still needs."""
@@ -185,7 +207,7 @@ class TestTheWriterIsActuallyWired:
         recent = (datetime.now(tz=UTC).date() - timedelta(days=3)).isoformat()
         bac.save({"files": {}, "seat_attempts": {_SEAT: {old: 99, recent: 7}}})
 
-        bac.record_attempt(_SEAT)
+        bac.record_attempts([_SEAT])
 
         kept = bac.load()["seat_attempts"][_SEAT]
         assert old not in kept                        # bounded

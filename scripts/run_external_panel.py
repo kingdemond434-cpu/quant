@@ -459,14 +459,6 @@ def main() -> None:
 
     def _one(pv: dict[str, Any]) -> dict[str, str]:
         name = pv.get("name", pv.get("model", "?"))
-        # THE DENOMINATOR (R0570). Exactly one attempt per seat per run, recorded BEFORE the call
-        # so a seat that dies mid-request still counts as having been asked -- otherwise the
-        # failures that matter most would be the ones missing from the denominator.
-        try:
-            from scripts.build_audit_coverage import record_attempt
-            record_attempt(pv.get("model", "?"))
-        except Exception:
-            pass
         try:
             txt, _stop = _ask_pushed(pv["base_url"], pv["key"], pv["model"],
                                      system, dossier)
@@ -482,11 +474,6 @@ def main() -> None:
                 txt, _stop = _ask_pushed(pv["base_url"], pv["key"], pv["model"],
                                          system, dossier)
                 if len(txt.strip()) < 50:
-                    try:
-                        from scripts.build_audit_coverage import record_blank
-                        record_blank(pv["model"])   # evidence for the next budget tune
-                    except Exception:
-                        pass
                     raise RuntimeError("blank response twice -- likely payload size; "
                                        "seat lost this run (recorded as an error, not a pass)")
             print(f"panel: {name} responded ({len(txt)} chars)")
@@ -494,20 +481,32 @@ def main() -> None:
         except Exception as e:                       # one dead provider never kills the panel
             print(f"panel: {name} FAILED {e!r}"[:150])
             # A HARD error is seat evidence exactly like a double-blank: until 2026-08-11 only
-            # the blank path called record_blank, so a seat dying with HTTP 400/404/KeyError
-            # left seat_blanks null and the seat-chronic fence + model_upgrade.regressed_seats
-            # were blind to the failure mode actually killing runs (measured: 4/4 free seats
-            # hard-erroring while seat_blanks stayed empty).
-            try:
-                from scripts.build_audit_coverage import record_blank
-                record_blank(pv.get("model", "?"))
-            except Exception:
-                pass
+            # the blank path was counted, so a seat dying with HTTP 400/404/KeyError left
+            # seat_blanks null and the seat-chronic fence + model_upgrade.regressed_seats were
+            # blind to the failure mode actually killing runs (measured: 4/4 free seats
+            # hard-erroring while seat_blanks stayed empty). Both paths land here, and a result
+            # with no "response" key is exactly the set recorded after the fan-out below.
             return {"provider": name, "model": pv.get("model", "?"), "error": repr(e)[:200]}
 
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=5) as ex:    # parallel fan-out: panel completes in
         results = list(ex.map(_one, providers))      # ~one slowest-model time, not the sum
+
+    # SEAT TELEMETRY IS WRITTEN HERE, SERIALLY, AND NEVER FROM INSIDE THE THREADS. Each recorder
+    # does load() -> mutate -> save() on one shared JSON, so calling them per-seat under a
+    # max_workers=5 pool makes concurrent seats read the same state and overwrite each other.
+    # That is not theoretical: record_blank and tune_budget shipped in the SAME commit (14131c33)
+    # and have watched the SAME 28 runs, and tune_budget -- which runs once, here, after the
+    # fan-out -- recorded 70 blanks of 148 calls while seat_blanks, incremented inside the
+    # threads, summed to 9. Same events, same window, 87% lost to the race. The old path also
+    # double-counted its own retry branch. Both sets are derivable serially from `results`: a
+    # result carrying no "response" key is a lost seat, whether it blanked twice or hard-errored.
+    try:
+        from scripts.build_audit_coverage import record_attempts, record_blanks
+        record_attempts([p.get("model", "?") for p in providers])
+        record_blanks([r.get("model", "?") for r in results if "response" not in r])
+    except Exception as _e:                          # telemetry never kills the panel
+        print(f"panel: could not record seat telemetry ({_e!r})")
     with _LOG.open("a", encoding="utf-8") as f:
         for r in results:
             f.write(json.dumps({"ts": ts, "mission": mission, **r}) + "\n")

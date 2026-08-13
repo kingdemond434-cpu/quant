@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+from collections.abc import Iterable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -208,30 +209,6 @@ def tune_budget(blanked: int, total: int) -> int:
 _BLANK_EVENT_CAP = 400
 
 
-def record_blank(model: str) -> None:
-    """Per-seat blank tally -- turns a flaky seat into an evidence-backed swap decision.
-
-    THE TALLY ALONE COULD NOT SUPPORT THAT DECISION, WHICH IS WHY THE EVENTS EXIST.
-    `seat_blanks` is a LIFETIME counter that nothing anywhere resets or decays, so a seat that
-    blanked three times months ago and has answered every call since is permanently
-    indistinguishable from one that is dying right now. The fence keyed on it (`seat-chronic-*`)
-    therefore fires on every run forever once a seat crosses the threshold -- a gate that cannot
-    clear carries zero information, and its recommendation is to SWAP a seat that may be
-    perfectly healthy. Measured 2026-08-13: nemotron-3-super-120b had a lifetime 4 and the live
-    canary reported it alive and answering, 4/4 seats up.
-
-    The tally is KEPT and keeps incrementing -- `check_free_roster` and `model_upgrade` read it,
-    and it is honest as history. What is added is the timestamp, so a reader can ask "is this
-    seat failing NOW" instead of only "has it ever failed".
-    """
-    m = refresh(load())
-    m.setdefault("seat_blanks", {})[model] = int(m.get("seat_blanks", {}).get(model, 0)) + 1
-    events = m.setdefault("seat_blank_events", [])
-    events.append({"model": model, "ts": datetime.now(tz=UTC).isoformat()})
-    m["seat_blank_events"] = events[-_BLANK_EVENT_CAP:]
-    save(m)
-
-
 def recent_blanks(m: dict[str, object], *, window_days: int) -> dict[str, int] | None:
     """Blanks per seat inside `window_days`, or ``None`` when recency cannot be measured.
 
@@ -266,8 +243,52 @@ def recent_blanks(m: dict[str, object], *, window_days: int) -> dict[str, int] |
 _ATTEMPT_DAY_CAP = 30
 
 
-def record_attempt(model: str) -> None:
-    """One call to one seat. THE DENOMINATOR (R0570) that makes the blank tally a rate.
+def record_blanks(models: Iterable[str]) -> None:
+    """Every blank from ONE panel run, in ONE read-modify-write. NEVER call this per-thread.
+
+    WHAT THE TALLY IS FOR, AND WHY THE EVENTS SIT BESIDE IT. `seat_blanks` is a LIFETIME counter
+    that nothing anywhere resets or decays, so a seat that blanked three times months ago and has
+    answered every call since is permanently indistinguishable from one dying right now. The fence
+    keyed on it (`seat-chronic-*`) therefore fired forever once a seat crossed the threshold, and
+    its recommendation is to SWAP -- which costs a live seat off an under-driven roster. The tally
+    is KEPT and keeps incrementing (`check_free_roster` and `model_upgrade` read it, and it is
+    honest as history); the timestamped events are what let a reader ask "is this seat failing
+    NOW" instead of only "has it ever failed".
+
+    THE RACE THIS CLOSES, AND IT HAD ALREADY EATEN 87% OF THE TALLY. `record_blank` was called
+    from inside `run_external_panel._one`, which runs under a ThreadPoolExecutor(max_workers=5),
+    and every call does load() -> mutate -> save() on one shared JSON. Concurrent seats therefore
+    read the same state and overwrite each other, and with 3-4 of 4 seats blanking together the
+    losses are not occasional -- they are the common case.
+
+    MEASURED 2026-08-13, and the two counters settle it because they shipped in the SAME commit
+    (14131c33, 2026-07-20) and have watched the SAME 28 runs: `tune_budget` runs ONCE, AFTER the
+    fan-out, and recorded 70 blanks of 148 seat-calls. `seat_blanks`, incremented inside the
+    threads, sums to 9. Same events, same window, 87% lost. Age cannot explain it; only the race
+    can. The old path also double-counted the retry branch (record_blank, then raise, then
+    record_blank again in the handler), so the surviving 9 were not even a clean sample.
+
+    The blanked set is derivable SERIALLY from the results the executor returns -- a result
+    without a "response" key is a lost seat -- so nothing is gained by writing from the threads.
+    """
+    m = refresh(load())
+    tally = m.setdefault("seat_blanks", {})
+    events = m.setdefault("seat_blank_events", [])
+    now = datetime.now(tz=UTC).isoformat()
+    for model in models:
+        tally[model] = int(tally.get(model, 0)) + 1
+        events.append({"model": model, "ts": now})
+    m["seat_blank_events"] = events[-_BLANK_EVENT_CAP:]
+    save(m)
+
+
+def record_blank(model: str) -> None:
+    """One blank. Kept as the single-seat spelling of `record_blanks`."""
+    record_blanks([model])
+
+
+def record_attempts(models: Iterable[str]) -> None:
+    """Every seat asked in ONE panel run, in ONE read-modify-write. THE DENOMINATOR (R0570).
 
     "Blanked 4x" is not a measurement. Four failures out of four calls is a dead seat; four out of
     four hundred is a 1% flake on a free tier, and until now nothing counted the calls, so the two
@@ -291,8 +312,9 @@ def record_attempt(model: str) -> None:
     att = m.setdefault("seat_attempts", {})
     if not isinstance(att, dict):
         att = m["seat_attempts"] = {}
-    per = att.setdefault(model, {})
-    per[today.isoformat()] = int(per.get(today.isoformat(), 0)) + 1
+    for model in models:
+        per = att.setdefault(model, {})
+        per[today.isoformat()] = int(per.get(today.isoformat(), 0)) + 1
     cutoff = (today - timedelta(days=_ATTEMPT_DAY_CAP)).isoformat()
     for mdl in list(att):
         kept = {d: c for d, c in (att[mdl] or {}).items() if d >= cutoff}
