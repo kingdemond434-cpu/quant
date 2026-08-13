@@ -2011,3 +2011,31 @@ sets are IDENTICAL, not merely overlapping.
 **CONSEQUENCE FOR THE ERA PLAN:** board 2's ~1009 pages are confirmed real, so the 8btc era plan
 built on that count is SOUND and the ground is far larger than the 128 captured pages — the
 constraint is capture coverage, not board size.
+
+### OP-071 on a last-reply-sorted board, PAGE DEPTH is a second era axis — and it runs BACKWARDS from the capture date   [active]
+
+**CORRECTS this seat's own s7 method note (2026-08-12)**, which prescribed *"era-seek by CAPTURE
+TIMESTAMP of pages 1–9"*. That is right for shallow pages and **inverted for deep ones**, and the
+error wastes a whole fetch-and-decode cycle on the wrong decade.
+
+**MEASURED (8btc board 2, 2026-08-13):** capture `20131213073329` of `forum-2-26.html` — a
+December-2013 crawl, squarely in the PBoC ban window — returns threads with ids **1–66 dated
+September 2012**, not ban-window material at all. Discuz sorts by **last reply**, so a deep page
+holds the board's **stalest** threads. The capture date is only an **upper bound** on what can
+appear; page depth then walks *backwards* from it.
+
+**THE RULE — read (capture_date, page_number) as a 2-D era selector:**
+- **Hunting a dated EVENT window** (a ban, a hack, an exchange failure): take a capture from just
+  after the event and read **LOW page numbers**. Event discussion is by definition freshly-replied.
+- **Hunting the OLDEST era strata**: take **any** later capture and read **HIGH page numbers**. A
+  2018 capture at page 1000 reaches further back than a 2013 capture at page 5.
+- **Corollary that saves real budget:** the archive's *capture* coverage and the board's *era*
+  coverage are different quantities. 128 captured pages of a ~1009-page board is not "128/1009 of
+  the era" — deep captures reach strata that no shallow capture of any date contains.
+
+**FIELD DETAIL for 8btc/Discuz of this era (saves a probe every run):** posts live in
+`<div class="t_f" id="postmessage_NN">`, **not** the `<td class="t_f">` that later Discuz skins use;
+`t_msgfont` and `postcontent` are both absent. Quoted replies repeat the parent's text with a
+`<author> 发表于 <date>` header, so a naive post count **double-counts** a reply chain — dedupe on
+the quote header before claiming a thread depth. GBK throughout.
+
