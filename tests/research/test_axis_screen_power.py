@@ -182,3 +182,40 @@ def test_the_ic_ceiling_is_never_rescaled():
     r = stage_a_screen(sig, ret, name="leak60s", horizon_days=60 / 86400.0)
     assert abs(r["ic"]) > 0.35 and r["implausible_leak"] is True
     assert r["verdict"] == "SUSPECT-LOOKAHEAD"
+
+
+def test_overlap_periods_separates_deflation_from_annualisation():
+    """A NON-OVERLAPPING h-day grid ([::h]) has time-independent rows: deflating them by
+    horizon_days again double-counts, and the only prior escape -- lying horizon_days=1 --
+    broke the Sharpe annualisation instead. overlap_periods carries the deflation meaning;
+    horizon_days keeps the annualisation meaning."""
+    sig, ret20 = _noise(n=800)
+    conflated = stage_a_screen(sig, ret20, name="c", horizon_days=20)
+    separated = stage_a_screen(sig, ret20, name="s", horizon_days=20, overlap_periods=1.0)
+    # deflation: conflated divides the time axis by 20, separated by 1
+    assert np.isclose(conflated["n_eff"] * 20, separated["n_eff"], rtol=0.01)
+    # annualisation identical -- both declared 20d targets
+    assert conflated["sharpe_momentum"] == separated["sharpe_momentum"]
+    # and the deflation actually used is recorded, so a downstream reader can reproduce it
+    assert separated["overlap_periods"] == 1.0
+    assert conflated["overlap_periods"] == 20.0
+
+
+def test_overlap_periods_default_none_is_the_historical_behaviour():
+    """None -> deflate by horizon_days, bit-identical to every existing caller."""
+    sig, ret = _noise(n=800)
+    a = stage_a_screen(sig, ret, name="a", horizon_days=5)
+    b = stage_a_screen(sig, ret, name="b", horizon_days=5, overlap_periods=5.0)
+    assert a["n_eff"] == b["n_eff"]
+    assert a["powered"] == b["powered"]
+
+
+def test_overlap_periods_composes_with_panel_width():
+    """The stacked-panel caller: overlap 1 on the time axis, full width on the cross-section.
+    n_eff = n / width, not n / (h * width) and not raw n."""
+    sig, ret = _noise(n=8000)
+    r = stage_a_screen(sig, ret, name="p", horizon_days=20, panel_width=100,
+                       overlap_periods=1.0)
+    assert np.isclose(r["n_eff"], 8000 / 100, rtol=0.01)
+    assert r["powered"] is False          # 1.96/sqrt(80) = 0.219 >> 0.03
+    assert r["verdict"] in ("SCREEN-UNDERPOWERED", "SUSPECT-LOOKAHEAD", "SUSPECT-STALE-LEG")

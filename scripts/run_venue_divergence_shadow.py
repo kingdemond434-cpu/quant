@@ -33,6 +33,13 @@ from typing import Any
 
 _VENUE = Path("web/venue_equity.json")
 _MARK = Path("data/live_combined_state.json")
+#: Like-for-like source, preferred when a producer exists: the EXECUTED cash-carry book's own
+#: mark-based NAV. web/venue_equity.json measures the cash-carry book (fut margin + tracked spot
+#: legs + USDT); data/live_combined_state.json's mcurve is the MOLDED PORTFOLIO (paper sleeves,
+#: different capital base) -- comparing those two is a scope mismatch, not a divergence
+#: measurement (claim-verifier HIGH, 3 consecutive days: $6,070 futures-scope vs $17,973
+#: total-scope, a structural ~+196% offset no breaker band can be calibrated on).
+_MARK_SAME_SCOPE = Path("data/cashcarry_mark_nav.json")
 _LOG = Path("data/venue_divergence_shadow.jsonl")
 _STALE_S = 900.0          # a feed older than this cannot be compared honestly
 
@@ -51,18 +58,31 @@ def _venue_nav() -> float | None:
         return None
 
 
-def _mark_nav() -> float | None:
-    """Newest mark-based NAV from the live_combined equity curve."""
+def _mark_nav() -> tuple[float | None, bool, Path]:
+    """(newest mark-based NAV, scopes_comparable, source path).
+
+    Prefers the executed book's own mark NAV (same scope as the venue measure). Until that
+    producer exists, falls back to the molded-portfolio curve WITH scopes_comparable=False --
+    the number is still logged for context, but no divergence may be computed from it: a diff
+    across two different books is a fabricated measurement, and a breaker band fitted to it
+    would either never fire or always fire (the welded-gate shape, L1.43).
+    """
+    if _MARK_SAME_SCOPE.exists():
+        try:
+            doc = json.loads(_MARK_SAME_SCOPE.read_text("utf-8"))
+            return float(doc["mark_nav"]), True, _MARK_SAME_SCOPE
+        except Exception:
+            return None, False, _MARK_SAME_SCOPE
     try:
         curve = json.loads(_MARK.read_text("utf-8")).get("mcurve") or []
-        return float(curve[-1][1]) if curve else None
+        return (float(curve[-1][1]) if curve else None), False, _MARK
     except Exception:
-        return None
+        return None, False, _MARK
 
 
 def sample() -> dict[str, Any]:
-    v, m = _venue_nav(), _mark_nav()
-    va, ma = _age_s(_VENUE), _age_s(_MARK)
+    v, (m, comparable, mark_src) = _venue_nav(), _mark_nav()
+    va, ma = _age_s(_VENUE), _age_s(mark_src)
     # A STALE feed manufactures fake divergence -- excluding it from calibration is the whole
     # point: a band fitted to stale-feed artefacts would trip on nothing real.
     stale = va > _STALE_S or ma > _STALE_S
@@ -72,8 +92,12 @@ def sample() -> dict[str, Any]:
         "venue_age_s": round(va, 1) if va != float("inf") else None,
         "mark_age_s": round(ma, 1) if ma != float("inf") else None,
         "stale": bool(stale),
+        # scope honesty (claim-verifier 2026-08-09..11): venue = cash-carry book, molded curve =
+        # paper portfolio. Only same-scope samples may carry a divergence.
+        "scopes_comparable": bool(comparable),
+        "mark_source": str(mark_src),
     }
-    if v is not None and m is not None and v > 0:
+    if v is not None and m is not None and v > 0 and comparable:
         rec["abs_diff"] = round(m - v, 2)
         rec["pct_diff"] = round(100.0 * (m - v) / v, 4)
     _LOG.parent.mkdir(parents=True, exist_ok=True)
@@ -91,15 +115,26 @@ def report() -> None:
         with contextlib.suppress(Exception):
             rows.append(json.loads(line))
     clean = [r for r in rows if not r.get("stale")
-             and r.get("venue_nav") is not None and r.get("mark_nav") is not None]
+             and r.get("venue_nav") is not None and r.get("mark_nav") is not None
+             # Scope gate (claim-verifier 2026-08-09..11): every pre-fix row compared the
+             # cash-carry venue measure against the MOLDED PORTFOLIO curve -- a different book.
+             # Old rows lack the key entirely, so they are excluded here by construction, and
+             # the calibration below can only ever run on like-for-like samples.
+             and r.get("scopes_comparable")]
     usable = [abs(float(r["pct_diff"])) for r in clean if r.get("pct_diff") is not None]
+    if not clean:
+        print("venue-divergence shadow: UNMEASURED -- zero like-for-like samples. Every logged "
+              "row compares the cash-carry venue measure against the molded-portfolio curve "
+              "(different book, structural offset). The enabling producer is a mark-based NAV "
+              "for the EXECUTED book at data/cashcarry_mark_nav.json; until it exists, no band "
+              "may be calibrated and gap #19 stays queued.")
+        return
 
     # INCREMENT DIVERGENCE -- the signal gap #19 actually needs (2026-07-23 shadow finding).
-    # The two feeds sit ~36% apart BY CONSTRUCTION (different bases: live_combined marks a
-    # 15,000-based book; the dead-man measure is fut margin + TRACKED legs + USDT delta and
-    # deliberately excludes untracked faucet spot). A level-vs-level band would trip instantly
-    # and permanently on that definitional offset. What genuinely signals a reconciliation
-    # break is the two measures DRIFTING APART between ticks.
+    # Even same-scope feeds can sit apart by a definitional constant; what genuinely signals a
+    # reconciliation break is the two measures DRIFTING APART between ticks. (Cross-scope rows
+    # never reach here: increments of two DIFFERENT books mix strategy difference into
+    # reconciliation noise, which is unusable for a band.)
     incs = []
     for a, b in itertools.pairwise(clean):
         dv = float(b["venue_nav"]) - float(a["venue_nav"])

@@ -72,6 +72,74 @@ class TestMountResolution:
             assert isinstance(used, int) and used >= 0
 
 
+class TestHolderVerdictNeverCertifiesWhatItCannotSee:
+    """The one test that matters: a PARTIAL fd scan must never say "held by nothing".
+
+    Measured on this box, 42 of 175 pids are fd-readable. A two-valued flag would certify the
+    scratch of the other 133 as unheld and the reader would delete a live session's working
+    state -- under memory pressure, which is exactly when the mistake is likeliest.
+    """
+
+    def _tmpfs(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(hr, "_fstype", lambda _p: "tmpfs")
+        big = tmp_path / "scratch.bin"
+        big.write_bytes(b"x" * (12 * 1024 * 1024))
+        return big
+
+    def test_partial_coverage_reports_unknown_not_false(self, tmp_path, monkeypatch):
+        self._tmpfs(monkeypatch, tmp_path)
+        monkeypatch.setattr(hr, "fd_scan_coverage", lambda: (42, 175))
+        monkeypatch.setattr(hr, "_held_paths", lambda _m: set())
+        [row] = hr.tmpfs_top_holders(str(tmp_path))
+        assert row.held is None, "a partial scan must not certify an entry as unheld"
+
+    def test_full_coverage_may_assert_unheld(self, tmp_path, monkeypatch):
+        self._tmpfs(monkeypatch, tmp_path)
+        monkeypatch.setattr(hr, "fd_scan_coverage", lambda: (175, 175))
+        monkeypatch.setattr(hr, "_held_paths", lambda _m: set())
+        [row] = hr.tmpfs_top_holders(str(tmp_path))
+        assert row.held is False
+
+    def test_zero_pids_is_not_full_coverage(self, tmp_path, monkeypatch):
+        """An unreadable /proc yields (0, 0); `readable == total` is True and must NOT mean seen."""
+        self._tmpfs(monkeypatch, tmp_path)
+        monkeypatch.setattr(hr, "fd_scan_coverage", lambda: (0, 0))
+        monkeypatch.setattr(hr, "_held_paths", lambda _m: set())
+        [row] = hr.tmpfs_top_holders(str(tmp_path))
+        assert row.held is None
+
+    def test_a_live_holder_is_a_fact_at_any_coverage(self, tmp_path, monkeypatch):
+        big = self._tmpfs(monkeypatch, tmp_path)
+        monkeypatch.setattr(hr, "fd_scan_coverage", lambda: (1, 175))
+        monkeypatch.setattr(hr, "_held_paths", lambda _m: {str(big)})
+        [row] = hr.tmpfs_top_holders(str(tmp_path))
+        assert row.held is True
+
+    def test_a_holder_inside_a_directory_holds_the_directory(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(hr, "_fstype", lambda _p: "tmpfs")
+        d = tmp_path / "session"
+        d.mkdir()
+        (d / "task.output").write_bytes(b"y" * (11 * 1024 * 1024))
+        monkeypatch.setattr(hr, "fd_scan_coverage", lambda: (175, 175))
+        monkeypatch.setattr(hr, "_held_paths", lambda _m: {str(d / "task.output")})
+        [row] = hr.tmpfs_top_holders(str(tmp_path))
+        assert row.path == str(d) and row.held is True, "an open fd inside pins the whole dir"
+
+    def test_non_tmpfs_yields_no_rows_to_act_on(self, tmp_path, monkeypatch):
+        self._tmpfs(monkeypatch, tmp_path)
+        monkeypatch.setattr(hr, "_fstype", lambda _p: "ext4")
+        assert hr.tmpfs_top_holders(str(tmp_path)) == []
+
+    def test_small_entries_are_not_reported(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(hr, "_fstype", lambda _p: "tmpfs")
+        (tmp_path / "tiny").write_bytes(b"z" * 1024)
+        assert hr.tmpfs_top_holders(str(tmp_path)) == []
+
+    def test_coverage_is_readable_over_total_on_the_real_box(self):
+        readable, total = hr.fd_scan_coverage()
+        assert 0 <= readable <= total
+
+
 class TestPressureNoteIsSafeOnTheFailurePath:
     def test_never_raises_when_nothing_is_readable(self, monkeypatch):
         """It is called while reporting a kill; an instrument that throws there loses the cause."""

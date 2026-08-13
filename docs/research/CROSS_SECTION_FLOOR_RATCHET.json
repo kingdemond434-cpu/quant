@@ -1,0 +1,6 @@
+{
+  "n_floored": 17,
+  "n_sites": 49,
+  "measured_by": "scripts/check_cross_section_floor.py",
+  "note": "floors ratchet UP only (L1.0/L1.50); never edit to fit a measurement"
+}

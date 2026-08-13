@@ -54,7 +54,7 @@ slot assignments and would be a defect if it ever returned a position size.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 __all__ = [
     "GROSS_TURNOVER_PENALTY",
@@ -216,6 +216,12 @@ class Admission:
     statistical_failures: tuple[str, ...] = ()
     admitted: bool = False
     reason: str = ""
+    #: Declared gates this candidate's producer never supplied. R0419: `g in gates` means an
+    #: ABSENT gate cannot appear in blocked_by and cannot block -- which is the correct call
+    #: (absent != failed; killing a candidate for an omission is the beats_baselines defect
+    #: pointed the other way) but it was also INVISIBLE. Absent and passed were byte-identical to
+    #: every reader, and only one of them is evidence (L1.28a).
+    unmeasured_gates: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -226,6 +232,31 @@ class AdmissionPlan:
     idle_slots_before: int = 0
     idle_slots_after: int = 0
     notes: tuple[str, ...] = field(default_factory=tuple)
+    #: gate -> {"pass", "fail", "unmeasured"} counts over every candidate seen. THE GATE-OPTIMALITY
+    #: DUTY DEMANDS THIS AND admit() DID NOT HAVE IT (R0419): a gate that accepts ~100% or rejects
+    #: ~100% carries zero information and is a defect to investigate, and it cannot be spotted
+    #: without a per-gate tally. `unmeasured` is a FIRST-CLASS column, not folded into either
+    #: side -- absence from a rejection tally is ambiguous between "never evaluated" and
+    #: "evaluated and always passed", and those are different defects (L1.49).
+    gate_histogram: dict[str, dict[str, int]] = field(default_factory=dict)
+
+    def welded_gates(self) -> dict[str, str]:
+        """Gates carrying no information over this cohort, and which KIND of nothing.
+
+        NEVER-EVALUATED is separated from CONSTANT-PASS on purpose: the first is a wiring defect
+        whose repair is upward (supply the input, or record that it cannot be supplied), the
+        second is a threshold question. Collapsing them sends someone to fix the wrong thing.
+        """
+        out: dict[str, str] = {}
+        for gate, h in self.gate_histogram.items():
+            seen = h["pass"] + h["fail"]
+            if not seen:
+                out[gate] = "NEVER-EVALUATED (no candidate supplied it -- L1.49 dead branch)"
+            elif not h["fail"]:
+                out[gate] = f"CONSTANT-PASS ({h['pass']}/{seen} passed, 0 rejected)"
+            elif not h["pass"]:
+                out[gate] = f"CONSTANT-REJECT (0/{seen} passed)"
+        return out
 
     def summary(self) -> str:
         return (f"{len(self.admitted)} admitted to forward clocks, {len(self.blocked)} "
@@ -284,6 +315,7 @@ def admit(candidates: list[dict[str, object]], *, idle_slots: int,
     """
     rows: list[Admission] = []
     unmeasured_bars: list[str] = []
+    histogram: dict[str, dict[str, int]] = {}
     for c in candidates:
         raw_gates = c.get("gates")
         # Defensive rather than trusting: a caller passing a non-dict must not crash a campaign,
@@ -294,6 +326,27 @@ def admit(candidates: list[dict[str, object]], *, idle_slots: int,
         name = str(c.get("name", "?"))
         oos = _f(c, "oos_sharpe", 0.0)
         blocked_list = [g for g in STRUCTURAL_GATES if g in gates and not gates[g]]
+        # UNCHANGED BEHAVIOUR, NEWLY VISIBLE (R0419). `g in gates` still governs blocking -- an
+        # absent gate must not kill a candidate. What changes is that the absence is now RECORDED
+        # instead of being indistinguishable from a pass.
+        #
+        # MEASURED against every site that can write a gate in `libs.autodiscovery.validation`
+        # (the literal at :760 plus the three conditional `gates[...] =` assignments), not against
+        # the declaration here: of the six structural gates, exactly ONE -- `break_even_win_rate`
+        # -- is written by NOTHING anywhere in the repo. It is declared structural, so it reads as
+        # part of the gauntlet, and it has never once evaluated. `capacity` and `sample_adequacy`
+        # are conditional on caller-supplied inputs and validate() already records their absence
+        # in `unmeasured`, which is the honest state and not this defect.
+        #
+        # THE COUNT IS STATED BECAUSE IT WAS WRONG TWICE ON THE WAY HERE -- "2 of 6", then "3 of
+        # 6" -- both from reading the unconditional gates literal and stopping. That is the row's
+        # own point turned on the row: a claim about which gates fire, asserted rather than
+        # measured. The histogram below exists so the next reader does not have to trust this
+        # comment at all.
+        unmeasured_list = [g for g in (*STRUCTURAL_GATES, *STATISTICAL_GATES) if g not in gates]
+        for g in (*STRUCTURAL_GATES, *STATISTICAL_GATES):
+            cell = histogram.setdefault(g, {"pass": 0, "fail": 0, "unmeasured": 0})
+            cell["unmeasured" if g not in gates else ("pass" if gates[g] else "fail")] += 1
         # The relevance floor is enforced as a structural block on purpose: it is a statement
         # about whether a scarce forward clock should be spent, not about statistical evidence,
         # and like every other structural block it must be un-out-rankable.
@@ -317,7 +370,8 @@ def admit(candidates: list[dict[str, object]], *, idle_slots: int,
                            reality_p=_f(c, "reality_p", 1.0), turnover=turn,
                            cost_basis=str(c.get("cost_basis") or cost_basis))
         rows.append(Admission(name=name, rank_score=score, blocked_by=tuple(blocked_list),
-                              statistical_failures=stat_fail))
+                              statistical_failures=stat_fail,
+                              unmeasured_gates=tuple(unmeasured_list)))
 
     blocked = tuple(r for r in rows if r.blocked_by)
     eligible = sorted((r for r in rows if not r.blocked_by),
@@ -326,6 +380,7 @@ def admit(candidates: list[dict[str, object]], *, idle_slots: int,
     admitted = tuple(
         Admission(name=r.name, rank_score=r.rank_score, blocked_by=r.blocked_by,
                   statistical_failures=r.statistical_failures, admitted=True,
+                  unmeasured_gates=r.unmeasured_gates,
                   reason=("admitted to a forward clock by EV rank; owes pre-registered forward "
                           "evidence with an unchanged Holm-corrected bar and a fixed end date"))
         for r in eligible[:n])
@@ -364,6 +419,15 @@ def admit(candidates: list[dict[str, object]], *, idle_slots: int,
     if n == 0 and eligible:
         notes.append("no idle slots: the forward stage is saturated, which is the intended "
                      "steady state and the correct reason to admit nothing")
-    return AdmissionPlan(admitted=admitted, blocked=blocked, ranked_out=ranked_out,
+    plan = AdmissionPlan(admitted=admitted, blocked=blocked, ranked_out=ranked_out,
                          idle_slots_before=n, idle_slots_after=n - len(admitted),
-                         notes=tuple(notes))
+                         notes=tuple(notes), gate_histogram=histogram)
+    # THE GATE-OPTIMALITY DUTY, SPOKEN OUT LOUD. A gate accepting ~100% or rejecting ~100% carries
+    # zero information and is a defect to investigate -- and until now admit() had no tally, so a
+    # structural gate that had NEVER ONCE EVALUATED looked exactly like one that always passed.
+    welded = plan.welded_gates()
+    if welded and rows:
+        notes.append("GATE-OPTIMALITY: " + "; ".join(
+            f"{g} {why}" for g, why in sorted(welded.items())))
+        plan = replace(plan, notes=tuple(notes))
+    return plan

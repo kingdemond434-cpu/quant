@@ -27,7 +27,15 @@ from libs.execution.exec_monitor import (  # noqa: E402
     update,
 )
 
-FORENSICS = ROOT / "data" / "trade_forensics.json"
+# THE PRODUCER'S OWN OUTPUT PATH, not a fourth spelling of it (found by the R0356 rewrite of the
+# phantom-paths fence). This read `data/trade_forensics.json`, which nothing has ever written:
+# run_trade_forensics.py:36,40 writes `web/trade_forensics.json` and the tracked
+# `docs/research/trade_forensics_latest.json`. So this monitor reported "UNMEASURED, not a clean
+# book: run scripts/run_trade_forensics.py first" no matter how many times that was done -- the
+# read-without-writer class the fence exists for, invisible to it because the path was built from
+# split literals. The tracked copy is the target: it survives a fresh checkout and carries the
+# same schema plus `written`.
+FORENSICS = ROOT / "docs/research/trade_forensics_latest.json"
 LEDGER = ROOT / "data" / "exec_defects.json"
 
 #: Map a forensics flag to a STABLE key. The flag text carries live numbers ("-37.54 bps over 23

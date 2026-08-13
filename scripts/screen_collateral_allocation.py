@@ -48,12 +48,24 @@ if str(_ROOT) not in sys.path:
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
+from libs.research.lending_haircut import (  # noqa: E402
+    LAST_RESORT_HAIRCUT_BPS,
+    derive_haircut,
+)
 
 #: Funding above this |8h rate| is the "high-funding regime" (~11% annualised at 3 prints/day).
 HIGH_FUNDING_8H = 0.0001
 #: Smart-contract + depeg + withdrawal-queue haircut on lending yield. NEVER zero: the risks are
 #: real, rare and correlated with exactly the moments you need the collateral back.
-DEFAULT_HAIRCUT_BPS = 300.0
+#:
+#: R0375: this is no longer the operative number. It was 300.0 with no derivation anywhere in the
+#: repo, and it closed the lending band 55x over against a 5.5bps breakeven. `haircut_bps=None`
+#: now resolves through `libs.research.lending_haircut.derive_haircut`, which measures the
+#: exploit and depeg base rates; this constant survives ONLY as that module's refusal value, for
+#: the case where the base rates cannot be read. It is re-exported here so the name keeps
+#: resolving for any caller that still imports it, and it is deliberately the LARGE number so a
+#: broken input keeps the band shut rather than opening it on a fabricated small haircut.
+DEFAULT_HAIRCUT_BPS = LAST_RESORT_HAIRCUT_BPS
 _PERIODS_PER_YEAR = 3 * 365                       # 8h funding prints
 
 
@@ -122,14 +134,20 @@ def funding_regimes(root: Path) -> dict[str, Any]:
     }
 
 
-def build_report(root: Path | None = None, *, haircut_bps: float = DEFAULT_HAIRCUT_BPS,
+def build_report(root: Path | None = None, *, haircut_bps: float | None = None,
                  carry_cost_bps_annual: float = 200.0) -> dict[str, Any]:
+    root = root or _ROOT
+    # R0375: resolve the haircut from measured base rates rather than a typed-in constant. An
+    # explicit value still overrides -- the docstring's own instruction is to re-run at several
+    # haircuts before believing any verdict, and that sensitivity sweep must stay available.
+    hc = derive_haircut(root)
+    if haircut_bps is None:
+        haircut_bps = hc.bps
     if haircut_bps <= 0:
         raise ValueError(
             "haircut_bps must be > 0: smart-contract, depeg and withdrawal-queue risk are real "
             "and correlated with the moments you need the collateral back. Modelling them as "
             "zero is how a screen manufactures a winner (L1.5).")
-    root = root or _ROOT
     apy, prov = best_lending_apy(root)
     reg = funding_regimes(root)
     lending_net = None if apy is None else apy - haircut_bps / 10_000.0
@@ -182,21 +200,25 @@ def build_report(root: Path | None = None, *, haircut_bps: float = DEFAULT_HAIRC
         "status": verdict, "detail": detail,
         "best_lending_apy": apy, "lending_provenance": prov,
         "haircut_bps": haircut_bps, "lending_net_apy": lending_net,
+        "haircut_derivation": hc.to_dict(),
         "carry_cost_bps_annual": carry_cost_bps_annual,
         "funding_regimes": reg, "regime_map": regime_map,
         "authority": "STAGE A -- evidence for an allocation decision. Moves no funds, places no "
                      "orders, and never auto-switches the book (L1.6).",
-        "note": "the haircut is a MODEL input, not a measurement: contract exploit, oracle "
-                "failure, depeg and withdrawal queues in stress. Re-run at several haircuts "
-                "before believing any verdict -- if the winner flips inside a plausible haircut "
-                "range, the honest answer is 'too close to call'.",
+        "note": "the haircut is now DERIVED from measured exploit and depeg base rates (R0375, "
+                "libs/research/lending_haircut.py) rather than assumed -- see haircut_derivation "
+                "for the components, the confidence bound, and the risks measured but "
+                "deliberately NOT priced. Re-run at several haircuts before believing any "
+                "verdict: if the winner flips inside the plausible range, the honest answer is "
+                "'too close to call'.",
     }
 
 
 def main() -> int:
     _law_guard()
     ap = argparse.ArgumentParser()
-    ap.add_argument("--haircut-bps", type=float, default=DEFAULT_HAIRCUT_BPS)
+    ap.add_argument("--haircut-bps", type=float, default=None,
+                    help="override the derived haircut (R0375) for a sensitivity sweep")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
     rep = build_report(haircut_bps=args.haircut_bps)

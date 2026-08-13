@@ -32,6 +32,7 @@ if str(_P(__file__).resolve().parent.parent) not in _sys.path:
     _sys.path.insert(0, str(_P(__file__).resolve().parent.parent))
 
 
+import argparse
 import contextlib
 import json
 import subprocess
@@ -39,6 +40,8 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+from libs.ops.lawful import guard as _law_guard  # L1.42: no act exempt
 
 _STATE = Path("data/cadence_state.json")
 _STAGE = Path("data/stage_state.json")
@@ -93,6 +96,49 @@ def _days_since(state: dict[str, Any], key: str) -> float:
         return (datetime.now(tz=UTC) - then).total_seconds() / 86400.0
     except (KeyError, ValueError, TypeError):
         return 1e9                                    # never ran -> due
+
+
+#: (label, cadence_state key, period days) for the duties `--report-only` reports on.
+#: HAND-BUILT AND DRIFT-FENCED. `_main_body` tests each of these inline, so a table that drifts
+#: would report a schedule the engine does not actually run -- which is worse than no report,
+#: because a reader would trust it. tests/governance/test_cadence_cli.py re-derives every pair
+#: from the SOURCE of `_main_body` and fails if any row here has no matching `_days_since(...)
+#: >= <period>` test. Adding a duty without adding it here does not break the engine; it breaks
+#: the test, which is the intended direction (L1.60: the gap is the work queue).
+_REPORTED_DUTIES: tuple[tuple[str, str, int], ...] = (
+    ("tier1 deep review", "last_tier1", _TIER1_EVERY_D),
+    ("panel", "last_panel", _PANEL_EVERY_D),
+    ("meta-research review", "last_meta_research", _META_RESEARCH_D),
+    ("fill-quality review", "last_fill_quality", 7),
+    ("model-upgrade sweep", "last_model_upgrade", _MODEL_UPGRADE_D),
+    ("data-axis dig", "last_data_axis_dig", 7),
+    ("blind rediscovery", "last_blind_rediscovery", 90),
+    ("decision scoring", "last_decision_scoring", 28),
+    ("memory consolidation", "last_memory_consolidation", 90),
+    ("prompt review", "last_prompt_review", _PROMPT_REVIEW_D),
+)
+
+
+def due_report() -> dict[str, Any]:
+    """What IS due, computed from the same state and constants -- and firing NOTHING.
+
+    R0425. This script had no argparse, so `--help` (the desk's documented habit for probing an
+    unfamiliar organ) did not print usage: it executed a full cadence run, firing the weekly panel
+    and monthly tier1. The one habit meant to make invocation SAFE was, on this script, the thing
+    that invoked it.
+    """
+    state = _load(_STATE, {})
+    stage = str(_load(_STAGE, {"stage": "S0"}).get("stage", "S0"))
+    duties = []
+    for label, key, period in _REPORTED_DUTIES:
+        d = _days_since(state, key)
+        never = d > 1e8
+        duties.append({"duty": label, "state_key": key, "period_days": period,
+                       "days_since": None if never else round(d, 2),
+                       "never_run": never, "due": d >= period})
+    return {"stage": stage, "state_file": str(_STATE),
+            "n_due": sum(1 for x in duties if x["due"]), "duties": duties,
+            "note": "REPORT ONLY -- nothing was fired. Run without --report-only to fire."}
 
 
 def _run_panel(mission: str | None) -> bool:
@@ -351,6 +397,7 @@ def main() -> None:
     the completed duties down with it. No floor is loosened, added to, or removed; this only
     changes whether work that ALREADY happened is remembered.
     """
+    _law_guard()                     # L1.42: no act exempt -- every entry point passes the laws
     now = datetime.now(tz=UTC)
     state = _load(_STATE, {})
     stage = str(_load(_STAGE, {"stage": "S0"}).get("stage", "S0"))
@@ -469,14 +516,24 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
     # PROMOTION GATE (every cycle). Renders the eight-gate barrier explicitly and records the
     # verdict, so a promotion prerequisite can be audited after the fact instead of being
     # assembled implicitly per screen. Fail-closed: unchecked gates reject.
+    # THE ARTIFACT ASSERTED HERE MUST BE THE ONE THIS STEP WRITES (R0353). This tested
+    # `data/promotion_gate.json` -- which scripts/check_promotion_gate.py rewrites HOURLY with
+    # unrelated keys -- so the existence test was satisfied by a sibling script's output and the
+    # step was credited every cycle while promotion_gate.py returned early having judged nothing.
+    # An existence test against a filename a DIFFERENT producer keeps fresh is not a check.
+    # Asserting freshness as well as existence closes the other half: a stale verdict from a run
+    # that died last week would otherwise still read as this cycle's work.
+    _pg = Path("data/promotion_gate_verdicts.json")
+    _pg_before = _pg.stat().st_mtime if _pg.exists() else -1.0
     _r = subprocess.run([sys.executable, "scripts/promotion_gate.py"],
                         capture_output=True, text=True, timeout=180, check=False)
     _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
-    if _r.returncode != 0 or not Path("data/promotion_gate.json").exists():
+    if _r.returncode != 0 or not _pg.exists() or _pg.stat().st_mtime <= _pg_before:
         # SILENT STEPS ARE UNMONITORED STEPS. These three were fired with their output
         # discarded, so a crash or an empty run looked identical to success -- the same
         # state-touched-but-nothing-produced class _run_panel exists to catch.
-        print(f"cadence: promotion-gate rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
+        print(f"cadence: promotion-gate rc={_r.returncode} NO VERDICT -- duty stays OWED "
+              f"| {_tail[0][:110]}")
     else:
         fired.append("promotion-gate")
 
@@ -906,5 +963,36 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
     _assert_floors(state, stage)
 
 
+def build_parser() -> argparse.ArgumentParser:
+    ap = argparse.ArgumentParser(
+        prog="run_cadence.py",
+        description="CADENCE ENGINE -- fires every review/generation duty that is due, per stage. "
+                    "WITH NO FLAGS THIS FIRES REAL DUTIES (the weekly panel, monthly tier1, digs). "
+                    "Use --report-only to see what is due without firing anything.")
+    ap.add_argument("--report-only", action="store_true",
+                    help="print what is due and exit WITHOUT firing any duty")
+    ap.add_argument("--json", action="store_true",
+                    help="with --report-only, emit the due table as JSON")
+    return ap
+
+
+# ARGV IS PARSED HERE, NOT INSIDE main(). `main()` keeps its no-argument signature because
+# tests/governance/test_cadence_state_durability.py calls `m.main()` directly -- were the parse
+# inside, that call would read pytest's own argv and die on unrecognised arguments. The two real
+# executors (ops/quant-cadence.service and scripts/daily_research_cycle.py:58) both invoke this
+# bare, so there is no existing flag contract to preserve: this is purely additive.
 if __name__ == "__main__":
+    _args = build_parser().parse_args()          # unknown flags now exit 2 with a usage line
+    if _args.report_only:
+        _rep = due_report()
+        if _args.json:
+            print(json.dumps(_rep, indent=2))
+        else:
+            print(f"cadence[{_rep['stage']}] REPORT ONLY -- nothing fired. "
+                  f"{_rep['n_due']} due:")
+            for _d in _rep["duties"]:
+                _age = "never run" if _d["never_run"] else f"{_d['days_since']:.1f}d ago"
+                print(f"  {'DUE ' if _d['due'] else '    '}{_d['duty']:<24}"
+                      f"every {_d['period_days']:>3}d   last: {_age}")
+        sys.exit(0)
     main()

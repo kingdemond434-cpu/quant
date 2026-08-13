@@ -1,6 +1,6 @@
 {
- "updated": "2026-08-07T03:16:10.741003+00:00",
- "n_closes": 27,
+ "updated": "2026-08-13T04:17:19.110102+00:00",
+ "n_closes": 4,
  "hold_buckets": {
   "<2h": {
    "n": 3,
@@ -21,10 +21,10 @@
    "bps": 0.0
   },
   ">24h": {
-   "n": 23,
-   "notional": 19361.96,
-   "net": -72.69,
-   "bps": -37.54
+   "n": 0,
+   "notional": 0,
+   "net": 0,
+   "bps": 0.0
   }
  },
  "hold_buckets_net_of_fees": {
@@ -50,28 +50,29 @@
    "bps": 0.0
   },
   ">24h": {
-   "n": 23,
-   "notional": 19361.96,
-   "fee": 1549.41,
-   "net": -1622.1,
-   "bps": -837.78
+   "n": 0,
+   "notional": 0,
+   "fee": 0,
+   "net": 0,
+   "bps": 0.0
   }
  },
  "fee_attribution": {
-  "venue_commission": 1557.61,
-  "attributed": 1549.56,
-  "unattributed": 8.05,
-  "unattributed_share": 0.005,
-  "n_events": 8487,
-  "fee_bps_of_logged_notional": 796.5,
+  "venue_commission": 0.23,
+  "attributed": 0.15,
+  "unattributed": 0.08,
+  "unattributed_share": 0.333,
+  "n_events": 41,
+  "fee_bps_of_logged_notional": 11.81,
   "scope": "futures commission only (/fapi income); spot-leg fees not visible -> LOWER BOUND"
  },
  "baseline_funding_class": {
-  "n": 16,
-  "net": -20.43,
-  "bps": -28.64
+  "n": 2,
+  "net": -0.26,
+  "bps": -18.48
  },
- "post_gate_baseline_opens": 2,
+ "post_gate_baseline_opens": 0,
+ "post_gate_opens_examined": 4,
  "maker_fill": {
   "n_legs": 30,
   "maker_share": 0.6,
@@ -81,19 +82,60 @@
   "note": "instrumented 2026-07-26; records written before that carry no mode, so n_legs climbs from 0 as new fills land -- a null share is thin data, not a regression. n_legs counts only legs that PLACED AN ORDER: no-order legs ['', 'already-flat'] are excluded from the denominator (R0064)"
  },
  "execution_tape": {
-  "taped": 531,
-  "tape_days": 2404.91,
+  "taped": 525,
+  "tape_days": 30.69,
   "backfilled": 0,
   "buffer_days": 25.06,
   "window_margin_days": 11.06,
   "buffer_squeezing_window": false
  },
  "worst_symbols": [],
- "flags": [
-  "hold-class >24h bleeding: -37.54 bps over 23 trades (net $-72.69)",
-  "FEE INTENSITY hold-class >24h: $1549.41 on $19362 = 800 bps, 80x the ~10 bps a futures round-trip should bill -- the venue is charging for fills this book did not intend (churn-loop fingerprint; see max_audit check_close_retry_loop)",
-  "ENTRY-GATE REGRESSION: 2 open(s) at baseline funding 0.0001 AFTER the gate shipped -- gate is not filtering"
+ "bleeding_symbols": [
+  {
+   "symbol": "NOMUSDT",
+   "n": 5,
+   "net": -78.85,
+   "bps": -149.4
+  },
+  {
+   "symbol": "COMPUSDT",
+   "n": 5,
+   "net": -10.58,
+   "bps": -106.4
+  },
+  {
+   "symbol": "ONEUSDT",
+   "n": 5,
+   "net": -14.03,
+   "bps": -92.4
+  },
+  {
+   "symbol": "1000CATUSDT",
+   "n": 5,
+   "net": -43.32,
+   "bps": -74.6
+  },
+  {
+   "symbol": "BNBUSDT",
+   "n": 13,
+   "net": -23.46,
+   "bps": -65.8
+  },
+  {
+   "symbol": "PEOPLEUSDT",
+   "n": 6,
+   "net": -12.71,
+   "bps": -62.4
+  }
  ],
+ "bleeding_basis": {
+  "window": "all-time",
+  "n_closes": 253,
+  "min_n": 5,
+  "bleed_bps": -20.0,
+  "note": "the executor's structural-bleed denylist reads THIS key; worst_symbols is 14d-rolling and is for alerts only"
+ },
+ "flags": [],
  "origin": "recursion rule 2026-07-22: mechanization of the principal-supplied probes that found gaps #42/#43/#34",
- "written": "2026-08-07T03:16:10.746865+00:00"
+ "written": "2026-08-13T04:17:19.115544+00:00"
 }

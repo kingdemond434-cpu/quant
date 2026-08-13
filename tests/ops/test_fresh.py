@@ -345,3 +345,77 @@ def test_a_path_OUTSIDE_the_root_is_recorded_by_its_absolute_name(tmp_path: Path
     rows = [json.loads(x) for x in
             (root / F.REGISTRY_REL).read_text("utf-8").splitlines() if x.strip()]
     assert rows[0]["path"] == str(outside)
+
+
+# ============================================================ the stamp-key zoo (R0399)
+
+def test_a_NON_generated_stamp_key_is_read_rather_than_falling_through_to_mtime(
+        tmp_path: Path) -> None:
+    """THE PROVING INSTANCE. data/live_guard.json stamps `ts`, not `generated` -- and it is the
+    size governor the executor reads at max_age_h=0.25 to decide how much book to put on. While
+    only `generated` was recognised this artifact resolved from MTIME, the one source this module
+    exists to distrust, so a deploy touching the file would have made a frozen guard read fresh."""
+    p = tmp_path / "data/live_guard.json"
+    p.parent.mkdir(parents=True)
+    stamp = (datetime.now(tz=UTC) - timedelta(hours=9)).isoformat()
+    p.write_text(json.dumps({"ts": stamp, "effective_size_fraction": 0.1}), "utf-8")
+    fr = F.read_fresh("data/live_guard.json", max_age_h=0.25, caller="t", root=tmp_path)
+    assert fr.source == "ts"                       # NOT "mtime" -- the file was written just now
+    assert fr.fresh is False and fr.age_h == pytest.approx(9.0, abs=0.05)
+
+
+@pytest.mark.parametrize("key", ["generated", "ts", "checked", "updated", "generated_at"])
+def test_every_key_in_the_desk_zoo_is_recognised(tmp_path: Path, key: str) -> None:
+    p = tmp_path / f"data/{key}.json"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps({key: (datetime.now(tz=UTC) - timedelta(hours=3)).isoformat()}),
+                 "utf-8")
+    fr = F.read_fresh(f"data/{key}.json", max_age_h=48.0, caller="t", root=tmp_path)
+    assert fr.source == key and fr.age_h == pytest.approx(3.0, abs=0.05)
+
+
+def test_a_stamp_key_holding_a_BOOL_is_not_read_as_a_time(tmp_path: Path) -> None:
+    """`measured` is a stamp key in the zoo AND a bool in data/inventory_yield_state.json and
+    data/lending_risk_base_rates.json. A stamp key is a stamp only when its VALUE parses as one --
+    and `bool` is a subclass of `int`, so the numeric epoch branch must be guarded too."""
+    p = tmp_path / "data/inventory.json"
+    p.parent.mkdir(parents=True)
+    p.write_text(json.dumps({"measured": False, "value": 1}), "utf-8")
+    fr = F.read_fresh("data/inventory.json", max_age_h=48.0, caller="t", root=tmp_path)
+    assert fr.source == "mtime" and fr.fresh is True
+
+
+def test_an_EPOCH_stamp_is_read_as_seconds(tmp_path: Path) -> None:
+    p = tmp_path / "data/epoch.json"
+    p.parent.mkdir(parents=True)
+    p.write_text(json.dumps({"ts": time.time() - 4 * 3600.0}), "utf-8")
+    fr = F.read_fresh("data/epoch.json", max_age_h=48.0, caller="t", root=tmp_path)
+    assert fr.source == "ts" and fr.age_h == pytest.approx(4.0, abs=0.05)
+
+
+def test_WIDENING_THE_ZOO_CAN_ONLY_TIGHTEN_a_gate_never_open_one(tmp_path: Path) -> None:
+    """THE SAFETY ARGUMENT, asserted rather than asserted-in-prose. Where the content stamp and
+    mtime disagree the OLDER wins, so recognising a new key can only ever make an artifact look
+    older than it did before. Here the stamp lies YOUNG -- clock skew, or a producer stamping its
+    input's as-of time -- and the file's own write time is what the gate must use."""
+    p = tmp_path / "data/skewed.json"
+    p.parent.mkdir(parents=True)
+    p.write_text(json.dumps({"ts": datetime.now(tz=UTC).isoformat()}), "utf-8")
+    old = time.time() - 30 * 3600.0
+    os.utime(p, (old, old))
+    fr = F.read_fresh("data/skewed.json", max_age_h=24.0, caller="t", root=tmp_path)
+    assert fr.source == "mtime>ts"
+    assert fr.fresh is False and fr.age_h == pytest.approx(30.0, abs=0.05)
+
+
+def test_the_two_provenance_organs_agree_on_the_age_of_one_artifact(tmp_path: Path) -> None:
+    """L1.61: libs.ops.fresh gated the money path on `generated` alone while
+    libs.ops.input_provenance held the whole zoo, so the L1.44 verdict and the L1.55 block could
+    report different ages for the SAME file and no fence could see it. One resolver now."""
+    from libs.ops.input_provenance import Inputs
+    p = tmp_path / "data/guard.json"
+    p.parent.mkdir(parents=True)
+    p.write_text(json.dumps({"ts": (datetime.now(tz=UTC) - timedelta(hours=6)).isoformat()}),
+                 "utf-8")
+    fr = F.read_fresh("data/guard.json", max_age_h=48.0, caller="t", root=tmp_path)
+    assert fr.age_h == pytest.approx(Inputs._age_h(p, json.loads(p.read_text())), abs=0.01)

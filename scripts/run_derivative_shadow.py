@@ -25,10 +25,14 @@ import pandas as pd
 
 from libs.data.crypto_source import fetch_klines
 from libs.research.anytime_valid import e_value
+from libs.research.cross_section_floor import measure_cross_section
 
 _METRICS = Path("data/crypto_metrics.parquet")
 _OUT = Path("web/derivative_shadow.json")
 _MIN_DAYS = 40
+# Held EQUAL to backfill_oi_ls_oos.MIN_SYMBOLS by test, not by comment: these two modules are
+# declared locked mirrors, and the floor is the one line that differed between them.
+_MIN_SYMBOLS = 8
 
 
 def _sharpe(r: np.ndarray) -> float:
@@ -53,6 +57,31 @@ def _forward_returns(df: pd.DataFrame) -> dict[str, float]:
         except Exception:
             continue
     prices = pd.DataFrame(px).reindex(piv_oi.index).ffill()
+
+    # CROSS-SECTION FLOOR -- this function is declared the LOCKED MIRROR of the construction in
+    # scripts/backfill_oi_ls_oos.py, and until 2026-08-13 it was not: the backfill floors thin
+    # dates (`piv_ls.notna().sum(axis=1) >= MIN_SYMBOLS`, :188) and this copy did not. Every line
+    # from `pr_ret` down is byte-identical between the two, so the OOS evidence was earned on a
+    # construction the live clock does not run. Two copies of one locked construction that differ
+    # is the L1.61 defect, and the half that decides promotion was the unfloored one.
+    #
+    # The demeans and z-scores below collapse the SYMBOL axis. On a date carrying a handful of
+    # finite names that collapse is one symbol's noise, and consecutive thin dates give the
+    # resulting SERIES structure the data never had -- measured elsewhere at rho=+0.86 against a
+    # floored truth of -0.06, with 4% of dates carrying 98% of the statistic.
+    #
+    # MEASURED ON THE LIVE CLOCK BEFORE FIXING: 46 dates, thinnest cross-section 99 symbols, zero
+    # dates below the floor. This is LATENT, not currently biting, and it is closed anyway --
+    # the roster changes as the clock accrues, and a divergence between a construction and its own
+    # out-of-sample validation is not something to leave running because today's data is kind.
+    # THE MASK IS APPLIED UNCONDITIONALLY, including when the measurement REFUSES. An
+    # UNMEASURABLE panel yields an all-False mask, so the sleeves come back empty and the clock
+    # publishes no forward Sharpe -- which is the correct answer for a panel too narrow to carry a
+    # cross-section at all. Skipping the filter on refusal would resolve absence to the LOOSER
+    # reading, which is the defect this floor exists to prevent (L1.28a).
+    _keep = measure_cross_section(piv_ls, min_symbols=_MIN_SYMBOLS)
+    piv_oi, piv_ls, prices = piv_oi[_keep.mask], piv_ls[_keep.mask], prices[_keep.mask]
+
     pr_ret = prices.pct_change().shift(-1)                    # next-day return (no lookahead)
     d_price = prices.pct_change()
     d_oi = piv_oi.pct_change()

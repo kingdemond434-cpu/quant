@@ -241,11 +241,69 @@ def _stage_b_verdict(arr: np.ndarray, t: float, bar: float, *,
     return "ACCRUING", need, suff
 
 
-def _evaluate(name: str, clock: str, symbol: str, field: str, direction: int, m: int) -> dict:
+def _declared_decision_points() -> dict[str, int]:
+    """Every axis's ALREADY-PRE-REGISTERED decision point, read back from the last artifact.
+
+    THE ONLY THING THAT MAKES A PRE-REGISTRATION REAL IS THAT IT SURVIVES THE NEXT RUN. Reading
+    the previous artifact and carrying the value forward verbatim is the whole mechanism: a
+    number recomputed each cycle is a target, not a pre-registration, however it is labelled.
+    """
+    try:
+        doc = json.loads(_STATE.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    if not isinstance(doc, dict):
+        return {}
+    out: dict[str, int] = {}
+    for row in doc.get("axes", []):
+        if not isinstance(row, dict):
+            continue
+        got = row.get("decision_at_obs")
+        if isinstance(got, int) and not isinstance(got, bool) and got > 0:
+            out[str(row.get("axis", "?"))] = got
+    return out
+
+
+def _decision_point(declared: int | None) -> tuple[int, str]:
+    """The observation count at which this clock's OWN terms permit a decision, and its origin.
+
+    WHY THIS FIELD HAD TO EXIST BEFORE SHADOW-BEFORE-SWAP (R0430). `slot_displacement` protects a
+    healthy incumbent because it "ends on its own pre-registered terms, never on a challenger's
+    arrival" -- a sentence pinned by a test with NO FIELD BEHIND IT. Nothing on a slot said when
+    those terms were reached, so a paired comparison would have been scored against a horizon
+    nobody wrote down, which is optional stopping with extra steps.
+
+    WHY IT IS NOT `need`, WHICH LOOKS LIKE IT ALREADY DOES THIS. `need` is honestly documented as
+    the CURRENTLY binding constraint and is recomputed every run from the current effect size
+    (`n + max(obs_short, e_short, 1)`). That makes it a live diagnostic -- genuinely useful, and
+    the correct thing to show a reader asking "how far off is this today?" -- but it moves WITH
+    the data, so a decision rule keyed on it would let the data set its own bar. Both fields are
+    published: `need` says where the bar is now, `decision_at_obs` says where it was written down.
+
+    IT IS IN OBSERVATIONS, NEVER A DATE (L1.48). R0430 proposed an "end date" as shadow_start's
+    natural sibling; a date is exactly the calendar gate L1.48 forbids, and a fast clock would be
+    held back for nothing while a near-idle one cleared it on twelve observations at t=0.42.
+
+    THE VALUE AT BIRTH IS A CONSTANT ON PURPOSE. MIN_OBS is the desk's trust floor and does not
+    depend on the sample, which is what makes stamping it a pre-registration rather than a
+    forecast dressed as one. Reaching it does NOT mean the axis passed -- it means the clock has
+    run long enough that a decision may legitimately be TAKEN, which is the question a paired
+    swap has to ask and the one nothing here could answer.
+    """
+    if declared is not None:
+        return declared, "DECLARED"
+    return MIN_OBS, "STAMPED"
+
+
+def _evaluate(name: str, clock: str, symbol: str, field: str, direction: int, m: int,
+              declared: int | None = None) -> dict:
     rows = _clock_rows(_ROOT / clock)
+    point, provenance = _decision_point(declared)
     if len(rows) < 2:
         return {"axis": name, "verdict": "ACCRUING", "forward_days": len(rows),
-                "need": MIN_OBS, "note": "clock just started -- forward evidence begins now"}
+                "need": MIN_OBS, "decision_at_obs": point,
+                "decision_point_provenance": provenance,
+                "note": "clock just started -- forward evidence begins now"}
 
     closes = _closes(symbol)
     rets, used = [], []
@@ -290,12 +348,17 @@ def _evaluate(name: str, clock: str, symbol: str, field: str, direction: int, m:
     diag = {"dated_rows": len(rows), "distinct_observations": n, "restamped": restamped,
             "flat_position": flat, "unusable": unusable}
     if len(rows) >= _DEGENERATE_MIN_ROWS and (n == 0 or (restamped + flat) >= n):
-        return {"axis": name, "verdict": "DEGENERATE", "forward_days": n, "need": MIN_OBS, **diag,
+        # A DEGENERATE clock keeps its decision point. The instrument is broken, which says
+        # nothing about the terms the hypothesis was registered under, and dropping the field
+        # here would make a repaired clock look newly-born and re-stamp it against later data.
+        return {"axis": name, "verdict": "DEGENERATE", "forward_days": n, "need": MIN_OBS,
+                "decision_at_obs": point, "decision_point_provenance": provenance, **diag,
                 "note": (f"{len(rows)} dated rows yielded {n} distinct observation(s) "
                          f"({restamped} re-stamped, {flat} flat, {unusable} unusable) -- this is "
                          "an instrument fault, NOT evidence about the hypothesis")}
     if n < 2:
-        return {"axis": name, "verdict": "ACCRUING", "forward_days": n, "need": MIN_OBS, **diag,
+        return {"axis": name, "verdict": "ACCRUING", "forward_days": n, "need": MIN_OBS,
+                "decision_at_obs": point, "decision_point_provenance": provenance, **diag,
                 "note": "not enough aligned forward days yet"}
 
     arr = np.asarray(rets, dtype="float64")
@@ -311,7 +374,11 @@ def _evaluate(name: str, clock: str, symbol: str, field: str, direction: int, m:
     # for its readers (revalidate_clocks, claim_verifier). Until R0257 this comment claimed the
     # count excluded degenerate rows and it did not: the claim was the documentation, the exclusion
     # was nowhere. The diagnostics are published beside it so the gap can never re-open silently.
-    return {"axis": name, "verdict": verdict, "forward_days": n, "need": int(need), **diag,
+    return {"axis": name, "verdict": verdict, "forward_days": n, "need": int(need),
+            # THE PRE-REGISTERED DECISION POINT, beside the live one. `need` moves with the data
+            # every run; `decision_at_obs` was written down once and is carried forward verbatim.
+            # Publishing both is the point: a reader can see the bar today AND the bar as agreed.
+            "decision_at_obs": point, "decision_point_provenance": provenance, **diag,
             "obs_short": int(suff.obs_short), "evidence": suff.reason,
             "cum_return": round(cum, 5), "ann_sharpe": round(sharpe, 2),
             "nw_t": round(t, 3), "holm_bar": round(bar, 3), "m_concurrent": m,
@@ -370,21 +437,17 @@ def _all_axes() -> tuple[dict[str, tuple[str, str, str, int]], list[dict]]:
 def main() -> None:
     # One cohort read for the whole run: every clock in this file is judged against the SAME
     # concurrent-m, and re-deriving per axis would let the bar drift mid-run.
-    #
-    # `cohort_m_for_bar` rather than the bare int, because the bar is only auditable if the
-    # artifact records HOW m was arrived at. A REFUSED-FLOORED m and a MEASURED one produce
-    # identically-shaped rows, and a reader cannot tell a verified cohort from a fallback unless
-    # the provenance travels with the number (L1.28a).
     cohort = cohort_m_for_bar()
     tracked, untracked = _all_axes()
 
     # THIS RUN IS PART OF ITS OWN COHORT, AND READING m BEFORE BUILDING THE ROSTER UNDERSTATED IT.
     # `derive_slots` counts one slot per row of data/axis_shadow_state.json -- the file THIS
     # function writes at the end. So the cohort read above describes the PREVIOUS run's roster,
-    # and every time the roster grows, the new clocks are judged against an m that excludes them:
-    # a looser bar, the phantom-edge direction this module exists to prevent. It was latent while
-    # the roster was a hardcoded dict and became live the moment owed survivors began registering
-    # themselves into it.
+    # and every time the roster grows the new clocks are judged against an m that excludes them:
+    # a looser bar, the phantom-edge direction this module exists to prevent. Measured 2026-08-13:
+    # m=5 while 6 clocks accrued, bar 2.33 against a required 2.39, alpha 0.0100/clock against a
+    # designed 0.0083. Latent while the roster was a hardcoded _AXES dict; live since owed
+    # survivors began registering themselves into it.
     #
     # Substitute this run's own axis count for the stale one and keep the registry's number as a
     # floor, so the correction can only ever TIGHTEN.
@@ -397,14 +460,23 @@ def main() -> None:
         prior_axis = 0
     own_axis = len(tracked) + len(untracked)
     m = max(1, cohort.m, cohort.m - prior_axis + own_axis)
-
-    results = [_evaluate(k, *v, m) for k, v in tracked.items()]
+    # Read the standing pre-registrations ONCE, before anything is recomputed. A decision point
+    # that already exists is carried forward verbatim; only a clock that has never had one gets
+    # stamped. This is what stops the bar moving with the data (see `_decision_point`).
+    declared = _declared_decision_points()
+    results = [_evaluate(k, *v, m, declared.get(k)) for k, v in tracked.items()]
     results.extend(untracked)
     for r in results:
         r.setdefault("auto_registered", r.get("axis") not in _AXES)
     payload = {"updated": datetime.now(tz=UTC).isoformat(), "min_observations": MIN_OBS,
+               # A bar is only auditable if its artifact says which cohort it was computed
+               # against, and with what provenance (MEASURED vs floored) -- L1.6 fence reads this.
+               # `m`, not `cohort.m`: the artifact must record the cohort the bar was ACTUALLY
+               # computed against, which includes this run's own roster (see main() above).
+               "m_concurrent": m, "m_provenance": cohort.provenance,
+               "m_detail": (f"{cohort.detail}; bar computed at m={m} after substituting this "
+                            f"run's {own_axis} axis row(s) for the {prior_axis} on disk"),
                "axes": results,
-               "m_concurrent": m, "m_provenance": cohort.provenance, "m_detail": cohort.detail,
                "note": ("Forward-only Stage-B tracking. P&L starts at the clock's first row, never "
                         "the screen sample. ELIGIBLE means the evidence bar is met and a promotion "
                         "decision may be taken -- it is NOT an automatic deployment. Eligibility "
@@ -414,8 +486,11 @@ def main() -> None:
     _STATE.write_text(json.dumps(payload, indent=1), "utf-8")
     for r in results:
         extra = f"t={r.get('nw_t')} bar={r.get('holm_bar')}" if "nw_t" in r else r.get("note", "")
-        print(f"axis-shadow | {r['axis']}: {r['verdict']} "
-              f"({r['forward_days']}/{r['need']} obs) {extra}")
+        # .get(): untracked-registry rows carry no forward_days/need, and a KeyError HERE -- after
+        # both artifacts were already written -- made every cron run of this organ exit nonzero,
+        # which read as "organ always dies" while the artifact quietly aged.
+        print(f"axis-shadow | {r.get('axis')}: {r.get('verdict')} "
+              f"({r.get('forward_days', '-')}/{r.get('need', '-')} obs) {extra}")
     print(f"-> {_OUT}")
 
 

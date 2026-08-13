@@ -2,17 +2,25 @@
 
 2026-07-29: 119/162 scripts had no in-repo scheduler reference and the live VPS crontab was
 uncommitted (docs/GAP_REGISTER.md:272), so a GitHub restore yielded a desk that ran NOTHING.
-ops/crontab.manifest is the reconstructed DR floor; this checker keeps it honest three ways:
+ops/crontab.manifest is the reconstructed DR floor; this checker keeps it honest five ways:
 
   (a) every script the manifest references must exist in the repo -- a deleted-but-still-
       scheduled script is a silent nightly failure (the DEAD CRON class, scripts/wiring_audit.py:8);
   (b) every committed ops/*.timer's service ExecStart script must exist AND appear in the
-      manifest -- the committed units are the one part the manifest CAN be sure of, so a unit
+      manifest, and every OnCalendar value must exactly match the manifest schedule -- the
+      committed units are the one part the manifest CAN be sure of, so a unit or schedule
       missing from it means the manifest has rotted, not the box;
   (c) where `crontab -l` succeeds (the live VPS), live-vs-manifest drift is reported in BOTH
       directions: an extra live line is tomorrow's un-reconstitutable job, a missing one is a
       job the DR floor promises but the box does not run. Root paths are normalized so
       "$QUANT_ROOT" here and /home/quant/quant-platform there compare equal.
+  (d) a script scheduled on several cron lines must use ONE lock path or none -- flock cannot
+      serialize across distinct lock files, so two `flock -n` lines LOOK mutually exclusive and
+      are not (R0326);
+  (e) every scheduled .py must be able to IMPORT: its first-party imports have to resolve to a
+      file in this tree. (a) catches the organ that dies on ENOENT; (e) catches the strictly
+      nastier one that dies on ImportError, which is indistinguishable downstream because it
+      still fires on time and still touches its log (R0359).
 
 In this sandbox / on a fresh restore `crontab -l` fails; that path reports 'no live crontab
 readable' gracefully and still runs (a)+(b) -- the repo-only checks are exactly the ones a
@@ -28,6 +36,7 @@ check itself -- a reporting failure must not mask a scheduling truth).
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import re
 import subprocess
@@ -161,6 +170,98 @@ def check_lock_coherence(man: Manifest) -> list[str]:
     return problems
 
 
+#: Top-level packages that live in THIS repo. A third-party import cannot be resolved from disk
+#: and is deliberately NOT checked -- but it is COUNTED, so "0 problems" can never be read as
+#: "everything was checked" when the truth is "almost nothing was" (the guard-scope lesson).
+_FIRST_PARTY = ("libs", "scripts", "app", "api")
+
+
+def _module_on_disk(root: Path, dotted: str) -> bool:
+    """Does `libs.discovery.cagr_optimizer` correspond to a file or package in this tree?
+
+    Pure PATH resolution, never an import: this fence runs on every push, and importing 184
+    organ entry points to find out whether they import would execute module-level code in all
+    of them. find_spec is not an option either -- it imports parent packages.
+    """
+    p = root.joinpath(*dotted.split("."))
+    return p.with_suffix(".py").is_file() or (p / "__init__.py").is_file()
+
+
+def check_imports_resolve(root: Path, man: Manifest) -> tuple[list[str], int, int]:
+    """(e) THE SILENT-IMPORTERROR FENCE. Returns (problems, n_checks, n_thirdparty_skipped).
+
+    WHY EXISTENCE IS NOT ENOUGH, and why this is a different failure from check (a). Check (a)
+    catches a manifest entry whose FILE is gone -- the organ dies on ENOENT. This catches the
+    strictly nastier case where the file is present and dies on ImportError, because the two are
+    indistinguishable downstream: the organ fires on time, writes a log, and every
+    freshness-shaped check reads a minutes-old log and reports it healthy. "A heartbeat proves
+    the loop is alive, NEVER that the pipe is."
+
+    THE MEASURED INSTANCE (R0359). scripts/run_geometric_review.py -- the one entry point wiring
+    the desk's SUPREME OBJECTIVE, E[log wealth], to something runnable -- was dead from
+    2026-07-30 to 2026-08-05 importing two modules that did not exist.
+
+    AND NOTE THE ACTUAL MECHANISM, because the row that asked for this misdiagnosed it: the
+    dormancy scan was NOT blind to scripts/. It already grepped scripts/ at 3be2e3e, and
+    scripts/run_geometric_review.py DID NOT EXIST in the tree that retirement was computed
+    against -- it was added by fee1214a on the OTHER lineage, which is not an ancestor of
+    3be2e3e. The retirement's "zero external importers" claim was TRUE of its own tree. The
+    breakage was born in the MERGE that later united the two lineages: the caller arrived from
+    master and the callees stayed deleted. No reachability scan on either side could have seen
+    that, because neither tree was ever wrong -- only their union was. That is precisely why the
+    check belongs HERE, at the schedule boundary, rather than in the dormancy hunter.
+    """
+    problems: list[str] = []
+    n_checks = 0
+    n_skipped = 0
+    for rel in referenced_paths(man):
+        if not rel.endswith(".py"):
+            continue
+        f = root / rel
+        if not f.is_file():
+            continue                      # already reported by check (a); not double-counted
+        try:
+            tree = ast.parse(f.read_text("utf-8", errors="ignore"))
+        except (SyntaxError, ValueError) as e:
+            problems.append(f"{rel}: does not parse ({e}) -- it cannot start at all")
+            continue
+        for node in ast.walk(tree):       # ast.walk, so a function-local import counts too
+            if isinstance(node, ast.Import):
+                for a in node.names:
+                    if a.name.split(".")[0] not in _FIRST_PARTY:
+                        n_skipped += 1
+                        continue
+                    n_checks += 1
+                    if not _module_on_disk(root, a.name):
+                        problems.append(f"{rel}: `import {a.name}` -- no such module in the repo")
+            elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
+                if node.module.split(".")[0] not in _FIRST_PARTY:
+                    n_skipped += 1
+                    continue
+                n_checks += 1
+                if not _module_on_disk(root, node.module):
+                    problems.append(f"{rel}: `from {node.module} import ...` -- no such module")
+                    continue
+                pkg = root.joinpath(*node.module.split("."))
+                init = pkg / "__init__.py"
+                if not init.is_file():
+                    continue
+                src = init.read_text("utf-8", errors="ignore")
+                for a in node.names:
+                    # `import *` names nothing checkable; a re-export is matched by NAME in the
+                    # package __init__ rather than by parsing it, which keeps this cheap and
+                    # errs toward silence -- a false MISSING here would block every push.
+                    if a.name == "*":
+                        continue
+                    n_checks += 1
+                    if (pkg / f"{a.name}.py").is_file() or (pkg / a.name / "__init__.py").is_file():
+                        continue
+                    if not re.search(rf"\b{re.escape(a.name)}\b", src):
+                        problems.append(f"{rel}: `from {node.module} import {a.name}` -- "
+                                        f"neither a submodule nor named in {node.module}.__init__")
+    return problems, n_checks, n_skipped
+
+
 def _exec_script_of(service_text: str) -> str | None:
     """Last .py/.sh token of the service's ExecStart line, or None when there is none."""
     for line in service_text.splitlines():
@@ -188,9 +289,22 @@ def _to_repo_rel(root: Path, path_str: str) -> str:
     return path_str
 
 
+def _on_calendar_values(timer_text: str) -> list[str]:
+    """Return active OnCalendar expressions exactly as systemd will parse them."""
+    values: list[str] = []
+    for line in timer_text.splitlines():
+        stripped = line.strip()
+        if stripped and not stripped.startswith("#") and stripped.startswith("OnCalendar="):
+            values.append(stripped.removeprefix("OnCalendar=").strip())
+    return values
+
+
 def check_committed_timers(root: Path, man: Manifest) -> list[str]:
-    """(b) every committed ops/*.timer must resolve to an existing ExecStart script that the
-    manifest names. The committed units are ground truth; the manifest must never lag them."""
+    """Fence committed timer wiring and exact calendar agreement with the manifest.
+
+    The unit files are executable ground truth. A manifest that names the right script but a
+    different time is not reconstitutable: it certifies one cadence and deploys another.
+    """
     problems: list[str] = []
     for timer in sorted((root / "ops").glob("*.timer")):
         service = timer.with_suffix(".service")
@@ -206,8 +320,32 @@ def check_committed_timers(root: Path, man: Manifest) -> list[str]:
         if not (root / rel).is_file():
             problems.append(f"{rel_timer}: ExecStart script {rel} does not exist in repo")
         if rel not in man.raw:
-            problems.append(f"{rel_timer}: ExecStart script {rel} is absent from the manifest"
-                            f" -- the manifest has rotted behind the committed units")
+            problems.append(
+                f"{rel_timer}: ExecStart script {rel} is absent from the manifest"
+                " -- the manifest has rotted behind the committed units"
+            )
+
+        calendars = _on_calendar_values(timer.read_text("utf-8"))
+        if not calendars:
+            continue
+        entries = [entry for entry in man.systemd if entry.unit == timer.name]
+        if len(entries) != 1:
+            problems.append(
+                f"{rel_timer}: expected exactly one matching SYSTEMD entry, found {len(entries)}"
+            )
+            continue
+        if len(calendars) != 1:
+            problems.append(
+                f"{rel_timer}: expected exactly one OnCalendar value, found {len(calendars)}"
+            )
+            continue
+        actual = calendars[0]
+        declared = entries[0].on
+        if actual != declared:
+            problems.append(
+                f"{rel_timer}: OnCalendar={actual!r} does not exactly match manifest "
+                f"on={declared!r}"
+            )
     return problems
 
 
@@ -278,7 +416,8 @@ def main(argv: list[str] | None = None) -> int:
     missing = check_scripts_exist(root, man)
     timer_problems = check_committed_timers(root, man)
     lock_problems = check_lock_coherence(man)
-    structural = list(man.parse_problems) + timer_problems + lock_problems
+    import_problems, n_import_checks, n_thirdparty = check_imports_resolve(root, man)
+    structural = list(man.parse_problems) + timer_problems + lock_problems + import_problems
 
     live = read_live_crontab()
     drift_missing: list[str] = []
@@ -297,6 +436,12 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  TIMER   {p}")
     for p in lock_problems:
         print(f"  LOCK    {p}")
+    for p in import_problems:
+        print(f"  IMPORT  {p}")
+    # L1.57: the denominator is what this RUN resolved, not a roster length. `0 problems` over 0
+    # checks is VACUOUS, and printing the count is what makes the difference legible.
+    print(f"  imports: {n_import_checks} first-party resolved, "
+          f"{n_thirdparty} third-party NOT CHECKED (unresolvable from disk)")
     if live is None:
         print("  live crontab: no live crontab readable (sandbox/fresh restore) -- "
               "repo-only checks (a)+(b) still ran")
@@ -327,6 +472,9 @@ def main(argv: list[str] | None = None) -> int:
                 "scripts_exist": {"ok": not missing, "missing": missing},
                 "committed_timers": {"ok": not timer_problems, "problems": timer_problems},
                 "lock_coherence": {"ok": not lock_problems, "problems": lock_problems},
+                "imports_resolve": {"ok": not import_problems, "problems": import_problems,
+                                    "n_first_party_checked": n_import_checks,
+                                    "n_third_party_unchecked": n_thirdparty},
                 "parse": {"ok": not man.parse_problems, "problems": man.parse_problems},
                 "live_crontab": {
                     "readable": live is not None,

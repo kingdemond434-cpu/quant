@@ -152,6 +152,23 @@ def _axes_on_disk() -> tuple[str, ...]:
     """
     found = sorted(p.stem for p in OUT.glob("*.json")) if OUT.exists() else []
     return tuple(dict.fromkeys([*AXES, *found]))
+def _trial_line(t: dict[str, Any]) -> str:
+    """One summary line per trial, total function: trials arrive in more than one screen shape
+    (an event-study row carries no `ic`), and the 2026-08-12 crash proved a KeyError HERE aborts
+    every axis after the one being printed -- their reports never finalize, so their screens can
+    admit nothing to a forward slot. A missing metric prints as `?`, never kills the finalizer.
+    """
+    ic, tt = t.get("ic"), t.get("ic_t_stat")
+    sr, sc = t.get("sharpe_best_reported"), t.get("sharpe_best_corrected")
+    num = (int, float)
+    ic_s = f"{ic:+.4f}" if isinstance(ic, num) else "?"
+    tt_s = f"{tt:.2f}" if isinstance(tt, num) else "?"
+    sh_s = (f"{sr:.2f}->{sc:.2f}"
+            if isinstance(sr, num) and isinstance(sc, num) else "?")
+    return (f"  {t.get('name', '?'):46s} IC={ic_s} t={tt_s} Sh {sh_s}  "
+            f"{str(t.get('verdict_adjusted', ''))[:58]}")
+
+
 TOTAL_TRIALS = 37  # 12 mining + 13 wikipedia + 12 fx (+ etf_flows not screenable)
 CAMPAIGN_BAR = _bar(TOTAL_TRIALS)
 
@@ -387,9 +404,7 @@ def main() -> None:
         print(f"\n=== {axis}: {len(screened)} trials, {len(surv)} survive correction+multiplicity "
               f"(axis bar t>{axis_bar}, campaign t>{CAMPAIGN_BAR}) ===")
         for t in sorted(screened, key=lambda x: -abs(x.get("ic", 0)))[:5]:
-            print(f"  {t['name']:46s} IC={t['ic']:+.4f} t={t['ic_t_stat']:.2f} "
-                  f"Sh {t['sharpe_best_reported']:.2f}->{t['sharpe_best_corrected']:.2f}  "
-                  f"{t['verdict_adjusted'][:58]}")
+            print(_trial_line(t))
     if incompatible:
         print(f"\n  PRESENT BUT NOT CORRECTABLE BY THIS LAYER ({len(incompatible)}): "
               f"{', '.join(incompatible)}")

@@ -77,6 +77,8 @@ _AGGRESSIVE_CONTEXT: dict[str, str] = {
     "L1.18a": "never defers hunting a mechanism because its capacity looks modest",
     "L1.22": "needs the human for direction less and less",
     "L1.27": "am I protecting capital, or avoiding uncertainty?",   # the anti-paralysis law itself
+    # prudence is priced as a COST here, not prescribed (R0438 false positive, widened per L1.41)
+    "L1.57": "has not been prudent; it has declined to participate",
     "L2.3": "must reach implemented (with commit) / rejected (with substantive reason)",
 }
 

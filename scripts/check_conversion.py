@@ -9,18 +9,26 @@ daily -- so it widened silently, exactly like unmeasured utilisation before L1.2
 
 WHAT IT MEASURES, from docs/research/recommendation_ledger.json (the de-facto winning queue --
 the sweep's M10 finding is that split stores recreate the defect, so this fence reads ONE store):
-  backlog            rows still open or scheduled
+  backlog            rows still open or scheduled (kept for every existing consumer)
+  backlog_open /     the two populations backlog conflates. A SCHEDULED row with a real reason
+  backlog_scheduled  and a future due date is a LAWFUL DISPOSITION, not debt.
+  owed               rows that owe a decision RIGHT NOW: untriaged past grace, or a schedule
+                     that has run out. THIS is the population the repair-mode line is applied
+                     to, because L1.28b(d) says the line is "25 OPEN ROWS".
   past_due           backlog rows whose due date has passed
   dispositions_7d    rows moved to implemented/rejected in the last 7 days (a reasoned
                      rejection IS a conversion -- the defect is silence, not the verdict)
   arrivals_7d        rows raised in the last 7 days
   oldest_backlog_age the age of the oldest still-open row, in days
+  backlog_age_p50/   the DRAIN. Under a real drain the old rows convert and these FALL; under
+  backlog_age_p90    treading water they rise exactly one day per day while flow looks balanced.
+                     Those two states are otherwise byte-identical in this artifact.
   queue_dispositioned all-time fraction of rows that reached a terminal verdict
 
 STATUSES (fail LOUD, never advisory):
   FLATLINE     zero dispositions in 7 days while the backlog is non-empty -- found-never-fixed
                as a steady state. Exit 2: this is the fence failure.
-  REPAIR-MODE  backlog above the deep-sweep backpressure line (25). Exit 0 but the artifact
+  REPAIR-MODE  OWED rows above the deep-sweep backpressure line (25). Exit 0 but the artifact
                carries repair_mode=true, and every consumer of the artifact (max-push queue,
                sweep prompts, brain briefs) is expected to flip effort from finding to fixing.
                Queueing theory (meta M8): at rho~4, exhortation cannot drain a queue -- only
@@ -79,6 +87,7 @@ _ROOT = Path(__file__).resolve().parent.parent
 # window) and pages-but-does-not-block, so a governance fault never silences an organ.
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from libs.ops.deferral import CHRONIC_RESCHEDULES, is_chronic, reschedule_count  # noqa: E402
 from libs.ops.fence_exit import FAIL, fence_exit  # noqa: E402
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
 from libs.ops.repair_mode import DIRECTION_FOR_STATUS  # noqa: E402  (L1.28b(d): one mapping)
@@ -172,8 +181,18 @@ def build_report(root: Path, now: datetime | None = None) -> dict[str, Any]:
     #       a due date. That branch was structurally dead in production, hiding every untriaged
     #       row. The unit test that "proved" it worked used an open row WITH a due date, a fixture
     #       the CLI cannot produce.
+    # A SCHEDULE THAT KEEPS MOVING NEVER COMES DUE, so this test alone could never see it. The
+    # `owed` population was the fix for counting lawful schedules as debt; its blind spot is the
+    # opposite error -- a row re-snoozed the day before it arrives leaves `owed` with no work done
+    # and no trace left, which is the one escape scripts/recommendations.py's docstring claims is
+    # closed. Measured 2026-08-13: 39 of 152 ever-scheduled rows had their due date moved, 38 are
+    # still scheduled. Chronic deferrals are counted as owed regardless of date (libs/ops/deferral).
+    # ADDS ZERO ROWS ON THE DAY IT LANDS -- `schedule_history` is born empty, so it can only bite
+    # on a future snooze, which is what keeps it from being red from day one and switched off.
+    chronic = [r for r in backlog if is_chronic(r)]
     overdue = [r for r in backlog
-               if (d := _parse_ts(r.get("due"))) is not None and d < now]
+               if is_chronic(r)
+               or ((d := _parse_ts(r.get("due"))) is not None and d < now)]
     orphans = [r for r in backlog
                if r.get("status") == "open"
                and (t := _parse_ts(r.get("raised"))) is not None
@@ -192,6 +211,39 @@ def build_report(root: Path, now: datetime | None = None) -> dict[str, Any]:
     oldest = min((_parse_ts(r.get("raised")) for r in backlog if _parse_ts(r.get("raised"))),
                  default=None)
     oldest_age = round((now - oldest).total_seconds() / 86400, 2) if oldest else 0.0
+
+    # THE REPAIR-MODE LINE COUNTS ROWS THAT OWE A DECISION, WHICH IS WHAT L1.28b(d) SAYS IT COUNTS
+    # -- "backlog above the repair-mode line (25 OPEN ROWS)". This counted `backlog`, and `backlog`
+    # is every non-terminal row, so a row correctly SCHEDULED with a real reason and a future due
+    # date was counted as repair debt from the moment it was dispositioned until the day it came
+    # due. Scheduling is one of the three lawful dispositions; counting it as debt makes the
+    # desk's own correct behaviour raise the number that says the desk is behind.
+    #
+    # THE CONSEQUENCE IS A WELDED GATE, and it is measured rather than argued. Reconstructing the
+    # daily backlog from the ledger's own raised/disposed stamps, `backlog` crossed 25 on
+    # 2026-07-28 and has never returned below it -- REPAIR-MODE fired on 100% of runs for 15
+    # consecutive days. A gate that fires on every run carries zero information (L1.43,
+    # GATE-OPTIMALITY), and its actuator is not a report but a BEHAVIOUR CHANGE: L1.28b(d) flips
+    # the next brain window from finding to fixing. A flip that is always on is not a flip, and
+    # the §37 carry-over brief measures exactly what that costs -- 15 items "shown to a LIVE cycle
+    # at least twice IN A ROW" and walked past. That is what a permanently-on signal earns.
+    #
+    # THIS IS A POPULATION FIX, NOT A LOOSENING, and the arithmetic says so on the day it landed:
+    # open=87 and owed=74 are both far above the line of 25, so today's verdict is REPAIR-MODE
+    # before and after. What changes is that the signal CAN now clear when the desk genuinely
+    # catches up, instead of being held on by work it did correctly. `backlog` keeps its old
+    # meaning and stays published, so every consumer that reads it is untouched.
+    open_rows = [r for r in backlog if r.get("status") == "open"]
+    # Rows that owe a decision RIGHT NOW: untriaged past grace, or a schedule that has run out.
+    # Strictly the honest population -- an overdue schedule owes a decision exactly as an orphan
+    # does, so it is counted, and an in-date schedule owes nothing today, so it is not.
+    owed = len(past_due)
+    ages = sorted((now - t).total_seconds() / 86400
+                  for r in backlog if (t := _parse_ts(r.get("raised"))))
+
+    def _pct(frac: float) -> float:
+        """Age at a percentile of the backlog, 0.0 on an empty backlog (no rows, no age)."""
+        return round(ages[min(int(frac * len(ages)), len(ages) - 1)], 2) if ages else 0.0
 
     # CONVERSION MUST CATCH UP TO ARRIVALS, AND MUST NEVER CATCH UP BY REDUCING THEM.
     #
@@ -247,7 +299,7 @@ def build_report(root: Path, now: datetime | None = None) -> dict[str, Any]:
         status = "FLATLINE"
     elif arrivals_collapsed:
         status = "ARRIVALS-COLLAPSED"
-    elif len(backlog) > REPAIR_MODE_BACKLOG:
+    elif owed > REPAIR_MODE_BACKLOG:
         status = "REPAIR-MODE"
     elif debt_growing:
         status = "DEBT-GROWING"
@@ -302,11 +354,39 @@ def build_report(root: Path, now: datetime | None = None) -> dict[str, Any]:
                              "L1.28b(f): acquisition is never cut to meet extraction, and "
                              "ARRIVALS-COLLAPSED outranks every green status below it."),
         "oldest_backlog_age_days": oldest_age,
+        # THE DRAIN, which this fence computed and never read. `oldest_backlog_age_days` was
+        # published from the day the fence was written and compared to NOTHING -- the same
+        # measured-but-unread failure the comment at line 202 names about arrivals vs
+        # dispositions, one layer over. It is the number that separates the only two states
+        # REPAIR-MODE cannot currently tell apart: a desk DRAINING a burst stock (old rows
+        # convert, the age percentiles fall) from a desk TREADING WATER on it (only new arrivals
+        # convert, so every percentile rises exactly one day per day while flow looks balanced).
+        # Both read `backlog≈flat, debt_growing=false, conversion_ratio≈0.8` and only one is work.
+        "backlog_open": len(open_rows),
+        "backlog_scheduled": len(backlog) - len(open_rows),
+        "owed": owed,
+        # THE DEFERRAL CHANNEL, which no gauge here could see. `reschedules_recorded` counts
+        # forward from 2026-08-13 only: the prior moves were overwritten one dispose at a time and
+        # are unrecoverable per row, so a 0 here means "none since the instrument existed", NEVER
+        # "none ever" (L1.28a -- a limitation must not read as health). The historical rate is on
+        # record in libs/ops/deferral.py: 39 of 152 ever-scheduled rows, 38 still scheduled.
+        "chronic_deferrals": len(chronic),
+        "chronic_deferral_ids": [r.get("id") for r in chronic][:20],
+        "chronic_reschedule_line": CHRONIC_RESCHEDULES,
+        "reschedules_recorded": sum(reschedule_count(r) for r in rows),
+        "reschedules_measured_from": "2026-08-13 (schedule_history born empty; prior moves were "
+                                     "overwritten in place and are unrecoverable per row)",
+        "backlog_age_p50_days": _pct(0.50),
+        "backlog_age_p90_days": _pct(0.90),
         "queue_dispositioned": round(terminal / max(len(rows), 1), 4),
         "repair_mode_line": REPAIR_MODE_BACKLOG,
-        "detail": f"{len(backlog)} rows in backlog ({len(past_due)} past due, oldest "
-                  f"{oldest_age}d); last 7d: {arrivals_7d} raised vs {dispositions_7d} "
-                  f"dispositioned",
+        # Named so a reader cannot mistake which population the line is applied to (L1.57): the
+        # count that drives the status is `owed`, not `backlog`.
+        "repair_mode_population": "owed (untriaged past grace + schedule run out) -- L1.28b(d)",
+        "detail": f"{len(backlog)} rows in backlog ({len(open_rows)} open, "
+                  f"{len(backlog) - len(open_rows)} scheduled); {owed} OWE a decision now "
+                  f"(oldest {oldest_age}d, p50 {_pct(0.50)}d); last 7d: {arrivals_7d} raised vs "
+                  f"{dispositions_7d} dispositioned",
     }
 
 

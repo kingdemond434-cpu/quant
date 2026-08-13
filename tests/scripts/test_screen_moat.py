@@ -135,13 +135,25 @@ def test_horizons_are_strides_so_one_period_equals_one_horizon() -> None:
     assert all(h % S.SNAPSHOT_S == 0 for h in S.HORIZONS_S)
 
 
-def test_the_sharpe_ceiling_is_rescaled_for_the_horizon() -> None:
-    """BUG 3. The screen annualises, so a ceiling of 6.0 calibrated at horizon_days=1 becomes a
-    725-fold tighter bar at 60s -- and pure noise reported sharpe_reversal=53.4 against it."""
+def test_the_sharpe_ceiling_is_rescaled_for_the_horizon(tmp_path) -> None:
+    """BUG 3, and its 2026-08-11 recurrence. The screen annualises, so a ceiling of 6.0 calibrated
+    at horizon_days=1 becomes a 725-fold tighter bar at 60s -- pure noise reported
+    sharpe_reversal=53.4 against it. The rescale now lives IN THE HARNESS (axis_screen applies
+    sqrt(1/hd) itself whenever horizon_days<1). An 08-09 lineage merge dropped it there while this
+    screen had already deleted its own call-site copy, so the rule existed NOWHERE and the planted
+    positive-control edge was branded SUSPECT-LOOKAHEAD. Two assertions, one per failure mode:
+    the rescale must REACH moat rows end-to-end, and this screen must never re-add its own copy
+    (double-rescaling would loosen the rail ~38x at 60s and kill the lookahead rail)."""
     import inspect
     src = inspect.getsource(S.screen_symbol)
-    assert "sharpe_ceiling" in src
-    assert "np.sqrt(1.0 / hd)" in src
+    assert "sharpe_ceiling=" not in src, "screen_moat must not override the harness's rescale"
+    root = tmp_path / "moat_r"
+    _tape(root, predictive=False)
+    rep = _run(tmp_path, root)
+    rows = [r for r in rep["results"] if "sharpe_ceiling_applied" in r]
+    assert rows, "no screened cell reported the ceiling it was judged against"
+    assert all(r["sharpe_ceiling_applied"] > 6.0 for r in rows), \
+        "a sub-daily cell was judged against the daily ceiling"
 
 
 def test_the_target_is_contemporaneous_because_the_screen_shifts_it_itself() -> None:
@@ -495,3 +507,27 @@ def test_the_screen_and_the_miner_key_cells_the_same_way() -> None:
             "mine_moat keys on stem.split('_')[0]; the two must not drift")
     assert "split(\"_\")" in Path(MM.__file__).read_text("utf-8"), (
         "the miner's rule changed -- re-check that this organ still matches it")
+
+
+def test_the_screen_floor_covers_the_harness_warmup(tmp_path) -> None:
+    """BUG 6 (2026-08-12). The caller floored PAIRED observations at 60, but stage_a_screen
+    consumes zwin+1 rows (z-score seed + forward-roll tail) before scoring, so a cell that
+    just cleared the floor was scored on n=39 -- and at that sample size the implausibility
+    rail fires on pure noise, branding underpowered cells SUSPECT-LOOKAHEAD (the false-alarm
+    channel that tripped moat-screen-mostly-suspect). The floor must deliver what it
+    promises: no cell the harness actually scored may carry fewer points than the floor."""
+    from libs.research.axis_screen import SCREEN_WARMUP_ROWS, stage_a_screen
+
+    rng = np.random.default_rng(7)
+    n_in = 60 + SCREEN_WARMUP_ROWS
+    res = stage_a_screen(rng.normal(size=n_in), rng.normal(scale=1e-3, size=n_in),
+                         name="warmup-floor-probe", horizon_days=900 / 86400.0)
+    assert res["n"] >= 60, "minimum admissible cell no longer delivers its promised floor"
+
+    root = tmp_path / "moat_r"
+    _tape(root, predictive=False)
+    rep = _run(tmp_path, root)
+    scored = [r for r in rep["results"] if "sharpe_ceiling_applied" in r]
+    assert scored, "no cell was scored at all -- the floor is over-tight, not warmup-aware"
+    thin = [r for r in scored if r.get("n", 0) < 60]
+    assert not thin, f"scored below the promised 60-point floor: {thin[:3]}"

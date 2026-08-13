@@ -173,3 +173,93 @@ def test_capability_wired_is_registered_and_carries_a_staleness_bound() -> None:
     assert artifact == "data/utilisation.json"
     assert max_age is not None and max_age > 0
     assert "check_utilisation" in cmd
+
+
+# ------------------------------------------------------------------- R0331: the archive deadline
+
+
+def _mine(state: str, days: Any) -> dict[str, Any]:
+    return {"closure": {"disk": {"state": state, "days": days}}}
+
+
+def test_disk_headroom_is_the_share_of_lead_time_remaining() -> None:
+    """R0331: preparedness, expressed against the lead time the only real fix actually needs."""
+    from scripts.check_ratchets import _disk_headroom
+
+    from libs.ops.disk import WARN_DAYS
+    assert _disk_headroom(_mine("URGENT", 3.0)) == pytest.approx(3.0 / WARN_DAYS)
+    assert _disk_headroom(_mine("OK", WARN_DAYS)) == pytest.approx(1.0)
+
+
+def test_disk_headroom_caps_at_one_so_a_huge_disk_cannot_install_an_unmeetable_floor() -> None:
+    """Without the cap, a one-off empty volume would ratchet the floor above any real reading.
+
+    The floor only rises, so a transient 400-day runway would record 19.0 and then fail forever
+    on healthy 30-day readings. The metric is 'do we have enough lead time', not 'how much'.
+    """
+    from scripts.check_ratchets import _disk_headroom
+    assert _disk_headroom(_mine("OK", 4000.0)) == 1.0
+
+
+def test_disk_headroom_reports_zero_when_the_recorders_have_actually_stopped() -> None:
+    """PAUSED is MEASURED and is the worst value -- refusing here would silence the real event."""
+    from scripts.check_ratchets import _disk_headroom
+    assert _disk_headroom(_mine("PAUSED", 0.0)) == 0.0
+
+
+def test_disk_headroom_refuses_an_unmeasurable_growth_rate() -> None:
+    """UNKNOWN means no rate yet, so there is no date. A 0.0 here would install a zero floor,
+    which is a ratchet that permits anything -- the same trap as the capability metric."""
+    from scripts.check_ratchets import _disk_headroom
+    assert _disk_headroom(_mine("UNKNOWN", None)) is None
+
+
+def test_disk_headroom_is_none_when_absent_or_malformed() -> None:
+    from scripts.check_ratchets import _disk_headroom
+    assert _disk_headroom("not a dict") is None
+    assert _disk_headroom({}) is None
+    assert _disk_headroom({"closure": "not a dict"}) is None
+    assert _disk_headroom({"closure": {}}) is None
+    assert _disk_headroom(_mine("OK", "three")) is None
+
+
+def test_disk_headroom_is_registered_and_carries_a_staleness_bound() -> None:
+    """A dead miner must read STALE, never green on a frozen runway (L1.44)."""
+    from scripts.check_ratchets import _METRICS
+    assert "disk_headroom_ratio" in _METRICS
+    artifact, _fn, max_age, cmd = _METRICS["disk_headroom_ratio"]
+    assert artifact == "data/moat_mine.json"
+    assert max_age is not None and max_age > 0
+    assert cmd.strip()
+
+
+# --------------------------------------------------------------- R0330: repair capacity ratchet
+
+
+def test_repair_p_fix_reads_the_capacity_artifact() -> None:
+    from scripts.check_ratchets import _repair_p_fix
+    assert _repair_p_fix({"p_fix": 0.5278, "p_disposed": 0.6389}) == 0.5278
+
+
+def test_repair_p_fix_refuses_an_insufficient_sample() -> None:
+    """INSUFFICIENT publishes p_fix=None. A 0.0 here would install a zero floor -- a ratchet that
+    permits anything -- which is the same trap as the capability and disk metrics."""
+    from scripts.check_ratchets import _repair_p_fix
+    assert _repair_p_fix({"status": "INSUFFICIENT", "p_fix": None}) is None
+    assert _repair_p_fix({"status": "UNMEASURED"}) is None
+    assert _repair_p_fix("not a dict") is None
+
+
+def test_repair_p_fix_rejects_a_bool_masquerading_as_a_rate() -> None:
+    """bool is an int subclass, so a stray True would read as a perfect 1.0 repair rate."""
+    from scripts.check_ratchets import _repair_p_fix
+    assert _repair_p_fix({"p_fix": True}) is None
+
+
+def test_repair_p_fix_is_registered_and_carries_a_staleness_bound() -> None:
+    from scripts.check_ratchets import _METRICS
+    assert "repair_p_fix" in _METRICS
+    artifact, _fn, max_age, cmd = _METRICS["repair_p_fix"]
+    assert artifact == "data/repair_metrics.json"
+    assert max_age is not None and max_age > 0
+    assert "check_repair_capacity" in cmd

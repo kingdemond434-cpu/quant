@@ -97,12 +97,23 @@ Older staged research scaffolding. Mostly ORPHANED; several DUPLICATE newer cryp
 ---
 
 ## DEPRECATED scripts (MT5/old stack — superseded by the crypto path)
-run_mt5_crossasset, run_mt5_funding_bridge, run_mt5_portfolio, run_campaign, run_carry_harvest,
-run_crossasset_shadow, run_crossasset_robust, run_xsec_funding, run_xsec_funding_max,
+run_campaign, run_carry_harvest, run_crossasset_robust, run_xsec_funding, run_xsec_funding_max,
 run_funding_8h, run_portfolio_live, run_live_demo, run_demo, ingest_etfs, ingest_multiasset,
 ingest_history, log_swaps, run_supervisor, run_worker, smoke_orchestration, run_prediction_markets,
 run_research_lake, run_research_tick, run_autodiscovery, run_factory.
 → Candidates for archival once their useful logic is confirmed migrated.
+
+**RETIRED 2026-08-13 (R0421):** `run_mt5_crossasset`, `run_mt5_funding_bridge`,
+`run_mt5_portfolio` — deleted. Dead by three independent measures: zero `ops/crontab.manifest`
+entries, no Python importer at any depth, and `run_daily_research.py` had already dropped them
+("MT5 abandoned."). Their `reports/mt5_*/report.json` artifacts are kept as research record
+(L1.17) and `build_scoreboard.py` now labels those rows RETIRED so a frozen artifact cannot read
+as a live one.
+
+**NOT deprecated — this list was wrong:** `run_crossasset_shadow` is LIVE, on cron at 06:40
+(`ops/crontab.manifest:1834`), and its artifact was fresh when checked on 2026-08-13. It writes
+`data/target_portfolio.json`, which `run_portfolio_live.py:169` depends on. Listing a live organ
+as deprecated is how a working path gets deleted by a future cleanup.
 
 ## DUPLICATE logic to resolve
 - `libs/research/crypto_regime.py` (heuristic) vs `libs/regime/` (probabilistic) — keep both, but the

@@ -83,6 +83,24 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 5 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_campaign_retention.py >> data/cro_ai_logs/campaign_retention.log 2>&1
 
+# REPAIR CAPACITY FENCE (R0330; L1.28b conversion parity, L1.0 ratchet): the SERVICE RATE behind
+# the queue. check_conversion publishes backlog, arrivals and dispositions -- the queue's LENGTH,
+# which is equally consistent with fast repair under heavy arrival and slow repair under light
+# arrival. So the desk could not tell whether repair capacity it had just added was working, which
+# is exactly the arrival-vs-service comparison L1.28b was written from; per L1.28a all three rates
+# counted as ZERO for want of a producer. Publishes a censoring-aware MTTR (the naive completed-only
+# median reads 3.37d against a true 5.27d -- it conditions on having been disposed, and 42.8% of
+# rows have not been), P(fix) separated from P(disposed) so the number cannot be raised by rejecting
+# more, and stock growth per ACTIVE ledger day so a quiet stretch does not read as improving.
+# CADENCE CEILING: DATA-ARRIVAL (L1.28c). The input is the ledger, which changes only when a worker
+# session disposes rows -- measured as bursty, with four consecutive zero-event days in the last
+# fortnight. Daily is already faster than the state changes; placed at 07:03 so the artifact is
+# four minutes fresh when check_ratchets reads it at 07:07 (30h max_age gives a day of slack).
+# EVIDENCE: scripts/check_repair_capacity.py -> data/repair_metrics.json; floor repair_p_fix
+# recorded in data/ratchet_floors.json from the 2026-08-12 ledger (460 rows, 263 completed).
+# CONFIDENCE: committed-script (new this cycle)
+3 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_repair_capacity.py >> data/cro_ai_logs/repair_capacity.log 2>&1
+
 # EVENT CALENDAR REBUILD (R0276): regenerates data/event_calendar.json, which libs/execution/
 # event_guard.py reads to defer conviction entries across FOMC windows. IDEMPOTENT -- the dates
 # are held in the generator with their source, so a run either reproduces the committed file
@@ -386,6 +404,29 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle, verified against live endpoints)
 */15 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_announcements.lock .venv/bin/python scripts/collect_announcements.py >> data/cro_ai_logs/announcements.log 2>&1
 
+# KR VENUE FLAG RECORDER (R0299, KR-s1 B): Upbit market_event (warning + 5 caution flags incl.
+# the venue's own kimchi-premium detector GLOBAL_PRICE_DIFFERENCES) + Bithumb market_warning +
+# per-asset deposit/withdrawal rails -- the independent barrier-height regressor that breaks the
+# KR-premium circularity. ALL THREE SURFACES ARE SNAPSHOT-ONLY WITH NO HISTORY ENDPOINT: every
+# unrecorded transition is permanently lost (L1.46), so transition timestamps inherit this poll
+# interval. CADENCE (L1.28c, data-arrival ceiling): flags flip at most a few times a day, but
+# the +/-15min stamp precision is what an event study consumes; 3 keyless GETs/tick is far
+# inside every documented limit. Phase-offset from the :00 announcements tick to spread load.
+# EVIDENCE: scripts/collect_kr_venue_flags.py -> data/kr_venue_flags.jsonl (baseline+transitions)
+# CONFIDENCE: committed-script (verified against all three live endpoints 2026-08-12)
+7-59/15 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_krflags.lock .venv/bin/python scripts/collect_kr_venue_flags.py >> data/cro_ai_logs/kr_venue_flags.log 2>&1
+
+# UPBIT FULL-MARKET CANDLE SNAPSHOT (R0303): the venue PURGES candle history at delisting
+# (6/6 delisted markets 404; AQT/AERGO lost 2026-08-03 because this ran 9 days late). Daily
+# candles for ALL markets incrementally + 1m for venue-flagged (pre-delist) names; a market
+# vanishing from /v1/market/all is recorded in the delist ledger with files preserved.
+# CADENCE (L1.28c): data-arrival ceiling -- daily candles change once per UTC day; the flagged
+# 1m trailing window (30d) is far wider than one day. 15:40 keeps clear of the 15:00 frontier
+# timer and the 14:00 dataaxis slot. Keyless quotation GETs at ~8/s, inside Upbit's 10/s.
+# EVIDENCE: scripts/run_upbit_snapshot.py -> data/upbit_snapshot/{daily,minute,manifest.json}
+# CONFIDENCE: committed-script (first full backfill run 2026-08-12)
+40 15 * * * cd "$QUANT_ROOT" && flock -n data/.cron_upbit_snapshot.lock .venv/bin/python scripts/run_upbit_snapshot.py >> data/cro_ai_logs/upbit_snapshot.log 2>&1
+
 # LLM DISCRETIONARY SLEEVE (R0122, principal request 2026-07-31 "a strategy where Claude acts
 # like a human trader with a brain, 24/7"). PAPER ONLY -- places no orders, imports no connector,
 # and a test asserts both. Every 4h so it covers the hours a human sleeps, which IS the stated
@@ -618,6 +659,17 @@ QUANT_ROOT=/home/quant/quant-platform
 # EVIDENCE: scripts/run_execution_intel.py (built 2026-07-29, triage #102)
 # CONFIDENCE: committed-script (new this cycle)
 */20 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_execution_intel.py >> data/cro_ai_logs/execution_intel.log 2>&1
+
+# FEE ATTRIBUTION: which SYMBOLS paid the $1,750.88 futures commission that is 88.7% of the
+# sleeve's non-funding loss. The trade tape carries no fee field on any of its 500 rows, so this
+# reads the venue income ledger instead and feeds run_execution_intel's fee_attribution surface.
+# CADENCE CEILING (L1.28c): DATA-ARRIVAL. Commission rows appear only when the sleeve fills, and
+# the book is currently flat under CASHCARRY_KILL -- firing faster re-reads unchanged state. The
+# read is also heavy (11,194 paginated income rows for one month), so a 20-minute cadence would
+# spend venue weight to learn nothing. Daily, ahead of the morning cycle.
+# EVIDENCE: scripts/run_fee_attribution.py (built 2026-08-12, R0371)
+# CONFIDENCE: committed-script (new this cycle -- cadence chosen here, not observed on the box)
+41 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_fee_attribution.py >> data/cro_ai_logs/fee_attribution.log 2>&1
 
 # REALITY GAP: backtest -> shadow -> live -> venue-truth chain comparison (constitution L2.10).
 # EVIDENCE: scripts/run_reality_gap.py (built 2026-07-29, triage #127)
@@ -903,9 +955,9 @@ SYSTEMD unit="quant-alerts.timer" on="15min tick" exec="scripts/run_alerts.py"
 # EVIDENCE: ops/quant-cadence.timer, ops/quant-cadence.service; CONFIDENCE: committed-unit
 SYSTEMD unit="quant-cadence.timer" on="hourly tick" exec="scripts/run_cadence.py"
 
-# daily-max loop: works the max_audit defect queue every 6h (committed unit).
+# daily-max loop: works the max_audit defect queue daily at 05:30 (committed unit).
 # EVIDENCE: ops/quant-daily-max.timer, ops/quant-daily-max.service; CONFIDENCE: committed-unit
-SYSTEMD unit="quant-daily-max.timer" on="6h tick" exec="scripts/daily_max.py"
+SYSTEMD unit="quant-daily-max.timer" on="*-*-* 05:30:00" exec="scripts/daily_max.py"
 
 # EVIDENCE: docs/PROJECT_HANDOFF.md:34; scripts/watchdog.py:61
 # CONFIDENCE: documented-cadence
@@ -932,6 +984,12 @@ SYSTEMD unit="quant-tunnel.service" on="always" exec=""
 # CONFIDENCE: documented-cadence
 SYSTEMD unit="quant-refresh.timer" on="*:0/3" exec=""
 
+# Midnight renewable frontier controller. Its unique unit name deliberately cannot collide with
+# deploy/quant-research.service, which remains the autonomous research supervisor.
+# EVIDENCE: ops/quant-midnight-frontier.timer, ops/quant-midnight-frontier.service
+# CONFIDENCE: committed-unit
+SYSTEMD unit="quant-midnight-frontier.timer" on="*-*-* 00:00:00 Europe/Dublin" exec="ops/run_midnight_frontier.sh"
+
 # python research cycle at 08:01 -- the second head of the dual schedule (cron 02:00 above).
 # EVIDENCE: docs/PROJECT_HANDOFF.md:35 ("quant-cro.timer (08:01 UTC python research cycle)");
 #   20260729_infrastructure.md:317-319 ("dual schedulers for daily_research_cycle (cron 02:00
@@ -951,6 +1009,10 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # retune it (the agent will then leave it alone because it is already scheduled).
 # Every entry here was proven: runnable main(), no money-path import, no spend
 # capability, no writes outside data/ + web/. CONFIDENCE: auto-wired.
+# scripts/screen_breadth_supply_axes.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+2 4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/screen_breadth_supply_axes.py >> data/cro_ai_logs/screen_breadth_supply_axes.log 2>&1
+# scripts/vault_search.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+8 4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/vault_search.py >> data/cro_ai_logs/vault_search.log 2>&1
 # scripts/make_probe_worktree.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 37 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/make_probe_worktree.py >> data/cro_ai_logs/make_probe_worktree.log 2>&1
 # scripts/retire_unfillable_candidates.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
@@ -1194,6 +1256,22 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/run_trade_review.py -> data/trading_playbook.json + data/trade_review.json
 # CONFIDENCE: committed-script (new this cycle)
 40 2,10,18 * * * cd "$QUANT_ROOT" && flock -n data/.cron_review.lock .venv/bin/python scripts/run_trade_review.py >> data/cro_ai_logs/trade_review.log 2>&1
+
+# EXECUTION-QUALITY DECOMPOSITION (R0334, principal 2026-08-01): the sleeve's six execution
+# decisions -- entry, stop, target, sizing, trade management, exit timing -- scored SEPARATELY.
+# The only scoreboard before this was a blended win_rate and mean_R, which cannot tell a good
+# thesis exited badly from a bad thesis rescued by the trailing ladder, and therefore cannot say
+# which of the two the desk has. First run measured a median capture ratio of 0.335: the median
+# trade keeps a third of the peak R its thesis earned, corroborating the resolver's own trail
+# sweep (best_trail_r 0.5 against a live 1.0). Target quality reports UNMEASURABLE-BY-DESIGN --
+# this sleeve forbids take-profits on purpose, so there is no target decision to score.
+# CADENCE CEILING: DATA-ARRIVAL (L1.28c). The input is resolve_paper_book's marks, refreshed at
+# :20 each hour; placed at :30 so the decomposition is ten minutes fresh when run_trade_review
+# reads it at :40, and every review brief carries the current sleeve profile.
+# EVIDENCE: scripts/run_execution_quality.py -> data/execution_quality.json, consumed by
+# scripts/run_trade_review.sleeve_profile; 14 closed PAPER trades at first measurement.
+# CONFIDENCE: committed-script (new this cycle)
+30 1,9,17 * * * cd "$QUANT_ROOT" && flock -n data/.cron_execquality.lock .venv/bin/python scripts/run_execution_quality.py >> data/cro_ai_logs/execution_quality.log 2>&1
 
 # COPYTRADING SCREEN (R0140): Stage A, ZERO promotion authority. Two hypotheses live under the
 # word "copytrading" and they get opposite verdicts. H1 FOLLOW A LEAD TRADER is NOT TESTABLE from
@@ -1828,6 +1906,14 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: measured (row counts above are from the runs, not estimates).
 15 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_dexscreener.lock .venv/bin/python scripts/collect_dexscreener.py >> data/cro_ai_logs/collect_dexscreener.log 2>&1
 
+# GECKOTERMINAL SIGNED DEX TRADES (R0291) -- HOURLY, the OPPOSITE cadence argument to the
+# history collectors above: the venue serves only the LAST ~300 trades per pool (no paging,
+# no history endpoint), so every hour NOT captured is permanently unrecoverable (L1.28b(f)).
+# The ceiling type is DATA-ARRIVAL from the retention side: hourly is the floor that bounds
+# loss, and the collector flags per-pool window overflow so the residual loss is MEASURED,
+# never silent. ~14 keyless calls/run at 2.6s pacing vs the documented 30/min limit.
+43 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_geckoterminal.lock .venv/bin/python scripts/collect_geckoterminal_trades.py >> data/cro_ai_logs/collect_geckoterminal.log 2>&1
+
 # CIRCULATING-SUPPLY HISTORY -- the half of the unlock screen that can ONLY be built forward.
 # screen_unlock_supply_series is blocked on two inputs and they are NOT symmetric: the unlock
 # CALENDAR is a published schedule that can be obtained later with its history intact, while the
@@ -1843,14 +1929,36 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # with anything else this desk runs.
 # PACE IS MEASURED: at 2.5s the first live run lost 2 of 5 ids to HTTP 429, and a 429 here is an
 # unrecoverable row rather than a retryable one. 7s + a 20s retry; ~3 minutes for 24 ids.
-# STILL BLOCKED, AND RECORDED: DefiLlama /emissions and /emission/<protocol> both answer HTTP 402
-# Payment Required and defillama.com/api/emissions answers 403 -- the calendar is behind a paid
-# tier. NOT purchased: a licensed vendor feed is the principal's decision, never a collector's.
+# UNBLOCKED 2026-08-11 (R0288): the paid wall covers only the API (/emissions 402,
+# /api/emissions 403). The PUBLIC PAGE defillama.com/unlocks -- the same s13-passed source the
+# 2026-07-24 snapshot came from -- still serves the whole calendar in __NEXT_DATA__, and
+# collect_unlock_calendar.py below scrapes it free. No purchase needed.
 # EVIDENCE: scripts/collect_circulating_supply.py -> data/circulating_supply.jsonl +
 # data/circulating_supply_status.json (reports days_covered, never row count -- a thousand rows
 # collected in one afternoon is not a series).
 # CONFIDENCE: measured (6 of 6 ids written across two live runs 2026-08-05).
 10 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_circsupply.lock .venv/bin/python scripts/collect_circulating_supply.py >> data/cro_ai_logs/circulating_supply.log 2>&1
+
+# UNLOCK CALENDAR -- the recoverable half, now recurring (R0288). First-seen events append with
+# the supply OBSERVED AT COLLECTION, so a future event carries a genuine point-in-time
+# pct-of-float; the one-shot snapshot's forward window expired 2026-08-23 and its pct_circ_now
+# was a look-ahead for every historical row. CEILING TYPE (L1.28c) is DATA-ARRIVAL: schedules
+# change on team announcements, weekly matches the page's own effective churn; runs Monday 05:55
+# after the daily supply row (05:10) and before the 06:25/06:27 unlock screens so the screen
+# always sees a fresh calendar. EVIDENCE: scripts/collect_unlock_calendar.py ->
+# data/unlock_calendar.jsonl + data/unlock_calendar_status.json (n_forward_cliffs,
+# forward_horizon_utc; a parse failure exits non-zero with the error in the status, never a
+# silent zero-append). CONFIDENCE: measured (first live run 2026-08-11: 368 protocols, 38,770
+# events, 271 forward cliffs, horizon 2026-09-10).
+55 5 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_unlockcal.lock .venv/bin/python scripts/collect_unlock_calendar.py >> data/cro_ai_logs/unlock_calendar.log 2>&1
+
+# CAPITAL-BASIS FENCE (R0287, L1.58): no published return without its declared denominator --
+# the Quantopian-2019 class the desk has hit three times (R0234, R0235, 13,155/4,500). Holds the
+# line on NEW artifacts; the dated 2026-08-11 bootstrap debt (17 artifacts) may only shrink.
+# CEILING TYPE (L1.28c) is DATA-ARRIVAL: performance artifacts refresh on their producers'
+# cadences (minutes-hours), daily is sufficient to catch a new undeclared artifact within its
+# first day. EVIDENCE: scripts/check_capital_basis.py -> data/capital_basis_check.json.
+43 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_capital_basis.py >> data/cro_ai_logs/capital_basis.log 2>&1
 25 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_holderconc.lock .venv/bin/python scripts/collect_holder_concentration.py >> data/cro_ai_logs/collect_holder_concentration.log 2>&1
 35 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_perpdex.lock .venv/bin/python scripts/collect_perpdex_funding.py >> data/cro_ai_logs/collect_perpdex_funding.log 2>&1
 
@@ -2257,3 +2365,190 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: committed-script + 10 tests, including the partial-outage case that would otherwise
 #   converge on a too-recent boundary and shout ROLLING
 20 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_bybit_archive.lock .venv/bin/python scripts/probe_bybit_archive.py >> data/cro_ai_logs/bybit_archive.log 2>&1
+
+# R0313 VENUE-SIDE DELISTED-INSTRUMENT PROBE -- the dead names, asked for rather than reconstructed.
+# WHY IT EXISTS: snapshot_universe (R0239) fixes survivorship FORWARD and its own docstring leaves
+# the backward half to "a reconstruction from binance.vision archives, a separate and much larger
+# job". Three venues simply publish their dead instruments, and nothing here had ever asked.
+# Measured first run 2026-08-12: bitmex 3077 dead vs 32 live, bybit 936 vs 808, coinbase 315 vs
+# 517 -- 4455 dead names, two venues carrying MORE dead than live. Those are systematically the
+# LOSERS, so every cross-section conditioned on today's listings is biased upward.
+# CADENCE (L1.28c): INFORMATION-ARRIVAL. Delistings land in daily batches, so daily is the ceiling;
+# faster re-reads an unchanged roster. The roster is a monotone UNION (never overwritten), so the
+# only irreversible loss is a name that appears AND ages off between two runs -- daily bounds that
+# to 24h. 03:35 -- after the bybit retention probe, same venue-truth block.
+# A network failure records UNREACHABLE per venue, never ABSENT: "we could not ask" and "there is
+# nothing there" demand opposite responses, and only an ENTIRELY unreachable run exits non-zero.
+# EVIDENCE: scripts/probe_delisted_instruments.py -> data/delisted_instruments.json (registry)
+#   + data/delisted_rosters/<venue>.json (the dead names themselves -- a count would be a
+#   catalogue, and a catalogue is half a deliverable)
+# CONFIDENCE: 18 tests, including the pagination case that read "500 dead, 0 live" until the
+#   walk was fixed (3077 after), and the purge case where a venue drops a name it once reported
+35 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_delisted_probe.lock .venv/bin/python scripts/probe_delisted_instruments.py >> data/cro_ai_logs/delisted_probe.log 2>&1
+
+# ---------------------------------------------------------------------------------------------
+# STALE-DAEMON REPAIR (L1.28b detect->repair; installed live 2026-08-11, cycle commit pending).
+# WHY: max_audit's daemon-stale-code-* class recurred 4x in 12d (carry-leak alarm inert 8.7h
+# 07-26; executor 139 commits stale 08-05; executor 127.3h stale 08-11) and every closure was
+# manual -- the detector had no actuator. run_stale_daemon_repair.py recomputes staleness with
+# max_audit's own instruments and restarts through ship_restart.ship(), which owns every refusal
+# (ruin tier, unknown unit, no-autorestart). TIER_RUIN is never auto-restarted; money-path units
+# hold during a non-OPEN L1.38 window (a restart ships disk state, which is what sterile forbids).
+# CEILING TYPE: information-arrival (staleness changes only when commits land while a daemon
+# persists); 2x/day gives the 48h escalation >=4 actuator firings of margin.
+40 7 * * * cd "$QUANT_ROOT" && flock -n data/.cron_stale_repair.lock .venv/bin/python scripts/run_stale_daemon_repair.py >> data/cro_ai_logs/stale_daemon_repair.log 2>&1
+40 19 * * * cd "$QUANT_ROOT" && flock -n data/.cron_stale_repair.lock .venv/bin/python scripts/run_stale_daemon_repair.py >> data/cro_ai_logs/stale_daemon_repair.log 2>&1
+
+# FRONTIER RETRY FIRINGS (installed live 2026-08-11). The 15:00 systemd rotation surrendered all
+# 7 regions for a full day whenever the desk-wide brain mutex was held at 15:00 (measured 7/7
+# DEFERRED 2026-08-11 to cro_ai pid 762669; organ-never-frontier-* recurred 3-4x over 14d). The
+# rotation is RESUMABLE (skips any region with a real >=1500b log today), so extra firings are
+# free retries and the defer-and-resume design regains its premise: invocations > collisions.
+# CEILING TYPE: phase raise, not a new cadence (L1.28c) -- still at most one real dig/region/day.
+30 5 * * * cd "$QUANT_ROOT" && flock -n /tmp/seat_frontier.lock /bin/bash ops/run_frontier_rotation.sh >> data/cro_ai_logs/seat_frontier.log 2>&1
+30 20 * * * cd "$QUANT_ROOT" && flock -n /tmp/seat_frontier.lock /bin/bash ops/run_frontier_rotation.sh >> data/cro_ai_logs/seat_frontier.log 2>&1
+
+# FREE-ROSTER CANARY (R0344) -- prove the degraded fallback is alive BEFORE the outage needs it.
+# Measured 2026-08-01T16:58Z: OpenRouter unfunded (-$0.59), the panel dropped to its 4 free seats,
+# and ALL FOUR failed (tencent 404, cohere 400, nvidia-nano 400, nvidia KeyError('choices')). The
+# desk had NO independent-review capability at all and nothing would have said so until the next
+# outage asked. The NO-COST-DRIVEN-DEGRADATION promise -- "runs the strongest FREE fallback and
+# labels it DEGRADED" -- was simply false, unobservably.
+# WHY A PROBE AND NOT A LOG READ: the free roster only RUNS when unfunded, so while funded no free
+# run enters external_panel_log.jsonl and a log-reading check learns nothing and rots. The seats
+# are FREE; asking them costs $0.
+# CEILING TYPE: INFORMATION-ARRIVAL -- a model id dies when a catalog drifts, a weekly-scale event.
+# A RESOURCE ceiling points the same way: free-tier pools saturate, that saturation IS the desk's
+# measured 400/429 class, and an hourly canary would BECOME the failure it detects. Daily, phased
+# 09:40 -- 30min ahead of the 10:10 commit-audit panel, so a dead roster is known before the run
+# that would need it rather than during it.
+# EVIDENCE: scripts/check_free_roster.py -> data/free_roster_canary.json; CONSTITUTION L1.43
+# CONFIDENCE: committed-script (first live run 2026-08-12: 4/4 seats alive, which also VERIFIED
+# the seat-id repair R0344 asked for -- and separated the two failure modes, since 3 of those 4
+# reachable seats have blanked under the real ~40k payload).
+40 9 * * * cd "$QUANT_ROOT" && flock -n data/.cron_freeroster.lock .venv/bin/python scripts/check_free_roster.py --report-only >> data/cro_ai_logs/free_roster.log 2>&1
+
+# DENOMINATOR ATTRITION (L1.60) -- L1.57 asks whether the fence's count is an int >= 1; this asks
+# what that count LOST getting there. A fence that walks 1000 files, drops 991 in an
+# `except OSError: continue`, and declares scanned=9 is recorded DECLARED, non-vacuous and CLEAN.
+# The proving instance was L1.57's OWN SUPPLIER: check_calendar_gates published scanned=N_SCANNED
+# from an `n += 1` one line below its handler. Both existing swallow detectors require a Pass
+# body, so the entire `continue` / `return <default>` class was invisible to enforcement (R0166,
+# prose-only since 2026-07-31). First run: 3 leaking denominators over 54 governed fences, the
+# sharpest on the money path (an absent module RAISED money_path_pct and the L1.50 ratchet locked
+# it in); all three repaired the same day, fence now OK. Verdicts: OK / PARTIAL (unparsed files,
+# surfaced not hidden) / ATTRITION (exit 2) / UNMEASURED (exit 2 -- an empty scope never reads
+# clean, L1.28a). Subject to its own law via scanned=n_examined, which counts unreadable files too.
+# CADENCE: daily. It is pure static analysis over ~54 files that change only when someone edits a
+# fence, so it is INFORMATION-ARRIVAL bound (L1.28c) -- hourly would re-read unchanged ASTs.
+# Phased to 06:41, clear of the hourly fence block and of the 06:00 cycle.
+# EVIDENCE: scripts/check_denominator_attrition.py -> data/denominator_attrition.json; CONSTITUTION L1.60
+# CONFIDENCE: committed-script (new this cycle); first run found 3 defects and all 3 are fixed
+41 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_denominator_attrition.py >> data/cro_ai_logs/denominator_attrition.log 2>&1
+
+# --- INTERNAL CLAIM CONSISTENCY (L1.61) --------------------------------------------------------
+# WHY: the desk reconciles its book against the VENUE every cycle (run_venue_reconcile, after a
+# 13-model panel demanded it) and has never once reconciled its own published artifacts against
+# EACH OTHER. Every existing instrument is single-artifact BY CONSTRUCTION: phantoms asks whether
+# a writer exists, fresh asks whether a file is old, input_provenance asks whether MY inputs were
+# present, denominator/attrition ask whether I scanned anything. An organ can pass all five while
+# asserting the opposite of the organ beside it, because CONTRADICTION IS NOT A PROPERTY OF ANY
+# SINGLE ARTIFACT -- it exists only in the relation between two, and nothing held two at once.
+# STATUS: OK / PARTIAL (exit 0, gap is a work queue) / CONTRADICTED (exit 2) / UNMEASURED (exit 2
+# -- an empty comparison set is the one result that must never read as agreement, L1.28a).
+# Subject to L1.57 via scanned=n_compared, which counts what the RUN compared, never len(CLAIMS).
+# CADENCE: daily. Its inputs are the Gate-0 board and the live guard; the guard republishes every
+# few minutes but the CLAIMS only move when a human changes config or consent, so it is
+# INFORMATION-ARRIVAL bound (L1.28c). Phased to 06:47, after the 06:41 attrition fence.
+# EVIDENCE: scripts/check_claim_consistency.py -> data/claim_consistency.json; CONSTITUTION L1.61
+# CONFIDENCE: committed-script (new this cycle); first run found 4 live contradictions on the
+# Gate-0 path -- 2 FABRICATED-SIDE, 2 SAME-NAME-DIFFERENT-QUESTION (R0536/R0537).
+47 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_claim_consistency.py >> data/cro_ai_logs/claim_consistency.log 2>&1
+
+# --- PANEL BREADTH (L1.62) ---------------------------------------------------------------------
+# WHY: the Stage-A screen's cross-sectional power denominator was an ASSUMPTION at BOTH endpoints,
+# one change apart. Pre-2026-08-11 panel_width was not passed (K symbols = K independent
+# observations, every t-stat inflated sqrt(K) ~ 11.8x at K=139); the fix passed the full width,
+# which asserts K symbols = ONE observation per bar. Measured on the desk's own 139-symbol panel
+# the answer is ~93, so the honest divisor is 1.50 and the detection floor was running 9.6x too
+# high. It stayed invisible because the surviving error ran CONSERVATIVE: its only symptom is
+# SCREEN-UNDERPOWERED, which writes no graveyard entry, no ledger row, no alert and no clock, and
+# holds 380 of 711 recorded verdicts. This fence watches the BASIS, not the number: an unmeasured
+# panel that claims `powered` or banks a graveyard-grade SCREEN-WEAK is the failure.
+# CADENCE: daily. Its input is the set of screen artifacts on disk, which only changes when a
+# screen runs, so it is INFORMATION-ARRIVAL bound (L1.28c) -- firing faster would re-read
+# unchanged verdicts. Phased to 06:53, after the 06:47 claim-consistency fence.
+# EVIDENCE: scripts/check_panel_breadth.py -> data/panel_breadth_coverage.json; CONSTITUTION L1.62
+# CONFIDENCE: committed-script (new this cycle); first run found 48 panel cells, 0 measured, and
+# caught a double-counted denominator in its own scan scope before it shipped.
+53 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_panel_breadth.py >> data/cro_ai_logs/panel_breadth.log 2>&1
+
+# --- CROSS-SECTION FLOOR (L1.62 family) --------------------------------------------------------
+# A per-date cross-sectional collapse over a thin cross-section is one symbol's noise, and
+# consecutive thin dates give the resulting SERIES structure the data never had. The dominant
+# guard in this repo is `if panel.shape[1] < N`, which counts DECLARED COLUMNS -- a 373-column
+# panel clears it on a date carrying six finite names. It reads like a breadth guard and checks a
+# number that cannot fall when the cross-section empties.
+# CADENCE: daily. Its input is the repo's own source, which changes on every push, so it is
+# INFORMATION-ARRIVAL bound (L1.28c). Phased to 06:57, after the 06:53 panel-breadth fence it
+# extends. A pre-push hook would be the event-driven end state; daily is the honest start.
+# EVIDENCE: scripts/check_cross_section_floor.py -> data/cross_section_floor.json; CONSTITUTION
+# L1.62 family (matrix entry in build_enforcement_matrix.py).
+# CONFIDENCE: committed-script (new this cycle); first run scanned 1,106 files and found 49
+# collapse sites -- 17 floored, 13 near-miss, 19 unfloored -- and caught a false positive in
+# itself (a COMMENT describing the fix scored as the fix) before it shipped.
+57 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_cross_section_floor.py >> data/cro_ai_logs/cross_section_floor.log 2>&1
+
+# --- CITATION INTEGRITY (R0369, under L2.3/§42) ------------------------------------------------
+# WHY: `dispose --status implemented` refuses an empty --commit, so the ledger's proof-of-work was
+# checked at WRITE time and never at READ time, where it is actually spent. A rebase rewrites SHAs
+# -- this branch gets rebased whenever a sibling pushes to it -- and the citation silently becomes
+# an orphaned object no other clone can resolve, getting worse with time rather than announcing
+# itself. First run over 227 citing rows: 208 OK, 14 INVALID, 1 ORPHANED. Ten of the fourteen cite
+# the literal string `HEAD` and four cite `pending`; none was ever valid, and none was reachable by
+# the write-time check, which only asks whether the field is non-empty. `HEAD` is the nastier half:
+# it RESOLVES in every clone, to something different each time, so an existence check reads healthy.
+# Verdicts: OK / BACKLOG (at or below the recorded floor -- the historical stock is a work queue,
+# and a fence red from day one gets switched off, L1.43) / DEGRADED (exit 2 -- the count ROSE, a new
+# unresolvable citation was written) / UNMEASURED (exit 2 -- git or ledger unreadable, L1.28a).
+# The floor is a constant in the fence, not a value read back from its own artifact, which would
+# ratify whatever drift had landed. It only ever moves DOWN, paired with the repointing that earned
+# it, and a test pins it. REPAIR IS WIRED, not notified: `recommendations.py repoint` moves the
+# pointer without touching the disposition, and refuses a replacement that does not resolve.
+# CADENCE: daily. Two `git rev-list` calls plus one `cat-file --batch-check` regardless of row
+# count (~60ms), but it is INFORMATION-ARRIVAL bound (L1.28c): citations change only when a row is
+# disposed or the branch is rebased. Phased to 06:47, clear of the 06:41 attrition fence.
+# EVIDENCE: scripts/check_citation_integrity.py -> data/citation_integrity.json; CONSTITUTION L2.3
+# CONFIDENCE: committed-script (new this cycle); first run found 15 and they are ledgered as a row
+47 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_citation_integrity.py --report-only >> data/cro_ai_logs/citation_integrity.log 2>&1
+
+# ---------------------------------------------------------------------------------------------
+# R0375 LENDING RISK BASE RATES (L1.51) -- the evidence under the haircut that decides whether
+# idle dollars may earn. `DEFAULT_HAIRCUT_BPS = 300.0` had no derivation anywhere in the repo and
+# closed the lending band 55x over against a 5.5bps breakeven; measured, the defensible number is
+# 41.7bps (exploit 12.2bps point -> 38.5bps at a 95% Poisson frequency bound on 2 events, plus a
+# 3.2bps measured USDC depeg shortfall). The verdict did not move -- what moved is that the margin
+# is now a measurement instead of an assumption wearing one's clothes (L1.47).
+# CADENCE: WEEKLY, and the ceiling is INFORMATION-ARRIVAL (L1.28c). Every input is a multi-year
+# aggregate: a 6-year hack record, integrated TVL-years, 2046 days of prices. One more day of
+# tape moves the estimate by ~0.1%, so a daily line would re-download ~100MB to re-derive an
+# unchanged number. Phased to Sun 03:12, clear of the 04:00 deep sweep.
+# MEMORY: the per-protocol payloads are 3-29MB of JSON each and a full parse would be several
+# hundred MB -- this box OOM-killed screen_orderbook_state four times at ~500MB free (R0378). The
+# collector streams and parses only the top-level `tvl` array; measured peak RSS 134MB for the
+# whole run, and a test pins the extractor against the nested-key trap.
+# EVIDENCE: scripts/collect_lending_risk_base_rates.py -> data/lending_risk_base_rates.json,
+# consumed by libs/research/lending_haircut.py <- idle_yield.reachable_floor +
+# screen_collateral_allocation.build_report; CONSTITUTION L1.51 (a clamp without a price)
+# CONFIDENCE: committed-script (new 2026-08-12); first run READ 6/6 protocols, $120.2B TVL-years
+12 3 * * 0 cd "$QUANT_ROOT" && flock -n data/.cron_lending_base_rates.lock .venv/bin/python scripts/collect_lending_risk_base_rates.py >> data/cro_ai_logs/lending_base_rates.log 2>&1
+
+# --- PARTITION POWER (L1.63) -------------------------------------------------------------------
+# CADENCE: daily. Its input is the D1 funding panel, which appends one bar per symbol per day, so
+# it is DATA-ARRIVAL bound (L1.28c) -- firing faster would re-grade an unchanged panel. Phased to
+# 07:11, after the 06:53 panel-breadth fence so both power measurements land in one morning.
+# EVIDENCE: scripts/check_partition_power.py -> data/partition_power.json; CONSTITUTION L1.63
+# CONFIDENCE: committed-script (new this cycle); first run graded 4 robustness partitions over
+# 213 symbols x 2,384 days and found ALL FOUR WELDED -- including the vol-tercile axis that gates
+# REGISTRY promotion, sleeve sizing and LIVE at 15% of book.
+11 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_partition_power.py >> data/cro_ai_logs/partition_power.log 2>&1

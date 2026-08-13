@@ -203,6 +203,21 @@ def test_parse_model_reads_family_and_version():
     assert parse_model("gpt-5") is None
 
 
+def test_regex_debris_is_not_a_model_at_a_truncated_version():
+    """Measured 2026-08-12: pinned_models() was publishing `claude-opus-4-8}` as a real pin.
+
+    _CHAIN_RE captures the whole quoted value of
+    `export _BRAIN_MODEL_CHAIN="${_BRAIN_MODEL_CHAIN:-... claude-opus-4-8}"`, so splitting it on
+    whitespace yields tokens carrying shell punctuation. The `}` made the version loop bail after
+    the first digit group and return ("opus", (4,)) -- NOT None -- so a malformed token became a
+    pin at version 4 instead of 4.8. `is not None` was the only guard pinned_models had, and it
+    was therefore never rejecting anything except ids that fail at the `claude-` prefix.
+    """
+    assert parse_model("claude-opus-4-8}") is None
+    assert parse_model("${_BRAIN_MODEL_CHAIN:-claude-fable-5") is None
+    assert parse_model("claude-opus-4-8") == ("opus", (4, 8)), "the well-formed id still parses"
+
+
 def test_version_ordering_beats_string_ordering():
     """String sort puts 'claude-opus-4-8' after 'claude-opus-5'; version tuples must not."""
     assert newer("claude-opus-5", "claude-opus-4-8")

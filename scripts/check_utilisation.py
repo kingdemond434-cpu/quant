@@ -41,6 +41,7 @@ from typing import Any
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from libs.ops.fence_exit import fence_exit  # noqa: E402
 
 _OUT = _ROOT / "data/utilisation.json"
 _LOGS = _ROOT / "data/cro_ai_logs"
@@ -545,7 +546,29 @@ def main() -> int:
             if r["binding_constraint"]:
                 print(f"  {'':17} └─ bound by: {r['binding_constraint'][:100]}")
         print(f"-> {_OUT.relative_to(_ROOT)}")
-    return 0 if (args.report_only or not rep["idle_unexplained"]) else 1
+
+    # THE DENOMINATOR IS THE *MEASURED* CEILINGS, NEVER `len(rows)` (L1.57, R0417). This fence's
+    # verdict is "no ceiling is idle without a named constraint", and an UNMEASURED ceiling
+    # cannot contribute to `idle_unexplained` -- `status` returns UNMEASURED before any of the
+    # idle branches are reached. So a board on which EVERY reading failed publishes an empty
+    # `idle_unexplained` and exits 0: a fully dark board renders as a clean one, which is the
+    # exact arithmetic L1.57 exists to refuse and the exact inversion of this fence's own law
+    # (L1.28a: unmeasured utilisation counts as ZERO, so a dark board is maximally idle).
+    #
+    # `len(rows)` would be the OTHER half of the same defect -- `collect()` is a hardcoded list
+    # of ten builder calls, so it counts what the author wrote down and can never fall when a
+    # reading dies. It must count what the RUN found, and what the run found is the readings
+    # that came back live.
+    if args.report_only:          # the explicit "do not gate" switch -- no verdict to refuse
+        return 0
+    n_measured = sum(1 for r in rep["ceilings"] if r["status"] != "UNMEASURED")
+    status = "OK" if not rep["idle_unexplained"] else "IDLE-UNEXPLAINED"
+    # `fence=` explicitly: caller_name() reads `__main__.__file__`, which is correct for the cron
+    # invocation and WRONG for any in-process call (under pytest it resolves to pytest's own
+    # __main__.py). A misattributed row is not counted against the L1.57 coverage ratchet at all,
+    # so the declaration would silently not exist for exactly the callers that are easiest to add.
+    return fence_exit(status, {"OK"}, scanned=n_measured, of="ceilings with a live reading",
+                      fence="check_utilisation.py")
 
 
 if __name__ == "__main__":

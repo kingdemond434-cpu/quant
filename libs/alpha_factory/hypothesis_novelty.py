@@ -63,16 +63,59 @@ def _jaccard(a: set[str], b: set[str]) -> float:
     return len(a & b) / len(a | b)
 
 
+def _idf(priors: Sequence[PriorIdea]) -> dict[str, float]:
+    """Smoothed inverse document frequency over the priors' statements.
+
+    Weighting exists so containment (below) is not trigger-happy: desk boilerplate that appears
+    in half the graveyard ("funding", "cross", "daily") earns almost no mass, while the tokens
+    that actually name a mechanism dominate the match.
+    """
+    df: dict[str, int] = {}
+    for p in priors:
+        for t in _tokens(p.statement):
+            df[t] = df.get(t, 0) + 1
+    n = len(priors)
+    import math
+    return {t: 1.0 + math.log((n + 1) / (d + 1)) for t, d in df.items()}
+
+
+def _stmt_similarity(statement: str, prior: PriorIdea, idf: dict[str, float],
+                     n_priors: int) -> float:
+    """IDF-weighted OVERLAP COEFFICIENT (containment), not Jaccard.
+
+    R0434, measured twice (2026-07-30: 0/43; 2026-08-06: 0/50 recall): a generator presents a
+    SHORT candidate statement while graveyard rows run ~1500 chars, and Jaccard between the two
+    is bounded above by the length ratio — the 0.7 threshold was structurally unreachable for the
+    query shape the gate actually receives (measured max 0.667), so every re-test of dead ground
+    passed. Containment divides the matched mass by the SMALLER side's mass, so a short statement
+    fully contained in a long prior scores ~1.0 regardless of the prior's length. Query tokens
+    unseen in the whole corpus take the maximum IDF: distinctive new vocabulary is exactly what
+    should pull a candidate toward novel.
+    """
+    import math
+    a, b = _tokens(statement), _tokens(prior.statement)
+    if not a or not b:
+        return 0.0
+    unseen = 1.0 + math.log(float(n_priors + 1))
+    mass_a = sum(idf.get(t, unseen) for t in a)
+    mass_b = sum(idf.get(t, unseen) for t in b)
+    inter = sum(idf.get(t, unseen) for t in a & b)
+    floor = min(mass_a, mass_b)
+    return inter / floor if floor > 0 else 0.0
+
+
 def _similarity(
-    statement: str, features: Sequence[str], prior: PriorIdea
+    statement: str, features: Sequence[str], prior: PriorIdea,
+    idf: dict[str, float], n_priors: int,
 ) -> float:
     """Blend statement-token overlap with feature-set overlap.
 
     Features encode the mechanism, so when both sides declare them they dominate (0.7) — the same
     mechanism in different words is still a re-test. When features are absent on either side, fall
-    back to statement-token similarity alone.
+    back to statement-token similarity alone. Features are short symmetric sets, so plain Jaccard
+    is correct there; statements are asymmetric in length, so they use weighted containment.
     """
-    stmt_sim = _jaccard(_tokens(statement), _tokens(prior.statement))
+    stmt_sim = _stmt_similarity(statement, prior, idf, n_priors)
     if features and prior.features:
         feat_sim = _jaccard(set(features), set(prior.features))
         return 0.7 * feat_sim + 0.3 * stmt_sim
@@ -95,8 +138,9 @@ def hypothesis_novelty(
     nearest_id: str | None = None
     nearest_sim = 0.0
     nearest_lesson: str | None = None
+    idf = _idf(priors)
     for prior in priors:
-        sim = _similarity(statement, features, prior)
+        sim = _similarity(statement, features, prior, idf, len(priors))
         if sim > nearest_sim:
             nearest_sim, nearest_id, nearest_lesson = sim, prior.id, prior.lesson
     return NoveltyResult(

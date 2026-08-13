@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from libs.doctrine.constitution import OBJECTIVE_PREAMBLE  # noqa: E402
 from libs.llm.effort import reasoning_payload  # noqa: E402
 from libs.research.public_strategy_hunter import load_sources, run  # noqa: E402
 
@@ -62,6 +63,7 @@ def _ask(prompt: str) -> str:
                 {
                     "role": "system",
                     "content": (
+                        OBJECTIVE_PREAMBLE + "\n"
                         "Extract only retrieved public evidence. You have zero capital, promotion or threshold "
                         "authority. Return the requested JSON and use null rather than inference."
                     ),

@@ -1266,7 +1266,12 @@ ConfidenceBench (Jul 2026, arxiv.org/html/2607.20526): Brier — Claude Opus 4.6
 better-calibrated ⇒ (a) calibrate PER FAMILY and PER TASK-TYPE, never one global shrinkage;
 (b) RE-BASELINE on every model upgrade — a calibration fitted on the old model is stale input
 steering live sizing (L1.44 class). Elicitation: self-critique + consistency sampling beat naive
-verbalization (arXiv:2606.03437; exact deltas minable from saved PDF next run). Adopt the
+verbalization (arXiv:2606.03437; exact deltas minable from saved PDF next run).
+**[CORRECTED 2026-08-12, litminer run 6: that characterization of 2606.03437 was WRONG — the
+paper isolates OWNERSHIP BIAS (models rate their own answers up to +26.8% more confident;
+ΔECE 0.098–0.261 by elicitation format; fix = frame the answer as USER input). See the
+2026-08-12 entry C below; the elicitation-method-ranking claim should not be cited to this
+paper.]** Adopt the
 per-claim (confidence − evidence-quality) gap as a logged metric (StatefulDiscovery
 arXiv:2606.11851 — the literature converged on the desk's ledger design). Secondary idea, same
 program: benchmark verbalized confidence against an EXTERNAL feature-based success predictor
@@ -1686,3 +1691,685 @@ Concrete free upgrade surfaced: Binance serves premium-index klines keyless (fin
 PI under the FR) — routed to data_axis_watchlist + universe map this run. Recommendation rowed
 via scripts/recommendations.py (fence checklist into the carry pipeline's verification layer).
 [§33: wired -> docs/research/data_axis_watchlist.md]
+
+- **2026-08-11 (brain-hunter):** Qlib separates cross-sectional normalisation into the PROCESSOR
+  layer (`CSRankNorm`/`CSZScoreNorm` — applied even to the LABEL, so models learn relative
+  returns) while every expression stays time-series. Clean architectural split the desk can copy:
+  peer-relative ops in the feature layer ONLY when the peer set IS the hypothesis; universe-
+  relative normalisation downstream at training time. Also: qlib's default label
+  `Ref($close,-2)/Ref($close,-1)-1` builds ONE BAR of execution slack into the target — the same
+  execution-realism discipline the desk enforces, arriving independently. Ledgered with R0437
+  (grouping-map wiring); operator extraction at search_operator_library.md `qlib-alpha158`.
+
+## 2026-08-12 (prospector, NP era-archaeology) — VR/Hurst regime instruments manufacture phantom mean-reversion on last-traded prices below ~15-min sampling
+SOURCE: Nuclear Phynance thread 161299 (2012-06/07, Wayback 20121015082004id_), practitioners
+Baltazar (1,653 posts) + cquand + MrMagoo; anchored to Lo's variance-ratio test (A Non-Random
+Walk Down Wall Street). THE FINDING, practitioner-stated and microstructure-standard: variance
+ratio / realized-vol frequency-structure / Hurst estimators read bid-ask BOUNCE as mean
+reversion when sampled on LAST-TRADED prices faster than ~15 min; midpoint sampling permits
+~1-min. WHY IT MATTERS HERE, NOW: data/strategy_coverage.json names STATISTICAL-ARBITRAGE the
+next family to open (state UNCOVERED, n_tested=0), and R0296 already directs its budget to
+cost/capacity first. The FIRST instrument any stat-arb opening builds is a mean-reversion
+quantifier — and the desk's bars are venue last-trade closes, so a naive VR/Hurst screen at
+sub-hour horizons starts life as a bounce detector with a green positive control (the same
+instrument-artifact class as coinbase_premium_timing's close-timestamp kill, L1.46). THE
+CONSTRAINT TO BAKE IN AT BUILD TIME: (a) sub-hour VR/Hurst constructions run on MIDPOINTS
+(the desk's own L2/tape corpus has them; GMO tick archive if cleared adds a JP venue) or on
+trades at ≥15-min sampling; (b) the screen ships a NEGATIVE control — a synthetic random walk
+with realistic bounce must NOT flag as mean-reverting — alongside the positive control (the
+2026-08-05 lesson: a positive control alone passed while the study was wrong). Ledgered same
+run via recommendations.py (prospector has no build authority; this is the consumer-carrying
+row the write-only-inbox failure class requires).
+
+## 2026-08-12 (litminer run 6) — GAP #70's lost extractor RE-DERIVED, WORKING, source preserved here
+
+**The register row's own defect recurred and was caught in-run:** this run first wrote "interior
+CAR table unread — no PDF extractor, installs frozen" into a watchlist card, i.e. inherited the
+exact false capability claim GAP #70 documents (asserted once, re-tested never). Re-tested it
+same-run per #70's standing rule: the premise is still true (no pypdf/fitz/pdfminer/poppler) and
+the conclusion is still false — **~30 lines of stdlib re-derive the run-3 prototype that /tmp
+recycled**. Evidence: ran against arXiv 2412.02452 (Saggu–Ante–Kopiec, SEC classifications):
+**57,370 chars extracted**; recovered interior facts a summary never carried (48-event dated
+table with tickers incl. DAO 25/07/2017; market model benchmarked on **Bitcoin log returns** ⇒
+CARs are BTC-relative; pre-announcement CARs −2.4% insignificant while pre-announcement VOLUME is
+abnormal; −3.9% pre-AR in the insider-trading subsample "hinting at potential leaks").
+
+**Source (stdlib-only; the durable copy #70 lacked — land as `scripts/pdf_text.py`, owner brain;
+litminer freeze bars scripts/ writes):**
+```python
+import re, sys, zlib
+raw = open(sys.argv[1], 'rb').read()
+texts = []
+for m in re.finditer(rb'stream\r?\n(.*?)endstream', raw, re.S):
+    try:
+        d = zlib.decompress(m.group(1))
+    except Exception:
+        continue
+    if b'Tj' not in d and b'TJ' not in d:
+        continue
+    out = []
+    for tm in re.finditer(rb'\((?:\\.|[^\\()])*\)\s*Tj|\[(?:[^\]\\]|\\.)*\]\s*TJ', d, re.S):
+        for s in re.finditer(rb'\((?:\\.|[^\\()])*\)', tm.group(0)):
+            t = s.group(0)[1:-1]
+            t = t.replace(b'\\(', b'(').replace(b'\\)', b')').replace(b'\\\\', b'\\')
+            out.append(re.sub(rb'\\[0-7]{1,3}', b'?', t))
+        out.append(b' ')
+    if out:
+        texts.append(b''.join(out))
+sys.stdout.write(b'\n'.join(texts).decode('latin-1', 'replace'))
+```
+**Known limitation, named:** parenthesis-literal strings only — `<hex>` Tj strings are skipped,
+which is where 2412.02452 keeps its bracketed event-windows and the −17.2% peak cell. The landed
+version should add hex-string decode (one extra `re.finditer(rb'<[0-9A-Fa-f\s]+>')` branch +
+font-agnostic best-effort). Octal escapes currently degrade to `?` (lossy-but-honest).
+
+## 2026-08-12 (litminer run 6 — AI-methods frontier; full evidence + URLs in `deep_sweep/20260812_litminer_aimethods.md`; all 8 live wounds received mapped findings)
+
+### A [w8/w1] Validation-integrity instrumentation: trajectory logs as evidence-of-record; condition on leakage, never average; audits read logs+code ◆◆compounding
+STC (arXiv 2606.05241, full read): agents doing live search during validation retrieve the answer —
+3-level taxonomy (metadata/question-context/explicit-answer) with a cheap detector stack (URL regex ·
+normalized-LCS · positive-control-validated LLM judge). The load-bearing depth catch: headline
+inflation "up to 4%" is the AGGREGATE; conditional on an answer-leakage event, accuracy hits ~100%
+(HLE 12.75%→100%). Recipe: (1) every hypothesis-validating agent run persists (query, URL, snippet)
+tuples — a verdict without its trajectory is the L1.49 class; (2) desk analogs: retrieving the
+hypothesis's SOURCE paper = circular confirmation; retrieving a decay study = conclusion leakage;
+(3) verdicts with leakage-class events are VOID and re-run search-blind, not down-weighted;
+(4) standing search-off ablation separates search-borne from model-borne verdict content.
+Companions, same theme measured: rubric-scanner transcript audits (2607.27518 — scanner F1 is
+ASYMMETRIC: guessing 0.93 sens / tool-failure 0.14, so structural detectors stay primary for
+env-failure; Docent lineage: 9.4pp of "capability" was harness bugs) and the appendix-measured
+audit delta: LLM-audit from the paper alone 51.4% vs logs+code 74.0% (2509.08713) — "assert the
+built artifact" now has an external effect size. [§33: wired -> docs/research/recommendation_ledger.json R-row (this entry)]
+
+### B [w1] Gate-battery validity trio — composes with #86 (IRT): per-gate information ≠ ordering transfer ≠ construct structure; all three computable from ledgers already on disk ◆◆compounding
+(1) PREDICTIVE validity (2606.19704): does the gauntlet's ranking TRANSFER? Field exemplar: a
+competently-run 149-team leaderboard had ρ=−0.13 vs its own hidden set. Port: Spearman(gate-time
+ranking, realized OOS ranking) per cohort; time-fold rank rotation; pre-registered falsification
+thresholds. Position paper — the MEASUREMENT is evidence-backed, the composite PV formula is
+CLAIM-grade. (2) CONSTRUCT validity checklist (2511.04703, NeurIPS 2025, 445 benchmarks): field
+base rates (21.8% define no phenomenon; only 16% run any statistical test) say construct failure
+is the NORM. Two desk gaps: a one-paragraph per-gate CONSTRUCT STATEMENT (phenomenon, confounds,
+known false-kill modes — would have caught the DSR-bar design defect BEFORE 420 hypotheses were
+spent) and a standing killed-population error analysis (the 86%-OOS-decay-of-rejects measurement,
+made per-cohort — which is also the empirical input PV and IRT both need). (3) MTMM
+convergent/discriminant (Campbell–Fiske; CogArena 2607.24999, 2505.10573): gate-score correlation
+matrix — gates claiming DIFFERENT constructs correlating ≈1 = fictional breadth that silently
+breaks multiplicity accounting; the desk's "12 slots = 4.56 effective bets" measured the symptom,
+this names the diagnostic. [§33: wired -> docs/research/recommendation_ledger.json R-row (this entry)]
+
+### C [w4/w5/w3] Panel independence & elicitation batch — the two-family doctrine now has published numbers; ownership bias is the calibration-inversion mechanism class ◆◆compounding
+Deliberative Illusion APPENDIX (2606.03032): discussion erases up to 72% of critical facts,
+attrition MONOTONE per round (cap any shared-context stage at ≤1 round; independent elicitation +
+calibrated aggregation #87 stays right); same-family majorities match the base model's direct
+output 65–76% (marginal same-family seat ≈ n_eff 1); **cross-family teams retain 0.598 vs
+same-family 0.357** (+67% — the cleanest published support for L1.31/L1.33 yet); one malicious
+seat → 58.9% of outputs carry the injection (panel stages must never share context). BEI
+entanglement audit (2604.07650, COLM): excess-co-failure-given-difficulty statistic, fully
+portable to the desk's per-seat logs — turns "is our 400-seat panel n_eff≈4?" into a statistic;
+judge–target entanglement predicts judge bias ρ≈0.5 ⇒ CROSS-FAMILY VERIFICATION BY DEFAULT,
+same-family verification gets a measured haircut; HONEST NULL carried: entanglement-aware
+reweighting beat competence weighting by +0.001 — spend on the audit and judge-assignment policy,
+not a fancier voting formula; caveat: frontier closed models show cross-family CIG convergence
+(shared data/distillation), so cross-family independence is measurable, not assumable.
+OWNERSHIP BIAS (2606.03437 — run-4 record corrected below): models rate their OWN answers up to
++26.8% more confident; ΔECE 0.098 (P(True)) → 0.261 (linguistic Likert). Fixes, all free:
+elicit confidence with the item framed as USER-provided third-party text; prefer P(True) over
+qualitative conviction labels (2.7× worse); keep generator/grader in separate fresh contexts
+(the split alone is worth ECE ~0.1–0.26). Independent COLM line: "Self-Preference Bias in
+Rubric-Based Evaluation". A/B-able on the desk's own logged forecasts at zero cost.
+[§33: wired -> docs/research/recommendation_ledger.json R-row (this entry)]
+
+### D [ENGINE-UPDATE #85, w2] The e-process rebuild now has its OPERATIONS MANUAL — formulas sufficient to reimplement in-repo, no package import ◆◆compounding
+2602.06379 (Feb 2026, + mature Ramdas-school corpus): construction by data type (betting
+martingale for bounded; mixtures for continuous; calibrators for existing p-values); design
+calibration BEFORE the run: GROW-optimal λ* with **expected N ≈ log(1/α)/g(λ*)** — replaces
+"how long must a forward clock run" guesswork with a formula tied to the pre-registered kill
+criterion; the 8.8×-wound fix stated as law: threshold E_t ≥ 1/α is CONSTANT under any peeking
+cadence (Ville), always-valid p = 1/sup E is monotone — re-reading cannot inflate; CONSTRAINT
+that binds the desk's self-tuning organs: every adaptation must be a predictable function of
+PAST data (timestamp tuning inputs strictly before the data they bet on); multiplicity for a
+CORRELATED hypothesis book: e-BH, and the arithmetic mean of arbitrarily-dependent e-values is
+still an e-value (products need independence); frozen e-processes for killed hypotheses.
+Practice evidence: enterprise A/B deployment (2302.10108). [§33: wired -> docs/research/recommendation_ledger.json R-row (this entry)]
+
+### E [w7] Generation-side quality — grade the GENERATOR; menus, not models, may be doing the choosing ◆compounding
+Appendix-measured (2509.08713): metric selection was 100% LIST-ORDER dependent and 82.4% of
+benchmark picks were the first four listed — any desk organ presenting candidate lists
+(hypotheses, axes, metrics, lenses) must RANDOMIZE order per call and LOG the permutation, then
+measure the desk's own ordering sensitivity (if selection is order-driven, the 420 were never
+chosen — the menu chose). Silent protocol drift: 25% of runs quietly subsampled/substituted data
+⇒ machine-checkable protocol block (universe, dates, n) attached at GENERATION time, diffed at
+gate time. ForeSci (2606.00644, CC-BY): temporal-cutoff backtesting OF THE GENERATION ORGAN —
+run it as-of historical dates on pre-T vault/data only, score picks against the desk's own
+realized OOS ledger = a generation-quality time series independent of the gauntlet (fixes
+generation without touching gates); adopt the evidence–decision decoupling check (the named
+failure mode: right evidence cited, wrong object concluded — audit that cited evidence supports
+the SPECIFIC hypothesis). [§33: wired -> docs/research/recommendation_ledger.json R-row (this entry)]
+
+### F [w6] Organ reliability & memory — external evidence CONVERGES on the desk's existing design; the binding constraint is supersession; reliability never follows capability for free ◆compounding
+Measured null worth carding so it never reopens: memory PRODUCTS lose to plain BM25 (60.5% vs
+Mem0 32.6 / Zep 37.5 / Cognee 28.3, MemoryAgentBench ICLR26 MIT) — do not adopt Mem0/Letta/Zep-class
+tooling. File-based coding-agent memory beats RAG 72.5% vs 48.5% at 115M-token horizon
+(LongMemEval-V2, CC-BY) — the vault+BM25+MEMORY.md stack is the evidence-favored architecture.
+Selective forgetting fails UNIVERSALLY (≤28% multi-hop for every method) ⇒ explicit supersession
+ledgering is load-bearing: every memory write that invalidates a prior fact must NAME the
+superseded row — no reader model can be assumed to resolve conflicting rows itself. Compaction is
+a COST knob not a quality knob (8 condensation strategies, none changed hypothesis quality;
+LLM-summary condensers cost +24–94%): prefer structural masking of stale tool outputs; keep
+write-ahead state files (run 5 of this organ died costing a header, not knowledge — the protocol
+works). Reliability is its own dimension (two-source: 2603.29231; Princeton HAL 2602.16666
+ICML26): capability gains yield only small reliability gains, frontier models MELT DOWN more
+(≤19%) by attempting ambitious multi-step plans ⇒ (a) after ANY organ model swap re-measure the
+organ's completion/decay curve — directly relevant to the live llm-auto-upgrade branch; (b) fit
+duration-bucketed reliability curves from existing organ logs and set checkpoint cadence BEFORE
+the measured meltdown onset; (c) constant-hazard prior (Ord 2505.05115): short duties compound
+reliability. [§33: wired -> docs/research/recommendation_ledger.json R-row (this entry)]
+
+### G [validation / lead-lag lane] Cross-venue lead-lag on venue MARKS is unidentified BY CONSTRUCTION — the R0117 refutation now has a second, deeper ground; standing rule proposed ◆compounding
+arXiv 2608.09188: venue marks are fixed points of an oracle operator (external anchor + self/peer
+reference) ⇒ "lead-lag and information-share estimators have power equal to size" — infinitely
+many topology decompositions fit the same reduced form when venues reference each other's prices
+(crypto mark/index prices DO). R0117 died on sampling-phase aliasing (desk-measured); this is the
+identification-theoretic kill of the same family one level down: even perfectly-sampled lead-lag
+on marks/indices is meaningless. Companion formalism: the Epps effect (coupled-LOB paper, q-fin.TR
+2026-06) is the named form of the sampling confound. STANDING RULE PROPOSED for the lead-lag
+family: any future proposal runs on RAW TRADES with own-clock provenance (desk recorder) — never
+mark/index series — AND Epps-corrects its sampling, or it is pre-killed twice over. The OpenMarket
+CC-BY ms-paired corpus (universe map 97) is the free testbed satisfying both conditions.
+[§33: wired -> docs/research/recommendation_ledger.json R-row (this entry)]
+
+### H [execution 66bps program + stats shelf] Liquidity-state-first execution prior; two 2026 decision-time-leakage formalisations; post-selection statistics shelf ◆compounding
+(1) arXiv 2607.09230 (Binance BTC/ETH futures L2, 2023–2026): "the first-order predictive signal
+is the pre-event L2 liquidity state" — a coarse pre-event state classifier predicts post-event
+liquidity REGIMES; order flow only adds on top. Not alpha — an execution-timing prior: classify
+liquidity state from the desk's own L2 recorder BEFORE placing child orders (predicts fill
+conditions, not returns). Single-author 8pp = design-hint grade; replicate on own data.
+(2) Backtest-leakage detector pair, independently formalised in 2026: 2605.23959 ("one-switch"
+decision-time leakage benchmark) + 2607.04958 (look-ahead-freedom as temporal non-interference) —
+candidate MECHANISED gate additions (the desk's leakage defence is currently design-review +
+causal_guard, whose enumerated-subset blindness R0289 documented). (3) Stats shelf for the
+methods backlog: tsbootstrap (2607.06690, distribution-free UQ); "Post Selection Estimation of
+Sharpe Ratios" (q-fin.TR 2026-06 — the desk selects before it reports, DSR does not price the
+selection FORM); "Lucky or Good? Outcome Noise, Effective Sample Size" (2607.27544 — same
+denominator discourse as effective-bets doctrine); HAC nugget from 2607.26188: HAC over-rejects
+at cycle scale (size 0.33 at nominal 0.05, n≈4 regimes) — binds any desk test with few
+independent regime observations. [§33: wired -> docs/research/recommendation_ledger.json R-row (this entry)]
+
+---
+
+### #116 — CLUSTER EVERY CALENDAR/EVENT TEST ON A PERSISTENT SERIES (measured: ~4× t-inflation)
+_AR frontier miner, 2026-08-12. Measured on this desk's own BTCUSDT D1, not imported._
+
+The desk's EVENT-AND-CALENDAR family tests dummies against daily series. Whether that is honest
+depends entirely on the **persistence of the series being tested**, and the two cases differ by 4×:
+
+| series | ICC (within-event) | design effect | naive daily-dummy t is inflated by |
+|---|---|---|---|
+| returns | **0.000** | 1.00 | **1.00× — a daily dummy is fine** |
+| funding | **0.525** | 16.07 | **≈4.01×** |
+| basis | **0.695** | 20.96 | **≈4.58×** |
+
+So *"is a daily calendar dummy valid?"* has **no general answer**. It is fine on returns and badly
+broken on funding/basis/OI/spread. **The trap sits on the good path:** the desk should prefer
+direction-agnostic channels (129/129 directional mechanisms failed 2026-08-01; funding/carry is the
+only repeat survivor), and those are exactly the persistent series where the naive test manufactures
+significance. A calendar edge "found" on funding at t≈2.6 is t≈0.65 once clustered.
+
+**FIX:** any event/calendar test must cluster at the **event** level (or report the ICC and design
+effect alongside the naive t). This is gap-register row 85 — *count EVENTS IN THE WORLD, never
+READINGS OF THE WORLD* — instantiated with a measured multiplier for the calendar family.
+Evidence: `data/ar_ramadan_power_check.json`. Instrument: **OP-053**.
+
+---
+
+### #117 — GRAVEYARD-CHECK SEAT BRIEFS BEFORE DISPATCH (two consecutive seats sent at dead ground)
+_AR frontier miner, 2026-08-12._
+
+**BR s1 (08-01):** its era target "BR P2P premium" was already `mercado_br` REJECTED, inside a family
+killed 5×. **AR s1 (08-12):** its era target — *"LocalBitcoins MENA-era P2P premium, Egypt/Lebanon
+premium episodes"* — is `era_crossvenue_fiat_premium_arb` (buried **7×**) inside the regional-premium
+class the desk itself declared **exhausted**, whose closest MENA-adjacent case (`try_premium_timing`,
+Turkey capital-control) was REJECTED and whose lone survivor (kimchi) was KILLED 08-01. The desk's own
+cross-era synthesis even states the rule that forecloses the replacement search: *"do not hunt for a
+region whose barrier is low enough to arb — that region's premium is already zero."*
+
+**The failure is structural, not clerical:** seat briefs are written from a **region stereotype**
+("this region has capital controls → hunt its premium"), which generates the *same* mechanism for
+every region, and the desk has now tested that mechanism in KR/JP/BR/TR/CN/RU/Coinbase. Each new seat
+therefore arrives pre-loaded with a hypothesis the graveyard already answered, and spends its scarce
+first item rediscovering that.
+
+**FIX (cheap, one step):** run the seat brief's era target through the graveyard + `strategy_coverage.json`
+**at brief-writing time**, and where the family is HUNTED, replace the target rather than dispatch it.
+Both seats caught it themselves at the cost of an item — but the catch depended on the seat choosing
+to check first, which is not enforced anywhere. **Standing implication:** a region's *stereotype* is
+the least informative thing about it; the BR seat's actual win was a **government dataset**, not a
+premium, and the AR analogue (GCC regulators, VARA/ADGM/SCA/CMA, the exchange layer) is still unmined.
+
+---
+
+### ENGINE IDEA — screen a mined validation framework by INVARIANCE before importing anything from it (BR frontier miner, 2026-08-12)
+
+Miners are explicitly told to route AI-quant structures and validation frameworks here as ENGINE
+ideas. This run mined one, and the screen that killed it is worth more than the artifact was.
+
+**The one-line test:** for any mined backtest/validation library, ask whether the statistic it
+scores is mathematically **invariant** to the resampling it performs. If it is, the gate carries
+zero information however sophisticated it looks. Permute twice; check the statistic moved by more
+than machine epsilon.
+
+**The proving instance** (`pedhsm/systematic-research-framework`, PT-BR, self-described as a
+*validation* library implementing MCPT): `mcp/tester.py` permutes the **realised return series** and
+scores `sharpe = mean/std*√252`, `cagr = exp(sum r)**(1/years)−1`, `vol = std*√252`. Mean, std and
+sum are each permutation-invariant, so the permuted statistic *is* the real statistic — measured
+**max−min = 1.1e-15** across 500 permutations × 4 synthetic series. Because floating-point summation
+is not associative, the p-value then resolves on rounding order: **winner p=0.978, catastrophe
+p=0.618**. Full kill in `docs/graveyard.md` (`mcpt_return_permutation`); screen filed as OP-056.
+
+**The general rule worth carrying:** *a permutation null must destroy the thing the statistic is
+supposed to measure.* Permuting realised strategy returns to test a Sharpe destroys nothing — the
+P&L is already computed. The correct null permutes the **price path** and re-runs the strategy, or
+permutes the **signal** against fixed returns.
+
+**NO BUILD IS OWED, AND THAT IS THE FINDING.** `libs/validation/bar_permutation.py` already permutes
+**bars** rather than returns, and already handles the floating-point tie problem this repo falls
+into, via a measured `_TIE_RTOL = 1e-4` plus the add-one correction `(sum(s ≥ real − tol) + 1)/(n+1)`.
+Two ecosystems, no citation link in either direction, same trap — one solved, one not. Per the
+provenance rule that is **genuine cross-ecosystem convergence**, and what it buys here is
+**confirmation of an existing desk design**, not a new subsystem. Recording the no-build explicitly
+so a future reader does not mistake the graveyard entry for an open gap.
+
+**Checked and NOT claimed as a defect:** the mined thesis (`mateusmartinelli/tcc`) loads a T-bill
+series and computes excess returns, which is the discipline the desk's own `beats_baselines` was
+once found to skip. I verified current state before citing it: `libs/autodiscovery/models.py` and
+`libs/validation/robustness_filters.py` now resolve a missing benchmark to an explicit **UNMEASURED**
+state rather than a silent pass, which is the correct fix and is in place. **Confirmatory only — no
+row filed**, because filing one would manufacture a finding out of a lesson the desk already banked.
+
+---
+
+### #118 — BULK-ARCHIVE ENUMERATION IS A THREE-MODE TAXONOMY, AND EVERY DEPTH CLAIM ON THIS DESK IS UNLABELLED
+
+_Filed 2026-08-12 by the free-data-alternatives miner. Method/tooling finding; no build proposed
+under the research freeze. Evidence: `docs/research/data_axis_watchlist.md` session note 2026-08-12,
+universe-map entries `99-binance-coinm-vision-archive`, `101-jpx-investor-type-free`._
+
+**THE DEFECT IS IN HOW THE DESK MEASURES ARCHIVE DEPTH, NOT IN ANY ONE ARCHIVE.** Verifying the
+Binance COIN-M bucket produced a failure that generalises past Binance:
+
+**1. The S3 lister truncates at `MaxKeys=1000` and never errors.** Listing
+`data/futures/cm/daily/metrics/BTCUSD_PERP/` without a continuation token returned exactly 500 zips
+(+500 checksums = the cap) and reported the series **ending 2022-11-24**. Paginated, it is **1,754
+files ending 2026-08-11** — a **3.7-year understatement that looks like a complete answer**. This is
+the desk's existing pagination lesson (learned on the Binance *income* REST endpoint) reappearing on
+a completely different endpoint class, which is the argument for treating it as a *class* property.
+
+**2. The three enumeration modes, and what a depth number means under each:**
+
+| mode | example | depth claim is… |
+|---|---|---|
+| S3-XML lister | `data.binance.vision` | a **LOWER BOUND** — silently capped at 1000 keys |
+| HTML directory listing | `public.bybit.com/trading/` (1,889 dirs, one response, no cap) | a **real count** |
+| no index / soft-empty | `okx.com/cdn/okex/traderecords/` → **HTTP 200, zero-byte body** | a **GUESS** — URLs must be constructed from a date grid |
+
+**3. The OKX case is the dangerous one and it is a known desk failure class wearing new clothes.**
+The directory returns **200 with an empty body** rather than 404, so `if resp.status_code == 200`
+passes against nothing at all. That is the *heartbeat-vs-payload* defect already on the desk's lesson
+list ("a heartbeat proves the loop is alive, never that the pipe is"), relocated from a websocket to
+an archive. And because absence of a constructed URL is indistinguishable from a genuine gap in the
+data, **"no file" resolves to a clean verdict** — WS-005 in the data layer.
+
+**WHAT IS OWED (verification, not code):** every S3-derived depth figure recorded in
+`data_axis_watchlist.md` before 2026-08-12 is a lower bound of unknown tightness and should be
+re-listed with pagination. This re-grades existing cards rather than adding new ones, so it is
+pure backlog-burn against the desk's stated bottleneck.
+
+**TWO COLLECTOR-DESIGN CONSTRAINTS FROM THE SAME RUN, recorded so they are not re-learned per venue:**
+- **Archive tiers are not nested.** On both Binance books, `monthly` carries `fundingRate` and
+  `daily` does not; `daily` carries `bookDepth`/`liquidationSnapshot`/`metrics` and `monthly` does
+  not. The near-universal assumption "monthly = aggregated daily" silently costs a collector either
+  OI+liquidations or funding, entirely.
+- **Reconstructing an instrument universe from today's `exchangeInfo` is a look-ahead in the
+  UNIVERSE.** Binance COIN-M: 30 live instruments vs 272 in the archive → **89% of instrument
+  history invisible**, including all 212 expired quarterlies. Upbit does the opposite (purges
+  delisted candles). **Neither polarity is the default**, it must be checked per venue, and it fails
+  toward a **false null** — the same direction as the `pct_circ_now` denominator leak already banked.
+
+**MINOR, AND HONESTLY A DEPENDENCY NOTE RATHER THAN A DEFECT:** legacy `.xls` (BIFF/OLE2) is a
+recurring JP/KR government-and-exchange publication format and this desk cannot read it —
+`pandas.read_excel` raises `ImportError: Missing optional dependency 'xlrd'`. It blocked content
+verification of the free JPX investor-type table this run (format authenticated via OLE2 magic
+bytes; columns unread). Recording the dependency; not installing it under the freeze.
+
+## 2026-08-12 (litminer run 7 — parent seat; full evidence in `literature_coverage.md` run-7 note)
+
+### #119 — THE SOURCE-VERIFICATION QUEUE IS 100% NOISE, THE OBVIOUS FIX SILENTLY DISABLES A GATE, AND NO TEST CAN CATCH EITHER ◆◆compounding
+_Litminer run 7, 2026-08-12. Found by doing the queue's own work: every item it handed me was
+already done. Run 6 noticed this in prose and moved on, so the desk has now paid for the
+diagnosis twice — this entry measures it instead._
+
+**(1) THE QUEUE.** `libs/research/source_backlog._classify` reads the `[§33: ...]` marker for
+`killed` and `deferred` only. §33 defines **four** verbs. `wired`/`screened` fall through to the
+fail-open `return "verification"` unless the card's PROSE happens to contain "verified-clean" /
+"destroyed-at-source" / "needs-legitimacy-review". **Measured over the live watchlist (34 cards):
+all 5 cards in the "VERIFY this cycle" queue carry a terminal §33 marker (4 `wired`, 1
+`screened`) — the organ the desk's doctrine calls its BOTTLENECK has been fed a queue with zero
+verification work in it.** Classification is decided by prose accident: `wired` cards scatter
+across resolved(2)/verification(4)/legitimacy(1), `screened` across resolved(2)/verification(1).
+The module's own docstring states the rule it breaks — *"THE DISPOSITION IS READ FROM THE §33
+MARKER, NEVER FROM PROSE"* — and documents this exact class (F0002, fixed 2026-07-28 for the
+other two verbs, measured cost then: three sessions re-deriving the same non-workability by hand).
+**Upgrade-before-build (L2.9): the sibling module `libs/research/mine_conversion` already defines
+`_TERMINAL = ("wired","screened","killed")` and artifact-checks each (`backing_reason`: exists /
+non-empty / postdates / anchor). `source_backlog` imports nothing from it.**
+
+**(2) THE TRAP — DO NOT APPLY THE OBVIOUS PATCH.** `max_audit._mine_items` uses the picker's
+*presentation* category as an *enforcement* predicate: it drops every card `parse_watchlist` calls
+`resolved` from the §33 population. **Simulated directly: the naive fix (`wired`/`screened` →
+`resolved`) takes the artifact-checked population 17 → 11 and strips `backing_reason` from 6
+cards** — including cards 23 and 27, the ones this seat hand-verified this morning. It would trade
+a visible nuisance for invisible loss of enforcement (L1.49, "a gate that never ran").
+**CORRECT PATCH:** a THIRD category (`converted`) that leaves the verify queue but stays inside
+the §33 population; `_mine_items` keeps filtering on `resolved` ONLY.
+
+**(3) WHY NO TEST FAILS.** 20 tests, two fixtures. Verb coverage: **`deferred` ×4, `killed` ×1,
+`wired`/`screened` ZERO.** The live watchlist uses `deferred` 12, `killed` 5, `screened` 5,
+`wired` 8 — **13 of 30 production markers (43%) use verbs no fixture contains.** The fixture was
+extended exactly as far as the F0002 fix reached and no further, so the suite is structurally
+incapable of failing on this bug. Same lesson as `libs/features/validation.py` / R0289 ("a fixture
+containing only the covered columns cannot reveal what the guard is blind to"), now in a second
+organ. **The test to write is a PROPERTY, not a case:** assert every §33 verb present in the live
+watchlist is represented in the fixture, so the next verb added to §33 cannot be silently
+unhandled.
+
+**BLAST RADIUS, MEASURED not asserted:** `source_backlog_next.py` is invoked by **10 organ
+prompts** — `ops/litminer_dig_prompt.txt`, `ops/prospector_dig_prompt.txt`,
+`ops/dataaxis_dig_prompt.txt` and the seven frontier seats (`ar/br/cn/en/jp/kr/ru`) — plus
+`CLAUDE.md` and `max_audit.py`. All ten carry the byte-identical order: *"clear those PENDING
+VERIFICATION items first -- the desk's bottleneck is verification, not cataloguing"*. **So the
+FIRST ACTION of every digging organ on this desk is currently aimed at a queue containing zero
+verification work.** This is not a cosmetic report bug; it is a standing misdirection of the
+desk's declared bottleneck effort, paid once per organ per run.
+**NOT APPLIED — litminer freeze bars `libs/`.**
+
+### #120 — THE DESK'S BIGGEST LIVE WOUND HAS AN INSTRUMENT THAT DISCARDS 37% OF ITS OWN EVIDENCE, AND ONLY 19 ROWS OF IT EXIST ◆◆compounding
+_Litminer run 7, 2026-08-12. Extends entry **H** (execution 66bps program) with an external live
+measurement and a desk-side instrument defect. NOT an alpha claim; must never enter the gauntlet._
+
+**EXTERNAL PRIMARY:** `arXiv 2605.05089` "Dynamic Collateral Control for Permissionless
+Spot-Perpetual Basis Trading" (Krestenko et al., 2026-05-06), read in full via the
+`arxiv.org/html/` route. **1,924 live basis trades, ~$8.95M notional, Arbitrum ERC-4626 vault,
+2025-04→2025-12: buy-basis median 18.2 bps (p90 ~25) vs sell-basis median 38.9 bps (p90 ~50+) —
+the CLOSING side costs ~2.1× the opening side, with a much thicker right tail.** Upper rebalance
+boundary given economically: `(α_U − α†)·D·κ̃_h = K_reb` — rebalance only when carry recovered over
+horizon h exceeds full round-trip cost; the authors state it **"may disappear entirely under
+realistic execution costs"**, which independently corroborates that the desk's churn problem
+(GAP #42) is STRUCTURAL and that its min-hold fix has the right economic form. Lower boundary:
+`α_L := inf{α : Π_liq(α;h_liq) ≤ ε_liq}`, h_liq=3h, ε_liq=1e-4.
+
+**WHY IT MATTERS:** the sleeve's wound is `price_pnl` −51.74 bps/round-trip on a delta-neutral
+pair, **flat across every hold bucket** — a cost paid once per round trip, which is exactly the
+signature a close-side execution asymmetry produces. R0219 hunts this ~66 bps gap.
+
+**GRADE — HYPOTHESIS, NOT PRIOR (citation chase, 2 levels):** 2605.05089 cites NO prior study
+measuring open/close asymmetry and presents its own as novel; no independent second measurement
+exists. It is one vault, one venue class, 8 months. **And it is DeFi (Hyperliquid + 1inch/
+Arbitrum): gas and AMM routing inflate DEX sell-side cost in ways a Binance CEX book does not
+share. The LEVELS do not transfer; only the STRUCTURE does.** Adopting 18.2/38.9 bps on a CEX book
+would import a cost structure the desk does not trade (L1.55 fabricated input).
+
+**SCREEN-ON-DISCOVERY, RUN SAME SESSION → UNIDENTIFIED, correctly.** `data/cashcarry_trades.json`
+carries the per-leg decomposition, so the falsifier is runnable in principle. But the `_tca`
+wrapper landed **2026-07-27** and **430 of 449 event rows predate it**; the fair denominator is
+**19 rows (6 opens, 13 closes)**, book flat since 2026-08-01. **The desk cannot answer its own
+66 bps attribution question from its own tape — n=19, not a broken instrument. UNIDENTIFIED is
+the honest verdict (L1.45), and reading an external n=1,924 is exactly what a desk in that
+position should do.** Direction agrees as a POINTER ONLY: close-leg spot slip median +10.39 bps
+(n=8) vs open-leg +0.04 (n=4) — n=8 supports no claim and is recorded only to justify repair.
+
+**THE REAL, CHEAP DEFECT:** on the fair denominator `spot_slip_bps` is present on 4/6 opens and
+8/13 closes — **7 of 19 rows (36.8%) lost, cause 100% mid-read failure, never a missing fill**
+(`spot_mid is None` on all 7; `spot_fill` missing on 0). `_mid_of`
+(`run_cashcarry_executor.py:1590`) returns `None` on ANY exception AND on a zero/empty book, so
+**"the venue read threw" and "the book was empty" are byte-identical downstream** — the desk's own
+L1.55 ABSENT-vs-UNREADABLE law violated inside the instrument built to attribute its largest loss.
+**PATCH:** record the failure REASON beside the `None` so a 37% instrument loss is attributable
+instead of invisible. **MEASUREMENT-FIRST: repair the instrument and accumulate rows; this
+justifies NO size change and NO rail movement.** Money path + sterile-cockpit rules apply.
+**NOT APPLIED — litminer freeze bars `scripts/`.**
+
+## 2026-08-12 — BRAIN hunter s2: four process imports, one of them runnable today
+
+Provenance as in `search_operator_library.md` `wq-brain-pipeline` (GPL-3.0 simulator read as text + an unlicensed CN-language community skill; facts only, nothing installed or run, official platform docs WALLED). **Everything below is METHOD. No threshold from that platform is adopted — their bar is an in-sample submission filter for an operator that runs its own OOS stage and pays per accepted alpha (L1.6).**
+
+### 1. THE SUB-UNIVERSE ROBUSTNESS TEST — the desk has the inputs on disk and does not run it
+
+BRAIN gates every alpha on `LOW_SUB_UNIVERSE_SHARPE`: **the alpha must also work on the more liquid TOP1000 subset, not only on the full TOP3000.** It is reportedly the **3rd-largest failure cause at 51.0%**, and the prescribed repairs are "avoid `rank(-assets)`, use `group_rank`, add a liquidity filter".
+
+**WHAT IT ACTUALLY DETECTS, and why it is not a capacity gate in disguise:** it separates *an edge you chose to harvest in a small-cap niche* from *an edge that only exists because the illiquid tail is in your cross-section*. The desk deliberately hunts small (§42, capacity parity L1.18a) — so it is **structurally the most exposed desk to this failure mode and the least likely to notice it**, because a liquidity-tail artifact and a genuine small-name edge produce the same backtest.
+
+**RUNNABLE TODAY, ZERO NEW DATA:** `data/crypto_grouping_map.json` already carries `liq_tier` (T1–T4, quartiles of 120d median dollar volume, 296 symbols). Re-run any cross-sectional survivor on the top tier alone; a Sharpe that collapses is a liquidity artifact, one that holds is an edge.
+
+**THIS ADDS A CHECK, IT LOWERS NOTHING (L1.6).** It is a *structural* screen — the class the desk's own gate-power audit says should block forever rather than rank — and it costs one re-run of an existing candidate.
+
+### 2. DECAY IS MATCHED TO THE DATA'S ARRIVAL RATE, NOT SWEPT
+
+The community decision tree prescribes decay **by data type**, not by search: fundamental **0**, analyst **0–4**, technical **10–30**, sentiment **4–10** (expected turnover 2–8% / 9–16% / 15–35% / 8–30% respectively).
+
+**MECHANISM:** smoothing is set by how fast the underlying *information* arrives. Quarterly fundamentals already move slowly ⇒ no smoothing. Price/volume moves every bar and is mostly noise ⇒ heavy smoothing is what makes it survivable at all.
+
+**WHY THIS MATTERS HERE SPECIFICALLY:** a swept decay window is a **DSR-counted trial per value**; a decay *derived* from the axis's settlement/arrival cadence is **one** trial with a stated reason. That is multiplicity budget recovered for free. It also lands exactly on L1.47 (funding is counted in **settlements**, never elapsed hours) and L1.46 (a configured constant is not evidence of a cadence): for a funding-derived signal the principled decay is a function of the 8h/4h settlement clock, not a swept integer.
+
+### 3. `Margin = PnL / total traded value` — a cost-first statistic the desk should compute
+
+Reported as a core metric ("higher is better"), and it is the one metric on their list that is **not** a statistical bar: it is **profit per dollar traded**, i.e. bps of edge per unit of turnover.
+
+**WHY IT IS worth importing when their Sharpe/Fitness thresholds are not:** margin is directly comparable to a *measured* desk quantity — round-trip cost in bps. An alpha whose margin is below measured cost is dead on arrival regardless of Sharpe, and that verdict is **arithmetic, not inference**. It is L1.5 execution physics expressed as one number, it needs no significance argument, and it would have flagged WS-006 (Holm-cleared at t=+3.95, netted −0.656 bp/bar) *before* the forward slot was spent.
+
+### 4. SELF-CORRELATION IS MEASURED ON DAILY RETURNS, AND PARAMETER TUNING DOES NOT FIX IT
+
+Their independence check correlates **daily return series** (their stated cut: <0.7), not signal values — and the explicit instruction is **"do not just tune parameters"**, because a re-parameterised signal produces a near-identical PnL stream. The desk's independence question ("independent survivor?") should be asked of the **PnL series** for the same reason, and this is a direct argument against counting parameter variants as diversification. Converges with the desk's own demeaning-floor lesson: residual correlation must be compared to −1/(N−1), never to zero.
+
+### 5. CHEAP: VALIDATE A FIELD BEFORE SPENDING A TRIAL ON IT
+
+Their idiom is to simulate the trivial expression `rank(<candidate_field>)` first — a 201 response means the field exists and is populated; anything else means the field is absent or the arity is wrong. **Desk analogue:** before a new axis consumes a DSR-counted trial, run the trivial transform and confirm the series is present, aligned and non-degenerate. `axis_screen` could take this as a precondition rather than discovering it inside a scored run. Costs ~nothing; the failure it prevents is a *wasted* multiplicity slot, which is the expensive kind.
+
+### 6. ENGINE IDEA — keep VECTOR-shaped data vector-shaped until the operator reduces it
+
+1,387 of BRAIN's 4,367 fields are VECTOR-typed, with `vec_avg`/`vec_sum` as late reducers. The desk collapses multi-venue funding, per-level depth and per-venue OI to a scalar **at ingest**, which fixes the reduction before any hypothesis can choose it — mean vs sum vs dispersion vs max are different signals, and cross-venue *dispersion* is the one most obviously discarded. Routed as an engine idea (L1.34 §4), not a build order.
+
+**NOT APPLIED — BRAIN-hunter seat is research-frozen out of `scripts/` and `libs/`.** Items 1, 3 and the video-fetcher defect are ledgered so they are driven rather than filed here (this inbox does not drive work).
+
+## 2026-08-13 — JP frontier miner s4 (two engine items; the first is the run's best find and it is NOT a trade)
+
+### 1. BOOK IMBALANCE AND AGGRESSOR FLOW MAY BE ONE AXIS, NOT TWO — and a practitioner ran the intervention that separates them
+
+**SOURCE:** `qiita.com/blog_UKI/items/d01367ff01ffbd64c863`, 「仮想通貨ボット：BitMEXの板でスプーフィングを
+試みた話」, 2021-12-14 (仮想通貨botter Advent Calendar 2021 d15), 37 likes, **comment layer checked: 0
+comments**. **DERIVES-FROM:** 杉原 (the JP-language exposition of Cont/Kukanov/Stoikov order-flow imbalance)
++ the author's own 2018 note. Pre-2023, so **not** LLM-contaminated (OP-072).
+
+**WHAT HE DID, AND WHY IT OUTRANKS AN OBSERVATIONAL STUDY.** He built a bitFlyer HFT bot whose direction
+signal was **OFI computed from the BitMEX book** (chosen because "海外取引所のほうが価格が先行する" and
+because bitFlyer's ¥1 tick made its own book too thin to compute OFI from). He then asked whether he could
+*manufacture* the signal: regression said **~$500k of BitMEX book change moved bitFlyer ~¥100**, and since
+spoofed orders are never meant to fill, **~$5,000 of margin at 100× would suffice.** He built it and ran it.
+**It did not work — large passive orders on BitMEX did not move bitFlyer.**
+
+**THE DECOMPOSITION THAT EXPLAINS THE NULL — this is the transferable part.** Writing every quantity positive:
+```
+ΔBid = (1) new limit-buy inflow − (2) cancellation of resting buy limits − (3) market-SELL take
+ΔAsk = (4) new limit-sell inflow − (5) cancellation of resting sell limits − (6) market-BUY take
+OFI  = ΔBid − ΔAsk = (1−2−3) − (4−5−6)
+```
+His finding: **"このうち説明力として支配的なものは(3)と(6)の成行注文なのでした"** — components **(3) and
+(6), the MARKET orders, dominate the explanatory power.** The quote-side components (1)(2)(4)(5) do carry
+some, and combining them improves overall performance, **but the displayed book is not where the information
+is.** Hence the null: to move price you must actually cross, which is ordinary manipulation — taker fees plus
+an adversely-selected position, "旨味はありません".
+
+**WHY THIS MATTERS HERE, CONCRETELY.** The desk's crypto mechanism vocabulary lists **`book imbalance`** and
+**`order flow` / aggressor-side trade intensity** as separate entries, and L1.18 (ALPHA DIVERSITY) counts
+*independent* sources. If OFI's predictive content is mostly the take component, then a book-imbalance
+feature and a taker-flow feature are **substantially the same signal wearing two names** — two features, one
+bet, and a diversity count that is too high by one. That is the demeaning-floor lesson in a different
+costume: apparent independence that is an artefact of construction.
+
+**THE DECISIVE TEST IS CHEAP AND RUNS ON DATA THE DESK ALREADY HOLDS.** The depth tape and the trade tape are
+both recorded (they are the whole subject of L1.46 clock provenance). Decompose ΔBid/ΔAsk per interval into
+take (reconcilable against the trade tape by aggressor side) vs quote-side residual, then regress forward
+return on each **separately** and report the incremental R² of the quote-side component over the take
+component alone. **Both constructions are DSR-counted trials** and must be logged as such. Three outcomes,
+all useful: quote-side adds nothing → collapse the two axes into one and correct the diversity count;
+quote-side adds materially → the desk has a genuinely separate axis and now knows it; underpowered →
+UNMEASURED, and the honest answer is instrumentation.
+
+**NOT A TRADE, AND THE GATES SAY SO.** `ofi_taker_component_dominance`: **EV 0.0002 → REJECT**
+(`high_turnover_no_maker` + `crowded_known`), novelty 0.851. An HFT-horizon OFI signal is DOA for a
+latency-disadvantaged spread-taker at this equity, and the EV gate is right. **The value is as a
+FEATURE-REDUNDANCY fact and an execution-model input**, which is why it is filed here and not carded.
+
+**AND THE HARD LINE ON THE STRATEGY ITSELF:** spoofing is prohibited market conduct (JP FIEA; US CEA §6(c);
+every major venue's terms). Nothing here is implementable and nothing here is proposed. What is extracted is
+**evidence about market structure produced by an intervention** — the author's own conclusion was that the
+exercise's real purpose was *"BitMEXの板を参照するボットを殺すボットを作る"*, i.e. probing whether bots that
+read the book can be farmed.
+
+**THE VOCABULARY GAP THIS EXPOSES (flagged per the extraction mandate — a mechanism mapping to NONE of the
+desk's families is the interesting case).** His closing line — *"市場がボットで飽和すると、必ずボットを食い物
+にするボットが現れる"* ("when a market saturates with bots, a bot that preys on bots will inevitably appear")
+— is a **PREDATION / adversarial-counterparty** mechanism family. Every entry in `CRYPTO_MECHANISMS` describes
+*market state*; none asks **"is my own order pattern a farmable, recognisable signature?"** The desk has this
+lens for its own *process* (L1.32's "the adversary") but not as a *market* family. It is not idle: this desk's
+carry sleeve opens and closes on a schedule tied to funding phase and rank exit, which is precisely a
+recognisable signature. **L1.45's excitation design already randomises *how* the desk orders — so the desk has
+partially defended against a mechanism it has never named.** Naming it is free; measuring it is the open
+question.
+
+### 2. THE DESK CHECKS FEATURE-DISTRIBUTION STATIONARITY AND (APPARENTLY) NEVER CHECKS THE TARGET'S
+
+**SOURCE:** `qiita.com/pip_pip_pip_p/items/3b86e36ca536e99d26e0` (2024-12-07) — full provenance and the
+strategy-side corroboration in `docs/graveyard.md` under the `jp_mlbot_atr_limit_reversion` addendum.
+
+His observation, aimed at the most-copied ML-bot tutorial in the JP ecosystem: *"mlbotチュートリアルでは特徴量
+の分布が時間で変化しないことをチェックしていますが、似たようなことを目的変数に対して行うといいかもしれま
+せん"* — **the tutorial checks that the FEATURE distribution is time-invariant; nobody checks the TARGET's.**
+He ranks target-stationarity **② ≫ ③ simple > ④ strong**, second only to ① sufficient samples, in what makes
+a rule-based base layer usable under an ML meta-label filter.
+
+**WHY IT LANDS ON THIS DESK.** The desk carries the feature-side check (the `richman` non-stationarity score
+is in this seat's own standing brief) and `dist_shift` from capability-hunt s3 (2026-08-01, "only SHIFT may be
+wired — DRIFT is overpowered at large n"). Both are **feature-side**. A screen whose *target* distribution
+moves between train and test — forward-return vol regime, funding regime, the censoring share this seat
+measured on 2026-08-12 (68.8% → 10.7% from 2019 to 2026) — is mis-specified in a way no feature-side check
+can see, and it fails toward **a false null in a quiet regime and a false positive in a violent one**.
+
+**PROPOSED, NOT BUILT (seat is research-frozen out of `libs/` and `scripts/`):** run the existing
+distribution-shift instrument against the **target** series, per screen cell, and publish the verdict beside
+the IC. **UNMEASURED must stay a real answer** — if the shift statistic is underpowered on a cell's sample,
+it says so rather than certifying stationarity. Cost is small (the instrument exists); the failure it prevents
+is a graveyard-grade verdict issued on a target that changed underneath the split.
+
+**Verification owed before anyone acts on this:** I did **not** read `libs/` to confirm the desk lacks a
+target-side check — the seat is frozen out of that tree and a grep from a research seat proves a name exists,
+never that a code path runs (the desk's own most-repeated lesson). **The claim "the desk does not check
+target stationarity" is UNVERIFIED and is the first thing the implementing seat should falsify.**
+
+---
+
+## 2026-08-13 — AR frontier miner s2: the video-transcript fetcher misreports WHY it failed, and that is why the purchase-evidence log sat empty
+
+**SOURCE:** measured this run, honest UA, against `scripts/fetch_video_transcript.py` and the four Piped
+instances it rotates. Seat is research-frozen out of `scripts/`, so this is **PROPOSED, NOT BUILT**.
+
+**THE DEFECT.** `youtube()` loops the 4 instances and on each failure overwrites a single `last = <error>`
+string, finally raising `SystemExit(f"all Piped instances failed -- last: {last}")`. Only the **last**
+instance's error ever reaches the operator. Measured causes, same minute, same box, same video:
+
+| instance | HTTP | actual cause |
+|---|---|---|
+| `api.piped.private.coffee` | **500** | YouTube bot-wall: `SignInConfirmNotBotException … LOGIN_REQUIRED` |
+| `pipedapi.kavin.rocks` | **502** | instance-side gateway failure |
+| `pipedapi.adminforge.de` | **301** | API moved off-host (redirects to `adminforge.de/search?…`) |
+| `api.piped.yt` | **000** | **dead domain — DNS NXDOMAIN** |
+
+Four distinct causes demanding four different responses, collapsed into one message — and because the **dead
+domain is last in `_PIPED`**, every failure of every cause is reported as `URLError … Name or service not
+known`. **A platform bot-wall is displayed as a local DNS fault.**
+
+**WHY IT MATTERS BEYOND TIDINESS — it silently defeated a standing principal mandate.** `video_locked_log.md`
+is the *sole* evidence gate for GAP #26 (paid transcript/proxy unlock) and it had **zero rows** after weeks of
+daily digs across seven regions. The mandate text reads that emptiness as diggers skipping the duty. The
+measured cause is the instrument: a digger who hit the wall saw a message indicating a problem on **their own
+box**, not a platform refusal, and correctly declined to log a platform block. **The log was empty because the
+error message was wrong**, and an artifact whose only job is to justify a purchase was being fed a false
+premise. This is the desk's UNMEASURED-REPORTED-AS-OK class pointed at a *cause* field rather than a value.
+
+**PROPOSED FIX (three lines of behaviour, no new capability):**
+1. Collect **per-instance** `(host, http_code, cause)` and report **all** of them, never just the last.
+2. Drop `api.piped.yt` (dead domain) or move it last-but-report-separately, so a permanently-dead host stops
+   being the default explanation for every failure.
+3. Classify `LOGIN_REQUIRED` / `SignInConfirmNotBotException` explicitly as **PLATFORM-WALL** and say so in the
+   exit message, with a pointer to `video_locked_log.md` — the operator is at that moment holding exactly the
+   evidence the log exists to collect, and nothing tells them so.
+
+**VERIFICATION OWED BEFORE ANYONE ACTS:** I read `scripts/fetch_video_transcript.py` directly and measured all
+four endpoints with `curl`, so the instance table is first-hand. What I did **not** do is check whether any
+other organ consumes this exit string (a caller keying on the message text would change with it). One grep
+from a seat with write access to `scripts/` settles it.
+
+**RELATED, and it corrects a same-day sibling claim:** RU miner s3 (2026-08-13) recorded that video access
+*"works on popular English content and fails on cold non-English"*. The English half is **refuted by control**:
+EN crypto videos at 142k / 50k / 33k views wall identically to AR videos at 538k / 47k / 31k. Language is
+orthogonal; only a ~1.6bn-view control passed. Full table and the GAP #26 consequence in
+`docs/research/video_locked_log.md`.
+
+---
+
+## 2026-08-13 — BR frontier miner s3: STATISTICAL-ARBITRAGE is thin for INSTRUMENT reasons, not verdict reasons
+
+**THE OBSERVATION.** `data/strategy_coverage.json` reports STATISTICAL-ARBITRAGE as **THIN, n=1 of
+14** — the desk's least-worked family. Mining the BR corpus for it, I checked the standing objection
+that would justify leaving it there, and **it does not apply**.
+
+**THE DESK'S OWN BREADTH LESSON, READ CAREFULLY:** *"the crypto cross-section is 1.54 independent bets
+RAW and 29 market-neutral. Any **directional** cross-sectional mechanism is hard-killed by
+narrow_breadth before it starts — neutralise BTC beta or do not build it."* A cointegration pair is
+long *y* / short *βx*: **beta-neutral by construction.** It therefore lands on the **29** side of that
+measurement, not the 1.54 side. **The argument that ends every directional cross-sectional mechanism
+on this desk is not an argument against this family — it is closer to an argument for it.**
+*(Caveat: `reports/cross_section_breadth.json` is gitignored and unreadable from this checkout, so
+1.54/29 are cited from the desk-lesson text and were not re-verified here.)*
+
+**AND THE INSTRUMENT THE FAMILY NEEDS IS ONE IMPORT.** The refutation I filed today
+(`graveyard.md: zecontinha_eg_pairs_screen`, OP-077) measured a live public pairs screen rejecting
+**17.97%** of pure-noise pairs against its own nominal 5%, because it took p-values from
+`adfuller(OLS.resid)`. **Any desk statarb work must use `statsmodels.tsa.stattools.coint()`**, whose
+MacKinnon critical values are derived for residuals of an *estimated* cointegrating vector. Measured
+side by side on n=120: 17.97% vs 7.60%. Note also that the correct test is itself **7.6% at n=120**,
+not 5% — short windows are not exact even done right, which is worth knowing before anyone sets a bar.
+
+**A SECOND, ORTHOGONAL SELECTION STATISTIC, ARRIVING FROM TWO BR SOURCES:** rank candidate pairs by
+the **stability of the rolling hedge ratio** (`beta_rotation`), not by the in-sample ADF p-value. It
+appears as a code function in `Vido/zecontinha` (`analysis.py`, window=40) and as the stated primary
+criterion of a PT-BR practitioner (*"beta rotation mais estável"*, video `vaDLuXYDSJ8`). The argument
+is mechanical rather than statistical — **an unstable β means the cointegrating relationship is not
+structural** — which is exactly the property an in-sample p-value cannot see.
+**PROVENANCE, STATED SO IT CANNOT BE MISREAD AS CONVERGENCE:** both sources sit inside the **same BR
+retail "Long&Short quantitativo" teaching tradition. This is ONE ecosystem node, not two**, and under
+GAP #85 it elevates nothing. It is a lead of exactly singleton weight.
+
+**NOT PROPOSED FOR CAPITAL, AND NOT SCREENED.** This is a note that a thin family is thin for
+correctable instrument reasons. Under the two-stage law it would owe a pre-registered screen and then
+a forward clock; neither is claimed here.
+
+## 2026-08-13 — BR miner s3: a cheap point-in-time universe the desk does not build
+
+`exchangeInfo` returns **today's** symbol set, which the desk has already recorded as *"a look-ahead in
+the UNIVERSE"*. **Git history of hardcoded ticker lists in public repos is a free, dated substitute**
+(universe map source **103**). Measured on one repo: vintages at 2020-06-28 / 2023-03-07 / 2023-12-05 /
+2025-11-14, and **8.7% of the 2023 USDT-perp cross-section is absent from live exchangeInfo** — of
+which **3 names are rebrands with a continuing price series** (MATIC→POL, RNDR→RENDER, TOMO→VIC), not
+deaths. **A rename and a delisting are opposite events that look identical in a symbol-set diff**, and
+the desk currently has no artifact that distinguishes them. Cost to build: a directory of old repos and
+a diff. No ingest built (research freeze).

@@ -22,12 +22,25 @@ from typing import Any
 
 import numpy as np
 
+from libs.research.panel_breadth import breadth_deflator as _breadth_deflator
+
+_ZWIN_DEFAULT = 20
+#: Rows stage_a_screen consumes before scoring begins at the default zwin: the first `zwin`
+#: rows seed the rolling z-score and the last row has no next-period target. A caller that
+#: floors its PAIRED-observation count must add this overhead or it delivers fewer scored
+#: points than its floor promises -- a 60-point floor handed the harness n=39, and on that
+#: sample the implausibility rail fired on small-sample noise, branding underpowered cells
+#: SUSPECT-LOOKAHEAD (moat-screen-mostly-suspect, 2026-08-12).
+SCREEN_WARMUP_ROWS = _ZWIN_DEFAULT + 1
+
 
 def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
-                   zwin: int = 20, contam_max: float = 0.20, ic_min: float = 0.03,
+                   zwin: int = _ZWIN_DEFAULT, contam_max: float = 0.20, ic_min: float = 0.03,
                    sharpe_min: float = 0.5, ic_ceiling: float = 0.35,
                    sharpe_ceiling: float = 6.0, clock: str | None = None,
                    horizon_days: float = 1.0, panel_width: int = 1,
+                   overlap_periods: float | None = None,
+                   xs_neff: float | None = None,
                    target_symbol: str = "",
                    registry: str = "data/axis_clock_registry.json") -> dict[str, Any]:
     """Screen a signal against NEXT-period target returns with the mandatory angle-20 gate.
@@ -69,6 +82,20 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
       scores 0.55 against the 0.5 floor) and slackens the sharpe_ceiling rail by the same factor.
     panel_width: number of cross-sectional units stacked into the flat arrays (1 = single series).
       Only n_eff/power use it; it does not change IC or Sharpe.
+    overlap_periods: how many consecutive rows share one target window on the TIME axis. None
+      (default) = horizon_days, the historical behaviour for daily-sampled overlapping targets. A
+      caller that already sampled a non-overlapping h-day grid ([::h]) passes 1.0: its rows are
+      time-independent, and deflating them by horizon_days again would double-count -- while
+      lying horizon_days=1 to dodge that would break the Sharpe annualisation instead. Recorded
+      in the output as `overlap_periods` so a downstream reader can reproduce the deflation.
+    xs_neff: MEASURED independent cross-sectional observations per bar, from
+      `libs/research/panel_breadth.measure_panel_breadth` on the caller's own panel. Omitting it
+      is a REFUSAL, not a default: the cell keeps the conservative full-`panel_width` divisor and
+      is stamped `breadth_basis: UNMEASURED`, which forbids `powered` and therefore forbids the
+      graveyard-grade SCREEN-WEAK verdict. Supplying it replaces the assumption K_eff=1 with the
+      panel's own number -- measured at ~93 of 139 on the desk's futclose panel, i.e. a 1.50x
+      divisor where 139x was being applied. Reported as `breadth_basis` / `xs_neff` /
+      `xs_deflator` so any reader can reproduce the power figure and see what it rests on.
     """
     s = np.asarray(signal, dtype="float64")
     r = np.asarray(target_ret, dtype="float64")
@@ -147,13 +174,53 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
     # bars over a 45-symbol panel, horizon_days*panel_width = 0.031, which clamps to 1.0 and
     # silently discards the 45x cross-sectional stacking correction entirely. Each factor floors
     # at "no correction" on its own, then they compose.
-    deflator = max(float(horizon_days), 1.0) * max(int(panel_width), 1)
+    #
+    # `overlap_periods` SEPARATES THE TWO MEANINGS horizon_days was carrying. Annualisation needs
+    # the TRUE period of the target (a year holds 365/h of them regardless of sampling), but the
+    # time-axis deflation needs the OVERLAP between consecutive rows -- and a caller that already
+    # sampled on a non-overlapping h-day grid ([::h]) has overlap 1, not h. Conflating them
+    # double-deflates that caller by h, and the only escape it had was lying about horizon_days,
+    # which broke the annualisation instead. None passed = deflate by horizon_days, the historical
+    # behaviour for daily-sampled overlapping callers.
+    t_deflator = float(horizon_days) if overlap_periods is None else float(overlap_periods)
+
+    # THE CROSS-SECTIONAL FACTOR IS A MEASUREMENT OR IT IS A REFUSAL -- never a guess (L1.28a).
+    # `panel_width` alone asserts that K symbols carry exactly ONE independent observation per
+    # bar. Before 2026-08-11 this line asserted the opposite (K observations, t inflated sqrt(K)).
+    # The desk swung between the two endpoints in one change and MEASURED NEITHER. On its own
+    # 139-symbol futclose panel the measured answer is ~93 bets per date -- near neither endpoint
+    # -- so the honest deflator is 1.50, not 139: n_eff was understated 93x and the detection
+    # floor inflated 9.6x. See libs/research/panel_breadth.py for the measurement and for why it
+    # is the PRODUCT terms (signal*target, the summands of the pooled IC) that set this, rather
+    # than the raw returns (rho +0.53 -> 1.9 bets) or the demeaned returns (rho at the arithmetic
+    # floor -> the full K, which is the over-claim `effective_bets` was clamped to prevent).
+    #
+    # WHY THE UNMEASURED PATH KEEPS THE FULL-K DIVISOR RATHER THAN GUESSING SOMETHING BETTER. The
+    # error this replaced ran CONSERVATIVE, and its only symptom was SCREEN-UNDERPOWERED -- "could
+    # not tell", which writes no graveyard entry, no ledger row, no alert and no clock. 380 of 711
+    # verdicts on disk sit there. An unmeasured panel keeps that conservative reading; absence
+    # resolves to the tighter answer, never to a clean one.
+    if int(panel_width) <= 1:
+        breadth_basis = "SINGLE-SERIES"
+    elif xs_neff is not None and np.isfinite(xs_neff) and float(xs_neff) >= 1.0:
+        breadth_basis = "MEASURED"
+    else:
+        breadth_basis = "UNMEASURED"
+    xs_deflator = _breadth_deflator(panel_width, xs_neff if breadth_basis == "MEASURED" else None)
+    deflator = max(t_deflator, 1.0) * xs_deflator
     n_eff = max(len(zv) / deflator, 1.0)
     min_detectable_ic = float(1.96 / np.sqrt(n_eff))
     # 'powered' asks whether the SAMPLE could have detected an effect worth caring about (ic_min),
     # NOT whether the observed IC happens to be large. Only under the former does a null mean
     # "looked and it is not there"; under the latter every null would be self-certifying.
-    powered = min_detectable_ic <= ic_min
+    #
+    # AN UNMEASURED PANEL CAN NEVER BE POWERED, and this is the load-bearing half of the change.
+    # `powered` is what licenses SCREEN-WEAK -- the desk's only graveyard-grade negative verdict.
+    # Certifying "tested and refuted" on a sample whose size was ASSUMED rather than measured is
+    # the false-null direction no other gate catches, and it is exactly what produced the 42
+    # SCREEN-WEAK verdicts the screen lacked the power to make (screen_oi_ls_axes.py:126). This
+    # can only ever REMOVE a powered claim, never add one.
+    powered = min_detectable_ic <= ic_min and breadth_basis != "UNMEASURED"
 
     # LOOKAHEAD RAIL. A signal observed at t should not know MORE about t+1 than about t: for a
     # genuine lead, forward IC is normally weaker than the contemporaneous relationship. A whole-
@@ -163,8 +230,25 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
     # a diagnostic; ic_ceiling stays caller-tunable per axis rather than one global guess.
     ic_exceeds_contemporaneous = abs(ic) > max(abs(same), ic_min) * 1.5 and abs(ic) >= 0.15
 
+    # THE SHARPE CEILING IS RESCALED FOR SUB-DAILY HORIZONS HERE, IN THE HARNESS, NOT AT EACH
+    # CALLER. `sharpe_ceiling=6.0` assumes horizon_days=1, and _sh ANNUALISES by
+    # sqrt(365/horizon_days), so at 60s the factor is ~725 and PURE NOISE scored sharpe_reversal
+    # 53.4 -> SUSPECT-LOOKAHEAD on six hypotheses whose ICs were 0.01-0.08. screen_moat.py found
+    # that and fixed it in its own call site; the liquidation-reversion screen then hit the
+    # identical wall from scratch, which is the tell that a correction living in one caller's
+    # comment is not a control (it fires on recall). Rescaling by the same sqrt(1/horizon) the
+    # annualisation applies keeps the rail at CONSTANT PER-PERIOD STRICTNESS instead of tightening
+    # it 725-fold by accident. The IC ceiling is left ALONE at every horizon: a correlation does
+    # not annualise, so 0.35 means the same thing at 60s as at a day.
+    # (Restored 2026-08-11: the 08-09 lineage merge took this file from the branch that predated
+    # d10a8b4 while keeping the caller that had already deleted its own copy of the rescale, so
+    # the rule existed NOWHERE and every strong sub-daily cell was branded SUSPECT-LOOKAHEAD.)
+    eff_sharpe_ceiling = float(sharpe_ceiling)
+    if float(horizon_days) < 1.0:
+        eff_sharpe_ceiling *= float(np.sqrt(1.0 / max(float(horizon_days), 1e-9)))
+
     decontam_fail = abs(same) > contam_max or abs(ic_res) < 0.5 * abs(ic) or stale_leg
-    implausible = abs(ic) > ic_ceiling or best > sharpe_ceiling    # alignment/lookahead rail
+    implausible = abs(ic) > ic_ceiling or best > eff_sharpe_ceiling   # alignment/lookahead rail
     if implausible or ic_exceeds_contemporaneous:
         verdict = "SUSPECT-LOOKAHEAD"                  # bithumb-class: too strong to be real
     elif stale_leg:
@@ -204,8 +288,14 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
            "stale_leg": bool(stale_leg), "residual_ic": round(ic_res, 4),
            "decontam_passed": not decontam_fail, "implausible_leak": implausible,
            "horizon_days": float(horizon_days), "panel_width": int(panel_width),
+           "overlap_periods": round(t_deflator, 6),
+           "breadth_basis": breadth_basis,
+           "xs_neff": (round(float(xs_neff), 3) if breadth_basis == "MEASURED"
+                       and xs_neff is not None else None),
+           "xs_deflator": round(float(xs_deflator), 3),
            "n_eff": round(n_eff, 1),
            "min_detectable_ic": round(min_detectable_ic, 4), "powered": powered,
+           "sharpe_ceiling_applied": round(eff_sharpe_ceiling, 2),
            "ic_exceeds_contemporaneous": ic_exceeds_contemporaneous,
            "verdict": verdict, "current_z": round(float(z[-1]), 3),
            "stage": "A (zero promotion authority)"}

@@ -54,6 +54,7 @@ _ROOT = Path(__file__).resolve().parent.parent
 #: Organs built to the standard. EVERY new organ joins this list in the same commit that creates
 #: it -- that is the whole mechanism. Adding a file here and failing the checks is a red build.
 _GOVERNED: tuple[str, ...] = (
+    "run_cadence.py",
     "check_conversion.py", "check_calibration.py", "check_replacement_rate.py",
     "check_exploration.py", "check_law_families.py", "check_change_window.py",
     "run_law_gate.py", "run_moat_backup.py", "run_capability_hunt.py",
@@ -61,11 +62,22 @@ _GOVERNED: tuple[str, ...] = (
     "check_build_standard.py",                              # this fence holds itself to it
     "check_input_provenance.py",                            # L1.55 transitive freshness
     "check_denominators.py",                                # L1.57 the denominator of a verdict
+    "check_denominator_attrition.py",                       # L1.60 what that denominator LOST
+    "check_claim_consistency.py",                           # L1.61 does the desk contradict itself
+    "check_partition_power.py",                              # L1.63 can the certificate say NO
+    "check_panel_breadth.py",                               # L1.62 was that power denominator measured
+    "check_citation_integrity.py",                          # R0369 can the proof-of-work be cashed
+    "check_birth_properties.py",                            # §36/L2.9 born with its properties
+    "check_capital_basis.py",                               # R0287 return-denominator invariant
+    "collect_unlock_calendar.py",                           # R0288 point-in-time unlock calendar
+    "run_fee_attribution.py",                               # R0371 who paid the fee bill
     "check_fence_yield.py",
     "ship_restart.py",                                      # the actuator for stale-code daemons
+    "run_stale_daemon_repair.py",                           # detect->repair loop closed (L1.28b)
     "derive_walcl_clock.py",                                # R0031 forward clock (2026-07-31)
     "run_llm_trader.py",
     "collect_announcements.py",
+    "run_upbit_snapshot.py",                                # R0303 purge-proof candle archive
     "run_conviction_trader.py",
     "resolve_paper_book.py",
     "build_chart_context.py",
@@ -83,6 +95,8 @@ _GOVERNED: tuple[str, ...] = (
     "check_funding_capture.py",                             # L1.47 fence (capability hunt s1)
     "check_idle_cost.py",                                   # L1.51 fence (capability hunt s1)
     "run_cost_identification.py",                           # L1.45 producer (capability hunt s4)
+    "fit_print_impact.py",                                  # L1.45 third cost basis (hunt s1)
+    "check_free_roster.py",                                 # R0344 degraded-fallback canary
     "screen_carry_basis_path.py",                           # R0206 carry attribution (2026-07-31)
     "check_promotion_gate.py",
     "run_discretionary_max.py",
@@ -98,6 +112,7 @@ _GOVERNED: tuple[str, ...] = (
     "check_doctrine_diff.py",               # R0093: doctrine order -> blind-spot row (L2.5)
     "run_paper_sleeve_spawner.py",          # R0102 paper-sleeve auto-spawn (2026-08-05)
     "collect_dexscreener.py",               # R0100 axis 3 (2026-08-05)
+    "collect_geckoterminal_trades.py",      # R0291 signed DEX flow (2026-08-12)
     "collect_holder_concentration.py",      # R0100 axis 4 (2026-08-05)
     "collect_perpdex_funding.py",           # R0100 axis 5 + screen-on-discovery (2026-08-05)
     "retire_unfillable_candidates.py",      # §42 capacity retirement (2026-08-05)
@@ -108,6 +123,13 @@ _GOVERNED: tuple[str, ...] = (
     "run_natural_experiment.py",            # R0207 first causal study, DiD (2026-08-05)
     "probe_bybit_archive.py",               # R0243 T7 retention alarm (2026-08-05)
     "fit_passive_impact.py",                # R0267 passive-fill impact model (2026-08-06)
+    "collect_kr_venue_flags.py",            # R0299 KR flag surface, snapshot-only (2026-08-12)
+    "probe_delisted_instruments.py",        # R0313 venue-side dead rosters (2026-08-12)
+    "read_xls.py",                          # R0317 stdlib .xls extraction, L1.11a (2026-08-12)
+    "check_extractor_invariants.py",        # R0318 OP-024 in-data invariants (2026-08-12)
+    "check_repair_capacity.py",             # R0330 L1.28b repair service rate (2026-08-12)
+    "run_execution_quality.py",             # R0334 six-component exec quality (2026-08-12)
+    "collect_lending_risk_base_rates.py",   # R0375 the evidence under the haircut (2026-08-12)
 )
 
 #: Organs that legitimately owe no cron line, with the reason. "No schedule" must be a DECISION.
@@ -132,6 +154,29 @@ _SCHEDULE_EXEMPT: dict[str, str] = {
                        "daemons on a TIMER -- the opposite of event-driven, and a standing "
                        "outage risk for the money path. Its detector (max_audit "
                        "check_stale_daemons) is the scheduled half of the pair",
+    "check_extractor_invariants.py": "reads SOURCE, not state, exactly like check_sizing_derivation "
+                                     "and check_return_targeting -- an extractor gains or loses its "
+                                     "invariant at COMMIT time, so the commit gate is the "
+                                     "information-arrival ceiling (L1.28c) and an hourly line would "
+                                     "re-parse an unchanged tree 24 times a day. IT IS IN THAT GATE: "
+                                     "run_law_gate.py _LAW_FENCES, beside both peers named above. "
+                                     "This exemption spent a week citing a gate that did not invoke "
+                                     "it, which is a cron exemption resting on nothing",
+    "check_birth_properties.py": "reads the REPO -- docs/, scripts/ and the tracked decision "
+                                 "ledger -- not live state, so an object gains or loses a birth "
+                                 "property at COMMIT time and the commit gate is the "
+                                 "information-arrival ceiling (L1.28c); an hourly line would "
+                                 "re-scan an unchanged tree 24 times a day. IT IS IN THAT GATE: "
+                                 "run_law_gate.py _LAW_FENCES, beside check_extractor_invariants "
+                                 "and check_build_standard -- and it ALSO runs hourly there, via "
+                                 "the same battery, so the cadence is covered without a second "
+                                 "line. Whole-tree scope was chosen over a git-diff of added "
+                                 "files because a merge-base is not resolvable on the shallow "
+                                 "clone actions/checkout produces by default",
+    "read_xls.py": "a TOOL, not an organ: it reads a file a seat hands it, so there is no state "
+                   "for a clock to re-read (L1.28c information-arrival ceiling). Scheduling it "
+                   "would mean scheduling it against WHAT -- there is no standing input, and a "
+                   "cron line over an empty argument is a line that fails every minute",
     "check_doctrine_diff.py": "runs as the doctrine_diff step of daily_research_cycle's _STEPS "
                               "chain, beside doctrine_guard; doctrine edits arrive at most a "
                               "few per week, so the daily chain IS the information-arrival "
@@ -150,6 +195,8 @@ _GUARD_EXEMPT: dict[str, str] = {
     "check_sizing_derivation.py": "runs inside the law gate, which has already verified the core "
                                   "before this fence executes",
     "check_return_targeting.py": "runs inside the law gate, which has already verified the core "
+                                 "before this fence executes",
+    "check_birth_properties.py": "runs inside the law gate, which has already verified the core "
                                  "before this fence executes",
 }
 
@@ -226,6 +273,17 @@ def build_report(root: Path | None = None) -> dict[str, Any]:
             # NOT a silent pass (this fence's own rule): an unreadable manifest means every
             # scheduling verdict below is UNMEASURED, and that must surface, not vanish.
             unreadable.append(f"{m}: {exc}")
+    # A daily-cycle organ IS scheduled -- daily_research_cycle.py is itself on a manifest line, and
+    # its _STEPS chain invokes each member every run. Until now that fact could only be asserted in
+    # prose on _SCHEDULE_EXEMPT (derive_walcl_clock's entry says exactly this), which meant the
+    # claim was never CHECKED: delete an organ from _STEPS and its static exemption still reads
+    # fine. Reading the chain turns a prose assertion into a verified one, and the repair is
+    # upward -- the fence now recognises real scheduling instead of being told to look away.
+    for chain in ("scripts/daily_research_cycle.py",):
+        try:
+            manifest += (root / chain).read_text("utf-8", errors="ignore")
+        except OSError as exc:
+            unreadable.append(f"{chain}: {exc}")
     try:
         matrix_src = (root / "scripts/build_enforcement_matrix.py").read_text("utf-8")
     except OSError as exc:

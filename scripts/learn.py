@@ -34,6 +34,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import tempfile
 import time
 from pathlib import Path
 from typing import Any
@@ -73,18 +74,88 @@ def cmd_render() -> int:
     return 0
 
 
+def would_reach_organs(row: dict[str, Any]) -> tuple[bool, list[str]]:
+    """Would this lesson be INJECTED, and which currently-injected lessons would it displace?
+
+    Answered by running the REAL packer over a scratch ledger containing the existing rows plus
+    this candidate -- never by re-deriving the arithmetic here. The budget is a strict-rank pack
+    with a latch (see corpus()), so "does it fit" is not a question about this lesson's length: a
+    lesson can be short and still be dropped because a longer, higher-scoring one ahead of it
+    closed the latch. Any local estimate of "free budget" would be wrong in exactly the cases
+    that matter, and would be wrong SILENTLY.
+
+    `root` is pinned to the repo so `enforced_by` references still resolve out of the scratch
+    file; without it every graduated lesson would lose its discount and the probe would answer a
+    different question from the one asked.
+    """
+    _text, over_before = corpus()
+    injected_before = {i.id for i in load()} - {d.id for d in over_before}
+    with tempfile.TemporaryDirectory() as td:
+        probe = Path(td) / "desk_lessons.jsonl"
+        existing = LEDGER.read_text("utf-8") if LEDGER.exists() else ""
+        probe.write_text(existing + json.dumps(row, ensure_ascii=False) + "\n", "utf-8")
+        _text, dropped = corpus(path=probe, root=_ROOT)
+    dropped_ids = {d.id for d in dropped}
+    displaced = sorted(injected_before & dropped_ids)
+    return row["id"] not in dropped_ids, displaced
+
+
 def cmd_add(a: argparse.Namespace) -> int:
     row: dict[str, Any] = {
         "id": next_id(), "learned": time.strftime("%Y-%m-%d", time.gmtime()),
         "cost": a.cost, "recurrence": 1, "lesson": a.lesson, "evidence": a.evidence,
         "tags": a.tag or [], "source": a.source,
     }
+    if a.enforced_by:
+        row["enforced_by"] = a.enforced_by
+    if a.accept_uninjected:
+        row["accepted_uninjected"] = a.accept_uninjected
     problems = validate_row(row)
     if problems:
         for p in problems:
             print(f"REFUSED: {p}", file=sys.stderr)
         return 1
-    print(f"{append(row)} recorded ({a.cost}, weight {COST_WEIGHT[a.cost]})")
+
+    # THE CHOICE IS FORCED HERE, AT WRITE TIME, BECAUSE NOWHERE ELSE EVER FORCED IT (R0346).
+    # Demonstrated 2026-08-01 with an unusually clean causal chain: L0057 ("a red pytest leg can
+    # mean zero tests ran") was recorded, its own commit message OBSERVED that it rendered 659
+    # chars against 156 chars of free budget and so "reaches no organ" -- and the class it warned
+    # about then recurred THREE times within 21 minutes, killing pytest collection repo-wide each
+    # time. The overflow was visible at render and audit time and at neither of those moments was
+    # anyone deciding anything. A lesson that does not fit is a WISH, and the ledger can tell at
+    # the exact moment it is written.
+    fits, displaced = would_reach_organs(row)
+    if not fits and not a.enforced_by and not a.accept_uninjected:
+        print(f"REFUSED: this lesson does NOT fit the {BUDGET_CHARS}-char injected budget -- it "
+              f"would be recorded and reach NO organ, which is a diary entry, not memory.\n"
+              f"  Choose one, and the choice is recorded on the row:\n"
+              f"    --enforced-by tests/x.py::test_y   a test enforces it mechanically, forever, "
+              f"at ~0 context cost (PREFERRED -- this is how the corpus keeps compounding)\n"
+              f"    --accept-uninjected \"<why no test is possible>\"   an explicit, auditable "
+              f"decision that this one rides in the ledger only\n"
+              f"  RAISING THE BUDGET IS NOT ON THAT LIST: that is how the doctrine reached 95k.",
+              file=sys.stderr)
+        return 1
+
+    rid = append(row)
+    print(f"{rid} recorded ({a.cost}, weight {COST_WEIGHT[a.cost]})")
+    if fits:
+        print(f"  INJECTED: it reaches every organ through {_INJECTION_SITES[0]}.")
+        for d in displaced:
+            print(f"  DISPLACED {d} -- it outranked that lesson, which now reaches no organ. "
+                  f"Graduating {d} to a test would buy its budget back.")
+    elif a.enforced_by:
+        verified = next((i for i in load() if i.id == rid), None)
+        ok = verified is not None and verified.enforced_verified
+        print(f"  NOT injected (over budget) but ENFORCED by {a.enforced_by} -- "
+              f"{'verified on disk' if ok else 'WHICH DOES NOT RESOLVE'}.")
+        if not ok:
+            print(f"REFUSED-IN-PART: {a.enforced_by} does not name a real test, so this lesson is "
+                  f"neither injected nor enforced. Fix the path with "
+                  f"`scripts/learn.py graduate {rid} <test>`.", file=sys.stderr)
+            return 1
+    else:
+        print(f"  NOT injected (over budget), accepted knowingly: {a.accept_uninjected}")
     return 0
 
 
@@ -199,6 +270,14 @@ def main() -> int:
     add.add_argument("--evidence", required=True, help="file, number or date that proves it")
     add.add_argument("--tag", action="append", default=[])
     add.add_argument("--source", default="session")
+    # THE TWO WAYS PAST A LESSON THAT DOES NOT FIT, and there is deliberately no third. Raising
+    # BUDGET_CHARS is the reflex that took the doctrine file to 95k, so it is not offered here.
+    add.add_argument("--enforced-by", default="",
+                     help="tests/x.py::test_y -- a test enforces this mechanically (PREFERRED: "
+                          "the property is kept forever at ~0 context cost)")
+    add.add_argument("--accept-uninjected", default="",
+                     help="record an explicit decision that this lesson rides in the ledger only "
+                          "because no test can catch it -- auditable, never silent")
     rec = sub.add_parser("recur", help="this lesson was re-learned -- promote it")
     rec.add_argument("id")
     gr = sub.add_parser("graduate", help="a test now enforces this lesson mechanically")

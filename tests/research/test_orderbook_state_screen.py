@@ -28,6 +28,7 @@ from libs.research.moat_microstructure import read_partition
 from libs.research.orderbook_state import (
     CONSTRUCTIONS,
     FORMS,
+    STATE_NAMES,
     Alignment,
     bar_close_states,
     boundary_prices,
@@ -453,3 +454,109 @@ def test_end_to_end_run_over_a_present_tape_writes_a_screened_artifact(tmp_path,
     assert "powered_cells_unadjusted" in doc
     assert "interesting_but_failed_multiplicity" in doc
     assert all("alignment" in r for r in doc["rows"])
+
+
+# ---------------------------------------------------------------------------------------------
+# R0378 -- the streaming load path. The screen could not COMPLETE on this box: peak RSS 510-650MB
+# and FLAT in --files, SIGKILLed by the kernel OOM killer at --files 48/96/160/240 in four
+# consecutive probes. The cost was the load path (one flat list of every raw dict in the cell),
+# not the budget. These tests pin the two things a rewrite can silently break: the OUTPUT must be
+# identical, and the memory must actually be bounded.
+# ---------------------------------------------------------------------------------------------
+
+
+def _split_tape(tmp_path: Path, n_parts: int = 4, n: int = 400) -> list[Path]:
+    """One cell's bars written across several partitions, as the hourly recorder does."""
+    state, ret = _series(n=n, lead=True, seed=11)
+    per = n // n_parts
+    out: list[Path] = []
+    for p in range(n_parts):
+        sl = slice(p * per, (p + 1) * per)
+        out.append(_write_tape(tmp_path / f"part_{p}.jsonl.gz", state[sl], ret[sl],
+                               t0=T0 + p * per * BAR_MS))
+    return out
+
+
+def test_streaming_matches_monolithic_across_partitions() -> None:
+    """cell_inputs must be BIT-IDENTICAL to parsing everything and sorting once.
+
+    Both derivations are per-row maps followed by one STABLE sort on the timestamp, so a stable
+    sort of a concatenation of stably-sorted sublists equals a stable sort of the whole. That is
+    the argument the rewrite rests on; this is the measurement of it.
+    """
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as td:
+        paths = _split_tape(Path(td))
+        every_row: list[dict[str, object]] = []
+        for p in paths:
+            every_row.extend(read_partition(p))
+
+        old_ms, old_states = snapshot_states(every_row)
+        old_tms, old_tpx = S.trade_arrays(every_row)
+        new_ms, new_states, new_tms, new_tpx, n_prints = S.cell_inputs(paths)
+
+        assert new_ms.size > 0 and new_tms.size > 0, "fixture produced nothing to compare"
+        np.testing.assert_array_equal(old_ms, new_ms)
+        np.testing.assert_array_equal(old_tms, new_tms)
+        np.testing.assert_array_equal(old_tpx, new_tpx)
+        assert n_prints == old_tms.size
+        for name in STATE_NAMES:
+            np.testing.assert_array_equal(old_states[name], new_states[name],
+                                          err_msg=f"state {name} diverged")
+
+
+def test_streaming_screen_output_is_identical() -> None:
+    """The whole 30-cell verdict table, not just the inputs -- a divergence in any statistic
+    would otherwise surface as a changed graveyard months later."""
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as td:
+        paths = _split_tape(Path(td))
+        every_row: list[dict[str, object]] = []
+        for p in paths:
+            every_row.extend(read_partition(p))
+
+        old = S.screen_cell("x:Y@d", every_row, decision_lag_ms=0)
+        new = S.screen_prepared("x:Y@d", *S.cell_inputs(paths)[:4], decision_lag_ms=0)
+        assert len(old) == len(new) == S.PREREGISTERED_FAMILY
+        assert old == new
+
+
+def test_no_input_is_charged_on_the_cell_not_the_partition() -> None:
+    """A cell whose prints are split one-per-partition must NOT read as NO-INPUT. Charging the
+    `< 2` floor per partition would silently drop every boundary print in the tape."""
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        paths = []
+        for i, t in enumerate((T0, T0 + BAR_MS)):
+            p = root / f"one_{i}.jsonl.gz"
+            with gzip.open(p, "wt", encoding="utf-8") as fh:
+                fh.write(json.dumps({"t": t, "k": "t", "p": 100.0, "q": 1.0, "m": True}) + "\n")
+            paths.append(p)
+        _ms, _st, t_ms, _px, n_prints = S.cell_inputs(paths)
+        assert n_prints == 2, "one print per partition must still total two on the cell"
+        assert t_ms.size == 2
+
+
+def test_peak_memory_does_not_grow_with_partition_count() -> None:
+    """The defect was O(partitions) retention. Derived state is ~1.5% of parsed tape, so eight
+    partitions must not cost eight times four."""
+    import tempfile
+    import tracemalloc
+
+    def peak(n_parts: int) -> int:
+        with tempfile.TemporaryDirectory() as td:
+            paths = _split_tape(Path(td), n_parts=n_parts, n=64 * n_parts)
+            tracemalloc.start()
+            S.cell_inputs(paths)
+            _cur, pk = tracemalloc.get_traced_memory()
+            tracemalloc.stop()
+            return pk
+
+    small, large = peak(2), peak(16)
+    # 8x the partitions. The retained arrays DO grow (they are the cell's own bars), but the
+    # parsed tape must not: a load path that still held every dict would land near 8x.
+    assert large < small * 3.0, f"peak grew {large / small:.1f}x for 8x the partitions"

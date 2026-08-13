@@ -120,7 +120,14 @@ FAMILIES: dict[str, dict[str, Any]] = {
     "STATISTICAL-ARBITRAGE": {
         "patterns": ("pairs", "cointegrat", "statarb", "mean_revert", "spread_trade"),
         "discretionary": False,
-        "claim": "a modelled relationship between instruments reverts"},
+        "claim": "a modelled relationship between instruments reverts",
+        # R0296 (RU practitioner corpus, 2026-08-01) -- binds whoever tests this family FIRST:
+        "test_prior": ("spend the test budget on COST/CAPACITY measurement, never the estimator "
+                       "(Kalman/polynomial ~= OLS+sigma per practitioner reply chains). Prior: "
+                       "~4.78%/yr gross per contract over 80 cointegrated pairs; capacity ceiling "
+                       "~USD 3-11k/pair before MMs reclaim it -- under L1.18a that is this desk's "
+                       "band, not a disqualifier; slippage+colocation is the binding constraint "
+                       "named by every source")},
     "LEAD-LAG": {
         "patterns": ("leadlag", "lead_lag", "btc_leadlag", "correlation_regime"),
         "discretionary": False,
@@ -188,6 +195,9 @@ def coverage(root: Path | None = None) -> dict[str, Any]:
             "ledger_mentions": mentions,
             "discretionary_adjacent": bool(spec["discretionary"]),
             "claim": spec["claim"],
+            # An operative prior rides WITH the gap it governs (R0296): the artifact that tells
+            # a reader "never tested" is the artifact that reader opens before testing.
+            **({"test_prior": spec["test_prior"]} if "test_prior" in spec else {}),
             "why": (f"{len(hits)} distinct candidates buried -- this family has been genuinely "
                     "worked" if state == "HUNTED" else
                     f"only {len(hits)} candidate(s) tested; one test is an anecdote and two a "

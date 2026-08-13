@@ -71,6 +71,19 @@ No prior data-axis watchlist exists (this is this mission's first run). Nothing 
 > - **UNBLOCKING STEP:** principal answers "research-only" or "full use" on the personal-vs-
 >   commercial scope. **Routed to GAP_REGISTER #67 (shared legitimacy-ruling row with the CC BY-NC
 >   question — one ruling session, two answers).**
+> - **THIRD INDEPENDENT RE-VERIFICATION 2026-08-11 (owed-work worker, web agent, robots-complied):**
+>   upbit.com robots.txt is a blanket `User-agent: * / Disallow: /` (allowlist: Googlebot/MSNBot/
+>   Yeti/Daumoa only — Claude not named, but `*` binds), so the portal FAQ itself was NOT re-fetched
+>   first-party; two independent search-index renderings agree clause-for-clause with the 07-25
+>   reading (provenance MEDIUM), and the first-party launch notice (api-manager.upbit.com notice
+>   5419, host §13-clean, fetched in full) itself PROMOTES backtesting as an intended use, restricts
+>   only "bulk download by abnormal means or causing system load", and re-confirms both hazards
+>   (listed-assets-only survivorship; files mutable without notice). Open API terms rev. 2023-10
+>   (first-party PDF, static.upbit.com): copyright in all data vests in Dunamu; no clause defines
+>   "commercial use". NOTHING found resolves own-account prop trading in either direction — the
+>   07-25 ambiguity STANDS, verbatim. **A written-clarification route exists and is stated in the
+>   notice: `historical_data@upbit.com` — the principal can get the answer in writing instead of
+>   ruling on ambiguity.**
 >
 > _Pre-deferral verification notes below (unchanged, still valid):_
 > **RE-VERIFIED 2026-07-25 (EN frontier miner, backlog burn-down). File downloaded, checksum
@@ -161,7 +174,7 @@ _Superseded original grading below (kept for the record):_
   failure modes: non-uniform start dates per data type (do not assume uniform depth).
 - **Grade: verified-clean** (portal existence + categories), pending format/auth confirmation.
 
-### 3. bitFlyer getexecutions + self-recorded candles — grade: CLOSED restricted-by-licence, destroyed-at-source for desk use (ToS READ 2026-08-01 by the JP miner; card synced 2026-08-04) [§33: killed -> docs/graveyard.md]
+### 3. bitFlyer getexecutions + self-recorded candles — grade: CLOSED restricted-by-licence, destroyed-at-source for desk use (ToS READ 2026-08-01 by the JP miner; card synced 2026-08-04; deduped 2026-08-12 — the superseded ruling below is demoted to h4 so it no longer parses as a second pending card) [§33: killed -> docs/graveyard.md `jp_bitflyer_direct_recording`]
 > **CLOSED 2026-08-04 (EN frontier miner, backlog sync) — THE LICENCE WAS READ 2026-08-01 AND IT
 > FORBIDS THE USE. The JP miner's seat-1 run resolved what four deferrals could not, by a fully
 > §13-clean route: the "never archived" claim was a WRONG CDX HOST+SLUG (`bitflyer.jp` not `.com`,
@@ -184,7 +197,7 @@ _Superseded original grading below (kept for the record):_
 >   free 1st-of-month (2019-08-30→); GMO Coin keyless ticks (2018-09-05→); bitbank candles.
 >
 > _Superseded deferral block below, kept for the record:_
-### 3. bitFlyer getexecutions + self-recorded candles — grade: **RESTRICTED-BY-LICENCE — CLOSED 2026-08-01, DO NOT BUILD** [§33: killed -> docs/graveyard.md `jp_bitflyer_direct_recording`]
+#### 3-RULING (2026-08-01 JP miner original, superseded by the sync card above — demoted from h3 2026-08-12 so the parser sees ONE card 3). bitFlyer getexecutions + self-recorded candles — RESTRICTED-BY-LICENCE — CLOSED 2026-08-01, DO NOT BUILD
 
 > **§33 DISPOSITION 2026-08-01 (JP frontier miner session 1) — THE DEFERRAL IS OVER. THE LICENCE HAS
 > BEEN READ AND IT FORBIDS THE USE. The human page-read dependency below is DISCHARGED — nobody
@@ -929,7 +942,11 @@ MEV/mempool; GitLab/StackOverflow/NPM = developer-activity factor #65; Telegram/
 retail-attention layer, **one** source was built (mechanism-first, not volume); the rest are logged
 here as excluded, not silently dropped (charter s27 "log every negative").
 
-### 21. NAVER DataLab (Korean search-attention) — grade: needs-legitimacy-review (account-gating: the SOLE blocker is a free NAVER Developers key = a human registration step, GAP #69; technical verification COMPLETE — endpoint live-confirmed keyless 401/errorCode 024 on 2026-07-25, 2026-07-26 and 2026-08-04; collector built+wired, zero code owed) [§33: deferred(2026-08-09) tier:3]
+### 21. NAVER DataLab (Korean search-attention) — grade: needs-legitimacy-review (account-gating: the SOLE blocker is a free NAVER Developers key = a human registration step, GAP #69; technical verification COMPLETE — endpoint live-confirmed keyless 401/errorCode 024 on 2026-07-25, 2026-07-26 and 2026-08-04; collector built+wired, zero code owed) [§33: deferred(2026-08-25) tier:3]
+> **§33 THIRD DEFERRAL 2026-08-11 (brain-hunter seat), blocker UNCHANGED and re-verified:**
+> `data/secrets/` listed this run — **no `naver.json`**, no `NAVER_*` env. The sole blocker
+> remains the principal's free NAVER Developers registration (GAP #69). Zero desk-side work owed;
+> deferral date is a re-check date, not a work estimate. Escalation stands via GAP #69.
 > **RE-QUEUED 2026-08-04 (EN frontier miner, backlog sync): this card sat in the TECHNICAL
 > verification queue and was re-verified identically on three separate runs — a treadmill. There
 > is no technical work left (the parser's own taxonomy files account-gating under the
@@ -981,7 +998,9 @@ here as excluded, not silently dropped (charter s27 "log every negative").
   click-through on the route; these are the exchange's OWN settlement prices (no vendor value
   redisseminated — the Kaiko-index distinction from T1a holds).
 
-### 21. NAVER DataLab (Korean search-attention) — grade: needs-monitoring (built, unrun) [§33: deferred(2026-08-09) tier:3]
+#### 21-RECORD (superseded twin, demoted from h3 2026-08-12 so the parser sees ONE card 21 — the live card with the honest needs-legitimacy-review grade is above the CFE entry). NAVER DataLab (Korean search-attention) — needs-monitoring (built, unrun)
+> **§33 THIRD DEFERRAL 2026-08-11:** same single blocker as the twin card above — key absent
+> (`data/secrets/` checked this run), principal-blocked (GAP #69). Re-check 2026-08-25.
 > **§33 DISPOSITION 2026-08-09 — THE COLLECTOR WAS RUN 2026-07-26. It did not produce an artifact,
 > and the honest disposition is a dated deferral rather than a manufactured one.**
 > - **RUN, VERBATIM OUTPUT:** `.venv/bin/python scripts/collect_naver_krsearch.py` →
@@ -1141,8 +1160,65 @@ undocumented. The desk's own recorder must stay primary; btc126 is backfill, not
   both cells count).
 - STATUS: catalogued + routed; Stage-A comparison NOT run this run (bounded-scope: this run's
   screen budget went to the 24h-lag contrarian cells, both logged SCREEN-WEAK; Binance 429 ban
-  expired 08-02 so pulls must be gentle). [§33: deferred(2026-08-11) — blocker: needs a
-  polite multi-day PI pull + carry-family owner's window choice; tier:2]
+  expired 08-02 so pulls must be gentle). [SUPERSEDED 2026-08-12 — see disposition below]
+
+**DISPOSITION 2026-08-12 (JP miner, matured deferral worked on its due date+1). The 08-04
+mechanism prior is CONFIRMED and the prize is MEASURED. `[§33: screened -> data/jp_funding_clamp_census.json]`**
+
+- **THE CLAMP IS VERIFIED, NOT ASSUMED (positive control).** `F = P + clamp(I − P, ±0.05%)`, so
+  `P ∈ [I−0.05%, I+0.05%]` collapses to `F = I` EXACTLY. Reconstructed the settled rate from 1m
+  `premiumIndexKlines` averaged over the preceding window: **BTCUSDT 49/60 and DOGEUSDT 46/60**
+  windows match to 2e-5. The residual misses are the averaging method (Binance uses an
+  impact/time-weighted average; a plain mean of 1m PI closes is an approximation) — the model is
+  verified, the misses are explained.
+- **ALIGNMENT, DECLARED (L1.46):** `fundingTime` = PI-kline open **+1 ms**, so the rate settled at
+  T is computed from the window **[T−8h, T)** — it belongs to the PRECEDING bar. Joining it to the
+  bar that OPENS at T is a one-window look-ahead. (08-04 flagged OKX/BitMEX pay one period late;
+  this is the Binance-side statement, now measured rather than asserted.)
+- **HOW MUCH INFORMATION THE PRINT DESTROYS — owned panel** (SCANNED denominator: **10 symbols /
+  68,893 8h windows / 2019-09-08→2026-06-20**; 10 is a small denominator and is declared, L1.57):
+  **35.6% of settled prints are exactly 0.0001 and 6.1% exactly 0.0 → 41.6% carry ZERO magnitude
+  information.** The censoring is INFORMATIVE, not random: the dead band *is* the low-premium
+  region, so precisely the small-premium observations are collapsed onto a constant. Any
+  regression or IC using settled FR as a continuous regressor is fitting a variable that is FLAT
+  across its entire middle range.
+- **AND IT DECAYS — the finding that changes what this axis is FOR.** Share exactly 0.0001 by year:
+  **2019 68.8% → 2020 43.4% → 2021 41.1% → 2022 31.3% → 2023 43.9% → 2024 39.6% → 2025 26.1% →
+  2026 10.7%.** So the PI upgrade is worth most to HISTORICAL work (up to two-thirds of windows
+  censored) and least to live signalling today (~11%). **This is a backtest-integrity upgrade
+  first, a live-signal upgrade second** — the opposite of how the 08-04 card framed it.
+- **LIVE WHOLE-UNIVERSE CROSS-SECTION (one instant, 812 USDT-M perps, BTCDOM excluded):**
+  **559/812 = 68.8% sit on one of THREE tie constants** — 0.00005 (n=270, of which 268 are 4h
+  interval), 0.00000 (n=234, 227 8h), 0.00010 (n=56, all 8h). Only **255 distinct funding values
+  exist across 812 symbols.**
+- **THE TIE-BREAK TEST — why this is worth doing at all.** Inside the 56-name group ALL printing
+  the identical `0.00010000`, the mark-vs-index premium still spans **−45.4 bps to +29.5 bps (74.9
+  bps of dispersion)**. The tie is an artifact of the clamp, not an economic equality, and PI
+  orders it. **This is the root cause of a defect the desk has already PAID for:** desk memory
+  records "42 perps sat exactly at the 1bp floor; 'hold while in top-60' made membership random →
+  159 closes in week one, fees −$60 against +$39 of funding". Those names were not at a *floor* —
+  they were **censored at the dead-band constant**, and the fix was applied to the hysteresis
+  rather than to the ranking variable. CAVEAT, stated because it decides deployability: the
+  dispersion is concentrated in THIN names (ONE, MTL, BNT, BAND, GTC) where this desk has been
+  burned on fees and capacity — the tie-break is real information, **not automatically tradeable**.
+- **BONUS FINDING, and it corroborates L1.47 with a COUNT.** L1.47 warns that `held / 8.0`
+  under-counts because "Binance sets 4h for many high-funding alts". Measured: **426 of 812
+  (52.4%) are on a 4-hour interval and 2 on 1-hour — only 385 (47.4%) are actually on the 8h the
+  arithmetic assumes.** "Many" is the MAJORITY. 4h names also carry more funding per day (median
+  +0.000300/day vs +0.000000/day for 8h names), confirming the "4h is set for the hot alts"
+  direction. Cross-sectional ranking on the RAW print mixes units, but honestly: the effect on
+  top-N selection is **modest** (Spearman 0.959 vs a per-day rank; top-40 overlap 37/40) — the
+  large error is in the ACCRUAL, which is L1.47's ground, not the ranking.
+- **EV + novelty, run BEFORE any further screen (fixing 08-04's recorded ordering slip):**
+  premium-index tie-break on the censored cross-section → **EV 0.0193 QUEUE** (p_survive 0.48,
+  breadth_f 1.673, tags funding_family+new_orthogonal_data), **novelty 0.726, not redundant**
+  (nearest `grave:cross-exchange funding dispersion`, sim 0.274, n=231 priors).
+- **NOT PROMOTED, AND THE SCREEN IS NOT DONE.** This run measured the PRIZE (how much information
+  the print destroys) — it did NOT run the construction-vs-construction IC comparison, because
+  that needs a multi-day polite PI backfill the H8 lake does not hold. Two-stage law: zero
+  promotion authority here regardless. **Next owner's job:** backfill 8h PI for the 10-symbol H8
+  cohort, then screen PI-construction vs FR-construction on the SAME windows — both cells are
+  DSR-counted trials (§26 construction logging).
 - ALIGNMENT NOTE for whoever runs it: OKX/BitMEX apply FR one period LATE; Binance immediate —
   declare per venue before any join (§26(4)).
 
@@ -1161,7 +1237,15 @@ undocumented. The desk's own recorder must stay primary; btc126 is backfill, not
   2025 s2d19 GMO-Bybit pair study — touches our LICENSED GMO tick source; 2022 s1d3+s1d21
   regression-bias pair; 2023 s1d24 limit-optimization under jumps).
 
-### 22. aigu + ProBitForge (principal-named CN sources) — grade: UNVERIFIED
+### 22. aigu + ProBitForge (principal-named CN sources) — grade: UNRESOLVABLE, killed with a NAMED re-entry condition [§33: killed -> docs/graveyard.md `cn_aigu_probitforge_unresolvable`]
+> **§33 KILLED 2026-08-11 (brain-hunter seat), mechanism not mood:** four independent searches
+> (EN descriptive, EN exact-handle, CN descriptive, CN practitioner-corpus) resolve NEITHER
+> entity; the only name-space collision is an active impersonation surface (ProBit Global scam
+> warnings). A miner cannot be pointed at an address that does not resolve, and seeding a hunter
+> with an unresolvable name fabricates coverage (this card's own analysis). **Re-entry condition
+> (L1.16a, named):** one line from the principal — a URL or exact platform handle — converts the
+> graveyard entry back to `pending-verification` immediately. Killing ≠ claiming the sources do
+> not exist; it is retiring an unactionable pointer from the owed-work queue.
 
 - **BRIEF:** principal named two sources to mine constantly *"if beneficial"* — **aigu** (described as
   a Chinese AI crypto quant research lab doing transparent paper trading, strategy evaluation and
@@ -1189,7 +1273,17 @@ undocumented. The desk's own recorder must stay primary; btc126 is backfill, not
   `_VECTOR_COOLDOWN_D` days. A fabricated exploration is worse than no exploration, because it
   ALSO blocks the real one.
 
-### 23. 中文 practitioner corpus (thuquant index / 数量技术宅 / 土法炼钢) — grade: UNVERIFIED
+### 23. 中文 practitioner corpus (thuquant index / 数量技术宅 / 土法炼钢) — grade: verified-reachable (all three, 2026-08-11); corpus dig owed to the CN seat [§33: deferred(2026-08-18) tier:2]
+> **§33 VERIFICATION DONE 2026-08-11 (brain-hunter seat), dig deferred to the CN miner seat:**
+> (1) `cnblogs.com/robots.txt` — `User-Agent: * / Allow: /`, no agent disallowed; (2)
+> `quant67.com/robots.txt` — `User-agent: * / Allow: /` + sitemap, fully permissive; (3)
+> `github.com/thuquant/awesome-quant` — EXISTS, **MIT**, 5.6k stars, README indexes CN quant
+> resources by category (数据源/数据库/量化交易平台). All three cleared the robots/licence
+> reachability bar this run — the card's own "no robots.txt check, no licence read" gap is
+> CLOSED. What remains is the language-depth CORPUS DIG (graveyard-ore first: sljsz's strategy-
+> decay posts), which is the CN seat's ground — deferred(2026-08-18) to its next run. The §13
+> caveat on WeChat/Zhihu (GAP #80, anti-bot ruling owed) is untouched by this verification: these
+> three grounds need no gate defeated.
 
 - **THE SUBSTITUTES, which do resolve, and why this is the same asset class.** The brief's intent —
   a constantly-mined Chinese practitioner corpus — is directly served by sources that verifiably
@@ -1219,7 +1313,47 @@ undocumented. The desk's own recorder must stay primary; btc126 is backfill, not
   rules, these are read by hand or not at all — the ruling is not pre-empted by pointing a crawler
   at them first.
 
-### 24. Foreign AI-quant RESEARCH SYSTEMS (VeighNa/vnpy.alpha, Qlib, JP/KR equivalents) — grade: UNVERIFIED
+### 24. Foreign AI-quant RESEARCH SYSTEMS (VeighNa/vnpy.alpha, Qlib, JP/KR equivalents) — grade: verified + MINED (Qlib 2026-08-11; **vnpy.alpha code mined 2026-08-13**) [§33: wired -> docs/research/search_operator_library.md `qlib-alpha158` + `vnpy-alpha-dsl`]
+> **§33 CONVERTED 2026-08-13 (CN frontier miner s8) — the vnpy HALF, which the 08-11 run left
+> unread.** The 08-11 conversion read vn.py's LICENCE but mined only Qlib files (`qlib/data/ops.py`,
+> `contrib/data/loader.py`, `contrib/data/handler.py` — all three Qlib paths). `vnpy/alpha` itself
+> — a 12-file research system with a feature-expression DSL, a factor library, models, a
+> backtester and an artifact store — was never opened. Now read in full → operator library anchor
+> `vnpy-alpha-dsl`. **§13: MIT, read from the canonical LICENSE this run.**
+> **THREE THINGS THAT CHANGE WHAT THIS CARD CLAIMS:**
+> 1. **"Remaining diff" #2 below is REFUTED for vnpy.alpha.** It claims these systems have *"a
+>    rolling walk-forward harness wired to the enumerator"*. vnpy.alpha has **none** — zero hits
+>    for rolling/walk-forward/refit/retrain/expanding/fold across the whole module; it has a
+>    STATIC three-way split and `lab.py` is a persistence layer, not a harness. The desk's gap is
+>    real, but this system is not evidence for it and there is nothing here to port. (The Qlib
+>    half of the claim was not re-tested this run and stands unexamined.)
+> 2. **"Remaining diff" #1 (the feature-expression DSL) now has a 285-line reference
+>    implementation**, and its architecture is the finding: an operator-overloaded proxy class +
+>    `eval()`, no parser, no AST. Copy the proxy pattern; **reject `eval`** — generated or
+>    LLM-authored expressions flowing into `eval()` is arbitrary code execution.
+> 3. **The DERIVES-FROM is recorded so this is never miscounted as convergence:** `alpha_158.py`'s
+>    own docstring says *"158 basic factors from Qlib"*. The factor set is DERIVED; only the
+>    polars ENGINE is independent, so the divergences carry the information (GAP-#85 echo trap).
+> **Corroborations worth their place:** the negative-delay leak rule is now confirmed in a second
+> independently-written framework (family-level, not a qlib quirk); the Slope/Rsquare/Resi trio is
+> independently present (strengthens its ranking as the real transform gap, with a closed-form
+> recipe); and **neither framework ships group operators** — both presuppose a sector map, which
+> corroborates the crypto grouping map as THE blocking input rather than a nicety.
+> **The binding-constraint caveat stands UNCHANGED** — 16,560 trials blocked on transport. This
+> extraction widens nothing until that moves.
+> **§33 CONVERTED 2026-08-11 (brain-hunter seat).** The card's own owed verification axis is
+> CLOSED: **Qlib LICENSE read = MIT (Microsoft); vn.py LICENSE read = MIT (Xiaoyou Chen)** —
+> both from the canonical files this run, not "understood to be" (the row-#79 discipline). And
+> the METHOD source was actually mined, not just verified: `qlib/data/ops.py` (1,681 lines, every
+> operator class), `contrib/data/loader.py` (Alpha158 blocks) and `contrib/data/handler.py`
+> (label + processors) read in full → extraction with exact semantics, five elided-semantic
+> rules for reading mined qlib-dialect expressions (N-type-keyed Rolling, min_periods=1,
+> future-Ref labels, negative-Ref leak rule, Greater=max), and per-family crypto analogues now in
+> the Search Operator Library under anchor `qlib-alpha158`. The card's "remaining diff" list
+> gains one measured item: the **Slope/Rsquare/Resi regression trio** is a concrete transform
+> axis `combination_engine` lacks (adoption via pre-registration, universe cost priced first).
+> The binding-constraint caveat (16,560 trials blocked on transport) stands UNCHANGED — this
+> extraction widens nothing until that moves.
 
 - **BRIEF (principal, 2026-08-06):** hunt the best Chinese/Japanese/etc AI-quant systems and *"copy
   their best research processes"* — explicitly the research operating system, not their signals.
@@ -1267,7 +1401,15 @@ undocumented. The desk's own recorder must stay primary; btc126 is backfill, not
   Ranking a DSL above the transport would be optimising the part that is already ahead — the exact
   substitution WS-004 names, and the reason this card is graded UNVERIFIED rather than actioned.
 
-### 25. EODHD.com (paid EOD/intraday vendor, $100/mo) — grade: UNVERIFIED
+### 25. EODHD.com (paid EOD/intraday vendor, $100/mo) — grade: KILLED as a purchase; coverage docs remain a free index [§33: killed -> docs/graveyard.md `eodhd_paid_vendor`]
+> **§33 KILLED 2026-08-11 (brain-hunter seat), mechanism:** L1.11 — the moat law forbids
+> purchasing commercial data outright, and this card's own analysis shows the free-first
+> prerequisite (documented failed free hunt on the equity axis) has never been run, so the paid
+> exception cannot even be claimed. For crypto it adds nothing over owned keyless Binance series.
+> The one live value — reading its coverage docs as a FREE INDEX of what data exists — is already
+> a validated technique in the Search Operator Library and needs no subscription. **Re-entry
+> condition (named):** the desk expands to an equity/cross-asset book AND a documented free hunt
+> on that axis fails at the charter bar.
 
 - **WHERE IT CAME FROM:** a Reddit post claiming four backtested strategies built on 10 years of
   EODHD data. The strategies themselves were REJECTED by the claim screen
@@ -1296,7 +1438,18 @@ undocumented. The desk's own recorder must stay primary; btc126 is backfill, not
   alternative hunt. Enters the ordinary catalogue → verify → resolve queue. Cataloguing is not
   adoption.
 
-### 26. Kraken downloadable historical OHLCVT archive (2015→, all timeframes, free) — grade: UNVERIFIED
+### 26. Kraken downloadable historical OHLCVT archive (2015→, all timeframes, free) — grade: verified-live (support article read 2026-08-11); licence UNSTATED, bulk ingest owed [§33: deferred(2026-08-25) tier:3]
+> **§33 VERIFICATION DONE 2026-08-11 (brain-hunter seat), ingest deferred:** the support article
+> EXISTS and matches the claim — OHLCVT CSVs in ZIP archives at **8 intervals (1/5/15/30/60/240/
+> 720/1440min)**, span "from each market's opening to the present", delivered via **Google Drive**
+> (full-history archive + quarterly-update folder), no price named. Two honest corrections to the
+> card: the "2015" start is NOT stated by Kraken (span is per-market-opening — potentially
+> earlier); and the article carries **no data-licence language at all**, so the licence read owed
+> at ingest is against Kraken's general ToS (row #79 discipline: read it, never assume in our
+> favour). BLOCKER, named: bulk Google-Drive download + lake ingest needs a collector-capable run
+> with disk budget — deferred(2026-08-25). The three declared uses (depth parity on an in-use
+> axis, second venue for ETH/BTC rotation falsification, pre-Binance-futures 2015-2017 coverage)
+> stand unchanged.
 
 - **THE GAP THIS EXPOSES, and it is a real one.** `FREE_DATA_ALTERNATIVES_SPEC` names
   "exchange-native dumps & archives ... from every major AND regional venue" as source category
@@ -1331,6 +1484,36 @@ undocumented. The desk's own recorder must stay primary; btc126 is backfill, not
 - **PROVENANCE:** a Reddit commenter answering "where do you get long crypto history". Worth
   stating that the desk's own weekly free-data mission should have found this before a forum
   comment did — the failure was not effort, it was that a familiar name reads as a covered one.
+### 27. Crypto grouping map — THE BLOCKING INPUT for group_rank/group_zscore, built proprietary — grade: **BUILT from owned bars 2026-08-11 (L1.11: zero vendor, zero licence surface)** [§33: wired -> data/crypto_grouping_map.json]
+> **BUILT 2026-08-11 (brain-hunter seat).** `wq_operators.group_rank/group_zscore` REFUSE without
+> a `dict[symbol, group]` map; since 2026-08-07 all 179,712 cross-sectional cells could only ask
+> "extreme vs ALL coins", never "vs PEERS". `data/crypto_grouping_map.json` now holds FOUR
+> candidate maps over the 296-symbol D1 lake, quality MEASURED inside the artifact:
+> **`corr_cluster_residual` (THE PEER MAP)** — average-linkage on 120d cross-sectionally demeaned
+> return correlation, K=12, largest cluster 100/296; intra-cluster residual corr **+0.138** vs
+> inter **−0.011** against the demeaning floor **−0.0034** (compared to the floor, not zero —
+> desk lesson); **`corr_cluster`** (raw corr — MEASURED DEGENERATE, 268/296 in one cluster: raw
+> co-movement IS the market factor, the desk's N_eff≈1.5 lesson reproduced from a new direction;
+> kept as evidence, not for use); **`liq_tier`** (120d median dollar-volume quartiles);
+> **`listing_cohort`** (first-partition half-year, static so no look-ahead). CONSUMER CONTRACT
+> in the provenance block: choosing a map is a TRIAL DIMENSION — the pre-registration that
+> adopts GROUP_TRANSFORMS must name its map(s) and price them in VARIANTS_TRIED. Consumer wiring
+> routed to the ledger (alpha org; this seat is research-frozen out of libs/). Vendor
+> taxonomies (CoinGecko categories) remain a possible ORTHOGONAL map — see card 28; not needed
+> to unblock.
+
+### 28. CoinGecko category taxonomy (mechanism-based grouping: L1/L2/DeFi/meme/RWA) — grade: needs-legitimacy-review (ToS read FAILED this run, 403) [§33: deferred(2026-08-25) tier:4]
+> **CARDED WITH ITS FAILED READ DOCUMENTED 2026-08-11 (brain-hunter seat):** the categories API
+> (`/coins/categories/list` + per-coin categories, keyless free tier) would give the
+> mechanism-based grouping (sector/narrative) that correlation clusters cannot express — an
+> ORTHOGONAL fourth map for card 27. **BLOCKER, named:** `coingecko.com/en/api_terms` returns
+> **HTTP 403** to this box's fetcher, so the commercial-use clause of the free tier is UNREAD —
+> and the desk has been burned recording licences in its own favour (row #79). §13: no adoption
+> before the read. Next route: the docs subdomain / a browser-capable session; if the free tier
+> bars commercial use, the kill is L1.11 (no purchase) and the fallback is card 27's proprietary
+> maps + DeFiLlama protocol categories (licence also unread — same read owed). Deferred
+> 2026-08-25, tier 4 (blocked on a licence read, not on engineering).
+
 ## CN OSS EXTRACTION BATCH — 2026-07-31 (5 new axes; full record: cn_oss_extraction_20260731.md)
 
 Verified same-day out of a principal-supplied survey of 10 CN-ecosystem OSS projects (8 real,
@@ -1401,7 +1584,25 @@ NOT mean capital (L1.6 -- a candidate is not an edge). R-rows: R0115-R0118.
 
 ## LITMINER RUN-4 CARDS (2026-07-31, official-sector family first visit — BIS/Fed/IMF primary reads)
 
-### 23. Carry↔liquidation mechanism family (BIS WP 1087, primary read) + COT-BTC extension — grade: needs-monitoring (mechanism prior on INGESTED axes; COT runner exists, BTC contract unrun) [§33: deferred(2026-08-07) tier:2]
+### 23. Carry↔liquidation mechanism family (BIS WP 1087, primary read) + COT-BTC extension — grade: needs-monitoring (mechanism prior on INGESTED axes; COT-BTC DATA LEG LANDED 2026-08-11, screen construction stays R0193) [§33: wired tier:2 -> data/cot_btc_panel.json]
+> **§33 CONVERTED 2026-08-11 (brain-hunter seat).** The owed data leg is ON DISK:
+> `data/cot_btc_panel.json` (845KB, provenance block inside) — CFTC legacy futures-only annual
+> archives 2017→2026 pulled direct (public domain, raw zips cached at `data/scratch/cot/`),
+> token-filtered BITCOIN/ETHER (token-level match so WEATHER can never match ETHER). What landed:
+> **CME BITCOIN 435w 2018-04-10→2026-08-04**, CBOE BITCOIN-USD 72w 2017-12-19→2019-04-30 (predates
+> the CME rows — extends the axis a full quarter earlier), MICRO BITCOIN 275w, ETHER 279w, MICRO
+> ETHER 243w, plus **Coinbase Derivatives / LMX NANO + PERP-STYLE contracts** (55–89w each) — the
+> perp-style COT rows are a BONUS carry-demand observable on §42 too-small-for-funds ground nobody
+> asked for. All legacy (All) columns kept: noncomm/comm/**nonreportable** long/short/net/net-over-OI
+> — nonreportables net-over-OI is the card's named carry-DEMAND variable. NOT DONE (unchanged
+> owner): the Stage-A screen construction (carry_z → forward liquidation intensity, h∈{5d,20d})
+> stays with **R0193** (re-scheduled 2026-08-24 this session), zero promotion authority, novelty
+> gate re-run owed at screen time per the card's own note.
+> **RE-VERIFIED 2026-08-12 (litminer run 6, §33(8) artifact check):** `data/cot_btc_panel.json`
+> exists (845KB, mtime 2026-08-11 postdates find), provenance block present (CFTC legacy
+> annual-archive URLs), 1,715 rows spanning 2017-12-19→2026-08-04 — matches the CBOE-1712→CME
+> claim exactly. R0193 confirmed in the ledger: status=scheduled, due=2026-08-24, summary names
+> this build. First-pass claims checked: 0 refuted.
 - **Provides:** mechanism priors on data the desk ALREADY holds — basis, multi-venue funding
   (incl. BitMEX 2016–2026 decade), tick liquidation stream — plus a near-zero-cost extension of
   the EXISTING COT ingestion (`scripts/run_cot_screen.py`, public-domain archives) to the CME BTC
@@ -1428,7 +1629,38 @@ NOT mean capital (L1.6 -- a candidate is not an edge). R-rows: R0115-R0118.
 - **§33 disposition:** deferred(2026-08-07) — construction owed by the alpha org via ledger row
   (R-row this run); litminer freeze bars new runner code. Tier 2: mechanism prior on ingested axes.
 
-### 24. Regulatory-event timeline (5-class taxonomy, Auer–Claessens) — grade: needs-monitoring (event gate EXISTS; timeline dataset is the owed build) [§33: deferred(2026-08-10) tier:3]
+### 24. Regulatory-event timeline (5-class taxonomy, Auer–Claessens) — grade: needs-monitoring (event gate EXISTS; timeline dataset is the owed build) [§33: deferred(2026-08-24) tier:3]
+> **§33 RE-DEFERRED 2026-08-24 with a FAILED SEARCH DOCUMENTED (2026-08-11, brain-hunter seat).**
+> The cheap path was probed and does not exist: the BIS QR Sep-2018 article page
+> (`bis.org/publ/qtrpdf/r_qt1809f.htm`) links ONLY the 240KB article PDF — no annex, no online
+> appendix, no dataset file; a targeted web search for a published Auer–Claessens event list
+> (151 events, dates + classes) found the SSRN/CEPR/RePEc mirrors of the same article and no
+> data artifact. So the timeline is a genuine RECONSTRUCTION job (regulator sites/archives, per
+> the card's own free-reconstruction claim), not an extraction — it stays with **R0193**
+> (re-scheduled 2026-08-24 this session). Blocker named: reconstruction labour by the alpha org;
+> nothing external blocks it.
+> **STRANDING RESOLVED 2026-08-12 (litminer run 6):** the [SUMMARY-ONLY — both routes 403'd]
+> FRL follow-on is identified and has an OPEN author-archived version:
+> **Saggu, Ante & Kopiec (2024), "Uncertain Regulations, Definite Impacts" — arxiv.org/abs/2412.02452**
+> (FRL version sciencedirect S1544612324014429 stays paywalled; the arXiv copy is the legitimate
+> route). Abstract-grade numbers verified verbatim: SEC classification-as-security events →
+> **returns −12% over one week post-announcement, persisting for a month** (no reversal =
+> underreaction gradient extends to the SEC era); **ex-ante abnormal VOLUME = pre-announcement
+> informed trading**; severity conditions on sentiment, size, age, volatility, illiquidity —
+> the heterogeneity conditioning for this card's event gate. **INTERIOR READ DONE SAME-RUN**
+> (GAP #70's stdlib zlib extractor re-derived — the "needs poppler" claim was the exact
+> inherited-false-limit #70 documents; 57,370 chars recovered): **48 events (IDs 1–48, DAO
+> 25/07/2017 →), sub-samples Binance+Coinbase / Coinbase-insider / Bittrex; market model
+> benchmarked on BITCOIN log returns ⇒ CARs are BTC-RELATIVE (the desk's own residualisation
+> convention — these numbers survive the narrow-breadth kill by construction); pre-announcement
+> CARs −2.4% INSIGNIFICANT while pre-announcement VOLUME is abnormal (the information is in
+> volume, not price, ex-ante); insider subsample pre-AR −3.9% ("potential leaks"); gradient
+> from −5.2% intensifying, −12%/1wk abstract-confirmed, persists a month.** The −17.2%/30d peak
+> cell + exact window brackets sit in hex-encoded Tj strings the current extractor skips
+> (limitation named in inbox 2026-08-12 entry). **BUILD SHORTCUT for R0193: the paper CONTAINS
+> the dated 48-event table with tickers + reference documentation — the SEC-classification
+> subset of this card is an EXTRACTION from an open source, not a regulator-site
+> reconstruction.** McLean–Pontiff −58% haircut applies to all magnitudes as standing prior.
 - **Provides:** dated, classified regulatory-event timeline (AML/CFT, interoperability-restricting,
   legal-status, CBDC, general-warning classes), reconstructable FREE from regulator sites/archives.
 - **Mechanism (BIS QR Sep-2018 page-read + Dallas Fed WP 381 PDF read; 151 events 2015–18):**
@@ -1445,7 +1677,24 @@ NOT mean capital (L1.6 -- a candidate is not an edge). R-rows: R0115-R0118.
 - **§33 disposition:** deferred(2026-08-10) — timeline build owed (ledger row this run). Tier 3:
   new surface with a live gate path.
 
-### 25. Stablecoin run signature — episodic conditioning on the EXISTING stablecoin_flows family — grade: needs-monitoring (reconstruction path corroborated, run-signature variables unbuilt) [§33: deferred(2026-08-10) tier:2]
+### 25. Stablecoin run signature — episodic conditioning on the EXISTING stablecoin_flows family — grade: needs-monitoring (SUPPLY-LEG VARIABLES BUILT 2026-08-11; mint/burn pair + premium legs stay R0193) [§33: wired tier:2 -> data/stablecoin_run_variables.json]
+> **§33 CONVERTED 2026-08-11 (brain-hunter seat), honest scope.** `data/stablecoin_run_variables.json`
+> (363KB) — DefiLlama `/stablecoincharts/all` (free, keyless, sr1073's own cited class): **USDT
+> 3,178d 2017-11-29→2026-08-11, USDC 2,892d**, columns date/circulating/d1%/d7%/**burn_z63**
+> (63d rolling z of daily supply delta — the burn-spike run signature). SANITY PROBES PASS on the
+> two known runs: Terra window 2022-05/06 worst USDT d7 = **−10.2%**; SVB window 2023-03 worst
+> USDC d7 = **−15.2%** — the signature is detectable in this data, measured not assumed.
+> **DECLARED ABSENT (L1.55):** the price leg — CoinGecko market_chart FETCH-FAILED from this box,
+> `peg_dev_bps` is null on every row and must never be read as "peg held"; the artifact's
+> provenance block carries `measured: {supply_leg: true, price_leg: false}`. REMAINDER (unchanged
+> owner, R0193 re-scheduled 2026-08-24): treasury-Transfer mint/burn PAIR (classifies which risk
+> source is live), safe-coin premium off the desk's own 4-venue tape (better clock provenance than
+> any vendor price anyway, L1.46), per-chain split if the family needs it.
+> **RE-VERIFIED 2026-08-12 (litminer run 6, §33(8) artifact check):** column-oriented store
+> reproduces every claim — USDT 3,178 rows 2017-11-29→2026-08-11, USDC 2,892; `peg_dev_bps`
+> non-null count 0 (declared-absent honoured); sanity probes RECOMPUTED from the artifact:
+> Terra worst USDT d7 = −10.23% (2022-05-18), SVB worst USDC d7 = −15.17% (2023-03-17) vs
+> claimed −10.2/−15.2. First-pass claims checked: 0 refuted.
 - **Provides:** episodic run-state classifier from data the desk can already reconstruct free:
   USDT/USDC treasury-Transfer mint/burn (the desk's corroborated reconstruction path), DefiLlama
   per-chain stablecoin circulation, CoinGecko stablecoin mcap (both free; sr1073's own sources),
@@ -1575,6 +1824,11 @@ step 1), obtained for free.
 ### 26. KR venue-state layer — Upbit + Bithumb event archive, market flags and rail state — grade: needs-monitoring (verified live, ingest STARTED, screen owed) [§33: screened -> data/upbit_trade_announcements.jsonl]
 _Discovered and verified by the KR frontier miner, session 1, 2026-08-01. All endpoints keyless,
 first-party, §13-clean (public documented venue APIs, no login, no paywall, no scraping)._
+> **RE-VERIFIED 2026-08-12 (litminer run 6, §33(8) artifact check):**
+> `data/upbit_trade_announcements.jsonl` exists (199KB), **737 rows** — the card's
+> category=trade count exactly — spanning 2017-10-27→2026-07-31 (KST stamps), consistent with
+> the 2017-10-24 open-beta claim (first *trade* announcement 3 days after open). Screen still
+> owed (unchanged owner). First-pass claims checked: 0 refuted.
 
 - **Provides — four distinct surfaces, all free:**
   1. `api-manager.upbit.com/api/v1/announcements` — **5,685 dated, categorised announcements back
@@ -1636,11 +1890,54 @@ first-party, §13-clean (public documented venue APIs, no login, no paywall, no 
   limits observed and respected throughout (the 429s in this run were backed off, never evaded).
 - **Routed:** `data/upbit_trade_announcements.jsonl`, `data/upbit_announcements.jsonl`,
   `data/data_universe_map.json` (4 entries), R0298–R0301, **R0303 (dated 08-03)**.
-
----
-
-### 27. GMO Coin free tick-trade archive (JP venue, keyless, 2018-09-05 →) — grade: **verified-technically-clean, LICENCE UNREAD (reachable, not blocked)** [§33: deferred(2026-08-12) tier:3]
+- **ERA MECHANISM PRIOR FOR THE OWED SCREEN (KR miner s2, 2026-08-12 — Ppomppu mania-window
+  primary text, archived `data/ppomppu_kr_era_threads.jsonl`):** the 2017-18 era folk record
+  states the rail-state→premium mechanism as RULES, not speculation: (1) "지갑 없이 신규상장시
+  타거래소보다 매우 높은 시세" — a deposit-closed listing forms a fenced (가두리) captive market
+  with structurally elevated venue price (live era example: BTG on Coinone at 66 vs global);
+  (2) per-coin premium dispersion ∝ transfer friction (ERC-20 tokens tight, congested chains
+  wide — same-day tape EOS 9-25% vs XRP 34%, Jan 2018); (3) venue↔bank binding makes rail
+  throttles VENUE-level basis events (real-name era: Upbit-IBK, Bithumb-NH; beehive-kill forced
+  selling = frozen-leg discounts). So the screen this card owes should key on **rail-state
+  TRANSITIONS per asset** (deposit close/reopen), not on flag LEVELS — the levels are the fence
+  standing, the transitions are the fence going up or coming down, and the era record says the
+  price action lives at the transitions. Pre-registered design + falsifier + EV gate (0.0061
+  QUEUE, novelty 0.772) live on `prospector_watchlist.md` card `kr_rail_state_transition_global_leg`
+  (2026-08-12); the screen obligation stays HERE, one owner, now with its design. (JP venue, keyless, 2018-09-05 →) — grade: **verified-technically-clean, LICENCE READ 2026-08-12 — needs-legitimacy-review: the customer 基本約款 Art. 14(15) requires company consent for off-service use of service-obtained information; whether the anonymous keyless archive is inside 本サービス scope is a policy decision, not a technical read. Ingest stays gated.** [§33: deferred(2026-08-19) tier:3]
 _Found by JP frontier miner session 1, 2026-08-01, as the licensed replacement for the §13-restricted bitFlyer axis._
+
+> **§33 DISPOSITION 2026-08-12 — THE OWED READ IS DONE (R0309). LICENCE UNREAD → LICENCE READ.**
+> The blocker named on 08-05 ("one PDF read, not a wall") was real and is now closed:
+> - **WHAT WAS READ:** `kihon-yakkan.pdf?ver=20260725` (ＧＭＯコインサービス基本約款, 12 pp,
+>   updated 2026-07-25), harvested from `coin.z.com/jp/corp/policy/terms/` this run. The PDF is a
+>   subset-font/CID document; text was recovered stdlib-only (zlib streams + per-font ToUnicode
+>   bfchar/bfrange maps, literal-string Tj decode) — 16,053 chars, all 26 articles legible.
+>   Method reproducible from the URL; no install, no proxy.
+> - **THE OPERATIVE CLAUSES, quoted:** Art. 14(15) 禁止事項: 「当社の承諾を得ることなく、本サービス
+>   により取得した情報を本サービス利用以外の目的で利用し、又は第三者に開示し、若しくは漏洩する行為」
+>   (without the company's consent, using information obtained through the Service for purposes
+>   other than Service use, or disclosing it to third parties, is prohibited). Art. 7(1): use of
+>   the Service is DEEMED ASSENT to the terms (「利用した場合は…同意しているものとみなします」).
+>   Art. 7(3): customers acquire no IP or other rights in the Service.
+> - **NO OTHER GOVERNING DOCUMENT EXISTS — searched, not assumed:** the policy index
+>   (`/jp/corp/policy/`, all 9 documents enumerated) has no API約款, no site-use terms, no
+>   copyright page; the API product page (`/jp/corp/product/info/api/`) links no API terms; the
+>   archive index (`api.coin.z.com/data/trades/`) carries zero terms/notice text. The 基本約款 is
+>   the whole licence surface.
+> - **WHY THIS IS A DECISION AND NOT A VERDICT:** the archive is branded APIドキュメント (inside
+>   the 暗号資産API surface) yet requires no account, no key, no click-through, robots explicitly
+>   permissive. EITHER it is 本サービス — then Art. 7(1) deems the download assent and Art. 14(15)
+>   gates desk research use on GMO's consent — OR it is outside 本サービス — then no licence
+>   attaches to a public publication of non-copyrightable facts (JP has no sui generis database
+>   right; 著作権法12条の2 needs creative selection/arrangement raw tick CSVs lack). The two
+>   readings give opposite answers and choosing between them is a §13 POLICY call, same class as
+>   the Upbit-portal row already in the DECIDE queue. Re-graded `needs-legitimacy-review` so the
+>   backlog surfaces it there — the queue built for exactly this shape.
+> - **Deferral is dated 2026-08-19 with the decision as the lifting condition.** This is not
+>   flow-rot: the deferral's CONTENT changed (unread → read, clause identified, routed). If the
+>   decision rules the 約款 governs, the honest next tag is `killed` (§13 hard stop, L1.16a
+>   re-entry = written GMO consent); if it rules the archive public-unlicensed, next tag is
+>   `wired` via a collector. Until then: **no collector, no ingest.**
 
 > **§33 DISPOSITION 2026-08-12 — CORRECTED FROM `screened`, WHICH THIS CARD NEVER WAS.** The tag
 > read `screened -> docs/research/prospector_coverage.md JP-s1` and was counted unbacked. Both
@@ -1692,14 +1989,46 @@ _Found by JP frontier miner session 1, 2026-08-01, as the licensed replacement f
   terms host *refuses us*; GMO's *serves us* and we simply have not rendered the body. Next action
   is an OP-038-class fetch of the JSON/API behind the JS shell, **not** a human page-read and **not**
   a proxy purchase.
-- **NEXT ACTION (dated):** render `coin.z.com/jp/corp/policy/terms/`, grep for the IP/データ/
-  再配布/API clause, and re-grade. **Owed by 2026-08-05.** Until then: **no collector, no ingest.**
+- **NEXT ACTION (dated):** ~~render the terms page and re-grade~~ **DONE 2026-08-12** (see
+  disposition block above — the 約款 is read; what remains is the §13 scope DECISION, owed by
+  2026-08-19 via the legitimacy queue). Until decided: **no collector, no ingest.**
   Technically verified ≠ cleared.
 
 ---
 
-### 28. bitbank public candlestick API (JP venue, keyless, whole-year-per-call) — grade: **verified-technically-clean WITH A CONFIRMED PHANTOM-HISTORY TRAP, licence unread — ATTEMPTED 2026-08-04 from the research container: bitbank.cc/error/terms serves a JS shell to curl (200, no body) and resets rendered fetches (Chromium+proxy ERR_CONNECTION_RESET); support.bitbank.cc same. The licence body is only reachable from a box with direct egress — VPS or the JP miner session. Grade stays licence-unread; ingest stays gated.** [§33: deferred(2026-08-12) tier:3]
+### 28. bitbank public candlestick API (JP venue, keyless, whole-year-per-call) — grade: **verified-technically-clean WITH A CONFIRMED PHANTOM-HISTORY TRAP, LICENCE READ 2026-08-12 — needs-legitimacy-review: the ToS (Art. 17/19/20) contains NO data-reuse restriction and the venue's own support docs invite programmatic public-data retrieval; the one restrictive text is the site-footer disclaimer ("private use only, not for commercial purposes" over news/prices/data), whose scope over the public.bitbank.cc API subdomain is the open policy question. Ingest stays gated.** [§33: deferred(2026-08-19) tier:3]
 _Found by JP frontier miner session 1, 2026-08-01._
+
+> **§33 DISPOSITION 2026-08-12 — THE OWED READ IS DONE (R0310), AND THE EGRESS DIAGNOSIS IS
+> CORRECTED.** The 08-04 attempt failed because it fetched the WRONG URL, not (only) the wrong box:
+> `bitbank.cc/error/terms` is the SPA's error route — the 6,500 B "JS shell" IS the error page.
+> The canonical terms live at **`bitbank.cc/doc/tos`**, which server-renders to plain curl from
+> this box: HTTP 200, 686,453 B, the full 規約 embedded (double-entity-encoded; 86,728 chars
+> extracted stdlib-only, ~4 service copies: spot/margin/lending/auto-invest).
+> - **WHAT THE ToS SAYS (users = account holders):** Art. 17 禁止行為 has **no data-reuse,
+>   no redistribution, no off-service-use clause** — prohibitions target account abuse, AML,
+>   reverse-engineering the service (逆アセンブル…リバースエンジニアリング), competing-service
+>   use, and 金商法 market-abuse articles. Art. 19 知的財産権: standard IP-ownership (no use
+>   restriction beyond infringement). Art. 20 秘密保持 covers non-public information and
+>   **excludes 公知 information by its own carve-outs** — public API data is outside it.
+> - **THE ONE RESTRICTIVE TEXT, quoted:** the site-footer 免責事項: 「当サイトにおけるニュース、
+>   取引価格、データ及びその他の情報などのコンテンツは…あくまでもお客様の私的利用のみのために
+>   当社が提供しているものであって、商用目的のために提供されているものではありません」 (site
+>   content incl. trading prices and data is provided solely for private use, not for commercial
+>   purposes). Shape is standard JP editorial not-investment-advice boilerplate (the surrounding
+>   sentences are about authors' views and solicitation), but the text names データ.
+> - **AGAINST reading it as an API ban:** the API host `public.bitbank.cc` carries no terms, no
+>   robots directives, no disclaimer; the official support article (support.bitbank.cc
+>   360019410033) **positively describes programmatic retrieval of 板情報/チャートデータ as the
+>   API's purpose**; the official api-docs repo (`bitbankinc/bitbank-api-docs`, no LICENSE file)
+>   documents the public API for bot use. A reading that bans commercial API consumption would
+>   make every bitbank trading bot a ToS breach — contradicting the venue's own documentation.
+> - **No API-specific 約款 exists** — searched (policy pages, support KB, api-docs repo).
+> - **ROUTED: needs-legitimacy-review** — same DECIDE queue as GMO (card 27) and the Upbit
+>   portal, decision owed by **2026-08-19**. bitbank's case is cleaner than GMO's (no
+>   consent-required reuse clause; positive invitation to programmatic use); if the decision
+>   clears it, next tag is `wired` via a collector **with the 2017-02-14 true-start guard**
+>   (the phantom-history trap below stands as an independent technical gate regardless).
 
 > **§33 DISPOSITION 2026-08-12 — CORRECTED FROM `screened`, WHICH CONTRADICTED THIS CARD'S OWN
 > GRADE.** The tag claimed a screen while the grade in the same heading reads *licence unread,
@@ -1730,9 +2059,11 @@ _Found by JP frontier miner session 1, 2026-08-01._
 - **§13:** `bitbank.cc/robots.txt` → 200, **no ClaudeBot block**; `public.bitbank.cc/robots.txt` →
   404. The API docs repo `github.com/bitbankinc/bitbank-api-docs` (126★) carries **no LICENSE file**
   (`license: None` via the GitHub API), so the docs are unlicensed and the governing document is the
-  site 規約 (`bitbank.cc/error/terms`, 200, 6,500 B — body not yet extracted). **LICENCE UNREAD.**
-- **NEXT ACTION (dated):** extract the 規約 body and re-grade. **Owed by 2026-08-05.** No ingest until
-  then.
+  site 規約 — canonical URL **`bitbank.cc/doc/tos`** (the earlier `/error/terms` URL was the SPA's
+  error route). **LICENCE READ 2026-08-12** — see the disposition block above for the clauses.
+- **NEXT ACTION (dated):** ~~extract the 規約 body and re-grade~~ **DONE 2026-08-12** (see
+  disposition block above — full ToS read from `bitbank.cc/doc/tos`; what remains is the §13
+  scope DECISION, owed by 2026-08-19 via the legitimacy queue). No ingest until decided.
 - **Standing value even if the licence fails:** the phantom-history finding is venue-independent
   knowledge and is already generalised into **OP-045**.
 
@@ -1835,6 +2166,54 @@ files are published under Brazil's open-data policy (LAI 12.527/2011). **CLEAN �
 residual **exactly 0.00**) · licence clean ✓ · **ingest NOT started** · **screen deliberately withheld
 as underpowered, with the enabling change named above.**
 
+---
+
+**UPDATE 2026-08-12 (BR frontier miner s2) — THE VINTAGE STACK'S "DECAYING DEADLINE" IS NOW A
+MEASURED LEVEL, AND ITS RATE IS EXPLICITLY UNMEASURED. s1's urgency claim was not evidenced.**
+
+s1 called this *"the one item with a decaying deadline"* on the strength of **2 of 4** probed
+vintages being live-404. That is a LEVEL observed on a 4-item sample, and a decay *rate* was
+inferred from it that nobody had measured. Full census run this session (every known publication
+date, both `.xls` and `.pdf`, ranged-GET against the live RFB server):
+
+| | count | range |
+|---|---|---|
+| distinct publication dates known (Wayback CDX) | **23** | 2021-09-02 … 2025-11-12 |
+| **LIVE on the RFB server** | **11** (+ `20260415` = **12**) | **2023-05-03 … 2026-04-15** |
+| **404 on the RFB server** | **12** | 2021-09-02 … 2023-03-02 |
+| of the dead, a DIRECT Wayback file capture exists | 8 | recoverable |
+| of the dead, **no direct capture — AT RISK** | **4** | 2021-09-02, 2022-07-05, 2023-02-06, 2023-03-02 |
+
+**The boundary is perfectly clean: everything published ≤ 2023-03-02 is dead, everything ≥
+2023-05-03 is live.** The public page links **only** `20260415`; the other 11 are unlinked but
+still served, so they are reachable only if you already know the filename — which is what makes the
+date list above the actual asset.
+
+**TWO HYPOTHESES FIT THIS EQUALLY WELL AND THEY IMPLY OPPOSITE URGENCY. Naming both instead of
+picking the exciting one:**
+- **(A) Rolling keep-last-N (N≈12).** 12 live / 12 dead is a suspiciously exact split. If true,
+  **every new publication kills the oldest survivor** and mirroring is genuinely urgent.
+- **(B) A one-time 2023-04/05 CMS migration cutoff.** gov.br has form for platform migrations, and
+  a single cut at that boundary explains the data exactly as well. If true the live set is
+  **stable** and there is no ongoing decay at all.
+
+**I could not discriminate them, and I am recording that rather than resolving it** (L1.28a —
+UNMEASURED is a real answer). The reason is concrete: Wayback captured these files essentially
+**once each, at publication**, so the CDX status timeline cannot date any file's death.
+**THE DISCRIMINATOR IS A SECOND CENSUS, AND THIS ENTRY EXISTS TO MAKE IT POSSIBLE** — s1 recorded
+no date list, so no delta was computable this run; the table above is the baseline. **Falsifier:**
+if a publication occurs after 2026-04-15 and the live floor moves from 2023-05-03 to 2023-06-08,
+hypothesis (A) is confirmed and mirroring becomes urgent; if the floor holds, (B) is confirmed.
+Re-probe: ranged-GET `.../criptoativos_dados_abertos_{DATE}.xls` for each date above.
+
+**A SECOND, UNRELATED OBSERVATION WORTH MORE THAN THE DECAY QUESTION: the series may be in a
+publication hiatus right now.** The newest vintage is **2026-04-15** — unchanged since s1 probed it
+on 2026-08-01 and **~4 months old today**. This dataset has a documented prior hiatus
+(2023-09 → 2024-10, i.e. **13 months**). So "the current file is 3.5 months lagged" may understate
+the problem: the lag is not a fixed publication delay but a **variable one with a 13-month
+precedent**, which matters for any conditioner built on it and is a far more serious constraint on
+using this axis live than the archival decay is.
+
 ### 30. OpenMarket — synchronized millisecond Polymarket↔Binance BTC corpus (arXiv:2607.26245, HuggingFace, Apache-2.0) — grade: **verified-live, licence CLEAN for the data, sample ingested and measured; DEAD AS AN ALPHA AXIS by the authors' own out-of-sample null, KEPT as a clock-provenance reference** [§33: killed -> docs/graveyard.md lit_prediction_market_microstructure_vs_book]
 - **Provides:** the first public millisecond-level paired Polymarket-BTC / Binance-BTCUSDT corpus
   with explicit pairing metadata. 727,098,247 deduplicated rows across 202 archival snapshots;
@@ -1881,3 +2260,536 @@ as underpowered, with the enabling change named above.**
 - **L1.16a re-entry:** a named orthogonal use that does NOT re-run the graveyarded construction —
   e.g. using the corpus as declared-provenance ground truth to validate the desk's own cross-venue
   timing methodology. Absent that, the 727M-row split stays un-ingested.
+
+## LITMINER RUN-6 CARDS (2026-08-12, arXiv q-fin full-subcategory sweep — first execution; ground file `deep_sweep/20260812_litminer_arxiv.md` carries full evidence + URLs)
+
+### 27. Copula-state BTC-hedged alt spread reversion at 5-min (STAT-ARB — the desk's only never-tested family, n=0) — grade: needs-monitoring (screen construction owed; hourly rung of the family is graveyard-KILLED) [§33: deferred(2026-08-24) tier:2]
+- **Provides:** the first testable construction for the STATISTICAL-ARBITRAGE family: 3-week
+  formation / 1-week trading rolling cycles on Binance USDT-M perps; spread = BTC − β·ALT
+  (Engle–Granger per cycle, re-selected — never static), copula conditional-probability entry
+  (h(1|2)>0.7, h(2|1)<0.3), 5-MIN bars only.
+- **Mechanism (desk-authored — the paper offers none, its weakest point):** coin-idiosyncratic
+  unhedged retail flow (momentum chasers, liquidation cascades) pushes the alt leg off its
+  BTC-cointegrated level; professionals don't close it because per-pair capacity ($3–11k,
+  RU-measured) is below their fixed costs. Loser: the impatient alt-leg taker. Persistence:
+  capacity-rationed competition. BTC-hedged by construction ⇒ the 1.54-effective-bets
+  directional kill does not bind; 5-min ⇒ the daily price-only grave does not bind.
+- **Evidence + replication state (honest):** Tadi–Witzany, Financial Innovation 11 (2025), OPEN
+  (PRIMARY full-PDF read; arXiv 2305.06961): 5-min net Sharpe 3.77 claimed 2021-01→2023-01 —
+  BUT in-paper baselines are net-negative (plain cointegration −18.7→−88.3%) and the
+  independent QFE 10(2) 2026 near-replication kills the HOURLY rung at ALL cost levels with
+  funding modeled (graveyard `lit_hourly_copula_pairs_netneg`, interior table extracted this
+  run). Read the 3.77 as the selection tail of a mostly-negative family; the 5-min rung is the
+  ONLY live region and it omitted funding.
+- **Falsifiers (pre-registerable, in order):** (1) add desk funding-panel accrual in the paper's
+  own window — flips ≤0 ⇒ dead as published; (2) OOS 2023-02→2026-08 net Sharpe <1 after −58%
+  haircut ⇒ decayed; (3) own-fill slippage calibration kills it ⇒ execution-bound, feeds
+  MM-execution family; (4) survives only 2021-22 alt-mania segment ⇒ regime artifact.
+- **Capacity:** $3–11k/pair, weekly top-2 — fund-invisible, book-sized (§42 lane).
+- **Graveyard-check:** family n=0; `statarb_kalman_hedge_ratio_refinement` kill is Kalman-β
+  (this is static-EG-per-cycle — no conflict); hourly kill above is the family PRIOR, not a
+  block on 5-min. JSAI-2020 instability caveat = why per-cycle re-selection is mandatory.
+- **§33 blocker, named:** Stage-A screen construction needs runner code the litminer freeze
+  bars; owed by the alpha org via **R0459** (due 2026-08-24). Novelty gate re-run
+  owed at screen time; every construction (bar size, α₁, copula family) logged as a charged trial.
+
+### 28. Quarter-hour clock: scheduled-algo order-imbalance leakage, 4–12h horizon (EVENT-AND-CALENDAR × ORDER-FLOW, sub-daily) — grade: needs-monitoring (dual-use; execution-hygiene leg needs NO alpha claim) [§33: deferred(2026-08-24) tier:2]
+- **Provides:** clock-phase-resolved order-imbalance at :00/:15/:30/:45 marks → 4–12h forward
+  returns, on the desk's OWN-CLOCK L2/trade recorder (the one instrument class R0117 taught the
+  desk to demand); funding-window (00/08/16 UTC) conditioning as the desk's differentiator.
+- **Mechanism:** interval-scheduled execution (TWAP/rebalance/funding-anchored bots) fires on
+  round marks; the printed imbalance leaks persistent parent flow. Loser: the principal behind
+  the clock-scheduled executor paying impact on a predictable schedule; persists because
+  cron-shaped execution is operationally standard and its leakage is invisible in the
+  executor's own benchmarks.
+- **Evidence + replication state:** Kim & Hansen arXiv 2607.09426 (abstract + v2 ack read):
+  OOS opening-return predictability; imbalance→4–12h; roundness drop = algo signature. Lineage
+  REPLICATED+published: Hansen–Kim–Kimbrough JFEC (arXiv 2109.12142) ties vol/volume periodicity
+  to algorithmic trading and FUNDING TIMES across three venues. Crowding caveat: QuantPedia
+  publicises the 2021 periodicity layer; the 2026 return-predictability layer is new. No cost
+  accounting in the abstract — net-tradability UNMEASURED, not claimed.
+- **Falsifiers:** (1) own-data clock-phase replication fails ⇒ sampling artifact, dead;
+  (2) predictability real but net<0 at desk size ⇒ demote to EXECUTION HYGIENE (don't execute
+  ON marks — negative capacity requirement, feeds the 66bps execution-gap program) — that leg
+  is valuable with NO alpha claim; (3) Binance-only ⇒ single-venue fragility; (4) sign flips
+  across funding windows ⇒ confounded with carry (hunted family), demote.
+- **Capacity:** most-liquid perps, hours-horizon — capacity unbinding; crowding is the risk.
+- **Graveyard-check:** EVENT-AND-CALENDAR n=1 thin; flow-conditioned intraday ≠ the price-only
+  graves (both 420/0-daily and the new `lit_intraday_ohlcv_mnq_14of14` 5-min OHLCV kill — this
+  card is imbalance-conditioned, exactly the exception class those kills leave open). CAUTION
+  for the builder: `libs/validation/event_study.py` is ONE-SIDED POSITIVE (desk memory) —
+  handle negative-direction effects explicitly.
+- **§33 blocker, named:** **R0459**, alpha org, due 2026-08-24; cheapest first build is
+  the hygiene leg (mark-avoidance in the executor's child-order timing — but executor code is
+  MONEY PATH: L1.38 change-window check applies to that consumer, not to the measurement).
+
+### 29. Polymarket-vs-Deribit binary wedge on BTC threshold contracts (VOL-AND-OPTIONS relative value — NOT the EV-rejected DVOL variance-carry) — grade: needs-legitimacy-review (TRADING leg only; measurement leg is free and §13-clean) [§33: deferred(2026-08-24) tier:2]
+- **Provides:** hourly wedge series = Polymarket Yes price − discounted option-implied binary
+  (Deribit surface the desk already holds) at matched strike/maturity; wedge as (a) tradeable
+  RV candidate, (b) zero-execution positioning-sentiment input to the options book.
+- **Mechanism:** favourite-longshot demand — prediction-market bettors overpay low-probability
+  Yes (lottery consumption); option MMs cannot close it: KYC/jurisdiction segmentation, no
+  cross-margin, Polygon rails, UMA oracle-resolution risk ⇒ a REGULATORY-segmentation moat that
+  does not decay via publication. Loser: the longshot bettor.
+- **Evidence + replication state:** Portnaya arXiv 2606.19517 (abstract-grade): 5.6pp mean gap
+  (t=6.46), pooled 6.3pp, **Deribit extension 11pp**, AR(1) half-life ≈4h, wedge concentrated
+  at low-prob/long-maturity; delta-hedged proxy "profitable after conservative costs, marginal
+  precision". No replication (2mo old). BOUNDARY mapped by an independent failure: the fast end
+  is DEAD (graveyard `lit_polymarket_15min_binary_ml`, −0.116/trade) — the wedge lives ONLY at
+  long-maturity/low-prob. 2026 practitioner corroboration logged in the ground file.
+- **Falsifiers:** (1) desk-rebuilt wedge |mean| < both legs' fees+spread ⇒ measurement-only
+  forever; (2) wedge only where Polymarket depth <$1k ⇒ below even this book, kill; (3) wedge
+  profile vs time-to-resolution shows it is UMA-risk compensation ⇒ not mispricing;
+  (4) legitimacy review refuses Polygon/Polymarket ops surface ⇒ signal-only permanently.
+- **Capacity:** threshold books $10²–10⁴ deep — fund-invisible, desk-sized; Deribit leg deep.
+- **Data leg [DATA-LOOT, catalogued this run]:** **OpenMarket** (arXiv 2607.26245) — CC-BY-4.0,
+  727M rows, ms-paired Polymarket/Binance, 2.9M explicit lead-lag pairs
+  (huggingface.co/datasets/gregyoung14/openmarket-btc-polymarket; verify LICENSE file at
+  ingest). Dual use: free wedge-measurement backfill AND an R0117-grade synchronized lead-lag
+  testbed (the named enabling-change class for that lane — subject to the raw-trades-not-marks
+  rule, inbox 2026-08-12 G).
+- **Graveyard-check:** VOL-AND-OPTIONS n=2 thin; distinct mechanism from the EV-rejected DVOL
+  vol-carry (variance-premium harvesting ≠ cross-venue RV on binaries); no prediction-market
+  graveyard rows. CLEAR for measurement.
+- **§33 blocker, named:** measurement construction in **R0459** (alpha org, 2026-08-24);
+  the TRADING leg additionally gated on a legitimacy/ops ruling (jurisdiction + Polygon rails +
+  UMA risk) — routed to the needs-legitimacy-review queue via this card's grade, decision lane
+  same as the KR/JP venue reads.
+
+### 31. Binance COIN-M (dapi) public market data — the home venue's OTHER futures book, zero desk coverage — grade: **verified-clean 2026-08-12 — the BULK ARCHIVE half is now verified separately (checksum + ground-truth diff executed); "full-history depth unknown until pulled" is CLOSED. Collector constraint found: build the universe from the ARCHIVE listing, never from `exchangeInfo` (30 live vs 272 archived = 89% of instrument history omitted, incl. all 212 expired quarterlies the convexity screen needs).** [§33: screened -> data/data_universe_map.json `99-binance-coinm-vision-archive`]
+> **PROBED 2026-08-12 (EN frontier miner session G, keyless, no auth):** `dapi.binance.com/dapi/v1/premiumIndex?symbol=BTCUSD_PERP` → live mark/index/funding (0.00003844) + `nextFundingTime`; `/dapi/v1/exchangeInfo` → **30 instruments: 20 COIN-M perps (BTC/ETH + 18 alts) + 5 quarterly-delivery underlyings (BTC/ETH/BNB/SOL/XRP × current+next quarter)**. Same endpoint family as the fapi (USDT-M) data the desk already collects — identical §13 posture, identical collector pattern; historical klines (`klines`, `markPriceKlines`, `indexPriceKlines`, `premiumIndexKlines`, `fundingRate`) serve keyless, so **backfill needs no standing daemon**. L1.46 note: dapi rows carry venue event-time fields exactly like fapi; stamp clock provenance at collection.
+> **WHY (mechanism found same run, NP 161162 translation — the 1990s convexity-adjustment-neglect family):** inverse contracts settle PnL in coin ⇒ convex USD payoff ⇒ fair COIN-M basis differs from USDT-M basis by a computable convexity adjustment (the FRA-vs-futures wedge, crypto edition). The screen: measured COIN-M-vs-USDT-M same-expiry basis differential vs its theoretical convexity value across the 5 quarterly underlyings; residual = collateral-clientele segmentation premium (coin-collateral hedgers — miners, coin-custody entities — cannot switch margin currency without changing custody posture: the who-must-trade story). Secondary unlocks: 20-pair COIN-M/USDT-M funding-differential panel; COIN-M OI share as a positioning axis.
+> **SCREEN-ON-DISCOVERY (run this session, at the only stage runnable without the data):** mechanism `coinm_usdtm_basis_convexity_rv` EV-gated honestly → **REJECT 0.0009** (p_survive 0.105, est_sharpe 0.5, breadth 5, orth 0.5, 12h/1.2×, tags funding_family+crowded_known; conservative narrow-tag reading also reported: 0.0002 — both logged, neither rescues). Mechanism → prospector_watchlist memory with a MEASUREMENT promotion trigger; the AXIS is the deliverable today: free, home-venue, feeds the screen the moment the panel exists. Full-history depth unknown until pulled (fapi-era caveat: gentle pulls, 429 discipline per entry 95).
+> **SOURCE:** NP thread 161162 (2012-06-20→07-04, Wayback 20121015082245, posters MrKlugh/gill/sas) + first-party Binance API docs/probe. **DERIVES-FROM:** the 161162 thread cites nothing (checked — 3 posts, era lore + one risk.net link on reverse cliquets); the convexity-adjustment mechanism is textbook (independently derivable); the crypto translation is this desk's. Universe map: `98-binance-coinm-dapi`. Recommendation row filed this run (screen construction, engineering-enabled seat).
+> **SECOND, INDEPENDENT mechanism prior (CN frontier miner 2026-08-12, era-archaeology — genuine cross-ecosystem convergence, queue place not lower bar):** the funding-differential panel has a DEMAND-side clientele the convexity story doesn't name: **synthetic-dollar holders**. 8btc thread-172717 (2018-05-26, BitMEX board, Wayback 20180902020842id_) shows CN practitioners deriving in public that a 1x coin-margined inverse short = USD account with no liquidation boundary (OP ran the testnet experiment: liq price "一亿", ≈+∞) and CHOOSING it over USDT — "比换成USDT更稳定更省手续费…做空的资金费率会更划算" (more stable than USDT, cheaper fees, and the short side's funding pays). Capital-control-barriered traders using inverse shorts as their dollar account = structural short-side flow on COIN-M ⇒ **persistent COIN-M-vs-USDT-M funding skew, widening when fiat rails are barriered and when stablecoin trust degrades**. Falsifier the era text supplies: the clientele needs coin-native holders barred from clean USD rails — if the skew doesn't co-move with rail-barrier proxies (stablecoin discount episodes, regional rail closures), the prior is wrong. SOURCE: 8btc thread-172717. DERIVES-FROM: NONE (checked — forum-native reasoning + testnet experiment; predates nothing it cites, independent of NP 161162's 1990s IR lore). Era corroboration for the linear-vs-inverse convexity confusion: the thread's first reply applies linear logic ("coin doubles ⇒ ruin") and is corrected by experiment — the exact confusion the convexity screen prices.
+
+## 2026-08-12 — JP miner: マケデコ (market-api) calendar opened; one axis worth a decision
+
+### 29. J-Quants API (JPX's own free JP-equity data, incl. 売買内訳データ = flow by investor category) — grade: **excluded-paid, VERIFIED 2026-08-12. The title of this card is FALSE on two counts: the investor-category axis is NOT free (投資部門別情報 = LIGHT ¥1,650/mo; 売買内訳データ = PREMIUM ¥16,500/mo, and they are DIFFERENT datasets the card conflated), and the v1 API it describes returns HTTP 410 GONE. §38 replacement found: JPX publishes the investor-type table free on its own website.** [§33: killed -> data/data_universe_map.json `100-jquants-api` + `101-jpx-investor-type-free`]
+- **WHAT + HOW FOUND.** Surfaced by opening the マケデコ Advent Calendar (new ground this run,
+  `qiita.com/advent-calendar/{2023,2024,2025}/market-api`, 74 entries mapped to
+  `data/jp_makedeco_advent_calendar.jsonl`). J-Quants is **Japan Exchange Group's own** free API;
+  four separate calendar entries are practitioner writeups of it, including a **V2 release**
+  (2025 s2d22), an **index OHLC endpoint** (2023 s1d20) and — the interesting one —
+  **売買内訳データ, trading value broken down BY INVESTOR CATEGORY** (2023 s1d23).
+- **WHY THE FLOW TABLE IS THE ONLY PART THAT MATTERS HERE.** Per the translate-don't-copy duty,
+  `commitment of traders → OI by venue + long/short account ratio`. JP equity flow-by-investor-type
+  (foreign / individual / institution / prop) is a **positioning panel published by the exchange
+  itself**, which is the structurally-unbuyable venue-truth class the moat doctrine prefers. That
+  is a real orthogonal axis, not another price feed.
+- **BUT BE HONEST ABOUT PRIORITY AND ABOUT WHAT I DID NOT DO.** This desk trades **Binance crypto**;
+  JP cash equities are the lowest rung of the standing source priority. The axis is **CATALOGUED,
+  NOT VERIFIED**: I did not read the licence, did not hit the endpoint, did not check the
+  registration wall (J-Quants has free and paid tiers, and the free tier is understood to carry a
+  **12-week data delay** — unconfirmed by me, so it stays a claim). No screen is owed on an axis
+  whose licence has not been read.
+- **§13 STATUS: UNREAD.** Decision owed 2026-08-19 alongside the other JP venue items.
+- **THE TRANSFERABLE QUESTION IT RAISES (worth more than the axis itself):** does Binance publish
+  any equivalent *category* breakdown of flow? The desk already collects the long/short **account**
+  ratio and top-trader ratios — which are the closest existing analogue — so the honest prior is
+  that this axis is **already partly held** and its marginal value is the JP-equity cross-section,
+  which the desk does not trade. Recorded so the next reader does not re-discover it as novel.
+
+---
+
+## SESSION SUMMARY — 2026-08-12 (AR frontier miner, seat's first run)
+
+**One axis carded, and it is carded WITH ITS CEILING** — the point of the card is to stop the desk
+re-deriving a design that cannot work. Deliberately **no bulk-add** of the AR seed list: the desk's
+measured bottleneck is verification, not cataloguing, and a source earns a graded card only by
+producing something. Everything else found this run is recorded as leads in
+`prospector_coverage.md` (AR row + session note), not as cards.
+
+- **`hijri_calendar_overlay` — VERIFIED-CLEAN, and PERMANENTLY UNDERPOWERED AS AN ANNUAL EVENT.**
+  Free and self-computable (no vendor, no key, no licence): the Hijri→Gregorian mapping is public
+  and the Ramadan windows are tabulated. Produced a real artifact this run:
+  **`data/ar_ramadan_power_check.json`** (BTCUSDT D1, 2019-09-09→2026-08-12, 2,530 days,
+  208 Ramadan-days, **7 episodes**).
+  - **Verified use:** as a **conditioning/exclusion variable** and for **cross-sectional** designs
+    (7 events × N assets/venues), where it retains power.
+  - **Killed use:** the **annual event study** — 80%-power MDE is **3–6× the observed effect** on
+    returns, funding and basis; halving the MDE needs **28 episodes = 21 more years**. Graveyarded
+    as `hijri_ramadan_calendar_axis` → `unmeasurable_by_construction` (**not** refuted; L1.25).
+  - **Measurement caveat that is also a tradability caveat:** windows are **moon-sighted**, so the
+    start date varies ±1 day by jurisdiction and is **not deterministic ex ante** — any design
+    keying on the exact first day inherits an irreducible ±1d alignment error.
+  - **Companion measurement (the reusable part):** within-event **ICC 0.000 / 0.525 / 0.695** for
+    returns / funding / basis → design effects 1.0 / 16.1 / 21.0. See **OP-053** and inbox **#116**.
+
+- **Leads found, NOT carded (unverified — recorded so they are not lost, not so they are trusted):**
+  GCC regulator/exchange layer (VARA, ADGM, SCA, CMA Saudi, `bitoasis.net`, CoinMENA) — the AR
+  analogue of the BR seat's government-dataset win, and the direction the AR ground actually
+  rewards now that its premium axis is dead. Chainalysis MENA regional figures (7.5% of global
+  on-chain value received, $338.7bn 2024; 93% in $10k+ transactions) are **summary-grade, read
+  through search results, primary not opened** — do not cite as verified.
+
+- **§13 note affecting future data digs:** `hawamer.com` (largest Gulf trading forum) **denies
+  `ClaudeBot` by name** under Cloudflare-managed rules with an EU DSM Art.4 reservation and
+  `Content-Signal: ai-train=no` — **HARD STOP, archives included**. `bitoasis.net` runs an AI-agent
+  **allowlist** (OAI-SearchBot/ChatGPT-User/PerplexityBot allowed, CCBot denied, ClaudeBot unnamed →
+  permitted under `*`). Per-agent policy is emerging; re-probe rather than carrying a binary prior.
+
+---
+
+## SESSION SUMMARY — 2026-08-12T15:31Z (FREE-DATA-ALTERNATIVES miner, standing weekly run)
+
+**STATUS: IN PROGRESS — note written BEFORE researching per the COMPLETION CONTRACT (2026-07-25).**
+Items resolve in place below; if this run is killed, this note is the durable resume point.
+
+**Cadence defect found before any hunting:** `data/cadence_state.json.last_data_axis_dig` reads
+**2026-07-19** — 24 days stale on a **weekly** mission. Runs have happened since (07-24, 07-25,
+07-31, 08-12 seats all wrote cards here) but none stamped the key, so the desk's own cadence meter
+has been reporting this mission as ~3.4 cadences overdue while it was in fact running. An organ
+whose done-key is never stamped is indistinguishable from a dead one (L1.28a: unmeasured = zero).
+Stamped at close of this run.
+
+**WHY THESE ITEMS (§33 tier order, not convenience).** `source_backlog_next.py` reports 16 pending
+verification + 6 pending legitimacy. §33 says work the expensive tier first; deferral expiry breaks
+ties.
+
+- **NOT TAKEN — card 1 Upbit portal (T3, due 08-15, soonest expiry).** Deliberately skipped and this
+  is the disposition: it has been independently verified **three times** (07-25, 08-11, +1) and the
+  blocker is a **principal ruling on commercial-use scope**, not anything an agent can test. Its own
+  card says *"COST OF WAITING IS ZERO"* and *"DO NOT BUILD A COLLECTOR YET"*. A fourth verification
+  would be re-litigating settled evidence (L1.16a) wearing a productivity costume. **The one unused
+  lever is already named on the card and is the principal's to pull: written clarification from
+  `historical_data@upbit.com`.** No agent sends that mail.
+- **NOT TAKEN — card 23 中文 practitioner corpus (T2, due 08-18):** explicitly *"corpus dig owed to
+  the CN seat"*. Taking another seat's owed work would double-count the conversion.
+
+**ITEMS TAKEN THIS RUN (depth maxed, breadth bounded):**
+
+1. **Card 31 — Binance COIN-M (dapi) ARCHIVE depth (T2, due 08-19).** The 08-12 probe verified the
+   *live API*; the card states **"Full-history depth unknown until pulled"**. Category 1 of this
+   mission is *exchange-native dumps/archives* — the bulk `data.binance.vision` bucket, which is a
+   **different artifact from the REST API** and is the half that replaces a paid tick/kline vendor.
+   Deliverable: measured archive depth per COIN-M instrument + a verify-don't-trust diff of the
+   archive against the REST API for the same window.
+2. **Card 29 — J-Quants API (T3, due 08-19).** Genuinely **catalogued-unverified**: licence unread,
+   endpoint never hit, the claimed free-tier 12-week delay unconfirmed. Cheapest real close on the
+   board and it is owed the same day as item 1.
+3. **SEARCH-SPACE EXPANSION (≥25% reserve, mission §11/§12).** New source class, recorded below.
+
+### ITEM 1 — RESOLVED. Card 31 Binance COIN-M: the ARCHIVE is verified-clean, and it is a
+### materially different (and much larger) artifact than the API the 08-12 probe verified.
+
+**GRADE: verified-clean** (checksum + ground-truth diff both executed this run, first party, keyless).
+Card 31 is re-graded from *"verified-live; collector/backfill owed"* — the **"full-history depth
+unknown until pulled"** clause is now CLOSED. Universe-map entry `98-binance-coinm-dapi` updated.
+
+**VERIFY-DON'T-TRUST — EXECUTED, NOT PLANNED.** `BTCUSD_PERP-1d-2024-01.zip`:
+- Published SHA256 sidecar `ef361aef…70b7` vs computed → **exact match**.
+- Archive vs live `dapi/v1/klines` over the same 31 bars, 7 fields each (O/H/L/C/volume/baseVol/
+  trades) → **0 mismatches, identical to the last decimal**. 217 field comparisons.
+
+**MEASURED DEPTH (all first-party S3 listings, paginated):**
+
+| dataset | tier | span | n | state |
+|---|---|---|---|---|
+| klines (15 intervals 1m→1mo) | monthly | 2020-08 → 2026-07 | 72 mo | live |
+| metrics (OI + positioning) | daily | 2021-07-08 → **2026-08-11** | 1,754 d | **live, T+1** |
+| fundingRate | monthly | 2022-07 → 2026-06 | 48 mo | live |
+| liquidationSnapshot | daily | 2023-06-25 → **2024-10-14** | 472 d | **FROZEN ~22 mo** |
+
+**FOUR FAILURE MODES, EACH FOUND BY HITTING IT — these are the deliverable, not the depth table:**
+
+1. **THE S3 LISTING SILENTLY TRUNCATES AT `MaxKeys=1000`, AND IT NEVER THROWS.** The unpaginated
+   listing of `metrics` returned exactly 500 zips (+500 checksums = the 1000 cap) and reported the
+   series **ending 2022-11-24**. Paginated with `continuation-token`: **1,754 files ending
+   2026-08-11**. A **3.7-year understatement that looks like a complete answer** — the desk's own
+   documented lesson ("paginate every venue history endpoint; past the cap the numbers keep looking
+   plausible") reproduced exactly, on a different endpoint class than the one it was learned on
+   (Binance *income* REST). **Every S3-listing-driven depth claim in this file predating today
+   should be treated as a lower bound until re-listed with pagination.**
+2. **SCHEMA DRIFT AT A DATED BOUNDARY: the CSV header appears on 2022-07-01 and not before.**
+   Bisected: `2022-06` has no header, `2022-07` onward does; 12 columns throughout. **The dangerous
+   direction is silent:** a backfill hardcoding `header=0` (correct for everything after 2022-07)
+   **silently deletes the first real bar of every pre-2022-07 monthly file** — no error, no warning,
+   just a missing bar per month across the earliest 23 months, which is precisely the regime an OOS
+   split is starved for. `header=None` fails loudly instead, which is the safe way to be wrong.
+3. **THE MONTHLY AND DAILY TIERS ARE NOT NESTED — neither is a superset of the other.** monthly
+   carries `fundingRate` and daily does **not**; daily carries `bookDepth`, `liquidationSnapshot`
+   and `metrics` and monthly does **not**. A collector that reasonably assumes "monthly = aggregated
+   daily" (the near-universal convention) never collects OI, book depth or liquidations at all, and
+   one built off daily alone never collects funding. Verified on both `cm` and `um`.
+4. **`liquidationSnapshot` EXISTS FOR COIN-M AND NOT FOR USDT-M.** `futures/um/daily/
+   liquidationSnapshot/` returns the bare self-prefix (empty); `futures/cm/daily/` carries **118
+   symbols**. The COIN-M window is frozen (2023-06-25 → 2024-10-14) with **6 interior missing days**
+   (2023-09-09/23/25, 2024-06-01/11/12) — real gaps, not weekends, in a 24/7 market.
+
+**SURVIVORSHIP — AND IT POINTS THE OPPOSITE WAY FROM UPBIT (card 1), WHICH IS THE REUSABLE PART.**
+Archive holds **272 kline symbols; the live `exchangeInfo` returns 30**. So **242 instruments (89%)
+are expired or delisted and invisible to any collector driven off `exchangeInfo`** — which is
+exactly the collector pattern card 31 proposes ("identical collector pattern" to the fapi). Of the
+242: **30 delisted perps** (LUNA, FTM, MATIC, XMR, OP, WLD, WIF, APT, ENS…) and **212 expired
+quarterlies**. Set difference the other way is **empty** — no live instrument lacks an archive, so
+the archive strictly dominates the API for history.
+- **Upbit purges delisted candles (the desk's recorded lesson: "treatment group erased"). Binance
+  RETAINS them.** Two venues, opposite survivorship polarity, and the *archive-vs-API* axis is
+  where the difference lives — not the venue. **The rule this generalises to: for any venue, the
+  instrument list is a point-in-time object, and reconstructing it from today's `exchangeInfo` is a
+  look-ahead in the UNIVERSE rather than in the prices** — the same class as the `pct_circ_now`
+  denominator leak already on the desk's lesson list, and it fails toward a FALSE NULL.
+- **This is what makes the card-31 convexity screen buildable at all:** that mechanism prices
+  COIN-M-vs-USDT-M *same-expiry* basis across quarterly underlyings. The quarterlies it needs are
+  **212 expired contracts** — every one of them absent from the API and present in the archive. The
+  screen was EV-rejected (0.0009) on its alpha claim and that rejection stands; the point here is
+  narrower and it is a **data-availability** point: had the collector been built off `exchangeInfo`
+  as proposed, the panel would have been **structurally incapable** of ever testing it, and the
+  failure would have read as "no data" rather than "wrong collector".
+
+**WHAT IT REPLACES (category 6).** `metrics` is a **5-minute positioning panel** —
+`sum_open_interest`, `sum_open_interest_value`, `count_toptrader_long_short_ratio`,
+`sum_toptrader_long_short_ratio`, `count_long_short_ratio`, `sum_taker_long_short_vol_ratio` — free,
+5 years deep, T+1, first-party. That is the substance of **Coinglass's paid OI/long-short history**
+for this venue. `liquidationSnapshot` is **per-order** (side, order_type, TIF, price, average_price,
+fill quantities), i.e. **finer than the aggregated liquidation feeds vendors sell** — for its frozen
+472-day window. Honest residual: the frozen window means COIN-M liquidations are **dead data**
+(mandate §7) — one-time-exhaustible, will never extend, and worth archiving to Bronze *because*
+nobody will regenerate it. **Forward liquidation coverage is destroyed-at-source on both books**
+and is NOT replaced by this find.
+
+**GAP OBSERVED, NOT YET EXPLAINED:** the 2026-08-11 metrics file holds **285 rows where a complete
+5-min day is 288**. Three missing buckets in one spot-checked day; not characterised across the
+series, so it is recorded as an open question, not a rate.
+
+**§13:** first-party Binance public bucket, keyless, no auth, no robots restriction on
+`data.binance.vision`; same posture as the USDT-M archive the desk already ingests. Clean.
+
+**ROUTING.** No new alpha claim, so no EV-gate pre-registration is owed — the card-31 mechanism was
+already EV-rejected this morning and nothing here rescues it. The deliverables are (a) the re-grade,
+(b) the four failure modes, which are **collector-design constraints** and route to
+`improvement_inbox.md`, and (c) the pagination trap, which is a **method defect affecting prior
+depth claims in this very file** and is the highest-value thing found this run.
+
+### ITEM 2 — RESOLVED, AND IT IS A CLEAN KILL. Card 29 J-Quants: the one axis with an economic
+### story is the single most expensive rung on the venue's own price list.
+
+**GRADE: excluded-paid (free-first protocol; paid-data trigger NOT met).** Card 29 goes from
+*catalogued-unverified* to **CLOSED**. §13 question is moot — there is no licence dispute, there is
+a price tag.
+
+**FIRST-PARTY EVIDENCE** — JPX 総研 press release 2025-08-22, `www.jpx.co.jp/corporate/news/
+news-releases/6020/20250822-01.html`, fetched in full and parsed (the app host `jpx-jquants.com`
+CloudFront-403s every non-browser client including WebFetch; **the corporate host does not** — that
+host split is the reason three prior readers had to rely on search-index renderings). The complete
+plan matrix, verbatim from the release:
+
+| dataset | 無料 ¥0 | ライト ¥1,650 | スタンダード ¥3,300 | プレミアム ¥16,500 |
+|---|---|---|---|---|
+| データ提供期間 | **過去2年 [12週間遅延]** | 過去5年 | 過去10年 | 提供期間全て |
+| 上場銘柄一覧 / 株価四本値 / 財務情報 / 決算発表予定日 / 取引カレンダー | ✓ | ✓ | ✓ | ✓ |
+| **投資部門別情報** (investor-category flow) | **–** | ✓ | ✓ | ✓ |
+| **売買内訳データ** (the card's target axis) | **–** | **–** | **–** | **✓** |
+
+**THREE THINGS THE CARD GOT WRONG, AND THE SECOND IS THE ONE WORTH REMEMBERING:**
+
+1. **The 12-week free-tier delay was flagged "unconfirmed by me". It is now CONFIRMED first-party**
+   — and it comes with a second limit the card never mentioned: **free history is 2 years**, not
+   full depth.
+2. **THE CARD'S CENTRAL EQUATION IS FALSE.** It states *"売買内訳データ = flow by investor
+   category"*. These are **two different products at two different price points**: 売買内訳データ is
+   the **order-attribute breakdown** (proprietary vs brokerage, short-sale flags) and sits at
+   **PREMIUM ¥16,500/mo**; the by-investor-category flow the card actually wanted is **投資部門別情報**
+   at **LIGHT ¥1,650/mo**. The card fused a cheap dataset's *meaning* onto an expensive dataset's
+   *name* and then reasoned about the merged object. **Neither is free**, so the card's premise —
+   *"JPX's own **free** API, incl. flow by investor category"* — is false on both readings.
+3. **THE API THE CARD DESCRIBES NO LONGER EXISTS.** `api.jquants.com/v1/*` returns **HTTP 410 Gone**
+   — `{"message": "J-QuantsはV2に移行しました。"}` — on every v1 path probed (`/v1/listed/info`,
+   `/v1/token/auth_user`). V1 token auth is retired in favour of dashboard-issued API keys. **All
+   four マケデコ Advent Calendar entries the card was built from (2023 s1d20, 2023 s1d23, 2025
+   s2d22) document a dead API surface.** A practitioner-writeup corpus dates silently: the calendar
+   entry is still up, still reads as current, and its endpoints are gone.
+
+**§38 — THE EXCLUSION SPAWNED ITS HUNT, AND THE HUNT SUCCEEDED (partially).** Excluding a paid
+source without finding its free primary would shrink the universe by attrition. **The primary here
+is the exchange's own website, and it gives away what the API bills for:**
+- **`www.jpx.co.jp/markets/statistics-equities/investor-type/`** (JA) and
+  `…/english/markets/statistics-equities/investor-type/` (EN) — **投資部門別売買状況 published
+  WEEKLY as free `.xls` + `.pdf`, no registration, no API key, no plan tier, no 12-week delay.**
+  25 file links on the JA index (`stock_val_*` = value, `stock_vol_*` = volume, weekly stamps).
+- **VERIFIED THIS FAR AND NO FURTHER — stated precisely because the difference matters:** HTTP 200,
+  99,840 bytes, magic `d0cf11e0a1b11ae1` = **genuine OLE2/BIFF**, i.e. a real legacy Excel file and
+  not an HTML error page wearing an `.xls` extension. **The column semantics are UNPARSED**: the
+  box has no `xlrd` and this mission runs under the research freeze, so installing one is out of
+  scope. **I did not read the table, so I do not claim its contents.**
+- **Honest residual:** archive **depth UNMEASURED** — the current index carries recent weeks only
+  and my guess at a back-number path 404'd. Whether history runs to 2015 or to last quarter is
+  **unknown**, and the ¥1,650 tier's value is precisely that unknown.
+- **The general shape, which outlives this card:** *the venue sells via API what it publishes free
+  on its website, in a worse format.* Worth testing against every venue the desk pays or would pay
+  for. That is the reusable finding here, not the JP equity axis.
+
+**BUT THE HONEST BOTTOM LINE, AND IT IS NOT CLOSE.** This is **JP cash equities**; the desk trades
+**Binance crypto**. The card itself said so. Free J-Quants gives OHLCV + financials on a market the
+desk does not trade, 2 years deep, 12 weeks stale. Even the successful §38 replacement is a **weekly
+JP-equity flow table in legacy Excel**. **Marginal value to `max E[log W_T]`: indistinguishable from
+zero.** No screen is owed, no EV-gate pre-registration is owed, and no ingestion is proposed. The
+deliverable is the **kill plus the three corrections**, so no future reader re-opens this believing
+JPX hands out investor-flow data for free.
+
+**INGESTION NOTE (routes to improvement_inbox):** legacy `.xls` (BIFF/OLE2) is a **recurring**
+Japanese-government/exchange publication format and the desk cannot read it — `pandas.read_excel`
+raises `ImportError: Missing optional dependency 'xlrd'`. Any future JP/KR government or exchange
+ingestion hits this wall. Recording the dependency, not installing it.
+
+---
+
+### ITEM 3 — SEARCH-SPACE EXPANSION (≥25% reserve). New source class: **exchange-published
+### bulk archives as a CLASS, audited for the tier-asymmetry defect found in item 1.**
+
+Item 1 found that Binance's bulk bucket is **not** shaped the way a collector would assume: monthly
+and daily tiers are **non-nested**, one book has liquidations the other does not, and the S3 lister
+silently truncates at 1,000 keys. **That is a claim about `data.binance.vision`. It is worth knowing
+whether it is a claim about the CLASS** — because every finding in item 1 is a collector-design
+constraint the desk would otherwise re-learn per venue, at the cost of a silently-wrong backfill
+each time.
+
+**Probed this run (first-party, keyless, listing-only — no bulk pulls):**
+
+| venue | bulk archive | reachable | shape finding |
+|---|---|---|---|
+| Binance | `data.binance.vision` (S3-XML) | ✅ | tiers **non-nested**; lister truncates at 1000 keys; header drift 2022-07-01 |
+| Bybit | `public.bybit.com/trading/` | ✅ | **HTML directory listing** (`Directory listing for /trading/`), **1,889 symbol dirs in one response, no cap, no pagination** |
+| OKX | `www.okx.com/cdn/okex/traderecords/` | ✅ files, ❌ index | per-day zips fetch fine (`…/20260810/BTC-USDT-trades-2026-08-10.zip` → **200, 2.34 MB**; 2025-06-10 → **200, 5.41 MB**) but the directory itself returns **HTTP 200 with a ZERO-BYTE body** |
+
+**THE CLASS-LEVEL FINDING — a taxonomy of how bulk archives are ENUMERATED, which is the thing that
+actually breaks backfills:**
+- **S3-XML listers (Binance)** — enumerable, and **silently truncate**. Failure is *invisible*: you
+  get a plausible short answer.
+- **HTML directory listings (Bybit)** — enumerable, no key cap, but schema-fragile to site redesign.
+- **Soft-empty index (OKX)** — **not enumerable, and it lies in the safe-looking direction.** The
+  files are real and serve fine, but the directory returns **200 with a zero-byte body** rather than
+  404. **A liveness check written as `if resp.status_code == 200` passes against nothing at all** —
+  the exact heartbeat-vs-payload defect on the desk's lesson list ("a heartbeat proves the loop is
+  alive, never that the pipe is"), reappearing as an *archive* rather than a websocket. Every URL
+  must be constructed from a date grid and probed individually, so **absence of a file is
+  indistinguishable from a gap in the data** unless the venue documents its calendar — "absence
+  resolves to a clean verdict", WS-005, relocated into the data layer.
+- **The transferable rule:** *before trusting any bulk-archive depth figure, ask which of the three
+  enumeration modes produced it.* A depth claim from mode 1 is a **lower bound** (truncation), from
+  mode 3 it is a **guess** (construction). Only mode 2 gives a real count. **This desk has depth
+  claims from all three modes recorded in this file with no distinction between them.**
+
+**HONEST LIMIT ON THIS ITEM:** reachability and enumeration-mode were probed; **no cross-venue
+depth or content verification was performed** (that is the next run's work, and it is named below).
+This item is graded **UNVERIFIED for content, verified for reachability + enumeration mode**.
+
+---
+
+## NEXT UN-EXHAUSTED GROUND (L1.35 — named so the chain survives this run)
+
+1. **Re-list every S3-derived depth claim in this file with pagination.** Item 1 proved the
+   unpaginated lister understates by years and never errors. Prior depth figures here are lower
+   bounds of unknown tightness. **Highest-value item on the board** — it re-grades existing cards
+   rather than adding new ones, and it is pure verification, which is the desk's stated bottleneck.
+2. **Bybit + OKX bulk archives to item-1 depth** — checksum discipline, ground-truth diff, tier
+   nesting, survivorship (delisted instruments present or purged). Item 3 established *how to
+   enumerate* them; the verification itself is undone.
+3. **The archive-vs-API survivorship polarity test, run across venues.** Item 1 found Binance
+   retains 242 delisted/expired instruments the API hides (89%) while Upbit purges. **Neither is
+   the default.** Every venue the desk collects needs this checked, because the failure is a
+   look-ahead in the *universe* and it fails toward a false null.
+4. **COIN-M `metrics` 285-vs-288 row question** — three missing 5-min buckets in the one day spot-
+   checked; unknown whether that is routine or episodic. Cheap to characterise across 1,754 files.
+5. **Card 1 Upbit remains blocked on the principal**, not on research. Untouched by design.
+
+## 2026-08-12 — BRAIN hunter s2: the field taxonomy, and what it says about the desk's data surface
+
+### 32. WorldQuant BRAIN data-field catalogue (USA TOP3000, delay=1) — a competitor's ENTIRE feature surface, enumerated — grade: **structural-reference, no ingest possible (equities), routed for its SHAPE not its contents** [§33: screened -> docs/research/search_operator_library.md]
+
+**SOURCE:** `QuantML-Research/wq-alpha-research`, `references/wq_usa_top3000_delay1_data_fields_summary.json` — a machine-generated summary of a 219-page field enumeration. **NO LICENCE FILE ⇒ all-rights-reserved**; counts and categories are facts, extracted as such, **no verbatim text or bulk data reused**, nothing installed. DERIVES-FROM: **NONE (checked)** — no desk artifact references this repo.
+
+**THE FIELD SURFACE, 4,367 fields:**
+
+| category | fields | share | crypto analogue on this desk |
+|---|---:|---:|---|
+| fundamental | 1,652 | 37.8% | **near-total gap.** On-chain fundamentals: supply/emission schedules, unlocks, TVL, protocol revenue, treasury flows, staking ratio, active addresses |
+| analyst | 1,324 | 30.3% | no sell-side analogue, but the *forward-expectation* role maps to funding, basis term structure, options-implied, prediction markets |
+| news | 996 | 22.8% | exchange announcements (listing/delisting), governance votes, incident feeds |
+| pv (price-volume) | **195** | **4.5%** | **the desk's near-entire surface** |
+| option | 138 | 3.2% | Deribit IV surface, 25Δ skew, put/call — reachable and largely unmined |
+| model | 40 | 0.9% | derived/model factors |
+| socialmedia | 22 | 0.5% | the **smallest** category on a platform that has it |
+
+By **type**: MATRIX 2,828 · **VECTOR 1,387** · **GROUP 142** · UNIVERSE 6 · SYMBOL 4.
+
+**THE TWO NUMBERS THAT MATTER, AND THE THIRD THAT CONSTRAINS THEM.**
+
+**(1) GROUP is a first-class data TYPE, and there are 142 of them.** The desk's 08-07 gap was framed as "we have no sector column". That framing was too small: on a mature platform *grouping is a whole data family* — 142 distinct ways to partition the same universe. Session 1 built **4** maps (`data/crypto_grouping_map.json`). That is the correct start and it is 3% of the analogous surface. **The gap is not one map, it is a taxonomy axis**, and it is now the clearest instance of the desk's L1.11 moat law: groupings are *manufactured* from owned data, carry zero licence surface (session 1 built all four from desk-owned D1 bars), and each one is a new orthogonal question to ask of every existing signal.
+
+**(2) VECTOR-typed fields are 32% of the surface and the desk has no vector type at all.** Multi-venue funding, per-level L2 depth, multi-pool lending rates and per-exchange OI are all natively one-symbol-many-values, and the desk reduces them to a scalar *at ingest* — before any operator can choose the reduction. Keeping the vector and reducing late (`vec_avg`/`vec_sum`, OP-066) is an ENGINE change, routed to improvement_inbox, not a data acquisition.
+
+**(3) THE YIELD-BY-CATEGORY CLAIM, AND EXACTLY WHAT IT DOES NOT LICENSE.** The same repo reports submission pass rate by data type: **fundamental 40% > mixed 12.7% > pure technical 5.3% > other 0%**, with failure causes LOW_SHARPE 90.7% / LOW_FITNESS 66.2% / LOW_SUB_UNIVERSE_SHARPE 51.0%.
+
+**This is MINED ORE — a claim from an unlicensed repo, on US equities, against THEIR in-sample submission filter. It is not evidence and it has not been verified here.** Its denominator, sample and selection are all unstated, and a pass rate against a permissive in-sample bar is not a statement about alpha existence.
+
+**It must NOT be read as "price-only alpha is dead." L1.25 forbids that reading and the desk has already retracted that narrative once** (the 420/0 record was an instrument artifact; the kimchi screen passed and was then refuted at full depth). What it *is* legitimately: **an independent, differently-instrumented data point that yield-per-trial differs by roughly 7.5× across data classes, and that the desk is confined to the lowest-yield class.** Read that way it is a **generation prior** — it says where to spend trials, never what is true — and it converges with the desk's own measured record from a completely different direction: funding/carry, a *non-pv* axis, is the lone repeat survivor, while 129/129 price-only directional mechanisms failed at max OOS Sharpe 0.100.
+
+**AND THE MECHANISM IS NAMED, WHICH IS THE PART WORTH HAVING.** The failure is not "price carries no information" — it is **turnover**. Fitness = `Sharpe × sqrt(|R| / max(TO, 0.125))` divides by turnover; the same source's expected-turnover table puts technical factors at **15–35%** against fundamental at **2–8%**, and describes LOW_FITNESS as "the softer version of HIGH_TURNOVER". Price-derived signals decay fastest, so they trade most, so the churn eats them. **That is the desk's own most expensive lesson in another ecosystem's handwriting** — WS-006 order-flow momentum cleared Holm at t=+3.95 and still netted −0.656 bp/bar; the carry sleeve's loss was 88.3% **fees**, not thesis.
+
+**THE ACQUISITION IMPLICATION (L1.11, and it is the honest one):** the highest-yield categories are exactly the ones the desk cannot buy and must manufacture — on-chain fundamentals and forward-expectation series. **No purchase is proposed and none is needed**; every analogue above is public. **[§33: screened -> docs/research/search_operator_library.md `wq-brain-pipeline` + this card]** — screened, not wired: this is a reference axis (equities, un-ingestible), and its deliverable is the SHAPE it gives the crypto-side hunt, already routed.
+
+**RESIDUAL GAP, graded:** the 4,367-field *contents* (2.8MB JSON) were **not** pulled — no desk use for equity field IDs, and bulk-copying an unlicensed artifact is not defensible under §13. The category/type counts are the whole transferable payload. **Re-entry condition (L1.16a):** if the desk ever builds a fundamentals-shaped crypto surface, the GROUP-typed field list becomes worth enumerating as a taxonomy menu.
+
+### 33. VARA (Dubai) crypto regulatory-event stream — dated licence register + named unlicensed-VASP blacklist + enforcement notices — grade: **verified-reachable, PARTIAL input to the R0193 owed build (one jurisdiction, not the panel)** [§33: deferred(2026-08-24) tier:3]
+
+**WHY THIS IS CARDED AT ALL, AND IT IS NOT "a regulator publishes things".** Card 24
+(`Regulatory-event timeline, 5-class taxonomy, Auer–Claessens`) is graded *"event gate EXISTS; the
+timeline dataset is the owed build"*, and its note records a **targeted web search for a published
+Auer–Claessens event list that FAILED** — the desk needs a dated regulatory-event dataset, could not
+find one, and scheduled a reconstruction (**R0193, due 2026-08-24**). This card exists **because that
+build has a documented data hole**, not because a source was spotted.
+
+**VERIFIED FIRST-HAND THIS RUN (honest UA `ClaudeBot`, s13 gate passed — `vara.ae/robots.txt` 200 and
+contains ZERO non-comment directive lines, so nothing is disallowed and no agent is named):**
+| artifact | URL | HTTP | verified content |
+|---|---|---|---|
+| public register | `/en/licenses-and-register/public-register/` | **200** | **51 licence refs** `VL/YY/MM/NNN` — the ref itself encodes **year/month** (`VL/26/08/002`, `VL/26/07/002`…), server-rendered, plus per-row issue date, licence type, activities, status |
+| **unlicensed-VASP blacklist** | `/en/enforcement/unlicensed-vasps/` | **200** | **38 dated rows**, named entities, `YYYY/MM/DD`, spanning **2023/04/12 → 2025/05/15** |
+| enforcement + warning notices | `/en/enforcement/`, `/en/regulations/regulatory-notices/` | **200** | dated notices, split Enforcement / Warning |
+| sitemap | `/sitemap/sitemap-index.xml` → `/sitemap/sitemap-0.xml` | **200** | 311 URLs (**no `lastmod`** — so the sitemap dates nothing; the dates live in the page bodies) |
+
+**THE ONE GENUINELY NICE PROPERTY:** every register row carries **its own issue date**, so a *single*
+pull already yields a point-in-time panel on the **entry** side — no repeated capture needed to know
+when each licence was granted. **Exits/revocations still require snapshots**, because a row that
+disappears leaves no trace; that asymmetry is the collector's design constraint, not a nice-to-have.
+
+**HONEST LIMITS — stated because the card is worth less than it first looks and the next reader must
+not inherit my enthusiasm:**
+1. **ONE JURISDICTION.** Auer–Claessens is a multi-country policy panel; VARA is Dubai. This is *a*
+   column, never the table.
+2. **WRONG EVENT CLASS, mostly.** The 5-class taxonomy classifies **national policy** actions (bans,
+   restrictions, AML/CFT regimes). VARA's stream is dominated by **entity-level** licensing and
+   small-VASP enforcement. The classes overlap only partially, and pretending otherwise would
+   contaminate the panel with events of a different kind.
+3. **ALMOST CERTAINLY NOT DIRECTLY TRADEABLE.** A Dubai enforcement notice against a small unlicensed
+   VASP has no plausible channel to BTC/ETH on Binance. **No mechanism is claimed here**, and none
+   should be inferred: this is timeline *material* for a build that already exists, not an axis.
+4. **NOT A PREMIUM PLAY.** The obvious GCC-venue idea is graveyarded — `era_crossvenue_fiat_premium_arb`
+   is buried 7×, the class is declared exhausted, and kimchi (its lone survivor) was killed 2026-08-01.
+
+**DISPOSITION:** `deferred(2026-08-24)` — deliberately aligned to **R0193's own due date**, because this
+is an *input* to that build and dating it separately would just create a second clock for one piece of
+work. This is alignment, not a snooze: the consuming recommendation is live, dated and owned.
+
+**ALSO ENUMERATED, GRADED, AND DELIBERATELY NOT CARDED** (the desk's measured bottleneck is
+verification, not cataloguing — a source earns a card by serving a named need):
+- **Saudi CMA open-data API** (`opendataapi.cma.gov.sa`, OpenAPI 3.0.1, **no auth**): 2,156 private
+  funds **fully dated**, 382 public funds, 230 institutions. Real and free — but **equities/funds, zero
+  crypto or virtual-asset content**. No desk need it serves. *(Trap worth recording: `PublicFunds`
+  advertises the same date keys as `PrivateFunds` and they are **null in 382/382** — a consumer keyed
+  on "the API returns dates" passes silently and gets nothing.)*
+- **`api.bitoasis.net`** — live AED trade tape (`/v1/exchange/trades/BTC-AED` **200**, real `id/type/
+  price/amount/timestamp`). Collectible, but its natural mechanism is the graveyarded regional-premium
+  family, so it gets **no card without a mechanism that is not already dead**.
+- **ADGM** — `sitemap.xml` 200 with **1,109 dated announcement URLs carrying `lastmod`** (FSRA fines,
+  fraud alerts, licence cancellations). The **second-best** artifact in the set and the natural next
+  jurisdiction column if R0193 wants one; the index page is client-side-paginated and useless, the
+  sitemap is the route.
+- **UNMEASURED, and kept distinct from empty:** SCA/UAE CMA (pages **200**, register data behind a
+  **401** API), QFMA (**200** Handlebars shells, 0 dates, and **zero** occurrences of "virtual asset"/
+  "crypto"/"VASP"), `rain.bh` / `cbb.gov.bh` / `saudiexchange.sa` (**403** on every path; `saudiexchange.sa`
+  apex has **no DNS record at all**), `coinmena.com` (`robots.txt` returns **200 with a Next.js error
+  shell and zero directives**). None of these is "closed" and none is "empty" — they are unmeasured,
+  and a status-code-only crawl would have scored several of them as open and harvested nothing.

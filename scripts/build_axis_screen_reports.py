@@ -28,10 +28,21 @@ DATES = {1: 1878, 5: 375, 20: 93}
 def enrich(t: dict[str, Any]) -> dict[str, Any]:
     h = t.get("horizon_days", 1)
     o = dict(t)
+    # NEW-FORMAT trials (2026-08-11 onward) record `overlap_periods`: the screen received its
+    # horizon and panel width, so its Sharpe is already annualised sqrt(365/h) and its n_eff is
+    # already deflated. Correcting again would UNDER-state Sharpe by sqrt(h) and re-apply a
+    # hardcoded date count over an honest measured one. The old corrections survive only for
+    # old-format artifacts, where they remain mandatory.
+    new_format = "overlap_periods" in t
     if "sharpe_momentum" in t:
-        o["sharpe_momentum_horizon_corrected"] = round(t["sharpe_momentum"] / np.sqrt(h), 3)
-        o["sharpe_reversal_horizon_corrected"] = round(t["sharpe_reversal"] / np.sqrt(h), 3)
-    if "ic" in t and "|" in t.get("name", "") and "BTC_abs" not in t.get("name", ""):
+        corr = 1.0 if new_format else np.sqrt(h)
+        o["sharpe_momentum_horizon_corrected"] = round(t["sharpe_momentum"] / corr, 3)
+        o["sharpe_reversal_horizon_corrected"] = round(t["sharpe_reversal"] / corr, 3)
+    if "ic" in t and new_format:
+        eff = max(float(t.get("n_eff") or 1.0), 1.0)
+        o["effective_n_dates"] = round(eff, 1)
+        o["ic_tstat_effective_n"] = round(float(t["ic"] * np.sqrt(eff)), 2)
+    elif "ic" in t and "|" in t.get("name", "") and "BTC_abs" not in t.get("name", ""):
         eff = DATES.get(h, t.get("n", 1))
         o["effective_n_dates"] = eff
         o["ic_tstat_effective_n"] = round(float(t["ic"] * np.sqrt(eff)), 2)
@@ -43,6 +54,22 @@ def enrich(t: dict[str, Any]) -> dict[str, Any]:
 
 oi = [enrich(t) for t in TRIALS if "BTC_abs" not in t["name"]]
 bm = [enrich(t) for t in TRIALS if "BTC_abs" in t["name"]]
+UPDATED = str(raw.get("generated", ""))[:10] or "2026-07-26"
+
+
+def _oi_verdict() -> str:
+    """Computed from the cells rather than frozen prose -- a hand-written 'ALL 42 FAIL' survives
+    every regeneration that changes what the cells actually say."""
+    weak = sum(1 for t in oi if t["verdict"] == "SCREEN-WEAK")
+    under = sum(1 for t in oi if t["verdict"] == "SCREEN-UNDERPOWERED")
+    interesting = sum(1 for t in oi if t["verdict"] == "SCREEN-INTERESTING")
+    art = len(oi) - weak - under - interesting
+    return (f"NEGATIVE-OR-UNDERPOWERED -- of {len(oi)} constructions: {weak} refuted "
+            f"(SCREEN-WEAK, powered), {under} could-not-tell (SCREEN-UNDERPOWERED), "
+            f"{art} artifact-class, {interesting} interesting. "
+            + ("NO FORWARD CLOCK STARTED." if interesting == 0 else
+               f"{interesting} SCREEN-INTERESTING cell(s) -- forward-clock eligibility per the "
+               "two-stage law, zero promotion authority here."))
 
 ALIGNMENT = (
  "VERIFIED, NOT ASSUMED. (a) The archive `date` is a UTC calendar day and matches both the 1d "
@@ -69,22 +96,26 @@ ALIGNMENT = (
 )
 
 CAVEAT = (
- "TWO HARNESS CAVEATS, declared rather than patched (the harness is audited and was not "
- "modified): (1) stage_a_screen hardcodes sqrt(365) annualisation, so on the non-overlapping "
- "5d/20d grids its Sharpe is inflated by sqrt(h) -- the horizon-corrected value is reported "
- "alongside every trial, and its SUSPECT-LOOKAHEAD Sharpe>6 rail is correspondingly "
- "over-sensitive at 20d. (2) On a stacked panel its `n` is SYMBOL-DAYS; symbols within a date "
- "are strongly correlated, so the independent-observation count is the number of DATES. Every "
- "IC t-stat below uses the date count, not the symbol-day count -- otherwise every t-stat would "
- "be inflated by ~sqrt(139)=11.8x."
+ "HARNESS CONVENTION (since 2026-08-11 the screen passes its stacking INTO the harness): "
+ "stage_a_screen receives horizon_days (Sharpe annualises sqrt(365/h)), panel_width (n_eff "
+ "divides out the cross-sectional stacking -- symbol-days are not independent observations) and "
+ "overlap_periods=1 (the [::h] grids are non-overlapping, so the time axis carries no overlap "
+ "deflation). Recorded n_eff, min_detectable_ic and `powered` are therefore the harness's own "
+ "honest figures; the *_horizon_corrected and ic_tstat_effective_n fields below equal the "
+ "harness values and survive only for continuity with old-format artifacts, where they applied "
+ "the corrections the harness had not been told to make. CONSEQUENCE of the honest deflation: "
+ "cells whose min_detectable_ic now exceeds the 0.03 floor read SCREEN-UNDERPOWERED (could not "
+ "tell) rather than SCREEN-WEAK (refuted) -- the earlier 42/42 'thorough refutation' overstated "
+ "what a panel of ~dates-independent observations can refute, exactly the false-null direction "
+ "the unlock-screen lesson names."
 )
 
 # ---------------------------------------------------------------- oi_ls_daily
 (OUT / "oi_ls_daily.json").write_text(json.dumps({
  "axis": "oi_ls_daily",
- "updated": "2026-07-26",
+ "updated": UPDATED,
  "stage": "A (zero promotion authority)",
- "verdict": "NEGATIVE -- ALL 42 CONSTRUCTIONS FAIL. NO FORWARD CLOCK STARTED.",
+ "verdict": _oi_verdict(),
  "universe": {"symbols": 139, "dates": 1879, "range": ["2021-06-01", "2026-07-23"],
               "survivorship": "tranche-1 cohort enumerated from the archive's OWN S3 listing "
                               "(includes delisted symbols), not from today's live universe -- "
@@ -236,7 +267,7 @@ CAVEAT = (
 # ---------------------------------------------------------------- binance_metrics
 (OUT / "binance_metrics.json").write_text(json.dumps({
  "axis": "binance_metrics",
- "updated": "2026-07-26",
+ "updated": UPDATED,
  "stage": "A (zero promotion authority)",
  "verdict": "REJECTED -- the harness's nominal SCREEN-INTERESTING does not survive adversarial "
             "review. NO FORWARD CLOCK STARTED.",

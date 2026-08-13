@@ -56,3 +56,25 @@ class TestBuildShadowReport:
         rejects = [("c1", "not-a-date"), ("c2", _iso_days_ago(60))]
         r = build_shadow_report(rejects, {"c2": 0.1}, deploy_threshold=0.5, min_age_days=30)
         assert r.n_eligible == 1  # the bad one is skipped, not crashed
+
+    def test_dict_scores_carry_their_sample_size_to_the_noise_bar(self) -> None:
+        """The rescorer's {"sharpe", "n_fwd_bars"} form judges at the noise-adjusted bar: a
+        31-bar annualized Sharpe of 1.2 is inside the zero-edge envelope and must not read as
+        a leaked survivor, while the same Sharpe at n=4000 must."""
+        rejects = [(f"c{i}", _iso_days_ago(60)) for i in range(6)]
+        short = {f"c{i}": {"sharpe": 1.2 + 0.01 * i, "n_fwd_bars": 31} for i in range(6)}
+        r = build_shadow_report(rejects, short, deploy_threshold=0.5, min_age_days=30)
+        assert r.audit.noise_adjusted is True
+        assert r.audit.n_would_have_paid == 0
+        assert r.audit.over_strict is False
+        powered = {f"c{i}": {"sharpe": 1.2 + 0.01 * i, "n_fwd_bars": 4000} for i in range(6)}
+        r2 = build_shadow_report(rejects, powered, deploy_threshold=0.5, min_age_days=30)
+        assert r2.audit.n_would_have_paid == 6
+        assert r2.audit.over_strict is True
+
+    def test_unreadable_dict_score_counts_as_pending_not_paid(self) -> None:
+        rejects = [("c1", _iso_days_ago(60))]
+        r = build_shadow_report(rejects, {"c1": {"wrong_key": 1.0}},
+                                deploy_threshold=0.5, min_age_days=30)
+        assert r.n_pending_rescore == 1
+        assert r.audit.n_rejects == 0

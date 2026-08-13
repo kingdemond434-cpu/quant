@@ -202,3 +202,121 @@ def test_holdings_does_not_fire_on_a_checkout_with_no_local_record(tmp_path, mon
     defects: list = []
     M.check_holdings_never_shrink(defects)
     assert not [d for d in defects if d[0] == "holdings-shrank"]
+
+
+# ------------------------------------------------- ack storage follows ack scope (R0393)
+#
+# The scope above decided how a defect was REPORTED and never where its ack was STORED, so a
+# REPO defect -- a property of a committed file, identically true in every checkout -- was
+# disposed of in an untracked per-box registry. Acking it here left it firing on the VPS, where
+# ">48h un-acked ESCALATES to the principal page" then paged him for a defect that already
+# carried a full reasoned disposition somewhere he could not see. These pin the routing.
+
+
+def _ack(until: str = "2099-01-01T00:00:00+00:00") -> dict:
+    return {"reason": "a reason a reader can act on", "by": "test", "until": until}
+
+
+@pytest.fixture
+def registries(tmp_path, monkeypatch):
+    repo, local = tmp_path / "repo.json", tmp_path / "local.json"
+    monkeypatch.setattr(M, "ACKS_REPO", repo)
+    monkeypatch.setattr(M, "ACKS", local)
+    return repo, local
+
+
+def _write(path: Path, payload: dict) -> None:
+    import json
+    path.write_text(json.dumps(payload), "utf-8")
+
+
+def test_an_ack_in_either_registry_counts(registries) -> None:
+    """The split governs WHERE a disposition is written, never whether it counts -- so landing it
+    could not silently un-ack the 61 acks already on the desk."""
+    repo, local = registries
+    _write(repo, {"repo-defect": _ack()})
+    _write(local, {"local-defect": _ack()})
+    defects = [("repo-defect", "m", "REPO", [], []), ("local-defect", "m", "RUNTIME", [], []),
+               ("neither", "m", "REPO", [], [])]
+    live, acked, state = M.split_acked(defects)
+    assert state == "known"
+    assert {d[0] for d in acked} == {"repo-defect", "local-defect"}
+    assert [d[0] for d in live] == ["neither"]
+
+
+def test_tracked_wins_over_local_for_the_same_id(registries) -> None:
+    """A local entry must not quietly extend or shorten a disposition the repo already records:
+    the tracked copy is the one every checkout sees and a reviewer reads in the diff."""
+    repo, local = registries
+    _write(repo, {"d": dict(_ack(), reason="the committed reason")})
+    _write(local, {"d": dict(_ack(), reason="a local override")})
+    _, acked, _ = M.split_acked([("d", "m", "REPO", [], [])])
+    assert acked == [("d", "the committed reason")]
+
+
+def test_an_unparseable_registry_degrades_the_whole_view(registries) -> None:
+    """Half-read is not known. Guessing "nothing is acked" writes a permanent false accusation;
+    guessing "all acked" buries real work -- so the state must say it does not know."""
+    repo, local = registries
+    repo.write_text("{not json", "utf-8")
+    _write(local, {"d": _ack()})
+    _, acked, state = M.split_acked([("d", "m", "REPO", [], [])])
+    assert state == "unknown"
+    assert [a[0] for a in acked] == ["d"], "a readable ack still counts; only the STATE degrades"
+
+
+def test_a_repo_defect_acked_only_locally_is_reported_as_misfiled(registries) -> None:
+    """The defect R0393 names, in one assertion: the ack exists, the defect is REPO, and the ack
+    cannot travel to the machine that is about to escalate it."""
+    _, local = registries
+    _write(local, {"d": _ack()})
+    assert M.misfiled_acks([("d", "m", "REPO", [], [])]) == [("d", "REPO")]
+
+
+def test_a_runtime_defect_acked_locally_is_correct(registries) -> None:
+    """The other half, and the reason this is a split rather than a move: a RUNTIME defect's truth
+    genuinely differs per machine, so a per-box ack is right and must not be nagged about."""
+    _, local = registries
+    _write(local, {"d": _ack()})
+    assert M.misfiled_acks([("d", "m", "RUNTIME", [], [])]) == []
+
+
+def test_unscoped_is_treated_as_repo_for_storage_too(registries) -> None:
+    """Unknown provenance never becomes an excuse -- the same tie-break the report already uses."""
+    _, local = registries
+    _write(local, {"d": _ack()})
+    assert M.misfiled_acks([("d", "m", "UNSCOPED", [], [])]) == [("d", "UNSCOPED")]
+
+
+def test_an_ack_carried_by_the_tracked_registry_is_not_misfiled(registries) -> None:
+    repo, local = registries
+    _write(repo, {"d": _ack()})
+    _write(local, {"d": _ack()})
+    assert M.misfiled_acks([("d", "m", "REPO", [], [])]) == []
+
+
+def test_an_expired_local_ack_is_not_misfiled(registries) -> None:
+    """It is not an ack at all any more -- the defect is simply live, which the report already
+    says. Counting it here would put work on the queue that is already on the queue."""
+    _, local = registries
+    _write(local, {"d": _ack(until="2000-01-01T00:00:00+00:00")})
+    assert M.misfiled_acks([("d", "m", "REPO", [], [])]) == []
+
+
+def test_misfiled_is_deduped_by_id(registries) -> None:
+    """One check emits many defects under one id -- producer-cadence-stale fires five times in a
+    normal run -- and there is only ever ONE ack to move. Reporting 17 where 12 are owed inflates
+    a queue, which is the same class of error as hiding one."""
+    _, local = registries
+    _write(local, {"d": _ack()})
+    dup = [("d", "m", "REPO", [], [])] * 5
+    assert M.misfiled_acks(dup) == [("d", "REPO")]
+
+
+def test_the_tracked_registry_is_actually_tracked() -> None:
+    """The whole point is that it travels. A tracked FILENAME under a wholesale `data/*` ignore
+    is still an untracked file -- the negation has to exist, or this fix is cosmetic."""
+    import subprocess
+    r = subprocess.run(["git", "check-ignore", "data/max_audit_acks_repo.json"],
+                       cwd=ROOT, capture_output=True, text=True)
+    assert r.returncode == 1, f"the repo ack registry is gitignored: {r.stdout.strip()}"

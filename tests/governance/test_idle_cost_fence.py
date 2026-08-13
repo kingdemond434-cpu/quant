@@ -286,3 +286,26 @@ class TestWiring:
         # L1.42: every entry point passes the laws. Skipping guard() fails the build standard.
         src = (_ROOT / "scripts/check_idle_cost.py").read_text("utf-8")
         assert "_law_guard()" in src
+
+    def test_the_principal_question_quotes_the_book_it_just_read(self, tmp_path: Path) -> None:
+        """R0374: the next_action named a HARDCODED $5,757.08 while the same payload reported a
+        different attested equity -- a configured constant wearing a measurement's clothes, in
+        the one field a human is meant to act on. An operator asked "where does $5,757.08 sit"
+        about a book that has not held that figure for weeks is answering about nothing."""
+        _nav(tmp_path, equity=13_151.52)
+        _live(tmp_path)
+        _yield_inputs(tmp_path)
+        rep = fence.build_report(root=tmp_path)
+        assert rep["status"] == "UNMEASURABLE-PAPER-BOOK"
+        assert "$13,151.52" in rep["next_action"]
+        assert "5,757.08" not in rep["next_action"]
+
+    def test_a_yes_does_not_retire_the_meter(self, tmp_path: Path) -> None:
+        """Falsifier (a) covers the idle-CASH rung only. The clamp register is separate live work,
+        so 'the money is already earning' cannot retire an organ that is also pricing clamps."""
+        _nav(tmp_path, equity=13_151.52)
+        _live(tmp_path)
+        _yield_inputs(tmp_path)
+        nxt = fence.build_report(root=tmp_path)["next_action"]
+        assert "does NOT retire" in nxt
+        assert "UNPRICED" in nxt

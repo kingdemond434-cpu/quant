@@ -40,7 +40,7 @@ class ShadowRunReport(BaseModel):
 
 def build_shadow_report(
     rejects: Sequence[tuple[str, str]],
-    forward_scores: Mapping[str, float],
+    forward_scores: Mapping[str, float | Mapping[str, object]],
     *,
     deploy_threshold: float,
     as_of: str | None = None,
@@ -52,14 +52,16 @@ def build_shadow_report(
 
     ``rejects`` is ``(candidate_id, rejected_at_iso)`` straight from ``CandidateStore.rejects()``.
     ``forward_scores`` maps a candidate id to its realized metric measured on data AFTER rejection
-    (the desk's forward evaluator writes this; missing == not yet scored). A reject is ELIGIBLE only
+    (the desk's forward evaluator writes this; missing == not yet scored) -- either a bare float
+    (judged at the raw deploy bar) or ``{"sharpe": float, "n_fwd_bars": int}`` (judged at the
+    noise-adjusted bar for that window). A reject is ELIGIBLE only
     once it is at least ``min_age_days`` old, so an edge rejected yesterday cannot be judged (it has
     no forward data). Eligible-but-unscored rejects are counted as pending work; eligible-and-scored
     rejects feed ``rejection_shadow_audit``. If a non-trivial slice of the scored rejects would have
     paid out-of-sample, the audit flags the gate over-strict -- pure recovery, no new data.
     """
     now = from_iso8601(as_of) if as_of else utcnow()
-    eligible: list[tuple[str, float | None]] = []
+    eligible: list[tuple[str, float | None, int | None]] = []
     n_eligible = 0
     for cid, rejected_at in rejects:
         try:
@@ -69,8 +71,23 @@ def build_shadow_report(
         if age_days < min_age_days:
             continue  # too young to have forward data -- never guess
         n_eligible += 1
-        eligible.append((cid, forward_scores.get(cid)))
-    n_pending = sum(1 for _, m in eligible if m is None)
+        entry = forward_scores.get(cid)
+        # Two score forms: the rescorer writes {"sharpe": ..., "n_fwd_bars": ...} so the audit
+        # can noise-adjust the pay bar at the entry's actual window; a bare float (legacy, or a
+        # caller asserting a judgment-ready metric) keeps the raw threshold.
+        if isinstance(entry, Mapping):
+            raw_m = entry.get("sharpe")
+            raw_n = entry.get("n_fwd_bars")
+            if isinstance(raw_m, int | float):
+                n_bars = int(raw_n) if isinstance(raw_n, int | float) and raw_n else None
+                eligible.append((cid, float(raw_m), n_bars))
+            else:
+                eligible.append((cid, None, None))  # unreadable score == unscored, never guessed
+        elif isinstance(entry, int | float):
+            eligible.append((cid, float(entry), None))
+        else:
+            eligible.append((cid, None, None))
+    n_pending = sum(1 for _, m, _ in eligible if m is None)
     audit = rejection_shadow_audit(
         eligible, deploy_threshold=deploy_threshold,
         leak_tolerance=leak_tolerance, min_sample=min_sample,

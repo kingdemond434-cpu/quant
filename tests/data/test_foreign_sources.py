@@ -128,6 +128,41 @@ class TestFailuresAreReportedNotRaisedAndNotFaked:
         arts, err = F.qiita("q")
         assert arts == [] and err and "shape changed" in err
 
+    @pytest.mark.parametrize("payload", [
+        json.dumps({"unexpected": "shape"}),          # API changed
+        json.dumps([1, 2, 3]),                        # not even the right container
+        json.dumps({"articles": "not-a-list"}),       # key present, wrong type
+    ])
+    def test_zenn_reports_a_changed_shape_instead_of_a_clean_null(self, monkeypatch,
+                                                                  payload: str) -> None:
+        """R0466: zenn was the one JSON source with no shape guard.
+
+        Every sibling names a shape change; zenn fell through to ([], None), which is the SAME
+        value it returns for "searched and Zenn genuinely has nothing". A blocked ground and an
+        exhausted ground then read identically, and only one of them is a reason to retire a
+        region. zenn.dev is one of the two hosts R0466 measured 403ing our named agent while its
+        robots.txt stayed clean, so this is exactly where that would have landed.
+        """
+        _stub(monkeypatch, payload)
+        arts, err = F.zenn("q")
+        assert arts == []
+        assert err and "shape changed" in err, "a clean null is being returned for a wall"
+
+    def test_zenn_names_a_non_json_body_rather_than_returning_nothing(self, monkeypatch) -> None:
+        """A 200 carrying an anti-bot HTML page. Already loud (the decode raises inside the try),
+        but pinned because it is the shape the CDN wall actually arrives in."""
+        _stub(monkeypatch, "<html>Access denied</html>")
+        arts, err = F.zenn("q")
+        assert arts == [] and err and "JSONDecodeError" in err
+
+    def test_zenn_still_reports_a_genuine_empty_as_empty(self, monkeypatch) -> None:
+        # The other half, and the one that keeps this honest: a real, well-formed, empty answer
+        # must NOT be dressed up as a wall. Making everything an error would destroy the same
+        # distinction from the opposite side.
+        _stub(monkeypatch, json.dumps({"articles": []}))
+        arts, err = F.zenn("q")
+        assert arts == [] and err is None
+
     def test_rows_missing_a_title_or_id_are_dropped_not_emitted_blank(self, monkeypatch) -> None:
         """A blank-titled row scores zero and reads to a human as 'nothing found in Japanese',
         which is a very different claim from 'the API changed'."""
@@ -249,3 +284,44 @@ class TestTheTwoDefectsTheFirstLiveSweepFound:
         one. Hatena was 429ing at the spacing Qiita and Habr were untroubled by."""
         assert F._MIN_INTERVAL_S["hatena"] > F._MIN_INTERVAL_S["qiita"]
         assert set(F._MIN_INTERVAL_S) >= set(F.SOURCES)
+
+
+class TestProbeSeparatesBlockedFromExhausted:
+    """R0466. `ok=False` had two causes that demand OPPOSITE responses, and one boolean for both.
+
+    WALLED means the ground is UNKNOWN and the next move is a UA matrix against a real content
+    path (OP-052). EMPTY means the source answered cleanly and really has nothing for that
+    keyword. Collapsing them is how "we are blocked" gets recorded as "this ground is thin" and a
+    whole region is retired on evidence that never existed (WS-005/L1.28a).
+    """
+
+    def _one(self, monkeypatch: pytest.MonkeyPatch, rows: list, err: str | None) -> dict:
+        monkeypatch.setattr(F, "SOURCES", {"zenn": (lambda kw: (rows, err), "ja")})
+        return F.probe_all()[0]
+
+    def test_a_wall_is_WALLED_not_thin_ground(self, monkeypatch) -> None:
+        row = self._one(monkeypatch, [], "HTTPError: 403")
+        assert row["ok"] is False and row["posture"] == "WALLED" and row["n"] == 0
+
+    def test_a_genuine_empty_is_EMPTY(self, monkeypatch) -> None:
+        row = self._one(monkeypatch, [], None)
+        assert row["ok"] is False and row["posture"] == "EMPTY" and row["error"] is None
+
+    def test_rows_are_OK(self, monkeypatch) -> None:
+        art = F.Article(source="zenn", ident="i", title="t", url="u")
+        row = self._one(monkeypatch, [art], None)
+        assert row["ok"] is True and row["posture"] == "OK" and row["n"] == 1
+
+    def test_a_raising_source_is_WALLED_and_still_carries_its_n(self, monkeypatch) -> None:
+        def boom(kw: str) -> tuple[list, str | None]:
+            raise urllib.error.HTTPError("u", 403, "Forbidden", {}, None)  # type: ignore[arg-type]
+        monkeypatch.setattr(F, "SOURCES", {"zenn": (boom, "ja")})
+        row = F.probe_all()[0]
+        assert row["posture"] == "WALLED" and row["n"] == 0 and "403" in str(row["error"])
+
+    def test_the_two_failure_postures_are_distinguishable_which_is_the_whole_point(
+            self, monkeypatch) -> None:
+        walled = self._one(monkeypatch, [], "HTTPError: 403")
+        empty = self._one(monkeypatch, [], None)
+        assert walled["ok"] == empty["ok"] is False        # the old signal: identical
+        assert walled["posture"] != empty["posture"]       # the new one: not

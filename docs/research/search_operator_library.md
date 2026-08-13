@@ -206,6 +206,18 @@ adaptations: universal (HN is EN-centric but hosts practitioner comments in all 
   Zhihu answers via question API; habr comments endpoint. Same two-step shape everywhere.
 counterfactual: MED -- HN search is well known; walking the tree by DEPTH and scoring locally is not.
 
+_OP-022 field note (EN sG, 08-12): OPERATOR-DEFENSE MINING — in any platform/contest thread, the
+platform's OWN EMPLOYEES' defensive replies enumerate their validation design in public (HN
+9152332: fawce/dunster/jik laid out the full gate — 6 equal-weighted metrics, 2y backtest + 1mo
+paper, locked-since-submission, default commission+slippage, source unread). That enumeration is
+a free PRE-REGISTRATION of the platform's failure mode: pair it with the later outcome (the 2020
+fund capital-return) and you hold a complete natural experiment — design, defense, and refutation,
+all citable. Search key: site/thread + operator-handle replies, not the OP. Adaptations:
+JP/CN=JoinQuant/BigQuant/myquant staff replies in BBS threads; WorldQuant staff forum replies
+(their submission-bar defenses are FACTS ABOUT THEIR PROCESS, never gates for ours); KR=exchange
+"official" accounts defending listing/delisting rules in cafe threads — same structure: the
+defense names the gate, reality later grades it._
+
 ### OP-023 per-method RPC capability matrix (probe, never assume)   [active]
 class: verification
 origin: EN frontier miner (2026-07-25)   validated-gain: found the desk's registry RPC chain 3/4
@@ -467,6 +479,10 @@ marked [UNVERIFIED] and must be negative-controlled before budget is spent on th
 | физлицо / физик | "natural person" — the P2P/tax-rail term for a retail individual counterparty | perennial | [UNVERIFIED] seat brief | `физлицо P2P лимиты банк` |
 | календарный арбитраж | calendar spread arb (near vs far future) — the dominant RU statarb form on MOEX | perennial | [V] smart-lab 707565 | `календарный арбитраж фьючерс проскальзывание` |
 | проскальзывание | slippage — the RU practitioner's named killer of statarb | perennial | [V] smart-lab 707565 | `статарбитраж проскальзывание не работает` |
+| связка | "the link-chain" — a payment ROUTE tested end-to-end (venue→processor→bank/card); the folk term for rail combinations, and THE search key for corridor/obnal genre ("проверял связку") | 2013- | [V] btcsec 2047 reply 7 | `связка вывод биржа карта` |
+| резерв(ы) | exchanger float/inventory — the capacity variable of the whole dealer layer; "резервов нет" = rail at capacity | 2013- | [V] btcsec 5848/3426 ("Апдейт, резервы актуальны") | `обменник резервы направление` |
+| складчина | group-buy / cost-sharing (of bots, courses, signals) — finds the retail tooling-distribution layer and its monoculture (WS-010) | perennial | [V] btcsec 4382 reply 20 | `складчина бот стратегия торговый` |
+| стенка | order-book wall (large limit order); "ловить стенку" = wall-catching, the era's book-reading verb — era bots shipped wall-filters with spoof-ignore limits | 2013- | [V] btcsec 4382 OP | `стенка стакан бот ловить` |
 
 ## ARCHIVED
 (none yet)
@@ -566,6 +582,8 @@ marked ✓ were CONFIRMED IN USE this run (2026-07-26) against live CN pages/API
 | 插针 / 瀑布 / 阴跌 / 腰斩 | chazhen / pubu / yindie / yaozhan | wick / waterfall dump / grinding decline / halved | ✓ price-action lore keys |
 | 洗盘 / 控盘 / 诱多 / 诱空 / 砸盘 | xipan / kongpan / youduo / youkong / zapan | shakeout / float-control / bull trap / bear trap / dumping | ✓ **the manipulation-mechanics key set** — 控盘 (float control) is the mechanism-bearing one |
 | 套牢 / 踏空 / 割肉 / 装死 / 纸手 / 钻石手 | taolao / takong / gerou / zhuangsi / zhishou / zuanshishou | trapped / missed the rally / cut losses / play dead / paper hands / diamond hands | ✓ retail POSITIONING/sentiment keys |
+| 塞舌尔人 | saisheerren | "the Seychellois" = BitMEX + its degen crowd (Seychelles incorporation); era mock-slogan "塞舌尔人最低五十倍杠杆起步…唯有爆仓止损" | ✓(08-12) 8btc thread-166158 (2018-05) — the 2018 合约党 era key; finds BitMEX-era leverage lore official terms never reach |
+| 对敲 | duiqiao | self-matched/wash prints — in era derivatives context, the manipulation allegation term (bots printing against themselves to move the mark) | ✓(08-12) 8btc thread-2352 (2013-12, 796 incident) — pairs with 插针/控盘 as the DERIVATIVES manipulation key |
 
 ### OP-033 legacy regional forums are NOT UTF-8 — decode before you judge     [active]
 class: extraction
@@ -620,6 +638,15 @@ adaptations: universal to any dead board (Discuz/phpBB/vBulletin/Rails/Discourse
 counterfactual: LOW-MED — Wayback digging is common; ranking captures by CDX LENGTH to dodge
   JS shells and the gzip magic-byte sniff are both desk discipline that turns "archive is broken"
   false negatives into reads.
+addendum (CN miner 2026-08-12, board-233 measurement): **a max page-number URL in CDX is NOT board
+  size — out-of-range Discuz page URLs alias to the last real page.** 8btc forum-233-1000.html
+  (captured 2018-09) renders a thread list ~identical to forum-233-1.html: the board held ~31
+  threads, not 1000 pages, and the 08-04 board map's "233 = 1000 pages" was this trap. Before
+  budgeting a deep dig on a CDX-implied page count, fetch the claimed-distant page and DIFF THE
+  EXTRACTED THREAD-ID SETS against page 1 — near-identical sets mean the board is small and fully
+  enumerable in one pass (which is a GOOD outcome: section-exhaustion becomes claimable same-run).
+  Regional adaptations: any Discuz/phpBB derivative (CN/KR/RU legacy boards) aliases the same way;
+  vBulletin 404s instead, so absence-of-404 is itself the Discuz signature.
 
 ### OP-047 equal-width binning on fat tails voids a factor test (pd.cut ≠ pd.qcut)   [active]
 _(numbered past OP-046: this working tree is the forked branch whose library ends at OP-034, but
@@ -705,6 +732,16 @@ counterfactual: HIGH — the diaspora question stood open across multiple RU ses
   was one public GET away the whole time. The class error was hunting DISCUSSIONS about where
   people went instead of reading the market that formed where they arrived.
 
+_OP-049 EXTENSION (RU s2-on-branch, 08-12): a dealer's TWO-SIDED fee ladder is a FLOW-DIRECTION
+gauge, not just a rent quote. Read IN vs OUT fees per instrument-leg: symmetric fees = balanced
+flow; a SIGN FLIP (customer PAID a premium on one side — btcsec 3426: BTC-E RUB-codes IN "от 3%
+премия" while RUB OUT charged 7%) = one-directional net retail flow, with the asymmetry
+magnitude pricing the direction. This is the graveyard demand-direction variable (7th/8th
+instances) read as an INSTRUMENT: era fee-ladders are point-in-time flow-direction records no
+vendor archives, and modern P2P ad ladders (the OP-049 census) carry the same readable sign.
+Per-region: works on any dealer-ad genre with quoted two-sided pricing. Trap: slug/URL numbers
+are punctuation-stripped ("ot-18" = 1.8%) — read the thread body, never the slug, for fees._
+
 _OP-034 field note (RU s1-on-branch, 08-04): Wayback REPLAY of querystring URLs (IPB/IPS
 `index.php?/topic/...`) 302s to the canonical capture timestamp — curl WITHOUT -L writes 0
 bytes, which looks exactly like a dead capture. It is the route, not the archive. Always `-L`
@@ -789,6 +826,50 @@ platforms check BOTH the state blob and the rendered DOM before concluding conte
 API-only. note.com bodies: `div.note-common-styles__textnote-body` in plain HTML (robots-legal
 page route; its /api/* is disallowed)._
 
+### OP-052 robots.txt is NOT the access policy: probe the CONTENT PATH with your own UA   [active]
+class: legitimacy-gate / §13 instrument
+origin: JP frontier miner (2026-08-12), found by re-verifying robots on entry per standing law
+validated-gain: caught note.com + zenn.dev refusing this desk's named agent AT THE CDN EDGE while
+  both robots.txt files are CLEAN of any ClaudeBot rule. 116 of the JP seat's 187-entry mapped
+  corpus (62%) is out of bounds, including all three of that run's planned deep-read targets. Two
+  prior JP sessions (08-01, 08-04) read note.com bodies successfully, so the change is DATED to
+  between 2026-08-04 and 2026-08-12 — a live rollout, not a standing condition.
+technique: every seat establishes §13 posture by reading `robots.txt`. **That is necessary and no
+  longer sufficient.** A CDN can carry an access policy the published robots.txt does not state,
+  and the two can disagree in either direction. Establish the posture with a UA MATRIX against a
+  real content path, not a policy file:
+  ```
+  for ua in ClaudeBot GPTBot CCBot Bytespider Claude-User Googlebot SomeRandomBot/1.0 curl/8.0; do
+    curl -s -o /dev/null -w "$ua %{http_code}\n" -A "$ua" "<a real article url>"; done
+  ```
+  READ THE SHAPE, because the shape is the finding:
+  * **our agent 403, generic bot 200, Googlebot 200** → a CURATED AI-CRAWLER DENYLIST. This is a
+    deliberate, legible policy about bulk AI collection. Measured on note.com: ClaudeBot/GPTBot/
+    CCBot/Bytespider all 403 while `SomeRandomBot/1.0` and `curl/8.0` get 200 — which PROVES it is
+    not a generic "non-browser UA" heuristic. **HARD STOP, archives included** (origin-domain
+    policy governs Wayback mining too, per the RU/btcsec fleet ruling).
+  * **everything 403 including browsers** → infrastructure/WAF, may be transient; re-probe later.
+  * **robots.txt itself 403s to our UA** → the edge is filtering before the policy layer; read the
+    policy with a neutral UA (you cannot comply with a policy you cannot read) and then apply the
+    content-path verdict. Reading the POLICY is not routing around access control; fetching BODIES
+    under a different UA is, and it is forbidden.
+  **THE TRAP THAT MAKES THIS URGENT, and it is not about robots at all:** a blocked ground and an
+  exhausted ground look IDENTICAL to a digger whose fetch path treats a non-200 as "no content".
+  The seat then records **"this ground is thin"** when the truth is **"we are blocked"** — opposite
+  facts, and the wrong one silently retires a whole region (WS-005 / L1.28a: absence must never
+  resolve to a clean verdict). Any seat reporting thinning ground on a previously-rich source must
+  run the UA matrix BEFORE writing that verdict.
+  **`Claude-User` returning 200 is a FACT TO RECORD, NEVER A ROUTE TO USE.** It is the
+  user-initiated-fetch agent; bulk-mining 91 posts under it is the same activity the venue denied,
+  wearing a different name. Log it so a future principal decision has the evidence, and stop.
+adaptations: JP=note.com **CLOSED** (2026-08-12), zenn.dev **CLOSED**, qiita.com **OPEN** (article
+  body served, 145 kB), adventar.org CLOSED (robots-stated, 08-04); KR=re-probe velog/tistory,
+  DCInside already robots-stated; CN=Gate WALLED at edge-403 (CN seat 08-12 — SAME CLASS, found
+  independently the same day and previously read as a site-specific quirk rather than an instance);
+  RU=re-probe habr/smart-lab; EN=Wilmott CF-403 on robots (08-12) is this shape one layer earlier.
+counterfactual: HIGH — without the matrix this run would have recorded "note.com deep-reads
+  returned nothing" and the JP ground would have looked exhausted rather than closed.
+
 ## LEXICON — JP crypto-trading jargon (dark-forest search keys)
 _Charter dark-forest deliverable #2, JP seat. Convention per EN/CN/KR tables. OBSERVED =
 verified in a real post/text this session (CN OP-037 lesson: 0/7 unverified seeds survived —
@@ -808,6 +889,14 @@ only observed terms enter as active keys; unobserved seeds stay marked SEED)._
 | 億り人 | "100-millionaire" (made ≥¥100M) | 2017→live | OBSERVED in derived form only (億ウォレ pun, 2024 calendar title). Seed WEAK-VERIFIED |
 | ガチホ | hard hold (gachi-hold) | 2017→live | SEED — NOT observed this run; do not build queries on it yet |
 | 爆益 / 退場 | explosive profit / blown-out exit | 2017→live | OBSERVED (Ros) — 退場 finds ruin post-mortems |
+| 鞘 (さや) | the arb spread itself; 鞘取り = arbitrage | all | OBSERVED (shidokamo, DEX-CEX post: 「DEX-CEXの鞘が10%」). THE JP word for a spread — 乖離 is the *state*, 鞘 is the *harvestable gap*. Query: 鞘取り bot finds arb writeups that 裁定取引 misses |
+| アビトラ | arbitrage (katakana clip of arbitrage) | 2017→live | OBSERVED (shidokamo title 「DEX-CEXアビトラの思ひ出」). Retail/botter register; the formal 裁定取引 finds academic/broker content instead. HIGH-VALUE KEY |
+| 見せ板 | spoofing (lit. "show board") | all | OBSERVED (blog_UKI, BitMEX spoofing post). The folk term; スプーフィング is the loan-word used in titles. Query 見せ板 finds manipulation-mechanics discussion |
+| お蔵入り | shelved / never shipped (of a strategy) | all | OBSERVED (blog_UKI: 「この戦略はお蔵入りしたのでした」). **A NEGATIVE-RESULT KEY** — finds abandoned strategies with stated reasons, i.e. free graveyard material |
+| 反面教師 | cautionary counter-example ("teacher by negative example") | all | OBSERVED (perp-screener: 「反面教師になればうれしい」). Authors flag their own failures with it — pairs with お蔵入り as the JP failure-post search pair |
+| チャッピー | ChatGPT (JP affectionate nickname) | 2023→live | OBSERVED (perp-screener: 「チャッピーの解説によると」). **NOT a trading term — an LLM-CONTAMINATION MARKER (OP-072).** Grep it to demote a page from independent node to echo |
+| 限月 | contract expiry month (futures/options) | all | OBSERVED (perp-screener). 期近 = near expiry, 期先 = far expiry — the JP calendar-spread vocabulary |
+| 爆損 | catastrophic loss (mirror of 爆益) | 2018→live | OBSERVED (マケデコ title 「機械学習モデルが爆損したときにやること」). Ruin-post key |
 ### OP-034 Quantopian forum archaeology — the extraction recipe                [active]
 class: extraction
 origin: EN frontier miner session D (2026-07-28), first two threads mined to exhaustion
@@ -864,6 +953,11 @@ CONFIRMED IN LIVE USE this run (search results + tracker-site names), not assume
 | 유의 종목 지정 기간 연장 | ...gigan yeonjang | designation period EXTENDED = the venue saying it is still unresolved | ✓ a distinct, informative event; modelling 유의종목 as binary discards it |
 | 원화 / 원화마켓 | wonhwa | "won" — **the EARLY register for what is now written KRW** | ✓ CONFIRMED: `원화 마켓 신규 상장` (18) + `원화마켓 신규 상장` (12, NO SPACE) + `원화 마켓 디지털 자산 추가` (7). Search BOTH spellings AND both spacings or you lose half the KRW-rail events |
 | 코인 추가 → 디지털 자산 추가 | ...chuga | "coin added" (2018 register) became "digital asset added" (2020+) | ✓ the same event renamed; an era-blind selector zero-hits 75 rows of it |
+| 가두리 | gaduri | "fish-pen / fenced enclosure" — a market whose deposit or withdrawal rail is CLOSED, so price is trapped and runs away from global. Per-ASSET, not per-venue | ✓ OBSERVED (Ppomppu 21343, 2017-12-23 "리플은 이와중에 가두리"). The retail name for the mechanism behind card `kr_rail_state_transition_global_leg`; the folk word finds the lore that 입출금 (the venue's formal word) does not |
+| 보따리상 | bottarisang | "bundle/shuttle merchant" — the physical-arbitrage carrier who buys abroad and sells into the KR book. **The era's name for the marginal premium arbitrageur** | ✓ OBSERVED (Ppomppu 22072, 2017-12-24: "보따리상들이 국내로 코인들고와서 팔아야되는데 지금 코인들 전송이 안됩니다"). THE supply-side premium key: finds threads about why the premium PERSISTS (carrier capacity) rather than that it exists |
+| 벌집계좌 | beoljip-gyejwa | "beehive account" — the omnibus/pooled corporate bank account small venues used when banks refused them individual 가상계좌 (virtual accounts) | ✓ OBSERVED (Ppomppu 76535, 2018-01-29). The 2018-01 real-name law split KR venues into a virtual-account tier (Upbit/Bithumb/Coinone/Korbit) and a beehive tier (GOPAX, Coinrail, HTS) — this term is the search key for the venue-tier / rail-access era layer and for forced-exit events at cut-off venues |
+| 허매수 / 허매도 | heo-maesu / heo-maedo | "fake bid / fake ask" = **spoofed walls** | ✓ OBSERVED (Ppomppu 77829, 2018-01-31: bots posting second-granularity walls). The KR key for retail-observed spoofing/microstructure lore; English "spoofing" zero-hits KR retail boards |
+| 한프 / 코프 | hanpeu / kopeu | premium abbreviations formed like 김프, almost certainly per-venue or per-country (한국/코인원?) — **gloss UNVERIFIED, recorded as observed rather than guessed** | SEED (Ppomppu 22072 title: "한프 김프 코프 하는데 궁금점요"). Worth resolving: if these are per-VENUE premium words the era had a folk vocabulary for intra-KR dispersion, which is exactly the WS-011 axis |
 
 ### OP-035 platform archives change their MARKUP between eras — a selector validated on one era silently zero-hits another   [active]
 class: extraction
@@ -1320,3 +1414,1273 @@ hosts, never the country.
 truncated head. My first pass cut at 1,200 bytes; GitHub's and MQL5's files are longer than that and
 a by-name block further down would have been invisible. A truncated read that finds nothing is
 **not** a clean verdict.
+
+## OPERATOR SEMANTICS — Qlib expression engine, exact reads (MIT, 2026-08-11) `qlib-alpha158`
+
+**PROVENANCE:** `microsoft/qlib` raw files read IN FULL this run — `qlib/data/ops.py` (1,681
+lines, every operator class enumerated), `qlib/contrib/data/loader.py` (Alpha158 field blocks),
+`qlib/contrib/data/handler.py` (label + processor config). LICENCE: **MIT, read from the
+canonical LICENSE file this run** (Microsoft). vn.py LICENSE also read: **MIT** (Xiaoyou Chen).
+DERIVES-FROM: WorldQuant-style expression DSL — this is the ALTERNATIVE-IMPLEMENTATION node the
+BRAIN charter ranks highest: a reimplementor had to make every elided semantic explicit in code.
+Converts data_axis_watchlist card 24 (VeighNa/Qlib) [§33 backing artifact for that card].
+
+**THE FIVE ELIDED SEMANTICS a summary would blur (each is a mechanical rule for reading ANY
+mined qlib-dialect expression):**
+1. **`Rolling(x, N)` has THREE semantics keyed on N's TYPE:** integer N → `rolling(N,
+   min_periods=1)`; **N=0 → EXPANDING window** (inception-to-date); **float 0<N<1 → EWM with
+   alpha=N**. A mined `Mean($close, 0.06)` is an EMA in disguise, not a bug.
+2. **`min_periods=1` everywhere:** every rolling stat emits from bar 1 on partial windows — a
+   mined backtest's early-window values rest on tiny samples; the desk convention (NaN until the
+   window fills) is STRICTER, so naive replication shifts early-sample behaviour.
+3. **Labels are future-Ref and CROSS-SECTIONALLY NORMALISED:** verbatim `Ref($close, -2)/
+   Ref($close, -1) - 1` (handler.py:90) — decide at t close, enter t+1, book t+2: ONE BAR of
+   execution slack built into the target; and `CSZScoreNorm` is applied to the LABEL
+   (handler.py:39) — Alpha158 models learn RELATIVE (cross-sectional) returns, which is this
+   desk's own TARGET/HORIZON duty arriving from an independent direction.
+4. **Negative `Ref` = future reference, legal ONLY in labels.** MECHANICAL LEAK RULE for every
+   mined expression: `Ref(x, -k)` inside a FEATURE is pre-falsified as leakage — kill on sight,
+   no screen owed.
+5. **`Greater/Less` are elementwise MAX/MIN, not comparisons** (`Gt/Ge/Lt/Le` are the booleans).
+   Reading a mined `Greater(a,b)` as a predicate silently rewrites the strategy.
+
+**VOCABULARY (crypto analogue + data-needed per the 3-question duty):**
+- **Regression trio `Slope/Rsquare/Resi(x,N)`** — rolling OLS of x on time index: trend rate,
+  trend QUALITY, deviation-from-trend. THE TRANSFORM AXIS THE DESK'S `combination_engine` LACKS.
+  Crypto analogue: apply to funding, basis, OI, taker_buy_frac (NOT price-only — graveyard
+  prior). Data needed: none new. Adoption = pre-registration (universe grows; the
+  `UNIVERSE_IF_ADOPTED` discipline in `wq_operators` prices the bar move BEFORE it is paid).
+- **`Rank(x,N)` is TS-RANK** — percentile of today within OWN trailing window, NOT
+  cross-sectional. The exact universe-vs-peer confusion class that spawned this organ, in the
+  reimplementation direction. Desk: `ts_rank` candidate; distinct from `rank` AND `group_rank`.
+- **`IdxMax/IdxMin/IMXD(x,N)`** — bars-since-high/low (Aroon family). Analogue: bars since
+  funding peak / OI peak. Data: none new.
+- **`RSV` (stochastic position in rolling hi-lo range), `QTLU/QTLD` (rolling 0.8/0.2 close
+  quantiles)** — price-only, LOW prior here (slow price-only is dead ground at daily res); log
+  for completeness, spend nothing.
+- **`Corr(x,y,N)/Cov` pair-rolling; Alpha158's `CORD` = Corr(returns, Δlog volume)** — the
+  volume-interaction block is the transferable half; desk analogue: Corr(funding change, taker
+  flow), Corr(basis, OI change). Data: owned.
+- **`WVMA`** — volume-weighted price-change volatility. Analogue on taker_buy_frac-weighted
+  moves. Data: owned.
+- **`ChangeInstrument(inst, expr)`** — evaluate expr on ANOTHER instrument (e.g. BTC state
+  inside an alt's signal). Desk analogue: regime conditioning on BTC/market factor — EXISTS
+  partially (combination_engine regimes); the operator generalises it to any pair.
+- **`Mask/If/And/Or` + `trade_when`** — conditional persistence family; desk has `trade_when`
+  (turnover-preserving hold) since 2026-08-07; `If` is its stateless sibling.
+- **KBAR block** (KMID/KLEN/KMID2/KUP/KLOW/KSFT wick anatomy) — intrabar shape features;
+  desk analogue exists on H8 bars; price-only prior applies.
+- **Alpha158 structure:** ~20 named blocks over windows {5,10,20,30,60} — a factor-set MAP of
+  what a production equities shop considers worth computing. The map is the asset; the
+  price-only factors are not (desk graveyard). Route: push the desk's OWN axes
+  (funding/basis/OI/taker flow) through the same transform blocks.
+
+**METHOD NOTE (routed to improvement inbox + ledger):** Qlib does cross-sectional normalisation
+in the PROCESSOR layer (`CSRankNorm/CSZScoreNorm`), never in the expression — features stay
+time-series, the cross-section is a TRAINING-TIME choice. Clean separation the desk can copy:
+`group_rank`-style ops stay in the feature layer ONLY when the peer set is part of the
+hypothesis; universe-relative normalisation belongs downstream.
+
+### OP-053 a calendar axis has a HARD event ceiling — compute the MDE before you spend the run   [active]
+class: power / pre-flight arithmetic
+origin: AR frontier miner (2026-08-12), found by testing the seat's own replacement axis
+validated-gain: killed an entire axis design in one command **after** the literature search and
+  **before** any screen, and produced the number that makes the kill permanent: an annual event over
+  a 7-year liquid history is **n=7**, and its 80%-power MDE was **3–6× the observed effect** on all
+  three channels tested. Halving that MDE needs **28 episodes = 21 more years**, so the design can
+  never be rescued by waiting — a fact no screen output would have stated.
+technique: for any calendar/seasonal/event axis, the sample size is **the number of EVENTS, never the
+  number of DAYS inside them** (gap-register row 85). Before mining or screening, compute:
+  ```
+  n_events  = occurrences of the event in the liquid sample      # annual => 7-10, monthly => 80+
+  MDE_80    = (t_crit(n-1) + 0.842) * sd(per-event effect) / sqrt(n_events)
+  ratio     = |observed| / MDE_80        # < 1  =>  the test CANNOT see a real effect
+  years_to_halve_MDE = 3 * current_span  # MDE ~ 1/sqrt(n)
+  ```
+  **READ THE RATIO, NOT THE p-VALUE.** A null with ratio 0.2 says *the instrument is blind*, not
+  *the effect is absent* — and the two demand opposite responses (L1.25: re-aim vs retire).
+  Report `unmeasurable_by_construction`, retire the **DESIGN**, and name the enabling change that
+  would restore power — for an annual event that is almost always **cross-sectional expansion**
+  (n_events × N assets/venues), never a longer wait.
+  **THE COMPANION TRAP, which is the half that surprises:** the same run must check the **ICC** of
+  the series being tested, because the naive daily-dummy test is honest on some series and badly
+  broken on others. Measured on this desk's BTCUSDT D1:
+  * **returns: ICC 0.000, design effect 1.00** — a daily dummy is fine.
+  * **funding: ICC 0.525 (DE 16.1)**, **basis: ICC 0.695 (DE 21.0)** — a daily dummy inflates t by
+    **≈4.0× and ≈4.6×**.
+  So *"is a daily calendar dummy valid?"* has no general answer: it depends on the **persistence of
+  the series**, not on the test. Any event test on funding, basis, OI or spread must cluster at the
+  event level. This matters most precisely where the desk should be hunting — the direction-agnostic
+  channels — so the trap sits on the good path, not the bad one.
+adaptations: AR=Hijri/Ramadan (n=7, killed as a design); universal — applies to halving cycles (n≈4),
+  quarterly expiries (n≈28), CME rolls (n≈80, the first annual-class axis with real power), unlock
+  events (n=24,201 but see the `pct_circ_now` conditioning-variable trap, R0289).
+counterfactual: HIGH — without the MDE the run would have reported "Ramadan shows no effect in
+  crypto" as a finding. That sentence is false in a specific and expensive way: it reads as *tested
+  and dead* when the truth is *never testable this way*, which would have retired the mechanism
+  along with the design and blocked the cross-sectional version that is still open.
+
+## LEXICON — AR crypto/trading jargon (dark-forest search keys)
+_Charter dark-forest deliverable #2, AR seat, session 1. Convention per EN/CN/KR/JP/RU tables.
+OBSERVED = seen in live AR text this session; SEED = supplied/inferred and NOT yet verified, per the
+CN OP-037 lesson (0/7 unverified seeds survived there — unobserved terms are not search keys yet)._
+
+| term | gloss | era | note / example query |
+|---|---|---|---|
+| المراجحة | arbitrage | all | **OBSERVED** — the standard AR term; `المراجحة العملات الرقمية` finds AR arb writeups |
+| العقود الدائمة | perpetual contracts (perps) | 2020→ | **OBSERVED** — the AR perp term; pairs with `التمويل` for funding-rate content |
+| التمويل / معدل التمويل | funding / funding rate | 2020→ | **OBSERVED** — note the collision: التمويل is also "financing" in the Islamic-finance sense, so this key returns BOTH trading and fiqh material. **That collision is a feature** — it is the bridge to the doctrinal layer |
+| التداول الشبكي | grid trading | 2021→ | **OBSERVED** — AR grid-bot content |
+| تتبع الاتجاه | trend following | all | **OBSERVED** |
+| بوت تداول / التداول الآلي | trading bot / automated trading | 2020→ | **OBSERVED** — `التداول الآلي` is the higher-yield of the two |
+| الرافعة المالية | leverage | all | **OBSERVED** — in fiqh contexts it is the flag for the riba objection |
+| التقابض / التقابض الفوري | possession / immediate possession (settlement) | doctrinal | **OBSERVED** — **the load-bearing doctrinal term**: the requirement that kills deferred settlement and derivatives. The precise key for the participant-exclusion layer |
+| الغرر / الميسر | gharar (uncertainty) / maysir (gambling) | doctrinal | **OBSERVED** — the two named grounds for the derivatives prohibition |
+| الربا | riba (interest) | doctrinal | **OBSERVED** — the ground for the margin/funding objection |
+| زكاة العملات الرقمية | zakat on digital currencies | 2018→ | **OBSERVED** — the forced-flow key; finds the 2.5%-levy rulings and calculators |
+| حلال / حرام + تداول | halal/haram + trading | all | **OBSERVED** — the retail-facing framing; high volume, mostly SEO-grade, but it names the constraint retail actually applies |
+| حوامير | "whales" (lit. groupers) — **and the name of the largest Gulf forum** | all | **OBSERVED** — `حوامير` is both the slang for big players and the brand `hawamer.com`. **Note the §13 status: that forum is a HARD STOP (ClaudeBot denied by name)**, so the term is a search key for *other* venues quoting it, not for mining the forum itself |
+| سيولة / السيولة | liquidity | all | SEED — standard finance vocabulary, low discrimination |
+
+---
+
+### OP-054 the native key is not the translated key — verify the search term against the ground before grading it THIN   [active]
+class: search / instrument hygiene
+origin: BR frontier miner session 2 (2026-08-12)
+validated-gain: measured on GitHub repo search, same corpus, same minute:
+  - `pairs+trading+brasil` -> **0 repos**
+  - `cointegracao` (the native PT term) -> **30 repos**, essentially all genuine pairs-trading /
+    statistical-arbitrage work, several crypto-native
+  A seat that queried the English term and stopped would have graded BR statistical arbitrage a
+  DEAD GROUND on a clean zero. The ground holds at least 30 repos. **Zero was a property of the
+  QUERY, not of the forest.**
+technique: for every family you hunt, the region names it with a NATIVE technical term that is
+  usually NOT the translation of the English one. Before recording any ground as thin or
+  exhausted, find the term the practitioners themselves use — normally by reading one known-good
+  artifact from that ground and harvesting its vocabulary, not by translating your own.
+  In PT-BR the family keys are `cointegração` (the method, and the highest-yield single key),
+  `long e short` / `long&short` (the retail name of the trade — B3 retail culture calls the trade
+  after its LEGS, not after the statistic), `arbitragem estatística`, `pares` / `par cointegrado`.
+  **`pairs trading` is not used.**
+adaptations: universal, and it composes with OP-030 (negative-control every zero-hit) and OP-037
+  (negative-control a supplied glossary). OP-030 says a zero needs a control; OP-037 says a
+  supplied TERM may be fake; **OP-054 says a REAL, correct, well-formed English term can still
+  return a structural zero because the ground does not speak it.** All three failure modes end in
+  the same artifact — a false EXHAUSTED — and that is the one verdict this desk cannot afford,
+  because a ground graded dead is never re-entered.
+counterfactual: HIGH. STATISTICAL-ARBITRAGE is the desk's **only NEVER-HUNTED family**
+  (`data/strategy_coverage.json`: 0 of 14 hunted), so the one family most in need of ground was
+  the one being hidden by vocabulary.
+
+### OP-055 in a mined replication repo, DIFF THE CONFIG COMMENTS AGAINST THE CONFIG VALUES   [active]
+class: extraction / evidence grading
+origin: BR frontier miner session 2 (2026-08-12)
+validated-gain: `mateusmartinelli/tcc` (crypto pairs trading, 3 method implementations,
+  ~1,384-1,464 lines each). **Three contradictions, all in the config block, found in under a
+  minute by one grep:**
+  - `TRANSACTION_COST = 0.001  # 0.05% por trade` — 0.001 is **0.1%**, i.e. **2x** the commented
+    intent. Identical in all three files (copy-pasted), so the whole comparison shares it.
+  - `Z_ENTRY_THRESHOLD = 1.5  # 2 standard deviations for entry (as per paper)` — the value is
+    **1.5σ**, the comment claims **2σ "as per paper"**. Looser entry ⇒ more trades ⇒ interacts
+    directly with the mis-stated cost.
+  - `LOOKBACKS = [90]  # 12 months formation period (252 trading days)` — the formation window is
+    **90 days**, not the paper's 252.
+technique: the comment is the author's statement of INTENT; the value is what actually RAN. On a
+  replication or thesis repo the two drift apart silently, and the write-up is generated from the
+  intent. One grep over the config block prices the gap between what a paper-replication claims to
+  have replicated and what it executed. Do this BEFORE reading any result the repo reports.
+  Grade the direction too: charging 2x cost is conservative and does not inflate a result, while a
+  looser entry threshold and a shorter formation window are NOT conservative.
+adaptations: universal — any language, any replication repo, thesis code, notebook, or bot config.
+  Pairs with the backtest-miner cost-accounting duty: absence of a cost model is a finding, and a
+  cost model that contradicts its own comment is a **better** one, because it is evidence about
+  the author's process rather than about their taste.
+counterfactual: MEDIUM-HIGH — the artifact reads as unusually rigorous on the surface (it loads a
+  T-bill series and computes excess returns, which most retail backtests never do), so it is
+  precisely the kind of repo a seat would quote approvingly without opening the config.
+
+### OP-056 a mined VALIDATION module is tested by INVARIANCE: does its null actually move its statistic?   [active]
+class: extraction / adversarial verification
+origin: BR frontier miner session 2 (2026-08-12)
+validated-gain: `pedhsm/systematic-research-framework` — "Biblioteca de validação de estratégias
+  quantitativas ... e testes de Monte Carlo (MCPT)". Its `mcp/tester.py` permutes the **realised
+  return series** and recomputes `sharpe = mean/std*sqrt(252)`, `cagr = exp(sum(r))**(1/years)-1`,
+  `vol = std*sqrt(252)`. **All three are order-invariant** (mean, std and sum are each invariant
+  under permutation), so the permuted statistic IS the real statistic.
+  Verified numerically by independent reimplementation of the arithmetic (NOT by executing the
+  repo — supply-chain rule), 500 permutations x 4 synthetic return series:
+  **max-min spread across permutations = 1.1e-15 (machine epsilon).**
+  The consequence is worse than an uninformative test. Because floating-point summation is not
+  associative, `perm_score >= real_score` resolves on ROUNDING ORDER, so the p-value is a hash of
+  FP dust rather than a statistic: measured p = 0.978 for a strong winner (mu=+0.15%/d) and
+  p = 0.618 for a catastrophe (mu=-0.20%/d) — **the disaster scored "better" than the winner**.
+  At any conventional alpha nothing ever passes: it is a **WALL, not a bar** (L1.49's exact case).
+technique: for any mined backtest/validation library, do not read its null — TEST it. Ask whether
+  the statistic it scores is mathematically invariant to the resampling it performs. If it is, the
+  gate carries zero information no matter how sophisticated it looks. The test is cheap: permute
+  twice and check the statistic moved by more than machine epsilon.
+  **The general rule the desk should carry outward: a permutation null must destroy the thing the
+  statistic is supposed to measure.** Permuting realised strategy returns to test a Sharpe destroys
+  nothing, because the P&L has already been computed. The correct null permutes the PRICE PATH and
+  re-runs the strategy (destroying timing skill while preserving the marginal distribution), or
+  permutes the SIGNAL against fixed returns.
+adaptations: universal — every language, every mined validation/backtest framework.
+  **CROSS-ECOSYSTEM CONVERGENCE, and it is genuine rather than an echo:** this desk's own
+  `libs/validation/bar_permutation.py` independently documents the identical trap (its docstring:
+  total log return over the permuted window EQUALS the real one, so buy-and-hold "scores
+  identically on the permutation and gets p ~ 1"), permutes bars rather than returns, and handles
+  the FP-dust tie problem the BR repo falls into via a measured `_TIE_RTOL = 1e-4` plus the
+  add-one correction `(sum(s >= real - tol) + 1)/(n + 1)`. Two ecosystems, no citation link in
+  either direction, same trap, one solved and one not. Per the provenance rule that buys the
+  finding a QUEUE PLACE, not a lower bar — and here it buys **confirmation of an existing desk
+  design**, not a new build. The desk is AHEAD on this one; the value is the operator, not a fix.
+counterfactual: HIGH for the fleet — miners are explicitly told to route AI-quant structures and
+  validation frameworks to the improvement inbox as ENGINE ideas, and this is the screen that
+  separates an engine idea worth importing from one that would import a welded gate.
+
+---
+
+## NATIVE LEXICON — BR / PT-BR (Brazilian Portuguese)
+_Charter dark-forest deliverable #2, BR seat, session 2 (2026-08-12). No BR lexicon existed before
+this run (`grep -c alavancado` = 0). OBSERVED = seen in live PT-BR artifacts this session (repo
+titles/descriptions in the 30-repo `cointegração` corpus); SEED = supplied/inferred and NOT yet
+verified. Per OP-037, a SEED is a lead, never a search key._
+
+| term | gloss | era | note / example query |
+|---|---|---|---|
+| **cointegração** | cointegration | all | **OBSERVED — the single highest-yield PT-BR quant key found this run.** 30 repos vs **0** for `pairs trading brasil`. This is OP-054's proving instance |
+| **long e short** / **long&short** | the pairs trade, named after its LEGS | all | **OBSERVED** — B3 retail culture names the TRADE, not the statistic. **Two collisions poison it as a bare key** (see below) — always pair with `cointegração` or `ações` |
+| par cointegrado / pares | cointegrated pair / pairs | all | **OBSERVED** |
+| arbitragem estatística | statistical arbitrage | all | **OBSERVED** (as `arbitragem estatistica`, unaccented, in repo text) — lower volume than `cointegração` |
+| **TCC** | *trabalho de conclusão de curso* — undergraduate final thesis | all | **OBSERVED and now MEASURED (s3) — a STRUCTURAL key, and a PRECISION one, not a recall one.** `TCC bitcoin` **29**, `TCC trading` **18**, `TCC criptomoedas` **15** — but `TCC cointegração` **1** against **30** for `cointegração` alone. **Never AND it with a topical key** (OP-081); union instead. Everything it returns is genuine thesis code (L1.34 #6: rigorous-looking, never out-of-sampled, unread by the English crowd), but counts **overstate** — student repos are disproportionately vendored framework forks |
+| **dissertação** | dissertation (the *formal* thesis word) | all | **OBSERVED-NEGATIVE (s3) — a measured ZERO: `dissertação trading` = 0 repos.** Recorded precisely because a clean zero on a correct, well-formed native word reads exactly like an empty ground (OP-054's third false-exhaustion mode). Within one country only the **colloquial abbreviation** survives as a repo label. Do not spend budget here |
+| **prazo** | lit. "term/deadline" — in BR pairs practice, **the lookback window** | all | **OBSERVED (s3, video `vaDLuXYDSJ8`)** — *"no prazo de 240"*. The window length is called a *prazo*, not a *janela*. A query for `janela` misses the practitioner layer |
+| **beta rotation** | rolling hedge-ratio stability | all | **OBSERVED (s3) — an ENGLISH term used untranslated inside PT-BR practice**, and independently a function name in `zecontinha` (`analysis.py:beta_rotation`). Selection criterion, not just a diagnostic: *"beta rotation mais estável"*. A PT-only query misses it — this is OP-079's boundary running through the vocabulary itself |
+| **enquadrado** | "well-fitted / well-framed" (of a pair) | all | **OBSERVED (s3)** — *"o par está melhor enquadrado"*, i.e. the best-fitting pair. Folk term for the selection step; no English equivalent in the literature |
+| ações | equities/stocks | all | **OBSERVED** — the disambiguator that rescues `long short` from the LSTM collision |
+| criptomoedas | cryptocurrencies | all | **OBSERVED** — note `cripto` alone did NOT conjoin usefully in repo search (`cointegracao+cripto` = 0 while crypto repos exist in the `cointegracao` corpus): search the broad key and filter, do not conjoin |
+| alavancado | leveraged | all | **SEED — NEGATIVE-CONTROLLED AND DOWNGRADED (OP-037).** The word is real standard Portuguese, but it is *standard financial vocabulary*, not slang, so it carries no discrimination as a search key — the CN `亏损/kuisun` case exactly. Not a dark-forest key |
+| laranja | lit. "orange" — a nominee / straw-man account holder | all | **SEED — real BR term, but §13 AWARENESS ONLY.** It indexes fraud and money-laundering material, not trading mechanism. Not a research key for this desk |
+| HODLar | to HODL, verbified with the PT infinitive `-ar` | 2017→ | **SEED — NOT CONFIRMED.** A targeted search surfaced BR Bitcoin communities but no evidence of this specific coinage in use. Morphologically plausible (PT productively verbifies loanwords) but **unobserved**; do not spend query budget on it until seen in live text |
+
+**THE TWO COLLISIONS THAT POISON `long short` IN A PT-BR CORPUS** — measured this run, and either
+one alone is enough to make a rich ground look picked clean:
+1. **LSTM.** `Long Short-Term Memory` is written out in full in Portuguese ML repo descriptions.
+   `long+short+acoes` returned 18 repos of which **3 of the top 5 were neural-network repos**.
+2. **C/C++ type keywords.** `"long e short"` returns `MODIFICADORES-DE-TIPOS-DE-DADOS-Unsigned-Long-e-Short`
+   — teaching repos about integer types. Two of the top 5.
+The rescue is the native method key (`cointegração`), not a better English phrasing. This is the
+vocabulary-collision sibling of the RU seat's TICKER-collision finding: same failure mode
+(a homonym silently empties a result set), different layer of the stack.
+
+### OP-057 the arXiv `/pdf/` route SILENTLY FABRICATES from this box — HTML/ar5iv is the only trusted route   [active]
+class: routing / source integrity
+origin: litminer run 7 (2026-08-12), AI-methods seat + parent adversarial re-test
+validated-gain: prevented an unknown number of fabricated figures from entering desk artifacts,
+  and bounded the retroactive damage to ZERO for the prior run.
+
+**THE FINDING.** `WebFetch` against `arxiv.org/pdf/<id>` does not reliably return the paper. The
+AI-methods seat measured **4 of 4 PDF fetches producing figures the VERBATIM ABSTRACTS
+CONTRADICT**, and on `2311.10685` the fabricated number pointed the **OPPOSITE DIRECTION** from
+the real headline. The same seat measured `arxiv.org/html/` clean **11 of 11**.
+
+**THE PARENT'S ADVERSARIAL RE-TEST, AND WHY IT MAKES THE RULE STRONGER RATHER THAN WEAKER.**
+Re-tested independently on `2605.05089v1`: the PDF route **REFUSED** — twice — returning PDF
+object structure and stating it could not locate the section. **So the failure mode is NOT
+uniform.** The route sometimes refuses honestly (safe) and sometimes confabulates (catastrophic),
+**and the caller cannot tell which one they received.** That is precisely the desk's own
+ABSENT-vs-UNREADABLE collapse (L1.55) — arriving at the TOOL layer, where every organ is exposed.
+A route that fails loudly can be trusted; a route that fails loudly *most of the time* cannot.
+
+**THE RULE.**
+1. **Read arXiv via `arxiv.org/html/<id>` or `ar5iv.labs.arxiv.org/html/<id>`. Always.** Both were
+   measured clean and both need no extractor. The parent pulled a full interior — boundary
+   formulas, per-asset tables, live-execution figures — from the HTML route today.
+2. **A `/pdf/`-sourced number is QUARANTINED** unless independently confirmed against the abstract,
+   the HTML mirror, or a stdlib extraction. Mark it `[UNVERIFIED-PDF-ROUTE]` rather than dropping
+   it silently — the mark is what lets a later run re-check it.
+3. **A LOCAL extraction is a different mechanism and is NOT covered by this rule.** The retraction
+   seat stdlib-extracted a CREATES PDF successfully the same day; that path parses bytes this box
+   holds, rather than asking a summariser what a binary said.
+4. `export.arxiv.org` **429s from this box** — walk listing pages serially, never the API.
+
+**RETROACTIVE DAMAGE, BOUNDED NOT ASSERTED.** run 6's arXiv ground file contains **zero**
+`arxiv.org/pdf/` URLs (grep count 0) against 2 html/ar5iv routes, so its figures are uncontaminated.
+The check is one grep and should be run on any ground file whose numbers are about to be relied on.
+
+**THE GENERAL LESSON, worth more than the arXiv instance:** an information channel that
+*sometimes* fabricates is more dangerous than one that always fails, because the failure carries
+no signal. Ask of every fetch route: **what does its failure look like, and is that
+distinguishable from success?** If it is not, the route needs a second source or a quarantine mark.
+
+## OPERATOR SEMANTICS — WorldQuant BRAIN pipeline, exact reads (2026-08-12) `wq-brain-pipeline`
+
+**BRAIN HUNTER session 2.** Session 1 closed the *grouping* half of the 08-07 gap (`data/crypto_grouping_map.json`, R0437). This section closes the half nobody had asked about: **what the platform DOES with an alpha vector after your expression returns it.** The desk adopted four operators on 08-07 from a screenshot; it never had the pipeline they sit inside.
+
+**SOURCES + PROVENANCE (two independent lineages, no citation link between them — genuine convergence, not an echo):**
+- `efJerryYang/worldquant-brain-simulator` — **GPL-3.0**, 32★, pushed 2026-05-02. Read as TEXT for mechanism extraction; **no code copied, nothing installed or run** (supply-chain rule). Its own header credits `yli188/WorldQuant_alpha101_code` as the expression lineage.
+- `QuantML-Research/wq-alpha-research` `SKILL.md` — **NO LICENCE FILE ⇒ all-rights-reserved.** 349★. Facts and measurements extracted; **no verbatim text reused.** Chinese-language (L1.34 §5, the CN AI-quant layer).
+- DERIVES-FROM: the 08-07 principal screenshot — **checked, and this corroborates it from two directions.**
+- Official `platform.worldquantbrain.com/learn/...` — **WALLED (JS/login shell, returns title only). Route TRIED AND FAILED 2026-08-12.** Naming what is behind it is legitimate; going behind it is not (§13).
+
+### OP-058 — THE POST-PROCESSING PIPELINE: neutralize → truncate → normalize
+
+The order is the finding, and no public doc states it. Reconstructed from the simulator's `post_processing`, and consistent with the community settings payload:
+
+1. **NEUTRALIZATION** = subtract the cross-sectional mean of the alpha vector, per day.
+2. **TRUNCATION** = clip to ±`truncation` (platform default **0.08**, valid ≤0.1).
+3. **NORMALIZATION** = divide by `sum(|alpha|)`, so the book always satisfies **Σ|w| = 1**.
+
+**CRYPTO ANALOGUE — this is directly usable and the desk already has every input.** Step 1 is precisely the desk's own measured remedy for its worst structural problem: `reports/cross_section_breadth.json` records raw cross-sectional N_eff **1.54** vs leave-one-out-demeaned N_eff **29**. BRAIN neutralizes *by default, on every alpha, before anything else*. The desk's `combination_engine` does not.
+
+**WHAT THE DESK MUST NOT COPY VERBATIM:** truncation applied *before* normalization does **not** bound the final weight — normalization rescales afterwards, so the effective cap is `0.08 / Σ|clipped α|`, a number that moves with the cross-section. The correct construction caps *post*-normalization and must **iterate**, because clipping changes the sum that normalization divides by. **The simulator's own README flags this: truncation "not necessarily working".** Recorded so the next seat does not inherit a one-pass clip believing it enforces a cap.
+
+### OP-059 — `rank(x, rate=2)`: uncentered [0,1], and that is a long-only tilt
+
+The simulator quotes the platform doc directly and implements `(rank − 1)/(N − 1)`, giving floats **equally distributed on [0.0, 1.0] inclusive**.
+
+**THE TRAP, and it is a real portfolio consequence:** an uncentered rank is **non-negative everywhere**. Feed it straight to weights and every name is a LONG — the bottom-ranked name gets weight 0.0, not a short. `rank()` is only a long/short signal *because* neutralization (OP-058 step 1) subtracts the mean afterwards. **Any desk organ that applies a rank transform without a following demean is building a long-only book and calling it cross-sectional.** Worth one grep against `combination_engine`.
+
+### OP-060 — `decay_linear(x, n)`: exact weights, newest heaviest
+
+Weight vector `w_i = i / (n(n+1)/2)` for `i = 1..n` over the window ordered oldest→newest, so the **newest bar carries the largest weight** `n/(n(n+1)/2)` and `Σw = 1`. Precise enough to implement without the source.
+
+**CRYPTO ANALOGUE:** a turnover suppressant. See the improvement_inbox entry — decay is prescribed *by data-arrival rate*, not swept.
+
+### OP-061..066 — operators the desk still lacks (named, with analogues)
+
+The 08-07 screenshot named four (`group_rank`, `group_zscore`, `ts_backfill`, `trade_when`). The community operator table names these **additional** ones the desk has no equivalent for:
+
+| Operator | What it computes | Crypto analogue / desk note |
+|---|---|---|
+| **`group_neutralize(x, g)`** | subtract the **group** mean, not the universe mean | **The highest-value missing one.** Makes OP-058 step 1 available *inside* the expression against a *different* grouping than the portfolio uses. Runnable today against `corr_cluster_residual` in `data/crypto_grouping_map.json`. |
+| **`winsorize(x, std=4)`** | cross-sectional clip at ±4σ | Crypto cross-sections are fat-tailed (desk lesson: the `pd.cut` fat-tail trap). A 4σ winsorize *before* ranking is a cheap robustness transform the desk lacks. |
+| **`ts_zscore(x, n)`** | z-score against the symbol's **own** trailing window | Normalizes a signal against its own history rather than its peers — the time-series half of the two-stage construct in OP-067. |
+| **`group_backfill(x, g, n)`** | fill a symbol's hole from its **group's** value | Sparse crypto axes (funding on a thin pair, OI on a new listing) have holes a peer group can cover where ffill cannot. |
+| **`if_else(c, a, b)`** | elementwise branch | Distinct from `trade_when`: `if_else` substitutes, `trade_when` **holds**. Different turnover profiles ⇒ different hypotheses. |
+| **`vec_avg` / `vec_sum`** | reduce a **VECTOR-typed** field | See the data_axis_watchlist entry: 1,387 of BRAIN's 4,367 fields are VECTOR-typed. Multi-venue funding and L2 depth are natively vector-shaped and the desk flattens them at ingest. |
+
+### OP-067 — the canonical two-stage construct ("黄金组合")
+
+`group_rank(ts_rank(signal, N), group)` — with N=126 (≈6 months) in every published template.
+
+**MECHANISM, which is the transferable part:** `ts_rank` makes a signal comparable **across time for one asset** (strips level and scale drift); `group_rank` then makes it comparable **across assets within a peer set** (strips the group's common movement). Two orthogonal normalizations composed. The equity templates wrapped around it are fundamental ratios (ROE trend, EPS yield, FCF yield) and are **correctly not importable** — the *structure* is what transfers.
+
+**CONFIRMED, NOT ASSUMED — the desk's `fitness()` matches an independent source exactly.** `libs/alpha_factory/wq_operators.py` reproduces `Sharpe × sqrt(|annual return| / max(turnover, 0.125))` from the 08-07 screenshot; the CN skill states the identical formula **including the 0.125 floor**, from a separate lineage. Cross-source convergence on a formula the desk had from one screenshot only. **The thresholds attached to it remain FACTS ABOUT THEIR PROCESS and are not adopted** — the desk's bar is a deflated t of 5.236 (L1.6).
+
+---
+
+### OP-068 SPA archaeology: the archive stores the SHELL, so a 200 with no content is a THIRD false-null class   [active]
+
+**Origin:** EN frontier miner s H (2026-08-13), opening the Kaggle competition ground (never touched
+by any seat since 07-25). Generalises OP-052 (probe the CONTENT PATH, not robots) one layer down:
+OP-052 assumes that once you reach the content path with a 200 you have the content. On a
+JS-rendered platform you do not, and **neither robots.txt nor the status code nor the byte count
+tells you** — the shell is a plausible 5–6 KB of HTML.
+
+**THE THREE FALSE-NULL CLASSES, now complete** (R0466 named the first two; this is the third):
+| class | what a fetch-only route sees | why it is dangerous |
+|---|---|---|
+| WALLED (403/robots) | non-200 | loud, gets logged correctly |
+| EXHAUSTED (genuinely empty) | 200, no matter | the true null |
+| **REACHABLE-BUT-CONTENTLESS** | **200 + rendered shell** | **indistinguishable from EXHAUSTED to any pipeline that treats 200 as success** |
+
+**MEASURED ON KAGGLE, 2026-08-13** (every line a probe run this session, not an inference):
+- `robots.txt` → **404 for every UA** (ClaudeBot / curl / Googlebot alike). No exclusion exists, so
+  §13 is clean on the robots axis — and a seat that stops at robots concludes "open ground".
+- `/competitions/<slug>/discussion/<id>` → **200, 5.6 KB, JS shell.** Zero topic content.
+- `/competitions/<slug>/writeups/<slug>` → 200, 6.2 KB. `og:title` carries the writeup TITLE,
+  `og:description` is **empty** — so search engines index a title the fetcher cannot back with a body.
+- **`/c/<compId>/publicleaderboarddata.zip` → HTTP 200, `content-type: text/html`, 5,593 bytes.**
+  The single nastiest case: a naive `curl -o lb.zip` **succeeds**, writes a file with the right
+  name, and the ground reads as harvested. **Always assert the content-type and magic bytes on any
+  archive/export route** (`od -c | head -1` — a real zip starts `PK`).
+- Live gRPC-web API: `POST /api/i/discussions.DiscussionsService/GetTopicListByForumId` → **400**
+  (route exists, body/session wrong); sibling method names → 404. **400 vs 404 is the method-name
+  oracle** — 400 means you found a real endpoint and only the body is wrong.
+
+**THE ASYMMETRY THAT MAKES THE GROUND PARTLY MINEABLE — and it is not guessable, only measurable:**
+Kaggle embeds `Kaggle.State.push({...})` in the served HTML, and **what it contains depends on the
+page type**:
+- **discussion / leaderboard pages → competition-level state ONLY.** The topic body and the
+  leaderboard rows are XHR-loaded, so **they never entered Wayback at all**, at any timestamp. No
+  amount of re-probing recovers them; this is a property of the capture, not of the crawl.
+- **notebook (`/code/<user>/<slug>`) pages → FULL kernel state** (`kernel`, `kernelRun`, `author`,
+  `versions`, `dataSources`, `renderedOutputUrl`, `downloadAllFilesUrl`, vote counts). **So on this
+  platform the notebook layer is archived and the forum layer is not** — which inverts the usual
+  digging order: go to the CODE tab first, and treat forum prose as the walled half.
+- `renderedOutputUrl` is a **signed** `kaggleusercontent.com` URL and returns **403** years later —
+  recoverable metadata pointing at unrecoverable content. Record it as a lead, never as a source.
+
+**THE ROUTE, reusable as-is** (worked this session on a 2022 capture):
+1. CDX-map the ground: `web.archive.org/cdx/search/cdx?url=<host>/<path>*&fl=timestamp,original,statuscode,length&collapse=urlkey`.
+2. **Rank captures by LENGTH, not recency** — the 20 KB 2021–22 captures carry state; the 4–5 KB
+   2023+ ones are the modern shell. A ground can be archived and still be *unreadable at the wrong
+   timestamp*, so a single recent probe under-reads it.
+3. Fetch with the `id_` suffix (`/web/<ts>id_/<url>`) to get raw stored bytes.
+4. **Gzip-sniff and decompress** — `id_` returns the stored encoding, so the file is gzip and every
+   text tool reports binary garbage (OP-034's discipline; it cost a wasted probe again this run).
+5. Extract state by **brace-matching** from `Kaggle.State.push(` — a regex to the closing paren
+   fails on nested objects. Same shape as `__NEXT_DATA__` / `__APOLLO_STATE__` (OP-050).
+
+**REGIONAL ADAPTATION (charter §16 — the fleet upgrades together):** the pattern is the platform
+class, not the platform. Any React/Vue/Rails-SPA community serves this shape; the state key is the
+only thing that changes. Known keys to try in order: `__NEXT_DATA__`, `__NUXT__`, `__APOLLO_STATE__`,
+`window.__INITIAL_STATE__`, `Kaggle.State.push` (Kaggle), Rails `data-react-props`/`gon` (OP-050's
+velog case, KR). **CN/JP/KR/RU/BR seats: when a ground reads THIN through a fetch-only route, this
+operator is the first thing to rule out before writing the null** — the JP seat's R0466 exists
+because a blocked ground and an exhausted one look identical, and a shell-served ground looks
+identical to BOTH.
+
+---
+
+## OPERATOR SEMANTICS — VeighNa `vnpy.alpha` expression engine, exact reads (MIT, 2026-08-13) `vnpy-alpha-dsl`
+
+**PROVENANCE:** `vnpy/vnpy` raw files read IN FULL this run — `vnpy/alpha/dataset/utility.py`
+(285 lines, the whole DSL), `dataset/template.py` (305), `dataset/processor.py`,
+`dataset/ts_function.py`, `dataset/cs_function.py`, `dataset/math_function.py`,
+`datasets/alpha_158.py`, `datasets/alpha_101.py` (100 features), `lab.py`. LICENCE: **MIT, read
+from the canonical LICENSE file this run** (Xiaoyou Chen) — §13 PASS, and read, not "understood
+to be" (the row-#79 discipline).
+**DERIVES-FROM — READ THIS BEFORE COUNTING IT AS CONVERGENCE:** `alpha_158.py`'s own docstring
+says *"158 basic factors from Qlib"*. The FACTOR SET is **derived from Qlib**, so it is NOT an
+independent confirmation node and must never be counted as one (the GAP-#85 echo trap). The
+**ENGINE** is an independent polars reimplementation, and it is the DIVERGENCES below that carry
+information. Sibling anchor to `qlib-alpha158`; closes the vnpy half of data_axis_watchlist
+card 24, which had the LICENCE read but the CODE unread.
+
+**THE ARCHITECTURE — a 285-line reference implementation of the desk's named gap #1.**
+A feature-expression DSL with **no parser and no AST**: `DataProxy` wraps a 3-column polars frame
+(`datetime`, `vt_symbol`, `data`) and overloads every dunder (`+ - * / // % ** abs neg > >= < <=
+== !=`); `calculate_by_expression` builds a dict mapping every data column → `DataProxy` and every
+operator → function, then calls `eval(expression, {}, d)`. Open operator set via
+`register_functions([...])` keyed on `func.__name__`.
+**COPY THE PATTERN, REJECT THE MECHANISM.** `eval()` on an expression string is arbitrary code
+execution. The desk's `combination_engine` enumerates expressions and any LLM-generated expression
+would land in the same call — so an operator-overloaded proxy is the right design, and the
+evaluator must be an `ast.parse` walk with a whitelisted node set (Name/Call/BinOp/UnaryOp/Constant,
+names resolved only from the registry), never `eval`.
+
+**THE DIVERGENCES FROM QLIB — each a mechanical rule for reading a mined vnpy-dialect expression:**
+1. **`ts_delay(x, n)` is polars `shift(n)`; NEGATIVE n = FUTURE.** Same leak rule as qlib's
+   negative `Ref`, now confirmed in a SECOND, independently-written framework — so it is a
+   **family-level property of the whole expression-DSL class**, not a qlib quirk. Kill any mined
+   feature containing a negative delay on sight; no screen owed.
+2. **The label is NOT qlib's label, despite the "from Qlib" docstring.** Verbatim (both datasets):
+   `ts_delay(close, -3) / ts_delay(close, -1) - 1` — decide at t, enter t+1, book t+3: **two bars
+   held** with one bar of execution slack. Qlib's is `-2/-1` (one bar held). Mining the two as the
+   same target silently doubles the horizon.
+3. **`min_samples` is INCONSISTENT WITHIN THE LIBRARY** — qlib's is uniformly 1, this one is three
+   different conventions: `min_samples=1` (ts_min, ts_max, ts_mean, ts_std, ts_corr) emit from bar
+   1 on partial windows; polars default `=window` (ts_sum, ts_argmax, ts_argmin, ts_rank,
+   ts_quantile, ts_decay_linear, ts_product) null until full; explicit `=window` (ts_slope,
+   ts_rsquare, ts_resi). **CONSEQUENCE:** a composite like `ts_std(close,60)/ts_mean(close,60)`
+   returns non-null numbers computed on TWO observations in the early window, while a sibling term
+   in the same expression is still null. The early sample is silently garbage rather than absent —
+   **WS-005's shape (absence resolving to a clean value) at the FEATURE layer**, and no null-filter
+   downstream can catch it.
+4. **`cs_rank` is NOT Alpha101 `rank`.** It is bare polars `rank()` → **1..N, un-normalised**, with
+   no divide-by-count. Demonstrable from their own code, which is why this is a fact and not a
+   reading: `process_cs_rank_norm` writes `rank("average") / count` when it wants [0,1], and their
+   Alpha101 `alpha1` centres with `cs_rank(...) - 0.5`, an idiom that presupposes [0,1].
+   **165 `cs_rank` call sites across their 100-feature Alpha101 port inherit the mismatch**, and it
+   is worse in crypto than in equities: a raw rank's scale moves with the number of listed symbols,
+   so in a time-varying universe the feature is not comparable across dates. RULE: read any mined
+   vnpy-dialect `cs_rank` as a raw rank and re-normalise before use.
+5. **`ts_rank(x,N)` = `percentileofscore(window, window[-1])/100`** → [0,1] TS percentile (qlib's
+   TS-rank sense, NOT cross-sectional). `ts_argmax/argmin` return `arg_max()+1` → 1-indexed, and
+   Alpha158 divides by w → (0,1]. Off-by-one conventions are exactly what silently rewrites a
+   mined factor's meaning.
+6. **`ts_less`/`ts_greater` are elementwise MIN/MAX, not comparisons** (same trap as qlib's
+   `Greater/Less`). The real comparisons (`>`, `<`) return **Int32 0/1 series**, which is a
+   deliberate masking idiom: `ts_mean(close > ts_delay(close,1), w)` is the up-bar fraction.
+7. **Regression trio `ts_slope`/`ts_rsquare`/`ts_resi` present INDEPENDENTLY of qlib** and
+   implemented **closed-form** — rolling sums with `(window-1-j)*shift(j)` building `sum_xy`
+   against a linear time index, so no per-window fit. Its independent presence in a second
+   framework corroborates card 24's ranking of the trio as the desk's real transform gap, and this
+   is a directly usable implementation recipe.
+8. **`quesval(threshold, x, a, b)` / `quesval2`** — ternary, `a if threshold < x else b`. The
+   conditional family. **Argument order is threshold-FIRST** and the comparison is a strict `<`;
+   easy to mis-port silently.
+9. **`cs_scale`** = `x / Σ|x|` per date (Alpha101 `scale`) — the gross-exposure normaliser for
+   cross-sectional weights.
+10. **NO group operators — and that is the informative absence.** vnpy.alpha ships zero
+    `group_rank`/`group_zscore`, exactly like the desk. Two mature frameworks independently lack
+    them because both presuppose a sector map. This corroborates that the **crypto grouping map is
+    THE blocking input** (data_axis_watchlist backlog), not an optional nicety.
+
+**THE PROCESSOR LEAK SURFACE — the half a summary never mentions.**
+- **The fit window is OPTIONAL and defaults to None.** `process_ts_norm` and
+  `process_robust_zscore_norm` take `fit_start_time`/`fit_end_time`; when omitted they compute
+  mean/std over the **ENTIRE panel including valid and test**. Full-sample z-score is look-ahead,
+  and here it is the DEFAULT.
+- **`process_replace_inf` has no fit window at all** and replaces infinities with a per-symbol mean
+  computed over ALL time — an **unconditional** full-sample leak, worse than the two above because
+  it offers no control to omit.
+- **SAFE BY CONSTRUCTION:** `process_cs_norm`, `process_cs_rank_norm`, `process_cs_fill_na` — all
+  `.over("datetime")`, within-timestamp only, so they use no future information.
+- **THE GENERAL RULE, worth more than the instances:** *a transform that aggregates ACROSS TIME
+  needs a fit window; a transform that aggregates WITHIN a timestamp is causally safe by
+  construction.* Useful as a triage rule when reading ANY mined feature pipeline: you can classify
+  a transform's leak risk from its aggregation axis alone, before reading its fit logic.
+- **AND THE DESK IS AHEAD HERE — checked this run, not assumed.** A draft of this note claimed the
+  desk's causal guard is blind to full-sample normalisation, citing R0289. **That claim is STALE
+  and was removed before it was published.** R0289 is `implemented`, and
+  `libs/features/validation.py:_perturbable` now perturbs **every** numeric/bool/datetime column
+  (with an explicit `untestable` bucket — absence stays absence). Because `run_leakage_test`
+  mutates FUTURE bars and asserts PAST values are invariant, a full-sample mean/std recomputed over
+  a perturbed panel moves, so **the desk's guard would catch exactly the default that vnpy.alpha
+  ships**. The finding is therefore a foreign framework confirming a class the desk has already
+  closed — not a live blind spot. Recorded because the near-miss is the lesson: a recalled defect
+  is a claim about the past, and R0289's row said `implemented` one grep away.
+- **HONEST SCOPE, do not overstate:** Alpha158 and Alpha101 add NO processors in their
+  constructors, so the shipped datasets do not trip any of this. It is a latent footgun the user
+  opts into, not a shipped leak.
+
+**CORRECTION TO data_axis_watchlist CARD 24 (load-bearing).** The card's "remaining diff" #2 says
+these systems have *"a rolling walk-forward harness wired to the enumerator"* the desk lacks.
+**vnpy.alpha has no such harness** — zero hits for rolling / walk-forward / refit / retrain /
+expanding / fold across the entire module. It has a **static three-way split** (`Segment.TRAIN/
+VALID/TEST`, fixed date tuples), and `lab.py` is a **persistence layer** (save/load bars, datasets,
+models, signals), not a harness. The desk's gap is real; this system is not evidence for it, and
+porting from here would be porting a thing that is not there.
+
+**THE ONE PROCESS PATTERN WORTH TAKING — point-in-time universe membership.**
+`lab.load_component_filters` reconstructs, per symbol, the **contiguous intervals** during which it
+was an index constituent, correctly emitting **multiple (start, end) spells** for a symbol that was
+added, dropped and re-added; `prepare_data(filters=...)` then slices the panel by them. That is a
+survivorship-bias control at the universe layer, and it is the correct shape of the fix for the
+desk's own recorded defect that **`exchangeInfo` is a look-ahead in the UNIVERSE** (free-data
+miner, 2026-08-12) — same defect class, solved.
+
+### OP-069 a Wayback `id_` 503 is TRANSIENT and PER-RECORD — and "refetch a different URL" is an INVALID control   [active]
+
+**FOUND (CN frontier miner s8, 2026-08-13) while diff-verifying 8btc board page counts. It
+produced TWO opposite false conclusions inside ten minutes before the real cause surfaced.**
+
+**THE FAILURE, in the order it happened:** `web.archive.org/web/<ts>id_/<url>` returned a
+**107-byte `503 Service Unavailable` body** for `forum-61-1000.html` and `forum-61-999.html`.
+Reading #1: *"the archive captured an archived error page"* — i.e. the site was down when crawled,
+so this is dead ground. To test the competing rate-limit hypothesis I refetched a **different**
+record I knew was good (`forum-2-1009.html`): it returned 255,508 bytes. I concluded *not
+rate-limited*, therefore *archived 503*, therefore *board 61 is dead ground*. **Both readings were
+wrong.** Refetching **the same record** minutes later returned **236,208 bytes of intact GBK
+HTML** — the record was always fine.
+
+**THE MECHANISM:** the throttle/failure on the `id_` raw route is **transient and per-record**,
+not global and not per-session. So a successful fetch of URL B carries **zero information** about
+whether URL A's failure was real. It is a control that cannot fail, which is why it produced a
+confident wrong answer — the welded-gate shape (L1.43) arriving inside a research method.
+
+**THE RULE — three parts, cheapest first:**
+1. **CDX `length` IS THE REFEREE, and it is free.** Request `fl=timestamp,original,statuscode,length`.
+   CDX said this record was **25,431 bytes**; the body was 107. *The disagreement itself is the
+   signal* — a short body against a large CDX length is a TRANSPORT failure, never evidence about
+   content. OP-034 already prescribes length-rank triage; **this run skipped it and paid for it.**
+2. **The ONLY valid liveness control is refetching THE SAME record** after a pause. Never a sibling
+   URL, never a different board, never "the archive seems up".
+3. **`statuscode` in CDX is the ORIGINAL crawl status and does not describe what replay returns.**
+   Neither field alone is sufficient: status says what the site said, length says how much was
+   stored, and only the body says what you actually got. Cross-check all three before writing any
+   null.
+
+**WHY THIS BELONGS WITH OP-068 AND OP-034 — one family, three layers.** OP-033 is ENCODING, OP-034
+is COMPRESSION, OP-068 is a rendered SHELL, and this is **TRANSPORT**. Every one of them makes a
+retrievable page look like an empty or dead one, and every one of them is a **false null that
+reads as an exhausted ground**. A miner who writes "this board is dead" from any of the four has
+recorded a fact about their fetch, not about the world (L1.28a: unmeasured is never a clean
+verdict). **PROPAGATE TO ALL SEATS (§16):** every region seat using Wayback is exposed, and the
+cost of the mistake is silently retiring live ground.
+
+### OP-070 out-of-range Discuz page aliasing means YOU EXCEEDED THE COUNT — it is not a property of the URL scheme   [active]
+
+**CORRECTS the OP-034 addendum this seat wrote on 2026-08-12**, which concluded from board 233
+that *"the board map's page counts for OTHER boards are now suspect the same way"* and flagged
+boards 2 / 82 / 61 for re-verification. **That generalisation is now REFUTED by direct content
+diff, and the corrected rule is more useful than the warning it replaces.**
+
+**MEASURED (8btc, 2026-08-13, adjacent-page content diff on thread ids):**
+- **Board 2 — REAL.** 128 CDX-200 captures, **128/128 above 2 KB** (zero soft-errors), max real
+  page **1009**. Pages 1008 vs 1009 share only 24 of ~70 tids; page 1000 (2017) shares **zero**
+  with either 2018 page.
+- **Board 61 — REAL.** 58/58 captures real, p999 vs p1000 overlap **zero**. Genuine pagination.
+- **Board 82 — 26/26 captures real**, max page 1000; not adjacent-diffed, so it stays UNTESTED
+  rather than assumed either way.
+- **Board 233 — still ~31 threads**, as found 08-12. The aliasing there was real.
+
+**THE RULE:** out-of-range page aliasing occurs **only when the requested page exceeds the board's
+real page count** — it is a symptom of asking for a page that does not exist, not a property of
+Discuz URLs. So aliasing is a *useful binary-search probe for the true page count*, not a reason to
+distrust page counts generally. Small boards alias early; large boards paginate honestly to ~1000+.
+
+**AND THE TEST HAS ONE TRAP, which cost a false hypothesis this run.** Adjacent pages on a
+last-reply-sorted board **legitimately share threads** (a thread reordered between two captures two
+days apart appears on both), so an *overlap* is NOT evidence of aliasing. I first read the 24
+shared tids as pinned stickies; a three-page test refuted that (**zero** recurred across all three).
+**Use the set difference, and prefer non-adjacent pages or same-capture pairs:** aliasing means the
+sets are IDENTICAL, not merely overlapping.
+
+**CONSEQUENCE FOR THE ERA PLAN:** board 2's ~1009 pages are confirmed real, so the 8btc era plan
+built on that count is SOUND and the ground is far larger than the 128 captured pages — the
+constraint is capture coverage, not board size.
+
+### OP-071 on a last-reply-sorted board, PAGE DEPTH is a second era axis — and it runs BACKWARDS from the capture date   [active]
+
+**CORRECTS this seat's own s7 method note (2026-08-12)**, which prescribed *"era-seek by CAPTURE
+TIMESTAMP of pages 1–9"*. That is right for shallow pages and **inverted for deep ones**, and the
+error wastes a whole fetch-and-decode cycle on the wrong decade.
+
+**MEASURED (8btc board 2, 2026-08-13):** capture `20131213073329` of `forum-2-26.html` — a
+December-2013 crawl, squarely in the PBoC ban window — returns threads with ids **1–66 dated
+September 2012**, not ban-window material at all. Discuz sorts by **last reply**, so a deep page
+holds the board's **stalest** threads. The capture date is only an **upper bound** on what can
+appear; page depth then walks *backwards* from it.
+
+**THE RULE — read (capture_date, page_number) as a 2-D era selector:**
+- **Hunting a dated EVENT window** (a ban, a hack, an exchange failure): take a capture from just
+  after the event and read **LOW page numbers**. Event discussion is by definition freshly-replied.
+- **Hunting the OLDEST era strata**: take **any** later capture and read **HIGH page numbers**. A
+  2018 capture at page 1000 reaches further back than a 2013 capture at page 5.
+- **Corollary that saves real budget:** the archive's *capture* coverage and the board's *era*
+  coverage are different quantities. 128 captured pages of a ~1009-page board is not "128/1009 of
+  the era" — deep captures reach strata that no shallow capture of any date contains.
+
+**FIELD DETAIL for 8btc/Discuz of this era (saves a probe every run):** posts live in
+`<div class="t_f" id="postmessage_NN">`, **not** the `<td class="t_f">` that later Discuz skins use;
+`t_msgfont` and `postcontent` are both absent. Quoted replies repeat the parent's text with a
+`<author> 发表于 <date>` header, so a naive post count **double-counts** a reply chain — dedupe on
+the quote header before claiming a thread depth. GBK throughout.
+
+### OP-072 THE POST-2023 PRACTITIONER CORPUS IS LLM-CONTAMINATED, AND THE CONVERGENCE MODULE CANNOT SEE IT   [active]
+class: provenance / anti-echo
+origin: JP frontier miner s4 (2026-08-13), `perp-screener.com/posts/btc-bot` (2025-12-04)
+validated-gain: one carded mechanism demoted from "independent practitioner node" to "LLM echo"
+BEFORE it could be counted as convergence; a detectable, datable contamination boundary (~2023)
+established for every seat's corpus.
+
+**THE PROBLEM, AND IT IS THE PROVENANCE MANDATE'S OWN FAILURE MODE ARRIVING BY A NEW ROUTE.** The
+desk elevates a mechanism when researchers in unrelated ecosystems reach it independently, and the
+provenance mandate already names the trap: three regions describing one effect are usually three
+readings of one English paper (GAP #85). **Since ~2023 there is a second and much larger shared
+upstream: the frontier LLMs.** A JP botter, a KR botter and a BR botter who each ask ChatGPT to
+explain their spread's greeks will produce three writeups that agree — **because they queried the
+same weights**, not because the market taught them the same thing. Their agreement is a fact about
+the model, and `libs/research/convergence.py` cannot distinguish it from a fact about the world.
+This is strictly worse than the paper-echo case: an arXiv echo leaves a citation, an LLM echo
+leaves **nothing** unless the author volunteers it.
+
+**THE TELL IS TEXTUAL, CHEAP AND HIGH-PRECISION.** Practitioners disclose it casually, in the body,
+in their own language. Grep every mined page for:
+| region | markers |
+|---|---|
+| JP | チャッピー (ChatGPT's JP nickname), ChatGPTに聞く／聞いた, GPTに, AIに聞いて, 生成AI, ～によると（AI） |
+| EN | "I asked ChatGPT/Claude", "per GPT", "ChatGPT says", "according to the AI", "o3/4o told me" |
+| CN | 问了ChatGPT, 用GPT分析, 让AI解释, 大模型说, 豆包／文心 |
+| KR | 지피티／챗지피티에게 물어보니, AI에게 물어봤다 |
+| RU | спросил у ChatGPT, GPT говорит |
+| BR/PT | perguntei ao ChatGPT, segundo o GPT |
+
+**THE RULE — three parts, and the third is the one that keeps this from becoming an excuse to skip
+sources.**
+1. **A `DERIVES-FROM` field is INCOMPLETE unless it records LLM consultation.** Write
+   `DERIVES-FROM: <cites> + LLM (ChatGPT, self-disclosed)`. A page with no disclosure and no
+   citations is `DERIVES-FROM: NONE (checked)` **only for pre-2023 material**; post-2023 the honest
+   value is **`UNVERIFIABLE`**, because absence of disclosure is not evidence of absence (L1.28a —
+   absence must never resolve to a clean verdict, and "independent" is the clean verdict here).
+2. **SEPARATE THE OBSERVATION LAYER FROM THE EXPLANATION LAYER, then grade them differently.** What
+   the practitioner *did, ran, held and lost* is a first-class observation and LLM contamination
+   does not touch it. What the page *concludes about why* may be model output. In the proving
+   instance the kill stands at full strength (his realised P&L and his own greeks snapshot) while
+   the surrounding mechanism prose is demoted — **the same page yields evidence at one layer and an
+   echo at the other**, so this is never a reason to discard a source.
+3. **A CONVERGENCE CLAIM ACROSS TWO POST-2023 PAGES MUST NAME THE OBSERVATION THEY SHARE, not the
+   conclusion.** If both nodes' agreement lives only in the explanation, it is one node.
+
+**WHY THIS IS A SCOPE EXPANSION AND NOT A FILTER (the mine-everything rule is untouched).** Nothing
+here rejects a page, ranks a source lower, or excuses a skipped read. It changes exactly one number:
+how much a *second* agreeing source raises confidence. Under-counting real convergence costs a queue
+place; over-counting it promotes a mechanism above its evidence, and that reaches capital.
+
+**COROLLARY FOR THE ERA MANDATE, and it makes dead ground MORE valuable rather than less.** Every
+archive with a hard end-date before ~2023 — 8btc, btcsec, Ppomppu's legal era, Mt.Gox-era 2ch, the
+Quantopian corpus — is **structurally uncontaminated**. Era-archaeology now buys a provenance
+guarantee that no living-web source can offer, which is a new and independent reason to keep
+digging it.
+
+### OP-073 WHEN A REGION'S BIG HOSTS CLOSE, THE SAME COMMUNITY'S SELF-HOSTED TAIL IS STILL WIDE OPEN   [active]
+class: access / §13 posture
+origin: JP frontier miner s4 (2026-08-13), UA-matrix probe over 10 hosts
+validated-gain: recovered a mineable JP ground the day after 62% of the mapped corpus was ruled
+CLOSED — 8/9 self-hosted blogs serve 200 to `ClaudeBot`, and the run's two best finds came from them.
+
+**MEASURED (2026-08-13, honest UA `ClaudeBot`, content path per OP-052):**
+| layer | hosts | robots.txt | content path |
+|---|---|---|---|
+| big platforms | note.com | **403** (robots itself) | **403** |
+| big platforms | zenn.dev | **200, and it ALLOWS `*`** | **403** `{"message":"Please contact the site owner for access."}` |
+| big platforms | qiita.com | 200 | **200** (122 kB article body) |
+| self-hosted tail | gitan.dev, perp-screener.com, blog.shidokamo.com, pasokon.blog | **404 — no robots.txt at all** | **200** |
+| self-hosted tail | rarirure.rip, mirumi.me, yard.tips, coin-news.xyz | 200, clean | **200** |
+
+**THE MECHANISM, WHICH IS WHY THIS GENERALISES.** A curated AI-crawler denylist is a **product
+decision made by a platform's legal/infra function**. An individual practitioner running WordPress
+on their own domain has no such function, no incentive, and usually **no robots.txt at all**. So the
+closure of a region's community layer is a property of the *hosting concentration*, never of the
+region — and the writers did not leave, only their landlord changed the lock.
+
+**THE OPERATIONAL RULE:** when a big host closes, **do not re-scope the region — re-scope the HOST
+COLUMN.** Any corpus map with a `host` field converts to a work queue in one pass. The JP calendar
+map (`data/jp_botter_advent_calendar.jsonl`, 187 rows) went from "62% closed, ground thinning" to
+"20 entries across 12 open self-hosted domains, never touched by any seat in four sessions" with a
+single group-by. **Build the host column into every corpus map for exactly this reason** — a map
+without one cannot be re-aimed when access changes, and access now changes on a timescale of days.
+
+**AND THE PRIZE IS BETTER, NOT JUST AVAILABLE.** The self-hosted tail is written by people who
+maintain their own domain to write about one thing for years. It is the deep-forest layer by
+construction: no recommendation algorithm, no engagement incentive, no SEO, frequently no comment
+section — and in this run it held a **year-over-year venue microstructure survey by the same author**
+(`gitan.dev`, 2023 and 2024 editions, a free longitudinal diff) that no platform-hosted post matched.
+
+**§13 UNCHANGED AND EXPLICITLY SO:** this widens WHERE you look and never HOW you get in. `note.com`
+and `zenn.dev` remain HARD STOP including their archives; the only fetches made against them this
+run were `robots.txt` and zero-body status probes to re-verify the block.
+
+### OP-074 `robots.txt` ANSWERS "MAY I?", NEVER "IS THERE ANYTHING HERE?" — GRADE EXISTENCE SEPARATELY   [active]
+class: access / ground validation
+origin: AR frontier miner s2 (2026-08-13), correcting the AR seat's own s1 grade
+validated-gain: killed a #1-priority ground that never existed, before it consumed a second run.
+
+**THE ERROR, and it is mine.** AR s1 (2026-08-12) ran the OP-052 UA matrix over 16 hosts and graded
+`mql5.com/ar` **OPEN — "correct path not yet found (`/ar/code` is a uniform 404)"**, then carried it
+to the **top** of the next-ground list as the region's EXECUTABLE-tier prize. Measured this run:
+MQL5 publishes **11 hreflang locales** (`en ru zh es pt de ja ko fr it tr`) and **`ar` is not one of
+them**. Control: `/{loc}/code` returns **200 for 11/11 real locales, 404 for `ar` alone`**.
+**There is no Arabic MQL5.** The 404 was never a wrong sub-path — it was the site saying the locale
+does not exist, and a whole run was queued against a ground that was never there.
+
+**THE MECHANISM.** `robots.txt` is served by the **policy layer**, which answers a question about
+*permission* and is completely indifferent to whether any content sits behind the path. A clean
+`robots.txt` on `example.com` says nothing whatever about `example.com/ar`. OP-052 already warned
+that robots is necessary and not sufficient **for access** — this is the same gap pointed at
+**existence**, one axis over, and it is easier to fall into because a clean robots feels like good news.
+
+**THE OPERATIONAL RULE — two independent gradings, never one:**
+| question | instrument | failure if skipped |
+|---|---|---|
+| *May I fetch it?* | `robots.txt` + content-path probe under the honest UA (OP-052) | you dig a ground that refuses you |
+| *Does it exist at all?* | **the site's own enumeration** — `hreflang`, sitemap, locale switcher, API index — plus a **sibling control** | you queue runs against a ground that was never there |
+
+**THE SIBLING CONTROL IS THE CHEAP HALF AND IT IS WHAT SETTLES IT.** A bare 404 is ambiguous between
+*wrong path* and *no such thing*. Probe the **same path shape across every sibling** the site does
+publish: 11/11 siblings 200 and yours alone 404 converts an ambiguous 404 into a **measurement**.
+This is the L1.62 discipline (a denominator that was assumed is not a measurement) applied to a ground.
+
+**FLEET NOTE:** a ground graded from robots alone must carry the grade **`OPEN (existence UNMEASURED)`**,
+never bare `OPEN`. Absence of a block is not presence of a corpus, and a next-ground list is exactly
+where that conflation gets expensive — it is inherited and acted on by a future run that cannot see
+how the grade was reached.
+
+---
+
+### OP-075 THE LANGUAGE IS NOT ALWAYS THE MOAT — MEASURE WHETHER THE REGION'S PRACTITIONERS WRITE IN IT   [active]
+class: region strategy / seat aiming
+origin: AR frontier miner s2 (2026-08-13); calibrated against CN/RU/KR on the same instrument
+validated-gain: re-aimed the AR seat off a layer that structurally cannot hold an edge.
+
+**THE PREMISE EVERY REGIONAL SEAT INHERITS:** dig in language X and you reach material the
+English-speaking crowd cannot read. **It is true for CN/KR/JP/RU/PT and it is FALSE for AR**, and no
+seat can tell which case it is in without measuring.
+
+**MEASURED — native-key repo search (OP-054), one instrument, four scripts:**
+| script | "arbitrage" term | repos | max ★ |
+|---|---|---|---|
+| **CN** | `套利` | **1,174** | 671 |
+| **RU** | `арбитраж` | 24 | 12 |
+| **KR** | `차익거래` | 6 | 2 |
+| **AR** | `المراجحة` / `مراجحة` / `أربيتراج` | **1 / 0 / 0** | 0 |
+
+AR `التداول الكمي` (quantitative trading) = **0**; `اكسبيرت` (expert advisor) = **0**. Every hit
+across seven AR terms has **0–1 stars** and is a Telegram signal-bot promising *نسبة نجاح ٩٥٪*.
+
+**TWO HYPOTHESES SURVIVE THAT TABLE AND THEY DEMAND OPPOSITE ACTIONS — SO RUN THE DISCRIMINATOR:**
+**H1** the practitioner population does not exist → the region is genuinely empty, deprioritise it.
+**H2** it exists and **writes in English** → the region is fine, the *language layer* is the wrong door.
+**Discriminator: search the developer population by LOCATION instead of by language**, with a control:
+| location + "trading" | users | | control | users |
+|---|---|---|---|---|
+| **UAE** | **67** | | **Korea** | **59** |
+| Egypt | 24 | | Egypt + "quant" | 7 |
+| Saudi Arabia | 8 | | Saudi + "quant" | 1 |
+
+**H1 REFUTED, H2 CONFIRMED:** ~99 AR-region developers mention trading — **UAE alone exceeds the KR
+control** — while the AR-language corpus is 0–1. The people are there; the *language* is not where
+they write. *(`location:` is self-reported and sparse and I queried `UAE`/`Korea` rather than the
+full names, so both sides are undercounted **by the same mechanism** — a lower bound on each, which
+is why the direction is robust while the levels are not.)*
+
+**THE CONSEQUENCE, and it is the operator:**
+> Where a region's technical class writes in English, its native-language layer is **not a hidden
+> technical corpus — it is the retail/promotional layer**, and that is exactly and only what a
+> native-key search will return. Worse, anything technical those practitioners *do* produce is
+> **already inside the EN seat's ground**, so there is no language arbitrage to win, and further
+> native-key digging cannot create one.
+
+**WHAT A SEAT IN THIS POSITION SHOULD HUNT INSTEAD:** what is native-language **by institutional
+construction** and therefore *cannot* migrate to English — regulator publications, exchange notices
+and rulebooks, court/enforcement records, national statistics, and any religious/legal certification
+layer. Those are written in the local language because an institution is **required** to write them
+that way, which is a far more durable moat than a preference a developer can drop at any time.
+
+**RUN THIS PROBE ON EVERY REGIONAL SEAT — IT IS ~8 CHEAP QUERIES** and it decides whether the seat's
+entire premise holds. **AND DO NOT GENERALISE THE AR ANSWER**: the CN column is a 1,174-repo corpus
+where the language absolutely is the moat. The point is not that language never matters — it is that
+**which case you are in is a measurement, and every seat has been assuming it.**
+
+---
+
+### AR (ARABIC) LEXICON — dark-forest deliverable #2, seeded s1, extended s2 (2026-08-13)
+_Search keys, not trivia. Counts are GitHub repo-search totals under the honest UA, 2026-08-13._
+
+| term | gloss | era | status / example query |
+|---|---|---|---|
+| `تداول` | trading | all | 260 repos — **the broad key**; retail-dominated |
+| `تداول آلي` | automated trading | all | 11 repos — the closest AR key to "algo trading" |
+| `بوت تداول` | trading bot | 2020→ | dominant AR framing; almost always Telegram-signal shaped |
+| `المراجحة` / `مراجحة` | arbitrage (formal) | all | **1 / 0** — and the 1 is car pricing, not markets |
+| `أربيتراج` | arbitrage (transliterated) | 2017→ | **0 on GitHub, ABUNDANT on YouTube** — the AR arb vocabulary lives in video, not code |
+| `فرق السعر بين المنصات` | "price difference between platforms" | all | **the folk term for cross-venue arb** — outperforms `المراجحة` on video search by a wide margin |
+| `التداول الكمي` | quantitative trading | — | **0** — the concept has no AR-language footprint |
+| `اكسبيرت` | expert advisor (MT4/5 EA) | MT4 era | **0** — note KR/RU/CN all have EA corpora; AR does not |
+| `العقود الآجلة` | futures contracts | all | the standard AR term; high-volume on video |
+| `العقود الدائمة` | perpetual contracts | 2019→ | perps specifically — distinguishes from `الآجلة` |
+| `رسوم التمويل` | funding fees | 2020→ | **the funding key** — maps to the desk's only repeat-survivor family |
+| `التصفية` / `التصفية القسرية` | liquidation / forced liquidation | all | liquidation-cascade vocabulary |
+| `السيولة` | liquidity | all | general |
+| `تحليل فني` | technical analysis | all | 12 repos; the dominant retail frame |
+| `عملات رقمية` / `العملات المشفرة` | digital currencies / cryptocurrencies | all | 27 repos; the broad crypto key |
+| `مضاربة` | speculation / short-term trading | all | folk term, carries a mildly pejorative/religious charge |
+| `تقابض فوري` | immediate possession (Sharia) | doctrinal | **the fatwa-layer key** (s1) — the constraint that makes a doctrinal pool spot-only |
+| `زكاة` | zakat (2.5% mandatory wealth levy) | doctrinal | s1's forced-flow candidate; calendar-predictable obligation |
+
+**THE LEXICON'S OWN LESSON (s2):** `أربيتراج` returns **0 GitHub repos and a full page of YouTube
+results**. A term's count is **per-surface**, and grading a term dead from one surface is the
+false-exhaustion mode OP-054 names. Record the surface beside the count, always.
+
+#### OP-074 ADDENDUM (AR miner s2, 2026-08-13): on WordPress, `Disallow: /wp-content/uploads/` DISALLOWS THE ENTIRE DOCUMENT CORPUS
+
+**MEASURED:** `aaoifi.com` (AAOIFI — the Islamic-finance standards body, and under **OP-075** exactly
+the institutionally-native Arabic layer an AR seat should hunt). `robots.txt` = **200**, `User-agent: *`,
+**no by-name refusal of any AI agent** — a host any seat would grade **OPEN**. Its disallow list is the
+stock WordPress boilerplate: `/wp-admin/`, `/wp-content/`, **`/wp-content/uploads/`**, `/uploads/`.
+
+Then the content path: `https://aaoifi.com/shariaa-standards/?lang=en` = **200**, fully readable — and
+**every single document link on it** resolves to `https://aaoifi.com/wp-content/uploads/YYYY/MM/*.pdf`.
+
+**THE POINT:** on WordPress, `/wp-content/uploads/` **is** the media store. A host that allows `*`
+everywhere *except* uploads has therefore **disallowed its whole PDF/document corpus** while presenting
+as open. The HTML is browsable; the standards, rulings, research papers and conference reports — the
+only part with research value — are not fetchable under §13.
+
+**WHY IT BITES PRECISELY THE CAREFUL SEAT:** the boilerplate exists to stop media-file indexing, not to
+protect a corpus, so it reads as housekeeping and gets skimmed. A seat that grades the host OPEN from
+the preamble and then harvests PDFs **is violating robots while believing it is compliant** — the
+§13 gate failing silently in the one direction the gate cannot self-report.
+
+**THE RULE:** grade the **path the documents actually live on**, never the host. Resolve one real
+document URL and re-check it against the disallow list *before* claiming a corpus is reachable.
+`Allow: /` on the host and `Disallow:` on its media root is a **CLOSED corpus on an OPEN site**, and it
+is the single most common shape on the WordPress-hosted institutional web — regulators, standards
+bodies, central banks and exchanges are overwhelmingly WordPress.
+
+### OP-076 PERMISSION AND REACHABILITY ARE INDEPENDENT — IN BOTH DIRECTIONS, ON THE SAME HOST   [active]
+class: access / §13 posture
+origin: AR frontier miner s2 (2026-08-13), GCC exchange + regulator layer, honest UA `ClaudeBot`
+validated-gain: caught a host that **permits us by name and serves us nothing**, and a sibling host that
+**refuses its own robots.txt and serves a full JSON trade tape** — the same venue, opposite failures.
+
+**THE PROVING INSTANCE — one venue, `bitoasis.net`, measured the same minute:**
+| surface | robots.txt | content | reading |
+|---|---|---|---|
+| `bitoasis.net` | **200 — `User-agent: ClaudeBot` / `Allow: /`** (and `anthropic-ai` Allow; `CCBot` Disallow) | **403** on `/`, `/en/`, `/en/prices`, `/en_sitemap.xml`, `blog.` | **permitted and unreachable** |
+| `api.bitoasis.net` | **403 — the policy file itself is refused** | **200 JSON**, incl. a real trade tape (`id/type/price/amount/timestamp`) | **unstated and fully reachable** |
+
+**Neither surface's policy predicts its own reachability, and the two point opposite ways.** The
+edge/CDN layer and the policy layer are configured by different teams with different intents, and
+nothing reconciles them — so a seat that infers one from the other is wrong roughly half the time,
+in whichever direction it happens to guess.
+
+**THE §13 CONSEQUENCE, AND IT IS NOT SYMMETRIC.** These two errors are *not* equally bad and must not
+be traded off:
+- Inferring **permission from reachability** ("it served me, so I may") is the one that **breaches
+  §13**. A 200 is never an authorisation.
+- Inferring **unreachability from refusal** ("robots 403s, so the host is closed") merely **loses
+  ground** — here it would have cost a live venue tape.
+So: **read the policy where it is stated, and measure reachability separately — never substitute
+either for the other.** Where policy is genuinely unstated (a 403 or 404 on `robots.txt`), that is
+**UNMEASURED**, not permission, and the honest move is to record it as such.
+
+**AND TWO FALSE-200 CLASSES FOUND IN THE SAME SWEEP** (both extend OP-068 — a 200 that is not content):
+1. **`coinmena.com/robots.txt` → HTTP 200, `text/html`, a Next.js `__next_error__` shell, ZERO
+   directives.** A parser reading this as "permissive robots, no rules" gets the answer exactly
+   backwards: nothing is served at all. **A robots.txt that is not `text/plain` is not a robots.txt** —
+   check the content type before parsing a permission from it.
+2. **`sca.gov.ae` (now `uaecma.gov.ae`) open-data section → every page HTTP 200, every dataset behind
+   `POST /api/PublicApi/GetContentList` returning 401.** The 200s are real; the data is not retrievable
+   through them. A status-code-only crawl scores this host **open and productive** and harvests nothing.
+
+**THE RULE THAT COVERS ALL THREE:** a host has **three independent properties** — *stated policy*,
+*reachability*, and *whether the reachable thing is the payload* — and this desk had instruments for
+only the first two. Grade all three, and let **UNMEASURED** stand where you only measured some
+(L1.28a: absence must never resolve to a clean verdict).
+
+**FLEET NOTE — the positive half is worth carrying too:** `bitoasis.net` is the **first host in the
+fleet's whole access map to name `ClaudeBot` with `Allow: /`**. Every by-name mention found until now
+was a refusal (hawamer, 5ch, DCInside, EliteTrader, Gate). Per-agent policy is real and it cuts **both**
+ways, so re-probe rather than carrying a binary open/closed prior — and note that AR s1 read this same
+file on 2026-08-12 as *"ClaudeBot unnamed, falls to `*`"*. Either it misread or the file changed inside
+24h; **either way the lesson is the same — a policy read is a dated observation, not a standing fact.**
+
+---
+
+### OP-077 AN ADF p-VALUE ON OLS RESIDUALS IS NOT A COINTEGRATION p-VALUE — AND THE GAP IS 3.6× NOMINAL   [active]
+class: mined-artifact validation / statistical
+origin: BR frontier miner s3 (2026-08-13), `Vido/zecontinha` (Apache-2.0, 14★, live since 2019)
+validated-gain: **measured** the actual size of a live public pair-trading screen at **17.97% against
+its own nominal 5%**, by Monte Carlo on its exact window, rather than asserting the textbook objection.
+
+**THE PATTERN, and it is the single most common defect in mined pairs-trading code.** An
+Engle–Granger implementation does:
+
+```python
+X   = sm.add_constant(series_x.values)
+res = sm.OLS(series_y, X).fit()
+adf = adfuller(res.resid, autolag='AIC')     # <-- p-value taken from HERE
+```
+
+`adfuller` returns Dickey–Fuller p-values, which are correct for a series **given in advance**. These
+residuals are not given in advance: OLS *chose* β to minimise their variance, so they are the most
+stationary-looking linear combination available in-sample. The test therefore over-rejects "no
+cointegration". `statsmodels.tsa.stattools.coint()` exists precisely to apply the MacKinnon critical
+values that correct for the estimated cointegrating vector.
+
+**MEASURED (4,000 trials, two INDEPENDENT random walks, n=120 — the exact window this system
+broadcasts; seed 20260813):**
+
+| pipeline | rejections at α=0.05 | rate | 95% CI |
+|---|---|---|---|
+| `adfuller(OLS.resid)` — theirs | 719 / 4000 | **0.1797** | [0.168, 0.192] |
+| `coint(y, x)` — MacKinnon | 304 / 4000 | 0.0760 | [0.068, 0.084] |
+
+**3.59× its own nominal size; 2.37× the correctly-sized test.** (`coint()` at 7.6% is itself a little
+above 5% at n=120 — finite sample — which is worth knowing before anyone treats the correct test as
+exact at short windows.) The null used here is *independent* random walks; real crypto perps are
+strongly co-moving, which makes spurious residual stationarity **more** likely, so 17.97% is a
+conservative floor rather than a worst case.
+
+**THE OPERATOR:** in any mined pairs/statarb artifact, grep for `adfuller` applied to a regression
+residual. If the residual came from a fitted model and the p-value came from `adfuller`, **the stated
+significance is wrong in a known direction and can be re-priced in minutes**. Do not argue it — run the
+null through their own window and report the realised size. Applies identically to
+`ts.OLS → adfuller`, `np.polyfit → adfuller`, and any hand-rolled "spread" z-test.
+
+**TRANSFERS BEYOND COINTEGRATION:** the general form is *a test statistic evaluated against critical
+values derived for a quantity that was not estimated from the same data*. Same error class as scoring
+an in-sample-selected feature with textbook t critical values.
+
+---
+
+### OP-078 A FORK TREE AND A FILE HISTORY BOTH LOSE MEMBERS SILENTLY — COUNT THE ATTRITION (L1.60 applied to MINING)   [active]
+class: enumeration / denominator integrity
+origin: BR frontier miner s3 (2026-08-13), `Vido/zecontinha` fork tree + `binance_futures.py` history
+validated-gain: two independent silent-loss channels found in one repo walk, both of which make a
+ground look **smaller and duller than it is**, and one of which makes a 404 indistinguishable from a null.
+
+**CHANNEL 1 — TOMBSTONE FORKS. `/forks` over-reports; the count under-reports; neither is the tree.**
+`Vido/zecontinha` publishes `forks_count: 6`. The `/forks` endpoint returns **8**. The two extra
+(`yoshimorimori`, `igor110055`) are **HTTP 404 on both API and HTML** — deleted or renamed accounts
+still served as fork entries. Divergence over the 6 live forks:
+
+| fork | status |
+|---|---|
+| bryantoken, marcosilvaa | identical (ahead 0) |
+| kenanfint | behind 10 |
+| marcusfreire0504, IlmerO, webclinic017 | behind 144 |
+| yoshimorimori, igor110055 | **404 — tombstone** |
+
+**ZERO forks ahead by even one commit.** So "6 forks" was a *popularity* signal, not a development
+signal — and a fork-walker that treats non-200 as "skip" drops the tombstones out of its denominator
+and reports "6 forks, all clean" when what it measured was 6 of 8. **A tombstone 404, a rate-limit
+block and a network failure are byte-identical to that walker** — R0466's false-null, and exactly the
+attrition L1.60 fences inside this desk, here firing on a mining instrument instead.
+**Count the 404s and name them as a third state.**
+
+**CHANNEL 2 — `?path=` IS RENAME-BLIND, AND IT COST 73% OF THE HISTORY.**
+`GET /repos/{r}/commits?path=src/coint/binance_futures.py` → **3 commits, oldest 2025-11-18**.
+That oldest commit is *"Moves django files to src/"*. Re-querying the pre-move path
+`coint/binance_futures.py` → **8 more, oldest 2020-06-28**. True history **11**; the obvious query
+reports **3**. A seat dating an artifact from the current path would have called a 2020 file a 2025
+one and mis-dated everything derived from it.
+**Operator: when the oldest commit a path returns is a move/rename/restructure commit, that is not the
+beginning — it is the seam. Re-query the old path (and repeat).**
+
+---
+
+### OP-079 IN A NON-ENGLISH REPO, THE CODE LAYER AND THE NEGOTIATION LAYER ARE IN DIFFERENT LANGUAGES — QUERY BOTH   [active]
+class: lexicon / language routing — refines OP-075 from the opposite direction
+origin: BR frontier miner s3 (2026-08-13), `Vido/zecontinha` PR threads #27/#28/#30/#35
+validated-gain: names *where inside one artifact* the native-language moat actually sits, after
+AR s2's OP-075 established that a region's practitioners may simply write in English.
+
+**THE PROVING INSTANCE — one repo, one thread, two languages, stated as policy by the maintainer:**
+
+> **Vido (2025-10-22):** *"I believe all public communications (and code base) should be in English.
+> Hopefully this will grant this project the greatest reach and it will be accessible to the most
+> developers — **not just the lusophones**."*
+
+…written in reply to a Brazilian contributor who had just asked, **in Portuguese**, which language to
+use (*"Salve @Vido, você prefere que eu siga com as mensagens dos PR em ingles ou portugues?"*).
+
+So on this artifact: **code, identifiers, commit messages and PR titles are English by explicit policy;
+the human negotiation around them is Portuguese.** OP-075 measured that an AR-region population writes
+its *code* in English and concluded the language is not a moat there. This is the refinement: the
+language boundary does not run around the repo, **it runs through it**, and it separates the layer that
+is easy to find from the layer that carries the reasoning.
+
+**THE CONSEQUENCE FOR SEARCH:** an English-key search finds this repo and its code. A Portuguese-key
+search finds the *discussion*. They are the same artifact and only the second contains the maintainer
+explaining what the system actually does (see OP-080). A seat that queries one key and grades the
+ground has measured **half** of it — and it is the half the crowd already has.
+
+**Residual traces even under an English-only policy** (these are the greppable seams): early
+identifiers the policy was adopted too late to remove — `gera_pares`, `calcula_modelo`, `PERIODOS_CALCULO`,
+`ativo_x`/`ativo_y` — plus Portuguese code comments (`# limpa o canvas`, `# TODO: descobrir qual é correto`).
+**Grep the identifiers, not the prose:** a project can enforce English on prose far more easily than it
+can rename its own variables.
+
+---
+
+### OP-080 THE MAINTAINER'S OWN WORDS IN A PR THREAD OUTRANK THE README — AND SOMETIMES REFUTE THE SYSTEM   [active]
+class: depth / comment layer
+origin: BR frontier miner s3 (2026-08-13), `Vido/zecontinha` PR #30
+validated-gain: a single reply established that a public signal feed had been **broadcasting a uniform
+random draw** — a fact absent from the README, the code comments, and every surface description.
+
+**THE COMMENT (PR #30, maintainer, 2025-10-21), and nothing else on the artifact says it:**
+
+> *"`select_pair(n)` was just a silly function to **draw a pair**, to show case it on Telegram.
+> What ends up happening was **Telegram folks see it as recommendations. Which they are NOT!**
+> Let's face it: this silly function is now a major interaction point with the users.
+> I don't think a random draw is applicable any more."*
+
+The surface — a live site, a Telegram channel, a cointegration engine, an ADF/Hurst/half-life panel —
+reads as a signal service. The comment layer says the selection step was **`order_by('?')`**, Django's
+random ordering, and that the audience had been reading noise as advice for years.
+
+**THE OPERATOR:** on any mined system that emits a signal, find the code path from *table* to
+*published output* and then find the **maintainer's own commentary on that specific function**. The
+README describes the machinery; the PR thread is where someone admits what the machinery is *for* and
+what it is *not*. Ranked by yield, on this artifact: PR review comments ≫ issues ≫ commit messages ≫ README.
+
+**AND THE RESEARCH ASSET IT CREATES — a documented control arm, which is the rarer half of this find.**
+Because the switch from random draw to screened selection is **dated and attributable** (PR #30 merged
+2025-11-06; template versioned `v3`, now `v4`), the channel's own public history contains a
+**random-pair-selection baseline followed by a screened one, on the same universe, published with
+timestamps**. Any future test of "does a cointegration screen beat drawing a pair out of a hat" has its
+control arm already broadcast in public. **Look for the regime change, not just the current behaviour.**
+
+---
+
+### OP-081 A GENRE KEY AND A TOPIC KEY SELECT ON DIFFERENT AXES — UNION THEM, NEVER `AND` THEM   [active]
+class: query construction / lexicon — the structural sibling of OP-054
+origin: BR frontier miner s3 (2026-08-13), `TCC` as a search key over BR quant repos
+validated-gain: graded a queue item predicted "RICH SEAM" as **narrow**, with the number that shows why,
+and salvaged the key's real use instead of discarding it.
+
+**MEASURED, one instrument, same minute (GitHub repo search):**
+
+| query | repos | |
+|---|---|---|
+| `TCC bitcoin` | **29** | the genre key works |
+| `TCC trading` | **18** | works |
+| `TCC criptomoedas` | **15** | works |
+| `TCC cointegração` | **1** | **genre ∩ topic ≈ ∅** |
+| `cointegração` alone (BR s2) | **30** | the topic key alone |
+| `dissertação trading` | **0** | the *formal* genre word is dead |
+| `"undergraduate thesis" trading` (EN control) | 8 | the EN genre word is weaker |
+
+**THE RULE.** A **genre/structural key** (`TCC`, thesis, dissertation, 卒論, 졸업논문, 毕业设计,
+дипломная работа) selects on *document type*. A **topical key** (`cointegração`) selects on *subject*.
+They are near-independent, so **ANDing them multiplies two already-small selectivities** and collapsed a
+30-repo corpus to **1**. Union them; run each separately and merge.
+
+**A GENRE KEY IS A PRECISION KEY, NOT A RECALL KEY.** Everything `TCC` returns really is thesis code —
+which is worth having, because thesis code is rigorous-looking, uniformly never out-of-sampled, and
+unread by the English crowd (L1.34 #6). Use it to *characterise* a corpus you found some other way,
+never as your way in.
+
+**TEST EVERY GENRE WORD; DO NOT ASSUME THE FORMAL ONE.** `dissertação` → **0** while `TCC` → 29, in the
+same country, in the same language. Only one of a region's several thesis words survives as a repo
+label, and it is generally the **colloquial abbreviation**, not the formal noun. Guessing costs a clean
+zero that reads exactly like an empty ground — the OP-054 false-exhaustion failure arriving through the
+genre axis instead of the topic axis.
+
+**AND GRADE BY NON-UPSTREAM PATHS, NOT BY REPO COUNT.** `cadilhe/freqtrade_2020_tcc` is a **vendored
+fork of freqtrade** — 428 blobs, of which the student's own work is a handful of files under
+`user_data/`. Student repos are disproportionately whole-framework forks, so a genre key's raw counts
+**overstate** the corpus. Open one before believing the number.
+
+---
+
+### OP-082 WHEN A BACKTEST PUBLISHES AN IMPLAUSIBLE WIN RATE, LOOK FOR THE TRADES IT PUT IN A DIFFERENT FILE   [active]
+class: backtest mining / survivorship
+origin: BR frontier miner s3 (2026-08-13), `cadilhe/freqtrade_2020_tcc` backtest artifacts
+validated-gain: turned an **87.1% win rate, +8.78%** headline into a measured **+5.87%** in one fetch —
+a **49.6% overstatement** — using only arithmetic already present in the repo.
+
+**THE PATTERN.** Backtesting frameworks report positions still open when the run ended **separately**
+from closed trades, because they have no exit price for them. The headline table is therefore a table
+of **trades that closed**, and in any strategy that exits winners on a target while letting losers run,
+**closing is correlated with winning**. The open-trade file is where the losers accumulate.
+
+**MEASURED on one artifact** (freqtrade, Binance spot /BTC, 23 pairs, 5m):
+
+| file | trades | win | loss | win rate | tot profit |
+|---|---|---|---|---|---|
+| `backtesting_report_*.txt` (headline) | 411 | 358 | 53 | **87.1%** | **+8.78%** |
+| `left_open_*.txt` (a *separate file*) | 14 | 1 | **13** | 7.1% | **−2.91%** |
+| **true combined** | 425 | 359 | 66 | 84.5% | **+5.87%** |
+
+Average duration gives it away independently: **4d23h** for the left-open set against **1d0h** for the
+closed set — the trapped losers are ~5× older than the trades that got counted.
+
+**THE OPERATOR:** an implausible win rate (>80%) with a **small average profit per trade** is the
+signature. Before reading anything else, (1) find the open-trades/unclosed report and add it back;
+(2) check for an exit rule that can only fire in profit (`sell_profit_only`, "only sell green",
+take-profit-without-stop) — that is the mechanism that *manufactures* the pattern; (3) compare average
+durations between the two sets. **Do not report the headline number even to dismiss it** — recompute
+and report the combined one.
+
+**AND KEEP THE MECHANISM SEPARATE FROM THE ARITHMETIC.** On this artifact the arithmetic is certain and
+the *cause* is not: `Strategy001.py` sets `sell_profit_only = True` while `config.binance.json` sets it
+`false`, and **config overrides strategy** — so which was live is undeterminable from the repo. State
+the recomputed number as fact and the mechanism as a hypothesis with its falsifier. (The vendored OHLCV
+under `user_data/data/` makes that falsifier genuinely runnable, which is what EXECUTABLE tier means.)
+
+---
+
+## OP-083 — THE DESK IMPORTED BRAIN'S **THRESHOLDS** (which do not port) AND MISSED ITS **RATIOS** (which do)
+
+**SOURCE:** `rocky-d/wqb` v0.2.5 (**MIT**, 272★, `wqb/wqb_session.py` + `wqb/wqb_urls.py`), read as
+text 2026-08-13. **DERIVES-FROM:** independent of `libs/validation/brain_calibration.py`, which was
+built from a *webinar transcript* — different artifact, different author, no shared lineage.
+**§13:** MIT, read-only, mined as text. **No credential was held, sought or used, and no call was made
+to `api.worldquantbrain.com`** — the library is an authenticated client and this seat does not touch
+authenticated surfaces.
+
+**THE FIND IS A NEGATIVE SPACE, not a new operator.** `brain_calibration.py` already imports BRAIN's
+constants — fitness bar 1.0, Sharpe bar 1.0, Sharpe target 1.25, self-correlation cap 0.7, truncation
+band, recent-Sharpe floor, IS/OOS score weights. Its own docstring then spends ten lines warning that
+these are US-equity, daily-rebalanced, dollar-neutral numbers on the platform's own PnL and
+annualisation conventions, **"COMPARABLE IN ORDER OF MAGNITUDE ONLY"**, and that *"a reader who takes
+1.25 as a threshold has misused this module"*. That warning is correct.
+
+**But a transcript states THRESHOLDS and an API states the MEASUREMENT NAMESPACE, and the desk only
+ever had the transcript.** `filter_alphas_limited` enumerates the platform's queryable alpha metrics,
+and four of them are **dimensionless ratios of two quantities measured the same way** — so every
+convention difference the caveat warns about (annualisation, cost base, return definition,
+periodicity) **cancels in the numerator and denominator**. The un-portable half was imported; the
+portable half was never seen.
+
+| BRAIN metric (API name) | what it computes | crypto analogue | desk status |
+|---|---|---|---|
+| `os.osISSharpeRatio` | OOS Sharpe ÷ IS Sharpe — one number for *how much of the backtest survived contact with unseen data* | forward-clock Sharpe ÷ Stage-A screen Sharpe, per candidate | **ABSENT** (grep: no `os_is`/`oos_is`/`degradation` metric) |
+| `os.sharpe60/125/250/500` | OOS Sharpe re-measured at four horizons — a **decay ladder**, not one verdict | same ladder in **OBSERVATIONS, never days** (L1.48): a perp desk funding 3×/day accrues evidence ~3× faster than a daily-rebalanced equity book, so copying 60/125/250/500 as *days* would import an equity sampling convention as if it were a law | **ABSENT** (grep: zero hits) |
+| `os.preCloseSharpe`, `os.preCloseSharpeRatio` | Sharpe recomputed at pre-close vs at the close print — *does this edge only exist at the stamp?* | entry shifted off the UTC bar boundary / off the funding settlement stamp | **PARTIAL** — `earnability.phase_sensitivity` already tests *funding-settlement binning* (L1.47's instrument) and is well-built; it does **not** test *decision-timestamp* sensitivity, which is the different question |
+| `is.selfCorrelation` **vs** `is.prodCorrelation` | **two** correlation gates: against your own prior alphas, and against the **production book** | candidate vs desk's own screened pool; candidate vs **capital already deployed** | **HALF** — `BRAIN_SELF_CORRELATION_CAP = 0.7` imported; the **prod** half absent |
+
+**WHY THE `prodCorrelation` HALF IS THE ONE THAT MATTERS (L1.18).** `selfCorrelation` asks "have I
+already tried this?"; `prodCorrelation` asks **"does this duplicate what is already taking capital?"**
+Only the second one protects the geometric-growth argument, because two correlated deployed sleeves
+draw down together. The desk has `cohort_independence`, `effective_bets` and `panel_breadth`, but
+grep finds **no candidate-vs-deployed gate at promotion time**. The objection writes itself — the desk
+runs ~1 deployed sleeve, so the gate is near-vacuous today — and it is exactly backwards: **a gate is
+cheapest to build while its denominator is 1 and binding from the moment the second sleeve lands.**
+
+**THE TRANSFERABLE RULE, and it generalises past this platform (L1.34/L1.11a).** When mining any
+foreign venue, asset class or institution: **a threshold is asset-class-bound and does not travel; a
+ratio of two like-measured quantities is unit-free and travels intact.** Prefer the ratio every time.
+This is why an equities platform can still teach a perp desk something — the caveat that correctly
+blocks its *numbers* does not touch its *instruments*.
+
+**HONEST LIMITATION OF THE SOURCE.** Every enum in `wqb/__init__.py` (`Neutralization`, `NanHandling`,
+`Pasteurization`, `UnitHandling`, `Region`, `Universe`, …) is aliased to `Any`. The library gives the
+**parameter namespace and exact API paths, not the value sets** — so this find names *what the platform
+measures*, and cannot name *what values it accepts*. Recorded so the next seat does not re-open it
+expecting enums.
+
+**Also confirmed from the wild (see OP-084): `ts_zscore`, `ts_av_diff`, `ts_corr`, `group_rank` are
+real platform operators** — `ts_zscore` is one of the six this desk still lacks.
+
+---
+
+## OP-084 — MEASURED: THE INDEPENDENCE CAME FROM THE **DATA**, NOT THE **MATH** (49 fields, 8 operators, 48/50 single-operator)
+
+**SOURCE:** `CrisperX/50_WorldQuant_Alpha_Examples_for_Alphathon` (85★, **NO LICENCE ⇒
+all-rights-reserved**), `alpha50.csv`, 14,891 B, last pushed 2023-10-30. **DERIVES-FROM:** named as
+the specific prize in this organ's own s2 next-ground list; no other seat has touched it. **§13:**
+public repo, read in place; **aggregate statistics and mechanism extracted, no formula or code copied
+into this repo** — an unlicensed artifact is mineable as *text* and not reproducible as *content*.
+**CLAIMED-IS-NOT-VERIFIED:** the README is an advertisement for paid tutoring and every performance
+number is the author's own, unverified, on US equities. **What is measured below are properties of
+the FILE, which I computed myself, not claims about the market.**
+
+The repo's premise is the desk's own independence problem stated in the platform's terms: *50 alphas
+that can pass the mutual correlation test if submitted together.* The desk's version is L1.18 (maximum
+INDEPENDENT compounding sources) against a cross-section measured at **N_eff 1.54 raw / 29
+market-neutral**. So: how does a working practitioner actually manufacture 50 mutually-uncorrelated
+signals?
+
+**MEASURED OVER ALL 50 ROWS:**
+
+| quantity | measurement |
+|---|---|
+| distinct **data fields** | **49** (for 50 alphas; max reuse 3) |
+| distinct **operator tokens** | **8** — `rank` 30, `ts_mean` 18, `ts_zscore` 2, `sum`/`delay`/`group_rank`/`ts_av_diff`/`ts_corr` 1 each |
+| expression depth (paren count) | min 1, **median 1**, max 15 |
+| **single-operator alphas** | **48 / 50** |
+| neutralization | Subindustry 19, Market 17, Sector 8, Industry 4, **None 2** — i.e. **96% neutralized** |
+| universe | TOP200 27, TOP1000 12, TOP500 9, TOP3000 2 |
+| turnover | median **0.0205** (≈2%), max 0.212 |
+| decay | median 10, mean 19.6, max 95 |
+
+**THE MECHANISM: 48 of 50 are one operator applied to one field.** `rank(mdf_pva)`,
+`-rank(mdf_ite_q)`, `-rank(fnd6_newa1v1300_epspi)`. Diversity of *expression* contributes essentially
+nothing to passing the correlation test; **diversity of underlying field contributes everything.**
+Eight operators sufficed for fifty independent signals.
+
+**WHY THIS MATTERS HERE, AND IT IS A RE-RANKING OF THIS SEAT'S OWN BRIEF.** This organ exists partly
+to hunt operators, and the strongest evidence it has yet produced says **operators are the low-yield
+axis and fields are the high-yield one.** It independently corroborates the desk's single most
+expensive research lesson from a completely different market, institution and asset class: the
+2026-08-01 campaign ran **129 mechanisms, all price-derived, all directional, and all 129 failed** at
+max OOS Sharpe 0.100. Another *transform* of price cannot manufacture an independent bet — only
+another *source* can. **The desk's alpha-diversity law is a DATA-ACQUISITION problem wearing a
+modelling costume**, and that is now measured from outside rather than argued from inside.
+
+**THE THRESHOLD-HUGGING RESULT, and it survives the source being untrustworthy.** Sharpe: **min 1.2500,
+median 1.2500, max 1.2900**; 26 of 50 sit at *exactly* 1.25; **70% within [1.24, 1.26]; 100% below
+1.30.** The platform's stated submission target — already in this repo as
+`BRAIN_SHARPE_TARGET = 1.25` — is the **floor, the median and very nearly the maximum** of the
+accepted population. That is the signature of a search that stops the instant the bar is cleared.
+**And the finding does not depend on the numbers being real:** if they are honest, the accepted
+population is dominated by marginal candidates; if they are fabricated, the author fabricated them
+*to hug the threshold*, which reveals the same selection norm. Either way it is direct external
+evidence for the desk's own law that **throughput must come from screening more, never from passing
+more** — and a live demonstration of why L1.6 forbids importing that 1.25 as a gate (OP-083).
+
+**CRYPTO ANALOGUE / WHAT IT WOULD NEED.** The construction that ports is *one cheap transform over
+many orthogonal fields*, not *many clever transforms over price*. The desk's binding input is
+unchanged and this sharpens it: 96% of these alphas neutralize against a **grouping** (subindustry
+most often — the *finest* available), and `data/crypto_grouping_map.json` exists with its consumer
+wiring still owed at **R0437**. Field-count, not operator-count, is the axis to grow —
+routed to `data_axis_watchlist.md`.

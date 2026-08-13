@@ -200,6 +200,30 @@ def tier_for_unit(unit: str) -> int | None:
     return None
 
 
+def units_touching(prefixes: Iterable[str], root: Path | None = None) -> tuple[str, ...]:
+    """Units whose entry point OR import closure is covered by any of ``prefixes``.
+
+    Exists so a CALLER can ask "which of these units sit on the money path?" against the same
+    ``_OWNED`` map and the same closure walk the planner uses. The alternative -- a second literal
+    list of money-path unit names -- is the drift this module's ``_OWNED`` docstring already warns
+    about, and it would drift in the direction that matters: a stale copy that forgot
+    ``quant-cashcarry`` would let an unattended deploy restart the executor mid-window.
+
+    CLOSURE, NOT JUST THE ENTRY POINT, because the money path is mostly LIBRARIES
+    (``libs/execution/``, ``libs/risk/``) that no unit names as its entry. Asking only about entry
+    points would answer "no money-path units" for a change to the sizing code, which is precisely
+    backwards.
+    """
+    root = root or _ROOT
+    pats = [p for p in prefixes if p]
+    out: set[str] = set()
+    for entry, (unit, _tier) in _OWNED.items():
+        covered = {entry} | import_closure(entry, root)
+        if any(any(c.startswith(p) or p.rstrip("/") in c for p in pats) for c in covered):
+            out.add(unit)
+    return tuple(sorted(out))
+
+
 def plan(changed: Iterable[str], root: Path | None = None) -> DeployPlan:
     """Classify changed repo-relative paths into restart / escalate / stale-scheduler / no-op."""
     root = root or _ROOT

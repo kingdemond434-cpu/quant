@@ -11,17 +11,26 @@ BOTH PIN A MEASURED 2026-08-05 DEFECT, not a hypothetical:
    the calendar and re-opened 2026-07-31 and 2026-08-01. The fence now reads `bleeding_symbols`
    (all-time, same bar). An exclusion whose path back is the passage of time is not evidence.
 
-2. THE REGRESSION DETECTOR UNDER-COUNTED. run_trade_forensics matched funding EXACTLY at the
-   venue default (1e-4), so it saw opens sitting ON the default and missed every open BELOW it:
-   BNBUSDT went on at 3.0e-05 and 6.6e-05, both further under the bar than the two it reported.
-   It now compares against the executor's actual floor, and this file asserts the mirrored
-   constant cannot drift -- the mirror exists because importing the executor opens venue
-   connections, so the coupling has to be enforced by a test rather than by an import.
+2. THE ENTRY-GATE DETECTOR MUST MEASURE THE BAR THE EXECUTOR ENFORCES. It originally matched
+   funding EXACTLY at the venue default and missed every open BELOW it; the 2026-08-05 fix
+   mirrored a flat floor, and R0057 then replaced that floor with a PER-SYMBOL contract (funding
+   over the minimum hold must beat that symbol's modelled round-trip). The coupling asserted here
+   moved with it -- the shared hold horizon, not a retired constant. The mirror exists at all
+   because importing the executor opens venue connections, so it has to be enforced by a test.
+
+AND THIS FILE IS ITSELF THE EVIDENCE FOR A THIRD DEFECT (2026-08-13). Merge 8b981a50 kept these
+tests and dropped the producer and reader that made them true, so the fence silently reverted to
+the rolling window while the suite went red and STAYED red for eight days -- read as ordinary
+environment noise. Two of the reds were genuine staleness (a 1-arg `_rt_bps` stub, a flat floor
+that no longer exists) and one was this file reading the LIVE cost model, which moved under it.
+A test that fails for reasons unrelated to its subject trains readers to discount red, which is
+what let a money-path regression hide in plain sight; the cost model is now injected.
 """
 from __future__ import annotations
 
 import importlib.util
 import json
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -41,11 +50,24 @@ _EXEC = _load("run_cashcarry_executor_gate", "scripts/run_cashcarry_executor.py"
 _FOR = _load("run_trade_forensics_gate", "scripts/run_trade_forensics.py")
 
 
-def test_funding_floor_constant_is_mirrored_not_drifted() -> None:
-    """The forensics detector must measure the bar the executor actually enforces."""
-    assert _FOR._MIN_FUNDING == _EXEC._MIN_FUNDING, (
-        "run_trade_forensics._MIN_FUNDING mirrors the executor's funding floor; they have "
-        "drifted, so the entry-gate regression check is now measuring a bar nobody enforces"
+def test_the_detector_measures_the_bar_the_executor_actually_enforces() -> None:
+    """The floor this file used to mirror NO LONGER EXISTS, and that is the correct outcome.
+
+    `_MIN_FUNDING` was a single desk-wide funding floor mirrored into the detector (2026-08-05).
+    R0057 replaced it with a PER-SYMBOL contract -- an open is a regression iff its funding could
+    not beat that symbol's modelled round-trip over the minimum hold -- so a flat constant is no
+    longer the bar anyone enforces and mirroring one would re-blind the check it was added to
+    sharpen. What must still hold is the coupling itself: the detector reads the executor's own
+    cost model and hold horizon rather than a number of its own.
+    """
+    assert not hasattr(_EXEC, "_MIN_FUNDING"), (
+        "a flat funding floor is back in the executor -- if it governs opens the detector must "
+        "mirror it again; if it does not, delete it"
+    )
+    assert max(1.0, _EXEC._MIN_HOLD_H / 8.0) == _FOR._GATE_PERIODS, (
+        "the detector prices funding over a different number of 8h settlement periods than the "
+        "executor requires a carry to hold, so it is judging opens against a horizon nobody "
+        "enforces"
     )
 
 
@@ -56,9 +78,16 @@ def test_denylist_bar_is_mirrored_not_drifted() -> None:
 
 @pytest.fixture
 def forensics(tmp_path, monkeypatch):
-    """Point the executor's fence at a throwaway forensics artifact."""
+    """Point the executor's fence at a throwaway forensics artifact.
+
+    `_BLEED_CACHE` too: the fence writes every non-empty read through to a last-good cache the
+    live executor consults when forensics is unreadable, so an un-redirected fixture would leave
+    synthetic bleeders in a money-path file. conftest covers this suite-wide; pinning it here as
+    well keeps the isolation visible to anyone reading only this file.
+    """
     p = tmp_path / "trade_forensics.json"
     monkeypatch.setattr(_EXEC, "_FORENSICS", p)
+    monkeypatch.setattr(_EXEC, "_BLEED_CACHE", tmp_path / "last_good.json")
     return p
 
 
@@ -106,19 +135,32 @@ def test_fence_fails_open_only_when_the_artifact_is_unreadable(forensics) -> Non
     assert _EXEC._structurally_bleeding("BTCUSDT") is False
 
 
-def test_entry_gate_refuses_below_floor_and_denylisted(forensics, monkeypatch) -> None:
-    """End-to-end on the gate the open loop actually calls."""
+def test_entry_gate_prices_each_symbol_against_its_own_round_trip(forensics, monkeypatch) -> None:
+    """End-to-end on the gate the open loop actually calls, under the R0057 contract.
+
+    This asserted a FLAT floor (`funding >= 1.5e-4`), so it read baseline funding as a refusal
+    everywhere. R0057 replaced that with a per-symbol test -- funding over the minimum hold must
+    beat THAT symbol's round-trip -- under which baseline funding on a tight measured major
+    legitimately passes and the same rate on a thin book cannot. Pinning the retired constant
+    would have re-imposed a bar the desk deliberately removed, so the contract is pinned instead:
+    the same funding rate must flip on the BOOK, and the denylist must outrank both.
+    """
     forensics.write_text(json.dumps({
         "bleeding_symbols": [{"symbol": "BNBUSDT", "n": 13, "net": -23.46, "bps": -65.8}],
     }), "utf-8")
-    monkeypatch.setattr(_EXEC, "_rt_bps", lambda _s: 1.0)   # cheap book: isolate the two vetoes
+    # `_n` absorbs R0247's `notional` argument -- a 1-arg stub silently drifted into a TypeError
+    # when the gate started sizing its cost lookup.
+    books = {"BTCUSDT": 1.0, "FILUSDT": 25.0, "BNBUSDT": 1.0, "ETHUSDT": 1.0}
+    monkeypatch.setattr(_EXEC, "_rt_bps", lambda s, _n=None: books.get(s, 39.5))
 
-    # the four real sub-floor opens of 2026-07-31/08-01, replayed against current code
-    assert _EXEC._entry_gate("BTCUSDT", 0.0001) is False      # at the venue default
+    # 0.0001 over 3 periods = 3 bps. Beats a 1 bps major, cannot pay for a 25 bps book.
+    assert _EXEC._entry_gate("BTCUSDT", 0.0001) is True
     assert _EXEC._entry_gate("FILUSDT", 0.0001) is False
-    assert _EXEC._entry_gate("BNBUSDT", 3.0e-05) is False     # below it AND denylisted
-    assert _EXEC._entry_gate("BNBUSDT", 6.6e-05) is False
-    # a clean symbol comfortably over the floor still passes -- the fence is not a blanket veto
+    # DENYLIST OUTRANKS THE ARITHMETIC: BNBUSDT's book is stubbed as cheap as BTCUSDT's, so it
+    # would pass on cost alone. The proven-loser veto is what refuses it -- at every rate.
+    assert _EXEC._entry_gate("BNBUSDT", 3.0e-05) is False
+    assert _EXEC._entry_gate("BNBUSDT", 0.0001) is False
+    # and the fence is not a blanket veto
     assert _EXEC._entry_gate("ETHUSDT", 0.0004) is True
 
 
@@ -149,19 +191,40 @@ def test_forensics_emits_all_time_bleeders_over_the_full_record(tmp_path, monkey
     assert out["bleeding_basis"]["window"] == "all-time"
 
 
-def test_forensics_flags_sub_floor_opens_not_just_baseline_ones(tmp_path, monkeypatch) -> None:
-    """The detector half: an open BELOW the floor is a bypass even if it is not AT the default."""
-    after = "2026-07-31T07:15:45+00:00"                      # after _GATE_DATE
-    trades = [{"event": "open", "symbol": "BNBUSDT", "opened": after,
-               "funding_rate": 3.0e-05, "notional": 47.36}]
+def test_forensics_flags_opens_that_could_not_beat_their_own_round_trip(
+    tmp_path, monkeypatch
+) -> None:
+    """The detector half, on the R0057 per-symbol contract that replaced the flat floor.
+
+    An open is a regression iff its funding could not beat THAT SYMBOL's modelled round-trip over
+    the minimum hold -- so the cost model is an input to the verdict and must be injected. It used
+    to be read from `data/cost_model.json` inside main(), which made this test a reader of live
+    desk state: the measured BNBUSDT book got cheaper (0.344 bps), 0.9 bps of funding beat it,
+    and the test went red without the detector changing at all.
+    """
+    recent = (datetime.now(tz=UTC) - timedelta(days=1)).isoformat()   # inside the rolling window
+    trades = [
+        # 3.0e-05 over 3 periods = 0.9 bps against a 12 bps book -> cannot pay for itself
+        {"event": "open", "symbol": "THINUSDT", "opened": recent,
+         "funding_rate": 3.0e-05, "notional": 47.36},
+        # 40 bps of funding against the same book -> legitimately passes; the flag is not blanket
+        {"event": "open", "symbol": "THINUSDT", "opened": recent,
+         "funding_rate": 1.5e-03, "notional": 47.36},
+    ]
+    cost = tmp_path / "cost_model.json"
+    cost.write_text(json.dumps({"symbols": {"THINUSDT": {"pair": {
+        "500": {"pair_roundtrip_bps": 12.0}}}}}), "utf-8")
     monkeypatch.setattr(_FOR, "_TRADES", tmp_path / "t.json")
     monkeypatch.setattr(_FOR, "_OUT", tmp_path / "out.json")
+    monkeypatch.setattr(_FOR, "_TRACKED", tmp_path / "tracked.json")
+    monkeypatch.setattr(_FOR, "_COST_MODEL", cost)
     _FOR._TRADES.write_text(json.dumps(trades), "utf-8")
     _FOR.main()
 
     out = json.loads((tmp_path / "out.json").read_text("utf-8"))
+    assert out["post_gate_opens_examined"] == 2
     assert out["post_gate_baseline_opens"] == 1, (
-        "3.0e-05 is further below the floor than the 1e-4 opens the old exact-match check "
-        "reported; under-counting a bypass reads as a bounded problem"
+        "the sub-contract open must be counted and the paying one must not -- a detector that "
+        "under-counts the defect it exists to catch reads as bounded"
     )
     assert any("ENTRY-GATE REGRESSION" in f for f in out["flags"])

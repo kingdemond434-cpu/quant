@@ -337,16 +337,32 @@ class CoverageGrid:
             self.filled.add((sym, mech, day))
 
     def report(self, symbols: list[str], days: list[str],
-               mechanisms: list[str] | None = None) -> dict[str, Any]:
+               mechanisms: list[str] | None = None,
+               pairs: list[tuple[str, str]] | None = None) -> dict[str, Any]:
+        """`pairs` is the list of (symbol, day) units that EXIST on tape. Without it the grid is
+        the cartesian product symbols x days -- which counts (symbol, day) combinations that were
+        never recorded (listed later, delisted earlier, recorder started mid-window) as HOLES.
+        Measured 2026-08-12: 11,004 of 11,004 reported holes were such phantoms while every cell
+        with tape was 7/7 measured -- coverage pinned at 53.05% 'STANDING-STILL' with nothing any
+        miner could do. A cell with no files is not unexplored edge; it is a listing-window fact
+        (the L1.46 class: a venue limitation must never read as a desk defect). Phantoms stay
+        COUNTED and published -- excluding them from the denominator is honest only while they
+        remain visible."""
         mechs = mechanisms or list(MECHANISMS)
-        total = len(symbols) * len(mechs) * len(days)
-        holes = [MoatCell(s, m, d) for s in symbols for m in mechs for d in days
+        if pairs is None:
+            universe = [(s, d) for s in symbols for d in days]
+            phantom = None
+        else:
+            universe = sorted(set(pairs))
+            phantom = len(symbols) * len(days) - len(universe)
+        total = len(universe) * len(mechs)
+        holes = [MoatCell(s, m, d) for (s, d) in universe for m in mechs
                  if (s, m, d) not in self.filled]
         pct = 0.0 if total == 0 else (total - len(holes)) / total
         by_mech: dict[str, int] = dict.fromkeys(mechs, 0)
         for h in holes:
             by_mech[h.mechanism] += 1
-        return {
+        out = {
             "cells_total": total,
             "cells_filled": total - len(holes),
             "coverage_pct": round(pct * 100, 2),
@@ -358,14 +374,24 @@ class CoverageGrid:
                      "difference between 'mined and empty' and 'never looked', and those "
                      "demand opposite responses"),
         }
+        if phantom is not None:
+            out["phantom_pairs_excluded"] = phantom
+            out["denominator"] = (
+                "cells that exist on tape (recorded (symbol, day) pairs x mechanisms). A pair "
+                "with no files cannot be mined at any effort level and is a listing-window "
+                "fact, not unexplored edge -- it is counted here, never as a hole.")
+        return out
 
 
 def coverage_report(results: list[dict[str, Any]], symbols: list[str],
-                    days: list[str]) -> dict[str, Any]:
-    """Build the grid from a set of extraction results."""
+                    days: list[str],
+                    pairs: list[tuple[str, str]] | None = None) -> dict[str, Any]:
+    """Build the grid from a set of extraction results. Pass `pairs` (the (symbol, day) units
+    that exist on tape) whenever the caller knows them -- see CoverageGrid.report for why the
+    cartesian fallback overstates holes."""
     g = CoverageGrid()
     for r in results:
         day = str(r.get("day", ""))
         for mech, s in (r.get("mechanisms") or {}).items():
             g.mark(str(r.get("symbol", "")), mech, day, n_obs=int(s.get("n", 0)))
-    return g.report(symbols, days)
+    return g.report(symbols, days, pairs=pairs)

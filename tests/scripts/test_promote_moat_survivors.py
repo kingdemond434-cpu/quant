@@ -15,12 +15,14 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+import pytest  # noqa: E402
 import scripts.promote_moat_survivors as P  # noqa: E402
 
 
@@ -201,3 +203,77 @@ def test_an_absent_registry_is_reported_not_invented(tmp_path) -> None:
     assert P.main() == 0
     rep = json.loads((tmp_path / "promo.json").read_text("utf-8"))
     assert rep["state"] == "NO REGISTRY"
+
+
+# ---------------------------------------------------------------------------------------------
+# L1.29 FORECAST INSTRUMENTATION (R0363, decision point B)
+#
+# Every promotion is the desk asserting a candidate will keep surviving. Unlogged, that is a
+# belief that inflates the apparent hit-rate by never counting its misses.
+# ---------------------------------------------------------------------------------------------
+
+
+def test_the_forecast_is_a_persistence_rate_NOT_the_p_value() -> None:
+    """R0363 proposed logging p_persistence directly. That would be a category error.
+
+    binom_tail returns P(X >= k) UNDER THE NULL -- and it points the OPPOSITE way to a survival
+    probability: a SMALLER p_persistence means a STRONGER candidate. Calibrating the desk against
+    that curve would grade it on a quantity that means nothing, while reading as instrumented.
+    """
+    strong = {"times_survived": 9, "times_screened": 10}
+    weak = {"times_survived": 2, "times_screened": 10}
+    assert P.forecast_p(strong) > P.forecast_p(weak), "the forecast must rise with persistence"
+    # The p-value moves the other way, which is exactly why it cannot stand in for this.
+    assert P.binom_tail(9, 10, 0.2) < P.binom_tail(2, 10, 0.2)
+
+
+def test_a_perfect_record_never_logs_certainty() -> None:
+    """(k+1)/(n+2), not k/n. A stream of p=1.0 forecasts is maximal overconfidence: unfalsifiable
+    upward and maximally Brier-punished when wrong -- the failure L1.29 exists to catch."""
+    p = P.forecast_p({"times_survived": 25, "times_screened": 25})
+    assert 0.0 < p < 1.0
+    assert p == pytest.approx(26 / 27)
+
+
+def test_a_due_forecast_is_graded_against_the_candidates_own_clock(tmp_path) -> None:
+    store = tmp_path / "cal.json"
+    clock = tmp_path / "c.jsonl"
+    clock.write_text(
+        json.dumps({"date": "2026-08-01", "times_survived": 2, "times_screened": 25}) + "\n"
+        + json.dumps({"date": "2026-08-21", "times_survived": 3, "times_screened": 27}) + "\n",
+        "utf-8")
+    P.fc.log_forecast("moat_persist:k", 0.5, P.FORECAST_KIND,
+                      resolve_by="2026-08-20T00:00:00+00:00", store=store)
+    prereg = {"k": {"clock": str(clock.relative_to(P.ROOT)) if clock.is_relative_to(P.ROOT)
+                    else str(clock), "forecast_resolve_by": "2026-08-20T00:00:00+00:00"}}
+    graded = P.grade_due_forecasts(prereg, now=datetime(2026, 8, 22, tzinfo=UTC), store=store)
+    assert graded == [{"key": "k", "outcome": True,
+                       "why": "1 survival(s) in 2 re-screening(s)"}]
+    assert json.loads(store.read_text())["forecasts"]["moat_persist:k"]["outcome"] == 1.0
+
+
+def test_a_candidate_never_re_screened_is_UNRESOLVABLE_not_a_miss(tmp_path) -> None:
+    """THE HONEST-GAP PATH. No re-screening means no evidence either way; scoring it as a miss
+    would penalise the desk for the SCREEN's silence rather than for its own judgement, and would
+    quietly bias measured calibration downward on exactly the candidates nothing looked at."""
+    store = tmp_path / "cal.json"
+    clock = tmp_path / "c.jsonl"
+    clock.write_text(
+        json.dumps({"date": "2026-08-01", "times_survived": 2, "times_screened": 25}) + "\n"
+        + json.dumps({"date": "2026-08-21", "times_survived": 2, "times_screened": 25}) + "\n",
+        "utf-8")
+    P.fc.log_forecast("moat_persist:k", 0.5, P.FORECAST_KIND,
+                      resolve_by="2026-08-20T00:00:00+00:00", store=store)
+    prereg = {"k": {"clock": str(clock), "forecast_resolve_by": "2026-08-20T00:00:00+00:00"}}
+    graded = P.grade_due_forecasts(prereg, now=datetime(2026, 8, 22, tzinfo=UTC), store=store)
+    assert graded[0]["outcome"] is None
+    assert not json.loads(store.read_text())["forecasts"]["moat_persist:k"].get("resolved")
+
+
+def test_a_forecast_is_never_graded_before_its_deadline(tmp_path) -> None:
+    """Grading early is peeking, and it is the same defect as reading a forward clock daily."""
+    store = tmp_path / "cal.json"
+    P.fc.log_forecast("moat_persist:k", 0.5, P.FORECAST_KIND,
+                      resolve_by="2026-09-30T00:00:00+00:00", store=store)
+    prereg = {"k": {"clock": "nope.jsonl", "forecast_resolve_by": "2026-09-30T00:00:00+00:00"}}
+    assert P.grade_due_forecasts(prereg, now=datetime(2026, 8, 22, tzinfo=UTC), store=store) == []

@@ -216,6 +216,35 @@ def test_unowned_flags_a_namespace_whose_resolver_was_deleted(store, tmp_path):
     assert "MISSING" in orphans[0]["why"]
 
 
+def test_a_keyless_namespace_can_never_be_rescued_by_ORGAN_RESOLVERS(store):
+    """R0422. Every unowned test above uses an `orphan:x` key WITH a colon, so all of them
+    exercise the ORGAN_RESOLVERS branch -- and all 13 real orphans had NO colon at all.
+
+    With no colon `ns` is "" and `ORGAN_RESOLVERS.get("")` is None forever, so adding entries to
+    that map can never own these rows however many are added. A declared `resolver=` is the ONLY
+    escape, which is why the fix was 13 per-row backfills and not a new namespace.
+    """
+    fc.log_forecast("20260801-no-namespace-at-all", 0.7, "diagnosis", resolve_by=_SOON,
+                    claim="a judgement call in prose")
+    assert [u["key"] for u in fc.unowned(root=Path("."))] == ["20260801-no-namespace-at-all"]
+    assert "no organ owns this namespace" in fc.unowned(root=Path("."))[0]["why"]
+    # ...and the ONLY thing that clears it is naming a grader.
+    fc.log_forecast("20260801-no-namespace-at-all", 0.7, "diagnosis",
+                    resolver="data/some_artifact.json: field x > y")
+    assert fc.unowned(root=Path(".")) == []
+
+
+def test_a_row_with_no_claim_is_voidable_rather_than_gradeable(store):
+    """R0422's worst-shaped row: p, kind and a deadline, but no `claim` -- so there is no
+    recorded statement of what was predicted. Reconstructing one and grading it would fabricate
+    an outcome into the term that feeds calibrated_confidence and Kelly."""
+    fc.log_forecast("20260731-claimless", 0.7, "fence-yield", resolve_by=_SOON)
+    assert fc.unowned(root=Path("."))[0]["claim"] == ""
+    assert fc.void("20260731-claimless", "no claim was ever recorded -- nothing to grade")
+    assert fc.unowned(root=Path(".")) == []
+    assert fc.get_forecast("20260731-claimless").get("resolved") is None   # voided != scored
+
+
 def test_resolved_rows_are_never_unowned(store):
     fc.log_forecast("20260801-graded", 0.7, "diagnosis", resolve_by=_SOON, claim="a judgement")
     assert len(fc.unowned(root=Path("."))) == 1

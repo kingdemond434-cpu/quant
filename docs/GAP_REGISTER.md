@@ -6,6 +6,38 @@ the newest overall, and the owner of the current RANK list — sits below the pr
 paragraph. That line's rows 81-87 are recorded here as 96-102; see the renumber notes at the
 foot of the register._
 
+_Re-ranked 2026-08-13T02:05Z (daily cycle, repair-mode)._ **#1 stays PRINCIPAL REARM + A/B/C**
+(human-gated; `web/cashcarry_live.json` read fresh: `n_carries 0`, `mode live-paper`, bleed verdict
+the diagnosed re-base accounting echo; `web/growth_audit.json` `conservatism_defects: []`, every
+gap RAIL- or HUMAN-justified). **Rank unchanged below #1; what moved this cycle moved by being
+CLOSED:** the §37 brief's dominant RECURRING class -- seven `rec-owed-R00xx` items -- had one
+mechanism, and it is now fenced. `scripts/recommendations.py dispose()` moved a scheduled row's
+due date IN PLACE with no history and no counter, so a row re-snoozed the day before it came due
+left the `owed` population with no work done and no trace, defeating the file's own stated
+anti-gaming guarantee. Measured over `--first-parent` ledger history: **39 of 152 ever-scheduled
+rows (26%) had their due date moved and 38 are still scheduled**. Closed by `libs/ops/deferral.py`
+(6c64b608): every move recorded with its reason, unreasoned re-schedule refused, chronically
+deferred rows can no longer leave `owed` by moving the date. Adds ZERO rows on the day it lands
+(owed 40 / backlog 226 bit-identical before and after), so it cannot be red-from-day-one and
+switched off. NEW this cycle: R0548 (max_audit's live-defect set is not stable within a cycle --
+14 at 00:30 vs 17 on re-run, the delta being exactly the three §37 SKIPPED items, so
+absent-from-audit was reading as fixed) and R0549 (`paywall-unhunted` VERIFIED live, llama.fi).
+
+_Re-ranked 2026-08-11T20:58Z (daily cycle, repair-mode)._ **#1 stays PRINCIPAL REARM + A/B/C**
+(human-gated; `web/cashcarry_live.json` read fresh this cycle: `n_carries 0`, `mode live-paper`,
+bleed verdict = the diagnosed re-base accounting echo, venue-ledger truth published). **Rank
+unchanged below #1; what moved this cycle moved by being CLOSED, not re-ordered:** the top
+instrument defect on the board (welded sub-daily sharpe-ceiling -- the merge dropped the rescale
+from BOTH lineages, every strong intraday cell auto-branded SUSPECT-LOOKAHEAD, moat positive
+control dead 6d) was fixed, live-verified, and its 1,220 welded-era verdicts reset (9e11c7d);
+crown-jewel recorder hang supervision now covers all three recorders (R0282); the OI/LS
+366-symbol universe ingestion is RUNNING (e2828b8, clears the #100-adjacent construction-mismatch
+precondition); the dated-deferral clock false-positive class is fixed at the root
+(mine_conversion "u" retention). #100/#101/#102 stand as ranked -- #100's remedy is partially
+delivered by the denominator now published on the entry-gate detector (post_gate_opens_examined);
+the general sweep it demands stays open. Ledger: 23 rows dispositioned this cycle, 3 added
+(R0442-R0444), backlog draining at 17.3/day vs 12.9 arrivals.**
+
 _Re-ranked 2026-08-05T03:40Z (daily cycle)._ **#1 stays PRINCIPAL REARM + A/B/C** (human-gated;
 `web/cashcarry_live.json` read fresh this cycle: `n_carries 0`, `deployed_notional 0.0`,
 `risk.action pause_opens`, `dd_from_peak_pct -17.61`). **#1b ENTERS AND IS CLOSED THIS CYCLE, and
@@ -717,7 +749,7 @@ this cycle's engineering effort goes to #2._
 
 | 67 | **Two §13 legitimacy RULINGS owed by the principal — each one blocks a verified free dataset the desk already has in hand** | Not engineering: both are one-line human decisions an agent may not self-approve, and each currently blocks a source that is technically DONE. (a) **Upbit Historical Market Data portal** — licence read in full: explicitly PERMITS *"non-commercial and private purposes such as developing one's own strategy and backtesting"*, explicitly PROHIBITS *"commercial use, redistribution, processing and sale"*. A prop desk trading only its own capital, redistributing nothing, sits on that line. Blocks the deepest free Korean-venue archive known to the desk (1m candles back to 2017-10-24, 786 markets, SHA256-verified, values ground-truthed against the live API). (b) **Coin Metrics community — CC BY-NC 4.0**. The data is INGESTED and screened under internal-research scope (`data/coinmetrics_flows.jsonl`, 9,866 rows); the open question is narrower: may a CC BY-NC series feed a PRODUCTION signal at a desk that trades its own capital and redistributes nothing. | **RULE BY 2026-08-15** (monthly governance window). Each answer is one line: Upbit → "research-only" or "full use"; CM → "research-only" or "production input permitted". Neither is urgent-by-decay (the Upbit portal is a static archive back to 2017; CM is T+1 and continuing), which is why this sits at 08-15 and #68 does not. If the ruling is "research-only" for either, that is a COMPLETE answer, not a blocker — say so and the cards close as research-scope-adopted. §33 deferrals dated to this row: data_axis_watchlist cards #1 and #7. | principal | 07-26 | open |
 | 68 | **bitFlyer ToS unreadable from FOUR independent routes — and every day of delay destroys a day of the only recoverable history** | The mechanism is verified-clean (no native candle API; self-bucketing from `getexecutions` is the only path; the 31-day lookback wall was binary-searched to the exact execution id; ~51.5k executions/day; a full backfill is ~3,200 calls ≈ 32 minutes). The ONLY open field is the licence, and it cannot be read: `bitflyer.com` ToS host returns 403/dropped from the VPS (route 1), Wayback/CDX holds no terms captures (route 2), an off-box egress on a different IP also returns 403 on both en-jp and ja-jp (route 3, tested 2026-07-26 — this kills the "just our IP" hypothesis), and alternate hosts 404 or do not resolve (route 4). The reachable docs page carries rate limits only, no licence language. No attempt was made to defeat the block (§13 is a boundary, not a hurdle). So nothing prohibits use and nothing permits it — which fails §13's clear-permitted-usage test. | **CLOSE BY 2026-08-09** — deliberately 14 days, not the monthly window, because this item DECAYS: the 31-day rolling wall means each day without a recorder permanently destroys a day of Japanese-venue tape that no free or paid provider can reconstruct. ACTION IS ONE PAGE-READ: any human or any organ on a non-blocked network opens `bitflyer.com/en-jp/terms`, finds the data-usage/redistribution clause, and pastes it into watchlist card #3. If permitted, the ~32-minute backfill runs the same day and the forward recorder starts. If prohibited, the card is KILLED with that mechanism and the desk stops spending cycles on it — either answer is worth more than the current silence. §33 deferral dated to this row: data_axis_watchlist card #3. **CLOSED 2026-08-05 — MOOT: THE PAGE-READ THIS ROW ESCALATED IS NO LONGER OWED, BECAUSE THE LICENCE WAS ALREADY READ.** The JP miner resolved it 2026-08-01 without a human and without defeating anything: route 2 had not actually failed, it had been mis-addressed — the "Wayback holds no terms captures" finding used the wrong CDX **host and slug** (`bitflyer.com`/`terms` instead of `bitflyer.jp`/`terms-of-use`). Corrected, capture `20190601153535` of `bitflyer.jp/en-eu/terms-of-use` served the document on the first try. **VERDICT: `restricted-by-licence`** — bitFlyer retains all rights in *"data such as transaction prices … which can be acquired by various external APIs"*, bars *"any robot, spider, crawler, scraper, script"*, and limits use to *"internal purposes … of the Service"*. So the row's decay premise is void in the direction that costs nothing: no day of tape was lost while this sat open, because no recorder was ever ours to start. ARTIFACTS: `docs/graveyard.md` → `jp_bitflyer_direct_recording` (mechanism of death, clause verbatim); `docs/research/data_axis_watchlist.md` card #3 synced CLOSED 2026-08-04. The same clause pre-kills `/v1/getchats`, `/v1/getfundingratehistory`, and the Wayback-archived keyless 15-min BTC/JPY series — an archive copy is not a licence. Licensed substitutes already owned: Tardis `bitflyer` free 1st-of-month (2019-08-30→), GMO Coin keyless ticks (2018-09-05→), bitbank candles. **HONEST RESIDUAL:** the document read is the EU entity's 2019 ToS, not the JP entity's current 利用規約; re-entry condition is a JP-entity ToS or explicit permission that does NOT retain rights in transaction prices. **THIS DOES NOT ANSWER ROW #80** — #68 is the one fork of the §13-consistency question that resolves with *no gate defeated*, so it removes an example, not the ruling; #80 still needs the principal. | operator+brain | 07-26 | closed |
-| 69 | **NAVER DataLab collector is built, wired and screen-harnessed — and has never run for want of a free API key** | The cheapest unconverted item in the entire §33 backlog, and it is not an engineering item at all: `scripts/collect_naver_krsearch.py` exists, is wired into the daily cadence, uses the audited `libs.research.axis_screen` harness, and no-ops gracefully without credentials. Run 2026-07-26 → `no NAVER_CLIENT_ID/SECRET -- graceful skip`; `data/secrets/naver.json` does not exist and no `NAVER_*` env var is set. Mechanism it would test: Korean retail search-attention as a companion to the kimchi-premium axis the desk already treats as real and orthogonal — the KR information ecosystem is distinct from Western crypto Twitter, and kimchi is the desk's single best-performing new axis (IC +0.148). The ToS-grey scrape of `datalab.naver.com`'s web endpoint was deliberately NOT taken: it is the exact class this desk excluded alongside Baidu Index and Weibo/Zhihu, and a fake artifact is worth less than none. | **BY 2026-08-09** — free NAVER Developers registration (NAVER account + phone verification; a human step, ~5 minutes), then drop `data/secrets/naver.json {"client_id": "...", "client_secret": "..."}`. Zero code is owed: the first live Stage-A screen lands on the next cadence run with no further work. If registration turns out to require Korean-resident verification the desk cannot satisfy, that is a real finding — record it and KILL the card with that mechanism rather than re-deferring. §33 deferral dated to this row: data_axis_watchlist card #21. | operator | 07-26 | open |
+| 69 | **NAVER DataLab collector is built, wired and screen-harnessed — and has never run for want of a free API key** | The cheapest unconverted item in the entire §33 backlog, and it is not an engineering item at all: `scripts/collect_naver_krsearch.py` exists, is wired into the daily cadence, uses the audited `libs.research.axis_screen` harness, and no-ops gracefully without credentials. Run 2026-07-26 → `no NAVER_CLIENT_ID/SECRET -- graceful skip`; `data/secrets/naver.json` does not exist and no `NAVER_*` env var is set. Mechanism it would test: Korean retail search-attention as a companion to the kimchi-premium axis the desk already treats as real and orthogonal — the KR information ecosystem is distinct from Western crypto Twitter, and kimchi is the desk's single best-performing new axis (IC +0.148). The ToS-grey scrape of `datalab.naver.com`'s web endpoint was deliberately NOT taken: it is the exact class this desk excluded alongside Baidu Index and Weibo/Zhihu, and a fake artifact is worth less than none. **RE-PRICED 2026-08-12 (R0300, KR-s1 C): tier-3 UNDER-VALUED this key.** Probing the sibling endpoints (KR-s1 2026-08-01) shows the SAME free key also unlocks `/v1/search/blog.json` and `/v1/search/cafearticle.json` — the ONLY s13-licensed route into Naver blogs and cafes, both of which name ClaudeBot/Claude-SearchBot `Disallow: /` in robots.txt and are therefore HARD-STOPPED on every other path. One ~5-minute registration converts TWO hard-stopped grounds PLUS the DataLab attention axis: three orthogonal KR surfaces for one human step — the highest value-per-operator-minute item on the register. **The 401-without-key is SETTLED — verified 4x; do NOT re-verify it a fifth time.** The only remaining action is the key; any further agent probe of this row is quota spent re-measuring a constant. | **BY 2026-08-19 (re-dated at the R0300 re-price; was 08-09 and lapsed)** — free NAVER Developers registration (NAVER account + phone verification; a human step, ~5 minutes), then drop `data/secrets/naver.json {"client_id": "...", "client_secret": "..."}`. Zero code is owed for DataLab: the first live Stage-A screen lands on the next cadence run with no further work. The blog/cafearticle surfaces DO owe a small collector on key arrival (`collect_naver_krsearch.py` reads only `/v1/datalab/search` — verified 2026-08-12); it is deliberately NOT pre-built because code that cannot be run against its endpoint until a key exists ships untested — the day the key lands, that build is the same session's work (L1.39). If registration turns out to require Korean-resident verification the desk cannot satisfy, that is a real finding — record it and KILL the card with that mechanism rather than re-deferring. §33 deferral dated to this row: data_axis_watchlist card #21. | operator | 07-26 | open |
 
 _Rows 67-69 added 2026-07-26 by the §33 conversion pass on the mined-to-wired backlog. All five carded finds took a disposition: two Tier-1 vendor-replacements WIRED with artifacts on disk (`data/coinmetrics_flows.jsonl` 9,866 rows full-depth + `data/kaiko_vwm_reference_rate.jsonl` 132 fixings), three DEFERRED with dates. Every one of the three deferrals is blocked on a HUMAN step and on nothing else — a licence ruling, a page-read from a non-blocked network, a free API registration — so they are rowed here rather than left as dates in a research doc, because §33 dates expire back into the backlog while only this register escalates. Zero kills: nothing in this batch deserved a graveyard entry, and a kill without a mechanism is the cheap exit §33(10) prices out._
 
@@ -891,3 +923,40 @@ available RAM 189MB→1555MB), and underneath both sat one genuine committed mon
 (eb74f48). Ranking rows against each other could not have surfaced that, because the register
 assumes its own measurements are trustworthy. **Staleness named, not carried silently:** the last
 stamp before this one was 07-30, six days ago._
+
+## 2026-08-11T17:10Z re-rank (repair-window cycle)
+_Re-ranked 2026-08-11T17:10Z_
+
+Top block CONFIRMED unchanged: #100/#101/#102 (observation-count-vs-sample-size; the two opposed
+substitution biases; the provenance ladder's structurally-unmeasurable trio) remain the ranked
+top -- nothing this cycle produced outranks them, and #93-class money-behind-noise rows stay
+closed. This cycle's work bears on the register as follows: the L1.6 cohort API restoration
+(commit 8e8ea23) closes the enforcement half of the multiplicity family that #100 sits in; the
+futclose tail repair un-starves every screen target feed (touches #78/#79 families).
+
+DEADLINE-PASSED rulings (10 rows; the register's own rule -- implement, re-defer with a NEW
+dated reason, or retire):
+- **#4 fill-quality ledger** -> re-deferred to **2026-08-30** with R0084 (moat conversion: tape
+  TCA fields) which subsumes it; R0371 (no fee field on any fill) is the prerequisite and is
+  next in the money-path queue behind R0422/R0415.
+- **#28 full-depth random-component audit** -> re-deferred **2026-09-03** behind R0088 (deep-sweep
+  cadence from measured marginal yield) -- same instrument family, one build.
+- **#60 ADL wrong-branch** -> money-path; L1.38-staged with the R0304-R0307 block, due
+  **2026-08-25** (window re-check).
+- **#69 NAVER DataLab never-run** -> first RUN scheduled with the generation queue
+  **2026-08-16** (collector exists; a never-run organ is one command, then its screen).
+- **#70 literature abstract-cap** -> rides the litminer's own timer; cap fix due **2026-08-19**.
+- **#73 panel 110k-char payload** -> deferred to panel-restore day (panel is DOWN on credits;
+  fixing its payload while it cannot run is polish on a stopped engine): **2026-08-21**.
+- **#74/#75 deep_sweep silent-fail + ungoverned tree** -> **2026-08-17** with R0015 (same tree,
+  one governance claim fixes all three).
+- **#78 Kaiko validation numbers** -> **2026-08-24**, behind R0081 (bronze owner) which rebuilds
+  the validation series it needs.
+- **#79 de-contam t-1 stale-leg hole** -> the SUSPECT-STALE-LEG verdict shipped in axis_screen
+  (verified in harness source this cycle) covers the screen path; the residual (recorder-side
+  staleness stamps) folds into L1.46 clock-provenance work, due **2026-08-27**.
+
+STARVED rows (17): named as next-cycle triage debt -- this cycle's budget went to the repair
+window (52 ledger dispositions, CI restoration, 2 collector/organ outage fixes). They are NOT
+silently carried: the mechanical pass re-lists them daily and the next cycle owes their pass
+first (§37 will show this paragraph as the dated ack).

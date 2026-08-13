@@ -25,6 +25,7 @@ from libs.ops.model_chain import (
     promote,
     read_chain,
     render_chain,
+    verify_chain,
 )
 
 _ROOT = Path(__file__).resolve().parent.parent.parent
@@ -156,3 +157,38 @@ def test_the_live_chain_file_exists_and_is_flagship_headed():
     assert chain, "no live chain"
     assert is_flagship(chain[0]), f"chain head {chain[0]} is not a flagship model"
     assert len(set(chain)) == len(chain), f"duplicate entries in live chain: {chain}"
+
+
+# --- chain entitlement (R0361) ------------------------------------------------------------
+# The row that produced these asked one question -- "is claude-opus-5 actually servable?" -- and
+# the honest answer required a call the desk had no instrument for. These pin the DISCIPLINE that
+# makes the answer trustworthy, not the answer: an unreachable endpoint must never be reported as
+# a dead rung, because that is precisely the inversion that made the original claim wrong.
+
+def test_unreachable_listing_is_unmeasured_never_dead():
+    for listing in (None, []):
+        out = verify_chain(["claude-fable-5", "claude-opus-5"], listing)
+        assert out["status"] == "UNMEASURED", listing
+        assert out["dead_rungs"] == [], (
+            "an unreachable /v1/models reported rungs as NOT-SERVED -- that is the R0361 "
+            "inversion: 'we could not ask' rendered as 'the vendor does not serve it', which "
+            "invites an edit to the auth path that the evidence does not support"
+        )
+        assert all(r["status"] == "UNMEASURED" for r in out["rungs"])
+        # An unmeasured run examined nothing, so its denominator is 0, not len(chain) (L1.57).
+        assert out["n_rungs_checked"] == 0
+
+
+def test_a_rung_absent_from_the_listing_is_named():
+    out = verify_chain(["claude-fable-5", "claude-ghost-9"], ["claude-fable-5", "claude-opus-5"])
+    assert out["status"] == "DEAD-RUNG"
+    assert out["dead_rungs"] == ["claude-ghost-9"]
+    assert out["n_rungs_checked"] == 2
+
+
+def test_a_fully_served_chain_is_ok():
+    chain = ["claude-fable-5", "claude-opus-5", "claude-opus-4-8"]
+    out = verify_chain(chain, [*chain, "claude-sonnet-5"])
+    assert out["status"] == "OK"
+    assert out["n_rungs_checked"] == 3
+    assert out["n_served_listed"] == 4

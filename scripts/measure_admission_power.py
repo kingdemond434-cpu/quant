@@ -117,6 +117,7 @@ def run_level(true_sr: float, *, reps: int, seed0: int, n: int = _BASE_N, n_obs:
     oos_true: list[float] = []
     oos_null: list[float] = []
     supplied: set[str] = set()
+    struct_seen: dict[str, dict[str, int]] = {}
 
     for i in range(reps):
         rng = np.random.default_rng(seed0 + 7919 * i)
@@ -140,7 +141,30 @@ def run_level(true_sr: float, *, reps: int, seed0: int, n: int = _BASE_N, n_obs:
         for c, r in zip(cands, rows, strict=True):
             is_true = bool(r["is_true"])
             gates = r["gates"]
-            struct_ok = all(gates.get(g, True) for g in STRUCTURAL_GATES)
+            # R0419: this was `all(gates.get(g, True) ...)`, which counts a gate NOBODY SUPPLIED
+            # as a PASS -- so the harness that produced the "structural gates pass 73-100% of
+            # true alphas" figure reproduced, in its own arithmetic, the very defect it would
+            # have caught. Measured: break_even_win_rate and sample_adequacy were absent for 100%
+            # of rows, so the published rate was computed over 4 of 6 declared gates while
+            # reading as though it covered all six.
+            #
+            # AND ONE OF THOSE FOUR IS STILL FABRICATED, one file upstream: `audit_gate_power`
+            # builds each row as `{g: bool(v.gates.get(g, True)) for g in GATES}`, so `capacity`
+            # -- which validate() only emits when an ADV input exists, and records as UNMEASURED
+            # otherwise -- arrives here as a constant True. Measured on this harness: capacity
+            # 80/80 pass, 0 fail. The histogram below shows it as a CONSTANT-PASS gate rather
+            # than hiding it, but the fix belongs upstream and is rowed separately (R0569): it
+            # moves audit_gate_power's own published power numbers and needs its own re-run.
+            #
+            # The evaluated gates still decide struct_ok -- an absent gate must not FAIL a
+            # candidate either (that is the beats_baselines defect pointed the other way). What
+            # changes is that the denominator is now honest about what it measured.
+            evaluated = [g for g in STRUCTURAL_GATES if g in gates]
+            struct_ok = all(gates[g] for g in evaluated)
+            for g in STRUCTURAL_GATES:
+                cell = struct_seen.setdefault(g, {"pass": 0, "fail": 0, "unmeasured": 0})
+                cell["unmeasured" if g not in gates else
+                     ("pass" if gates[g] else "fail")] += 1
             floor_ok = float(r["oos_sharpe"]) >= MIN_ADMISSION_OOS_SHARPE
             name = str(c["name"])
             if is_true:
@@ -191,6 +215,13 @@ def run_level(true_sr: float, *, reps: int, seed0: int, n: int = _BASE_N, n_obs:
         "oos_sharpe_null": _stats(oos_null),
         "structural_gates_supplied_by_validate": sorted(supplied),
         "structural_gates_never_supplied": sorted(set(STRUCTURAL_GATES) - supplied),
+        # THE PER-GATE HISTOGRAM THE GATE-OPTIMALITY DUTY DEMANDS (R0419). The two summary lists
+        # above say WHICH gates were supplied; this says what each one actually DID. `unmeasured`
+        # is a first-class column: absence from a rejection tally is ambiguous between "never
+        # evaluated" and "evaluated and always passed", and only one of those is a wiring defect.
+        "structural_gate_histogram": struct_seen,
+        "structural_pass_rate_is_measured_over": sorted(
+            g for g, h in struct_seen.items() if h["pass"] + h["fail"]),
     }
 
 

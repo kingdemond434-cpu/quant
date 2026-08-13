@@ -49,7 +49,13 @@ start_if_down bybit run_recorder_bybit.py
 # The miner is started LAST and only if something is recording -- it has nothing to read
 # otherwise, and a miner reporting 0% because no tape exists is noise that hides the real signal.
 if [ -d data/moat ] && [ -n "$(ls -A data/moat 2>/dev/null)" ]; then
-    if pgrep -f "[s]cripts/mine_moat.py --loop" >/dev/null 2>&1; then
+    # The guard must match the process it SPAWNS, whatever order the args land in. The screen's
+    # spawn line puts --files before --loop, so an adjacency pattern (".py --loop") never matched
+    # its own child and every */5 supervisor tick leaked another ~340MB looper until the box hit
+    # the 400MB organ floor (measured 2026-08-11: four screen loopers, organ spawns skipping all
+    # day). `.*--loop` is order-independent; both guards use it so an arg insertion cannot
+    # resurrect the leak on the miner either.
+    if pgrep -f "[s]cripts/mine_moat.py.*--loop" >/dev/null 2>&1; then
         echo "  ok      moat-miner already running"
     else
         MOAT_FILE_BUDGET="${MOAT_FILE_BUDGET:-40}" \
@@ -61,7 +67,7 @@ if [ -d data/moat ] && [ -n "$(ls -A data/moat 2>/dev/null)" ]; then
     # mechanism actually predicts. Running the first continuously and the second on a daily
     # cadence was the asymmetry: an irreplaceable asset measured around the clock and interrogated
     # once a day. Both carry their own persisted coverage frontier, so both converge.
-    if pgrep -f "[s]cripts/screen_moat.py --loop" >/dev/null 2>&1; then
+    if pgrep -f "[s]cripts/screen_moat.py.*--loop" >/dev/null 2>&1; then
         echo "  ok      moat-screen already running"
     else
         nohup "$PY" scripts/screen_moat.py --files "${MOAT_SCREEN_FILES:-24}" \

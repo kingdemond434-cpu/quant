@@ -237,6 +237,14 @@ def derive_slots() -> dict[str, Any]:
                           # of the `state` prose. None where the artifact does not declare one --
                           # an absent start is UNKNOWN, never today (L1.30 phantom-birth rule).
                           "started": row.get("shadow_start") or row.get("start"),
+                          # `decision_at_obs` is the clock's PRE-REGISTERED decision point in
+                          # OBSERVATIONS (R0430), carried first-class for the same reason
+                          # `started` is: a consumer must never have to re-derive it, because
+                          # re-deriving it from today's data is precisely what makes it stop
+                          # being pre-registered. None where the artifact declares none -- an
+                          # undeclared decision point is UNKNOWN, and a horizon nobody wrote
+                          # down can never be reported as reached.
+                          "decision_at_obs": row.get("decision_at_obs"),
                           **_evidence(str(row.get("axis", "?")), now,
                                       days=row.get("forward_days", row.get("n", 0)),
                                       updated=row.get("updated")
@@ -342,8 +350,7 @@ class CohortM:
 
     `m` is what you pass to holm_bar. `provenance` says how it was arrived at, because a bar
     computed from a degraded cohort is still a bar and the caller has to be able to say so in its
-    own artifact. A number without its provenance is exactly what let a bar run on an
-    unverifiable m for weeks while every artifact recorded it as though it were measured.
+    own artifact.
     """
     m: int
     provenance: str          # MEASURED | INCOMPLETE-FLOORED | REFUSED-FLOORED
@@ -364,18 +371,10 @@ def cohort_m_for_bar() -> CohortM:
     designed 0.0045, a family-wise error rate 3.67x the design, on the desk's only path from
     research to capital.
 
-    TWO BOUNDS ARE AVAILABLE AND THIS TAKES THE LARGER OF THEM, never one or the other. The
-    per-source bound `m_upper` (counted slots plus each unreadable source's own maximum) is the
-    sharper statistic and is preferred where present; the law cap is the blunt floor. They are not
-    ordered in general -- `m_upper` is smaller when few sources are unreadable and larger when the
-    cohort has genuinely outgrown the cap -- so taking the max is the only choice that cannot
-    produce a LOOSER bar than either bound alone. That property is what makes this safe to
-    reinstate over a differently-derived number without re-auditing every caller.
-
-    Degraded paths:
-      * cohort incomplete (a source unreadable => m is a LOWER bound) -> max(m_upper, cap)
-      * registry unusable entirely                                    -> the cap
-    Over-counting only costs a real edge its promotion by a few days of clock; under-counting
+    So the degraded paths floor at the LAW CAP rather than falling back to a smaller number:
+      * cohort incomplete (a source unreadable => m is a LOWER bound) -> max(m, m_upper, CAP)
+      * registry unusable entirely                                    -> MAX_FORWARD_SLOTS
+    Over-counting only costs us a real edge's promotion by a few days of clock; under-counting
     admits noise as edge and sizes capital on it. Those are not symmetric, and this function
     resolves every ambiguity toward the one that cannot manufacture an edge.
     """
@@ -384,8 +383,7 @@ def cohort_m_for_bar() -> CohortM:
         derived = int(snap["m_concurrent"])
         complete = bool(snap["complete"])
         unknown = list(snap.get("unknown_sources") or [])
-        # Absent on a caller-supplied or older snapshot; the cap floor below still bounds it.
-        upper = int(snap.get("m_upper") or derived)
+        upper = snap.get("m_upper")
     except (OSError, ValueError, KeyError, TypeError) as exc:
         return CohortM(
             MAX_FORWARD_SLOTS, "REFUSED-FLOORED",
@@ -393,24 +391,27 @@ def cohort_m_for_bar() -> CohortM:
             f"{MAX_FORWARD_SLOTS} because an unknown cohort must never produce a LOOSER bar than "
             "a known one")
     if not complete:
+        # m_upper bounds each unreadable source at its own maximum, so where it is published it is
+        # the TIGHTER honest floor; the law cap remains the minimum either way. Both directions
+        # can only ever RAISE m above the loose lower bound, never lower it.
+        floor = max(derived, int(upper) if isinstance(upper, int) else 0, MAX_FORWARD_SLOTS)
         return CohortM(
-            max(upper, MAX_FORWARD_SLOTS), "INCOMPLETE-FLOORED",
-            f"{derived} clocks counted, per-source upper bound {upper}, but {len(unknown)} "
-            f"source(s) unreadable ({', '.join(unknown[:3])}) -- m is a LOWER bound, so it is "
-            f"floored at the law cap {MAX_FORWARD_SLOTS}; the true bar can only be higher")
-    return CohortM(max(derived, upper, 1), "MEASURED",
+            floor, "INCOMPLETE-FLOORED",
+            f"{derived} clocks counted but {len(unknown)} source(s) unreadable "
+            f"({', '.join(unknown[:3])}) -- m is a LOWER bound, so it is floored at "
+            f"{floor}; the true bar can only be higher, never lower")
+    return CohortM(max(derived, 1), "MEASURED",
                    f"{derived} concurrently-accruing forward clocks, every source readable")
 
 
 def concurrent_m() -> int:
-    """The Holm cohort size to correct EVERY forward bar by. Never 0 -- that would zero out
-    multiplicity -- and never the LOWER bound, which would loosen every bar it feeds.
+    """The Holm cohort size. Never returns 0 -- a cohort of nothing would zero out multiplicity.
 
-    Delegates to `cohort_m_for_bar()` so the fail-safe flooring applies to EVERY caller by
+    Delegates to `cohort_m_for_bar()` so that the fail-safe flooring applies to EVERY caller by
     default. This function had zero callers for the whole period the axis clocks ran at a 3.67x
-    inflated error rate; a bare `len()` here would be a footgun waiting for its first user.
+    inflated error rate; a bare `len()` here would have been a footgun waiting for its first user.
     """
-    return max(1, cohort_m_for_bar().m)
+    return cohort_m_for_bar().m
 
 
 def write_snapshot() -> dict[str, Any]:

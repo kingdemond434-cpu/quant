@@ -1,14 +1,6 @@
 """Estimation-error-shrunk Kelly -- the fraction that actually maximizes E[log wealth].
 
-Full Kelly is growth-optimal only when the edge is known EXACTLY. Ours is estimated from
-N forward days, so it carries standard error -- and Kelly's penalty for betting above the
-true optimum is worse than for betting the same distance below it (growth falls off a
-cliff on the overbet side). Betting naive full Kelly on an estimated edge therefore has
-LOWER expected compounding than the shrunk fraction. This is not conservatism: it is the
-max-E[log] bet under parameter uncertainty (2026-07-12 external-review upgrade, replacing
-the discrete time-ladder rungs of policy v3).
-
-    shrink = S^2 / (S^2 + SE(S)^2)        (Bayesian shrinkage toward zero edge)
+    shrink = S^2 / (S^2 + SE(S)^2)        (Bayesian shrinkage toward a zero-edge prior)
     fraction_of_kelly = shrink            (ramps continuously as evidence accumulates)
 
 with SE from Lo (2002): SE(S_daily) = sqrt((1 + S_daily^2 / 2) / N), annualized. Pooling
@@ -16,6 +8,46 @@ shadow + live forward days grows N daily, so size compounds with evidence automa
 no rungs, no calendar, nothing to skip. Reference behaviour (S_ann ~ 2.3): ~0.17x Kelly
 at day 15, ~0.36x at 40, ~0.55x at 90, ~0.71x at 180. A day-40 fast-track (needs S ~ 5)
 starts at ~0.73x -- strong evidence self-authorizes size, weak evidence cannot.
+
+WHY THE SHRINK IS RIGHT -- CORRECTED 2026-08-13 (R0432). THE FORMULA IS UNCHANGED AND THIS
+IS NOT AN ARGUMENT TO BET MORE. What changed is the reason attached to it, because the
+reason that used to be here is measurably false and a false rationale calibrates a real
+knob in the wrong direction.
+
+THE RETIRED RATIONALE: "Kelly's penalty for overbetting is asymmetric, so betting naive
+full Kelly on an ESTIMATED edge has lower expected compounding than the shrunk fraction."
+Measured and refuted by `scripts/study_absorbing_kelly.py` CONTROL A, 12/12 cells: with an
+unbiased mu, estimation noise ALONE leaves the growth optimum at exactly f* = 1.00. It is
+not a simulation artifact -- E[log W_T] = T(L*mu - L^2 sigma^2 / 2) is LINEAR in mu, so
+averaging over symmetric parameter noise about a correct mean cannot move the argmax at
+all. The asymmetry is real but it already lives inside the quadratic term; it is not a
+second effect that noise switches on.
+
+THE RATIONALE THAT SURVIVES: S-hat is not unbiased for the quantity being bet on. Edges
+reach this function BECAUSE they measured well, so the estimate carries a winner's curse
+and the correct input is the POSTERIOR MEAN of the edge under a prior that most candidates
+have none -- strictly below S-hat. S^2/(S^2 + SE^2) is exactly the James-Stein /
+normal-posterior shrinkage factor toward a zero-edge prior, so the form was right for a
+reason nobody had written down. The desk's prior is very strong: 420 screened, 0 survivors.
+
+DECIDED, NOT DEFERRED: THE SCREEN'S TRIAL COUNT IS NOT FED IN, AND MUST NOT BE. R0432 asked
+whether the 420-trial multiplicity count should tighten the shrink for heavily-selected
+candidates. It should not, and the reason is a property of the INPUT rather than a judgement
+about strength: this function is fed `fwd_sharpe` / `fwd_days` (dynamic_leverage.py:112) --
+the pre-registered FORWARD clock, measured on data that took no part in the screen's
+selection. Charging the screen's winner's curse against an estimate that did not undergo it
+prices the same selection twice, which is the duplicated-multiplicity error this desk has
+already paid for once in validation (turnover penalised twice because nobody checked whether
+it was in the number). The two-stage discovery law is what makes this safe: the screen has
+zero promotion authority, so its multiplicity is spent there and not carried forward.
+
+WHAT IS GENUINELY UNPRICED, AND IS A DIFFERENT AND SMALLER QUANTITY: promotion selects on
+FORWARD evidence, over at most MAX_FORWARD_SLOTS=12 concurrent slots. Holm corrects the
+p-value of that decision; it does not de-bias the effect SIZE this function then sizes on,
+so a candidate that just cleared the bar still has an upward-biased forward Sharpe. The
+relevant selection intensity is best-of-12, not best-of-420. Whether S^2/(S^2+SE^2) already
+absorbs it is an empirical question that needs its own study and is rowed separately --
+NOT assumed either way here, and any change it produces can only be TIGHTER.
 """
 
 from __future__ import annotations

@@ -287,3 +287,323 @@ grounds.**
   rails and sanctioned/offshore venues** — i.e. into exactly the leg the §13 gate forbids. There is
   no followable diaspora here for this desk. This is a genuine dead end, and naming it as one is
   the deliverable.
+
+---
+
+## SESSION SUMMARY — 2026-08-12 (standing daily run; brain seat)
+
+**STEP 0 — WATCHLIST REVIEW (one line each):**
+1. `kr_perasset_premium` — **DROP.** Its single trigger (R0069 adjudication) fired 2026-08-01:
+   decisive full-depth screen returned HONEST NULL (effective sign-z +1.15, 0/38 survivors,
+   37 underpowered + 1 timing-artifact), forward clock explicitly declined. Axis adjudicated —
+   nothing left to watch.
+2. POC volume-profile retest (RU 08-04 card) — **HOLD.** Stage-A falsification (rolling 96-bar
+   POC on owned 1h candles) still un-run; trigger unchanged.
+3. SFD-class venue-cadence probe (JP 08-04 card) — **HOLD.** The 48h mark/premium-index cadence
+   recording still un-run; the name-the-discontinuity precondition stands.
+
+**THIS SESSION'S DIG (Nuclear Phynance era-archaeology, first touch):** ground OPENED — 6,645
+distinct archived thread-page captures (2006→2021) via Wayback CDX; the live site is DEAD (000
+both schemes). Two threads mined to full depth (both Page-1-of-1, complete reply chains):
+161897 "VIX futures explanation" and 161299 "Quantifying how mean-reverting a market is?".
+EliteTrader: **CLOSED for this seat — ClaudeBot refused by name in robots.txt** (§13; archive
+side-door barred per the bitFlyer ruling). Wilmott: WALLED today (Cloudflare 403 both egresses).
+
+**Cards kept (survived graveyard + EV): 0.** One mechanism decomposed and EV-gated honestly:
+
+### dvol_futures_basis_carry — EV-REJECTED, logged as watchlist memory (not a card)
+- **Source + provenance:** NP thread 161897 (2012-07-24, practitioners filthy/ebal/athletico;
+  Wayback capture 20121015081431) — VERIFIED-mechanism (textbook-consistent, independently
+  derivable); instrument verified live 2026-08-12: Deribit BTC DVOL futures (USDC cash-settled,
+  60-min TWAP expiry; ETH not yet listed) — support.deribit.com 31424954825373.
+- **Mechanism:** VIX² (variance) is statically replicable by an option strip; VIX is its square
+  root — "you can't trade square roots": no static hedge exists, cash-and-carry cannot pin the
+  future, so the basis is an UNPINNED risk-neutral expectation E[vol] bearing a vol-of-vol
+  (convexity) premium. Same construction ⇒ same property for Deribit DVOL futures.
+- **Desk transfer, both directions:** (a) DVOL futures basis = candidate vol-carry sleeve,
+  structurally distinct from perp funding (counterparty = vol hedgers paying convexity, not
+  levered longs); (b) the inverse test CONFIRMS the desk's funding prior: perp basis IS
+  statically hedgeable (spot vs perp), so funding carry's edge must come from flow (leverage
+  demand), never from replication failure — consistent with `_PRIORS` funding_family.
+- **EV gate (honest, run this session):** est_sharpe 0.4, breadth 1 (BTC only), capacity ~$30k,
+  orthogonality 0.4 (short-vol tail-correlated with funding book), 10h effort, tags
+  funding_family+narrow_breadth → **EV 0.0003 < 0.002 REJECT** (p_survive 0.075, breadth_f
+  0.224). The single-instrument construction starves exactly like VRP — the prior working as
+  designed. No construction-shopping was done; this is the one construction scored.
+- **SINGLE PROMOTION TRIGGER:** breadth. ETHDVOL futures listing PLUS any second venue's vol
+  future (≥3 instruments), OR a validated ≥5-asset cross-sectional vol-carry construction —
+  then re-score; at breadth 5 the same honest inputs clear the gate (~0.0027).
+- **Strongest spurious argument (written first):** the premium is the most-published carry in
+  finance; in thin crypto vol futures the roll-down may be entirely consumed by spread + the
+  tail (short-vol blowups correlated with the funding book's own worst days), making the sleeve
+  additive risk, not additive alpha.
+
+**WATCHLIST (max 5 — active entries after this session): POC retest (hold), SFD cadence probe
+(hold), dvol_futures_basis_carry (new). 3/5 slots used.**
+
+---
+
+## SESSION SUMMARY — 2026-08-12 session G (EN frontier miner, seat rotation)
+
+**THIS SESSION'S DIG (NP era-archaeology continuation + HN Records family close):** three items,
+all closed. (1) **HN 9152332** (2015 Quantopian contest-winner thread, 28 comments, full tree via
+OP-022, max depth 3) — the ERA COMPANION to graveyard `crowdsourced_backtest_selection_fund`: the
+mechanism of death was predicted IN the operator's own 2015 thread (learnstats2: "the algorithm
+you need to win a contest is the highest-risk algorithm you can get away with"; fawce's defense
+named the exact machinery — backtest + 1-month paper — that the 2020 fund outcome refuted).
+Graveyard entry enriched, no new mechanism. (2) **NP threads 161162 + 161713 EXHAUSTED** (3 and
+14 posts, full reply chains): 161162 → convexity-adjustment-neglect mechanism, translated and
+EV-gated below; 161713 → 2012 validation time capsule (random-tape harness placebo, live-vs-
+backtest same-window reconciliation, selection-on-OOS death anecdote) — CONFIRMATORY of desk
+doctrine (certify_gauntlet already runs known-GOOD/known-NULL controls, R0017), no inbox row
+spent. (3) **NP forum indices surveyed:** 8 of 13 classified (f2 TRADING rich — 25 titles mapped
+2011-02; f4 risk/VaR; f5 quant-theory; f8 books; f6 careers noise; f10 off-topic noise; f12
+general mixed; f1 done prior); f3/f7/f9/f11/f13 = ZERO Wayback captures (2 probes each,
+unarchived seams). Venue-discovery thread 148582 ("top 3 forums you spend time on"): 0 replies at
+capture — dead seam, documented. **DATA AXIS FOUND: Binance COIN-M (dapi), zero desk coverage,
+verified-live keyless** → data_axis_watchlist card 31 + universe map 98-binance-coinm-dapi.
+
+**Cards kept (survived graveyard + EV): 0.** One mechanism decomposed and EV-gated honestly:
+
+### coinm_usdtm_basis_convexity_rv — EV-REJECTED, logged as watchlist memory (not a card)
+- **Source + provenance:** NP thread 161162 "Convexity arbitrage" (2012-06-20, Wayback
+  20121015082245, MrKlugh/gill/sas) — era lore: mid-90s convexity adjustments (FRA-vs-futures,
+  in-arrears) ignored by the street until a London desk arbitraged them; one victim "no longer
+  around". MECHANISM_ONLY tier at source; instrument layer verified live this run (dapi probe).
+  DERIVES-FROM: NONE (checked) — 3-post thread, no citations beyond a risk.net cliquet feature.
+- **Mechanism:** inverse (coin-margined) futures settle PnL in coin ⇒ convex USD payoff ⇒ fair
+  COIN-M basis ≠ USDT-M basis by a computable convexity adjustment (∝ σ²T). Clienteles are
+  segmented by collateral custody (coin-only hedgers cannot use USDT-M), so the differential can
+  sit away from fair value persistently. Trade = same-expiry basis spread, market-neutral to
+  first order, 5 quarterly underlyings (BTC/ETH/BNB/SOL/XRP).
+- **EV gate (honest, run this session, libs.research.alpha_economics):** est_sharpe 0.5, breadth
+  5, capacity $200k (COIN-M BTC/ETH deep), orth 0.5, 12h effort, 1.2× maint, tags
+  funding_family + crowded_known (the spread is a known pro-desk trade even though the
+  convexity-MISPRICING test framing is not published) → **EV 0.0009 < 0.002 REJECT** (p_survive
+  0.105). Conservative variant WITH narrow_breadth tag also scored and reported: 0.0002. Two
+  constructions considered, both logged (VARIANTS_TRIED discipline): quarterly-convexity (scored,
+  mechanism-true) and 20-pair perp funding-differential (named, weaker mechanism — clientele
+  demand, not convexity; NOT scored as a rescue).
+- **SINGLE PROMOTION TRIGGER (measurement, not construction-shopping):** once the COIN-M axis is
+  backfilled (card 31), compute the measured quarterly basis differential minus theoretical
+  convexity value, net of 2× taker fees both legs. If |residual| persists on ≥3 of 5 underlyings
+  across ≥2 quarterly rolls, re-score with MEASURED est_sharpe in place of the 0.5 prior —
+  measured inputs, not tag relitigation, are the only path back.
+- **Strongest spurious argument (written first):** every delta-neutral basis desk already watches
+  this spread; post-2022 COIN-M OI share shrank (the coin-collateral clientele thinned), so the
+  residual may be exactly fee-sized — the axis measurement decides, not this card.
+
+**WATCHLIST (max 5 — active entries after this session): POC retest (hold), SFD cadence probe
+(hold), dvol_futures_basis_carry (hold), coinm_usdtm_basis_convexity_rv (new). 4/5 slots used.**
+
+## SESSION SUMMARY — 2026-08-12 session 2-on-branch (RU frontier miner)
+
+### delisting_announcement_unwind_window — EV-REJECTED at prior, logged as watchlist memory (not a card; measurement trigger named)
+- **Source + provenance:** github.com/roman-boop/bybit-trading-on-delistings (RU practitioner
+  cryptomaniac_dt, the POC-retest card's author — chain walked live topic 2130528 → GitHub
+  profile → 50-repo sweep, 2026-08-12). The bot is EXECUTABLE-tier evidence of the RETAIL SNIPE
+  layer: telethon on @Bybit_Announcements + Binance CMS news parse → market SHORT on mentioned
+  USDT-perps at announcement latency. Sibling repo bybyt-tokensplash-long = the listing-side
+  twin (already desk-owned ground: listing_events.py is pre-registered; not a new trial).
+  DERIVES-FROM: NONE (checked) — no citations in either repo; practitioner-native genre.
+- **Mechanism:** delisting announcement opens a PRE-ANNOUNCED, DATED forced-unwind window
+  (holders must exit; market-makers pull; perp contracts get settled/removed) ⇒ predictable
+  sell pressure with published equities index-deletion analogues and a crypto study already
+  quoted on the Upbit axis row (−12%/wk post-announcement, no reversal). §42 names "delisting
+  unwinds" as desk ground. The desk angle is the multi-day WINDOW, never the t=0 snipe (that
+  layer is measurably occupied — this repo IS the evidence).
+- **EV gate (honest, run this session, libs.research.alpha_economics):** est_sharpe 0.5, breadth
+  30 (batch-clustered events counted conservatively), capacity $50k (delisted names are thin BY
+  SELECTION), orth 0.8, 16h effort (event-list collector + event study), 1.2× maint, tags
+  crowded_known (index-deletion effect is published; snipe layer crowded) → **EV 0.0013 < 0.002
+  REJECT** (p_survive 0.0525). Sensitivity at est_sharpe 0.7 also rejects (0.0019) — reported,
+  not adopted. VARIANTS_TRIED: window-drift (scored); announcement-latency snipe (named, NOT
+  scored — a latency race vs colocated retail bots at zero prior, naming it is not a rescue).
+- **SINGLE PROMOTION TRIGGER (measurement, not construction-shopping):** universe-map row 44
+  (exchange-announcement-calendars, adopted-pending-verify) now carries the CONCRETE collector
+  routes this dig surfaced (Binance CMS news endpoint; @Bybit_Announcements as machine-readable
+  feed). When that owed verify lands and the event list exists, the event study against bronze
+  candles is ~free: if measured window drift nets positive after funding-spike carry cost +
+  spread blowout (the two named killers — shorts crowd delisting perps, funding goes deeply
+  negative), re-score with MEASURED est_sharpe via libs/validation/event_study.py (event-shaped
+  gate, both exit rules = two trials). Nothing promotes from this entry directly.
+- **Strongest spurious argument (written first):** the visible drift may be entirely the
+  UNSHORTABLE segment — by the time a perp short is practical, funding cost ≈ the drift
+  (barrier-rent shape again: the return accrues to whoever bears the constraint, and a
+  crowded-short funding print IS that constraint priced).
+
+**WATCHLIST (max 5): unchanged — 4/5 slots used; this entry holds no slot.**
+
+## SESSION SUMMARY — 2026-08-12 session 2-on-branch (KR frontier miner)
+
+### kr_rail_state_transition_global_leg — NEW CARD (slot 5) — EV 0.0061 QUEUE, novelty 0.772 [§33: wired -> data/ppomppu_kr_era_threads.jsonl]
+- **Source + provenance:** Ppomppu 가상화폐 era corpus, mania+ban window threads mined to full
+  comment layer this session (era-seek per OP-021 KR; archive data/ppomppu_kr_era_threads.jsonl,
+  era map + 2,130-row title tape data/ppomppu_bitcoin_era_map.json). Load-bearing primary posts:
+  22072 (2017-12-24: "지갑 없이 신규상장시 타거래소보다 매우 높은 시세" — deposit-closed listing
+  = captive-market premium, stated as a RULE with live example BTG-Coinone 66; 보따리상 supply
+  pipe throttled by chain congestion), 55179 (2018-01-12: ERC-20 tokens arb tight — per-coin
+  premium ∝ transfer friction), 76535/76756/76863 (2018-01-29/30: venue↔bank binding + beehive
+  kill → venue-level rail dispersion, frozen-leg discounts). DERIVES-FROM: NONE for the mechanism
+  comments (checked — folk-original; news threads quote Yonhap). CONVERGENCE (genuinely
+  independent, three instances): era folk rule (2017-12) + modern Cocoa per-coin premium
+  route-optimizer (velog, s5 2026-08-04) + CN 7th-instance venue-credit share (8btc 2013) —
+  different eras, languages, authors; none derives from another.
+- **Mechanism:** per-coin deposit/withdrawal suspensions and resumptions on Upbit/Bithumb create
+  and release fenced-market (가두리) venue premium dispersion. KR retail is KRW-rail-captive; when
+  a coin's deposit rail closes, KR demand cannot import supply (보따리상 pipe cut) → venue-local
+  premium builds; on rail REOPEN the premium converges through the first deposits. The desk
+  cannot touch the KR leg (no KRW rail — the membrane cuts against us too) — the tradeable
+  transmission is the GLOBAL leg: KR-dominated alts' Binance price/flow around KR rail-state
+  transitions (KR venues are the marginal bid in many alt books; a rail state change gates that
+  bid's transmission). The regressor is the venue's OWN label, structurally unbuyable (card #26).
+- **EV gate (honest, run this session, libs.research.alpha_economics):** est_sharpe 0.5, breadth
+  30 (rail-transition events/yr, batch-clustered counted conservatively), capacity $100k (Binance
+  leg, mid-cap alts), orth 0.8 (no desk signal reads per-coin/per-venue KR rail state; kimchi =
+  aggregate BTC premium only), 16h effort (announcement-category collector extension + event
+  study), 1.2× maint, tags new_orthogonal_data → **EV 0.0061 ≥ 0.002 QUEUE** (p_survive 0.24,
+  breadth_f 1.225). Novelty vs 231 graveyard priors: **0.772, not redundant** (nearest:
+  illiquidity_premium 0.228). Capacity runway: event-shaped overlay on liquid Binance perps —
+  no runway conflict; REACHES-LIVE class if it survives.
+- **Pre-registration owed BEFORE any screen (two-stage law, zero promotion authority here):**
+  event = per-asset rail-state TRANSITION on a KR big-2 venue (deposit close / deposit reopen —
+  from the announcement archive's suspension notices + the live market/all + assetsstatus flags
+  now accruing since 08-01); direction = close→global-leg underperformance of KR-dominated alts
+  (KR bid transmission cut), reopen→recovery; window = announcement t0 to t+3d; target =
+  cross-sectional relative return vs Binance alt universe (asset-selection signal per the
+  target/horizon duty). BOTH event_study exit rules = two trials, logged. FALSIFIER: if
+  close-events show no cross-sectional deficit vs matched controls (or the sign is random across
+  the 8.8y announcement archive), the transmission is dead and the card dies — the KR-internal
+  premium may be real while the global transmission is nil, and only the transmission is
+  tradeable here. THE SCREEN IS CARD #26's OWED SCREEN — same owner, now with a design; this
+  card adds no second screen obligation (§33: this find is WIRED as era evidence + design;
+  the screen disposition lives on card #26, unchanged owner).
+- **Strongest spurious argument (written first):** KR-dominated alts are SELECTED FOR
+  manipulation-heavy books (the era's own bots were part venue-manufactured volume, and Upbit
+  wash-volume was prosecuted) — a measured "KR bid transmission" may be the echo of paint, not
+  flow; the control set must match on volume-quality, and any survivor owes a mechanism check
+  against per-venue REAL-flow proxies before it is believed.
+- **ADDENDUM 2026-08-12 (same seat, resumed run) — two era findings that cut AGAINST this card,
+  recorded here because the screen must not be run without them.** (1) **WS-011 outage-staleness
+  confound.** The same era corpus documents (thread 52389, OP + independent commenter) a KR venue
+  whose matching engine FROZE during a crash, manufacturing a ~140,000 KRW intra-KR spread out of
+  nothing. Tapes freeze during crashes and volume spikes — exactly when rail-state transitions
+  cluster — so this confounder is *correlated with the treatment* and biases the event window
+  rather than averaging out. The pre-registered screen above must therefore carry a liveness
+  filter (venue volume / tape advance) on both legs, or a "rail state → premium" result is
+  unidentifiable from "venue stopped trading". Note `libs/research/upbit_data.py:64` currently
+  discards `candle_acc_trade_volume`, so that filter is not available from the stored series
+  as-built. (2) **Direction risk.** Thread 77829's best reply — "해외 차트 고스란히 반영 되요"
+  (the KR bots simply track the overseas chart) — is era testimony that the KR book FOLLOWS
+  global. This card's tradeable claim is KR→global transmission; if the era reply generalises,
+  the causal arrow points the other way and the card's mechanism is absent even if the correlation
+  is present. Neither finding kills the card; both mean a naive positive result should be
+  disbelieved first. The FALSIFIER above is unchanged and still binding.
+
+**WATCHLIST (max 5): POC retest (hold), SFD cadence probe (hold), dvol_futures_basis_carry
+(hold), coinm_usdtm_basis_convexity_rv (hold), kr_rail_state_transition_global_leg (NEW). 5/5
+slots used.**
+
+## SESSION SUMMARY — 2026-08-12 (JP frontier miner)
+
+### jp_funding_settlement_sandwich — EV-REJECTED as published, logged as watchlist memory (not a card); the OBSERVATION is routed instead
+- **Source + provenance (mandatory fields).** SOURCE: `qiita.com/lud-botter/items/6b4412fe2c7b3a9578a5`
+  — 「金利をサンドイッチするBotのアイデア」, 仮想通貨botter Advent Calendar 2023 day 12, posted
+  2023-12-11, updated 2024-03-10, 34 likes, **0 comments** (checked, not assumed — no reply layer
+  to mine). Host qiita.com is the OPEN half of the JP corpus (note.com/zenn.dev closed this run,
+  OP-052). **DERIVES-FROM: NONE (checked)** — the post cites no paper, repo or thread; it is a
+  first-person account triggered by watching the 2023-08/09 alt-pump wave. This matters: it makes
+  the agreement with the desk's own L1.47 finding **genuine independent convergence, not an echo**
+  (the desk's usual false-convergence trap, GAP #85).
+- **Mechanism as published.** On perps carrying large NEGATIVE funding (< −1% per settlement,
+  common on 2023 alt pumps), price drops sharply AT the settlement stamp — the author reports the
+  same down-candle at 1m, 1s AND ms resolution. Trade: hold a LONG for ~10 ms spanning the stamp,
+  collect the payment, eat only the tiny price drop. Win iff |funding| > drop over the hold. WHO IS
+  FORCED: the funding-harvesting long cohort, synchronised by the VENUE'S CLOCK — they are paid at
+  a common instant and exit together, so the payment itself triggers the move.
+- **EV gate (honest, run this session):** est_sharpe 0.6, breadth 30, capacity $25k, orth 0.85,
+  60h effort, 2.5× maintenance, tags funding_family + high_turnover_no_maker → **EV 0.0006 <
+  0.002 → REJECT.** Novelty 0.797 (not redundant, nearest `grave:cross-exchange funding
+  dispersion` 0.203) — so it is rejected on ECONOMICS, not as re-tested ground.
+- **WHY IT IS DOA HERE SPECIFICALLY, beyond the EV arithmetic.** (1) It needs millisecond execution
+  against a stamp the author measured jittering **50–100 ms** on his own main venue; this desk has
+  no HFT execution path and its one abandoned HFT attempt is in the same corpus. (2) The author's
+  own sizing was **20× leverage**, which the survival rails forbid on an unproven edge — and his
+  stated failure mode is a **−50% trade** when the funding is missed. (3) **The delay is worst
+  exactly when funding is most extreme** ("金利-3%など、加熱している時ほど遅延しやすく"): payoff
+  and execution risk are POSITIVELY correlated, so the fat left tail is concentrated on the
+  best-looking opportunities. (4) **Dead at source with a dated cause:** ~¥500k over 2 months, then
+  "エッジが消えた"; one venue **changed its funding-settlement rules mid-operation** — the same
+  venue-rule-change death mode as the SFD class (graveyard `jp_sfd_boundary_game`, 08-04). (5) The
+  author was also front-run on his BUY leg once his timing became regular.
+- **WHAT IS ACTUALLY WORTH KEEPING — routed, not carded.** The tradeable bot is dead; the
+  OBSERVATION behind it is a measurable claim about market structure that bears on the desk's
+  DEPLOYED sleeve: *is there a systematic price move in the minutes around a funding settlement,
+  conditional on funding sign/magnitude?* L1.47 already measured that the desk's own closes cluster
+  near settlement stamps (22.3% within an hour of a payment) but never measured whether PRICE moves
+  there. → **EV 0.0087 QUEUE** as `funding_settlement_phase_execution_timing` (est_sharpe 0.35,
+  breadth 40, capacity $200k, orth 0.7, 12h, tags funding_family). This is an EXECUTION-TIMING
+  measurement for an existing sleeve, not a new alpha — which is exactly the class L1.5/the
+  bottleneck law says is usually cheaper and more certain than another signal.
+- **UNTESTED ALPHA the author names and never tried (L1.34 #6, the unpriced option):** "if you can
+  characterise the CONDITIONS under which the settlement delay occurs, you can build the mirror bot
+  — short WITHOUT paying funding." Logged as his stated open question, not as a desk claim.
+- **PROCESS EXTRACTION (process mandate).** DISCOVERY PATH: noticed an EXTREME in an already-visible
+  observable (funding < −1% during alt pumps) and reasoned "a large discrete payment must create a
+  distortion" — a mechanism-first trigger, not a data-mining sweep. THE NOTICING: confirmed the same
+  artifact at THREE resolutions (1m/1s/ms) before trading it — a cheap, transferable robustness
+  check the desk does not routinely run on microstructure claims. WHAT HE COULD NOT TEST: the
+  venue's internal order-processing/settlement mechanics (his addendum section is a stub). HIS OTHER
+  BOTS, with outcomes — a rare practitioner P&L ledger: CEX-CEX domestic↔overseas arb (**quit at the
+  JP Travel Rule revision**, barely profitable), DEX shitcoin bot (atomic arb + sandwich, tens of
+  thousands USD over months, chain dying), MEV sandwich via Flashbots (abandoned: gas + competition),
+  spread-detection bot (manual execution, ~¥10k/mo), HFT (1+ month, **no valid indicator found**,
+  abandoned), ML swing bot (backtest-good, untested live).
+- **ERA MARKER for the JP map (dark-forest deliverable 3):** the JP **Travel Rule revision (in force
+  2023-06-01)** killed this practitioner's domestic↔overseas CEX arb. That is a dated regulatory
+  boundary closing the JP corridor-rent surface — the JP instance of the barrier-rent family the RU
+  (8th instance) and KR seats keep hitting, and it closes the same way: **by regulation, not by
+  competition**. Consistent with the JP premium axis already being graveyarded near zero.
+
+**WATCHLIST (max 5): POC retest (hold), SFD cadence probe (hold), dvol_futures_basis_carry (hold),
+coinm_usdtm_basis_convexity_rv (hold), kr_rail_state_transition_global_leg (hold). 5/5 slots used
+— this session added NO card (one EV-reject, one measurement routed to the funding axis owner).**
+
+## 2026-08-13 — JP frontier miner s4 (deep-forest self-hosted layer): 4 candidates scored, 1 clears, 0 new cards
+
+All four were novelty-gated against the graveyard BEFORE scoring (universal duty; none redundant,
+nearest-prior similarity 0.149–0.189) and then run through the pre-registered EV gate with honest
+inputs. Verdicts, so the trials are counted rather than the survivor reported alone:
+
+| candidate | novelty | EV | p_survive | verdict | disposition |
+|---|---|---|---|---|---|
+| `venue_fee_volume_credibility` | 0.816 | **0.0058** | 0.24 | **QUEUE** | → universe-map source **102** (data-integrity axis, not a sleeve) |
+| `ofi_taker_component_dominance` | 0.851 | 0.0002 | 0.026 | REJECT (below thresh) | → `improvement_inbox.md` item 1 (feature-redundancy fact, not a trade) |
+| `option_flow_informedness` | 0.828 | 0.0002 | 0.060 | REJECT (below thresh) | → held below as an untested-alpha lead + vocabulary flag |
+| `rev_calendar_spread_iv_convergence` | 0.811 | 0.0000 | 0.013 | REJECT | → `docs/graveyard.md` (also refuted at source) |
+
+**NO NEW CARD. The watchlist stays at 5/5: POC retest (hold), SFD cadence probe (hold),
+`dvol_futures_basis_carry` (hold), `coinm_usdtm_basis_convexity_rv` (hold),
+`kr_rail_state_transition_global_leg` (hold).** The one gate survivor is a *conditioning variable*,
+not a sleeve, so it takes an axis row rather than a card slot — carding it would consume a scarce
+slot with something that can never be promoted on its own.
+
+**THE ONE LEAD HELD RATHER THAN DISCARDED — `option_flow_informedness`, flagged per the extraction
+mandate as mapping to NO entry in `CRYPTO_MECHANISMS`.** From `perp-screener.com/posts/btc-bot`
+(2025-12-04), stated as the author's reason for choosing options at all: *"「意志のある取引」が多いの
+では？"* — **option order flow carries more intent per unit notional than perp flow, because
+selecting a strike AND an expiry encodes direction, timing and magnitude simultaneously, whereas
+`BTCUSDT` gets bought on a vibe.** The desk's vocabulary has `options skew` and `derivatives
+positioning`, which are *state* variables; this is a claim about the **informedness of flow
+conditional on instrument complexity**, and it is a different quantity. Testable in principle (does
+option trade imbalance lead perp price by more than perp trade imbalance does?), and it **fails the
+EV gate today on `narrow_breadth`** — BTC/ETH options are ~2–3 independent bets — which is an honest
+rejection, not a hidden one. **Enabling change that would re-open it (L1.16a):** a materially wider
+liquid crypto option cross-section, or a construction that pools the option-flow signal across many
+perps rather than trading the options themselves. Held here, not carded, not screened.
+
+**PROVENANCE NOTE ON THE WHOLE SESSION (OP-072, new this run):** the options post's *mechanism
+analysis* is self-disclosed LLM output (*"チャッピーの解説によると"*), so it is **not** an independent
+practitioner node and must never be counted as convergence. Its *observations* — realised P&L, greeks
+snapshot, the expiry failure mode — stand. The other three sources are pre-2023 or carry no LLM
+disclosure, checked.

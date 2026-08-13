@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -103,6 +104,31 @@ class FakeBroker:
 
     def get_order(self, client_order_id: str) -> BrokerOrderResult | None:
         return self._by_client.get(client_order_id)
+
+
+@pytest.fixture(autouse=True)
+def _never_write_the_live_bleed_cache(
+    tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """No test may seed the executor's last-good denylist cache with fixture symbols.
+
+    `_structurally_bleeding` writes through every non-empty read, and the tests that exercise it
+    monkeypatch `_FORENSICS` but have no reason to know a second path exists. Without this,
+    running the suite would leave synthetic rows (FRESHUSDT, ZZZBLEEDUSDT) in the real
+    `data/structural_bleed_last_good.json`, which the live executor consults whenever forensics
+    is unreadable -- a test run silently editing a money-path fallback.
+
+    Autouse and directory-wide on purpose: opt-in isolation only protects the tests that
+    remembered to ask, and the next test to touch this fence will not know to. Covers every
+    LOADED copy of the module, because test_carry_entry_gate.py execs the same source under an
+    alias to avoid opening venue connections -- patching one name would leave the other live.
+    """
+    seen = [m for m in list(sys.modules.values())
+            if getattr(m, "__name__", "").startswith("scripts.run_cashcarry_executor")
+            or (hasattr(m, "_BLEED_CACHE") and hasattr(m, "_structurally_bleeding"))]
+    for mod in seen:
+        monkeypatch.setattr(mod, "_BLEED_CACHE",
+                            tmp_path_factory.mktemp("bleed") / "last_good.json", raising=False)
 
 
 @pytest.fixture

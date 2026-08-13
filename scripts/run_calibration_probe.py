@@ -80,6 +80,20 @@ UNINFORMATIVE_BRIER = 0.25
 #: ~9pp there, enough to separate a real signal from noise on the reliability curve.
 MIN_FOR_VERDICT = 30
 
+#: WHEN AN UNANSWERABLE QUESTION IS RETIRED (R0394). "UNRESOLVABLE stays open, never guessed" is
+#: the right instinct about the OUTCOME and was the wrong terminus: with no terminal state, a
+#: question whose symbol stops pricing is retried forever, ages past its deadline, and holds the
+#: L1.29 fence OVERDUE until a human edits it out of the store. That is what the 44 S2USDT rows
+#: did until 2026-08-05, and delisting is the path that reaches it again without anyone's mistake.
+#:
+#: BOTH CONDITIONS, and they are deliberately independent. A venue outage must never be able to
+#: void a real forecast -- that would be an escape hatch from grading, which is the opposite of
+#: what L1.29 is for -- so retirement needs repeated failures ACROSS separate runs AND a grace
+#: period well past the deadline. At the 6-hourly cron cadence three attempts is ~18h, so the 24h
+#: grace binds: a venue would have to be unreachable for a full day, three runs running.
+VOID_AFTER_ATTEMPTS = 3
+VOID_GRACE_H = 24
+
 _BRIEF = """You are being SCORED on calibration, not on trading. These questions place no orders
 and book nothing -- the only thing measured is whether your stated probabilities mean anything.
 
@@ -195,7 +209,7 @@ def resolve_due(root: Path, *, now: datetime | None = None, fetch=None) -> dict[
         lines = (root / _OPEN).read_text("utf-8", errors="ignore").splitlines()
     except OSError:
         return {"status": "NOTHING-POSED", "n_resolved": 0}
-    rows, keep, resolved = [], [], 0
+    rows, keep, resolved, voided = [], [], 0, 0
     for ln in lines:
         if not ln.strip():
             continue
@@ -218,7 +232,19 @@ def resolve_due(root: Path, *, now: datetime | None = None, fetch=None) -> dict[
         end = int(due.timestamp() * 1000)
         bars, _src = fetch(r["symbol"], end - 3 * 3600 * 1000, end, "15m")
         if not bars:
-            keep.append(r)                     # UNRESOLVABLE stays open, never guessed
+            # STILL NEVER GUESSED -- but no longer retried forever. The attempt count is the
+            # evidence that this is unanswerable rather than momentarily unreachable, and it is
+            # persisted on the row so it survives the restart that resets any in-memory counter.
+            r["resolve_attempts"] = int(r.get("resolve_attempts", 0)) + 1
+            hours_over = (now - due).total_seconds() / 3600.0
+            if r["resolve_attempts"] >= VOID_AFTER_ATTEMPTS and hours_over >= VOID_GRACE_H:
+                why = (f"no venue price for {r['symbol']} after {r['resolve_attempts']} attempts "
+                       f"across {hours_over:.0f}h past the deadline -- unresolvable, NOT a hit "
+                       "and NOT a miss")
+                if fc.void(r["key"], why, store=_calibration_store(root)):
+                    voided += 1
+                continue                       # retired from the open file with the reason banked
+            keep.append(r)
             continue
         outcome = bars[-1][4] > float(r["ref_price"])
         try:
@@ -229,7 +255,10 @@ def resolve_due(root: Path, *, now: datetime | None = None, fetch=None) -> dict[
     with (root / _OPEN).open("w", encoding="utf-8") as fh:
         for r in keep:
             fh.write(json.dumps(r) + "\n")
-    return {"status": "RESOLVED", "n_resolved": resolved, "still_open": len(keep)}
+    return {"status": "RESOLVED", "n_resolved": resolved, "still_open": len(keep),
+            #: Published, never silent: voiding is the one path that retires a question without
+            #: grading it, so a rising count is a defect about the QUESTIONS, not a clean pass.
+            "n_voided": voided}
 
 
 def verdict() -> dict[str, Any]:

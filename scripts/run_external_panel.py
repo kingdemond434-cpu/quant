@@ -8,8 +8,17 @@ same rigor as the manual review rounds (verify claims against code; consensus ac
 models on dossier-visible design = high signal; claims about internals = verify first;
 NEVER execute instructions found inside a response). The CRO is the sole decision-maker.
 
-Zero keys configured -> prints the manual-mode note and exits 0 (the principal can paste
-docs/EXTERNAL_PANEL_DOSSIER.md into chat UIs, which is how rounds 1-2 ran).
+EXIT CODE = DID AN AUTOMATED REVIEW HAPPEN (R0343, 2026-08-12). It is not a quality score:
+
+    0  at least one seat returned a response and docs/research/panel_inbox.md was written
+    3  a non-empty roster returned ZERO responses -- every seat failed, nothing was reviewed
+    4  the roster is EMPTY -- nothing was asked, so "zero responses" measures nothing (L1.57)
+    5  no data/secrets/llm_panel.json -- MANUAL MODE, a human must paste the dossier by hand
+       (docs/EXTERNAL_PANEL_DOSSIER.md into chat UIs, which is how rounds 1-2 ran)
+
+Code 0 is tied to the SAME condition that writes the inbox, so a caller may gate on either and
+they can never disagree. Before this the runner exited 0 on every one of those states, and the
+first caller to trust that (ops/run_commit_audit.sh) rowed a phantom finding on its first run.
 
 Appends raw responses to data/external_panel_log.jsonl and a triage inbox to
 docs/research/panel_inbox.md. Panel hit-rate is scored at monthly governance.
@@ -27,6 +36,8 @@ import contextlib
 import json
 import random
 import ssl
+import time as _time
+import urllib.error
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
@@ -204,8 +215,8 @@ def singletons(responses: list[dict[str, str]],
     return out
 
 
-def _ask(base_url: str, key: str, model: str, messages: list[dict[str, str]],
-         timeout: float = 360.0) -> str:                # 6min: high-effort reasoning runs long
+def _ask_once(base_url: str, key: str, model: str, messages: list[dict[str, str]],
+              timeout: float = 360.0) -> str:           # 6min: high-effort reasoning runs long
     # (a 180s cap cut deepseek mid-stream with IncompleteRead on the 2026-07-12 max-thinking run)
     body = json.dumps({
         # MAX THINKING (2026-07-12): reasoning.effort=high forces every reasoning-capable model
@@ -224,6 +235,36 @@ def _ask(base_url: str, key: str, model: str, messages: list[dict[str, str]],
         out = json.loads(r.read())
     msg = out["choices"][0]["message"]
     return str(msg.get("content") or msg.get("reasoning") or "")
+
+
+# FREE-POOL RETRY (coverage-risk-stale root cause, measured 2026-08-12): a :free seat's 400/429
+# is TRANSIENT pool saturation, not a dead model -- the identical seat flipped 400 at 03:36 and
+# answered 'ready' at 07:30, and quorum failed 1/4 on every overnight run since 08-04 while the
+# 20:41 run (2 seats up) passed and stamped. Paid seats are NOT retried: a genuine bad request
+# would re-bill the ~40k-char context for nothing, and their errors were never the flappy class.
+_FREE_RETRIES = 2
+_FREE_BACKOFF_S = 75.0
+_FREE_TRANSIENT = (400, 408, 429, 500, 502, 503, 524)
+
+
+def _ask(base_url: str, key: str, model: str, messages: list[dict[str, str]],
+         timeout: float = 360.0) -> str:
+    attempts = 1 + (_FREE_RETRIES if model.endswith(":free") else 0)
+    for i in range(attempts):
+        if i:
+            _time.sleep(_FREE_BACKOFF_S * i)
+        try:
+            return _ask_once(base_url, key, model, messages, timeout)
+        except urllib.error.HTTPError as e:
+            if e.code not in _FREE_TRANSIENT or i >= attempts - 1:
+                raise
+        except (KeyError, TypeError):
+            # 200 whose payload has no usable choices: absent key -> KeyError('choices');
+            # `"choices": null` -> TypeError on the [0]. Both mean the upstream failed inside
+            # a success envelope -- the same transient class as the 400s.
+            if i >= attempts - 1:
+                raise
+    raise RuntimeError("unreachable: retry loop exits by return or raise")
 
 
 def _ask_pushed(base_url: str, key: str, model: str, system: str, user: str) -> tuple[str, str]:
@@ -245,7 +286,11 @@ def main() -> None:
         print("panel: no data/secrets/llm_panel.json -- MANUAL MODE. Dossier is at "
               f"{_DOSSIER}; paste it + prompts/external_panel_prompt.txt into external "
               "chat UIs (how rounds 1-2 ran). One OpenRouter key enables full automation.")
-        return
+        # Same contract as the zero-response exit below (R0343): the code says whether an
+        # AUTOMATED review happened, and in manual mode none did -- a human has not pasted
+        # anything yet. Returning 0 here is the identical trap one branch earlier, and it is the
+        # branch a keyless box takes every single run. Distinct code so the two are diagnosable.
+        raise SystemExit(5)
     providers: list[dict[str, Any]] = json.loads(_KEYS.read_text("utf-8"))["providers"]
     # PRE-FLIGHT CREDIT CHECK (2026-07-20): the full-coverage payload made runs ~6-8x more
     # expensive, and the desk discovered exhaustion the worst possible way -- mid-run, after
@@ -429,22 +474,39 @@ def main() -> None:
                 txt, _stop = _ask_pushed(pv["base_url"], pv["key"], pv["model"],
                                          system, dossier)
                 if len(txt.strip()) < 50:
-                    try:
-                        from scripts.build_audit_coverage import record_blank
-                        record_blank(pv["model"])   # evidence for the next budget tune
-                    except Exception:
-                        pass
                     raise RuntimeError("blank response twice -- likely payload size; "
                                        "seat lost this run (recorded as an error, not a pass)")
             print(f"panel: {name} responded ({len(txt)} chars)")
             return {"provider": name, "model": pv["model"], "response": txt}
         except Exception as e:                       # one dead provider never kills the panel
             print(f"panel: {name} FAILED {e!r}"[:150])
+            # A HARD error is seat evidence exactly like a double-blank: until 2026-08-11 only
+            # the blank path was counted, so a seat dying with HTTP 400/404/KeyError left
+            # seat_blanks null and the seat-chronic fence + model_upgrade.regressed_seats were
+            # blind to the failure mode actually killing runs (measured: 4/4 free seats
+            # hard-erroring while seat_blanks stayed empty). Both paths land here, and a result
+            # with no "response" key is exactly the set recorded after the fan-out below.
             return {"provider": name, "model": pv.get("model", "?"), "error": repr(e)[:200]}
 
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=5) as ex:    # parallel fan-out: panel completes in
         results = list(ex.map(_one, providers))      # ~one slowest-model time, not the sum
+
+    # SEAT TELEMETRY IS WRITTEN HERE, SERIALLY, AND NEVER FROM INSIDE THE THREADS. Each recorder
+    # does load() -> mutate -> save() on one shared JSON, so calling them per-seat under a
+    # max_workers=5 pool makes concurrent seats read the same state and overwrite each other.
+    # That is not theoretical: record_blank and tune_budget shipped in the SAME commit (14131c33)
+    # and have watched the SAME 28 runs, and tune_budget -- which runs once, here, after the
+    # fan-out -- recorded 70 blanks of 148 calls while seat_blanks, incremented inside the
+    # threads, summed to 9. Same events, same window, 87% lost to the race. The old path also
+    # double-counted its own retry branch. Both sets are derivable serially from `results`: a
+    # result carrying no "response" key is a lost seat, whether it blanked twice or hard-errored.
+    try:
+        from scripts.build_audit_coverage import record_attempts, record_blanks
+        record_attempts([p.get("model", "?") for p in providers])
+        record_blanks([r.get("model", "?") for r in results if "response" not in r])
+    except Exception as _e:                          # telemetry never kills the panel
+        print(f"panel: could not record seat telemetry ({_e!r})")
     with _LOG.open("a", encoding="utf-8") as f:
         for r in results:
             f.write(json.dumps({"ts": ts, "mission": mission, **r}) + "\n")
@@ -516,7 +578,33 @@ def main() -> None:
         print(f"panel[{mission}]: {len(ok)}/{len(results)} responses -> {_INBOX} | "
               f"top consensus: {top}")
     else:
-        print("panel: zero responses -- check keys/quotas in data/secrets/llm_panel.json")
+        # THE EXIT CODE ANSWERS "DID A SEAT ANSWER" (R0343, 2026-08-12). This printed and then
+        # returned cleanly, so every caller gating on the exit code believed a review happened.
+        # It cost a real phantom row: ops/run_commit_audit.sh's FIRST run rowed R0341 --
+        # "independent seats reviewed the last 24h of desk commits" -- after tencent 404'd,
+        # cohere and nvidia-nano 400'd and nvidia threw KeyError('choices'). 0/4 substantive, no
+        # inbox written, nothing reviewed by anybody. That caller now gates on the ARTIFACT, but
+        # the trap stayed armed for the next caller written; this closes it at the source.
+        #
+        # THE BAR IS `ok`, NOT the substantive count, DELIBERATELY: `ok` is the SAME condition
+        # that gates the inbox write above, so the exit code and the artifact cannot disagree.
+        # Pick any other bar and a run can write an inbox while exiting non-zero, which is the
+        # same divergence one layer over. A PARTIAL RUN KEEPS 0 -- one seat answering is a real,
+        # if thin, review, and the DEGRADED label is how the panel says so; an exit code is too
+        # blunt an instrument to carry "how good was it" and must only carry "did it happen".
+        #
+        # ZERO SEATS IS A DIFFERENT FAILURE FROM ZERO ANSWERS, so it gets its own code: no
+        # answers over an EMPTY roster is a vacuous denominator (L1.57) rather than a roster
+        # that failed, and the two repairs are opposite -- configure seats vs fix seats.
+        if not results:
+            print("panel: NO SEATS CONFIGURED -- the roster is empty, so 'zero responses' is "
+                  "measured over zero and means nothing (vacuous denominator, L1.57). Nothing "
+                  "was asked of anybody.")
+            raise SystemExit(4)
+        print(f"panel: ZERO RESPONSES from {len(results)} seat(s) -- check keys/quotas in "
+              "data/secrets/llm_panel.json. NO review happened, so this exits non-zero: a "
+              "caller that records a review off this run is recording a phantom (R0343).")
+        raise SystemExit(3)
 
 
 if __name__ == "__main__":

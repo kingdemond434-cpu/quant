@@ -39,6 +39,7 @@ import pandas as pd
 from scipy.stats import norm
 
 from libs.research.axis_screen import stage_a_screen
+from libs.research.panel_breadth import measure_panel_breadth
 
 ROOT = Path("/home/quant/quant-platform")
 MET = ROOT / "data/lake/bronze/oi_ls_daily"
@@ -115,12 +116,34 @@ def decile_spread(sig: pd.DataFrame, fwd_rel: pd.DataFrame) -> dict:
 TRIALS: list[dict] = []
 
 
-def run(name: str, sig: pd.DataFrame, tgt: pd.DataFrame, meta: dict) -> dict:
+def run(name: str, sig: pd.DataFrame, tgt: pd.DataFrame, meta: dict, *,
+        panel_width: int) -> dict:
     s, t, info = stack(sig, tgt)
     if len(s) < 100:
         out = {"name": name, "verdict": "INSUFFICIENT-DATA", "n": len(s)}
     else:
-        out = stage_a_screen(s, t, name=name)
+        # The stacked panel's power context, passed INTO the harness rather than pasted over its
+        # output afterwards. horizon_days drives annualisation; the [::h] grids are built
+        # NON-overlapping so the time axis carries no overlap (overlap_periods=1); panel_width
+        # divides out the cross-sectional stacking. Before 2026-08-11 none of these were passed,
+        # so every recorded n_eff was raw symbol-days and `powered` was certified on a sample
+        # inflated by the full panel width -- 42 "graveyard-grade" SCREEN-WEAK verdicts the
+        # screen lacked the power to make (the false-null direction no other gate catches).
+        #
+        # AND THE 08-11 FIX REPLACED ONE ASSUMPTION WITH THE OPPOSITE ONE. panel_width alone says
+        # these 139 symbols carry ONE independent observation per day. Measured on this very
+        # panel (2026-08-13) they carry ~93: the product terms the pooled IC sums correlate at
+        # rho=+0.0036 across names, because the target is the cross-sectionally DEMEANED return.
+        # So the divisor is 1.50, not 139, and every cell here was reading a detection floor 9.6x
+        # too high. Measured per panel and per cell -- asserting a constant would re-create the
+        # error in a third place. UNMEASURABLE keeps the conservative full-K divisor.
+        breadth = measure_panel_breadth(sig.to_numpy(), tgt.to_numpy(),
+                                        min_obs=MIN_OBS_PER_SYM)
+        out = stage_a_screen(s, t, name=name,
+                             horizon_days=float(meta.get("horizon_days") or 1.0),
+                             panel_width=panel_width, overlap_periods=1.0,
+                             xs_neff=breadth.xs_neff if breadth.measured else None)
+        out["breadth"] = breadth.as_dict()
     out.update(meta)
     out.update(info)
     TRIALS.append(out)
@@ -180,7 +203,8 @@ def screen_oi_ls() -> dict:
         for cname, raw in cons.items():
             meta = {"horizon_days": h, "target": "cross-sectional relative return",
                     "normalisation": "cross-sectional rank->normal-scores, then harness z20"}
-            o = run(f"{cname}|xsrank|rel|{h}d", xs_rank_z(raw).where(enough), rel, meta)
+            o = run(f"{cname}|xsrank|rel|{h}d", xs_rank_z(raw).where(enough), rel, meta,
+                    panel_width=len(common))
             o["descriptive_decile_spread"] = decile_spread(
                 xs_rank_z(raw).where(enough), rel.shift(-1))
         res[h] = None
@@ -198,7 +222,8 @@ def screen_oi_ls() -> dict:
         for cname in ("M1_ls_level", "M3_taker_level", "M2_oi_growth"):
             run(f"{cname}|rawz20|rel|{h}d", cons[cname].where(enough), rel,
                 {"horizon_days": h, "target": "cross-sectional relative return",
-                 "normalisation": "raw level, harness z20 only"})
+                 "normalisation": "raw level, harness z20 only"},
+                panel_width=len(common))
 
     # -- declared target control: ABSOLUTE (non-demeaned) return instead of relative, h=1.
     #    Documents the relative-vs-absolute distinction the mandate calls the key lever.
@@ -210,7 +235,8 @@ def screen_oi_ls() -> dict:
         run(f"{cname}|xsrank|ABS|1d", xs_rank_z(cons[cname]).where(enough),
             ret.where(enough),
             {"horizon_days": 1, "target": "ABSOLUTE return (control)",
-             "normalisation": "cross-sectional rank->normal-scores, then harness z20"})
+             "normalisation": "cross-sectional rank->normal-scores, then harness z20"},
+            panel_width=len(common))
     return {"symbols": len(common), "dates": len(px),
             "range": [str(px.index.min().date()), str(px.index.max().date())]}
 
@@ -268,8 +294,13 @@ def screen_binance_metrics() -> dict:
                 TRIALS.append({"name": f"{cname}|BTC_abs|{h}d", "verdict": "INSUFFICIENT-DATA",
                                "n": len(j), "horizon_days": h})
                 continue
+            # Single series on the same non-overlapping [::h] grid: true horizon for the
+            # annualisation, overlap 1 for the deflation, width 1. The old bare call left
+            # horizon_days=1.0, so 5d Sharpe annualised sqrt(5)=2.24x hot -- the adversarial
+            # review of M5|BTC_abs|5d had to hand-correct exactly this.
             o = stage_a_screen(j["s"].to_numpy("float64"), j["t"].to_numpy("float64"),
-                               name=f"{cname}|BTC_abs|{h}d")
+                               name=f"{cname}|BTC_abs|{h}d",
+                               horizon_days=float(h), overlap_periods=1.0)
             o.update({"horizon_days": h, "target": "BTCUSDT absolute return (single asset -- "
                       "no cross-section available in this axis)",
                       "normalisation": "harness z20 only"})

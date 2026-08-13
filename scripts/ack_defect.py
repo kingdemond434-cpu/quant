@@ -34,8 +34,27 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 _ACKS = _ROOT / "data/max_audit_acks.json"
+#: R0393: REPO-scope acks go in the TRACKED registry so they travel with the commit that reasons
+#: about them. The routing input costs nothing -- max_audit already records `scope` per defect in
+#: the report this script reads to validate the id.
+_ACKS_REPO = _ROOT / "data/max_audit_acks_repo.json"
 _REPORT = _ROOT / "data/max_audit_report.json"
 _MAX_DAYS = 30
+
+
+def _registry_for(scope: str) -> tuple[Path, str]:
+    """Which registry an ack of this scope belongs in, and why.
+
+    RUNTIME defects rest on untracked evidence -- a clone can neither confirm nor close them -- so
+    their disposition is genuinely per-box. Everything else (REPO, and UNSCOPED which max_audit
+    escalates as REPO so unknown provenance is never an excuse) is identically true in every
+    checkout and must be disposed of where every checkout can see it.
+    """
+    if scope == "RUNTIME":
+        return _ACKS, ("RUNTIME -- the evidence is untracked, so this ack is correctly per-box "
+                       "and stays out of git")
+    return _ACKS_REPO, (f"{scope} -- true in every checkout, so the ack is TRACKED and must be "
+                        "committed, or it keeps firing (and escalating) everywhere else")
 
 
 def _load(p: Path) -> dict:
@@ -54,16 +73,27 @@ def main() -> int:
     ap.add_argument("--prune", action="store_true", help="remove expired acks and exit")
     args = ap.parse_args()
 
-    acks = _load(_ACKS)
     now = datetime.now(tz=UTC)
 
     if args.prune:
-        keep = {k: v for k, v in acks.items() if str(v.get("until", "")) > now.isoformat()}
-        _ACKS.write_text(json.dumps(keep, indent=2), "utf-8")
-        print(f"pruned {len(acks) - len(keep)} expired ack(s); {len(keep)} remain")
+        # BOTH registries. Pruning only the local one would let expired tracked acks linger as
+        # permanent burial -- the one thing this script's own rules forbid outright.
+        total = 0
+        for path in (_ACKS, _ACKS_REPO):
+            acks = _load(path)
+            if not acks:
+                continue
+            keep = {k: v for k, v in acks.items() if str(v.get("until", "")) > now.isoformat()}
+            path.write_text(json.dumps(keep, indent=2), "utf-8")
+            print(f"{path.name}: pruned {len(acks) - len(keep)} expired ack(s); "
+                  f"{len(keep)} remain")
+            total += len(acks) - len(keep)
+        print(f"pruned {total} expired ack(s) in total")
         return 0
 
-    live = {d.get("id"): d.get("msg", "") for d in _load(_REPORT).get("live", [])}
+    report = _load(_REPORT)
+    live = {d.get("id"): d.get("msg", "") for d in report.get("live", [])}
+    scopes = {d.get("id"): str(d.get("scope") or "UNSCOPED") for d in report.get("live", [])}
     if not args.did:
         if not live:
             print("no live defects in data/max_audit_report.json (run scripts/max_audit.py first)")
@@ -91,15 +121,26 @@ def main() -> int:
               "audit re-fires when the ack lapses, which is the point.")
         return 2
 
+    scope = scopes.get(args.did, "UNSCOPED")
+    path, why = _registry_for(scope)
+    acks = _load(path)
     acks[args.did] = {
         "reason": args.reason.strip(), "by": args.by.strip(),
         "acked": now.isoformat(),
         "until": (now + timedelta(days=args.days)).isoformat(),
+        #: The scope this ack was ROUTED on, recorded beside it. A later reader asking why an ack
+        #: sits in one file rather than the other should not have to re-derive it from a run that
+        #: may no longer produce the same defect.
+        "scope": scope,
     }
-    _ACKS.parent.mkdir(parents=True, exist_ok=True)
-    _ACKS.write_text(json.dumps(acks, indent=2), "utf-8")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(acks, indent=2), "utf-8")
     print(f"acked {args.did} for {args.days}d (expires {acks[args.did]['until'][:10]}) -- "
           f"max_audit will report it as [acked] until then, then re-fire")
+    print(f"  -> {path.relative_to(_ROOT)}  [{why}]")
+    if path is _ACKS_REPO:
+        print("  COMMIT IT. An uncommitted tracked ack is a per-box ack wearing a tracked "
+              "filename, and the defect keeps escalating on every other checkout.")
     return 0
 
 

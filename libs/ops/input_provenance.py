@@ -242,19 +242,16 @@ class Inputs:
         CONTENT OUTRANKS MTIME, for the reason `fresh.py` documents: the 10-minute auto-deploy
         and the puller's revert path rewrite files, so mtime lies FRESH after a deploy -- the
         dangerous direction. The stamp-key list is the desk's observed zoo, not a preference.
+
+        DELEGATED to libs.ops.fresh (R0399), which held only `generated` while this module held
+        the whole zoo -- so the L1.44 gate and the L1.55 block could report different ages for
+        the SAME artifact and no fence could see it, the L1.61 class exactly. One module now
+        knows when a file is old.
         """
-        if isinstance(data, dict):
-            for key in ("generated", "ts", "checked", "measured", "updated", "generated_at"):
-                v = data.get(key)
-                if isinstance(v, str):
-                    try:
-                        from datetime import datetime
-                        t = datetime.fromisoformat(v.replace("Z", "+00:00"))
-                        return max(0.0, (time.time() - t.timestamp()) / 3600.0)
-                    except ValueError:
-                        continue
-                if isinstance(v, (int, float)) and v > 1e8:  # epoch seconds
-                    return max(0.0, (time.time() - float(v)) / 3600.0)
+        from libs.ops.fresh import stamp_age_h
+        age, _key = stamp_age_h(data)
+        if age is not None:
+            return age
         try:
             return max(0.0, (time.time() - p.stat().st_mtime) / 3600.0)
         except OSError:

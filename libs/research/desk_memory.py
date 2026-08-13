@@ -164,10 +164,17 @@ def _test_exists(ref: str, root: Path | None = None) -> bool:
     return f"def {name}(" in src
 
 
-def load(path: Path | None = None) -> list[Lesson]:
+def load(path: Path | None = None, root: Path | None = None) -> list[Lesson]:
     """Every ACTIVE lesson, highest-scoring first. Retired rows stay in the file as history and
     are excluded here -- the ledger is append-only so that a retired lesson can be audited later,
-    which is impossible if retirement means deletion."""
+    which is impossible if retirement means deletion.
+
+    `root` EXISTS SO A CALLER CAN SCORE A LEDGER THAT IS NOT IN THE REPO. It defaults to the
+    ledger's own grandparent, which is right for the real file. A caller probing a CANDIDATE
+    corpus writes it to a scratch path, and without this the `enforced_by` references would then
+    be resolved against the scratch directory, every graduated lesson would silently lose its
+    discount, and the probe would answer a different question from the one that was asked.
+    """
     p = path or LEDGER
     if not p.exists():
         return []
@@ -188,7 +195,7 @@ def load(path: Path | None = None) -> list[Lesson]:
             enforced_by=ref,
             # VERIFIED, never trusted. See _test_exists: a stale or mistyped reference must not
             # buy the budget discount, or the field becomes a silent way out of the corpus.
-            enforced_verified=bool(ref) and _test_exists(ref, p.parent.parent),
+            enforced_verified=bool(ref) and _test_exists(ref, root or p.parent.parent),
         ))
     out.sort(key=lambda item: (-item.score, item.id))
     return out
@@ -244,14 +251,15 @@ def validate_row(row: dict[str, object]) -> list[str]:
     return problems
 
 
-def corpus(budget: int = BUDGET_CHARS, path: Path | None = None) -> tuple[str, list[Lesson]]:
+def corpus(budget: int = BUDGET_CHARS, path: Path | None = None,
+           root: Path | None = None) -> tuple[str, list[Lesson]]:
     """The injected text, plus EVERY lesson that did not fit.
 
     Returning the dropped list is not a nicety. A memory layer that truncated silently would
     reproduce the exact defect it was built to fix: the desk believing it carries knowledge it
     does not carry. Callers are expected to surface the overflow, and check_memory_reach does.
     """
-    items = load(path)
+    items = load(path, root)
     kept: list[Lesson] = []
     dropped: list[Lesson] = []
     used = len(_HEADER) + len(_FOOTER)

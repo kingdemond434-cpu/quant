@@ -117,10 +117,57 @@ def _pairwise(mat: np.ndarray, symbols: list[str]) -> dict[str, Any]:
                 joint.append((float(np.corrcoef(x[both], y[both])[0, 1]), n))
     mean_filled = float(np.mean(filled)) if filled else float("nan")
     mean_joint = float(np.mean([c for c, _ in joint])) if joint else float("nan")
+    overlaps = sorted(n for _, n in joint)
     return {"mean_pairwise_zero_filled": mean_filled,
             "mean_pairwise_jointly_active": mean_joint,
             "n_pairs_zero_filled": len(filled), "n_pairs_jointly_active": len(joint),
-            "max_joint_overlap_days": max([n for _, n in joint], default=0)}
+            "max_joint_overlap_days": max(overlaps, default=0),
+            # The MEDIAN, not the max, is what the confidence bound is taken at: the max is the
+            # single best-observed pair and using it would price every other pair's correlation as
+            # if it were the most-observed one.
+            "median_joint_overlap_days": int(np.median(overlaps)) if overlaps else 0}
+
+
+def _independence(k: int, pw: dict[str, Any]) -> tuple[float, float, float, str]:
+    """Effective bets, published from the CONSERVATIVE correlation -- never the flattering one.
+
+    THE DEFECT THIS FIXES. This script computed correlation two ways, printed both, stored both,
+    and then fed the headline `effective_bets` from the ZERO-FILLED one, which is the more
+    forgiving of the two numbers it had just computed itself. Measured 2026-08-12 on the live
+    panel: rho 0.198 zero-filled vs 0.421 jointly-active over 8 columns, publishing 3.36
+    effective bets where the jointly-active reading gives 2.03 -- a 66% overstatement of
+    diversification. Reading the more forgiving of two disagreeing counters is a defect class
+    this desk has paid for before.
+
+    WHY THE CONSERVATIVE DIRECTION IS NOT MERELY TASTE. Over-estimating independence is the
+    dangerous direction under every sizing rule the desk owns: a Kelly bettor who believes it
+    holds 3.4 independent bets when it holds 2.0 over-levers, and Kelly's penalty is asymmetric.
+    Under-estimating costs a little size that later evidence reclaims. Same asymmetry, same
+    reasoning, and the same instrument as marginal_admission._fisher_upper, which already treats
+    a correlation the desk cannot pin down as duplicate-like rather than as independence.
+
+    ZERO-FILL IS NOT WRONG, IT ANSWERS A DIFFERENT QUESTION. On a day a sleeve chose not to trade
+    its return really is zero, so the zero-filled series is the true P&L stream. But two sleeves
+    that are rarely active on the same day look uncorrelated for a reason that is an accident of
+    scheduling, not a property of their mechanisms -- and the book getting fuller is the plan.
+    Both numbers are published; only the conservative one is headlined.
+
+    UNMEASURABLE READS AS ONE BET, NEVER AS MANY (L1.28a). With no jointly-active pairs there is
+    no evidence these columns are distinct, and 'we cannot tell' must not render as health.
+    """
+    rho_zf = pw["mean_pairwise_zero_filled"]
+    rho_ja = pw["mean_pairwise_jointly_active"]
+    n_eff_zf = effective_bets(k, rho_zf) if np.isfinite(rho_zf) else float("nan")
+    n_eff_ja = effective_bets(k, rho_ja) if np.isfinite(rho_ja) else float("nan")
+    if not np.isfinite(rho_ja):
+        return 1.0, n_eff_zf, n_eff_ja, ("UNMEASURED -- no jointly-active pair, so a duplicate "
+                                         "cannot be ruled out; floored at one bet")
+    n_overlap = int(pw.get("median_joint_overlap_days", 0) or 0)
+    rho_bound = ma._fisher_upper(float(rho_ja), n_overlap)
+    n_eff = effective_bets(k, rho_bound)
+    return n_eff, n_eff_zf, n_eff_ja, (
+        f"jointly-active rho {rho_ja:+.3f} at median overlap {n_overlap}d -> Fisher upper bound "
+        f"{rho_bound:.3f} (zero-filled would have published {n_eff_zf:.2f})")
 
 
 def main() -> int:
@@ -132,8 +179,7 @@ def main() -> int:
     ann = 365.0
     sharpes = {s: ma._sharpe(mat[:, j], ann) for j, s in enumerate(symbols)}
     pw = _pairwise(mat, symbols)
-    n_eff = (effective_bets(len(symbols), pw["mean_pairwise_zero_filled"])
-             if np.isfinite(pw["mean_pairwise_zero_filled"]) else float("nan"))
+    n_eff, n_eff_zf, n_eff_ja, basis = _independence(len(symbols), pw)
 
     print(f"RETURN PANEL: {len(dates)} days x {len(symbols)} symbols "
           f"({dates[0]} .. {dates[-1]})")
@@ -142,7 +188,9 @@ def main() -> int:
     print(f"  mean pairwise rho  jointly-active: {pw['mean_pairwise_jointly_active']:+.3f} "
           f"({pw['n_pairs_jointly_active']} pairs, max overlap "
           f"{pw['max_joint_overlap_days']}d)")
-    print(f"  effective bets from {len(symbols)} columns: {n_eff:.2f}")
+    print(f"  effective bets from {len(symbols)} columns: {n_eff:.2f}  [{basis}]")
+    print(f"    zero-filled {n_eff_zf:.2f} vs jointly-active {n_eff_ja:.2f} -- the published "
+          "number is the LOWER, never the flattering one")
     print("\n  top columns by realised Sharpe (net of fees, own fills):")
     for s in sorted(symbols, key=lambda x: -sharpes[x])[:8]:
         print(f"    {s:14s} Sharpe {sharpes[s]:+7.3f}   active {active[s]:3d}d")
@@ -171,11 +219,19 @@ def main() -> int:
         "returns": mat.tolist(),
         "active_days": {s: active[s] for s in symbols},
         "sharpes": sharpes, "correlation": pw, "effective_bets": n_eff,
+        "effective_bets_basis": basis,
+        "effective_bets_zero_filled": n_eff_zf,
+        "effective_bets_jointly_active": n_eff_ja,
         "admission_audit": {"seed": order[0], "kept": kept, "verdicts": verdicts},
         "note": "Returns are net/notional per closed trade, notional-weighted within a symbol-day, "
-                "zero-filled on inactive days. Zero-fill is the strategy's true return stream but "
-                "inflates correlation between mostly-flat strategies, so jointly-active "
-                "correlation is reported alongside it and the disagreement is the finding.",
+                "zero-filled on inactive days. Zero-fill is the strategy's true return stream, but "
+                "when activity barely overlaps it DEFLATES measured correlation -- one column's "
+                "moves land against the other's zeros -- so mostly-flat strategies read as "
+                "diversified when they are merely out of phase. Measured 2026-08-12: rho +0.198 "
+                "zero-filled vs +0.421 jointly-active on the same 8 columns. Both are published; "
+                "effective_bets is headlined from the CONSERVATIVE one via a Fisher upper bound, "
+                "because over-estimating independence over-levers and under-estimating it costs "
+                "size that later evidence reclaims.",
     }, indent=2), "utf-8")
     print(f"\n-> {_OUT.relative_to(_ROOT)}")
     return 0

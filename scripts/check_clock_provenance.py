@@ -62,6 +62,7 @@ if str(_ROOT) not in sys.path:
 
 # L1.42 LAWFUL ENTRY: TTL-cached, pages but does not block -- a governance fault must never
 # silence the only instrument that reports on the desk's largest dataset.
+from libs.ops.fence_exit import fence_exit  # noqa: E402
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
 from libs.research import clock_provenance as cp  # noqa: E402
 
@@ -320,7 +321,11 @@ def main() -> int:
         print(f"  next: {rep['next_action']}")
     if args.report_only:
         return 0
-    return 0 if rep["status"] == "OK" else 2
+    # L1.57 (R0417): denominator = market-data files this run actually opened. A collector
+    # directory that has moved or emptied yields zero files, zero unmarked streams, and an OK
+    # verdict about clock provenance the run never observed.
+    return fence_exit(rep["status"], {"OK"}, scanned=rep.get("files_read", 0),
+                      of="market-data files read", fence="check_clock_provenance.py")
 
 
 if __name__ == "__main__":

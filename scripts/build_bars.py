@@ -115,9 +115,19 @@ def trades_from(row: dict) -> list[tuple[int, float, float]]:
             if not isinstance(tr, dict):
                 continue
             try:
-                ms = int(tr.get("T") or row.get("t") or 0)
-                px = float(tr.get("p"))
-                qty = float(tr.get("v") if tr.get("v") is not None else tr.get("size") or 0.0)
+                # R0378: BOTH Bybit shapes. The compressed WS payload labels these p/T/v; the
+                # shape this desk's recorder actually wrote labels them price/time/size, and the
+                # reader accepted only the first. Measured 2026-08-12 over 6 sampled partitions:
+                # 221,000 nested entries, 100% of them price/time/size, 0 prints parsed -- the
+                # ENTIRE bybit trade tape (10,814 partitions, 27% of data/moat) was invisible to
+                # every consumer of this function, and it failed silently because an unparseable
+                # entry is skipped rather than counted. That is the exact defect this docstring
+                # already warned about for quantity, one field over.
+                ms = int(tr.get("T") or tr.get("time") or row.get("t") or 0)
+                raw_px = tr.get("p") if tr.get("p") is not None else tr.get("price")
+                px = float(raw_px if raw_px is not None else 0.0)
+                raw_q = tr.get("v") if tr.get("v") is not None else tr.get("size")
+                qty = float(raw_q if raw_q is not None else 0.0)
             except (TypeError, ValueError):
                 continue
             if ms and px > 0:

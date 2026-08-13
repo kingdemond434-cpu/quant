@@ -1,0 +1,17 @@
+{"_quarantine_header": true, "reason": "Fixture rows written into the LIVE moat tape by tests/execution/test_carry_entry_gate.py via run_trade_forensics.main() -> execution_tape.backfill(trades) with no path= (the test redirects the forensics module's paths, but the tape default lives in libs/execution/execution_tape.py). NOT live fills: every row here was taped after the 2026-08-01T21:55 CASHCARRY_KILL, with the book flat (cashcarry_positions.json positions {}).", "cut_rule": "taped > 2026-08-01T21:55:23.205752+00:00 (kill boundary), not a symbol denylist", "quarantined_at": "2026-08-13T04:15:02.501685+00:00", "fixed_by": "libs/execution/execution_tape._writable test-harness write guard", "n": 16}
+{"event": "close", "symbol": "OLDUSDT", "held_hours": 30.0, "closed": "2020-01-01T00:00:00+00:00", "notional": 100.0, "net": -1.0, "_taped": "2026-08-05T01:10:29.499574+00:00"}
+{"event": "close", "symbol": "OLDUSDT", "held_hours": 30.0, "closed": "2020-01-01T00:00:00+00:00", "notional": 100.0, "net": -1.0, "_taped": "2026-08-05T01:10:29.499778+00:00"}
+{"event": "close", "symbol": "OLDUSDT", "held_hours": 30.0, "closed": "2020-01-01T00:00:00+00:00", "notional": 100.0, "net": -1.0, "_taped": "2026-08-05T01:10:29.499870+00:00"}
+{"event": "close", "symbol": "OLDUSDT", "held_hours": 30.0, "closed": "2020-01-01T00:00:00+00:00", "notional": 100.0, "net": -1.0, "_taped": "2026-08-05T01:10:29.499944+00:00"}
+{"event": "close", "symbol": "OLDUSDT", "held_hours": 30.0, "closed": "2020-01-01T00:00:00+00:00", "notional": 100.0, "net": -1.0, "_taped": "2026-08-05T01:10:29.500015+00:00"}
+{"event": "open", "symbol": "BNBUSDT", "opened": "2026-07-31T07:15:45+00:00", "funding_rate": 3e-05, "notional": 47.36, "_taped": "2026-08-05T01:10:29.605117+00:00"}
+{"event": "open", "symbol": "THINUSDT", "opened": "2026-08-12T03:02:36.260819+00:00", "funding_rate": 3e-05, "notional": 47.36, "_taped": "2026-08-13T03:02:36.282470+00:00"}
+{"event": "open", "symbol": "THINUSDT", "opened": "2026-08-12T03:02:36.260819+00:00", "funding_rate": 0.0015, "notional": 47.36, "_taped": "2026-08-13T03:02:36.283733+00:00"}
+{"event": "open", "symbol": "THINUSDT", "opened": "2026-08-12T03:03:13.825103+00:00", "funding_rate": 3e-05, "notional": 47.36, "_taped": "2026-08-13T03:03:13.834036+00:00"}
+{"event": "open", "symbol": "THINUSDT", "opened": "2026-08-12T03:03:13.825103+00:00", "funding_rate": 0.0015, "notional": 47.36, "_taped": "2026-08-13T03:03:13.834302+00:00"}
+{"event": "open", "symbol": "THINUSDT", "opened": "2026-08-12T03:17:21.226254+00:00", "funding_rate": 3e-05, "notional": 47.36, "_taped": "2026-08-13T03:17:21.269107+00:00"}
+{"event": "open", "symbol": "THINUSDT", "opened": "2026-08-12T03:17:21.226254+00:00", "funding_rate": 0.0015, "notional": 47.36, "_taped": "2026-08-13T03:17:21.271721+00:00"}
+{"event": "open", "symbol": "THINUSDT", "opened": "2026-08-12T03:19:46.556304+00:00", "funding_rate": 3e-05, "notional": 47.36, "_taped": "2026-08-13T03:19:46.581089+00:00"}
+{"event": "open", "symbol": "THINUSDT", "opened": "2026-08-12T03:19:46.556304+00:00", "funding_rate": 0.0015, "notional": 47.36, "_taped": "2026-08-13T03:19:46.585089+00:00"}
+{"event": "open", "symbol": "THINUSDT", "opened": "2026-08-12T03:30:01.165786+00:00", "funding_rate": 3e-05, "notional": 47.36, "_taped": "2026-08-13T03:30:01.202169+00:00"}
+{"event": "open", "symbol": "THINUSDT", "opened": "2026-08-12T03:30:01.165786+00:00", "funding_rate": 0.0015, "notional": 47.36, "_taped": "2026-08-13T03:30:01.204973+00:00"}

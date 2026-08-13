@@ -40,11 +40,19 @@ its own falsifier: the best stablecoin supply APY reachable anywhere in the coll
 3.78% (aave-v3 USDC, Ethereum, $162M TVL) against a risk-free rate of 3.73%/yr. Net of the desk's
 own mandated 300bps haircut the lending rung yields 0.78% and LOSES to T-bills.
 
-    THE HAIRCUT IS DOING 100% OF THAT WORK. Gross, the lending rung wins by 5bps. The entire
-    "DeFi loses" verdict rests on `DEFAULT_HAIRCUT_BPS = 300.0`, a constant with no derivation
+    THE HAIRCUT WAS DOING 100% OF THAT WORK. Gross, the lending rung won by 5bps. The entire
+    "DeFi loses" verdict rested on `DEFAULT_HAIRCUT_BPS = 300.0`, a constant with no derivation
     anywhere in the repo. So this module reports the verdict AND the gross comparison AND the
     breakeven haircut, and never lets the constant hide inside a single netted number. A screen
     whose answer is an assumption wearing a measurement's clothes is the L1.47 defect class.
+
+    CLOSED BY R0375 (2026-08-12). `libs/research/lending_haircut.py` now derives the haircut from
+    measured base rates -- net-of-returned-funds exploit losses over integrated TVL-years, at a
+    95% Poisson frequency bound, plus the measured depeg shortfall. It came out at 41.7bps, i.e.
+    the undefended constant was 7.2x the defended estimate. THE VERDICT DID NOT MOVE and that is
+    the honest headline: on the 2026-08-12 snapshot the lending rung loses GROSS as well, so the
+    haircut decides nothing today. What changed is that the margin is now a measurement. The
+    refusal value is still 300bps, so an unreadable base-rate artifact keeps the band shut.
 
 Consequently the floor is `max(risk_free, lending_net)` and TODAY THAT IS SIMPLY THE RISK-FREE
 RATE. The module keeps both rungs because the comparison is the deliverable: the day a rung wins
@@ -94,16 +102,21 @@ _DEFI = "data/defi_lending.jsonl"
 _HURDLE = "data/hurdle_rate.json"
 
 
-def _haircut_bps() -> float:
-    """The lending haircut, IMPORTED and never copied.
+def _haircut_bps(root: Path | None = None) -> float:
+    """The lending haircut, DERIVED in one place and never copied.
 
-    `screen_collateral_allocation.py` already owns this constant and already refuses to run at
-    zero. A second literal here would be two definitions of one risk judgement, drifting silently
-    -- the precise failure `capacity_policy.py` was created to end. If the import breaks, that is
-    a REFUSAL, not a default: silently substituting a local number is how the drift starts.
+    Until R0375 this imported `screen_collateral_allocation.DEFAULT_HAIRCUT_BPS = 300.0`, a
+    constant with no derivation anywhere in the repo -- see this module's own docstring, which
+    recorded that the entire "DeFi loses" verdict rested on it. `lending_haircut.derive_haircut`
+    now computes it from measured exploit and depeg base rates and returns the SAME 300bps with
+    `measured=False` when it cannot, so a broken input still fails toward a shut band.
+
+    One definition, no per-caller copies: `screen_collateral_allocation` resolves through the
+    same function. A second literal here would be two definitions of one risk judgement drifting
+    silently -- the failure `capacity_policy.py` was created to end.
     """
-    from scripts.screen_collateral_allocation import DEFAULT_HAIRCUT_BPS
-    return float(DEFAULT_HAIRCUT_BPS)
+    from libs.research.lending_haircut import derive_haircut
+    return float(derive_haircut(root).bps)
 
 
 def _read_json(root: Path, rel: str) -> tuple[dict[str, Any] | None, float | None]:
@@ -326,7 +339,7 @@ def reachable_floor(root: Path | None = None, *, haircut_bps: float | None = Non
     wins and the floor moves.
     """
     root = root or _ROOT
-    hc = _haircut_bps() if haircut_bps is None else float(haircut_bps)
+    hc = _haircut_bps(root) if haircut_bps is None else float(haircut_bps)
     if hc <= 0:
         raise ValueError(
             "haircut_bps must be > 0: smart-contract, depeg and withdrawal-queue risk are real "
@@ -352,12 +365,22 @@ def reachable_floor(root: Path | None = None, *, haircut_bps: float | None = Non
     # `gross` is narrowed alongside `net` because net is DERIVED from it -- true by construction,
     # but stating it keeps the arithmetic below provably total rather than relying on that.
     if net is not None and gross is not None and rf is not None:
-        notes.append(
-            f"lending loses by {(rf - net) * 10_000:.0f}bps NET but wins by "
-            f"{(gross - rf) * 10_000:.0f}bps GROSS -- the {hc:.0f}bps haircut decides this "
-            f"verdict entirely, and it has no derivation in the repo (brainstorm item 22)."
-            if net < rf else
-            f"lending wins by {(net - rf) * 10_000:.0f}bps NET of the {hc:.0f}bps haircut.")
+        # THREE cases, not two. The original text hard-coded "wins GROSS, loses NET" and printed
+        # it whenever the net rung lost -- so on a day when lending lost GROSS as well it
+        # reported a -1bps gross "win" and blamed a haircut that had decided nothing. Which
+        # input actually settles the verdict is the whole point of publishing both rungs.
+        if net >= rf:
+            notes.append(f"lending wins by {(net - rf) * 10_000:.0f}bps NET of the "
+                         f"{hc:.1f}bps haircut.")
+        elif gross <= rf:
+            notes.append(f"lending loses by {(rf - gross) * 10_000:.0f}bps GROSS, before any "
+                         f"haircut -- the {hc:.1f}bps haircut is NOT what decides this verdict "
+                         f"today.")
+        else:
+            notes.append(f"lending loses by {(rf - net) * 10_000:.0f}bps NET but wins by "
+                         f"{(gross - rf) * 10_000:.0f}bps GROSS -- the {hc:.1f}bps haircut "
+                         f"decides this verdict entirely. It is DERIVED from measured exploit "
+                         f"and depeg base rates (R0375), not assumed.")
     return Floor(candidates[winner], winner, rf, gross, net, hc, breakeven, True, notes,
                  {"best_pool": best} if best else {})
 

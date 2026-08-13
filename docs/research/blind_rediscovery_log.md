@@ -774,3 +774,527 @@ swept — the draft that globbed them fired QUOTA-CAP on "up to 26 years", a dat
 record, and a gate that cries wolf gets switched off.
 
 _R0210 closed 2026-08-05._
+
+---
+
+# SESSION 2026-08-11 — second formal run
+
+**Fired by:** due-by-state, 11 days after the 2026-07-31 run (standing cadence is monthly; the
+early-fire rule names "material new internal raw material" and the interval supplied it: the moat
+corpus grew 7.1 → **17 GB**, three new law-built instrumentation layers landed (L1.45 excitation,
+L1.46 clock provenance, L1.47 funding clock) each carrying measured facts that did not exist on
+07-31, BR-08 was screened and refuted-reversed, the kimchi kill was re-based, and the graveyard
+gained ~12 entries including the RU statarb family prior R0296. §33 gate: BACKLOG-CLEAR, mining
+authorised.
+
+**Method compliance:** ZERO external search. Every input below is a desk artifact.
+
+### Inputs read (complete)
+| Artifact | What was taken |
+|---|---|
+| `docs/graveyard.md` (739 lines, full) | every kill class + kill basis; the RU statarb prior; the SFD-class probe; the barrier-migration synthesis |
+| `research_agenda.json` (50 `do_not_repeat`, 20-item queue) | full — including the 2026-07-31 L1.16a re-opens and the 2026-08-05 EV rejects |
+| `data/strategy_coverage.json` | family states: STATISTICAL-ARBITRAGE the one NEVER-HUNTED family; 6 thin |
+| Prior session (BR-01…BR-09) + R0381–R0384 | collision set; BR numbering continues at BR-10 |
+| `data/decision_ledger.json` (230 records; 14 since 08-01 read in full) | the 08-05 execution-hypotheses record (H1–H3), the EV-gate recalibration history |
+| `docs/research/MECHANISM_GRAPH.md` M1–M5 + addendum | node discipline; M5 feedback named as the desk's own candidate (not re-invented here) |
+| `data/funding_capture.json` (L1.47) | close-phase octiles, 59/266 forfeit closes z=+4.8, 41.4% mis-marked |
+| `data/excitation_design.json` (L1.45) | frozen arms; the identification target |
+| `data/data_assets.json` (120 assets) + on-disk verification | what is actually testable today (COT zcache has NO crypto markets — checked, one candidate dropped for it) |
+| `docs/research/prospector_watchlist.md`, `weak_signal_registry.md` | prior-art: SFD-class probe card (2026-08-04), WS-001 barrier law, R0296 statarb prior |
+| `data/mine_generation_priors.json`, forward slots / promotion queue | routing capacity |
+
+**Novelty gate:** all nine candidates scored against the **rebuilt** 231-prior corpus
+(`build_graveyard_priors.py` re-run this session so the 08-11 kills are in it) via
+`libs.alpha_factory.hypothesis_novelty`. Max similarity 0.30, none redundant at the 0.7 bar.
+Unlike the 07-31 run this pass carries real weight: the gate's recall was fixed 2026-08-11
+(IDF-containment, 195/195 on replay, FP 0/30). The manual per-card graveyard cross-check was
+still performed and is written into each card.
+
+---
+
+## THE FINDING — what the desk's narrative cannot see (run 2)
+
+Three findings this run, each with named evidence and each converted to cards in the same session.
+
+### Finding 1 — the desk's laws are manufacturing proprietary data faster than its research engine notices
+
+Three instrumentation layers were built in the last six weeks, each to satisfy a law, and each is
+consumed by exactly ONE fence and ZERO hypotheses:
+
+| Series | Law that built it | Only consumer today | Its own text says |
+|---|---|---|---|
+| excitation-arm fills | L1.45 | `run_cost_identification` → `check_excitation` | (fills are the identification corpus) |
+| `delta = t_recv − t_venue` | L1.46 | `check_clock_provenance` | "first-class and **STRUCTURALLY UNBUYABLE**" |
+| funding-cycle phase (octiles) | L1.47 | `check_funding_capture` | "a free control variable with the same P&L units as hold duration" |
+
+The pattern: **instrumentation built to satisfy a law stops being read as data.** Each series is
+proprietary in the strictest sense (requires our quotes, our vantage, our fills), each is accruing
+daily at zero marginal cost, and none has ever had a hypothesis pointed at it. This is the 07-31
+finding ("82% of data unscreened") in a sharper form — that was data collected FOR research and
+not yet screened; this is data the GOVERNANCE layer creates as a by-product, which no organ's
+charter treats as research material at all. BR-16, BR-17 and BR-12 are the conversion.
+
+### Finding 2 — the desk learned its independence lesson for validation and never fed it back into selection
+
+The desk measured its cross-section at **N_eff 1.54 raw / 29 market-neutral** and built the
+demeaning-floor discipline (`cohort_independence`) — for *validating* candidates. The deployed
+carry sleeve still selects on the **raw funding level**, which maximally loads the common
+leverage-appetite factor: the whole book's payment stream is close to ONE bet timed by market-wide
+sentiment, and every queued refinement (BR-01 burden, BR-02 half-life, realised-cost H1,
+dispersion-crowding) modifies the rank input without decomposing it. The independence arithmetic
+the desk applies to candidate returns has never been applied to its own selection variable.
+BR-11 is the conversion, and it opens the one NEVER-HUNTED family (statistical arbitrage) on the
+funding surface — where the desk's priors are strongest — instead of in dead price space.
+
+### Finding 3 — the contract lifecycle is instrumented at one end
+
+`listing_events.py` pre-registers the birth end of the perp lifecycle. §42 named "delisting
+unwinds" as ground on day one, and no organ ever built the death end: the announcement collector
+runs (472 rows) but carries ~1 delist-tagged row, `futclose_daily` (139 symbols of dated-future
+closes) has no hypothesis consumer, and the lake's 296 symbol dirs include early-enders nobody
+has classified as delistings vs collector boundaries. "We have an event study" has been reading
+as coverage while covering half the lifecycle. BR-10 (and the BR-14 reject's idle-data
+observation) are the conversion.
+
+---
+
+## PRIOR-ART COLLISIONS — declared before the cards
+
+- **BR-12 vs the 2026-08-04 SFD-class watchlist probe.** The SFD kill banked "audit the CADENCE,
+  not the formula" — a venue-clock LAG game on throttled references. BR-12 is the **incentive**
+  half of the same surface (pushing the reference INTO the averaging window). Lag ≠ marking; both
+  declared, neither claims the other.
+- **BR-12 vs BR-09/BR-03.** BR-09 is dodge flow (no post-stamp reversion predicted); BR-03 is
+  venue-as-sampling-scheme. BR-12's signature is reversion after the stamp, scaling with an
+  incentive rank. Three different observables on the settlement clock.
+- **BR-16 vs `execution_maker_carry` (queue rank 1).** That is a POLICY (post-only entries);
+  BR-16 is a SENSOR derived from those fills. The policy generates the sensor's data.
+- **BR-16 nearest prior `lit_prediction_market_microstructure_vs_book` (sim 0.23).** That kill's
+  mechanism — features re-deriving a price that already contains them — does not transfer: our own
+  fills are in nobody's book.
+- **BR-11 vs BR-01/BR-02 and `cross_venue_funding_dispersion_crowding` (queued).** BR-01 rescales
+  the level by OI; BR-02 is a per-name time-series property; the queued gauge is cross-VENUE
+  same-symbol dispersion as a stress meter. BR-11 is the cross-SYMBOL factor decomposition of the
+  selection variable itself. Four different objects.
+- **Dropped for collision, recorded so the check is auditable:** funding-interval transition
+  events (inside BR-05's pre-registered event classes); liquidation-cascade carry entry timing
+  (the killed conditioning-overlay class, and M5 feedback strength is the MECHANISM_GRAPH's own
+  named candidate — not this seat's invention to claim); borrow-rate vs funding (dropped by the
+  07-31 run, M1 saturated); Deribit skew-vs-funding consistency (breadth 2 → EV ~0.0005,
+  pre-rejected; `options_skew_riskreversal` already queued); COT crypto positioning (verified
+  NOT on disk — `cot_zcache` is FX/metals only — and the intent overlaps the queued
+  dispersion-crowding gauge); intra-window premium session attribution (no premium-path archive
+  exists yet; named as future ground, not carded).
+
+---
+
+## THE CARDS — seven queued, two EV-rejected honestly
+
+All EV scores from `libs.research.alpha_economics.ev_score` (threshold 0.002), inputs honest, not
+tuned. All nine logged in `research_memory`. Ledger rows R0445–R0451 bind a screening owner
+(cycle org) and a due date to every queued card, per R0210(b). **None of these earns a cent; a
+Stage-A pass earns a pre-registered forward clock at most (L1.6).**
+
+| card | mechanism node | EV | p | novelty | route |
+|---|---|---|---|---|---|
+| BR-11 funding-factor residual selection | M1 funding node, decomposed | **0.0104** | 0.30 | 0.726 | **R0445**, due 08-25 |
+| BR-12 settlement-marking pressure | funding-benchmark node (new) | **0.0103** | 0.48 | 0.772 | **R0446**, due 08-25 |
+| BR-15 negative-funding borrow asymmetry | M1 funding node, sign-split | **0.0095** | 0.30 | 0.779 | **R0447**, due 09-01 |
+| BR-13 CME-closure weekend differential | funding node × calendar (new) | **0.0074** | 0.30 | 0.726 | **R0448**, due 09-01 |
+| BR-16 own-quote adverse-selection gauge | execution reality (L1.11b ERM) | **0.0070** | 0.24 | 0.767 | **R0450**, due 09-08 |
+| BR-17 venue-clock delta congestion | infrastructure latency (new) | **0.0059** | 0.24 | 0.797 | **R0451**, due 09-08 |
+| BR-10 delisting forced-unwind | contract-lifecycle forced flow | **0.0048** | 0.24 | 0.786 | **R0449**, due 09-08 |
+| BR-14 dated-futures fixed-vs-floating | basis term structure | 0.0011 | 0.105 | 0.704 | **EV-REJECTED**, recorded |
+| BR-18 residual pair reversion (cost-first) | lottery-demand reversion | 0.0014 | 0.045 | 0.728 | **EV-REJECTED**, recorded |
+
+Full mechanism text, WHO-is-forced, data-on-disk paths, timestamp-alignment declarations,
+falsifiers and the strongest-spurious-argument for each card live in the ledger rows (R0445–R0451,
+written at full §32 depth) — not duplicated here; the ledger is the chased copy.
+
+**The two rejects, and why they are reported rather than resubmitted:**
+- **BR-14** (lock carry via short dated future when implied fixed rate is rich vs expected
+  funding): dies on `crowded_known` (cash-and-carry-to-expiry is THE institutional trade; the CME
+  variant was EV-rejected 08-05) × breadth ~10, and the un-crowded remainder is exactly where
+  dated books are sub-viable. The card's independently-standing observation — `futclose_daily` has
+  zero hypothesis consumers — is banked in Finding 3.
+- **BR-18** (residualized fork/ecosystem pair reversion, estimator frozen at OLS+σ per R0296,
+  falsifier = measured costs): the `price_only` prior (0.30, earned by 420/0 plus three external
+  replications) takes honest inputs to 0.0014. Not tuned to pass. The statarb family-opening duty
+  is discharged by BR-11 instead — on the surface where the desk's priors are strongest. If BR-11
+  survives Stage A, the residual-object approach gains evidence and BR-18 may re-enter under
+  L1.16a with that named change.
+
+**Timidity check.** Nine candidates, no cap applied, none shrunk to review easier. The two
+rejections are the gate's honest arithmetic on honest inputs — recorded with their inputs, like
+BR-04 before them, not quietly dropped.
+
+---
+
+## THE 12-MONTH LITERATURE COMPARISON LOG (run-2 additions)
+
+Same integrity rule as 07-31: verdicts recorded from a search performed on the check-back date;
+cards are never quietly edited, corrections append with their own date.
+
+| id | invented (blind) | one-line mechanism | check-back | literature verdict |
+|---|---|---|---|---|
+| BR-10 | 2026-08-11 | perp delisting = forced unwind with a public deadline; event-study the announce→settle window | 2027-08-11 | _pending_ |
+| BR-11 | 2026-08-11 | decompose funding cross-section into leverage-appetite factor + idiosyncratic residual; select carry on the residual | 2027-08-11 | _pending_ |
+| BR-12 | 2026-08-11 | benchmark-fixing pressure on the premium index inside the funding averaging window, detected by post-stamp reversion scaled by |funding|·OI/depth | 2027-08-11 | _pending_ |
+| BR-13 | 2026-08-11 | weekend CME closure removes the basis-arb balance sheet weekly; funding differential appears only on CME-listed names | 2027-08-11 | _pending_ |
+| BR-14 | 2026-08-11 | perp-vs-dated-future as floating-vs-fixed carry term choice (EV-rejected at invention) | 2027-08-11 | _pending_ |
+| BR-15 | 2026-08-11 | negative funding persists longer than positive because shorting spot requires borrow — asymmetric arb supply | 2027-08-11 | _pending_ |
+| BR-16 | 2026-08-11 | own randomized maker quotes as informed-flow probes; markout dispersion = proprietary toxicity gauge | 2027-08-11 | _pending_ |
+| BR-17 | 2026-08-11 | recv-minus-venue timestamp delta as a continuous matching-engine congestion sensor leading vol/spread | 2027-08-11 | _pending_ |
+| BR-18 | 2026-08-11 | residualized economic-family pair reversion off retail lottery demand (EV-rejected at invention) | 2027-08-11 | _pending_ |
+
+---
+
+## ROUTING
+
+Forward slots 12/12 with the promotion queue's candidate side still thin — unchanged from 07-31:
+Stage-A screens need no slot and are unblocked today (BR-11, BR-13, BR-15 runnable immediately on
+lake data; BR-12, BR-16, BR-17 on the moat/execution tape; BR-10 after event-list assembly).
+Every queued card is a ledger row with an owner and a due date, chased by `recommendations.owed()`
+until disposed. This seat ran inside its freeze: no screen was executed here, no code was touched,
+and the handoff is explicit per R0210(b).
+
+**Observed in passing, not chased (freeze):** `data/screen_funding_interval_mismatch.json`
+appeared in one directory listing this session and was absent minutes later — shared-tree sibling
+activity or a vanishing screen artifact. Whichever it is, the BR-03/R0121 screen's artifact state
+deserves one glance from the cycle org; noted here rather than rowed to avoid double-carding a
+sibling's in-flight work.
+
+## SUBSYSTEM COVERAGE (L1.0(e))
+
+| Subsystem | Depth | What it produced |
+|---|---|---|
+| Data | **deep** | Finding 1 (three fence-only proprietary series); COT-not-on-disk verification; moat 17 GB re-measure |
+| Research process | **deep** | Finding 2 (validation lesson never fed back to selection); statarb family opened on the right surface |
+| Validation / stats | medium | novelty-gate rebuild + post-fix weighting; DSR-honest cell accounting written into every falsifier |
+| Execution | **deep** | BR-16/BR-17; L1.47 phase facts read as research material |
+| Portfolio / sizing | medium | BR-11's N_eff-of-payment-stream framing |
+| Risk | medium | BR-15's compensation-vs-inefficiency falsifier; BR-10 endogeneity declaration |
+| Governance | medium | Finding 1 IS a governance observation; two honest EV-rejects recorded |
+| Ops / infra | shallow | vanishing-artifact observation above |
+
+## NEXT UN-EXHAUSTED GROUND (L1.35 — named before closing)
+
+**Sections claimed EXHAUSTED this run:** none.
+
+1. **The moat trade tape as an object in itself** (17 GB; BR-12/BR-17 consume stamp-windows and
+   deltas — the aggressor-sequence structure between stamps is untouched).
+2. **Intra-window premium-index path archive** — does not exist yet; the BR-03 screen and BR-12
+   both want it; whoever builds it unlocks the session-attribution ground named and not carded
+   this run.
+3. **`data/unlock_events.json` + the now-running `circulating_supply` point-in-time collector** —
+   the unlock axis re-test with a defensible conditioning variable becomes possible as the PIT
+   series accrues; the 0/27 screen died partly on `pct_circ_now` look-ahead, not on the mechanism.
+4. **The graveyard's kill-bases as a dataset** (carried from 07-31, still unmined): which death
+   mechanisms recur names the desk's systematic failure modes.
+5. **CME `statistics`/`definition` tapes** (carried from 07-31, still untouched at 1.08 GB).
+
+## CLOSE — blunt
+
+**No new tradeable edge was found, and none of the nine cards is one.** Seven mechanism cards
+with falsifiers and owners; base rate says perhaps one survives Stage A. The deliverable is the
+three findings, and the sharpest of them is Finding 1: the desk's governance layer is now
+generating unbuyable data as a by-product — own-quote probes, venue-clock deltas, funding-phase
+octiles — and every one of those series terminates in a fence instead of a hypothesis. The prior
+run found the desk had not screened the data it collected on purpose; this run finds it does not
+even regard as data what it collects by law. Fresh eyes in a year should check whether that
+pattern has a third instance — whatever L1.58+ builds next will probably also emit a proprietary
+series with a fence as its only reader.
+
+_Session closed 2026-08-11. Ledger rows R0445–R0451. Next scheduled run: 2026-09-11, or earlier
+on due-by-state._
+
+---
+
+# SESSION 2026-08-12 — third formal run
+
+**Fired by:** due-by-state, **one day** after the 2026-08-11 run. A one-day interval sets a high bar
+for "material new internal raw material", and the interval cleared it: **107 commits**, the
+graveyard priors corpus rebuilt **231 → 251 canonical priors** (~20 new kills in a day, including
+`hijri_ramadan_calendar_axis`, `mcpt_return_permutation`, `era_selfref_mark_liquidation_796` and
+seven `lit_*` entries), and **three new instrumentation layers landed the same day** — R0334
+execution decomposition, R0371 fee attribution, and the capability-hunt s1 third cost basis. §33
+gate: BACKLOG-CLEAR, mining authorised.
+
+**Method compliance:** ZERO external search. Every input below is a desk artifact.
+
+### Inputs read (complete)
+| Artifact | What was taken |
+|---|---|
+| `docs/graveyard.md` (1090 lines, full index built) | complete kill index with S/T classification; the `era_selfref_mark_liquidation_796` **residue clause**; the four adjacent kills that buried BR-22 |
+| `research_agenda.json` (50 `do_not_repeat`, full queue) | verbatim slugs — `liquidation_heatmap_cascade_predict[13]` and `vpin_ofi_microstructure[12]` each killed a candidate before it was written |
+| `data/strategy_coverage.json` | 14 families: 7 HUNTED, 6 THIN, 1 MENTIONED-NEVER-TESTED |
+| Prior sessions (BR-01…BR-18) + R0445–R0451 | collision set; numbering continues at **BR-19** |
+| `libs/research/mine_conversion.py` (read to the line) | **the finding** — the `wired` definition and `backing_reason()`'s corroboration test |
+| `libs/research/alpha_economics.py` (read to the line) | `EV = P × dSharpe × …` — the gate is parameterised in Sharpe |
+| `data/decision_ledger.json` (232 records) | the 2026-08-05 execution-hypotheses record **in full** — it killed one of my two candidate findings |
+| `data/jp_funding_clamp_census.json` (produced today) | killed my other candidate finding |
+| `data/freshness_contracts.jsonl` (1,435 contracts / 1,096 paths) | the instrument that makes the finding's fix cheap |
+| `data/print_impact.json`, `moat_series.jsonl`, `fee_attribution.json`, `execution_quality.json`, `funding_caps.json`, `oi_ls_universe.jsonl`, `micro_feature_store.json`, `geckoterminal_trades.jsonl` | the orphan set, verified by grep for consumers rather than assumed |
+| `scripts/screen_funding_interval_mismatch.py` | collision clearance for BR-19 |
+
+**Novelty gate:** priors corpus **rebuilt this session** (`build_graveyard_priors.py`, 251 priors) so
+today's ~20 kills are in it. All four candidates scored via `libs.alpha_factory.hypothesis_novelty`.
+Max similarity **0.309**, none redundant at the 0.7 bar. Manual per-card graveyard cross-check
+performed in addition, and it is what killed two candidates the automated gate passed.
+
+---
+
+## TWO CANDIDATE FINDINGS DIED AGAINST THE DESK'S OWN RECORDS — recorded, because the discipline is the deliverable
+
+Both were developed to the point of being cardable before being checked. Recording them is not
+padding: an early-fired run's main risk is re-deriving yesterday's work, and this is the evidence
+the check was actually performed.
+
+1. **"The desk's carry selection variable is CENSORED."** Binance funding is
+   `premium + clamp(interest − premium, ±0.05%)`, so a ±0.05% dead band pins funding at the
+   0.01% constant and destroys the premium information inside it; the desk ranks carry names on
+   the censored variable. **Already measured — the same day.** `data/jp_funding_clamp_census.json`
+   (JP frontier miner, 2026-08-12): `share_exactly_0.0001` **0.3556**, `share_on_either_constant`
+   **0.4162**, and a live cross-section where 56 names tied at the 8h dead-band constant span
+   **74.9 bps** of premium. The census even proposes the premium tie-break. Dropped as a
+   re-derivation.
+2. **"The EV gate is structurally blind to cost-side mechanisms."** True — `ev_score` is
+   proportional to `est_sharpe`, so a cost mechanism must be translated into a Sharpe to be scored
+   at all. **Already flagged**, 2026-08-05, in the `flagged_gap` field of
+   `2026-08-05-generation-three-execution-hypotheses-and-a-miscalibrated-ev-gate`: *"it penalises
+   execution/cost work hardest — which the constitution ranks equal to alpha"* (F0023/R0038).
+   One increment survives and is **contributed to the open row rather than carded as new**: R0038's
+   proposed remedy is a *recalibration with an acceptance-rate target*, and recalibration cannot
+   fix a **missing dimension**. A threshold move changes which Sharpes pass; it does not give a
+   bps-saved-per-round-trip a way to be expressed. BR-20 below is the live instance — it rejected
+   at 0.0016 in exactly that class, and was recorded rather than re-tagged.
+
+---
+
+## THE FINDING — what the desk's narrative cannot see (run 3)
+
+### §33 credits conversion by asking whether a file was WRITTEN, never whether anything READS it — so the maximally law-compliant dig manufactures orphans
+
+Runs 1 and 2 each found a version of idle data: run 1 that 82% of collected data was unscreened,
+run 2 that governance-built instrumentation terminates in a **fence** instead of a hypothesis. Two
+sightings of a symptom. **This run found the generator**, and it is written into the law that
+exists to prevent it.
+
+`libs/research/mine_conversion.py:29` defines the disposition:
+
+> `wired -- code exists AND executed AND wrote a real artifact`
+
+and `backing_reason()` (lines 316–357) corroborates that claim with exactly three tests: the named
+path **exists**, is **non-empty**, and its **mtime postdates the find**. There is **no consumer
+check anywhere in the module.** The disposition is named *wired* — a word that means *connected to
+something* — and the instrument measures *written*. The vocabulary promises a connection and the
+test certifies a file.
+
+So the behaviour that maximally satisfies §33 is: mine a source, write a collector, emit a
+`.jsonl`, claim `[§33: wired -> data/X.jsonl]`, and the gate prints **BACKLOG-CLEAR** — the exact
+string at the top of this seat's own prompt today. Every organ downstream reads that as *conversion
+is complete*.
+
+**Measured on disk right now.** Six artifacts with zero consumers of any kind — not a research
+reader, not even a fence — every one of which would be creditable as `wired` today:
+
+| artifact | size / rows | what it holds | consumers |
+|---|---|---|---|
+| `data/moat_series.jsonl` | 82 MB / **93,345** | per-symbol-day `withdrawal_rate`, `book_slope`, `replenishment_halflife` | writer only |
+| `data/geckoterminal_trades.jsonl` | 19 MB / **38,271** | DEX trades with `tx_from` wallet attribution | writer only |
+| `data/print_impact.json` | 74 KB | **99 fitted impact curves**, 34 dual-basis pairs | writer only |
+| `data/tail_funding_divergence.jsonl` | 987 rows | cross-venue funding spread, OI-filtered | writer only — *its own docstring says so* |
+| `data/funding_caps.json` | **747 symbols** | per-symbol funding cap/floor | none |
+| `data/carry_viability.json` | 45 symbols | per-symbol breakeven funding | none |
+
+**Why the desk cannot see it, stated precisely:** the desk built reachability analysis for **code**
+— an import-graph walk, and L1.49's insistence that reachability is measured from the declaration
+site — and **never built the equivalent for data**. A function nobody calls is a named defect class
+here. A dataset nobody reads is a *conversion*.
+
+**And the fix is a join, not a subsystem.** L1.44 already self-builds `data/freshness_contracts.jsonl`
+from **actual read sites** — 1,435 contracts over 1,096 distinct paths, keyed
+`{ts, event, path, caller, kind, max_age_h, age_h, guardian}`. Checked this run: **not one of the
+six orphans appears in it.** The registry that answers "does anything read this?" already exists,
+already self-builds, and already excludes exactly the right files; `backing_reason()` simply never
+consults it. This is R0371's shape one level up — *the first repair is a consumer, not a producer*.
+Routed as **R0525**, owner cycle org, due 2026-08-19. This seat is frozen out of `libs/`.
+
+**A run-2 forecast resolved in one day, and it resolved correct.** Run 2 closed by predicting:
+*"whatever L1.58+ builds next will probably also emit a proprietary series with a fence as its only
+reader."* L1.60 landed 2026-08-12 and emitted `data/denominator_attrition.json` — read by
+`check_denominator_attrition.py` and nothing else. Recorded here as a resolved prediction (L1.29
+material), not claimed as this run's finding: it confirms run 2's Finding 1, and the mechanism above
+is *why* it keeps happening.
+
+---
+
+## PRIOR-ART COLLISIONS — declared before the cards
+
+- **BR-19 vs `screen_funding_interval_mismatch.py`.** That screen tested whether the funding
+  *calendars* are OFFSET (a settlement-straddle arb) and found the mechanism **geometrically
+  impossible** — Binance's 4h grid is a strict superset of its 8h grid. BR-19 makes no calendar
+  claim; it treats the parameter as a venue-revealed risk classification. Different object.
+- **BR-19 vs BR-05 (spec changes as natural experiments).** BR-05 pre-registers *transitions* as
+  events. BR-19 is the *standing cross-sectional state*. Run 2 dropped interval-transition events
+  into BR-05; this does not re-open them.
+- **BR-19 vs L1.47 and `jp_funding_clamp_census`.** L1.47 uses `fundingIntervalHours` for **accrual
+  arithmetic** (a correctness fix — `/8.0` under-counts 4h names 2×). The census measures the
+  information the clamp **destroys**. BR-19 claims the parameter **carries** information. Three
+  uses of one field; only the third is a signal claim.
+- **BR-21 vs H1 (2026-08-05).** H1's predictor is our **own realised** round-trip cost. That
+  predictor is structurally undefined for a name the desk has never traded — the L1.45 cycle
+  exactly. BR-21's predictor is third-party book state, defined on the whole universe. The
+  distinction *is* the card.
+- **BR-21/BR-20 vs `vpin_ofi_microstructure` (`do_not_repeat[12]`).** That was rejected for
+  requiring L2 tick infrastructure and for IC decay. Both cards here consume **already-computed
+  daily/interval aggregates** that exist on disk; neither proposes tick infrastructure.
+- **BR-20 vs BR-07 and BR-16.** BR-07 is depth *withdrawal* (the cancel side only). BR-16 is
+  adverse selection measured on **our own** quotes. BR-20 is the displayed-vs-traded ratio from
+  **third-party** prints. Three observables, one surface.
+- **BR-22 vs four adjacent kills** — `dex_cex_volume_ratio_flow`, `exchange_netflow` (0/12 cells),
+  `hyperliquid_trader_skill_persistence` (position-overlap artifact), `hl_elite_directional_order_flow`
+  (sign flips under cohort perturbation). Declared, and it is why BR-22 carries `crowded_known`.
+- **Dropped before carding, recorded so the check is auditable:** *liquidation-level clustering from
+  the OI tape* — `do_not_repeat[13] liquidation_heatmap_cascade_predict` is DEFERRED with breadth
+  limited to BTC/ETH and a paid CoinGlass dependency, and `lit_liquidation_csd_alarms` confines the
+  survivor to **rails-only sizing, never alpha**. *Thin index-constituent mark dislocation* — named
+  as live residue by `era_selfref_mark_liquidation_796`, but no index-constituent series exists on
+  disk; carried to next ground rather than carded on data the desk does not have. *Fee-concentration
+  as its own card* (`top4_share` 0.8589) — folded into BR-21 as motivating evidence instead of
+  double-carding, since it shares BR-11's and H1's object.
+
+---
+
+## THE CARDS — two queued, two EV-rejected honestly
+
+All EV scores from `libs.research.alpha_economics.ev_score` (threshold 0.002) on honest inputs, not
+tuned. All four logged in `research_memory`, including both rejects. **None of these earns a cent;
+a Stage-A pass earns a pre-registered forward clock at most (L1.6).**
+
+| card | mechanism | EV | p | novelty | route |
+|---|---|---|---|---|---|
+| **BR-21** replenishment half-life as an **ex-ante** cost prior for never-traded names | breaks the L1.45 exclusion cycle | **0.0044** | 0.24 | 0.721 | **R0524**, due 08-26 |
+| **BR-19** venue risk-parameter metadata (interval + adjusted cap) as carry conditioning | venue's own risk verdict, published | **0.0029** | 0.48 | 0.691 | **R0523**, due 08-26 |
+| BR-20 displayed-vs-traded liquidity ratio as an adverse-selection state | maker display is a revealed expectation | 0.0016 | 0.24 | 0.754 | **EV-REJECTED**, recorded |
+| BR-22 wallet-attributed DEX accumulation leads perp funding | on-chain flow is attributable, perp flow is not | 0.0004 | 0.084 | 0.753 | **EV-REJECTED**, recorded |
+
+**BR-19 — the mechanism.** Binance publishes, per symbol, `fundingIntervalHours` (measured live:
+**426 of 812 names on 4h**, 384 on 8h, 2 on 1h) and an `adjustedFundingRateCap` (`funding_caps.json`,
+747 symbols at ±2%, BTCDOM ±3%). These are set by the venue's risk desk from the full position and
+liquidation distribution — information no participant can reconstruct — and the venue is *forced to
+publish them* (they are contract terms) and *forced to set them accurately* (its own insurance fund
+is the counterparty). A name given a shorter interval or a widened cap is one the venue expects to
+run persistently extreme funding. Nobody joins these fields to returns because they read as plumbing
+constants; `screen_funding_interval_mismatch.py`'s own docstring notes `fundingIntervalHours` was
+"fetched nowhere in this repo". **Falsifier:** within the tradeable carry universe, regress realised
+carry PnL / funding persistence / basis-leg damage on interval class and cap class **controlling for
+the funding level**; if the parameter adds nothing beyond the level, dead. Cells pre-registered:
+2 parameter classes × 3 horizons, DSR-counted. **Strongest argument it is spurious:** the parameter
+is assigned *from* historical funding extremity, so it may be a lagged, coarsened copy of the funding
+level the desk already ranks on — which the level control is designed to expose.
+
+**BR-21 — the mechanism.** `print_impact.json` established that at $450 notional this desk is a
+**spread taker, not an impact maker** (impact 1.6% of cost), so cost is governed by passive placement
+and symbol selection. `fee_attribution.json` shows commission is **88.7% of the sleeve's non-funding
+loss** and `top4_share` **0.8589** — four names carry it. Whether a passive order fills and whether a
+taker order walks is governed by how fast the book **refills**, not by displayed depth at the instant
+of the walk. `moat_series.jsonl` already holds `replenishment_halflife` and `withdrawal_rate` for
+**93,345 symbol-days** and nothing reads it. **The load-bearing distinction:** realised-cost
+predictors (H1, the bleed denylist) are undefined for names never traded, and `n` grows only through
+opens — the exact never-traded/never-measured cycle L1.45 names. A book-state predictor is defined
+on the whole universe, including names the desk has never touched. **Falsifier:** rank the traded
+universe by `replenishment_halflife`, test against realised round-trip bps out-of-sample, and check
+whether the four fee-dominant names sit in the predicted bad tail. **Strongest argument it is
+spurious:** replenishment and spread are both functions of the same liquidity latent, so the
+half-life may add nothing over the half-spread the book walk already prices — the pre-registered
+control is the book-walk cost itself.
+
+**The two rejects, reported rather than resubmitted.** BR-20 scores **0.0016** against a 0.002 bar —
+a near miss, and it sits precisely in the class F0023/R0038 flagged as under-priced by this gate.
+It was **not re-tagged to clear**. The honest response to a gate you have measured as biased is to
+report the bias on the row (done, above) and let the arithmetic stand; tuning a card because you know
+the gate is wrong is how a bar stops being a bar. BR-22 at **0.0004** is a genuinely weak card: the
+*dataset* is new, but the graveyard asks for a materially new **mechanism**, and wallet attribution
+is a better instrument pointed at a family the desk has already killed four ways.
+
+**Timidity check.** Four candidates, no cap applied, none shrunk to review easier. Two rejections are
+the gate's honest arithmetic on honest inputs. Two further candidate *findings* were killed by the
+desk's own records before they reached a card — which is why this run produced two cards and not six.
+
+---
+
+## THE 12-MONTH LITERATURE COMPARISON LOG (run-3 additions)
+
+| id | invented (blind) | one-line mechanism | check-back | literature verdict |
+|---|---|---|---|---|
+| BR-19 | 2026-08-12 | exchange-published funding interval + adjusted funding cap as a venue-revealed risk classification conditioning carry | 2027-08-12 | _pending_ |
+| BR-20 | 2026-08-12 | ratio of print-derived to depth-derived execution cost as a per-symbol revealed adverse-selection expectation (EV-rejected at invention) | 2027-08-12 | _pending_ |
+| BR-21 | 2026-08-12 | order-book replenishment half-life as an ex-ante cost prior for never-traded symbols | 2027-08-12 | _pending_ |
+| BR-22 | 2026-08-12 | wallet-attributed DEX accumulation leading perp funding (EV-rejected at invention) | 2027-08-12 | _pending_ |
+
+---
+
+## ROUTING
+
+Every queued card is a ledger row with a named owner and a due date, chased by
+`recommendations.owed()` until disposed: **R0523** (BR-19), **R0524** (BR-21), **R0525** (the §33
+finding). Stage-A screens need no forward slot and are runnable immediately — BR-19 on
+`funding_caps.json` + the lake's `funding`/`basis` columns, BR-21 on `moat_series.jsonl` against
+`fee_attribution.json`. This seat ran inside its freeze: no screen executed, no `scripts/` or
+`libs/` file touched, handoff explicit per R0210(b).
+
+## SUBSYSTEM COVERAGE (L1.0(e))
+
+| Subsystem | Depth | What it produced |
+|---|---|---|
+| Governance / research process | **deep** | THE FINDING — §33's conversion test is consumer-blind, with the code lines and the cheap fix |
+| Data | **deep** | the six-artifact orphan set, verified by consumer-grep; L1.44 registry coverage measured |
+| Execution | **deep** | BR-21, BR-20; the spread-taker reading and the fee concentration read as research material |
+| Validation / stats | medium | priors corpus rebuilt 231→251; two candidate findings killed on manual cross-check the automated gate passed |
+| Portfolio / sizing | shallow | none this run — named honestly rather than padded |
+| Risk | shallow | index-constituent residue identified, not carded (no data on disk) |
+| Ops / infra | medium | `oi_ls_universe.jsonl` verified as a genuine 2020–2026 panel (256,625 rows, 365 symbols) whose only reader is `max_audit` |
+
+## NEXT UN-EXHAUSTED GROUND (L1.35 — named before closing)
+
+**Sections claimed EXHAUSTED this run:** none.
+
+1. **`data/oi_ls_universe.jsonl` — 256,625 rows, 2020→2026, 365 symbols, read only by a fence.**
+   The `oi_ls_liq_forward` clock correctly cannot be filled by history (forward evidence must be
+   forward), but a *Stage-A* screen on six years of panel is a different object and nothing blocks
+   it. One malformed row carries date `1993` — a data-integrity note, not a card.
+2. **Index-constituent series for tail perps** — `era_selfref_mark_liquidation_796` names this as
+   live residue and no collector exists. Whoever builds it unlocks the one graveyard-sanctioned
+   re-entry on that class.
+3. **`data/micro_feature_store.json` as it accrues** — 42 symbols × 27 days of hourly microstructure
+   *with* `mid_close`. Checked this run against the graveyard's claim that the `jp_intraday` 1h–6h
+   cells are untestable "for want of an hourly lake": **too thin today**, and the claim stands. Re-test
+   the blocker when the panel passes ~12 months.
+4. **The graveyard's kill-bases as a dataset** — carried from 07-31 and 08-11, **still unmined**, and
+   now partly built: a full S/T-classified kill index was constructed as an input to this run and
+   discarded with the session. Third naming; it should be an artifact, not a re-derivation each time.
+5. **The moat trade tape's aggressor-sequence structure between stamps** (carried from 08-11).
+6. **CME `statistics`/`definition` tapes** (carried from 07-31, still untouched at 1.08 GB).
+
+## CLOSE — blunt
+
+**No new tradeable edge was found, and neither queued card is one.** Base rate says perhaps one of
+two survives Stage A, and BR-19's own strongest-spurious argument is that it may be a coarsened copy
+of a variable the desk already ranks on.
+
+The deliverable is the finding, and it is a governance defect with a measured price: **§33 — the law
+written to stop the desk cataloguing without converting — accepts a written file as proof of
+conversion.** Six datasets totalling over 100 MB, including 93,345 symbol-days of proprietary
+microstructure and 99 fitted impact curves, are creditable as `wired` today and are read by nothing.
+The desk hunts orphaned *code* by walking the import graph and has never once asked the same question
+of a *dataset*, while its conversion law credits datasets. Runs 1 and 2 both reported idle data as a
+symptom; this is the generator, and it is three lines from being fixed by a registry the desk already
+built for another purpose.
+
+Fresh eyes in a year should check one thing: whether `[§33: wired]` still means *written*. If it
+does, the next run will find a seventh orphan and a fourth restatement of the same finding.
+
+_Session closed 2026-08-12. Ledger rows R0523–R0525. Cards BR-19…BR-22. Next scheduled run:
+2026-09-12, or earlier on due-by-state._

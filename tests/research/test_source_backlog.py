@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+from datetime import date
+from pathlib import Path
+
 from libs.research.source_backlog import (
     SourceCard,
+    backlog_from_file,
     next_pending,
     parse_watchlist,
 )
@@ -103,3 +107,83 @@ class TestNextPending:
         rep = next_pending([])
         assert rep.n_total == 0
         assert "backlog clear" in rep.verdict
+
+
+# ---------------------------------------------------------------------------------------------
+# F0002: the verify-queue must offer only what a miner can actually do THIS cycle.
+#
+# Raised 2026-07-28 by the CN frontier miner, accepted, and measured: three sessions (07-26 CN,
+# 07-26 EN-C, 07-28 CN) each re-derived by hand that the same cards were not workable. On the
+# live watchlist this cut the offered queue from 15 items to 5 without losing a single card --
+# 4 were terminally killed, 11 carry a dated deferral and are reported with their return date.
+# ---------------------------------------------------------------------------------------------
+
+_S33 = """# Watchlist
+
+### 30. EODHD.com — grade: KILLED as a purchase [§33: killed -> docs/graveyard.md `eodhd`]
+### 31. Regulatory-event timeline — grade: needs-monitoring [§33: deferred(2026-08-24) tier:3]
+### 32. NAVER DataLab — grade: needs-legitimacy-review [§33: deferred(2026-08-09) tier:3]
+### 33. Live axis — grade: UNVERIFIED
+### 34. Hourly — grade: needs-monitoring (sibling graveyard-KILLED) [§33: deferred(2026-08-24)]
+"""
+
+_TODAY = date(2026, 8, 12)
+
+
+class TestNonActionableCardsAreNotOfferedAsThisCycle:
+    def test_a_terminally_killed_card_is_resolved_not_pending(self) -> None:
+        """The fail-open `return "verification"` was offering killed cards forever: a §33 kill
+        matches none of the recognised grade substrings, so it fell through to pending."""
+        card = next(c for c in parse_watchlist(_S33, today=_TODAY) if c.card_id == 30)
+        assert card.category == "resolved"
+
+    def test_the_word_killed_in_PROSE_never_resolves_a_live_card(self) -> None:
+        """THE TRAP THIS AVOIDS. Card 34's grade contains 'graveyard-KILLED' describing a
+        SIBLING rung while the card itself has a screen owed. Substring-matching the word would
+        silently close a card with real work -- only the §33 MARKER counts."""
+        card = next(c for c in parse_watchlist(_S33, today=_TODAY) if c.card_id == 34)
+        assert card.category == "deferred", "resolved by prose, not by disposition"
+        assert card.deferred_until == date(2026, 8, 24)
+
+    def test_a_FUTURE_deferral_is_withheld_and_NAMED_with_its_return_date(self) -> None:
+        rep = next_pending(parse_watchlist(_S33, today=_TODAY))
+        assert "Regulatory-event timeline" not in " ".join(rep.next_verification)
+        # 31 and 34 only: NAVER (32) was deferred to 08-09, which has already passed on _TODAY,
+        # so it is correctly back in the legitimacy queue rather than withheld.
+        assert rep.n_deferred == 2
+        # Withheld is not hidden: the card and its date are published, soonest first.
+        assert rep.deferred[0][1] == "2026-08-24"
+        assert "deferred (next returns 2026-08-24)" in rep.verdict
+
+    def test_a_PAST_deferral_returns_to_the_queue_ON_ITS_OWN(self) -> None:
+        """THE RE-ENTRY CONDITION, and the half that matters most.
+
+        NAVER was deferred to 2026-08-09. An exclusion with no path back is how a card gets
+        dropped forever -- 'ask of any exclusion: what is the path back?'. The date IS the path,
+        so the same input classified on a later day must be workable again with no edit.
+        """
+        before = next(c for c in parse_watchlist(_S33, today=date(2026, 8, 1)) if c.card_id == 32)
+        after = next(c for c in parse_watchlist(_S33, today=_TODAY) if c.card_id == 32)
+        assert before.category == "deferred"
+        assert after.category == "legitimacy", "the deferral expired and nothing re-admitted it"
+
+    def test_a_deferral_dated_TODAY_is_workable_today(self) -> None:
+        """Boundary: `deferred(2026-08-24)` means blocked UNTIL the 24th, workable ON it."""
+        card = next(c for c in parse_watchlist(_S33, today=date(2026, 8, 24)) if c.card_id == 31)
+        assert card.category == "verification"
+
+    def test_a_malformed_date_leaves_the_card_workable(self) -> None:
+        """Fail OPEN on debris: an unparseable date must never become an indefinite block."""
+        bad = "### 40. X — grade: UNVERIFIED [§33: deferred(2026-13-99) tier:2]\n"
+        card = parse_watchlist(bad, today=_TODAY)[0]
+        assert card.category == "verification"
+        assert card.deferred_until is None
+
+    def test_the_live_watchlist_offers_only_workable_cards(self) -> None:
+        """The standing invariant, on the real file the miners read."""
+        rep = backlog_from_file(Path("docs/research/data_axis_watchlist.md"))
+        offered = set(rep.next_verification) | set(rep.next_legitimacy)
+        deferred_names = {n for n, _ in rep.deferred}
+        assert not (offered & deferred_names), "a deferred card is also being offered"
+        assert rep.n_total == (rep.n_resolved + rep.n_verification_pending
+                               + rep.n_legitimacy_pending + rep.n_deferred), "cards lost"

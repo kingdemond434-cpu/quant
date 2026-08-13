@@ -127,3 +127,90 @@ def test_an_informative_forecaster_justifies_kelly(monkeypatch):
                         lambda: {"n_resolved": MIN_FOR_VERDICT + 5, "brier": 0.18, "bias": 0.03})
     v = verdict()
     assert v["state"] == "INFORMATIVE" and v["brier"] < UNINFORMATIVE_BRIER
+
+
+# ---- retiring a question the world cannot answer, without handing the desk an escape hatch ----
+#
+# R0394. "UNRESOLVABLE stays open, never guessed" is right about the OUTCOME and was the wrong
+# TERMINUS: with no terminal state the row is retried forever, ages past its deadline, and holds
+# the L1.29 fence OVERDUE until a human edits the store by hand -- which is exactly what the 44
+# S2USDT rows did. A fence that can never go green gets ignored, and this is the fence that
+# detects the desk being confidently wrong. Delisting reaches the same weld with nobody at fault.
+
+
+def _posed(tmp_path, monkeypatch):
+    _charts(tmp_path)
+    import libs.self_improvement.forecast_calibration as fc
+    monkeypatch.setattr(fc, "_LOG", tmp_path / "data/forecast_log.json")
+    pose(tmp_path, ask=lambda _p: '{"q1": 0.61, "q2": 0.44, "q3": 0.55}')
+    return fc
+
+
+def _dead_venue(*a, **k):
+    return ([], "venue down")
+
+
+def test_a_sustained_outage_past_the_grace_finally_retires_the_question(tmp_path, monkeypatch):
+    """The weld broken. Three separate runs, all unpriceable, all well past the deadline."""
+    fc = _posed(tmp_path, monkeypatch)
+    late = datetime.now(tz=UTC) + timedelta(hours=72)
+    for _ in range(2):
+        assert resolve_due(tmp_path, now=late, fetch=_dead_venue)["n_voided"] == 0
+    r = resolve_due(tmp_path, now=late, fetch=_dead_venue)
+    assert r["n_voided"] == 3 and r["still_open"] == 0
+    assert fc.overdue() == [], "the fence can now go green honestly"
+
+
+def test_a_BRIEF_outage_never_retires_a_real_forecast(tmp_path, monkeypatch):
+    """The risk this state creates, and the reason for two independent conditions. If a venue
+    blip could void a forecast, the desk would have an escape hatch from grading itself -- the
+    exact opposite of what L1.29 is for."""
+    _posed(tmp_path, monkeypatch)
+    late = datetime.now(tz=UTC) + timedelta(hours=72)
+    r = resolve_due(tmp_path, now=late, fetch=_dead_venue)
+    assert r["n_voided"] == 0 and r["still_open"] == 3
+
+
+def test_attempts_alone_do_not_retire_a_question_inside_the_grace(tmp_path, monkeypatch):
+    """The other half of the conjunction: a busy cron must not burn through the attempt budget in
+    the first hour after a deadline, when the venue may simply be lagging."""
+    _posed(tmp_path, monkeypatch)
+    just_due = datetime.now(tz=UTC) + timedelta(hours=25)   # past the 24h horizon, inside grace
+    for _ in range(5):
+        r = resolve_due(tmp_path, now=just_due, fetch=_dead_venue)
+    assert r["n_voided"] == 0 and r["still_open"] == 3
+
+
+def test_the_attempt_count_SURVIVES_A_RESTART(tmp_path, monkeypatch):
+    """Each resolve_due call is a separate process. An in-memory counter would reset every run and
+    the row would never reach the threshold -- retried forever, which is the bug."""
+    _posed(tmp_path, monkeypatch)
+    late = datetime.now(tz=UTC) + timedelta(hours=72)
+    resolve_due(tmp_path, now=late, fetch=_dead_venue)
+    rows = [json.loads(ln) for ln in
+            (tmp_path / "data/calibration_probe.jsonl").read_text().splitlines() if ln.strip()]
+    assert all(r["resolve_attempts"] == 1 for r in rows)
+
+
+def test_a_retired_question_is_NOT_scored_either_way(tmp_path, monkeypatch):
+    """The whole point. A fabricated outcome here would flow through report()'s bias into
+    calibrated_confidence and out into Kelly leverage."""
+    fc = _posed(tmp_path, monkeypatch)
+    late = datetime.now(tz=UTC) + timedelta(hours=72)
+    for _ in range(3):
+        resolve_due(tmp_path, now=late, fetch=_dead_venue)
+    store = json.loads((tmp_path / "data/forecast_log.json").read_text())["forecasts"]
+    assert store and all(r.get("voided") and "outcome" not in r for r in store.values())
+    assert fc.report()["n_excluded"]["voided"] == 3
+
+
+def test_a_question_that_becomes_priceable_again_is_GRADED_not_retired(tmp_path, monkeypatch):
+    """Retirement must lose to real evidence whenever real evidence shows up, right up to the
+    last attempt -- otherwise the desk quietly stops grading names that merely went quiet."""
+    _posed(tmp_path, monkeypatch)
+    late = datetime.now(tz=UTC) + timedelta(hours=72)
+    for _ in range(2):
+        resolve_due(tmp_path, now=late, fetch=_dead_venue)
+    bars = [(0, 0, 0, 0, 999.0)]                          # closed far above every ref price
+    r = resolve_due(tmp_path, now=late, fetch=lambda *a, **k: (bars, "test"))
+    assert r["n_resolved"] == 3 and r["n_voided"] == 0

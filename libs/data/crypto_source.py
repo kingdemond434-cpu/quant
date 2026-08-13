@@ -123,13 +123,20 @@ def list_perp_symbols() -> list[str]:
     )
 
 
-def list_liquid_perps(*, top_n: int = 100) -> list[str]:
-    """Top-N USDT perps by 24h quote volume -- the TRADEABLE universe (realistic-cost names)."""
+def perp_quote_volumes() -> dict[str, float]:
+    """24h quote volume per actively-trading USDT perp -- the liquidity axis, BOTH tails.
+
+    list_liquid_perps() serves the top; the thin tail is §42 named ground (thin-pair
+    cross-venue funding, R0295), so the raw map is exposed rather than only its head."""
     perps = set(list_perp_symbols())
     tickers = _get(f"{_FAPI}/fapi/v1/ticker/24hr")
-    rows = [(t["symbol"], float(t.get("quoteVolume", 0.0)))
-            for t in tickers if t.get("symbol") in perps]
-    rows.sort(key=lambda x: x[1], reverse=True)
+    return {t["symbol"]: float(t.get("quoteVolume", 0.0))
+            for t in tickers if t.get("symbol") in perps}
+
+
+def list_liquid_perps(*, top_n: int = 100) -> list[str]:
+    """Top-N USDT perps by 24h quote volume -- the TRADEABLE universe (realistic-cost names)."""
+    rows = sorted(perp_quote_volumes().items(), key=lambda x: x[1], reverse=True)
     return [s for s, _ in rows[:top_n]]
 
 

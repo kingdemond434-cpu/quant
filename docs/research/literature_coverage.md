@@ -4,21 +4,34 @@ _Seeded 2026-07-18; rotation rule: >=40% of budget to least-recently-covered._
 
 | Family | Last visited | Sessions | Yield | Notes |
 |---|---|---|---|---|
-| arXiv q-fin (full) | 2026-07-26 | 1 | 1 graveyard row (`lit_defi_tvl_crosssection`, primary-verified) | Reachable and productive. HTML route (`arxiv.org/html/<id>`, `ar5iv…`) is the workhorse; PDFs now also readable (OP-025). Still only a slice touched — the full q-fin subcategory sweep is UNMINED. |
+| arXiv q-fin (full) | **2026-08-12** | 3 | run 6 (FIRST full-subcat execution): **3 mechanism cards (27–29 → R0459: 5-min stat-arb copula, quarter-hour clock, Polymarket–Deribit wedge), 4 mechanism graveyard rows + retraction wave-2, 2 engine entries (R0460/R0461), OpenMarket **Apache-2.0** ms-corpus (map 97)**; prior run 1 graveyard row | Reachable and productive. HTML route (`arxiv.org/html/<id>`, `ar5iv…`) is the workhorse; PDFs now also readable (OP-025). Run 6 walked all 8 subcats (TR×4 months/128 titles; others 2026-07 full + targeted). **ENUMERATION DEBT PAID IN FULL by run 7: all 12 outstanding slices walked, 287 titles read — and STATISTICAL-ARBITRAGE is NULL across every one of them (a SUPPLY finding, not evidence the family is dead; its next ground is theses/replication papers, not arXiv).** export.arxiv.org API 429s from this box — use listing pages SERIALLY. |
 | SSRN (microstructure/anomalies/crypto) | 2026-07-26 | 1 | 0 — **blocked** | **HTTP 403 from this box on every attempt.** Logged as NK-005 with a validated substitute-route ladder (OP-026). One finding (F11) is stranded provisional solely because of this. Not a dead corpus — a routing problem. |
-| Practitioner research (AQR/Man/TwoSigma/BIS/IMF/Fed) | 2026-07-31 | 1 | **FIRST VISIT: 3 watchlist cards (23–25), 4 inbox items (#90–#93), 6 primary reads, the −58% prior measured in crypto, 4 loot entries** | The spec's "criminally under-mined" call VALIDATED on contact: BIS WP1087 (carry→liquidations, primary), NY Fed sr1073 (stablecoin runs, primary via mirror), sr1052 (macro-disconnect null, primary), AQR Trading Costs ($1.7T live-trade cost curve), Man/Harvey crypto TSMOM (primary via Duke archive). Sub-families still unmined: Two Sigma depth (no alt-data methodology published — measured thin), DE Shaw (not visited), ECB/BoE. |
+| Practitioner research (AQR/Man/TwoSigma/BIS/IMF/Fed) | 2026-07-31 | 1 | **FIRST VISIT: 3 watchlist cards (23–25), 4 inbox items (#90–#93), 6 primary reads, the −58% prior measured in crypto, 4 loot entries** | The spec's "criminally under-mined" call VALIDATED on contact: BIS WP1087 (carry→liquidations, primary), NY Fed sr1073 (stablecoin runs, primary via mirror), sr1052 (macro-disconnect null, primary), AQR Trading Costs ($1.7T live-trade cost curve), Man/Harvey crypto TSMOM (primary via Duke archive). **RUN 7 (2026-08-12) took the ECB/BoE residual and it resolved as a ROUTE finding plus one live-sleeve find.** BoE 2025–26 crypto output is REGULATORY (systemic-stablecoin consultation), mechanism-DRY — same shape as the J-STAGE verdict. ECB is **UNREAD, NOT EMPTY**: the WP landing page is a gateway with no listing and the obvious year-listing URL 404s; **§38 replacement named — reach `ecb:ecbwps` via RePEc/EconPapers (the OP-026a route), next run.** The find came from the adjacent search instead: **arXiv 2605.05089 — 1,924 LIVE basis trades measuring buy-basis 18.2 bps vs SELL-basis 38.9 bps (~2.1× asymmetry), the exact signature of the desk's own flat-across-hold-buckets −51.74 bps.** Graded HYPOTHESIS not prior (cites no antecedent, none exists, DeFi venues so levels do not transfer). Sub-families still unmined: Two Sigma depth, DE Shaw. |
 | Journals (JF/JFE/RFS/JPM preprints) | 2026-07-26 | 1 | 2 graveyard rows + the McLean–Pontiff standing haircut prior | Reached via NBER pages, author self-archives and institutional OA repos, never via the publisher (Wiley 403s). HXZ interior extracted and it **corrected three numbers** in the desk's record. |
-| Theses & dissertations | 2026-07-26 | 1 | see LIT_d | Opened this run as part of the non-English ground. The genre that must report negative results is the one nobody reads — free graveyard entries. |
-| Failed-replication literature | 2026-07-31 | 3 | **11 findings; 4 graveyard rows + 1 corroboration; 3 method rails; NK-004 at HIGH** | Richest family. Run 4 closed both stranded carry-overs: F11 upgraded via the OP-026 RePEc route (size-death corroboration into the graveyard), F8's PubPeer layer mined (+103% citation stacking quantified, author-level nodes named). Remaining un-exhausted: the "−0.31" digit in F4; systematic Retraction-DB sweep found NOTHING beyond the Lucey cluster (measured null — the cluster IS the crypto retraction story). |
-| Non-English academic | 2026-07-31 | 3 | see LIT_d + run-4 addendum | Run 4: J-STAGE `ファンディングレート` → **exactly 0 results** — the JP academic corpus has never used the funding-rate loanword; JP perp-mechanism knowledge lives ENTIRELY in the practitioner web. J-STAGE crypto-derivatives sub-corpus graded EXHAUSTED-BY-ABSENCE. NOTE: kimchi clock REFUTED 2026-07-30 (R0051) — the KR academic layer's load-bearing status is retired; 오정훈 resume point downgraded to context-only. |
-| AI/agent/LLM methods (cs.LG/cs.AI/evals) | 2026-07-31 | 2 | **Run 4: 8 findings → 5 inbox items (#85–#89) + R0187–R0191, aimed at LIVE wounds** | Paid again, harder: exact e-process recipe for the Stage-B ×4.9 peeking wound; IRT de-welding for the welded gauntlet (certify_gauntlet already emits the response matrix); calibrated soft-voting replacing the singleton-discarding plurality filter; debate cancellation RE-CONFIRMED on 2025-26 evidence. Venue verdicts logged (METR rich; Epoch thin-for-methods; OpenReview workshops rich — NeurIPS eval-of-agents deadline 08-29; MemAgents = unmined ground; CN tech reports thin-for-methods). |
+| Theses & dissertations | **2026-08-12** | 2 | **run 7 FIRST REAL EXECUTION: 15/15 repositories stamped, 7 graveyard candidates, a cost-breakeven ladder that exists in no publication, ZERO cards by decision** | The 08-05 seat died at a checklist with every row PENDING; run 7 finished it. **Central claim TESTED, not assumed: free graveyard entries TRUE (5 of 6 items → a usable negative); free hypotheses FALSE; data chapters TRUE but worthless (all commodity feeds); "journals launder failures" REFUTED — the journal version PROMOTED the negatives to the abstract.** Reformulation for run 8: hunt the intermediate SENSITIVITY TABLE (gross printed next to net), never the failure narrative. **ROUTE T-6: every ETD AGGREGATOR refused this box (OATD/CORE 403, NDLTD 503, IEEE 418, DART-Europe PERMANENTLY CLOSED 2025-02-03) while every INSTITUTIONAL repository served 200 — aggregator routing is why prior seats read full corpora as empty.** NOT-REACHED: CN, MIT/Berkeley/Stanford, ETH, BASE, EThOS, OpenThesis. |
+| Failed-replication literature | **2026-08-12** | 5 | **11 findings; 4 graveyard rows + 1 corroboration; 3 method rails; NK-004 at HIGH** | Richest family. Run 4 closed both stranded carry-overs: F11 upgraded via the OP-026 RePEc route (size-death corroboration into the graveyard), F8's PubPeer layer mined (+103% citation stacking quantified, author-level nodes named). Run 6 delta: **the wave GREW — "Datestamping the Bitcoin and Ethereum Bubbles" (FRL 2018, GSADF classic) RETRACTED + Naeem-cluster FRL 2024 retraction** (graveyard `lit_retraction_wave_2026_datestamping_naeem`); the 07-31 "nothing beyond the Lucey cluster" null is SUPERSEDED. **RUN 7 MECHANISED IT AND THE HONEST HEADLINE IS THAT THE WAVE KILLS ALMOST NOTHING:** full Crossref/RW corpus (71,743 rows, 65 MB) DOWNLOADED AND PARSED from this box, two verified routes, licence graded (no explicit CC0 for the CSV → internal screening only, not redistribution). Core finance = **55 retractions in the DB's entire history, 45 INTEGRITY-ONLY (82%) vs 10 FRAUD/DATA**; all 12 Lucey rows carry a byte-identical rogue-editor string with ZERO data-side tokens — mechanisms untouched. **★ It ships with its own contraindication: Andersen–Bondarenko VPIN is IN the DB and the desk cites it (inbox #66 + the EXHAUSTED order-flow verdict) — a FALSE POSITIVE (technical retraction, republished JFM 17:1–46), so a naive retracted⇒discard screen would have destroyed a valid live prior.** Slicing trap caught: RW has no `Business - Finance` category (finance sits under `Business - Economics`) — a grep on "Finance" returns a confident wrong ZERO. Contamination measured NULL: 0 of 221 `Cites Retracted Work` rows touch crypto/asset pricing. **The 4-run "−0.31" carry-over is CLOSED: Brigida Table 13, Level-1, Δ(TVL/MarketCap), Q4 α −0.31 p=0.45 — run 2's record VINDICATED.** NEXT: published replication/comment papers (Critical Finance Review, JF/JFE/RFS "Comment on…"), never walked. |
+| Non-English academic | **2026-08-12** | 4 | see LIT_d + run-4 addendum | Run 4: J-STAGE `ファンディングレート` → **exactly 0 results** — the JP academic corpus has never used the funding-rate loanword; JP perp-mechanism knowledge lives ENTIRELY in the practitioner web. J-STAGE crypto-derivatives sub-corpus graded EXHAUSTED-BY-ABSENCE. NOTE: kimchi clock REFUTED 2026-07-30 (R0051) — the KR academic layer's load-bearing status is retired; 오정훈 resume point downgraded to context-only. Run 6: J-STAGE 暗号資産裁定/仮想通貨裁定/マーケットメイク all policy-only (DRY, corroborates exhaustion-by-absence); ペアトレード the exception → JSAI 2020 cointegration-instability note (consumed into card 27's prior). CiNii proper + JP thesis layer still untouched. **RUN 7 CORRECTION, and it is a big one: the KOREAN THESIS LAYER IS NOT EMPTY — the prior seats' zeros were a ROUTING ARTIFACT (T-6: every ETD aggregator refuses this box; every institutional repository serves 200). A Kookmin doctoral work on BTC spot-vs-perp arbitrage was read in full and graveyarded on its own numbers. Any non-EN corpus previously graded empty VIA AN AGGREGATOR must be re-opened — an aggregator's silence is a route fact, never a corpus verdict.** |
+| AI/agent/LLM methods (cs.LG/cs.AI/evals) | **2026-08-12** | 4 | **Run 4: 8 findings → 5 inbox items (#85–#89) + R0187–R0191, aimed at LIVE wounds** | Paid again, harder: exact e-process recipe for the Stage-B ×4.9 peeking wound; IRT de-welding for the welded gauntlet (certify_gauntlet already emits the response matrix); calibrated soft-voting replacing the singleton-discarding plurality filter; debate cancellation RE-CONFIRMED on 2025-26 evidence. Venue verdicts logged (METR rich; Epoch thin-for-methods; OpenReview workshops rich; CN tech reports thin-for-methods). Run 6: **13 findings → 6 entries (R0453–R0458), all 4 carry-overs closed, run-4's 2606.03437 record CORRECTED (ownership bias); COLM = richest never-visited venue (standing revisit); NeurIPS eval-of-agents = dated revisit ~2026-10; memory-products do-not-adopt null carded; MemAgents listing bot-gated, ground mined via citation graph.** **RUN 7 (expansion ~43%, 16 findings, 4 do-not-adopt nulls): ★ the run's most important output is a TOOLING-INTEGRITY finding — `WebFetch` on `arxiv.org/pdf/` SILENTLY FABRICATES (4/4 fetches contradicted the verbatim abstracts; one pointed the OPPOSITE direction) while `arxiv.org/html/` was clean 11/11 → standing rule **OP-057**; the parent's adversarial re-test found the route sometimes REFUSES instead, which makes it WORSE — the caller cannot tell which they got. Also: `model_upgrade.py` has NO same-model control arm while the desk auto-upgrades its own seats (90–96% of SAME-MODEL forks diverge at temp 0, arXiv 2608.08239); "anytime validity is free" (2501.03982) sequentializes the existing t-test with a BIT-IDENTICAL bar; empirical Bayes on the rejected 434 finally separates "welded gate" from "empty generator"; e-backtesting as a SHADOW monitor only (no rail touched). COLM regraded **RICH-as-index / BLOCKED-as-source** (OpenReview bot gate; 2 of 4 shortlisted read via arXiv mirrors, 2 blocked and PROVED absent by a 0-result API query, not by failure to find). Non-EN parity run on CN/JP/KR/RU: genuinely low yield, reported as a negative rather than padded. Best never-visited ground was the **Anthropic Engineering blog**, not an academic venue. SEAT'S CLOSING JUDGEMENT, recorded as this family's rotation verdict: *"the real bottleneck is not literature — seven findings across runs 6–7 compute from artifacts ALREADY ON DISK and none has been run."*** |
 
-**Rotation note (the ≥40%-to-least-recently-covered rule), updated 2026-07-31.** Practitioner
-research is no longer at zero (visited run 4, and it paid). Least-recently-covered now: the FOUR
-families last touched 2026-07-26 — **arXiv q-fin (full subcategory sweep still unmined), SSRN
-(via the strengthened OP-026a ladder), journals, theses (layer B, still the weakest relative to
-its thesis)**. Next run's rotation-bound picks come from these four; the arXiv q-fin full sweep +
-theses layer are the named front of the queue.
+**Rotation note (the ≥40%-to-least-recently-covered rule), updated 2026-08-12 (run 7 — SUPERSEDES
+run 6's).** **Theses layer B is CLOSED** (15/15 stamped, carried since seeding) and the **arXiv
+enumeration debt is PAID IN FULL** (12 slices, 287 titles). Practitioner residual **ECB/BoE is
+half-closed** — BoE mechanism-DRY, ECB **UNREAD-not-empty** with its §38 replacement route named
+(`ecb:ecbwps` via RePEc/EconPapers).
+**Least-recently-covered is now unambiguous: SSRN and JOURNALS, both last touched 2026-07-26 and
+both un-executed since** — SSRN blocked at 403 with a validated substitute ladder (OP-026) that
+has never been walked end-to-end, and journals at a single session. **Those two are run 8's
+rotation-bound picks**, together with the theses ground's own named continuation (institutional
+repositories DIRECTLY, never aggregators — T-6) and the replication/comment-paper genre the
+retraction ground surfaced as never-walked.
+**A ROTATION VERDICT THAT OVERRIDES THE USUAL RULE FOR ONE FAMILY:** the AI-methods seat closed by
+judging that *"the real bottleneck is not literature — seven findings across runs 6–7 compute from
+artifacts ALREADY ON DISK and none has been run."* **AI-methods is therefore DE-PRIORITISED for
+run 8 in favour of a reanalysis pass** — the marginal paper there is now worth less than the
+marginal computation, and mining a family whose output nobody consumes is the acquisition/extraction
+imbalance §33 exists to prevent, pointed at literature instead of data. Dated revisits: NeurIPS eval-of-agents ~2026-10; COLM
+accepted-list every run; Molnar pre-registered halving-clock window resolves Oct–Nov 2026
+(zero-cost natural experiment — grade it by watching).
 
 ---
 
@@ -574,3 +587,758 @@ Parallel ground-diggers are **READ-ONLY on every shared ledger** (`recommendatio
 locking; ID races have already cost this desk a renumber). Each writes ONLY its own file under
 `docs/research/deep_sweep/`. The parent does ALL routing serially at close.
 
+---
+
+## SESSION NOTE 2026-08-12 (literature deep-miner — run 6; STANDING DAILY)
+
+_Written BEFORE any searching (completion contract §1). Updated as each item resolves. If this
+run is killed, what stands below is the durable progress._
+
+### State at run start (recomputed, not remembered)
+- **RUN 5 (2026-08-05) DIED MID-RUN**: its note above opens 4 items and closes NONE. Honest
+  accounting: no litminer close exists between 08-05 and today. Its verification targets were
+  since dispositioned by the **brain-hunter seat 2026-08-11** (watchlist cards 22–26: two
+  `wired` with named artifacts, one `screened`, one `killed→graveyard`, two `deferred` with
+  dates to R0193/CN-seat). `source_backlog_next.py` still lists them "pending verification"
+  because their GRADES are non-terminal — the residual litminer duty is ARTIFACT-VERIFICATION
+  of the 08-11 claims (§33(8): first-pass grades are not evidence), not re-doing the digs.
+- `source_backlog_next.py` → 30 catalogued, 12 resolved, 12 pending verification, 6 pending
+  legitimacy decision (policy items incl. GMO/bitbank ToS reads owed 08-19 — principal/brain
+  ground, not litminer's).
+- `mine_gate.py` → BACKLOG-CLEAR, all 18 carded finds disposed; mining authorised.
+- `data/mine_generation_priors.json` (read per §33.14): one measured class,
+  `data_axis_watchlist.md` converting at 51.6% — favoured; no starve list.
+- Rotation debt: **arXiv q-fin FULL subcategory sweep now carried FOUR runs** — the standing
+  debt and this run's centre. Theses layer B still the family's weakest (unsearched).
+- `data/strategy_coverage.json` → STATISTICAL-ARBITRAGE remains the ONE
+  `MENTIONED-NEVER-TESTED` family (n=0); THIN: vol-and-options, event-and-calendar,
+  market-making-execution, attention-sentiment, level-reaction, lead-lag. Literature aim
+  points at these, not at hunted carry/trend.
+
+### ITEMS TAKEN THIS RUN (bounded breadth; depth MAXED per item)
+1. **[BACKLOG — verification-first]** Artifact-verify the six 08-11 dispositions on disk
+   (cot_btc_panel.json · stablecoin_run_variables.json · upbit_trade_announcements.jsonl ·
+   graveyard `cn_aigu_probitforge_unresolvable` · the two dated deferrals), postdate + content
+   checks, and upgrade/downgrade grades on evidence. Plus run-4's two [SUMMARY-ONLY]
+   strandings (SEC-interventions FRL; IMF WP 2023/163) via OP-026a routes. — **STATUS: ✅ CLOSED.**
+   **All five checkable 08-11 claims REPRODUCE (0 refuted — logged against the §33(8) first-pass
+   error rate, which historically ran 4-of-5 refuted):** COT panel 845KB/1,715 rows
+   2017-12-19→2026-08-04 w/ CFTC provenance; stablecoin store column-oriented USDT 3,178/USDC
+   2,892 rows, peg leg all-null as declared, Terra/SVB probes RECOMPUTED −10.23%/−15.17% vs
+   claimed −10.2/−15.2; Upbit archive 737 rows exactly; graveyard entry at line 707; R0193
+   scheduled due 2026-08-24. Verification stamps written into cards 23/25/26.
+   **Both strandings RESOLVED:** (a) FRL = **Saggu–Ante–Kopiec, open arXiv 2412.02452** —
+   −12%/1wk persisting a month, ex-ante informed volume, heterogeneity conditioning; then
+   **INTERIOR READ COMPLETED SAME-RUN** by re-deriving GAP #70's lost stdlib extractor (my
+   first draft repeated the false "needs poppler" limit — #70's re-test rule caught it):
+   48-event dated table present, BTC-benchmarked market model (CARs are BTC-relative),
+   pre-CARs insignificant vs abnormal pre-VOLUME, −3.9% insider-subsample pre-AR; extractor
+   source preserved in improvement_inbox (2026-08-12 entry) for the brain to land as
+   scripts/pdf_text.py; (b) IMF WP/23/163 = "The Crypto Cycle and US Monetary
+   Policy" — imf.org+elibrary both 403 from here, but the **authors' own Econbrowser summary
+   carries the interior numbers**: dynamic-factor on longest-lived tokens ≈75% mcap, factor
+   explains ~80% variance, Wu–Xia +1pp → −0.15sd crypto factor/2wk (equity −0.1sd),
+   institutional volume +1700% 2020Q2→2021Q2, risk-aversion correlation explains ≤65% —
+   external corroboration of the desk's OWN N_eff≈1.54 raw cross-section and the FRED-overlay
+   kills; routed to research_memory at close, no new card (corroboration, not mechanism).
+   **§39 advance folded in: graphsense-tagpacks VERIFIED (MIT, BTC-side labels)** → CryptoQuant
+   row PARTIAL, universe map entry 96. My own parser bug corrected in project memory
+   (recommendation_ledger is `{recommendations:[...]}`, decision_ledger is `{policy,decisions}`).
+2. **[ROTATION-BOUND, carried 4 runs] arXiv q-fin FULL subcategory sweep** (TR/PM/RM/ST/MF/
+   CP/PR/GN + stat.ML methods slice), aimed at STATISTICAL-ARBITRAGE (never-tested) and the
+   THIN families; replication scans + 2-level citation chains mandatory; ≤3 mechanism cards.
+   — STATUS: below.
+3. **[LIT-c + ≥25% SEARCH-SPACE EXPANSION] AI/autonomous-research METHODS frontier** — run-4/5
+   carry-overs (MemAgents ground, Search-Time Contamination 2606.05241, appendix deltas
+   2606.03032/2509.08713/2606.03437, NeurIPS eval-of-agents) + NEW venues never visited,
+   aimed at the desk's live wounds (welded gates, calibration, panel design). — **STATUS:
+   ✅ CLOSED** (ground file `deep_sweep/20260812_litminer_aimethods.md`, 662 lines; ~36 web ops,
+   expansion 40%). All 4 carry-overs closed; **run-4's 2606.03437 record was WRONG (ownership
+   bias, not elicitation ranking) — corrected inline in the inbox**. 13 findings → 6 consolidated
+   inbox entries (2026-08-12 A–F) → **R0453–R0458**. Headlines: STC conditional-inflation ~100%
+   (aggregate 4% masks it) + trajectory-as-evidence recipe; cross-family panels retain 0.598 vs
+   0.357 same-family + same-family majorities ≈ base prior 65–76% (published support for
+   L1.31/33); e-process OPERATIONS MANUAL for #85 (N≈log(1/α)/g, constant-threshold peeking law);
+   menu-order drove 100% of metric "choices" (generation-side wound); memory products measurably
+   LOSE to the desk's own BM25+files design (do-not-adopt null carded); reliability ≠ capability
+   two-source ⇒ re-measure organ curves after any model swap (live llm-auto-upgrade relevance).
+   Honest nulls: Apollo/BAAI thin (1 query deep), MemAgents listing bot-gated (ground mined via
+   its citation graph instead), NeurIPS-eval-of-agents pre-deadline → dated revisit ~2026-10.
+   New standing venues: **COLM accepted-list (richest never-visited venue — revisit every run)**,
+   HF weekly-trending (leads only), Epoch hub (quarterly), METR (quarterly).
+   §39 advance folded here: free exchange-address label corpora (CryptoQuant/Nansen/Arkham
+   rows) — GraphSense TagPacks class. — STATUS: ✅ done in item 1 (verified MIT, catalogued).
+
+### STEP -1 DIVERGENT QUERIES (3 a different searcher would run; ≥2 funded)
+1. J-STAGE/CiNii native-operator sweep: 暗号資産 裁定取引 / ペアトレード (JP academic stat-arb
+   on crypto — the litminer's own non-EN academic ground, parity with the venue miners).
+2. Retraction Watch + failed-replication finance sweep (standing mandate, never yet executed
+   as a query family): retracted crypto/finance empirics = free graveyard entries.
+3. "Agentic benchmark construct validity / eval contamination" (an evals engineer's query, not
+   a quant's) — maps to the desk's own gauntlet-design wounds.
+
+### NEXT RUN PICKS UP AT (updated at close)
+- Whatever of items 1–3 stays open, named precisely at close.
+- Theses layer B (DiVA/theses.fr/DART-Europe/CyberLeninka/J-STAGE theses) — still unsearched.
+- Practitioner residuals: Two Sigma depth, DE Shaw, ECB/BoE crypto notes; journals family.
+
+### DISCIPLINE (unchanged, learned): parallel ground-diggers are READ-ONLY on every shared
+ledger; each writes ONLY its own file under `docs/research/deep_sweep/`; the parent routes
+serially at close. Litminer freeze: no writes outside docs/research/* and data/* catalogs.
+
+
+### ✅ ITEM 2 [rotation debt, carried 4 runs] arXiv q-fin FULL-subcategory sweep — **CLOSED** (first actual execution; the 08-05 seat died at header). Ground file `deep_sweep/20260812_litminer_arxiv.md` (646 lines, ~45 fetches). 8 subcats walked (TR×4mo/128 titles; others 2026-07 full + targeted); 2 divergent grounds executed. **3 mechanism cards at the cap — cards 27–29 → R0459** (5-min copula stat-arb: FIRST test of the desk's only n=0 family, funding-falsifier first; quarter-hour clock w/ funding-window conditioning + a no-alpha-claim execution-hygiene leg; Polymarket–Deribit binary wedge, measurement-free, trading leg legitimacy-gated). **5 graveyard entries banked** (hourly copula pairs — upgraded SAME-RUN to interior-verified via the re-derived extractor: net-negative at ALL costs incl. 0.04% RT with funding modeled; fast Polymarket ML −0.116/trade; liquidation-CSD alarms event-heterogeneous, rails-only survivor; intraday OHLCV 14/14 MNQ extends 420/0 to 5-min; retraction wave-2: Datestamping-Bubbles + Naeem FRL). **2 engine entries → R0460/R0461** (lead-lag marks-unidentifiability standing rule — R0117's second, deeper kill; execution liquidity-state prior + mechanised leakage-gate candidates + post-selection stats shelf). OpenMarket **Apache-2.0** ms-corpus catalogued (map 97). 6 documented nulls (J-STAGE academic crypto mechanics DRY — practitioner-web verdict corroborated from the academic side; q-fin.PR zero-crypto, VRP resolves to the EV-rejected shape, logged as watchlist breadth-evidence only, NOT re-carded).
+
+---
+
+## RUN 6 CLOSE — routing totals, depth line, honest defects, next ground
+
+**ROUTING TOTALS:** 3 mechanism cards (27–29, §33-deferred → **R0459**, due 08-24) · 8 inbox
+entries (2026-08-12 A–H) · **9 ledger rows R0453–R0461** · 5 graveyard entries · 12
+research-memory rows · 2 universe-map entries (96 graphsense-tagpacks, 97 OpenMarket) · §39
+CryptoQuant row OPEN→PARTIAL · 4 coverage-table rows + rotation note updated · cadence stamped ·
+2 record corrections (run-4's 2606.03437 mischaracterization; my own ledger-parser error →
+project memory) · 1 defect-closer contribution (GAP #70's lost stdlib PDF extractor RE-DERIVED,
+proven on two papers same-run, source preserved in inbox for the brain to land).
+
+**DEPTH LINE (mandated):** BIS/artifact verification — 5/5 primary-artifact reproductions, 0
+refuted (vs the historical 4/5 refutation rate). Saggu — surface→open-mirror→INTERIOR (extractor)
+same-run; depth surfaced the BTC-relative benchmark + insignificant-pre-CAR/abnormal-pre-VOLUME
+split + the 48-event table (turned R0193's reconstruction into an extraction). QFE near-replication
+— landing-page→INTERIOR same-run; depth turned "hourly dies at 0.08%" into "hourly never lives at
+ANY cost, funding modeled". Tadi–Witzany — PRIMARY full-PDF + 2-level citation chase + replication
+scan; depth collapsed the family's live region to 5-min-or-faster. Deliberative-Illusion /
+Hidden-Pitfalls / 2606.03437 — appendix-level passes; depth produced the cross-family table, the
+measured audit delta, and a CORRECTION of the desk's own record. Per-lead grades in both ground
+files; no lead advanced on an unread summary without [SUMMARY-ONLY].
+
+**HONEST DEFECTS OF THIS RUN:**
+1. **No Stage-A screen RAN** (same letter-vs-spirit gap run 4 named): cards 27–29 need runner
+   constructions the litminer freeze bars; the honest routing is dated §33 deferrals + R0459.
+   The deferral machinery resurfaces them 08-24 if the alpha org slips.
+2. **Ledger arrival +9 rows into a repair-mode backlog** (196 open at run start). Mitigation
+   applied: 13 AI-methods findings consolidated to 6 rows; 3 cards batched into ONE row; nulls
+   routed to research_memory (5 rows), not the ledger.
+3. **arXiv enumeration debt**, recorded not hidden: TR 2026-03/04 + ST/PR 2026-02..06 unwalked
+   (depth was traded for it; the queue's depth work paid — 2 of 5 graveyard kills came from it).
+4. **Extractor hex-string gap named**: bracketed windows/peak cells in hex-encoded Tj strings
+   remain unread (Saggu −17.2%/30d cell stays [remembered-not-reproduced]); fix spec'd in the
+   inbox entry for the landed version.
+5. **Two agent next-ground items were STALE on arrival** (S1 SEC-FRL / S2 IMF WP/23/163 — both
+   resolved by item 1 THIS run before the agent finished): the 08-05 header it inherited from
+   predates the resolution. De-duplicated here so run 7 does not re-chase them. S3 (2510.14435
+   negative-carry computation) remains genuinely open.
+
+**NEXT UN-EXHAUSTED GROUND (run 7, in order):**
+1. **Theses layer B** (DiVA / theses.fr / DART-Europe / CyberLeninka / CiNii+KCI theses) — the
+   standing weakest family, carried since seeding; JP thesis layer doubly named (arXiv agent's
+   J-STAGE null points there).
+2. **Portnaya + Hansen–Kim full texts** → extract the delta-hedged proxy construction and the
+   Autocorrelation-Map estimator; draft card-29's measurement-only pre-registration.
+3. arXiv enumeration debt (TR 03/04, ST/PR 02–06) + S3 (2510.14435 §negative-carry).
+4. COLM shortlisted full texts (CONCORD, Rubrics-as-Attack-Surface, TierMem, 56-benchmark MTMM).
+5. Retraction Watch MECHANISED (public Crossref dataset → crypto/finance slice, grade
+   editorial-vs-fraud).
+6. SSRN via OP-026a + practitioner residuals (Two Sigma depth, DE Shaw, ECB/BoE).
+7. Dated: NeurIPS eval-of-agents ~2026-10; Molnar halving-clock window Oct–Nov 2026 (watch-only).
+
+**WHICH ARTIFACT ON DISK IS DIFFERENT BECAUSE OF WHAT WAS MINED (§33 standing test):**
+`data_axis_watchlist.md` (+3 §33-carded finds w/ dispositions, +4 verification stamps),
+`graveyard.md` (+5), `improvement_inbox.md` (+8 entries + extractor source + correction),
+`recommendation_ledger.json` (R0453–R0461), `data_universe_map.json` (+2),
+`paid_dataset_targets.md` (CryptoQuant PARTIAL), 12 research-memory rows,
+`cadence_state.json` stamped, 2 ground files under `deep_sweep/`, and this coverage map.
+
+---
+
+## SESSION NOTE 2026-08-12 (literature deep-miner — run 7; STANDING DAILY)
+
+_Written BEFORE any searching (completion contract §1). Updated as each item resolves. If this
+run is killed, what stands below is the durable progress._
+
+### State at run start (recomputed, not remembered)
+- Run 6 CLOSED CLEANLY today 02:10Z (3 cards, 9 ledger rows, 5 graveyard, 8 inbox). This run
+  resumes at its named next-ground list; it does NOT re-open run 6's closed items.
+- `source_backlog_next.py` → 34 catalogued, 17 resolved, **5 pending verification**, 1 legitimacy
+  decision, 11 dated deferrals. **Diagnosis before work:** 3 of the 5 (`BIS/COT`, `stablecoin
+  run`, `KR venue-state`) were artifact-verified by run 6 THIS MORNING; the remaining 2 (cards
+  **24** `VeighNa/Qlib`, **27** `crypto grouping map`) are marked `[§33: wired]` in the watchlist
+  but have **never been artifact-verified by anyone** — run 6 checked cards 23/25/26 only. So the
+  litminer's residual backlog duty is exactly those two, and the script's re-listing of terminal
+  rows is itself a defect to characterise (it burns a verification slot every cycle).
+- `mine_gate.py` → **BACKLOG-CLEAR**, 17 carded finds disposed; mining authorised.
+- Ledger is in **REPAIR-MODE** (209 open, 59 past grace). L1.28b(f): diggers run at FULL cadence
+  regardless — but arrival discipline binds (run 6's honest defect #2). Findings consolidate into
+  few rows; nulls go to research_memory, not the ledger; and this seat looks for owed rows it can
+  dispose ON EVIDENCE as its conversion contribution.
+- `data/strategy_coverage.json` (read, not remembered): **STATISTICAL-ARBITRAGE still
+  MENTIONED-NEVER-TESTED (n=0)** — carded 08-12 (card 27→R0459) but untested. THIN: level-reaction
+  (1), event-and-calendar (1), attention-sentiment (2), market-making-execution (2),
+  vol-and-options (2), lead-lag (2). HUNTED (do not re-bring): carry-funding, cross-venue-premium,
+  cross-sectional-factor, trend-and-structure, order-flow-positioning, copy-trader-skill,
+  onchain-flow.
+- **A PREVIOUS RUN DIED MID-WORK AND ITS ITEM IS STILL OPEN** (resume rule §3):
+  `deep_sweep/20260805_LIT_theses_layer.md` stops at a **15-repository checklist, every row
+  PENDING, FINDINGS section empty**. That seat's aim + priors are sound and inherited whole.
+  Finishing it outranks opening new ground.
+
+### ITEMS TAKEN THIS RUN (bounded breadth; depth MAXED per item)
+1. **[BACKLOG — verification-first]** Artifact-verify cards **24** (`search_operator_library.md`
+   anchor `qlib-alpha158` — licence claim + extracted operator semantics) and **27**
+   (`data/crypto_grouping_map.json` — the BLOCKING input for `group_rank`/`group_zscore`), both
+   §33(8) first-pass grades never checked. Plus: characterise the backlog re-listing defect.
+   — STATUS: below.
+2. **[NEXT-GROUND #1 + DIED-MID-RUN PICKUP] THESES LAYER B** — resume the 08-05 seat's own
+   repository checklist (DiVA/theses.fr/DART-Europe/CORE/BASE/OATD/NARCIS/ETH/SciELO/CiNii/
+   KCI-RISS/CN self-archives/US DSpace). The one genre contractually obliged to publish its
+   failures. Extraction rule inherited from the graveyard's `statarb_kalman_hedge_ratio_refinement`
+   row: **read the COST chapter, never the model chapter.** — STATUS: below.
+3. **[NEXT-GROUND #5] RETRACTION + FAILED-REPLICATION, MECHANISED** — the public Crossref/
+   Retraction-Watch dataset → crypto/finance slice, graded editorial-vs-fraud. Standing mandate,
+   never executed as a query FAMILY (run 6 found wave-2 by hand). Free graveyard entries.
+   — STATUS: below.
+4. **[LIT-c + ≥25% SEARCH-SPACE EXPANSION] AI/autonomous-research METHODS frontier** — COLM
+   accepted-list full texts (run 6: "richest never-visited venue, standing revisit": CONCORD,
+   Rubrics-as-Attack-Surface, TierMem, 56-benchmark MTMM) + NEW venues never visited, aimed at
+   live wounds (welded gate, peeking, calibration, panel design). — STATUS: below.
+5. **[NEXT-GROUND #2] Portnaya + Hansen–Kim full texts** → card-29's delta-hedged proxy +
+   Autocorrelation-Map estimator; plus arXiv enumeration debt (TR 03/04, ST/PR 02–06) and S3
+   (2510.14435 §negative-carry). — STATUS: below.
+
+### STEP -1 DIVERGENT QUERIES (3 a different searcher would run; ≥2 funded)
+1. **A librarian's query, not a quant's**: search the thesis aggregators by SUPERVISOR and by
+   DATA-CHAPTER vocabulary ("tick data provided by", "proprietary dataset", "transaction cost
+   assumption") rather than by strategy name — the data chapter is the part nobody indexes for.
+2. **A research-integrity officer's query**: retraction/expression-of-concern notices as a
+   *venue* — grade whether the finance retraction wave is fraud or citation-cartel, because the
+   two imply OPPOSITE priors on the underlying mechanism (fraud ⇒ mechanism unevidenced;
+   cartel ⇒ mechanism may be fine, the citations are fake).
+3. **A JP/KR university librarian's query**: native-language thesis operators (修士論文 暗号資産
+   裁定 / 학위논문 차익거래 암호화폐) rather than English crypto terms — run 6's J-STAGE null was
+   about the *journal* corpus; the *thesis* corpus is a different index and has never been tried.
+
+### DISCIPLINE (unchanged, learned): parallel ground-diggers are READ-ONLY on every shared ledger
+(`recommendations.py` has no locking; ID races have cost a renumber); each writes ONLY its own
+file under `docs/research/deep_sweep/`; the parent routes serially at close. Litminer freeze: no
+writes outside `docs/research/*` and `data/*` catalogs — never scripts/, libs/, executor, rails.
+
+### ✅ ITEM 1 [BACKLOG — verification-first] — **CLOSED.** Both cards reproduce; and the queue that surfaced them is measurably broken.
+
+**A. CARD 24 (VeighNa/Qlib) — VERIFIED, including the axis that has bitten this desk before.**
+Artifact `docs/research/search_operator_library.md` exists (145,615 B, 1,657 lines), anchor
+`qlib-alpha158` present at **line 1405**, and the content is the claimed content, not a summary of
+it: the FIVE elided semantics are each stated as a mechanical reading rule with the exact source
+line (`Rolling` N-type ternary incl. N=0→expanding and float→EWM; `min_periods=1` everywhere;
+future-`Ref` labels + `CSZScoreNorm` on the LABEL at handler.py:39; negative-`Ref`-in-a-feature as
+a pre-falsified leak rule; `Greater/Less` = elementwise max/min, not predicates), plus per-family
+crypto analogues and the `Slope/Rsquare/Resi` regression trio named as the transform axis
+`combination_engine` lacks. **LICENCE RE-READ INDEPENDENTLY THIS RUN** (the card's own rule: "the
+licence read comes FIRST… the desk has been bitten here", row #79): `raw.githubusercontent.com/
+microsoft/qlib/main/LICENSE` → **MIT, "Copyright (c) Microsoft Corporation."**;
+`raw.githubusercontent.com/vnpy/vnpy/master/LICENSE` → **MIT, "Copyright (c) 2015-present,
+Xiaoyou Chen"**. Both claims reproduce verbatim. `[PRIMARY]`
+
+**B. CARD 27 (crypto grouping map) — VERIFIED to the digit, and one honest gap named.**
+`data/crypto_grouping_map.json` 27,560 B, built `2026-08-11T15:19:53Z`, file mtime 15:20:06 —
+**postdates the find** (§33 strong form). Every published number recomputed from the artifact:
+296 symbols ✓; `corr_cluster_residual` K=12 ✓, largest cluster R8=**100**/296 ✓, intra
+**+0.1382** vs inter **−0.0112** against demeaning floor **−0.0034** ✓ (and the artifact states
+the compare-to-floor-not-zero rule in its own `note` field); `corr_cluster` degenerate at
+**268**/296 ✓; `liq_tier` K=4 ✓; `listing_cohort` K=17 static cohorts ✓; all four maps are
+`dict[symbol,str]` exactly as `wq_operators._require_groups` expects ✓.
+**THE GAP, stated because the card's grade does not:** `grep` across the tree returns **ZERO code
+consumers** — no `.py` reads `crypto_grouping_map.json`, and no call site passes a `groups=` map.
+`group_rank`/`group_zscore` remain INERT. The card is graded `[§33: wired]`, but "wired" here
+means *the artifact was built*, not *anything consumes it*. That is correctly owned elsewhere
+(**R0437**, status `scheduled`, due **2026-08-18**, owed by the alpha org), so this is not a
+hidden defect — but the grade overstates, and a reader who trusts the grade will believe a
+capability is live that is not. **Verification stamps: cards 24 and 27, this run.**
+
+**C. THE REAL FIND OF THIS ITEM — the verification queue is 100% noise, and the obvious fix makes
+it worse.** Run 6 noticed in prose that these grades "parse as non-terminal" and moved on. That
+diagnosis has now been paid for twice, so this run measured it instead.
+- **Measured:** `parse_watchlist` over the 34 cards → `{resolved 17, deferred 11, verification 5,
+  legitimacy 1}`. **All 5 cards in the "VERIFY this cycle" queue carry a terminal §33 marker**
+  (4 `wired`, 1 `screened`). The organ the desk's own doctrine calls its *bottleneck* has been
+  handed a queue containing zero actual verification work.
+- **Root cause, exactly:** `libs/research/source_backlog._classify` reads the §33 marker for
+  `killed` and `deferred` only. §33 defines **four** verbs. `wired`/`screened` fall through to the
+  fail-open `return "verification"` unless the card's PROSE happens to contain "verified-clean" /
+  "destroyed-at-source" / "needs-legitimacy-review". The cross-tab proves classification is
+  decided by prose accident: `wired` cards scatter across resolved(2)/verification(4)/legitimacy(1);
+  `screened` across resolved(2)/verification(1). The module's own docstring states the rule it is
+  breaking — *"THE DISPOSITION IS READ FROM THE §33 MARKER, NEVER FROM PROSE"* — and documents
+  this exact failure class (F0002, fixed 2026-07-28 for `killed`/`deferred`, left live for the
+  other two verbs). Upgrade-before-build applies: the sibling module
+  `libs/research/mine_conversion` already defines `_TERMINAL = ("wired","screened","killed")` and
+  artifact-checks each one (`backing_reason`: exists / non-empty / postdates / anchor).
+  `source_backlog` imports nothing from it.
+- **THE TRAP IN THE OBVIOUS REPAIR (this is why the finding is worth a row).** `max_audit._mine_items`
+  uses the picker's *presentation* category as an *enforcement* predicate: it drops every card
+  `parse_watchlist` calls `resolved` from the §33 population. Simulated directly: the naive patch
+  (`wired`/`screened` → `resolved`) takes the artifact-checked population **17 → 11 and silently
+  strips `backing_reason` from 6 cards** — including card 27 and card 23, the very cards this seat
+  hand-verified. It would convert a visible nuisance into an invisible loss of enforcement (L1.49
+  "a gate that never ran"). **Correct patch:** a THIRD category (`converted`) that leaves the
+  verify queue but stays inside the §33 population, plus a regression test that fails if a future
+  edit "simplifies" `converted` into `resolved`. Named for the ledger; not applied — litminer
+  freeze bars `libs/`.
+- **Honest consequence for my own duty:** existence/non-empty/postdate is ALREADY automated by
+  `backing_reason`. The non-mechanical half — *do the published numbers reproduce from the
+  artifact* — is the part worth a human, and that is what §33(8) should be read to mean.
+
+### ✅ PARENT DIG [rotation-bound practitioner/central-bank residual] — **CLOSED**, and it landed on the deployed sleeve rather than on a new alpha.
+
+**Rotation target was the practitioner family (last touched 07-31, best measured yield/session:
+first visit = 3 cards + 4 inbox items). Named residuals: Two Sigma depth, DE Shaw, ECB/BoE.**
+
+**A. ECB/BoE — HONEST NULL, graded as a ROUTE finding, not a corpus verdict.** BoE's 2025–26 crypto
+output is REGULATORY (systemic-stablecoin consultation + policy statements: ≥40% of backing at the
+BoE, ≤60% short gilts), not empirical microstructure — the same shape as run 6's J-STAGE verdict:
+policy-rich, mechanism-dry. ECB: the WP landing page is a gateway with no listing
+(`/press/research-publications/working-papers/html/index.en.html`), and the obvious year-listing
+guess `papers-2026.en.html` returns **HTTP 404**. So ECB is **UNREAD, not empty** — I did not find
+its listing route from this box, which is a routing gap and is recorded as one. `[ABSTRACT]`/route.
+**§38 replacement named:** reach ECB WPs via RePEc/EconPapers series `ecb:ecbwps` (the OP-026a
+route that already unblocked SSRN for this organ) rather than via ecb.europa.eu. Next run.
+
+**B. THE FIND — `arXiv 2605.05089`, "Dynamic Collateral Control for Permissionless Spot-Perpetual
+Basis Trading" (Krestenko, Butov, Berezovskiy, Bolotin; 2026-05-06). `[PRIMARY]`, full interior via
+the `arxiv.org/html/` route (the PDF route returned raw FlateDecode objects — the HTML route
+remains the workhorse and needed no extractor; `scripts/pdf_text.py` has NOT landed, so run 6's
+GAP #70 hand-off is still owed).** This is EXECUTION/RISK on the desk's **deployed** sleeve, not an
+alpha claim, and it is routed as such — it can never enter the alpha gauntlet.
+- **THE TRANSFERABLE MEASUREMENT — an independent LIVE deployment of the desk's own trade.**
+  1,924 basis trades, ~$8.95M notional, ERC-4626 vault on Arbitrum, 2025-04-01→2025-12-01:
+  **buy-basis median 18.2 bps (p90 ~25) vs sell-basis median 38.9 bps (p90 ~50+)** — the closing
+  side costs **~2.1×** the opening side, with a materially thicker right tail.
+- **THE UPPER REBALANCE BOUNDARY, stated economically:** `(α_U − α†)·D·κ̃_h = K_reb` — rebalance
+  down only when carry recovered over horizon h exceeds full round-trip cost `K_reb` (fees +
+  impact + gas + chain overhead); the authors state the upper trigger **"may disappear entirely
+  under realistic execution costs."** That is independent corroboration that the desk's churn
+  problem (GAP #42: 38% of carries closed before one funding payment, −8.1%/yr) is STRUCTURAL,
+  and that its min-hold fix has the right economic form. Lower boundary is solvency-driven:
+  `α_L := inf{α : Π_liq(α;h_liq) ≤ ε_liq}`, calibrated h_liq = 3h, ε_liq = 1e-4.
+- **WHY IT MATTERS HERE:** the sleeve's largest live wound is `price_pnl` **−51.74 bps/round-trip**
+  on a delta-neutral pair that should be ~0, **flat across every hold bucket** (−48→−64 bps) — a
+  cost paid ONCE PER ROUND TRIP, not accruing with time. A close-side execution asymmetry produces
+  exactly that signature. R0219 hunts this ~66 bps gap.
+- **WHAT DOES NOT TRANSFER, stated plainly:** this is DeFi (Hyperliquid perps, 1inch/Arbitrum spot).
+  Gas and AMM routing inflate DEX sell-side cost in ways a Binance CEX book does not share. **The
+  LEVELS are not portable; only the STRUCTURE (which side is expensive, and why) is** — and the
+  structure is a hypothesis to test on desk fills, never a number to adopt.
+
+**C. SCREEN-ON-DISCOVERY, run in the same session — and it returned UNIDENTIFIED, correctly.**
+`data/cashcarry_trades.json` carries the per-leg decomposition (`spot_slip_bps`, `fut_slip_bps`,
+`spot_mode`, `fut_mode`, `wait_s`), so the falsifier is runnable in principle. Result:
+- **THE ONLY DEFENSIBLE DENOMINATOR IS 19 ROWS.** The `_tca` wrapper landed **2026-07-27**;
+  **430 of 449** event rows PREDATE it, so their nulls are expected rather than defective. Post-TCA:
+  **6 opens, 13 closes**, and the book has been flat since 2026-08-01. **The desk cannot answer its
+  own 66 bps attribution question from its own tape — not because the instrument is broken, but
+  because n=19. UNIDENTIFIED is the honest verdict (L1.45), and the external n=1,924 is exactly
+  what a desk in that position should be reading.**
+- **DIRECTION AGREES, AND IT IS A POINTER, NOT EVIDENCE:** close-leg spot slippage median
+  **+10.39 bps** (mean +22.33, p90 +59.17, n=8) vs open-leg **+0.04 bps** (n=4). Same sign and
+  rough shape as the paper's asymmetry. **n=8 vs n=4 supports no claim** and is written here only
+  to justify repairing the instrument.
+- **ONE REAL MEASUREMENT DEFECT FOUND:** on the fair denominator, `spot_slip_bps` is present on
+  only **4/6 opens and 8/13 closes — 7 of 19 rows (36.8%) lost**, and the cause is **100%
+  mid-read failure**, never a missing fill (`spot_mid is None` on all 7; `spot_fill` missing on 0).
+  `_mid_of` (run_cashcarry_executor.py:1590) returns `None` on ANY exception AND on a zero/empty
+  book, so **"the venue book read threw" and "the book was empty" are byte-identical to every
+  downstream reader** — the desk's own L1.55 ABSENT-vs-UNREADABLE law, violated inside the very
+  instrument built to attribute its biggest loss. Exact patch: record the failure REASON alongside
+  the None so a 37% instrument loss is attributable instead of invisible. Not applied — freeze.
+
+**TWO SELF-CORRECTIONS, recorded because both were errors I nearly published:**
+1. I first read the durable moat tape's FIRST ROW and concluded the archive "drops the slippage
+   fields". **Refuted by taking the union of keys across all 531 rows** — the fields are present
+   (as are the L1.45 excitation fields `exc_arm/exc_baseline/exc_cell/exc_seed/exc_wait_s`). **One
+   row's keys are not a schema.**
+2. I first computed a "97.6% null" rate over all 500 rows. **That denominator is contaminated by
+   430 pre-instrument rows** — the exact L1.57/L1.60 error class this desk legislates against,
+   committed by me against the desk's own money-path data. Controlling for the 07-27 landing date
+   moved the real number to 63% populated / 37% lost, and changed the verdict from "broken field"
+   to "underpowered instrument with a 37% attributable-loss bug".
+
+**D. ITEM 1 ADDENDUM — why no test catches this, measured.** The classifier has 20 tests over two
+fixtures. Verb coverage: **the fixtures contain `deferred` ×4 and `killed` ×1, and `wired`/
+`screened` ZERO times.** The live watchlist uses **`deferred` 12, `killed` 5, `screened` 5,
+`wired` 8** — so **13 of 30 production §33 markers (43%) use verbs that appear nowhere in any
+fixture.** The fixture was extended exactly as far as the F0002 fix reached (2026-07-28,
+`killed`+`deferred`) and not one verb further, so the suite is **structurally incapable of failing
+on this bug**: every test passes against a classifier that ignores half the marker vocabulary.
+This is the desk's own recorded lesson — *"build the self-test fixture from the WIDEST real
+schema, not the narrowest; a fixture that only contains the covered columns cannot reveal what
+the guard is blind to"* (`libs/features/validation.py`, R0289) — recurring in a second organ.
+**The regression test to write is therefore not one test but a property:** assert that every §33
+verb appearing in the LIVE watchlist is represented in the fixture, so the next verb added to §33
+cannot be silently unhandled. **Self-correction:** my first read of the file saw only `_SAMPLE`
+(zero §33 markers) and I nearly wrote "the fixture has no markers at all" — a second fixture at
+line 123 does carry them. Checking the whole file, not the first one, is what produced the
+sharper and correct version of the claim.
+
+**PARENT DIG — CITATION CHASE (depth mandate, 2 levels) and the grade it forces.** Walked
+2605.05089's reference list: it cites basis/carry work (Barth et al. 2016 Treasury cash-futures
+basis; Du–Tepper–Verdelhan 2018 CIP deviations), perp-pricing theory (Brennecka 2019; Matta–
+Mattarei 2021) and DEX-execution work (Angeris–Chitra–Evans 2020; Heimbach–Wattenhofer 2022) —
+and **cites NO prior study measuring an open/close asymmetry.** Its own live measurement is
+presented as novel, which the forward search corroborates: no independent second measurement
+exists. **Therefore the asymmetry is a SINGLE-SOURCE, SINGLE-VENUE-CLASS live observation
+(one vault, DeFi, 8 months), and it is graded HYPOTHESIS, not validated prior** — exactly the
+grade L1.7 demands of an uncontested claim. The practitioner web echoes the direction ("unwind
+during a vol spike costs 0.4% on both legs") but that is education copy, mined for VOCABULARY and
+crowd-positioning only, never as evidence.
+**CONSEQUENCE FOR ROUTING — this is a MEASUREMENT-FIRST item and must not become a size change:**
+the desk should (1) repair the 37% mid-read loss so the instrument stops discarding its own
+evidence, (2) accumulate post-TCA rows, (3) then test the asymmetry on its OWN fills. Adopting the
+paper's 18.2/38.9 bps numbers on a CEX book would be importing a DeFi cost structure the desk does
+not trade — the precise error the desk's own doctrine calls a fabricated input (L1.55).
+
+**PARENT — R0358 EVIDENCE, recorded NOT re-rowed (anti-duplication).** `R0358` ("GAP #70 — LAND
+THE STDLIB PDF EXTRACTOR") is `scheduled` with **due = 2026-08-12, i.e. TODAY**, and
+`scripts/pdf_text.py` **still does not exist** (checked this run). Its summary already notes "two
+consecutive literature runs inherited the claim"; **this run is the third** — I hit the wall today
+on `arXiv 2605.05089`, whose PDF route returned raw FlateDecode object code, and routed around it
+via the `arxiv.org/html/` mirror. So the recurrence is now measured at 3, the working source sits
+preserved in `improvement_inbox.md` (run-6 entry, proven on two papers same-run), and the row is
+blocked ONLY on someone with `scripts/` write access — which the litminer freeze denies. **No new
+ledger row raised: R0358 exists, is correctly scheduled, and duplicating it would burn a slot in a
+repair-mode backlog to say something the row already says.** What this run adds is the third dated
+data point and the note that its deadline lapses today unmet.
+
+### ✅ ITEM 3 [NEXT-GROUND #5] RETRACTION + FAILED-REPLICATION, MECHANISED — **CLOSED.** Ground file `deep_sweep/20260812_litminer_retraction.md` (815 lines, 7 sections, 56 tool ops). **HONEST HEADLINE: the finance retraction wave kills almost nothing, and saying so is the result.**
+
+- **THE ROUTE IS NOW MECHANISED, not a lead.** The full Crossref/Retraction-Watch corpus —
+  **71,743 rows, 65 MB — was downloaded and parsed from this box**, two verified routes
+  (`gitlab.com/crossref/retraction-watch-data` raw CSV, git-versioned so ARRIVALS are diffable;
+  and `api.labs.crossref.org/data/retractionwatch`, fresher). **Licence honestly graded: Crossref's
+  general position is CC0/public-domain-facts but NO explicit CC0 string exists for this CSV** →
+  cleared for internal screening, **NOT** for redistribution. §13 respected without overclaiming.
+- **A FALSE-EXHAUSTION TRAP CAUGHT BEFORE IT FIRED:** the RW vocabulary has **no
+  `Business - Finance` category** — finance is filed under `Business - Economics`. A future script
+  grepping "Finance" returns a confident, wrong ZERO. Exactly the desk's own "a correct-looking
+  term returning a clean zero" failure mode, caught at build time.
+- **THE LOAD-BEARING SPLIT (the whole reason the ground matters): core finance journals hold
+  55 retractions in the DATABASE'S ENTIRE HISTORY — 45 INTEGRITY-ONLY (82%) vs 10 FRAUD/DATA;
+  wider economics is 1.2% pure fraud.** All **12** Lucey-cluster retractions (run 6 had found 2)
+  carry a **byte-identical** reason string — rogue editor / conflict of interest — with **zero
+  data-side tokens. The mechanisms are untouched.** The desk must not harvest these as mechanism
+  kills, and now has the counts to say so.
+- **★ THE NEAR-MISS, and the highest-value thing this ground produced.** **"VPIN and the flash
+  crash" (Andersen–Bondarenko) IS in the retraction database** — and the desk cites it in inbox
+  **#66** (positioning-contamination law) and in its **EXHAUSTED order-flow verdict**. It is a
+  **FALSE POSITIVE**: the CREATES 2013-42 PDF was fetched and stdlib-extracted, where the authors
+  state they *"agreed to have the initially accepted version undergo a technical retraction to
+  allow for addition of such material"* — it republished as JFM 17:1–46 (2014). **Desk citation
+  CLEAN.** **A naive "retracted ⇒ discard" screen — the obvious thing to build from this corpus —
+  would have destroyed a valid live prior on day one.** The ground therefore ships with its own
+  contraindication, which is worth more than the corpus.
+  *Bonus rail extracted en route:* un-optimised realised volatility posts a **0.0%** false-positive
+  rate at its 95th pct vs VPIN's **7%** at its 99th — a benchmark-free-alarm admission test that
+  maps directly onto the `lit_liquidation_csd_alarms` graveyard row.
+- **GENUINE KILLS: one methodologically important, one irrelevant.** JF's *Risk Management in
+  Financial Institutions* (Rampini–Viswanathan–Vuillemey) was retracted because **a replication
+  study found the authors' own code did not reproduce their central findings** — the desk holds no
+  position in it, but the MECHANISM (published replication → forced retraction) is what points at
+  the next ground. Plus JFE's Bai–Bali–Wen corporate-bond factors.
+- **CARRY-OVER CLOSED (open 4 runs): the "−0.31" digit is LOCATED** — Brigida **Table 13**,
+  Level-1 subset, Δ(TVL/MarketCap), Q4 α = **−0.31 (p=0.45)**. **Run 2's record is VINDICATED.**
+  The Naeem reason text upgraded `[SUMMARY-ONLY]` → `[PRIMARY]`.
+- **MEASURED NULLS (first-class):** citation contamination (`Cites Retracted Work`) is real and
+  rising (37 in 2025) but **0 of 221 rows touch crypto or asset pricing — no second wave is
+  coming**. The widely-quoted "226 crypto retractions" is **~95% the Hindawi blockchain-tech paper
+  mill**, not empirics. 43% of the economics slice is a single IEEE conference purge. PubPeer
+  re-tested per GAP #70: root 200, **search 403** — not circumvented; RW/Crossref is the §38
+  replacement for the OUTCOME layer, the ALLEGATION layer stays `blocked-from-here`.
+- **TWO SELF-CORRECTIONS BY THE SEAT:** it flagged the JFE row a false positive, chased it, and
+  **inverted its own call** — it is real; and it found **RW's date fields on that row are wrong by
+  years** (standing rule: never compute on RW dates). Its own title screen's min-token filter had
+  hidden the VPIN row — caught only by an author-key pass.
+- **NEXT GROUND NAMED:** published **replication / comment papers** (Critical Finance Review
+  replication issues, JF/JFE/RFS "Comment on…") — §3.3 proves the mechanism (a published
+  replication forced a JF retraction) and that genre has never been walked by this desk.
+
+### ✅ ITEM 4 [LIT-c + ≥25% EXPANSION] AI/AUTONOMOUS-RESEARCH METHODS — **CLOSED.** Ground file `deep_sweep/20260812_litminer_aimethods_run7.md` (1,119 lines, 91 tool ops, expansion **~43%**). 16 findings, 4 do-not-adopt nulls, all 8 live wounds hit.
+
+- **★ N1 — A TOOLING-INTEGRITY FINDING THAT OUTRANKS EVERY PAPER IN THIS RUN, AND I TESTED IT
+  MYSELF RATHER THAN RELAYING IT.** The seat reports `WebFetch` on `arxiv.org/pdf/` **silently
+  fabricating**: 4 of 4 PDF fetches produced figures the verbatim abstracts contradict, and on
+  `2311.10685` the fabrication pointed the **OPPOSITE DIRECTION** from the real headline;
+  `arxiv.org/html/` was clean 11/11.
+  **MY INDEPENDENT TEST (adversarial, L1.7): on `2605.05089v1` the PDF route REFUSED both times** —
+  it returned PDF object structure and said it could not locate the section. **So the failure mode
+  is NOT uniform, and that qualification makes the finding WORSE, not better:** the same route
+  sometimes refuses honestly (safe) and sometimes confabulates (catastrophic), **and the caller
+  cannot tell which one they received.** That is the desk's own ABSENT-vs-UNREADABLE collapse
+  (L1.55) reappearing at the TOOL layer, where every organ on this desk is exposed to it.
+  **RETROACTIVE DAMAGE BOUNDED, not asserted:** run 6's arXiv ground file contains **zero**
+  `arxiv.org/pdf/` URLs (grep count 0) against 2 html/ar5iv routes, so **run 6's figures are not
+  contaminated**. My own interior read today came from the HTML route. **STANDING RULE: HTML/ar5iv
+  is the only trusted arXiv route from this box; a `/pdf/` result is quarantined unless
+  independently confirmed.**
+- **F1 [W6, LIVE — the desk is auto-upgrading its own LLM seats RIGHT NOW]** `scripts/model_upgrade.py`
+  scores the wrong world: `gauntlet()` is four single-turn probes on a static payload and
+  `regressed_seats()` has **no same-model control arm**. Replay Gap (2608.08239, full text +
+  appendices): early-swap replay scores **92–97% of post-fork decisions against states that never
+  occur**; the stitched evaluator went **0-for-5** on success-relevant calls; and the load-bearing
+  catch — **90–96% of SAME-MODEL control forks diverge at temperature 0**. Without a paired control
+  fork the desk **cannot distinguish "opus-5 is worse" from "the pool re-batched"**. Directly
+  relevant to the live `llm-auto-upgrade` branch this session sits on.
+- **F4 [W1] "Anytime validity is free" (2501.03982)** — for any valid fixed-N test there exists an
+  anytime-valid sequential test that **coincides with it at N**. The desk can sequentialize its
+  existing t-test, gain unlimited peeking, and keep the bar **bit-for-bit identical** — satisfying
+  the never-loosen law *by construction*, and far cheaper than the full e-process rebuild sitting
+  in the ledger since 07-31.
+- **F5 [W2/W8] The test that separates the desk's two indistinguishable failures.** On 136,000 real
+  strategies, "multiple testing methods popular in finance fail to identify most out-of-sample
+  performers" (Chen–Dim 2311.10685). Empirical Bayes over the desk's **rejected 434** would finally
+  separate **"the gate is welded" from "the generator is empty"** — two diagnoses that have emitted
+  the identical zero for a year. Diagnostic only; moves no threshold.
+- **F10 [W1, money path] E-backtesting** (Wang–Wang–Ziegel, *Management Science* 72(6); preprint
+  2209.00991v5 full text): model-free, distribution-free e-processes for VaR/ES readable DAILY
+  without alpha inflation; GREE/GREL/GREM formulas extracted. Framed strictly as a **shadow
+  monitor** — no rail touched, `run_deadman_switch.py` untouched (Tier-3 discipline held).
+- **F16 QUALIFIES A RUN-6 BANKED ITEM — do not implement R0455 as written.** The ownership-bias fix
+  (re-frame answers as user-supplied) repairs calibration LEVEL but lands on an axis where
+  confidence separates correct from plausible-wrong by only **+0.021**. Report **AUROC alongside
+  ECE**, or the fix optimises a number that cannot discriminate.
+- **ITEM A HONESTLY 2 OF 4:** Rubrics-as-Attack-Surface and TierMem read in full via arXiv mirrors;
+  **CONCORD and the 56-benchmark MTMM are BLOCKED** — COLM full texts route through OpenReview's
+  bot gate (3 paths tested) and neither is on arXiv (**proved by a 0-result API query, not by
+  failure to find** — the distinction the desk requires). MTMM's *need* is superseded by
+  `2509.20293` (same statistics WITH thresholds: α≥0.90, HTMT≤0.85, CLR≥2.0, plus a worked
+  failure). **COLM regraded: RICH as an index, BLOCKED as a source.**
+- **EXPANSION ~43%.** Best never-visited ground was the **Anthropic Engineering blog**, not an
+  academic venue. **Non-English parity was run on CN/JP/KR/RU and the yield was genuinely low —
+  reported as a negative result rather than padded**, which is the correct behaviour.
+- **THE SEAT'S OWN CLOSING JUDGEMENT, and it is the right one:** *"the real bottleneck is not
+  literature — seven findings across runs 6–7 compute from artifacts ALREADY ON DISK and none has
+  been run. The marginal value of an eighth paper is now below the marginal value of one
+  reanalysis pass."* **That is a recommendation to STOP MINING THIS GROUND and start computing**,
+  and it is recorded as this family's rotation verdict.
+
+### ✅ ITEM 5 [NEXT-GROUND #2] INTERIORS — **CLOSED, and it CORRECTS RUN 6's OUTPUT FROM THIS MORNING.** Ground file `deep_sweep/20260812_litminer_interiors.md` (850 lines, 57 ops). **Zero new cards — and that is the correct result**, because three claims already standing in desk artifacts are wrong.
+
+- **CARD 29 — construction fully extracted, then killed as specified.** Portnaya `2606.19517`
+  `[PRIMARY]` via HTML: IV inversion → `P_fair = e^(−rτ)Φ(d₂)` → gap → plug-in SE simplifying
+  exactly to `|𝒱ᴰ|·ς̂_C/𝒱ᶜ` → `TF_t = (f_B+f_P)+½(s_B,t+s_P)` → vega/delta-matched proxy. Interior
+  verdict: **the arbitrage proxy is a NULL, not a marginal positive** — n=16 trades, one market
+  with a single losing trade, pooled HAC CI **[−0.008, 0.143] CONTAINS ZERO**, and the friction
+  formula's three parameters are **never given a number anywhere in the paper**. Worse, **the
+  measurement is not identifiable as specified**: three biases each of the ORDER of the 5.6pp
+  effect and each scaling with `√τ` *along the paper's own headline axis* — omitted skew term
+  ≈2–10pp, spot-for-forward ≈2–4pp at a 10% basis, and a longshot quoted half-spread that
+  co-varies with the wedge (`2604.24366`). Nothing is left for "segmentation". The paper states
+  the **opposite sign** for the skew correction to what `−∂C/∂K` gives.
+- **AND CARD 29's DATA CLAIM IS FALSE — I VERIFIED THIS MYSELF ON DISK.** The card says "the
+  Deribit surface the desk already holds". `data/deribit_surface.parquet` is **100 rows × 6 scalar
+  columns — `ts, currency, atm_iv, skew, term, spot` — with NO STRIKE DIMENSION**, 7 weeks
+  (2026-06-26→2026-08-12), daily. It cannot support a strike-wise digital comparison at all.
+  (Cross-check that the seat's read was real: its cited "desk's own stored skew of 10.19 IV pts"
+  is row 0's BTC `skew` value exactly.) OpenMarket cannot backfill it (`up_token_id`/`down_token_id`
+  are **strikeless** up/down binaries; **licence is Apache-2.0, not CC-BY**. PRECISION, because I
+  checked the artifact rather than relaying the seat's phrasing: `docs/research/openmarket_corpus.json`
+  ALREADY recorded `data_licence: apache-2.0` correctly, so the error was confined to run 6's
+  **coverage-map prose** — 2 occurrences, corrected in this file — and never touched the corpus
+  record or the universe map. A licence correction aimed at the wrong artifact would itself have
+  become a false record.) **And the desk ALREADY RAN the favourite-longshot test**:
+  `reports/prediction_markets/report.json`, **166 markets, 0 survivors**, every variant below the
+  n≥250 floor — uncited by the card that rests on it.
+  **Decisive experiment specified, cost = ONE HTTP GET:** compare `Φ(d₂)` against the call-spread
+  digital on a single keyless chain snapshot. No history, no capital.
+- **S3 IS A PHANTOM — a five-run carry-over closes as resolved-to-nonexistent.** `2510.14435` is
+  Borri–Liu–Tsyvinski–Wu *"Cryptocurrency as an Investable Asset Class"* — a **review**. It
+  contains **no negative-carry computation**: no formula, no yearly table, no numeric 2025 Sharpe,
+  no cost assumption; the construction is delegated to reference [124], whose bibliography entry
+  the v4 HTML truncates before reaching (recorded as a routing limit, not a claim of absence).
+- **ENUMERATION DEBT PAID IN FULL** — all 12 slices, **287 titles** walked. Payload:
+  **STATISTICAL-ARBITRAGE is NULL across every one of them**, with per-axis counts. The desk's one
+  never-tested family has no fresh arXiv supply, which is itself the finding.
+
+- **★ THE NOVELTY-GATE MISS — mechanism CARD 28 collides with `do_not_repeat` BY EXACT arXiv ID,
+  and I verified both sides on disk.** *(Naming discipline: this is MECHANISM card 28 from run 6's
+  arXiv ground file → R0459, NOT watchlist source-card 28 "CoinGecko category taxonomy". Two
+  different 28s are live; the desk has been bitten by id-only addressing before.)*
+  `research_agenda.json::do_not_repeat[23]` = **`quarter_hour_periodicity_crypto_futures`,
+  REJECTED 2026-07-17 by the EV gate (ev 0.0006, `crowded_known`), citing arXiv 2607.09426** —
+  the same paper run 6 built card 28 on (its ground file cites `2607.09426` at lines 60/118/257).
+  **Run 6 cross-checked `graveyard.md` and NOT `research_agenda.json`, though the standing duty
+  names both.** R0459 is `open` with **no due date** (run 6's note called it due 08-24 — also
+  wrong).
+  **BUT THE DISPOSITION IS A SPLIT, NOT A BLANKET KILL, AND THE DISTINCTION IS LOAD-BEARING:**
+  - **The ALPHA leg (quarter-hour clock-phase imbalance) IS the rejected item → KILL.** L1.16a's
+    door is narrow: re-open only on a named enabling change addressing **the original mechanism of
+    death**. The 07-17 rejection died on **ev 0.0006 + crowded_known**; the only thing that has
+    changed since is the own-clock recorder, which addresses the *secondary* infra remark and
+    leaves the crowding/EV objection **untouched**. Re-proposing it is re-litigating (L1.17) and
+    burns multiplicity budget twice.
+  - **The EXECUTION-HYGIENE leg SURVIVES** — "avoid executing ON marks", explicitly **no alpha
+    claim**, feeding the 66bps program. The EV gate rejected an *alpha proposal*; an
+    execution-timing rule is a different object and is not covered by `do_not_repeat[23]`. It is
+    what should have been carded alone.
+  - **AND THE INTERIOR SUPPLIES A STRICTLY BETTER KILL THAN THE EV GATE HAD:** the authors' own
+    number is **0.5 bp per boundary against a ~10 bp round trip** — a **20× cost-to-signal ratio**
+    — with an explicit disclaimer against standalone trading. That is a STRUCTURAL kill (blocks
+    forever) replacing a score-based one, and it is worth more to the graveyard than the rejection
+    it corroborates.
+
+### ✅ ITEM 2 [NEXT-GROUND #1 + DIED-MID-RUN PICKUP] THESES LAYER B — **CLOSED**, 15/15 checklist rows stamped. Ground file `deep_sweep/20260812_litminer_theses.md` (68KB, 106 ops). **The 08-05 seat's abandoned checklist is now a finished artifact.**
+
+- **VERDICT ON THE GROUND'S CENTRAL CLAIM — real but NARROW, and one limb is REFUTED.** The seat
+  was told to test the claim rather than assume it, and it did:
+  **(a) free graveyard entries — TRUE**, and it is the entire yield: **5 of 6 items opened produced
+  a usable negative**. **(b) free untested hypotheses — FALSE in practice**: further-work sections
+  yielded ONE idea and it fails the "who loses money" test. **Zero mechanism cards, by decision**,
+  written up so the decision is auditable. **(c) data chapters naming feeds — TRUE but worthless**:
+  every feed named was already-held commodity data. **Zero new sources.** **(d) "journals launder
+  the failures" — REFUTED where testable**: Fil–Krištoufek's JOURNAL version *promoted* the
+  negatives into the abstract headline.
+  **REFORMULATION FOR RUN 8, which is worth more than the original claim:** the exploitable asset
+  is the **intermediate SENSITIVITY TABLE** a journal compresses away — gross printed *next to*
+  net — not the failure narrative. **Hunt sensitivity tables, not confessions.**
+- **THE HIGHEST-VALUE ARTIFACT: a COST-BREAKEVEN LADDER that exists in no publication.** From Fil
+  (Charles Univ. 2019, supervisor Krištoufek), by combining a gross table and a net table **30
+  pages apart**, the seat derived closed-form one-way breakeven costs: **hourly cointegration
+  18.6 bps — BELOW the venue's own taker fee** — daily cointegration 23.6, daily distance 29.4,
+  hourly distance 65.6. **Neither the thesis nor its journal version states this.** That is exactly
+  the "read the COST chapter, never the model chapter" extraction rule paying out.
+- **DAILY CRYPTO PAIRS DIE ON GROSS, NOT ON COSTS** — at **zero** cost: +0.31%/mo, **46% win rate**,
+  24.6% drawdown. A STRUCTURAL death, and strictly stronger than "costs ate it": a cost-reduction
+  programme cannot rescue it.
+- **KOREA — the desk's EXACT instrument, and it dies twice.** A Kookmin doctoral work on BTC
+  spot-vs-perp arbitrage: **gross 2.6 bps against a retail cost of 6.5 bps**; its one profitable
+  configuration ran on **FTX, which collapsed before the paper was accepted**; and its daily result
+  is **cash-and-carry mislabelled** — 100% win rate over 162 trades with **funding defined in §3.2
+  and never charged**. A positive backtest with an absent cost model IS a negative result, written
+  up as one.
+- **IT RAISES RUN 6's STAT-ARB PRIOR (card 27) — with the dependency named.** An independent second
+  group also lands on the **5-min rung (+11.61%/mo)**, which strengthens the desk's only n=0-family
+  card. **But that group's cost model is UNREADABLE (IEEE 418s despite CC-BY)** — flagged as the
+  top residual gap rather than folded in silently. Correct handling: a raise with a named
+  unverified dependency is not a validation.
+- **★ ROUTING FINDING T-6 — this reinterprets PRIOR "EMPTY CORPUS" VERDICTS ACROSS THE DESK.**
+  **Every ETD aggregator refused this box** — OATD 403, CORE 403, NDLTD 503, IEEE 418, and
+  **DART-Europe PERMANENTLY CLOSED 2025-02-03** — while **every institutional repository served
+  full text at 200**. **Aggregator routing is why prior seats read full corpora as empty**, and it
+  is a ROUTE fact, never a corpus verdict. Corroborated by the seat's own KR result: **the Korean
+  thesis layer is NOT empty; the prior zeros were a routing artifact.**
+- **A SECOND SILENT-FABRICATION MODE, found the hard way, and it belongs beside OP-057.** A working
+  route for R0358 exists (WebFetch lands the raw PDF binary on disk even when its summariser
+  fails → extract locally). **CRITICAL CAVEAT: an extractor that MERGES `/ToUnicode` CMaps
+  silently corrupts Latin text while CJK looks perfect** — "Journal of the Korea" → "Jousnam og
+  uhe Kosea". **It produces confident wrong numbers rather than erroring.** Working per-font
+  implementation left at `/tmp/pdfx2.py`, **outside the repo, nothing wired** (freeze respected).
+- **PROVENANCE DISCIPLINE HELD:** no number came from WebFetch PDF summarisation — all from local
+  stdlib extraction of saved binaries or HTML/JSON APIs; no `[UNVERIFIED-PDF-ROUTE]` tags needed.
+  The one snippet-only item (Uppsala DiVA) is held `[SUMMARY-ONLY]` and barred from priors.
+- **HONEST GAPS, named in priority order for run 8:** CN, MIT/Berkeley/Stanford, ETH, BASE, EThOS,
+  OpenThesis **NOT-REACHED**; two identified high-value targets (**UFRGS `10183/175317`**,
+  **Uppsala `diva2:1324527`**) identified but not opened.
+
+---
+
+## RUN 7 CLOSE — routing totals, depth line, honest defects, next ground
+
+**ROUTING TOTALS:** **0 mechanism cards** (see defect 2 — this is the honest outcome, not a
+shortfall) · **2 inbox entries (#119, #120)** · **1 standing rule LANDED by me, not recommended
+(`OP-057`)** · **6 ledger rows R0514–R0519** · **4 graveyard entries** (2 correcting run 6's own
+cards, 2 from the theses ground) · 3 research-memory rows · **2 verification stamps** (watchlist
+cards 24, 27) · 6 coverage-table rows rewritten + **rotation note REPLACED** · cadence stamped ·
+1 record correction (OpenMarket CC-BY→**Apache-2.0**, 2 occurrences, coverage-map prose only) ·
+5 ground files under `deep_sweep/` (theses 68KB, AI-methods 101KB, retraction 58KB, interiors
+63KB, + this map).
+
+**WHAT I VERIFIED MYSELF vs WHAT I RELAYED (§33(8) applies to my own seats, not just to other
+organs).** VERIFIED ON DISK OR BY RE-FETCH: card 24's artifact + **both licences re-read from the
+canonical `LICENSE` files**; card 27's every published number; `data/deribit_surface.parquet` is
+**100×6 with no strike dimension** (and its BTC `skew` 10.19 matches the seat's citation exactly);
+`do_not_repeat[23]` collides with mechanism card 28 **by arXiv id**; R0459 is `open` with **no due
+date** (run 6's note said 08-24 — wrong); `scripts/pdf_text.py` absent; the `/pdf/` fabrication
+claim **re-tested adversarially** (it REFUSED on my paper — a qualification that strengthens the
+rule); `openmarket_corpus.json` **already** held the correct licence, so the correction was aimed
+at the right artifact. RELAYED WITHOUT INDEPENDENT RE-TEST, and flagged as such: the theses ground's
+breakeven ladder and Kookmin numbers, the retraction corpus counts (55/45/10), the AI-methods
+appendix figures. Each is `[PRIMARY]`-graded in its own ground file with URLs; none has been
+re-derived by me.
+
+**DEPTH LINE (mandated).** *Backlog* — artifact-level on 2 cards + an independent licence re-fetch;
+depth turned "the grades parse oddly" into a measured 3-legged defect with a trap in its obvious
+fix. *Parent/basis* — surface→abstract→**full interior via HTML**→**2-level citation chase**→
+**screened on desk data**; depth converted an attractive external number into `UNIDENTIFIED` plus
+a real 37% instrument loss, which is the opposite of what the surface promised and worth more.
+*Retraction* — index→**full 71,743-row corpus parsed locally**→retraction notices→**the CREATES
+PDF interior**; depth turned "a wave of finance retractions" into "82% integrity-only, kills
+nothing" AND caught a false positive that would have destroyed a live desk prior. *Theses* —
+checklist→institutional full texts→**two tables 30 pages apart combined into a breakeven ladder
+stated in neither**; depth is the entire yield here. *Interiors* — landing page→full text→
+**appendix**→**the desk's own parquet**; depth refuted three standing claims. *AI-methods* —
+listing→full text→**appendix**→**adversarial re-test of its own tool**.
+
+**HONEST DEFECTS OF THIS RUN:**
+1. **+6 ledger rows into a repair-mode backlog** (209 open at start). Mitigated deliberately: ~25
+   findings consolidated to 6 rows, all nulls routed to research_memory instead, **no row raised
+   for R0358 because one already exists** — but the arrival is still net-positive to a queue the
+   desk is trying to drain, and it is recorded rather than excused.
+2. **ZERO mechanism cards.** The spec says zero is valid and creditable, and this run earns it
+   honestly: the theses seat declined to card its one further-work idea (fails "who loses money"),
+   the interiors seat killed rather than carded, and **STATISTICAL-ARBITRAGE was NULL across all
+   287 arXiv titles**. The literature's alpha supply to this desk is dry this cycle — which is a
+   finding, and it is why the rotation verdict points at reanalysis rather than more reading.
+3. **I fixed none of the defects I found.** The freeze bars `libs/`, `scripts/`, executor and
+   rails, and every one of #119/#120/R0514–R0519 lands there. Each carries an exact named patch,
+   which is the most this seat may do — but detect-implies-repair is only half-satisfied, and the
+   repairs now sit in the same queue as everything else.
+4. **The `/pdf/` fabrication audit is INCOMPLETE.** I bounded it for run 6's arXiv ground file
+   (zero `/pdf/` URLs) and for this run. **Every other organ's PDF-sourced figures across the
+   desk's whole history remain unaudited**, and the one-grep check is specified in OP-057 but was
+   not run beyond litminer.
+5. **Coverage gaps left open, named not hidden:** theses CN / MIT / Berkeley / Stanford / ETH /
+   BASE / EThOS / OpenThesis **NOT-REACHED**; two identified high-value theses (UFRGS
+   `10183/175317`, Uppsala `diva2:1324527`) unopened; ECB **UNREAD**; COLM's CONCORD + MTMM
+   blocked at OpenReview's bot gate.
+6. **Three self-corrections I nearly published as fact**, each caught by checking rather than
+   asserting: one row's keys read as a schema (union across 531 rows refuted it); a null-rate
+   computed over a denominator contaminated by 430 pre-instrument rows (**the exact L1.57/L1.60
+   error the desk legislates against, committed by me against its money-path data**); and a
+   licence correction aimed at the wrong artifact. All three are written into the record above.
+
+**NEXT UN-EXHAUSTED GROUND (run 8, in order):**
+1. **A REANALYSIS PASS, NOT A READING PASS** — the AI-methods seat's verdict: 7 findings from runs
+   6–7 compute from artifacts already on disk and none has been run. Highest-value: empirical
+   Bayes over the rejected 434 (separates "welded gate" from "empty generator").
+2. **SSRN via the OP-026a ladder, walked END-TO-END** — rotation-bound, 403-blocked since 07-26,
+   substitute route validated but never executed. Then the **journals** family (single session).
+3. **Replication / comment papers** (Critical Finance Review, JF/JFE/RFS "Comment on…") — never
+   walked; a published replication forced the one genuine JF retraction found this run.
+4. **Theses continuation, INSTITUTIONAL REPOSITORIES DIRECTLY** (T-6: never aggregators) — the 6
+   NOT-REACHED systems + the two named targets; hunt **sensitivity tables**, not confessions.
+5. **ECB via `ecb:ecbwps` on RePEc/EconPapers**; practitioner residuals Two Sigma depth, DE Shaw.
+6. **Card 27's live dependency:** obtain the second group's cost model (IEEE 418s despite CC-BY) —
+   the stat-arb raise is unverified until it is read.
+7. **The one-GET experiment** the interiors seat specified: `Φ(d₂)` vs the call-spread digital on a
+   single keyless chain snapshot, which decides card 29's identifiability for the cost of one
+   HTTP request.
+8. Dated: NeurIPS eval-of-agents ~2026-10; Molnar halving-clock window Oct–Nov 2026 (watch-only).
+
+**WHICH ARTIFACT ON DISK IS DIFFERENT BECAUSE OF WHAT WAS MINED (§33 standing test):**
+`docs/graveyard.md` (+4 rows, two of which CORRECT cards this desk wrote this morning),
+`improvement_inbox.md` (+#119, +#120), `search_operator_library.md` (**+OP-057, landed not
+proposed**), `recommendation_ledger.json` (R0514–R0519), `literature_coverage.md` (6 family rows,
+rotation note replaced, 2 verification stamps, licence correction), 3 research-memory rows,
+`cadence_state.json` stamped, and 4 new ground files under `deep_sweep/`.
+
+**CLOSING NOTE — TWO DESK LESSONS DELIBERATELY *NOT* ADDED, and why the refusal is correct.**
+`scripts/learn.py` refused both candidate lessons from this run: the corpus is at its **12,000-char
+injected budget**, so a new row *"would be recorded and reach NO organ — a diary entry, not
+memory."* It offers two honest exits, `--enforced-by <test>` or `--accept-uninjected <why no test
+is possible>`. **Neither applies truthfully here, so neither was used.** (1) The classification/
+enforcement-coupling lesson **can** be enforced by a test — R0514 specifies that exact property
+test — so claiming "no test is possible" would be a false record, and naming a test that does not
+yet exist would be worse. Its correct home is **shipping as `--enforced-by` when R0514 lands.**
+(2) The instrument-landing-date lesson is a third member of an *already-injected* family (the
+L1.57/L1.60 denominator lessons); adding it would displace something at a full budget for a
+marginal restatement. **Both lessons are durably recorded where they act** — R0514/R0517 and inbox
+#119/#120, with the failure mode and the patch — and this paragraph exists so the omission is an
+auditable decision rather than a silent gap. **The gate was right and was not routed around**; a
+budget fence that gets bypassed on the first inconvenient day is not a fence.

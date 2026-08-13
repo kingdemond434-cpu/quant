@@ -24,12 +24,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
+from scipy import stats
 
+from libs.research.order_sensitive_decay import decay_verdict
 from libs.research.upbit_data import upbit_daily_utc_keyed
 
 SERIES = Path("data/signal_halflife.jsonl")
 REPORT = Path("data/signal_halflife_report.json")
 MIN_POINTS_TO_FIT = 8  # refuse to estimate a half-life below this
+IC_WINDOW = 60  # rolling_ic's window length -- the sample size behind each window's IC
 
 
 def _get(u, t=40):
@@ -76,7 +79,7 @@ def kimchi(gb):
     return {d: kb[d] / fx[d] / gb[d] - 1.0 for d in (set(kb) & set(fx) & set(gb))}
 
 
-def rolling_ic(sig: dict, gb: dict, win: int = 60, step: int = 20):
+def rolling_ic(sig: dict, gb: dict, win: int = IC_WINDOW, step: int = 20):
     """IC computed over successive non-overlapping-ish windows -> the ageing curve."""
     dates = sorted(set(sig) & set(gb))
     if len(dates) < win + 25:
@@ -113,6 +116,48 @@ def half_life(ics: list[float]) -> float | None:
     return float(-np.log(2) / b)
 
 
+def _window_pvalues(ics: list[float], n_obs: int) -> list[float]:
+    """One-sided p-value per rolling window: is THIS window's IC better than chance?
+
+    Sub-period p-values are what the mean-p combination needs, and they have to be real ones --
+    feeding it something merely p-shaped makes the Uniform(0,1) null false and the combined error
+    rate meaningless. n_obs is the window LENGTH (the correlation's sample size), not the number
+    of windows.
+    """
+    out = []
+    for r in ics:
+        rc = min(max(float(r), -0.999999), 0.999999)
+        t = rc * np.sqrt(max(n_obs - 2, 1) / (1.0 - rc * rc))
+        out.append(float(stats.t.sf(t, df=max(n_obs - 2, 1))))
+    return out
+
+
+def merge_series(existing: list[dict], new: list[dict]) -> list[dict]:
+    """One row per (date, signal). The last write for a day WINS; order is (date, signal).
+
+    THE DEFECT THIS CLOSES (R0314). This file was APPENDED once per RUN while its only time key
+    is the DATE, and the daily cycle fires more than once a day -- so by 2026-08-12, 32 of its 34
+    (date, signal) keys carried 2-3 byte-identical copies. Nothing reads the file yet, and that is
+    precisely why it had to be fixed rather than left: its whole stated purpose is to BE the decay
+    series a future fit runs on ("a decay curve needs a TIME SERIES THAT STARTS NOW"), so the
+    duplicates would have weighted those days 2-3x in that fit, silently, long after anyone
+    remembered the writer appended per-run. Observation count is not sample size.
+
+    A RETRACTION IS NEVER SILENTLY DROPPED. Re-running a past date cannot happen today (the script
+    only ever writes `today`), but if it ever did, last-write-wins would quietly un-retract a row
+    that was judged contaminated. The judgement survives the value.
+    """
+    out: dict[tuple[str, str], dict] = {}
+    for r in [*existing, *new]:
+        key = (str(r.get("date", "")), str(r.get("signal", "")))
+        prior = out.get(key)
+        if prior and prior.get("retracted_lookahead") and not r.get("retracted_lookahead"):
+            r = {**r, "retracted_lookahead": prior["retracted_lookahead"],
+                 "retraction": prior.get("retraction", "")}
+        out[key] = r
+    return [out[k] for k in sorted(out)]
+
+
 def main() -> None:
     gb = binance()
     sigs = {}
@@ -133,7 +178,32 @@ def main() -> None:
         early = float(np.mean(ics[:2])) if len(ics) >= 2 else ics[0]
         trend = recent - early
         hl = half_life(ics) if len(ics) >= MIN_POINTS_TO_FIT else None
-        status = "AGEING" if trend < -0.03 else "STRENGTHENING" if trend > 0.03 else "STABLE"
+        # R0467: `status` -- a bare +/-0.03 cut on a two-window IC difference, with no null behind
+        # it -- IS RETIRED HERE, and `trend` (the number it was thresholding) is kept. R0312 added
+        # the order-sensitive `decay` bar beside it "for continuity", which left every row
+        # carrying TWO verdicts on one question that could and did disagree: on 2026-08-12 and
+        # again on 08-13 stablecoin_supply read STABLE by `status` and STRENGTHENING then DECAYING
+        # by `decay`. Two labels a reader can choose between is worse than either alone, because
+        # whichever suits the argument is always available and is always quotable as "the" verdict.
+        #
+        # `decay` is the survivor because it can be REFUSED: each window's IC becomes a one-sided
+        # p-value, and the early and late halves are combined SEPARATELY at a pre-registered
+        # split, so a null record reads STABLE. `status` had no null and could not refuse. DSR and
+        # PSR cannot answer this question at all -- they are order-invariant, so decay is
+        # invisible to them by construction.
+        #
+        # THE RAW NUMBER SURVIVES THE LABEL. `trend`, `ic_early` and `ic_recent` are still
+        # published: retiring an unfounded VERDICT is not a reason to stop publishing the
+        # MEASUREMENT under it, and a reader who wants the crude two-window difference can still
+        # compute it and see the +/-0.03 for the arbitrary cut it always was.
+        # NON-OVERLAPPING windows only. rolling_ic strides 20 through a 60-wide window, so
+        # consecutive ICs share two thirds of their data and their p-values are strongly
+        # positively dependent -- and mean-p's Irwin-Hall null assumes INDEPENDENCE. Feeding it
+        # the overlapping series would produce an error rate that looks like a probability and is
+        # not one, which is worse than no number. Taking every (win/step)-th window costs
+        # resolution and buys a null that is actually true.
+        stride = max(1, -(-IC_WINDOW // 20))                  # ceil(win / step)
+        decay = decay_verdict(_window_pvalues(ics[::stride], IC_WINDOW))
         rows.append(
             {
                 "date": today,
@@ -143,7 +213,7 @@ def main() -> None:
                 "ic_recent": round(recent, 4),
                 "trend": round(trend, 4),
                 "half_life_windows": hl,
-                "status": status,
+                "decay": decay,
                 "curve": [round(v, 4) for v in ics],
             }
         )
@@ -159,14 +229,27 @@ def main() -> None:
         )
         print(
             f"{name:22s} windows={len(ics):2d} | IC early {early:+.4f} -> recent {recent:+.4f} "
-            f"| trend {trend:+.4f} | half-life {hl_s} | {status}"
+            f"| trend {trend:+.4f} | half-life {hl_s}"
         )
         print(f"{'':22s} curve: " + " ".join(f"{v:+.3f}" for v in ics))
+        if decay["verdict"] == "UNDERPOWERED":
+            print(f"{'':22s} decay: UNDERPOWERED -- {decay['why']}")
+        else:
+            print(f"{'':22s} decay: {decay['verdict']} (order-sensitive, mean-p at a "
+                  f"pre-registered split: early {decay['error_rate_early']:.4f} -> late "
+                  f"{decay['error_rate_late']:.4f} over {decay['n_periods']} windows)")
 
     if rows:
-        with SERIES.open("a", encoding="utf-8") as fh:
-            for r in rows:
-                fh.write(json.dumps({k: v for k, v in r.items() if k != "curve"}) + "\n")
+        existing = []
+        if SERIES.exists():
+            existing = [json.loads(ln) for ln in SERIES.read_text("utf-8").splitlines() if ln.strip()]
+        merged = merge_series(
+            existing, [{k: v for k, v in r.items() if k != "curve"} for r in rows])
+        # Rewrite via a temp file: a half-written series is worse than a stale one, and this is
+        # the artifact a future decay fit is supposed to trust.
+        tmp = SERIES.with_name(SERIES.name + ".tmp")
+        tmp.write_text("".join(json.dumps(r) + "\n" for r in merged), "utf-8")
+        tmp.replace(SERIES)
         REPORT.write_text(
             json.dumps({"updated": datetime.now(tz=UTC).isoformat(), "signals": report}, indent=1),
             "utf-8",

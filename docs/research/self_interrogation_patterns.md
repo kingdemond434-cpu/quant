@@ -220,3 +220,36 @@ recursion rule), so the desk needs him to supply an angle exactly once.
     (self-sealing verdicts), staleness fences that pass on an empty producer, and every
     accept-side gate that is invisible in a rejection tally (L1.49's twin -- L1.49 covers gates
     that NEVER ran, this covers gates that ran and were emptied).
+
+16. WHO ELSE WRITES THIS ARTIFACT? -- ENUMERATE EVERY WRITER, NOT THE INTENDED ONE
+    (added 2026-08-13, found a contaminated moat dataset the day it was coined)
+    Every fence this desk owns asks whether an artifact is FRESH (L1.44), whether its producer's
+    own inputs were present (L1.55), whether the scan behind it was non-empty (L1.57/L1.60), or
+    whether two boards AGREE (L1.61). Not one of them asks the prior question: WHO IS ALLOWED TO
+    WRITE HERE? An artifact with one intended writer and one unintended writer is young,
+    well-formed, internally consistent, passes every min_rows floor and satisfies its freshness
+    contract -- and is fabricated in part. Contamination is a property of the WRITER SET, and
+    nothing on this desk had ever enumerated one.
+    ASK, of any accumulating or append-only artifact: (a) grep every call site of its writer, not
+    just the one you have in mind; (b) does the writer take its target from a module-level default
+    that a CALLER IN ANOTHER MODULE cannot redirect? (c) can the test suite reach it? (d) if a
+    fixture row landed here, what would look different -- and if the answer is "nothing", the
+    artifact is unaudited however often it is read.
+    Proving instance: `tests/execution/test_carry_entry_gate.py` drives `run_trade_forensics.main()`,
+    which calls `execution_tape.backfill(trades)` with no `path=`. The test carefully monkeypatches
+    the forensics module's `_TRADES`/`_OUT`/`_TRACKED`/`_COST_MODEL`; the tape's default lives in a
+    DIFFERENT module and nothing redirected it. Because the fixture stamps `opened` as `now - 1d`,
+    `_key()` differed every run and dedupe could never collapse them: 16 permanent rows, 10 of them
+    written the morning this was found. One carries `closed: 2020-01-01`, so
+    `execution_tape.coverage()["days"]` -- the number Gate 0's ">=4 weeks of live fills" is measured
+    against -- read 2415.15 against a true 30.69, and `web/trade_forensics.json` published
+    `tape_days: 2415.14`. The desk advertised 6.6 years of fill history it did not have, on the one
+    dataset its own module docstring calls irreplaceable.
+    THE FIX GOES AT THE WRITE CHOKEPOINT, NEVER IN THE OFFENDING TEST: patching the test closes one
+    caller and leaves the next test author the same invisible trap (section 37). Encoded as
+    `libs/execution/execution_tape._writable` (refuses the live default under a test harness) and
+    `tests/execution/test_tape_test_harness_guard.py`.
+    GENERALISES TO: any module-level `_PATH = Path(...)` default reachable from a test; every
+    append-only store (graveyard, ledgers, tapes, jsonl corpora); and the mirror case this cycle
+    also raised -- a WRITE with no intended reader, which is R0074's phantom-path census walked in
+    the opposite direction.

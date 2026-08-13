@@ -65,6 +65,7 @@ _BOOK = "data/conviction_book.jsonl"
 _MARKS = "data/paper_book_pnl.json"
 _PLAYBOOK = "data/trading_playbook.json"
 _STATE = "data/trade_review.json"
+_EXEC_QUALITY = "data/execution_quality.json"
 
 #: 3 independent agreeing trades before a lesson reaches the trading brief. Derived from the same
 #: N-gate the calibration fence uses (5 resolved forecasts before shrinkage applies) scaled to the
@@ -85,6 +86,11 @@ _CAUSES = ("THESIS-WRONG", "LEVEL-WRONG", "TIMING-WRONG", "NOISE-STOP",
 _BRIEF = """You are reviewing a CLOSED paper trade from this desk's Binance perpetual futures
 sleeve. Be the desk's harshest honest reviewer. The goal is not to feel bad about losses or good
 about wins -- it is to extract knowledge that changes the NEXT trade.
+
+HOW THIS SLEEVE EXECUTES, measured across every close so far (R0334). Use it to judge whether
+this trade is TYPICAL of the sleeve or an exception -- a component that is bad everywhere is a
+process defect and belongs in the lesson; the same number on one trade is an anecdote:
+{sleeve}
 
 THE TRADE AS IT WAS CLAIMED AT ENTRY:
 {entry}
@@ -240,7 +246,31 @@ def parse(raw: str) -> dict[str, Any] | None:
         return None
 
 
-def review_one(row: dict[str, Any], mark: dict[str, Any], *, ask=_ask) -> dict[str, Any] | None:
+def sleeve_profile(root: Path) -> str:
+    """The six-component execution decomposition, or an honest note that it is not measured yet.
+
+    Read rather than recomputed so the reviewer and the scorecard cannot disagree about the same
+    sleeve. An absent or thin artifact yields a sentence saying so -- never a fabricated profile,
+    which would have the reviewer judging a trade against numbers nobody measured (L1.55).
+    """
+    try:
+        doc = json.loads((root / _EXEC_QUALITY).read_text("utf-8"))
+    except (OSError, ValueError):
+        return ("UNMEASURED -- data/execution_quality.json is absent or unreadable. Judge this "
+                "trade on its own terms and do not infer a sleeve-level pattern from one close.")
+    if doc.get("status") == "UNMEASURED":
+        return f"UNMEASURED -- {doc.get('detail', 'no closed trades carry a realised R')}"
+    lines = [f"({doc.get('n_closes')} closed PAPER trades; "
+             f"{doc.get('n_components_measured')}/{doc.get('n_components')} components measured)"]
+    for comp in doc.get("components", []):
+        val = "n/a" if comp.get("value") is None else f"{comp['value']:g} {comp.get('unit', '')}"
+        lines.append(f"  {comp.get('name')}: {comp.get('state')} {val} (n={comp.get('n')})"
+                     f" -- {comp.get('why')}")
+    return "\n".join(lines)
+
+
+def review_one(row: dict[str, Any], mark: dict[str, Any], *, ask=_ask,
+               sleeve: str = "UNMEASURED -- no decomposition supplied") -> dict[str, Any] | None:
     entry = {k: row.get(k) for k in ("symbol", "direction", "probability", "entry_ref",
                                      "invalidation", "structure", "expected_move_pct",
                                      "horizon_hours", "driver", "falsifier", "stop_pct")}
@@ -251,6 +281,7 @@ def review_one(row: dict[str, Any], mark: dict[str, Any], *, ask=_ask) -> dict[s
                                     "units_at_exit", "hold_hours", "buy_and_hold")}
     res = parse(ask(_BRIEF.format(entry=json.dumps(entry, indent=1),
                                   outcome=json.dumps(out, indent=1),
+                                  sleeve=sleeve,
                                   causes=", ".join(_CAUSES))))
     if res is None or res.get("cause") not in _CAUSES:
         return None
@@ -278,8 +309,9 @@ def main() -> int:
 
     n_closed = len(pb.get("reviewed_keys") or []) + len(pending)
     results = []
+    profile = sleeve_profile(_ROOT)
     for row, mark in pending:
-        res = review_one(row, mark)
+        res = review_one(row, mark, sleeve=profile)
         key = row.get("at")
         if res is None:
             results.append({"trade": key, "status": "NO-REVIEW",

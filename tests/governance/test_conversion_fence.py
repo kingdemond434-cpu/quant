@@ -316,3 +316,90 @@ class TestTheExitMapKeepsBothTeeth:
         assert not overlap, (
             f"{sorted(overlap)} is both a named failure and a passing status -- the fence would "
             f"exit 0 on the thing it was built to catch")
+
+
+class TestRepairModeCountsWhatOwesADecision:
+    """L1.28b(d) says the line is "25 OPEN ROWS"; the fence applied it to every non-terminal row.
+
+    A row SCHEDULED with a real reason and a future due date is one of the three lawful
+    dispositions. Counting it as repair debt makes the desk's own correct behaviour raise the
+    number that says the desk is behind -- and because scheduled rows accumulate faster than they
+    come due, the gate welds ON. Measured on the live ledger 2026-08-12 by reconstructing the
+    daily backlog from the raised/disposed stamps: `backlog` crossed 25 on 2026-07-28 and never
+    returned below it, so REPAIR-MODE fired on 100% of runs for 15 consecutive days.
+
+    That is not a cosmetic complaint. REPAIR-MODE's actuator is a BEHAVIOUR CHANGE -- it flips the
+    next brain window from finding to fixing -- and a flip that is always on is not a flip. The
+    §37 carry-over brief measures the cost directly: 15 items "shown to a LIVE cycle at least
+    twice IN A ROW" and walked past.
+    """
+
+    def test_in_date_scheduled_rows_are_not_repair_debt(self, tmp_path) -> None:
+        """The regression that welded the gate: lawful scheduling must not trigger repair mode."""
+        rows = [_row(f"S{i}", "scheduled", 3.0, due="2026-11-15")
+                for i in range(REPAIR_MODE_BACKLOG * 3)]
+        rows += [_row("R1", "implemented", 2.0, disposed_days_ago=1.0)]
+        _write_ledger(tmp_path, rows)
+        rep = build_report(tmp_path, NOW)
+        assert rep["backlog"] > REPAIR_MODE_BACKLOG, "fixture must be over the OLD line"
+        assert rep["owed"] == 0, "no row owes a decision: every schedule is still in date"
+        assert rep["status"] != "REPAIR-MODE", (
+            "75 correctly-scheduled rows read as repair debt -- this is the welded gate: the "
+            "desk doing the lawful thing is what holds the signal on")
+
+    def test_an_overdue_schedule_owes_a_decision_exactly_as_an_orphan_does(self, tmp_path) -> None:
+        """The fix must not become a hiding place -- a schedule that ran out is real debt.
+
+        This is the direction that would make the change a LOOSENING rather than a population
+        fix, so it is pinned: if `owed` counted only open rows, parking work in a scheduled row
+        with a past due date would silence the fence completely.
+        """
+        # Raised recently with a due date that has already passed. The recency matters: rows aged
+        # 30d would make arrivals_7d zero, and ARRIVALS-COLLAPSED (correctly) outranks REPAIR-MODE,
+        # which would test the precedence order rather than the population.
+        rows = [_row(f"S{i}", "scheduled", 3.0, due="2026-07-01")
+                for i in range(REPAIR_MODE_BACKLOG + 1)]
+        # A conversion this week, so FLATLINE (which also correctly outranks REPAIR-MODE) is not
+        # the thing under test -- the question is purely whether an expired schedule is owed.
+        rows += [_row("D1", "implemented", 3.0, disposed_days_ago=1.0)]
+        _write_ledger(tmp_path, rows)
+        rep = build_report(tmp_path, NOW)
+        assert rep["owed"] == REPAIR_MODE_BACKLOG + 1
+        assert rep["status"] == "REPAIR-MODE"
+
+    def test_the_populations_backlog_conflates_are_published_separately(self, tmp_path) -> None:
+        _write_ledger(tmp_path, [
+            _row("O1", "open", 5.0),
+            _row("S1", "scheduled", 5.0, due="2026-11-15"),
+            _row("S2", "scheduled", 5.0, due="2026-11-15"),
+            _row("D1", "implemented", 5.0, disposed_days_ago=1.0),
+        ])
+        rep = build_report(tmp_path, NOW)
+        assert rep["backlog"] == 3, "backlog keeps its old meaning for existing consumers"
+        assert rep["backlog_open"] == 1
+        assert rep["backlog_scheduled"] == 2
+        assert rep["owed"] == 1, "only the open row past grace owes a decision today"
+
+    def test_the_drain_is_published_so_treading_water_is_visible(self, tmp_path) -> None:
+        """oldest_backlog_age was computed from day one and compared to NOTHING.
+
+        A desk DRAINING a burst stock and a desk servicing only new arrivals are byte-identical
+        in this artifact -- same backlog size, same balanced flow, same conversion ratio. The age
+        percentiles are the only fields that separate them, because under treading water they
+        rise exactly one day per day.
+        """
+        rows = [_row(f"OLD{i}", "open", 20.0) for i in range(9)]
+        rows += [_row("NEW1", "open", 1.0)]
+        _write_ledger(tmp_path, rows)
+        rep = build_report(tmp_path, NOW)
+        assert rep["backlog_age_p50_days"] == 20.0
+        assert rep["backlog_age_p90_days"] == 20.0
+        assert rep["oldest_backlog_age_days"] == 20.0
+
+    def test_an_empty_backlog_reports_zero_age_rather_than_crashing(self, tmp_path) -> None:
+        """The refusal path (L1.41): no rows means no age, and it must not IndexError."""
+        _write_ledger(tmp_path, [_row("D1", "implemented", 5.0, disposed_days_ago=1.0)])
+        rep = build_report(tmp_path, NOW)
+        assert rep["backlog"] == 0
+        assert rep["owed"] == 0
+        assert rep["backlog_age_p50_days"] == 0.0

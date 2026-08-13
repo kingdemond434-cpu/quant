@@ -37,6 +37,8 @@ ROOT = Path(__file__).resolve().parent.parent
 # not a permanently silent no-op wearing a green tick.
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+from libs.ops.deferral import is_chronic, record_reschedule  # noqa: E402
+
 LEDGER = ROOT / "docs/research/recommendation_ledger.json"
 
 # A recommendation may sit undisposed for one cycle -- long enough to be triaged in the next
@@ -76,7 +78,13 @@ def _load() -> dict[str, Any]:
 def _save(d: dict[str, Any]) -> None:
     LEDGER.parent.mkdir(parents=True, exist_ok=True)
     tmp = LEDGER.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(d, indent=1), "utf-8")
+    # ensure_ascii=False IS LOAD-BEARING, not cosmetic (R0368). ~60 of the escapes this used to
+    # emit were CJK: the Chinese search operators the non-English mining rows are ABOUT. As
+    # `韭菜` a reviewer cannot read the row and -- the half that costs something -- no
+    # grep for 韭菜 can find it, so a term already mined returns a clean zero and reads as
+    # unexplored ground. That is the false-exhaustion mode L1.11a exists to prevent, arriving
+    # through the serializer. Every consumer goes through json.loads and is indifferent.
+    tmp.write_text(json.dumps(d, indent=1, ensure_ascii=False), "utf-8")
     tmp.replace(LEDGER)          # atomic: a torn ledger would lose the very rows it protects
 
 
@@ -199,6 +207,25 @@ def dispose(a: argparse.Namespace) -> None:
     if a.status == "implemented" and not a.commit:
         raise SystemExit("an implemented recommendation needs --commit: the desk's standing rule "
                          "is that an artifact proves the work, never a claim")
+    # RE-SCHEDULING A ROW IS A DEFERRAL, AND A DEFERRAL THAT LEAVES NO TRACE IS A SKIP (L1.60).
+    # This file's docstring claims "scheduled" cannot become where rows go to die because an
+    # overdue schedule fires like an orphan -- true, unless the due date moves first, which this
+    # very function did in place with no history and no counter. Measured over the ledger's
+    # first-parent git history 2026-08-13: 39 of 152 ever-scheduled rows (26%) were given more
+    # than one distinct due date and 38 of them are STILL scheduled -- they never converted, they
+    # only moved. See libs/ops/deferral.py for the census and why it had to come from git.
+    #
+    # DEFERRING AGAIN STAYS FULLY AVAILABLE -- a row blocked on Gate 0 or a forward clock is not
+    # repair debt, and forcing it terminal would manufacture a false rejection. What is refused is
+    # deferring INVISIBLY: say what changed, and the move is recorded rather than erased.
+    if a.status == "scheduled" and row["status"] == "scheduled":
+        if len((a.reason or "").strip()) < _MIN_REASON:
+            raise SystemExit(
+                f"{a.id} is already scheduled (due {row.get('due')}) -- moving that date is a "
+                f"DEFERRAL and needs --reason (>={_MIN_REASON} chars) naming what changed. "
+                "Re-scheduling is always available; doing it silently is not, because a row "
+                "snoozed for the fourth time and a row scheduled once are otherwise identical.")
+        record_reschedule(row, a.reason)
     row.update(status=a.status, reason=a.reason, commit=a.commit, due=a.due,
                disposed=datetime.now(tz=UTC).isoformat())
     _save(d)
@@ -231,6 +258,56 @@ def correct(a: argparse.Namespace) -> None:
     _save(d)
     print(f"{a.id} corrected -> OPEN (prior disposition kept in its history); "
           "a fresh disposition is now owed")
+
+
+def repoint(a: argparse.Namespace) -> None:
+    """Re-point a disposition's --commit at the commit that actually carries the work (R0369).
+
+    WHY `correct` IS THE WRONG VERB FOR THIS. A rebase rewrites SHAs -- and this branch gets
+    rebased whenever a sibling pushes to it -- so a citation written honestly this morning can
+    name an orphaned object by tonight. `correct` re-OPENS the row and files the prior
+    disposition as MISFILED, which is a lie about what happened: the decision was right and only
+    the pointer moved. Recording it as a misfiling would corrupt the correction history that
+    verb exists to protect, so the two are kept distinct.
+
+    WHAT THIS MAY NOT BECOME. It mutates the commit field and NOTHING else -- never the status,
+    never the reason. And it refuses a new citation that does not resolve to a real commit
+    object, because a verb that laundered one unresolvable pointer into another would give the
+    ledger a way to look repaired while proving nothing. Every repoint is appended to the row's
+    `repoints` list with its reason, so the old pointer stays readable forever.
+    """
+    d = _load()
+    row = next((r for r in d["recommendations"] if r["id"] == a.id), None)
+    if row is None:
+        raise SystemExit(f"no such recommendation: {a.id}")
+    if a.expect and a.expect.lower() not in row["summary"].lower():
+        raise SystemExit(
+            f"{a.id} does not match --expect {a.expect!r}. Its summary is:\n  "
+            f"{row['summary'][:200]}\nAnother writer may have taken the id you assumed.")
+    if row["status"] != "implemented":
+        raise SystemExit(f"{a.id} is {row['status']}, not implemented -- only an implemented "
+                         "row cites a commit, so there is no pointer to move")
+    if len((a.reason or "").strip()) < _MIN_REASON:
+        raise SystemExit(f"a repoint needs a real reason (>={_MIN_REASON} chars): why the old "
+                         "citation stopped resolving, and how the new one was identified")
+    import subprocess
+    try:
+        p = subprocess.run(["git", "rev-parse", "--verify", f"{a.commit}^{{commit}}"],
+                           capture_output=True, text=True, timeout=30, cwd=ROOT)
+    except (OSError, subprocess.SubprocessError) as e:
+        raise SystemExit(f"cannot verify {a.commit}: {type(e).__name__}: {e}") from e
+    if p.returncode != 0:
+        raise SystemExit(
+            f"REFUSING: {a.commit!r} does not resolve to a commit in this clone. Re-pointing a "
+            "citation at something unresolvable would make the ledger look repaired while still "
+            "proving nothing -- find the real commit first.")
+    row.setdefault("repoints", []).append({
+        "was": row.get("commit"), "now": a.commit,
+        "at": datetime.now(tz=UTC).isoformat(), "why": a.reason})
+    row["commit"] = a.commit
+    _save(d)
+    print(f"{a.id} repointed -> {a.commit} (was {row['repoints'][-1]['was']}); "
+          "status and reason untouched")
 
 
 def sweeps_shown() -> dict[str, int]:
@@ -295,13 +372,24 @@ def drain(d: dict[str, Any], window_h: float = 72.0) -> dict[str, float]:
 
 
 def owed(d: dict[str, Any]) -> tuple[list[Any], list[Any]]:
-    """(undisposed past grace, scheduled past due) -- the two ways a row goes stale."""
+    """(undisposed past grace, scheduled past due OR chronically deferred) -- how a row goes stale.
+
+    THE THIRD WAY A ROW GOES STALE WAS INVISIBLE UNTIL 2026-08-13. An overdue schedule fires here,
+    so a row that keeps its date owes a decision the day it arrives -- but a row whose date is
+    MOVED the day before never arrives at all, and 26% of ever-scheduled rows had exactly that
+    done to them (libs/ops/deferral.py). A chronically re-scheduled row is therefore counted as
+    owed whatever its due date says: it does not lose the right to be deferred again, only the
+    ability to leave the desk's attention while it happens.
+    """
     now = datetime.now(tz=UTC)
     orphans = [r for r in d["recommendations"]
                if r["status"] == "open" and _age_h(r["raised"]) > GRACE_H]
     overdue = []
     for r in d["recommendations"]:
         if r["status"] != "scheduled" or not r.get("due"):
+            continue
+        if is_chronic(r):
+            overdue.append(r)
             continue
         try:
             if datetime.fromisoformat(str(r["due"])).replace(tzinfo=UTC) < now:
@@ -379,6 +467,13 @@ def main() -> None:
     p.add_argument("--id", required=True)
     p.add_argument("--reason", required=True)
     p.set_defaults(func=correct)
+    p = sub.add_parser("repoint", help="move an implemented row's --commit after a rebase, "
+                                       "without touching the disposition itself")
+    p.add_argument("--id", required=True)
+    p.add_argument("--commit", required=True, help="the commit that carries the work TODAY")
+    p.add_argument("--reason", required=True)
+    p.add_argument("--expect", help="substring the target summary must contain")
+    p.set_defaults(func=repoint)
     p = sub.add_parser("report", help="orphans and overdue -- both are defects, not backlog")
     p.set_defaults(func=report)
     a = ap.parse_args()

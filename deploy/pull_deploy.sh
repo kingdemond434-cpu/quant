@@ -101,13 +101,32 @@ fi
 # it buys nothing and costs a deadlock class: this script writes its own evidence into data/, and
 # on any box where that is not ignored, run #1 would wedge every run after it. Found by the
 # end-to-end drill, not by reading the code.
-if [ -n "$(git status --porcelain --untracked-files=no 2>/dev/null)" ]; then
-    say "REFUSING -- tracked files are modified. Uncommitted work here is an operator hotfix"
-    say "mid-flight; a fast-forward that overwrites it destroys the only copy. Commit or stash it."
-    git status --short --untracked-files=no | head -20
-    record refused-dirty "$(git rev-parse --short HEAD)" "-" "modified tracked files"
-    exit 2
-fi
+# THE REFUSAL IS NARROWED TO THE ONLY CASE THAT LOSES DATA: a dirty path the fast-forward would
+# ITSELF overwrite. It is NOT weakened -- that case still refuses, and refuses earlier and louder
+# than before, naming the colliding paths instead of dumping the whole status.
+#
+# WHY THE OLD ANY-DIRT TEST HAD TO GO, measured rather than argued (2026-08-12): 1078 logged ticks
+# since 08-04, 91.1% refused-dirty, and `deployed` appears ZERO times -- this desk's only inbound
+# deploy path had never once deployed. That is a WELDED GATE (L1.43): a control that refuses ~100%
+# carries no information and is a wall, not a bar. The dirt is not operator work and never was:
+# organs rewrite TRACKED files on a cadence (recommendation_ledger.json on every recommendations.py
+# call, backups/moat/*, reports/*, data/*_record.json), and `git add -A` had recorded four agent
+# worktrees as accidental GITLINKS whose shas move whenever a sibling session commits -- dirt that
+# cannot be cleaned even in principle, because committing a gitlink only re-points it.
+#
+# WHY THE INTERSECTION IS THE RIGHT PREDICATE, verified empirically before this was written rather
+# than reasoned from the man page: git ALREADY enforces exactly this rule. A fast-forward over a
+# file dirty-but-absent-from-the-diff SUCCEEDS and preserves the local content; over a file dirty
+# AND in the diff it ABORTS with "Your local changes would be overwritten", leaving the hotfix
+# intact. So the operator-hotfix protection this refusal exists for is a property of git itself,
+# and the script's job is only to decide EARLIER, record the status, and say which paths collided.
+# The two fixes considered before this one -- move organ state out of git, or give the script an
+# allowlist of artifacts it may `reset` -- are both strictly worse: an allowlist rots, and anything
+# that discards a tracked file on a live box can destroy the only copy of a session's work, which
+# this desk has already paid for once (R0144, 2026-07-31).
+dirty_paths() { git diff --name-only -z HEAD 2>/dev/null | tr '\0' '\n' | sed '/^$/d' | sort -u; }
+DIRTY=$(dirty_paths)
+is_dirty() { printf '%s\n' "$DIRTY" | grep -Fxq -- "$1"; }
 
 # SELF-INSTALLING SCHEDULER (2026-07-30). The manifest is source; the live crontab is derived
 # state -- and nothing re-derived it. A manifest change deployed by this very script sat
@@ -121,7 +140,13 @@ fi
 # block) and needs no root for the cron half; its systemd half degrades to printed "owed" lines.
 # LAW-GATE HOOK INSTALL (L1.37): every clone of this repo gets the pre-push gate, so a breach
 # cannot leave any box for master. Idempotent; a symlink would break on Windows checkouts.
-if [ -d "$ROOT/.git/hooks" ] && [ -f "$ROOT/deploy/git_hooks/pre-push" ]; then
+# Both self-installers below used to sit BEHIND the any-dirt refusal, so on a permanently-dirty box
+# neither had run since 08-04 either -- the welded gate had two silent victims, not one. They are
+# restored here under a PRECISE predicate instead of a blanket one: install only when the source
+# file itself is unmodified, which is exactly the "drifted box" hazard (installing an operator's
+# uncommitted manifest or hook) and nothing wider.
+if [ -d "$ROOT/.git/hooks" ] && [ -f "$ROOT/deploy/git_hooks/pre-push" ] \
+   && ! is_dirty deploy/git_hooks/pre-push; then
     cp "$ROOT/deploy/git_hooks/pre-push" "$ROOT/.git/hooks/pre-push" 2>/dev/null || true
     chmod +x "$ROOT/.git/hooks/pre-push" 2>/dev/null || true
 fi
@@ -131,7 +156,8 @@ fi
 _ROLE=$(cat "$ROOT/ops/role" 2>/dev/null || echo primary)
 _MAN_FILE="$ROOT/ops/crontab.manifest"
 [ "$_ROLE" = "research" ] && _MAN_FILE="$ROOT/ops/crontab.research.manifest"
-if [ "$DRY" -eq 0 ] && [ -f "$_MAN_FILE" ]; then
+_MAN_REL=${_MAN_FILE#"$ROOT"/}
+if [ "$DRY" -eq 0 ] && [ -f "$_MAN_FILE" ] && ! is_dirty "$_MAN_REL"; then
     _MAN_WANT=$(cksum "$_MAN_FILE" | cut -d' ' -f1)
     _MAN_HAVE=$(cat "$ROOT/data/.crontab_installed_hash" 2>/dev/null || echo none)
     if [ "$_MAN_WANT" != "$_MAN_HAVE" ]; then
@@ -181,6 +207,38 @@ fi
 CHANGED=$(git diff --name-only "$OLD" "$NEW")
 N_CHANGED=$(printf '%s\n' "$CHANGED" | grep -c . || true)
 say "$N_CHANGED changed path(s) between $OLD_SHORT and $NEW_SHORT"
+
+# ---------------------------------------------------------------- the collision test
+# Only NOW can the dirty set be judged, because "would this deploy destroy local work?" is a
+# question about the INTERSECTION of what is dirty with what this specific commit range touches --
+# it is unanswerable before the fetch, which is why the old test asked the answerable-but-wrong
+# question instead. Loop rather than `comm`/process-substitution: DIRTY is a handful of paths, and
+# this is #!/bin/sh where <(...) does not exist.
+# `if` rather than `grep && printf`: under `set -e` the short-circuit leaves the loop -- and so the
+# command substitution -- non-zero on the NO-COLLISION path, which killed the script exactly when
+# it should have proceeded. A deploy guard whose happy path exits 1 is the welded gate again.
+COLLIDE=$(printf '%s\n' "$DIRTY" | while IFS= read -r p; do
+    [ -n "$p" ] || continue
+    if printf '%s\n' "$CHANGED" | grep -Fxq -- "$p"; then printf '%s\n' "$p"; fi
+done) || true
+
+if [ -n "$COLLIDE" ]; then
+    N_COLLIDE=$(printf '%s\n' "$COLLIDE" | grep -c . || true)
+    say "REFUSING -- $N_COLLIDE locally-modified path(s) are also changed by this fast-forward."
+    say "Uncommitted work here is an operator hotfix mid-flight and the deploy would destroy the"
+    say "only copy. Commit it (or move it aside) and the next tick deploys:"
+    printf '%s\n' "$COLLIDE" | sed 's/^/    /' | head -20
+    if [ "$DRY" -eq 0 ]; then
+        record refused-dirty "$OLD_SHORT" "$NEW_SHORT" "$N_COLLIDE dirty path(s) collide with the incoming diff"
+        exit 2
+    fi
+    say "--dry-run: reporting only."
+elif [ -n "$DIRTY" ]; then
+    # SAY IT OUT LOUD. Proceeding over a dirty tree is the new behaviour and a reader of this log
+    # must never infer the tree was clean; git will still abort the merge if this judgement is wrong.
+    N_DIRTY=$(printf '%s\n' "$DIRTY" | grep -c . || true)
+    say "$N_DIRTY tracked path(s) locally modified, none of them touched by this range -- proceeding"
+fi
 
 PLAN=$(printf '%s\n' "$CHANGED" | "$PY" -m libs.ops.deploy_plan --directives || true)
 printf '%s\n' "$CHANGED" | "$PY" -m libs.ops.deploy_plan || true
@@ -285,12 +343,31 @@ say "fast-forwarded to $NEW_SHORT"
 # whole path exists to end, so outcomes are journalled to a file and counted from that.
 OUTCOMES=$(mktemp) || exit 2
 
+# ---------------------------------------------------------------- L1.38: hold the money path
+# THE MERGE IS NEVER HELD, ONLY THE RESTART. Code lands on disk as always; a money-path process
+# keeps running its old copy until the cockpit opens. This is the same gate
+# scripts/run_stale_daemon_repair.py already applies, and its absence here was reachable only once
+# the dirty-tree refusal above stopped being a no-op -- repairing the deploy path without it would
+# have ARMED an unattended executor restart inside a live RAIL_BREACH window.
+if HELD_UNITS=$("$PY" "$ROOT/scripts/check_change_window.py" --held-units 2>/dev/null); then
+    [ -z "$HELD_UNITS" ] || say "L1.38: money-path restarts held this tick ($(printf '%s' "$HELD_UNITS" | tr '\n' ' '))"
+else
+    # Fail toward STERILE. A window we cannot read is not an open one, and the cost asymmetry is
+    # the same one build_report() itself is written around: a wrong OPEN is unbounded.
+    HELD_UNITS=$(printf '%s\n' "$PLAN" | awk -F'\t' '$1=="RESTART"{print $2}')
+    say "change-window fence unreadable -- holding EVERY restart this tick (L1.38 fails closed)"
+fi
+
 if [ -n "$PLAN" ]; then
     printf '%s\n' "$PLAN" | while IFS='	' read -r verb target why; do
         [ -n "${verb:-}" ] || continue
         case "$verb" in
         RESTART)
-            if ! command -v systemctl >/dev/null 2>&1; then
+            if printf '%s\n' "$HELD_UNITS" | grep -Fxq -- "$target"; then
+                say "HELD (L1.38): $target is on the money path and the window is not OPEN"
+                say "  the commit IS merged; this process keeps its old code until the window opens"
+                echo held >> "$OUTCOMES"
+            elif ! command -v systemctl >/dev/null 2>&1; then
                 say "OWED (no systemctl): sudo systemctl restart $target   [$why]"
                 echo owed >> "$OUTCOMES"
             elif systemctl restart "$target" >/dev/null 2>&1; then
@@ -334,13 +411,16 @@ fi
 
 n_of() { grep -c "^$1\$" "$OUTCOMES" 2>/dev/null || true; }
 RESTARTED=$(n_of restarted); OWED=$(n_of owed)
-ESCALATED=$(n_of escalated); SCHED=$(n_of scheduler)
+ESCALATED=$(n_of escalated); SCHED=$(n_of scheduler); HELD=$(n_of held)
 
 # OWED and ESCALATED both mean "a process is still running stale code, pending a human". Say so in
 # the status field itself, so a box parked in that state cannot read as a clean deploy.
+# HELD counts too, and for the same reason: an L1.38 hold is a DELIBERATE stale process, but it is
+# still a stale process, and a status that reads `deployed` would tell every downstream reader the
+# new code is live in it. Deliberate and invisible is how a temporary hold becomes a permanent one.
 STATUS=deployed
-[ "$OWED" -eq 0 ] && [ "$ESCALATED" -eq 0 ] || STATUS=deployed-action-owed
+[ "$OWED" -eq 0 ] && [ "$ESCALATED" -eq 0 ] && [ "$HELD" -eq 0 ] || STATUS=deployed-action-owed
 record "$STATUS" "$OLD_SHORT" "$NEW_SHORT" \
-    "$N_CHANGED paths; $RESTARTED restarted, $OWED owed, $ESCALATED escalated, $SCHED sched"
-say "done -- $OLD_SHORT -> $NEW_SHORT, CI green; $RESTARTED restarted, $OWED owed, $ESCALATED escalated"
+    "$N_CHANGED paths; $RESTARTED restarted, $OWED owed, $HELD held(L1.38), $ESCALATED escalated, $SCHED sched"
+say "done -- $OLD_SHORT -> $NEW_SHORT, CI green; $RESTARTED restarted, $OWED owed, $HELD held, $ESCALATED escalated"
 [ "$STATUS" = deployed ] || say "ACTION OWED -- a supervised process is still running stale code"

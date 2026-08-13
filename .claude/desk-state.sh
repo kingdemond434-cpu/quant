@@ -98,5 +98,29 @@ if [ -f docs/GAP_REGISTER.md ]; then
     grep -oE '^\| [0-9]+ \| \*\*[^*]{1,95}' docs/GAP_REGISTER.md 2>/dev/null \
       | sed 's/^| /    #/; s/ | \*\*/  /' | tail -3
 fi
+# SHARED-CHECKOUT WARNING (R0423). Printed HERE because session start is the one moment the
+# decision is still free -- once you have edited the tree, taking a worktree costs a migration.
+# Three recorded instances of a sibling's broad `git commit` sweeping another session's staged
+# files into an unrelated commit; the code survived every time and the RATIONALE did not.
+# ADVISORY ONLY: it never fails the session (L1.37 -- a governance fault must not stop the desk).
+if [ -n "$PY" ]; then
+    "$PY" - <<'PYEOF' 2>/dev/null || true
+try:
+    from libs.ops.shared_tree import detect
+    r = detect()
+    if r["status"] == "SHARED":
+        pids = ", ".join(str(o["pid"]) for o in r["same_worktree"])
+        print(f"  SHARED TREE  {len(r['same_worktree'])} other live session(s) in THIS worktree "
+              f"(pid {pids})")
+        print("               a broad `git commit` in either sweeps the other's staged files. "
+              "Stage explicit paths,")
+        print("               or take your own:  git worktree add -b <branch> ../qp-<branch>"
+              "   (never `git stash`)")
+    elif r["status"] == "UNMEASURED":
+        print(f"  shared tree  UNMEASURED -- {r['detail'][:90]}")
+except Exception:
+    print("  shared tree  detector unreadable -- concurrency UNKNOWN, not fine")
+PYEOF
+fi
 echo "  READ FIRST: CLAUDE.md, then docs/GAP_REGISTER.md row 91 (the ranked top item)."
 echo "=========================================================================="

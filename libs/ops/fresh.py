@@ -103,9 +103,65 @@ def _root() -> Path:
     return Path(env) if env else Path.cwd()
 
 
+#: THE STAMP-KEY ZOO (R0399). Five names for one concept across the desk's decision artifacts:
+#: `generated` (most organs), `ts` (data/live_guard.json), `updated` (web/*), `checked`,
+#: `generated_at`. This module recognised ONLY `generated`, so on 2026-08-13 five of the eight
+#: live contracts resolved age from mtime -- and mtime is the source this module exists to
+#: distrust: the 10-minute auto-deploy and the puller's revert path rewrite files, so a frozen
+#: artifact reads FRESH after a deploy. Three of those five publish a stamp we were ignoring.
+#: Order is `input_provenance`'s original, preserved so that delegating there changes nothing.
+_STAMP_KEYS: tuple[str, ...] = ("generated", "ts", "checked", "measured", "updated",
+                                "generated_at")
+
+#: A tie-break only. Content stamp and mtime are written within the same syscall of each other in
+#: normal operation, so a bare `>` comparison would flap between them on float noise and rename
+#: the reported source at random. One minute is far below the tightest max_age on the desk (the
+#: executor's 0.25h), so it can never change a freshness verdict -- only which clock is credited.
+_STAMP_TIE_H = 1.0 / 60.0
+
+
+def stamp_age_h(data: Any) -> tuple[float | None, str | None]:
+    """(age_h, stamp_key) from the artifact's OWN content stamp, or (None, None).
+
+    A stamp key is a stamp only when its VALUE parses as a time. `measured` is the live example of
+    why that matters: it is a BOOL in data/inventory_yield_state.json and
+    data/lending_risk_base_rates.json, and keying on the NAME alone would read `False` as a
+    timestamp. Shared with libs.ops.input_provenance so the two organs can never disagree about
+    how old the same artifact is (L1.61).
+    """
+    if not isinstance(data, dict):
+        return None, None
+    now = datetime.now(tz=UTC)
+    for key in _STAMP_KEYS:
+        v = data.get(key)
+        if isinstance(v, bool):
+            continue            # bool IS an int in Python -- guard BEFORE the number branch
+        if isinstance(v, str):
+            try:
+                at = datetime.fromisoformat(v.replace("Z", "+00:00"))
+            except ValueError:
+                continue        # malformed -> try the next key, never claim an age from it
+            if at.tzinfo is None:
+                at = at.replace(tzinfo=UTC)
+            return max(0.0, (now - at).total_seconds() / 3600.0), key
+        if isinstance(v, (int, float)) and v > 1e8:                          # epoch seconds
+            return max(0.0, (now - datetime.fromtimestamp(float(v), tz=UTC))
+                       .total_seconds() / 3600.0), key
+    return None, None
+
+
 def _age_of(path: Path) -> tuple[float | None, str, Any]:
-    """(age_h, source, parsed_data). Content `generated` stamp preferred; mtime is the fallback
-    because a deploy-rewritten mtime lies fresh -- the dangerous direction for an age check."""
+    """(age_h, source, parsed_data). The artifact's own content stamp outranks mtime, and where
+    the two disagree the OLDER of them wins.
+
+    NEVER THE YOUNGER, and that is what makes widening the zoo safe. mtime lies FRESH after a
+    deploy (the dangerous direction this module was built for), but a content stamp can lie fresh
+    too -- clock skew, a naive stamp read in the wrong zone, or a producer stamping the as-of time
+    of its INPUT rather than its own run. Taking the older means a newly-recognised stamp key can
+    only ever make an artifact look OLDER than it did before, so this widening can TIGHTEN a
+    freshness gate and can never open one. Measured across all 8 live contracts 2026-08-13: stamp
+    and mtime agreed to within 0.01h, so the change is a no-op until an mtime actually lies.
+    """
     try:
         raw = path.read_text("utf-8")
     except OSError:
@@ -114,21 +170,20 @@ def _age_of(path: Path) -> tuple[float | None, str, Any]:
         data = json.loads(raw)
     except ValueError:
         return None, "unreadable", None
-    age_gen: float | None = None
-    if isinstance(data, dict) and data.get("generated"):
-        try:
-            at = datetime.fromisoformat(str(data["generated"]))
-            if at.tzinfo is None:
-                at = at.replace(tzinfo=UTC)
-            age_gen = max(0.0, (datetime.now(tz=UTC) - at).total_seconds() / 3600.0)
-        except ValueError:
-            age_gen = None      # malformed stamp -> fall back to mtime, never hide the artifact
-    if age_gen is not None:
-        return age_gen, "generated", data
+    age_stamp, key = stamp_age_h(data)
     try:
-        return max(0.0, (time.time() - path.stat().st_mtime) / 3600.0), "mtime", data
+        age_mtime: float | None = max(0.0, (time.time() - path.stat().st_mtime) / 3600.0)
     except OSError:
-        return None, "missing", data
+        age_mtime = None
+    if age_stamp is not None and key is not None:
+        if age_mtime is not None and age_mtime > age_stamp + _STAMP_TIE_H:
+            # The file was WRITTEN longer ago than its own stamp admits -- the stamp is the one
+            # lying young here, so the source is named as the pair that produced the verdict.
+            return age_mtime, f"mtime>{key}", data
+        return age_stamp, key, data
+    if age_mtime is not None:
+        return age_mtime, "mtime", data
+    return None, "missing", data
 
 
 def _rel(root: Path, p: Path) -> str:

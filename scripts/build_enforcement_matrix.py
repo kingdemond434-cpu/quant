@@ -30,6 +30,7 @@ Pure stdlib. Run from repo root.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 from datetime import UTC, datetime
@@ -38,6 +39,7 @@ from typing import Any
 
 _ROOT = Path(__file__).resolve().parent.parent
 _CONST = _ROOT / "docs/CONSTITUTION.md"
+_MASTER = _ROOT / "docs/MASTER_QUANT_CONSTITUTION.md"
 _AUDIT = _ROOT / "scripts/max_audit.py"
 _MANIFEST = _ROOT / "ops/crontab.manifest"
 _OUT = _ROOT / "data/enforcement_matrix.json"
@@ -65,17 +67,47 @@ _MAP: dict[str, list[str]] = {
     # shortest candidate leaves observations already on disk untested -- idle data manufactured by
     # the validator rather than by a lazy collector. check_campaign_retention.py floors the share
     # a campaign actually tests on, so the 82.9% min-length discard cannot come back in silence.
-    # NOTE THE `scripts/` PREFIX -- it is load-bearing, not decoration. `_exists` short-circuits
-    # any ref starting with `check_` into max_audit's FUNCTION table, so the bare
-    # `check_campaign_retention.py` form resolves against a registry a standalone script can
-    # never be in, and reports BROKEN-REF without saying why. Every standalone fence here is
-    # written path-first for that reason. R0436 rows the short-circuit itself.
+    # THE `scripts/` PREFIX IS THE HOUSE STYLE AND IS NO LONGER LOAD-BEARING (R0436, fixed).
+    # `_exists` used to short-circuit any ref starting with `check_` into max_audit's FUNCTION
+    # table, so the bare `check_campaign_retention.py` form resolved against a registry a
+    # standalone script can never be in and reported BROKEN-REF without saying why. It now
+    # discriminates on the `.py` suffix -- which a function name cannot carry -- so both forms
+    # resolve. Path-first is kept everywhere here because it says WHERE the fence lives at a
+    # glance; the suffixless `check_campaign_retention` form is still a function-table request
+    # and still fails, now with a hint that names the suffix.
     "L1.8": ["check_no_mining_throttle", "check_mining_nonregression", "check_mine_flow",
              "scripts/check_campaign_retention.py", "libs/research/campaign_retention.py"],
     "L1.9": ["check_blind_trigger", "check_interrogation", "check_dig_depth"],
     "L1.10": ["check_mine_conversion", "check_mine_gate"],
-    "L1.11": ["moat_audit.py", "check_vendor_replacement", "run_recorder.py"],
-    "L1.11a": ["ops/run_frontier_rotation.sh", "kimi_hunter.py"],
+    # R0316 adds HISTORICAL MONOPOLISATION, which L1.11 names outright and nothing implemented.
+    # A point-in-time history is the cheapest proprietary state available: everyone can fetch M2SL,
+    # almost nobody keeps what it SAID last month. FRED serves only the current vintage, so the
+    # archive was overwritten AND truncated to a rolling window on every run -- each day destroying
+    # a vintage that cannot be re-earned at any price, which is the one currency the desk cannot
+    # buy back. Measured on the RFB Brazil panel: 42/42 months revised between vintages, worst
+    # +40.9%, systematically upward. The store makes the daily overwrite lossless and turns "this
+    # source is revised" from a disqualification into a dataset.
+    "L1.11": ["moat_audit.py", "check_vendor_replacement", "run_recorder.py",
+              "libs/research/vintage.py", "scripts/collect_fred_macro.py",
+              "tests/research/test_vintage.py"],
+    # L1.11a ranks ground by REVERSE-ENGINEERING COST PER UNIT OF EFFORT, and delisted rosters are
+    # the cheapest high-cost ground the desk had never asked for: R0239's own docstring routed the
+    # backward half of survivorship to "a reconstruction from binance.vision archives, a separate
+    # and much larger job", while three venues publish their dead instruments outright. One call
+    # each returned 4455 names (bitmex 3077 vs 32 live, bybit 936 vs 808, coinbase 315 vs 517) --
+    # accessibility was the barrier, and L1.11a says a barrier is a search dimension.
+    # The same argument one format across (R0317): a legacy `.xls` is an ACCESSIBILITY barrier, and
+    # government, regulator and central-bank publications are disproportionately served as one
+    # PRECISELY because they are old institutional pipelines -- which is the same reason they stay
+    # under-mined. The desk had recorded "this box cannot read .xls" (no xlrd/openpyxl/olefile,
+    # installs frozen) as a fact about the world; it was a fact about a missing library. OLE2+BIFF8
+    # are two documented byte-level layers and the stdlib ships `struct`, so the moat here is made
+    # of tedium rather than secrecy -- maximum reverse-engineering cost per unit of effort.
+    "L1.11a": ["ops/run_frontier_rotation.sh", "kimi_hunter.py",
+               "scripts/probe_delisted_instruments.py",
+               "tests/scripts/test_probe_delisted_instruments.py",
+               "scripts/read_xls.py", "libs/data/xls_reader.py",
+               "tests/data/test_xls_reader.py"],
     "L1.12": ["check_orphan_code", "check_idle_capability", "libs/self_improvement/dormancy.py"],
     "L1.13": ["check_gap_register_health", "run_execution_intel.py"],
     "L1.14": ["check_directives", "research_erv.py"],
@@ -136,8 +168,16 @@ _MAP: dict[str, list[str]] = {
     "L1.28": ["scripts/check_timidity_language.py", "tests/governance/test_timidity_fence.py",
               "ops/principal_doctrine.txt"],
     # L1.28a is measured, not asserted: every ceiling reports utilisation or counts as zero.
+    # R0318 adds the extractor case, where the absence-reads-as-health failure is at its sharpest:
+    # `all([])` is True, so a hand-rolled parse that returned nothing but headers scores "0
+    # violations" and the report reads as a clean bill. check_identities refuses that -- zero
+    # usable rows is UNMEASURED, and the count of rows the law actually closed over is a
+    # first-class output rather than a footnote.
     "L1.28a": ["scripts/check_utilisation.py", "check_idle_capability", "check_clock_saturation",
-               "check_capacity_runway"],
+               "check_capacity_runway", "libs/research/conservation.py",
+               "tests/research/test_conservation.py",
+               "scripts/check_extractor_invariants.py",
+               "libs/research/extractor_invariants.py"],
     # L1.28b: conversion hunts 100% daily -- FLATLINE (7d of silence on a non-empty queue) fails.
     # The fence DETECTS the debt; the actuator is what makes the law's own remedy -- (d) "flips
     # the next audit/brain window from finding to fixing" -- actually reach an organ (L1.36).
@@ -149,11 +189,25 @@ _MAP: dict[str, list[str]] = {
     # restart needs a systemctl this box denies. Detection without an actuator IS the L1.28b
     # defect; this is the actuator.
     "L1.28b": ["scripts/check_conversion.py", "libs/ops/repair_mode.py", "ops/brain_env.sh",
-               "scripts/ship_restart.py"],
+               # run_stale_daemon_repair closes the remaining half-gap: ship_restart was an
+               # actuator a HUMAN still had to invoke; this invokes it on the detector's own
+               # verdict (cron 2x/day), with TIER_RUIN and the L1.38 sterile window as the two
+               # hard skips. Detection -> repair now needs nobody awake.
+               "scripts/ship_restart.py", "scripts/run_stale_daemon_repair.py",
+               # R0330: check_conversion measures the QUEUE, this measures the CAPACITY that
+               # drains it. A long queue is equally consistent with fast repair under heavy
+               # arrival and slow repair under light arrival, so queue length alone cannot say
+               # whether repair capacity is improving -- which is the comparison L1.28b is
+               # written from. MTTR is censoring-aware; P(fix) excludes rejections on purpose.
+               "scripts/check_repair_capacity.py", "libs/research/repair_capacity.py"],
     # L1.28c: every cadence hunts its own ceiling. The manifest fence requires a decided cadence
     # with evidence per line; brain_seat_throughput measures the resource they all compete for,
     # so "raise the cron" vs "buy a second seat" is settled by measurement.
-    "L1.28c": ["scripts/check_scheduler_manifest.py", "scripts/check_utilisation.py"],
+    # run_cadence.py IS the cadence engine this law governs, and it was mapped by NOTHING -- so
+    # the one organ that decides what fires and enforces the never-sleepier floors was also the
+    # one organ outside the build standard and the L1.42 law boundary (R0425).
+    "L1.28c": ["scripts/check_scheduler_manifest.py", "scripts/check_utilisation.py",
+               "scripts/run_cadence.py"],
     # L1.29: the desk scores its own confidence or its confidence is fiction. The fence fails
     # on ungraded predictions; the shrinkage closes the loop back into sizing/promotion.
     "L1.29": ["scripts/check_calibration.py",
@@ -180,8 +234,16 @@ _MAP: dict[str, list[str]] = {
     # via the doctrine, and guarded by a family-level check. A gate, not a report.
     "L1.36": ["scripts/check_law_families.py"],
     # L1.37: the gate itself -- four boundaries (organ spawn, pre-push, CI, hourly cron).
+    # L1.37 carries the BOUNDARIES themselves, and check_birth_properties is the §36/L2.9
+    # birth-property predicates moved onto them. They ran at 07:00 on cron and nowhere else, so
+    # four defect keys (artifact-ungoverned 6x, orphan-scripts 4x, mine-conversion-unbacked 3x,
+    # decision-ledger-undated 2x) recurred by construction: the object was authored, committed and
+    # pushed, and the question "why does this file exist?" reached a session that had to
+    # reconstruct the answer from cold hours later. Same predicates, one source of truth
+    # (max_audit's tables are imported, never copied) -- only the boundary is new.
     "L1.37": ["scripts/run_law_gate.py", "deploy/git_hooks/pre-push", "ops/brain_env.sh",
-              ".github/workflows/ci.yml"],
+              ".github/workflows/ci.yml", "scripts/check_birth_properties.py",
+              "tests/ops/test_birth_properties.py"],
     # L1.38: the money path freezes to IMPROVEMENTS (never repairs) inside launch/first-fills/
     # rail-breach windows. Part of the survival family in spirit; fenced standalone.
     "L1.38": ["scripts/check_change_window.py"],
@@ -200,7 +262,13 @@ _MAP: dict[str, list[str]] = {
     "L1.42": ["libs/ops/lawful.py", "scripts/check_build_standard.py",
               "scripts/run_cashcarry_executor.py"],
     # L1.43: governance measured like everything else -- has each fence ever caught anything?
-    "L1.43": ["scripts/check_fence_yield.py", "scripts/check_enforcement_execution.py"],
+    # check_free_roster is the same logic pointed at a governance CAPABILITY rather than a fence:
+    # the degraded free-seat fallback is only ever exercised while unfunded, so its health was
+    # invisible by construction and 2026-08-01 found all four seats dead during the outage they
+    # exist for. NEVER-RUN is the status L1.43 already names; this makes it observable on a
+    # cadence, for free, because the seats cost nothing to ask.
+    "L1.43": ["scripts/check_fence_yield.py", "scripts/check_enforcement_execution.py",
+              "scripts/check_free_roster.py"],
     # L1.44: consumption-time freshness -- every decision-path read declares its max tolerated
     # age at the read site; the fence fails on STALE-CONSUMED (a live decision steered by a
     # frozen input) and on UNWIRED (a bootstrap contract deleted from the executor/alerts).
@@ -220,9 +288,15 @@ _MAP: dict[str, list[str]] = {
     # R0267 joins L1.45 rather than getting its own key: it is the FUNCTIONAL FORM the excitation
     # design has no vocabulary for, and its own-fill half refuses for exactly the reason L1.45
     # names -- an operating point the desk never visits, so go buy the observation.
+    # fit_print_impact is the THIRD basis: the counterfactual half is the book walk, the own-fills
+    # half is excitation, and neither reads the ~2,500 prints/symbol/hour of OTHER PEOPLE's
+    # completed executions sitting on the same tape. It serves L1.45 by refusing above its
+    # identified range -- the same "operating point never visited" discipline, applied to its own
+    # output -- and it explicitly does NOT claim the causal slope excitation exists to identify.
     "L1.45": ["scripts/check_excitation.py", "scripts/run_cost_identification.py",
               "libs/execution/excitation.py", "scripts/fit_passive_impact.py",
-              "libs/execution/passive_impact.py"],
+              "libs/execution/passive_impact.py", "scripts/fit_print_impact.py",
+              "libs/research/print_impact.py"],
     # L1.46: clock provenance. Every other data fence asks whether the COLLECTOR RAN -- gapless
     # collection was verified GOOD on the same corpus that is not monotonic in its own `t` field.
     # This one asks whether the TIMESTAMPS MEAN WHAT THE SCHEMA IMPLIES, which is the defect class
@@ -314,6 +388,107 @@ _MAP: dict[str, list[str]] = {
     "L1.57": ["scripts/check_denominators.py", "libs/ops/denominator.py",
               "libs/ops/fence_exit.py", "tests/governance/test_denominators.py",
               "scripts/check_exploration.py", "scripts/check_calendar_gates.py"],
+    # L1.58 is the executable edge/P&L waterfall and loss investigation loop.
+    "L1.58": ["scripts/run_trade_forensics.py", "scripts/run_trade_review.py",
+              "libs/execution/execution_tape.py", "check_forensics_fresh",
+              # R0334 (principal 2026-08-01): the sleeve's only scoreboard was a blended win_rate
+              # and mean_R, which cannot separate a good thesis exited badly from a bad thesis
+              # rescued by the ladder. Six components, each with its own denominator and its own
+              # refusal -- target quality is UNMEASURABLE-BY-DESIGN on a sleeve that forbids
+              # take-profits, and the stop check reports itself as a constant-pass gate (L1.49).
+              "scripts/run_execution_quality.py", "libs/research/execution_quality.py"],
+    # L1.59 freezes doctrine growth and makes the mandate answerable to measured value.
+    "L1.59": ["scripts/build_enforcement_matrix.py", "scripts/module_justification.py",
+              "scripts/check_denominators.py", "scripts/check_ratchets.py",
+              "scripts/run_max_push.py", "scripts/check_doctrine_diff.py"],
+    # L1.60: L1.57 asks whether the denominator is an int >= 1; nothing asked what it LOST. A
+    # fence that reads 1000 files, drops 991 in `except OSError: continue` and declares
+    # scanned=9 is recorded DECLARED, non-vacuous and CLEAN. The proving instance is L1.57's own
+    # supplier -- check_calendar_gates' `n += 1` sat one line BELOW its handler. Both existing
+    # swallow detectors require a Pass body, so the whole `continue`/`return <default>` class was
+    # invisible (R0166, prose-only for twelve days). The three repaired fences are listed: each
+    # is a regression site, and reverting an `attempted` counter turns the tests red.
+    "L1.60": ["scripts/check_denominator_attrition.py", "libs/ops/attrition.py",
+              "scripts/check_coverage_floors.py", "scripts/check_calendar_gates.py",
+              "scripts/check_llm_routing.py"],
+    # L1.61: the desk reconciles its book against the VENUE every cycle and had never once
+    # reconciled its own artifacts against EACH OTHER. Every instrument is single-artifact BY
+    # CONSTRUCTION -- phantoms asks "does a writer exist", fresh asks "is it old",
+    # input_provenance asks "were MY inputs present" -- so contradiction, which exists only in
+    # the RELATION between two artifacts, was invisible to all of them. Proving instance was
+    # live on the only path to capital: gate0_readiness and live_guard evaluate the same five
+    # Gate-0 criteria through the same function and FOUR disagreed. The general index was
+    # REFUTED by its own falsifier (418 disagreements, ~0 genuine), so the registry is
+    # hand-built and money-path only.
+    "L1.61": ["scripts/check_claim_consistency.py", "libs/ops/claim_registry.py"],
+    # L1.62: the Stage-A screen's cross-sectional power denominator was an ASSUMPTION at both
+    # endpoints, one change apart, and neither was ever measured. Pre-08-11 panel_width was not
+    # passed (K symbols = K observations, t inflated sqrt(K)); the fix passed the full width
+    # (K symbols = ONE observation). Measured on the desk's own 139-symbol panel the answer is
+    # ~93, so the divisor is 1.50 not 139 and the detection floor ran 9.6x high. Invisible
+    # because the error ran CONSERVATIVE and its only symptom is SCREEN-UNDERPOWERED -- "could
+    # not tell", which writes no graveyard entry, no clock and no alert, and holds 380 of 711
+    # verdicts on disk. Both copies of the expression are listed: type2_cost.correlation_n_eff
+    # documents itself as a deliberate copy "so the two cannot disagree", so a fix in one file
+    # leaves the other authoritative. The screen caller is a regression site -- removing its
+    # measure_panel_breadth call turns the tests red.
+    # The CROSS-SECTION FLOOR joins this family rather than minting a law of its own (L1.59
+    # freezes doctrine expansion; L2.9 says upgrade before building). It is the SAME defect one
+    # axis over: L1.62 caught a denominator that ASSUMED how many independent bets a date carries,
+    # this catches one that counts the panel's DECLARED WIDTH (`shape[1]`) instead of the finite
+    # symbols a date actually has. A 373-column panel clears `shape[1] >= 8` on a date carrying
+    # six names. Measured 2026-08-13: 12 of 311 dates carried 98.1% of a lag-1 statistic, reading
+    # rho=+0.856 against a floored truth of -0.06. run_derivative_shadow is a regression site --
+    # it is the declared locked mirror of backfill_oi_ls_oos and was the unfloored half.
+    "L1.63": ["scripts/check_partition_power.py", "libs/validation/partition_power.py",
+              "libs/autodiscovery/regime.py", "libs/risk/sleeve_allocation.py",
+              "scripts/check_promotion_gate.py", "libs/research/crypto_regime.py",
+              "scripts/falsify_funding_state_axis.py"],
+    "L1.62": ["scripts/check_panel_breadth.py", "libs/research/panel_breadth.py",
+              "libs/research/axis_screen.py", "libs/validation/type2_cost.py",
+              "scripts/screen_oi_ls_axes.py",
+              "scripts/check_cross_section_floor.py", "libs/research/cross_section_floor.py",
+              "scripts/run_derivative_shadow.py"],
+    # R0369 (under L2.3/§42): an implemented row's --commit is the ledger's whole proof mechanism,
+    # and it was enforced only at WRITE time -- `dispose` refuses an empty field and asks nothing
+    # else. A rebase rewrites SHAs and the citation quietly names an object no other clone can
+    # resolve. Measured over 227 citing rows: 14 INVALID (10 the literal `HEAD`, 4 `pending`) and
+    # 1 ORPHANED. `HEAD` is the half no existence check could ever catch: it resolves everywhere,
+    # to a different commit for every reader. The repair is UPWARD and wired -- `repoint` moves a
+    # pointer without disturbing the disposition and refuses an unresolvable replacement.
+    "L2.3-r0369": ["scripts/check_citation_integrity.py", "libs/research/citation_integrity.py",
+                   "scripts/recommendations.py"],
+    # R0287 capital-basis invariant (under L1.58's waterfall discipline): a return without its
+    # declared denominator is the Quantopian-2019 shape (190% headline, 58% on capital actually
+    # drawn) and this desk's own thrice-repeated class (R0234 ~25x equity undercount, R0235
+    # testnet-sizing-live, the 13,155/4,500 split). The fence holds the line on NEW artifacts and
+    # carries the dated 2026-08-11 bootstrap debt shrink-only.
+    "L1.58-r0287": ["scripts/check_capital_basis.py", "libs/research/capital_basis.py",
+                    "tests/research/test_capital_basis.py"],
+    # R0288 unlock-calendar conversion (L1.8 data-to-alpha): data/unlock_events.json sat with
+    # ZERO python readers and an expiring forward window; the collector accrues first-seen events
+    # with POINT-IN-TIME pct-of-float (the snapshot's pct_circ_now was a look-ahead in the
+    # conditioning variable), the reader gives the snapshot its first consumer, and forward
+    # events route through the event-study gate once enough accrue.
+    "L1.8-r0288": ["scripts/collect_unlock_calendar.py", "libs/research/unlock_calendar.py",
+                   "tests/research/test_unlock_calendar.py",
+                   "scripts/collect_circulating_supply.py"],
+    # R0371 fee attribution (L1.58 edge preservation / P&L forensics): futures commission is
+    # 88.7% of the sleeve's non-funding loss and 0 of 500 trade-tape rows carry a fee field, so
+    # the desk could see the dominant loss and not attribute it. binance_testnet.commission_events
+    # already answered it and had zero callers; this is the consumer. Per-symbol truth reconciles
+    # to the cent ($1,750.878 vs the dashboard's $1,750.88) and four names carry 85.9% of it.
+    # Per-round-trip attribution stays REFUSED and the spot leg UNMEASURED -- both are published
+    # as refusals rather than zeros, and the 7.1% tape coverage is the defect the surface reports.
+    "L1.58-r0371": ["scripts/run_fee_attribution.py", "libs/research/fee_attribution.py",
+                    "tests/test_fee_attribution.py", "scripts/run_execution_intel.py"],
+    # R0303 Upbit purge-proof snapshot (L1.46 unrecoverable-series duty): the venue erases a
+    # market's candle history at delisting (~11.4 KRW markets/yr; AQT/AERGO lost 2026-08-03),
+    # and the desk's own >=120-aligned-day panel filter stacks a second survivorship bias on
+    # top. The collector holds full daily history for every market plus flagged-market 1m,
+    # and its manifest's delist ledger is the treatment group the purge erases.
+    "L1.46-r0303": ["scripts/run_upbit_snapshot.py", "libs/research/upbit_data.py",
+                    "tests/research/test_upbit_snapshot.py"],
     # R0123 decline grading: L1.29 says an ungraded prediction is a BELIEF that inflates the
     # apparent hit-rate by never counting its misses -- and a sleeve scored only on the trades it
     # CHOOSES to be graded on is that defect with a dominant strategy attached. Nine consecutive
@@ -342,6 +517,29 @@ _MAP: dict[str, list[str]] = {
     "L1.11-r0100": ["scripts/collect_dexscreener.py",
                     "scripts/collect_holder_concentration.py",
                     "scripts/collect_perpdex_funding.py"],
+    # R0291 (2026-08-12): wallet-resolved signed DEX flow, the one axis where waiting IS the
+    # loss -- venue retention ~300 trades/pool, so capture is forward-only-unrecoverable
+    # (L1.28b(f): acquisition never throttled). Dual clocks per L1.46 (chain stamp + receipt),
+    # per-pool window-overflow flagged so sampling truncation is measured, never silent.
+    "L1.11-r0291": ["scripts/collect_geckoterminal_trades.py"],
+    # R0299 (2026-08-12, KR-s1 B): the KR venue flag surface -- Upbit warning + 5 caution flags
+    # and Bithumb market_warning + per-asset deposit/withdrawal rails. All three surfaces are
+    # SNAPSHOT-ONLY with no history endpoint, so this recorder is the only source of the series
+    # (L1.46: recv_only clock declared, unrecorded transitions permanently lost). Bithumb rail
+    # state is the independent barrier-height regressor that breaks the KR-premium circularity.
+    # A failed fetch is never diffed -- absence must not read as 'all flags cleared' (L1.51).
+    "L1.46-r0299": ["scripts/collect_kr_venue_flags.py"],
+    # R0375 (2026-08-12): the haircut that decides whether idle dollars may earn was
+    # `DEFAULT_HAIRCUT_BPS = 300.0` with no derivation anywhere in the repo, against a measured
+    # 5.5bps breakeven -- L1.51's own defect class (a clamp nobody could argue with because
+    # nobody had computed it) sitting on the desk's only idle-capital decision. Now derived from
+    # net-of-returned-funds exploit losses over integrated TVL-years at a 95% Poisson frequency
+    # bound, plus the measured depeg shortfall: 41.7bps. The refusal value is still 300, so an
+    # unreadable input keeps the band SHUT rather than opening it on a fabricated small number
+    # (L1.55). Risks measured but deliberately unpriced are named, never inferred as zero.
+    "L1.51-r0375": ["scripts/collect_lending_risk_base_rates.py",
+                    "libs/research/lending_haircut.py",
+                    "tests/research/test_lending_haircut.py"],
     # R0102 paper-sleeve auto-spawn: converts corrected Stage-A survivors into costless paper
     # sleeves. L1.6 bounds it (zero promotion authority, zero capital) and L1.18a orders its queue
     # (deployment race -- shortest capacity runway first). It NEVER spawns over the Holm cap: a
@@ -518,6 +716,13 @@ _FENCE_OWNERS: dict[str, str] = {
     # --- survival rails (L1.23): states that read HEALTHY while being terminal.
     "check_book_collapse": "L1.23",
     "check_book_absorbing_state": "L1.23",   # a rail that can never release the book is not safety
+    # L1.44 is the freshness law, and this is its sharpest case: the published rail verdict is a
+    # produced artifact whose consumers (dashboard, pager, check_idle_cost) cannot see its age,
+    # because `_emit` copies `rb['risk']` forward onto a file whose mtime keeps advancing. The
+    # feed's own freshness is a heartbeat, and a heartbeat proves the loop is alive, never that
+    # the pipe is. Compares the recomputed decision against the published one rather than asking
+    # its age -- a fresh-and-wrong verdict passes every age bound there is.
+    "check_rail_verdict_published": "L1.44",
     # --- injection + fence integrity (L2.1 / L2.2): the enforcement layer auditing itself.
     "check_constitution": "L2.1",
     "check_universal_doctrine": "L2.1",
@@ -574,6 +779,12 @@ _FENCE_OWNERS: dict[str, str] = {
     "check_silent_swallows_on_the_rails": "L1.41",  # a bare except on the money path is a refusal-path hole
     "check_survivor_pipeline": "L1.56",       # zero results is a claim about the INSTRUMENT until it is shown to work
     "check_test_suite_collectable": "L2.2",   # a suite that cannot collect enforces nothing
+    # Same family as the line above, one cause upstream (R0407a): an OOM-killed probe reports as a
+    # broken suite, so the box running out of memory is a condition under which the desk's evidence
+    # stops being evidence -- exactly what check_dependency_drift and check_test_suite_collectable
+    # each say about their own precondition. Not L1.28a: that law is about running a ceiling AT its
+    # limit, and RAM at 100% is the failure, not the goal.
+    "check_host_memory_headroom": "L2.2",     # a verdict the box had no memory to produce is not one
     "check_triage_disposition": "L1.17",      # self-dispositioning registers stay honest or lose the exclusion
     "check_under_exploration": "L1.32",       # under-exploration is a breach, not a preference
     "check_unwired_modules": "L2.9",          # built-but-unreachable, the third shape of dormancy
@@ -639,9 +850,30 @@ def _fence_names() -> set[str]:
 
 
 def _exists(ref: str) -> bool:
-    """Does the enforcing artifact actually exist? A mapping to a deleted file is worse than none."""
+    """Does the enforcing artifact actually exist? A mapping to a deleted file is worse than none.
+
+    TWO REGISTRIES, AND THE `.py` SUFFIX IS THE ONLY THING THAT SEPARATES THEM (R0436). A ref
+    beginning `check_` can mean either of two entirely different objects: a FUNCTION inside
+    scripts/max_audit.py, or a standalone fence SCRIPT on disk. This used to short-circuit ANY
+    `check_`-prefixed ref into the function table, so `check_denominators.py`, `check_freshness.py`
+    and every other standalone fence written in the bare form was resolved against a registry it
+    can never appear in -- reported BROKEN-REF, which exits 1 and hard-blocks every push (L1.37),
+    with a message naming the ref and nothing about why.
+
+    `_fence_names()` regexes `^def (check_[a-z_0-9]+)`, and `.` is not in that character class, so
+    a max_audit function name can NEVER end in `.py`. That makes the suffix an exact discriminator
+    rather than a heuristic: with it, the ref means the script; without it, the function. Both
+    forms are now askable, which is what the old code had no way to express.
+
+    THE ACCEPT DIRECTION IS THE SAFE ONE and it loosens nothing: the file branch still requires the
+    path to EXIST on disk, so a mapping to a deleted or misspelled fence fails exactly as before. A
+    max_audit function mistakenly written `check_foo.py` has no `scripts/check_foo.py` behind it
+    and still reports BROKEN-REF. What changes is only that a real fence, mapped by its real
+    filename, stops being unmappable -- and an unmappable fence is one a future author is cheapest
+    to leave unmapped, which is the outcome this matrix exists to prevent (L2.0).
+    """
     bare = ref.split(":")[0].split(" ")[0]
-    if bare.startswith("check_"):
+    if bare.startswith("check_") and not bare.endswith(".py"):
         return bare in _fence_names()
     return any(cand.exists() for cand in (_ROOT / bare, _ROOT / "scripts" / bare))
 
@@ -649,6 +881,28 @@ def _exists(ref: str) -> bool:
 def _scheduled(refs: list[str]) -> list[str]:
     man = _MANIFEST.read_text("utf-8") if _MANIFEST.exists() else ""
     return [r for r in refs if Path(r.split(":")[0].split(" ")[0]).name in man]
+
+
+def _master_authority() -> dict[str, Any]:
+    """Expose the limit of this matrix instead of Goodharting its clean companion score."""
+    text = _MASTER.read_text("utf-8")
+    canonical = text.replace("\r\n", "\n").replace("\r", "\n").encode("utf-8")
+    sections = len(re.findall(r"^# \d+\.", text, re.MULTILINE))
+    return {
+        "master_path": _MASTER.relative_to(_ROOT).as_posix(),
+        "master_sha256": hashlib.sha256(canonical).hexdigest(),
+        "master_sections": sections,
+        "master_to_code_crosswalk": {
+            "status": "UNMEASURED",
+            "covered_sections": None,
+            "total_sections": sections,
+            "owed": True,
+            "scope_note": (
+                "The executable matrix below covers docs/CONSTITUTION.md companion laws; it is "
+                "not yet a section-by-section enforcement crosswalk for the sealed master."
+            ),
+        },
+    }
 
 
 def build() -> dict[str, Any]:
@@ -670,8 +924,12 @@ def build() -> dict[str, Any]:
                      "enforced_by": live, "broken_references": broken,
                      "scheduled": _scheduled(live), "note": note})
 
+    # ORPHANS ARE COMPUTED OVER FUNCTION REFS ONLY. `fences` holds max_audit FUNCTION names, which
+    # never carry a `.py` suffix, so a script ref could never have cancelled an orphan anyway --
+    # but leaving `check_foo.py` in this set would quietly claim it might, and a set whose members
+    # cannot match its counterpart is the kind of near-miss that reads as coverage (R0436).
     mapped_fences = {r.split(":")[0] for refs in _MAP.values() for r in refs
-                     if r.startswith("check_")}
+                     if r.startswith("check_") and not r.split(":")[0].endswith(".py")}
     orphan_fences = sorted(fences - mapped_fences)
     counts: dict[str, int] = {}
     for r in rows:
@@ -680,6 +938,7 @@ def build() -> dict[str, Any]:
         "generated": datetime.now(tz=UTC).isoformat(),
         "law": "L2.0/L2.2 -- a principle with no enforcement is prose; a fence with no principle "
                "is unvoted complexity. Both directions are engineering gaps.",
+        "authority": _master_authority(),
         "counts": counts, "n_principles": len(principles), "n_fences": len(fences),
         "unenforced": [r["principle"] for r in rows if r["status"] == "UNENFORCED"],
         "broken_references": {r["principle"]: r["broken_references"] for r in rows
@@ -687,6 +946,81 @@ def build() -> dict[str, Any]:
         "fences_without_a_principle": orphan_fences,
         "matrix": rows,
     }
+
+
+#: Where a `check_*` FUNCTION inside scripts/max_audit.py is claimed by a law. Named here as a
+#: constant so the failure message and the registry can never drift apart in a rename.
+_OWNERS_REGISTRY = "_FENCE_OWNERS in scripts/build_enforcement_matrix.py"
+
+
+def _orphan_remediation(orphans: list[str]) -> str:
+    """The exact line to add, for the exact fence that failed. R0427.
+
+    THE GATE KNEW THE ANSWER AND PRINTED THE QUESTION. This refusal has blocked pushes for
+    everyone on a shared branch twice in four commits (c8983b1 check_paywalls_registered;
+    cc28734 check_blocked_routes_hunted + check_verified_alternatives_promoted) -- different
+    authors, three commits apart, which makes it a class rather than an accident. Both times the
+    fix was one line in a registry the message never named, while the trap it is mistaken for
+    (adding the SCRIPT PATH to `_MAP`) reads as equivalent in review and does nothing, because
+    there is no script path for a function.
+
+    The remediation is emitted as copy-pasteable source rather than prose. An instruction the
+    reader has to translate is an instruction they can translate wrongly, and the wrong
+    translation here is the exact edit that looks correct and fails.
+    """
+    lines = [
+        f"  HOW TO FIX -- add each fence to {_OWNERS_REGISTRY}, keyed by the law its own",
+        "  docstring already names (map from the docstring, never from a guess):",
+        "",
+    ]
+    lines += [f'      "{name}": "L1.x",   # <- replace L1.x with the law this fence enforces'
+              for name in orphans]
+    lines += [
+        "",
+        "  A max_audit fence is a FUNCTION, so it is wired by FUNCTION NAME. Adding the script",
+        "  path to `_MAP` looks equivalent, reads equivalent in review, and does nothing -- the",
+        "  orphan set is computed over refs starting with `check_`, and no script path is one.",
+        "  If no existing law covers the fence, THAT is the finding: either the fence is unvoted",
+        "  complexity (retire it), or the constitution is missing a principle the fence already",
+        "  assumes (raise it). Both need a decision; neither is silence.",
+    ]
+    return "\n".join(lines)
+
+
+def _broken_ref_hints(refs: list[str]) -> list[str]:
+    """Explain a BROKEN-REF whose artifact is sitting right there on disk (R0427/R0436).
+
+    `_exists` resolves a `check_`-prefixed ref against max_audit's FUNCTION table unless it carries
+    a `.py` suffix. That is now an exact rule rather than a short-circuit, but it is still a rule
+    the author cannot see from the failure, and the surviving failure mode is the SUFFIXLESS one:
+    `check_foo` when the fence is a standalone `scripts/check_foo.py`. The status is correct and
+    the reason is invisible, which sends the author hunting a file that already exists.
+
+    The `.py` case is kept because a fence at the REPO ROOT rather than under `scripts/` still
+    fails, and because a repo that reverts `_exists` must not silently lose the explanation.
+    """
+    hints = []
+    for ref in refs:
+        bare = ref.split(":")[0].split(" ")[0]
+        if not bare.startswith("check_"):
+            continue
+        if bare.endswith(".py"):
+            if (_ROOT / "scripts" / bare).exists():
+                hints.append(
+                    f"{bare} EXISTS at scripts/{bare} -- write it path-first as `scripts/{bare}`. "
+                    f"A ref starting with `check_` and carrying no `.py` suffix is resolved "
+                    f"against max_audit's FUNCTION table, which a standalone script can never "
+                    f"appear in.")
+        elif (_ROOT / "scripts" / f"{bare}.py").exists():
+            # THE AMBIGUITY R0436 NAMES, from the other side: a bare `check_foo` is a request for
+            # the FUNCTION registry, and max_audit has no such function -- but a fence SCRIPT of
+            # that name is on disk. Two registries, one spelling, and the author gets a refusal
+            # about a fence they can see. Name the suffix that asks for the other one.
+            hints.append(
+                f"{bare} is not a function in scripts/max_audit.py, but scripts/{bare}.py EXISTS. "
+                f"A suffixless `check_` ref asks for max_audit's FUNCTION table; add the suffix "
+                f"(`scripts/{bare}.py`) to ask for the standalone fence script instead.")
+    return hints
 
 
 def main() -> int:
@@ -702,13 +1036,20 @@ def main() -> int:
     else:
         print(f"enforcement matrix: {m['counts']} over {m['n_principles']} principles / "
               f"{m['n_fences']} fences")
+        crosswalk = m["authority"]["master_to_code_crosswalk"]
+        print(f"  sealed master: {m['authority']['master_sections']} sections; "
+              f"master-to-code crosswalk={crosswalk['status']} (owed={crosswalk['owed']})")
         for pid in m["unenforced"]:
             print(f"  UNENFORCED {pid}")
         for pid, refs in m["broken_references"].items():
             print(f"  BROKEN-REF {pid} -> {refs}")
+            for hint in _broken_ref_hints(refs):
+                print(f"      {hint}")
         n_orph = len(m["fences_without_a_principle"])
         print(f"  fences with no governing principle: {n_orph}"
-              + (f" (first 5: {m['fences_without_a_principle'][:5]})" if n_orph else ""))
+              + (f": {m['fences_without_a_principle']}" if n_orph else ""))
+        if n_orph:
+            print(_orphan_remediation(m["fences_without_a_principle"]))
         print(f"-> {_OUT.relative_to(_ROOT)}")
     if args.report_only:
         return 0

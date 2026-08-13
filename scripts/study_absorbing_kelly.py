@@ -94,6 +94,7 @@ NOTHING HERE CHANGES A RAIL, A BAR OR A SIZER.
 """
 from __future__ import annotations
 
+import itertools
 import json
 from pathlib import Path
 
@@ -117,39 +118,77 @@ _SIGMA_D = 0.02                     # ~38% annualised, a crypto-sleeve scale
 _BARRIERS = (0.20, 0.50)
 
 
+#: Path-chunk budget in array elements. A 10-year horizon at 8,000 paths is 29M float64s per
+#: array and `cumprod` needs a second one -- ~470MB on a box whose OOM floor is 400MB free, which
+#: is how a study kills the test suite rather than answering its question. Chunking bounds the
+#: footprint at ~64MB whatever the horizon. AT 365 DAYS 8,000x365 = 2.92M FITS IN ONE CHUNK, so
+#: the 1y cells draw exactly the arrays they drew before and their numbers are unchanged.
+_CHUNK_ELEMS = 4_000_000
+
+
 def _argmax_f(*, sharpe_ann: float, kelly_lev: float, barrier: float, absorbing: bool,
-              sharpe_sd: float, seed: int) -> tuple[float, float]:
+              sharpe_sd: float, seed: int, horizon: int = _HORIZON) -> tuple[float, float]:
     """Grid-search f by E[log W_T] under COMMON RANDOM NUMBERS across the whole grid.
 
     One set of shocks is drawn per cell and every f is evaluated on it. That is not only ~60x
     cheaper than re-drawing per grid point, it is the correct estimator for this question: the
     quantity wanted is which f is BEST, and differencing curves computed on independent noise
     buries a real ordering under Monte-Carlo error that common shocks cancel exactly.
+
+    COMMON RANDOM NUMBERS SURVIVE THE CHUNKING, which is the only thing that could have broken
+    here: every f is evaluated on the SAME chunk before the next chunk is drawn, so the shocks are
+    still shared across the grid exactly as they were when the whole horizon fit in one array.
+    Chunking changes the memory footprint, never the estimator.
     """
     rng = np.random.default_rng(seed)
-    # Parameter uncertainty is ONE draw per path, held for the whole horizon: the desk lives with
-    # a single estimate for the life of the bet. Re-drawing each step would average the
-    # uncertainty away and report that estimation error costs nothing.
-    s_true = (rng.normal(sharpe_ann, sharpe_sd, size=(_N_PATHS, 1)) if sharpe_sd > 0
-              else np.full((_N_PATHS, 1), sharpe_ann))
-    mu_d = s_true / np.sqrt(_PPY) * _SIGMA_D
-    z = rng.standard_normal((_N_PATHS, _HORIZON))
-    r = mu_d + _SIGMA_D * z                          # the shared return path, f-independent
+    chunk = max(1, min(_N_PATHS, _CHUNK_ELEMS // max(1, horizon)))
+    acc = np.zeros(len(_F_GRID), dtype="float64")
+    done = 0
+    while done < _N_PATHS:
+        n = min(chunk, _N_PATHS - done)
+        # Parameter uncertainty is ONE draw per path, held for the whole horizon: the desk lives
+        # with a single estimate for the life of the bet. Re-drawing each step would average the
+        # uncertainty away and report that estimation error costs nothing.
+        s_true = (rng.normal(sharpe_ann, sharpe_sd, size=(n, 1)) if sharpe_sd > 0
+                  else np.full((n, 1), sharpe_ann))
+        mu_d = s_true / np.sqrt(_PPY) * _SIGMA_D
+        z = rng.standard_normal((n, horizon))
+        r = mu_d + _SIGMA_D * z                      # the shared return path, f-independent
+        for i, f in enumerate(_F_GRID):
+            steps = np.maximum(1.0 + (f * kelly_lev) * r, 1e-9)
+            if absorbing:
+                # Freeze at the barrier from the first touch. The account keeps the money and
+                # loses the ability to compound it, which is what a venue minimum actually does.
+                #
+                # THIS ARM KEEPS `cumprod` AND IS PROVABLY SAFE, WHICH IS WHY ITS NUMBERS ARE
+                # UNCHANGED BIT FOR BIT. Underflow cannot corrupt it: equity moves continuously
+                # (every step is positive), so a path reaching 0.0 must have passed through
+                # `barrier` first and `.any()` has already caught it -- and a caught path is
+                # scored at `barrier`, never at its underflowed value. gamma_boundary, the only
+                # half of this study that bears on sizing, is built solely from this arm.
+                eq = np.cumprod(steps, axis=1)
+                terminal = np.where((eq <= barrier).any(axis=1), barrier, eq[:, -1])
+                acc[i] += float(np.sum(np.log(terminal)))
+            else:
+                # THE ARM THAT UNDERFLOWED, AND THE HORIZON SWEEP IS WHAT REACHED IT. With no
+                # barrier to absorb it, a path just keeps compounding down: at f=3.0 and S=2.3 the
+                # leverage is 21.7x, so a single -4.6% day floors its step at 1e-9, and enough of
+                # those over 3,650 steps drive the product below the float64 minimum. `log(0.0)`
+                # is then -inf -- not "very bad" but INFINITELY bad -- so ONE underflowing path in
+                # 8,000 set that f's entire score to -inf and deleted it from the argmax for an
+                # arithmetic reason rather than an economic one. Measured at seed 11: 0/64 paths
+                # underflow at 365 and 1,095 days, 7/64 at 3,650. The base study could not have
+                # seen this; 365 steps cannot get there.
+                #
+                # Summing logs is mathematically identical and cannot underflow, and it needs no
+                # cumulative array because nothing here asks WHEN the path crossed anything --
+                # only where it ended.
+                acc[i] += float(np.sum(np.log(steps)))
+        done += n
 
-    best_f, best_g = float(_F_GRID[0]), -np.inf
-    for f in _F_GRID:
-        steps = np.maximum(1.0 + (f * kelly_lev) * r, 1e-9)
-        eq = np.cumprod(steps, axis=1)
-        if absorbing:
-            # Freeze at the barrier from the first touch. The account keeps the money and loses
-            # the ability to compound it, which is what a venue minimum actually does.
-            terminal = np.where((eq <= barrier).any(axis=1), barrier, eq[:, -1])
-        else:
-            terminal = eq[:, -1]
-        g = float(np.mean(np.log(terminal)))
-        if g > best_g:
-            best_f, best_g = float(f), g
-    return best_f, best_g
+    g_all = acc / _N_PATHS
+    j = int(np.argmax(g_all))
+    return float(_F_GRID[j]), float(g_all[j])
 
 
 def full_kelly_leverage(sharpe_ann: float, sigma_d: float = _SIGMA_D) -> float:
@@ -169,16 +208,17 @@ def full_kelly_leverage(sharpe_ann: float, sigma_d: float = _SIGMA_D) -> float:
     return sharpe_ann / (np.sqrt(_PPY) * sigma_d)
 
 
-def study(sharpe_ann: float, n_days: float, barrier: float, *, seed: int = 11) -> dict:
-    """One cell: a true Sharpe, an evidence width, and a barrier."""
+def study(sharpe_ann: float, n_days: float, barrier: float, *, seed: int = 11,
+          horizon: int = _HORIZON) -> dict:
+    """One cell: a true Sharpe, an evidence width, a barrier, and a horizon."""
     kelly_lev = full_kelly_leverage(sharpe_ann)     # f is reported in MULTIPLES of full Kelly
     f_noabs, g_noabs = _argmax_f(sharpe_ann=sharpe_ann, kelly_lev=kelly_lev, barrier=barrier,
-                                 absorbing=False, sharpe_sd=0.0, seed=seed)
+                                 absorbing=False, sharpe_sd=0.0, seed=seed, horizon=horizon)
     f_abs, g_abs = _argmax_f(sharpe_ann=sharpe_ann, kelly_lev=kelly_lev, barrier=barrier,
-                             absorbing=True, sharpe_sd=0.0, seed=seed)
+                             absorbing=True, sharpe_sd=0.0, seed=seed, horizon=horizon)
     se = sharpe_se(sharpe_ann, n_days)
     f_joint, g_joint = _argmax_f(sharpe_ann=sharpe_ann, kelly_lev=kelly_lev, barrier=barrier,
-                                 absorbing=True, sharpe_sd=se, seed=seed)
+                                 absorbing=True, sharpe_sd=se, seed=seed, horizon=horizon)
 
     # CONTROL A -- uncertainty WITHOUT the barrier. This is the decisive one and it was not in
     # the first version of this study, which is why that version reported a confident and wrong
@@ -186,7 +226,7 @@ def study(sharpe_ann: float, n_days: float, barrier: float, *, seed: int = 11) -
     # UNBIASED mu leaves the argmax exactly at full Kelly: symmetric parameter noise, on its own,
     # cannot move the Kelly optimum at all. Measured f* = 1.00, matching theory.
     f_unc_only, _ = _argmax_f(sharpe_ann=sharpe_ann, kelly_lev=kelly_lev, barrier=barrier,
-                              absorbing=False, sharpe_sd=se, seed=seed)
+                              absorbing=False, sharpe_sd=se, seed=seed, horizon=horizon)
 
     gamma_boundary = f_abs / f_noabs if f_noabs > 0 else float("nan")
     gamma_est = shrink_fraction(sharpe_ann, n_days)
@@ -222,6 +262,7 @@ def study(sharpe_ann: float, n_days: float, barrier: float, *, seed: int = 11) -
 
     return {
         "sharpe_ann": sharpe_ann, "n_days": n_days, "barrier_frac_of_book": barrier,
+        "horizon_days": horizon,
         "full_kelly_leverage": round(kelly_lev, 3),
         "positive_control_ok": control_ok,
         "f_star_no_barrier": f_noabs, "f_star_absorbing": f_abs, "f_star_joint": f_joint,
@@ -245,6 +286,48 @@ def study(sharpe_ann: float, n_days: float, barrier: float, *, seed: int = 11) -
     }
 
 
+#: R0431's sweep. 1y is the base study's horizon; 10y is the longest the desk can simulate at this
+#: path count inside its memory budget. The desk's objective is LIFETIME E[log W_T], so if the
+#: joint cell's above-Kelly optimum is the 1y freezing floor rather than something real, f*_joint
+#: must fall toward f*_absorbing as the horizon grows -- the direction theory predicts.
+_HORIZON_SWEEP = (365, 1095, 3650)
+
+#: The sweep runs at the desk's REAL barrier only, and at the SHORT evidence width where the
+#: artifact is largest. NOT SILENTLY CAPPED (L1.53): the 0.50 barrier is a $100-book case the desk
+#: does not trade, and 180d evidence has a narrower se and so a smaller artifact to dissolve --
+#: dropping them costs the sweep nothing it was built to see, and the cost of the full 3x12 grid
+#: is ~14x the base study's runtime for cells that answer a question nobody asked.
+_SWEEP_BARRIER = 0.20
+_SWEEP_N_DAYS = 40.0
+
+
+def horizon_sweep() -> list[dict]:
+    """R0431: is the joint cell's above-Kelly optimum an artifact of the ONE-YEAR horizon?
+
+    THE BASE STUDY PUBLISHED ITS OWN CAVEAT AND COULD NOT TEST IT. Freezing at the barrier floors
+    terminal log-wealth at log(barrier) while the upside stays unbounded, so mu-dispersion pays
+    like a call option and pushes f*_joint ABOVE full Kelly (measured 1.05-3.00). The claim
+    attached to that number is that it is a property of the 1y horizon and not of the desk's
+    objective: over a lifetime, absorption forfeits ALL future compounding rather than settling at
+    0.2x book, so the floor creating the convexity is exactly what a long horizon removes.
+
+    That is a FALSIFIABLE claim and it was carrying no evidence. If f*_joint does NOT fall as the
+    horizon grows, the artifact's stated explanation is wrong and the joint cells need a different
+    one -- which matters more than the confirmation would, because the base study's headline
+    verdict (do not wire a boundary shrink) rests on reading those cells as an artifact.
+    """
+    out = []
+    for horizon in _HORIZON_SWEEP:
+        for sharpe in (0.75, 1.5, 2.3):
+            c = study(sharpe, _SWEEP_N_DAYS, _SWEEP_BARRIER, horizon=horizon)
+            # The quantity the row is about: how far the joint optimum sits above the
+            # absorbing-only one. Theory says this gap closes as the horizon grows.
+            c["joint_over_absorbing"] = (round(c["f_star_joint"] / c["f_star_absorbing"], 4)
+                                         if c["f_star_absorbing"] > 0 else float("nan"))
+            out.append(c)
+    return out
+
+
 def main() -> int:
     # The desk's own real-edge band (0.5-1.5 OOS Sharpe, from its 131,441-backtest sweep) plus the
     # cashcarry-scale case, each at a short and a long evidence width.
@@ -262,12 +345,92 @@ def main() -> int:
     # Kelly, because E[log W] is linear in mu. Reported as a count, not asserted in prose.
     n_unc_neutral = sum(1 for c in cells if abs(c["f_star_uncertainty_only"] - 1.0) <= 0.15)
 
+    # ------------------------------------------------------------------ R0431 HORIZON SWEEP
+    sweep = horizon_sweep()
+    # The row's prediction, tested rather than asserted: the joint optimum's excess over the
+    # absorbing-only optimum should SHRINK as the horizon grows, because the log(barrier) floor
+    # that manufactures the convexity is what a long horizon removes.
+    # THE VERDICT IS BUILT FROM UNCLIPPED CELLS ONLY, and the denominator is published beside it.
+    # f*_joint pins at the 3.00 grid edge in every S=0.75 cell, so its ratio there is a LOWER
+    # BOUND, not a measurement -- averaging it in would let a censored number drive the conclusion
+    # (L1.57). The count of what was dropped is reported rather than silently excluded.
+    by_h = {h: [c for c in sweep
+                if c["horizon_days"] == h and not c["joint_cell_hit_grid_edge"]]
+            for h in _HORIZON_SWEEP}
+    mean_excess = {h: (sum(c["joint_over_absorbing"] for c in cs) / len(cs) if cs else float("nan"))
+                   for h, cs in by_h.items()}
+    # gamma_boundary is the DECISION-RELEVANT half and it is never clipped (f_abs and f_noabs both
+    # sit well inside the grid), so it is averaged over every cell at each horizon.
+    mean_gamma = {h: sum(c["gamma_boundary"] for c in sweep if c["horizon_days"] == h)
+                     / max(1, sum(1 for c in sweep if c["horizon_days"] == h))
+                  for h in _HORIZON_SWEEP}
+    ordered = [mean_excess[h] for h in _HORIZON_SWEEP]
+    n_usable = sum(len(cs) for cs in by_h.values())
+    falls = all(b <= a + 1e-9 for a, b in itertools.pairwise(ordered))
+    n_sweep_control_ok = sum(1 for c in sweep if c["positive_control_ok"])
+    if n_sweep_control_ok < len(sweep):
+        horizon_verdict = "UNUSABLE (positive control failed in the sweep)"
+    elif n_usable < 2 or any(v != v for v in ordered):     # NaN-safe: no unclipped cell somewhere
+        horizon_verdict = "UNMEASURED (too few unclipped cells to read a trend)"
+    elif falls and ordered[-1] < ordered[0]:
+        horizon_verdict = "CONFIRMED-ARTIFACT-OF-HORIZON"
+    elif ordered[-1] < ordered[0]:
+        horizon_verdict = "FALLS-BUT-NOT-MONOTONE"
+    else:
+        horizon_verdict = "REFUTED (the excess RISES with horizon)"
+
     doc = {
         "row": "R0266",
         "question": "does an absorbing-boundary shrink compose with the estimation shrink, "
                     "or double-count against it (and against the ruin cap already in the sizer)?",
         "status": "MEASURED",
         "n_paths": _N_PATHS, "horizon_days": _HORIZON,
+        "r0431_horizon_sweep": {
+            "row": "R0431",
+            "question": "is f*_joint > 1 an artifact of the ONE-YEAR horizon, as the base "
+                        "study's own caveat claims? Over a lifetime absorption forfeits ALL "
+                        "future compounding rather than settling at 0.2x book, so the excess "
+                        "should fall as the horizon grows",
+            "horizons_days": list(_HORIZON_SWEEP),
+            "barrier_frac_of_book": _SWEEP_BARRIER,
+            "evidence_width_days": _SWEEP_N_DAYS,
+            "scope_note": "run at the desk's REAL barrier and the SHORT evidence width only -- "
+                          "the 0.50 barrier is a $100-book case the desk does not trade and 180d "
+                          "evidence has a smaller artifact to dissolve. Dropped deliberately and "
+                          "named here rather than silently capped",
+            "n_cells": len(sweep),
+            "n_cells_usable_for_verdict": n_usable,
+            "n_cells_dropped_grid_edge": len(sweep) - n_usable,
+            "positive_control_passed": f"{n_sweep_control_ok}/{len(sweep)}",
+            "mean_joint_over_absorbing_by_horizon": {
+                str(h): round(v, 4) for h, v in mean_excess.items()},
+            "monotone_decreasing": falls,
+            "verdict": horizon_verdict,
+            "answer": (
+                "REFUTED. The base study's caveat claimed f*_joint > 1 is an artifact of the 1y "
+                "horizon that a lifetime horizon would remove. Measured over 1y/3y/10y the "
+                "excess RISES instead. THE MECHANISM: modelling absorption as FREEZING floors "
+                "terminal log-wealth at log(barrier) FOREVER, while surviving paths compound "
+                "roughly linearly in T -- so the gap the floor insures against GROWS with the "
+                "horizon and the mu-dispersion call option becomes MORE valuable, not less. The "
+                "horizon was never the fix; the ABSORPTION MODEL is. Testing the row's actual "
+                "claim needs the alternative it names in its own parenthesis -- an explicit "
+                "continuation value for the non-absorbed state, so that absorption forfeits the "
+                "compounding the capital would otherwise have earned rather than settling at "
+                "log(0.2). f*_joint remains NOT EVIDENCE either way, exactly as before."),
+            "gamma_boundary_by_horizon": {str(h): round(v, 4) for h, v in mean_gamma.items()},
+            "gamma_boundary_note": (
+                "THE HALF THAT ACTUALLY BEARS ON SIZING, and it moved. gamma_boundary is never "
+                "clipped, and it FALLS with the horizon exactly as theory predicts: at the "
+                "desk's real barrier it is ~0.95 at 1y but ~0.82 at 10y, so the boundary shrink "
+                "over a LIFETIME is roughly 15-20%, about double the '<=10%' the base study "
+                "measured at one year. The base study's headline figure is a 1-YEAR number and "
+                "this desk's objective is lifetime E[log W_T]. The conclusion still holds -- the "
+                "estimation shrink applies 0.058-0.721 in the same cells and continues to "
+                "dominate, and _ruin_cap already binds the same barrier from the constraint side "
+                "-- but the margin is smaller than the artifact previously stated."),
+            "cells": sweep,
+        },
         "barrier_note": "fraction of starting book at which the account can no longer execute "
                         "economic round-trips at venue minimums ($200 viability floor / book)",
         "wired": False,
@@ -296,6 +459,21 @@ def main() -> int:
               f"{c['f_star_no_barrier']:7.2f} {c['f_star_uncertainty_only']:6.2f} "
               f"{c['f_star_absorbing']:6.2f} {c['gamma_boundary']:6.3f} "
               f"{c['gamma_estimation']:6.3f}  {c['verdict']}")
+    print()
+    print(f"=== R0431 HORIZON SWEEP ({len(sweep)} cells, barrier {_SWEEP_BARRIER}, "
+          f"{_SWEEP_N_DAYS:.0f}d evidence) ===")
+    print(f"{'S':>5} {'horiz':>6} {'f*none':>7} {'f*abs':>6} {'f*joint':>8} {'j/abs':>6}")
+    for c in sweep:
+        print(f"{c['sharpe_ann']:5.2f} {c['horizon_days']:6d} {c['f_star_no_barrier']:7.2f} "
+              f"{c['f_star_absorbing']:6.2f} {c['f_star_joint']:8.2f} "
+              f"{c['joint_over_absorbing']:6.2f}")
+    print(f"  mean f*joint/f*abs by horizon (UNCLIPPED cells only, "
+          f"{n_usable}/{len(sweep)} usable): " + ", ".join(
+              f"{h}d={mean_excess[h]:.2f}" for h in _HORIZON_SWEEP))
+    print("  mean gamma_boundary by horizon: " + ", ".join(
+        f"{h}d={mean_gamma[h]:.3f}" for h in _HORIZON_SWEEP)
+        + "   <-- the half that bears on sizing, and it FALLS")
+    print(f"  R0431 VERDICT: {horizon_verdict}")
     print()
     print(f"  POSITIVE CONTROL: {n_control_ok}/{len(cells)} cells recovered full Kelly "
           f"(f*_no_barrier ~ 1.0) with no barrier and no estimation error")

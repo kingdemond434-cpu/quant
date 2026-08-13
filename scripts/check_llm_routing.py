@@ -66,16 +66,29 @@ def _chain_literal(tree: ast.Module) -> list[str] | None:
 def audit(root: Path | None = None) -> dict[str, Any]:
     root = root or _ROOT
     organs: list[dict[str, Any]] = []
+    attempted = unreadable = 0
     for path in sorted((root / "scripts").glob("*.py")):
+        # EVERY DISCARD IS COUNTED (L2.4/L1.60): both skips below used to remove an organ from
+        # `organs`, which is the denominator of routed_fraction AND the scanned= count handed to
+        # fence_exit. An organ that stopped parsing therefore RAISED the routed fraction and
+        # could flip this fence from BACKLOG to OK by breaking.
+        attempted += 1
         try:
             src = path.read_text("utf-8")
         except OSError:
+            unreadable += 1
             continue
         if _ROSTER_FILENAME not in src:
-            continue
+            continue                      # not an LLM organ: scope, not attrition
         try:
             tree = ast.parse(src)
-        except SyntaxError:
+        except SyntaxError as exc:
+            # It references the roster, so it IS an organ; its routing is UNKNOWN, not absent.
+            # Keeping the row is the extractor_invariants shape: the unreadable case stays in
+            # the denominator instead of quietly improving the ratio.
+            organs.append({"script": f"scripts/{path.name}", "status": "UNPARSEABLE",
+                           "declares_chain": False, "chain_len": 0,
+                           "chain_note": f"cannot be parsed, so routing is unverifiable: {exc}"})
             continue
         routed = "libs.ops.llm_route" in src or "llm_route import" in src
         chain = _chain_literal(tree)
@@ -110,6 +123,12 @@ def audit(root: Path | None = None) -> dict[str, Any]:
         "n_organs": len(organs),
         "n_routed": routed_n,
         "n_single_route": len(organs) - routed_n,
+        # The denominator's own provenance (L1.60): how many scripts the walk offered, and how
+        # many it could not read. Without these, "3 organs" and "300 scripts, 297 unreadable"
+        # print the same line.
+        "n_attempted": attempted,
+        "n_unreadable": unreadable,
+        "n_unparseable": sum(1 for o in organs if o["status"] == "UNPARSEABLE"),
         "routed_fraction": round(routed_n / len(organs), 3) if organs else None,
         "unsound_chains": unsound,
         "single_route": [o["script"] for o in organs if o["status"] == "SINGLE-ROUTE"],

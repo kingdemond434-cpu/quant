@@ -296,7 +296,14 @@ def load_unlock_schedule(path: Path | None = None) -> ScheduleLoad:
         if not isinstance(row, dict):
             continue
         symbol = str(row.get("symbol") or row.get("ticker") or "").upper().strip()
-        instant = _as_utc(row.get("instant") or row.get("timestamp") or row.get("date"))
+        # `ts` (epoch seconds) is what the collector actually writes, and it MUST be tried before
+        # `date`.  `date` is a bare "2016-11-11" -- naive, so _as_utc rejects it by design rather
+        # than guessing a zone.  Omitting `ts` therefore dropped every row in the file while the
+        # one field that parses sat unread: 24,201/24,201 rows lost, a total parse loss that looks
+        # exactly like a healthy quiet screen from outside.  Order is load-bearing, not cosmetic.
+        instant = _as_utc(
+            row.get("instant") or row.get("timestamp") or row.get("ts") or row.get("date")
+        )
         raw_tokens = row.get("tokens", row.get("amount"))
         tokens = float(raw_tokens) if isinstance(raw_tokens, int | float) else float("nan")
         if not symbol or instant is None:
@@ -392,7 +399,18 @@ def load_circulating_supply(path: Path | None = None) -> SupplyLoad:
             n_bad += 1
             continue
         symbol = str(row.get("symbol") or "").upper().strip()
-        when = _as_utc(row.get("observed_at") or row.get("timestamp") or row.get("date"))
+        # `observed_utc` is what collect_circulating_supply.py writes, and it is already a
+        # fully aware ISO stamp.  This is the SAME defect as the schedule loader's missing `ts`
+        # one screen-half away: the loader enumerated field names the collector does not use, so
+        # 78/78 observations dropped.  This chain stays SEPARATE from the schedule chain on
+        # purpose -- an observation instant and a release instant are different facts, and a
+        # shared chain would let a supply row's `date` be read as a vesting cliff.
+        when = _as_utc(
+            row.get("observed_at")
+            or row.get("observed_utc")
+            or row.get("timestamp")
+            or row.get("date")
+        )
         raw = row.get("circulating", row.get("circulating_supply"))
         value = float(raw) if isinstance(raw, int | float) else float("nan")
         if not symbol or when is None or not math.isfinite(value) or value <= 0.0:
@@ -624,9 +642,13 @@ def run_screen(
     panel: dict[str, tuple[tuple[datetime, ...], np.ndarray]] = {} if bars is None else bars
     if not panel:
         missing.append(
-            "price panel: no per-symbol daily bars supplied for the unlocking universe.  The "
-            "on-disk price lake (`data/binance_vision/`) covers 25 large-cap majors; an unlock "
-            "screen needs bars for the symbols that actually have vesting cliffs."
+            "price panel: no per-symbol daily bars supplied for the unlocking universe.  "
+            "`data/binance_vision/` NO LONGER EXISTS (the path this message named until "
+            "2026-08-12).  The lake that does exist, `data/bars/`, holds 45 symbols at 15min "
+            "granularity only, and covers 18 of the 165 symbols in `data/unlock_events.json` -- "
+            "so supplying this panel is a REAL build (a daily resample plus a universe decision), "
+            "not a wiring oversight.  An unlock screen needs daily bars for the symbols that "
+            "actually have vesting cliffs."
         )
 
     if missing:

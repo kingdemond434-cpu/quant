@@ -855,3 +855,44 @@ flat book.
 never share a source -- same family as L1.51's `_capital()`, where a ceiling and its own numerator
 shared one. And an alarm must name the cause its data supports, not the one its shape suggests:
 check the diagnosis is *possible* in the current state before asserting it.
+
+## Architecture decision -- 2026-08-13 (MEASURED NULL: commercial agent-memory products lose to BM25; do not adopt)
+
+Carded so no future session re-opens it (R0458; research-memory row
+`rm-20260813T083328-e3d8ea` [method/rejected]). **Do not adopt Mem0 / Letta / Zep / Cognee /
+MIRIX-class memory products.** This is not a taste call -- every arm the published benchmarks
+favour is the arm this desk already runs.
+
+**The numbers.** MemoryAgentBench (arXiv 2507.05257, ICLR 2026 -- peer-reviewed, MIT code, public
+data) accurate-retrieval average: Mem0 **32.6%**, Cognee 28.3%, Zep 37.5%, MIRIX 47.5%, against
+plain **BM25 60.5%**. LongMemEval-V2 (2605.12493): memory that reads and writes *files*
+(AgentRunbook-C) **72.5%** vs embedding-RAG **48.5%** over histories to 115M tokens. 2605.18854
+(480 evals, DiscoveryBench): across 8 condensation strategies *no condenser significantly alters
+hypothesis quality*, while LLM-summary condensers **cost +24-94% tokens**.
+
+**Why no desk change follows, and that is the finding rather than an evasion.** The desk's
+retrieval IS BM25 (`libs/research/vault_index.py` behind `scripts/vault_search.py`, the same index
+the `vault_search` MCP tool serves, so an organ and a session cannot disagree about what the vault
+says). The desk's memory IS files (Obsidian vault + `MEMORY.md` + running notes). Compaction is
+therefore a **cost** knob, not a quality one: prefer structural masking of stale tool outputs over
+LLM re-summarization, which the desk does not do and must not start.
+
+**The binding constraint is selective forgetting, and it is why supersession ledgering is
+load-bearing rather than bureaucracy.** Multi-hop fact consolidation measured **<=28% for every
+method tested** -- no machine can be trusted to propagate a supersession through derived facts. So
+a write that invalidates a prior fact must NAME the row it supersedes; an agent reading both rows
+cannot be assumed to resolve the conflict itself. The desk already encodes this
+(`findings_ledger.superseded_by`, e.g. F0004->F0020 and F0007->F0008; `track_findings.py:89`
+documents supersession as the legal exit that stops a refuted row rotting) -- the benchmark says
+keep paying for it.
+
+**The one half NOT satisfied, split rather than buried** (R0595): *after any organ model swap,
+re-measure the organ's completion/decay curve.* `scripts/model_upgrade.py` gauntlets a candidate on
+single-shot CAPABILITY (live / format / honesty / capacity) and nothing measures reliability over
+runs -- grep for `completion_rate`, `decay_curve`, `organ_completion` across `scripts/` and `libs/`
+returns **zero producers**. The gap points the dangerous way: capability gains buy only small
+reliability gains, and up to **19%** of failures are meltdown-by-ambition, where a *more* capable
+model attempts more and finishes less. A seat can pass all four probes, be adopted correctly, and
+quietly lower the finished-run rate the panel actually consumes. The denominator already exists --
+`build_audit_coverage.record_attempts` (95289be5) counts every seat call whether it answers or
+dies.

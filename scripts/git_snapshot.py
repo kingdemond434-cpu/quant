@@ -12,10 +12,34 @@ from __future__ import annotations
 
 import subprocess
 from datetime import UTC, datetime
+from pathlib import Path
 
 
 def _git(*args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(["git", *args], capture_output=True, text=True, check=False)
+
+
+def _drop_accidental_gitlinks() -> list[str]:
+    """Unstage mode-160000 entries in a repo that has no submodules.
+
+    `git add -A` records any directory containing a `.git` entry as a GITLINK, and this desk
+    creates git worktrees under .claude/worktrees/ routinely. A gitlink's recorded sha moves
+    whenever that worktree commits, so the parent tree reads ` M <path>` permanently and cannot
+    be cleaned -- committing it only re-points it. That dirt is what wedged the inbound deploy
+    path for 8 days (0 deploys in 1078 ticks, measured 2026-08-12).
+
+    .gitignore covers the path this actually happened on. This covers the CLASS: a worktree or a
+    stray clone made anywhere else. If real submodules are ever adopted, .gitmodules exists and
+    this stands down rather than fighting them.
+    """
+    if Path(".gitmodules").exists():
+        return []
+    staged = _git("ls-files", "-s")
+    links = [ln.split("\t", 1)[1] for ln in staged.stdout.splitlines()
+             if ln.startswith("160000 ") and "\t" in ln]
+    if links:
+        _git("rm", "--cached", "-r", "--quiet", "--", *links)
+    return links
 
 
 def main() -> None:
@@ -23,6 +47,8 @@ def main() -> None:
         print("git-snapshot: not a git repo -- skipped (run git init once)")
         return
     _git("add", "-A")
+    for path in _drop_accidental_gitlinks():
+        print(f"git-snapshot: refused to track gitlink {path} (worktree/clone, not a submodule)")
     if not _git("status", "--porcelain").stdout.strip():
         print("git-snapshot: no changes since last snapshot")
         return

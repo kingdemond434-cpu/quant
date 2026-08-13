@@ -1,6 +1,5 @@
 # Panel rulings -- cross-run finding memory (the panel's graveyard)
-Updated 2026-08-04. CHECK THIS BEFORE triaging new panel output: a finding matching a prior REJECT with no NEW evidence is already ruled -- skip it, log 'already ruled', do not re-litigate. Supersede a ruling only with new code/market evidence.
-Updated 2026-08-06. CHECK THIS BEFORE triaging new panel output: a finding matching a prior REJECT with no NEW evidence is already ruled -- skip it, log 'already ruled', do not re-litigate. Supersede a ruling only with new code/market evidence.
+Updated 2026-08-12. CHECK THIS BEFORE triaging new panel output: a finding matching a prior REJECT with no NEW evidence is already ruled -- skip it, log 'already ruled', do not re-litigate. Supersede a ruling only with new code/market evidence.
 
 ## REJECTED (7)
 - [nvidia (nemotron-3-ultra)/audit] proposed a one-time Tier-3 exception (bounded auto-reset flag read by the dead-man at startup) to avoid indefinite flat-book if paging stays broken and the principal is unreachable -- HARD REJECT per protocol: any change to scripts/run_deadman_switch.py requires explicit principal sign-off, full stop -- an autonomously-authored auto-reset mechanism is exactly the kind of self-authorized rail-loosening the Tier-3 rule exists to prevent, regardless of how bounded the proposal sounds. Noted for principal awareness only, not queued

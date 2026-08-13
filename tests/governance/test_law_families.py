@@ -10,6 +10,20 @@ from scripts.check_law_families import FAMILIES, build_report
 from scripts.check_timidity_language import _prompt_surfaces, audit_prompts
 
 
+def _git_repo(root: Path, files: dict[str, str]) -> None:
+    """A throwaway repo with one commit. NEVER mutate the shared checkout to test a git
+    behaviour -- sibling sessions are writing to it right now, which is the very defect R0402
+    is about."""
+    def _g(*a: str) -> None:
+        subprocess.run(["git", *a], cwd=root, capture_output=True, text=True, check=True)
+    _g("init", "-q")
+    _g("config", "user.email", "t@t"), _g("config", "user.name", "t")
+    for rel, body in files.items():
+        (root / rel).write_text(body, "utf-8")
+    _g("add", "-A")
+    _g("commit", "-qm", "base")
+
+
 @pytest.fixture(autouse=True, scope="module")
 def _matrix_built():
     """These tests read data/enforcement_matrix.json, which is GENERATED and gitignored.
@@ -115,9 +129,52 @@ def test_law_and_state_fences_are_separated():
 
 
 def test_laws_only_gate_passes_in_a_fresh_checkout():
+    """R0402: this test asserted a property of a FRESH CHECKOUT and evaluated it against the
+    shared working tree. On a box where sibling sessions build continuously that is a different
+    artifact, and on 2026-08-05 it was a materially different one -- rc=2 on nine scripts whose
+    manifest lines existed only in another session's uncommitted file. The gate now judges HEAD,
+    so the name and the assertion finally describe the same thing; `subject` is asserted because
+    a verdict that does not name its subject is what let the two drift apart unnoticed."""
     from scripts.run_law_gate import full_gate
     rep = full_gate(laws_only=True)
     assert rep["ok"] is True, rep["failures"]
+    assert "HEAD" in rep["subject"], rep["subject"]
+
+
+def test_a_DIRTY_tree_is_judged_at_HEAD_not_as_it_sits(tmp_path: Path) -> None:
+    """The mechanism, on a throwaway repo so the shared checkout is never mutated."""
+    from scripts.run_law_gate import _at_head
+    _git_repo(tmp_path, {"f.txt": "committed"})
+    (tmp_path / "f.txt").write_text("UNCOMMITTED SIBLING WORK", "utf-8")
+    where, subject, why = _at_head(tmp_path)
+    try:
+        assert where != tmp_path and why == []
+        assert (where / "f.txt").read_text("utf-8") == "committed"
+        assert "HEAD" in subject and "1 file(s) dirty" in subject
+    finally:
+        subprocess.run(["git", "worktree", "remove", "--force", str(where)],
+                       cwd=tmp_path, capture_output=True, text=True)
+
+
+def test_a_CLEAN_tree_is_judged_in_place_and_pays_for_no_checkout(tmp_path: Path) -> None:
+    """A clean tree already IS HEAD, so CI and a fresh clone pay nothing for this: the checkout
+    is bought only when the verdict would otherwise be about the wrong artifact."""
+    from scripts.run_law_gate import _at_head
+    _git_repo(tmp_path, {"f.txt": "committed"})
+    where, subject, why = _at_head(tmp_path)
+    assert where == tmp_path and why == [] and "tree clean" in subject
+
+
+def test_an_UNAVAILABLE_head_checkout_is_REPORTED_never_silently_ignored(tmp_path: Path) -> None:
+    """Falling back to the dirty tree in silence would re-create the defect while looking fixed:
+    the reader sees PASS and cannot tell which artifact earned it (L1.28a)."""
+    from scripts.run_law_gate import _at_head
+    subprocess.run(["git", "init", "-q", str(tmp_path)], capture_output=True, text=True)
+    (tmp_path / "f.txt").write_text("never committed -- HEAD does not resolve", "utf-8")
+    where, subject, why = _at_head(tmp_path)
+    assert where == tmp_path
+    assert why and "head-checkout-unavailable" in why[0]
+    assert "UNAVAILABLE" in subject and "UNCOMMITTED" in subject
 
 
 def test_fast_gate_guards_core_and_doctrine():

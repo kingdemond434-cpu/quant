@@ -22,7 +22,8 @@ from __future__ import annotations
 
 import json
 import subprocess
-from datetime import UTC, datetime
+from collections.abc import Iterable
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -110,7 +111,16 @@ def refresh(m: dict) -> dict:
         seen.add(rel)
         rec = files.setdefault(rel, {"last_audited": None, "audit_count": 0})
         try:
-            rec["loc"] = sum(1 for _ in p.open("r", encoding="utf-8", errors="ignore"))
+            # CLOSE THE HANDLE (2026-08-12). `sum(1 for _ in p.open(...))` never closed the file:
+            # CPython's refcount reaps it, but it emits a ResourceWarning first, and this repo
+            # sets filterwarnings = error. So EVERY test that transitively reached refresh() --
+            # i.e. every test of record_blank, tune_budget or audit_payload, and therefore every
+            # test of the panel's own failure path, which calls record_blank per dead seat --
+            # failed on the warning rather than on the behaviour. The R0343 total-failure fixture
+            # was the first thing to need that path and the first thing to hit this. A leak that
+            # makes a code path untestable costs more than the descriptors.
+            with p.open("r", encoding="utf-8", errors="ignore") as fh:
+                rec["loc"] = sum(1 for _ in fh)
         except Exception:
             rec["loc"] = 0
         rec["review_class"] = _review_class(rel)
@@ -156,26 +166,197 @@ def current_budget(m: dict) -> int:
 
 
 def tune_budget(blanked: int, total: int) -> int:
-    """Shrink hard on any blank, grow gently on a clean run. Called after every panel."""
+    """Shrink hard on any blank, grow gently on a clean run. Called after every panel.
+
+    THE WELD THIS NOW REPORTS (measured 2026-08-12). The budget sat at exactly CODE_BUDGET_MIN
+    while the last eight recorded firings carried 2-4 blanks of 4 -- `max(40_000, int(40_000 *
+    0.6))` is 40_000, so the shrink arm moved NOTHING, eight times, and the history rendered
+    `from 40000 to 40000` with no hint that a bound had been hit. A control that fires and
+    changes nothing is a welded gate (L1.43), and this one is the mechanistic reason the same
+    free seats blank forever: they fail on a 40k payload, the adaptive response that exists to
+    shrink it cannot, and the tally records the blanks while the budget records success.
+
+    NOTHING IS LOOSENED HERE. The floor is not lowered and neither arm is re-rated -- lowering a
+    floor to clear the violation it caught is the failure this desk has paid for repeatedly. The
+    fix is that "the budget adapted" and "the budget COULD NOT adapt" stop being byte-identical
+    in the record, which is the only way anyone can argue about whether the floor is right.
+    Whether these seats need a smaller tier or the floor needs re-deriving is a payload-design
+    decision with an owner; this makes it visible, it does not take it.
+    """
     m = refresh(load())
     cur = current_budget(m)
     if blanked:
         new = max(CODE_BUDGET_MIN, int(cur * 0.6))   # a blank is a real failure: cut deep
+        bound = "floor" if new >= cur else None
     else:
         new = min(CODE_BUDGET_CHARS, int(cur * 1.15))  # earn size back slowly
+        bound = "ceiling" if new <= cur else None
     m["code_budget_chars"] = new
     m.setdefault("budget_history", []).append(
-        {"blanked": blanked, "of": total, "from": cur, "to": new})
+        {"blanked": blanked, "of": total, "from": cur, "to": new,
+         # Present ONLY when the arm was inert, so a reader scanning the history sees the weld
+         # rather than having to re-derive it from two equal numbers.
+         **({"welded_at": bound, "wanted": int(cur * 0.6) if blanked else int(cur * 1.15)}
+            if bound else {})})
     m["budget_history"] = m["budget_history"][-30:]
     save(m)
     return new
 
 
-def record_blank(model: str) -> None:
-    """Per-seat blank tally -- turns a flaky seat into an evidence-backed swap decision."""
+#: Timestamped blanks kept beside the lifetime tally. Bounded so the ledger cannot grow without
+#: limit; 400 covers months of panel runs at this desk's cadence and the window queries only ever
+#: look back days.
+_BLANK_EVENT_CAP = 400
+
+
+def recent_blanks(m: dict[str, object], *, window_days: int) -> dict[str, int] | None:
+    """Blanks per seat inside `window_days`, or ``None`` when recency cannot be measured.
+
+    ``None`` IS THE LOAD-BEARING RETURN AND MUST NOT COLLAPSE INTO AN EMPTY DICT. Until the
+    event log has been written to, a seat with a lifetime tally has NO recency evidence at all,
+    and `{}` would read as "zero recent blanks -- the seat is fine", quietly clearing a fence on
+    a box where nothing has been measured. That is absence resolving to a clean verdict, this
+    desk's most-repeated defect class. A caller that gets ``None`` must say UNMEASURED.
+    """
+    events = m.get("seat_blank_events")
+    if not isinstance(events, list) or not events:
+        return None
+    cutoff = datetime.now(tz=UTC) - timedelta(days=window_days)
+    out: dict[str, int] = {}
+    for e in events:
+        if not isinstance(e, dict):
+            continue  # attrition-ok: a malformed row carries no timestamp to place in a window
+        try:
+            when = datetime.fromisoformat(str(e.get("ts", "")))
+        except ValueError:
+            continue  # attrition-ok: same -- an unparseable stamp is not evidence of recency
+        if when >= cutoff:
+            model = str(e.get("model", "?"))
+            out[model] = out.get(model, 0) + 1
+    return out
+
+
+#: Attempts are kept as a per-seat, per-DAY tally rather than one event per call: attempts
+#: outnumber blanks by ~2 orders of magnitude, and a capped event list would evict the oldest
+#: attempts first -- shrinking exactly the denominator this exists to protect. Days retained; the
+#: window queries only ever look back `SEAT_BLANK_WINDOW_DAYS`.
+_ATTEMPT_DAY_CAP = 30
+
+
+def record_blanks(models: Iterable[str]) -> None:
+    """Every blank from ONE panel run, in ONE read-modify-write. NEVER call this per-thread.
+
+    WHAT THE TALLY IS FOR, AND WHY THE EVENTS SIT BESIDE IT. `seat_blanks` is a LIFETIME counter
+    that nothing anywhere resets or decays, so a seat that blanked three times months ago and has
+    answered every call since is permanently indistinguishable from one dying right now. The fence
+    keyed on it (`seat-chronic-*`) therefore fired forever once a seat crossed the threshold, and
+    its recommendation is to SWAP -- which costs a live seat off an under-driven roster. The tally
+    is KEPT and keeps incrementing (`check_free_roster` and `model_upgrade` read it, and it is
+    honest as history); the timestamped events are what let a reader ask "is this seat failing
+    NOW" instead of only "has it ever failed".
+
+    THE RACE THIS CLOSES, AND IT HAD ALREADY EATEN 87% OF THE TALLY. `record_blank` was called
+    from inside `run_external_panel._one`, which runs under a ThreadPoolExecutor(max_workers=5),
+    and every call does load() -> mutate -> save() on one shared JSON. Concurrent seats therefore
+    read the same state and overwrite each other, and with 3-4 of 4 seats blanking together the
+    losses are not occasional -- they are the common case.
+
+    MEASURED 2026-08-13, and the two counters settle it because they shipped in the SAME commit
+    (14131c33, 2026-07-20) and have watched the SAME 28 runs: `tune_budget` runs ONCE, AFTER the
+    fan-out, and recorded 70 blanks of 148 seat-calls. `seat_blanks`, incremented inside the
+    threads, sums to 9. Same events, same window, 87% lost. Age cannot explain it; only the race
+    can. The old path also double-counted the retry branch (record_blank, then raise, then
+    record_blank again in the handler), so the surviving 9 were not even a clean sample.
+
+    The blanked set is derivable SERIALLY from the results the executor returns -- a result
+    without a "response" key is a lost seat -- so nothing is gained by writing from the threads.
+    """
     m = refresh(load())
-    m.setdefault("seat_blanks", {})[model] = int(m.get("seat_blanks", {}).get(model, 0)) + 1
+    tally = m.setdefault("seat_blanks", {})
+    events = m.setdefault("seat_blank_events", [])
+    now = datetime.now(tz=UTC).isoformat()
+    for model in models:
+        tally[model] = int(tally.get(model, 0)) + 1
+        events.append({"model": model, "ts": now})
+    m["seat_blank_events"] = events[-_BLANK_EVENT_CAP:]
     save(m)
+
+
+def record_blank(model: str) -> None:
+    """One blank. Kept as the single-seat spelling of `record_blanks`."""
+    record_blanks([model])
+
+
+def record_attempts(models: Iterable[str]) -> None:
+    """Every seat asked in ONE panel run, in ONE read-modify-write. THE DENOMINATOR (R0570).
+
+    "Blanked 4x" is not a measurement. Four failures out of four calls is a dead seat; four out of
+    four hundred is a 1% flake on a free tier, and until now nothing counted the calls, so the two
+    were byte-identical to every reader -- L1.57's missing denominator, one subsystem over from
+    where it was written.
+
+    IT ALSO UN-WELDS THE FENCE, which is the half that bites today. `seat-chronic-*-unmeasured`
+    can currently only clear when a seat BLANKS AGAIN: with no events, recency is unmeasured and
+    the defect fires forever, so the fence is lit precisely while the seats are healthy and goes
+    quiet only on new failure. That is the inverted-gate class R0492 named, reappearing one level
+    up in the instrument built to fix it. An attempt is recorded whether the seat succeeds or
+    fails, so health becomes measurable from success -- the only direction that can honestly
+    clear it.
+
+    ATTEMPTS ARE THEIR OWN EPOCH, which is why no separate "instrumented since" stamp is needed:
+    an attempt recorded at T proves the instrumentation was live at T, so attempts inside the
+    window with no blank events inside the window means zero blanks, MEASURED -- not unknown.
+    """
+    m = refresh(load())
+    today = datetime.now(tz=UTC).date()
+    att = m.setdefault("seat_attempts", {})
+    if not isinstance(att, dict):
+        att = m["seat_attempts"] = {}
+    for model in models:
+        per = att.setdefault(model, {})
+        per[today.isoformat()] = int(per.get(today.isoformat(), 0)) + 1
+    cutoff = (today - timedelta(days=_ATTEMPT_DAY_CAP)).isoformat()
+    for mdl in list(att):
+        kept = {d: c for d, c in (att[mdl] or {}).items() if d >= cutoff}
+        if kept:
+            att[mdl] = kept
+        else:
+            del att[mdl]
+    save(m)
+
+
+def recent_attempts(m: dict[str, object], *, window_days: int) -> dict[str, int] | None:
+    """Calls per seat inside `window_days`, or ``None`` when nothing has been recorded.
+
+    ``None`` rather than ``{}`` for the same reason `recent_blanks` returns it: a box that has
+    never counted an attempt has no rate evidence, and zero-attempts would read as a 0/0 rate that
+    a caller could round to "fine".
+    """
+    att = m.get("seat_attempts")
+    if not isinstance(att, dict) or not att:
+        return None
+    cutoff = (datetime.now(tz=UTC).date() - timedelta(days=window_days)).isoformat()
+    out: dict[str, int] = {}
+    for model, days in att.items():
+        if not isinstance(days, dict):
+            continue  # attrition-ok: a malformed seat block carries no dated counts to window
+        n = sum(int(c) for d, c in days.items() if str(d) >= cutoff)
+        if n:
+            out[str(model)] = n
+    return out or None
+
+
+def blank_rate(m: dict[str, object], *, window_days: int) -> dict[str, tuple[int, int]] | None:
+    """{seat: (blanks, attempts)} inside the window, or ``None`` when attempts are unrecorded.
+
+    Keyed on ATTEMPTS, never on blanks: a seat that answered every call in the window has no blank
+    events at all, and that is the healthy case the caller most needs to be able to see.
+    """
+    attempts = recent_attempts(m, window_days=window_days)
+    if attempts is None:
+        return None
+    blanks = recent_blanks(m, window_days=window_days) or {}
+    return {seat: (blanks.get(seat, 0), n) for seat, n in attempts.items()}
 
 
 def audit_payload() -> tuple[str, list[str]]:

@@ -22,6 +22,7 @@ Rules of the sweep:
 """
 from __future__ import annotations
 
+import collections
 import contextlib
 import importlib.util
 import json
@@ -33,14 +34,31 @@ import time
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:          # fences import libs; a blind checker is a defect
     sys.path.insert(0, str(ROOT))
+
+from libs.research import path_refs  # noqa: E402  (needs the sys.path line above)
+
+if TYPE_CHECKING:                      # the libs import below needs the sys.path line above
+    from libs.ops.cycle_evidence import CycleEvidence
 LOGS = ROOT / "data/cro_ai_logs"
 REPORT = ROOT / "data/max_audit_report.json"
+#: PER-BOX acks: the defect's truth genuinely differs by machine, so its disposition should too.
+#: Untracked by design (`data/*` is gitignored) -- a RUNTIME defect acked here is acked exactly
+#: where it fires and nowhere else, which is correct.
 ACKS = ROOT / "data/max_audit_acks.json"
+#: TRACKED acks, and the distinction is R0393. A REPO-scope defect is a property of a COMMITTED
+#: file, so it is identically true in every checkout -- but its ack lived only in the untracked
+#: file, so acking it here left it firing on the VPS, where the doctrine's own escalation rule
+#: ("defects persisting >48h un-acked ESCALATE to the principal page") pages the principal for a
+#: defect that HAS a full reasoned disposition sitting in another checkout. That is the exact
+#: failure the ack mechanism exists to prevent, and it fires hardest on the most carefully
+#: dispositioned items. The scope needed to route this was already computed per defect
+#: (`scope_of`) and simply never applied to ack STORAGE.
+ACKS_REPO = ROOT / "data/max_audit_acks_repo.json"
 PA = ROOT / "data/PRINCIPAL_ACTION.md"
 
 ESCALATE_H = 48.0
@@ -217,6 +235,34 @@ def _tracked_set() -> set[str]:
 _TRACKED: set[str] | None = None
 
 
+def _committed_only(rels: list[str]) -> list[str]:
+    """Keep only paths git TRACKS -- governance applies to what is COMMITTED (2026-08-12).
+
+    check_artifact_governance already refuses to judge GITIGNORED files, for a reason it wrote
+    down: a gate whose verdict depends on which machine ran it cannot be trusted in either
+    direction. Untracked-but-not-ignored files are the same class and were never filtered, which
+    matters because this repo is a SHARED, CONTENDED checkout -- sibling sessions and organs hold
+    work-in-progress in the tree constantly. Measured while installing the birth-property fence:
+    a sibling's uncommitted `scripts/check_denominator_attrition.py` turned both this check and
+    the CI test that asserts on it RED, in a session that had never touched that file. A gate any
+    other worker's scratch can trip is a gate that gets bypassed, and one bypassed on a false
+    alarm is bypassed on the true one too.
+
+    NOTHING REAL IS HIDDEN. A file that is not tracked is not in the repository: it cannot be an
+    orphan in it, and it cannot be an ungoverned artifact of it. The instant it is committed --
+    the moment the property actually has to hold -- it is in scope again, which is precisely the
+    boundary this filter exists to sharpen.
+
+    AN EMPTY ANSWER IS NOT AN ANSWER (L1.28a). If git cannot be reached (no repo, tmp_path test
+    tree, subprocess failure) `_tracked_set` returns an empty set, and filtering against it would
+    remove EVERY candidate and render a clean verdict over nothing -- the vacuous pass L1.57
+    exists to refuse. So the filter applies only when git actually answered; otherwise the caller
+    judges the filesystem exactly as before.
+    """
+    tracked = _tracked_set()
+    return [r for r in rels if r in tracked] if tracked else rels
+
+
 def _split_evidence(paths: list[str]) -> tuple[list[str], list[str]]:
     """(tracked, untracked) repo-relative evidence paths, deduped and ordered."""
     global _TRACKED
@@ -348,7 +394,15 @@ def _fenced(fn, defects, label):
 # having produced when its log is substantial OR a declared artifact advanced. Keep in sync with
 # libs/ops/organ_catchup.py ORGANS.
 ORGAN_ARTIFACTS: dict[str, tuple[str, ...]] = {
-    "brain-cycle": ("data/decision_ledger.json", "docs/research/cadence_duties.md"),
+    # EXCLUSIVITY, and this drifted from its own sibling for weeks. libs/ops/organ_catchup.py
+    # dropped BOTH of these for the brain on 2026-07-26 with the reason spelled out -- the ledger
+    # is written by every commit and several organs, cadence_duties by run_cadence -- so each made
+    # a DEAD cycle read as produced. This table kept them, and because the reported age is
+    # min(log_age, artifact_age) the shared artifact made the number OPTIMISTIC: on 2026-08-12 the
+    # brain had been dead 17.9h through four consecutive failures and this reported 13h. A
+    # liveness signal a dozen other writers can emit is not evidence THIS organ ran. No exclusive
+    # artifact exists, so fall back to log size: weaker, but honest (L1.28a).
+    "brain-cycle": (),
     "dataaxis-dig": ("docs/research/data_axis_watchlist.md", "data/data_universe_map.json"),
     "prospector-dig": ("docs/research/prospector_watchlist.md",
                        "docs/research/prospector_coverage.md"),
@@ -361,13 +415,36 @@ ORGAN_ARTIFACTS: dict[str, tuple[str, ...]] = {
     "frontier-jp": ("docs/research/prospector_coverage.md",),
     "frontier-ar": ("docs/research/prospector_coverage.md",),
     "frontier-br": ("docs/research/prospector_coverage.md",),
+    # Its shell log is ~always a stub (auth deferrals) or reaped; the deliverable is the
+    # committed log doc -- run 2 (8278e31) wrote 234 lines there while every .log stayed
+    # under 200b, and this check read that as "organ has never fired" (2026-08-12).
+    "blindrediscovery": ("docs/research/blind_rediscovery_log.md",),
 }
 
 
+def _exclusive_artifacts(organ: str) -> tuple[str, ...]:
+    """Declared artifacts only THIS organ writes.
+
+    R0418. The brain-cycle note above states the principle -- "a liveness signal a dozen other
+    writers can emit is not evidence THIS organ ran" -- and it was applied by hand, to one organ,
+    once. Eight organs still shared `docs/research/prospector_coverage.md` (measured 2026-08-13:
+    prospector-dig + frontier-en/cn/ru/kr/jp/ar/br), so any ONE frontier seat writing it made the
+    other seven read as having produced. That is the same false GREEN the brain fix removed,
+    multiplied by eight and left in place because exclusivity was a comment rather than a rule.
+
+    Computed from the table instead of curated, so a future organ that declares a shared artifact
+    cannot silently re-open the hole -- the drift this docstring's own sibling suffered for weeks.
+    An organ left with no exclusive artifact falls back to log size: weaker, but honest (L1.28a).
+    """
+    shared = {a for a, n in collections.Counter(
+        a for arts in ORGAN_ARTIFACTS.values() for a in arts).items() if n > 1}
+    return tuple(a for a in ORGAN_ARTIFACTS.get(organ, ()) if a not in shared)
+
+
 def _artifact_age_h(organ: str) -> float:
-    """Hours since this organ's freshest declared artifact advanced (inf if none)."""
+    """Hours since this organ's freshest EXCLUSIVE declared artifact advanced (inf if none)."""
     best = 0.0
-    for rel in ORGAN_ARTIFACTS.get(organ, ()):
+    for rel in _exclusive_artifacts(organ):
         try:
             best = max(best, (ROOT / rel).stat().st_mtime)
         except OSError:
@@ -393,9 +470,24 @@ def check_organs(defects) -> None:
             continue                      # artifacts prove production; stub log is expected
         age_h = min((NOW - max(p.stat().st_mtime for p in ok)) / 3600, art_h)
         if age_h > max_h:
+            # IN-FLIGHT IS NOT SILENTLY DEGRADED. `_producer_running` already encodes this for
+            # products ("a monitor that cries wolf on healthy work is how a desk learns to ignore
+            # its own pager") and this check never consulted it: on 2026-08-12 it paged
+            # `organ-stale-brain-cycle ... silently degraded` at 14:54 about a cycle that was
+            # running at that moment and exited 0 at 15:26. A claude organ's log stays tiny until
+            # exit, so a healthy long run looks exactly like a dead one to a size-and-mtime rule.
+            #
+            # BOUNDED, because forgiving an in-flight run forever would hide a HUNG organ -- the
+            # failure this check exists to catch. Past 2x the cadence window a still-running
+            # producer IS the defect, and the message says which of the two it is.
+            running = _organ_running(organ)
+            if running and age_h <= 2 * max_h:
+                continue
+            hung = (" -- and its producer is STILL RUNNING, so this is a HUNG run, not a missed "
+                    "one") if running else ""
             defects.append((f"organ-stale-{organ}",
                             f"{organ}: last SUCCESSFUL run {age_h:.0f}h ago "
-                            f"(cadence expects <= {max_h:.0f}h) -- silently degraded"))
+                            f"(cadence expects <= {max_h:.0f}h) -- silently degraded{hung}"))
 
 
 # A real death SAYS so. A ~58b log is the normal signature of a SUCCESSFUL claude organ (it writes
@@ -434,13 +526,37 @@ def _producer_running(label: str) -> bool:
     its own pager -- the same blindness the stub-death check exists to prevent.
     """
     pat = _PRODUCER_PGREP.get(label)
-    if not pat:
-        return False
+    return bool(pat) and _pgrep(pat)
+
+
+def _pgrep(pat: str) -> bool:
     try:
         return subprocess.run(["pgrep", "-f", pat], capture_output=True,
                               timeout=10, check=False).returncode == 0
     except (OSError, subprocess.SubprocessError):
         return False               # cannot prove it is alive -> fall through and report
+
+
+#: organ -> pgrep pattern for the shell entrypoint that writes its log. Mirrors the `pgrep` field
+#: of libs/ops/organ_catchup.ORGANS, which has guarded exactly this way since 2026-07-26.
+_ORGAN_PGREP = {
+    "brain-cycle":      "run_cro_ai[.]sh",
+    "dataaxis-dig":     "run_dataaxis_dig[.]sh",
+    "litminer-dig":     "run_litminer_dig[.]sh",
+    "prospector-dig":   "run_prospector_dig[.]sh",
+    "blindrediscovery": "run_blind_rediscovery",
+}
+
+
+def _organ_running(organ: str) -> bool:
+    """True while THIS organ is mid-run, so a healthy long cycle is not filed as a dead one.
+
+    FAILS TOWARD REPORTING. An organ with no known pattern, or a pgrep that cannot run, returns
+    False and the staleness defect fires as before -- an unprovable liveness claim must never
+    silence a fence (L1.28a: unmeasured is not OK).
+    """
+    pat = _ORGAN_PGREP.get(organ) or ("run_frontie[r]" if organ.startswith("frontier-") else "")
+    return bool(pat) and _pgrep(pat)
 
 
 def check_stub_deaths(defects) -> None:
@@ -789,22 +905,94 @@ def check_coverage(defects) -> None:
         defects.append(("coverage-budget-floor",
                         "adaptive review payload pinned at its 40k floor -- seats are blanking "
                         "repeatedly; coverage is crawling"))
-    for seat, n in (m.get("seat_blanks") or {}).items():
-        if int(n) >= 3:
-            defects.append((f"seat-chronic-{seat.split('/')[-1]}",
-                            f"panel seat {seat} blanked {n}x -- chronic capacity failure, "
-                            "swap-candidate with evidence"))
+    _check_chronic_seats(defects, m)
+
+
+#: A blank inside this window is evidence about the seat NOW. Wide enough that a genuinely dying
+#: seat cannot hide between panel runs, short enough that a seat which has since recovered clears.
+SEAT_BLANK_WINDOW_DAYS = 7
+
+#: Calls needed inside the window before a rate is allowed to mean anything. Below this the fence
+#: says UNMEASURED rather than grading: on 2 calls a single blank reads as a 50% failure rate and
+#: would prescribe swapping a healthy seat, which is the wrong direction to be confident in
+#: (L1.62 -- an underpowered sample earns no verdict, and refusing to grade is a real answer).
+SEAT_MIN_ATTEMPTS = 5
+
+
+def _check_chronic_seats(defects, m: dict) -> None:
+    """A SEAT IS SWAPPED ON WHAT IT IS DOING NOW, NOT ON WHAT IT HAS EVER DONE.
+
+    This fence read `seat_blanks`, a LIFETIME counter that nothing anywhere resets or decays. So
+    once a seat crossed 3 it fired on every run forever, whatever the seat was currently doing --
+    a gate that cannot clear carries zero information, and this one's recommendation is to SWAP,
+    which costs a live seat. Measured 2026-08-13: nemotron-3-super-120b-a12b sat at a lifetime 4
+    while the free-roster canary reported it ALIVE and answering with all 4 seats up, and the
+    session banner reported panel depth already under-driven at 403/406 seats. Acting on the
+    fence would have removed a working seat to fix a failure that had stopped happening.
+
+    THE COUNTER IS ALSO DENOMINATOR-FREE, and that half is not repaired here: "blanked 4x" out of
+    four calls is a dead seat, out of four hundred it is a 1% flake rate on a free tier, and
+    nothing records the attempts. Recency is the half that is measurable from what the panel
+    already writes; the rate needs a success counter at the call site and is rowed separately.
+
+    UNMEASURED RECENCY IS REPORTED, NEVER TREATED AS QUIET. Until the event log has entries, a
+    seat with a lifetime tally has no recency evidence, and silently clearing the fence there
+    would be absence resolving to a clean verdict on the exact history that raised it.
+    """
+    from scripts.build_audit_coverage import blank_rate
+
+    lifetime = {k: int(v) for k, v in (m.get("seat_blanks") or {}).items()}
+    rate = blank_rate(m, window_days=SEAT_BLANK_WINDOW_DAYS) or {}
+    for seat, n in lifetime.items():
+        if n < 3:
+            continue
+        tag = f"seat-chronic-{seat.split('/')[-1]}"
+        blanks, attempts = rate.get(seat, (0, 0))
+        if attempts < SEAT_MIN_ATTEMPTS:
+            defects.append((
+                f"{tag}-unmeasured",
+                f"panel seat {seat} carries a LIFETIME blank tally of {n} and only {attempts} "
+                f"recorded call(s) in {SEAT_BLANK_WINDOW_DAYS}d, below the {SEAT_MIN_ATTEMPTS} "
+                f"needed to tell a dead seat from a flake, so whether it is failing NOW is "
+                f"UNMEASURED. Do not swap on this: the tally never resets, so it says only that "
+                f"the seat failed at some point in its history. Clears on its own once the panel "
+                f"has run {SEAT_MIN_ATTEMPTS}x -- from SUCCESS, not only from a new blank."))
+        elif blanks >= 3:
+            defects.append((
+                tag,
+                f"panel seat {seat} blanked {blanks}x of {attempts} calls "
+                f"({blanks / attempts:.0%}) in the last {SEAT_BLANK_WINDOW_DAYS}d (lifetime {n}) "
+                f"-- chronic capacity failure that is still happening, swap-candidate with "
+                f"evidence"))
 
 
 def check_findings(defects) -> None:
     d = _j(ROOT / "data/findings_ledger.json", {})
+    # A SUPERSEDED FINDING IS CLOSED, NOT OWED. Its mechanism was refuted by a later finding that
+    # carries the live version of the concern, so the work this row asks for is work nobody should
+    # do -- and it had no legal exit before, leaving `fix` (a false claim that also credits the
+    # seat with a hit it did not earn) as the only way to stop it firing. It stays listed in
+    # `track_findings report`, so closing it is visible rather than a disappearance.
+    # ONE THRESHOLD, ONE ROUNDING. `timedelta.days` TRUNCATES, so this fence used to disagree with
+    # `track_findings report` -- which measures the same ledger against the same bar in float days
+    # -- by up to 24h. Measured 2026-08-13: the report printed "3 ACCEPTED FINDINGS UNFIXED >14d
+    # -- these are DEFECTS" (F0005/F0006/F0008 at 14.0d) while this fence returned NONE on the same
+    # file in the same second. A human reading one and a gate reading the other is the shared-
+    # constant divergence L1.61 exists for, and it errs toward silence, which is the direction
+    # nobody notices. The constant is now imported rather than re-typed, so they cannot drift.
+    from scripts.track_findings import UNFIXED_DEFECT_D
+
+    now = datetime.now(tz=UTC)
     old = [f for f in d.get("findings", [])
            if f.get("ruling") == "accepted" and not f.get("fixed")
-           and (datetime.now(tz=UTC) - datetime.fromisoformat(f["raised"])).days > 14]
+           and not f.get("superseded_by")
+           and (now - datetime.fromisoformat(f["raised"])).total_seconds() / 86400.0
+           > UNFIXED_DEFECT_D]
     if old:
         ids = ", ".join(f["id"] for f in old[:5])
         defects.append(("findings-rotting",
-                        f"{len(old)} ACCEPTED panel findings unfixed >14d ({ids}) -- the loop "
+                        f"{len(old)} ACCEPTED panel findings unfixed >{UNFIXED_DEFECT_D:.0f}d "
+                        f"({ids}) -- the loop "
                         "the audit system exists for is open"))
 
 
@@ -871,16 +1059,16 @@ def check_verify_lag(defects) -> None:
 def check_blind_trigger(defects) -> None:
     """Blind Rediscovery is state-driven, not clock-driven: fire it early when the desk has
     materially new internal raw material (data axes / graveyard entries) since its last run."""
+    from libs.ops.blind_trigger import counts as _blind_counts
+
     state = _j(ROOT / "data/cadence_state.json", {})
     last = state.get("last_blind_rediscovery")
     seen = _j(ROOT / "data/blind_trigger_baseline.json", {})
 
-    umap = _j(ROOT / "data/data_universe_map.json", {})
-    srcs = umap.get("sources", {})
-    n_sources = len(srcs) if isinstance(srcs, (dict, list)) else 0
-    gy = ROOT / "docs/graveyard.md"
-    n_grave = (sum(1 for ln in gy.read_text("utf-8").splitlines() if ln.startswith("| "))
-               if gy.exists() else 0)
+    # ONE counting rule, shared with the actuator that clears this trigger
+    # (libs/ops/blind_trigger.stamp, called by the dig on verified production) --
+    # two copies of the count is how the detector and the clearer drift apart.
+    n_sources, n_grave = _blind_counts(ROOT)
 
     base_src = int(seen.get("sources", 0))
     base_grave = int(seen.get("graveyard", 0))
@@ -1026,13 +1214,59 @@ def check_dig_depth(defects) -> None:
     chain, followed a fork, or chased a citation) is breadth-theater -- flag it. Depth quality
     ultimately shows in output and is judged by red-team/maximization; this catches the gross
     wide-and-shallow case mechanically."""
+    # TWO CLASSES OF DEPTH, because the original list encoded only one and misgraded the other.
+    # CORPUS depth is following a source down: reply chains, forks, citations, threads. The list
+    # below it is VERIFICATION depth -- re-deriving a claim rather than repeating it -- which
+    # costs at least as much and looks nothing like the first in prose.
+    #
+    # WIDENED ON A MEASURED FALSE POSITIVE (2026-08-12), the same remedy check_timidity_language
+    # records for its own vocabulary. frontier_br_20260812T0827 scored 1/11 and was flagged
+    # breadth-theater. What it actually did: reimplemented a repo's "MCPT validation" to show it
+    # permutes order-invariant statistics (max-min across 500 permutations = 1.1e-15, so the
+    # p-value is a floating-point rounding hash), censused 23 archive vintages to RETRACT its own
+    # predecessor's inferred decay rate, ran the native-key control that exposed a structural
+    # zero, and recorded a falsifier instead of picking the exciting hypothesis. Grading that as
+    # theatre is not a harmless miss: a lexical fence teaches seats to WRITE the words it counts,
+    # so a list blind to verification depth actively pushes digs toward comment-tree breadth --
+    # the fence causing the failure it detects.
+    #
+    # THE BAR IS UNCHANGED at <2 hits. This adds sight, not slack, and it stays a GROSS detector
+    # by its own docstring -- lexical markers are fakeable by construction and real depth quality
+    # is judged downstream by red-team/maximization. FALSIFIER: if a dig ever clears this bar on
+    # verification words alone while its output shows no re-derivation, the class is noise and
+    # comes back out.
+    # THE VOCABULARY ENCODED ONE DIG MODALITY AND SCORED EVERY OTHER ONE AS THEATRE. Every marker
+    # above the second line is community/text mining (reply, comment, thread, fork, citation) or
+    # code replication (permut, reimplement, census). A dig into a BULK ARCHIVE or an API does its
+    # depth with a different vocabulary entirely, so it was structurally incapable of clearing this
+    # bar however deep it went -- a gate that rejects ~100% of a category carries zero information
+    # about that category, which is the welded-gate class this desk hunts (L1.43/L1.49).
+    #
+    # MEASURED, 2026-08-12: dataaxis_20260812T1530 scored 1. That dig verified a published sha256
+    # sidecar, ran archive-vs-live to 0 mismatches over 31 bars x 7 fields, and found that the S3
+    # lister truncates at 1000 keys and never errors -- a 3.7-YEAR silent understatement of the
+    # archive's depth, now a recorded desk lesson. That is the depth mandate honoured exactly, and
+    # the fence called it breadth-theater.
+    #
+    # THIS IS NOT THE BAR BEING LOWERED TO FIT THE VIOLATION IT CAUGHT, and the distinction is the
+    # whole point: the threshold stays at >=2, and every added marker names a VERIFICATION ACT
+    # PERFORMED rather than an adjective or an intention. `backfill` was tried and REJECTED for
+    # exactly that reason -- its only occurrence in the corpus is "still needs a pi backfill",
+    # which names work NOT done, and a marker that passes on intent is how this becomes theatre.
+    # Measured over all 9 substantial digs on disk: exactly ONE flips, and the shallow log still
+    # fires. FALSIFIER, inherited from the rule above and unchanged: if a dig ever clears the bar
+    # on verification words alone while its output shows no re-derivation, the class comes out.
     markers = ("repl", "comment", "thread", "fork", "citation", "issue", "discussion",
-               ">=2", "deep", "exhaust", "debunk")
+               ">=2", "deep", "exhaust", "debunk",
+               "permut", "reimplement", "replicat", "census", "falsifier",
+               "positive control", "graveyard", "wayback", "retract",
+               # archive / API verification: the act, never the adjective
+               "paginat", "sha256", "checksum", "mismatch", "sidecar", "cross-check",
+               "byte-for-byte", "truncat")
     for pat in ("frontier_*.log", "dataaxis_*.log", "prospector_*.log", "litminer_*.log"):
         logs = sorted(LOGS.glob(pat), key=lambda p: p.stat().st_mtime, reverse=True)
         if not logs:
             continue
-        newest = logs[0]
         _mand = ROOT / "data/depth_mandate_baseline"
         if not _mand.exists():
             _mand.write_text(str(NOW))
@@ -1040,12 +1274,20 @@ def check_dig_depth(defects) -> None:
             _base = float(_mand.read_text().strip())
         except Exception:
             _base = NOW
-        if newest.stat().st_mtime < _base:
-            continue                                  # pre-mandate dig -- not judged
-        if (NOW - newest.stat().st_mtime) > 4 * 86400:
-            continue                                  # stale digs handled by check_organs
-        if newest.stat().st_size < 1500:
-            continue                                  # stub/quota-death handled elsewhere
+        # JUDGE THE NEWEST *JUDGEABLE* DIG, NOT THE NEWEST FILE. This took `logs[0]` and then
+        # `continue`d if it was a stub -- so one 171-byte "DEFERRED -- brain mutex held by cro_ai"
+        # notice, written seconds ago, silently exempted the ENTIRE frontier family from depth
+        # judgement while four substantial digs from that morning sat unread. The fence reported
+        # no defect over a set it never opened: a passing verdict on an empty scan, which is the
+        # vacuous-denominator class (L1.57) rather than a threshold being too loose. Stubs are
+        # still not judged for depth -- check_organs owns quota-deaths -- they just no longer
+        # blind the family behind them.
+        newest = next((p for p in logs
+                       if p.stat().st_size >= 1500                      # substantial dig
+                       and p.stat().st_mtime >= _base                   # post-mandate
+                       and (NOW - p.stat().st_mtime) <= 4 * 86400), None)  # not stale
+        if newest is None:
+            continue
         txt = newest.read_text("utf-8", errors="ignore").lower()
         hits = sum(1 for m in markers if m in txt)
         if hits < 2:
@@ -1055,29 +1297,60 @@ def check_dig_depth(defects) -> None:
                             "evident. Depth mandate not honored."))
 
 
-def check_interrogation(defects) -> None:
-    """The last successful brain cycle must show evidence it ran the self-interrogation battery.
-    A cycle that did not probe is a cycle that trusted itself -- the exact failure this catches.
-    Only judged on cycles that ran AFTER the protocol existed."""
+def _cycle_evidence() -> CycleEvidence:
+    """The ONE evidence reading both cycle-quality fences judge, on the ONE log they both select.
+
+    Computed here rather than twice, because the fences below previously chose their own log by
+    their own window AND scored it by their own proxy, so they could -- and on 2026-08-01 did --
+    return contradictory verdicts about the same cycle. Sharing the selection and the scoring is
+    what makes that contradiction structurally impossible; see libs/ops/cycle_evidence.py.
+
+    A missing baseline is still bootstrapped (first run stamps it and declines to judge cycles
+    that predate the protocol), but "no judgeable log" is now UNMEASURED rather than a silent
+    clean return -- L1.28a, and the vacuous pass L1.57 exists to refuse."""
+    from libs.ops import cycle_evidence
+
     base_f = ROOT / "data/interrogation_baseline"
     if not base_f.exists():
         base_f.write_text(str(NOW))
-        return
+        return cycle_evidence.unmeasured("interrogation baseline just stamped -- no post-protocol "
+                                         "cycle exists to judge yet")
     try:
         base = float(base_f.read_text().strip())
-    except Exception:
-        return
+    except Exception as e:
+        return cycle_evidence.unmeasured(f"interrogation baseline unreadable ({e!r}) -- cannot "
+                                         "tell a pre-protocol cycle from a post-protocol one")
     cyc = [p for p in LOGS.glob("2026*_*.log")
            if p.stat().st_mtime >= base and p.stat().st_size >= 2000]
     if not cyc:
-        return                                        # no post-protocol successful cycle yet
+        return cycle_evidence.unmeasured(
+            f"no cycle log in {LOGS.name} is both post-protocol and >=2000 bytes -- the desk "
+            "cannot show that its last cycle interrogated anything")
     newest = max(cyc, key=lambda p: p.stat().st_mtime)
-    txt = newest.read_text("utf-8", errors="ignore").lower()
-    if not any(k in txt for k in ("interrogat", "probe", "verified with a fresh read",
-                                  "self-interrog", "angle")):
+    return cycle_evidence.score(newest.read_text("utf-8", errors="ignore"), log_name=newest.name)
+
+
+def check_interrogation(defects) -> None:
+    """The last successful brain cycle must show evidence it ran the self-interrogation battery.
+    A cycle that did not probe is a cycle that trusted itself -- the exact failure this catches.
+
+    FIRES ON TOTAL ABSENCE OF EVIDENCE, not on the absence of five magic words. The keyword grep
+    this replaces ('interrogat', 'probe', 'verified with a fresh read', 'self-interrog', 'angle')
+    fired on a cycle that had verified its headline finding from the journal with timestamps and
+    values and disproved a CI-red by isolation -- it had simply never typed one of the words.
+    Whether the interrogation was CITED is a different question and belongs to the fence below;
+    this one asks only whether it happened at all."""
+    ev = _cycle_evidence()
+    if not ev.measured:
+        defects.append(("cycle-evidence-unmeasured",
+                        f"cannot judge cycle interrogation: {ev.why_unmeasured}. UNMEASURED is "
+                        "not a pass -- absence of evidence was reading as evidence of health."))
+        return
+    if ev.substance == 0:
         defects.append(("cycle-skipped-interrogation",
-                        f"{newest.name}: last successful cycle shows no self-interrogation "
-                        "evidence -- it trusted itself instead of probing. Protocol not honored."))
+                        f"{ev.log}: last successful cycle shows no self-interrogation evidence -- "
+                        "no artifact cited with a value, no self-correction, no finding disproved. "
+                        "It trusted itself instead of probing. Protocol not honored."))
 
 
 def check_generation(defects) -> None:
@@ -1298,22 +1571,30 @@ def check_rubberstamp_detector(defects) -> None:
 
 def check_rubberstamp_enforcement(defects) -> None:
     """Active only when the flag exists: the newest successful cycle must show NAMED VERIFIED
-    READS (file-path citations proving it actually looked), not bare 'verified' prose."""
+    READS, not bare 'verified' prose.
+
+    A NAMED VERIFIED READ IS A PATH AND A VALUE, which is what the cycle prompt has always asked
+    for ("file path + the value/line you saw"). The count this replaces matched path-shaped
+    tokens only, so five filenames nobody opened passed it while a cycle that read carefully and
+    reported its numbers against bare module names failed. Same floor, better measurement: the
+    bar did not move, the instrument did.
+
+    It judges THE SAME LOG as check_interrogation above, by construction. Two fences that pick
+    their own log cannot be prevented from disagreeing about the cycle."""
     flag = ROOT / "data/ANTIRUBBERSTAMP_ACTIVE"
     if not flag.exists():
         return
-    cyc = [p for p in LOGS.glob("2026*_*.log")
-           if p.stat().st_size >= 2000 and (NOW - p.stat().st_mtime) < 2 * 86400]
-    if not cyc:
-        return
-    newest = max(cyc, key=lambda p: p.stat().st_mtime)
-    t = newest.read_text("utf-8", errors="ignore")
-    cites = len(set(re.findall(r"[\w/]+\.(?:py|json|md|sh|txt)", t)))
-    if cites < 5:
+    ev = _cycle_evidence()
+    if not ev.measured:
+        return                      # check_interrogation already raised cycle-evidence-unmeasured
+    if not ev.cited:
+        from libs.ops.cycle_evidence import CITED_FLOOR
         defects.append(("rubberstamp-enforced",
-                        f"{newest.name}: anti-rubber-stamp ACTIVE but the cycle cites only {cites} "
-                        "named reads -- interrogation lacks verified-read evidence. Cite the "
-                        "specific file+value per probe angle, do not rubber-stamp."))
+                        f"{ev.log}: anti-rubber-stamp ACTIVE but the cycle cites only "
+                        f"{ev.cited_claims} artifact(s) with a value (floor {CITED_FLOOR}; it "
+                        f"names {ev.artifacts} artifact(s) in total) -- interrogation lacks "
+                        "verified-read evidence. Cite the specific file+value per probe angle "
+                        "(web/growth_audit.json, capital_util=1.005), not a bare module name."))
 
 
 def check_clock_saturation(defects) -> None:
@@ -1325,15 +1606,33 @@ def check_clock_saturation(defects) -> None:
 
     This duty shipped as prompt text only -- and prompt-only duties are aspirations. The desk's
     recursion rule is that every manual probe becomes a standing automatic check, so it is fenced
-    here. Axes are read from the Bronze lake (what was actually ingested, not what a doc claims);
-    clocks are read from cadence_state gen_done_* (what actually ran)."""
+    here. Axes are read from the Bronze lake (what was actually ingested, not what a doc claims).
+
+    WHAT IT READS, AND WHY THAT CHANGED (2026-08-12). The first cut graded `gen_done_<axis>` in
+    cadence_state as a RECENCY clock. That key is a one-way PRESENCE latch, and its own producer
+    refuses to re-stamp it when a run pre-registers nothing new -- run_axis_generate.py:196: "
+    writing 'done at <now>' for work not done this run is the same lie in a quieter file". So 7
+    days after the last NEW axis this fired on every axis forever, and the only way to clear it
+    was the re-stamp its producer calls a lie. It also misread the QUANTITY: on 2026-08-12 it
+    reported `crossasset` as having NO hypothesis accruing while data/forward_slots.json carried
+    a standing crossasset clock ACCRUING since 2026-06-21 -- 52 days. All 9 flagged axes in fact
+    held dated EV-gate cards in two pre-registration docs (2026-07-22 and 2026-08-05), which is
+    the duty's own second branch ("or ledger why the axis is not yet testable") already satisfied.
+    A gate that rejects 100% on a quantity it does not measure carries zero information
+    (GATE-OPTIMALITY DUTY, L1.43), and its only available remedy was fabrication.
+
+    So it now reads the two stores that actually hold the answer -- the Holm cohort
+    (data/forward_slots.json) for ACCRUING, and the `axis=` trail run_axis_generate stamps into
+    research_agenda.json for LEDGERED -- and it stays able to FIRE, on two genuine breaches:
+    an ingested axis with NEITHER (nobody ever authored a hypothesis for paid-for data), and a
+    ledgered-but-unclocked axis while the cohort has IDLE SLOTS, which is the literal L1.28a
+    idleness this duty exists to catch -- a free slot next to an authored hypothesis. At 12/12
+    with zero idle slots the clocks ARE saturated (the metric this check is named for) and no
+    axis can start one without displacing another: the Holm cap binds, not researcher idleness,
+    and MAX_FORWARD_SLOTS is a validation bar that is never widened to clear a defect. The
+    cohort file's own freshness is L1.44's job, not a second uncoordinated rule here."""
     bronze = ROOT / "data/lake/bronze"
-    cad_p = ROOT / "data/cadence_state.json"
-    if not bronze.exists() or not cad_p.exists():
-        return
-    try:
-        cad = json.loads(cad_p.read_text("utf-8"))
-    except Exception:
+    if not bronze.exists():
         return
     # INPUT STORES are not axes: raw price/metrics lakes feed constructions but cannot carry
     # a hypothesis themselves (the constructions built FROM them do). Excluding them keeps this
@@ -1342,26 +1641,46 @@ def check_clock_saturation(defects) -> None:
     axes = sorted(d.name for d in bronze.iterdir() if d.is_dir() and d.name not in _input_stores)
     if not axes:
         return
-    stale = []
-    for ax in axes:
-        ts = cad.get(f"gen_done_{ax}") or cad.get(f"gen_done_{ax}_family")
-        if not ts:
-            stale.append(f"{ax}(never)")
-            continue
-        try:
-            age_d = (NOW - datetime.fromisoformat(ts).timestamp()) / 86400.0
-            if age_d > 7:
-                stale.append(f"{ax}({age_d:.0f}d)")
-        except Exception:
-            stale.append(f"{ax}(unparsable)")
-    if stale:
+    # UNMEASURED is a real answer (L1.28a): an absent accrual store is not an empty one, and
+    # treating it as empty would manufacture a breach on every axis -- the exact failure above.
+    try:
+        fs = json.loads((ROOT / "data/forward_slots.json").read_text("utf-8"))
+        slots = [s for s in fs.get("slots") or [] if isinstance(s, dict)]
+        idle = int(fs.get("idle_slots") or 0)
+    except Exception:
         defects.append((
             "clock-saturation",
-            f"OBJECTIVE #2 breach: {len(stale)}/{len(axes)} verified axes have NO hypothesis "
-            f"accruing within 7d -- {', '.join(stale[:8])}"
-            f"{' ...' if len(stale) > 8 else ''}. An empty forward clock is idle research "
-            "capital: pre-register a hypothesis on each, or ledger why the axis is not yet "
-            "testable (e.g. forward history under the gauntlet minimum)."))
+            f"UNMEASURED: data/forward_slots.json is absent or unreadable, so the accrual state "
+            f"of {len(axes)} verified axes cannot be read at all. Absence is not health and is "
+            "not idleness either -- repair the cohort producer before grading this duty."))
+        return
+    accruing = {str(s.get("name", "")) for s in slots}
+    # The ledger branch the duty explicitly allows. run_axis_generate stamps `axis=<name>` into
+    # every pre-registration it routes -- QUEUED or EV-rejected-with-a-revisit-condition alike --
+    # so this is the machine-readable trail of "a hypothesis was actually authored for this axis".
+    try:
+        ledgered = set(re.findall(
+            r"axis=([a-z_]+)", (ROOT / "research_agenda.json").read_text("utf-8")))
+    except Exception:
+        ledgered = set()
+    ungenerated = [a for a in axes if a not in accruing and a not in ledgered]
+    unclocked = [a for a in axes if a not in accruing and a in ledgered]
+    if ungenerated:
+        defects.append((
+            "clock-saturation",
+            f"OBJECTIVE #2 breach: {len(ungenerated)}/{len(axes)} verified axes have NEITHER a "
+            f"forward clock NOR a pre-registered hypothesis -- {', '.join(ungenerated[:8])}"
+            f"{' ...' if len(ungenerated) > 8 else ''}. Ingest cost was paid and nothing was ever "
+            "authored against it: pre-register a hypothesis on each, or ledger why the axis is "
+            "not yet testable (e.g. forward history under the gauntlet minimum)."))
+    if unclocked and idle > 0:
+        defects.append((
+            "clock-saturation",
+            f"OBJECTIVE #2 breach: {idle} forward slot(s) sit IDLE while {len(unclocked)}/"
+            f"{len(axes)} axes hold an authored-but-unclocked hypothesis -- "
+            f"{', '.join(unclocked[:8])}{' ...' if len(unclocked) > 8 else ''}. An empty forward "
+            "clock beside a ready hypothesis is idle research capital (L1.28a): start the clock. "
+            "Slots are the scarce input, so spend them shortest-capacity-runway first."))
 
 
 def check_vendor_replacement(defects) -> None:
@@ -1462,9 +1781,42 @@ def check_carry_funding_measured(defects) -> None:
     # nothing, so a book whose non-funding P&L was 3146% of its harvest could read as a SURVIVOR.
     # A fence firing into a field nobody reads is not a fence.
     if cc.get("bleed_alert") is True:
-        defects.append((
-            "carry-bleed-alarm",
-            f"carry leak alarm FIRING and unactioned -- {str(cc.get('bleed_verdict', ''))[:200]}"))
+        # AN ABSORBING ALARM CARRIES ZERO INFORMATION (R0352, L1.43 welded gate). `bleed_alert` is
+        # computed from CUMULATIVE-LIFETIME totals, and a book holding no positions cannot accrue
+        # new funding or new non-funding P&L -- so with exposure at zero BOTH terms of the ratio
+        # are frozen by construction and the alarm is arithmetically incapable of ever clearing.
+        # Measured: it fired every cycle for 7+ days against `funding_harvested` pinned at the
+        # same 113.06 while `n_carries` was 0. That is not a leak, it is a stuck needle.
+        #
+        # THE THRESHOLD IS NOT TOUCHED, and that direction is forbidden -- the bar in
+        # carry_bleed_report is unchanged and a book with ANY exposure alarms exactly as before.
+        # What changes is only WHICH CLAIM is made about a book that cannot move the number.
+        #
+        # ABSENCE IS NOT ZERO. `n_carries`/`deployed_notional` must both be PRESENT and zero to
+        # earn the flat reading; an executor predating those keys falls through to the live alarm,
+        # because "no exposure" and "we cannot see the exposure" are opposite states and only one
+        # of them is safe to quieten (WS-005, the desk's most-repeated defect class).
+        legs, notl = cc.get("n_carries"), cc.get("deployed_notional")
+        flat = (isinstance(legs, int) and legs == 0
+                and isinstance(notl, int | float) and float(notl) == 0.0)
+        recon = cc.get("fut_leg_reconciliation") or {}
+        attributed = recon.get("explained") is True and recon.get("measured") is True
+        verdict = str(cc.get("bleed_verdict", ""))[:200]
+        if not flat:
+            defects.append((
+                "carry-bleed-alarm",
+                f"carry leak alarm FIRING and unactioned -- {verdict}"))
+        elif not attributed:
+            # STILL A DEFECT, AND DELIBERATELY A DIFFERENT ONE. The leak is historical rather than
+            # live, but nobody has said where it went -- and unlike the cumulative ratio this IS
+            # satisfiable: attributing the gap clears it. A quiet fence here would be the muting
+            # this repair exists to avoid.
+            defects.append((
+                "carry-bleed-unattributed",
+                f"carry book is FLAT (0 carries, 0 notional) but a lifetime bleed is UNATTRIBUTED "
+                f"-- the futures-leg reconciliation does not explain it "
+                f"(explained={recon.get('explained')!r} measured={recon.get('measured')!r}). "
+                f"Closed episode, open question: {verdict}"))
 
 
 def check_memory_hygiene(defects) -> None:
@@ -2537,6 +2889,12 @@ _FINDING_DOCS = (
     # Excluding it on the panel-loop precedent while the panel loop holds none of its findings is
     # exactly the denominator trick 35 forbids, so it is scanned until those verdicts exist.
     "docs/research/PREMORTEM_20260805.md",
+    # 2026-08-11 (findings-scope-unmonitored): the halted failed-breakout study's write-up
+    # carries 5 numbered findings ("MECHANISM UNMEASURABLE -- study halted before the pattern
+    # search"). A HALTED study is not a closed one: its findings name work still owed (the
+    # measurability defect itself), so they owe register rows -- the INTRADAY_ROTATION exclusion
+    # precedent (a COMPLETED study is a record) explicitly does not apply to a halt.
+    "docs/research/FAILED_BREAKOUT_PREREGISTRATION.md",
 )
 #: Finding-bearing docs deliberately out of scope, with the reason -- so the scope check can tell
 #: "consciously excluded" from "quietly unmonitored".
@@ -2641,6 +2999,7 @@ _FINDING_DOCS_EXCLUDED = {
                             "the L1.x hash seal is not engaged",
     "docs/research/feed_inbox.md": "literature feed, not desk findings",
     "docs/research/data_axis_watchlist.md": "source cards -- governed by §33 dispositions",
+    "docs/research/crypto_source_seeds.md": "living source-seed map -- governed by L1.52 miners",
     "docs/research/discovery_hypotheses.md": "hypotheses -- governed by §33 / the trial ledger",
     "docs/research/literature_coverage.md": "coverage log -- governed by §33",
     "docs/research/prospector_coverage.md": "coverage log -- governed by §33, same as its "
@@ -2756,9 +3115,28 @@ _PRODUCER_CADENCE = {
     "docs/research/canary_searches.md": (
         4.0, "re-run each digging session; an unexpected shift triggers targeted rediscovery "
              "BEFORE the normal cadence -- nothing confirmed the canaries were re-run"),
-    "docs/research/generation_due.md": (
-        8.0, "the cadence engine flags scoped generate runs and the brain executes then marks "
-             "them -- nothing checked a flagged run was ever executed"),
+    # THE LIVE QUEUE, and this table pointed at the WRONG FILE for weeks (fixed 2026-08-12).
+    # `generation_due.md` sat here at an 8d bar while having ZERO writers anywhere in the repo
+    # (content frozen since 2026-07-29, header stamped 2026-07-16); it is now recorded terminal
+    # below. The file run_cadence ACTUALLY writes is this one -- scripts/run_cadence.py:46 sets
+    # _DUE_NOTE to it and :881 write_text's it on every hourly firing that has due items. So the
+    # producer-cadence-stale defect fired four times in a single sweep against a document nothing
+    # produces, and each ack reasoned about it as the live queue ("stale for exactly one reason --
+    # the generate run it is waiting on"), concluding it would clear with an OpenRouter top-up. A
+    # file with no writer cannot be freshened by unblocking its reader: that ack could never have
+    # come true. Read-without-writer (L1.40 lens 1) applied to a governance table.
+    # THE BAR'S ONE HONEST CAVEAT, stated rather than discovered later: run_cadence writes this
+    # file only under `if due:`, so a fully-drained queue stops refreshing it and would read as
+    # stale. That is the L1.51 "what does absence look like?" trap, and it is not live today --
+    # PROSPECTOR (7d) and the DATA-AXIS dig (7d) are standing recurring duties, so the queue has
+    # never been empty. If it ever drains, the right repair is to make run_cadence stamp an
+    # explicit empty queue, NOT to widen this bar until it cannot fire.
+    "docs/research/cadence_duties.md": (
+        3.0, "the LIVE generation-duty queue, rewritten by scripts/run_cadence.py:881 on each "
+             "hourly firing with due items. It goes stale in exactly one way that matters -- "
+             "run_cadence stopped firing -- and that is what this catches. The brain drains it "
+             "by executing the scoped generate runs and setting gen_done_<name> / "
+             "last_live_generate in data/cadence_state.json."),
     "docs/research/adoption_queue.md": (
         35.0, "trigger-gated methods (fracdiff, dollar bars, ...) -- nothing notices when a "
               "precondition ARRIVES, so a due adoption waits forever"),
@@ -2818,6 +3196,20 @@ _PRODUCER_CADENCE = {
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
 _TERMINAL_ARTIFACTS = {
+    "docs/research/generation_due.md":
+        "SUPERSEDED SNAPSHOT WITH NO PRODUCER (recorded 2026-08-12). Header stamped "
+        "2026-07-16T23:23Z, last content change 2026-07-29, and a repo-wide search for a writer "
+        "returns NOTHING -- no write_text, no append, no shell redirect. The live queue with the "
+        "same header template is docs/research/cadence_duties.md, which run_cadence.py:46/:881 "
+        "actually writes; this table governed THIS file on an 8d producer cadence instead, so "
+        "producer-cadence-stale fired against a document nothing produces and was acked four "
+        "times in one sweep on the theory it would clear when a generate run unblocked. It could "
+        "not: an unread reader cannot freshen an unwritten file. TERMINAL, NOT DELETED, because "
+        "it still has live READERS -- scripts/screen_fred_macro_axis.py:1/:325 cites its line 5 "
+        "as the provenance of the fred_macro scoped run, and scripts/build_audit_coverage.py:54 "
+        "lists it. Deleting it would break the audit trail of a duty that was actually executed. "
+        "It is an immutable record of what was owed on 2026-07-16, superseded by the live queue, "
+        "never edited.",
     "docs/research/PREMORTEM_20260805.md":
         "DATED PRE-MORTEM RECORD (run 1, 2026-08-05, R0105) -- the first time that mission has "
         "ever fired. Terminal because it is an immutable transcript of ONE dated adversarial "
@@ -2951,6 +3343,23 @@ _TERMINAL_ARTIFACTS = {
     # conversion, and "convert the doctrine" is not a coherent action. Terminal is the DECISION
     # the law demands, not a default -- each governs behaviour and is superseded by amendment,
     # never worked off a queue.
+    "docs/MASTER_QUANT_CONSTITUTION.md":
+        "principal-supplied sealed top-level doctrine -- injected at controller "
+        "entry, never an inventory",
+    "docs/audit_shards/":
+        "generated audit-shard class -- disposable working views, never a findings backlog",
+    "docs/research/ETHBTC_ROTATION_PREREGISTRATION.md":
+        "immutable preregistration -- superseded by its result, never refreshed in place",
+    "docs/research/FULL_SWEEP_PREREGISTRATION.md":
+        "immutable preregistration -- superseded by its result, never refreshed in place",
+    "docs/research/MANAGEMENT_SWEEP_PREREGISTRATION.md":
+        "immutable preregistration -- superseded by its result, never refreshed in place",
+    "docs/research/recent_changes.md":
+        "append-only change record -- each row is terminal evidence, not inventory",
+    "docs/research/TIER1_CONTROLLER_MANDATE.md":
+        "standing subordinate implementation doctrine under the sealed master",
+    "docs/RESEARCH_DATA_TRANSPORT.md":
+        "deployment runbook -- superseded by a new transport design, never cadence-refreshed",
     "docs/research/EXPLORATION_DOCTRINE.md": "standing doctrine -- binds organs, not an inventory",
     "docs/research/MEASUREMENT_DOCTRINE.md": "standing doctrine -- binds organs, not an inventory",
     "docs/research/OPERATING_DOCTRINE.md": "standing doctrine -- governs what to build",
@@ -3314,6 +3723,185 @@ def check_naive_datetime(defects) -> None:
 TEST_RECORD = ROOT / "docs/research/test_suite_record.json"
 
 
+#: MemAvailable below this is a real risk of the next probe being OOM-killed rather than run. A
+#: full pytest collection peaked at 326MB here (R0407b), so a floor at 400MB is "one more probe
+#: fits"; 189MB was the reading on the day two consecutive runs were killed.
+MEM_FLOOR_MB = 400
+
+#: tmpfs is RAM owned by NO PROCESS, so it appears in no RSS check and is never reclaimed under
+#: pressure -- the whole reason this class was invisible. 1021MB (26% of a 3.8GB box) was the
+#: orphan pile that closed R0407's loop; 600MB is well below that and well above steady state.
+TMPFS_CEILING_MB = 600
+
+
+def check_host_memory_headroom(defects) -> None:
+    """THE MEMORY THAT BELONGS TO NO PROCESS (R0407a). Every other memory check watches RSS.
+
+    `libs/ops/host_resources` was built for R0407 and wired only REACTIVELY -- run_ci and
+    max_audit's collection probe call `pressure_note()` to annotate a death that has already
+    happened. That makes the instrument a coroner. Nothing on this desk asks the question BEFORE
+    the kill, so the closed loop R0407 documented (an OOM-killed run never reaches its own
+    cleanup -> its scratch is orphaned -> free RAM falls -> the next run is likelier to be killed)
+    still had no detector, only a better autopsy.
+
+    MEASURED WHEN THIS WAS WIRED (2026-08-13): MemAvailable 205MB, 798MB held under /tmp. The
+    R0407 prevention (`tmp_path_retention_policy=failed`, 513ba24) worked on the population it
+    targeted -- pytest orphans are no longer the bulk -- and the occupancy came back anyway from
+    a DIFFERENT population: agent-session scratch and stray research artifacts (a 178MB mentions
+    dump, a 63MB CSV, a 63MB probe file). So the fence must watch TOTAL tmpfs occupancy, not
+    pytest directories; fixing the one producer that was caught is not the same as watching the
+    resource, which is exactly why R0407 left this half open.
+
+    IT REPORTS AND DOES NOT DELETE, deliberately. `/tmp` on this box is shared with the live
+    executor, three recorders and several concurrent agent sessions; an automatic reaper here
+    would race a sibling's scratch mid-run, and destroying another process's working state to
+    reclaim memory is a larger failure than the one it fixes. The actionable half is carried in
+    the message: the exact command, the two numbers, and which threshold was crossed.
+
+    UNMEASURED IS A DEFECT, NOT SILENCE (L1.28a). A box whose /proc cannot be read is not a box
+    with plenty of memory. `None` from `tmpfs_used_mb` is kept distinct from `0`: it means /tmp
+    is not a tmpfs here, so there is no hidden RAM to report -- a different fact, not a low
+    reading, and folding them together would invent pressure on a normal disk-backed host.
+    """
+    from libs.ops.host_resources import mem_available_mb, tmpfs_used_mb
+
+    avail = mem_available_mb()
+    tmp_mb = tmpfs_used_mb()
+    where = "check tmpfs occupancy with `du -sm /tmp/* | sort -rn | head`"
+
+    if avail is None:
+        defects.append((
+            "host-memory-unmeasured",
+            "MemAvailable could not be read from /proc/meminfo, so host memory headroom is "
+            "UNMEASURED this cycle. That is not a clean bill: the OOM class this check exists "
+            "for (R0407) is invisible by construction to every RSS-based check on the desk, so "
+            "an unreadable /proc leaves it invisible again. Confirm /proc is mounted."))
+        return
+
+    # S108 guards against WRITING predictable paths into a world-writable dir; these are message
+    # strings about a mount this check only reads, same exemption as libs/ops/host_resources.
+    tmp_note = (
+        "/tmp is not a tmpfs on this host (no RAM hidden there)"  # noqa: S108
+        if tmp_mb is None else f"{tmp_mb}MB of RAM held by files under /tmp (tmpfs)")
+
+    if avail < MEM_FLOOR_MB:
+        defects.append((
+            "host-memory-low",
+            f"MemAvailable is {avail}MB, below the {MEM_FLOOR_MB}MB floor -- {tmp_note}. A full "
+            f"pytest collection peaks near 326MB here, so the next probe is a coin-flip against "
+            f"the OOM killer, and a killed probe reports as a broken test suite (R0407b). This "
+            f"is memory no RSS check can see. First move: {where}; free the largest entries that "
+            f"no live process owns, NEVER by deleting another session's scratch blind."))
+
+    if tmp_mb is not None and tmp_mb > TMPFS_CEILING_MB:
+        defects.append((
+            "host-tmpfs-bloated",
+            f"{tmp_mb}MB of RAM is held by files under /tmp, above the {TMPFS_CEILING_MB}MB "
+            f"ceiling (MemAvailable {avail}MB). tmpfs pages are resident memory owned by no "
+            f"process: they are never reclaimed under pressure and never appear in a process "
+            f"memory check. R0407's prevention fixed pytest's orphans specifically; occupancy "
+            f"returning from other producers is the same resource going unwatched. "
+            f"{_tmpfs_holders_note()} {where}."))
+
+
+def _desk_owned_worktrees() -> dict[str, str]:
+    """Realpath -> registered path, for THIS repo's own git worktrees living outside the repo.
+
+    THE ONE PRODUCER THE NOTE ASKS FOR AND NEVER SUPPLIED. `_tmpfs_holders_note` closes by
+    telling the reader that "age plus a known producer is the evidence to act on" -- and then
+    names no producer, so the reader has to establish ownership by hand at the exact moment the
+    box is short of memory. Measured 2026-08-13: /tmp held 838MB against a 600MB ceiling, and
+    150MB of it was a detached checkout at /tmp/wt-head that THIS REPO had registered 6.5h
+    earlier and abandoned. Establishing that took `git worktree list`, a read of the entry's
+    `.git` pointer, a diff of its one dirty artifact against the main tree, and a holder scan.
+    The fence had already computed the size, the age and the holder, and stopped one fact short
+    of the one that actually decides the deletion.
+
+    A REGISTERED WORKTREE IS OWNERSHIP EVIDENCE, which is precisely what a bare directory under
+    a shared /tmp does not carry. It is a checkout of a COMMITTED sha of this repo, so reclaiming
+    it destroys no unique work unless the tree is dirty -- and `git worktree remove` refuses a
+    dirty tree by itself, which is why the command named below is the plain one and never
+    `--force`. The reader who needs `--force` is then making that call knowingly.
+
+    THE FENCE STILL DELETES NOTHING. Naming a reclaimable entry and reaping it are different
+    acts, and only the second can race a live sibling: an agent session's `git worktree add`
+    (which CLAUDE.md itself instructs, in preference to `git stash`) holds no descriptor while
+    the model is thinking, so "no holder" cannot distinguish an abandoned checkout from one
+    between commands. Age plus ownership is evidence for a HUMAN decision, not a licence to
+    automate one -- the same reason `libs/ops/host_resources` reports and does not reap.
+
+    Best-effort: a repo without git, or a git that errors, yields no attribution and the note
+    degrades to exactly what it printed before.
+    """
+    try:
+        r = subprocess.run(["git", "worktree", "list", "--porcelain"], cwd=ROOT,
+                           capture_output=True, text=True, timeout=30, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return {}
+    if r.returncode != 0:
+        return {}
+    main = os.path.realpath(str(ROOT))
+    owned: dict[str, str] = {}
+    for line in r.stdout.splitlines():
+        if not line.startswith("worktree "):
+            continue
+        p = line.split(" ", 1)[1].strip()
+        rp = os.path.realpath(p)
+        if rp != main:                      # the main checkout is the desk, not its scratch
+            owned[rp] = p
+    return owned
+
+
+def _tmpfs_holders_note() -> str:
+    """The largest /tmp entries with the one fact that makes freeing them a safe decision.
+
+    THE FENCE STAYS A REPORTER AND THE REPORT BECOMES ACTIONABLE. It still deletes nothing --
+    `/tmp` is shared with the live executor, three recorders and several agent sessions, and an
+    automatic reaper racing a sibling's scratch is a worse failure than the one it fixes. What
+    changes is that the reader no longer has to redo the investigation by hand under memory
+    pressure: the entries, their ages and whether anything live holds them are IN the defect.
+
+    HELD-BY-NOTHING IS NEVER ASSERTED FROM A PARTIAL SCAN. Most pids on this box are unreadable,
+    so an unheld-looking entry is reported as "holder unknown", never as safe. The coverage
+    fraction is printed so the reader can price the verdict instead of trusting it.
+    """
+    from libs.ops.host_resources import fd_scan_coverage, tmpfs_top_holders
+
+    rows = tmpfs_top_holders()
+    if not rows:
+        return ""
+    readable, total = fd_scan_coverage()
+    seen = f"{readable}/{total} pids' descriptors readable" if total else "no pid table readable"
+    owned = _desk_owned_worktrees()
+    parts = []
+    n_owned = 0
+    for r in rows:
+        holder = ("HELD by a live process" if r.held
+                  else "held by nothing" if r.held is False else "holder UNKNOWN")
+        # A lawgate checkout registers at <entry>/t while the entry itself is what holds the RAM,
+        # so ownership is matched by CONTAINMENT, not equality: the reclaim command has to name
+        # the registered path and the size next to it is the whole subtree's.
+        target = os.path.realpath(r.path).rstrip("/")
+        mine = [reg for rp, reg in sorted(owned.items())
+                if rp == target or rp.startswith(target + "/")]
+        own = ""
+        if mine:
+            n_owned += 1
+            own = f" DESK-OWNED git worktree -- reclaim: git worktree remove {mine[0]}"
+        parts.append(f"{r.path} {r.mb}MB {r.age_h:.0f}h {holder}{own}")
+    # THE ATTRIBUTION SENTENCE IS CONDITIONAL, and that is not cosmetic. Printed unconditionally
+    # it appears on every firing including the ones where nothing is reclaimable, so the reader
+    # cannot tell from the message whether the desk owns any of the pile -- which is the single
+    # question it was added to answer. Its presence IS the signal.
+    tail = ("" if not n_owned else
+            f" {n_owned} of these are DESK-OWNED: this repo registered them, each is a checkout "
+            f"of a committed sha, and `git worktree remove` refuses one whose tree is dirty -- "
+            f"the one class the reader can free without first reconstructing where it came from.")
+    return (f"Largest entries: {'; '.join(parts)}. Holder scan saw {seen}, so 'holder UNKNOWN' "
+            f"means NOT CHECKABLE from here, never 'safe to delete' -- age plus a known producer "
+            f"is the evidence to act on.{tail}")
+
+
 def check_test_suite_collectable(defects) -> None:
     """THE SUITE MUST ACTUALLY RUN, AND MUST NOT SHRINK. Coverage theater in its purest form.
 
@@ -3543,6 +4131,7 @@ def check_artifact_governance(defects) -> None:
         if ig.returncode in (0, 1):        # 0 = some ignored, 1 = none ignored; 128 = no git
             skip = {ln.strip() for ln in ig.stdout.splitlines() if ln.strip()}
             cands = [c for c in cands if c not in skip]
+    cands = _committed_only(cands)      # untracked WIP is not yet an artifact OF this repo
     unclaimed = []
     for rel in cands:
         if (rel in claimed or rel.startswith(claimed_prefixes)
@@ -3816,6 +4405,25 @@ _ONESHOT_SCRIPTS = frozenset({
     # it (multi-year horizons, to confirm the 1y framing is what inverted the sign), and that is
     # a re-run of the same decisive experiment rather than a schedule.
     "study_absorbing_kelly.py",
+    # classified 2026-08-12 ON THE DAY IT WAS WRITTEN (4c578e58), which is the point: R0345
+    # PRE-REGISTERED this falsifier in its own text ("measure disposition latency for compound
+    # versus atomic rows -- if compound rows do NOT age longer, this hypothesis is wrong"), and
+    # this script ran it BEFORE the admission-control build R0345 proposed. It refuted the
+    # hypothesis (p=0.93; compound rows are 6% of the ledger and cannot explain a 200-row backlog
+    # at any effect size), so the build was correctly NOT made and the backlog was re-diagnosed as
+    # a burst STOCK rather than a flow imbalance. A pre-registered falsifier is a decisive
+    # experiment, not a cadence: re-running it on the same ledger re-derives a settled number, and
+    # re-running it on a CHANGED ledger would answer a different question than the one registered.
+    # Its verdict is the durable artifact; the script is the transcript of how it was reached.
+    "check_row_atomicity.py",
+    # classified 2026-08-12 (orphan-scripts defect): the OI/LS universe metrics BACKFILL half of
+    # work order oi-ls-universe-metrics-backfill. Ran to completion 2026-08-12T01:35Z ->
+    # data/oi_ls_universe.jsonl (365 symbols, 256,625 rows, every symbol current to the archive
+    # edge 2026-08-10) + data/oi_ls_universe_coverage.json. The FORWARD feed is
+    # collect_oi_ls_live.py's cadence, so a schedule here would re-download a static public
+    # archive daily. Idempotent and resumable by design: a future listing-gap fill is a manual
+    # re-invocation of the same script, not a cadence.
+    "dl_metrics_universe.py",
 })
 
 
@@ -3848,61 +4456,6 @@ _PHANTOM_ALLOWED = {
 #: they are written by redirection from cron, not by python, so they would all read as phantoms.
 _PHANTOM_EXTS = (".json", ".jsonl", ".db", ".sqlite", ".csv", ".pkl", ".parquet")
 
-_PATH_LIT = re.compile(r'["\'](?P<p>(?:data|reports)/[A-Za-z0-9_./-]+'
-                       r'(?:\.json|\.jsonl|\.db|\.sqlite|\.csv|\.pkl|\.parquet))["\']')
-
-#: Verbs that indicate the line PRODUCES the path rather than consuming it.
-_WRITE_VERBS = ("write_text", "write_bytes", "open(", "json.dump", "to_csv", "to_json",
-                "savefig", "copyfile", "copy2", "dump(", "mkdir", "touch", "backup(",
-                "to_parquet", "np.save", "pickle.dump", "connect(")
-
-
-def _resolve_writers(lines: list[str], bound: dict[str, str]) -> set[str]:
-    """Paths written THROUGH A VARIABLE, which is how almost all of them are actually written.
-
-    THE FALSE-POSITIVE THIS FIXES (2026-08-01). The original test was LINE-LOCAL: a path counted as
-    written only if a write verb appeared on the same line as the string literal. But the ordinary
-    Python idiom is a module constant written later through its name --
-
-        QUAR = ROOT / "data/defi_lending_quarantine.json"     # literal here, no write verb
-        ...
-        QUAR.write_text(json.dumps(...))                      # writer here, no literal
-
-    -- so the detector could not see the writer and reported perfectly correct code as
-    READ-WITHOUT-WRITER. Measured on this tree: of 53 reported phantoms, the majority were this
-    shape (collect_defi_lending.py:62, protective_stops.py:143, collect_oi_ls_live.py, ...). That
-    matters more than the miscount: a fence that fires on healthy code gets acknowledged into
-    silence, and an acknowledged fence enforces nothing. The narrowness the docstring claims was
-    real in intent and absent in implementation.
-
-    ALIASES TOO. A constant is frequently passed as a default and written through the parameter
-    name (`def append(*, path: Path = LEDGER): path.write_text(...)`), so a name bound to a known
-    path as a default argument inherits that path for the purposes of this check.
-
-    Deliberately still textual rather than a full dataflow analysis. The remaining blind spot is a
-    path written through a name this never sees bound; that direction fails toward REPORTING a
-    phantom, which is the safe direction for a detector whose entire job is to notice absence.
-    """
-    if not bound:
-        return set()
-    written: set[str] = set()
-    # `def f(..., path: Path = LEDGER)` -> `path` also refers to LEDGER's target.
-    alias = dict(bound)
-    for line in lines:
-        for name, p in bound.items():
-            for m in re.finditer(rf"(\w+)\s*(?::[^=,)]+)?=\s*{re.escape(name)}\b", line):
-                if m.group(1).isidentifier():
-                    alias.setdefault(m.group(1), p)
-    for line in lines:
-        for name, p in alias.items():
-            if not re.search(rf"\b{re.escape(name)}\b", line):
-                continue
-            if any(v in line for v in _WRITE_VERBS) or re.search(
-                    rf"\b{re.escape(name)}\s*\.\s*(unlink|rename|replace|parent)\b", line):
-                written.add(p)
-    return written
-
-
 def check_phantom_paths(defects) -> None:
     """READ-WITHOUT-WRITER: a path some organ reads that NOTHING on this desk ever writes.
 
@@ -3921,41 +4474,19 @@ def check_phantom_paths(defects) -> None:
     them by shell redirection, so every one would read as a phantom and the check would be
     switched off within a week.
     """
+    # RESOLVED FROM THE SYNTAX TREE (R0356). This was a line-text scan, and a path in Python is an
+    # EXPRESSION -- `_ROOT / "data" / "x.json"` is invisible to any regex needing `data/` inside one
+    # string, in the READ position as much as the write position. Measured on this tree: swapping
+    # the textual scan for libs/research/path_refs resolved 12 reported paths (7 by finding the
+    # writer, 5 by recognising a provenance LABEL that opens nothing) and surfaced 12 genuine
+    # read-without-writers it had never been able to see. One of those was
+    # `data/trade_forensics.json`, read by run_exec_monitor while the producer writes
+    # `web/trade_forensics.json` -- the desk's most prolific defect class, sitting unreported
+    # inside its own detector because the read was a split literal.
     root = ROOT
-    refs: dict[str, set[str]] = {}
-    writers: set[str] = set()
-    for py in list((root / "scripts").rglob("*.py")) + list((root / "libs").rglob("*.py")):
-        try:
-            text = py.read_text("utf-8", errors="ignore")
-        except OSError:
-            continue
-        rel_py = str(py.relative_to(root))
-        lines = text.splitlines()
-        # NAME -> path, for module-constant style bindings. See _resolve_writers.
-        bound: dict[str, str] = {}
-        for line in lines:
-            # A path named only in a COMMENT is not read by anything. This check reported
-            # `data/x.json` -- a placeholder inside two explanatory comments, one of them in this
-            # very function -- as a phantom store with two readers.
-            if line.lstrip().startswith("#"):
-                continue
-            for m in _PATH_LIT.finditer(line):
-                p = m.group("p")
-                refs.setdefault(p, set()).add(rel_py)
-                if any(v in line for v in _WRITE_VERBS):
-                    writers.add(p)
-                lhs = line.split("=", 1)[0].strip() if "=" in line else ""
-                if lhs.isidentifier():
-                    bound[lhs] = p
-        writers |= _resolve_writers(lines, bound)
-
-    phantoms = sorted(
-        p for p, _ in refs.items()
-        if p not in _PHANTOM_ALLOWED
-        and p.endswith(_PHANTOM_EXTS)
-        and not (root / p).exists()
-        and p not in writers
-    )
+    found = path_refs.scan(root)
+    refs = found.reads
+    phantoms = found.phantoms(root, allowed=set(_PHANTOM_ALLOWED))
     if phantoms:
         shown = "; ".join(f"{p} (read by {', '.join(sorted(refs[p])[:2])})" for p in phantoms[:5])
         defects.append((
@@ -4008,15 +4539,55 @@ def check_orphan_scripts(defects) -> None:
                     and "audit_shards" not in f.as_posix()):
                 with contextlib.suppress(OSError):
                     corpus.append(f.read_text("utf-8", errors="ignore"))
-    blob = "\n".join(corpus)
     cycle = set(re.findall(r'"scripts/([a-z_0-9]+\.py)"',
                            (sdir / "daily_research_cycle.py").read_text("utf-8", errors="ignore")))
+    # ONE PASS OVER THE CORPUS, NOT ONE PER SCRIPT (2026-08-12). This ran
+    # `re.search(rf"scripts/{name}|scripts\.{stem}\b|\b{stem}\b", blob)` for EVERY script, i.e.
+    # ~500 full scans of a multi-megabyte blob: 91.6s of check_orphan_scripts' 91.7s, and the
+    # dominant term in max_audit's whole runtime. That cost is why this check could only ever
+    # live on a daily cron -- at 90s it cannot be a push gate, and a law with no boundary is a
+    # law enforced periodically (L1.37).
+    #
+    # THE REWRITE IS AN IDENTITY, NOT AN APPROXIMATION, and the argument is the only reason it is
+    # safe to touch a detector this load-bearing: `\b` is defined against exactly [A-Za-z0-9_],
+    # so `\bSTEM\b` matches iff STEM appears as a MAXIMAL run of those characters -- which is
+    # precisely membership in the token set below. The two other alternatives are strict
+    # subcases: `scripts/foo.py` and `scripts.foo` both contain `foo` as a maximal token (`/` and
+    # `.` are not word characters), so neither can match where the third does not. Verified
+    # empirically against the old implementation over the real repo before landing: identical
+    # verdicts on all 496 scripts.
+    #
+    # A stem that is not a pure identifier (a dash, a dot) would break that equivalence, because
+    # `\b` could then match across a boundary the tokenizer split. Those keep the original regex
+    # -- correctness first, and they are rare enough that the speed is unaffected.
+    # MEMORY IS THE OTHER HALF OF "AFFORDABLE AT A BOUNDARY", and it nearly deleted this fence on
+    # its first wiring: `re.findall` over the joined corpus materialises a LIST of every token in
+    # the repo -- ~6M short strings at ~50B of object overhead each -- which peaked at 621MB RSS
+    # on a 3.8GB box with 616MB free. The law gate's subprocess came back rc=-9: the OOM killer,
+    # reported as "no output". Streaming per file with `finditer` keeps only the UNIQUE tokens
+    # (a few hundred thousand), and the 45MB joined blob is never built unless something actually
+    # needs it. A fence that dies under memory pressure is indistinguishable from a fence that
+    # passed, which is the worst of the available failure modes (L1.28a).
+    tokens: set[str] = set()
+    for _text in corpus:
+        tokens.update(mm.group() for mm in re.finditer(r"[A-Za-z0-9_]+", _text))
+    # A sibling session's uncommitted script is not an orphan of this repo -- see _committed_only.
+    committed = set(_committed_only([f"scripts/{f.name}" for f in sdir.glob("*.py")]))
+    cands = [f for f in sorted(sdir.glob("*.py"))
+             if f.name not in cycle and f.name not in _ONESHOT_SCRIPTS
+             and f.name != "daily_research_cycle.py" and f"scripts/{f.name}" in committed]
+    # The joined blob exists ONLY for the non-identifier fallback, which is empty in practice.
+    blob = ("\n".join(corpus)
+            if any(not re.fullmatch(r"[A-Za-z0-9_]+", f.stem) for f in cands) else "")
     dead = []
-    for f in sorted(sdir.glob("*.py")):
-        if f.name in cycle or f.name in _ONESHOT_SCRIPTS or f.name == "daily_research_cycle.py":
-            continue
-        stem = re.escape(f.stem)
-        if not re.search(rf"scripts/{re.escape(f.name)}|scripts\.{stem}\b|\b{stem}\b", blob):
+    for f in cands:
+        if re.fullmatch(r"[A-Za-z0-9_]+", f.stem):
+            referenced = f.stem in tokens
+        else:
+            stem = re.escape(f.stem)
+            referenced = bool(
+                re.search(rf"scripts/{re.escape(f.name)}|scripts\.{stem}\b|\b{stem}\b", blob))
+        if not referenced:
             dead.append(f.name)
     if dead:
         defects.append((
@@ -4585,6 +5156,7 @@ def check_mine_flow(defects) -> None:
         load_ledger,
         load_ratchet,
         priors_payload,
+        stable_key,
         tier_calibration,
         update_ratchet,
     )
@@ -4594,7 +5166,9 @@ def check_mine_flow(defects) -> None:
         return  # a single snapshot cannot measure flow -- not a defect, just no history yet
     thr = _mine_thresholds()
     flow = flow_stats(ledger)
-    n_names = len({str(i.get("n", "")) for r in ledger for i in r["items"]})
+    # Stable identities, matching flow_stats: raw names count every re-grade as a fresh find,
+    # which inflates the denominator and understates the conversion rate.
+    n_names = len({stable_key(str(i.get("n", ""))) for r in ledger for i in r["items"]})
     rate = (flow.n_converted / n_names) if n_names else 0.0
 
     priors = class_priors(ledger)
@@ -4947,15 +5521,31 @@ def check_dig_uncommitted(defects) -> None:
     # Asked exactly, via git's own index -- NOT file mtimes. A fresh clone stamps every file with
     # the checkout time, so an mtime-vs-commit-time comparison reports the entire research surface
     # as uncommitted on any re-clone. `git status --porcelain` answers the real question.
+    #
+    # `-b` COSTS NOTHING AND NAMES THE TREE. This box runs a dozen registered worktrees at once
+    # (cron starts several), and this check reports whichever one it happened to run in -- ROOT is
+    # relative to max_audit.py's own location. A bare basename is therefore unactionable from
+    # anywhere else, and the way it fails is expensive rather than merely unhelpful: a reader who
+    # resolves `absorbing_kelly_study.json[M]` in their OWN checkout finds it clean, goes looking,
+    # finds it dirty in a sibling's tree, and commits another live session's in-progress work.
+    # That is R0423, which this desk has recorded four times. Measured 2026-08-13: the handed
+    # defect named absorbing_kelly_study.json, clean in the canonical checkout and dirty in two
+    # sibling worktrees mid-study.
     try:
-        out = subprocess.run(["git", "status", "--porcelain", "--", *_DIG_TRACKED],
+        out = subprocess.run(["git", "status", "--porcelain", "-b", "--", *_DIG_TRACKED],
                              cwd=ROOT, capture_output=True, text=True, timeout=20)
     except (OSError, subprocess.SubprocessError):
         return  # no git available -- the check simply does not apply here
     if out.returncode != 0:
         return
     stale = []
+    branch = ""
     for line in out.stdout.splitlines():
+        # `## <branch>...<upstream>` from -b. Skipping it explicitly matters: the parse below
+        # would otherwise read it as a file with status code "##".
+        if line.startswith("##"):
+            branch = line[2:].strip().split("...")[0].strip()
+            continue
         if len(line) > 3:
             code, path = line[:2].strip() or "??", line[3:].strip()
             # RATCHET GRACE (R0147): conversion/holdings records are re-ticked by cron every
@@ -4977,11 +5567,15 @@ def check_dig_uncommitted(defects) -> None:
                     pass                     # grace unreadable -> file stays counted (fail firm)
             stale.append(f"{Path(path).name}[{code}]")
     if stale:
+        where = f"{ROOT}{f' ({branch})' if branch else ''}"
         defects.append((
             "dig-output-uncommitted",
-            f"§33: dig output UNCOMMITTED -- {', '.join(stale[:8])}. Output not "
+            f"§33: dig output UNCOMMITTED in {where} -- {', '.join(stale[:8])}. Output not "
             "committed and pushed by end of cycle DID NOT HAPPEN and earns zero credit: git is "
-            "the institutional memory, VPS disk is not. Commit, push, and VERIFY the push."))
+            "the institutional memory, VPS disk is not. Commit, push, and VERIFY the push -- IN "
+            "THAT TREE. Several worktrees are live on this box and the same path is a different "
+            "session's work in each, so resolving the basename in your own checkout commits "
+            "someone else's (R0423)."))
 
 
 MINING_RECORD = ROOT / "docs/research/mining_record.json"   # tracked in git, like the §33 record
@@ -5188,6 +5782,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("llm-exhaustion", check_llm_exhaustion),
                       ("dependency-drift", check_dependency_drift),
                       ("naive-datetime", check_naive_datetime),
+                      ("host-memory", check_host_memory_headroom),
                       ("test-suite", check_test_suite_collectable),
                       ("triage-disposition", check_triage_disposition),
                       ("artifact-governance", check_artifact_governance),
@@ -5495,7 +6090,7 @@ def check_book_absorbing_state(defects) -> None:
     if not (feed.exists() and st_p.exists()):
         return
     try:
-        from libs.risk import risk_controls
+        from libs.risk import capital_events, risk_controls
         fd = json.loads(feed.read_text("utf-8"))
         st = json.loads(st_p.read_text("utf-8"))
     except Exception:
@@ -5504,7 +6099,24 @@ def check_book_absorbing_state(defects) -> None:
     if fut_leg is None:                       # futures equity unmeasured this tick -> stay silent
         return
     try:
-        start = float(st["start_futures_equity"])
+        # THE THIRD SITE OF THE TWO-SITES/ONE-TRUTH BUG (R0364). The docstring above promises this
+        # monitor recomputes through the SAME pure function the executor calls; it did, and then
+        # fed it a DIFFERENT inception. `start_futures_equity` is the raw inception, written once
+        # and never re-based, while `fut_leg_net` is published as `fut_eq - effective_start_equity`
+        # (run_cashcarry_executor.py:1833) -- so `raw + fut_leg_net` adds a delta measured against
+        # one baseline to another baseline and over-states equity by exactly the ledgered re-base.
+        # Measured 2026-08-12: this monitor believed $13,472.67 while the book's own published
+        # equity was $8,682.22, a $4,790.70 gap equal to the recorded capital event to the cent.
+        #
+        # The direction is the dangerous one. `flatten` comes ONLY from the ruin rail
+        # (risk_controls.evaluate:319, dd_start = eq/start - 1), so over-stating equity means this
+        # check goes SILENT while the real rail is firing: at a true -36% the raw arithmetic reads
+        # -19.7% and reports a healthy book. An absorbing-state monitor that cannot see the
+        # absorbing state is worse than absent, because its silence is read as an all-clear.
+        #
+        # `flow_adjusted_equity` and `venue_equity` are deliberately still omitted: both feed only
+        # the pause/breach branches, and this check returns early on anything but `flatten`.
+        start = capital_events.effective_start_equity(float(st["start_futures_equity"]))
         fut_eq = start + float(fut_leg)
         # Flat book: unrealised spot is 0, so the spot side is exactly the banked realised PnL.
         eq_c = fut_eq + float(st.get("realized_spot_pnl", 0.0))
@@ -5528,6 +6140,100 @@ def check_book_absorbing_state(defects) -> None:
         f"${start:,.2f} inception). Every other check reads this as a healthy flat book. "
         f"Re-baselining a fired ruin rail is TIER-3 (principal-only) -- do NOT self-clear it; "
         f"page the principal with the attribution of what caused the drawdown."))
+
+
+#: How far the recomputed ruin-channel drawdown may sit from the published one before the
+#: published block is treated as describing DIFFERENT INPUTS. Both sides are `equity/start - 1`
+#: off the same snapshot, so agreement is exact up to one tick of equity drift; the failure this
+#: catches was 68 percentage points wide. A NUMERIC tolerance on a ratio, not a clock.
+_RAIL_DD_TOL_PCT = 1.0
+
+
+def check_rail_verdict_published(defects) -> None:
+    """THE RAIL VERDICT EVERY CONSUMER READS MUST BE ONE SOMETHING ACTUALLY EVALUATED (R0364).
+
+    `web/cashcarry_live.json["risk"]` is the desk's published rail state: the dashboard renders it,
+    `check_idle_cost` prices the clamp from it, and a human reads `action` to decide whether the
+    book is stopped. It is published by `_emit` as `rb.get("risk")` -- a key set ONLY by
+    `_rebalance`. Two ways that lies, and NOTHING could tell either from a healthy verdict:
+
+      ABSENT   On any tick that did not rebalance, `rb` is `_book_snapshot()`, which has no "risk"
+               key at all, so `_emit` publishes `"risk": null`. At `--interval 600` against a 60s
+               heartbeat that is ~9 ticks in 10. `check_idle_cost` reads `live.get("risk") or {}`
+               -> action "" -> the rail clamp is recorded INACTIVE and priced at zero, so a live
+               pause is invisible to the one fence built to price it.
+      STALE    When `_rebalance` stops completing, the last block it set is copied forward every
+               tick onto a file whose mtime keeps advancing. Measured 2026-08-05: the feed was
+               fresh at 08:52Z carrying `dd_from_start_pct -17.64 / pause_opens`, which reproduces
+               ONLY against the RAW inception, while the running code computes +50.90 against the
+               ledgered one -- and `last_combined_equity_at` sat 11 hours behind a process that
+               republishes every 600s. A frozen pause verdict was steering the dashboard, the
+               pager and the Gate-0 clock.
+
+    This is the desk's oldest lesson pointed at a rail: A HEARTBEAT PROVES THE LOOP IS ALIVE, NEVER
+    THAT THE PIPE IS. The feed's own freshness is the heartbeat and it stayed green through both.
+
+    So the check does what R0364 asked for and compares the RECOMPUTED decision against the
+    published one, rather than asking either how old it is -- an age bound would need a threshold
+    and would still pass a verdict that was fresh and wrong. Only the RUIN channel is compared:
+    `dd_start = equity/start - 1` depends on nothing this monitor omits, while the pause and
+    breach channels take `flow_adjusted_equity` and `venue_equity` that only the executor holds,
+    so comparing `action` outright would fire on a venue breach that is entirely correct.
+
+    Reports; changes nothing. Reads that fail leave it SILENT -- an unmeasurable feed must never
+    manufacture a rail defect (the 07-26 "no measurement beats a confident wrong one" lesson).
+    """
+    feed = ROOT / "web/cashcarry_live.json"
+    st_p = ROOT / "data/cashcarry_positions.json"
+    if not (feed.exists() and st_p.exists()):
+        return
+    try:
+        from libs.risk import capital_events
+        fd = json.loads(feed.read_text("utf-8"))
+        st = json.loads(st_p.read_text("utf-8"))
+    except Exception:
+        return
+    fut_leg = fd.get("fut_leg_net")
+    if fut_leg is None:                       # futures equity unmeasured this tick -> stay silent
+        return
+    try:
+        start = capital_events.effective_start_equity(float(st["start_futures_equity"]))
+        eq_c = start + float(fut_leg) + float(st.get("realized_spot_pnl", 0.0))
+        dd_start_pct = (eq_c / max(1e-9, start) - 1.0) * 100.0
+    except (KeyError, TypeError, ValueError):
+        return
+    risk = fd.get("risk")
+    if not isinstance(risk, dict):
+        defects.append((
+            "rail-verdict-absent",
+            f"NO RAIL VERDICT IS PUBLISHED: web/cashcarry_live.json carries `risk: {risk!r}` on a "
+            f"feed that is otherwise current (n_carries={fd.get('n_carries')}, equity "
+            f"${eq_c:,.2f}). `_emit` publishes `rb.get('risk')` and only `_rebalance` sets that "
+            f"key, so every non-rebalance tick republishes the whole book with the rail state "
+            f"blanked. Downstream cannot tell this from 'no breach': check_idle_cost reads "
+            f"`live.get('risk') or {{}}` and prices the clamp at zero. UNMEASURED IS NOT OK "
+            f"(L1.28a) -- the executor must publish the last EVALUATED decision with the time it "
+            f"was evaluated, or publish an explicit UNEVALUATED marker."))
+        return
+    pub = risk.get("dd_from_start_pct")
+    if pub is None:
+        return
+    try:
+        gap = abs(float(pub) - dd_start_pct)
+    except (TypeError, ValueError):
+        return
+    if gap > _RAIL_DD_TOL_PCT:
+        defects.append((
+            "rail-verdict-stale",
+            f"THE PUBLISHED RAIL VERDICT DISAGREES WITH ITS OWN INPUTS by {gap:.2f} points: the "
+            f"feed says dd_from_start {float(pub):+.2f}% / action {risk.get('action')!r}, and "
+            f"recomputing it from the SAME snapshot against the ledgered inception "
+            f"(${start:,.2f}) gives {dd_start_pct:+.2f}%. `_emit` copies `rb['risk']` forward "
+            f"every tick, so a `_rebalance` that stops completing publishes a FROZEN verdict onto "
+            f"a file whose mtime keeps advancing -- state last stamped "
+            f"{st.get('last_combined_equity_at')!r}. The dashboard, the pager and the idle-cost "
+            f"clamp price are all reading a rail nothing is recomputing. Do NOT re-baseline "
+            f"anything: find why _rebalance stopped writing."))
 
 
 DOCTRINE = ROOT / "ops/principal_doctrine.txt"
@@ -5585,6 +6291,7 @@ CHECKS += [("fee-carry-ratio", check_fee_carry_ratio),
            ("paid-target-registry", check_paid_target_registry),
            ("holdings-ratchet", check_holdings_never_shrink),
            ("book-absorbing-state", check_book_absorbing_state),
+           ("rail-verdict-published", check_rail_verdict_published),
            ("universal-doctrine", check_universal_doctrine)]
 
 
@@ -5595,7 +6302,34 @@ _CONSTITUTION_ORGANS = ("run_external_panel", "hypothesis_generator", "breadth_e
                         "collector_author", "deep_review", "run_micro_audit",
                         # added at the 2026-08-04 merge: this branch's organs, caught by the
                         # sibling's coverage net (they held the panel keys with no objective)
-                        "kimi_hunter", "run_strategic_director")
+                        "kimi_hunter", "run_strategic_director",
+                        # caught by the panel-keys net 2026-08-11: both send reasoning prompts
+                        "gpt_hunter", "run_survivor_panel")
+
+
+def _carries_objective(script: Path) -> bool:
+    """Does this organ's prompt carry the objective -- in the script, or one hop into `libs/`?
+
+    A FLAT GREP ON scripts/ WAS WRONG IN BOTH DIRECTIONS, and the second direction is the one that
+    matters. `run_strategic_director` builds its prompt in `libs.research.strategic_director.
+    build_prompt`, so the preamble is correctly injected and the grep would have called it NAKED
+    forever. A fence that reports a defect which cannot be cleared is a fence that gets ignored --
+    this desk has already retired two for exactly that ("Two fences that cried wolf").
+
+    ONE HOP, NOT A FULL IMPORT GRAPH. The prompt of an organ lives either where the organ is or in
+    the module it delegates prompt-building to; chasing transitively would start finding the string
+    in unrelated dependencies and turn a specific check into one that can never go red.
+    """
+    src = script.read_text("utf-8", errors="ignore")
+    if "OBJECTIVE_PREAMBLE" in src:
+        return True
+    for mod in re.findall(r"^from (libs[.\w]+) import", src, re.M):
+        p = ROOT / (mod.replace(".", "/") + ".py")
+        if p.exists():
+            with contextlib.suppress(OSError):
+                if "OBJECTIVE_PREAMBLE" in p.read_text("utf-8", errors="ignore"):
+                    return True
+    return False
 
 
 def check_constitution(defects) -> None:
@@ -5634,7 +6368,7 @@ def check_constitution(defects) -> None:
         if not p.exists():
             continue
         with contextlib.suppress(OSError):
-            if "OBJECTIVE_PREAMBLE" not in p.read_text("utf-8", errors="ignore"):
+            if not _carries_objective(p):
                 naked.append(name)
     if naked:
         defects.append((
@@ -6678,8 +7412,10 @@ def check_moat_screened(defects) -> None:
             "moat-screen-mostly-suspect",
             f"{len(suspect)} of {d.get('scored')} scored hypotheses came back SUSPECT-LOOKAHEAD. "
             "On a causally clean tape that is a statement about the HARNESS, not the features -- "
-            "alignment, horizon calibration or target construction. Four such bugs were found and "
-            "fixed on 2026-08-03; a fifth would look exactly like this."))
+            "alignment, horizon calibration or target construction. Five such bugs were found and "
+            "fixed on 2026-08-03 (1595bd4), the sub-daily ceiling rescale was re-welded 2026-08-11 "
+            "(9e11c7d) after a merge deleted it from BOTH sides, and the warmup-blind screen floor "
+            "fell 2026-08-12; the next one would look exactly like this."))
 
     # THE RATE, NOT THE LEVEL (P18) -- APPLIED TO THE HUNT, NOT ONLY TO THE MINE. The miner has
     # carried a closure check since it was built; the screen shipped with a coverage frontier and
@@ -6824,6 +7560,64 @@ def check_constitution_review(defects) -> None:
 CHECKS += [("constitution-review", check_constitution_review)]   # registered BELOW its definition
 
 
+def _read_one(path: Path) -> tuple[dict, str]:
+    """One ack registry -> (acks, state). An ABSENT registry is known-empty; an UNPARSEABLE one is
+    "unknown", never silently empty -- guessing "nothing is acked" writes a permanent false
+    accusation and guessing "all acked" buries real work."""
+    if not path.exists():
+        return {}, "known"
+    try:
+        acks = json.loads(path.read_text("utf-8"))
+    except Exception:
+        return {}, "unknown"
+    return (acks, "known") if isinstance(acks, dict) else ({}, "unknown")
+
+
+def _read_acks() -> tuple[dict, str]:
+    """Both registries as one view. TRACKED WINS on a duplicate id: it is the copy every checkout
+    can see and a reviewer can read in the diff, so a local entry must not be able to quietly
+    shorten or extend a disposition the repo has already recorded. Either registry failing to
+    parse degrades the WHOLE view to "unknown" -- a half-read ack table is not a known one."""
+    repo, s1 = _read_one(ACKS_REPO)
+    local, s2 = _read_one(ACKS)
+    merged = {**local, **repo}
+    return merged, ("known" if s1 == "known" and s2 == "known" else "unknown")
+
+
+def misfiled_acks(defects: Sequence[tuple], *, now_iso: str | None = None) -> list[tuple[str, str]]:
+    """REPO-scope defects acked ONLY in the per-box registry -- acks that do not travel (R0393).
+
+    Reported rather than fixed silently, because moving an ack between files is a disposition and
+    disposition is not this function's to make. Each entry is (defect id, scope).
+
+    DEDUPED BY ID, because an ack is keyed by id and one check emits many defects under the same
+    one: `producer-cadence-stale` fires five times in a normal run, and a list that repeated it
+    five times would report 17 misfilings where 12 acks need moving -- inflating a queue is the
+    same class of error as hiding one.
+    """
+    now_iso = now_iso or datetime.now(tz=UTC).isoformat()
+    repo, _ = _read_one(ACKS_REPO)
+    local, _ = _read_one(ACKS)
+    out: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    for d in defects:
+        did = d[0]
+        if did in seen:
+            continue
+        seen.add(did)
+        scope = d[2] if len(d) > 2 else "UNSCOPED"
+        if scope == "RUNTIME":
+            continue                                    # per-box defect, per-box ack: correct
+        a = local.get(did)
+        if not (isinstance(a, dict) and a.get("until", "") > now_iso):
+            continue                                    # not acked locally; nothing to misfile
+        b = repo.get(did)
+        if isinstance(b, dict) and b.get("until", "") > now_iso:
+            continue                                    # already carried by the tracked registry
+        out.append((did, scope))
+    return out
+
+
 def split_acked(
     defects: Sequence[tuple], *, now_iso: str | None = None
 ) -> tuple[list[tuple], list[tuple[str, str]], str]:
@@ -6838,6 +7632,12 @@ def split_acked(
     A brief whose top of queue is 100% false gets walked past, which the brief then counted as
     avoidance and escalated. Sharing this function is what stops that drift for good.
 
+    TWO REGISTRIES, ONE VIEW (R0393). Acks are split by the scope max_audit already computes:
+    REPO-scope dispositions live in the TRACKED registry so they travel with the commit that
+    reasons about them, RUNTIME ones stay per-box where their truth actually differs. An id acked
+    in EITHER is acked here -- the split governs where a disposition is WRITTEN, never whether it
+    counts, so no existing ack was invalidated by the split landing.
+
     Returns ``(live, acked, ack_state)``. ``ack_state`` is the REFUSAL PATH (L1.41): "known" when
     the registry was genuinely read, "unknown" when it exists but could not be parsed. An ABSENT
     registry is known-empty -- "nothing has been acked" is a fact, not an unknown. Callers that
@@ -6845,17 +7645,7 @@ def split_acked(
     writes a permanent false accusation and guessing "all acked" buries real work.
     """
     now_iso = now_iso or datetime.now(tz=UTC).isoformat()
-    if not ACKS.exists():
-        acks: Any = {}
-        state = "known"
-    else:
-        try:
-            acks = json.loads(ACKS.read_text("utf-8"))
-            state = "known"
-        except Exception:
-            acks, state = {}, "unknown"
-    if not isinstance(acks, dict):
-        acks, state = {}, "unknown"
+    acks, state = _read_acks()
 
     # WIDTH-PRESERVING (merge 2026-08-04): defects arrive as (did, msg) from bare callers and as
     # (did, msg, scope, tracked, untracked) after _fenced's evidence recording. The ack rule reads
@@ -6878,6 +7668,7 @@ def main() -> None:
         _fenced(fn, defects, label)
 
     live, acked, _ack_state = split_acked(defects)
+    misfiled = misfiled_acks(defects)
 
     prev = _j(REPORT, {})
     first_seen = prev.get("first_seen", {})
@@ -6893,7 +7684,11 @@ def main() -> None:
          "live": [{"id": d, "msg": m, "scope": s, "evidence_tracked": tr,
                    "evidence_untracked": un} for d, m, s, tr, un in live],
          "by_scope": by_scope,
-         "acked": [d for d, _ in acked], "first_seen": first_seen,
+         "acked": [d for d, _ in acked],
+         #: Acks that do not travel: REPO-scope defects disposed of only in the untracked
+         #: per-box registry, so they keep firing (and escalating) on every other checkout.
+         "acked_misfiled": [{"id": d, "scope": s} for d, s in misfiled],
+         "first_seen": first_seen,
          "scope_note": (
              "REPO: the check consulted a git-tracked file, so the defect is verifiable and "
              "closable from any checkout. RUNTIME: it consulted only untracked paths (data/, "

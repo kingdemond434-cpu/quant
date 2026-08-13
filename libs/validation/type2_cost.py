@@ -112,6 +112,7 @@ from typing import Any
 import numpy as np
 
 from libs.research.cohort_independence import effective_bets
+from libs.research.panel_breadth import breadth_deflator
 from libs.validation.admission_power import POWER_TARGET
 from libs.validation.forward_stats import autocorr_factor
 
@@ -283,26 +284,35 @@ def effective_years(
     return float(min(years * gain / d, years * max(1, int(n_units))))
 
 
-def correlation_n_eff(n_obs: float, *, horizon_periods: float = 1.0, panel_width: int = 1) -> float:
+def correlation_n_eff(n_obs: float, *, horizon_periods: float = 1.0, panel_width: int = 1,
+                      xs_neff: float | None = None) -> float:
     """Effective independent observations behind a correlation-scale statistic.
 
     THE SAME EXPRESSION AS `libs/research/axis_screen.py`, copied rather than re-derived so the two
     cannot disagree, INCLUDING its upper bound at the rows actually observed:
 
-        n_eff = min(n, n / (horizon_periods * panel_width)), floored at 1
+        n_eff = min(n, n / (horizon_periods * K/xs_neff)), floored at 1
 
-    `horizon_periods` deflates for OVERLAPPING targets sampled every period; `panel_width` divides
-    out cross-sectional stacking (a 139-symbol panel flattened into one array has n = symbol-days,
-    and treating those as independent inflates every t-stat by sqrt(139) ~ 11.8x). The bound at `n`
-    exists because at horizon < 1 the deflator inverts into a MULTIPLIER -- measured on the first
-    intraday caller, 4,314 five-minute bars reported n_eff = 1,236,384 -- and a bound that can only
-    lower n_eff can only tighten the reading.
+    `horizon_periods` deflates for OVERLAPPING targets sampled every period; the cross-sectional
+    factor divides out stacking (a 139-symbol panel flattened into one array has n = symbol-days).
+    The bound at `n` exists because at horizon < 1 the deflator inverts into a MULTIPLIER --
+    measured on the first intraday caller, 4,314 five-minute bars reported n_eff = 1,236,384 --
+    and a bound that can only lower n_eff can only tighten the reading.
+
+    `xs_neff` IS THE MEASURED BREADTH AND `panel_width` ALONE IS AN ASSUMPTION. Dividing by the
+    full K asserts K symbols carry ONE independent observation per bar; passing no `panel_width`
+    at all asserts they carry K. Both endpoints were live on this desk within one change of each
+    other and NEITHER was ever measured -- on its own 139-symbol panel the answer is ~93, so the
+    honest divisor is 1.50 rather than 139. Omitting `xs_neff` keeps the conservative full-K
+    divisor: absence resolves to the tighter reading, never to a clean one (L1.28a). The
+    measurement lives in `libs/research/panel_breadth.py`; this signature exists so the two copies
+    of the expression stay identical, which is the only reason the copy was tolerated.
     """
     n = float(n_obs)
     if not math.isfinite(n) or n <= 0.0:
         return 0.0
     h = float(horizon_periods)
-    w = max(1, int(panel_width))
+    w = breadth_deflator(panel_width, xs_neff)
     denom = max(h * w, 1e-9) if math.isfinite(h) and h > 0.0 else float(w)
     return float(max(min(n, n / denom), 1.0))
 
@@ -576,6 +586,7 @@ def correlation_negative(
     source: str = "",
     horizon_periods: float = 1.0,
     panel_width: int = 1,
+    xs_neff: float | None = None,
     n_tests: int = 1,
     alpha: float = DEFAULT_ALPHA,
     effects: Sequence[float] = DECLARED_CORRELATION_EFFECTS,
@@ -592,7 +603,8 @@ def correlation_negative(
     artifact keeps a reader from comparing a 0.03 IC floor against a 0.2 mean-shift floor as though
     they were the same quantity.
     """
-    n_eff = correlation_n_eff(n_obs, horizon_periods=horizon_periods, panel_width=panel_width)
+    n_eff = correlation_n_eff(n_obs, horizon_periods=horizon_periods, panel_width=panel_width,
+                              xs_neff=xs_neff)
     if n_eff < _MIN_N_EFF:
         return indeterminate(
             name,

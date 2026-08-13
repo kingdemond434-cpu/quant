@@ -2,10 +2,17 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from scripts.check_change_window import build_report, touches_money_path
+from scripts.check_change_window import (
+    REPAIR_MARKER,
+    build_report,
+    classify_commits,
+    restart_verdict,
+    touches_money_path,
+)
 
 NOW = datetime(2026, 8, 1, 12, 0, tzinfo=UTC)
 
@@ -76,3 +83,87 @@ def test_freeze_is_improvements_not_repairs_in_the_law_text():
 def test_money_path_matcher():
     assert touches_money_path(["libs/risk/gate.py"]) == ["libs/risk/gate.py"]
     assert touches_money_path(["docs/research/x.md"]) == []
+
+
+# --- R0426: the window judged a WINDOW, never a DIFF ------------------------------------------
+# L1.38 freezes money-path IMPROVEMENTS and always allows REPAIRS, but the unit of deployment is a
+# PROCESS RESTART, not a commit -- so a repair sitting behind a withheld improvement could not be
+# shipped without also shipping the improvement, and this fence had no vocabulary for saying which
+# pending commits were which. That is the live instance the row was raised on.
+
+
+def _git(repo: Path, *args: str) -> str:
+    return subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True,
+                          check=True).stdout.strip()
+
+
+def _repo(tmp_path: Path) -> Path:
+    r = tmp_path / "repo"
+    (r / "libs/execution").mkdir(parents=True)
+    (r / "scripts").mkdir(parents=True)
+    _git(r.parent, "init", "-q", str(r))
+    _git(r, "config", "user.email", "t@t")
+    _git(r, "config", "user.name", "t")
+    (r / "README").write_text("base\n")
+    _git(r, "add", "-A")
+    _git(r, "commit", "-qm", "base")
+    return r
+
+
+def _commit(repo: Path, rel: str, msg: str) -> None:
+    p = repo / rel
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text((p.read_text() if p.exists() else "") + "x\n")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", msg)
+
+
+def test_a_money_path_commit_is_an_improvement_unless_it_DECLARES_a_repair(tmp_path):
+    repo = _repo(tmp_path)
+    base = _git(repo, "rev-parse", "HEAD")
+    _commit(repo, "libs/execution/conn.py", "tidy the connector")             # undeclared
+    _commit(repo, "libs/execution/conn.py", f"{REPAIR_MARKER} -- futures leg reported a re-base")
+    _commit(repo, "scripts/run_deep_sweep.py", "research change")
+    kinds = {c["kind"]: c["subject"] for c in classify_commits(base, "HEAD", root=repo)}
+    assert set(kinds) == {"IMPROVEMENT", "REPAIR", "NON-MONEY-PATH"}
+    assert kinds["IMPROVEMENT"] == "tidy the connector"      # UNDECLARED IS NEVER A REPAIR
+    assert kinds["REPAIR"].startswith(REPAIR_MARKER)
+    assert kinds["NON-MONEY-PATH"] == "research change"
+
+
+def test_a_repair_stuck_behind_a_withheld_improvement_is_named(tmp_path):
+    """THE LIVE INSTANCE R0426 WAS RAISED ON: restarting to land the repair also lands the
+    improvement a prior session deliberately withheld, and nothing could say so."""
+    repo = _repo(tmp_path)
+    base = _git(repo, "rev-parse", "HEAD")
+    _commit(repo, "libs/execution/conn.py", "improve sizing telemetry")       # withheld
+    _commit(repo, "libs/execution/conn.py", f"{REPAIR_MARKER} -- net_pnl_basis")
+    rv = restart_verdict(base, "HEAD", root=repo, status="STERILE")
+    assert rv["verdict"] == "BLOCK"
+    assert rv["n_repairs"] == 1 and rv["n_blocking"] == 1
+    assert "improve sizing telemetry" in rv["blocking"][0]["subject"]
+
+
+def test_all_declared_repairs_may_deploy_inside_a_window(tmp_path):
+    repo = _repo(tmp_path)
+    base = _git(repo, "rev-parse", "HEAD")
+    _commit(repo, "libs/execution/conn.py", f"{REPAIR_MARKER} -- a live defect")
+    rv = restart_verdict(base, "HEAD", root=repo, status="STERILE")
+    assert rv["verdict"] == "ALLOW" and rv["n_repairs"] == 1
+
+
+def test_no_money_path_commits_is_NOT_reported_as_all_repairs(tmp_path):
+    """Two different facts: 'the freeze never applied' vs 'every frozen thing is a repair'."""
+    repo = _repo(tmp_path)
+    base = _git(repo, "rev-parse", "HEAD")
+    _commit(repo, "scripts/run_deep_sweep.py", "research only")
+    rv = restart_verdict(base, "HEAD", root=repo, status="STERILE")
+    assert rv["verdict"] == "ALLOW"
+    assert "touch the money path" in rv["why"] and "declared repairs" not in rv["why"]
+
+
+def test_an_open_window_never_blocks_a_restart(tmp_path):
+    repo = _repo(tmp_path)
+    base = _git(repo, "rev-parse", "HEAD")
+    _commit(repo, "libs/execution/conn.py", "undeclared money-path change")
+    assert restart_verdict(base, "HEAD", root=repo, status="OPEN")["verdict"] == "ALLOW"

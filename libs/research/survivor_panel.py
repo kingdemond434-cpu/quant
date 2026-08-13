@@ -39,6 +39,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from libs.doctrine.constitution import OBJECTIVE_PREAMBLE
+from libs.research.list_order import shuffled_with_log
+
 __all__ = [
     "FORBIDDEN",
     "Proposal",
@@ -229,9 +232,21 @@ def _dossier_text(d: dict[str, Any]) -> str:
 
 
 def round_one_prompt(dossier: dict[str, Any]) -> tuple[str, str]:
-    """(system, user) for the independent round."""
-    classes = "\n".join(f"  {k} -- {v}" for k, v in BOTTLENECK_CLASSES)
+    """(system, user) for the independent round.
+
+    THE MENU IS SHUFFLED PER CALL (R0457). `BOTTLENECK_CLASSES` is a hardcoded tuple, so
+    `SAMPLE_LENGTH` led this list on every run this panel has ever done, and
+    `run_survivor_panel.py` TALLIES `bottleneck_votes` across seats -- a cross-seat vote count on a
+    fixed-order menu. arXiv 2509.08713 measured 100% metric-ordering dependence in exactly this
+    shape, so an unshuffled tally cannot distinguish "the seats agree" from "the seats all read the
+    same first line". The permutation is logged, which is what makes the sensitivity measurable
+    rather than merely removed.
+    """
+    ordered, _perm = shuffled_with_log(
+        BOTTLENECK_CLASSES, organ="survivor_panel", field="bottleneck_classes")
+    classes = "\n".join(f"  {k} -- {v}" for k, v in ordered)
     system = (
+        OBJECTIVE_PREAMBLE + "\n"
         "You are a seat on a quantitative research desk's bottleneck panel. You are handed the "
         "desk's REAL measured artifacts. Your job is root-cause analysis, not encouragement and "
         "not a literature review.\n\n"
@@ -264,6 +279,7 @@ def cross_examination_prompt(dossier: dict[str, Any],
     cannot -- not to poll reputations.
     """
     system = (
+        OBJECTIVE_PREAMBLE + "\n"
         "You are the same seat, now in cross-examination. Below are the other seats' answers, "
         "anonymised. Do NOT summarise them and do NOT try to be agreeable.\n\n"
         "Your job:\n"
@@ -282,8 +298,15 @@ def cross_examination_prompt(dossier: dict[str, Any],
         '"everyone_missed": "<=100 words>", '
         '"proposals": [{"action": "...", "bottleneck": "...", "rationale": "...", '
         '"testable_in_days": <number>}]}')
+    # SEAT ORDER IS SHUFFLED TOO (R0457), and it is the same bias one level up: `others` arrives in
+    # roster order, which is stable across runs, so the SAME model was SEAT A every week while this
+    # prompt asks the reader to REFUTE a specific claim and then DECIDE. Position 1 gets refuted or
+    # adopted disproportionately. `run_external_panel.py:538` already fixed exactly this for the
+    # CRO's inbox and the fix was never propagated here.
+    shuffled_others, _seat_perm = shuffled_with_log(
+        list(others), organ="survivor_panel", field="round_two_seat_order")
     blocks = "\n\n".join(f"--- SEAT {chr(65 + i)} ---\n{txt[:2600]}"
-                         for i, (_name, txt) in enumerate(others))
+                         for i, (_name, txt) in enumerate(shuffled_others))
     user = (f"THE DESK'S MEASURED STATE:\n{_dossier_text(dossier)}\n\n"
             f"THE OTHER SEATS SAID:\n{blocks}")
     return system, user

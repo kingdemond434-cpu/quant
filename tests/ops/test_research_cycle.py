@@ -14,8 +14,8 @@ from __future__ import annotations
 from pathlib import Path
 
 CYCLE = Path("ops/run_research_cycle.sh")
-SERVICE = Path("ops/quant-research.service")
-TIMER = Path("ops/quant-research.timer")
+SERVICE = Path("ops/quant-midnight-frontier.service")
+TIMER = Path("ops/quant-midnight-frontier.timer")
 
 
 def test_THE_EXECUTION_STAGE_IS_SCHEDULED_AT_ALL() -> None:
@@ -55,7 +55,7 @@ def test_IT_IS_NICED_BECAUSE_THE_RECORDERS_ARE_IRREPLACEABLE() -> None:
 def test_THE_TIMER_STARTS_THE_OVERNIGHT_FRONTIER_AT_LOCAL_MIDNIGHT() -> None:
     """One existing timer starts the renewable cycle; the wrapper lock rejects duplicates."""
     timer = TIMER.read_text("utf-8")
-    assert "00:00:00 Europe/London" in timer
+    assert "00:00:00 Europe/Dublin" in timer
     assert ".overnight_frontier.lock" in Path("ops/run_sweep_then_cycle.sh").read_text("utf-8")
     assert ".midnight_controller_cycle.lock" in Path("ops/run_midnight_frontier.sh").read_text(
         "utf-8"

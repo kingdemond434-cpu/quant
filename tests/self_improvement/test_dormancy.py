@@ -95,6 +95,29 @@ def test_a_module_imported_from_OUTSIDE_its_package_has_external_importers() -> 
     assert D._external_importers("libs/research/capacity_policy.py")
 
 
+def test_a_scripts_ENTRY_POINT_counts_as_an_external_importer() -> None:
+    """R0359 alleged this scan is blind to scripts/ and had therefore authorised a false
+    retirement. THE ALLEGATION IS REFUTED, and this pins the refutation so it is not re-raised.
+
+    The claim was that commit 3be2e3e retired 14 libs/discovery modules on "zero external
+    importers" while scripts/run_geometric_review.py imported two of them. Checked against the
+    actual trees: _external_importers ALREADY grepped scripts/ at 3be2e3e, and
+    scripts/run_geometric_review.py DID NOT EXIST in the tree that retirement was computed on --
+    it was added by fee1214a on the other lineage, which is not an ancestor of 3be2e3e. The
+    retirement's claim was true of its own tree. The breakage was born in the later MERGE, which
+    brought the caller from master while the callees stayed deleted here. That failure lives at
+    the schedule boundary and is fenced by check_scheduler_manifest (e), not here.
+
+    scripts/ is where nearly every organ lives, so the property is worth a standing test even
+    though it already held.
+    """
+    for module in ("libs/discovery/cagr_optimizer.py", "libs/discovery/portfolio_geometry.py"):
+        assert "scripts/run_geometric_review.py" in D._external_importers(module), (
+            f"{module} reads as unreachable despite a scripts/ entry point importing it -- "
+            "that is the false-retirement authoriser R0359 feared"
+        )
+
+
 def test_ITS_OWN_PACKAGE_does_not_make_a_module_reachable() -> None:
     """THE ASSERTION THE MODULE'S CORRECTNESS RESTS ON. A package of six modules that only import
     each other is a dormant SUBSYSTEM, and counting intra-package imports would hide exactly the

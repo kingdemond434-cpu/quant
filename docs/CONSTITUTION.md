@@ -1,6 +1,11 @@
-# THE CONSTITUTION OF THE RESEARCH ORGANISM
-*(Permanent. Installed 2026-07-29 by principal order. This is not guidance; it is the governing
-operating system of the entire quant research organism. It binds every research cycle, audit,
+# THE MACHINE-ENFORCED CONSTITUTION OF THE RESEARCH ORGANISM
+
+> Authority: `docs/MASTER_QUANT_CONSTITUTION.md` is the single authoritative top-level operating
+> constitution. This file is its compact, machine-enforced implementation companion; it does not
+> compete with or narrow the master. Worker prompts remain compact by referencing the sealed master.
+
+*(Permanent machine-enforced companion. Installed 2026-07-29 by principal order. This is the
+executable projection of the master for the entire quant research organism. It binds every research cycle, audit,
 review, agent, LLM interaction, engineering decision, data decision, experiment, deployment
 decision, governance process, and every future subsystem — daily to quarterly, every cadence,
 permanently. No component, researcher, model, or automated process is exempt.)*
@@ -2500,3 +2505,263 @@ weaknesses, gaps, blind spots, missing capabilities and unrealised opportunities
 information-to-research-to-survivor-to-portfolio-to-execution-to-live-learning chain; implement and
 measure positive-EV improvements; simplify negative-value complexity; repeat without arbitrary
 termination, always subordinate to survival, evidence and long-term expected log wealth.
+
+## L1.60 A DENOMINATOR THAT LOSES ITS MEMBERS IN SILENCE IS A COVERAGE CLAIM THE DESK CANNOT CASH
+
+L1.57 put a count at every fence's exit site and asked one question of it: is it an `int >= 1`?
+That is a test on the NUMBER. It is blind to the only other way a denominator lies -- by being
+perfectly honest about what it counted and perfectly silent about what it LOST on the way there.
+
+    for p in files:                       # 1000
+        try:
+            text = p.read_text("utf-8")
+        except OSError:
+            continue                      # <- 991 leave the count entirely
+        n += 1                            # 9
+    return fence_exit(status, PASSING, scanned=n, of="*.py")   # DECLARED. Not vacuous. CLEAN.
+
+Nine is an `int >= 1`, so L1.57 records the row green. The fence read 1% of its scope and said so
+nowhere.
+
+**THE PROVING INSTANCE IS L1.57'S OWN SUPPLIER.** `check_calendar_gates.py` declares
+`scanned=N_SCANNED`, and `N_SCANNED` came from an `n += 1` sitting one line BELOW
+`except (OSError, UnicodeDecodeError): continue`. The denominator built to reveal a hollow verdict
+was itself hollowed by the same mechanism, one level up. A law's own instrument being defeated by
+the law's own failure mode is the strongest available evidence that the MECHANISM, not the
+diligence, is what needs fixing.
+
+**WHY EVERY SWALLOW DETECTOR ON THE DESK WAS BLIND TO IT.** Both -- `check_build_standard.
+_has_silent_swallow` and `max_audit.check_silent_swallows_on_the_rails` -- require a `Pass` body.
+Every instance in this class uses `continue` or `return <default>`. R0166 recorded exactly this in
+prose on 2026-07-31 and scheduled the widening; nothing was built for twelve days. A DUTY WITH NO
+INSTRUMENT IS A WISH (L1.46).
+
+**MEASURED THE DAY THIS WAS BUILT** (2026-08-12, 54 governed fences): three leaking denominators,
+each feeding a published verdict -- `check_coverage_floors.money_path_pct` (an absent money-path
+module left numerator AND denominator, so the percentage ROSE as the order path went dark, and the
+L1.50 ratchet then locked that inflated floor in **permanently**); `check_calendar_gates.N_SCANNED`;
+`check_llm_routing.routed_fraction`, where an organ that stopped parsing RAISED the fraction and
+could flip the fence from BACKLOG to OK by breaking. All three were repaired in the same run.
+
+**OPERATIVE -- ONE RULE, ONE REPAIR.** A loop producing a scope denominator publishes how many
+iterations it ATTEMPTED. The law does not forbid a single skip: skipping is often correct, and a
+scope filter that drops 900 of 1000 files is fine. What is never correct is skipping INVISIBLY,
+because it makes two different facts byte-identical to every reader -- *this file was out of
+scope* and *this fence could not read this file* -- and only one of them is a defect. The repair
+is one counter above the first exit, which is what the desk already does where it does this well
+(`extractor_invariants.py` turns a `SyntaxError` into a row that STAYS in the denominator;
+`check_funding_capture.py` writes `malformed += 1; continue`). Those sites are recognised and left
+alone: a fence that punished the practice it exists to encourage would be switched off (L1.43).
+An exemption is available, must carry a REASON (`# attrition-ok: <why>`), and is REPORTED rather
+than hidden -- an invisible exemption is this defect wearing a comment.
+
+**SCOPE IS THE L1.57 GOVERNED SET, DISCOVERED AND NEVER ENUMERATED** -- it reuses
+`libs.ops.denominator.governed_fences` verbatim, so this law and L1.57 cannot disagree about which
+fences exist. The wider repo is a measured ratchet gap, not a silence.
+
+**ANTI-TIMIDITY READING, THE ENTIRE PURPOSE (L1.28).** A MEASUREMENT duty and a SCOPE EXPANSION.
+It lifts nothing, sizes nothing, promotes nothing, loosens no statistical bar, and has no
+vocabulary for turning a failing verdict into a passing one. It forbids no skip -- it requires
+that skips be COUNTED, which strictly increases what the desk can see. Every error it catches
+points the same way: toward a fence looking better covered than it ever was.
+
+FENCED by `scripts/check_denominator_attrition.py` over `libs/ops/attrition.py`.
+
+## L1.61 THE DESK RECONCILES ITS BOOK AGAINST THE VENUE AND HAS NEVER ONCE RECONCILED IT AGAINST ITSELF
+
+After a 13-model panel demanded it, this desk built double-entry reconciliation against the
+VENUE (`run_venue_reconcile.py`). It never built one against ITSELF, and the reason it never
+occurred to anyone is structural rather than careless: **every instrument here is single-artifact
+BY CONSTRUCTION.** `path_refs.phantoms` asks whether a writer exists. `fresh` asks whether a file
+is old. `input_provenance` (L1.55) asks whether MY inputs were present. `denominator` (L1.57) and
+`attrition` (L1.60) ask whether I scanned anything. An organ reads its inputs successfully,
+computes honestly, publishes a well-formed fresh artifact, and passes ALL FIVE while asserting
+the exact opposite of what the organ beside it asserts about the same fact.
+
+**CONTRADICTION IS NOT A PROPERTY OF ANY SINGLE ARTIFACT.** It exists only in the RELATION
+between two, and until now nothing on this desk ever held two at once. This is the same blind
+spot as L1.45's cycle -- every fence walked nodes, none walked edges.
+
+**THE PROVING INSTANCE WAS LIVE, ON THE ONLY PATH TO CAPITAL.** `data/gate0_readiness.json` names
+its own subject -- "S1 entry (Gate 0) -- `libs/execution/staging.py:s1_entry_met`" -- and
+`data/live_guard.json` evaluates the same five criteria through the same function. FOUR OF FIVE
+DISAGREED. The board a HUMAN reads reported `principal_signoff`, `keys_present`,
+`connector_verified` and `symbol_count_4_5` all READY; the executor-side evaluator reported all
+four False. Each side read its own source successfully, so no fence could fire. The principal
+signed off on 2026-07-30 and `run_live_guard` structurally cannot see it: it reads
+`data/stage_state.json['principal_signoff']`, **a key no code anywhere writes**, while consent
+actually lives in `data/gate0_signoff.json`. Two incompatible encodings of the same human act.
+
+**THE GENERAL VERSION WAS REFUTED BY ITS OWN PRE-REGISTERED FALSIFIER, AND THAT IS WHY THIS LAW
+IS NARROW.** The first design indexed every leaf key across `data/**.json`. Measured 2026-08-12:
+590 artifacts, 10,003 distinct leaf names, 4,523 published by >=2 artifacts, 418 in scalar
+disagreement -- and a random sample of 25 of those contained **ZERO** genuine same-meaning
+contradictions. `why` has 78 publishers of free text; `window_days` is 1.0 in one artifact and 90
+in another and BOTH ARE CORRECT; `ready` is a bool in one and a count in another. A fence
+emitting 418 findings of which ~all are noise gets acked into silence -- exactly how the
+phantom-paths fence spent its first months (R0356). **A DETECTOR THAT CRIES WOLF ENFORCES
+NOTHING (L1.37).** The registry is therefore HAND-BUILT and MONEY-PATH ONLY.
+
+**OPERATIVE.** Every claim is a fact two organs genuinely both assert, registered with what each
+side ACTUALLY MEASURES read from its code -- never from the name it publishes under. Three
+contradiction classes, because they demand different repairs: **FABRICATED-SIDE** (one side's
+value came from an absent input -- repair the INPUT, not the verdict); **SAME-NAME-
+DIFFERENT-QUESTION** (both measured honestly and answer different questions under one name, so
+the ambiguous evidence CONTRACT is the defect and neither reading is wrong on its own terms);
+**GENUINE-DISAGREEMENT** (both measured the same question and one is simply wrong). A claim that
+stops resolving goes UNRESOLVED rather than quietly dropping out of the denominator, and a run
+that compares NOTHING reads UNMEASURED, never OK (L1.28a).
+
+**THE FENCE MUST NOT OVER-CLAIM ITS OWN ATTRIBUTION, AND ITS FIRST RUN DID.** L1.55's `measured`
+flag is BLOCK-level; four of the five Gate-0 criteria are computed after -- and therefore
+override -- the absent input. Inheriting the block flag labelled two genuine measurements
+FABRICATED and would have sent a reader to repair an input those values never read. **An
+inference wearing a measurement's clothes is the defect this fence exists to catch**, so the
+taint is registered per criterion from a read of the producer's code, and a regression test
+pins it.
+
+**ANTI-TIMIDITY READING, THE ENTIRE PURPOSE (L1.28).** A MEASUREMENT duty and a SCOPE EXPANSION.
+It lifts nothing, sizes nothing, promotes nothing, OPENS NO GATE and loosens no bar -- it has no
+vocabulary for changing any value it reads. Its whole effect is to make "these two boards agree"
+distinguishable from "these two boards have never been compared", which were byte-identical on
+this desk until now, and only one of them is evidence.
+
+FENCED by `scripts/check_claim_consistency.py` over `libs/ops/claim_registry.py`.
+
+## L1.62 A POWER FIGURE WHOSE DENOMINATOR WAS ASSUMED IS NOT A MEASUREMENT
+
+The Stage-A screen turns a stacked (symbol x date) panel into a power verdict by dividing the row
+count by a cross-sectional factor, and that factor decides `powered` -- the single bit separating
+the desk's two negative verdicts. **SCREEN-WEAK** is "tested and refuted", graveyard-grade
+negative knowledge. **SCREEN-UNDERPOWERED** is "could not tell": no graveyard entry, no ledger
+row, no alert, no clock -- the only exit from the pipeline that leaves NO TRACE. **380 of 711
+recorded verdicts on disk sit in it, the largest class by 2.4x, and no fence read that ratio.**
+
+**BOTH ENDPOINTS OF THIS ERROR WERE LIVE WITHIN ONE CHANGE OF EACH OTHER, AND NEITHER WAS EVER
+MEASURED.** Until 2026-08-11 `panel_width` was not passed at all, so K symbols carried K
+independent observations and every t-stat was inflated by sqrt(K) ~ 11.8x at K=139. The fix
+passed the full width, which asserts the opposite: K symbols carry exactly ONE independent
+observation per bar. `scripts/screen_oi_ls_axes.py:126` records the cost of the first endpoint in
+its own words -- "42 'graveyard-grade' SCREEN-WEAK verdicts the screen lacked the power to make".
+The desk swung from one assumption to its inverse and measured neither, on a quantity that is
+cheap to compute from the panel already in memory.
+
+**WHY THE SURVIVING ERROR WAS INVISIBLE, AND IT GENERALISES.** Dividing by the full K can only
+LOWER n_eff, and a low n_eff produces only SCREEN-UNDERPOWERED, which claims nothing and alerts
+nobody. **An error whose only symptom is silence is invisible by construction** -- L1.55's own
+lesson, "nobody audits a number that is already small", and the L1.25 diagnostic's first
+question, *instrument?*, one layer below the two campaign-constant gates already found. Ask of
+any conservative-running quantity: WHAT WOULD ITS BEING WRONG LOOK LIKE? If the answer is "a
+verdict nobody records", it is unaudited however often it runs.
+
+**WHAT IS MEASURED, AND WHY IT IS THE PRODUCT TERMS.** A pooled IC is the mean of
+`signal[i,d] * target[i,d]` over every cell, so the variance of that mean is set by the
+cross-sectional correlation of the SUMMANDS -- not of the raw returns, and not of the demeaned
+returns. Measured 2026-08-13 on the desk's own 139-symbol futclose panel over 1,897 dates, and
+each row refutes a different tempting shortcut:
+
+| series | mean pairwise rho | effective breadth |
+|---|---|---|
+| RAW returns | +0.5288 | 1.88 |
+| RELATIVE (demeaned) returns | -0.0069 (floor -0.00725) | 139.00, capped |
+| **PRODUCT TERMS signal*target** | **+0.0036** | **92.76** |
+
+The RAW row is why the 2026-08-11 change looked right: against a raw-return target, K names
+really are worth ~1.9 bets. The RELATIVE row is why it is wrong here -- the screen's target IS
+the demeaned return, whose residual correlation sits at 95% of the way to the arithmetic floor --
+and it is ALSO why the pre-08-11 endpoint is wrong, because reading breadth off it returns the
+full K by construction, the exact misreading `cohort_independence.effective_bets` was clamped to
+prevent after it reported "64.4 independent bets from 29 perps". Only the PRODUCT row is both
+measured and relevant, and **it lands near neither endpoint**: the honest divisor is 1.50, not
+139, so n_eff was understated 93x and the detection floor ran 9.6x too high.
+
+**OPERATIVE.** Every panel cell declares the BASIS of its cross-sectional denominator --
+`MEASURED` (from `libs/research/panel_breadth.measure_panel_breadth` on that caller's own panel),
+`SINGLE-SERIES`, or `UNMEASURED`. Measured per panel and per cell: asserting a desk-wide constant
+would re-create the same error in a third place. **AN UNMEASURED PANEL CAN NEVER BE `powered`**,
+and that is the load-bearing half -- `powered` is what licenses SCREEN-WEAK, and certifying
+"tested and refuted" on a sample size nobody measured is the false-null direction no other gate
+catches. An unmeasurable panel keeps the CONSERVATIVE full-K divisor: absence resolves to the
+tighter reading, never to a clean one (L1.28a). The fix lands in BOTH copies of the expression --
+`libs/research/axis_screen.py` and `libs/validation/type2_cost.correlation_n_eff`, which
+documents itself as a deliberate copy "so the two cannot disagree" -- because one bug in two
+files means fixing one leaves the other authoritative.
+
+**COVERAGE IS A RATCHET, NOT A CLIFF.** Legacy cells resting on the assumed divisor are
+conservative, so they over-claim nothing; they read PARTIAL and exit 0, and the gap is the work
+queue (L1.0). A fence red on the day it is built gets switched off (L1.43). Only an OVERCLAIMED
+cell -- `powered: true` or SCREEN-WEAK on an unmeasured basis -- is a failure. A run finding zero
+panel cells reads UNMEASURED, never OK.
+
+**ANTI-TIMIDITY READING (L1.28).** This is a MEASUREMENT duty and a SCOPE EXPANSION. It lifts
+nothing, sizes nothing, promotes nothing, opens no gate and loosens no statistical bar --
+`ic_min`, `sharpe_min`, the angle-20 de-contamination gate, Holm, alpha and MAX_FORWARD_SLOTS are
+all untouched, and the change moved not one recorded number by itself. The measurement is capable
+of moving the divisor in EITHER direction and says so: on a raw-return panel it CONFIRMS the
+full-K divisor. Its whole effect is to make "this panel's power rests on a measurement"
+distinguishable from "this panel's power rests on an assumption nobody checked" -- byte-identical
+on this desk until now, and only one of them is evidence.
+
+FENCED by `scripts/check_panel_breadth.py` over `libs/research/panel_breadth.py`.
+
+## L1.63 A ROBUSTNESS CERTIFICATE WHOSE PARTITION CANNOT FAIL IS A WELDED GATE
+
+Three wired gates certify that an edge is "regime robust", and all three implement one rule: split
+the return series into groups and require it to be net-positive in at least K of them.
+`libs/autodiscovery/regime.regime_robust` blocks REGISTRY promotion, `libs/risk/sleeve_allocation`
+min_regimes_positive sets a sizing ceiling, and `scripts/check_promotion_gate` two_regimes stands
+between a candidate and LIVE at 15% of book. **All three partition by realized-volatility terciles,
+and no instrument on this desk could ask whether that partition is capable of returning False.**
+
+**WHY EVERY EXISTING INSTRUMENT WAS BLIND, AND IT IS A THIRD BLINDNESS, NOT A REPEAT.** L1.43's
+`check_fence_yield` asks whether a gate ever FIRED. L1.49's `check_gate_reachability` asks whether
+a gate ever RAN, measured from the declaration site precisely because a gate that never ran emits
+no tally row. `gate_discrimination` reads a per-gate accept/reject histogram. Each of those reads
+the gate's OUTCOME. None can see the case where the gate runs on every candidate, is perfectly
+reachable, emits a row every time, and returns True on all of them **because the partition it uses
+cannot produce a negative group for the edge in front of it**. That gate is neither dead nor
+mis-calibrated; it is WELDED OPEN by its choice of axis, and an accept/reject tally cannot separate
+"passed because the edge is robust" from "passed because this partition was never able to fail".
+L1.49 said absence from a rejection tally is ambiguous; this is the same ambiguity at the far end,
+where a gate that rejects nothing looks identical to a bar being cleared honestly.
+
+**THE PROVING INSTANCE IS THIS LAW'S OWN FALSIFIER.** The capability hunt of 2026-08-13 proposed
+adding a funding-state axis to the robustness certificate, and its falsifier was run first, as the
+desk requires. That falsifier's FIRST version declared `finds_dead_state` its decisive criterion
+and then measured a carry proxy that is non-positive on 3.0% of days -- so the criterion could not
+fire for EITHER axis, and the verdict fell through to a spread comparison answering a different
+question. **It would have published REFUTED from a test structurally incapable of returning
+anything else**, and it was caught only by re-reading the instrument instead of its output. The
+identical defect, one level up, in the very run built to find it.
+
+**MEASURED THE DAY THIS WAS BUILT**, on 213 symbols x 2,384 days (2020-02-03 -> 2026-08-13) of the
+desk's own D1 funding panel, carry sleeve = daily top-10 by trailing funding net of 6bps/turn:
+vol terciles 3/3 groups positive; funding state 2/2; trend state 2/2; funding breadth 3/3.
+**Four axes, 6.5 years, and not one could produce the failing group its certificate claims to test
+for.** The measured reason is that daily cross-sectional selection is itself the hedge: unselected,
+the market's funding is non-positive on 40.6% of days; after top-10 selection, 3.0%. The
+certificate is not wrong -- it is EMPTY, and nothing here could say so. This also REFUTES the
+proposal that produced it: the missing axis was never the defect, the rule was.
+
+**OPERATIVE.** Every partition behind a robustness certificate is graded on the desk's own data via
+`libs/validation/partition_power.partition_power` -- DISCRIMINATING (some graded group came out
+non-positive, so a pass carries information), WELDED (every graded group positive, so the
+certificate would have passed anything), or UNMEASURED. **UNMEASURED and WELDED stay distinct**:
+"every group was positive" and "no group had enough observations to tell" are different claims and
+only one is evidence (L1.28a), so a partition below `MIN_GROUP_OBS` refuses to grade rather than
+manufacture a verdict. Unlabelled observations are counted, never silently dropped (L1.60).
+
+**THE REPAIR IS UPWARD, NEVER DOWNWARD (L1.49).** A WELDED reading never justifies deleting a gate,
+lowering a bar, or calling the gauntlet smaller. It justifies giving the certificate an axis able
+to produce a negative group, or recording out loud that it carries no information for this edge. A
+smaller gauntlet that runs is not an improvement on a larger one that does not.
+
+**ANTI-TIMIDITY READING (L1.28).** This is a MEASUREMENT duty and a SCOPE EXPANSION. It lifts
+nothing, sizes nothing, promotes nothing, opens no gate and loosens no statistical bar;
+`regime_robust`, `min_regimes_positive` and `two_regimes` behave identically before and after, and
+it moved not one recorded number by itself. It has no vocabulary for turning a failing verdict into
+a passing one. Its whole effect is to make "this edge survived a test that could have killed it"
+distinguishable from "this edge passed a test that has never killed anything" -- byte-identical on
+this desk until now, and only one of them is evidence.
+
+FENCED by `scripts/check_partition_power.py` over `libs/validation/partition_power.py`.

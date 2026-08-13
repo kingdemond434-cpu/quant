@@ -76,13 +76,25 @@ def main() -> None:
                      "best_sharpe": cp.get("headline_sharpe"), "survivors": 0,
                      "status": "SHADOW (unvalidated; ~0.8-1.2 unstable; fails DSR/PBO)"})
 
+    # RETIRED PRODUCERS, RECORD KEPT (R0421, 2026-08-13). scripts/run_mt5_crossasset.py,
+    # run_mt5_funding_bridge.py and run_mt5_portfolio.py were deleted: dead by three independent
+    # measures (no manifest line, no importer at any depth, already listed DEPRECATED in
+    # REPO_MAP). Their reports/ artifacts are FROZEN at 2026-06-21 and will never advance again.
+    #
+    # The rows are KEPT rather than dropped. These are real rejections of real strategies and the
+    # graveyard is sacred (L1.17) -- deleting them would remove true information from a board whose
+    # own note calls itself "the honest research record". What was wrong was not the rows but that
+    # a frozen artifact rendered identically to a live one, so the status now SAYS it is retired.
+    # (mt5_crossasset_shadow below is NOT affected: run_crossasset_shadow.py is live on cron.)
+    _RETIRED = " [RETIRED 2026-08-13 -- producer deleted, artifact frozen 2026-06-21]"
+
     # MT5 cross-asset diversified portfolios (the native-MT5 max-edge search)
     xa = _read("mt5_crossasset", "report.json")
     if isinstance(xa, dict) and xa.get("variants"):
         best = max(xa["variants"], key=lambda v: v.get("ann_sharpe", 0))
         surv = int(xa.get("survivors", 0))
         status = ("REGISTRY (cleared gauntlet)" if surv
-                  else "REJECTED (gauntlet)")
+                  else "REJECTED (gauntlet)") + _RETIRED
         rows.append({"name": "MT5 cross-asset (momentum/trend/reversal)",
                      "universe": f"{xa.get('symbols', 0)} instruments, 5 asset classes",
                      "best_sharpe": best.get("ann_sharpe"),
@@ -105,7 +117,7 @@ def main() -> None:
         sleeves = [r for r in mp["results"] if not str(r.get("sleeve", "")).startswith("portfolio")]
         best = max((r.get("ann_sharpe") or 0) for r in mp["results"])
         status = (f"REGISTRY ({surv} survivors)" if surv
-                  else f"REJECTED (best {best} fails DSR/fragility)")
+                  else f"REJECTED (best {best} fails DSR/fragility)") + _RETIRED
         rows.append({"name": f"MT5 alpha portfolio ({len(sleeves)} sleeves + COT)",
                      "universe": f"{mp.get('instruments', 0)} instruments, risk-parity",
                      "best_sharpe": best, "survivors": surv, "status": status})
@@ -120,7 +132,7 @@ def main() -> None:
                      "universe": f"{br.get('cfd_names', 0)} MT5 CFDs (gross sharpe {gross})",
                      "best_sharpe": best.get("ann_sharpe"),
                      "survivors": int(br.get("survivors", 0)),
-                     "status": "REJECTED (edge is funding cashflow, not price)"})
+                     "status": "REJECTED (edge is funding cashflow, not price)" + _RETIRED})
 
     payload = {"strategies": rows,
                "note": "Honest research record. Net-of-cost, full validation. "

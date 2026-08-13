@@ -36,11 +36,22 @@ import scripts.check_coverage_floors as C
 
 
 def _report(repo: float = 90.0, money: float = 60.0) -> dict[str, Any]:
-    """A coverage.py JSON report shaped like the real one, with one money-path file."""
+    """A coverage.py JSON report shaped like the real one, with EVERY money-path file present.
+
+    It used to synthesise only ``MONEY_PATH[0]``, which is not a shape a real pytest run can
+    produce and which made these tests unable to exercise the module-absence branch at all. Since
+    L1.60 an absent money-path module is a refusal -- it leaves numerator and denominator
+    together, so the percentage RISES as the order path goes dark -- and a fixture narrower than
+    reality would have quietly asserted the opposite (the widest-real-schema rule, desk lesson
+    on libs/features/validation.py).
+    """
+    n = len(C.MONEY_PATH)
     return {
         "totals": {"percent_covered": repo},
         "files": {
-            C.MONEY_PATH[0]: {"summary": {"num_statements": 1000, "covered_lines": int(money * 10)}}
+            rel: {"summary": {"num_statements": 1000 // n,
+                              "covered_lines": round(money * 10) // n}}
+            for rel in C.MONEY_PATH
         },
     }
 

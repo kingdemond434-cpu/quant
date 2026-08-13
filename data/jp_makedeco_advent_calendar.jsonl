@@ -1,0 +1,74 @@
+{"year": 2023, "series": 1, "day": 1, "comment": "機械学習モデルが爆損したときにやること", "title": "", "url": "https://speakerdeck.com/katsu1110/ji-jie-xue-xi-moderugabao-sun-sitatokiniyarukoto", "author": "katsu1110", "host": "speakerdeck.com"}
+{"year": 2023, "series": 1, "day": 2, "comment": "機械学習モデルでシグナルを設計してから気をつけるべきTips", "title": "", "url": "https://zenn.dev/gamella/articles/d8c87d91ff0355", "author": "tomo_alpaca", "host": "zenn.dev"}
+{"year": 2023, "series": 1, "day": 3, "comment": "異常アノマリーのその後", "title": "", "url": "https://zenn.dev/ageonsen/articles/5657b12b177f50", "author": "pegion_HOLE", "host": "zenn.dev"}
+{"year": 2023, "series": 1, "day": 4, "comment": "J-Quants API を GAS で使う (1) ID トークンの取得", "title": "", "url": "https://zenn.dev/seratch/articles/aa2adaab185758", "author": "seratch", "host": "zenn.dev"}
+{"year": 2023, "series": 1, "day": 5, "comment": "J-Quants API を GAS で使う (2) 銘柄毎に最新の終値を書き込む", "title": "", "url": "https://zenn.dev/seratch/articles/3dca8c0c04d0ae", "author": "seratch", "host": "zenn.dev"}
+{"year": 2023, "series": 1, "day": 6, "comment": "ペアトレード、私の過去の事例", "title": "", "url": "https://www.stockinvestment.blog/?p=2074", "author": "shinshin999", "host": "stockinvestment.blog"}
+{"year": 2023, "series": 1, "day": 7, "comment": "J-Quants API を GAS で使う (3) 銘柄毎に RSI を書き込む", "title": "", "url": "https://zenn.dev/seratch/articles/244db0270510c6", "author": "seratch", "host": "zenn.dev"}
+{"year": 2023, "series": 1, "day": 8, "comment": "J-Quants APIを用いた日本株寄り引けロングショート戦略分析", "title": "", "url": "https://note.com/botter_01/n/nc5b1967ea962", "author": "botter_01", "host": "note.com"}
+{"year": 2023, "series": 1, "day": 9, "comment": "J-Quants API を GAS で使う (4) 銘柄毎に予想配当利回りを書き込む", "title": "", "url": "https://zenn.dev/seratch/articles/8b1dab6eff831f", "author": "seratch", "host": "zenn.dev"}
+{"year": 2023, "series": 1, "day": 10, "comment": "価格変動パターンの類似度を使用したデータバリデーション", "title": "", "url": "https://zenn.dev/daidai_daitai/articles/20eef499ab86dd", "author": "168daidai", "host": "zenn.dev"}
+{"year": 2023, "series": 1, "day": 11, "comment": "俺がJQuantsAPIで躓いた事まとめ", "title": "", "url": "https://www.stockinvestment.blog/?p=2079", "author": "shinshin999", "host": "stockinvestment.blog"}
+{"year": 2023, "series": 1, "day": 17, "comment": "バックテストの評価指標のKPI設定", "title": "トレードの評価指標のKPI設定（平均利益と平均損失の大きさが同じ場合）", "url": "https://qiita.com/Sunset_Yuhi/items/25b7d0580c73d5e5a73a", "author": "Sunset_Yuhi", "host": "qiita.com"}
+{"year": 2023, "series": 1, "day": 18, "comment": "TOPIXのボラティリティをStochastic Volatilityモデル + R + Stanで推定する", "title": "", "url": "https://suzunano.net/posts/stochastic-volatility-model/", "author": "suzunya", "host": "suzunano.net"}
+{"year": 2023, "series": 1, "day": 19, "comment": "2階建て信用取引でどのくらい建玉を建てていいか計算する", "title": "2階建て信用取引でどのくらい建玉を建てていいか計算する", "url": "https://qiita.com/Sunset_Yuhi/items/92790fb674c1794b3431", "author": "Sunset_Yuhi", "host": "qiita.com"}
+{"year": 2023, "series": 1, "day": 20, "comment": "【J-Quants】指数四本値を取得できる新規のAPIについて", "title": "【J-Quants】指数四本値を取得できる新規のAPIについて", "url": "https://qiita.com/j_quants/items/68ffe2383cd6c3b8f6e1", "author": "j_quants", "host": "qiita.com"}
+{"year": 2023, "series": 1, "day": 21, "comment": "窓際族はクリスマスに億り人の夢をみる", "title": "", "url": "https://note.com/nonbiri_tech/n/n7429ffebb9d9", "author": "NonbiriTech", "host": "note.com"}
+{"year": 2023, "series": 1, "day": 22, "comment": "Pytorchによるテーブルデータのmixup", "title": "", "url": "https://zenn.dev/tonic/articles/4245664ba2a5a0", "author": "tonic3561", "host": "zenn.dev"}
+{"year": 2023, "series": 1, "day": 23, "comment": "【J-Quants】売買内訳データの紹介及びその利用例について", "title": "【J-Quants】売買内訳データの紹介及びその利用例について", "url": "https://qiita.com/j_quants/items/ae423b14dcdcf819eb27", "author": "j_quants", "host": "qiita.com"}
+{"year": 2023, "series": 1, "day": 24, "comment": "マケデコアドベントカレンダー特別企画 マケデコ 2023年末座談会", "title": "", "url": "https://zenn.dev/gamella/articles/1a84cd8f480d76", "author": "tomo_alpaca", "host": "zenn.dev"}
+{"year": 2023, "series": 1, "day": 25, "comment": "新NISAでの個別株投資を考えてみる", "title": "", "url": "https://note.com/uki_profit/n/nc22e324b26ad", "author": "blog_UKI", "host": "note.com"}
+{"year": 2024, "series": 1, "day": 2, "comment": "業績予測して株買ってみる！", "title": "", "url": "https://note.com/uki_profit/n/nbab322398649", "author": "blog_UKI", "host": "note.com"}
+{"year": 2024, "series": 1, "day": 3, "comment": "リスク・リターンの計算方法とその意味", "title": "リスク・リターンの計算方法とその意味", "url": "https://qiita.com/892noske/items/d1acadd876d97538ca29", "author": "892noske", "host": "qiita.com"}
+{"year": 2024, "series": 1, "day": 5, "comment": "J-Quants APIを活用した場中リバーサル戦略の検証", "title": "", "url": "https://note.com/neet_uncle/n/nca65718ff547", "author": "nitori_13", "host": "note.com"}
+{"year": 2024, "series": 1, "day": 6, "comment": "ChatGPTを投資に活用する方法を考える", "title": "", "url": "https://note.com/neet_uncle/n/n1c2e28fb31a3", "author": "nitori_13", "host": "note.com"}
+{"year": 2024, "series": 1, "day": 7, "comment": "謎の資産曲線S", "title": "", "url": "https://zenn.dev/ageonsen/articles/4a4144f67c9826", "author": "pegion_HOLE", "host": "zenn.dev"}
+{"year": 2024, "series": 1, "day": 10, "comment": "Realized Volatilityの理論と実装", "title": "", "url": "https://suzunano.net/posts/realized-volatility/", "author": "suzunya", "host": "suzunano.net"}
+{"year": 2024, "series": 1, "day": 11, "comment": "日本株業績予測のコード", "title": "", "url": "https://github.com/UKI000/JP_Stock_Gyouseki_Prediction/tree/main", "author": "blog_UKI", "host": "github.com"}
+{"year": 2024, "series": 1, "day": 14, "comment": "金融時系列における機械学習のオーバーフィット対策", "title": "", "url": "https://note.com/botter_01/n/n7f08918bc3e5", "author": "botter_01", "host": "note.com"}
+{"year": 2024, "series": 1, "day": 15, "comment": "為替予測モデルの構築に挑戦したい人にむけての基礎知識", "title": "", "url": "https://zenn.dev/gamella/articles/23311d3fa3c579", "author": "tomo_alpaca", "host": "zenn.dev"}
+{"year": 2024, "series": 1, "day": 16, "comment": "J-QuantAPI(プレミアム)で前場後場リターンを分析する", "title": "", "url": "https://zenn.dev/kobao/articles/31bac85d325648", "author": "shiokara_botter", "host": "zenn.dev"}
+{"year": 2024, "series": 1, "day": 17, "comment": "書籍『わが投資術』とJQuantsAPIで小型株を分析してみた", "title": "", "url": "https://zenn.dev/morim34/articles/ae053ce5b94419", "author": "Morim34", "host": "zenn.dev"}
+{"year": 2024, "series": 1, "day": 18, "comment": "Geminiで企業の決算短信の「変化」を捉える", "title": "", "url": "https://zenn.dev/nishimoto/articles/d77efb0c7d0e47", "author": "nishimt", "host": "zenn.dev"}
+{"year": 2024, "series": 1, "day": 19, "comment": "評価指標に応じた損失関数のデザイン", "title": "", "url": "https://zenn.dev/tonic/articles/70cc6c46408aeb", "author": "tonic3561", "host": "zenn.dev"}
+{"year": 2024, "series": 1, "day": 20, "comment": "楽天RSSを用いて個別株の監視記録をする", "title": "", "url": "https://zenn.dev/ririkabu/articles/b7adbbd3012eea", "author": "nonactiveuser2", "host": "zenn.dev"}
+{"year": 2024, "series": 1, "day": 21, "comment": "個人投資家に「32%」のエッジがある理由", "title": "", "url": "https://note.com/fetalia_lumin/n/n7f5246d659d9?sub_rt=share_pb", "author": "Fetalia_lumin", "host": "note.com"}
+{"year": 2024, "series": 1, "day": 22, "comment": "おじさんはなぜ爆損してしまうのか", "title": "", "url": "https://note.com/bakuson_dameyo/n/nee6b8b085ede", "author": "katsu1110", "host": "note.com"}
+{"year": 2024, "series": 1, "day": 23, "comment": "分析も機械学習もやらない株Botterのおはなし", "title": "", "url": "https://note.com/jpchibi/n/n7bb6e320a07c", "author": "chibitrade", "host": "note.com"}
+{"year": 2024, "series": 1, "day": 24, "comment": "何か", "title": "", "url": "", "author": "corochann", "host": ""}
+{"year": 2024, "series": 1, "day": 25, "comment": "過去の私のポロリ纏め", "title": "", "url": "https://note.com/shinshin_trade/n/n71bc16ac7ee0", "author": "stkinvest_blog", "host": "note.com"}
+{"year": 2024, "series": 2, "day": 17, "comment": "レジームスイッチ：動的ウエイト付けによるモデル選択", "title": "", "url": "https://zenn.dev/shizumaru/articles/d72f21f0ff84fd", "author": "shizhamu", "host": "zenn.dev"}
+{"year": 2024, "series": 2, "day": 18, "comment": "さぁバリュー投資をしてみよう", "title": "", "url": "https://note.com/alive_hebe2297/n/n7d50c9de871e", "author": "yokotatsu0000", "host": "note.com"}
+{"year": 2024, "series": 2, "day": 21, "comment": "オールウェザー投資について", "title": "", "url": "https://note.com/alive_hebe2297/n/n58c40bfd61d3", "author": "yokotatsu0000", "host": "note.com"}
+{"year": 2025, "series": 1, "day": 1, "comment": "これまで勉強してきたことのまとめ", "title": "", "url": "https://zenn.dev/ageonsen/articles/fa6646e4c62307", "author": "pegion_HOLE", "host": "zenn.dev"}
+{"year": 2025, "series": 1, "day": 3, "comment": "ラーニングゾーンを抜け出して優位性をつかみとれ", "title": "", "url": "https://note.com/hem9821/n/na8f188d65c94", "author": "hiroyam09441507", "host": "note.com"}
+{"year": 2025, "series": 1, "day": 4, "comment": "レイ・ダリオの全天候型ポートフォリオを弄ってみる", "title": "", "url": "https://note.com/peisuke/n/n8359633d792d", "author": "peisuke", "host": "note.com"}
+{"year": 2025, "series": 1, "day": 5, "comment": "MixSeekという投資アルゴ量産のための新しいAIエージェントプラットフォーム", "title": "", "url": "https://zenn.dev/gamella/articles/1dc5271a85a1fb", "author": "tomo_alpaca", "host": "zenn.dev"}
+{"year": 2025, "series": 1, "day": 6, "comment": "何か書きます", "title": "", "url": "", "author": "892noske", "host": ""}
+{"year": 2025, "series": 1, "day": 7, "comment": "混雑度ファクター", "title": "", "url": "https://zenn.dev/ageonsen/articles/7ceb60de46825d", "author": "pegion_HOLE", "host": "zenn.dev"}
+{"year": 2025, "series": 1, "day": 8, "comment": "父さんな、「金融コンペはク⚪︎ゲー」の先に行かせてもらう", "title": "", "url": "https://note.com/bakuson_dameyo/n/n6d9d712f63dc", "author": "katsu1110", "host": "note.com"}
+{"year": 2025, "series": 1, "day": 9, "comment": "多変量確率的ボラティリティモデルで相関係数の時変性をとらえる", "title": "", "url": "https://suzunano.net/posts/multivariate-stochastic-volatility-model/", "author": "suzunya", "host": "suzunano.net"}
+{"year": 2025, "series": 1, "day": 10, "comment": "日々公表取得APIで、超高リスク空売り戦略を作る", "title": "", "url": "https://zenn.dev/kobao/articles/c501252c5676dd", "author": "shiokara_botter", "host": "zenn.dev"}
+{"year": 2025, "series": 1, "day": 11, "comment": "仲値後の円高は死につつある？", "title": "", "url": "https://note.com/datetimeidx/n/n742ae7f3b56c", "author": "datetimeidx", "host": "note.com"}
+{"year": 2025, "series": 1, "day": 12, "comment": "LLM×トレーディング まとめのまとめ", "title": "", "url": "https://note.com/uki_profit/n/n495a8a38d69c", "author": "blog_UKI", "host": "note.com"}
+{"year": 2025, "series": 1, "day": 13, "comment": "マイナスコストのヘッジ", "title": "", "url": "https://note.com/alive_hebe2297/n/nd1eafd20dfe1?app_launch=false", "author": "yokotatsu0000", "host": "note.com"}
+{"year": 2025, "series": 1, "day": 14, "comment": "戦略を組み合わせることによるパフォーマンスの向上例", "title": "", "url": "https://zenn.dev/ageonsen/articles/ce692f471787d8", "author": "pegion_HOLE", "host": "zenn.dev"}
+{"year": 2025, "series": 1, "day": 15, "comment": "書籍『わが投資術』のネットキャッシュ比率の汎用性の検証", "title": "", "url": "https://zenn.dev/morim34/articles/ff991f32187d96", "author": "Morim34", "host": "zenn.dev"}
+{"year": 2025, "series": 1, "day": 16, "comment": "仕様駆動開発で作る汎用シグナル開発ライブラリ", "title": "", "url": "https://zenn.dev/tonic/articles/540c0be25bb07e", "author": "tonic3561", "host": "zenn.dev"}
+{"year": 2025, "series": 1, "day": 17, "comment": "トレードにおける戦略構築について", "title": "", "url": "https://note.com/neet_uncle/n/n2e8c76975cae", "author": "nitori_13", "host": "note.com"}
+{"year": 2025, "series": 1, "day": 18, "comment": "強化学習の使い方に関する個人的考察", "title": "", "url": "https://note.com/brave_acacia668/n/n11086e9b6a13?sub_rt=share_pb", "author": "xhibiking", "host": "note.com"}
+{"year": 2025, "series": 1, "day": 19, "comment": "Kaggleのコンペ設計の未来：「モデル」から「振る舞い」の最適化へ", "title": "", "url": "https://zenn.dev/gamella/articles/832ef696c5c546", "author": "tomo_alpaca", "host": "zenn.dev"}
+{"year": 2025, "series": 1, "day": 20, "comment": "なんかポロリしたいですね。", "title": "", "url": "", "author": "shinshin999", "host": ""}
+{"year": 2025, "series": 1, "day": 21, "comment": "【Colab配布】yfinanceだけで日本株分析：OHLCV×財務三表×セクターまで", "title": "", "url": "https://note.com/botter_01/n/nbbec5830cc17", "author": "botter_01", "host": "note.com"}
+{"year": 2025, "series": 1, "day": 22, "comment": "ダッシュボードを作らずに爆損", "title": "", "url": "https://note.com/bakuson_dameyo/n/nf067b15d111b", "author": "katsu1110", "host": "note.com"}
+{"year": 2025, "series": 1, "day": 23, "comment": "1億円プレイヤーになっても幸せになれなかった株Botterのおはなし", "title": "", "url": "https://note.com/jpchibi/n/n615b2d554313", "author": "chibitrade", "host": "note.com"}
+{"year": 2025, "series": 1, "day": 24, "comment": "頭が悪そうな戦略を考える", "title": "", "url": "", "author": "pegion_HOLE", "host": ""}
+{"year": 2025, "series": 1, "day": 25, "comment": "AIエージェント × 人の褌でトレード戦略を爆誕させる", "title": "", "url": "https://note.com/drillan/n/n7379c02632c9", "author": "driller", "host": "note.com"}
+{"year": 2025, "series": 2, "day": 15, "comment": "Chatterjeeの順位相関とSpearmanの順位相関を、特徴量ヒートマップで比較してみる", "title": "", "url": "https://note.com/lively_orca7486/n/n21e366d5ac79", "author": "madoten", "host": "note.com"}
+{"year": 2025, "series": 2, "day": 19, "comment": "J-Quants APIで行う売買内訳データ分析", "title": "", "url": "https://note.com/noisefallacy/n/nb784e348ed55", "author": "noisefallacy", "host": "note.com"}
+{"year": 2025, "series": 2, "day": 20, "comment": "日本株昼休み中のリバーサル", "title": "", "url": "https://note.com/datetimeidx/n/naf83657b2e3f", "author": "datetimeidx", "host": "note.com"}
+{"year": 2025, "series": 2, "day": 21, "comment": "Numeraiにみるアルファマイニングの理想形", "title": "", "url": "https://note.com/uki_profit/n/nb84401bd65df", "author": "blog_UKI", "host": "note.com"}
+{"year": 2025, "series": 2, "day": 22, "comment": "J-Quants API Ver.2リリースのお知らせ", "title": "J-Quants API V2リリース（機能改善と今後のお知らせ）", "url": "https://qiita.com/j_quants/items/c8669bfec76355c32400", "author": "j_quants", "host": "qiita.com"}
+{"year": 2025, "series": 2, "day": 23, "comment": "【時系列分析】スコア駆動モデルという選択肢 〜ボラティリティ変動モデルを例に〜", "title": "【時系列分析】スコア駆動モデルという選択肢 〜ボラティリティ変動モデルを例に〜", "url": "https://qiita.com/time_varying/items/1ee811a3695323ae0b9c", "author": "time_varying", "host": "qiita.com"}
+{"year": 2025, "series": 2, "day": 24, "comment": "初めてのBot開発振り返り", "title": "", "url": "https://note.com/tsumitatero/n/n20c1f2595ecf", "author": "tsumitatero", "host": "note.com"}
+{"year": 2025, "series": 2, "day": 25, "comment": "投資戦略を量産せよ 2 - マケデコセミナー(2025/12/26)", "title": "", "url": "https://speakerdeck.com/gamella/26", "author": "tomo_alpaca", "host": "speakerdeck.com"}

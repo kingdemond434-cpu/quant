@@ -40,8 +40,21 @@ def _isolated_log(tmp_path: Path, monkeypatch):
 
 
 def _log_and_resolve(pairs: list[tuple[float, bool]]) -> None:
+    """Log PRE-REGISTERED forecasts and grade them.
+
+    THE resolve_by IS NOT DECORATION, and omitting it silently retired 13 of these tests. Commit
+    d13999b1 -- "The calibration bias was INVERTED and inflating Kelly sizing on a live sleeve" --
+    taught `_scoreable` to exclude rows with no resolve_by, because a forecast graded
+    retrospectively is hindsight wearing a prediction's clothes (all 30 such rows in the live store
+    resolved TRUE, a median 18ms after being logged, driving the measured bias to -0.146 while the
+    pre-registered rows said +0.176). This helper still logged bare rows, so from that commit every
+    test built on it fell below the n>=5 gate and asserted against a report of Nones -- including
+    every test of the SIGN CONVENTION the commit existed to fix. The bar is unchanged and the
+    fixtures now clear it honestly: these rows are pre-registered, which is what a scoreable
+    forecast IS.
+    """
     for i, (p, outcome) in enumerate(pairs):
-        FC.log_forecast(f"k{i}", p, "promotion")
+        FC.log_forecast(f"k{i}", p, "promotion", resolve_by="2099-01-01T00:00:00+00:00")
         FC.resolve(f"k{i}", outcome)
 
 
@@ -247,11 +260,118 @@ def test_forecasts_of_DIFFERENT_KINDS_share_one_calibration(_isolated_log: Path)
     """`kind` is carried for slicing later, not for partitioning the score. One desk, one
     calibration -- otherwise every kind has too few outcomes to clear the gate and nothing is ever
     measured."""
-    FC.log_forecast("a", 0.9, "promotion")
+    when = "2099-01-01T00:00:00+00:00"                    # pre-registered; see _log_and_resolve
+    FC.log_forecast("a", 0.9, "promotion", resolve_by=when)
     FC.resolve("a", True)
-    FC.log_forecast("b", 0.9, "gate")
+    FC.log_forecast("b", 0.9, "gate", resolve_by=when)
     FC.resolve("b", True)
     for i in range(3):
-        FC.log_forecast(f"c{i}", 0.9, "experiment")
+        FC.log_forecast(f"c{i}", 0.9, "experiment", resolve_by=when)
         FC.resolve(f"c{i}", True)
     assert FC.report()["n_resolved"] == 5
+
+
+# ==================================== the terminal state for a question the world cannot answer
+#
+# R0394. The store had exactly two states -- open, or resolved with an outcome -- so a question
+# whose symbol stops pricing could never leave the OVERDUE set, and 44 such rows held the L1.29
+# fence red until a human edited them out of the file. A fence that can never go green gets
+# ignored (L1.43), and this is the fence that detects the desk being CONFIDENTLY WRONG.
+#
+# The whole risk of adding this state is that it becomes an escape hatch from grading. Hence: it
+# is never an outcome, it cannot touch a graded row, and it is counted out loud.
+
+
+def _future() -> str:
+    return "2099-01-01T00:00:00+00:00"
+
+
+def test_a_VOIDED_forecast_leaves_the_OVERDUE_set(_isolated_log: Path) -> None:
+    """The weld, in one assertion: before this the row could only ever be retried."""
+    FC.log_forecast("dead", 0.61, "calibration_probe", resolve_by="2000-01-01T00:00:00+00:00")
+    assert [o["key"] for o in FC.overdue()] == ["dead"]
+    assert FC.void("dead", "no venue price for S2USDT") is True
+    assert FC.overdue() == []
+
+
+def test_a_VOID_IS_NOT_AN_OUTCOME(_isolated_log: Path) -> None:
+    """THE ONE THAT MATTERS. Scoring an unanswerable question either way writes a fabricated
+    outcome into the bias that feeds calibrated_confidence and from there Kelly leverage. A void
+    must be invisible to the numerator, not a free hit and not a free miss."""
+    _log_and_resolve([(0.9, True)] * 5)
+    before = FC.report()
+    FC.log_forecast("dead", 0.99, "promotion", resolve_by="2000-01-01T00:00:00+00:00")
+    FC.void("dead", "unpriceable")
+    after = FC.report()
+    assert after["n_resolved"] == before["n_resolved"]
+    assert after["brier"] == before["brier"] and after["bias"] == before["bias"]
+    store = json.loads(_isolated_log.read_text("utf-8"))["forecasts"]["dead"]
+    assert "outcome" not in store and not store.get("resolved")
+
+
+def test_a_VOID_ALSO_LEAVES_THE_DENOMINATOR(_isolated_log: Path) -> None:
+    """A voided row can never enter the numerator, so keeping it in `eligible` would make the
+    resolved-ratio FALL every time the desk honestly disposes of a dead question -- pushing the
+    fence toward BLIND for doing the right thing. That is L1.53(4)'s named failure: a gauge
+    improvable by doing less of the thing it exists to encourage."""
+    _log_and_resolve([(0.9, True)] * 5)
+    FC.log_forecast("dead", 0.5, "promotion", resolve_by=_future())
+    with_open = FC.report()["n_eligible"]
+    FC.void("dead", "unpriceable")
+    assert FC.report()["n_eligible"] == with_open - 1
+
+
+def test_the_VOID_COUNT_IS_PUBLISHED(_isolated_log: Path) -> None:
+    """Voiding is the only path that clears a row without grading it. Unpublished, it would be
+    exactly the silent escape hatch this fence exists to deny."""
+    FC.log_forecast("dead", 0.5, "promotion", resolve_by=_future())
+    FC.void("dead", "unpriceable")
+    assert FC.report()["n_excluded"]["voided"] == 1
+
+
+def test_a_VOID_RECORDS_ITS_REASON_AND_TIME(_isolated_log: Path) -> None:
+    """'Unresolvable' is a claim about the world and has to be auditable later."""
+    FC.log_forecast("dead", 0.5, "promotion", resolve_by=_future())
+    FC.void("dead", "no venue price for S2USDT after 3 attempts")
+    row = json.loads(_isolated_log.read_text("utf-8"))["forecasts"]["dead"]
+    assert row["voided"] is True
+    assert "S2USDT" in row["void_reason"] and row["voided_at"]
+
+
+def test_a_GRADED_forecast_can_NEVER_be_voided(_isolated_log: Path) -> None:
+    """The attack this state creates: voiding a resolved miss to erase it from the record. A
+    scored forecast is immutable in BOTH directions or it is not a claim the desk cannot edit."""
+    FC.log_forecast("k", 0.9, "promotion", resolve_by=_future())
+    FC.resolve("k", False)
+    assert FC.void("k", "inconvenient") is False
+    row = json.loads(_isolated_log.read_text("utf-8"))["forecasts"]["k"]
+    assert row["outcome"] == 0.0 and not row.get("voided")
+
+
+def test_VOIDING_IS_IDEMPOTENT_and_an_unknown_key_is_a_no_op(_isolated_log: Path) -> None:
+    FC.log_forecast("dead", 0.5, "promotion", resolve_by=_future())
+    assert FC.void("dead", "first") is True
+    assert FC.void("dead", "second") is False
+    assert json.loads(_isolated_log.read_text("utf-8"))["forecasts"]["dead"]["void_reason"] \
+        == "first"
+    assert FC.void("never-logged", "why") is False
+    assert "never-logged" not in json.loads(_isolated_log.read_text("utf-8"))["forecasts"]
+
+
+def test_a_VOIDED_row_cannot_be_REVIVED_by_relogging(_isolated_log: Path) -> None:
+    """Otherwise the next probe pass quietly reopens it and the weld comes back."""
+    FC.log_forecast("dead", 0.5, "promotion", resolve_by="2000-01-01T00:00:00+00:00")
+    FC.void("dead", "unpriceable")
+    FC.log_forecast("dead", 0.99, "promotion", resolve_by=_future())
+    row = json.loads(_isolated_log.read_text("utf-8"))["forecasts"]["dead"]
+    assert row["p"] == 0.5 and row["voided"] is True
+    assert FC.overdue() == []
+
+
+def test_a_VOIDED_row_needs_no_grader(_isolated_log: Path) -> None:
+    """`unowned` names rows nothing can grade so they can be fixed while grading is still
+    possible. A retired row is not waiting on anybody."""
+    FC.log_forecast("orphan:dead", 0.5, "promotion", resolve_by=_future())
+    assert [u["key"] for u in FC.unowned()] == ["orphan:dead"]
+    FC.void("orphan:dead", "unpriceable")
+    assert FC.unowned() == []

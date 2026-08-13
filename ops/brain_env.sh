@@ -59,8 +59,16 @@ brain_mutex() {
     exec 9>>"/tmp/quant_brain.lock" 2>/dev/null || return 0  # cannot lock -> never block the desk
     if ! flock -n 9; then
         mkdir -p /home/quant/quant-platform/data/cro_ai_logs 2>/dev/null || true
-        echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) $name DEFERRED -- brain mutex held by $(cat /tmp/quant_brain.owner 2>/dev/null || echo unknown)" \
-            >> /home/quant/quant-platform/data/cro_ai_logs/brain_mutex.log 2>/dev/null || true
+        local msg
+        msg="$(date -u +%Y-%m-%dT%H:%M:%SZ) $name DEFERRED -- brain mutex held by $(cat /tmp/quant_brain.owner 2>/dev/null || echo unknown)"
+        echo "$msg" >> /home/quant/quant-platform/data/cro_ai_logs/brain_mutex.log 2>/dev/null || true
+        # The deferral must ALSO land in the ORGAN'S OWN log (callers set BRAIN_MUTEX_LOGFILE to
+        # their attempt stub): organ_catchup.organ_owed treats "no logs today" as "timer has not
+        # fired -- not ours to start", so a deferral that leaves no per-organ log makes the organ
+        # invisible to its own retry loop. Measured 2026-08-11: all 7 frontier regions deferred
+        # behind the 14:45 brain run at 15:00, left zero logs, and catchup reported
+        # "nothing owed" while the organ-never fence reported them dead for 36h.
+        [ -n "${BRAIN_MUTEX_LOGFILE:-}" ] && echo "$msg" >> "$BRAIN_MUTEX_LOGFILE" 2>/dev/null
         exit 0
     fi
     echo "$name pid=$$ since=$(date -u +%Y-%m-%dT%H:%M:%SZ)" > /tmp/quant_brain.owner 2>/dev/null || true

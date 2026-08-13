@@ -203,6 +203,35 @@ def _split_anchor(artifact: str) -> tuple[str, str]:
     return m.group("path"), (m.group("anchor") or "").strip()
 
 
+def _anchor_tokens(anchor: str) -> tuple[str, ...]:
+    """THE THIRD COSTUME (2026-08-12), and `_readings` below predicted it in its own docstring:
+    "a per-instance fix buys one cycle; the rule has to generalise or it returns in a third
+    costume." It did. The parser was taught backticked anchors, then bare anchors -- and the
+    CONTAINS assertion downstream stayed a single verbatim substring test, so a card naming TWO
+    entries was checked for a string that never existed anywhere.
+
+    MEASURED, and it was the dangerous direction. The J-Quants kill card cites
+    `data/data_universe_map.json` `100-jquants-api` + `101-jpx-investor-type-free`. Both keys are
+    in that file; the compound literal "`100-jquants-api` + `101-jpx-investor-type-free`" is not,
+    so a card whose work was genuinely DONE read as a fabricated claim. A false "unbacked" is worse
+    than a false pass here, because the defect's own prescribed remedy is "produce the artifact or
+    DOWNGRADE THE CLAIM" -- pointed at a true claim, that instructs a reader to either redo
+    finished work or retract something correct.
+
+    A CONJUNCTION, WHICH IS STRICTLY STRONGER, NEVER A DISCOUNT. Naming two entries asserts BOTH
+    exist and every one must appear; a single anchor keeps the exact behaviour it had. There is no
+    input on which this credits a card the old test rejected for a real absence -- it only stops
+    reading "A and B" as one nonexistent string. The laundering guard `_readings` names is intact:
+    an anchor is still an EXTRA assertion on top of exists / non-empty / postdates-the-find.
+
+    MISSING TOKENS ARE NAMED INDIVIDUALLY, per this module's own "a count is not a diagnosis"
+    rule: a half-done conversion now says WHICH half is absent instead of quoting the whole
+    citation back at the reader.
+    """
+    toks = tuple(t.strip() for t in re.findall(r"`([^`]+)`", anchor) if t.strip())
+    return toks or (anchor,)
+
+
 def _readings(artifact: str) -> tuple[tuple[str, str], ...]:
     """Every defensible (path, anchor) reading of a citation, STRONGEST FIRST.
 
@@ -303,15 +332,19 @@ def backing_reason(
                 # AN ANCHOR IS AN EXTRA ASSERTION, NEVER A DISCOUNT. Naming WHICH entry is strictly
                 # better evidence than naming the file -- a 388-line graveyard is non-empty no
                 # matter what you failed to write in it -- so the anchor must APPEAR in the file.
-                if anchor and anchor.lower() not in p.read_text("utf-8", errors="ignore").lower():
-                    return f"anchor-absent: {path_s!r} does not contain {anchor!r}"
+                if anchor:
+                    blob = p.read_text("utf-8", errors="ignore").lower()
+                    missing = [t for t in _anchor_tokens(anchor) if t.lower() not in blob]
+                    if missing:
+                        return (f"anchor-absent: {path_s!r} does not contain "
+                                + " + ".join(repr(t) for t in missing))
                 # ...and it must POSTDATE the find. Exact was not enough on its own:
                 # `-> pyproject.toml` named a real non-empty file and was credited, so any
                 # pre-existing file in the repo was a valid receipt for any claim. Doing the actual
                 # work satisfies this for free -- including a graveyard entry, which touches
                 # graveyard.md.
-                if (first_seen and item.name in first_seen
-                        and p.stat().st_mtime <= first_seen[item.name]):
+                if (first_seen and stable_key(item.name) in first_seen
+                        and p.stat().st_mtime <= first_seen[stable_key(item.name)]):
                     return (f"stale-evidence: {path_s!r} has not been modified since before this "
                             "find was first carded, so it cannot be evidence OF it")
             except OSError as exc:
@@ -474,8 +507,14 @@ def append_snapshot(path: Path, items: Sequence[MinedItem], *, now: datetime | N
     see the note in max_audit.check_mining_nonregression for what went wrong when it did not.
     """
     ts = (now or datetime.now(UTC)).timestamp()
-    row = {"ts": ts, "items": [{"n": i.name, "s": i.source, "d": i.disposition, "t": i.tier}
-                               for i in items]}
+    # "u" (deferred_until) is retained because flow_stats needs it: dropping it at snapshot time
+    # made every DATED deferral age as "owing" -- mine-flow-rotting fired on the Upbit card at
+    # 17d while the card carried a legal deferred(2026-08-15) the parser had understood and this
+    # writer then threw away (the flag-computed-and-dropped class, L1.47).
+    row = {"ts": ts, "items": [
+        {"n": i.name, "s": i.source, "d": i.disposition, "t": i.tier,
+         **({"u": i.deferred_until} if i.deferred_until else {})}
+        for i in items]}
     if carded is not None:
         row["carded"] = int(carded)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -519,23 +558,55 @@ def flow_stats(
 ) -> FlowStats:
     """Derive find->conversion latency and the age of the oldest still-owing item."""
     ts_now = (now or datetime.now(UTC)).timestamp()
+    # KEYED ON stable_key, NOT THE RAW NAME (2026-08-12). A re-grade renames the card, and on
+    # raw names the old name became an immortal owing ghost: first_seen kept it, no snapshot
+    # could ever convert or defer it, and mine-flow-rotting fired forever on a find whose
+    # CURRENT card was already killed with an artifact (bitFlyer, killed 08-04, "owing 17d").
+    # The identity fix landed for vanished/stale-evidence on 08-11 and this function was the
+    # one reader still on raw names.
     first_seen: dict[str, float] = {}
     converted_at: dict[str, float] = {}
+    deferred_until: dict[str, str] = {}
+    display: dict[str, str] = {}
     for row in ledger:
         ts = float(row["ts"])
         for it in row["items"]:
             name = str(it.get("n", ""))
             if not name:
                 continue
-            first_seen.setdefault(name, ts)
-            if it.get("d") in _TERMINAL and name not in converted_at:
-                converted_at[name] = ts
+            key = stable_key(name)
+            display[key] = name          # latest sighting carries the find's current card text
+            first_seen.setdefault(key, ts)
+            if it.get("d") in _TERMINAL and key not in converted_at:
+                converted_at[key] = ts
+            # LATEST snapshot wins: a re-dated deferral supersedes, and a card that stops being
+            # deferred (tag edited away) drops back into owing.
+            if it.get("d") == "deferred":
+                deferred_until[key] = str(it.get("u", ""))
+            elif key in deferred_until:
+                del deferred_until[key]
     lat = sorted((converted_at[n] - first_seen[n]) / 86400.0 for n in converted_at)
-    owing = {n: t for n, t in first_seen.items() if n not in converted_at}
+
+    def _deferral_active(name: str) -> bool:
+        """A DATED, UNEXPIRED deferral is a disposition (§33): it silences the owing clock but
+        never resets it -- on expiry the item re-enters owing at its ORIGINAL first_seen age, so
+        deferral buys silence, not youth. Undated (old-format rows dropped "u") or expired
+        deferrals keep aging: the conservative direction for both."""
+        until = deferred_until.get(name, "")
+        if not until:
+            return False
+        try:
+            return date.fromisoformat(until) > datetime.fromtimestamp(ts_now, UTC).date()
+        except ValueError:
+            return False
+
+    owing = {n: t for n, t in first_seen.items()
+             if n not in converted_at and not _deferral_active(n)}
     oldest_name, oldest_days = "", 0.0
     if owing:
-        oldest_name = min(owing, key=lambda n: owing[n])
-        oldest_days = (ts_now - owing[oldest_name]) / 86400.0
+        oldest_key = min(owing, key=lambda n: owing[n])
+        oldest_name = display.get(oldest_key, oldest_key)
+        oldest_days = (ts_now - owing[oldest_key]) / 86400.0
     worsening = False
     if len(lat) >= 6:
         # ordered by latency, not time -- compare the halves of the CHRONOLOGICAL series instead
@@ -777,15 +848,46 @@ def feedback_applied(
 # it is VISIBLE.
 # --------------------------------------------------------------------------------------------
 
+#: A card's name is "<find> — grade: <mutable assessment>". The split tolerates em/en dashes and
+#: plain hyphens because the docs carry all three.
+_GRADE_SPLIT = re.compile(r"\s+[—–-]{1,2}\s*grade\s*:", re.IGNORECASE)  # noqa: RUF001 -- the en dash is a deliberate member of the class: live cards carry em/en/hyphen variants
+
+
+def stable_key(name: str) -> str:
+    """The find's durable identity: the card text BEFORE its grade.
+
+    Grades are DESIGNED to change ("re-graded 2026-07-25" appears in live cards), so an identity
+    that includes the grade makes every re-grade a RENAME: the old name fires mine-item-vanished
+    while the new name's first_seen resets to the re-grade instant, which turns every artifact
+    written before that instant into "stale-evidence". Measured 2026-08-11: one re-graded T3 card
+    reported vanished and six same-run conversions reported unbacked, all from this one identity
+    choice -- the work was real, the fence's name for it was not stable.
+    """
+    return _GRADE_SPLIT.split(name, 1)[0].strip()
+
+
 def first_seen_map(ledger: Sequence[LedgerRow]) -> dict[str, float]:
-    """Earliest snapshot timestamp per item name -- when the desk first knew about the find."""
+    """LOWER BOUND on each stable find identity's birth, from the snapshot ledger.
+
+    A find first appearing in snapshot N was born somewhere in the (N-1, N] window -- snapshot
+    N's own timestamp is an UPPER bound, and judging evidence against an upper bound fails the
+    exact flow section 33 mandates (screen-on-discovery: work and card land in the SAME run, and
+    the artifact write naturally precedes the doc write by minutes). So the value recorded is the
+    PREVIOUS snapshot's timestamp: an artifact older than that provably predates the find and
+    stays stale-evidence; one written inside the discovery window is credited. Items already
+    present in the very first snapshot keep that snapshot's timestamp -- with no earlier row
+    there is no window to reason about, and loosening the oldest cohort is not this fix's job.
+    """
     out: dict[str, float] = {}
+    prev_ts = None
     for row in ledger:
         ts = float(row["ts"])
+        lower = prev_ts if prev_ts is not None else ts
         for it in row["items"]:
             n = str(it.get("n", ""))
             if n:
-                out.setdefault(n, ts)
+                out.setdefault(stable_key(n), lower)
+        prev_ts = ts
     return out
 
 
@@ -803,12 +905,14 @@ def vanished(
     if not ledger:
         return ()
     prev = ledger[-1]
-    was_owing = {str(i.get("n", "")) for i in prev["items"]
-                 if i.get("d") not in _TERMINAL and str(i.get("n", ""))}
-    now_present = {i.name for i in current}
+    # Keyed on the STABLE identity: a re-graded card is the same find under a new assessment,
+    # not an erasure. The display name reported back is the one the last snapshot carried.
+    was_owing = {stable_key(n): n for i in prev["items"]
+                 if i.get("d") not in _TERMINAL and (n := str(i.get("n", "")))}
+    now_present = {stable_key(i.name) for i in current}
     # a terminal disposition in THIS pass is a legitimate exit, not an erasure
-    now_done = {i.name for i in current if is_disposed(i, as_of=as_of)}
-    return tuple(sorted(was_owing - now_present - now_done))
+    now_done = {stable_key(i.name) for i in current if is_disposed(i, as_of=as_of)}
+    return tuple(sorted(was_owing[k] for k in was_owing.keys() - now_present - now_done))
 
 
 def ledger_regressed(ratchet: Ratchet, ledger: Sequence[LedgerRow], *,

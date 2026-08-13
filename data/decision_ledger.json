@@ -76,7 +76,7 @@
    "success_metric": "challenger fwd Sharpe > incumbent fwd Sharpe AND >=0.5 at day 90",
    "reversal_condition": "challenger fwd < incumbent at day 90 -> kill challenger, graveyard as regime_artifact",
    "review_due": "2026-10-07",
-   "ev_gate_verdict": "REJECT (EV 0.0087, p_survive 7.2%) \u2014 OVERRIDDEN by explicit principal instruction",
+   "ev_gate_verdict": "REJECT (EV 0.0087, p_survive 7.2%) — OVERRIDDEN by explicit principal instruction",
    "outcome": null
   },
   {
@@ -93,7 +93,8 @@
    "success_metric": "net_pnl ~= funding - fees +- basis drift as closes accumulate",
    "reversal_condition": "spot-wallet audit contradicts the banked realized by > $50",
    "review_due": "2026-08-08",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): CORRECT. Held: attribution closes -- web/cashcarry_live.json leak_attribution fut_fees 1750.88 + basis -231.92 with residual 4798.1, and the residual IS the 2026-08-01 RESTART capital event (+4790.70; delta 7.4 = 0.15%), so net = marks + banked realized + futures delta reconciles to funding-fees-basis as the metric demanded. The phantom -$394 class never recurred."
   },
   {
    "id": "2026-07-09-income-pagination",
@@ -106,7 +107,8 @@
    "success_metric": "income totals stable vs manual venue export",
    "reversal_condition": "n/a (pure correctness fix, CI-tested)",
    "review_due": "2026-08-08",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): PARTIAL. Held: pagination shipped and busy-week income totals stopped understating (the <=1000-row truncation class is in desk memory as PAID-for). Failed/undone: the stated verification -- 'income totals stable vs manual venue export' -- has no diff artifact anywhere; the claim rests on code-read, not on the comparison the metric named."
   },
   {
    "id": "2026-07-09-carry-hysteresis-hold-while-positive",
@@ -119,7 +121,8 @@
    "success_metric": "closes/day < 3 and commissions < 20% of funding by 2026-07-23",
    "reversal_condition": "avg held-name funding decays materially below the open-candidate set for >1wk (then add a fee-aware rotation rule instead)",
    "review_due": "2026-08-08",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): PARTIAL. Held: rank-churn closes collapsed (hold-while-positive removed the top-60 lottery; the 159-closes/week class ended). Failed: 'commissions < 20% of funding by 07-23' -- fee-vs-funding reached 75.99x on the 7d window (2026-07-31 row) and leak_attribution shows fut_fees 1750.88 = the dominant loss term; the fee bleed had additional drivers (min-hold aliasing, rail churn) this lever could not touch."
   },
   {
    "id": "2026-07-09-liquidation-source-swap-binance-to-bybit",
@@ -169,7 +172,7 @@
    "success_metric": "first auto-deployed sleeve reaches step-2 (10%) without gate breach",
    "reversal_condition": "any live sleeve loses > its base allocation before demotion fires -> re-instate per-sleeve approval",
    "review_due": "at live connect + 60d",
-   "outcome": null
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): UNCLEAR (never exercised): no sleeve has ever reached the auto-deploy ladder -- zero Stage-B promotions (forward slots 0/12 promoted) and the launch itself was later found to be a NO-OP (launch-readiness sweep 08-01: no module could order). The pre-authorization stands untested; nothing it authorized has happened. Re-review when a sleeve first clears Stage B."
   },
   {
    "id": "2026-07-09-adaptive-validation-windows",
@@ -185,7 +188,7 @@
    "success_metric": "first fast-tracked sleeve survives its first 30 live days without demotion",
    "reversal_condition": "any fast-tracked sleeve demoted within 30 live days -> restore 90d standard for its class",
    "review_due": "first fast-track + 30d",
-   "outcome": null
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): PARTIAL. Held: the decision's PRINCIPLE -- evidence beats calendar -- was adopted into law (L1.48 evidence-is-the-clock, libs/research/evidence_clock.sufficient(); calendar gates are now defects desk-wide), a stronger form than the 40d fast-track it proposed. Failed/unexercised: 'first fast-tracked sleeve survives 30 live days' never ran -- no sleeve has ever been fast-tracked because none cleared the forward stage at all."
   },
   {
    "id": "2026-07-10-carry-executor-restart-apply-holdtop",
@@ -234,7 +237,7 @@
    "success_metric": "0 unresolved NONE-defects older than 1 cycle; >=90 hypotheses scored by 2026-08-10 with graveyard growth",
    "reversal_condition": "audit drives a size-up that breaches a survival constraint, or quota measurably degrades hypothesis quality",
    "review_due": "2026-08-10",
-   "outcome": null
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): PARTIAL. Held (exceeded): >=90 hypotheses scored by 08-10 -- the desk scored 434 candidates by 08-05 and the graveyard grew +36 entries since 07-31 (blind_trigger baseline delta). Failed: '0 unresolved NONE-defects older than 1 cycle' -- the recommendation queue sits in repair-mode with 101 rows past grace (2026-08-12 banner); detection outran repair by ~4:1 exactly as L1.28b measured."
   },
   {
    "id": "2026-07-11-crypto-autodiscovery-factory-wired",
@@ -252,7 +255,7 @@
    "success_metric": "factory runs green in the daily cycle and auto-produces gauntleted candidates for each new data axis without bespoke code; any future survivor is DSR/PBO/RC-clean, not a breadth-mining artifact",
    "reversal_condition": "if the factory ever promotes a candidate that later fails forward validation as a multiple-testing artifact, or if daily runtime/instability becomes material -> narrow the universe further or gate the step behind new-symbol detection",
    "review_due": "2026-08-10",
-   "outcome": "pending"
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): PARTIAL. Held: the factory runs in the daily cycle and auto-produced ~430 gauntleted candidates across axes without bespoke per-axis code. Failed: the 'DSR/PBO/RC-clean' half -- the 07-31/08-01 audits found the gauntlet WELDED (SR-3 fails/SR-5 passes), pbo and reality_check were CAMPAIGN CONSTANTS vetoing per-candidate, and the screen ran at ~0.25% power; the 420/0 record was an instrument artifact (L1.25), so cleanliness was asserted, not delivered, until the redesign."
   },
   {
    "id": "2026-07-11-rail-autonomy-tiers",
@@ -268,7 +271,7 @@
    "success_metric": "first Tier-1/2 rail move is evidence-clean at its 30d review",
    "reversal_condition": "any rail move followed within 30d by a breach it would have prevented -> revert tier system to explicit-yes",
    "review_due": "first rail move + 30d",
-   "outcome": null
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): WRONG on the metric, and the miss was caught and banked: the FIRST live Tier-1 rail move (08-01 12:10Z RISK-PAUSE-OPENS at -17.6% <= -15%) was NOT evidence-clean -- a +4790.70 capital-event re-baseline at 12:22 dissolved the rail's denominator and opens resumed at 14:19 with zero trades in between (journalctl evidence, desk lesson L: 'a drawdown rail measures a RATIO'). The corridor pre-authorization itself behaved as designed; the un-pause path did not, and the re-arm-must-be-explicit fix is the surviving artifact."
   },
   {
    "id": "2026-07-12-external-review-fixes",
@@ -297,7 +300,8 @@
    "success_metric": "first live inversion episode: realized DD <= 2x model expectation",
    "reversal_condition": "first live funding-inversion episode with DD > 2x model expectation -> rule goes back to the principal with the realized numbers",
    "review_due": "2026-08-11",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): UNCLEAR (unresolvable): the metric needs a live funding-inversion episode; none occurred before the 08-01 drawdown-rail pause and the book has been flat since (n_carries 0). Same-day superseded by the ADOPTED row; re-review after re-arm."
   },
   {
    "id": "2026-07-12-first-inversion-rule-adopted",
@@ -313,7 +317,8 @@
    "success_metric": "first live inversion episode DD <= model expectation at capped size; cap lifts correctly on survival or day-60",
    "reversal_condition": "none needed -- rule self-expires at day 60; supersedes 2026-07-12-first-inversion-rule-declined",
    "review_due": "2026-08-11",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): UNCLEAR (unresolvable): probation never tested -- no live inversion episode occurred in the ~19 live days before the 08-01 rail pause froze the book (n_carries 0, armed=False), and day-60 (09-10) is unreached. NOTE for the re-review: the cap's 60-day clock is calendar-based; L1.48 (evidence is the clock) would count inversion-episode observations instead. Re-review on re-arm or 09-10."
   },
   {
    "id": "2026-07-12-round2-review-fixes",
@@ -329,7 +334,8 @@
    "success_metric": "carry day-40 gate evaluates with regime evidence available; no false dead-man events; CI green",
    "reversal_condition": "vif noise causes sizing to oscillate >20% day-over-day -> smooth vif with 10d EMA",
    "review_due": "2026-08-11",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): PARTIAL. Held: zero dead-man FALSE fires since (the 07-13 NOM fire was TRUE by mark-vs-fill accounting); NW/vif sizing fix survived later review. Failed: 'CI green' -- the gate was red 08-05..08-11 (merge-union lineage plus a pytest budget that killed every honest 60-80min run as HUNG>1800s; both fixed 08-11/08-12)."
   },
   {
    "id": "2026-07-12-deadman-false-fire-incident",
@@ -345,7 +351,8 @@
    "success_metric": "zero deadman false fires; single pid-stamped writer verified after every daemon deploy",
    "reversal_condition": "n/a (defect fix)",
    "review_due": "2026-08-11",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): CORRECT. Held: zero false fires in 31 days since state versioning + pid-stamped single-writer; the one subsequent fire (07-13 NOM) was a TRUE fire on venue equity -40.9%, which is the rail working. The zombie-inheritance class has not recurred."
   },
   {
    "id": "2026-07-12-multi-model-advisory-panel",
@@ -361,7 +368,8 @@
    "success_metric": "first automated panel run produces >=1 QUEUE-or-better finding; provider hit-rate measurable by month 2",
    "reversal_condition": "two consecutive panels produce zero surviving findings -> drop to biweekly; persistent injection attempts from a provider -> drop provider",
    "review_due": "2026-08-11",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): CORRECT. Held: the panel runs on mission rotation with findings triaged through track_findings (external_panel_log.jsonl: 199 mission rows incl. 64 audit / 65 tier1); provider hit-rate is measurable (seat-chronic fence, 582d535, exists precisely because per-seat performance is tracked). The same-author blind spot has a standing structural counter."
   },
   {
    "id": "2026-07-12-vps-migration-complete",
@@ -378,7 +386,8 @@
    "success_metric": "7 continuous days of clean VPS heartbeats -> live connector enable gate opens",
    "reversal_condition": "VPS instability -> laptop un-retire = remove data/FREEZE + re-enable QuantWatchdog",
    "review_due": "2026-08-11",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): CORRECT. Held: the desk has run continuously on the Hetzner box since migration (every organ log under data/cro_ai_logs is this host); the 7-day clean-heartbeat gate passed and live connectors were subsequently enabled (testnet carry book traded)."
   },
   {
    "id": "2026-07-12-panel-max-roi-upgrade",
@@ -394,7 +403,8 @@
    "success_metric": "first generate-mission produces >=1 EV-gate-QUEUE hypothesis; first data-mission surfaces >=1 verified new source",
    "reversal_condition": "generate/data missions produce zero survivors across 3 rotations -> drop those missions, keep audit+premortem",
    "review_due": "2026-08-11",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): PARTIAL. Held: weekly mission rotation is real (13 benchmark / 16 maximization / 11 synthesize / 4 premortem rows in external_panel_log.jsonl). Failed/unevidenced: 'first generate-mission produces >=1 EV-gate-QUEUE hypothesis' has no traceable queue row crediting a panel generate-mission as origin; the premortem lane also sat unfired for its first 3 weeks (batch5 memory) before its 4 rows landed."
   },
   {
    "id": "2026-07-12-monthly-tier1-panel",
@@ -410,7 +420,8 @@
    "success_metric": "first monthly tier1 review produces >=1 EV-positive achievable move implemented or queued",
    "reversal_condition": "3 monthly tier1 runs yield only resource-bound or zero-EV suggestions -> drop to quarterly",
    "review_due": "2026-08-11",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): PARTIAL. Held: the tier1 mission is not decorative -- 65 tier1 rows in external_panel_log.jsonl. Failed/unevidenced: no artifact ties the FIRST monthly tier1 review to a specific implemented-or-queued EV-positive move (the metric's yield half); panel findings and ledger rows do not carry a tier1-origin marker to audit it."
   },
   {
    "id": "2026-07-12-panel-roster-refresh-and-memory",
@@ -426,7 +437,8 @@
    "success_metric": "roster stays >=10 distinct labs with zero dead IDs; no rejected finding re-triaged after it enters panel_rulings.md",
    "reversal_condition": "roster refresh proposes only downgrades 3 months running -> make it drop-dead-only",
    "review_due": "2026-08-11",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): PARTIAL. Held: roster maintenance runs (desk-state: 397/400 seats at advertised max) and rulings memory exists. Failed: 'zero dead IDs' -- the 08-11 20:41 panel run drew HTTP 400s from free-tier seats (free-nemotron-super, free-laguna-s) and 73 error rows sit in external_panel_log.jsonl; the paid-seat 402 outage since ~08-08 is a funding failure, not a roster one, but dead free IDs are roster debt."
   },
   {
    "id": "2026-07-16-nom-thin-book-sizing-fix",
@@ -1118,13 +1130,13 @@
   },
   {
    "id": "2026-07-18-self-heal-and-frontier-batch",
-   "decision": "BUILT (self-healing, freeze-exempt maintenance, CI-green + drill-tested): (1) BRAIN AUTO-RETRY -- run_alerts watchdog re-triggers a failed daily brain cycle after ~11:00 UTC (fixes the 07-18 session-limit lost-day), rate-limited 1/3h, never two brains. (2) EVENT-TRIGGERED REMEDIATION -- a brain-remediable alert (cadence_floor_violation/root_cause_critical/recorder_stale) triggers the brain within minutes; human-only + justified/slow alerts (deadman/growth_defect) deliberately never loop it. (3) RESOLUTION '\u2705 FIXED' PAGES -- every \u26a0\ufe0f alert now pairs with a \u2705 RESOLVED page when it clears, so the operator only looks when a warning arrives with NO fix behind it. (4) DRILL -- tests/execution/test_brain_watchdog.py (6 tests) proves auto-retry fires on a failed cycle, rate-limits, and never triggers on human-only conditions. CHARTER refined (comment/reply layer first-class + debunking-as-falsification; crypto-native source family; new-data-sources as logged per-dig deliverable). QUEUED (improvement_inbox, freeze-governed): Frontier Expansion Menu (8 language/domain frontiers: Russian/Korean/MidEast/Brazilian miners, DeFi-event miner, GitHub archeologist, cross-asset, MEV behind a sub-50ms hardware gate) + operationalization mandate + the growth_audit depth-context fix (needs a controlled executor restart).",
+   "decision": "BUILT (self-healing, freeze-exempt maintenance, CI-green + drill-tested): (1) BRAIN AUTO-RETRY -- run_alerts watchdog re-triggers a failed daily brain cycle after ~11:00 UTC (fixes the 07-18 session-limit lost-day), rate-limited 1/3h, never two brains. (2) EVENT-TRIGGERED REMEDIATION -- a brain-remediable alert (cadence_floor_violation/root_cause_critical/recorder_stale) triggers the brain within minutes; human-only + justified/slow alerts (deadman/growth_defect) deliberately never loop it. (3) RESOLUTION '✅ FIXED' PAGES -- every ⚠️ alert now pairs with a ✅ RESOLVED page when it clears, so the operator only looks when a warning arrives with NO fix behind it. (4) DRILL -- tests/execution/test_brain_watchdog.py (6 tests) proves auto-retry fires on a failed cycle, rate-limits, and never triggers on human-only conditions. CHARTER refined (comment/reply layer first-class + debunking-as-falsification; crypto-native source family; new-data-sources as logged per-dig deliverable). QUEUED (improvement_inbox, freeze-governed): Frontier Expansion Menu (8 language/domain frontiers: Russian/Korean/MidEast/Brazilian miners, DeFi-event miner, GitHub archeologist, cross-asset, MEV behind a sub-50ms hardware gate) + operationalization mandate + the growth_audit depth-context fix (needs a controlled executor restart).",
    "hypothesis": "auto-retry + event-trigger + resolution-pairing make the desk self-heal so the operator only intervenes when auto-fix fails",
    "expected_benefit": "no lost brain days; alerts resolve without the operator; frontiers queued at depth",
    "expected_cost": "brain triggers cost session budget (rate-limited 1/3h); doc/inbox growth",
    "confidence": 0.85,
    "assumptions": "brain CI + escalation keep auto-triggered cycles safe; growth_audit fix waits for a controlled restart",
-   "success_metric": "next failed 08:45 cycle auto-recovers same day; a clearing alert produces a \u2705 page; drill stays green",
+   "success_metric": "next failed 08:45 cycle auto-recovers same day; a clearing alert produces a ✅ page; drill stays green",
    "reversal_condition": "auto-retry loops or over-triggers -> tighten the rate limit / conditions",
    "review_due": "2026-08-17",
    "review_due_source": "default"
@@ -1170,7 +1182,7 @@
   },
   {
    "id": "2026-07-18-expansion-specs-prebuilt",
-   "decision": "Principal: build all expansion specs at max-ROI ceiling so they function as discussed. DONE \u2014 4 full implementation specs (each with module design, test plan, complexity cost, shadow-proof, falsification hypothesis, independence class): (1) FRONTIER_MINER_TEMPLATE.md \u2014 ONE parameterized generic miner (run_frontier_miner.py --region) that every region (CN/RU/KR/JP/AE/BR) instantiates identically via an Operationalization Profile JSON (region, query_budget 20, sources, >=5 slang terms, >=3 regional alpha vectors, anti-bot protocol); build-once-instantiate-per-region = max ROI, deletion-credit-friendly; reference data/frontier_profiles/CN.json created + validated. (2) NLP_NORMALIZATION_SPEC.md \u2014 shared slang\u2192concept layer, two-stage (deterministic glossary + LLM-proposed mappings that are FLAGGED and only learned after a card survives the Prosecutor). (3) DISCOVERY_TELEMETRY_SPEC.md \u2014 attribution tags (region/type/pipeline_status) on every card \u2192 information_value.jsonl + monthly multiplier report (breadth multiplier, per-region intake/survival, Discovery Probability Index English-vs-region). (4) SPECIALIZED_SEATS_SPEC.md \u2014 DeFi Event Miner (high-ROI, time-bound on-chain events), GitHub Archeologist (extended Prospector duty), OSINT regional-flow tier (flow signals not miners); MEV quarantined behind the sub-50ms latency gate (no spec effort until precondition met). All research/discovery \u2014 zero risk-path/frozen-component touch; freeze-governed, monthly engine builds highest-EV first. Every regional miner now 'functions the same way as described' via the single template.",
+   "decision": "Principal: build all expansion specs at max-ROI ceiling so they function as discussed. DONE — 4 full implementation specs (each with module design, test plan, complexity cost, shadow-proof, falsification hypothesis, independence class): (1) FRONTIER_MINER_TEMPLATE.md — ONE parameterized generic miner (run_frontier_miner.py --region) that every region (CN/RU/KR/JP/AE/BR) instantiates identically via an Operationalization Profile JSON (region, query_budget 20, sources, >=5 slang terms, >=3 regional alpha vectors, anti-bot protocol); build-once-instantiate-per-region = max ROI, deletion-credit-friendly; reference data/frontier_profiles/CN.json created + validated. (2) NLP_NORMALIZATION_SPEC.md — shared slang→concept layer, two-stage (deterministic glossary + LLM-proposed mappings that are FLAGGED and only learned after a card survives the Prosecutor). (3) DISCOVERY_TELEMETRY_SPEC.md — attribution tags (region/type/pipeline_status) on every card → information_value.jsonl + monthly multiplier report (breadth multiplier, per-region intake/survival, Discovery Probability Index English-vs-region). (4) SPECIALIZED_SEATS_SPEC.md — DeFi Event Miner (high-ROI, time-bound on-chain events), GitHub Archeologist (extended Prospector duty), OSINT regional-flow tier (flow signals not miners); MEV quarantined behind the sub-50ms latency gate (no spec effort until precondition met). All research/discovery — zero risk-path/frozen-component touch; freeze-governed, monthly engine builds highest-EV first. Every regional miner now 'functions the same way as described' via the single template.",
    "hypothesis": "one parameterized template + shared infra specs make every regional/seat expansion functionally identical and cheap to instantiate",
    "expected_benefit": "spec-prebuild rule now satisfied for the expansion set; regions are config, not code; build is turnkey post-Gate-0",
    "expected_cost": "spec maintenance; ~200-line generic miner + per-region profiles when built",
@@ -1425,7 +1437,7 @@
   },
   {
    "id": "2026-07-19-cjk-priority-license-gate",
-   "decision": "Operator flagged the Chinese 'free/cheap' digital culture as a massive standing advantage to exploit always. ADOPTED the legitimate half: CJK open-source ecosystem (Gitee, Chinese GitHub, open community datasets, open-access academic) elevated to a standing high-yield priority for all diggers (charter \u00a713 note + free-data spec section + data-axis prompt). DECLINED the illegitimate half: added a UNIVERSAL LICENSE/LEGITIMACY GATE (DIGGING_CHARTER \u00a713) -- the desk never seeks/downloads/runs/adopts pirated datasets, cracked/shared premium software, paywall-circumvented papers, or paid-DB mirrors (CNKI/Wind/Bloomberg). Reasons practical not only legal: (1) un-deployable at live/commercial scale so worthless now; (2) cracked software = top malware vector, must never run on the box holding keys/ledger/live-creds (hard security boundary); (3) highest contamination/fabrication tier. Illegitimate finds graded 'excluded-illegitimate' (awareness only), never adopted. Strengthens the Data Genealogy license-scope discipline rather than limiting it.",
+   "decision": "Operator flagged the Chinese 'free/cheap' digital culture as a massive standing advantage to exploit always. ADOPTED the legitimate half: CJK open-source ecosystem (Gitee, Chinese GitHub, open community datasets, open-access academic) elevated to a standing high-yield priority for all diggers (charter §13 note + free-data spec section + data-axis prompt). DECLINED the illegitimate half: added a UNIVERSAL LICENSE/LEGITIMACY GATE (DIGGING_CHARTER §13) -- the desk never seeks/downloads/runs/adopts pirated datasets, cracked/shared premium software, paywall-circumvented papers, or paid-DB mirrors (CNKI/Wind/Bloomberg). Reasons practical not only legal: (1) un-deployable at live/commercial scale so worthless now; (2) cracked software = top malware vector, must never run on the box holding keys/ledger/live-creds (hard security boundary); (3) highest contamination/fabrication tier. Illegitimate finds graded 'excluded-illegitimate' (awareness only), never adopted. Strengthens the Data Genealogy license-scope discipline rather than limiting it.",
    "hypothesis": "the legitimate CJK open-source layer is a real under-mined edge; a hard legitimacy gate captures it without the legal/malware/contamination liability of the pirated layer",
    "expected_benefit": "high-yield legitimately-free CJK sources + a clean, live-deployable, malware-safe data foundation",
    "expected_cost": "some genuinely-useful-but-illegitimate sources are deliberately left on the table (correct -- they are un-deployable + unsafe)",
@@ -1828,7 +1840,8 @@
    "success_metric": "first sweep completes ~22d post-funding; cadence set from measured re-review yield, not opinion",
    "reversal_condition": "if a real bug is found in a stale unchanged file before the sweep completes, tighten immediately -- that is evidence the floor is too loose",
    "review_due": "2026-08-12",
-   "review_due_source": "success_metric"
+   "review_due_source": "success_metric",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): UNCLEAR (matures today): the ~22d-post-funding first sweep window lands 2026-08-12; no long-tail sweep-completion artifact exists yet to measure re-review yield against. The HOLD half of the decision (refuse to tune cadence on opinion) has cost nothing measurable. Re-review when the first sweep report lands."
   },
   {
    "id": "2026-07-21-rulings-feed-and-stale-seat",
@@ -2712,7 +2725,8 @@
    "success_metric": "next panels: 13/13 non-blank with named-file findings; gemini-3.6-flash earns a positive hit-rate on track_findings within 2 weeks",
    "reversal_condition": "if gemini-3.6-flash blanks or scores zero validated findings over 2 weeks, swap to openai/gpt-5.6-sol-pro (capacity-PASSED backup) and accept the concentration cost",
    "review_due": "2026-08-07",
-   "review_due_source": "success_metric"
+   "review_due_source": "success_metric",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): PARTIAL. Held: the capacity claim itself -- 12/13 seats ingested the full 750,805-char payload with proof-of-read; that measurement stands and is what the A/B directive builds on. Failed: 'next panels 13/13 non-blank' -- OpenRouter credits died again (HTTP 402 by ~08-08; second_family_log row 46), seats blanked, and the seat-chronic fence had to learn to count hard errors as blanks (582d535). The forward metric failed for the same reason the capacity was idle: funding, now re-asked on the principal page."
   },
   {
    "id": "2026-07-24-budget-incident-and-envelope-guard",
@@ -2803,7 +2817,7 @@
   },
   {
    "id": "2026-07-26-s37-carryover-disposition",
-   "decision": "\u00a737 DISPOSITION of the 20-item carry-over brief. DONE THIS CYCLE (4): ci-gate-red (CI ALL GREEN, verified twice); gate-optimality + gate-optimality-zero-survivors (ANSWERED -- campaign PBO/RC applied as per-candidate vetoes, mechanism confirmed in code, rec R0016); dig-output-uncommitted (committed + pushed, verified against origin/master); findings-scope-unmonitored (root-caused to a trailing-slash convention its sibling check honoured and it did not -- was UNCLOSABLE by construction, now closed). NOT DONE, WITH REASONS -- recorded here rather than carried silently a third time: (a) stub-deaths / organ-never-brain-cycle: root cause is QUOTA exhaustion, evidenced this cycle by a deep_sweep auditor whose failure text reads 'You're out of usage credits'. The FIX for this class was already committed this cycle (organ_catchup global concurrency gate, which stops catch-up firing three max-effort organs into one freshly-reset window). It cannot be verified until the next window rolls, so closing it now would be claiming an outcome from a config change -- the exact thing the battery's config-vs-outcome move forbids. Verification owed next cycle. (b) prompt-doctrine-bloat (27.5k chars): a compression pass that silently drops a load-bearing commitment is worse than the bloat, and this doctrine is the desk's constitution. Not a spare-capacity task at the end of a long cycle. (c) blind-rediscovery-due-by-state, vendor-replacement, depth-parity, data-utilization-paralysis, dig-shallow-litminer, rejection-shadow-unscored, coverage-risk-stale, directive-overdue-bitmex-ingest-spec: all require a dig/organ run or a multi-hour build, and the desk's paid review budget is at $3.40 with the principal paged. Deferring them behind a live integrity leak on the money path was the correct EV ordering, not fatigue. (d) bnb-burn-unfunded: testnet account, fee burn inert -- accepted as a testnet limitation, already ledgered as such. (e) directive-overdue-growth-audit-freshness-RESOLVED: the item's own text says RESOLVED and verified 2026-07-24; it is a stale work-order row, not work. It should be retired from the brief rather than re-carried -- flagged as such here. (f) orphan-code: 64 modules across 6 packages; deleting on a static-import proxy risks removing dynamically-imported code, and the check's own text says to verify against dynamic imports first. Needs a real reachability pass, not a spare hour.",
+   "decision": "§37 DISPOSITION of the 20-item carry-over brief. DONE THIS CYCLE (4): ci-gate-red (CI ALL GREEN, verified twice); gate-optimality + gate-optimality-zero-survivors (ANSWERED -- campaign PBO/RC applied as per-candidate vetoes, mechanism confirmed in code, rec R0016); dig-output-uncommitted (committed + pushed, verified against origin/master); findings-scope-unmonitored (root-caused to a trailing-slash convention its sibling check honoured and it did not -- was UNCLOSABLE by construction, now closed). NOT DONE, WITH REASONS -- recorded here rather than carried silently a third time: (a) stub-deaths / organ-never-brain-cycle: root cause is QUOTA exhaustion, evidenced this cycle by a deep_sweep auditor whose failure text reads 'You're out of usage credits'. The FIX for this class was already committed this cycle (organ_catchup global concurrency gate, which stops catch-up firing three max-effort organs into one freshly-reset window). It cannot be verified until the next window rolls, so closing it now would be claiming an outcome from a config change -- the exact thing the battery's config-vs-outcome move forbids. Verification owed next cycle. (b) prompt-doctrine-bloat (27.5k chars): a compression pass that silently drops a load-bearing commitment is worse than the bloat, and this doctrine is the desk's constitution. Not a spare-capacity task at the end of a long cycle. (c) blind-rediscovery-due-by-state, vendor-replacement, depth-parity, data-utilization-paralysis, dig-shallow-litminer, rejection-shadow-unscored, coverage-risk-stale, directive-overdue-bitmex-ingest-spec: all require a dig/organ run or a multi-hour build, and the desk's paid review budget is at $3.40 with the principal paged. Deferring them behind a live integrity leak on the money path was the correct EV ordering, not fatigue. (d) bnb-burn-unfunded: testnet account, fee burn inert -- accepted as a testnet limitation, already ledgered as such. (e) directive-overdue-growth-audit-freshness-RESOLVED: the item's own text says RESOLVED and verified 2026-07-24; it is a stale work-order row, not work. It should be retired from the brief rather than re-carried -- flagged as such here. (f) orphan-code: 64 modules across 6 packages; deleting on a static-import proxy risks removing dynamically-imported code, and the check's own text says to verify against dynamic imports first. Needs a real reachability pass, not a spare hour.",
    "hypothesis": "An honest, specific disposition of each un-done carry-over item is worth more than clearing the count -- the brief exists to stop silent third carries, not to force low-quality closure.",
    "expected_benefit": "Carry-over brief stops being a list nobody accounts for; each item now has a stated reason or a verification owed.",
    "expected_cost": "None beyond the writing.",
@@ -2947,11 +2961,13 @@
    "success_metric": "cadence completes inside its budget and persists stamps (MEASURED 443.3s, 29 fired, 3 new stamps); max_audit reports scheduled-script-missing until the tree is resynced (MEASURED 75/133); desk_brief/contributor_score stop reporting false in cro_cycle_log.",
    "reversal_condition": "If deferring the panel measurably delays a finding that would have changed a decision, move it back and instead raise the parent budget. If the wall-clock gate skips the panel on runs that had ample budget, the reserve (780s) is mis-set -- lower it rather than remove it.",
    "neighbours": "daily_research_cycle._run now exports QUANT_STEP_BUDGET_S to ALL ~52 steps (ignored by every step that does not read it) and splits argv -- so desk_brief and contributor_score begin EXECUTING for the first time and will start writing docs/DESK_BRIEF.md and the contributor artifact, which is a new write path, not a no-op. In run_cadence, _funding_restored() and the model-upgrade duty now observe a funding-restored edge one run later (30d cadence, negligible); the closing status line reports panel-due-in computed before the panel runs. max_audit gains defect id scheduled-script-missing, which is REPO-scoped and will therefore escalate to the principal page after 48h -- intended, since the tree is genuinely broken.",
-   "flagged_gap": "branch-fork-75-missing-scheduled-scripts"
+   "flagged_gap": "branch-fork-75-missing-scheduled-scripts",
+   "review_due": "2026-09-03",
+   "review_due_source": "default"
   },
   {
    "id": "2026-08-04-carryover-37-disposition-tooling-absent",
-   "decision": "\u00a737 DISPOSITION for the 27-item carry-over queue, recorded as the law requires rather than carried silently a third time. A MATERIAL SHARE OF THE QUEUE IS NOT REFUSAL, IT IS ABSENT TOOLING -- and nothing was reporting that. Verified by stat, per item: certify_gauntlet.py MISSING (it produces reports/gauntlet_certification.json, the exact artifact the `gate-optimality` and `gate-optimality-zero-survivors` acks cite as their evidence -- so both items were unclosable here), report_gate_audit.py MISSING, run_max_push.py MISSING (the maximization organ itself), check_exploration.py MISSING (feeds `exploration-rate-unmeasured`), run_organ_er.py MISSING. All five exist on master. The carry-over brief counts an item as 'shown to a live cycle and skipped', which is the right default, but it cannot distinguish a brain that walked past an item from a brain holding a tool that is not on disk -- so 14 awake sweeps reported wilful skipping where the true cause was the branch fork (gap register #88). CONSEQUENCE: the merge is not one row among 88, it is the unblocker for a large fraction of this queue, and its priority rises accordingly. DISPOSITION: these items are DEFERRED to 2026-08-05 with the merge as their named blocker (dated, per the no-parked-rows rule), not skipped. Items whose tooling IS present (blindrediscovery, dataaxis, litminer digs -- all verified PRESENT) do not get this excuse and remain genuinely owed.",
+   "decision": "§37 DISPOSITION for the 27-item carry-over queue, recorded as the law requires rather than carried silently a third time. A MATERIAL SHARE OF THE QUEUE IS NOT REFUSAL, IT IS ABSENT TOOLING -- and nothing was reporting that. Verified by stat, per item: certify_gauntlet.py MISSING (it produces reports/gauntlet_certification.json, the exact artifact the `gate-optimality` and `gate-optimality-zero-survivors` acks cite as their evidence -- so both items were unclosable here), report_gate_audit.py MISSING, run_max_push.py MISSING (the maximization organ itself), check_exploration.py MISSING (feeds `exploration-rate-unmeasured`), run_organ_er.py MISSING. All five exist on master. The carry-over brief counts an item as 'shown to a live cycle and skipped', which is the right default, but it cannot distinguish a brain that walked past an item from a brain holding a tool that is not on disk -- so 14 awake sweeps reported wilful skipping where the true cause was the branch fork (gap register #88). CONSEQUENCE: the merge is not one row among 88, it is the unblocker for a large fraction of this queue, and its priority rises accordingly. DISPOSITION: these items are DEFERRED to 2026-08-05 with the merge as their named blocker (dated, per the no-parked-rows rule), not skipped. Items whose tooling IS present (blindrediscovery, dataaxis, litminer digs -- all verified PRESENT) do not get this excuse and remain genuinely owed.",
    "hypothesis": "A queue that measures 'was the brain shown this' cannot distinguish unwillingness from impossibility, so a tooling outage masquerades as repeated wilful skipping and the real blocker stays invisible for as many sweeps as it takes someone to stat the file.",
    "expected_benefit": "Re-prioritises the merge from an infrastructure chore to the unblocker of the carry-over queue, and stops ~5 items being re-reported as skipped when they are impossible.",
    "expected_cost": "None -- an accounting correction, no code.",
@@ -2961,13 +2977,15 @@
    ],
    "success_metric": "After the merge, these items either close or produce a real result; if they still stall, the tooling explanation was wrong and the original skipped-verdict stands.",
    "reversal_condition": "If any of the five is found reachable by another path in this tree, that item returns to genuinely-owed immediately.",
-   "neighbours": "Touches no code. It does change how \u00a737 output should be read: max_audit's carryover-skipped message asserts wilful carrying, and that assertion is now known to be unreliable while the tree is forked -- the carry-over brief should stat an item's tooling before calling it skipped. Rowed as the follow-up rather than patched here, since the brief lives on master.",
-   "flagged_gap": "carryover-brief-cannot-distinguish-skipped-from-impossible"
+   "neighbours": "Touches no code. It does change how §37 output should be read: max_audit's carryover-skipped message asserts wilful carrying, and that assertion is now known to be unreliable while the tree is forked -- the carry-over brief should stat an item's tooling before calling it skipped. Rowed as the follow-up rather than patched here, since the brief lives on master.",
+   "flagged_gap": "carryover-brief-cannot-distinguish-skipped-from-impossible",
+   "review_due": "2026-09-03",
+   "review_due_source": "default"
   },
   {
    "id": "2026-08-04-scheduled-organ-outage-and-stale-code-daemons",
    "decision": "Restored 113 master-only files into the forked working tree to end a 60% scheduled-organ outage, then swept every long-lived daemon for stale in-memory code and restarted the 5 found. Adopted master's stricter ruff config as a UNION with our dependency upper-bounds (each side had ratcheted a different axis) and fixed the 20 issues it surfaced, 2 of them latent UTC bugs.",
-   "hypothesis": "The 32-item \u00a737 carry-over queue and ~10 max_audit defects were not refusal but ONE root cause: the crontab was installed 08-02 from master's ops/crontab.manifest while the tree stayed on a 07-29 fork, so 75/133 scheduled scripts did not exist. Each fired, died on ENOENT, and still touched its log, so every freshness-shaped check read a fresh mtime and passed.",
+   "hypothesis": "The 32-item §37 carry-over queue and ~10 max_audit defects were not refusal but ONE root cause: the crontab was installed 08-02 from master's ops/crontab.manifest while the tree stayed on a 07-29 fork, so 75/133 scheduled scripts did not exist. Each fired, died on ENOENT, and still touched its log, so every freshness-shaped check read a fresh mtime and passed.",
    "expected_benefit": "56% of scheduled organs restored to actually executing (75 -> 0 missing, verified by re-running the check). live_guard alive after ~6 days dead. The moat went STANDING-STILL -> CLOSING, coverage 53.31 -> 53.94%. The 08-04 rails fix 423ccad is running in the executor for the first time; the bybit recorder now honours its 08-02 disk guard.",
    "expected_cost": "A brief tape gap at recorder restart (unrecorded seconds are permanently unbuyable), and real CPU/network now consumed by 75 organs that previously exited instantly.",
    "confidence": "HIGH on the root cause -- proven, not inferred: ops/crontab.manifest and deploy/reconstitute_cron.sh both exist ONLY on master, and the installed crontab names itself as written by that script on 2026-08-02T02:50Z. HIGH on the daemon finding: mine_moat's daemon start (08-02 08:43:17) precedes the closure commit f903d93 (08-02 08:59) by 16 minutes, and restarting it made the missing field appear immediately.",
@@ -2976,7 +2994,9 @@
    "reversal_condition": "Checkpoint 20260804T213624_merge-master-restore-75-organs restores the prior tree exactly. If a restored organ proves harmful, delete that script and its crontab line rather than reverting all 113. If the stricter lint config blocks work, the per-file waivers each carry a stated falsifier.",
    "neighbours": "(1) cron + systemd: 75 organs now execute rather than exiting instantly, consuming real resources and writing artifacts for the first time; (2) max_audit: scheduled-script-missing closes and exploration-rate-unmeasured is expected to harden into the honest under-exploration finding now that the rate is measurable; (3) the CI lint leg now enforces DTZ + bandit repo-wide; (4) the executor, 3 recorders and moat miner are all new PIDs; (5) forward clocks reading stablecoin supply now key on UTC days, not local.",
    "flagged_gap": "Still forked: 419 commits behind, ~88 master-only test files, 256 conflicted paths. pyproject proved reunification must be a per-file UNION, not take-theirs. Rowed R0023 + GAP #88c.",
-   "push_record": "L1.37 --no-verify push, sanctioned, 4th instance -- AND THE CLASS HAS CHANGED, which is the point. The previous three were ENOENT: the hook exec'd scripts/run_law_gate.py, which did not exist here, so the gate failed on ABSENCE. The prior record (cb207f2) set its own retirement condition as 'once the merge lands and the hook can actually execute'. That half is now met: the gate RUNS, and this push restored 5 more fences it was missing (check_build_standard, check_mypy_ratchet, check_return_targeting, check_scheduler_manifest, check_sizing_derivation) -- two of which PASS immediately, so they were never breaches, only absences. WHY --no-verify IS STILL JUSTIFIED, verified rather than asserted: the 6 remaining breaches are pre-existing desk-wide states, not my diff. I diffed each fence's output against my own 147 changed paths: check_law_families, check_enforcement_execution, check_timidity_language and check_build_standard name NONE of my files. check_scheduler_manifest names one (ops/run_commit_audit.sh) and reading its detail shows the finding is a crontab DUPE -- the line is scheduled twice live vs once in the manifest -- which is a schedule defect that predates me; I restored the script, never the schedule. check_law_families has moreover never passed on this branch in its life, because until today the file was absent. SO: nothing that exists in this checkout was bypassed on its merits. The leash is now SHORTER, not longer -- from here --no-verify requires showing the breaches are not yours, and the next cycle inherits 6 named, substantive breaches to close (gap #88c / R0023)."
+   "push_record": "L1.37 --no-verify push, sanctioned, 4th instance -- AND THE CLASS HAS CHANGED, which is the point. The previous three were ENOENT: the hook exec'd scripts/run_law_gate.py, which did not exist here, so the gate failed on ABSENCE. The prior record (cb207f2) set its own retirement condition as 'once the merge lands and the hook can actually execute'. That half is now met: the gate RUNS, and this push restored 5 more fences it was missing (check_build_standard, check_mypy_ratchet, check_return_targeting, check_scheduler_manifest, check_sizing_derivation) -- two of which PASS immediately, so they were never breaches, only absences. WHY --no-verify IS STILL JUSTIFIED, verified rather than asserted: the 6 remaining breaches are pre-existing desk-wide states, not my diff. I diffed each fence's output against my own 147 changed paths: check_law_families, check_enforcement_execution, check_timidity_language and check_build_standard name NONE of my files. check_scheduler_manifest names one (ops/run_commit_audit.sh) and reading its detail shows the finding is a crontab DUPE -- the line is scheduled twice live vs once in the manifest -- which is a schedule defect that predates me; I restored the script, never the schedule. check_law_families has moreover never passed on this branch in its life, because until today the file was absent. SO: nothing that exists in this checkout was bypassed on its merits. The leash is now SHORTER, not longer -- from here --no-verify requires showing the breaches are not yours, and the next cycle inherits 6 named, substantive breaches to close (gap #88c / R0023).",
+   "review_due": "2026-09-03",
+   "review_due_source": "default"
   },
   {
    "id": "2026-08-05-severed-reply-channel-and-amnesiac-denylist",
@@ -3002,7 +3022,9 @@
     "run_trade_forensics.py flags -> run_alerts trade_class_bleeding page: the flag text changed (4 opens vs 2, 'below the floor' vs 'at baseline'), which will fire ONE new page under the 24h dedupe. Intended: the count was wrong."
    ],
    "flagged_gap": "The fork is the root cause of the pager regressions and is NOT fixed by this entry: the tree is 419 commits behind master and 108 ahead, and master silently held capabilities this box lacked. Ledgered as R0030.",
-   "push_record": "pending -- committed and pushed at end of cycle"
+   "push_record": "pending -- committed and pushed at end of cycle",
+   "review_due": "2026-09-04",
+   "review_due_source": "default"
   },
   {
    "id": "2026-08-05-l137-no-verify-push-record-5th",
@@ -3023,7 +3045,9 @@
     "ops/principal_doctrine.txt -- untouched, and it is the root cause of breaches 2 and 4 (35 laws absent from it)"
    ],
    "flagged_gap": "ROOT CAUSE, unfixed and now the top governance item: 21 orphan fences and 35 laws absent from the doctrine text mean the enforcement matrix reports laws as fenced that are not. This cycle found the sharpest instance -- check_book_absorbing_state was MAPPED to L1.23 and had never been written, so the desk believed it was guarded against the exact lock that has held the book flat. A registered-but-absent check is worse than an unregistered one: it stops anyone looking. Audit all 21 orphans and every mapping for existence, not just for presence.",
-   "push_record": "--no-verify, 5th instance, this entry is the record"
+   "push_record": "--no-verify, 5th instance, this entry is the record",
+   "review_due": "2026-09-04",
+   "review_due_source": "default"
   },
   {
    "id": "2026-08-05-generation-three-execution-hypotheses-and-a-miscalibrated-ev-gate",
@@ -3044,7 +3068,9 @@
     "data/shadow_sleeves.json / slot_registry -- 11 of 12 forward slots occupied, so at most ONE of these could ever take a clock; Stage A has zero promotion authority so generating all three costs no multiplicity"
    ],
    "flagged_gap": "THE EV GATE IS MIS-CALIBRATED FOR THIS DESK AND IT SILENTLY SHAPES EVERY RESEARCH DECISION. capacity_f = min(capacity_usd/1e6, 5)**0.25, so at our real ~$50k book capacity_f=0.473 and, against _EV_THRESHOLD=0.05, effort_h is the only free variable: a Sharpe-3.0 idea taking 6h scores 0.0462 and REJECTS while the same idea at 0.5h clears. Measured over a 320-cell grid: 4.4% clears at our capital vs 17.5% at $1M. It asks 'would this matter at a big fund', not 'does this raise OUR log-growth', and it penalises execution/cost work hardest -- which the constitution ranks equal to alpha. NOT self-applied: the gate has ZERO promotion authority, so its cost is invisible triage loss rather than risk, and recalibration deserves its own pre-registered acceptance-rate target instead of a threshold nudge. F0023 / R0038.",
-   "push_record": "pending -- pushed at end of cycle"
+   "push_record": "pending -- pushed at end of cycle",
+   "review_due": "2026-09-04",
+   "review_due_source": "default"
   },
   {
    "id": "2026-08-05-l137-no-verify-push-record-6th",
@@ -3072,13 +3098,15 @@
     "gate_state": "14 breaches, all attributed, none owned by this session",
     "owned_and_fixed_first": "check_constitution_core (f35df7e)",
     "verified_on_remote": true
-   }
+   },
+   "review_due": "2026-09-04",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-28-carry-churn-loop-root-cause-and-fix",
-   "decision": "STEP-0 integrity watch found the carry bleed alarm live and traced it to an UNBOUNDED CHURN LOOP that had been burning since 07-25. Attribution: legs were perfectly hedged (spot -263.46 / perp +263.57 ~ 0) so the entire -2227.01 non-funding PnL was FEES (1746.66) + basis (-212.10) + residual (-268.25). Both figures come from the SAME income_summary(start_ms) window, so this was not a phantom window mismatch -- the leak is real. Decisive reconciliation: the book's own trade log accounts for only ~$126 of fees (251 closes, $252k round-trip notional @5bps) against a venue bill of $1,746.66 -- 11,136 COMMISSION events for 251 logged round-trips, ~44 venue fills per logged trade, 86% concentrated in 4 symbols. $1,456 of it landed in the last 48h and it was still accruing a metronomic $2.40 per 600s tick at diagnosis (~$345/day) against $113 of LIFETIME funding harvest and $0.00 earned today. ROOT CAUSE (two independent defects, either alone sustains the loop): (1) every futures hedge had been force-closed out from under the book -- venue futures account verified FLAT while the book still tracked 4 carries -- so the close path's reduceOnly cover had nothing to reduce; the venue rejects it, _filled() returns False, fut_ok=False, and `if not (spot_ok and fut_ok): continue` kept the pair tracked for a retry FOREVER. fut_ok meant 'an order filled' when a close only ever needed 'the leg is flat'. (2) _reconcile runs FIRST each tick and, being blind to the KILL/risk-flatten order, re-shorted the missing futures leg AND re-bought the spot leg the previous tick's close had sold -- rebuilding with market orders exactly the position the close was tearing down, every tick. The book was also running NAKED LONG SPOT throughout: a hedge-integrity failure the bleed alarm's basis attribution could not express. FIX: (a) _close_goal_state() -- a CLOSE leg already at its goal state (flat) counts as done, checked PER LEG against the venue and FAIL-CLOSED (an unreadable wallet leaves _ok untouched), so the 2026-07-19 stranded-inventory guard is preserved exactly rather than loosened; (b) _reconcile(flatten_only=) -- under KILL or a latched risk-flatten the two exposure-ADDING branches are skipped while every branch that moves TOWARD flat (orphan cover, trim-excess, adl-flatten) stays live, because a flatten order never means 'stop reducing risk'. Also found+fixed: tests/execution/test_fill_verification.py had been FAILING since 07-27 (commit b3dce46) -- its fake's place_market never accepted the reduce_only kwarg production now passes, so it raised TypeError, _safe() swallowed it, and BOTH legs read unfilled. The regression guard on the 07-19 money-path incident was silently disarmed for a day. RECURSION RULE: encoded as max_audit check_close_retry_loop, which reports the FINGERPRINT (same symbol failing to close while the reconciler rebuilds it) rather than \u00a740's SYMPTOM ('fees are 63x harvest'). \u00a740 DID fire ~27h before diagnosis -- detection was never the gap, NAMING THE CAUSE was. Verified firing on live state, naming all 4 symbols.",
+   "decision": "STEP-0 integrity watch found the carry bleed alarm live and traced it to an UNBOUNDED CHURN LOOP that had been burning since 07-25. Attribution: legs were perfectly hedged (spot -263.46 / perp +263.57 ~ 0) so the entire -2227.01 non-funding PnL was FEES (1746.66) + basis (-212.10) + residual (-268.25). Both figures come from the SAME income_summary(start_ms) window, so this was not a phantom window mismatch -- the leak is real. Decisive reconciliation: the book's own trade log accounts for only ~$126 of fees (251 closes, $252k round-trip notional @5bps) against a venue bill of $1,746.66 -- 11,136 COMMISSION events for 251 logged round-trips, ~44 venue fills per logged trade, 86% concentrated in 4 symbols. $1,456 of it landed in the last 48h and it was still accruing a metronomic $2.40 per 600s tick at diagnosis (~$345/day) against $113 of LIFETIME funding harvest and $0.00 earned today. ROOT CAUSE (two independent defects, either alone sustains the loop): (1) every futures hedge had been force-closed out from under the book -- venue futures account verified FLAT while the book still tracked 4 carries -- so the close path's reduceOnly cover had nothing to reduce; the venue rejects it, _filled() returns False, fut_ok=False, and `if not (spot_ok and fut_ok): continue` kept the pair tracked for a retry FOREVER. fut_ok meant 'an order filled' when a close only ever needed 'the leg is flat'. (2) _reconcile runs FIRST each tick and, being blind to the KILL/risk-flatten order, re-shorted the missing futures leg AND re-bought the spot leg the previous tick's close had sold -- rebuilding with market orders exactly the position the close was tearing down, every tick. The book was also running NAKED LONG SPOT throughout: a hedge-integrity failure the bleed alarm's basis attribution could not express. FIX: (a) _close_goal_state() -- a CLOSE leg already at its goal state (flat) counts as done, checked PER LEG against the venue and FAIL-CLOSED (an unreadable wallet leaves _ok untouched), so the 2026-07-19 stranded-inventory guard is preserved exactly rather than loosened; (b) _reconcile(flatten_only=) -- under KILL or a latched risk-flatten the two exposure-ADDING branches are skipped while every branch that moves TOWARD flat (orphan cover, trim-excess, adl-flatten) stays live, because a flatten order never means 'stop reducing risk'. Also found+fixed: tests/execution/test_fill_verification.py had been FAILING since 07-27 (commit b3dce46) -- its fake's place_market never accepted the reduce_only kwarg production now passes, so it raised TypeError, _safe() swallowed it, and BOTH legs read unfilled. The regression guard on the 07-19 money-path incident was silently disarmed for a day. RECURSION RULE: encoded as max_audit check_close_retry_loop, which reports the FINGERPRINT (same symbol failing to close while the reconciler rebuilds it) rather than §40's SYMPTOM ('fees are 63x harvest'). §40 DID fire ~27h before diagnosis -- detection was never the gap, NAMING THE CAUSE was. Verified firing on live state, naming all 4 symbols.",
    "hypothesis": "The fee bill is not execution-quality drag but a non-terminating retry loop: a close that can never be confirmed, in front of a reconciler that rebuilds what it unwinds. If so, fees scale with TICK COUNT rather than with trading decisions, and the fix is definitional (goal state vs order receipt), not a fee-optimisation.",
-   "expected_benefit": "Removes a ~$345/day unbounded fee drain with no position limit -- the single most direct drag on CAGR per max_audit \u00a740. Restores the carry book's forward track record, which SIZING v4 reads directly: a record contaminated by a churn bug cannot size anything honestly. Restores a disarmed money-path regression guard. On live capital this defect class is catastrophic: unbounded, self-sustaining, and invisible to the trade log that was supposed to record it.",
+   "expected_benefit": "Removes a ~$345/day unbounded fee drain with no position limit -- the single most direct drag on CAGR per max_audit §40. Restores the carry book's forward track record, which SIZING v4 reads directly: a record contaminated by a churn bug cannot size anything honestly. Restores a disarmed money-path regression guard. On live capital this defect class is catastrophic: unbounded, self-sustaining, and invisible to the trade log that was supposed to record it.",
    "expected_cost": "~70 lines across one executor + one audit check + 5 regression tests. Both guards are conservative-direction only (less trading; correct retirement of an achieved state), so the failure mode of the fix itself is under-trading, never over-trading.",
    "confidence": 0.93,
    "assumptions": [
@@ -3112,7 +3140,7 @@
     "libs/execution/binance_testnet.py -- additive READ-ONLY helper; cannot place or cancel an order. Money path (binance_live, binance_spot_live, staging, run_cashcarry_executor, run_deadman_switch, libs/risk/*) byte-identical this cycle.",
     "run_alerts.py -- pages on trade_forensics flags, so it will now surface FEE INTENSITY. Intended; the flag is specific and names its cause.",
     "max_audit escalation <-> PRINCIPAL_ACTION.md -- the ordering change alters what the pager delivers as line 1. Routine escalation is demoted ONLY behind a page dated within 7 days.",
-    "\u00a735 scope -- adding SUBSYSTEM_TRIAGE/TRIAGE_ADDENDUM/GATE0_QUEUE to _FINDING_DOCS RAISED open findings 67 -> 168. Deliberate: coverage that rises by not counting findings is the denominator trick the law forbids. It immediately surfaced 4 previously-invisible items.",
+    "§35 scope -- adding SUBSYSTEM_TRIAGE/TRIAGE_ADDENDUM/GATE0_QUEUE to _FINDING_DOCS RAISED open findings 67 -> 168. Deliberate: coverage that rises by not counting findings is the denominator trick the law forbids. It immediately surfaced 4 previously-invisible items.",
     "check_generation now reads data/stage_a_verdicts.jsonl -- a run that screens without setting the cadence key is finally credited; a cycle that only touches the key no longer is.",
     "check_artifact_governance now filters gitignored paths -- the CI test asserting on it was ENVIRONMENT-DEPENDENT (red on the box holding local scratch, green on a clean runner)."
    ],
@@ -3260,7 +3288,7 @@
     "NOT touched: dead-man switch, kill switches, ruin caps, DSR/PBO/RC thresholds, forward specs, executor."
    ],
    "independence_argument": "The two changes touch different subsystems and do not interact: positive_control is new, additive, imported by nothing in the money or promotion path (only the new runner and tests), and changes no verdict anywhere; the kimchi retirement is a registry-membership change with no code shared with the control harness. The one place they meet is conceptual, not mechanical -- both concern promotion evidence -- and neither can alter the other's output. CONCURRENCY CAVEAT, logged as a blind spot: a second session (branch claude/wonderful-darwin-7uiobi) was committing to this same working tree during this cycle and rewrote scripts/run_crypto_portfolio.py at 12:15, so the independence gate could not see all changes in the window; my files do not overlap theirs.",
-   "opportunity_cost": "Displaced: (a) the R0044 19-path migration itself -- correctly, since R0017 is its precondition and shipping it uncertified is the phantom-edge risk that got the 07-30 attempt reverted; (b) the carry book's residual 5563.42 bleed attribution and its 67x fee/funding ratio, which is the larger CAGR drag but sits on a live-paper book at 0 deployed notional, so it costs measurement quality, not compounding, today; (c) the remaining 35 \u00a737 carry-over items.",
+   "opportunity_cost": "Displaced: (a) the R0044 19-path migration itself -- correctly, since R0017 is its precondition and shipping it uncertified is the phantom-edge risk that got the 07-30 attempt reverted; (b) the carry book's residual 5563.42 bleed attribution and its 67x fee/funding ratio, which is the larger CAGR drag but sits on a live-paper book at 0 deployed notional, so it costs measurement quality, not compounding, today; (c) the remaining 35 §37 carry-over items.",
    "rails_touched": "none",
    "growth_audit_link": "web/growth_audit.json",
    "review_due": "2026-08-29",
@@ -3270,7 +3298,7 @@
    "id": "2026-07-30-global-brain-mutex-two-brains-one-tree-one-quota",
    "ts": "2026-07-30T17:35:00+00:00",
    "decision": "Installed a GLOBAL BRAIN MUTEX (brain_mutex() in ops/brain_env.sh, called by all 7 claude organ launchers before brain_auth_check). Mutual exclusion previously lived only in the cron lines with PER-ORGAN lock paths, so cro_ai could not overlap cro_ai but COULD overlap deep_sweep, and organ_catchup's bare Popen, the systemd timers and manual fires had no lock at all. organ_catchup's own 'field busy' guard is a check-then-act race. MEASURED this cycle: catchup re-fired deep_sweep at 17:00:03 and the CRO brain started at 17:00:20 -- two --effort max brains on one working tree and one model pool.",
-   "expected_benefit": "Removes the quota-famine feedback loop (parallel brains drain the shared pool, both die, more organs fall owed, catchup fires more of them) which is consistent with 7 stub-deaths/48h, 12 cycles lost to quota, 39 items on the \u00a737 carry-over, 5 stale producers and 7 frontier organs that have never fired. Also removes a git-integrity hazard: observed max_audit.py mutating mid-read and `git status` going 4-dirty to clean as the sibling committed a tree it did not author.",
+   "expected_benefit": "Removes the quota-famine feedback loop (parallel brains drain the shared pool, both die, more organs fall owed, catchup fires more of them) which is consistent with 7 stub-deaths/48h, 12 cycles lost to quota, 39 items on the §37 carry-over, 5 stale producers and 7 frontier organs that have never fired. Also removes a git-integrity hazard: observed max_audit.py mutating mid-read and `git status` going 4-dirty to clean as the sibling committed a tree it did not author.",
    "cost": "~40 lines of shell, additive, no python touched. One behaviour change: a brain organ launched into a busy field now defers (exit 0) instead of running.",
    "confidence": 0.9,
    "assumptions": "flock is available (already used by 8 cron lines); organ_catchup's 5-min re-fire recovers deferred organs; frontier rotation's existing >=1500b resume point retries a deferred region.",
@@ -3282,7 +3310,8 @@
    "rails_touched": "NONE. Dead-man switch untouched and read-only this cycle.",
    "growth_audit_link": "Indirect: restores the research-throughput that every growth item depends on. capital_util GAP (justified_by NONE, $0 of $4,500 deployed) was diagnosed this cycle to the _MIN_FUNDING absolute floor and ledgered as R0066, not closed.",
    "review_due": "2026-08-06",
-   "review_due_source": "success_metric"
+   "review_due_source": "success_metric",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): PARTIAL. Held: the mutex bites -- deferrals are real (frontier 7/7 DEFERRED behind the 15:00 brain, brain_mutex.log), and the two-brains-one-tree corruption class (07-30 incident) has not recurred. Failed: 'stub-deaths fall toward zero over 7 days' -- 12 stub-deaths in the last 48h; the dominant cause moved from overlap to session-limit exhaustion with no metered fallback (keyfile absent), which the mutex cannot fix. The falsifier half-fired too: deferral-to-retry latency reached 24h for frontier seats (defer-retry memory), which is starvation-shaped and is why organ_catchup now re-fires every 5 minutes."
   },
   {
    "id": "2026-07-31-money-path-restore-min-funding-deletion",
@@ -3294,27 +3323,29 @@
    "assumptions": "cost_model p90 default remains fail-closed for unmeasured names; forensics denylist keeps updating; churn-loop fix 59b837d stays live",
    "success_metric": "7d fee-vs-funding ratio falls from 75.99x toward the 6.84x best-ever as the churn window rolls off AND new opens stay within entry-gate economics; no re-entry of the flatten absorbing state at truthful equity",
    "reversal_condition": "if baseline-funding opens on MEASURED-cheap symbols realise net-negative bps over >=20 closes, restore a floor derived from realised (not modelled) costs",
-   "neighbours_named": "quant-cashcarry daemon; risk_controls (equity read fccc580); growth_audit capital_utilization; trade_forensics entry-gate line + denylist; cost_model.json; fee-carry-ratio \u00a740 checks; forward carry clock (evidence resumes, contamination question stays on principal page A/B/C)",
+   "neighbours_named": "quant-cashcarry daemon; risk_controls (equity read fccc580); growth_audit capital_utilization; trade_forensics entry-gate line + denylist; cost_model.json; fee-carry-ratio §40 checks; forward carry clock (evidence resumes, contamination question stays on principal page A/B/C)",
    "independence_argument": "entry-gate only shapes NEW opens; hold/close paths, hedging, sizing untouched. The other risk-path change this window (fccc580) was authored by a prior session and only SHIPPED here by restart -- no new interaction surface",
    "rails_touched": "NONE. Dead-man untouched. Ruin rail reads fixed equity (re-armed by prior session).",
    "opportunity_cost": "displaced the R0031 slot wire (deferred 1 day with named evidence bar) -- money-path restoration outranks a new clock under L1.2",
-   "review_due": "2026-08-07"
+   "review_due": "2026-08-07",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): UNCLEAR (unresolvable on a flat book): the metric tracks 7d fee-vs-funding falling from 75.99x toward 6.84x, but the 08-01 drawdown rail paused opens and both terms froze (fee_burn_window.json: identical samples; n_carries 0). No re-entry of the flatten absorbing state occurred -- vacuously, since nothing traded. Re-review after re-arm; the churn-window arithmetic cannot be graded on zero flow."
   },
   {
    "id": "2026-07-31-rec-queue-x1-wire-and-ev-recalibration",
    "ts": "2026-07-31T07:27:29.649110+00:00",
-   "hypothesis": "The queue's \u03bb/\u03bc\u22484 pathology is a MISSING ENFORCEMENT SURFACE, not a discipline failure: adding check_recommendation_rows (per-row rec-owed-* defects -> \u00a737 brief) creates the cross-session pressure that measured behaviour (9/12 implemented rows fixed <6h, none >3.67d) says is the only thing that moves work. Jointly: _EV_THRESHOLD 0.05->0.002 (R0023/R0034) because the old bar sat 5x above the best honestly-scored real family, auto-rejecting honesty and blocking generation twice.",
+   "hypothesis": "The queue's λ/μ≈4 pathology is a MISSING ENFORCEMENT SURFACE, not a discipline failure: adding check_recommendation_rows (per-row rec-owed-* defects -> §37 brief) creates the cross-session pressure that measured behaviour (9/12 implemented rows fixed <6h, none >3.67d) says is the only thing that moves work. Jointly: _EV_THRESHOLD 0.05->0.002 (R0023/R0034) because the old bar sat 5x above the best honestly-scored real family, auto-rejecting honesty and blocking generation twice.",
    "expected_benefit": "every overdue R-row becomes carry-over-tracked with survival counts (27 disposed same-cycle under the new pressure); generation unblocks (honest carry-class QUEUEs, hard-kill junk still REJECTS -- 3 reference lock-tests)",
    "cost": "~60 lines max_audit + 6 tests + 10 lines alpha_economics + 3 tests",
    "confidence": 0.8,
    "assumptions": "per-row cap 12 keeps pager readable while summary carries true totals; EV re-tune waits for n>=50 scored verdicts per constitution item 9",
    "success_metric": "P1 check 08-02: of the 9 rows due 08-01, fewer than 6 past-due (prediction was >=6 WITHOUT this wire); no fresh accumulation of >24h-undisposed rows across 7 days; next generation cycle actually screens queued candidates",
-   "reversal_condition": "if the \u00a737 brief becomes majority rec-rows and crowds out defect-closers, add tier weighting; if EV gate admits a flood that starves triage, raise threshold citing the measured flood",
-   "neighbours_named": "carryover_brief/libs.ops.carryover (consumes CHECKS); max_audit escalation pager (<=13 new lines); recommendations.py (grace parity locked by test); generation duty (unblocked); \u00a737 brief composition",
+   "reversal_condition": "if the §37 brief becomes majority rec-rows and crowds out defect-closers, add tier weighting; if EV gate admits a flood that starves triage, raise threshold citing the measured flood",
+   "neighbours_named": "carryover_brief/libs.ops.carryover (consumes CHECKS); max_audit escalation pager (<=13 new lines); recommendations.py (grace parity locked by test); generation duty (unblocked); §37 brief composition",
    "independence_argument": "check is read-only over the ledger json; EV gate touches no validation/promotion path (Stage-A ordering only, zero promotion authority under the two-stage law)",
    "rails_touched": "NONE",
    "opportunity_cost": "displaced doctrine consolidation R0002 (rescheduled 08-01 under the new enforcement -- it will sit in tomorrow's brief with a survival count)",
-   "review_due": "2026-08-07"
+   "review_due": "2026-08-07",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): WRONG. The wire did not hold the queue: 7d arrivals 101 vs dispositions 93 with 101 rows past grace and repair-mode ON (2026-08-12 banner) -- fresh accumulation of undisposed rows is exactly what the metric said must not happen. The x1 wiring existed but service rate never caught arrival rate; L1.28b's capacity-and-admission analysis stands."
   },
   {
    "id": "2026-07-31-bitmex-decade-spec-and-funding-phase1",
@@ -3342,11 +3373,12 @@
    "assumptions": "ntfy 429s are burst-limits a 90s retry clears; principal wants the digest (evidence: it answers his own recorded ask)",
    "success_metric": "digest_page.log shows delivered daily incl. after-retry lines; orphan check stays honest (no new laundering path for 30d)",
    "reversal_condition": "principal replies kill -> delete manifest line + legacy line, restore the report-as-orphan lock verbatim",
-   "neighbours_named": "max_audit orphan-scripts corpus (narrowed); ops/crontab.manifest (2 new managed lines incl. graveyard_resurrect); ntfy channel budget (one retry max, low priority); \u00a736 artifact governance (BITMEX spec claimed terminal same commit)",
+   "neighbours_named": "max_audit orphan-scripts corpus (narrowed); ops/crontab.manifest (2 new managed lines incl. graveyard_resurrect); ntfy channel budget (one retry max, low priority); §36 artifact governance (BITMEX spec claimed terminal same commit)",
    "independence_argument": "no money path; detector change only narrows corpus (fail-toward-reporting)",
    "rails_touched": "NONE",
    "opportunity_cost": "none material -- unblocked CI which everything else ships through",
-   "review_due": "2026-08-07"
+   "review_due": "2026-08-07",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): CORRECT. Held: digest_page.log shows sustained daily delivery ('digest paged' through 08-11 08:30), and the orphan census stayed honest for the full 30d window -- it fired at 60 on real merge-resurrections and was burned back to the 45 budget by wiring/retiring (21946ff), not by laundering the count."
   },
   {
    "id": "2026-07-31-freeze-response-commit-scheduler-unification-reject-loop-l116a-reopens",
@@ -3365,7 +3397,8 @@
    "confidence": 0.85,
    "success_metric": "REARM reply observed lifting freeze + book resumes within one tick; zero duplicate-organ fires in 7d of logs; reject scores >0 rows by 08-12; >=4 of 12 queue items screened by 08-04 (R0126)",
    "reversal_condition": "reply channel abused or misfires -> revert run_alerts poll block + move to authed ntfy; stagger causes a collector collision -> re-pin explicit slots; re-opened items that fail screens return to graveyard with BOTH kill records",
-   "review_due": "2026-08-12"
+   "review_due": "2026-08-12",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): PARTIAL. Held: reject shadow scores >0 rows by 08-12 (data/reject_forward_scores.json: 25 scored, regenerated 08-12); no duplicate-organ double-fires in the window (mutex + hang-supervision R0282). Failed/unresolved: 'REARM reply observed lifting freeze' -- no REARM has occurred (armed=False to this day) and the reply channel itself was severed for 3 days (severed-reply memory); queue screening hit 6 of 12 seeded axes by the deadline, not >=4-and-rolling for all."
   },
   {
    "id": "2026-07-31-ci-red-deploy-pipeline-repair",
@@ -3397,7 +3430,7 @@
     "deploy pipeline (pull_deploy/run_ci/rollback_guard consumers)",
     "law-gate fence lists (both sessions' additions merged)",
     "slot_registry Holm m for every Stage-B clock (11->12 raises every bar correctly)",
-    "max_audit \u00a733 sweep semantics",
+    "max_audit §33 sweep semantics",
     "recommendations CLI callers (id allocation)",
     "discretionary sleeve organs (lint/bugfix touched them)"
    ],
@@ -3406,12 +3439,13 @@
    "reversal_condition": "revert the grace commit if a genuinely-unpushed dig output survives >6h unflagged; retire the walcl clock only by ledgered decision (slot law)",
    "review_due": "2026-08-07",
    "review_due_source": "one week of puller ticks + clock rows is decisive for all five sub-decisions",
-   "verified_by_fresh_read": "pull_deploy_state.json up-to-date@ffdf929 16:43Z; axis_shadow_state walcl ACCRUING 1/40d; forward_slots m=12 idle=0; max_audit live=[carry-bleed-alarm(acked)]; conversion_status 112 backlog 40 disp/7d"
+   "verified_by_fresh_read": "pull_deploy_state.json up-to-date@ffdf929 16:43Z; axis_shadow_state walcl ACCRUING 1/40d; forward_slots m=12 idle=0; max_audit live=[carry-bleed-alarm(acked)]; conversion_status 112 backlog 40 disp/7d",
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): PARTIAL. Held: the puller stayed green (pull_deploy logs through this morning), the recovered 35-file fix set survived, no R-id collision by 08-07 (the R0170+ renumber convention held). Failed: 'dig-output-uncommitted stays clear' -- it re-fired 4x on awake sweeps in the following week (carryover brief 2026-08-12), the exact class this cycle existed to end; walcl accrual is thin but alive (data/walcl_impulse.jsonl, last row 08-11)."
   },
   {
    "id": "2026-07-31-cycle5-repairmode-conversion-batch",
    "ts": "2026-07-31T18:08:58.754765+00:00",
-   "decision": "Repair-mode conversion cycle run CONCURRENT with a live sibling session, serialized by design: (1) R0060 CLOSED -- last two leaky Upbit open-stamp copies rewired to upbit_daily_close_keyed (code half landed via sibling commit 748cda4 after this session's untracked fence test failed in ITS suite -- cross-session fence propagation); this session contributed the permanent fence tests/governance/test_upbit_single_source.py + retracted 10 leak-contaminated kimchi_premium rows in data/signal_halflife.jsonl (STRENGTHENING ic 0.38 was pure look-ahead vs true full-depth IC +0.0012). (2) R0056 CLOSED implemented-by-machinery (092310f findings-scope fence + f57ae69 L1.28b conversion family; parser variant reasoned-rejected). (3) R0058 SCHEDULED 08-01 pinned to the REARM boundary: L1.38 change-window reads RAIL_BREACH, book venue-verified flat so zero TCA data destroyed while frozen; fix must land before first post-REARM fill. (4) capability_hunt/ scoped as \u00a735/\u00a736 class exclusion (findings row same-run per L1.31; 07-31 proof R0153-R0173 all disposed). (5) 3 acks with falsifiers: daemon-stale-code (restart HELD -- sibling mid-edit on binance_spot_live.py; frozen book makes stale code inert), carry-bleed-alarm (accounting echo; flat book cannot carry a naked leg; A/B/C owed), deploy-refused (correct R0135 behavior on sibling dirt). (6) R0174 session edit-mutex rowed+scheduled 08-02 after today's sweep-and-recover race. Max_audit live defects 10 -> 0.",
+   "decision": "Repair-mode conversion cycle run CONCURRENT with a live sibling session, serialized by design: (1) R0060 CLOSED -- last two leaky Upbit open-stamp copies rewired to upbit_daily_close_keyed (code half landed via sibling commit 748cda4 after this session's untracked fence test failed in ITS suite -- cross-session fence propagation); this session contributed the permanent fence tests/governance/test_upbit_single_source.py + retracted 10 leak-contaminated kimchi_premium rows in data/signal_halflife.jsonl (STRENGTHENING ic 0.38 was pure look-ahead vs true full-depth IC +0.0012). (2) R0056 CLOSED implemented-by-machinery (092310f findings-scope fence + f57ae69 L1.28b conversion family; parser variant reasoned-rejected). (3) R0058 SCHEDULED 08-01 pinned to the REARM boundary: L1.38 change-window reads RAIL_BREACH, book venue-verified flat so zero TCA data destroyed while frozen; fix must land before first post-REARM fill. (4) capability_hunt/ scoped as §35/§36 class exclusion (findings row same-run per L1.31; 07-31 proof R0153-R0173 all disposed). (5) 3 acks with falsifiers: daemon-stale-code (restart HELD -- sibling mid-edit on binance_spot_live.py; frozen book makes stale code inert), carry-bleed-alarm (accounting echo; flat book cannot carry a naked leg; A/B/C owed), deploy-refused (correct R0135 behavior on sibling dirt). (6) R0174 session edit-mutex rowed+scheduled 08-02 after today's sweep-and-recover race. Max_audit live defects 10 -> 0.",
    "expected_benefit": "Conversion queue drained of every past-grace row (arrivals/dispositions gap is the binding L1.28b defect); phantom-edge surface removed (a refuted signal was printing STRENGTHENING into a decay tracker); R0058 sequencing protects the moat data stream at resume.",
    "confidence": 0.85,
    "assumptions": [
@@ -3420,7 +3454,7 @@
     "no reader currently consumes signal_halflife.jsonl rows without honoring retracted_lookahead (grep found zero readers)"
    ],
    "neighbours": [
-    "scripts/max_audit.py \u00a735/\u00a736 scope sets (exclusion added -- scope check semantics unchanged)",
+    "scripts/max_audit.py §35/§36 scope sets (exclusion added -- scope check semantics unchanged)",
     "recommendation ledger shared with concurrent sessions (id R0174 verified-by-expect)",
     "quant-cashcarry daemon (restart deliberately deferred -- money path untouched this session)",
     "signal_halflife.jsonl consumers (none today; rows carry retracted_lookahead flags)"
@@ -3436,7 +3470,7 @@
   {
    "id": "2026-07-31-cycle6-r0206-carry-attribution-and-inert-moneypath-fix",
    "ts": "2026-07-31T21:04:10.124779+00:00",
-   "decision": "REPAIR-MODE cycle (conversion fence: 146 backlog rows, lambda/mu ~3.3), two conversions. (1) R0206/BR-08 CONVERTED BY TEST, NOT BY OPINION: built scripts/screen_carry_basis_path.py (pre-registered constants, 2 constructions x 2 horizons = 4 DSR-counted cells, ALL written to data/carry_basis_path.json including the ones that printed nothing) and ran it on bronze D1, 164 symbols 2019-09-08..2026-07-31. HYPOTHESIS REFUTED AND REVERSED: top-4-by-funding basis leg is +0.65 bps/day (t +3.11) = CONVERGING, not widening; the BASIS LEG ALONE improves monotonically across funding deciles (d1 -1.89 -> d10 +0.61 bps/day) in all 4 constructions. SELF-CORRECTION: the first write-up cited NET by decile, which is partly tautological because funding is the ranking variable; the basis leg is the component that carries no such mechanism. The carry ENTRY RULE is exonerated; the live -51.74 bps price_pnl returns to the execution/accounting explanation exactly as the card pre-committed. Graveyard row + rm-20260731T210007-ebb263 written; residual ~66 bps reality gap rowed R0213. (2) MONEY-PATH FIX CONVERTED FROM INERT TO LIVE: the uncommitted min_notional change touched binance_spot_live, whose ONLY importer (run_live_guard.py:99) never calls exchange_filters -- every money-path caller imports the TESTNET modules, so the field reached ZERO consumers while run_stranded_recovery.py:128 kept its hardcoded 10.0. Propagated to binance_spot_testnet, REWROTE a FABRICATED docstring (it cited a dust guard in run_cashcarry_executor._reconcile and a '2026-07-25 false-fire' -- fresh grep: neither exists in that file), and added tests/execution/test_filter_parity.py, verified to FAIL 4/5 without the fix. Also closed 2 max_audit governance defects (blind_rediscovery_log.md classified under both \u00a735-excluded-with-reason and \u00a736 _PRODUCER_CADENCE): live defects 6 -> 4.",
+   "decision": "REPAIR-MODE cycle (conversion fence: 146 backlog rows, lambda/mu ~3.3), two conversions. (1) R0206/BR-08 CONVERTED BY TEST, NOT BY OPINION: built scripts/screen_carry_basis_path.py (pre-registered constants, 2 constructions x 2 horizons = 4 DSR-counted cells, ALL written to data/carry_basis_path.json including the ones that printed nothing) and ran it on bronze D1, 164 symbols 2019-09-08..2026-07-31. HYPOTHESIS REFUTED AND REVERSED: top-4-by-funding basis leg is +0.65 bps/day (t +3.11) = CONVERGING, not widening; the BASIS LEG ALONE improves monotonically across funding deciles (d1 -1.89 -> d10 +0.61 bps/day) in all 4 constructions. SELF-CORRECTION: the first write-up cited NET by decile, which is partly tautological because funding is the ranking variable; the basis leg is the component that carries no such mechanism. The carry ENTRY RULE is exonerated; the live -51.74 bps price_pnl returns to the execution/accounting explanation exactly as the card pre-committed. Graveyard row + rm-20260731T210007-ebb263 written; residual ~66 bps reality gap rowed R0213. (2) MONEY-PATH FIX CONVERTED FROM INERT TO LIVE: the uncommitted min_notional change touched binance_spot_live, whose ONLY importer (run_live_guard.py:99) never calls exchange_filters -- every money-path caller imports the TESTNET modules, so the field reached ZERO consumers while run_stranded_recovery.py:128 kept its hardcoded 10.0. Propagated to binance_spot_testnet, REWROTE a FABRICATED docstring (it cited a dust guard in run_cashcarry_executor._reconcile and a '2026-07-25 false-fire' -- fresh grep: neither exists in that file), and added tests/execution/test_filter_parity.py, verified to FAIL 4/5 without the fix. Also closed 2 max_audit governance defects (blind_rediscovery_log.md classified under both §35-excluded-with-reason and §36 _PRODUCER_CADENCE): live defects 6 -> 4.",
    "expected_benefit": "R0206: eliminates a wrong repair direction before it was acted on -- the desk was one step from re-engineering the selection rule of its only sleeve on a mechanism that history refutes, and localises the ~66 bps divergence to execution where the next repair hour actually pays. Money path: converts an inert change into a live one and installs the parity test that prevents the whole class (4 duplicate parsers, previously 0 tests between them).",
    "confidence": 0.7,
    "assumptions": [
@@ -3511,7 +3545,7 @@
   {
    "id": "2026-08-01-cycle-carryover-ack-blindness-and-generation-third-store",
    "ts": "2026-08-01T15:03:54.789150+00:00",
-   "decision": "Two organs that judge the desk were reading a PARTIAL view of the evidence and escalating on it. (1) \u00a737 carry-over brief: scripts/carryover_brief.py enumerated max_audit.CHECKS directly and recorded EVERY defect as owed, because the ack filter lived inside max_audit.main() rather than beside the module-level CHECKS list that was shared precisely to stop this drift. Measured: 26 of 47 reported items carried unexpired dated acks and 1 was already fixed (57% false positive), and because the brief sorts by age x sightings the OLDEST acks floated to the top -- the 12 items placed in front of the brain FIRST were 12/12 acked, several blocked on principal-only actions (Tier-3 gate flip, manual re-arm) or on cron dates not yet reached. Self-amplifying: every cycle that correctly walked past an acked item incremented seen_by_live_brain, making the accusation louder. FIX: extracted max_audit.split_acked as the ONE definition; carryover_brief now records live ids as owed and acked ids separately, with an explicit ack_state refusal path (corrupt registry -> 'unknown' and the brief says so; ABSENT registry -> 'known', since nothing-acked is a fact). Deferral is NOT muted: a new TREADMILL signal fires when an item has been continuously deferred past the doctrine's 30d burial line, which is enforcement the desk did not previously have. (2) ADJACENCY, same failure shape: max_audit.check_generation credited generation from only 2 of the 3 stores a Stage-A screen lands in, so it reported the desk's PRIMARY duty skipped for 5.8d while R0069's 38-asset / 84,891-asset-day panel screen was written to reports/axis_screens/ that afternoon. Added the third store, preferring content 'updated' over mtime per L1.44.",
+   "decision": "Two organs that judge the desk were reading a PARTIAL view of the evidence and escalating on it. (1) §37 carry-over brief: scripts/carryover_brief.py enumerated max_audit.CHECKS directly and recorded EVERY defect as owed, because the ack filter lived inside max_audit.main() rather than beside the module-level CHECKS list that was shared precisely to stop this drift. Measured: 26 of 47 reported items carried unexpired dated acks and 1 was already fixed (57% false positive), and because the brief sorts by age x sightings the OLDEST acks floated to the top -- the 12 items placed in front of the brain FIRST were 12/12 acked, several blocked on principal-only actions (Tier-3 gate flip, manual re-arm) or on cron dates not yet reached. Self-amplifying: every cycle that correctly walked past an acked item incremented seen_by_live_brain, making the accusation louder. FIX: extracted max_audit.split_acked as the ONE definition; carryover_brief now records live ids as owed and acked ids separately, with an explicit ack_state refusal path (corrupt registry -> 'unknown' and the brief says so; ABSENT registry -> 'known', since nothing-acked is a fact). Deferral is NOT muted: a new TREADMILL signal fires when an item has been continuously deferred past the doctrine's 30d burial line, which is enforcement the desk did not previously have. (2) ADJACENCY, same failure shape: max_audit.check_generation credited generation from only 2 of the 3 stores a Stage-A screen lands in, so it reported the desk's PRIMARY duty skipped for 5.8d while R0069's 38-asset / 84,891-asset-day panel screen was written to reports/axis_screens/ that afternoon. Added the third store, preferring content 'updated' over mtime per L1.44.",
    "expected_benefit": "The brain seat is the desk's scarcest resource (L1.28c) and its FIRST-priority queue was 57% noise, ranked anti-correlated with real work. Post-fix the queue surfaced generation-skipped -- the constitution's own PRIMARY duty -- at rank #1 after 10 awake cycles at rank ~13+. No capital effect; the effect is on what every future cycle works on first.",
    "confidence": 0.9,
    "assumptions": [
@@ -3528,12 +3562,13 @@
     "data/max_audit_acks.json -- read by one more caller; unchanged in content, verified 36 acks present after the refusal-path test restored it",
     "check_generation's third store touches nothing that writes reports/axis_screens/"
    ],
-   "success_metric": "The \u00a737 brief's top-12 contains ZERO currently-acked items on the next 5 cycles (was 12/12), and check_generation does not fire on a day a screen report was written.",
+   "success_metric": "The §37 brief's top-12 contains ZERO currently-acked items on the next 5 cycles (was 12/12), and check_generation does not fire on a day a screen report was written.",
    "reversal_condition": "If a genuinely-owed item is found hidden in the deferred list without a valid unexpired ack, or if the treadmill signal never fires on an item deferred >30d, revert to recording all defects as owed and fix forward from there -- a noisy brief beats a blind one.",
    "independence": "Both edits are in the AUDIT/GOVERNANCE subsystem, not the risk/execution/sizing path, and they are causally linked (same failure shape, second found by the first). Non-interaction argument: split_acked is a pure function over (defects, ack registry) with max_audit.main()'s partition verified byte-identical before/after; the check_generation edit only widens an OR over timestamp sources and was positive/negative-control tested (fires when screens are hidden, silent when present). Neither touches a rail, a gate threshold, or any capital path.",
    "review_due": "2026-08-08",
    "review_due_source": "cycle+7d",
-   "verified_by_fresh_read": true
+   "verified_by_fresh_read": true,
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): UNCLEAR. The metric window ('next 5 cycles' = ~08-02..08-06) left no per-cycle brief snapshots to audit, so the promise is unverifiable as stated. Outside the window, today's brief lists ci-gate-red (acked 08-11 20:58 until 08-13) among carryover-skipped items -- either the listing predates the ack or the ack filter is leaking again; flagged for the next cycle rather than scored on out-of-window evidence."
   },
   {
    "id": "2026-08-05-carry-denylist-forgot-itself-while-paused",
@@ -3557,7 +3592,8 @@
    "independence": "Single subsystem (execution entry path), single causal change, plus one measurement-only edit to the fence that audits it. Non-interaction argument: the fence edit is read-only and cannot influence the executor; the executor edit is strictly tighten-only (symbols in the rolling window are decided before the new branch, and symbols in neither source are allowed exactly as before), so it cannot loosen any existing denial.",
    "review_due": "2026-08-12T03:09:51.014009+00:00",
    "review_due_source": "cycle+7d",
-   "verified_by_fresh_read": true
+   "verified_by_fresh_read": true,
+   "outcome": "SCORED 2026-08-12 (owed-work batch3): UNCLEAR (vacuously held): no re-arm has occurred, so 'zero opens in COOKIEUSDT/1000CATUSDT before 08-15' held over zero opportunities -- a pass over an empty denominator is not evidence (L1.57). The code half (denylist keyed on lifetime forensics, not the rolling window) is committed; the behavioural half is only testable at re-arm. Re-review on re-arm."
   },
   {
    "id": "2026-08-05-stablecoin-supply-momentum-shift-keep-accruing",
@@ -3610,7 +3646,75 @@
    "expected_cost": "~$200/month reported; split across seats UNMEASURED",
    "success_metric": "the ORIGINAL entry's metric stands and is half-met: '>=1 QUEUE-or-better finding' PASSED (~3); 'provider hit-rate measurable by month 2' FAILED (never computed)",
    "reversal_condition": "unchanged from the original entry: two consecutive panels with zero surviving findings -> drop to biweekly. On the evidence above it has arguably already fired and could not be observed",
-   "ts": "2026-08-09T10:54:30.050491+00:00"
+   "ts": "2026-08-09T10:54:30.050491+00:00",
+   "review_due": "2026-09-08",
+   "review_due_source": "default"
+  },
+  {
+   "id": "2026-08-12-repair-mode-welded-population-fix",
+   "ts": "2026-08-12T15:22:28.530868+00:00",
+   "decision": "Changed the L1.28b(d) repair-mode line to count rows that OWE a decision (untriaged past grace + schedules run out) instead of every non-terminal ledger row, and published the backlog age percentiles. Commit 4c578e58, merged 8cc510bd. Separately REJECTED R0345 (compound-row admission control) on its own pre-registered falsifier rather than building it.",
+   "why": "The §37 brief flagged rec-ledger-backlog as RECURRING 3x over 11.9d and said explicitly that closing the instance again buys one cycle -- the fix must be the class. Root cause found: check_conversion.py applied the line to `backlog` = every non-terminal row, which includes rows correctly SCHEDULED with a real reason and a future due date. Scheduling is one of three lawful dispositions, so the desk's own correct behaviour raised the number saying it was behind, and scheduled rows accrue faster than they come due. Reconstructed from the ledger's raised/disposed stamps: backlog crossed 25 on 2026-07-28 and never returned -- REPAIR-MODE fired on 100% of runs for 15 consecutive days. Its actuator is a behaviour change (flip the brain window from finding to fixing), and an always-on flip is not a flip; the brief measured the cost as 15 items shown to a live cycle twice in a row and walked past.",
+   "measured": "Pre-fix backlog 201 (86 open / 115 scheduled), owed 73, oldest 17.15d, p50 7.24d. Post-merge live run: REPAIR-MODE at owed=70 vs line 25 -- verdict UNCHANGED, confirming a population fix and not a loosening. R0345 falsifier (scripts/check_row_atomicity.py, Kaplan-Meier with open/scheduled right-censored): compound KM-median 6.07d vs atomic 5.04d, log-rank chi2=0.008 p=0.9289; sensitivities enum3 p=0.176, semicolon p=0.621, conjunction p=0.735, length p=0.791; within-source p=0.120. Compound rows 29/486 = 6%, too few to explain a 200-row backlog at any effect size. Backlog is a STOCK from two burst days (+66 07-31, +107 08-01); since 08-04 the desk served 157 vs 136 arrivals.",
+   "unmeasured": "Whether un-welding the signal actually raises the conversion rate -- that is a behavioural claim about future brain windows and needs weeks of ledger history to test. The age percentiles were added precisely so it becomes measurable: under a real drain they fall, under treading water they rise 1d/day. Also unmeasured: whether the line of 25 is the right threshold for the OWED population, since it was calibrated against the older, larger one.",
+   "expected_cost": "One governance fence touched, 70 lines. No risk, execution or sizing path. Independence gate: single subsystem. Neighbours audited and named in the commit -- run_max_push.py:251, check_fence_yield.py:51, libs/ops/repair_mode.py, capability_ratchet.py:935, orphan_scan.py:82; all read the artifact, none read the status population.",
+   "success_metric": "backlog_age_p50_days and oldest_backlog_age_days FALL over the next 14 days while arrivals hold their baseline (L1.28b(f): the drain must never come from finding less). REPAIR-MODE clearing at least once when owed drops below 25 would confirm the gate can now carry information.",
+   "reversal_condition": "If REPAIR-MODE clears while owed rows are genuinely rotting -- i.e. status OK with oldest_backlog_age_days still rising -- the population is wrong and the line must move back toward the fuller backlog. Revert 4c578e58; the pre-fix behaviour is one line (`len(backlog) > REPAIR_MODE_BACKLOG`).",
+   "review_due": "2026-08-26",
+   "review_due_source": "success_metric"
+  },
+  {
+   "id": "2026-08-12-birth-properties-boundary",
+   "ts": "2026-08-12T18:17:29.597014+00:00",
+   "decision": "Moved three of the four RECURRING birth-property predicates (artifact-ungoverned, orphan-scripts, decision-ledger-undated) onto the L1.37 push/CI boundary via scripts/check_birth_properties.py in run_law_gate._LAW_FENCES, after clearing all four live instances. Fixed the fourth (mine-conversion-unbacked) at the CLASS level in libs/research/mine_conversion._anchor_tokens rather than at its instance. Commit 66feaa26.",
+   "why": "The §37 brief marked all four RECURRING and said a per-instance fix buys exactly one cycle. They are one class -- a new object born without a required property -- and they recurred BY CONSTRUCTION: all four live in max_audit, which runs at 07:00 on cron and in neither run_law_gate, the pre-push hook, nor CI, so the authoring context is always gone by the time the question is asked (commit 9f3e2fcf: 'fix artifact-ungoverned that MY OWN commit introduced'). The detector was already correct; only the boundary was wrong.",
+   "measured": "check_orphan_scripts 91.56s of 91.66s total and 621MB peak RSS -> 3.4s and 204MB, verified an IDENTITY differentially against the replaced regex (406 real candidates + 15 adversarial cases, zero mismatches). Law gate 41s/11 fences -> 65s/12. _PRODUCER_CADENCE governed generation_due.md (ZERO writers repo-wide, content frozen 2026-07-29) while the live cadence_duties.md (run_cadence.py:881) was unclaimed. check_mine_conversion: 0 defects on this box vs 10 in a clean worktree at the same sha. max_audit acks are keyed on defect NAME, so one ack about generation_due.md suppressed three other stale documents.",
+   "unmeasured": "Whether the ~24s the new fence adds to every push measurably slows the desk's commit cadence -- not instrumented, and cheap to revisit if anyone notices. Whether mine-conversion-unbacked can be made portable at all without changing what §33 accepts as a receipt (rowed R0504, not attempted). Whether L1.34/L1.35 bind a reasoning controller as well as a digging seat (rowed R0507, deliberately left RED rather than decided unilaterally).",
+   "expected_cost": "+24s on every push and CI run, against ~90s saved on every max_audit sweep. One more fence to maintain. Whole-tree scope means the fence goes red for whatever ANY worker commits unclassified -- intended, but it makes the gate a shared dependency.",
+   "success_metric": "None of artifact-ungoverned / orphan-scripts / decision-ledger-undated / mine-conversion-unbacked appears as a RECURRING item in a §37 carry-over brief again. They may still FIRE -- that is the fence working -- but they should be fixed by the session that caused them, in the same push, not carried to a later cycle.",
+   "reversal_condition": "If the fence proves red more often from cross-worker contention than from real unclassified arrivals (i.e. it is mostly tripped by objects the tripping session did not author), the whole-tree scope is wrong and it should be narrowed to a diff against the push range, accepting the shallow-clone UNMEASURED case. If the recurrence continues in a §37 brief despite the boundary, the boundary was not the mechanism and the diagnosis in this row is wrong.",
+   "review_due": "2026-09-11",
+   "review_due_source": "chosen -- 30d is ~2 §37 brief cycles, enough for a recurrence to reappear if the diagnosis is wrong"
+  },
+  {
+   "id": "2026-08-13-denylist-merge-union-restore",
+   "ts": "2026-08-13T03:18:38.664522+00:00",
+   "decision": "Restored the all-time structural-bleed denylist that merge 8b981a50 silently reverted, and closed the fail-open R0158 named in the same function. THREE PARTS. (1) PRODUCER: scripts/run_trade_forensics.py re-emits `bleeding_symbols` + `bleeding_basis` -- the same bar (n>=5, <=-20bps) computed over the FULL closed-trade record instead of the 14d rolling `worst_symbols`. (2) READER: run_cashcarry_executor._structurally_bleeding reads the all-time key with `or` fallback to the rolling one. (3) R0158 FAIL-OPEN: the `not isinstance(rows, list) -> return False` early return both allowed the open AND skipped the persistent graveyard beneath it, so the newest denial layer was unreachable on the one input it exists to survive; control now always reaches the graveyard and an unparseable window degrades to a write-through last-good cache (data/structural_bleed_last_good.json) instead of to nothing.",
+   "why": "The fence denied 0 of 6 proven losers. Merge 8b981a50 kept tests/execution/test_carry_entry_gate.py -- the file that ASSERTS the fence reads bleeding_symbols -- and dropped the producer and reader that made it true (verified per-sha: a0026d98 producer=2 reader=2; 8b981a50 producer=0 reader=0). The suite went red and stayed red for 8 days and was read as environment noise, so the money-path regression hid behind its own alarm. The rolling window empties BECAUSE the book is paused, and a pause is caused by losses -- so the denylist was protecting nothing at exactly the moment a re-arm would re-open the names that caused the pause.",
+   "measured": "web/trade_forensics.json before: worst_symbols == [], bleeding_symbols absent, 4 of 253 all-time closes in the rolling window. Six symbols qualify all-time: NOMUSDT -149.4bps/5 (the 2026-07-13 dead-man symbol), COMPUSDT -106.4/5, ONEUSDT -92.4/5, 1000CATUSDT -74.6/5, BNBUSDT -65.8/13, PEOPLEUSDT -62.4/6. _structurally_bleeding denied 2 of these (only the two carrying data/execution_reentry.json rows) and allowed 4. After: denies all 6 plus COOKIEUSDT = 7, BTCUSDT/ETHUSDT still allowed. 23 targeted tests green (12 new), ruff clean, mypy clean on 627 files.",
+   "unmeasured": "The dollar value of opens this prevented is UNMEASURABLE and is NOT claimed: the book has been flat since 2026-08-01 (n_carries 0, CASHCARRY_KILL present), so the regression cost nothing realised -- it was an armed trap for the re-arm, not an active bleed. Full-suite verdict pending at write time; the coverage-floor gate could not be run because the box OOM-killed a --cov run (3.8GB, no swap, ~450MB free under a concurrent session).",
+   "expected_cost": "Tighten-only on new opens: 5 more symbols refused. Modelled clamp cost is small and concentrated -- ONEUSDT is independently refused by the cost gate anyway (94.81bps modelled round-trip), so the binding names are BNBUSDT and NOMUSDT. Both have realised evidence (-65.8 and -149.4 bps) that the executor's own reality floor already prices.",
+   "success_metric": "No open is ever placed in a symbol carrying an all-time <=-20bps/n>=5 verdict, and web/trade_forensics.json publishes bleeding_basis.window == 'all-time' on every run.",
+   "reversal_condition": "Revert if the all-time list ever denies a symbol whose all-time verdict has since moved above the bar (it cannot by construction -- the list is recomputed each run from the full record), or if the last-good cache is shown to deny a symbol the live artifact would allow for more than one forensics cycle.",
+   "neighbours": "NAMED (change policy): (1) scripts/check_excitation.py:64 enumerates blocked symbols from this same function -- its published denylist grows 2 -> 7; re-run clean this cycle. (2) max_audit.py:6867 reads _structurally_bleeding for its money-path no-op check -- now has a non-empty set to assert against, which strengthens it. (3) _entry_gate is the sole caller and is new-opens-only, so no held carry can be force-closed. (4) data/execution_reentry.json gains 4 symbols with NO re-entry row -- an L1.16a absorbing exclusion, rowed R0565 and deliberately NOT loosened while the change window is STERILE on a live rail breach. (5) tests/execution/conftest.py gains an autouse fixture so no test can seed the live cache. INDEPENDENCE GATE: the only other change this window is in validation (ledger dispositions, no code), a different subsystem from execution -- no interaction.",
+   "review_due": "2026-08-20",
+   "review_due_source": "7d: first forensics cycles after a book re-arm are when this fires"
+  },
+  {
+   "id": "2026-08-13-moat-tape-decontamination-and-repair-window",
+   "ts": "2026-08-13T04:42:22.328737+00:00",
+   "decision": "CYCLE 2026-08-13. Opened in L1.28b repair mode (33 rows owing, 11 SKIPS); closed with the conversion fence OK, 18 owing and ZERO skips. TWO BUILDS + 12 dispositions.\n\n(1) MOAT TAPE CONTAMINATED BY THE TEST SUITE (50bd5ef4). Found by re-measuring R0058's stated premise instead of trusting it. tests/execution/test_carry_entry_gate.py drives run_trade_forensics.main(), which calls execution_tape.backfill(trades) with no path=; the test redirects the forensics module's four paths but the tape's default lives in another module. 16 fixture rows on an append-only store, 10 written that morning, undedupable because the fixture stamps opened as now-1d. One carries closed:2020-01-01, so coverage()['days'] -- Gate 0's '>=4 weeks of live fills' metric -- read 2415.15 vs a true 30.69, published as tape_days 2415.14 35 minutes before the cycle began. Fixed at the WRITE CHOKEPOINT (_writable refuses the live default under a test harness), not in the test. 16 rows quarantined by a kill-boundary cut, not a symbol denylist -- which caught the one fixture wearing a real symbol (BNBUSDT).\n\n(2) R0217 HOST-DEATH RAIL NEVER EXISTED (43f579b1). place_stop_market was defined only on binance_live while the executor binds binance_testnet as fut, so _reconcile_protective_stops returned [] on its first line in every environment the desk has run. Ported it AND cancel_order (the reconciler degrades to placement-only without the canceller, which would accumulate resting stops every pass). Fenced by an ast-parse of the executor's hasattr/getattr probes rather than by pinning one function.",
+   "expected_benefit": "Removes a fabricated 78.7x overstatement from the metric that gates live capital, and restores a ruin rail in the environment being validated. Neither changes a sizing number today (book flat under CASHCARRY_KILL); both change what the desk BELIEVES when the principal re-arms.",
+   "confidence": 0.93,
+   "assumptions": [
+    "coverage()['days'] is the freeze-exit fill-depth metric (libs/risk/capital_events.py:12)",
+    "no ratchet floor had locked the inflated 2415d value -- verified, none found",
+    "production never sets PYTEST_CURRENT_TEST and never imports pytest -- verified by import probe",
+    "the executor is inert under CASHCARRY_KILL, so both changes ship at re-arm, not today"
+   ],
+   "success_metric": "tape_days stays equal to the real span (30.69 today) and rises only with real fills; _reconcile_protective_stops places a stop on the first re-armed position instead of returning []",
+   "reversal_condition": "If _writable's raise ever fires in a NON-test process, the pytest-in-sys.modules half is too broad and must narrow to PYTEST_CURRENT_TEST only. If the ported stop misbehaves on testnet (orphan stops surviving, or interference with the maker-pair fill inference despite the _resting_quotes STOP_MARKET filter), revert 43f579b1 -- the rail returns to its prior no-op, which is the status quo ante, not a new risk.",
+   "neighbours": [
+    "run_trade_forensics._tape_sync (observer catch now returns {'error':...} under test only)",
+    "run_cashcarry_executor.py:129 live append -- unchanged",
+    "Gate 0 / freeze exit -- evidence corrected, verdict unchanged (30.69 > 28)",
+    "capability_ratchet.py:1356 -- reads the forensics tape block; no floor had locked the bad value",
+    "check_funding_capture / fit_passive_impact / screen_venue_subsidy -- were reading 16 fake fills",
+    "_reconcile_protective_stops, _resting_quotes (R0071c STOP_MARKET filter makes wiring safe)",
+    "Tier-3 untouched: no ruin cap, kill switch or deadman path modified"
+   ],
+   "review_due": "2026-09-12",
+   "review_due_source": "default"
   }
  ]
 }

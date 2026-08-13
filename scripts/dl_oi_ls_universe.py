@@ -120,6 +120,36 @@ def pull_klines(sym: str) -> int:
                     have.add(ds)
             except Exception:
                 continue
+    # TAIL REPAIR (found 2026-08-11 via a starved breadth screen; R0085's "+0 closes x139" was
+    # this): the monthly zip for the CURRENT month is only published after the month ends, so
+    # in-month the loop above 404s and closes arrive in month-sized batches up to 31 days late --
+    # while the metrics leg (daily zips) stays current. Every axis screen's TARGET feed was
+    # therefore up to a month staler than its signals. Fetch the daily kline zips for the recent
+    # gap exactly the way pull_metrics fetches its dailies. Bounded to 45 days: older holes are
+    # the monthly loop's job and stay visible in its `missing` count.
+    tail_start = max(START, END - timedelta(days=45))
+    d = tail_start
+    while d <= END:
+        ds = d.isoformat()
+        if ds not in have:
+            url = f"{BASE}/daily/klines/{sym}/1d/{sym}-1d-{ds}.zip"
+            try:
+                raw = _get(url)
+                with zipfile.ZipFile(io.BytesIO(raw)) as zf:
+                    lines = zf.read(zf.namelist()[0]).decode().splitlines()
+                for ln in lines:
+                    p = ln.split(",")
+                    try:
+                        ts = int(p[0])
+                        pd_ = datetime.fromtimestamp(ts / 1000, tz=UTC).date().isoformat()
+                        if pd_ not in have:
+                            rows.append({"date": pd_, "close": float(p[4])})
+                            have.add(pd_)
+                    except (ValueError, IndexError):
+                        continue
+            except Exception:
+                pass                      # unpublished/delisted day; the missing count keeps it visible
+        d += timedelta(days=1)
     if rows:
         rows.sort(key=lambda r: r["date"])
         with out.open("a", encoding="utf-8") as f:
