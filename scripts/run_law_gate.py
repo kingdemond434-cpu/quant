@@ -35,8 +35,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import shutil
 import subprocess
 import sys
+import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -162,12 +165,96 @@ def fast_gate(root: Path | None = None) -> dict[str, Any]:
             "generated": datetime.now(tz=UTC).isoformat()}
 
 
-def full_gate(root: Path | None = None, *, laws_only: bool = False) -> dict[str, Any]:
+def _dirty(root: Path) -> list[str]:
+    """Files that differ from HEAD, tracked or not. Empty means the tree IS HEAD."""
+    try:
+        out = subprocess.run(["git", "status", "--porcelain"], cwd=root,
+                             capture_output=True, text=True, timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return []                          # no git -- nothing to reconcile against, judge in place
+    return [ln[3:].strip() for ln in out.stdout.splitlines() if ln.strip()] \
+        if out.returncode == 0 else []
+
+
+def _at_head(root: Path) -> tuple[Path, str, list[str]]:
+    """(where to run, what that place IS, why it is not HEAD). A pristine checkout when dirty.
+
+    THE DEFECT THIS CLOSES (R0402). laws_only exists for CI and the pre-push hook, both of which
+    judge COMMITTED state -- and both read the shared working tree instead. On this box that is
+    not a technicality: sibling sessions build continuously in the same checkout, and on
+    2026-08-05 the gate returned rc=2 on nine scripts "scheduled by the manifest but absent from
+    the repo" where every one of those manifest lines existed ONLY in another session's
+    uncommitted ops/crontab.manifest. `git show HEAD:ops/crontab.manifest` had zero occurrences.
+    So the pre-push hook refused EVERY push on this box for a breach owned by somebody else's
+    unsaved files, and the only way out was --no-verify -- which trains the desk to bypass its
+    own law gate, the exact "a gate that cries wolf gets disabled" death L1.37 rule 1 names.
+
+    A CLEAN TREE IS ALREADY HEAD, so the checkout is paid for ONLY when the verdict would
+    otherwise be wrong: CI and a fresh clone are untouched and cost nothing extra.
+    """
+    dirt = _dirty(root)
+    if not dirt:
+        return root, "cwd==HEAD (tree clean)", []
+    tmp = Path(tempfile.mkdtemp(prefix="lawgate-head-"))
+    wt = tmp / "t"
+    try:
+        r = subprocess.run(["git", "worktree", "add", "--detach", str(wt), "HEAD"],
+                           cwd=root, capture_output=True, text=True, timeout=300)
+        if r.returncode != 0:
+            raise OSError((r.stderr or r.stdout).strip()[:200])
+    except (OSError, subprocess.SubprocessError) as exc:
+        # NEVER silently fall back to the dirty tree: the whole point is that the verdict names
+        # its own subject. Judging in place is still better than no verdict, but it is REPORTED.
+        shutil.rmtree(tmp, ignore_errors=True)
+        return root, f"cwd (HEAD CHECKOUT UNAVAILABLE: {exc}) -- verdict covers UNCOMMITTED work", \
+            [f"head-checkout-unavailable: {exc}"]
+    return wt, f"HEAD in a detached worktree ({len(dirt)} file(s) dirty in cwd, excluded)", []
+
+
+def full_gate(root: Path | None = None, *, laws_only: bool = False,
+              in_place: bool = False) -> dict[str, Any]:
     """Every fence, all failures collected. Never first-failure-only.
 
     laws_only=True runs the portable LAW fences alone -- the correct mode for CI and the
-    pre-push hook, where live desk state does not exist and its absence is not a breach."""
+    pre-push hook, where live desk state does not exist and its absence is not a breach. It also
+    judges HEAD rather than the working tree (R0402), because that is what those two boundaries
+    are actually gating; pass in_place=True to judge the tree as it sits.
+
+    The HEAD run RE-EXECS this script from the checkout, so the fence LIST is HEAD's too. A gate
+    that judged HEAD's files against the working tree's roster would be a third artifact, which
+    is the same confusion one layer down.
+    """
     root = root or _ROOT
+    in_place = in_place or os.environ.get("QUANT_LAWGATE_IN_PLACE") == "1"
+    if laws_only and not in_place:
+        where, subject, why = _at_head(root)
+        if where != root:
+            try:
+                # RECURSION IS SUPPRESSED BY ENV, NOT BY A FLAG, and the difference is
+                # load-bearing: the checkout is of HEAD, which may predate this very code. An
+                # unknown --in-place makes an older copy die in argparse with empty stdout (this
+                # bug, hit on the first run); an unknown env var is ignored, and an older copy
+                # then does exactly what it always did -- judge in place, no recursion possible.
+                env = {**os.environ, "QUANT_LAWGATE_IN_PLACE": "1"}
+                r = subprocess.run([sys.executable, str(where / "scripts/run_law_gate.py"),
+                                    "--laws-only", "--json"], cwd=where, env=env,
+                                   capture_output=True, text=True, timeout=1800)
+                rep = json.loads(r.stdout)
+                rep["subject"] = subject
+                return rep
+            except (OSError, subprocess.SubprocessError, ValueError) as exc:
+                why = [f"head-gate-unrunnable: {exc} -- counts as FAILED, never skipped"]
+                return {"mode": "laws", "ok": False, "n_fences": 0, "n_failed": len(why),
+                        "failures": why, "results": [], "subject": subject,
+                        "generated": datetime.now(tz=UTC).isoformat()}
+            finally:
+                subprocess.run(["git", "worktree", "remove", "--force", str(where)],
+                               cwd=root, capture_output=True, text=True, timeout=120)
+                shutil.rmtree(where.parent, ignore_errors=True)
+        head_note, head_why = subject, why
+    else:
+        head_note, head_why = ("cwd (in-place: the working tree as it sits)"
+                               if laws_only else "cwd (full gate judges LIVE state)"), []
     battery = _LAW_FENCES if laws_only else _LAW_FENCES + _STATE_FENCES
     results, failures = [], []
     for script, extra in battery:
@@ -189,8 +276,9 @@ def full_gate(root: Path | None = None, *, laws_only: bool = False) -> dict[str,
         except (OSError, subprocess.TimeoutExpired) as exc:
             results.append({"fence": script, "ok": False, "detail": f"unrunnable: {exc}"})
             failures.append(f"{script}: UNRUNNABLE ({exc}) -- counts as FAILED, never skipped")
+    failures += head_why
     return {"mode": "laws" if laws_only else "full", "ok": not failures,
-            "n_fences": len(battery),
+            "n_fences": len(battery), "subject": head_note,
             "n_failed": len(failures), "failures": failures, "results": results,
             "generated": datetime.now(tz=UTC).isoformat()}
 
@@ -202,9 +290,14 @@ def main() -> int:
     ap.add_argument("--laws-only", action="store_true",
                     help="portable law fences only -- for CI and the pre-push hook, where live "
                          "desk state does not exist and its absence is not a breach")
+    ap.add_argument("--in-place", action="store_true",
+                    help="judge the working tree as it sits instead of HEAD. --laws-only judges "
+                         "HEAD by default because that is what a push and CI actually gate; this "
+                         "is the escape hatch, and the re-exec inside the HEAD checkout uses it")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
-    rep = fast_gate() if args.fast else full_gate(laws_only=args.laws_only)
+    rep = fast_gate() if args.fast else full_gate(laws_only=args.laws_only,
+                                                  in_place=args.in_place)
     if not args.fast:
         (_ROOT / "data/law_gate.json").write_text(json.dumps(rep, indent=2), "utf-8")
     if args.json:
@@ -212,6 +305,10 @@ def main() -> int:
     else:
         head = "LAW GATE" + (" (fast)" if args.fast else f" -- {rep.get('n_fences', 0)} fences")
         print(f"{head}: {'PASS' if rep['ok'] else 'FAIL'}")
+        # The verdict NAMES ITS OWN SUBJECT (R0402): "PASS" is meaningless until you know which
+        # artifact passed -- HEAD, or a working tree three sessions are writing to right now.
+        if not args.fast and rep.get("subject"):
+            print(f"  judged: {rep['subject']}")
         for f in rep["failures"]:
             print(f"  BREACH  {f}")
     return 0 if rep["ok"] else 1
