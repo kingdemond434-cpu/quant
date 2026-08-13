@@ -5554,11 +5554,11 @@
    "summary": "ABSORPTION COST IS HORIZON-DEPENDENT AND THE 1-YEAR FRAMING INVERTS ITS SIGN. Found by R0266's study (scripts/study_absorbing_kelly.py, docs/research/absorbing_kelly_study.json). Modelling absorption as the account FREEZING at the barrier -- correct for a venue minimum, since the money is still there -- floors terminal log-wealth at log(barrier) while the upside stays unbounded. Over a ONE-YEAR horizon that bounded downside makes E[logW] CONVEX in leverage once mu is uncertain: mu-dispersion pays like a call option, more spread puts more mass in the unbounded good tail while the bad tail is capped, and the measured optimum came out ABOVE full Kelly (f* 1.05 to 3.00). The first version of the study read that as 'the two shrinks double-count in 12/12 cells' and would have shipped a confident wrong number; it was caught only because a positive control and a no-barrier control were added. THE FIX IS THE HORIZON, NOT THE MODEL: this desk's objective is LIFETIME E[log W_T], and over a lifetime absorption forfeits ALL future compounding rather than settling at 0.2x book -- the very floor that creates the convexity is what a long horizon removes. WORK: re-run the study with multi-year horizons (or an explicit continuation value for the non-absorbed state) and confirm f*_joint falls below f*_absorbing as the horizon grows, which is the direction theory predicts. LOW PRIORITY and say so: the boundary shrink at the desk's real barrier measured <=10% (gamma_boundary 0.90-1.00 at the 00-on-k viability floor), an order of magnitude below the estimation shrink already applied, so nothing about deployed sizing turns on it. This row exists so the artifact's own caveat is tracked rather than living only in a docstring.",
    "roi_bps": 8.0,
    "raised": "2026-08-05T23:28:25.564804+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "1e61e63a",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T09:32:54.185531+00:00"
   },
   {
    "id": "R0432",
@@ -5890,11 +5890,11 @@
    "summary": "litminer run6 cards 27-29 build batch (arXiv sweep, dues aligned w/ R0193 lane): (27) 5-min copula-state BTC-hedged alt spread Stage-A screen — FIRST test of the n=0 stat-arb family; funding-accrual falsifier FIRST (paper omitted it; hourly rung graveyard-killed at all costs w/ funding modeled); (28) quarter-hour clock-phase imbalance screen on own-clock recorder + funding-window conditioning; cheapest leg = execution hygiene (avoid executing ON marks, feeds 66bps program, no alpha claim; executor change = money-path, L1.38 window applies); (29) Polymarket-vs-Deribit binary wedge MEASUREMENT (both feeds free; OpenMarket CC-BY corpus = backfill; trading leg separately gated needs-legitimacy-review). Litminer freeze bars runner code — alpha org owns constructions. Cards carry pre-registered falsifiers + graveyard priors.",
    "roi_bps": 40.0,
    "raised": "2026-08-12T02:07:10.562976+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "SCHEDULED ON THE R0193 LANE (due 2026-08-24, live and draining -- two of three data legs landed 08-11), with the batch REORDERED by a precondition audit run today rather than by the card order. NOT PARKED: each card now names its own blocker, measured. (27) 5-min copula-state BTC-hedged alt spread -- BLOCKED ON DATA. The card is pre-registered at 5-MINUTE resolution; the desk holds data/bars/*.parquet at 15-MINUTE only, 45 symbols, zero 5-min files. Rebuilding it at 15-min to make it runnable would be a silent construction substitution -- exactly the garden-of-forking-paths the screen-on-discovery duty forbids ('LOG EVERY CONSTRUCTION YOU TRY'), and it would be reported as a test of the pre-registered hypothesis when it is a different one. Needs a 5-min bar pull first; the resolution is not negotiable downward without re-registering the card. (28) quarter-hour clock-phase imbalance -- DATA READY, BUILD FIRST. The 15-min bars ARE the quarter-hour grid the card needs, and the own-clock recorder tapes exist, so this is the only card of the three whose data leg is complete today; it moves to the head of the batch on that evidence. Its execution-hygiene leg (avoid executing ON marks) is a money-path change and stays behind the L1.38 change window. (29) Polymarket-vs-Deribit binary wedge -- PARTIAL. Deribit collection exists (collect_deribit_surface.py, deribit_surface.parquet) but data/openmarket holds only 52KB (lag_pairs_ms.parquet + market_meta.parquet), a slice rather than the full ms-paired CC-BY corpus, so the backfill leg is short. The trading leg stays behind the section-13 legitimacy review as the card itself states. NOT IMPLEMENTED HERE and saying so: three Stage-A screens through the audited harness with the mandated target/horizon sweep and DSR trial logging is a research campaign, and a rushed screen produces a phantom verdict, which is negative discovery (L1.6). The unblocking work is a 5-min bar pull for (27) and the openmarket corpus completion for (29).",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-24",
+   "disposed": "2026-08-13T09:36:51.498451+00:00"
   },
   {
    "id": "R0460",
@@ -5902,11 +5902,11 @@
    "summary": "litminer run6 inbox G: adopt the lead-lag STANDING RULE — future cross-venue lead-lag proposals must use RAW TRADES w/ own-clock provenance (never marks/indices: arXiv 2608.09188 proves estimators on marks have power=size when venues cross-reference; R0117's aliasing kill was the shallower half) + Epps-correct sampling; OpenMarket ms-paired corpus (universe map 97) is the free compliant testbed. One-paragraph rule into the validation lane's checklist; pre-kills a whole class of future phantom proposals at zero cost.",
    "roi_bps": 15.0,
    "raised": "2026-08-12T02:07:14.014990+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "083ac2dc",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T09:35:34.867531+00:00"
   },
   {
    "id": "R0461",
@@ -7606,6 +7606,18 @@
    "summary": "THE DESK IMPORTED BRAIN'S selfCorrelation CAP AND MISSED ITS prodCorrelation GATE (BRAIN hunter s3, OP-083). BRAIN's alpha API exposes TWO distinct correlation gates: is.selfCorrelation (candidate vs your own prior alphas) and is.prodCorrelation (candidate vs the PRODUCTION book). libs/validation/brain_calibration.py imported only the first, as BRAIN_SELF_CORRELATION_CAP = 0.7; grep finds no candidate-vs-deployed correlation gate anywhere in libs/ or scripts/. THE TWO ASK DIFFERENT QUESTIONS AND ONLY ONE PROTECTS THE GROWTH ARGUMENT: selfCorrelation asks 'have I already tried this?', prodCorrelation asks 'does this duplicate what is ALREADY TAKING CAPITAL?' -- two correlated deployed sleeves draw down together, which is exactly what L1.18 (maximum INDEPENDENT compounding sources) exists to prevent. The desk has cohort_independence, effective_bets, panel_breadth and capacity_policy, but nothing that gates a candidate against the DEPLOYED book at promotion time. THE OBVIOUS OBJECTION IS BACKWARDS: the desk runs ~1 deployed sleeve so the gate looks near-vacuous today -- which is precisely why it is cheap now (denominator 1) and binding from the moment the second sleeve lands. Building it after the second sleeve means the first pair is admitted ungated, and that pair is the one that sets the book's correlation floor. CORROBORATED FROM OUTSIDE (OP-084): a measured 50-alpha low-correlation portfolio achieved independence through 49 DISTINCT DATA FIELDS with only 8 operator tokens and 48/50 single-operator expressions -- independence is bought with orthogonal SOURCES, so the gate must be paired with field-count growth, not with more transforms of price. Note the ordering constraint: this gate must read the deployed book at consumption time with a declared max age (L1.44), and must fail toward REFUSING a candidate when the book is unreadable, never toward admitting one.",
    "roi_bps": 18.0,
    "raised": "2026-08-13T09:19:34.236227+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0603",
+   "source": "cycle",
+   "summary": "TMPFS'S DOMINANT PRODUCER BY COUNT IS THE AGENT HARNESS, AND NOTHING REAPS IT. Freeing host-tmpfs-bloated today reclaimed 255 dead agent-session scratch dirs under /tmp/claude-1000 (179MB), the oldest 188h and accumulating continuously since 2026-07-26 -- 316 dirs total. Every desk-side producer of tmpfs has a cleanup owner (run_law_gate reaps its own lawgate-head-* checkouts past 2h; pytest got tmp_path_retention_policy=failed in 513ba24), and this one has none because ITS PRODUCER IS NOT DESK CODE: the Claude Code harness writes each session's task outputs and tool results there and never removes them, so the occupancy R0407 closed keeps returning from outside the repo. max_audit's fence correctly reports rather than deletes (a watcher of a shared resource cannot safely free it) and now names desk-OWNED git worktrees with their reclaim command (268c7f50), but harness scratch carries no ownership evidence the desk can act on automatically. THE SAFE DISCRIMINATOR IS MEASURED AND CHEAP: cron seats run under 'timeout 3000' (50min), so a session dir untouched for >=24h cannot belong to a live session, and a live-holder fd/cwd scan confirmed only 2 of 316 were held. WHAT THIS NEEDS IS A DECISION, NOT A DISCOVERY: either a desk-side janitor with that 24h+no-holder rule (cheap, and the rule is already validated by today's reclaim), or an accepted recurring manual reclaim, or a harness-level retention setting if one exists. Left unfixed the fence will re-fire on a schedule set by agent-session volume, and the failure mode is the R0407 loop: low memory makes an OOM kill likelier, the kill orphans more scratch, the next run starts poorer.",
+   "roi_bps": 5.0,
+   "raised": "2026-08-13T09:37:13.822328+00:00",
    "status": "open",
    "reason": null,
    "commit": null,
