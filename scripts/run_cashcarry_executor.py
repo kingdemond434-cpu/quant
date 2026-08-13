@@ -402,24 +402,139 @@ def _reentry_conditions() -> dict[str, Any]:
         return {}
 
 
-def _structurally_bleeding(sym: str) -> bool:
+#: LAST-GOOD BLEED WINDOW (R0158). Written through on every non-empty `worst_symbols` read,
+#: consulted only when the live artifact cannot be parsed. Runtime state, not configuration:
+#: it is derived entirely from forensics and is rebuilt by the next good read.
+_BLEED_CACHE = Path("data/structural_bleed_last_good.json")
+
+
+def _remember_bleed_window(rows: list[Any]) -> None:
+    """Persist a NON-EMPTY bleed window so an unreadable forensics cannot un-deny it.
+
+    EMPTY IS NEVER CACHED, and that asymmetry is the whole design. `worst_symbols` is a 14-day
+    rolling window over this book's own closes, so it empties during a pause -- and a pause is
+    CAUSED by losses (test_structural_bleed_persistence). Writing an empty read through would
+    let the ordinary paused state erase the cache, re-creating the forgetting defect one layer
+    down. Only evidence of bleeding is recorded; absence of evidence overwrites nothing.
+
+    Best-effort by construction: this is a cache, and a cache that can abort the executor is a
+    worse defect than a cache that misses. A failed write leaves the previous entry in place.
+    """
+    if not rows:
+        return
+    try:
+        _BLEED_CACHE.parent.mkdir(parents=True, exist_ok=True)
+        tmp = _BLEED_CACHE.with_suffix(".tmp")
+        # `rows`, not `worst_symbols`: what gets cached is whichever list the fence actually
+        # used, which is `bleeding_symbols` on a current artifact. Naming it after the rolling
+        # key would misdescribe an all-time verdict to the next reader.
+        tmp.write_text(json.dumps(
+            {"rows": rows, "cached": datetime.now(UTC).isoformat()}), "utf-8")
+        os.replace(tmp, _BLEED_CACHE)  # atomic: a reader never sees a half-written window
+    except OSError as exc:
+        print(f"bleed-cache write failed ({exc}) -- keeping previous last-good window")
+
+
+def _last_good_bleed_window() -> list[Any]:
+    """The most recent non-empty bleed window, or [] when none was ever recorded.
+
+    NO AGE BOUND, deliberately. L1.44's contract for this artifact is that deny-direction data
+    never loosens with age -- an expiry here would restore the fail-open it exists to close,
+    just on a timer. The cache is consulted ONLY when the live read failed, so a healthy
+    producer makes it unreachable; chasing a dead producer is the fence's job, not this
+    function's.
+    """
+    try:
+        data = json.loads(_BLEED_CACHE.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    if not isinstance(data, dict):
+        return []
+    # `worst_symbols` is read too, so a cache written before the key was renamed still fences.
+    # Dropping it would silently discard recorded denials, which is the one direction this
+    # whole function exists to prevent.
+    rows = data.get("rows") or data.get("worst_symbols")
+    return rows if isinstance(rows, list) else []
+
+
+def _probe_within_cap(sym: str, notional: float | None) -> bool:
+    """Is an intended open small enough to be the BOUNDED probe the re-entry row authorises?
+
+    `max_notional_usd` HAD NO READER ANYWHERE IN THE REPO (found 2026-08-13, two days before the
+    first probe window opened). `reentry_allowed` granted the probe on a COUNT alone and
+    `_structurally_bleeding` returned False, so the open then proceeded at whatever size ordinary
+    sizing chose -- while data/execution_reentry.json documented a $100 cap and the protocol's own
+    prose promised "a bounded number of MINIMUM-SIZE probes". The bound was documentation.
+
+    That mattered on a date: both recorded rows (1000CATUSDT, COOKIEUSDT) open on 2026-08-15, and
+    the mechanism the denylist exists to prevent is precisely a full-size open into a book that
+    cannot absorb it -- NOMUSDT took $4,297 into a thin book on 2026-07-13 and cost 40.9% of venue
+    equity in five minutes.
+
+    UNKNOWN SIZE IS REFUSED. A caller that does not declare its notional gets False, so the probe
+    is denied and the symbol stays blocked: the desk cannot certify a cap it cannot measure
+    (L1.28a), and the fail-closed direction here is the one that keeps the verdict standing.
+    """
+    row = _reentry_conditions().get(sym)
+    if not isinstance(row, dict):
+        return False
+    try:
+        cap = float(row["max_notional_usd"])
+    except (KeyError, TypeError, ValueError):
+        return False                      # no declared cap => no bounded probe exists
+    return notional is not None and 0.0 < float(notional) <= cap
+
+
+def _structurally_bleeding(sym: str, notional: float | None = None) -> bool:
     """True => this symbol has PROVEN it loses money for the desk; block new opens.
 
     L1.44 contract (48h: forensics is produced daily): deny-direction data never loosens with
-    age, so a STALE denylist STILL DENIES -- the fence owns chasing the dead producer. Only an
-    unreadable file falls back to allow, exactly as before, and that read is now recorded
-    instead of silent."""
+    age, so a STALE denylist STILL DENIES -- the fence owns chasing the dead producer. An
+    unreadable file no longer falls back to a bare allow (R0158): it falls back to the last
+    good window AND still consults the persistent graveyard below."""
     # R0159 EMPTY floor (min_rows=1): this is the deny-direction ledger that must be non-empty
     # -- a truncated forensics ({}) vaporises every recorded denial, so blocked bleeders
     # (COOKIEUSDT, 1000CATUSDT) become openable again with a young mtime as camouflage. A
-    # legitimate forensics artifact always carries worst_symbols and its stamp. The allow
-    # fallback below is unchanged (documented direction); the empty read is now a recorded
-    # stale_read instead of a silent un-deny.
+    # legitimate forensics artifact always carries worst_symbols and its stamp. The empty read
+    # is a recorded stale_read instead of a silent un-deny.
     fr = read_fresh(_FORENSICS, max_age_h=48.0, min_rows=1,
                     caller="run_cashcarry_executor._structurally_bleeding")
-    rows = fr.data.get("worst_symbols") if isinstance(fr.data, dict) else None
-    if not isinstance(rows, list):
-        return False
+    # READS THE ALL-TIME KEY (2026-08-05, restored 2026-08-13). This read `worst_symbols`, which
+    # run_trade_forensics computes over a 14-DAY ROLLING window -- correct for the pager (an
+    # all-history flag re-pages forever after the fix works) and exactly wrong for a fence. A
+    # symbol that proved it loses money does not stop having proved it because a fortnight
+    # passed, so the denylist emptied itself on a rolling cycle and the desk re-opened the names
+    # it had already paid to learn about. Measured at restoration: the window held 4 of 253
+    # all-time closes and named ZERO, while six qualified all-time -- NOMUSDT (-149.4 bps, the
+    # 2026-07-13 dead-man symbol), COMPUSDT, ONEUSDT, 1000CATUSDT, BNBUSDT, PEOPLEUSDT. The
+    # window is near-empty BECAUSE the book is paused, so the fence protected nothing at exactly
+    # the moment a re-arm would re-open the names that caused the pause.
+    #
+    # The `or` fallback keeps an OLD artifact fencing something rather than nothing: a forensics
+    # build that predates `bleeding_symbols` still yields its rolling list. It is `or`, not
+    # `if "bleeding_symbols" in doc`, DELIBERATELY: an EMPTY all-time list is falsy and falls
+    # through to the rolling one, because a symbol can bleed inside 14d without yet clearing the
+    # all-time n>=5 bar. Falling through therefore blocks MORE, never less -- and widening this
+    # set can only ever REFUSE an open, never force-close a held carry.
+    rows: Any = None
+    if isinstance(fr.data, dict):
+        rows = fr.data.get("bleeding_symbols") or fr.data.get("worst_symbols")
+    # R0158. The old `if not isinstance(rows, list): return False` did TWO things, and only one
+    # of them was the documented fallback. It allowed the open (documented), and it returned
+    # BEFORE the persistent graveyard at the bottom of this function -- so the 2026-08-05 denial
+    # layer, the one that survives an emptied rolling window, was unreachable on exactly the
+    # input that most needs it: a corrupt or absent forensics artifact. The newest protection
+    # was switched off by the oldest failure mode.
+    #
+    # Both halves are repaired DENY-DIRECTION ONLY. An unparseable window degrades to the last
+    # NON-EMPTY window this executor saw (never to nothing), and control always reaches the
+    # graveyard. A symbol in neither source is allowed exactly as before.
+    if isinstance(rows, list):
+        _remember_bleed_window(rows)
+    else:
+        rows = _last_good_bleed_window()
+        print(f"forensics unreadable ({fr.why}) -- denylist falling back to "
+              f"{len(rows)} cached row(s) + persistent graveyard")
     for r in rows:
         try:
             if (r.get("symbol") == sym and int(r.get("n", 0)) >= _BLEED_MIN_N
@@ -434,9 +549,12 @@ def _structurally_bleeding(sym: str) -> bool:
                 # DEFAULT IS DENY: no recorded condition => blocked exactly as before.
                 allowed, why = excitation.reentry_allowed(sym, _reentry_conditions(),
                                                           execution_tape.read())
-                if allowed:
-                    print(f"re-entry probe {sym}: {why}")
+                if allowed and _probe_within_cap(sym, notional):
+                    print(f"re-entry probe {sym}: {why} (<= cap, ${notional:g})")
                     return False
+                if allowed:
+                    print(f"re-entry probe {sym} REFUSED: {why}, but intended notional "
+                          f"{notional!r} is not within the recorded max_notional_usd")
                 return True
         except (TypeError, ValueError):
             continue
@@ -460,9 +578,12 @@ def _structurally_bleeding(sym: str) -> bool:
     if isinstance(row, dict):
         allowed, why = excitation.reentry_allowed(sym, _reentry_conditions(),
                                                   execution_tape.read())
-        if allowed:
-            print(f"re-entry probe {sym} (persistent graveyard): {why}")
+        if allowed and _probe_within_cap(sym, notional):
+            print(f"re-entry probe {sym} (persistent graveyard): {why} (<= cap, ${notional:g})")
             return False
+        if allowed:
+            print(f"re-entry probe {sym} (persistent graveyard) REFUSED: {why}, but intended "
+                  f"notional {notional!r} is not within the recorded max_notional_usd")
         return True
     return False
 
@@ -601,7 +722,7 @@ def _entry_gate(sym: str, funding: float, min_hold_h: float = _MIN_HOLD_H,
     USDT; None keeps the historical fixed-'500' bucket). Applied to NEW OPENS ONLY -- never to
     the hold/target set, so raising the bar can never force-close existing carries (that would
     itself be a churn event)."""
-    if _structurally_bleeding(sym):
+    if _structurally_bleeding(sym, notional):
         return False                      # proven money-loser: never re-open it
     periods = max(1.0, min_hold_h / 8.0)
     return funding * 1e4 * periods > _rt_bps(sym, notional)

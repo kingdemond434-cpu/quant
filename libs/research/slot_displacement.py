@@ -75,6 +75,7 @@ __all__ = [
     "RECLAIMABLE",
     "Displacement",
     "DisplacementPlan",
+    "at_decision_point",
     "classify_slot",
     "plan_displacement",
 ]
@@ -163,9 +164,52 @@ def classify_slot(slot: dict[str, Any]) -> tuple[str, str]:
     if obs is None:
         return BLOCKED, (
             f"{name}: no observation count published, so this slot cannot be judged either way")
+    _reached, terms = at_decision_point(slot)
     return PROTECTED, (
         f"{name}: accruing on {obs} observation(s) -- ends on its own pre-registered terms, never "
-        "on a challenger's arrival")
+        f"on a challenger's arrival ({terms})")
+
+
+def at_decision_point(slot: dict[str, Any]) -> tuple[bool | None, str]:
+    """Has this incumbent reached the decision point IT pre-registered? R0430's prerequisite.
+
+    THE FIELD THIS READS DID NOT EXIST UNTIL NOW, WHICH IS WHY SHADOW-BEFORE-SWAP COULD NOT BE
+    BUILT. `classify_slot` has always protected a healthy incumbent because it "ends on its own
+    pre-registered terms" -- a sentence pinned by a test with nothing behind it. A paired
+    challenger scored against an incumbent whose horizon was never written down is optional
+    stopping with extra steps: whoever runs the comparison picks the moment, and picking the
+    moment is the entire bias.
+
+    THREE-VALUED, AND THE THIRD VALUE IS THE SAFE ONE. ``None`` means the slot declares no
+    decision point, and it must never collapse into ``False`` OR ``True``: "not yet" and "we
+    never wrote one down" demand opposite repairs, and only the second is a wiring defect. A
+    caller may act on ``True`` alone; every other value leaves the incumbent alone.
+
+    IT GRANTS NO AUTHORITY AND MOVES NOTHING. Reaching a decision point means a decision may
+    legitimately be TAKEN, not that the incumbent loses. The paired comparison that would use
+    this -- warm-refit challenger, identical labels, fixed paired advantage -- remains unbuilt on
+    purpose, and `plan_displacement` is deliberately unchanged: a healthy incumbent is still
+    never displaced, at any observation count. This function only makes the question answerable.
+    """
+    name = str(slot.get("name", "?"))
+    point = slot.get("decision_at_obs")
+    if not isinstance(point, int) or isinstance(point, bool) or point <= 0:
+        return None, (
+            f"{name} declares no pre-registered decision point, so no horizon exists to have "
+            "been reached -- an incumbent cannot be paired against a bar nobody wrote down")
+    days = slot.get("days")
+    obs = int(days) if isinstance(days, (int, float)) and not isinstance(days, bool) else None
+    if obs is None:
+        return None, (
+            f"{name} pre-registered a decision at {point} observation(s) but publishes no "
+            "observation count, so progress toward it is UNMEASURED")
+    if obs >= point:
+        return True, (
+            f"{name} reached its pre-registered decision point: {obs}/{point} observation(s). A "
+            "decision may be TAKEN on its own terms -- this is not itself a verdict")
+    return False, (
+        f"{name} is {point - obs} observation(s) short of its pre-registered decision point "
+        f"({obs}/{point}) -- its own terms have not yet allowed a decision")
 
 
 def plan_displacement(slots: list[dict[str, Any]], challengers: list[dict[str, Any]],

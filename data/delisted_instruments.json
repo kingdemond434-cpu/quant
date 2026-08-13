@@ -1,5 +1,5 @@
 {
- "probed": "2026-08-12T08:24:41.993336+00:00",
+ "probed": "2026-08-13T03:35:14.989666+00:00",
  "venues": {
   "binance_futures": {
    "endpoint": "GET fapi.binance.com/fapi/v1/exchangeInfo",
@@ -31,19 +31,19 @@
   "bybit": {
    "endpoint": "GET api.bybit.com/v5/market/instruments-info?category=linear&status={Trading,Closed}",
    "states": {
-    "Trading": 808,
-    "Closed": 936
+    "Trading": 810,
+    "Closed": 937
    },
-   "n_live": 808,
-   "n_new_this_run": 0,
+   "n_live": 810,
+   "n_new_this_run": 1,
    "verdict": "AVAILABLE",
-   "n_dead": 936
+   "n_dead": 937
   },
   "coinbase": {
    "endpoint": "GET api.exchange.coinbase.com/products",
    "states": {
-    "delisted": 315,
-    "online": 517
+    "online": 517,
+    "delisted": 315
    },
    "n_live": 517,
    "n_new_this_run": 0,
@@ -62,8 +62,8 @@
   "okx": {
    "endpoint": "GET www.okx.com/api/v5/public/instruments?instType=SWAP",
    "states": {
-    "live": 445,
-    "preopen": 2
+    "live": 446,
+    "preopen": 1
    },
    "n_live": 447,
    "verdict": "ABSENT",
@@ -83,5 +83,5 @@
  "n_venues": 7,
  "n_reached": 7,
  "n_available": 4,
- "n_dead_total": 4455
+ "n_dead_total": 4456
 }

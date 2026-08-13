@@ -237,6 +237,14 @@ def derive_slots() -> dict[str, Any]:
                           # of the `state` prose. None where the artifact does not declare one --
                           # an absent start is UNKNOWN, never today (L1.30 phantom-birth rule).
                           "started": row.get("shadow_start") or row.get("start"),
+                          # `decision_at_obs` is the clock's PRE-REGISTERED decision point in
+                          # OBSERVATIONS (R0430), carried first-class for the same reason
+                          # `started` is: a consumer must never have to re-derive it, because
+                          # re-deriving it from today's data is precisely what makes it stop
+                          # being pre-registered. None where the artifact declares none -- an
+                          # undeclared decision point is UNKNOWN, and a horizon nobody wrote
+                          # down can never be reported as reached.
+                          "decision_at_obs": row.get("decision_at_obs"),
                           **_evidence(str(row.get("axis", "?")), now,
                                       days=row.get("forward_days", row.get("n", 0)),
                                       updated=row.get("updated")

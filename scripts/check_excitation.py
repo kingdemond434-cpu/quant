@@ -74,8 +74,17 @@ def _bleeding_symbols(root: Path, inp: Inputs, reentry: dict[str, Any]) -> list[
     them is evidence. The read is now DECLARED (L1.55): the caller gets `None` for "cannot know"
     and a list for "measured", and `build_report` refuses to publish a denylist it did not read.
     """
+    # SAME KEY PRECEDENCE AS THE EXECUTOR (2026-08-13). `_structurally_bleeding` reads
+    # `bleeding_symbols` -- the ALL-TIME verdict -- and falls through to the 14d-rolling
+    # `worst_symbols` only when the all-time list is absent or empty. This read must mirror that
+    # `or` exactly: reading `worst_symbols` alone would have this fence publish 2 blocked symbols
+    # while the gate enforced 7, which is precisely the "fence and gate disagree about who is
+    # blocked" failure the docstring above promises cannot happen (L1.61 -- the same claim
+    # measured two ways from two sources is a contradiction nothing else on the desk can see).
     data = inp.read_json(root / "web/trade_forensics.json", default=None, required=True)
-    rows = data.get("worst_symbols") if isinstance(data, dict) else None
+    rows = None
+    if isinstance(data, dict):
+        rows = data.get("bleeding_symbols") or data.get("worst_symbols")
     if not isinstance(rows, list):
         rows = []
     out = []

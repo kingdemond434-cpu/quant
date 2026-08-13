@@ -34,6 +34,13 @@ from libs.execution import leg_modes
 
 _TRADES = Path("data/cashcarry_trades.json")
 _OUT = Path("web/trade_forensics.json")
+# A MODULE CONSTANT so a test can inject one (2026-08-13). This was a local inside main(), so the
+# entry-gate detector's only test read the LIVE desk cost model: it asserted a BNBUSDT open was
+# flagged, the measured book got cheaper (0.344 bps pair round-trip at that size), and the test
+# went red for a reason having nothing to do with the behaviour it pins. A test that fails when
+# the desk's state moves teaches readers to discount red -- which is how the merge-union defect
+# this file's `bleeding_symbols` key repairs stayed invisible for eight days.
+_COST_MODEL = Path("data/cost_model.json")
 # web/ is untracked runtime state: evidence that exists ONLY there is invisible to any checkout
 # and unciteable by an audit (R0160). _TRACKED is the governed, reports-parallel copy of the same
 # doc; run_cashcarry_executor keeps reading _OUT -- the denylist read path must not move.
@@ -42,6 +49,12 @@ _MIN_N = 15            # a class needs this many trades before its verdict is tr
 _WINDOW_D = 14.0       # ROLLING window: all-history flags would re-page forever even
                        # after fixes work; the question is "is it bleeding NOW"
 _BLEED_BPS = -1.0      # class net worse than this (bps of notional) = defect
+# DENYLIST EVIDENCE IS ALL-TIME, ALERTS ARE ROLLING (2026-08-05, restored 2026-08-13). These
+# mirror the executor's `_BLEED_BPS`/`_BLEED_MIN_N`; the mirror exists because importing the
+# executor opens venue connections, so tests/execution/test_carry_entry_gate.py asserts the two
+# pairs stay equal and drift fails CI instead of silently re-blinding the fence.
+_DENY_BPS = -20.0      # all-time realised net bps at which a symbol is structurally bleeding
+_DENY_MIN_N = 5        # minimum closed trades before that verdict is trusted
 _FEE_RT_BPS = 10.0     # futures leg billed twice per round-trip at ~5 bps taker rack rate
 _FEE_BPS_MAX = 50.0    # 5x that -- generous for maker/taker mix + partials, so anything above
                        # is fills the book never intended, not an execution-quality gradient
@@ -220,9 +233,10 @@ def _tape_sync(trades: list[dict[str, Any]]) -> dict[str, Any]:
 def main() -> None:
     trades = json.loads(_TRADES.read_text("utf-8")) if _TRADES.exists() else []
     tape = _tape_sync(trades)
-    closes = [x for x in trades if x.get("event") == "close" and x.get("held_hours") is not None]
+    all_closes = [x for x in trades
+                  if x.get("event") == "close" and x.get("held_hours") is not None]
     cutoff = (datetime.now(tz=UTC) - timedelta(days=_WINDOW_D)).isoformat()
-    closes = [x for x in closes if str(x.get("closed", "")) >= cutoff]
+    closes = [x for x in all_closes if str(x.get("closed", "")) >= cutoff]
     flags: list[str] = []
 
     hold = _buckets(closes)
@@ -275,9 +289,8 @@ def main() -> None:
     # funding could NOT beat the symbol's modelled round-trip over the minimum hold. Baseline
     # funding on a tight measured major legitimately passes; baseline funding on an unmeasured
     # or expensive book cannot.
-    _cm_path = Path("data/cost_model.json")
     try:
-        _cost_model = json.loads(_cm_path.read_text("utf-8")) if _cm_path.exists() else {}
+        _cost_model = json.loads(_COST_MODEL.read_text("utf-8")) if _COST_MODEL.exists() else {}
     except (OSError, json.JSONDecodeError):
         _cost_model = {}
     # Same rolling window as every other flag in this file: the question is "is the gate
@@ -314,6 +327,40 @@ def main() -> None:
         if net < -25.0 and bps < -20.0:
             flags.append(f"symbol {s} structurally bleeding: ${net:.0f} over {n} trades "
                          f"({bps:.0f} bps)")
+
+    # THE DENYLIST'S EVIDENCE -- ALL-TIME, never windowed. Same bar as the executor's fence
+    # (n >= 5 closes, realised <= -20 bps), computed over the FULL closed-trade record.
+    #
+    # WHY THIS KEY EXISTS SEPARATELY FROM `worst_symbols`: that list is 14d-ROLLING, which is
+    # correct for the pager (an all-history flag re-pages forever after the fix works) and
+    # exactly wrong for a fence. A symbol that PROVED it loses money does not stop having proved
+    # it because a fortnight passed, so a windowed denylist rehabilitates every proven loser on a
+    # fortnightly cycle and the desk re-buys the lesson it already paid for.
+    #
+    # RESTORED 2026-08-13 (R0158 sibling). This split shipped 2026-08-05 in a0026d98 and was
+    # REVERTED by merge 8b981a50, which kept tests/execution/test_carry_entry_gate.py -- the file
+    # asserting the fence reads this key -- while dropping the producer and reader that made it
+    # true. The tests went red and stayed red, so the merge-union defect was visible the whole
+    # time and read as an ordinary red suite. Measured at restoration: the rolling window held
+    # 4 of 253 all-time closes and named ZERO bleeders, while SIX qualified all-time -- NOMUSDT
+    # (-149.4 bps, the 2026-07-13 dead-man symbol), COMPUSDT (-106.4), ONEUSDT (-92.4),
+    # 1000CATUSDT (-74.6), BNBUSDT (-65.8) and PEOPLEUSDT (-62.4). The book is paused on a
+    # drawdown, which is WHY the window is nearly empty: the fence protects nothing at exactly
+    # the moment a re-arm would re-open the names that caused the pause.
+    #
+    # The path back is a RE-MEASUREMENT that moves the all-time verdict, never the calendar.
+    all_sym: dict[str, list[float]] = defaultdict(lambda: [0, 0.0, 0.0])
+    for x in all_closes:
+        s = str(x.get("symbol"))
+        all_sym[s][0] += 1
+        all_sym[s][1] += float(x.get("net") or 0)
+        all_sym[s][2] += float(x.get("notional") or 0)
+    bleeding: list[dict[str, Any]] = sorted(
+        ({"symbol": s, "n": int(n), "net": round(net, 2),
+          "bps": round(1e4 * net / nt, 1)}
+         for s, (n, net, nt) in all_sym.items()
+         if n >= _DENY_MIN_N and nt and 1e4 * net / nt <= _DENY_BPS),
+        key=lambda r: float(r["bps"]))   # worst first, so a reader sees the sharpest evidence
 
     # MAKER FILL-RATE ON THE PRIMARY BOOK (2026-07-26). The patient-maker opens shipped 07-24 to
     # cut a fee bill running ~2.5x the funding harvest, and the desk carried a standing duty to
@@ -376,6 +423,11 @@ def main() -> None:
         "execution_tape": tape,
         "worst_symbols": [{"symbol": s, "n": n, "net": round(net, 2), "bps": round(bps, 1)}
                           for s, n, net, bps in worst],
+        "bleeding_symbols": bleeding,
+        "bleeding_basis": {"window": "all-time", "n_closes": len(all_closes),
+                           "min_n": _DENY_MIN_N, "bleed_bps": _DENY_BPS,
+                           "note": "the executor's structural-bleed denylist reads THIS key; "
+                                   "worst_symbols is 14d-rolling and is for alerts only"},
         "flags": flags,
         "origin": "recursion rule 2026-07-22: mechanization of the principal-supplied probes "
                   "that found gaps #42/#43/#34",

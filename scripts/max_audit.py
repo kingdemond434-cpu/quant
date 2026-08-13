@@ -3728,7 +3728,38 @@ def check_host_memory_headroom(defects) -> None:
             f"ceiling (MemAvailable {avail}MB). tmpfs pages are resident memory owned by no "
             f"process: they are never reclaimed under pressure and never appear in a process "
             f"memory check. R0407's prevention fixed pytest's orphans specifically; occupancy "
-            f"returning from other producers is the same resource going unwatched. {where}."))
+            f"returning from other producers is the same resource going unwatched. "
+            f"{_tmpfs_holders_note()} {where}."))
+
+
+def _tmpfs_holders_note() -> str:
+    """The largest /tmp entries with the one fact that makes freeing them a safe decision.
+
+    THE FENCE STAYS A REPORTER AND THE REPORT BECOMES ACTIONABLE. It still deletes nothing --
+    `/tmp` is shared with the live executor, three recorders and several agent sessions, and an
+    automatic reaper racing a sibling's scratch is a worse failure than the one it fixes. What
+    changes is that the reader no longer has to redo the investigation by hand under memory
+    pressure: the entries, their ages and whether anything live holds them are IN the defect.
+
+    HELD-BY-NOTHING IS NEVER ASSERTED FROM A PARTIAL SCAN. Most pids on this box are unreadable,
+    so an unheld-looking entry is reported as "holder unknown", never as safe. The coverage
+    fraction is printed so the reader can price the verdict instead of trusting it.
+    """
+    from libs.ops.host_resources import fd_scan_coverage, tmpfs_top_holders
+
+    rows = tmpfs_top_holders()
+    if not rows:
+        return ""
+    readable, total = fd_scan_coverage()
+    seen = f"{readable}/{total} pids' descriptors readable" if total else "no pid table readable"
+    parts = []
+    for r in rows:
+        holder = ("HELD by a live process" if r.held
+                  else "held by nothing" if r.held is False else "holder UNKNOWN")
+        parts.append(f"{r.path} {r.mb}MB {r.age_h:.0f}h {holder}")
+    return (f"Largest entries: {'; '.join(parts)}. Holder scan saw {seen}, so 'holder UNKNOWN' "
+            f"means NOT CHECKABLE from here, never 'safe to delete' -- age plus a known producer "
+            f"is the evidence to act on.")
 
 
 def check_test_suite_collectable(defects) -> None:

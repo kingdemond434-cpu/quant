@@ -6,11 +6,11 @@
    "summary": "wire CPCV/SPA/FDR/lockbox: validation code exists but is never called by any gauntlet path",
    "roi_bps": 0,
    "raised": "2026-07-26T11:26:08.435892+00:00",
-   "status": "scheduled",
-   "reason": "Blanket claim REFUTED by fresh reads: 3 of 4 named components are wired AND reached from a scheduled script. Real CPCV at libs/autodiscovery/validation.py:624 via :274-277; campaign_fdr :310 called at orchestrator.py:328-330; LockedHoldout constructed orchestrator.py:290, opened once at :354-359 -- all reached in production by scripts/run_moat_campaign.py:40,144 (cron manifest:1260, artifact reports/moat_campaign.json stamped 2026-08-05T04:10:14Z). SPA alone is dead: hansen_spa (reality_check.py:57) is reachable only via Gauntlet.run (gauntlet.py:176) and Gauntlet is instantiated nowhere outside tests. Owed work is ONE decision -- wire hansen_spa into the reachable validate() path, or retire libs/validation/gauntlet.py -- and that same decision settles R0008, whose only trials_ledger writer lives in the same dead class.",
+   "status": "rejected",
+   "reason": "THE ROW'S BLANKET PREMISE IS REFUTED and re-verified by fresh read this cycle: 3 of the 4 named components are wired AND reached in production -- CPCV at libs/autodiscovery/validation.py:624, campaign_fdr via orchestrator.py:328-330, LockedHoldout constructed orchestrator.py:290 and opened at :354-359, all reached from scripts/run_moat_campaign.py. Only hansen_spa is dead (sole caller libs/validation/gauntlet.py:176; Gauntlet instantiated nowhere outside tests). Rejecting the row AS WRITTEN rather than re-scheduling it a fourth time: 'wire CPCV/SPA/FDR/lockbox' describes work that is 3/4 already done, so carrying it misreports the desk's own state. The one real remaining decision is re-scoped to R0567 and deliberately bound to R0566 -- SPA, DSR n_eff and the trials ledger are all multiplicity accounting in the same gauntlet, and changing them separately risks the double-count that made this gauntlet 4x too strict before.",
    "commit": null,
-   "due": "2026-08-12",
-   "disposed": "2026-08-05T09:02:40.262291+00:00"
+   "due": null,
+   "disposed": "2026-08-13T03:13:22.914994+00:00"
   },
   {
    "id": "R0002",
@@ -98,11 +98,11 @@
    "summary": "O6 data-moat: populate-or-retire the trials_ledger (0 rows in every DB while docstring claims nothing is validated without it; gauntlet no-ledger fallback n_trials=2) + build effective-vs-raw trial audit view from research_candidates rows (gate-optimality duty currently unauditable)",
    "roi_bps": null,
    "raised": "2026-07-26T11:45:42.344528+00:00",
-   "status": "scheduled",
-   "reason": "HALF-BUILT AND WIRED TO THE WRONG SOURCE. Measured live: trials_ledger has 0 rows in sor_research.sqlite, alpha_registry.sqlite AND sor_crypto.sqlite. Its only writer is libs/store/trials.py:102, whose only caller is the dead Gauntlet._resolve_n_trials (gauntlet.py:93-101). The audit view WAS built -- max_audit.py:1553-1555 calls effective_trial_count -- but its input _trial_mechanisms() (max_audit.py:130-149) reads the empty table's family column and returns [], so max_audit.py:1558 'if eff.raw' is ALWAYS falsy and the inflation string is permanently blank. The gate-optimality duty is structurally unauditable while 3043 research_candidates rows (1799 + 1244) sit unread. Same decision as R0001: retiring gauntlet.py removes the ledger's only writer, at which point _trial_mechanisms must repoint at research_candidates or the table be dropped.",
+   "status": "rejected",
+   "reason": "SAME ROOT CAUSE AS R0001, now isolated: the trials_ledger has 0 rows in every DB because its ONLY writer lives inside libs/validation/gauntlet.py, which is instantiated nowhere outside tests/validation/test_gauntlet.py -- so 'populate-or-retire the ledger' is not a separable task, it is one branch of the single decision about that dead class. Rejecting as a standalone row to stop two rows tracking one decision (both have been carried 17.6d); the decision is R0567, which names the trials ledger explicitly as the thing re-homed if gauntlet.py is retired.",
    "commit": null,
-   "due": "2026-08-12",
-   "disposed": "2026-08-05T09:02:49.873700+00:00"
+   "due": null,
+   "disposed": "2026-08-13T03:13:30.154479+00:00"
   },
   {
    "id": "R0009",
@@ -1118,11 +1118,11 @@
    "summary": "SYNTH0731 P2-19 [val V11/V6/V14 + 0729F11]: validation small-fix bundle — DSR n_eff=n/autocorr_factor (3 lines, anti-conservative side); _PERIODS_PER_YEAR x4.1 annual_sharpe inflation; event_study bootstrap overlap conservatism",
    "roi_bps": 50.0,
    "raised": "2026-07-31T03:45:46.017975+00:00",
-   "status": "scheduled",
-   "reason": "Two of three legs still owed and BOTH TIGHTEN THE BAR. (1) PSR/DSR use raw n at dsr.py:31 and :40 with no autocorrelation deflation, while the Bartlett autocorr_factor it needs already sits UNUSED at forward_stats.py:32 clamped to [1,5]. (2) The hourly annualiser _PERIODS_PER_YEAR = 24*260 is still hardcoded at autodiscovery/validation.py:50 and multiplies annual_sharpe at :611 inside validate() -- the function every campaign runner imports (run_real_campaign.py:31, certify_gauntlet.py:50, measure_gate_histogram.py:24 and ~12 more) -- a 4.1x Sharpe inflation whenever daily bars are fed in. Leg 3 is already DONE: event_study.py:145 discounts n by the overlap fraction and :162 uses n_eff in the t-stat.",
-   "commit": null,
-   "due": "2026-08-12",
-   "disposed": "2026-08-05T09:04:53.270220+00:00"
+   "status": "implemented",
+   "reason": "2 of 3 legs verified landed by fresh read this cycle; leg 1 split to R0566 rather than carried a 4th time. Leg 2 (annualiser): libs/autodiscovery/validation.py now takes periods_per_year as a REQUIRED parameter with no default and its docstring credits R0086 -- the 24*260 module constant that inflated annual_sharpe 4.135x on daily bars is gone. Leg 3 (event-study overlap): libs/validation/event_study.py:145 computes n_eff = max(1.0, n*(1.0-ov)) and :162 uses it in the t-stat. Leg 1 (DSR n_eff) is genuinely still owed and is now R0566, which carries the double-counting question that must be answered before wiring.",
+   "commit": "757c2d79",
+   "due": null,
+   "disposed": "2026-08-13T03:12:48.126182+00:00"
   },
   {
    "id": "R0087",
@@ -5307,11 +5307,11 @@
    "summary": "Liveness layer per-row fix (capability hunt s2 Proposal A headline, NOT built): check_organ_liveness.py:168-173 takes age = min(fresh) over SURVIVING artifacts, so one live file hides every absent sibling in the same block and the row reads FRESH; max_audit.check_organs:388 continues past 8 organs sharing 1 artifact whose mtime is written by git. Refused a fourth central instrument -- these need the per-row fix, not a rewrite. Feeds capability_ratchet ops_autonomy.",
    "roi_bps": null,
    "raised": "2026-08-05T22:02:19.266866+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "9e02d50d",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T02:27:12.328270+00:00"
   },
   {
    "id": "R0419",
@@ -5343,11 +5343,11 @@
    "summary": "RETIRE THE MT5 PAIR, or say why not. scripts/run_mt5_crossasset.py and scripts/run_mt5_funding_bridge.py are dead by three independent measures: run_daily_research.py:48 ends its step-list comment with the literal sentence 'MT5 abandoned.' and _STEPS is crypto-only; ops/crontab.manifest has ZERO entries for either; no Python importer at any depth. REPO_MAP.md:99-104 already lists both under 'DEPRECATED scripts (MT5/old stack)'. They still carry live imports of validate/campaign_gate_stats, so every future validation-API change pays maintenance on two scripts nothing can run. Found while surveying R0271's nine truncation sites -- both were cited as work, and the correct disposition is deletion, not migration. NOTE the same survey found run_daily_research.py's module docstring at :5 still advertises '(4) the MT5 alpha-portfolio campaign', contradicting its own step list -- a stale docstring is how a dead path keeps looking alive.",
    "roi_bps": 15.0,
    "raised": "2026-08-05T22:22:12.518753+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "f5fdd767",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T02:51:44.429619+00:00"
   },
   {
    "id": "R0422",
@@ -5355,11 +5355,11 @@
    "summary": "THIRTEEN FORECASTS HAVE A DEADLINE AND NO GRADER -- earliest due 2026-08-14. Surfaced by unowned() built for R0260 (233596c) and now published in data/calibration_status.json as n_unowned/unowned_next_due. They are hand-logged judgement claims (kinds fence-yield, risk, diagnosis, engineering, research, capability) whose keys sit in no organ namespace and whose text score_forecasts.auto_resolvable cannot parse, so on 2026-08-14 check_calibration goes OVERDUE and NO organ on this desk can clear it -- a permanently-red fence, which is how a fence gets switched off (L1.43). MOST ARE CHEAPLY GRADEABLE FROM ARTIFACTS THE DESK ALREADY WRITES: 20260801-conversion-repair-mode-still-correct reads the backlog count in data/conversion_status.json; 20260731-filter-parity-holds reads whether tests/execution/test_filter_parity.py passes; 20260801-L1.45-cost-ratio-exceeds-1.25 reads the cost_ratio artifact. THE FIX IS PER-ROW, NOT A NEW ORGAN: set forecast_calibration.log_forecast(resolver=...) naming the artifact each answer is read off, then grade them on the date. Two (the 2026-09-30 blind-rediscovery originality check and the 2027-07-31 literature check-back) are genuinely judgement calls and need a declared human grader, not a script.",
    "roi_bps": 30.0,
    "raised": "2026-08-05T22:22:28.221603+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "881049cf",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T02:55:11.489626+00:00"
   },
   {
    "id": "R0423",
@@ -5367,11 +5367,11 @@
    "summary": "SHARED-TREE COMMIT SWEEP: a sibling session ran a broad commit between my 'git add' and my 'git commit', sweeping 4 staged money-path files (libs/execution/carry_accounting.py, run_cashcarry_executor.py, run_live_combined.py, tests/execution/test_carry_accounting.py) into its own commit d971a08, whose message is about R0261 discovery-rank and says NOTHING about the $4,807 futures-leg reporting repair those files contain. The CODE survived; the RATIONALE was destroyed -- and per L1.16 an edge/repair is only durable if its mechanism is understood, which is what a commit message is for. git blame on that repair now points a future reader at an unrelated subject line. This is the third recorded instance of the shared-checkout class (memory: 'sibling commit -a swept my staged ledger', 'a sibling git checkout'd the tree off my branch MID-TASK'). Per-instance fix each time = re-commit; the GENERALISATION is that concurrent sessions must not share a worktree: each takes 'git worktree add -b <branch>' at session start and merges back. Proposed: make that the documented default in ops/ and have a cheap check fire when two live claude processes resolve the same git common-dir.",
    "roi_bps": 3.0,
    "raised": "2026-08-05T22:49:43.088832+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "e5d7de24",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T03:03:29.964596+00:00"
   },
   {
    "id": "R0424",
@@ -5391,11 +5391,11 @@
    "summary": "run_cadence.py HAS NO ARGPARSE AND SILENTLY IGNORES EVERY FLAG. '.venv/bin/python scripts/run_cadence.py --help' does not print help -- it executes a full cadence run (measured 2026-08-05: still running at 3m13s, having checked panel funding and found balance -0.59). Any operator or organ reaching for --help, --dry-run, --report-only or --json on this script gets a REAL RUN of the engine that fires the weekly panel and monthly tier1. The desk has a documented instinct to probe a script with --help before invoking it (that is how several organs were verified this week), so the one habit meant to make invocation SAFE is, on this script, the thing that invokes it. This is the same class as the Windows-only generation entry point found by EXECUTING it: the signature is not what the caller assumes. FIX: add an argparse with --report-only/--json, or at minimum reject unknown argv with a non-zero exit and a usage line. Neighbour: ops/ callers and cron entries pass no flags today, so adding argparse is additive and cannot change scheduled behaviour.",
    "roi_bps": 2.0,
    "raised": "2026-08-05T22:54:46.276639+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "5e9db644",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T02:35:32.094063+00:00"
   },
   {
    "id": "R0426",
@@ -5403,11 +5403,11 @@
    "summary": "STERILE COCKPIT HAS NO PER-COMMIT GRANULARITY, so a REPAIR cannot be deployed without also deploying every withheld IMPROVEMENT. L1.38 freezes money-path improvements inside the launch window and always allows repairs -- but the unit of deployment is a PROCESS RESTART, not a commit. Live instance today: commit 483b374 (a repair -- the futures leg published $4,807 of a signed re-base as profit, and scripts/hurdle_rate.py:97 reads that exact net_pnl to judge whether the carry beats T-bills) sits behind f7becef, an improvement a prior session deliberately withheld under L1.38 with a reasoned, unexpired ack. Restarting the executor to land the repair also lands the withheld improvement; not restarting leaves the repair INERT (verified: web/cashcarry_live.json still publishes net_pnl 2935.65 with no net_pnl_basis key, i.e. the running pid predates the fix -- desk lesson L0004). NOT restarted this cycle, and that is a decision not an oversight: the book is FLAT and killed (CASHCARRY_KILL present since 08-01T21:55), so nothing is being sized on the corrupt number right now, and the re-arm -- a principal decision -- will restart the process anyway. THE GAP TO CLOSE: check_change_window.py judges a WINDOW, never a DIFF, so it cannot tell an operator which pending commits are repairs and which are frozen improvements. It should classify the commits between the running process's start and HEAD, so 'can I restart?' becomes answerable instead of argued.",
    "roi_bps": 4.0,
    "raised": "2026-08-05T22:54:59.704915+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "5f420992",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-13T02:58:48.333213+00:00"
   },
   {
    "id": "R0427",
@@ -6975,6 +6975,138 @@
    "summary": "A SPAWN SURFACE CARRIES NEITHER THE MINER MANDATE NOR DEEP-FOREST EXHAUSTIVENESS, AND IT IS A CONTROLLER. ops/midnight_codex_prompt.txt fails tests/governance/test_source_universality.py twice -- test_every_miner_brief_carries_the_mandate and test_every_seat_carries_the_deep_forest_mandate -- measured 2026-08-13 on a full tests/governance run. The prompt arrived in 320a4af0/0d314696 ('seal the master constitution and harden midnight continuity', 'wire the continuous open-world frontier and controller handoff'); this row's author touched neither it nor the test, so it is pre-existing rather than fallout. WHY THIS IS NOT A TEST-HYGIENE NIT: L1.36 makes REACHING a condition of every law family -- 'a law that never reaches an organ cannot change behaviour however well fenced' -- and L1.35 is the law that forbids a hunter from ever declaring itself exhausted. A controller seat spawned without it is precisely the failure L1.36's own proving instance describes (L2.3 was in the constitution, mapped in the matrix, ABSENT FROM THE DOCTRINE). The seat in question is a CONTROLLER that hands off continuity across the midnight boundary, so whatever it does or fails to do propagates to the workers it schedules. TWO READINGS AND THEY NEED DIFFERENT FIXES, so establish which before patching: either the prompt genuinely should carry the mandate (inject it, and the fence goes green), or a continuity controller is not a hunting seat and the test's _PROMPTS discovery is over-broad (then the exemption is declared IN the test with its reason, never by quietly narrowing the glob -- an invisible exemption is the defect wearing a comment, L1.60). Do not resolve it by deleting the assertion.",
    "roi_bps": 10.0,
    "raised": "2026-08-13T01:57:09.312376+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0558",
+   "source": "cycle",
+   "summary": "L1.62 follow-up: measure_cross_section_breadth.py (956 lines) is UNWIRED and UNSCHEDULED, its artifact reports/cross_section_breadth.json has never existed, and libs/portfolio/concentration.py:94 hardcodes LIVE_BOOK_MEAN_CORR=0.638 citing that absent artifact -- a frozen fossil, not a read. Its dependent measure_live_book_concentration.py runs daily and has been BLOCKED on the missing panel. Schedule it, produce the artifact, replace the hardcoded constant with a read.",
+   "roi_bps": null,
+   "raised": "2026-08-13T02:12:54.037883+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0559",
+   "source": "cycle",
+   "summary": "L1.62 follow-up: cross-sectional breadth is measured ONCE per run and has no DRIFT monitor. Residual correlation regime-shifts (a crypto beta spike collapses breadth), which silently invalidates every power figure computed from it. Add a drift check comparing current measured breadth to the value the last screen used.",
+   "roi_bps": null,
+   "raised": "2026-08-13T02:12:58.521781+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0560",
+   "source": "cycle",
+   "summary": "L1.62 follow-up: the breadth estimate is sensitive to the column-inclusion floor -- 92.76 bets pairwise-complete over 139 names vs 72.27 restricted to columns with >=200 obs (~30% spread, ~15% in the detection floor). Pin the estimator's inclusion rule with a sensitivity study rather than leaving min_obs a free parameter.",
+   "roi_bps": null,
+   "raised": "2026-08-13T02:13:03.071811+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0561",
+   "source": "cycle",
+   "summary": "SCREEN-UNDERPOWERED is the largest verdict class on disk (380 of 711, 2.4x the next) and NO fence reads that ratio. check_panel_breadth (L1.62) now watches the BASIS of the denominator but not the RATE. A screen whose modal verdict is 'could not tell' is an instrument report, not a research result -- make the underpowered rate a fenced ratchet metric.",
+   "roi_bps": null,
+   "raised": "2026-08-13T02:13:09.299930+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0562",
+   "source": "cycle",
+   "summary": "libs/data/cot_source.py is a FREE CFTC public-API capability with ZERO production consumers, and it has been unreachable for months while looking wired. Found during R0421: it had TWO importers (scripts/log_swaps.py and scripts/run_mt5_portfolio.py) and BOTH were dead MT5-stack scripts nothing invoked. tests/scripts/test_wiring_and_ratchets.py only flags a SOLE dead importer -- so N>1 dead importers evade the check entirely, which is an off-by-N hole in the wiring fence worth its own look. Both importers are now retired and the module is reachable only from tests/data/test_cot_source.py, which the orphan check tolerates. THE MODULE IS WORTH KEEPING, NOT DELETING: it pulls CFTC legacy non-commercial (large-speculator) positioning straight from publicreporting.cftc.gov -- free, weekly, orthogonal-to-price, correctly lagged Tuesday-snapshot/Friday-publish with no look-ahead, and it already has 18 passing tests. Its COT_MAP is keyed to MT5 FX/metals/oil symbols, so the crypto desk needs either a crypto-relevant remap (CFTC now publishes BTC/ETH futures COT) or an explicit decision to hold it dormant. DECIDE: wire it to a screen, remap it to crypto contracts, or record it dormant with a reason -- an unwired free data axis is L1.28a idle capacity.",
+   "roi_bps": 8.0,
+   "raised": "2026-08-13T02:51:50.947133+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0563",
+   "source": "cycle",
+   "summary": "MONEY-PATH SPOT FILTER DIVERGENCE, LIVE AND ALREADY PINNED BY A RED TEST. tests/execution/test_filter_parity.py fails 4/5 today (KeyError min_notional at :85). libs/execution/binance_spot_live.py:121 emits min_notional from the NOTIONAL/MIN_NOTIONAL filter; libs/execution/binance_spot_testnet.py:95-99 exchange_filters() returns only step/min_qty/qty_prec/tick/price_prec and omits it entirely. min_notional is the venue minimum ORDER VALUE -- a gate quantity filters cannot express -- so on the testnet path an order below the venue minimum is not caught locally and is rejected by the venue instead, and the two parsers disagree about what a symbol's constraints ARE. The test was written precisely to pin this divergence and it is red, which means the parity guarantee the money path assumes has been absent for as long as the test has been failing. Surfaced 2026-08-13 while setting the R0422 resolver for forecast 20260731-filter-parity-holds (p=0.90, due 2026-10-31) -- that forecast currently grades FALSE. FIX: add min_notional to binance_spot_testnet.exchange_filters() reading BOTH filter names (MIN_NOTIONAL and NOTIONAL), absent => 0.0 not a silent default, exactly as the live parser does. CHECK THE L1.38 CHANGE WINDOW FIRST: this is money path. It is a REPAIR not an improvement, and repairs always proceed even inside a freeze.",
+   "roi_bps": 25.0,
+   "raised": "2026-08-13T02:55:21.552300+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0564",
+   "source": "cycle",
+   "summary": "MERGE-UNION MONEY-PATH REGRESSION, CLASS-LEVEL FIX NEEDED: merge 8b981a50 reverted the bleeding_symbols producer AND reader from a0026d98 while KEEPING tests/execution/test_carry_entry_gate.py, the file that asserts them. The suite went red and stayed red 8 days, read as environment noise; the structural-bleed denylist silently reverted to the 14d rolling window and denied ZERO of 6 all-time bleeders. Restored this cycle, but the CLASS is unclosed: nothing on this desk detects a merge that keeps one lineage's TESTS and the other's CODE. Build a check that fails when a test file's git lineage postdates the module it imports by a merge commit that touched neither -- or, cheaper and stronger, a red-suite AGE fence: a test failing for >N days is a defect row, not backlog, because a permanently-red suite is a disabled gate (L1.43 welded-gate logic applied to the test suite itself).",
+   "roi_bps": 45.0,
+   "raised": "2026-08-13T03:07:33.941646+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0565",
+   "source": "cycle",
+   "summary": "L1.16a GAP EXPOSED BY THE DENYLIST RESTORE: 4 of the 6 now-denied bleeders (NOMUSDT -149.4bps, COMPUSDT -106.4, ONEUSDT -92.4, PEOPLEUSDT -62.4) have NO row in data/execution_reentry.json, so they are ABSORBING exclusions -- denied with no path back, and n can only grow through opens so the verdict is unrevisitable by construction (the exact cycle L1.45 names). Only 1000CATUSDT and COOKIEUSDT carry re-entry conditions. NOT fixed this cycle deliberately: adding re-entry rows LOOSENS a denial, and the change window is STERILE on a live RAIL_BREACH (CASHCARRY_KILL present, book unwinding) -- loosening during a rail unwind is the wrong direction regardless of merit. Owed: a mechanism-of-death + named-change + bounded-probe row for each, written when the window reopens. Note the cost gate independently refuses ONEUSDT (modelled 94.81bps round-trip), so the practical clamp cost is concentrated in BNBUSDT/NOMUSDT.",
+   "roi_bps": 12.0,
+   "raised": "2026-08-13T03:07:53.649759+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0566",
+   "source": "cycle",
+   "summary": "R0086 SUCCESSOR (leg 1 only, the other two legs verified landed 2026-08-13): PSR/DSR use RAW n with no autocorrelation deflation. libs/validation/dsr.py:probabilistic_sharpe_ratio computes z = (sr - sr0) * sqrt(n-1) / sqrt(denom) and the module has ZERO occurrences of 'autocorr', while the Bartlett vif it needs sits ready at libs/validation/forward_stats.py:32 (clamped [1,5]) and is already consumed by forward_stats, type2_cost, kelly_shrink, dynamic_leverage and 4 scripts. Direction is TIGHTEN (n_eff = n/vif), so it is a correctness fix, not a bar change. THE OPEN QUESTION THAT MUST BE ANSWERED FIRST, and why this was not rushed at the tail of a money-path cycle: multiplicity is ALREADY priced in DSR via expected_max_sharpe(sr0), and libs/research/axis_screen + panel_breadth (L1.62) carry their own n_eff path -- so deflating n here risks DOUBLE-COUNTING, the exact defect that made this gauntlet 4x too strict before (desk lesson: 'before penalising a quantity, check it is not already in the number'). Measure the interaction across the ~20 deflated_sharpe_ratio call sites, THEN wire. Do it together with the SPA/trials_ledger decision (R0001/R0008): all three are multiplicity accounting in one gauntlet and changing them separately re-creates the double-count risk.",
+   "roi_bps": 50.0,
+   "raised": "2026-08-13T03:12:37.364075+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0567",
+   "source": "cycle",
+   "summary": "R0001/R0008 SUCCESSOR -- ONE DECISION, verified reachability 2026-08-13: hansen_spa is the ONLY dead component of the four R0001 named (CPCV, campaign_fdr and LockedHoldout are all wired and reached from scripts/run_moat_campaign.py). libs/validation/gauntlet.py instantiates nowhere outside tests/validation/test_gauntlet.py, and gauntlet.py:176 is hansen_spa's only caller -- so the class is dead production code and SPA has never run. THE BAR IS NOT MISSING: the reachable validate() path runs whites_reality_check at libs/autodiscovery/validation.py:478 and :729, and Hansen SPA is a studentized refinement of White, not an absent gate -- so retiring gauntlet.py would NOT lower a bar (L1.49's repair-upward rule is satisfied either way). The decision is therefore genuinely open: wire hansen_spa beside whites_reality_check in validate(), or retire gauntlet.py and re-home the trials_ledger writer (R0008's only writer lives in the same dead class, which is why every trials_ledger DB has 0 rows). Decide WITH R0566 -- SPA, DSR n_eff and the trials ledger are all multiplicity accounting in one gauntlet.",
+   "roi_bps": 15.0,
+   "raised": "2026-08-13T03:13:04.291802+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0568",
+   "source": "cycle",
+   "summary": "THE FULL TEST SUITE COULD NOT BE RUN THIS CYCLE, AND THAT IS A GATE-AVAILABILITY DEFECT, NOT A BAD DAY. Measured 2026-08-13: box is 3814MB total with NO SWAP; with one concurrent agent session resident, MemAvailable sat at 441-599MB and BOTH full-suite attempts died at ~2% (~300 of ~14k tests) with no summary line -- once with --cov (coverage.json never written) and once without. The pytest process ran at 13-37% CPU against a sibling at 66%. run_ci.py:239 ALREADY handles this correctly (negative returncode -> failed, never green -- verified by fresh read, not re-litigated), so the gate fails CLOSED and nothing is silently passing. THE DEFECT IS AVAILABILITY: if the desk routinely runs two agent sessions on this box, the primary safety gate is unrunnable whenever they overlap, and the predictable adaptation is sessions learning to push on partial evidence -- which is how a fails-closed gate becomes a gate nobody runs (L1.43). Options to price: a swap file (cheapest, removes the hard OOM wall), pytest-xdist with bounded workers, a serialising flock across agent sessions for the suite specifically, or a bigger box. Needs a MEASUREMENT first: peak RSS of a solo full-suite run, which nobody has recorded.",
+   "roi_bps": 8.0,
+   "raised": "2026-08-13T03:25:24.748824+00:00",
    "status": "open",
    "reason": null,
    "commit": null,

@@ -1,17 +1,17 @@
 # Desk digest (auto-generated daily -- do not hand-edit)
-_updated 2026-08-12T09:07Z · companion to [[institutional_knowledge]]_
+_updated 2026-08-13T02:20Z · companion to [[institutional_knowledge]]_
 
 ## Book
-- Molded net: **$-1905.24** | funding **$113.06** | run-rate APR 0.0% | day 41.16
-- Root cause: **unknown_novel** (pause_and_page) | tracking error $2815.43
+- Molded net: **$-1973.24** | funding **$113.06** | run-rate APR 0.0% | day 41.88
+- Root cause: **unknown_novel** (pause_and_page) | tracking error $2812.55
 
 ## Validation clocks
 - **carry (DEPLOYED)**: 47/90d | bt 4.38 fwd 16.6
-- **perp L/S**: 40/90d | bt 0.88 fwd -1.49
-- **trend**: 40/90d | bt 1.24 fwd 2.95
-- **trend regime-gated**: 35/90d | bt 1.21 fwd 0.0
-- **OI/LS data**: 45/40d
-- **stablecoin data**: 41/40d
+- **perp L/S**: 41/90d | bt 0.58 fwd -3.73
+- **trend**: 41/90d | bt 1.17 fwd 2.91
+- **trend regime-gated**: 36/90d | bt 1.02 fwd 0.0
+- **OI/LS data**: 46/40d
+- **stablecoin data**: 42/40d
 
 ## Open decisions (ledger)
 - `2026-07-04-levered-lab-3x` -- review 2026-10-02: by day 90: sim vs real comparison decisively answers the leverage question
@@ -197,6 +197,8 @@ _updated 2026-08-12T09:07Z · companion to [[institutional_knowledge]]_
 - `2026-08-05-stablecoin-supply-momentum-shift-keep-accruing` -- review 2026-09-04: The clock reaches its 40-observation wall and returns a verdict on post-break data. Either
 - `2026-08-05-ci-gate-attribution-tracked-vs-inflight` -- review 2026-08-19: ci-gate-red does not fire on a cycle whose only failures are another session's untracked f
 - `2026-08-09-panel-cost-recorded-100x-low` -- review 2026-09-08: the ORIGINAL entry's metric stands and is half-met: '>=1 QUEUE-or-better finding' PASSED (
+- `2026-08-12-repair-mode-welded-population-fix` -- review 2026-08-26: backlog_age_p50_days and oldest_backlog_age_days FALL over the next 14 days while arrivals
+- `2026-08-12-birth-properties-boundary` -- review 2026-09-11: None of artifact-ungoverned / orphan-scripts / decision-ledger-undated / mine-conversion-u
 
 ## Executive KPI snapshot
 - CRO: {"hypotheses_tested_lifetime": 20, "validated_survivors": 1, "survivor_note": "cash-carry (fwd 8/90); trend candidate gauntlet-passed (fwd 1/90); all else graveyarded", "survival_r

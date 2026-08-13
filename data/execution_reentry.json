@@ -4,7 +4,11 @@
   "_default": "DENY. A symbol absent from this file stays blocked exactly as before. A row with no named_change, no usable probe_after, or max_probes=0 is also denied -- recording a row is not arming it.",
   "1000CATUSDT": {
     "named_change": "Incident #6 fix (2026-07-27, run_cashcarry_executor.py:1235 _CLOSE_IS_MARKET_ONLY + :1255 reduceOnly on close legs). The original mechanism of death was THE DESK'S OWN BUG, not this symbol's microstructure: post-only closes carried neither reduceOnly nor a venue size cap, so repeated close attempts accumulated resting fills that bought the short through zero into a +1,138,985 LONG. The -74.6 bps over n=5 attributed to this symbol is contaminated by that event, and the bug that caused it no longer exists.",
-    "original_verdict": {"n": 5, "bps": -74.6, "net_usd": -43.32},
+    "original_verdict": {
+      "n": 5,
+      "bps": -74.6,
+      "net_usd": -43.32
+    },
     "probe_after": "2026-08-15T00:00:00+00:00",
     "_probe_after_why": "Deliberately AFTER the L1.38 launch window. A re-entry probe is a money-path IMPROVEMENT, not a repair, and the first 20 live fills are the ones that can never be re-randomised -- they should not be spent re-testing a contaminated verdict. Dated, not open-ended (an undated deferral is illegal).",
     "max_probes": 3,
@@ -13,11 +17,85 @@
   },
   "COOKIEUSDT": {
     "named_change": "Incident #6 fix (2026-07-27, run_cashcarry_executor.py:1235 _CLOSE_IS_MARKET_ONLY + :1255 reduceOnly on close legs). Same mechanism, and this is the symbol the executor's own comment names first: close attempts bought the short through zero into a +916,772 LONG. The -53.7 bps over n=7 is contaminated by the desk's own defect. NOTE the confound runs both ways -- executor:623 separately records COOKIEUSDT as a genuinely expensive book (cost model: 66.489 bps at $500, the most expensive of all 30 measured symbols), so this probe may well re-confirm the block. That is a legitimate outcome, not a failed experiment.",
-    "original_verdict": {"n": 7, "bps": -53.7, "net_usd": -39.07},
+    "original_verdict": {
+      "n": 7,
+      "bps": -53.7,
+      "net_usd": -39.07
+    },
     "probe_after": "2026-08-15T00:00:00+00:00",
     "_probe_after_why": "As above -- after the launch window, dated.",
     "max_probes": 3,
     "max_notional_usd": 100.0,
     "falsifier": "As above. With a modelled 66.489 bps round-trip at $500 this symbol may fail the ORDINARY entry gate on cost long before the denylist matters -- in which case the denylist was never the binding constraint and the probe budget goes unspent, which is itself the finding."
+  },
+  "NOMUSDT": {
+    "named_change": "THE MECHANISM OF DEATH WAS MIS-PRICING, and three named changes address it directly. (1) L1.11b REALISED-COST FLOOR: run_cashcarry_executor._rt_bps now returns max(modelled, realised), so this symbol is priced at its OWN realised round-trip instead of a book-walk that excludes fees -- the modelled figure that admitted these opens was slippage-only (BTCUSDT reads 0.018 bps, impossible with commission). (2) R0057 PER-SYMBOL ENTRY CONTRACT replaced the flat funding floor: funding over the minimum hold must beat THIS symbol's round-trip, not a desk-wide constant. (3) R0247 SIZE-AWARE LOOKUP prices the notional the open would actually send, which is the specific thing that was absent when NOMUSDT took $4,297 into a thin book on 2026-07-13. The desk did not learn these were bad symbols; it learned it could not see their cost. It can now. THIS IS THE 2026-07-13 DEAD-MAN SYMBOL -- $4,297 into a thin book, venue equity -40.9% in five minutes, and the executor's mark-based view showed only -$55. The $100 cap below is the whole point of the probe and is now ENFORCED in code; it was documentation only until 2026-08-13.",
+    "original_verdict": {
+      "n": 5,
+      "bps": -149.4,
+      "net_usd": -78.85
+    },
+    "probe_after": "2026-08-15T00:00:00+00:00",
+    "_probe_after_why": "Matches the two existing rows: deliberately AFTER the L1.38 launch window. A re-entry probe is a money-path IMPROVEMENT, not a repair, and the first 20 live fills can never be re-randomised. Dated, not open-ended -- an undated deferral is illegal.",
+    "max_probes": 3,
+    "max_notional_usd": 100.0,
+    "falsifier": "EXPECTED OUTCOME IS THAT THE PROBE BUDGET GOES UNSPENT, and that is the finding, not a failed experiment: the realised-cost floor sets this symbol's gate cost to its own realised loss, so the ORDINARY entry gate refuses it long before the denylist matters -- meaning the denylist was never the binding constraint. If probes DO fire and still realise <= -20 bps, the verdict is RE-CONFIRMED on post-fix evidence and this row is set to max_probes=0 with that result recorded. The point is to make the verdict TESTABLE, never to overturn it.",
+    "_recorded": "2026-08-13, as part of restoring the all-time denylist that merge 8b981a50 had reverted. Restoring the fence re-blocked these five and thereby CREATED five absorbing exclusions (check_excitation reported ABSORBING); L1.16a requires a documented path back, so the rows are part of that repair rather than a separate loosening. They cannot fire today: the book is flat under CASHCARRY_KILL."
+  },
+  "COMPUSDT": {
+    "named_change": "THE MECHANISM OF DEATH WAS MIS-PRICING, and three named changes address it directly. (1) L1.11b REALISED-COST FLOOR: run_cashcarry_executor._rt_bps now returns max(modelled, realised), so this symbol is priced at its OWN realised round-trip instead of a book-walk that excludes fees -- the modelled figure that admitted these opens was slippage-only (BTCUSDT reads 0.018 bps, impossible with commission). (2) R0057 PER-SYMBOL ENTRY CONTRACT replaced the flat funding floor: funding over the minimum hold must beat THIS symbol's round-trip, not a desk-wide constant. (3) R0247 SIZE-AWARE LOOKUP prices the notional the open would actually send, which is the specific thing that was absent when NOMUSDT took $4,297 into a thin book on 2026-07-13. The desk did not learn these were bad symbols; it learned it could not see their cost. It can now.",
+    "original_verdict": {
+      "n": 5,
+      "bps": -106.4,
+      "net_usd": -10.58
+    },
+    "probe_after": "2026-08-15T00:00:00+00:00",
+    "_probe_after_why": "Matches the two existing rows: deliberately AFTER the L1.38 launch window. A re-entry probe is a money-path IMPROVEMENT, not a repair, and the first 20 live fills can never be re-randomised. Dated, not open-ended -- an undated deferral is illegal.",
+    "max_probes": 3,
+    "max_notional_usd": 100.0,
+    "falsifier": "EXPECTED OUTCOME IS THAT THE PROBE BUDGET GOES UNSPENT, and that is the finding, not a failed experiment: the realised-cost floor sets this symbol's gate cost to its own realised loss, so the ORDINARY entry gate refuses it long before the denylist matters -- meaning the denylist was never the binding constraint. If probes DO fire and still realise <= -20 bps, the verdict is RE-CONFIRMED on post-fix evidence and this row is set to max_probes=0 with that result recorded. The point is to make the verdict TESTABLE, never to overturn it.",
+    "_recorded": "2026-08-13, as part of restoring the all-time denylist that merge 8b981a50 had reverted. Restoring the fence re-blocked these five and thereby CREATED five absorbing exclusions (check_excitation reported ABSORBING); L1.16a requires a documented path back, so the rows are part of that repair rather than a separate loosening. They cannot fire today: the book is flat under CASHCARRY_KILL."
+  },
+  "ONEUSDT": {
+    "named_change": "THE MECHANISM OF DEATH WAS MIS-PRICING, and three named changes address it directly. (1) L1.11b REALISED-COST FLOOR: run_cashcarry_executor._rt_bps now returns max(modelled, realised), so this symbol is priced at its OWN realised round-trip instead of a book-walk that excludes fees -- the modelled figure that admitted these opens was slippage-only (BTCUSDT reads 0.018 bps, impossible with commission). (2) R0057 PER-SYMBOL ENTRY CONTRACT replaced the flat funding floor: funding over the minimum hold must beat THIS symbol's round-trip, not a desk-wide constant. (3) R0247 SIZE-AWARE LOOKUP prices the notional the open would actually send, which is the specific thing that was absent when NOMUSDT took $4,297 into a thin book on 2026-07-13. The desk did not learn these were bad symbols; it learned it could not see their cost. It can now. Modelled pair round-trip is 94.81 bps at $500 -- the second most expensive of the 30 measured symbols -- so this row will almost certainly never spend a probe.",
+    "original_verdict": {
+      "n": 5,
+      "bps": -92.4,
+      "net_usd": -14.03
+    },
+    "probe_after": "2026-08-15T00:00:00+00:00",
+    "_probe_after_why": "Matches the two existing rows: deliberately AFTER the L1.38 launch window. A re-entry probe is a money-path IMPROVEMENT, not a repair, and the first 20 live fills can never be re-randomised. Dated, not open-ended -- an undated deferral is illegal.",
+    "max_probes": 3,
+    "max_notional_usd": 100.0,
+    "falsifier": "EXPECTED OUTCOME IS THAT THE PROBE BUDGET GOES UNSPENT, and that is the finding, not a failed experiment: the realised-cost floor sets this symbol's gate cost to its own realised loss, so the ORDINARY entry gate refuses it long before the denylist matters -- meaning the denylist was never the binding constraint. If probes DO fire and still realise <= -20 bps, the verdict is RE-CONFIRMED on post-fix evidence and this row is set to max_probes=0 with that result recorded. The point is to make the verdict TESTABLE, never to overturn it.",
+    "_recorded": "2026-08-13, as part of restoring the all-time denylist that merge 8b981a50 had reverted. Restoring the fence re-blocked these five and thereby CREATED five absorbing exclusions (check_excitation reported ABSORBING); L1.16a requires a documented path back, so the rows are part of that repair rather than a separate loosening. They cannot fire today: the book is flat under CASHCARRY_KILL."
+  },
+  "BNBUSDT": {
+    "named_change": "THE MECHANISM OF DEATH WAS MIS-PRICING, and three named changes address it directly. (1) L1.11b REALISED-COST FLOOR: run_cashcarry_executor._rt_bps now returns max(modelled, realised), so this symbol is priced at its OWN realised round-trip instead of a book-walk that excludes fees -- the modelled figure that admitted these opens was slippage-only (BTCUSDT reads 0.018 bps, impossible with commission). (2) R0057 PER-SYMBOL ENTRY CONTRACT replaced the flat funding floor: funding over the minimum hold must beat THIS symbol's round-trip, not a desk-wide constant. (3) R0247 SIZE-AWARE LOOKUP prices the notional the open would actually send, which is the specific thing that was absent when NOMUSDT took $4,297 into a thin book on 2026-07-13. The desk did not learn these were bad symbols; it learned it could not see their cost. It can now. STRONGEST CONTAMINATION CASE of the five: BNBUSDT was re-opened 2026-07-31 and 2026-08-01 at 3.0e-05 and 6.6e-05 funding -- both BELOW the floor the old flat gate was supposed to enforce and both invisible to the then-detector. Its measured book is genuinely tight (0.344 bps modelled pair round-trip), so unlike the thin names here the realised loss is much more plausibly the gate's fault than the book's.",
+    "original_verdict": {
+      "n": 13,
+      "bps": -65.8,
+      "net_usd": -23.46
+    },
+    "probe_after": "2026-08-15T00:00:00+00:00",
+    "_probe_after_why": "Matches the two existing rows: deliberately AFTER the L1.38 launch window. A re-entry probe is a money-path IMPROVEMENT, not a repair, and the first 20 live fills can never be re-randomised. Dated, not open-ended -- an undated deferral is illegal.",
+    "max_probes": 3,
+    "max_notional_usd": 100.0,
+    "falsifier": "EXPECTED OUTCOME IS THAT THE PROBE BUDGET GOES UNSPENT, and that is the finding, not a failed experiment: the realised-cost floor sets this symbol's gate cost to its own realised loss, so the ORDINARY entry gate refuses it long before the denylist matters -- meaning the denylist was never the binding constraint. If probes DO fire and still realise <= -20 bps, the verdict is RE-CONFIRMED on post-fix evidence and this row is set to max_probes=0 with that result recorded. The point is to make the verdict TESTABLE, never to overturn it.",
+    "_recorded": "2026-08-13, as part of restoring the all-time denylist that merge 8b981a50 had reverted. Restoring the fence re-blocked these five and thereby CREATED five absorbing exclusions (check_excitation reported ABSORBING); L1.16a requires a documented path back, so the rows are part of that repair rather than a separate loosening. They cannot fire today: the book is flat under CASHCARRY_KILL."
+  },
+  "PEOPLEUSDT": {
+    "named_change": "THE MECHANISM OF DEATH WAS MIS-PRICING, and three named changes address it directly. (1) L1.11b REALISED-COST FLOOR: run_cashcarry_executor._rt_bps now returns max(modelled, realised), so this symbol is priced at its OWN realised round-trip instead of a book-walk that excludes fees -- the modelled figure that admitted these opens was slippage-only (BTCUSDT reads 0.018 bps, impossible with commission). (2) R0057 PER-SYMBOL ENTRY CONTRACT replaced the flat funding floor: funding over the minimum hold must beat THIS symbol's round-trip, not a desk-wide constant. (3) R0247 SIZE-AWARE LOOKUP prices the notional the open would actually send, which is the specific thing that was absent when NOMUSDT took $4,297 into a thin book on 2026-07-13. The desk did not learn these were bad symbols; it learned it could not see their cost. It can now.",
+    "original_verdict": {
+      "n": 6,
+      "bps": -62.4,
+      "net_usd": -12.71
+    },
+    "probe_after": "2026-08-15T00:00:00+00:00",
+    "_probe_after_why": "Matches the two existing rows: deliberately AFTER the L1.38 launch window. A re-entry probe is a money-path IMPROVEMENT, not a repair, and the first 20 live fills can never be re-randomised. Dated, not open-ended -- an undated deferral is illegal.",
+    "max_probes": 3,
+    "max_notional_usd": 100.0,
+    "falsifier": "EXPECTED OUTCOME IS THAT THE PROBE BUDGET GOES UNSPENT, and that is the finding, not a failed experiment: the realised-cost floor sets this symbol's gate cost to its own realised loss, so the ORDINARY entry gate refuses it long before the denylist matters -- meaning the denylist was never the binding constraint. If probes DO fire and still realise <= -20 bps, the verdict is RE-CONFIRMED on post-fix evidence and this row is set to max_probes=0 with that result recorded. The point is to make the verdict TESTABLE, never to overturn it.",
+    "_recorded": "2026-08-13, as part of restoring the all-time denylist that merge 8b981a50 had reverted. Restoring the fence re-blocked these five and thereby CREATED five absorbing exclusions (check_excitation reported ABSORBING); L1.16a requires a documented path back, so the rows are part of that repair rather than a separate loosening. They cannot fire today: the book is flat under CASHCARRY_KILL."
   }
 }

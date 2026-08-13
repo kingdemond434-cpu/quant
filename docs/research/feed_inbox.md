@@ -158,3 +158,19 @@ open / 3d, so this fired on AGE, not depth -- the queue was shallow and simply n
     Milestone-driven equity valuation, no crypto surface; the multi-agent structure itself is
     generic and adds nothing to what L1.31/L1.33 already run.
 -->
+
+## Large Language Model-Driven Small-Capitalization Trading: Integrating Financial News Sentiment, Macroeconomic Indicators, and Technical Signals
+- 2026-08-12 · http://arxiv.org/abs/2608.12283v1
+- Large language models can extract richer signals from financial news than fixed sentiment lexicons, and recent work has explored feeding such signals into portfolio construction. We study an uncertainty-aware construction that feeds model-predicted risk -- decomposed into aleatoric and epistemic components -- directly into the covariance matrix of portfolio allocators, rather than treating portfolio risk as fixed or adjusting only expected returns. We evaluate the pipeline on Russell 2000 equities under three stock-selection regimes: a pure-alpha trigger that isolates abnormal stock moves not 
+
+## Calibration Bets on the Past: Post-Training Quantization for Financial Time-Series Forecasting
+- 2026-08-12 · http://arxiv.org/abs/2608.12259v1
+- Financial forecasting models are typically developed in full precision, yet production deployment often requires low-precision inference to reduce memory and computational cost. Post-training quantization (PTQ) enables such deployment without retraining. However, reliable activation quantization requires calibration: activation ranges are estimated from historical data before deployment and then remain fixed during future inference. The importance of this deployment choice for financial forecasting remains poorly understood. We present a systematic study of activation calibration for PTQ in cr
+
+## Regime-Gated Residual Mixture-of-Experts for Cross-Sectional Volatility Forecasting
+- 2026-08-12 · http://arxiv.org/abs/2608.12251v1
+- Financial volatility is regime dependent, yet incorporating regime information into neural networks can also destabilize training. This paper asks where such information should enter a neural cross-sectional volatility forecasting model. We study five-day realized-volatility forecasts for 1,027 U.S. equities using a rolling walk-forward evaluation framework in which information, model capacity, hyperparameter tuning, and random seeds are matched across architectures. We propose RG-ResMoE, a regime-gated residual mixture-of-experts architecture in which regime information is used only for exper
+
+## Does a Structural Model Add Anything to the Closing Price? Calibrated forecasting, incremental information, and match leverage in the Italian Serie A
+- 2026-08-11 · http://arxiv.org/abs/2608.11505v1
+- Studies of association-football forecasting routinely report three-way accuracy in the low fifties and present it as competitive with the betting market. Accuracy against a uniform benchmark answers the wrong question; the question worth asking is whether a model carries information a margin-free closing price has not already absorbed. We formalise that test as the fitted weight in a logarithmic opinion pool and apply it to nineteen complete Serie A seasons (7,220 matches). The answer is negative and stable. A Dixon-Coles model with tuned exponential decay attains 53.4% accuracy and a Ranked P

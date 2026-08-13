@@ -906,6 +906,64 @@ def build() -> dict[str, Any]:
     }
 
 
+#: Where a `check_*` FUNCTION inside scripts/max_audit.py is claimed by a law. Named here as a
+#: constant so the failure message and the registry can never drift apart in a rename.
+_OWNERS_REGISTRY = "_FENCE_OWNERS in scripts/build_enforcement_matrix.py"
+
+
+def _orphan_remediation(orphans: list[str]) -> str:
+    """The exact line to add, for the exact fence that failed. R0427.
+
+    THE GATE KNEW THE ANSWER AND PRINTED THE QUESTION. This refusal has blocked pushes for
+    everyone on a shared branch twice in four commits (c8983b1 check_paywalls_registered;
+    cc28734 check_blocked_routes_hunted + check_verified_alternatives_promoted) -- different
+    authors, three commits apart, which makes it a class rather than an accident. Both times the
+    fix was one line in a registry the message never named, while the trap it is mistaken for
+    (adding the SCRIPT PATH to `_MAP`) reads as equivalent in review and does nothing, because
+    there is no script path for a function.
+
+    The remediation is emitted as copy-pasteable source rather than prose. An instruction the
+    reader has to translate is an instruction they can translate wrongly, and the wrong
+    translation here is the exact edit that looks correct and fails.
+    """
+    lines = [
+        f"  HOW TO FIX -- add each fence to {_OWNERS_REGISTRY}, keyed by the law its own",
+        "  docstring already names (map from the docstring, never from a guess):",
+        "",
+    ]
+    lines += [f'      "{name}": "L1.x",   # <- replace L1.x with the law this fence enforces'
+              for name in orphans]
+    lines += [
+        "",
+        "  A max_audit fence is a FUNCTION, so it is wired by FUNCTION NAME. Adding the script",
+        "  path to `_MAP` looks equivalent, reads equivalent in review, and does nothing -- the",
+        "  orphan set is computed over refs starting with `check_`, and no script path is one.",
+        "  If no existing law covers the fence, THAT is the finding: either the fence is unvoted",
+        "  complexity (retire it), or the constitution is missing a principle the fence already",
+        "  assumes (raise it). Both need a decision; neither is silence.",
+    ]
+    return "\n".join(lines)
+
+
+def _broken_ref_hints(refs: list[str]) -> list[str]:
+    """Explain the short-circuit that makes a standalone fence report BROKEN-REF (R0427/R0436).
+
+    `_exists` routes ANY ref starting with `check_` into max_audit's function table, so a
+    standalone script written in the bare `check_foo.py` form is resolved against a registry it
+    can never be in. The status is correct and the reason is invisible, which sends the author
+    hunting a missing file that is sitting right there on disk.
+    """
+    hints = []
+    for ref in refs:
+        bare = ref.split(":")[0].split(" ")[0]
+        if bare.startswith("check_") and bare.endswith(".py") and (_ROOT / "scripts" / bare).exists():
+            hints.append(
+                f"{bare} EXISTS at scripts/{bare} -- write it path-first as `scripts/{bare}`. A "
+                f"ref starting with `check_` is resolved against max_audit's FUNCTION table, "
+                f"which a standalone script can never appear in.")
+    return hints
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", action="store_true")
@@ -926,9 +984,13 @@ def main() -> int:
             print(f"  UNENFORCED {pid}")
         for pid, refs in m["broken_references"].items():
             print(f"  BROKEN-REF {pid} -> {refs}")
+            for hint in _broken_ref_hints(refs):
+                print(f"      {hint}")
         n_orph = len(m["fences_without_a_principle"])
         print(f"  fences with no governing principle: {n_orph}"
-              + (f" (first 5: {m['fences_without_a_principle'][:5]})" if n_orph else ""))
+              + (f": {m['fences_without_a_principle']}" if n_orph else ""))
+        if n_orph:
+            print(_orphan_remediation(m["fences_without_a_principle"]))
         print(f"-> {_OUT.relative_to(_ROOT)}")
     if args.report_only:
         return 0

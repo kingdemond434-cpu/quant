@@ -1,4 +1,4 @@
-# DESK BRIEF -- 2026-08-12 09:42Z
+# DESK BRIEF -- 2026-08-13 03:29Z
 
 Machine-generated from measured desk state. Every number traces to an artifact in
 `data/`. Nothing here is an argument. Respond to the evidence, not to another model.
@@ -13,34 +13,34 @@ Machine-generated from measured desk state. Every number traces to an artifact i
    forward clocks promote.
 
 ## Experiment record (45d, harvested from git -- one row per commit)
-- experiments: **1439**; decided: 839
-- survival rate: **5.5%** (46 survived / 737 refuted / 56 inconclusive)
-- unclassified commit decisions: 100 (commit-discipline defect)
+- experiments: **1546**; decided: 919
+- survival rate: **5.5%** (51 survived / 807 refuted / 61 inconclusive)
+- unclassified commit decisions: 106 (commit-discipline defect)
 
 | mechanism | tested | survived | rate |
 |---|---:|---:|---:|
-| M_UNMAPPED | 674 | 39 | 6% |
+| M_UNMAPPED | 746 | 43 | 6% |
 | M_ATTENTION_DELAY | 46 | 2 | 4% |
-| M_STRUCTURAL_BARRIER | 38 | 0 | 0% |
-| M_LIQUIDITY_WITHDRAWAL | 37 | 1 | 3% |
+| M_LIQUIDITY_WITHDRAWAL | 42 | 2 | 5% |
+| M_STRUCTURAL_BARRIER | 40 | 0 | 0% |
 | M_FORCED_DELEVERAGE | 34 | 3 | 9% |
 | M_FLOW_PRESSURE | 13 | 0 | 0% |
-| M_SKILL_PERSISTENCE | 10 | 0 | 0% |
-| M_FUNDAMENTAL_PROXY | 10 | 0 | 0% |
+| M_FUNDAMENTAL_PROXY | 11 | 0 | 0% |
+| M_SKILL_PERSISTENCE | 11 | 0 | 0% |
 | M_PRICE_PATTERN | 5 | 1 | 20% |
 
 ### Why experiments died (45d)
 
-- `E_DATA_QUALITY` 388 (35%)
-- `B_WRONG_MEASUREMENT` 203 (19%)
-- `H_OVERFIT` 181 (16%)
-- `G_TOO_EXPENSIVE` 150 (14%)
-- `C_WRONG_TIMING` 87 (8%)
-- `F_REGIME_DEPENDENT` 67 (6%)
+- `E_DATA_QUALITY` 435 (37%)
+- `B_WRONG_MEASUREMENT` 218 (18%)
+- `H_OVERFIT` 188 (16%)
+- `G_TOO_EXPENSIVE` 164 (14%)
+- `C_WRONG_TIMING` 92 (8%)
+- `F_REGIME_DEPENDENT` 71 (6%)
 - `D_ALREADY_ARBITRAGED` 16 (1%)
-- `A_NO_MECHANISM` 5 (0%)
+- `A_NO_MECHANISM` 7 (1%)
 
-**591/1097 = 54% of refutations are MEASUREMENT failures (data quality + wrong construction), not absent alpha.**
+**653/1191 = 55% of refutations are MEASUREMENT failures (data quality + wrong construction), not absent alpha.**
 
 ## FAMILY KILLS -- mechanisms closed by evidence
 
@@ -51,12 +51,12 @@ Every future variant inherits this evidence.
 ## Transferable lessons (family -> dominant failure mode)
 
 - **price-only/TA** -> `C_WRONG_TIMING` (n=56)
-- **funding/positioning** -> `G_TOO_EXPENSIVE` (n=30)
+- **funding/positioning** -> `G_TOO_EXPENSIVE` (n=32)
 - **regional premium** -> `A_NO_MECHANISM` (n=28)
 - **attention/social** -> `C_WRONG_TIMING` (n=26)
 - **on-chain/flow** -> `C_WRONG_TIMING` (n=26)
 - **trader/behavioural** -> `C_WRONG_TIMING` (n=19)
-- **other** -> `UNCLASSIFIED` (n=7)
+- **other** -> `UNCLASSIFIED` (n=9)
 - **developer** -> `C_WRONG_TIMING` (n=7)
 
 ## Proprietary moat (4.4GB order books, 30 symbols, top-20 snapshots)

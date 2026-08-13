@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-12T14:03:35.162963+00:00",
+ "updated": "2026-08-13T03:30:01.145878+00:00",
  "n_closes": 0,
  "hold_buckets": {
   "<2h": {
@@ -72,7 +72,7 @@
   "bps": 0.0
  },
  "post_gate_baseline_opens": 0,
- "post_gate_opens_examined": 1,
+ "post_gate_opens_examined": 0,
  "maker_fill": {
   "n_legs": 0,
   "maker_share": null,
@@ -82,15 +82,30 @@
   "note": "instrumented 2026-07-26; records written before that carry no mode, so n_legs climbs from 0 as new fills land -- a null share is thin data, not a regression. n_legs counts only legs that PLACED AN ORDER: no-order legs ['', 'already-flat'] are excluded from the denominator (R0064)"
  },
  "execution_tape": {
-  "taped": 531,
-  "tape_days": 2404.91,
+  "taped": 539,
+  "tape_days": 2415.14,
   "backfilled": 0,
   "buffer_days": 0.0,
   "window_margin_days": -14.0,
   "buffer_squeezing_window": false
  },
  "worst_symbols": [],
+ "bleeding_symbols": [
+  {
+   "symbol": "OLDUSDT",
+   "n": 5,
+   "net": -5.0,
+   "bps": -100.0
+  }
+ ],
+ "bleeding_basis": {
+  "window": "all-time",
+  "n_closes": 5,
+  "min_n": 5,
+  "bleed_bps": -20.0,
+  "note": "the executor's structural-bleed denylist reads THIS key; worst_symbols is 14d-rolling and is for alerts only"
+ },
  "flags": [],
  "origin": "recursion rule 2026-07-22: mechanization of the principal-supplied probes that found gaps #42/#43/#34",
- "written": "2026-08-12T14:03:35.168947+00:00"
+ "written": "2026-08-13T03:30:01.146671+00:00"
 }
