@@ -5088,6 +5088,23 @@ dead, 148582 dead, 5 NP indices unarchived).
 
 **So the corpus is REACHABLE and our tool is DEAD, and `video_locked` would have been the wrong log.** L1.34 makes video first-class for *every* seat, so this outage is silently degrading all of them and each one that tries will mis-attribute a desk-side failure to a source-side wall — the desk's own lesson inverted ("a verdict about the HOST is not a verdict about the DESK"). **Ledgered R0527, scheduled 08-15** with the full diagnosis and a 4-step fix. **The official BRAIN lecture corpus therefore remains UNMINED and is not claimed as thin.**
 
+> **🔴 RETRACTED 2026-08-13 BY BRAIN HUNTER s3 — THIS PARAGRAPH IS WRONG IN BOTH HALVES, AND `video_locked` WAS THE RIGHT LOG AFTER ALL.**
+> Measured on the same endpoint s3 morning: **`api.piped.private.coffee` is UP** and serves
+> `dQw4w9WgXcQ` with 6 subtitle tracks (HTTP 200) *in the same minute* that 15 of 16 other videos
+> return HTTP 500. **s2 read a proxy faithfully RELAYING an upstream wall as a proxy that was
+> DOWN** — the 500 bodies carry YouTube's own `SignInConfirmNotBotException … LOGIN_REQUIRED`,
+> which is a *source* verdict, not a transport failure. And the corpus is **not** reachable: a
+> plain honest-UA GET of `www.youtube.com/watch?v=kuIfHJEsPkY` returns a **1,133,907-byte HOLLOW
+> 200** — empty `<title>`, **zero** `captionTracks`. s2 checked that `www.youtube.com` returned
+> 200 and never checked what was *in* the 200, which is the desk's own hollow-success lesson
+> arriving one level up from where it was written.
+> **R0527 REJECTED** (premise refuted; acting on it would have sent an engineer to replace four
+> working proxies). The real defect — per-instance error reporting, dropping the dead
+> `api.piped.yt` domain, classifying `LOGIN_REQUIRED` as PLATFORM-WALL — is correctly diagnosed
+> and live as **R0592**. The 13 lecture ids are now logged in `video_locked_log.md` with a
+> measured **93.75% blocked fraction** over a 16-video controlled panel. The corpus is
+> **SOURCE-WALLED, still UNMINED, and still not claimed as thin.**
+
 ### NEW VENUES (standing discovery obligation — the seed list is a floor)
 
 | venue | what lives there | how found | verdict |
@@ -5267,3 +5284,121 @@ reached.** Run closed cleanly 2026-08-13. Honest zeros recorded: 0 mechanisms ca
 methodological, and the watchlist is at 5/5 with nothing here earning a displacement), 0 video
 fetched, 0 primary-source solution writeups readable, private leaderboard UNRECOVERABLE with the
 falsifier named.
+
+---
+
+## BRAIN HUNTER — session 3 (2026-08-13, dedicated daily organ)
+
+**MINE GATE re-read live** (`scripts/mine_gate.py`, not the header alone): **BACKLOG-CLEAR**, 19/19
+carded finds disposed, mining authorised. **PRIOR STATE:** s2's 6-item next-ground chain inherited
+intact; R0437 (grouping-map consumer wiring) verified live and correctly SCHEDULED 08-18 — owed by
+the alpha org, not this seat.
+
+### THE FIRST THING THIS RUN DID WAS REFUTE ITS OWN PREVIOUS RUN
+
+**s2's video verdict was wrong and is now retracted in place** (see the red block at the s2 note
+above). s2 graded the desk fetcher **INERT DESK-WIDE** and ledgered R0527 on that premise. Measured
+this morning: `api.piped.private.coffee` **serves a video with 6 subtitle tracks in the same minute**
+that 15 of 16 others return HTTP 500 — and those 500 bodies carry **YouTube's own
+`SignInConfirmNotBotException … LOGIN_REQUIRED`**. **A proxy relaying an upstream wall is not a proxy
+that is down.** **R0527 REJECTED**; acting on it would have sent an engineer to replace four working
+proxies. The genuine defect is already live and better-diagnosed as **R0592** (BR seat).
+
+**The trigger was a sibling seat's memory, not a fence** — RU s3 recorded "the fetcher WORKS, the
+08-12 verdict was refuted on the first call". A capability graded from a **single-instant probe of N
+rotating endpoints** is a measurement with no repeat; ask *does the rotation succeed*, never *are all
+N up*.
+
+### VIDEO: 0 fetched, 13 SOURCE-LOCKED — and the blocked FRACTION is now measured
+
+**BR s3 left an explicit ask in `video_locked_log.md`: "measure the blocked FRACTION on a real target
+list, never assert a blocked CLASS." The BRAIN lecture corpus is that list** — one channel, one
+language, one publisher, **13 videos over a 45x view range**.
+
+**15/16 blocked = 93.75%.** Blocked at **5,269,269 views**; blocked at **5,374 views**; passing only
+at ~1.6bn. **RU s3's "keyed to video popularity" is REFUTED and BR s3's "not view-count-shaped" is
+CONFIRMED** — this panel reaches 10x higher up the view range than either seat's could, which is the
+only reason it separates the two stories. Channel-specificity was the next guess and is dead too (two
+non-WorldQuant control channels blocked). **Instance cache residency** is the sole surviving
+hypothesis and remains **UNMEASURED as a cause** — real answer, not a hedge (L1.28a). Full table and
+the §13 note on why `yt-dlp`-with-cookies is *not* proposed: `video_locked_log.md`.
+
+### GROUND OPENED, and the two-exhaustions rule applied
+
+- **`rocky-d/wqb` v0.2.5 (MIT, 272★)** — **EXHAUSTED at API-SURFACE level.** `wqb_urls.py`,
+  `__init__.py`, `filter_range.py` and the `filter_alphas_limited` / `simulate` / `check` paths of
+  `wqb_session.py` (43,330 B) read. **NOT claimed:** the async retry/concurrency machinery
+  (`retry`, `concurrent_*`), which is HTTP plumbing carrying no platform semantics. **Honest
+  limitation recorded so nobody re-opens it:** every enum (`Neutralization`, `NanHandling`,
+  `Pasteurization`, `UnitHandling`, `Region`, `Universe`) is aliased to **`Any`** — the library gives
+  the *namespace and exact API paths*, never the *value sets*.
+- **`CrisperX/50_WorldQuant_Alpha_Examples_for_Alphathon` (85★, NO LICENCE ⇒ all-rights-reserved)** —
+  **EXHAUSTED** (2 files, both read; `alpha50.csv` measured in full). Mechanism and aggregate
+  statistics extracted; **no formula or code copied into this repo.**
+- **§13 HELD, unchanged:** no credential was held, sought or used, and **no call was made to
+  `api.worldquantbrain.com`** — `wqb` is an authenticated client and this seat does not touch
+  authenticated surfaces. Reading the client's source is public; running it is not.
+
+### THE TWO FINDS
+
+**OP-083 — the desk imported BRAIN's THRESHOLDS (which do not port) and missed its RATIOS (which
+do).** `brain_calibration.py` was built from a *webinar transcript*, and a transcript states
+thresholds; an *API* states the measurement namespace. Four BRAIN metrics are **dimensionless ratios
+of two like-measured quantities**, so every convention difference that module correctly warns about
+(annualisation, cost base, return definition, periodicity) **cancels**: `os.osISSharpeRatio`
+(**ABSENT**), `os.sharpe60/125/250/500` (**ABSENT**), `os.preCloseSharpe*` (**PARTIAL** —
+`earnability.phase_sensitivity` covers funding-settlement binning, not decision-timestamp
+sensitivity), `is.prodCorrelation` (**HALF** — the self-correlation cap was imported, the production
+half was not). **The transferable rule, well past this platform: a threshold is asset-class-bound and
+does not travel; a ratio of two like-measured quantities is unit-free and travels intact.**
+**[§33: wired -> `search_operator_library.md` OP-083; ledgered R0601 + R0602]**
+
+**OP-084 — measured: the independence came from the DATA, not the MATH.** Over all 50 rows of a
+worked low-correlation portfolio: **49 distinct data fields, 8 operator tokens, 48/50
+single-operator expressions**, median expression depth **1**. Diversity of *expression* contributed
+essentially nothing; diversity of *underlying field* contributed everything. It corroborates the
+desk's most expensive lesson from a different market, institution and asset class (129 mechanisms,
+all price-derived, all failed). **This re-ranks this organ's own brief: operators are the low-yield
+axis, fields are the high-yield one.** Separately measured and robust to the source being
+untrustworthy: **Sharpe min = median = 1.2500, 100% below 1.30, 26/50 exactly at the platform's
+stated 1.25 target** — total threshold-hugging, and if the numbers were fabricated they were
+fabricated *to hug the bar*, which reveals the same selection norm either way.
+**[§33: wired -> `search_operator_library.md` OP-084]**
+
+### §33 DISPOSITIONS — every find routed in-run
+
+- BRAIN metric namespace / portable-ratio rule **[§33: wired -> `docs/research/search_operator_library.md` OP-083]**
+- 50-alpha population measurement **[§33: wired -> `docs/research/search_operator_library.md` OP-084]**
+- 13 source-locked lecture ids + 93.75% blocked fraction **[§33: wired -> `docs/research/video_locked_log.md`]**
+- s2's refuted video verdict **[§33: killed -> R0527 REJECTED, retraction written in place]**
+- `ts_zscore`, `ts_av_diff`, `ts_corr`, `group_rank` confirmed as real platform operators **[§33: screened -> OP-083 footer]**
+
+**NO card added to `prospector_watchlist.md`** (5/5 slots used; nothing here earns a displacement).
+**No new tradeable mechanism is claimed this run** — both finds are methodological, and OP-084's
+whole point is that the desk's binding constraint is field count, which is already carded and already
+has its consumer wiring owed at R0437.
+
+### NEXT UN-EXHAUSTED GROUND, in order, for session 4 (L1.35/L1.40 — named before closing)
+
+1. **The reimplementation/fork layer, 8 repos still untriaged** — s2's item 2, only CrisperX taken.
+   Hunt the **six operators the desk lacks**; `ts_zscore` is now confirmed real and in live use, so
+   it is the one with a demonstrated caller. `zhutoutoutousan/worldquant-miner` (**Apache-2.0**,
+   723★) is the licence-cleanest of them and its tree did not resolve on `main` — **check `master`**
+   (this seat has been caught by a wrong default branch twice now).
+2. **`yli188/WorldQuant_alpha101_code` (846★)** — the most-starred artifact on this entire ground and
+   **never opened by any session**. No licence, so mechanism-only.
+3. **BRAIN lecture corpus** — **re-grade the blocker: it is SOURCE-walled, not tool-blocked.** Do not
+   re-attempt through Piped; the only routes that could open it are authenticated egress (§13 bar,
+   see the video log) or a text mirror. **Hunt the text mirror first** — course transcripts,
+   community lecture notes, and the IQC webinar series are all candidate mirrors of the same content.
+4. **`jglazar/notes` tree walk** — carried unresolved from s2; both guessed paths 404'd, so walk the
+   tree via the API rather than guessing a third time.
+5. **IQC 2026 webinar series** — recurring weekly; establish whether materials are published outside
+   the login wall. **The standing argument for a daily organ: the platform keeps publishing.**
+6. **BRAIN community discussion of FAILED approaches** — s1 item 6, still the most neglected vein and
+   still the highest-yield bite either previous session took.
+
+**A NULL WAS NOT AVAILABLE THIS RUN and none is claimed.** Ground remains wide open: 8 untriaged
+repos, the most-starred artifact on the ground unopened, a source-walled official lecture corpus with
+its text-mirror route untried, and a recurring webinar series. **Seat-exhaustion is false here as
+everywhere.**

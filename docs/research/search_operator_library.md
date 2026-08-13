@@ -2565,3 +2565,122 @@ the *cause* is not: `Strategy001.py` sets `sell_profit_only = True` while `confi
 `false`, and **config overrides strategy** — so which was live is undeterminable from the repo. State
 the recomputed number as fact and the mechanism as a hypothesis with its falsifier. (The vendored OHLCV
 under `user_data/data/` makes that falsifier genuinely runnable, which is what EXECUTABLE tier means.)
+
+---
+
+## OP-083 — THE DESK IMPORTED BRAIN'S **THRESHOLDS** (which do not port) AND MISSED ITS **RATIOS** (which do)
+
+**SOURCE:** `rocky-d/wqb` v0.2.5 (**MIT**, 272★, `wqb/wqb_session.py` + `wqb/wqb_urls.py`), read as
+text 2026-08-13. **DERIVES-FROM:** independent of `libs/validation/brain_calibration.py`, which was
+built from a *webinar transcript* — different artifact, different author, no shared lineage.
+**§13:** MIT, read-only, mined as text. **No credential was held, sought or used, and no call was made
+to `api.worldquantbrain.com`** — the library is an authenticated client and this seat does not touch
+authenticated surfaces.
+
+**THE FIND IS A NEGATIVE SPACE, not a new operator.** `brain_calibration.py` already imports BRAIN's
+constants — fitness bar 1.0, Sharpe bar 1.0, Sharpe target 1.25, self-correlation cap 0.7, truncation
+band, recent-Sharpe floor, IS/OOS score weights. Its own docstring then spends ten lines warning that
+these are US-equity, daily-rebalanced, dollar-neutral numbers on the platform's own PnL and
+annualisation conventions, **"COMPARABLE IN ORDER OF MAGNITUDE ONLY"**, and that *"a reader who takes
+1.25 as a threshold has misused this module"*. That warning is correct.
+
+**But a transcript states THRESHOLDS and an API states the MEASUREMENT NAMESPACE, and the desk only
+ever had the transcript.** `filter_alphas_limited` enumerates the platform's queryable alpha metrics,
+and four of them are **dimensionless ratios of two quantities measured the same way** — so every
+convention difference the caveat warns about (annualisation, cost base, return definition,
+periodicity) **cancels in the numerator and denominator**. The un-portable half was imported; the
+portable half was never seen.
+
+| BRAIN metric (API name) | what it computes | crypto analogue | desk status |
+|---|---|---|---|
+| `os.osISSharpeRatio` | OOS Sharpe ÷ IS Sharpe — one number for *how much of the backtest survived contact with unseen data* | forward-clock Sharpe ÷ Stage-A screen Sharpe, per candidate | **ABSENT** (grep: no `os_is`/`oos_is`/`degradation` metric) |
+| `os.sharpe60/125/250/500` | OOS Sharpe re-measured at four horizons — a **decay ladder**, not one verdict | same ladder in **OBSERVATIONS, never days** (L1.48): a perp desk funding 3×/day accrues evidence ~3× faster than a daily-rebalanced equity book, so copying 60/125/250/500 as *days* would import an equity sampling convention as if it were a law | **ABSENT** (grep: zero hits) |
+| `os.preCloseSharpe`, `os.preCloseSharpeRatio` | Sharpe recomputed at pre-close vs at the close print — *does this edge only exist at the stamp?* | entry shifted off the UTC bar boundary / off the funding settlement stamp | **PARTIAL** — `earnability.phase_sensitivity` already tests *funding-settlement binning* (L1.47's instrument) and is well-built; it does **not** test *decision-timestamp* sensitivity, which is the different question |
+| `is.selfCorrelation` **vs** `is.prodCorrelation` | **two** correlation gates: against your own prior alphas, and against the **production book** | candidate vs desk's own screened pool; candidate vs **capital already deployed** | **HALF** — `BRAIN_SELF_CORRELATION_CAP = 0.7` imported; the **prod** half absent |
+
+**WHY THE `prodCorrelation` HALF IS THE ONE THAT MATTERS (L1.18).** `selfCorrelation` asks "have I
+already tried this?"; `prodCorrelation` asks **"does this duplicate what is already taking capital?"**
+Only the second one protects the geometric-growth argument, because two correlated deployed sleeves
+draw down together. The desk has `cohort_independence`, `effective_bets` and `panel_breadth`, but
+grep finds **no candidate-vs-deployed gate at promotion time**. The objection writes itself — the desk
+runs ~1 deployed sleeve, so the gate is near-vacuous today — and it is exactly backwards: **a gate is
+cheapest to build while its denominator is 1 and binding from the moment the second sleeve lands.**
+
+**THE TRANSFERABLE RULE, and it generalises past this platform (L1.34/L1.11a).** When mining any
+foreign venue, asset class or institution: **a threshold is asset-class-bound and does not travel; a
+ratio of two like-measured quantities is unit-free and travels intact.** Prefer the ratio every time.
+This is why an equities platform can still teach a perp desk something — the caveat that correctly
+blocks its *numbers* does not touch its *instruments*.
+
+**HONEST LIMITATION OF THE SOURCE.** Every enum in `wqb/__init__.py` (`Neutralization`, `NanHandling`,
+`Pasteurization`, `UnitHandling`, `Region`, `Universe`, …) is aliased to `Any`. The library gives the
+**parameter namespace and exact API paths, not the value sets** — so this find names *what the platform
+measures*, and cannot name *what values it accepts*. Recorded so the next seat does not re-open it
+expecting enums.
+
+**Also confirmed from the wild (see OP-084): `ts_zscore`, `ts_av_diff`, `ts_corr`, `group_rank` are
+real platform operators** — `ts_zscore` is one of the six this desk still lacks.
+
+---
+
+## OP-084 — MEASURED: THE INDEPENDENCE CAME FROM THE **DATA**, NOT THE **MATH** (49 fields, 8 operators, 48/50 single-operator)
+
+**SOURCE:** `CrisperX/50_WorldQuant_Alpha_Examples_for_Alphathon` (85★, **NO LICENCE ⇒
+all-rights-reserved**), `alpha50.csv`, 14,891 B, last pushed 2023-10-30. **DERIVES-FROM:** named as
+the specific prize in this organ's own s2 next-ground list; no other seat has touched it. **§13:**
+public repo, read in place; **aggregate statistics and mechanism extracted, no formula or code copied
+into this repo** — an unlicensed artifact is mineable as *text* and not reproducible as *content*.
+**CLAIMED-IS-NOT-VERIFIED:** the README is an advertisement for paid tutoring and every performance
+number is the author's own, unverified, on US equities. **What is measured below are properties of
+the FILE, which I computed myself, not claims about the market.**
+
+The repo's premise is the desk's own independence problem stated in the platform's terms: *50 alphas
+that can pass the mutual correlation test if submitted together.* The desk's version is L1.18 (maximum
+INDEPENDENT compounding sources) against a cross-section measured at **N_eff 1.54 raw / 29
+market-neutral**. So: how does a working practitioner actually manufacture 50 mutually-uncorrelated
+signals?
+
+**MEASURED OVER ALL 50 ROWS:**
+
+| quantity | measurement |
+|---|---|
+| distinct **data fields** | **49** (for 50 alphas; max reuse 3) |
+| distinct **operator tokens** | **8** — `rank` 30, `ts_mean` 18, `ts_zscore` 2, `sum`/`delay`/`group_rank`/`ts_av_diff`/`ts_corr` 1 each |
+| expression depth (paren count) | min 1, **median 1**, max 15 |
+| **single-operator alphas** | **48 / 50** |
+| neutralization | Subindustry 19, Market 17, Sector 8, Industry 4, **None 2** — i.e. **96% neutralized** |
+| universe | TOP200 27, TOP1000 12, TOP500 9, TOP3000 2 |
+| turnover | median **0.0205** (≈2%), max 0.212 |
+| decay | median 10, mean 19.6, max 95 |
+
+**THE MECHANISM: 48 of 50 are one operator applied to one field.** `rank(mdf_pva)`,
+`-rank(mdf_ite_q)`, `-rank(fnd6_newa1v1300_epspi)`. Diversity of *expression* contributes essentially
+nothing to passing the correlation test; **diversity of underlying field contributes everything.**
+Eight operators sufficed for fifty independent signals.
+
+**WHY THIS MATTERS HERE, AND IT IS A RE-RANKING OF THIS SEAT'S OWN BRIEF.** This organ exists partly
+to hunt operators, and the strongest evidence it has yet produced says **operators are the low-yield
+axis and fields are the high-yield one.** It independently corroborates the desk's single most
+expensive research lesson from a completely different market, institution and asset class: the
+2026-08-01 campaign ran **129 mechanisms, all price-derived, all directional, and all 129 failed** at
+max OOS Sharpe 0.100. Another *transform* of price cannot manufacture an independent bet — only
+another *source* can. **The desk's alpha-diversity law is a DATA-ACQUISITION problem wearing a
+modelling costume**, and that is now measured from outside rather than argued from inside.
+
+**THE THRESHOLD-HUGGING RESULT, and it survives the source being untrustworthy.** Sharpe: **min 1.2500,
+median 1.2500, max 1.2900**; 26 of 50 sit at *exactly* 1.25; **70% within [1.24, 1.26]; 100% below
+1.30.** The platform's stated submission target — already in this repo as
+`BRAIN_SHARPE_TARGET = 1.25` — is the **floor, the median and very nearly the maximum** of the
+accepted population. That is the signature of a search that stops the instant the bar is cleared.
+**And the finding does not depend on the numbers being real:** if they are honest, the accepted
+population is dominated by marginal candidates; if they are fabricated, the author fabricated them
+*to hug the threshold*, which reveals the same selection norm. Either way it is direct external
+evidence for the desk's own law that **throughput must come from screening more, never from passing
+more** — and a live demonstration of why L1.6 forbids importing that 1.25 as a gate (OP-083).
+
+**CRYPTO ANALOGUE / WHAT IT WOULD NEED.** The construction that ports is *one cheap transform over
+many orthogonal fields*, not *many clever transforms over price*. The desk's binding input is
+unchanged and this sharpens it: 96% of these alphas neutralize against a **grouping** (subindustry
+most often — the *finest* available), and `data/crypto_grouping_map.json` exists with its consumer
+wiring still owed at **R0437**. Field-count, not operator-count, is the axis to grow —
+routed to `data_axis_watchlist.md`.

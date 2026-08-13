@@ -100,3 +100,49 @@ the **last** instance's error, and that instance is `api.piped.yt` — **a dead 
 six fetch attempts surfaced `Name or service not known`, i.e. a platform bot-wall displayed as a local
 DNS fault. **Query `https://api.piped.private.coffee/streams/<id>` directly to get the true status**;
 the wrapper's error text is not evidence about the video.
+
+| 2026-08-13 | youtube | `kuIfHJEsPkY` · `A3RNoYAz_9U` · `40JActnyhkM` · `dpNuRCcxjwc` · `LC6whEo80T0` · `XqdcIayjAug` · `-iP5GFbF8NM` · `eTq8iPhL1Ys` · `nNOFUVfDg3Y` · `QjhqRrPQs2Q` · `fjc1M92MPSc` (Learn2Quant L1-L11, **official WorldQuant channel**) | the platform's own alpha-construction methodology course — metrics, neutralization, delay/decay, diversity, risk | official docs at `platform.worldquantbrain.com/learn` are login-walled (logged WALLED 08-12); the lecture corpus IS the public mirror of that material, and it is video-only |
+| 2026-08-13 | youtube | `mky_BnKKmM0` · `sVV8qsCSIg0` (Quantcepts: Sentiment Data / Types of Alpha Ideas) | data-category-specific alpha construction | as above |
+
+### 2026-08-13 — THE BLOCKED **FRACTION** ON A REAL TARGET LIST (BRAIN hunter s3)
+
+**This answers the ask BR s3 left directly above** ("measure the blocked FRACTION on a real target
+list rather than asserting a blocked CLASS"). The BRAIN lecture corpus is that list: **one channel,
+one language, one publisher, 13 videos, a 45x view range.**
+
+| panel | n | blocked | fraction |
+|---|---|---|---|
+| Learn2Quant + Quantcepts (official WorldQuant channel) | 13 | 13 | **100%** |
+| non-WorldQuant finance channels (controls) | 2 | 2 | 100% |
+| `dQw4w9WgXcQ` (cache-resident control) | 1 | 0 | 0% |
+| **total** | **16** | **15** | **93.75%** |
+
+**THE VIEW-COUNT HYPOTHESIS IS DEAD, and this panel is what kills it.** RU s3 recorded the gate as
+*"keyed to video popularity"*; BR s3 recorded it as *"NOT view-count-shaped"*. Both were measured on
+mixed panels topping out near 538k views, where the two stories are hard to separate. This panel
+reaches **5,269,269 views** — `QjhqRrPQs2Q`, an official institutional upload — and it is **BOT-WALLED
+exactly like the 116,831-view lecture beside it**, while the lowest-view video in the whole set
+(`5nPiAv4sCrY`, **5,374 views**, a different channel) is *also* blocked. Blocked at 5.27M, blocked at
+5.4k, passing at ~1.6bn. **BR s3 is CONFIRMED and RU s3's causal story is REFUTED** — view count does
+not order the outcomes at all.
+
+**AND IT IS NOT THE CHANNEL EITHER**, which was the obvious next guess once one publisher went 13/13:
+the two non-WorldQuant finance channels tested as controls are blocked too. What survives is exactly
+the candidate BR s3 named and could not confirm — **instance cache residency**: the single video that
+passes is the most-requested video on the internet, which needs no live upstream fetch. Still
+**UNMEASURED as a cause** (confirming it needs instance-side evidence we cannot see from outside), but
+it is now the *only* hypothesis of the three that no measurement contradicts.
+
+**THE DIRECT ROUTE IS WALLED TOO — so this is the SOURCE's wall, not our proxy's.** A plain honest-UA
+GET of `www.youtube.com/watch?v=kuIfHJEsPkY` returns **HTTP 200 at 1,133,907 bytes** with
+`<title> - YouTube</title>` (**empty**), **zero** `captionTracks`, zero
+`playerCaptionsTracklistRenderer`, and one `LOGIN_REQUIRED`. A full-size hollow 200 — RU s3's
+signature, reproduced on this ground. No route around it was attempted or is authorised (§13).
+
+**WHAT THIS BUYS, IF ANYTHING IS BOUGHT.** The desk-side asks are now clearly separable, which was the
+whole point of measuring: (1) **nothing here justifies a REGIONAL proxy** — AR s2 established that with
+EN controls and this panel re-confirms it on an all-EN corpus; (2) an **authenticated or
+residential-egress route** is the only thing that would open a 93.75%-blocked surface, and the target
+list justifying it now exists; (3) **`yt-dlp` with cookies is NOT proposed** — it is the standard tool
+here, but the desk does not hold a YouTube account and a credentialed account's contents are not public
+merely because an account exists (§13, the same line that stopped this seat at `wq-alpha-research` §§7+).

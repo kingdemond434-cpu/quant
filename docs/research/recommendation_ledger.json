@@ -6706,11 +6706,11 @@
    "summary": "VIDEO FETCHER IS INERT DESK-WIDE, and every miner seat is mis-attributing the failure to source walls. scripts/fetch_video_transcript.py reaches YouTube ONLY via 4 hardcoded Piped proxies (_PIPED, lines 27-31) and ALL FOUR are down as measured 2026-08-12: api.piped.private.coffee 500, pipedapi.kavin.rocks 502, pipedapi.adminforge.de 301 (redirect not followed), api.piped.yt 000 (DNS NXDOMAIN). Meanwhile www.youtube.com returns 200 from this box, so the source is NOT walled -- the DESK-SIDE TOOL is dead. THE DEFECT IS THE MIS-ATTRIBUTION, not the outage: L1.34 makes video first-class for EVERY seat and the coverage protocol says log video_locked only for a route TRIED AND FAILED, so every seat that tries will now correctly record a failure and INCORRECTLY infer the platform is walled -- a desk-tool outage wearing a source-wall costume, and the same class as the desk lesson 'a verdict about the HOST is not a verdict about the DESK'. It fails silently and permanently: Piped instances rotate constantly (the module comment says so) and nothing monitors them. FIX, in order of durability: (1) the script must distinguish ALL-PROXIES-DOWN from CAPTIONS-ABSENT in its exit message so a seat cannot mis-log it; (2) refresh the instance list AND follow redirects (adminforge returns 301, so it may be alive behind a moved path); (3) add a non-Piped fallback -- the legacy timedtext endpoint returns 200/size=0 and the ANDROID innertube client returns 400, both verified dead today, so the fallback needs to be a maintained library rather than another hardcoded host; (4) fence it: a video-route liveness check, since a rotating-proxy dependency with no monitor is guaranteed to rot again. Found by BRAIN hunter s2 while executing its owed video obligation (Learn2Quant lessons kuIfHJEsPkY / A3RNoYAz_9U, the official BRAIN lecture corpus, still unfetched).",
    "roi_bps": 45.0,
    "raised": "2026-08-12T20:55:11.671195+00:00",
-   "status": "scheduled",
-   "reason": "Owned by the ops/tooling org: the fix is in scripts/fetch_video_transcript.py and the BRAIN-hunter seat is research-frozen out of scripts/ and libs/. Tight due date (3d, not the usual window) deliberately: the diagnosis is complete and the first repair is a URL-list refresh plus following the 301, so the work is cheap -- while the cost accrues DAILY and SILENTLY across every miner seat, because L1.34 makes video first-class for all of them and each one that tries will mis-record a desk-tool outage as a source-side wall.",
+   "status": "rejected",
+   "reason": "PREMISE REFUTED BY CONTROLLED MEASUREMENT (BRAIN hunter s3, 2026-08-13). R0527 claimed 'all four Piped proxies are down, the source is NOT walled, the DESK-SIDE TOOL is dead'. Measured today on the same endpoint: api.piped.private.coffee serves dQw4w9WgXcQ with 6 subtitle tracks (HTTP 200) in the SAME MINUTE that 15 of 16 other videos return HTTP 500 carrying YouTube's own SignInConfirmNotBotException/LOGIN_REQUIRED. A 500 from the proxy RELAYING an upstream bot-wall is not a dead proxy -- s2 misread a faithfully-reported source wall as a desk-side outage, which is the desk lesson 'a verdict about the HOST is not a verdict about the DESK' inverted. Direct route confirms the wall is the source's: www.youtube.com/watch returns a 1,133,907-byte HOLLOW 200 with empty <title> and ZERO captionTracks. Acting on R0527 would have sent an engineer to replace four working proxies. The real defect -- per-instance error reporting, dropping the dead api.piped.yt domain, and classifying LOGIN_REQUIRED as PLATFORM-WALL rather than a local fault -- is already correctly diagnosed and live as R0592 (open). Superseded by R0592; no separate work owed.",
    "commit": null,
-   "due": "2026-08-15",
-   "disposed": "2026-08-12T20:56:05.961114+00:00"
+   "due": null,
+   "disposed": "2026-08-13T09:16:40.424513+00:00"
   },
   {
    "id": "R0528",
@@ -7582,6 +7582,30 @@
    "summary": "Build a point-in-time universe from git history of hardcoded ticker lists in public repos: answers the recorded 'exchangeInfo is a look-ahead in the UNIVERSE' gap. Measured 8.7% true USDT survivorship erasure over 2023-03 -> today, and separates RENAMES (MATIC->POL, RNDR->RENDER, TOMO->VIC -- continuing series) from DELISTINGS, which the desk currently has no artifact to distinguish. Cost: a directory of old repos and a diff. (universe map source 103)",
    "roi_bps": null,
    "raised": "2026-08-13T09:02:47.010621+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0601",
+   "source": "cycle",
+   "summary": "RECORD FORWARD EVIDENCE AS A RATIO AND A LADDER, NOT A SINGLE VERDICT (BRAIN hunter s3, OP-083). WorldQuant BRAIN exposes os.osISSharpeRatio (OOS Sharpe over IS Sharpe) and os.sharpe60/125/250/500 (OOS Sharpe re-measured at four horizons) as first-class queryable metrics; the desk has NEITHER (grep: zero hits for both families across libs/ and scripts/). data/forward_slots.json rows carry only name/kind/source/state -- the two Sharpes whose ratio measures this desk's OWN screen optimism are not persisted anywhere, so the quantity is UNMEASURED and therefore counts as zero (L1.28a). WHY IT PORTS WHERE THE THRESHOLDS DO NOT: brain_calibration.py correctly refuses to let BRAIN's 1.25 Sharpe target become a gate because it is US-equity/daily/dollar-neutral on their conventions -- but a RATIO of two like-measured Sharpes is dimensionless and every one of those conventions cancels. The desk imported the un-portable half and never saw the portable half. WHAT TO BUILD: persist screen (Stage-A) Sharpe and forward Sharpe per candidate, publish the ratio, and re-measure forward Sharpe at 4 cumulative points expressed in OBSERVATIONS not days (L1.48 -- a perp book funding 3x/day accrues evidence ~3x faster than the daily-rebalanced equity book those 60/125/250/500 day-counts came from; copying them as days imports an equity sampling convention as a law). PAYS INTO: L1.29 (the ratio's distribution across the desk's 434 screened candidates is a direct measurement of its own overfitting rate, which nothing currently measures), L1.19/L1.30 (a decay ladder detects an edge dying WHILE it is being confirmed; a single end-of-clock verdict cannot). NOT A BAR CHANGE: this adds no gate, moves no threshold and grants no promotion authority -- it is a measurement duty only.",
+   "roi_bps": 25.0,
+   "raised": "2026-08-13T09:19:18.670834+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0602",
+   "source": "cycle",
+   "summary": "THE DESK IMPORTED BRAIN'S selfCorrelation CAP AND MISSED ITS prodCorrelation GATE (BRAIN hunter s3, OP-083). BRAIN's alpha API exposes TWO distinct correlation gates: is.selfCorrelation (candidate vs your own prior alphas) and is.prodCorrelation (candidate vs the PRODUCTION book). libs/validation/brain_calibration.py imported only the first, as BRAIN_SELF_CORRELATION_CAP = 0.7; grep finds no candidate-vs-deployed correlation gate anywhere in libs/ or scripts/. THE TWO ASK DIFFERENT QUESTIONS AND ONLY ONE PROTECTS THE GROWTH ARGUMENT: selfCorrelation asks 'have I already tried this?', prodCorrelation asks 'does this duplicate what is ALREADY TAKING CAPITAL?' -- two correlated deployed sleeves draw down together, which is exactly what L1.18 (maximum INDEPENDENT compounding sources) exists to prevent. The desk has cohort_independence, effective_bets, panel_breadth and capacity_policy, but nothing that gates a candidate against the DEPLOYED book at promotion time. THE OBVIOUS OBJECTION IS BACKWARDS: the desk runs ~1 deployed sleeve so the gate looks near-vacuous today -- which is precisely why it is cheap now (denominator 1) and binding from the moment the second sleeve lands. Building it after the second sleeve means the first pair is admitted ungated, and that pair is the one that sets the book's correlation floor. CORROBORATED FROM OUTSIDE (OP-084): a measured 50-alpha low-correlation portfolio achieved independence through 49 DISTINCT DATA FIELDS with only 8 operator tokens and 48/50 single-operator expressions -- independence is bought with orthogonal SOURCES, so the gate must be paired with field-count growth, not with more transforms of price. Note the ordering constraint: this gate must read the deployed book at consumption time with a declared max age (L1.44), and must fail toward REFUSING a candidate when the book is unreadable, never toward admitting one.",
+   "roi_bps": 18.0,
+   "raised": "2026-08-13T09:19:34.236227+00:00",
    "status": "open",
    "reason": null,
    "commit": null,
