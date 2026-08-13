@@ -1404,6 +1404,46 @@ cheapest remaining binary-search extension.
 
 ## SESSION NOTES — JP frontier miner
 
+### 2026-08-13 session (JP frontier miner) — IN PROGRESS (write-first note; updated as each item resolves)
+RESUME STEP 1 (backlog): `source_backlog_next.py --limit 6` → 6 pending technical verifications,
+**0 JP-owned**. The one with a JP component ("Foreign AI-quant RESEARCH SYSTEMS — VeighNa/vnpy.alpha,
+Qlib, **JP/KR equivalents**") had its CN half mined by the CN seat **today** (s8, 08-13); the JP half
+is not a catalogued source yet — it is a HUNT, and it belongs in item 2 below rather than as a
+verification. Nothing else in the pending/decide list is JP. RESUME STEP 2: my own 08-12 NEXT-RUN
+queue governs this run.
+
+**RESUME-STEP-2 DEFECT, CAUGHT ON READING MY OWN QUEUE (recorded before it is fixed).** My 08-12
+note's next-run item (1) is titled **"qiita-hosted botter-calendar queue, now the primary ground"**
+and then names **five** entries of which **three are zenn.dev** — the host that same note had just
+ruled **CLOSED, HARD STOP** four paragraphs earlier (2022 s1d3 richwomanbtc, 2023 s1d24
+richwomanbtc, 2025 s1d17 kobao). I wrote the access finding and the queue in the same run and did
+not re-filter the queue through the finding. The queue was 40% dead on arrival and only a
+host-column check caught it. **This is the L1.44/L1.55 shape applied to a prose artifact: a
+hand-off whose inputs changed underneath it between being computed and being consumed.** The two
+genuinely-open entries survive as item 1; the queue is re-derived from the host column below, not
+from the prose.
+
+ITEMS THIS RUN (bounded per completion contract; deep-forest tier first per L1.35):
+0. **Standing cheap probe — UA matrix on the closed hosts + robots on every host I am about to
+   touch.** An edge denylist is a config and configs revert; a cached verdict is forbidden
+   (OP-052 is my own operator and it applies to me). STATUS: pending.
+1. **qiita botter-calendar deep-read — the two survivors of my own queue.** 2021 s1d15
+   `qiita.com/blog_UKI` BitMEX spoofing experiment (an EXECUTABLE-tier venue-microstructure
+   experiment by a named lineage botter); 2024 s2d8 `qiita.com/pip_pip_pip_p` "when does
+   rule-based + ML-filter actually work". STATUS: pending.
+2. **THE DEEP-FOREST PERSONAL-BLOG LAYER — 20 entries across 12 self-hosted domains, never
+   touched by ANY seat in 4 JP sessions.** Every prior JP run went to the three big hosts
+   (note/qiita/zenn = 160/187) and skipped the long tail — which is precisely the layer L1.35
+   names (self-hosted, unindexed, no AI-crawler denylist because nobody bothered to write one).
+   Priority inside the item: (a) `gitan.dev` **"ビットコインbotterにとっての各マーケットの特徴"
+   2023 + 2024 — the same author re-writing the same venue survey one year apart**, i.e. a free
+   longitudinal microstructure diff, which is worth more than either post alone; (b)
+   `perp-screener.com` **"儲からないBTCオプションbot"** (the bot that does NOT make money — a
+   documented failure with a stated cause is the highest-value field on any page per the PROCESS
+   MANDATE, and free graveyard material); (c) `blog.shidokamo.com` **"DEX-CEXアビトラの思ひ出"**
+   (a *memories-of* post = a dated death of an arb family). STATUS: pending.
+NEXT ITEMS (for the run after this one): recorded at close.
+
 ### 2026-08-12 session (JP frontier miner) — COMPLETE (write-first note, finalized end of run)
 §33 STANDING TEST ("which artifact on disk is different because of what was mined?"):
 `data/jp_funding_clamp_census.json` (NEW, tracked via a `.gitignore` `!` exception),
