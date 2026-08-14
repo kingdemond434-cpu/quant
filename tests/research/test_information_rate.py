@@ -62,8 +62,10 @@ def test_EVENT_CLUSTERING_IS_REPORTED_WHEN_IT_BINDS() -> None:
 def test_HIGHER_FREQUENCY_IS_ATTENUATED_BY_SERIAL_CORRELATION() -> None:
     """The easiest way to manufacture evidence here would be to treat 3x the bars as 3x the
     information. Sampling one process faster does not make it more independent."""
-    sticky = EvidenceState(raw_observations=40, autocorrelation=0.8, distinct_regimes=3)
-    clean = EvidenceState(raw_observations=40, autocorrelation=0.0, distinct_regimes=3)
+    sticky = EvidenceState(raw_observations=40, autocorrelation=0.8, distinct_regimes=3,
+                           measured=True)
+    clean = EvidenceState(raw_observations=40, autocorrelation=0.0, distinct_regimes=3,
+                          measured=True)
     a_sticky = next(a for a in accelerants(sticky, bars_per_day=1, available_bars_per_day=3)
                     if "bars/day" in a.lever)
     a_clean = next(a for a in accelerants(clean, bars_per_day=1, available_bars_per_day=3)
@@ -228,3 +230,30 @@ def test_A_MEASURED_CORRELATION_STILL_PUBLISHES_A_NUMBER() -> None:
     a = next(x for x in accelerants(measured, available_symbols=213) if "cross-section" in x.lever)
     assert a.gain is not None and abs(a.gain - cross_section_gain(213, 0.7)) < 1e-9
     assert a.measured is True
+
+
+def test_AN_UNMEASURED_AUTOCORRELATION_ALSO_PUBLISHES_A_RANGE() -> None:
+    """THE SAME DEFECT AS THE CROSS-SECTION LEVER, IN THE OTHER INPUT, and it survived the first
+    fix -- the live report published a flat "+3.0x sample 1 -> 3 bars/day" for every clock,
+    because `autocorrelation` defaults to 0.0 and 0.0 is the value at which this lever looks best.
+
+    Two defaulted zeros, two flattering answers. That is why the treatment is a RULE about
+    unmeasured inputs rather than a patch per lever.
+    """
+    s = EvidenceState(raw_observations=40, distinct_regimes=3, measured=False)
+    a = next(x for x in accelerants(s, bars_per_day=1, available_bars_per_day=3)
+             if "bars/day" in x.lever)
+    assert a.gain is None and a.measured is False
+    assert a.gain_high == 3.0                       # only if the finer bars are as independent
+    assert a.gain_low is not None and a.gain_low < 1.2   # at a realistic intraday rho of 0.8
+    assert "UNMEASURED" in a.why
+
+
+def test_NO_LEVER_PUBLISHES_A_POINT_GAIN_FROM_AN_UNMEASURED_STATE() -> None:
+    """The rule, stated once as a test: an UNMEASURED EvidenceState may not produce a single
+    confident multiplier from ANY lever. A future lever that forgets this fails here rather than
+    on the dashboard."""
+    s = EvidenceState(raw_observations=40, distinct_regimes=3, measured=False)
+    for a in accelerants(s, available_symbols=213, bars_per_day=1, available_bars_per_day=3):
+        assert a.gain is None, f"{a.lever} published a point gain from unmeasured inputs"
+        assert a.gain_low is not None and a.gain_high is not None

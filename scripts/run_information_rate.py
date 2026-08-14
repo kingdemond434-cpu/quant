@@ -98,6 +98,32 @@ def _state_for(slot: dict[str, Any]) -> tuple[EvidenceState | None, str]:
     if not isinstance(days, (int, float)) or days <= 0:
         return None, ("no observation count on this row -- NO-EVIDENCE and information rate is "
                       "undefined, which is a different claim from a rate of zero")
+
+    # PUBLISHED BY THE CLOCK OR NOT AT ALL. `run_axis_shadows` now writes `distinct_regimes` and
+    # `autocorrelation` beside `forward_days`, computed from the return series it already holds.
+    # Where they are present the deflators are MEASURED and the rate is real; where they are
+    # absent nothing is inferred, because the flattering value for each of them is exactly the
+    # value a missing field would default to.
+    regimes = slot.get("distinct_regimes")
+    rho = slot.get("autocorrelation")
+    has_regimes = isinstance(regimes, int) and regimes > 0
+    has_rho = isinstance(rho, (int, float))
+    if has_regimes or has_rho:
+        state = EvidenceState(
+            raw_observations=int(days),
+            autocorrelation=float(rho) if has_rho else 0.0,
+            distinct_regimes=int(regimes) if has_regimes else 0,
+            distinct_symbols=1,
+            # MEASURED only when BOTH are present. A half-measured state would let the measured
+            # half license a point-estimate accelerant computed from the unmeasured half's
+            # default, which is the defect this flag exists to stop.
+            measured=bool(has_regimes and has_rho),
+        )
+        parts = []
+        parts.append(f"regimes covered {regimes}" if has_regimes else "regimes UNMEASURED")
+        parts.append(f"lag-1 rho {float(rho):+.3f}" if has_rho else "autocorrelation UNMEASURED")
+        return state, "; ".join(parts)
+
     return EvidenceState(
         raw_observations=int(days),
         # UNMEASURED, carried as the clock's own untested defaults rather than as optimistic
@@ -106,9 +132,10 @@ def _state_for(slot: dict[str, Any]) -> tuple[EvidenceState | None, str]:
         distinct_regimes=0,
         distinct_symbols=1,
         measured=False,
-    ), ("deflators UNMEASURED -- the forward artifact carries a day count, not a return series. "
-        "autocorrelation, regimes covered and cross-symbol correlation each need the series; "
-        "until they are published this rate is an UPPER BOUND on the true one")
+    ), ("deflators UNMEASURED -- this clock's forward artifact carries a day count and no return "
+        "statistics. It is therefore charged the single-regime penalty (x0.5) for a fact nobody "
+        "recorded. run_axis_shadows publishes both fields from 2026-08-14; a clock still reading "
+        "UNMEASURED here has not been re-run since, or is not an axis clock")
 
 
 def main() -> int:

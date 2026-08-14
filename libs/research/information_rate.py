@@ -240,27 +240,65 @@ def accelerants(
         ratio = available_bars_per_day / bars_per_day
         # HIGHER FREQUENCY IS NOT A FREE MULTIPLIER, and pretending it is would be the single
         # easiest way to manufacture evidence here. Sampling the same process faster raises serial
-        # correlation, and the deflator takes it straight back. The honest bound is the raw
-        # multiplier ATTENUATED by the deflator this clock already measures.
-        atten = _serial_deflator(state.autocorrelation)
-        out.append(Accelerant(
-            lever=f"sample {bars_per_day:g} -> {available_bars_per_day:g} bars/day",
-            gain=max(1.0, ratio * atten),
-            why=(f"{ratio:.0f}x the raw observations, ATTENUATED by this clock's own serial "
-                 f"deflator ({atten:.2f}) because sampling one process faster does not make it "
-                 "more independent. A strategy whose edge lives at a daily horizon gains almost "
-                 "nothing here; one whose edge is intraday gains nearly the full multiple"),
-            requires="a signal whose mechanism actually operates at the finer horizon"))
+        # correlation, and the deflator takes it straight back.
+        if state.measured:
+            atten = _serial_deflator(state.autocorrelation)
+            out.append(Accelerant(
+                lever=f"sample {bars_per_day:g} -> {available_bars_per_day:g} bars/day",
+                gain=max(1.0, ratio * atten),
+                why=(f"{ratio:.0f}x the raw observations, ATTENUATED by this clock's MEASURED "
+                     f"serial deflator ({atten:.2f}) because sampling one process faster does not "
+                     "make it more independent. An edge that lives at a daily horizon gains "
+                     "almost nothing; an intraday one gains nearly the full multiple"),
+                requires="a signal whose mechanism actually operates at the finer horizon"))
+        else:
+            # THE SAME DEFECT AS THE CROSS-SECTION LEVER, IN THE OTHER INPUT, and it survived the
+            # first fix. `autocorrelation` defaults to 0.0 when unmeasured, and 0.0 is exactly the
+            # value at which this lever looks BEST -- the deflator is 1.0, nothing is attenuated,
+            # and the report published a flat "+3.0x" for every clock on the live box. Two
+            # defaulted zeros, two flattering answers, one fixed and one not: which is the reason
+            # the honest treatment is a RULE about unmeasured inputs rather than a patch per lever.
+            #
+            # Sampling 3x faster is worth 3.0x only if the finer bars are as independent as the
+            # coarse ones, which for a daily-horizon signal they emphatically are not.
+            hi = ratio * _serial_deflator(0.0)
+            lo = max(1.0, ratio * _serial_deflator(0.8))
+            out.append(Accelerant(
+                lever=f"sample {bars_per_day:g} -> {available_bars_per_day:g} bars/day",
+                gain=None, gain_low=lo, gain_high=hi,
+                why=(f"UNMEASURED. Worth {hi:.1f}x only if the finer bars are as independent as "
+                     f"the coarse ones, and {lo:.1f}x at a realistic intraday autocorrelation of "
+                     "0.8. A signal whose MECHANISM operates daily gains nothing here however "
+                     "many bars it is sampled at -- the extra observations are the same day seen "
+                     "three times. Measure the clock's lag-1 autocorrelation first"),
+                requires="the clock's measured lag-1 autocorrelation, which no forward artifact "
+                         "currently publishes"))
 
-    if state.distinct_regimes <= 1:
-        now = regime_penalty(state.distinct_regimes)
+    # TWO DIFFERENT LEVERS WEAR THE SAME 0.5 PENALTY, and conflating them is the difference
+    # between a free halving today and a wait on the market. `regime_penalty` returns 0.5 for
+    # UNMEASURED (0) and 0.5 for MEASURED-AS-ONE (1) -- deliberately, because untested is treated
+    # as concentrated. But the REMEDIES are opposite, and only one of them costs time.
+    if state.distinct_regimes <= 0:
+        out.append(Accelerant(
+            lever="publish the regime count this clock has ALREADY covered",
+            gain=regime_penalty(3) / regime_penalty(0),
+            why=("NOT A WAIT -- A MEASUREMENT. The clock is being charged the single-regime "
+                 "penalty (x0.5) because `distinct_regimes` is UNMEASURED and untested is treated "
+                 "as concentrated, not because anyone established it ran through one regime. A "
+                 "clock that has in fact spanned three regimes is paying double for a fact nobody "
+                 "recorded: publishing the count halves its remaining wait THE SAME DAY, and "
+                 "lowers no bar -- the deflator was always meant to be measured. 2 regimes is "
+                 "worth 1.6x, 3+ is worth 2.0x"),
+            requires="`distinct_regimes` in the forward artifact, from a series the clock "
+                     "already has"))
+    elif state.distinct_regimes == 1:
         out.append(Accelerant(
             lever="cover a second regime",
-            gain=regime_penalty(2) / now if now > 0 else 1.0,
-            why=("evidence from one regime is evidence about one regime, and the clock says so "
-                 "with a 0.5 multiplier. THIS ONE CANNOT BE BOUGHT WITH COMPUTE -- it arrives "
-                 "when the market changes, or by backfilling the signal over a period that "
-                 "already contained a different regime"),
+            gain=regime_penalty(2) / regime_penalty(1),
+            why=("evidence from one regime is evidence about one regime, and here that is "
+                 "MEASURED rather than assumed. THIS ONE CANNOT BE BOUGHT WITH COMPUTE -- it "
+                 "arrives when the market changes, or by replaying the signal over a historical "
+                 "period that already contained a different regime"),
             requires="a second regime in the observation window, or a historical one to replay"))
 
     out.sort(key=lambda a: a.rank_key, reverse=True)
