@@ -44,11 +44,13 @@ from pathlib import Path as _P
 if str(_P(__file__).resolve().parent.parent) not in _sys.path:
     _sys.path.insert(0, str(_P(__file__).resolve().parent.parent))
 
+import argparse
 import json
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from libs.research.clock_retirement import LEDGER, RetirementRefused, accept
 from libs.research.slot_displacement import (
     BLOCKED,
     RECLAIMABLE,
@@ -114,7 +116,40 @@ def sweep(slots: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _accept(names: list[str], rep: dict[str, Any], decided_by: str) -> int:
+    """Record the principal's decision for each named clock. THE ONLY WRITE PATH INTO THE LEDGER.
+
+    Reached only from an explicit `--accept` on a human's command line: no cycle, no organ and no
+    test calls it. Each name is checked against THIS sweep, so a row can never cite a verdict that
+    has since changed, and each refusal is printed rather than skipped -- a silently-dropped
+    retirement reads exactly like a successful one.
+    """
+    rc = 0
+    for name in names:
+        try:
+            row = accept(name, rep, decided_by=decided_by)
+        except RetirementRefused as exc:
+            print(f"  REFUSED  {name}\n           {exc}")
+            rc = 1
+            continue
+        print(f"  RETIRED  {name:<34} requeue_as={row['requeue_as']}  "
+              f"m {row['cohort_m_before']} -> {row['cohort_m_after']}")
+    print(f"-> {LEDGER} (TRACKED -- commit it; a retirement no clone can see is not a decision)")
+    print("   Every acceptance LOOSENS the Holm bar for every surviving clock. That is the price "
+          "paid for the seat, and it is recorded next to each row rather than left to be "
+          "rediscovered.")
+    return rc
+
+
 def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--accept", action="append", default=[], metavar="CLOCK",
+                    help="record a ledgered retirement for this clock (repeatable). Requires the "
+                         "clock to be RECLAIMABLE in THIS run's proposals")
+    ap.add_argument("--decided-by", default="principal",
+                    help="who is taking the decision -- written into the ledger row")
+    args = ap.parse_args()
+
     try:
         snap = derive_slots()
         slots = list(snap.get("slots") or [])
@@ -148,6 +183,12 @@ def main() -> int:
         print("  no clock is currently reclaimable -- every occupied seat is either accruing or "
               "unassessable, and neither may be taken")
     print(f"-> {_OUT} and {_WEB}")
+    if rep["proposals"] and not args.accept:
+        print("   To act on one: --accept <clock> [--accept <clock> ...] --decided-by <who>. "
+              "Nothing here retires anything on its own, and nothing ever will.")
+    if args.accept:
+        print("ACCEPTING (explicit, attributed, against THIS sweep):")
+        return _accept(list(args.accept), rep, args.decided_by)
     return 0
 
 
