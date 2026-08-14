@@ -40,7 +40,7 @@ from pathlib import Path
 from typing import Any
 
 from libs.ops.desk_host import is_owning_host
-from libs.research.clock_retirement import retired_names
+from libs.research.clock_retirement import multiplicity_high_water, retired_names
 
 _ROOT = Path(__file__).resolve().parents[2]
 
@@ -407,10 +407,29 @@ def derive_slots() -> dict[str, Any]:
         unknown.extend(absent)
         absent = []
 
-    m_upper = len(slots) + sum(bounds.values())
+    # CAPACITY AND MULTIPLICITY ARE TWO NUMBERS, AND THIS FILE HAD ONLY EVER STORED ONE.
+    #
+    # `seats_upper` is a RESOURCE bound: how many concurrent forward clocks the box, the data and
+    # the attention budget support. Retiring a dead clock frees one and that is pure gain.
+    #
+    # `m_upper` is how many times the desk LOOKED, and it is a HIGH-WATER MARK. A clock that ran
+    # and failed consumed a trial; retiring it afterwards does not un-look, for the same reason a
+    # p-value cannot be improved by forgetting an experiment. So it takes the max of the live
+    # bound and every cohort size the retirement ledger has ever recorded, and it CANNOT FALL.
+    #
+    # This is what makes automatic seat reclamation safe. The standing objection to it -- that
+    # dropping a row loosens every survivor's bar in the phantom-edge direction -- was an
+    # objection to the BAR MOVING, not to the seat being freed, and the two only ever moved
+    # together because they shared a variable.
+    seats_upper = len(slots) + sum(bounds.values())
+    m_upper = max(seats_upper, multiplicity_high_water(_ROOT))
     return {
         "updated": now.isoformat(),
         "m_concurrent": len(slots),
+        "seats_used": len(slots),
+        "seats_upper": seats_upper,
+        "seats_free": max(0, MAX_FORWARD_SLOTS - seats_upper),
+        "multiplicity_high_water": m_upper,
         # THE NUMBER EVERY BAR MUST BE COMPUTED FROM. `m_concurrent` counts only what was READ, so
         # it is a LOWER bound whenever a source is unreadable -- and understating m LOOSENS every
         # Holm bar, the phantom-edge direction this module exists to prevent. `complete=False` was
@@ -421,8 +440,12 @@ def derive_slots() -> dict[str, Any]:
         "m_bounds": bounds,
         "complete": not unknown,
         "cap": MAX_FORWARD_SLOTS,
-        "over_cap": m_upper > MAX_FORWARD_SLOTS,
-        "idle_slots": max(0, MAX_FORWARD_SLOTS - m_upper),
+        # CAPACITY QUESTIONS ANSWER FROM SEATS, never from multiplicity. Asking "may another clock
+        # start?" against a high-water mark would keep the desk permanently over cap on the
+        # strength of clocks that have already been retired -- idleness bought with a number that
+        # exists to protect the bar, which protects nothing and costs every candidate its clock.
+        "over_cap": seats_upper > MAX_FORWARD_SLOTS,
+        "idle_slots": max(0, MAX_FORWARD_SLOTS - seats_upper),
         "unknown_sources": unknown,
         # Published so a reader can tell a measured zero from a host without state, which is
         # the whole distinction the ABSENT/UNKNOWN split turns on (L1.28a).

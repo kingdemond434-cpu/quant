@@ -46,7 +46,9 @@ __all__ = [
     "LEDGER",
     "RetirementRefused",
     "accept",
+    "auto_accept",
     "load",
+    "multiplicity_high_water",
     "retired_names",
 ]
 
@@ -91,6 +93,79 @@ def retired_names(root: Path | str | None = None) -> set[str]:
         if isinstance(row, dict) and isinstance(row.get("clock"), str) and row["clock"]:
             out.add(row["clock"])
     return out
+
+
+def multiplicity_high_water(root: Path | str | None = None) -> int:
+    """The largest cohort this desk has ever run concurrently, from the ledger's own rows.
+
+    THIS IS WHAT MAKES AUTOMATIC RETIREMENT SAFE, and it is the whole reason retirement stopped
+    being a decision that had to be taken by hand.
+
+    The original objection was exact and correct: removing a row SHRINKS m and LOOSENS every
+    surviving clock's bar, which is the phantom-edge direction. But that objection conflated two
+    different quantities the desk had only ever stored as one number:
+
+        SEATS         a CAPACITY limit. Twelve concurrent forward clocks is what the box, the
+                      data and the attention budget support. A dead clock holding one is pure
+                      waste and freeing it costs nothing.
+        MULTIPLICITY  how many times the desk LOOKED. A clock that ran and failed consumed a
+                      trial, and retiring it afterwards does not un-look. This number may never
+                      fall, for the same reason you cannot improve a p-value by forgetting an
+                      experiment.
+
+    Separating them dissolves the objection entirely: retirement frees the seat and leaves the bar
+    exactly where it was. There is then no direction in which automatic retirement can flatter a
+    result, so it no longer needs a human in the loop -- what needed the human was the bar
+    movement, not the seat.
+
+    ZERO FROM AN EMPTY LEDGER, which is correct rather than merely safe: with no retirements the
+    live concurrent count IS the high-water mark, and `derive_slots` takes the max of the two.
+    """
+    best = 0
+    for row in load(root).get("retirements", []):
+        if not isinstance(row, dict):
+            continue
+        for key in ("multiplicity_floor", "seats_before", "cohort_m_before"):
+            v = row.get(key)
+            if isinstance(v, int):
+                best = max(best, v)
+                break
+    return best
+
+
+def auto_accept(
+    sweep: dict[str, Any],
+    *,
+    decided_by: str = "cycle",
+    root: Path | str | None = None,
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """Retire EVERY clock this sweep classified RECLAIMABLE. Returns (rows written, refusals).
+
+    SAFE TO RUN UNATTENDED, AND ONLY BECAUSE OF THE SPLIT ABOVE. Freeing a seat no longer moves
+    any bar, so the standing objection to automating this -- that it loosens the fence in the
+    phantom-edge direction -- no longer applies to anything it does.
+
+    THE CRITERION IS PRE-REGISTERED IN CODE, NOT CHOSEN PER RUN. `classify_slot` decides
+    RECLAIMABLE from the clock's OWN pre-registered kill terms, or from its having converted zero
+    observations, or from a DEGENERATE instrument. None of those is a judgement made after seeing
+    a result the desk would rather not have. Reading a proposal list and picking the convenient
+    entries WOULD be, which is why this takes all of them or none.
+
+    BLOCKED CLOCKS ARE NEVER TOUCHED, and that asymmetry is the point: they cannot be ASSESSED,
+    which is a measurement defect upstream. Wrongly reclaiming one destroys forward evidence that
+    cannot be re-earned at any price; wrongly protecting one costs a queue position.
+    """
+    rows: list[dict[str, Any]] = []
+    refused: list[str] = []
+    for p in sweep.get("proposals", []):
+        if not isinstance(p, dict):
+            continue
+        name = str(p.get("clock") or "")
+        try:
+            rows.append(accept(name, sweep, decided_by=decided_by, root=root))
+        except RetirementRefused as exc:
+            refused.append(f"{name}: {exc}")
+    return rows, refused
 
 
 def accept(
@@ -141,7 +216,7 @@ def accept(
     if any(isinstance(r, dict) and r.get("clock") == clock for r in rows):
         raise RetirementRefused(f"{clock} is already retired in {LEDGER}")
 
-    m_before = int(sweep.get("m_now") or 0)
+    seats_before = int(sweep.get("m_now") or 0)
     row = {
         "clock": clock,
         "retired_at": stamp,
@@ -156,11 +231,16 @@ def accept(
         "observations": p.get("observations"),
         "why": p.get("why"),
         "kind": p.get("kind"),
-        # What the desk gave up to gain the seat, stated at the moment of the decision so nobody
-        # has to reconstruct it: one fewer row in the cohort is a LOOSER bar for every survivor.
-        "cohort_m_before": m_before,
-        "cohort_m_after": max(0, m_before - 1),
-        "loosens_bars": True,
+        # CAPACITY, which is what a retirement actually buys. One fewer occupied seat.
+        "seats_before": seats_before,
+        "seats_after": max(0, seats_before - 1),
+        # MULTIPLICITY, which a retirement does NOT buy and must never buy. This number is the
+        # floor every future Holm bar is computed against, and it is a HIGH-WATER MARK: a trial
+        # that ran, ran. Retiring the clock afterwards frees its seat and changes nothing about
+        # the fact that the desk looked. Publishing it in the row makes the guarantee auditable
+        # from the ledger alone -- a reader can check that no retirement ever lowered it.
+        "multiplicity_floor": seats_before,
+        "loosens_bars": False,
     }
     rows.append(row)
     payload = {

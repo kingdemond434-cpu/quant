@@ -59,7 +59,13 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # cap of 12 with ZERO idle, at least one seat held by a DEGENERATE instrument fault that cannot
   # resolve however long it runs. The sweep SURFACES those; retiring one stays a ledgered decision
   # because dropping a row shrinks m and loosens every neighbour's bar.
-  nice -n 15 "$PY" scripts/run_clock_retirement_sweep.py || true
+  # --accept-all: NOTHING IDLES. A dead clock holding a seat blocks a real candidate's forward
+  # clock, and forward time is the one input that cannot be bought later, so waiting for a human
+  # to approve each reclamation costs exactly the resource the desk is shortest of. This became
+  # safe to automate when seats and multiplicity were split: freeing a seat no longer moves any
+  # Holm bar, because `m` is now a HIGH-WATER MARK -- a clock that ran and failed consumed a
+  # trial, and retiring it does not un-look. BLOCKED clocks are still never touched.
+  nice -n 15 "$PY" scripts/run_clock_retirement_sweep.py --accept-all --decided-by cycle || true
   nice -n 15 "$PY" scripts/run_live_ladder.py
   # EXECUTION HEALTH runs every cycle, including days the research half found nothing. The money
   # path is where the desk is currently LOSING (27 closes, all three hold buckets negative net of

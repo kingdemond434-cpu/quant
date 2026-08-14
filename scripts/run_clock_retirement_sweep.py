@@ -50,7 +50,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from libs.research.clock_retirement import LEDGER, RetirementRefused, accept
+from libs.research.clock_retirement import LEDGER, RetirementRefused, accept, auto_accept
 from libs.research.slot_displacement import (
     BLOCKED,
     RECLAIMABLE,
@@ -146,6 +146,10 @@ def main() -> int:
     ap.add_argument("--accept", action="append", default=[], metavar="CLOCK",
                     help="record a ledgered retirement for this clock (repeatable). Requires the "
                          "clock to be RECLAIMABLE in THIS run's proposals")
+    ap.add_argument("--accept-all", action="store_true",
+                    help="retire EVERY reclaimable proposal. Safe unattended: freeing a seat no "
+                         "longer moves any Holm bar (multiplicity is a high-water mark), so there "
+                         "is no direction in which this can flatter a result")
     ap.add_argument("--decided-by", default="principal",
                     help="who is taking the decision -- written into the ledger row")
     args = ap.parse_args()
@@ -183,9 +187,23 @@ def main() -> int:
         print("  no clock is currently reclaimable -- every occupied seat is either accruing or "
               "unassessable, and neither may be taken")
     print(f"-> {_OUT} and {_WEB}")
+    if args.accept_all:
+        rows, refused = auto_accept(rep, decided_by=args.decided_by)
+        print(f"AUTO-RECLAIM: {len(rows)} seat(s) freed, {len(refused)} refused")
+        for r in rows:
+            print(f"  RETIRED  {r['clock']:<34} requeue_as={r['requeue_as']}  "
+                  f"seats {r['seats_before']} -> {r['seats_after']}")
+        for why in refused:
+            print(f"  REFUSED  {why}")
+        if rows:
+            print(f"-> {LEDGER} (TRACKED -- commit it)")
+            print("   NO BAR MOVED. Multiplicity is a high-water mark: a clock that ran and "
+                  "failed consumed a trial, and retiring it does not un-look. What was freed is "
+                  "CAPACITY, which is the only thing a dead clock was ever holding.")
+        return 0
     if rep["proposals"] and not args.accept:
-        print("   To act on one: --accept <clock> [--accept <clock> ...] --decided-by <who>. "
-              "Nothing here retires anything on its own, and nothing ever will.")
+        print("   To act on one: --accept <clock> [--accept <clock> ...] --decided-by <who>, "
+              "or --accept-all to reclaim every free seat at once.")
     if args.accept:
         print("ACCEPTING (explicit, attributed, against THIS sweep):")
         return _accept(list(args.accept), rep, args.decided_by)
