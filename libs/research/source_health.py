@@ -667,9 +667,9 @@ def _probe_ok(row: Mapping[str, Any]) -> tuple[bool, str | None]:
         # with error=None and come out as "probe reported ok=false, no reason given" -- a source
         # that ANSWERED CLEANLY, reading as a broken lane.
         if posture == _POSTURE_WALLED:
-            return False, (f"WALLED -- the source refused or served something unusable, so the "
-                           f"ground is UNKNOWN and this is NOT evidence it is thin; next move is "
-                           f"an OP-052 UA matrix against a real content path"
+            return False, ("WALLED -- the source refused or served something unusable, so the "
+                           "ground is UNKNOWN and this is NOT evidence it is thin; next move is "
+                           "an OP-052 UA matrix against a real content path"
                            + (f" ({reason})" if reason is not None else ""))
         if posture == _POSTURE_EMPTY:
             return False, ("EMPTY -- the source answered cleanly and genuinely had nothing for "

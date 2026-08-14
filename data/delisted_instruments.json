@@ -1,14 +1,14 @@
 {
- "probed": "2026-08-13T03:35:14.989666+00:00",
+ "probed": "2026-08-14T03:36:23.670702+00:00",
  "venues": {
   "binance_futures": {
    "endpoint": "GET fapi.binance.com/fapi/v1/exchangeInfo",
    "states": {
-    "TRADING": 731,
+    "TRADING": 737,
     "SETTLING": 127,
     "PENDING_TRADING": 1
    },
-   "n_live": 732,
+   "n_live": 738,
    "note": "SETTLING/DELIVERING are dated delivery contracts mid-retirement; a perp that was delisted disappears from exchangeInfo entirely, so this does not recover already-dead perps -- binance.vision archives remain the route for those.",
    "partial": true,
    "n_new_this_run": 0,
@@ -31,19 +31,19 @@
   "bybit": {
    "endpoint": "GET api.bybit.com/v5/market/instruments-info?category=linear&status={Trading,Closed}",
    "states": {
-    "Trading": 810,
+    "Trading": 815,
     "Closed": 937
    },
-   "n_live": 810,
-   "n_new_this_run": 1,
+   "n_live": 815,
+   "n_new_this_run": 0,
    "verdict": "AVAILABLE",
    "n_dead": 937
   },
   "coinbase": {
    "endpoint": "GET api.exchange.coinbase.com/products",
    "states": {
-    "online": 517,
-    "delisted": 315
+    "delisted": 315,
+    "online": 517
    },
    "n_live": 517,
    "n_new_this_run": 0,
@@ -53,9 +53,9 @@
   "kraken_futures": {
    "endpoint": "GET futures.kraken.com/derivatives/api/v3/instruments",
    "states": {
-    "tradeable": 298
+    "tradeable": 300
    },
-   "n_live": 298,
+   "n_live": 300,
    "verdict": "ABSENT",
    "n_dead": 0
   },

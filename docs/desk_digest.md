@@ -1,17 +1,17 @@
 # Desk digest (auto-generated daily -- do not hand-edit)
-_updated 2026-08-13T02:20Z · companion to [[institutional_knowledge]]_
+_updated 2026-08-14T02:28Z · companion to [[institutional_knowledge]]_
 
 ## Book
-- Molded net: **$-1973.24** | funding **$113.06** | run-rate APR 0.0% | day 41.88
-- Root cause: **unknown_novel** (pause_and_page) | tracking error $2812.55
+- Molded net: **$-1987.74** | funding **$113.06** | run-rate APR 0.0% | day 42.88
+- Root cause: **unknown_novel** (pause_and_page) | tracking error $2812.25
 
 ## Validation clocks
-- **carry (DEPLOYED)**: 47/90d | bt 4.38 fwd 16.6
-- **perp L/S**: 41/90d | bt 0.58 fwd -3.73
-- **trend**: 41/90d | bt 1.17 fwd 2.91
-- **trend regime-gated**: 36/90d | bt 1.02 fwd 0.0
-- **OI/LS data**: 46/40d
-- **stablecoin data**: 42/40d
+- **carry (DEPLOYED)**: 49/90d | bt 3.42 fwd 16.31
+- **perp L/S**: 42/90d | bt 0.85 fwd -4.26
+- **trend**: 42/90d | bt 1.14 fwd -2.58
+- **trend regime-gated**: 37/90d | bt 1.04 fwd 0.0
+- **OI/LS data**: 47/40d
+- **stablecoin data**: 43/40d
 
 ## Open decisions (ledger)
 - `2026-07-04-levered-lab-3x` -- review 2026-10-02: by day 90: sim vs real comparison decisively answers the leverage question
@@ -199,6 +199,8 @@ _updated 2026-08-13T02:20Z · companion to [[institutional_knowledge]]_
 - `2026-08-09-panel-cost-recorded-100x-low` -- review 2026-09-08: the ORIGINAL entry's metric stands and is half-met: '>=1 QUEUE-or-better finding' PASSED (
 - `2026-08-12-repair-mode-welded-population-fix` -- review 2026-08-26: backlog_age_p50_days and oldest_backlog_age_days FALL over the next 14 days while arrivals
 - `2026-08-12-birth-properties-boundary` -- review 2026-09-11: None of artifact-ungoverned / orphan-scripts / decision-ledger-undated / mine-conversion-u
+- `2026-08-13-denylist-merge-union-restore` -- review 2026-08-20: No open is ever placed in a symbol carrying an all-time <=-20bps/n>=5 verdict, and web/tra
+- `2026-08-13-moat-tape-decontamination-and-repair-window` -- review 2026-09-12: tape_days stays equal to the real span (30.69 today) and rises only with real fills; _reco
 
 ## Executive KPI snapshot
 - CRO: {"hypotheses_tested_lifetime": 20, "validated_survivors": 1, "survivor_note": "cash-carry (fwd 8/90); trend candidate gauntlet-passed (fwd 1/90); all else graveyarded", "survival_r
