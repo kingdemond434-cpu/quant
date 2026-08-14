@@ -122,5 +122,27 @@ except Exception:
     print("  shared tree  detector unreadable -- concurrency UNKNOWN, not fine")
 PYEOF
 fi
+# III.16 -- UNWIRED OR IDLE IS A DEFECT, surfaced at session start so every Claude session sees
+# the number before it decides what to build. A capability written, tested and correct but CALLED
+# BY NOTHING is invisible to ruff, mypy, the suite and any module count; the only question that
+# separates it from a working one is WHAT RAN IT, and it is never asked by accident. Read from the
+# artifact rather than recomputed here: a number typed into a hook is correct the day it is typed.
+if [ -f data/unwired_capability.json ]; then
+    "$PY" - <<'PYEOF' 2>/dev/null || true
+import json
+try:
+    d = json.load(open("data/unwired_capability.json"))
+    n, t = int(d.get("n_suspects", 0)), int(d.get("n_tested_but_unwired", 0))
+    if n:
+        print(f"  unwired      {n} public capability(ies) called by NOTHING; {t} of them TESTED "
+              f"but wired to nothing (III.16)")
+        print( "               `python scripts/check_unwired_capability.py` -- built is not a "
+               "status; name the caller")
+except Exception:
+    print("  unwired      report unreadable -- III.16 compliance UNKNOWN, not clean")
+PYEOF
+else
+    echo "  unwired      data/unwired_capability.json ABSENT -- the III.16 hunter has not run here"
+fi
 echo "  READ FIRST: CLAUDE.md, then docs/GAP_REGISTER.md row 91 (the ranked top item)."
 echo "=========================================================================="
