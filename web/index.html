@@ -208,7 +208,17 @@ const pct=(v,d=2)=>v===null||v===undefined?"—":(v>=0?'+':'')+Number(v).toFixed
 const kk=(l,v,cls="",sub="")=>`<div class="kk"><div class="l">${l}</div><div class="v mono ${cls}">${v}</div>${sub?`<div class="s">${sub}</div>`:""}</div>`;
 const signed=v=>v>=0?'pos':'red';
 const moneyK=(l,v,sub="")=>kk(l,(v>=0?'+':'')+money(v),signed(v),sub);
-async function j(u){return await (await fetch(u,{cache:"no-store"})).json();}
+// CACHE-BUST AT THE URL, NOT ONLY AT THE HEADER (2026-08-14). Every fetch here already passed
+// {cache:"no-store"} and the server already sends `Cache-Control: no-store, max-age=0`, and the
+// page STILL served stale JSON through a browser hard reset. Both of those control caches this
+// page can address: the browser's. Neither reaches an intermediary -- a CDN or reverse proxy in
+// front of the origin sees a byte-identical URL and answers from its own stored copy, and a
+// hard reload cannot invalidate a cache it is not talking to. A unique query string makes every
+// load a DIFFERENT resource at every layer, which is the only cache-defeat that does not depend
+// on somebody else's configuration being right.
+  const _bust = u => u + (u.includes("?") ? "&" : "?") + "_=" + Date.now();
+  const jget = async u => (await fetch(_bust(u), {cache:"no-store"})).json();
+async function j(u){return await jget(u);}
 function curve(eq,key="v"){
   if(!eq||eq.length<2) return "<div class='note'>equity history builds as the executor trades</div>";
   const W=1080,H=190,P=24,vs=eq.map(p=>p[key]),mn=Math.min(...vs),mx=Math.max(...vs);

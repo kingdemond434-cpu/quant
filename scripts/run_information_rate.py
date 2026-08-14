@@ -51,17 +51,38 @@ _OUT = Path("data/information_rate.json")
 _WEB = Path("web/information_rate.json")
 _LAKE = Path("data/lake")
 
-#: The universe the desk ALREADY HOLDS BARS FOR. This is what makes the cross-section lever an
-#: available change rather than a data project, so it is counted from the lake rather than
-#: asserted. Absent lake -> 1, which offers the lever to nobody: the conservative direction.
-def _universe_size() -> tuple[int, str]:
+def _universe_size(timeframe: str = "D1") -> tuple[int, str]:
+    """How many symbols the desk ALREADY HOLDS BARS FOR at this timeframe.
+
+    This is what separates the cross-section lever from a data project, so it is COUNTED, never
+    asserted -- and counted at the right depth, which the first version of this function got
+    wrong. The lake is `data/lake/<layer>/<asset_class>/<symbol>/<timeframe>/`, so listing the
+    top level counts LAYERS: it returned 1 on a box holding 213 symbols and silently withheld the
+    single most valuable accelerant on the desk. A count that is wrong in the direction of
+    "no lever available" is not the safe error here; it is the error that leaves the clocks slow.
+
+    A SYMBOL DIRECTORY IS NOT BARS. Only directories containing an actual parquet at this
+    timeframe are counted -- an empty partition created by `write_bars` on an empty frame is a
+    symbol the desk tried to collect and did not get, and counting it would price the lever
+    against data that is not there.
+    """
+    root = _LAKE / "bronze"
     try:
-        syms = {p.name for p in _LAKE.iterdir() if p.is_dir()}
+        cands = [p for p in root.glob("*/*") if p.is_dir()]
     except OSError:
-        return 1, f"{_LAKE} unreadable -- the cross-section lever is NOT offered, because a lever "\
-                  "whose data nobody can confirm is a data project wearing a config change's face"
+        cands = []
+    if not cands:
+        return 1, (f"{root} unreadable or empty -- the cross-section lever is NOT offered, "
+                   "because a lever whose data nobody can confirm is a data project wearing a "
+                   "config change's face")
+    syms = {p.name for p in cands
+            if (p / timeframe).is_dir() and any((p / timeframe).rglob("*.parquet"))}
     n = len(syms)
-    return max(1, n), f"{n} symbol(s) with bars already in {_LAKE}"
+    if n == 0:
+        return 1, (f"{len(cands)} symbol director(ies) under {root} but NONE holds a {timeframe} "
+                   "parquet -- directories are not bars, and pricing the lever against them "
+                   "would recommend widening onto data the desk does not have")
+    return max(1, n), f"{n} symbol(s) holding {timeframe} bars under {root}"
 
 
 def _state_for(slot: dict[str, Any]) -> tuple[EvidenceState | None, str]:

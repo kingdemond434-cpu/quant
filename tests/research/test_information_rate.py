@@ -129,3 +129,63 @@ def test_THE_ROW_IS_JSON_SHAPED() -> None:
     import json
     assert json.loads(json.dumps(row))["clock"] == "c"
     assert row["accelerants"] and "gain" in row["accelerants"][0]
+
+
+# ============================================================ the universe count (VPS regression)
+
+def test_THE_UNIVERSE_IS_COUNTED_AT_THE_SYMBOL_DEPTH(tmp_path, monkeypatch) -> None:
+    """MEASURED ON THE LIVE BOX 2026-08-14: this reported `1 symbol` on a desk holding many,
+    because the lake is `<layer>/<asset_class>/<symbol>/<timeframe>/` and the first version listed
+    the top level -- which counts LAYERS. It silently withheld the largest accelerant the desk has.
+    A count wrong toward "no lever available" is not the safe error; it is the one that leaves
+    every clock slow.
+    """
+    import scripts.run_information_rate as R
+
+    lake = tmp_path / "lake"
+    for sym in ("BTCUSDT", "ETHUSDT", "SOLUSDT"):
+        d = lake / "bronze" / "crypto" / sym / "D1"
+        d.mkdir(parents=True)
+        (d / "part-0.parquet").write_bytes(b"x")
+    monkeypatch.setattr(R, "_LAKE", lake)
+    n, why = R._universe_size()
+    assert n == 3, why
+    assert "3 symbol(s)" in why
+
+
+def test_A_SYMBOL_DIRECTORY_WITHOUT_BARS_IS_NOT_A_SYMBOL(tmp_path, monkeypatch) -> None:
+    """`write_bars` creates the partition even for an empty frame, so a bare directory records a
+    symbol the desk TRIED to collect and did not get. Counting it prices the lever against data
+    that is not there."""
+    import scripts.run_information_rate as R
+
+    lake = tmp_path / "lake"
+    (lake / "bronze" / "crypto" / "BTCUSDT" / "D1").mkdir(parents=True)
+    (lake / "bronze" / "crypto" / "BTCUSDT" / "D1" / "part-0.parquet").write_bytes(b"x")
+    (lake / "bronze" / "crypto" / "GHOSTUSDT" / "D1").mkdir(parents=True)   # no parquet
+    monkeypatch.setattr(R, "_LAKE", lake)
+    n, _ = R._universe_size()
+    assert n == 1
+
+
+def test_AN_ABSENT_LAKE_OFFERS_THE_LEVER_TO_NOBODY(tmp_path, monkeypatch) -> None:
+    import scripts.run_information_rate as R
+
+    monkeypatch.setattr(R, "_LAKE", tmp_path / "nothing-here")
+    n, why = R._universe_size()
+    assert n == 1 and "NOT offered" in why
+
+
+def test_THE_TIMEFRAME_IS_HONOURED(tmp_path, monkeypatch) -> None:
+    """An H8 clock and a D1 clock do not have the same universe available, and reporting D1's
+    breadth for an H8 signal recommends widening onto bars nobody collected at that frequency."""
+    import scripts.run_information_rate as R
+
+    lake = tmp_path / "lake"
+    for sym, tf in (("BTCUSDT", "D1"), ("ETHUSDT", "D1"), ("BTCUSDT", "H8")):
+        d = lake / "bronze" / "crypto" / sym / tf
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "part-0.parquet").write_bytes(b"x")
+    monkeypatch.setattr(R, "_LAKE", lake)
+    assert R._universe_size("D1")[0] == 2
+    assert R._universe_size("H8")[0] == 1
