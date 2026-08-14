@@ -97,3 +97,67 @@ def test_REFUSALS_ARE_REPORTED_WITH_THEIR_ARITHMETIC() -> None:
 def test_AN_EMPTY_BATCH_IS_A_REAL_ANSWER() -> None:
     rep = review([], local_m=12)
     assert rep["n_offered"] == 0 and rep["n_admitted"] == 0
+
+
+# ======================================================= three factories, one denominator
+
+def test_A_MULTI_DONOR_BATCH_PRICES_EVERY_DONORS_SEARCH() -> None:
+    """THE CORRECTION A THIRD FACTORY FORCES. `admit()` alone charges one donation its own
+    donor's search, which is right when a donation arrives by itself. It is NOT right when three
+    factories each send their best on the same day: the desk is then looking at three maxima and
+    admitting whichever clears -- a selection across donors that no donor can see and none priced.
+
+    Charging each row only its own donor understates m by the other two searches entirely, and
+    understating m LOOSENS the bar."""
+    rows = [
+        _row(name="a", source="opencode", trials_screened=40, t_stat=4.0),
+        _row(name="b", source="deepseek", trials_screened=60, t_stat=4.0),
+        _row(name="c", source="claude-local", trials_screened=100, t_stat=4.0),
+    ]
+    rep = review(rows, local_m=12)
+    assert rep["donor_trials_total"] == 200
+    assert rep["batch_union_m"] == 212
+    assert sorted(rep["donors"]) == ["claude-local", "deepseek", "opencode"]
+    bars = {a["bar"] for a in rep["admitted"]} | {r["bar"] for r in rep["refused"]}
+    assert len(bars) == 1, "every row faces the SAME denominator: local + all donors"
+
+
+def test_MORE_FACTORIES_MEANS_A_HIGHER_BAR_NOT_A_LOWER_ONE() -> None:
+    """The cost is real and is meant to be. A desk running three factories looked in three times
+    as many places, so it must clear a higher bar. That is the price of the throughput, not a
+    defect in it -- and it is the property that stops adding donors being a free win."""
+    one = review([_row(name="a", trials_screened=40, t_stat=3.6)], local_m=12)
+    three = review([
+        _row(name="a", source="opencode", trials_screened=40, t_stat=3.6),
+        _row(name="b", source="deepseek", trials_screened=40, t_stat=0.1),
+        _row(name="c", source="other", trials_screened=40, t_stat=0.1),
+    ], local_m=12)
+    bar_one = one["admitted"][0]["bar"] if one["n_admitted"] else one["refused"][0]["bar"]
+    bar_three = next(r["bar"] for r in (three["admitted"] + three["refused"])
+                     if r["name"] == "a")
+    assert bar_three > bar_one
+
+
+def test_A_DONOR_CANNOT_DILUTE_ITS_OWN_TRIALS_BY_SENDING_MORE_ROWS() -> None:
+    """Sending ten weak rows alongside one strong one does not lower the strong row's bar -- it
+    raises it, because every row's trials enter the same denominator."""
+    lean = review([_row(name="strong", trials_screened=40, t_stat=4.2)], local_m=12)
+    padded = review([_row(name="strong", trials_screened=40, t_stat=4.2)]
+                    + [_row(name=f"pad{i}", trials_screened=40, t_stat=0.0) for i in range(10)],
+                    local_m=12)
+    b_lean = (lean["admitted"] + lean["refused"])[0]["bar"]
+    b_pad = next(r["bar"] for r in (padded["admitted"] + padded["refused"])
+                 if r["name"] == "strong")
+    assert b_pad > b_lean
+
+
+def test_A_DONOR_IS_FREE_TO_BUILD_ITS_FACTORY_ANY_WAY_IT_LIKES() -> None:
+    """THE ONLY CONTRACT IS THE DECLARED SEARCH. Nothing here inspects a donor's generator, its
+    screens, its language or its data. Two donations with wildly different provenance are judged
+    by the same arithmetic, which is what makes independent factories worth having: shared
+    machinery would make their mistakes correlated, and correlated mistakes are the one thing a
+    second opinion cannot catch."""
+    exotic = {"name": "z", "source": "some-other-agent", "trials_screened": 5, "t_stat": 4.9,
+              "mechanism": "hand-written by a human on a napkin"}
+    v = admit(exotic, local_m=12)
+    assert v.admit, v.why

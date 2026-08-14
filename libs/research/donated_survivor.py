@@ -160,14 +160,44 @@ def review(rows: list[dict[str, Any]], *, local_m: int,
     A batch is judged row by row against the same union bar rather than ranked against each other:
     ranking donated survivors would add a THIRD selection step on top of the donor's and this
     desk's, and nothing downstream would know it happened.
+
+    **WITH MORE THAN ONE DONOR THE UNION SPANS ALL OF THEM, and this is the correction a third
+    factory forces.** `admit()` alone prices one donation against the search that produced it,
+    which is right when a donation arrives by itself. It is NOT right when three factories each
+    send their best on the same day: the desk is then looking at three maxima and admitting
+    whichever clears, which is a selection across donors that neither donor can see and neither
+    priced. Charging each row only its own donor's trials would understate m by the other two
+    searches entirely -- and understating m LOOSENS the bar, the phantom-edge direction, exactly
+    as when the desk counted its own cohort three ways in three files.
+
+    So the batch's denominator is local clocks + EVERY donor's trials in the window, and each row
+    faces it. The cost is real and is meant to be: a desk running three factories must clear a
+    higher bar than a desk running one, because it looked in three times as many places. That is
+    the price of the extra throughput, not a defect in it.
     """
-    verdicts = [admit(r, local_m=local_m, alpha=alpha) for r in rows]
+    donor_trials = 0
+    for r in rows:
+        d, _ = _parse(r)
+        if d is not None:
+            donor_trials += d.trials_screened + (d.donor_cohort_m or 0)
+    batch_m = max(1, int(local_m)) + donor_trials
+    # Each row is priced at the FULL batch denominator by handing `admit` a local_m that already
+    # carries every other donor's search. Its own trials are then added once, by `admit` itself.
+    verdicts = []
+    for r in rows:
+        d, _ = _parse(r)
+        others = batch_m - ((d.trials_screened + (d.donor_cohort_m or 0)) if d else 0)
+        verdicts.append(admit(r, local_m=others, alpha=alpha))
     ok = [v for v in verdicts if v.admit]
+    donors = sorted({str(r.get("source") or "?") for r in rows})
     return {
         "n_offered": len(rows),
         "n_admitted": len(ok),
         "n_refused": len(verdicts) - len(ok),
         "local_m": int(local_m),
+        "donors": donors,
+        "donor_trials_total": donor_trials,
+        "batch_union_m": batch_m,
         "admitted": [{"name": v.name, "bar": v.bar, "union_m": v.union_m, "why": v.why}
                      for v in ok],
         "refused": [{"name": v.name, "bar": v.bar, "union_m": v.union_m, "why": v.why}
