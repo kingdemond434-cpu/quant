@@ -103,7 +103,11 @@ _PATH = rf"(?:{_SEG}/)+{_SEG}(?:{'|'.join(re.escape(e) for e in CODE_EXT)})"
 CITE_RE = re.compile(rf"(?<![\w./-])({_PATH})(?![\w])")
 
 #: ``path.py:256`` / ``path.py:45-52`` -- the doc claims to have read a specific line.
-LINE_RE = re.compile(rf"(?<![\w./-])({_PATH}):(\d+)(?:\s*[-–]\s*\d+)?(?![\w])")
+# THE EN DASH IN THE CHARACTER CLASS IS DELIBERATE, not a typo. Docs on this desk write
+# line ranges both ways, and dropping it would silently stop matching half the citations
+# this regex exists to find -- a lint "fix" that removes a capability and leaves the
+# check looking healthy. Hence the suppression rather than a rewrite.
+LINE_RE = re.compile(rf"(?<![\w./-])({_PATH}):(\d+)(?:\s*[-–]\s*\d+)?(?![\w])")  # noqa: RUF001
 
 #: Present-tense mechanism markers. A parenthetical cadence is the R0468 shape exactly; the verb
 #: forms are how this vault states that something is wired RIGHT NOW.

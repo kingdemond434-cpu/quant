@@ -246,7 +246,7 @@ def locate(sheet: Sheet) -> Layout:
         raise RfbPanelError("no 'Total Geral' header cell -- the grand identity cannot be checked")
     total_col = total[1]
 
-    between = [c for c in range(ordered[-1] + 1, total_col)]
+    between = list(range(ordered[-1] + 1, total_col))
     if len(between) != 1:
         raise RfbPanelError(
             f"expected exactly one domestic-exchange column between the second Subtotal "
