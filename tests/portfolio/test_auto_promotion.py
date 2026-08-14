@@ -140,3 +140,54 @@ class TestReporting:
         assert s["n_promoted"] == 1 and s["n_refused"] == 1
         assert s["refusals"][0]["why"]
         assert "indistinguishable from one that" in s["note"]
+
+
+def _armed_root(tmp_path):
+    import json
+
+    from libs.portfolio.auto_promotion import ARMED_MARKER
+    p = tmp_path / ARMED_MARKER
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps({"armed": True, "armed_at": "2026-08-14"}), "utf-8")
+    return tmp_path
+
+
+_ELIGIBLE = {"name": "carry", "verdict": "ELIGIBLE", "nw_t": 4.0, "holm_bar": 2.6,
+             "forward_days": 40, "need": 30}
+
+
+def test_A_CLIP_BELOW_VENUE_MINIMUM_IS_REFUSED_NOT_ROUNDED_UP(tmp_path) -> None:
+    """FOUND THE MOMENT A REAL SMALL BOOK WAS PROPOSED (2026-08-14, $200 deployable). 2% of $200
+    is $4 and venue minimum notional is ~$5-10 PER LEG, so the earned clip is unplaceable.
+
+    Without this the module returns PROMOTE with a clip the executor cannot place, and the failure
+    surfaces as a rejected order rather than a refused promotion -- a decision that looks taken, is
+    logged as taken, and never happens.
+
+    ROUNDING UP WOULD BE WORSE THAN REFUSING: it breaches the cap silently, in the one direction
+    that puts more money on an unproven edge than the principal authorised."""
+    from libs.portfolio.auto_promotion import decide
+
+    d = decide(_ELIGIBLE, live_count=0, rails_ok=True, root=_armed_root(tmp_path),
+               deployable_usd=200.0, min_notional_usd=10.0)
+    assert d.refused and d.clip_frac == 0.0
+    assert "BELOW the venue minimum" in d.why
+    assert "too small to hold this position" in d.why
+
+
+def test_THE_SAME_CANDIDATE_IS_PROMOTED_ON_A_BOOK_THAT_CAN_HOLD_IT(tmp_path) -> None:
+    """The refusal is about the BOOK, not the edge -- so it must lift when the book grows."""
+    from libs.portfolio.auto_promotion import decide
+
+    d = decide(_ELIGIBLE, live_count=0, rails_ok=True, root=_armed_root(tmp_path),
+               deployable_usd=2000.0, min_notional_usd=10.0)
+    assert d.promote and d.clip_frac > 0
+
+
+def test_OMITTING_THE_NOTIONAL_LEAVES_BEHAVIOUR_UNCHANGED(tmp_path) -> None:
+    """A caller that cannot supply the venue minimum gets the pre-existing behaviour rather than a
+    fabricated one: guessing a minimum here would refuse real promotions on an invented number."""
+    from libs.portfolio.auto_promotion import decide
+
+    d = decide(_ELIGIBLE, live_count=0, rails_ok=True, root=_armed_root(tmp_path))
+    assert d.promote

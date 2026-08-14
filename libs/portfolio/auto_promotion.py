@@ -109,6 +109,8 @@ def decide(
     root: Path | str | None = None,
     max_clip: float = MAX_FIRST_CLIP_FRAC,
     max_live: int = MAX_LIVE_STRATEGIES,
+    deployable_usd: float | None = None,
+    min_notional_usd: float | None = None,
 ) -> PromotionDecision:
     """Should this Stage-B-eligible candidate receive a first live clip, and how large?
 
@@ -171,6 +173,32 @@ def decide(
     margin = float(t) / float(bar) if float(bar) > 0 else 1.0
     clip = min(max_clip, max_clip * min(1.0, (margin - 1.0) / 2.0 + 0.5))
     clip = max(clip, max_clip * 0.25)          # never so small the fills teach nothing
+
+    # A CLIP BELOW VENUE MINIMUM NOTIONAL IS NOT A SMALL POSITION, IT IS AN UNPLACEABLE ONE.
+    # Found the moment a real small book was proposed (2026-08-14, $200 deployable): 2% of $200 is
+    # $4, and Binance minimum notional is roughly $5-10 PER LEG, so a carry needs ~$10-20. Without
+    # this check the module returns PROMOTE with a clip the executor cannot place, and the failure
+    # surfaces as a rejected order rather than as a refused promotion -- a decision that looks
+    # taken, is logged as taken, and never happens.
+    #
+    # THE HONEST RESOLUTION IS TO REFUSE, NOT TO ROUND UP. Rounding the clip up to the venue
+    # minimum would breach the cap this module exists to enforce, and would do it silently, in the
+    # one direction that puts more money on an unproven edge than the principal authorised. What is
+    # too small to place at 2% is too concentrated to place at all.
+    if deployable_usd is not None and min_notional_usd is not None:
+        clip_usd = clip * float(deployable_usd)
+        if clip_usd < float(min_notional_usd):
+            need_frac = float(min_notional_usd) / float(deployable_usd)
+            return PromotionDecision(False, 0.0, (
+                f"the clip this candidate earned is ${clip_usd:,.2f} ({clip:.2%} of "
+                f"${float(deployable_usd):,.2f}), BELOW the venue minimum notional of "
+                f"${float(min_notional_usd):,.2f}. It cannot be placed. Reaching the minimum would "
+                f"require {need_frac:.1%} of deployable equity against a {max_clip:.1%} cap -- so "
+                "this is not a sizing question, it is a statement that the book is too small to "
+                "hold this position at the authorised concentration. Rounding up to the minimum "
+                "would breach the cap silently, in the direction that puts more money on an "
+                "unproven edge than the principal approved. Fund more, or place a first clip BY "
+                "HAND as an explicit execution experiment"), name)
 
     return PromotionDecision(True, round(clip, 6), (
         f"ELIGIBLE with t={float(t):.3f} against a Holm bar of {float(bar):.3f} on {obs} effective "
