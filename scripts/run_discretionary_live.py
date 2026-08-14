@@ -42,6 +42,7 @@ from pathlib import Path
 from typing import Any
 
 from libs.execution.discretionary_sleeve import (
+    Decision,
     RuleSignal,
     SleeveState,
     journal,
@@ -91,6 +92,10 @@ def main() -> int:
     ap.add_argument("--min-notional", type=float, default=None,
                     help="venue minimum notional; omit only if genuinely unknown")
     ap.add_argument("--rule-id", default="H3_ict_sweep_shift")
+    ap.add_argument("--spot-only", action="store_true",
+                    help="SPOT VENUE: refuse every short signal instead of placing it. Required "
+                         "wherever derivatives are unavailable -- EEA retail under MiCA, which "
+                         "includes Ireland")
     args = ap.parse_args()
 
     symbols = [s.strip() for s in args.symbols.split(",") if s.strip()]
@@ -110,6 +115,7 @@ def main() -> int:
                         open_positions=int(args.open_positions))
     rows: list[dict[str, Any]] = []
     absent: list[str] = []
+    skipped_short: list[str] = []
     for sym in symbols:
         df = frames.get(sym)
         if df is None or len(df) == 0:
@@ -122,6 +128,23 @@ def main() -> int:
         # place a year of trades at once, and the older ones are not signals -- they are backtest
         # rows whose outcome is already known.
         sig = _to_signal(found[-1], sym, args.rule_id)
+        # A SHORT SIGNAL ON A SPOT VENUE IS REFUSED, NEVER INVERTED AND NEVER SILENTLY DROPPED.
+        # On spot a SELL closes a position you already hold; it does not open a short. Inverting
+        # the direction would trade the OPPOSITE of the pre-registered hypothesis under its name,
+        # which is worse than not trading it -- the journal would then record H3's hit rate against
+        # trades H3 never called for. Dropping it silently is the other failure: the sleeve would
+        # look like a long-only strategy that fires half as often, and nobody could tell that half
+        # its signals were unplaceable rather than absent.
+        if args.spot_only and sig.side == "SELL":
+            skipped_short.append(sym)
+            rows.append(journal(Decision(
+                False, 0.0, 0.0,
+                f"SHORT REFUSED -- spot-only venue. H3 called a short on {sym} and a spot account "
+                "cannot open one: a SELL here closes inventory rather than opening a position. "
+                "Recorded rather than dropped so the journal shows the rule FIRED and the VENUE "
+                "refused it, which is a different fact from the rule staying silent",
+                dict(vars(sig))), _JOURNAL))
+            continue
         decision = size_and_check(sig, state, min_notional_usd=args.min_notional)
         rows.append(journal(decision, _JOURNAL))
         if decision.take:
@@ -134,6 +157,8 @@ def main() -> int:
         "n_intents": len(rows),
         "n_taken": sum(1 for r in rows if r.get("taken")),
         "absent_symbols": absent,
+        "spot_only": bool(args.spot_only),
+        "shorts_refused": skipped_short,
         "intents": rows,
         "note": ("Intents only -- nothing is placed here. Routing goes through the executor and "
                  "risk kernel the carry path already uses; a second, thinner order path beside it "
@@ -152,6 +177,9 @@ def main() -> int:
         print(f"  {mark} {r.get('symbol','?'):<10} {r.get('side','?'):<4} "
               f"qty={r.get('qty')} risk=${r.get('risk_usd')}")
         print(f"         {r.get('why','')[:160]}")
+    if skipped_short:
+        print(f"  SHORTS REFUSED (spot-only): {', '.join(skipped_short)} -- the rule fired and the "
+              "venue cannot place it, which is not the same as the rule staying silent")
     if absent:
         print(f"  no bars for: {', '.join(absent)} -- UNMEASURED, not 'no setup'")
     print(f"-> {_JOURNAL} and {_OUT}")

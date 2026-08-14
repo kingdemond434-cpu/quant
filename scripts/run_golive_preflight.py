@@ -73,8 +73,23 @@ def _keys() -> Check:
                      f"credential modules unreadable ({type(exc).__name__}) -- cannot tell whether "
                      "keys are installed, which is not the same as knowing they are not",
                      "investigate before trusting any other line of this report")
+    fut_ok, spot_ok = has
     if all(has):
         return Check("venue credentials", GO, "futures and spot legs both hold keys")
+    # SPOT-ONLY IS A LEGITIMATE VENUE STATE, NOT A HALF-INSTALLED CARRY (2026-08-14). EEA retail
+    # cannot access crypto derivatives under MiCA -- Ireland included -- so a desk there will
+    # PERMANENTLY have one leg and no way to get the other. Reporting that as a blocked carry sends
+    # the principal hunting for a key that regulation forbids them to hold, which is worse than
+    # useless: it hides the real finding, which is that the carry book is untradeable in this
+    # jurisdiction and the spot-only sleeves are what can run.
+    if spot_ok and not fut_ok:
+        return Check("venue credentials", GO,
+                     "SPOT ONLY -- spot holds keys, futures does not. Cash-and-carry is "
+                     "IMPOSSIBLE here, not merely unfunded: it is two legs by definition and the "
+                     "short leg cannot be opened. Long-only sleeves can run; every short signal "
+                     "must be REFUSED rather than inverted",
+                     "run the discretionary sleeve with --spot-only, and treat any carry figure "
+                     "on the dashboard as inapplicable rather than pending")
     missing = [n for n, ok in zip(("futures", "spot"), has, strict=True) if not ok]
     return Check("venue credentials", BLOCKED,
                  f"{', '.join(missing)} leg has no key. A carry needs BOTH legs: one leg alone is "
