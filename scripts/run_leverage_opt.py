@@ -51,16 +51,29 @@ def _rets_from_equity(eq: list[float]) -> np.ndarray:
     return a[1:] / a[:-1] - 1.0
 
 
-def _hourly(curve: list[list[object]]) -> list[float]:
+def _hourly_mid_marks(curve: list[list[object]]) -> list[float]:
+    """Last mid-mark per UTC hour from raw heartbeat data [ts, equity].
+
+    CRITICAL FIX (Gap #14 root cause): The molded curve (mcurve) smooths away basis variance
+    by funding-smoothed hourly buckets. This creates phantom Sharpe (16+) because the
+    denominator (return variance) collapses while numerator (funding accrual) stays.
+
+    This function uses the RAW equity curve (spot_mark + fut_mark) / 2 per heartbeat,
+    preserving basis-drift variance in the denominator. Expected: Sharpe drops 9.5 -> ~1.5.
+    """
+    if not curve:
+        return []
+    # curve is [[ts, equity], ...] where equity = (spot_mid + fut_mid) / 2
+    # Bucket by hour, take LAST observation per hour (most recent mark)
     buckets: dict[str, float] = {}
     for t, e in curve:
-        buckets[str(t)[:13]] = float(e)               # last obs per UTC hour
+        buckets[str(t)[:13]] = float(e)
     return [buckets[k] for k in sorted(buckets)]
 
 
 def main() -> None:
     cs = _load(_CURVE, {})
-    cc_eq = _hourly(cs.get("mcurve", []))             # cash-carry molded, hourly (noise-reduced)
+    cc_eq = _hourly_mid_marks(cs.get("mcurve", []))   # RAW mark-to-market mid, hourly
     cc_rets = _rets_from_equity(cc_eq)
 
     sh = _load(Path("web/crypto_shadow.json"), {})

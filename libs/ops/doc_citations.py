@@ -103,7 +103,7 @@ _PATH = rf"(?:{_SEG}/)+{_SEG}(?:{'|'.join(re.escape(e) for e in CODE_EXT)})"
 CITE_RE = re.compile(rf"(?<![\w./-])({_PATH})(?![\w])")
 
 #: ``path.py:256`` / ``path.py:45-52`` -- the doc claims to have read a specific line.
-LINE_RE = re.compile(rf"(?<![\w./-])({_PATH}):(\d+)(?:\s*[-–]\s*\d+)?(?![\w])")
+LINE_RE = re.compile(rf"(?<![\w./-])({_PATH}):(\d+)(?:\s*[-–]\s*\d+)?(?![\w])")  # noqa: RUF001 -- the en dash is DELIBERATE
 
 #: Present-tense mechanism markers. A parenthetical cadence is the R0468 shape exactly; the verb
 #: forms are how this vault states that something is wired RIGHT NOW.

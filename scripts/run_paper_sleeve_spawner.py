@@ -428,17 +428,21 @@ def main() -> int:
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
     out, rc = run(_ROOT)
-    if args.json:
-        print(json.dumps(out, indent=1, default=str))
-    else:
-        print(f"paper-sleeve spawner (R0102): {out['status']} -- "
-              f"cohort {out['cohort'].get('m_concurrent')}/{out['cohort'].get('cap')}, "
-              f"{len(out.get('queued', []))} queued, "
-              f"{len(out.get('spawned', []))} spawned all-time")
-        if out.get("why"):
-            print(f"  {out['why']}")
-        for q in out.get("queued", [])[:6]:
-            print(f"  QUEUED {q['name']} (since {str(q['ts'])[:10]}) -- {q['reason'][:90]}")
+    try:
+        if args.json:
+            print(json.dumps(out, indent=1, default=str))
+        else:
+            print(f"paper-sleeve spawner (R0102): {out['status']} -- "
+                  f"cohort {out['cohort'].get('m_concurrent')}/{out['cohort'].get('cap')}, "
+                  f"{len(out.get('queued', []))} queued, "
+                  f"{len(out.get('spawned', []))} spawned all-time")
+            if out.get("why"):
+                print(f"  {out['why']}")
+            for q in out.get("queued", [])[:6]:
+                print(f"  QUEUED {q['name']} (since {str(q['ts'])[:10]}) -- {q['reason'][:90]}")
+    except BrokenPipeError:
+        # Pipe closed (e.g., `head`, `less`) - exit cleanly
+        sys.exit(0)
     return rc
 
 
