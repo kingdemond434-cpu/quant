@@ -82,7 +82,18 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # count that is currently the desk's largest unmeasured risk. `|| true` because a BLOCKED verdict
   # is information, not a cycle failure.
   nice -n 15 "$PY" scripts/run_golive_preflight.py --capital "${GOLIVE_CAPITAL:-200}" || true
+  # THE VERB ON THE PROMOTION PATH. Measured 2026-08-14: auto_promotion.decide() had ZERO callers
+  # -- `is_armed` and the clip cap were imported by one report and the DECISION function was
+  # invoked by nothing, in no cycle, ever. Arming automated promotion would therefore have changed
+  # nothing: the marker flips, every gate inside decide() stays unevaluated, and the desk believes
+  # its research-to-capital path is automated while the last link does not exist.
+  # It publishes verdicts and places nothing; the executor places, the kernel bounds, the deadman
+  # stops. Runs AFTER the ladder -- it must see the SAME Stage-B rows the ladder just
+  # published, and a promotion decided from a pre-ladder read would cite figures the
+  # dashboard never showed, which is how a promotion becomes unauditable after the fact.
   nice -n 15 "$PY" scripts/run_live_ladder.py
+  nice -n 15 "$PY" scripts/run_auto_promotion.py --capital "${GOLIVE_CAPITAL:-200}" \
+      --min-notional "${VENUE_MIN_NOTIONAL:-10}" || true
   # EXECUTION HEALTH runs every cycle, including days the research half found nothing. The money
   # path is where the desk is currently LOSING (27 closes, all three hold buckets negative net of
   # fees), so a cycle that reported only research would go quiet on the one number costing money.
