@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-14T10:05:56.579574+00:00",
+ "updated": "2026-08-14T10:44:26.033550+00:00",
  "retirements": [
   {
    "clock": "walcl_reserve_impulse",
@@ -29,7 +29,12 @@
    "seats_before": 15,
    "seats_after": 14,
    "multiplicity_floor": 15,
-   "loosens_bars": false
+   "loosens_bars": false,
+   "reversed": {
+    "at": "2026-08-14T10:44:26.033550+00:00",
+    "by": "principal",
+    "why": "false NO-EVIDENCE: 7 rows exist in data/perpdex_funding_clock.jsonl; run_paper_sleeve_forward reads a different artifact"
+   }
   },
   {
    "clock": "cat|ratio|1h|all|funding|oi",
