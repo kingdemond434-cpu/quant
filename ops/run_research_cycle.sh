@@ -72,6 +72,16 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # more effective observations per day, and nothing was computing that rate -- two functions in
   # evidence_clock existed for it with zero callers outside their own module.
   nice -n 15 "$PY" scripts/run_information_rate.py || true
+  # THE UNWIRED HUNTER (III.16), daily, so nobody has to remember. A public function that is
+  # written, tested, correct and CALLED BY NOTHING is invisible to every other instrument here:
+  # ruff sees valid code, mypy valid types, the suite green tests, a module count a module. The
+  # only question separating an unwired capability from a working one is WHAT RAN IT, and it is
+  # never asked by accident. Four instances were found by hand in one day -- including
+  # auto_promotion.decide(), which ruled on live capital and had zero callers on the day capital
+  # was deposited. First run: 227 suspects, 203 of them TESTED but wired to nothing.
+  # Reports, never blocks: a hunter that failed a push on a false positive would be switched off,
+  # and the real instances would return with the alarm already disabled.
+  nice -n 15 "$PY" scripts/check_unwired_capability.py || true
   # THE GO-LIVE STATE, PUBLISHED DAILY RATHER THAN REMEMBERED. Advisory by design: every
   # precondition it reports is already ENFORCED independently on the money path (no keys means no
   # authentication, CASHCARRY_KILL forces flatten-only in the executor's own order loop, the ruin

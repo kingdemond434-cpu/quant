@@ -894,3 +894,54 @@ conversion to validated survivors. If retail-trader forensics produces no valida
 a measured window, its budget falls like any other unproductive source -- and that outcome is
 recorded rather than quietly abandoned, because "we mined the leaderboards and got nothing" is a
 finding the desk must be able to cite.
+
+## III.16 UNWIRED OR IDLE IS A DEFECT — STANDING, ALL SEATS, ALL BRAINS, ALL MINERS
+
+Added 2026-08-14 at the principal's instruction, after the same failure was found four times in
+one day. It binds every seat and every organ, and it outranks "is it correct?" — because a correct
+thing nobody calls produces exactly as much as a broken thing nobody calls.
+
+**THE CLASS.** Code that exists, tests green, reads well, and is EXECUTED BY NOTHING. It is not a
+style problem. Measured instances from a single day:
+
+  * `auto_promotion.decide()` -- the function ruling on whether a candidate receives live capital
+    -- had ZERO CALLERS on the day capital was being deposited. Arming it would have flipped a
+    marker, left every gate unevaluated, and left the desk believing its research-to-capital path
+    was automated while the last link did not exist.
+  * `check_calendar_gates.py` [L1.48, L1.57, L1.60] had no cron line; its only appearance in the
+    schedule manifest was inside a COMMENT. Three laws read as enforced and were not.
+  * `capital_basis.declare()` [L1.58-r0287] had no caller; the fence named the helper in its own
+    error message and no producer imported it, so every governed artifact published undeclared
+    denominators.
+  * `evidence_clock.annualised_information_rate` and `regime_penalty` had no callers outside their
+    own module, so the desk could say how much evidence a clock HELD and never how fast it ARRIVED
+    -- while every clock sat at half rate for a fact nobody had measured.
+  * `run_golive_preflight` -- built, then wired to nothing, in the same session that criticised
+    exactly this pattern in someone else's assessment.
+
+**THE RULE.** A capability is not DONE when it is written, tested and correct. It is done when
+something RUNS it on a schedule or on a live path, and the run is visible in an artifact. Until
+then it is INVENTORY, and inventory is reported as an open defect rather than as a delivery.
+
+**IDLENESS IS THE SAME DEFECT IN THE OTHER DIRECTION.** A forward clock accruing nothing, a seat
+held by a dead hypothesis, a collector whose rows join to no consumer, a queue with capacity and
+no candidate, a sleeve with no rule, a lever nobody pulls -- each is a resource the desk is paying
+for and receiving nothing from. FORWARD TIME IS THE ONE INPUT THAT CANNOT BE BOUGHT LATER, so an
+idle clock is not a neutral state; it is an irrecoverable loss accruing quietly.
+
+**HOW IT IS FOUND, NOT REMEMBERED.** `scripts/check_enforcement_execution.py` grades every law
+fence EXECUTED / MANUAL / MENTIONED and exits non-zero on MENTIONED. `max_audit.check_orphan_code`
+walks the import graph from `scripts/` and reports near-fully-orphaned packages. Every new organ
+joins one of those the day it is written. A capability whose wiring is checked by a human reading
+a diff is a capability that will be unwired again within a month.
+
+**THE ASYMMETRY THAT MAKES THIS URGENT RATHER THAN TIDY.** An unwired capability and a working one
+are byte-identical in every report that counts modules, passes tests or lists features. Nothing
+distinguishes them except asking WHAT RAN IT, and that question is never asked by accident. So the
+desk's completion counts are systematically overstated by exactly the amount of inventory it holds
+-- and the overstatement is invisible from the inside, which is what makes it a defect class rather
+than a backlog.
+
+**BINDING ON EVERY FUTURE DELIVERY.** No organ, seat, brain or miner may report a capability as
+complete without naming the caller, the schedule entry, or the live path that executes it. "Built"
+is not a status. "Running, and here is the artifact it wrote" is.
