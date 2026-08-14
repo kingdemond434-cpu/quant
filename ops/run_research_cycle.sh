@@ -66,6 +66,12 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # Holm bar, because `m` is now a HIGH-WATER MARK -- a clock that ran and failed consumed a
   # trial, and retiring it does not un-look. BLOCKED clocks are still never touched.
   nice -n 15 "$PY" scripts/run_clock_retirement_sweep.py --accept-all --decided-by cycle || true
+  # WHY THE CLOCKS ARE SLOW, ranked, next to the sweep that says which ones are dead. Shortening
+  # the clock is forbidden (L1.6) and a cleverer test was built and MEASURED slower (anytime_valid
+  # graduated a Sharpe-2 edge at a median 132 days against a fixed 90). The only accelerant left is
+  # more effective observations per day, and nothing was computing that rate -- two functions in
+  # evidence_clock existed for it with zero callers outside their own module.
+  nice -n 15 "$PY" scripts/run_information_rate.py || true
   nice -n 15 "$PY" scripts/run_live_ladder.py
   # EXECUTION HEALTH runs every cycle, including days the research half found nothing. The money
   # path is where the desk is currently LOSING (27 closes, all three hold buckets negative net of
