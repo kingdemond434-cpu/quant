@@ -72,6 +72,16 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # more effective observations per day, and nothing was computing that rate -- two functions in
   # evidence_clock existed for it with zero callers outside their own module.
   nice -n 15 "$PY" scripts/run_information_rate.py || true
+  # THE GO-LIVE STATE, PUBLISHED DAILY RATHER THAN REMEMBERED. Advisory by design: every
+  # precondition it reports is already ENFORCED independently on the money path (no keys means no
+  # authentication, CASHCARRY_KILL forces flatten-only in the executor's own order loop, the ruin
+  # rail evaluates every tick, the deadman is independent Tier-3), so this blocks nothing and must
+  # not -- a reporting script that can halt the book is a new failure mode bought for a check the
+  # book already performs. What it adds is ONE read of all of them together, plus the two figures
+  # nothing else reports: whether lcurve has started capturing basis variance, and the closed-trade
+  # count that is currently the desk's largest unmeasured risk. `|| true` because a BLOCKED verdict
+  # is information, not a cycle failure.
+  nice -n 15 "$PY" scripts/run_golive_preflight.py --capital "${GOLIVE_CAPITAL:-200}" || true
   nice -n 15 "$PY" scripts/run_live_ladder.py
   # EXECUTION HEALTH runs every cycle, including days the research half found nothing. The money
   # path is where the desk is currently LOSING (27 closes, all three hold buckets negative net of
