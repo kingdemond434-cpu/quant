@@ -71,6 +71,16 @@ svg text{fill:var(--dim);font-size:9px}
       <div id="pqnote" style="opacity:.65;margin-top:8px;font-size:12px"></div></div>
   </div>
 
+  <div class="card"><div class="ph">Seat reclamation · clocks that can no longer earn their seat</div>
+    <div class="k" id="crk"></div>
+    <div style="padding:10px 14px">
+      <table id="crtab" style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="text-align:left;opacity:.7"><th>clock</th><th>re-file as</th>
+          <th>why</th></tr></thead><tbody></tbody></table>
+      <div id="crblocked" style="margin-top:10px;font-size:13px"></div>
+      <div id="crnote" style="opacity:.65;margin-top:8px;font-size:12px"></div></div>
+  </div>
+
   <div class="card"><div class="ph">Loss forensics · WHERE the money went and WHY (daily)</div>
     <div class="k" id="fxk"></div>
     <div style="padding:10px 14px">
@@ -162,7 +172,34 @@ async function load(){
     }).join("");
     document.getElementById("levnote").textContent=L.note||"";
   }catch(e){document.getElementById("levnote").textContent="leverage.json not found — run run_mt5_portfolio.py";}
-  try{
+  
+// SEAT RECLAMATION. Two of these were found on the first live run holding seats at Sharpe -5.16
+// and -3.93 -- clocks that reached their OWN pre-registered kill and that nothing could act on,
+// because reclamation only ran when a challenger arrived. PROPOSALS, never actions: retiring a
+// row shrinks the Holm cohort and loosens every remaining bar, so the decision stays ledgered.
+try{
+  const C=await (await fetch("clock_retirement.json",{cache:"no-store"})).json();
+  document.getElementById("crk").innerHTML=
+    `<div><b>${C.m_now}</b><span>m now (cap ${C.cap})</span></div>`+
+    `<div><b>${C.seats_free_now}</b><span>free now</span></div>`+
+    `<div><b>${C.seats_freeable}</b><span>freeable</span></div>`+
+    `<div><b>${C.seats_free_if_all_retired}</b><span>free if accepted</span></div>`;
+  const cb=document.querySelector("#crtab tbody"); cb.innerHTML="";
+  (C.proposals||[]).forEach(p=>{
+    const tr=document.createElement("tr");
+    const col=p.requeue_as==="REFUTED"?"#ff9b9b":"#ffd28a";
+    tr.innerHTML=`<td style="padding:4px 0">${p.clock}</td>`+
+      `<td style="color:${col}">${p.requeue_as}</td>`+
+      `<td style="opacity:.75">${(p.why||"").slice(0,150)}</td>`;
+    cb.appendChild(tr);
+  });
+  if(!(C.proposals||[]).length) cb.innerHTML='<tr><td colspan="3" style="opacity:.6">no clock is currently reclaimable — every occupied seat is accruing or unassessable</td></tr>';
+  document.getElementById("crblocked").innerHTML=(C.blocked||[]).length
+    ? `<span style="opacity:.7">BLOCKED (never proposed — fix the measurement upstream): </span>${(C.blocked||[]).map(b=>b.clock).join(", ")}`
+    : "";
+  document.getElementById("crnote").textContent=`updated ${(C.updated||"").slice(0,16)} · proposals only; retirement is a ledgered decision`;
+}catch(e){document.getElementById("crnote").textContent="clock_retirement.json not found — run scripts/run_clock_retirement_sweep.py";}
+try{
     const Q=await (await fetch("promotion_queue.json",{cache:"no-store"})).json();
     const sl=Q.slots||{};
     document.getElementById("pqk").innerHTML=

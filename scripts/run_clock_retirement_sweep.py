@@ -58,6 +58,10 @@ from libs.research.slot_displacement import (
 from libs.research.slot_registry import MAX_FORWARD_SLOTS, derive_slots
 
 _OUT = Path("data/clock_retirement_proposals.json")
+#: THE DASHBOARD READS web/, NOT data/. Writing only the state file would repeat the defect this
+#: whole area keeps producing: a correct artifact nobody can see. run_axis_shadows already sets
+#: the pattern -- state under data/, the same payload under web/ for the page.
+_WEB = Path("web/clock_retirement.json")
 
 
 def sweep(slots: list[dict[str, Any]]) -> dict[str, Any]:
@@ -128,6 +132,8 @@ def main() -> int:
     rep = sweep(slots)
     _OUT.parent.mkdir(parents=True, exist_ok=True)
     _OUT.write_text(json.dumps(rep, indent=1), "utf-8")
+    _WEB.parent.mkdir(parents=True, exist_ok=True)
+    _WEB.write_text(json.dumps(rep, indent=1), "utf-8")
 
     head = "OVER CAP" if rep["over_cap"] else "within cap"
     print(f"clock-retirement: m={rep['m_now']} cap={rep['cap']} ({head}), "
@@ -141,7 +147,7 @@ def main() -> int:
     if not rep["proposals"]:
         print("  no clock is currently reclaimable -- every occupied seat is either accruing or "
               "unassessable, and neither may be taken")
-    print(f"-> {_OUT}")
+    print(f"-> {_OUT} and {_WEB}")
     return 0
 
 
