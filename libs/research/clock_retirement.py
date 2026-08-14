@@ -43,6 +43,7 @@ from pathlib import Path
 from typing import Any
 
 __all__ = [
+    "AUTO_EXCLUDED",
     "LEDGER",
     "RetirementRefused",
     "accept",
@@ -50,6 +51,7 @@ __all__ = [
     "load",
     "multiplicity_high_water",
     "retired_names",
+    "reverse",
 ]
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -58,6 +60,15 @@ _ROOT = Path(__file__).resolve().parents[2]
 #: no clone can see and no audit can cite, which is indistinguishable from a clock that quietly
 #: vanished.
 LEDGER = "docs/research/CLOCK_RETIREMENTS.json"
+
+#: Verdict phrases that may NEVER be retired unattended. A clock that accrued NOTHING is the one
+#: case where a dead clock and a BROKEN JOIN are byte-identical downstream -- both are the absence
+#: of rows, in the same field, on the same artifact. Every other reclaimable verdict is computed
+#: FROM observations and so cannot be manufactured by a runner that found none.
+AUTO_EXCLUDED: frozenset[str] = frozenset({
+    "NO-EVIDENCE",
+    "ZERO OBSERVATIONS",
+})
 
 
 class RetirementRefused(RuntimeError):
@@ -90,7 +101,11 @@ def retired_names(root: Path | str | None = None) -> set[str]:
     """
     out: set[str] = set()
     for row in load(root).get("retirements", []):
-        if isinstance(row, dict) and isinstance(row.get("clock"), str) and row["clock"]:
+        # A REVERSED ROW IS HISTORY, NOT A RETIREMENT. The row stays in the ledger so the record
+        # of the mistaken belief survives -- deleting it would erase the only evidence that would
+        # let anyone notice the underlying join is still broken.
+        if (isinstance(row, dict) and isinstance(row.get("clock"), str) and row["clock"]
+                and not row.get("reversed")):
             out.add(row["clock"])
     return out
 
@@ -133,6 +148,37 @@ def multiplicity_high_water(root: Path | str | None = None) -> int:
     return best
 
 
+def _auto_eligible(proposal: dict[str, Any]) -> bool:
+    """May this proposal be retired UNATTENDED? Measured 2026-08-14, and it cost a real clock.
+
+    THE INCIDENT. `perpdex_funding::aster_BTCUSDT_level_rate::8h` was proposed as RECLAIMABLE with
+    "NO-EVIDENCE with zero observations accrued -- it has spent its opportunities and converted
+    none of them", and `--accept-all` retired it. It had SEVEN forward observations on disk, in
+    `data/perpdex_funding_clock.jsonl`, written by a collector that is cronned, has run all week,
+    and holds 184,753 rows. `run_paper_sleeve_forward` reads a different artifact, found no row,
+    and published a zero -- which the cohort then read as a MEASUREMENT.
+
+    THE ASYMMETRY THAT MAKES THIS A RULE RATHER THAN A PATCH. The other reclaimable classes cannot
+    fail this way:
+
+      * FAILING FORWARD  the clock reached the decision point IT pre-registered and lost there.
+                         That verdict is computed FROM its observations, so it cannot be produced
+                         by a runner that found none.
+      * DEGENERATE       an instrument fault the evaluator diagnosed while looking at real rows.
+
+    ZERO OBSERVATIONS IS THE ONE VERDICT A BROKEN JOIN AND A DEAD CLOCK PRODUCE IDENTICALLY, and
+    nothing downstream can tell them apart -- both are the absence of rows, in the same field, on
+    the same artifact. So it stays a proposal and a human checks the join. That costs a queue
+    position; the alternative destroys forward evidence that cannot be re-earned at any price, and
+    the desk has now paid that price once.
+    """
+    blob = f"{proposal.get('verdict') or ''} {proposal.get('why') or ''}".upper()
+    if any(m in blob for m in AUTO_EXCLUDED):
+        return False
+    obs = proposal.get("observations")
+    return not (isinstance(obs, (int, float)) and obs <= 0)
+
+
 def auto_accept(
     sweep: dict[str, Any],
     *,
@@ -161,6 +207,11 @@ def auto_accept(
         if not isinstance(p, dict):
             continue
         name = str(p.get("clock") or "")
+        if not _auto_eligible(p):
+            refused.append(
+                f"{name}: ZERO-OBSERVATION clocks are not auto-retired -- see AUTO_EXCLUDED. "
+                "It stays proposed; retire it by hand once the join is checked")
+            continue
         try:
             rows.append(accept(name, sweep, decided_by=decided_by, root=root))
         except RetirementRefused as exc:
@@ -213,7 +264,11 @@ def accept(
 
     doc = load(base)
     rows = list(doc.get("retirements", []))
-    if any(isinstance(r, dict) and r.get("clock") == clock for r in rows):
+    # A REVERSED ROW DOES NOT BLOCK A RE-RETIREMENT. Reversal is not immunity: if the join is
+    # checked and the clock really is dead, it retires again, and the ledger then carries both the
+    # mistake and the correction rather than silently replacing one with the other.
+    if any(isinstance(r, dict) and r.get("clock") == clock and not r.get("reversed")
+           for r in rows):
         raise RetirementRefused(f"{clock} is already retired in {LEDGER}")
 
     seats_before = int(sweep.get("m_now") or 0)
@@ -256,3 +311,47 @@ def accept(
     p_out.parent.mkdir(parents=True, exist_ok=True)
     p_out.write_text(json.dumps(payload, indent=1) + "\n", "utf-8")
     return row
+
+
+def reverse(clock: str, *, why: str, decided_by: str,
+            root: Path | str | None = None, now: datetime | None = None) -> dict[str, Any]:
+    """Un-retire a clock and put it back in the cohort. THE PATH THIS LEDGER SHIPPED WITHOUT.
+
+    WHY IT WAS MISSING AND WHY THAT WAS WRONG. The ledger was built on the premise that a
+    retirement is only ever taken against measured evidence, so reversing one would be re-opening
+    a settled question. That premise failed within a day:
+    `perpdex_funding::aster_BTCUSDT_level_rate::8h` was retired for "zero observations
+    accrued" while holding SEVEN forward observations on disk, because the runner that publishes
+    accrual reads a different artifact than the collector writes.
+    A ledger with no reversal made a measurement defect permanent.
+
+    THE REVERSAL IS ITSELF LEDGERED, never a deletion. The retirement row stays exactly where it
+    is and gains a `reversed` block naming who, when and why. Deleting the row would erase the
+    evidence that the desk once believed the clock was dead -- which is the only record that would
+    let anyone notice the join is still broken, and the whole reason the ledger is tracked in git.
+
+    IT DOES NOT LOOSEN ANYTHING. Restoring a clock RAISES the seat count and can only TIGHTEN the
+    cohort; `multiplicity_high_water` is untouched because the high-water mark never falls anyway.
+    So unlike retirement, reversal has no phantom-edge direction and needs no live proposal --
+    which is what makes it safe to reach for the moment a false reading is suspected.
+    """
+    base = Path(root) if root is not None else _ROOT
+    stamp = (now or datetime.now(tz=UTC)).isoformat()
+    if not str(why).strip() or not str(decided_by).strip():
+        raise RetirementRefused(
+            "a reversal needs a stated reason and an attributed decider -- an unexplained "
+            "un-retirement is indistinguishable from the retirement having been an accident")
+
+    doc = load(base)
+    rows = list(doc.get("retirements", []))
+    hit = next((r for r in rows
+                if isinstance(r, dict) and r.get("clock") == clock and not r.get("reversed")), None)
+    if hit is None:
+        raise RetirementRefused(f"{clock} is not currently retired in {LEDGER}")
+    hit["reversed"] = {"at": stamp, "by": str(decided_by).strip(), "why": str(why).strip()}
+
+    p_out = base / LEDGER
+    p_out.parent.mkdir(parents=True, exist_ok=True)
+    p_out.write_text(json.dumps({**doc, "updated": stamp, "retirements": rows}, indent=1) + "\n",
+                     "utf-8")
+    return hit

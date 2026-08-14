@@ -27,6 +27,7 @@ from libs.research.clock_retirement import (
     load,
     multiplicity_high_water,
     retired_names,
+    reverse,
 )
 
 
@@ -173,3 +174,81 @@ def test_THE_MECHANISM_OF_DEATH_IS_COPIED_NOT_INFERRED(tmp_path: Path) -> None:
     row = accept("walcl_reserve_impulse", _sweep(), decided_by="principal", root=tmp_path)
     assert row["requeue_as"] == "UNTESTED"
     assert "instrument failed" in str(row["why"])
+
+
+# ================================================== the 2026-08-14 false retirement, and its cure
+
+def _zero_obs_sweep() -> dict[str, object]:
+    """The exact proposal that cost a real clock: NO-EVIDENCE, zero observations -- published by a
+    runner reading a different artifact than the collector writes."""
+    return {
+        "m_now": 15,
+        "proposals": [{
+            "clock": "perpdex_funding::aster_BTCUSDT_level_rate::8h",
+            "requeue_as": "UNTESTED", "verdict": "NO-EVIDENCE", "observations": 0,
+            "why": "NO-EVIDENCE with zero observations accrued -- it has spent its opportunities "
+                   "and converted none of them, so there is no sample here to protect"}],
+        "blocked": [], "protected": [],
+    }
+
+
+def test_A_ZERO_OBSERVATION_CLOCK_IS_NEVER_AUTO_RETIRED(tmp_path: Path) -> None:
+    """MEASURED: this clock was auto-retired holding SEVEN forward observations on disk. Zero
+    observations is the ONE verdict a broken join and a dead clock produce identically -- both are
+    the absence of rows, in the same field, on the same artifact. Every other reclaimable verdict
+    is computed FROM observations and cannot be manufactured by a runner that found none."""
+    rows, refused = auto_accept(_zero_obs_sweep(), decided_by="cycle", root=tmp_path)
+    assert rows == []
+    assert len(refused) == 1 and "ZERO-OBSERVATION" in refused[0]
+    assert retired_names(tmp_path) == set()
+
+
+def test_A_HUMAN_MAY_STILL_RETIRE_IT_BY_HAND(tmp_path: Path) -> None:
+    """The guard is on the UNATTENDED path only. Once someone has checked the join, the decision
+    is theirs -- refusing it entirely would make a genuinely dead clock unretirable."""
+    row = accept("perpdex_funding::aster_BTCUSDT_level_rate::8h", _zero_obs_sweep(),
+                 decided_by="principal", root=tmp_path)
+    assert row["clock"].startswith("perpdex_funding")
+
+
+def test_A_FALSE_RETIREMENT_CAN_BE_REVERSED(tmp_path: Path) -> None:
+    accept("trend_30d", _sweep(), decided_by="cycle", root=tmp_path)
+    assert retired_names(tmp_path) == {"trend_30d"}
+
+    reverse("trend_30d", why="the accrual runner read the wrong artifact",
+            decided_by="principal", root=tmp_path)
+    assert retired_names(tmp_path) == set(), "a reversed clock is back in the cohort"
+
+
+def test_A_REVERSAL_KEEPS_THE_ROW_AS_HISTORY(tmp_path: Path) -> None:
+    """Deleting the row would erase the evidence that the desk once believed the clock was dead --
+    the only record that would let anyone notice the join is still broken."""
+    accept("trend_30d", _sweep(), decided_by="cycle", root=tmp_path)
+    reverse("trend_30d", why="false NO-EVIDENCE reading", decided_by="principal", root=tmp_path)
+    rows = load(tmp_path)["retirements"]
+    assert len(rows) == 1
+    assert rows[0]["reversed"]["why"] == "false NO-EVIDENCE reading"
+    assert rows[0]["reversed"]["by"] == "principal"
+
+
+def test_A_REVERSAL_NEEDS_A_REASON_AND_A_DECIDER(tmp_path: Path) -> None:
+    accept("trend_30d", _sweep(), decided_by="cycle", root=tmp_path)
+    with pytest.raises(RetirementRefused, match="stated reason"):
+        reverse("trend_30d", why="  ", decided_by="principal", root=tmp_path)
+    with pytest.raises(RetirementRefused, match="stated reason"):
+        reverse("trend_30d", why="ok", decided_by="", root=tmp_path)
+
+
+def test_REVERSING_SOMETHING_NOT_RETIRED_IS_REFUSED(tmp_path: Path) -> None:
+    with pytest.raises(RetirementRefused, match="not currently retired"):
+        reverse("never_retired", why="x", decided_by="principal", root=tmp_path)
+
+
+def test_A_REVERSED_CLOCK_CAN_BE_RETIRED_AGAIN(tmp_path: Path) -> None:
+    """Reversal is not immunity. If the join is checked and the clock really is dead, it retires
+    again -- and the ledger then carries both the mistake and the correction."""
+    accept("trend_30d", _sweep(), decided_by="cycle", root=tmp_path)
+    reverse("trend_30d", why="checking the join", decided_by="principal", root=tmp_path)
+    accept("trend_30d", _sweep(), decided_by="principal", root=tmp_path)
+    assert retired_names(tmp_path) == {"trend_30d"}
+    assert len(load(tmp_path)["retirements"]) == 2
