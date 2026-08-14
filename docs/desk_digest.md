@@ -1,9 +1,9 @@
 # Desk digest (auto-generated daily -- do not hand-edit)
-_updated 2026-08-14T02:28Z · companion to [[institutional_knowledge]]_
+_updated 2026-08-14T08:39Z · companion to [[institutional_knowledge]]_
 
 ## Book
-- Molded net: **$-1987.74** | funding **$113.06** | run-rate APR 0.0% | day 42.88
-- Root cause: **unknown_novel** (pause_and_page) | tracking error $2812.25
+- Molded net: **$-1987.74** | funding **$113.06** | run-rate APR 0.0% | day 43.14
+- Root cause: **unknown_novel** (pause_and_page) | tracking error $2806.16
 
 ## Validation clocks
 - **carry (DEPLOYED)**: 49/90d | bt 3.42 fwd 16.31

@@ -60,6 +60,7 @@ import urllib.request
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
@@ -254,8 +255,8 @@ def contiguity(rows: list[dict[str, Any]], step_ms: int) -> dict[str, Any]:
         return {"n": len(rows), "gaps": [], "contiguous": len(rows) > 0}
     ts = [int(r["t"]) for r in rows]
     gaps = [{"after": datetime.fromtimestamp(a / 1000, UTC).date().isoformat(),
-             "missing_periods": int(round((b - a) / step_ms)) - 1}
-            for a, b in zip(ts, ts[1:], strict=False) if b - a > step_ms]
+             "missing_periods": round((b - a) / step_ms) - 1}
+            for a, b in pairwise(ts) if b - a > step_ms]
     return {"n": len(rows), "first": datetime.fromtimestamp(ts[0] / 1000, UTC).date().isoformat(),
             "last": datetime.fromtimestamp(ts[-1] / 1000, UTC).date().isoformat(),
             "gaps": gaps[:20], "n_gaps": len(gaps),

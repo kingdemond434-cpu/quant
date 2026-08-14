@@ -38,13 +38,13 @@
   "repair_p_fix": {
     "artifact": "data/repair_metrics.json",
     "proving_command": "python scripts/check_repair_capacity.py",
-    "recorded": "2026-08-13T07:07:10Z",
-    "value": 0.5814
+    "recorded": "2026-08-14T07:07:05Z",
+    "value": 0.5895
   },
   "scripts_mypy_clean": {
     "artifact": "data/mypy_ratchet.json",
     "proving_command": "python scripts/check_mypy_ratchet.py",
-    "recorded": "2026-08-14T03:49:42Z",
+    "recorded": "2026-08-14T09:26:19Z",
     "value": 0.406844
   },
   "test_strength::libs/autodiscovery/validation.py": {
