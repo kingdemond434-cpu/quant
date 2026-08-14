@@ -189,3 +189,42 @@ def test_THE_TIMEFRAME_IS_HONOURED(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(R, "_LAKE", lake)
     assert R._universe_size("D1")[0] == 2
     assert R._universe_size("H8")[0] == 1
+
+
+def test_AN_UNMEASURED_CORRELATION_PUBLISHES_A_RANGE_NOT_A_NUMBER() -> None:
+    """THE DEFECT THIS PINS, caught by running the report on the live box 2026-08-14.
+
+    `cross_symbol_rho` defaults to 0.0 when unmeasured, and 0.0 is exactly the value at which this
+    lever looks BEST. The report published "213x available" for a macro timing clock whose true
+    cross-sectional correlation is high enough to make the real figure a small fraction of that: a
+    defaulted zero read as a measurement, in the flattering direction, on the number that decides
+    where the desk spends a month of build time.
+    """
+    unmeasured = EvidenceState(raw_observations=40, distinct_regimes=3, measured=False)
+    a = next(x for x in accelerants(unmeasured, available_symbols=213)
+             if "cross-section" in x.lever)
+    assert a.gain is None and a.measured is False
+    assert a.gain_high is not None and a.gain_high > 200      # rho=0
+    assert a.gain_low is not None and a.gain_low < 25         # rho=0.9
+    assert "UNMEASURED" in a.why
+
+
+def test_AN_UNMEASURED_LEVER_CANNOT_OUTRANK_A_MEASURED_ONE_ON_A_DEFAULT() -> None:
+    """Ranking uses the CONSERVATIVE end, so an unmeasured lever competes on its floor rather than
+    on the optimistic end of a two-order-of-magnitude range."""
+    unmeasured = EvidenceState(raw_observations=40, autocorrelation=0.0, distinct_regimes=3,
+                               measured=False)
+    ranked = accelerants(unmeasured, available_symbols=213, bars_per_day=1,
+                         available_bars_per_day=3)
+    xs = next(a for a in ranked if "cross-section" in a.lever)
+    assert xs.rank_key == xs.gain_low
+
+
+def test_A_MEASURED_CORRELATION_STILL_PUBLISHES_A_NUMBER() -> None:
+    """The range is for absence, not a blanket downgrade. A clock that HAS measured its
+    cross-symbol correlation gets the point estimate it earned."""
+    measured = EvidenceState(raw_observations=40, distinct_regimes=3, cross_symbol_rho=0.7,
+                             measured=True)
+    a = next(x for x in accelerants(measured, available_symbols=213) if "cross-section" in x.lever)
+    assert a.gain is not None and abs(a.gain - cross_section_gain(213, 0.7)) < 1e-9
+    assert a.measured is True

@@ -69,14 +69,36 @@ class Accelerant:
     """
 
     lever: str
-    gain: float
+    #: The multiplier, or None when an input it depends on is UNMEASURED. NEVER a point estimate
+    #: computed from a defaulted zero -- see `gain_low`.
+    gain: float | None
     why: str
     #: What the desk must already possess for this to be available. Named so an accelerant that
     #: needs data nobody has is not confused with one that needs a config change.
     requires: str
+    #: THE RANGE, when the gain cannot be a number. The cross-section lever spans 213x at rho=0
+    #: and 1.0x at rho=1.0 for the same 213 symbols, so an unmeasured rho does not narrow to
+    #: "213x" -- it narrows to nothing, and publishing the optimistic end of a two-order-of-
+    #: magnitude range as if it were measured is exactly the WS-005 substitution this desk keeps
+    #: making. `gain_low` is the conservative end and is what RANKING uses, so an unmeasured lever
+    #: can never outrank a measured one on the strength of a default.
+    gain_low: float | None = None
+    gain_high: float | None = None
+
+    @property
+    def measured(self) -> bool:
+        return self.gain is not None
+
+    @property
+    def rank_key(self) -> float:
+        return self.gain if self.gain is not None else (self.gain_low or 0.0)
 
     @property
     def days_saved_from(self) -> str:
+        if self.gain is None:
+            return (f"UNMEASURED: between {self.gain_low:.1f}x and {self.gain_high:.1f}x"
+                    if self.gain_low is not None and self.gain_high is not None
+                    else "UNMEASURED")
         return f"divides the remaining wait by {self.gain:.1f}x" if self.gain > 1.0 else "no gain"
 
 
@@ -108,8 +130,13 @@ class RateReport:
                                else round(self.days_remaining, 1)),
             "binding_constraint": self.binding,
             "binding_costs_multiplier": round(self.binding_cost, 3),
-            "accelerants": [{"lever": a.lever, "gain": round(a.gain, 2), "why": a.why,
-                             "requires": a.requires} for a in self.accelerants],
+            "accelerants": [{"lever": a.lever,
+                             "gain": (None if a.gain is None else round(a.gain, 2)),
+                             "gain_low": (None if a.gain_low is None else round(a.gain_low, 2)),
+                             "gain_high": (None if a.gain_high is None else round(a.gain_high, 2)),
+                             "measured": a.measured,
+                             "why": a.why, "requires": a.requires}
+                            for a in self.accelerants],
         }
 
 
@@ -175,16 +202,39 @@ def accelerants(
         rho = state.cross_symbol_rho
         now = cross_section_gain(state.distinct_symbols, rho)
         then = cross_section_gain(available_symbols, rho)
-        gain = then / now if now > 0 else 1.0
-        out.append(Accelerant(
-            lever=f"widen the cross-section {state.distinct_symbols} -> {available_symbols}",
-            gain=gain,
-            why=(f"the same signal evaluated on {available_symbols} symbols at measured "
-                 f"rho={rho:.2f} earns {then:.1f} independent observations per bar against "
-                 f"{now:.1f} now. THIS IS USUALLY THE LARGEST AVAILABLE GAIN and it needs no new "
-                 "data -- the bars are already in the lake. It is worth exactly nothing at rho=1, "
-                 "so it is computed from this clock's own correlation rather than assumed"),
-            requires="bars already in the lake for the wider universe"))
+        if state.measured:
+            out.append(Accelerant(
+                lever=f"widen the cross-section {state.distinct_symbols} -> {available_symbols}",
+                gain=(then / now if now > 0 else 1.0),
+                why=(f"the same signal on {available_symbols} symbols at MEASURED rho={rho:.2f} "
+                     f"earns {then:.1f} independent observations per bar against {now:.1f} now. "
+                     "Usually the largest available gain, and it needs no new data -- the bars "
+                     "are already in the lake"),
+                requires="bars already in the lake for the wider universe"))
+        else:
+            # THE DEFECT THIS BRANCH EXISTS FOR, caught by running the report on the live box.
+            # `cross_symbol_rho` defaults to 0.0 when unmeasured, and 0.0 is the value at which
+            # this lever looks BEST: it published "213x available" for a macro timing clock whose
+            # true cross-sectional correlation is high enough to make the real number a fraction
+            # of that. A defaulted zero read as a measurement, in the flattering direction, on the
+            # number that decides where the desk spends a month of build time -- WS-005 exactly.
+            #
+            # The range spans two orders of magnitude for the SAME 213 symbols, so an unmeasured
+            # rho does not narrow to the optimistic end, it narrows to nothing. Both ends are
+            # published and the CONSERVATIVE one carries the ranking.
+            hi = cross_section_gain(available_symbols, 0.0) / (now or 1.0)
+            lo = cross_section_gain(available_symbols, 0.9) / (now or 1.0)
+            out.append(Accelerant(
+                lever=f"widen the cross-section {state.distinct_symbols} -> {available_symbols}",
+                gain=None, gain_low=lo, gain_high=hi,
+                why=(f"UNMEASURED. Across {available_symbols} symbols this is worth {hi:.0f}x at "
+                     f"rho=0 and {lo:.0f}x at rho=0.9, and exactly 1.0x at rho=1.0 -- 213 tickers "
+                     "on one instrument. Crypto daily returns sit near the pessimistic end, and a "
+                     "MARKET-WIDE TIMING signal gains least of all because one macro reading per "
+                     "day is one observation however many symbols it is scored against. Measure "
+                     "the clock's cross-symbol correlation before spending build time on this"),
+                requires="the clock's measured cross-symbol correlation, which no forward "
+                         "artifact currently publishes"))
 
     if available_bars_per_day > bars_per_day > 0:
         ratio = available_bars_per_day / bars_per_day
@@ -213,7 +263,7 @@ def accelerants(
                  "already contained a different regime"),
             requires="a second regime in the observation window, or a historical one to replay"))
 
-    out.sort(key=lambda a: a.gain, reverse=True)
+    out.sort(key=lambda a: a.rank_key, reverse=True)
     return out
 
 
