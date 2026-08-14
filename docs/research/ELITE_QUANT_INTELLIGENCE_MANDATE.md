@@ -831,3 +831,66 @@ PRODUCING ALPHA.** Every miner, community, dataset and research stream must cont
 compute and its attention through MEASURABLE DOWNSTREAM ECONOMIC VALUE.
 
 ONE VALIDATED MECHANISM IS WORTH MORE THAN ONE MILLION COLLECTED MESSAGES.
+
+## III.15 HIGH-RETURN TRADER AND LEADERBOARD FORENSICS (STANDING, ENFORCED)
+
+Added 2026-08-14 at the principal's instruction. Named seed targets: **Alpha Capital Wealth,
+Indice Hustlers, FX Goats** and the wider South African retail/prop trading scene, plus every
+public exchange leaderboard the desk can lawfully read (Binance Leaderboard, Bybit, Hyperliquid,
+and any venue publishing per-trader positions or returns).
+
+**WHY THIS IS A SOURCE AT ALL.** These operators run REAL money through REAL execution under REAL
+constraints, and a large part of what they know is execution and behaviour knowledge that never
+appears in a paper: which sessions actually fill, where spreads widen, how a broker behaves at the
+news print, what position management survives contact with a drawdown. That is category C of
+III.3, and it is the category this desk is weakest at.
+
+**WHY IT IS THE MOST DANGEROUS SOURCE ON THE REGISTRY, AND THE ONE MOST LIKELY TO BE MISREAD.**
+
+  * **SURVIVORSHIP IS THE ENTIRE SELECTION MECHANISM.** A leaderboard is, by construction, the
+    maximum of a very large number of draws. With enough participants the top of any leaderboard
+    is occupied by luck at a rate indistinguishable from skill, and the leaderboard NEVER shows
+    the denominator. Under III.10 a rank is not evidence; under `donated_survivor` the same
+    arithmetic is already enforced for donated candidates, and A LEADERBOARD ENTRY IS EXACTLY A
+    DONATED SURVIVOR WITH ITS TRIAL COUNT DELETED. Treat it as one: the trial count must be
+    ESTIMATED (participants in the ranking) and declared, or the claim is unpriceable.
+  * **MARTINGALE AND HIDDEN-TAIL STRATEGIES DOMINATE SHORT LEADERBOARDS.** Grid, averaging-down,
+    survivorship-heavy indices scalping and unhedged carry all produce long, smooth, spectacular
+    equity curves followed by one terminal loss. A curve that looks better than anything this desk
+    has produced is EVIDENCE OF A HIDDEN TAIL until the tail is located. Explicitly test for it:
+    max adverse excursion, position-size progression after losses, time-to-recovery, and whether
+    the account has ever taken a loss proportional to its gains.
+  * **EDUCATION AND PROP-FIRM ECONOMICS ARE NOT TRADING ECONOMICS.** Where the operator's revenue
+    comes from courses, signals, affiliate rebates or challenge fees, the published track record is
+    MARKETING and its incentives point away from accuracy. Record the revenue model beside every
+    claim. This is not an accusation; it is a variable that changes what the evidence means.
+  * **THEIR MARKET IS OFTEN NOT OURS.** Indices, FX and CFD behaviour under a broker's execution
+    does not transfer unexamined to crypto perps. A mechanism must be re-derived in this desk's
+    venue, cost and liquidity environment before it is a candidate here.
+
+**WHAT TO EXTRACT — MECHANISM AND PROCESS, NEVER PARAMETERS OR SIGNALS.**
+
+  * SESSION AND LIQUIDITY STRUCTURE: which sessions, opens and news windows they trade and avoid,
+    and whether the avoidance is measurable in spread and slippage data the desk can obtain.
+  * RISK PROCESS: fixed-fractional vs progressive sizing, daily loss caps, per-trade stops, how a
+    losing streak changes size. THIS IS THE HIGHEST-TRANSFER CATEGORY -- it is mechanical,
+    testable, and it is where retail operators genuinely differ from each other.
+  * ENTRY/EXIT MECHANICS: partial fills, scaling out, break-even moves, trailing rules -- all of
+    which are execution behaviour the desk can simulate and then measure live.
+  * DISCIPLINE ARCHITECTURE: pre-registered rules, checklists, session limits, cooling-off after
+    losses. A process that survives drawdown is a real and copyable asset even when the signal
+    behind it is not.
+  * DRAWDOWN BEHAVIOUR: what they do after a loss is more informative than what they do after a
+    win, and it is the part almost nobody publishes.
+
+**CONVERSION IS MANDATORY AND IDENTICAL TO III.4.** Every observation becomes a III.5 packet with
+an ESTIMATED trial count, a stated revenue model, and a NEGATIVE CONTROL that would show the same
+result under luck alone. It then enters the ordinary funnel and earns a forward clock or nothing.
+NO LEADERBOARD ENTRY, RANK, RETURN FIGURE, TESTIMONIAL OR SCREENSHOT MAY REACH CAPITAL, and no
+miner may promote one.
+
+**FITNESS, MEASURED LIKE EVERY OTHER SOURCE (III.8).** Track this whole category by downstream
+conversion to validated survivors. If retail-trader forensics produces no validated mechanism over
+a measured window, its budget falls like any other unproductive source -- and that outcome is
+recorded rather than quietly abandoned, because "we mined the leaderboards and got nothing" is a
+finding the desk must be able to cite.
