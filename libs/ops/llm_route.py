@@ -30,7 +30,19 @@ from typing import Any, Final
 #: filed under. For these, ANY seat can serve ANY model in the chain -- which is exactly the fact
 #: kimi_hunter was missing when a roster full of OpenRouter seats yielded "not in the seated
 #: roster" and an immediate exit.
-MODEL_ROUTING_HOSTS: Final[tuple[str, ...]] = ("openrouter",)
+#:
+#: THE TEST FOR MEMBERSHIP IS A PROPERTY, NOT A PREFERENCE: an OpenAI-compatible gateway that
+#: dispatches on the request body's `model`. `opencode` (OpenCode Zen) qualifies and is listed so
+#: that adding a Zen seat to the roster is a CREDENTIAL change with no code change -- the desk
+#: should never have to ship a commit to gain a route. Listing a host here grants nothing on its
+#: own: `build_chain` only ever considers seats that actually exist in `llm_panel.json`, so an
+#: unused entry costs nothing and an added key works immediately.
+#:
+#: AND IT IS AN ADDITION, NEVER A SWAP. L1.54's whole claim is that depth beats picking a better
+#: single name: the failure it was written for -- one unavailable model string, 56 scheduled runs
+#: a week, zero artifacts and no complaint -- is a SINGLE-ROUTE failure, and replacing one gateway
+#: with another reproduces its exact shape at a different address.
+MODEL_ROUTING_HOSTS: Final[tuple[str, ...]] = ("openrouter", "opencode")
 
 
 @dataclass(frozen=True)

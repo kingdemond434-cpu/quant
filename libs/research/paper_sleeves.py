@@ -439,8 +439,15 @@ def free_slots(cohort: dict[str, Any]) -> tuple[int, str]:
     # own maximum, so `cap - m_upper` is a count of slots that are free NO MATTER what those
     # sources hold. Falls back to the counted value only for a registry payload predating the
     # bound, and then keeps the old blanket refusal.
-    m = int(cohort.get("m_upper", cohort.get("m_concurrent", cap)))
-    if "m_upper" not in cohort and not cohort.get("complete", False):
+    # SEATS, NOT MULTIPLICITY (2026-08-14). This is a CAPACITY question -- "is there room for
+    # another clock?" -- and `m_upper` stopped being a capacity number when it became the
+    # high-water mark that keeps the Holm bar from loosening on retirement. Reading it here would
+    # hold the desk permanently over cap on the strength of clocks already retired: idleness
+    # bought with a figure that exists to protect the bar, and it protects nothing by being spent
+    # here. `seats_upper` carries the same fail-safe bounding of unreadable sources.
+    m = int(cohort.get("seats_upper", cohort.get("m_upper", cohort.get("m_concurrent", cap))))
+    if "seats_upper" not in cohort and "m_upper" not in cohort \
+            and not cohort.get("complete", False):
         return 0, ("cohort INCOMPLETE and unbounded (registry payload carries no m_upper) -- "
                    f"m={m} is a lower bound, so free slots are treated as ZERO rather than guessed")
     if cohort.get("over_cap") or m >= cap:

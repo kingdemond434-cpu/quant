@@ -22,10 +22,12 @@ zero -- they mark the cohort `complete=False`, which run_alerts surfaces. Likewi
 is counted until it is RETIRED by an explicit ledgered decision: over-counting only tightens the
 bar (the safe error), under-counting admits noise as edge.
 
-Stdlib plus ONE in-repo import: `libs.ops.desk_host`, which answers whether this box owns the
-runtime state under `data/`. That question cannot be settled from the artifacts themselves --
-on a clone the evidence and its absence look identical -- and guessing it wrong publishes a small
-cohort as MEASURED, which is a LOOSER bar. The import is the price of not guessing.
+Stdlib plus TWO in-repo imports, and each is the price of not guessing something that cannot be
+guessed safely. `libs.ops.desk_host` answers whether this box owns the runtime state under
+`data/`: that cannot be settled from the artifacts themselves -- on a clone the evidence and its
+absence look identical -- and guessing it wrong publishes a small cohort as MEASURED, a LOOSER
+bar. `libs.research.clock_retirement` carries the tracked ledger of clocks that have LEFT the
+cohort by explicit decision, which is the only sanctioned way `m` may ever fall.
 
 import from libs.research.slot_registry.
 """
@@ -38,6 +40,7 @@ from pathlib import Path
 from typing import Any
 
 from libs.ops.desk_host import is_owning_host
+from libs.research.clock_retirement import multiplicity_high_water, retired_names
 
 _ROOT = Path(__file__).resolve().parents[2]
 
@@ -338,6 +341,23 @@ def derive_slots() -> dict[str, Any]:
     # bar -- the phantom-edge direction this module exists to prevent. What the measurement buys is
     # that a dead clock can no longer report itself as accruing, and that the desk can see it is
     # paying multiplicity for slots returning nothing.
+    # THE ONE SANCTIONED EXIT, AND IT IS THE ONLY ONE (2026-08-14). Everything above deliberately
+    # keeps a dormant clock counted; this is the single place a name may leave, and it leaves only
+    # because `docs/research/CLOCK_RETIREMENTS.json` -- TRACKED, attributed, evidenced, and
+    # writable only by an explicit human `--accept` against a live sweep proposal -- says so.
+    #
+    # Applied HERE, after all three sources are assembled, so retirement means the same thing for
+    # an axis clock, a standing sleeve and a derivative. The pre-existing `verdict: RETIRED` string
+    # in the axis artifact covered ONE source and lived in gitignored state, which made it a
+    # decision no clone could see and no audit could cite.
+    #
+    # A MALFORMED OR ABSENT LEDGER RETIRES NOTHING: the cohort stays larger and every bar stays
+    # tighter, so the failure mode is seats that will not free rather than bars that quietly
+    # loosened.
+    _retired_names = retired_names(_ROOT)
+    retired = [s for s in slots if str(s.get("name")) in _retired_names]
+    slots = [s for s in slots if str(s.get("name")) not in _retired_names]
+
     dead = [s for s in slots if s.get("evidence") in ("STALLED", "NO-EVIDENCE")]
     unmeasured = [s for s in slots if s.get("evidence") == "UNMEASURED"]
 
@@ -387,10 +407,29 @@ def derive_slots() -> dict[str, Any]:
         unknown.extend(absent)
         absent = []
 
-    m_upper = len(slots) + sum(bounds.values())
+    # CAPACITY AND MULTIPLICITY ARE TWO NUMBERS, AND THIS FILE HAD ONLY EVER STORED ONE.
+    #
+    # `seats_upper` is a RESOURCE bound: how many concurrent forward clocks the box, the data and
+    # the attention budget support. Retiring a dead clock frees one and that is pure gain.
+    #
+    # `m_upper` is how many times the desk LOOKED, and it is a HIGH-WATER MARK. A clock that ran
+    # and failed consumed a trial; retiring it afterwards does not un-look, for the same reason a
+    # p-value cannot be improved by forgetting an experiment. So it takes the max of the live
+    # bound and every cohort size the retirement ledger has ever recorded, and it CANNOT FALL.
+    #
+    # This is what makes automatic seat reclamation safe. The standing objection to it -- that
+    # dropping a row loosens every survivor's bar in the phantom-edge direction -- was an
+    # objection to the BAR MOVING, not to the seat being freed, and the two only ever moved
+    # together because they shared a variable.
+    seats_upper = len(slots) + sum(bounds.values())
+    m_upper = max(seats_upper, multiplicity_high_water(_ROOT))
     return {
         "updated": now.isoformat(),
         "m_concurrent": len(slots),
+        "seats_used": len(slots),
+        "seats_upper": seats_upper,
+        "seats_free": max(0, MAX_FORWARD_SLOTS - seats_upper),
+        "multiplicity_high_water": m_upper,
         # THE NUMBER EVERY BAR MUST BE COMPUTED FROM. `m_concurrent` counts only what was READ, so
         # it is a LOWER bound whenever a source is unreadable -- and understating m LOOSENS every
         # Holm bar, the phantom-edge direction this module exists to prevent. `complete=False` was
@@ -401,8 +440,12 @@ def derive_slots() -> dict[str, Any]:
         "m_bounds": bounds,
         "complete": not unknown,
         "cap": MAX_FORWARD_SLOTS,
-        "over_cap": m_upper > MAX_FORWARD_SLOTS,
-        "idle_slots": max(0, MAX_FORWARD_SLOTS - m_upper),
+        # CAPACITY QUESTIONS ANSWER FROM SEATS, never from multiplicity. Asking "may another clock
+        # start?" against a high-water mark would keep the desk permanently over cap on the
+        # strength of clocks that have already been retired -- idleness bought with a number that
+        # exists to protect the bar, which protects nothing and costs every candidate its clock.
+        "over_cap": seats_upper > MAX_FORWARD_SLOTS,
+        "idle_slots": max(0, MAX_FORWARD_SLOTS - seats_upper),
         "unknown_sources": unknown,
         # Published so a reader can tell a measured zero from a host without state, which is
         # the whole distinction the ABSENT/UNKNOWN split turns on (L1.28a).
@@ -414,6 +457,9 @@ def derive_slots() -> dict[str, Any]:
         "not_accruing": [{"name": s["name"], "evidence": s.get("evidence"),
                           "days": s.get("days"), "age_h": s.get("age_h")} for s in dead],
         "unmeasured_slots": [s["name"] for s in unmeasured],
+        # PUBLISHED, NEVER MERELY SUBTRACTED. A seat that vanished and a seat that was retired look
+        # identical in a count, and only one of them is a decision somebody made and signed.
+        "retired_slots": [s["name"] for s in retired],
         "evidence_stale_after_h": STALE_AFTER_H,
         "slots": slots,
         "note": ("Holm cohort for every Stage-B forward clock. UNREADABLE sources are bounded "
@@ -422,7 +468,10 @@ def derive_slots() -> dict[str, Any]:
                  "clock never born, and calling that unknown is what froze slot admission. "
                  "Dormant clocks stay counted until RETIRED by an explicit ledgered decision -- "
                  "`not_accruing` names the slots paying multiplicity while returning no evidence, "
-                 "which is a cost to fix upstream, never by shrinking m."),
+                 "which is a cost to fix upstream, never by shrinking m. `retired_slots` names "
+                 "the ones that HAVE left, each by an attributed row in "
+                 "docs/research/CLOCK_RETIREMENTS.json taken against a live sweep proposal; that "
+                 "tracked ledger is the only mechanism by which m may fall."),
     }
 
 
