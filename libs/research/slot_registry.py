@@ -33,6 +33,7 @@ import from libs.research.slot_registry.
 """
 from __future__ import annotations
 
+import contextlib
 import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -182,6 +183,20 @@ def _paper_sleeve_evidence(name: str, now: datetime) -> dict[str, Any]:
     is rows added since baseline, and a sleeve with none reads NO-EVIDENCE (distinct from STALLED,
     which is about the artifact ageing).
     """
+    # A SCREEN-SPAWNED CLOCK PUBLISHES SOMEWHERE ELSE, and reading only the paper-sleeve artifact
+    # is what starved one (2026-08-14). `perpdex_funding::aster_BTCUSDT_level_rate::8h` was
+    # reported NO-EVIDENCE with zero observations while SEVEN rows sat in
+    # data/perpdex_funding_clock.jsonl -- its collector cronned, run all week, 184,753 rows. The
+    # cohort read that zero as a MEASUREMENT, the sweep called the seat reclaimable, and the
+    # unattended path retired a clock that had evidence.
+    #
+    # `stage_a_screen(clock=...)` announces every clock it starts into the axis clock registry, so
+    # the registry is the one place that knows where a screen-spawned clock's rows actually live.
+    # Checked FIRST, because a name present there is definitionally not a paper sleeve.
+    reg_ev = _registered_clock_evidence(name, now)
+    if reg_ev is not None:
+        return reg_ev
+
     doc = _read_json(_PAPER_FORWARD)
     if not isinstance(doc, dict):
         return {"evidence": "UNMEASURED",
@@ -203,6 +218,44 @@ def _paper_sleeve_evidence(name: str, now: datetime) -> dict[str, Any]:
             "progress_to_resolution": row.get("progress_to_resolution"),
             "why": row.get("why", "")}
 
+
+
+#: Where stage_a_screen announces every clock it starts. A screen-spawned clock is NOT a paper
+#: sleeve and does not publish through the paper-sleeve runner; this is the map from its name to
+#: the JSONL its rows are actually written to.
+_CLOCK_REGISTRY = "data/axis_clock_registry.json"
+
+
+def _registered_clock_evidence(name: str, now: datetime) -> dict[str, Any] | None:
+    """Accrual for a clock announced by `stage_a_screen`, or None when this name is not one.
+
+    RETURNS None RATHER THAN A ZERO when the name is unregistered: None means "not my kind of
+    clock, ask the next reader", and a zero would mean "measured, and it has nothing" -- which is
+    exactly the substitution that retired a clock holding seven observations.
+    """
+    doc = _read_json(_CLOCK_REGISTRY)
+    axes = doc.get("axes") if isinstance(doc, dict) else None
+    rec = axes.get(name) if isinstance(axes, dict) else None
+    if not isinstance(rec, dict) or not rec.get("clock"):
+        return None
+    rel = str(rec["clock"])
+    p = _ROOT / rel
+    if not p.exists():
+        return {"evidence": "UNMEASURED", "source": rel,
+                "why": (f"{name} is registered against {rel}, which does not exist on this host. "
+                        "Registered-but-absent is UNKNOWN, never a measured zero -- a clock whose "
+                        "rows cannot be found has not been shown to have none")}
+    try:
+        lines = [ln for ln in p.read_text("utf-8", errors="ignore").splitlines() if ln.strip()]
+    except OSError:
+        return {"evidence": "UNMEASURED", "source": rel, "why": f"{rel} unreadable"}
+    age_h = None
+    with contextlib.suppress(OSError):
+        age_h = round((now.timestamp() - p.stat().st_mtime) / 3600.0, 1)
+    state = ("NO-EVIDENCE" if not lines else
+             "STALLED" if (age_h is not None and age_h > STALE_AFTER_H) else "ACCRUING")
+    return {"evidence": state, "days": len(lines), "age_h": age_h, "source": rel,
+            "why": f"{len(lines)} clock row(s) in {rel} (screen-spawned clock, not a paper sleeve)"}
 
 def _read_json(rel: str) -> Any | None:
     """Return parsed JSON, or None when the source cannot be trusted (missing/unreadable)."""
