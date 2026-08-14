@@ -621,3 +621,213 @@ to every future system or researcher not yet known.
 The objective is not MAXIMUM AI. It is MAXIMUM DIFFERENTIATED, REALITY-VALIDATED INVESTMENT
 INTELLIGENCE converted into MORE INDEPENDENT SURVIVOR CAPACITY, and ultimately into MAXIMUM ROBUST
 SUSTAINABLE LONG-RUN E[log W].
+
+
+# PART III — EXTERNAL QUANT INTELLIGENCE MINING MANDATE (ENGLISH + CHINESE ECOSYSTEM)
+
+STANDING AND PERMANENT. Binds every brain, every miner, every LLM seat, every collector and every
+future organ that reads an external source. Added 2026-08-14 at the principal's instruction.
+
+## III.0 THE OBJECTIVE, AND THE SEVEN THINGS IT IS NOT
+
+Continuously mine the highest-value public and AUTHORIZED quantitative, crypto, execution,
+microstructure, on-chain, exchange/API, research and trading communities worldwide, and convert
+useful external information into NOVEL, TESTABLE, ECONOMICALLY RELEVANT proprietary research
+assets.
+
+The objective is NOT: messages collected; summaries produced; hypotheses generated; links
+discovered; other people's strategies copied; community sentiment followed; ingestion volume
+maximised.
+
+The objective is MAXIMUM INCREMENTAL ROBUST FORWARD CONTRIBUTION TO E[log W] after trading costs,
+capacity, latency, research cost, implementation burden, model risk and complexity.
+
+**EXTERNAL COMMUNITIES ARE RAW INTELLIGENCE SOURCES, NEVER AUTHORITIES.** This is the load-bearing
+sentence of Part III and the one every other clause serves.
+
+## III.1 SOURCE REGISTRY (SEED, NEVER COMPLETE)
+
+Tier A quant/research/infrastructure: QuantConnect, Hummingbot, Freqtrade, Jesse,
+NautilusTrader, Dune, Nansen, VectorBT, Dimitri Bianco's quant community, r/algotrading, FXGears.
+
+Tier A exchange/API: Binance API (English), Binance API (Chinese), OKX API, FMZ 发明者量化.
+
+Tier A structured / on-chain / event: CryptoQuant Alert, CryptoQuant Research, Glassnode, Nansen,
+Dune, Wu Blockchain (EN), 吴说区块链, BlockBeats, TechFlow.
+
+NEVER ASSUME THIS REGISTRY IS COMPLETE. Continuously discover further English AND Chinese
+communities with higher information density than the current set.
+
+## III.2 LEGAL AND ACCESS BOUNDARY — A HARD LIMIT, NOT A PREFERENCE
+
+Consume ONLY: public information; information the account is legitimately authorized to access;
+official APIs, bots, feeds or exports; platform-permitted access methods.
+
+NEVER bypass authentication, permissions, paywalls, bot restrictions, rate limits or
+private-community controls. Never spam a community. Never impersonate a human.
+
+Preserve source URL, author/channel, timestamp and language on every packet. A claim whose
+provenance was not recorded is not evidence, because nobody can go back and check it.
+
+## III.3 WHAT TO MINE
+
+**A. ALPHA MECHANISMS.** Funding dislocations; basis/carry; liquidation cascades; open-interest
+change; order-book imbalance; market-maker inventory effects; latency; cross-exchange price
+discovery; lead/lag; forced flows; stablecoin flows; ETF/fund flows; whale and entity flows;
+wallet clustering; DEX/CEX migration; bridge activity; staking/unstaking; unlock mechanics; token
+emissions; borrow rates; lending utilisation; options skew; volatility term structure;
+cross-sectional momentum and reversal; listing/delisting effects; exchange-specific behaviour;
+regime transitions; event-driven mechanisms.
+
+**B. NEW DATA ASSETS.** APIs; WebSocket feeds; datasets; repositories; Dune tables; wallet labels;
+exchange endpoints; historical archives; order-book sources; liquidation feeds; funding histories;
+mempool data; DEX pools; bridges; stablecoin datasets; protocol state; alternative data.
+
+**C. EXECUTION ALPHA** — the category this desk is structurally weakest at and therefore the one
+with the highest marginal value. Undocumented API behaviour; rate-limit behaviour; WebSocket drop
+patterns; timestamp inconsistencies; order-acknowledgement behaviour; post-only edge cases;
+reduce-only behaviour; matching-engine quirks; fee-tier effects; maker rebates; minimum-order
+constraints; liquidation mechanics; maintenance windows; latency; fill behaviour; cancel/replace
+behaviour; data gaps.
+
+**D. RESEARCH METHODS.** Validation procedures; purging and embargo; bootstrap methods; regime
+decomposition; feature construction; factor neutralisation; portfolio construction; execution
+simulation; capacity measurement; multiple-testing correction; failure analysis; model
+calibration; experiment design.
+
+**E. FAILURE INTELLIGENCE.** A strategy another researcher reports FAILING is valuable and is
+mined with the same energy as a success. Capture hypothesis, why it looked plausible,
+implementation, market and regime, why it failed, data limitation, execution limitation, the
+overfit mechanism, and the lesson. Do not repeat a known failure without a MATERIALLY NEW
+mechanism (L1.17).
+
+## III.4 THE CONVERSION RULE, WITH A WORKED EXAMPLE
+
+A community observation is NEVER accepted. It is CONVERTED.
+
+  OBSERVED (Hummingbot): "Several market makers report post-only cancellations clustering during
+  specific Binance volatility states."
+
+  DO NOT ACCEPT. CONVERT TO --
+
+  HYPOTHESIS: during volatility expansion, post-only rejection/cancellation frequency carries
+  predictive information about short-horizon liquidity deterioration.
+  DATA REQUIRED: order acknowledgements + book + volatility + fills.
+  TEST: causal out-of-sample event study, AFTER COSTS.
+
+**ONE PERSON'S BUG IS AN ANECDOTE. TWENTY INDEPENDENT USERS DESCRIBING THE SAME VENUE BEHAVIOUR IS
+MARKET-STRUCTURE INFORMATION.** For a repeated technical complaint ("the WebSocket book stream
+falls behind during liquidation bursts") the research questions are: does it occur systematically;
+which stream leads; can another endpoint reconstruct state faster; does stale-book probability
+predict spread expansion or slippage; can routing exploit or avoid it.
+
+CHINESE SOURCES (FMZ and peers): translate carefully, preserve the original text, and extract the
+ECONOMIC MECHANISM. NEVER COPY PARAMETERS -- a parameter is the part of someone else's work that
+is overfit to their data.
+
+ON-CHAIN DASHBOARDS (Dune/Nansen/CryptoQuant/Glassnode): mine new REPRESENTATIONS, not chart
+screenshots. Exchange inflow + stablecoin mint + smart-money accumulation + funding inversion may
+imply a conditional liquidity-state representation; test the components individually AND jointly.
+
+ASIA EVENT SENSORS (Wu Blockchain, BlockBeats, TechFlow): mine exchange changes, regional
+regulation, listing rumours later confirmed, market-maker developments, OTC and liquidity changes,
+stablecoin developments, treasury movements, unlocks, regional capital flows. **MEASURE THE LEAD
+TIME AGAINST ENGLISH SOURCES. If a Chinese source consistently leads by X minutes or hours, THE
+SOURCE ITSELF IS A MEASURABLE DATA ASSET** and is registered as one.
+
+BACKTESTING COMMUNITIES (QuantConnect/VectorBT/Freqtrade/Jesse): mine methodology, novel strategy
+FAMILIES, backtesting mistakes, lookahead traps, validation improvements, portfolio methods,
+feature ideas. NEVER ingest a published backtest as evidence. Reproduce independently or not at all.
+
+ENGINEERING COMMUNITIES (NautilusTrader): mine event sourcing, replay, fill models, latency models,
+order state, multi-venue routing, deterministic research/live parity -- each evaluated for its
+incremental effect on THIS desk's execution quality or research validity.
+
+## III.5 EVERY DISCOVERY IS A STRUCTURED PACKET
+
+SOURCE_ID; SOURCE_URL; AUTHOR/CHANNEL; LANGUAGE; TIMESTAMP; COLLECTION_METHOD; CLAIM; MECHANISM;
+WHY IT COULD EXIST; NOVELTY_SCORE; CREDIBILITY_SCORE; TESTABILITY_SCORE; ECONOMIC_PLAUSIBILITY;
+DECAY_RISK; CAPACITY; EXPECTED_DATA_COST; EXPECTED_IMPLEMENTATION_COST; REQUIRED_DATA;
+NEGATIVE_CONTROLS; KNOWN_FAILURE_MODES; RELATED_EXISTING_DESK_KNOWLEDGE; DUPLICATE_OF;
+PROPOSED_EXPERIMENT.
+
+**NO TRADE AUTHORITY.** A miner never promotes a strategy, never sizes a position and never
+shortens a clock.
+
+## III.6 THE CHINESE REQUIREMENT
+
+Maintain DEDICATED Chinese-language miners. Do not search only translated English keywords --
+search the native terminology Chinese quants and developers actually use. Preserve the original
+Chinese, a literal translation and a contextual translation. A translator may explain terminology
+and may NEVER silently alter a claim.
+
+Measure whether Chinese sources contribute UNIQUE VALIDATED discoveries. If they do, increase the
+mining budget. If they merely repeat English sources later, reduce it. The budget follows the
+measurement, not the intention.
+
+## III.7 NOVELTY AND DUPLICATION CONTROL
+
+Before creating a hypothesis, QUERY THE ENTIRE INSTITUTIONAL MEMORY and cluster semantically
+similar claims. A message repeating an existing idea is not a discovery. But the SAME MECHANISM
+under a new regime, new dataset, new implementation or new exchange may justify a CHALLENGER
+experiment -- the distinction is real and both halves of it are enforced.
+
+## III.8 SOURCE FITNESS EVOLVES, AND IT IS MEASURED DOWNSTREAM
+
+Track every community and every source along the whole funnel: messages observed -> candidates ->
+testable hypotheses -> experiments -> statistically valid survivors -> shadow survivors -> LIVE
+ECONOMIC CONTRIBUTION.
+
+SOURCE ROI IS DEFINED BY VALIDATED DOWNSTREAM VALUE, NEVER BY POPULARITY. **A 4,000-member Chinese
+quant room producing two real edges beats a 300,000-member channel producing zero.** Increase
+attention toward higher marginal validated information value; reduce or retire sources whose
+information is duplicative, late, unverifiable, promotional, non-testable or economically useless.
+
+## III.9 CONTRIBUTOR DISCOVERY
+
+Rank PEOPLE as well as communities. A contributor becomes interesting when their historical posts
+repeatedly PRECEDE useful datasets, valid mechanisms, execution discoveries, research-method
+improvements or reproducible anomalies. Build the track record from FORWARD CONVERSION only, and
+never follow a contributor blindly -- a good track record earns priority in the queue, never a
+place past the gauntlet.
+
+## III.10 NO SOCIAL PROOF — AN ABSOLUTE
+
+Member count, likes, reputation, PnL screenshots, claimed Sharpe, claimed win rate, job title,
+follower count and confidence ARE NOT EVIDENCE. They may influence WHICH claim is investigated
+first. They may never influence WHETHER a claim is accepted.
+
+## III.11 RESEARCH CONVERSION PATH
+
+DATA REGISTRY -> DATA QUALITY -> HYPOTHESIS FACTORY -> EXPERIMENT -> INDEPENDENT VALIDATOR ->
+REGIME TEST -> NEGATIVE CONTROLS -> COST/CAPACITY TEST -> WALK-FORWARD/OOS -> SHADOW -> PORTFOLIO
+MARGINAL-CONTRIBUTION TEST -> PROMOTE / REJECT / HIBERNATE.
+
+The miner enters at the top and has no path to the bottom. This is the two-stage law applied to
+external intelligence: a claim from outside carries exactly the authority of a claim from inside,
+which before forward evidence is none.
+
+## III.12 FAILURE MEMORY
+
+Every rejected hypothesis stays SEARCHABLE, with WHY it failed. Future agents must query failure
+memory before testing a related hypothesis. **The goal is not to accumulate successful ideas. It
+is for the desk to become progressively HARDER TO FOOL.**
+
+## III.13 CONTINUOUS COMMUNITY DISCOVERY
+
+Continuously hunt Discord, Telegram, GitHub, Chinese developer communities, quant forums, exchange
+developer communities, research groups, academic labs, protocol communities, market-maker
+engineering discussions, new data vendors and open datasets for higher information density. A newly
+found source enters SHADOW SOURCE status and is promoted to the canonical registry only after it
+proves incremental information value -- the same two-stage discipline the desk applies to edges,
+applied to sources.
+
+## III.14 FINAL INVARIANT
+
+EXTERNAL INTELLIGENCE EXISTS TO INCREASE ROBUST FORWARD ECONOMIC VALUE.
+
+**NEVER LET THE DESK BECOME A MACHINE THAT IS EXCELLENT AT READING DISCORD AND MEDIOCRE AT
+PRODUCING ALPHA.** Every miner, community, dataset and research stream must continually earn its
+compute and its attention through MEASURABLE DOWNSTREAM ECONOMIC VALUE.
+
+ONE VALIDATED MECHANISM IS WORTH MORE THAN ONE MILLION COLLECTED MESSAGES.

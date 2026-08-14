@@ -17,6 +17,7 @@ Keep this file SHORT. It sits in every context window, so it is an INDEX, never 
 | adding a doc under `docs/` | `docs/research/ARTIFACT_GOVERNANCE.md` — every artifact must be claimed by a law, on arrival |
 | data sources | `docs/research/data_axis_watchlist.md`, `scripts/source_backlog_next.py` |
 | frontier / competitor / outlier hunting | `docs/research/ELITE_QUANT_INTELLIGENCE_MANDATE.md` — standing principal law, all three seats |
+| mining any EXTERNAL source (Discord/Telegram/GitHub/CN communities) | same file, **PART III** — external intelligence mining, EN + CN. Access boundary is hard; social proof is never evidence; a source earns its budget by measured downstream conversion |
 
 ## Search the vault before deciding — 208k lines, one hop
 
