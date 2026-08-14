@@ -2552,3 +2552,19 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # 213 symbols x 2,384 days and found ALL FOUR WELDED -- including the vol-tercile axis that gates
 # REGISTRY promotion, sleeve sizing and LIVE at 15% of book.
 11 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_partition_power.py >> data/cro_ai_logs/partition_power.log 2>&1
+
+# ---------------------------------------------------------------------------------------------
+# CODE SYNC -- pull the branch and run the gates, hourly, so a pushed fix stops being homework.
+# WHY: every agent change needed the principal to open a terminal, fetch, merge, gate and re-run
+# the affected organ. That is a deterministic job done by a human several times a day, and the
+# real cost is not the typing -- it is that a fix sits unapplied for hours while the box runs the
+# old code and the clocks depending on it keep accruing nothing.
+# SAFE BY CONSTRUCTION, and these are conditions rather than decoration: FAST-FORWARD ONLY (a
+# diverged branch is a real decision between agents and stops with the divergence named); a DIRTY
+# TRACKED TREE is a full stop (R0423 -- a checkout over a sibling's uncommitted work destroys it);
+# it never commits, never pushes, never stashes; gates run AFTER and RED is reported, never
+# repaired, because an organ editing code it did not write on the box that trades is worse than
+# the failure. Runs no research: the cycle owns that schedule and that budget.
+# EVIDENCE: ops/sync_from_repo.sh -> data/cro_ai_logs/sync_<date>.log
+# :23 avoids the :00 and :15 collector crowd and the 08:35 perpdex slot.
+23 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_sync.lock bash ops/sync_from_repo.sh >> data/cro_ai_logs/sync_cron.log 2>&1
