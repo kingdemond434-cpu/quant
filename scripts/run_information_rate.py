@@ -51,17 +51,38 @@ _OUT = Path("data/information_rate.json")
 _WEB = Path("web/information_rate.json")
 _LAKE = Path("data/lake")
 
-#: The universe the desk ALREADY HOLDS BARS FOR. This is what makes the cross-section lever an
-#: available change rather than a data project, so it is counted from the lake rather than
-#: asserted. Absent lake -> 1, which offers the lever to nobody: the conservative direction.
-def _universe_size() -> tuple[int, str]:
+def _universe_size(timeframe: str = "D1") -> tuple[int, str]:
+    """How many symbols the desk ALREADY HOLDS BARS FOR at this timeframe.
+
+    This is what separates the cross-section lever from a data project, so it is COUNTED, never
+    asserted -- and counted at the right depth, which the first version of this function got
+    wrong. The lake is `data/lake/<layer>/<asset_class>/<symbol>/<timeframe>/`, so listing the
+    top level counts LAYERS: it returned 1 on a box holding 213 symbols and silently withheld the
+    single most valuable accelerant on the desk. A count that is wrong in the direction of
+    "no lever available" is not the safe error here; it is the error that leaves the clocks slow.
+
+    A SYMBOL DIRECTORY IS NOT BARS. Only directories containing an actual parquet at this
+    timeframe are counted -- an empty partition created by `write_bars` on an empty frame is a
+    symbol the desk tried to collect and did not get, and counting it would price the lever
+    against data that is not there.
+    """
+    root = _LAKE / "bronze"
     try:
-        syms = {p.name for p in _LAKE.iterdir() if p.is_dir()}
+        cands = [p for p in root.glob("*/*") if p.is_dir()]
     except OSError:
-        return 1, f"{_LAKE} unreadable -- the cross-section lever is NOT offered, because a lever "\
-                  "whose data nobody can confirm is a data project wearing a config change's face"
+        cands = []
+    if not cands:
+        return 1, (f"{root} unreadable or empty -- the cross-section lever is NOT offered, "
+                   "because a lever whose data nobody can confirm is a data project wearing a "
+                   "config change's face")
+    syms = {p.name for p in cands
+            if (p / timeframe).is_dir() and any((p / timeframe).rglob("*.parquet"))}
     n = len(syms)
-    return max(1, n), f"{n} symbol(s) with bars already in {_LAKE}"
+    if n == 0:
+        return 1, (f"{len(cands)} symbol director(ies) under {root} but NONE holds a {timeframe} "
+                   "parquet -- directories are not bars, and pricing the lever against them "
+                   "would recommend widening onto data the desk does not have")
+    return max(1, n), f"{n} symbol(s) holding {timeframe} bars under {root}"
 
 
 def _state_for(slot: dict[str, Any]) -> tuple[EvidenceState | None, str]:
@@ -77,6 +98,32 @@ def _state_for(slot: dict[str, Any]) -> tuple[EvidenceState | None, str]:
     if not isinstance(days, (int, float)) or days <= 0:
         return None, ("no observation count on this row -- NO-EVIDENCE and information rate is "
                       "undefined, which is a different claim from a rate of zero")
+
+    # PUBLISHED BY THE CLOCK OR NOT AT ALL. `run_axis_shadows` now writes `distinct_regimes` and
+    # `autocorrelation` beside `forward_days`, computed from the return series it already holds.
+    # Where they are present the deflators are MEASURED and the rate is real; where they are
+    # absent nothing is inferred, because the flattering value for each of them is exactly the
+    # value a missing field would default to.
+    regimes = slot.get("distinct_regimes")
+    rho = slot.get("autocorrelation")
+    has_regimes = isinstance(regimes, int) and regimes > 0
+    has_rho = isinstance(rho, (int, float))
+    if has_regimes or has_rho:
+        state = EvidenceState(
+            raw_observations=int(days),
+            autocorrelation=float(rho) if has_rho else 0.0,
+            distinct_regimes=int(regimes) if has_regimes else 0,
+            distinct_symbols=1,
+            # MEASURED only when BOTH are present. A half-measured state would let the measured
+            # half license a point-estimate accelerant computed from the unmeasured half's
+            # default, which is the defect this flag exists to stop.
+            measured=bool(has_regimes and has_rho),
+        )
+        parts = []
+        parts.append(f"regimes covered {regimes}" if has_regimes else "regimes UNMEASURED")
+        parts.append(f"lag-1 rho {float(rho):+.3f}" if has_rho else "autocorrelation UNMEASURED")
+        return state, "; ".join(parts)
+
     return EvidenceState(
         raw_observations=int(days),
         # UNMEASURED, carried as the clock's own untested defaults rather than as optimistic
@@ -85,9 +132,10 @@ def _state_for(slot: dict[str, Any]) -> tuple[EvidenceState | None, str]:
         distinct_regimes=0,
         distinct_symbols=1,
         measured=False,
-    ), ("deflators UNMEASURED -- the forward artifact carries a day count, not a return series. "
-        "autocorrelation, regimes covered and cross-symbol correlation each need the series; "
-        "until they are published this rate is an UPPER BOUND on the true one")
+    ), ("deflators UNMEASURED -- this clock's forward artifact carries a day count and no return "
+        "statistics. It is therefore charged the single-regime penalty (x0.5) for a fact nobody "
+        "recorded. run_axis_shadows publishes both fields from 2026-08-14; a clock still reading "
+        "UNMEASURED here has not been re-run since, or is not an axis clock")
 
 
 def main() -> int:

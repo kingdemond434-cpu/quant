@@ -275,6 +275,14 @@ def derive_slots() -> dict[str, Any]:
                           # undeclared decision point is UNKNOWN, and a horizon nobody wrote
                           # down can never be reported as reached.
                           "decision_at_obs": row.get("decision_at_obs"),
+                          # DEFLATOR INPUTS, carried through so `information_rate` can compute a
+                          # real rate rather than charging every clock the unmeasured penalty.
+                          # PASSED THROUGH VERBATIM, including absence: a missing field must stay
+                          # missing here, because the value each of them defaults to downstream is
+                          # exactly the flattering one, and inventing it in the registry would put
+                          # the substitution one layer further from where anyone would look.
+                          "distinct_regimes": row.get("distinct_regimes"),
+                          "autocorrelation": row.get("autocorrelation"),
                           **_evidence(str(row.get("axis", "?")), now,
                                       days=row.get("forward_days", row.get("n", 0)),
                                       updated=row.get("updated")

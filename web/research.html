@@ -105,10 +105,21 @@ svg text{fill:var(--dim);font-size:9px}
     <div class="note" id="levnote"></div></div>
 </main>
 <script>
+  // CACHE-BUST AT THE URL, NOT ONLY AT THE HEADER (2026-08-14). Every fetch here already passed
+  // {cache:"no-store"} and the server already sends `Cache-Control: no-store, max-age=0`, and the
+  // page STILL served stale JSON through a browser hard reset. Both of those control caches this
+  // page can address: the browser's. Neither reaches an intermediary -- a CDN or reverse proxy in
+  // front of the origin sees a byte-identical URL and answers from its own stored copy, and a
+  // hard reload cannot invalidate a cache it is not talking to. A unique query string makes every
+  // load a DIFFERENT resource at every layer, which is the only cache-defeat that does not depend
+  // on somebody else's configuration being right.
+  const _bust = u => u + (u.includes("?") ? "&" : "?") + "_=" + Date.now();
+  const jget = async u => (await fetch(_bust(u), {cache:"no-store"})).json();
+
 function fmt(v){return v===null||v===undefined?"—":(typeof v==="number"?v.toFixed(2):v);}
 async function load(){
   try{
-    const L=await (await fetch("live.json",{cache:"no-store"})).json();
+    const L=await jget("live.json");
     const a=L.account||{};
     const k=[["Account",a.login],["Server",a.server],["Equity",fmt(a.equity)],
       ["Gross notional","$"+fmt(L.gross_notional)],["Gross leverage",fmt(L.gross_leverage)+"x"],
@@ -122,7 +133,7 @@ async function load(){
       " · "+(L.mode==="live"?"sending real demo orders":"dry-run (no orders sent)");
   }catch(e){document.getElementById("livenote").textContent="live.json not found — run run_portfolio_live.py";}
   try{
-    const s=await (await fetch("strategies.json",{cache:"no-store"})).json();
+    const s=await jget("strategies.json");
     document.querySelector("#board tbody").innerHTML=s.strategies.map(r=>{
       const t=r.status.startsWith("SHADOW")?"amb":(r.survivors>0?"":"red");
       return `<tr><td>${r.name}</td><td class="dim">${r.universe}</td>
@@ -133,7 +144,7 @@ async function load(){
   }catch(e){document.getElementById("boardnote").textContent="strategies.json not found — run build_scoreboard.py";}
 
   try{
-    const d=await (await fetch("shadow.json",{cache:"no-store"})).json();
+    const d=await jget("shadow.json");
     document.getElementById("ts").textContent="updated "+(d.updated||"").slice(0,16).replace("T"," ");
     const k=[["Shadow start",(d.shadow_start||"").slice(0,10)],["Forward days",d.forward_days],
       ["Forward Sharpe",fmt(d.forward_ann_sharpe)],["Backtest Sharpe",fmt(d.backtest_ann_sharpe)]];
@@ -144,7 +155,7 @@ async function load(){
   }catch(e){document.getElementById("verdict").textContent="shadow.json not found — run run_shadow_forward.py";}
 
   try{
-    const x=await (await fetch("crossasset_shadow.json",{cache:"no-store"})).json();
+    const x=await jget("crossasset_shadow.json");
     const k=[["Shadow start",(x.shadow_start||"").slice(0,10)],["Forward days",x.forward_days],
       ["Forward Sharpe",fmt(x.forward_ann_sharpe)],["Backtest Sharpe",fmt(x.backtest_ann_sharpe)],
       ["Gauntlet",x.gates_passed],["Deployable",x.deployable?"yes":"no"],
@@ -159,7 +170,7 @@ async function load(){
   }catch(e){document.getElementById("xaverdict").textContent="crossasset_shadow.json not found — run run_crossasset_shadow.py";}
 
   try{
-    const L=await (await fetch("leverage.json",{cache:"no-store"})).json();
+    const L=await jget("leverage.json");
     const pct=v=>v===null||v===undefined?"—":(v*100).toFixed(0)+"%";
     const ent=Object.entries(L.leverage||{}).sort((a,b)=>(b[1].points.recommended.cagr)-(a[1].points.recommended.cagr));
     document.querySelector("#levtbl tbody").innerHTML=ent.map(([nm,a])=>{
@@ -178,7 +189,7 @@ async function load(){
 // because reclamation only ran when a challenger arrived. PROPOSALS, never actions: retiring a
 // row shrinks the Holm cohort and loosens every remaining bar, so the decision stays ledgered.
 try{
-  const C=await (await fetch("clock_retirement.json",{cache:"no-store"})).json();
+  const C=await jget("clock_retirement.json");
   document.getElementById("crk").innerHTML=
     `<div><b>${C.m_now}</b><span>m now (cap ${C.cap})</span></div>`+
     `<div><b>${C.seats_free_now}</b><span>free now</span></div>`+
@@ -200,7 +211,7 @@ try{
   document.getElementById("crnote").textContent=`updated ${(C.updated||"").slice(0,16)} · proposals only; retirement is a ledgered decision`;
 }catch(e){document.getElementById("crnote").textContent="clock_retirement.json not found — run scripts/run_clock_retirement_sweep.py";}
 try{
-    const Q=await (await fetch("promotion_queue.json",{cache:"no-store"})).json();
+    const Q=await jget("promotion_queue.json");
     const sl=Q.slots||{};
     document.getElementById("pqk").innerHTML=
       [["Candidates",Q.n_candidates],["Forward slots",`${sl.occupied||0}/${sl.cap||0} used, ${sl.free||0} free`],
@@ -233,7 +244,7 @@ try{
     document.getElementById("pqnote").textContent=`generated ${(Q.generated||"").slice(0,16)} · ${Q.law||""}`;
   }catch(e){document.getElementById("pqnote").textContent="promotion_queue.json not found — run scripts/run_promotion_queue.py";}
   try{
-    const F=await (await fetch("trade_forensics.json",{cache:"no-store"})).json();
+    const F=await jget("trade_forensics.json");
     const mk=(F.maker_fill||{}), tp=(F.execution_tape||{});
     // AN ERROR STRING IS NOT A MEASUREMENT. A section that failed must read as failed, never as
     // a number -- run_trade_forensics wraps its tape in a broad except and used to ship
@@ -264,7 +275,7 @@ try{
     document.getElementById("fxnote").textContent=`updated ${(F.updated||"").slice(0,16)} · run_trade_forensics.py (daily, in the research cycle)`;
   }catch(e){document.getElementById("fxnote").textContent="trade_forensics.json not found — run scripts/run_trade_forensics.py";}
   try{
-    const A=await (await fetch("axis_shadows.json",{cache:"no-store"})).json();
+    const A=await jget("axis_shadows.json");
     const tb=document.querySelector("#axtab tbody"); tb.innerHTML="";
     (A.axes||[]).forEach(a=>{
       const tr=document.createElement("tr");

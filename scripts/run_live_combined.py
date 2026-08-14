@@ -206,16 +206,44 @@ def main() -> None:
     now = datetime.now(tz=UTC).isoformat()
     cs = _load(_CURVE)
     if abs(_num(cs.get("start"), -1) - m_start) > 0.01:
-        cs = {"start": m_start, "mcurve": [], "fcurve": []}
+        cs = {"start": m_start, "mcurve": [], "fcurve": [], "lcurve": []}
     mcurve = cs.get("mcurve", [])
     fcurve = cs.get("fcurve", [])
     mcurve.append([now, m_eq])
     fcurve.append([now, fut_book])
-    mcurve, fcurve = mcurve[-4000:], fcurve[-4000:]
+    # THE LEG CURVE -- the recording half of the variance-collapse fix (GAP #14 root cause).
+    #
+    # WHAT IS WRONG TODAY. `run_leverage_opt` computes forward Sharpe from `mcurve`, and `mcurve`
+    # is `m_eq` -- a SCALAR, the SUM of the legs. In a cash-and-carry the legs are deliberately
+    # opposed, so summing them cancels the price move that is common to both and leaves funding,
+    # which accrues almost smoothly. The denominator of that Sharpe therefore contains almost no
+    # variance, and the desk reads ann Sharpe 9.5-15.5 where a real carry edge is a fraction of
+    # that. `_PLAUSIBLE_SHARPE` catches the symptom and zeroes the number; nothing has ever
+    # touched the cause, because the cause is that the variance was never RECORDED.
+    #
+    # WHAT THIS DOES AND DOES NOT DO. It records the two leg books SEPARATELY at the same
+    # heartbeat. That is strictly more information than their sum and it is the input a
+    # mark-to-mark return series needs -- the basis is `spot_book - fut_book` and its movement is
+    # precisely the variance the sum cancels. It does NOT change any Sharpe, any bar, any gate or
+    # any decision today: nothing reads `lcurve` yet, ON PURPOSE. A computation swapped in against
+    # two hours of history would replace a known-wrong number with an unknown-wrong one.
+    #
+    # WHY IT STARTS NOW RATHER THAN WITH THE COMPUTATION. Every heartbeat that passes unrecorded
+    # is basis variance that cannot be recovered afterwards -- the same shape as forward time, and
+    # the same reason the desk starts clocks before it knows whether it will want them. The
+    # computation can be written any day; this history can only be collected forward.
+    #
+    # `perp_book` is carried as None rather than 0.0 when the perp sleeve is inactive: a book that
+    # does not exist and a book worth nothing are different facts, and 0.0 would enter a variance
+    # calculation as a real observation of a flat leg.
+    lcurve = cs.get("lcurve", [])
+    lcurve.append([now, spot_book, fut_book, (perp_book if perp_active else None)])
+    mcurve, fcurve, lcurve = mcurve[-4000:], fcurve[-4000:], lcurve[-4000:]
     peak = max(e for _, e in mcurve) if mcurve else m_eq
     dd = round((m_eq / peak - 1.0) * 100, 2) if peak > 0 else 0.0
     _CURVE.parent.mkdir(parents=True, exist_ok=True)
-    _CURVE.write_text(json.dumps({"start": m_start, "mcurve": mcurve, "fcurve": fcurve}), "utf-8")
+    _CURVE.write_text(json.dumps({"start": m_start, "mcurve": mcurve,
+                              "fcurve": fcurve, "lcurve": lcurve}), "utf-8")
 
     # EXPERIMENTAL levered lab (SIMULATED, fresh from inception): _LEV x the go-forward P&L of the
     # real carry (fut+spot legs) + the perp paper. HONEST -- it amplifies LOSSES as well as gains.

@@ -46,6 +46,7 @@ import numpy as np
 
 from libs.research.anytime_valid import e_value
 from libs.research.evidence_clock import MIN_OBS, Sufficiency, sufficient
+from libs.research.regime_coverage import lag1_autocorr, regime_coverage
 from libs.research.slot_registry import cohort_m_for_bar, derive_slots
 from libs.validation.forward_stats import holm_alpha, holm_bar, nw_tstat
 
@@ -295,6 +296,21 @@ def _decision_point(declared: int | None) -> tuple[int, str]:
     return MIN_OBS, "STAMPED"
 
 
+def _regime_coverage_for(closes: dict, used: list) -> tuple[int, dict]:
+    """Regimes this clock's OWN observations fell in -- never the ones its price history contains.
+
+    A clock born last week has not covered the regimes in a two-year close series, and counting
+    them from the series would credit it with evidence it never collected. So the observation
+    dates are mapped to positions in the ascending close series and only those bars are counted.
+    """
+    if not closes:
+        return 0, {"status": "UNMEASURED", "why": "no close series for this symbol"}
+    dates = sorted(closes)
+    pos = {d: i for i, d in enumerate(dates)}
+    series = [closes[d] for d in dates]
+    idx = [pos[d] for d in used if d in pos]
+    return regime_coverage(series, idx or None)
+
 def _evaluate(name: str, clock: str, symbol: str, field: str, direction: int, m: int,
               declared: int | None = None) -> dict:
     rows = _clock_rows(_ROOT / clock)
@@ -362,6 +378,24 @@ def _evaluate(name: str, clock: str, symbol: str, field: str, direction: int, m:
                 "note": "not enough aligned forward days yet"}
 
     arr = np.asarray(rets, dtype="float64")
+    # THE TWO DEFLATOR INPUTS NOTHING HAS EVER PUBLISHED, and their absence is expensive in
+    # opposite directions. `evidence_clock.regime_penalty` charges 0.5 for UNMEASURED exactly as
+    # it does for MEASURED-AS-ONE, so every clock on this desk has been paying a single-regime
+    # penalty for a fact nobody recorded -- measured 2026-08-14, all nine axis clocks at 0.50
+    # effective observations per day, every one binding on "regime concentration". A clock that
+    # genuinely spanned three regimes is paying double, and publishing the count halves its
+    # remaining wait the same day while lowering no bar: the deflator was always meant to be
+    # measured, and a placeholder is not a measurement.
+    #
+    # `autocorrelation` runs the OTHER way and is published for exactly that reason. The
+    # unmeasured default of 0.0 leaves the serial deflator at 1.0, so a positively autocorrelated
+    # clock is currently being CREDITED too much and this will make it slower. A measurement that
+    # can only ever help is not a measurement.
+    #
+    # Both are DIAGNOSTIC fields on the record. No verdict, bar or promotion path below reads
+    # them; `evidence_clock` consumes them wherever a caller chooses to build an EvidenceState.
+    regimes, regime_detail = _regime_coverage_for(closes, used)
+    rho1 = lag1_autocorr(arr)
     cum = float(np.prod(1.0 + arr) - 1.0)
     sharpe = float(arr.mean() / arr.std() * np.sqrt(365)) if arr.std() > 0 else 0.0
     t = float(nw_tstat(arr)) if n >= 3 else 0.0
@@ -380,6 +414,14 @@ def _evaluate(name: str, clock: str, symbol: str, field: str, direction: int, m:
             # Publishing both is the point: a reader can see the bar today AND the bar as agreed.
             "decision_at_obs": point, "decision_point_provenance": provenance, **diag,
             "obs_short": int(suff.obs_short), "evidence": suff.reason,
+            # DEFLATOR INPUTS for libs.research.evidence_clock. `distinct_regimes` 0 means
+            # UNMEASURED and is kept distinct from 1 (measured single) even though the penalty
+            # table treats them alike today -- folding "could not tell" into "measured one" is
+            # precisely the substitution that left every clock at half rate. `autocorrelation`
+            # is null rather than 0.0 when it cannot be estimated, because 0.0 is the value that
+            # credits the full raw count.
+            "distinct_regimes": int(regimes), "regime_detail": regime_detail,
+            "autocorrelation": rho1,
             "cum_return": round(cum, 5), "ann_sharpe": round(sharpe, 2),
             "nw_t": round(t, 3), "holm_bar": round(bar, 3), "m_concurrent": m,
             # The peek-safe leg, published so a reader can see WHICH gate is binding rather than
