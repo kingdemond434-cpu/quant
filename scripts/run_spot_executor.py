@@ -64,6 +64,31 @@ MAX_RUN_FRAC = 1.0
 #: returns 0.0 in that case, and 0.0 would let a $0.30 order through to be rejected at the venue.
 FALLBACK_MIN_NOTIONAL = 10.0
 
+#: Quote suffixes the research universe may arrive in, longest first so BTCUSDT strips USDT rather
+#: than matching a shorter suffix inside it. Order matters and is not alphabetical by accident.
+_KNOWN_QUOTES = ("USDT", "USDC", "FDUSD", "TUSD", "EUR", "GBP", "BTC")
+
+
+def retarget(symbol: str, quote: str) -> str:
+    """Re-quote a research symbol onto the asset THIS ACCOUNT MAY ACTUALLY TRADE.
+
+    WHY THIS IS NOT COSMETIC. Measured 2026-08-15: every order came back `-2010 This symbol is not
+    permitted for this account`. Under MiCA, Binance does not permit EEA retail to trade its USDT
+    spot pairs at all, and the desk's entire research universe is quoted in USDT because that is
+    what the data lake holds. The signal is about the BASE asset -- BNB, LINK, ADA -- and the quote
+    is a settlement detail of the venue, so re-quoting changes what is traded not at all and
+    changes whether it CAN be traded completely.
+
+    The bars stay USDT-denominated on purpose. USDT/USDC has traded within a few tens of basis
+    points of parity for years, so a momentum rank over 20-day returns is unaffected; refitting the
+    universe on thinner USDC history would change the measured signal for a reason that has nothing
+    to do with the signal.
+    """
+    for q in _KNOWN_QUOTES:
+        if symbol.endswith(q):
+            return symbol[: -len(q)] + quote
+    return symbol + quote
+
 
 def _round_step(qty: float, step: float) -> float:
     """Down to the venue's step. ALWAYS DOWN: rounding up can exceed the intended weight and, on
@@ -96,6 +121,11 @@ def main() -> int:
                     help="ACTUALLY PLACE ORDERS. Absent, this prints what it would do and spends "
                          "nothing")
     ap.add_argument("--max-run-frac", type=float, default=MAX_RUN_FRAC)
+    ap.add_argument("--quote", default="USDT",
+                    help="quote asset to TRADE in, independent of the quote the research universe "
+                         "is denominated in. EEA retail cannot trade Binance USDT pairs under "
+                         "MiCA (-2010) and must use USDC; the signal is about the base asset and "
+                         "is unchanged by the settlement leg")
     ap.add_argument("--cycle", default=None,
                     help="idempotency scope; defaults to the UTC date so a re-run on the same day "
                          "reuses client order IDs and the venue rejects the duplicate")
@@ -117,7 +147,7 @@ def main() -> int:
     rep: dict[str, Any] = {
         "updated": datetime.now(tz=UTC).isoformat(),
         "cycle": cycle, "armed": armed, "armed_why": why_armed,
-        "rail_frozen": rail_frozen, "rail_why": why_rail,
+        "rail_frozen": rail_frozen, "rail_why": why_rail, "quote": args.quote,
         "targets_why": why_targets, "equity_usd": float(args.equity),
         "placed": [], "refused": [], "dry_run": not place,
         "leverage": "1.0x -- SPOT HOLDS WHAT IT PAID FOR. No leverage exists on this path and "
@@ -149,20 +179,23 @@ def main() -> int:
 
     budget = float(args.equity) * float(args.max_run_frac)
     spent = 0.0
-    for sym, frac in sorted(targets.items(), key=lambda kv: -kv[1]):
+    for research_sym, frac in sorted(targets.items(), key=lambda kv: -kv[1]):
+        sym = retarget(research_sym, args.quote)
         want_usd = frac * float(args.equity)
-        base = sym.replace("USDT", "")
+        base = retarget(research_sym, "")
         price = float(px.get(sym) or 0.0)
         have_usd = float(held.get(base, 0.0)) * price
         delta = want_usd - have_usd            # THE DELTA, never the target
         f = filters.get(sym, {})
         min_notional = float(f.get("min_notional") or 0.0) or FALLBACK_MIN_NOTIONAL
 
-        row: dict[str, Any] = {"symbol": sym, "target_weight": frac,
+        row: dict[str, Any] = {"symbol": sym, "research_symbol": research_sym,
+                               "target_weight": frac,
                                "want_usd": round(want_usd, 2), "have_usd": round(have_usd, 2),
                                "delta_usd": round(delta, 2)}
         if price <= 0:
-            row["why"] = "no price from the venue -- UNMEASURED, refusing to size against it"
+            row["why"] = (f"{sym} carries no price at the venue -- it may not be listed in "
+                          f"{args.quote}. UNMEASURED, refusing to size against it")
             rep["refused"].append(row)
             continue
         if abs(delta) < min_notional:
