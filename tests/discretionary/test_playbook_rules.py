@@ -12,10 +12,14 @@ fires on both is a rule that fires on anything.
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 import pandas as pd
+import pytest
 
 from libs.discretionary import rules as R
+from libs.discretionary import tape as T
 
 
 def _frame(close: list[float] | np.ndarray, *, vol: list[float] | np.ndarray | None = None,
@@ -159,41 +163,134 @@ def test_H11_FIRES_AT_THE_BAND_AND_TARGETS_THE_MEAN() -> None:
 
 
 # ---------------------------------------------------------------- H4 / H5, tape-fed
-class _Profile:
-    def __init__(self, poc: float, vah: float, val: float, cvd: float) -> None:
-        self.poc, self.vah, self.val, self.cvd = poc, vah, val, cvd
+#
+# THESE BUILD REAL PROFILES FROM SYNTHETIC PRINTS rather than stubbing the dataclass. The stub the
+# first version used carried poc/vah/val/cvd and nothing else, which is exactly the shape that let
+# a scalar CVD be compared against a DAILY candle extreme: the stub could not represent a window,
+# so the window mismatch was unrepresentable in the test too.
+_HOUR = 3_600_000
+
+
+class _Prof:
+    """A minimal profile double for the value-area geometry tests, which need no bars."""
+
+    def __init__(self, poc: float, vah: float, val: float, last_price: float) -> None:
+        self.poc, self.vah, self.val = poc, vah, val
+        self.last_price, self.bars, self.cvd = last_price, (), 0.0
+
+
+def _tape(bars: list[tuple[float, int, int]]) -> list[tuple[int, float, float, bool]]:
+    """(price, n_buyer_aggressed, n_seller_aggressed) per hour -> aggTrade tuples.
+
+    `m=True` means the BUYER was the maker, so the aggressor was a SELLER. Spelling the two counts
+    out per bar is the whole point: delta is the only column here no candle source can supply, and
+    a helper that derived it from price direction would be testing the folk method instead.
+    """
+    out: list[tuple[int, float, float, bool]] = []
+    for h, (px, n_buy, n_sell) in enumerate(bars):
+        t0 = h * _HOUR
+        for j in range(n_buy + n_sell):
+            out.append((t0 + j * 1000, float(px), 1.0, j >= n_buy))
+    return out
+
+
+def _profile(bars: list[tuple[float, int, int]]) -> Any:
+    """A profile over `bars`. One extra hour is appended and then dropped by `tape_bars` as the
+    in-progress bucket, so the window under test is exactly `bars`."""
+    return T.volume_profile(_tape([*bars, (bars[-1][0], 1, 0)]))
 
 
 def test_H4_FADES_A_PRINT_OUTSIDE_THE_VALUE_AREA_TOWARD_THE_POC() -> None:
-    b = _frame([100.0] * 60 + [112.0])
-    got = R.h4_auction_value(b, _Profile(poc=100.0, vah=105.0, val=95.0, cvd=0.0))
+    got = R.h4_auction_value(_Prof(poc=100.0, vah=105.0, val=95.0, last_price=112.0))
     assert got and got[0].direction == -1
     assert got[0].target == 100.0, "an unaccepted print reverts to where volume actually traded"
 
 
 def test_H4_IS_SILENT_INSIDE_THE_VALUE_AREA() -> None:
     """Price inside the area is the auction doing what it should. That is not a signal."""
-    b = _frame([100.0] * 60 + [101.0])
-    assert not R.h4_auction_value(b, _Profile(poc=100.0, vah=105.0, val=95.0, cvd=0.0))
+    assert not R.h4_auction_value(_Prof(poc=100.0, vah=105.0, val=95.0, last_price=101.0))
 
 
-def test_H5_FADES_A_NEW_HIGH_MADE_ON_NEGATIVE_DELTA() -> None:
+#: A base auction with real width: twenty hours oscillating across a few price bins, so the value
+#: area is an interval rather than a single bin. A degenerate zero-width area is refused by H4 (a
+#: stop half a width beyond the edge would be a zero-distance stop) and would test nothing here.
+_BASE = [(100.0 + (i % 5) * 0.5, 20, 10) for i in range(20)]
+
+
+def test_H4_READS_THE_TAPES_LAST_PRINT_NOT_A_CANDLE_CLOSE() -> None:
+    """The profile is built from the last day of prints. Judging it against a DAILY bar's close
+    asks whether a level up to twenty hours old sits outside an auction measured to the minute."""
+    p = _profile([*_BASE, (130.0, 20, 10)])
+    assert p is not None and p.last_price == pytest.approx(130.0)
+    assert p.vah > p.val, "the value area must have width or H4 is right to decline"
+    got = R.h4_auction_value(p)
+    assert got and got[0].direction == -1 and got[0].entry_price == pytest.approx(130.0)
+    assert got[0].target == pytest.approx(p.poc)
+
+
+def test_H5_FADES_A_NEW_HIGH_THE_AGGRESSORS_DID_NOT_FUND() -> None:
     """THE STATEMENT OHLCV CANNOT MAKE. A new high carried by makers rather than aggressors is
     being sold into -- which is why this hypothesis waited for the tape."""
-    b = _frame(list(np.linspace(100, 110, 40)))
-    got = R.h5_cvd_divergence(b, _Profile(poc=105.0, vah=108.0, val=102.0, cvd=-9000.0))
+    rising = [(100.0 + i * 0.5, 20, 5) for i in range(20)]     # net-bought all the way up
+    p = _profile([*rising, (115.0, 2, 40)])                    # new high, heavily seller-aggressed
+    assert p is not None
+    got = R.h5_cvd_divergence(p)
     assert got and got[0].direction == -1
+    assert "not funded" in got[0].note
 
 
 def test_H5_IS_SILENT_WHEN_FLOW_CONFIRMS_THE_MOVE() -> None:
-    b = _frame(list(np.linspace(100, 110, 40)))
-    assert not R.h5_cvd_divergence(b, _Profile(poc=105.0, vah=108.0, val=102.0, cvd=+9000.0))
+    rising = [(100.0 + i * 0.5, 20, 5) for i in range(20)]
+    p = _profile([*rising, (115.0, 40, 2)])                    # new high, aggressors funded it
+    assert p is not None and not R.h5_cvd_divergence(p)
+
+
+def test_H5_TESTS_A_DIVERGENCE_AND_NOT_THE_SIGN_OF_ONE_SCALAR() -> None:
+    """THE DEFECT THE FIRST VERSION SHIPPED WITH. It fired on `cvd < 0` -- the sign of cumulative
+    delta over the whole window. On a tape with any persistent imbalance that scalar holds one
+    sign for days, so the rule was "new high while the day happens to be net-sold": constant in
+    one regime, silent in the other, and in neither case the registered comparative claim.
+
+    Here an early flush leaves the window's SCALAR deeply negative for the rest of the day, while
+    over the ten bars that matter cumulative delta climbs with price and sets a new local high
+    alongside it. A LEVEL test shorts this. A DIVERGENCE test must not, and that difference is
+    the entire hypothesis."""
+    flush = [(100.0, 5, 55) for _ in range(10)]                 # -50/bar: cum reaches -500
+    recovery = [(101.0 + i, 25, 5) for i in range(10)]          # +20/bar: cum climbs to -300
+    p = _profile([*flush, *recovery, (115.0, 35, 5)])           # new high, cum climbs to -270
+    assert p is not None
+    assert p.cvd < 0, "the scalar is negative -- a level test would short here"
+    cum = p.cum_delta()
+    assert cum[-1] > max(cum[-11:-1]), "cum delta set a new local high with price"
+    assert not R.h5_cvd_divergence(p), "price and flow agree: there is no divergence to trade"
+
+
+def test_PRICE_AND_FLOW_ARE_MEASURED_ON_ONE_GRID() -> None:
+    """The seam this whole rewrite closes: both series come off `profile.bars`, and the scalar is
+    trimmed to the same span, so no caller can hand H5 a ten-DAY extreme and one day of flow."""
+    p = _profile(_BASE)
+    assert p is not None
+    assert len(p.cum_delta()) == len(p.bars) == len(_BASE)
+    assert p.cum_delta()[-1] == pytest.approx(p.cvd, abs=1e-9), \
+        "the scalar cvd IS the last cumulative point -- they can never describe different windows"
+
+
+def test_A_STALE_TAPE_IS_REFUSED_NOT_FADED() -> None:
+    """If a recorder unit stops, every number in the profile stays well-formed and describes an
+    auction that has already ended. Only its AGE says so."""
+    p = _profile([*_BASE, (130.0, 20, 10)])
+    assert p is not None
+    fresh_ms = p.last_ts + int(0.5 * _HOUR)
+    stale_ms = p.last_ts + int((T.MAX_TAPE_AGE_H + 5) * _HOUR)
+    assert R.detect_with_tape(p, now_ms=fresh_ms), "a fresh tape must produce the H4 fade"
+    assert R.detect_with_tape(p, now_ms=stale_ms) == []
+    assert p.age_h(stale_ms) > T.MAX_TAPE_AGE_H
 
 
 def test_THE_TAPE_RULES_DECLINE_WITHOUT_A_PROFILE() -> None:
     """No tape must be reported as NO TAPE by the caller, not as no setups. A rule that returned
     silence for a missing input is indistinguishable from one that found nothing."""
-    assert R.detect_with_tape(_quiet(), None) == []
+    assert R.detect_with_tape(None) == []
 
 
 # ---------------------------------------------------------------- family-level

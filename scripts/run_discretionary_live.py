@@ -202,6 +202,8 @@ def main() -> int:
     absent: list[str] = []
     skipped_short: list[str] = []
     no_tape: list[str] = []
+    stale_tape: list[str] = []
+    tape_errors: list[str] = []
     placed: list[dict[str, Any]] = []
     # THE VENUE IS READ ONCE, not per rule. Eleven rules each fetching balances would be eleven
     # round trips describing eleven slightly different accounts.
@@ -242,8 +244,18 @@ def main() -> int:
             prof = tape.volume_profile(trades)
             if prof is None:
                 no_tape.append(sym)
+            elif not prof.fresh():
+                # THE RECORDER STOPPING IS INVISIBLE FROM INSIDE THE PROFILE. Every number stays
+                # well-formed; only its age says the auction being described has already ended.
+                stale_tape.append(f"{sym} ({prof.age_h():.1f}h)")
             else:
-                found.extend(rules.detect_with_tape(df, prof))
+                # NOT wrapped in a bare except. A rule that raises is a defect to see, not a
+                # symbol to skip -- but one symbol's defect must not cost the other ten their
+                # book, so the failure is CAUGHT HERE, NAMED, and published in the artifact.
+                try:
+                    found.extend(rules.detect_with_tape(prof))
+                except Exception as exc:
+                    tape_errors.append(f"{sym}: {type(exc).__name__}: {exc}")
         if not found:
             continue
         # THE MOST RECENT SETUP PER RULE. Replaying every historical setup as a live intent would
@@ -313,6 +325,9 @@ def main() -> int:
         "wallet": args.wallet,
         "rules_run": sorted([args.rule_id, *rules.READY, *rules.TAPE_RULES]),
         "no_tape_symbols": no_tape,
+        "stale_tape_symbols": stale_tape,
+        "max_tape_age_h": tape.MAX_TAPE_AGE_H,
+        "tape_rule_errors": tape_errors,
         "still_blocked": rules.BLOCKED,
         "intents": rows,
         "note": ("Intents only -- nothing is placed here. Routing goes through the executor and "
@@ -341,6 +356,14 @@ def main() -> int:
     if no_tape:
         print(f"  NO TAPE for: {', '.join(no_tape)} -- H4/H5 are UNMEASURED on these, which is a "
               "statement about the recorder, not about the market")
+    if stale_tape:
+        print(f"  STALE TAPE (> {tape.MAX_TAPE_AGE_H}h) for: {', '.join(stale_tape)} -- the "
+              "profile is well-formed and describes an auction that has already ended. H4/H5 are "
+              "UNMEASURED here; check the recorder units")
+    if tape_errors:
+        print("  TAPE RULE RAISED -- a defect, not a quiet symbol:")
+        for e in tape_errors:
+            print(f"    {e}")
     if absent:
         print(f"  no bars for: {', '.join(absent)} -- UNMEASURED, not 'no setup'")
     print(f"-> {_JOURNAL} and {_OUT}")
