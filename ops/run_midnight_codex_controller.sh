@@ -4,7 +4,12 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
-PIPELINE_RC="${1:-0}"
+MODE="${1:-run}"
+if [ "$MODE" = "--pipeline-start" ]; then
+    PIPELINE_RC=-1
+else
+    PIPELINE_RC="${1:-0}"
+fi
 LOG_DIR="data/cro_ai_logs"
 STATUS="data/intelligence/midnight_codex_status.json"
 LAST_MESSAGE="data/intelligence/midnight_codex_last_message.md"
@@ -46,6 +51,11 @@ os.replace(tmp, path)
 PYEOF
 }
 
+if [ "$MODE" = "--pipeline-start" ]; then
+    write_status "RUNNING_PIPELINE" "Deterministic frontier is running; controller has not started" -1
+    exit 0
+fi
+
 if ! "$PY" scripts/check_constitution_core.py >>"$LOG" 2>&1; then
     write_status "CONSTITUTION_BREACH" "Sealed master/core verification failed; controller mutation refused" 125
     echo "midnight-codex: constitution verification failed; deterministic machinery remains active" | tee -a "$LOG"
@@ -63,17 +73,57 @@ if ! codex login status >>"$LOG" 2>&1; then
     exit 3
 fi
 
+# Codex 0.147 exposes the unattended policy as a GLOBAL option (before `exec`); newer builds
+# may expose it on `exec`. Detect the parser surface instead of pinning a flag that silently
+# moved. `--approve-for-me` remains a sandboxed, automatic-review compatibility fallback.
+CODEX_GLOBAL_ARGS=()
+CODEX_EXEC_APPROVAL_ARGS=()
+CODEX_HELP=$(codex --help 2>&1)
+CODEX_EXEC_HELP=$(codex exec --help 2>&1)
+if grep -q -- "--ask-for-approval" <<<"$CODEX_HELP"; then
+    CODEX_GLOBAL_ARGS=(--ask-for-approval never)
+elif grep -q -- "--ask-for-approval" <<<"$CODEX_EXEC_HELP"; then
+    CODEX_EXEC_APPROVAL_ARGS=(--ask-for-approval never)
+elif grep -q -- "--approve-for-me" <<<"$CODEX_EXEC_HELP"; then
+    CODEX_EXEC_APPROVAL_ARGS=(--approve-for-me)
+else
+    write_status "CLI_INCOMPATIBLE" "Installed Codex has no supported unattended approval mode" 124
+    echo "midnight-codex: installed CLI lacks an unattended approval mode" | tee -a "$LOG"
+    exit 3
+fi
+
 CLAIM_FILE="$(mktemp)"
 PROMPT_FILE="$(mktemp)"
+HEARTBEAT_PID=""
 cleanup() {
+    if [ -n "$HEARTBEAT_PID" ]; then
+        kill "$HEARTBEAT_PID" >/dev/null 2>&1 || true
+        wait "$HEARTBEAT_PID" 2>/dev/null || true
+    fi
     rm -f -- "$CLAIM_FILE" "$PROMPT_FILE"
 }
 trap cleanup EXIT
 
-"$PY" scripts/controller_checkpoint.py claim --controller codex-midnight --ttl-seconds 900 >"$CLAIM_FILE"
-CLAIM_STATUS=$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8")).get("status", ""))' "$CLAIM_FILE")
-if [ "$CLAIM_STATUS" != "LEASED" ]; then
-    HOLDER=$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8")).get("controller", "unknown"))' "$CLAIM_FILE")
+CLAIM_RC=0
+"$PY" scripts/controller_checkpoint.py claim --controller codex-midnight --ttl-seconds 900 \
+    >"$CLAIM_FILE" || CLAIM_RC=$?
+if [ "$CLAIM_RC" -ne 0 ]; then
+    CLAIM_REASON=$("$PY" -c 'import json,sys
+try: print(json.load(open(sys.argv[1], encoding="utf-8")).get("reason", "unknown claim failure"))
+except Exception: print("unreadable claim response")' "$CLAIM_FILE")
+    write_status "LEASE_ERROR" "Controller lease claim failed: $CLAIM_REASON" "$CLAIM_RC"
+    echo "midnight-codex: lease claim failed closed: $CLAIM_REASON" | tee -a "$LOG"
+    exit "$CLAIM_RC"
+fi
+CLAIM_PARSE_RC=0
+CLAIM_STATUS=$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8")).get("status", ""))' "$CLAIM_FILE") || CLAIM_PARSE_RC=$?
+if [ "$CLAIM_PARSE_RC" -ne 0 ] || { [ "$CLAIM_STATUS" != "LEASED" ] && [ "$CLAIM_STATUS" != "LEASE_HELD" ]; }; then
+    write_status "LEASE_ERROR" "Controller lease claim returned malformed or unknown state" 2
+    echo "midnight-codex: malformed/unknown lease response; failing closed" | tee -a "$LOG"
+    exit 2
+fi
+if [ "$CLAIM_STATUS" = "LEASE_HELD" ]; then
+    HOLDER=$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8")).get("controller", "unknown"))' "$CLAIM_FILE" 2>/dev/null || echo unknown)
     write_status "LEASE_HELD" "Controller lease already held by $HOLDER; duplicate mutation refused" 0
     echo "midnight-codex: lease held by $HOLDER; duplicate controller refused" | tee -a "$LOG"
     exit 0
@@ -83,6 +133,7 @@ export QUANT_CONTROLLER_EPOCH
 export QUANT_CONTROLLER_TOKEN
 QUANT_CONTROLLER_EPOCH=$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["epoch"])' "$CLAIM_FILE")
 QUANT_CONTROLLER_TOKEN=$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["fencing_token"])' "$CLAIM_FILE")
+write_status "RUNNING_CONTROLLER" "Codex holds the fenced lease and is processing the current frontier" -1
 
 {
     printf '=== SEALED AUTHORITATIVE MASTER CONSTITUTION (verified before lease claim) ===\n'
@@ -102,16 +153,19 @@ heartbeat_loop() {
 heartbeat_loop &
 HEARTBEAT_PID=$!
 
-CODEX_ARGS=(exec -C "$PWD" --sandbox workspace-write --ask-for-approval never
+CODEX_ARGS=(exec -C "$PWD" --sandbox workspace-write "${CODEX_EXEC_APPROVAL_ARGS[@]}"
     --output-last-message "$LAST_MESSAGE"
     --config "model_reasoning_effort=${CODEX_NIGHTLY_REASONING_EFFORT:-high}")
 if [ -n "${CODEX_NIGHTLY_MODEL:-}" ]; then
     CODEX_ARGS+=(--model "$CODEX_NIGHTLY_MODEL")
 fi
-codex "${CODEX_ARGS[@]}" - <"$PROMPT_FILE" >>"$LOG" 2>&1
-CODEX_RC=$?
+CODEX_RC=0
+timeout --signal=TERM --kill-after=60 "${CODEX_NIGHTLY_TIMEOUT_SECONDS:-21600}" \
+    codex "${CODEX_GLOBAL_ARGS[@]}" "${CODEX_ARGS[@]}" - <"$PROMPT_FILE" >>"$LOG" 2>&1 \
+    || CODEX_RC=$?
 kill "$HEARTBEAT_PID" >/dev/null 2>&1 || true
 wait "$HEARTBEAT_PID" 2>/dev/null || true
+HEARTBEAT_PID=""
 
 CHECKPOINT_RC=0
 "$PY" scripts/controller_checkpoint.py checkpoint \

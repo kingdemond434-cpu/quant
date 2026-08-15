@@ -20,7 +20,9 @@ def test_midnight_is_a_vps_controller_cycle_not_an_app_automation() -> None:
     assert "00:00:00 Europe/Dublin" in TIMER.read_text("utf-8")
     assert "run_midnight_frontier.sh" in SERVICE.read_text("utf-8")
     wrapper = WRAPPER.read_text("utf-8")
-    assert wrapper.index("run_sweep_then_cycle.sh") < wrapper.index(
+    # A pre-run status publication is allowed, but deterministic evidence must finish
+    # before the actual reasoning-controller invocation.
+    assert wrapper.index("run_sweep_then_cycle.sh") < wrapper.rindex(
         "run_midnight_codex_controller.sh"
     )
     assert ".midnight_controller_cycle.lock" in wrapper
@@ -54,7 +56,6 @@ def test_codex_controller_is_noninteractive_fenced_and_checkpointed() -> None:
     for required in (
         "check_constitution_core.py",
         "codex login status",
-        "--ask-for-approval never",
         "--sandbox workspace-write",
         "controller_checkpoint.py claim",
         "controller_checkpoint.py heartbeat",
@@ -64,6 +65,12 @@ def test_codex_controller_is_noninteractive_fenced_and_checkpointed() -> None:
     ):
         assert required in source
     assert "persistent workers" in source or "deterministic machinery remains active" in source
+    assert "--approve-for-me" in source and "--ask-for-approval never" in source
+    assert 'codex "${CODEX_GLOBAL_ARGS[@]}" "${CODEX_ARGS[@]}"' in source
+    assert "CLI_INCOMPATIBLE" in source
+    assert "RUNNING_PIPELINE" in source and "RUNNING_CONTROLLER" in source
+    assert "LEASE_ERROR" in source and "CLAIM_RC" in source
+    assert "CODEX_NIGHTLY_TIMEOUT_SECONDS:-21600" in source
     assert "--dangerously-bypass-approvals-and-sandbox" not in source
     assert source.index("check_constitution_core.py") < source.index(
         "controller_checkpoint.py claim"
@@ -72,6 +79,18 @@ def test_codex_controller_is_noninteractive_fenced_and_checkpointed() -> None:
     assert "HANDOFF_INCOMPLETE" in source
     assert '|| CHECKPOINT_RC=$?' in source
     assert '|| TRANSFER_RC=$?' in source
+
+
+def test_midnight_waits_for_an_existing_pipeline_before_reasoning() -> None:
+    wrapper = WRAPPER.read_text("utf-8")
+    sweep = Path("ops/run_sweep_then_cycle.sh").read_text("utf-8")
+    assert "run_sweep_then_cycle.sh --cycle-only --wait-existing" in wrapper
+    assert wrapper.index("--pipeline-start") < wrapper.index("run_sweep_then_cycle.sh")
+    assert 'if [ "$WAIT_EXISTING" -eq 1 ]' in sweep
+    assert sweep.index("flock 9") < sweep.index("existing overnight frontier completed")
+    assert "HANDOFF_MTIME" in sweep
+    assert 'd.get("pipeline", {}).get("rc")' in sweep
+    assert "--cycle-only) CYCLE_ONLY=1" in sweep
 
 
 def test_controller_prompt_forces_continuation_conversion_and_open_world_coverage() -> None:
@@ -89,3 +108,17 @@ def test_controller_prompt_forces_continuation_conversion_and_open_world_coverag
         assert required.casefold() in prompt.casefold()
     assert MANDATE.exists() and len(MANDATE.read_text("utf-8")) > 20_000
     assert "controller_continuity.py" in AGENTS.read_text("utf-8")
+
+
+def test_midnight_aggressively_converts_real_orphans_end_to_end() -> None:
+    prompt = PROMPT.read_text("utf-8")
+    for required in (
+        "web/intelligence_cycle.json",
+        "data/published_gaps/orphan_chain.json",
+        "ORPHAN",
+        "INERT",
+        "CONVERSION_FAILURE",
+        "WIRE, TEST, ARCHIVE, DELETE or BLOCKED",
+        "producer -> durable output -> consumer -> decision/research",
+    ):
+        assert required in prompt

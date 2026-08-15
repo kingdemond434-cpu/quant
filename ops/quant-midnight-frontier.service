@@ -4,6 +4,9 @@ After=network-online.target
 
 [Service]
 Type=oneshot
+TimeoutStartSec=18h
+KillMode=control-group
 User=quant
+Environment="PATH=/home/quant/quant-platform/.venv/bin:/home/quant/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 WorkingDirectory=/home/quant/quant-platform
 ExecStart=/bin/bash /home/quant/quant-platform/ops/run_midnight_frontier.sh

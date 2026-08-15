@@ -9,7 +9,13 @@ if ! flock -n 8; then
     exit 0
 fi
 
-bash ops/run_sweep_then_cycle.sh
+# Publish the in-progress state before long-running deterministic work. This prevents yesterday's
+# successful status from masking a hung current cycle.
+bash ops/run_midnight_codex_controller.sh --pipeline-start || exit $?
+
+# The cycle builds bars before running every registered study, including full_sweep. Skipping
+# the wrapper's pre-bars sweep prevents duplicate compute and a stale-bars false BLOCKED result.
+bash ops/run_sweep_then_cycle.sh --cycle-only --wait-existing
 PIPELINE_RC=$?
 bash ops/run_midnight_codex_controller.sh "$PIPELINE_RC"
 CONTROLLER_RC=$?

@@ -144,6 +144,44 @@ def blocked(missing: list[str]) -> dict:
     }
 
 
+def unmeasured_alignment(*, eth_bars: int, btc_bars: int, aligned_bars: int,
+                            valid_aligned_bars: int) -> dict:
+    """Truthful terminal artifact when the registered OOS return series cannot exist.
+
+    Fewer than two finite, positive, timestamp-aligned closes cannot produce even one return.
+    Running the grid anyway would manufacture zero-return arms and an arbitrary "best" arm.
+    """
+    return {
+        "ts": datetime.now(tz=UTC).isoformat(),
+        "verdict": "UNMEASURED",
+        "reason": (
+            "fewer than two finite positive aligned ETH/BTC closes in the "
+            "pre-registered out-of-sample window"
+        ),
+        "window": f"{OOS_START} .. {OOS_END}",
+        "input_bars": {"ETHUSDT": eth_bars, "BTCUSDT": btc_bars},
+        "raw_aligned_bars": aligned_bars,
+        "bars": valid_aligned_bars,
+        "observed_return_intervals": max(valid_aligned_bars - 1, 0),
+        "nominal_trials": nominal_trials(),
+        "shared_budget": SHARED_BUDGET,
+        "hurdle": round(hurdle(), 3),
+        "kill_criteria_fired": [
+            f"K8 SAMPLE FLOOR: 0 trades < {MIN_TRADES} -> UNMEASURED, not 'no edge'"
+        ],
+        "buy_and_hold_log_return": {},
+        "best_arm": {},
+        "arms": [],
+        "stage_reached": "DATA ALIGNMENT -- no strategy or control arm evaluated",
+        "preregistration": str(PREREG.relative_to(ROOT)),
+        "note": (
+            "NOTHING IS SYNTHESISED. No strategy, random-control or buy-and-hold result was "
+            "computed from an absent return series."
+        ),
+        "authority": "NONE. Stage A. Pre-registers nothing, promotes nothing, trades nothing.",
+    }
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--seed", type=int, default=7, help="K6 negative-control seed")
@@ -162,7 +200,28 @@ def main() -> int:
         return 0
 
     df = pd.merge(eth, btc, on="timestamp", suffixes=("_eth", "_btc"))
-    df = df[(df.timestamp >= OOS_START) & (df.timestamp <= OOS_END)]
+    df = df[(df.timestamp >= OOS_START) & (df.timestamp <= OOS_END)].copy()
+    raw_aligned_bars = len(df)
+    for close in ("close_eth", "close_btc"):
+        df[close] = pd.to_numeric(df[close], errors="coerce")
+    df = df.replace([np.inf, -np.inf], np.nan).dropna(subset=["close_eth", "close_btc"])
+    df = df[(df.close_eth > 0) & (df.close_btc > 0)].reset_index(drop=True)
+    if len(df) < 2:
+        rep = unmeasured_alignment(
+            eth_bars=len(eth),
+            btc_bars=len(btc),
+            aligned_bars=raw_aligned_bars,
+            valid_aligned_bars=len(df),
+        )
+        OUT.parent.mkdir(parents=True, exist_ok=True)
+        OUT.write_text(json.dumps(rep, indent=1), "utf-8")
+        print(
+            "ethbtc-rotation: UNMEASURED -- "
+            f"{len(df)} valid aligned OOS bars; no return series"
+        )
+        print(f"  artifact: {OUT.relative_to(ROOT)}")
+        return 0
+
     per_year = 365.0 if len(df) < 5000 else 365.0 * 6
 
     rows, rng = [], np.random.default_rng(a.seed)

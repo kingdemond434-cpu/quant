@@ -70,3 +70,12 @@ def test_THE_BAR_BUDGET_IS_OVERRIDABLE_BUT_HAS_A_SANE_DEFAULT() -> None:
     competes with the recorders, so it is a declared default rather than an unbounded job."""
     src = CYCLE.read_text("utf-8")
     assert "BARS_FILE_BUDGET:-" in src
+
+
+def test_STAGE_FAILURES_REMAIN_VISIBLE_AFTER_INDEPENDENT_STAGES_CONTINUE() -> None:
+    """A failed study/monitor must not be converted to scheduler success by `|| true` or echo."""
+    src = CYCLE.read_text("utf-8")
+    assert "record_failure" in src
+    assert "STAGE FAILED" in src
+    assert 'exit "$CYCLE_RC"' in src
+    assert "|| true" not in src

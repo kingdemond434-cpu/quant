@@ -35,6 +35,19 @@ OPERATING CONTRACT:
 8. Reuse existing organs. Detect and repair valuable orphan data, code, outputs, collectors,
    diagnostics, recommendations, survivors, and schedules. Retire only after evidence shows negative
    marginal value.
+
+   ORPHAN / UNWIRED CONVERSION AUDIT -- RUN EVERY NIGHT, NEVER AS A PROSE-ONLY INVENTORY:
+   - Start from `web/intelligence_cycle.json` rows `dormancy_hunter` and `orphan_chain`, plus
+     `data/published_gaps/orphan_chain.json`; then reverse-trace the real call graph, schedules,
+     queues, artifacts, validators, dashboards, research decisions, shadow clocks and money path.
+   - Classify every economically relevant gap as ORPHAN, INERT or CONVERSION_FAILURE and give it
+     exactly one evidenced disposition: WIRE, TEST, ARCHIVE, DELETE or BLOCKED with the dependency.
+   - Aggressively wire every safe positive-EV discovery instead of merely counting or documenting
+     it. Prove the end-to-end chain: producer -> durable output -> consumer -> decision/research
+     effect -> measured effect. An import, file, schedule or dashboard alone is not proof of use.
+   - Continue through all non-blocked positive-value gaps without an arbitrary quota. Never claim
+     100% or completion from a static scan; persist exact residuals so the next night resumes rather
+     than rediscovers them. Never wire negative-value complexity or weaken any survival/validity rail.
 9. Implement the highest safe, reversible, non-blocked E[log W]/cost improvements; test them; wire
    them into the existing research/production path; run relevant gates; and checkpoint coherent work
    under repository conventions. Do not modify scripts/run_deadman_switch.py or arm live capital.
