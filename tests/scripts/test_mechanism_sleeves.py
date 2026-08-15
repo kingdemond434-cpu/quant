@@ -130,3 +130,35 @@ def test_THE_CENSUS_CLASS_IS_THE_ONE_THE_CENSUS_ASSIGNS() -> None:
         declared = CONSTRUCTION_CLASS.get(subtype)
         if declared is not None:
             assert declared == census_class, f"{subtype}: census says {declared}"
+
+
+def test_A_SLEEVE_ARTIFACT_DECLARES_ITS_SLICE_OF_THE_ACCOUNT() -> None:
+    """MEASURED LIVE 2026-08-15. These weights published 5% gross across three symbols and the
+    margin executor read them as THE WHOLE BOOK -- an instruction to sell 95% of an account these
+    sleeves do not own, liquidating the momentum book to fund a 5% sleeve. Nothing caught it
+    except the unrelated rule that SELL legs are not placed by that script: a safety net that
+    happened to be in the way, not a design.
+
+    `book_frac` is the fix and it must be present, because its ABSENCE means 1.0 -- whole
+    account -- which is correct for the momentum book and catastrophic for a sleeve."""
+    rep = M.build()
+    assert "book_frac" in rep, "an artifact with no book_frac is read as claiming the account"
+    assert rep["book_frac"] == pytest.approx(M.EQUAL_CLIP_FRAC * len(M.SLEEVES))
+    assert 0.0 < rep["book_frac"] < 1.0, "these sleeves must never claim the whole book"
+    assert "90% liquidation order" in rep["book_frac_why"]
+
+
+def test_WEIGHTS_ARE_SHARES_OF_THE_SLICE_NOT_OF_THE_ACCOUNT() -> None:
+    """Publishing account-shares here would make the meaning of a weight depend on which file
+    read it -- the executor scales by book_frac, so a weight that already accounted for the slice
+    would be applied twice and the sleeve would run at a fraction of its intended size."""
+    from libs.autodiscovery.generators import MarketSeries
+
+    rep = M.build()
+    if not rep["target_weights"]:
+        pytest.skip("no lake series on this host -- the slice arithmetic needs a live signal")
+    assert rep["gross_frac_of_slice"] <= 1.0 + 1e-9, "shares of the slice cannot exceed the slice"
+    assert rep["gross_frac_of_account"] == pytest.approx(
+        rep["gross_frac_of_slice"] * rep["book_frac"])
+    assert rep["gross_frac_of_account"] <= rep["book_frac"] + 1e-9
+    assert MarketSeries is not None

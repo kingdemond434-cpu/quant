@@ -57,10 +57,16 @@ _OUT = Path("web/margin_executor.json")
 #: Annualised cross-margin borrow rate assumed when the venue's own figure is unavailable. It
 #: enters the KELLY NUMERATOR, so understating it over-levers by exactly the amount understated --
 #: hence a deliberately high default rather than a flattering one.
-DEFAULT_BORROW_RATE = 0.10
+#: NO LONGER A DEFAULT -- kept only so an operator can see what the placeholder WAS, and what it
+#: cost. At 10% assumed against a book earning 8.2%/yr (Sharpe 0.48 at 17% vol), Kelly returns
+#: 0.00x and the margin path reports "1.00x FLOOR BINDING": the account was moved to cross margin
+#: for leverage the arithmetic was refusing on a number nobody had measured. The rate is now read
+#: from the venue, which publishes it hourly and charges it hourly.
+_HISTORICAL_PLACEHOLDER_BORROW_RATE = 0.10
 
 
-def _targets(path: Path | None = None) -> tuple[dict[str, float], float | None, int | None, str]:
+def _targets(path: Path | None = None) -> tuple[
+        dict[str, float], float | None, int | None, str, float]:
     """Target weights plus the book's own Sharpe and observation count, from one artifact.
 
     All three come from the same file BECAUSE THEY MUST DESCRIBE THE SAME BOOK. A Sharpe read from
@@ -76,16 +82,20 @@ def _targets(path: Path | None = None) -> tuple[dict[str, float], float | None, 
     except (OSError, ValueError) as exc:
         return {}, None, None, (f"{src} unreadable ({type(exc).__name__}) -- UNMEASURED. "
                                 "Refusing: an empty book would read as 'go to cash' and would sell "
-                                "everything on borrowed money")
+                                "everything on borrowed money"), 1.0
     w = d.get("target_weights")
     if not isinstance(w, dict) or not w:
-        return {}, None, None, f"{src} carries no target_weights"
+        return {}, None, None, f"{src} carries no target_weights", 1.0
     sharpe = d.get("sharpe_excess")
     n = d.get("n_days")
+    # `book_frac`: the share of the ACCOUNT this artifact claims. A sleeve that publishes 5% gross
+    # is describing 5% of the book, not a 95% liquidation order for everything else.
+    frac = d.get("book_frac")
     return ({str(k): float(v) for k, v in w.items()},
             float(sharpe) if isinstance(sharpe, (int, float)) else None,
             int(n) if isinstance(n, (int, float)) else None,
-            f"{len(w)} weight(s), sharpe_excess={sharpe}, n={n}")
+            f"{len(w)} weight(s), sharpe_excess={sharpe}, n={n}, book_frac={frac or 1.0}",
+            float(frac) if isinstance(frac, (int, float)) and 0.0 < float(frac) <= 1.0 else 1.0)
 
 
 def main() -> int:
@@ -93,7 +103,12 @@ def main() -> int:
     ap.add_argument("--quote", default="USDC")
     ap.add_argument("--place", action="store_true",
                     help="ACTUALLY BORROW AND BUY. Absent, prints what it would do")
-    ap.add_argument("--borrow-rate", type=float, default=DEFAULT_BORROW_RATE)
+    ap.add_argument("--borrow-rate", type=float, default=None,
+                    help="annualised cost of borrowing. DEFAULT: read from the venue. This number "
+                         "decides whether leverage exists at all -- Kelly is (mu-r)/sigma^2 -- and "
+                         "it was a 10%% placeholder until 2026-08-15, which capped the book at 1x "
+                         "against its own measured edge. Pass a number only to override a venue "
+                         "read you have a reason to distrust")
     ap.add_argument("--cycle", default=None)
     ap.add_argument("--targets", default=None,
                     help="target-weights artifact to trade. Defaults to the momentum book. Point "
@@ -110,8 +125,11 @@ def main() -> int:
     rail, why_rail = frozen()
     place = bool(args.place) and not rail and armed
 
-    weights, sharpe, n_obs, why_targets = _targets(
+    weights, sharpe, n_obs, why_targets, book_frac = _targets(
         Path(args.targets) if args.targets else None)
+    why_frac = ("1.0 -- this artifact declares no book_frac, so it claims the whole account (the "
+                "momentum book always did)" if book_frac >= 1.0 else
+                f"{book_frac:.1%} of the account, declared by the artifact itself")
     rep: dict[str, Any] = {"updated": datetime.now(tz=UTC).isoformat(), "cycle": cycle,
                            "armed": armed, "armed_why": why_armed, "rail_frozen": rail,
                            "rail_why": why_rail, "targets_why": why_targets,
@@ -168,13 +186,40 @@ def main() -> int:
     owed = m.liabilities()
     rets = _recent_portfolio_returns(weights, px)
     sigma = realised_vol(rets) if rets else None
-    lev = choose(sigma, sharpe=sharpe, n_obs=n_obs, borrow_rate=float(args.borrow_rate))
+    # THE COST OF CAPITAL IS READ, NOT ASSUMED. An override is honoured; otherwise the venue is
+    # asked. If the venue cannot answer, the rate is UNMEASURED and leverage is refused outright --
+    # falling back to the old placeholder would restore exactly the defect this replaces, and an
+    # unmeasured cost of borrowing is the one input on which guessing low ends the account.
+    if args.borrow_rate is not None:
+        rate, why_rate = float(args.borrow_rate), f"OVERRIDE from --borrow-rate: {args.borrow_rate}"
+    else:
+        rate, why_rate = m.borrow_rate(args.quote)
+    rep["borrow_rate"] = rate
+    rep["borrow_rate_why"] = why_rate
+    if rate is None:
+        lev = choose(sigma, sharpe=sharpe, n_obs=n_obs, borrow_rate=0.0, ceiling=1.0)
+        lev["why"] = ("borrow rate UNMEASURED -- leverage held at 1.00x. " + why_rate
+                      + ". Borrowing at an unknown cost is the one sizing input where a low guess "
+                        "ends the account rather than merely underperforming")
+    else:
+        lev = choose(sigma, sharpe=sharpe, n_obs=n_obs, borrow_rate=rate)
+    rep["book_frac"] = book_frac
+    rep["book_frac_why"] = why_frac
     rep["equity_usd"] = round(equity, 2)
     rep["leverage"] = dict(lev)
     rep["margin_level"] = m.margin_level()
     rep["liabilities"] = {k: round(v, 8) for k, v in owed.items()}
 
-    gross_usd = equity * float(lev["leverage"])
+    # THE BOOK SLICE. A targets artifact may claim only PART of the account, and until 2026-08-15
+    # it could not: every weights file was read as THE WHOLE BOOK. Measured live -- the mechanism
+    # sleeves published 5% gross across three symbols, and this executor therefore wanted to sell
+    # 95% of an account it did not own, liquidating the momentum book to fund a 5% sleeve. Nothing
+    # caught it except the unrelated rule that SELL legs are not placed here, which is a safety net
+    # that happens to be in the way rather than a design.
+    #
+    # `book_frac` is declared BY THE ARTIFACT. Absent, it is 1.0 -- the momentum book is the whole
+    # account and always was, so the old behaviour is preserved exactly where it was correct.
+    gross_usd = equity * float(lev["leverage"]) * book_frac
     free_quote = float(held.get(args.quote, 0.0))
     spent = 0.0
 

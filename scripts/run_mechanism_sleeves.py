@@ -148,6 +148,16 @@ def build() -> dict[str, Any]:
                       "fixed": "BEFORE the first fill, so it cannot be renegotiated by the sleeve "
                                "that breaches it"},
         "sleeves": [], "target_weights": {}, "refused": [],
+        # THE SHARE OF THE ACCOUNT THIS ARTIFACT CLAIMS, and it must be declared or the executor
+        # reads these weights as the WHOLE book. Measured live 2026-08-15: 5% gross across three
+        # symbols was interpreted as an instruction to sell 95% of the account -- liquidating the
+        # momentum book to fund a 5% sleeve. Only the unrelated "SELL legs are not placed here"
+        # rule stopped it, which is a safety net in the way rather than a design.
+        "book_frac": round(EQUAL_CLIP_FRAC * len(SLEEVES), 6),
+        "book_frac_why": (
+            f"{len(SLEEVES)} sleeve(s) at {EQUAL_CLIP_FRAC:.0%} each. These weights are shares of "
+            "THAT slice, never of the account -- a sleeve describing 10% of the book is not a "
+            "90% liquidation order for everything else"),
     }
     if not ok:
         rep["refused"].append(why_exc)
@@ -197,13 +207,18 @@ def build() -> dict[str, Any]:
             longs = {k: v for k, v in nonzero.items() if v > 0}
             row["shorts_refused"] = sorted(k for k, v in nonzero.items() if v < 0)
             if longs:
-                per = EQUAL_CLIP_FRAC / len(longs)
+                # WITHIN THE SLICE. Each sleeve owns 1/len(SLEEVES) of book_frac and splits it
+                # equally across its own longs, so the published weights sum to 1.0 across the
+                # slice and the executor scales them by book_frac. Publishing account-shares here
+                # instead would make the meaning of a weight depend on which file read it.
+                per = (1.0 / len(SLEEVES)) / len(longs)
                 for k in longs:
                     weights[k] = round(weights.get(k, 0.0) + per, 6)
         rep["sleeves"].append(row)
 
     rep["target_weights"] = weights
-    rep["gross_frac"] = round(sum(weights.values()), 6)
+    rep["gross_frac_of_slice"] = round(sum(weights.values()), 6)
+    rep["gross_frac_of_account"] = round(sum(weights.values()) * rep["book_frac"], 6)
     return rep
 
 
@@ -231,7 +246,9 @@ def main() -> int:
     for w in rep["refused"]:
         print(f"  REFUSED: {w}")
     if rep["target_weights"]:
-        print(f"  target weights ({rep['gross_frac']:.1%} gross): "
+        print(f"  slice {rep['book_frac']:.1%} of the account; weights are shares OF THAT SLICE "
+              f"({rep['gross_frac_of_slice']:.0%} of it = {rep['gross_frac_of_account']:.1%} of "
+              f"the book): "
               + ", ".join(f"{k} {v:.3%}" for k, v in sorted(rep["target_weights"].items())))
     print(f"-> {_OUT}")
     return 0 if rep["exception_active"] else 1

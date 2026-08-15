@@ -192,6 +192,52 @@ def account() -> dict[str, Any]:
     return dict(_signed("/sapi/v1/margin/account", {}))
 
 
+def borrow_rate(asset: str = "USDC") -> tuple[float | None, str]:
+    """(annualised borrow rate, why). None when the venue does not answer -- NEVER a default.
+
+    **THIS NUMBER DECIDES WHETHER LEVERAGE EXISTS AT ALL, AND IT WAS A GUESS.** The executor used
+    `DEFAULT_BORROW_RATE = 0.10`. Measured live 2026-08-15 the book's own edge was Sharpe 0.48 at
+    17% annual vol -- an expected 8.2%/yr against an ASSUMED 10% cost of borrowing. Kelly then
+    correctly returns 0.00x, and the whole margin path reports 1.00x FLOOR BINDING. The account was
+    moved to cross margin for leverage the arithmetic was refusing on a placeholder.
+
+    Kelly is `(mu - r)/sigma^2`. `r` is not a modelling choice; the venue publishes it hourly and
+    charges it hourly. A guessed `r` above the truth silently caps the book at 1x; a guessed `r`
+    below it borrows into negative growth. Both errors are invisible -- the printed leverage looks
+    like a considered decision either way.
+
+    RETURNS None RATHER THAN THE OLD DEFAULT when the call fails. The caller must then decide
+    explicitly, and the honest decision on an unmeasured cost of capital is to refuse leverage --
+    not to fall back to the number this function was written to replace.
+    """
+    try:
+        raw = _signed("/sapi/v1/margin/next-hourly-interest-rate",
+                      {"assets": str(asset).upper(), "isIsolated": "FALSE"})
+    except Exception as exc:
+        return None, (f"{type(exc).__name__}: {exc} -- borrow rate UNMEASURED. Not 10%, not zero: "
+                      "unknown. Sizing leverage against a guessed cost of capital is how a book "
+                      "borrows into negative growth while its printed leverage looks considered")
+    rows = raw if isinstance(raw, list) else [raw]
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        val = r.get("nextHourlyInterestRate")
+        if val is None:
+            continue
+        try:
+            hourly = float(val)
+        except (TypeError, ValueError):
+            continue
+        # SIMPLE ANNUALISATION, not compounded. Interest is charged hourly on the borrowed
+        # PRINCIPAL, and Kelly's `r` is a simple continuously-charged cost -- compounding here
+        # would overstate it by ~4% of itself and tighten leverage for an arithmetic reason.
+        annual = hourly * 24.0 * 365.0
+        return annual, (f"{asset.upper()} hourly {hourly:.8f} -> {annual:.2%}/yr, read from the "
+                        "venue at /sapi/v1/margin/next-hourly-interest-rate")
+    return None, (f"venue returned no nextHourlyInterestRate for {asset} -- UNMEASURED. The "
+                  "response shape may have changed; a rate cannot be inferred from its absence")
+
+
 def margin_level() -> float | None:
     """Total assets / total liabilities. None when the venue does not report it -- NEVER a
     default: a missing level rendered as a large number would wave every borrow through, and
