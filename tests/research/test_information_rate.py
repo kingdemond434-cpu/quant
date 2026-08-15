@@ -257,3 +257,30 @@ def test_NO_LEVER_PUBLISHES_A_POINT_GAIN_FROM_AN_UNMEASURED_STATE() -> None:
     for a in accelerants(s, available_symbols=213, bars_per_day=1, available_bars_per_day=3):
         assert a.gain is None, f"{a.lever} published a point gain from unmeasured inputs"
         assert a.gain_low is not None and a.gain_high is not None
+
+def test_UNMEASURED_ACCELERANT_PRINTS_ITS_RANGE_WITHOUT_A_POINT_ESTIMATE() -> None:
+    """Live regression: ``gain=None`` reached ``:.1f`` and crashed the scheduled report."""
+    import scripts.run_information_rate as R
+
+    line = R._format_accelerant(
+        {"lever": "widen cross-section", "gain": None, "gain_low": 12.3, "gain_high": 213.0}
+    )
+    assert line == "      UNMEASURED [12.3x..213.0x]  widen cross-section"
+    assert "+0.0x" not in line and "+None" not in line
+
+
+def test_UNMEASURED_ACCELERANT_WITHOUT_BOUNDS_STAYS_UNMEASURED() -> None:
+    """Missing uncertainty bounds are absence, never permission to substitute zero."""
+    import scripts.run_information_rate as R
+
+    assert R._format_accelerant({"lever": "unknown", "gain": None}) == (
+        "      UNMEASURED  unknown"
+    )
+
+
+def test_MEASURED_ACCELERANT_RETAINS_THE_EXISTING_POINT_FORMAT() -> None:
+    import scripts.run_information_rate as R
+
+    assert R._format_accelerant({"lever": "publish regimes", "gain": 2.0}) == (
+        "      +2.0x  publish regimes"
+    )

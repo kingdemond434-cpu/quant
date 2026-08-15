@@ -237,7 +237,8 @@ def _read_artifact(path: Path) -> object | None:
             return None
         return rows
     try:
-        return json.loads(text)
+        loaded: object = json.loads(text)
+        return loaded
     except (TypeError, ValueError):
         return None
 

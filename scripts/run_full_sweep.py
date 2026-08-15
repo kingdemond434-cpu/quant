@@ -522,22 +522,28 @@ def main() -> int:
         print(f"  kill criteria already binding: {PREREG.relative_to(ROOT)}")
         return 0
 
-    symbols = sorted(frames)
+    input_symbols = sorted(frames)
     idx, aligned, dropped = align(frames, a.tail_bars)
+    # `align` deliberately drops symbols whose ragged span cannot support the common grid. Every
+    # downstream panel is built from `aligned`, so its symbol axis must come from the same object.
+    # Reusing `input_symbols` here asks every panel for a column it explicitly dropped and turns an
+    # honest coverage reduction into a KeyError (live: 1000CATUSDT, 2026-08-14).
+    symbols = sorted(aligned)
     secs = bar_seconds(idx)
     if len(idx) < a.min_obs * 2 or secs <= 0:
         rep = blocked(
-            (f"the retained grid across {len(symbols)} symbol(s) has {len(idx)} bars -- fewer "
-             f"than {MIN_SYMBOLS_PER_BAR} symbol(s) overlap anywhere, or none covers "
+            (f"the retained grid from {len(input_symbols)} input symbol(s) has {len(idx)} bars -- "
+             f"fewer than {MIN_SYMBOLS_PER_BAR} symbol(s) overlap anywhere, or none covers "
              f"{MIN_SYMBOL_COVERAGE:.0%} of the grid. The recorders cover names raggedly, so this "
              "usually means the per-symbol bar windows do not intersect: widen BARS_FILE_BUDGET so "
              "each symbol reaches further back, or rebuild bars over a common window."),
-            {"symbols": symbols, "common_bars": len(idx),
+            {"symbols": input_symbols, "retained_symbols": symbols,
+             "symbols_dropped_for_coverage": dropped, "common_bars": len(idx),
              "per_symbol_bars": {s: len(d) for s, d in frames.items()},
              "bar_seconds": secs})
         a.out.parent.mkdir(parents=True, exist_ok=True)
         a.out.write_text(json.dumps(rep, indent=1), "utf-8")
-        print(f"full-sweep: BLOCKED -- common grid is {len(idx)} bars across {symbols}.")
+        print(f"full-sweep: BLOCKED -- common grid is {len(idx)} bars across {input_symbols}.")
         return 0
 
     panels, absent = feature_panels(aligned)

@@ -39,6 +39,7 @@ if str(_P(__file__).resolve().parent.parent) not in _sys.path:
     _sys.path.insert(0, str(_P(__file__).resolve().parent.parent))
 
 import json
+import math
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -138,6 +139,25 @@ def _state_for(slot: dict[str, Any]) -> tuple[EvidenceState | None, str]:
         "UNMEASURED here has not been re-run since, or is not an axis clock")
 
 
+def _format_accelerant(row: dict[str, Any]) -> str:
+    """Render measured gain or its explicit uncertainty range without inventing a point value."""
+    lever = str(row.get("lever") or "unknown lever")
+    gain = row.get("gain")
+    if isinstance(gain, (int, float)) and not isinstance(gain, bool) and math.isfinite(gain):
+        return f"      +{gain:.1f}x  {lever}"
+
+    low, high = row.get("gain_low"), row.get("gain_high")
+    range_measured = all(
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+        for value in (low, high)
+    )
+    if range_measured:
+        return f"      UNMEASURED [{low:.1f}x..{high:.1f}x]  {lever}"
+    return f"      UNMEASURED  {lever}"
+
+
 def main() -> int:
     try:
         snap = derive_slots()
@@ -197,7 +217,7 @@ def main() -> int:
         print(f"  {r['clock']:<34} {rate_s:>10} eff obs/day   {left_s}")
         print(f"      binding: {r['binding_constraint']} (x{r['binding_costs_multiplier']})")
         for a in r["accelerants"][:2]:
-            print(f"      +{a['gain']:.1f}x  {a['lever']}")
+            print(_format_accelerant(a))
     for u in unmeasured[:5]:
         print(f"  UNMEASURED  {u}")
     print(f"-> {_OUT} and {_WEB}")
