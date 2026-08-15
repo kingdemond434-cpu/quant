@@ -72,6 +72,9 @@ def _candidate_counts(db_path: Path) -> tuple[int | None, int | None, int | None
 
 def _canonical_stages(path: Path) -> list[dict[str, Any]]:
     """Cumulative rung counts from one identity-preserving ledger only."""
+    if not path.is_file():
+        return [{"stage": state, "count": None, "source": str(path),
+                 "status": "UNMEASURED: canonical ledger has no events"} for state in ORDER]
     try:
         records = AlphaStateLedger(path).records.values()
     except ValueError:
@@ -134,6 +137,17 @@ def build(root: Path = ROOT) -> dict[str, Any]:
                     outcomes[name] = (float(value), float(cost))
     allocation = adaptive_portfolios(outcomes)
     bottleneck = weakest_transition(stages)
+    if bottleneck is None and isinstance(screen_valid, int) and screen_valid > 0:
+        bottleneck = {
+            "from": "LEGACY_SCREEN_RECORD",
+            "to": "CANONICAL_EVIDENCED_DISPOSITION",
+            "upstream": screen_valid,
+            "downstream": 0,
+            "conversion": 0.0,
+            "stranded": screen_valid,
+            "action": ("identity-join each row; enter it at DISCOVERED and advance only through "
+                       "evidenced rungs, otherwise record the exact rejection/retirement reason"),
+        }
 
     return {
         "updated_at": datetime.now(tz=UTC).isoformat(),
