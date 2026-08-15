@@ -64,6 +64,7 @@ __all__ = [
     "kelly_leverage",
     "leverage_for_distance",
     "realised_vol",
+    "sharpe_lower_bound",
 ]
 
 #: The principal's stated minimum, 2026-08-15. Binds even when the measurement asks for less, and
@@ -75,11 +76,15 @@ MIN_LEVERAGE = 3.0
 #: order at rebalance time is an unhedged intent nobody notices. Raise it if the account tier does.
 VENUE_MAX_LEVERAGE = 10.0
 
-#: Fraction of Kelly taken. Half, because mu and sigma are ESTIMATED and the growth curve is far
-#: steeper right of the optimum than left: overestimating mu by 2x puts a full-Kelly book exactly
-#: at the zero-growth point. Costs 25% of the theoretical growth rate; roughly halves outcome
-#: volatility. A stated choice, not a derived constant.
-DEFAULT_KELLY_FRACTION = 0.5
+#: FULL KELLY, at the principal's instruction 2026-08-15: grow as fast as possible. Full Kelly IS
+#: the growth maximum -- taking half of it is choosing a slower book on purpose.
+#:
+#: The danger it carries is not aggression, it is ESTIMATION ERROR, and the answer to that is not
+#: a smaller fraction: it is a smaller SHARPE. `sharpe_lower_bound` sizes against the conservative
+#: end of the estimate, so exposure is full-Kelly on a number the book can defend and RISES on its
+#: own as observations accumulate. A fixed fraction never rises; it stays timid forever regardless
+#: of how much evidence arrives, which is the wrong shape for a desk that is trying to learn.
+DEFAULT_KELLY_FRACTION = 1.0
 
 #: Daily standard deviations that must fit inside the liquidation distance. 3 is ~1-in-740 under a
 #: normal and meaningfully more common under crypto returns, which have fat left tails.
@@ -145,7 +150,20 @@ def leverage_for_distance(distance: float, *, liquidation: float = LIQUIDATION_L
     return liquidation / ((liquidation - 1.0) + distance)
 
 
+def sharpe_lower_bound(sharpe: float, n_obs: int, *, z: float = 1.0) -> float:
+    """Sharpe minus one standard error -- SE ~ sqrt((1 + S^2/2)/n).
+
+    Shared shape with `libs.research.vol_target.sharpe_lower_bound` on purpose: leverage and gross
+    exposure are the same decision expressed twice, and two different confidence adjustments would
+    let the book run one size while reporting another.
+    """
+    if n_obs <= 1:
+        return 0.0
+    return float(sharpe) - z * math.sqrt((1.0 + 0.5 * float(sharpe) ** 2) / float(n_obs))
+
+
 def choose(daily_sigma: float | None, *, sharpe: float | None = None,
+           n_obs: int | None = None,
            kelly_fraction: float = DEFAULT_KELLY_FRACTION,
            k: float = DEFAULT_SIGMA_MULTIPLE, borrow_rate: float = 0.0,
            floor: float = MIN_LEVERAGE, ceiling: float = VENUE_MAX_LEVERAGE) -> LeverageDecision:
@@ -168,8 +186,11 @@ def choose(daily_sigma: float | None, *, sharpe: float | None = None,
     survive = leverage_for_distance(k * daily_sigma)
 
     kelly = full = None
+    used = sharpe
     if sharpe is not None and math.isfinite(sharpe):
-        full = kelly_leverage(sharpe * sigma_ann, sigma_ann, borrow_rate=borrow_rate)
+        # FULL KELLY ON A DEFENSIBLE SHARPE, not a fraction of Kelly on an optimistic one.
+        used = sharpe if n_obs is None else sharpe_lower_bound(sharpe, n_obs)
+        full = kelly_leverage(used * sigma_ann, sigma_ann, borrow_rate=borrow_rate)
         kelly = full * kelly_fraction
 
     bounds = {"survival": survive, "venue/ceiling": ceiling}
@@ -180,6 +201,8 @@ def choose(daily_sigma: float | None, *, sharpe: float | None = None,
     lev = max(floor, min(raw, ceiling))
 
     parts = [f"sigma {daily_sigma:.2%}/day ({sigma_ann:.0%} ann)"]
+    if sharpe is not None and n_obs is not None and used is not None:
+        parts.append(f"Sharpe {sharpe:.2f} -> {used:.2f} at one standard error over n={n_obs:,}")
     if kelly is not None and full is not None:
         parts.append(f"full Kelly {full:.2f}x, {kelly_fraction:g}-Kelly {kelly:.2f}x "
                      f"(growth turns NEGATIVE beyond {2 * full:.2f}x)")
@@ -192,7 +215,7 @@ def choose(daily_sigma: float | None, *, sharpe: float | None = None,
                 "instruction, not a calculation: the position is carried by the floor rather than "
                 "by the measurement")
         if kelly is not None:
-            mu = (sharpe or 0.0) * sigma_ann
+            mu = (used or 0.0) * sigma_ann
             g_floor = growth_rate(floor, mu, sigma_ann, borrow_rate=borrow_rate)
             g_raw = growth_rate(raw, mu, sigma_ann, borrow_rate=borrow_rate)
             note += (f", and the objective says so: expected geometric growth is {g_floor:+.1%}/yr "

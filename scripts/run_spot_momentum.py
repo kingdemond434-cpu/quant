@@ -146,9 +146,13 @@ def main() -> int:
     #
     # The Sharpe used is the EXCESS one. Raw Sharpe includes the market's drift, and sizing a book
     # against a number that is mostly beta would target a volatility the selection never earned.
+    # n_obs IS WHAT MAKES THIS DYNAMIC IN THE DIRECTION THAT MATTERS. The Sharpe is discounted by
+    # one standard error, and that error shrinks as observations accumulate -- so the book's
+    # exposure RISES on its own as evidence arrives, without anyone editing a constant. A fixed
+    # Kelly fraction would stay timid forever no matter how much the desk learned.
     vt = gross_exposure(float(np.std(strat[np.isfinite(strat)])) or None,
-                        sharpe=res.sharpe_excess, max_gross=args.max_gross,
-                        current_gross=_previous_gross())
+                        sharpe=res.sharpe_excess, n_obs=res.n_days,
+                        max_gross=args.max_gross, current_gross=_previous_gross())
     w = {k: round(v * vt.gross, 6) for k, v in w.items()}
 
     # WHAT TO ACTUALLY BUY, and whether the account can buy it. A weight below venue minimum is

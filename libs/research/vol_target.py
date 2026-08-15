@@ -45,12 +45,26 @@ __all__ = [
     "GrossDecision",
     "gross_exposure",
     "growth_optimal_vol",
+    "sharpe_lower_bound",
 ]
 
 #: Unlevered ceiling: a spot account cannot hold more than it paid for. Levered callers pass the
 #: leverage the policy permits, which is itself Kelly-bounded, so the cap always comes from the
 #: same estimate as the target and binds before the target can overshoot it.
 DEFAULT_MAX_GROSS = 1.0
+
+#: FULL KELLY, at the principal's instruction 2026-08-15: "it should try to grow as fast as
+#: possible". Full Kelly maximises E[log wealth] exactly -- it is the optimum, not an overshoot of
+#: it -- and on a Sharpe-0.50 book it targets 50% annualised volatility, which is the number asked
+#: for. Halving it would be choosing a slower book on purpose.
+#:
+#: WHAT FULL KELLY ACTUALLY COSTS, stated because it is the whole reason anyone runs half. The
+#: growth curve is far steeper right of the optimum than left, so an OVERSTATED Sharpe is punished
+#: much harder than an understated one: believe 1.0 when the truth is 0.5 and the book sits at 2x
+#: true Kelly, which is exactly the zero-growth point. That asymmetry is not an argument for
+#: timidity -- it is an argument for not feeding this function a number that is too big, which is
+#: what `sharpe_lower_bound` below is for.
+DEFAULT_KELLY_FRACTION = 1.0
 
 #: Never fully flat from a vol reading alone. A book that de-grosses to zero on one violent week
 #: stops compounding entirely and has to time its own re-entry, which is a second, harder bet that
@@ -85,7 +99,28 @@ class GrossDecision:
                 "state": self.state, "why": self.why}
 
 
-def growth_optimal_vol(sharpe: float, *, kelly_fraction: float = 0.5) -> float:
+def sharpe_lower_bound(sharpe: float, n_obs: int, *, z: float = 1.0) -> float:
+    """The Sharpe a book can be RUN at, rather than the one it printed.
+
+    A measured Sharpe is an estimate with a standard error of roughly sqrt((1 + S^2/2) / n). Full
+    Kelly on the point estimate is full Kelly on the upper half of a distribution as often as the
+    lower, and the growth curve punishes the upper half far harder -- so the aggressive-and-correct
+    move is full Kelly on a CONSERVATIVE Sharpe, not a fraction of Kelly on an optimistic one.
+    Those two produce similar exposure today and behave completely differently as evidence
+    accumulates: this one RISES as n grows, because the uncertainty shrinks.
+
+    z=1 is one standard error, deliberately mild. The dominant error on this desk is not sampling
+    noise anyway -- it is that an IN-SAMPLE Sharpe is biased upward by selection in a way no
+    standard error captures, and only forward evidence removes that. This bound handles the part
+    that is measurable and says plainly that it does not handle the rest.
+    """
+    if n_obs <= 1:
+        return 0.0
+    se = math.sqrt((1.0 + 0.5 * float(sharpe) ** 2) / float(n_obs))
+    return float(sharpe) - z * se
+
+
+def growth_optimal_vol(sharpe: float, *, kelly_fraction: float = DEFAULT_KELLY_FRACTION) -> float:
     """The ANNUAL portfolio volatility that maximises E[log wealth]: `kelly_fraction * sharpe`.
 
     Falls out of Kelly directly -- f* = S/sigma, so the volatility run at the optimum is f*sigma =
@@ -98,7 +133,9 @@ def growth_optimal_vol(sharpe: float, *, kelly_fraction: float = 0.5) -> float:
 
 
 def gross_exposure(realised_vol_daily: float | None, *, sharpe: float | None,
-                   kelly_fraction: float = 0.5, max_gross: float = DEFAULT_MAX_GROSS,
+                   n_obs: int | None = None,
+                   kelly_fraction: float = DEFAULT_KELLY_FRACTION,
+                   max_gross: float = DEFAULT_MAX_GROSS,
                    min_gross: float = DEFAULT_MIN_GROSS,
                    current_gross: float | None = None) -> GrossDecision:
     """Gross exposure from measured volatility, clamped, with a rebalance band.
@@ -123,8 +160,11 @@ def gross_exposure(realised_vol_daily: float | None, *, sharpe: float | None,
             why=("no Sharpe estimate, so the growth-optimal volatility cannot be computed. The "
                  "target is a function of the EDGE, and without one there is no optimum to aim at"))
 
+    # THE SHARPE THIS SIZES AGAINST IS THE LOWER BOUND WHEN n IS KNOWN. Full Kelly on a point
+    # estimate is full Kelly on the optimistic half of a distribution half the time.
+    used = sharpe if n_obs is None else sharpe_lower_bound(sharpe, n_obs)
     sigma_ann = realised_vol_daily * math.sqrt(_PPY)
-    target = growth_optimal_vol(sharpe, kelly_fraction=kelly_fraction)
+    target = growth_optimal_vol(used, kelly_fraction=kelly_fraction)
     raw = target / sigma_ann if sigma_ann > 0 else 0.0
     gross = max(min_gross, min(raw, max_gross))
 
@@ -146,7 +186,11 @@ def gross_exposure(realised_vol_daily: float | None, *, sharpe: float | None,
 
     return GrossDecision(
         gross=gross, target_vol=target, realised_vol=sigma_ann, raw_gross=raw, state=state,
-        why=(f"Sharpe {sharpe:.2f} x {kelly_fraction:g}-Kelly => growth-optimal portfolio vol "
+        why=(f"Sharpe {sharpe:.2f}"
+             + ("" if n_obs is None else
+                f" -> {used:.2f} at one standard error over n={n_obs:,} (full Kelly on a point "
+                "estimate is full Kelly on the optimistic half of it half the time)")
+             + f" x {kelly_fraction:g}-Kelly => growth-optimal portfolio vol "
              f"{target:.0%}/yr; realised {sigma_ann:.0%}/yr => gross {raw:.2f}"
              + {"MEASURED": "",
                 "CAPPED": f", CAPPED at {max_gross:.2f} -- past the cap more exposure lowers "

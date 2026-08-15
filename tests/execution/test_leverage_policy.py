@@ -80,6 +80,36 @@ def test_A_STRONG_EDGE_CAN_EXCEED_EIGHT_BECAUSE_NOTHING_IS_HARDCODED() -> None:
     assert d["leverage"] > 8.0
 
 
+def test_FULL_KELLY_IS_THE_DEFAULT_BECAUSE_IT_IS_THE_MAXIMUM() -> None:
+    """Principal's instruction 2026-08-15: grow as fast as possible. Full Kelly IS the growth
+    maximum; taking a fraction of it is choosing a slower book on purpose."""
+    from libs.execution.leverage_policy import DEFAULT_KELLY_FRACTION
+    assert DEFAULT_KELLY_FRACTION == 1.0
+
+
+def test_THE_SHARPE_IS_DISCOUNTED_FOR_ESTIMATION_ERROR_NOT_THE_KELLY_FRACTION() -> None:
+    """THE SHAPE THAT MATTERS. A fixed fraction never rises -- it stays timid forever however much
+    evidence arrives. A confidence-discounted Sharpe RISES as n grows, which is the right response
+    to a desk that is accumulating forward observations."""
+    from libs.execution.leverage_policy import sharpe_lower_bound
+    thin = sharpe_lower_bound(1.0, 30)
+    thick = sharpe_lower_bound(1.0, 5000)
+    assert thin < thick < 1.0, "more observations must buy more exposure, never less"
+    assert sharpe_lower_bound(1.0, 1) == 0.0, "one observation supports no leverage at all"
+    lo = choose(0.03, sharpe=1.0, n_obs=30, borrow_rate=0.0)
+    hi = choose(0.03, sharpe=1.0, n_obs=5000, borrow_rate=0.0)
+    assert lo["kelly"] < hi["kelly"]
+
+
+def test_BOTH_MODULES_DISCOUNT_THE_SHARPE_IDENTICALLY() -> None:
+    """Leverage and gross exposure are the same decision expressed twice. Two different confidence
+    adjustments would let the book run one size while reporting another."""
+    from libs.execution.leverage_policy import sharpe_lower_bound as a
+    from libs.research.vol_target import sharpe_lower_bound as b
+    for s_, n in ((0.5, 2534), (1.2, 90), (2.0, 400)):
+        assert abs(a(s_, n) - b(s_, n)) < 1e-12
+
+
 def test_THE_FLOOR_OVERRIDES_THE_MEASUREMENT_AND_LABELS_ITSELF() -> None:
     """The principal's 3x minimum binds even when the objective asks for less -- but a floored
     number must never be readable as a measured one."""
