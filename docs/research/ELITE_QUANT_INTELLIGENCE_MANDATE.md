@@ -621,3 +621,327 @@ to every future system or researcher not yet known.
 The objective is not MAXIMUM AI. It is MAXIMUM DIFFERENTIATED, REALITY-VALIDATED INVESTMENT
 INTELLIGENCE converted into MORE INDEPENDENT SURVIVOR CAPACITY, and ultimately into MAXIMUM ROBUST
 SUSTAINABLE LONG-RUN E[log W].
+
+
+# PART III — EXTERNAL QUANT INTELLIGENCE MINING MANDATE (ENGLISH + CHINESE ECOSYSTEM)
+
+STANDING AND PERMANENT. Binds every brain, every miner, every LLM seat, every collector and every
+future organ that reads an external source. Added 2026-08-14 at the principal's instruction.
+
+## III.0 THE OBJECTIVE, AND THE SEVEN THINGS IT IS NOT
+
+Continuously mine the highest-value public and AUTHORIZED quantitative, crypto, execution,
+microstructure, on-chain, exchange/API, research and trading communities worldwide, and convert
+useful external information into NOVEL, TESTABLE, ECONOMICALLY RELEVANT proprietary research
+assets.
+
+The objective is NOT: messages collected; summaries produced; hypotheses generated; links
+discovered; other people's strategies copied; community sentiment followed; ingestion volume
+maximised.
+
+The objective is MAXIMUM INCREMENTAL ROBUST FORWARD CONTRIBUTION TO E[log W] after trading costs,
+capacity, latency, research cost, implementation burden, model risk and complexity.
+
+**EXTERNAL COMMUNITIES ARE RAW INTELLIGENCE SOURCES, NEVER AUTHORITIES.** This is the load-bearing
+sentence of Part III and the one every other clause serves.
+
+## III.1 SOURCE REGISTRY (SEED, NEVER COMPLETE)
+
+Tier A quant/research/infrastructure: QuantConnect, Hummingbot, Freqtrade, Jesse,
+NautilusTrader, Dune, Nansen, VectorBT, Dimitri Bianco's quant community, r/algotrading, FXGears.
+
+Tier A exchange/API: Binance API (English), Binance API (Chinese), OKX API, FMZ 发明者量化.
+
+Tier A structured / on-chain / event: CryptoQuant Alert, CryptoQuant Research, Glassnode, Nansen,
+Dune, Wu Blockchain (EN), 吴说区块链, BlockBeats, TechFlow.
+
+NEVER ASSUME THIS REGISTRY IS COMPLETE. Continuously discover further English AND Chinese
+communities with higher information density than the current set.
+
+## III.2 LEGAL AND ACCESS BOUNDARY — A HARD LIMIT, NOT A PREFERENCE
+
+Consume ONLY: public information; information the account is legitimately authorized to access;
+official APIs, bots, feeds or exports; platform-permitted access methods.
+
+NEVER bypass authentication, permissions, paywalls, bot restrictions, rate limits or
+private-community controls. Never spam a community. Never impersonate a human.
+
+Preserve source URL, author/channel, timestamp and language on every packet. A claim whose
+provenance was not recorded is not evidence, because nobody can go back and check it.
+
+## III.3 WHAT TO MINE
+
+**A. ALPHA MECHANISMS.** Funding dislocations; basis/carry; liquidation cascades; open-interest
+change; order-book imbalance; market-maker inventory effects; latency; cross-exchange price
+discovery; lead/lag; forced flows; stablecoin flows; ETF/fund flows; whale and entity flows;
+wallet clustering; DEX/CEX migration; bridge activity; staking/unstaking; unlock mechanics; token
+emissions; borrow rates; lending utilisation; options skew; volatility term structure;
+cross-sectional momentum and reversal; listing/delisting effects; exchange-specific behaviour;
+regime transitions; event-driven mechanisms.
+
+**B. NEW DATA ASSETS.** APIs; WebSocket feeds; datasets; repositories; Dune tables; wallet labels;
+exchange endpoints; historical archives; order-book sources; liquidation feeds; funding histories;
+mempool data; DEX pools; bridges; stablecoin datasets; protocol state; alternative data.
+
+**C. EXECUTION ALPHA** — the category this desk is structurally weakest at and therefore the one
+with the highest marginal value. Undocumented API behaviour; rate-limit behaviour; WebSocket drop
+patterns; timestamp inconsistencies; order-acknowledgement behaviour; post-only edge cases;
+reduce-only behaviour; matching-engine quirks; fee-tier effects; maker rebates; minimum-order
+constraints; liquidation mechanics; maintenance windows; latency; fill behaviour; cancel/replace
+behaviour; data gaps.
+
+**D. RESEARCH METHODS.** Validation procedures; purging and embargo; bootstrap methods; regime
+decomposition; feature construction; factor neutralisation; portfolio construction; execution
+simulation; capacity measurement; multiple-testing correction; failure analysis; model
+calibration; experiment design.
+
+**E. FAILURE INTELLIGENCE.** A strategy another researcher reports FAILING is valuable and is
+mined with the same energy as a success. Capture hypothesis, why it looked plausible,
+implementation, market and regime, why it failed, data limitation, execution limitation, the
+overfit mechanism, and the lesson. Do not repeat a known failure without a MATERIALLY NEW
+mechanism (L1.17).
+
+## III.4 THE CONVERSION RULE, WITH A WORKED EXAMPLE
+
+A community observation is NEVER accepted. It is CONVERTED.
+
+  OBSERVED (Hummingbot): "Several market makers report post-only cancellations clustering during
+  specific Binance volatility states."
+
+  DO NOT ACCEPT. CONVERT TO --
+
+  HYPOTHESIS: during volatility expansion, post-only rejection/cancellation frequency carries
+  predictive information about short-horizon liquidity deterioration.
+  DATA REQUIRED: order acknowledgements + book + volatility + fills.
+  TEST: causal out-of-sample event study, AFTER COSTS.
+
+**ONE PERSON'S BUG IS AN ANECDOTE. TWENTY INDEPENDENT USERS DESCRIBING THE SAME VENUE BEHAVIOUR IS
+MARKET-STRUCTURE INFORMATION.** For a repeated technical complaint ("the WebSocket book stream
+falls behind during liquidation bursts") the research questions are: does it occur systematically;
+which stream leads; can another endpoint reconstruct state faster; does stale-book probability
+predict spread expansion or slippage; can routing exploit or avoid it.
+
+CHINESE SOURCES (FMZ and peers): translate carefully, preserve the original text, and extract the
+ECONOMIC MECHANISM. NEVER COPY PARAMETERS -- a parameter is the part of someone else's work that
+is overfit to their data.
+
+ON-CHAIN DASHBOARDS (Dune/Nansen/CryptoQuant/Glassnode): mine new REPRESENTATIONS, not chart
+screenshots. Exchange inflow + stablecoin mint + smart-money accumulation + funding inversion may
+imply a conditional liquidity-state representation; test the components individually AND jointly.
+
+ASIA EVENT SENSORS (Wu Blockchain, BlockBeats, TechFlow): mine exchange changes, regional
+regulation, listing rumours later confirmed, market-maker developments, OTC and liquidity changes,
+stablecoin developments, treasury movements, unlocks, regional capital flows. **MEASURE THE LEAD
+TIME AGAINST ENGLISH SOURCES. If a Chinese source consistently leads by X minutes or hours, THE
+SOURCE ITSELF IS A MEASURABLE DATA ASSET** and is registered as one.
+
+BACKTESTING COMMUNITIES (QuantConnect/VectorBT/Freqtrade/Jesse): mine methodology, novel strategy
+FAMILIES, backtesting mistakes, lookahead traps, validation improvements, portfolio methods,
+feature ideas. NEVER ingest a published backtest as evidence. Reproduce independently or not at all.
+
+ENGINEERING COMMUNITIES (NautilusTrader): mine event sourcing, replay, fill models, latency models,
+order state, multi-venue routing, deterministic research/live parity -- each evaluated for its
+incremental effect on THIS desk's execution quality or research validity.
+
+## III.5 EVERY DISCOVERY IS A STRUCTURED PACKET
+
+SOURCE_ID; SOURCE_URL; AUTHOR/CHANNEL; LANGUAGE; TIMESTAMP; COLLECTION_METHOD; CLAIM; MECHANISM;
+WHY IT COULD EXIST; NOVELTY_SCORE; CREDIBILITY_SCORE; TESTABILITY_SCORE; ECONOMIC_PLAUSIBILITY;
+DECAY_RISK; CAPACITY; EXPECTED_DATA_COST; EXPECTED_IMPLEMENTATION_COST; REQUIRED_DATA;
+NEGATIVE_CONTROLS; KNOWN_FAILURE_MODES; RELATED_EXISTING_DESK_KNOWLEDGE; DUPLICATE_OF;
+PROPOSED_EXPERIMENT.
+
+**NO TRADE AUTHORITY.** A miner never promotes a strategy, never sizes a position and never
+shortens a clock.
+
+## III.6 THE CHINESE REQUIREMENT
+
+Maintain DEDICATED Chinese-language miners. Do not search only translated English keywords --
+search the native terminology Chinese quants and developers actually use. Preserve the original
+Chinese, a literal translation and a contextual translation. A translator may explain terminology
+and may NEVER silently alter a claim.
+
+Measure whether Chinese sources contribute UNIQUE VALIDATED discoveries. If they do, increase the
+mining budget. If they merely repeat English sources later, reduce it. The budget follows the
+measurement, not the intention.
+
+## III.7 NOVELTY AND DUPLICATION CONTROL
+
+Before creating a hypothesis, QUERY THE ENTIRE INSTITUTIONAL MEMORY and cluster semantically
+similar claims. A message repeating an existing idea is not a discovery. But the SAME MECHANISM
+under a new regime, new dataset, new implementation or new exchange may justify a CHALLENGER
+experiment -- the distinction is real and both halves of it are enforced.
+
+## III.8 SOURCE FITNESS EVOLVES, AND IT IS MEASURED DOWNSTREAM
+
+Track every community and every source along the whole funnel: messages observed -> candidates ->
+testable hypotheses -> experiments -> statistically valid survivors -> shadow survivors -> LIVE
+ECONOMIC CONTRIBUTION.
+
+SOURCE ROI IS DEFINED BY VALIDATED DOWNSTREAM VALUE, NEVER BY POPULARITY. **A 4,000-member Chinese
+quant room producing two real edges beats a 300,000-member channel producing zero.** Increase
+attention toward higher marginal validated information value; reduce or retire sources whose
+information is duplicative, late, unverifiable, promotional, non-testable or economically useless.
+
+## III.9 CONTRIBUTOR DISCOVERY
+
+Rank PEOPLE as well as communities. A contributor becomes interesting when their historical posts
+repeatedly PRECEDE useful datasets, valid mechanisms, execution discoveries, research-method
+improvements or reproducible anomalies. Build the track record from FORWARD CONVERSION only, and
+never follow a contributor blindly -- a good track record earns priority in the queue, never a
+place past the gauntlet.
+
+## III.10 NO SOCIAL PROOF — AN ABSOLUTE
+
+Member count, likes, reputation, PnL screenshots, claimed Sharpe, claimed win rate, job title,
+follower count and confidence ARE NOT EVIDENCE. They may influence WHICH claim is investigated
+first. They may never influence WHETHER a claim is accepted.
+
+## III.11 RESEARCH CONVERSION PATH
+
+DATA REGISTRY -> DATA QUALITY -> HYPOTHESIS FACTORY -> EXPERIMENT -> INDEPENDENT VALIDATOR ->
+REGIME TEST -> NEGATIVE CONTROLS -> COST/CAPACITY TEST -> WALK-FORWARD/OOS -> SHADOW -> PORTFOLIO
+MARGINAL-CONTRIBUTION TEST -> PROMOTE / REJECT / HIBERNATE.
+
+The miner enters at the top and has no path to the bottom. This is the two-stage law applied to
+external intelligence: a claim from outside carries exactly the authority of a claim from inside,
+which before forward evidence is none.
+
+## III.12 FAILURE MEMORY
+
+Every rejected hypothesis stays SEARCHABLE, with WHY it failed. Future agents must query failure
+memory before testing a related hypothesis. **The goal is not to accumulate successful ideas. It
+is for the desk to become progressively HARDER TO FOOL.**
+
+## III.13 CONTINUOUS COMMUNITY DISCOVERY
+
+Continuously hunt Discord, Telegram, GitHub, Chinese developer communities, quant forums, exchange
+developer communities, research groups, academic labs, protocol communities, market-maker
+engineering discussions, new data vendors and open datasets for higher information density. A newly
+found source enters SHADOW SOURCE status and is promoted to the canonical registry only after it
+proves incremental information value -- the same two-stage discipline the desk applies to edges,
+applied to sources.
+
+## III.14 FINAL INVARIANT
+
+EXTERNAL INTELLIGENCE EXISTS TO INCREASE ROBUST FORWARD ECONOMIC VALUE.
+
+**NEVER LET THE DESK BECOME A MACHINE THAT IS EXCELLENT AT READING DISCORD AND MEDIOCRE AT
+PRODUCING ALPHA.** Every miner, community, dataset and research stream must continually earn its
+compute and its attention through MEASURABLE DOWNSTREAM ECONOMIC VALUE.
+
+ONE VALIDATED MECHANISM IS WORTH MORE THAN ONE MILLION COLLECTED MESSAGES.
+
+## III.15 HIGH-RETURN TRADER AND LEADERBOARD FORENSICS (STANDING, ENFORCED)
+
+Added 2026-08-14 at the principal's instruction. Named seed targets: **Alpha Capital Wealth,
+Indice Hustlers, FX Goats** and the wider South African retail/prop trading scene, plus every
+public exchange leaderboard the desk can lawfully read (Binance Leaderboard, Bybit, Hyperliquid,
+and any venue publishing per-trader positions or returns).
+
+**WHY THIS IS A SOURCE AT ALL.** These operators run REAL money through REAL execution under REAL
+constraints, and a large part of what they know is execution and behaviour knowledge that never
+appears in a paper: which sessions actually fill, where spreads widen, how a broker behaves at the
+news print, what position management survives contact with a drawdown. That is category C of
+III.3, and it is the category this desk is weakest at.
+
+**WHY IT IS THE MOST DANGEROUS SOURCE ON THE REGISTRY, AND THE ONE MOST LIKELY TO BE MISREAD.**
+
+  * **SURVIVORSHIP IS THE ENTIRE SELECTION MECHANISM.** A leaderboard is, by construction, the
+    maximum of a very large number of draws. With enough participants the top of any leaderboard
+    is occupied by luck at a rate indistinguishable from skill, and the leaderboard NEVER shows
+    the denominator. Under III.10 a rank is not evidence; under `donated_survivor` the same
+    arithmetic is already enforced for donated candidates, and A LEADERBOARD ENTRY IS EXACTLY A
+    DONATED SURVIVOR WITH ITS TRIAL COUNT DELETED. Treat it as one: the trial count must be
+    ESTIMATED (participants in the ranking) and declared, or the claim is unpriceable.
+  * **MARTINGALE AND HIDDEN-TAIL STRATEGIES DOMINATE SHORT LEADERBOARDS.** Grid, averaging-down,
+    survivorship-heavy indices scalping and unhedged carry all produce long, smooth, spectacular
+    equity curves followed by one terminal loss. A curve that looks better than anything this desk
+    has produced is EVIDENCE OF A HIDDEN TAIL until the tail is located. Explicitly test for it:
+    max adverse excursion, position-size progression after losses, time-to-recovery, and whether
+    the account has ever taken a loss proportional to its gains.
+  * **EDUCATION AND PROP-FIRM ECONOMICS ARE NOT TRADING ECONOMICS.** Where the operator's revenue
+    comes from courses, signals, affiliate rebates or challenge fees, the published track record is
+    MARKETING and its incentives point away from accuracy. Record the revenue model beside every
+    claim. This is not an accusation; it is a variable that changes what the evidence means.
+  * **THEIR MARKET IS OFTEN NOT OURS.** Indices, FX and CFD behaviour under a broker's execution
+    does not transfer unexamined to crypto perps. A mechanism must be re-derived in this desk's
+    venue, cost and liquidity environment before it is a candidate here.
+
+**WHAT TO EXTRACT — MECHANISM AND PROCESS, NEVER PARAMETERS OR SIGNALS.**
+
+  * SESSION AND LIQUIDITY STRUCTURE: which sessions, opens and news windows they trade and avoid,
+    and whether the avoidance is measurable in spread and slippage data the desk can obtain.
+  * RISK PROCESS: fixed-fractional vs progressive sizing, daily loss caps, per-trade stops, how a
+    losing streak changes size. THIS IS THE HIGHEST-TRANSFER CATEGORY -- it is mechanical,
+    testable, and it is where retail operators genuinely differ from each other.
+  * ENTRY/EXIT MECHANICS: partial fills, scaling out, break-even moves, trailing rules -- all of
+    which are execution behaviour the desk can simulate and then measure live.
+  * DISCIPLINE ARCHITECTURE: pre-registered rules, checklists, session limits, cooling-off after
+    losses. A process that survives drawdown is a real and copyable asset even when the signal
+    behind it is not.
+  * DRAWDOWN BEHAVIOUR: what they do after a loss is more informative than what they do after a
+    win, and it is the part almost nobody publishes.
+
+**CONVERSION IS MANDATORY AND IDENTICAL TO III.4.** Every observation becomes a III.5 packet with
+an ESTIMATED trial count, a stated revenue model, and a NEGATIVE CONTROL that would show the same
+result under luck alone. It then enters the ordinary funnel and earns a forward clock or nothing.
+NO LEADERBOARD ENTRY, RANK, RETURN FIGURE, TESTIMONIAL OR SCREENSHOT MAY REACH CAPITAL, and no
+miner may promote one.
+
+**FITNESS, MEASURED LIKE EVERY OTHER SOURCE (III.8).** Track this whole category by downstream
+conversion to validated survivors. If retail-trader forensics produces no validated mechanism over
+a measured window, its budget falls like any other unproductive source -- and that outcome is
+recorded rather than quietly abandoned, because "we mined the leaderboards and got nothing" is a
+finding the desk must be able to cite.
+
+## III.16 UNWIRED OR IDLE IS A DEFECT — STANDING, ALL SEATS, ALL BRAINS, ALL MINERS
+
+Added 2026-08-14 at the principal's instruction, after the same failure was found four times in
+one day. It binds every seat and every organ, and it outranks "is it correct?" — because a correct
+thing nobody calls produces exactly as much as a broken thing nobody calls.
+
+**THE CLASS.** Code that exists, tests green, reads well, and is EXECUTED BY NOTHING. It is not a
+style problem. Measured instances from a single day:
+
+  * `auto_promotion.decide()` -- the function ruling on whether a candidate receives live capital
+    -- had ZERO CALLERS on the day capital was being deposited. Arming it would have flipped a
+    marker, left every gate unevaluated, and left the desk believing its research-to-capital path
+    was automated while the last link did not exist.
+  * `check_calendar_gates.py` [L1.48, L1.57, L1.60] had no cron line; its only appearance in the
+    schedule manifest was inside a COMMENT. Three laws read as enforced and were not.
+  * `capital_basis.declare()` [L1.58-r0287] had no caller; the fence named the helper in its own
+    error message and no producer imported it, so every governed artifact published undeclared
+    denominators.
+  * `evidence_clock.annualised_information_rate` and `regime_penalty` had no callers outside their
+    own module, so the desk could say how much evidence a clock HELD and never how fast it ARRIVED
+    -- while every clock sat at half rate for a fact nobody had measured.
+  * `run_golive_preflight` -- built, then wired to nothing, in the same session that criticised
+    exactly this pattern in someone else's assessment.
+
+**THE RULE.** A capability is not DONE when it is written, tested and correct. It is done when
+something RUNS it on a schedule or on a live path, and the run is visible in an artifact. Until
+then it is INVENTORY, and inventory is reported as an open defect rather than as a delivery.
+
+**IDLENESS IS THE SAME DEFECT IN THE OTHER DIRECTION.** A forward clock accruing nothing, a seat
+held by a dead hypothesis, a collector whose rows join to no consumer, a queue with capacity and
+no candidate, a sleeve with no rule, a lever nobody pulls -- each is a resource the desk is paying
+for and receiving nothing from. FORWARD TIME IS THE ONE INPUT THAT CANNOT BE BOUGHT LATER, so an
+idle clock is not a neutral state; it is an irrecoverable loss accruing quietly.
+
+**HOW IT IS FOUND, NOT REMEMBERED.** `scripts/check_enforcement_execution.py` grades every law
+fence EXECUTED / MANUAL / MENTIONED and exits non-zero on MENTIONED. `max_audit.check_orphan_code`
+walks the import graph from `scripts/` and reports near-fully-orphaned packages. Every new organ
+joins one of those the day it is written. A capability whose wiring is checked by a human reading
+a diff is a capability that will be unwired again within a month.
+
+**THE ASYMMETRY THAT MAKES THIS URGENT RATHER THAN TIDY.** An unwired capability and a working one
+are byte-identical in every report that counts modules, passes tests or lists features. Nothing
+distinguishes them except asking WHAT RAN IT, and that question is never asked by accident. So the
+desk's completion counts are systematically overstated by exactly the amount of inventory it holds
+-- and the overstatement is invisible from the inside, which is what makes it a defect class rather
+than a backlog.
+
+**BINDING ON EVERY FUTURE DELIVERY.** No organ, seat, brain or miner may report a capability as
+complete without naming the caller, the schedule entry, or the live path that executes it. "Built"
+is not a status. "Running, and here is the artifact it wrote" is.

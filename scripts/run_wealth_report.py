@@ -46,6 +46,7 @@ from libs.portfolio.wealth_retention import (  # noqa: E402
     reserve_option_value,
 )
 from libs.portfolio.wealth_retention import summarise as retention_summary  # noqa: E402
+from libs.research import capital_basis  # noqa: E402
 from libs.research.alpha_retention import LossEvent, RetentionRecord  # noqa: E402
 from libs.research.alpha_retention import summarise as retention_loss_summary  # noqa: E402
 from libs.research.conversion_velocity import STAGES, ConversionRecord  # noqa: E402
@@ -493,6 +494,22 @@ def build() -> dict[str, object]:
                                 "retaining more real net wealth?",
         "ANSWER": q,
         "why": why,
+        # THE DENOMINATOR IS DECLARED, NOT ASSUMED (L1.58-r0287). Every return this board reports
+        # is a ratio, and a ratio whose denominator is unnamed is unfalsifiable: `+8%` on capital
+        # actually drawn and `+8%` on total portfolio value are different claims that print
+        # identically, and the second is the Quantopian trap -- legal to state, impossible to
+        # audit, and flattering by exactly the amount of cash left idle.
+        #
+        # `libs.research.capital_basis` has carried the vocabulary and this helper since the law
+        # was written, and `scripts/check_capital_basis.py` fails any web/ or reports/ artifact
+        # reporting a return without one. NOTHING EVER CALLED IT: the fence named the helper in
+        # its own message and no producer imported it, so L1.58-r0287 read as enforced while every
+        # artifact it governs published undeclared denominators. Measured by
+        # check_enforcement_execution 2026-08-14 as MENTIONED -- a fence that has never run.
+        #
+        # capital_utilized is the honest leveraged-book basis: PnL over the cash ACTUALLY drawn,
+        # including margin. It is the denominator that cannot be inflated by holding cash idle.
+        **capital_basis.declare("capital_utilized"),
         "unmeasured_sections": unmeasured,
         "sections": sections,
         "note": ("Architecture counts are deliberately absent from this report. Every section "

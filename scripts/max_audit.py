@@ -3321,8 +3321,10 @@ _TERMINAL_ARTIFACTS = {
     "docs/research/ELITE_QUANT_INTELLIGENCE_MANDATE.md":
         "STANDING PRINCIPAL DOCTRINE (2026-08-13), terminal by nature rather than by exhaustion. "
         "It accumulates no inventory and has no producer: it is the principal's directive on "
-        "elite-firm capability recovery, extreme-outlier forensics and future-frontier search, "
-        "binding on all three builder seats, and it changes only by principal decision. A "
+        "elite-firm capability recovery, extreme-outlier forensics, future-frontier search and "
+        "(PART III, 2026-08-14) external intelligence mining across the English and Chinese "
+        "research ecosystem, binding on every brain, miner and LLM seat rather than on the "
+        "three builder seats alone. It changes only by principal decision. A "
         "producer cadence here would be actively wrong -- it would imply the law goes stale and "
         "invite a scheduled rewrite of something no schedule owns. Classified DOCTRINE in "
         "ARTIFACT_GOVERNANCE.md and indexed in CLAUDE.md so a fresh session can find it, which is "

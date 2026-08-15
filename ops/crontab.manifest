@@ -2570,3 +2570,18 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: ops/sync_from_repo.sh -> data/cro_ai_logs/sync_<date>.log
 # :23 avoids the :00 and :15 collector crowd and the 08:35 perpdex slot.
 23 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_sync.lock bash ops/sync_from_repo.sh >> data/cro_ai_logs/sync_cron.log 2>&1
+
+# ---------------------------------------------------------------------------------------------
+# L1.48 CALENDAR-GATE SCANNER -- the fence that had no executor.
+# WHY THIS LINE EXISTS. check_enforcement_execution graded this script MENTIONED on 2026-08-14:
+# three files name it (build_enforcement_matrix, check_denominator_attrition, libs/ops/attrition)
+# and none of them imports a process or import primitive, so none of them can RUN it. Its only
+# appearance in this manifest was inside a COMMENT describing it as "L1.57's own supplier". So the
+# desk believed L1.48, L1.57 and L1.60 were fenced while the fence had never once executed -- L1.49
+# exactly, a claim the desk cannot cash, firing on the law-enforcement layer itself.
+# WHAT IT DOES: scans the tree for calendar gates standing in for confidence bars, and prints the
+# migration checklist DERIVED FROM THE CODE rather than from anyone's memory of it. A hand-written
+# list is stale the moment somebody adds the fifteenth site, and L1.48 binds code not yet written.
+# EVIDENCE: scripts/check_calendar_gates.py -> data/cro_ai_logs/calendar_gates.log
+# 05:41, before the 07:11 partition-power fence, so both law measurements land in one morning.
+41 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_calgates.lock .venv/bin/python scripts/check_calendar_gates.py >> data/cro_ai_logs/calendar_gates.log 2>&1

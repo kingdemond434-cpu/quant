@@ -17,6 +17,7 @@ Keep this file SHORT. It sits in every context window, so it is an INDEX, never 
 | adding a doc under `docs/` | `docs/research/ARTIFACT_GOVERNANCE.md` — every artifact must be claimed by a law, on arrival |
 | data sources | `docs/research/data_axis_watchlist.md`, `scripts/source_backlog_next.py` |
 | frontier / competitor / outlier hunting | `docs/research/ELITE_QUANT_INTELLIGENCE_MANDATE.md` — standing principal law, all three seats |
+| mining any EXTERNAL source (Discord/Telegram/GitHub/CN communities) | same file, **PART III** — external intelligence mining, EN + CN. Access boundary is hard; social proof is never evidence; a source earns its budget by measured downstream conversion |
 
 ## Search the vault before deciding — 208k lines, one hop
 
@@ -49,6 +50,12 @@ with the vocabulary the document itself would use.
   `git stash`**: it restores to the index and a sibling can check the tree out from under you.
   Three recorded instances of a sibling's broad commit sweeping another session's staged files
   into an unrelated commit; the code survived every time, the rationale did not.
+- **UNWIRED OR IDLE IS A DEFECT** (III.16). A capability is done when something RUNS it on a
+  schedule or a live path and the run leaves an artifact -- not when it is written, tested and
+  correct. Four instances found in one day, including `auto_promotion.decide()` with ZERO callers
+  on the day capital was deposited. An unwired capability and a working one are byte-identical in
+  every report that counts modules or passes tests; the only question that separates them is WHAT
+  RAN IT, and it is never asked by accident. Never report "built" as a status.
 - **Tier-3 ruin rail** (`scripts/run_deadman_switch.py`) is never modified autonomously. Arming live
   trading is the principal's act. It is deliberately absent from mypy's `files`.
 - `data/secrets/**` never leaves the box, and no tool ever prints a key.
