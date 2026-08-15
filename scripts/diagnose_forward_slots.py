@@ -141,9 +141,14 @@ def main() -> int:
     slots = derive_slots()
     rows = [diagnose(s) for s in slots.get("slots", [])]
     blocked = [r for r in rows if r["state"] != "MEASURABLE"]
+    # THE KEYS ARE `seats_used`/`seats_free`, NOT `occupied`/`idle_slots`. The first run of this
+    # script printed "None occupied / cap 12, 0 unmeasurable" against a queue reporting 13 and 2 --
+    # `.get()` on the wrong name returns None and a report full of Nones reads like a clean desk.
+    # That is the same substitution this whole file exists to catch, made by the catcher.
     rep = {"updated": datetime.now(tz=UTC).isoformat(),
-           "occupied": slots.get("occupied"), "cap": slots.get("cap"),
-           "idle_slots": slots.get("idle_slots"), "over_cap": slots.get("over_cap"),
+           "seats_used": slots.get("seats_used"), "cap": slots.get("cap"),
+           "seats_free": slots.get("seats_free"), "over_cap": slots.get("over_cap"),
+           "m_upper": slots.get("m_upper"), "complete": slots.get("complete"),
            "n_unmeasurable": len(blocked), "slots": rows,
            "why_this_matters": (
                "the forward queue rations BREADTH, and breadth is the only route to a higher "
@@ -155,8 +160,13 @@ def main() -> int:
     if args.json:
         print(json.dumps(rep, indent=1))
         return 0
-    print(f"=== FORWARD SLOT DIAGNOSIS === {slots.get('occupied')} occupied / cap "
-          f"{slots.get('cap')}, {len(blocked)} unmeasurable")
+    print(f"=== FORWARD SLOT DIAGNOSIS === seats {slots.get('seats_used')} used "
+          f"({slots.get('seats_free')} free) of cap {slots.get('cap')}, "
+          f"multiplicity high-water {slots.get('m_upper')}, "
+          f"{len(blocked)} unmeasurable, complete={slots.get('complete')}")
+    if not rows:
+        print("  derive_slots() returned NO rows on this host -- that is UNMEASURED, not an empty "
+              "queue. data/ is gitignored, so a clone sees none of the clocks the box is running")
     for r in blocked:
         print(f"\n  [{r['state']}] {r['name'][:78]}")
         print(f"    registered={r.get('registered_in_clock_registry')} "

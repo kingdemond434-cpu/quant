@@ -95,6 +95,11 @@ _STEPS = [
     # queue is the binding constraint on breadth, so an unusable seat is the most expensive
     # object on the desk. Reports only; it never reclaims.
     ("slot_diagnosis",    "scripts/diagnose_forward_slots.py", 120),
+    # HOW MANY INDEPENDENT BETS ARE HELD, which is the number every return target rests on and the
+    # one nothing else on the desk publishes. "15 sleeves" and "1.2 effective bets" are the same
+    # book in every strategy count; k_eff = n/(1+(n-1)rho) separates them. Also the daily caller
+    # for the family partition -- seats are per-family or the queue rations breadth globally.
+    ("breadth_ledger",    "scripts/report_breadth.py",         120),
     ("live_ladder",       "scripts/run_live_ladder.py",      600),
     ("auto_promotion",    "scripts/run_auto_promotion.py --capital 200 --min-notional 10", 300),
     ("golive_preflight",  "scripts/run_golive_preflight.py --capital 200", 120),
