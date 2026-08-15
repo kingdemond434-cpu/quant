@@ -370,10 +370,20 @@ def test_gap_ranking_is_ordered_and_excludes_classes_tested_to_depth() -> None:
 
 
 def test_the_real_tree_reads_and_the_campaign_is_concentrated() -> None:
-    """The finding itself: the maximum-power campaign occupies very few economic classes."""
+    """The finding itself: the maximum-power campaign occupies very few economic classes.
+
+    SKIPS RATHER THAN FAILS WHEN THE ARTIFACT IS ABSENT. `reports/` is gitignored, so a clone has
+    no campaign file and this asserted `n_candidates > 0` -- reporting "the campaign is not
+    concentrated" when the truth is "there is no campaign here to read". Its sibling in
+    tests/validation/test_screen_admission.py already skips on exactly this absence; one of them
+    was wrong, and it was this one. An absent artifact is UNMEASURED (L1.28a), and a red suite
+    that means "you are on a clone" trains the desk to ignore red.
+    """
     report = census(ROOT)
     campaign = report.campaign_diversity
-    assert campaign.n_candidates > 0, "reports/real_campaign.json must be readable here"
+    if campaign.n_candidates == 0:
+        pytest.skip("reports/real_campaign.json absent (reports/ is gitignored) -- UNMEASURED "
+                    "on this host, not a campaign that failed to concentrate")
     assert campaign.n_classes_occupied < campaign.n_classes_in_taxonomy / 3
     assert campaign.diversity < 0.30
     assert report.gaps, "there must be at least one ranked gap"

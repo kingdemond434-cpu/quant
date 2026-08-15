@@ -47,6 +47,7 @@ from pathlib import Path
 from typing import Any
 
 from libs.discretionary import rules, tape
+from libs.execution import wallet as wallet_mod
 from libs.execution.discretionary_sleeve import (
     Decision,
     RuleSignal,
@@ -95,7 +96,15 @@ def _to_signal(setup: rules.Setup, symbol: str, rule_id: str) -> RuleSignal:
     )
 
 
-_EXEC_REPORT = Path("web/spot_executor.json")
+#: The report each wallet's executor publishes. THE WALLET DECIDES WHICH ONE IS TRUE. Reading the
+#: spot report while trading margin sizes the whole discretionary book against a wallet the capital
+#: has left -- and on a day the spot report is merely stale rather than absent, that is a
+#: denominator which is wrong, plausible, and silent.
+_EXEC_REPORT_BY_WALLET = {
+    "spot": Path("web/spot_executor.json"),
+    "margin": Path("web/margin_executor.json"),
+}
+_EXEC_REPORT = _EXEC_REPORT_BY_WALLET["spot"]
 
 
 def _from_ict(setup: Any) -> rules.Setup:
@@ -113,29 +122,60 @@ def _from_ict(setup: Any) -> rules.Setup:
              f"{setup.sweep_i}/{setup.shift_i}/{setup.entry_i}")
 
 
-def _resolve_equity(raw: str) -> tuple[float, str]:
-    """A number, or the figure the spot executor last read FROM THE VENUE.
+def _resolve_equity(raw: str, wallet: str = "spot") -> tuple[float, float, str]:
+    """`(NET equity, leverage, why)` -- the figure THIS WALLET's executor last read from the venue.
+
+    **NET, NEVER THE LEVERED BASIS.** An earlier version returned `equity * leverage` and handed it
+    to `SleeveState.equity_usd`, which is the denominator for BOTH risk-per-trade and the daily
+    loss cap. At 3x that silently made every trade risk 3% of the account and the daily cap 9% --
+    two limits tripled by a change that was only ever meant to raise EXPOSURE. Leverage belongs in
+    the gross cap, which bounds notional; it has no business in the risk fraction, which bounds
+    how much real money one wrong trade costs.
 
     Deliberately not a second venue read. The executor runs immediately before this in the cycle
     and already resolved equity against live balances; re-deriving it here would give two organs
     two answers on the same book, and the one that sized the orders is the one that is true.
+
+    **LEVERAGE COMES FROM THE SAME REPORT, NEVER RECOMPUTED HERE.** `leverage_policy.choose()` is
+    deterministic given its inputs, so a second call would usually agree -- and "usually" is the
+    problem: the two would read realised vol at different moments and silently diverge on exactly
+    the volatile days when the number matters. One book, one leverage, computed once. This sleeve
+    reads it, publishes it, and multiplies its risk basis by it so the discretionary rules carry
+    the same gearing the momentum legs do rather than sitting at 1x inside a levered account.
 
     An ABSENT or STALE report refuses rather than falling back to a literal. A default denominator
     is the exact defect this replaces: it is right when written and silently wrong afterwards.
     """
     if str(raw).strip().lower() != "auto":
         try:
-            return float(raw), f"stated by the caller: ${float(raw):,.2f}"
+            return float(raw), 1.0, f"stated by the caller: ${float(raw):,.2f}, unlevered"
         except (TypeError, ValueError):
-            return 0.0, f"--equity {raw!r} is neither a number nor 'auto'"
+            return 0.0, 1.0, f"--equity {raw!r} is neither a number nor 'auto'"
+    src = _EXEC_REPORT_BY_WALLET.get(str(wallet).strip().lower(), _EXEC_REPORT)
     try:
-        rep = json.loads(_EXEC_REPORT.read_text("utf-8"))
+        rep = json.loads(src.read_text("utf-8"))
         eq = float(rep["equity_usd"])
     except (OSError, ValueError, KeyError, TypeError) as exc:
-        return 0.0, (f"--equity auto, but {_EXEC_REPORT} is unreadable ({type(exc).__name__}). "
-                     "Refusing rather than inventing a denominator: every intent below would be "
-                     "sized against a number nobody measured")
-    return eq, f"read from {_EXEC_REPORT}, which resolved it against live balances: ${eq:,.2f}"
+        return 0.0, 1.0, (f"--equity auto, but {src} is unreadable ({type(exc).__name__}). "
+                          "Refusing rather than inventing a denominator: every intent below would "
+                          "be sized against a number nobody measured")
+    lev = 1.0
+    why_lev = ""
+    if wallet == "margin":
+        node = rep.get("leverage")
+        try:
+            lev = float(node["leverage"]) if isinstance(node, dict) else 1.0
+        except (KeyError, TypeError, ValueError):
+            lev = 1.0
+        if lev <= 0:
+            # NOT clamped up to 1.0. A policy that returned zero is a policy saying the measured
+            # edge does not support carrying this book, and overriding that here would be this
+            # sleeve deciding it knows better than the arithmetic every other leg obeys.
+            return 0.0, 0.0, (f"{src} reports leverage {lev} -- the policy declines to carry this "
+                              "book at all. Refusing rather than sizing at an invented 1x")
+        why_lev = (f", leverage {lev:.2f}x from the same report (never recomputed here) -> gross "
+                   f"cap ${eq * lev:,.2f}; risk and the daily cap stay fractions of NET ${eq:,.2f}")
+    return eq, lev, f"read from {src}, resolved against live balances: ${eq:,.2f}{why_lev}"
 
 
 def main() -> int:
@@ -191,10 +231,18 @@ def main() -> int:
               "is a different and false claim")
         return 1
 
-    equity, equity_why = _resolve_equity(args.equity)
+    equity, leverage, equity_why = _resolve_equity(args.equity, args.wallet)
     if equity <= 0:
         print(f"discretionary-live: {equity_why}")
         return 1
+    # BORROW ONLY WHERE BORROWING IS THE POINT. On margin the venue funds the shortfall
+    # (MARGIN_BUY) so a levered risk basis becomes real exposure; on spot the same flag is refused
+    # by the order path rather than quietly filling an unlevered leg the sizing did not intend.
+    borrow = wallet_mod.is_margin(args.wallet) and leverage > 1.0
+    # THE ONLY PLACE LEVERAGE ENTERS THIS SLEEVE: it raises the gross the book may carry, and
+    # nothing else. It does not touch the risk fraction and it does not touch the daily loss cap,
+    # both of which are promises about the principal's real money.
+    max_gross = equity * leverage
     state = SleeveState(equity_usd=equity,
                         realised_pnl_today_usd=float(args.realised_today),
                         open_positions=int(args.open_positions))
@@ -202,6 +250,8 @@ def main() -> int:
     absent: list[str] = []
     skipped_short: list[str] = []
     no_tape: list[str] = []
+    stale_tape: list[str] = []
+    tape_errors: list[str] = []
     placed: list[dict[str, Any]] = []
     # THE VENUE IS READ ONCE, not per rule. Eleven rules each fetching balances would be eleven
     # round trips describing eleven slightly different accounts.
@@ -224,6 +274,13 @@ def main() -> int:
                   "refusing to place. Sizing against an unknown balance is how a sleeve spends "
                   "money it does not have")
             return 1
+        # ELEVEN REFUSALS FOR INSUFFICIENT FUNDS LOOK IDENTICAL TO ELEVEN QUIET RULES. If the cash
+        # has simply moved to the other wallet, the sleeve says which one rather than journalling
+        # eleven rows that each blame the market.
+        misplaced = wallet_mod.misplaced_capital(args.wallet, args.quote,
+                                                 min_notional=float(args.min_notional))
+        if misplaced:
+            print(f"discretionary-live: {misplaced}")
     cycle = datetime.now(tz=UTC).strftime("%Y%m%d")
     for sym in symbols:
         df = frames.get(sym)
@@ -242,8 +299,18 @@ def main() -> int:
             prof = tape.volume_profile(trades)
             if prof is None:
                 no_tape.append(sym)
+            elif not prof.fresh():
+                # THE RECORDER STOPPING IS INVISIBLE FROM INSIDE THE PROFILE. Every number stays
+                # well-formed; only its age says the auction being described has already ended.
+                stale_tape.append(f"{sym} ({prof.age_h():.1f}h)")
             else:
-                found.extend(rules.detect_with_tape(df, prof))
+                # NOT wrapped in a bare except. A rule that raises is a defect to see, not a
+                # symbol to skip -- but one symbol's defect must not cost the other ten their
+                # book, so the failure is CAUGHT HERE, NAMED, and published in the artifact.
+                try:
+                    found.extend(rules.detect_with_tape(prof))
+                except Exception as exc:
+                    tape_errors.append(f"{sym}: {type(exc).__name__}: {exc}")
         if not found:
             continue
         # THE MOST RECENT SETUP PER RULE. Replaying every historical setup as a live intent would
@@ -275,10 +342,15 @@ def main() -> int:
                     "staying silent",
                     dict(vars(sig))), _JOURNAL))
                 continue
-            decision = size_and_check(sig, state, min_notional_usd=args.min_notional)
+            decision = size_and_check(sig, state, min_notional_usd=args.min_notional,
+                                      max_gross_usd=max_gross)
             row = journal(decision, _JOURNAL)
             if decision.take:
                 state.open_positions += 1      # the concurrency cap binds WITHIN a run too
+                # AND SO DOES THE GROSS CAP. Checked per-leg against a zero running total, every
+                # leg passes and the book lands at N times the limit -- N being however many rules
+                # happened to fire that morning.
+                state.gross_open_usd += float(decision.notional_usd)
                 if args.place or place_ctx is not None:
                     # THE SLEEVE'S OWN RISK CHECK HAS ALREADY RUN. size_and_check owns
                     # per-trade risk, the daily loss cap and the concurrency cap; the order path
@@ -289,7 +361,7 @@ def main() -> int:
                         quote=args.quote, free_quote=free_quote,
                         min_notional=float(args.min_notional or 0.0) or 5.0,
                         stop_price=float(sig.stop_price), step=steps.get(sym, 0.0),
-                        place=bool(args.place))
+                        place=bool(args.place), borrow=borrow)
                     row["order"] = out.as_row()
                     placed.append(out.as_row())
                     if out.placed:
@@ -300,6 +372,10 @@ def main() -> int:
         "updated": datetime.now(tz=UTC).isoformat(),
         "equity_usd": equity,
         "equity_why": equity_why,
+        "leverage": leverage,
+        "borrowing": borrow,
+        "max_gross_usd": round(max_gross, 2),
+        "gross_committed_usd": round(state.gross_open_usd, 2),
         "rule_id": args.rule_id,
         "n_intents": len(rows),
         "n_taken": sum(1 for r in rows if r.get("taken")),
@@ -313,6 +389,9 @@ def main() -> int:
         "wallet": args.wallet,
         "rules_run": sorted([args.rule_id, *rules.READY, *rules.TAPE_RULES]),
         "no_tape_symbols": no_tape,
+        "stale_tape_symbols": stale_tape,
+        "max_tape_age_h": tape.MAX_TAPE_AGE_H,
+        "tape_rule_errors": tape_errors,
         "still_blocked": rules.BLOCKED,
         "intents": rows,
         "note": ("Intents only -- nothing is placed here. Routing goes through the executor and "
@@ -341,6 +420,14 @@ def main() -> int:
     if no_tape:
         print(f"  NO TAPE for: {', '.join(no_tape)} -- H4/H5 are UNMEASURED on these, which is a "
               "statement about the recorder, not about the market")
+    if stale_tape:
+        print(f"  STALE TAPE (> {tape.MAX_TAPE_AGE_H}h) for: {', '.join(stale_tape)} -- the "
+              "profile is well-formed and describes an auction that has already ended. H4/H5 are "
+              "UNMEASURED here; check the recorder units")
+    if tape_errors:
+        print("  TAPE RULE RAISED -- a defect, not a quiet symbol:")
+        for e in tape_errors:
+            print(f"    {e}")
     if absent:
         print(f"  no bars for: {', '.join(absent)} -- UNMEASURED, not 'no setup'")
     print(f"-> {_JOURNAL} and {_OUT}")

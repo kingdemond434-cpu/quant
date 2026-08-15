@@ -25,6 +25,7 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
+from libs.execution.wallet import WALLETS
 from libs.ops.platform_paths import venv_python
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -100,20 +101,52 @@ _STEPS = [
     # book in every strategy count; k_eff = n/(1+(n-1)rho) separates them. Also the daily caller
     # for the family partition -- seats are per-family or the queue rations breadth globally.
     ("breadth_ledger",    "scripts/report_breadth.py",         120),
+    # WHERE THE NEXT RETURN COMES FROM, RANKED -- and it had no daily caller. The census scores
+    # every mechanism class by plausibility x orthogonality x data-feasibility x depth-deficit and
+    # names, per class, WHO IS FORCED TO TRADE against the desk and which datasets are missing. It
+    # is the desk's reading list for breadth, it is the artifact `report_mechanism_supply` consumes,
+    # and it ran only when somebody remembered it existed (III.16). Top gaps as of 2026-08-15 are
+    # all NO-CANDIDATE: index_reconstitution_flow 0.48, estate_liquidation_distribution 0.45,
+    # treasury_cost_base_liquidation 0.42 -- three forced-seller mechanisms the desk has never
+    # screened, every one of them FREE-ACQUIRABLE.
+    ("mechanism_census",  "scripts/run_mechanism_census.py",   300),
+    # THE mechanical_supply_release CHAIN, all four steps of which existed and none of which ran.
+    # Vesting cliffs and emissions are a forced seller on an IMMUTABLE schedule -- the same shape as
+    # carry, and the highest-orthogonality class whose data the census records as already on disk.
+    # The screen honestly reports UNMEASURED while its inputs are missing; running it daily is what
+    # turns "we never got to it" into a named, dated deficit that accrues.
+    ("unlock_calendar",   "scripts/collect_unlock_calendar.py", 180),
+    ("circulating_supply", "scripts/collect_circulating_supply.py", 180),
+    ("supply_screen",     "scripts/screen_unlock_supply_series.py", 240),
+    ("supply_report",     "scripts/report_mechanism_supply.py", 120),
+    # IS EVERYTHING ACTUALLY ARMED -- nine independent facts across three directories, two of them
+    # gitignored, whose sense is inverted for the three rails. `run_golive_preflight` checked ONE
+    # of them, so the question was answered by running four scripts and reading prose, which is how
+    # a desk comes to believe a switch is on because it was on last week. Runs BEFORE the order
+    # steps so the day's artifact records the arming state the orders were actually placed under.
+    ("arming",            "scripts/report_arming.py",        60),
     ("live_ladder",       "scripts/run_live_ladder.py",      600),
     ("auto_promotion",    "scripts/run_auto_promotion.py --capital 200 --min-notional 10", 300),
     ("golive_preflight",  "scripts/run_golive_preflight.py --capital 200", 120),
     ("spot_targets",      "scripts/run_spot_momentum.py --equity 200 --min-notional 10", 300),
-    ("spot_orders",       "scripts/run_spot_executor.py --equity auto --quote USDC --place --reserve-frac 0.3 --wallet spot", 300),
+    ("spot_orders",       "scripts/run_spot_executor.py --equity auto --quote USDC --place --reserve-frac 0.3 --wallet {WALLET}", 300),
     # --place: the eleven playbook rules now TRADE, each entry carrying a venue-held stop placed
     # through the same primitive the momentum book uses. --spot-only refuses every short they call
     # and journals the refusal, which on a spot account IS the measurement for H1/H7/H11.
     ("discretionary",     "scripts/run_discretionary_live.py --equity auto --spot-only "
-                          "--quote USDC --place --min-notional 5 --wallet spot", 600),
+                          "--quote USDC --place --min-notional 5 --wallet {WALLET}", 600),
     # THE LEVERED PATH. Inert without data/MARGIN_ENABLE and without capital in the margin wallet,
     # both of which are the principal's acts. The leverage is COMPUTED every run -- no flag -- so a
     # thin edge borrows nothing and the same line is correct at any Sharpe.
     ("margin_orders",     "scripts/run_margin_executor.py --quote USDC --place", 300),
+    # THE MECHANISM SLEEVES, running under a DECLARED SUSPENSION of L1.6 recorded in
+    # docs/research/LIVE_EXCEPTION_LEDGER.json. Both steps fail closed without that ledger row, so
+    # revoking the exception is one field and binds on the next cycle. They trade as a SEPARATE
+    # book with their own target artifact -- merging them into the momentum weights would produce
+    # a set no organ published, sized against a Sharpe describing neither.
+    ("mechanism_sleeves", "scripts/run_mechanism_sleeves.py", 300),
+    ("mechanism_orders",  "scripts/run_margin_executor.py --quote USDC --place "
+                          "--targets data/mechanism_sleeve_targets.json", 300),
     ("leaderboards",      "scripts/collect_leaderboards.py", 300),
     ("copytrading_panel", "scripts/screen_copytrading.py",   300),
     ("listing_watch",     "scripts/run_listing_watch.py",    60),  # gap-53 data clock
@@ -259,8 +292,29 @@ def _nav_equity() -> dict[str, object]:
 
 def main() -> None:
     steps: dict[str, dict[str, object]] = {}
+    # THE WALLET IS SUBSTITUTED HERE, NOT HARDCODED IN THE STEP TABLE. Binance treats spot and
+    # cross-margin as separate balances, so the day the principal moves capital between them, every
+    # sleeve pointed at the old one keeps running perfectly and places nothing. An env var means
+    # that move is one line on the box rather than a code change -- and the executors additionally
+    # name the other wallet at runtime when it holds the money (`wallet.misplaced_capital`), so a
+    # cycle left on the wrong setting reports it instead of going quiet.
+    # ENV FIRST, THEN A REPO FILE. `/etc/environment` needs root, and the principal running the
+    # desk is not root on this box -- a control surface that requires sudo to change is one that
+    # gets left wrong. `data/DESK_WALLET` sits beside the other arming markers, is gitignored so it
+    # cannot travel into a clone, and is writable by the account that actually moves the capital.
+    desk_wallet = (os.environ.get("DESK_WALLET") or "").strip().lower()
+    if not desk_wallet:
+        try:
+            desk_wallet = (_ROOT / "data" / "DESK_WALLET").read_text("utf-8").strip().lower()
+        except OSError:
+            desk_wallet = "spot"
+    desk_wallet = desk_wallet or "spot"
+    if desk_wallet not in WALLETS:
+        raise SystemExit(f"DESK_WALLET={desk_wallet!r} is not one of {WALLETS}. Refusing to "
+                         "default: a typo that silently trades the wrong wallet is the failure "
+                         "this substitution exists to prevent")
     for label, script, timeout in _STEPS:
-        steps[label] = _run(script, timeout)
+        steps[label] = _run(script.replace("{WALLET}", desk_wallet), timeout)
         print(f"[{label}] {steps[label]}")
     _write_status(steps)  # R0258: pager artifact, before any bookkeeping below can raise
 

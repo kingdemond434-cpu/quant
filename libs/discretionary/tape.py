@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import gzip
 import json
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -36,10 +37,13 @@ from typing import Any
 import numpy as np
 
 __all__ = [
+    "MAX_TAPE_AGE_H",
     "MOAT_ROOTS",
+    "TapeBar",
     "TapeProfile",
     "cvd",
     "load_trades",
+    "tape_bars",
     "volume_profile",
 ]
 
@@ -55,11 +59,45 @@ VALUE_AREA = 0.70
 #: few enough that a thin tape does not scatter into singleton bins.
 _BINS = 50
 
+#: How old the newest print may be before the profile describes a PAST auction rather than the
+#: live one. The recorders write hourly partitions continuously, so a gap this size means a unit
+#: stopped -- and fading the value area of a session that ended yesterday is not the registered
+#: hypothesis, it is a different and untested one wearing its name.
+MAX_TAPE_AGE_H = 3.0
+
+#: Tape bar width. The recorders partition hourly, so this is the finest grid on which a full
+#: window is guaranteed complete rather than half-written.
+_BAR_MINUTES = 60
+
+
+@dataclass(frozen=True)
+class TapeBar:
+    """One time bucket of the tape: OHLC from prints, plus the SIGNED volume over the same bucket.
+
+    THE DELTA IS THE POINT. OHLC is available from any candle source; `delta` is not available from
+    any of them at any resolution, and it is the only column here that no other input can supply.
+    """
+
+    ts: int
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: float
+    delta: float
+
 
 @dataclass(frozen=True)
 class TapeProfile:
-    """Volume-at-price for one window, plus the signed flow over the same trades. Both come from
-    one pass so they can never describe different windows."""
+    """Volume-at-price for one window, the signed flow over the same trades, and the bar series
+    both were built from. All from ONE pass, so they can never describe different windows.
+
+    **THE WINDOW IS CARRIED, NOT ASSUMED.** The first version handed rules a scalar `cvd` over the
+    last 24 hourly partitions, and H5 compared it against a ten-bar extreme taken from a DAILY
+    candle frame -- a ten-DAY price move judged against one day of flow. Both numbers were correct
+    and the comparison between them meant nothing. Carrying `bars` makes the window a property of
+    the object rather than of whichever caller happened to load it.
+    """
 
     poc: float
     vah: float
@@ -68,11 +106,40 @@ class TapeProfile:
     n_trades: int
     total_volume: float
     why: str
+    first_ts: int = 0
+    last_ts: int = 0
+    last_price: float = 0.0
+    bars: tuple[TapeBar, ...] = ()
+
+    def age_h(self, now_ms: int | None = None) -> float:
+        """Hours since the newest print. Refuses a stale auction; never interpolates one."""
+        if not self.last_ts:
+            return float("inf")
+        now = int(now_ms if now_ms is not None else time.time() * 1000)
+        return max(0.0, (now - self.last_ts) / 3_600_000.0)
+
+    def fresh(self, now_ms: int | None = None, *, max_age_h: float = MAX_TAPE_AGE_H) -> bool:
+        return self.age_h(now_ms) <= max_age_h
+
+    def cum_delta(self) -> tuple[float, ...]:
+        """Cumulative signed volume, bar by bar. The series a DIVERGENCE needs -- the scalar `cvd`
+        is only its last element, and a level is not a divergence."""
+        out: list[float] = []
+        acc = 0.0
+        for bar in self.bars:
+            acc += bar.delta
+            out.append(acc)
+        return tuple(out)
 
     def as_row(self) -> dict[str, Any]:
+        # BARS ARE SUMMARISED, NOT DUMPED. This row lands in a daily artifact; a thousand OHLC
+        # rows per symbol per day would bury the verdict it exists to publish.
         return {"poc": round(self.poc, 8), "vah": round(self.vah, 8), "val": round(self.val, 8),
                 "cvd": round(self.cvd, 4), "n_trades": self.n_trades,
-                "total_volume": round(self.total_volume, 4), "why": self.why}
+                "total_volume": round(self.total_volume, 4), "n_bars": len(self.bars),
+                "first_ts": self.first_ts, "last_ts": self.last_ts,
+                "last_price": round(self.last_price, 8), "age_h": round(self.age_h(), 2),
+                "why": self.why}
 
 
 def _partitions(symbol: str, roots: tuple[str, ...] = MOAT_ROOTS) -> list[Path]:
@@ -128,8 +195,43 @@ def cvd(trades: list[tuple[int, float, float, bool]]) -> float:
     return float(sum((-q if m else q) for _, _, q, m in trades))
 
 
+def tape_bars(trades: list[tuple[int, float, float, bool]], *,
+              minutes: int = _BAR_MINUTES) -> list[TapeBar]:
+    """Bucket the tape into OHLC + SIGNED volume bars. Empty list on an empty tape.
+
+    **PRICE AND FLOW MUST SHARE A GRID OR NEITHER CAN DIVERGE FROM THE OTHER.** The whole content
+    of H5 is "price made a new extreme and signed flow did not", which is a statement about two
+    series over ONE window. Reading the extreme off a daily candle frame and the flow off a
+    one-day tape compares a ten-day move to a one-day imbalance: both numbers correct, the
+    comparison meaningless. Bucketing here means the two can only ever be measured together.
+
+    ONLY COMPLETE BUCKETS ARE RETURNED. The newest bucket is almost always mid-formation, and a
+    partial bar's delta is a fraction of an hour's flow presented as an hour's -- which biases the
+    most recent point, the only one any rule acts on.
+    """
+    if not trades:
+        return []
+    width = max(1, int(minutes)) * 60_000
+    buckets: dict[int, list[tuple[float, float, bool]]] = {}
+    for ts, p, q, m in trades:
+        buckets.setdefault((ts // width) * width, []).append((p, q, m))
+    keys = sorted(buckets)
+    if len(keys) > 1:
+        keys = keys[:-1]                    # drop the in-progress bucket
+    out: list[TapeBar] = []
+    for k in keys:
+        rows = buckets[k]
+        prices = [p for p, _, _ in rows]
+        out.append(TapeBar(
+            ts=k, open=prices[0], high=max(prices), low=min(prices), close=prices[-1],
+            volume=float(sum(q for _, q, _ in rows)),
+            delta=float(sum((-q if m else q) for _, q, m in rows))))
+    return out
+
+
 def volume_profile(trades: list[tuple[int, float, float, bool]], *,
-                   bins: int = _BINS, value_area: float = VALUE_AREA) -> TapeProfile | None:
+                   bins: int = _BINS, value_area: float = VALUE_AREA,
+                   bar_minutes: int = _BAR_MINUTES) -> TapeProfile | None:
     """POC / VAH / VAL from trade prints, with the CVD over the same trades.
 
     Returns None on an empty or degenerate tape -- NOT a zero profile. A POC of 0.0 would be a
@@ -140,6 +242,16 @@ def volume_profile(trades: list[tuple[int, float, float, bool]], *,
     until 70% is enclosed. That is Market Profile's construction; a percentile of the price
     distribution is a different object that happens to produce similar numbers on quiet days.
     """
+    # THE PROFILE AND THE BAR SERIES ARE TRIMMED TO THE SAME SPAN, so `cvd` is exactly the last
+    # element of `cum_delta()` and can never drift from it. Without this the scalar covers the
+    # in-progress bucket that `tape_bars` drops, and the two disagree by a partial hour of flow --
+    # a small discrepancy whose only symptom is a rule and its own audit row telling different
+    # stories about the same window.
+    bars = tuple(tape_bars(trades, minutes=bar_minutes))
+    if not bars:
+        return None
+    span_end = bars[-1].ts + max(1, int(bar_minutes)) * 60_000
+    trades = [t for t in trades if t[0] < span_end]
     if len(trades) < 20:
         return None
     px = np.array([p for _, p, _, _ in trades], dtype="float64")
@@ -171,6 +283,9 @@ def volume_profile(trades: list[tuple[int, float, float, bool]], *,
     return TapeProfile(
         poc=float(centres[poc_i]), vah=float(centres[hi_i]), val=float(centres[lo_i]),
         cvd=cvd(trades), n_trades=len(trades), total_volume=float(qty.sum()),
+        first_ts=int(trades[0][0]), last_ts=int(trades[-1][0]), last_price=float(bars[-1].close),
+        bars=bars,
         why=(f"{len(trades):,} aggTrades over [{lo:.6g}, {hi:.6g}], {bins} price bins, "
-             f"{value_area:.0%} value area grown outward from the POC. Trade prints, not depth: "
-             "this estimates the auction, it is not the book"))
+             f"{value_area:.0%} value area grown outward from the POC, {len(bars)} complete "
+             f"{bar_minutes}m bars. Trade prints, not depth: this estimates the auction, it is "
+             "not the book"))

@@ -60,21 +60,26 @@ _OUT = Path("web/margin_executor.json")
 DEFAULT_BORROW_RATE = 0.10
 
 
-def _targets() -> tuple[dict[str, float], float | None, int | None, str]:
+def _targets(path: Path | None = None) -> tuple[dict[str, float], float | None, int | None, str]:
     """Target weights plus the book's own Sharpe and observation count, from one artifact.
 
     All three come from the same file BECAUSE THEY MUST DESCRIBE THE SAME BOOK. A Sharpe read from
     one run and weights from another would lever today's positions by yesterday's evidence.
+
+    `path` selects which book. A SECOND BOOK IS A SECOND ARTIFACT, never a merge: combining two
+    target sets here would produce weights no single organ published, sized against a Sharpe that
+    describes neither, and leave nothing on disk that says what was actually intended.
     """
+    src = path or _TARGETS
     try:
-        d = json.loads(_TARGETS.read_text("utf-8"))
+        d = json.loads(src.read_text("utf-8"))
     except (OSError, ValueError) as exc:
-        return {}, None, None, (f"{_TARGETS} unreadable ({type(exc).__name__}) -- UNMEASURED. "
+        return {}, None, None, (f"{src} unreadable ({type(exc).__name__}) -- UNMEASURED. "
                                 "Refusing: an empty book would read as 'go to cash' and would sell "
                                 "everything on borrowed money")
     w = d.get("target_weights")
     if not isinstance(w, dict) or not w:
-        return {}, None, None, f"{_TARGETS} carries no target_weights"
+        return {}, None, None, f"{src} carries no target_weights"
     sharpe = d.get("sharpe_excess")
     n = d.get("n_days")
     return ({str(k): float(v) for k, v in w.items()},
@@ -90,6 +95,11 @@ def main() -> int:
                     help="ACTUALLY BORROW AND BUY. Absent, prints what it would do")
     ap.add_argument("--borrow-rate", type=float, default=DEFAULT_BORROW_RATE)
     ap.add_argument("--cycle", default=None)
+    ap.add_argument("--targets", default=None,
+                    help="target-weights artifact to trade. Defaults to the momentum book. Point "
+                         "it at data/mechanism_sleeve_targets.json to run the mechanism sleeves as "
+                         "a SEPARATE book -- separate so each has its own weights, its own Sharpe "
+                         "and its own row on disk, rather than one merged set nobody published")
     args = ap.parse_args()
 
     from libs.execution import binance_margin_live as m
@@ -100,7 +110,8 @@ def main() -> int:
     rail, why_rail = frozen()
     place = bool(args.place) and not rail and armed
 
-    weights, sharpe, n_obs, why_targets = _targets()
+    weights, sharpe, n_obs, why_targets = _targets(
+        Path(args.targets) if args.targets else None)
     rep: dict[str, Any] = {"updated": datetime.now(tz=UTC).isoformat(), "cycle": cycle,
                            "armed": armed, "armed_why": why_armed, "rail_frozen": rail,
                            "rail_why": why_rail, "targets_why": why_targets,

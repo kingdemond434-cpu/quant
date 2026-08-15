@@ -25,11 +25,14 @@ shape `libs/ict` produces, so one adapter serves all of them and no rule gets it
 
 from __future__ import annotations
 
+import itertools
 from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
 import pandas as pd
+
+from libs.discretionary import tape
 
 __all__ = [
     "BLOCKED",
@@ -462,25 +465,42 @@ def detect(b: pd.DataFrame, rules: list[str] | None = None) -> list[Setup]:
 # so one gzip pass serves both and they can never describe different windows.
 # --------------------------------------------------------------------------------------------
 
-def h4_auction_value(b: pd.DataFrame, profile: Any = None, *,
-                     stop_frac: float = 0.5) -> list[Setup]:
+def _tape_atr(bars: Any, lookback: int = 14) -> float:
+    """True range over the TAPE's own bars. A stop for a tape-time rule must be sized in tape
+    time -- a daily ATR on an hourly signal is a stop roughly five times wider than the move the
+    rule is claiming, which quietly turns a fade into a hold-and-hope."""
+    window = list(bars)[-(lookback + 1):]
+    if len(window) < 2:
+        return 0.0
+    trs = []
+    for prev, cur in itertools.pairwise(window):
+        trs.append(max(cur.high - cur.low, abs(cur.high - prev.close), abs(cur.low - prev.close)))
+    return float(np.mean(trs)) if trs else 0.0
+
+
+def h4_auction_value(profile: Any = None, *, stop_frac: float = 0.5) -> list[Setup]:
     """Acceptance/rejection at the value area: fade a print OUTSIDE the area back toward the POC.
 
     MECHANISM, as registered: price outside the value area is an auction that has not been
     accepted, and unaccepted prices revert to where volume actually traded. Price INSIDE the area
     is doing what it should and is not a signal.
 
+    **THE PRICE IS THE TAPE'S LAST PRINT, NOT A CANDLE CLOSE.** The profile is built from the last
+    day of prints; comparing it against a DAILY bar's close asks whether a level that may be
+    twenty hours old sits outside an auction measured to the minute. The two objects have to be
+    read from the same window or the comparison is between different days.
+
     PRE-REGISTERED 2026-08-15: `stop_frac=0.5` -- the stop sits half a value-area width beyond the
     edge that was broken. The registration fixes POC/VAH/VAL and the reversion claim; the stop
     geometry is fixed here, before the first run.
     """
-    if profile is None or len(b) == 0:
+    if profile is None:
         return []
-    px = float(b["close"].iloc[-1])
+    px = float(getattr(profile, "last_price", 0.0) or 0.0)
     width = float(profile.vah - profile.val)
-    if width <= 0:
+    if width <= 0 or px <= 0:
         return []
-    i = len(b) - 1
+    i = max(0, len(getattr(profile, "bars", ())) - 1)
     if px > profile.vah:
         return [Setup("H4_auction_value", -1, px, px + stop_frac * width, profile.poc, i,
                       f"print above VAH {profile.vah:.6g}, unaccepted -> POC {profile.poc:.6g}")]
@@ -490,53 +510,76 @@ def h4_auction_value(b: pd.DataFrame, profile: Any = None, *,
     return []
 
 
-def h5_cvd_divergence(b: pd.DataFrame, profile: Any = None, *, lookback: int = 10,
+def h5_cvd_divergence(profile: Any = None, *, lookback: int = 10,
                       stop_atr: float = 1.5) -> list[Setup]:
-    """Delta divergence at a structural level: price makes a new extreme, signed flow does not.
+    """Delta divergence: price makes a new extreme over the window and CUMULATIVE FLOW DOES NOT.
 
-    MECHANISM, as registered: a new high on NEGATIVE cumulative delta is a push carried by makers
-    rather than aggressors -- the move is being sold into, and the level is more likely to fail
-    than extend. That statement is unavailable from OHLCV at any resolution, which is exactly why
-    this hypothesis waited for the tape.
+    MECHANISM, as registered: a new high the aggressive buyers did not fund is a push carried by
+    makers -- the move is being sold into, and the level is more likely to fail than extend. That
+    statement is unavailable from OHLCV at any resolution, which is why this hypothesis waited for
+    the tape and why it is the one rule on the desk whose input nothing else can see.
+
+    **A LEVEL IS NOT A DIVERGENCE, AND THE FIRST VERSION TESTED A LEVEL.** It fired a short on
+    `cvd < 0` -- the sign of one scalar over the whole window. On a tape with any persistent
+    imbalance that scalar keeps one sign for days, so the rule was "new high while the day happens
+    to be net-sold", which fires constantly in one regime and never in the other. The registered
+    claim is comparative: price sets a higher high, cumulative delta does not. That needs the
+    SERIES, and it needs both series on one grid -- `profile.bars`, built in the same pass.
 
     PRE-REGISTERED 2026-08-15: `lookback=10`, `stop_atr=1.5`.
     """
-    if profile is None or len(b) < lookback + 20:
+    if profile is None:
         return []
-    i = len(b) - 1
-    a = _last(_atr(b), i)
+    bars = list(getattr(profile, "bars", ()))
+    if len(bars) < lookback + 2:
+        return []
+    cum = list(profile.cum_delta())
+    i = len(bars) - 1
+    a = _tape_atr(bars)
     if not np.isfinite(a) or a <= 0:
         return []
-    px = float(b["close"].iloc[i])
-    recent = b.iloc[i - lookback:i]
-    delta = float(profile.cvd)
-    if px >= float(recent["high"].max()) and delta < 0:
+    px = float(bars[i].close)
+    prior = bars[i - lookback:i]
+    prior_cum = cum[i - lookback:i]
+    if px >= max(x.high for x in prior) and cum[i] < max(prior_cum):
         return [Setup("H5_cvd_divergence", -1, px, px + stop_atr * a, px - 2.0 * a, i,
-                      f"new {lookback}-bar high on NEGATIVE delta {delta:,.2f} -- sold into")]
-    if px <= float(recent["low"].min()) and delta > 0:
+                      f"new {lookback}-bar high, cum delta {cum[i]:,.2f} BELOW its own "
+                      f"{lookback}-bar high {max(prior_cum):,.2f} -- the push was not funded")]
+    if px <= min(x.low for x in prior) and cum[i] > min(prior_cum):
         return [Setup("H5_cvd_divergence", +1, px, px - stop_atr * a, px + 2.0 * a, i,
-                      f"new {lookback}-bar low on POSITIVE delta {delta:,.2f} -- bought into")]
+                      f"new {lookback}-bar low, cum delta {cum[i]:,.2f} ABOVE its own "
+                      f"{lookback}-bar low {min(prior_cum):,.2f} -- the flush was not funded")]
     return []
 
 
-#: The two rules that consume the tape rather than the candles. Kept separate because `detect`
-#: cannot load a tape for them -- the caller owns that read, and a rule that silently returned
-#: nothing when its input was missing would be indistinguishable from a rule that found nothing.
+#: The two rules that consume the tape rather than the candles. THEY TAKE NO DATAFRAME: every
+#: number they use -- price, extremes, flow, ATR -- comes off the tape, so there is no seam at
+#: which a candle window and a tape window can disagree. `detect` cannot run them because the
+#: caller owns the gzip read, and a rule that silently returned nothing when its input was missing
+#: would be indistinguishable from a rule that found nothing.
 TAPE_RULES: dict[str, Any] = {
     "H4_auction_value": h4_auction_value,
     "H5_cvd_divergence": h5_cvd_divergence,
 }
 
 
-def detect_with_tape(b: pd.DataFrame, profile: Any) -> list[Setup]:
-    """H4 and H5 for one symbol, given the profile the caller loaded. Empty when profile is None,
-    and the caller reports that as NO TAPE rather than as no setups."""
+def detect_with_tape(profile: Any, *, now_ms: int | None = None,
+                     max_age_h: float | None = None) -> list[Setup]:
+    """H4 and H5 for one symbol, given the profile the caller loaded.
+
+    **A STALE TAPE IS REFUSED, NOT FADED.** If a recorder unit stops, the newest partition simply
+    stops advancing and every function here keeps returning clean numbers about yesterday's
+    auction. Fading the value area of a session that has already ended is a different hypothesis
+    from the registered one, and it would be indistinguishable in the artifact.
+
+    Empty when profile is None, and the caller reports that as NO TAPE rather than as no setups.
+    """
     if profile is None:
+        return []
+    limit = tape.MAX_TAPE_AGE_H if max_age_h is None else max_age_h
+    if hasattr(profile, "fresh") and not profile.fresh(now_ms, max_age_h=limit):
         return []
     out: list[Setup] = []
     for fn in TAPE_RULES.values():
-        try:
-            out.extend(fn(b, profile))
-        except Exception:
-            continue
+        out.extend(fn(profile))
     return out

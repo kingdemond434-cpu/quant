@@ -52,6 +52,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from libs.execution import wallet as wallet_mod
 from libs.execution.wallet import WALLETS
 
 _TARGETS = Path("data/spot_momentum.json")
@@ -286,6 +287,12 @@ def main() -> int:
     # the venue answers `-2010 Account has insufficient balance`. Measured 2026-08-15: two legs
     # filled, ADA wanted $39.96 against $36.21 free, and the book sat two-thirds complete.
     quote_free = float(held.get(args.quote, 0.0))
+    # AND IF THE CASH IS SIMPLY IN THE OTHER WALLET, SAY SO. A book pointed at an emptied wallet
+    # places nothing, raises nothing, and writes a row identical to a day when every target was
+    # already on side. This is the one runtime check that separates them.
+    misplaced = wallet_mod.misplaced_capital(args.wallet, args.quote)
+    if misplaced:
+        print(f"  {misplaced}")
     for research_sym, frac in sorted(targets.items(), key=lambda kv: -kv[1]):
         sym = retarget(research_sym, args.quote)
         want_usd = frac * equity

@@ -5,97 +5,115 @@ queue rations BREADTH, breadth is the only route to a higher combined Sharpe, so
 binding constraint on the desk's objective. Raising it would tighten every existing candidate's bar
 -- Holm's strongest is alpha/m -- so the cap held, correctly, and the desk stayed narrow.
 
-Partitioning fixes that, and these tests pin the three things that make it legitimate rather than a
-loophole: the families are declared before the data, ambiguity resolves toward the TIGHTER bar, and
+Partitioning fixes that, and these tests pin the four things that make it legitimate rather than a
+loophole: the taxonomy is the census's rather than one this module invented, a class earns its own
+error budget by being a separate QUESTION, an undeclared mechanism never gets the cheaper bar, and
 the cost is computed rather than waved away.
 """
 
 from __future__ import annotations
 
+from libs.research.mechanism_census import CLASS_BY_ID
 from libs.validation.family_multiplicity import (
-    FAMILIES,
+    CORRELATED_CORE,
+    ORTHOGONALITY_FLOOR,
     UNCLASSIFIED,
     bh_alpha,
     bh_bar,
     effective_m,
     family_error_budget,
     family_of,
-    matches,
     partition,
 )
 from libs.validation.forward_stats import holm_bar
 
 
+def test_THE_TAXONOMY_IS_THE_CENSUS_AND_NOT_A_SECOND_COPY() -> None:
+    """TWO TAXONOMIES ARE TWO ANSWERS, and the one nobody maintains is the one that quietly
+    disagrees. This module invented five token families beside `mechanism_census.TAXONOMY` -- 26
+    classes with named payers, economic definitions and declared orthogonality, already ranking the
+    research agenda. Every family name this returns must be a census class id."""
+    live = ["H5_cvd_divergence", "oi_divergence", "cny_premium", "defi_utilisation",
+            "stablecoin_supply_momentum", "walcl_reserve_impulse"]
+    for name in live:
+        fam = family_of(name)
+        assert fam in CLASS_BY_ID, f"{name} -> {fam}, which is not a census class"
+
+
 def test_A_NEW_CLOCK_IN_ONE_FAMILY_DOES_NOT_TIGHTEN_ANOTHERS_BAR() -> None:
-    """THE WHOLE POINT. Under one cohort, starting a macro clock raises the bar a momentum
-    candidate must clear -- a real cost paid by a real hypothesis for an unrelated one."""
-    before = partition(["cashcarry", "funding_basis", "trend_regime"])
-    after = partition(["cashcarry", "funding_basis", "trend_regime",
-                       "defi_utilisation", "onchain_gas", "stablecoin_supply"])
-    assert len(before["structure"]) == len(after["structure"]) == 1
-    assert holm_bar(len(before["structure"])) == holm_bar(len(after["structure"]))
+    """THE WHOLE POINT. Under one cohort, starting a macro clock raises the bar a flow candidate
+    must clear -- a real cost paid by a real hypothesis for an unrelated one."""
+    before = partition(["H5_cvd_divergence", "oi_divergence"])
+    after = partition(["H5_cvd_divergence", "oi_divergence",
+                       "defi_utilisation", "cny_premium", "stablecoin_supply_momentum"])
+    flow = "informed_order_flow"
+    assert len(before[flow]) == len(after[flow]) == 1
+    assert holm_bar(len(before[flow])) == holm_bar(len(after[flow]))
     # ... while the single-cohort bar would have moved against it
-    assert holm_bar(3) < holm_bar(6)
+    assert holm_bar(2) < holm_bar(5)
 
 
 def test_PARTITION_LOOSENS_NOTHING_INSIDE_A_FAMILY() -> None:
-    """Members of one family still pay each other's multiplicity in full. The correction is
+    """Members of one class still pay each other's multiplicity in full. The correction is
     applied, not evaded."""
-    p = partition(["funding_a", "carry_b", "basis_c", "perpdex_d"])
-    assert len(p["carry"]) == 4
-    assert holm_bar(4) == holm_bar(len(p["carry"]))
+    p = partition(["oi_divergence", "ls_contrarian", "funding_stress_reversal"])
+    assert len(p["positioning_crowding_unwind"]) == 3
+    assert holm_bar(3) == holm_bar(len(p["positioning_crowding_unwind"]))
 
 
-def test_AMBIGUITY_RESOLVES_TOWARD_THE_TIGHTER_BAR_NOT_DICT_ORDER() -> None:
-    """A REAL NAME FROM THE LIVE COHORT. `full_sweep_cross_asset_lead_1h_all_decay_breakout_decay
-    _momentum` matches relative_value AND structure. First-match-wins would have let the
-    declaration order of a dict literal decide a statistical threshold."""
-    name = "full_sweep_cross_asset_lead_1h_all_decay_breakout_decay_momentum"
-    assert len(matches(name)) == 2
-    cohort = [name, "crossasset", "cny_premium", "trend_regime"]
-    fam = family_of(name, cohort)
-    sizes = {f: sum(1 for n in cohort if f in matches(n)) for f in matches(name)}
-    assert sizes[fam] == max(sizes.values()), "an ambiguous name must join the LARGER family"
+def test_A_CLASS_EARNS_ITS_OWN_BUDGET_BY_BEING_A_SEPARATE_QUESTION() -> None:
+    """ELEVEN PRICE PATTERNS ARE ONE QUESTION HOWEVER MANY NAMES THEY CARRY. The census scores
+    `price_continuation` at 0.03 and `liquidity_provision_immediacy` at 0.1 -- its own statement
+    that these are the promiscuous vocabulary most of the desk's history already lives in. Giving
+    them separate seat pools would manufacture breadth by renaming, so they share one cohort."""
+    assert CLASS_BY_ID["price_continuation"].orthogonality < ORTHOGONALITY_FLOOR
+    assert CLASS_BY_ID["liquidity_provision_immediacy"].orthogonality < ORTHOGONALITY_FLOOR
+    p = partition(["H2_volume_breakout", "H9_opening_range", "H10_vol_compression",
+                   "H1_structural_fade", "H6_wyckoff", "H7_vwap_reversion", "H11_band_fade",
+                   "H5_cvd_divergence"])
+    assert len(p[CORRELATED_CORE]) == 7, "seven price/mean-reversion rules, one question"
+    assert p["informed_order_flow"] == ["H5_cvd_divergence"]
+
+
+def test_THE_TAPE_RULE_IS_THE_ONE_THE_DESK_DOES_NOT_ALREADY_HOLD() -> None:
+    """H5 reads signed aggressive flow, which no other rule on the desk can see -- and the census
+    scores informed_order_flow at 0.55 against price_continuation's 0.03. H4 reads the same tape
+    and is NOT the same claim: 'unaccepted prices revert to where volume traded' is an immediacy
+    argument, and filing it beside H5 would credit the desk with two informed-flow tests when it
+    has one."""
+    assert family_of("H5_cvd_divergence") == "informed_order_flow"
+    assert family_of("H4_auction_value") == CORRELATED_CORE
+    assert CLASS_BY_ID["informed_order_flow"].orthogonality >= ORTHOGONALITY_FLOOR
 
 
 def test_AN_UNDECLARED_MECHANISM_IS_NOT_GIVEN_A_FREE_PASS() -> None:
-    """Unclassified candidates share ONE cohort, so skipping the declaration is the EXPENSIVE
-    path. Making it cheap would turn 'do not name your family' into an optimisation."""
-    p = partition(["mystery_one", "mystery_two", "mystery_three", "cashcarry"])
+    """A name the census cannot place lands in UNCLASSIFIED, which is never the cheaper bar."""
+    assert family_of("zzz_unplaceable_thing") == UNCLASSIFIED
+    p = partition(["zzz_one", "zzz_two", "zzz_three", "oi_divergence"])
     assert len(p[UNCLASSIFIED]) == 3
-    assert family_of("mystery_one") == UNCLASSIFIED
 
 
 def test_THE_UNDECLARED_BAR_IS_FLOORED_AT_THE_WORST_DECLARED_ONE() -> None:
     """THE DEFECT THE LIVE COHORT EXPOSED. `len()` alone made UNCLASSIFIED the CHEAPEST bar on the
-    desk the moment it held fewer members than the largest declared family -- measured 2 against
-    structure's 8, so t=1.96 against t=2.50. The dominant strategy becomes naming a candidate
-    something the token list cannot match, which turns the partition into opt-out at exactly the
-    moment a genuinely new mechanism arrives."""
-    p = partition(["mystery_one", "trend_a", "momentum_b", "breakout_c", "wyckoff_d"])
+    desk the moment it held fewer members than the largest declared family. The dominant strategy
+    becomes naming a candidate something the taxonomy cannot match, which turns the partition into
+    opt-out at exactly the moment a genuinely new mechanism arrives."""
+    p = partition(["zzz_unplaceable", "H2_volume_breakout", "H9_opening_range",
+                   "H10_vol_compression", "H1_structural_fade"])
     eff = effective_m(p)
     assert len(p[UNCLASSIFIED]) == 1
-    assert eff[UNCLASSIFIED] == eff["structure"] == 4
+    assert eff[UNCLASSIFIED] == eff[CORRELATED_CORE] == 4
     assert holm_bar(eff[UNCLASSIFIED]) >= max(holm_bar(v) for v in eff.values())
 
 
 def test_THE_FLOOR_ONLY_EVER_TIGHTENS() -> None:
     """It is a max, so it cannot loosen a declared family's bar, and it cannot loosen UNCLASSIFIED's
     own when unclassified is already the largest cohort."""
-    p = partition(["m1", "m2", "m3", "m4", "trend_a"])
+    p = partition(["zzz_a", "zzz_b", "zzz_c", "zzz_d", "H2_volume_breakout"])
     eff = effective_m(p)
-    assert eff[UNCLASSIFIED] == 4 and eff["structure"] == 1
+    assert eff[UNCLASSIFIED] == 4 and eff[CORRELATED_CORE] == 1
     for fam, members in p.items():
         assert eff[fam] >= len(members)
-
-
-def test_FAMILIES_ARE_ABOUT_WHY_AN_EDGE_EXISTS_NOT_WHERE_IT_TRADES() -> None:
-    """Splitting by symbol or timeframe would slice ONE question into many and evade the
-    correction rather than apply it. Each declared family is a distinct mechanism claim."""
-    assert set(FAMILIES) == {"carry", "flow", "relative_value", "structure", "onchain"}
-    for tokens in FAMILIES.values():
-        for tok in tokens:
-            assert not tok.isdigit() and "usdt" not in tok and tok not in {"1h", "4h", "1d"}
 
 
 def test_BH_IS_LOOSER_THAN_HOLM_AND_ONLY_BELOW_THE_TOP_RANK() -> None:
@@ -119,8 +137,8 @@ def test_THE_COST_OF_PARTITIONING_IS_COMPUTED_NOT_WAVED_AWAY() -> None:
 
 
 def test_THE_LIVE_COHORT_PARTITIONS_INTO_REAL_FAMILIES() -> None:
-    """Against the actual 13 names on the box, so this is exercised on the cohort it was built
-    for rather than on invented ones."""
+    """Against the actual names on the box, so this is exercised on the cohort it was built for
+    rather than on invented ones."""
     live = ["defi_utilisation", "stablecoin_supply_momentum", "cny_premium",
             "walcl_reserve_impulse", "perpdex_funding::aster_BTCUSDT_level_rate::8h",
             "cashcarry", "crossasset", "trend_regime", "ls_contrarian", "oi_divergence"]

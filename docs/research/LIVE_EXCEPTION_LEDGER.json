@@ -1,0 +1,33 @@
+{
+ "what": "SUSPENSIONS OF STANDING LAW, each attributed, dated and scoped. An exception nobody wrote down becomes the rule nobody remembers agreeing to -- so a law may be suspended, but never quietly. Code that runs under a suspension reads this file and REFUSES when its row is absent or inactive.",
+ "why_a_ledger_and_not_a_flag": "A boolean in a config says a rule is off. It does not say who turned it off, when, for what, on what terms, or what the desk decided the cost was. Six weeks later the boolean is indistinguishable from a default, and the law it suspends is gone rather than waived.",
+ "exceptions": [
+  {
+   "id": "live-mechanism-sleeves",
+   "active": true,
+   "granted": "2026-08-15",
+   "granted_by": "principal (kingdemond434), in session, reaffirmed after the cost was stated",
+   "law_suspended": "L1.6 -- the backtest gauntlet has ZERO promotion authority; capital comes only from pre-registered FORWARD evidence",
+   "scope": "Two mechanism sleeves may take live capital on BACKTEST evidence alone: positioning_crowding_unwind (funding_stress_reversal) and relative_value_convergence (intermarket_difference). Confined to scripts/run_mechanism_sleeves.py and the target weights it publishes. Every other promotion path is unaffected -- auto_promotion still requires the forward bar.",
+   "principals_words": "i want to put them in live directly now as exception if they earn they stay n considered validated simple",
+   "concern_stated_before_granting": "Live P&L over weeks is very weak evidence at these Sharpes: the standard error of a one-month return swamps the mean, so a sleeve that 'earned' over 30 days and one that did not are statistically the same observation. The principal was told this and reaffirmed the instruction. That is their call to make.",
+   "terms_fixed_before_the_first_fill": {
+    "clip_frac": 0.05,
+    "equal_and_fixed": "no sleeve is sized up for performing well -- progression after a result is what III.15 forbids, and it is forbidden here too",
+    "kill_drawdown": -0.15,
+    "review_days": 30,
+    "review_test": "realised return since inception must be non-negative at REVIEW_DAYS, or the sleeve is retired",
+    "survival_is_not_validation": "a sleeve that survives the review has bought the right to keep its clip while its forward clock keeps accruing. Live P&L starts the evidence; it does not finish it.",
+    "why_fixed_now": "'if they earn they stay' decided AFTER seeing the returns is not a rule, it is a garden of forking paths with money in it: whichever sleeve looks best gets kept for a reason invented afterwards. The threshold is only a threshold if it predates the number it judges."
+   },
+   "what_was_NOT_suspended": [
+    "the ruin rails (CASHCARRY_KILL, DEADMAN_FIRED, FREEZE) -- checked before every order",
+    "the gross cap, the per-trade risk fraction and the daily loss cap",
+    "the rule against a backtest deciding position SIZE -- clips are equal and fixed precisely because the gauntlet may not allocate",
+    "the Tier-3 deadman switch, which is never modified autonomously",
+    "auto_promotion's forward-evidence bar, which is untouched"
+   ],
+   "revocation": "Set active=false. The sleeve runner fails closed on the next cycle and publishes no targets."
+  }
+ ]
+}
