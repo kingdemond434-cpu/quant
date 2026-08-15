@@ -58,6 +58,8 @@ class MarketSeries:
     ref_high: np.ndarray | None = None
     ref_low: np.ndarray | None = None
     funding: np.ndarray | None = None    # per-bar perp funding rate (Level-3), for crypto signals
+    basis: np.ndarray | None = None      # per-bar perp basis (perp mark vs spot, Level-3)
+    taker_buy_frac: np.ndarray | None = None  # aggressive buy volume fraction (Level-3 flow)
 
     def __len__(self) -> int:
         return len(self.close)

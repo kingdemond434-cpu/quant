@@ -838,6 +838,11 @@ CONSTRUCTION_CLASS: dict[str, str] = {
     "inverse_reference": "relative_value_convergence",
     "persistent_long": "market_risk_premium",
     "funding_stress_reversal": "positioning_crowding_unwind",
+    "derivative_carry_basis": "derivative_carry_basis",
+    "taker_flow": "informed_order_flow",
+    "funding_taker_interaction": "positioning_crowding_unwind",
+    "basis_funding_interaction": "derivative_carry_basis",
+    "basis_taker_interaction": "informed_order_flow",
 }
 
 

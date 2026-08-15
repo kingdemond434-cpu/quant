@@ -56,11 +56,13 @@ def main() -> None:
     parser.add_argument("--timeframe", choices=("D1", "H8"), default="D1")
     parser.add_argument("--max-symbols", type=int, default=30,
                         help="cap the universe to the top-N liquid perps (0 = all)")
+    parser.add_argument("--offset", type=int, default=0,
+                        help="skip the top-N-offset liquid perps (chunked/parallel cycles)")
     args = parser.parse_args()
 
     tf = Timeframe(args.timeframe)
     limit = args.max_symbols or None
-    symbols, provider = load_universe(tf, limit=limit)
+    symbols, provider = load_universe(tf, limit=limit, offset=args.offset)
     if not symbols:
         raise SystemExit(f"no crypto {tf.value} data in lake; run scripts/ingest_crypto.py first")
 
