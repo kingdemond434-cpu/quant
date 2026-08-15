@@ -55,6 +55,8 @@ from typing import Any
 
 import numpy as np
 
+from libs.execution.spot_order_path import retarget
+
 _OUT = Path("data/mechanism_sleeve_targets.json")
 _STATE = Path("data/mechanism_sleeve_state.json")
 _LEDGER = Path("docs/research/LIVE_EXCEPTION_LEDGER.json")
@@ -114,17 +116,50 @@ def _exception_recorded() -> tuple[bool, str]:
 
 def _series(symbols: tuple[str, ...]) -> dict[str, Any]:
     """MarketSeries per symbol from the lake, funding attached where the lake holds it."""
-    from libs.autodiscovery.crypto_adapter import lake_provider
+    import dataclasses
+
+    import numpy as _np
+    from scripts.collect_perp_funding import load as _load_funding
+
+    from libs.autodiscovery.crypto_adapter import _read_frames, lake_provider
+    from libs.data.timeframe import Timeframe
 
     provider = lake_provider(list(symbols), lake_root=_LAKE)
+    # THE FRAMES CARRY THE DATE AXIS AND `MarketSeries` DOES NOT. lake_provider builds the series
+    # from these same frames and drops the index, so reading them here is the only way to align a
+    # second series to the first. The first attempt used `getattr(ser, "dates", None)`, which is
+    # always None -- a dead branch that would have left funding permanently unattached while
+    # looking like it handled the case.
+    try:
+        frames = _read_frames(list(symbols), Timeframe.D1, _LAKE)
+    except Exception:
+        frames = {}
+
     out: dict[str, Any] = {}
     for s in symbols:
         try:
             ser = provider(s)
         except Exception:
             ser = None
-        if ser is not None:
-            out[s] = ser
+        if ser is None:
+            continue
+        # FUNDING FROM THE SIDECAR WHEN THE LAKE DOES NOT CARRY IT. `data/lake` holds OHLCV, so
+        # MarketSeries.funding was None on every symbol and `funding_stress_reversal` degraded to
+        # zeros -- honestly, and to no effect: a live sleeve that could never produce a signal.
+        #
+        # ALIGNED BY DATE, NEVER ZIPPED. The two series come from different fetches, and a
+        # positional join offsets funding from price the moment either has a gap -- which reads as
+        # a signal and is a join bug. A date with no funding row stays 0.0, which for THIS
+        # generator is the neutral value rather than an invented one.
+        if getattr(ser, "funding", None) is None:
+            fmap = _load_funding(s)
+            df = frames.get(s)
+            if fmap and df is not None and len(df) == len(ser.close):
+                vals = [fmap.get(str(d)[:10]) for d in df.index]
+                if any(v is not None for v in vals):
+                    ser = dataclasses.replace(ser, funding=_np.array(
+                        [0.0 if v is None else float(v) for v in vals], dtype="float64"))
+        out[s] = ser
     return out
 
 
@@ -135,6 +170,109 @@ def _positions(subtype: str, series: Any, params: dict[str, float]) -> np.ndarra
         if g.subtype == subtype:
             return np.asarray(g.fn(series, params), dtype="float64")
     return None
+
+
+def _marks() -> dict[str, float]:
+    """Live prices, wallet-agnostic. Empty when the venue is unreadable -- and an EMPTY mark set
+    must never be read as a zero return, which would trip the kill on every sleeve at once."""
+    try:
+        from libs.execution import binance_spot_live
+
+        return {str(k): float(v) for k, v in binance_spot_live.prices().items()}
+    except Exception:
+        return {}
+
+
+def _track(rep: dict[str, Any], px: dict[str, float]) -> dict[str, Any]:
+    """Mark each sleeve since inception and APPLY THE KILL RULE.
+
+    **THE RULE WAS DECLARED AND ENFORCED BY NOTHING.** `KILL_DRAWDOWN`, `REVIEW_DAYS` and `_STATE`
+    were constants with no reader: the ledger promised a sleeve would be retired below -15% and
+    the code would have traded it to zero. That is III.16 on the SAFETY half of an exception to a
+    standing law -- the half whose absence is invisible precisely while things are going well.
+
+    **THE MEASURE IS THE SLEEVE'S OWN WEIGHTS MARKED FORWARD, AND IT EXCLUDES COSTS.** Per-fill
+    attribution across two books sharing one margin account is not available here. Marking the
+    published weights is therefore OPTIMISTIC -- a real book pays fees, slippage and borrow that
+    this does not subtract. The direction matters and it is the safe one: a kill that trips on an
+    optimistic measure is definitely a kill, because the realised book did worse. It would be the
+    reverse error -- a flattering measure used to KEEP a sleeve -- that this must never make, and
+    surviving here is explicitly not evidence of anything (see the ledger).
+    """
+    try:
+        state = json.loads(_STATE.read_text("utf-8"))
+    except (OSError, ValueError):
+        state = {}
+    now = datetime.now(tz=UTC)
+    rows = state.get("sleeves") if isinstance(state, dict) else None
+    sleeves: dict[str, Any] = dict(rows or {})
+
+    for row in rep["sleeves"]:
+        key = str(row["census_class"])
+        prior = sleeves.get(key) or {}
+        if prior.get("retired"):
+            row["state"] = "RETIRED"
+            row["why"] = prior.get("retired_why", "retired by the pre-registered kill rule")
+            continue
+        held = {k: v for k, v in (row.get("symbols") or {}).items() if abs(float(v)) > 1e-12}
+        if row.get("state") != "LIVE" or not held:
+            continue
+
+        marks = prior.get("marks") or {}
+        if not marks:
+            # INCEPTION. Recorded on the first LIVE run, from live prices. A sleeve with no
+            # inception marks has no return to judge and must not be killed for it.
+            fresh = {k: px[retarget(k, "USDC")] for k in held if retarget(k, "USDC") in px}
+            if fresh:
+                sleeves[key] = {"inception": now.isoformat(), "marks": fresh,
+                                "weights": {k: float(v) for k, v in held.items()}}
+            row["tracking"] = "INCEPTION recorded" if fresh else "no marks available yet"
+            continue
+
+        w = prior.get("weights") or {}
+        contribs = []
+        for sym, w0 in w.items():
+            p0, p1 = float(marks.get(sym, 0.0)), float(px.get(retarget(sym, "USDC"), 0.0))
+            if p0 > 0 and p1 > 0:
+                contribs.append((1.0 if float(w0) > 0 else -1.0) * (p1 / p0 - 1.0))
+        if not contribs:
+            # UNMEASURED, NOT ZERO. An unreadable price set must never present as a flat return --
+            # that is a measurement failure wearing the shape of a healthy sleeve.
+            row["tracking"] = "UNMEASURED -- no marks readable this run; the kill rule cannot bind"
+            continue
+        ret = float(np.mean(contribs))
+        age_days = (now - datetime.fromisoformat(str(prior["inception"]))).total_seconds() / 86400
+        prior["last_return"], prior["age_days"] = round(ret, 6), round(age_days, 2)
+        row["return_since_inception"] = round(ret, 6)
+        row["age_days"] = round(age_days, 2)
+
+        why = None
+        if ret <= KILL_DRAWDOWN:
+            why = (f"RETIRED: return since inception {ret:+.2%} at or below the pre-registered "
+                   f"kill of {KILL_DRAWDOWN:+.0%}. Fixed before the first fill, so it is not "
+                   "renegotiable by the sleeve that breached it")
+        elif age_days >= REVIEW_DAYS and ret < 0:
+            why = (f"RETIRED: {age_days:.0f} days elapsed (review at {REVIEW_DAYS}) with a return "
+                   f"of {ret:+.2%}. The review test was non-negative, declared in advance")
+        if why:
+            prior["retired"], prior["retired_why"] = True, why
+            row["state"], row["why"] = "RETIRED", why
+            # A RETIRED SLEEVE PUBLISHES NO WEIGHTS. Its slice falls out of the target book and
+            # the executor's reduce leg unwinds it on the next run -- which only works because
+            # that leg now exists.
+            for sym in list(w):
+                rep["target_weights"].pop(sym, None)
+        sleeves[key] = prior
+
+    state = {"updated": now.isoformat(), "sleeves": sleeves,
+             "measure": ("published weights marked forward, EXCLUDING fees, slippage and borrow. "
+                         "Optimistic by construction, so a kill it trips is conservative -- the "
+                         "realised book did worse. Never used to justify KEEPING a sleeve"),
+             "kill_drawdown": KILL_DRAWDOWN, "review_days": REVIEW_DAYS}
+    _STATE.parent.mkdir(parents=True, exist_ok=True)
+    _STATE.write_text(json.dumps(state, indent=1), "utf-8")
+    rep["n_retired"] = sum(1 for v in sleeves.values() if v.get("retired"))
+    return rep
 
 
 def build() -> dict[str, Any]:
@@ -148,6 +286,16 @@ def build() -> dict[str, Any]:
                       "fixed": "BEFORE the first fill, so it cannot be renegotiated by the sleeve "
                                "that breaches it"},
         "sleeves": [], "target_weights": {}, "refused": [],
+        # THE SHARE OF THE ACCOUNT THIS ARTIFACT CLAIMS, and it must be declared or the executor
+        # reads these weights as the WHOLE book. Measured live 2026-08-15: 5% gross across three
+        # symbols was interpreted as an instruction to sell 95% of the account -- liquidating the
+        # momentum book to fund a 5% sleeve. Only the unrelated "SELL legs are not placed here"
+        # rule stopped it, which is a safety net in the way rather than a design.
+        "book_frac": round(EQUAL_CLIP_FRAC * len(SLEEVES), 6),
+        "book_frac_why": (
+            f"{len(SLEEVES)} sleeve(s) at {EQUAL_CLIP_FRAC:.0%} each. These weights are shares of "
+            "THAT slice, never of the account -- a sleeve describing 10% of the book is not a "
+            "90% liquidation order for everything else"),
     }
     if not ok:
         rep["refused"].append(why_exc)
@@ -197,13 +345,20 @@ def build() -> dict[str, Any]:
             longs = {k: v for k, v in nonzero.items() if v > 0}
             row["shorts_refused"] = sorted(k for k, v in nonzero.items() if v < 0)
             if longs:
-                per = EQUAL_CLIP_FRAC / len(longs)
+                # WITHIN THE SLICE. Each sleeve owns 1/len(SLEEVES) of book_frac and splits it
+                # equally across its own longs, so the published weights sum to 1.0 across the
+                # slice and the executor scales them by book_frac. Publishing account-shares here
+                # instead would make the meaning of a weight depend on which file read it.
+                per = (1.0 / len(SLEEVES)) / len(longs)
                 for k in longs:
                     weights[k] = round(weights.get(k, 0.0) + per, 6)
         rep["sleeves"].append(row)
 
     rep["target_weights"] = weights
-    rep["gross_frac"] = round(sum(weights.values()), 6)
+    rep = _track(rep, _marks())
+    weights = rep["target_weights"]
+    rep["gross_frac_of_slice"] = round(sum(weights.values()), 6)
+    rep["gross_frac_of_account"] = round(sum(weights.values()) * rep["book_frac"], 6)
     return rep
 
 
@@ -231,7 +386,9 @@ def main() -> int:
     for w in rep["refused"]:
         print(f"  REFUSED: {w}")
     if rep["target_weights"]:
-        print(f"  target weights ({rep['gross_frac']:.1%} gross): "
+        print(f"  slice {rep['book_frac']:.1%} of the account; weights are shares OF THAT SLICE "
+              f"({rep['gross_frac_of_slice']:.0%} of it = {rep['gross_frac_of_account']:.1%} of "
+              f"the book): "
               + ", ".join(f"{k} {v:.3%}" for k, v in sorted(rep["target_weights"].items())))
     print(f"-> {_OUT}")
     return 0 if rep["exception_active"] else 1

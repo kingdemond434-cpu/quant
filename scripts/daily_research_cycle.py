@@ -154,6 +154,11 @@ _STEPS = [
     # revoking the exception is one field and binds on the next cycle. They trade as a SEPARATE
     # book with their own target artifact -- merging them into the momentum weights would produce
     # a set no organ published, sized against a Sharpe describing neither.
+    # THE INPUT THE SLEEVE NEVER HAD. `crypto_adapter` attaches MarketSeries.funding only when the
+    # LAKE frame carries a funding column, and data/lake holds OHLCV -- so funding_stress_reversal
+    # degraded to zeros on every symbol, every run. One of two LIVE mechanism sleeves, structurally
+    # unable to produce a signal. Runs BEFORE the sleeves so the same cycle that collects it uses it.
+    ("perp_funding",     "scripts/collect_perp_funding.py",   300),
     ("mechanism_sleeves", "scripts/run_mechanism_sleeves.py", 300),
     ("mechanism_orders",  "scripts/run_margin_executor.py --quote USDC --place "
                           "--targets data/mechanism_sleeve_targets.json", 300),

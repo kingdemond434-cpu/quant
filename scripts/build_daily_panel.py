@@ -75,17 +75,35 @@ def _unlock_symbols() -> tuple[set[str], str]:
     return out, f"{len(out)} symbol(s) with at least one unlock row in {p}"
 
 
+#: Import failures are fatal; per-symbol read failures are not. Set once, so a broken import is
+#: reported ONCE rather than swallowed 165 times.
+_READ_DEFECT: str | None = None
+
+
 def _read_intraday(symbol: str) -> Any | None:
     """The 15min frame for one symbol, or None. Reads through the lake's own reader so this file
-    cannot disagree with the rest of the desk about what a bar is."""
-    try:
-        from libs.autodiscovery.crypto_adapter import _read_frames
-        from libs.core.instruments import Timeframe
+    cannot disagree with the rest of the desk about what a bar is.
 
+    **THE BARE `except Exception` HERE HID A BROKEN IMPORT.** The first version imported
+    `libs.core.instruments.Timeframe`, which does not exist -- the module is `libs.data.timeframe`.
+    Every call raised ModuleNotFoundError, every call was swallowed, and the panel reported "0 of
+    165 symbols" as though the lake were empty. A missing module and a missing symbol produced the
+    same answer, which is this desk's most-repeated defect committed inside a file whose whole job
+    is to stop a count being trusted.
+
+    The import now sits OUTSIDE the handler. A per-symbol read may still fail -- a symbol genuinely
+    absent from the lake is ordinary -- and only that is caught.
+    """
+    global _READ_DEFECT
+    from libs.autodiscovery.crypto_adapter import _read_frames
+    from libs.data.timeframe import Timeframe
+
+    try:
         frames = _read_frames([symbol], Timeframe.M15, "data/lake")
-        return frames.get(symbol)
-    except Exception:
+    except Exception as exc:
+        _READ_DEFECT = f"{type(exc).__name__}: {exc}"
         return None
+    return frames.get(symbol)
 
 
 def to_daily(df: Any) -> tuple[tuple[datetime, ...], np.ndarray] | None:
@@ -142,6 +160,9 @@ def build(min_days: int = MIN_DAYS) -> dict[str, Any]:
         "unmeasured_no_bars": sorted(no_bars),
         "unmeasured_too_short": {k: short[k] for k in sorted(short)},
         "coverage_frac": round(len(panel) / len(wanted), 4) if wanted else None,
+        # A READ DEFECT IS NOT LOW COVERAGE. If the reader itself is broken, "0 of 165" is a
+        # statement about this script, not about the lake, and the two must not print alike.
+        "read_defect": _READ_DEFECT,
         "selection_rule": (
             "EVERY symbol with an unlock row and >= min_days COMPLETE daily bars is included. No "
             "symbol is ever excluded for its outcome, and the rule was fixed before any result -- "
@@ -190,6 +211,9 @@ def main() -> int:
     print(f"=== DAILY PANEL === {rep['n_in_panel']} of {rep['n_wanted']} unlock symbol(s) "
           f"({'n/a' if cov is None else f'{cov:.1%}'} coverage), min {rep['min_days']} complete days")
     print(f"  universe: {rep['why_universe']}")
+    if rep.get("read_defect"):
+        print(f"  READ DEFECT: {rep['read_defect']} -- this is a fault in the READER, not low "
+              "coverage of the lake. Every symbol failed the same way")
     if rep["unmeasured_no_bars"]:
         names = ", ".join(rep["unmeasured_no_bars"][:12])
         more = f" (+{len(rep['unmeasured_no_bars']) - 12} more)" \

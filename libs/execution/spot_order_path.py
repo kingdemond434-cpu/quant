@@ -30,7 +30,8 @@ import math
 from dataclasses import dataclass, field
 from typing import Any
 
-__all__ = ["MIN_STOP_GAP", "OrderOutcome", "floor_2dp", "place_entry", "retarget"]
+__all__ = [
+    "MIN_STOP_GAP", "OrderOutcome", "floor_2dp", "place_entry", "retarget", "round_step"]
 
 #: Quote suffixes a research symbol may arrive in, longest first so BTCUSDT strips USDT rather than
 #: matching a shorter suffix inside it. Order matters and is not alphabetical by accident.
@@ -173,7 +174,7 @@ def place_entry(live: Any, symbol: str, usd: float, *, cycle: str, quote: str,
         filled = float(res.get("executedQty") or 0.0)
     except (TypeError, ValueError):
         filled = 0.0
-    qty = _round_step(filled, step)
+    qty = round_step(filled, step)
     if qty <= 0:
         out.why += "; STOP NOT PLACED -- venue reported no executed quantity to protect"
         return out
@@ -190,7 +191,7 @@ def place_entry(live: Any, symbol: str, usd: float, *, cycle: str, quote: str,
     return out
 
 
-def _round_step(qty: float, step: float) -> float:
+def round_step(qty: float, step: float) -> float:
     """DOWN to the venue's lot step. Rounding up on a protective stop asks to sell more than is
     held, which the venue refuses -- leaving the position unprotected at the moment it matters."""
     if step <= 0:
