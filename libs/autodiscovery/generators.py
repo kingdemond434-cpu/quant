@@ -44,24 +44,17 @@ MEASURED 2026-08-05, which is why this warning sits at the top of the file:
     effective classes 2.787, diversity 0.139. The full 21-spec library resolves to FIVE:
     price_continuation 11, liquidity_provision_immediacy 6, relative_value_convergence 2,
     positioning_crowding_unwind 1, market_risk_premium 1.
-  * 2026-08-14 adds ``derivative_carry_basis`` (true carry: reads funding/basis) and
-    ``taker_flow`` (informed order flow: reads taker_buy_frac) — the first two generators whose
-    inputs come from Level-3 perp data, taking the library's distinct mechanism classes from five
-    to seven.
   * Cross-mechanism N_eff is 4.08 against the ~100 a weak-edge portfolio needs, and the binding
     constraint is DISTINCT MECHANISM SUPPLY. Reading 12 families as 12 mechanisms overstates that
     supply by better than 2x and makes repetition look like exploration.
 
-THE MAXIMUM-POWER CAMPAIGN RAN NO TRUE CARRY TEST UNTIL 2026-08-14, and this file is why —
-then ``derivative_carry_basis`` closed the gap.
-``Family.CARRY`` holds two generators. ``drift_proxy`` is ``momentum_positions(lookback=200)`` on
-OHLC bars — long-horizon price continuation; no funding rate, no swap rate and no basis appears
-anywhere in its inputs, so the census files it under ``price_continuation``. A true carry test
-(``derivative_carry_basis``: the leveraged long who pays funding every interval to hold exposure
-he will not fund with cash) needs swap/funding/basis data, which the OHLC feed did not carry —
-and which the crypto lake now does. The ``derivative_carry_basis`` spec added 2026-08-14 reads the
-funding rate (and basis, when present) into its position rule: it IS carry evidence. Nothing in
-``drift_proxy`` may be reported as carry coverage.
+THE DESK HAS RUN ZERO TRUE CARRY TESTS IN ITS MAXIMUM-POWER CAMPAIGN, and this file is why.
+``Family.CARRY`` holds exactly one generator, ``drift_proxy``, and ``drift_proxy`` is
+``momentum_positions(lookback=200)`` on OHLC bars — long-horizon price continuation. No funding
+rate, no swap rate and no basis appears anywhere in its inputs, so the census files it under
+``price_continuation``. A true carry test (``derivative_carry_basis``: the leveraged long who pays
+funding every interval to hold exposure he will not fund with cash) needs data no generator in
+this file touches. Nothing here may be reported as carry coverage.
 
 Scoped precisely, because the opposite overstatement is just as bad: the desk DOES hold real
 `derivative_carry_basis` evidence elsewhere — funding/basis screen artifacts and a live
@@ -223,153 +216,74 @@ def _funding_stress_reversal(s: MarketSeries, p: dict[str, float]) -> np.ndarray
     return np.where(z > thr, -1.0, np.where(z < -thr, 1.0, 0.0)).astype("float64")
 
 
-def _derivative_carry_basis(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
-    """TRUE CARRY: hold the perp leg that is PAID funding/basis, not the side price momentum favors.
+def _producer_margin_stress(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
+    """treasury_cost_base_liquidation: trade the FORCED SELLER, not a price pattern.
 
-    This is the ``derivative_carry_basis`` test the census has recorded as never run: the leveraged
-    long who pays funding every interval to hold exposure he will not fund with cash is on the
-    WRONG side; the desk should be on the side the funding stream pays. Positive funding (longs
-    pay) -> short the perp; negative funding (shorts pay) -> long. The same sign logic applies to
-    basis (perp mark vs spot): positive basis -> perp rich vs spot -> short; negative -> long.
+    THE PAYER, which is what makes this a mechanism rather than a correlation. A miner carries a
+    FIAT cost base -- power, hosting, leased rigs, debt service -- against coin-denominated
+    revenue. Those obligations do not reschedule for a drawdown. So coin must be sold on the
+    OPERATOR'S calendar rather than the market's, and hardest exactly when price is weakest. The
+    seller is structurally price-insensitive and would prefer not to sell; that is the definition
+    of a compelled flow, and it is why this class scores 0.70 orthogonality against a library
+    otherwise made of price patterns.
 
-    Level-3 signal; degrades to flat without funding OR basis data (honest, like cross_asset).
+    TWO REGIMES, OPPOSITE SIGNS, and conflating them is how this mechanism gets mismeasured:
+
+      COMPRESSION UNDERWAY -- hashprice falling and difficulty still high. Margin is being
+      squeezed while capacity has not yet left, so forced supply is RISING. Short.
+
+      CAPITULATION COMPLETE -- hashprice deeply depressed AND difficulty has adjusted DOWN.
+      Difficulty only falls when hashrate has actually switched off, which is the observable
+      admission that the marginal producer has already sold and exited. The forced supply is
+      spent. Long.
+
+    The second leg is the one worth having, and it is only identifiable because difficulty is a
+    LAGGING, MECHANICAL confirmation of an exit that already happened -- not a forecast. Nothing
+    here predicts miner behaviour; it reads a balance-sheet consequence after the fact.
+
+    DEGRADES TO FLAT without producer data, exactly like the funding signals. A fabricated
+    hashprice would invent the compelled seller the entire claim rests on, and a mechanism whose
+    payer is imaginary is a price pattern wearing an economic story.
     """
-    if s.funding is None:
+    if s.hashprice is None:
         return np.zeros(len(s), dtype="float64")
-    f = np.nan_to_num(s.funding, nan=0.0)
-    w = int(p["window"])
-    carry = np.full(len(f), 0.0, dtype="float64")
-    for i in range(w, len(f)):
-        seg = f[i - w + 1: i + 1]
-        carry[i] = seg.mean() if len(seg) else 0.0
-    # long when funding is paid TO longs (negative rate), short when longs pay (positive rate).
-    pos = np.where(carry < -float(p["entry"]), 1.0,
-                   np.where(carry > float(p["entry"]), -1.0, 0.0)).astype("float64")
-    if s.basis is not None:
-        b = np.nan_to_num(s.basis, nan=0.0)
-        bw = int(p.get("basis_window", w))
-        bmean = np.full(len(b), 0.0, dtype="float64")
-        for i in range(bw, len(b)):
-            bseg = b[i - bw + 1: i + 1]
-            bmean[i] = bseg.mean() if len(bseg) else 0.0
-        # basis confirmation: only trade when basis agrees with the funding-side read.
-        agree = (bmean < -float(p.get("basis_entry", 0.0))) | (bmean > float(p.get("basis_entry", 0.0)))
-        pos = np.where(agree, pos, 0.0)
-    return pos
+    hp = np.nan_to_num(np.asarray(s.hashprice, dtype="float64"), nan=0.0)
+    w = int(p.get("window", 90))
+    thr = float(p.get("z_entry", 1.0))
+    out = np.zeros(len(hp), dtype="float64")
+    if len(hp) <= w:
+        return out
 
-
-def _taker_flow(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
-    """Order-flow persistence: follow the aggressive (taker) side when it is one-sided.
-
-    ``taker_buy_frac`` is the share of bar volume executed by aggressive BUYERS. A sustained
-    reading above 0.5 is net aggressive demand; below 0.5 is net aggressive supply. Momentum
-    variant follows it; the ``fade`` variant fades extremes (counterparty liquidity provision).
-
-    Level-3 signal; degrades to flat without taker data (honest, like cross_asset).
-    """
-    if s.taker_buy_frac is None:
-        return np.zeros(len(s), dtype="float64")
-    t = np.nan_to_num(s.taker_buy_frac, nan=0.5)
-    w = int(p["window"])
-    flow = np.full(len(t), 0.5, dtype="float64")
-    for i in range(w, len(t)):
-        seg = t[i - w + 1: i + 1]
-        flow[i] = seg.mean() if len(seg) else 0.5
-    offset = float(p.get("offset", 0.05))
-    mode = int(p.get("mode", 1.0))
-    if mode == 0:
-        # fade extremes: buy when flow is far below neutral, sell when far above.
-        return np.where(flow < 0.5 - offset, 1.0,
-                        np.where(flow > 0.5 + offset, -1.0, 0.0)).astype("float64")
-    return np.where(flow > 0.5 + offset, 1.0,
-                    np.where(flow < 0.5 - offset, -1.0, 0.0)).astype("float64")
-
-
-def _funding_taker_interaction(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
-    """FUNDING × TAKER interaction: fade funding stress ONLY when aggressive flow confirms.
-
-    Positive funding (longs paying) + aggressive buying (taker_buy_frac > 0.5) = crowded longs
-    being squeezed -> mean reversion stronger. Negative funding + aggressive selling = crowded
-    shorts -> reversion. Only trades when both signals align.
-
-    Level-3 signal; degrades to flat without funding OR taker data.
-    """
-    if s.funding is None or s.taker_buy_frac is None:
-        return np.zeros(len(s), dtype="float64")
-    f = np.nan_to_num(s.funding, nan=0.0)
-    t = np.nan_to_num(s.taker_buy_frac, nan=0.5)
-    w = int(p["window"])
-    z_fund = np.zeros(len(f), dtype="float64")
-    z_flow = np.zeros(len(t), dtype="float64")
-    for i in range(w, len(f)):
-        fseg = f[i - w + 1: i + 1]
-        tseg = t[i - w + 1: i + 1]
-        fd = fseg.std()
-        td = tseg.std()
-        z_fund[i] = (f[i] - fseg.mean()) / fd if fd > 0 else 0.0
-        z_flow[i] = (tseg.mean() - 0.5) / td if td > 0 else 0.0
-    thr = float(p.get("z_entry", 1.5))
-    # Both z-scores must exceed threshold and agree in direction
-    align = (z_fund > thr) & (z_flow > float(p.get("flow_thr", 0.5)))  # pos funding + buy pressure
-    align |= (z_fund < -thr) & (z_flow < -float(p.get("flow_thr", 0.5)))  # neg funding + sell pressure
-    pos = np.where(z_fund > thr, -1.0, np.where(z_fund < -thr, 1.0, 0.0)).astype("float64")
-    return np.where(align, pos, 0.0)
-
-
-def _basis_funding_interaction(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
-    """BASIS × FUNDING interaction: true carry with basis convergence + funding direction.
-
-    The carry trade (derivative_carry_basis) gets confirmation from basis: negative basis (perp
-    cheap) + negative funding (longs paid) = strong long signal. Positive basis + positive
-    funding = strong short. Both must align.
-
-    Level-3 signal; degrades to flat without basis OR funding data.
-    """
-    if s.basis is None or s.funding is None:
-        return np.zeros(len(s), dtype="float64")
-    b = np.nan_to_num(s.basis, nan=0.0)
-    f = np.nan_to_num(s.funding, nan=0.0)
-    w = int(p["window"])
-    b_mean = np.full(len(b), 0.0, dtype="float64")
-    f_mean = np.full(len(f), 0.0, dtype="float64")
-    for i in range(w, len(b)):
-        bseg = b[i - w + 1: i + 1]
-        fseg = f[i - w + 1: i + 1]
-        b_mean[i] = bseg.mean() if len(bseg) else 0.0
-        f_mean[i] = fseg.mean() if len(fseg) else 0.0
-    entry = float(p.get("entry", 0.0002))
-    # Both basis and funding must agree on direction
-    long_cond = (b_mean < -entry) & (f_mean < -entry)
-    short_cond = (b_mean > entry) & (f_mean > entry)
-    return np.where(long_cond, 1.0, np.where(short_cond, -1.0, 0.0)).astype("float64")
-
-
-def _basis_taker_interaction(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
-    """BASIS × TAKER interaction: basis mean-reversion when aggressive flow opposes it.
-
-    Negative basis (perp cheap) + aggressive buying (taker_buy_frac > 0.5) = longs absorbing
-    the discount -> basis convergence long. Positive basis + aggressive selling = shorts
-    absorbing premium -> basis convergence short. Counter-trend flow confirms the reversion.
-
-    Level-3 signal; degrades to flat without basis OR taker data.
-    """
-    if s.basis is None or s.taker_buy_frac is None:
-        return np.zeros(len(s), dtype="float64")
-    b = np.nan_to_num(s.basis, nan=0.0)
-    t = np.nan_to_num(s.taker_buy_frac, nan=0.5)
-    w = int(p["window"])
-    b_mean = np.full(len(b), 0.0, dtype="float64")
-    t_mean = np.full(len(t), 0.5, dtype="float64")
-    for i in range(w, len(b)):
-        bseg = b[i - w + 1: i + 1]
-        tseg = t[i - w + 1: i + 1]
-        b_mean[i] = bseg.mean() if len(bseg) else 0.0
-        t_mean[i] = tseg.mean() if len(tseg) else 0.5
-    offset = float(p.get("offset", 0.05))
-    # Basis negative + buying = long; basis positive + selling = short
-    long_cond = (b_mean < -float(p.get("basis_thr", 0.0001))) & (t_mean > 0.5 + offset)
-    short_cond = (b_mean > float(p.get("basis_thr", 0.0001))) & (t_mean < 0.5 - offset)
-    return np.where(long_cond, 1.0, np.where(short_cond, -1.0, 0.0)).astype("float64")
+    diff = (np.nan_to_num(np.asarray(s.difficulty, dtype="float64"), nan=0.0)
+            if s.difficulty is not None else None)
+    for i in range(w, len(hp)):
+        seg = hp[i - w + 1: i + 1]
+        sd = seg.std()
+        if sd <= 0:
+            continue
+        z = (hp[i] - seg.mean()) / sd
+        if z > -thr:
+            continue                      # margin is not compressed; no forced flow to trade
+        # Margin IS compressed. Which regime?
+        eased = False
+        if diff is not None:
+            # CAPACITY GONE IS A STATE, NOT AN EVENT -- and the first version got this wrong.
+            #
+            # It compared difficulty across one retarget window (`diff[i] < diff[i-14]`). But
+            # difficulty is a STEP FUNCTION that holds its new level until the next adjustment, so
+            # that test is true only for the ~14 bars immediately after a drop and false forever
+            # after. The signal would have flipped back to SHORT a fortnight into precisely the
+            # recovery it exists to catch.
+            #
+            # The economically meaningful condition is that difficulty is still BELOW ITS RECENT
+            # PEAK: the hashrate that switched off has not come back, so the marginal producer is
+            # still absent and their forced supply is still spent. That persists for as long as it
+            # is true, which is the shape the claim actually has.
+            back = max(0, i - w)
+            peak = diff[back: i + 1].max()
+            eased = peak > 0 and diff[i] < peak * (1.0 - float(p.get("ease_frac", 0.01)))
+        out[i] = 1.0 if eased else -1.0
+    return out
 
 
 @dataclass(frozen=True)
@@ -446,47 +360,9 @@ GENERATORS: tuple[GeneratorSpec, ...] = (
                   "price_continuation, never derivative_carry_basis",
                   ["this is momentum wearing a carry label, so it is evidence about price "
                    "continuation and about nothing else",
+                   "the desk has run ZERO true carry tests in its maximum-power campaign",
                    "sharp reversals and crowding, exactly as for time_series_mom"],
                   [{"lookback": 200}]),
-    # TRUE CARRY -- closes the census gap "the desk has run ZERO true carry tests in its
-    # maximum-power campaign" (drift_proxy divergence record above). This spec is the first
-    # generator that actually reads a funding rate (and, when present, basis) into its position
-    # rule, so the CARRY family finally carries derivative_carry_basis census class evidence.
-    GeneratorSpec(Family.CARRY, "derivative_carry_basis", _derivative_carry_basis, _R,
-                  "harvest the funding stream: hold the perp leg that is PAID funding/basis "
-                  "(positive funding -> short, negative -> long)",
-                  ["needs funding data (absent -> flat)",
-                   "funding can stay one-way in strong trends, and the carry flips sign slowly",
-                   "basis disagreement gates the trade flat when it contradicts funding"],
-                  [{"window": w, "entry": e, "basis_window": w, "basis_entry": 0.0}
-                   for w in (7, 14, 30, 60) for e in (0.0001, 0.00015, 0.0002, 0.0003, 0.0005)]
-                   + [{"window": w, "entry": e, "basis_window": w, "basis_entry": b}
-                      for w in (14, 30) for e in (0.00015, 0.0002) for b in (0.0001, 0.0002)]),
-    GeneratorSpec(Family.LIQUIDITY, "taker_flow", _taker_flow, _L,
-                  "order-flow persistence: follow (or fade) sustained aggressive taker demand",
-                  ["needs taker_buy_frac data (absent -> flat)",
-                   "flow is noisy at low volume; follow variant whipsaws in chop"],
-                  [{"window": w, "offset": o, "mode": m}
-                   for w in (10, 20, 30, 50) for o in (0.03, 0.05, 0.08, 0.10) for m in (1.0, 0.0)]),
-    # CROSS-AXIS INTERACTIONS -- genuine new mechanisms using multiple Level-3 columns together
-    GeneratorSpec(Family.LIQUIDITY, "funding_taker_interaction", _funding_taker_interaction, _L,
-                  "funding stress reversion confirmed by aggressive taker flow alignment",
-                  ["needs funding AND taker_buy_frac data (absent -> flat)",
-                   "both signals must agree; noisy when flow is weak"],
-                  [{"window": w, "z_entry": z, "flow_thr": ft}
-                   for w in (14, 30, 50) for z in (1.0, 1.5, 2.0) for ft in (0.3, 0.5, 0.7)]),
-    GeneratorSpec(Family.CARRY, "basis_funding_interaction", _basis_funding_interaction, _R,
-                  "true carry with basis+funding alignment: both must pay the same side",
-                  ["needs basis AND funding data (absent -> flat)",
-                   "both must agree on direction; no single-column fallback"],
-                  [{"window": w, "entry": e}
-                   for w in (14, 30, 60) for e in (0.0001, 0.00015, 0.0002, 0.0003)]),
-    GeneratorSpec(Family.LIQUIDITY, "basis_taker_interaction", _basis_taker_interaction, _L,
-                  "basis mean-reversion confirmed by counter-trend aggressive flow",
-                  ["needs basis AND taker_buy_frac data (absent -> flat)",
-                   "flow must oppose the basis direction (counter-trend confirmation)"],
-                  [{"window": w, "offset": o, "basis_thr": bt}
-                   for w in (14, 30, 50) for o in (0.03, 0.05, 0.08) for bt in (0.00005, 0.0001, 0.0002)]),
     GeneratorSpec(Family.REGIME_TRANSITION, "vol_onset_trend", _regime_transition, _S,
                   "regime persistence after a volatility break", ["false transition calls"],
                   [{"vol_window": 20, "trend": 20}]),
@@ -503,10 +379,23 @@ GENERATORS: tuple[GeneratorSpec, ...] = (
                   ["needs funding data", "persistent one-way funding in strong trends",
                    "census class is positioning_crowding_unwind, NOT liquidity provision: the "
                    "payer is a trader liquidated on the venue's schedule"],
-                  [{"window": w, "z_entry": z}
-                   for w in (7, 14, 21, 30, 50) for z in (1.0, 1.25, 1.5, 1.75, 2.0, 2.5)]),
+                  [{"window": 30, "z_entry": 1.5}, {"window": 14, "z_entry": 2.0}]),
     GeneratorSpec(Family.RISK_PREMIA, "persistent_long", _risk_premia, _R,
                   "harvest the long-run risk premium", ["secular bear", "crash"], [{}]),
+    # THE FIRST GENERATOR IN THIS LIBRARY WHOSE INPUT IS NOT A PRICE. Its census class,
+    # treasury_cost_base_liquidation, scores 0.70 orthogonality precisely because a producer's
+    # balance sheet is not a candle -- and orthogonality, not candidate count, is the binding
+    # constraint on this desk's combined Sharpe (docs/research/REALITY_CHECK_POWER.md).
+    GeneratorSpec(Family.LIQUIDITY, "producer_margin_stress", _producer_margin_stress, _S,
+                  "forced selling by a fiat-cost-base producer; the exit is confirmed by a "
+                  "DOWNWARD difficulty adjustment, which is mechanical and lagging, not forecast",
+                  ["needs hashprice; flat without it",
+                   "difficulty is a step function -- compare across the retarget, not bar-to-bar",
+                   "census class is treasury_cost_base_liquidation, NOT mechanical_supply_release: "
+                   "that is a SCHEDULE known in advance, this is a balance-sheet constraint",
+                   "a miner hedging with derivatives sells less spot than the cost base implies"],
+                  [{"window": 90, "z_entry": 1.0, "retarget": 14},
+                   {"window": 180, "z_entry": 1.5, "retarget": 14}]),
 )
 
 
@@ -706,9 +595,8 @@ FAMILY_MECHANISM_DIVERGENCE: dict[str, str] = {
         "FILED `carry`, IS `price_continuation`. It is momentum_positions(lookback=200) on OHLC "
         "bars — no funding, swap or basis input exists in the generator. The family label is the "
         "frozen budget partition; counting it as carry coverage would credit the desk with a "
-        "carry test it has never run. (True carry coverage now lives in the separate spec "
-        "`derivative_carry_basis`, which reads funding and basis; `drift_proxy` itself remains "
-        "price continuation and is not carry evidence.)"
+        "carry test it has never run, and the desk has run ZERO true carry tests in its "
+        "maximum-power campaign."
     ),
     "funding_stress_reversal": (
         "FILED `liquidity`, IS `positioning_crowding_unwind`. Fading funding stress is a claim "
@@ -716,26 +604,6 @@ FAMILY_MECHANISM_DIVERGENCE: dict[str, str] = {
         "paid for immediacy. Counting it under liquidity provision would add a sixth member to a "
         "class already tested to exhaustion while hiding the library's only occupant of a class "
         "the price-only classes do not own."
-    ),
-    "taker_flow": (
-        "FILED `liquidity`, IS `informed_order_flow`. Following (or fading) aggressive taker "
-        "flow is a claim about the uninformed counterparty who fills an informed order and "
-        "learns its information only after the price has already moved -- not about a warehouse "
-        "being paid for immediacy. The LIQUIDITY family label is the frozen budget partition; "
-        "the census class is the mechanism that pays."
-    ),
-    "funding_taker_interaction": (
-        "FILED `liquidity`, IS `positioning_crowding_unwind`. Fading funding stress when "
-        "aggressive taker flow confirms the crowding is a claim about leveraged traders being "
-        "squeezed on the venue's schedule, not about a warehouse being paid for immediacy. The "
-        "LIQUIDITY family label is the frozen budget partition; the census class is the "
-        "mechanism that pays."
-    ),
-    "basis_taker_interaction": (
-        "FILED `carry`, IS `informed_order_flow`. Basis mean-reversion confirmed by counter-trend "
-        "aggressive flow is a claim about the uninformed counterparty absorbing the basis "
-        "discount/premium, not about the leveraged long paying funding. The CARRY family label "
-        "is the frozen budget partition; the census class is the mechanism that pays."
     ),
 }
 

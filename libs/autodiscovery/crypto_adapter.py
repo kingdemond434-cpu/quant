@@ -88,9 +88,17 @@ def _provider_from_frames(frames: dict[str, Any], min_bars: int) -> DataProvider
         if df is None or len(df) < min_bars:
             return None
         funding = df["funding"].to_numpy("float64") if "funding" in df.columns else None
-        basis = df["basis"].to_numpy("float64") if "basis" in df.columns else None
-        taker = (df["taker_buy_frac"].to_numpy("float64")
-                 if "taker_buy_frac" in df.columns else None)
+        # PRODUCER ECONOMICS, for treasury_cost_base_liquidation. Attached exactly as funding is:
+        # present when the lake carries the column, None when it does not, and NEVER synthesised.
+        #
+        # Adding the fields to MarketSeries and the generator without this line would have left
+        # `producer_margin_stress` returning flat forever -- correct, registered, and starved,
+        # which is the same silent shape as the rho tracker with nothing writing its input. A
+        # generator that cannot see its data is not a mechanism, it is a zero.
+        hashprice = (df["hashprice"].to_numpy("float64")
+                     if "hashprice" in df.columns else None)
+        difficulty = (df["difficulty"].to_numpy("float64")
+                      if "difficulty" in df.columns else None)
         ref_close = ref_high = ref_low = None
         if btc_close is not None and symbol != "BTCUSDT":
             ref = btc_close.reindex(df.index).ffill()
@@ -115,8 +123,8 @@ def _provider_from_frames(frames: dict[str, Any], min_bars: int) -> DataProvider
             ref_high=ref_high,
             ref_low=ref_low,
             funding=funding,
-            basis=basis,
-            taker_buy_frac=taker,
+            hashprice=hashprice,
+            difficulty=difficulty,
         )
 
     return provider
@@ -142,17 +150,10 @@ def load_universe(
     timeframe: Timeframe = Timeframe.D1,
     *,
     limit: int | None = 30,
-    offset: int = 0,
     lake_root: str = _LAKE_ROOT,
     min_bars: int = _MIN_BARS,
 ) -> tuple[list[str], DataProvider]:
     """Select the TRADEABLE crypto universe (top-``limit`` by trailing dollar-volume) + a provider.
-
-    ``offset`` skips the top-``offset`` ranked symbols, enabling CHUNKED/STREAMED campaigns: the
-    documented re-test condition for raising the cap is that the campaign holds candidate series
-    in a chunked form rather than all at once -- staggered cycles each over a bounded slice of the
-    universe achieve exactly that, and the content-hash store keeps the slices' trials deduped and
-    DSR-deflated across campaigns.
 
     Ranking is done OFFLINE from lake bars (median close*volume over the last ~180 bars) -- no live
     API call, so no network/geo-block failure mode in the daily cycle.
@@ -196,7 +197,7 @@ def load_universe(
         return float(dollar.median()) if len(dollar) else 0.0
 
     eligible.sort(key=_adv, reverse=True)
-    selected = eligible if limit is None else eligible[offset:offset + limit]
+    selected = eligible if limit is None else eligible[:limit]
     return selected, _provider_from_frames(frames, min_bars)
 
 
