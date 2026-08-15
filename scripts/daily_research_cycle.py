@@ -101,6 +101,24 @@ _STEPS = [
     # book in every strategy count; k_eff = n/(1+(n-1)rho) separates them. Also the daily caller
     # for the family partition -- seats are per-family or the queue rations breadth globally.
     ("breadth_ledger",    "scripts/report_breadth.py",         120),
+    # WHERE THE NEXT RETURN COMES FROM, RANKED -- and it had no daily caller. The census scores
+    # every mechanism class by plausibility x orthogonality x data-feasibility x depth-deficit and
+    # names, per class, WHO IS FORCED TO TRADE against the desk and which datasets are missing. It
+    # is the desk's reading list for breadth, it is the artifact `report_mechanism_supply` consumes,
+    # and it ran only when somebody remembered it existed (III.16). Top gaps as of 2026-08-15 are
+    # all NO-CANDIDATE: index_reconstitution_flow 0.48, estate_liquidation_distribution 0.45,
+    # treasury_cost_base_liquidation 0.42 -- three forced-seller mechanisms the desk has never
+    # screened, every one of them FREE-ACQUIRABLE.
+    ("mechanism_census",  "scripts/run_mechanism_census.py",   300),
+    # THE mechanical_supply_release CHAIN, all four steps of which existed and none of which ran.
+    # Vesting cliffs and emissions are a forced seller on an IMMUTABLE schedule -- the same shape as
+    # carry, and the highest-orthogonality class whose data the census records as already on disk.
+    # The screen honestly reports UNMEASURED while its inputs are missing; running it daily is what
+    # turns "we never got to it" into a named, dated deficit that accrues.
+    ("unlock_calendar",   "scripts/collect_unlock_calendar.py", 180),
+    ("circulating_supply", "scripts/collect_circulating_supply.py", 180),
+    ("supply_screen",     "scripts/screen_unlock_supply_series.py", 240),
+    ("supply_report",     "scripts/report_mechanism_supply.py", 120),
     ("live_ladder",       "scripts/run_live_ladder.py",      600),
     ("auto_promotion",    "scripts/run_auto_promotion.py --capital 200 --min-notional 10", 300),
     ("golive_preflight",  "scripts/run_golive_preflight.py --capital 200", 120),

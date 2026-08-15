@@ -17,20 +17,26 @@ from libs.execution import spot_order_path as P
 class _Venue:
     """A connector stand-in. Injected rather than imported so no test can reach the live venue."""
 
+    #: Spot by default. A margin stand-in sets this True, exactly as the real connectors do.
+    SUPPORTS_BORROW = False
+
     def __init__(self, *, armed: bool = True, fill: float = 1.0,
                  fail_order: bool = False, fail_stop: bool = False) -> None:
         self.armed, self.fill = armed, fill
         self.fail_order, self.fail_stop = fail_order, fail_stop
         self.orders: list[tuple[Any, ...]] = []
         self.stops: list[tuple[Any, ...]] = []
+        self.borrowed: list[bool] = []
 
     def is_armed(self) -> tuple[bool, str]:
         return self.armed, f"armed={self.armed}"
 
-    def place_market_quote(self, sym: str, side: str, usd: float, *, cycle: str) -> dict[str, Any]:
+    def place_market_quote(self, sym: str, side: str, usd: float, *, cycle: str,
+                           borrow: bool = False) -> dict[str, Any]:
         if self.fail_order:
             raise RuntimeError("venue rejected the call: HTTP 400")
         self.orders.append((sym, side, usd, cycle))
+        self.borrowed.append(borrow)
         return {"orderId": 1, "status": "FILLED", "executedQty": str(self.fill)}
 
     def place_stop_loss_limit(self, sym: str, side: str, qty: float, stop: float,
@@ -150,3 +156,57 @@ def test_DRY_RUN_SPENDS_NOTHING() -> None:
                         min_notional=5.0, stop_price=600.0, place=False)
     assert out.placed is False and "DRY RUN" in out.why
     assert not v.orders and not v.stops
+
+
+# ------------------------------------------------------------------------------ borrowing legs
+class _MarginVenue(_Venue):
+    SUPPORTS_BORROW = True
+
+
+def test_A_BORROWING_LEG_IS_NOT_CLAMPED_TO_FREE_CASH() -> None:
+    """THE WHOLE POINT OF A MARGIN WALLET. Clamping to free quote would cap the book at 1x and
+    silently discard the leverage the policy computed -- every leg filled, every leg smaller than
+    the sizing assumed, and nothing in the journal saying so."""
+    v = _MarginVenue()
+    out = P.place_entry(v, "BTCUSDT", 500.0, cycle="20260815", quote="USDC",
+                        free_quote=100.0, min_notional=5.0, borrow=True)
+    assert out.placed and out.usd == 500.0
+    assert v.borrowed == [True], "the venue must be told to MARGIN_BUY, not NO_SIDE_EFFECT"
+
+
+def test_WITHOUT_BORROW_THE_CLAMP_STILL_BINDS_ON_MARGIN() -> None:
+    """Leverage is opt-in per leg. A margin connector is not a licence to spend cash it lacks."""
+    v = _MarginVenue()
+    out = P.place_entry(v, "BTCUSDT", 500.0, cycle="20260815", quote="USDC",
+                        free_quote=100.0, min_notional=5.0, borrow=False)
+    assert out.placed and out.usd == 100.0 and "CLAMPED" in out.why
+    assert v.borrowed == [False]
+
+
+def test_BORROW_ON_A_SPOT_CONNECTOR_IS_REFUSED_BEFORE_ANYTHING_IS_SENT() -> None:
+    """Spot is 1x by construction. Routing a levered size there would clamp it to free cash and
+    fill -- a leg that looks successful while carrying a fraction of its intended exposure, which
+    is the quietest way to be wrong about a position."""
+    v = _Venue()
+    out = P.place_entry(v, "BTCUSDT", 500.0, cycle="20260815", quote="USDC",
+                        free_quote=100.0, min_notional=5.0, borrow=True)
+    assert not out.placed and "BORROW REQUESTED" in out.why
+    assert v.orders == [], "nothing may reach the venue once the mismatch is known"
+
+
+def test_THE_RAIL_STILL_OUTRANKS_A_BORROWING_LEG(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Leverage does not buy an exemption from the ruin rails, and the rail is checked FIRST --
+    before arming, before the borrow capability, before any sizing."""
+    monkeypatch.setattr("libs.execution.ruin_rail.frozen", lambda root=None: (True, "KILL latched"))
+    v = _MarginVenue()
+    out = P.place_entry(v, "BTCUSDT", 500.0, cycle="20260815", quote="USDC",
+                        free_quote=1e9, min_notional=5.0, borrow=True)
+    assert not out.placed and "RUIN RAIL LATCHED" in out.why
+    assert v.orders == []
+
+
+def test_A_DRY_RUN_SAYS_IT_WOULD_BORROW() -> None:
+    v = _MarginVenue()
+    out = P.place_entry(v, "BTCUSDT", 500.0, cycle="20260815", quote="USDC",
+                        free_quote=100.0, min_notional=5.0, borrow=True, place=False)
+    assert not out.placed and "MARGIN_BUY" in out.why and v.orders == []

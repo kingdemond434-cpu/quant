@@ -61,6 +61,12 @@ _MARGIN_FLAG = Path("data/MARGIN_ENABLE")
 
 #: Venue thresholds, stated so the distance from them is visible at every call site rather than
 #: living in a support article. Binance issues a margin call at 1.5 and liquidates at 1.1.
+#: This connector can open a position larger than its free cash by borrowing. Declared as a flag
+#: rather than inferred from a signature: the shared order path must decide whether a borrow was
+#: requested of something that cannot borrow BEFORE it sends anything, not by catching a TypeError
+#: from the venue call and reporting it as a rejected order.
+SUPPORTS_BORROW = True
+
 MARGIN_CALL_LEVEL = 1.5
 LIQUIDATION_LEVEL = 1.1
 

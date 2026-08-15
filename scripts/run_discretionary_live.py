@@ -96,7 +96,15 @@ def _to_signal(setup: rules.Setup, symbol: str, rule_id: str) -> RuleSignal:
     )
 
 
-_EXEC_REPORT = Path("web/spot_executor.json")
+#: The report each wallet's executor publishes. THE WALLET DECIDES WHICH ONE IS TRUE. Reading the
+#: spot report while trading margin sizes the whole discretionary book against a wallet the capital
+#: has left -- and on a day the spot report is merely stale rather than absent, that is a
+#: denominator which is wrong, plausible, and silent.
+_EXEC_REPORT_BY_WALLET = {
+    "spot": Path("web/spot_executor.json"),
+    "margin": Path("web/margin_executor.json"),
+}
+_EXEC_REPORT = _EXEC_REPORT_BY_WALLET["spot"]
 
 
 def _from_ict(setup: Any) -> rules.Setup:
@@ -114,29 +122,53 @@ def _from_ict(setup: Any) -> rules.Setup:
              f"{setup.sweep_i}/{setup.shift_i}/{setup.entry_i}")
 
 
-def _resolve_equity(raw: str) -> tuple[float, str]:
-    """A number, or the figure the spot executor last read FROM THE VENUE.
+def _resolve_equity(raw: str, wallet: str = "spot") -> tuple[float, float, str]:
+    """`(risk_basis, leverage, why)` -- the figure THIS WALLET's executor last read from the venue.
 
     Deliberately not a second venue read. The executor runs immediately before this in the cycle
     and already resolved equity against live balances; re-deriving it here would give two organs
     two answers on the same book, and the one that sized the orders is the one that is true.
+
+    **LEVERAGE COMES FROM THE SAME REPORT, NEVER RECOMPUTED HERE.** `leverage_policy.choose()` is
+    deterministic given its inputs, so a second call would usually agree -- and "usually" is the
+    problem: the two would read realised vol at different moments and silently diverge on exactly
+    the volatile days when the number matters. One book, one leverage, computed once. This sleeve
+    reads it, publishes it, and multiplies its risk basis by it so the discretionary rules carry
+    the same gearing the momentum legs do rather than sitting at 1x inside a levered account.
 
     An ABSENT or STALE report refuses rather than falling back to a literal. A default denominator
     is the exact defect this replaces: it is right when written and silently wrong afterwards.
     """
     if str(raw).strip().lower() != "auto":
         try:
-            return float(raw), f"stated by the caller: ${float(raw):,.2f}"
+            return float(raw), 1.0, f"stated by the caller: ${float(raw):,.2f}, unlevered"
         except (TypeError, ValueError):
-            return 0.0, f"--equity {raw!r} is neither a number nor 'auto'"
+            return 0.0, 1.0, f"--equity {raw!r} is neither a number nor 'auto'"
+    src = _EXEC_REPORT_BY_WALLET.get(str(wallet).strip().lower(), _EXEC_REPORT)
     try:
-        rep = json.loads(_EXEC_REPORT.read_text("utf-8"))
+        rep = json.loads(src.read_text("utf-8"))
         eq = float(rep["equity_usd"])
     except (OSError, ValueError, KeyError, TypeError) as exc:
-        return 0.0, (f"--equity auto, but {_EXEC_REPORT} is unreadable ({type(exc).__name__}). "
-                     "Refusing rather than inventing a denominator: every intent below would be "
-                     "sized against a number nobody measured")
-    return eq, f"read from {_EXEC_REPORT}, which resolved it against live balances: ${eq:,.2f}"
+        return 0.0, 1.0, (f"--equity auto, but {src} is unreadable ({type(exc).__name__}). "
+                          "Refusing rather than inventing a denominator: every intent below would "
+                          "be sized against a number nobody measured")
+    lev = 1.0
+    why_lev = ""
+    if wallet == "margin":
+        node = rep.get("leverage")
+        try:
+            lev = float(node["leverage"]) if isinstance(node, dict) else 1.0
+        except (KeyError, TypeError, ValueError):
+            lev = 1.0
+        if lev <= 0:
+            # NOT clamped up to 1.0. A policy that returned zero is a policy saying the measured
+            # edge does not support carrying this book, and overriding that here would be this
+            # sleeve deciding it knows better than the arithmetic every other leg obeys.
+            return 0.0, 0.0, (f"{src} reports leverage {lev} -- the policy declines to carry this "
+                              "book at all. Refusing rather than sizing at an invented 1x")
+        why_lev = f", leverage {lev:.2f}x from the same report (never recomputed here)"
+    return eq * lev, lev, (f"read from {src}, resolved against live balances: ${eq:,.2f}"
+                           f"{why_lev} -> risk basis ${eq * lev:,.2f}")
 
 
 def main() -> int:
@@ -192,10 +224,14 @@ def main() -> int:
               "is a different and false claim")
         return 1
 
-    equity, equity_why = _resolve_equity(args.equity)
+    equity, leverage, equity_why = _resolve_equity(args.equity, args.wallet)
     if equity <= 0:
         print(f"discretionary-live: {equity_why}")
         return 1
+    # BORROW ONLY WHERE BORROWING IS THE POINT. On margin the venue funds the shortfall
+    # (MARGIN_BUY) so a levered risk basis becomes real exposure; on spot the same flag is refused
+    # by the order path rather than quietly filling an unlevered leg the sizing did not intend.
+    borrow = wallet_mod.is_margin(args.wallet) and leverage > 1.0
     state = SleeveState(equity_usd=equity,
                         realised_pnl_today_usd=float(args.realised_today),
                         open_positions=int(args.open_positions))
@@ -309,7 +345,7 @@ def main() -> int:
                         quote=args.quote, free_quote=free_quote,
                         min_notional=float(args.min_notional or 0.0) or 5.0,
                         stop_price=float(sig.stop_price), step=steps.get(sym, 0.0),
-                        place=bool(args.place))
+                        place=bool(args.place), borrow=borrow)
                     row["order"] = out.as_row()
                     placed.append(out.as_row())
                     if out.placed:
@@ -320,6 +356,8 @@ def main() -> int:
         "updated": datetime.now(tz=UTC).isoformat(),
         "equity_usd": equity,
         "equity_why": equity_why,
+        "leverage": leverage,
+        "borrowing": borrow,
         "rule_id": args.rule_id,
         "n_intents": len(rows),
         "n_taken": sum(1 for r in rows if r.get("taken")),

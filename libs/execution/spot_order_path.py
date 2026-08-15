@@ -79,7 +79,8 @@ def floor_2dp(x: float) -> float:
 
 def place_entry(live: Any, symbol: str, usd: float, *, cycle: str, quote: str,
                 free_quote: float, min_notional: float, stop_price: float | None = None,
-                step: float = 0.0, place: bool = True) -> OrderOutcome:
+                step: float = 0.0, place: bool = True,
+                borrow: bool = False) -> OrderOutcome:
     """Buy `usd` of `symbol`, then rest its protective stop. Refuses with a stated reason.
 
     `live` is the connector module, injected rather than imported, so this stays testable without
@@ -101,7 +102,20 @@ def place_entry(live: Any, symbol: str, usd: float, *, cycle: str, quote: str,
     if not armed:
         return OrderOutcome(sym, "BUY", usd, False, f"NOT ARMED -- {why_armed}")
 
-    spend = floor_2dp(min(usd, free_quote))
+    # BORROW IS REFUSED BEFORE ANYTHING IS SENT, not caught afterwards. A levered size routed to a
+    # connector that cannot borrow would otherwise be clamped to free cash and filled -- a leg that
+    # looks successful while carrying a fraction of the exposure its sizing assumed, which is the
+    # quietest way to be wrong about a position.
+    if borrow and not getattr(live, "SUPPORTS_BORROW", False):
+        return OrderOutcome(
+            sym, "BUY", usd, False,
+            f"BORROW REQUESTED of {getattr(live, '__name__', live)}, which cannot borrow. Refusing "
+            "rather than placing an unlevered leg: the caller sized this expecting leverage")
+
+    # THE FREE-CASH CLAMP DOES NOT APPLY TO A BORROWING LEG. On cross margin the venue funds the
+    # difference (MARGIN_BUY), so clamping to free quote would cap the book at 1x and silently
+    # discard the leverage the policy computed.
+    spend = floor_2dp(usd if borrow else min(usd, free_quote))
     if spend < min_notional:
         return OrderOutcome(
             sym, "BUY", spend, False,
@@ -116,10 +130,14 @@ def place_entry(live: Any, symbol: str, usd: float, *, cycle: str, quote: str,
 
     if not place:
         return OrderOutcome(sym, "BUY", spend, False,
-                            f"DRY RUN -- would buy ${spend:,.2f}{clamped}")
+                            f"DRY RUN -- would buy ${spend:,.2f}{clamped}"
+                            f"{' (MARGIN_BUY: borrows the shortfall)' if borrow else ''}")
 
     try:
-        res = live.place_market_quote(sym, "BUY", spend, cycle=cycle)
+        kw: dict[str, Any] = {"cycle": cycle}
+        if borrow:
+            kw["borrow"] = True          # MARGIN_BUY; absent means NO_SIDE_EFFECT on both venues
+        res = live.place_market_quote(sym, "BUY", spend, **kw)
     except Exception as exc:
         return OrderOutcome(sym, "BUY", spend, False, f"ORDER REJECTED ({type(exc).__name__}: "
                                                       f"{exc})")

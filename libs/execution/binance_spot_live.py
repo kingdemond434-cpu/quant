@@ -41,6 +41,12 @@ _BASE = "https://api.binance.com"                # PINNED live spot -- verified 
 #: the v6 address to the venue whitelist leaves the desk one dual-stack host away from the same
 #: silent failure. Pinning the egress family makes the address the venue sees a PROPERTY OF THIS
 #: MODULE rather than of the host's resolver ordering.
+#: Spot is 1x by construction: you hold what you paid for. There is no borrow surface here and
+#: none can be added -- a `borrow=True` order routed to this module is a caller defect, and the
+#: shared order path refuses it rather than silently placing an unlevered leg the sizing did not
+#: intend.
+SUPPORTS_BORROW = False
+
 FORCE_IPV4 = True
 _KEYFILE = Path("data/secrets/binance_live_spot.json")
 _ENABLE_FLAG = Path("data/LIVE_ENABLE")

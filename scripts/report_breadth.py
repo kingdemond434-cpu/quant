@@ -9,7 +9,7 @@ edge is a hope rather than a plan.
 **THE WORD THAT GETS ASSUMED IS "INDEPENDENT".** Eleven momentum variants are one bet in eleven
 hats: at rho 0.8, k_eff is 1.2, not 11. Nothing else the desk publishes distinguishes those two
 books -- both report "11 strategies" -- and the difference is the entire gap between the current
-book and a 7%/month target.
+book and the principal's monthly floor.
 
 **THIS IS THE CALLER FOR TWO MODULES THAT HAD NONE** (III.16). `libs.research.breadth` computes the
 k_eff arithmetic and `libs.validation.family_multiplicity` partitions the Holm cohort so seats stop
@@ -20,7 +20,7 @@ report that counts modules. This runs them daily, on the LIVE cohort, and leaves
 what the partition WOULD cost (`family_error_budget`) beside what it buys, and ranks where marginal
 breadth is highest so research effort follows the derivative rather than the newest idea.
 
-    python scripts/report_breadth.py [--json] [--target-monthly 0.07]
+    python scripts/report_breadth.py [--json] [--target-monthly 0.05]
 """
 
 from __future__ import annotations
@@ -51,6 +51,13 @@ _OUT = Path("web/breadth_ledger.json")
 #: `sleeves_needed_at_rho_0` answers "at THIS quality, how many?" and not "how many do we need".
 _ASSUMED_SLEEVE_SHARPE = 0.48
 
+#: The principal's standing floor, set 2026-08-15: at least 5%/month. Priced rather than hoped --
+#: 5%/mo is 79.6%/yr, which at the Kelly optimum needs Sharpe 1.26, which at today's per-sleeve
+#: quality needs SEVEN uncorrelated sleeves. The earlier 7% figure needed eleven. Both numbers are
+#: requirements on BREADTH, and neither is reachable by leverage: past Kelly, more borrowing lowers
+#: growth. Stated here so the target and its cost never drift apart in different documents.
+DEFAULT_TARGET_MONTHLY = 0.05
+
 
 def _cohort() -> list[str]:
     """Live forward-clock names. Empty on a clone -- data/ is gitignored, so that is UNMEASURED."""
@@ -74,7 +81,7 @@ def _rules() -> list[str]:
     return sorted(set(rules.READY) | set(rules.TAPE_RULES))
 
 
-def build(target_monthly: float = 0.07, *, alpha: float = 0.05) -> dict[str, Any]:
+def build(target_monthly: float = DEFAULT_TARGET_MONTHLY, *, alpha: float = 0.05) -> dict[str, Any]:
     cohort = _cohort()
     rule_names = _rules()
     names = cohort + rule_names
@@ -125,7 +132,7 @@ def build(target_monthly: float = 0.07, *, alpha: float = 0.05) -> dict[str, Any
     # a declared orthogonality; the live book occupies a handful. An EMPTY high-orthogonality class
     # is the first sleeve of an uncorrelated family -- exactly the case `marginal_breadth` prices
     # two orders of magnitude above another variant of what is already held. This turns "find ways
-    # to 7% a month" into a named, ranked list of mechanisms rather than a search for a better
+    # to 5% a month" into a named, ranked list of mechanisms rather than a search for a better
     # version of the mechanisms already in the book.
     held = set(parts)
     vacant = [
@@ -161,7 +168,7 @@ def build(target_monthly: float = 0.07, *, alpha: float = 0.05) -> dict[str, Any
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--json", action="store_true")
-    ap.add_argument("--target-monthly", type=float, default=0.07)
+    ap.add_argument("--target-monthly", type=float, default=DEFAULT_TARGET_MONTHLY)
     args = ap.parse_args()
 
     rep = build(args.target_monthly)
