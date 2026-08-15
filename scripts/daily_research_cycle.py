@@ -100,6 +100,12 @@ _STEPS = [
     # one nothing else on the desk publishes. "15 sleeves" and "1.2 effective bets" are the same
     # book in every strategy count; k_eff = n/(1+(n-1)rho) separates them. Also the daily caller
     # for the family partition -- seats are per-family or the queue rations breadth globally.
+    # RHO, MEASURED -- the number every projection here has been assuming. Runs BEFORE the breadth
+    # ledger so the same cycle that records today's marks reports against them. k_eff asymptotes to
+    # 1/rho, so at rho=0.2 combined Sharpe caps however many sleeves are added and 40%/yr is
+    # unreachable at ANY n; at rho=0 six sleeves reach it. Nothing else the desk publishes
+    # distinguishes those two futures.
+    ("sleeve_rho",        "scripts/track_sleeve_correlation.py", 120),
     ("breadth_ledger",    "scripts/report_breadth.py",         120),
     # WHERE THE NEXT RETURN COMES FROM, RANKED -- and it had no daily caller. The census scores
     # every mechanism class by plausibility x orthogonality x data-feasibility x depth-deficit and

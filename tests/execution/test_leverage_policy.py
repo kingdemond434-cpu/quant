@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import math
 
+import pytest
+
 from libs.execution import binance_margin_live as margin
 from libs.execution.leverage_policy import (
     MIN_LEVERAGE,
@@ -186,3 +188,29 @@ def test_THE_SIGMA_ANNUALISATION_USES_A_365_DAY_YEAR() -> None:
     d = choose(0.03, sharpe=1.0)
     # the field is rounded for reporting, so compare at the reporting precision
     assert abs(d["sigma_annual"] - 0.03 * math.sqrt(365.0)) < 1e-4
+
+
+def test_INTEREST_IS_CHARGED_ON_THE_BORROWED_PART_NOT_THE_WHOLE_POSITION() -> None:
+    """At f=1.0 nothing is borrowed, so no interest is due. The old form read
+    `f*(mu - borrow)` and billed the rate against the principal's own equity too -- understating
+    every published growth number by exactly `r`, which at the live 5.1% venue rate was most of a
+    small book's expected growth."""
+    mu, sigma, r = 0.0816, 0.17, 0.051
+    assert growth_rate(1.0, mu, sigma, borrow_rate=r) == pytest.approx(
+        growth_rate(1.0, mu, sigma, borrow_rate=0.0)), "an unlevered book pays no interest"
+    # and a levered one pays on (f-1) only
+    assert growth_rate(3.0, mu, sigma, borrow_rate=r) == pytest.approx(
+        3.0 * mu - 2.0 * r - 9.0 * sigma * sigma / 2)
+
+
+def test_THE_KELLY_POINT_IS_UNCHANGED_BY_THE_FIX() -> None:
+    """The two forms differ by the CONSTANT r, so their derivatives are identical -- which is
+    exactly why the error survived: every comparison between two leverages came out the same and
+    only the LEVEL was wrong. Pinned so a future 'simplification' back to f*(mu-r) is caught."""
+    mu, sigma, r = 0.0816, 0.17, 0.051
+    f_star = kelly_leverage(mu, sigma, borrow_rate=r)
+    for delta in (0.05, 0.2, 0.5):
+        assert growth_rate(f_star, mu, sigma, borrow_rate=r) > growth_rate(
+            f_star + delta, mu, sigma, borrow_rate=r)
+        assert growth_rate(f_star, mu, sigma, borrow_rate=r) > growth_rate(
+            max(0.0, f_star - delta), mu, sigma, borrow_rate=r)

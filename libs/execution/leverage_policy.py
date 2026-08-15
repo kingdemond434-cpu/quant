@@ -151,10 +151,25 @@ def kelly_leverage(mu_annual: float, sigma_annual: float, *, borrow_rate: float 
 
 def growth_rate(f: float, mu_annual: float, sigma_annual: float, *,
                 borrow_rate: float = 0.0) -> float:
-    """g(f) = f*(mu - borrow) - f^2 sigma^2 / 2. Published so the parabola can be printed rather
-    than asserted -- the fastest way to see that 8x is on the far side of zero."""
-    excess = float(mu_annual) - float(borrow_rate)
-    return f * excess - (f ** 2) * (sigma_annual ** 2) / 2.0
+    """g(f) = f*mu - (f-1)*r - f^2 sigma^2 / 2. Published so the parabola can be printed rather
+    than asserted -- the fastest way to see that 8x is on the far side of zero.
+
+    **INTEREST IS CHARGED ON THE BORROWED PART, NOT ON THE WHOLE POSITION.** This read
+    `f*(mu - borrow)`, which bills the borrow rate against the 1.0x funded by the principal's own
+    equity as well as the (f-1) actually borrowed. At f=1.0 nothing is borrowed and it still
+    deducted a full year of interest. Every published growth number was therefore understated by
+    exactly `r` -- 5.1 percentage points at the live venue rate, which is most of a small book's
+    expected growth. Caught 2026-08-15 when two calculations of the same book disagreed by 5.1pp
+    and one of them had to be wrong.
+
+    THE KELLY POINT IS UNAFFECTED and that is why this survived: the two forms differ by the
+    CONSTANT `r`, so their derivatives are identical, f* = (mu-r)/sigma^2 either way, and every
+    comparison between two leverages came out the same. Only the LEVEL was wrong -- which is the
+    number a human reads to decide whether the strategy is worth running at all.
+    """
+    borrowed = max(0.0, float(f) - 1.0)
+    return (f * float(mu_annual) - borrowed * float(borrow_rate)
+            - (f ** 2) * (sigma_annual ** 2) / 2.0)
 
 
 def leverage_for_distance(distance: float, *, liquidation: float = LIQUIDATION_LEVEL) -> float:
