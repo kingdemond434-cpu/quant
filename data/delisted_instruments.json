@@ -1,5 +1,5 @@
 {
- "probed": "2026-08-14T03:36:23.670702+00:00",
+ "probed": "2026-08-15T03:35:08.094533+00:00",
  "venues": {
   "binance_futures": {
    "endpoint": "GET fapi.binance.com/fapi/v1/exchangeInfo",
@@ -19,31 +19,31 @@
    "endpoint": "GET www.bitmex.com/api/v1/instrument (paginated)",
    "states": {
     "Settled": 1377,
-    "Open": 32,
-    "Delisted": 13,
+    "Open": 27,
+    "Delisted": 18,
     "Unlisted": 1687
    },
-   "n_live": 32,
-   "n_new_this_run": 0,
+   "n_live": 27,
+   "n_new_this_run": 5,
    "verdict": "AVAILABLE",
-   "n_dead": 3077
+   "n_dead": 3082
   },
   "bybit": {
    "endpoint": "GET api.bybit.com/v5/market/instruments-info?category=linear&status={Trading,Closed}",
    "states": {
-    "Trading": 815,
-    "Closed": 937
+    "Trading": 821,
+    "Closed": 945
    },
-   "n_live": 815,
-   "n_new_this_run": 0,
+   "n_live": 821,
+   "n_new_this_run": 8,
    "verdict": "AVAILABLE",
-   "n_dead": 937
+   "n_dead": 945
   },
   "coinbase": {
    "endpoint": "GET api.exchange.coinbase.com/products",
    "states": {
-    "delisted": 315,
-    "online": 517
+    "online": 517,
+    "delisted": 315
    },
    "n_live": 517,
    "n_new_this_run": 0,
@@ -83,5 +83,5 @@
  "n_venues": 7,
  "n_reached": 7,
  "n_available": 4,
- "n_dead_total": 4456
+ "n_dead_total": 4469
 }
