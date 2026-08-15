@@ -123,6 +123,10 @@ _STEPS = [
     # "no daily bars supplied" against a panel sitting on disk.
     ("daily_panel",       "scripts/build_daily_panel.py",      240),
     ("supply_screen",     "scripts/screen_unlock_supply_series.py", 240),
+    # CENSUS GAP #1 (0.48, NO-CANDIDATE) -- the desk's highest-ranked mechanism, never screened.
+    # Runs daily and reports UNMEASURED with its missing input NAMED until the event feed exists:
+    # a screen that only starts running once its data arrives is a screen nobody remembers to run.
+    ("index_recon",       "scripts/screen_index_reconstitution.py", 180),
     ("supply_report",     "scripts/report_mechanism_supply.py", 120),
     # IS EVERYTHING ACTUALLY ARMED -- nine independent facts across three directories, two of them
     # gitignored, whose sense is inverted for the three rails. `run_golive_preflight` checked ONE
