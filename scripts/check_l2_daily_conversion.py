@@ -59,7 +59,7 @@ def build_report(root: Path, *, now: datetime | None = None) -> dict[str, Any]:
                 {
                     "stage": "RECORD",
                     "owner": "scripts/ensure_recorder.py",
-                    "action": f"restore {name} recorder and prove new tape bytes, not only a process",  # noqa: E501
+                    "action": f"restore {name} recorder and prove new tape bytes, not only a process",
                 }
             )
     docs: dict[str, dict[str, Any] | None] = {}
@@ -104,7 +104,7 @@ def build_report(root: Path, *, now: datetime | None = None) -> dict[str, Any]:
             {
                 "stage": "RECORD",
                 "owner": "existing backup/retention and recorder organs",
-                "action": "restore safe tape growth; archive/compress only with verified recoverability "  # noqa: E501
+                "action": "restore safe tape growth; archive/compress only with verified recoverability "
                 f"(state={disk.get('state')}, free_bytes={disk.get('free_bytes')})",
             }
         )
@@ -137,8 +137,8 @@ def build_report(root: Path, *, now: datetime | None = None) -> dict[str, Any]:
         actions.append(
             {
                 "stage": "CONVERT",
-                "owner": "existing hypothesis, validation, portfolio-admission and paper-sleeve organs",  # noqa: E501
-                "action": f"route {len(candidates)} persistent L2 candidates through preregistration, "  # noqa: E501
+                "owner": "existing hypothesis, validation, portfolio-admission and paper-sleeve organs",
+                "action": f"route {len(candidates)} persistent L2 candidates through preregistration, "
                 "cost/leakage/multiplicity tests, independence, portfolio contribution and "
                 "zero-capital shadow clocks; preserve rejections and near-survivors",
             }
@@ -157,11 +157,11 @@ def build_report(root: Path, *, now: datetime | None = None) -> dict[str, Any]:
         "schema_version": "1.0.0",
         "generated_utc": now.isoformat(),
         "status": "OPERATING_FULL_CHAIN" if complete else "REDIRECT_REQUIRED",
-        "claim": "100% means the current measured denominator traversed every conversion stage; new tape or mechanisms reopen it",  # noqa: E501
+        "claim": "100% means the current measured denominator traversed every conversion stage; new tape or mechanisms reopen it",
         "checks": checks,
         "coverage": coverage,
         "redirect_queue": unique,
-        "controller_instruction": "consume every non-blocked positive-EV row tonight; persist exact BLOCKED dependencies",  # noqa: E501
+        "controller_instruction": "consume every non-blocked positive-EV row tonight; persist exact BLOCKED dependencies",
     }
 
 
@@ -174,7 +174,7 @@ def main(argv: list[str] | None = None) -> int:
     a.out.parent.mkdir(parents=True, exist_ok=True)
     a.out.write_text(json.dumps(report, indent=1) + "\n", "utf-8")
     print(
-        f"L2 daily conversion: {report['status']} -- {len(report['redirect_queue'])} routed residual(s)"  # noqa: E501
+        f"L2 daily conversion: {report['status']} -- {len(report['redirect_queue'])} routed residual(s)"
     )
     return 0
 
