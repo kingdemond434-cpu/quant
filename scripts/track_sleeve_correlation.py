@@ -69,6 +69,10 @@ from datetime import UTC, datetime
 from itertools import combinations
 from typing import Any
 
+import numpy as np
+
+from libs.research.sleeve_allocation import allocate, report as allocation_report
+
 #: Sleeve/mechanism return streams. One file per mechanism, or one file keyed by mechanism.
 #: Gitignored on purpose -- these are live results, not source.
 _RETURNS = _ROOT / "data" / "sleeve_returns.json"
@@ -85,6 +89,21 @@ BOOK_SHARPE = 0.48
 #: Combined Sharpe required for 40%/yr at the book's vol and borrow rate. Stated so the verdict is
 #: against a number fixed in advance rather than one chosen after seeing rho.
 TARGET_SHARPE = 1.14
+
+#: Crypto trades 24/7; matches the convention `BOOK_SHARPE` and every other annualised figure in
+#: this file already use. Per-mechanism Sharpes below are annualised with the SAME constant so the
+#: optimal-weight figure sits on the same footing as `combined_sharpe_abs` and is comparable to it.
+_DAYS_PER_YEAR = 365.0
+
+
+def _sharpe(xs: list[float]) -> float:
+    """Annualised per-mechanism Sharpe from its own daily stream. 0.0 on a silent or constant
+    stream -- absence of a signal must never read as a claim of one."""
+    if len(xs) < 2:
+        return 0.0
+    a = np.asarray(xs, dtype="float64")
+    sd = float(a.std(ddof=1))
+    return (float(a.mean()) / sd) * math.sqrt(_DAYS_PER_YEAR) if sd > 0 else 0.0
 
 
 def _pearson(a: list[float], b: list[float]) -> float | None:
@@ -209,6 +228,18 @@ def analyse(streams: dict[str, dict[str, float]], *, min_obs: int = MIN_OBS,
                                          "920 backtest streams / 19 mechanisms"},
     })
 
+    # OPTIMAL-WEIGHT UPLIFT (libs.research.sleeve_allocation). k_eff above is EQUICORRELATION --
+    # exact only if every pair shares one rho, which this book does not: seven discretionary rules
+    # are one census class, the rest are unlike it and each other. Averaging that cluster with the
+    # rest understates what a book actually gets to claim once it stops equal-weighting. Never
+    # replaces the figure above -- it is reported alongside, shrunk, sample-gated, and labelled as
+    # an in-sample ceiling, because a Markowitz optimiser run carelessly on a short correlation
+    # sample is the textbook way to manufacture a Sharpe that is not there.
+    mat = np.array([[(1.0 if a == b else (_pearson(series[a], series[b]) or 0.0))
+                     for b in names] for a in names])
+    sharpes = np.array([_sharpe(series[nm]) for nm in names])
+    rep["optimal_allocation"] = allocation_report(allocate(names, sharpes, mat, n_obs=n))
+
     reach = "REACHABLE" if (not math.isinf(asym) and asym >= target_sharpe) else "UNREACHABLE"
     need_n = None
     if reach == "REACHABLE":
@@ -258,6 +289,21 @@ def render(rep: dict[str, Any]) -> str:
     ref = rep["backtest_reference"]
     L += ["", f"  backtest reference    mean |rho| {ref['mean_abs_rho']:.3f}, k_eff {ref['k_eff']}",
           f"                        {ref['source']}"]
+
+    oa = rep.get("optimal_allocation") or {}
+    L += ["", "OPTIMAL-WEIGHT UPLIFT (upper bound, in-sample -- see caveat)", ""]
+    if oa.get("usable"):
+        L += [f"  equicorrelation S     {oa['equicorrelation_sharpe']:.2f}   (equal weights, "
+              f"the number above)",
+              f"  optimal-weight S      {oa['optimal_sharpe']:.2f}   "
+              f"(+{oa['uplift_sharpe']:.2f} from reweighting alone)",
+              f"  effective bets        {oa['effective_bets']:.2f}   "
+              f"of {rep['n_mechanisms']} mechanisms",
+              f"  shrinkage applied     {oa['shrinkage']:.0%} toward equicorrelation",
+              "", "  " + oa["caveat"]]
+    else:
+        L.append("  " + oa.get("why", "not computed"))
+
     L += ["", "VERDICT", "", "  " + rep["verdict"], "",
           "  A correlation is not a constant. It rises in exactly the regime where",
           "  diversification is needed -- a liquidation cascade moves every crypto",
