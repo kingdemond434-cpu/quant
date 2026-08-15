@@ -15,6 +15,7 @@ import hashlib
 import hmac
 import json
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -52,13 +53,36 @@ def is_armed() -> tuple[bool, str]:
     return all(checks.values()), ", ".join(f"{k}={v}" for k, v in checks.items())
 
 
+def _open(req: urllib.request.Request) -> Any:
+    """urlopen, but a rejection carries the VENUE'S OWN REASON.
+
+    `HTTPError.__str__` is "HTTP Error 401: Unauthorized" and the body is discarded unless
+    something reads it. Binance puts the only actionable part there: -2015 "Invalid API-key, IP, or
+    permissions for action" is a whitelist or permission problem on a key that is otherwise
+    correct, -2014 is a malformed key, -1021 is a clock skew, -1022 a bad signature. Those need
+    four different fixes and the bare status code distinguishes none of them, so an operator
+    reading the refusal cannot tell "wrong key" from "right key, wrong IP" -- which is exactly the
+    wall a first live arming hits.
+
+    The body is quoted, never the credential: the request's headers are not touched here.
+    """
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return json.loads(r.read())
+    except urllib.error.HTTPError as exc:
+        try:
+            detail = exc.read().decode("utf-8", "replace")[:300]
+        except Exception:                                  # body already consumed or stream dead
+            detail = "(no body)"
+        raise RuntimeError(f"venue rejected the call: HTTP {exc.code} {detail}") from exc
+
+
 def _get(path: str, params: dict[str, Any] | None = None) -> Any:
     url = f"{_BASE}{path}"
     if params:
         url += "?" + urllib.parse.urlencode(params)
     req = urllib.request.Request(url, headers={"User-Agent": "quant-live-spot/1.0"})
-    with urllib.request.urlopen(req, timeout=20) as r:
-        return json.loads(r.read())
+    return _open(req)
 
 
 def _signed(path: str, params: dict[str, Any], *, method: str = "GET") -> Any:
@@ -77,8 +101,7 @@ def _signed(path: str, params: dict[str, Any], *, method: str = "GET") -> Any:
     else:
         req = urllib.request.Request(f"{_BASE}{path}", data=body, method=method,
                                      headers={"X-MBX-APIKEY": key})
-    with urllib.request.urlopen(req, timeout=20) as r:
-        return json.loads(r.read())
+    return _open(req)
 
 
 def prices() -> dict[str, float]:
