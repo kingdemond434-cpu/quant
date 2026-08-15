@@ -52,9 +52,39 @@ from typing import Any
 
 _OUT = _ROOT / "reports" / "borrow_rate_survey.json"
 
-#: Stablecoins the book could plausibly hold as its quote asset. BTC/ETH are listed because a
-#: SHORT leg borrows the base asset, and those rates differ from the stable ones by more.
+#: FUNDING ASSETS -- the only ones this survey may recommend. Borrowing one of these is a pure
+#: financing decision because the book's P&L is already denominated in dollars, so the liability
+#: does not move against you.
+FUNDING_ASSETS = frozenset({"USDC", "USDT", "FDUSD", "TUSD", "DAI", "USDP", "BUSD"})
+
+#: Surveyed for INFORMATION only. Borrowing BTC is not cheap money at any rate -- see
+#: `_is_funding` below.
 DEFAULT_ASSETS = ("USDC", "USDT", "FDUSD", "BTC", "ETH")
+
+
+def _is_funding(asset: str) -> bool:
+    """Can borrowing this asset be compared on RATE ALONE? Only for the quote currency.
+
+    **THIS DISTINCTION IS THE WHOLE SAFETY PROPERTY OF THIS SCRIPT, AND ITS FIRST VERSION DID NOT
+    HAVE IT.** That version sorted every asset by rate and recommended the cheapest. Run live it
+    returned "cheapest BTC at 0.44%/yr -- borrowing the cheapest is free growth", which is wrong
+    in a way that can cost far more than the entire edge.
+
+    Borrowing BTC does not give you cheap dollars. It gives you a SHORT BTC POSITION: the
+    liability is denominated in BTC, so it grows with the BTC price. On a $10,000 BTC loan a 30%
+    BTC year costs $3,000 -- not the $44 the interest rate implies. The rate is low precisely
+    because it is nearly irrelevant to the true cost of that trade.
+
+    A stablecoin loan has no such exposure. The book's P&L is in dollars, the debt is in dollars,
+    and the rate genuinely is the cost. Those are the only ones that can be ranked against each
+    other, so those are the only ones ranked.
+
+    Deliberately a WHITELIST, not a "is it volatile" heuristic: a new stablecoin absent from the
+    list is treated as non-funding and merely reported, which errs toward not recommending
+    something. A depegged stablecoin also stops being a pure funding asset, and no rate table can
+    see a depeg -- so the list is necessary and never sufficient.
+    """
+    return str(asset).upper() in FUNDING_ASSETS
 
 
 def growth(f: float, mu: float, sigma: float, r: float) -> float:
@@ -83,14 +113,23 @@ def survey(assets: tuple[str, ...]) -> list[dict[str, Any]]:
 
 def report(rows: list[dict[str, Any]], *, mu: float, sigma: float,
            f_at: float | None = None) -> dict[str, Any]:
-    priced = [r for r in rows if isinstance(r.get("annual_rate"), (int, float))]
+    for r in rows:
+        r["funding_asset"] = _is_funding(r.get("asset", ""))
+    priced = [r for r in rows
+              if isinstance(r.get("annual_rate"), (int, float)) and r["funding_asset"]]
+    informational = [r for r in rows
+                     if isinstance(r.get("annual_rate"), (int, float)) and not r["funding_asset"]]
     rep: dict[str, Any] = {
         "updated": datetime.now(tz=UTC).isoformat(),
         "mu_annual": mu, "sigma_annual": sigma,
-        "rows": rows, "n_priced": len(priced), "n_unmeasured": len(rows) - len(priced),
+        "rows": rows, "n_priced": len(priced),
+        "n_informational": len(informational),
+        "n_unmeasured": sum(1 for r in rows if r.get("annual_rate") is None),
+        "funding_assets_only": sorted(FUNDING_ASSETS),
     }
     if not priced:
-        rep["verdict"] = ("NO RATE COULD BE READ. Not zero, not 10% -- unknown. Sizing leverage "
+        rep["verdict"] = ("NO FUNDING-ASSET RATE COULD BE READ. Not zero, not 10% -- unknown. "
+                          "Sizing leverage "
                           "against an unmeasured cost of capital is how a book borrows into "
                           "negative growth while its printed leverage looks considered.")
         return rep
@@ -135,11 +174,25 @@ def render(rep: dict[str, Any], f_at: float | None) -> str:
         if rate is None:
             L.append(f"  {r['asset']:<8}{'UNMEASURED':>10}   {r.get('why','')[:52]}")
             continue
+        if not r.get("funding_asset"):
+            L.append(f"  {r['asset']:<8}{rate:>9.2%}{'--':>10}{'NOT A FUNDING ASSET':>26}")
+            continue
         line = (f"  {r['asset']:<8}{rate:>9.2%}{r['kelly_f']:>10.2f}"
                 f"{r['growth_at_kelly']:>12.2%}")
         if f_at:
             line += f"{r.get('growth_at_f', 0):>12.2%}"
         L.append(line)
+
+    if rep.get("n_informational"):
+        L += ["",
+              "  ASSETS SHOWN BUT NOT RANKED, and the reason is not conservatism:",
+              "  borrowing BTC or ETH is NOT cheap funding at any rate. The liability is",
+              "  denominated in that asset, so the loan IS a short position in it. A",
+              "  $10,000 BTC loan through a 30% BTC year costs $3,000, not the $44 the",
+              "  rate implies. Those rates are low precisely because the interest is the",
+              "  smallest part of what that trade costs.",
+              "",
+              "  Only assets your P&L is already denominated in can be compared on rate."]
     L += ["", "  " + rep.get("verdict", "")]
     L += ["",
           "  dg/dr = -(f* - 1): the saving scales with LEVERAGE and is zero unlevered.",
