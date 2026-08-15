@@ -23,7 +23,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from libs.alpha_factory.research_budget import adaptive_portfolios  # noqa: E402
-from libs.research.alpha_state import AlphaStateLedger, ORDER  # noqa: E402
+from libs.research.alpha_state import ORDER, AlphaStateLedger  # noqa: E402
 
 DEFAULT_OUT = ROOT / "web/conversion_control.json"
 
