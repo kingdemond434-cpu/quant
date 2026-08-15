@@ -154,6 +154,40 @@ def _connectors() -> dict[str, Any]:
     return out
 
 
+def _cost_levers() -> dict[str, Any]:
+    """The two switches that change what the desk PAYS rather than what it may do.
+
+    **DELIBERATELY NOT COUNTED IN `fully_armed`.** An unclaimed fee discount does not risk the
+    account and must not block a report whose job is to say whether trading is permitted; conflating
+    "costs more than it should" with "must not trade" would make the one number this file exists to
+    publish mean two different things. They are here because they are otherwise invisible: nothing
+    else on the desk ever asks whether the commission it assumes is the commission it is charged.
+    """
+    out: dict[str, Any] = {}
+    try:
+        doc = json.loads((_ROOT / "web/fee_discount.json").read_text("utf-8"))
+        out["bnb_burn"] = {"state": doc.get("state"), "why": str(doc.get("why", ""))[:180],
+                           "effective_commission_per_side":
+                               doc.get("effective_commission_per_side")}
+    except (OSError, ValueError) as exc:
+        out["bnb_burn"] = {"state": "UNMEASURED",
+                           "why": f"web/fee_discount.json unreadable ({type(exc).__name__}) -- run "
+                                  "scripts/run_fee_discount.py. Unmeasured, not off"}
+    # MAKER ROUTING IS A PROPERTY OF THE CODE, so it is asserted from the module rather than from an
+    # artifact: if `maker_first` is importable, both money paths route through it by default.
+    try:
+        from libs.execution import maker_first
+
+        out["maker_routing"] = {
+            "state": "ON", "wait_s": maker_first.DEFAULT_WAIT_S,
+            "why": ("entries quote passively before crossing on both the discretionary and margin "
+                    "paths. Measured per run as `maker_share` in each executor's artifact -- if "
+                    "that stays near zero the routing is falling back and the reason is in `why`")}
+    except Exception as exc:
+        out["maker_routing"] = {"state": "UNKNOWN", "why": f"{type(exc).__name__}: {exc}"}
+    return out
+
+
 def build() -> dict[str, Any]:
     switches = {}
     for sw in _SWITCHES:
@@ -181,6 +215,9 @@ def build() -> dict[str, Any]:
         "wallet": _wallet(),
         "exception_ledger": _exception(),
         "connectors": _connectors(),
+        # COST, NOT PERMISSION. Reported beside the switches and excluded from `fully_armed` --
+        # see `_cost_levers` for why merging the two would spoil the one number this file publishes.
+        "cost_levers": _cost_levers(),
         "rail_frozen": rail_frozen, "rail_why": rail_why,
         "n_not_armed": len(blocking), "not_armed": blocking,
         "n_unknown": len(unknown), "unknown": unknown,
@@ -221,6 +258,11 @@ def main() -> int:
           f"file={w['file_data_DESK_WALLET']})")
     for name, c in rep["connectors"].items():
         print(f"  connector {name:<7} armed={c['armed']} -- {str(c['why'])[:110]}")
+    # COST LEVERS, PRINTED SEPARATELY FROM THE SWITCHES so nobody reads an unclaimed fee discount
+    # as a reason the desk may not trade. They are here because nothing else asks the question.
+    cl = rep.get("cost_levers") or {}
+    for name, row in cl.items():
+        print(f"  cost {name:<14} {row.get('state')} -- {str(row.get('why', ''))[:110]}")
     e = rep["exception_ledger"]
     print(f"  exception ledger: {e['state']}")
     for row in e.get("active", []):

@@ -46,7 +46,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from libs.execution.leverage_policy import choose, realised_vol
+from libs.execution import maker_first
+from libs.execution.leverage_policy import MARGIN_CALL_LEVEL, choose, realised_vol
+from libs.execution.maker_first import maker_first_buy, maker_first_reduce
 from libs.execution.ruin_rail import frozen
 from libs.execution.spot_order_path import floor_2dp, retarget, round_step
 
@@ -110,6 +112,11 @@ def main() -> int:
                          "against its own measured edge. Pass a number only to override a venue "
                          "read you have a reason to distrust")
     ap.add_argument("--cycle", default=None)
+    ap.add_argument("--maker-wait", type=float, default=maker_first.DEFAULT_WAIT_S,
+                    help="seconds an entry rests passively before the remainder is crossed "
+                         f"(default {maker_first.DEFAULT_WAIT_S:g}s). 0 quotes and crosses "
+                         "immediately, which is the old MARKET-order behaviour with an extra "
+                         "round trip -- use it only if the passive fills prove adversely selected")
     ap.add_argument("--targets", default=None,
                     help="target-weights artifact to trade. Defaults to the momentum book. Point "
                          "it at data/mechanism_sleeve_targets.json to run the mechanism sleeves as "
@@ -197,12 +204,20 @@ def main() -> int:
     rep["borrow_rate"] = rate
     rep["borrow_rate_why"] = why_rate
     if rate is None:
-        lev = choose(sigma, sharpe=sharpe, n_obs=n_obs, borrow_rate=0.0, ceiling=1.0)
+        lev = choose(sigma, sharpe=sharpe, n_obs=n_obs, borrow_rate=0.0, ceiling=1.0,
+                     margin_call_level=MARGIN_CALL_LEVEL)
         lev["why"] = ("borrow rate UNMEASURED -- leverage held at 1.00x. " + why_rate
                       + ". Borrowing at an unknown cost is the one sizing input where a low guess "
                         "ends the account rather than merely underperforming")
     else:
-        lev = choose(sigma, sharpe=sharpe, n_obs=n_obs, borrow_rate=rate)
+        # THE MARGIN-CALL BAND IS PASSED HERE AND NOWHERE ELSE. This is the only book that
+        # can be called: a fresh position at leverage f opens at level f/(f-1), so above
+        # 3.00x the account is already inside the venue's 1.5 call band before the market
+        # has moved. Cutting costs is what made this bind -- Kelly is (mu-r)/sigma^2, so
+        # the maker routing and the BNB interest discount moved this book's optimum from
+        # 2.31x to about 4.0x, straight through the line.
+        lev = choose(sigma, sharpe=sharpe, n_obs=n_obs, borrow_rate=rate,
+                     margin_call_level=MARGIN_CALL_LEVEL)
     rep["book_frac"] = book_frac
     rep["book_frac_why"] = why_frac
     rep["equity_usd"] = round(equity, 2)
@@ -222,6 +237,9 @@ def main() -> int:
     gross_usd = equity * float(lev["leverage"]) * book_frac
     free_quote = float(held.get(args.quote, 0.0))
     spent = 0.0
+    #: Routing outcomes, kept so the maker share is computed once by `maker_first.maker_share`
+    #: rather than re-derived from the serialised rows here.
+    routed_legs: list[maker_first.MakerOutcome] = []
 
     # REDUCE LEGS FIRST, then adds. A rebalance that buys before it sells asks for cash the run is
     # about to raise, and every buy leg is refused for insufficient funds while the sell that would
@@ -285,7 +303,21 @@ def main() -> int:
                 free_quote += qty * price
                 continue
             try:
-                row["result"] = m.place_market_reduce(sym, "SELL", qty, cycle=cycle)
+                # MAKER-FIRST ON THE WAY OUT TOO. The first pass of maker routing wired the ENTRY
+                # only, so a round trip paid maker in and taker out -- half a spread saving
+                # described as a spread saving. The reduce leg rotates the same thin alt names at
+                # the same 5-20bps. AUTO_REPAY is carried on both legs of the passive path: a
+                # close that removes the asset and leaves the loan has kept the debt and lost the
+                # collateral behind it.
+                routed_out = maker_first_reduce(
+                    m, sym, qty, cycle=cycle, min_notional=min_notional,
+                    step=float(f.get("step") or 0.0), tick=float(f.get("tick") or 0.0),
+                    mark=price, wait_s=float(args.maker_wait))
+                routed_legs.append(routed_out)
+                row["result"] = routed_out.result
+                row["route"] = routed_out.mode
+                row["maker_usd"] = round(routed_out.maker_usd, 2)
+                row["route_why"] = routed_out.why
                 rep["reduced"].append(row)
                 # THE PROCEEDS FUND THE LATER BUY LEGS IN THIS SAME RUN. Without this the executor
                 # would sell an overweight coin and then refuse the underweight one for lack of
@@ -309,7 +341,21 @@ def main() -> int:
             spent += spend
             continue
         try:
-            row["result"] = m.place_market_quote(sym, "BUY", spend, cycle=cycle, borrow=borrow)
+            # MAKER-FIRST. Until 2026-08-15 this line was a MARKET order and the margin book paid
+            # the full spread on every entry -- on the alt legs the mechanism sleeves rotate
+            # through, that is 5-20bps a side against an edge measured in tens of bps, charged on
+            # every rebalance. `maker_first_buy` quotes at the bid, waits once, and crosses only
+            # the unfilled remainder, so the worst case is this line's old behaviour plus the
+            # drift across the wait. The daily signal horizon is what makes the wait affordable.
+            routed = maker_first_buy(
+                m, sym, spend, cycle=cycle, min_notional=min_notional,
+                step=float(f.get("step") or 0.0), tick=float(f.get("tick") or 0.0),
+                borrow=borrow, wait_s=float(args.maker_wait))
+            routed_legs.append(routed)
+            row["result"] = routed.result
+            row["route"] = routed.mode
+            row["maker_usd"] = round(routed.maker_usd, 2)
+            row["route_why"] = routed.why
             rep["placed"].append(row)
             free_quote = max(0.0, free_quote - spend)
             spent += spend
@@ -325,9 +371,19 @@ def main() -> int:
     for r in rep.get("reduced", []):
         print(f"  SELL {r['symbol']:<10} ${abs(r['delta_usd']):>9,.2f}  "
               f"qty={r.get('qty')}  [AUTO_REPAY]")
+    # THE MAKER SHARE, BY NOTIONAL, OR None. The passive wait buys half the spread and pays for it
+    # in adverse selection; which side of that trade this book is on is measurable only if the
+    # split is recorded. None on an empty run rather than 0.0 -- no legs is not a bad maker share.
+    # Computed by the SAME function the discretionary runner uses, so the two books cannot report
+    # incomparable numbers under one name.
+    rep["maker_share"] = maker_first.maker_share(routed_legs)
     for r in rep["placed"]:
         print(f"  BUY  {r['symbol']:<10} ${r['delta_usd']:>9,.2f}"
-              f"{'  [BORROWED]' if r.get('borrow') else ''}")
+              f"{'  [BORROWED]' if r.get('borrow') else ''}"
+              f"{'  [' + str(r['route']) + ']' if r.get('route') else ''}")
+    if rep.get("maker_share") is not None:
+        print(f"  maker share {rep['maker_share']:.0%} by notional "
+              f"(waited {args.maker_wait:g}s per leg)")
     for r in rep["refused"]:
         print(f"  SKIP {r.get('symbol', '-'):<10} {str(r.get('why', ''))[:100]}")
     return _finish(0)

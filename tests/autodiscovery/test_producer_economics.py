@@ -24,6 +24,7 @@ from libs.autodiscovery.crypto_adapter import (
 from libs.autodiscovery.generators import _producer_margin_stress
 from libs.autodiscovery.models import MarketSeries
 
+
 def _load_script(name: str):
     """`scripts/` is not a package, so import the module by path."""
     path = Path(__file__).resolve().parents[2] / "scripts" / f"{name}.py"

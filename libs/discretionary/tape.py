@@ -39,9 +39,11 @@ import numpy as np
 __all__ = [
     "MAX_TAPE_AGE_H",
     "MOAT_ROOTS",
+    "BookState",
     "TapeBar",
     "TapeProfile",
     "cvd",
+    "load_book",
     "load_trades",
     "tape_bars",
     "volume_profile",
@@ -183,6 +185,104 @@ def load_trades(symbol: str, *, max_files: int = 24,
             continue                       # partition mid-write or truncated: skip, do not fail
     out.sort(key=lambda t: t[0])
     return out
+
+
+@dataclass(frozen=True)
+class BookState:
+    """One L2 snapshot, reduced to the three numbers the mechanism actually claims.
+
+    `imbalance` is signed depth pressure in [-1, 1]; `slope` is how fast size accumulates away
+    from the touch (a STEEP book absorbs, a FLAT one gaps); `spread_bps` is the immediate cost of
+    demanding liquidity right now.
+    """
+
+    ts: int
+    mid: float
+    spread_bps: float
+    imbalance: float
+    slope: float
+    depth_usd: float
+
+
+def load_book(symbol: str, *, max_files: int = 24,
+              roots: tuple[str, ...] = MOAT_ROOTS) -> list[BookState]:
+    """L2 depth snapshots from the moat -- THE ROWS NOTHING HAS EVER READ.
+
+    **MEASURED 2026-08-15.** `run_recorder_spot` and `run_recorder` have written a `{"k": "d"}`
+    row per symbol every few seconds for weeks -- top-20 bids and asks, at real request-weight
+    cost against the venue's budget -- and `load_trades` filters for `"k" == "t"` and throws every
+    one of them away. The census scores `orderbook_microstructure_state` at 0.90 ORTHOGONALITY,
+    the highest of all 26 classes, and records its data requirement as RECORD-FORWARD: the desk
+    has been paying that cost since the recorders were built and consuming none of it.
+
+    That is the unread-data defect at its largest: not a capability nobody wired, but a dataset
+    nobody read, on the one mechanism class furthest from everything else the book holds.
+
+    `/api/v3/depth` returns NO venue timestamp (lastUpdateId/bids/asks only), so `t` here is the
+    RECEIPT clock and the recorder marks it `recv_only` for exactly that reason. Depth features
+    are therefore never joined to trade features at sub-second precision -- the two clocks are
+    different and pretending otherwise would manufacture lead-lag that is really clock skew.
+    """
+    out: list[BookState] = []
+    for f in _partitions(symbol, roots)[-max_files:]:
+        try:
+            with gzip.open(f, "rt", encoding="utf-8") as fh:
+                for line in fh:
+                    if '"k": "d"' not in line and '"k":"d"' not in line:
+                        continue
+                    try:
+                        r = json.loads(line)
+                    except ValueError:
+                        continue
+                    if r.get("k") != "d":
+                        continue
+                    st = _book_state(r)
+                    if st is not None:
+                        out.append(st)
+        except (OSError, EOFError):
+            continue
+    out.sort(key=lambda b: b.ts)
+    return out
+
+
+def _book_state(row: dict[str, Any]) -> BookState | None:
+    """One raw depth row -> BookState, or None. A malformed side is NOT half a book."""
+    bids, asks = row.get("b"), row.get("a")
+    if not isinstance(bids, list) or not isinstance(asks, list) or not bids or not asks:
+        return None
+    try:
+        b = [(float(p), float(q)) for p, q in bids[:20]]
+        a = [(float(p), float(q)) for p, q in asks[:20]]
+    except (TypeError, ValueError):
+        return None
+    if not b or not a or b[0][0] <= 0 or a[0][0] <= 0:
+        return None
+    best_bid, best_ask = b[0][0], a[0][0]
+    mid = (best_bid + best_ask) / 2.0
+    if mid <= 0 or best_ask < best_bid:
+        return None
+    bid_usd = sum(p * q for p, q in b)
+    ask_usd = sum(p * q for p, q in a)
+    total = bid_usd + ask_usd
+    if total <= 0:
+        return None
+    # SLOPE: size accumulated per basis point of distance from the touch, averaged across sides.
+    # A steep book absorbs an impatient order; a flat one lets it walk. Normalised by mid so the
+    # number means the same thing on a $100k asset and a $0.30 one.
+    def _slope(side: list[tuple[float, float]], ref: float) -> float:
+        acc = 0.0
+        for p, q in side:
+            dist_bps = abs(p - ref) / ref * 10_000.0
+            if dist_bps > 1e-9:
+                acc += p * q / dist_bps
+        return acc
+
+    return BookState(
+        ts=int(row.get("t", 0)), mid=mid,
+        spread_bps=(best_ask - best_bid) / mid * 10_000.0,
+        imbalance=(bid_usd - ask_usd) / total,
+        slope=(_slope(b, best_bid) + _slope(a, best_ask)) / 2.0,
+        depth_usd=total)
 
 
 def cvd(trades: list[tuple[int, float, float, bool]]) -> float:

@@ -100,6 +100,12 @@ _STEPS = [
     # one nothing else on the desk publishes. "15 sleeves" and "1.2 effective bets" are the same
     # book in every strategy count; k_eff = n/(1+(n-1)rho) separates them. Also the daily caller
     # for the family partition -- seats are per-family or the queue rations breadth globally.
+    # RHO, MEASURED -- the number every projection here has been assuming. Runs BEFORE the breadth
+    # ledger so the same cycle that records today's marks reports against them. k_eff asymptotes to
+    # 1/rho, so at rho=0.2 combined Sharpe caps however many sleeves are added and 40%/yr is
+    # unreachable at ANY n; at rho=0 six sleeves reach it. Nothing else the desk publishes
+    # distinguishes those two futures.
+    ("sleeve_rho",        "scripts/track_sleeve_correlation.py", 120),
     ("breadth_ledger",    "scripts/report_breadth.py",         120),
     # WHERE THE NEXT RETURN COMES FROM, RANKED -- and it had no daily caller. The census scores
     # every mechanism class by plausibility x orthogonality x data-feasibility x depth-deficit and
@@ -128,6 +134,14 @@ _STEPS = [
     # a screen that only starts running once its data arrives is a screen nobody remembers to run.
     ("index_recon_feed",  "scripts/collect_index_reconstitution.py", 180),
     ("index_recon",       "scripts/screen_index_reconstitution.py", 180),
+    # THE HIGHEST-ORTHOGONALITY CLASS THE DESK HAS, AND NEITHER SCREEN RAN ON A SCHEDULE.
+    # `screen_orderbook_state.py` carried a cron line in its own header marked "NOT wired here"
+    # and it was never installed; `libs/research/book_microstructure.py` was imported by nothing
+    # but its test. Two pre-registered screens on `orderbook_microstructure_state` (census
+    # orthogonality 0.90 -- the only lever that lowers rho rather than raising n), both idle.
+    # Read-only over data/moat; on a clone without the tape both exit 0 reporting UNMEASURED.
+    ("book_state",        "scripts/screen_orderbook_state.py --files 240", 900),
+    ("book_constructions", "scripts/screen_book_constructions.py --files 48", 600),
     ("supply_report",     "scripts/report_mechanism_supply.py", 120),
     # IS EVERYTHING ACTUALLY ARMED -- nine independent facts across three directories, two of them
     # gitignored, whose sense is inverted for the three rails. `run_golive_preflight` checked ONE
@@ -135,6 +149,16 @@ _STEPS = [
     # a desk comes to believe a switch is on because it was on last week. Runs BEFORE the order
     # steps so the day's artifact records the arming state the orders were actually placed under.
     ("arming",            "scripts/report_arming.py",        60),
+    # THE CHEAPEST COST LEVER ON THE DESK, READ EVERY DAY. The BNB burn is 25% off every commission
+    # and off margin interest, and it is invisible from inside the repo: every TCA and net-edge
+    # number here is computed from an ASSUMED commission rate that nobody was checking against the
+    # venue. Read-only without --enable, so the cycle reports the state and never changes it.
+    ("fee_discount",      "scripts/run_fee_discount.py",     60),
+    # WHICH VENUE IS CHEAPER TO CARRY THE SAME LONG. Interest is charged on the BORROWED part,
+    # funding on the WHOLE notional, so the comparison moves with leverage and cannot be settled
+    # once. Daily, so a regime where funding goes negative -- the case where perps actually win --
+    # is caught rather than assumed away. Access under MiCA gates it before cost does.
+    ("funding_vs_borrow", "scripts/compare_funding_vs_borrow.py", 120),
     ("live_ladder",       "scripts/run_live_ladder.py",      600),
     ("auto_promotion",    "scripts/run_auto_promotion.py --capital 200 --min-notional 10", 300),
     ("golive_preflight",  "scripts/run_golive_preflight.py --capital 200", 120),

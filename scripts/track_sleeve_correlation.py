@@ -58,9 +58,10 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-_ROOT = Path(__file__).resolve().parents[1]
-if str(_ROOT) not in sys.path:
-    sys.path.insert(0, str(_ROOT))
+# The assignment must not sit BETWEEN the imports: ruff's E402 tolerates a bare sys.path guard
+# and not an intervening statement, so `_ROOT` is bound after the import block instead.
+if str(Path(__file__).resolve().parents[1]) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import argparse
 import json
@@ -75,6 +76,7 @@ from libs.research.sleeve_allocation import allocate, report as allocation_repor
 
 #: Sleeve/mechanism return streams. One file per mechanism, or one file keyed by mechanism.
 #: Gitignored on purpose -- these are live results, not source.
+_ROOT = Path(__file__).resolve().parents[1]
 _RETURNS = _ROOT / "data" / "sleeve_returns.json"
 _OUT = _ROOT / "reports" / "sleeve_correlation.json"
 
@@ -118,7 +120,7 @@ def _pearson(a: list[float], b: list[float]) -> float | None:
         # returns a flat line, and calling that "uncorrelated" would credit it with diversification
         # it cannot provide -- the single easiest way to manufacture a good-looking k_eff.
         return None
-    cov = sum((x - ma) * (y - mb) for x, y in zip(a, b))
+    cov = sum((x - ma) * (y - mb) for x, y in zip(a, b, strict=True))
     return cov / math.sqrt(va * vb)
 
 

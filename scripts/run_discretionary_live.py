@@ -47,6 +47,7 @@ from pathlib import Path
 from typing import Any
 
 from libs.discretionary import rules, tape
+from libs.execution import maker_first
 from libs.execution import wallet as wallet_mod
 from libs.execution.discretionary_sleeve import (
     Decision,
@@ -55,7 +56,7 @@ from libs.execution.discretionary_sleeve import (
     journal,
     size_and_check,
 )
-from libs.execution.spot_order_path import place_entry
+from libs.execution.spot_order_path import place_entry, retarget
 from libs.execution.wallet import WALLETS, connector
 
 _JOURNAL = Path("data/discretionary_journal.jsonl")
@@ -210,6 +211,15 @@ def main() -> int:
                     help="SPOT VENUE: refuse every short signal instead of placing it. Required "
                          "wherever derivatives are unavailable -- EEA retail under MiCA, which "
                          "includes Ireland")
+    ap.add_argument("--no-maker", action="store_true",
+                    help="cross the spread on entry instead of quoting passively first. The "
+                         "default is maker-first: it saves half the spread (5-20bps a side on the "
+                         "thin alt legs) at the cost of adverse selection on the fills that do "
+                         "rest. Use this for a signal whose decay does not survive the wait")
+    ap.add_argument("--maker-wait", type=float, default=None,
+                    help="seconds a passive quote is given before the remainder is crossed "
+                         f"(default {maker_first.DEFAULT_WAIT_S:g}s). 0 makes the maker leg a "
+                         "formality -- it quotes and immediately crosses")
     args = ap.parse_args()
 
     # THE RAILS ARE REPORTED HERE, NOT ENFORCED. This script places nothing, so a latched rail
@@ -251,14 +261,21 @@ def main() -> int:
     skipped_short: list[str] = []
     no_tape: list[str] = []
     stale_tape: list[str] = []
+    no_book: list[str] = []
     tape_errors: list[str] = []
     placed: list[dict[str, Any]] = []
+    #: The outcome OBJECTS, kept alongside their serialised rows so the maker share is computed by
+    #: `maker_first.maker_share` -- the same function the margin executor uses. Re-deriving it from
+    #: the dicts here would be a second implementation of one KPI, and two implementations of a
+    #: number are two numbers that can disagree about the same book.
+    outcomes: list[Any] = []
     # THE VENUE IS READ ONCE, not per rule. Eleven rules each fetching balances would be eleven
     # round trips describing eleven slightly different accounts.
     live_mod: Any = None
     place_ctx = None
     free_quote = 0.0
     steps: dict[str, float] = {}
+    ticks: dict[str, float] = {}
     if args.place:
         from libs.execution import binance_spot_live
         live_mod = connector(args.wallet)
@@ -267,8 +284,13 @@ def main() -> int:
             free_quote = float(live_mod.balances().get(args.quote, 0.0))
             # MARKET DATA IS PUBLIC AND WALLET-AGNOSTIC. There is one BNBUSDC market, not a spot
             # one and a margin one; only balances and orders are routed by wallet.
-            steps = {k: float(v.get("step") or 0.0)
-                     for k, v in binance_spot_live.exchange_filters().items()}
+            _filters = binance_spot_live.exchange_filters()
+            steps = {k: float(v.get("step") or 0.0) for k, v in _filters.items()}
+            # THE PRICE TICK, WHICH THIS PATH NEVER READ BEFORE. A market order needs no price, so
+            # `tick` was parsed by the connector and used by nobody here. A post-only quote does:
+            # its price must land ON the tick or the venue rejects it, and rounding it the wrong
+            # way lifts the bid through the ask and the LIMIT_MAKER is rejected for crossing.
+            ticks = {k: float(v.get("tick") or 0.0) for k, v in _filters.items()}
         except Exception as exc:
             print(f"discretionary-live: venue unreadable ({type(exc).__name__}: {exc}) -- "
                   "refusing to place. Sizing against an unknown balance is how a sleeve spends "
@@ -308,7 +330,14 @@ def main() -> int:
                 # symbol to skip -- but one symbol's defect must not cost the other ten their
                 # book, so the failure is CAUGHT HERE, NAMED, and published in the artifact.
                 try:
-                    found.extend(rules.detect_with_tape(prof))
+                    # THE DEPTH ROWS, read for the first time. `load_book` returns [] when the
+                    # recorder wrote trades but no depth -- a real and separate failure, since the
+                    # depth poll and the aggTrades poll are different requests on different
+                    # weights and one can fail while the other does not.
+                    books = tape.load_book(sym)
+                    if not books:
+                        no_book.append(sym)
+                    found.extend(rules.detect_with_tape(prof, books=books))
                 except Exception as exc:
                     tape_errors.append(f"{sym}: {type(exc).__name__}: {exc}")
         if not found:
@@ -360,10 +389,22 @@ def main() -> int:
                         live_mod, sym, float(decision.notional_usd), cycle=cycle,
                         quote=args.quote, free_quote=free_quote,
                         min_notional=float(args.min_notional or 0.0) or 5.0,
-                        stop_price=float(sig.stop_price), step=steps.get(sym, 0.0),
-                        place=bool(args.place), borrow=borrow, side=sig.side)
+                        # KEYED BY THE SYMBOL THE ORDER IS ACTUALLY SENT ON, not the research one.
+                        # `steps` comes from exchangeInfo and is keyed BNBUSDC; the loop variable
+                        # is the research symbol BNBUSDT, so under `--quote USDC` every lookup
+                        # missed and fell through to step=0.0 -- which makes `round_step` a no-op
+                        # and sends the protective stop at full float precision. That is exactly
+                        # the shape of the `51077 Precision is over the maximum` rejection this
+                        # desk already paid for once, on the leg where a rejection means the
+                        # position stays open with no stop behind it.
+                        stop_price=float(sig.stop_price),
+                        step=steps.get(retarget(sym, args.quote), 0.0),
+                        tick=ticks.get(retarget(sym, args.quote), 0.0),
+                        place=bool(args.place), borrow=borrow, side=sig.side,
+                        maker=not args.no_maker, maker_wait_s=args.maker_wait)
                     row["order"] = out.as_row()
                     placed.append(out.as_row())
+                    outcomes.append(out)
                     if out.placed:
                         free_quote -= out.usd   # the next rule sees what this one left behind
             rows.append(row)
@@ -385,11 +426,18 @@ def main() -> int:
         "rail_why": why_rail,
         "shorts_refused": skipped_short,
         "orders": placed,
+        # BY NOTIONAL, AND None WHEN NOTHING WAS PLACED. The passive wait trades spread cost for
+        # adverse selection, and which side of that trade the book is on is an empirical question
+        # this number is the only way to answer. A zero here on an empty run would read as "the
+        # maker path is broken" when it means "no legs" -- L1.28a, on a KPI.
+        "maker_share": maker_first.maker_share(outcomes),
+        "maker_routing": "OFF (--no-maker)" if args.no_maker else "maker-first, then cross",
         "placed": bool(args.place),
         "wallet": args.wallet,
         "rules_run": sorted([args.rule_id, *rules.READY, *rules.TAPE_RULES]),
         "no_tape_symbols": no_tape,
         "stale_tape_symbols": stale_tape,
+        "no_book_symbols": no_book,
         "max_tape_age_h": tape.MAX_TAPE_AGE_H,
         "tape_rule_errors": tape_errors,
         "still_blocked": rules.BLOCKED,
@@ -424,6 +472,10 @@ def main() -> int:
         print(f"  STALE TAPE (> {tape.MAX_TAPE_AGE_H}h) for: {', '.join(stale_tape)} -- the "
               "profile is well-formed and describes an auction that has already ended. H4/H5 are "
               "UNMEASURED here; check the recorder units")
+    if no_book:
+        print(f"  NO DEPTH for: {', '.join(no_book)} -- H12 is UNMEASURED on these. Distinct from "
+              "NO TAPE: the depth poll and the aggTrades poll are separate requests, and one can "
+              "fail while the other keeps writing")
     if tape_errors:
         print("  TAPE RULE RAISED -- a defect, not a quiet symbol:")
         for e in tape_errors:

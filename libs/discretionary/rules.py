@@ -36,6 +36,7 @@ from libs.discretionary import tape
 
 __all__ = [
     "BLOCKED",
+    "BOOK_RULES",
     "READY",
     "Setup",
     "detect",
@@ -49,6 +50,7 @@ __all__ = [
     "h9_opening_range",
     "h10_vol_compression",
     "h11_band_fade",
+    "h12_book_pressure",
 ]
 
 #: Nothing is blocked any more, and the empty dict is the finding. The pre-registration marked H4
@@ -552,6 +554,63 @@ def h5_cvd_divergence(profile: Any = None, *, lookback: int = 10,
     return []
 
 
+def h12_book_pressure(profile: Any = None, *, books: Any = None, z_entry: float = 1.5,
+                      min_obs: int = 60) -> list[Setup]:
+    """ORDERBOOK MICROSTRUCTURE STATE -- the class the census rates 0.90, on data already on disk.
+
+    PRE-REGISTERED 2026-08-15, before any backtest.
+
+    THE PAYER, and he is named by the census rather than invented here: an impatient taker who
+    pays a spread the book's state had ALREADY widened, and a resting order that was there to be
+    hit. Liquidity provision is priced by the state of the book at the moment demand arrives, and
+    that state is observable BEFORE the trade rather than inferred after it.
+
+    MECHANISM CLAIM. Depth imbalance is short-horizon pressure: when resting size is
+    overwhelmingly on one side, the thin side is where price goes, because that is the side an
+    impatient order walks through. The claim is about IMMEDIACY, not value -- it decays in
+    minutes and it is the reason this class sits at 0.90 orthogonality against a library of price
+    patterns that all read the same closes.
+
+    **THE FILTER IS THE HYPOTHESIS, NOT A TUNING KNOB.** Imbalance alone is famously contaminated
+    by spoofing and by the mechanical rebuild after a sweep. The registered form requires a STEEP
+    book as well: pressure only counts when size is genuinely stacked near the touch, because a
+    flat book with a lopsided total is a book about to be cancelled. Both conditions, or no trade.
+
+    DEGRADES TO FLAT without depth snapshots, exactly like every other moat rule. An imbalance
+    computed from an absent book would be a claim about a market nobody observed.
+    """
+    rows = list(books or ())
+    if profile is None or len(rows) < min_obs:
+        return []
+    imb = np.array([b.imbalance for b in rows], dtype="float64")
+    slope = np.array([b.slope for b in rows], dtype="float64")
+    # PAST-ONLY STATISTICS. A z-score against the whole sample lets a later regime decide what
+    # counted as extreme today -- the same lookahead the Hawkes event threshold avoids.
+    hist_i, hist_s = imb[:-1], slope[:-1]
+    sd = float(hist_i.std())
+    if sd <= 0 or not np.isfinite(sd):
+        return []
+    z = (float(imb[-1]) - float(hist_i.mean())) / sd
+    steep = float(slope[-1]) > float(np.median(hist_s))
+    if not steep or abs(z) < z_entry:
+        return []
+    last = rows[-1]
+    px = float(last.mid)
+    if px <= 0 or last.spread_bps <= 0:
+        return []
+    # THE STOP IS THE SPREAD, SCALED. An immediacy claim that has not paid within a few multiples
+    # of the cost of demanding liquidity is a claim that was wrong, and a wider stop would hold a
+    # microstructure position long past the horizon its mechanism describes.
+    stop_frac = max(3.0 * last.spread_bps / 10_000.0, 0.002)
+    direction = 1 if z > 0 else -1
+    return [Setup("H12_book_pressure", direction, px,
+                  px * (1 - direction * stop_frac), px * (1 + direction * 2 * stop_frac),
+                  len(rows) - 1,
+                  f"depth imbalance z={z:+.2f} on a book steeper than its own median "
+                  f"(slope {last.slope:,.0f}, spread {last.spread_bps:.1f}bps) -- the thin side "
+                  "is where an impatient order walks")]
+
+
 #: The two rules that consume the tape rather than the candles. THEY TAKE NO DATAFRAME: every
 #: number they use -- price, extremes, flow, ATR -- comes off the tape, so there is no seam at
 #: which a candle window and a tape window can disagree. `detect` cannot run them because the
@@ -562,9 +621,16 @@ TAPE_RULES: dict[str, Any] = {
     "H5_cvd_divergence": h5_cvd_divergence,
 }
 
+#: Rules that need the DEPTH rows rather than the trade rows. Kept separate because they take a
+#: second argument the trade-only rules do not, and because a caller that has trades but no book
+#: must run the first set rather than silently skip both.
+BOOK_RULES: dict[str, Any] = {
+    "H12_book_pressure": h12_book_pressure,
+}
+
 
 def detect_with_tape(profile: Any, *, now_ms: int | None = None,
-                     max_age_h: float | None = None) -> list[Setup]:
+                     max_age_h: float | None = None, books: Any = None) -> list[Setup]:
     """H4 and H5 for one symbol, given the profile the caller loaded.
 
     **A STALE TAPE IS REFUSED, NOT FADED.** If a recorder unit stops, the newest partition simply
@@ -582,4 +648,9 @@ def detect_with_tape(profile: Any, *, now_ms: int | None = None,
     out: list[Setup] = []
     for fn in TAPE_RULES.values():
         out.extend(fn(profile))
+    # THE DEPTH ROWS, WHICH NOTHING READ UNTIL 2026-08-15. Absent `books`, these produce nothing
+    # and the caller reports NO BOOK -- distinct from NO TAPE, because the recorder can be writing
+    # trades while the depth poll is failing and those are different repairs.
+    for fn in BOOK_RULES.values():
+        out.extend(fn(profile, books=books))
     return out

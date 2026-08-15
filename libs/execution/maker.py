@@ -1,9 +1,25 @@
-"""Maker-first execution: post-only quotes at the passive top-of-book, one wait, taker fallback.
+"""Maker-first execution for the TESTNET FUTURES batch. **NOT THE LIVE PATH -- see `maker_first`.**
 
 Pays the MAKER fee (~half the taker fee on Binance futures) on quotes that rest, instead of crossing
 the spread every rebalance -- pure net-edge on a thin carry book, no alpha change. Batch design:
 quote ALL legs passively, wait once, then market-fill only the unfilled remainder, so a 20-symbol
 rebalance still completes in one short window. No look-ahead / no edge logic -- execution only.
+
+**THIS MODULE CANNOT REACH A LIVE VENUE AND THAT IS NOT A CONFIGURATION DETAIL.** It imports
+`binance_testnet` at module scope, so the connector is fixed at import time and no caller can point
+it anywhere else. `scripts/run_crypto_testnet.py` is its one caller and testnet is where it belongs.
+Until 2026-08-15 this was the ONLY maker router in the repo, which is how the live spot and margin
+books came to cross the spread on every entry while a "maker-first execution" module sat in the
+tree: the capability was real, tested, and structurally unable to touch the money path.
+
+`libs/execution/maker_first.py` is the live one. It takes the connector as an ARGUMENT, resolves a
+quote by order id rather than by cancelling every order on the symbol (this module's `cancel_all`
+would take a resting protective stop with it), and reports its maker share by notional rather than
+by leg. Two differences worth keeping in mind before merging them:
+
+    * this one batches N symbols behind ONE wait, which matters for a 20-leg carry rebalance;
+    * `maker_first` handles ONE order and resolves partial fills exactly, which matters when a
+      protective stop has to be sized from what actually filled.
 """
 
 from __future__ import annotations

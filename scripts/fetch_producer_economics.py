@@ -50,9 +50,10 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-_ROOT = Path(__file__).resolve().parents[1]
-if str(_ROOT) not in sys.path:
-    sys.path.insert(0, str(_ROOT))
+# The assignment must not sit BETWEEN the imports: ruff's E402 tolerates a bare sys.path guard
+# and not an intervening statement, so `_ROOT` is bound after the import block instead.
+if str(Path(__file__).resolve().parents[1]) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import argparse
 import json
@@ -62,6 +63,7 @@ import urllib.request
 from datetime import UTC, datetime
 from typing import Any
 
+_ROOT = Path(__file__).resolve().parents[1]
 _OUT = _ROOT / "data" / "producer_economics.json"
 
 #: Free, no key, no account. Daily resolution, full history.
@@ -88,7 +90,7 @@ _SCALES = {"H/s": 1e-15, "KH/s": 1e-12, "MH/s": 1e-9,
 
 def _get(url: str, timeout: int) -> Any:
     req = urllib.request.Request(url, headers={"User-Agent": "quant-desk/1.0"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:   # noqa: S310 -- fixed https host
+    with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.loads(r.read().decode("utf-8"))
 
 

@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import math
 
+import pytest
+
 from libs.execution import binance_margin_live as margin
 from libs.execution.leverage_policy import (
     MIN_LEVERAGE,
@@ -186,3 +188,73 @@ def test_THE_SIGMA_ANNUALISATION_USES_A_365_DAY_YEAR() -> None:
     d = choose(0.03, sharpe=1.0)
     # the field is rounded for reporting, so compare at the reporting precision
     assert abs(d["sigma_annual"] - 0.03 * math.sqrt(365.0)) < 1e-4
+
+
+def test_INTEREST_IS_CHARGED_ON_THE_BORROWED_PART_NOT_THE_WHOLE_POSITION() -> None:
+    """At f=1.0 nothing is borrowed, so no interest is due. The old form read
+    `f*(mu - borrow)` and billed the rate against the principal's own equity too -- understating
+    every published growth number by exactly `r`, which at the live 5.1% venue rate was most of a
+    small book's expected growth."""
+    mu, sigma, r = 0.0816, 0.17, 0.051
+    assert growth_rate(1.0, mu, sigma, borrow_rate=r) == pytest.approx(
+        growth_rate(1.0, mu, sigma, borrow_rate=0.0)), "an unlevered book pays no interest"
+    # and a levered one pays on (f-1) only
+    assert growth_rate(3.0, mu, sigma, borrow_rate=r) == pytest.approx(
+        3.0 * mu - 2.0 * r - 9.0 * sigma * sigma / 2)
+
+
+def test_THE_KELLY_POINT_IS_UNCHANGED_BY_THE_FIX() -> None:
+    """The two forms differ by the CONSTANT r, so their derivatives are identical -- which is
+    exactly why the error survived: every comparison between two leverages came out the same and
+    only the LEVEL was wrong. Pinned so a future 'simplification' back to f*(mu-r) is caught."""
+    mu, sigma, r = 0.0816, 0.17, 0.051
+    f_star = kelly_leverage(mu, sigma, borrow_rate=r)
+    for delta in (0.05, 0.2, 0.5):
+        assert growth_rate(f_star, mu, sigma, borrow_rate=r) > growth_rate(
+            f_star + delta, mu, sigma, borrow_rate=r)
+        assert growth_rate(f_star, mu, sigma, borrow_rate=r) > growth_rate(
+            max(0.0, f_star - delta), mu, sigma, borrow_rate=r)
+
+
+# ---------------------------------------------------- THE MARGIN-CALL BAND (added 2026-08-15)
+def test_A_FRESH_POSITION_HITS_THE_CALL_BAND_AT_EXACTLY_THREE_X() -> None:
+    """Entry level is f/(f-1), fixed the instant the order fills. At Binance's 1.5 call level that
+    is 3.00x -- above it the account opens ALREADY IN MARGIN CALL, before the market has moved."""
+    from libs.execution.leverage_policy import MARGIN_CALL_LEVEL, leverage_at_margin_call
+
+    assert MARGIN_CALL_LEVEL == 1.5
+    assert leverage_at_margin_call() == pytest.approx(3.0)
+    assert leverage_at_margin_call(2.0) == pytest.approx(2.0)
+    assert leverage_at_margin_call(1.1) == pytest.approx(11.0)   # the liquidation line
+
+
+def test_A_VENUE_THAT_NEVER_CALLS_IMPOSES_NO_BOUND() -> None:
+    from libs.execution.leverage_policy import leverage_at_margin_call
+
+    assert leverage_at_margin_call(1.0) == float("inf")
+
+
+def test_THE_BAND_DEFAULTS_OFF_BECAUSE_ONLY_A_BORROWING_BOOK_CAN_BE_CALLED() -> None:
+    """A spot book at 1x has no liability and no level. Applying the bound there would refuse
+    leverage against a hazard that cannot occur -- and would silently lower a ceiling the principal
+    set at 8x, which is theirs to move."""
+    assert choose(0.03)["binding_constraint"] in {"survival", "venue/ceiling"}
+
+
+def test_THE_BAND_BINDS_WHEN_PASSED_AND_CUTTING_COSTS_IS_WHAT_MAKES_IT_BIND() -> None:
+    """Kelly is (mu-r)/sigma^2, so cheaper execution RAISES it. The maker routing and the BNB
+    interest discount moved this book's optimum from 2.31x through the 3.00x line -- a saving that
+    walks the book into a margin call is not a saving."""
+    dear = choose(0.0089, sharpe=0.69, n_obs=5000, borrow_rate=0.051, margin_call_level=1.5)
+    cheap = choose(0.0089, sharpe=0.83, n_obs=5000, borrow_rate=0.0382, margin_call_level=1.5)
+    assert cheap["kelly"] > dear["kelly"], "the cost work must raise the growth optimum"
+    assert cheap["leverage"] <= 3.0 + 1e-9
+    assert cheap["binding_constraint"] == "margin-call band"
+    assert "ALREADY IN MARGIN CALL" in cheap["why"]
+
+
+def test_THE_BAND_NEVER_RAISES_LEVERAGE_ONLY_LOWERS_IT() -> None:
+    for sh in (0.2, 0.5, 0.9, 1.5):
+        free = choose(0.02, sharpe=sh, n_obs=2000, borrow_rate=0.04)
+        held = choose(0.02, sharpe=sh, n_obs=2000, borrow_rate=0.04, margin_call_level=1.5)
+        assert held["leverage"] <= free["leverage"] + 1e-9
