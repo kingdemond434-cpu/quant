@@ -25,6 +25,7 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
+from libs.execution.wallet import WALLETS
 from libs.ops.platform_paths import venv_python
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -104,12 +105,12 @@ _STEPS = [
     ("auto_promotion",    "scripts/run_auto_promotion.py --capital 200 --min-notional 10", 300),
     ("golive_preflight",  "scripts/run_golive_preflight.py --capital 200", 120),
     ("spot_targets",      "scripts/run_spot_momentum.py --equity 200 --min-notional 10", 300),
-    ("spot_orders",       "scripts/run_spot_executor.py --equity auto --quote USDC --place --reserve-frac 0.3 --wallet spot", 300),
+    ("spot_orders",       "scripts/run_spot_executor.py --equity auto --quote USDC --place --reserve-frac 0.3 --wallet {WALLET}", 300),
     # --place: the eleven playbook rules now TRADE, each entry carrying a venue-held stop placed
     # through the same primitive the momentum book uses. --spot-only refuses every short they call
     # and journals the refusal, which on a spot account IS the measurement for H1/H7/H11.
     ("discretionary",     "scripts/run_discretionary_live.py --equity auto --spot-only "
-                          "--quote USDC --place --min-notional 5 --wallet spot", 600),
+                          "--quote USDC --place --min-notional 5 --wallet {WALLET}", 600),
     # THE LEVERED PATH. Inert without data/MARGIN_ENABLE and without capital in the margin wallet,
     # both of which are the principal's acts. The leverage is COMPUTED every run -- no flag -- so a
     # thin edge borrows nothing and the same line is correct at any Sharpe.
@@ -259,8 +260,19 @@ def _nav_equity() -> dict[str, object]:
 
 def main() -> None:
     steps: dict[str, dict[str, object]] = {}
+    # THE WALLET IS SUBSTITUTED HERE, NOT HARDCODED IN THE STEP TABLE. Binance treats spot and
+    # cross-margin as separate balances, so the day the principal moves capital between them, every
+    # sleeve pointed at the old one keeps running perfectly and places nothing. An env var means
+    # that move is one line on the box rather than a code change -- and the executors additionally
+    # name the other wallet at runtime when it holds the money (`wallet.misplaced_capital`), so a
+    # cycle left on the wrong setting reports it instead of going quiet.
+    desk_wallet = os.environ.get("DESK_WALLET", "spot").strip().lower()
+    if desk_wallet not in WALLETS:
+        raise SystemExit(f"DESK_WALLET={desk_wallet!r} is not one of {WALLETS}. Refusing to "
+                         "default: a typo that silently trades the wrong wallet is the failure "
+                         "this substitution exists to prevent")
     for label, script, timeout in _STEPS:
-        steps[label] = _run(script, timeout)
+        steps[label] = _run(script.replace("{WALLET}", desk_wallet), timeout)
         print(f"[{label}] {steps[label]}")
     _write_status(steps)  # R0258: pager artifact, before any bookkeeping below can raise
 

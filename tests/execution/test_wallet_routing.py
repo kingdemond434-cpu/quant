@@ -10,9 +10,11 @@ No error, no alarm. A book that has simply stopped, looking exactly like a quiet
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
-from libs.execution import binance_margin_live, binance_spot_live
+from libs.execution import binance_margin_live, binance_spot_live, wallet
 from libs.execution.wallet import WALLETS, connector, is_margin
 
 
@@ -68,3 +70,55 @@ def test_MARKET_DATA_IS_NOT_ROUTED_BY_WALLET() -> None:
     src = Path("scripts/run_spot_executor.py").read_text("utf-8")
     assert "px = market.prices()" in src and "filters = market.exchange_filters()" in src
     assert "held = live.balances()" in src
+
+
+# ------------------------------------------------------------------ where the money actually is
+def _stub(monkeypatch: pytest.MonkeyPatch, spot: object, margin: object) -> None:
+    """Point both connectors' `balances` at canned answers. A callable that RAISES stands for an
+    unreadable wallet, which must never be reported as an empty one."""
+    for mod, val in ((binance_spot_live, spot), (binance_margin_live, margin)):
+        def _b(v: object = val) -> dict[str, float]:
+            if isinstance(v, Exception):
+                raise v
+            return {"USDC": float(v)}          # type: ignore[arg-type]
+        monkeypatch.setattr(mod, "balances", _b)
+
+
+def test_IT_NAMES_THE_WALLET_HOLDING_THE_MONEY(monkeypatch: pytest.MonkeyPatch) -> None:
+    """THE RUNTIME CHECK THIS MODULE'S HEADER DESCRIBED AND NOTHING PERFORMED. A sleeve pointed at
+    an emptied wallet places no orders, raises nothing, and writes a row identical to a day when
+    every target was already on side. Until this existed, the two were indistinguishable."""
+    _stub(monkeypatch, spot=0.0, margin=812.40)
+    msg = wallet.misplaced_capital("spot", "USDC")
+    assert msg and "MARGIN WALLET" in msg and "812.40" in msg
+    assert "--wallet margin" in msg, "the message must carry the fix, not just the diagnosis"
+    assert wallet.misplaced_capital("margin", "USDC") is None, "the money IS in margin: no news"
+
+
+def test_IT_STAYS_QUIET_WHEN_NEITHER_WALLET_CAN_FUND_A_TRADE(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """Pointing at an equally empty wallet is noise. 'The book is out of capital' is the honest
+    report, and this function is not the organ that makes it."""
+    _stub(monkeypatch, spot=0.0, margin=3.0)
+    assert wallet.misplaced_capital("spot", "USDC", min_notional=10.0) is None
+
+
+def test_AN_UNREADABLE_WALLET_IS_NONE_AND_NEVER_ZERO(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Zero is the measurement that the money is gone. None is the statement that nobody looked
+    successfully. Collapsing the second into the first is how 'the key lost margin permission'
+    comes to read as 'the account is empty' -- and it would then hunt for capital that is there."""
+    _stub(monkeypatch, spot=0.0, margin=RuntimeError("-2015 invalid API-key"))
+    loc = wallet.locate_capital("USDC")
+    assert loc["balances"]["margin"] is None
+    assert "-2015" in loc["errors"]["margin"]
+    assert loc["richest"] == "spot", "only READABLE wallets may be ranked"
+    # and with margin unreadable there is no evidence the cash is elsewhere, so it says nothing
+    assert wallet.misplaced_capital("spot", "USDC") is None
+
+
+def test_IT_READS_AND_NEVER_TRANSFERS() -> None:
+    """No transfer surface exists on this path and none may be added: an organ that could move
+    capital between wallets to 'fix' the mismatch would be a money path nobody armed."""
+    src = Path(wallet.__file__).read_text("utf-8")
+    for forbidden in ("margin/transfer", "sapi/v1/margin/transfer", "universalTransfer"):
+        assert forbidden not in src, f"{forbidden} must never appear in the wallet selector"

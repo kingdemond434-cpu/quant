@@ -47,6 +47,7 @@ from pathlib import Path
 from typing import Any
 
 from libs.discretionary import rules, tape
+from libs.execution import wallet as wallet_mod
 from libs.execution.discretionary_sleeve import (
     Decision,
     RuleSignal,
@@ -226,6 +227,13 @@ def main() -> int:
                   "refusing to place. Sizing against an unknown balance is how a sleeve spends "
                   "money it does not have")
             return 1
+        # ELEVEN REFUSALS FOR INSUFFICIENT FUNDS LOOK IDENTICAL TO ELEVEN QUIET RULES. If the cash
+        # has simply moved to the other wallet, the sleeve says which one rather than journalling
+        # eleven rows that each blame the market.
+        misplaced = wallet_mod.misplaced_capital(args.wallet, args.quote,
+                                                 min_notional=float(args.min_notional))
+        if misplaced:
+            print(f"discretionary-live: {misplaced}")
     cycle = datetime.now(tz=UTC).strftime("%Y%m%d")
     for sym in symbols:
         df = frames.get(sym)

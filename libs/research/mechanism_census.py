@@ -838,6 +838,36 @@ CONSTRUCTION_CLASS: dict[str, str] = {
     "inverse_reference": "relative_value_convergence",
     "persistent_long": "market_risk_premium",
     "funding_stress_reversal": "positioning_crowding_unwind",
+    # THE ELEVEN DISCRETIONARY RULES, declared by construction rather than left to keyword luck.
+    # Measured 2026-08-15: `classify()` returned None for H4, H5, H9 and H10 -- the desk's own
+    # taxonomy could not place four of the rules it was trading, so they fell to UNCLASSIFIED and
+    # the breadth report counted them as an undeclared mechanism. Declaring the map is cheaper and
+    # far safer than broadening signature regexes, which would silently re-file other candidates.
+    "H1_structural_fade": "liquidity_provision_immediacy",
+    "H2_volume_breakout": "price_continuation",
+    "H3_ict": "price_continuation",
+    # H4 is volume-at-price reversion from TRADE PRINTS -- "unaccepted prices revert to where
+    # volume traded" is an immediacy claim, not an information one. It reads the tape, but reading
+    # the tape is not the same as trading its information, and filing it beside H5 would credit
+    # the desk with two informed-flow tests when it has one.
+    "H4_auction_value": "liquidity_provision_immediacy",
+    # H5 IS the informed-flow test: signed aggressive volume diverging from price. The class's own
+    # note says every kill so far died because flow was CONCURRENT with price -- a divergence is
+    # precisely the non-concurrent form, which makes this the untested construction, not a repeat.
+    "H5_cvd_divergence": "informed_order_flow",
+    "H6_wyckoff": "liquidity_provision_immediacy",
+    "H7_vwap_reversion": "liquidity_provision_immediacy",
+    "H8_supply_demand": "liquidity_provision_immediacy",
+    "H9_opening_range": "price_continuation",
+    "H10_vol_compression": "price_continuation",
+    "H11_band_fade": "liquidity_provision_immediacy",
+    # forward clocks whose names carry no census vocabulary
+    "cny_premium": "capital_control_barrier_rent",
+    "oi_divergence": "positioning_crowding_unwind",
+    "ls_contrarian": "positioning_crowding_unwind",
+    "walcl_reserve_impulse": "macro_liquidity_transmission",
+    "defi_utilisation": "network_usage_demand",
+    "stablecoin_supply_momentum": "primary_market_creation_flow",
 }
 
 

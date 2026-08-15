@@ -30,88 +30,86 @@ rather than leaving it to be discovered later.
 
 **FAMILIES ARE DECLARED BEFORE THE DATA, LIKE EVERY OTHER TERM.** A family assigned after seeing
 which candidates look good is a garden of forking paths with extra steps -- the partition would
-become the free parameter. `FAMILIES` below is fixed here, dated, and a name that matches none of
-them lands in UNCLASSIFIED, which is deliberately the LARGEST cohort rather than a free pass.
+become the free parameter. A name the taxonomy cannot place lands in UNCLASSIFIED, which is
+deliberately never cheaper than the largest declared cohort rather than a free pass.
+
+**THE TAXONOMY IS THE CENSUS'S, NOT THIS MODULE'S.** The first version declared five families from
+a hand-written token list, beside `libs/research/mechanism_census.TAXONOMY` -- 26 classes, each
+with a named PAYER, an economic definition, signature vocabulary, and a declared orthogonality,
+already used to rank the desk's research agenda. Two taxonomies answering "why does this edge
+exist" are two answers, and the one nobody maintains is the one that quietly disagrees. This module
+now classifies through the census and holds only the multiplicity arithmetic.
+
+**A CLASS EARNS ITS OWN ERROR BUDGET BY BEING A SEPARATE QUESTION, AND THE CENSUS ALREADY SCORES
+THAT.** Partitioning is only legitimate between hypotheses that are not one question in disguise --
+so classes the census itself declares as barely orthogonal (`price_continuation` 0.03,
+`market_risk_premium` 0.05, `liquidity_provision_immediacy` 0.1) do NOT get separate cohorts. They
+share one, because eleven price-pattern variants are one question however many names they carry.
+The same number then governs both halves of the desk's growth arithmetic: a family that does not
+add breadth does not get its own seats either.
 """
 
 from __future__ import annotations
 
 from statistics import NormalDist
 
+from libs.research.mechanism_census import CLASS_BY_ID, classify
+
 __all__ = [
-    "FAMILIES",
+    "CORRELATED_CORE",
+    "ORTHOGONALITY_FLOOR",
     "UNCLASSIFIED",
     "bh_alpha",
     "bh_bar",
     "effective_m",
     "family_error_budget",
     "family_of",
-    "matches",
     "partition",
 ]
 
-#: Pre-declared families, fixed 2026-08-15 before any candidate was assigned to one. Each is a
-#: distinct QUESTION about why an edge exists, which is the only partition that justifies separate
-#: error control -- splitting by symbol or by timeframe would be slicing one question, and the
-#: correction would then be evaded rather than applied.
-FAMILIES: dict[str, tuple[str, ...]] = {
-    # why: someone is PAID to hold the other side (funding, basis, carry)
-    "carry": ("funding", "carry", "basis", "perpdex", "cashcarry"),
-    # why: capital is FORCED to move (liquidations, flows, supply, reserves)
-    "flow": ("liquidation", "flow", "supply", "reserve", "walcl", "stablecoin", "obi", "cvd",
-             "oi_divergence", "ls_contrarian"),
-    # why: a price relationship is mechanically linked (cross-venue, cross-asset, premium)
-    "relative_value": ("crossasset", "cross_asset", "premium", "cny", "kimchi", "ethbtc",
-                       "rotation"),
-    # why: participants behave predictably at structure (levels, breakouts, ranges)
-    # `opening_range` added 2026-08-15 as a SPELLING of `orb`, not a new member: the rule the token
-    # was declared to catch is named H9_opening_range and the abbreviation never matched it. The
-    # move TIGHTENS that rule's bar (structure is the largest family), so it cannot be a partition
-    # chosen to flatter -- the forking-paths hazard only runs in the other direction.
-    "structure": ("trend", "momentum", "breakout", "wyckoff", "ict", "vwap", "band", "orb",
-                  "opening_range", "compression", "supply_demand", "structural"),
-    # why: on-chain or protocol mechanics (utilisation, defi, gas)
-    "onchain": ("defi", "utilisation", "onchain", "gas"),
-}
-
-#: Where a name that matches no declared family lands. NOT a free pass: unclassified candidates
-#: share ONE cohort, so an un-named mechanism pays the full multiplicity of every other un-named
-#: one. That asymmetry is deliberate -- declaring the family is the work, and skipping it must not
-#: be the cheaper path.
+#: Where a name the census cannot place lands. NOT a free pass: unclassified candidates share ONE
+#: cohort and `effective_m` floors it at the largest declared family, so an un-named mechanism pays
+#: the worst bar on the desk. That asymmetry is deliberate -- declaring the mechanism is the work,
+#: and skipping it must never be the cheaper path.
 UNCLASSIFIED = "unclassified"
 
+#: The shared cohort for census classes that are barely orthogonal. Separate error control is only
+#: justified between separate QUESTIONS; a class the census scores at 0.03 is the promiscuous
+#: price-only vocabulary that most of the desk's history already lives in, and giving it its own
+#: seat pool would manufacture breadth by renaming.
+CORRELATED_CORE = "correlated_core"
 
-def matches(name: str) -> list[str]:
-    """Every declared family this name matches. Usually one; occasionally more, and that matters."""
-    low = str(name).lower()
-    return sorted(fam for fam, toks in FAMILIES.items() if any(t in low for t in toks))
+#: Declared orthogonality at or above which a census class carries its own multiplicity cohort.
+#:
+#: THIS IS A THRESHOLD ON NUMBERS THE CENSUS PUBLISHED LONG BEFORE THIS COHORT EXISTED, which is
+#: what keeps it from being a free parameter fitted to today's candidates. It is fixed here, dated
+#: 2026-08-15, and changing it changes real statistical bars -- so it moves by a ledgered decision
+#: or not at all. Raising it merges families (fewer seats, tighter bars); lowering it splits them
+#: (more seats, higher global FWER), and `family_error_budget` prices that in both directions.
+ORTHOGONALITY_FLOOR = 0.35
 
 
 def family_of(name: str, cohort: list[str] | None = None) -> str:
-    """The declared family for a candidate name, or UNCLASSIFIED.
+    """The census class this candidate belongs to, or CORRELATED_CORE / UNCLASSIFIED.
 
-    AMBIGUITY RESOLVES TOWARD THE TIGHTER BAR, NEVER TOWARD DICT ORDER. A real name from the live
-    cohort -- `full_sweep_cross_asset_lead_1h_all_decay_breakout_decay_momentum` -- matches BOTH
-    `relative_value` (cross_asset) and `structure` (breakout, momentum). First-match-wins would
-    have assigned it by the declaration order of a dict literal, which is an invisible dependency
-    deciding a real statistical threshold.
+    `cohort` is accepted and ignored: it existed to break ties between hand-written token families,
+    and the census resolves ambiguity itself -- most matched signatures wins, ties by taxonomy
+    priority, so a specific economic vocabulary always outbids the promiscuous price-only one. The
+    parameter stays because callers pass it; the tie-break it used to drive is gone with the token
+    list that needed it.
 
-    When `cohort` is given, an ambiguous name joins the LARGEST matching family, so it pays the
-    HIGHER multiplicity. That is the only safe direction: a candidate that might belong to two
-    questions must not get the cheaper bar by accident of spelling. Without a cohort the tie
-    breaks alphabetically, which is arbitrary but at least stated and stable.
-
-    Substring matching on a fixed, pre-declared token list. Deliberately not clever: a classifier
-    that inferred families from returns would assign them AFTER seeing the data, which is the one
-    thing the partition may never do.
+    The name is passed as BOTH text and construction id, so an explicit `CONSTRUCTION_CLASS` entry
+    short-circuits keyword matching. An implementation beats a keyword every time -- that is the
+    census's own rule, and it is how the eleven discretionary rules are placed.
     """
-    hits = matches(name)
-    if not hits:
+    del cohort
+    cls_id, _ = classify(str(name), construction=str(name))
+    if cls_id is None:
         return UNCLASSIFIED
-    if len(hits) == 1 or cohort is None:
-        return hits[0]
-    sizes = {f: sum(1 for n in cohort if f in matches(n)) for f in hits}
-    return max(hits, key=lambda f: (sizes[f], f))
+    cls = CLASS_BY_ID.get(cls_id)
+    if cls is None or cls.orthogonality < ORTHOGONALITY_FLOOR:
+        return CORRELATED_CORE
+    return cls_id
 
 
 def partition(names: list[str]) -> dict[str, list[str]]:

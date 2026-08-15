@@ -39,6 +39,7 @@ from pathlib import Path
 from typing import Any
 
 from libs.research import breadth
+from libs.research import mechanism_census as census
 from libs.validation import family_multiplicity as fm
 from libs.validation.forward_stats import holm_bar
 
@@ -86,8 +87,13 @@ def build(target_monthly: float = 0.07, *, alpha: float = 0.05) -> dict[str, Any
     fam_rows = []
     for fam, members in sorted(parts.items(), key=lambda kv: (-len(kv[1]), kv[0])):
         m = eff[fam]
+        cls = census.CLASS_BY_ID.get(fam)
         fam_rows.append({
             "family": fam, "m": m, "n_members": len(members), "members": sorted(members),
+            # DECLARED, NOT MEASURED, and labelled so nowhere downstream can read it as a rho.
+            # It ranks where to look; it never sizes anything.
+            "declared_orthogonality": None if cls is None else cls.orthogonality,
+            "payer": None if cls is None else cls.payer,
             "holm_bar_rank1": holm_bar(m, 1, alpha=alpha),
             "bh_bar_rank1": fm.bh_bar(m, 1, alpha=alpha),
             # WHAT THE PARTITION BUYS, per family: the bar this member would have faced in one
@@ -115,6 +121,24 @@ def build(target_monthly: float = 0.07, *, alpha: float = 0.05) -> dict[str, Any
             marginal.append({"candidate": label, "assumed_rho_to_book": cand_rho,
                              **breadth.marginal_breadth(n_held, 0.8, cand_rho)})
 
+    # WHERE THE DESK IS NOT. The census declares 26 mechanism classes, each with a named payer and
+    # a declared orthogonality; the live book occupies a handful. An EMPTY high-orthogonality class
+    # is the first sleeve of an uncorrelated family -- exactly the case `marginal_breadth` prices
+    # two orders of magnitude above another variant of what is already held. This turns "find ways
+    # to 7% a month" into a named, ranked list of mechanisms rather than a search for a better
+    # version of the mechanisms already in the book.
+    held = set(parts)
+    vacant = [
+        {"class": c.id, "declared_orthogonality": c.orthogonality, "plausibility": c.plausibility,
+         "priority": c.priority, "payer": c.payer,
+         "data": c.data.availability.value if hasattr(c.data.availability, "value")
+                 else str(c.data.availability)}
+        for c in census.TAXONOMY
+        if c.id not in held and c.orthogonality >= fm.ORTHOGONALITY_FLOOR
+    ]
+    vacant.sort(key=lambda r: (-(float(r["declared_orthogonality"]) * float(r["plausibility"])),
+                               r["priority"]))
+
     return {
         "updated": datetime.now(tz=UTC).isoformat(),
         "assumed_per_sleeve_sharpe": _ASSUMED_SLEEVE_SHARPE,
@@ -125,6 +149,8 @@ def build(target_monthly: float = 0.07, *, alpha: float = 0.05) -> dict[str, Any
         "families": fam_rows,
         "family_error_budget": fm.family_error_budget(len(parts), alpha=alpha),
         "marginal_breadth": marginal,
+        "orthogonality_floor": fm.ORTHOGONALITY_FLOOR,
+        "vacant_high_orthogonality_classes": vacant,
         "seats": ("under partition, seats are PER FAMILY: a new clock in one family costs the "
                   "others exactly nothing, so the total is bounded by how many genuinely distinct "
                   "questions the desk can ask rather than by MAX_FORWARD_SLOTS"),
@@ -168,10 +194,11 @@ def main() -> int:
         for f in rep["families"]:
             floored = " [m FLOORED: undeclared pays the worst bar on the desk]" \
                 if f["m"] > f["n_members"] else ""
-            print(f"    {f['family']:<16} m={f['m']:<3} holm t {f['holm_bar_rank1']:.2f}  "
-                  f"BH t {f['bh_bar_rank1']:.2f}   "
-                  f"(one global cohort would be {f['holm_bar_if_one_global_cohort']:.2f})"
-                  f"{floored}")
+            orth = f["declared_orthogonality"]
+            print(f"    {f['family']:<30} m={f['m']:<3} holm t {f['holm_bar_rank1']:.2f}  "
+                  f"BH t {f['bh_bar_rank1']:.2f}  "
+                  f"orth {'  n/a' if orth is None else f'{orth:5.2f}'}  "
+                  f"(one cohort: {f['holm_bar_if_one_global_cohort']:.2f}){floored}")
         eb = rep["family_error_budget"]
         print(f"  cost: {eb['why']}")
 
@@ -180,6 +207,15 @@ def main() -> int:
         for m in rep["marginal_breadth"]:
             print(f"    {m['candidate']:<32} rho {m['assumed_rho_to_book']:.1f} -> "
                   f"+{m['delta_k']:.3f} effective bets  (S x{m['sharpe_multiplier']:.3f})")
+
+    if rep["vacant_high_orthogonality_classes"]:
+        print(f"\n  VACANT mechanism classes (census orthogonality >= "
+              f"{rep['orthogonality_floor']}) -- the desk holds NOTHING here, so each is a FIRST "
+              "sleeve of an uncorrelated family rather than another variant of what is held:")
+        for v in rep["vacant_high_orthogonality_classes"][:8]:
+            print(f"    {v['class']:<34} orth {v['declared_orthogonality']:.2f}  "
+                  f"plaus {v['plausibility']:.2f}  data {v['data']}")
+            print(f"      payer: {str(v['payer'])[:96]}")
 
     print(f"\n-> {_OUT}")
     return 0
