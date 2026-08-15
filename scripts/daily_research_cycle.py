@@ -135,6 +135,8 @@ _STEPS = [
     # a desk comes to believe a switch is on because it was on last week. Runs BEFORE the order
     # steps so the day's artifact records the arming state the orders were actually placed under.
     ("arming",            "scripts/report_arming.py",        60),
+    ("paper_sleeve_spawner", "scripts/run_paper_sleeve_spawner.py", 600),
+    ("paper_sleeve_forward", "scripts/run_paper_sleeve_forward.py", 600),
     ("live_ladder",       "scripts/run_live_ladder.py",      600),
     ("auto_promotion",    "scripts/run_auto_promotion.py --capital 200 --min-notional 10", 300),
     ("golive_preflight",  "scripts/run_golive_preflight.py --capital 200", 120),

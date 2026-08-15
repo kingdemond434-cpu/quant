@@ -157,17 +157,17 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   #
   # It fails closed on its own if the exception ledger is inactive, so scheduling it grants no
   # authority the principal did not already write down.
-  nice -n 15 "$PY" scripts/run_mechanism_sleeves.py || true
+  nice -n 15 "$PY" scripts/run_mechanism_sleeves.py
   nice -n 15 "$PY" scripts/run_margin_executor.py --quote "${SPOT_QUOTE:-USDC}" --place \
-      --targets data/mechanism_sleeve_targets.json || true
+      --targets data/mechanism_sleeve_targets.json
   # THE WRITER THE RHO TRACKER WAS WAITING FOR. track_sleeve_correlation.py reads
   # data/sleeve_returns.json and NOTHING WROTE IT -- the tracker would have printed "nothing to
   # measure yet" forever, looking patient while starving. Correlation is the one number that
   # decides whether the desk's return target is reachable at all, and it only accumulates with
   # elapsed time, so the recorder has to run every cycle from now rather than from when someone
   # remembers.
-  nice -n 15 "$PY" scripts/record_sleeve_returns.py || true
-  nice -n 15 "$PY" scripts/track_sleeve_correlation.py || true
+  nice -n 15 "$PY" scripts/record_sleeve_returns.py
+  nice -n 15 "$PY" scripts/track_sleeve_correlation.py
   # --spot-only REFUSES every short H3 calls and journals the refusal, rather than inverting it
   # (which would score H3's hit rate against trades it never called for) or dropping it silently
   # (which would hide that half its signals were unplaceable rather than absent).
@@ -184,18 +184,6 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # count that is currently the desk's largest unmeasured risk. `|| true` because a BLOCKED verdict
   # is information, not a cycle failure.
   nice -n 15 "$PY" scripts/run_golive_preflight.py --capital "${GOLIVE_CAPITAL:-200}" || true
-  # THE VERB ON THE PROMOTION PATH. Measured 2026-08-14: auto_promotion.decide() had ZERO callers
-  # -- `is_armed` and the clip cap were imported by one report and the DECISION function was
-  # invoked by nothing, in no cycle, ever. Arming automated promotion would therefore have changed
-  # nothing: the marker flips, every gate inside decide() stays unevaluated, and the desk believes
-  # its research-to-capital path is automated while the last link does not exist.
-  # It publishes verdicts and places nothing; the executor places, the kernel bounds, the deadman
-  # stops. Runs AFTER the ladder -- it must see the SAME Stage-B rows the ladder just
-  # published, and a promotion decided from a pre-ladder read would cite figures the
-  # dashboard never showed, which is how a promotion becomes unauditable after the fact.
-  nice -n 15 "$PY" scripts/run_live_ladder.py
-  nice -n 15 "$PY" scripts/run_auto_promotion.py --capital "${GOLIVE_CAPITAL:-200}" \
-      --min-notional "${VENUE_MIN_NOTIONAL:-10}"
   # EXECUTION HEALTH runs every cycle, including days the research half found nothing. The money
   # path is where the desk is currently LOSING (27 closes, all three hold buckets negative net of
   # fees), so a cycle that reported only research would go quiet on the one number costing money.
@@ -210,7 +198,16 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # day-zero NO-EVIDENCE row immediately, proving every new clock is runnable and cohort-counted.
   nice -n 15 "$PY" scripts/run_paper_sleeve_spawner.py
   nice -n 15 "$PY" scripts/run_paper_sleeve_forward.py
+  # THE CANONICAL LADDER MUST READ THE CLOCK THE SPAWNER JUST CREATED. OOS is evidence produced
+  # by the zero-capital clock, so running the ladder before the spawner made its own gate circular:
+  # a statistically-valid candidate owed OOS before the organ that could start OOS had run.
+  nice -n 15 "$PY" scripts/run_live_ladder.py
   nice -n 15 "$PY" scripts/run_promotion_queue.py
+  # THE VERB ON THE PROMOTION PATH. It publishes verdicts and places nothing; the executor places,
+  # the kernel bounds, the deadman stops. Runs after the fresh clock and ladder state so a decision
+  # can never cite Stage-B figures the dashboard did not show.
+  nice -n 15 "$PY" scripts/run_auto_promotion.py --capital "${GOLIVE_CAPITAL:-200}" \
+      --min-notional "${VENUE_MIN_NOTIONAL:-10}"
   # Publish the one evidence-adaptive funnel plan only after admission, shadow and promotion
   # artifacts are fresh. Research-allocation authority only; no promotion or capital authority.
   nice -n 15 "$PY" scripts/run_conversion_control.py

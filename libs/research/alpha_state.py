@@ -9,8 +9,8 @@ look identical right up until the morning they do not.
 So the transitions become an object. An alpha advances ONE rung at a time, each rung names the
 evidence it requires, and a skipped rung is a hard refusal rather than an omission nobody notices.
 
-    DISCOVERED -> IMPLEMENTED -> TESTED -> STATISTICALLY_VALID -> OOS_VALIDATED
-      -> INDEPENDENCE_CHECKED -> PORTFOLIO_VALIDATED -> SHADOW -> CAPITAL_ELIGIBLE
+    DISCOVERED -> IMPLEMENTED -> TESTED -> STATISTICALLY_VALID -> SHADOW
+      -> OOS_VALIDATED -> INDEPENDENCE_CHECKED -> PORTFOLIO_VALIDATED -> CAPITAL_ELIGIBLE
       -> LIVE -> MONITORED  (and DEGRADED / RETIRED from anywhere)
 
 WHAT THIS IS NOT. It is not a promoter. It grants nothing, sizes nothing and places nothing --
@@ -80,8 +80,13 @@ RUNGS: tuple[Rung, ...] = (
          "cleared the DECLARED-universe hurdle. `trials_declared` is required by name because "
          "deflating on the executed count rather than the declared one is the most respectable "
          "route to a manufactured survivor (L1.52a)"),
+    Rung("SHADOW", ("shadow_started_at",),
+         "a pre-registered forward clock is running at zero capital. It must precede OOS: the "
+         "clock is the producer of genuinely untouched observations, so requiring OOS before "
+         "starting it is a circular gate that can never pay its own evidence debt"),
     Rung("OOS_VALIDATED", ("oos_result", "split_rule_preregistered"),
-         "held on data the selection did not see, under a split chosen BEFORE the result"),
+         "held on observations accrued after the zero-capital clock was registered, under a "
+         "decision rule chosen before those observations arrived"),
     Rung("INDEPENDENCE_CHECKED", ("mechanism_cluster", "correlation_to_book"),
          "a distinct MECHANISM, not the fiftieth expression of a deployed alpha. Four formulas "
          "over one feature are one research family, and counting them as four is how a generator "
@@ -89,9 +94,6 @@ RUNGS: tuple[Rung, ...] = (
     Rung("PORTFOLIO_VALIDATED", ("marginal_contribution", "capacity"),
          "improves the EXISTING book after correlation, cost and capacity. Standalone Sharpe "
          "cannot answer this and is routinely mistaken for an answer to it"),
-    Rung("SHADOW", ("shadow_started_at",),
-         "a forward clock is running at zero capital. The slow part of discovery was never "
-         "paperwork -- it is elapsed forward time, and that is the one input nobody can buy later"),
     Rung("LIVE_CANARY", ("canary_size_quote_units", "principal_canary_authorisation"),
          "REAL FILLS AT LEARNING SIZE, and the rung that exists because simulation cannot answer "
          "the question it is asked. A canary is not there to make money -- it is there to test "

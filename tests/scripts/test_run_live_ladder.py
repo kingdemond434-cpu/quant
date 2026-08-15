@@ -56,6 +56,31 @@ def test_A_SURVIVOR_THAT_ALREADY_HAS_A_RECORD_IS_NOT_RE_SHADOWED(
     assert rep["to_shadow"] == [] and len(rep["verdicts"]) == 1
 
 
+def test_A_REAL_PAPER_BIRTH_ADVANCES_THE_CANONICAL_ALPHA_TO_SHADOW(tmp_path: Path) -> None:
+    alpha_id = "cross_asset|lead|1h|trending|breakout|decay(momentum)"
+    data = tmp_path / "data"
+    data.mkdir()
+    _write(data / "safe_name_shadow_state.json", {
+        "trial": alpha_id,
+        "shadow_start": "2026-08-16T00:00:00+00:00",
+    })
+    assert RL.shadow_births(tmp_path) == {alpha_id: "2026-08-16T00:00:00+00:00"}
+    rec, why = RL.state_of(
+        alpha_id, has_forward_record=False, forward_obs=0,
+        shadow_started_at=RL.shadow_births(tmp_path)[alpha_id], t_stat=6.0,
+    )
+    assert rec.state == "SHADOW"
+    assert "OOS_VALIDATED" in why
+
+
+def test_AN_UNREGISTERED_SURVIVOR_CANNOT_CLAIM_SHADOW() -> None:
+    rec, why = RL.state_of(
+        "unborn", has_forward_record=False, forward_obs=0, shadow_started_at="", t_stat=6.0,
+    )
+    assert rec.state == "STATISTICALLY_VALID"
+    assert "shadow_started_at" in why
+
+
 # ------------------------------------------------------------- the informative-clip floor
 
 

@@ -245,6 +245,12 @@ def test_THE_CANARY_RUNG_SITS_BETWEEN_SHADOW_AND_CAPITAL() -> None:
     assert ORDER.index("SHADOW") < ORDER.index("LIVE_CANARY") < ORDER.index("CAPITAL_ELIGIBLE")
 
 
+def test_SHADOW_PRECEDES_OOS_BECAUSE_IT_PRODUCES_UNTOUCHED_EVIDENCE() -> None:
+    """A gate cannot require the evidence produced by a later rung before starting that rung."""
+    assert ORDER.index("STATISTICALLY_VALID") < ORDER.index("SHADOW")
+    assert ORDER.index("SHADOW") < ORDER.index("OOS_VALIDATED")
+
+
 def test_THE_CANARY_STILL_NEEDS_THE_PRINCIPALS_AUTHORISATION() -> None:
     """A smaller decision than capital, never NO decision."""
     assert "principal_canary_authorisation" in requirements("LIVE_CANARY")

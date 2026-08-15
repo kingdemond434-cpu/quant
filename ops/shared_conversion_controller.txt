@@ -14,10 +14,12 @@ module-count target is allowed.
 
 Attack the measured binding transition first without starving persistent exploration. Every item
 must move through the same DISCOVERED -> IMPLEMENTED -> TESTED -> STATISTICALLY_VALID ->
-OOS_VALIDATED -> INDEPENDENCE_CHECKED -> PORTFOLIO_VALIDATED -> SHADOW -> LIVE_CANARY ->
+SHADOW -> OOS_VALIDATED -> INDEPENDENCE_CHECKED -> PORTFOLIO_VALIDATED -> LIVE_CANARY ->
 CAPITAL_ELIGIBLE -> LIVE -> MONITORED ladder, one evidenced rung at a time. Never call a screen hit
 a survivor, never skip portfolio contribution, cost/capacity, untouched-forward or real-fill
 evidence, and never weaken survival/statistical rails. Start all qualified zero-capital clocks
-immediately using the existing partitioned multiplicity system; capacity scales dynamically by
+immediately: SHADOW is the producer of untouched post-selection OOS observations, so requiring
+OOS before clock birth is a circular gate. Use the existing partitioned multiplicity system;
+capacity scales dynamically by
 partition rather than by loosening family-wise error control. Recompute the plan every cycle,
 publish measured outcomes, and simplify/archive negative-value complexity instead of wiring bloat.

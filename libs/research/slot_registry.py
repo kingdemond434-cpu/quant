@@ -405,7 +405,8 @@ def derive_slots() -> dict[str, Any]:
     # THE ONE SANCTIONED EXIT, AND IT IS THE ONLY ONE (2026-08-14). Everything above deliberately
     # keeps a dormant clock counted; this is the single place a name may leave, and it leaves only
     # because `docs/research/CLOCK_RETIREMENTS.json` -- TRACKED, attributed, evidenced, and
-    # writable only by an explicit human `--accept` against a live sweep proposal -- says so.
+    # writable only by an explicit human evidence decision (a live sweep proposal, or a recorded
+    # principal account/jurisdiction ineligibility) -- says so.
     #
     # Applied HERE, after all three sources are assembled, so retirement means the same thing for
     # an axis clock, a standing sleeve and a derivative. The pre-existing `verdict: RETIRED` string
@@ -531,7 +532,8 @@ def derive_slots() -> dict[str, Any]:
                  "`not_accruing` names the slots paying multiplicity while returning no evidence, "
                  "which is a cost to fix upstream, never by shrinking m. `retired_slots` names "
                  "the ones that HAVE left, each by an attributed row in "
-                 "docs/research/CLOCK_RETIREMENTS.json taken against a live sweep proposal; that "
+                 "docs/research/CLOCK_RETIREMENTS.json taken against a live sweep proposal or an "
+                 "explicit principal account/jurisdiction ineligibility; that "
                  "tracked ledger is the only mechanism by which m may fall."),
     }
 

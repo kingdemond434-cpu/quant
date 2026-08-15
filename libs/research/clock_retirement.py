@@ -19,10 +19,13 @@ it is why this module is deliberately awkward:
     DECISION, and decisions belong in git where they are dated, attributed, diffable and
     reversible. Recorded in gitignored runtime state it would be invisible to every clone and to
     every audit -- the same defect that put real trade evidence somewhere no checkout could cite.
-  * A CLOCK MAY ONLY BE RETIRED AGAINST A LIVE PROPOSAL. `accept()` requires the name to appear in
+  * AN EVIDENCE-FAILED CLOCK MAY ONLY BE RETIRED AGAINST A LIVE PROPOSAL. `accept()` requires the
+    name to appear in
     the CURRENT sweep's RECLAIMABLE set and copies that proposal's evidence verbatim. Retiring by
     hand-typed name is the move that turns "this clock is dead" into "this clock is inconvenient",
-    and the two are indistinguishable in a ledger that does not carry the evidence.
+    and the two are indistinguishable in a ledger that does not carry the evidence. A principal
+    may separately record an account/jurisdiction ineligibility directly in this tracked ledger;
+    that frees scarce clock capacity but the high-water multiplicity below still cannot fall.
   * THE MECHANISM OF DEATH IS RECORDED, NOT INFERRED (L1.17). REFUTED retires the ground with the
     clock; UNTESTED returns the hypothesis to the queue. Getting this backwards either buys a dead
     axis a second time at full price, or retires ground nobody ever measured.

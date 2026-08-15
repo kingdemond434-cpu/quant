@@ -62,6 +62,11 @@ class TestItSurfacesWhatWasInvisible:
         assert by["killed"] == "REFUTED"
         assert by["jammed"] == "UNTESTED"
 
+    def test_source_gone_is_freeable_and_requeues_as_untested(self) -> None:
+        rep = _M.sweep([_slot("vanished", evidence="SOURCE-GONE", days=None)])
+        assert rep["seats_freeable"] == 1
+        assert rep["proposals"][0]["requeue_as"] == "UNTESTED"
+
 
 class TestTheTwoRefusals:
     def test_IT_NEVER_RETIRES_ANYTHING_ITSELF(self) -> None:

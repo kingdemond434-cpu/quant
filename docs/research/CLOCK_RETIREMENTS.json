@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-14T10:44:26.033550+00:00",
+ "updated": "2026-08-15T23:25:00+00:00",
  "retirements": [
   {
    "clock": "walcl_reserve_impulse",
@@ -95,7 +95,22 @@
    "seats_after": 14,
    "multiplicity_floor": 15,
    "loosens_bars": false
+  },
+  {
+   "clock": "cashcarry",
+   "retired_at": "2026-08-15T23:25:00+00:00",
+   "decided_by": "principal",
+   "requeue_as": "INELIGIBLE",
+   "verdict": "ACCOUNT-JURISDICTION-CONSTRAINT",
+   "evidence": "principal explicitly retired Binance cash-and-carry for this Dublin account; the production cycle already records the account as spot-only and does not schedule the cash-carry executor",
+   "observations": 50,
+   "why": "The strategy is not executable on the principal's permitted Binance account. A zero-capital research clock cannot resolve an account-eligibility constraint and must not occupy scarce forward capacity. This records the principal's operational constraint; it is not a general legal conclusion and does not weaken any validation bar.",
+   "kind": "standing",
+   "seats_before": 13,
+   "seats_after": 12,
+   "multiplicity_floor": 15,
+   "loosens_bars": false
   }
  ],
- "note": "The ONLY way a forward clock leaves the Holm cohort. Every row is an explicit, attributed decision taken against a LIVE sweep proposal, with that proposal's evidence copied verbatim. Retiring a clock SHRINKS m and LOOSENS every remaining bar -- the phantom-edge direction -- so this file is tracked in git rather than runtime state, and no organ, cycle or test may append to it."
+ "note": "The ONLY way a forward clock leaves the Holm cohort. Evidence-driven rows are explicit, attributed decisions taken against a live sweep proposal; an explicit principal account/jurisdiction constraint may also retire a strategy that cannot be executed on the permitted account. Multiplicity is a high-water mark, so retirement frees capacity but never un-looks a trial or lowers the forward bar. This file is tracked in git rather than runtime state."
 }

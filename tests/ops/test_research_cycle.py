@@ -38,6 +38,14 @@ def test_THE_ORDER_IS_BARS_THEN_STUDIES_THEN_LADDER() -> None:
     assert i_bars < i_study < i_ladder, "the cycle runs its stages out of dependency order"
 
 
+def test_THE_ZERO_CAPITAL_CLOCK_EXISTS_BEFORE_THE_LADDER_READS_IT() -> None:
+    """SHADOW produces untouched OOS evidence; the ladder cannot demand that evidence first."""
+    for path in (CYCLE, CRON):
+        src = path.read_text("utf-8")
+        assert src.index("run_paper_sleeve_spawner.py") < src.index("run_live_ladder.py")
+        assert src.index("run_paper_sleeve_forward.py") < src.index("run_live_ladder.py")
+
+
 def test_THE_LADDER_RUNS_EVEN_ON_A_NULL_DAY() -> None:
     """It also reports what is ALREADY live, so a cycle that skipped it when the sweep found
     nothing would go silent exactly when a live record needs reading."""

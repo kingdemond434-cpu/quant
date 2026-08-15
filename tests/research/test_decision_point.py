@@ -163,3 +163,9 @@ class TestDisplacementBehaviourIsUnchanged:
         """Instrument faults outrank the decision point -- a broken clock has no terms to serve."""
         status, _ = classify_slot(_slot(state="DEGENERATE", decision_at_obs=999))
         assert status == "RECLAIMABLE"
+
+    def test_a_source_gone_clock_is_reclaimable_not_permanently_blocked(self):
+        """The exact source identity vanished, so the clock cannot produce another observation."""
+        status, why = classify_slot(_slot(evidence="SOURCE-GONE", days=None))
+        assert status == "RECLAIMABLE"
+        assert "cannot accrue another observation" in why

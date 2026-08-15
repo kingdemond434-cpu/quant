@@ -154,4 +154,7 @@ def test_midnight_routes_l2_and_every_conversion_family() -> None:
     )
     controller = Path("ops/run_midnight_codex_controller.sh").read_text("utf-8")
     assert "cat ops/shared_conversion_controller.txt" in controller
+    shared = Path("ops/shared_conversion_controller.txt").read_text("utf-8")
+    assert "STATISTICALLY_VALID ->\nSHADOW -> OOS_VALIDATED" in shared
+    assert "SHADOW is the producer of untouched post-selection OOS observations" in shared
     assert "scripts/run_conversion_control.py" in cycle
