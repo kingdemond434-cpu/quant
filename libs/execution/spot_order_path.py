@@ -196,4 +196,18 @@ def round_step(qty: float, step: float) -> float:
     held, which the venue refuses -- leaving the position unprotected at the moment it matters."""
     if step <= 0:
         return qty
-    return float(int(qty / step) * step)
+    # QUANTIZED IN DECIMAL, NOT MULTIPLIED BACK IN BINARY FLOAT. `int(qty/step) * step` is exact
+    # in the abstract and produces 60.800000000000004 in practice -- and the venue rejects it:
+    # measured live 2026-08-15, `{"code":51077,"msg":"Precision is over the maximum"}` on an ADA
+    # reduce leg whose quantity was correct to the step and wrong in its 15th decimal place. The
+    # order was refused, the position stayed, and every number on screen looked right.
+    from decimal import ROUND_DOWN, Decimal
+
+    # DIVIDE, FLOOR, MULTIPLY -- ALL IN DECIMAL. Quantizing to the step's DECIMAL PLACES is not the
+    # same operation: a step of 1.0 has one decimal place, so quantize would return 59.9 for a
+    # step that only permits whole units. Dividing by the step and flooring to an integer is the
+    # step rule itself, and doing it in Decimal keeps the result free of the binary tail that the
+    # venue rejected.
+    d_step = Decimal(str(step))
+    units = (Decimal(str(qty)) / d_step).to_integral_value(rounding=ROUND_DOWN)
+    return float((units * d_step).normalize())

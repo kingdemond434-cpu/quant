@@ -208,6 +208,20 @@ def choose(daily_sigma: float | None, *, sharpe: float | None = None,
         full = kelly_leverage(used * sigma_ann, sigma_ann, borrow_rate=borrow_rate)
         kelly = full * kelly_fraction
 
+    # NO SHARPE: SURVIVAL BINDS, AND THE STATE SAYS SO IN THOSE WORDS. Directed by the principal
+    # 2026-08-15 -- "measuring edge takes ages, just let it leverage what's safe" -- and it is the
+    # behaviour this module was originally built and tested for.
+    #
+    # WHAT SURVIVAL DOES AND DOES NOT PROMISE, because the number is easy to misread. It is the
+    # leverage at which a k-sigma move does not end the account. It says NOTHING about whether the
+    # edge is positive: with no Sharpe there is no growth optimum, so this bound multiplies
+    # whatever the edge turns out to be, plus the borrow cost, in both directions. Measured live
+    # the same day, a backtest-only mechanism sleeve sized at 8.72x this way -- the most aggressive
+    # number the policy can produce, on the book with the least evidence behind it.
+    #
+    # The state is therefore NEVER reported as a growth constraint. A reader seeing
+    # "GROWTH (KELLY)" believes an edge was measured; "SURVIVAL (NO EDGE ESTIMATE)" is the same
+    # number carrying the truth about where it came from.
     bounds = {"survival": survive, "venue/ceiling": ceiling}
     if kelly is not None:
         bounds["growth (Kelly)"] = kelly
@@ -237,8 +251,14 @@ def choose(daily_sigma: float | None, *, sharpe: float | None = None,
                      f"at {floor:.2f}x against {g_raw:+.1%}/yr at {raw:.2f}x")
         parts.append(note)
 
+    # The state carries WHERE THE NUMBER CAME FROM, not just which bound won. Survival binding
+    # with no Sharpe is the same arithmetic as survival binding with one, and a reader who sees
+    # only "SURVIVAL" cannot tell whether an edge was measured at all.
+    state = ("FLOOR BINDING" if floored else
+             ("SURVIVAL (NO EDGE ESTIMATE)" if kelly is None and binding == "survival"
+              else binding.upper()))
     return LeverageDecision(
-        leverage=round(lev, 3), state="FLOOR BINDING" if floored else binding.upper(),
+        leverage=round(lev, 3), state=state,
         floor_binding=floored, sigma=round(daily_sigma, 5), sigma_annual=round(sigma_ann, 4),
         kelly_full=None if full is None else round(full, 3),
         kelly=None if kelly is None else round(kelly, 3),

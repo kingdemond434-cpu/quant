@@ -80,3 +80,22 @@ def test_SELLS_SORT_BEFORE_BUYS_SO_THEIR_PROCEEDS_FUND_THE_ADDS() -> None:
     order = sorted(deltas, key=lambda k: deltas[k])
     assert order[0] == "OVERWEIGHT", "the reduce leg must run first"
     assert all(deltas[k] > 0 for k in order[1:])
+
+
+def test_THE_QUANTITY_IS_QUANTIZED_IN_DECIMAL_NOT_MULTIPLIED_IN_FLOAT() -> None:
+    """MEASURED LIVE 2026-08-15: `{"code":51077,"msg":"Precision is over the maximum"}` on an ADA
+    reduce leg. `int(qty/step) * step` is exact in the abstract and produces 60.800000000000004 in
+    binary float -- a quantity correct to the step and wrong in its 15th decimal place. The venue
+    refused it, the position stayed, and every number on screen looked right."""
+    assert round_step(60.812, 0.1) == 60.8
+    assert repr(round_step(60.812, 0.1)) == "60.8", "no float tail may survive"
+    assert repr(round_step(2.2134, 0.01)) == "2.21"
+    assert repr(round_step(0.06534, 0.001)) == "0.065"
+
+
+def test_QUANTIZING_STILL_ROUNDS_DOWN() -> None:
+    """Decimal quantize defaults to ROUND_HALF_EVEN, which would round UP on a sell and ask the
+    venue for more base than is held. ROUND_DOWN is not a detail here."""
+    assert round_step(0.5009, 0.001) == 0.5
+    assert round_step(0.9999, 0.1) == 0.9
+    assert round_step(59.99, 1.0) == 59.0
