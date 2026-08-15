@@ -98,6 +98,13 @@ def main() -> int:
                          "includes Ireland")
     args = ap.parse_args()
 
+    # THE RAILS ARE REPORTED HERE, NOT ENFORCED. This script places nothing, so a latched rail
+    # cannot stop an order it never sends -- but an intent list printed during a freeze reads as a
+    # book about to be taken, and whoever routes it by hand needs to see the freeze on the same
+    # screen. Enforcement lives in the module that actually spends money.
+    from libs.execution.ruin_rail import frozen
+    rail_frozen, why_rail = frozen()
+
     symbols = [s.strip() for s in args.symbols.split(",") if s.strip()]
     try:
         from libs.autodiscovery.crypto_adapter import _read_frames
@@ -158,6 +165,8 @@ def main() -> int:
         "n_taken": sum(1 for r in rows if r.get("taken")),
         "absent_symbols": absent,
         "spot_only": bool(args.spot_only),
+        "rail_frozen": rail_frozen,
+        "rail_why": why_rail,
         "shorts_refused": skipped_short,
         "intents": rows,
         "note": ("Intents only -- nothing is placed here. Routing goes through the executor and "
@@ -172,6 +181,9 @@ def main() -> int:
 
     print(f"discretionary-live [{args.rule_id}]: {len(rows)} intent(s), "
           f"{payload['n_taken']} would be taken, equity ${args.equity:,.2f}")
+    if rail_frozen:
+        print(f"  RUIN RAIL LATCHED -- these intents are NOT placeable until it is cleared. "
+              f"{why_rail}")
     for r in rows:
         mark = "TAKE  " if r.get("taken") else "REFUSE"
         print(f"  {mark} {r.get('symbol','?'):<10} {r.get('side','?'):<4} "
