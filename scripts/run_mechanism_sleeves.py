@@ -131,9 +131,29 @@ KILL_DRAWDOWN = -0.15
 #: Days after which a non-negative realised return is required to keep the clip.
 REVIEW_DAYS = 30
 
-#: Symbols. Deliberately the same liquid set the momentum book trades: a new mechanism tested on a
-#: different universe confounds the mechanism with the universe, and then neither is measured.
-SYMBOLS: tuple[str, ...] = ("BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "LINKUSDT", "ADAUSDT")
+#: CANDIDATES, not the universe. What actually trades is derived every run by
+#: `libs.research.sleeve_universe.select` from the capital present, the history in the lake and a
+#: liquidity ranking -- so funding is the only lever needed to widen the book, and a symbol whose
+#: leg would fall under the venue minimum is excluded BEFORE it is published rather than refused
+#: after. The first six are the momentum book's set and stay at the front of the candidate list:
+#: a new mechanism tested on a different universe confounds the mechanism with the universe.
+SYMBOLS: tuple[str, ...] = (
+    "BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "LINKUSDT", "ADAUSDT",
+    # WIDENING CANDIDATES. Liquid, USDC-tradeable on Binance spot, and each one is only a
+    # CANDIDATE: it enters the book if the lake carries enough history for it and capital reaches
+    # its leg, and is named in `rejected` with a reason when it does not.
+    "XRPUSDT", "DOGEUSDT", "AVAXUSDT", "DOTUSDT", "MATICUSDT", "LTCUSDT",
+    "ATOMUSDT", "UNIUSDT", "NEARUSDT", "APTUSDT", "ARBUSDT", "OPUSDT",
+    "FILUSDT", "INJUSDT", "SUIUSDT", "TIAUSDT", "SEIUSDT", "AAVEUSDT",
+)
+
+#: The venue floor a single leg must clear. Binance publishes per-symbol minimums; 5.0 is
+#: the conservative floor the order path already uses when a symbol declares none.
+MIN_NOTIONAL_USD = 5.0
+
+#: Equity assumed when the venue cannot be read. Only ever SHRINKS the universe: an unreadable
+#: balance must not widen the book, because the failure mode is publishing legs that get refused.
+_FALLBACK_EQUITY = 0.0
 
 
 def _exception_recorded() -> tuple[bool, str]:
@@ -299,6 +319,55 @@ def _risk_parity_clips(vols: dict[str, float | None]) -> tuple[dict[str, float],
                  "ONLY -- no return, no Sharpe, so the backtest is not allocating capital")
 
 
+def _equity_and_leverage() -> tuple[float, float, str]:
+    """(net equity, leverage, why) from the margin executor's own last run.
+
+    DELIBERATELY NOT A SECOND VENUE READ. The executor resolves equity against live balances and
+    computes leverage from the book's own arithmetic; re-deriving either here would give two organs
+    two answers about one account, and the one that sized the orders is the one that is true.
+    UNREADABLE COLLAPSES THE UNIVERSE TO NOTHING rather than assuming a number -- an unknown balance
+    must never WIDEN the book, because the failure it causes is legs the venue refuses.
+    """
+    try:
+        d = json.loads(Path("web/margin_executor.json").read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        return _FALLBACK_EQUITY, 1.0, (
+            f"web/margin_executor.json unreadable ({type(exc).__name__}) -- equity UNMEASURED, so "
+            "the universe collapses to empty. An unknown balance must never widen a book")
+    eq = d.get("equity_usd")
+    lev = (d.get("leverage") or {}).get("leverage")
+    if not isinstance(eq, (int, float)) or float(eq) <= 0:
+        return _FALLBACK_EQUITY, 1.0, "margin executor reports no equity -- universe empty"
+    return (float(eq), float(lev) if isinstance(lev, (int, float)) and lev > 0 else 1.0,
+            f"equity ${float(eq):,.2f} at {lev}x, from the executor's last run")
+
+
+def _history_and_liquidity(candidates: tuple[str, ...]) -> tuple[dict[str, int], dict[str, float]]:
+    """{symbol: n_bars} and {symbol: dollar-volume proxy} from the lake. Absent symbols simply do
+    not appear, which `select` reads as no history rather than as a short one."""
+    from libs.autodiscovery.crypto_adapter import _read_frames
+    from libs.data.timeframe import Timeframe
+
+    try:
+        frames = _read_frames(list(candidates), Timeframe.D1, _LAKE)
+    except Exception:
+        return {}, {}
+    hist: dict[str, int] = {}
+    liq: dict[str, float] = {}
+    for s, df in (frames or {}).items():
+        if df is None or not len(df):
+            continue
+        hist[s] = len(df)
+        try:
+            # Median dollar volume over the last 90 days. MEDIAN, not mean: one listing-day volume
+            # spike would otherwise rank a thin name above a consistently deep one.
+            tail = df.tail(90)
+            liq[s] = float(np.median(np.asarray(tail["close"]) * np.asarray(tail["volume"])))
+        except Exception:
+            continue          # ranks LAST in `select`; unmeasured is not disqualifying
+    return hist, liq
+
+
 def _marks() -> dict[str, float]:
     """Live prices, wallet-agnostic. Empty when the venue is unreadable -- and an EMPTY mark set
     must never be read as a zero return, which would trip the kill on every sleeve at once."""
@@ -429,7 +498,27 @@ def build() -> dict[str, Any]:
         rep["refused"].append(why_exc)
         return rep
 
-    frames = _series(SYMBOLS)
+    # THE UNIVERSE, DERIVED. Capital first, then history, then a liquidity ranking. Widening is
+    # therefore automatic on funding and impossible without it -- which is the correct direction:
+    # the failure from publishing legs below the venue floor is silent underweight, and the failure
+    # from holding six names on capital that funds eighteen is unbought turnover at the same edge.
+    from libs.research.sleeve_universe import select as _select_universe
+
+    equity, leverage, why_equity = _equity_and_leverage()
+    hist, liq = _history_and_liquidity(SYMBOLS)
+    uni = _select_universe(
+        SYMBOLS, equity_usd=equity, leverage=leverage,
+        book_frac=EQUAL_CLIP_FRAC * len(SLEEVES), n_sleeves=len(SLEEVES),
+        min_notional=MIN_NOTIONAL_USD, history=hist, liquidity=liq)
+    uni["equity_why"] = why_equity
+    rep["universe"] = uni
+    symbols = tuple(uni["symbols"])
+    if not symbols:
+        rep["refused"].append(
+            f"{uni.get('why')} ({why_equity})")
+        return rep
+
+    frames = _series(symbols)
     if not frames:
         rep["refused"].append(
             f"no lake series for any of {list(SYMBOLS)} -- UNMEASURED. Publishing an empty target "
