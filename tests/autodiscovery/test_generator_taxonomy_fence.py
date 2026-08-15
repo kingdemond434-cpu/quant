@@ -264,7 +264,24 @@ def test_the_mechanism_graph_carries_the_family_vs_mechanism_addendum() -> None:
     doc = Path(__file__).resolve().parents[2] / "docs/research/MECHANISM_GRAPH.md"
     assert doc.exists()
     text = doc.read_text("utf-8")
-    assert ZERO_CARRY_CLAIM in text.upper(), (
-        "the zero-carry fact must stay readable in MECHANISM_GRAPH.md, not only in code"
-    )
+    # SYMMETRIC WITH THE CODE FENCE, and it was not before. This asserted ZERO_CARRY_CLAIM
+    # UNCONDITIONALLY, which was right only while the claim was true. The day a real carry spec
+    # landed, this fence would have forced the prose to keep asserting zero carry coverage while
+    # `test_zero_true_carry_tests_is_both_true_and_stated` forced the module docstring to drop it
+    # -- two artifacts of the same fact compelled to contradict each other, with no way to make
+    # the suite green honestly. A fence must check the record MATCHES the library, never that it
+    # holds one fixed answer forever.
+    carry_specs = sorted(s.subtype for s in GENERATORS if census_class(s) == _TRUE_CARRY_CLASS)
+    if carry_specs:
+        assert ZERO_CARRY_CLAIM not in text.upper(), (
+            f"{carry_specs} now test true carry, so MECHANISM_GRAPH.md must stop claiming "
+            f"'{ZERO_CARRY_CLAIM}'"
+        )
+        assert _TRUE_CARRY_CLASS in text, (
+            "the doc must still name the class the new coverage belongs to"
+        )
+    else:
+        assert ZERO_CARRY_CLAIM in text.upper(), (
+            "the zero-carry fact must stay readable in MECHANISM_GRAPH.md, not only in code"
+        )
     assert "CONSTRUCTION_CLASS" in text, "the addendum must name the authority it defers to"

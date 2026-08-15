@@ -280,7 +280,7 @@ def build_candidates(panel: dict[str, dict[str, np.ndarray]]) -> list[dict[str, 
     net_returns, same activity and variance filters -- so this measures the correlation of the
     candidate set the gauntlet actually judged, not of a lookalike written for this file.
     """
-    from libs.autodiscovery.generators import GENERATORS, net_returns
+    from libs.autodiscovery.generators import GENERATORS, returns_for
     from libs.autodiscovery.models import MarketSeries
     btc = panel.get("BTC")
     out: list[dict[str, Any]] = []
@@ -307,7 +307,10 @@ def build_candidates(panel: dict[str, dict[str, np.ndarray]]) -> list[dict[str, 
                     continue                 # absent evidence, not a failed measurement
                 if pos.size == 0 or float(np.mean(pos != 0.0)) < _MIN_ACTIVE_FRACTION:
                     continue
-                r = np.asarray(net_returns(ser, pos), dtype="float64")
+                # returns_for, not net_returns: this measurement decides the desk's k_eff,
+                # and scoring the carry spec on the price path would correlate a spot
+                # direction bet against the price patterns it is supposed to be unlike.
+                r = np.asarray(returns_for(spec)(ser, pos), dtype="float64")
                 if not np.all(np.isfinite(r)) or float(np.std(r)) <= _RET_SD_FLOOR:
                     continue
                 out.append({"symbol": sym, "family": str(spec.family), "subtype": spec.subtype,

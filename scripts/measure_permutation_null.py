@@ -31,7 +31,7 @@ from typing import Any
 
 import numpy as np
 
-from libs.autodiscovery.generators import GENERATORS, net_returns
+from libs.autodiscovery.generators import GENERATORS, carry_returns, net_returns
 from libs.autodiscovery.models import MarketSeries
 from libs.data.venue_http import get_json
 from libs.validation.bar_permutation import (
@@ -110,12 +110,17 @@ def _rules() -> list[dict[str, Any]]:
     """Every declared family x param variant, plus the buy-and-hold control."""
     out: list[dict[str, Any]] = [{
         "family": "CONTROL", "subtype": "buy_and_hold", "params": {}, "fn": _buy_and_hold,
+        "delta_neutral": False,
         "control": True,
     }]
     for spec in GENERATORS:
         for variant in spec.param_variants:
+            # `delta_neutral` travels WITH the rule. This module flattens specs into dicts, so
+            # dropping the flag here would silently score the carry on the price path -- the
+            # null it measures would then be a null for a trade nobody runs.
             out.append({"family": str(spec.family), "subtype": spec.subtype,
-                        "params": dict(variant), "fn": spec.fn, "control": False})
+                        "params": dict(variant), "fn": spec.fn, "control": False,
+                        "delta_neutral": spec.delta_neutral})
     return out
 
 
@@ -128,7 +133,8 @@ def _score(rule: dict[str, Any], s: MarketSeries) -> tuple[float, float]:
     active = float(np.mean(pos != 0.0)) if pos.size else 0.0
     if active < _MIN_ACTIVE_FRACTION:
         return float("nan"), active
-    return _sharpe(net_returns(s, pos)), active
+    score = carry_returns if rule.get("delta_neutral") else net_returns
+    return _sharpe(score(s, pos)), active
 
 
 def run(symbol: str, days: int, n_perm: int, seed: int) -> dict[str, Any]:
@@ -228,7 +234,7 @@ def main(argv: list[str] | None = None) -> int:
         "question": ("do the desk's twelve declared families carry information in the ORDER of "
                      "bars, or are they harvesting drift the asset hands out for free"),
         "method": ("libs.validation.bar_permutation on okx:history-candles:1D:confirmed; every "
-                   "GeneratorSpec x param_variant scored by generators.net_returns; buy-and-hold "
+                   "GeneratorSpec x param_variant scored by its own generators.returns_for path; buy-and-hold "
                    "run as the control that measures the permutation's own bias"),
         "source": "okx:history-candles:1D:confirmed",
         "symbols": symbols, "results": [], "blocked": {},

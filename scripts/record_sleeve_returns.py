@@ -53,6 +53,8 @@ from collections import defaultdict
 from datetime import UTC, date, datetime
 from typing import Any
 
+from libs.research.mechanism_census import CONSTRUCTION_CLASS
+
 _OUT = _ROOT / "data" / "sleeve_returns.json"
 
 #: Where per-strategy daily results are published. Each is tried in order and whatever is present
@@ -71,11 +73,15 @@ def _census_class(name: str) -> str:
     Falls back to the raw name rather than to a catch-all bucket: an unmapped mechanism correlated
     under 'other' with three unrelated things would produce a correlation about nothing.
     """
-    try:
-        from libs.research.mechanism_census import SUBTYPE_TO_CLASS  # type: ignore
-        m = dict(SUBTYPE_TO_CLASS)
-    except Exception:
-        m = {}
+    # `CONSTRUCTION_CLASS` is the census's actual export. This read `SUBTYPE_TO_CLASS`, a name
+    # that has never existed -- so the bare `except` swallowed an ImportError on EVERY run and the
+    # generator map was always empty. The discretionary rules below still mapped, being hardcoded,
+    # so the output looked right; what failed silently was every GENERATOR subtype, which fell
+    # through to its raw id and would then be correlated as its own private mechanism. That
+    # inflates the mechanism count and therefore k_eff -- the single number this entire chain
+    # exists to measure -- in the optimistic direction. Imported at module scope now: a rename
+    # should crash the recorder, not quietly improve the desk's apparent diversification.
+    m = dict(CONSTRUCTION_CLASS)
     # The discretionary rules carry their own ids and are not in the generator map.
     m.update({
         "H1_structural_fade": "liquidity_provision_immediacy",

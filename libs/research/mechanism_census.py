@@ -838,6 +838,12 @@ CONSTRUCTION_CLASS: dict[str, str] = {
     "inverse_reference": "relative_value_convergence",
     "persistent_long": "market_risk_premium",
     "funding_stress_reversal": "positioning_crowding_unwind",
+    # The library's FIRST spec whose family label and census class agree on carry. Distinct from
+    # `funding_stress_reversal` on the same input: that one FADES extreme funding (its payer is a
+    # trader liquidated on the venue's schedule), this one COLLECTS ordinary funding (its payer is
+    # a levered long buying convenience). Same series, opposite sign, different payer -- which is
+    # the sharpest available test of whether "different mechanism" means anything on this desk.
+    "funding_carry": "derivative_carry_basis",
     # THE ELEVEN DISCRETIONARY RULES, declared by construction rather than left to keyword luck.
     # Measured 2026-08-15: `classify()` returned None for H4, H5, H9 and H10 -- the desk's own
     # taxonomy could not place four of the rules it was trading, so they fell to UNCLASSIFIED and
