@@ -180,6 +180,17 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # GPT seat fetches; this records what was fetched, at what completeness, and what remains, so
   # "we mined that channel" stops being a claim nobody can check.
   nice -n 15 "$PY" scripts/run_external_intel.py
+  # LEADERBOARD / COPY-TRADER FORENSICS (III.15), DAILY, because the panel it needs is made of
+  # CALENDAR SEPARATION and nothing else can manufacture it. screen_copytrading was written on
+  # 2026-07-31, correctly diagnoses the survivorship trap that makes every leaderboard read a
+  # phantom edge, appends an append-only cohort snapshot, and refuses to publish a persistence
+  # number until it holds two snapshots at least 5 days apart with EXITS COUNTED AS FAILURES.
+  # It had ZERO schedulers. So the one organ whose verdict depends entirely on repeated daily
+  # snapshots had been accumulating none, and its NO-DATA was a statement about the cron table
+  # rather than about copy traders (III.16, and L1.28a: absence must not resolve to a verdict).
+  # It exits 0 even when the venue is unreachable and records the failure in its own report, so a
+  # rate-limited fetch does not redden the whole cycle -- an unreachable venue is not a desk defect.
+  nice -n 15 "$PY" scripts/screen_copytrading.py
   # THE RETURN ENGINES. Everything above measures whether the RESEARCH is healthy; these decide
   # where capital would go if there were any. ELEVEN books; nine correctly report UNMEASURED on a
   # clone with no positions and each names the artifact it needs -- they exist now so that nothing

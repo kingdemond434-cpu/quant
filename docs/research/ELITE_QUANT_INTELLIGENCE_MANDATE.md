@@ -895,6 +895,39 @@ a measured window, its budget falls like any other unproductive source -- and th
 recorded rather than quietly abandoned, because "we mined the leaderboards and got nothing" is a
 finding the desk must be able to cite.
 
+**THE WIRE, NAMED (2026-08-15). III.15 WAS A MANDATE WITH NO SCHEDULER, WHICH IS III.16 APPLIED TO
+III.15 ITSELF.** `scripts/screen_copytrading.py` had existed since 2026-07-31. It already carries
+the correct design -- an append-only cohort panel, a refusal to publish any persistence figure
+until it holds two snapshots at least `MIN_PANEL_GAP_DAYS=5` apart, exits counted as FAILURES
+rather than dropped, and the copier profit share (13%) charged against any measured edge before it
+counts as an edge for us rather than for the lead. It also documents the trap in full: sorted on
+pnl/aum/copiers, a 34-trader OKX sample returns Spearman +0.33 persistence, which is manufactured
+end-to-end by selecting on the outcome and by the absence of everyone who blew up.
+
+**AND NOTHING RAN IT.** Zero schedulers, zero cron entries, zero cycle lines. So the ONE organ whose
+verdict is made of calendar separation had been accumulating no calendar separation, and its
+standing `NO-DATA` was a statement about the cron table, not about copy traders. Under L1.28a that
+is the difference between UNMEASURED and measured-null, and the desk had been reading one as the
+other for fifteen days. It now runs daily in `ops/run_research_cycle.sh` and
+`tests/ops/test_research_cycle.py` fails if that line is ever removed.
+
+**VENUE COVERAGE IS PARTIAL AND THE GAP IS STATED RATHER THAN IMPLIED.** The wired organ reads OKX
+copytrading only. Binance's leaderboard, Bybit's and Hyperliquid's per-account position feed
+(FREE_DATA_ADDENDA C3 #54: the most complete free positioning dataset in crypto, public by design)
+are IN SCOPE and NOT YET COLLECTED. Each is a separate collector against a separate endpoint, and
+none may be written speculatively from a network-denied clone -- an endpoint guessed rather than
+observed produces a collector that fails silently and a panel that looks like it is accumulating.
+Until each is built and scheduled, this category's coverage is ONE VENUE, and any claim about
+"leaderboard traders" generally is a claim about OKX copytrading specifically.
+
+**WHAT A HEADLINE LIKE "165% OVER 170 DAYS, 15% MAX DRAWDOWN, 189 COPIERS" IS WORTH, CONCRETELY.**
+It is the maximum of a very large number of draws, quoted without its denominator, by a platform
+whose revenue rises with the number of copiers. The named figures are not the evidence and the
+badge is not the evidence; the only extractable objects are (a) the timestamped position stream, if
+the venue publishes one, which is data and enters as data, and (b) the execution and behaviour
+knowledge of category C. The return figure enters as EXTREME_CLAIM_UNVERIFIED with the full
+capital-path forensic required, or it does not enter.
+
 ## III.16 UNWIRED OR IDLE IS A DEFECT — STANDING, ALL SEATS, ALL BRAINS, ALL MINERS
 
 Added 2026-08-14 at the principal's instruction, after the same failure was found four times in
