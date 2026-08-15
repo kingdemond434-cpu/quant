@@ -70,3 +70,51 @@ def test_THE_BAR_BUDGET_IS_OVERRIDABLE_BUT_HAS_A_SANE_DEFAULT() -> None:
     competes with the recorders, so it is a declared default rather than an unbounded job."""
     src = CYCLE.read_text("utf-8")
     assert "BARS_FILE_BUDGET:-" in src
+
+
+#: The two stages whose non-zero exit is a DESIGNED VERDICT rather than a fault. Both publish a
+#: judgement -- "these capabilities are unwired", "the book is BLOCKED" -- and a cycle that went
+#: red because the preflight correctly reported a latched rail would train everyone to ignore red.
+_MAY_SUPPRESS = ("check_unwired_capability.py", "run_golive_preflight.py")
+
+
+def test_THE_CYCLE_CAN_ACTUALLY_FAIL() -> None:
+    """THE ONE THAT MATTERS HERE. Every stage once ended in `|| true` and the closing line
+    reported `exit $?` -- the status of the last `|| true`, which is 0 by construction. A cycle
+    where the sweep crashed, the ladder never ran and the promotion path died printed the same
+    "exit 0" as a clean one, so yesterday's artifacts were certified as today's work every night
+    (L1.49: a gate that never ran is a claim the desk cannot cash).
+
+    This was fixed once and then lost to a `--theirs` merge resolution on the box. That is exactly
+    why it is a test and not a comment.
+    """
+    src = CYCLE.read_text("utf-8")
+    assert "CYCLE_RC=0" in src and "trap 'record_failure" in src, (
+        "the cycle has no ERR trap -- a failing stage leaves no record and the run reports success")
+    assert 'exit "$CYCLE_RC"' in src, (
+        "the cycle does not exit on its own latched status; `exit $?` reports only the LAST "
+        "stage, which says nothing about the twenty before it")
+    assert "exit $? at" not in src, "the old always-zero exit line is back"
+
+
+def test_ONLY_THE_STAGES_THAT_PUBLISH_A_VERDICT_MAY_SUPPRESS_FAILURE() -> None:
+    """`|| true` is how the silence came back last time. Each surviving one must be a stage whose
+    non-zero exit is a judgement, and a new one added anywhere else fails here rather than being
+    discovered a month later by wondering why the cycle is always green."""
+    suppressed = [ln.strip() for ln in CYCLE.read_text("utf-8").splitlines()
+                  if ln.rstrip().endswith("|| true") and not ln.strip().startswith("#")]
+    for ln in suppressed:
+        assert any(k in ln for k in _MAY_SUPPRESS), (
+            f"stage suppresses its own failure and is not one of the two that may: {ln!r}. A "
+            "cycle that cannot go red is a cycle nobody can trust when it is green")
+
+
+def test_THE_TRAP_KEEPS_THE_CONTINUATION_THAT_MASKING_BOUGHT() -> None:
+    """Failing closed must not mean stopping. `set -e` here would abort the whole run on the first
+    stage that exits non-zero, taking the recorders and every downstream monitor with it -- which
+    is a worse outage than the silence it replaced."""
+    opts = [ln for ln in CYCLE.read_text("utf-8").splitlines() if ln.startswith("set ")]
+    assert opts, "the cycle sets no shell options at all"
+    for ln in opts:
+        assert "-e" not in ln.replace("-uo", "").replace("-u", ""), (
+            f"{ln!r} aborts the cycle on the first failure; the ERR trap records and continues")
