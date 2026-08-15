@@ -14,6 +14,7 @@ import json
 import sqlite3
 import sys
 from datetime import UTC, datetime
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
@@ -71,7 +72,7 @@ def _candidate_counts(db_path: Path) -> tuple[int | None, int | None, int | None
 def weakest_transition(stages: list[dict[str, Any]]) -> dict[str, Any] | None:
     """Lowest measured adjacent conversion rate; unknown never masquerades as zero."""
     measured: list[dict[str, Any]] = []
-    for upstream, downstream in zip(stages, stages[1:], strict=False):
+    for upstream, downstream in pairwise(stages):
         a, b = upstream["count"], downstream["count"]
         if not isinstance(a, int) or not isinstance(b, int) or a <= 0:
             continue
