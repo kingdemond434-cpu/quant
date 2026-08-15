@@ -104,10 +104,35 @@ def test_A_GENERATOR_WITHOUT_ITS_INPUT_IS_FLAT_AND_SAYS_SO() -> None:
     bare = MarketSeries(close=c, high=c * 1.01, low=c * 0.99, volume=np.full(n, 1e6),
                         hour=np.arange(n) % 24, ref_close=None, ref_high=None, ref_low=None,
                         funding=None)
+    # SCOPED TO THE SLEEVES THAT HAVE AN EXTERNAL INPUT AT ALL. funding_stress_reversal needs a
+    # funding series and intermarket_difference needs the reference's RANGE; both can be starved
+    # and both must say so. `hawkes_vol_expansion` reads only OHLCV, which is never absent -- it
+    # CANNOT be silently starved, and asserting it goes flat would be asserting a defect.
+    needs_external = {"funding_stress_reversal", "intermarket_difference"}
     for _cls, subtype, _why, params in M.SLEEVES:
         pos = M._positions(subtype, bare, params)
         assert pos is not None, f"{subtype} must exist in this repo"
-        assert not np.any(pos), f"{subtype} must degrade to FLAT without its input"
+        if subtype in needs_external:
+            assert not np.any(pos), f"{subtype} must degrade to FLAT without its input"
+
+
+def test_A_SLEEVE_NEEDING_ONLY_OHLCV_CANNOT_BE_SILENTLY_STARVED() -> None:
+    """The other half of the same property. A sleeve whose every input is always present has no
+    FLAT-EVERYWHERE failure mode -- so a flat reading from it is a real market statement rather
+    than a missing feed, and the two must not be conflated in either direction."""
+    from libs.autodiscovery.generators import MarketSeries
+
+    n = 600
+    rng = np.random.default_rng(3)
+    vol = np.where(np.arange(n) % 200 < 40, 0.05, 0.008)
+    c = 100 * np.cumprod(1 + rng.normal(0.0005, 1, n) * vol)
+    bare = MarketSeries(close=c, high=c * 1.01, low=c * 0.99, volume=np.full(n, 1e6),
+                        hour=np.arange(n) % 24, ref_close=None, ref_high=None, ref_low=None,
+                        funding=None)
+    pos = M._positions("hawkes_vol_expansion", bare, {"beta": 0.2, "k": 2.0, "lookback": 20})
+    assert pos is not None and np.any(pos), \
+        "an OHLCV-only sleeve must produce positions on clustered volatility"
+    assert set(np.unique(pos)) <= {-1.0, 0.0, 1.0}, "positions are directional, not sized here"
 
 
 def test_EVERY_DECLARED_SLEEVE_HAS_A_GENERATOR_IN_THIS_REPO() -> None:

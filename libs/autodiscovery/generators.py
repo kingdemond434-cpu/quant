@@ -73,6 +73,7 @@ about THIS generator campaign, the run whose "44 mechanisms" figure was being qu
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Any
@@ -187,6 +188,70 @@ def _vol_expansion(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
     return vol_expansion_positions(
         _bars(s), vol_window=int(p["vol_window"]), lookback=int(p["lookback"])
     )
+
+
+def _hawkes_vol_expansion(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
+    """SELF-EXCITING volatility intensity, then follow the trend it is exciting.
+
+    PRE-REGISTERED 2026-08-15, before any backtest on this desk.
+
+    MECHANISM CLAIM. Volatility arrives in CLUSTERS because one large move mechanically causes the
+    next: margin calls fire, market makers widen, stops cascade, and each of those is a fresh
+    event. A Hawkes process is the standard model of exactly that -- a baseline intensity plus a
+    decaying kick from every past event:
+
+        lambda(t) = mu + sum_i alpha * exp(-beta * (t - t_i))
+
+    WHAT MAKES THIS DIFFERENT FROM `vol_trend`, WHICH ALREADY EXISTS. A rolling standard deviation
+    is a WINDOW: every bar inside it counts the same and every bar outside counts zero, so it
+    cannot distinguish "one shock twenty bars ago" from "five shocks in the last five bars". The
+    Hawkes intensity is a decaying SUM, so recent clustering dominates and an isolated old shock
+    fades. That is a genuinely different statistic, not a reparameterisation -- which is the only
+    reason this earns a slot beside a generator that shares its name.
+
+    **AND IT IS STILL price_continuation.** The census scores that class at 0.03 orthogonality:
+    intensity decides WHEN to be positioned, and the direction still comes from the trend, so this
+    correlates with everything else on the price tape. Filing it anywhere more flattering would
+    credit the desk with breadth it has not bought.
+
+    EVENTS are absolute returns beyond `k` times their own trailing scale. Not a fixed percentage:
+    a 2% move is an event in one regime and noise in another, and a fixed bar would make the
+    process fire constantly in one and never in the other.
+    """
+    n = len(s)
+    if n < 60:
+        return np.zeros(n, dtype="float64")
+    close = np.asarray(s.close, dtype="float64")
+    r = np.zeros(n, dtype="float64")
+    r[1:] = np.diff(close) / np.maximum(close[:-1], 1e-12)
+    beta, k = float(p["beta"]), float(p["k"])
+    lookback = int(p["lookback"])
+
+    # Trailing scale, PAST-ONLY. A scale computed over the whole sample would let a future
+    # volatility regime decide which of today's moves counted as an event.
+    scale = np.zeros(n, dtype="float64")
+    for i in range(30, n):
+        scale[i] = float(np.std(r[max(0, i - 90):i])) or 1e-12
+    events = np.zeros(n, dtype="float64")
+    events[30:] = (np.abs(r[30:]) > k * scale[30:]).astype("float64")
+
+    # The self-exciting intensity itself: decay the running total, then add today's event. Adding
+    # BEFORE the decay would let the current bar excite itself, which is lookahead in one line.
+    intensity = np.zeros(n, dtype="float64")
+    lam = 0.0
+    for i in range(1, n):
+        lam = lam * math.exp(-beta) + events[i - 1]
+        intensity[i] = lam
+
+    # POSITIONED ONLY WHILE INTENSITY IS ELEVATED against its own past. The direction is the
+    # trend's; the intensity is the gate.
+    out = np.zeros(n, dtype="float64")
+    for i in range(lookback + 90, n):
+        hurdle = float(np.median(intensity[max(0, i - 90):i]))
+        if intensity[i] <= hurdle or intensity[i] <= 0:
+            continue
+        out[i] = 1.0 if close[i] > close[i - lookback] else -1.0
+    return out
 
 
 def _mean_reversion(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
@@ -503,6 +568,17 @@ GENERATORS: tuple[GeneratorSpec, ...] = (
     GeneratorSpec(Family.VOLATILITY_COMPRESSION, "squeeze_breakout", _vol_compression, _S,
                   "volatility compression precedes expansion", ["failed expansion"],
                   [{"window": 20, "vol_window": 20}]),
+    GeneratorSpec(
+        Family.VOLATILITY_EXPANSION, "hawkes_vol_expansion", _hawkes_vol_expansion, _S,
+        "volatility is SELF-EXCITING: one large move mechanically causes the next through margin "
+        "calls, maker withdrawal and stop cascades, so a decaying sum of past events predicts the "
+        "clustering a rolling window cannot see",
+        ["the direction still comes from the trend, so this is price_continuation and correlates "
+         "with the whole price tape -- the intensity gates WHEN, never WHAT",
+         "a decay rate is a fitted parameter and the process is sensitive to it",
+         "regime-dependent: a year of steady grind produces almost no events and no positions"],
+        [{"beta": 0.2, "k": 2.0, "lookback": 20}, {"beta": 0.5, "k": 2.0, "lookback": 20},
+         {"beta": 0.2, "k": 3.0, "lookback": 40}]),
     GeneratorSpec(Family.VOLATILITY_EXPANSION, "vol_trend", _vol_expansion, _S,
                   "trend strengthens as volatility expands", ["vol spike reversal"],
                   [{"vol_window": 20, "lookback": 20}]),

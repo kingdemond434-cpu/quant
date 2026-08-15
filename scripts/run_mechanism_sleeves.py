@@ -72,6 +72,14 @@ SLEEVES: tuple[tuple[str, str, str, dict[str, float]], ...] = (
     ("relative_value_convergence", "intermarket_difference", "trade the ATR-normalised residual "
      "against a reference, so the shared market factor both legs carry is differenced away rather "
      "than traded twice", {"lookback": 24, "threshold": 0.25}),
+    # ADDED 2026-08-15 at the principal's direction, under the same standing exception. The
+    # census files it as price_continuation (orthogonality 0.03), so it joins CORRELATED_CORE and
+    # adds close to nothing to k_eff -- that is the honest expectation and it is recorded here
+    # rather than discovered from the correlation tracker in a month.
+    ("price_continuation", "hawkes_vol_expansion", "volatility is SELF-EXCITING: one large move "
+     "causes the next through margin calls, maker withdrawal and stop cascades, and a decaying "
+     "sum of past events sees that clustering where a rolling window cannot",
+     {"beta": 0.2, "k": 2.0, "lookback": 20}),
 )
 
 #: Fraction of the book each sleeve carries. EQUAL AND FIXED. Sizing by backtest Sharpe would let

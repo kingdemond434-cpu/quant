@@ -823,6 +823,10 @@ CONSTRUCTION_CLASS: dict[str, str] = {
     "squeeze_breakout": "price_continuation",
     "vol_trend": "price_continuation",
     "vol_onset_trend": "price_continuation",
+    # Hawkes intensity gates WHEN to be positioned; the DIRECTION is still the trend's, so this is
+    # price_continuation however sophisticated the gate. Filing a self-exciting model under a
+    # higher-orthogonality class would credit the desk with breadth it has not bought.
+    "hawkes_vol_expansion": "price_continuation",
     "vwap_trend": "price_continuation",
     "ict_mss_follow": "price_continuation",
     "ict_fvg_follow": "price_continuation",
