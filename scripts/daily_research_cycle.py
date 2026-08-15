@@ -119,6 +119,12 @@ _STEPS = [
     ("circulating_supply", "scripts/collect_circulating_supply.py", 180),
     ("supply_screen",     "scripts/screen_unlock_supply_series.py", 240),
     ("supply_report",     "scripts/report_mechanism_supply.py", 120),
+    # IS EVERYTHING ACTUALLY ARMED -- nine independent facts across three directories, two of them
+    # gitignored, whose sense is inverted for the three rails. `run_golive_preflight` checked ONE
+    # of them, so the question was answered by running four scripts and reading prose, which is how
+    # a desk comes to believe a switch is on because it was on last week. Runs BEFORE the order
+    # steps so the day's artifact records the arming state the orders were actually placed under.
+    ("arming",            "scripts/report_arming.py",        60),
     ("live_ladder",       "scripts/run_live_ladder.py",      600),
     ("auto_promotion",    "scripts/run_auto_promotion.py --capital 200 --min-notional 10", 300),
     ("golive_preflight",  "scripts/run_golive_preflight.py --capital 200", 120),
