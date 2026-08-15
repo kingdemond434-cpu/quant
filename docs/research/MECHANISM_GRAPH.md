@@ -160,18 +160,33 @@ it never names the payer.** `libs/research/mechanism_census.CONSTRUCTION_CLASS` 
 authority for the payer, and `libs/autodiscovery/generators.py` now defers to it in code
 (`census_class`, `mechanism_class_counts`, `FAMILY_MECHANISM_DIVERGENCE`).
 
-## THE DESK HAS RUN **ZERO TRUE CARRY TESTS** IN ITS MAXIMUM-POWER CAMPAIGN
+## CARRY COVERAGE: none until `funding_carry`, and the obstacle was a return path
 
-`Family.CARRY` holds exactly one generator. `drift_proxy` is `momentum_positions(lookback=200)` on
-OHLC bars — no funding rate, no swap rate, no basis anywhere in its inputs, which is why the census
-files it under `price_continuation`. A true carry test is `derivative_carry_basis`: the leveraged
-long who pays funding every interval to hold exposure he will not fund with cash. The single
-`carry`-family row in the 44-candidate campaign is a momentum test.
+For the entire life of this library `Family.CARRY` held exactly one generator, and it was not
+carry. `drift_proxy` is `momentum_positions(lookback=200)` on OHLC bars — no funding rate, no swap
+rate, no basis anywhere in its inputs, which is why the census files it under `price_continuation`.
+The single `carry`-family row in the 44-candidate campaign was a momentum test, and that has not
+changed: `drift_proxy` is still not carry and still carries its divergence entry.
 
-Scoped precisely, because the opposite overstatement is just as bad: the desk **does** hold real
+A true carry test is `derivative_carry_basis`: the leveraged long who pays funding every interval
+to hold exposure he will not fund with cash. **`funding_carry` is now that test.** The data was
+never the obstacle — `MarketSeries.funding` has been populated by the crypto adapter throughout,
+and was read by exactly one generator: the *fade* (`funding_stress_reversal`). What was missing was
+a RETURN PATH. `net_returns` computes `position × spot_return`, which is the P&L of a directional
+bet and the wrong P&L of a delta-neutral carry, whose legs cancel and whose entire return is
+accrual. Scoring a carry through the price path would have measured spot direction and filed the
+answer under `derivative_carry_basis` — `drift_proxy`'s error committed a second time, with better
+inputs. `carry_returns`, the `delta_neutral` spec flag and `returns_for` exist for that reason, and
+a test fences every scoring call site against reaching for `net_returns` directly.
+
+Scoped precisely, because the opposite overstatement is just as bad: the desk **also** holds real
 `derivative_carry_basis` evidence elsewhere — funding/basis screen artifacts and a live
-cash-and-carry book, which the census reads and marks TESTED-DEEP. The zero is about the generator
-campaign, the run whose "44 mechanisms" figure was being quoted.
+cash-and-carry book, which the census reads and marks TESTED-DEEP. The gap was always about the
+generator campaign, the run whose "44 mechanisms" figure was being quoted.
+
+Worth stating in the same breath: `derivative_carry_basis` scores **0.30 orthogonality**, among the
+lowest on the board, precisely because it *is* the desk's existing live family. Closing this hole
+adds return and coverage. It does not add diversification and it does not move `k_eff`.
 
 ## Corrected counts — the full 21-spec library
 

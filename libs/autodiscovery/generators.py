@@ -48,18 +48,27 @@ MEASURED 2026-08-05, which is why this warning sits at the top of the file:
     constraint is DISTINCT MECHANISM SUPPLY. Reading 12 families as 12 mechanisms overstates that
     supply by better than 2x and makes repetition look like exploration.
 
-THE DESK HAS RUN ZERO TRUE CARRY TESTS IN ITS MAXIMUM-POWER CAMPAIGN, and this file is why.
-``Family.CARRY`` holds exactly one generator, ``drift_proxy``, and ``drift_proxy`` is
+CARRY COVERAGE: none at all until ``funding_carry``, and this file was why.
+``Family.CARRY`` held exactly one generator, ``drift_proxy``, and ``drift_proxy`` is
 ``momentum_positions(lookback=200)`` on OHLC bars — long-horizon price continuation. No funding
 rate, no swap rate and no basis appears anywhere in its inputs, so the census files it under
-``price_continuation``. A true carry test (``derivative_carry_basis``: the leveraged long who pays
-funding every interval to hold exposure he will not fund with cash) needs data no generator in
-this file touches. Nothing here may be reported as carry coverage.
+``price_continuation``. Nothing about ``drift_proxy`` may be reported as carry coverage, and that
+has not changed.
 
-Scoped precisely, because the opposite overstatement is just as bad: the desk DOES hold real
+WHAT CHANGED: ``funding_carry`` now exists and is the first true test of the class. The data was
+never the obstacle — ``MarketSeries.funding`` has been populated by the crypto adapter the whole
+time and was read by exactly one generator, the FADE (``funding_stress_reversal``). The missing
+piece was a RETURN PATH: ``net_returns`` computes ``position x spot_return``, which is the P&L of
+a directional bet and the wrong P&L of a delta-neutral carry, whose legs cancel and whose entire
+return is accrual. Scoring a carry through the price path would have measured spot direction and
+filed the answer under ``derivative_carry_basis`` — ``drift_proxy``'s error committed a second
+time, with better inputs. ``carry_returns`` and the ``delta_neutral`` spec flag exist for that
+reason, and ``returns_for`` is how every call site picks between them.
+
+Scoped precisely, because the opposite overstatement is just as bad: the desk ALSO holds real
 `derivative_carry_basis` evidence elsewhere — funding/basis screen artifacts and a live
-cash-and-carry book, which the census reads and marks TESTED-DEEP. The zero above is about THIS
-generator campaign, which is the run whose "44 mechanisms" figure was being quoted.
+cash-and-carry book, which the census reads and marks TESTED-DEEP. The zero above was always
+about THIS generator campaign, the run whose "44 mechanisms" figure was being quoted.
 """
 
 from __future__ import annotations
@@ -95,6 +104,64 @@ def _bars(s: MarketSeries) -> Bars:
 def net_returns(series: MarketSeries, positions: np.ndarray, *, cost: float = 0.0003) -> np.ndarray:
     """Net, lag-1, cost-adjusted returns of a position series (reuses the shared backtest core)."""
     return strategy_returns(_bars(series), positions, cost_per_turnover=cost)
+
+
+def carry_returns(series: MarketSeries, positions: np.ndarray, *,
+                  cost: float = 0.0003) -> np.ndarray:
+    """Returns of a DELTA-NEUTRAL carry: funding accrual. The price return is ZERO BY CONSTRUCTION.
+
+    WHY A SECOND RETURN FUNCTION EXISTS, AND WHY REUSING `net_returns` WOULD HAVE BEEN A LIE
+
+    `net_returns` computes `position x spot_return`. That is the correct P&L of a DIRECTIONAL bet
+    and it is the wrong P&L of a carry. A cash-and-carry is long spot and short the perpetual in
+    equal notional: the two legs cancel, the spot path drops out, and what remains is the funding
+    the levered long pays every interval to the party supplying his spot leg. Scoring that
+    construction through the price path would have measured a spot-direction bet and filed the
+    answer under `derivative_carry_basis` -- crediting the desk with a carry test it still had not
+    run, which is the exact overstatement `drift_proxy` is already on record for.
+
+    THE ARITHMETIC
+
+        r[i] = position[i-1] * funding[i] - turnover[i] * cost * 2
+
+    Lag-1 matches `net_returns` so the two are comparable bar-for-bar and can be correlated
+    against each other in the cross-mechanism work. The bar's funding is the value the lake stores
+    for that bar -- `crypto_source` resamples the 8h stamps to a DAILY SUM, so on D1 bars this is
+    the whole day's funding and needs no rescaling. Sign: positive funding means longs pay, and
+    this construction is short the perp, so positive funding is REVENUE.
+
+    COST IS DOUBLED, and that is not conservatism. Every open crosses TWO books (spot and perp)
+    and every close crosses them again, so a unit of carry turnover buys two round-trips, not one.
+    The live desk measures precisely this as a `pair_roundtrip_bps` and its executor gates on it;
+    charging one leg here would make the backtest cheaper than the book it is supposed to predict.
+
+    ABSENT FUNDING IS ZERO ACCRUAL, NOT A ZERO RETURN, and the distinction is real but benign
+    here: a bar whose funding the venue never published earns nothing on a position that was
+    nonetheless held, which is the honest reading. It cannot manufacture a signal the way a
+    zero-filled hashprice can, because it enters additively rather than through a z-score.
+    """
+    n = len(series.close)
+    pos = np.nan_to_num(np.asarray(positions, dtype="float64")[:n], nan=0.0)
+    if n < 2:
+        return np.zeros(0, dtype="float64")
+    if series.funding is None:
+        return np.zeros(n - 1, dtype="float64")
+    f = np.nan_to_num(np.asarray(series.funding, dtype="float64")[:n], nan=0.0)
+    accrual = pos[:-1] * f[1:]
+    turnover = np.abs(np.diff(pos))
+    out: np.ndarray = (accrual - turnover * float(cost) * 2.0).astype("float64")
+    return out
+
+
+def returns_for(spec: GeneratorSpec) -> Callable[..., np.ndarray]:
+    """The return function a spec MUST be scored with.
+
+    Every call site scores generators through this rather than reaching for `net_returns`, because
+    the failure it prevents is silent: a delta-neutral spec run through the price path does not
+    error, it returns a plausible-looking directional number under a carry label. `test_generators`
+    asserts no module scores a delta-neutral spec any other way.
+    """
+    return carry_returns if spec.delta_neutral else net_returns
 
 
 # --- price-pattern families (reuse the validated Stage-13.5 primitives) -------------
@@ -216,6 +283,178 @@ def _funding_stress_reversal(s: MarketSeries, p: dict[str, float]) -> np.ndarray
     return np.where(z > thr, -1.0, np.where(z < -thr, 1.0, 0.0)).astype("float64")
 
 
+def _funding_carry(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
+    """derivative_carry_basis: SUPPLY the spot leg and collect what the levered long pays for it.
+
+    THE FIRST TRUE CARRY TEST IN THIS LIBRARY. `Family.CARRY` has held exactly one generator since
+    inception -- `drift_proxy`, which is `momentum_positions(lookback=200)` on OHLC bars, with no
+    funding, swap or basis anywhere in its inputs. The census files it under `price_continuation`
+    and this module's own header carried the line "the desk has run ZERO true carry tests in its
+    maximum-power campaign" as a standing admission. The funding data was in the lake the whole
+    time; `MarketSeries.funding` was populated and read by exactly one generator, the FADE.
+
+    THE PAYER, which is what makes this a mechanism and not a yield curve. A trader who wants
+    levered long exposure and will not or cannot post the cash borrows it through the perpetual,
+    and the funding rate is the recurring price of that convenience. He pays every interval, on
+    schedule, to whoever holds the spot he is synthesising. The payment is OBSERVABLE IN ADVANCE
+    and the convergence is CONTRACTUAL -- that is the whole basis of the 0.85 plausibility the
+    census assigns this class, the highest of any class on the board.
+
+    Positions are 1 (carry on) or 0 (flat). NEVER -1: a negative carry means paying funding to be
+    short the basis, which is a different trade with a different payer -- it needs the borrow cost
+    of shorting spot, which nothing here measures. Refusing to emit it keeps this a test of the
+    claim actually being made.
+
+    HYSTERESIS, NOT A THRESHOLD, and it is the economic heart of the construction rather than a
+    smoothing nicety. A carry pays a few basis points a day and costs a full PAIR round-trip to
+    put on -- both legs, twice. The live desk measured that as ~16bps against ~4bps/day of
+    funding, so a trade entered and exited on a single print loses money on a mechanism that
+    genuinely pays. Entry demands the recent MEAN funding clear a bar; the position is then held
+    until funding decays to the exit level. That is the same shape as the live book's `hold_top`
+    rule, deliberately, so this measures the strategy the desk would actually run.
+
+    A ROLLING MEAN, NOT THE LATEST PRINT: funding is noisy per interval and this construction
+    earns the AVERAGE over a hold, so entering on the average is the honest form of the claim.
+
+    DEGRADES TO FLAT without funding data, exactly like the other non-price generators.
+
+    SCORED WITH `carry_returns`, NEVER `net_returns` -- see `delta_neutral` on its spec. This
+    construction has no spot exposure; its return is the funding it accrues.
+    """
+    if s.funding is None:
+        return np.zeros(len(s), dtype="float64")
+    f = np.asarray(s.funding, dtype="float64")
+    n = len(f)
+    out = np.zeros(n, dtype="float64")
+    w = int(p.get("window", 30))
+    if n <= w:
+        return out
+    # Bars, expressed per bar of the series. The lake stores DAILY-summed funding on D1 bars, so
+    # these are daily rates and the defaults are read against ordinary major funding (~3bps/day).
+    enter = float(p.get("enter_bps", 2.0)) / 1e4
+    exit_ = float(p.get("exit_bps", 0.5)) / 1e4
+    min_obs = max(5, w // 3)
+
+    on = False
+    for i in range(w, n):
+        seg = f[i - w + 1: i + 1]
+        seg = seg[np.isfinite(seg)]
+        if len(seg) < min_obs:
+            # Not enough published funding to know what the average pays. Holding through an
+            # unmeasured stretch would be asserting the carry persisted; drop it instead.
+            on = False
+            continue
+        m = float(seg.mean())
+        on = m > exit_ if on else m > enter
+        out[i] = 1.0 if on else 0.0
+    return out
+
+
+def _producer_margin_stress(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
+    """treasury_cost_base_liquidation: trade the FORCED SELLER, not a price pattern.
+
+    THE PAYER, which is what makes this a mechanism rather than a correlation. A miner carries a
+    FIAT cost base -- power, hosting, leased rigs, debt service -- against coin-denominated
+    revenue. Those obligations do not reschedule for a drawdown. So coin must be sold on the
+    OPERATOR'S calendar rather than the market's, and hardest exactly when price is weakest. The
+    seller is structurally price-insensitive and would prefer not to sell; that is the definition
+    of a compelled flow, and it is why this class scores 0.70 orthogonality against a library
+    otherwise made of price patterns.
+
+    TWO REGIMES, OPPOSITE SIGNS, and conflating them is how this mechanism gets mismeasured:
+
+      COMPRESSION UNDERWAY -- hashprice falling and difficulty still high. Margin is being
+      squeezed while capacity has not yet left, so forced supply is RISING. Short.
+
+      CAPITULATION COMPLETE -- hashprice deeply depressed AND difficulty has adjusted DOWN.
+      Difficulty only falls when hashrate has actually switched off, which is the observable
+      admission that the marginal producer has already sold and exited. The forced supply is
+      spent. Long.
+
+    The second leg is the one worth having, and it is only identifiable because difficulty is a
+    LAGGING, MECHANICAL confirmation of an exit that already happened -- not a forecast. Nothing
+    here predicts miner behaviour; it reads a balance-sheet consequence after the fact.
+
+    DEGRADES TO FLAT without producer data, exactly like the funding signals. A fabricated
+    hashprice would invent the compelled seller the entire claim rests on, and a mechanism whose
+    payer is imaginary is a price pattern wearing an economic story.
+    """
+    if s.hashprice is None:
+        return np.zeros(len(s), dtype="float64")
+    # DELIBERATELY NOT `nan_to_num(..., nan=0.0)`, which is what this line used to be.
+    #
+    # A day the source did not publish arrives here as NaN. Zeroing it does not say "unknown" -- it
+    # asserts that a PH/s of hashrate earned NOTHING that day, which is the deepest margin
+    # compression physically possible. The z-score goes violently negative and the generator opens
+    # a SHORT on a hole in the data. Every absent day becomes a maximum-conviction trade.
+    #
+    # That was invisible only while nothing populated this field at all. The moment real data with
+    # real gaps arrives -- which is what `scripts/fetch_producer_economics.py` now does -- zero-fill
+    # converts source outages into the strongest signals in the book. Non-finite now means NO
+    # OBSERVATION: the bar is skipped, and the value is excluded from the rolling statistics rather
+    # than dragging their mean and variance toward a number nobody measured.
+    hp = np.asarray(s.hashprice, dtype="float64")
+    w = int(p.get("window", 90))
+    thr = float(p.get("z_entry", 1.0))
+    out = np.zeros(len(hp), dtype="float64")
+    if len(hp) <= w:
+        return out
+    # A z-score computed off a handful of survivors is noise wearing a threshold.
+    min_obs = max(20, w // 3)
+
+    diff = np.asarray(s.difficulty, dtype="float64") if s.difficulty is not None else None
+    for i in range(w, len(hp)):
+        if not np.isfinite(hp[i]):
+            continue                      # no margin observed on this bar; no claim to make
+        seg = hp[i - w + 1: i + 1]
+        seg = seg[np.isfinite(seg)]
+        if len(seg) < min_obs:
+            continue
+        sd = seg.std()
+        if sd <= 0:
+            continue
+        z = (hp[i] - seg.mean()) / sd
+        if z > -thr:
+            continue                      # margin is not compressed; no forced flow to trade
+        # Margin IS compressed. Which regime?
+        # WHICH REGIME -- and "I cannot tell" is a third answer, not a tiebreak toward short.
+        #
+        # With no difficulty series at all, this degrades to the compression leg only: that is the
+        # declared contract, the short is what hashprice alone supports, and the caller knows the
+        # column is absent. But when a difficulty series IS supplied and merely has a hole on this
+        # bar, falling through to `eased = False` would read the hole as positive evidence that
+        # capacity is still online -- a claim from absence, on exactly the axis that separates the
+        # two legs. An unobservable regime gets no position.
+        if diff is not None and not np.isfinite(diff[i]):
+            continue
+        eased = False
+        if diff is not None:
+            # CAPACITY GONE IS A STATE, NOT AN EVENT -- and the first version got this wrong.
+            #
+            # It compared difficulty across one retarget window (`diff[i] < diff[i-14]`). But
+            # difficulty is a STEP FUNCTION that holds its new level until the next adjustment, so
+            # that test is true only for the ~14 bars immediately after a drop and false forever
+            # after. The signal would have flipped back to SHORT a fortnight into precisely the
+            # recovery it exists to catch.
+            #
+            # The economically meaningful condition is that difficulty is still BELOW ITS RECENT
+            # PEAK: the hashrate that switched off has not come back, so the marginal producer is
+            # still absent and their forced supply is still spent. That persists for as long as it
+            # is true, which is the shape the claim actually has.
+            #
+            # The peak is taken over FINITE values only. `ndarray.max()` propagates NaN, so one
+            # missing difficulty day anywhere in the 90-bar lookback would return NaN, fail the
+            # `peak > 0` test, and silently disable the capitulation leg -- the long, the half of
+            # this mechanism actually worth owning -- for three months after every source gap.
+            back = max(0, i - w)
+            seen = diff[back: i + 1]
+            seen = seen[np.isfinite(seen)]
+            peak = float(seen.max()) if seen.size else 0.0
+            eased = peak > 0 and diff[i] < peak * (1.0 - float(p.get("ease_frac", 0.01)))
+        out[i] = 1.0 if eased else -1.0
+    return out
+
+
 @dataclass(frozen=True)
 class GeneratorSpec:
     """One generator, its budget partition, and its declared economics.
@@ -237,6 +476,14 @@ class GeneratorSpec:
     edge_source: str
     failure_modes: list[str]
     param_variants: list[dict[str, float]] = field(default_factory=lambda: [{}])
+
+    #: True => this spec's P&L is FUNDING ACCRUAL on a delta-neutral book, not `position x spot
+    #: return`, and it must be scored with `carry_returns` (see `returns_for`). Defaults False, so
+    #: every price-pattern spec in this library is unaffected and keeps its exact historical
+    #: scoring. It is a property of the CONSTRUCTION, not a preference: a spec that is long spot
+    #: and short the perp has no spot exposure to score, and running it through the price path
+    #: silently reports a directional bet under a carry label.
+    delta_neutral: bool = False
 
 
 _B, _S, _R, _L = (
@@ -293,6 +540,28 @@ GENERATORS: tuple[GeneratorSpec, ...] = (
                    "the desk has run ZERO true carry tests in its maximum-power campaign",
                    "sharp reversals and crowding, exactly as for time_series_mom"],
                   [{"lookback": 200}]),
+    # THE FIRST TRUE CARRY TEST IN THIS LIBRARY, and the one that retires the header's standing
+    # "ZERO true carry tests" admission. Filed under Family.CARRY and the census agrees for the
+    # first time: `derivative_carry_basis`, plausibility 0.85 -- the highest of any class on the
+    # board -- and the only one whose payment is observable in advance and whose convergence is
+    # contractual. DELTA-NEUTRAL, so it is scored by `carry_returns`; see `returns_for`.
+    GeneratorSpec(Family.CARRY, "funding_carry", _funding_carry, _R,
+                  "supply the spot leg of a levered long's synthetic exposure and collect the "
+                  "perpetual funding he pays for it; delta-neutral, so the P&L is accrual and "
+                  "the spot path cancels out",
+                  ["needs funding data; flat without it",
+                   "a carry pays basis points a day and costs a full PAIR round-trip (two books, "
+                   "twice) to put on -- without hysteresis it loses money on a mechanism that pays",
+                   "funding can invert while the position is held; the exit is a decay level, "
+                   "not a stop, so an inversion is ridden until the mean falls through it",
+                   "census class derivative_carry_basis scores only 0.30 orthogonality: this is "
+                   "the desk's existing live family, so it adds return and NOT diversification",
+                   "MUST be scored with carry_returns -- net_returns would report a spot "
+                   "direction bet under a carry label, which is drift_proxy's error exactly"],
+                  [{"window": 30, "enter_bps": 2.0, "exit_bps": 0.5},
+                   {"window": 14, "enter_bps": 3.0, "exit_bps": 1.0},
+                   {"window": 60, "enter_bps": 1.5, "exit_bps": 0.5}],
+                  delta_neutral=True),
     GeneratorSpec(Family.REGIME_TRANSITION, "vol_onset_trend", _regime_transition, _S,
                   "regime persistence after a volatility break", ["false transition calls"],
                   [{"vol_window": 20, "trend": 20}]),
@@ -312,6 +581,20 @@ GENERATORS: tuple[GeneratorSpec, ...] = (
                   [{"window": 30, "z_entry": 1.5}, {"window": 14, "z_entry": 2.0}]),
     GeneratorSpec(Family.RISK_PREMIA, "persistent_long", _risk_premia, _R,
                   "harvest the long-run risk premium", ["secular bear", "crash"], [{}]),
+    # THE FIRST GENERATOR IN THIS LIBRARY WHOSE INPUT IS NOT A PRICE. Its census class,
+    # treasury_cost_base_liquidation, scores 0.70 orthogonality precisely because a producer's
+    # balance sheet is not a candle -- and orthogonality, not candidate count, is the binding
+    # constraint on this desk's combined Sharpe (docs/research/REALITY_CHECK_POWER.md).
+    GeneratorSpec(Family.LIQUIDITY, "producer_margin_stress", _producer_margin_stress, _S,
+                  "forced selling by a fiat-cost-base producer; the exit is confirmed by a "
+                  "DOWNWARD difficulty adjustment, which is mechanical and lagging, not forecast",
+                  ["needs hashprice; flat without it",
+                   "difficulty is a step function -- compare across the retarget, not bar-to-bar",
+                   "census class is treasury_cost_base_liquidation, NOT mechanical_supply_release: "
+                   "that is a SCHEDULE known in advance, this is a balance-sheet constraint",
+                   "a miner hedging with derivatives sells less spot than the cost base implies"],
+                  [{"window": 90, "z_entry": 1.0, "retarget": 14},
+                   {"window": 180, "z_entry": 1.5, "retarget": 14}]),
 )
 
 
@@ -513,6 +796,15 @@ FAMILY_MECHANISM_DIVERGENCE: dict[str, str] = {
         "frozen budget partition; counting it as carry coverage would credit the desk with a "
         "carry test it has never run, and the desk has run ZERO true carry tests in its "
         "maximum-power campaign."
+    ),
+    "producer_margin_stress": (
+        "FILED `liquidity`, IS `treasury_cost_base_liquidation`. The payer is a miner meeting "
+        "FIAT obligations out of coin-denominated revenue, who sells on his creditors' calendar "
+        "rather than the market's — not a warehouse being paid for immediacy. Filing it under "
+        "liquidity provision would add a member to the desk's most crowded class (0.10 "
+        "orthogonality, already seven of eleven live rules) while hiding its only occupant of a "
+        "0.70-orthogonality class, which inverts what the library is actually short of. The "
+        "family label stays because it is the frozen budget partition."
     ),
     "funding_stress_reversal": (
         "FILED `liquidity`, IS `positioning_crowding_unwind`. Fading funding stress is a claim "

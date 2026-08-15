@@ -21,7 +21,7 @@ from libs.autodiscovery.capacity_screen import (
     build_bank_record,
     screen_reason,
 )
-from libs.autodiscovery.generators import net_returns, planned_hypotheses
+from libs.autodiscovery.generators import planned_hypotheses, returns_for
 from libs.autodiscovery.lifecycle import promote
 from libs.autodiscovery.memory import (
     CandidateSeries,
@@ -240,8 +240,13 @@ class AutoDiscoveryLab:
             try:
                 base_cost = self._cost_for(hyp.symbol)
                 positions = spec.fn(series, dict(hyp.params))
-                rets = net_returns(series, positions, cost=base_cost)
-                stressed = net_returns(series, positions, cost=self.execution_gap.stress(base_cost))
+                # `returns_for`, never `net_returns` directly. A delta-neutral carry has no spot
+                # exposure, so the price path does not error on it -- it quietly reports a
+                # direction bet under a carry label. Price specs are unaffected: returns_for hands
+                # them the same `net_returns` they have always been scored with.
+                score = returns_for(spec)
+                rets = score(series, positions, cost=base_cost)
+                stressed = score(series, positions, cost=self.execution_gap.stress(base_cost))
             except Exception:
                 continue
             if len(rets) >= _MIN_BARS:

@@ -58,6 +58,12 @@ class MarketSeries:
     ref_high: np.ndarray | None = None
     ref_low: np.ndarray | None = None
     funding: np.ndarray | None = None    # per-bar perp funding rate (Level-3), for crypto signals
+    # PRODUCER ECONOMICS, for treasury_cost_base_liquidation. Both optional and both None by
+    # default: a generator that needs them degrades to FLAT rather than to a guess, exactly as the
+    # funding signals do. Miner data is free but not universal, and a fabricated hashprice would
+    # invent the compelled seller the whole mechanism is about.
+    hashprice: np.ndarray | None = None   # revenue per unit hashrate ($/PH/day), producer margin
+    difficulty: np.ndarray | None = None  # network difficulty; its DOWNWARD adjustments mark exit
 
     def __len__(self) -> int:
         return len(self.close)

@@ -151,24 +151,29 @@ def kelly_leverage(mu_annual: float, sigma_annual: float, *, borrow_rate: float 
 
 def growth_rate(f: float, mu_annual: float, sigma_annual: float, *,
                 borrow_rate: float = 0.0) -> float:
-    """g(f) = f*mu - (f-1)*r - f^2 sigma^2 / 2. Published so the parabola can be printed rather
-    than asserted -- the fastest way to see that 8x is on the far side of zero.
+    """g(f) = f*mu - borrow*max(0, f-1) - f^2 sigma^2 / 2. Published so the parabola can be
+    printed rather than asserted -- the fastest way to see that 8x is on the far side of zero.
 
-    **INTEREST IS CHARGED ON THE BORROWED PART, NOT ON THE WHOLE POSITION.** This read
-    `f*(mu - borrow)`, which bills the borrow rate against the 1.0x funded by the principal's own
-    equity as well as the (f-1) actually borrowed. At f=1.0 nothing is borrowed and it still
-    deducted a full year of interest. Every published growth number was therefore understated by
-    exactly `r` -- 5.1 percentage points at the live venue rate, which is most of a small book's
-    expected growth. Caught 2026-08-15 when two calculations of the same book disagreed by 5.1pp
-    and one of them had to be wrong.
+    **INTEREST IS CHARGED ON THE BORROWED PART, NOT ON ALL OF f.** The previous form was
+    `f * (mu - borrow)`, which bills a full year of margin interest on the desk's OWN capital: at
+    f = 1.0 nothing is borrowed and it still deducted the entire rate. The two expressions differ
+    by `r*f - r*(f-1) = r` at EVERY f, so every growth figure this function has printed was low by
+    the full borrow rate -- 5.1 points at the current one -- and the error is invisible because it
+    shifts the whole parabola down without changing its shape.
 
-    THE KELLY POINT IS UNAFFECTED and that is why this survived: the two forms differ by the
-    CONSTANT `r`, so their derivatives are identical, f* = (mu-r)/sigma^2 either way, and every
-    comparison between two leverages came out the same. Only the LEVEL was wrong -- which is the
-    number a human reads to decide whether the strategy is worth running at all.
+    It does NOT move the optimum: d/df of both forms gives f* = (mu - borrow)/sigma^2, so
+    `kelly_leverage` above was always correct. What it corrupted was the answer to "is this worth
+    doing at all" -- a book whose true growth is +6.7%/yr reading as +1.6%/yr is the difference
+    between a desk that runs and a desk that gets switched off for looking flat.
+
+    Below f = 1 the desk holds cash rather than borrowing, so the charge is zero. No interest is
+    CREDITED on that cash either: assuming an idle-balance yield the venue may not pay would be
+    inventing income, which is the same class of error pointing the other way.
     """
-    borrowed = max(0.0, float(f) - 1.0)
-    return (f * float(mu_annual) - borrowed * float(borrow_rate)
+    f = float(f)
+    borrowed = max(0.0, f - 1.0)
+    return (f * float(mu_annual)
+            - float(borrow_rate) * borrowed
             - (f ** 2) * (sigma_annual ** 2) / 2.0)
 
 

@@ -96,7 +96,7 @@ def _forward_score(rec: object, frames: dict[str, Any] | None = None, *,
         import pandas as pd
 
         from libs.autodiscovery.crypto_adapter import _provider_from_frames
-        from libs.autodiscovery.generators import net_returns
+        from libs.autodiscovery.generators import returns_for
         spec = _spec_for(rec.family, rec.subtype)
         if frames is None:
             df = _frame(rec.symbol)
@@ -114,7 +114,7 @@ def _forward_score(rec: object, frames: dict[str, Any] | None = None, *,
         if series is None:
             return None
         positions = spec.fn(series, dict(rec.params))
-        rets = net_returns(series, positions)
+        rets = returns_for(spec)(series, positions)
         cutoff = pd.Timestamp(rec.created_at)
         idx = df.index
         if getattr(idx, "tz", None) is not None and cutoff.tz is None:

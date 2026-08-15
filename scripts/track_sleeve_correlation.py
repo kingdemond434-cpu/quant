@@ -1,262 +1,314 @@
 #!/usr/bin/env python3
-"""RHO, MEASURED -- the number every return projection on this desk has been assuming.
+"""LIVE cross-mechanism correlation -- the one number every growth projection rests on.
 
-WHY THIS IS THE HIGHEST-VALUE NUMBER THE DESK IS NOT MEASURING. Combined Sharpe is s*sqrt(k_eff),
-and k_eff = n/(1+(n-1)rho). At rho=0 six sleeves at s=0.48 reach S=1.18 and 40%/yr; at rho=0.2 the
-same six reach S=0.76 and k_eff ASYMPTOTES to 1/rho=5, so combined Sharpe caps at 1.07 and adding
-sleeves past that point buys literally nothing. Those two futures are indistinguishable in every
-artifact the desk publishes, and the difference between them is one number nobody has measured.
+WHAT THIS MEASURES AND WHY IT IS THE ONLY THING WORTH MEASURING RIGHT NOW
 
-`libs/research/breadth` refuses to assume it and reports UNMEASURED, correctly. That refusal is
-only useful if something is trying to END it.
+The desk wants combined Sharpe out of several individually-weak edges. Under equicorrelation, N
+streams at average pairwise correlation rho are worth
 
-**IT MEASURES DAILY SIGNAL RETURNS, NOT FILLS, AND SAYS SO.** Per-sleeve realised P&L across books
-sharing one margin account is not attributable here. Each sleeve's published positions are marked
-forward on the same daily grid instead. Costs are excluded -- but rho is a CORRELATION, and fees
-are close to a per-sleeve constant, so they shift the means far more than the co-movement. This is
-the one statistic on the desk where the signal-return proxy is nearly as good as the realised one.
+    k_eff = N / (1 + (N-1)*rho)      independent bets
+    S_combined = s * sqrt(k_eff)     combined Sharpe
 
-**PAIRWISE, ON OVERLAPPING DAYS ONLY.** Two sleeves that ran in different months have no
-correlation to measure -- filling the gap with zeros would manufacture independence, which is
-exactly the flattering error the whole breadth module exists to prevent.
+and that expression CONVERGES: as N grows, k_eff -> 1/rho. So the combined Sharpe has a hard
+ceiling of `s / sqrt(rho)` NO MATTER HOW MANY SLEEVES ARE ADDED. At the book's measured s = 0.48:
 
-**IT REPORTS `n` ALONGSIDE EVERY RHO AND REFUSES A SHORT SAMPLE.** A correlation from nine
-overlapping days has a standard error near 0.33: it is compatible with anything from -0.3 to +0.9,
-and reading a point estimate off it would replace an honest UNMEASURED with a confident wrong one.
+    rho 0.05  ->  k_eff cap 20.0  ->  ceiling S 2.15   -- 40%/yr reachable
+    rho 0.10  ->  k_eff cap 10.0  ->  ceiling S 1.52   -- reachable
+    rho 0.20  ->  k_eff cap  5.0  ->  ceiling S 1.07   -- 40%/yr UNREACHABLE at any n
+    rho 0.375 ->  k_eff cap  2.7  ->  ceiling S 0.78   -- unreachable
 
-    python scripts/track_sleeve_correlation.py [--min-overlap 20] [--json]
+ORTHOGONALITY IS THE BINDING CONSTRAINT, NOT SLEEVE COUNT. Past the ceiling, adding sleeves buys
+literally nothing, and a desk that keeps adding price-pattern variants is building a large pile of
+correlated noise and calling it a portfolio.
+
+WHAT IS ALREADY KNOWN, SO THIS IS NOT STARTING FROM ZERO
+
+`measure_cross_mechanism_corr.py` measured this on 2026-08-05 over 920 BACKTEST return streams
+grouped into 19 mechanisms: mean absolute off-diagonal rho 0.375, participation-ratio k_eff 4.08,
+ceiling 2.02x. That is a real measurement and it says the ceiling is low.
+
+What it is NOT is a measurement of THESE sleeves, LIVE, on overlapping forward history. Backtest
+streams share fitted parameters and a common sample; live streams do not. The number can move.
+This script measures the live one so the projections stop resting on the backtest one.
+
+**GO IN EXPECTING TO CONFIRM THE WALL.** The honest success criterion is whether live rho comes in
+UNDER 0.10 -- that is the threshold where 40%/yr exists at all. Anything at or above 0.20 settles
+the question in the other direction, and settling it is worth as much as opening it.
+
+THE PART THAT MAKES THIS HARD, AND WHY THE REPORT LEADS WITH IT
+
+A correlation estimated from a few weeks of daily returns is extremely noisy. The standard error
+of a Pearson correlation is approximately
+
+    se(rho) ~= (1 - rho^2) / sqrt(n - 3)
+
+At n = 20 daily observations and true rho = 0.2, se is 0.23 -- the interval spans "independent" to
+"hopeless". This script therefore refuses to publish a verdict below a minimum sample, reports the
+interval on every pair, and states how many observations would be needed to separate the measured
+value from the decision thresholds. A confident rho from three weeks of data would be exactly the
+kind of number that gets acted on and should not be.
+
+    python scripts/track_sleeve_correlation.py
+    python scripts/track_sleeve_correlation.py --min-obs 40 --target-sharpe 1.14
 """
 
 from __future__ import annotations
 
 # PATH BOOTSTRAP. `python scripts/x.py` puts scripts/ on sys.path, NOT the repo root.
-import sys as _sys
-from pathlib import Path as _P
+import sys
+from pathlib import Path
 
-if str(_P(__file__).resolve().parent.parent) not in _sys.path:
-    _sys.path.insert(0, str(_P(__file__).resolve().parent.parent))
+# The assignment must not sit BETWEEN the imports: ruff's E402 tolerates a bare sys.path guard
+# and not an intervening statement, so `_ROOT` is bound after the import block instead.
+if str(Path(__file__).resolve().parents[1]) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import argparse
-import itertools
 import json
 import math
 from datetime import UTC, datetime
-from pathlib import Path
+from itertools import combinations
 from typing import Any
 
-import numpy as np
+#: Sleeve/mechanism return streams. One file per mechanism, or one file keyed by mechanism.
+#: Gitignored on purpose -- these are live results, not source.
+_ROOT = Path(__file__).resolve().parents[1]
+_RETURNS = _ROOT / "data" / "sleeve_returns.json"
+_OUT = _ROOT / "reports" / "sleeve_correlation.json"
 
-_ROOT = Path(__file__).resolve().parent.parent
-_STATE = _ROOT / "data/sleeve_returns.jsonl"
-_OUT = _ROOT / "web/sleeve_correlation.json"
+#: Below this many OVERLAPPING observations, a pairwise correlation is not a measurement. At n=20
+#: the standard error is around 0.23, which spans every decision threshold that matters.
+MIN_OBS = 30
 
-#: Overlapping days below which a pairwise rho is reported as UNMEASURED rather than as a number.
-#: At n=20 the standard error of a correlation is ~1/sqrt(n-3) = 0.24, which is still wide -- so
-#: this is the floor at which the estimate becomes worth PRINTING, not the point at which it
-#: becomes reliable. The standard error travels with every value for exactly that reason.
-MIN_OVERLAP = 20
+#: The book's measured per-sleeve Sharpe. Not a target -- the observed starting point that the
+#: ceiling arithmetic is applied to.
+BOOK_SHARPE = 0.48
 
-#: Where each sleeve's daily positions come from. Every source publishes symbol -> weight, so one
-#: reader serves all of them and a new sleeve needs a row here rather than a new script.
-SOURCES: tuple[tuple[str, str, str], ...] = (
-    ("momentum", "data/spot_momentum.json", "target_weights"),
-    ("mechanism_sleeves", "data/mechanism_sleeve_targets.json", "target_weights"),
-    ("discretionary", "web/discretionary_live.json", "intents"),
-)
+#: Combined Sharpe required for 40%/yr at the book's vol and borrow rate. Stated so the verdict is
+#: against a number fixed in advance rather than one chosen after seeing rho.
+TARGET_SHARPE = 1.14
 
 
-def _prices() -> dict[str, float]:
-    try:
-        from libs.execution import binance_spot_live
-
-        return {str(k): float(v) for k, v in binance_spot_live.prices().items()}
-    except Exception:
-        return {}
-
-
-def _weights_today() -> dict[str, dict[str, float]]:
-    """sleeve -> {symbol: signed weight}, from whatever each sleeve published today."""
-    from libs.execution.spot_order_path import retarget
-
-    out: dict[str, dict[str, float]] = {}
-    for name, rel, key in SOURCES:
-        try:
-            doc = json.loads((_ROOT / rel).read_text("utf-8"))
-        except (OSError, ValueError):
-            continue
-        node = doc.get(key)
-        w: dict[str, float] = {}
-        if isinstance(node, dict):
-            w = {retarget(str(k), ""): float(v) for k, v in node.items()}
-        elif isinstance(node, list):
-            # the discretionary sleeve publishes INTENTS; only taken ones are positions
-            for row in node:
-                if isinstance(row, dict) and row.get("taken"):
-                    sym = retarget(str(row.get("symbol", "")), "")
-                    side = 1.0 if str(row.get("side", "BUY")).upper() == "BUY" else -1.0
-                    if sym:
-                        w[sym] = w.get(sym, 0.0) + side
-        if w:
-            out[name] = w
-    return out
+def _pearson(a: list[float], b: list[float]) -> float | None:
+    n = len(a)
+    if n < 3:
+        return None
+    ma, mb = sum(a) / n, sum(b) / n
+    va = sum((x - ma) ** 2 for x in a)
+    vb = sum((y - mb) ** 2 for y in b)
+    if va <= 0 or vb <= 0:
+        # A CONSTANT STREAM HAS NO CORRELATION, not zero correlation. A sleeve that never traded
+        # returns a flat line, and calling that "uncorrelated" would credit it with diversification
+        # it cannot provide -- the single easiest way to manufacture a good-looking k_eff.
+        return None
+    cov = sum((x - ma) * (y - mb) for x, y in zip(a, b, strict=True))
+    return cov / math.sqrt(va * vb)
 
 
-def append_today(now: datetime | None = None) -> dict[str, Any]:
-    """Mark each sleeve's CURRENT positions and append one row per day. Idempotent per date.
+def _se(rho: float, n: int) -> float:
+    """Approximate standard error of a Pearson correlation."""
+    return (1.0 - rho ** 2) / math.sqrt(max(1, n - 3))
 
-    APPEND-ONLY AND ONE ROW PER DAY. A second run the same day updates that day's marks rather
-    than adding a second observation -- two rows for one day would double-count it in every
-    correlation and inflate n without adding information.
+
+def _fisher_ci(rho: float, n: int, z: float = 1.96) -> tuple[float, float]:
+    """Fisher z interval -- correct near +/-1 where the normal approximation is not."""
+    if n <= 3 or abs(rho) >= 1.0:
+        return (-1.0, 1.0)
+    zr = 0.5 * math.log((1 + rho) / (1 - rho))
+    se = 1.0 / math.sqrt(n - 3)
+    lo, hi = zr - z * se, zr + z * se
+    return (math.tanh(lo), math.tanh(hi))
+
+
+def _align(streams: dict[str, dict[str, float]]) -> tuple[list[str], dict[str, list[float]]]:
+    """Restrict every stream to the dates ALL of them share.
+
+    Pairwise-complete correlation on differently-dated streams is how a matrix ends up
+    non-positive-definite and k_eff ends up meaningless. Common dates only, and the count is
+    reported so a thin overlap is visible rather than inferred.
     """
-    now = now or datetime.now(tz=UTC)
-    day = now.strftime("%Y-%m-%d")
-    px, weights = _prices(), _weights_today()
-    if not px or not weights:
-        return {"day": day, "written": False,
-                "why": ("prices or weights unreadable -- UNMEASURED. A row of zeros would enter "
-                        "every correlation as a real day on which nothing moved together")}
-    rows = []
-    if _STATE.exists():
-        for line in _STATE.read_text("utf-8").splitlines():
-            try:
-                r = json.loads(line)
-            except ValueError:
-                continue
-            if isinstance(r, dict) and r.get("day") != day:
-                rows.append(r)
-    marks = {name: {s: px[s + "USDC"] for s in w if s + "USDC" in px}
-             for name, w in weights.items()}
-    rows.append({"day": day, "at": now.isoformat(), "weights": weights, "marks": marks})
-    _STATE.parent.mkdir(parents=True, exist_ok=True)
-    _STATE.write_text("\n".join(json.dumps(r) for r in rows) + "\n", "utf-8")
-    return {"day": day, "written": True, "sleeves": sorted(weights)}
+    if not streams:
+        return [], {}
+    common = set.intersection(*(set(v.keys()) for v in streams.values()))
+    dates = sorted(common)
+    return dates, {k: [float(v[d]) for d in dates] for k, v in streams.items()}
 
 
-def _daily_returns() -> dict[str, dict[str, float]]:
-    """sleeve -> {day: signal return}, from consecutive marks of the SAME positions.
-
-    A day's return uses YESTERDAY's weights against today's prices -- the position was held into
-    the move. Using today's weights would mark a position the sleeve had not yet taken, which is
-    lookahead of the purest kind and would flatter every sleeve identically.
-    """
-    rows = []
-    try:
-        for line in _STATE.read_text("utf-8").splitlines():
-            try:
-                rows.append(json.loads(line))
-            except ValueError:
-                continue
-    except OSError:
-        return {}
-    rows.sort(key=lambda r: str(r.get("day", "")))
-    out: dict[str, dict[str, float]] = {}
-    for prev, cur in itertools.pairwise(rows):
-        for name, w in (prev.get("weights") or {}).items():
-            p0 = (prev.get("marks") or {}).get(name) or {}
-            p1 = (cur.get("marks") or {}).get(name) or {}
-            legs = [(1.0 if v > 0 else -1.0) * (float(p1[s]) / float(p0[s]) - 1.0)
-                    for s, v in w.items()
-                    if s in p0 and s in p1 and float(p0[s]) > 0 and float(p1[s]) > 0]
-            if legs:
-                out.setdefault(name, {})[str(cur["day"])] = float(np.mean(legs))
-    return out
-
-
-def report(min_overlap: int = MIN_OVERLAP) -> dict[str, Any]:
-    from libs.research.breadth import combined_sharpe, effective_breadth
-
-    series = _daily_returns()
-    pairs: list[dict[str, Any]] = []
-    measured: list[float] = []
-    for a, b in itertools.combinations(sorted(series), 2):
-        common = sorted(set(series[a]) & set(series[b]))
-        row: dict[str, Any] = {"a": a, "b": b, "n_overlap": len(common)}
-        if len(common) < min_overlap:
-            row["rho"] = None
-            row["why"] = (f"{len(common)} overlapping day(s) against a floor of {min_overlap}. "
-                          "A correlation from a handful of days is compatible with almost any "
-                          "value; printing the point estimate would replace an honest UNMEASURED "
-                          "with a confident wrong number")
-        else:
-            xa = np.array([series[a][d] for d in common], dtype="float64")
-            xb = np.array([series[b][d] for d in common], dtype="float64")
-            if xa.std() <= 0 or xb.std() <= 0:
-                row["rho"] = None
-                row["why"] = "one series has zero variance -- a flat sleeve correlates with nothing"
-            else:
-                rho = float(np.corrcoef(xa, xb)[0, 1])
-                row["rho"] = round(rho, 4)
-                # THE STANDARD ERROR TRAVELS WITH THE VALUE. 1/sqrt(n-3) is the Fisher-z SE, and
-                # at the n this desk will have for months it is WIDE -- which is the finding, not
-                # a footnote to it.
-                row["se"] = round(1.0 / math.sqrt(len(common) - 3), 4)
-                measured.append(rho)
-        pairs.append(row)
-
-    n = len(series)
-    rho_bar = float(np.mean(measured)) if measured else None
-    k = effective_breadth(n, rho_bar)
-    s_bar = 0.48
-    return {
+def analyse(streams: dict[str, dict[str, float]], *, min_obs: int = MIN_OBS,
+            book_sharpe: float = BOOK_SHARPE,
+            target_sharpe: float = TARGET_SHARPE) -> dict[str, Any]:
+    dates, series = _align(streams)
+    n = len(dates)
+    names = sorted(series)
+    rep: dict[str, Any] = {
         "updated": datetime.now(tz=UTC).isoformat(),
-        "n_sleeves": n, "sleeves": sorted(series),
-        "days_recorded": {k2: len(v) for k2, v in sorted(series.items())},
-        "min_overlap": min_overlap,
-        "pairs": pairs,
-        "n_pairs_measured": len(measured),
-        "mean_rho": None if rho_bar is None else round(rho_bar, 4),
-        "rho_state": "MEASURED" if rho_bar is not None else "UNMEASURED",
-        "effective_breadth": None if k is None else round(k, 3),
-        "combined_sharpe_at_s048": (None if rho_bar is None
-                                    else round(combined_sharpe(s_bar, n, rho_bar) or 0.0, 3)),
-        "measure": ("daily SIGNAL returns of each sleeve's published positions, marked forward on "
-                    "one grid and EXCLUDING costs. Fees are close to a per-sleeve constant, so "
-                    "they move the means far more than the co-movement -- this is the one desk "
-                    "statistic where the signal proxy is nearly as good as the realised one"),
-        "why_it_matters": (
-            "k_eff = n/(1+(n-1)rho) asymptotes to 1/rho. At rho=0.2 combined Sharpe caps at "
-            "s*sqrt(5) however many sleeves are added, so 40%/yr is unreachable at ANY n -- and "
-            "at rho=0 six sleeves reach it. Those two futures are identical in every artifact "
-            "except this one"),
+        "mechanisms": names, "n_mechanisms": len(names),
+        "overlapping_observations": n,
+        "first": dates[0] if dates else None, "last": dates[-1] if dates else None,
+        "book_sharpe": book_sharpe, "target_sharpe": target_sharpe,
+        "pairs": [], "usable": False,
     }
 
+    if len(names) < 2:
+        rep["verdict"] = (f"{len(names)} stream(s). Correlation needs two, and the whole question "
+                          "is whether DIFFERENT mechanisms move together.")
+        return rep
+    if n < min_obs:
+        rep["verdict"] = (
+            f"UNUSABLE -- {n} overlapping observations, below the {min_obs} floor. "
+            f"se(rho) at n={n} is about {_se(0.2, n):.2f}, which spans every threshold that "
+            f"matters: 0.10 (40%/yr reachable) and 0.20 (unreachable at any sleeve count). "
+            f"A number published here would be acted on and should not be.")
+        return rep
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--min-overlap", type=int, default=MIN_OVERLAP)
-    ap.add_argument("--json", action="store_true")
-    args = ap.parse_args()
+    rhos: list[float] = []
+    for a, b in combinations(names, 2):
+        r = _pearson(series[a], series[b])
+        if r is None:
+            rep["pairs"].append({"a": a, "b": b, "rho": None,
+                                 "why": "a stream is constant -- it never traded, which is not "
+                                        "the same as being uncorrelated"})
+            continue
+        lo, hi = _fisher_ci(r, n)
+        rhos.append(r)
+        rep["pairs"].append({"a": a, "b": b, "rho": round(r, 4),
+                             "ci95": [round(lo, 4), round(hi, 4)],
+                             "se": round(_se(r, n), 4)})
 
-    wrote = append_today()
-    rep = report(args.min_overlap)
-    rep["today"] = wrote
-    _OUT.parent.mkdir(parents=True, exist_ok=True)
-    _OUT.write_text(json.dumps(rep, indent=1), "utf-8")
+    if len(rhos) < 1:
+        rep["verdict"] = "no pair had two live streams to compare"
+        return rep
 
-    if args.json:
-        print(json.dumps(rep, indent=1))
-        return 0
-    print(f"=== SLEEVE CORRELATION === {rep['n_sleeves']} sleeve(s), rho {rep['rho_state']}"
-          + (f" = {rep['mean_rho']:+.3f}" if rep["mean_rho"] is not None else "")
-          + f", {rep['n_pairs_measured']} of {len(rep['pairs'])} pair(s) measured")
-    if not wrote.get("written"):
-        print(f"  today NOT recorded: {wrote.get('why')}")
-    else:
-        print(f"  recorded {wrote['day']}: {', '.join(wrote['sleeves'])}")
-    for d, days in rep["days_recorded"].items():
-        print(f"    {d:<20} {days} day(s) of return history")
+    N = len(names)
+    mean_rho = sum(rhos) / len(rhos)
+    mean_abs = sum(abs(x) for x in rhos) / len(rhos)
+
+    # BOTH are reported, and the gap between them is the finding when it is large. A mean of +0.005
+    # across pairs running from -0.85 to +0.96 reads as "independent" and is CANCELLATION, not
+    # diversification -- two correlated blocs pointing opposite ways. The absolute mean is the one
+    # that governs how much risk actually diversifies.
+    def keff(rho: float) -> float:
+        d = 1.0 + (N - 1) * rho
+        return max(1.0, min(float(N), N / d)) if d > 0 else float(N)
+
+    k_signed, k_abs = keff(mean_rho), keff(mean_abs)
+    ceil_signed = book_sharpe * math.sqrt(k_signed)
+    ceil_abs = book_sharpe * math.sqrt(k_abs)
+    # The asymptote: what no number of sleeves can beat.
+    asym = (book_sharpe / math.sqrt(mean_abs)) if mean_abs > 0 else float("inf")
+
+    rep.update({
+        "usable": True,
+        "mean_rho": round(mean_rho, 4),
+        "mean_abs_rho": round(mean_abs, 4),
+        "rho_min": round(min(rhos), 4), "rho_max": round(max(rhos), 4),
+        "k_eff_signed": round(k_signed, 2), "k_eff_abs": round(k_abs, 2),
+        "combined_sharpe_signed": round(ceil_signed, 3),
+        "combined_sharpe_abs": round(ceil_abs, 3),
+        "ceiling_at_infinite_sleeves": (None if math.isinf(asym) else round(asym, 3)),
+        "backtest_reference": {"mean_abs_rho": 0.375, "k_eff": 4.08,
+                               "source": "measure_cross_mechanism_corr.py, 2026-08-05, "
+                                         "920 backtest streams / 19 mechanisms"},
+    })
+
+    reach = "REACHABLE" if (not math.isinf(asym) and asym >= target_sharpe) else "UNREACHABLE"
+    need_n = None
+    if reach == "REACHABLE":
+        # How many sleeves at THIS rho to actually get there.
+        want_k = (target_sharpe / book_sharpe) ** 2
+        if mean_abs > 0 and want_k < 1.0 / mean_abs:
+            need_n = math.ceil(want_k * (1 - mean_abs) / (1 - want_k * mean_abs))
+    rep["sleeves_needed"] = need_n
+    rep["verdict"] = (
+        f"live mean |rho| = {mean_abs:.3f} over {N} mechanisms, {n} overlapping days. "
+        f"k_eff {k_abs:.2f}, combined Sharpe {ceil_abs:.2f}. "
+        f"Ceiling at infinite sleeves is {'unbounded' if math.isinf(asym) else f'{asym:.2f}'}, so "
+        f"S={target_sharpe:.2f} is {reach}"
+        + (f" -- about {need_n} sleeves at this rho." if need_n else
+           f". Adding sleeves past k_eff {1/mean_abs:.1f} buys nothing." if mean_abs > 0 else "."))
+    return rep
+
+
+def render(rep: dict[str, Any]) -> str:
+    L = [f"LIVE CROSS-MECHANISM CORRELATION  ({rep['updated'][:19]}Z)", ""]
+    L.append(f"  mechanisms            {rep['n_mechanisms']}  "
+             f"{', '.join(rep.get('mechanisms', [])) or '-'}")
+    L.append(f"  overlapping days      {rep['overlapping_observations']}"
+             + (f"   {rep['first']} .. {rep['last']}" if rep.get("first") else ""))
+    if not rep.get("usable"):
+        L += ["", "  " + rep.get("verdict", "no verdict")]
+        return "\n".join(L)
+
+    L += ["", "PAIRWISE", ""]
     for p in rep["pairs"]:
-        if p["rho"] is None:
-            print(f"  {p['a']} x {p['b']}: UNMEASURED -- {str(p['why'])[:90]}")
-        else:
-            print(f"  {p['a']} x {p['b']}: rho {p['rho']:+.3f} +/- {p['se']:.3f} "
-                  f"over {p['n_overlap']} day(s)")
-    if rep["mean_rho"] is not None:
-        print(f"  -> k_eff {rep['effective_breadth']}, combined Sharpe "
-              f"{rep['combined_sharpe_at_s048']} at s=0.48")
+        if p.get("rho") is None:
+            L.append(f"  {p['a'][:26]:<26} {p['b'][:26]:<26}   n/a  {p.get('why','')[:44]}")
+            continue
+        lo, hi = p["ci95"]
+        L.append(f"  {p['a'][:26]:<26} {p['b'][:26]:<26} {p['rho']:>+7.3f}  "
+                 f"95% [{lo:+.2f}, {hi:+.2f}]")
+
+    L += ["", "AGGREGATE", "",
+          f"  mean rho (signed)     {rep['mean_rho']:+.4f}   k_eff {rep['k_eff_signed']:.2f}   "
+          f"-> S {rep['combined_sharpe_signed']:.2f}",
+          f"  mean |rho|            {rep['mean_abs_rho']:.4f}   k_eff {rep['k_eff_abs']:.2f}   "
+          f"-> S {rep['combined_sharpe_abs']:.2f}   <- THE ONE THAT GOVERNS",
+          f"  range                 {rep['rho_min']:+.3f} .. {rep['rho_max']:+.3f}"]
+    if abs(rep["mean_rho"]) < 0.5 * rep["mean_abs_rho"]:
+        L.append("  NOTE: the signed mean is far below the absolute mean. That is CANCELLATION")
+        L.append("  between opposing blocs, not independence, and it does not diversify risk.")
+    ref = rep["backtest_reference"]
+    L += ["", f"  backtest reference    mean |rho| {ref['mean_abs_rho']:.3f}, k_eff {ref['k_eff']}",
+          f"                        {ref['source']}"]
+    L += ["", "VERDICT", "", "  " + rep["verdict"], "",
+          "  A correlation is not a constant. It rises in exactly the regime where",
+          "  diversification is needed -- a liquidation cascade moves every crypto",
+          "  mechanism together. Treat this as an upper bound on your independence,",
+          "  measured in calm, not a property you own."]
+    return "\n".join(L)
+
+
+def _load(path: Path) -> dict[str, dict[str, float]]:
+    if not path.exists():
+        return {}
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if isinstance(doc, dict) and isinstance(doc.get("streams"), dict):
+        doc = doc["streams"]
+    return {k: v for k, v in doc.items() if isinstance(v, dict) and v}
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--returns", default=str(_RETURNS),
+                    help="JSON: {mechanism: {YYYY-MM-DD: daily_return}}")
+    ap.add_argument("--min-obs", type=int, default=MIN_OBS)
+    ap.add_argument("--book-sharpe", type=float, default=BOOK_SHARPE)
+    ap.add_argument("--target-sharpe", type=float, default=TARGET_SHARPE)
+    ap.add_argument("--json", action="store_true")
+    a = ap.parse_args()
+
+    streams = _load(Path(a.returns))
+    if not streams:
+        print(f"no return streams at {a.returns}\n\n"
+              "  Expected: {\"mechanism_name\": {\"2026-08-15\": 0.0031, ...}, ...}\n\n"
+              "  Nothing to measure yet. Three of the four census families only started\n"
+              "  publishing signals recently, so overlapping live history is what this is\n"
+              "  waiting on -- and elapsed time is the only thing that produces it.\n\n"
+              "  Until then the backtest figure stands: mean |rho| 0.375, k_eff 4.08,\n"
+              "  combined Sharpe ceiling 0.78 at the book's s=0.48. On that number,\n"
+              "  40%/yr is unreachable at ANY sleeve count.")
+        return
+
+    rep = analyse(streams, min_obs=a.min_obs, book_sharpe=a.book_sharpe,
+                  target_sharpe=a.target_sharpe)
+    _OUT.parent.mkdir(parents=True, exist_ok=True)
+    _OUT.write_text(json.dumps(rep, indent=2), "utf-8")
+    print(json.dumps(rep, indent=2) if a.json else render(rep))
     print(f"\n-> {_OUT}")
-    return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()

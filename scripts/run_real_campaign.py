@@ -26,7 +26,7 @@ from typing import Any
 
 import numpy as np
 
-from libs.autodiscovery.generators import GENERATORS, net_returns
+from libs.autodiscovery.generators import GENERATORS, returns_for
 from libs.autodiscovery.models import Family, Hypothesis, MarketSeries
 from libs.autodiscovery.validation import campaign_gate_stats, validate
 from libs.data.venue_http import get_json
@@ -146,7 +146,9 @@ def main(argv: list[str] | None = None) -> int:
                     continue
                 if pos.size == 0 or float(np.mean(pos != 0.0)) < 0.01:
                     continue
-                r = net_returns(ser, pos)
+                # returns_for: a delta-neutral carry has no spot exposure, so the price
+                # path would score a direction bet under a carry label instead of erroring.
+                r = returns_for(spec)(ser, pos)
                 if not np.all(np.isfinite(r)) or float(np.std(r)) <= 0:
                     continue
                 cands.append({

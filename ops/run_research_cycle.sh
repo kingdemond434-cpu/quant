@@ -143,6 +143,42 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # the margin wallet. The leverage is computed from measured Sharpe and vol every run, so this
   # line is correct whether the edge supports 0.8x or 6x -- there is no number here to go stale.
   nice -n 15 "$PY" scripts/run_margin_executor.py --quote "${SPOT_QUOTE:-USDC}" --place
+  # ---- PRODUCER ECONOMICS: the input _producer_margin_stress was starved of --
+  #
+  # THE SAME SILENT SHAPE AS THE RHO TRACKER, ONE LAYER DOWN. The generator was registered, the
+  # MarketSeries fields existed, the adapter attached them -- and no process ever fetched the
+  # numbers, so it returned zeros on every symbol of every campaign while looking provisioned.
+  #
+  # `treasury_cost_base_liquidation` scores 0.70 orthogonality against a library that is otherwise
+  # eleven rules across three census classes, which makes it the best diversification this desk can
+  # still reach. It was blocked on free data nobody had scheduled.
+  #
+  # Daily, because the series only accumulates with elapsed time: the generator's z-score needs 90
+  # days, blockchain.info serves history, so the first run backfills and every run after keeps it
+  # current. `|| true` -- a producer-data outage must not take down the trading cycle, and the
+  # generator degrades to flat on absent days by design rather than guessing through them.
+  nice -n 15 "$PY" scripts/fetch_producer_economics.py || true
+  # ---- THE MECHANISM SLEEVES, AND THE RHO CHAIN THEY FEED -------------------
+  #
+  # NONE OF THIS WAS SCHEDULED. run_mechanism_sleeves.py published the sleeve targets only when
+  # someone typed it by hand, so the targets file went stale between manual runs and the two
+  # sleeves under the live exception accrued no forward record -- while the exception's own
+  # 30-day review clock ran anyway. A review against evidence that was never collected is not a
+  # review.
+  #
+  # It fails closed on its own if the exception ledger is inactive, so scheduling it grants no
+  # authority the principal did not already write down.
+  nice -n 15 "$PY" scripts/run_mechanism_sleeves.py || true
+  nice -n 15 "$PY" scripts/run_margin_executor.py --quote "${SPOT_QUOTE:-USDC}" --place \
+      --targets data/mechanism_sleeve_targets.json || true
+  # THE WRITER THE RHO TRACKER WAS WAITING FOR. track_sleeve_correlation.py reads
+  # data/sleeve_returns.json and NOTHING WROTE IT -- the tracker would have printed "nothing to
+  # measure yet" forever, looking patient while starving. Correlation is the one number that
+  # decides whether the desk's return target is reachable at all, and it only accumulates with
+  # elapsed time, so the recorder has to run every cycle from now rather than from when someone
+  # remembers.
+  nice -n 15 "$PY" scripts/record_sleeve_returns.py || true
+  nice -n 15 "$PY" scripts/track_sleeve_correlation.py || true
   # --spot-only REFUSES every short H3 calls and journals the refusal, rather than inverting it
   # (which would score H3's hit rate against trades it never called for) or dropping it silently
   # (which would hide that half its signals were unplaceable rather than absent).

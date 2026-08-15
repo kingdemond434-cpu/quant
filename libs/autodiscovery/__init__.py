@@ -12,7 +12,14 @@ from __future__ import annotations
 
 from libs.autodiscovery.data_opportunity import DataOpportunityEngine, DataOpportunityReport
 from libs.autodiscovery.errors import AutoDiscoveryError
-from libs.autodiscovery.generators import GENERATORS, GeneratorSpec, net_returns, planned_hypotheses
+from libs.autodiscovery.generators import (
+    GENERATORS,
+    GeneratorSpec,
+    carry_returns,
+    net_returns,
+    planned_hypotheses,
+    returns_for,
+)
 from libs.autodiscovery.lifecycle import promote, segment_pass
 from libs.autodiscovery.memory import CandidateStore, content_hash
 from libs.autodiscovery.models import (
@@ -52,7 +59,9 @@ __all__ = [  # noqa: RUF022  # grouped by concern
     "GENERATORS",
     "GeneratorSpec",
     "planned_hypotheses",
+    "carry_returns",
     "net_returns",
+    "returns_for",
     # validation / lifecycle
     "validate",
     "promote",
