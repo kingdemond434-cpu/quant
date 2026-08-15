@@ -133,6 +133,14 @@ _STEPS = [
     # both of which are the principal's acts. The leverage is COMPUTED every run -- no flag -- so a
     # thin edge borrows nothing and the same line is correct at any Sharpe.
     ("margin_orders",     "scripts/run_margin_executor.py --quote USDC --place", 300),
+    # THE MECHANISM SLEEVES, running under a DECLARED SUSPENSION of L1.6 recorded in
+    # docs/research/LIVE_EXCEPTION_LEDGER.json. Both steps fail closed without that ledger row, so
+    # revoking the exception is one field and binds on the next cycle. They trade as a SEPARATE
+    # book with their own target artifact -- merging them into the momentum weights would produce
+    # a set no organ published, sized against a Sharpe describing neither.
+    ("mechanism_sleeves", "scripts/run_mechanism_sleeves.py", 300),
+    ("mechanism_orders",  "scripts/run_margin_executor.py --quote USDC --place "
+                          "--targets data/mechanism_sleeve_targets.json", 300),
     ("leaderboards",      "scripts/collect_leaderboards.py", 300),
     ("copytrading_panel", "scripts/screen_copytrading.py",   300),
     ("listing_watch",     "scripts/run_listing_watch.py",    60),  # gap-53 data clock
