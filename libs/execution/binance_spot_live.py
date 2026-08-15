@@ -13,7 +13,10 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import http.client
 import json
+import socket
+import ssl
 import time
 import urllib.error
 import urllib.parse
@@ -24,6 +27,21 @@ from typing import Any
 from libs.execution.idempotency import client_order_id
 
 _BASE = "https://api.binance.com"                # PINNED live spot -- verified against docs
+
+#: EVERY CALL LEAVES OVER IPv4, BECAUSE THE VENUE'S WHITELIST IS AN IPv4 LIST.
+#:
+#: Measured 2026-08-15 on the live box. It holds two addresses -- 95.216.191.70 and
+#: 2a01:4f9:c010:9451::1 -- and Python's default resolver preferred the IPv6 one. So the key was
+#: whitelisted for the v4 address, every request arrived from the v6 address, and Binance returned
+#: `-2015 Invalid API-key, IP, or permissions for action` on a key whose key, secret and
+#: permissions were all correct. The message names three causes and the true one is a FOURTH that
+#: it does not mention, which is why this constant is here rather than in an operator's memory.
+#:
+#: The alternative fixes were rejected: /etc/gai.conf needs root the box does not have, and adding
+#: the v6 address to the venue whitelist leaves the desk one dual-stack host away from the same
+#: silent failure. Pinning the egress family makes the address the venue sees a PROPERTY OF THIS
+#: MODULE rather than of the host's resolver ordering.
+FORCE_IPV4 = True
 _KEYFILE = Path("data/secrets/binance_live_spot.json")
 _ENABLE_FLAG = Path("data/LIVE_ENABLE")
 _VPS_MARKER = Path("data/LIVE_VPS_VERIFIED")
@@ -53,6 +71,55 @@ def is_armed() -> tuple[bool, str]:
     return all(checks.values()), ", ".join(f"{k}={v}" for k, v in checks.items())
 
 
+class _IPv4HTTPSConnection(http.client.HTTPSConnection):
+    """HTTPS pinned to A records. `socket.create_connection` walks whatever `getaddrinfo` returns
+    in whatever order the host prefers, so on a dual-stack box the egress address -- the one the
+    venue matches against its whitelist -- is decided by system configuration nobody here reads."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        # HELD EXPLICITLY. `HTTPSConnection._context` exists at runtime but is absent from the
+        # typeshed stubs, and reaching for a private attribute the checker cannot see is how a
+        # TLS context silently becomes None on a version bump -- on the module that places orders.
+        self._tls: ssl.SSLContext = kwargs.get("context") or ssl.create_default_context()
+
+    def connect(self) -> None:
+        last: OSError | None = None
+        for af, kind, proto, _canon, addr in socket.getaddrinfo(
+                self.host, self.port, socket.AF_INET, socket.SOCK_STREAM):
+            sock = socket.socket(af, kind, proto)
+            try:
+                if isinstance(self.timeout, int | float):
+                    sock.settimeout(self.timeout)
+                sock.connect(addr)
+            except OSError as exc:
+                sock.close()
+                last = exc
+                continue
+            self.sock = self._tls.wrap_socket(sock, server_hostname=self.host)
+            return
+        raise last or OSError(f"no IPv4 address for {self.host}")
+
+
+class _IPv4HTTPSHandler(urllib.request.HTTPSHandler):
+    def https_open(self, req: urllib.request.Request) -> Any:
+        return self.do_open(_IPv4HTTPSConnection, req,
+                            context=getattr(self, "_context", None))
+
+
+#: Socket bound on every venue call. An unbounded read on the order path does not fail, it HANGS,
+#: and a hung order is the one state the desk cannot reconcile -- it does not know whether the leg
+#: exists. Passed EXPLICITLY at the call site rather than defaulted, so the bound is visible where
+#: the request is made and cannot be lost by a wrapper that forgets to forward it.
+_TIMEOUT_S = 20
+
+
+def _urlopen(req: urllib.request.Request, *, timeout: int = _TIMEOUT_S) -> Any:
+    if not FORCE_IPV4:
+        return urllib.request.urlopen(req, timeout=timeout)
+    return urllib.request.build_opener(_IPv4HTTPSHandler()).open(req, timeout=timeout)
+
+
 def _open(req: urllib.request.Request) -> Any:
     """urlopen, but a rejection carries the VENUE'S OWN REASON.
 
@@ -67,7 +134,7 @@ def _open(req: urllib.request.Request) -> Any:
     The body is quoted, never the credential: the request's headers are not touched here.
     """
     try:
-        with urllib.request.urlopen(req, timeout=20) as r:
+        with _urlopen(req, timeout=_TIMEOUT_S) as r:
             return json.loads(r.read())
     except urllib.error.HTTPError as exc:
         try:
