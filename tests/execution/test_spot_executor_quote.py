@@ -161,3 +161,24 @@ def test_THE_PLACED_AMOUNT_IS_FLOORED_NOT_ROUNDED() -> None:
     src = _SRC.read_text("utf-8")
     assert "_floor_2dp(delta)" in src, "the order amount still rounds to nearest"
     assert 'place_market_quote(sym, "BUY", round(' not in src
+
+
+def test_A_RESERVE_LEAVES_CAPITAL_FOR_THE_OTHER_SLEEVES() -> None:
+    """MEASURED 2026-08-15, the moment the discretionary sleeve was given --place: the momentum
+    book had deployed 100% of equity, so eleven rules found $0 of free quote and every one of them
+    refused with "below the venue minimum". Both sleeves were behaving correctly and the book was
+    allocated by RUN ORDER -- whichever executed first took everything.
+
+    A capital split is a decision, so it is a parameter with a stated default rather than an
+    accident of the cron file's line ordering."""
+    src = _SRC.read_text("utf-8")
+    assert "--reserve-frac" in src
+    assert "deployable = equity * (1.0 - reserve)" in src
+    assert "allocated by RUN ORDER" in src, "the reason must travel with the parameter"
+
+
+def test_THE_RESERVE_IS_CLAMPED_TO_A_FRACTION() -> None:
+    """A reserve above 1.0 would produce negative deployable equity and short the book; below 0 it
+    would deploy more than exists."""
+    src = _SRC.read_text("utf-8")
+    assert "max(0.0, min(1.0, float(args.reserve_frac)))" in src

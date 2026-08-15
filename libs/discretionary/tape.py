@@ -1,0 +1,176 @@
+"""THE MOAT TAPE, READ -- signed trade flow and volume-at-price, for H4 and H5.
+
+WHY THIS EXISTS AND WHY IT DID NOT. `DISCRETIONARY_PLAYBOOK_PREREGISTRATION.md` marks H4 (Auction
+Market Theory / Volume Profile) and H5 (order flow / CVD) as **BLOCKED: recorder bringup
+(operator)**. That was true when it was written on 2026-08-04.
+
+IT IS NO LONGER TRUE, AND NOTHING NOTICED. `run_recorder_spot` and `run_recorder` have been taping
+every aggTrade -- price, quantity, and `m` (isBuyerMaker), which IS the trade's sign -- plus top-20
+depth, into hourly gzip partitions under `data/moat/`. Three recorder units are enabled on the box.
+So the exact inputs those two hypotheses were waiting for have been accumulating for weeks while
+both stayed marked blocked, and the block was a stale note rather than a missing capability.
+
+That is the desk's own defect class from the other side: not an unwired capability, but UNREAD
+DATA -- collected daily, at cost, consumed by nothing, with a document explaining why it could not
+be consumed. Nobody re-reads a BLOCKED label to ask whether it is still true.
+
+**SIGNED FLOW IS THE THING OHLCV CANNOT GIVE.** A candle body is not delta: a bar can close green
+on net selling and red on net buying, and the folk method of inferring flow from candle direction
+has no evidence behind it. `m=True` means the BUYER was the maker, so the aggressor was a SELLER --
+that mapping is the whole of CVD and getting it backwards inverts every signal built on it.
+
+**VOLUME AT PRICE IS AN ESTIMATE OF THE AUCTION, NOT THE AUCTION.** aggTrades bucket to a price
+grid, giving POC/VAH/VAL. That is what Market Profile needs and it is genuinely different from
+OHLCV, but it is trade prints rather than the full book, and the module says so rather than
+implying a depth-derived profile.
+"""
+
+from __future__ import annotations
+
+import gzip
+import json
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+
+__all__ = [
+    "MOAT_ROOTS",
+    "TapeProfile",
+    "cvd",
+    "load_trades",
+    "volume_profile",
+]
+
+#: Where the recorders write. Both are read: a symbol taped on one venue and not the other must
+#: not read as "no tape", which is the absence-as-verdict defect on the collection layer.
+MOAT_ROOTS: tuple[str, ...] = ("data/moat/spot", "data/moat/perp", "data/moat/fut")
+
+#: Value-area fraction. 70% is Market Profile's own definition, not a desk choice -- H4 is
+#: registered as "POC/VAH/VAL reversion", and those letters mean the standard construction.
+VALUE_AREA = 0.70
+
+#: Price buckets across the session's range. Enough that the POC is a price rather than a region,
+#: few enough that a thin tape does not scatter into singleton bins.
+_BINS = 50
+
+
+@dataclass(frozen=True)
+class TapeProfile:
+    """Volume-at-price for one window, plus the signed flow over the same trades. Both come from
+    one pass so they can never describe different windows."""
+
+    poc: float
+    vah: float
+    val: float
+    cvd: float
+    n_trades: int
+    total_volume: float
+    why: str
+
+    def as_row(self) -> dict[str, Any]:
+        return {"poc": round(self.poc, 8), "vah": round(self.vah, 8), "val": round(self.val, 8),
+                "cvd": round(self.cvd, 4), "n_trades": self.n_trades,
+                "total_volume": round(self.total_volume, 4), "why": self.why}
+
+
+def _partitions(symbol: str, roots: tuple[str, ...] = MOAT_ROOTS) -> list[Path]:
+    out: list[Path] = []
+    for r in roots:
+        d = Path(r) / symbol
+        if d.is_dir():
+            out.extend(sorted(d.glob("*.jsonl.gz")))
+    return out
+
+
+def load_trades(symbol: str, *, max_files: int = 24,
+                roots: tuple[str, ...] = MOAT_ROOTS) -> list[tuple[int, float, float, bool]]:
+    """Recent aggTrades as (ts_ms, price, qty, is_buyer_maker), oldest first.
+
+    `max_files` bounds the read: partitions are hourly, so 24 is the last day. Unbounded reads on a
+    tape that grows forever turn a daily cycle into an outage the first time nobody is watching.
+
+    A CORRUPT LINE IS SKIPPED, NEVER FATAL. A truncated final partition is normal -- the recorder
+    may be mid-write -- and losing a day's tape to one bad byte would be a self-inflicted outage.
+    """
+    files = _partitions(symbol, roots)[-max_files:]
+    out: list[tuple[int, float, float, bool]] = []
+    for f in files:
+        try:
+            with gzip.open(f, "rt", encoding="utf-8") as fh:
+                for line in fh:
+                    if '"k": "t"' not in line and '"k":"t"' not in line:
+                        continue          # depth row; cheap string test before the json parse
+                    try:
+                        r = json.loads(line)
+                    except ValueError:
+                        continue
+                    if r.get("k") != "t":
+                        continue
+                    try:
+                        out.append((int(r["t"]), float(r["p"]), float(r["q"]), bool(r["m"])))
+                    except (KeyError, TypeError, ValueError):
+                        continue
+        except (OSError, EOFError):
+            continue                       # partition mid-write or truncated: skip, do not fail
+    out.sort(key=lambda t: t[0])
+    return out
+
+
+def cvd(trades: list[tuple[int, float, float, bool]]) -> float:
+    """Cumulative volume delta: aggressor-buy volume minus aggressor-sell volume.
+
+    `m` IS THE MAKER FLAG AND THE SIGN IS ITS INVERSE. `m=True` means the buyer was the MAKER, so
+    the trade was lifted by a SELLER and counts negative. Getting this backwards inverts every
+    divergence signal built on top and would look like a working strategy with the sign flipped.
+    """
+    return float(sum((-q if m else q) for _, _, q, m in trades))
+
+
+def volume_profile(trades: list[tuple[int, float, float, bool]], *,
+                   bins: int = _BINS, value_area: float = VALUE_AREA) -> TapeProfile | None:
+    """POC / VAH / VAL from trade prints, with the CVD over the same trades.
+
+    Returns None on an empty or degenerate tape -- NOT a zero profile. A POC of 0.0 would be a
+    price the market never traded at, and every comparison against it would be nonsense that
+    looked numeric.
+
+    THE VALUE AREA GROWS FROM THE POC OUTWARD, taking whichever adjacent bin holds more volume,
+    until 70% is enclosed. That is Market Profile's construction; a percentile of the price
+    distribution is a different object that happens to produce similar numbers on quiet days.
+    """
+    if len(trades) < 20:
+        return None
+    px = np.array([p for _, p, _, _ in trades], dtype="float64")
+    qty = np.array([q for _, _, q, _ in trades], dtype="float64")
+    lo, hi = float(px.min()), float(px.max())
+    if not np.isfinite(lo) or hi <= lo or qty.sum() <= 0:
+        return None
+
+    edges = np.linspace(lo, hi, bins + 1)
+    idx = np.clip(np.digitize(px, edges) - 1, 0, bins - 1)
+    vol = np.zeros(bins, dtype="float64")
+    np.add.at(vol, idx, qty)
+    centres = (edges[:-1] + edges[1:]) / 2.0
+
+    poc_i = int(np.argmax(vol))
+    target = value_area * float(vol.sum())
+    lo_i = hi_i = poc_i
+    acc = float(vol[poc_i])
+    while acc < target and (lo_i > 0 or hi_i < bins - 1):
+        below = float(vol[lo_i - 1]) if lo_i > 0 else -1.0
+        above = float(vol[hi_i + 1]) if hi_i < bins - 1 else -1.0
+        if above >= below:
+            hi_i += 1
+            acc += max(above, 0.0)
+        else:
+            lo_i -= 1
+            acc += max(below, 0.0)
+
+    return TapeProfile(
+        poc=float(centres[poc_i]), vah=float(centres[hi_i]), val=float(centres[lo_i]),
+        cvd=cvd(trades), n_trades=len(trades), total_volume=float(qty.sum()),
+        why=(f"{len(trades):,} aggTrades over [{lo:.6g}, {hi:.6g}], {bins} price bins, "
+             f"{value_area:.0%} value area grown outward from the POC. Trade prints, not depth: "
+             "this estimates the auction, it is not the book"))

@@ -181,6 +181,10 @@ def main() -> int:
                     help="ACTUALLY PLACE ORDERS. Absent, this prints what it would do and spends "
                          "nothing")
     ap.add_argument("--max-run-frac", type=float, default=MAX_RUN_FRAC)
+    ap.add_argument("--reserve-frac", type=float, default=0.0,
+                    help="fraction of equity this book must NOT deploy, held for the other "
+                         "sleeves. Two sleeves sharing one wallet is a capital allocation, and "
+                         "without this the one that runs first takes everything")
     ap.add_argument("--quote", default="USDT",
                     help="quote asset to TRADE in, independent of the quote the research universe "
                          "is denominated in. EEA retail cannot trade Binance USDT pairs under "
@@ -246,7 +250,21 @@ def main() -> int:
         _OUT.parent.mkdir(parents=True, exist_ok=True)
         _OUT.write_text(json.dumps(rep, indent=1), "utf-8")
         return 1
+    # THE RESERVE, TAKEN OFF THE TOP. MEASURED 2026-08-15: the momentum book deployed 100% of
+    # equity, so when the discretionary sleeve was given --place it found $0 of free quote and
+    # refused every one of eleven rules with "below the venue minimum". Both sleeves were correct
+    # and the book was allocated by RUN ORDER -- whichever executed first took everything.
+    #
+    # A capital split is a decision, so it is a parameter with a stated default rather than an
+    # accident of the cron file's line ordering.
+    reserve = max(0.0, min(1.0, float(args.reserve_frac)))
+    deployable = equity * (1.0 - reserve)
     rep["equity_usd"], rep["equity_why"] = round(equity, 2), equity_why
+    rep["reserve_frac"], rep["deployable_usd"] = reserve, round(deployable, 2)
+    if reserve > 0:
+        rep["equity_why"] += (f"; ${equity * reserve:,.2f} ({reserve:.0%}) RESERVED for the other "
+                              "sleeves and not deployed here")
+    equity = deployable
 
     budget = equity * float(args.max_run_frac)
     spent = 0.0

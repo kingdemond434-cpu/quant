@@ -80,23 +80,64 @@ def test_A_STRONG_EDGE_CAN_EXCEED_EIGHT_BECAUSE_NOTHING_IS_HARDCODED() -> None:
     assert d["leverage"] > 8.0
 
 
-def test_THE_FLOOR_OVERRIDES_THE_MEASUREMENT_AND_LABELS_ITSELF() -> None:
-    """The principal's 3x minimum binds even when the objective asks for less -- but a floored
-    number must never be readable as a measured one."""
-    d = choose(0.05, sharpe=0.5, borrow_rate=0.08)
-    assert d["leverage"] == MIN_LEVERAGE
-    assert d["floor_binding"] is True
-    assert d["state"] == "FLOOR BINDING"
-    assert "instruction, not a calculation" in d["why"]
+def test_FULL_KELLY_IS_THE_DEFAULT_BECAUSE_IT_IS_THE_MAXIMUM() -> None:
+    """Principal's instruction 2026-08-15: grow as fast as possible. Full Kelly IS the growth
+    maximum; taking a fraction of it is choosing a slower book on purpose."""
+    from libs.execution.leverage_policy import DEFAULT_KELLY_FRACTION
+    assert DEFAULT_KELLY_FRACTION == 1.0
 
 
-def test_THE_FLOORED_CASE_PUBLISHES_WHAT_IT_COSTS() -> None:
-    """Taking the floor over the optimum has a price in the desk's own objective, and the decision
-    states it in annualised growth rather than leaving it to be inferred."""
-    d = choose(0.03, sharpe=1.02, borrow_rate=0.08)
-    assert d["floor_binding"] is True
-    assert "expected geometric growth is" in d["why"]
-    assert "/yr at" in d["why"]
+def test_THE_SHARPE_IS_DISCOUNTED_FOR_ESTIMATION_ERROR_NOT_THE_KELLY_FRACTION() -> None:
+    """THE SHAPE THAT MATTERS. A fixed fraction never rises -- it stays timid forever however much
+    evidence arrives. A confidence-discounted Sharpe RISES as n grows, which is the right response
+    to a desk that is accumulating forward observations."""
+    from libs.execution.leverage_policy import sharpe_lower_bound
+    thin = sharpe_lower_bound(1.0, 30)
+    thick = sharpe_lower_bound(1.0, 5000)
+    assert thin < thick < 1.0, "more observations must buy more exposure, never less"
+    assert sharpe_lower_bound(1.0, 1) == 0.0, "one observation supports no leverage at all"
+    lo = choose(0.03, sharpe=1.0, n_obs=30, borrow_rate=0.0)
+    hi = choose(0.03, sharpe=1.0, n_obs=5000, borrow_rate=0.0)
+    assert lo["kelly"] < hi["kelly"]
+
+
+def test_BOTH_MODULES_DISCOUNT_THE_SHARPE_IDENTICALLY() -> None:
+    """Leverage and gross exposure are the same decision expressed twice. Two different confidence
+    adjustments would let the book run one size while reporting another."""
+    from libs.execution.leverage_policy import sharpe_lower_bound as a
+    from libs.research.vol_target import sharpe_lower_bound as b
+    for s_, n in ((0.5, 2534), (1.2, 90), (2.0, 400)):
+        assert abs(a(s_, n) - b(s_, n)) < 1e-12
+
+
+def test_THE_FLOOR_IS_FULLY_INVESTED_AND_CANNOT_FORCE_A_BORROW() -> None:
+    """THE CHANGE THAT MATTERS. A 3.0 floor was set and removed the same day: the live book's Kelly
+    was 1.49x and its ZERO-GROWTH point 2.99x, so 3.0 forced the one configuration the objective
+    forbids -- roughly zero expected growth carrying full liquidation risk.
+
+    1.0 cannot do that. It is unlevered by definition, so it can never push a book past its own
+    zero-growth line; it only says 'do not hold idle cash on a margin account'."""
+    assert MIN_LEVERAGE == 1.0
+    weak = choose(0.05, sharpe=0.2, n_obs=4000, borrow_rate=0.08)
+    assert weak["leverage"] == 1.0, "a thin edge is held fully invested, never borrowed against"
+    assert weak["floor_binding"] is True
+
+
+def test_THE_FLOOR_NEVER_EXCEEDS_THE_ZERO_GROWTH_POINT() -> None:
+    """THE PROPERTY THE 3.0 FLOOR VIOLATED, asserted so it cannot come back. Any floor at or above
+    2x Kelly forces negative-growth leverage on a book that cannot support it."""
+    for sharpe, sigma in ((0.2, 0.05), (0.5, 0.03), (1.0, 0.04)):
+        d = choose(sigma, sharpe=sharpe, n_obs=2000, borrow_rate=0.10)
+        if d["zero_growth_leverage"]:
+            assert max(1.0, d["zero_growth_leverage"]) >= MIN_LEVERAGE, (
+                "the floor forces leverage past the point where growth turns negative")
+
+
+def test_A_STRONG_EDGE_STILL_LEVERS_ABOVE_THE_FLOOR() -> None:
+    """Maximum growth means levering up when the edge supports it. The floor is a minimum, not a
+    target."""
+    strong = choose(0.01, sharpe=2.5, n_obs=4000, borrow_rate=0.02)
+    assert strong["leverage"] > 1.0
 
 
 def test_UNMEASURED_VOLATILITY_TAKES_THE_FLOOR_NOT_THE_CEILING() -> None:

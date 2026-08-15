@@ -49,6 +49,7 @@ from libs.research.spot_momentum import (
     evaluate,
     spot_long_only_returns,
 )
+from libs.research.vol_target import gross_exposure
 
 _OUT = Path("data/spot_momentum.json")
 _WEB = Path("web/spot_momentum.json")
@@ -83,6 +84,15 @@ def _weights(close: Any, q: float) -> dict[str, float]:
             if isinstance(pd.notna(w[s]), bool)}
 
 
+def _previous_gross() -> float | None:
+    """Yesterday's gross, so the rebalance band has something to compare against. Absent on the
+    first run, which is correct: there is no position to leave alone."""
+    try:
+        return float(json.loads(_OUT.read_text("utf-8"))["gross"]["gross"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--symbols", default=",".join(_SPOT_UNIVERSE))
@@ -92,6 +102,10 @@ def main() -> int:
     ap.add_argument("--q", type=float, default=DEFAULT_Q)
     ap.add_argument("--band", type=float, default=DEFAULT_BAND)
     ap.add_argument("--cost-bps", type=float, default=10.0)
+    ap.add_argument("--max-gross", type=float, default=1.0,
+                    help="ceiling on total exposure. 1.0 is unlevered -- a spot account cannot "
+                         "hold more than it paid for. A levered caller passes what "
+                         "libs.execution.leverage_policy permits, which is itself Kelly-bounded")
     args = ap.parse_args()
 
     symbols = [s.strip() for s in args.symbols.split(",") if s.strip()]
@@ -124,6 +138,23 @@ def main() -> int:
     res = evaluate(strat, benchmark_returns(close))
     w = _weights(close, args.q)
 
+    # GROSS EXPOSURE AT THE GROWTH OPTIMUM. The weights above are RELATIVE -- inverse-vol within
+    # the top quantile -- and say nothing about how much of the account should be in the book at
+    # all. Left at 1.0 the book runs whatever volatility the tape happens to hand it, which is the
+    # one quantity the objective is a function of. The target is not chosen: at the Kelly optimum
+    # portfolio volatility EQUALS the Sharpe, so `growth_optimal_vol` is arithmetic.
+    #
+    # The Sharpe used is the EXCESS one. Raw Sharpe includes the market's drift, and sizing a book
+    # against a number that is mostly beta would target a volatility the selection never earned.
+    # n_obs IS WHAT MAKES THIS DYNAMIC IN THE DIRECTION THAT MATTERS. The Sharpe is discounted by
+    # one standard error, and that error shrinks as observations accumulate -- so the book's
+    # exposure RISES on its own as evidence arrives, without anyone editing a constant. A fixed
+    # Kelly fraction would stay timid forever no matter how much the desk learned.
+    vt = gross_exposure(float(np.std(strat[np.isfinite(strat)])) or None,
+                        sharpe=res.sharpe_excess, n_obs=res.n_days,
+                        max_gross=args.max_gross, current_gross=_previous_gross())
+    w = {k: round(v * vt.gross, 6) for k, v in w.items()}
+
     # WHAT TO ACTUALLY BUY, and whether the account can buy it. A weight below venue minimum is
     # reported rather than rounded up: rounding would breach the intended allocation silently, in
     # the direction that concentrates the book.
@@ -147,6 +178,7 @@ def main() -> int:
         "universe": list(close.columns),
         "absent_symbols": absent,
         "target_weights": w,
+        "gross": vt.as_row(),
         "orders": orders,
         "unplaceable": unplaceable,
         "evidence_status": "IN-SAMPLE ONLY -- NO FORWARD CLOCK",
@@ -167,6 +199,10 @@ def main() -> int:
     print(f"  beta            {res.beta_to_universe:>7.2f}   NOT neutral; full drawdown retained")
     print(f"  max drawdown    {res.max_drawdown:>7.1%}")
     print("  IN-SAMPLE ONLY -- no forward clock (principal exception)")
+    print(f"  GROSS           {vt.gross:>7.2f}   {vt.state} -- target vol "
+          f"{0.0 if vt.target_vol is None else vt.target_vol:.0%}/yr vs realised "
+          f"{0.0 if vt.realised_vol is None else vt.realised_vol:.0%}/yr")
+    print(f"    {vt.why[:150]}")
     print("  TARGET BOOK:")
     for o in orders:
         print(f"    BUY  {o['symbol']:<10} {o['weight']:>7.2%}  ${o['usd']:,.2f}")
