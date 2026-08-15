@@ -18,6 +18,12 @@ That is the single most expensive mistake available in this file and it is silen
 **DRY RUN IS THE DEFAULT AND `--place` IS THE ONLY WAY TO SPEND MONEY.** A flag that defaults to
 placing is a flag somebody sets by forgetting.
 
+**THE RUIN RAILS BIND HERE TOO.** `libs.execution.ruin_rail` is consulted before any order goes
+out, and a latched rail refuses the whole run. The arming contract this module inherits from
+`binance_spot_live` answers "may this box place orders at all"; it does NOT answer "is the book
+frozen right now", and those came apart the moment a second order path existed: `CASHCARRY_KILL`
+has been latched since 2026-08-01 and nothing on this path had ever read it.
+
 **EVERY REFUSAL IS PRINTED AND JOURNALLED.** Below min-notional, below step size, arming missing,
 cap exceeded -- each is stated with its arithmetic. A book that silently skipped a leg would leave
 the operator believing they hold a position they do not.
@@ -96,16 +102,24 @@ def main() -> int:
     args = ap.parse_args()
 
     from libs.execution import binance_spot_live as live
+    from libs.execution.ruin_rail import frozen
 
     cycle = args.cycle or datetime.now(tz=UTC).strftime("%Y%m%d")
     armed, why_armed = live.is_armed()
+    rail_frozen, why_rail = frozen()
+    # A LATCHED RAIL DOWNGRADES THE RUN TO A DRY RUN rather than aborting it. The operator still
+    # gets the full delta table -- which is what tells them whether clearing the rail is even the
+    # right move -- and every row says the rail refused it, so nobody reads the printed book as a
+    # placed one.
+    place = bool(args.place) and not rail_frozen
     targets, why_targets = _load_targets()
 
     rep: dict[str, Any] = {
         "updated": datetime.now(tz=UTC).isoformat(),
         "cycle": cycle, "armed": armed, "armed_why": why_armed,
+        "rail_frozen": rail_frozen, "rail_why": why_rail,
         "targets_why": why_targets, "equity_usd": float(args.equity),
-        "placed": [], "refused": [], "dry_run": not args.place,
+        "placed": [], "refused": [], "dry_run": not place,
         "leverage": "1.0x -- SPOT HOLDS WHAT IT PAID FOR. No leverage exists on this path and "
                     "none can be added; margin is a different product with a different connector "
                     "and a liquidation price.",
@@ -170,14 +184,20 @@ def main() -> int:
 
         side = "BUY" if delta > 0 else "SELL"
         row["side"] = side
-        if not args.place:
+        if rail_frozen:
+            # NOT a dry run and not a venue rejection: the desk's own rail refused it. Named
+            # separately so the journal can never be read as "the venue was fine with this".
+            row["why"] = f"RUIN RAIL LATCHED -- {why_rail}"
+            rep["refused"].append(row)
+            continue
+        if not place:
             row["why"] = "DRY RUN -- would place this; --place spends money"
             rep["placed"].append(row)
             if side == "BUY":
                 spent += delta
             continue
         try:
-            if side == "BUY":
+            if side == "BUY":  # place=True here, so a rail is known clear
                 res = live.place_market_quote(sym, "BUY", round(delta, 2), cycle=cycle)
                 spent += delta
             else:
@@ -199,14 +219,16 @@ def main() -> int:
     _OUT.parent.mkdir(parents=True, exist_ok=True)
     _OUT.write_text(json.dumps(rep, indent=1), "utf-8")
 
-    mode = "DRY RUN" if not args.place else "LIVE"
+    mode = "RAIL FROZEN" if rail_frozen else ("LIVE" if place else "DRY RUN")
     print(f"=== SPOT EXECUTOR [{mode}] === armed={armed} cycle={cycle} equity=${args.equity:,.2f}")
+    if rail_frozen:
+        print(f"  RUIN RAIL LATCHED -- nothing was placed. {why_rail}")
     for r in rep["placed"]:
         print(f"  {r.get('side','?'):<4} {r['symbol']:<10} ${abs(r['delta_usd']):>8,.2f}  "
               f"(target ${r['want_usd']:,.2f}, held ${r['have_usd']:,.2f})")
     for r in rep["refused"]:
         print(f"  SKIP {r.get('symbol','-'):<10} {str(r.get('why',''))[:110]}")
-    if not args.place:
+    if not place and not rail_frozen:
         print("  nothing was placed. add --place to spend money.")
     print(f"-> {_JOURNAL} and {_OUT}")
     return 0
