@@ -37,7 +37,8 @@ def test_build_uses_canonical_store_and_defaults_to_fifty_fifty(tmp_path: Path) 
     assert report["legacy_inventory_not_conversion"]["candidate_store"][
         "fully_measured_survivors"
     ] == 1
-    assert report["stages"][0]["count"] == 0
+    assert report["stages"][0]["count"] is None
+    assert report["binding_transition"]["from"] == "LEGACY_SCREEN_RECORD"
     assert report["research_portfolios"]["weights"] == {
         "exploitation": 0.5, "exploration": 0.5,
     }

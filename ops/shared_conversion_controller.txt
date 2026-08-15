@@ -7,7 +7,10 @@ ops/research_allocation_policy.json: exploitation converts the nearest-to-money 
 improves descendants/portfolio fit/execution; exploration searches unknown mechanisms, data,
 participants, domains and search methods. The starting prior is the principal's 50/50 preference;
 movement toward 60/40 is allowed only when two-sided realised validated economic value per measured
-research cost supports it. No candidate, test, survivor, commit or module-count target is allowed.
+research cost supports it. Publish those two-sided outcomes to
+data/research_portfolio_outcomes.json with source evidence; if they are not measurable, leave them
+unknown and retain the prior rather than inventing yield. No candidate, test, survivor, commit or
+module-count target is allowed.
 
 Attack the measured binding transition first without starving persistent exploration. Every item
 must move through the same DISCOVERED -> IMPLEMENTED -> TESTED -> STATISTICALLY_VALID ->
