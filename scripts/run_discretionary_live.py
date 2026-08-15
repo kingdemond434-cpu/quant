@@ -361,7 +361,7 @@ def main() -> int:
                         quote=args.quote, free_quote=free_quote,
                         min_notional=float(args.min_notional or 0.0) or 5.0,
                         stop_price=float(sig.stop_price), step=steps.get(sym, 0.0),
-                        place=bool(args.place), borrow=borrow)
+                        place=bool(args.place), borrow=borrow, side=sig.side)
                     row["order"] = out.as_row()
                     placed.append(out.as_row())
                     if out.placed:
