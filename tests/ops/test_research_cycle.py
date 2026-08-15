@@ -154,3 +154,45 @@ def test_THE_SCHEDULED_EQUITY_IS_READ_NOT_TYPED() -> None:
     assert "--equity auto" in src[i:i + 200], (
         "the scheduled run must read equity from the venue; a literal would go stale on the first "
         "fill and nobody would be watching")
+
+
+CRON = Path("scripts/daily_research_cycle.py")
+
+
+def test_THE_MONEY_PATH_IS_IN_THE_PIPELINE_THAT_ACTUALLY_FIRES() -> None:
+    """MEASURED 2026-08-15. Two daily pipelines exist on the box: the 2am root crontab runs
+    scripts/daily_research_cycle.py, and ops/run_research_cycle.sh is driven by a USER systemd unit
+    -- which does not fire at all unless lingering is enabled for the account.
+
+    Everything touching capital had been wired into the shell cycle alone. `systemctl list-timers`
+    showed no unit for it. So the order path, the promotion verb and the leaderboard panel were
+    scheduled in a file whose scheduler could not be demonstrated, which is III.16 wearing a cron
+    entry's clothes.
+    """
+    src = CRON.read_text("utf-8")
+    for stage in ("run_spot_momentum.py", "run_spot_executor.py", "run_auto_promotion.py",
+                  "run_live_ladder.py", "run_discretionary_live.py"):
+        assert stage in src, (
+            f"{stage} is not in the pipeline the crontab runs -- it fires only if a user timer "
+            "happens to be enabled, and nobody would notice the day it is not")
+
+
+def test_THE_LADDER_RUNS_BEFORE_PROMOTION_IN_BOTH_PIPELINES() -> None:
+    """A promotion decided from a pre-ladder read cites Stage-B figures the dashboard never
+    showed, which makes it unauditable after the fact."""
+    for path in (CYCLE, CRON):
+        src = path.read_text("utf-8")
+        if "run_auto_promotion.py" not in src:
+            continue
+        assert src.index("run_live_ladder.py") < src.index("run_auto_promotion.py"), (
+            f"{path}: promotion runs before the ladder that produces its inputs")
+
+
+def test_THE_SCHEDULED_DENOMINATORS_ARE_READ_NOT_TYPED() -> None:
+    """The literal that broke the first live book was `--equity 198`. Anything spending money on a
+    schedule reads its denominator from the venue."""
+    src = CRON.read_text("utf-8")
+    i = src.index("run_spot_executor.py")
+    assert "--equity auto" in src[i:i + 120]
+    j = src.index("run_discretionary_live.py")
+    assert "--equity auto" in src[j:j + 120]

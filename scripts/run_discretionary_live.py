@@ -81,12 +81,42 @@ def _to_signal(setup: Any, symbol: str, rule_id: str) -> RuleSignal:
     )
 
 
+_EXEC_REPORT = Path("web/spot_executor.json")
+
+
+def _resolve_equity(raw: str) -> tuple[float, str]:
+    """A number, or the figure the spot executor last read FROM THE VENUE.
+
+    Deliberately not a second venue read. The executor runs immediately before this in the cycle
+    and already resolved equity against live balances; re-deriving it here would give two organs
+    two answers on the same book, and the one that sized the orders is the one that is true.
+
+    An ABSENT or STALE report refuses rather than falling back to a literal. A default denominator
+    is the exact defect this replaces: it is right when written and silently wrong afterwards.
+    """
+    if str(raw).strip().lower() != "auto":
+        try:
+            return float(raw), f"stated by the caller: ${float(raw):,.2f}"
+        except (TypeError, ValueError):
+            return 0.0, f"--equity {raw!r} is neither a number nor 'auto'"
+    try:
+        rep = json.loads(_EXEC_REPORT.read_text("utf-8"))
+        eq = float(rep["equity_usd"])
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        return 0.0, (f"--equity auto, but {_EXEC_REPORT} is unreadable ({type(exc).__name__}). "
+                     "Refusing rather than inventing a denominator: every intent below would be "
+                     "sized against a number nobody measured")
+    return eq, f"read from {_EXEC_REPORT}, which resolved it against live balances: ${eq:,.2f}"
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--symbols", default="BTCUSDT,ETHUSDT")
-    ap.add_argument("--equity", type=float, required=True,
-                    help="deployable equity in USD -- required, never guessed: a fabricated "
-                         "denominator sizes every position wrongly and silently")
+    ap.add_argument("--equity", required=True,
+                    help="deployable equity in USD, or 'auto' to read the figure the spot "
+                         "executor last published. Never guessed: a fabricated denominator sizes "
+                         "every position wrongly and silently, and a LITERAL is a fabricated "
+                         "denominator the moment the account moves")
     ap.add_argument("--realised-today", type=float, default=0.0)
     ap.add_argument("--open-positions", type=int, default=0)
     ap.add_argument("--min-notional", type=float, default=None,
@@ -117,7 +147,11 @@ def main() -> int:
               "is a different and false claim")
         return 1
 
-    state = SleeveState(equity_usd=float(args.equity),
+    equity, equity_why = _resolve_equity(args.equity)
+    if equity <= 0:
+        print(f"discretionary-live: {equity_why}")
+        return 1
+    state = SleeveState(equity_usd=equity,
                         realised_pnl_today_usd=float(args.realised_today),
                         open_positions=int(args.open_positions))
     rows: list[dict[str, Any]] = []
@@ -159,7 +193,8 @@ def main() -> int:
 
     payload = {
         "updated": datetime.now(tz=UTC).isoformat(),
-        "equity_usd": float(args.equity),
+        "equity_usd": equity,
+        "equity_why": equity_why,
         "rule_id": args.rule_id,
         "n_intents": len(rows),
         "n_taken": sum(1 for r in rows if r.get("taken")),
@@ -180,7 +215,7 @@ def main() -> int:
     _OUT.write_text(json.dumps(payload, indent=1), "utf-8")
 
     print(f"discretionary-live [{args.rule_id}]: {len(rows)} intent(s), "
-          f"{payload['n_taken']} would be taken, equity ${args.equity:,.2f}")
+          f"{payload['n_taken']} would be taken, equity ${equity:,.2f}")
     if rail_frozen:
         print(f"  RUIN RAIL LATCHED -- these intents are NOT placeable until it is cleared. "
               f"{why_rail}")

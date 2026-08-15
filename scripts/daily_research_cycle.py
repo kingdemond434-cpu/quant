@@ -72,6 +72,32 @@ _STEPS = [
     # but it must run daily from S0 so the rails are exercised BEFORE they are load-bearing,
     # rather than executing for the first time on the day real money is behind them.
     ("live_guard",        "scripts/run_live_guard.py",       120),
+    # THE MONEY PATH, IN THE PIPELINE THAT PROVABLY RUNS. Measured 2026-08-15: the spot book, the
+    # discretionary sleeve and the leaderboard panel were all wired into ops/run_research_cycle.sh,
+    # which is driven by a USER systemd unit -- and user units do not fire at all unless lingering
+    # is enabled for the account. This list is invoked by the 2am root crontab, which is the only
+    # daily schedule on this box with observed firings behind it.
+    #
+    # RUNNING IN BOTH IS SAFE AND DELIBERATE. run_spot_executor trades the DELTA against live
+    # holdings, so a second pass the same day sees the book already at target and skips every leg
+    # under the venue minimum; client order IDs are keyed to the UTC date, so a genuine duplicate
+    # is rejected by the venue rather than filled twice. Duplication costs one API call. The
+    # alternative -- a money path that only runs if a user timer happens to be enabled -- costs the
+    # day's rebalance, silently, and that is III.16 on the one capability that touches capital.
+    # THE PROMOTION PATH, SAME REASONING. run_auto_promotion is the VERB on research-to-capital --
+    # auto_promotion.decide() had zero callers until it was written -- and it too lived only in the
+    # shell cycle. Armed but unscheduled is indistinguishable from unarmed in every artifact the
+    # desk produces. The ladder runs FIRST because promotion must see the Stage-B rows the ladder
+    # just published; a promotion decided from a pre-ladder read cites figures the dashboard never
+    # showed, which makes it unauditable after the fact.
+    ("live_ladder",       "scripts/run_live_ladder.py",      600),
+    ("auto_promotion",    "scripts/run_auto_promotion.py --capital 200 --min-notional 10", 300),
+    ("golive_preflight",  "scripts/run_golive_preflight.py --capital 200", 120),
+    ("spot_targets",      "scripts/run_spot_momentum.py --equity 200 --min-notional 10", 300),
+    ("spot_orders",       "scripts/run_spot_executor.py --equity auto --quote USDC --place", 300),
+    ("discretionary",     "scripts/run_discretionary_live.py --equity auto --spot-only", 300),
+    ("leaderboards",      "scripts/collect_leaderboards.py", 300),
+    ("copytrading_panel", "scripts/screen_copytrading.py",   300),
     ("listing_watch",     "scripts/run_listing_watch.py",    60),  # gap-53 data clock
     # §42(6): the CONSUMER for that clock. Collection without a promotion path is acquisition the
     # desk can never convert, so the study runs on the same cadence as the collector rather than
