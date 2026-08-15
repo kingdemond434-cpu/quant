@@ -4,6 +4,7 @@ import json
 import sqlite3
 from pathlib import Path
 
+from libs.research.alpha_state import AlphaStateLedger
 from scripts.run_conversion_control import build, weakest_transition
 
 
@@ -31,12 +32,27 @@ def test_build_uses_canonical_store_and_defaults_to_fifty_fifty(tmp_path: Path) 
     db.commit()
     db.close()
     report = build(tmp_path)
-    assert report["stages"][0]["count"] == 2
-    assert report["stages"][2]["count"] == 1
+    assert report["legacy_inventory_not_conversion"]["candidate_store"]["tested"] == 2
+    assert report["legacy_inventory_not_conversion"]["candidate_store"][
+        "fully_measured_survivors"
+    ] == 1
+    assert report["stages"][0]["count"] == 0
     assert report["research_portfolios"]["weights"] == {
         "exploitation": 0.5, "exploration": 0.5,
     }
     assert report["research_portfolios"]["evidence_used"] is False
+
+
+def test_build_computes_rates_only_inside_the_canonical_identity_ledger(tmp_path: Path) -> None:
+    path = tmp_path / "data/alpha_state_ledger.jsonl"
+    ledger = AlphaStateLedger(path)
+    ledger.advance("a", "IMPLEMENTED", {"expression": "x", "data_source": "d"})
+    report = build(tmp_path)
+    assert report["stages"][0]["count"] == 1
+    assert report["stages"][1]["count"] == 1
+    assert report["stages"][2]["count"] == 0
+    assert report["binding_transition"]["from"] == "IMPLEMENTED"
+    assert report["binding_transition"]["to"] == "TESTED"
 
 
 def test_build_moves_only_from_realised_two_sided_outcomes(tmp_path: Path) -> None:
