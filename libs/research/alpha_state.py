@@ -191,7 +191,8 @@ class AlphaStateLedger:
                     )
             if expected.history != rec.history or expected.evidence != rec.evidence:
                 raise ValueError(
-                    f"malformed alpha-state ledger line {number}: snapshot does not match transition"
+                    f"malformed alpha-state ledger line {number}: snapshot does not match "
+                    "transition"
                 )
             records[rec.alpha_id] = rec
         return records
