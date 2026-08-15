@@ -865,6 +865,7 @@ CONSTRUCTION_CLASS: dict[str, str] = {
     "cny_premium": "capital_control_barrier_rent",
     "oi_divergence": "positioning_crowding_unwind",
     "ls_contrarian": "positioning_crowding_unwind",
+    "producer_margin_stress": "treasury_cost_base_liquidation",
     "walcl_reserve_impulse": "macro_liquidity_transmission",
     "defi_utilisation": "network_usage_demand",
     "stablecoin_supply_momentum": "primary_market_creation_flow",

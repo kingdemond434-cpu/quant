@@ -216,6 +216,76 @@ def _funding_stress_reversal(s: MarketSeries, p: dict[str, float]) -> np.ndarray
     return np.where(z > thr, -1.0, np.where(z < -thr, 1.0, 0.0)).astype("float64")
 
 
+def _producer_margin_stress(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
+    """treasury_cost_base_liquidation: trade the FORCED SELLER, not a price pattern.
+
+    THE PAYER, which is what makes this a mechanism rather than a correlation. A miner carries a
+    FIAT cost base -- power, hosting, leased rigs, debt service -- against coin-denominated
+    revenue. Those obligations do not reschedule for a drawdown. So coin must be sold on the
+    OPERATOR'S calendar rather than the market's, and hardest exactly when price is weakest. The
+    seller is structurally price-insensitive and would prefer not to sell; that is the definition
+    of a compelled flow, and it is why this class scores 0.70 orthogonality against a library
+    otherwise made of price patterns.
+
+    TWO REGIMES, OPPOSITE SIGNS, and conflating them is how this mechanism gets mismeasured:
+
+      COMPRESSION UNDERWAY -- hashprice falling and difficulty still high. Margin is being
+      squeezed while capacity has not yet left, so forced supply is RISING. Short.
+
+      CAPITULATION COMPLETE -- hashprice deeply depressed AND difficulty has adjusted DOWN.
+      Difficulty only falls when hashrate has actually switched off, which is the observable
+      admission that the marginal producer has already sold and exited. The forced supply is
+      spent. Long.
+
+    The second leg is the one worth having, and it is only identifiable because difficulty is a
+    LAGGING, MECHANICAL confirmation of an exit that already happened -- not a forecast. Nothing
+    here predicts miner behaviour; it reads a balance-sheet consequence after the fact.
+
+    DEGRADES TO FLAT without producer data, exactly like the funding signals. A fabricated
+    hashprice would invent the compelled seller the entire claim rests on, and a mechanism whose
+    payer is imaginary is a price pattern wearing an economic story.
+    """
+    if s.hashprice is None:
+        return np.zeros(len(s), dtype="float64")
+    hp = np.nan_to_num(np.asarray(s.hashprice, dtype="float64"), nan=0.0)
+    w = int(p.get("window", 90))
+    thr = float(p.get("z_entry", 1.0))
+    out = np.zeros(len(hp), dtype="float64")
+    if len(hp) <= w:
+        return out
+
+    diff = (np.nan_to_num(np.asarray(s.difficulty, dtype="float64"), nan=0.0)
+            if s.difficulty is not None else None)
+    for i in range(w, len(hp)):
+        seg = hp[i - w + 1: i + 1]
+        sd = seg.std()
+        if sd <= 0:
+            continue
+        z = (hp[i] - seg.mean()) / sd
+        if z > -thr:
+            continue                      # margin is not compressed; no forced flow to trade
+        # Margin IS compressed. Which regime?
+        eased = False
+        if diff is not None:
+            # CAPACITY GONE IS A STATE, NOT AN EVENT -- and the first version got this wrong.
+            #
+            # It compared difficulty across one retarget window (`diff[i] < diff[i-14]`). But
+            # difficulty is a STEP FUNCTION that holds its new level until the next adjustment, so
+            # that test is true only for the ~14 bars immediately after a drop and false forever
+            # after. The signal would have flipped back to SHORT a fortnight into precisely the
+            # recovery it exists to catch.
+            #
+            # The economically meaningful condition is that difficulty is still BELOW ITS RECENT
+            # PEAK: the hashrate that switched off has not come back, so the marginal producer is
+            # still absent and their forced supply is still spent. That persists for as long as it
+            # is true, which is the shape the claim actually has.
+            back = max(0, i - w)
+            peak = diff[back: i + 1].max()
+            eased = peak > 0 and diff[i] < peak * (1.0 - float(p.get("ease_frac", 0.01)))
+        out[i] = 1.0 if eased else -1.0
+    return out
+
+
 @dataclass(frozen=True)
 class GeneratorSpec:
     """One generator, its budget partition, and its declared economics.
@@ -312,6 +382,20 @@ GENERATORS: tuple[GeneratorSpec, ...] = (
                   [{"window": 30, "z_entry": 1.5}, {"window": 14, "z_entry": 2.0}]),
     GeneratorSpec(Family.RISK_PREMIA, "persistent_long", _risk_premia, _R,
                   "harvest the long-run risk premium", ["secular bear", "crash"], [{}]),
+    # THE FIRST GENERATOR IN THIS LIBRARY WHOSE INPUT IS NOT A PRICE. Its census class,
+    # treasury_cost_base_liquidation, scores 0.70 orthogonality precisely because a producer's
+    # balance sheet is not a candle -- and orthogonality, not candidate count, is the binding
+    # constraint on this desk's combined Sharpe (docs/research/REALITY_CHECK_POWER.md).
+    GeneratorSpec(Family.LIQUIDITY, "producer_margin_stress", _producer_margin_stress, _S,
+                  "forced selling by a fiat-cost-base producer; the exit is confirmed by a "
+                  "DOWNWARD difficulty adjustment, which is mechanical and lagging, not forecast",
+                  ["needs hashprice; flat without it",
+                   "difficulty is a step function -- compare across the retarget, not bar-to-bar",
+                   "census class is treasury_cost_base_liquidation, NOT mechanical_supply_release: "
+                   "that is a SCHEDULE known in advance, this is a balance-sheet constraint",
+                   "a miner hedging with derivatives sells less spot than the cost base implies"],
+                  [{"window": 90, "z_entry": 1.0, "retarget": 14},
+                   {"window": 180, "z_entry": 1.5, "retarget": 14}]),
 )
 
 
