@@ -143,6 +143,21 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # the margin wallet. The leverage is computed from measured Sharpe and vol every run, so this
   # line is correct whether the edge supports 0.8x or 6x -- there is no number here to go stale.
   nice -n 15 "$PY" scripts/run_margin_executor.py --quote "${SPOT_QUOTE:-USDC}" --place
+  # ---- PRODUCER ECONOMICS: the input _producer_margin_stress was starved of --
+  #
+  # THE SAME SILENT SHAPE AS THE RHO TRACKER, ONE LAYER DOWN. The generator was registered, the
+  # MarketSeries fields existed, the adapter attached them -- and no process ever fetched the
+  # numbers, so it returned zeros on every symbol of every campaign while looking provisioned.
+  #
+  # `treasury_cost_base_liquidation` scores 0.70 orthogonality against a library that is otherwise
+  # eleven rules across three census classes, which makes it the best diversification this desk can
+  # still reach. It was blocked on free data nobody had scheduled.
+  #
+  # Daily, because the series only accumulates with elapsed time: the generator's z-score needs 90
+  # days, blockchain.info serves history, so the first run backfills and every run after keeps it
+  # current. `|| true` -- a producer-data outage must not take down the trading cycle, and the
+  # generator degrades to flat on absent days by design rather than guessing through them.
+  nice -n 15 "$PY" scripts/fetch_producer_economics.py || true
   # ---- THE MECHANISM SLEEVES, AND THE RHO CHAIN THEY FEED -------------------
   #
   # NONE OF THIS WAS SCHEDULED. run_mechanism_sleeves.py published the sleeve targets only when

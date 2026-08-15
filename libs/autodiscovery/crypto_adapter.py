@@ -17,6 +17,7 @@ new free data axis (OI / LS / liquidations / stablecoin flows) as its forward cl
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any
@@ -60,13 +61,68 @@ def crypto_symbols(
     return sorted(d.name for d in root.iterdir() if (d / timeframe.value).exists())
 
 
+#: Sidecar written by `scripts/fetch_producer_economics.py`. Kept OUT of the bronze bars on
+#: purpose: bronze is raw venue ingest, and a network-wide statistic is not something the venue
+#: said. Joining at read time keeps each one's provenance honest.
+_PRODUCER_ECONOMICS = Path(__file__).resolve().parents[2] / "data" / "producer_economics.json"
+
+
+def _load_producer_economics(path: Path) -> tuple[dict[str, dict[str, float]], tuple[str, ...]]:
+    """({date: {hashprice, difficulty}}, symbols it applies to). Absent file -> empty, never raises.
+
+    A missing sidecar must leave one generator flat, not break every campaign in the lab.
+    """
+    if not path.exists():
+        return {}, ()
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}, ()
+    series = doc.get("series")
+    if not isinstance(series, dict):
+        return {}, ()
+    raw = doc.get("symbols")
+    syms = tuple(str(s) for s in raw) if isinstance(raw, list) else ("BTCUSDT",)
+    return ({str(d): v for d, v in series.items() if isinstance(v, dict)}, syms)
+
+
+def _attach_producer(df: Any, series: dict[str, dict[str, float]]) -> None:
+    """Join producer economics onto a frame by CALENDAR DATE. Gaps stay NaN.
+
+    NOT forward-filled. A day the source did not publish is a day on which nobody observed the
+    marginal miner's margin, and carrying yesterday's hashprice forward would state a measurement
+    that was never taken. `_producer_margin_stress` reads non-finite as "no observation" and skips
+    the bar, which is the only reading of a gap that does not invent a compelled seller.
+
+    NO LOOKAHEAD: the value stamped on bar D is the network's aggregate FOR day D, complete at D's
+    close -- the same instant bar D closes. `net_returns` lags positions one bar, so the trade
+    lands on D+1 and sees nothing it could not have known. Identical treatment to ``funding``.
+    """
+    try:
+        days = [ts.date().isoformat() for ts in df.index]
+    except AttributeError:
+        return                            # non-datetime index: the join is undefined, so skip it
+    nan = float("nan")
+    for col in ("hashprice", "difficulty"):
+        vals = [float(series.get(d, {}).get(col, nan)) for d in days]
+        if any(v == v for v in vals):     # at least one real observation, else add no column
+            df[col] = vals
+
+
 def _read_frames(symbols: Sequence[str], timeframe: Timeframe, lake_root: str) -> dict[str, Any]:
     """Read + cache each symbol's lake frame once (indexed by timestamp)."""
     lake = ParquetLake(lake_root)
+    econ, econ_symbols = _load_producer_economics(_PRODUCER_ECONOMICS)
     frames = {}
     for s in symbols:
         register_instrument(InstrumentSpec(symbol=s, asset_class=AssetClass.CRYPTO, description=s))
         frames[s] = lake.read_bars(Layer.BRONZE, s, timeframe).set_index("timestamp")
+        # ONLY the symbols these economics belong to. Miners of BTC are compelled to sell BTC; the
+        # forced flow lands in that book and nowhere else. Stamping the series onto an alt would
+        # assert a structural seller in a market that does not have one, which is how one genuine
+        # mechanism gets laundered into a spurious edge across an entire universe.
+        if econ and s in econ_symbols:
+            _attach_producer(frames[s], econ)
     return frames
 
 

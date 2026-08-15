@@ -247,17 +247,35 @@ def _producer_margin_stress(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
     """
     if s.hashprice is None:
         return np.zeros(len(s), dtype="float64")
-    hp = np.nan_to_num(np.asarray(s.hashprice, dtype="float64"), nan=0.0)
+    # DELIBERATELY NOT `nan_to_num(..., nan=0.0)`, which is what this line used to be.
+    #
+    # A day the source did not publish arrives here as NaN. Zeroing it does not say "unknown" -- it
+    # asserts that a PH/s of hashrate earned NOTHING that day, which is the deepest margin
+    # compression physically possible. The z-score goes violently negative and the generator opens
+    # a SHORT on a hole in the data. Every absent day becomes a maximum-conviction trade.
+    #
+    # That was invisible only while nothing populated this field at all. The moment real data with
+    # real gaps arrives -- which is what `scripts/fetch_producer_economics.py` now does -- zero-fill
+    # converts source outages into the strongest signals in the book. Non-finite now means NO
+    # OBSERVATION: the bar is skipped, and the value is excluded from the rolling statistics rather
+    # than dragging their mean and variance toward a number nobody measured.
+    hp = np.asarray(s.hashprice, dtype="float64")
     w = int(p.get("window", 90))
     thr = float(p.get("z_entry", 1.0))
     out = np.zeros(len(hp), dtype="float64")
     if len(hp) <= w:
         return out
+    # A z-score computed off a handful of survivors is noise wearing a threshold.
+    min_obs = max(20, w // 3)
 
-    diff = (np.nan_to_num(np.asarray(s.difficulty, dtype="float64"), nan=0.0)
-            if s.difficulty is not None else None)
+    diff = np.asarray(s.difficulty, dtype="float64") if s.difficulty is not None else None
     for i in range(w, len(hp)):
+        if not np.isfinite(hp[i]):
+            continue                      # no margin observed on this bar; no claim to make
         seg = hp[i - w + 1: i + 1]
+        seg = seg[np.isfinite(seg)]
+        if len(seg) < min_obs:
+            continue
         sd = seg.std()
         if sd <= 0:
             continue
@@ -265,6 +283,16 @@ def _producer_margin_stress(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
         if z > -thr:
             continue                      # margin is not compressed; no forced flow to trade
         # Margin IS compressed. Which regime?
+        # WHICH REGIME -- and "I cannot tell" is a third answer, not a tiebreak toward short.
+        #
+        # With no difficulty series at all, this degrades to the compression leg only: that is the
+        # declared contract, the short is what hashprice alone supports, and the caller knows the
+        # column is absent. But when a difficulty series IS supplied and merely has a hole on this
+        # bar, falling through to `eased = False` would read the hole as positive evidence that
+        # capacity is still online -- a claim from absence, on exactly the axis that separates the
+        # two legs. An unobservable regime gets no position.
+        if diff is not None and not np.isfinite(diff[i]):
+            continue
         eased = False
         if diff is not None:
             # CAPACITY GONE IS A STATE, NOT AN EVENT -- and the first version got this wrong.
@@ -279,8 +307,15 @@ def _producer_margin_stress(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
             # PEAK: the hashrate that switched off has not come back, so the marginal producer is
             # still absent and their forced supply is still spent. That persists for as long as it
             # is true, which is the shape the claim actually has.
+            #
+            # The peak is taken over FINITE values only. `ndarray.max()` propagates NaN, so one
+            # missing difficulty day anywhere in the 90-bar lookback would return NaN, fail the
+            # `peak > 0` test, and silently disable the capitulation leg -- the long, the half of
+            # this mechanism actually worth owning -- for three months after every source gap.
             back = max(0, i - w)
-            peak = diff[back: i + 1].max()
+            seen = diff[back: i + 1]
+            seen = seen[np.isfinite(seen)]
+            peak = float(seen.max()) if seen.size else 0.0
             eased = peak > 0 and diff[i] < peak * (1.0 - float(p.get("ease_frac", 0.01)))
         out[i] = 1.0 if eased else -1.0
     return out
