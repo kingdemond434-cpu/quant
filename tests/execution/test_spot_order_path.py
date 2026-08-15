@@ -210,3 +210,42 @@ def test_A_DRY_RUN_SAYS_IT_WOULD_BORROW() -> None:
     out = P.place_entry(v, "BTCUSDT", 500.0, cycle="20260815", quote="USDC",
                         free_quote=100.0, min_notional=5.0, borrow=True, place=False)
     assert not out.placed and "MARGIN_BUY" in out.why and v.orders == []
+
+
+# --------------------------------------------------------------- side, and the day it inverted
+def test_A_SELL_IS_REFUSED_AND_NEVER_SENT_AS_A_BUY() -> None:
+    """MEASURED LIVE ON THE PRINCIPAL'S ACCOUNT, 2026-08-15. `run_discretionary_live` refused
+    shorts only under --spot-only. Run without that flag against the margin wallet, two SELL
+    signals reached place_entry and were placed as BUYS -- the opposite of the trade the rule
+    called -- with stops sized for a short resting ABOVE the market where they protect nothing.
+    Every printed line read TAKE.
+
+    The caller's guard was a FLAG, which is an instruction to whoever types the command. This is
+    the mechanism, and it binds on every wallet."""
+    v = _MarginVenue()
+    out = P.place_entry(v, "BTCUSDT", 100.0, cycle="20260815", quote="USDC",
+                        free_quote=1e9, min_notional=5.0, side="SELL")
+    assert not out.placed and "LONGS ONLY" in out.why
+    assert out.side == "SELL", "the refusal must report the side that was ASKED for"
+    assert v.orders == [], "nothing may reach the venue"
+
+
+def test_THE_SIDE_CHECK_OUTRANKS_EVERY_OTHER_GATE() -> None:
+    """Checked before the rail, before arming, before sizing -- because an inverted order is wrong
+    at every one of those stages and the earliest refusal is the clearest one."""
+    for free, minn in ((0.0, 5.0), (1e9, 1e9)):
+        out = P.place_entry(_Venue(armed=False), "BTCUSDT", 100.0, cycle="c", quote="USDC",
+                            free_quote=free, min_notional=minn, side="SELL")
+        assert "LONGS ONLY" in out.why, "the side refusal must not be masked by another gate"
+
+
+def test_BUY_IS_UNAFFECTED_AND_CASE_IS_NOT_A_LOOPHOLE() -> None:
+    v = _Venue()
+    assert P.place_entry(v, "BTCUSDT", 50.0, cycle="c", quote="USDC",
+                         free_quote=1e9, min_notional=5.0, side="BUY").placed
+    assert P.place_entry(v, "BTCUSDT", 50.0, cycle="c", quote="USDC",
+                         free_quote=1e9, min_notional=5.0, side="buy").placed
+    for bad in ("Sell", "SHORT", "", "sel"):
+        out = P.place_entry(v, "BTCUSDT", 50.0, cycle="c", quote="USDC",
+                            free_quote=1e9, min_notional=5.0, side=bad)
+        assert not out.placed, f"side={bad!r} must not reach the venue"

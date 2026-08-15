@@ -80,7 +80,7 @@ def floor_2dp(x: float) -> float:
 def place_entry(live: Any, symbol: str, usd: float, *, cycle: str, quote: str,
                 free_quote: float, min_notional: float, stop_price: float | None = None,
                 step: float = 0.0, place: bool = True,
-                borrow: bool = False) -> OrderOutcome:
+                borrow: bool = False, side: str = "BUY") -> OrderOutcome:
     """Buy `usd` of `symbol`, then rest its protective stop. Refuses with a stated reason.
 
     `live` is the connector module, injected rather than imported, so this stays testable without
@@ -94,6 +94,25 @@ def place_entry(live: Any, symbol: str, usd: float, *, cycle: str, quote: str,
     from libs.execution.ruin_rail import frozen
 
     sym = retarget(symbol, quote)
+    # THIS PRIMITIVE BUYS. IT HAS NEVER DONE ANYTHING ELSE, and until 2026-08-15 nothing said so.
+    #
+    # MEASURED, LIVE, ON THE PRINCIPAL'S ACCOUNT. `run_discretionary_live` refused shorts only
+    # under --spot-only. Run WITHOUT that flag against the margin wallet, two SELL signals reached
+    # this function and were placed as BUYS -- the exact opposite of the trade the rule called --
+    # and their stops, sized for a short, went in ABOVE the market where they protect nothing. Two
+    # inverted, unprotected positions, and every printed line read TAKE.
+    #
+    # The caller's guard was a FLAG. A flag is an instruction to whoever types the command; this is
+    # the mechanism. A short is not a smaller version of a buy: it borrows the base asset, its stop
+    # is above the entry, and its liquidation arithmetic is different. Until a real short path
+    # exists, a SELL is REFUSED here, loudly, on every wallet.
+    if str(side).upper() != "BUY":
+        return OrderOutcome(
+            sym, str(side).upper(), usd, False,
+            f"SIDE {side!r} REFUSED -- this order path opens LONGS ONLY. It has always sent BUY "
+            "regardless of the side requested, so a SELL routed here would be filled in the "
+            "opposite direction with a stop that cannot protect it. Refusing is the only correct "
+            "behaviour until a short path exists that borrows the base asset and inverts the stop")
     rail, why_rail = frozen()
     if rail:
         return OrderOutcome(sym, "BUY", usd, False, f"RUIN RAIL LATCHED -- {why_rail}")
