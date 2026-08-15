@@ -35,10 +35,17 @@ def main() -> int:
     ap.add_argument("--json", action="store_true", help="print the artifact to stdout")
     args = ap.parse_args()
 
+    # `bars=None` WAS HARDCODED, so the screen could never receive a price panel even once one
+    # existed -- it would have gone on reporting "no per-symbol daily bars supplied" against a
+    # panel sitting on disk, and the message would have read as a data gap rather than a wire.
+    # An EMPTY panel is passed through unchanged: the screen's own missing-input path owns that
+    # message, and re-stating it here would be two organs answering one question.
+    from scripts.build_daily_panel import load_panel
+
     report = run_screen(
         schedule_path=_ROOT / "data/unlock_events.json",
         supply_path=_ROOT / "data/circulating_supply.jsonl",
-        bars=None,
+        bars=load_panel() or None,
     )
     _OUT.parent.mkdir(parents=True, exist_ok=True)
     _OUT.write_text(json.dumps(report, indent=1) + "\n", encoding="utf-8")

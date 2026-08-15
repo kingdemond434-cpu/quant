@@ -117,6 +117,11 @@ _STEPS = [
     # turns "we never got to it" into a named, dated deficit that accrues.
     ("unlock_calendar",   "scripts/collect_unlock_calendar.py", 180),
     ("circulating_supply", "scripts/collect_circulating_supply.py", 180),
+    # THE THIRD INPUT THE SUPPLY SCREEN NAMED AND NOBODY BUILT: daily bars for the unlocking
+    # universe, resampled from the 15min lake. Runs BEFORE the screen, which now actually receives
+    # the panel -- `bars=None` was hardcoded in its runner, so it would have gone on reporting
+    # "no daily bars supplied" against a panel sitting on disk.
+    ("daily_panel",       "scripts/build_daily_panel.py",      240),
     ("supply_screen",     "scripts/screen_unlock_supply_series.py", 240),
     ("supply_report",     "scripts/report_mechanism_supply.py", 120),
     # IS EVERYTHING ACTUALLY ARMED -- nine independent facts across three directories, two of them
