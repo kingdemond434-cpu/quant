@@ -122,3 +122,26 @@ def test_midnight_aggressively_converts_real_orphans_end_to_end() -> None:
         "producer -> durable output -> consumer -> decision/research",
     ):
         assert required in prompt
+
+
+def test_midnight_routes_l2_and_every_conversion_family() -> None:
+    prompt = PROMPT.read_text("utf-8")
+    cycle = Path("ops/run_research_cycle.sh").read_text("utf-8")
+    for required in (
+        "data/l2_daily_conversion.json",
+        "100% mining over a frozen denominator",
+        "preregistered hypothesis generation",
+        "near-survivor/survivor disposition",
+        "zero-capital paper shadow",
+        "WHOLE-FACTORY CONVERSION-DEBT SWEEP",
+        "statistical validity and overdue forecasts",
+        "mutation breadth",
+        "blind-spot fields/entities/crosses",
+        "scheduler integrity",
+        "governance defects/law fences",
+        "Every Claude, Codex, OpenCode",
+    ):
+        assert required in prompt
+    assert cycle.index("run_moat_utilisation.py") < cycle.index(
+        "check_l2_daily_conversion.py"
+    )

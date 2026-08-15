@@ -110,6 +110,10 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # Reports, never blocks: a hunter that failed a push on a false positive would be switched off,
   # and the real instances would return with the alarm already disabled.
   nice -n 15 "$PY" scripts/check_unwired_capability.py || true
+  # L2 DATA IS AN INPUT, NOT AN ACCOMPLISHMENT. Refresh the denominator and publish every broken
+  # tape -> utilisation -> hypothesis -> test -> survivor -> shadow conversion link.
+  nice -n 15 "$PY" scripts/run_moat_utilisation.py
+  nice -n 15 "$PY" scripts/check_l2_daily_conversion.py
   # THE TWO SLEEVES A SPOT-ONLY ACCOUNT CAN ACTUALLY HOLD. The principal is Irish retail: EEA
   # derivatives are unavailable under MiCA, so cash-and-carry is untradeable (two legs, and the
   # short cannot be opened) and xsec_price_mom is untradeable for the same reason -- it is a
