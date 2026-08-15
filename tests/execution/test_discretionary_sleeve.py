@@ -12,6 +12,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from libs.execution.discretionary_sleeve import (
     Decision,
     RuleSignal,
@@ -128,3 +130,93 @@ def test_THE_SIGNAL_CARRIES_ITS_FORCED_PARTICIPANT() -> None:
 def test_A_DECISION_IS_JSON_SHAPED() -> None:
     d: Decision = size_and_check(_sig(), SleeveState(equity_usd=10_000.0))
     assert json.loads(json.dumps({"take": d.take, "qty": d.qty, **d.signal}))["qty"] == d.qty
+
+
+# ------------------------------------------------------------------------------- the gross cap
+def _leg(entry: float, stop: float, sym: str = "BTCUSDT") -> RuleSignal:
+    """A signal at a STATED entry and stop -- the file's own `_sig()` fixes both, and the gross
+    cap is entirely about what happens when the distance between them is small."""
+    return RuleSignal(rule_id="H1", symbol=sym, side="BUY", entry_price=entry, stop_price=stop)
+
+
+def test_FIXED_FRACTIONAL_RISK_DOES_NOT_BOUND_NOTIONAL() -> None:
+    """THE ARITHMETIC THAT MADE THIS NECESSARY, stated as a test so it cannot be forgotten again.
+    notional = risk / stop-distance, so a TIGHT stop produces an enormous position while every
+    risk limit still reads green. Measured live 2026-08-15: $1.93 risked (1% of $192.61) against
+    a 0.30% stop carried $634 of notional -- 3.3x the account, from ONE rule."""
+    d = size_and_check(_leg(62897.4, 62706.32), SleeveState(equity_usd=192.61))
+    assert d.take and d.risk_usd == pytest.approx(1.93, abs=0.01)
+    assert d.notional_usd > 3 * 192.61, "risk was obeyed and the position is 3x the account"
+
+
+def test_THE_GROSS_CAP_REFUSES_THE_LEG_THAT_BREACHES_IT() -> None:
+    d = size_and_check(_leg(62897.4, 62706.32), SleeveState(equity_usd=192.61),
+                       max_gross_usd=192.61 * 3.0)
+    assert not d.take and "gross cap" in d.why
+    assert "does not bound NOTIONAL" in d.why
+
+
+def test_IT_IS_A_RUNNING_TOTAL_OR_IT_IS_NOT_A_CAP() -> None:
+    """Checked per-leg against zero, every leg passes and the book lands at N times the limit --
+    N being however many rules happened to fire that morning."""
+    cap = 700.0
+    first = size_and_check(_leg(62897.4, 62706.32), SleeveState(equity_usd=192.61),
+                           max_gross_usd=cap)
+    assert first.take, "the first leg fits under the cap"
+    second = size_and_check(_leg(62897.4, 62706.32),
+                            SleeveState(equity_usd=192.61, gross_open_usd=first.notional_usd),
+                            max_gross_usd=cap)
+    assert not second.take, "the second identical leg must see what the first committed"
+
+
+def test_A_BREACHING_LEG_IS_REFUSED_AND_NEVER_CLAMPED_DOWN() -> None:
+    """A leg sized to the remaining room is a DIFFERENT TRADE from the one the rule called, with
+    a stop that no longer means what it meant when it was pre-registered. Refusing keeps the
+    pre-registration intact; clamping silently rewrites it."""
+    d = size_and_check(_leg(62897.4, 62706.32),
+                       SleeveState(equity_usd=192.61, gross_open_usd=500.0), max_gross_usd=600.0)
+    assert not d.take and d.qty == 0.0
+    assert "NOT clamped down to fit" in d.why
+
+
+def test_A_WIDE_STOP_PASSES_THE_SAME_CAP() -> None:
+    """The cap binds on NOTIONAL, not on the rule. The same risk against a 10% stop is a small
+    position and must go through untouched -- otherwise this is a second, hidden risk limit."""
+    d = size_and_check(_leg(100.0, 90.0), SleeveState(equity_usd=192.61),
+                       max_gross_usd=192.61 * 3.0)
+    assert d.take and d.notional_usd == pytest.approx(19.26, abs=0.05)
+
+
+def test_NO_CAP_MEANS_NO_CHECK_SO_SPOT_IS_UNCHANGED() -> None:
+    """max_gross_usd=None is the unlevered path, where `place_entry`'s free-cash clamp already
+    bounds the leg. Making the cap mandatory here would be a second limit on a book that has one."""
+    d = size_and_check(_leg(62897.4, 62706.32), SleeveState(equity_usd=192.61))
+    assert d.take
+
+
+def test_THE_DECISION_CARRIES_EVERY_FIELD_THE_ORDER_PATH_SPENDS() -> None:
+    """THE SEAM, TESTED AS A SEAM. `run_discretionary_live` passes `decision.notional_usd` to
+    `place_entry`, and until 2026-08-15 `Decision` had no such attribute -- the notional existed
+    only inside the `why` string. Every sizing test passed because none of them crossed into
+    placement, which is the identical shape as the `_to_signal` AttributeError two commits
+    earlier: one field further down the same path, found the same way -- in production.
+
+    Pins the CONTRACT rather than one attribute, so the next field the order path needs fails
+    here instead of at a venue."""
+    d = size_and_check(_leg(100.0, 90.0), SleeveState(equity_usd=10_000.0))
+    assert d.take
+    for attr in ("qty", "risk_usd", "notional_usd", "why", "take"):
+        assert hasattr(d, attr), f"the order path reads .{attr} and Decision does not have it"
+    assert d.notional_usd == pytest.approx(d.qty * 100.0, abs=0.01)
+    assert d.notional_usd > 0.0, "a taken decision with zero notional would place nothing"
+
+
+def test_A_REFUSAL_CARRIES_A_ZERO_NOTIONAL_AND_NOT_A_STALE_ONE() -> None:
+    """A refused leg must not report the size it would have been. The runner accumulates
+    `gross_open_usd` from this field, and a refusal that reported its would-be notional would
+    consume gross the book never committed."""
+    d = size_and_check(_leg(100.0, 100.0), SleeveState(equity_usd=10_000.0))
+    assert not d.take and d.notional_usd == 0.0
+    capped = size_and_check(_leg(62897.4, 62706.32), SleeveState(equity_usd=192.61),
+                            max_gross_usd=100.0)
+    assert not capped.take and capped.notional_usd == 0.0

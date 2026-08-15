@@ -123,7 +123,14 @@ def _from_ict(setup: Any) -> rules.Setup:
 
 
 def _resolve_equity(raw: str, wallet: str = "spot") -> tuple[float, float, str]:
-    """`(risk_basis, leverage, why)` -- the figure THIS WALLET's executor last read from the venue.
+    """`(NET equity, leverage, why)` -- the figure THIS WALLET's executor last read from the venue.
+
+    **NET, NEVER THE LEVERED BASIS.** An earlier version returned `equity * leverage` and handed it
+    to `SleeveState.equity_usd`, which is the denominator for BOTH risk-per-trade and the daily
+    loss cap. At 3x that silently made every trade risk 3% of the account and the daily cap 9% --
+    two limits tripled by a change that was only ever meant to raise EXPOSURE. Leverage belongs in
+    the gross cap, which bounds notional; it has no business in the risk fraction, which bounds
+    how much real money one wrong trade costs.
 
     Deliberately not a second venue read. The executor runs immediately before this in the cycle
     and already resolved equity against live balances; re-deriving it here would give two organs
@@ -166,9 +173,9 @@ def _resolve_equity(raw: str, wallet: str = "spot") -> tuple[float, float, str]:
             # sleeve deciding it knows better than the arithmetic every other leg obeys.
             return 0.0, 0.0, (f"{src} reports leverage {lev} -- the policy declines to carry this "
                               "book at all. Refusing rather than sizing at an invented 1x")
-        why_lev = f", leverage {lev:.2f}x from the same report (never recomputed here)"
-    return eq * lev, lev, (f"read from {src}, resolved against live balances: ${eq:,.2f}"
-                           f"{why_lev} -> risk basis ${eq * lev:,.2f}")
+        why_lev = (f", leverage {lev:.2f}x from the same report (never recomputed here) -> gross "
+                   f"cap ${eq * lev:,.2f}; risk and the daily cap stay fractions of NET ${eq:,.2f}")
+    return eq, lev, f"read from {src}, resolved against live balances: ${eq:,.2f}{why_lev}"
 
 
 def main() -> int:
@@ -232,6 +239,10 @@ def main() -> int:
     # (MARGIN_BUY) so a levered risk basis becomes real exposure; on spot the same flag is refused
     # by the order path rather than quietly filling an unlevered leg the sizing did not intend.
     borrow = wallet_mod.is_margin(args.wallet) and leverage > 1.0
+    # THE ONLY PLACE LEVERAGE ENTERS THIS SLEEVE: it raises the gross the book may carry, and
+    # nothing else. It does not touch the risk fraction and it does not touch the daily loss cap,
+    # both of which are promises about the principal's real money.
+    max_gross = equity * leverage
     state = SleeveState(equity_usd=equity,
                         realised_pnl_today_usd=float(args.realised_today),
                         open_positions=int(args.open_positions))
@@ -331,10 +342,15 @@ def main() -> int:
                     "staying silent",
                     dict(vars(sig))), _JOURNAL))
                 continue
-            decision = size_and_check(sig, state, min_notional_usd=args.min_notional)
+            decision = size_and_check(sig, state, min_notional_usd=args.min_notional,
+                                      max_gross_usd=max_gross)
             row = journal(decision, _JOURNAL)
             if decision.take:
                 state.open_positions += 1      # the concurrency cap binds WITHIN a run too
+                # AND SO DOES THE GROSS CAP. Checked per-leg against a zero running total, every
+                # leg passes and the book lands at N times the limit -- N being however many rules
+                # happened to fire that morning.
+                state.gross_open_usd += float(decision.notional_usd)
                 if args.place or place_ctx is not None:
                     # THE SLEEVE'S OWN RISK CHECK HAS ALREADY RUN. size_and_check owns
                     # per-trade risk, the daily loss cap and the concurrency cap; the order path
@@ -358,6 +374,8 @@ def main() -> int:
         "equity_why": equity_why,
         "leverage": leverage,
         "borrowing": borrow,
+        "max_gross_usd": round(max_gross, 2),
+        "gross_committed_usd": round(state.gross_open_usd, 2),
         "rule_id": args.rule_id,
         "n_intents": len(rows),
         "n_taken": sum(1 for r in rows if r.get("taken")),

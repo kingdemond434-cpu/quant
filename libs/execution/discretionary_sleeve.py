@@ -93,11 +93,18 @@ class RuleSignal:
 class SleeveState:
     """What the sleeve knows about today. Supplied by the caller from real book state."""
 
+    #: NET equity -- the principal's own money, never a levered basis. Risk-per-trade and the daily
+    #: loss cap are both fractions of THIS, and they must be: losing 1% of a 3x notional basis is
+    #: losing 3% of the account, which would silently triple both limits the day leverage arrived.
     equity_usd: float
     realised_pnl_today_usd: float = 0.0
     open_positions: int = 0
     #: Consecutive losses, carried ONLY so the sleeve can prove it did not react to them.
     loss_streak: int = 0
+    #: Notional ALREADY committed today by earlier legs. The gross cap is a running total or it is
+    #: not a cap: checked per-leg against zero, every leg passes and the book ends up at N times
+    #: the limit, where N is however many rules happened to fire.
+    gross_open_usd: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -109,6 +116,13 @@ class Decision:
     risk_usd: float
     why: str
     signal: dict[str, Any] = field(default_factory=dict)
+    #: qty * entry. A REAL FIELD, because the order path spends it and the gross cap bounds it.
+    #: It existed only inside the `why` string until 2026-08-15: `run_discretionary_live` passed
+    #: `decision.notional_usd` to `place_entry` against a dataclass that had no such attribute, so
+    #: the FIRST order this sleeve ever tried to place would have raised AttributeError. Every
+    #: sizing test passed, because none of them crossed the seam into placement -- the identical
+    #: shape as the `_to_signal` failure two commits earlier, one field further down the same path.
+    notional_usd: float = 0.0
 
     @property
     def refused(self) -> bool:
@@ -119,7 +133,8 @@ def size_and_check(sig: RuleSignal, state: SleeveState, *,
                    risk_frac: float = RISK_PER_TRADE_FRAC,
                    daily_cap_frac: float = DAILY_LOSS_CAP_FRAC,
                    max_concurrent: int = MAX_CONCURRENT,
-                   min_notional_usd: float | None = None) -> Decision:
+                   min_notional_usd: float | None = None,
+                   max_gross_usd: float | None = None) -> Decision:
     """Size this signal and rule on it. Every gate is a REFUSAL that must pass.
 
     NO SCORING. A weighted score lets a strong number on one axis buy past a hard requirement on
@@ -163,6 +178,29 @@ def size_and_check(sig: RuleSignal, state: SleeveState, *,
     qty = risk_usd / risk_per_unit
     notional = qty * float(sig.entry_price)
 
+    # THE GROSS CAP. FIXED-FRACTIONAL RISK DOES NOT BOUND NOTIONAL, and it is easy to believe it
+    # does. Notional = risk / stop-distance, so a TIGHT stop makes it explode: measured live
+    # 2026-08-15, a BTC leg risking $1.93 (1% of $192.61) against a 0.30% stop carried $634 of
+    # notional -- 3.3x the account, from one rule, inside every stated limit.
+    #
+    # ON SPOT THIS WAS INVISIBLE because `place_entry` clamped every order to free cash, so an
+    # oversized leg simply landed underweight. That clamp was doing a job nobody had assigned it,
+    # and the day borrowing was wired in -- which removes the clamp, because on margin the venue
+    # funds the shortfall -- the only thing standing between a tight stop and a 6x book was gone.
+    # A limit that is enforced by an accident somewhere else is not a limit.
+    if max_gross_usd is not None:
+        after = float(state.gross_open_usd) + notional
+        if after > float(max_gross_usd):
+            return Decision(False, 0.0, risk_usd, (
+                f"gross cap: this leg's ${notional:,.2f} notional on top of "
+                f"${float(state.gross_open_usd):,.2f} already committed would reach "
+                f"${after:,.2f}, past the ${float(max_gross_usd):,.2f} this book may carry. "
+                f"Fixed-fractional RISK does not bound NOTIONAL -- notional is risk divided by the "
+                f"stop distance, so a tight stop produces a huge position while every risk limit "
+                f"still reads green. NOT clamped down to fit: a leg sized to the remaining room is "
+                "a different trade from the one the rule called, with a stop that no longer means "
+                "what it meant when it was pre-registered"), s)
+
     if min_notional_usd is not None and notional < float(min_notional_usd):
         return Decision(False, 0.0, risk_usd, (
             f"sized notional ${notional:,.2f} is below the venue minimum "
@@ -178,7 +216,8 @@ def size_and_check(sig: RuleSignal, state: SleeveState, *,
         f"${notional:,.2f}. Risk fraction is CONSTANT -- unchanged by the {state.loss_streak} "
         f"consecutive loss(es) on record, because sizing that reacts to the last trade is how a "
         f"hit-rate edge is given back. Rule {sig.rule_id}"
-        + (f"; forced participant: {sig.forced_participant}" if sig.forced_participant else "")), s)
+        + (f"; forced participant: {sig.forced_participant}" if sig.forced_participant else "")),
+        s, round(notional, 2))
 
 
 def journal(decision: Decision, path: Path | str, *, now: datetime | None = None) -> dict[str, Any]:

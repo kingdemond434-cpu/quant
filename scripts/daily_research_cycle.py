@@ -284,7 +284,17 @@ def main() -> None:
     # that move is one line on the box rather than a code change -- and the executors additionally
     # name the other wallet at runtime when it holds the money (`wallet.misplaced_capital`), so a
     # cycle left on the wrong setting reports it instead of going quiet.
-    desk_wallet = os.environ.get("DESK_WALLET", "spot").strip().lower()
+    # ENV FIRST, THEN A REPO FILE. `/etc/environment` needs root, and the principal running the
+    # desk is not root on this box -- a control surface that requires sudo to change is one that
+    # gets left wrong. `data/DESK_WALLET` sits beside the other arming markers, is gitignored so it
+    # cannot travel into a clone, and is writable by the account that actually moves the capital.
+    desk_wallet = (os.environ.get("DESK_WALLET") or "").strip().lower()
+    if not desk_wallet:
+        try:
+            desk_wallet = (_ROOT / "data" / "DESK_WALLET").read_text("utf-8").strip().lower()
+        except OSError:
+            desk_wallet = "spot"
+    desk_wallet = desk_wallet or "spot"
     if desk_wallet not in WALLETS:
         raise SystemExit(f"DESK_WALLET={desk_wallet!r} is not one of {WALLETS}. Refusing to "
                          "default: a typo that silently trades the wrong wallet is the failure "
