@@ -64,6 +64,11 @@ def test_codex_controller_is_noninteractive_fenced_and_checkpointed() -> None:
     ):
         assert required in source
     assert "persistent workers" in source or "deterministic machinery remains active" in source
+    assert 'CODEX_NIGHTLY_MODEL="${CODEX_NIGHTLY_MODEL:-gpt-5.6-sol}"' in source
+    assert "CODEX_NIGHTLY_REASONING_EFFORT:-max" in source
+    service = SERVICE.read_text("utf-8")
+    assert "CODEX_NIGHTLY_MODEL=gpt-5.6-sol" in service
+    assert "CODEX_NIGHTLY_REASONING_EFFORT=max" in service
     assert "--dangerously-bypass-approvals-and-sandbox" not in source
     assert source.index("check_constitution_core.py") < source.index(
         "controller_checkpoint.py claim"

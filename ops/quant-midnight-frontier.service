@@ -5,5 +5,7 @@ After=network-online.target
 [Service]
 Type=oneshot
 User=quant
+Environment="CODEX_NIGHTLY_MODEL=gpt-5.6-sol"
+Environment="CODEX_NIGHTLY_REASONING_EFFORT=max"
 WorkingDirectory=/home/quant/quant-platform
 ExecStart=/bin/bash /home/quant/quant-platform/ops/run_midnight_frontier.sh

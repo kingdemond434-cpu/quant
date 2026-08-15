@@ -102,9 +102,10 @@ heartbeat_loop() {
 heartbeat_loop &
 HEARTBEAT_PID=$!
 
+CODEX_NIGHTLY_MODEL="${CODEX_NIGHTLY_MODEL:-gpt-5.6-sol}"
 CODEX_ARGS=(exec -C "$PWD" --sandbox workspace-write --ask-for-approval never
     --output-last-message "$LAST_MESSAGE"
-    --config "model_reasoning_effort=${CODEX_NIGHTLY_REASONING_EFFORT:-high}")
+    --config "model_reasoning_effort=${CODEX_NIGHTLY_REASONING_EFFORT:-max}")
 if [ -n "${CODEX_NIGHTLY_MODEL:-}" ]; then
     CODEX_ARGS+=(--model "$CODEX_NIGHTLY_MODEL")
 fi
