@@ -128,6 +128,7 @@ __all__ = [
     "open_orders",
     "place_market_quote",
     "place_market_reduce",
+    "place_stop_loss_limit",
 ]
 
 
@@ -298,6 +299,29 @@ def place_market_reduce(symbol: str, side: str, qty: float, *, cycle: str) -> di
         "symbol": symbol, "side": side, "type": "MARKET", "quantity": f"{qty}",
         "sideEffectType": "AUTO_REPAY", "isIsolated": "FALSE",
         "newClientOrderId": client_order_id(symbol, side, "margin_close", cycle=cycle),
+    }, method="POST"))
+
+
+def place_stop_loss_limit(symbol: str, side: str, qty: float, stop_price: float,
+                          limit_price: float, *, cycle: str | None = None) -> dict[str, Any]:
+    """A resting protective stop on the MARGIN book, repaying debt when it fires.
+
+    `AUTO_REPAY` is the whole reason this exists separately from the spot version. A stop that
+    sells the position but leaves the loan outstanding has removed the asset and kept the
+    liability -- the margin level barely improves and interest keeps accruing on a book that no
+    longer holds anything. On a levered position the repayment IS the protection.
+
+    Same STOP_LOSS_LIMIT caveat as spot: Binance offers no stop-market here, so in a gap through
+    the limit the order rests unfilled -- and on margin that is the scenario where the liquidation
+    engine acts instead, which is exactly what the stop was meant to pre-empt.
+    """
+    if side not in {"BUY", "SELL"}:
+        raise ValueError(f"side must be BUY or SELL, got {side!r}")
+    return dict(_signed("/sapi/v1/margin/order", {
+        "symbol": symbol, "side": side, "type": "STOP_LOSS_LIMIT", "timeInForce": "GTC",
+        "quantity": f"{qty}", "stopPrice": f"{stop_price}", "price": f"{limit_price}",
+        "sideEffectType": "AUTO_REPAY", "isIsolated": "FALSE",
+        "newClientOrderId": client_order_id(symbol, side, "marginstop", cycle=cycle),
     }, method="POST"))
 
 

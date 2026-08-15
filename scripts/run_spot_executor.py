@@ -52,6 +52,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from libs.execution.wallet import WALLETS
+
 _TARGETS = Path("data/spot_momentum.json")
 _JOURNAL = Path("data/spot_executor_journal.jsonl")
 _OUT = Path("web/spot_executor.json")
@@ -185,6 +187,10 @@ def main() -> int:
                     help="fraction of equity this book must NOT deploy, held for the other "
                          "sleeves. Two sleeves sharing one wallet is a capital allocation, and "
                          "without this the one that runs first takes everything")
+    ap.add_argument("--wallet", default="spot", choices=list(WALLETS),
+                    help="which wallet holds the book. Moving capital to margin without moving "
+                         "this leaves the executor reading an empty spot wallet and placing "
+                         "nothing, which is indistinguishable from a book already at target")
     ap.add_argument("--quote", default="USDT",
                     help="quote asset to TRADE in, independent of the quote the research universe "
                          "is denominated in. EEA retail cannot trade Binance USDT pairs under "
@@ -195,8 +201,12 @@ def main() -> int:
                          "reuses client order IDs and the venue rejects the duplicate")
     args = ap.parse_args()
 
-    from libs.execution import binance_spot_live as live
+    from libs.execution import binance_spot_live as market
     from libs.execution.ruin_rail import frozen
+    from libs.execution.wallet import connector
+
+    # BALANCES AND ORDERS follow the wallet; PRICES AND FILTERS are public and do not.
+    live = connector(args.wallet)
 
     if args.equity is None:
         ap.error("--equity is required: pass a number, or 'auto' to read it from the venue")
@@ -214,6 +224,7 @@ def main() -> int:
         "updated": datetime.now(tz=UTC).isoformat(),
         "cycle": cycle, "armed": armed, "armed_why": why_armed,
         "rail_frozen": rail_frozen, "rail_why": why_rail, "quote": args.quote,
+        "wallet": args.wallet,
         "targets_why": why_targets,
         "placed": [], "refused": [], "dry_run": not place,
         "leverage": "1.0x -- SPOT HOLDS WHAT IT PAID FOR. No leverage exists on this path and "
@@ -232,8 +243,8 @@ def main() -> int:
     # can drift from the account and the account is the only thing that is true.
     try:
         held = live.balances() if armed else {}
-        px = live.prices()
-        filters = live.exchange_filters()
+        px = market.prices()
+        filters = market.exchange_filters()
     except Exception as exc:
         msg = (f"venue unreadable ({type(exc).__name__}: {exc}) -- refusing. Trading against an "
                "unknown position is how a rebalance becomes a doubling")

@@ -55,6 +55,7 @@ from libs.execution.discretionary_sleeve import (
     size_and_check,
 )
 from libs.execution.spot_order_path import place_entry
+from libs.execution.wallet import WALLETS, connector
 
 _JOURNAL = Path("data/discretionary_journal.jsonl")
 _OUT = Path("web/discretionary_live.json")
@@ -69,8 +70,14 @@ _FORCED = ("stops resting beyond the swept swing -- they must fill when touched 
            "the structure shift after the sweep is the evidence that flow was absorbed")
 
 
-def _to_signal(setup: Any, symbol: str, rule_id: str) -> RuleSignal:
-    """ICTSetup -> RuleSignal. A FIELD MAPPING, deliberately nothing more.
+def _to_signal(setup: rules.Setup, symbol: str, rule_id: str) -> RuleSignal:
+    """Setup -> RuleSignal. A FIELD MAPPING, deliberately nothing more.
+
+    TAKES THE COMMON `Setup`, NOT `ICTSetup`. When H3 was the only rule this read `sweep_i`,
+    `shift_i` and `entry_i` off the ICT dataclass directly; the moment ten more rules arrived --
+    none of which has those fields -- it raised AttributeError on the first live run. `_from_ict`
+    now translates H3 into the common shape BEFORE anything reaches here, so this function knows
+    about exactly five fields and every rule presents all five.
 
     Every number is carried through untouched. Rounding, clamping or 'improving' a stop here would
     move the pre-registered terms after the data arrived, which is the whole thing the playbook's
@@ -84,7 +91,7 @@ def _to_signal(setup: Any, symbol: str, rule_id: str) -> RuleSignal:
         stop_price=float(setup.stop),
         target_price=float(setup.target),
         forced_participant=_FORCED,
-        note=f"H3 ICT sweep->shift->entry at bars {setup.sweep_i}/{setup.shift_i}/{setup.entry_i}",
+        note=setup.note,
     )
 
 
@@ -148,6 +155,10 @@ def main() -> int:
     ap.add_argument("--place", action="store_true",
                     help="ACTUALLY PLACE the taken intents, each with a venue-held stop. Absent, "
                          "this journals what it would do and spends nothing")
+    ap.add_argument("--wallet", default="spot", choices=list(WALLETS),
+                    help="which wallet to trade from. Both wallets have separate balances, so a "
+                         "sleeve pointed at an empty one keeps working perfectly and places "
+                         "nothing -- which looks exactly like a quiet market")
     ap.add_argument("--quote", default="USDT",
                     help="quote asset to trade in -- USDC for EEA retail, whose account may not "
                          "touch Binance USDT pairs under MiCA")
@@ -200,12 +211,14 @@ def main() -> int:
     steps: dict[str, float] = {}
     if args.place:
         from libs.execution import binance_spot_live
-        live_mod = binance_spot_live
+        live_mod = connector(args.wallet)
         place_ctx = True
         try:
             free_quote = float(live_mod.balances().get(args.quote, 0.0))
+            # MARKET DATA IS PUBLIC AND WALLET-AGNOSTIC. There is one BNBUSDC market, not a spot
+            # one and a margin one; only balances and orders are routed by wallet.
             steps = {k: float(v.get("step") or 0.0)
-                     for k, v in live_mod.exchange_filters().items()}
+                     for k, v in binance_spot_live.exchange_filters().items()}
         except Exception as exc:
             print(f"discretionary-live: venue unreadable ({type(exc).__name__}: {exc}) -- "
                   "refusing to place. Sizing against an unknown balance is how a sleeve spends "
@@ -297,6 +310,7 @@ def main() -> int:
         "shorts_refused": skipped_short,
         "orders": placed,
         "placed": bool(args.place),
+        "wallet": args.wallet,
         "rules_run": sorted([args.rule_id, *rules.READY, *rules.TAPE_RULES]),
         "no_tape_symbols": no_tape,
         "still_blocked": rules.BLOCKED,

@@ -90,16 +90,21 @@ _STEPS = [
     # desk produces. The ladder runs FIRST because promotion must see the Stage-B rows the ladder
     # just published; a promotion decided from a pre-ladder read cites figures the dashboard never
     # showed, which makes it unauditable after the fact.
+    # WHY A SEAT IS UNJUDGEABLE, named per slot. The displacement plan correctly refuses to
+    # reclaim what it cannot see and then stops, which leaves the item unactionable -- and the
+    # queue is the binding constraint on breadth, so an unusable seat is the most expensive
+    # object on the desk. Reports only; it never reclaims.
+    ("slot_diagnosis",    "scripts/diagnose_forward_slots.py", 120),
     ("live_ladder",       "scripts/run_live_ladder.py",      600),
     ("auto_promotion",    "scripts/run_auto_promotion.py --capital 200 --min-notional 10", 300),
     ("golive_preflight",  "scripts/run_golive_preflight.py --capital 200", 120),
     ("spot_targets",      "scripts/run_spot_momentum.py --equity 200 --min-notional 10", 300),
-    ("spot_orders",       "scripts/run_spot_executor.py --equity auto --quote USDC --place --reserve-frac 0.3", 300),
+    ("spot_orders",       "scripts/run_spot_executor.py --equity auto --quote USDC --place --reserve-frac 0.3 --wallet spot", 300),
     # --place: the eleven playbook rules now TRADE, each entry carrying a venue-held stop placed
     # through the same primitive the momentum book uses. --spot-only refuses every short they call
     # and journals the refusal, which on a spot account IS the measurement for H1/H7/H11.
     ("discretionary",     "scripts/run_discretionary_live.py --equity auto --spot-only "
-                          "--quote USDC --place --min-notional 5", 600),
+                          "--quote USDC --place --min-notional 5 --wallet spot", 600),
     # THE LEVERED PATH. Inert without data/MARGIN_ENABLE and without capital in the margin wallet,
     # both of which are the principal's acts. The leverage is COMPUTED every run -- no flag -- so a
     # thin edge borrows nothing and the same line is correct at any Sharpe.

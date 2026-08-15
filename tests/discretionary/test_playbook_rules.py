@@ -222,3 +222,38 @@ def test_ONE_BAD_DETECTOR_DOES_NOT_MUTE_THE_FAMILY(monkeypatch) -> None:  # type
 
     monkeypatch.setitem(R.READY, "H11_band_fade", _boom)
     R.detect(_frame([100.0] * 40 + [88.0]))          # must not raise
+
+
+def test_THE_ADAPTER_ACCEPTS_EVERY_RULES_SETUP_NOT_JUST_H3S() -> None:
+    """THE BUG THE FIRST LIVE RUN FOUND, and it got past twenty-one green tests.
+
+    `_to_signal` read `sweep_i`/`shift_i`/`entry_i` straight off the ICT dataclass, because when it
+    was written H3 was the only rule. Ten rules later, none of which has those fields, the first
+    real invocation raised AttributeError -- and every test passed, because the detectors were
+    tested and the order path was tested and the SEAM BETWEEN THEM was not.
+
+    This exercises the seam with a Setup from each family.
+    """
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("run_disc_undertest",
+                                                  "scripts/run_discretionary_live.py")
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    for rule_id, direction in (("H1_structural_fade", -1), ("H6_wyckoff_spring", 1),
+                               ("H11_band_fade", -1), ("H5_cvd_divergence", -1)):
+        st = R.Setup(rule_id, direction, 100.0, 105.0, 95.0, 3, "note")
+        sig = mod._to_signal(st, "BTCUSDT", st.rule_id)
+        assert sig.rule_id == rule_id
+        assert sig.side == ("BUY" if direction > 0 else "SELL")
+        assert sig.entry_price == 100.0 and sig.stop_price == 105.0
+
+    class _ICT:
+        direction, entry_price, stop, target = 1, 100.0, 95.0, 110.0
+        sweep_i, shift_i, entry_i = 1, 2, 3
+
+    conv = mod._from_ict(_ICT())
+    assert conv.rule_id == "H3_ict_sweep_shift"
+    assert mod._to_signal(conv, "BTCUSDT", conv.rule_id).side == "BUY"
