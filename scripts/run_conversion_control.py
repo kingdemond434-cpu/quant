@@ -23,6 +23,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from libs.alpha_factory.research_budget import adaptive_portfolios  # noqa: E402
+from libs.research.alpha_state import AlphaStateLedger, ORDER  # noqa: E402
 
 DEFAULT_OUT = ROOT / "web/conversion_control.json"
 
@@ -69,6 +70,24 @@ def _candidate_counts(db_path: Path) -> tuple[int | None, int | None, int | None
         return None, None, None
 
 
+def _canonical_stages(path: Path) -> list[dict[str, Any]]:
+    """Cumulative rung counts from one identity-preserving ledger only."""
+    try:
+        records = AlphaStateLedger(path).records.values()
+    except ValueError:
+        return [{"stage": state, "count": None, "source": str(path),
+                 "status": "UNMEASURED: malformed canonical ledger"} for state in ORDER]
+    rows: list[dict[str, Any]] = []
+    for index, state in enumerate(ORDER):
+        count = sum(
+            1 for rec in records
+            if rec.state in ORDER and ORDER.index(rec.state) >= index
+        )
+        rows.append({"stage": state, "count": count, "source": str(path),
+                     "status": "MEASURED"})
+    return rows
+
+
 def weakest_transition(stages: list[dict[str, Any]]) -> dict[str, Any] | None:
     """Lowest measured adjacent conversion rate; unknown never masquerades as zero."""
     measured: list[dict[str, Any]] = []
@@ -88,29 +107,21 @@ def weakest_transition(stages: list[dict[str, Any]]) -> dict[str, Any] | None:
 
 def build(root: Path = ROOT) -> dict[str, Any]:
     tested, screen_valid, durable = _candidate_counts(root / "data/sor_crypto.sqlite")
-    portfolio = _json(root / "data/portfolio_admission.json")
-    sleeves = _json(root / "data/paper_sleeve_queue.json")
-    promotion = _json(root / "data/promotion_queue.json")
-    live = _json(root / "data/live_records.json") or _json(root / "web/cashcarry_live.json")
-
-    stages = [
-        {"stage": "TESTED", "count": tested, "source": "data/sor_crypto.sqlite"},
-        {"stage": "STATISTICALLY_VALID_SCREEN", "count": screen_valid,
-         "source": "research_candidates.survived"},
-        {"stage": "OOS_AND_CAPACITY_MEASURED", "count": durable,
-         "source": "CandidateStore.survivors()"},
-        {"stage": "PORTFOLIO_VALIDATED",
-         "count": _count_rows(portfolio, "admitted", "eligible", "rows"),
-         "source": "data/portfolio_admission.json"},
-        {"stage": "SHADOW",
-         "count": _count_rows(sleeves, "active", "sleeves", "rows"),
-         "source": "data/paper_sleeve_queue.json"},
-        {"stage": "CAPITAL_ELIGIBLE",
-         "count": _count_rows(promotion, "eligible", "capital_eligible", "promotions"),
-         "source": "data/promotion_queue.json"},
-        {"stage": "LIVE", "count": _count_rows(live, "records", "positions", "sleeves"),
-         "source": "data/live_records.json|web/cashcarry_live.json"},
-    ]
+    ledger_path = root / "data/alpha_state_ledger.jsonl"
+    stages = _canonical_stages(ledger_path)
+    legacy_inventory = {
+        "candidate_store": {"tested": tested, "screen_survivors": screen_valid,
+                            "fully_measured_survivors": durable,
+                            "source": "data/sor_crypto.sqlite"},
+        "portfolio_rows": _count_rows(_json(root / "data/portfolio_admission.json"),
+                                      "admitted", "eligible", "rows"),
+        "shadow_rows": _count_rows(_json(root / "data/paper_sleeve_queue.json"),
+                                   "active", "sleeves", "rows"),
+        "promotion_rows": _count_rows(_json(root / "data/promotion_queue.json"),
+                                      "eligible", "capital_eligible", "promotions"),
+        "rule": ("inventory only until joined by the same alpha_id through alpha_state_ledger; "
+                 "never use unrelated counts as adjacent funnel stages"),
+    }
 
     outcomes_doc = _json(root / "data/research_portfolio_outcomes.json")
     outcomes: dict[str, tuple[float, float]] = {}
@@ -129,6 +140,7 @@ def build(root: Path = ROOT) -> dict[str, Any]:
         "authority": "research work allocation only; no promotion, risk-limit or capital authority",
         "canonical_ladder": [row["stage"] for row in stages],
         "stages": stages,
+        "legacy_inventory_not_conversion": legacy_inventory,
         "binding_transition": bottleneck,
         "research_portfolios": {
             "weights": allocation.weights,
