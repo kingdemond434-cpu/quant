@@ -141,7 +141,9 @@ def survivor_t_stats(raw: object) -> dict[str, float]:
 
 
 def state_of(name: str, *, has_forward_record: bool, forward_obs: int,
-             t_stat: float | None) -> tuple[alpha_state.AlphaRecord, str]:
+             t_stat: float | None,
+             ledger: alpha_state.AlphaStateLedger | None = None
+             ) -> tuple[alpha_state.AlphaRecord, str]:
     """Place a Stage-A survivor on the governance ladder and say what the NEXT rung costs.
 
     THE POINT IS THE REFUSAL, NOT THE PLACEMENT. Before `alpha_state` existed, nothing in the code
@@ -154,7 +156,7 @@ def state_of(name: str, *, has_forward_record: bool, forward_obs: int,
     screen has zero promotion authority (two-stage discovery law), so the ladder is expected to
     halt at OOS_VALIDATED or below until forward evidence exists.
     """
-    rec = alpha_state.AlphaRecord(alpha_id=name)
+    rec = ledger.get(name) if ledger is not None else alpha_state.AlphaRecord(alpha_id=name)
     # Evidence the sweep artifact genuinely establishes. Nothing is asserted that was not measured:
     # an empty value is treated as missing by the machine, so padding here would be refused anyway.
     ev: dict[str, str] = {
@@ -173,9 +175,11 @@ def state_of(name: str, *, has_forward_record: bool, forward_obs: int,
         nxt = alpha_state.next_rung(rec.state)
         if nxt is None:
             break
-        moved, reason = alpha_state.advance(
-            rec, nxt, {k: v for k, v in ev.items()
-                       if k in alpha_state.requirements(nxt)})
+        step_evidence = {k: v for k, v in ev.items() if k in alpha_state.requirements(nxt)}
+        moved, reason = (
+            ledger.advance(name, nxt, step_evidence) if ledger is not None
+            else alpha_state.advance(rec, nxt, step_evidence)
+        )
         if moved.state == rec.state:
             break
         rec = moved
@@ -236,6 +240,8 @@ def main() -> int:
                     help="where owed forward clocks are recorded so Stage-B and the dashboard "
                          "can see them; overridable so tests never write the real one")
     ap.add_argument("--out", type=Path, default=OUT)
+    ap.add_argument("--alpha-ledger", type=Path, default=None,
+                    help="append-only canonical state ledger; defaults beside --registry")
     a = ap.parse_args()
 
     live = records_from(_load(a.records))
@@ -243,6 +249,9 @@ def main() -> int:
     survivors = survivors_from(sweep_doc)
     t_by_key = survivor_t_stats(sweep_doc)
     floor = min_informative_clip()
+    state_ledger = alpha_state.AlphaStateLedger(
+        a.alpha_ledger or (a.registry.parent / "alpha_state_ledger.jsonl")
+    )
 
     named = {r.name for r in live}
     # A SURVIVOR WITH NO FORWARD RECORD IS THE WHOLE POINT OF THIS SCRIPT. It should be accruing
@@ -278,7 +287,7 @@ def main() -> int:
     for s_name in survivors:
         rec, why = state_of(s_name, has_forward_record=s_name in named,
                             forward_obs=next((r.n_trades for r in live if r.name == s_name), 0),
-                            t_stat=t_by_key.get(s_name))
+                            t_stat=t_by_key.get(s_name), ledger=state_ledger)
         ladder_states.append({"alpha": s_name, "state": rec.state, "blocked_by": why,
                               "owes": list(alpha_state.requirements(
                                   alpha_state.next_rung(rec.state) or "")),

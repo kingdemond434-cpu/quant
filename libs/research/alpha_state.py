@@ -35,14 +35,18 @@ THREE PROPERTIES, each chosen against a specific way this would otherwise rot:
 
 from __future__ import annotations
 
+import json
+import os
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
+from pathlib import Path
 
 __all__ = [
     "ORDER",
     "RUNGS",
     "TERMINAL",
     "AlphaRecord",
+    "AlphaStateLedger",
     "Rung",
     "advance",
     "next_rung",
@@ -137,6 +141,84 @@ class AlphaRecord:
     def rung_index(self) -> int:
         """Position on the ladder; -1 for terminal states, which sit off it."""
         return ORDER.index(self.state) if self.state in ORDER else -1
+
+
+class AlphaStateLedger:
+    """Append-only durable materialisation of the canonical ladder.
+
+    The transition function remains the sole authority. The ledger only persists transitions it
+    accepted, so a restart or controller handoff resumes the same alpha rather than rebuilding an
+    optimistic state from whichever report happens to be newest.
+    """
+
+    def __init__(self, path: Path | str) -> None:
+        self.path = Path(path)
+        self.records = self._load()
+
+    def _load(self) -> dict[str, AlphaRecord]:
+        if not self.path.exists():
+            return {}
+        records: dict[str, AlphaRecord] = {}
+        for number, line in enumerate(self.path.read_text("utf-8").splitlines(), start=1):
+            if not line.strip():
+                continue
+            try:
+                row = json.loads(line)
+                rec = AlphaRecord(
+                    alpha_id=str(row["alpha_id"]), state=str(row["state"]),
+                    evidence={str(k): str(v) for k, v in dict(row["evidence"]).items()},
+                    history=tuple((str(a), str(b)) for a, b in row["history"]),
+                    note=str(row.get("note", "")),
+                )
+            except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+                raise ValueError(f"malformed alpha-state ledger line {number}: {exc}") from exc
+            if rec.state not in ORDER and rec.state not in TERMINAL:
+                raise ValueError(f"malformed alpha-state ledger line {number}: unknown state")
+            prior = records.get(rec.alpha_id, AlphaRecord(alpha_id=rec.alpha_id))
+            if len(rec.history) != len(prior.history) + 1 or \
+                    rec.history[:-1] != prior.history or rec.history[-1][0] != rec.state:
+                raise ValueError(
+                    f"malformed alpha-state ledger line {number}: history is not append-only"
+                )
+            if rec.state in TERMINAL:
+                expected, _ = retreat(prior, rec.state, reason=rec.note or "ledgered retreat",
+                                      now=rec.history[-1][1])
+            else:
+                expected, why = advance(prior, rec.state, rec.evidence, now=rec.history[-1][1])
+                if expected.state != rec.state:
+                    raise ValueError(
+                        f"malformed alpha-state ledger line {number}: illegal transition ({why})"
+                    )
+            if expected.history != rec.history or expected.evidence != rec.evidence:
+                raise ValueError(
+                    f"malformed alpha-state ledger line {number}: snapshot does not match transition"
+                )
+            records[rec.alpha_id] = rec
+        return records
+
+    def get(self, alpha_id: str) -> AlphaRecord:
+        return self.records.get(alpha_id, AlphaRecord(alpha_id=alpha_id))
+
+    def advance(self, alpha_id: str, to: str, evidence: dict[str, str], *,
+                now: str = "") -> tuple[AlphaRecord, str]:
+        current = self.get(alpha_id)
+        moved, reason = advance(current, to, evidence, now=now)
+        if moved == current:
+            return moved, reason
+        self._append(moved)
+        self.records[alpha_id] = moved
+        return moved, reason
+
+    def _append(self, rec: AlphaRecord) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        row = json.dumps({
+            "schema_version": 1, "alpha_id": rec.alpha_id, "state": rec.state,
+            "evidence": rec.evidence, "history": rec.history, "note": rec.note,
+        }, sort_keys=True)
+        with self.path.open("a", encoding="utf-8", newline="\n") as fh:
+            fh.write(row + "\n")
+            fh.flush()
+            os.fsync(fh.fileno())
 
 
 def requirements(state: str) -> tuple[str, ...]:

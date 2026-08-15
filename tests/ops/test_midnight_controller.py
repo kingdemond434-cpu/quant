@@ -145,8 +145,13 @@ def test_midnight_routes_l2_and_every_conversion_family() -> None:
         "scheduler integrity",
         "governance defects/law fences",
         "Every Claude, Codex, OpenCode",
+        "web/conversion_control.json",
+        "fixed counts",
     ):
         assert required in prompt
     assert cycle.index("run_moat_utilisation.py") < cycle.index(
         "check_l2_daily_conversion.py"
     )
+    controller = Path("ops/run_midnight_codex_controller.sh").read_text("utf-8")
+    assert "cat ops/shared_conversion_controller.txt" in controller
+    assert "scripts/run_conversion_control.py" in cycle

@@ -93,6 +93,11 @@ OPERATING CONTRACT:
    under repository conventions. Do not modify scripts/run_deadman_switch.py or arm live capital.
 10. Before exit, update durable artifacts and leave Claude an exact checkpoint containing what
     changed, evidence and test results, unresolved external blockers, and the ranked next action.
+11. Consume `web/conversion_control.json` and the shared dynamic conversion contract embedded
+    after this brief. Treat its measured binding transition and evidence-adaptive research split
+    as the common work allocator for Claude, Codex, OpenCode, miners and future controllers. Close
+    conversion debt end-to-end, then republish the plan; never substitute fixed counts or activity
+    metrics for validated economic value.
 
 The controller lease epoch/token in the environment fences this mutation window. If they do not
 match durable state, stop controller mutations and report the stale lease; do not affect persistent

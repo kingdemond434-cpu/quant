@@ -282,6 +282,15 @@ if [ -z "$_DOCTRINE" ]; then
     printf 'brain_env: DOCTRINE EMPTY (%s) -- every organ sourcing this would run undirected\n' \
         "$_BRAIN_ROOT/ops/principal_doctrine.txt" >&2
 fi
+_CONVERSION_CONTROL="$(cat "$_BRAIN_ROOT/ops/shared_conversion_controller.txt" 2>/dev/null)"
+if [ -z "$_CONVERSION_CONTROL" ]; then
+    printf 'brain_env: SHARED CONVERSION CONTROL EMPTY (%s)\n' \
+        "$_BRAIN_ROOT/ops/shared_conversion_controller.txt" >&2
+else
+    _DOCTRINE="${_DOCTRINE}
+
+${_CONVERSION_CONTROL}"
+fi
 
 # --- §33 CONVERSION PRIORITY -------------------------------------------------------------------
 #

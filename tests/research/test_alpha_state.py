@@ -8,11 +8,16 @@ records where an alpha sits is a log, not a control.
 
 from __future__ import annotations
 
+import json
+
+import pytest
+
 from libs.research.alpha_state import (
     ORDER,
     RUNGS,
     TERMINAL,
     AlphaRecord,
+    AlphaStateLedger,
     advance,
     next_rung,
     render,
@@ -44,6 +49,38 @@ def _climb(stop_before: str | None = None) -> AlphaRecord:
             break
         rec, _ = advance(rec, state, _FULL)
     return rec
+
+
+def test_LEDGER_RESUMES_THE_SAME_ALPHA_ACROSS_CONTROLLERS(tmp_path) -> None:
+    path = tmp_path / "alpha_state.jsonl"
+    first = AlphaStateLedger(path)
+    rec, _ = first.advance("shared", "IMPLEMENTED", _FULL, now="2026-01-01T00:00:00Z")
+    assert rec.state == "IMPLEMENTED"
+
+    resumed = AlphaStateLedger(path)
+    assert resumed.get("shared").state == "IMPLEMENTED"
+    rec, _ = resumed.advance("shared", "TESTED", _FULL, now="2026-01-02T00:00:00Z")
+    assert rec.state == "TESTED"
+    assert len(path.read_text("utf-8").splitlines()) == 2
+
+
+def test_LEDGER_REFUSES_SKIPS_WITHOUT_APPENDING(tmp_path) -> None:
+    path = tmp_path / "alpha_state.jsonl"
+    ledger = AlphaStateLedger(path)
+    rec, why = ledger.advance("shared", "LIVE", _FULL)
+    assert rec.state == "DISCOVERED"
+    assert "REFUSED" in why
+    assert not path.exists()
+
+
+def test_LEDGER_FAILS_CLOSED_ON_A_FORGED_SNAPSHOT(tmp_path) -> None:
+    path = tmp_path / "alpha_state.jsonl"
+    path.write_text(json.dumps({
+        "alpha_id": "forged", "state": "LIVE", "evidence": _FULL,
+        "history": [["LIVE", "2026-01-01T00:00:00Z"]], "note": "",
+    }) + "\n", "utf-8")
+    with pytest.raises(ValueError, match="illegal transition"):
+        AlphaStateLedger(path)
 
 
 def test_A_SKIPPED_RUNG_IS_REFUSED_EVEN_WITH_THE_HIGHER_EVIDENCE_IN_HAND() -> None:

@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "authority": "principal preference; research allocation only; no production-capital authority",
+  "portfolio_prior": {
+    "exploitation": 0.5,
+    "exploration": 0.5
+  },
+  "portfolio_bounds": {
+    "exploitation": [0.4, 0.6],
+    "exploration": [0.4, 0.6]
+  },
+  "prior_strength": 1.0,
+  "mode_priors": {
+    "exploitation": 0.4,
+    "recombination": 0.25,
+    "exploration": 0.2,
+    "falsification": 0.1,
+    "wildcard": 0.05
+  },
+  "mode_floors": {
+    "exploration": 0.1,
+    "falsification": 0.05
+  },
+  "rule": "Start 50/50. Move only on measured downstream validated economic value per measured research cost. Never optimize candidate/test/commit counts. Recompute every cycle; do not hardcode a throughput target."
+}

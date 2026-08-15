@@ -190,6 +190,9 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   nice -n 15 "$PY" scripts/run_paper_sleeve_spawner.py
   nice -n 15 "$PY" scripts/run_paper_sleeve_forward.py
   nice -n 15 "$PY" scripts/run_promotion_queue.py
+  # Publish the one evidence-adaptive funnel plan only after admission, shadow and promotion
+  # artifacts are fresh. Research-allocation authority only; no promotion or capital authority.
+  nice -n 15 "$PY" scripts/run_conversion_control.py
   nice -n 15 "$PY" scripts/run_trade_forensics.py
   nice -n 15 "$PY" scripts/run_exec_monitor.py
   # THE LOOP CLOSES HERE. The intelligence cycle re-reads everything this run produced -- kills,

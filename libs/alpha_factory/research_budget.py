@@ -31,19 +31,26 @@ believing the space has been searched when it has been skimmed.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from pathlib import Path
 
-#: Default split. Sums to 1.0. Deliberately NOT equal-weighted: exploitation is the largest single
-#: share because deepening a real seam is the highest-expected-value action WHEN a seam exists --
-#: and the whole point of the floors below is that this share cannot eat the others when it does
-#: not.
+_ROOT = Path(__file__).resolve().parents[2]
+POLICY_PATH = _ROOT / "ops/research_allocation_policy.json"
+
+
+def load_policy(path: Path = POLICY_PATH) -> dict[str, object]:
+    """Load the principal's allocation prior from a tracked policy, never from code constants."""
+    raw = json.loads(path.read_text("utf-8"))
+    if not isinstance(raw, dict):
+        raise ValueError("research allocation policy must be an object")
+    return raw
+
+
+_POLICY = load_policy()
 DEFAULT_QUOTAS: dict[str, float] = {
-    "exploitation": 0.40,
-    "recombination": 0.25,
-    "exploration": 0.20,
-    "falsification": 0.10,
-    "wildcard": 0.05,
+    str(k): float(v) for k, v in dict(_POLICY["mode_priors"]).items()
 }
 
 #: Hard floors, applied AFTER any dynamic reweighting. This is the anti-rut mechanism and it is the
@@ -51,13 +58,72 @@ DEFAULT_QUOTAS: dict[str, float] = {
 #: reweights toward exploitation, which produces more exploitation success, which reweights
 #: further -- and the desk optimises itself into a local maximum by a sequence of individually
 #: correct decisions. A floor is not a preference; it is the refusal to let that loop close.
-FLOORS: dict[str, float] = {"exploration": 0.10, "falsification": 0.05}
+FLOORS: dict[str, float] = {
+    str(k): float(v) for k, v in dict(_POLICY["mode_floors"]).items()
+}
 
 MODES: tuple[str, ...] = tuple(DEFAULT_QUOTAS)
 
 #: Modes that need at least one survivor to mean anything. With none, they are unrunnable and
 #: their budget must go somewhere that can run rather than being reported as allocated.
 _NEEDS_SURVIVORS: frozenset[str] = frozenset({"exploitation", "recombination", "falsification"})
+
+
+@dataclass(frozen=True)
+class PortfolioAllocation:
+    """Evidence-adaptive exploration/exploitation split with its uncertainty exposed."""
+
+    weights: dict[str, float]
+    evidence_used: bool
+    reason: str
+
+
+def adaptive_portfolios(
+    outcomes: Mapping[str, tuple[float, float]],
+    *,
+    policy: Mapping[str, object] | None = None,
+) -> PortfolioAllocation:
+    """Allocate between exploration and exploitation from realised economic yield.
+
+    ``outcomes`` maps portfolio -> (validated economic value, measured research cost).  With
+    missing/non-positive cost there is no rate to learn from, so the tracked principal prior is
+    returned exactly.  Once both sides are measured, the prior acts as shrinkage and the observed
+    value-per-cost rate moves the split inside policy bounds.  No candidate count, target survivor
+    count, or code constant can steer it.
+    """
+    cfg = dict(policy or _POLICY)
+    prior = _normalise({str(k): float(v) for k, v in dict(cfg["portfolio_prior"]).items()})
+    bounds = {str(k): tuple(float(x) for x in v)
+              for k, v in dict(cfg["portfolio_bounds"]).items()}
+    strength = float(cfg["prior_strength"])
+    if strength <= 0:
+        raise ValueError("prior_strength must be positive")
+    if set(prior) != {"exploration", "exploitation"}:
+        raise ValueError("portfolio_prior must name exploration and exploitation")
+
+    measured: dict[str, tuple[float, float]] = {}
+    for name in prior:
+        value, cost = outcomes.get(name, (0.0, 0.0))
+        if float(cost) > 0:
+            measured[name] = (max(0.0, float(value)), float(cost))
+    if set(measured) != set(prior):
+        return PortfolioAllocation(prior, False,
+                                   "insufficient two-sided realised value/cost evidence; using "
+                                   "the tracked principal prior without inventing a winner")
+
+    scores = {
+        name: (value + strength * prior[name]) / (cost + strength)
+        for name, (value, cost) in measured.items()
+    }
+    raw = _normalise(scores)
+    exploit_lo, exploit_hi = bounds["exploitation"]
+    exploit = min(exploit_hi, max(exploit_lo, raw["exploitation"]))
+    weights = {"exploitation": exploit, "exploration": 1.0 - exploit}
+    return PortfolioAllocation(
+        weights, True,
+        "realised validated-economic-value per measured research cost, shrunk to the tracked "
+        "principal prior and bounded by the tracked anti-rut policy",
+    )
 
 
 @dataclass(frozen=True)
