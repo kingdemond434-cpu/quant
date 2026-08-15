@@ -57,6 +57,29 @@ _RAMP = _ROOT / "data" / "ramp_state.json"
 _RAMP_MAX_AGE_H = 168.0
 _PRINCIPAL = _ROOT / "data" / "PRINCIPAL_ACTION.md"
 
+#: DECLARES THAT THIS DESK HAS NO FUTURES LEG, ON PURPOSE. Written by the principal and
+#: never by an organ -- like every other file that changes what the rails believe.
+#:
+#: WHY IT HAD TO EXIST. Measured 2026-08-15. The principal is Irish retail, so EEA derivatives are
+#: unavailable under MiCA and the futures account cannot be read at all. The futures KEYFILE still
+#: existed, so `_venue()` returned the futures connector as armed, `positions()` raised, and
+#: `_reconcile` did the correct thing for a carry desk: FAILED CLOSED, reporting `<unreadable>` as
+#: a naked position and freezing the executor. Sixty seconds later it did it again.
+#:
+#: That is a rail firing accurately at a book that no longer exists. The §3 invariant is about
+#: LEVERAGED positions whose stop must survive the host's death; a spot holding has no liquidation
+#: price and no counterparty call, so the invariant does not apply to it -- but "does not apply"
+#: must be STATED, because the alternative reading is that spot positions are covered and they are
+#: not. The report says so on every tick rather than going quiet.
+#:
+#: The freeze it produced was correct in mechanism and wrong in premise, which is the hardest kind
+#: to see: nothing was broken, and the book could not trade.
+_SPOT_ONLY = _ROOT / "data" / "SPOT_ONLY"
+
+
+def _spot_only() -> bool:
+    return _SPOT_ONLY.exists()
+
 
 def _load(p: Path, default: Any) -> Any:
     try:
@@ -75,7 +98,15 @@ def _ack_ts() -> float:
 
 def _venue() -> Any | None:
     """The live FUTURES connector, ONLY if it is fully armed. None otherwise -- and None must
-    mean 'we cannot see the book', never 'the book is clean'."""
+    mean 'we cannot see the book', never 'the book is clean'.
+
+    Under `data/SPOT_ONLY` this returns None DELIBERATELY, and the distinction is the whole point:
+    `_reconcile` treats None as "no futures positions can exist" rather than as a failed read, and
+    that is only true because the desk has declared it has no futures leg. Without the marker the
+    same None would be a lie about an unreadable venue.
+    """
+    if _spot_only():
+        return None
     try:
         from libs.execution import binance_live
     except ImportError:
@@ -107,6 +138,12 @@ def _arming() -> tuple[bool, bool, str | None]:
     except Exception:
         spot = False
     hazard = None
+    if _spot_only():
+        # NOT HALF-ARMED, DELIBERATELY ONE-LEGGED. The hazard below describes a cash-and-carry
+        # book that lost a leg. A desk that never had a futures leg is a different object, and
+        # reporting it as a degraded carry book would demote the stage every tick forever while
+        # naming a risk -- an unhedgeable perp position -- that cannot arise.
+        return fut, spot, None
     if fut != spot:
         have, missing = ("futures", "spot") if fut else ("spot", "futures")
         hazard = (f"HALF-ARMED: {have} leg armed, {missing} leg is NOT -- a cash-and-carry book "
@@ -131,6 +168,14 @@ def _freeze(on: bool, reason: str) -> str:
 def _reconcile(venue: Any, now: float) -> tuple[stops.ReconcileReport, str]:
     if venue is None:
         rep = stops.ReconcileReport(naked={}, breaches={}, n_positions=0)
+        if _spot_only():
+            # SAYING WHAT IS NOT COVERED, EVERY TICK. A clean §3 line next to a live spot book
+            # reads as "the book is protected". It is not: §3 is about leveraged positions whose
+            # stop must outlive the host, and a spot holding has neither a liquidation price nor a
+            # venue-side stop here. Silence would be the more dangerous of the two reports.
+            return rep, ("SPOT_ONLY -- no futures leg exists, so no leveraged position can. Spot "
+                         "holdings are OUTSIDE the §3 invariant: they carry no venue-side stop "
+                         "and none is claimed. Their risk is drawdown, not liquidation")
         return rep, "connector not armed -- venue not read (no positions can exist)"
     try:
         positions = venue.positions()
