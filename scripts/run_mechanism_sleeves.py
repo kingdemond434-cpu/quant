@@ -114,17 +114,50 @@ def _exception_recorded() -> tuple[bool, str]:
 
 def _series(symbols: tuple[str, ...]) -> dict[str, Any]:
     """MarketSeries per symbol from the lake, funding attached where the lake holds it."""
-    from libs.autodiscovery.crypto_adapter import lake_provider
+    import dataclasses
+
+    import numpy as _np
+    from scripts.collect_perp_funding import load as _load_funding
+
+    from libs.autodiscovery.crypto_adapter import _read_frames, lake_provider
+    from libs.data.timeframe import Timeframe
 
     provider = lake_provider(list(symbols), lake_root=_LAKE)
+    # THE FRAMES CARRY THE DATE AXIS AND `MarketSeries` DOES NOT. lake_provider builds the series
+    # from these same frames and drops the index, so reading them here is the only way to align a
+    # second series to the first. The first attempt used `getattr(ser, "dates", None)`, which is
+    # always None -- a dead branch that would have left funding permanently unattached while
+    # looking like it handled the case.
+    try:
+        frames = _read_frames(list(symbols), Timeframe.D1, _LAKE)
+    except Exception:
+        frames = {}
+
     out: dict[str, Any] = {}
     for s in symbols:
         try:
             ser = provider(s)
         except Exception:
             ser = None
-        if ser is not None:
-            out[s] = ser
+        if ser is None:
+            continue
+        # FUNDING FROM THE SIDECAR WHEN THE LAKE DOES NOT CARRY IT. `data/lake` holds OHLCV, so
+        # MarketSeries.funding was None on every symbol and `funding_stress_reversal` degraded to
+        # zeros -- honestly, and to no effect: a live sleeve that could never produce a signal.
+        #
+        # ALIGNED BY DATE, NEVER ZIPPED. The two series come from different fetches, and a
+        # positional join offsets funding from price the moment either has a gap -- which reads as
+        # a signal and is a join bug. A date with no funding row stays 0.0, which for THIS
+        # generator is the neutral value rather than an invented one.
+        if getattr(ser, "funding", None) is None:
+            fmap = _load_funding(s)
+            df = frames.get(s)
+            if fmap and df is not None and len(df) == len(ser.close):
+                vals = [fmap.get(str(d)[:10]) for d in df.index]
+                if any(v is not None for v in vals):
+                    ser = dataclasses.replace(ser, funding=_np.array(
+                        [0.0 if v is None else float(v) for v in vals], dtype="float64"))
+        out[s] = ser
     return out
 
 
