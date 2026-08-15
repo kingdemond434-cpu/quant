@@ -126,6 +126,7 @@ _STEPS = [
     # CENSUS GAP #1 (0.48, NO-CANDIDATE) -- the desk's highest-ranked mechanism, never screened.
     # Runs daily and reports UNMEASURED with its missing input NAMED until the event feed exists:
     # a screen that only starts running once its data arrives is a screen nobody remembers to run.
+    ("index_recon_feed",  "scripts/collect_index_reconstitution.py", 180),
     ("index_recon",       "scripts/screen_index_reconstitution.py", 180),
     ("supply_report",     "scripts/report_mechanism_supply.py", 120),
     # IS EVERYTHING ACTUALLY ARMED -- nine independent facts across three directories, two of them
