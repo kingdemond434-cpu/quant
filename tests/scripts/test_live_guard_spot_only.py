@@ -112,3 +112,39 @@ def test_THE_MARKER_IS_A_PRINCIPAL_ACT_AND_NO_ORGAN_WRITES_IT() -> None:
         body = other.read_text("utf-8")
         assert 'SPOT_ONLY").write_text' not in body
         assert 'SPOT_ONLY").touch' not in body
+
+
+def test_THE_CANARY_PROBES_THE_LEG_THE_DESK_ACTUALLY_TRADES(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A STUCK GAUGE IS NOT A HEALTH CHECK. With no futures leg the probe was skipped on every
+    tick, so `consecutive_failures` held whatever value it had when the futures venue was last
+    readable -- and it contributes a tripwire, so the desk carried a permanent degraded state it
+    had no way to clear. The probe's value (revoked keys, IP drift, recvWindow skew) is identical
+    on either leg, so on a spot-only desk it aims at the credential that matters here."""
+    g = _guard()
+    marker = tmp_path / "SPOT_ONLY"
+    marker.write_text("", "utf-8")
+    monkeypatch.setattr(g, "_SPOT_ONLY", marker)
+    _venue, leg = g._canary_venue(None)
+    assert leg in {"spot", "none"}, "a spot-only desk must not report a futures probe"
+
+
+def test_A_CARRY_DESK_STILL_PROBES_FUTURES(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The change must be scoped to the spot-only case: where a futures venue exists it remains
+    the thing under test, because that is the leg carrying liquidation risk."""
+    g = _guard()
+    monkeypatch.setattr(g, "_SPOT_ONLY", tmp_path / "absent")
+    sentinel = object()
+    venue, leg = g._canary_venue(sentinel)
+    assert venue is sentinel and leg == "futures"
+
+
+def test_WITHOUT_THE_MARKER_AN_ABSENT_VENUE_RECORDS_NO_ATTEMPT(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """An unarmed desk has no execution path to prove, and logging failures there would bury a
+    real outage under thousands of S0 rows."""
+    g = _guard()
+    monkeypatch.setattr(g, "_SPOT_ONLY", tmp_path / "absent")
+    venue, leg = g._canary_venue(None)
+    assert venue is None and leg == "none"

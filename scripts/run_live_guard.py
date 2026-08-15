@@ -189,10 +189,48 @@ def _reconcile(venue: Any, now: float) -> tuple[stops.ReconcileReport, str]:
     return stops.reconcile(positions, orders, now), "venue read ok"
 
 
+def _canary_venue(venue: Any) -> tuple[Any, str]:
+    """WHAT THE PROBE SHOULD BE PROVING: that the venue WE TRADE still answers a signed call.
+
+    On a spot-only desk `venue` is None by design, and the old code then skipped the probe
+    forever -- so the canary's last recorded state stayed whatever it was when the futures leg was
+    still being read, and `consecutive_failures` could never come back down. A health check that
+    can only ever hold its last verdict is not a health check; it is a stuck gauge, and this one
+    contributes a tripwire.
+
+    The probe's value is unchanged by which leg it runs on: it catches revoked keys, IP-whitelist
+    drift and recvWindow skew. Pointing it at the spot connector on a spot-only desk aims it at the
+    credential that actually matters here.
+    """
+    if venue is not None:
+        return venue, "futures"
+    if not _spot_only():
+        return None, "none"
+    try:
+        from libs.execution import binance_spot_live as spot
+    except ImportError:
+        return None, "none"
+    try:
+        return (spot, "spot") if spot.is_armed()[0] else (None, "none")
+    except Exception:
+        return None, "none"
+
+
 def _canary(venue: Any, now: float) -> tuple[canary_mod.CanaryState, str]:
     st = canary_mod.CanaryState.load(_ROOT / "data" / "canary_state.json")
     if not st.is_due(now):
         return st, "not due"
+    venue, leg = _canary_venue(venue)
+    if leg == "spot" and venue is not None:
+        t0 = time.time()
+        try:
+            venue.balances()
+            st.record(ok=True, latency_ms=(time.time() - t0) * 1000.0, now=now,
+                      detail="signed spot balances read")
+            return st, "probe ok (spot leg)"
+        except Exception as e:
+            st.record(ok=False, latency_ms=(time.time() - t0) * 1000.0, now=now, detail=repr(e))
+            return st, f"probe FAILED (spot leg): {e!r}"
     if venue is None:
         # Do NOT record an attempt: an unarmed desk has no execution path to prove, and logging
         # failures here would bury a real outage under thousands of S0 rows.
