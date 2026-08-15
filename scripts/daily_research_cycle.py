@@ -90,6 +90,11 @@ _STEPS = [
     # desk produces. The ladder runs FIRST because promotion must see the Stage-B rows the ladder
     # just published; a promotion decided from a pre-ladder read cites figures the dashboard never
     # showed, which makes it unauditable after the fact.
+    # WHY A SEAT IS UNJUDGEABLE, named per slot. The displacement plan correctly refuses to
+    # reclaim what it cannot see and then stops, which leaves the item unactionable -- and the
+    # queue is the binding constraint on breadth, so an unusable seat is the most expensive
+    # object on the desk. Reports only; it never reclaims.
+    ("slot_diagnosis",    "scripts/diagnose_forward_slots.py", 120),
     ("live_ladder",       "scripts/run_live_ladder.py",      600),
     ("auto_promotion",    "scripts/run_auto_promotion.py --capital 200 --min-notional 10", 300),
     ("golive_preflight",  "scripts/run_golive_preflight.py --capital 200", 120),
