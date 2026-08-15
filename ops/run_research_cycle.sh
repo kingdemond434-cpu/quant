@@ -119,6 +119,25 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # raw number would report the market's return as the strategy's alpha.
   nice -n 15 "$PY" scripts/run_spot_momentum.py --equity "${GOLIVE_CAPITAL:-200}" \
       --min-notional "${VENUE_MIN_NOTIONAL:-10}"
+  # THE ORDER PATH, DAILY AND UNATTENDED. Everything above computes what the book SHOULD be; this
+  # is the only line that makes the account match it. Left manual, the desk publishes a correct
+  # target book every night and holds yesterday's positions forever -- which is III.16 on the one
+  # capability that touches money.
+  #
+  # --equity auto reads the denominator from the venue. A hand-typed one is right when it is typed
+  # and wrong when it is used: 2026-08-15 the book was sized at $198 against a balance that had
+  # already lost the USDT->USDC conversion spread, two legs filled, the third was refused for
+  # insufficient balance, and the account sat two-thirds invested.
+  #
+  # --quote is a JURISDICTION fact, not a preference: EEA retail may not trade Binance USDT spot
+  # pairs under MiCA (-2010 on every symbol), so the book settles in USDC while the research stays
+  # USDT-denominated because that is what the lake holds.
+  #
+  # It trades the DELTA against live holdings, the 5% turnover band suppresses churn on unchanged
+  # ranks, MAX_RUN_FRAC bounds how wrong one bad targets file can be, and every ruin rail is
+  # consulted before a single order goes out.
+  nice -n 15 "$PY" scripts/run_spot_executor.py --equity auto \
+      --quote "${SPOT_QUOTE:-USDC}" --place
   # --spot-only REFUSES every short H3 calls and journals the refusal, rather than inverting it
   # (which would score H3's hit rate against trades it never called for) or dropping it silently
   # (which would hide that half its signals were unplaceable rather than absent).

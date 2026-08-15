@@ -62,3 +62,46 @@ def test_THE_DEFAULT_IS_UNCHANGED() -> None:
     src = _SRC.read_text("utf-8")
     assert '"--quote", default="USDT"' in src
     assert "-2010" in src, "the reason for the flag must travel with it"
+
+
+def test_AUTO_EQUITY_COUNTS_THE_QUOTE_PLUS_THE_BOOKS_OWN_COINS() -> None:
+    """The denominator has to include what the book already holds, or every target shrinks to the
+    cash left over and the executor sells the position it just bought."""
+    r = _mod()._resolve_equity
+    held = {"USDC": 41.06, "BNB": 0.15, "LINK": 3.0}
+    eq, why = r("auto", {"BNBUSDT": 0.5, "LINKUSDT": 0.5}, held,
+                {"BNBUSDC": 700.0, "LINKUSDC": 17.0}, "USDC")
+    assert abs(eq - 197.06) < 0.01
+    assert "read from the venue" in why and "BNB" in why
+
+
+def test_AUTO_EQUITY_IGNORES_COINS_THE_BOOK_DOES_NOT_TARGET() -> None:
+    """A balance can hold positions put there for another reason. Sweeping them into the
+    denominator sizes this book against committed capital, then sells them to fund the gap."""
+    r = _mod()._resolve_equity
+    eq, _ = r("auto", {"BNBUSDT": 1.0}, {"USDC": 100.0, "BNB": 0.1, "DOGE": 1_000_000.0},
+              {"BNBUSDC": 700.0, "DOGEUSDC": 0.2}, "USDC")
+    assert abs(eq - 170.0) < 0.01, "an untargeted holding must not enter the denominator"
+
+
+def test_AN_UNPRICEABLE_HOLDING_REFUSES_RATHER_THAN_UNDERSTATES() -> None:
+    """Counting it as zero would shrink every target and turn a missing price into a sell order --
+    UNMEASURED resolving to a number, in the direction that liquidates (L1.28a)."""
+    r = _mod()._resolve_equity
+    eq, why = r("auto", {"BNBUSDT": 1.0}, {"USDC": 10.0, "BNB": 1.0}, {}, "USDC")
+    assert eq == 0.0
+    assert "cannot be priced" in why and "trigger sells" in why
+
+
+def test_A_STATED_NUMBER_STILL_WINS() -> None:
+    """An explicit figure is a stated intent. A book being deliberately sized down must not have
+    its denominator quietly re-read from the account it is withdrawing from."""
+    r = _mod()._resolve_equity
+    eq, why = r("198", {}, {"USDC": 5000.0}, {}, "USDC")
+    assert eq == 198.0 and "stated by the caller" in why
+
+
+def test_A_NONSENSE_EQUITY_IS_REFUSED_NOT_COERCED() -> None:
+    r = _mod()._resolve_equity
+    eq, why = r("lots", {}, {"USDC": 1.0}, {}, "USDC")
+    assert eq == 0.0 and "neither a number nor" in why
