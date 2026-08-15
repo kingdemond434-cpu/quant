@@ -76,10 +76,15 @@ __all__ = [
 #: desk's own objective forbids: expected geometric growth of roughly zero, carrying full
 #: liquidation risk, in exchange for nothing. The floor was not aggressive, it was inert.
 #:
-#: With no floor the policy runs the measured optimum in both directions -- it levers UP when the
-#: edge supports it and refuses to lever at all when it does not, which is the only version of
-#: "maximum growth" that is actually maximising anything.
-MIN_LEVERAGE = 0.0
+#: 1.0 is the floor the principal agreed: FULLY INVESTED, never borrowing, never sitting on cash.
+#: That is not the same as the 3.0 it replaced, and the difference is the whole point -- 1.0 cannot
+#: force a levered position, so it can never push the book past its own zero-growth line. It only
+#: says "do not hold idle cash on a margin account".
+#:
+#: DE-GROSSING STILL HAPPENS, one layer up. When the edge is thin the answer is not negative
+#: leverage, it is less EXPOSURE -- and `libs.research.vol_target` owns that, with its own floor at
+#: 20% gross. Two floors on two different quantities, neither able to force the other's hand.
+MIN_LEVERAGE = 1.0
 
 #: NOT a risk preference -- what the venue will actually lend on cross margin. A policy that
 #: returned 12x when Binance tops out lower would produce an order the venue refuses, and a refused

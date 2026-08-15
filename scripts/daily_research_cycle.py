@@ -94,7 +94,7 @@ _STEPS = [
     ("auto_promotion",    "scripts/run_auto_promotion.py --capital 200 --min-notional 10", 300),
     ("golive_preflight",  "scripts/run_golive_preflight.py --capital 200", 120),
     ("spot_targets",      "scripts/run_spot_momentum.py --equity 200 --min-notional 10", 300),
-    ("spot_orders",       "scripts/run_spot_executor.py --equity auto --quote USDC --place", 300),
+    ("spot_orders",       "scripts/run_spot_executor.py --equity auto --quote USDC --place --reserve-frac 0.3", 300),
     # --place: the eleven playbook rules now TRADE, each entry carrying a venue-held stop placed
     # through the same primitive the momentum book uses. --spot-only refuses every short they call
     # and journals the refusal, which on a spot account IS the measurement for H1/H7/H11.

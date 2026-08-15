@@ -137,7 +137,7 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # ranks, MAX_RUN_FRAC bounds how wrong one bad targets file can be, and every ruin rail is
   # consulted before a single order goes out.
   nice -n 15 "$PY" scripts/run_spot_executor.py --equity auto \
-      --quote "${SPOT_QUOTE:-USDC}" --place
+      --quote "${SPOT_QUOTE:-USDC}" --place --reserve-frac "${SPOT_RESERVE_FRAC:-0.3}"
   # THE LEVERED PATH, inert until the principal writes data/MARGIN_ENABLE and moves capital into
   # the margin wallet. The leverage is computed from measured Sharpe and vol every run, so this
   # line is correct whether the edge supports 0.8x or 6x -- there is no number here to go stale.

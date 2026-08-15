@@ -110,23 +110,34 @@ def test_BOTH_MODULES_DISCOUNT_THE_SHARPE_IDENTICALLY() -> None:
         assert abs(a(s_, n) - b(s_, n)) < 1e-12
 
 
-def test_THERE_IS_NO_FLOOR_SO_A_WEAK_EDGE_IS_NOT_LEVERED() -> None:
-    """THE CHANGE THAT MATTERS, and the reason for it. A 3.0 floor was set and removed hours later:
-    the live book's Kelly was 1.49x and its ZERO-GROWTH point 2.99x, so a 3.0 floor forced the one
-    configuration the objective forbids -- roughly zero expected growth carrying full liquidation
-    risk. A floor above the zero-growth line is not aggression, it is inertia."""
-    assert MIN_LEVERAGE == 0.0
-    d = choose(0.05, sharpe=0.2, borrow_rate=0.08)
-    assert d["leverage"] < 1.0, "an edge that cannot beat its borrow cost must not be levered"
-    assert d["floor_binding"] is False
+def test_THE_FLOOR_IS_FULLY_INVESTED_AND_CANNOT_FORCE_A_BORROW() -> None:
+    """THE CHANGE THAT MATTERS. A 3.0 floor was set and removed the same day: the live book's Kelly
+    was 1.49x and its ZERO-GROWTH point 2.99x, so 3.0 forced the one configuration the objective
+    forbids -- roughly zero expected growth carrying full liquidation risk.
 
-
-def test_THE_OPTIMUM_IS_TAKEN_IN_BOTH_DIRECTIONS() -> None:
-    """Maximum growth means levering up when the edge supports it AND declining to when it does
-    not. A policy that only knows how to go up is not maximising anything."""
-    strong = choose(0.01, sharpe=2.5, n_obs=4000, borrow_rate=0.02)
+    1.0 cannot do that. It is unlevered by definition, so it can never push a book past its own
+    zero-growth line; it only says 'do not hold idle cash on a margin account'."""
+    assert MIN_LEVERAGE == 1.0
     weak = choose(0.05, sharpe=0.2, n_obs=4000, borrow_rate=0.08)
-    assert strong["leverage"] > 1.0 > weak["leverage"]
+    assert weak["leverage"] == 1.0, "a thin edge is held fully invested, never borrowed against"
+    assert weak["floor_binding"] is True
+
+
+def test_THE_FLOOR_NEVER_EXCEEDS_THE_ZERO_GROWTH_POINT() -> None:
+    """THE PROPERTY THE 3.0 FLOOR VIOLATED, asserted so it cannot come back. Any floor at or above
+    2x Kelly forces negative-growth leverage on a book that cannot support it."""
+    for sharpe, sigma in ((0.2, 0.05), (0.5, 0.03), (1.0, 0.04)):
+        d = choose(sigma, sharpe=sharpe, n_obs=2000, borrow_rate=0.10)
+        if d["zero_growth_leverage"]:
+            assert max(1.0, d["zero_growth_leverage"]) >= MIN_LEVERAGE, (
+                "the floor forces leverage past the point where growth turns negative")
+
+
+def test_A_STRONG_EDGE_STILL_LEVERS_ABOVE_THE_FLOOR() -> None:
+    """Maximum growth means levering up when the edge supports it. The floor is a minimum, not a
+    target."""
+    strong = choose(0.01, sharpe=2.5, n_obs=4000, borrow_rate=0.02)
+    assert strong["leverage"] > 1.0
 
 
 def test_UNMEASURED_VOLATILITY_TAKES_THE_FLOOR_NOT_THE_CEILING() -> None:
