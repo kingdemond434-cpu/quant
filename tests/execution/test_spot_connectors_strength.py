@@ -360,6 +360,13 @@ def _capture_requests(mod: Any, monkeypatch: pytest.MonkeyPatch) -> list[Any]:
         return _FakeResponse(b'{"ok": true}')
 
     monkeypatch.setattr(mod.urllib.request, "urlopen", fake_urlopen)
+    # binance_spot_live routes through its OWN opener (`_urlopen`) to pin the egress to IPv4 --
+    # the box is dual-stack and the venue whitelists an IPv4 address, so leaving the family to
+    # the host resolver is what produced a -2015 on a wholly correct key. That opener does not
+    # consult `urllib.request.urlopen`, so patching only the stdlib name would let these tests
+    # make a REAL network call and fail on TLS instead of on the assertion they are about.
+    if hasattr(mod, "_urlopen"):
+        monkeypatch.setattr(mod, "_urlopen", fake_urlopen)
     return seen
 
 
