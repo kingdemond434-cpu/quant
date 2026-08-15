@@ -112,11 +112,56 @@ def _load_targets() -> tuple[dict[str, float], str]:
     return {str(k): float(v) for k, v in w.items()}, f"{len(w)} target weight(s)"
 
 
+def _resolve_equity(raw: str, targets: dict[str, float], held: dict[str, float],
+                    px: dict[str, float], quote: str) -> tuple[float, str]:
+    """The denominator, from the venue when asked -- because a hand-typed one goes stale silently.
+
+    MEASURED 2026-08-15, on the first live book: `--equity 198` was passed against a balance that
+    had already lost the USDT->USDC conversion spread. Two legs filled, the third came back
+    `Account has insufficient balance`, and the operator was left holding a two-thirds book. The
+    number was right when it was typed and wrong by the time it was used, which is the whole
+    argument for reading it.
+
+    SCOPED, NOT THE WHOLE ACCOUNT. Only the free quote asset plus the coins this book targets are
+    counted. A balance can hold positions put there for another reason -- another sleeve, a
+    long-term hold, an airdrop -- and sweeping them into the denominator would size this book
+    against capital that is already committed, then sell them to fund the difference.
+
+    ALSO WHY IT IS NOT THE DEFAULT: an explicit number is a stated intent, and `auto` re-reads the
+    account every run. On a book that is meant to compound, those are the same; on a book being
+    deliberately sized down, they are not, and the caller says which one it means.
+    """
+    if str(raw).strip().lower() != "auto":
+        try:
+            return float(raw), f"stated by the caller: ${float(raw):,.2f}"
+        except (TypeError, ValueError):
+            return 0.0, f"--equity {raw!r} is neither a number nor 'auto'"
+    total = float(held.get(quote, 0.0))
+    parts = [f"{quote} {total:,.2f}"]
+    for research_sym in targets:
+        base = retarget(research_sym, "")
+        qty = float(held.get(base, 0.0))
+        if qty <= 0:
+            continue
+        price = float(px.get(retarget(research_sym, quote)) or 0.0)
+        if price <= 0:
+            # UNPRICED HOLDING: counting it as zero would understate equity and quietly shrink
+            # every target; refusing is the honest move, since the alternative silently sells.
+            return 0.0, (f"holding {base} cannot be priced in {quote} -- refusing to compute an "
+                         "equity that would understate the book and trigger sells")
+        total += qty * price
+        parts.append(f"{base} {qty * price:,.2f}")
+    return total, f"read from the venue: {' + '.join(parts)} = ${total:,.2f}"
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--equity", type=float, required=True,
-                    help="deployable USDT -- required, never guessed from the balance: a balance "
-                         "includes coins you may be holding for another reason")
+    ap.add_argument("--equity", default=None,
+                    help="deployable capital, or the literal 'auto' to read it from the venue. "
+                         "AUTO IS SCOPED, NOT THE WHOLE ACCOUNT: it values the free quote asset "
+                         "plus the coins this book targets, and nothing else -- a balance can hold "
+                         "positions put there for another reason, and sweeping them into the book "
+                         "would size against capital that is already committed")
     ap.add_argument("--place", action="store_true",
                     help="ACTUALLY PLACE ORDERS. Absent, this prints what it would do and spends "
                          "nothing")
@@ -134,6 +179,8 @@ def main() -> int:
     from libs.execution import binance_spot_live as live
     from libs.execution.ruin_rail import frozen
 
+    if args.equity is None:
+        ap.error("--equity is required: pass a number, or 'auto' to read it from the venue")
     cycle = args.cycle or datetime.now(tz=UTC).strftime("%Y%m%d")
     armed, why_armed = live.is_armed()
     rail_frozen, why_rail = frozen()
@@ -148,7 +195,7 @@ def main() -> int:
         "updated": datetime.now(tz=UTC).isoformat(),
         "cycle": cycle, "armed": armed, "armed_why": why_armed,
         "rail_frozen": rail_frozen, "rail_why": why_rail, "quote": args.quote,
-        "targets_why": why_targets, "equity_usd": float(args.equity),
+        "targets_why": why_targets,
         "placed": [], "refused": [], "dry_run": not place,
         "leverage": "1.0x -- SPOT HOLDS WHAT IT PAID FOR. No leverage exists on this path and "
                     "none can be added; margin is a different product with a different connector "
@@ -177,11 +224,20 @@ def main() -> int:
         _OUT.write_text(json.dumps(rep, indent=1), "utf-8")
         return 1
 
-    budget = float(args.equity) * float(args.max_run_frac)
+    equity, equity_why = _resolve_equity(args.equity, targets, held, px, args.quote)
+    if equity <= 0:
+        rep["refused"].append({"why": equity_why})
+        print(f"spot-executor: {equity_why}")
+        _OUT.parent.mkdir(parents=True, exist_ok=True)
+        _OUT.write_text(json.dumps(rep, indent=1), "utf-8")
+        return 1
+    rep["equity_usd"], rep["equity_why"] = round(equity, 2), equity_why
+
+    budget = equity * float(args.max_run_frac)
     spent = 0.0
     for research_sym, frac in sorted(targets.items(), key=lambda kv: -kv[1]):
         sym = retarget(research_sym, args.quote)
-        want_usd = frac * float(args.equity)
+        want_usd = frac * equity
         base = retarget(research_sym, "")
         price = float(px.get(sym) or 0.0)
         have_usd = float(held.get(base, 0.0)) * price
@@ -253,7 +309,7 @@ def main() -> int:
     _OUT.write_text(json.dumps(rep, indent=1), "utf-8")
 
     mode = "RAIL FROZEN" if rail_frozen else ("LIVE" if place else "DRY RUN")
-    print(f"=== SPOT EXECUTOR [{mode}] === armed={armed} cycle={cycle} equity=${args.equity:,.2f}")
+    print(f"=== SPOT EXECUTOR [{mode}] === armed={armed} cycle={cycle} equity=${equity:,.2f}")
     if rail_frozen:
         print(f"  RUIN RAIL LATCHED -- nothing was placed. {why_rail}")
     for r in rep["placed"]:

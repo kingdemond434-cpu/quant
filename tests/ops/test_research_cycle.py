@@ -134,3 +134,23 @@ def test_THE_LEADERBOARD_PANEL_ACCUMULATES_ON_A_SCHEDULE() -> None:
     assert "screen_copytrading.py" in CYCLE.read_text("utf-8"), (
         "the copytrading/leaderboard forward panel is not scheduled -- it will report NO-DATA "
         "forever, and the reason will be the scheduler rather than the evidence")
+
+
+def test_THE_ORDER_PATH_IS_SCHEDULED() -> None:
+    """III.16 on the one capability that touches money. Everything else in the cycle computes what
+    the book SHOULD be; without this line the desk publishes a correct target every night and holds
+    yesterday's positions forever."""
+    src = CYCLE.read_text("utf-8")
+    assert "run_spot_executor.py" in src, "the book is computed daily and never placed"
+    assert "--place" in src, "a scheduled executor without --place is a nightly dry run"
+
+
+def test_THE_SCHEDULED_EQUITY_IS_READ_NOT_TYPED() -> None:
+    """A hand-typed denominator is right when it is typed and wrong when it is used. 2026-08-15:
+    sized at $198 against a balance that had already lost the conversion spread -- two legs filled,
+    the third refused for insufficient balance, account left two-thirds invested."""
+    src = CYCLE.read_text("utf-8")
+    i = src.index("run_spot_executor.py")
+    assert "--equity auto" in src[i:i + 200], (
+        "the scheduled run must read equity from the venue; a literal would go stale on the first "
+        "fill and nobody would be watching")
