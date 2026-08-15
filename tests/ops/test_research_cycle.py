@@ -118,3 +118,19 @@ def test_THE_TRAP_KEEPS_THE_CONTINUATION_THAT_MASKING_BOUGHT() -> None:
     for ln in opts:
         assert "-e" not in ln.replace("-uo", "").replace("-u", ""), (
             f"{ln!r} aborts the cycle on the first failure; the ERR trap records and continues")
+
+
+def test_THE_LEADERBOARD_PANEL_ACCUMULATES_ON_A_SCHEDULE() -> None:
+    """III.15 needs CALENDAR SEPARATION and nothing else can manufacture it.
+
+    screen_copytrading refuses to publish a persistence number until it holds two cohort snapshots
+    at least five days apart, with exits counted as failures -- the only unbiased design against a
+    leaderboard, which is by construction the maximum of a very large number of draws. It was
+    written 2026-07-31 with ZERO schedulers, so the panel accumulated nothing and its NO-DATA was a
+    statement about the cron table rather than about copy traders (III.16, L1.28a).
+
+    A screen whose verdict depends on repeated snapshots and which nothing repeats is not a screen.
+    """
+    assert "screen_copytrading.py" in CYCLE.read_text("utf-8"), (
+        "the copytrading/leaderboard forward panel is not scheduled -- it will report NO-DATA "
+        "forever, and the reason will be the scheduler rather than the evidence")
