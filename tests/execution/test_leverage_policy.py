@@ -110,23 +110,23 @@ def test_BOTH_MODULES_DISCOUNT_THE_SHARPE_IDENTICALLY() -> None:
         assert abs(a(s_, n) - b(s_, n)) < 1e-12
 
 
-def test_THE_FLOOR_OVERRIDES_THE_MEASUREMENT_AND_LABELS_ITSELF() -> None:
-    """The principal's 3x minimum binds even when the objective asks for less -- but a floored
-    number must never be readable as a measured one."""
-    d = choose(0.05, sharpe=0.5, borrow_rate=0.08)
-    assert d["leverage"] == MIN_LEVERAGE
-    assert d["floor_binding"] is True
-    assert d["state"] == "FLOOR BINDING"
-    assert "instruction, not a calculation" in d["why"]
+def test_THERE_IS_NO_FLOOR_SO_A_WEAK_EDGE_IS_NOT_LEVERED() -> None:
+    """THE CHANGE THAT MATTERS, and the reason for it. A 3.0 floor was set and removed hours later:
+    the live book's Kelly was 1.49x and its ZERO-GROWTH point 2.99x, so a 3.0 floor forced the one
+    configuration the objective forbids -- roughly zero expected growth carrying full liquidation
+    risk. A floor above the zero-growth line is not aggression, it is inertia."""
+    assert MIN_LEVERAGE == 0.0
+    d = choose(0.05, sharpe=0.2, borrow_rate=0.08)
+    assert d["leverage"] < 1.0, "an edge that cannot beat its borrow cost must not be levered"
+    assert d["floor_binding"] is False
 
 
-def test_THE_FLOORED_CASE_PUBLISHES_WHAT_IT_COSTS() -> None:
-    """Taking the floor over the optimum has a price in the desk's own objective, and the decision
-    states it in annualised growth rather than leaving it to be inferred."""
-    d = choose(0.03, sharpe=1.02, borrow_rate=0.08)
-    assert d["floor_binding"] is True
-    assert "expected geometric growth is" in d["why"]
-    assert "/yr at" in d["why"]
+def test_THE_OPTIMUM_IS_TAKEN_IN_BOTH_DIRECTIONS() -> None:
+    """Maximum growth means levering up when the edge supports it AND declining to when it does
+    not. A policy that only knows how to go up is not maximising anything."""
+    strong = choose(0.01, sharpe=2.5, n_obs=4000, borrow_rate=0.02)
+    weak = choose(0.05, sharpe=0.2, n_obs=4000, borrow_rate=0.08)
+    assert strong["leverage"] > 1.0 > weak["leverage"]
 
 
 def test_UNMEASURED_VOLATILITY_TAKES_THE_FLOOR_NOT_THE_CEILING() -> None:

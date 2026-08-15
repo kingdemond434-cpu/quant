@@ -18,10 +18,15 @@ and no level. If it did, the playbook's pre-registration would be gone the momen
 trading -- the terms would have been fixed before the data for the DETECTOR and after the data for
 whatever this file added on top.
 
-**IT PLACES NOTHING BY DEFAULT.** It prints and journals intents. `--place` is deliberately absent:
-routing to the venue goes through the same executor and risk kernel the carry path uses, and a
-second, thinner order path built beside it is how two different sets of rails come to exist for one
-book.
+**IT PLACES NOTHING BY DEFAULT, AND `--place` GOES THROUGH THE SHARED PRIMITIVE.** Eleven rules
+must not mean eleven sets of rails, so every order this script sends goes through
+`libs.execution.spot_order_path.place_entry` -- the same rail check, arming check, free-cash clamp,
+floor-to-the-cent and venue-held stop the momentum book uses. A second, thinner order path built
+beside it is how two sets of rails come to exist for one book and drift apart silently.
+
+**AND EVERY ENTRY RESTS A STOP AT THE VENUE.** Each hypothesis declares one; it is placed as a
+STOP_LOSS_LIMIT immediately after the fill, sized from what actually filled. A stop that lives in
+this journal is an intention that dies with the process.
 
     python scripts/run_discretionary_live.py --symbols BTCUSDT,ETHUSDT --equity 200
 """
@@ -49,6 +54,7 @@ from libs.execution.discretionary_sleeve import (
     journal,
     size_and_check,
 )
+from libs.execution.spot_order_path import place_entry
 
 _JOURNAL = Path("data/discretionary_journal.jsonl")
 _OUT = Path("web/discretionary_live.json")
@@ -139,6 +145,12 @@ def main() -> int:
                     help="venue minimum notional; omit only if genuinely unknown")
     ap.add_argument("--rule-id", default="H3_ict_sweep_shift",
                     help="label for the ICT detector only; every other rule carries its own id")
+    ap.add_argument("--place", action="store_true",
+                    help="ACTUALLY PLACE the taken intents, each with a venue-held stop. Absent, "
+                         "this journals what it would do and spends nothing")
+    ap.add_argument("--quote", default="USDT",
+                    help="quote asset to trade in -- USDC for EEA retail, whose account may not "
+                         "touch Binance USDT pairs under MiCA")
     ap.add_argument("--no-tape", action="store_true",
                     help="skip H4/H5. They read data/moat aggTrade partitions, which is a gzip "
                          "scan per symbol -- worth skipping on a clone with no tape, never on the "
@@ -179,6 +191,27 @@ def main() -> int:
     absent: list[str] = []
     skipped_short: list[str] = []
     no_tape: list[str] = []
+    placed: list[dict[str, Any]] = []
+    # THE VENUE IS READ ONCE, not per rule. Eleven rules each fetching balances would be eleven
+    # round trips describing eleven slightly different accounts.
+    live_mod: Any = None
+    place_ctx = None
+    free_quote = 0.0
+    steps: dict[str, float] = {}
+    if args.place:
+        from libs.execution import binance_spot_live
+        live_mod = binance_spot_live
+        place_ctx = True
+        try:
+            free_quote = float(live_mod.balances().get(args.quote, 0.0))
+            steps = {k: float(v.get("step") or 0.0)
+                     for k, v in live_mod.exchange_filters().items()}
+        except Exception as exc:
+            print(f"discretionary-live: venue unreadable ({type(exc).__name__}: {exc}) -- "
+                  "refusing to place. Sizing against an unknown balance is how a sleeve spends "
+                  "money it does not have")
+            return 1
+    cycle = datetime.now(tz=UTC).strftime("%Y%m%d")
     for sym in symbols:
         df = frames.get(sym)
         if df is None or len(df) == 0:
@@ -230,9 +263,25 @@ def main() -> int:
                     dict(vars(sig))), _JOURNAL))
                 continue
             decision = size_and_check(sig, state, min_notional_usd=args.min_notional)
-            rows.append(journal(decision, _JOURNAL))
+            row = journal(decision, _JOURNAL)
             if decision.take:
                 state.open_positions += 1      # the concurrency cap binds WITHIN a run too
+                if args.place or place_ctx is not None:
+                    # THE SLEEVE'S OWN RISK CHECK HAS ALREADY RUN. size_and_check owns
+                    # per-trade risk, the daily loss cap and the concurrency cap; the order path
+                    # owns the venue's rules and the rails. Neither re-implements the other, and
+                    # an order reaching the venue has passed BOTH.
+                    out = place_entry(
+                        live_mod, sym, float(decision.notional_usd), cycle=cycle,
+                        quote=args.quote, free_quote=free_quote,
+                        min_notional=float(args.min_notional or 0.0) or 5.0,
+                        stop_price=float(sig.stop_price), step=steps.get(sym, 0.0),
+                        place=bool(args.place))
+                    row["order"] = out.as_row()
+                    placed.append(out.as_row())
+                    if out.placed:
+                        free_quote -= out.usd   # the next rule sees what this one left behind
+            rows.append(row)
 
     payload = {
         "updated": datetime.now(tz=UTC).isoformat(),
@@ -246,6 +295,8 @@ def main() -> int:
         "rail_frozen": rail_frozen,
         "rail_why": why_rail,
         "shorts_refused": skipped_short,
+        "orders": placed,
+        "placed": bool(args.place),
         "rules_run": sorted([args.rule_id, *rules.READY, *rules.TAPE_RULES]),
         "no_tape_symbols": no_tape,
         "still_blocked": rules.BLOCKED,

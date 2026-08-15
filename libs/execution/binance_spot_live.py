@@ -319,6 +319,31 @@ def place_market_quote(symbol: str, side: str, quote_usdt: float,
     return dict(res) if isinstance(res, dict) else {"raw": res}
 
 
+def place_stop_loss_limit(symbol: str, side: str, qty: float, stop_price: float,
+                          limit_price: float, cycle: str | None = None) -> dict[str, Any]:
+    """A RESTING protective stop, held by the VENUE.
+
+    THE RAIL THAT MATTERS IS THE ONE BINANCE HOLDS. A stop enforced by our own process is not a
+    stop -- it is an intention that evaporates with the process, and the outage during which it
+    evaporates is exactly the one you needed it for. §3 exists because of that distinction.
+
+    STOP_LOSS_LIMIT, not STOP_LOSS_MARKET, because Binance spot does not offer the latter. The
+    consequence is stated rather than hidden: in a gap through the limit price the order rests
+    unfilled and the position is NOT protected. `limit_price` should therefore sit meaningfully
+    beyond `stop_price` on the closing side -- a limit equal to the stop is the version that looks
+    protected and fills least often.
+
+    SELL-side only in practice on a long-only spot book: this closes inventory, it cannot open a
+    short, and a BUY stop here would be an entry order wearing a protective order's name.
+    """
+    res = _signed("/api/v3/order", {
+        "symbol": symbol, "side": side, "type": "STOP_LOSS_LIMIT", "timeInForce": "GTC",
+        "quantity": qty, "stopPrice": stop_price, "price": limit_price,
+        "newClientOrderId": client_order_id(symbol, side, "spotstop", cycle=cycle),
+    }, method="POST")
+    return dict(res) if isinstance(res, dict) else {"raw": res}
+
+
 def place_post_only(symbol: str, side: str, qty: float, price: float,
                     cycle: str | None = None) -> dict[str, Any]:
     """Post-only spot LIMIT order (type=LIMIT_MAKER) -- guaranteed MAKER.

@@ -67,9 +67,19 @@ __all__ = [
     "sharpe_lower_bound",
 ]
 
-#: The principal's stated minimum, 2026-08-15. Binds even when the measurement asks for less, and
-#: every decision that hits it is labelled so a floored number is never read as a measured one.
-MIN_LEVERAGE = 3.0
+#: NO FLOOR. Set to 0.0 at the principal's instruction, 2026-08-15, replacing a 3.0 minimum that
+#: had been set hours earlier -- and the reason for the change is worth keeping, because it is the
+#: whole argument for computing this number rather than choosing it.
+#:
+#: At the time the floor was set, the live book's growth-optimal leverage was 1.49x and its
+#: ZERO-GROWTH point was 2.99x. A 3.0 floor would therefore have forced the one configuration the
+#: desk's own objective forbids: expected geometric growth of roughly zero, carrying full
+#: liquidation risk, in exchange for nothing. The floor was not aggressive, it was inert.
+#:
+#: With no floor the policy runs the measured optimum in both directions -- it levers UP when the
+#: edge supports it and refuses to lever at all when it does not, which is the only version of
+#: "maximum growth" that is actually maximising anything.
+MIN_LEVERAGE = 0.0
 
 #: NOT a risk preference -- what the venue will actually lend on cross margin. A policy that
 #: returned 12x when Binance tops out lower would produce an order the venue refuses, and a refused
