@@ -137,7 +137,8 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # ranks, MAX_RUN_FRAC bounds how wrong one bad targets file can be, and every ruin rail is
   # consulted before a single order goes out.
   nice -n 15 "$PY" scripts/run_spot_executor.py --equity auto \
-      --quote "${SPOT_QUOTE:-USDC}" --place --reserve-frac "${SPOT_RESERVE_FRAC:-0.3}"
+      --quote "${SPOT_QUOTE:-USDC}" --place --reserve-frac "${SPOT_RESERVE_FRAC:-0.3}" \
+      --wallet "${SPOT_WALLET:-spot}"
   # THE LEVERED PATH, inert until the principal writes data/MARGIN_ENABLE and moves capital into
   # the margin wallet. The leverage is computed from measured Sharpe and vol every run, so this
   # line is correct whether the edge supports 0.8x or 6x -- there is no number here to go stale.
@@ -146,7 +147,8 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # (which would score H3's hit rate against trades it never called for) or dropping it silently
   # (which would hide that half its signals were unplaceable rather than absent).
   nice -n 15 "$PY" scripts/run_discretionary_live.py --equity "${GOLIVE_CAPITAL:-200}" \
-      --min-notional "${VENUE_MIN_NOTIONAL:-10}" --spot-only
+      --min-notional "${VENUE_MIN_NOTIONAL:-10}" --spot-only \
+      --wallet "${SPOT_WALLET:-spot}"
   # THE GO-LIVE STATE, PUBLISHED DAILY RATHER THAN REMEMBERED. Advisory by design: every
   # precondition it reports is already ENFORCED independently on the money path (no keys means no
   # authentication, CASHCARRY_KILL forces flatten-only in the executor's own order loop, the ruin
