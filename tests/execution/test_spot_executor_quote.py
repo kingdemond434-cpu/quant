@@ -139,3 +139,25 @@ def test_A_LEG_WITH_LESS_THAN_THE_MINIMUM_REFUSES_RATHER_THAN_CLAMPING() -> None
     src = _clamp_src()
     assert "quote_free < min_notional" in src
     assert "Nothing placeable" in src
+
+
+def test_QUOTE_AMOUNTS_FLOOR_TO_THE_CENT_NEVER_ROUND() -> None:
+    """THE LAST LEG'S BUG, TWICE. Free balance was 36.20972275 USDC; the order was clamped to
+    exactly that and `round(_, 2)` published 36.21 -- $0.00028 more than the account held. The
+    venue answered `insufficient balance`, which reads as a sizing error and was a rounding
+    direction. Rounding to nearest is safe on every order EXCEPT the one that spends the whole
+    balance, and that is precisely the order a rebalance ends on."""
+    f = _mod()._floor_2dp
+    assert f(36.20972275) == 36.20
+    assert f(41.999) == 41.99
+    assert f(5.0) == 5.0
+    assert f(36.219) == 36.21
+    # the property that matters: never more than the input
+    for v in (0.001, 1.005, 99.999, 36.20972275):
+        assert f(v) <= v
+
+
+def test_THE_PLACED_AMOUNT_IS_FLOORED_NOT_ROUNDED() -> None:
+    src = _SRC.read_text("utf-8")
+    assert "_floor_2dp(delta)" in src, "the order amount still rounds to nearest"
+    assert 'place_market_quote(sym, "BUY", round(' not in src

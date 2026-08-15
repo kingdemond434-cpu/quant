@@ -47,6 +47,7 @@ if str(_P(__file__).resolve().parent.parent) not in _sys.path:
 
 import argparse
 import json
+import math
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -88,6 +89,20 @@ def retarget(symbol: str, quote: str) -> str:
         if symbol.endswith(q):
             return symbol[: -len(q)] + quote
     return symbol + quote
+
+
+def _floor_2dp(x: float) -> float:
+    """Quote amounts DOWN to the cent, never to nearest.
+
+    MEASURED 2026-08-15, and it cost the last leg of the first live book twice. Free balance was
+    36.20972275 USDC; the order was clamped to exactly that and then `round(_, 2)` published
+    36.21 -- $0.00028 MORE than the account held. The venue answered `-2010 Account has
+    insufficient balance`, which reads as a sizing error and was a rounding direction.
+
+    Rounding to nearest is safe on every order except the one that spends the whole balance, and
+    that is precisely the order a rebalance ends on.
+    """
+    return math.floor(x * 100.0) / 100.0
 
 
 def _round_step(qty: float, step: float) -> float:
@@ -279,6 +294,7 @@ def main() -> int:
                 rep["refused"].append(row)
                 continue
             row["clamped_from"] = round(delta, 2)
+            quote_free = _floor_2dp(quote_free)   # never publish a cent the wallet does not hold
             row["shortfall_usd"] = round(short, 2)
             row["why_clamped"] = (
                 f"sized to the ${quote_free:,.2f} of {args.quote} actually free rather than the "
@@ -314,7 +330,7 @@ def main() -> int:
             continue
         try:
             if side == "BUY":  # place=True here, so a rail is known clear
-                res = live.place_market_quote(sym, "BUY", round(delta, 2), cycle=cycle)
+                res = live.place_market_quote(sym, "BUY", _floor_2dp(delta), cycle=cycle)
                 spent += delta
                 quote_free -= delta        # the next leg sees what this one left behind
             else:
