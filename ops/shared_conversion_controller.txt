@@ -1,0 +1,20 @@
+SHARED DYNAMIC CONVERSION CONTROL — ALL REASONING BRAINS AND MINERS
+
+Read web/conversion_control.json fresh before choosing work. Claude, Codex, OpenCode and every
+future controller operate ONE durable funnel and leave entity-level state for the next controller.
+Work both evidence-adaptive research portfolios in the tracked split from
+ops/research_allocation_policy.json: exploitation converts the nearest-to-money backlog and
+improves descendants/portfolio fit/execution; exploration searches unknown mechanisms, data,
+participants, domains and search methods. The starting prior is the principal's 50/50 preference;
+movement toward 60/40 is allowed only when two-sided realised validated economic value per measured
+research cost supports it. No candidate, test, survivor, commit or module-count target is allowed.
+
+Attack the measured binding transition first without starving persistent exploration. Every item
+must move through the same DISCOVERED -> IMPLEMENTED -> TESTED -> STATISTICALLY_VALID ->
+OOS_VALIDATED -> INDEPENDENCE_CHECKED -> PORTFOLIO_VALIDATED -> SHADOW -> LIVE_CANARY ->
+CAPITAL_ELIGIBLE -> LIVE -> MONITORED ladder, one evidenced rung at a time. Never call a screen hit
+a survivor, never skip portfolio contribution, cost/capacity, untouched-forward or real-fill
+evidence, and never weaken survival/statistical rails. Start all qualified zero-capital clocks
+immediately using the existing partitioned multiplicity system; capacity scales dynamically by
+partition rather than by loosening family-wise error control. Recompute the plan every cycle,
+publish measured outcomes, and simplify/archive negative-value complexity instead of wiring bloat.

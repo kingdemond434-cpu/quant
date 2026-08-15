@@ -28,6 +28,7 @@ from libs.alpha_factory.research_budget import (
     EXHAUSTION_BAR,
     FLOORS,
     MODES,
+    adaptive_portfolios,
     allocate,
     apply_floors,
     coverage_report,
@@ -74,6 +75,29 @@ def test_A_ZERO_BUDGET_IS_NOT_AN_ERROR() -> None:
 def test_A_NEGATIVE_BUDGET_RAISES() -> None:
     with pytest.raises(ValueError, match="non-negative"):
         allocate(-1)
+
+
+def test_PORTFOLIOS_START_AT_THE_TRACKED_FIFTY_FIFTY_PRIOR_WITHOUT_EVIDENCE() -> None:
+    a = adaptive_portfolios({})
+    assert a.weights == pytest.approx({"exploitation": 0.5, "exploration": 0.5})
+    assert a.evidence_used is False
+
+
+def test_PORTFOLIOS_MOVE_ONLY_ON_TWO_SIDED_ECONOMIC_EVIDENCE() -> None:
+    a = adaptive_portfolios({"exploitation": (9.0, 3.0), "exploration": (1.0, 3.0)})
+    assert a.evidence_used is True
+    assert a.weights["exploitation"] == pytest.approx(0.6)
+    assert sum(a.weights.values()) == pytest.approx(1.0)
+
+
+def test_PORTFOLIO_NUMBERS_LIVE_IN_POLICY_NOT_IMPLEMENTATION() -> None:
+    policy = {
+        "portfolio_prior": {"exploitation": 0.2, "exploration": 0.8},
+        "portfolio_bounds": {"exploitation": [0.1, 0.3], "exploration": [0.7, 0.9]},
+        "prior_strength": 2.0,
+    }
+    a = adaptive_portfolios({}, policy=policy)
+    assert a.weights == pytest.approx({"exploitation": 0.2, "exploration": 0.8})
 
 
 # -------------------------------------------------------------------------- the anti-rut floors
