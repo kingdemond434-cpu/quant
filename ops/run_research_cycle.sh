@@ -191,6 +191,14 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # It exits 0 even when the venue is unreachable and records the failure in its own report, so a
   # rate-limited fetch does not redden the whole cycle -- an unreachable venue is not a desk defect.
   nice -n 15 "$PY" scripts/screen_copytrading.py
+  # THE OTHER TWO VENUES III.15 NAMES. screen_copytrading covers OKX only; Binance's futures
+  # leaderboard and Hyperliquid's per-account feed (the most complete free positioning dataset in
+  # crypto, public by design -- FREE_DATA_ADDENDA C3 #54) were in scope and collected by nothing.
+  # Same discipline, one implementation: append-only, exits counted as FAILURES, and the rank
+  # statistic published twice so the survivorship effect is the difference between them rather
+  # than an argument. `|| true` is NOT used: an unreachable venue is recorded inside the report
+  # and the script still exits 0, so a real crash here is a real cycle failure.
+  nice -n 15 "$PY" scripts/collect_leaderboards.py
   # THE RETURN ENGINES. Everything above measures whether the RESEARCH is healthy; these decide
   # where capital would go if there were any. ELEVEN books; nine correctly report UNMEASURED on a
   # clone with no positions and each names the artifact it needs -- they exist now so that nothing
