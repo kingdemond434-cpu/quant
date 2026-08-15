@@ -18,8 +18,11 @@ clocks are strictly slower -- it is the reason the KILL RULE below is fixed BEFO
 stay" decided after seeing the returns is not a rule, it is a garden of forking paths with money in
 it: whichever sleeve looks best gets kept for a reason invented afterwards. Fixed now:
 
-    * each sleeve carries EQUAL_CLIP_FRAC of the book, and no sleeve is ever sized up for
-      performing well -- that is progression, and progression is what III.15 forbids;
+    * the book's TOTAL envelope is fixed at `EQUAL_CLIP_FRAC * len(SLEEVES)` and no sleeve is ever
+      sized up for performing well -- that is progression, and progression is what III.15 forbids.
+      The envelope is divided by INVERSE VOLATILITY (see `_sleeve_vol`), which reads a second
+      moment and never a return: two sleeves with the same volatility get the same clip whether one
+      of them tripled and the other halved;
     * a sleeve is RETIRED when its realised return since inception is below KILL_DRAWDOWN, or
       when REVIEW_DAYS have elapsed and its realised return is negative;
     * a sleeve that survives the review is NOT thereby validated -- it has bought the right to
@@ -103,11 +106,23 @@ SLEEVES: tuple[tuple[str, str, str, dict[str, float]], ...] = (
      "forecasting the price it is paid on", {"window": 30, "z_entry": 0.5}),
 )
 
-#: Fraction of the book each sleeve carries. EQUAL AND FIXED. Sizing by backtest Sharpe would let
-#: the gauntlet allocate capital, which is precisely the authority the two-stage law withholds and
+#: Fraction of the book each sleeve carries ON AVERAGE. Sizing by backtest SHARPE would let the
+#: gauntlet allocate capital, which is precisely the authority the two-stage law withholds and
 #: which this exception did NOT suspend -- the principal suspended the requirement for forward
-#: evidence before going live, not the rule against letting a backtest decide position size.
+#: evidence before going live, not the rule against letting a backtest decide position size. The
+#: TOTAL book fraction is still `EQUAL_CLIP_FRAC * len(SLEEVES)` and is unchanged by the split
+#: below; only how that fixed envelope is divided moves.
 EQUAL_CLIP_FRAC = 0.05
+
+#: Days of history the per-sleeve volatility is measured over. Long enough that the estimate is not
+#: one week's weather, short enough to track a regime.
+RISK_PARITY_WINDOW = 60
+
+#: How far a sleeve's clip may travel from the equal one, in either direction. A volatility
+#: estimate near zero -- which a generator that is flat most of the time will produce -- inverts to
+#: an unbounded weight, and the sleeve holding the whole book would be the one that trades least.
+#: The cap is the entire reason this is safe to run unattended.
+MAX_CLIP_MULTIPLE = 3.0
 
 #: Realised return since inception at which a sleeve is retired, no discussion. Fixed before the
 #: first fill so it cannot be renegotiated by the sleeve that breaches it.
@@ -199,6 +214,89 @@ def _positions(subtype: str, series: Any, params: dict[str, float]) -> np.ndarra
         if g.subtype == subtype:
             return np.asarray(g.fn(series, params), dtype="float64")
     return None
+
+
+def _sleeve_vol(positions: dict[str, np.ndarray], frames: dict[str, Any],
+                window: int = RISK_PARITY_WINDOW) -> float | None:
+    """Realised daily volatility of THIS SLEEVE'S OWN position series. None when unmeasurable.
+
+    **THE SECOND MOMENT ONLY, AND THAT DISTINCTION IS THE WHOLE LEGAL ARGUMENT.** L1.6 withholds
+    from the backtest the authority to allocate capital, and this exception did not restore it.
+    What the backtest may not supply is the MEAN -- the edge claim, the contested quantity, the
+    thing forward evidence exists to establish. The VARIANCE is not an edge claim: it is a risk
+    measurement, it is estimable in weeks rather than years, and `leverage_policy.realised_vol`
+    already sizes the entire book from exactly this quantity computed exactly this way. Using sigma
+    from history here is the desk's existing practice; using mu would be the violation.
+
+    **AND IT IS NOT ASSUMPTION-FREE -- IT IS A BETTER ASSUMPTION.** Inverse-volatility weighting
+    implicitly assumes EQUAL SHARPE across sleeves. Equal-dollar weighting also makes an assumption
+    and a stranger one: that Sharpe is PROPORTIONAL to volatility, i.e. that the wilder sleeve has
+    proportionally more edge. Neither is measured. The first is the one this desk would state out
+    loud if asked, which is the test that decides between them.
+
+    NOT progression under III.15 either: a sleeve that made money and one that lost money get the
+    same clip if their volatilities match. Nothing here reads a return.
+    """
+    rets: list[np.ndarray] = []
+    for sym, pos in positions.items():
+        ser = frames.get(sym)
+        close = None if ser is None else np.asarray(getattr(ser, "close", []), dtype="float64")
+        if close is None or len(close) < 3 or len(pos) != len(close):
+            continue
+        with np.errstate(divide="ignore", invalid="ignore"):
+            r = np.diff(close) / close[:-1]
+        # LAGGED BY ONE BAR. A position multiplied by the SAME bar's return is the sleeve trading
+        # on a close it could not have seen, and the volatility of that series is not the
+        # volatility of anything tradeable.
+        pnl = np.asarray(pos[:-1], dtype="float64") * r
+        pnl = pnl[np.isfinite(pnl)]
+        if len(pnl) >= 3:
+            rets.append(pnl[-window:])
+    if not rets:
+        return None
+    n = min(len(r) for r in rets)
+    if n < 3:
+        return None
+    stacked = np.vstack([r[-n:] for r in rets])
+    sd = float(np.std(stacked.mean(axis=0), ddof=1))
+    return sd if np.isfinite(sd) and sd > 0 else None
+
+
+def _risk_parity_clips(vols: dict[str, float | None]) -> tuple[dict[str, float], str]:
+    """Inverse-volatility shares of the fixed envelope, summing to 1.0 across ALL sleeves.
+
+    NORMALISED ACROSS EVERY SLEEVE, NOT ONLY THE LIVE ONES. A sleeve with no signal today holds
+    cash, and its share must stay unspent rather than be redistributed -- otherwise the book's
+    gross exposure would rise on exactly the days fewest mechanisms found anything to trade.
+
+    A sleeve whose volatility is UNMEASURABLE gets the equal share. Not the largest, not zero: an
+    unmeasured risk is not a licence to size up and not evidence the sleeve is idle (L1.28a).
+    """
+    n = len(vols)
+    if n == 0:
+        return {}, "no sleeves"
+    equal = 1.0 / n
+    measured = {k: v for k, v in vols.items() if v is not None and v > 0}
+    if not measured:
+        return (dict.fromkeys(vols, equal),
+                f"every sleeve's volatility is UNMEASURABLE -- equal {equal:.1%} shares, which is "
+                "the honest fallback rather than a computed-looking number built on nothing")
+    inv = {k: 1.0 / float(v) for k, v in measured.items()}
+    mean_inv = sum(inv.values()) / len(inv)
+    raw = {k: (inv.get(k, mean_inv)) for k in vols}          # unmeasured -> the average inverse
+    total = sum(raw.values())
+    shares = {k: v / total for k, v in raw.items()}
+    # THE CAP, APPLIED THEN RE-NORMALISED. Clipping alone would leave the shares not summing to 1
+    # and quietly change the book's total exposure, which is the one thing this rewrite must not
+    # touch: the envelope is fixed and only its division moves.
+    lo, hi = equal / MAX_CLIP_MULTIPLE, equal * MAX_CLIP_MULTIPLE
+    capped = {k: min(hi, max(lo, v)) for k, v in shares.items()}
+    tot = sum(capped.values())
+    out = {k: v / tot for k, v in capped.items()}
+    n_capped = sum(1 for k in shares if abs(shares[k] - capped[k]) > 1e-12)
+    return out, (f"inverse-volatility over {RISK_PARITY_WINDOW}d on {len(measured)}/{n} sleeves, "
+                 f"{n_capped} clipped at {MAX_CLIP_MULTIPLE:g}x the equal share. SECOND MOMENT "
+                 "ONLY -- no return, no Sharpe, so the backtest is not allocating capital")
 
 
 def _marks() -> dict[str, float]:
@@ -322,7 +420,8 @@ def build() -> dict[str, Any]:
         # rule stopped it, which is a safety net in the way rather than a design.
         "book_frac": round(EQUAL_CLIP_FRAC * len(SLEEVES), 6),
         "book_frac_why": (
-            f"{len(SLEEVES)} sleeve(s) at {EQUAL_CLIP_FRAC:.0%} each. These weights are shares of "
+            f"{len(SLEEVES)} sleeve(s) at {EQUAL_CLIP_FRAC:.0%} each ON AVERAGE -- the envelope is "
+            "fixed and inverse-volatility decides only how it is divided. These are shares of "
             "THAT slice, never of the account -- a sleeve describing 10% of the book is not a "
             "90% liquidation order for everything else"),
     }
@@ -338,18 +437,40 @@ def build() -> dict[str, Any]:
             "chose")
         return rep
 
-    weights: dict[str, float] = {}
-    for census_class, subtype, mechanism, params in SLEEVES:
-        row: dict[str, Any] = {"census_class": census_class, "generator": subtype,
-                               "mechanism": mechanism, "params": params, "symbols": {},
-                               "clip_frac": EQUAL_CLIP_FRAC}
-        live: dict[str, float] = {}
+    # PASS ONE: every sleeve's position series, computed ONCE. The volatility that sets the clips
+    # and the last value that sets the signal come from the same arrays, so the weight a sleeve
+    # gets and the trade it publishes can never be derived from two different runs of a generator.
+    series_by_sleeve: dict[str, dict[str, np.ndarray]] = {}
+    for census_class, subtype, _mech, params in SLEEVES:
+        got: dict[str, np.ndarray] = {}
         for sym, ser in frames.items():
             pos = _positions(subtype, ser, params)
-            if pos is None:
-                row["error"] = f"no generator named {subtype!r} in this repo"
-                break
-            if len(pos) == 0:
+            if pos is not None and len(pos):
+                got[sym] = pos
+        series_by_sleeve[census_class] = got
+
+    vols = {c: _sleeve_vol(series_by_sleeve.get(c, {}), frames) for c, _s, _m, _p in SLEEVES}
+    clips, clips_why = _risk_parity_clips(vols)
+    rep["sizing"] = "RISK PARITY (inverse volatility)"
+    rep["sizing_why"] = clips_why
+    rep["sleeve_vol"] = {k: (None if v is None else round(v, 6)) for k, v in vols.items()}
+
+    weights: dict[str, float] = {}
+    for census_class, subtype, mechanism, params in SLEEVES:
+        share = float(clips.get(census_class, 1.0 / len(SLEEVES)))
+        row: dict[str, Any] = {"census_class": census_class, "generator": subtype,
+                               "mechanism": mechanism, "params": params, "symbols": {},
+                               "vol": None if vols[census_class] is None
+                               else round(float(vols[census_class]), 6),
+                               "share_of_slice": round(share, 6),
+                               "clip_frac": round(share * EQUAL_CLIP_FRAC * len(SLEEVES), 6)}
+        live: dict[str, float] = {}
+        pos_map = series_by_sleeve.get(census_class, {})
+        if not pos_map and frames:
+            row["error"] = f"no generator named {subtype!r} in this repo, or it returned nothing"
+        for sym in frames:
+            pos = pos_map.get(sym)
+            if pos is None or len(pos) == 0:
                 continue
             last = float(pos[-1])
             # A GENERATOR THAT DEGRADES TO FLAT IS SAYING ITS INPUT IS MISSING, NOT THAT THE
@@ -374,11 +495,12 @@ def build() -> dict[str, Any]:
             longs = {k: v for k, v in nonzero.items() if v > 0}
             row["shorts_refused"] = sorted(k for k, v in nonzero.items() if v < 0)
             if longs:
-                # WITHIN THE SLICE. Each sleeve owns 1/len(SLEEVES) of book_frac and splits it
-                # equally across its own longs, so the published weights sum to 1.0 across the
-                # slice and the executor scales them by book_frac. Publishing account-shares here
-                # instead would make the meaning of a weight depend on which file read it.
-                per = (1.0 / len(SLEEVES)) / len(longs)
+                # WITHIN THE SLICE. Each sleeve owns `share` of book_frac -- its inverse-volatility
+                # share, which sums to 1.0 across ALL sleeves including the flat ones -- and splits
+                # that equally across its own longs. The published weights therefore sum to at most
+                # 1.0 across the slice and the executor scales them by book_frac. Publishing
+                # account-shares here would make a weight mean different things in different files.
+                per = share / len(longs)
                 for k in longs:
                     weights[k] = round(weights.get(k, 0.0) + per, 6)
         rep["sleeves"].append(row)

@@ -377,6 +377,32 @@ def place_stop_loss_limit(symbol: str, side: str, qty: float, stop_price: float,
     }, method="POST"))
 
 
+def place_post_only(symbol: str, side: str, qty: float, price: float, *,
+                    cycle: str | None = None, borrow: bool = False) -> dict[str, Any]:
+    """Post-only margin LIMIT (type=LIMIT_MAKER) -- guaranteed MAKER, rejected if it would cross.
+
+    **THE MARGIN BOOK HAD NO PASSIVE PATH AT ALL.** Every entry `run_margin_executor` placed was a
+    MARKET order, so the book paid the full spread on both sides of every rotation. On the thin alt
+    legs the sleeves trade that is 5-20bps a side -- larger than the commission it is usually
+    discussed alongside, and charged against an edge measured in tens of bps.
+
+    ``borrow`` carries the same meaning and the same default as `place_market_quote`: absent means
+    ``NO_SIDE_EFFECT`` and no new liability. A resting order that borrows on fill is deliberately
+    the explicit case -- a quote can sit for a long time, and the interest starts when it fills.
+    """
+    if side not in {"BUY", "SELL"}:
+        raise ValueError(f"side must be BUY or SELL, got {side!r}")
+    if borrow:
+        _check_borrow_allowed()
+    return dict(_signed("/sapi/v1/margin/order", {
+        "symbol": symbol, "side": side, "type": "LIMIT_MAKER",
+        "quantity": f"{qty}", "price": f"{price}",
+        "sideEffectType": "MARGIN_BUY" if borrow else "NO_SIDE_EFFECT",
+        "isIsolated": "FALSE",
+        "newClientOrderId": client_order_id(symbol, side, "marginmaker", cycle=cycle),
+    }, method="POST"))
+
+
 def open_orders(symbol: str | None = None) -> list[dict[str, Any]]:
     p: dict[str, Any] = {"isIsolated": "FALSE"}
     if symbol:
@@ -385,6 +411,42 @@ def open_orders(symbol: str | None = None) -> list[dict[str, Any]]:
     return list(res) if isinstance(res, list) else []
 
 
+def cancel_order(symbol: str, order_id: int | str) -> dict[str, Any]:
+    """Cancel ONE margin order by id. Raises on failure, deliberately -- see the spot twin.
+
+    On this book the distinction matters more than it does on spot: an unresolved quote here may
+    have borrowed, so treating an ambiguous cancel as "not filled" and re-sending risks a SECOND
+    borrow against the same intent.
+    """
+    return dict(_signed("/sapi/v1/margin/order",
+                        {"symbol": symbol, "orderId": order_id, "isIsolated": "FALSE"},
+                        method="DELETE"))
+
+
+def order_status(symbol: str, order_id: int | str) -> dict[str, Any]:
+    """One margin order's live state: `status`, `executedQty`, `cummulativeQuoteQty`."""
+    return dict(_signed("/sapi/v1/margin/order",
+                        {"symbol": symbol, "orderId": order_id, "isIsolated": "FALSE"}))
+
+
 def cancel_all(symbol: str) -> dict[str, Any]:
+    """Cancel every open margin order on a symbol.
+
+    **NOT THE WAY TO PULL A MAKER QUOTE**, for the reason the spot module states at greater length:
+    the symbol may carry a resting AUTO_REPAY stop protecting a levered position, and on this book
+    an unprotected position is one the venue can close for you.
+    """
     return dict(_signed("/sapi/v1/margin/openOrders",
                         {"symbol": symbol, "isIsolated": "FALSE"}, method="DELETE"))
+
+
+def book_ticker() -> dict[str, tuple[float, float]]:
+    """{symbol: (bid, ask)} -- the PUBLIC spot top-of-book, which is the book margin trades on.
+
+    Re-exported rather than re-implemented. Cross margin has no separate order book: the same
+    `/api/v3/ticker/bookTicker` on the same host is the venue this module's orders rest in, and a
+    second implementation of it would be two sources of truth for one number.
+    """
+    from libs.execution.binance_spot_live import book_ticker as _spot_book
+
+    return _spot_book()

@@ -141,6 +141,11 @@ _STEPS = [
     # a desk comes to believe a switch is on because it was on last week. Runs BEFORE the order
     # steps so the day's artifact records the arming state the orders were actually placed under.
     ("arming",            "scripts/report_arming.py",        60),
+    # THE CHEAPEST COST LEVER ON THE DESK, READ EVERY DAY. The BNB burn is 25% off every commission
+    # and off margin interest, and it is invisible from inside the repo: every TCA and net-edge
+    # number here is computed from an ASSUMED commission rate that nobody was checking against the
+    # venue. Read-only without --enable, so the cycle reports the state and never changes it.
+    ("fee_discount",      "scripts/run_fee_discount.py",     60),
     ("live_ladder",       "scripts/run_live_ladder.py",      600),
     ("auto_promotion",    "scripts/run_auto_promotion.py --capital 200 --min-notional 10", 300),
     ("golive_preflight",  "scripts/run_golive_preflight.py --capital 200", 120),

@@ -13,17 +13,28 @@
    "concern_stated_before_granting": "Live P&L over weeks is very weak evidence at these Sharpes: the standard error of a one-month return swamps the mean, so a sleeve that 'earned' over 30 days and one that did not are statistically the same observation. The principal was told this and reaffirmed the instruction. That is their call to make.",
    "terms_fixed_before_the_first_fill": {
     "clip_frac": 0.05,
-    "equal_and_fixed": "no sleeve is sized up for performing well -- progression after a result is what III.15 forbids, and it is forbidden here too",
+    "equal_and_fixed": "no sleeve is sized up for performing well -- progression after a result is what III.15 forbids, and it is forbidden here too. AMENDED 2026-08-15 (see sizing_amendment): the TOTAL envelope stays fixed at clip_frac * n_sleeves; only its division moves, and it moves on a second moment that no return enters.",
     "kill_drawdown": -0.15,
     "review_days": 30,
     "review_test": "realised return since inception must be non-negative at REVIEW_DAYS, or the sleeve is retired",
     "survival_is_not_validation": "a sleeve that survives the review has bought the right to keep its clip while its forward clock keeps accruing. Live P&L starts the evidence; it does not finish it.",
-    "why_fixed_now": "'if they earn they stay' decided AFTER seeing the returns is not a rule, it is a garden of forking paths with money in it: whichever sleeve looks best gets kept for a reason invented afterwards. The threshold is only a threshold if it predates the number it judges."
+    "why_fixed_now": "'if they earn they stay' decided AFTER seeing the returns is not a rule, it is a garden of forking paths with money in it: whichever sleeve looks best gets kept for a reason invented afterwards. The threshold is only a threshold if it predates the number it judges.",
+    "sizing_amendment": {
+     "date": "2026-08-15",
+     "changed": "equal DOLLAR clips -> inverse-VOLATILITY clips (risk parity) within an unchanged total envelope",
+     "why": "Equal dollars across sleeves of different volatility is equal capital and UNEQUAL RISK: the wildest sleeve dominates the book's variance and therefore its drawdown, for no reason anybody chose. The envelope -- clip_frac * n_sleeves of the account -- is unchanged, so this alters no risk limit; it alters only how the fixed budget is split.",
+     "what_it_reads": "the SECOND MOMENT of each sleeve's own position series, and nothing else. libs: scripts/run_mechanism_sleeves._sleeve_vol",
+     "why_that_is_not_the_suspended_rule": "What L1.6 withholds from the backtest is the MEAN -- the edge claim, the contested quantity, the thing forward evidence exists to establish. The VARIANCE is a risk measurement, is estimable in weeks rather than years, and leverage_policy.realised_vol already sizes the whole book from exactly this quantity computed exactly this way. Using sigma here is the desk's existing practice; using mu would be the violation.",
+     "why_it_is_not_progression": "III.15 forbids sizing UP after a result. Two sleeves with the same volatility receive the same clip whether one tripled and the other halved -- pinned by tests/scripts/test_risk_parity_clips.py::TestItNeverReadsAReturn, which feeds the identical series long and short and requires identical clips.",
+     "the_assumption_it_makes": "Inverse-volatility weighting implicitly assumes EQUAL SHARPE across sleeves. That is an assumption and it is not measured. Equal-dollar weighting also made one, and a stranger one: that Sharpe is PROPORTIONAL to volatility, i.e. that the wilder sleeve has proportionally more edge. Neither is free; the first is the one this desk would state out loud if asked.",
+     "the_guard": "A sleeve's clip is capped at MAX_CLIP_MULTIPLE (3x) of the equal share in either direction, then re-normalised so the envelope is exactly preserved. Without the cap a near-zero volatility estimate -- which a generator that is flat most of the time produces -- inverts to an unbounded weight, and the sleeve holding the whole book would be the one that trades least.",
+     "unmeasurable_sleeves": "get the EQUAL share, never the largest and never zero. An unmeasured risk is not a licence to size up, and it is not evidence the sleeve is idle (L1.28a)."
+    }
    },
    "what_was_NOT_suspended": [
     "the ruin rails (CASHCARRY_KILL, DEADMAN_FIRED, FREEZE) -- checked before every order",
     "the gross cap, the per-trade risk fraction and the daily loss cap",
-    "the rule against a backtest deciding position SIZE -- clips are equal and fixed precisely because the gauntlet may not allocate",
+    "the rule against a backtest deciding position size on EDGE -- no Sharpe, return or P&L enters any clip. Clips are inverse-volatility within a fixed total envelope (see terms.sizing_amendment); the gauntlet still may not allocate on what it thinks it earned",
     "the Tier-3 deadman switch, which is never modified autonomously",
     "auto_promotion's forward-evidence bar, which is untouched"
    ],

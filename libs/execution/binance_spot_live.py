@@ -372,9 +372,68 @@ def open_orders(symbol: str | None = None) -> list[dict[str, Any]]:
 
 
 def cancel_all(symbol: str) -> dict[str, Any]:
-    """Cancel all open orders on a symbol (signed) -- to pull an unfilled maker quote."""
+    """Cancel all open orders on a symbol (signed).
+
+    **NOT THE WAY TO PULL A MAKER QUOTE.** This symbol may also carry a resting STOP_LOSS_LIMIT
+    protecting a position opened on an earlier cycle, and this call takes that with it -- leaving
+    inventory unprotected as a side effect of an execution-routing decision. `cancel_order` below
+    pulls one order by id and is what the maker path uses.
+    """
     try:
         res = _signed("/api/v3/openOrders", {"symbol": symbol}, method="DELETE")
         return {"code": 200, "res": res}
     except Exception as e:  # nothing to cancel / transient -- non-fatal
         return {"code": 0, "msg": repr(e)[:80]}
+
+
+def cancel_order(symbol: str, order_id: int | str) -> dict[str, Any]:
+    """Cancel ONE order by id. Raises on failure -- the caller must distinguish the cases.
+
+    THE RAISE IS THE POINT. A cancel that fails because the order already FILLED and a cancel that
+    fails because the network dropped are the same exception here and must not be the same decision
+    upstream: the first means the quote is done, the second means its state is unknown. Swallowing
+    this into a falsy return merges them, and the merged branch places a second order.
+    """
+    res = _signed("/api/v3/order", {"symbol": symbol, "orderId": order_id}, method="DELETE")
+    return dict(res) if isinstance(res, dict) else {"raw": res}
+
+
+def bnb_burn_status() -> dict[str, bool]:
+    """Is the BNB fee discount switched on? `{spotBNBBurn, interestBNBBurn}`.
+
+    **25% OFF EVERY SPOT COMMISSION AND OFF MARGIN INTEREST, AND IT IS AN ACCOUNT TOGGLE.** No
+    research, no risk, no code on the money path -- it changes the price of what the desk already
+    does. It is read here rather than assumed because a discount everybody believes is on and is
+    not is worse than one nobody claimed: every cost forecast on the desk would be 25% optimistic
+    on its largest term, uniformly, in the direction that flatters.
+    """
+    res = _signed("/sapi/v1/bnbBurn", {})
+    d = dict(res) if isinstance(res, dict) else {}
+    return {"spotBNBBurn": bool(d.get("spotBNBBurn")),
+            "interestBNBBurn": bool(d.get("interestBNBBurn"))}
+
+
+def set_bnb_burn(*, spot: bool = True, interest: bool = True) -> dict[str, bool]:
+    """Switch the BNB fee discount on (or off). Returns the venue's resulting state.
+
+    NOT CALLED BY ANY SCHEDULE. This changes an account setting, so it stays an explicit act:
+    `scripts/run_fee_discount.py --enable` is the only caller and it requires the flag. The daily
+    cycle READS the state and reports it, which is the half that should be automatic.
+    """
+    res = _signed("/sapi/v1/bnbBurn",
+                  {"spotBNBBurn": "true" if spot else "false",
+                   "interestBNBBurn": "true" if interest else "false"}, method="POST")
+    d = dict(res) if isinstance(res, dict) else {}
+    return {"spotBNBBurn": bool(d.get("spotBNBBurn")),
+            "interestBNBBurn": bool(d.get("interestBNBBurn"))}
+
+
+def order_status(symbol: str, order_id: int | str) -> dict[str, Any]:
+    """One order's live state: `status`, `executedQty`, `cummulativeQuoteQty`.
+
+    The authority on what a maker quote actually did. `open_orders` answers only "is it resting",
+    which cannot tell a full fill from a partial one -- and the difference between those is the
+    size of the taker order that should follow.
+    """
+    res = _signed("/api/v3/order", {"symbol": symbol, "orderId": order_id})
+    return dict(res) if isinstance(res, dict) else {"raw": res}
