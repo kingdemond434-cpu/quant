@@ -134,6 +134,14 @@ _STEPS = [
     # a screen that only starts running once its data arrives is a screen nobody remembers to run.
     ("index_recon_feed",  "scripts/collect_index_reconstitution.py", 180),
     ("index_recon",       "scripts/screen_index_reconstitution.py", 180),
+    # THE HIGHEST-ORTHOGONALITY CLASS THE DESK HAS, AND NEITHER SCREEN RAN ON A SCHEDULE.
+    # `screen_orderbook_state.py` carried a cron line in its own header marked "NOT wired here"
+    # and it was never installed; `libs/research/book_microstructure.py` was imported by nothing
+    # but its test. Two pre-registered screens on `orderbook_microstructure_state` (census
+    # orthogonality 0.90 -- the only lever that lowers rho rather than raising n), both idle.
+    # Read-only over data/moat; on a clone without the tape both exit 0 reporting UNMEASURED.
+    ("book_state",        "scripts/screen_orderbook_state.py --files 240", 900),
+    ("book_constructions", "scripts/screen_book_constructions.py --files 48", 600),
     ("supply_report",     "scripts/report_mechanism_supply.py", 120),
     # IS EVERYTHING ACTUALLY ARMED -- nine independent facts across three directories, two of them
     # gitignored, whose sense is inverted for the three rails. `run_golive_preflight` checked ONE
