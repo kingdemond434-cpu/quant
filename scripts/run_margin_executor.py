@@ -48,7 +48,7 @@ from typing import Any
 
 from libs.execution.leverage_policy import choose, realised_vol
 from libs.execution.ruin_rail import frozen
-from libs.execution.spot_order_path import floor_2dp, retarget
+from libs.execution.spot_order_path import floor_2dp, retarget, round_step
 
 _TARGETS = Path("data/spot_momentum.json")
 _JOURNAL = Path("data/margin_executor_journal.jsonl")
@@ -134,14 +134,14 @@ def main() -> int:
                            "armed": armed, "armed_why": why_armed, "rail_frozen": rail,
                            "rail_why": why_rail, "targets_why": why_targets,
                            "quote": args.quote, "dry_run": not place,
-                           "placed": [], "refused": []}
+                           "placed": [], "refused": [], "reduced": []}
 
     def _finish(code: int) -> int:
         _OUT.parent.mkdir(parents=True, exist_ok=True)
         _OUT.write_text(json.dumps(rep, indent=1), "utf-8")
         _JOURNAL.parent.mkdir(parents=True, exist_ok=True)
         with _JOURNAL.open("a", encoding="utf-8") as fh:
-            for r in rep["placed"] + rep["refused"]:
+            for r in rep["placed"] + rep["reduced"] + rep["refused"]:
                 fh.write(json.dumps({"at": rep["updated"], "cycle": cycle, **r}) + "\n")
         return code
 
@@ -223,7 +223,16 @@ def main() -> int:
     free_quote = float(held.get(args.quote, 0.0))
     spent = 0.0
 
-    for research_sym, frac in sorted(weights.items(), key=lambda kv: -kv[1]):
+    # REDUCE LEGS FIRST, then adds. A rebalance that buys before it sells asks for cash the run is
+    # about to raise, and every buy leg is refused for insufficient funds while the sell that would
+    # have funded it waits its turn. Ordering by delta ascending puts the sells at the front.
+    def _delta_usd(kv: tuple[str, float]) -> float:
+        sym_ = retarget(kv[0], args.quote)
+        base_ = retarget(kv[0], "")
+        price_ = float(px.get(sym_) or 0.0)
+        return kv[1] * gross_usd - float(held.get(base_, 0.0)) * price_
+
+    for research_sym, frac in sorted(weights.items(), key=_delta_usd):
         sym = retarget(research_sym, args.quote)
         base = retarget(research_sym, "")
         price = float(px.get(sym) or 0.0)
@@ -244,10 +253,47 @@ def main() -> int:
             rep["refused"].append(row)
             continue
         if delta < 0:
-            row["why"] = ("SELL leg not placed by this script. Reducing a levered book is the "
-                          "operation that RAISES the margin level, and it belongs on the de-risk "
-                          "path with AUTO_REPAY rather than inside a rebalance loop")
-            rep["refused"].append(row)
+            # THE REDUCE LEG. `place_market_reduce` -- AUTO_REPAY, deliberately never gated on the
+            # margin level -- existed, was tested, and had NO CALLER on the money path (III.16).
+            # The consequence was structural rather than cosmetic: a BUY-only executor cannot
+            # rebalance down, cannot take profit, and cannot free quote. Measured 2026-08-15, the
+            # account sat at $193 of equity in three coins with ONE CENT of USDC, and every leg it
+            # wanted was a SELL -- so the book was fully invested, permanently, with no mechanism
+            # to fund a new sleeve or trim a position that had run.
+            #
+            # SELLING IS THE OPERATION THAT RAISES THE MARGIN LEVEL. The original comment used
+            # that as a reason to refuse; it is the reason to ALLOW. A book that can borrow but
+            # never repay only moves toward liquidation.
+            qty_wanted = abs(delta) / price
+            held_base = float(held.get(base, 0.0))
+            # NEVER MORE THAN IS HELD. Selling beyond the balance on cross margin does not fail --
+            # it OPENS A SHORT by borrowing the base asset, converting a rebalance into a new
+            # levered position nobody asked for. The min() is the whole guard.
+            qty = round_step(min(qty_wanted, held_base), float(f.get("step") or 0.0))
+            row["qty"] = qty
+            row["held_base"] = held_base
+            if qty <= 0 or qty * price < min_notional:
+                row["why"] = (f"reduce leg of {qty_wanted:.8f} {base} rounds to {qty:.8f} against "
+                              f"{held_base:.8f} held -- below the venue minimum "
+                              f"${min_notional:,.2f}. The position stays rather than paying a fee "
+                              "for noise")
+                rep["refused"].append(row)
+                continue
+            if not place:
+                row["why"] = f"DRY RUN -- would SELL {qty:.8f} {base} (${qty * price:,.2f})"
+                rep["reduced"].append(row)
+                free_quote += qty * price
+                continue
+            try:
+                row["result"] = m.place_market_reduce(sym, "SELL", qty, cycle=cycle)
+                rep["reduced"].append(row)
+                # THE PROCEEDS FUND THE LATER BUY LEGS IN THIS SAME RUN. Without this the executor
+                # would sell an overweight coin and then refuse the underweight one for lack of
+                # cash it had just raised.
+                free_quote += qty * price
+            except Exception as exc:
+                row["why"] = f"REDUCE REJECTED ({type(exc).__name__}: {exc})"
+                rep["refused"].append(row)
             continue
 
         # BORROW ONLY WHAT THE CASH DOES NOT COVER. Spending free quote first keeps the liability
@@ -276,6 +322,9 @@ def main() -> int:
           f"leverage {lev['leverage']:.2f}x ({lev['state']}), gross ${gross_usd:,.2f}")
     print(f"  {str(lev['why'])[:200]}")
     print(f"  margin level {rep['margin_level']}  liabilities {rep['liabilities'] or '{}'}")
+    for r in rep.get("reduced", []):
+        print(f"  SELL {r['symbol']:<10} ${abs(r['delta_usd']):>9,.2f}  "
+              f"qty={r.get('qty')}  [AUTO_REPAY]")
     for r in rep["placed"]:
         print(f"  BUY  {r['symbol']:<10} ${r['delta_usd']:>9,.2f}"
               f"{'  [BORROWED]' if r.get('borrow') else ''}")
