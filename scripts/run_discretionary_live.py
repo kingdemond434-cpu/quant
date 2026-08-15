@@ -251,6 +251,7 @@ def main() -> int:
     skipped_short: list[str] = []
     no_tape: list[str] = []
     stale_tape: list[str] = []
+    no_book: list[str] = []
     tape_errors: list[str] = []
     placed: list[dict[str, Any]] = []
     # THE VENUE IS READ ONCE, not per rule. Eleven rules each fetching balances would be eleven
@@ -308,7 +309,14 @@ def main() -> int:
                 # symbol to skip -- but one symbol's defect must not cost the other ten their
                 # book, so the failure is CAUGHT HERE, NAMED, and published in the artifact.
                 try:
-                    found.extend(rules.detect_with_tape(prof))
+                    # THE DEPTH ROWS, read for the first time. `load_book` returns [] when the
+                    # recorder wrote trades but no depth -- a real and separate failure, since the
+                    # depth poll and the aggTrades poll are different requests on different
+                    # weights and one can fail while the other does not.
+                    books = tape.load_book(sym)
+                    if not books:
+                        no_book.append(sym)
+                    found.extend(rules.detect_with_tape(prof, books=books))
                 except Exception as exc:
                     tape_errors.append(f"{sym}: {type(exc).__name__}: {exc}")
         if not found:
@@ -390,6 +398,7 @@ def main() -> int:
         "rules_run": sorted([args.rule_id, *rules.READY, *rules.TAPE_RULES]),
         "no_tape_symbols": no_tape,
         "stale_tape_symbols": stale_tape,
+        "no_book_symbols": no_book,
         "max_tape_age_h": tape.MAX_TAPE_AGE_H,
         "tape_rule_errors": tape_errors,
         "still_blocked": rules.BLOCKED,
@@ -424,6 +433,10 @@ def main() -> int:
         print(f"  STALE TAPE (> {tape.MAX_TAPE_AGE_H}h) for: {', '.join(stale_tape)} -- the "
               "profile is well-formed and describes an auction that has already ended. H4/H5 are "
               "UNMEASURED here; check the recorder units")
+    if no_book:
+        print(f"  NO DEPTH for: {', '.join(no_book)} -- H12 is UNMEASURED on these. Distinct from "
+              "NO TAPE: the depth poll and the aggTrades poll are separate requests, and one can "
+              "fail while the other keeps writing")
     if tape_errors:
         print("  TAPE RULE RAISED -- a defect, not a quiet symbol:")
         for e in tape_errors:

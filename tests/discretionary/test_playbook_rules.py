@@ -354,3 +354,86 @@ def test_THE_ADAPTER_ACCEPTS_EVERY_RULES_SETUP_NOT_JUST_H3S() -> None:
     conv = mod._from_ict(_ICT())
     assert conv.rule_id == "H3_ict_sweep_shift"
     assert mod._to_signal(conv, "BTCUSDT", conv.rule_id).side == "BUY"
+
+
+# ------------------------------------------------- H12, on the rows nothing had ever read
+def _books(imb: list[float], slope: list[float]) -> list[Any]:
+    return [T.BookState(ts=i * 1000, mid=100.0, spread_bps=2.0, imbalance=b, slope=s,
+                        depth_usd=1e6) for i, (b, s) in enumerate(zip(imb, slope, strict=True))]
+
+
+def test_H12_READS_THE_DEPTH_ROWS_THE_RECORDER_HAS_ALWAYS_WRITTEN() -> None:
+    """MEASURED 2026-08-15. `run_recorder_spot` writes a `{"k":"d"}` row per symbol every few
+    seconds -- top-20 bids and asks, at real request-weight cost -- and `load_trades` filtered for
+    `"k"=="t"` and discarded every one. The census rates `orderbook_microstructure_state` at 0.90
+    orthogonality, the HIGHEST of all 26 classes, and records its data as RECORD-FORWARD: the desk
+    had been paying for it since the recorders were built and consuming none of it."""
+    row = {"t": 1, "k": "d", "b": [["100.0", "5"], ["99.9", "10"]],
+           "a": [["100.1", "5"], ["100.2", "10"]]}
+    st = T._book_state(row)
+    assert st is not None
+    assert st.mid == pytest.approx(100.05)
+    assert st.spread_bps == pytest.approx(9.995, abs=0.01)
+    assert -1.0 <= st.imbalance <= 1.0
+    assert st.slope > 0 and st.depth_usd > 0
+
+
+def test_A_HALF_BOOK_IS_NOT_A_BOOK() -> None:
+    """One malformed side is not half an observation -- an imbalance computed from bids alone is
+    +1.0 by construction, which is the strongest possible signal manufactured from a parse error."""
+    assert T._book_state({"t": 1, "k": "d", "b": [], "a": [["1", "1"]]}) is None
+    assert T._book_state({"t": 1, "k": "d", "b": [["1", "1"]], "a": None}) is None
+    assert T._book_state({"t": 1, "k": "d", "b": [["x", "y"]], "a": [["1", "1"]]}) is None
+
+
+def test_H12_NEEDS_BOTH_IMBALANCE_AND_A_STEEP_BOOK() -> None:
+    """THE FILTER IS THE HYPOTHESIS. Imbalance alone is contaminated by spoofing and by the
+    mechanical rebuild after a sweep; pressure counts only when size is genuinely stacked near the
+    touch, because a flat book with a lopsided total is a book about to be cancelled."""
+    n = 80
+    rng = np.random.default_rng(11)
+    flat = [1.0] * n
+    # HISTORY MUST HAVE VARIANCE OR THERE IS NO Z-SCORE. A constant history gives sd=0 and the
+    # rule correctly returns nothing -- a book that has never moved cannot have an extreme.
+    imb = [*rng.normal(0.0, 0.05, n - 1), 0.9]
+    # extreme imbalance on a book NO steeper than its own median -> no trade
+    assert not R.h12_book_pressure(object(), books=_books(imb, flat))
+    # same imbalance, steep book -> fires
+    steep = [1.0] * (n - 1) + [10.0]
+    got = R.h12_book_pressure(object(), books=_books(imb, steep))
+    assert got and got[0].direction == +1 and got[0].rule_id == "H12_book_pressure"
+
+
+def test_A_CONSTANT_BOOK_HAS_NO_EXTREME() -> None:
+    """Zero dispersion in the history means no z-score exists. Dividing by it would produce an
+    infinite conviction from a book that has never moved."""
+    n = 80
+    assert R.h12_book_pressure(object(), books=_books([0.0] * n, [1.0] * n)) == []
+
+
+def test_H12_IS_FLAT_WITHOUT_DEPTH() -> None:
+    """An imbalance computed from an absent book is a claim about a market nobody observed."""
+    assert R.h12_book_pressure(object(), books=[]) == []
+    assert R.h12_book_pressure(object(), books=None) == []
+    assert R.h12_book_pressure(None, books=_books([0.9] * 80, [1.0] * 80)) == []
+
+
+def test_H12_SIZES_ITS_STOP_FROM_THE_SPREAD() -> None:
+    """An immediacy claim that has not paid within a few multiples of the cost of demanding
+    liquidity was wrong. A wider stop holds a microstructure position past its own horizon."""
+    n = 80
+    rng = np.random.default_rng(11)
+    got = R.h12_book_pressure(object(), books=_books([*rng.normal(0.0, 0.05, n - 1), 0.9],
+                                                    [1.0] * (n - 1) + [10.0]))
+    assert got
+    s = got[0]
+    assert s.stop < s.entry_price < s.target
+    assert (s.entry_price - s.stop) / s.entry_price <= 0.01, "a microstructure stop stays tight"
+
+
+def test_THE_BOOK_RULES_ARE_A_SEPARATE_REGISTRY() -> None:
+    """A caller with trades but no depth must still run the trade rules. Folding H12 into
+    TAPE_RULES would make one missing feed silence three hypotheses."""
+    assert "H12_book_pressure" in R.BOOK_RULES
+    assert "H12_book_pressure" not in R.TAPE_RULES
+    assert set(R.TAPE_RULES) == {"H4_auction_value", "H5_cvd_divergence"}
