@@ -100,15 +100,43 @@ def test_AN_UNREADABLE_LEVEL_REFUSES_THE_BORROW(
         m.place_market_quote("BNBUSDC", "BUY", 100.0, cycle="c", borrow=True)
 
 
-def test_A_THIN_MARGIN_LEVEL_REFUSES_THE_BORROW(
+def test_A_BOOK_INSIDE_THE_LIQUIDATION_BAND_CANNOT_BORROW_MORE(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """The level moves with the market, so the floor sits far above the liquidation line -- a check
-    that passes at 1.15 has already failed by the time the order fills."""
     _arm(tmp_path, monkeypatch)
-    monkeypatch.setattr(m, "margin_level", lambda: 1.4)
-    with pytest.raises(RuntimeError, match="below the borrow floor"):
+    monkeypatch.setattr(m, "margin_level", lambda: 1.11)
+    with pytest.raises(RuntimeError, match="below the floor"):
         m.place_market_quote("BNBUSDC", "BUY", 100.0, cycle="c", borrow=True)
-    assert m._MIN_LEVEL_TO_BORROW > m.MARGIN_CALL_LEVEL > m.LIQUIDATION_LEVEL
+    assert m.MIN_PROJECTED_LEVEL > m.LIQUIDATION_LEVEL
+
+
+def test_THE_FLOOR_DOES_NOT_FORBID_THE_LEVERAGE_IT_GOVERNS() -> None:
+    """THE BUG AN ABSOLUTE FLOOR WOULD HAVE BEEN. Entering at leverage L puts the account at level
+    L/(L-1) BY DEFINITION -- 3x arrives at exactly 1.50, the venue's own margin-call line, and 2x
+    at 2.00. A constant floor above those forbids the leverage it was written to govern, which is
+    worse than no check: it reads as a safety property and functions as an outage."""
+    for lev in (2.0, 3.0, m.MAX_LEVERAGE):
+        entry_level = lev / (lev - 1.0)
+        assert entry_level > m.MIN_PROJECTED_LEVEL, (
+            f"{lev}x enters at level {entry_level:.3f}, at or below the floor "
+            f"{m.MIN_PROJECTED_LEVEL} -- the ceiling and the floor contradict each other")
+
+
+def test_THE_LIQUIDATION_DISTANCE_IS_ARITHMETIC_AND_IT_IS_PUBLISHED() -> None:
+    """d = 1 - 1.1(L-1)/L. The number that decides whether a leverage is survivable, computed
+    rather than remembered, so every report can print it."""
+    assert abs(m.liquidation_distance(3.0) - 0.2667) < 0.001
+    assert abs(m.liquidation_distance(6.0) - 0.0833) < 0.001
+    assert abs(m.liquidation_distance(8.0) - 0.0375) < 0.001
+    assert m.liquidation_distance(1.0) == 1.0, "unlevered cannot be liquidated by a price move"
+
+
+def test_HEADROOM_NEVER_QUOTES_SIZE_WITHOUT_THE_MOVE_THAT_KILLS_IT() -> None:
+    """A borrow figure alone is the half of the trade that looks like opportunity; the reader
+    supplies the other half from optimism."""
+    _, why = m.borrow_headroom(200.0, 8.0)
+    assert "LIQUIDATED BY A" in why and "3.7%" in why
+    _, why3 = m.borrow_headroom(200.0, 3.0)
+    assert "26.7%" in why3
 
 
 def test_CLOSING_IS_NEVER_GATED_ON_THE_MARGIN_LEVEL(
@@ -145,9 +173,9 @@ def test_BORROWING_USES_THE_ORDERS_OWN_SIDE_EFFECT_NOT_A_SEPARATE_LOAN() -> None
 
 def test_LEVERAGE_IS_CAPPED_IN_CODE_AND_THE_CAP_IS_STATED() -> None:
     """A number that lives only in a caller's argument is one bad cron line from 10x."""
-    usd, why = m.borrow_headroom(200.0, 10.0)
+    usd, why = m.borrow_headroom(200.0, 25.0)
     assert usd == 200.0 * (m.MAX_LEVERAGE - 1.0)
-    assert "CAPPED" in why and "3.00x" in why
+    assert "CAPPED" in why and f"{m.MAX_LEVERAGE:.2f}x" in why
     assert m.borrow_headroom(200.0, 1.0)[0] == 0.0
 
 
