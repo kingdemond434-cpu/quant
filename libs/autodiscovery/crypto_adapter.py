@@ -88,6 +88,17 @@ def _provider_from_frames(frames: dict[str, Any], min_bars: int) -> DataProvider
         if df is None or len(df) < min_bars:
             return None
         funding = df["funding"].to_numpy("float64") if "funding" in df.columns else None
+        # PRODUCER ECONOMICS, for treasury_cost_base_liquidation. Attached exactly as funding is:
+        # present when the lake carries the column, None when it does not, and NEVER synthesised.
+        #
+        # Adding the fields to MarketSeries and the generator without this line would have left
+        # `producer_margin_stress` returning flat forever -- correct, registered, and starved,
+        # which is the same silent shape as the rho tracker with nothing writing its input. A
+        # generator that cannot see its data is not a mechanism, it is a zero.
+        hashprice = (df["hashprice"].to_numpy("float64")
+                     if "hashprice" in df.columns else None)
+        difficulty = (df["difficulty"].to_numpy("float64")
+                      if "difficulty" in df.columns else None)
         ref_close = ref_high = ref_low = None
         if btc_close is not None and symbol != "BTCUSDT":
             ref = btc_close.reindex(df.index).ffill()
@@ -112,6 +123,8 @@ def _provider_from_frames(frames: dict[str, Any], min_bars: int) -> DataProvider
             ref_high=ref_high,
             ref_low=ref_low,
             funding=funding,
+            hashprice=hashprice,
+            difficulty=difficulty,
         )
 
     return provider
