@@ -47,7 +47,7 @@ from pathlib import Path
 from typing import Any
 
 from libs.execution import maker_first
-from libs.execution.leverage_policy import choose, realised_vol
+from libs.execution.leverage_policy import MARGIN_CALL_LEVEL, choose, realised_vol
 from libs.execution.maker_first import maker_first_buy, maker_first_reduce
 from libs.execution.ruin_rail import frozen
 from libs.execution.spot_order_path import floor_2dp, retarget, round_step
@@ -204,12 +204,20 @@ def main() -> int:
     rep["borrow_rate"] = rate
     rep["borrow_rate_why"] = why_rate
     if rate is None:
-        lev = choose(sigma, sharpe=sharpe, n_obs=n_obs, borrow_rate=0.0, ceiling=1.0)
+        lev = choose(sigma, sharpe=sharpe, n_obs=n_obs, borrow_rate=0.0, ceiling=1.0,
+                     margin_call_level=MARGIN_CALL_LEVEL)
         lev["why"] = ("borrow rate UNMEASURED -- leverage held at 1.00x. " + why_rate
                       + ". Borrowing at an unknown cost is the one sizing input where a low guess "
                         "ends the account rather than merely underperforming")
     else:
-        lev = choose(sigma, sharpe=sharpe, n_obs=n_obs, borrow_rate=rate)
+        # THE MARGIN-CALL BAND IS PASSED HERE AND NOWHERE ELSE. This is the only book that
+        # can be called: a fresh position at leverage f opens at level f/(f-1), so above
+        # 3.00x the account is already inside the venue's 1.5 call band before the market
+        # has moved. Cutting costs is what made this bind -- Kelly is (mu-r)/sigma^2, so
+        # the maker routing and the BNB interest discount moved this book's optimum from
+        # 2.31x to about 4.0x, straight through the line.
+        lev = choose(sigma, sharpe=sharpe, n_obs=n_obs, borrow_rate=rate,
+                     margin_call_level=MARGIN_CALL_LEVEL)
     rep["book_frac"] = book_frac
     rep["book_frac_why"] = why_frac
     rep["equity_usd"] = round(equity, 2)

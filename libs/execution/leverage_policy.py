@@ -99,6 +99,11 @@ VENUE_MAX_LEVERAGE = 10.0
 #: end of the estimate, so exposure is full-Kelly on a number the book can defend and RISES on its
 #: own as observations accumulate. A fixed fraction never rises; it stays timid forever regardless
 #: of how much evidence arrives, which is the wrong shape for a desk that is trying to learn.
+#: The venue's MARGIN-CALL level on cross margin. Binance calls at 1.5 and liquidates at 1.1.
+#: This is the venue's published number, not a desk risk preference, and that distinction is why
+#: the bound below is a default rather than a setting.
+MARGIN_CALL_LEVEL = 1.5
+
 DEFAULT_KELLY_FRACTION = 1.0
 
 #: Daily standard deviations that must fit inside the liquidation distance. 3 is ~1-in-740 under a
@@ -197,17 +202,52 @@ def sharpe_lower_bound(sharpe: float, n_obs: int, *, z: float = 1.0) -> float:
     return float(sharpe) - z * math.sqrt((1.0 + 0.5 * float(sharpe) ** 2) / float(n_obs))
 
 
+def leverage_at_margin_call(call_level: float = MARGIN_CALL_LEVEL) -> float:
+    """The leverage at which a FRESH position is already inside the venue's margin-call band.
+
+    ARITHMETIC, NOT OPINION, AND IT IS THE SAME IDENTITY `liquidation_distance` USES. Borrowing B
+    against equity E gives assets E+B and liabilities B, so the margin level is (E+B)/B. Entering
+    at leverage f means B = E(f-1), so the level AT ENTRY is f/(f-1) -- a number fixed the instant
+    the order fills, before the market has moved at all. Setting that equal to the call level and
+    solving gives f = L/(L-1). At Binance's 1.5 that is exactly 3.00x.
+
+    **THIS IS NOT A RISK APPETITE. IT IS WHETHER THE POSITION CAN BE HELD.** Above this leverage
+    the account opens in margin call: the venue restricts it and may force-liquidate at its own
+    convenience and in whatever liquidity exists. A "riskier" 4x is not a more aggressive version
+    of 3x, it is a position the venue is entitled to close for you on day zero.
+
+    **IT BECAME REACHABLE ON 2026-08-15 AND THAT IS WHY IT IS HERE.** Kelly is (mu-r)/sigma^2, so
+    cutting costs raises it: routing entries and exits maker-first and switching on the BNB
+    interest discount moved this book's optimum from 2.31x to about 4.0x. The growth arithmetic
+    asks for 4x and the venue calls the account at anything above 3x. Before those savings the
+    optimum sat below this line and nothing had to notice; the saving is what made the ceiling
+    bind, and a saving that quietly walks a book into a margin call is not a saving.
+    """
+    lvl = float(call_level)
+    if lvl <= 1.0:
+        return float("inf")          # a venue that never calls imposes no bound here
+    return lvl / (lvl - 1.0)
+
+
 def choose(daily_sigma: float | None, *, sharpe: float | None = None,
            n_obs: int | None = None,
            kelly_fraction: float = DEFAULT_KELLY_FRACTION,
            k: float = DEFAULT_SIGMA_MULTIPLE, borrow_rate: float = 0.0,
-           floor: float = MIN_LEVERAGE, ceiling: float = VENUE_MAX_LEVERAGE) -> LeverageDecision:
+           floor: float = MIN_LEVERAGE, ceiling: float = VENUE_MAX_LEVERAGE,
+           margin_call_level: float | None = None) -> LeverageDecision:
     """The leverage growth permits, bounded by survival, floored by the principal's instruction.
 
     `sharpe` is the book's ANNUAL Sharpe, which is how the desk already reports every strategy, and
     it is all Kelly needs: with mu = S*sigma, f* = S/sigma. Absent it, the growth bound cannot be
     computed and only the liquidation bound applies -- reported as such rather than silently
     dropping half the calculation.
+
+    **`margin_call_level` DEFAULTS OFF, ON PURPOSE.** Only a BORROWING book can be margin-called;
+    a spot book at 1x has no liability and no level, so applying the bound there would refuse
+    leverage against a hazard that cannot occur. `run_margin_executor` passes the venue's 1.5, and
+    it is the only caller that should. Defaulting it on would also silently lower a ceiling the
+    principal set at 8x, which is theirs to move -- see `leverage_at_margin_call` for why this is a
+    venue-mechanics bound rather than a competing opinion about risk.
     """
     if daily_sigma is None or not math.isfinite(daily_sigma) or daily_sigma < _MIN_CREDIBLE_SIGMA:
         return LeverageDecision(
@@ -245,6 +285,11 @@ def choose(daily_sigma: float | None, *, sharpe: float | None = None,
     bounds = {"survival": survive, "venue/ceiling": ceiling}
     if kelly is not None:
         bounds["growth (Kelly)"] = kelly
+    # THE MARGIN-CALL BAND, AS A BOUND RATHER THAN A WARNING. Every other entry here is a choice
+    # about how much risk to take; this one is about whether the venue lets the position stand.
+    # Reporting it and proceeding would be publishing a leverage the account cannot hold.
+    if margin_call_level is not None:
+        bounds["margin-call band"] = leverage_at_margin_call(margin_call_level)
     binding = min(bounds, key=lambda kname: bounds[kname])
     raw = bounds[binding]
     lev = max(floor, min(raw, ceiling))
@@ -256,6 +301,16 @@ def choose(daily_sigma: float | None, *, sharpe: float | None = None,
         parts.append(f"full Kelly {full:.2f}x, {kelly_fraction:g}-Kelly {kelly:.2f}x "
                      f"(growth turns NEGATIVE beyond {2 * full:.2f}x)")
     parts.append(f"survival at k={k:g} allows {survive:.2f}x")
+    if margin_call_level is not None:
+        mc = leverage_at_margin_call(margin_call_level)
+        parts.append(f"the venue calls at level {margin_call_level:g}, which a FRESH position hits "
+                     f"at {mc:.2f}x")
+        if kelly is not None and kelly > mc:
+            parts.append(
+                f"NOTE: growth wants {kelly:.2f}x and the account would open ALREADY IN MARGIN "
+                f"CALL above {mc:.2f}x. Held at the band. Cutting costs raises Kelly -- that is "
+                "what pushed the optimum through this line -- and a saving that walks the book "
+                "into a margin call is not a saving")
     parts.append(f"binding constraint: {binding} -> {raw:.2f}x")
 
     floored = raw < floor
