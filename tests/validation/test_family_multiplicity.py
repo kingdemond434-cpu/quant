@@ -17,6 +17,7 @@ from libs.validation.family_multiplicity import (
     UNCLASSIFIED,
     bh_alpha,
     bh_bar,
+    effective_m,
     family_error_budget,
     family_of,
     matches,
@@ -63,6 +64,29 @@ def test_AN_UNDECLARED_MECHANISM_IS_NOT_GIVEN_A_FREE_PASS() -> None:
     p = partition(["mystery_one", "mystery_two", "mystery_three", "cashcarry"])
     assert len(p[UNCLASSIFIED]) == 3
     assert family_of("mystery_one") == UNCLASSIFIED
+
+
+def test_THE_UNDECLARED_BAR_IS_FLOORED_AT_THE_WORST_DECLARED_ONE() -> None:
+    """THE DEFECT THE LIVE COHORT EXPOSED. `len()` alone made UNCLASSIFIED the CHEAPEST bar on the
+    desk the moment it held fewer members than the largest declared family -- measured 2 against
+    structure's 8, so t=1.96 against t=2.50. The dominant strategy becomes naming a candidate
+    something the token list cannot match, which turns the partition into opt-out at exactly the
+    moment a genuinely new mechanism arrives."""
+    p = partition(["mystery_one", "trend_a", "momentum_b", "breakout_c", "wyckoff_d"])
+    eff = effective_m(p)
+    assert len(p[UNCLASSIFIED]) == 1
+    assert eff[UNCLASSIFIED] == eff["structure"] == 4
+    assert holm_bar(eff[UNCLASSIFIED]) >= max(holm_bar(v) for v in eff.values())
+
+
+def test_THE_FLOOR_ONLY_EVER_TIGHTENS() -> None:
+    """It is a max, so it cannot loosen a declared family's bar, and it cannot loosen UNCLASSIFIED's
+    own when unclassified is already the largest cohort."""
+    p = partition(["m1", "m2", "m3", "m4", "trend_a"])
+    eff = effective_m(p)
+    assert eff[UNCLASSIFIED] == 4 and eff["structure"] == 1
+    for fam, members in p.items():
+        assert eff[fam] >= len(members)
 
 
 def test_FAMILIES_ARE_ABOUT_WHY_AN_EDGE_EXISTS_NOT_WHERE_IT_TRADES() -> None:

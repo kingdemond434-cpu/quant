@@ -43,6 +43,7 @@ __all__ = [
     "UNCLASSIFIED",
     "bh_alpha",
     "bh_bar",
+    "effective_m",
     "family_error_budget",
     "family_of",
     "matches",
@@ -63,8 +64,12 @@ FAMILIES: dict[str, tuple[str, ...]] = {
     "relative_value": ("crossasset", "cross_asset", "premium", "cny", "kimchi", "ethbtc",
                        "rotation"),
     # why: participants behave predictably at structure (levels, breakouts, ranges)
+    # `opening_range` added 2026-08-15 as a SPELLING of `orb`, not a new member: the rule the token
+    # was declared to catch is named H9_opening_range and the abbreviation never matched it. The
+    # move TIGHTENS that rule's bar (structure is the largest family), so it cannot be a partition
+    # chosen to flatter -- the forking-paths hazard only runs in the other direction.
     "structure": ("trend", "momentum", "breakout", "wyckoff", "ict", "vwap", "band", "orb",
-                  "compression", "supply_demand", "structural"),
+                  "opening_range", "compression", "supply_demand", "structural"),
     # why: on-chain or protocol mechanics (utilisation, defi, gas)
     "onchain": ("defi", "utilisation", "onchain", "gas"),
 }
@@ -116,6 +121,28 @@ def partition(names: list[str]) -> dict[str, list[str]]:
     for n in names:
         out.setdefault(family_of(n, names), []).append(str(n))
     return out
+
+
+def effective_m(parts: dict[str, list[str]]) -> dict[str, int]:
+    """Family -> the m each member is actually corrected against. NOT simply the family size.
+
+    **UNCLASSIFIED IS FLOORED AT THE LARGEST DECLARED FAMILY, AND THIS IS THE WHOLE POINT.** The
+    header promises that skipping the declaration is never the cheaper path, and plain `len()` did
+    not deliver it: measured on the live cohort, UNCLASSIFIED held two members against `structure`'s
+    eight, so an undeclared mechanism faced t=1.96 while a declared one faced t=2.50. Left alone,
+    the dominant strategy is to name your candidate something the token list cannot match -- the
+    partition would have quietly become opt-out, and the incentive runs the wrong way at exactly
+    the moment a new mechanism arrives.
+
+    A declared family is corrected against its own members, which is what partitioning is for.
+    UNCLASSIFIED is corrected against the worst bar on the desk, which is what a refusal to declare
+    should cost. The floor never LOOSENS a bar -- it is a max, so it can only tighten.
+    """
+    sizes = {fam: len(members) for fam, members in parts.items()}
+    declared_max = max((n for fam, n in sizes.items() if fam != UNCLASSIFIED), default=0)
+    if UNCLASSIFIED in sizes:
+        sizes[UNCLASSIFIED] = max(sizes[UNCLASSIFIED], declared_max)
+    return sizes
 
 
 def bh_alpha(m: int, rank: int, *, alpha: float = 0.05) -> float:
