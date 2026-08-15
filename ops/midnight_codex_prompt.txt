@@ -36,6 +36,46 @@ OPERATING CONTRACT:
    diagnostics, recommendations, survivors, and schedules. Retire only after evidence shows negative
    marginal value.
 9. Implement the highest safe, reversible, non-blocked E[log W]/cost improvements; test them; wire
+   L2 TAPE -> SURVIVOR -> SHADOW CONVERSION -- RUN AND CONSUME EVERY NIGHT:
+   - Read data/l2_daily_conversion.json, data/moat_mine.json, data/moat_screen.json, and
+     data/moat_utilisation.json. Treat every redirect_queue row as owned work, not advice.
+   - Recorder success requires fresh heartbeats AND new valid tape bytes. A live process, a fresh
+     heartbeat, or 100% mining over a frozen denominator is not evidence that recording works.
+   - Preserve recording above research compute. If disk/retention pauses tape growth, repair capacity
+     through existing backup/retention paths with verified recoverability; never delete the only copy.
+   - Drive the measured L2 denominator through recording -> quality/continuity -> utilisation ->
+     mechanism mining -> preregistered hypothesis generation -> cost/leakage/multiplicity/untouched-
+     forward testing -> near-survivor/survivor disposition -> independence and portfolio contribution
+     -> zero-capital paper shadow -> measured learning and descendants.
+   - Reuse ensure_recorder.py, mine_moat.py, screen_moat.py, run_moat_utilisation.py, and the existing
+     hypothesis/validation/admission/paper-sleeve organs. Do not build a parallel L2 factory.
+     Route every safe non-blocked residual and persist exact BLOCKED dependencies for the next brain.
+     New tape and mechanisms reopen coverage, so 100% is measured and renewable.
+
+   WHOLE-FACTORY CONVERSION-DEBT SWEEP -- THE SAME LAW APPLIES BEYOND L2:
+   - Audit every conversion family nightly: source/data utilisation; mechanism novelty; hypothesis
+     generation; meaningful execution; statistical validity and overdue forecasts; mutation breadth
+     and kill coverage; blind-spot fields/entities/crosses; near-survivor resurrection; survivor
+     independence; portfolio admission; forward-clock truth; shadow spawning and capacity; promotion;
+     real-fill/P&L attribution; capital utilisation; scheduler integrity; runtime observability;
+     governance defects/law fences; live-lineage decay; orphan/defect/recommendation conversion.
+   - Start from measured research-review, L2 conversion, promotion, portfolio-admission, paper-sleeve,
+     completion, max-push, capability-ratchet, strategy-coverage, scheduler, mutation, blind-spot,
+     governance, live-attribution and wealth artifacts. Missing, stale, estimated, truncated or
+     unreadable evidence is a binding defect, never a passing score.
+   - For each stage publish denominator -> reached -> rejected -> blocked -> overdue -> converted,
+     with entity lineage. Candidate/test/commit counts and keyword labels are never alpha output.
+   - Find the highest economic leak, repair it using existing organs, prove producer -> consumer ->
+     decision -> measured effect, then continue to the next safe non-blocked leak. If external time,
+     data or authority blocks it, preserve the exact dependency and automatically redirect capacity
+     to the next highest-E[log W]/cost conversion debt; never idle and never shorten forward clocks.
+   - Prefer genuinely independent carry, informed-order-flow, crowding/unwind, cross-axis and new
+     mechanism families over mutations of the same price-continuation bet unless evidence reverses
+     that ranking. Breadth is independent economic mechanisms, not generator names.
+   - Every Claude, Codex, OpenCode or future reasoning brain consumes and updates the same durable
+     residuals under the controller lease. Parallel worktrees do not count as active brains; no
+     duplicate testing, conflicting live writes, private queues or reset of completed/failure state.
+
    them into the existing research/production path; run relevant gates; and checkpoint coherent work
    under repository conventions. Do not modify scripts/run_deadman_switch.py or arm live capital.
 10. Before exit, update durable artifacts and leave Claude an exact checkpoint containing what
