@@ -82,6 +82,20 @@ export BARS_FILE_BUDGET="${BARS_FILE_BUDGET:-20000}"
   # Reports, never blocks: a hunter that failed a push on a false positive would be switched off,
   # and the real instances would return with the alarm already disabled.
   nice -n 15 "$PY" scripts/check_unwired_capability.py || true
+  # THE TWO SLEEVES A SPOT-ONLY ACCOUNT CAN ACTUALLY HOLD. The principal is Irish retail: EEA
+  # derivatives are unavailable under MiCA, so cash-and-carry is untradeable (two legs, and the
+  # short cannot be opened) and xsec_price_mom is untradeable for the same reason -- it is a
+  # DOLLAR-NEUTRAL book that shorts the bottom quantile. These are what remain.
+  # spot_momentum leads with the EXCESS over equal-weight buy-and-hold, never the raw Sharpe: a
+  # long-only crypto book earns in a rising tape with or without selection skill, and quoting the
+  # raw number would report the market's return as the strategy's alpha.
+  nice -n 15 "$PY" scripts/run_spot_momentum.py --equity "${GOLIVE_CAPITAL:-200}" \
+      --min-notional "${VENUE_MIN_NOTIONAL:-10}" || true
+  # --spot-only REFUSES every short H3 calls and journals the refusal, rather than inverting it
+  # (which would score H3's hit rate against trades it never called for) or dropping it silently
+  # (which would hide that half its signals were unplaceable rather than absent).
+  nice -n 15 "$PY" scripts/run_discretionary_live.py --equity "${GOLIVE_CAPITAL:-200}" \
+      --min-notional "${VENUE_MIN_NOTIONAL:-10}" --spot-only || true
   # THE GO-LIVE STATE, PUBLISHED DAILY RATHER THAN REMEMBERED. Advisory by design: every
   # precondition it reports is already ENFORCED independently on the money path (no keys means no
   # authentication, CASHCARRY_KILL forces flatten-only in the executor's own order loop, the ruin
