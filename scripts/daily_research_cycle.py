@@ -154,6 +154,11 @@ _STEPS = [
     # number here is computed from an ASSUMED commission rate that nobody was checking against the
     # venue. Read-only without --enable, so the cycle reports the state and never changes it.
     ("fee_discount",      "scripts/run_fee_discount.py",     60),
+    # WHICH VENUE IS CHEAPER TO CARRY THE SAME LONG. Interest is charged on the BORROWED part,
+    # funding on the WHOLE notional, so the comparison moves with leverage and cannot be settled
+    # once. Daily, so a regime where funding goes negative -- the case where perps actually win --
+    # is caught rather than assumed away. Access under MiCA gates it before cost does.
+    ("funding_vs_borrow", "scripts/compare_funding_vs_borrow.py", 120),
     ("live_ladder",       "scripts/run_live_ladder.py",      600),
     ("auto_promotion",    "scripts/run_auto_promotion.py --capital 200 --min-notional 10", 300),
     ("golive_preflight",  "scripts/run_golive_preflight.py --capital 200", 120),

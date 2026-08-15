@@ -194,6 +194,101 @@ class TestTheQuotePrice:
         assert v.maker_calls[0][3] <= 100.077
 
 
+class _ReduceVenue(_Venue):
+    """The closing mirror. Adds the margin reduce path so AUTO_REPAY can be asserted."""
+
+    def __init__(self, **kw: Any) -> None:
+        super().__init__(**kw)
+        self.reduce_calls: list[tuple[str, str, float]] = []
+        self.post_only_kw: list[dict[str, Any]] = []
+
+    def place_post_only(self, sym: str, side: str, qty: float, price: float,
+                        **kw: Any) -> dict[str, Any]:
+        self.post_only_kw.append(dict(kw))
+        return super().place_post_only(sym, side, qty, price, **kw)
+
+    def place_market_reduce(self, sym: str, side: str, qty: float, **kw: Any) -> dict[str, Any]:
+        self.reduce_calls.append((sym, side, qty))
+        return {"orderId": 7, "status": "FILLED", "executedQty": str(qty)}
+
+
+def _reduce(v: _Venue, qty: float = 1.0, **kw: Any) -> mf.MakerOutcome:
+    return mf.maker_first_reduce(v, "AAAUSDC", qty, cycle="c1", min_notional=5.0,
+                                 step=0.001, tick=0.01, mark=100.0,
+                                 sleep=lambda _s: None, **kw)
+
+
+class TestTheReduceLeg:
+    """The exit was still crossing after the first pass -- half a spread saving described as a
+    spread saving. These pin the sell-side mirror, whose failure mode is worse than the buy's."""
+
+    def test_a_sell_quotes_at_the_ASK_never_the_bid(self) -> None:
+        v = _ReduceVenue(bid=100.0, ask=100.1)
+        _reduce(v)
+        assert v.maker_calls[0][3] == pytest.approx(100.1), "quoted at the bid -- that is a taker"
+        assert v.maker_calls[0][1] == "SELL"
+
+    def test_the_sell_price_rounds_UP_to_the_tick(self) -> None:
+        # Rounding DOWN would drop the offer into the spread, where LIMIT_MAKER is rejected.
+        v = _ReduceVenue(bid=99.0, ask=100.023)
+        mf.maker_first_reduce(v, "AAAUSDC", 1.0, cycle="c", min_notional=5.0,
+                              step=0.001, tick=0.05, mark=100.0, sleep=lambda _s: None)
+        assert v.maker_calls[0][3] == pytest.approx(100.05)
+        assert v.maker_calls[0][3] >= 100.023
+
+    def test_the_passive_close_carries_AUTO_REPAY(self) -> None:
+        # A close that removes the asset and leaves the loan has kept the debt and lost the
+        # collateral behind it. The market fallback hard-codes AUTO_REPAY; so must the quote.
+        v = _ReduceVenue()
+        _reduce(v)
+        assert v.post_only_kw[0].get("repay") is True
+
+    def test_it_closes_through_the_REDUCE_path_not_a_plain_sell(self) -> None:
+        v = _ReduceVenue(maker_filled_qty=0.0)
+        _reduce(v, qty=1.0)
+        assert v.reduce_calls and v.reduce_calls[0][1] == "SELL"
+        assert v.market_calls == [], "a plain market sell leaves the debt behind"
+
+    def test_partial_fill_crosses_only_the_UNSOLD_units(self) -> None:
+        v = _ReduceVenue(maker_filled_qty=0.4)
+        out = _reduce(v, qty=1.0)
+        assert out.mode == "taker_fallback"
+        assert out.maker_qty == pytest.approx(0.4)
+        assert v.reduce_calls[0][2] == pytest.approx(0.6)
+
+    def test_an_unresolved_quote_is_NEVER_oversold(self) -> None:
+        # THE WORST CASE ON THIS BOOK. Selling the remainder on top of a live quote does not fail
+        # on cross margin -- it borrows the base asset and OPENS A SHORT.
+        v = _ReduceVenue(cancel_raises=True, status_raises=True)
+        out = _reduce(v, qty=1.0)
+        assert out.mode == "UNRESOLVED"
+        assert v.reduce_calls == [] and v.market_calls == []
+
+    def test_a_crossed_reduce_still_counts_toward_the_maker_share(self) -> None:
+        # Without a mark price a crossed leg would carry taker_usd = 0 and vanish from the KPI,
+        # which would report a high maker share for a book that crossed everything.
+        v = _ReduceVenue(book_raises=True)
+        out = _reduce(v, qty=1.0)
+        assert out.mode == "taker"
+        assert out.taker_usd == pytest.approx(100.0)
+        assert mf.maker_share([out]) == pytest.approx(0.0)
+
+
+class TestRoundStepUp:
+    def test_it_ceilings_rather_than_flooring(self) -> None:
+        assert mf.round_step_up(100.021, 0.05) == pytest.approx(100.05)
+        assert mf.round_step_up(100.05, 0.05) == pytest.approx(100.05)
+
+    def test_a_zero_step_is_a_passthrough(self) -> None:
+        assert mf.round_step_up(100.0217, 0.0) == pytest.approx(100.0217)
+
+    def test_no_binary_float_tail(self) -> None:
+        # `math.ceil(x/step)*step` reproduces the 15th-decimal tail the venue rejected with 51077.
+        v = mf.round_step_up(60.7, 0.1)
+        assert repr(v) == repr(60.7) or v == pytest.approx(60.7, abs=1e-12)
+        assert len(repr(v)) < 10, f"binary tail survived: {v!r}"
+
+
 class TestMakerShare:
     def test_an_empty_book_is_None_not_zero(self) -> None:
         # L1.28a on a KPI: no legs is not a bad maker share, it is no measurement.

@@ -48,7 +48,7 @@ from typing import Any
 
 from libs.execution import maker_first
 from libs.execution.leverage_policy import choose, realised_vol
-from libs.execution.maker_first import maker_first_buy
+from libs.execution.maker_first import maker_first_buy, maker_first_reduce
 from libs.execution.ruin_rail import frozen
 from libs.execution.spot_order_path import floor_2dp, retarget, round_step
 
@@ -295,7 +295,21 @@ def main() -> int:
                 free_quote += qty * price
                 continue
             try:
-                row["result"] = m.place_market_reduce(sym, "SELL", qty, cycle=cycle)
+                # MAKER-FIRST ON THE WAY OUT TOO. The first pass of maker routing wired the ENTRY
+                # only, so a round trip paid maker in and taker out -- half a spread saving
+                # described as a spread saving. The reduce leg rotates the same thin alt names at
+                # the same 5-20bps. AUTO_REPAY is carried on both legs of the passive path: a
+                # close that removes the asset and leaves the loan has kept the debt and lost the
+                # collateral behind it.
+                routed_out = maker_first_reduce(
+                    m, sym, qty, cycle=cycle, min_notional=min_notional,
+                    step=float(f.get("step") or 0.0), tick=float(f.get("tick") or 0.0),
+                    mark=price, wait_s=float(args.maker_wait))
+                routed_legs.append(routed_out)
+                row["result"] = routed_out.result
+                row["route"] = routed_out.mode
+                row["maker_usd"] = round(routed_out.maker_usd, 2)
+                row["route_why"] = routed_out.why
                 rep["reduced"].append(row)
                 # THE PROCEEDS FUND THE LATER BUY LEGS IN THIS SAME RUN. Without this the executor
                 # would sell an overweight coin and then refuse the underweight one for lack of

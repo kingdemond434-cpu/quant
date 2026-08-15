@@ -378,7 +378,8 @@ def place_stop_loss_limit(symbol: str, side: str, qty: float, stop_price: float,
 
 
 def place_post_only(symbol: str, side: str, qty: float, price: float, *,
-                    cycle: str | None = None, borrow: bool = False) -> dict[str, Any]:
+                    cycle: str | None = None, borrow: bool = False,
+                    repay: bool = False) -> dict[str, Any]:
     """Post-only margin LIMIT (type=LIMIT_MAKER) -- guaranteed MAKER, rejected if it would cross.
 
     **THE MARGIN BOOK HAD NO PASSIVE PATH AT ALL.** Every entry `run_margin_executor` placed was a
@@ -386,18 +387,34 @@ def place_post_only(symbol: str, side: str, qty: float, price: float, *,
     legs the sleeves trade that is 5-20bps a side -- larger than the commission it is usually
     discussed alongside, and charged against an edge measured in tens of bps.
 
-    ``borrow`` carries the same meaning and the same default as `place_market_quote`: absent means
-    ``NO_SIDE_EFFECT`` and no new liability. A resting order that borrows on fill is deliberately
-    the explicit case -- a quote can sit for a long time, and the interest starts when it fills.
+    **THE SIDE EFFECT IS THE WHOLE ORDER ON THIS BOOK, AND IT HAS THREE VALUES, NOT TWO.**
+
+      ``borrow=True``  -> MARGIN_BUY. The venue borrows exactly what the order needs, on fill.
+      ``repay=True``   -> AUTO_REPAY. Proceeds repay the loan. THIS IS NOT OPTIONAL ON A CLOSE: a
+                          sell that removes the asset and leaves the liability has kept the debt
+                          and lost the thing backing it -- the margin level barely improves and
+                          interest keeps accruing against a book that no longer holds anything.
+                          On a levered position the repayment IS the protection, which is why
+                          `place_market_reduce` and `place_stop_loss_limit` both hard-code it.
+      neither          -> NO_SIDE_EFFECT, the default, which adds no liability and repays none.
+
+    Defaulting either one on would mean a caller who forgot the argument borrowed money or repaid
+    a loan they meant to keep. Both stay explicit; passing both is refused rather than resolved.
     """
     if side not in {"BUY", "SELL"}:
         raise ValueError(f"side must be BUY or SELL, got {side!r}")
+    if borrow and repay:
+        raise ValueError(
+            "borrow and repay are mutually exclusive -- MARGIN_BUY and AUTO_REPAY are opposite "
+            "side effects and the venue takes exactly one. Refusing rather than picking, because "
+            "either choice would be this module deciding what the caller meant about a liability")
     if borrow:
         _check_borrow_allowed()
+    side_effect = "MARGIN_BUY" if borrow else ("AUTO_REPAY" if repay else "NO_SIDE_EFFECT")
     return dict(_signed("/sapi/v1/margin/order", {
         "symbol": symbol, "side": side, "type": "LIMIT_MAKER",
         "quantity": f"{qty}", "price": f"{price}",
-        "sideEffectType": "MARGIN_BUY" if borrow else "NO_SIDE_EFFECT",
+        "sideEffectType": side_effect,
         "isIsolated": "FALSE",
         "newClientOrderId": client_order_id(symbol, side, "marginmaker", cycle=cycle),
     }, method="POST"))
