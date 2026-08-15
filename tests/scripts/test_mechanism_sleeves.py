@@ -108,7 +108,8 @@ def test_A_GENERATOR_WITHOUT_ITS_INPUT_IS_FLAT_AND_SAYS_SO() -> None:
     # funding series and intermarket_difference needs the reference's RANGE; both can be starved
     # and both must say so. `hawkes_vol_expansion` reads only OHLCV, which is never absent -- it
     # CANNOT be silently starved, and asserting it goes flat would be asserting a defect.
-    needs_external = {"funding_stress_reversal", "intermarket_difference"}
+    needs_external = {"funding_stress_reversal", "intermarket_difference",
+                      "producer_margin_stress", "funding_carry"}
     for _cls, subtype, _why, params in M.SLEEVES:
         pos = M._positions(subtype, bare, params)
         assert pos is not None, f"{subtype} must exist in this repo"
@@ -276,3 +277,35 @@ def test_THE_MEASURE_DECLARES_THAT_IT_FLATTERS(tmp_path: Path,
     assert "EXCLUDING fees" in doc["measure"]
     assert "Never used to justify KEEPING" in doc["measure"]
     assert doc["kill_drawdown"] == M.KILL_DRAWDOWN
+
+
+def test_THE_LIVE_SET_SPANS_MORE_THAN_ONE_CENSUS_FAMILY() -> None:
+    """FIVE SLEEVES IN ONE FAMILY IS ONE BET WITH FIVE NAMES. k_eff = n/(1+(n-1)rho) is driven by
+    the FAMILY count, not the sleeve count, so a set that all files under price_continuation would
+    raise every published strategy tally while leaving effective breadth exactly where it was."""
+    fams = {cls for cls, _sub, _why, _p in M.SLEEVES}
+    assert len(fams) >= 4, f"only {len(fams)} distinct census families live: {sorted(fams)}"
+    assert len(fams) == len(M.SLEEVES), "one sleeve per family, or the count is inflated"
+
+
+def test_THE_HIGHEST_ORTHOGONALITY_GENERATOR_IS_DEPLOYED() -> None:
+    """`producer_margin_stress` scores 0.70 against a library otherwise made of price patterns at
+    0.03, and it sat built-with-a-wired-collector-and-no-sleeve. That is III.16 on the single most
+    valuable unit of breadth available to this desk."""
+    from libs.research.mechanism_census import CLASS_BY_ID
+
+    live = {sub: cls for cls, sub, _why, _p in M.SLEEVES}
+    assert "producer_margin_stress" in live
+    best = max(CLASS_BY_ID[c].orthogonality for c in live.values() if c in CLASS_BY_ID)
+    assert best >= 0.70, "the desk's most orthogonal available family must be live"
+
+
+def test_EVERY_SLEEVE_NAMES_A_PAYER_RATHER_THAN_A_PATTERN() -> None:
+    """A mechanism that cannot name who is FORCED to trade against it is a pattern with a story.
+    The census carries the payer per class; a live sleeve must map to one that has it."""
+    from libs.research.mechanism_census import CLASS_BY_ID
+
+    for cls, sub, why, _p in M.SLEEVES:
+        assert len(why) > 60, f"{sub} carries no mechanism statement"
+        if cls in CLASS_BY_ID:
+            assert CLASS_BY_ID[cls].payer, f"{cls} names no payer"

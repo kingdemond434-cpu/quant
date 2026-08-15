@@ -80,6 +80,27 @@ SLEEVES: tuple[tuple[str, str, str, dict[str, float]], ...] = (
      "causes the next through margin calls, maker withdrawal and stop cascades, and a decaying "
      "sum of past events sees that clustering where a rolling window cannot",
      {"beta": 0.2, "k": 2.0, "lookback": 20}),
+    # THE HIGHEST-ORTHOGONALITY GENERATOR IN THE REPO (0.70), built, collector wired, and NOT
+    # DEPLOYED until now. The desk holds NOTHING in treasury_cost_base_liquidation, so unlike
+    # hawkes this is a genuinely new family rather than a fifth name in correlated_core.
+    #
+    # THE PAYER IS NAMED AND IT IS NOT A PRICE PATTERN: a miner carries a FIAT cost base -- power,
+    # hosting, leased rigs, debt service -- against coin-denominated revenue. Those obligations do
+    # not reschedule for a drawdown, so coin is sold on the operator's calendar and hardest when
+    # price is weakest. Difficulty falling is the LAGGING, mechanical admission that the marginal
+    # producer already switched off and sold; nothing here forecasts miner behaviour.
+    ("treasury_cost_base_liquidation", "producer_margin_stress", "a miner's fiat obligations do "
+     "not reschedule for a drawdown, so coin is sold on the operator's calendar rather than the "
+     "market's -- and difficulty adjusting DOWN is the mechanical confirmation the marginal "
+     "producer has already exited", {"window": 90, "z_entry": 1.0}),
+    # THE DESK'S FIRST TRUE CARRY TEST. Family.CARRY held exactly one generator since inception --
+    # `drift_proxy`, which is momentum(200) on OHLC with no funding, swap or basis in its inputs,
+    # and which the census correctly files as price_continuation. The funding data was in the lake
+    # the whole time and exactly one generator read it: the FADE. This supplies the spot leg and
+    # collects what the levered long pays for it.
+    ("derivative_carry_basis", "funding_carry", "the levered long pays funding to hold his "
+     "position and someone must supply the other side -- this collects that payment rather than "
+     "forecasting the price it is paid on", {"window": 30, "z_entry": 0.5}),
 )
 
 #: Fraction of the book each sleeve carries. EQUAL AND FIXED. Sizing by backtest Sharpe would let
