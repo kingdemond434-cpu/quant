@@ -69,8 +69,14 @@ _FORCED = ("stops resting beyond the swept swing -- they must fill when touched 
            "the structure shift after the sweep is the evidence that flow was absorbed")
 
 
-def _to_signal(setup: Any, symbol: str, rule_id: str) -> RuleSignal:
-    """ICTSetup -> RuleSignal. A FIELD MAPPING, deliberately nothing more.
+def _to_signal(setup: rules.Setup, symbol: str, rule_id: str) -> RuleSignal:
+    """Setup -> RuleSignal. A FIELD MAPPING, deliberately nothing more.
+
+    TAKES THE COMMON `Setup`, NOT `ICTSetup`. When H3 was the only rule this read `sweep_i`,
+    `shift_i` and `entry_i` off the ICT dataclass directly; the moment ten more rules arrived --
+    none of which has those fields -- it raised AttributeError on the first live run. `_from_ict`
+    now translates H3 into the common shape BEFORE anything reaches here, so this function knows
+    about exactly five fields and every rule presents all five.
 
     Every number is carried through untouched. Rounding, clamping or 'improving' a stop here would
     move the pre-registered terms after the data arrived, which is the whole thing the playbook's
@@ -84,7 +90,7 @@ def _to_signal(setup: Any, symbol: str, rule_id: str) -> RuleSignal:
         stop_price=float(setup.stop),
         target_price=float(setup.target),
         forced_participant=_FORCED,
-        note=f"H3 ICT sweep->shift->entry at bars {setup.sweep_i}/{setup.shift_i}/{setup.entry_i}",
+        note=setup.note,
     )
 
 
