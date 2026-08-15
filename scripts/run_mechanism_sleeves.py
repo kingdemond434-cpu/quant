@@ -55,6 +55,8 @@ from typing import Any
 
 import numpy as np
 
+from libs.execution.spot_order_path import retarget
+
 _OUT = Path("data/mechanism_sleeve_targets.json")
 _STATE = Path("data/mechanism_sleeve_state.json")
 _LEDGER = Path("docs/research/LIVE_EXCEPTION_LEDGER.json")
@@ -170,6 +172,109 @@ def _positions(subtype: str, series: Any, params: dict[str, float]) -> np.ndarra
     return None
 
 
+def _marks() -> dict[str, float]:
+    """Live prices, wallet-agnostic. Empty when the venue is unreadable -- and an EMPTY mark set
+    must never be read as a zero return, which would trip the kill on every sleeve at once."""
+    try:
+        from libs.execution import binance_spot_live
+
+        return {str(k): float(v) for k, v in binance_spot_live.prices().items()}
+    except Exception:
+        return {}
+
+
+def _track(rep: dict[str, Any], px: dict[str, float]) -> dict[str, Any]:
+    """Mark each sleeve since inception and APPLY THE KILL RULE.
+
+    **THE RULE WAS DECLARED AND ENFORCED BY NOTHING.** `KILL_DRAWDOWN`, `REVIEW_DAYS` and `_STATE`
+    were constants with no reader: the ledger promised a sleeve would be retired below -15% and
+    the code would have traded it to zero. That is III.16 on the SAFETY half of an exception to a
+    standing law -- the half whose absence is invisible precisely while things are going well.
+
+    **THE MEASURE IS THE SLEEVE'S OWN WEIGHTS MARKED FORWARD, AND IT EXCLUDES COSTS.** Per-fill
+    attribution across two books sharing one margin account is not available here. Marking the
+    published weights is therefore OPTIMISTIC -- a real book pays fees, slippage and borrow that
+    this does not subtract. The direction matters and it is the safe one: a kill that trips on an
+    optimistic measure is definitely a kill, because the realised book did worse. It would be the
+    reverse error -- a flattering measure used to KEEP a sleeve -- that this must never make, and
+    surviving here is explicitly not evidence of anything (see the ledger).
+    """
+    try:
+        state = json.loads(_STATE.read_text("utf-8"))
+    except (OSError, ValueError):
+        state = {}
+    now = datetime.now(tz=UTC)
+    rows = state.get("sleeves") if isinstance(state, dict) else None
+    sleeves: dict[str, Any] = dict(rows or {})
+
+    for row in rep["sleeves"]:
+        key = str(row["census_class"])
+        prior = sleeves.get(key) or {}
+        if prior.get("retired"):
+            row["state"] = "RETIRED"
+            row["why"] = prior.get("retired_why", "retired by the pre-registered kill rule")
+            continue
+        held = {k: v for k, v in (row.get("symbols") or {}).items() if abs(float(v)) > 1e-12}
+        if row.get("state") != "LIVE" or not held:
+            continue
+
+        marks = prior.get("marks") or {}
+        if not marks:
+            # INCEPTION. Recorded on the first LIVE run, from live prices. A sleeve with no
+            # inception marks has no return to judge and must not be killed for it.
+            fresh = {k: px[retarget(k, "USDC")] for k in held if retarget(k, "USDC") in px}
+            if fresh:
+                sleeves[key] = {"inception": now.isoformat(), "marks": fresh,
+                                "weights": {k: float(v) for k, v in held.items()}}
+            row["tracking"] = "INCEPTION recorded" if fresh else "no marks available yet"
+            continue
+
+        w = prior.get("weights") or {}
+        contribs = []
+        for sym, w0 in w.items():
+            p0, p1 = float(marks.get(sym, 0.0)), float(px.get(retarget(sym, "USDC"), 0.0))
+            if p0 > 0 and p1 > 0:
+                contribs.append((1.0 if float(w0) > 0 else -1.0) * (p1 / p0 - 1.0))
+        if not contribs:
+            # UNMEASURED, NOT ZERO. An unreadable price set must never present as a flat return --
+            # that is a measurement failure wearing the shape of a healthy sleeve.
+            row["tracking"] = "UNMEASURED -- no marks readable this run; the kill rule cannot bind"
+            continue
+        ret = float(np.mean(contribs))
+        age_days = (now - datetime.fromisoformat(str(prior["inception"]))).total_seconds() / 86400
+        prior["last_return"], prior["age_days"] = round(ret, 6), round(age_days, 2)
+        row["return_since_inception"] = round(ret, 6)
+        row["age_days"] = round(age_days, 2)
+
+        why = None
+        if ret <= KILL_DRAWDOWN:
+            why = (f"RETIRED: return since inception {ret:+.2%} at or below the pre-registered "
+                   f"kill of {KILL_DRAWDOWN:+.0%}. Fixed before the first fill, so it is not "
+                   "renegotiable by the sleeve that breached it")
+        elif age_days >= REVIEW_DAYS and ret < 0:
+            why = (f"RETIRED: {age_days:.0f} days elapsed (review at {REVIEW_DAYS}) with a return "
+                   f"of {ret:+.2%}. The review test was non-negative, declared in advance")
+        if why:
+            prior["retired"], prior["retired_why"] = True, why
+            row["state"], row["why"] = "RETIRED", why
+            # A RETIRED SLEEVE PUBLISHES NO WEIGHTS. Its slice falls out of the target book and
+            # the executor's reduce leg unwinds it on the next run -- which only works because
+            # that leg now exists.
+            for sym in list(w):
+                rep["target_weights"].pop(sym, None)
+        sleeves[key] = prior
+
+    state = {"updated": now.isoformat(), "sleeves": sleeves,
+             "measure": ("published weights marked forward, EXCLUDING fees, slippage and borrow. "
+                         "Optimistic by construction, so a kill it trips is conservative -- the "
+                         "realised book did worse. Never used to justify KEEPING a sleeve"),
+             "kill_drawdown": KILL_DRAWDOWN, "review_days": REVIEW_DAYS}
+    _STATE.parent.mkdir(parents=True, exist_ok=True)
+    _STATE.write_text(json.dumps(state, indent=1), "utf-8")
+    rep["n_retired"] = sum(1 for v in sleeves.values() if v.get("retired"))
+    return rep
+
+
 def build() -> dict[str, Any]:
     ok, why_exc = _exception_recorded()
     rep: dict[str, Any] = {
@@ -250,6 +355,8 @@ def build() -> dict[str, Any]:
         rep["sleeves"].append(row)
 
     rep["target_weights"] = weights
+    rep = _track(rep, _marks())
+    weights = rep["target_weights"]
     rep["gross_frac_of_slice"] = round(sum(weights.values()), 6)
     rep["gross_frac_of_account"] = round(sum(weights.values()) * rep["book_frac"], 6)
     return rep

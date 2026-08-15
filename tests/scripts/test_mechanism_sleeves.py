@@ -162,3 +162,92 @@ def test_WEIGHTS_ARE_SHARES_OF_THE_SLICE_NOT_OF_THE_ACCOUNT() -> None:
         rep["gross_frac_of_slice"] * rep["book_frac"])
     assert rep["gross_frac_of_account"] <= rep["book_frac"] + 1e-9
     assert MarketSeries is not None
+
+
+# ------------------------------------------------------------------ the kill rule, ENFORCED
+def _stub_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, sleeves: dict) -> Path:
+    p = tmp_path / "state.json"
+    p.write_text(json.dumps({"sleeves": sleeves}), "utf-8")
+    monkeypatch.setattr(M, "_STATE", p)
+    return p
+
+
+def test_THE_KILL_RULE_IS_ENFORCED_AND_NOT_MERELY_DECLARED(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """UNTIL 2026-08-15 IT WAS A CONSTANT WITH NO READER. KILL_DRAWDOWN, REVIEW_DAYS and _STATE
+    had no consumer anywhere in the repo: the ledger promised retirement below -15% and the code
+    would have traded the sleeve to zero. That is III.16 on the SAFETY half of an exception to a
+    standing law -- the half whose absence is invisible exactly while things are going well."""
+    from datetime import UTC, datetime, timedelta
+
+    _stub_state(tmp_path, monkeypatch, {
+        "relative_value_convergence": {
+            "inception": (datetime.now(tz=UTC) - timedelta(days=3)).isoformat(),
+            "marks": {"BTCUSDT": 100.0}, "weights": {"BTCUSDT": 1.0}}})
+    rep = {"sleeves": [{"census_class": "relative_value_convergence", "state": "LIVE",
+                        "symbols": {"BTCUSDT": 1.0}}], "target_weights": {"BTCUSDT": 1.0}}
+    out = M._track(rep, {"BTCUSDC": 80.0})            # -20%, past the -15% kill
+    row = out["sleeves"][0]
+    assert row["state"] == "RETIRED"
+    assert row["return_since_inception"] == pytest.approx(-0.20)
+    assert "not renegotiable" in row["why"]
+    assert out["target_weights"] == {}, "a retired sleeve must publish no weights"
+
+
+def test_A_RETIREMENT_IS_PERMANENT(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A sleeve that recovers after breaching does not come back. The threshold judged it once."""
+    _stub_state(tmp_path, monkeypatch, {
+        "relative_value_convergence": {"retired": True, "retired_why": "killed at -20%"}})
+    rep = {"sleeves": [{"census_class": "relative_value_convergence", "state": "LIVE",
+                        "symbols": {"BTCUSDT": 1.0}}], "target_weights": {"BTCUSDT": 1.0}}
+    out = M._track(rep, {"BTCUSDC": 1e6})             # spectacular recovery, irrelevant
+    assert out["sleeves"][0]["state"] == "RETIRED"
+
+
+def test_THE_REVIEW_TEST_BINDS_ONLY_AFTER_ITS_DAYS(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Non-negative at REVIEW_DAYS. A small loss on day 3 is noise; the same loss at 30 days is
+    the pre-registered answer."""
+    from datetime import UTC, datetime, timedelta
+
+    for age, expect in ((3, "LIVE"), (M.REVIEW_DAYS + 1, "RETIRED")):
+        _stub_state(tmp_path, monkeypatch, {
+            "relative_value_convergence": {
+                "inception": (datetime.now(tz=UTC) - timedelta(days=age)).isoformat(),
+                "marks": {"BTCUSDT": 100.0}, "weights": {"BTCUSDT": 1.0}}})
+        rep = {"sleeves": [{"census_class": "relative_value_convergence", "state": "LIVE",
+                            "symbols": {"BTCUSDT": 1.0}}], "target_weights": {"BTCUSDT": 1.0}}
+        out = M._track(rep, {"BTCUSDC": 98.0})        # -2%: inside the kill, negative at review
+        assert out["sleeves"][0]["state"] == expect, f"age {age}d"
+
+
+def test_UNREADABLE_PRICES_CANNOT_TRIP_THE_KILL(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """An empty mark set must never present as a flat -- or worse, a catastrophic -- return. A
+    venue outage retiring every sleeve at once is the failure mode of a kill rule that treats
+    absence as a measurement."""
+    from datetime import UTC, datetime, timedelta
+
+    _stub_state(tmp_path, monkeypatch, {
+        "relative_value_convergence": {
+            "inception": (datetime.now(tz=UTC) - timedelta(days=90)).isoformat(),
+            "marks": {"BTCUSDT": 100.0}, "weights": {"BTCUSDT": 1.0}}})
+    rep = {"sleeves": [{"census_class": "relative_value_convergence", "state": "LIVE",
+                        "symbols": {"BTCUSDT": 1.0}}], "target_weights": {"BTCUSDT": 1.0}}
+    out = M._track(rep, {})                            # venue unreadable
+    assert out["sleeves"][0]["state"] == "LIVE"
+    assert "UNMEASURED" in out["sleeves"][0]["tracking"]
+    assert out["target_weights"] == {"BTCUSDT": 1.0}
+
+
+def test_THE_MEASURE_DECLARES_THAT_IT_FLATTERS(tmp_path: Path,
+                                               monkeypatch: pytest.MonkeyPatch) -> None:
+    """Marking published weights excludes fees, slippage and borrow, so it is optimistic. The
+    direction is the safe one -- a kill it trips is conservative because the realised book did
+    worse -- and it must never be read the other way, as evidence for KEEPING a sleeve."""
+    p = _stub_state(tmp_path, monkeypatch, {})
+    M._track({"sleeves": [], "target_weights": {}}, {})
+    doc = json.loads(p.read_text("utf-8"))
+    assert "EXCLUDING fees" in doc["measure"]
+    assert "Never used to justify KEEPING" in doc["measure"]
+    assert doc["kill_drawdown"] == M.KILL_DRAWDOWN
