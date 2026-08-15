@@ -64,20 +64,58 @@ _MARGIN_FLAG = Path("data/MARGIN_ENABLE")
 MARGIN_CALL_LEVEL = 1.5
 LIQUIDATION_LEVEL = 1.1
 
-#: No NEW borrow below this. Deliberately far above the liquidation line: the level moves with the
-#: market, so a check that passes at 1.15 has already failed by the time the order fills. Repaying
-#: and selling are never gated on it -- blocking a book from de-risking is how a margin call
-#: becomes a liquidation.
-_MIN_LEVEL_TO_BORROW = 2.0
+#: THE FLOOR IS ON THE PROJECTED LEVEL, NOT AN ABSOLUTE ONE, and the difference is not a detail.
+#: An absolute floor of 2.0 would have made 3x unreachable: entering at leverage L puts the account
+#: at level L/(L-1) BY DEFINITION, so 3x arrives at exactly 1.50 -- the venue's own margin-call
+#: line -- and 2x arrives at 2.00. A constant floor above those is a constant that forbids the
+#: leverage it was written to govern, which is worse than no check: it reads as a safety property
+#: and functions as an outage.
+#:
+#: 1.12 sits just above the 1.10 liquidation line. That is deliberately TIGHT, and it is tight
+#: because the principal set the ceiling at 8x; a floor loose enough to be comfortable would
+#: silently refuse the configuration that was asked for. The protection at high leverage is
+#: therefore NOT this number -- it is the de-risk path and the size of the move, both published.
+MIN_PROJECTED_LEVEL = 1.12
 
-#: Hard ceiling on requested leverage, enforced here rather than trusted from the caller. Binance
-#: permits more on some accounts; that is the venue's risk appetite, not this desk's.
-MAX_LEVERAGE = 3.0
+#: Hard ceiling on requested leverage, enforced here rather than trusted from the caller.
+#: Set to 8.0 at the principal's explicit instruction, 2026-08-15, over a stated objection recorded
+#: in `liquidation_distance` below. The venue may permit more; that is its risk appetite.
+MAX_LEVERAGE = 8.0
+
+#: What a caller gets when it does not choose. The principal's stated minimum.
+DEFAULT_LEVERAGE = 3.0
+
+
+def liquidation_distance(leverage: float) -> float:
+    """The adverse move, as a fraction, that takes a fresh position at `leverage` to liquidation.
+
+    ARITHMETIC, NOT OPINION. Borrowing B against equity E gives assets E+B and liabilities B, so
+    the margin level is (E+B)/B. Entering at leverage L means B = E(L-1), so the level at entry is
+    L/(L-1) and a price fall of d takes it to (E+B)(1-d)/B. Setting that equal to the liquidation
+    level and solving:
+
+        d = 1 - LIQUIDATION_LEVEL * (L-1) / L
+
+        3x -> -26.7%      6x -> -8.3%      8x -> -3.75%
+
+    THE NUMBER THAT MATTERS AT 8x IS 3.75%. The assets in this book move that much on an ordinary
+    day, so at that leverage liquidation is not a tail event, it is the base case, and it fires
+    against the WHOLE position rather than the borrowed part. The spot book's own backtest carries
+    a 79.6% max drawdown; at 8x the account does not survive to experience it.
+
+    Published as a function rather than a comment so every report can print it and nobody has to
+    remember it.
+    """
+    if leverage <= 1.0:
+        return 1.0
+    return 1.0 - LIQUIDATION_LEVEL * (leverage - 1.0) / leverage
 
 __all__ = [
+    "DEFAULT_LEVERAGE",
     "LIQUIDATION_LEVEL",
     "MARGIN_CALL_LEVEL",
     "MAX_LEVERAGE",
+    "MIN_PROJECTED_LEVEL",
     "account",
     "balances",
     "borrow_headroom",
@@ -85,6 +123,7 @@ __all__ = [
     "has_keys",
     "is_armed",
     "liabilities",
+    "liquidation_distance",
     "margin_level",
     "open_orders",
     "place_market_quote",
@@ -196,7 +235,12 @@ def borrow_headroom(equity_usd: float, leverage: float) -> tuple[float, str]:
     if lev < leverage:
         capped = (f" (requested {leverage:.2f}x, CAPPED at the module ceiling {MAX_LEVERAGE:.2f}x "
                   "-- the venue may permit more; that is its risk appetite, not this desk's)")
-    return equity_usd * (lev - 1.0), f"{lev:.2f}x on ${equity_usd:,.2f} equity{capped}"
+    # THE DISTANCE TRAVELS WITH THE SIZE. A headroom figure quoted without it is the half of the
+    # trade that looks like opportunity, and the reader supplies the other half from optimism.
+    d = liquidation_distance(lev)
+    return equity_usd * (lev - 1.0), (
+        f"{lev:.2f}x on ${equity_usd:,.2f} equity{capped}; entry margin level "
+        f"{lev / (lev - 1.0):.2f}, LIQUIDATED BY A {d:.1%} ADVERSE MOVE")
 
 
 def _check_borrow_allowed() -> None:
@@ -207,11 +251,12 @@ def _check_borrow_allowed() -> None:
             "margin level UNREADABLE -- refusing to borrow. An unknown distance to the "
             f"liquidation line at {LIQUIDATION_LEVEL} is not the same as a safe one, and the only "
             "safe reading of 'unmeasured' on this path is no")
-    if lvl < _MIN_LEVEL_TO_BORROW:
+    if lvl < MIN_PROJECTED_LEVEL:
         raise RuntimeError(
-            f"margin level {lvl:.2f} is below the borrow floor {_MIN_LEVEL_TO_BORROW:.2f} "
+            f"margin level {lvl:.3f} is below the floor {MIN_PROJECTED_LEVEL:.3f} "
             f"(venue calls at {MARGIN_CALL_LEVEL}, liquidates at {LIQUIDATION_LEVEL}) -- refusing "
-            "to add leverage to a book that is already close to the line")
+            "to add leverage to a book already inside the liquidation band. Selling and repaying "
+            "remain available and are the only things that raise this number")
 
 
 def place_market_quote(symbol: str, side: str, quote_amount: float, *,

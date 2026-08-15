@@ -105,3 +105,37 @@ def test_A_NONSENSE_EQUITY_IS_REFUSED_NOT_COERCED() -> None:
     r = _mod()._resolve_equity
     eq, why = r("lots", {}, {"USDC": 1.0}, {}, "USDC")
     assert eq == 0.0 and "neither a number nor" in why
+
+
+def _clamp_src() -> str:
+    return _SRC.read_text("utf-8")
+
+
+def test_A_BUY_IS_SIZED_TO_THE_CASH_THAT_EXISTS() -> None:
+    """MEASURED 2026-08-15. Targets are computed from EQUITY, which includes coins already held;
+    the cash available to buy with is a different and smaller number. The final leg asked for
+    $39.96 against $36.21 free, the venue answered `-2010 Account has insufficient balance`, and
+    the book sat two-thirds complete. A slightly underweight position is a book; a rejected order
+    is a hole."""
+    src = _clamp_src()
+    assert "quote_free" in src, "the executor does not track spendable cash"
+    assert "delta > quote_free" in src, "a buy larger than the free balance is not clamped"
+    assert "clamped_from" in src and "shortfall_usd" in src, (
+        "a clamped leg must record what it wanted -- otherwise the filled weight reads as the "
+        "intended one and the book looks correctly sized when it is not")
+
+
+def test_THE_CASH_DECREMENTS_AS_LEGS_FILL() -> None:
+    """Without this, every leg believes it has the whole balance, and a three-leg book plans to
+    spend the same dollars three times -- in the dry run too, where the operator reads the plan."""
+    src = _clamp_src()
+    assert src.count("quote_free -= delta") >= 2, (
+        "both the live and the dry-run branches must decrement, or the printed plan is a fiction")
+
+
+def test_A_LEG_WITH_LESS_THAN_THE_MINIMUM_REFUSES_RATHER_THAN_CLAMPING() -> None:
+    """Clamping below the venue minimum produces an order that cannot be placed. The leg stays
+    empty and says so, which is the one outcome an operator can act on."""
+    src = _clamp_src()
+    assert "quote_free < min_notional" in src
+    assert "Nothing placeable" in src

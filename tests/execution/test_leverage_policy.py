@@ -1,0 +1,147 @@
+"""Leverage as much as growth permits -- pinned on the arithmetic that makes "permits" a maximum.
+
+The instruction was "no fixed ceiling, minimum 3x, as much as growth permits". The first two are
+settings. The third is a computation, and its answer is a MAXIMUM: past Kelly, more leverage buys
+less growth, and past 2x Kelly it buys negative growth. These tests exist so that fact stays in the
+code rather than in a conversation.
+"""
+
+from __future__ import annotations
+
+import math
+
+from libs.execution import binance_margin_live as margin
+from libs.execution.leverage_policy import (
+    MIN_LEVERAGE,
+    VENUE_MAX_LEVERAGE,
+    choose,
+    growth_rate,
+    kelly_leverage,
+    leverage_for_distance,
+    realised_vol,
+)
+
+
+def test_GROWTH_IS_A_DOWNWARD_PARABOLA_PEAKING_AT_KELLY() -> None:
+    """THE WHOLE ARGUMENT. If this is not true, "as much as growth permits" would mean "as much as
+    possible", and the desk's objective would be unbounded in leverage."""
+    mu, sigma = 0.60, 0.60
+    f_star = kelly_leverage(mu, sigma)
+    assert abs(f_star - mu / sigma ** 2) < 1e-12
+    peak = growth_rate(f_star, mu, sigma)
+    for f in (f_star * 0.5, f_star * 0.9, f_star * 1.1, f_star * 2.0, f_star * 3.0):
+        assert growth_rate(f, mu, sigma) <= peak + 1e-12, (
+            f"growth at {f:.2f}x exceeds the Kelly peak -- the objective is not being maximised "
+            "at f*, and every conclusion drawn from it is wrong")
+
+
+def test_GROWTH_IS_ZERO_AT_TWICE_KELLY_AND_NEGATIVE_BEYOND() -> None:
+    """The number that turns 'aggressive' into 'worse'. A book past 2x Kelly with a positive
+    expected return compounds to zero almost surely."""
+    mu, sigma = 0.60, 0.60
+    f_star = kelly_leverage(mu, sigma)
+    assert abs(growth_rate(2 * f_star, mu, sigma)) < 1e-12
+    assert growth_rate(2.5 * f_star, mu, sigma) < 0
+
+
+def test_THE_BORROW_COST_COMES_OFF_THE_NUMERATOR() -> None:
+    """Levered capital is rented. Omitting the rent overstates Kelly by exactly the rate paid --
+    the direction that over-levers."""
+    free = kelly_leverage(0.60, 0.60, borrow_rate=0.0)
+    paid = kelly_leverage(0.60, 0.60, borrow_rate=0.10)
+    assert paid < free
+    assert kelly_leverage(0.05, 0.60, borrow_rate=0.10) == 0.0, (
+        "an edge that does not beat its own borrow cost must return zero leverage; borrowing more "
+        "of a losing trade does not make it a winning one")
+
+
+def test_THE_LIQUIDATION_BOUND_INVERTS_THE_CONNECTORS_OWN_FORMULA() -> None:
+    """Two modules computing the same relationship must agree, or one of them is silently wrong on
+    the path that ends the account."""
+    for lev in (2.0, 3.0, 5.0, 8.0):
+        d = margin.liquidation_distance(lev)
+        assert abs(leverage_for_distance(d) - lev) < 1e-9
+
+
+def test_THE_SMALLER_OF_GROWTH_AND_SURVIVAL_WINS() -> None:
+    """Kelly is about compounding; liquidation is about surviving to compound. Neither substitutes
+    for the other, so the binding one must be the minimum and must be NAMED."""
+    d = choose(0.03, sharpe=1.0, borrow_rate=0.08)
+    assert d["binding_constraint"] in {"growth (Kelly)", "survival", "venue/ceiling"}
+    assert d["raw_leverage"] <= d["survival_leverage"] + 1e-9
+    assert d["raw_leverage"] <= d["kelly"] + 1e-9
+
+
+def test_A_STRONG_EDGE_CAN_EXCEED_EIGHT_BECAUSE_NOTHING_IS_HARDCODED() -> None:
+    """THE INSTRUCTION, HONOURED. The ceiling moves with the evidence: a high-Sharpe, low-vol book
+    is allowed past 8x, because at that point growth genuinely permits it."""
+    d = choose(0.004, sharpe=4.0, borrow_rate=0.02, k=1.0)
+    assert d["kelly"] > 8.0, f"a Sharpe-4 book at 0.4%/day vol has Kelly {d['kelly']}, not <8"
+    assert d["leverage"] > 8.0
+
+
+def test_THE_FLOOR_OVERRIDES_THE_MEASUREMENT_AND_LABELS_ITSELF() -> None:
+    """The principal's 3x minimum binds even when the objective asks for less -- but a floored
+    number must never be readable as a measured one."""
+    d = choose(0.05, sharpe=0.5, borrow_rate=0.08)
+    assert d["leverage"] == MIN_LEVERAGE
+    assert d["floor_binding"] is True
+    assert d["state"] == "FLOOR BINDING"
+    assert "instruction, not a calculation" in d["why"]
+
+
+def test_THE_FLOORED_CASE_PUBLISHES_WHAT_IT_COSTS() -> None:
+    """Taking the floor over the optimum has a price in the desk's own objective, and the decision
+    states it in annualised growth rather than leaving it to be inferred."""
+    d = choose(0.03, sharpe=1.02, borrow_rate=0.08)
+    assert d["floor_binding"] is True
+    assert "expected geometric growth is" in d["why"]
+    assert "/yr at" in d["why"]
+
+
+def test_UNMEASURED_VOLATILITY_TAKES_THE_FLOOR_NOT_THE_CEILING() -> None:
+    """The direction that survives being wrong. Choosing high leverage from an absent measurement
+    is inventing confidence out of missing data, on the one path that can end the account."""
+    for bad in (None, float("nan"), 0.0, 0.0001):
+        d = choose(bad, sharpe=3.0)
+        assert d["leverage"] == MIN_LEVERAGE
+        assert d["state"] == "UNMEASURED"
+
+
+def test_WITHOUT_A_SHARPE_ONLY_SURVIVAL_BINDS_AND_IT_SAYS_SO() -> None:
+    """Half the calculation missing must be visible as missing, not silently dropped."""
+    d = choose(0.03)
+    assert d["kelly"] is None
+    assert d["binding_constraint"] in {"survival", "venue/ceiling"}
+
+
+def test_REALISED_VOL_IS_NONE_NOT_ZERO_WHEN_UNESTIMABLE() -> None:
+    """Zero divides into infinite leverage -- the one value a missing-data path would most
+    naturally produce is the one that must never appear."""
+    assert realised_vol([]) is None
+    assert realised_vol([0.01, 0.02]) is None
+    assert realised_vol([0.0] * 40) is None, "a flat series is not 0% vol, it is unmeasurable here"
+    v = realised_vol([0.01, -0.02, 0.03, -0.01, 0.02, -0.03, 0.01, 0.02])
+    assert v is not None and v > 0
+
+
+def test_THE_VENUE_CEILING_IS_NOT_A_RISK_PREFERENCE() -> None:
+    """It exists so the policy cannot emit an order the venue refuses -- a refused order at
+    rebalance time is an intent nobody notices."""
+    d = choose(0.002, sharpe=10.0, borrow_rate=0.0, k=0.5)
+    assert d["leverage"] <= VENUE_MAX_LEVERAGE
+
+
+def test_THE_DECISION_NEVER_PUBLISHES_A_NUMBER_WITHOUT_ITS_BASIS() -> None:
+    d = choose(0.03, sharpe=1.0)
+    for key in ("sigma", "survivable_move", "survival_leverage", "binding_constraint", "why"):
+        assert key in d, f"{key} missing -- a leverage published bare is half the trade"
+    assert "not a tail-risk control" in d["why"]
+
+
+def test_THE_SIGMA_ANNUALISATION_USES_A_365_DAY_YEAR() -> None:
+    """Crypto does not close. A 252-day year understates annual vol by ~20%, which overstates
+    Kelly by ~45% -- the error compounds in the direction that over-levers."""
+    d = choose(0.03, sharpe=1.0)
+    # the field is rounded for reporting, so compare at the reporting precision
+    assert abs(d["sigma_annual"] - 0.03 * math.sqrt(365.0)) < 1e-4

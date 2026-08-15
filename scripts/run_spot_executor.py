@@ -235,6 +235,13 @@ def main() -> int:
 
     budget = equity * float(args.max_run_frac)
     spent = 0.0
+    # WHAT IS ACTUALLY SPENDABLE, tracked down as orders fill. The target book is computed from
+    # EQUITY, which includes coins already held; the cash available to buy with is a different and
+    # smaller number. When they diverge -- and they always do, because the earlier legs were sized
+    # before the last fill moved prices -- the final leg asks for more than the wallet holds and
+    # the venue answers `-2010 Account has insufficient balance`. Measured 2026-08-15: two legs
+    # filled, ADA wanted $39.96 against $36.21 free, and the book sat two-thirds complete.
+    quote_free = float(held.get(args.quote, 0.0))
     for research_sym, frac in sorted(targets.items(), key=lambda kv: -kv[1]):
         sym = retarget(research_sym, args.quote)
         want_usd = frac * equity
@@ -260,6 +267,25 @@ def main() -> int:
                           "silently; the position stays where it is")
             rep["refused"].append(row)
             continue
+        if delta > 0 and delta > quote_free:
+            # CLAMP TO THE CASH, rather than letting the venue reject the whole leg. A slightly
+            # underweight position is a book; a rejected order is a hole. The shortfall is stated
+            # so nobody reads the filled weight as the intended one.
+            short = delta - quote_free
+            if quote_free < min_notional:
+                row["why"] = (f"wants ${delta:,.2f} but only ${quote_free:,.2f} of {args.quote} is "
+                              f"free, which is below the venue minimum ${min_notional:,.2f}. "
+                              "Nothing placeable; the leg stays empty and says so")
+                rep["refused"].append(row)
+                continue
+            row["clamped_from"] = round(delta, 2)
+            row["shortfall_usd"] = round(short, 2)
+            row["why_clamped"] = (
+                f"sized to the ${quote_free:,.2f} of {args.quote} actually free rather than the "
+                f"${delta:,.2f} the target asked for -- ${short:,.2f} short, so this leg lands "
+                "UNDERWEIGHT and the next rebalance closes the gap")
+            delta = quote_free
+            row["delta_usd"] = round(delta, 2)
         if delta > 0 and spent + delta > budget:
             row["why"] = (f"would spend ${spent + delta:,.2f} of a ${budget:,.2f} run budget. "
                           "The cap bounds how wrong ONE bad targets file can be, so it refuses "
@@ -284,11 +310,13 @@ def main() -> int:
             rep["placed"].append(row)
             if side == "BUY":
                 spent += delta
+                quote_free -= delta    # or the printed plan spends the same cash on every leg
             continue
         try:
             if side == "BUY":  # place=True here, so a rail is known clear
                 res = live.place_market_quote(sym, "BUY", round(delta, 2), cycle=cycle)
                 spent += delta
+                quote_free -= delta        # the next leg sees what this one left behind
             else:
                 # SELLING IS SIZED IN BASE, not quote: quoteOrderQty on a SELL asks the venue to
                 # raise a dollar amount, and if the holding is a hair short the whole order fails.
