@@ -22,12 +22,17 @@
     "maxDD_R": -18.5, "annualized_SR": 2.34, "trades_per_yr": 331
   },
   "sizing_model": {
-    "lot_per_sleeve": 0.01,
-    "risk_per_trade_pct_equity": 2.7,
-    "max_concurrent_exposure_pct": 10.8,
-    "model_annual_return_arithmetic": "~116%/yr",
-    "model_worst_historical_DD": "-51% (18.5R)",
-    "scaling": "linear in lot; keep risk_pct constant as equity grows (lot ~ equity). At 10k EUR use ~0.16 lots/sleeve."
+    "method": "block bootstrap (25-trade blocks), 30k sims/yr, fixed-fractional",
+    "study": "docs/SIZING_STUDY.md (2026-08-16, MANDATE_NET_COMPOUNDING)",
+    "lot_per_sleeve": "AUTO: q=5.5% of current equity, rounded to 0.01, floor 0.01 (currently 0.02 at 633.89 EUR)",
+    "risk_per_trade_pct_equity": 5.5,
+    "max_concurrent_exposure_pct": 22,
+    "base_medCAGR": "~566%",
+    "stress_medCAGR_edge_halved": "~170%",
+    "P_ruin_at_0.02": 0.0000,
+    "P_DD_gt_50_pct": 0.41,
+    "model_worst_historical_DD_pct": "-51% (18.5R)",
+    "scaling": "linear in lot; gateway auto-scales lot from equity every cycle"
   },
   "gates_passed": [
     "t > 2 (combined t=6.82)",
@@ -49,12 +54,24 @@
   ],
   "gateway": {
     "armed": true,
-    "lot": 0.01,
+    "lot": "auto (q=5.5% equity; 0.02 at current equity)",
     "bracket_hours_utc": [7, 13, 14, 17],
     "cancel_unfilled": "20:30 UTC",
     "force_close_positions": "19:30 UTC (never across broker 21:00-22:00 pause)",
     "weekend_guard": "idles on stale tick",
     "restart_recovery": "price-matched adoption of pending orders"
+  },
+  "hunt5_2026-08-16": {
+    "deployed_note": "no changes deployed; filters are candidates pending WF OOS",
+    "trend_filter": "DEAD - all 4 windows (t<=0.97); edge is symmetric, both bracket legs matter",
+    "promising_candidates": {
+      "range_large_asia": "exp 0.163R t=5.63 PF 1.57 maxDD -8.3R",
+      "range_large_ny_open": "exp 0.161R t=5.35 PF 1.58 maxDD -7.4R",
+      "vol_high_asia": "exp 0.190R t=5.11 PF 1.64 maxDD -8.0R",
+      "vol_low_ny_open": "exp 0.205R t=4.72 maxDD -11.6R"
+    },
+    "dow_diagnostic": "all dows positive except Wednesday afternoon (exp 0.007, t=0.15) - candidate skip rule, needs WF",
+    "next": "WF OOS + cost stress + param robustness on candidates before any deploy"
   },
   "pending_human_action": "Enable 'Allow algorithmic trading' in VIG terminal (Tools > Options > Expert Advisors). Without it orders return retcode 10017.",
   "crypto_policy": "RESEARCH FROZEN: no new crypto alphas or execution work. Exchange data feeds (funding/OI/liquidations) retained as INFORMATION INPUTS only. CASHCARRY_KILL latched. Knowledge stays in repo.",

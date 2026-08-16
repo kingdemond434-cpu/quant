@@ -319,6 +319,9 @@ def family_session_range_breakout(
     ttl_bars: int = 12,
     rr: float = 2,
     spread_gate: bool = False,
+    trend_filter: str = "none",
+    range_filter: str = "all",
+    vol_filter: str = "all",
 ) -> list[Signal]:
     """Session-range breakout as a resting bracket.
 
@@ -330,6 +333,15 @@ def family_session_range_breakout(
 
     spread_gate: skip days whose current spread is above its own 96-bar median
     (tighter-cost subset of the same pattern).
+
+    trend_filter="aligned": keep only the leg aligned with the EMA20 slope at
+    signal time (buy leg if slope >= 0, sell leg otherwise) - one-sided.
+
+    range_filter="small"/"large": trade only days whose range span is below /
+    above the rolling 20-day median span.
+
+    vol_filter="low"/"high": trade only days whose ATR is below / above the
+    rolling 200-bar ATR median.
     """
     h1 = _h1(df)
     atr = _atr(h1, atr_n)
@@ -344,6 +356,10 @@ def family_session_range_breakout(
         window = h1.loc[(h1["hour"] >= range_start) & (h1["hour"] < range_end)]
         signal_hour = signal_at if signal_at is not None else range_end
     range_by_day = window.groupby("date").agg(hi=("high", "max"), lo=("low", "min"))
+    span_by_day = (range_by_day["hi"] - range_by_day["lo"]).rename("span")
+    span_med = span_by_day.rolling(20, min_periods=10).median()
+    atr_med = atr.rolling(200, min_periods=60).median()
+    ema20 = h1["close"].ewm(span=20, min_periods=10).mean()
     signals: list[Signal] = []
     for i in range(1, len(h1) - 2):
         ts = h1.index[i]
@@ -365,13 +381,29 @@ def family_session_range_breakout(
         span = hi - lo
         if span <= 0:
             continue
+        sm2 = span_med.get(key, np.nan)
+        if range_filter == "small" and not (np.isnan(sm2) or span < sm2):
+            continue
+        if range_filter == "large" and not (np.isnan(sm2) or span > sm2):
+            continue
+        am = atr_med.iloc[i]
+        if vol_filter == "low" and not (np.isnan(am) or a < am):
+            continue
+        if vol_filter == "high" and not (np.isnan(am) or a > am):
+            continue
+        slope = 0.0
+        if trend_filter == "aligned":
+            if i >= 5:
+                slope = float(ema20.iloc[i] - ema20.iloc[i - 4])
         dist = max(1.2 * a, span)
-        signals.append(Signal(time=ts, side=1, stop=hi - dist, target=hi + dist * rr,
-                              ttl_bars=ttl_bars, tag="session_range_breakout",
-                              trigger=hi, wait_bars=wait_bars))
-        signals.append(Signal(time=ts, side=-1, stop=lo + dist, target=lo - dist * rr,
-                              ttl_bars=ttl_bars, tag="session_range_breakout",
-                              trigger=lo, wait_bars=wait_bars))
+        if trend_filter != "aligned" or slope >= 0:
+            signals.append(Signal(time=ts, side=1, stop=hi - dist, target=hi + dist * rr,
+                                  ttl_bars=ttl_bars, tag="session_range_breakout",
+                                  trigger=hi, wait_bars=wait_bars))
+        if trend_filter != "aligned" or slope < 0:
+            signals.append(Signal(time=ts, side=-1, stop=lo + dist, target=lo - dist * rr,
+                                  ttl_bars=ttl_bars, tag="session_range_breakout",
+                                  trigger=lo, wait_bars=wait_bars))
     return signals
 
 

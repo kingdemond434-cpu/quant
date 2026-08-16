@@ -18,12 +18,24 @@ the broker's daily 21:00-22:00 UTC trading pause.
 ## Numbers (2018-2026 dense sample, costs inside R)
 
 - Combined: n=2,812, exp +0.127R, t=6.82, PF 1.37, SR 2.34, maxDD -18.5R
-- Model: ~116%/yr arithmetic at 0.01 lot/sleeve (2.7% risk per trade),
-  worst historical DD -51%
-- Scaling is linear in lot; at 10k EUR use ~0.16 lots/sleeve for the same
-  risk profile
-- Forward validation starts **Monday 2026-08-17 07:00 UTC** — 50 live trades
-  + 14 days before scaling
+- Sizing per **MANDATE_NET_COMPOUNDING** (maximize robust geometric growth,
+  drawdown is acceptable, ruin is not): q = 5.5% of equity per trade
+  (auto-lot, currently 0.02 at 633.89 EUR). Base medCAGR ~566%, stress
+  (edge halved, vol x1.3) ~170%, P(ruin) ~ 0.0000, P(DD>50%) = 41% accepted.
+  Full study: `docs/SIZING_STUDY.md`.
+- Forward validation starts **Monday 2026-08-17 07:00 UTC** - 50 live trades
+  + 14 days before scaling.
+
+## Hunt #5 (2026-08-16) - filter variants
+
+- **trend_filter: DEAD** on all 4 windows (t <= 0.97). The edge is symmetric -
+  both bracket legs matter. Do not resurrect.
+- Promising candidates (need WF OOS + cost stress before deploy):
+  range_large asia (0.163R t=5.63, maxDD -8.3R), range_large ny_open
+  (0.161R t=5.35), vol_high asia (0.190R t=5.11), vol_low ny_open
+  (0.205R t=4.72).
+- DOW diagnostic: all weekdays positive except Wednesday afternoon
+  (exp +0.007R, t=0.15) - possible skip rule, needs walk-forward confirmation.
 
 ## Gates the edge passed
 

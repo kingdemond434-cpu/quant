@@ -36,12 +36,23 @@ TERMINAL = r"C:\Program Files\VIG Group MT5 Terminal\terminal64.exe"
 SYMBOL = "XAUUSD"
 MAGIC = 341953
 
-LOT = 0.01              # per bracket; risk ~2.7% of balance each
+LOT = 0.02              # per bracket; mandate-optimal q=5.5% (sizing study 2026-08-16)
+Q_OPT = 0.055           # risk fraction of equity per trade (robust geometric optimum)
+DIST_USD = 19.1         # ~1.2xATR stop distance (USD/oz), used for auto lot scaling
+CONTRACT_OZ = 100
+FX_EUR = 0.92
 RR = 2.0
 ATR_N = 20
 TTL_BARS = 12
 CANCEL_HOUR = 20.5      # cancel unfilled brackets at 20:30 UTC
 CLOSE_HOUR = 19.5       # force-close positions at 19:30 UTC
+
+
+def auto_lot(equity: float) -> float:
+    """Fixed-fractional sizing: q_opt of equity per trade, rounded to 0.01."""
+    lot = Q_OPT * equity / (DIST_USD * CONTRACT_OZ * FX_EUR)
+    lot = round(lot / 0.01) * 0.01
+    return float(min(max(lot, 0.01), 5.0))
 
 # (label, signal_hour, range window)  range None => [0, signal_hour)
 WINDOWS = [
@@ -119,6 +130,7 @@ def bracket_spec(hi: float, lo: float, a: float, tick: float) -> dict:
 
 
 def place_bracket(st: dict, spec: dict, window: str) -> dict:
+    lot = st.get("lot") or LOT
     if not st["armed"]:
         log(f"SHADOW [{window}] would place bracket: {json.dumps(spec, default=str)}")
         return {"shadow": True, "orders": []}
@@ -128,7 +140,7 @@ def place_bracket(st: dict, spec: dict, window: str) -> dict:
         req = {
             "action": mt5.TRADE_ACTION_PENDING,
             "symbol": SYMBOL,
-            "volume": LOT,
+            "volume": lot,
             "type": mt5.ORDER_TYPE_BUY_STOP if side == "buy_stop" else mt5.ORDER_TYPE_SELL_STOP,
             "price": s["price"],
             "sl": s["sl"],
@@ -202,6 +214,10 @@ def main() -> None:
         log("no tick; market likely closed")
         mt5.shutdown()
         return
+    equity = float(mt5.account_info().equity)
+    lot = auto_lot(equity)
+    st["lot"] = lot
+    st["equity"] = round(equity, 2)
 
     tnow = pd.Timestamp(tick.time, unit="s", tz="UTC")
     today = tnow.date()

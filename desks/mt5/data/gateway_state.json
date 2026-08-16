@@ -24,7 +24,7 @@
   },
   "position": null,
   "last_bracket_date": "2026-08-14",
-  "last_reconcile": "2026-08-16T15:15:51+00:00",
+  "last_reconcile": "2026-08-16T15:50:48+00:00",
   "bracket_cancelled": true,
   "pending": null,
   "brackets": {
@@ -160,5 +160,7 @@
         ]
       }
     }
-  }
+  },
+  "lot": 0.06,
+  "equity": 1833.89
 }
