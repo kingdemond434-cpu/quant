@@ -31,35 +31,35 @@ import pandas as pd
 
 from libs.data.instruments import InstrumentSpec, asset_class_for_group, register_instrument
 from libs.data.lake import Layer, ParquetLake
+from libs.data.mt5_research import LIQUID_INTRADAY_CORE, research_session_verdict
 from libs.data.schema import BAR_COLUMNS
 from libs.data.timeframe import Timeframe
 
 # Liquid, research-relevant core that also gets intraday (H1) history. Everything else is D1 only.
-_H1_CORE = (
-    "EURUSD", "GBPUSD", "USDJPY", "USDCHF", "AUDUSD", "USDCAD", "NZDUSD",
-    "EURJPY", "GBPJPY", "EURGBP", "AUDJPY", "EURAUD",
-    "XAUUSD", "XAGUSD", "XTIUSD", "XBRUSD", "XNGUSD",
-    "US500", "NAS100", "US30", "US2000", "GER40", "UK100", "JPN225", "USDX",
-    "BTCUSD", "ETHUSD",
-)
 _OUT = Path("reports/data_coverage.json")
 _MAXBARS = 100_000
 
 
-def _connect(expected_server: str = ""):  # type: ignore[no-untyped-def]
+def _connect(
+    expected_server: str = "",
+    *,
+    terminal_path: str = "",
+    allow_readonly_live: bool = False,
+):  # type: ignore[no-untyped-def]
     import MetaTrader5 as mt5
 
-    if not mt5.initialize():
+    initialized = mt5.initialize(terminal_path) if terminal_path else mt5.initialize()
+    if not initialized:
         raise SystemExit(f"MT5 initialize failed: {mt5.last_error()}")
     acct = mt5.account_info()
-    if acct is None or int(acct.trade_mode) != 0:
+    term = mt5.terminal_info()
+    verdict = research_session_verdict(
+        acct, term, expected_server=expected_server, allow_readonly_live=allow_readonly_live
+    )
+    if not verdict.allowed:
         mt5.shutdown()
-        raise SystemExit("refusing to run: not connected to a DEMO account")
-    # Reproducibility guard: initialize() can silently attach to a different running terminal.
-    if expected_server and acct.server != expected_server:
-        mt5.shutdown()
-        raise SystemExit(f"wrong terminal: got {acct.server!r}, expected {expected_server!r}")
-    print(f"connected: server={acct.server} trade_mode=DEMO maxbars={mt5.terminal_info().maxbars}")
+        raise SystemExit(f"refusing MT5 research session: {verdict.mode}: {verdict.reason}")
+    print(f"connected: server={acct.server} mode={verdict.mode} maxbars={term.maxbars}")
     return mt5
 
 
@@ -114,15 +114,30 @@ def main() -> None:
     parser.add_argument("--start", default="2000-01-01", help="earliest bar date to request")
     parser.add_argument("--expected-server", default="",
                         help="assert MT5 connected to this server (reproducibility guard)")
+    parser.add_argument("--terminal", default="", help="exact MT5 terminal executable")
+    parser.add_argument(
+        "--allow-readonly-live", action="store_true",
+        help="permit a server-pinned investor login only when account+terminal trading are disabled",
+    )
     args = parser.parse_args()
 
     start = datetime.fromisoformat(args.start).replace(tzinfo=UTC)
     want_tf = [Timeframe(t.strip()) for t in args.timeframes.split(",") if t.strip()]
     group_filter = {g.strip() for g in args.groups.split(",") if g.strip()}
 
-    mt5 = _connect(args.expected_server)
+    mt5 = _connect(
+        args.expected_server,
+        terminal_path=args.terminal,
+        allow_readonly_live=args.allow_readonly_live,
+    )
     lake = ParquetLake(args.base)
-    tf_map = {Timeframe.D1: mt5.TIMEFRAME_D1, Timeframe.H1: mt5.TIMEFRAME_H1}
+    tf_map = {
+        Timeframe.D1: mt5.TIMEFRAME_D1,
+        Timeframe.H4: mt5.TIMEFRAME_H4,
+        Timeframe.H1: mt5.TIMEFRAME_H1,
+        Timeframe.M15: mt5.TIMEFRAME_M15,
+        Timeframe.M5: mt5.TIMEFRAME_M5,
+    }
 
     symbols = list(mt5.symbols_get())
     if group_filter:
@@ -148,7 +163,7 @@ def main() -> None:
                 InstrumentSpec(symbol=name, asset_class=ac, description=sym.description or name)
             )
             for tf in want_tf:
-                if tf is Timeframe.H1 and name not in _H1_CORE:
+                if tf is not Timeframe.D1 and name not in LIQUID_INTRADAY_CORE:
                     continue
                 rates = _fetch(mt5, name, tf_map[tf], _MAXBARS, args.tries, start)
                 if rates is None:
@@ -172,14 +187,15 @@ def main() -> None:
     _OUT.write_text(json.dumps(coverage, indent=2), "utf-8")
 
     d1 = [c for c in coverage if c["timeframe"] == "D1" and c["bars"]]
-    h1 = [c for c in coverage if c["timeframe"] == "H1" and c["bars"]]
     by_class: dict[str, int] = {}
     for c in d1:
         by_class[str(c["asset_class"])] = by_class.get(str(c["asset_class"]), 0) + 1
     deepest = sorted(d1, key=lambda c: int(c["bars"]), reverse=True)[:5]  # type: ignore[arg-type]
     print(f"\nINGEST COMPLETE -> {_OUT}")
     print(f"D1 datasets with data: {len(d1)} | by class: {by_class}")
-    print(f"H1 datasets with data: {len(h1)}")
+    for tf in want_tf:
+        measured = [c for c in coverage if c["timeframe"] == tf.value and c["bars"]]
+        print(f"{tf.value} datasets with data: {len(measured)}")
     if deepest:
         print("deepest D1 history:")
         for c in deepest:

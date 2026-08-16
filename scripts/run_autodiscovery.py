@@ -32,6 +32,7 @@ from libs.autodiscovery.reports import (
     survivor_report,
 )
 from libs.autodiscovery.validation import SESSION_DAYS_PER_YEAR
+from libs.data.mt5_research import LIQUID_INTRADAY_CORE, research_session_verdict
 from libs.data.timeframe import Timeframe
 from libs.store.connection import Database
 from libs.store.migrations import run_migrations
@@ -62,19 +63,28 @@ def _mt5_cost_provider(mt5):  # type: ignore[no-untyped-def]
     return cost_for
 
 
-def _mt5_provider(timeframe: str, bars: int, expected_server: str = ""):
+def _mt5_provider(
+    timeframe: str,
+    bars: int,
+    expected_server: str = "",
+    *,
+    terminal_path: str = "",
+    allow_readonly_live: bool = False,
+):
     import MetaTrader5 as mt5
 
-    if not mt5.initialize():
+    initialized = mt5.initialize(terminal_path) if terminal_path else mt5.initialize()
+    if not initialized:
         raise SystemExit(f"MT5 initialize failed: {mt5.last_error()}")
     acct = mt5.account_info()
-    if acct is None or int(acct.trade_mode) != 0:
+    term = mt5.terminal_info()
+    verdict = research_session_verdict(
+        acct, term, expected_server=expected_server, allow_readonly_live=allow_readonly_live
+    )
+    if not verdict.allowed:
         mt5.shutdown()
-        raise SystemExit("refusing to run: not connected to a DEMO account")
-    if expected_server and acct.server != expected_server:
-        mt5.shutdown()
-        raise SystemExit(f"wrong terminal: got {acct.server!r}, expected {expected_server!r}")
-    print(f"connected: server={acct.server} trade_mode=DEMO")
+        raise SystemExit(f"refusing MT5 research session: {verdict.mode}: {verdict.reason}")
+    print(f"connected: server={acct.server} mode={verdict.mode}")
     tf = getattr(mt5, f"TIMEFRAME_{timeframe}", mt5.TIMEFRAME_H1)
 
     def provider(symbol: str) -> MarketSeries | None:
@@ -94,8 +104,8 @@ def _mt5_provider(timeframe: str, bars: int, expected_server: str = ""):
     return provider
 
 
-def _write_reports(store: CandidateStore) -> None:
-    _OUT.mkdir(parents=True, exist_ok=True)
+def _write_reports(store: CandidateStore, out: Path = _OUT) -> None:
+    out.mkdir(parents=True, exist_ok=True)
     reports = {
         "research_report": research_report(store),
         "failure_analysis_report": failure_analysis_report(store),
@@ -105,8 +115,8 @@ def _write_reports(store: CandidateStore) -> None:
         "pipeline_health_report": pipeline_health_report(store),
     }
     for name, payload in reports.items():
-        (_OUT / f"{name}.json").write_text(json.dumps(payload, indent=2), "utf-8")
-    print(f"reports written to {_OUT}/")
+        (out / f"{name}.json").write_text(json.dumps(payload, indent=2), "utf-8")
+    print(f"reports written to {out}/")
 
 
 def main() -> None:
@@ -121,15 +131,35 @@ def main() -> None:
     parser.add_argument("--families", default="", help="comma-separated families; empty = all 12")
     parser.add_argument("--expected-server", default="",
                         help="assert MT5 connected to this server (reproducibility guard)")
+    parser.add_argument("--terminal", default="", help="exact MT5 terminal executable")
+    parser.add_argument(
+        "--allow-readonly-live", action="store_true",
+        help="permit a server-pinned investor login only when account+terminal trading are disabled",
+    )
+    parser.add_argument(
+        "--universe", choices=("explicit", "mt5-liquid-core"), default="explicit",
+        help="use --symbols or the canonical liquid MT5 cross-asset research universe",
+    )
+    parser.add_argument("--report-dir", default=str(_OUT))
     args = parser.parse_args()
-    symbols = [s.strip() for s in args.symbols.split(",") if s.strip()]
+    symbols = (
+        list(LIQUID_INTRADAY_CORE)
+        if args.universe == "mt5-liquid-core"
+        else [s.strip() for s in args.symbols.split(",") if s.strip()]
+    )
     from libs.autodiscovery.models import Family
 
     families = [Family(f.strip()) for f in args.families.split(",") if f.strip()] or None
 
     db = Database(Path(args.db))
     run_migrations(db, MIGRATIONS)
-    provider = _mt5_provider(args.timeframe, args.bars, args.expected_server)
+    provider = _mt5_provider(
+        args.timeframe,
+        args.bars,
+        args.expected_server,
+        terminal_path=args.terminal,
+        allow_readonly_live=args.allow_readonly_live,
+    )
     import MetaTrader5 as mt5  # already initialized by _mt5_provider
 
     # THE ANNUALISER MUST BE THE BARS ACTUALLY FETCHED (R0086). `_mt5_provider` resolves the
@@ -160,7 +190,7 @@ def main() -> None:
             done += 1
             print(f"[cycle {done}] tested={result.tested} skipped_dup={result.skipped_duplicate} "
                   f"survivors={result.survivors} rejected={result.rejected}")
-            _write_reports(lab.store)
+            _write_reports(lab.store, Path(args.report_dir))
             if result.survivors == 0:
                 print("  zero survivors this cycle (honest result; nothing promoted).")
             if args.once or (cycles_target and done >= cycles_target):

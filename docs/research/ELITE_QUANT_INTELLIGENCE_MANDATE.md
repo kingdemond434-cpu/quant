@@ -29,6 +29,22 @@ TESTABLE MECHANISM → COMPARE WITH CURRENT DESK → GAP → REPRODUCE → FALSI
 DESCENDANTS → CANONICAL EMPIRICAL TEST → CAPACITY → PORTFOLIO CONSEQUENCE → LIVE/SHADOW EVIDENCE →
 FAILURE/SUCCESS MEMORY → RESEARCH-PROCESS IMPROVEMENT → NEW SEARCH → REPEAT WITHOUT FIXED END.
 
+## MT5 cross-asset priority (standing addition, 2026-08-16)
+
+The entire intelligence function treats the liquid MT5/broker universe as a first-class research
+frontier alongside crypto: gold and silver, major and cross FX, equity indices, energy and other
+lawfully available broker instruments. Every hunter and miner must search for transferable
+mechanisms, data, code, failed strategies, costs, session effects, macro/positioning information,
+cross-asset structure and execution evidence that can be tested on this universe. Useful crypto
+mechanisms must be tested for MT5 portability, and useful MT5 mechanisms must be tested for crypto
+portability when the market structure permits it.
+
+This is an opportunity priority, not a hard-coded capital split and not authority to manufacture
+an all-MT5 conclusion. Allocation between MT5, crypto and new universes remains dynamic under
+validated marginal E[log W], independence, capacity, lawful access, costs and survival. Research
+uses demo or server-pinned investor/read-only accounts only. External claims and high leverage
+never bypass the canonical empirical, shadow, portfolio, promotion or deterministic risk gates.
+
 ## The clauses that bind hardest, and that a fresh session most often violates
 
 These are extracted for the index; the full text below is authoritative and is not a summary.

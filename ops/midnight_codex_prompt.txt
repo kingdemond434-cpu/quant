@@ -56,6 +56,20 @@ L2/MOAT FLOOR:
   near-survivor/survivor disposition, independence, zero-capital paper shadow, portfolio learning using
   existing recorder/moat/hypothesis/validation/admission organs.
 
+MT5 CROSS-ASSET FLOOR:
+- Consume reports/mt5_frontier_windows.json, reports/data_coverage.json,
+  reports/autodiscovery/mt5_*/ and web/crossasset_shadow.json. Treat missing, failed or stale
+  read-only broker data as a conversion defect: repair collection/publication/consumption, or
+  persist the exact external dependency and redirect capacity without claiming coverage.
+- Hunt and test gold/silver, FX, index, energy and other liquid MT5 mechanisms across D1/H4/H1/M15,
+  including session, trend/reversal, cross-asset, macro/positioning, carry/roll, liquidity/cost and
+  crypto-to-MT5 portability descendants. Convert evidence through the existing hypothesis,
+  validation, near-survivor, shadow, independence and portfolio organs; never create an MT5-only
+  survivor authority or parallel factory.
+- Rank MT5 versus crypto and every other frontier dynamically by marginal validated E[log W] per
+  full conversion cost. Do not enforce a fixed market allocation and do not infer edge from
+  leverage. Read-only research may never arm capital or bypass deterministic survival gates.
+
 OPEN-WORLD DISCOVERY FLOOR:
 - Maximize depth and open-world coverage across markets, assets, venues, horizons, regimes,
   participants, mechanisms, data modalities, languages/geographies, research/search methods,
