@@ -2,7 +2,7 @@ param(
     [string]$CodeRoot = "C:\Users\dell\quant-conversion-fix",
     [string]$StateRoot = "C:\Users\dell\quant-platform",
     [string]$Python = "C:\Users\dell\AppData\Local\Programs\Python\Python312\python.exe",
-    [string]$Terminal = "C:\Users\dell\gold-desk\mt5_readonly\terminal64.exe",
+    [string]$Terminal = "C:\Program Files\VIG Group MT5 Terminal\terminal64.exe",
     [string]$ExpectedServer = "VantageMarkets-Live 14",
     [string]$SshKey = "$env:USERPROFILE\.ssh\id_ed25519",
     [string]$Vps = "quant@95.216.191.70"
@@ -15,7 +15,7 @@ $lockPath = Join-Path $StateRoot "data\.mt5_frontier_windows.lock"
 $started = [DateTimeOffset]::UtcNow
 $steps = [ordered]@{}
 $lock = $null
-$telemetryWasRunning = $false
+$goldDeskWasRunning = $false
 
 New-Item -ItemType Directory -Force (Split-Path $statusPath), (Split-Path $logPath), (Split-Path $lockPath) | Out-Null
 
@@ -77,24 +77,24 @@ try {
     Set-Location $StateRoot
     Write-FrontierStatus "RUNNING" "read-only MT5 collection and research started"
 
-    # MetaTrader's Python bridge permits one client per terminal. Pause only the read-only account
-    # telemetry worker, reuse its investor terminal, and restore it before publication. The gold
-    # signal desk uses a different terminal and remains continuously active.
-    $telemetry = Get-CimInstance Win32_Process | Where-Object {
-        $_.Name -like "pythonw*.exe" -and $_.CommandLine -like "*-m golddesk.telemetry_service*"
+    # MetaTrader's Python bridge permits one client per terminal. The installed VIG terminal is
+    # the verified investor session owned by the PAPER gold sensor. Pause that worker, reuse the
+    # same read-only session, and restore its supervisor before publication.
+    $goldDesk = Get-CimInstance Win32_Process | Where-Object {
+        $_.Name -like "pythonw*.exe" -and $_.CommandLine -like "*-m golddesk.service*"
     }
-    $telemetrySupervisor = Get-CimInstance Win32_Process | Where-Object {
-        $_.Name -eq "cmd.exe" -and $_.CommandLine -like "*run_telemetry.bat*"
+    $goldDeskSupervisor = Get-CimInstance Win32_Process | Where-Object {
+        $_.Name -eq "cmd.exe" -and $_.CommandLine -like "*run_desk.bat*"
     }
-    if ($telemetry -or $telemetrySupervisor) {
-        $telemetryWasRunning = $true
-        if ($telemetrySupervisor) {
-            $telemetrySupervisor | ForEach-Object {
+    if ($goldDesk -or $goldDeskSupervisor) {
+        $goldDeskWasRunning = $true
+        if ($goldDeskSupervisor) {
+            $goldDeskSupervisor | ForEach-Object {
                 Start-Process taskkill.exe -ArgumentList "/PID", $_.ProcessId, "/T", "/F" `
                     -Wait -WindowStyle Hidden
             }
         } else {
-            $telemetry | ForEach-Object {
+            $goldDesk | ForEach-Object {
                 Start-Process taskkill.exe -ArgumentList "/PID", $_.ProcessId, "/T", "/F" `
                     -Wait -WindowStyle Hidden
             }
@@ -123,11 +123,11 @@ try {
         }
     }
 
-    if ($telemetryWasRunning) {
+    if ($goldDeskWasRunning) {
         Start-Process -FilePath "cmd.exe" -ArgumentList "/c", `
-            '"C:\Users\dell\gold-desk\scripts\run_telemetry.bat"' -WindowStyle Hidden
-        $telemetryWasRunning = $false
-        $steps["telemetry_restart"] = [ordered]@{state="PASS"; finished_at=[DateTimeOffset]::UtcNow.ToString("o")}
+            '"C:\Users\dell\gold-desk\scripts\run_desk.bat"' -WindowStyle Hidden
+        $goldDeskWasRunning = $false
+        $steps["gold_desk_restart"] = [ordered]@{state="PASS"; finished_at=[DateTimeOffset]::UtcNow.ToString("o")}
     }
 
     # Publish only the broker-universe research lake and compact evidence, never credentials or
@@ -151,9 +151,9 @@ try {
     Add-Content -Path $logPath -Value "[$([DateTimeOffset]::UtcNow.ToString('o'))] FAIL: $($_.Exception.Message)"
     exit 1
 } finally {
-    if ($telemetryWasRunning) {
+    if ($goldDeskWasRunning) {
         Start-Process -FilePath "cmd.exe" -ArgumentList "/c", `
-            '"C:\Users\dell\gold-desk\scripts\run_telemetry.bat"' -WindowStyle Hidden
+            '"C:\Users\dell\gold-desk\scripts\run_desk.bat"' -WindowStyle Hidden
     }
     if ($lock) { $lock.Dispose() }
 }
