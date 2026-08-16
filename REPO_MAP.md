@@ -129,3 +129,15 @@ as deprecated is how a working path gets deleted by a future cleanup.
    `autodiscovery.validation` wrapper.
 3. One **risk engine** facade over `libs/risk/*` consumed by the executor.
 4. A **crypto `MarketSeries` adapter** so the discovery factory + generators run on perps.
+
+## ACTIVE 2026-08-16: desks/mt5 - MT5 research desk (XAUUSD)
+
+- This is NOT the retired run_mt5_* scripts listed above. It is a NEW standalone
+  desk executing on the local Windows host (C:\\Users\\dell\\mt5-research); this
+  VPS directory is a visibility/coordination copy only - do not run it here.
+- Read desks/mt5/docs/MT5_DESK.md + MT5_DESK_STATE.json: armed gateway, 4
+  decorrelated daily breakout sleeves on XAUUSD, combined SR 2.34 backtest,
+  ~116%/yr model at 0.01 lot/sleeve, worst DD -51%.
+- Forward validation starts 2026-08-17 07:00 UTC (50 trades + 14 days gate).
+- Crypto desk policy: FROZEN (CASHCARRY_KILL latched); exchange data feeds
+  remain information inputs only. All new research is MT5.
