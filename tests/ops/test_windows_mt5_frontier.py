@@ -33,7 +33,8 @@ def test_mt5_frontier_restores_gold_sensor_after_exclusive_terminal_use() -> Non
     script = (ROOT / "ops" / "run_windows_mt5_frontier.ps1").read_text("utf-8")
     assert "golddesk.service" in script
     assert "run_desk.bat" in script
-    assert "Start-Process taskkill.exe" in script
+    assert "function Stop-ProcessTree" in script
+    assert "taskkill.exe" not in script
     assert "if ($goldDeskSupervisor)" in script
     assert "if ($goldDeskWasRunning)" in script
     assert "golddesk.telemetry_service" not in script

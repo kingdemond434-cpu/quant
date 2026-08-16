@@ -39,6 +39,22 @@ function Write-FrontierStatus([string]$state, [string]$reason) {
     Move-Item -Force $temp $statusPath
 }
 
+function Stop-ProcessTree([int]$rootPid) {
+    $snapshot = @(Get-CimInstance Win32_Process)
+    $ordered = New-Object System.Collections.Generic.List[int]
+    function Add-Children([int]$parentPid) {
+        foreach ($child in $snapshot | Where-Object { $_.ParentProcessId -eq $parentPid }) {
+            Add-Children $child.ProcessId
+            $ordered.Add([int]$child.ProcessId)
+        }
+    }
+    Add-Children $rootPid
+    $ordered.Add($rootPid)
+    foreach ($pidToStop in $ordered) {
+        Stop-Process -Id $pidToStop -Force -ErrorAction SilentlyContinue
+    }
+}
+
 function Run-Step([string]$name, [scriptblock]$action) {
     $stepStart = [DateTimeOffset]::UtcNow
     $stepLog = Join-Path $env:TEMP "mt5-$name-$([Guid]::NewGuid().ToString('N')).log"
@@ -92,13 +108,11 @@ try {
         $goldDeskWasRunning = $true
         if ($goldDeskSupervisor) {
             $goldDeskSupervisor | ForEach-Object {
-                Start-Process taskkill.exe -ArgumentList "/PID", $_.ProcessId, "/T", "/F" `
-                    -Wait -WindowStyle Hidden
+                Stop-ProcessTree $_.ProcessId
             }
         } else {
             $goldDesk | ForEach-Object {
-                Start-Process taskkill.exe -ArgumentList "/PID", $_.ProcessId, "/T", "/F" `
-                    -Wait -WindowStyle Hidden
+                Stop-ProcessTree $_.ProcessId
             }
         }
         Get-CimInstance Win32_Process -Filter "Name='terminal64.exe'" | Where-Object {
