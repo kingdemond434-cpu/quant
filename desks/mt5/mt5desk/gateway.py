@@ -47,7 +47,8 @@ RR = 2.0
 ATR_N = 20
 CANCEL_HOUR = 20.5      # cancel unfilled brackets at 20:30 UTC
 CLOSE_HOUR = 19.5       # force-close positions at 19:30 UTC
-PROMOTED_LOT = 0.01     # promoted sleeves start at minimum lot (ramp, not fixed)
+PROMOTED_MIN_EQUITY = 400.0  # EUR: below this, promoted sleeves stay dormant
+                             # (0.01 lot floor at small equity = >8.8% risk/trade)
 
 
 def promoted_lot(equity: float, live_n: int) -> float:
@@ -356,6 +357,10 @@ def main() -> None:
         save_state(st)
 
     sleeves = sleeve_set()
+    if equity < PROMOTED_MIN_EQUITY:
+        sleeves = [s for s in sleeves if s["name"].startswith("gold_")]
+        if load_sleeves():
+            log(f"equity {equity:.0f} < {PROMOTED_MIN_EQUITY:.0f}: promoted sleeves dormant")
     if st["last_bracket_date"] == day_key:
         for s in sleeves:
             if st["brackets"].get(s["name"]):
