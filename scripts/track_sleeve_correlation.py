@@ -72,7 +72,8 @@ from typing import Any
 
 import numpy as np
 
-from libs.research.sleeve_allocation import allocate, report as allocation_report
+from libs.research.sleeve_allocation import allocate
+from libs.research.sleeve_allocation import report as allocation_report
 
 #: Sleeve/mechanism return streams. One file per mechanism, or one file keyed by mechanism.
 #: Gitignored on purpose -- these are live results, not source.
