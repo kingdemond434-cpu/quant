@@ -1,0 +1,11 @@
+[Unit]
+Description=Deep mine priority X accounts 3x daily
+
+[Timer]
+OnCalendar=*-*-* 06:15:00
+OnCalendar=*-*-* 14:15:00
+OnCalendar=*-*-* 22:15:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
