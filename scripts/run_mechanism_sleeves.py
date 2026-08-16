@@ -145,6 +145,16 @@ SYMBOLS: tuple[str, ...] = (
     "XRPUSDT", "DOGEUSDT", "AVAXUSDT", "DOTUSDT", "MATICUSDT", "LTCUSDT",
     "ATOMUSDT", "UNIUSDT", "NEARUSDT", "APTUSDT", "ARBUSDT", "OPUSDT",
     "FILUSDT", "INJUSDT", "SUIUSDT", "TIAUSDT", "SEIUSDT", "AAVEUSDT",
+    # EXTENDED 2026-08-16. At $1,000 and 3x the previous 24-name list BOUND BEFORE CAPITAL DID,
+    # which put the ceiling back in a constant -- the exact defect deriving the universe was meant
+    # to remove. The list must always be longer than money can reach, so that `binding_constraint`
+    # reads CAPITAL and funding stays the only lever. Ordering is irrelevant: `select` ranks by
+    # measured liquidity and truncates, so a name that is thin or missing from the lake simply
+    # never gets picked rather than diluting anything.
+    "ETCUSDT", "XLMUSDT", "ALGOUSDT", "VETUSDT", "HBARUSDT", "ICPUSDT",
+    "FTMUSDT", "SANDUSDT", "MANAUSDT", "AXSUSDT", "GRTUSDT", "CRVUSDT",
+    "MKRUSDT", "LDOUSDT", "RUNEUSDT", "THETAUSDT", "EOSUSDT", "CAKEUSDT",
+    "GALAUSDT", "CHZUSDT", "ENSUSDT", "SNXUSDT", "COMPUSDT", "DYDXUSDT",
 )
 
 #: The venue floor a single leg must clear. Binance publishes per-symbol minimums; 5.0 is

@@ -137,3 +137,42 @@ class TestWideningIsNotDiversification:
         rep = U.select(("AUSDT",), equity_usd=10_000.0, leverage=1.0, book_frac=0.25,
                        n_sleeves=5, min_notional=5.0, history=_hist("AUSDT"))
         assert "NOT DIVERSIFICATION" in rep["breadth_note"]
+
+
+class TestTheCandidateListNeverBecomesTheCeiling:
+    """Deriving the universe from capital is pointless if a hardcoded LIST binds first. That is the
+    same defect wearing a different constant, and at $1,000/3x the original 24-name list hit it."""
+
+    def test_the_list_outreaches_capital_at_the_principals_stated_funding(self) -> None:
+        """$1,000 is the figure the principal stated on 2026-08-16, so that is the bar.
+
+        NOT AN UNBOUNDED CLAIM, AND THE LIMIT IS REAL RATHER THAN LAZY. Past roughly 50 names the
+        candidate list would be reaching into pairs too thin for the book to trade without moving
+        them, so at $2,000 and 3x it is LIQUIDITY that binds, not a constant nobody revisited.
+        That is a market fact and the correct thing for the universe to be limited by; a constant
+        is not. If the desk ever funds past that, the fix is a measured depth screen -- not more
+        tickers typed into a tuple.
+        """
+        import scripts.run_mechanism_sleeves as MS
+
+        n = len(MS.SLEEVES)
+        for equity, lev in ((1_000.0, 1.0), (1_000.0, 3.0)):
+            cap = U.capital_supports(equity, leverage=lev,
+                                     book_frac=MS.EQUAL_CLIP_FRAC * n, n_sleeves=n,
+                                     min_notional=MS.MIN_NOTIONAL_USD)
+            assert len(MS.SYMBOLS) > cap, (
+                f"at ${equity:,.0f} and {lev}x capital reaches {cap} symbols but the candidate "
+                f"list holds {len(MS.SYMBOLS)} -- the LIST is the ceiling, so funding has stopped "
+                "being the only lever and the constant is back")
+
+    def test_the_momentum_books_six_stay_at_the_front(self) -> None:
+        # A new mechanism tested on a different universe confounds the mechanism with the universe.
+        import scripts.run_mechanism_sleeves as MS
+
+        assert MS.SYMBOLS[:6] == ("BTCUSDT", "ETHUSDT", "BNBUSDT",
+                                  "SOLUSDT", "LINKUSDT", "ADAUSDT")
+
+    def test_candidates_are_unique(self) -> None:
+        import scripts.run_mechanism_sleeves as MS
+
+        assert len(set(MS.SYMBOLS)) == len(MS.SYMBOLS), "a duplicated candidate double-weights it"
