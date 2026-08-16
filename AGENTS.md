@@ -6,6 +6,7 @@ changed.
 
 Before non-trivial work, read completely:
 
+- `docs/MANDATE_NET_COMPOUNDING.md` — BINDING human mandate: maximize robust net geometric growth; high drawdown is acceptable if survivable, ruin is not; never under-size out of drawdown discomfort; applies to ALL desks
 - `docs/MASTER_QUANT_CONSTITUTION.md` — the single authoritative top-level operating constitution
 - `CLAUDE.md`
 - `docs/CONSTITUTION.md`

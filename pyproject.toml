@@ -90,7 +90,12 @@ src = ["libs", "app", "tests"]
 # refuses to deploy on a red gate, so scratch at the root silently disables auto-deploy for the
 # whole desk. Moved rather than deleted -- nothing here is mine to throw away -- and excluded so
 # the gate measures the codebase instead of the debris.
-exclude = ["scratch"]
+exclude = ["scratch", "desks/mt5"]
+# `desks/mt5` is the mirror copy of the MT5 research desk (executes on the local Windows host;
+# this copy is for visibility/coordination only). External code with its own host conventions
+# (MetaTrader5 import, Windows paths, legacy style) -- same treatment as scratch: the gate should
+# measure the platform codebase, not a mirrored desk. It is never executed here; see
+# desks/mt5/docs/MT5_DESK.md.
 
 [tool.ruff.lint]
 select = [
