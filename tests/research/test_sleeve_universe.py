@@ -176,3 +176,23 @@ class TestTheCandidateListNeverBecomesTheCeiling:
         import scripts.run_mechanism_sleeves as MS
 
         assert len(set(MS.SYMBOLS)) == len(MS.SYMBOLS), "a duplicated candidate double-weights it"
+
+
+class TestTheEmptyUniverseNamesTheRightCause:
+    """An empty universe has two causes with two OPPOSITE fixes -- send money, or collect data.
+    The first version blamed capital unconditionally, which on a $1,000 dry run reported the legs
+    as too small when capital reached ten symbols and the lake carried none. A diagnostic pointing
+    at the wrong lever is worse than none, because it gets acted on."""
+
+    def test_no_capital_says_CAPITAL(self) -> None:
+        rep = U.select(("AUSDT",), equity_usd=10.0, leverage=1.0, book_frac=0.25,
+                       n_sleeves=5, min_notional=5.0, history=_hist("AUSDT"))
+        assert rep["binding_constraint"] == "CAPITAL"
+        assert rep["why"].startswith("CAPITAL")
+
+    def test_no_history_says_DATA_and_that_money_will_not_help(self) -> None:
+        rep = U.select(("AUSDT", "BUSDT"), equity_usd=1_000.0, leverage=1.0, book_frac=0.25,
+                       n_sleeves=5, min_notional=5.0, history={})
+        assert rep["binding_constraint"] == "DATA"
+        assert rep["capital_supports"] > 0, "capital was fine; the message must not blame it"
+        assert "Sending more capital would change nothing" in rep["why"]

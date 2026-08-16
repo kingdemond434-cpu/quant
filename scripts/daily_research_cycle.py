@@ -133,6 +133,18 @@ _STEPS = [
     # Runs daily and reports UNMEASURED with its missing input NAMED until the event feed exists:
     # a screen that only starts running once its data arrives is a screen nobody remembers to run.
     ("index_recon_feed",  "scripts/collect_index_reconstitution.py", 180),
+    # THE LAKE MUST BE WIDER THAN THE MONEY CAN REACH, OR DATA BINDS INSTEAD OF CAPITAL.
+    # Measured 2026-08-16 on a $1,000 dry run: the sleeve universe wanted 10 symbols per sleeve at
+    # 1x and 30 at 3x, and the lake carried TEN symbols total -- 38 of 48 candidates had no history
+    # at all, so `select` would have returned an empty universe and every sleeve would have gone to
+    # cash on a fully funded account. Nothing refreshed the lake on a schedule; `ingest_crypto` had
+    # no cycle step.
+    #
+    # `--universe liquid` rather than a second hardcoded list: the venue's own liquidity ranking is
+    # the one source of truth, `select` ranks by measured depth anyway, and a second tuple of
+    # tickers here would drift out of step with the sleeve candidates exactly as silently as the
+    # first one did.
+    ("lake_ingest",       "scripts/ingest_crypto.py --universe liquid --max-symbols 60", 1800),
     ("index_recon",       "scripts/screen_index_reconstitution.py", 180),
     # THE HIGHEST-ORTHOGONALITY CLASS THE DESK HAS, AND NEITHER SCREEN RAN ON A SCHEDULE.
     # `screen_orderbook_state.py` carried a cron line in its own header marked "NOT wired here"

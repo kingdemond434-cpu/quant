@@ -134,12 +134,26 @@ def select(candidates: tuple[str, ...], *, equity_usd: float, leverage: float, b
     }
     if not chosen:
         rep["state"] = "NO-TRADEABLE-UNIVERSE"
-        rep["why"] = (
-            f"capital supports {cap} symbol(s) per sleeve and {len(eligible)} have the history. "
-            f"At ${equity_usd:,.2f} equity, {leverage:.2f}x and a {book_frac:.0%} slice across "
-            f"{n_sleeves} sleeves, a leg is worth less than the ${min_notional:,.2f} venue "
-            "minimum -- the sleeves will publish weights and place NOTHING. The capital "
-            "constraint as a number, rather than as a run of refused orders")
+        # NAME THE CAUSE THAT ACTUALLY BOUND. An empty universe has two completely different
+        # causes with two completely different fixes -- send money, or collect data -- and the
+        # first version of this message blamed capital unconditionally. Measured 2026-08-16 on a
+        # $1,000 dry run: capital reached ten symbols, the lake carried none, and the report said
+        # the legs were too small. That is a diagnostic pointing at the wrong lever, which is
+        # worse than no diagnostic because it gets acted on.
+        rep["binding_constraint"] = "CAPITAL" if cap == 0 else "DATA"
+        if cap == 0:
+            rep["why"] = (
+                f"CAPITAL: at ${equity_usd:,.2f} equity, {leverage:.2f}x and a {book_frac:.0%} "
+                f"slice across {n_sleeves} sleeves, a leg is worth less than the "
+                f"${min_notional:,.2f} venue minimum, so capital supports ZERO symbols. The "
+                f"sleeves will publish weights and place NOTHING. {len(eligible)} candidate(s) "
+                "have the history and are waiting on money")
+        else:
+            rep["why"] = (
+                f"DATA: capital supports {cap} symbol(s) per sleeve, but NONE of the "
+                f"{len(candidates)} candidates carries {MIN_HISTORY_DAYS}+ daily bars in the "
+                "lake. Money is not the constraint here -- run the lake backfill. Sending more "
+                "capital would change nothing")
         return rep
 
     binding = "CAPITAL" if cap <= len(eligible) else "DATA"
