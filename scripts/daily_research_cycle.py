@@ -171,6 +171,12 @@ _STEPS = [
     # once. Daily, so a regime where funding goes negative -- the case where perps actually win --
     # is caught rather than assumed away. Access under MiCA gates it before cost does.
     ("funding_vs_borrow", "scripts/compare_funding_vs_borrow.py", 120),
+    # CAN THE DESK SHORT AT ALL. Read-only. rho_bar 0.375 and the ~+17%/yr ceiling both follow
+    # from every sleeve being long crypto, and the desk concluded shorts were impossible by
+    # conflating MiCA's DERIVATIVES ban with an unbuilt order path. A cross-margin short borrows
+    # the BASE asset -- margin lending, not a derivative. Daily because borrow availability and
+    # base-asset rates move, and a short that is right about direction can still lose to carry.
+    ("short_capability",  "scripts/probe_short_capability.py", 120),
     ("paper_sleeve_spawner", "scripts/run_paper_sleeve_spawner.py", 600),
     ("paper_sleeve_forward", "scripts/run_paper_sleeve_forward.py", 600),
     ("live_ladder",       "scripts/run_live_ladder.py",      600),

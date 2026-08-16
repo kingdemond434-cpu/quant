@@ -238,6 +238,36 @@ def borrow_rate(asset: str = "USDC") -> tuple[float | None, str]:
                   "response shape may have changed; a rate cannot be inferred from its absence")
 
 
+def max_borrowable(asset: str) -> tuple[float | None, str]:
+    """How much of `asset` this account may borrow right now. None when the venue will not say.
+
+    **THE QUESTION THAT DECIDES WHETHER THIS DESK CAN SHORT AT ALL, AND IT HAS NEVER BEEN ASKED.**
+    A cross-margin short is not a derivative: it borrows the BASE asset and sells it, which is
+    margin lending on spot. The desk conflated that with the MiCA restriction on its FUTURES
+    account and concluded shorts were impossible -- so every fade mechanism in the playbook
+    (H1, H7, H11) journals a refusal instead of a trade, and rho sits at 0.375 because every
+    sleeve the book can hold is long crypto.
+
+    Whether the borrow is actually offered per asset is a fact the venue publishes and nobody
+    read. This reads it. It places nothing and authorises nothing.
+
+    NONE RATHER THAN ZERO on an unreadable answer: "the venue will not lend me this" and "we could
+    not ask" lead to different conclusions, and only one of them closes the question.
+    """
+    try:
+        raw = _signed("/sapi/v1/margin/maxBorrowable", {"asset": str(asset).upper()})
+    except Exception as exc:
+        return None, f"UNREADABLE ({type(exc).__name__}: {str(exc)[:90]})"
+    try:
+        amount = float(dict(raw).get("amount") or 0.0)
+    except (TypeError, ValueError):
+        return None, f"venue answered but the amount is unparseable: {str(raw)[:80]}"
+    if amount <= 0:
+        return 0.0, ("venue permits ZERO borrow of this asset -- either it is not on the "
+                     "cross-margin lending list or this account is not eligible for it")
+    return amount, f"venue permits borrowing {amount:g} {str(asset).upper()}"
+
+
 def margin_level() -> float | None:
     """Total assets / total liabilities. None when the venue does not report it -- NEVER a
     default: a missing level rendered as a large number would wave every borrow through, and
