@@ -1,7 +1,7 @@
 param(
     [string]$CodeRoot = "C:\Users\dell\quant-conversion-fix",
     [string]$StateRoot = "C:\Users\dell\quant-platform",
-    [string]$Python = "C:\Users\dell\quant-platform\.venv\Scripts\python.exe",
+    [string]$Python = "C:\Users\dell\AppData\Local\Programs\Python\Python312\python.exe",
     [string]$Terminal = "C:\Users\dell\gold-desk\mt5_readonly\terminal64.exe",
     [string]$ExpectedServer = "VantageMarkets-Live 14",
     [string]$SshKey = "$env:USERPROFILE\.ssh\id_ed25519",
@@ -70,7 +70,10 @@ try {
     if (!(Test-Path $Python) -or !(Test-Path $Terminal) -or !(Test-Path $CodeRoot)) {
         throw "required Python, MT5 terminal, or code root is missing"
     }
-    $env:PYTHONPATH = $CodeRoot
+    # The MT5 IPC wheel must run under the terminal owner's base interpreter. Reuse the quant
+    # environment's pure-Python dependencies without invoking its launcher shim (which times out
+    # against this portable investor terminal).
+    $env:PYTHONPATH = "$CodeRoot;$StateRoot\.venv\Lib\site-packages"
     Set-Location $StateRoot
     Write-FrontierStatus "RUNNING" "read-only MT5 collection and research started"
 

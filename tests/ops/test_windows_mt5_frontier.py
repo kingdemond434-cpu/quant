@@ -8,6 +8,8 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_mt5_frontier_is_research_only_and_publishes_to_shadow() -> None:
     script = (ROOT / "ops" / "run_windows_mt5_frontier.ps1").read_text("utf-8")
     assert "--allow-readonly-live" in script
+    assert "Python312\\python.exe" in script
+    assert ".venv\\Lib\\site-packages" in script
     assert "execution_authority = $false" in script
     assert "survival_gates_bypassed = $false" in script
     assert "run_crossasset_shadow.py" in script
