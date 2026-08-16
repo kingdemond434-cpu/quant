@@ -1,0 +1,8 @@
+{
+ "updated_at": "2026-08-14T23:43:20.741561+00:00",
+ "status": "AUTH_REQUIRED",
+ "reason": "Run codex login --device-auth once on the VPS; no repository state reset",
+ "controller_rc": 126,
+ "pipeline_rc": 0,
+ "persistent_workers_controller_independent": true
+}
