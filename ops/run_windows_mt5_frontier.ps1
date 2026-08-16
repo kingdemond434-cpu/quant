@@ -15,7 +15,7 @@ $lockPath = Join-Path $StateRoot "data\.mt5_frontier_windows.lock"
 $started = [DateTimeOffset]::UtcNow
 $steps = [ordered]@{}
 $lock = $null
-$goldDeskWasRunning = $false
+$telemetryWasRunning = $false
 
 New-Item -ItemType Directory -Force (Split-Path $statusPath), (Split-Path $logPath), (Split-Path $lockPath) | Out-Null
 
@@ -74,21 +74,23 @@ try {
     Set-Location $StateRoot
     Write-FrontierStatus "RUNNING" "read-only MT5 collection and research started"
 
-    # MetaTrader's Python bridge permits one client per terminal. Pause the read-only gold sensor,
-    # reuse its investor terminal, and restore it before network publication. This avoids a second
-    # credential store and never touches an execution-capable account.
-    $desk = Get-CimInstance Win32_Process | Where-Object {
-        $_.Name -like "pythonw*.exe" -and $_.CommandLine -like "*-m golddesk.service*"
+    # MetaTrader's Python bridge permits one client per terminal. Pause only the read-only account
+    # telemetry worker, reuse its investor terminal, and restore it before publication. The gold
+    # signal desk uses a different terminal and remains continuously active.
+    $telemetry = Get-CimInstance Win32_Process | Where-Object {
+        $_.Name -like "pythonw*.exe" -and $_.CommandLine -like "*-m golddesk.telemetry_service*"
     }
-    $deskSupervisor = Get-CimInstance Win32_Process | Where-Object {
-        $_.Name -eq "cmd.exe" -and $_.CommandLine -like "*run_desk.bat*"
+    $telemetrySupervisor = Get-CimInstance Win32_Process | Where-Object {
+        $_.Name -eq "cmd.exe" -and $_.CommandLine -like "*run_telemetry.bat*"
     }
-    if ($desk -or $deskSupervisor) {
-        $goldDeskWasRunning = $true
-        $deskSupervisor | ForEach-Object {
+    if ($telemetry -or $telemetrySupervisor) {
+        $telemetryWasRunning = $true
+        $telemetrySupervisor | ForEach-Object {
             Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
         }
-        $desk | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+        $telemetry | ForEach-Object {
+            Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+        }
         Get-CimInstance Win32_Process -Filter "Name='terminal64.exe'" | Where-Object {
             $_.ExecutablePath -eq $Terminal
         } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
@@ -113,11 +115,11 @@ try {
         }
     }
 
-    if ($goldDeskWasRunning) {
+    if ($telemetryWasRunning) {
         Start-Process -FilePath "cmd.exe" -ArgumentList "/c", `
-            '"C:\Users\dell\gold-desk\scripts\run_desk.bat"' -WindowStyle Hidden
-        $goldDeskWasRunning = $false
-        $steps["gold_desk_restart"] = [ordered]@{state="PASS"; finished_at=[DateTimeOffset]::UtcNow.ToString("o")}
+            '"C:\Users\dell\gold-desk\scripts\run_telemetry.bat"' -WindowStyle Hidden
+        $telemetryWasRunning = $false
+        $steps["telemetry_restart"] = [ordered]@{state="PASS"; finished_at=[DateTimeOffset]::UtcNow.ToString("o")}
     }
 
     # Publish only the broker-universe research lake and compact evidence, never credentials or
@@ -141,9 +143,9 @@ try {
     Add-Content -Path $logPath -Value "[$([DateTimeOffset]::UtcNow.ToString('o'))] FAIL: $($_.Exception.Message)"
     exit 1
 } finally {
-    if ($goldDeskWasRunning) {
+    if ($telemetryWasRunning) {
         Start-Process -FilePath "cmd.exe" -ArgumentList "/c", `
-            '"C:\Users\dell\gold-desk\scripts\run_desk.bat"' -WindowStyle Hidden
+            '"C:\Users\dell\gold-desk\scripts\run_telemetry.bat"' -WindowStyle Hidden
     }
     if ($lock) { $lock.Dispose() }
 }
