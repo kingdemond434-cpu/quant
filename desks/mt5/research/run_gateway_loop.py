@@ -31,6 +31,8 @@ def main() -> None:
         from datetime import datetime, timezone  # noqa: PLC0415
         if datetime.now(timezone.utc).hour == 22:  # once per UTC day
             shadow_forward.main()
+            import promoter  # noqa: PLC0415
+            promoter.main()
     except Exception as e:  # noqa: BLE001 - watchdog must never die
         gateway.log(f"LOOP ERROR: {e!r}")
     finally:
