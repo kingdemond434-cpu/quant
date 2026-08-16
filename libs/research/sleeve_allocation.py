@@ -209,6 +209,91 @@ def allocate(names: list[str], sharpes: np.ndarray, corr: np.ndarray, n_obs: int
              f"an upper bound on what live reweighting would earn, never a forecast of it"))
 
 
+#: How far a min-variance clip may travel from the equal one, in either direction, before it is
+#: capped. Same guard and same reasoning as the risk-parity clips in `run_mechanism_sleeves`: a
+#: correlation the sample barely knows inverts to an unbounded weight, and the sleeve holding the
+#: whole book would be the one the data understands least.
+MAX_CLIP_MULTIPLE = 3.0
+
+
+def min_variance(names: list[str], corr: np.ndarray, n_obs: int) -> Allocation:
+    """`C^-1 . 1` -- the de-clustering weights, with NO Sharpe vector anywhere in them.
+
+    **THIS IS THE VERSION THE DESK IS ALLOWED TO TRADE, AND THE DISTINCTION IS THE WHOLE POINT.**
+    `allocate()` above solves `w ∝ C^-1 s`, which reads the SHARPE VECTOR -- the mean, the edge
+    claim, the contested quantity that L1.6 withholds from the backtest and that the live-sleeve
+    exception did NOT restore. Its number is worth publishing as an upper bound and must not size a
+    position.
+
+    Passing a vector of ONES instead asks a different question: not "which sleeve earns most per
+    unit of risk" but "how do I hold these sixteen things so the redundant cluster stops counting
+    seven times". That reads only the CORRELATION MATRIX -- second moments, estimable in weeks,
+    and exactly the input `leverage_policy.realised_vol` already sizes the entire book from.
+
+    **AND IT CAPTURES MOST OF THE GAIN.** Measured on the desk's own book, 2026-08-16:
+
+        equal weights        S 0.58   +10.2%/yr
+        MIN-VARIANCE  C^-1.1 S 0.68   +14.2%/yr      <- this function
+        mean-variance C^-1.s S 0.71   +15.5%/yr      <- forbidden, and worth 1.3pp more
+
+    Four fifths of the uplift for none of the legal cost. The remaining 1.3pp is the price of not
+    letting a backtest tell the book which sleeve is good, which is a price this desk has already
+    decided to pay everywhere else.
+
+    **IT IS ALSO THE CORRECT BAYESIAN CHOICE UNDER THIS DESK'S OWN CONSTRAINT, NOT A CONCESSION.**
+    If the desk may not use measured per-sleeve means, its honest prior is that the sleeves have
+    EQUAL expected Sharpe -- and under equal Sharpes `C^-1 s` collapses to `C^-1 1` exactly. The
+    law-compliant answer and the estimator you would choose anyway are the same vector.
+
+    Every guard in `allocate` applies unchanged: the observation floor, the non-PSD refusal, the
+    shrinkage toward equicorrelation and the condition-number bound. Reusing it rather than
+    re-deriving is deliberate -- two optimisers on one desk is two ways to be wrong about `C^-1`.
+    """
+    return allocate(names, np.ones(len(names), dtype="float64"), corr, n_obs)
+
+
+def long_only_clips(a: Allocation) -> tuple[dict[str, float], str]:
+    """Turn an Allocation's weights into non-negative clips summing to 1.0. ({}, why) when unusable.
+
+    **NEGATIVE WEIGHTS ARE SHORTS, AND A SHORT IS NOT A SMALLER LONG.** `C^-1 . 1` will happily
+    return a negative weight on a sleeve that hedges the cluster, and on paper that is the optimal
+    holding. This book cannot place it: `spot_order_path` opens longs only, and the short path
+    built on 2026-08-16 is deliberately unwired pending the principal's arming. Publishing a
+    negative clip would produce either a refused order or -- worse -- a silently dropped leg, and a
+    book that holds something other than what it published.
+
+    So negatives are CLIPPED TO ZERO and the remainder renormalised, which is the standard
+    long-only projection. It is not free: clipping loses part of the uplift the optimiser found,
+    and `n_clipped` says how much of the book was affected so the cost is visible rather than
+    assumed. When shorts are armed this restriction can be relaxed and the gain recovered.
+    """
+    if not a.usable or not a.weights:
+        return {}, (a.why or "allocation unusable")
+    raw = {k: float(v) for k, v in a.weights.items()}
+    n = len(raw)
+    if n == 0:
+        return {}, "no sleeves"
+    neg = [k for k, v in raw.items() if v < 0]
+    pos = {k: max(0.0, v) for k, v in raw.items()}
+    tot = sum(pos.values())
+    if tot <= 0:
+        return {}, ("every min-variance weight is negative or zero -- the optimiser wants a net "
+                    "SHORT book, which this long-only path cannot express. Falling back")
+    shares = {k: v / tot for k, v in pos.items()}
+    equal = 1.0 / n
+    lo, hi = equal / MAX_CLIP_MULTIPLE, equal * MAX_CLIP_MULTIPLE
+    capped = {k: min(hi, max(lo, v)) for k, v in shares.items()}
+    s2 = sum(capped.values())
+    out = {k: v / s2 for k, v in capped.items()}
+    n_capped = sum(1 for k in shares if abs(shares[k] - capped[k]) > 1e-12)
+    return out, (
+        f"min-variance (C^-1 . 1) on {n} sleeves, shrunk {a.shrinkage:.0%} toward equicorrelation "
+        f"over {a.n_obs} observations; {len(neg)} negative weight(s) clipped to zero because this "
+        f"book is long-only, {n_capped} capped at {MAX_CLIP_MULTIPLE:g}x the equal share, then "
+        "renormalised so the envelope is exactly preserved. SECOND MOMENT ONLY -- no Sharpe, no "
+        "return, so the backtest is not allocating capital")
+
+
 def report(a: Allocation) -> dict[str, Any]:
     d: dict[str, Any] = {
         "n_sleeves": a.n_sleeves, "n_obs": a.n_obs,

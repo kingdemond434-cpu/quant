@@ -326,6 +326,49 @@ def borrow_headroom(equity_usd: float, leverage: float) -> tuple[float, str]:
         f"{lev / (lev - 1.0):.2f}, LIQUIDATED BY A {d:.1%} ADVERSE MOVE")
 
 
+#: Hard ceiling on SHORT gross exposure, as a multiple of equity. Deliberately NOT `MAX_LEVERAGE`:
+#: see `short_liquidation_distance` for why the short rail binds earlier than the long's at every
+#: gross. 2.00x is exactly the margin-call band, so this is the venue's own line, not an opinion.
+MAX_SHORT_GROSS = 2.0
+
+
+def short_gross_at_margin_call(call_level: float = MARGIN_CALL_LEVEL) -> float:
+    """Short gross (as a multiple of equity) at which a FRESH short opens already margin-called.
+
+    Solving `(1+g)/g = L` gives `g = 1/(L-1)`. At Binance's 1.5 that is exactly 2.00x -- where a
+    LONG reaches the same band only at 3.00x. The short rail is tighter and the two must never
+    share a constant.
+    """
+    lvl = float(call_level)
+    if lvl <= 1.0:
+        return float("inf")
+    return 1.0 / (lvl - 1.0)
+
+
+def short_liquidation_distance(gross_ratio: float) -> float:
+    """The ADVERSE (upward) move that takes a fresh short at `gross_ratio` to liquidation.
+
+    **NOT THE MIRROR OF THE LONG, AND THE DIFFERENCE IS THE WHOLE REASON THIS EXISTS.** Selling
+    borrowed base leaves the QUOTE proceeds as an asset and the BASE as a liability, so
+
+        assets = (1+g)E   liabilities = gE   level at entry = (1+g)/g
+
+    against a long's `f/(f-1)`. Those are different functions, and the short's is worse at every
+    size: at 2x gross a long survives a 45.0% adverse move and a short only 36.4%. The asymmetry is
+    structural rather than incidental -- an adverse move for a long shrinks the ASSET while the
+    debt is fixed, but an adverse move for a short GROWS THE DEBT ITSELF while the collateral sits
+    still, so the ratio deteriorates from both directions at once.
+
+    And the loss above is unbounded: a base asset can triple, a long can only fall to zero. That is
+    why `MAX_SHORT_GROSS` is a separate, lower constant and why no caller may pass a leverage
+    figure computed for the long book.
+    """
+    g = float(gross_ratio)
+    if g <= 0:
+        return float("inf")            # no short, nothing to liquidate
+    return (1.0 + g) / (LIQUIDATION_LEVEL * g) - 1.0
+
+
 def _check_borrow_allowed() -> None:
     """Raises unless a NEW borrow is safe right now. Called only on the borrowing side."""
     lvl = margin_level()
