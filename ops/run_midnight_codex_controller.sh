@@ -155,10 +155,10 @@ heartbeat_loop() {
 heartbeat_loop &
 HEARTBEAT_PID=$!
 
-CODEX_NIGHTLY_MODEL="${CODEX_NIGHTLY_MODEL:-gpt-5.6-terra}"
+CODEX_NIGHTLY_MODEL="${CODEX_NIGHTLY_MODEL_OVERRIDE:-gpt-5.6-terra}"
 CODEX_ARGS=(exec -C "$PWD" --sandbox workspace-write "${CODEX_EXEC_APPROVAL_ARGS[@]}"
     --output-last-message "$LAST_MESSAGE"
-    --config "model_reasoning_effort=${CODEX_NIGHTLY_REASONING_EFFORT:-medium}"
+    --config "model_reasoning_effort=${CODEX_NIGHTLY_REASONING_EFFORT_OVERRIDE:-medium}"
     --model "$CODEX_NIGHTLY_MODEL")
 CODEX_RC=0
 timeout --signal=TERM --kill-after=60 "${CODEX_NIGHTLY_TIMEOUT_SECONDS:-21600}" \

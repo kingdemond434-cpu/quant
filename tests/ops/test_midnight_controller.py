@@ -71,8 +71,8 @@ def test_codex_controller_is_noninteractive_fenced_and_checkpointed() -> None:
     assert "RUNNING_PIPELINE" in source and "RUNNING_CONTROLLER" in source
     assert "LEASE_ERROR" in source and "CLAIM_RC" in source
     assert "CODEX_NIGHTLY_TIMEOUT_SECONDS:-21600" in source
-    assert 'CODEX_NIGHTLY_MODEL="${CODEX_NIGHTLY_MODEL:-gpt-5.6-terra}"' in source
-    assert "CODEX_NIGHTLY_REASONING_EFFORT:-medium" in source
+    assert 'CODEX_NIGHTLY_MODEL="${CODEX_NIGHTLY_MODEL_OVERRIDE:-gpt-5.6-terra}"' in source
+    assert "CODEX_NIGHTLY_REASONING_EFFORT_OVERRIDE:-medium" in source
     service = SERVICE.read_text("utf-8")
     assert "CODEX_NIGHTLY_MODEL=gpt-5.6-terra" in service
     assert "CODEX_NIGHTLY_REASONING_EFFORT=medium" in service
