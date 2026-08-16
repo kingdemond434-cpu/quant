@@ -68,7 +68,9 @@ def _connect(
     return mt5
 
 
-def _fetch(mt5, symbol: str, tf_const, count: int, tries: int, start):  # type: ignore[no-untyped-def]
+def _fetch(  # type: ignore[no-untyped-def]
+    mt5, symbol: str, tf_const, count: int, tries: int, start, *, prefer_range: bool = False
+):
     """Pull history, retrying while the async download completes.
 
     Tries ``copy_rates_range`` first (more reliable at triggering a cold-cache download) and falls
@@ -78,12 +80,21 @@ def _fetch(mt5, symbol: str, tf_const, count: int, tries: int, start):  # type: 
     """
     now = datetime.now(tz=UTC)
     for _ in range(tries):
-        rates = mt5.copy_rates_from_pos(symbol, tf_const, 0, count)
-        if rates is not None and len(rates) > 0:
-            return rates
-        rates = mt5.copy_rates_range(symbol, tf_const, start, now)
-        if rates is not None and len(rates) > 0:
-            return rates
+        methods = (
+            (
+                (mt5.copy_rates_range, (symbol, tf_const, start, now)),
+                (mt5.copy_rates_from_pos, (symbol, tf_const, 0, count)),
+            )
+            if prefer_range
+            else (
+                (mt5.copy_rates_from_pos, (symbol, tf_const, 0, count)),
+                (mt5.copy_rates_range, (symbol, tf_const, start, now)),
+            )
+        )
+        for method, call_args in methods:
+            rates = method(*call_args)
+            if rates is not None and len(rates) > 0:
+                return rates
         time.sleep(0.5)
     return None
 
@@ -192,7 +203,15 @@ def main() -> None:
             for tf in want_tf:
                 if tf is not Timeframe.D1 and name not in liquid_intraday:
                     continue
-                rates = _fetch(mt5, name, tf_map[tf], _MAXBARS, args.tries, start)
+                rates = _fetch(
+                    mt5,
+                    name,
+                    tf_map[tf],
+                    _MAXBARS,
+                    args.tries,
+                    start,
+                    prefer_range=tf is Timeframe.D1,
+                )
                 if rates is None:
                     coverage.append(
                         {"symbol": name, "asset_class": ac.value, "timeframe": tf.value, "bars": 0}
