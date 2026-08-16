@@ -507,6 +507,160 @@ def family_london_close_momentum(
     return signals
 
 
+def family_level_breakout(
+    df: pd.DataFrame,
+    *,
+    level: str = "pdh",          # "pdh" = prior-day high/low, "week" = prior week
+    signal_hour: int = 7,
+    wait_bars: int = 12,
+    atr_n: int = 20,
+    ttl_bars: int = 12,
+    rr: float = 2.0,
+    vol_filter: str = "all",     # "high": trade only vol-expansion days
+    vol_gate_q: float = 0.75,    # ATR > q * rolling 200-bar median
+    range_filter: str = "all",   # "small": trade only compressed prior ranges
+    spread_gate: bool = False,
+) -> list[Signal]:
+    """Structural level breakout: prior-day (or prior-week) high/low as a
+    resting bracket at `signal_hour`. Reverse-engineered from the public
+    Gold breakout-EA family (Goldtrade/Reaper): important level -> range
+    state -> expansion -> confirmed break -> runner. Same execution geometry
+    as the armed session-range family (dist = max(1.2*ATR, span)).
+    """
+    h1 = _h1(df)
+    atr = _atr(h1, atr_n)
+    atr_med = atr.rolling(200, min_periods=60).median()
+    h1 = h1.assign(date=h1.index.date)
+    if level == "pdh":
+        d = h1.groupby("date").agg(hi=("high", "max"), lo=("low", "min"))
+        d["phi"] = d["hi"].shift(1)
+        d["plo"] = d["lo"].shift(1)
+    else:
+        iso = h1.index.isocalendar()
+        h1["wkey"] = iso.year.astype(int) * 100 + iso.week.astype(int)
+        d = h1.groupby("wkey").agg(hi=("high", "max"), lo=("low", "min"))
+        d["phi"] = d["hi"].shift(1)
+        d["plo"] = d["lo"].shift(1)
+    span_by_day = (d["hi"] - d["lo"]).rename("span")
+    span_med = span_by_day.rolling(20, min_periods=10).median()
+    spread_med = (
+        h1["spread"].rolling(96).median() if "spread" in h1.columns else None
+    )
+    a = atr.to_numpy()
+    am = atr_med.to_numpy()
+    sp = h1["spread"].to_numpy() if "spread" in h1.columns else None
+    sm = spread_med.to_numpy() if spread_med is not None else None
+    signals: list[Signal] = []
+    for i in range(1, len(h1) - 2):
+        ts = h1.index[i]
+        if ts.hour != signal_hour:
+            continue
+        if level == "week" and ts.dayofweek != 0:
+            continue  # week bracket armed once, Monday
+        if np.isnan(h1["open"].iloc[i]):
+            continue
+        ai = a[i]
+        if not (ai > 0):
+            continue
+        if vol_filter == "high":
+            v = am[i]
+            if np.isnan(v) or ai < vol_gate_q * v:
+                continue
+        if spread_gate:
+            if sm is None or np.isnan(sm[i]) or sp[i] > sm[i]:
+                continue
+        key = h1["date"].iloc[i] if level == "pdh" else int(h1["wkey"].iloc[i])
+        if key not in d.index:
+            continue
+        hi, lo = float(d.at[key, "phi"]), float(d.at[key, "plo"])
+        if not (hi > 0) or not (lo > 0) or hi <= lo:
+            continue
+        span = hi - lo
+        if span <= 0:
+            continue
+        if range_filter == "small":
+            sm2 = span_med.get(key, np.nan)
+            if np.isnan(sm2) or span >= sm2:
+                continue
+        dist = max(1.2 * ai, span)
+        signals.append(Signal(time=ts, side=1, stop=hi - dist, target=hi + dist * rr,
+                              ttl_bars=ttl_bars, tag=f"level_breakout.{level}",
+                              trigger=hi, wait_bars=wait_bars))
+        signals.append(Signal(time=ts, side=-1, stop=lo + dist, target=lo - dist * rr,
+                              ttl_bars=ttl_bars, tag=f"level_breakout.{level}",
+                              trigger=lo, wait_bars=wait_bars))
+    return signals
+
+
+def family_failed_breakout(
+    df: pd.DataFrame,
+    *,
+    level: str = "pdh",
+    signal_hours: tuple = (7, 13, 14, 17),
+    atr_n: int = 20,
+    ttl_bars: int = 12,
+    rr: float = 1.6,
+    min_pierce_atr: float = 0.05,
+    spread_gate: bool = False,
+) -> list[Signal]:
+    """Failed-breakout fade: price pierces the prior-day extreme on a closed
+    bar but closes back inside (no displacement/follow-through) -> fade back
+    into the range at the next bar open. The Gold Reaper "fake breakout
+    filter" turned into a falsifiable rule. Entry next open (no intrabar).
+    """
+    h1 = _h1(df)
+    atr = _atr(h1, atr_n)
+    h1 = h1.assign(date=h1.index.date)
+    d = h1.groupby("date").agg(hi=("high", "max"), lo=("low", "min"))
+    d["phi"] = d["hi"].shift(1)
+    d["plo"] = d["lo"].shift(1)
+    spread_med = (
+        h1["spread"].rolling(96).median() if "spread" in h1.columns else None
+    )
+    a = atr.to_numpy()
+    o = h1["open"].to_numpy()
+    c = h1["close"].to_numpy()
+    hh = h1["high"].to_numpy()
+    ll = h1["low"].to_numpy()
+    sp = h1["spread"].to_numpy() if "spread" in h1.columns else None
+    sm = spread_med.to_numpy() if spread_med is not None else None
+    signals: list[Signal] = []
+    for i in range(2, len(h1) - 2):
+        ts = h1.index[i]
+        if ts.hour not in signal_hours:
+            continue
+        key = h1["date"].iloc[i]
+        if key not in d.index:
+            continue
+        phi, plo = float(d.at[key, "phi"]), float(d.at[key, "plo"])
+        ai = a[i]
+        if not (ai > 0) or np.isnan(ai):
+            continue
+        if spread_gate:
+            if sm is None or np.isnan(sm[i]) or sp[i] > sm[i]:
+                continue
+        side = 0
+        pierce = 0.0
+        if hh[i] > phi and c[i] < phi and phi > 0:
+            side = -1  # broke above, closed back inside -> fade short
+            pierce = hh[i] - phi
+        elif ll[i] < plo and c[i] > plo and plo > 0:
+            side = 1  # broke below, closed back inside -> fade long
+            pierce = plo - ll[i]
+        if side == 0:
+            continue
+        if pierce < min_pierce_atr * ai:
+            continue
+        entry = o[i + 1]
+        stop_dist = 1.2 * ai
+        stop = entry - side * stop_dist
+        target = entry + side * stop_dist * rr
+        signals.append(Signal(time=h1.index[i + 1], side=side, stop=stop,
+                              target=target, ttl_bars=ttl_bars,
+                              tag=f"failed_breakout.{level}"))
+    return signals
+
+
 def _cot_entries(
     h1: pd.DataFrame,
     cot: pd.DataFrame,

@@ -1,0 +1,31 @@
+     sym    window      variant     n   exp_R     t    PF maxDD_R          WF(oos)  GATE
+  GBPJPY      asia         base  2163   0.121  5.29  1.31   -22.8 [+0.094 +0.143 +0.128]  PASS
+  GBPJPY      asia  spread_gate  1465   0.094  3.40  1.23   -26.7 [+0.060 +0.107 +0.120]  PASS
+  GBPJPY london_am         base  2053   0.084  4.02  1.24   -23.7 [+0.089 +0.088 +0.074]  PASS
+  GBPJPY london_am  spread_gate  1920   0.083  3.84  1.24   -23.8 [+0.094 +0.083 +0.071]  PASS
+  GBPJPY   ny_open         base  2048   0.096  3.56  1.19   -38.5 [+0.137 +0.143 +0.008]  fail
+  GBPJPY   ny_open  spread_gate  1917   0.096  3.45  1.19   -35.1 [+0.149 +0.135 +0.000]  fail
+  GBPJPY afternoon         base  1753   0.004  0.22  1.01   -38.6 [fail-fast]  fail
+  GBPJPY afternoon  spread_gate  1659  -0.002 -0.08  0.99   -36.0 [fail-fast]  fail
+
+20 survivors of 80 tests across 19 symbols
+  PASS USDJPY asia base: exp=0.159R t=7.49 PF=1.50 maxDD=-14.1R stress=0.120R
+  PASS USDJPY asia spread_gate: exp=0.161R t=7.49 PF=1.51 maxDD=-13.1R stress=0.121R
+  PASS USDJPY london_am base: exp=0.114R t=4.80 PF=1.28 maxDD=-17.5R stress=0.060R
+  PASS USDJPY london_am spread_gate: exp=0.114R t=4.77 PF=1.28 maxDD=-18.4R stress=0.061R
+  PASS XAUUSD asia base: exp=0.212R t=8.40 PF=1.54 maxDD=-21.0R stress=0.202R
+  PASS XAUUSD asia spread_gate: exp=0.198R t=7.21 PF=1.50 maxDD=-18.7R stress=0.187R
+  PASS XAUUSD london_am base: exp=0.153R t=5.88 PF=1.35 maxDD=-22.8R stress=0.142R
+  PASS XAUUSD london_am spread_gate: exp=0.147R t=5.43 PF=1.33 maxDD=-27.0R stress=0.136R
+  PASS XAUUSD afternoon base: exp=0.096R t=4.53 PF=1.35 maxDD=-14.0R stress=0.088R
+  PASS XAUUSD afternoon spread_gate: exp=0.095R t=4.40 PF=1.34 maxDD=-14.0R stress=0.087R
+  PASS CADJPY asia base: exp=0.163R t=7.29 PF=1.46 maxDD=-11.3R stress=0.113R
+  PASS CADJPY asia spread_gate: exp=0.163R t=5.50 PF=1.45 maxDD=-9.3R stress=0.113R
+  PASS EURJPY asia base: exp=0.142R t=6.49 PF=1.40 maxDD=-13.0R stress=0.109R
+  PASS EURJPY asia spread_gate: exp=0.152R t=6.25 PF=1.43 maxDD=-12.7R stress=0.118R
+  PASS EURJPY london_am base: exp=0.079R t=3.79 PF=1.23 maxDD=-20.8R stress=0.043R
+  PASS EURJPY london_am spread_gate: exp=0.082R t=3.85 PF=1.24 maxDD=-19.7R stress=0.046R
+  PASS GBPJPY asia base: exp=0.121R t=5.29 PF=1.31 maxDD=-22.8R stress=0.094R
+  PASS GBPJPY asia spread_gate: exp=0.094R t=3.40 PF=1.23 maxDD=-26.7R stress=0.067R
+  PASS GBPJPY london_am base: exp=0.084R t=4.02 PF=1.24 maxDD=-23.7R stress=0.058R
+  PASS GBPJPY london_am spread_gate: exp=0.083R t=3.84 PF=1.24 maxDD=-23.8R stress=0.057R

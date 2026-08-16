@@ -33,6 +33,8 @@ def main() -> None:
             shadow_forward.main()
             import promoter  # noqa: PLC0415
             promoter.main()
+            import regime_monitor  # noqa: PLC0415
+            regime_monitor.main()
         if datetime.now(timezone.utc).weekday() == 0 and datetime.now(timezone.utc).hour == 23:
             import json as _json  # noqa: PLC0415
             from pathlib import Path as _Path  # noqa: PLC0415
@@ -50,11 +52,15 @@ def main() -> None:
                     fetch_universe.main()
                     import run_hunt7  # noqa: PLC0415
                     run_hunt7.main()
+                    import run_hunt8  # noqa: PLC0415
+                    run_hunt8.main()
+                    import run_hunt9  # noqa: PLC0415
+                    run_hunt9.main()
                     stfile.write_text(_json.dumps({"last_sweep": now_ts}),
                                       encoding="utf-8")
-                    gateway.log("weekly hunt7 sweep completed")
+                    gateway.log("weekly hunt7/8/9 sweep completed")
                 except Exception as e2:  # noqa: BLE001
-                    gateway.log(f"HUNT7 ERROR: {e2!r}")
+                    gateway.log(f"HUNT7/8/9 ERROR: {e2!r}")
     except Exception as e:  # noqa: BLE001 - watchdog must never die
         gateway.log(f"LOOP ERROR: {e!r}")
     finally:
