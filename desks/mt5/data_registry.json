@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "note": "Dataset registry. Lifecycle: DISCOVERED, INGESTED, QUALITY-PASSED, RESEARCH-USEFUL, OOS-INCREMENTAL, FORWARD-INCREMENTAL, CORE. Demotion allowed.",
+  "datasets": {
+    "mt5_h1_universe": {
+      "lifecycle": "INGESTED",
+      "source": "Vantage MT5 terminal (execution truth)",
+      "symbols": 19,
+      "format": "parquet",
+      "path": "data/universe/*_H1.parquet",
+      "coverage": "2018-2026 H1",
+      "ingested": "2026-08-16",
+      "notes": "XAUUSD spread overridden to measured live 0.48",
+      "provenance": "MT5 copy_rates_from_pos"
+    },
+    "fred_macro": {
+      "lifecycle": "INGESTED",
+      "source": "FRED API",
+      "series": ["DFII10", "T10YIE", "DGS2", "DGS10", "VIXCLS", "DTWEXBGS", "DFF"],
+      "format": "parquet",
+      "path": "data/lake/fred_*.parquet",
+      "coverage": "1962-2026",
+      "ingested": "2026-08-16",
+      "notes": "Current vintage only; ALFRED key = point-in-time upgrade path",
+      "provenance": "fred.stlouisfed.org"
+    },
+    "spdr_gld_holdings": {
+      "lifecycle": "DISCOVERED",
+      "source": "spdrgoldshares.com",
+      "status": "blocked - all URLs 404",
+      "priority": "miner task",
+      "notes": "Retry mirrors/archives; historical XLSX + bar lists",
+      "quarantined": true
+    },
+    "sge_benchmark": {
+      "lifecycle": "DISCOVERED",
+      "source": "Shanghai Gold Exchange",
+      "status": "not yet fetched",
+      "priority": "high",
+      "notes": "Shanghai Gold Benchmark Price + reports"
+    },
+    "shfe_gold": {
+      "lifecycle": "DISCOVERED",
+      "source": "Shanghai Futures Exchange",
+      "status": "not yet fetched",
+      "priority": "high",
+      "notes": "Gold futures volume/OI/market statistics"
+    },
+    "lbma_vaults": {
+      "lifecycle": "DISCOVERED",
+      "source": "LBMA",
+      "status": "not yet fetched",
+      "priority": "high",
+      "notes": "London vault holdings, clearing statistics"
+    },
+    "swiss_customs_gold": {
+      "lifecycle": "DISCOVERED",
+      "source": "Swiss Customs",
+      "status": "not yet fetched",
+      "priority": "high",
+      "notes": "Gold imports/exports by country; monthly from 2012, granular since 2021"
+    },
+    "wgc_goldhub": {
+      "lifecycle": "DISCOVERED",
+      "source": "World Gold Council Goldhub",
+      "status": "not yet fetched",
+      "priority": "medium",
+      "notes": "Supply/demand datasets"
+    },
+    "cme_gc": {
+      "lifecycle": "DISCOVERED",
+      "source": "CME Group public",
+      "status": "not yet fetched",
+      "priority": "medium",
+      "notes": "GC futures/options OI, volatility analytics, settlement; delayed quotes only"
+    },
+    "cot": {
+      "lifecycle": "DISCOVERED",
+      "source": "CFTC public",
+      "status": "not yet fetched",
+      "priority": "medium",
+      "notes": "Historical COT via public reporting environment"
+    },
+    "gdelt": {
+      "lifecycle": "DISCOVERED",
+      "source": "GDELT 2.0",
+      "status": "not yet fetched",
+      "priority": "low",
+      "notes": "Translated news 100+ languages, 15-min updates; quarantined research input"
+    }
+  }
+}
