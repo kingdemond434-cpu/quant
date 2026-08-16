@@ -26,8 +26,9 @@ def test_mt5_frontier_covers_cross_asset_intraday_and_daily_frames() -> None:
 def test_mt5_frontier_restores_gold_sensor_after_exclusive_terminal_use() -> None:
     script = (ROOT / "ops" / "run_windows_mt5_frontier.ps1").read_text("utf-8")
     assert "golddesk.service" in script
+    assert "run_desk.bat" in script
     assert "if ($goldDeskWasRunning)" in script
-    assert script.count('Start-Process -FilePath "pythonw.exe"') == 2
+    assert script.count('Start-Process -FilePath "cmd.exe"') == 2
 
 
 def test_mt5_frontier_installer_is_daily_and_catch_up_enabled() -> None:

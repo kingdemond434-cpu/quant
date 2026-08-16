@@ -71,8 +71,14 @@ try {
     # reuse its investor terminal, and restore it before network publication. This avoids a second
     # credential store and never touches an execution-capable account.
     $desk = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*golddesk.service*" }
-    if ($desk) {
+    $deskSupervisor = Get-CimInstance Win32_Process | Where-Object {
+        $_.Name -eq "cmd.exe" -and $_.CommandLine -like "*run_desk.bat*"
+    }
+    if ($desk -or $deskSupervisor) {
         $goldDeskWasRunning = $true
+        $deskSupervisor | ForEach-Object {
+            Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+        }
         $desk | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
         Get-CimInstance Win32_Process -Filter "Name='terminal64.exe'" | Where-Object {
             $_.ExecutablePath -eq $Terminal
@@ -99,8 +105,8 @@ try {
     }
 
     if ($goldDeskWasRunning) {
-        Start-Process -FilePath "pythonw.exe" -ArgumentList "-m", "golddesk.service" `
-            -WorkingDirectory "C:\Users\dell\gold-desk" -WindowStyle Hidden
+        Start-Process -FilePath "cmd.exe" -ArgumentList "/c", `
+            '"C:\Users\dell\gold-desk\scripts\run_desk.bat"' -WindowStyle Hidden
         $goldDeskWasRunning = $false
         $steps["gold_desk_restart"] = [ordered]@{state="PASS"; finished_at=[DateTimeOffset]::UtcNow.ToString("o")}
     }
@@ -127,8 +133,8 @@ try {
     exit 1
 } finally {
     if ($goldDeskWasRunning) {
-        Start-Process -FilePath "pythonw.exe" -ArgumentList "-m", "golddesk.service" `
-            -WorkingDirectory "C:\Users\dell\gold-desk" -WindowStyle Hidden
+        Start-Process -FilePath "cmd.exe" -ArgumentList "/c", `
+            '"C:\Users\dell\gold-desk\scripts\run_desk.bat"' -WindowStyle Hidden
     }
     if ($lock) { $lock.Dispose() }
 }
