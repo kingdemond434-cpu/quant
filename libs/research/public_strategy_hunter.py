@@ -220,6 +220,16 @@ def youtube_transcript(
         return {"transcript_state": TRANSCRIPT_UNREADABLE, "text": "",
                 "reason": (f"caption body is not XML ({len(raw)} bytes) -- a challenge page or a "
                            f"format change, not a video without captions: {exc}")}
+    root_name = xml.tag.rsplit("}", 1)[-1].casefold()
+    if root_name not in {"transcript", "timedtext"}:
+        return {
+            "transcript_state": TRANSCRIPT_UNREADABLE,
+            "text": "",
+            "reason": (
+                f"caption endpoint returned XML root {root_name!r}, not a caption document "
+                f"({len(raw)} bytes); likely a challenge page"
+            ),
+        }
     transcript = " ".join(
         html.unescape("".join(x.itertext()))
         for x in xml.iter()
@@ -343,14 +353,20 @@ Return JSON only with keys mechanism, economic_rationale, hypothesis, actors, co
 entry, exit, horizon, state, sizing, leverage, portfolio, execution, costs, capacity, data,
 validation, failures, performance_claim, evidence_class, transferable, falsifier, entities,
 relationships, capability_gaps, open_questions, descendant_hypotheses, reproducible, new_sources,
-component_assets, failure_cause, emergence_class, regional_terms, combine_with_internal. Use null
+component_assets, failure_cause, emergence_class, regional_terms, combine_with_internal,
+research_system, discovery_process, testing_process, data_pipeline, superior_capabilities,
+internal_analogue, measurable_gap, replication_plan. Use null
 for anything not stated. Evidence class must be one of MARKETING_CLAIM,
 SCREENSHOT_SELECTED_RESULT, BACKTEST, FORWARD_PAPER_TRADING, LIVE_BROKER_EXCHANGE,
 INDEPENDENTLY_VERIFIABLE, INSTITUTIONAL_AUDITED. Preserve hidden leverage, selection, capacity,
 cost and drawdown concerns explicitly. A failed whole strategy may still yield components.
 The source is an EXTERNAL PRIOR. Do not upgrade evidence, infer unseen text, or recommend promotion.
-Convert useful material into a falsifiable replication, component test, data acquisition or explicit
-rejection; a reading-list summary is not completion.
+For a creator or research-system source, mine HOW the work is done as deeply as WHAT it claims:
+discovery process, data acquisition, experiment design, negative-result memory, validation,
+portfolio/execution use and self-improvement. Identify atomic capabilities that appear better than
+the desk's current analogue and specify a measurable challenger. Convert useful material into a
+falsifiable replication, component test, data acquisition or explicit rejection; a reading-list
+summary is not completion and an external threshold never becomes an internal gate.
 
 RETRIEVED CONTENT:
 {content[:50000]}

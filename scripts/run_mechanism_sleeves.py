@@ -172,6 +172,41 @@ def _positions(subtype: str, series: Any, params: dict[str, float]) -> np.ndarra
     return None
 
 
+def _input_state(subtype: str, series: Any, params: dict[str, float]) -> tuple[bool, str]:
+    """Distinguish a valid neutral signal from a generator's missing-input zero fallback.
+
+    Both relevant generators deliberately return an all-zero vector when their required sidecar
+    is absent.  The vector therefore cannot answer whether zero means *neutral now* or *never
+    measured*.  Inspect the actual declared input instead; otherwise a healthy funding feed is
+    repeatedly misdiagnosed and the repair loop wastes every night fixing data that already works.
+    """
+    if subtype == "funding_stress_reversal":
+        raw = getattr(series, "funding", None)
+        if raw is None:
+            return False, "funding is absent"
+        values = np.asarray(raw, dtype="float64")
+        finite = values[np.isfinite(values)]
+        needed = max(2, int(params.get("window", 1)) + 1)
+        if len(finite) < needed:
+            return False, f"funding has {len(finite)} finite rows; needs at least {needed}"
+        if not np.any(np.abs(finite) > 1e-15):
+            return False, "funding contains no observed non-zero print"
+        return True, f"funding measured ({len(finite)} finite rows)"
+    if subtype == "intermarket_difference":
+        needed = max(2, int(params.get("lookback", 1)) + 1)
+        counts = []
+        for name in ("ref_close", "ref_high", "ref_low"):
+            raw = getattr(series, name, None)
+            if raw is None:
+                return False, f"{name} is absent"
+            values = np.asarray(raw, dtype="float64")
+            counts.append(int(np.isfinite(values).sum()))
+        if min(counts, default=0) < needed:
+            return False, f"reference range has finite rows {counts}; needs at least {needed}"
+        return True, f"reference close/high/low measured ({min(counts)} aligned rows)"
+    return True, "generator declares no sidecar input contract"
+
+
 def _marks() -> dict[str, float]:
     """Live prices, wallet-agnostic. Empty when the venue is unreadable -- and an EMPTY mark set
     must never be read as a zero return, which would trip the kill on every sleeve at once."""
@@ -315,7 +350,10 @@ def build() -> dict[str, Any]:
                                "mechanism": mechanism, "params": params, "symbols": {},
                                "clip_frac": EQUAL_CLIP_FRAC}
         live: dict[str, float] = {}
+        input_states: dict[str, dict[str, Any]] = {}
         for sym, ser in frames.items():
+            input_ok, input_why = _input_state(subtype, ser, params)
+            input_states[sym] = {"measured": input_ok, "why": input_why}
             pos = _positions(subtype, ser, params)
             if pos is None:
                 row["error"] = f"no generator named {subtype!r} in this repo"
@@ -329,13 +367,32 @@ def build() -> dict[str, Any]:
             # all-zero case separately is what keeps "no data" from being published as "no signal".
             live[sym] = last
         row["symbols"] = live
+        row["inputs"] = input_states
+        measured_inputs = sum(bool(v["measured"]) for v in input_states.values())
+        row["input_coverage"] = {
+            "measured": measured_inputs,
+            "attempted": len(input_states),
+        }
         nonzero = {k: v for k, v in live.items() if abs(v) > 1e-12}
         if not nonzero and live:
-            row["state"] = "FLAT-EVERYWHERE"
-            row["why"] = ("every symbol returned 0.0. For this generator that means its INPUT is "
-                          "absent (funding series, or the reference's high/low), not that the "
-                          "market is neutral -- the two are indistinguishable in the number and "
-                          "must not be in the report")
+            if measured_inputs == len(input_states):
+                row["state"] = "NEUTRAL"
+                row["why"] = (
+                    "required input is measured for every attempted symbol; no symbol crosses "
+                    "the predeclared entry condition now"
+                )
+            elif measured_inputs:
+                row["state"] = "PARTIAL-INPUT"
+                row["why"] = (
+                    f"required input measured for {measured_inputs}/{len(input_states)} symbols; "
+                    "zeros on the remainder are not market-neutral observations"
+                )
+            else:
+                row["state"] = "NO-INPUT"
+                row["why"] = (
+                    "every zero came from a generator whose required sidecar input is absent or "
+                    "insufficient; this is UNMEASURED, not a market view"
+                )
         elif not live:
             row["state"] = "NO-SERIES"
         else:

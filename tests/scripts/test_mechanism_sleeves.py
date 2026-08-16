@@ -108,6 +108,63 @@ def test_A_GENERATOR_WITHOUT_ITS_INPUT_IS_FLAT_AND_SAYS_SO() -> None:
         pos = M._positions(subtype, bare, params)
         assert pos is not None, f"{subtype} must exist in this repo"
         assert not np.any(pos), f"{subtype} must degrade to FLAT without its input"
+        measured, why = M._input_state(subtype, bare, params)
+        assert measured is False
+        assert "absent" in why
+
+
+def test_VALID_FUNDING_CAN_BE_NEUTRAL_NOW_WITHOUT_BEING_CALLED_MISSING() -> None:
+    from libs.autodiscovery.generators import MarketSeries
+
+    n = 400
+    close = 100 + np.cumsum(np.random.default_rng(11).normal(0, 1, n))
+    funding = np.sin(np.arange(n) / 13.0) * 0.0001
+    series = MarketSeries(
+        close=close,
+        high=close * 1.01,
+        low=close * 0.99,
+        volume=np.full(n, 1e6),
+        hour=np.arange(n) % 24,
+        ref_close=None,
+        ref_high=None,
+        ref_low=None,
+        funding=funding,
+    )
+    measured, why = M._input_state("funding_stress_reversal", series, {"window": 30})
+    assert measured is True
+    assert "measured" in why
+
+
+def test_BUILD_REPORTS_MEASURED_ALL_ZERO_FUNDING_AS_NEUTRAL(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from libs.autodiscovery.generators import MarketSeries
+
+    n = 80
+    close = np.linspace(100.0, 110.0, n)
+    funding = np.sin(np.arange(n) / 7.0) * 0.0001
+    reference = close * 1.01
+    series = MarketSeries(
+        close=close,
+        high=close * 1.01,
+        low=close * 0.99,
+        volume=np.full(n, 1e6),
+        hour=np.arange(n) % 24,
+        ref_close=reference,
+        ref_high=reference * 1.01,
+        ref_low=reference * 0.99,
+        funding=funding,
+    )
+    monkeypatch.setattr(M, "_exception_recorded", lambda: (True, "test exception"))
+    monkeypatch.setattr(M, "_series", lambda _symbols: {"BTCUSDT": series})
+    monkeypatch.setattr(M, "_positions", lambda _subtype, _series, _params: np.zeros(n))
+    monkeypatch.setattr(M, "_marks", lambda: {})
+    monkeypatch.setattr(M, "_STATE", tmp_path / "state.json")
+
+    rep = M.build()
+    assert {row["state"] for row in rep["sleeves"]} == {"NEUTRAL"}
+    assert all(row["input_coverage"] == {"measured": 1, "attempted": 1}
+               for row in rep["sleeves"])
 
 
 def test_EVERY_DECLARED_SLEEVE_HAS_A_GENERATOR_IN_THIS_REPO() -> None:

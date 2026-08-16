@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
-from libs.research.public_strategy_hunter import Source, discover, missions, run
+from libs.research.public_strategy_hunter import Source, discover, extraction_prompt, missions, run
 
 
 def test_research_site_changes_are_content_deduped_and_reprocessed() -> None:
@@ -42,3 +43,40 @@ def test_generic_site_content_is_actual_public_text_not_a_byte_count() -> None:
     )[0]
     assert row["description"] == "Portable order book states"
     assert row["source_kind"] == "site"
+
+
+def test_named_x_depth_floor_is_registered_and_reaches_midnight() -> None:
+    registry = json.loads(Path("docs/research/GPT_HUNTER_SOURCES.json").read_text("utf-8"))
+    x_names = {
+        str(row.get("name", "")).casefold()
+        for row in registry["sources"]
+        if row.get("surface") == "x"
+    }
+    assert {"l1vsun", "shmidtqq", "cvxv666"} <= x_names
+
+    mandate = Path("docs/research/ELITE_QUANT_INTELLIGENCE_MANDATE.md").read_text("utf-8")
+    midnight = Path("ops/midnight_codex_prompt.txt").read_text("utf-8")
+    for handle in ("@L1vsun", "@shmidtqq", "@cvxv666"):
+        assert handle in mandate
+        assert handle in midnight
+    assert "BLOCKED access is never a clean null" in midnight
+    assert "existing hypothesis/conversion pipeline" in midnight
+
+
+def test_creator_extraction_mines_research_system_not_only_strategy_claim() -> None:
+    prompt = extraction_prompt(
+        {"url": "https://x.com/L1vsun", "title": "creator", "source_kind": "x"},
+        "public creator material",
+        ["PUBLIC_STRATEGY", "ELITE_EXTERNAL_INTELLIGENCE"],
+    )
+    for field in (
+        "research_system",
+        "discovery_process",
+        "testing_process",
+        "data_pipeline",
+        "superior_capabilities",
+        "measurable_gap",
+        "replication_plan",
+    ):
+        assert field in prompt
+    assert "external threshold never becomes an internal gate" in prompt
