@@ -17,3 +17,6 @@
   backtesting" + "storing on a personal PC", PROHIBITS "commercial use, redistribution, processing,
   and sale". Does the desk's proprietary-trading research use fall under the permitted clause
   (YES = ingest, NO = kill to graveyard)? An agent may not self-approve this.
+
+## 2026-08-16T04:33:46.194828+00:00 POISONED DEPENDENCY
+- binance funding (live API) (DQS 0.0) feeds ['A001'] -- feeds the live cash-carry entry gate

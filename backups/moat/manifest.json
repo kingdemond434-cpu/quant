@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-15T03:55:10.002161+00:00",
+  "generated": "2026-08-16T03:55:27.502532+00:00",
   "law": "L1.23 -- survival first: the moat is capital in information form",
   "stores": {
     "execution_tape": {
@@ -16,15 +16,15 @@
       "status": "REPLICATED",
       "kind": "sqlite",
       "path": "data/sor_research.sqlite",
-      "bytes": 52776960,
+      "bytes": 57040896,
       "sha256": {
-        "sor_research": "45453cbc56c1d2960d5ee0e51837beb9f5b015b5b4764eafc1dc4e92f6d809dc"
+        "sor_research": "886432c9abb32090c001fc66f5097d3b6d1074b06bc78c06118012753a81b07f"
       },
       "table_rows": {
         "schema_migrations": 7,
         "snapshots": 0,
         "config_versions": 0,
-        "audit_log": 871,
+        "audit_log": 875,
         "trials_ledger": 0,
         "alpha_registry": 0,
         "risk_registry": 0,
@@ -38,20 +38,20 @@
         "research_memory": 313,
         "metric_points": 0,
         "alerts": 0,
-        "research_candidates": 4622,
+        "research_candidates": 5026,
         "lab_checkpoint": 1,
-        "campaigns": 389,
-        "workers": 18,
-        "candidate_returns": 5646
+        "campaigns": 388,
+        "workers": 19,
+        "candidate_returns": 6454
       }
     },
     "alpha_registry": {
       "status": "REPLICATED",
       "kind": "sqlite",
       "path": "data/alpha_registry.sqlite",
-      "bytes": 614400,
+      "bytes": 618496,
       "sha256": {
-        "alpha_registry": "cbee650954d190582fd4e880d8265d09dcbf0bd3e2e362d83027b4d86d492307"
+        "alpha_registry": "c37a9ace4b72e84e298b2df8af510c0fe44d25e6adb198690ac35ae702b444ab"
       },
       "table_rows": {
         "schema_migrations": 7,
@@ -66,7 +66,7 @@
         "fills": 0,
         "positions": 0,
         "alpha_cards": 8,
-        "alpha_events": 1104,
+        "alpha_events": 1120,
         "alpha_performance": 0,
         "research_memory": 0,
         "metric_points": 0,
@@ -108,11 +108,11 @@
   },
   "skipped_over_cap": [],
   "not_covered_bytes": {
-    "data/lake": 1440199950,
+    "data/lake": 1443639144,
     "data/moat": 19462809048
   },
   "not_covered_note": "bulk lake/L2 need the Storage-Box/R2 principal decision -- measured here every run so the gap stays a number",
-  "disk_free_pct": 12.19,
+  "disk_free_pct": 10.66,
   "fuse_pct": 15.0,
   "restore_drill_passed": true,
   "absent_stores": [],
