@@ -1,10 +1,13 @@
-"""Fetch CFTC legacy futures-only COT report for gold into the MT5 desk.
+"""Fetch CFTC legacy futures-only COT for the full desk universe.
 
 Data: CFTC Socrata "Disaggregated Futures-Only" schema 6dca-aqww (legacy
 noncomm/comm series, history to 1986). Weekly, report date = Tuesday,
-published Friday ~19:30 UTC. noncomm = large speculators (the crowd);
-comm = commercials (the counterparty).
-Output: C:\\Users\\dell\\mt5-research\\data\\cot_gold.parquet
+published Friday ~19:30 UTC. noncomm = large speculators; comm = commercials.
+
+Contracts: gold, silver, FX currencies (each MT5 pair maps to one currency
+future), US dollar index, S&P 500, NASDAQ 100 (conditioning-only).
+
+Output: data/cot/{slug}.parquet per contract + data/cot_gold.parquet (legacy).
 """
 
 from __future__ import annotations
@@ -17,7 +20,8 @@ from pathlib import Path
 import pandas as pd
 
 BASE = "https://publicreporting.cftc.gov/resource/6dca-aqww.json"
-OUT = Path(r"C:\Users\dell\mt5-research\data\cot_gold.parquet")
+OUT = Path(r"C:\Users\dell\mt5-research\data\cot")
+OUT.mkdir(parents=True, exist_ok=True)
 
 SELECT = (
     "report_date_as_yyyy_mm_dd,commodity_name,contract_market_name,open_interest_all,"
@@ -27,13 +31,41 @@ SELECT = (
     "change_in_open_interest_all"
 )
 
+# commodity_name candidates tried in order (first non-empty wins)
+TARGETS: list[tuple[str, list[str]]] = [
+    ("gold", ["GOLD"]),
+    ("silver", ["SILVER"]),
+    ("jpy", ["JAPANESE YEN"]),
+    ("eur", ["EURO FX"]),
+    ("gbp", ["POUND STERLING"]),
+    ("cad", ["CANADIAN DOLLAR"]),
+    ("aud", ["AUSTRALIAN DOLLAR"]),
+    ("nzd", ["NEW ZEALAND DOLLAR"]),
+    ("chf", ["SWISS FRANC"]),
+    ("dxy", ["US DOLLAR INDEX", "U.S. DOLLAR INDEX"]),
+    ("sp500", ["S&P BROAD BASED STOCK INDICES"]),
+    ("nasdaq100", ["NASDAQ  BROADBASED INDICES"]),
+]
 
-def fetch_all() -> list[dict]:
+# MT5 symbol -> cot slug (a pair trades its base-currency future; JPY crosses
+# all use the yen contract; conditioning-only symbols DXY/SP500/NDX exposed)
+SYMBOL_SLUG = {
+    "XAUUSD": "gold", "XAGUSD": "silver",
+    "USDJPY": "jpy", "EURJPY": "jpy", "GBPJPY": "jpy", "CADJPY": "jpy",
+    "AUDJPY": "jpy", "NZDJPY": "jpy", "CHFJPY": "jpy",
+    "EURUSD": "eur", "EURGBP": "eur", "EURCHF": "eur",
+    "GBPUSD": "gbp", "USDCAD": "cad", "AUDUSD": "aud", "NZDUSD": "nzd",
+    "USDCHF": "chf",
+    "DXY": "dxy", "SP500": "sp500", "NDX": "nasdaq100",
+}
+
+
+def fetch_contract(commodity: str) -> pd.DataFrame | None:
     rows: list[dict] = []
     offset = 0
     while True:
         params = {
-            "$where": "commodity_name like 'GOLD%'",
+            "$where": f"commodity_name='{commodity}'",
             "$select": SELECT,
             "$order": "report_date_as_yyyy_mm_dd",
             "$limit": "5000",
@@ -41,23 +73,15 @@ def fetch_all() -> list[dict]:
         }
         url = f"{BASE}?{urllib.parse.urlencode(params)}"
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=60) as resp:
+        with urllib.request.urlopen(req, timeout=90) as resp:
             batch = json.load(resp)
         rows.extend(batch)
         if len(batch) < 5000:
             break
         offset += 5000
-    return rows
-
-
-def main() -> None:
-    rows = fetch_all()
+    if not rows:
+        return None
     df = pd.DataFrame(rows)
-    print("distinct commodity_name:")
-    print(df["commodity_name"].value_counts().to_string())
-    print("distinct contract_market_name:")
-    print(df["contract_market_name"].value_counts().to_string())
-    df = df[df["contract_market_name"] == "GOLD"]
     df["report_date_as_yyyy_mm_dd"] = pd.to_datetime(
         df["report_date_as_yyyy_mm_dd"], format="ISO8601", utc=True
     )
@@ -65,12 +89,35 @@ def main() -> None:
         if col not in ("report_date_as_yyyy_mm_dd", "commodity_name",
                        "contract_market_name"):
             df[col] = pd.to_numeric(df[col], errors="coerce")
+    # prefer the outright contract when multiple markets exist
+    best = (df.groupby("contract_market_name").size().idxmax()
+            if df["contract_market_name"].nunique() > 1 else df["contract_market_name"].iloc[0])
+    df = df[df["contract_market_name"] == best]
     df = df.rename(columns={"report_date_as_yyyy_mm_dd": "report_date"})
     df = df.sort_values("report_date").drop_duplicates("report_date", keep="last")
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(OUT, index=False)
-    print(f"rows={len(df)}  {df['report_date'].min().date()} -> {df['report_date'].max().date()}")
-    print(df.tail(3).to_string())
+    return df
+
+
+def main() -> None:
+    for slug, candidates in TARGETS:
+        df = None
+        for cand in candidates:
+            df = fetch_contract(cand)
+            if df is not None:
+                break
+        if df is None or df.empty:
+            print(f"{slug:>10}: FAILED (no rows for {candidates})")
+            continue
+        df.to_parquet(OUT / f"{slug}.parquet", index=False)
+        print(f"{slug:>10}: {len(df)} rows  "
+              f"{df['report_date'].min().date()} -> {df['report_date'].max().date()}"
+              f"  market={df['contract_market_name'].iloc[0]}")
+    # legacy gold alias
+    g = OUT / "gold.parquet"
+    if g.exists():
+        import shutil
+        shutil.copy(g, Path(r"C:\Users\dell\mt5-research\data\cot_gold.parquet"))
+        print("legacy cot_gold.parquet refreshed")
 
 
 if __name__ == "__main__":

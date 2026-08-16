@@ -7,17 +7,40 @@ and the quant-platform lake D1 history for long-horizon context.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 import pandas as pd
 
 _VANTAGE = r"C:\Users\dell\gold-desk\data\bars_vantage"
 _LAKE = r"C:\Users\dell\quant-platform\data\lake"
-_COT = r"C:\Users\dell\mt5-research\data\cot_gold.parquet"
+_COT = Path(r"C:\Users\dell\mt5-research\data\cot")
+_COT_LEGACY = Path(r"C:\Users\dell\mt5-research\data\cot_gold.parquet")
+
+# MT5 symbol -> cot slug (base-currency future; JPY crosses use the yen)
+_SYMBOL_SLUG = {
+    "XAUUSD": "gold", "XAGUSD": "silver",
+    "USDJPY": "jpy", "EURJPY": "jpy", "GBPJPY": "jpy", "CADJPY": "jpy",
+    "AUDJPY": "jpy", "NZDJPY": "jpy", "CHFJPY": "jpy",
+    "EURUSD": "eur", "EURGBP": "eur", "EURCHF": "eur",
+    "GBPUSD": "gbp", "USDCAD": "cad", "AUDUSD": "aud", "NZDUSD": "nzd",
+    "USDCHF": "chf",
+    "DXY": "dxy", "SP500": "sp500", "NDX": "nasdaq100",
+}
 
 
-def load_cot() -> pd.DataFrame:
-    """CFTC legacy COT for COMEX GOLD: weekly report_date (Tuesday, UTC)."""
-    df = pd.read_parquet(_COT)
+def load_cot(symbol: str = "XAUUSD") -> pd.DataFrame:
+    """CFTC legacy COT for the symbol's currency/commodity future.
+
+    Weekly report_date (Tuesday, UTC). XAUUSD -> GOLD (legacy alias kept).
+    EUR not available in the legacy schema (see data_registry)."""
+    slug = _SYMBOL_SLUG.get(symbol)
+    if slug is None:
+        raise KeyError(f"no COT mapping for {symbol}")
+    if symbol == "XAUUSD" and not (_COT / "gold.parquet").exists():
+        path = _COT_LEGACY
+    else:
+        path = _COT / f"{slug}.parquet"
+    df = pd.read_parquet(path)
     df["report_date"] = pd.to_datetime(df["report_date"], utc=True)
     return df.sort_values("report_date").reset_index(drop=True)
 

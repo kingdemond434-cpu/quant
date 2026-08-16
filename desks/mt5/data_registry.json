@@ -14,15 +14,46 @@
       "provenance": "MT5 copy_rates_from_pos"
     },
     "fred_macro": {
-      "lifecycle": "INGESTED",
-      "source": "FRED API",
-      "series": ["DFII10", "T10YIE", "DGS2", "DGS10", "VIXCLS", "DTWEXBGS", "DFF"],
+      "lifecycle": "CORE",
+      "source": "FRED API (fredgraph CSV, no key)",
+      "series": ["DGS2", "DGS10", "DGS30", "DFII5", "DFII10", "T5YIE", "T10YIE",
+                 "T10Y2Y", "TB3MS", "DFF", "SOFR", "WALCL", "VIXCLS",
+                 "BAMLH0A0HYM2", "DTWEXBGS", "DTWEXM", "DEXJPUS", "DEXUSEU",
+                 "DEXUSUK", "DEXCAUS", "DEXUSAL", "DEXUSNZ", "DEXSZUS",
+                 "DEXCHUS", "DCOILWTICO", "PCOPPUSDM", "SP500", "NASDAQCOM",
+                 "NIKKEI225"],
       "format": "parquet",
       "path": "data/lake/fred_*.parquet",
-      "coverage": "1962-2026",
+      "coverage": "1934-2026",
       "ingested": "2026-08-16",
-      "notes": "Current vintage only; ALFRED key = point-in-time upgrade path",
+      "notes": "Current vintage only; ALFRED key = point-in-time upgrade path. "
+               "DTWEXM ends 2019 (discontinued); BAMLH0A0HYM2 starts 2023; "
+               "gold PM fix series 404s on FRED (XAUUSD H1 covers gold pricing)",
       "provenance": "fred.stlouisfed.org"
+    },
+    "cot_fx": {
+      "lifecycle": "CORE",
+      "source": "CFTC legacy futures-only (Socrata 6dca-aqww)",
+      "contracts": ["gold", "silver", "jpy", "gbp", "cad", "aud", "nzd",
+                    "chf", "dxy", "sp500", "nasdaq100"],
+      "format": "parquet",
+      "path": "data/cot/*.parquet",
+      "coverage": "1986-2026 weekly (aud 1987, nzd 1999, dxy 1992)",
+      "ingested": "2026-08-16",
+      "notes": "EUR FX absent from legacy schema (known CFTC quirk; euro lives "
+               "in disaggregated/TFF only - registered as EUR_COT_BLOCKED). "
+               "sp500 broad group ends 2021-09; nasdaq100 market = NASDAQ MINI "
+               "since 2021. JPY crosses all map to the yen contract.",
+      "provenance": "publicreporting.cftc.gov",
+      "mapping": "mt5desk/data.py _SYMBOL_SLUG"
+    },
+    "bis_eer": {
+      "lifecycle": "DISCOVERED",
+      "source": "BIS stats API",
+      "status": "blocked - /api/v2/data 500/501 on all standard paths (2026-08-16)",
+      "notes": "EER need covered pragmatically by FRED DTWEXBGS/DTWEXM; "
+               "retry BIS web bulk download later",
+      "quarantined": true
     },
     "spdr_gld_holdings": {
       "lifecycle": "DISCOVERED",
@@ -75,11 +106,19 @@
       "notes": "GC futures/options OI, volatility analytics, settlement; delayed quotes only"
     },
     "cot": {
-      "lifecycle": "DISCOVERED",
+      "lifecycle": "CORE",
       "source": "CFTC public",
-      "status": "not yet fetched",
-      "priority": "medium",
-      "notes": "Historical COT via public reporting environment"
+      "status": "fetched - see cot_fx entry",
+      "priority": "done",
+      "notes": "superseded by cot_fx (multi-contract lake)"
+    },
+    "eur_cot_blocked": {
+      "lifecycle": "DISCOVERED",
+      "source": "CFTC",
+      "status": "blocked - EURO FX absent from legacy futures-only schema; "
+               "disaggregated Socrata schema id 72ab-3q3s returns 404",
+      "notes": "EUR positioning via FRED rates differentials + EURUSD H1 for now",
+      "quarantined": true
     },
     "gdelt": {
       "lifecycle": "DISCOVERED",
