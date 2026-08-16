@@ -42,10 +42,12 @@ Priority tiers (P1 = wire into running pipeline now; P2 = next; P3 = queued):
 
 - **P1 (in pipeline already):** shadow→promotion ladder w/ auto-verdict +
   auto-retire; dynamic Kelly sizing (Q_OPT from equity; ramp by live n); weekly
-  universe sweep (hunt7, Mondays 23:00 UTC auto); research genealogy (every
-  test logged with family tag — hunt6/hunt7 records); live-vs-backtest reality
-  model (live_ledger vs forward ledger; spread/latency/MAE/MFE audit); alpha
-  decay + change-point detectors (roll20 exp monitor in promoter).
+  universe sweep (hunt7 + hunt8 COT, Mondays 23:00 UTC auto); research genealogy
+  (every test logged with family tag — hunt6/hunt7/hunt8 records); live-vs-
+  backtest reality model (live_ledger vs forward ledger; spread/latency/MAE/MFE
+  audit); alpha decay + change-point detectors (roll20 exp monitor in promoter);
+  multiplicity correction (research/multiplicity.py — deflated t per family +
+  total, gate_ds flag on every survivor).
 - **P2 (next builds):** Asia-session super-miner (see §3); survivor-neighborhood
   expansion hammer; A/B/C trade-quality scoring + size-proportional capital;
   meta-labeler (skip/normal/increase/max on regime+spread+vol+family-health);
@@ -55,15 +57,19 @@ Priority tiers (P1 = wire into running pipeline now; P2 = next; P3 = queued):
   not fixed TTL); MAE/MFE exploitation; profit-lock optimizer; re-entry engine;
   regime-conditioned parameter sets (high/low ATR, Asia range compression,
   prior-US impulse, correlation-break); DOW/month-end/quarter-end/holiday
-  conditioning tags.
+  conditioning tags; event/fixing engine (Tokyo/London/NY opens, CPI/NFP/FOMC/
+  BoJ dates from official schedules); options-derived state (skew, term
+  structure, expected move) via free IV mirrors; macro/rates relative-value
+  conditioning (yield differentials × intraday triggers); cross-market
+  price-discovery lead/lag (futures-state → MT5 spot).
 - **P3 (architecture):** Alpha Independence Hunter (reward = expectancy ×
   robustness × scalability × regime complementarity × DD complementarity ÷
   correlation with live book — bounties for profit during Gold-Asia's worst
   weeks); family-aware allocator (10 hunt6 sleeves = ONE family until residual
   correlations prove otherwise; size cluster for E[log W]); portfolio-first
   promotion (promote on marginal E[log W] gain, not standalone t); Bayesian
-  live updater (live evidence dominates posterior); Deflated-Sharpe/PBO haircut
-  on multi-test survivors; counterfactual robustness engine (perturb sessions,
+  live updater (live evidence dominates posterior); PBO/selection-bias audit
+  beyond deflated t; counterfactual robustness engine (perturb sessions,
   entries, exits, delays; prefer plateaus over points); adversarial killer agent
   (leakage, DST, stale bars, future info, symbol quirks); synthetic disaster
   simulator (gaps, 5× spread, disconnect, duplicate orders, broker rejection);
@@ -167,9 +173,72 @@ blocked → registry marks blocked; retry only via alternate free endpoints.
 
 ## 8. Standing automation (already wired)
 
-- Weekly universe sweep (hunt7) Monday 23:00 UTC after universe refresh;
-  hunt7_state.json freshness guard; results in reports/hunt7.json.
+- Weekly universe sweep (hunt7 + hunt8 COT) Monday 23:00 UTC after universe
+  refresh; hunt7_state.json freshness guard; results in reports/hunt7.json,
+  hunt8.json (multiplicity-annotated via research/multiplicity.py).
 - Daily shadow-forward + promoter at 22:00 UTC.
 - Live reality audit continuous in gateway (spread/latency/MAE/MFE recorded
   in live_ledger.jsonl).
 - All survivors enter portfolio-first evaluation before capital moves.
+
+## 9. Canonical 27-bucket backlog (status)
+
+1. Mechanism mining around proven Gold/JPY family — causal/session
+   decomposition + sibling expansion | P2, flagship §3
+2. Orthogonal alpha across FX/metals/indices/rates/energy/cross-asset | hunt7
+   LIVE; hunt8 (COT) LIVE; indices/energy data = Tier-1 fetch pending
+3. Proprietary/paid data (CME MBO, CLS, OTC vol, positioning, physical) |
+   Tier-2/3 queue in §5, ROI-ranked
+4. Portfolio-first research: every strategy scored by marginal E[log W] | P3
+   (Alpha Independence Hunter; portfolio_hunt6 = prototype)
+5. Adaptive leverage/Kelly with cluster-aware covariance + state-dependent
+   risk | P1 (auto_lot/ramp); cluster-covariance upgrade P3
+6. Execution alpha: market vs limit, entry delay, spread/slippage gating,
+   venue routing, fill prediction, markout/toxicity | spread_gate LIVE;
+   venue routing = Fusion Zero plan; markout/toxicity = P2
+7. Trade-path optimization: MAE/MFE, dynamic exits, profit lock, runners,
+   time stops, re-entry | P2
+8. Regime/state models activating only positive-conditional-expectancy
+   sleeves | P2 (regime-conditioned params); BIS/vol states data-ready
+9. Change-point/alpha-decay detection + automatic capital rotation | P1
+   (promoter roll20/maxDD/exp monitors + auto-retire)
+10. Hierarchical models sharing info across related sleeves | P3 (JPY basket
+    state model, gold macro-state model)
+11. Deflated Sharpe/PBO/family-level multiplicity | P1 (multiplicity.py;
+    PBO deeper audit P3)
+12. Adversarial falsification: leakage, DST/session bugs, impossible fills,
+    spread errors, overfit | P3 (killer agent); DST/session audit available
+    on demand
+13. Synthetic stress + operational fault simulation | P3
+14. Multi-broker/live-feed shadow replication | Fusion Zero = active plan;
+    cross-broker state (Tier 2)
+15. Capacity/scalability modeling across capital scales | P3
+16. Research-compute allocation: mine successful neighborhoods, reserve
+    orthogonal budget | P2 convention (neighborhood hammer + unknown-
+    unknown desk)
+17. External alpha intelligence (papers/MQL5/Myfxbook/YouTube/GitHub/forums)
+    → falsifiable hypotheses | standing habit, External Alpha Intelligence
+    Desk
+18. Drawdown-alpha mining (profit when champions lose) | P3 (DD bounty in
+    Alpha Independence Hunter)
+19. Meta-labelers (skip/normal/increase/max-size) | P2
+20. Automated champion/challenger replacement + Bayesian live updating | P1
+    (promoter) + P3 (Bayesian posterior upgrade)
+21. Cross-market price-discovery: futures/order flow → slower MT5 | P2;
+    gated on Tier-2 futures data
+22. Event/fixing engines: Tokyo/London/NY opens, CPI/NFP/FOMC/BoJ, month-end,
+    expiry, benchmark flows | P2 (calendar-engine build); FRED/CFTC data
+    ready; official schedules = free
+23. Options-derived state: skew, term structure, gamma, expected move | P2
+    (free IV mirrors); CME CVOL = Tier 2
+24. Macro/rates relative-value conditioning | P2 (FRED lake ready: yield
+    differentials × intraday triggers)
+25. Physical commodity + alternative data branches | Tier-1 queue (LBMA/SGE/
+    WGC registry entries) + Alt-Data desk
+26. Permanent dataset frontier agent (discover → score → acquire queue) |
+    standing role; registry + Tier 1/2/3 §5 = current frontier
+27. Proprietary execution/market-state DB (compounding asset over time) |
+    LIVE via live_ledger.jsonl + gateway reality audit + shadow ledgers
+
+Status legend: P1 = wired and running; P2 = next build (data-ready where
+noted); P3 = architecture queue; LIVE = executing now.
