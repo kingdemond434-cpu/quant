@@ -86,15 +86,15 @@ try {
     if ($telemetry -or $telemetrySupervisor) {
         $telemetryWasRunning = $true
         $telemetrySupervisor | ForEach-Object {
-            Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+            & taskkill.exe /PID $_.ProcessId /T /F *> $null
         }
         $telemetry | ForEach-Object {
-            Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+            & taskkill.exe /PID $_.ProcessId /T /F *> $null
         }
         Get-CimInstance Win32_Process -Filter "Name='terminal64.exe'" | Where-Object {
             $_.ExecutablePath -eq $Terminal
         } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
-        Start-Sleep -Seconds 3
+        Start-Sleep -Seconds 5
     }
 
     $ingestUniverse = if ((Get-Date).DayOfWeek -eq "Sunday") { "all" } else { "mt5-liquid-core" }
