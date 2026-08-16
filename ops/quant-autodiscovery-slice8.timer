@@ -1,0 +1,10 @@
+[Unit]
+Description=Quant Autodiscovery Slice 8 (at :23)
+
+[Timer]
+OnCalendar=*:23
+Persistent=true
+RandomizedDelaySec=10
+
+[Install]
+WantedBy=timers.target

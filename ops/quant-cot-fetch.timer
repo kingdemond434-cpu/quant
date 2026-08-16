@@ -1,0 +1,9 @@
+[Unit]
+Description=Fetch CFTC COT data every Friday 20:30 UTC (report published 15:30 ET)
+
+[Timer]
+OnCalendar=Fri *-*-* 20:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

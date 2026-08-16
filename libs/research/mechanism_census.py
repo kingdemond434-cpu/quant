@@ -842,6 +842,10 @@ CONSTRUCTION_CLASS: dict[str, str] = {
     "inverse_reference": "relative_value_convergence",
     "persistent_long": "market_risk_premium",
     "funding_stress_reversal": "positioning_crowding_unwind",
+    # Same payer as funding_stress_reversal -- the crowded levered book -- measured from the
+    # CFTC COT weekly positioning print rather than the venue funding print. Two meters of one
+    # mechanism, not two mechanisms; the census says so and the divergence register agrees.
+    "cot_positioning_reversal": "positioning_crowding_unwind",
     # The library's FIRST spec whose family label and census class agree on carry. Distinct from
     # `funding_stress_reversal` on the same input: that one FADES extreme funding (its payer is a
     # trader liquidated on the venue's schedule), this one COLLECTS ordinary funding (its payer is

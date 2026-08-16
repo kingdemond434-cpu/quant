@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import pandas as pd
 
 from libs.autodiscovery.memory import CandidateStore
 from libs.autodiscovery.models import CycleResult, Family, MarketSeries
@@ -109,10 +110,52 @@ def _attach_producer(df: Any, series: dict[str, dict[str, float]]) -> None:
             df[col] = vals
 
 
+def _load_cot_series() -> dict[str, pd.Series]:
+    """Load CFTC COT spec-share series per asset (btc/eth) from data/cot/*.parquet.
+
+    NO-LOOKAHEAD: each COT row is stamped with ``pub_date`` = report date + 4 calendar days
+    (published every Friday ~15:30 ET; +4d is the honest "available from" stamp for D1 bars
+    that timestamp at bar START). Series are reindexed onto a symbol's bar index with
+    PAST-ONLY ffill keyed on pub_date, exactly like the BTC reference close: a bar sees the
+    last COT report whose publication preceded it, never the current one.
+    """
+    base = Path(_LAKE_ROOT).parent / "cot"
+    out: dict[str, pd.Series] = {}
+    for asset in ("btc", "eth"):
+        path = base / f"{asset}.parquet"
+        if not path.exists():
+            continue
+        cot = pd.read_parquet(path)
+        if cot.empty or "pub_date" not in cot.columns:
+            continue
+        idx = pd.DatetimeIndex(pd.to_datetime(cot["pub_date"])).tz_localize("UTC")
+        out[asset] = pd.Series(
+            cot["net_spec"].to_numpy("float64") / cot["oi"].clip(lower=1.0).to_numpy("float64"),
+            index=idx,
+        ).sort_index()
+    return out
+
+
+def _attach_cot(df: pd.DataFrame, asset: str | None, cot: dict[str, pd.Series]) -> None:
+    """Attach COT spec/comm share columns to one symbol frame (past-only ffill)."""
+    if asset is None or asset not in cot:
+        return
+    s = cot[asset].reindex(df.index, method="ffill")
+    if not s.isna().all():
+        df["cot_spec_share"] = s.to_numpy("float64")
+
+
+_COT_ASSET: dict[str, str] = {
+    "BTCUSDT": "btc", "BTCUSD": "btc", "BTCUSDC": "btc",
+    "ETHUSDT": "eth", "ETHUSD": "eth", "ETHUSDC": "eth",
+}
+
+
 def _read_frames(symbols: Sequence[str], timeframe: Timeframe, lake_root: str) -> dict[str, Any]:
     """Read + cache each symbol's lake frame once (indexed by timestamp)."""
     lake = ParquetLake(lake_root)
     econ, econ_symbols = _load_producer_economics(_PRODUCER_ECONOMICS)
+    cot = _load_cot_series()
     frames = {}
     for s in symbols:
         register_instrument(InstrumentSpec(symbol=s, asset_class=AssetClass.CRYPTO, description=s))
@@ -123,6 +166,11 @@ def _read_frames(symbols: Sequence[str], timeframe: Timeframe, lake_root: str) -
         # mechanism gets laundered into a spurious edge across an entire universe.
         if econ and s in econ_symbols:
             _attach_producer(frames[s], econ)
+        # COT is per-ASSET (CME futures on BTC and ETH), so only symbols of that asset get it.
+        # Same discipline as producer economics: a BTC positioning meter on an alt's book would
+        # assert a crowd that is not there.
+        if s in _COT_ASSET:
+            _attach_cot(frames[s], _COT_ASSET[s], cot)
     return frames
 
 
@@ -144,6 +192,8 @@ def _provider_from_frames(frames: dict[str, Any], min_bars: int) -> DataProvider
         if df is None or len(df) < min_bars:
             return None
         funding = df["funding"].to_numpy("float64") if "funding" in df.columns else None
+        cot_spec = (df["cot_spec_share"].to_numpy("float64")
+                    if "cot_spec_share" in df.columns else None)
         # PRODUCER ECONOMICS, for treasury_cost_base_liquidation. Attached exactly as funding is:
         # present when the lake carries the column, None when it does not, and NEVER synthesised.
         #
@@ -179,6 +229,7 @@ def _provider_from_frames(frames: dict[str, Any], min_bars: int) -> DataProvider
             ref_high=ref_high,
             ref_low=ref_low,
             funding=funding,
+            cot_spec_share=cot_spec,
             hashprice=hashprice,
             difficulty=difficulty,
         )
@@ -206,6 +257,7 @@ def load_universe(
     timeframe: Timeframe = Timeframe.D1,
     *,
     limit: int | None = 30,
+    offset: int = 0,
     lake_root: str = _LAKE_ROOT,
     min_bars: int = _MIN_BARS,
 ) -> tuple[list[str], DataProvider]:
@@ -240,6 +292,11 @@ def load_universe(
 
     ``limit=None`` keeps every symbol and is what the profiling above used; it is available for
     deliberate, resourced runs, not for the daily cycle.
+
+    ``offset`` slices the ranked universe for CHUNKED cycles (slice0..slice5 timers): the daily
+    campaign runs 6 x 50-symbol chunks instead of one 30-symbol cap, so the whole lake is tested
+    every hour instead of the top-30 only. Chunks share the SAME provider (all frames are read
+    and cached once), so COT/producer/funding columns attach identically in every slice.
     """
     all_syms = crypto_symbols(timeframe, lake_root=lake_root)
     frames = _read_frames(all_syms, timeframe, lake_root)
@@ -253,7 +310,7 @@ def load_universe(
         return float(dollar.median()) if len(dollar) else 0.0
 
     eligible.sort(key=_adv, reverse=True)
-    selected = eligible if limit is None else eligible[:limit]
+    selected = eligible if limit is None else eligible[offset: offset + limit]
     return selected, _provider_from_frames(frames, min_bars)
 
 

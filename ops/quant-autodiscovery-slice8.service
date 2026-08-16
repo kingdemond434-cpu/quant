@@ -1,0 +1,19 @@
+[Unit]
+Description=Quant Autodiscovery Slice 8 (symbols 240-269)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=quant
+WorkingDirectory=/home/quant/quant-platform
+Environment=PATH=/home/quant/quant-platform/.venv/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/run_crypto_research.py --db data/sor_crypto.sqlite --timeframe D1 --max-symbols 30 --offset 240
+StandardOutput=journal
+StandardError=journal
+TimeoutSec=1800
+MemoryMax=500M
+MemoryHigh=450M
+
+[Install]
+WantedBy=multi-user.target
