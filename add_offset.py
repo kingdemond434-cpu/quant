@@ -40,10 +40,12 @@ if old2 not in src:
 src = src.replace(old2, new2)
 
 # Update docstring with offset chunking note
-old3 = """    ``limit=None`` keeps every symbol and is what the profiling above used; it is available for
+old3 = """    ``limit=None`` keeps every symbol and is what the profiling above used; it is
+    available for
     deliberate, resourced runs, not for the daily cycle.
     \"\"\""""
-new3 = """    ``limit=None`` keeps every symbol and is what the profiling above used; it is available for
+new3 = """    ``limit=None`` keeps every symbol and is what the profiling above used; it is
+    available for
     deliberate, resourced runs, not for the daily cycle.
 
     ``offset`` slices the ranked universe for CHUNKED cycles (slice0..slice5 timers): the daily

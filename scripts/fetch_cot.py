@@ -24,7 +24,6 @@ from __future__ import annotations
 
 import json
 import urllib.request
-from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
@@ -83,7 +82,7 @@ def to_frame(rows: list[dict]) -> pd.DataFrame:
     if df.empty:
         return df
     df = df.groupby("date", as_index=False).agg(
-        {c: "sum" for c in ["spec_long", "spec_short", "comm_long", "comm_short", "oi"]}
+        dict.fromkeys(["spec_long", "spec_short", "comm_long", "comm_short", "oi"], "sum")
     )
     df["pub_date"] = df["date"] + pd.Timedelta(days=4)
     df["net_spec"] = df["spec_long"] - df["spec_short"]

@@ -4,7 +4,7 @@ from pathlib import Path
 p = Path("/home/quant/quant-platform/ops/crontab.manifest")
 src = p.read_text()
 
-block = """# ---------------------------------------------------------------------------------------------
+block = """# -------------------------------------------------------------------------------
 # AUTODISCOVERY SLICES (10 x 30-symbol chunks over the full lake, one pass per hour)
 # quant-autodiscovery-slice{0..9}.timer at :00,:10,:20,:30,:40,:50,:03,:13,:23,:33
 # -> scripts/run_crypto_research.py --max-symbols 30 --offset {0,30,...,270}
