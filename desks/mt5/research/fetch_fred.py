@@ -51,6 +51,8 @@ SERIES = {
     "DEXSZUS": "USDCHF noon",
     "DEXCHUS": "CNY per USD noon",
     "DCOILWTICO": "WTI crude spot",
+    "ECBDFR": "ECB deposit facility rate",
+    "IR3TIB01JPM156N": "Japan 3M interbank (JGB proxy)",
     "PCOPPUSDM": "copper spot",
     "SP500": "S&P 500",
     "NASDAQCOM": "NASDAQ composite",

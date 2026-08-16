@@ -21,7 +21,7 @@
                  "BAMLH0A0HYM2", "DTWEXBGS", "DTWEXM", "DEXJPUS", "DEXUSEU",
                  "DEXUSUK", "DEXCAUS", "DEXUSAL", "DEXUSNZ", "DEXSZUS",
                  "DEXCHUS", "DCOILWTICO", "PCOPPUSDM", "SP500", "NASDAQCOM",
-                 "NIKKEI225"],
+                 "NIKKEI225", "ECBDFR", "IR3TIB01JPM156N"],
       "format": "parquet",
       "path": "data/lake/fred_*.parquet",
       "coverage": "1934-2026",
