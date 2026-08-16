@@ -17,6 +17,7 @@ def test_mt5_frontier_is_research_only_and_publishes_to_shadow() -> None:
     assert "--place" not in script
     assert "& $action *> $stepLog" in script
     assert "& $action *>&1 | Tee-Object" not in script
+    assert '$env:PYTHONUNBUFFERED = "1"' in script
 
 
 def test_mt5_frontier_covers_cross_asset_intraday_and_daily_frames() -> None:
@@ -24,7 +25,8 @@ def test_mt5_frontier_covers_cross_asset_intraday_and_daily_frames() -> None:
     assert '--timeframes "D1,H4,H1,M15"' in script
     for asset_class in ("fx", "metal", "energy", "index"):
         assert f"data/lake/bronze/{asset_class}" in script
-    assert '"Sunday"' in script and '{ "all" } else { "mt5-liquid-core" }' in script
+    assert '"Sunday"' in script and 'Run-Step "full_broker_d1"' in script
+    assert "DEGRADED" in script
 
 
 def test_mt5_frontier_restores_gold_sensor_after_exclusive_terminal_use() -> None:

@@ -14,6 +14,7 @@ $logPath = Join-Path $StateRoot "logs\mt5_frontier_windows.log"
 $lockPath = Join-Path $StateRoot "data\.mt5_frontier_windows.lock"
 $started = [DateTimeOffset]::UtcNow
 $steps = [ordered]@{}
+$optionalFailures = @()
 $lock = $null
 $goldDeskWasRunning = $false
 
@@ -74,6 +75,7 @@ try {
     # environment's pure-Python dependencies without invoking its launcher shim (which times out
     # against this portable investor terminal).
     $env:PYTHONPATH = "$CodeRoot;$StateRoot\.venv\Lib\site-packages"
+    $env:PYTHONUNBUFFERED = "1"
     Set-Location $StateRoot
     Write-FrontierStatus "RUNNING" "read-only MT5 collection and research started"
 
@@ -105,12 +107,10 @@ try {
         Start-Sleep -Seconds 5
     }
 
-    $ingestUniverse = if ((Get-Date).DayOfWeek -eq "Sunday") { "all" } else { "mt5-liquid-core" }
-
     Run-Step "ingest" {
         & $Python "$CodeRoot\scripts\ingest_history.py" --base "$StateRoot\data\lake" `
           --terminal $Terminal --allow-readonly-live --expected-server $ExpectedServer `
-          --universe $ingestUniverse --timeframes "D1,H4,H1,M15" --warmup-sleep 30 --tries 3
+          --universe mt5-liquid-core --timeframes "D1,H4,H1,M15" --warmup-sleep 30 --tries 3
     }
     foreach ($tf in @("D1", "H4", "H1", "M15")) {
         $bars = if ($tf -eq "M15") { 30000 } elseif ($tf -eq "H1") { 20000 } else { 8000 }
@@ -120,6 +120,21 @@ try {
               --universe mt5-liquid-core --timeframe $tf --bars $bars `
               --db "$StateRoot\data\sor_mt5_$($tf.ToLower()).sqlite" `
               --report-dir "$StateRoot\reports\autodiscovery\mt5_$tf"
+        }
+    }
+
+    # Full broker breadth is a Sunday expansion after the liquid core has already reached the
+    # canonical pipeline. A native failure in a remote stock symbol is visible but cannot erase
+    # the higher-value core cycle.
+    if ((Get-Date).DayOfWeek -eq "Sunday") {
+        try {
+            Run-Step "full_broker_d1" {
+                & $Python "$CodeRoot\scripts\ingest_history.py" --base "$StateRoot\data\lake" `
+                  --terminal $Terminal --allow-readonly-live --expected-server $ExpectedServer `
+                  --universe all --timeframes "D1" --warmup-sleep 30 --tries 2
+            }
+        } catch {
+            $optionalFailures += "full_broker_d1: $($_.Exception.Message)"
         }
     }
 
@@ -144,7 +159,11 @@ try {
           "cd /home/quant/quant-platform && tar -xzf /tmp/mt5-frontier.tar.gz && rm -f /tmp/mt5-frontier.tar.gz && .venv/bin/python scripts/run_crossasset_shadow.py"
     }
     Remove-Item -Force $archive -ErrorAction SilentlyContinue
-    Write-FrontierStatus "PASS" "fresh MT5 evidence published to canonical shadow pipeline"
+    if ($optionalFailures.Count) {
+        Write-FrontierStatus "DEGRADED" ($optionalFailures -join "; ")
+    } else {
+        Write-FrontierStatus "PASS" "fresh MT5 evidence published to canonical shadow pipeline"
+    }
     exit 0
 } catch {
     Write-FrontierStatus "FAIL" $_.Exception.Message
