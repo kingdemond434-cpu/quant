@@ -71,11 +71,11 @@ def test_codex_controller_is_noninteractive_fenced_and_checkpointed() -> None:
     assert "RUNNING_PIPELINE" in source and "RUNNING_CONTROLLER" in source
     assert "LEASE_ERROR" in source and "CLAIM_RC" in source
     assert "CODEX_NIGHTLY_TIMEOUT_SECONDS:-21600" in source
-    assert 'CODEX_NIGHTLY_MODEL="${CODEX_NIGHTLY_MODEL:-gpt-5.6-sol}"' in source
-    assert "CODEX_NIGHTLY_REASONING_EFFORT:-max" in source
+    assert 'CODEX_NIGHTLY_MODEL="${CODEX_NIGHTLY_MODEL:-gpt-5.6-terra}"' in source
+    assert "CODEX_NIGHTLY_REASONING_EFFORT:-medium" in source
     service = SERVICE.read_text("utf-8")
-    assert "CODEX_NIGHTLY_MODEL=gpt-5.6-sol" in service
-    assert "CODEX_NIGHTLY_REASONING_EFFORT=max" in service
+    assert "CODEX_NIGHTLY_MODEL=gpt-5.6-terra" in service
+    assert "CODEX_NIGHTLY_REASONING_EFFORT=medium" in service
     assert "--dangerously-bypass-approvals-and-sandbox" not in source
     assert source.index("check_constitution_core.py") < source.index(
         "controller_checkpoint.py claim"
@@ -100,6 +100,9 @@ def test_midnight_waits_for_an_existing_pipeline_before_reasoning() -> None:
 
 def test_controller_prompt_forces_continuation_conversion_and_open_world_coverage() -> None:
     prompt = PROMPT.read_text("utf-8")
+    # Keep the nightly controller implementation-first and prevent mandate duplication
+    # from silently consuming the reasoning budget again.
+    assert len(prompt) <= 10_000
     for required in (
         "MASTER_QUANT_CONSTITUTION.md",
         "continuation cycle",
