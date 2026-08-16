@@ -84,6 +84,13 @@ packages = ["libs", "app"]
 line-length = 100
 target-version = "py311"
 src = ["libs", "app", "tests"]
+# `scratch/` is one-off operator debris -- three versions of one aggregator, `fix_*`, `patch_*`,
+# `check_*` one-shots -- committed to the REPO ROOT by a seat that stages broadly. 42 files, 189
+# lint errors, and they held `ruff check .` RED. That is not cosmetic: `deploy/pull_deploy.sh`
+# refuses to deploy on a red gate, so scratch at the root silently disables auto-deploy for the
+# whole desk. Moved rather than deleted -- nothing here is mine to throw away -- and excluded so
+# the gate measures the codebase instead of the debris.
+exclude = ["scratch"]
 
 [tool.ruff.lint]
 select = [

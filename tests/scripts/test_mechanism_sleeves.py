@@ -113,8 +113,17 @@ def test_A_GENERATOR_WITHOUT_ITS_INPUT_IS_FLAT_AND_SAYS_SO() -> None:
     for _cls, subtype, _why, params in M.SLEEVES:
         pos = M._positions(subtype, bare, params)
         assert pos is not None, f"{subtype} must exist in this repo"
+        # GUARDED, because not every sleeve HAS an external input. `hawkes_vol_expansion`
+        # reads only OHLCV, so asserting it goes flat without a sidecar would assert the
+        # exact opposite of correct behaviour -- see the OHLCV test below, which is the
+        # other half of this property. `_input_state` is checked inside the same guard: it
+        # is the thing that separates a missing feed from a genuine neutral reading, and it
+        # only has an answer to give for a sleeve that declares a sidecar contract.
         if subtype in needs_external:
             assert not np.any(pos), f"{subtype} must degrade to FLAT without its input"
+            measured, why = M._input_state(subtype, bare, params)
+            assert measured is False
+            assert "absent" in why
 
 
 def test_A_SLEEVE_NEEDING_ONLY_OHLCV_CANNOT_BE_SILENTLY_STARVED() -> None:
@@ -134,6 +143,79 @@ def test_A_SLEEVE_NEEDING_ONLY_OHLCV_CANNOT_BE_SILENTLY_STARVED() -> None:
     assert pos is not None and np.any(pos), \
         "an OHLCV-only sleeve must produce positions on clustered volatility"
     assert set(np.unique(pos)) <= {-1.0, 0.0, 1.0}, "positions are directional, not sized here"
+
+
+def test_VALID_FUNDING_CAN_BE_NEUTRAL_NOW_WITHOUT_BEING_CALLED_MISSING() -> None:
+    from libs.autodiscovery.generators import MarketSeries
+
+    n = 400
+    close = 100 + np.cumsum(np.random.default_rng(11).normal(0, 1, n))
+    funding = np.sin(np.arange(n) / 13.0) * 0.0001
+    series = MarketSeries(
+        close=close,
+        high=close * 1.01,
+        low=close * 0.99,
+        volume=np.full(n, 1e6),
+        hour=np.arange(n) % 24,
+        ref_close=None,
+        ref_high=None,
+        ref_low=None,
+        funding=funding,
+    )
+    measured, why = M._input_state("funding_stress_reversal", series, {"window": 30})
+    assert measured is True
+    assert "measured" in why
+
+
+def test_BUILD_REPORTS_MEASURED_ALL_ZERO_FUNDING_AS_NEUTRAL(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from libs.autodiscovery.generators import MarketSeries
+
+    # 120 BARS, NOT 80. `producer_margin_stress` declares a 90-day window, so an 80-bar fixture
+    # makes its input genuinely UNDERPOWERED and the sleeve correctly reports NO-INPUT -- which
+    # would turn this test into an assertion that a short series is a market view. The fixture has
+    # to be long enough for every sleeve's declared window or it is testing the fixture.
+    n = 120
+    close = np.linspace(100.0, 110.0, n)
+    funding = np.sin(np.arange(n) / 7.0) * 0.0001
+    reference = close * 1.01
+    series = MarketSeries(
+        close=close,
+        high=close * 1.01,
+        low=close * 0.99,
+        volume=np.full(n, 1e6),
+        hour=np.arange(n) % 24,
+        ref_close=reference,
+        ref_high=reference * 1.01,
+        ref_low=reference * 0.99,
+        funding=funding,
+        # HASHPRICE, ADDED 2026-08-16 WHEN `_input_state` GREW TO COVER producer_margin_stress.
+        # The assertion below is that EVERY sleeve reports NEUTRAL -- a measured input that simply
+        # is not crossing its entry condition. Leaving hashprice absent would make one sleeve
+        # correctly report NO-INPUT, and the test would then be asserting that a starved sleeve is
+        # reported as a market view, which is the exact defect `_input_state` exists to catch.
+        hashprice=np.full(n, 50.0),
+    )
+    monkeypatch.setattr(M, "_exception_recorded", lambda: (True, "test exception"))
+    # THE UNIVERSE GATE RUNS BEFORE `_series` AND WOULD REFUSE FIRST. Since 2026-08-16 the symbol
+    # set is derived from live equity and lake history rather than hardcoded, so on a host with
+    # neither -- which is every CI runner -- `build()` returns NO-TRADEABLE-UNIVERSE before it ever
+    # reaches the monkeypatched `_series`. Stubbing both inputs is what keeps this test about the
+    # thing it is testing (all-zero funding reported NEUTRAL, not NO-INPUT) rather than about
+    # whether the box happens to have a lake.
+    monkeypatch.setattr(M, "_equity_and_leverage", lambda: (10_000.0, 1.0, "stubbed for test"))
+    monkeypatch.setattr(M, "_history_and_liquidity",
+                        lambda _c: ({"BTCUSDT": 400}, {"BTCUSDT": 1e9}))
+    monkeypatch.setattr(M, "_series", lambda _symbols: {"BTCUSDT": series})
+    monkeypatch.setattr(M, "_positions", lambda _subtype, _series, _params: np.zeros(n))
+    monkeypatch.setattr(M, "_marks", lambda: {})
+    monkeypatch.setattr(M, "_STATE", tmp_path / "state.json")
+
+    rep = M.build()
+    assert {row["state"] for row in rep["sleeves"]} == {"NEUTRAL"}
+    assert all(row["input_coverage"] == {"measured": 1, "attempted": 1}
+               for row in rep["sleeves"])
 
 
 def test_EVERY_DECLARED_SLEEVE_HAS_A_GENERATOR_IN_THIS_REPO() -> None:

@@ -377,6 +377,62 @@ def _history_and_liquidity(candidates: tuple[str, ...]) -> tuple[dict[str, int],
             continue          # ranks LAST in `select`; unmeasured is not disqualifying
     return hist, liq
 
+def _input_state(subtype: str, series: Any, params: dict[str, float]) -> tuple[bool, str]:
+    """Distinguish a valid neutral signal from a generator's missing-input zero fallback.
+
+    Both relevant generators deliberately return an all-zero vector when their required sidecar
+    is absent.  The vector therefore cannot answer whether zero means *neutral now* or *never
+    measured*.  Inspect the actual declared input instead; otherwise a healthy funding feed is
+    repeatedly misdiagnosed and the repair loop wastes every night fixing data that already works.
+    """
+    # EXTENDED 2026-08-16 FROM TWO SLEEVES TO FOUR. `_input_state` covered only
+    # `funding_stress_reversal` and `intermarket_difference`, and returned "declares no sidecar
+    # contract" -- i.e. MEASURED -- for the other two, which both have one:
+    #
+    #   `funding_carry`           reads MarketSeries.funding, exactly as the fade does
+    #   `producer_margin_stress`  returns np.zeros() outright when MarketSeries.hashprice is None
+    #
+    # So a starved carry or producer sleeve was reported NEUTRAL -- "no symbol crosses the entry
+    # condition" -- when the truth was "the feed is absent". That is precisely the conflation this
+    # function exists to prevent, surviving in the two sleeves it did not enumerate. Caught by
+    # test_A_GENERATOR_WITHOUT_ITS_INPUT_IS_FLAT_AND_SAYS_SO, whose `needs_external` set already
+    # named all four.
+    if subtype in {"funding_stress_reversal", "funding_carry"}:
+        raw = getattr(series, "funding", None)
+        if raw is None:
+            return False, "funding is absent"
+        values = np.asarray(raw, dtype="float64")
+        finite = values[np.isfinite(values)]
+        needed = max(2, int(params.get("window", 1)) + 1)
+        if len(finite) < needed:
+            return False, f"funding has {len(finite)} finite rows; needs at least {needed}"
+        if not np.any(np.abs(finite) > 1e-15):
+            return False, "funding contains no observed non-zero print"
+        return True, f"funding measured ({len(finite)} finite rows)"
+    if subtype == "intermarket_difference":
+        needed = max(2, int(params.get("lookback", 1)) + 1)
+        counts = []
+        for name in ("ref_close", "ref_high", "ref_low"):
+            raw = getattr(series, name, None)
+            if raw is None:
+                return False, f"{name} is absent"
+            values = np.asarray(raw, dtype="float64")
+            counts.append(int(np.isfinite(values).sum()))
+        if min(counts, default=0) < needed:
+            return False, f"reference range has finite rows {counts}; needs at least {needed}"
+        return True, f"reference close/high/low measured ({min(counts)} aligned rows)"
+    if subtype == "producer_margin_stress":
+        raw = getattr(series, "hashprice", None)
+        if raw is None:
+            return False, "hashprice is absent"
+        values = np.asarray(raw, dtype="float64")
+        finite = values[np.isfinite(values)]
+        needed = max(2, int(params.get("window", 1)) + 1)
+        if len(finite) < needed:
+            return False, f"hashprice has {len(finite)} finite rows; needs at least {needed}"
+        return True, f"hashprice measured ({len(finite)} finite rows)"
+    return True, "generator declares no sidecar input contract"
+
 
 def _marks() -> dict[str, float]:
     """Live prices, wallet-agnostic. Empty when the venue is unreadable -- and an EMPTY mark set
@@ -536,17 +592,27 @@ def build() -> dict[str, Any]:
             "chose")
         return rep
 
-    # PASS ONE: every sleeve's position series, computed ONCE. The volatility that sets the clips
-    # and the last value that sets the signal come from the same arrays, so the weight a sleeve
-    # gets and the trade it publishes can never be derived from two different runs of a generator.
+    # PASS ONE: every sleeve's position series AND its input state, computed ONCE.
+    #
+    # The volatility that sets the clips and the last value that sets the signal come from the same
+    # arrays, so the weight a sleeve gets and the trade it publishes can never be derived from two
+    # different runs of a generator. THE INPUT STATE IS CAPTURED IN THE SAME PASS, for the same
+    # reason: "was the feed there" asked in a second sweep could answer about a different read than
+    # the one the positions came from, and the entire point of `_input_state` is to say which of
+    # two identical-looking zero vectors is a market view and which is a missing sidecar.
     series_by_sleeve: dict[str, dict[str, np.ndarray]] = {}
+    inputs_by_sleeve: dict[str, dict[str, dict[str, Any]]] = {}
     for census_class, subtype, _mech, params in SLEEVES:
         got: dict[str, np.ndarray] = {}
+        input_states: dict[str, dict[str, Any]] = {}
         for sym, ser in frames.items():
+            input_ok, input_why = _input_state(subtype, ser, params)
+            input_states[sym] = {"measured": input_ok, "why": input_why}
             pos = _positions(subtype, ser, params)
             if pos is not None and len(pos):
                 got[sym] = pos
         series_by_sleeve[census_class] = got
+        inputs_by_sleeve[census_class] = input_states
 
     vols = {c: _sleeve_vol(series_by_sleeve.get(c, {}), frames) for c, _s, _m, _p in SLEEVES}
     clips, clips_why = _risk_parity_clips(vols)
@@ -565,6 +631,8 @@ def build() -> dict[str, Any]:
                                "clip_frac": round(share * EQUAL_CLIP_FRAC * len(SLEEVES), 6)}
         live: dict[str, float] = {}
         pos_map = series_by_sleeve.get(census_class, {})
+        # FROM PASS ONE, NOT RE-DERIVED. Same read as the positions above it.
+        input_states = inputs_by_sleeve.get(census_class, {})
         if not pos_map and frames:
             row["error"] = f"no generator named {subtype!r} in this repo, or it returned nothing"
         for sym in frames:
@@ -578,13 +646,32 @@ def build() -> dict[str, Any]:
             # all-zero case separately is what keeps "no data" from being published as "no signal".
             live[sym] = last
         row["symbols"] = live
+        row["inputs"] = input_states
+        measured_inputs = sum(bool(v["measured"]) for v in input_states.values())
+        row["input_coverage"] = {
+            "measured": measured_inputs,
+            "attempted": len(input_states),
+        }
         nonzero = {k: v for k, v in live.items() if abs(v) > 1e-12}
         if not nonzero and live:
-            row["state"] = "FLAT-EVERYWHERE"
-            row["why"] = ("every symbol returned 0.0. For this generator that means its INPUT is "
-                          "absent (funding series, or the reference's high/low), not that the "
-                          "market is neutral -- the two are indistinguishable in the number and "
-                          "must not be in the report")
+            if measured_inputs == len(input_states):
+                row["state"] = "NEUTRAL"
+                row["why"] = (
+                    "required input is measured for every attempted symbol; no symbol crosses "
+                    "the predeclared entry condition now"
+                )
+            elif measured_inputs:
+                row["state"] = "PARTIAL-INPUT"
+                row["why"] = (
+                    f"required input measured for {measured_inputs}/{len(input_states)} symbols; "
+                    "zeros on the remainder are not market-neutral observations"
+                )
+            else:
+                row["state"] = "NO-INPUT"
+                row["why"] = (
+                    "every zero came from a generator whose required sidecar input is absent or "
+                    "insufficient; this is UNMEASURED, not a market view"
+                )
         elif not live:
             row["state"] = "NO-SERIES"
         else:
