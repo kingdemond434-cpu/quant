@@ -1,5 +1,5 @@
 {
- "probed": "2026-08-15T03:35:08.094533+00:00",
+ "probed": "2026-08-16T03:35:09.010178+00:00",
  "venues": {
   "binance_futures": {
    "endpoint": "GET fapi.binance.com/fapi/v1/exchangeInfo",
@@ -24,7 +24,7 @@
     "Unlisted": 1687
    },
    "n_live": 27,
-   "n_new_this_run": 5,
+   "n_new_this_run": 0,
    "verdict": "AVAILABLE",
    "n_dead": 3082
   },
@@ -35,15 +35,15 @@
     "Closed": 945
    },
    "n_live": 821,
-   "n_new_this_run": 8,
+   "n_new_this_run": 0,
    "verdict": "AVAILABLE",
    "n_dead": 945
   },
   "coinbase": {
    "endpoint": "GET api.exchange.coinbase.com/products",
    "states": {
-    "online": 517,
-    "delisted": 315
+    "delisted": 315,
+    "online": 517
    },
    "n_live": 517,
    "n_new_this_run": 0,

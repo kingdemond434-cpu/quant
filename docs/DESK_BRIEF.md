@@ -1,4 +1,4 @@
-# DESK BRIEF -- 2026-08-15 09:36Z
+# DESK BRIEF -- 2026-08-16 03:26Z
 
 Machine-generated from measured desk state. Every number traces to an artifact in
 `data/`. Nothing here is an argument. Respond to the evidence, not to another model.
@@ -13,17 +13,17 @@ Machine-generated from measured desk state. Every number traces to an artifact i
    forward clocks promote.
 
 ## Experiment record (45d, harvested from git -- one row per commit)
-- experiments: **1702**; decided: 1007
-- survival rate: **5.4%** (54 survived / 882 refuted / 71 inconclusive)
-- unclassified commit decisions: 138 (commit-discipline defect)
+- experiments: **1804**; decided: 1041
+- survival rate: **5.2%** (54 survived / 910 refuted / 77 inconclusive)
+- unclassified commit decisions: 176 (commit-discipline defect)
 
 | mechanism | tested | survived | rate |
 |---|---:|---:|---:|
-| M_UNMAPPED | 820 | 45 | 5% |
+| M_UNMAPPED | 848 | 45 | 5% |
 | M_ATTENTION_DELAY | 49 | 3 | 6% |
-| M_LIQUIDITY_WITHDRAWAL | 45 | 2 | 4% |
+| M_LIQUIDITY_WITHDRAWAL | 46 | 2 | 4% |
 | M_STRUCTURAL_BARRIER | 44 | 0 | 0% |
-| M_FORCED_DELEVERAGE | 37 | 3 | 8% |
+| M_FORCED_DELEVERAGE | 42 | 3 | 7% |
 | M_SKILL_PERSISTENCE | 14 | 0 | 0% |
 | M_FLOW_PRESSURE | 13 | 0 | 0% |
 | M_FUNDAMENTAL_PROXY | 11 | 0 | 0% |
@@ -31,16 +31,16 @@ Machine-generated from measured desk state. Every number traces to an artifact i
 
 ### Why experiments died (45d)
 
-- `E_DATA_QUALITY` 473 (37%)
-- `B_WRONG_MEASUREMENT` 236 (18%)
-- `H_OVERFIT` 198 (15%)
-- `G_TOO_EXPENSIVE` 178 (14%)
-- `C_WRONG_TIMING` 107 (8%)
-- `F_REGIME_DEPENDENT` 78 (6%)
+- `E_DATA_QUALITY` 488 (37%)
+- `B_WRONG_MEASUREMENT` 242 (18%)
+- `H_OVERFIT` 201 (15%)
+- `G_TOO_EXPENSIVE` 181 (14%)
+- `C_WRONG_TIMING` 109 (8%)
+- `F_REGIME_DEPENDENT` 80 (6%)
 - `D_ALREADY_ARBITRAGED` 16 (1%)
 - `A_NO_MECHANISM` 8 (1%)
 
-**709/1294 = 55% of refutations are MEASUREMENT failures (data quality + wrong construction), not absent alpha.**
+**730/1325 = 55% of refutations are MEASUREMENT failures (data quality + wrong construction), not absent alpha.**
 
 ## FAMILY KILLS -- mechanisms closed by evidence
 

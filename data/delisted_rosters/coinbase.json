@@ -1,1269 +1,1269 @@
 {
  "venue": "coinbase",
  "endpoint": "GET api.exchange.coinbase.com/products",
- "probed": "2026-08-15T03:35:08.094533+00:00",
+ "probed": "2026-08-16T03:35:09.010178+00:00",
  "n_dead": 315,
  "n_new_this_run": 0,
  "symbols": {
   "1INCH-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ACH-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ACX-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ADA-USDC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "AGLD-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "AIOZ-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ALCX-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ALCX-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ANKR-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ANKR-GBP": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ANT-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "API3-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "APT-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ARPA-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ARPA-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ASM-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ATA-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ATA-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "AUCTION-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "AUCTION-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "AXS-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "AXS-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "AXS-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "BADGER-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "BADGER-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "BAL-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "BAND-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "BAND-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "BAND-GBP": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "BAT-USDC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "BICO-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "BICO-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "BIT-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "BIT-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "BNT-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "BNT-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "BNT-GBP": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "BOBA-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "BOND-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "BOND-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "BTC-USDC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "BTRST-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "BTRST-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "BTRST-GBP": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "BTRST-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "BUSD-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "C98-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "CGLD-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "CGLD-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "CGLD-GBP": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "CHZ-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "CLV-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "CLV-GBP": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "CLV-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "CLV-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "COVAL-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "COVAL-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "CRO-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "CRPT-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "CTSI-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "CTX-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "CTX-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "CVC-USDC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "DAI-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "DAI-USDC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "DAR-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "DDX-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "DDX-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "DDX-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "DESO-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "DESO-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "DESO-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "DIA-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "DIA-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "DNT-USDC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "DREP-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "DREP-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "DYP-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "DYP-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ELA-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ENJ-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ENJ-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ENJ-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ENS-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "EOS-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "EOS-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "EOS-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ERN-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ERN-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ERN-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ETH-DAI": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ETH-USDC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "EURC-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "EURC-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "FARM-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "FIDA-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "FIDA-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "FIS-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "FIS-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "FLOW-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "FORT-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "FORTH-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "FORTH-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "FORTH-GBP": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "FOX-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "FX-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "GAL-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "GAL-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "GALA-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "GALA-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "GALA-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "GMT-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "GNO-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "GNT-USDC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "GRT-GBP": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "GUSD-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "GYEN-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "HFT-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "HOPR-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ICP-GBP": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ICP-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "IDEX-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "IDEX-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "INDEX-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "IOTX-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "JUP-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "KEEP-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "KNC-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "KRL-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "KRL-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "KSM-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "LCX-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "LCX-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "LIT-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "LOKA-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "LOOM-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "LOOM-USDC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "LQTY-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "LQTY-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "LRC-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "LRC-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "LRC-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "LSETH-ETH": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MANA-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MANA-ETH": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MANA-USDC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MASK-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MASK-GBP": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MASK-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MATH-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MATIC-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MATIC-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MATIC-GBP": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MATIC-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MATIC-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MCO2-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MCO2-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MDT-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MEDIA-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MEDIA-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "METIS-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MINA-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MINA-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MIR-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MIR-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MIR-GBP": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MIR-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MKR-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MKR-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MOBILE-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MONA-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MOVE-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MPL-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MTL-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MULTI-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MUSD-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MUSE-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "MXC-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "NCT-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "NCT-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "NEST-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "NEST-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "NKN-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "NKN-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "NKN-GBP": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "NMR-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "NMR-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "NMR-GBP": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "NU-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "NU-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "NU-GBP": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "NU-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "OGN-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "OMG-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "OMG-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "OMG-GBP": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "OMG-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "OMNI-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "OOKI-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ORN-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ORN-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ORN-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "PAX-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "PERP-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "PERP-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "PIRATE-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "PLA-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "POLS-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "POLY-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "POLY-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "POND-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "POWR-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "POWR-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "PRQ-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "PRQ-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "PYUSD-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "QSP-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "QSP-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "QUICK-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "RAD-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "RAD-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "RAD-GBP": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "RAD-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "RAI-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "RBN-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "REN-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "REN-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "REP-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "REP-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "REQ-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "REQ-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "REQ-GBP": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "REQ-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "RGT-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "RLC-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "RLY-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "RLY-GBP": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "RLY-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "RLY-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "RNDR-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "RNDR-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "RNDR-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "RONIN-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ROSE-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "SAND-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "SEAM-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "SHPING-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "SHPING-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "SKL-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "SKL-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "SKL-GBP": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "SNT-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "SNX-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "SPELL-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "STG-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "STORJ-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "SUKU-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "SUKU-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "SUPER-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "SUSHI-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "SUSHI-ETH": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "SUSHI-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "SUSHI-GBP": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "SYLO-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "SYLO-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "SYN-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "TIME-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "TIME-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "TONE-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "TRAC-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "TRAC-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "TRB-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "TRIBE-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "TRU-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "TRU-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "TRU-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "TRU-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "TVK-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "UMA-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "UMA-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "UMA-GBP": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "UNFI-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "UPI-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "UPI-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "UST-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "UST-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "UST-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "VGX-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "VGX-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "VGX-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "WAMPL-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "WAMPL-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "WBTC-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "WBTC-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "WCFG-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "WCFG-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "WCFG-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "WCFG-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "WLUNA-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "WLUNA-GBP": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "WLUNA-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "WLUNA-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "XCN-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "XRP-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "XRP-GBP": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "XYO-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "XYO-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "XYO-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "YFII-USD": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ZEC-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ZEC-USDC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ZEN-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ZEN-USDT": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ZRX-BTC": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   },
   "ZRX-EUR": {
    "first_seen": "unknown",
-   "last_seen": "2026-08-15T03:35:08.094533+00:00"
+   "last_seen": "2026-08-16T03:35:09.010178+00:00"
   }
  }
 }

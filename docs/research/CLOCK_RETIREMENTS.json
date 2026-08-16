@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-15T23:25:00+00:00",
+ "updated": "2026-08-16T00:24:18.154704+00:00",
  "retirements": [
   {
    "clock": "walcl_reserve_impulse",
@@ -110,7 +110,37 @@
    "seats_after": 12,
    "multiplicity_floor": 15,
    "loosens_bars": false
+  },
+  {
+   "clock": "conv_moat_screen_results_horizon_days0_000694444_current_z_3_616_decontam_passed_true_ic_0_044",
+   "retired_at": "2026-08-16T00:24:18.154216+00:00",
+   "decided_by": "cycle",
+   "requeue_as": "UNTESTED",
+   "verdict": "since 2026-08-14T10:15:33.043328+00:00",
+   "evidence": "SOURCE-GONE",
+   "observations": null,
+   "why": "conv_moat_screen_results_horizon_days0_000694444_current_z_3_616_decontam_passed_true_ic_0_044: evidence SOURCE-GONE -- the exact pre-registered source identity is absent, so this clock cannot accrue another observation. Retire the clock as UNTESTED and preserve its history; never reinterpret the missing source as a zero return",
+   "kind": "derivative",
+   "seats_before": 12,
+   "seats_after": 11,
+   "multiplicity_floor": 12,
+   "loosens_bars": false
+  },
+  {
+   "clock": "full_sweep_cross_asset_lead_1h_all_decay_breakout_decay_momentum",
+   "retired_at": "2026-08-16T00:24:18.154704+00:00",
+   "decided_by": "cycle",
+   "requeue_as": "UNTESTED",
+   "verdict": "since 2026-08-14T10:15:33.043954+00:00",
+   "evidence": "SOURCE-GONE",
+   "observations": null,
+   "why": "full_sweep_cross_asset_lead_1h_all_decay_breakout_decay_momentum: evidence SOURCE-GONE -- the exact pre-registered source identity is absent, so this clock cannot accrue another observation. Retire the clock as UNTESTED and preserve its history; never reinterpret the missing source as a zero return",
+   "kind": "derivative",
+   "seats_before": 12,
+   "seats_after": 11,
+   "multiplicity_floor": 12,
+   "loosens_bars": false
   }
  ],
- "note": "The ONLY way a forward clock leaves the Holm cohort. Evidence-driven rows are explicit, attributed decisions taken against a live sweep proposal; an explicit principal account/jurisdiction constraint may also retire a strategy that cannot be executed on the permitted account. Multiplicity is a high-water mark, so retirement frees capacity but never un-looks a trial or lowers the forward bar. This file is tracked in git rather than runtime state."
+ "note": "The ONLY way a forward clock leaves the Holm cohort. Every row is an explicit, attributed decision taken against a LIVE sweep proposal, with that proposal's evidence copied verbatim. Retiring a clock SHRINKS m and LOOSENS every remaining bar -- the phantom-edge direction -- so this file is tracked in git rather than runtime state, and no organ, cycle or test may append to it."
 }
