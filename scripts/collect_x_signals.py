@@ -23,7 +23,6 @@ import numpy as np
 import pandas as pd
 
 
-
 def _try_xcom_ssr(account: str, limit: int = 20) -> list[dict[str, Any]]:
     """Fetch tweets from x.com server-side-rendered profile HTML (no auth)."""
     import html as _html

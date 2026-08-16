@@ -179,3 +179,23 @@ reports/principal_drop.json
 # turned the box's only inbound deploy path into a permanent no-op (measured 2026-08-12:
 # 0 deploys in 1078 ticks). Four gitlinks were untracked the same day.
 .claude/worktrees/
+
+# one-off operator scripts; scratch/ is ruff-excluded in pyproject
+/check_*.py
+/chk_*.py
+/dbg_*.py
+/debug_*.py
+/fix_*.py
+/patch_*.py
+/show_*.py
+/test_*.py
+
+# one-off operator scripts; scratch/ is ruff-excluded in pyproject
+/check_*.py
+/chk_*.py
+/dbg_*.py
+/debug_*.py
+/fix_*.py
+/patch_*.py
+/show_*.py
+/test_*.py

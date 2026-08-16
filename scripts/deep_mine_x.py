@@ -21,7 +21,6 @@ import html as html_mod
 import json
 import re
 import sys
-import time
 from datetime import UTC, datetime
 from pathlib import Path
 

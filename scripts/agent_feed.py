@@ -113,7 +113,7 @@ def tail_entries(n: int = 50) -> list[dict]:
         return []
     with INDEX.open("r", encoding="utf-8") as f:
         lines = f.readlines()
-    return [json.loads(l) for l in lines[-n:]]
+    return [json.loads(ln) for ln in lines[-n:]]
 
 
 def main() -> None:

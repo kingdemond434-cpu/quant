@@ -16,7 +16,6 @@ Attempts to automatically fix the most common recurring defects:
 from __future__ import annotations
 
 import json
-import os
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -43,11 +42,11 @@ def fix_mechanism_attribution() -> dict[str, Any]:
     # The mechanism attribution failure is: "UNATTRIBUTED -- 1 sleeve(s) with a measured WIN +2,796.53 is 2473% of the +113.06 mechanism term"
     # This means a sleeve's P&L is being credited to the wrong mechanism or uncredited.
     # The fix is to run the attribution logic properly.
-    rc, out, err = run_cmd([".venv/bin/python", "scripts/check_mechanism_attribution.py"])
+    rc, out, _err = run_cmd([".venv/bin/python", "scripts/check_mechanism_attribution.py"])
     if rc == 0:
         return {"fixed": True, "message": "Mechanism attribution now clean"}
     # Try to run the attribution fix if there's a script for it
-    rc2, out2, err2 = run_cmd([".venv/bin/python", "-c", """
+    _rc2, _out2, _err2 = run_cmd([".venv/bin/python", "-c", """
 import json
 from pathlib import Path
 # Check promotion_queue for unattributed sleeves
@@ -93,7 +92,7 @@ def fix_conversion_backlog() -> dict[str, Any]:
         backlog = data.get("backlog", 0)
         if backlog > 0:
             # The conversion processor should handle this
-            rc, out, err = run_cmd([".venv/bin/python", "scripts/check_conversion.py"])
+            rc, _out, _err = run_cmd([".venv/bin/python", "scripts/check_conversion.py"])
             return {"fixed": rc == 0, "message": f"Conversion check rc={rc}"}
     except Exception:
         pass
@@ -102,7 +101,7 @@ def fix_conversion_backlog() -> dict[str, Any]:
 
 def fix_citation_integrity() -> dict[str, Any]:
     """Repoint invalid citations."""
-    rc, out, err = run_cmd([".venv/bin/python", "scripts/check_citation_integrity.py", "--report-only"])
+    rc, out, _err = run_cmd([".venv/bin/python", "scripts/check_citation_integrity.py", "--report-only"])
     if rc == 0:
         return {"fixed": True, "message": "Citations now clean"}
     # The recommendations.py repoint tool could fix this
@@ -144,7 +143,7 @@ def fix_scheduler_manifest() -> dict[str, Any]:
 
 def fix_claim_consistency() -> dict[str, Any]:
     """Resolve claim contradictions."""
-    rc, out, err = run_cmd([".venv/bin/python", "scripts/check_claim_consistency.py"])
+    rc, out, _err = run_cmd([".venv/bin/python", "scripts/check_claim_consistency.py"])
     if rc == 0:
         return {"fixed": True, "message": "Claims now consistent"}
     return {"fixed": False, "message": f"Claims still contradictory: {out[:200]}"}
@@ -152,7 +151,7 @@ def fix_claim_consistency() -> dict[str, Any]:
 
 def fix_organ_liveness() -> dict[str, Any]:
     """Check organ liveness."""
-    rc, out, err = run_cmd([".venv/bin/python", "scripts/check_organ_liveness.py"])
+    rc, out, _err = run_cmd([".venv/bin/python", "scripts/check_organ_liveness.py"])
     if rc == 0:
         return {"fixed": True, "message": "All organs live"}
     return {"fixed": False, "message": f"Some organs dark: {out[:200]}"}
@@ -160,7 +159,7 @@ def fix_organ_liveness() -> dict[str, Any]:
 
 def fix_excitation() -> dict[str, Any]:
     """Check excitation."""
-    rc, out, err = run_cmd([".venv/bin/python", "scripts/check_excitation.py"])
+    rc, out, _err = run_cmd([".venv/bin/python", "scripts/check_excitation.py"])
     if rc == 0:
         return {"fixed": True, "message": "Excitation identified"}
     return {"fixed": False, "message": f"Excitation unidentified: {out[:200]}"}
@@ -168,7 +167,7 @@ def fix_excitation() -> dict[str, Any]:
 
 def fix_clock_provenance() -> dict[str, Any]:
     """Fix clock provenance."""
-    rc, out, err = run_cmd([".venv/bin/python", "scripts/check_clock_provenance.py"])
+    rc, out, _err = run_cmd([".venv/bin/python", "scripts/check_clock_provenance.py"])
     if rc == 0:
         return {"fixed": True, "message": "Clocks now marked"}
     return {"fixed": False, "message": f"Clock provenance mixed: {out[:200]}"}
@@ -176,7 +175,7 @@ def fix_clock_provenance() -> dict[str, Any]:
 
 def fix_idle_cost() -> dict[str, Any]:
     """Check idle cost."""
-    rc, out, err = run_cmd([".venv/bin/python", "scripts/check_idle_cost.py", "--report-only"])
+    rc, out, _err = run_cmd([".venv/bin/python", "scripts/check_idle_cost.py", "--report-only"])
     if rc == 0:
         return {"fixed": True, "message": "Idle cost measured"}
     return {"fixed": False, "message": f"Idle cost unmeasured: {out[:200]}"}
@@ -184,7 +183,7 @@ def fix_idle_cost() -> dict[str, Any]:
 
 def fix_free_roster() -> dict[str, Any]:
     """Check free roster."""
-    rc, out, err = run_cmd([".venv/bin/python", "scripts/check_free_roster.py", "--report-only"])
+    rc, out, _err = run_cmd([".venv/bin/python", "scripts/check_free_roster.py", "--report-only"])
     if rc == 0:
         return {"fixed": True, "message": "Free roster healthy"}
     return {"fixed": False, "message": f"Free roster unhealthy: {out[:200]}"}
@@ -192,7 +191,7 @@ def fix_free_roster() -> dict[str, Any]:
 
 def fix_llm_routing() -> dict[str, Any]:
     """Check LLM routing."""
-    rc, out, err = run_cmd([".venv/bin/python", "scripts/check_llm_routing.py"])
+    rc, out, _err = run_cmd([".venv/bin/python", "scripts/check_llm_routing.py"])
     if rc == 0:
         return {"fixed": True, "message": "LLM routing complete"}
     return {"fixed": False, "message": f"LLM routing incomplete: {out[:200]}"}
@@ -200,7 +199,7 @@ def fix_llm_routing() -> dict[str, Any]:
 
 def fix_panel_breadth() -> dict[str, Any]:
     """Check panel breadth."""
-    rc, out, err = run_cmd([".venv/bin/python", "scripts/check_panel_breadth.py"])
+    rc, out, _err = run_cmd([".venv/bin/python", "scripts/check_panel_breadth.py"])
     if rc == 0:
         return {"fixed": True, "message": "Panel breadth measured"}
     return {"fixed": False, "message": f"Panel breadth unmeasured: {out[:200]}"}
@@ -208,7 +207,7 @@ def fix_panel_breadth() -> dict[str, Any]:
 
 def fix_cross_section_floor() -> dict[str, Any]:
     """Check cross-section floor."""
-    rc, out, err = run_cmd([".venv/bin/python", "scripts/check_cross_section_floor.py"])
+    rc, out, _err = run_cmd([".venv/bin/python", "scripts/check_cross_section_floor.py"])
     if rc == 0:
         return {"fixed": True, "message": "Cross-section floor enforced"}
     return {"fixed": False, "message": f"Cross-section floor issues: {out[:200]}"}
@@ -216,7 +215,7 @@ def fix_cross_section_floor() -> dict[str, Any]:
 
 def fix_prompt_ratchet() -> dict[str, Any]:
     """Check prompt ratchet."""
-    rc, out, err = run_cmd([".venv/bin/python", "scripts/check_prompt_ratchet.py", "--json"])
+    rc, out, _err = run_cmd([".venv/bin/python", "scripts/check_prompt_ratchet.py", "--json"])
     if rc == 0:
         return {"fixed": True, "message": "Prompt ratchet clean"}
     return {"fixed": False, "message": f"Prompt ratchet issues: {out[:200]}"}
