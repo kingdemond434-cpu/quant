@@ -27,12 +27,34 @@ def main() -> None:
     LOCK.write_text("locked", encoding="utf-8")
     try:
         gateway.main()
-        import shadow_forward  # noqa: PLC0415
         from datetime import datetime, timezone  # noqa: PLC0415
         if datetime.now(timezone.utc).hour == 22:  # once per UTC day
+            import shadow_forward  # noqa: PLC0415
             shadow_forward.main()
             import promoter  # noqa: PLC0415
             promoter.main()
+        if datetime.now(timezone.utc).weekday() == 0 and datetime.now(timezone.utc).hour == 23:
+            import json as _json  # noqa: PLC0415
+            from pathlib import Path as _Path  # noqa: PLC0415
+            stfile = _Path(r"C:\Users\dell\mt5-research\data\hunt7_state.json")
+            last = 0
+            if stfile.exists():
+                try:
+                    last = _json.loads(stfile.read_text(encoding="utf-8")).get("last_sweep", 0)
+                except Exception:
+                    pass
+            now_ts = datetime.now(timezone.utc).timestamp()
+            if now_ts - last > 6 * 86400:  # weekly standing sweep
+                try:
+                    import fetch_universe  # noqa: PLC0415
+                    fetch_universe.main()
+                    import run_hunt7  # noqa: PLC0415
+                    run_hunt7.main()
+                    stfile.write_text(_json.dumps({"last_sweep": now_ts}),
+                                      encoding="utf-8")
+                    gateway.log("weekly hunt7 sweep completed")
+                except Exception as e2:  # noqa: BLE001
+                    gateway.log(f"HUNT7 ERROR: {e2!r}")
     except Exception as e:  # noqa: BLE001 - watchdog must never die
         gateway.log(f"LOOP ERROR: {e!r}")
     finally:

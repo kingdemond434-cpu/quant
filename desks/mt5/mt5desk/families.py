@@ -63,28 +63,31 @@ def family1_usd_session_shock(
     fx_ret = fxr["close"].pct_change().rolling(24).std().fillna(0)
     fx_move = fxr["close"].pct_change().abs()
     atr = _atr(h1, atr_n)
+    fxc = fxr["close"].to_numpy()
+    fr = fx_ret.to_numpy()
+    fm = fx_move.to_numpy()
+    a = atr.to_numpy()
+    c = h1["close"].to_numpy()
     signals: list[Signal] = []
     for i in range(2, len(h1) - 2):
         ts = h1.index[i]
         if not (london_start <= ts.hour < london_end):
             continue
-        row = h1.iloc[i]
-        prev = h1.iloc[i - 1]
-        if np.isnan(row["close"]) or np.isnan(prev["close"]):
+        if np.isnan(c[i]) or np.isnan(c[i - 1]):
             continue
-        std = fx_ret.iloc[i] * np.sqrt(1)
+        std = fr[i] * np.sqrt(1)
         if not (std > 0):
             continue
-        impulse = fx_move.iloc[i] > shock_atr * std
+        impulse = fm[i] > shock_atr * std
         if not impulse:
             continue
-        a = atr.iloc[i]
-        if not (a > 0):
+        ai = a[i]
+        if not (ai > 0):
             continue
         # gold anti-correlates with USD: USD up (EUR down) -> gold down
-        side = 1 if fxr["close"].iloc[i] < fxr["close"].iloc[i - 1] else -1
-        stop_dist = 1.2 * a
-        entry = row["close"]
+        side = 1 if fxc[i] < fxc[i - 1] else -1
+        stop_dist = 1.2 * ai
+        entry = c[i]
         stop = entry - side * stop_dist
         target = entry + side * stop_dist * rr
         signals.append(Signal(time=ts, side=side, stop=stop, target=target,
@@ -111,21 +114,25 @@ def family4_comex_settlement_effect(
     h1 = _h1(df)
     atr = _atr(h1, atr_n)
     vol_med = atr.rolling(120).median()
+    c = h1["close"].to_numpy()
+    o = h1["open"].to_numpy()
+    a = atr.to_numpy()
+    vm = vol_med.to_numpy()
     signals: list[Signal] = []
     for i in range(window_before, len(h1) - 2):
         ts = h1.index[i]
         if ts.hour != settle_hour:
             continue
-        if np.isnan(h1["close"].iloc[i - 1]):
+        if np.isnan(c[i - 1]):
             continue
-        a = atr.iloc[i]
-        vmed = vol_med.iloc[i]
-        if not (a > 0) or np.isnan(vmed):
+        ai = a[i]
+        v = vm[i]
+        if not (ai > 0) or np.isnan(v):
             continue
-        pre = h1["close"].iloc[i - window_before]
-        now = h1["close"].iloc[i - 1]
-        move = (now - pre) / a
-        vol_high = a > vol_floor * vmed
+        pre = c[i - window_before]
+        now = c[i - 1]
+        move = (now - pre) / ai
+        vol_high = ai > vol_floor * v
         side = 0
         if vol_high and abs(move) > move_thresh:
             side = 1 if move > 0 else -1  # continuation under high vol
@@ -133,8 +140,8 @@ def family4_comex_settlement_effect(
             side = -1 if move > 0 else 1  # fade under low vol
         if side == 0:
             continue
-        entry = h1["open"].iloc[i]
-        stop_dist = 1.2 * a
+        entry = o[i]
+        stop_dist = 1.2 * ai
         stop = entry - side * stop_dist
         target = entry + side * stop_dist * rr
         signals.append(Signal(time=ts, side=side, stop=stop, target=target,
@@ -162,6 +169,8 @@ def family_asia_momentum(
         .agg(o=("open", "first"), c=("close", "last"))
     )
     signals: list[Signal] = []
+    a = atr.to_numpy()
+    o = h1["open"].to_numpy()
     for i in range(2, len(h1) - 2):
         ts = h1.index[i]
         if ts.hour != asia_end:
@@ -169,16 +178,16 @@ def family_asia_momentum(
         key = ts.date()
         if key not in asia.index:
             continue
-        a = atr.iloc[i]
-        if not (a > 0) or np.isnan(a):
+        ai = a[i]
+        if not (ai > 0) or np.isnan(ai):
             continue
         row = asia.loc[key]
         move = float(row["c"] - row["o"])
-        if abs(move) < mom_thresh * a:
+        if abs(move) < mom_thresh * ai:
             continue
         side = 1 if move > 0 else -1
-        entry = h1["open"].iloc[i]
-        stop_dist = 1.2 * a
+        entry = o[i]
+        stop_dist = 1.2 * ai
         stop = entry - side * stop_dist
         target = entry + side * stop_dist * rr
         signals.append(Signal(time=ts, side=side, stop=stop, target=target,
@@ -199,12 +208,14 @@ def family_dow_effect(
     h1 = _h1(df)
     atr = _atr(h1, atr_n)
     signals: list[Signal] = []
+    a = atr.to_numpy()
+    o = h1["open"].to_numpy()
     for i in range(2, len(h1) - 2):
         ts = h1.index[i]
         if ts.hour != 0:
             continue
-        a = atr.iloc[i]
-        if not (a > 0) or np.isnan(a):
+        ai = a[i]
+        if not (ai > 0) or np.isnan(ai):
             continue
         side = 0
         if ts.dayofweek == dow_long:
@@ -213,8 +224,8 @@ def family_dow_effect(
             side = -1
         if side == 0:
             continue
-        entry = h1["open"].iloc[i]
-        stop_dist = 1.2 * a
+        entry = o[i]
+        stop_dist = 1.2 * ai
         stop = entry - side * stop_dist
         target = entry + side * stop_dist * rr
         signals.append(Signal(time=ts, side=side, stop=stop, target=target,
@@ -243,23 +254,28 @@ def family7_spread_state_avoidance(
     atr = _atr(h1, atr_n)
     spread_med = h1[spread_col].rolling(96).median()
     mom = h1["close"].pct_change(mom_n)
+    sp = h1[spread_col].to_numpy()
+    sm = spread_med.to_numpy()
+    a = atr.to_numpy()
+    m = mom.to_numpy()
+    o = h1["open"].to_numpy()
     signals: list[Signal] = []
     for i in range(4, len(h1) - 2):
         ts = h1.index[i]
         if np.isnan(h1["close"].iloc[i]):
             continue
-        a = atr.iloc[i]
-        sm = spread_med.iloc[i]
-        if not (a > 0) or np.isnan(sm):
+        ai = a[i]
+        smi = sm[i]
+        if not (ai > 0) or np.isnan(smi):
             continue
-        if h1[spread_col].iloc[i] > sm * (1 + high_spread_frac):
+        if sp[i] > smi * (1 + high_spread_frac):
             continue
-        m = mom.iloc[i]
-        if abs(m) < 0.0005:
+        mi = m[i]
+        if abs(mi) < 0.0005:
             continue
-        side = 1 if m > 0 else -1
-        entry = h1["open"].iloc[i + 1]
-        stop_dist = 1.2 * a
+        side = 1 if mi > 0 else -1
+        entry = o[i + 1]
+        stop_dist = 1.2 * ai
         stop = entry - side * stop_dist
         target = entry + side * stop_dist * rr
         signals.append(Signal(time=h1.index[i + 1], side=side, stop=stop,
@@ -283,24 +299,29 @@ def family_momentum_volgate(
     atr = _atr(h1, atr_n)
     atr_med = atr.rolling(120, min_periods=40).median()
     mom = h1["close"].pct_change(mom_n)
+    a = atr.to_numpy()
+    vm = atr_med.to_numpy()
+    m = mom.to_numpy()
+    c = h1["close"].to_numpy()
+    o = h1["open"].to_numpy()
     signals: list[Signal] = []
     for i in range(mom_n + 1, len(h1) - 2):
         ts = h1.index[i]
-        if np.isnan(h1["close"].iloc[i]):
+        if np.isnan(c[i]):
             continue
-        a = atr.iloc[i]
-        vmed = atr_med.iloc[i]
-        if not (a > 0) or np.isnan(vmed) or a < vol_gate_q * vmed:
+        ai = a[i]
+        v = vm[i]
+        if not (ai > 0) or np.isnan(v) or ai < vol_gate_q * v:
             continue
-        m = mom.iloc[i]
-        if np.isnan(m) or abs(m) < mom_thresh:
+        mi = m[i]
+        if np.isnan(mi) or abs(mi) < mom_thresh:
             continue
         # vol-scaled: the move must exceed 0.35x ATR% so noise can't pass
-        if abs(m) < 0.35 * (a / h1["close"].iloc[i]):
+        if abs(mi) < 0.35 * (ai / c[i]):
             continue
-        side = 1 if m > 0 else -1
-        entry = h1["open"].iloc[i + 1]
-        stop_dist = 1.2 * a
+        side = 1 if mi > 0 else -1
+        entry = o[i + 1]
+        stop_dist = 1.2 * ai
         stop = entry - side * stop_dist
         target = entry + side * stop_dist * rr
         signals.append(Signal(time=h1.index[i + 1], side=side, stop=stop,
@@ -419,6 +440,9 @@ def family_monday_gap(
     """Weekend gap (Sunday 22:00 open vs Friday close): momentum or fade."""
     h1 = _h1(df)
     atr = _atr(h1, atr_n)
+    a = atr.to_numpy()
+    o = h1["open"].to_numpy()
+    c = h1["close"].to_numpy()
     signals: list[Signal] = []
     for i in range(2, len(h1) - 2):
         ts = h1.index[i]
@@ -429,17 +453,17 @@ def family_monday_gap(
             j -= 1
         if j <= 0:
             continue
-        a = atr.iloc[i]
-        if not (a > 0) or np.isnan(a):
+        ai = a[i]
+        if not (ai > 0) or np.isnan(ai):
             continue
-        gap = float(h1["open"].iloc[i] - h1["close"].iloc[j])
-        if abs(gap) < min_gap_atr * a:
+        gap = float(o[i] - c[j])
+        if abs(gap) < min_gap_atr * ai:
             continue
         side = 1 if gap > 0 else -1
         if mode == "fade":
             side = -side
-        entry = h1["open"].iloc[i]
-        stop_dist = 1.2 * a
+        entry = o[i]
+        stop_dist = 1.2 * ai
         stop = entry - side * stop_dist
         target = entry + side * stop_dist * rr
         signals.append(Signal(time=ts, side=side, stop=stop, target=target,
@@ -459,20 +483,23 @@ def family_london_close_momentum(
     """14:00-16:00 momentum entered at 17:00, exited by 20:00 (pre-pause)."""
     h1 = _h1(df)
     atr = _atr(h1, atr_n)
+    a = atr.to_numpy()
+    c = h1["close"].to_numpy()
+    o = h1["open"].to_numpy()
     signals: list[Signal] = []
     for i in range(lookback + 1, len(h1) - 2):
         ts = h1.index[i]
         if ts.hour != 16:
             continue
-        a = atr.iloc[i]
-        if not (a > 0) or np.isnan(a):
+        ai = a[i]
+        if not (ai > 0) or np.isnan(ai):
             continue
-        m = (h1["close"].iloc[i] - h1["close"].iloc[i - lookback]) / a
+        m = (c[i] - c[i - lookback]) / ai
         if abs(m) < mom_thresh:
             continue
         side = 1 if m > 0 else -1
-        entry = h1["open"].iloc[i]
-        stop_dist = 1.2 * a
+        entry = o[i]
+        stop_dist = 1.2 * ai
         stop = entry - side * stop_dist
         target = entry + side * stop_dist * rr
         signals.append(Signal(time=ts, side=side, stop=stop, target=target,
