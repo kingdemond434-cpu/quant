@@ -29,7 +29,8 @@ def test_mt5_frontier_restores_telemetry_after_exclusive_terminal_use() -> None:
     script = (ROOT / "ops" / "run_windows_mt5_frontier.ps1").read_text("utf-8")
     assert "golddesk.telemetry_service" in script
     assert "run_telemetry.bat" in script
-    assert "taskkill.exe /PID $_.ProcessId /T /F" in script
+    assert "Start-Process taskkill.exe" in script
+    assert "if ($telemetrySupervisor)" in script
     assert "if ($telemetryWasRunning)" in script
     assert "*-m golddesk.service*" not in script
     assert script.count('Start-Process -FilePath "cmd.exe"') == 2

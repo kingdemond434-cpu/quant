@@ -85,11 +85,16 @@ try {
     }
     if ($telemetry -or $telemetrySupervisor) {
         $telemetryWasRunning = $true
-        $telemetrySupervisor | ForEach-Object {
-            & taskkill.exe /PID $_.ProcessId /T /F *> $null
-        }
-        $telemetry | ForEach-Object {
-            & taskkill.exe /PID $_.ProcessId /T /F *> $null
+        if ($telemetrySupervisor) {
+            $telemetrySupervisor | ForEach-Object {
+                Start-Process taskkill.exe -ArgumentList "/PID", $_.ProcessId, "/T", "/F" `
+                    -Wait -WindowStyle Hidden
+            }
+        } else {
+            $telemetry | ForEach-Object {
+                Start-Process taskkill.exe -ArgumentList "/PID", $_.ProcessId, "/T", "/F" `
+                    -Wait -WindowStyle Hidden
+            }
         }
         Get-CimInstance Win32_Process -Filter "Name='terminal64.exe'" | Where-Object {
             $_.ExecutablePath -eq $Terminal
