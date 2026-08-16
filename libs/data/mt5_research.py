@@ -40,6 +40,29 @@ LIQUID_INTRADAY_CORE: tuple[str, ...] = (
     "ETHUSD",
 )
 
+_BROKER_ALIASES: dict[str, tuple[str, ...]] = {
+    "XTIUSD": ("USOUSD", "CL-OIL"),
+    "XBRUSD": ("UKOUSD",),
+    "US500": ("SP500.r", "SP500"),
+    "US30": ("DJ30.r", "DJ30"),
+    "US2000": ("RUS2000.r", "RUS2000"),
+    "GER40": ("GER40.r",),
+    "UK100": ("UK100.r",),
+    "JPN225": ("JPN225ft", "Nikkei225"),
+}
+
+
+def resolve_liquid_intraday_core(available: list[str]) -> list[str]:
+    """Resolve the canonical liquid universe to actual broker symbol names."""
+    exact = {name.upper(): name for name in available}
+    resolved: list[str] = []
+    for canonical in LIQUID_INTRADAY_CORE:
+        candidates = (canonical, *_BROKER_ALIASES.get(canonical, ()))
+        match = next((exact[c.upper()] for c in candidates if c.upper() in exact), None)
+        if match is not None and match not in resolved:
+            resolved.append(match)
+    return resolved
+
 
 @dataclass(frozen=True)
 class ResearchSessionVerdict:

@@ -31,7 +31,7 @@ import pandas as pd
 
 from libs.data.instruments import InstrumentSpec, asset_class_for_group, register_instrument
 from libs.data.lake import Layer, ParquetLake
-from libs.data.mt5_research import LIQUID_INTRADAY_CORE, research_session_verdict
+from libs.data.mt5_research import research_session_verdict, resolve_liquid_intraday_core
 from libs.data.schema import BAR_COLUMNS
 from libs.data.timeframe import Timeframe
 
@@ -44,11 +44,14 @@ def _connect(
     expected_server: str = "",
     *,
     terminal_path: str = "",
+    portable: bool = False,
     allow_readonly_live: bool = False,
 ):  # type: ignore[no-untyped-def]
     import MetaTrader5 as mt5
 
-    initialized = mt5.initialize(terminal_path) if terminal_path else mt5.initialize()
+    initialized = (
+        mt5.initialize(terminal_path, portable=portable) if terminal_path else mt5.initialize()
+    )
     if not initialized:
         raise SystemExit(f"MT5 initialize failed: {mt5.last_error()}")
     acct = mt5.account_info()
@@ -73,10 +76,10 @@ def _fetch(mt5, symbol: str, tf_const, count: int, tries: int, start):  # type: 
     """
     now = datetime.now(tz=UTC)
     for _ in range(tries):
-        rates = mt5.copy_rates_range(symbol, tf_const, start, now)
+        rates = mt5.copy_rates_from_pos(symbol, tf_const, 0, count)
         if rates is not None and len(rates) > 0:
             return rates
-        rates = mt5.copy_rates_from_pos(symbol, tf_const, 0, count)
+        rates = mt5.copy_rates_range(symbol, tf_const, start, now)
         if rates is not None and len(rates) > 0:
             return rates
         time.sleep(0.5)
@@ -108,15 +111,32 @@ def main() -> None:
     parser.add_argument("--timeframes", default="D1,H1")
     parser.add_argument("--groups", default="", help="comma-separated group filter; empty = all")
     parser.add_argument("--max-symbols", type=int, default=0, help="0 = no cap")
-    parser.add_argument("--warmup-sleep", type=float, default=25.0,
-                        help="seconds to let the terminal bulk-download after selecting symbols")
+    parser.add_argument(
+        "--universe",
+        choices=("all", "mt5-liquid-core"),
+        default="all",
+        help="full broker D1 breadth or the resolved liquid cross-asset core",
+    )
+    parser.add_argument(
+        "--warmup-sleep",
+        type=float,
+        default=25.0,
+        help="seconds to let the terminal bulk-download after selecting symbols",
+    )
     parser.add_argument("--tries", type=int, default=15, help="per-symbol fetch retries")
     parser.add_argument("--start", default="2000-01-01", help="earliest bar date to request")
-    parser.add_argument("--expected-server", default="",
-                        help="assert MT5 connected to this server (reproducibility guard)")
+    parser.add_argument(
+        "--expected-server",
+        default="",
+        help="assert MT5 connected to this server (reproducibility guard)",
+    )
     parser.add_argument("--terminal", default="", help="exact MT5 terminal executable")
     parser.add_argument(
-        "--allow-readonly-live", action="store_true",
+        "--portable", action="store_true", help="start terminal in isolated portable mode"
+    )
+    parser.add_argument(
+        "--allow-readonly-live",
+        action="store_true",
         help="permit a server-pinned investor login only when account+terminal trading are disabled",
     )
     args = parser.parse_args()
@@ -128,6 +148,7 @@ def main() -> None:
     mt5 = _connect(
         args.expected_server,
         terminal_path=args.terminal,
+        portable=args.portable,
         allow_readonly_live=args.allow_readonly_live,
     )
     lake = ParquetLake(args.base)
@@ -144,7 +165,11 @@ def main() -> None:
         symbols = [s for s in symbols if s.path.split("\\", 1)[0] in group_filter]
     if args.max_symbols:
         symbols = symbols[: args.max_symbols]
+    liquid_intraday = set(resolve_liquid_intraday_core([s.name for s in symbols]))
+    if args.universe == "mt5-liquid-core":
+        symbols = [s for s in symbols if s.name in liquid_intraday]
     print(f"universe: {len(symbols)} symbols; timeframes={[t.value for t in want_tf]}")
+    print(f"resolved liquid intraday core: {len(liquid_intraday)} broker symbols")
 
     # Phase 1: bulk-select + nudge every symbol so the terminal starts downloading history, then
     # wait ONCE for the bulk sync (far faster than paying a long retry budget per cold symbol).
@@ -163,21 +188,26 @@ def main() -> None:
                 InstrumentSpec(symbol=name, asset_class=ac, description=sym.description or name)
             )
             for tf in want_tf:
-                if tf is not Timeframe.D1 and name not in LIQUID_INTRADAY_CORE:
+                if tf is not Timeframe.D1 and name not in liquid_intraday:
                     continue
                 rates = _fetch(mt5, name, tf_map[tf], _MAXBARS, args.tries, start)
                 if rates is None:
-                    coverage.append({"symbol": name, "asset_class": ac.value,
-                                     "timeframe": tf.value, "bars": 0})
+                    coverage.append(
+                        {"symbol": name, "asset_class": ac.value, "timeframe": tf.value, "bars": 0}
+                    )
                     continue
                 frame = _to_canonical(rates)
                 lake.write_bars(Layer.BRONZE, name, tf, frame)
-                coverage.append({
-                    "symbol": name, "asset_class": ac.value, "timeframe": tf.value,
-                    "bars": len(frame),
-                    "first": str(frame["timestamp"].iloc[0].date()),
-                    "last": str(frame["timestamp"].iloc[-1].date()),
-                })
+                coverage.append(
+                    {
+                        "symbol": name,
+                        "asset_class": ac.value,
+                        "timeframe": tf.value,
+                        "bars": len(frame),
+                        "first": str(frame["timestamp"].iloc[0].date()),
+                        "last": str(frame["timestamp"].iloc[-1].date()),
+                    }
+                )
             if i % 25 == 0:
                 print(f"  [{i}/{len(symbols)}] {name} done")
     finally:

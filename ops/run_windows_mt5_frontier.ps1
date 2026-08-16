@@ -2,7 +2,7 @@ param(
     [string]$CodeRoot = "C:\Users\dell\quant-conversion-fix",
     [string]$StateRoot = "C:\Users\dell\quant-platform",
     [string]$Python = "C:\Users\dell\quant-platform\.venv\Scripts\python.exe",
-    [string]$Terminal = "C:\Program Files\VIG Group MT5 Terminal\terminal64.exe",
+    [string]$Terminal = "C:\Users\dell\gold-desk\mt5_readonly\terminal64.exe",
     [string]$ExpectedServer = "VantageMarkets-Live 14",
     [string]$SshKey = "$env:USERPROFILE\.ssh\id_ed25519",
     [string]$Vps = "quant@95.216.191.70"
@@ -15,6 +15,7 @@ $lockPath = Join-Path $StateRoot "data\.mt5_frontier_windows.lock"
 $started = [DateTimeOffset]::UtcNow
 $steps = [ordered]@{}
 $lock = $null
+$goldDeskWasRunning = $false
 
 New-Item -ItemType Directory -Force (Split-Path $statusPath), (Split-Path $logPath), (Split-Path $lockPath) | Out-Null
 
@@ -66,10 +67,25 @@ try {
     Set-Location $StateRoot
     Write-FrontierStatus "RUNNING" "read-only MT5 collection and research started"
 
+    # MetaTrader's Python bridge permits one client per terminal. Pause the read-only gold sensor,
+    # reuse its investor terminal, and restore it before network publication. This avoids a second
+    # credential store and never touches an execution-capable account.
+    $desk = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*golddesk.service*" }
+    if ($desk) {
+        $goldDeskWasRunning = $true
+        $desk | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+        Get-CimInstance Win32_Process -Filter "Name='terminal64.exe'" | Where-Object {
+            $_.ExecutablePath -eq $Terminal
+        } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+        Start-Sleep -Seconds 3
+    }
+
+    $ingestUniverse = if ((Get-Date).DayOfWeek -eq "Sunday") { "all" } else { "mt5-liquid-core" }
+
     Run-Step "ingest" {
         & $Python "$CodeRoot\scripts\ingest_history.py" --base "$StateRoot\data\lake" `
           --terminal $Terminal --allow-readonly-live --expected-server $ExpectedServer `
-          --timeframes "D1,H4,H1,M15" --warmup-sleep 20 --tries 8
+          --universe $ingestUniverse --timeframes "D1,H4,H1,M15" --warmup-sleep 30 --tries 3
     }
     foreach ($tf in @("D1", "H4", "H1", "M15")) {
         $bars = if ($tf -eq "M15") { 30000 } elseif ($tf -eq "H1") { 20000 } else { 8000 }
@@ -80,6 +96,13 @@ try {
               --db "$StateRoot\data\sor_mt5_$($tf.ToLower()).sqlite" `
               --report-dir "$StateRoot\reports\autodiscovery\mt5_$tf"
         }
+    }
+
+    if ($goldDeskWasRunning) {
+        Start-Process -FilePath "pythonw.exe" -ArgumentList "-m", "golddesk.service" `
+            -WorkingDirectory "C:\Users\dell\gold-desk" -WindowStyle Hidden
+        $goldDeskWasRunning = $false
+        $steps["gold_desk_restart"] = [ordered]@{state="PASS"; finished_at=[DateTimeOffset]::UtcNow.ToString("o")}
     }
 
     # Publish only the broker-universe research lake and compact evidence, never credentials or
@@ -103,5 +126,9 @@ try {
     Add-Content -Path $logPath -Value "[$([DateTimeOffset]::UtcNow.ToString('o'))] FAIL: $($_.Exception.Message)"
     exit 1
 } finally {
+    if ($goldDeskWasRunning) {
+        Start-Process -FilePath "pythonw.exe" -ArgumentList "-m", "golddesk.service" `
+            -WorkingDirectory "C:\Users\dell\gold-desk" -WindowStyle Hidden
+    }
     if ($lock) { $lock.Dispose() }
 }

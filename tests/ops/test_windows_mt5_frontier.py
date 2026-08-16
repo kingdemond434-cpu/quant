@@ -20,6 +20,14 @@ def test_mt5_frontier_covers_cross_asset_intraday_and_daily_frames() -> None:
     assert '--timeframes "D1,H4,H1,M15"' in script
     for asset_class in ("fx", "metal", "energy", "index"):
         assert f"data/lake/bronze/{asset_class}" in script
+    assert '"Sunday"' in script and '{ "all" } else { "mt5-liquid-core" }' in script
+
+
+def test_mt5_frontier_restores_gold_sensor_after_exclusive_terminal_use() -> None:
+    script = (ROOT / "ops" / "run_windows_mt5_frontier.ps1").read_text("utf-8")
+    assert "golddesk.service" in script
+    assert "if ($goldDeskWasRunning)" in script
+    assert script.count('Start-Process -FilePath "pythonw.exe"') == 2
 
 
 def test_mt5_frontier_installer_is_daily_and_catch_up_enabled() -> None:

@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from libs.data.mt5_research import LIQUID_INTRADAY_CORE, research_session_verdict
+from libs.data.mt5_research import (
+    LIQUID_INTRADAY_CORE,
+    research_session_verdict,
+    resolve_liquid_intraday_core,
+)
 
 
 def _account(**overrides: object) -> SimpleNamespace:
@@ -53,3 +57,10 @@ def test_liquid_core_spans_mt5_asset_classes() -> None:
     assert {"XAUUSD", "XAGUSD", "EURUSD", "USDJPY", "US500", "XTIUSD"} <= set(
         LIQUID_INTRADAY_CORE
     )
+
+
+def test_liquid_core_resolves_broker_aliases_without_duplicates() -> None:
+    available = ["EURUSD", "XAUUSD", "SP500.r", "USOUSD", "UKOUSD", "JPN225ft"]
+    resolved = resolve_liquid_intraday_core(available)
+    assert set(resolved) == set(available)
+    assert len(resolved) == len(set(resolved))

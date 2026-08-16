@@ -32,7 +32,7 @@ from libs.autodiscovery.reports import (
     survivor_report,
 )
 from libs.autodiscovery.validation import SESSION_DAYS_PER_YEAR
-from libs.data.mt5_research import LIQUID_INTRADAY_CORE, research_session_verdict
+from libs.data.mt5_research import research_session_verdict, resolve_liquid_intraday_core
 from libs.data.timeframe import Timeframe
 from libs.store.connection import Database
 from libs.store.migrations import run_migrations
@@ -69,11 +69,14 @@ def _mt5_provider(
     expected_server: str = "",
     *,
     terminal_path: str = "",
+    portable: bool = False,
     allow_readonly_live: bool = False,
 ):
     import MetaTrader5 as mt5
 
-    initialized = mt5.initialize(terminal_path) if terminal_path else mt5.initialize()
+    initialized = (
+        mt5.initialize(terminal_path, portable=portable) if terminal_path else mt5.initialize()
+    )
     if not initialized:
         raise SystemExit(f"MT5 initialize failed: {mt5.last_error()}")
     acct = mt5.account_info()
@@ -129,24 +132,29 @@ def main() -> None:
     parser.add_argument("--cycles", type=int, default=1)  # 0 = forever
     parser.add_argument("--interval", type=float, default=3600.0)
     parser.add_argument("--families", default="", help="comma-separated families; empty = all 12")
-    parser.add_argument("--expected-server", default="",
-                        help="assert MT5 connected to this server (reproducibility guard)")
+    parser.add_argument(
+        "--expected-server",
+        default="",
+        help="assert MT5 connected to this server (reproducibility guard)",
+    )
     parser.add_argument("--terminal", default="", help="exact MT5 terminal executable")
     parser.add_argument(
-        "--allow-readonly-live", action="store_true",
+        "--portable", action="store_true", help="start terminal in isolated portable mode"
+    )
+    parser.add_argument(
+        "--allow-readonly-live",
+        action="store_true",
         help="permit a server-pinned investor login only when account+terminal trading are disabled",
     )
     parser.add_argument(
-        "--universe", choices=("explicit", "mt5-liquid-core"), default="explicit",
+        "--universe",
+        choices=("explicit", "mt5-liquid-core"),
+        default="explicit",
         help="use --symbols or the canonical liquid MT5 cross-asset research universe",
     )
     parser.add_argument("--report-dir", default=str(_OUT))
     args = parser.parse_args()
-    symbols = (
-        list(LIQUID_INTRADAY_CORE)
-        if args.universe == "mt5-liquid-core"
-        else [s.strip() for s in args.symbols.split(",") if s.strip()]
-    )
+    symbols = [s.strip() for s in args.symbols.split(",") if s.strip()]
     from libs.autodiscovery.models import Family
 
     families = [Family(f.strip()) for f in args.families.split(",") if f.strip()] or None
@@ -158,9 +166,17 @@ def main() -> None:
         args.bars,
         args.expected_server,
         terminal_path=args.terminal,
+        portable=args.portable,
         allow_readonly_live=args.allow_readonly_live,
     )
     import MetaTrader5 as mt5  # already initialized by _mt5_provider
+
+    if args.universe == "mt5-liquid-core":
+        symbols = resolve_liquid_intraday_core([s.name for s in mt5.symbols_get()])
+        if not symbols:
+            mt5.shutdown()
+            raise SystemExit("no canonical liquid MT5 symbols resolve on this broker")
+        print(f"resolved liquid MT5 universe: {len(symbols)} symbols")
 
     # THE ANNUALISER MUST BE THE BARS ACTUALLY FETCHED (R0086). `_mt5_provider` resolves the
     # timeframe with getattr(..., mt5.TIMEFRAME_H1) -- a silent fallback -- so parse it strictly
@@ -175,8 +191,12 @@ def main() -> None:
             f"use one of {', '.join(t.value for t in Timeframe)}"
         ) from None
     lab = AutoDiscoveryLab(
-        db, provider, bar=bar, days_per_year=SESSION_DAYS_PER_YEAR,
-        cost_provider=_mt5_cost_provider(mt5), families=families
+        db,
+        provider,
+        bar=bar,
+        days_per_year=SESSION_DAYS_PER_YEAR,
+        cost_provider=_mt5_cost_provider(mt5),
+        families=families,
     )
     print("net-of-cost: per-symbol cost calibrated from live MT5 symbol_info")
     if families:
@@ -188,8 +208,10 @@ def main() -> None:
         while cycles_target == 0 or done < cycles_target:
             result = lab.cycle(symbols)
             done += 1
-            print(f"[cycle {done}] tested={result.tested} skipped_dup={result.skipped_duplicate} "
-                  f"survivors={result.survivors} rejected={result.rejected}")
+            print(
+                f"[cycle {done}] tested={result.tested} skipped_dup={result.skipped_duplicate} "
+                f"survivors={result.survivors} rejected={result.rejected}"
+            )
             _write_reports(lab.store, Path(args.report_dir))
             if result.survivors == 0:
                 print("  zero survivors this cycle (honest result; nothing promoted).")
