@@ -27,6 +27,7 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from libs.data.instruments import InstrumentSpec, asset_class_for_group, register_instrument
@@ -40,6 +41,7 @@ _OUT = Path("reports/data_coverage.json")
 # Keep one native MT5 request below the terminal's crash-prone 100k ceiling. 30k still gives
 # roughly 114y D1 / 19y H4 / 4.8y H1 / 1.2y M15 and matches the deepest discovery consumer.
 _MAXBARS = 30_000
+_REQUEST_CHUNK = 5_000
 
 
 def _connect(
@@ -68,9 +70,7 @@ def _connect(
     return mt5
 
 
-def _fetch(  # type: ignore[no-untyped-def]
-    mt5, symbol: str, tf_const, count: int, tries: int, start, *, prefer_range: bool = False
-):
+def _fetch(mt5, symbol: str, tf_const, count: int, tries: int, start):  # type: ignore[no-untyped-def]
     """Pull history, retrying while the async download completes.
 
     Tries ``copy_rates_range`` first (more reliable at triggering a cold-cache download) and falls
@@ -80,21 +80,22 @@ def _fetch(  # type: ignore[no-untyped-def]
     """
     now = datetime.now(tz=UTC)
     for _ in range(tries):
-        methods = (
-            (
-                (mt5.copy_rates_range, (symbol, tf_const, start, now)),
-                (mt5.copy_rates_from_pos, (symbol, tf_const, 0, count)),
-            )
-            if prefer_range
-            else (
-                (mt5.copy_rates_from_pos, (symbol, tf_const, 0, count)),
-                (mt5.copy_rates_range, (symbol, tf_const, start, now)),
-            )
-        )
-        for method, call_args in methods:
-            rates = method(*call_args)
-            if rates is not None and len(rates) > 0:
-                return rates
+        # The native bridge hard-exits on large single requests on this terminal. Page backward
+        # in bounded blocks, then reverse the blocks to preserve chronological order.
+        pieces = []
+        for offset in range(0, count, _REQUEST_CHUNK):
+            take = min(_REQUEST_CHUNK, count - offset)
+            rates = mt5.copy_rates_from_pos(symbol, tf_const, offset, take)
+            if rates is None or len(rates) == 0:
+                break
+            pieces.append(rates)
+            if len(rates) < take:
+                break
+        if pieces:
+            return np.concatenate(list(reversed(pieces)))
+        rates = mt5.copy_rates_range(symbol, tf_const, start, now)
+        if rates is not None and len(rates) > 0:
+            return rates
         time.sleep(0.5)
     return None
 
@@ -203,15 +204,7 @@ def main() -> None:
             for tf in want_tf:
                 if tf is not Timeframe.D1 and name not in liquid_intraday:
                     continue
-                rates = _fetch(
-                    mt5,
-                    name,
-                    tf_map[tf],
-                    _MAXBARS,
-                    args.tries,
-                    start,
-                    prefer_range=tf is Timeframe.D1,
-                )
+                rates = _fetch(mt5, name, tf_map[tf], _MAXBARS, args.tries, start)
                 if rates is None:
                     coverage.append(
                         {"symbol": name, "asset_class": ac.value, "timeframe": tf.value, "bars": 0}

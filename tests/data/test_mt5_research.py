@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from scripts.ingest_history import _MAXBARS, _fetch
+from scripts.ingest_history import _MAXBARS, _REQUEST_CHUNK, _fetch
 
 from libs.data.mt5_research import (
     LIQUID_INTRADAY_CORE,
@@ -72,17 +72,20 @@ def test_native_history_request_stays_below_terminal_crash_ceiling() -> None:
     assert _MAXBARS == 30_000
 
 
-def test_daily_fetch_uses_range_before_crash_prone_position_request() -> None:
-    calls: list[str] = []
+def test_history_fetch_pages_below_native_crash_ceiling() -> None:
+    calls: list[tuple[int, int]] = []
 
     class MT5:
         def copy_rates_range(self, *_args: object) -> list[int]:
-            calls.append("range")
-            return [1]
+            raise AssertionError("range fallback should not run when paged history exists")
 
-        def copy_rates_from_pos(self, *_args: object) -> list[int]:
-            calls.append("position")
-            return [1]
+        def copy_rates_from_pos(
+            self, _symbol: str, _tf: int, offset: int, count: int
+        ) -> list[tuple[int, int]]:
+            calls.append((offset, count))
+            return [(offset, count)] * count
 
-    assert _fetch(MT5(), "EURUSD", 1, 30_000, 1, object(), prefer_range=True) == [1]
-    assert calls == ["range"]
+    result = _fetch(MT5(), "EURUSD", 1, 12_000, 1, object())
+    assert len(result) == 12_000
+    assert calls == [(0, _REQUEST_CHUNK), (5_000, _REQUEST_CHUNK), (10_000, 2_000)]
+    assert tuple(result[0]) == (10_000, 2_000)
