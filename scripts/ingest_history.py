@@ -37,7 +37,9 @@ from libs.data.timeframe import Timeframe
 
 # Liquid, research-relevant core that also gets intraday (H1) history. Everything else is D1 only.
 _OUT = Path("reports/data_coverage.json")
-_MAXBARS = 100_000
+# Keep one native MT5 request below the terminal's crash-prone 100k ceiling. 30k still gives
+# roughly 114y D1 / 19y H4 / 4.8y H1 / 1.2y M15 and matches the deepest discovery consumer.
+_MAXBARS = 30_000
 
 
 def _connect(

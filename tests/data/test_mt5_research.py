@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+from scripts.ingest_history import _MAXBARS
+
 from libs.data.mt5_research import (
     LIQUID_INTRADAY_CORE,
     research_session_verdict,
@@ -64,3 +66,7 @@ def test_liquid_core_resolves_broker_aliases_without_duplicates() -> None:
     resolved = resolve_liquid_intraday_core(available)
     assert set(resolved) == set(available)
     assert len(resolved) == len(set(resolved))
+
+
+def test_native_history_request_stays_below_terminal_crash_ceiling() -> None:
+    assert _MAXBARS == 30_000
