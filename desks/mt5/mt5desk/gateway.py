@@ -47,7 +47,38 @@ RR = 2.0
 ATR_N = 20
 CANCEL_HOUR = 20.5      # cancel unfilled brackets at 20:30 UTC
 CLOSE_HOUR = 19.5       # force-close positions at 19:30 UTC
-PROMOTED_LOT = 0.01     # promoted sleeves stay at minimum lot until months of proof
+PROMOTED_LOT = 0.01     # promoted sleeves start at minimum lot (ramp, not fixed)
+
+
+def promoted_lot(equity: float, live_n: int) -> float:
+    """Dynamic lot for promoted sleeves: auto_lot(equity) x ramp.
+
+    Ramp earns full authority only with forward proof: 0.25x before 50 live
+    trades, 0.5x before 200, 1.0x after 200. Floor 0.01, cap 5.0.
+    """
+    ramp = 0.25 if live_n < 50 else (0.5 if live_n < 200 else 1.0)
+    lot = auto_lot(equity) * ramp
+    lot = round(lot / 0.01) * 0.01
+    return float(min(max(lot, 0.01), 5.0))
+
+
+def sleeve_live_n(name: str) -> int:
+    """Closed-trade count for a sleeve from the live ledger."""
+    if not LEDGER.exists():
+        return 0
+    try:
+        n = 0
+        for line in LEDGER.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            try:
+                if json.loads(line).get("sleeve") == name:
+                    n += 1
+            except Exception:
+                continue
+        return n
+    except Exception:
+        return 0
 
 # (label, signal_hour, range window)  range None => [0, signal_hour)
 GOLD_WINDOWS = [
@@ -289,7 +320,7 @@ def sleeve_set() -> list[dict]:
                         "window": s["window"],
                         "sig_hour": next(w[1] for w in GOLD_WINDOWS if w[0] == s["window"]),
                         "rng": next(w[2] for w in GOLD_WINDOWS if w[0] == s["window"]),
-                        "lot": PROMOTED_LOT, "status": "LIVE"})
+                        "lot": "auto_ramp", "status": "LIVE"})
     return sleeves
 
 
@@ -354,7 +385,9 @@ def main() -> None:
             a = float(tr.ewm(alpha=1 / ATR_N, min_periods=ATR_N).mean().iloc[-1])
             spec = bracket_spec(hi, lo, max(a, 5.0), sym.trade_tick_size,
                                 stops_level=int(getattr(sym, "trade_stops_level", 0) or 20))
-            lot = auto_lot(equity) if s["lot"] == "auto" else float(s["lot"])
+            lot = auto_lot(equity) if s["lot"] == "auto" else (
+                promoted_lot(equity, sleeve_live_n(s["name"])) if s["lot"] == "auto_ramp"
+                else float(s["lot"]))
             # margin guard (machine kill switch): skip sleeve if tight
             if not margin_ok(s["symbol"], lot, max(hi, lo)):
                 log(f"[{s['name']}] SKIPPED: margin tight (lot={lot})")
