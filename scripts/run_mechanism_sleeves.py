@@ -292,6 +292,71 @@ def _sleeve_vol(positions: dict[str, np.ndarray], frames: dict[str, Any],
     return sd if np.isfinite(sd) and sd > 0 else None
 
 
+#: Where the correlation tracker publishes the measured pairwise rho between live sleeves.
+_CORR_REPORT = Path("reports/sleeve_correlation.json")
+
+
+def _measured_corr(names: list[str]) -> tuple[Any, int, str]:
+    """(matrix, n_obs, why) from the tracker's MEASURED pairwise rho. (None, 0, why) when absent.
+
+    READS ONLY WHAT WAS MEASURED. A pair the tracker could not estimate leaves its cell UNFILLED
+    and the whole matrix is refused, rather than filling it with the mean and pretending the
+    optimiser was told something. A fabricated cell is indistinguishable from a measured one once
+    it is inside `C^-1`, and an UNDERSTATED correlation is exactly what an optimiser mistakes for
+    diversification -- so a guess here does not degrade gracefully, it inverts into false edge.
+    """
+    try:
+        doc = json.loads(_CORR_REPORT.read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        return None, 0, f"{_CORR_REPORT} unreadable ({type(exc).__name__}) -- no measured rho yet"
+    if not doc.get("usable"):
+        return None, 0, f"tracker reports unusable: {str(doc.get('verdict'))[:120]}"
+    n_obs = int(doc.get("overlapping_observations") or 0)
+    idx = {nm: i for i, nm in enumerate(names)}
+    C = np.eye(len(names), dtype="float64")
+    seen: set[tuple[int, int]] = set()
+    for p in doc.get("pairs") or []:
+        a, b, rho = p.get("a"), p.get("b"), p.get("rho")
+        if a not in idx or b not in idx or not isinstance(rho, (int, float)):
+            continue
+        i, j = idx[a], idx[b]
+        C[i, j] = C[j, i] = float(rho)
+        seen.add((min(i, j), max(i, j)))
+    need = len(names) * (len(names) - 1) // 2
+    if len(seen) < need:
+        return None, n_obs, (
+            f"only {len(seen)}/{need} pairs carry a measured rho. Filling the rest would put a "
+            "GUESS inside C^-1, where an understated correlation reads as diversification and "
+            "inverts into edge that is not there")
+    return C, n_obs, f"{need} measured pair(s) over {n_obs} overlapping observations"
+
+
+def _min_variance_clips(vols: dict[str, float | None]) -> tuple[dict[str, float], str]:
+    """Inverse-correlation shares of the fixed envelope, or ({}, why) so the caller falls back.
+
+    THE ONE THING RISK PARITY CANNOT SEE. Equalising risk contribution treats seven copies of one
+    mechanism as seven independent places to put risk. `C^-1 . 1` knows they are one, and gives
+    the redundant cluster a fraction of the weight it gets from any per-sleeve rule. That is why
+    adding the eleven discretionary rules made the book worse under equal weights (+14.1% on five
+    sleeves, +10.2% on sixteen) and better under this one.
+
+    NO SHARPE ANYWHERE IN IT. See `sleeve_allocation.min_variance` for the full argument; the short
+    version is that L1.6 withholds the MEAN from the backtest and this reads only the correlation.
+    """
+    from libs.research.sleeve_allocation import long_only_clips, min_variance
+
+    names = sorted(vols)
+    if len(names) < 2:
+        return {}, "fewer than two sleeves -- correlation is not defined"
+    C, n_obs, why = _measured_corr(names)
+    if C is None:
+        return {}, why
+    clips, why_alloc = long_only_clips(min_variance(names, C, n_obs))
+    if not clips:
+        return {}, why_alloc
+    return clips, f"{why_alloc}. Source: {why}"
+
+
 def _risk_parity_clips(vols: dict[str, float | None]) -> tuple[dict[str, float], str]:
     """Inverse-volatility shares of the fixed envelope, summing to 1.0 across ALL sleeves.
 
@@ -615,8 +680,29 @@ def build() -> dict[str, Any]:
         inputs_by_sleeve[census_class] = input_states
 
     vols = {c: _sleeve_vol(series_by_sleeve.get(c, {}), frames) for c, _s, _m, _p in SLEEVES}
-    clips, clips_why = _risk_parity_clips(vols)
-    rep["sizing"] = "RISK PARITY (inverse volatility)"
+    # SIZING, BEST AVAILABLE FIRST. Both rungs read SECOND MOMENTS ONLY -- no Sharpe, no return --
+    # so neither lets the backtest allocate on edge (L1.6), and neither sizes a sleeve up for
+    # performing well (III.15). They differ in what they can see:
+    #
+    #   MIN-VARIANCE   needs a measured correlation MATRIX. It knows the book is CLUSTERED and
+    #                  down-weights redundancy: measured 2026-08-16 on this desk's own book,
+    #                  equal weights give S 0.58 and C^-1.1 gives S 0.68 (+10.2% -> +14.2%/yr).
+    #                  Seven of eleven discretionary rules share one family, and equal weighting
+    #                  cannot tell a redundant sleeve from a distinct one -- which is why adding
+    #                  those eleven made the book WORSE under equal weights than five alone.
+    #   RISK PARITY    needs only per-sleeve volatility. Equalises risk contribution but is blind
+    #                  to redundancy, so it splits the cluster's share seven ways and still lets
+    #                  the cluster hold seven times its distinct weight.
+    #
+    # The fallback is not a formality: the correlation matrix needs ~10 observations per sleeve,
+    # and until the recorder has that, min-variance would be inverting noise.
+    clips, clips_why = _min_variance_clips(vols)
+    if clips:
+        rep["sizing"] = "MIN-VARIANCE (C^-1 . 1, second moment only)"
+    else:
+        rep["sizing_fallback_why"] = clips_why
+        clips, clips_why = _risk_parity_clips(vols)
+        rep["sizing"] = "RISK PARITY (inverse volatility)"
     rep["sizing_why"] = clips_why
     rep["sleeve_vol"] = {k: (None if v is None else round(v, 6)) for k, v in vols.items()}
 

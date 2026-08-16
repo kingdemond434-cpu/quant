@@ -164,3 +164,105 @@ class TestTheVolItself:
 
     def test_a_mismatched_length_is_skipped_rather_than_zipped(self) -> None:
         assert ms._sleeve_vol({"S": np.ones(10)}, {"S": _Ser(_walk(400, 0.02))}) is None
+
+
+class TestMinVarianceIsPreferredAndFallsBackHonestly:
+    """Both rungs read second moments only. They differ in what they can SEE: min-variance knows
+    the book is clustered, risk parity cannot and splits a redundant cluster's share seven ways."""
+
+    @staticmethod
+    def _report(tmp: Path, names: list[str], rho: dict[tuple[str, str], float],
+                n_obs: int = 400, usable: bool = True) -> Path:
+        pairs = [{"a": a, "b": b, "rho": r} for (a, b), r in rho.items()]
+        p = tmp / "sleeve_correlation.json"
+        p.write_text(json.dumps({"usable": usable, "overlapping_observations": n_obs,
+                                 "pairs": pairs, "mechanisms": names}), "utf-8")
+        return p
+
+    def _install(self, monkeypatch: pytest.MonkeyPatch, path: Path) -> None:
+        monkeypatch.setattr(ms, "_CORR_REPORT", path)
+
+    def test_a_redundant_cluster_is_DOWN_weighted(
+            self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        names = ["c0", "c1", "c2", "distinct"]
+        rho = {}
+        for i in range(3):
+            for j in range(i + 1, 3):
+                rho[(f"c{i}", f"c{j}")] = 0.9
+        for i in range(3):
+            rho[(f"c{i}", "distinct")] = 0.05
+        self._install(monkeypatch, self._report(tmp_path, names, rho))
+        clips, why = ms._min_variance_clips(dict.fromkeys(names, 0.02))
+        assert clips, why
+        assert clips["distinct"] > clips["c0"], (
+            "the sleeve nobody resembles must outweigh a member of a 0.9 cluster -- that IS the "
+            "gain over risk parity")
+        assert sum(clips.values()) == pytest.approx(1.0), "the envelope must be preserved exactly"
+
+    def test_an_incomplete_matrix_is_REFUSED_not_filled(
+            self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        # A fabricated cell is indistinguishable from a measured one inside C^-1, and an
+        # UNDERSTATED correlation is exactly what an optimiser mistakes for diversification.
+        names = ["a", "b", "c"]
+        self._install(monkeypatch, self._report(tmp_path, names, {("a", "b"): 0.3}))
+        clips, why = ms._min_variance_clips(dict.fromkeys(names, 0.02))
+        assert clips == {}
+        assert "measured rho" in why and "GUESS" in why
+
+    def test_an_absent_tracker_report_falls_back_rather_than_guessing(
+            self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        self._install(monkeypatch, tmp_path / "nope.json")
+        clips, why = ms._min_variance_clips({"a": 0.02, "b": 0.02})
+        assert clips == {} and "no measured rho yet" in why
+
+    def test_an_unusable_tracker_verdict_is_honoured(
+            self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        p = self._report(tmp_path, ["a", "b"], {("a", "b"): 0.3}, usable=False)
+        self._install(monkeypatch, p)
+        assert ms._min_variance_clips({"a": 0.02, "b": 0.02})[0] == {}
+
+    def test_a_thin_sample_is_refused_by_the_observation_floor(
+            self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        # 10 obs for 4 sleeves (6 correlations) inverts noise, not structure.
+        names = ["a", "b", "c", "d"]
+        rho = {(x, y): 0.3 for i, x in enumerate(names) for y in names[i + 1:]}
+        self._install(monkeypatch, self._report(tmp_path, names, rho, n_obs=10))
+        assert ms._min_variance_clips(dict.fromkeys(names, 0.02))[0] == {}
+
+    def test_one_sleeve_is_not_an_allocation(self) -> None:
+        assert ms._min_variance_clips({"only": 0.02})[0] == {}
+
+    def test_the_sizing_path_reads_NO_sharpe_and_NO_return_IN_ITS_CODE(self) -> None:
+        """THE LEGAL PROPERTY, checked against executable code rather than prose.
+
+        L1.6 withholds the MEAN from the backtest. Grepping the raw source catches the docstrings
+        that EXPLAIN that rule and reports the explanation as the violation, so the docstrings and
+        comments are stripped first and only the statements are searched. What survives is the
+        actual question: does the sizing path ever touch a return, a P&L or a Sharpe?
+        """
+        import ast
+        import inspect
+
+        for fn in (ms._min_variance_clips, ms._measured_corr):
+            tree = ast.parse(inspect.getsource(fn).lstrip())
+            for node in ast.walk(tree):
+                if (isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant)
+                        and isinstance(node.value.value, str)):
+                    node.value.value = ""          # blank every docstring, keep the structure
+            code = ast.unparse(tree).lower()
+            for banned in ("sharpe", "pnl", "profit", "mean_return", "book_return"):
+                assert banned not in code, (
+                    f"{banned!r} appears in the EXECUTABLE code of {fn.__name__} -- that is the "
+                    "backtest allocating on edge, which the live exception did not suspend")
+
+    def test_min_variance_is_exactly_mean_variance_under_equal_sharpe(self) -> None:
+        """Not a concession, the same vector. If the desk may not use measured per-sleeve means,
+        its honest prior is EQUAL expected Sharpe -- and under equal Sharpes `C^-1 s` collapses to
+        `C^-1 1` identically. The law-compliant estimator and the one you would pick anyway agree.
+        """
+        from libs.research.sleeve_allocation import allocate, min_variance
+
+        names = ["a", "b", "c"]
+        C = np.array([[1.0, 0.8, 0.1], [0.8, 1.0, 0.1], [0.1, 0.1, 1.0]])
+        assert min_variance(names, C, 400).weights == allocate(
+            names, np.ones(3), C, 400).weights
