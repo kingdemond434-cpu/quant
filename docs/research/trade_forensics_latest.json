@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-16T04:18:20.963716+00:00",
+ "updated": "2026-08-16T09:31:19.218576+00:00",
  "n_closes": 4,
  "hold_buckets": {
   "<2h": {
@@ -145,5 +145,5 @@
   "maker fill-rate 57.1% below the 60% target over 42 legs -- patient-maker opens are not converting; fees are the dominant carry cost, so this is the primary unit-economics lever"
  ],
  "origin": "recursion rule 2026-07-22: mechanization of the principal-supplied probes that found gaps #42/#43/#34",
- "written": "2026-08-16T04:18:20.965059+00:00"
+ "written": "2026-08-16T09:31:19.222063+00:00"
 }
