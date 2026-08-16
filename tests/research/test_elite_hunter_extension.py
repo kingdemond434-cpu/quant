@@ -64,6 +64,31 @@ def test_named_x_depth_floor_is_registered_and_reaches_midnight() -> None:
     assert "existing hypothesis/conversion pipeline" in midnight
 
 
+def test_named_x_floor_is_recursive_extractive_and_implementation_bound() -> None:
+    mandate = Path("docs/research/ELITE_QUANT_INTELLIGENCE_MANDATE.md").read_text("utf-8")
+    midnight = Path("ops/midnight_codex_prompt.txt").read_text("utf-8")
+    for required in (
+        "NAMED-SEED MAXIMUM-DEPTH / MAXIMUM-ROI LAW",
+        "artifact-exhaustive",
+        "papers and appendices",
+        "repositories and forks",
+        "failures and negative results",
+        "test -> implementation -> consumer -> measured-effect",
+        "E[log W] uplift",
+    ):
+        assert required in mandate
+    for required in (
+        "outbound citations",
+        "papers/appendices",
+        "repos/forks/notebooks",
+        "validation/falsification",
+        "immediately IMPLEMENT and TEST",
+        "E[log W] uplift / total conversion cost",
+        "Surface summaries and passive reading lists fail",
+    ):
+        assert required in midnight
+
+
 def test_creator_extraction_mines_research_system_not_only_strategy_claim() -> None:
     prompt = extraction_prompt(
         {"url": "https://x.com/L1vsun", "title": "creator", "source_kind": "x"},

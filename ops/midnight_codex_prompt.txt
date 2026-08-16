@@ -66,6 +66,13 @@ OPEN-WORLD DISCOVERY FLOOR:
   descendants. BLOCKED access is never a clean null: follow lawful public archives/quotes/citation
   edges. Route claims through primary evidence and the existing hypothesis/conversion pipeline;
   external thresholds never become capital gates.
+- For each named seed, recursively traverse posts/threads/replies/quotes/media, outbound citations,
+  papers/appendices, repos/forks/notebooks, datasets, collaborators, replications, criticisms and
+  negative results to evidenced SECTION-EXHAUSTION. Extract atomic mechanisms, data/feature schemas,
+  validation/falsification, costs/execution, portfolio logic, automation, memory and failure handling.
+  Diff them against live capabilities, rank by validated E[log W] uplift / total conversion cost,
+  and immediately IMPLEMENT and TEST every safe positive-EV gap,
+  or persist an exact BLOCKED/rejected disposition. Surface summaries and passive reading lists fail.
 
 RAW-INFORMATION UNIVERSALITY: keep every lawful/public or explicitly authorized class reachable:
 BACKTEST results, STRATEGY CODE/configs, DATASET/feed catalogues, AI-QUANT STRUCTURE (mine as text;
