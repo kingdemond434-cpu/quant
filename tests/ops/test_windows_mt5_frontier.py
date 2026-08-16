@@ -13,6 +13,8 @@ def test_mt5_frontier_is_research_only_and_publishes_to_shadow() -> None:
     assert "run_crossasset_shadow.py" in script
     assert "order_send" not in script
     assert "--place" not in script
+    assert "& $action *> $stepLog" in script
+    assert "& $action *>&1 | Tee-Object" not in script
 
 
 def test_mt5_frontier_covers_cross_asset_intraday_and_daily_frames() -> None:

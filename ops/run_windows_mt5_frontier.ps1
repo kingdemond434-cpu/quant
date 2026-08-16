@@ -40,15 +40,22 @@ function Write-FrontierStatus([string]$state, [string]$reason) {
 
 function Run-Step([string]$name, [scriptblock]$action) {
     $stepStart = [DateTimeOffset]::UtcNow
+    $stepLog = Join-Path $env:TEMP "mt5-$name-$([Guid]::NewGuid().ToString('N')).log"
     try {
-        & $action *>&1 | Tee-Object -FilePath $logPath -Append
-        if ($LASTEXITCODE -ne $null -and $LASTEXITCODE -ne 0) {
-            throw "$name exited $LASTEXITCODE"
+        # Do not pipe a MetaTrader-spawning process into Tee-Object: terminal64 inherits the pipe
+        # handle and keeps it open after Python exits, which makes a completed step hang forever.
+        & $action *> $stepLog
+        $stepRc = $LASTEXITCODE
+        Get-Content $stepLog | Tee-Object -FilePath $logPath -Append
+        if ($stepRc -ne $null -and $stepRc -ne 0) {
+            throw "$name exited $stepRc"
         }
         $steps[$name] = [ordered]@{state="PASS"; started_at=$stepStart.ToString("o"); finished_at=[DateTimeOffset]::UtcNow.ToString("o")}
     } catch {
         $steps[$name] = [ordered]@{state="FAIL"; started_at=$stepStart.ToString("o"); finished_at=[DateTimeOffset]::UtcNow.ToString("o"); error=$_.Exception.Message}
         throw
+    } finally {
+        Remove-Item -Force $stepLog -ErrorAction SilentlyContinue
     }
 }
 
@@ -70,7 +77,9 @@ try {
     # MetaTrader's Python bridge permits one client per terminal. Pause the read-only gold sensor,
     # reuse its investor terminal, and restore it before network publication. This avoids a second
     # credential store and never touches an execution-capable account.
-    $desk = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*golddesk.service*" }
+    $desk = Get-CimInstance Win32_Process | Where-Object {
+        $_.Name -like "pythonw*.exe" -and $_.CommandLine -like "*-m golddesk.service*"
+    }
     $deskSupervisor = Get-CimInstance Win32_Process | Where-Object {
         $_.Name -eq "cmd.exe" -and $_.CommandLine -like "*run_desk.bat*"
     }
