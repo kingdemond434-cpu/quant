@@ -38,6 +38,7 @@ import json
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import cast
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
@@ -49,6 +50,7 @@ from libs.research.clock_registry import REGISTRY as CLOCK_REGISTRY  # noqa: E40
 from libs.research.clock_registry import register_owed  # noqa: E402
 from libs.research.live_ladder import (  # noqa: E402
     MIN_OBS_FOR_A_VERDICT,
+    LadderVerdict,
     LiveRecord,
     decide,
     render,
@@ -88,7 +90,7 @@ def min_informative_clip(*, drag_budget: float = DRAG_BUDGET,
 
 def _load(path: Path) -> object | None:
     try:
-        return json.loads(path.read_text("utf-8"))
+        return cast(object, json.loads(path.read_text("utf-8")))
     except (OSError, json.JSONDecodeError):
         return None
 
@@ -141,7 +143,10 @@ def survivor_t_stats(raw: object) -> dict[str, float]:
 
 
 def state_of(name: str, *, has_forward_record: bool, forward_obs: int,
-             t_stat: float | None) -> tuple[alpha_state.AlphaRecord, str]:
+             shadow_started_at: str = "",
+             t_stat: float | None,
+             ledger: alpha_state.AlphaStateLedger | None = None
+             ) -> tuple[alpha_state.AlphaRecord, str]:
     """Place a Stage-A survivor on the governance ladder and say what the NEXT rung costs.
 
     THE POINT IS THE REFUSAL, NOT THE PLACEMENT. Before `alpha_state` existed, nothing in the code
@@ -152,9 +157,9 @@ def state_of(name: str, *, has_forward_record: bool, forward_obs: int,
 
     EVERY SWEEP SURVIVOR STOPS WELL SHORT OF LIVE and that is the correct output, not a bug: a
     screen has zero promotion authority (two-stage discovery law), so the ladder is expected to
-    halt at OOS_VALIDATED or below until forward evidence exists.
+    halt at SHADOW or below until the registered clock produces untouched forward evidence.
     """
-    rec = alpha_state.AlphaRecord(alpha_id=name)
+    rec = ledger.get(name) if ledger is not None else alpha_state.AlphaRecord(alpha_id=name)
     # Evidence the sweep artifact genuinely establishes. Nothing is asserted that was not measured:
     # an empty value is treated as missing by the machine, so padding here would be refused anyway.
     ev: dict[str, str] = {
@@ -166,20 +171,46 @@ def state_of(name: str, *, has_forward_record: bool, forward_obs: int,
     if t_stat is not None:
         ev |= {"t_stat": f"{t_stat:.3f}", "deflated_hurdle": "5.236",
                "trials_declared": "898560"}
+    if shadow_started_at or has_forward_record:
+        ev["shadow_started_at"] = shadow_started_at or "recorded"
     if has_forward_record:
-        ev |= {"shadow_started_at": "recorded", "forward_observations": str(forward_obs)}
+        ev["forward_observations"] = str(forward_obs)
     reason = ""
     while True:
         nxt = alpha_state.next_rung(rec.state)
         if nxt is None:
             break
-        moved, reason = alpha_state.advance(
-            rec, nxt, {k: v for k, v in ev.items()
-                       if k in alpha_state.requirements(nxt)})
+        step_evidence = {k: v for k, v in ev.items() if k in alpha_state.requirements(nxt)}
+        moved, reason = (
+            ledger.advance(name, nxt, step_evidence) if ledger is not None
+            else alpha_state.advance(rec, nxt, step_evidence)
+        )
         if moved.state == rec.state:
             break
         rec = moved
     return rec, reason
+
+
+def shadow_births(root: Path) -> dict[str, str]:
+    """Canonical alpha id -> real zero-capital clock birth.
+
+    Paper sleeves use filesystem-safe names, while the alpha ledger uses the original pipe-delimited
+    identity. The state file carries that identity as ``trial``. Joining on it is what turns an
+    on-disk clock into a SHADOW rung without inventing forward evidence or relying on name shape.
+    """
+    out: dict[str, str] = {}
+    data = root / "data"
+    if not data.is_dir():
+        return out
+    for path in data.glob("*_shadow_state.json"):
+        doc = _load(path)
+        if not isinstance(doc, dict):
+            continue
+        alpha_id = str(doc.get("trial") or "").strip()
+        started = str(doc.get("shadow_start") or "").strip()
+        if alpha_id and started:
+            out[alpha_id] = started
+    return out
 
 
 
@@ -204,7 +235,9 @@ def evidence_of(rec: LiveRecord) -> tuple[float, str]:
     return eff, why
 
 
-def competing_allocation(live: list[LiveRecord], verdicts: list) -> dict[str, object]:
+def competing_allocation(
+    live: list[LiveRecord], verdicts: list[LadderVerdict]
+) -> dict[str, object]:
     """What every live record would receive if capital were re-competed RIGHT NOW.
 
     Age is not an input. A record funded because it has been running for months and a record with
@@ -236,6 +269,8 @@ def main() -> int:
                     help="where owed forward clocks are recorded so Stage-B and the dashboard "
                          "can see them; overridable so tests never write the real one")
     ap.add_argument("--out", type=Path, default=OUT)
+    ap.add_argument("--alpha-ledger", type=Path, default=None,
+                    help="append-only canonical state ledger; defaults beside --registry")
     a = ap.parse_args()
 
     live = records_from(_load(a.records))
@@ -243,6 +278,10 @@ def main() -> int:
     survivors = survivors_from(sweep_doc)
     t_by_key = survivor_t_stats(sweep_doc)
     floor = min_informative_clip()
+    state_ledger = alpha_state.AlphaStateLedger(
+        a.alpha_ledger or (a.registry.parent / "alpha_state_ledger.jsonl")
+    )
+    births = shadow_births(a.registry.parent.parent)
 
     named = {r.name for r in live}
     # A SURVIVOR WITH NO FORWARD RECORD IS THE WHOLE POINT OF THIS SCRIPT. It should be accruing
@@ -278,7 +317,8 @@ def main() -> int:
     for s_name in survivors:
         rec, why = state_of(s_name, has_forward_record=s_name in named,
                             forward_obs=next((r.n_trades for r in live if r.name == s_name), 0),
-                            t_stat=t_by_key.get(s_name))
+                            shadow_started_at=births.get(s_name, ""),
+                            t_stat=t_by_key.get(s_name), ledger=state_ledger)
         ladder_states.append({"alpha": s_name, "state": rec.state, "blocked_by": why,
                               "owes": list(alpha_state.requirements(
                                   alpha_state.next_rung(rec.state) or "")),

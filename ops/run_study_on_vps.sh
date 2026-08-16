@@ -131,9 +131,19 @@ run_one() {
   # per-cell lines explicitly but not its header, so the first ~8 minutes of a real run produced a
   # log containing only "STARTED" -- indistinguishable from a hang, which is exactly what it was
   # read as. The detach fix made the process survivable and simultaneously made it look dead.
+  # Capture the STUDY process, not tee. The old trailing FINISHED echo overwrote a crashed
+  # study's rc and made the scheduler green on stale artifacts.
+  set +e
   OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONUNBUFFERED=1 \
     nice -n 15 "$PY" $cmd 2>&1 | tee -a "$LOG"
-  echo "FINISHED $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  local study_rc=${PIPESTATUS[0]}
+  set -e
+  if [ "$study_rc" -ne 0 ]; then
+    echo "FAILED   $(date -u +%Y-%m-%dT%H:%M:%SZ) rc=$study_rc"
+    return "$study_rc"
+  fi
+  echo "FINISHED $(date -u +%Y-%m-%dT%H:%M:%SZ) rc=0"
+  return 0
 }
 
 echo "== data present on this box ==" | tee -a "$LOG"
@@ -155,14 +165,21 @@ for name in "${!STUDIES[@]}"; do
   esac
 done
 
+OVERALL_RC=0
 if [ -n "$ONLY" ]; then
   [ -n "${STUDIES[$ONLY]:-}" ] || {
     echo "unknown study '$ONLY'. Registered: ${ORDER[*]}"; exit 1; }
-  run_one "$ONLY"
+  run_one "$ONLY" || OVERALL_RC=$?
 else
-  for name in "${ORDER[@]}"; do run_one "$name" || true; done
+  for name in "${ORDER[@]}"; do
+    run_one "$name" || OVERALL_RC=1
+  done
 fi
 
 echo
 echo "Artifacts are under data/. They are gitignored, so to get a VERDICT off the box either read"
 echo "it here, or commit the JSON report itself -- reports are small, and a verdict is not a lake."
+if [ "$OVERALL_RC" -ne 0 ]; then
+  echo "STUDY BATCH FAILED -- at least one registered study failed; stale outputs are not success."
+fi
+exit "$OVERALL_RC"

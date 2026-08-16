@@ -95,3 +95,12 @@ def test_THE_SWEEPS_FIRST_PROGRESS_LINE_IS_FLUSHED() -> None:
     sweep = Path("scripts/run_full_sweep.py").read_text("utf-8")
     header = sweep.split("full-sweep: {PREREGISTERED_UNIVERSE} candidates")[1][:400]
     assert "flush=True" in header, "the header print lost its flush -- a detached run goes silent"
+
+
+def test_A_FAILED_STUDY_CANNOT_BE_REPORTED_AS_FINISHED(src: str) -> None:
+    """tee and a trailing echo must not turn a crashed study into a green scheduled run."""
+    assert "PIPESTATUS[0]" in src
+    assert 'echo "FAILED' in src
+    assert 'return "$study_rc"' in src
+    assert "OVERALL_RC" in src
+    assert 'run_one "$name" || true' not in src

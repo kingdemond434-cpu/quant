@@ -432,6 +432,39 @@ def test_RAGGED_SPANS_NO_LONGER_EMPTY_THE_WHOLE_PANEL() -> None:
     assert dropped == ["CCC"], "the disjoint symbol was not dropped, or was dropped silently"
 
 
+def test_MAIN_PASSES_ONLY_RETAINED_SYMBOLS_TO_PANEL_CONSUMERS(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """Live regression: 1000CATUSDT was dropped by ``align`` but remained in ``symbols``.
+
+    ``pooled_features`` then indexed every panel with the stale input universe and crashed instead
+    of reporting the retained cross-section. Stop immediately at that boundary so this test never
+    runs the 898,560-cell study.
+    """
+    overlap = pd.date_range("2026-08-01", periods=500, freq="15min", tz="UTC")
+    disjoint = pd.date_range("2026-09-01", periods=500, freq="15min", tz="UTC")
+    frames = {
+        "BTCUSDT": pd.DataFrame({"timestamp": overlap, "close": np.arange(500) + 100.0}),
+        "ETHUSDT": pd.DataFrame({"timestamp": overlap, "close": np.arange(500) + 50.0}),
+        "1000CATUSDT": pd.DataFrame(
+            {"timestamp": disjoint, "close": np.arange(500) + 1.0}
+        ),
+    }
+
+    class ReachedPanelBoundary(Exception):
+        pass
+
+    def capture(_panels: dict[str, pd.DataFrame], symbols: list[str]) -> None:
+        assert symbols == ["BTCUSDT", "ETHUSDT"]
+        raise ReachedPanelBoundary
+
+    monkeypatch.setattr(FS, "universe_check", lambda: (FS.PREREGISTERED_UNIVERSE, True))
+    monkeypatch.setattr(FS, "discover", lambda _symbols, _bars: frames)
+    monkeypatch.setattr(FS, "pooled_features", capture)
+    monkeypatch.setattr(sys, "argv", ["run_full_sweep.py"])
+    with pytest.raises(ReachedPanelBoundary):
+        FS.main()
+
+
 def test_A_BAR_IS_KEPT_ONLY_WHERE_ENOUGH_SYMBOLS_TRADED() -> None:
     """A bar with one symbol in it cannot be ranked cross-sectionally -- `rank` and `zscore`
     degenerate and correctly refuse -- so keeping it buys nothing and dilutes every count."""

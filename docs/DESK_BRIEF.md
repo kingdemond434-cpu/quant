@@ -1,4 +1,4 @@
-# DESK BRIEF -- 2026-08-14 09:26Z
+# DESK BRIEF -- 2026-08-15 09:36Z
 
 Machine-generated from measured desk state. Every number traces to an artifact in
 `data/`. Nothing here is an argument. Respond to the evidence, not to another model.
@@ -13,34 +13,34 @@ Machine-generated from measured desk state. Every number traces to an artifact i
    forward clocks promote.
 
 ## Experiment record (45d, harvested from git -- one row per commit)
-- experiments: **1644**; decided: 977
-- survival rate: **5.4%** (53 survived / 855 refuted / 69 inconclusive)
-- unclassified commit decisions: 122 (commit-discipline defect)
+- experiments: **1702**; decided: 1007
+- survival rate: **5.4%** (54 survived / 882 refuted / 71 inconclusive)
+- unclassified commit decisions: 138 (commit-discipline defect)
 
 | mechanism | tested | survived | rate |
 |---|---:|---:|---:|
-| M_UNMAPPED | 798 | 45 | 6% |
-| M_ATTENTION_DELAY | 47 | 2 | 4% |
+| M_UNMAPPED | 820 | 45 | 5% |
+| M_ATTENTION_DELAY | 49 | 3 | 6% |
 | M_LIQUIDITY_WITHDRAWAL | 45 | 2 | 4% |
-| M_STRUCTURAL_BARRIER | 41 | 0 | 0% |
-| M_FORCED_DELEVERAGE | 36 | 3 | 8% |
+| M_STRUCTURAL_BARRIER | 44 | 0 | 0% |
+| M_FORCED_DELEVERAGE | 37 | 3 | 8% |
+| M_SKILL_PERSISTENCE | 14 | 0 | 0% |
 | M_FLOW_PRESSURE | 13 | 0 | 0% |
 | M_FUNDAMENTAL_PROXY | 11 | 0 | 0% |
-| M_SKILL_PERSISTENCE | 11 | 0 | 0% |
 | M_PRICE_PATTERN | 5 | 1 | 20% |
 
 ### Why experiments died (45d)
 
-- `E_DATA_QUALITY` 462 (37%)
-- `B_WRONG_MEASUREMENT` 230 (18%)
-- `H_OVERFIT` 196 (16%)
-- `G_TOO_EXPENSIVE` 170 (14%)
-- `C_WRONG_TIMING` 100 (8%)
-- `F_REGIME_DEPENDENT` 75 (6%)
+- `E_DATA_QUALITY` 473 (37%)
+- `B_WRONG_MEASUREMENT` 236 (18%)
+- `H_OVERFIT` 198 (15%)
+- `G_TOO_EXPENSIVE` 178 (14%)
+- `C_WRONG_TIMING` 107 (8%)
+- `F_REGIME_DEPENDENT` 78 (6%)
 - `D_ALREADY_ARBITRAGED` 16 (1%)
 - `A_NO_MECHANISM` 8 (1%)
 
-**692/1257 = 55% of refutations are MEASUREMENT failures (data quality + wrong construction), not absent alpha.**
+**709/1294 = 55% of refutations are MEASUREMENT failures (data quality + wrong construction), not absent alpha.**
 
 ## FAMILY KILLS -- mechanisms closed by evidence
 

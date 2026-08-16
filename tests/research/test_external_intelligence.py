@@ -33,6 +33,29 @@ def test_external_graph_ranks_evidence_and_extracts_internal_gaps() -> None:
     assert "fame" in report["ranking_law"]
 
 
+def test_creator_superior_capability_enters_the_same_measured_gap_path() -> None:
+    report = external_capability_graph(
+        [
+            {
+                "url": "https://x.com/creator",
+                "evidence_class": "BACKTEST",
+                "research_system": "generate -> autopsy -> mutate",
+                "internal_analogue": "existing mutation runner",
+                "measurable_gap": "unique survivors per compute-hour",
+                "replication_plan": "frozen-parent challenger",
+                "superior_capabilities": ["failure-conditioned mutation"],
+            }
+        ],
+        internal_capabilities=[],
+    )
+    gap = report["capability_gaps"][0]
+    assert gap["capability"] == "failure-conditioned mutation"
+    assert gap["gap_kind"] == "superior_external_capability"
+    assert gap["research_system"] == "generate -> autopsy -> mutate"
+    assert gap["measurable_gap"] == "unique survivors per compute-hour"
+    assert gap["replication_plan"] == "frozen-parent challenger"
+
+
 def test_paper_success_is_not_automatic_survivor_and_failure_is_banked() -> None:
     complete = dict.fromkeys(
         (

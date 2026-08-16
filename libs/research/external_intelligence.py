@@ -100,8 +100,13 @@ def external_capability_graph(
             edges.extend(
                 {**dict(edge), "source": source} for edge in raw_edges if isinstance(edge, Mapping)
             )
-        raw_gaps = item.get("capability_gaps", [])
-        if isinstance(raw_gaps, list):
+        raw_gap_groups = (
+            ("capability_gap", item.get("capability_gaps", [])),
+            ("superior_external_capability", item.get("superior_capabilities", [])),
+        )
+        for gap_kind, raw_gaps in raw_gap_groups:
+            if not isinstance(raw_gaps, list):
+                continue
             for gap in raw_gaps:
                 row = dict(gap) if isinstance(gap, Mapping) else {"capability": str(gap)}
                 capability = str(row.get("capability", "")).strip()
@@ -113,6 +118,15 @@ def external_capability_graph(
                         "capability": capability,
                         "source": source,
                         "evidence_class": evidence,
+                        "gap_kind": gap_kind,
+                        "research_system": item.get("research_system"),
+                        "internal_analogue": row.get(
+                            "internal_analogue", item.get("internal_analogue")
+                        ),
+                        "measurable_gap": row.get("measurable_gap", item.get("measurable_gap")),
+                        "replication_plan": row.get(
+                            "replication_plan", item.get("replication_plan")
+                        ),
                         "status": "GAP_CANDIDATE",
                         "next": (
                             "replicate -> adversarial test -> adapt -> integrate -> "

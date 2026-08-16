@@ -339,8 +339,8 @@ class CandidateStore:
             metrics=metrics, survived=survived, rejection_reason=rejection_reason,
         )
         with self.db.transaction() as conn:
-            conn.execute(
-                f"INSERT INTO research_candidates ({_COLS}) "
+            cur = conn.execute(
+                f"INSERT OR IGNORE INTO research_candidates ({_COLS}) "
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     rec.id, now, now, campaign_id, rec.family, rec.subtype, rec.symbol,
@@ -350,6 +350,8 @@ class CandidateStore:
                     int(survived), rejection_reason,
                 ),
             )
+            if cur.rowcount == 0:
+                return rec
             if series is not None:
                 _insert_series(conn, candidate_id=rec.id, kind=SeriesKind.NET,
                                values=series.net, epoch_key=series.epoch_key,

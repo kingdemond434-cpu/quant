@@ -127,6 +127,11 @@ REQUEUE_UNTESTED = "UNTESTED"
 #: Evidence labels the registry publishes when it cannot see whether a clock is breathing.
 _UNMEASURABLE_EVIDENCE = frozenset({"UNMEASURED"})
 
+# A named source that no longer carries the exact pre-registered identity is not an unknown
+# observation. It is a measured inability to accrue another observation. Keeping it in BLOCKED
+# forever strands the seat and cannot preserve evidence, because there is no producer left.
+_TERMINAL_SOURCE_EVIDENCE = frozenset({"SOURCE-GONE"})
+
 
 @dataclass(frozen=True)
 class Displacement:
@@ -204,6 +209,11 @@ def classify_slot(slot: dict[str, Any]) -> tuple[str, str]:
             f"{name}: verdict {verdict} -- the instrument failed, so this clock cannot resolve "
             f"however long it runs. It publishes evidence={evidence!r}, which is why a liveness "
             "check protects it and a verdict check does not")
+    if evidence in _TERMINAL_SOURCE_EVIDENCE:
+        return RECLAIMABLE, (
+            f"{name}: evidence {evidence} -- the exact pre-registered source identity is absent, "
+            "so this clock cannot accrue another observation. Retire the clock as UNTESTED and "
+            "preserve its history; never reinterpret the missing source as a zero return")
     if evidence in _UNMEASURABLE_EVIDENCE:
         return BLOCKED, (
             f"{name}: evidence UNMEASURED -- whether this clock is alive is unknown, and a slot "

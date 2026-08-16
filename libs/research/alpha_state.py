@@ -9,8 +9,8 @@ look identical right up until the morning they do not.
 So the transitions become an object. An alpha advances ONE rung at a time, each rung names the
 evidence it requires, and a skipped rung is a hard refusal rather than an omission nobody notices.
 
-    DISCOVERED -> IMPLEMENTED -> TESTED -> STATISTICALLY_VALID -> OOS_VALIDATED
-      -> INDEPENDENCE_CHECKED -> PORTFOLIO_VALIDATED -> SHADOW -> CAPITAL_ELIGIBLE
+    DISCOVERED -> IMPLEMENTED -> TESTED -> STATISTICALLY_VALID -> SHADOW
+      -> OOS_VALIDATED -> INDEPENDENCE_CHECKED -> PORTFOLIO_VALIDATED -> CAPITAL_ELIGIBLE
       -> LIVE -> MONITORED  (and DEGRADED / RETIRED from anywhere)
 
 WHAT THIS IS NOT. It is not a promoter. It grants nothing, sizes nothing and places nothing --
@@ -35,14 +35,18 @@ THREE PROPERTIES, each chosen against a specific way this would otherwise rot:
 
 from __future__ import annotations
 
+import json
+import os
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
+from pathlib import Path
 
 __all__ = [
     "ORDER",
     "RUNGS",
     "TERMINAL",
     "AlphaRecord",
+    "AlphaStateLedger",
     "Rung",
     "advance",
     "next_rung",
@@ -76,8 +80,13 @@ RUNGS: tuple[Rung, ...] = (
          "cleared the DECLARED-universe hurdle. `trials_declared` is required by name because "
          "deflating on the executed count rather than the declared one is the most respectable "
          "route to a manufactured survivor (L1.52a)"),
+    Rung("SHADOW", ("shadow_started_at",),
+         "a pre-registered forward clock is running at zero capital. It must precede OOS: the "
+         "clock is the producer of genuinely untouched observations, so requiring OOS before "
+         "starting it is a circular gate that can never pay its own evidence debt"),
     Rung("OOS_VALIDATED", ("oos_result", "split_rule_preregistered"),
-         "held on data the selection did not see, under a split chosen BEFORE the result"),
+         "held on observations accrued after the zero-capital clock was registered, under a "
+         "decision rule chosen before those observations arrived"),
     Rung("INDEPENDENCE_CHECKED", ("mechanism_cluster", "correlation_to_book"),
          "a distinct MECHANISM, not the fiftieth expression of a deployed alpha. Four formulas "
          "over one feature are one research family, and counting them as four is how a generator "
@@ -85,9 +94,6 @@ RUNGS: tuple[Rung, ...] = (
     Rung("PORTFOLIO_VALIDATED", ("marginal_contribution", "capacity"),
          "improves the EXISTING book after correlation, cost and capacity. Standalone Sharpe "
          "cannot answer this and is routinely mistaken for an answer to it"),
-    Rung("SHADOW", ("shadow_started_at",),
-         "a forward clock is running at zero capital. The slow part of discovery was never "
-         "paperwork -- it is elapsed forward time, and that is the one input nobody can buy later"),
     Rung("LIVE_CANARY", ("canary_size_quote_units", "principal_canary_authorisation"),
          "REAL FILLS AT LEARNING SIZE, and the rung that exists because simulation cannot answer "
          "the question it is asked. A canary is not there to make money -- it is there to test "
@@ -137,6 +143,85 @@ class AlphaRecord:
     def rung_index(self) -> int:
         """Position on the ladder; -1 for terminal states, which sit off it."""
         return ORDER.index(self.state) if self.state in ORDER else -1
+
+
+class AlphaStateLedger:
+    """Append-only durable materialisation of the canonical ladder.
+
+    The transition function remains the sole authority. The ledger only persists transitions it
+    accepted, so a restart or controller handoff resumes the same alpha rather than rebuilding an
+    optimistic state from whichever report happens to be newest.
+    """
+
+    def __init__(self, path: Path | str) -> None:
+        self.path = Path(path)
+        self.records = self._load()
+
+    def _load(self) -> dict[str, AlphaRecord]:
+        if not self.path.exists():
+            return {}
+        records: dict[str, AlphaRecord] = {}
+        for number, line in enumerate(self.path.read_text("utf-8").splitlines(), start=1):
+            if not line.strip():
+                continue
+            try:
+                row = json.loads(line)
+                rec = AlphaRecord(
+                    alpha_id=str(row["alpha_id"]), state=str(row["state"]),
+                    evidence={str(k): str(v) for k, v in dict(row["evidence"]).items()},
+                    history=tuple((str(a), str(b)) for a, b in row["history"]),
+                    note=str(row.get("note", "")),
+                )
+            except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+                raise ValueError(f"malformed alpha-state ledger line {number}: {exc}") from exc
+            if rec.state not in ORDER and rec.state not in TERMINAL:
+                raise ValueError(f"malformed alpha-state ledger line {number}: unknown state")
+            prior = records.get(rec.alpha_id, AlphaRecord(alpha_id=rec.alpha_id))
+            if len(rec.history) != len(prior.history) + 1 or \
+                    rec.history[:-1] != prior.history or rec.history[-1][0] != rec.state:
+                raise ValueError(
+                    f"malformed alpha-state ledger line {number}: history is not append-only"
+                )
+            if rec.state in TERMINAL:
+                expected, _ = retreat(prior, rec.state, reason=rec.note or "ledgered retreat",
+                                      now=rec.history[-1][1])
+            else:
+                expected, why = advance(prior, rec.state, rec.evidence, now=rec.history[-1][1])
+                if expected.state != rec.state:
+                    raise ValueError(
+                        f"malformed alpha-state ledger line {number}: illegal transition ({why})"
+                    )
+            if expected.history != rec.history or expected.evidence != rec.evidence:
+                raise ValueError(
+                    f"malformed alpha-state ledger line {number}: snapshot does not match "
+                    "transition"
+                )
+            records[rec.alpha_id] = rec
+        return records
+
+    def get(self, alpha_id: str) -> AlphaRecord:
+        return self.records.get(alpha_id, AlphaRecord(alpha_id=alpha_id))
+
+    def advance(self, alpha_id: str, to: str, evidence: dict[str, str], *,
+                now: str = "") -> tuple[AlphaRecord, str]:
+        current = self.get(alpha_id)
+        moved, reason = advance(current, to, evidence, now=now)
+        if moved == current:
+            return moved, reason
+        self._append(moved)
+        self.records[alpha_id] = moved
+        return moved, reason
+
+    def _append(self, rec: AlphaRecord) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        row = json.dumps({
+            "schema_version": 1, "alpha_id": rec.alpha_id, "state": rec.state,
+            "evidence": rec.evidence, "history": rec.history, "note": rec.note,
+        }, sort_keys=True)
+        with self.path.open("a", encoding="utf-8", newline="\n") as fh:
+            fh.write(row + "\n")
+            fh.flush()
+            os.fsync(fh.fileno())
 
 
 def requirements(state: str) -> tuple[str, ...]:

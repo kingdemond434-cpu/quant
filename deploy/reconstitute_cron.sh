@@ -13,10 +13,9 @@
 #   * cron entries are installed inside a marker-fenced block -- re-running REPLACES the
 #     block, never appends (the append failure mode is how boxes end up running a job twice);
 #   * everything outside the fence in the user's crontab is preserved byte-for-byte;
-#   * the committed quant-* timer units are enabled via systemctl when it exists (unit files are
-#     copied into /etc/systemd/system only when that dir is writable, i.e. run as root;
-#     otherwise the exact sudo commands are printed -- this box denies systemctl to the quant
-#     user, scripts/watchdog.py:78, so printing the commands IS the deliverable there).
+#   * the committed quant-* timer units are enabled on the system plane when writable; without
+#     root, the collision-free midnight controller alone is installed as a durable user timer
+#     while the other units remain system-owned and their exact sudo recovery commands are shown.
 #
 # REFUSES to run when scripts/check_scheduler_manifest.py finds manifest-referenced scripts
 # missing from the repo: installing a crontab of dead entries would fake a healthy DR drill
@@ -108,8 +107,10 @@ else
 fi
 
 # systemd plane: committed dig units plus the collision-free midnight frontier. Copy+enable
-# when we can, print the sudo commands when we cannot -- never die here (the cron plane above
-# already restored the money-path watchdog backstop, which respawns the critical services).
+# all units when we can. Without system write access, install ONLY the midnight frontier in the
+# invoking user's systemd manager. The other timers stay on the system plane, so this fallback
+# cannot create a second copy of every miner. Never die here: the cron plane above already
+# restored the money-path watchdog backstop, which respawns the critical services.
 UNITS="quant-blindrediscovery quant-dataaxis quant-frontier quant-litminer quant-prospector quant-midnight-frontier"
 if command -v systemctl >/dev/null 2>&1; then
     COPIED=0
@@ -131,6 +132,14 @@ if command -v systemctl >/dev/null 2>&1; then
         echo "reconstitute: copied $COPIED/6 unit pairs into /etc/systemd/system"
         echo "reconstitute: NOTE committed units hardcode /home/quant/quant-platform paths;"
         echo "reconstitute: if this checkout lives elsewhere, edit the copies before relying on them"
+        for u in $UNITS; do
+            if systemctl enable --now "$u.timer" >/dev/null 2>&1; then
+                echo "reconstitute: enabled $u.timer"
+            else
+                echo "reconstitute: could not enable $u.timer -- owed:"
+                echo "  sudo systemctl enable --now $u.timer"
+            fi
+        done
     else
         echo "reconstitute: /etc/systemd/system not writable -- run as root to install units, or:"
         for u in $UNITS; do
@@ -139,17 +148,91 @@ if command -v systemctl >/dev/null 2>&1; then
         echo "  sudo systemctl disable --now quant-research.timer  # legacy midnight timer only"
         echo "  sudo rm -f /etc/systemd/system/quant-research.timer"
         echo "  sudo systemctl daemon-reload"
-    fi
-    for u in $UNITS; do
-        if systemctl enable --now "$u.timer" >/dev/null 2>&1; then
-            echo "reconstitute: enabled $u.timer"
-        else
-            echo "reconstitute: could not enable $u.timer (no root / unit absent) -- owed:"
-            echo "  sudo systemctl enable --now $u.timer"
+
+        # Do not create two midnight launchers if a root-owned current or legacy timer is
+        # already live. A disabled unit file is harmless; an enabled/active timer is not.
+        SYSTEM_MIDNIGHT_LIVE=0
+        for u in quant-midnight-frontier quant-research; do
+            if systemctl is-enabled "$u.timer" >/dev/null 2>&1 || \
+                    systemctl is-active "$u.timer" >/dev/null 2>&1; then
+                SYSTEM_MIDNIGHT_LIVE=1
+                echo "reconstitute: $u.timer is already live on the system plane; user timer skipped"
+            fi
+        done
+
+        if [ "$SYSTEM_MIDNIGHT_LIVE" -eq 0 ]; then
+            USER_HOME=${HOME:-}
+            if [ -z "$USER_HOME" ] && command -v getent >/dev/null 2>&1; then
+                USER_HOME=$(getent passwd "$(id -u)" | awk -F: '{print $6}')
+            fi
+            if [ -z "$USER_HOME" ]; then
+                echo "reconstitute: cannot determine user home -- midnight user timer not installed" >&2
+            else
+                USER_CONFIG_HOME=${XDG_CONFIG_HOME:-"$USER_HOME/.config"}
+                USER_SYSTEMD_DIR="$USER_CONFIG_HOME/systemd/user"
+                mkdir -p "$USER_SYSTEMD_DIR"
+                USER_SERVICE_TMP="$USER_SYSTEMD_DIR/.quant-midnight-frontier.service.tmp.$$"
+                USER_TIMER_TMP="$USER_SYSTEMD_DIR/.quant-midnight-frontier.timer.tmp.$$"
+
+                # Derive the user service from the authoritative committed service. Only the
+                # identity/path fields differ; timer semantics remain byte-for-byte identical.
+                if awk -v root="$ROOT" -v home="$USER_HOME" '
+                    /^User=/ { next }
+                    /^Environment="PATH=/ {
+                        print "Environment=\"PATH=" root "/.venv/bin:" home "/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\""
+                        next
+                    }
+                    /^WorkingDirectory=/ { print "WorkingDirectory=" root; next }
+                    /^ExecStart=/ { print "ExecStart=/bin/bash " root "/ops/run_midnight_frontier.sh"; next }
+                    { print }
+                ' "$ROOT/ops/quant-midnight-frontier.service" > "$USER_SERVICE_TMP" && \
+                        cp "$ROOT/ops/quant-midnight-frontier.timer" "$USER_TIMER_TMP" && \
+                        chmod 0644 "$USER_SERVICE_TMP" "$USER_TIMER_TMP" && \
+                        mv -f "$USER_SERVICE_TMP" \
+                            "$USER_SYSTEMD_DIR/quant-midnight-frontier.service" && \
+                        mv -f "$USER_TIMER_TMP" \
+                            "$USER_SYSTEMD_DIR/quant-midnight-frontier.timer"; then
+                    echo "reconstitute: installed midnight unit pair in $USER_SYSTEMD_DIR"
+
+                    # Linger makes the user manager survive logout/reboot. It is normally
+                    # permitted for the current account; if host policy denies it, expose the gap.
+                    if command -v loginctl >/dev/null 2>&1; then
+                        loginctl --no-ask-password enable-linger "$(id -un)" >/dev/null 2>&1 || true
+                        if [ "$(loginctl show-user "$(id -un)" -p Linger --value 2>/dev/null || true)" != "yes" ]; then
+                            echo "reconstitute: WARNING user linger is not enabled; timer may wait for login" >&2
+                            echo "  sudo loginctl enable-linger $(id -un)" >&2
+                        fi
+                    fi
+
+                    # Cron/SSH environments sometimes omit this even while the user manager exists.
+                    if [ -z "${XDG_RUNTIME_DIR:-}" ] && [ -d "/run/user/$(id -u)" ]; then
+                        XDG_RUNTIME_DIR="/run/user/$(id -u)"
+                        export XDG_RUNTIME_DIR
+                    fi
+                    if systemctl --user daemon-reload && \
+                            systemctl --user enable --now quant-midnight-frontier.timer && \
+                            systemctl --user is-enabled --quiet quant-midnight-frontier.timer && \
+                            systemctl --user is-active --quiet quant-midnight-frontier.timer; then
+                        echo "reconstitute: installed, enabled and active user quant-midnight-frontier.timer"
+                    else
+                        echo "reconstitute: user unit files installed but user manager activation failed" >&2
+                        echo "  systemctl --user daemon-reload" >&2
+                        echo "  systemctl --user enable --now quant-midnight-frontier.timer" >&2
+                    fi
+                else
+                    rm -f "$USER_SERVICE_TMP" "$USER_TIMER_TMP"
+                    echo "reconstitute: midnight user unit installation failed" >&2
+                fi
+            fi
         fi
-    done
+
+        # These remain one-copy system services. Never mirror them into the user manager.
+        for u in quant-blindrediscovery quant-dataaxis quant-frontier quant-litminer quant-prospector; do
+            echo "reconstitute: $u.timer remains system-owned -- owed:"
+            echo "  sudo systemctl enable --now $u.timer"
+        done
+    fi
 else
     echo "reconstitute: no systemctl on this box -- systemd plane skipped (cron plane is live)"
 fi
-
 echo "reconstitute: done. Verify with: $PY $CHECKER  (drift should now be zero)"

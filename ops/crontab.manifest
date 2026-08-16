@@ -2555,6 +2555,17 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # REGISTRY promotion, sleeve sizing and LIVE at 15% of book.
 11 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_partition_power.py >> data/cro_ai_logs/partition_power.log 2>&1
 
+# --- LIVE RECOVERY + VALIDATION JOBS (verified against VPS 2026-08-15) ------------------------
+# The recorder supervisor is a five-minute idempotent watchdog, so it also supplies bounded
+# post-reboot recovery without a second undeclared @reboot path. The three validators consume
+# daily artifacts and remain phase-separated from their producers. These entries replace legacy
+# pre-manifest lines; reconstitution owns exactly one copy of each.
+# CONFIDENCE: verified-live plus committed-script.
+*/5 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_recorder_supervisor.lock bash ops/start_recorders_nosudo.sh >> data/recorder_supervisor.log 2>&1
+20 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_axis_shadows.lock .venv/bin/python scripts/run_axis_shadows.py >> data/cro_ai_logs/axis_shadows.log 2>&1
+5 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cohort_integrity.lock .venv/bin/python scripts/check_cohort_integrity.py --report-only >> data/cro_ai_logs/cohort_integrity.log 2>&1
+15 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_gate_reachability.lock .venv/bin/python scripts/check_gate_reachability.py --report-only >> data/cro_ai_logs/gate_reachability.log 2>&1
+
 # ---------------------------------------------------------------------------------------------
 # CODE SYNC -- pull the branch and run the gates, hourly, so a pushed fix stops being homework.
 # WHY: every agent change needed the principal to open a terminal, fetch, merge, gate and re-run

@@ -17,21 +17,26 @@ desk ALIVE did not. That is invisible to any check that only looks at the units 
 this walks the FLOORS -- the freshness contract run_cadence itself enforces -- and asks of each
 one: what writes this, what starts that, and when did it last happen?
 
-THREE VERDICTS, AND THE MIDDLE ONE IS THE POINT:
+FIVE PRODUCTION VERDICTS, AND THE SECOND ONE IS THE POINT:
   RUNNING    the artifact exists and is inside its floor
   STALE      it exists and is past its floor -- scheduled but not producing, the class above
+  FAILED     it is fresh but records an unsuccessful production cycle
+  INVALID    it cannot prove when or what the producer did
   MISSING    it has never been written, or nothing in the repository starts its producer
 
-Exit code is 1 if anything is MISSING or STALE, so this can gate a deploy rather than decorate it.
+Exit code is 1 unless every required artifact is RUNNING, so this gates a deploy rather than
+decorating it.
 Read-only. No keys, no order paths.
 """
 from __future__ import annotations
 
 import argparse
+import getpass
 import json
 import subprocess
 import sys
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -61,7 +66,14 @@ FLOORS: dict[str, tuple[float, str, str]] = {
     "data/max_audit_report.json": (
         30.0, "quant-daily-max.timer",
         "the daily maximisation sweep has not run, so nothing is auditing the desk"),
+    "data/intelligence/midnight_codex_status.json": (
+        30.0, "quant-midnight-frontier.timer",
+        "the daily Codex controller has not completed the deterministic frontier, checkpointed "
+        "its work and handed the same state back to Claude"),
 }
+
+MIDNIGHT_STATUS = "data/intelligence/midnight_codex_status.json"
+MIDNIGHT_SUCCESS = "CHECKPOINTED_FOR_CLAUDE"
 
 #: Tape roots: absence here is the upstream blocker every other moat defect resolves to.
 TAPE = ("data/moat",)
@@ -73,14 +85,25 @@ REQUIRED_UNITS = (
     "quant-recorder-fut.service", "quant-recorder-spot.service", "quant-recorder-bybit.service",
     "quant-moat-miner.service", "quant-moat-screen.service",
     "quant-watchdog.timer", "quant-alerts.timer", "quant-cadence.timer", "quant-daily-max.timer",
+    "quant-midnight-frontier.timer",
 )
+
+# The midnight timer may be installed as a machine unit by root or as a persistent user unit by
+# the quant account. A user unit is not persistent merely because `is-enabled` says enabled:
+# without loginctl linger it disappears when the last login session closes and cannot fire at
+# midnight. Other critical units remain system-scope only.
+EITHER_SCOPE_UNITS = frozenset({"quant-midnight-frontier.timer"})
 
 TIER3 = ("quant-deadman.service",)
 
 
+def _now_epoch() -> float:
+    return time.time()
+
+
 def _age_h(p: Path) -> float | None:
     try:
-        return (time.time() - p.stat().st_mtime) / 3600.0
+        return (_now_epoch() - p.stat().st_mtime) / 3600.0
     except OSError:
         return None
 
@@ -92,6 +115,74 @@ def _systemctl(*args: str) -> str:
         return (r.stdout or r.stderr or "").strip()
     except (OSError, subprocess.SubprocessError):
         return ""
+
+
+def _loginctl(*args: str) -> str:
+    try:
+        r = subprocess.run(["loginctl", *args], capture_output=True, text=True, timeout=20,
+                           check=False)
+        return (r.stdout or r.stderr or "").strip()
+    except (OSError, subprocess.SubprocessError):
+        return ""
+
+
+def _user_linger_state() -> str:
+    """Return loginctl's durable-user-manager state for the account running this verifier."""
+    return _loginctl(
+        "show-user", getpass.getuser(), "--property=Linger", "--value"
+    ).strip().lower()
+
+
+def _enabled(value: str) -> bool:
+    return value.startswith("enabled")
+
+
+def _zero_exit_code(value: object) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value == 0
+
+
+def _midnight_status_health(p: Path) -> tuple[float | None, str | None]:
+    """Return embedded event age and any semantic failure in the midnight status artifact.
+
+    Git checkout, restore and deployment can all give an old payload a fresh filesystem mtime.
+    The controller writes an authoritative ``updated_at`` event time, so using mtime here would
+    certify a cycle that never ran on this host.
+    """
+    try:
+        payload = json.loads(p.read_text("utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        return None, f"unreadable status JSON ({type(exc).__name__})"
+    if not isinstance(payload, dict):
+        return None, "status JSON must be an object"
+
+    raw_stamp = payload.get("updated_at")
+    if not isinstance(raw_stamp, str) or not raw_stamp.strip():
+        return None, "status has no authoritative updated_at timestamp"
+    try:
+        stamp = datetime.fromisoformat(raw_stamp.replace("Z", "+00:00"))
+        if stamp.tzinfo is None or stamp.utcoffset() is None:
+            raise ValueError("timestamp has no timezone")
+        age_h = (_now_epoch() - stamp.astimezone(UTC).timestamp()) / 3600.0
+    except (OverflowError, TypeError, ValueError) as exc:
+        return None, f"invalid updated_at timestamp ({exc})"
+    if age_h < -(5.0 / 60.0):
+        return None, f"updated_at is {-age_h:.2f}h in the future"
+    age_h = max(0.0, age_h)
+
+    failures = []
+    status = payload.get("status")
+    if status != MIDNIGHT_SUCCESS:
+        failures.append(f"status={status!r}, expected {MIDNIGHT_SUCCESS!r}")
+    if not _zero_exit_code(payload.get("controller_rc")):
+        failures.append(f"controller_rc={payload.get('controller_rc')!r}, expected 0")
+    if not _zero_exit_code(payload.get("pipeline_rc")):
+        failures.append(f"pipeline_rc={payload.get('pipeline_rc')!r}, expected 0")
+    if payload.get("persistent_workers_controller_independent") is not True:
+        failures.append("persistent_workers_controller_independent is not true")
+    reason = payload.get("reason")
+    if not isinstance(reason, str) or not reason.strip():
+        failures.append("reason is missing")
+    return age_h, "; ".join(failures) or None
 
 
 def check_units() -> list[dict]:
@@ -107,14 +198,46 @@ def check_units() -> list[dict]:
             out.append({"unit": unit, "state": "UNKNOWN",
                         "why": "no systemd on this host -- run this ON THE VPS"})
             continue
-        enabled = _systemctl("is-enabled", unit) or "not-found"
-        active = _systemctl("is-active", unit) or "unknown"
-        ok = enabled.startswith("enabled")
-        out.append({"unit": unit, "enabled": enabled, "active": active,
-                    "state": "OK" if ok else "NOT-ENABLED",
-                    "why": "" if ok else (
-                        f"systemctl reports {enabled!r}. Installed unit files are not running "
-                        "units -- `enable --now` is what survives a reboot.")})
+        system_enabled = _systemctl("is-enabled", unit) or "not-found"
+        system_active = _systemctl("is-active", unit) or "unknown"
+        if unit not in EITHER_SCOPE_UNITS:
+            ok = _enabled(system_enabled)
+            out.append({"unit": unit, "enabled": system_enabled, "active": system_active,
+                        "scope": "system", "state": "OK" if ok else "NOT-ENABLED",
+                        "why": "" if ok else (
+                            f"systemctl reports {system_enabled!r}. Installed unit files are not "
+                            "running units -- `enable --now` is what survives a reboot.")})
+            continue
+
+        user_enabled = _systemctl("--user", "is-enabled", unit) or "not-found"
+        user_active = _systemctl("--user", "is-active", unit) or "unknown"
+        linger = _user_linger_state() if _enabled(user_enabled) else "not-checked"
+        system_ok = _enabled(system_enabled) and system_active == "active"
+        user_ok = _enabled(user_enabled) and user_active == "active" and linger == "yes"
+        ok = system_ok or user_ok
+        scope = "system" if system_ok else "user" if user_ok else "none"
+        why = ""
+        if not ok:
+            why = (
+                f"system scope reports enabled={system_enabled!r}, active={system_active!r}; "
+                f"user scope reports enabled={user_enabled!r}, active={user_active!r}, "
+                f"Linger={linger!r}. The timer must be enabled and active either as a system "
+                "unit or as a user unit with loginctl linger=yes so it can fire while the quant "
+                "user is logged out."
+            )
+        out.append({
+            "unit": unit,
+            "enabled": system_enabled if system_ok else user_enabled,
+            "active": system_active if system_ok else user_active,
+            "scope": scope,
+            "system_enabled": system_enabled,
+            "system_active": system_active,
+            "user_enabled": user_enabled,
+            "user_active": user_active,
+            "user_linger": linger,
+            "state": "OK" if ok else "NOT-ENABLED",
+            "why": why,
+        })
     for unit in TIER3:
         p = ROOT / "ops" / unit
         st = _systemctl("is-enabled", unit) if have_systemd else ""
@@ -130,15 +253,28 @@ def check_production() -> list[dict]:
     out = []
     for rel, (max_h, unit, meaning) in sorted(FLOORS.items()):
         p = ROOT / rel
-        age = _age_h(p)
+        semantic_failure = None
+        if rel == MIDNIGHT_STATUS and p.exists():
+            age, semantic_failure = _midnight_status_health(p)
+        else:
+            age = _age_h(p)
         if age is None:
-            out.append({"artifact": rel, "state": "MISSING", "unit": unit, "age_h": None,
-                        "floor_h": max_h, "why": f"never written. {meaning}"})
+            state = "INVALID" if p.exists() else "MISSING"
+            prefix = semantic_failure or "never written"
+            out.append({"artifact": rel, "state": state, "unit": unit, "age_h": None,
+                        "floor_h": max_h, "why": f"{prefix}. {meaning}"})
         elif age > max_h:
+            semantic_suffix = f" Last result is also unhealthy: {semantic_failure}." \
+                if semantic_failure else ""
             out.append({"artifact": rel, "state": "STALE", "unit": unit,
                         "age_h": round(age, 2), "floor_h": max_h,
                         "why": (f"{age:.1f}h old against a {max_h}h floor -- scheduled but not "
-                                f"PRODUCING. {meaning}")})
+                                f"PRODUCING. {meaning}{semantic_suffix}")})
+        elif semantic_failure:
+            out.append({"artifact": rel, "state": "FAILED", "unit": unit,
+                        "age_h": round(age, 2), "floor_h": max_h,
+                        "why": (f"fresh status artifact records an unsuccessful cycle: "
+                                f"{semantic_failure}. {meaning}")})
         else:
             out.append({"artifact": rel, "state": "RUNNING", "unit": unit,
                         "age_h": round(age, 2), "floor_h": max_h, "why": ""})
@@ -153,7 +289,7 @@ def check_tape() -> list[dict]:
         files = list(root.rglob("*.jsonl.gz")) if root.exists() else []
         total = sum(f.stat().st_size for f in files) if files else 0
         newest = max((f.stat().st_mtime for f in files), default=0.0)
-        age = (time.time() - newest) / 3600.0 if newest else None
+        age = (_now_epoch() - newest) / 3600.0 if newest else None
         if not files:
             out.append({"path": rel, "state": "MISSING", "files": 0,
                         "why": ("no tape at all. The recorders are the ONLY thing that writes "
@@ -179,7 +315,7 @@ def main() -> int:
 
     units, production, tape = check_units(), check_production(), check_tape()
     bad_units = [u for u in units if u["state"] == "NOT-ENABLED"]
-    bad_prod = [p for p in production if p["state"] in ("MISSING", "STALE")]
+    bad_prod = [p for p in production if p["state"] != "RUNNING"]
     bad_tape = [t for t in tape if t["state"] in ("MISSING", "STALE")]
     ok = not (bad_units or bad_prod or bad_tape)
 
@@ -209,7 +345,7 @@ def main() -> int:
             print(f"            {u['why'][:104]}")
     print("\n  PRODUCTION (when did it last WRITE?)")
     for p in production:
-        mark = {"RUNNING": "ok  ", "STALE": "FAIL", "MISSING": "FAIL"}[p["state"]]
+        mark = "ok  " if p["state"] == "RUNNING" else "FAIL"
         age = f"{p['age_h']}h" if p["age_h"] is not None else "never"
         print(f"    [{mark}] {p['artifact']:<32} {age:>9} / {p['floor_h']}h floor")
         if p["why"]:

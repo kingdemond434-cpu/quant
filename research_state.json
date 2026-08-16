@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-14T09:23:36.003179+00:00",
+  "generated": "2026-08-15T09:33:21.570248+00:00",
   "master_objective": "maximize expected lifetime geometric growth (log wealth), survival-c",
   "deployed": {
     "sleeves": [
@@ -7,17 +7,17 @@
       "perp_ls (paper)"
     ],
     "start_capital": 15000.0,
-    "equity": 17727.5,
-    "net_pnl": 2727.5,
-    "return_pct": 18.183,
-    "days_live": 43.17,
+    "equity": 17909.59,
+    "net_pnl": 2909.59,
+    "return_pct": 19.397,
+    "days_live": 44.18,
     "winrate_pct": 43.1,
     "n_closed_trades": 253,
-    "deployed_sharpe": -10.45,
+    "deployed_sharpe": -1.78,
     "funding": 113.06,
     "funding_measured": true,
     "n_carries": 0,
-    "perp_paper_net": -192.0
+    "perp_paper_net": -11.0
   },
   "binding_constraint": "calendar-time data accumulation (not engineering throughput)",
   "bottleneck_rankings": [
@@ -27,17 +27,17 @@
       "evidence": [
         {
           "edge": "oi_divergence",
-          "have_days": 47,
+          "have_days": 48,
           "needs_days": 40
         },
         {
           "edge": "ls_contrarian",
-          "have_days": 47,
+          "have_days": 48,
           "needs_days": 40
         },
         {
           "edge": "liquidation_reversal",
-          "have_days": 47,
+          "have_days": 48,
           "needs_days": 40
         }
       ],
@@ -58,13 +58,21 @@
   ],
   "retirement_candidates": [
     {
+      "sleeve": "funding_momentum",
+      "marginal_sharpe": -0.07
+    },
+    {
+      "sleeve": "xsec_price_mom",
+      "marginal_sharpe": -0.02
+    },
+    {
       "sleeve": "basis_carry",
-      "marginal_sharpe": -0.13
+      "marginal_sharpe": -0.01
     }
   ],
   "retirement_note": "SIGNAL ONLY \u2014 marginal-Sharpe swings ~\u00b10.15 between runs, so a single negative sign is within noise. Retire only on PERSISTENT negative contribution across runs, with promotion-grade rigor. No whipsaw.",
-  "architecture_review_due": false,
-  "cycles_logged": 87,
+  "architecture_review_due": true,
+  "cycles_logged": 91,
   "completed_this_cycle": [
     "archive_integrity_ok",
     "watchdog_run_logged_off",
@@ -119,17 +127,17 @@
   "research_backlog": [
     {
       "edge": "oi_divergence",
-      "status": "data-blocked 47/40d",
+      "status": "data-blocked 48/40d",
       "info_value": "positive but not yet actionable"
     },
     {
       "edge": "ls_contrarian",
-      "status": "data-blocked 47/40d",
+      "status": "data-blocked 48/40d",
       "info_value": "positive but not yet actionable"
     },
     {
       "edge": "liquidation_reversal",
-      "status": "data-blocked 47/40d",
+      "status": "data-blocked 48/40d",
       "info_value": "positive but not yet actionable"
     }
   ],
@@ -140,7 +148,7 @@
     "DEFER heavy external paper search: info value < top backlog item this cycle."
   ],
   "forecast_calibration": {
-    "n_resolved": 104,
+    "n_resolved": 105,
     "n_eligible": 361,
     "n_excluded": {
       "retrospective": 30,
@@ -149,11 +157,11 @@
       "voided": 1
     },
     "status": "calibrated",
-    "brier": 0.2459,
-    "reliability": 0.7541,
-    "bias": 0.1139,
+    "brier": 0.2451,
+    "reliability": 0.7549,
+    "bias": 0.109,
     "bias_label": "over-confident",
-    "hit_rate_posterior": 0.453,
+    "hit_rate_posterior": 0.458,
     "note": "Brier lower=better; reliability=1-Brier; bias>0 means forecasts were too high. Applied as a shrinkage on future p_success when |bias| is material."
   }
 }

@@ -15,7 +15,8 @@
 # whoever read them most recently; a script is followed every time.
 #
 #   bash ops/run_sweep_then_cycle.sh            # sweep, wait, then the full cycle
-#   bash ops/run_sweep_then_cycle.sh --cycle-only   # skip the sweep (it already finished)
+#   bash ops/run_sweep_then_cycle.sh --cycle-only    # skip the sweep (it already finished)
+#   bash ops/run_sweep_then_cycle.sh --wait-existing # join an already-running cycle
 #
 # Safe to detach:
 #   setsid nohup bash ops/run_sweep_then_cycle.sh > data/pipeline.log 2>&1 < /dev/null & disown
@@ -23,20 +24,50 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 
 LOG="data/pipeline_$(date -u +%Y%m%dT%H%M%SZ).log"
-mkdir -p data
-exec 9>data/.overnight_frontier.lock
-if ! flock -n 9; then
-    echo "overnight frontier already running; refusing a duplicate cycle"
-    exit 0
-fi
-SWEEP_REPORT="data/full_sweep.json"
-CYCLE_ONLY="${1:-}"
+CYCLE_ONLY=0
+WAIT_EXISTING=0
+for _arg in "$@"; do
+    case "$_arg" in
+        --cycle-only) CYCLE_ONLY=1 ;;
+        --wait-existing) WAIT_EXISTING=1 ;;
+        *) echo "unknown option: $_arg" >&2; exit 2 ;;
+    esac
+done
 
 PY=""
 for _c in "$PWD/.venv/bin/python" .venv/bin/python python3; do
     if [ -x "$_c" ] || command -v "$_c" >/dev/null 2>&1; then PY="$_c"; break; fi
 done
 [ -n "$PY" ] || { echo "FATAL: no interpreter"; exit 1; }
+
+mkdir -p data
+exec 9>data/.overnight_frontier.lock
+if ! flock -n 9; then
+    if [ "$WAIT_EXISTING" -eq 1 ]; then
+        WAIT_STARTED=$(date +%s)
+        echo "overnight frontier already running; waiting for its durable outputs"
+        flock 9
+        HANDOFF="data/overnight_frontier_handoff.json"
+        HANDOFF_MTIME=0
+        [ -f "$HANDOFF" ] && HANDOFF_MTIME=$(stat -c %Y "$HANDOFF" 2>/dev/null || echo 0)
+        if [ "$HANDOFF_MTIME" -lt $((WAIT_STARTED - 300)) ]; then
+            echo "existing frontier released its lock without a fresh durable handoff" >&2
+            exit 2
+        fi
+        WAIT_RC=$("$PY" -c 'import json,sys
+d=json.load(open(sys.argv[1], encoding="utf-8")); r=d.get("pipeline", {}).get("rc")
+assert type(r) is int and 0 <= r <= 125
+print(r)' "$HANDOFF") || {
+            echo "existing frontier handoff has no valid pipeline rc" >&2
+            exit 2
+        }
+        echo "existing overnight frontier completed; continuing from durable rc=$WAIT_RC"
+        exit "$WAIT_RC"
+    fi
+    echo "overnight frontier already running; refusing a duplicate cycle"
+    exit 0
+fi
+SWEEP_REPORT="data/full_sweep.json"
 
 SWEEP_RC=0
 CYCLE_RC=0
@@ -46,7 +77,7 @@ PIPELINE_RC=0
 echo "=== pipeline start $(date -u) ==="
 "$PY" scripts/overnight_frontier_handoff.py snapshot || echo "overnight-frontier: baseline failed; finalizer will report it"
 
-if [ "$CYCLE_ONLY" != "--cycle-only" ]; then
+if [ "$CYCLE_ONLY" -eq 0 ]; then
     # THE PRE-RUN MTIME IS THE COMPLETION TEST. "Does full_sweep.json exist" is not a test -- it
     # exists from the LAST run. The sweep writes its report only at the end, so a report NEWER
     # than the moment we started is the one unambiguous signal that this run finished. Parsing the

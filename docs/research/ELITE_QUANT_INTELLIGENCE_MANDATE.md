@@ -522,7 +522,29 @@ X is a permanent first-class PUBLIC research surface, mined for mechanisms and c
 than sentiment. Current high-value seed nodes: **@antpalkin** (autoresearch loops, mass
 generate→kill→autopsy→repair, Horizon workflows), **@L1vsun** (PCA/latent-factor residual
 stat-arb, OU/s-scores, crowding, alpha half-life, post-publication decay, capacity),
-**@shmidtqq** (self-improving loops, prediction-market systems, negative-result preservation).
+and **@shmidtqq** (self-improving loops, prediction-market systems, negative-result preservation).
+These three are a named DAILY DEPTH FLOOR for GPT Hunter and every Claude/Codex/OpenCode controller,
+not a ceiling on X discovery. An unavailable profile remains BLOCKED CURRENT ACCESS: recheck it,
+then lawfully recover its historical/citation graph through public archives, quoted posts, papers,
+code, datasets, collaborators and downstream discussions. Never infer that access failure means the
+research ground is empty.
+
+**NAMED-SEED MAXIMUM-DEPTH / MAXIMUM-ROI LAW.** Every daily pass over @L1vsun, @shmidtqq and @antpalkin must be
+recursive and artifact-exhaustive, never a profile skim. Traverse new posts, threads, replies,
+quotes, media/transcripts, outbound links, cited authors, papers and appendices, repositories and forks,
+notebooks, datasets, changelogs, collaborators, downstream replications, criticisms,
+failures and negative results until the current public section reaches evidenced
+SECTION-EXHAUSTION. Extract mechanisms, assumptions, data schemas, feature construction, testing
+and falsification methods, cost/execution models, portfolio logic, research workflow, automation,
+memory, evaluation and failure-handling—not merely conclusions. Diff each atomic capability against
+the live factory. Every positive-EV difference must enter the existing evidence -> hypothesis ->
+test -> implementation -> consumer -> measured-effect path in the same controller cycle when safe;
+otherwise record the exact BLOCKED dependency or evidence-backed rejection. No passive reading
+list, prose-only summary, duplicate subsystem, copied threshold, unverifiable performance claim or
+claim of permanent account exhaustion is acceptable. Order conversion by expected validated
+E[log W] uplift divided by acquisition, testing, implementation and maintenance cost; depth never
+means spending scarce capacity on a dominated branch while a higher-value branch is actionable.
+New material, citations and descendants reopen the graph every day.
 
 **THESE ARE DISCOVERY ROUTERS, NOT AUTHORITIES.** The mandated path is always POST → PRIMARY
 SOURCE → PAPER/CODE/DATA → MECHANISM → CANONICAL TEST → VERDICT. Never stop at the thread. Every
