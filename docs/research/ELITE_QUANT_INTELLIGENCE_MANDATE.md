@@ -522,13 +522,12 @@ X is a permanent first-class PUBLIC research surface, mined for mechanisms and c
 than sentiment. Current high-value seed nodes: **@antpalkin** (autoresearch loops, mass
 generate→kill→autopsy→repair, Horizon workflows), **@L1vsun** (PCA/latent-factor residual
 stat-arb, OU/s-scores, crowding, alpha half-life, post-publication decay, capacity),
-**@shmidtqq** (self-improving loops, prediction-market systems, negative-result preservation), and
-**@cvxv666** (quantitative research systems, data, mechanisms and workflow intelligence). These
-four are a named DAILY DEPTH FLOOR for GPT Hunter and every Claude/Codex/OpenCode controller, not a
-ceiling on X discovery. A suspended or unavailable profile remains BLOCKED CURRENT ACCESS: recheck
-it, then lawfully recover its historical/citation graph through public archives, quoted posts,
-papers, code, datasets, collaborators and downstream discussions. Never infer that access failure
-means the research ground is empty.
+and **@shmidtqq** (self-improving loops, prediction-market systems, negative-result preservation).
+These three are a named DAILY DEPTH FLOOR for GPT Hunter and every Claude/Codex/OpenCode controller,
+not a ceiling on X discovery. An unavailable profile remains BLOCKED CURRENT ACCESS: recheck it,
+then lawfully recover its historical/citation graph through public archives, quoted posts, papers,
+code, datasets, collaborators and downstream discussions. Never infer that access failure means the
+research ground is empty.
 
 **THESE ARE DISCOVERY ROUTERS, NOT AUTHORITIES.** The mandated path is always POST → PRIMARY
 SOURCE → PAPER/CODE/DATA → MECHANISM → CANONICAL TEST → VERDICT. Never stop at the thread. Every

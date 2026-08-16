@@ -52,11 +52,12 @@ def test_named_x_depth_floor_is_registered_and_reaches_midnight() -> None:
         for row in registry["sources"]
         if row.get("surface") == "x"
     }
-    assert {"l1vsun", "shmidtqq", "cvxv666"} <= x_names
+    assert {"l1vsun", "shmidtqq", "antpalkin"} <= x_names
+    assert "cvxv666" not in x_names
 
     mandate = Path("docs/research/ELITE_QUANT_INTELLIGENCE_MANDATE.md").read_text("utf-8")
     midnight = Path("ops/midnight_codex_prompt.txt").read_text("utf-8")
-    for handle in ("@L1vsun", "@shmidtqq", "@cvxv666"):
+    for handle in ("@L1vsun", "@shmidtqq", "@antpalkin"):
         assert handle in mandate
         assert handle in midnight
     assert "BLOCKED access is never a clean null" in midnight
