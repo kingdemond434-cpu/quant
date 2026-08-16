@@ -1,0 +1,164 @@
+{
+  "armed": true,
+  "bracket": {
+    "date": "2026-08-14",
+    "hi": 4364.14,
+    "lo": 4310.94,
+    "spec": {
+      "buy_stop": {
+        "price": 4364.14,
+        "sl": 4310.740000000001,
+        "tp": 4470.54
+      },
+      "sell_stop": {
+        "price": 4310.94,
+        "sl": 4364.339999999999,
+        "tp": 4204.54
+      }
+    },
+    "placed_at": "2026-08-16T14:58:04+00:00",
+    "result": {
+      "shadow": true,
+      "orders": []
+    }
+  },
+  "position": null,
+  "last_bracket_date": "2026-08-14",
+  "last_reconcile": "2026-08-16T15:15:51+00:00",
+  "bracket_cancelled": true,
+  "pending": null,
+  "brackets": {
+    "asia": {
+      "date": "2026-08-14",
+      "hi": 4364.14,
+      "lo": 4310.94,
+      "spec": {
+        "buy_stop": {
+          "price": 4364.14,
+          "sl": 4310.740000000001,
+          "tp": 4470.54
+        },
+        "sell_stop": {
+          "price": 4310.94,
+          "sl": 4364.339999999999,
+          "tp": 4204.54
+        }
+      },
+      "placed_at": "2026-08-16T15:13:25+00:00",
+      "result": {
+        "shadow": false,
+        "orders": [
+          {
+            "side": "buy_stop",
+            "retcode": 10015,
+            "comment": "Invalid price"
+          },
+          {
+            "side": "sell_stop",
+            "retcode": 10017,
+            "comment": "Trade disabled"
+          }
+        ]
+      }
+    },
+    "london_am": {
+      "date": "2026-08-14",
+      "hi": 4357.44,
+      "lo": 4329.73,
+      "spec": {
+        "buy_stop": {
+          "price": 4357.44,
+          "sl": 4329.53,
+          "tp": 4412.86
+        },
+        "sell_stop": {
+          "price": 4329.73,
+          "sl": 4357.639999999999,
+          "tp": 4274.3099999999995
+        }
+      },
+      "placed_at": "2026-08-16T15:13:25+00:00",
+      "result": {
+        "shadow": false,
+        "orders": [
+          {
+            "side": "buy_stop",
+            "retcode": 10015,
+            "comment": "Invalid price"
+          },
+          {
+            "side": "sell_stop",
+            "retcode": 10017,
+            "comment": "Trade disabled"
+          }
+        ]
+      }
+    },
+    "ny_open": {
+      "date": "2026-08-14",
+      "hi": 4358.67,
+      "lo": 4348.25,
+      "spec": {
+        "buy_stop": {
+          "price": 4358.67,
+          "sl": 4340.02,
+          "tp": 4395.58
+        },
+        "sell_stop": {
+          "price": 4348.25,
+          "sl": 4366.9,
+          "tp": 4311.34
+        }
+      },
+      "placed_at": "2026-08-16T15:13:25+00:00",
+      "result": {
+        "shadow": false,
+        "orders": [
+          {
+            "side": "buy_stop",
+            "retcode": 10015,
+            "comment": "Invalid price"
+          },
+          {
+            "side": "sell_stop",
+            "retcode": 10017,
+            "comment": "Trade disabled"
+          }
+        ]
+      }
+    },
+    "afternoon": {
+      "date": "2026-08-14",
+      "hi": 4396.96,
+      "lo": 4348.52,
+      "spec": {
+        "buy_stop": {
+          "price": 4396.96,
+          "sl": 4348.32,
+          "tp": 4493.84
+        },
+        "sell_stop": {
+          "price": 4348.52,
+          "sl": 4397.160000000001,
+          "tp": 4251.64
+        }
+      },
+      "placed_at": "2026-08-16T15:13:25+00:00",
+      "result": {
+        "shadow": false,
+        "orders": [
+          {
+            "side": "buy_stop",
+            "retcode": 10017,
+            "comment": "Trade disabled"
+          },
+          {
+            "side": "sell_stop",
+            "retcode": 10017,
+            "comment": "Trade disabled"
+          }
+        ]
+      }
+    }
+  }
+}

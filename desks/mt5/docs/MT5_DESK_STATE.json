@@ -1,0 +1,75 @@
+{
+  "desk": "MT5_RESEARCH (XAUUSD breakout sleeves)",
+  "status": "LIVE-ARMED - forward validation starts 2026-08-17 07:00 UTC",
+  "host": "LOCAL WINDOWS ONLY - this copy is for visibility/coordination. Do NOT run gateway here; MT5 terminal is on the Windows host.",
+  "account": {
+    "broker": "VantageMarkets-Live 14",
+    "login": 34049153,
+    "currency": "EUR",
+    "equity": 633.89,
+    "leverage": "1:500",
+    "type": "Islamic swap-free (halal, no interest)"
+  },
+  "edge": "Session range breakout on XAUUSD: range forms, bracket (buy-stop/sell-stop) placed at window open, SL 1.2xATR or span, TP 2R, patience up to 12 bars.",
+  "deployed_sleeves": [
+    {"window": "Asia->London", "signal_hour_utc": 7, "range": "[0,7)", "exp_R": 0.143, "t": 5.15, "maxDD_R": -14},
+    {"window": "LondonAM", "signal_hour_utc": 13, "range": "[10,13)", "exp_R": 0.105, "t": 4.61, "maxDD_R": -17},
+    {"window": "NYOpen", "signal_hour_utc": 14, "range": "[13,14)", "exp_R": 0.153, "t": 6.53, "maxDD_R": -18},
+    {"window": "Afternoon", "signal_hour_utc": 17, "range": "[14,17)", "exp_R": 0.086, "t": 3.89, "maxDD_R": -17}
+  ],
+  "combined_book": {
+    "n": 2812, "exp_R": 0.127, "t": 6.82, "PF": 1.37, "win_rate": 0.50,
+    "maxDD_R": -18.5, "annualized_SR": 2.34, "trades_per_yr": 331
+  },
+  "sizing_model": {
+    "lot_per_sleeve": 0.01,
+    "risk_per_trade_pct_equity": 2.7,
+    "max_concurrent_exposure_pct": 10.8,
+    "model_annual_return_arithmetic": "~116%/yr",
+    "model_worst_historical_DD": "-51% (18.5R)",
+    "scaling": "linear in lot; keep risk_pct constant as equity grows (lot ~ equity). At 10k EUR use ~0.16 lots/sleeve."
+  },
+  "gates_passed": [
+    "t > 2 (combined t=6.82)",
+    "n > 60 (n=2812)",
+    "Walk-forward OOS positive in every fold",
+    "Param robustness 24/27 combos",
+    "Cost stress at 2x spread+commission survives (0.122R -> 0.113R)",
+    "Replay on live bars 13/13 days filled, exp +0.174R"
+  ],
+  "graveyard": [
+    "monday_gap (momentum null, fade t=1.61)",
+    "london_close_momentum (null)",
+    "asia_momentum (null)",
+    "usd_session_shock (negative all variants)",
+    "comex_settlement (null; broker pauses 21:00-22:00 UTC daily)",
+    "dow_effect (null)",
+    "cot_families (cot_net_fade/cot_change_fade/cot_change_momentum/cot_comm_follow, t<=0.8)",
+    "momentum_volgate & spread_state_avoidance (t=2.6/3.7 but maxDD -49R to -96R - NOT deployable)"
+  ],
+  "gateway": {
+    "armed": true,
+    "lot": 0.01,
+    "bracket_hours_utc": [7, 13, 14, 17],
+    "cancel_unfilled": "20:30 UTC",
+    "force_close_positions": "19:30 UTC (never across broker 21:00-22:00 pause)",
+    "weekend_guard": "idles on stale tick",
+    "restart_recovery": "price-matched adoption of pending orders"
+  },
+  "pending_human_action": "Enable 'Allow algorithmic trading' in VIG terminal (Tools > Options > Expert Advisors). Without it orders return retcode 10017.",
+  "crypto_policy": "RESEARCH FROZEN: no new crypto alphas or execution work. Exchange data feeds (funding/OI/liquidations) retained as INFORMATION INPUTS only. CASHCARRY_KILL latched. Knowledge stays in repo.",
+  "next_steps": [
+    "2026-08-17 07:00 UTC: first live Asia bracket",
+    "Monitor logs/gateway.log + data/gateway_state.json daily",
+    "Forward gate: 50 live trades + 14 days before scaling",
+    "Next sleeve candidates: event-surprise axis (CPI/NFP/FOMC), spread-gated variants"
+  ],
+  "key_files": [
+    "mt5desk/gateway.py (armed executor)",
+    "mt5desk/engine.py (costed backtest, walk-forward, Signal.wait_bars trigger)",
+    "mt5desk/families.py (breakout families + graveyard families)",
+    "research/hunt1-4.py, research/audit.py, research/replay.py",
+    "reports/verdict_breakout.json, reports/hunt1-4.json",
+    "data/cot_gold.parquet (CFTC legacy schema 6dca-aqww, 1986-2026)"
+  ]
+}
