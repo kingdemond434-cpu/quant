@@ -25,7 +25,18 @@ from libs.risk.vol_target import realized_volatility, vol_target
 class CAGROptimization(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    weights: dict[str, float]  # sum to the deployed leverage (<= leverage_cap)
+    #: Per-alpha allocations. **THEY DO NOT SUM TO `leverage`, AND THE COMMENT HERE SAID THEY DID
+    #: UNTIL 2026-08-16.** `build_portfolio` returns a RISK BUDGET whose weights sum to less than
+    #: one (0.4 on a two-alpha book, being 0.2 apiece), and this module multiplies that budget by
+    #: `leverage` -- so the deployed gross is `sum(base_weights) * leverage`, not `leverage`.
+    #:
+    #: The discrepancy matters in whichever direction a caller trusts. Sizing from `leverage`
+    #: deploys 2.5x what the weights specify; sizing from the weights deploys 40% of what
+    #: `leverage` advertises. Both readings are defensible from the old comment, which is what
+    #: made it worse than no comment. **`sum(weights.values())` IS THE DEPLOYED GROSS**; `leverage`
+    #: is the scalar applied to the risk budget, and the two are equal only when the budget
+    #: happens to sum to one. Pinned by tests/discovery/test_cagr_optimizer.py.
+    weights: dict[str, float]
     leverage: float
     expected_log_growth: float
     survival_probability: float
