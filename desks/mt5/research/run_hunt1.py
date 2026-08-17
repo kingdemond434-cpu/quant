@@ -11,7 +11,6 @@ import pandas as pd
 from mt5desk import families
 from mt5desk.data import load_fx_h4, load_gold
 from mt5desk.engine import Costs, run_backtest, walk_forward_splits
-from mt5desk.config import DATA, REPORTS, desk_root  # noqa: E402
 
 H1_UNIVERSE = [
     "usd_session_shock",
@@ -98,7 +97,7 @@ def main() -> None:
                   "commission_per_lot": costs.commission_per_lot},
         "results": results,
     }
-    out = str(REPORTS / "hunt1.json")
+    out = r"C:\Users\dell\mt5-research\reports\hunt1.json"
     with open(out, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2, default=str)
     print(f"\nreport -> {out}")

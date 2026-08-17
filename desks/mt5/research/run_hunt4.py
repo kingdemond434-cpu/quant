@@ -11,7 +11,6 @@ import pandas as pd
 from mt5desk import families
 from mt5desk.data import load_gold
 from mt5desk.engine import Costs, run_backtest, walk_forward_splits
-from mt5desk.config import DATA, REPORTS, desk_root  # noqa: E402
 
 COSTS = Costs(spread_per_lot=0.48, commission_per_lot=3.50, contract_oz=100.0)
 STRESS = Costs(spread_per_lot=1.00, commission_per_lot=7.00, contract_oz=100.0)
@@ -97,7 +96,7 @@ def main() -> None:
               f"PF={r['pf']} maxDD={r['maxdd']}R stressed={r['exp_stressed']} oos={r['oos']}")
 
     report = {"at": datetime.now(tz=UTC).isoformat(), "rows": rows, "survivors": surv}
-    out = str(REPORTS / "hunt4.json")
+    out = r"C:\Users\dell\mt5-research\reports\hunt4.json"
     with open(out, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2, default=str)
     print(f"report -> {out}")
