@@ -77,6 +77,12 @@ VERDICT_MIN_DAYS = 14
 PROMOTE_MIN_EXP = 0.05
 PROMOTE_MIN_DD = -25.0
 
+#: Trades below which NO terminal verdict is issued, in either direction. The 14-day clock still
+#: runs -- it just cannot execute a sleeve on three fills. 20 is where the false-kill rate on a
+#: genuinely good edge falls under 20% (36% at n=3); it is a floor on evidence, not a target.
+#: Raising it makes the desk slower and more certain, lowering it faster and more arbitrary.
+MIN_VERDICT_TRADES = 20
+
 
 def slog(*a) -> None:
     msg = " ".join(str(x) for x in a)
@@ -175,9 +181,30 @@ def main() -> None:
             days_active = (datetime.now(timezone.utc) -
                            pd.Timestamp(st["first_entry"]).to_pydatetime().replace(tzinfo=timezone.utc)).days
         st["days_active"] = days_active
+        # NO TERMINAL VERDICT WITHOUT ENOUGH EVIDENCE TO SUPPORT ONE.
+        #
+        # This fired on `n >= 50 OR days_active >= 14`, and the days clause is what did the
+        # damage. A cell firing ~80 times a year produces about THREE trades in fourteen days,
+        # and the verdict is permanent in both directions. Measured against the best candidate's
+        # +0.276R with per-trade sd 1.089, the chance of KILLING a genuinely good edge:
+        #
+        #        3 trades -> 36.0%          20 trades -> 17.7%
+        #        5        -> 32.1%          50        ->  7.1%
+        #       10        -> 25.6%         100        ->  1.9%
+        #
+        # So the clock was not rescuing slow sleeves from limbo -- it was executing them at
+        # random, and the same arithmetic promotes noise in the other direction. The fix is not a
+        # looser clock but refusing to decide early: below MIN_VERDICT_TRADES the sleeve stays
+        # ACTIVE and keeps accruing, which costs nothing because shadow uses no capital. A slow
+        # edge is then never stuck (it promotes the moment it has evidence) and never killed on
+        # three fills.
         if st["status"] == "ACTIVE" and (st["n"] >= VERDICT_MIN_TRADES
                                          or days_active >= VERDICT_MIN_DAYS):
-            if st["exp_r"] > PROMOTE_MIN_EXP and st["max_dd_r"] > PROMOTE_MIN_DD:
+            if st["n"] < MIN_VERDICT_TRADES:
+                slog(f"{key}: verdict DEFERRED -- n={st['n']} < {MIN_VERDICT_TRADES} after "
+                     f"{days_active}d. Deciding on this sample is more likely to be wrong than "
+                     f"right; sleeve stays ACTIVE and keeps accruing.")
+            elif st["exp_r"] > PROMOTE_MIN_EXP and st["max_dd_r"] > PROMOTE_MIN_DD:
                 st["status"] = "PROMOTION CANDIDATE"
                 slog(f"{key}: VERDICT PROMOTE n={st['n']} exp={st['exp_r']:.3f}R "
                      f"maxDD={st['max_dd_r']:.1f}R")

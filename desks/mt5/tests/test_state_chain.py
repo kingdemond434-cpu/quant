@@ -104,3 +104,32 @@ def test_the_state_gate_runs_before_a_bracket_is_computed():
     i_gate = _GW.index("state_allows(s, df")
     i_range = _GW.index("rng2 = day_range(df")
     assert i_gate < i_range
+
+
+# --------------------------------------------------------- the verdict needs evidence
+
+def test_no_terminal_verdict_below_the_evidence_floor():
+    """THE 14-DAY CLOCK WAS EXECUTING SLOW SLEEVES AT RANDOM. A cell firing ~80x/yr produces
+    about 3 trades in 14 days, and at n=3 a genuinely good +0.276R edge is KILLED 36% of the
+    time -- permanently, in both directions. The clock still runs; it just cannot decide on a
+    sample that is more likely to be wrong than right."""
+    from shadow_forward import MIN_VERDICT_TRADES, VERDICT_MIN_DAYS
+    assert MIN_VERDICT_TRADES >= 20, "the evidence floor is too low to beat a coin flip"
+    assert VERDICT_MIN_DAYS == 14, "the clock itself should be unchanged"
+    src = (_DESK / "research" / "shadow_forward.py").read_text(encoding="utf-8")
+    assert 'if st["n"] < MIN_VERDICT_TRADES:' in src
+    i_defer = src.index('st["n"] < MIN_VERDICT_TRADES')
+    i_kill = src.index('st["status"] = "KILL"')
+    i_prom = src.index('st["status"] = "PROMOTION CANDIDATE"')
+    assert i_defer < i_prom < i_kill, (
+        "the evidence floor must be checked BEFORE either terminal branch")
+
+
+def test_deferral_keeps_the_sleeve_active_rather_than_killing_it():
+    """A slow edge must never be stuck AND never executed: it stays ACTIVE, keeps accruing, and
+    promotes the moment it has evidence. Shadow uses no capital, so waiting is free."""
+    src = (_DESK / "research" / "shadow_forward.py").read_text(encoding="utf-8")
+    block = src[src.index('if st["n"] < MIN_VERDICT_TRADES:'):src.index('elif st["exp_r"]')]
+    assert '"KILL"' not in block, "the deferral branch kills the sleeve"
+    assert 'st["status"]' not in block, "the deferral branch changes status; it must not"
+    assert "DEFERRED" in block
