@@ -33,6 +33,7 @@ import MetaTrader5 as mt5
 import numpy as np
 import pandas as pd
 from mt5desk import provenance as _prov  # noqa: E402
+from mt5desk.independence import measure_from_ledger  # noqa: E402
 from mt5desk.config import desk_root, gateway_paused, terminal_path  # noqa: E402
 
 BASE = desk_root()
@@ -585,6 +586,24 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
         log(f"ledger: recorded {written} closed trade(s)")
 
 
+def ledger_rows() -> list[dict]:
+    """Closed trades recorded by this desk. Torn final lines are skipped, never fatal."""
+    if not LEDGER.exists():
+        return []
+    out = []
+    for line in LEDGER.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(row, dict):
+            out.append(row)
+    return out
+
+
 def sleeve_set() -> list[dict]:
     """All active sleeves: gold book + promoted, with window metadata."""
     sleeves = []
@@ -678,7 +697,23 @@ def main() -> None:
             log(f"equity {equity:.0f} < {PROMOTED_MIN_EQUITY:.0f}: promoted sleeves dormant")
     # AGGREGATE HEAT, applied after every other filter so it sees the sleeves that would really
     # trade. Deferred sleeves are named in the log rather than dropped quietly.
-    sleeves, heat_note = cap_by_heat(sleeves, equity)
+    #
+    # k_eff IS MEASURED AND PASSED, and until now it was neither. `cap_by_heat(sleeves, equity)`
+    # supplied no breadth term, so `heat_budget` returned its base 3.81% on every call and the
+    # whole sqrt(k_eff) ladder was dead code -- the book pinned to a three-leg budget however many
+    # independent edges it went on to earn. That is a permanent cap on compounding, which is the
+    # opposite of what the budget was written to do: breadth is meant to be PAID FOR with measured
+    # orthogonality and then spent.
+    #
+    # The estimate is deliberately conservative in three ways, because an overstated k_eff feeds
+    # straight into leverage: correlations are computed on overlapping days only (never zero
+    # filled), the 95% UPPER bound on mean correlation is used rather than the point estimate, and
+    # an unmeasurable book returns None, which routes back to the base budget rather than to the
+    # ceiling.
+    k_eff, k_why = measure_from_ledger(
+        ledger_rows(), _prov.current_account(mt5.account_info()))
+    log(k_why)
+    sleeves, heat_note = cap_by_heat(sleeves, equity, k_eff=k_eff)
     if heat_note:
         log(heat_note)
     if st["last_bracket_date"] == day_key:
