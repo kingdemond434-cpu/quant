@@ -43,8 +43,34 @@ LOG = BASE / "logs" / "gateway.log"
 TERMINAL = terminal_path()
 MAGIC = 341953
 
-LOT = 0.02              # gold book lot; mandate-optimal q=5.5% (sizing study 2026-08-16)
-Q_OPT = 0.055           # risk fraction of equity per trade (robust geometric optimum)
+LOT = 0.02              # gold book lot; see Q_OPT below for the sizing policy
+# RISK FRACTION OF EQUITY PER TRADE. Was 0.055, and that was not an arbitrary number: measured
+# full Kelly on the 3-leg gold book (E[ln(1+qR)] maximised over the daily portfolio series,
+# 5,728 trades, 2018-2026) is q* = 6.00%, so 5.5% was ~92% of Kelly, chosen deliberately.
+#
+# IT IS STILL WRONG, AND THE REASON IS NOT THE DRAWDOWN -- IT IS ESTIMATION FRAGILITY.
+# Kelly is computed FROM the measured edge. That edge is in-sample, on one path, with params
+# selected on this same gold data in hunt5. If the true expectancy is even half of the measured
+# +0.159R/trade, then sizing at Kelly-on-measured is 2x over-levered, and past 2x Kelly the
+# geometric growth rate turns NEGATIVE while every backtest number still looks excellent. Full
+# Kelly is the point of maximum growth AND the point of maximum sensitivity to being wrong about
+# the input; the whole margin of safety lives below it.
+#
+# The visible symptom is the drawdown ladder, in-sample, on the 3-leg book (worst -33.7R):
+#     0.75% -> +118%/yr, -23.0% DD      <- here
+#     1.04% -> +190%/yr, -30.7% DD      (what the 0.01 min lot forces at EUR1,684 -- see auto_lot)
+#     3.00% -> +1,479%/yr, -68.4% DD    (half Kelly)
+#     5.50% -> +7,660%/yr, -90.7% DD    (the old setting)
+#     6.00% -> +9,816%/yr, -93.0% DD    (full Kelly)
+# Those growth figures are in-sample and assume the edge is exactly as measured; they are the
+# reason the ladder is shown, not a forecast. A -90% drawdown is also not survivable in practice
+# regardless of what the geometric mean says about the path that produced it.
+#
+# THIS NUMBER MAY RISE, BUT ONLY ON FORWARD EVIDENCE. Fixed-fractional sizing already compounds
+# -- auto_lot scales the lot with equity every run, so the book grows geometrically at a CONSTANT
+# q without anyone touching this constant. Raising q is a separate claim: that the edge is better
+# known than it is today. That claim is settled by live trades, not by backtest cells.
+Q_OPT = 0.0075
 DIST_USD = 19.1         # ~1.2xATR stop distance (USD/oz), used for auto lot scaling
 CONTRACT_OZ = 100
 FX_EUR = 0.92
@@ -96,10 +122,47 @@ GOLD_WINDOWS = [
 ]
 
 
+#: EUR put at risk by the venue's smallest tradeable position on gold. Below the equity where
+#: this equals Q_OPT, the FLOOR sets the risk and the policy does not -- deliberately kept, so a
+#: small account can trade and compound up rather than being locked out, but never silently.
+MIN_LOT_RISK_EUR = 0.01 * DIST_USD * CONTRACT_OZ * FX_EUR   # ~17.57
+
+
+def realised_q(equity: float) -> float:
+    """The risk fraction the account WILL actually run, after the 0.01-lot floor.
+
+    Not the same as Q_OPT whenever equity is small, and that gap is the whole point of this
+    function existing. `auto_lot` used to clamp to 0.01 inside a `min(max(...))` and return only
+    the lot, so a book configured for 0.75% could run at 5.9% with nothing in the code, the log
+    or the state file ever saying so. A policy number that the venue silently overrides is not a
+    policy.
+    """
+    lot = max(round(Q_OPT * equity / (DIST_USD * CONTRACT_OZ * FX_EUR) / 0.01) * 0.01, 0.01)
+    return float(lot * DIST_USD * CONTRACT_OZ * FX_EUR / equity) if equity > 0 else 0.0
+
+
 def auto_lot(equity: float) -> float:
-    """Fixed-fractional sizing: q_opt of equity per trade, rounded to 0.01."""
-    lot = Q_OPT * equity / (DIST_USD * CONTRACT_OZ * FX_EUR)
-    lot = round(lot / 0.01) * 0.01
+    """Fixed-fractional sizing: Q_OPT of equity per trade, floored at the venue minimum.
+
+    THE FLOOR IS A DECISION, NOT A ROUNDING ARTIFACT. 0.01 lot risks ~EUR 17.57 on gold, so the
+    smallest position the venue will accept already implies a fixed EUR risk, and the fraction
+    that represents falls as equity grows:
+
+        equity  realised q   worst historical DD (3-leg book, -33.7R)
+          300      5.86%          -86.9%     <- ~full Kelly. This is where accounts die.
+          500      3.51%          -70.1%
+          800      2.20%          -52.7%
+        1,684      1.04%          -29.8%     <- current account; survivable
+        2,343      0.75%          -22.4%     <- Q_OPT finally reachable
+        8,000      0.22%           -7.1%
+
+    Kept floored rather than refusing to trade, because a book that cannot open a position also
+    cannot compound out of the range where the floor binds. The cost of that choice is real and
+    it is highest at the smallest sizes, which is precisely when it is least visible on a
+    statement -- so the realised fraction is computed explicitly by `realised_q` and recorded by
+    the caller instead of being inferred from a lot size after the fact.
+    """
+    lot = round(Q_OPT * equity / (DIST_USD * CONTRACT_OZ * FX_EUR) / 0.01) * 0.01
     return float(min(max(lot, 0.01), 5.0))
 
 
