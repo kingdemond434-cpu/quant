@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-16T09:31:15.363367+00:00",
+  "generated": "2026-08-17T03:38:07.396718+00:00",
   "master_objective": "maximize expected lifetime geometric growth (log wealth), survival-c",
   "deployed": {
     "sleeves": [
@@ -7,17 +7,17 @@
       "perp_ls (paper)"
     ],
     "start_capital": 15000.0,
-    "equity": 17903.94,
-    "net_pnl": 2903.94,
-    "return_pct": 19.36,
-    "days_live": 45.17,
+    "equity": 17962.09,
+    "net_pnl": 2962.09,
+    "return_pct": 19.747,
+    "days_live": 45.93,
     "winrate_pct": 41.7,
     "n_closed_trades": 254,
-    "deployed_sharpe": 0.4,
+    "deployed_sharpe": 7.94,
     "funding": 113.06,
     "funding_measured": true,
     "n_carries": 0,
-    "perp_paper_net": -9.5
+    "perp_paper_net": 45.5
   },
   "binding_constraint": "calendar-time data accumulation (not engineering throughput)",
   "bottleneck_rankings": [
@@ -59,16 +59,20 @@
   "retirement_candidates": [
     {
       "sleeve": "funding_momentum",
-      "marginal_sharpe": -0.19
+      "marginal_sharpe": -0.1
     },
     {
       "sleeve": "basis_carry",
       "marginal_sharpe": -0.06
+    },
+    {
+      "sleeve": "xsec_price_mom",
+      "marginal_sharpe": -0.03
     }
   ],
   "retirement_note": "SIGNAL ONLY \u2014 marginal-Sharpe swings ~\u00b10.15 between runs, so a single negative sign is within noise. Retire only on PERSISTENT negative contribution across runs, with promotion-grade rigor. No whipsaw.",
   "architecture_review_due": false,
-  "cycles_logged": 94,
+  "cycles_logged": 95,
   "completed_this_cycle": [
     "archive_integrity_ok",
     "watchdog_run_logged_off",

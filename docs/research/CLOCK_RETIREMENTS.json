@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-16T00:24:18.154704+00:00",
+ "updated": "2026-08-17T00:27:04.120912+00:00",
  "retirements": [
   {
    "clock": "walcl_reserve_impulse",
@@ -139,6 +139,21 @@
    "seats_before": 12,
    "seats_after": 11,
    "multiplicity_floor": 12,
+   "loosens_bars": false
+  },
+  {
+   "clock": "conv_moat_screen_results_horizon_days0_000694444_current_z_1_225_ic_0_0932_mechanism_imbalance",
+   "retired_at": "2026-08-17T00:27:04.120912+00:00",
+   "decided_by": "cycle",
+   "requeue_as": "UNTESTED",
+   "verdict": "since 2026-08-16T00:26:07.750849+00:00",
+   "evidence": "SOURCE-GONE",
+   "observations": null,
+   "why": "conv_moat_screen_results_horizon_days0_000694444_current_z_1_225_ic_0_0932_mechanism_imbalance: evidence SOURCE-GONE -- the exact pre-registered source identity is absent, so this clock cannot accrue another observation. Retire the clock as UNTESTED and preserve its history; never reinterpret the missing source as a zero return",
+   "kind": "derivative",
+   "seats_before": 15,
+   "seats_after": 14,
+   "multiplicity_floor": 15,
    "loosens_bars": false
   }
  ],

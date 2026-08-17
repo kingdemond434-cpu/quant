@@ -190,3 +190,15 @@ open / 3d, so this fired on AGE, not depth -- the queue was shallow and simply n
 ## AI-Driven Multiscenario Interest Rate Forecasting: A Proof of Concept for Banking Asset Management
 - 2026-08-12 · http://arxiv.org/abs/2608.12424v1
 - This study focuses on developing an AI-supported prototype for multiperspective interest rate forecasting that combines classical econometric models with modern artificial intel-ligence methods. Tested in a major European bank, the system enables more precise and flexible prediction of interest rate developments, supporting strategic decision-making in Asset-Liability Management (ALM). It integrates topic modeling, sentiment analysis, econometric forecasting, and market-based analyses within an interactive platform. Leveraging AI to analyze large volumes of financial documents and market data 
+
+## Dependence-Informed Sparse Neural Architecture for Stock Return Prediction
+- 2026-08-14 · http://arxiv.org/abs/2608.14323v1
+- Using neural networks for stock return prediction typically requires choices about depth and hidden-layer width that are difficult to connect to financial interpretation. We study an alternative: estimate dependence among firm characteristics with a Maximally Filtered Clique Forest (MFCF), then map its clique structure to a Homological Neural Network (HNN). The MFCF maximum clique size K is the only parameter controlling architectural complexity, and it has a clear graphical meaning: it bounds the number of characteristics in each maximal clique and hence the highest interaction order the netw
+
+## Photonic Quantum Computing vs. Classical Solvers in Constrained Factor Portfolio Optimization
+- 2026-08-14 · http://arxiv.org/abs/2608.14134v1
+- The authors present a rigorous empirical evaluation of three distinct optimization paradigms for institutional factor portfolio construction: an entropy-based photonic quantum annealer (Dirac-3, Quantum Computing Inc.), a commercial mixed-integer programming solver (Gurobi), and a model-free deep reinforcement learning agent (SAC). Evaluating these pipelines on the Jensen-Kelly-Pedersen 13-factor equity library across 164 months test window, we implement a full factorial penalty sweep comprising 48 hyperparameter configurations that govern return, volatility, and skewness trade-offs. Our findi
+
+## Buy the Rumor, Sell the News: When Is News Priced In?
+- 2026-08-14 · http://arxiv.org/abs/2608.14014v1
+- Two old market sayings hold that news is already priced in by the time it is published, and that the rumor is bought while the news is sold. Both place the price move associated with a piece of news before and at publication rather than after it. Whether the claims hold, for which kinds of news, and by how much are basic questions about how fast markets absorb public information. We test them on 4.57 million financial news articles covering roughly 3,000 US stocks (2023-2026). A large language model teacher, distilled into a compact classifier through active learning, assigns each article one 

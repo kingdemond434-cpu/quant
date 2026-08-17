@@ -1,14 +1,14 @@
 {
- "probed": "2026-08-16T03:35:09.010178+00:00",
+ "probed": "2026-08-17T03:35:09.833792+00:00",
  "venues": {
   "binance_futures": {
    "endpoint": "GET fapi.binance.com/fapi/v1/exchangeInfo",
    "states": {
     "TRADING": 737,
     "SETTLING": 127,
-    "PENDING_TRADING": 1
+    "PENDING_TRADING": 2
    },
-   "n_live": 738,
+   "n_live": 739,
    "note": "SETTLING/DELIVERING are dated delivery contracts mid-retirement; a perp that was delisted disappears from exchangeInfo entirely, so this does not recover already-dead perps -- binance.vision archives remain the route for those.",
    "partial": true,
    "n_new_this_run": 0,
@@ -42,8 +42,8 @@
   "coinbase": {
    "endpoint": "GET api.exchange.coinbase.com/products",
    "states": {
-    "delisted": 315,
-    "online": 517
+    "online": 517,
+    "delisted": 315
    },
    "n_live": 517,
    "n_new_this_run": 0,

@@ -1,34 +1,34 @@
 {
-  "generated": "2026-08-16T03:20:31.183239+00:00",
-  "as_of": "2026-08-16",
+  "generated": "2026-08-17T03:20:21.933012+00:00",
+  "as_of": "2026-08-17",
   "source": "quote-saver.bycsi.com (Bybit first-party, unauthenticated HTTPS)",
   "status": "FIXED",
-  "detail": "the earliest available date has NOT moved since the last run; the span has GROWN to 360 days from the recent end. Retention is a FIXED floor, not a rolling window, so the 2026-08-01 sweep's rolling-retention inference is REFUTED and the ingest carries no expiry deadline.",
+  "detail": "the earliest available date has NOT moved since the last run; the span has GROWN to 361 days from the recent end. Retention is a FIXED floor, not a rolling window, so the 2026-08-01 sweep's rolling-retention inference is REFUTED and the ingest carries no expiry deadline.",
   "n_unreachable": 0,
   "symbols": {
     "BTCUSDT": {
       "earliest": "2025-08-21",
-      "span_days": 360,
+      "span_days": 361,
       "status": "UNMOVED",
       "previous_earliest": "2025-08-21",
       "first_seen": "2026-08-01",
-      "probes": 11
+      "probes": 12
     },
     "ETHUSDT": {
       "earliest": "2025-08-21",
-      "span_days": 360,
+      "span_days": 361,
       "status": "UNMOVED",
       "previous_earliest": "2025-08-21",
       "first_seen": "2026-08-05",
-      "probes": 11
+      "probes": 12
     },
     "SOLUSDT": {
       "earliest": "2025-08-21",
-      "span_days": 360,
+      "span_days": 361,
       "status": "UNMOVED",
       "previous_earliest": "2025-08-21",
       "first_seen": "2026-08-05",
-      "probes": 11
+      "probes": 12
     }
   }
 }

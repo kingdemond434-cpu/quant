@@ -1,8 +1,8 @@
 {
- "updated_at": "2026-08-16T00:35:43.839717+00:00",
- "status": "CHECKPOINTED_FOR_CLAUDE",
- "reason": "Midnight controller completed, checkpointed, and atomically transferred",
- "controller_rc": 0,
+ "updated_at": "2026-08-17T00:38:52.422815+00:00",
+ "status": "CONTROLLER_FAILED_CHECKPOINTED",
+ "reason": "Controller rc=1; exact state checkpointed and transferred; inspect data/cro_ai_logs/midnight_codex_20260817T003841Z.log",
+ "controller_rc": 1,
  "pipeline_rc": 1,
  "persistent_workers_controller_independent": true
 }
