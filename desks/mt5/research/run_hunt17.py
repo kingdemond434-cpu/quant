@@ -207,12 +207,82 @@ def fam_d1_inside(h4: pd.DataFrame, d1: pd.DataFrame, side: int,
     return out
 
 
+_ANC: pd.DataFrame | None = None
+
+
+def _anchors_df() -> pd.DataFrame:
+    global _ANC
+    if _ANC is None:
+        try:
+            _ANC = pd.read_pickle(BASE / "data" / "cross_asset_anchors.pkl")
+        except Exception:
+            _ANC = pd.DataFrame()
+    return _ANC
+
+
+def fam_macro_gold_yield(h4: pd.DataFrame, d1: pd.DataFrame, side: int,
+                         n: int = 34, rr: float = 2.0, ttl: int = 12,
+                         yield_z: float = 0.0) -> list[Signal]:
+    """H4 momentum on gold gated by the REAL-YIELD state (T10YIE from the
+    macro anchors desk): LONG only when the 2y rolling z of 10y breakevens is
+    <= yield_z, SHORT only when z >= -yield_z. Mechanism: real-yield regime is
+    the dominant gold driver; momentum taken with the regime, not against it.
+    Non-XAU symbols / missing anchors -> no signals (battery filters by n>60)."""
+    anc = _anchors_df()
+    if anc.empty or "T10YIE" not in anc.columns:
+        return []
+    t10 = anc["T10YIE"].dropna()
+    roll = t10.rolling(504, min_periods=120)
+    z = (t10 - roll.mean()) / roll.std()
+    if z.index.tz is not None:
+        z = z.tz_localize(None)
+    sm = _sma(h4["close"], n)
+    a = _atr(h4, ATR_N)
+    cl = h4["close"].to_numpy(float)
+    smv = sm.to_numpy(float)
+    out = []
+    for i in range(2, len(h4)):
+        zv = z.get(pd.Timestamp(h4.index[i].date()), float("nan"))
+        if zv != zv:
+            continue
+        if side > 0 and zv <= yield_z and cl[i] > smv[i] \
+                and cl[i - 1] > smv[i - 1] and cl[i - 2] > smv[i - 2]:
+            try:
+                out.append(_sig(h4.index[i], 1, float(cl[i]), float(a.iloc[i]),
+                                rr, ttl, "macro_gold_yield"))
+            except ValueError:
+                pass
+        if side < 0 and zv >= -yield_z and cl[i] < smv[i] \
+                and cl[i - 1] < smv[i - 1] and cl[i - 2] < smv[i - 2]:
+            try:
+                out.append(_sig(h4.index[i], -1, float(cl[i]), float(a.iloc[i]),
+                                rr, ttl, "macro_gold_yield"))
+            except ValueError:
+                pass
+    return out
+
+
 FAMILIES = {
     "d1_trend_pullback": fam_d1_trend_pullback,
     "d1_swing_break": fam_d1_swing_break,
     "h4_momentum": fam_h4_momentum,
     "h4_vol_break": fam_h4_vol_break,
     "d1_inside": fam_d1_inside,
+    "macro_gold_yield": fam_macro_gold_yield,
+}
+PARAMS = {
+    "d1_trend_pullback": [dict(d1_n=50, h4_n=20, rr=2.0, ttl=12),
+                          dict(d1_n=100, h4_n=30, rr=2.5, ttl=24)],
+    "d1_swing_break": [dict(d1_win=20, exp_mult=1.15, rr=2.0, ttl=12),
+                       dict(d1_win=30, exp_mult=1.10, rr=2.5, ttl=24)],
+    "h4_momentum": [dict(n=34, rr=2.0, ttl=12),
+                    dict(n=55, rr=2.5, ttl=24)],
+    "h4_vol_break": [dict(n1=14, n2=50, k=1.2, rr=2.0, ttl=12),
+                     dict(n1=10, n2=40, k=1.3, rr=2.0, ttl=24)],
+    "d1_inside": [dict(rr=1.5, ttl=24),
+                  dict(rr=2.0, ttl=48)],
+    "macro_gold_yield": [dict(n=34, rr=2.0, ttl=12, yield_z=0.0),
+                         dict(n=55, rr=2.5, ttl=24, yield_z=-0.25)],
 }
 PARAMS = {
     "d1_trend_pullback": [dict(d1_n=50, h4_n=20, rr=2.0, ttl=12),
