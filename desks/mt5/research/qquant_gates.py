@@ -46,6 +46,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3]))  # quant repo root:
 
 from libs.validation.cpcv import CPCV  # noqa: E402
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E402
+from mt5desk.canonical import census_report  # noqa: E402
 from libs.validation.pbo import probability_backtest_overfitting  # noqa: E402
 from libs.validation.reality_check import hansen_spa  # noqa: E402
 from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus  # noqa: E402
@@ -362,6 +363,28 @@ def main() -> int:
     n_trials12 = max(2, math.ceil(n_cells[12] * TRIALS_MULTIPLIER))
     n_trials16 = max(2, math.ceil(n_cells[16] * TRIALS_MULTIPLIER))
 
+    # HOW MANY SEARCHES WERE ACTUALLY PERFORMED, as distinct from how many cells were counted.
+    # The DSR threshold scales with E[max of N], derived for N INDEPENDENT draws, and a sweep over
+    # (symbol x family x side x window x state x params) manufactures near-copies structurally:
+    # rr=2.0/ttl=12 and rr=2.0/ttl=13 are one search sampled twice. Reported at BOTH counts and
+    # never silently substituted -- lowering N makes every threshold easier, so the correction has
+    # to be visible. The gates below still run on n_trials (the raw count); this census is the
+    # evidence for whether that count is the right one.
+    census = {}
+    for hunt, mat, sh, n_raw in ((12, m12, sharpes12, n_trials12),
+                                 (16, m16, sharpes16, n_trials16)):
+        if mat.size and mat.shape[1] >= 2:
+            sd = float(np.std(sh)) if len(sh) > 1 else 0.0
+            rep = census_report([mat[:, k] for k in range(mat.shape[1])], sd_sharpe=sd)
+            rep["n_raw_declared"] = n_raw     # cells x TRIALS_MULTIPLIER, what the gates use
+            census[f"hunt{hunt}"] = rep
+            print(f"trial census hunt{hunt}: {rep['n_raw']} cells behave as "
+                  f"{rep['n_effective']} independent searches ({rep['inflation']}x inflation); "
+                  f"SR0 {rep['sr0_raw']} -> {rep['sr0_effective']}", flush=True)
+        else:
+            census[f"hunt{hunt}"] = {"status": "UNMEASURABLE", "n_raw_declared": n_raw,
+                                     "why": "fewer than two usable columns in the trial matrix"}
+
     print("program-level: PBO + SPA on full trial matrices...", flush=True)
     pbo12 = probability_backtest_overfitting(m12)
     # hunt16 may be unswept (empty matrix). PBO/SPA on nothing is not "clean" -- it is
@@ -397,6 +420,9 @@ def main() -> int:
                 gate_fails[name] = gate_fails.get(name, 0) + 1
     out = {
         "n_trials": {"hunt12": n_trials12, "hunt16": n_trials16},
+        # The multiplicity burden the gates actually applied, next to the burden
+        # the search actually earned. Both, always -- see mt5desk.canonical.
+        "trial_census": census,
         "program_level": {
             "hunt12": {"pbo": round(float(pbo12.pbo), 4),
                        "spa_p": round(float(spa12.p_value), 4)},

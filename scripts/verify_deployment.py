@@ -82,7 +82,11 @@ TAPE = ("data/moat",)
 #: deliberately absent: it moves funds and is Tier-3, so it is reported separately and never
 #: required by an automated check.
 REQUIRED_UNITS = (
-    "quant-recorder-fut.service", "quant-recorder-spot.service", "quant-recorder-bybit.service",
+    # CRYPTO RECORDERS RETIRED 2026-08-17. Irish retail rules make the crypto leg spot-only,
+    # the desk trades MT5, and these three had grown to 19GB on a 37GB disk while feeding
+    # nothing that trades. Their obligation transferred to mt5desk.tape -- see constitution
+    # section 224. Expecting them here reported a healthy desk as broken.
+
     "quant-moat-miner.service", "quant-moat-screen.service",
     "quant-watchdog.timer", "quant-alerts.timer", "quant-cadence.timer", "quant-daily-max.timer",
     "quant-midnight-frontier.timer",

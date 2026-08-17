@@ -29,6 +29,21 @@ import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 
+
+def _switch_wait(label: str) -> None:
+    """Pause while data/RECORDERS_OFF exists. See scripts/recorder_switch.py."""
+    from pathlib import Path as _P
+    import time as _t
+    flag = _P(__file__).resolve().parent.parent / "data" / "RECORDERS_OFF"
+    if not flag.exists():
+        return
+    print(f"{label}: data/RECORDERS_OFF present -- recording paused (not exiting;"
+          " systemd would restart an exit). Remove the file to resume.", flush=True)
+    while flag.exists():
+        _t.sleep(30)
+    print(f"{label}: RECORDERS_OFF cleared -- resuming", flush=True)
+
+
 _BASE = "https://fapi.binance.com"                 # LIVE public market data (read-only)
 _CORE = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT",
             "DOGEUSDT", "ADAUSDT", "AVAXUSDT", "LINKUSDT", "LTCUSDT",
@@ -233,6 +248,11 @@ def main() -> None:
     last_universe_poll = time.time()
     disk_warned = False
     while True:
+        # NO-ROOT KILL SWITCH. `quant` has no sudo on the VPS, so
+        # `systemctl stop` is unavailable to the operator who needs it, and
+        # Restart=always makes killing the process pointless. Idles rather than
+        # exits, because an exit just moves the disk problem into the journal.
+        _switch_wait('recorder-fut')
         t0 = time.time()
         if _STOP:
             _drain(buf)

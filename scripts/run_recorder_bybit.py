@@ -34,6 +34,21 @@ if str(_R) not in sys.path:
 
 from libs.ops.disk import PAUSE_FRAC, headroom  # noqa: E402
 
+
+def _switch_wait(label: str) -> None:
+    """Pause while data/RECORDERS_OFF exists. See scripts/recorder_switch.py."""
+    from pathlib import Path as _P
+    import time as _t
+    flag = _P(__file__).resolve().parent.parent / "data" / "RECORDERS_OFF"
+    if not flag.exists():
+        return
+    print(f"{label}: data/RECORDERS_OFF present -- recording paused (not exiting;"
+          " systemd would restart an exit). Remove the file to resume.", flush=True)
+    while flag.exists():
+        _t.sleep(30)
+    print(f"{label}: RECORDERS_OFF cleared -- resuming", flush=True)
+
+
 _BASE = "https://api.bybit.com"
 _ROOT = Path(__file__).resolve().parent.parent / "data/moat/bybit"
 _HB = Path(__file__).resolve().parent.parent / "data/recorder_bybit_heartbeat"
@@ -168,6 +183,16 @@ def main() -> None:
     disk_warned = False
 
     while True:
+
+        # NO-ROOT KILL SWITCH. `quant` has no sudo on the VPS, so
+
+        # `systemctl stop` is unavailable to the operator who needs it, and
+
+        # Restart=always makes killing the process pointless. Idles rather than
+
+        # exits, because an exit just moves the disk problem into the journal.
+
+        _switch_wait('recorder-bybit')
         t0 = time.time()
         # DISK GUARD. This recorder shipped WITHOUT one while both Binance recorders had it, and
         # it is the fastest writer on the box -- 20 symbols at 1.5s depth, ~2.7x the others. So

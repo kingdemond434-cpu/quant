@@ -158,10 +158,10 @@ if have_sudo; then
 else
     echo "  NO SUDO -- /etc/systemd/system is unreachable."
     echo "  That is not a reason to leave the desk unstarted. Use the zero-privilege path:"
-    echo "     bash ops/start_recorders_nosudo.sh"
-    echo "     ( crontab -l 2>/dev/null | grep -v start_recorders_nosudo"
-    echo "       echo '@reboot cd $ROOT && bash ops/start_recorders_nosudo.sh >> data/supervisor.log 2>&1'"
-    echo "       echo '*/5 * * * * cd $ROOT && bash ops/start_recorders_nosudo.sh >> data/supervisor.log 2>&1'"
+#   [retired 2026-08-17] start_recorders_nosudo -- crypto tape, constitution 224
+#   [retired 2026-08-17] start_recorders_nosudo -- crypto tape, constitution 224
+#   [retired 2026-08-17] start_recorders_nosudo -- crypto tape, constitution 224
+#   [retired 2026-08-17] start_recorders_nosudo -- crypto tape, constitution 224
     echo "     ) | crontab -"
     echo "  ...then re-run this script's verification step:  $PY scripts/verify_deployment.py"
     exit 2
@@ -172,7 +172,10 @@ fi
 # because no tape exists is noise that hides the real signal. Every unrecorded second is
 # permanently unbuyable -- the only cost on this desk money cannot fix afterwards.
 say "3. start the recorders (tape first -- nothing downstream has anything to read without them)"
-sudo systemctl enable --now quant-recorder-fut quant-recorder-spot quant-recorder-bybit
+# RETIRED 2026-08-17 -- crypto recorders are no longer part of this desk (constitution 224).
+# Re-enabling them refills 19GB of disk with a tape nothing trades on.
+# sudo systemctl enable --now quant-recorder-fut quant-recorder-spot quant-recorder-bybit
+echo "   crypto recorders: RETIRED (see constitution 224); MT5 tape is mt5desk.tape"
 sleep 20
 FILES=$(find data/moat -name '*.jsonl.gz' 2>/dev/null | wc -l)
 echo "  tape files after 20s: $FILES"

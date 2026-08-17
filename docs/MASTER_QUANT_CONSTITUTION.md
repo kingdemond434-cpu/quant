@@ -6401,3 +6401,67 @@ The open question is no longer which technology is missing.
 
 That is where the next major gain comes from, and every section above is
 justified only insofar as it moves that ratio.
+
+================================================================================
+
+# 224. CRYPTO TAPE RETIRED. THE OBLIGATION TRANSFERS TO MT5.
+
+## 224.1 WHAT IS RETIRED, AND WHY THIS IS NOT A LAPSE
+
+The three crypto L2 recorders -- quant-recorder-fut, quant-recorder-spot,
+quant-recorder-bybit -- are RETIRED as of 2026-08-17.
+
+Their unit files carried a header stating that leaving them off is a breach of
+P26, on the grounds that an unrecorded second is permanently unbuyable at any
+price. That reasoning was correct and it still is. It simply no longer applies
+to Binance and Bybit, because:
+
+    Irish retail rules make the crypto leg SPOT ONLY
+    the desk trades MT5
+    the tape fed nothing that trades
+    it had reached 19GB on a 37GB disk, with root at 87%
+
+# A TAPE NOBODY WILL TRADE ON IS NOT A MOAT. IT IS A BILL.
+
+## 224.2 THE OBLIGATION IS NOT CANCELLED. IT MOVES.
+
+P26 now binds `mt5desk.tape` instead. Every MT5 tick this desk can see is
+recorded, for the identical reason: pre-recorder tick data does not exist free
+at any broker, the archive only grows, and downtime is the one cost money
+cannot recover later.
+
+    RETIRED   data/moat/{fut,spot,perp,bybit}     Binance + Bybit L2
+    KEPT      data/moat/execution_tape            this desk's own fills
+    ACTIVE    data/tape/ticks                     MT5 tick tape (section 23)
+
+## 224.3 DEPTH IS PROBED, NEVER ASSUMED
+
+An MT5 CFD broker is not an exchange. `market_book_get` usually returns nothing
+or a single synthetic level echoing the spread already carried by the tick.
+
+`mt5desk.tape.probe_depth()` therefore establishes by evidence whether real
+depth exists, per symbol, and records the verdict.
+
+# WHERE THERE IS NO REAL DEPTH, SECTION 222 IS NOT BUILDABLE ON THIS VENUE.
+
+The liquidity survival engine -- cancel and execution hazards, refill rate,
+absorption versus fragile display -- requires more than one level per side.
+Building it on a book synthesised from bid/ask would produce a precise model
+OF THE SYNTHESIS, and every state it reported would be an artefact. Section 222
+waits for a venue that has depth, or it does not get built.
+
+The tick tape is unaffected and supports section 23 in full: quote-change
+imbalance, tick direction, micro momentum, spread expansion and contraction,
+update intensity, burstiness, gap frequency.
+
+## 224.4 NO COMPUTE, NO RESEARCH EFFORT, NO LLM BUDGET ON CRYPTO VENUES
+
+Binance, Bybit and every other crypto venue are out of scope for this desk:
+no recording, no hunting, no gauntlet runs, no data spend, no agent hours.
+
+Crypto INSTRUMENTS remain in scope only where MT5 quotes them and they clear
+the ordinary promotion protocol like any other symbol. The venue is retired,
+not the asset class.
+
+Reversal requires a stated change in the legal or venue position, recorded
+here. It is not reversed by a passing idea that the old tape might be useful.
