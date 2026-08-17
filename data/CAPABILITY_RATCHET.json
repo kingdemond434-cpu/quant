@@ -1,7 +1,7 @@
 {
  "_": "HIGH-WATER MARKS for desk CAPABILITY, one score per named aspect on the 0-10 scale the principal's standing order is stated on. Raised automatically; NEVER lowered by code. A FALL is a defect reported with a NAMED CAUSE, a FLATLINE is reported with the binding constraint that is holding the aspect down, and UNMEASURED is its own state -- never silently a 0 and never silently a 10.",
  "law": "R0104 -- every aspect is pushed toward 10/10 every day, non-exhaustively. A rating nobody records cannot ratchet, and a score that can silently fall is not a standard.",
- "generated": "2026-08-17T03:49:30.664185+00:00",
+ "generated": "2026-08-17T04:00:21.409335+00:00",
  "status": "REGRESSED",
  "scale_max": 10.0,
  "stall_days": 7.0,
@@ -11,7 +11,7 @@
  "measured_mean": 7.99,
  "first_recorded": "2026-08-05T12:09:08.679174+00:00",
  "last_raise_at": "2026-08-16T18:25:14.007326+00:00",
- "days_since_raise": 0.39,
+ "days_since_raise": 0.4,
  "n_raises": 14,
  "binding_constraint": {
   "state": "MEASURED",
@@ -301,7 +301,7 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/organ_liveness.json",
-     "detail": "scripts/run_drills.py is FRESH (age 0.07h against its own 72.0h tolerance); evidence data/drill_report.json, data/drill_log.jsonl",
+     "detail": "scripts/run_drills.py is FRESH (age 0.25h against its own 72.0h tolerance); evidence data/drill_report.json, data/drill_log.jsonl",
      "constraint": "AT CEILING -- producing inside its own declared cadence, and the work is now HOLDING it"
     }
    ]
@@ -619,8 +619,8 @@
    "score": 9.2,
    "high_water": 9.2,
    "movement": "FLATLINE",
-   "cause": "pager_deliveries_ok at 8.3 -- +85 logged page attempts that DELIVERED (713 -> 798 of 858) buys the next point",
-   "binding_constraint": "pager_deliveries_ok at 8.3 -- +85 logged page attempts that DELIVERED (713 -> 798 of 858) buys the next point",
+   "cause": "pager_deliveries_ok at 8.3 -- +85 logged page attempts that DELIVERED (717 -> 802 of 862) buys the next point",
+   "binding_constraint": "pager_deliveries_ok at 8.3 -- +85 logged page attempts that DELIVERED (717 -> 802 of 862) buys the next point",
    "ceiling": "the pager provably delivers between incidents, on more than one channel, with the canary auditing the ledger rather than the code",
    "artifacts": [
     "data/alert_delivery.jsonl",
@@ -632,15 +632,15 @@
      "state": "MEASURED",
      "score": 8.3,
      "artifact": "data/alert_delivery.jsonl",
-     "detail": "713/858 ledger attempts delivered; last row channel ntfy ok=True -- http 200",
-     "constraint": "+85 logged page attempts that DELIVERED (713 -> 798 of 858) buys the next point"
+     "detail": "717/862 ledger attempts delivered; last row channel ntfy ok=True -- http 200",
+     "constraint": "+85 logged page attempts that DELIVERED (717 -> 802 of 862) buys the next point"
     },
     {
      "key": "alert_channels_not_silent",
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/ALERT_CHANNELS_SILENT",
-     "detail": "no silence flag, and the canary ran 4.54h ago (bound 6h) -- a live canary that is not complaining",
+     "detail": "no silence flag, and the canary ran 4.72h ago (bound 6h) -- a live canary that is not complaining",
      "constraint": "AT CEILING -- a page has landed inside the canary's own lookback AND the canary is itself alive; HOLDING it means keeping the canary on its cadence, because a silent canary and a working pager look identical from here"
     }
    ]
@@ -673,7 +673,7 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/organ_liveness.json",
-     "detail": "scripts/run_cost_hunt.py is FRESH (age 0.35h against its own 3.0h tolerance); evidence data/cost_hunt.json",
+     "detail": "scripts/run_cost_hunt.py is FRESH (age 0.53h against its own 3.0h tolerance); evidence data/cost_hunt.json",
      "constraint": "AT CEILING -- producing inside its own declared cadence, and the work is now HOLDING it"
     },
     {
@@ -681,7 +681,7 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/organ_liveness.json",
-     "detail": "scripts/run_cost_identification.py is FRESH (age 0.4h against its own 3.0h tolerance); evidence data/cost_surface.json",
+     "detail": "scripts/run_cost_identification.py is FRESH (age 0.58h against its own 3.0h tolerance); evidence data/cost_surface.json",
      "constraint": "AT CEILING -- producing inside its own declared cadence, and the work is now HOLDING it"
     },
     {
@@ -793,7 +793,7 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/miner_runway.json",
-     "detail": "11/11 seats wired at 2026-08-17T03:37:35Z",
+     "detail": "11/11 seats wired at 2026-08-17T03:53:45Z",
      "constraint": "AT CEILING (11/11 seats with prompt + runner + unit all present) -- the work is now HOLDING it"
     },
     {
@@ -809,7 +809,7 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/miner_runway.json",
-     "detail": "11/11 seats ok at 2026-08-17T03:37:35Z; by_status {'ok': ['frontier-en', 'frontier-cn', 'frontier-ru', 'frontier-kr', 'frontier-jp', 'frontier-ar', 'frontier-br', 'prospector', 'litminer', 'dataaxis', 'blindrediscovery']}",
+     "detail": "11/11 seats ok at 2026-08-17T03:53:45Z; by_status {'ok': ['frontier-en', 'frontier-cn', 'frontier-ru', 'frontier-kr', 'frontier-jp', 'frontier-ar', 'frontier-br', 'prospector', 'litminer', 'dataaxis', 'blindrediscovery']}",
      "constraint": "AT CEILING (11/11 seats producing inside their own max_age_h) -- the work is now HOLDING it"
     }
    ]
@@ -866,8 +866,8 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/knowledge_engine.json",
-     "detail": "corpus 1108 at 2026-08-17T03:37:01.964103+00:00; 9.0 causal edges, blind-validation consistent=3",
-     "constraint": "AT CEILING (1108 retrievable documents in the research memory, top rung 50) -- the ladder is exhausted and the next point needs a HARDER ladder, argued for in the diff"
+     "detail": "corpus 1113 at 2026-08-17T03:53:30.468429+00:00; 9.0 causal edges, blind-validation consistent=3",
+     "constraint": "AT CEILING (1113 retrievable documents in the research memory, top rung 50) -- the ladder is exhausted and the next point needs a HARDER ladder, argued for in the diff"
     },
     {
      "key": "playbook_lessons",
@@ -890,11 +890,11 @@
   {
    "key": "backup_dr",
    "state": "MEASURED",
-   "score": 9.3,
+   "score": 9.2,
    "high_water": 10.0,
    "movement": "FELL",
-   "cause": "backup_dr.disk_headroom_over_fuse 10.0 -> 7.1 (data/backup_status.json): disk free 10.66% against a 15.0% fuse (status DISK-FUSE); uncovered bulk lake/L2 need the Storage-Box/R2 principal decision -- measured here every run so the gap stays a number",
-   "binding_constraint": "disk_headroom_over_fuse at 7.1 -- +1.49 of the backup organ's own disk fuse (10.66 -> 12.15 of 15) buys the next point",
+   "cause": "backup_dr.disk_headroom_over_fuse 10.0 -> 6.6 (data/backup_status.json): disk free 9.88% against a 15.0% fuse (status DISK-FUSE); uncovered bulk lake/L2 need the Storage-Box/R2 principal decision -- measured here every run so the gap stays a number",
+   "binding_constraint": "disk_headroom_over_fuse at 6.6 -- +1.52 of the backup organ's own disk fuse (9.88 -> 11.4 of 15) buys the next point",
    "ceiling": "every durable store replicated off the host and a restore actually EXERCISED, with disk headroom clear of the backup organ's own fuse",
    "artifacts": [
     "data/backup_status.json",
@@ -906,7 +906,7 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/backup_status.json",
-     "detail": "6/6 stores replicated at 2026-08-16T03:55:27.502532+00:00; NOT replicated: none",
+     "detail": "6/6 stores replicated at 2026-08-17T03:55:15.852095+00:00; NOT replicated: none",
      "constraint": "AT CEILING (6/6 durable stores replicated off the host) -- the work is now HOLDING it"
     },
     {
@@ -920,17 +920,17 @@
     {
      "key": "disk_headroom_over_fuse",
      "state": "MEASURED",
-     "score": 7.1,
+     "score": 6.6,
      "artifact": "data/backup_status.json",
-     "detail": "disk free 10.66% against a 15.0% fuse (status DISK-FUSE); uncovered bulk lake/L2 need the Storage-Box/R2 principal decision -- measured here every run so the gap stays a number",
-     "constraint": "+1.49 of the backup organ's own disk fuse (10.66 -> 12.15 of 15) buys the next point"
+     "detail": "disk free 9.88% against a 15.0% fuse (status DISK-FUSE); uncovered bulk lake/L2 need the Storage-Box/R2 principal decision -- measured here every run so the gap stays a number",
+     "constraint": "+1.52 of the backup organ's own disk fuse (9.88 -> 11.4 of 15) buys the next point"
     },
     {
      "key": "backup_cadence",
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/organ_liveness.json",
-     "detail": "scripts/run_moat_backup.py is FRESH (age 23.8h against its own 72.0h tolerance); evidence data/backup_status.json",
+     "detail": "scripts/run_moat_backup.py is FRESH (age 23.98h against its own 72.0h tolerance); evidence data/backup_status.json",
      "constraint": "AT CEILING -- producing inside its own declared cadence, and the work is now HOLDING it"
     }
    ]
@@ -1033,7 +1033,7 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/miner_runway.json",
-     "detail": "creds_present=True at 2026-08-17T03:37:35Z; log dir /home/quant/quant-platform/data/cro_ai_logs",
+     "detail": "creds_present=True at 2026-08-17T03:53:45Z; log dir /home/quant/quant-platform/data/cro_ai_logs",
      "constraint": "AT CEILING -- the seats are credentialled by the operator, as designed"
     },
     {
@@ -1193,7 +1193,7 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/blindspot_max.json",
-     "detail": "4/4 slices conditioned (hour_of_day, day_of_week, regime, session) at 2026-08-17T03:34:43.285792+00:00",
+     "detail": "4/4 slices conditioned (hour_of_day, day_of_week, regime, session) at 2026-08-17T03:51:11.292431+00:00",
      "constraint": "AT CEILING (4/4 enumerated slices the desk actually conditions on) -- the work is now HOLDING it"
     },
     {
@@ -1353,9 +1353,9 @@
   {
    "aspect": "backup_dr",
    "movement": "FELL",
-   "score": 9.3,
+   "score": 9.2,
    "high_water": 10.0,
-   "cause": "backup_dr.disk_headroom_over_fuse 10.0 -> 7.1 (data/backup_status.json): disk free 10.66% against a 15.0% fuse (status DISK-FUSE); uncovered bulk lake/L2 need the Storage-Box/R2 principal decision -- measured here every run so the gap stays a number"
+   "cause": "backup_dr.disk_headroom_over_fuse 10.0 -> 6.6 (data/backup_status.json): disk free 9.88% against a 15.0% fuse (status DISK-FUSE); uncovered bulk lake/L2 need the Storage-Box/R2 principal decision -- measured here every run so the gap stays a number"
   },
   {
    "aspect": "mutation_breadth",
@@ -1395,7 +1395,7 @@
   {
    "aspect": "alerting_pager",
    "score": 9.2,
-   "binding_constraint": "pager_deliveries_ok at 8.3 -- +85 logged page attempts that DELIVERED (713 -> 798 of 858) buys the next point"
+   "binding_constraint": "pager_deliveries_ok at 8.3 -- +85 logged page attempts that DELIVERED (717 -> 802 of 862) buys the next point"
   },
   {
    "aspect": "recorder_tape",

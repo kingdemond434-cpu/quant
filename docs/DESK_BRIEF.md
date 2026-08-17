@@ -1,4 +1,4 @@
-# DESK BRIEF -- 2026-08-17 03:37Z
+# DESK BRIEF -- 2026-08-17 03:53Z
 
 Machine-generated from measured desk state. Every number traces to an artifact in
 `data/`. Nothing here is an argument. Respond to the evidence, not to another model.
@@ -13,7 +13,7 @@ Machine-generated from measured desk state. Every number traces to an artifact i
    forward clocks promote.
 
 ## Experiment record (45d, harvested from git -- one row per commit)
-- experiments: **1841**; decided: 1046
+- experiments: **1842**; decided: 1046
 - survival rate: **5.2%** (54 survived / 914 refuted / 78 inconclusive)
 - unclassified commit decisions: 199 (commit-discipline defect)
 

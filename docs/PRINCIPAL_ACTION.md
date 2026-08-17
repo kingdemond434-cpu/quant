@@ -26,3 +26,6 @@
 
 ## 2026-08-17T03:37:02.125576+00:00 POISONED DEPENDENCY
 - binance funding (live API) (DQS 0.0) feeds ['A001'] -- feeds the live cash-carry entry gate
+
+## 2026-08-17T03:53:30.518434+00:00 POISONED DEPENDENCY
+- binance funding (live API) (DQS 0.0) feeds ['A001'] -- feeds the live cash-carry entry gate
