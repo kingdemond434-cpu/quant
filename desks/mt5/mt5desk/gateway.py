@@ -70,7 +70,18 @@ LOT = 0.02              # gold book lot; see Q_OPT below for the sizing policy
 # -- auto_lot scales the lot with equity every run, so the book grows geometrically at a CONSTANT
 # q without anyone touching this constant. Raising q is a separate claim: that the edge is better
 # known than it is today. That claim is settled by live trades, not by backtest cells.
-Q_OPT = 0.0075
+
+#: IMPORTED, NOT RESTATED. These used to be literals here AND in gateway_config_fallback.py, kept
+#: in step by a test -- which duly caught the first drift, but only because someone had thought to
+#: write it. Research code on Linux cannot import this module (MetaTrader5), so the fallback is
+#: the one both sides can reach and is therefore the definition. Q_OPT is derived there from the
+#: drawdown tolerance rather than chosen: 1.27%, the risk that spends exactly MAX_DRAWDOWN_
+#: TOLERANCE over the book's worst -33.7R. See that module for the full argument.
+from mt5desk.gateway_config_fallback import (  # noqa: E402
+    BOOK_WORST_DD_R as _BOOK_WORST_DD_R,
+    MAX_DRAWDOWN_TOLERANCE,
+    Q_OPT,
+)
 DIST_USD = 19.1         # ~1.2xATR stop distance (USD/oz), used for auto lot scaling
 CONTRACT_OZ = 100
 FX_EUR = 0.92
@@ -128,6 +139,24 @@ GOLD_WINDOWS = [
 MIN_LOT_RISK_EUR = 0.01 * DIST_USD * CONTRACT_OZ * FX_EUR   # ~17.57
 
 
+def _lot_steps(raw_lot: float) -> float:
+    """Snap a raw lot DOWN to the venue's 0.01 grain. Never up.
+
+    This was `round()` -- to nearest -- and that let realised risk EXCEED the policy by up to half
+    a lot step. It was invisible while Q_OPT sat 41% below the heat budget, because there was
+    slack to absorb the overshoot. Now that Q_OPT is derived from the drawdown tolerance, the base
+    budget is exactly `Q_OPT x 3 legs`, so an upward round on every leg puts the armed gold book
+    OVER its own cap and `cap_by_heat` amputates a validated leg: at EUR 8,000 nearest-rounding
+    gave 0.06 lot (1.32% x 3 = 3.95% against a 3.81% budget) and dropped gold_afternoon.
+
+    Rounding down costs a little size in the gaps between lot steps -- 0.05 rather than 0.06 at
+    EUR 8,000 -- and buys the invariant that realised risk is never above the stated policy. The
+    0.01 minimum below is the sole documented exception, where the venue's floor overrides the
+    policy upward and `realised_q` reports exactly that.
+    """
+    return math.floor(raw_lot / 0.01 + 1e-9) * 0.01
+
+
 def realised_q(equity: float) -> float:
     """The risk fraction the account WILL actually run, after the 0.01-lot floor.
 
@@ -137,7 +166,7 @@ def realised_q(equity: float) -> float:
     or the state file ever saying so. A policy number that the venue silently overrides is not a
     policy.
     """
-    lot = max(round(Q_OPT * equity / (DIST_USD * CONTRACT_OZ * FX_EUR) / 0.01) * 0.01, 0.01)
+    lot = max(_lot_steps(Q_OPT * equity / (DIST_USD * CONTRACT_OZ * FX_EUR)), 0.01)
     return float(lot * DIST_USD * CONTRACT_OZ * FX_EUR / equity) if equity > 0 else 0.0
 
 
@@ -153,8 +182,13 @@ def auto_lot(equity: float) -> float:
           500      3.51%          -70.1%
           800      2.20%          -52.7%
         1,684      1.04%          -29.8%     <- current account; survivable
-        2,343      0.75%          -22.4%     <- Q_OPT finally reachable
-        8,000      0.22%           -7.1%
+        2,300      0.76%          -22.7%     <- last equity the floor still binds at
+        3,000      1.17%          -32.7%     <- policy reachable; q now tracks Q_OPT from here
+       25,000      1.27%          -34.9%
+
+    Note the DIP around EUR 2,300 and not a monotone fall: once the raw lot clears 0.01 the floor
+    stops binding, and realised q drops to whatever the 0.01 grain allows before climbing back
+    toward Q_OPT as equity makes the grain finer. Sizing is a step function, not a curve.
 
     Kept floored rather than refusing to trade, because a book that cannot open a position also
     cannot compound out of the range where the floor binds. The cost of that choice is real and
@@ -162,62 +196,26 @@ def auto_lot(equity: float) -> float:
     statement -- so the realised fraction is computed explicitly by `realised_q` and recorded by
     the caller instead of being inferred from a lot size after the fact.
     """
-    lot = round(Q_OPT * equity / (DIST_USD * CONTRACT_OZ * FX_EUR) / 0.01) * 0.01
+    lot = _lot_steps(Q_OPT * equity / (DIST_USD * CONTRACT_OZ * FX_EUR))
     return float(min(max(lot, 0.01), 5.0))
 
 
-#: Maximum fraction of equity this desk will put at risk across ALL sleeves on one day.
+#: THE PORTFOLIO CAP IS `heat_budget()`, NOT A CONSTANT. A fixed `MAX_PORTFOLIO_HEAT = 0.04`
+#: stood here and was already dead -- `cap_by_heat` consults `heat_budget(k_eff)` and nothing read
+#: the constant -- but it stated 4% in the one place a reader looks for the budget, while the live
+#: base is 3.81%. Two numbers, one of them decorative, is how a desk ends up sized by whichever
+#: one the next person happens to find.
 #:
-#: THERE WAS NO PORTFOLIO CAP AT ALL. Every sleeve was sized on its own -- promoted ones at a
-#: fixed 0.01 lot, which at EUR 1,684 equity is 1.04% each -- and `load_sleeves()` returned every
-#: LIVE sleeve with no count or aggregate limit. The shadow set is ten sleeves. Ten promoted
-#: sleeves bracketing the same morning is ~10% of the account at risk in one session, and nothing
-#: in the code prevented it. Per-sleeve risk control is not risk control: correlated sleeves fire
-#: together precisely in the regimes that hurt, which is when the cap is needed.
-#:
-#: SIZED SO THE VALIDATED CORE FITS AND ADDITIONS MUST BE EARNED. The first value tried here was
-#: 3%, and its own test rejected it: at EUR 1,684 the 0.01 lot floor puts each sleeve at 1.04%, so
-#: the three-leg gold book is 3.12% and a 3% cap would have dropped `gold_afternoon` -- amputating
-#: a leg of the one book with walk-forward evidence and human authorisation behind it, to enforce
-#: a number chosen by round figure. A cap exists to stop unproven sleeves STACKING, not to
-#: dismember the proven book.
-#:
-#: 4% admits exactly the armed gold book at today's equity and nothing else. Every additional
-#: sleeve therefore has to be paid for by equity GROWTH -- as the account rises the 0.01 floor
-#: falls as a fraction and more sleeves fit, which is the correct order: capital first, then
-#: breadth. At EUR 2,343 five sleeves fit; at EUR 8,000, six.
-#:
-#: Deliberately a HEAT budget rather than a sleeve count. A count would let total risk grow
-#: silently as equity FALLS, because the fixed 0.01 lot becomes a larger fraction of a smaller
-#: account -- risk rising exactly when the account can least afford it.
-MAX_PORTFOLIO_HEAT = 0.04
+#: WHY A BUDGET AND NOT A SLEEVE COUNT. Promoted sleeves take a fixed 0.01 lot -- 1.04% of equity
+#: at EUR 1,684 -- and `load_sleeves()` returns every LIVE one. Ten promotions bracketing the same
+#: morning is ~10% of the account at risk in one session. A COUNT cap would also let total risk
+#: grow silently as equity FALLS, because the fixed floor becomes a larger fraction of a smaller
+#: account: risk rising exactly when the account can least afford it. Per-sleeve risk control is
+#: not risk control -- correlated sleeves fire together precisely in the regimes that hurt.
 
 #: The k_eff the base budget is calibrated to: the armed 3-leg gold book, whose measured
 #: cross-sleeve correlation is 0.165 -> 2.26 independent bets.
 _HEAT_BASE_KEFF = 2.26
-
-#: THE DRAWDOWN THE PRINCIPAL IS WILLING TO SIT THROUGH. This is the real constraint and every
-#: other number here is derived from it, so it is stated once, in the open, instead of being
-#: implied by a round percentage nobody can defend.
-#:
-#: WHY THIS IS THE AGGRESSIVE SETTING AND NOT THE TIMID ONE. Measured full Kelly on the 3-leg
-#: gold book is 9.00% per trade (27% total heat), and sizing there is not "maximum growth" -- it
-#: is a bet that an in-sample backtest is exact. The test that settles it: if the true edge is
-#: HALF the measured one, then sizing at measured full Kelly returns 96.9%/yr while sizing at
-#: measured HALF Kelly returns 291.4%/yr. Half Kelly delivers THREE TIMES the real growth,
-#: because past the true optimum the geometric rate falls, and at 2x Kelly it collapses to 59%
-#: of maximum with a -100% drawdown. More size is not more aggression past that point; it is
-#: less money.
-#:
-#: In-sample drawdown at each fraction of measured Kelly (3-leg gold book, 2018-2026):
-#:      0.12x Kelly -> -32.8%      0.50x -> -84.4%      1.00x -> -98.9%
-#: The drawdown constraint binds long before Kelly does, which is why it is the input.
-MAX_DRAWDOWN_TOLERANCE = 0.35
-
-#: Worst peak-to-trough drawdown the armed book has ever produced, in R, at the sweep that
-#: validated it. Heat is solved against THIS, so the budget answers a question about the actual
-#: book rather than a generic risk-of-ruin formula.
-_BOOK_WORST_DD_R = 33.7
 
 #: Legs in the book that -DD figure was measured on (asia, london_am, afternoon). The budget is
 #: expressed as total heat = per-trade risk x legs, so this converts one into the other.
@@ -254,12 +252,11 @@ def heat_budget(k_eff: float | None = None) -> float:
     diversified one, which is how a portfolio discovers its real correlation during the drawdown
     rather than before it.
     """
-    # SOLVED AGAINST THE DRAWDOWN TARGET, not read off a constant. A book that suffers `dd_r` R
-    # of drawdown at per-trade risk q loses roughly 1-(1-q)^dd_r of equity, so the q that spends
-    # exactly MAX_DRAWDOWN_TOLERANCE is q* = 1 - (1 - tol)^(1/dd_r). That is the aggressive
-    # setting: it takes every basis point the stated tolerance allows and stops precisely where
-    # the principal said to stop, rather than at a number chosen for looking sensible.
-    q_star = 1.0 - (1.0 - MAX_DRAWDOWN_TOLERANCE) ** (1.0 / _BOOK_WORST_DD_R)
+    # SOLVED AGAINST THE DRAWDOWN TARGET, not read off a constant -- and it is THE SAME q the
+    # desk actually sizes each trade at, because Q_OPT is now that same derivation rather than a
+    # hardcoded second opinion. One tolerance, one formula, both levels: the budget can no longer
+    # be spending a drawdown allowance that per-trade sizing has privately decided against.
+    q_star = Q_OPT
     # MULTIPLIED BY THE VALIDATED LEG COUNT, NOT BY k_eff -- and the difference matters. The
     # -33.7R figure is the drawdown of the SUMMED three-leg series, so it already contains how
     # often those legs co-fire; scaling it by k_eff as well double-counts the diversification and

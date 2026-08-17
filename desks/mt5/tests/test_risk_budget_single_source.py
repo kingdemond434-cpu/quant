@@ -19,30 +19,54 @@ for p in (str(_DESK), str(_DESK / "research")):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from mt5desk.gateway_config_fallback import Q_OPT  # noqa: E402
+from mt5desk.gateway_config_fallback import (  # noqa: E402
+    BOOK_WORST_DD_R, MAX_DRAWDOWN_TOLERANCE, Q_OPT, risk_per_trade)
+
+_GW = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
 
 
-def test_the_fallback_matches_the_gateway():
-    """The fallback exists because gateway.py imports MetaTrader5 and cannot load on Linux. That
-    makes it a SECOND copy of the number, so it is pinned to the gateway's literal by test rather
-    than by hope."""
-    src = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
-    m = re.search(r"^Q_OPT\s*=\s*([0-9.]+)", src, re.M)
-    assert m, "gateway.Q_OPT not found -- did it move or get renamed?"
-    assert float(m.group(1)) == pytest.approx(Q_OPT), (
-        f"gateway.py says Q_OPT={m.group(1)} but gateway_config_fallback says {Q_OPT}. "
-        "Research code reads the fallback; a drift here means the desk optimises one book and "
-        "trades another.")
+def test_the_gateway_imports_the_budget_rather_than_restating_it():
+    """THE COPY IS GONE, not merely synchronised. This test used to assert that gateway.py's
+    literal EQUALLED the fallback's -- and it earned its keep, catching the drift the first time
+    the gateway's value changed. But a test is a poor substitute for an invariant: two constants
+    that must agree stay agreed only while someone remembers to check. The gateway now imports."""
+    assert not re.search(r"^Q_OPT\s*=\s*[0-9]", _GW, re.M), (
+        "gateway.py defines its own Q_OPT literal again -- the second copy is back")
+    assert "from mt5desk.gateway_config_fallback import" in _GW
+    assert "Q_OPT," in _GW or "Q_OPT " in _GW
+
+
+def test_risk_per_trade_spends_exactly_the_stated_tolerance():
+    """The derivation, checked against its own definition: losing q of equity on each of dd_r
+    consecutive R must land on the tolerance, not near it."""
+    realised = 1.0 - (1.0 - Q_OPT) ** BOOK_WORST_DD_R
+    assert realised == pytest.approx(MAX_DRAWDOWN_TOLERANCE, abs=1e-9)
+
+
+def test_a_worse_drawdown_estimate_produces_a_smaller_q():
+    """Monotonicity, so a future revision to the book's worst drawdown moves size the right way."""
+    assert risk_per_trade(dd_r=50.0) < Q_OPT < risk_per_trade(dd_r=20.0)
+    assert risk_per_trade(tolerance=0.20) < Q_OPT < risk_per_trade(tolerance=0.50)
+
+
+def test_the_book_cannot_absorb_a_meaningful_drawdown_haircut():
+    """WHY THERE IS NO SAFETY FACTOR ON THE IN-SAMPLE -33.7R, stated as a test so the next person
+    to reach for one finds the arithmetic instead of re-deriving it. At EUR 1,684 the 0.01 lot
+    floor forces 1.04% per trade and the armed book runs three legs = 3.12%. A haircut past ~1.22x
+    puts the base budget under that and amputates a validated leg."""
+    floor_q, legs = 0.0104, 3
+    assert risk_per_trade(dd_r=BOOK_WORST_DD_R * 1.22) * legs >= floor_q * legs
+    assert risk_per_trade(dd_r=BOOK_WORST_DD_R * 1.5) * legs < floor_q * legs, (
+        "a 1.5x haircut now fits -- the account grew, so a safety factor is affordable; "
+        "revisit BOOK_WORST_DD_R")
 
 
 def test_no_consumer_hardcodes_its_own_risk_budget():
     """A literal 0.055 anywhere outside the gateway's own explanatory comment is the exact defect
     this fences: a superseded number that still reads like a decision."""
-    # The two DESIGNATED holders are exempt: gateway.py owns the number, and
-    # gateway_config_fallback.py restates it for boxes that cannot import MetaTrader5. That
-    # restatement is pinned to the gateway by `test_the_fallback_matches_the_gateway`, so it is a
-    # checked copy rather than a free-floating one. Everything else must import.
-    HOLDERS = {"gateway.py", "gateway_config_fallback.py"}
+    # ONE designated holder now. gateway_config_fallback.py defines the budget; gateway.py used to
+    # be exempt as its co-owner and no longer needs to be, because it imports like everyone else.
+    HOLDERS = {"gateway_config_fallback.py"}
     offenders = []
     for py in _DESK.rglob("*.py"):
         if "__pycache__" in py.parts or py.name in HOLDERS:

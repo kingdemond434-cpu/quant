@@ -173,7 +173,13 @@ def main() -> None:
             s["status"] = "RETIRED"
             s["retired_at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
             s["retire_reason"] = reason
-            skey = f"{s['symbol']}.{s['window']}"
+            # THE SLEEVE'S NAME *IS* ITS SHADOW KEY -- it was written from `key` at promotion.
+            # Rebuilding it from symbol+window silently dropped the state, so retiring
+            # "CADJPY.asia.FAILED_BREAK" wrote KILL onto "CADJPY.asia": a different sleeve, also
+            # in the shadow set, which had done nothing wrong. Meanwhile the conditioned sleeve
+            # kept PROMOTION CANDIDATE, so the next run promoted it again -- the desk oscillating
+            # promote/retire forever, against this module's own "never re-promoted" guarantee.
+            skey = s["name"]
             if skey in shadow:
                 shadow[skey]["status"] = "KILL"
             plog(f"AUTO-RETIRED {s['name']} ({reason})")
