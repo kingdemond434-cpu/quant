@@ -12,12 +12,13 @@ from pathlib import Path
 
 import MetaTrader5 as mt5
 import pandas as pd
+from mt5desk.config import DATA, REPORTS, desk_root  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from mt5desk.config import terminal_path
 
 TERMINAL = terminal_path()
-OUT = Path(r"C:\Users\dell\mt5-research\data\universe")
+OUT = DATA / "universe"
 OUT.mkdir(parents=True, exist_ok=True)
 
 TRIANGLE = ["AUDCAD", "AUDNZD", "NZDCAD"]

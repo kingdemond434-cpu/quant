@@ -42,7 +42,7 @@ BASE = Path(__file__).resolve().parent.parent
 REPORTS = BASE / "reports"
 sys.path.insert(0, str(BASE))
 sys.path.insert(0, str(BASE / "research"))
-sys.path.insert(0, str(Path(r"C:\Users\dell\quant-platform")))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))  # quant repo root: libs/validation lives there
 
 from libs.validation.cpcv import CPCV  # noqa: E402
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E402
@@ -161,7 +161,15 @@ def worker_eval(row: dict, pbo_val: float, spa_p: float, n_trials: int,
            row["win"], row["state"])
     if key not in cell_map or cell_map[key] is None:
         return {"error": f"series missing for {key}"}
-    arr = np.asarray(list(cell_map[key].values()), dtype=float)
+    # SORTED BY DATE EXPLICITLY. `arr` feeds CPCV and the walk-forward engine, both of which split
+    # by index POSITION and therefore assume chronological order. Taking `list(dict.values())`
+    # relied on dict insertion order surviving a Series.to_dict() and a multiprocessing pickle --
+    # an unstated dependency that, if it ever broke, would shuffle time inside the two gates whose
+    # entire purpose is to respect it, and would do so silently. Sharpe is order-invariant, so the
+    # failure would show up only in the gates that matter.
+    _ser = pd.Series(cell_map[key], dtype=float).dropna()
+    _ser.index = pd.to_datetime(pd.Series(list(_ser.index)), errors="coerce").values
+    arr = _ser[pd.notna(_ser.index)].sort_index().to_numpy(dtype=float)
     if len(arr) < 60:
         return {"error": f"series too short ({len(arr)})"}
     stages: dict[str, dict] = {}
@@ -275,22 +283,74 @@ def main() -> int:
 
     # ----- original program-level stats on the full trial matrices ----------
     def build_matrix(hunt: int) -> tuple[np.ndarray | None, list]:
-        cols, col_meta = [], []
+        """Date-aligned trial matrix: row t is THE SAME CALENDAR DAY in every column.
+
+        IT WAS NEITHER ALIGNED NOR COMPLETE, AND THE ALIGNMENT BUG IS THE WORSE OF THE TWO.
+        Each cell's series is a {date: return} dict. The old code did
+
+            arr = np.asarray(list(s.values()))          # dates discarded
+            ...
+            min_len = min(len(a) for a in cols)
+            np.column_stack([a[-min_len:] for a in cols])
+
+        which stacked the last N values of each column POSITIONALLY. Cells trade on different
+        days, so row 5 of column A and row 5 of column B were different dates. Every number
+        computed from the joint structure of that matrix -- PBO/CSCV, Hansen SPA, the correlation
+        implied across trials -- was measured on a cross-section that never existed. Those are
+        precisely the gates that decide whether a survivor is a curve fit.
+
+        The truncation was the second defect: `min_len` clipped every column to the shortest,
+        so one sparse cell with 60 observations reduced a matrix whose other cells had thousands
+        to a 167-day window. Both defects have the same root -- the date index was thrown away --
+        and both are fixed by joining on it.
+
+        NON-TRADING DAYS ARE 0.0 HERE, AND THAT IS NOT THE BANNED ZERO-FILL. The distinction is
+        what the number is being used FOR. Writing 0.0 into a series to estimate CORRELATION
+        between sleeves fabricates decorrelation, inflates k_eff and raises leverage -- that is
+        the defect in `record_sleeve_returns` and it stays forbidden. Here the columns are
+        calendar P&L streams of individual strategies, and a day a strategy held no position
+        genuinely returned nothing: the zero is a true statement about that day, not a
+        substitute for a missing observation. PBO compares in-sample against out-of-sample
+        selection over the SAME periods, which requires a common calendar; an inner join across
+        thousands of cells that trade on different days would collapse to almost no rows.
+        """
+        cols, col_meta = {}, []
         for c in (all12 if hunt == 12 else all16):
             key = (c["sym"], c.get("fam") or c.get("family"),
                    c.get("side") or "LONG", c["win"], c["state"])
             s = cell_map.get(key)
             if s is None:
                 continue
-            arr = np.asarray(list(s.values()), dtype=float)
-            if len(arr) < 60:
+            ser = pd.Series(s, dtype=float).dropna()
+            if len(ser) < 60:
+                continue                  # too thin to characterise, at any alignment
+            ser.index = pd.to_datetime(pd.Series(list(ser.index)), errors="coerce").values
+            ser = ser[pd.notna(ser.index)]
+            if len(ser) < 60:
                 continue
-            cols.append(arr)
+            # Duplicate dates within one cell are summed: two trades on one day are one day's P&L.
+            ser = ser.groupby(level=0).sum().sort_index()
+            cols[f"c{len(col_meta)}"] = ser
             col_meta.append(c)
+        # AN UNSWEPT FAMILY RETURNS AN EMPTY MATRIX, NOT None. `sharpes12` below indexes
+        # `m12.shape[1]` unconditionally, so returning None raises AttributeError three lines
+        # later and reads like a code fault rather than "this family had no cells". An empty
+        # (0, 0) array flows through: the comprehension yields nothing and the `.size` guards
+        # further down do the rest. np.column_stack([]) and min([]) both raise, so the guard has
+        # to be here either way.
+        #
+        # (The progress-print that lived here indexed `ci` and `cells`, which this loop does not
+        # define -- a fragment left behind by an earlier loop shape. Dropped with the refactor.)
         if not cols:
-            return None, []
-        min_len = min(len(a) for a in cols)
-        return np.column_stack([a[-min_len:] for a in cols]), col_meta
+            return np.empty((0, 0)), []
+        # The join is the fix. pandas aligns on the index, so every row is one calendar day
+        # across all columns, and the matrix spans the UNION of trading days rather than being
+        # clipped to the thinnest cell.
+        df = pd.DataFrame(cols).sort_index().fillna(0.0)
+        print(f"matrix hunt{hunt}: {df.shape[0]} calendar days x {df.shape[1]} cells "
+              f"({df.index.min().date()} -> {df.index.max().date()}), date-aligned",
+              flush=True)
+        return df.to_numpy(dtype=float), col_meta
 
     m12, cm12 = build_matrix(12)
     m16, cm16 = build_matrix(16)
@@ -304,9 +364,14 @@ def main() -> int:
 
     print("program-level: PBO + SPA on full trial matrices...", flush=True)
     pbo12 = probability_backtest_overfitting(m12)
-    pbo16 = probability_backtest_overfitting(m16)
+    # hunt16 may be unswept (empty matrix). PBO/SPA on nothing is not "clean" -- it is
+    # UNMEASURED, so it fails closed: pbo=1.0 and p=1.0 deny admission rather than granting it.
+    class _NullStat:
+        pbo = 1.0
+        p_value = 1.0
+    pbo16 = probability_backtest_overfitting(m16) if m16.size else _NullStat()
     spa12 = hansen_spa(m12)
-    spa16 = hansen_spa(m16)
+    spa16 = hansen_spa(m16) if m16.size else _NullStat()
     print(f"hunt12 PBO={pbo12.pbo:.3f} SPA p={spa12.p_value:.3f} | "
           f"hunt16 PBO={pbo16.pbo:.3f} SPA p={spa16.p_value:.3f}", flush=True)
 

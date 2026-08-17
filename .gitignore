@@ -199,3 +199,9 @@ reports/principal_drop.json
 /patch_*.py
 /show_*.py
 /test_*.py
+
+# Per-box daily-cycle stamp. MUST NOT be shared between machines: it records "the operating chain
+# already ran for this UTC day", and only the Windows box with a live MT5 terminal can actually run
+# the shadow step. Committing a stamp written on a research box would make the execution box pull
+# it, see the day as done, and skip the one run that matters.
+desks/mt5/data/daily_cycle_state.json

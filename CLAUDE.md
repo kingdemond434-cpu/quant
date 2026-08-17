@@ -11,6 +11,7 @@ Keep this file SHORT. It sits in every context window, so it is an INDEX, never 
 
 | When | Read |
 |---|---|
+| proposing, validating, shadowing or promoting ANY edge | `docs/UNIVERSAL_PROMOTION_PROTOCOL.md` — **binding on every brain**, Claude and Codex alike. One door to capital; the nine defects this desk has actually shipped; and the habit behind seven of them — absence read as permission |
 | any non-trivial change | `docs/MASTER_QUANT_CONSTITUTION.md` first; then `docs/CONSTITUTION.md`, its machine-enforced companion |
 | deciding what to work on | `docs/GAP_REGISTER.md` — ranked open defects; **row 91 is the current top item** |
 | touching research/studies | `docs/research/*PREREGISTRATION.md` — kill criteria bind BEFORE a run |

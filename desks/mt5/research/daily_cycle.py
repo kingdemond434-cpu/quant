@@ -1,0 +1,144 @@
+"""daily_cycle: the three processes that actually move an edge toward capital.
+
+    shadow_forward  ->  promoter  ->  markout
+
+WHY THIS FILE HAD TO EXIST. `research_supervisor` restarts hunts and `hourly_cycle` checks health,
+mines the web and writes a frontier report. Both work. Neither has ever run `shadow_forward`,
+`promoter` or `markout` -- so nine validated candidates sat in `shadow_forward.SLEEVES` with
+nothing to execute them, accruing no evidence, unable to promote, for as long as that remained
+true. A pipeline that does not terminate in a decision is not a pipeline.
+
+The supervisor could not have been the home for this. It is built around one-shot DONE markers: a
+target runs until its marker exists and is never started again. That is right for a hunt and wrong
+for anything daily, which is why these three were never added to it.
+
+WHY DATE-STAMPED AND NOT CLOCK-TRIGGERED. The execution box is a laptop that sleeps. A task
+scheduled for 22:00 simply never runs on a day the lid was shut at 21:30, and the failure is
+silent -- the desk looks idle rather than broken. This runs the day's work on the FIRST invocation
+of each UTC day and no-ops on every later one, so an hourly caller gets exactly one run per day
+whenever the machine happens to be awake. `shadow_forward` is independently idempotent on the same
+key, so a double call is safe even if this guard is bypassed.
+
+    python research/daily_cycle.py            # from the hourly loop, or by hand
+    python research/daily_cycle.py --force    # re-run today (after fixing a failure)
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+import traceback
+from datetime import datetime, timezone
+from pathlib import Path
+
+BASE = Path(__file__).resolve().parent.parent
+for p in (str(BASE), str(BASE / "research")):
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
+STAMP = BASE / "data" / "daily_cycle_state.json"
+LOG = BASE / "logs" / "daily_cycle.log"
+
+
+def dlog(msg: str) -> None:
+    line = f"{datetime.now(timezone.utc).isoformat(timespec='seconds')} {msg}"
+    print(line, flush=True)
+    LOG.parent.mkdir(parents=True, exist_ok=True)
+    with LOG.open("a", encoding="utf-8") as f:
+        f.write(line + "\n")
+
+
+def _load_stamp() -> dict:
+    if not STAMP.exists():
+        return {}
+    try:
+        return json.loads(STAMP.read_text(encoding="utf-8"))
+    except ValueError:
+        return {}
+
+
+def run_step(name: str, fn) -> dict:
+    """Run one step, recording the outcome either way.
+
+    A step that raises must NOT abort the cycle. Shadow needs a live MT5 terminal and will fail on
+    a research box; the promoter and markout read files and do not. Stopping the whole cycle on the
+    first failure would mean a closed laptop silently suppresses the execution measurement too --
+    and an unmeasured failure is the thing this desk is least willing to have.
+    """
+    started = datetime.now(timezone.utc)
+    try:
+        fn()
+        out = {"ok": True}
+        dlog(f"{name}: ok")
+    except Exception as exc:                                        # noqa: BLE001
+        out = {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
+        dlog(f"{name}: FAILED -- {out['error']}")
+        dlog(traceback.format_exc().rstrip())
+    out["seconds"] = round((datetime.now(timezone.utc) - started).total_seconds(), 1)
+    return out
+
+
+def _shadow() -> None:
+    import shadow_forward
+    shadow_forward.main()
+
+
+def _promote() -> None:
+    import promoter
+    promoter.main()
+
+
+def _markout() -> None:
+    from mt5desk.config import DATA
+    from mt5desk.markout import compute, load_jsonl, render
+    m = compute(load_jsonl(DATA / "order_intents.jsonl"),
+                load_jsonl(DATA / "live_ledger.jsonl"))
+    for line in render(m).splitlines():
+        dlog("  " + line)
+    (BASE / "reports" / "markout.json").write_text(json.dumps({
+        "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "usable": m.usable, "n_matched": m.n_matched,
+        "n_unfilled_intents": m.n_unfilled_intents,
+        "n_unmatched_deals": m.n_unmatched_deals,
+        "mean_slip_quote": m.mean_slip_quote, "mean_slip_r": m.mean_slip_r,
+        "edge_share": m.edge_share, "why": m.why,
+    }, indent=2), encoding="utf-8")
+
+
+#: ORDER IS LOAD-BEARING. The promoter reads the state shadow has just written, so running it
+#: first would decide today on yesterday's evidence. Markout runs last and unconditionally: it
+#: reads the live ledger, so it reports on the armed book whether or not shadow could reach a
+#: terminal.
+STEPS = (("shadow", _shadow), ("promoter", _promote), ("markout", _markout))
+
+
+def main(argv: list[str] | None = None) -> int:
+    argv = sys.argv[1:] if argv is None else argv
+    force = "--force" in argv
+    today = datetime.now(timezone.utc).date().isoformat()
+    stamp = _load_stamp()
+
+    if stamp.get("last_run") == today and not force:
+        dlog(f"daily cycle already ran {today}; skip (--force to re-run)")
+        return 0
+
+    dlog(f"daily cycle {today} starting")
+    results = {name: run_step(name, fn) for name, fn in STEPS}
+
+    # THE STAMP RECORDS THE ATTEMPT, NOT A SUCCESS. Marking the day done only on a clean run would
+    # make a broken step retry every hour, and a step that fails at 09:00 because the terminal is
+    # shut fails identically at 10:00 -- turning one honest failure into a log full of them. The
+    # per-step outcome is kept alongside so the failure stays visible and `--force` is the explicit
+    # way to try again.
+    stamp["last_run"] = today
+    stamp["steps"] = results
+    STAMP.parent.mkdir(parents=True, exist_ok=True)
+    STAMP.write_text(json.dumps(stamp, indent=2), encoding="utf-8")
+
+    failed = [n for n, r in results.items() if not r["ok"]]
+    dlog(f"daily cycle {today} done" + (f" -- FAILED: {', '.join(failed)}" if failed else ""))
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

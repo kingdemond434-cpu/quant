@@ -6,6 +6,13 @@ changed.
 
 Before non-trivial work, read completely:
 
+- `docs/UNIVERSAL_PROMOTION_PROTOCOL.md` — **BINDING ON EVERY BRAIN.** The single path an edge takes
+  to capital: hypothesis → falsify → sweep with multiplicity → shadow → promoter → live. No brain
+  has a private door; no brain hand-edits `data/sleeves.json`; no brain arms capital. Opens with the
+  nine real defects this desk has shipped (a lookahead that manufactured 180 false survivors, a
+  conditioning state dropped at three separate layers, a units error that would have deleted every
+  JPY cross) and the one habit behind seven of them: **absence read as permission**. Read it before
+  proposing an edge, and again before believing one.
 - `docs/MANDATE_NET_COMPOUNDING.md` — BINDING human mandate: maximize robust net geometric growth; high drawdown is acceptable if survivable, ruin is not; never under-size out of drawdown discomfort; applies to ALL desks
 - `docs/MASTER_QUANT_CONSTITUTION.md` — the single authoritative top-level operating constitution
 - `CLAUDE.md`
