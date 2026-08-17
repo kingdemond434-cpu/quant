@@ -357,8 +357,10 @@ def main() -> int:
     print(f"matrix hunt12: {m12.shape if m12 is not None else 'none'}  "
           f"hunt16: {m16.shape if m16 is not None else 'none'}", flush=True)
 
-    sharpes12 = np.array([sharpe_ratio(m12[:, k]) for k in range(m12.shape[1])])
-    sharpes16 = np.array([sharpe_ratio(m16[:, k]) for k in range(m16.shape[1])])
+    sharpes12 = np.array([sharpe_ratio(m12[:, k]) for k in range(m12.shape[1])]) \
+        if m12 is not None else np.array([])
+    sharpes16 = np.array([sharpe_ratio(m16[:, k]) for k in range(m16.shape[1])]) \
+        if m16 is not None else np.array([])
     n_trials12 = max(2, math.ceil(n_cells[12] * TRIALS_MULTIPLIER))
     n_trials16 = max(2, math.ceil(n_cells[16] * TRIALS_MULTIPLIER))
 

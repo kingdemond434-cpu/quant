@@ -49,7 +49,7 @@ def main() -> None:
             time.sleep(60)
     sleeves = build_sleeves()
     daily = build_daily(sleeves)
-    R = daily.to_numpy(dtype=float)
+    R = np.nan_to_num(daily.to_numpy(dtype=float), nan=0.0)
     names = list(daily.columns)
 
     w = np.full(len(names), 1.0 / len(names))
@@ -69,8 +69,8 @@ def main() -> None:
         if lg > best_g:
             best_g, best_w = lg, w.copy()
 
-    port_eq = daily.sum(axis=1)
-    port_opt = daily @ best_w
+    port_eq = daily.fillna(0.0).sum(axis=1)
+    port_opt = daily.fillna(0.0) @ best_w
     sh_eq = port_eq.mean() / port_eq.std(ddof=1) * np.sqrt(252)
     sh_opt = port_opt.mean() / port_opt.std(ddof=1) * np.sqrt(252)
 
@@ -83,8 +83,8 @@ def main() -> None:
     order = np.argsort(-best_w)
     print(f"{'sleeve':<26} {'weight':>8} {'annSharpe(w)':>12}")
     for i in order:
-        s = daily[names[i]]
-        ann = s.mean() / s.std(ddof=1) * np.sqrt(252) if s.std(ddof=1) > 0 else 0
+        s = daily[names[i]].dropna()
+        ann = s.mean() / s.std(ddof=1) * np.sqrt(252) if len(s) > 1 and s.std(ddof=1) > 0 else 0
         print(f"{names[i]:<26} {best_w[i]:8.4f} {ann:12.2f}")
 
     print(f"\nq_total={Q_TOTAL}:")

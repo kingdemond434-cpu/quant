@@ -92,7 +92,7 @@ def build_daily(sleeves: list[dict]) -> pd.DataFrame:
                          dtype=float)
     for s in sleeves:
         d = pd.Series(s["r"], index=pd.Index(s["dates"]))
-        daily[s["name"]] = d.groupby(level=0).sum().reindex(alldays).fillna(0.0)
+        daily[s["name"]] = d.groupby(level=0).sum().reindex(alldays)
     return daily
 
 

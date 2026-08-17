@@ -109,24 +109,33 @@ def _day_states_same_day(h1: pd.DataFrame) -> dict:
     by = ny.assign(date=ny.index.date).groupby("date").agg(hi=("high", "max"), lo=("low", "min"))
     by["rng"] = by["hi"] - by["lo"]
     by["rng_med"] = by["rng"].shift(1).rolling(20, min_periods=10).median()
+    by["rng_prior"] = by["rng"].shift(1)
     day = h1.assign(date=h1.index.date).groupby("date").agg(hi=("high", "max"), lo=("low", "min"))
     day["dhi"] = day["hi"].shift(1)
     day["dlo"] = day["lo"].shift(1)
-    by = by.join(day[["dhi", "dlo"]])
+    day["g2hi"] = day["hi"].shift(2)
+    day["g2lo"] = day["lo"].shift(2)
+    by = by.join(day[["dhi", "dlo", "g2hi", "g2lo"]])
+    ny_prev = ny.assign(date=ny.index.date).groupby("date")["close"].last()
     out = {}
     for d, r in by.iterrows():
         med = r["rng_med"]
         if not med or pd.isna(med):
             out[d] = "NONE"
             continue
-        st = "TREND_DAY" if r["rng"] > 1.5 * med else (
-            "RANGE_DAY" if r["rng"] < 0.75 * med else "NORMAL_DAY")
-        dhi, dlo = r["dhi"], r["dlo"]
-        if dhi and dlo and (r["hi"] > dhi or r["lo"] < dlo):
-            nyc = ny[ny.index.date == d]
-            if len(nyc) and ((nyc["close"].iloc[-1] < dhi and r["hi"] > dhi)
-                             or (nyc["close"].iloc[-1] > dlo and r["lo"] < dlo)):
-                st = "FAILED_BREAK"
+        rp = r["rng_prior"]
+        if not rp or pd.isna(rp):
+            out[d] = "NONE"
+            continue
+        st = "TREND_DAY" if rp > 1.5 * med else (
+            "RANGE_DAY" if rp < 0.75 * med else "NORMAL_DAY")
+        pd_close = ny_prev.get(d - pd.Timedelta(days=1))
+        prev_hi, prev_lo = r["dhi"], r["dlo"]
+        g2hi, g2lo = r["g2hi"], r["g2lo"]
+        if pd_close is not None and prev_hi and prev_lo and g2hi and g2lo \
+                and ((prev_hi > g2hi and pd_close < g2hi)
+                     or (prev_lo < g2lo and pd_close > g2lo)):
+            st = "FAILED_BREAK"
         out[d] = st
     return out
 
