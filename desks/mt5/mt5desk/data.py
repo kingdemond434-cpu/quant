@@ -10,11 +10,12 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
+from mt5desk.config import DATA, REPORTS, desk_root  # noqa: E402
 
 _VANTAGE = r"C:\Users\dell\gold-desk\data\bars_vantage"
 _LAKE = r"C:\Users\dell\quant-platform\data\lake"
-_COT = Path(r"C:\Users\dell\mt5-research\data\cot")
-_COT_LEGACY = Path(r"C:\Users\dell\mt5-research\data\cot_gold.parquet")
+_COT = DATA / "cot"
+_COT_LEGACY = DATA / "cot_gold.parquet"
 
 # MT5 symbol -> cot slug (base-currency future; JPY crosses use the yen)
 _SYMBOL_SLUG = {

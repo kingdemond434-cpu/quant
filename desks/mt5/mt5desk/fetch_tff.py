@@ -18,8 +18,9 @@ import zipfile
 from pathlib import Path
 
 import pandas as pd
+from mt5desk.config import DATA, REPORTS, desk_root  # noqa: E402
 
-OUT = Path(r"C:\Users\dell\mt5-research\data\cot_tff")
+OUT = DATA / "cot_tff"
 OUT.mkdir(parents=True, exist_ok=True)
 YEARS = list(range(2018, 2027))
 

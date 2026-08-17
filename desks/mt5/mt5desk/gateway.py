@@ -31,10 +31,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import MetaTrader5 as mt5
 import numpy as np
 import pandas as pd
+from mt5desk.config import desk_root, gateway_paused, terminal_path  # noqa: E402
 
-from mt5desk.config import gateway_paused, terminal_path
-
-BASE = Path(r"C:\Users\dell\mt5-research")
+BASE = desk_root()
 STATE = BASE / "data" / "gateway_state.json"
 SLEEVES_FILE = BASE / "data" / "sleeves.json"
 LEDGER = BASE / "data" / "live_ledger.jsonl"
