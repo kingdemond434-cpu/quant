@@ -592,8 +592,38 @@ def sleeve_set() -> list[dict]:
                         "window": s["window"],
                         "sig_hour": next(w[1] for w in GOLD_WINDOWS if w[0] == s["window"]),
                         "rng": next(w[2] for w in GOLD_WINDOWS if w[0] == s["window"]),
+                        # THE CONDITIONING STATE TRAVELS WITH THE SLEEVE, and before this it did
+                        # not exist anywhere in the live chain. shadow_forward keyed on
+                        # (symbol, window), promoter wrote no state field, and this function
+                        # rebuilt every sleeve from `window` alone -- so a promoted
+                        # "CADJPY asia FAILED_BREAK" would have traded CADJPY asia on EVERY day.
+                        # The sleeve would carry the name of a validated strategy while running
+                        # an unvalidated one (+0.163R unconditioned against the +0.276R that
+                        # earned promotion), and nothing would have said so.
+                        "state": s.get("state"),
                         "lot": "auto_ramp", "status": "LIVE"})
     return sleeves
+
+
+def state_allows(sleeve: dict, h1: "pd.DataFrame", day: object) -> tuple[bool, str]:
+    """May a state-conditioned sleeve trade today? FAILS CLOSED on any doubt.
+
+    An unconditioned sleeve always passes. A conditioned one must have its state computable from
+    the bars in hand AND match; if the state cannot be computed the sleeve does NOT trade, because
+    the alternative is trading the unconditioned strategy under a conditioned sleeve's name and
+    risk budget. Absence of a state is not permission.
+    """
+    want = sleeve.get("state")
+    if not want:
+        return True, ""
+    try:
+        from research.run_hunt12 import day_states           # noqa: PLC0415
+        got = day_states(h1).get(day)
+    except Exception as exc:                                  # noqa: BLE001
+        return False, f"state UNCOMPUTABLE ({type(exc).__name__}); refusing to trade unconditioned"
+    if got is None:
+        return False, "state unknown for today; refusing to trade unconditioned"
+    return (got == want), (f"state {got} != {want}" if got != want else "")
 
 
 def main() -> None:
@@ -660,6 +690,12 @@ def main() -> None:
             df = pd.DataFrame(h1)
             df["time"] = pd.to_datetime(df["time"], unit="s", utc=True)
             df = df.set_index("time").sort_index()
+            # THE STATE GATE, applied before any bracket is computed. A conditioned sleeve that
+            # cannot confirm its state does not trade -- see `state_allows`.
+            ok_state, why_state = state_allows(s, df, datetime.now(tz=UTC).date())
+            if not ok_state:
+                log(f"[{s['name']}] no trade today: {why_state}")
+                continue
             rng2 = day_range(df, s["rng"], s["sig_hour"])
             if rng2 is None:
                 log(f"[{s['name']}] range not ready at {hour:.1f}")

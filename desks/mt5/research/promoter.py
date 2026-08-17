@@ -124,7 +124,14 @@ def main() -> None:
             continue
         if key in existing:
             continue
-        sym, win = key.split(".", 1)
+        # KEYS NOW CARRY AN OPTIONAL THIRD FIELD: "SYM.window" or "SYM.window.STATE".
+        # `split(".", 1)` would have put "asia.FAILED_BREAK" into `win`, which then fails the
+        # gateway's window whitelist and silently drops the sleeve -- a conditioned candidate
+        # would sit in shadow forever, meeting every promotion criterion and never promoting,
+        # with no error anywhere. Parsed explicitly instead.
+        parts = key.split(".")
+        sym, win = parts[0], parts[1]
+        cond = parts[2] if len(parts) > 2 else None
         if win not in GOLD_WINDOWS:
             continue
         if sym == "XAUUSD":
@@ -139,6 +146,10 @@ def main() -> None:
                 changed = True
                 continue
         sleeves.append({"name": key, "symbol": sym, "window": win,
+                        # Carried through to the gateway, which refuses to trade a conditioned
+                        # sleeve whose state it cannot confirm. Without this field the gateway
+                        # would trade the UNCONDITIONED strategy under this sleeve's name.
+                        "state": cond,
                         "lot": PROMOTED_LOT, "status": "LIVE",
                         "promoted_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
                         "shadow_exp": st.get("exp_r", 0.0)})
