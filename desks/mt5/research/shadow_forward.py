@@ -72,7 +72,8 @@ def per_symbol_costs(meta: dict, sym: str):
 def fetch_h1(sym: str) -> pd.DataFrame | None:
     import MetaTrader5 as mt5  # noqa: E402
     if mt5.terminal_info() is None:
-        if not mt5.initialize(path=r"C:\Program Files\VIG Group MT5 Terminal\terminal64.exe"):
+        from mt5desk.config import terminal_path  # noqa: E402
+        if not mt5.initialize(path=terminal_path()):
             slog(f"mt5 init failed: {mt5.last_error()}")
             return None
     from datetime import timedelta

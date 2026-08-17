@@ -56,11 +56,17 @@ def main() -> None:
                     run_hunt8.main()
                     import run_hunt9  # noqa: PLC0415
                     run_hunt9.main()
+                    import free_shadows  # noqa: PLC0415
+                    free_shadows.main()
+                    import run_hunt10  # noqa: PLC0415
+                    run_hunt10.main()
+                    import run_hunt12  # noqa: PLC0415
+                    run_hunt12.main()
                     stfile.write_text(_json.dumps({"last_sweep": now_ts}),
                                       encoding="utf-8")
-                    gateway.log("weekly hunt7/8/9 sweep completed")
+                    gateway.log("weekly hunt7-12 + states sweep completed")
                 except Exception as e2:  # noqa: BLE001
-                    gateway.log(f"HUNT7/8/9 ERROR: {e2!r}")
+                    gateway.log(f"HUNT7-12 ERROR: {e2!r}")
     except Exception as e:  # noqa: BLE001 - watchdog must never die
         gateway.log(f"LOOP ERROR: {e!r}")
     finally:

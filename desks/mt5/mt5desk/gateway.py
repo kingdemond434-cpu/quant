@@ -25,9 +25,14 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import MetaTrader5 as mt5
 import numpy as np
 import pandas as pd
+
+from mt5desk.config import gateway_paused, terminal_path
 
 BASE = Path(r"C:\Users\dell\mt5-research")
 STATE = BASE / "data" / "gateway_state.json"
@@ -35,7 +40,7 @@ SLEEVES_FILE = BASE / "data" / "sleeves.json"
 LEDGER = BASE / "data" / "live_ledger.jsonl"
 LOG = BASE / "logs" / "gateway.log"
 
-TERMINAL = r"C:\Program Files\VIG Group MT5 Terminal\terminal64.exe"
+TERMINAL = terminal_path()
 MAGIC = 341953
 
 LOT = 0.02              # gold book lot; mandate-optimal q=5.5% (sizing study 2026-08-16)
@@ -47,8 +52,8 @@ RR = 2.0
 ATR_N = 20
 CANCEL_HOUR = 20.5      # cancel unfilled brackets at 20:30 UTC
 CLOSE_HOUR = 19.5       # force-close positions at 19:30 UTC
-PROMOTED_MIN_EQUITY = 400.0  # EUR: below this, promoted sleeves stay dormant
-                             # (0.01 lot floor at small equity = >8.8% risk/trade)
+PROMOTED_MIN_EQUITY = 300.0  # EUR: below this, promoted sleeves stay dormant
+                             # (0.01 lot at 300 EUR ~= 5.9% risk/trade ~= validated 5.5%)
 
 
 def promoted_lot(equity: float, live_n: int) -> float:
@@ -326,6 +331,9 @@ def sleeve_set() -> list[dict]:
 
 
 def main() -> None:
+    if gateway_paused():
+        log("gateway paused (data/GATEWAY_PAUSED present); no trading this pass")
+        return
     if not connect():
         return
     st = load_state()

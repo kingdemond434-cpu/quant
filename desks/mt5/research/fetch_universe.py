@@ -5,13 +5,17 @@ Run with the VIG terminal logged in.
 """
 
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 import MetaTrader5 as mt5
 import pandas as pd
 
-TERMINAL = r"C:\Program Files\VIG Group MT5 Terminal\terminal64.exe"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from mt5desk.config import terminal_path
+
+TERMINAL = terminal_path()
 OUT = Path(r"C:\Users\dell\mt5-research\data\universe")
 OUT.mkdir(parents=True, exist_ok=True)
 
