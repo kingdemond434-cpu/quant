@@ -797,7 +797,12 @@ QUANT_ROOT=/home/quant/quant-platform
 #   ensure_recorder.py + pgrep-respawn every 10 min");
 #   docs/research/deep_sweep/20260729_data-intelligence.md:77-78 ("recorders re-spawned every 10m")
 # CONFIDENCE: documented-cadence
-*/10 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/ensure_recorder.py >> data/cro_ai_logs/ensure_recorder_cron.log 2>&1
+# RETIRED 2026-08-17 (constitution 224). Crypto venues are out of scope for this desk:
+# Irish retail rules make the leg spot-only, the desk trades MT5, and these had reached
+# 19GB on a 37GB disk feeding a tape nothing trades on. The P26 obligation TRANSFERS to
+# mt5desk.tape rather than lapsing -- an unrecorded second is still unbuyable, it is just
+# an MT5 second now. Re-enabling requires a stated change in the legal or venue position.
+# */10 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/ensure_recorder.py >> data/cro_ai_logs/ensure_recorder_cron.log 2>&1
 
 # spot + bybit recorder pgrep-guards: bracket trick mandatory -- self-matching monitors reported
 # a dead recorder as RUNNING twice (docs/playbooks/ops_checklist.md:12).
@@ -805,8 +810,10 @@ QUANT_ROOT=/home/quant/quant-platform
 #   (mirrors run_recorder_bybit.py)"); docs/institutional_knowledge.md:456 ("cron pgrep
 #   self-heal" for all three moat recorders); docs/GAP_REGISTER.md:272 ("spot recorder")
 # CONFIDENCE: documented-cadence
-*/10 * * * * cd "$QUANT_ROOT" && { pgrep -f "run_recorder_spo[t]" >/dev/null || setsid nohup .venv/bin/python scripts/run_recorder_spot.py >> data/recorder_spot.log 2>&1 ; }
-*/10 * * * * cd "$QUANT_ROOT" && { pgrep -f "run_recorder_bybi[t]" >/dev/null || setsid nohup .venv/bin/python scripts/run_recorder_bybit.py >> data/recorder_bybit.log 2>&1 ; }
+
+# */10 * * * * cd "$QUANT_ROOT" && { pgrep -f "run_recorder_spo[t]" >/dev/null || setsid nohup .venv/bin/python scripts/run_recorder_spot.py >> data/recorder_spot.log 2>&1 ; }
+
+# */10 * * * * cd "$QUANT_ROOT" && { pgrep -f "run_recorder_bybi[t]" >/dev/null || setsid nohup .venv/bin/python scripts/run_recorder_bybit.py >> data/recorder_bybit.log 2>&1 ; }
 
 # --------------------------------------------------------------------------------------------
 # DETERMINISTIC COLLECTORS -- the desk is not all-LLM at the base layer
@@ -2561,7 +2568,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # daily artifacts and remain phase-separated from their producers. These entries replace legacy
 # pre-manifest lines; reconstitution owns exactly one copy of each.
 # CONFIDENCE: verified-live plus committed-script.
-*/5 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_recorder_supervisor.lock bash ops/start_recorders_nosudo.sh >> data/recorder_supervisor.log 2>&1
+
+# */5 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_recorder_supervisor.lock bash ops/start_recorders_nosudo.sh >> data/recorder_supervisor.log 2>&1
 20 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_axis_shadows.lock .venv/bin/python scripts/run_axis_shadows.py >> data/cro_ai_logs/axis_shadows.log 2>&1
 5 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cohort_integrity.lock .venv/bin/python scripts/check_cohort_integrity.py --report-only >> data/cro_ai_logs/cohort_integrity.log 2>&1
 15 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_gate_reachability.lock .venv/bin/python scripts/check_gate_reachability.py --report-only >> data/cro_ai_logs/gate_reachability.log 2>&1
