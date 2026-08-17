@@ -122,28 +122,37 @@ def fetch_vintages(series_id: str, key: str, timeout: int = 60) -> pd.DataFrame 
     obs = r.json().get("observations", [])
     if not obs:
         return None
-    rows = []
-    for o in obs:
-        date = o.get("date")
-        for k, v in o.items():
-            # vintage columns are named "<SERIES>_YYYYMMDD"
-            if k == "date" or "_" not in k or v in (".", "", None):
-                continue
-            stamp = k.rsplit("_", 1)[-1]
-            if len(stamp) != 8 or not stamp.isdigit():
-                continue
-            try:
-                rows.append({"observation_date": date,
-                             "realtime_date": f"{stamp[:4]}-{stamp[4:6]}-{stamp[6:]}",
-                             "value": float(v)})
-            except ValueError:
-                continue
-    if not rows:
+
+    # VECTORISED, BECAUSE THE PYTHON LOOP OOM-KILLED A 4GB BOX. CPI carries ~950 observations
+    # across ~800 vintages: the previous version built 760,000 dicts in a list before touching
+    # pandas, which is roughly 150MB of dict overhead alone, then doubled it constructing the
+    # DataFrame. The process was killed mid-series and left a partial lake behind.
+    #
+    # Reshaping wide->long with melt does the same work inside pandas, and float32 halves what
+    # survives it. Precision is irrelevant here: these are macro prints with 1-3 significant
+    # decimals, not prices.
+    wide = pd.DataFrame(obs)
+    del obs
+    vint_cols = [c for c in wide.columns
+                 if c != "date" and "_" in c
+                 and (s := c.rsplit("_", 1)[-1]).isdigit() and len(s) == 8]
+    if not vint_cols:
         return None
-    df = pd.DataFrame(rows)
-    df["observation_date"] = pd.to_datetime(df["observation_date"])
-    df["realtime_date"] = pd.to_datetime(df["realtime_date"])
-    return df.sort_values(["observation_date", "realtime_date"]).reset_index(drop=True)
+    long = wide[["date"] + vint_cols].melt(
+        id_vars="date", var_name="_vintage", value_name="value")
+    del wide
+    long = long[long["value"].ne(".") & long["value"].notna()]
+    if long.empty:
+        return None
+    long["value"] = pd.to_numeric(long["value"], errors="coerce", downcast="float")
+    long = long[long["value"].notna()]
+    long["observation_date"] = pd.to_datetime(long["date"], errors="coerce")
+    long["realtime_date"] = pd.to_datetime(
+        long["_vintage"].str.rsplit("_", n=1).str[-1], format="%Y%m%d", errors="coerce")
+    long = long[long["observation_date"].notna() & long["realtime_date"].notna()]
+    out = long[["observation_date", "realtime_date", "value"]]
+    del long
+    return out.sort_values(["observation_date", "realtime_date"]).reset_index(drop=True)
 
 
 def vintage_as_of(df: pd.DataFrame, as_of: str | datetime) -> pd.Series:
@@ -203,8 +212,17 @@ def main(argv: list[str] | None = None) -> int:
         print(report["fix"])
         return 2
 
-    written, lags, failed = 0, {}, []
+    force = "--force" in argv
+    written, lags, failed, skipped = 0, {}, [], []
     for sid in sorted(wanted):
+        # RESUMABLE. A full vintage history is a large download and the box has 4GB; if the OOM
+        # killer takes the process mid-run, restarting must not re-fetch what already landed.
+        # Each series is written before the next is requested, so completed work survives.
+        out_path = OUT / f"{sid}.parquet"
+        if out_path.exists() and not force:
+            skipped.append(sid)
+            print(f"{sid}: already on disk, skipping (--force to refetch)", flush=True)
+            continue
         print(f"{sid}: fetching all vintages...", flush=True)
         try:
             df = fetch_vintages(sid, key)
@@ -234,19 +252,27 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  {sid}: REJECTED -- median release lag {lag['median_days']:.0f}d is not a "
                   f"publication delay. The vintage history is wrong. Not written.", flush=True)
             continue
-        df.to_parquet(OUT / f"{sid}.parquet", index=False)
+        df.to_parquet(out_path, index=False)
         lags[sid] = lag
         written += 1
         print(f"  {sid}: {len(df):,} rows, {n_vint} vintages, "
               f"median release lag {lag.get('median_days', float('nan')):.0f}d", flush=True)
+        # Released before the next request, not at the next garbage collection. On a 4GB box the
+        # peak that matters is two series held at once, and that peak is what got the process
+        # killed.
+        del df
+        import gc; gc.collect()
 
-    report.update({"status": "OK" if written else "EMPTY", "written": written,
+    report.update({"status": "OK" if (written or skipped) else "EMPTY", "written": written,
+                   "skipped_already_present": skipped,
                    "failed": failed, "release_lag_days": lags,
                    "path": str(OUT),
                    "usage": "research: from research.fetch_alfred import vintage_as_of"})
     (REPORTS / "alfred_vintages.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
-    print(f"\n{written} series written to {OUT}" + (f", {len(failed)} failed" if failed else ""))
-    return 0 if written else 1
+    print(f"\n{written} written to {OUT}"
+          + (f", {len(skipped)} already present" if skipped else "")
+          + (f", {len(failed)} REJECTED/failed: {', '.join(failed)}" if failed else ""))
+    return 0 if (written or skipped) else 1
 
 
 if __name__ == "__main__":
