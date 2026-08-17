@@ -21,6 +21,7 @@ appended to data/live_ledger.jsonl for retire/champion logic.
 from __future__ import annotations
 
 import json
+import math
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -191,6 +192,44 @@ def auto_lot(equity: float) -> float:
 #: account -- risk rising exactly when the account can least afford it.
 MAX_PORTFOLIO_HEAT = 0.04
 
+#: The k_eff the base budget is calibrated to: the armed 3-leg gold book, whose measured
+#: cross-sleeve correlation is 0.165 -> 2.26 independent bets.
+_HEAT_BASE_KEFF = 2.26
+
+#: Never exceed this however good the diversification looks. Correlations rise in exactly the
+#: regime where the budget would be spent, and a measured k_eff is an estimate from calm.
+MAX_HEAT_CEILING = 0.10
+
+
+def heat_budget(k_eff: float | None = None) -> float:
+    """Total risk the book may carry, scaled by how many INDEPENDENT bets it actually holds.
+
+    A FIXED PERCENTAGE IS THE WRONG INSTRUMENT AND IT CAPS GROWTH PERMANENTLY. At a flat 4% the
+    admitted sleeve count converges to five at ANY equity -- 5 at EUR 2,343 and still 5 at EUR
+    100,000 -- because `realised_q` converges to Q_OPT once the account clears the 0.01 lot floor.
+    The book would stop widening forever, which is the opposite of safe aggressive growth.
+
+    The reason 4% was right for three gold legs is not the number of sleeves, it is that those
+    legs are 0.165 correlated and therefore only ~2.26 independent bets. Portfolio drawdown for N
+    sleeves at total heat H scales roughly as H / sqrt(k_eff), so holding drawdown fixed lets H
+    grow with sqrt(k_eff). Five genuinely independent sleeves are SAFER at 6% than three
+    correlated ones at 4%, and a constant refuses to see the difference.
+
+        k_eff 2.26 (gold book today)      -> 4.0%
+        k_eff 5.12 (the 9 candidates)     -> 6.0%
+        k_eff 9.0                          -> 8.0%
+
+    UNMEASURED k_eff RETURNS THE BASE BUDGET, never the ceiling. The desk has no live
+    cross-sleeve correlation yet -- shadow started 2026-08-16 -- and treating "not yet measured"
+    as "independent" is the single assumption that would let a correlated book size like a
+    diversified one, which is how a portfolio discovers its real correlation during the drawdown
+    rather than before it.
+    """
+    if k_eff is None or not (k_eff == k_eff) or k_eff < 1.0:
+        return MAX_PORTFOLIO_HEAT
+    scaled = MAX_PORTFOLIO_HEAT * math.sqrt(float(k_eff) / _HEAT_BASE_KEFF)
+    return float(min(max(scaled, MAX_PORTFOLIO_HEAT), MAX_HEAT_CEILING))
+
 
 def load_sleeves() -> list[dict]:
     """Promoted sleeves from data/sleeves.json (writer: research/promoter.py)."""
@@ -204,7 +243,8 @@ def load_sleeves() -> list[dict]:
 
 
 def cap_by_heat(sleeves: list[dict], equity: float,
-                per_sleeve_q: float | None = None) -> tuple[list[dict], str | None]:
+                per_sleeve_q: float | None = None,
+                k_eff: float | None = None) -> tuple[list[dict], str | None]:
     """Trim `sleeves` so their combined risk stays inside MAX_PORTFOLIO_HEAT.
 
     Returns the admitted sleeves and a note when anything was dropped, because a silently
@@ -220,12 +260,14 @@ def cap_by_heat(sleeves: list[dict], equity: float,
     q = per_sleeve_q if per_sleeve_q is not None else realised_q(equity)
     if q <= 0:
         return list(sleeves), None
-    room = int(MAX_PORTFOLIO_HEAT / q)
+    budget = heat_budget(k_eff)
+    room = int(budget / q)
     if room >= len(sleeves):
         return list(sleeves), None
     dropped = [s.get("name", "?") for s in sleeves[max(room, 0):]]
     note = (f"PORTFOLIO HEAT CAP: {len(sleeves)} sleeves x {q:.2%} = "
-            f"{len(sleeves) * q:.1%} exceeds {MAX_PORTFOLIO_HEAT:.0%}; "
+            f"{len(sleeves) * q:.1%} exceeds {budget:.1%} "
+            f"(k_eff {'unmeasured' if k_eff is None else format(k_eff, '.2f')}); "
             f"admitting {max(room, 0)}, deferring {dropped}")
     return sleeves[:max(room, 0)], note
 
