@@ -418,6 +418,25 @@ def margin_ok(symbol: str, lot: float, price: float) -> bool:
     return need <= acc.margin_free * 0.9
 
 
+#: Placement intents, one line per pending order sent. Separate from the deal ledger because the
+#: two are written at different moments by different events -- an intent exists the instant an
+#: order is sent, a deal only when it closes, and most intents never become deals at all (the
+#: 20:30 cancel). Keeping them apart means an unfilled bracket is recorded as what it is rather
+#: than inferred from an absence.
+INTENTS = BASE / "data" / "order_intents.jsonl"
+
+
+def _record_intent(**row) -> None:
+    """Append one placement intent. NEVER raises -- telemetry must not break the money path."""
+    try:
+        row["time"] = now()
+        INTENTS.parent.mkdir(parents=True, exist_ok=True)
+        with INTENTS.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(row, default=str) + "\n")
+    except Exception as exc:                      # noqa: BLE001
+        log(f"intent record failed (non-fatal): {type(exc).__name__}: {exc}")
+
+
 def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float) -> dict:
     if not st["armed"]:
         log(f"SHADOW [{sleeve}] would place bracket: {json.dumps(spec, default=str)}")
@@ -444,6 +463,16 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float) ->
         if code == 10017:
             log("ORDER FAILED: trade disabled - enable 'Allow algorithmic trading' "
                 "in terminal Options > Expert Advisors, and check account auth")
+        # THE INTENT, RECORDED AT PLACEMENT. Without this line slippage is unknowable: once the
+        # order fills, MT5 reports only the price it GOT, and the price the desk ASKED for is
+        # gone. Every backtest number on this desk assumes fills at exactly `s["price"]`, and
+        # nothing has ever checked that assumption -- the crypto desk made the same omission and
+        # discovered its real execution cost was 50x its modelled one, on trades that needed
+        # twelve days of funding to repay a single entry. Written at send time, joined by ticket
+        # in `markout.py` when the deal closes.
+        _record_intent(sleeve=sleeve, symbol=symbol, side=side, lot=lot,
+                       intended=float(s["price"]), sl=float(s["sl"]), tp=float(s["tp"]),
+                       ticket=(getattr(res, "order", None) if res else None), retcode=code)
         sent.append({"side": side, "retcode": code,
                      "comment": res.comment if res else None})
         log(f"ORDER [{sleeve}] {side} -> retcode={code} "
@@ -532,7 +561,16 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
         rec = {"time": now(), "sleeve": sleeve, "symbol": d.symbol,
                "side": d.type, "pl_quote": round(pl_quote, 2),
                "r_multiple": round(r, 4), "volume": d.volume,
-               "commission": d.commission, "swap": d.swap, "deal": d.ticket}
+               "commission": d.commission, "swap": d.swap, "deal": d.ticket,
+               # THE FILL, so it can be compared with the intent. price_open was already read
+               # here to size `risk_quote` and then thrown away, which is why no markout was
+               # possible: the one number that reveals execution quality was computed and
+               # discarded on every single trade. contract_size travels with it so slippage can
+               # be converted to account currency without a second lookup at analysis time.
+               "fill_price": float(d.price_open), "sl": float(d.sl), "tp": float(d.tp),
+               "order": getattr(d, "order", None),
+               "contract_size": float(sym_info.trade_contract_size),
+               "risk_quote": round(float(risk_quote), 6)}
         with LEDGER.open("a", encoding="utf-8") as f:
             f.write(json.dumps(rec) + "\n")
         written += 1
