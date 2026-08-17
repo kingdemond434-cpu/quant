@@ -28,6 +28,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from mt5desk import provenance  # noqa: E402
+
 BASE = Path(__file__).resolve().parent.parent
 SHADOW_DIR = BASE / "reports" / "shadow"
 SLEEVES_FILE = BASE / "data" / "sleeves.json"
@@ -77,13 +79,38 @@ def load_sleeves() -> list[dict]:
 
 
 def load_ledger() -> list[dict]:
+    """Closed trades from the account THIS DESK IS CURRENTLY TRADING, and no others.
+
+    THE FILE IS NOT ONE ACCOUNT'S HISTORY. The broker is switched by editing one line of
+    data/terminal_path.txt, so the moment that points at a Fusion DEMO terminal, demo fills append
+    to this same file -- and they are read below to RETIRE live sleeves and to judge gold
+    challengers against the armed book. Demo fills are optimistic in exactly the dimension that
+    matters (a demo server fills stops at the trigger with no slippage), so a sleeve could be kept
+    alive by practice results, or a newly funded live account judged on demo history sitting above
+    it in the file.
+
+    Rows predating provenance match nothing and are excluded. That is a deliberate loss of
+    history: the alternative is silently treating pre-switch trades as belonging to whatever
+    account happens to be connected today, which is the defect itself.
+    """
     if not LEDGER.exists():
         return []
     try:
-        return [json.loads(line) for line in LEDGER.read_text(encoding="utf-8").splitlines()
+        rows = [json.loads(line) for line in LEDGER.read_text(encoding="utf-8").splitlines()
                 if line.strip()]
     except Exception:
         return []
+    try:
+        import MetaTrader5 as mt5  # noqa: PLC0415
+        acc = provenance.current_account(mt5.account_info())
+    except Exception:
+        acc = provenance.current_account(None)
+    kept = [r for r in rows if provenance.same_account(r, acc)]
+    if len(kept) != len(rows):
+        plog(f"ledger: {len(kept)}/{len(rows)} rows are from the account in hand "
+             f"(login={acc['login']} server={acc['server']} kind={acc['kind']}); "
+             f"{len(rows) - len(kept)} from another account or predating provenance, excluded")
+    return kept
 
 
 def armed_forward_exp(ledger: list[dict], window: str) -> float | None:

@@ -32,6 +32,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import MetaTrader5 as mt5
 import numpy as np
 import pandas as pd
+from mt5desk import provenance as _prov  # noqa: E402
 from mt5desk.config import desk_root, gateway_paused, terminal_path  # noqa: E402
 
 BASE = desk_root()
@@ -567,7 +568,16 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
                "fill_price": float(d.price_open), "sl": float(d.sl), "tp": float(d.tp),
                "order": getattr(d, "order", None),
                "contract_size": float(sym_info.trade_contract_size),
-               "risk_quote": round(float(risk_quote), 6)}
+               "risk_quote": round(float(risk_quote), 6),
+               # WHICH ACCOUNT TRADED. The broker is switched by editing one line of
+               # data/terminal_path.txt, so the account under this gateway can change between two
+               # runs. Without these fields a Fusion DEMO fill lands in the same ledger the
+               # promoter reads to RETIRE a live sleeve, indistinguishable forever after -- and a
+               # newly funded live account would be judged partly on demo history sitting above it
+               # in the same file. Demo fills are not a conservative approximation of live ones:
+               # a demo server fills stops at the trigger with no slippage, which is exactly the
+               # assumption markout exists to test.
+               **_prov.stamp(_prov.current_account(mt5.account_info()))}
         with LEDGER.open("a", encoding="utf-8") as f:
             f.write(json.dumps(rec) + "\n")
         written += 1

@@ -46,6 +46,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from mt5desk.provenance import DEMO, UNKNOWN, row_account, split_by_account
+
 #: MT5 order type constants, inlined so this module imports on a research box where the
 #: MetaTrader5 package does not exist. Fixed by the platform, not by the broker.
 _BUY_TYPES = {0, 2, 4}       # BUY, BUY_LIMIT, BUY_STOP
@@ -81,10 +83,13 @@ class Markout:
     edge_share: float | None
     rows: list[dict[str, Any]]
     why: str = ""
+    #: Which kind of account produced these fills. A markout is only meaningful against one.
+    account_kind: str = UNKNOWN
+    mixed: bool = False
 
     @property
     def usable(self) -> bool:
-        return self.n_matched > 0
+        return self.n_matched > 0 and not self.mixed
 
 
 def load_jsonl(path: Path) -> list[dict]:
@@ -113,6 +118,22 @@ def compute(intents: list[dict], deals: list[dict],
     noted, it is a direct subtraction from the only thing being harvested, and an execution
     problem is invisible in currency terms while being fatal in R terms.
     """
+    # ONE ACCOUNT AT A TIME. Averaging a demo fill with a live one produces a number describing
+    # neither, and the direction of the error is not conservative: a demo server fills stops at
+    # the trigger with no slippage, so every demo row drags the mean toward "no slippage" using
+    # trades that could not have slipped. Segregate and refuse rather than blend.
+    accounts = {k for k in split_by_account(deals)} if deals else set()
+    kinds = {k[2] for k in accounts}
+    if len(accounts) > 1:
+        listed = ", ".join(f"{login or '?'}@{server or '?'}/{kind}"
+                           for login, server, kind in sorted(accounts, key=str))
+        return Markout(len(deals), 0, len(intents), 0, 0.0, 0.0, 0.0, 0.0, None, [],
+                       why=(f"MIXED ledger -- fills from {len(accounts)} accounts ({listed}). A "
+                            "markout across accounts describes none of them; demo fills do not "
+                            "slip, so blending them understates live cost. Split the ledger."),
+                       account_kind=UNKNOWN, mixed=True)
+    kind = next(iter(kinds)) if kinds else UNKNOWN
+
     by_ticket = {}
     for i in intents:
         t = i.get("ticket")
@@ -153,7 +174,8 @@ def compute(intents: list[dict], deals: list[dict],
         return Markout(len(deals), 0, unfilled, unmatched, 0.0, 0.0, 0.0, 0.0, None, [],
                        why=("no matched intent/deal pairs yet. Nothing has filled, or the gateway "
                             "predates intent recording. This is NOT a clean bill of health -- "
-                            "execution is UNMEASURED until a fill exists."))
+                            "execution is UNMEASURED until a fill exists."),
+                       account_kind=kind)
 
     sq = sorted(r["slip_quote"] for r in rows)
     srs = [r["slip_r"] for r in rows if r["slip_r"] is not None]
@@ -167,7 +189,8 @@ def compute(intents: list[dict], deals: list[dict],
         mean_slip_r=mean_r,
         edge_share=(mean_r / book_edge_r) if book_edge_r else None,
         rows=rows,
-        why="matched on order ticket; slip signed so a bad buy and a bad sell do not cancel")
+        why="matched on order ticket; slip signed so a bad buy and a bad sell do not cancel",
+        account_kind=kind)
 
 
 def render(m: Markout) -> str:
@@ -184,6 +207,16 @@ def render(m: Markout) -> str:
           f"  mean slip            {m.mean_slip_quote:+.5f} quote  ({m.mean_slip_r:+.4f} R)",
           f"  median slip          {m.median_slip_quote:+.5f} quote",
           f"  worst slip           {m.worst_slip_quote:+.5f} quote", ""]
+    if m.account_kind == DEMO:
+        L += ["  MEASURED ON A DEMO ACCOUNT -- not evidence of live execution.",
+              "  A demo server has no liquidity behind it and fills stop orders at the trigger",
+              "  price. A clean result here is the null outcome a server that CANNOT slip always",
+              "  produces, so it confirms nothing about the assumption this module tests. What a",
+              "  demo run does prove: contract sizes, stop and freeze levels, symbol suffixes,",
+              "  session hours, margin maths, and whether orders are accepted at all.", ""]
+    elif m.account_kind == UNKNOWN:
+        L += ["  ACCOUNT UNKNOWN -- these fills predate provenance stamping, so the desk cannot",
+              "  say whether they are demo or live. Treat as unmeasured.", ""]
     if m.edge_share is not None:
         pct = m.edge_share * 100.0
         verdict = ("execution is eating the edge" if pct >= 50 else

@@ -23,11 +23,17 @@ for p in (str(_DESK), str(_DESK / "research")):
         sys.path.insert(0, p)
 
 import promoter  # noqa: E402
+from mt5desk import provenance  # noqa: E402
+
+#: The account these fixtures pretend to be trading. Ledger rows are stamped with it, because the
+#: promoter now counts only trades from the account in hand -- an unstamped row is evidence about
+#: nothing, which is the entire point of `test_account_provenance.py`.
+_ACC = {"login": 5551234, "server": "FusionMarkets-Live", "kind": provenance.LIVE}
 
 
 @pytest.fixture
 def desk(tmp_path, monkeypatch):
-    """A promoter pointed entirely at tmp_path."""
+    """A promoter pointed entirely at tmp_path, trading a known account."""
     shadow_dir = tmp_path / "reports" / "shadow"
     shadow_dir.mkdir(parents=True)
     (tmp_path / "data").mkdir()
@@ -36,6 +42,7 @@ def desk(tmp_path, monkeypatch):
     monkeypatch.setattr(promoter, "SLEEVES_FILE", tmp_path / "data" / "sleeves.json")
     monkeypatch.setattr(promoter, "LEDGER", tmp_path / "data" / "live_ledger.jsonl")
     monkeypatch.setattr(promoter, "LOG", tmp_path / "logs" / "promoter.log")
+    monkeypatch.setattr(promoter.provenance, "current_account", lambda _acc: _ACC)
 
     class Desk:
         root = tmp_path
@@ -47,6 +54,12 @@ def desk(tmp_path, monkeypatch):
             return json.loads((shadow_dir / "shadow_state.json").read_text(encoding="utf-8"))
 
         def ledger(self, rows: list[dict]) -> None:
+            (tmp_path / "data" / "live_ledger.jsonl").write_text(
+                "\n".join(json.dumps({**provenance.stamp(_ACC), **r}) for r in rows),
+                encoding="utf-8")
+
+        def ledger_raw(self, rows: list[dict]) -> None:
+            """Unstamped rows, as written before provenance existed."""
             (tmp_path / "data" / "live_ledger.jsonl").write_text(
                 "\n".join(json.dumps(r) for r in rows), encoding="utf-8")
 
@@ -168,6 +181,33 @@ def test_a_gold_challenger_that_beats_the_armed_book_promotes(desk):
     promoter.main()
     (s,) = desk.sleeves()
     assert s["name"] == "XAUUSD.asia.NORMAL_DAY" and s["state"] == "NORMAL_DAY"
+
+
+def test_a_demo_fill_cannot_retire_a_live_sleeve(desk):
+    """THE TRAP THE FUSION DEMO OPENS. The broker is switched by editing one line of
+    data/terminal_path.txt, so demo fills land in the SAME live_ledger.jsonl the promoter reads to
+    retire live sleeves -- and demo fills are optimistic, not conservative. A losing demo run must
+    not retire a live edge, and a flattering one must not keep a dead one alive."""
+    desk.shadow({"CADJPY.asia.FAILED_BREAK": dict(_GOOD)})
+    promoter.main()
+    demo = {"login": 999, "server": "FusionMarkets-Demo", "kind": provenance.DEMO}
+    desk.ledger_raw([{**provenance.stamp(demo), "sleeve": "CADJPY.asia.FAILED_BREAK",
+                      "r_multiple": -1.0} for _ in range(12)])
+    promoter.main()
+    (s,) = desk.sleeves()
+    assert s["status"] == "LIVE", "a demo losing streak retired a live sleeve"
+
+
+def test_unstamped_legacy_rows_are_not_counted_as_evidence(desk):
+    """Rows written before provenance are real trades on SOME account. The desk cannot say which,
+    so they decide nothing -- rather than being credited to whatever account is connected today."""
+    desk.shadow({"CADJPY.asia.FAILED_BREAK": dict(_GOOD)})
+    promoter.main()
+    desk.ledger_raw([{"sleeve": "CADJPY.asia.FAILED_BREAK", "r_multiple": -1.0}
+                     for _ in range(12)])
+    promoter.main()
+    (s,) = desk.sleeves()
+    assert s["status"] == "LIVE"
 
 
 def test_the_armed_gold_book_is_never_touched_by_the_promoter(desk):

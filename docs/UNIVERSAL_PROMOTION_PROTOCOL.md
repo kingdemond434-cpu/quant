@@ -264,6 +264,28 @@ python research/shadow_forward.py               # idempotent; skips if already r
 cat reports/shadow/shadow_state.json
 ```
 
+### Demo is a rung on the ladder, not a shortcut down it
+
+The desk switches brokers by editing one line of `data/terminal_path.txt`, so the account under the
+gateway can change between two runs. Every ledger row is therefore stamped with `account`, `server`
+and `account_kind`, and **the promoter counts only trades from the account currently in hand.**
+
+This is not bookkeeping. Demo fills are **optimistic, not conservative**: a demo server has no
+liquidity behind it and fills stop orders at the trigger price with no slippage — precisely the
+assumption `markout` exists to test. A clean markout on demo is the null result a server that
+*cannot* slip will always produce, so it confirms nothing. Blending demo and live rows would drag
+the mean toward "no slippage" using trades that could not have slipped, and a losing demo week
+could retire a live edge.
+
+So: `markout` refuses to average across accounts and labels a demo measurement as **not evidence of
+live execution**. Rows predating provenance match nothing and decide nothing — a deliberate loss of
+history, because the alternative is crediting pre-switch trades to whatever account is connected
+today.
+
+What a demo run **does** prove, and it is worth real money to learn without spending any: contract
+sizes, stop and freeze levels, symbol suffixes, session hours, margin maths, and whether the
+gateway's orders are accepted at all. Run there first. Just never quote its slippage as your cost.
+
 **Read `markout` before you believe any return figure you produce.** Every number this desk
 generates assumes fills at exactly the bracket price, and session-range breakout enters on **stop
 orders into fast moves** — the worst case for slippage, because the order becomes a market order
