@@ -87,10 +87,11 @@ def sleeve_live_n(name: str) -> int:
         return 0
 
 # (label, signal_hour, range window)  range None => [0, signal_hour)
+# ny_open QUARANTINED 2026-08-17: exp +0.029R, PF 1.05, maxDD -52.8R (rank 9).
+# Must re-earn admission via a genuinely different conditioning rule.
 GOLD_WINDOWS = [
     ("asia", 7, None),
     ("london_am", 13, (10, 13)),
-    ("ny_open", 14, (13, 14)),
     ("afternoon", 17, (14, 17)),
 ]
 
@@ -111,6 +112,31 @@ def load_sleeves() -> list[dict]:
         return [s for s in data.get("sleeves", []) if s.get("status") == "LIVE"]
     except Exception:
         return []
+
+
+def regime_hibernate(sleeves: list[dict]) -> set[str]:
+    """Gateway names of sleeves flagged 'hibernate' in data/regime_state.json
+    (writer: research/regime_monitor.py). Auto-kill: no new brackets until a
+    human re-admits the sleeve (flag cleared or removed).
+
+    Sleeve-key mapping: armed gold windows = 'XAUUSD|asia' etc; promoted
+    sleeves use their ledger tag (symbol|window).
+    """
+    p = BASE / "data" / "regime_state.json"
+    if not p.exists():
+        return set()
+    try:
+        state = json.loads(p.read_text(encoding="utf-8"))
+    except Exception:
+        return set()
+    flags = state.get("sleeves", {})
+    killed = set()
+    for s in sleeves:
+        name = s["name"]
+        key = f"XAUUSD|{name[5:]}" if name.startswith("gold_") else name.replace(".", "|")
+        if flags.get(key, {}).get("flag") == "hibernate":
+            killed.add(name)
+    return killed
 
 
 def now() -> str:
@@ -365,6 +391,10 @@ def main() -> None:
         save_state(st)
 
     sleeves = sleeve_set()
+    reg_killed = regime_hibernate(sleeves)
+    if reg_killed:
+        log(f"REGIME: auto-hibernate, no new brackets: {reg_killed}")
+        sleeves = [s for s in sleeves if s["name"] not in reg_killed]
     if equity < PROMOTED_MIN_EQUITY:
         sleeves = [s for s in sleeves if s["name"].startswith("gold_")]
         if load_sleeves():

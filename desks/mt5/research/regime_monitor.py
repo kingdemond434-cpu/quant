@@ -53,11 +53,15 @@ def main() -> None:
         n = len(rs)
         win = float(np.mean([x for x in rs if x > 0])) if any(x > 0 for x in rs) else 0.0
         loss = float(np.mean([x for x in rs if x < 0])) if any(x < 0 for x in rs) else 0.0
-        flag = "hibernate" if (n >= 30 and exp < HIBERNATE_EXP) else (
+        cum = np.cumsum(rs)
+        maxdd = float(min(cum[i] - cum[:i + 1].max() for i in range(len(cum)))) if n else 0.0
+        flag = "hibernate" if ((n >= 30 and exp < HIBERNATE_EXP)
+                               or (n >= 10 and maxdd < -25.0)) else (
             "warn" if (n >= 30 and exp < WARN_EXP) else "ok")
         state["sleeves"][sleeve] = dict(n=n, exp_r=round(exp, 4),
                                         avg_win_r=round(win, 3),
                                         avg_loss_r=round(loss, 3),
+                                        max_dd_r=round(maxdd, 1),
                                         flag=flag)
     STATE.write_text(json.dumps(state, indent=2), encoding="utf-8")
     flags = {s: v["flag"] for s, v in state["sleeves"].items() if v["flag"] != "ok"}

@@ -23,10 +23,10 @@ OUT = Path(r"C:\Users\dell\mt5-research\data\cot_tff")
 OUT.mkdir(parents=True, exist_ok=True)
 YEARS = list(range(2018, 2027))
 
-# (slug, market-name token)
+# Metals are NOT in TFF (financial futures only): gold/silver coverage comes
+# from the legacy (1986+) and disaggregated (2006+) COT reports instead.
+# DXY has no TFF entry (ICE dollar index not reported in this view).
 TARGETS = [
-    ("gold", "GOLD"),
-    ("silver", "SILVER"),
     ("jpy", "JAPANESE YEN"),
     ("eur", "EURO FX"),
     ("gbp", "BRITISH POUND"),
@@ -34,7 +34,6 @@ TARGETS = [
     ("aud", "AUSTRALIAN DOLLAR"),
     ("nzd", "NEW ZEALAND DOLLAR"),
     ("chf", "SWISS FRANC"),
-    ("dxy", "US DOLLAR INDEX"),
     ("sp500", "S&P 500"),
     ("nasdaq100", "NASDAQ"),
 ]

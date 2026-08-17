@@ -15,6 +15,14 @@ proven mechanism pipeline. Every desk competes for research budget; the
 Research-Capital Governor gives compute and capital to whichever market
 (crypto vs MT5) produces the highest marginal validated geometric growth.
 
+**The permanent Governor question** (the closest thing to a maxed quant —
+there is no static final form): *Of every possible data acquisition, alpha
+experiment, execution improvement, portfolio change, infrastructure fix and
+sizing change available right now, which one has the highest expected
+marginal increase in forward net E[log W]? Execute that first, measure it,
+then repeat.* Feature accumulation is the mistake; converting existing
+machinery into real, independent, scalable, forward-proven P&L is the goal.
+
 End state: ONE closed loop —
 `discover information → generate mechanism → falsify → validate → forward-test
 → allocate → execute → measure reality gap → update beliefs → mine failures →
@@ -185,8 +193,9 @@ convention: large parquet mirrors untracked on disk, tracked in registry only.
 ## 8. Standing automation (already wired)
 
 - Weekly universe sweep (hunt7 structure + hunt8 COT + hunt9 survivor-level
-  families) Monday 23:00 UTC after universe refresh; hunt7_state.json freshness
-  guard; results in reports/hunt7.json, hunt8.json, hunt9.json
+  families + free-state lake rebuild + hunt10 state-conditioning ablation
+  + hunt12 mechanism-state sweep) Monday 23:00 UTC after universe refresh;
+  hunt7_state.json freshness guard; results in reports/hunt7..hunt12.json
   (multiplicity-annotated).
 - Daily shadow-forward + promoter at 22:00 UTC + regime/decay monitor
   (regime_state.json, warn/hibernate flags per sleeve).
@@ -212,7 +221,10 @@ convention: large parquet mirrors untracked on disk, tracked in registry only.
 ## 10. Canonical 27-bucket backlog (status)
 
 1. Mechanism mining around proven Gold/JPY family — causal/session
-   decomposition + sibling expansion | P2, flagship §3
+   decomposition + sibling expansion | **v1 RESULT: prior-NY displacement
+   state is the mechanism** — TREND_DAY +0.908R/PF 4.29 (battery PASS),
+   FAILED_BREAK strongly negative (avoid); hunt12 = universe state sweep
+   LIVE; docs/MECHANISM_REPORT_ASIA_GOLD.md
 2. Orthogonal alpha across FX/metals/indices/rates/energy/cross-asset | hunt7
    LIVE; hunt8 (COT) LIVE + verdict: no standalone COT edge; hunt9 (levels)
    LIVE; indices/energy data = Tier-1 fetch pending
@@ -229,7 +241,9 @@ convention: large parquet mirrors untracked on disk, tracked in registry only.
    time stops, re-entry | SEEDED (trade_path.py evidence: TTL-engine,
    16%-losers-at-+1R → H_TP1 trail hypothesis; re-validate before use)
 8. Regime/state models activating only positive-conditional-expectancy
-   sleeves | SEEDED (regime_monitor.py); regime-conditioned params P2
+   sleeves | SEEDED (regime_monitor.py; free state lake + hunt10 ablation:
+   macro_stress_hi / session_expanding / jpy_breadth_strong condition the
+   armed gold book — pending full re-validation + multiplicity)
 9. Change-point/alpha-decay detection + automatic capital rotation | P1
    (regime_monitor + promoter roll20/maxDD/exp monitors + auto-retire)
 10. Hierarchical models sharing info across related sleeves | P3 (JPY basket

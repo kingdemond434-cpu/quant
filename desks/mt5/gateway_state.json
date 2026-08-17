@@ -1,0 +1,33 @@
+{
+  "armed": true,
+  "bracket": {
+    "date": "2026-08-14",
+    "hi": 4364.14,
+    "lo": 4310.94,
+    "spec": {
+      "buy_stop": {
+        "price": 4364.14,
+        "sl": 4310.740000000001,
+        "tp": 4470.54
+      },
+      "sell_stop": {
+        "price": 4310.94,
+        "sl": 4364.339999999999,
+        "tp": 4204.54
+      }
+    },
+    "placed_at": "2026-08-16T14:58:04+00:00",
+    "result": {
+      "shadow": true,
+      "orders": []
+    }
+  },
+  "position": null,
+  "last_bracket_date": "2026-08-17",
+  "last_reconcile": "2026-08-17T00:05:02+00:00",
+  "bracket_cancelled": true,
+  "pending": null,
+  "brackets": {},
+  "lot": 0.06,
+  "equity": 1683.89
+}
