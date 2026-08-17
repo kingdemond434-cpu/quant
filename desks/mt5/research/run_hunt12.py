@@ -27,6 +27,15 @@ from mt5desk.engine import Costs, run_backtest  # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
+
+# MULTIPLICITY, SIZED TO THE SWEEP THAT IS ACTUALLY RUN. This was `E_MAX = 1.5`, a constant
+# copied from hunt11's "E[max of 9 iid normals]" -- but this sweep tests symbols x 4 windows x 4
+# states, which was 352 cells on the 22-symbol universe and grows with every symbol added. The
+# honest bar for 352 cells is E[max t] = 2.93, so the gate demanded t > 3.5 where it should have
+# demanded t > 4.9. Re-judging hunt12's own output at its own sweep size takes 9 survivors to 3.
+#
+# Left as a module-level default ONLY so importers that call battery() directly keep working;
+# main() overrides it with the real grid size before sweeping. See mt5desk.multiplicity.
 E_MAX = 1.5
 WINDOWS = {
     "asia": dict(range_start=7, wait_bars=12, rr=2.0, ttl_bars=12),
@@ -157,7 +166,12 @@ def battery(h1: pd.DataFrame, sigs: list, costs: Costs) -> dict:
 
 
 def main() -> None:
+    global E_MAX
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
+    # SIZE THE CORRECTION TO THE FULL GRID BEFORE SWEEPING A SINGLE CELL. The denominator is
+    # every hypothesis the machine will look at -- including the ones that fail instantly --
+    # because counting only what passed is how a multiplicity correction gets quietly disarmed.
+    E_MAX = deflation(sweep_size(len(meta), len(WINDOWS), len(STATES)))
     log = open(BASE / "logs" / "hunt12_console.txt", "w", encoding="utf-8")
     partial = BASE / "reports" / "hunt12_partial.json"
     done, results = [], []

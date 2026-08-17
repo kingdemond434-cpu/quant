@@ -39,7 +39,7 @@ BASE = Path(__file__).resolve().parent.parent
 REPORTS = BASE / "reports"
 sys.path.insert(0, str(BASE))
 sys.path.insert(0, str(BASE / "research"))
-sys.path.insert(0, str(Path(r"C:\Users\dell\quant-platform")))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))  # quant repo root: libs/validation lives there
 
 from libs.validation.cpcv import CPCV  # noqa: E402
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E402
@@ -165,6 +165,11 @@ def main() -> int:
                 save_cache()
                 print(f"matrix hunt{hunt}: {ci + 1}/{len(cells)} cells "
                       f"({len(daily_cache)} cached)", flush=True)
+        # An EMPTY family is not a zero-width matrix -- it is a family that was not swept.
+        # np.column_stack on [] raises, and min() on [] raises, so both are surfaced as an
+        # explicit empty result rather than a traceback that looks like a code fault.
+        if not cols:
+            return np.empty((0, 0)), []
         min_len = min(len(a) for a in cols)
         matrix = np.column_stack([a[-min_len:] for a in cols])
         return matrix, col_meta
@@ -181,9 +186,14 @@ def main() -> int:
 
     print("program-level: PBO + SPA on full trial matrices...", flush=True)
     pbo12 = probability_backtest_overfitting(m12)
-    pbo16 = probability_backtest_overfitting(m16)
+    # hunt16 may be unswept (empty matrix). PBO/SPA on nothing is not "clean" -- it is
+    # UNMEASURED, so it fails closed: pbo=1.0 and p=1.0 deny admission rather than granting it.
+    class _NullStat:
+        pbo = 1.0
+        p_value = 1.0
+    pbo16 = probability_backtest_overfitting(m16) if m16.size else _NullStat()
     spa12 = hansen_spa(m12)
-    spa16 = hansen_spa(m16)
+    spa16 = hansen_spa(m16) if m16.size else _NullStat()
     print(f"hunt12 PBO={pbo12.pbo:.3f} SPA p={spa12.p_value:.3f} | "
           f"hunt16 PBO={pbo16.pbo:.3f} SPA p={spa16.p_value:.3f}", flush=True)
 
