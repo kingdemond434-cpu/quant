@@ -26,7 +26,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from portfolio_projection import build_daily, build_sleeves  # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
-Q_TOTAL = 0.055
+
+# THE DESK HAS ONE RISK BUDGET AND IT LIVES IN THE GATEWAY. This read 0.055 -- the old
+# ~92%-of-Kelly setting -- while gateway.Q_OPT was moved to 0.0075, so the allocator was
+# optimising and reporting a book at seven times the risk the account actually runs. Two files
+# disagreeing about the risk budget is how a superseded number gets quoted back as evidence.
+# Imported rather than copied, so it can never drift again.
+try:
+    from mt5desk.gateway import Q_OPT as Q_TOTAL          # noqa: E402
+except Exception:                                          # MetaTrader5 absent (research boxes)
+    from mt5desk.gateway_config_fallback import Q_OPT as Q_TOTAL  # type: ignore  # noqa: E402
 LR = 5e-3
 ITERS = 4000
 
@@ -40,7 +49,7 @@ def main() -> None:
             time.sleep(60)
     sleeves = build_sleeves()
     daily = build_daily(sleeves)
-    R = np.nan_to_num(daily.to_numpy(dtype=float), nan=0.0)
+    R = daily.to_numpy(dtype=float)
     names = list(daily.columns)
 
     w = np.full(len(names), 1.0 / len(names))
@@ -60,8 +69,8 @@ def main() -> None:
         if lg > best_g:
             best_g, best_w = lg, w.copy()
 
-    port_eq = daily.fillna(0.0).sum(axis=1)
-    port_opt = daily.fillna(0.0) @ best_w
+    port_eq = daily.sum(axis=1)
+    port_opt = daily @ best_w
     sh_eq = port_eq.mean() / port_eq.std(ddof=1) * np.sqrt(252)
     sh_opt = port_opt.mean() / port_opt.std(ddof=1) * np.sqrt(252)
 
@@ -74,8 +83,8 @@ def main() -> None:
     order = np.argsort(-best_w)
     print(f"{'sleeve':<26} {'weight':>8} {'annSharpe(w)':>12}")
     for i in order:
-        s = daily[names[i]].dropna()
-        ann = s.mean() / s.std(ddof=1) * np.sqrt(252) if len(s) > 1 and s.std(ddof=1) > 0 else 0
+        s = daily[names[i]]
+        ann = s.mean() / s.std(ddof=1) * np.sqrt(252) if s.std(ddof=1) > 0 else 0
         print(f"{names[i]:<26} {best_w[i]:8.4f} {ann:12.2f}")
 
     print(f"\nq_total={Q_TOTAL}:")

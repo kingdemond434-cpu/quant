@@ -18,9 +18,10 @@ import urllib.request
 from pathlib import Path
 
 import pandas as pd
+from mt5desk.config import DATA, REPORTS, desk_root  # noqa: E402
 
 BASE = "https://publicreporting.cftc.gov/resource/6dca-aqww.json"
-OUT = Path(r"C:\Users\dell\mt5-research\data\cot")
+OUT = DATA / "cot"
 OUT.mkdir(parents=True, exist_ok=True)
 
 SELECT = (
@@ -116,7 +117,7 @@ def main() -> None:
     g = OUT / "gold.parquet"
     if g.exists():
         import shutil
-        shutil.copy(g, Path(r"C:\Users\dell\mt5-research\data\cot_gold.parquet"))
+        shutil.copy(g, DATA / "cot_gold.parquet")
         print("legacy cot_gold.parquet refreshed")
 
 
