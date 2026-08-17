@@ -41,7 +41,7 @@ TARGETS = [
          marker="reports/DONE_fragility", match="fragility.py"),
     dict(name="qquant_gates",
          python=r"C:\Users\dell\quant-platform\.venv\Scripts\python.exe",
-         args=["-u", "-W", "ignore", "research/qquant_gates.py"],
+         args=["-u", "-W", "ignore", "research/qquant_gates.py", "--workers", "8"],
          marker="reports/DONE_qquant_gates", match="qquant_gates.py"),
     dict(name="regime_oos", args=["-u", "-W", "ignore", "research/regime_discovery.py"],
          marker="reports/DONE_regime_oos", match="regime_discovery.py"),
@@ -57,16 +57,28 @@ TARGETS = [
          marker="reports/DONE_hunt21", match="run_hunt21.py"),
     dict(name="hunt22", args=["-u", "-W", "ignore", "research/run_hunt22.py"],
          marker="reports/DONE_hunt22", match="run_hunt22.py"),
+    dict(name="hunt23", args=["-u", "-W", "ignore", "research/run_hunt23.py"],
+         marker="reports/DONE_hunt23", match="run_hunt23.py"),
+    dict(name="macro_desk", args=["-u", "-W", "ignore", "research/macro_desk.py"],
+         marker="reports/DONE_macro_never", match="macro_desk.py"),
+    dict(name="options_desk", args=["-u", "-W", "ignore", "research/options_desk.py"],
+         marker="reports/DONE_options_never", match="options_desk.py"),
+    dict(name="crowding_miner", args=["-u", "-W", "ignore", "research/crowding_miner.py"],
+         marker="reports/DONE_crowding_never", match="crowding_miner.py"),
     dict(name="news_desk", args=["-u", "-W", "ignore", "research/news_desk.py"],
          marker="reports/DONE_news_final", match="news_desk.py"),
     dict(name="universal",
          python=r"C:\Users\dell\quant-platform\.venv\Scripts\python.exe",
          args=["-u", "-W", "ignore", "research/universal_gate.py"],
-         marker="reports/DONE_universal_hunt22", match="universal_gate.py"),
+         marker="reports/DONE_universal_hunt23", match="universal_gate.py"),
     dict(name="meta_desk",
-         python=r"C:\Users\dell\quant-platform\.venv\Scripts\python.exe",
-         args=["-u", "-W", "ignore", "research/meta_desk.py"],
-         marker="reports/DONE_meta", match="meta_desk.py"),
+python=r"C:\Users\dell\quant-platform\.venv\Scripts\python.exe",
+          args=["-u", "-W", "ignore", "research/meta_desk.py"],
+          marker="reports/DONE_meta", match="meta_desk.py"),
+    dict(name="allocation",
+          python=r"C:\Users\dell\quant-platform\.venv\Scripts\python.exe",
+          args=["-u", "-W", "ignore", "research/allocation.py"],
+          marker="reports/DONE_allocation", match="allocation.py"),
 ]
 
 
@@ -75,6 +87,9 @@ def log(msg: str) -> None:
     print(line, flush=True)
     with open(LOG, "a", encoding="utf-8") as f:
         f.write(line + "\n")
+
+
+CHILD_LOGS = Path(r"C:\Users\dell\AppData\Local\Temp\opencode\logs")
 
 
 def is_running(match: str) -> bool:
@@ -125,6 +140,8 @@ def main() -> int:
             return 0
         now = time.time()
         for t in TARGETS:
+            if (BASE / "data" / f"HOLD_{t['name']}").exists():
+                continue
             if (BASE / t["marker"]).exists():
                 continue
             if is_running(t["match"]):
@@ -136,7 +153,8 @@ def main() -> int:
                     f"{datetime.fromtimestamp(last + 1800, timezone.utc).isoformat()}")
                 continue
             try:
-                sl = open(LOGS / f"{t['name']}_super.log", "ab")
+                CHILD_LOGS.mkdir(parents=True, exist_ok=True)
+                sl = open(CHILD_LOGS / f"{t['name']}_super.log", "ab")
                 py = t.get("python") or PYW
                 proc = subprocess.Popen(
                     [str(py)] + t["args"], cwd=str(BASE),

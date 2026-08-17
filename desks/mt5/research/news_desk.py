@@ -44,10 +44,57 @@ def log(msg: str) -> None:
         f.write(line + "\n")
 
 
+def poll_official_rss() -> int:
+    """Poll FREE official-government RSS feeds (Fed/BLS/ECB/BOJ/BOE/SNB) and
+    record every headline with the four clocks. No invented data: only items
+    that actually appeared in a first-party feed. Deduped by guid/link/title."""
+    import free_data as fd
+    seen = set()
+    if CAPTURES.exists():
+        try:
+            for line in CAPTURES.read_text("utf-8").splitlines():
+                try:
+                    e = json.loads(line)
+                    seen.add(e.get("key", ""))
+                except Exception:
+                    pass
+        except Exception:
+            pass
+    new = 0
+    for src, url in fd.RSS_FEEDS.items():
+        for item in fd.rss_fetch(url):
+            title = item.get("title", "").strip()
+            link = item.get("link", "").strip() or item.get("guid", "").strip()
+            key = f"{src}:{title[:80]}:{link[:120]}"
+            if not title or key in seen:
+                continue
+            happened = item.get("pubDate") or item.get("published") or item.get("updated")
+            rec = {
+                "key": key, "source": src, "title": title, "url": link,
+                "happened_at": happened,
+                "published_at": happened,
+                "received_at": datetime.now(timezone.utc).isoformat(),
+                "processed_at": datetime.now(timezone.utc).isoformat(),
+                "lane": "deep",  # RSS headlines -> deep lane (no LLM in capture path)
+                "raw": True,
+            }
+            with open(CAPTURES, "a", encoding="utf-8") as f:
+                f.write(json.dumps(rec) + "\n")
+            seen.add(key)
+            new += 1
+    if new:
+        log(f"RSS capture: {new} new first-party headlines stored")
+    return new
+
+
 def main() -> None:
     log("news desk ready. schedule empty (licensed calendar source pending); "
         "capture activates after Fusion gateway go-live.")
     while True:
+        try:
+            poll_official_rss()
+        except Exception as ex:
+            log(f"rss poll error: {ex!r}")
         if SCHEDULE.exists():
             try:
                 events = json.loads(SCHEDULE.read_text("utf-8"))

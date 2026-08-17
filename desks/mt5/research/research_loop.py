@@ -48,6 +48,37 @@ def log(msg: str) -> None:
         f.write(line + "\n")
 
 
+def until_next_hour() -> float:
+    now = datetime.now(timezone.utc)
+    nxt = now.replace(minute=0, second=0, microsecond=0)
+    nxt = nxt.replace(hour=nxt.hour + 1)
+    return min(3600.0, max(60.0, (nxt - now).total_seconds()))
+
+
+def hourly_demo_snapshot() -> None:
+    """Hourly hypothesis->demo ledger: queue state + latest hunt18 battery demos."""
+    q = load_queue()
+    counts: dict[str, int] = {}
+    for it in q:
+        counts[it.get("status", "?")] = counts.get(it.get("status", "?"), 0) + 1
+    done = sorted(REPORTS.glob("DONE_loop_*"))
+    demos = []
+    for f in sorted(REPORTS.glob("hunt18_*.json"))[-8:]:
+        try:
+            d = json.loads(f.read_text("utf-8"))
+            demos.append({"id": f.stem,
+                          "survivors": len(d.get("survivors", [])),
+                          "cells": len(d.get("all", []))})
+        except Exception:
+            pass
+    row = {"ts": datetime.now(timezone.utc).isoformat(),
+           "queue": counts, "queued_pending": int(next_pending() is not None),
+           "experiments_done": len(done), "recent_demos": demos}
+    with open(REPORTS / "hypothesis_demo.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps(row) + "\n")
+    log(f"hourly demo snapshot: queue={counts} done={len(done)}")
+
+
 def run_experiment(item: dict) -> int:
     exp_id = item["id"]
     log(f"starting {exp_id}: {item.get('family')} {item.get('side')} "
@@ -64,12 +95,13 @@ def run_experiment(item: dict) -> int:
 
 
 def main() -> int:
-    log("research_loop started")
+    log("research_loop started (hourly hypothesis->demo cadence)")
     while True:
         item = next_pending()
         if item is None:
-            log("queue empty — sleeping 300s")
-            time.sleep(300)
+            log(f"queue empty — next hourly tick in {until_next_hour():.0f}s")
+            time.sleep(until_next_hour())
+            hourly_demo_snapshot()
             continue
         run_experiment(item)
         try:
@@ -77,7 +109,9 @@ def main() -> int:
                            cwd=str(BASE), capture_output=True, text=True, timeout=600)
         except Exception as e:
             log(f"diagnose failed: {e!r}")
-        time.sleep(5)
+        hourly_demo_snapshot()
+        log(f"next hourly tick in {until_next_hour():.0f}s")
+        time.sleep(until_next_hour())
 
 
 if __name__ == "__main__":

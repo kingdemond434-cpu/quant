@@ -104,13 +104,19 @@ def main() -> int:
     dsr12 = dsr_for_hunt("hunt12.json")
     dsr16 = dsr_for_hunt("hunt16.json")
     h1_cache: dict[str, pd.DataFrame] = {}
-    daily_cache: dict[str, pd.DataFrame] = {}
+    states_cache: dict[str, dict] = {}
+    daily_cache: dict[str, pd.Series] = {}
 
     def symbol_h1(sym: str) -> pd.DataFrame:
         if sym not in h1_cache:
             h1_cache[sym] = families._h1(
                 pd.read_parquet(BASE / "data" / "universe" / f"{sym}_H1.parquet"))
         return h1_cache[sym]
+
+    def symbol_states(sym: str) -> dict:
+        if sym not in states_cache:
+            states_cache[sym] = day_states(symbol_h1(sym))
+        return states_cache[sym]
 
     def costs_for(sym: str) -> Costs:
         m = meta.get(sym, {})
@@ -124,7 +130,7 @@ def main() -> int:
         if key in daily_cache:
             return daily_cache[key]
         h1 = symbol_h1(sym)
-        states = day_states(h1)
+        states = symbol_states(sym)
         if hunt == "hunt12.json":
             sigs = families.family_session_range_breakout(h1, **W12[row["win"]])
             sdays = [pd.Timestamp(s.time).date() for s in sigs]
@@ -147,7 +153,9 @@ def main() -> int:
         if sym not in mkt_cache:
             h1 = symbol_h1(sym)
             c = pd.Series(h1["close"].to_numpy(float), index=h1.index)
-            mkt_cache[sym] = np.log(c).diff().resample("D").sum().dropna()
+            mk = np.log(c).diff().resample("D").sum().dropna()
+            mk.index = mk.index.tz_localize(None)
+            mkt_cache[sym] = mk
         return mkt_cache[sym]
 
     rows = sv["real_survivors"]
