@@ -60,3 +60,11 @@ Method: every claimed capability checked as CODE (exists) + WIRED (scheduled/lau
 - Fusion go-live remains blocked on user install + EUR300 deposit (tomorrow).
 - MARGINAL_ELOGW score fields and full 182-population orthogonality sleeve list: next queue after merge.
 - VPS sync pending (last verified commit f1943219; force sync after this audit).
+## Audit row 34 (08-17 16:30 UTC)
+- qquant_gates fully parallel (8 workers): 697 cell series DONE (1150s), program-level PBO+SPA running; old serial path (332/18548) killed; cache removed.
+- hunt23 rerun DONE: 8 cells (XAUUSD gold_dxy_resid/gold_yield_lag, AUDCAD cad_oil_lag, USDCAD usdcad_oil_lag; jpy_risk_lag 28/47 n<60 skipped). TZ bug fixed (anchor naive vs UTC resample) - lag families now fire.
+- Fragility (REAL2) SKIPPED per user directive (16:2x) - universal gate covers DSR/fragility equivalence; DONE_fragility marked skipped.
+- options_desk LIVE: Deribit BTC/ETH surfaces via instrument_name parse; archive 2 rows (16:01).
+- macro_desk LIVE: FRED states + ALFRED PIT lake + cross_asset_anchors.pkl (4232x11) each cycle.
+- crowding_miner LIVE: crowding_state.json (first cycle: gh_stars empty - GitHub unauth search degraded, LOW publicity).
+- news_desk: poll_official_rss() added (4 clocks, dedupe, deep lane).

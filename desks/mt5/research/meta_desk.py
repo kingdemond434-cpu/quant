@@ -406,7 +406,8 @@ def item15_failure_mutation(daily: dict[str, pd.Series]) -> dict:
 def main() -> None:
     wait_for([REPORTS / "DONE_merge", REPORTS / "DONE_universal_hunt17",
               REPORTS / "DONE_universal_hunt19", REPORTS / "DONE_universal_hunt20",
-              REPORTS / "DONE_universal_hunt21", REPORTS / "DONE_universal_hunt22"],
+              REPORTS / "DONE_universal_hunt21", REPORTS / "DONE_universal_hunt22",
+              REPORTS / "DONE_universal_hunt23"],
              "merge + universal gauntlet")
     tprint("meta desk: computing the 15 final items", flush=True)
     daily = survivor_daily()

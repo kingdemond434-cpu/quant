@@ -65,13 +65,14 @@ COST_SCENARIO = 3.0
 GATES = ["economic_prior", "in_sample_screen", "deflated_sharpe", "pbo",
          "reality_check_spa", "cpcv", "walk_forward", "stress_costs",
          "lockbox", "expected_value"]
-HUNTS = ["hunt17", "hunt19", "hunt20", "hunt21", "hunt22"]
+HUNTS = ["hunt17", "hunt19", "hunt20", "hunt21", "hunt22", "hunt23"]
 GATE_MODULES = {  # hunt -> module + report file
     "hunt17": ("run_hunt17", "hunt17.json"),
     "hunt19": ("run_hunt19", "hunt19.json"),
     "hunt20": ("run_hunt20", "hunt20.json"),
     "hunt21": ("run_hunt21", "hunt21.json"),
     "hunt22": ("run_hunt22", "hunt22.json"),
+    "hunt23": ("run_hunt23", "hunt23.json"),
 }
 
 
@@ -138,14 +139,69 @@ def iter_hunt_cells(modname: str, meta: dict) -> list[Cell]:
     return out
 
 
+def _ug_daily(args) -> pd.Series:
+    df, sigs, costs = args
+    return daily_series(df, sigs, costs)
+
+
+def _ug_verdict(args) -> dict:
+    cid, sym, arr, arr_x3, pbo_ok, pbo_val, spa_ok, spa_p, n_trials, sh_var = args
+    arr = np.asarray(arr, dtype=float)
+    if len(arr) < 60:
+        return {"cell": cid, "error": "series too short"}
+    sr = sharpe_ratio(arr)
+    stages = {
+        "economic_prior": {"passed": True, "message": "mechanism documented at hunt registration"},
+        "in_sample_screen": {"passed": bool(sr > 0.0), "sharpe": round(float(sr), 4)},
+    }
+    dsr = deflated_sharpe_ratio(arr, n_trials=n_trials,
+                                variance_of_sharpes=float(sh_var), threshold=DSR_THRESHOLD)
+    stages["deflated_sharpe"] = {"passed": bool(dsr.passed), "dsr": round(float(dsr.dsr), 4),
+                                 "sr0": round(float(dsr.sr0_threshold), 4), "n_trials": n_trials}
+    stages["pbo"] = {"passed": pbo_ok, "pbo": round(float(pbo_val), 4)}
+    stages["reality_check_spa"] = {"passed": spa_ok, "p_value": round(float(spa_p), 4)}
+    cpcv = CPCV(n_groups=6, n_test_groups=2)
+    oos = []
+    for split in cpcv.split(len(arr)):
+        te = np.asarray(split.test)
+        if len(te) >= 30:
+            oos.append(sharpe_ratio(arr[te]))
+    cpcv_mean = float(np.mean(oos)) if oos else 0.0
+    stages["cpcv"] = {"passed": bool(cpcv_mean > 0.0), "mean_oos_sharpe": round(cpcv_mean, 4),
+                      "folds": len(oos)}
+    try:
+        wf = WalkForwardEngine().evaluate(arr, n_splits=WF_SPLITS,
+                                          test_size=max(20, len(arr) // 6),
+                                          min_oos_sharpe=0.0, min_stability=WF_MIN_STABILITY)
+        wf_status = wf.status
+        wf_oos = float(wf.oos_sharpe)
+        wf_stab = float(wf.stability)
+    except Exception:
+        wf_status, wf_oos, wf_stab = "TOO_SHORT", float("-inf"), 0.0
+    stages["walk_forward"] = {"passed": bool(wf_status is WalkForwardStatus.PASSED),
+                              "oos_sharpe": round(wf_oos, 4),
+                              "stability": round(wf_stab, 4)}
+    exp3 = float(np.asarray(arr_x3, dtype=float).mean()) if len(arr_x3) else 0.0
+    stages["stress_costs"] = {"passed": bool(exp3 > 0.0), "exp_x3": round(exp3, 4)}
+    stages["lockbox"] = {"passed": bool(wf_oos >= 0.0),
+                         "lockbox_sharpe": round(wf_oos, 4)}
+    ev = float(arr.mean())
+    stages["expected_value"] = {"passed": bool(ev > 0.0), "ev": round(ev, 4)}
+    return {"cell": cid, "sym": sym, "days": len(arr),
+            "passed": all(s["passed"] for s in stages.values()),
+            "stages": stages}
+
+
 def gauntlet(cells: list[Cell], hunt: str) -> dict:
-    daily: list[pd.Series] = []
-    daily_x3: list[pd.Series] = []
-    for c in cells:
-        daily.append(daily_series(c.df, c.sigs, c.costs))
-        daily_x3.append(daily_series(c.df, c.sigs, Costs(c.costs.spread_per_lot * COST_SCENARIO,
-                                                         c.costs.commission_per_lot * COST_SCENARIO,
-                                                         c.costs.contract_oz)))
+    import multiprocessing as mp
+    workers = min(8, len(cells) or 1)
+    with mp.Pool(workers) as pool:
+        daily = list(pool.map(_ug_daily, [
+            (c.df, c.sigs, c.costs) for c in cells]))
+        daily_x3 = list(pool.map(_ug_daily, [
+            (c.df, c.sigs, Costs(c.costs.spread_per_lot * COST_SCENARIO,
+                                 c.costs.commission_per_lot * COST_SCENARIO,
+                                 c.costs.contract_oz)) for c in cells]))
     cols = [s.to_numpy(float) for s in daily]
     cols = [a for a in cols if len(a) >= 60]
     if not cols:
@@ -161,49 +217,19 @@ def gauntlet(cells: list[Cell], hunt: str) -> dict:
     print(f"  {hunt}: matrix {matrix.shape} PBO={float(pbo.pbo):.3f} "
           f"SPA p={float(spa.p_value):.4f} n_trials={n_trials}", flush=True)
 
-    verdicts = []
+    args = []
     for k, c in enumerate(cells):
         arr = daily[k].to_numpy(float)
         if len(arr) < 60:
-            verdicts.append({"cell": c.id, "error": "series too short"})
+            args.append((c.id, c.sym, np.array([]), np.array([]),
+                         pbo_ok, float(pbo.pbo), spa_ok, float(spa.p_value),
+                         n_trials, float(sharpes.var(ddof=1))))
             continue
-        sr = sharpe_ratio(arr)
-        stages = {
-            "economic_prior": {"passed": True, "message": "mechanism documented at hunt registration"},
-            "in_sample_screen": {"passed": bool(sr > 0.0), "sharpe": round(float(sr), 4)},
-        }
-        dsr = deflated_sharpe_ratio(arr, n_trials=n_trials,
-                                    variance_of_sharpes=float(sharpes.var(ddof=1)),
-                                    threshold=DSR_THRESHOLD)
-        stages["deflated_sharpe"] = {"passed": bool(dsr.passed), "dsr": round(float(dsr.dsr), 4),
-                                     "sr0": round(float(dsr.sr0_threshold), 4), "n_trials": n_trials}
-        stages["pbo"] = {"passed": pbo_ok, "pbo": round(float(pbo.pbo), 4)}
-        stages["reality_check_spa"] = {"passed": spa_ok, "p_value": round(float(spa.p_value), 4)}
-        cpcv = CPCV(n_groups=6, n_test_groups=2)
-        oos = []
-        for split in cpcv.split(len(arr)):
-            te = np.asarray(split.test)
-            if len(te) >= 30:
-                oos.append(sharpe_ratio(arr[te]))
-        cpcv_mean = float(np.mean(oos)) if oos else 0.0
-        stages["cpcv"] = {"passed": bool(cpcv_mean > 0.0), "mean_oos_sharpe": round(cpcv_mean, 4),
-                          "folds": len(oos)}
-        wf = WalkForwardEngine().evaluate(arr, n_splits=WF_SPLITS,
-                                          test_size=max(20, len(arr) // 6),
-                                          min_oos_sharpe=0.0, min_stability=WF_MIN_STABILITY)
-        stages["walk_forward"] = {"passed": bool(wf.status is WalkForwardStatus.PASSED),
-                                  "oos_sharpe": round(float(wf.oos_sharpe), 4),
-                                  "stability": round(float(wf.stability), 4)}
-        exp3 = float(daily_x3[k].mean()) if len(daily_x3[k]) else 0.0
-        stages["stress_costs"] = {"passed": bool(exp3 > 0.0), "exp_x3": round(exp3, 4)}
-        stages["lockbox"] = {"passed": bool(float(wf.oos_sharpe) >= 0.0),
-                             "lockbox_sharpe": round(float(wf.oos_sharpe), 4)}
-        ev = float(arr.mean())
-        stages["expected_value"] = {"passed": bool(ev > 0.0), "ev": round(ev, 4)}
-        verdicts.append({"cell": c.id, "sym": c.sym, "days": len(arr),
-                         "passed": all(s["passed"] for s in stages.values()),
-                         "stages": stages})
-
+        args.append((c.id, c.sym, arr, daily_x3[k].to_numpy(float),
+                     pbo_ok, float(pbo.pbo), spa_ok, float(spa.p_value),
+                     n_trials, float(sharpes.var(ddof=1))))
+    with mp.Pool(workers) as pool:
+        verdicts = list(pool.map(_ug_verdict, args))
     gate_fails: dict[str, int] = {}
     for v in verdicts:
         for name, s in v.get("stages", {}).items():

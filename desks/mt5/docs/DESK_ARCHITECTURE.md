@@ -37,7 +37,7 @@ MEASURED BY INCREMENTAL E[log W]
 - cross-sectional FX ............ 22-sym universe + pairs (gate: universal)
 - commodities/physical flows .... XAU/XAG/XAU factors (gate: universal); physical flow data QUEUED
 - crypto/on-chain ............... BTCUSD/ETHUSD in universe; on-chain data QUEUED
-- alternative data .............. GLOBAL_GOLD mandate; externally QUEUED
+- alternative data .............. GLOBAL_GOLD mandate; FREE sources LIVE: research/free_data.py (FRED/ALFRED vintage, Deribit, Yahoo chart, official RSS, GitHub, Reddit) feeding macro_desk, options_desk, crowding_miner (crowding_state.json)
 - regime transitions ............ fragility.py (REAL2) RUNNING + meta_desk item 6
 - crisis/convexity .............. Turtle crisis sleeve SALEH_xxx, dav crisis families (gate: universal)
 - multi-horizon ................. M15/H1/H4/D1 tiers in hunts + forward clock (gate: universal)
@@ -50,7 +50,7 @@ MEASURED BY INCREMENTAL E[log W]
 
 ## Meta-desk items (research/meta_desk.py, spawns after DONE_merge + DONE_universal_*)
 1 opportunity_density (risk mult) | 2 impact_network (lead-lag edges) |
-3 participant_inference (heuristic) | 4 options_implied QUEUED | 5 policy_path QUEUED |
+3 participant_inference (heuristic) | 4 options_implied DATA (Deribit live) | 5 policy_path DATA (FRED states live) |
 6 drawdown_forecast | 7 crowding (internal proxies) | 8 alpha_stack (sizing) |
 9 synthetic_discovery (stationarity scan) | 10 capacity_ladder | 11 decay_detector |
 12 counterfactual_learner | 13 info_value_allocator | 14 market_model_errors |
