@@ -165,6 +165,33 @@ def auto_lot(equity: float) -> float:
     return float(min(max(lot, 0.01), 5.0))
 
 
+#: Maximum fraction of equity this desk will put at risk across ALL sleeves on one day.
+#:
+#: THERE WAS NO PORTFOLIO CAP AT ALL. Every sleeve was sized on its own -- promoted ones at a
+#: fixed 0.01 lot, which at EUR 1,684 equity is 1.04% each -- and `load_sleeves()` returned every
+#: LIVE sleeve with no count or aggregate limit. The shadow set is ten sleeves. Ten promoted
+#: sleeves bracketing the same morning is ~10% of the account at risk in one session, and nothing
+#: in the code prevented it. Per-sleeve risk control is not risk control: correlated sleeves fire
+#: together precisely in the regimes that hurt, which is when the cap is needed.
+#:
+#: SIZED SO THE VALIDATED CORE FITS AND ADDITIONS MUST BE EARNED. The first value tried here was
+#: 3%, and its own test rejected it: at EUR 1,684 the 0.01 lot floor puts each sleeve at 1.04%, so
+#: the three-leg gold book is 3.12% and a 3% cap would have dropped `gold_afternoon` -- amputating
+#: a leg of the one book with walk-forward evidence and human authorisation behind it, to enforce
+#: a number chosen by round figure. A cap exists to stop unproven sleeves STACKING, not to
+#: dismember the proven book.
+#:
+#: 4% admits exactly the armed gold book at today's equity and nothing else. Every additional
+#: sleeve therefore has to be paid for by equity GROWTH -- as the account rises the 0.01 floor
+#: falls as a fraction and more sleeves fit, which is the correct order: capital first, then
+#: breadth. At EUR 2,343 five sleeves fit; at EUR 8,000, six.
+#:
+#: Deliberately a HEAT budget rather than a sleeve count. A count would let total risk grow
+#: silently as equity FALLS, because the fixed 0.01 lot becomes a larger fraction of a smaller
+#: account -- risk rising exactly when the account can least afford it.
+MAX_PORTFOLIO_HEAT = 0.04
+
+
 def load_sleeves() -> list[dict]:
     """Promoted sleeves from data/sleeves.json (writer: research/promoter.py)."""
     if not SLEEVES_FILE.exists():
@@ -174,6 +201,33 @@ def load_sleeves() -> list[dict]:
         return [s for s in data.get("sleeves", []) if s.get("status") == "LIVE"]
     except Exception:
         return []
+
+
+def cap_by_heat(sleeves: list[dict], equity: float,
+                per_sleeve_q: float | None = None) -> tuple[list[dict], str | None]:
+    """Trim `sleeves` so their combined risk stays inside MAX_PORTFOLIO_HEAT.
+
+    Returns the admitted sleeves and a note when anything was dropped, because a silently
+    shortened book is indistinguishable from a book that had nothing to trade.
+
+    ORDER IS PRESERVED, so the caller's own priority decides who is dropped -- and the gold book
+    is placed first by `sleeve_set()`, which makes the armed, human-authorised sleeves senior to
+    anything the promoter added on its own. A cap that dropped sleeves arbitrarily could silently
+    retire the one book with forward evidence behind it in favour of three that have none.
+    """
+    if equity <= 0 or not sleeves:
+        return list(sleeves), None
+    q = per_sleeve_q if per_sleeve_q is not None else realised_q(equity)
+    if q <= 0:
+        return list(sleeves), None
+    room = int(MAX_PORTFOLIO_HEAT / q)
+    if room >= len(sleeves):
+        return list(sleeves), None
+    dropped = [s.get("name", "?") for s in sleeves[max(room, 0):]]
+    note = (f"PORTFOLIO HEAT CAP: {len(sleeves)} sleeves x {q:.2%} = "
+            f"{len(sleeves) * q:.1%} exceeds {MAX_PORTFOLIO_HEAT:.0%}; "
+            f"admitting {max(room, 0)}, deferring {dropped}")
+    return sleeves[:max(room, 0)], note
 
 
 def regime_hibernate(sleeves: list[dict]) -> set[str]:
@@ -461,6 +515,11 @@ def main() -> None:
         sleeves = [s for s in sleeves if s["name"].startswith("gold_")]
         if load_sleeves():
             log(f"equity {equity:.0f} < {PROMOTED_MIN_EQUITY:.0f}: promoted sleeves dormant")
+    # AGGREGATE HEAT, applied after every other filter so it sees the sleeves that would really
+    # trade. Deferred sleeves are named in the log rather than dropped quietly.
+    sleeves, heat_note = cap_by_heat(sleeves, equity)
+    if heat_note:
+        log(heat_note)
     if st["last_bracket_date"] == day_key:
         for s in sleeves:
             if st["brackets"].get(s["name"]):
