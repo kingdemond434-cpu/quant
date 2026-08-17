@@ -102,8 +102,20 @@ def fetch_vintages(series_id: str, key: str, timeout: int = 60) -> pd.DataFrame 
     one row per observation date. That is the whole revision history in a single request, which
     matters because the alternative is one request per vintage per series.
     """
+    # THE REALTIME SPAN IS NOT OPTIONAL, and omitting it fails SILENTLY in the worst possible
+    # way. `output_type=2` asks for observations by vintage date, but FRED defaults
+    # realtime_start and realtime_end to TODAY -- so the response contains exactly one vintage,
+    # today's, which is the fully revised series this module exists to refuse. It returns 200,
+    # parses cleanly, writes a file, and reports success.
+    #
+    # The tell was the release lag: 14,575 days for CPI. That is not a publication delay, it is
+    # 1947 to today -- the distance from the oldest observation to the only vintage present.
+    # A number that absurd is the file saying it has one vintage without knowing how to say so.
     r = requests.get(API, params={"series_id": series_id, "api_key": key,
-                                  "file_type": "json", "output_type": 2}, timeout=timeout)
+                                  "file_type": "json", "output_type": 2,
+                                  "realtime_start": "1776-07-04",   # FRED's minimum
+                                  "realtime_end": "9999-12-31"},    # FRED's maximum
+                     timeout=timeout)
     if r.status_code != 200:
         print(f"  {series_id}: HTTP {r.status_code} {r.text[:120]}", flush=True)
         return None
@@ -203,12 +215,30 @@ def main(argv: list[str] | None = None) -> int:
         if df is None or df.empty:
             failed.append(sid)
             continue
-        df.to_parquet(OUT / f"{sid}.parquet", index=False)
-        lags[sid] = release_lag(df)
-        written += 1
         n_vint = df["realtime_date"].nunique()
+        lag = release_lag(df)
+        # A SINGLE VINTAGE IS A FAILED FETCH, NOT A NEVER-REVISED SERIES. Every series in SERIES
+        # was chosen BECAUSE revision bites it -- GDP, payrolls, CPI are revised for years. One
+        # vintage means the request returned the current revision, which is precisely the data
+        # this module refuses. Rejected rather than written, because a revised series sitting in
+        # the point-in-time lake is a silent lookahead in every backtest that reads it.
+        if n_vint < 2:
+            failed.append(sid)
+            print(f"  {sid}: REJECTED -- only {n_vint} vintage returned. This is the revised "
+                  f"series, not a point-in-time history. Not written.", flush=True)
+            continue
+        # Same check from the other side: a first-print lag of decades is arithmetic on a single
+        # vintage, not a publication delay. Monthly data prints within ~60 days; quarterly ~120.
+        if lag and lag.get("median_days", 0) > 400:
+            failed.append(sid)
+            print(f"  {sid}: REJECTED -- median release lag {lag['median_days']:.0f}d is not a "
+                  f"publication delay. The vintage history is wrong. Not written.", flush=True)
+            continue
+        df.to_parquet(OUT / f"{sid}.parquet", index=False)
+        lags[sid] = lag
+        written += 1
         print(f"  {sid}: {len(df):,} rows, {n_vint} vintages, "
-              f"median release lag {lags[sid].get('median_days', float('nan')):.0f}d", flush=True)
+              f"median release lag {lag.get('median_days', float('nan')):.0f}d", flush=True)
 
     report.update({"status": "OK" if written else "EMPTY", "written": written,
                    "failed": failed, "release_lag_days": lags,

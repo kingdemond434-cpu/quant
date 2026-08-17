@@ -205,3 +205,8 @@ reports/principal_drop.json
 # the shadow step. Committing a stamp written on a research box would make the execution box pull
 # it, see the day as done, and skip the one run that matters.
 desks/mt5/data/daily_cycle_state.json
+
+# CREDENTIALS. Never tracked. secrets/ was NOT ignored until 2026-08-17 -- a FRED API key
+# landed there and `git check-ignore` returned no match, meaning one `git add -A` would have
+# committed it. Any key that has been in this directory on an unignored commit is burned.
+secrets/
