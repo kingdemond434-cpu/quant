@@ -196,6 +196,18 @@ def main() -> int:
                              "t": round(st["t_stat"], 2), "pf": round(st["profit_factor"], 2)}
             else:
                 cells[cl] = {"n": len(sub), "exp_r": None, "t": None, "pf": None}
+        cells_te = {}
+        for cl in range(k):
+            days = {pd.Timestamp(d).date() for d in day_idx[split:][lab_te == cl]}
+            sub = [s for s in sigs_all if pd.Timestamp(s.time).date() in days]
+            if len(sub) >= 30:
+                st = run_backtest(h1, sub, costs).stats()
+                cells_te[cl] = {"n": st["n"], "exp_r": round(st["expectancy_r"], 3),
+                                "t": round(st["t_stat"], 2), "pf": round(st["profit_factor"], 2),
+                                "oos_supported": bool(st["expectancy_r"] > 0 and st["t_stat"] > 1.0)}
+            else:
+                cells_te[cl] = {"n": len(sub), "exp_r": None, "t": None, "pf": None,
+                                "oos_supported": False}
         out[sym] = {
             "k": k, "silhouette": round(sil, 3), "bootstrap_agreement": round(boot, 3),
             "oos_size_corr": round(oos_match, 3) if oos_match == oos_match else None,
@@ -204,14 +216,18 @@ def main() -> int:
             "features": list(feats.columns),
             "centroids_z": [[round(float(x), 2) for x in row] for row in cen],
             "cluster_conditional_exp": cells,
+            "cluster_conditional_exp_oos": cells_te,
             "note": "K-Means on daily X-features (fit on 70% fold); cluster-conditional exp "
-                    "of session-range-breakout on the SAME symbol = permission-filter evidence",
+                    "of session-range-breakout on the SAME symbol = permission-filter evidence; "
+                    "cells_te = OOS 30% days only (true out-of-sample conditional validation)",
             "swept_at": datetime.now(timezone.utc).isoformat(),
         }
         print(f"{sym}: k={k} sil={out[sym]['silhouette']} boot={out[sym]['bootstrap_agreement']} "
-              f"cells={cells}", flush=True)
+              f"cells={cells} oos_cells={cells_te}", flush=True)
     (REPORTS / "latent_regimes.json").write_text(json.dumps(out, indent=2, default=str),
                                                  encoding="utf-8")
+    (REPORTS / "DONE_regime_oos").write_text(datetime.now(timezone.utc).isoformat(),
+                                             encoding="utf-8")
     print("latent_regimes.json written", flush=True)
     return 0
 

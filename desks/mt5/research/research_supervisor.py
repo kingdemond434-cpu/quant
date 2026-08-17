@@ -35,6 +35,38 @@ TARGETS = [
     dict(name="placebo", args=["-u", "-W", "ignore", "research/placebo_test.py",
                                "XAUUSD", "AUDCAD", "AUDJPY"],
          marker="reports/DONE_placebo", match="placebo_test.py"),
+    dict(name="hunt17", args=["-u", "-W", "ignore", "research/run_hunt17.py"],
+         marker="reports/DONE_hunt17", match="run_hunt17.py"),
+    dict(name="fragility", args=["-u", "-W", "ignore", "research/fragility.py"],
+         marker="reports/DONE_fragility", match="fragility.py"),
+    dict(name="qquant_gates",
+         python=r"C:\Users\dell\quant-platform\.venv\Scripts\python.exe",
+         args=["-u", "-W", "ignore", "research/qquant_gates.py"],
+         marker="reports/DONE_qquant_gates", match="qquant_gates.py"),
+    dict(name="regime_oos", args=["-u", "-W", "ignore", "research/regime_discovery.py"],
+         marker="reports/DONE_regime_oos", match="regime_discovery.py"),
+    dict(name="merge", args=["-u", "-W", "ignore", "research/merge_qquant.py"],
+         marker="reports/DONE_merge", match="merge_qquant.py"),
+    dict(name="research_loop", args=["-u", "-W", "ignore", "research/research_loop.py"],
+         marker="reports/DONE_loop_final", match="research_loop.py"),
+    dict(name="hunt19", args=["-u", "-W", "ignore", "research/run_hunt19.py"],
+         marker="reports/DONE_hunt19", match="run_hunt19.py"),
+    dict(name="hunt20", args=["-u", "-W", "ignore", "research/run_hunt20.py"],
+         marker="reports/DONE_hunt20", match="run_hunt20.py"),
+    dict(name="hunt21", args=["-u", "-W", "ignore", "research/run_hunt21.py"],
+         marker="reports/DONE_hunt21", match="run_hunt21.py"),
+    dict(name="hunt22", args=["-u", "-W", "ignore", "research/run_hunt22.py"],
+         marker="reports/DONE_hunt22", match="run_hunt22.py"),
+    dict(name="news_desk", args=["-u", "-W", "ignore", "research/news_desk.py"],
+         marker="reports/DONE_news_final", match="news_desk.py"),
+    dict(name="universal",
+         python=r"C:\Users\dell\quant-platform\.venv\Scripts\python.exe",
+         args=["-u", "-W", "ignore", "research/universal_gate.py"],
+         marker="reports/DONE_universal_hunt22", match="universal_gate.py"),
+    dict(name="meta_desk",
+         python=r"C:\Users\dell\quant-platform\.venv\Scripts\python.exe",
+         args=["-u", "-W", "ignore", "research/meta_desk.py"],
+         marker="reports/DONE_meta", match="meta_desk.py"),
 ]
 
 
@@ -105,8 +137,9 @@ def main() -> int:
                 continue
             try:
                 sl = open(LOGS / f"{t['name']}_super.log", "ab")
+                py = t.get("python") or PYW
                 proc = subprocess.Popen(
-                    [str(PYW)] + t["args"], cwd=str(BASE),
+                    [str(py)] + t["args"], cwd=str(BASE),
                     stdout=sl, stderr=subprocess.STDOUT,
                     creationflags=subprocess.DETACHED_PROCESS
                     | subprocess.CREATE_NEW_PROCESS_GROUP)

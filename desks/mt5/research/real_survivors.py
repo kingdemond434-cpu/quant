@@ -50,10 +50,8 @@ def main() -> int:
         passed = 0
         for s in survivors:
             wf = np.array([float(x) for x in s.get("wf", []) if x == x], dtype=float)
-            if len(wf) < 3:
-                ok_wf = bool(wf.mean() > 0) if len(wf) else False
-            else:
-                ok_wf = bool(wf.mean() > 0 and int((wf > 0).sum()) >= 2)
+            ok_wf = bool(len(wf) == 3 and np.all(wf > 0))
+            ok_stress = bool(s.get("exp_stress", 0.0) is not None and s.get("exp_stress", 0.0) > 0)
             ok_pbo = bool(pbo is not None and pbo["pbo"] < 0.30)
             ok_placebo = bool(placebo is not None and placebo["verdict"] == "CLEAN")
             ok_done = bool(done)
@@ -61,11 +59,12 @@ def main() -> int:
                        side=s.get("side", "LONG"), win=s.get("win", ""),
                        state=s.get("state", ""), n=s["n"], exp=s["exp"], t=s["t"],
                        defl=s["defl"], pf=s["pf"], maxdd=s["maxdd"],
+                       exp_stress=s.get("exp_stress", None),
                        wf=[round(float(x), 3) if x == x else None for x in s.get("wf", [])],
                        wf_ok=ok_wf, pbo=round(pbo["pbo"], 4) if pbo else None,
                        pbo_ok=ok_pbo, placebo=placebo["verdict"] if placebo else None,
                        hunt_done=done)
-            row["REAL"] = bool(ok_wf and ok_pbo and ok_placebo and ok_done)
+            row["REAL"] = bool(ok_wf and ok_stress and ok_pbo and ok_placebo and ok_done)
             rows.append(row)
             passed += int(row["REAL"])
         summaries[hf] = {"status": "COMPLETE" if done else "RUNNING",

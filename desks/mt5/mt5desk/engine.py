@@ -46,6 +46,9 @@ class Signal:
     tag: str
     trigger: float | None = None  # intrabar stop-order level (breakouts); None = next open
     wait_bars: int = 1  # bars the resting trigger stays alive (1 = next bar only)
+    bank_frac: float = 0.0  # 0 = flat target exit; >0 = close this fraction at target, rest runs
+    bank_protect_k: float = 0.0  # runner stop moves to entry + stop_dist*k after bank (0 = BE)
+    runner_trail_k: float = 0.0  # 0 = fixed stop; >0 = chandelier trail at stop_dist*k off extreme
 
 
 @dataclass
@@ -138,24 +141,47 @@ def run_backtest(
         stop = sig.stop
         target = sig.target
         ttl = sig.ttl_bars
+        bank_frac = sig.bank_frac
+        bank_protect_k = sig.bank_protect_k
+        runner_trail_k = sig.runner_trail_k
+        banked = False
+        banked_at = 0.0
+        trail_ext = entry
         exit_price: float | None = None
         reason = "ttl"
         bars_held = 0
         last = min(len(idx), fill_bar + ttl)
         for j in range(fill_bar, last):
             bars_held = j - fill_bar + 1
+            hi, lo = float(h[j]), float(l[j])
             if side > 0:
-                if float(l[j]) <= stop:
-                    exit_price, reason = stop, "stop"
+                if not banked and bank_frac > 0 and hi >= target:
+                    banked = True
+                    banked_at = target
+                    stop = max(stop, entry + abs(entry - sig.stop) * bank_protect_k)
+                if banked:
+                    trail_ext = max(trail_ext, hi)
+                    if runner_trail_k > 0:
+                        stop = max(stop, trail_ext - abs(entry - sig.stop) * runner_trail_k)
+                if lo <= stop:
+                    exit_price, reason = stop, "bank" if banked else "stop"
                     break
-                if float(h[j]) >= target:
+                if not banked and hi >= target:
                     exit_price, reason = target, "target"
                     break
             else:
-                if float(h[j]) >= stop:
-                    exit_price, reason = stop, "stop"
+                if not banked and bank_frac > 0 and lo <= target:
+                    banked = True
+                    banked_at = target
+                    stop = min(stop, entry - abs(entry - sig.stop) * bank_protect_k)
+                if banked:
+                    trail_ext = min(trail_ext, lo)
+                    if runner_trail_k > 0:
+                        stop = min(stop, trail_ext + abs(entry - sig.stop) * runner_trail_k)
+                if hi >= stop:
+                    exit_price, reason = stop, "bank" if banked else "stop"
                     break
-                if float(l[j]) <= target:
+                if not banked and lo <= target:
                     exit_price, reason = target, "target"
                     break
         if exit_price is None:
@@ -167,7 +193,11 @@ def run_backtest(
         stop_dist = abs(entry - sig.stop)
         if stop_dist <= 0:
             continue
-        r = (exit_price - entry) / stop_dist * side
+        if banked:
+            r = bank_frac * (banked_at - entry) / stop_dist * side \
+                + (1.0 - bank_frac) * (exit_price - entry) / stop_dist * side
+        else:
+            r = (exit_price - entry) / stop_dist * side
         r -= per_oz_cost / stop_dist
         trades.append(
             Trade(
