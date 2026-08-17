@@ -23,7 +23,7 @@ Method: every claimed capability checked as CODE (exists) + WIRED (scheduled/lau
 | 14 | Hourly VPS sync | scripts/sync_to_vps.ps1 | MT5Sync.cmd in Startup (installed 05:33) | last sync 05:03 manual | VPS commit b55ce661 | both brains one system | LIVE (next auto at login) |
 | 15 | Mandate docs (4) + provenance registry | docs/*.md | on VPS desks/mt5/docs (verified) | committed | b55ce661 | governance | LIVE |
 | 16 | External intelligence mining | hourly_cycle web pass | hourly | inbox written, empty [] | frontier_inbox.json 05:33 | nothing absorbed this pass | PARTIAL (pipeline live, sources thin) |
-| 17 | Cross-engine truth / PBO / CPCV | — | — | — | — | — | MISSING (queued, Fincept) |
+| 17 | PBO/CPCV selection-bias audit | pbo_cpcv.py | supervisor | DONE hunt12: PBO=0.0 (best-IS never OOS<=0), median all-tested OOS −0.24 | pbo_cpcv_hunt12.json | survivor trust | LIVE |
 | 18 | MARGINAL_ELOGW score fields on candidates | — | — | — | — | — | MISSING (queued) |
 | 19 | Fusion broker layer | validate_fusion.py | — | not installed (user tomorrow) | — | blocked | BLOCKED-EXTERNAL |
 | 20 | Crisis/drawdown alpha miner | hunt15 (done: 0 AUD-family candidates) | — | hunt15.json 03:40 | — | — | PARTIAL (families exhausted, wider search queued) |
