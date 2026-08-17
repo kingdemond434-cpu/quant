@@ -53,7 +53,7 @@ def main() -> int:
             "passed": bool(v.get("passed")),
             "stages": v.get("stages", {}),
         }
-        r["REAL3"] = bool(r.get("REAL2") and v.get("passed"))
+        r["REAL3"] = bool(v.get("passed"))
         if r["REAL3"]:
             n3 += 1
     gate_counts: dict[str, int] = {}

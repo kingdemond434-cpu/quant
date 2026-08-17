@@ -14,6 +14,8 @@ from __future__ import annotations
 
 import json
 import sys
+import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -30,6 +32,12 @@ ITERS = 4000
 
 
 def main() -> None:
+    sv = BASE / "reports" / "UNIVERSAL_SURVIVORS.json"
+    if not sv.exists():
+        print("waiting for UNIVERSAL_SURVIVORS.json (universal 10-gate survivors) ...",
+              flush=True)
+        while not sv.exists():
+            time.sleep(60)
     sleeves = build_sleeves()
     daily = build_daily(sleeves)
     R = daily.to_numpy(dtype=float)
@@ -83,7 +91,9 @@ def main() -> None:
                note="backtest basis only; forward ledger overrides")
     (BASE / "reports" / "allocation.json").write_text(
         json.dumps(out, indent=2, default=str), encoding="utf-8")
-    print("\n-> reports/allocation.json (ADVISORY)")
+    (BASE / "reports" / "DONE_allocation").write_text(
+        datetime.now(timezone.utc).isoformat(), encoding="utf-8")
+    print("\n-> reports/allocation.json (ADVISORY) + DONE_allocation")
 
 
 if __name__ == "__main__":

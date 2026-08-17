@@ -23,8 +23,8 @@ MEASURED BY INCREMENTAL E[log W]
 - breakout ..................... rft_candle_break, dav_breakout_fakeout (gate: universal)
 - trend ........................ rft_aroon_candle, dav hull/macd (gate: universal)
 - relative value ............... pairs RV hunt20 (XAU-XAG log), triangles hunt21 DONE (gate: universal)
-- carry ........................ not coded (yields absent; QUEUED with options/policy data)
-- volatility/options ........... meta_desk item 4 — QUEUED (no options data)
+- carry ........................ DATA stage (yields in macro_state.json; carry hunt QUEUED behind policy desk)
+- volatility/options ........... meta_desk item 4 — DATA stage (Deribit BTC/ETH live via options_desk)
 - microstructure/order flow .... not coded (no tick data); QQQ ticks queued after Fusion
 - execution .................... live layer only (engine exec + banked R / runner trail)
 - macro ........................ hunt22 event-hour effects RUNNING (gate: universal)

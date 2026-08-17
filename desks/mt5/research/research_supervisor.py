@@ -72,9 +72,13 @@ TARGETS = [
          args=["-u", "-W", "ignore", "research/universal_gate.py"],
          marker="reports/DONE_universal_hunt23", match="universal_gate.py"),
     dict(name="meta_desk",
-         python=r"C:\Users\dell\quant-platform\.venv\Scripts\python.exe",
-         args=["-u", "-W", "ignore", "research/meta_desk.py"],
-         marker="reports/DONE_meta", match="meta_desk.py"),
+python=r"C:\Users\dell\quant-platform\.venv\Scripts\python.exe",
+          args=["-u", "-W", "ignore", "research/meta_desk.py"],
+          marker="reports/DONE_meta", match="meta_desk.py"),
+    dict(name="allocation",
+          python=r"C:\Users\dell\quant-platform\.venv\Scripts\python.exe",
+          args=["-u", "-W", "ignore", "research/allocation.py"],
+          marker="reports/DONE_allocation", match="allocation.py"),
 ]
 
 
@@ -83,6 +87,9 @@ def log(msg: str) -> None:
     print(line, flush=True)
     with open(LOG, "a", encoding="utf-8") as f:
         f.write(line + "\n")
+
+
+CHILD_LOGS = Path(r"C:\Users\dell\AppData\Local\Temp\opencode\logs")
 
 
 def is_running(match: str) -> bool:
@@ -133,6 +140,8 @@ def main() -> int:
             return 0
         now = time.time()
         for t in TARGETS:
+            if (BASE / "data" / f"HOLD_{t['name']}").exists():
+                continue
             if (BASE / t["marker"]).exists():
                 continue
             if is_running(t["match"]):
@@ -144,7 +153,8 @@ def main() -> int:
                     f"{datetime.fromtimestamp(last + 1800, timezone.utc).isoformat()}")
                 continue
             try:
-                sl = open(LOGS / f"{t['name']}_super.log", "ab")
+                CHILD_LOGS.mkdir(parents=True, exist_ok=True)
+                sl = open(CHILD_LOGS / f"{t['name']}_super.log", "ab")
                 py = t.get("python") or PYW
                 proc = subprocess.Popen(
                     [str(py)] + t["args"], cwd=str(BASE),
