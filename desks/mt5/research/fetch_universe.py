@@ -9,12 +9,16 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+# THE PATH INSERT MUST PRECEDE THE IMPORT IT ENABLES. This module imported mt5desk.config on the
+# line ABOVE the sys.path.insert that makes mt5desk importable, so it only ever worked when the
+# process happened to start with desks/mt5 already on the path -- i.e. when the cwd was right.
+# Run as `python research/fetch_universe.py` from desks/mt5 it dies with ModuleNotFoundError, and
+# that is the documented way to run it.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import MetaTrader5 as mt5
 import pandas as pd
-from mt5desk.config import DATA, REPORTS, desk_root  # noqa: E402
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from mt5desk.config import terminal_path
+from mt5desk.config import DATA, REPORTS, desk_root, terminal_path  # noqa: E402
 
 TERMINAL = terminal_path()
 OUT = DATA / "universe"

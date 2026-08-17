@@ -248,11 +248,17 @@ filterwarnings = ["error"]
 # A genuinely slow test states its own cost with @pytest.mark.timeout(N) rather than relaxing the
 # floor for everything -- the ratchet rule: one test's need is never the whole suite's licence.
 #
-# signal (SIGALRM) rather than the thread method on purpose: it interrupts a blocking syscall and
-# gives the offending test's own traceback. The thread method cannot, and would report the hang
-# without saying where -- which is most of the diagnostic value.
+# THREAD, NOT SIGNAL, AND THIS COST A DIAGNOSTIC. signal (SIGALRM) is the better method where it
+# exists: it interrupts a blocking syscall and gives the offending test's own traceback, which the
+# thread method cannot. But SIGALRM DOES NOT EXIST ON WINDOWS, and the MT5 execution box is
+# Windows -- `signal.signal(signal.SIGALRM, handler)` raises AttributeError there and takes down
+# the entire run as an INTERNALERROR before a single test reports. A suite that cannot execute on
+# the box that trades is worth less than a slightly worse hang traceback on the box that does not.
+#
+# A hang now reports WHICH test hung but not where inside it. If that becomes the live question,
+# set the method per-platform rather than reverting this: the Windows box must keep running tests.
 timeout = 300
-timeout_method = "signal"
+timeout_method = "thread"
 # THE SUITE'S OWN SCRATCH WAS STARVING THE SUITE. /tmp here is a tmpfs, so every byte under
 # /tmp/pytest-of-quant is RESIDENT RAM on a 3.8GB box with NO SWAP that also carries the live
 # executor, three recorders and several agent sessions. Measured 2026-08-05: 35 orphaned run
