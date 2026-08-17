@@ -155,6 +155,8 @@ def main() -> None:
                    indent=2, default=str), encoding="utf-8")
     tprint(f"\n{sum(1 for r in results if r['gate'])} survivors of "
            f"{len(results)} tests across {len(meta)} symbols")
+    (BASE / "reports" / "DONE_hunt12").write_text(
+        datetime.now(timezone.utc).isoformat(), encoding="utf-8")
 
 
 if __name__ == "__main__":

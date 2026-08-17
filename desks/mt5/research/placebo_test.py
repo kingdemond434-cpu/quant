@@ -57,11 +57,11 @@ def null_market(h1: pd.DataFrame, rng: np.random.Generator) -> pd.DataFrame:
     honest null: it removes the dependence the mechanism actually feeds on.
     """
     c = h1["close"].to_numpy(float)
-    r = np.diff(np.log(c))
+    n = len(c)
+    r = np.diff(np.log(c))                      # n-1 returns
     mid = (h1["high"].to_numpy(float) + h1["low"].to_numpy(float)) / 2
     hl = (h1["high"].to_numpy(float) - h1["low"].to_numpy(float)) / np.where(mid > 0, mid, 1.0)
-    r = r[:-1]
-    hl = hl[1:]
+    hl = hl[1:]                                 # n-1 ranges, aligned to the returns
     block = 4
     n_b = len(r) // block
     rp = r[: n_b * block].reshape(n_b, block)
@@ -71,13 +71,23 @@ def null_market(h1: pd.DataFrame, rng: np.random.Generator) -> pd.DataFrame:
     rs = rp.reshape(-1)
     hs = hp.reshape(-1)
     base = float(c[0])
-    path = np.concatenate([[base], base * np.exp(np.cumsum(rs))])
+    # path must have EXACTLY n rows (same index as h1); append the leftover tail
+    # returns (0..3 bars) so lengths always match.
+    path = np.empty(n)
+    path[0] = base
+    path[1 : n_b * block + 1] = base * np.exp(np.cumsum(rs))
+    tail = r[n_b * block :]
+    if len(tail):
+        path[n_b * block + 1 :] = path[n_b * block] * np.exp(np.cumsum(tail))
+    else:
+        path[n_b * block + 1 :] = path[n_b * block]
     out = h1.copy()
-    o = np.empty(len(path))
+    o = np.empty(n)
     o[0] = path[0]
     o[1:] = path[:-1]
-    h = np.maximum(o, path) + hs * np.maximum(o, path)
-    l = np.minimum(o, path) - hs * np.minimum(o, path)
+    hs_full = np.concatenate([hs, [hs[-1] if len(hs) else 0.0] * (n - len(hs))])
+    h = np.maximum(o, path) + hs_full * np.maximum(o, path)
+    l = np.minimum(o, path) - hs_full * np.minimum(o, path)
     out["open"] = o
     out["close"] = path
     out["high"] = h
@@ -146,6 +156,8 @@ def main() -> int:
     print(text, flush=True)
     (BASE / "reports" / "placebo_test.json").write_text(
         json.dumps(out, indent=2), encoding="utf-8")
+    (BASE / "reports" / "DONE_placebo").write_text(
+        datetime.now(timezone.utc).isoformat(), encoding="utf-8")
     return 0
 
 

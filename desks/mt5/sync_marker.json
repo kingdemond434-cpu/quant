@@ -1,0 +1,20 @@
+{
+ "last_cycle": "2026-08-17T04:33:01.121643+00:00",
+ "health": {
+  "hunt12": {
+   "alive": false,
+   "restarted": true
+  },
+  "hunt16": {
+   "alive": true
+  },
+  "gateway_cmd": {
+   "alive": true
+  }
+ },
+ "mine": {
+  "sources_tried": 2,
+  "new_seeds": 0,
+  "inbox": 0
+ }
+}

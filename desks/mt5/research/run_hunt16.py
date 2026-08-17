@@ -156,7 +156,7 @@ def dav_ema_trend_pullback(h1: pd.DataFrame, side: int) -> list[Signal]:
     stop = h1["close"] - 1.5 * a if side > 0 else h1["close"] + 1.5 * a
     target = h1["close"] + 2.0 * (1.5 * a) if side > 0 else h1["close"] - 2.0 * (1.5 * a)
     return _sigs(h1, pull & trend & mom & mdir, side, stop, target, 12,
-                 h1.index.hour.between(0, 23))
+                 ((h1.index.hour >= 0) & (h1.index.hour <= 23)))
 
 
 def dav_supertrend_trail(h1: pd.DataFrame, side: int) -> list[Signal]:
@@ -167,7 +167,7 @@ def dav_supertrend_trail(h1: pd.DataFrame, side: int) -> list[Signal]:
     a = _atr(h1, 14)
     stop = c - 1.5 * a if side > 0 else c + 1.5 * a
     target = c + 2.0 * (1.5 * a) if side > 0 else c - 2.0 * (1.5 * a)
-    return _sigs(h1, cond, side, stop, target, 12, h1.index.hour.between(0, 23))
+    return _sigs(h1, cond, side, stop, target, 12, ((h1.index.hour >= 0) & (h1.index.hour <= 23)))
 
 
 def dav_breakout_fakeout(h1: pd.DataFrame, side: int) -> list[Signal]:
@@ -179,7 +179,7 @@ def dav_breakout_fakeout(h1: pd.DataFrame, side: int) -> list[Signal]:
     a = _atr(h1, 14)
     stop = h1["close"] - 1.5 * a if side > 0 else h1["close"] + 1.5 * a
     target = h1["close"] + 2.0 * (1.5 * a) if side > 0 else h1["close"] - 2.0 * (1.5 * a)
-    return _sigs(h1, cond & dhi.notna(), side, stop, target, 12, h1.index.hour.between(0, 23))
+    return _sigs(h1, cond & dhi.notna(), side, stop, target, 12, ((h1.index.hour >= 0) & (h1.index.hour <= 23)))
 
 
 def dav_fakeout_reverse(h1: pd.DataFrame, side: int) -> list[Signal]:
@@ -196,7 +196,7 @@ def dav_fakeout_reverse(h1: pd.DataFrame, side: int) -> list[Signal]:
     a = _atr(h1, 14)
     stop = h1["close"] + 1.5 * a if side < 0 else h1["close"] - 1.5 * a
     target = h1["close"] - 2.0 * (1.5 * a) if side < 0 else h1["close"] + 2.0 * (1.5 * a)
-    return _sigs(h1, fake & dhi.notna(), side, stop, target, 12, h1.index.hour.between(0, 23))
+    return _sigs(h1, fake & dhi.notna(), side, stop, target, 12, ((h1.index.hour >= 0) & (h1.index.hour <= 23)))
 
 
 def dav_squeeze_expansion(h1: pd.DataFrame, side: int) -> list[Signal]:
@@ -212,7 +212,7 @@ def dav_squeeze_expansion(h1: pd.DataFrame, side: int) -> list[Signal]:
     a = _atr(h1, 14)
     stop = h1["close"] - 1.5 * a if side > 0 else h1["close"] + 1.5 * a
     target = h1["close"] + 2.0 * (1.5 * a) if side > 0 else h1["close"] - 2.0 * (1.5 * a)
-    return _sigs(h1, cond, side, stop, target, 12, h1.index.hour.between(0, 23))
+    return _sigs(h1, cond, side, stop, target, 12, ((h1.index.hour >= 0) & (h1.index.hour <= 23)))
 
 
 def dav_bb_meanrev(h1: pd.DataFrame, side: int) -> list[Signal]:
@@ -227,7 +227,7 @@ def dav_bb_meanrev(h1: pd.DataFrame, side: int) -> list[Signal]:
     a = _atr(h1, 14)
     stop = h1["close"] - 1.5 * a if side > 0 else h1["close"] + 1.5 * a
     target = h1["close"] + 1.5 * (1.5 * a) if side > 0 else h1["close"] - 1.5 * (1.5 * a)
-    return _sigs(h1, cond, side, stop, target, 16, h1.index.hour.between(0, 23))
+    return _sigs(h1, cond, side, stop, target, 16, ((h1.index.hour >= 0) & (h1.index.hour <= 23)))
 
 
 def dav_keltner_break(h1: pd.DataFrame, side: int) -> list[Signal]:
@@ -239,7 +239,7 @@ def dav_keltner_break(h1: pd.DataFrame, side: int) -> list[Signal]:
     a = _atr(h1, 14)
     stop = h1["close"] - 1.5 * a if side > 0 else h1["close"] + 1.5 * a
     target = h1["close"] + 2.0 * (1.5 * a) if side > 0 else h1["close"] - 2.0 * (1.5 * a)
-    return _sigs(h1, cond, side, stop, target, 12, h1.index.hour.between(0, 23))
+    return _sigs(h1, cond, side, stop, target, 12, ((h1.index.hour >= 0) & (h1.index.hour <= 23)))
 
 
 def dav_t3_trend(h1: pd.DataFrame, side: int) -> list[Signal]:
@@ -252,7 +252,7 @@ def dav_t3_trend(h1: pd.DataFrame, side: int) -> list[Signal]:
     a = _atr(h1, 14)
     stop = h1["close"] - 1.5 * a if side > 0 else h1["close"] + 1.5 * a
     target = h1["close"] + 2.0 * (1.5 * a) if side > 0 else h1["close"] - 2.0 * (1.5 * a)
-    return _sigs(h1, cond, side, stop, target, 12, h1.index.hour.between(0, 23))
+    return _sigs(h1, cond, side, stop, target, 12, ((h1.index.hour >= 0) & (h1.index.hour <= 23)))
 
 
 def dav_rsi_div_rev(h1: pd.DataFrame, side: int) -> list[Signal]:
@@ -268,7 +268,7 @@ def dav_rsi_div_rev(h1: pd.DataFrame, side: int) -> list[Signal]:
     a = _atr(h1, 14)
     stop = h1["close"] - 1.5 * a if side > 0 else h1["close"] + 1.5 * a
     target = h1["close"] + 1.5 * (1.5 * a) if side > 0 else h1["close"] - 1.5 * (1.5 * a)
-    return _sigs(h1, cond, side, stop, target, 16, h1.index.hour.between(0, 23))
+    return _sigs(h1, cond, side, stop, target, 16, ((h1.index.hour >= 0) & (h1.index.hour <= 23)))
 
 
 def dav_macd_qqe(h1: pd.DataFrame, side: int) -> list[Signal]:
@@ -282,7 +282,7 @@ def dav_macd_qqe(h1: pd.DataFrame, side: int) -> list[Signal]:
     a = _atr(h1, 14)
     stop = h1["close"] - 1.5 * a if side > 0 else h1["close"] + 1.5 * a
     target = h1["close"] + 2.0 * (1.5 * a) if side > 0 else h1["close"] - 2.0 * (1.5 * a)
-    return _sigs(h1, cond, side, stop, target, 12, h1.index.hour.between(0, 23))
+    return _sigs(h1, cond, side, stop, target, 12, ((h1.index.hour >= 0) & (h1.index.hour <= 23)))
 
 
 def dav_abc_structure(h1: pd.DataFrame, side: int) -> list[Signal]:
@@ -296,7 +296,7 @@ def dav_abc_structure(h1: pd.DataFrame, side: int) -> list[Signal]:
     a = _atr(h1, 14)
     stop = h1["close"] - 1.5 * a if side > 0 else h1["close"] + 1.5 * a
     target = h1["close"] + 2.0 * (1.5 * a) if side > 0 else h1["close"] - 2.0 * (1.5 * a)
-    return _sigs(h1, cond, side, stop, target, 12, h1.index.hour.between(0, 23))
+    return _sigs(h1, cond, side, stop, target, 12, ((h1.index.hour >= 0) & (h1.index.hour <= 23)))
 
 
 def dav_momentum_cont(h1: pd.DataFrame, side: int) -> list[Signal]:
@@ -308,7 +308,7 @@ def dav_momentum_cont(h1: pd.DataFrame, side: int) -> list[Signal]:
     cond = bar.shift(1)
     stop = h1["close"] - 1.0 * a if side > 0 else h1["close"] + 1.0 * a
     target = h1["close"] + 1.5 * (1.0 * a) if side > 0 else h1["close"] - 1.5 * (1.0 * a)
-    return _sigs(h1, cond, side, stop, target, 8, h1.index.hour.between(0, 23))
+    return _sigs(h1, cond, side, stop, target, 8, ((h1.index.hour >= 0) & (h1.index.hour <= 23)))
 
 
 def dav_hull_trend(h1: pd.DataFrame, side: int) -> list[Signal]:
@@ -319,7 +319,7 @@ def dav_hull_trend(h1: pd.DataFrame, side: int) -> list[Signal]:
     a = _atr(h1, 14)
     stop = h1["close"] - 1.5 * a if side > 0 else h1["close"] + 1.5 * a
     target = h1["close"] + 2.0 * (1.5 * a) if side > 0 else h1["close"] - 2.0 * (1.5 * a)
-    return _sigs(h1, cond, side, stop, target, 12, h1.index.hour.between(0, 23))
+    return _sigs(h1, cond, side, stop, target, 12, ((h1.index.hour >= 0) & (h1.index.hour <= 23)))
 
 
 def dav_range_filter_adx(h1: pd.DataFrame, side: int) -> list[Signal]:
@@ -333,7 +333,7 @@ def dav_range_filter_adx(h1: pd.DataFrame, side: int) -> list[Signal]:
         (c > hi_chan - chan * 0.2) & (dx > 25)
     stop = h1["close"] - 1.5 * a if side > 0 else h1["close"] + 1.5 * a
     target = h1["close"] + 2.0 * (1.5 * a) if side > 0 else h1["close"] - 2.0 * (1.5 * a)
-    return _sigs(h1, cond, side, stop, target, 12, h1.index.hour.between(0, 23))
+    return _sigs(h1, cond, side, stop, target, 12, ((h1.index.hour >= 0) & (h1.index.hour <= 23)))
 
 
 FAMILIES = {
@@ -428,6 +428,8 @@ def main() -> None:
                    indent=2, default=str), encoding="utf-8")
     tprint(f"\n{sum(1 for r in results if r['gate'])} survivors of {len(results)} "
            f"battery tests")
+    (BASE / "reports" / "DONE_hunt16").write_text(
+        datetime.now(timezone.utc).isoformat(), encoding="utf-8")
 
 
 if __name__ == "__main__":
