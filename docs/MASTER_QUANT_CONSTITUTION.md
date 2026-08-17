@@ -6465,3 +6465,27 @@ not the asset class.
 
 Reversal requires a stated change in the legal or venue position, recorded
 here. It is not reversed by a passing idea that the old tape might be useful.
+
+## 224.5 PROBE RESULT, 2026-08-17: FUSION HAS NO DEPTH
+
+`mt5desk.tape --probe` against the live Fusion terminal:
+
+    22 symbols tested        NO_DEPTH on all 22
+    levels per symbol        0
+    real depth               0/22
+
+# SECTION 222 IS NOT BUILDABLE ON THIS VENUE. IT IS NOT DEFERRED. IT IS BLOCKED.
+
+The liquidity survival engine needs more than one level per side to have a
+subject at all: cancel hazard, execution hazard, refill rate, absorption versus
+fragile display are all statements about resting orders this broker does not
+expose. Building it here would fit a precise model to a book synthesised from
+bid/ask, and every state it reported would be an artefact of the synthesis.
+
+Re-probing is cheap and the answer can change -- a different broker, a futures
+venue, or an exchange feed would all answer differently. Until one does, 222
+stays unbuilt and its budget goes elsewhere.
+
+The tick tape is unaffected. Section 23 -- quote-change imbalance, tick
+direction, micro momentum, spread expansion and contraction, update intensity,
+burstiness, gap frequency -- needs only bid/ask and is fully available.
