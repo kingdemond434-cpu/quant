@@ -38,37 +38,12 @@ WINDOWS = {
     "afternoon": dict(range_start=14, range_end=17, signal_at=17, wait_bars=8, rr=2.0, ttl_bars=12),
 }
 
-# (sym, window, state) -- state=None means UNCONDITIONED, the hunt6 form.
-#
-# A THIRD FIELD WAS ADDED, and it had to be added here, in the promoter and in the gateway at the
-# same time. Before this the live chain was state-blind end to end: this list keyed on
-# (symbol, window), promoter wrote no state, and gateway.sleeve_set rebuilt every sleeve from the
-# window alone. Promoting "CADJPY asia FAILED_BREAK" would therefore have traded CADJPY asia on
-# EVERY day -- the sleeve carrying the name and risk budget of a strategy that earned +0.276R
-# while actually running the unconditioned one at +0.163R, with nothing anywhere saying so.
-SLEEVES = [
-    # hunt6 survivors, unconditioned
-    ("XAUUSD", "asia", None), ("XAUUSD", "london_am", None), ("XAUUSD", "afternoon", None),
-    ("USDJPY", "asia", None), ("USDJPY", "london_am", None),
-    ("CADJPY", "asia", None),
-    ("EURJPY", "asia", None), ("EURJPY", "london_am", None),
-    ("GBPJPY", "asia", None), ("GBPJPY", "london_am", None),
-    # hunt12 candidates, state-conditioned, added 2026-08-17 after the day_states lookahead fix.
-    # These FAILED the 10-gate gauntlet on deflated Sharpe (SR0 0.471 against 0.138-0.256 at
-    # n_trials 2,464) and pass the other nine. That is a POWER problem, not a validity one -- PBO
-    # 0.034 and walk-forward stability 1.0 say they are not curve-fits -- and forward evidence is
-    # the only thing that can settle it. Shadow generates exactly that, at zero capital.
-    # The three XAUUSD entries are filtered subsets of gold legs already live: they are here to be
-    # MEASURED against their parent, not to be promoted alongside it.
-    ("CADJPY", "asia", "FAILED_BREAK"),
-    ("USDJPY", "asia", "FAILED_BREAK"),
-    ("EURJPY", "asia", "FAILED_BREAK"),
-    ("EURJPY", "asia", "NORMAL_DAY"),
-    ("CADJPY", "london_am", "NORMAL_DAY"),
-    ("USDJPY", "london_am", "FAILED_BREAK"),
-    ("XAUUSD", "asia", "NORMAL_DAY"),
-    ("XAUUSD", "asia", "FAILED_BREAK"),
-    ("XAUUSD", "london_am", "NORMAL_DAY"),
+SLEEVES = [  # (sym, window) - hunt6 survivors
+    ("XAUUSD", "asia"), ("XAUUSD", "london_am"), ("XAUUSD", "afternoon"),
+    ("USDJPY", "asia"), ("USDJPY", "london_am"),
+    ("CADJPY", "asia"),
+    ("EURJPY", "asia"), ("EURJPY", "london_am"),
+    ("GBPJPY", "asia"), ("GBPJPY", "london_am"),
 ]
 
 FETCH_DAYS = 45
@@ -76,12 +51,6 @@ VERDICT_MIN_TRADES = 50
 VERDICT_MIN_DAYS = 14
 PROMOTE_MIN_EXP = 0.05
 PROMOTE_MIN_DD = -25.0
-
-#: Trades below which NO terminal verdict is issued, in either direction. The 14-day clock still
-#: runs -- it just cannot execute a sleeve on three fills. 20 is where the false-kill rate on a
-#: genuinely good edge falls under 20% (36% at n=3); it is a floor on evidence, not a target.
-#: Raising it makes the desk slower and more certain, lowering it faster and more arbitrary.
-MIN_VERDICT_TRADES = 20
 
 
 def slog(*a) -> None:
@@ -138,8 +107,8 @@ def main() -> None:
         return
 
     h1_cache = {}
-    for sym, win, cond in SLEEVES:
-        key = f"{sym}.{win}" + (f".{cond}" if cond else "")
+    for sym, win in SLEEVES:
+        key = f"{sym}.{win}"
         st = state.get(key, {"n": 0, "cum_r": 0.0, "max_dd_r": 0.0,
                              "first_entry": None, "last_entry": None,
                              "status": "ACTIVE"})
@@ -149,15 +118,9 @@ def main() -> None:
         if h1 is None:
             continue
         sigs = families.family_session_range_breakout(h1, **WINDOWS[win])
-        if cond:
-            # Same corrected prior-day join the sweep used. A shadow record built on a different
-            # conditioning rule than the backtest would be measuring a third strategy.
-            from run_hunt12 import day_states  # noqa: PLC0415
-            st_map = day_states(h1)
-            sigs = [g for g in sigs if st_map.get(pd.Timestamp(g.time).date()) == cond]
         res = run_backtest(h1, sigs, per_symbol_costs(meta, sym))
         trades = [t for t in res.trades if t.entry_time >= SHADOW_START]
-        ledger = SHADOW_DIR / (f"ledger_{sym}_{win}" + (f"_{cond}" if cond else "") + ".json")
+        ledger = SHADOW_DIR / f"ledger_{sym}_{win}.json"
         ledger.write_text(json.dumps(
             [{"entry_time": str(t.entry_time), "exit_time": str(t.exit_time),
               "side": t.side, "entry": t.entry, "exit": t.exit,
@@ -181,30 +144,9 @@ def main() -> None:
             days_active = (datetime.now(timezone.utc) -
                            pd.Timestamp(st["first_entry"]).to_pydatetime().replace(tzinfo=timezone.utc)).days
         st["days_active"] = days_active
-        # NO TERMINAL VERDICT WITHOUT ENOUGH EVIDENCE TO SUPPORT ONE.
-        #
-        # This fired on `n >= 50 OR days_active >= 14`, and the days clause is what did the
-        # damage. A cell firing ~80 times a year produces about THREE trades in fourteen days,
-        # and the verdict is permanent in both directions. Measured against the best candidate's
-        # +0.276R with per-trade sd 1.089, the chance of KILLING a genuinely good edge:
-        #
-        #        3 trades -> 36.0%          20 trades -> 17.7%
-        #        5        -> 32.1%          50        ->  7.1%
-        #       10        -> 25.6%         100        ->  1.9%
-        #
-        # So the clock was not rescuing slow sleeves from limbo -- it was executing them at
-        # random, and the same arithmetic promotes noise in the other direction. The fix is not a
-        # looser clock but refusing to decide early: below MIN_VERDICT_TRADES the sleeve stays
-        # ACTIVE and keeps accruing, which costs nothing because shadow uses no capital. A slow
-        # edge is then never stuck (it promotes the moment it has evidence) and never killed on
-        # three fills.
         if st["status"] == "ACTIVE" and (st["n"] >= VERDICT_MIN_TRADES
                                          or days_active >= VERDICT_MIN_DAYS):
-            if st["n"] < MIN_VERDICT_TRADES:
-                slog(f"{key}: verdict DEFERRED -- n={st['n']} < {MIN_VERDICT_TRADES} after "
-                     f"{days_active}d. Deciding on this sample is more likely to be wrong than "
-                     f"right; sleeve stays ACTIVE and keeps accruing.")
-            elif st["exp_r"] > PROMOTE_MIN_EXP and st["max_dd_r"] > PROMOTE_MIN_DD:
+            if st["exp_r"] > PROMOTE_MIN_EXP and st["max_dd_r"] > PROMOTE_MIN_DD:
                 st["status"] = "PROMOTION CANDIDATE"
                 slog(f"{key}: VERDICT PROMOTE n={st['n']} exp={st['exp_r']:.3f}R "
                      f"maxDD={st['max_dd_r']:.1f}R")

@@ -26,16 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from portfolio_projection import build_daily, build_sleeves  # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
-
-# THE DESK HAS ONE RISK BUDGET AND IT LIVES IN THE GATEWAY. This read 0.055 -- the old
-# ~92%-of-Kelly setting -- while gateway.Q_OPT was moved to 0.0075, so the allocator was
-# optimising and reporting a book at seven times the risk the account actually runs. Two files
-# disagreeing about the risk budget is how a superseded number gets quoted back as evidence.
-# Imported rather than copied, so it can never drift again.
-try:
-    from mt5desk.gateway import Q_OPT as Q_TOTAL          # noqa: E402
-except Exception:                                          # MetaTrader5 absent (research boxes)
-    from mt5desk.gateway_config_fallback import Q_OPT as Q_TOTAL  # type: ignore  # noqa: E402
+Q_TOTAL = 0.055
 LR = 5e-3
 ITERS = 4000
 

@@ -121,38 +121,13 @@ def frontier_report(health: dict) -> None:
     print(f"frontier report written ({rep['swept_at']})", flush=True)
 
 
-def daily() -> dict:
-    """The operating chain -- shadow -> promoter -> markout -- run once per UTC day.
-
-    THIS WAS THE HOLE. Health checks, web mining and a frontier report all ran hourly while the
-    three processes that actually move an edge toward capital ran NOWHERE: nine validated
-    candidates sat in `shadow_forward.SLEEVES` accruing no evidence and unable to promote. The
-    supervisor could not have hosted them either -- it is built around one-shot DONE markers, so a
-    recurring job would run once and never again.
-
-    Called every hour deliberately. `daily_cycle` self-guards on a UTC date stamp, so this box gets
-    exactly one run per day whenever it happens to be awake, instead of missing the day entirely
-    because the laptop was shut at the scheduled minute.
-    """
-    try:
-        import daily_cycle  # noqa: PLC0415
-        return {"exit_code": daily_cycle.main([]),
-                "at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
-    except Exception as exc:                                            # noqa: BLE001
-        # Reported, never swallowed: this hourly cycle must survive, but a desk that cannot run its
-        # promotion chain has to say so rather than print "cycle done".
-        print(f"daily cycle FAILED to start: {type(exc).__name__}: {exc}", flush=True)
-        return {"error": f"{type(exc).__name__}: {exc}"}
-
-
 def main() -> None:
     h = health()
-    d = daily()
     m = mine()
     frontier_report(h)
     (BASE / "data" / "sync_marker.json").write_text(
         json.dumps({"last_cycle": datetime.now(timezone.utc).isoformat(),
-                    "health": h, "daily": d, "mine": m}, indent=1), encoding="utf-8")
+                    "health": h, "mine": m}, indent=1), encoding="utf-8")
     print("cycle done", flush=True)
 
 

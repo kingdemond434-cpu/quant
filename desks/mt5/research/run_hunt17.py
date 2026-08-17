@@ -278,23 +278,11 @@ PARAMS = {
     "h4_momentum": [dict(n=34, rr=2.0, ttl=12),
                     dict(n=55, rr=2.5, ttl=24)],
     "h4_vol_break": [dict(n1=14, n2=50, k=1.2, rr=2.0, ttl=12),
-                     dict(n1=10, n2=40, k=1.3, rr=2.0, ttl=24)],
-    "d1_inside": [dict(rr=1.5, ttl=24),
-                  dict(rr=2.0, ttl=48)],
-    "macro_gold_yield": [dict(n=34, rr=2.0, ttl=12, yield_z=0.0),
-                         dict(n=55, rr=2.5, ttl=24, yield_z=-0.25)],
-}
-PARAMS = {
-    "d1_trend_pullback": [dict(d1_n=50, h4_n=20, rr=2.0, ttl=12),
-                          dict(d1_n=100, h4_n=30, rr=2.5, ttl=24)],
-    "d1_swing_break": [dict(d1_win=20, exp_mult=1.15, rr=2.0, ttl=12),
-                       dict(d1_win=30, exp_mult=1.10, rr=2.5, ttl=24)],
-    "h4_momentum": [dict(n=34, rr=2.0, ttl=12),
-                    dict(n=55, rr=2.5, ttl=24)],
-    "h4_vol_break": [dict(n1=14, n2=50, k=1.2, rr=2.0, ttl=12),
                      dict(n1=10, n2=40, k=1.3, rr=2.5, ttl=24)],
     "d1_inside": [dict(rr=2.0, ttl=12),
                   dict(rr=2.5, ttl=24)],
+    "macro_gold_yield": [dict(n=34, rr=2.0, ttl=12, yield_z=0.0),
+                         dict(n=55, rr=2.5, ttl=24, yield_z=-0.25)],
 }
 
 

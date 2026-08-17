@@ -15,10 +15,9 @@ import urllib.request
 from pathlib import Path
 
 import pandas as pd
-from mt5desk.config import DATA, REPORTS, desk_root  # noqa: E402
 
 BASE = "https://publicreporting.cftc.gov/resource/72hh-3qpy.json"
-OUT = DATA / "cot_disagg"
+OUT = Path(r"C:\Users\dell\mt5-research\data\cot_disagg")
 OUT.mkdir(parents=True, exist_ok=True)
 
 SELECT = (

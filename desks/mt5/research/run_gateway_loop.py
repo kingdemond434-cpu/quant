@@ -14,9 +14,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from mt5desk import gateway  # noqa: E402
-from mt5desk.config import DATA, REPORTS, desk_root  # noqa: E402
 
-LOCK = DATA / "gateway.lock"
+LOCK = Path(r"C:\Users\dell\mt5-research\data\gateway.lock")
 
 
 def main() -> None:
@@ -39,7 +38,7 @@ def main() -> None:
         if datetime.now(timezone.utc).weekday() == 0 and datetime.now(timezone.utc).hour == 23:
             import json as _json  # noqa: PLC0415
             from pathlib import Path as _Path  # noqa: PLC0415
-            stfile = DATA / "hunt7_state.json"
+            stfile = _Path(r"C:\Users\dell\mt5-research\data\hunt7_state.json")
             last = 0
             if stfile.exists():
                 try:
