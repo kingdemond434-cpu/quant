@@ -178,11 +178,39 @@ def release_lag(df: pd.DataFrame) -> dict:
     than assumed.
     """
     first = df.sort_values("realtime_date").groupby("observation_date").head(1)
-    lag = (first["realtime_date"] - first["observation_date"]).dt.days
-    if lag.empty:
+    if first.empty:
         return {}
+
+    # OBSERVATIONS THAT PREDATE ALFRED'S VINTAGE RECORD HAVE NO OBSERVABLE FIRST PRINT, and
+    # including them corrupts the median badly enough to fail a series that is perfectly fine.
+    #
+    # ALFRED's vintage coverage begins at different dates per series, while the OBSERVATION
+    # history usually runs back much further. GDPC1 has observations from 1947 and vintages from
+    # ~1991: every pre-1991 quarter therefore appears to have been "first published" in 1991,
+    # giving apparent lags up to 44 years. With 44 contaminated years against 35 clean ones, the
+    # MEDIAN itself lands in the contaminated region -- 1,936 days -- and the series was rejected
+    # as broken when it was merely old.
+    #
+    # CPIAUCSL passed the same check at 50 days for exactly this reason: its vintages start ~1953
+    # against observations from 1947, so only six years are contaminated and the median is clean.
+    # The rejections were not detecting a bad fetch, they were detecting long histories.
+    #
+    # So the lag is measured only where a first print is actually observable: after the earliest
+    # vintage in the file. The excluded count is reported rather than dropped silently, because a
+    # series with almost nothing left is a different problem and should look like one.
+    vintage_start = df["realtime_date"].min()
+    observable = first[first["realtime_date"] > vintage_start + pd.Timedelta(days=7)]
+    excluded = int(len(first) - len(observable))
+    if observable.empty:
+        return {"median_days": float("nan"), "n_observations": 0,
+                "excluded_predating_vintage_record": excluded,
+                "why": ("every observation predates this series' vintage record, so no first "
+                        "print is observable and the release lag cannot be measured")}
+    lag = (observable["realtime_date"] - observable["observation_date"]).dt.days
     return {"median_days": float(lag.median()), "min_days": int(lag.min()),
-            "max_days": int(lag.max()), "n_observations": int(len(lag))}
+            "max_days": int(lag.max()), "n_observations": int(len(lag)),
+            "excluded_predating_vintage_record": excluded,
+            "vintage_record_starts": str(vintage_start.date())}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -247,7 +275,8 @@ def main(argv: list[str] | None = None) -> int:
             continue
         # Same check from the other side: a first-print lag of decades is arithmetic on a single
         # vintage, not a publication delay. Monthly data prints within ~60 days; quarterly ~120.
-        if lag and lag.get("median_days", 0) > 400:
+        _med = lag.get("median_days") if lag else None
+        if _med is not None and _med == _med and _med > 400:
             failed.append(sid)
             print(f"  {sid}: REJECTED -- median release lag {lag['median_days']:.0f}d is not a "
                   f"publication delay. The vintage history is wrong. Not written.", flush=True)
@@ -255,8 +284,11 @@ def main(argv: list[str] | None = None) -> int:
         df.to_parquet(out_path, index=False)
         lags[sid] = lag
         written += 1
+        _exc = lag.get("excluded_predating_vintage_record", 0)
         print(f"  {sid}: {len(df):,} rows, {n_vint} vintages, "
-              f"median release lag {lag.get('median_days', float('nan')):.0f}d", flush=True)
+              f"median release lag {lag.get('median_days', float('nan')):.0f}d"
+              + (f" ({_exc} obs predate the vintage record, excluded from the lag)"
+                 if _exc else ""), flush=True)
         # Released before the next request, not at the next garbage collection. On a 4GB box the
         # peak that matters is two series held at once, and that peak is what got the process
         # killed.
