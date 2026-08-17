@@ -196,9 +196,38 @@ MAX_PORTFOLIO_HEAT = 0.04
 #: cross-sleeve correlation is 0.165 -> 2.26 independent bets.
 _HEAT_BASE_KEFF = 2.26
 
+#: THE DRAWDOWN THE PRINCIPAL IS WILLING TO SIT THROUGH. This is the real constraint and every
+#: other number here is derived from it, so it is stated once, in the open, instead of being
+#: implied by a round percentage nobody can defend.
+#:
+#: WHY THIS IS THE AGGRESSIVE SETTING AND NOT THE TIMID ONE. Measured full Kelly on the 3-leg
+#: gold book is 9.00% per trade (27% total heat), and sizing there is not "maximum growth" -- it
+#: is a bet that an in-sample backtest is exact. The test that settles it: if the true edge is
+#: HALF the measured one, then sizing at measured full Kelly returns 96.9%/yr while sizing at
+#: measured HALF Kelly returns 291.4%/yr. Half Kelly delivers THREE TIMES the real growth,
+#: because past the true optimum the geometric rate falls, and at 2x Kelly it collapses to 59%
+#: of maximum with a -100% drawdown. More size is not more aggression past that point; it is
+#: less money.
+#:
+#: In-sample drawdown at each fraction of measured Kelly (3-leg gold book, 2018-2026):
+#:      0.12x Kelly -> -32.8%      0.50x -> -84.4%      1.00x -> -98.9%
+#: The drawdown constraint binds long before Kelly does, which is why it is the input.
+MAX_DRAWDOWN_TOLERANCE = 0.35
+
+#: Worst peak-to-trough drawdown the armed book has ever produced, in R, at the sweep that
+#: validated it. Heat is solved against THIS, so the budget answers a question about the actual
+#: book rather than a generic risk-of-ruin formula.
+_BOOK_WORST_DD_R = 33.7
+
+#: Legs in the book that -DD figure was measured on (asia, london_am, afternoon). The budget is
+#: expressed as total heat = per-trade risk x legs, so this converts one into the other.
+_HEAT_BASE_LEGS = 3
+
 #: Never exceed this however good the diversification looks. Correlations rise in exactly the
-#: regime where the budget would be spent, and a measured k_eff is an estimate from calm.
-MAX_HEAT_CEILING = 0.10
+#: regime where the budget would be spent, and a measured k_eff is an estimate from calm. Raised
+#: from 10% only because the budget is now solved against an explicit drawdown target -- the
+#: ceiling is a backstop against a bad k_eff estimate, not the operative limit.
+MAX_HEAT_CEILING = 0.15
 
 
 def heat_budget(k_eff: float | None = None) -> float:
@@ -225,10 +254,25 @@ def heat_budget(k_eff: float | None = None) -> float:
     diversified one, which is how a portfolio discovers its real correlation during the drawdown
     rather than before it.
     """
+    # SOLVED AGAINST THE DRAWDOWN TARGET, not read off a constant. A book that suffers `dd_r` R
+    # of drawdown at per-trade risk q loses roughly 1-(1-q)^dd_r of equity, so the q that spends
+    # exactly MAX_DRAWDOWN_TOLERANCE is q* = 1 - (1 - tol)^(1/dd_r). That is the aggressive
+    # setting: it takes every basis point the stated tolerance allows and stops precisely where
+    # the principal said to stop, rather than at a number chosen for looking sensible.
+    q_star = 1.0 - (1.0 - MAX_DRAWDOWN_TOLERANCE) ** (1.0 / _BOOK_WORST_DD_R)
+    # MULTIPLIED BY THE VALIDATED LEG COUNT, NOT BY k_eff -- and the difference matters. The
+    # -33.7R figure is the drawdown of the SUMMED three-leg series, so it already contains how
+    # often those legs co-fire; scaling it by k_eff as well double-counts the diversification and
+    # returned 2.87%, which is less than the 3.12% the armed gold book actually runs. The first
+    # version of this line therefore amputated the very book the budget is calibrated on.
+    base = q_star * _HEAT_BASE_LEGS
     if k_eff is None or not (k_eff == k_eff) or k_eff < 1.0:
-        return MAX_PORTFOLIO_HEAT
-    scaled = MAX_PORTFOLIO_HEAT * math.sqrt(float(k_eff) / _HEAT_BASE_KEFF)
-    return float(min(max(scaled, MAX_PORTFOLIO_HEAT), MAX_HEAT_CEILING))
+        return float(min(base, MAX_HEAT_CEILING))
+    # More independent bets survive more total heat at the SAME drawdown: portfolio drawdown for
+    # N sleeves at heat H scales roughly as H/sqrt(k_eff), so holding drawdown fixed lets H grow
+    # with sqrt(k_eff). Breadth is paid for with measured orthogonality.
+    scaled = base * math.sqrt(float(k_eff) / _HEAT_BASE_KEFF)
+    return float(min(max(scaled, base), MAX_HEAT_CEILING))
 
 
 def load_sleeves() -> list[dict]:

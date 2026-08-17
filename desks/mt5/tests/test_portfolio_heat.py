@@ -30,6 +30,7 @@ def _load():
     keep, ns = [], {"math": _math}
     wanted_fn = {"cap_by_heat", "realised_q", "auto_lot", "heat_budget"}
     wanted_const = {"MAX_PORTFOLIO_HEAT", "MAX_HEAT_CEILING", "_HEAT_BASE_KEFF", "Q_OPT",
+                    "MAX_DRAWDOWN_TOLERANCE", "_BOOK_WORST_DD_R", "_HEAT_BASE_LEGS",
                     "DIST_USD", "CONTRACT_OZ", "FX_EUR", "MIN_LOT_RISK_EUR"}
     for n in tree.body:
         if isinstance(n, ast.FunctionDef) and n.name in wanted_fn:
@@ -126,8 +127,9 @@ def test_a_flat_budget_would_cap_the_book_forever():
     The book would stop widening permanently -- the opposite of safe aggressive growth."""
     q_big = NS["realised_q"](100_000.0)
     q_mid = NS["realised_q"](2_343.0)
-    assert int(NS["MAX_PORTFOLIO_HEAT"] / q_big) == int(NS["MAX_PORTFOLIO_HEAT"] / q_mid), (
-        "premise changed: the flat budget no longer plateaus")
+    flat = NS["heat_budget"](2.26)
+    assert int(flat / q_big) == int(flat / q_mid), (
+        "premise changed: a flat budget no longer plateaus")
     # with correlation-awareness, more independent bets buy more room at the SAME equity
     assert int(NS["heat_budget"](5.12) / q_big) > int(NS["heat_budget"](2.26) / q_big)
 
@@ -136,8 +138,9 @@ def test_heat_scales_with_independence_not_sleeve_count():
     """Five genuinely independent sleeves are safer at 6% than three correlated ones at 4%.
     Drawdown scales as H/sqrt(k_eff), so holding drawdown fixed lets H grow with sqrt(k_eff)."""
     base = NS["heat_budget"](2.26)
-    assert base == pytest.approx(0.04, abs=1e-6)
-    assert NS["heat_budget"](5.12) == pytest.approx(0.04 * (5.12 / 2.26) ** 0.5, rel=1e-6)
+    q_star = 1.0 - (1.0 - NS["MAX_DRAWDOWN_TOLERANCE"]) ** (1.0 / NS["_BOOK_WORST_DD_R"])
+    assert base == pytest.approx(q_star * NS["_HEAT_BASE_LEGS"], rel=1e-6)
+    assert NS["heat_budget"](5.12) == pytest.approx(base * (5.12 / 2.26) ** 0.5, rel=1e-6)
     assert NS["heat_budget"](9.0) > NS["heat_budget"](5.12) > base
 
 
@@ -146,11 +149,30 @@ def test_unmeasured_correlation_gets_the_BASE_budget_never_the_ceiling():
     correlation yet. Treating 'not yet measured' as 'independent' is the one assumption that lets
     a correlated book size like a diversified one -- and that discovers its real correlation
     during the drawdown instead of before it."""
+    base = NS["heat_budget"](2.26)
     for bad in (None, float("nan"), 0.0, 0.9):
-        assert NS["heat_budget"](bad) == pytest.approx(NS["MAX_PORTFOLIO_HEAT"], abs=1e-9)
+        assert NS["heat_budget"](bad) == pytest.approx(base, abs=1e-9)
+        assert NS["heat_budget"](bad) < NS["MAX_HEAT_CEILING"]
 
 
 def test_the_ceiling_binds_however_good_diversification_looks():
     """Correlations rise in exactly the regime the budget would be spent, and a measured k_eff is
     an estimate taken in calm."""
     assert NS["heat_budget"](1000.0) == pytest.approx(NS["MAX_HEAT_CEILING"], abs=1e-9)
+
+
+def test_the_budget_is_solved_from_the_stated_drawdown_tolerance():
+    """The budget answers a question about THIS book -- 35% tolerance against its measured -33.7R
+    -- rather than being a round number. q* = 1-(1-tol)^(1/dd_r), times the validated leg count."""
+    q_star = 1.0 - (1.0 - NS["MAX_DRAWDOWN_TOLERANCE"]) ** (1.0 / NS["_BOOK_WORST_DD_R"])
+    assert q_star == pytest.approx(0.0127, abs=0.0005)
+    assert NS["heat_budget"](None) == pytest.approx(q_star * NS["_HEAT_BASE_LEGS"], rel=1e-9)
+
+
+def test_the_armed_gold_book_fits_at_live_equity():
+    """REGRESSION. Multiplying q* by k_eff instead of the validated LEG COUNT double-counted the
+    diversification already inside the -33.7R summed series and returned 2.87% -- below the 3.12%
+    the gold book actually runs, amputating the book the budget is calibrated on."""
+    gold = [{"name": f"gold_{w}"} for w in ("asia", "london_am", "afternoon")]
+    admitted, note = NS["cap_by_heat"](list(gold), 1684.0)
+    assert len(admitted) == 3 and note is None
