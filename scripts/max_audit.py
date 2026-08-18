@@ -3248,9 +3248,12 @@ _FINDING_DOCS_EXCLUDED = {
     # do not exist upstream, move it into _FINDING_DOCS.
     # trailing slash = the whole CLASS is claimed (a generator emits dated instances)
     "docs/research/deep_sweep/":
-        "weekly deep-cold-audit output -- CADENCED PRODUCER (§36); findings flow to\n"
-        "improvement_inbox and GAP_REGISTER rows (§35). Each dated report is one\n"
-        "sweep's snapshot, superseded by the next, never converted in place.",
+        "TWO producers' output under one directory (R0015): the weekly deep cold audit AND the\n"
+        "literature deep-miner's LIT_* files -- both CADENCED PRODUCERS (§36) whose findings\n"
+        "flow to improvement_inbox / the recommendation ledger / GAP_REGISTER rows (§35; e.g.\n"
+        "LIT #72 -> GAP #79, litminer run 7 -> R0514-R0519). Each dated report is one run's\n"
+        "snapshot, superseded by the next, never converted in place. The exclusion covers each\n"
+        "producer on its own routing argument, not by directory accident.",
     "docs/EXTERNAL_PANEL_DOSSIER.md":
         "GENERATED dossier -- its numbered block is a copy of the register table; original panel "
         "findings enter via panel_inbox -> panel_rulings, which are in scope",
@@ -3351,11 +3354,6 @@ _PRODUCER_CADENCE = {
         14.0, "L1.39/L1.31: every candidate listed here owes a Stage-A screen (R0115 and R0120 "
               "were screened same-day); a stale record means candidates are accumulating "
               "un-screened, which is precisely the idle-findings defect"),
-    "docs/EXECUTION_QUEUE.md": (
-        7.0, "the ranked, unbuilt remainder (opened 2026-07-30) -- 'worked in RANK ORDER by the "
-             "next cycle, the weekly GAP-MAX sweep, or any fresh session'; its own header claims "
-             "a cadence and nothing checked it was ever re-worked, which is exactly the failure "
-             "this law exists to catch"),
     # THE DISCRETIONARY DESK is a PRODUCER: it states the sleeve's measured constants (noise
     # floors, costs, the cost-adjusted breakeven hit rate) and every one is a MEASUREMENT that
     # drifts. A stale page means the desk is reasoning from last month's volatility regime and
@@ -3380,6 +3378,17 @@ _PRODUCER_CADENCE = {
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
 _TERMINAL_ARTIFACTS = {
+    "docs/EXECUTION_QUEUE.md":
+        "COMPLETED BATCH RECORD (verified by fresh read 2026-08-18). Ranks 2-7 ALL BUILT AND "
+        "WIRED 07-30 (the doc's own status table, artifacts on disk); rank 1 dispositioned the "
+        "same day (14 retired / 32 evidenced-blocked / 7 activate-pending). The live residue is "
+        "carried by RUNNING machinery, not by this file: dormancy/unwired is measured daily "
+        "(check_unwired_capability, 241 at reclassification), strategic-director activation is "
+        "OpenRouter-402-blocked and tracked in PRINCIPAL_ACTION, and every item-exit obligation "
+        "lands in the recommendation ledger per its own SS41 rule. A completed batch's write-up "
+        "is the record, not a backlog -- the INTRADAY_ROTATION precedent; a 7d re-work clock on "
+        "a dated snapshot schedules rewrites of history. Reclassified from _PRODUCER_CADENCE "
+        "with the verification stamp appended in-doc.",
     "docs/research/MASTER_APPENDIX_A_PENDING_RESEAL.md":
         "PARKED CONSTITUTIONAL TEXT AWAITING THE PRINCIPAL (2026-08-18). Sections appended to "
         "the sealed master on 08-17 by 98d63ce3+6b8b61a9 WITHOUT the principal-only --reseal; "

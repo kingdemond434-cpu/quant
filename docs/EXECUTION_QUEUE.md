@@ -226,3 +226,14 @@ the box, or the moment credit lands, with no redesign.
 
 Work in rank order. Ship each item wired + scheduled + evidenced, or do not count it. Re-run the
 dormancy hunter after every item: **if the dormant count went UP, the item was not finished.**
+
+## GOVERNANCE RECLASSIFICATION (2026-08-18, owed-work batch3 — fresh-read verification)
+
+Every rank re-read this session: 2–7 BUILT AND WIRED (status table above; artifacts verified on
+disk), rank 1 dispositioned 2026-07-30 (14 retired / 32 evidenced-blocked / 7 activate-pending).
+The live remainder is carried by running machinery, not by this file: the dormant/unwired count is
+measured daily (`check_unwired_capability`, 241 at this stamp), strategic-director activation is
+OpenRouter-402-blocked and surfaced in PRINCIPAL_ACTION, and each item's §41 exit obligation lands
+in the recommendation ledger. A completed batch's write-up is the record, not a backlog
+(INTRADAY_ROTATION precedent) — reclassified `_PRODUCER_CADENCE` → `_TERMINAL_ARTIFACTS`; the 7d
+re-work clock would have scheduled rewrites of a dated record.
