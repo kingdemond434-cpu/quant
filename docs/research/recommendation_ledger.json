@@ -6046,11 +6046,11 @@
    "summary": "HARVEST THE RECOVERABLE RFB VINTAGES FROM THE WAYBACK CDX. R0316 built the point-in-time store (libs/research/vintage.py) and wired FRED capture, but the store's history starts 2026-08-12 and cannot be back-filled -- so every axis needing a test window that predates today is still blocked on SAMPLE, not on machinery. The RFB Brazil crypto panel has 23+ publication dates recoverable from the Wayback CDX and a live-404 vintage was already recovered intact via the web.archive.org/<ts>id_/ raw-replay modifier (OP-047). That is a one-off backfill worth years of point-in-time depth: pair the CDX harvest with libs.data.xls_reader (the files are legacy .xls, landed in R0317) and libs.research.conservation (PF+PJ=Subtotal, the identity that validated the original parse), then record each recovered publication under its OWN vintage date, never today's. ALSO IN SCOPE: audit which other collectors overwrite a revised source the way collect_fred_macro did -- the FRED defect was found by scoping R0316, not by any fence, so the same shape is likely live elsewhere.",
    "roi_bps": 4.0,
    "raised": "2026-08-12T11:46:07.822299+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "8f73b1f8",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-18T19:48:06.568617+00:00"
   },
   {
    "id": "R0473",
@@ -6058,11 +6058,11 @@
    "summary": "check_enforcement_execution.py CREDITS A MENTION AS A RUN, so the L1.43/L1.49 reachability instrument has a false-GREEN mode. Measured: data/enforcement_execution.json records scripts/check_extractor_invariants.py as verdict EXECUTED with evidence 'invoked by scripts/build_enforcement_matrix.py', while that file invokes nothing -- the citation is a string inside a module-level dict literal mapping law ids to citation paths, and grep over build_enforcement_matrix.py finds no subprocess, Popen, import_module or exec anywhere. The fence had genuinely zero invocation sites at the time. This is the same error libs/research/extractor_invariants.py:201 explicitly refuses ('a module that only MENTIONS the conservation helper has not used it, and crediting prose as validation would let the fence be satisfied by writing about the fix'), committed by the desk's own reachability checker. Scope: check_enforcement_execution reports EXECUTED=151, and any of those 151 resting on a citation-in-a-literal is equally unproven -- the count is the thing to audit first, since a reachability instrument that can be satisfied by a string literal cannot cash any of its claims. Fix direction: resolve an invocation by walking the import/subprocess graph from an entry point (the check_gate_reachability.py idiom, declaration-site not tally), never by substring presence.",
    "roi_bps": null,
    "raised": "2026-08-12T12:32:42.275842+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Core fix was already live since 3dce08b0 (AST-based _code_index + can_exec condition + MENTIONED-in-_BROKEN); verified tonight against the live artifact: check_extractor_invariants.py now EXECUTED via a real invoker (run_law_gate.py:95 subprocess), zero MENTIONED/DECORATIVE rows, all 184 EXECUTED verdicts re-derived by the AST walker. Added the missing regression test pinning string-literal-is-not-a-run in 84cbf97d.",
+   "commit": "84cbf97d",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-18T19:48:08.456761+00:00"
   },
   {
    "id": "R0474",
@@ -6070,11 +6070,11 @@
    "summary": "THE TEST SUITE WRITES TO THE LIVE L1.57 GOVERNANCE REGISTRY. libs/ops/fence_exit.fence_exit() appends a row to data/denominator_contracts.jsonl via libs.ops.denominator.record() whenever scanned= is passed, and it exposes no way to redirect that write. Measured 2026-08-12: 94 of 670 rows (14 pct) in the live registry were test artifacts under the synthetic fence name 't'. Cleaned to 576 and the R0318 test redirected via monkeypatch, but the PRE-EXISTING writers remain: tests/governance/test_denominators.py calls fence_exit with scanned= at lines 38, 39, 51, 56, 57, 70, 71 (fence unset, so denominator.caller_name() files them under the TEST FUNCTION's name, which is worse than 't' because those look like real fences) and at 173, 174 with fence='t'. This is the same class as the L1.29 incident where the suite wrote to the live forecast store. Two candidate fixes: an autouse conftest fixture redirecting denominator._root() for the whole suite (broad, one place, cannot be forgotten by a new test), or threading root= through fence_exit (explicit, but every future caller must remember). Prefer the fixture -- a governance store that any test can silently append to will be polluted again by the next fence that ships.",
    "roi_bps": null,
    "raised": "2026-08-12T12:32:57.540274+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "84cbf97d",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-18T19:48:10.273039+00:00"
   },
   {
    "id": "R0475",
@@ -7738,6 +7738,42 @@
    "summary": "data/cot_btc_panel.json BUILDER COLUMN DEFECT: comm_long==noncomm_long AND comm_short==noncomm_short on 100% of 435 CME BITCOIN rows (litminer run8, data/carry_liq_screen.json cot_column_audit) -- the commercial columns are DUPLICATES of noncommercial, so every comm_* field in this SS33-credited artifact is fiction; nonrep_* verified independent (0% collision, used by M1). MECHANISM (likely): CFTC legacy futures-only column offsets mis-mapped in the 08-11 brain-hunter builder (raw zips cached at data/scratch/cot/ -- re-derivable without refetch). PATCH: fix the column map against the CFTC legacy layout, rebuild from cached zips, re-verify nonrep against total-OI arithmetic (noncomm_net + comm_net + nonrep_net = 0 identity currently CANNOT hold with duplicated columns -- use it as the rebuild's self-check). Until rebuilt: any analysis touching comm_* on this file is void; nonrep-based M1 stands.",
    "roi_bps": 15.0,
    "raised": "2026-08-18T19:20:11.836227+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0614",
+   "source": "cycle",
+   "summary": "THE PAGER SLEPT THROUGH A 22-HOUR MONEY-PATH OUTAGE. quant-cashcarry crash-looped from 2026-08-17 21:39Z (LawBreach CORE-SEAL at spawn, NRestarts=2242) and no alert fired that anyone acted on -- systemd auto-restart kept the unit in 'activating', and liveness checks key on states a crash-loop never enters. Fix direction: page on executor cycle-artifact age > 2x interval (catches every dead-executor mode regardless of unit state; the L1.51 lesson -- a flat book generates no evidence of its own flatness). ALSO FOUND WHILE RAISING THIS: docs/research/recommendation_ledger.json is read-modify-write JSON with NO lock -- two concurrent recommendations.py adds both printed 'R0614 ledgered' and a concurrent max_audit rewrite then erased both rows; serialise via an flock on the ledger path inside recommendations.py.",
+   "roi_bps": null,
+   "raised": "2026-08-18T19:42:29.638585+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0615",
+   "source": "cycle",
+   "summary": "PRINCIPAL DECISION OWED: accept or reject the parked Appendix A (sections 218-223, docs/research/MASTER_APPENDIX_A_PENDING_RESEAL.md). It was appended to the SEALED master on 08-17 by session commits 98d63ce3+6b8b61a9 without the principal-only --reseal; the seal breach crash-looped the LIVE cashcarry executor for ~22h (2,242 restarts, LawBreach L1.42 strict guard) and failed every organ-spawn law gate. Master restored to sealed bytes in 786e98d9 and the principal paged 2026-08-18. If accepted: re-append + check_constitution_core.py --reseal. If rejected: delete the parked file with a graveyard note.",
+   "roi_bps": null,
+   "raised": "2026-08-18T19:42:46.089251+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0616",
+   "source": "cycle",
+   "summary": "PROSPECTOR CARD listing_comparables_repricing (EV QUEUE 0.0038, novelty 0.802) owes its Stage-A/event-study screen per R0210(b): SCREENING OWNER = alpha-screening org (rides card #26's announcement archive + R0437 grouping-map consumers), DUE 2026-09-01. Design pre-registered on the card (prospector_watchlist.md 2026-08-18): phase-1 announce->list comparables relative return (primary), phase-2 post-listing reversal (confirmatory), point-in-time clusters only, placebo on matched non-event windows, both event_study exit rules counted.",
+   "roi_bps": 15.0,
+   "raised": "2026-08-18T19:55:29.047795+00:00",
    "status": "open",
    "reason": null,
    "commit": null,

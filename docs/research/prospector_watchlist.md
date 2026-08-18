@@ -607,3 +607,84 @@ analysis* is self-disclosed LLM output (*"チャッピーの解説によると"*
 practitioner node and must never be counted as convergence. Its *observations* — realised P&L, greeks
 snapshot, the expiry failure mode — stand. The other three sources are pre-2023 or carry no LLM
 disclosure, checked.
+
+## SESSION SUMMARY — 2026-08-18 (standing daily run; brain seat)
+
+**STEP 0 — WATCHLIST REVIEW (one line each, triggers probed live this run):**
+1. POC volume-profile retest (RU 08-04) — **HOLD.** Stage-A screen on owned 1h candles still
+   un-run; trigger unchanged.
+2. SFD-class venue-cadence probe (JP 08-04) — **HOLD.** 48h mark/premium-index cadence recording
+   still un-run; name-the-discontinuity precondition stands.
+3. `dvol_futures_basis_carry` — **DISPLACED to research_memory** (rm-20260818T195526-7ef2c7,
+   trigger preserved verbatim). Probed live: Deribit ETH futures = 12, DVOL futures = **NONE** —
+   trigger unfired after 6 days; it was the weakest holder (EV 0.0003) and a QUEUE card arrived.
+4. `coinm_usdtm_basis_convexity_rv` — **HOLD.** R0462 (COIN-M backfill) scheduled, due 2026-08-27;
+   measurement trigger pending.
+5. `kr_rail_state_transition_global_leg` — **HOLD.** Screen owed on card #26 (design pre-registered
+   08-12); no run visible in research memory.
+
+**THIS SESSION'S DIG (NP forum-2 TRADING batch, carried since 08-12, all closed):**
+112425 "Price patterns" **EXHAUSTED** (6/6 archived pages; page-3 final state lost to the capture
+lattice — named residual). 147526 "corporate bond new issue premium" **EXHAUSTED** (3/3 posts,
+sole capture). 4851 "Renaissance Watch" **SURVEYED** (pages 1/17/18 of 27 archived, 45 total;
+named residual: pages ~38-40 = 2014 Senate-PSI basket-options era, 44-45 = 2018+ era). Yields
+routed to research memory (rm-…-e701c2): QIM capacity-decay case study (VERIFIED-grade public
+tape: founding capacity belief $500M → $6-10B hard-close claim → practitioner impact-cost
+refutation → flat-since-2009; the operator's OWN May-2010 admission that its drawdown-reduction
+policy subtracted value pro-cyclically), 2013 GP-engine commoditization testimony, Aug-2007 quake
+contemporaneous tape, GLOBEX confirm-parsing counterparty-identity leak (era protocol-metadata
+flow attribution; modern analog already catalogued = universe-map row 54 Hyperliquid position
+transparency — enrichment only, no new axis).
+
+**Cards kept (survived graveyard + EV): 1.**
+
+### listing_comparables_repricing — NEW CARD (slot 5, after dvol displacement) — EV 0.0038 QUEUE (untagged) / 0.0013 REJECT (crowded_known) — BOTH REPORTED; novelty 0.802 [§33: screened -> ledger R0616 names the screening owner + due 2026-09-01]
+1. **Source + provenance:** NP thread 147526 "corporate bond new issue premium/discount"
+   (2010-11-29→2011-02-05, golftango/Lucy/tokyo; Wayback 20110206204021, sole capture, EXHAUSTED
+   3/3 posts this run). Load-bearing reply (Lucy, 1-post account): a new issue priced wide/narrow
+   **reprices existing bonds & CDS** — the new-issue event moves the COMPARABLE CURVE, not just
+   the issue. Grade: **SEMI for the mechanism class** (independently grounded in the equity
+   IPO-industry-spillover literature + the KR 가두리 era corpus documenting captive listing
+   demand), **CLAIM for the crypto instance** (no crypto implementation found in this dig — and
+   that absence is exactly the tag ambiguity scored below). DERIVES-FROM: NONE (3-post thread, no
+   citations).
+2. **Mechanism:** a major-venue listing ANNOUNCEMENT of asset X opens a dated two-phase repricing
+   of X's already-listed comparables. Phase 1 (announcement→listing): demand for X routes to
+   substitutes — X is not yet tradeable on that venue (Upbit KR retail cannot buy X at all;
+   Binance announcement→listing gaps run days) — comparables outperform the cross-section.
+   Phase 2 (post-listing): demand concentrates onto X; comparables reverse. The desk trades ONLY
+   the comparables (liquid, already-listed perps) — harvesting listing information through
+   instruments that exist, sidestepping the measurably-crowded listed-asset snipe layer entirely.
+3. **Counterparty + why they persist:** attention-driven retail routing "the next X" demand into
+   sector peers (behavioral, re-supplied by every listing cycle); market makers inventory-hedging
+   new-listing risk with correlated names (structural, small). The snipe bots that crowd the
+   listed asset CANNOT occupy this channel — it is a multi-day relative-value window with no
+   latency race.
+4. **Why the edge exists NOW:** the desk holds the dated announcement archives (Binance CMS +
+   Upbit, 8.8y) AND a desk-built correlation-cluster grouping map (zero licence surface) — the
+   comparable set is computable point-in-time from owned data; Upbit still lists with
+   announcement gaps; §42 names listings as desk ground.
+5. **Crypto-perp adaptation:** cleanest construction is CROSS-VENUE — Upbit announcement →
+   Binance-perp comparables of the announced asset (announcement on one venue, harvest on
+   another, no KRW rail needed). Second construction: Binance announcement → Binance-perp
+   comparables. BOTH declared now (VARIANTS_TRIED; no construction-shopping later).
+6. **Cheapest falsification (free, historical):** event list from the announcement archives;
+   comparable sets from ROLLING PRE-EVENT correlation clusters — **NEVER the current grouping map
+   applied backwards** (the pct_circ_now look-ahead class, named before the screen so it cannot
+   be shipped); `libs/validation/event_study.py`, both exit rules = 2 trials, phase-1 cell
+   primary, phase-2 reversal confirmatory. Timestamp alignment DECLARED: announcement stamps are
+   venue-local (Upbit KST — the KR to= lesson), bars UTC D1; entry = next-UTC-day open after the
+   announcement stamp, never same-bar.
+7. **≤4-week observable:** event-study verdict on the archived events (both phases), plus ~8-12
+   new events/month accruing forward across the two venues.
+8. **Strongest spurious argument (written first):** REVERSE CAUSALITY — venues list what already
+   pumped, so the listing is SELECTED ON the cluster's momentum and "comparables outperform
+   before listing" may be the venue's selection rule, not a tradeable reaction. The screen must
+   measure from the ANNOUNCEMENT stamp only, control for pre-announcement cluster momentum, and
+   survive a placebo on matched non-event windows of the same clusters. Second: the meme-corner
+   "sympathy play" is folk-crowded — both EV variants are reported above (QUEUE untagged, REJECT
+   crowded_known) and the screen's FIRST question is the crowding check, not the return.
+
+**WATCHLIST (max 5 — active entries after this session): POC retest (hold), SFD cadence probe
+(hold), coinm_usdtm_basis_convexity_rv (hold), kr_rail_state_transition_global_leg (hold),
+listing_comparables_repricing (NEW). 5/5 slots used; dvol trigger lives in research memory.**

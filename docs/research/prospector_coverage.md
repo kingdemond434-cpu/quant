@@ -5438,3 +5438,31 @@ STEP -1 DIVERGENT QUERIES (3 a different searcher would run; ≥2 spent): (a) Nu
 solution write-ups; (c) era-journalist chain on 4851: Medallion basket-options/leverage
 structure via public record rather than forum lore.
 STATUS: items 1-3 OPEN.
+RESOLVED 1 (NP forum-2 TRADING batch, carried since 08-12 — all three threads closed):
+- **112425 "Price patterns" EXHAUSTED** (6/6 archived pages, 2008→2014; page-3 final state lost
+  to the capture lattice — the sole 2011-01 capture predates its fill; named, not papered over).
+  Yield: QIM capacity-decay case study end-to-end (VERIFIED-grade contemporaneous tape: founding
+  capacity belief $500M → 2010 hard-close letter claiming $6-10B → FDAXHunter's measured
+  impact-cost refutation → "flat since 2009" 2013 verdict → 2013 down year + HFT-impact
+  suspicion); the operator's OWN May-2010 attribution that its systematic drawdown-reduction
+  policy subtracted value (lowest exposure in the recovery, highest in the worst stretch) —
+  the L1.51 clamp-cost law observed in the wild, priced by the payer; 2013 GP commoditization
+  testimony ("everyone and his brother… cheap genetic programming engines") — free crowding
+  context for the desk's own 420/0 + DSR discipline; Meyer-Packard floating-hypercubes
+  "didn't pan out for Prediction Company" scuttlebutt. NO new mechanism (candlestick/pattern
+  class = price-only daily, desk-dead). Routed: rm-…-e701c2.
+- **147526 "corporate bond new issue premium" EXHAUSTED** (3/3 posts, sole capture 2011-02).
+  Yield: THE CARD — new issues reprice the EXISTING comparable curve → listing_comparables_
+  repricing (novelty 0.802, EV QUEUE 0.0038 untagged / REJECT 0.0013 crowded_known, BOTH
+  reported; card in prospector_watchlist.md, screen handoff = R0616, owner alpha-screening,
+  due 2026-09-01; dvol displaced to rm-…-7ef2c7 with trigger preserved, probed unfired live —
+  Deribit ETH DVOL futures: NONE).
+- **4851 "Renaissance Watch" SURVEYED** (pages 1/17/18 read of 27 archived, 45 total). Yield:
+  Aug-2007 quake contemporaneous tape (RIEF −8.7%, Simons deleveraging-wave letter, AQR −13%,
+  Tykhe −19%, kubrick's factor-vs-technical cross-section read); GLOBEX confirm-parsing
+  counterparty-identity leak + protocol reverse-engineering as standard HFT practice (2
+  practitioners) — era instance of protocol-metadata flow attribution; modern analog ALREADY
+  CATALOGUED (universe map row 54 Hyperliquid position transparency) — enrichment, no new axis.
+  NAMED RESIDUAL: pages ~38-40 (2014 Senate-PSI basket-options era) + 44-45 (2018+); low
+  mechanism density measured (3-page sample: news-watch genre) — residual is optional ground,
+  not owed ground.
