@@ -1,3 +1,34 @@
+> # RETRACTED 2026-08-18 — THIS REPORT IS A LOOKAHEAD ARTIFACT
+>
+> Every number below was produced by `mech_battery.py`, which computed its day
+> states INLINE and SAME-DAY: day D was labelled from D's own 13:00–22:00 NY
+> session and then used to filter D's own signals. The asia window fires at
+> 07:00 UTC, so every trade here was gated by data from fifteen hours in its own
+> future.
+>
+> `run_hunt12.day_states` had already found and fixed exactly this. Eleven
+> callers picked the fix up. This script was not one of them, because it
+> reimplemented the labelling instead of importing it — two implementations of
+> one definition, and the wrong one wrote this file.
+>
+> | cell | as published | corrected |
+> |---|---|---|
+> | asia TREND_DAY | +0.908R, defl_t 9.85, PF 4.29 | **+0.191R, defl_t 1.30** |
+> | asia NORMAL_DAY | +0.459R, defl_t 9.56 | **+0.256R, defl_t 4.59** |
+> | asia FAILED_BREAK | −0.257R, defl_t −8.29, −184R DD | **+0.158R, defl_t 2.16** |
+> | asia RANGE_DAY | +0.076R | **+0.210R** |
+>
+> Corrected, the four states pay +0.191 / +0.256 / +0.210 / +0.158 against an
+> unconditional base of **+0.212R**. That is a flat line. Prior-NY displacement
+> does not discriminate; the "4.3× the unconditional book at a quarter of the
+> drawdown" headline was the lookahead, and the FAILED_BREAK sign inverts.
+>
+> **The Action section below is void.** Conditioning on this state buys nothing
+> and costs half the sample. See `reports/mech_battery.json`, regenerated from
+> the corrected join.
+
+---
+
 # MECHANISM REPORT: What makes Asia Gold work
 
 _Generated 2026-08-17 — Mechanism Desk flagship v1. Evidence: XAUUSD H1
