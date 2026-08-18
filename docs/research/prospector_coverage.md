@@ -5402,3 +5402,39 @@ has its consumer wiring owed at R0437.
 repos, the most-starred artifact on the ground unopened, a source-walled official lecture corpus with
 its text-mirror route untried, and a recurring webinar series. **Seat-exhaustion is false here as
 everywhere.**
+
+---
+
+### 2026-08-18 PROSPECTOR session (standing daily; brain seat, real egress) — IN PROGRESS (write-first note; updated as items resolve)
+PRIOR STATE: both 08-12 sessions (brain seat + session G) closed cleanly — no dead run to
+resurrect. MINE GATE at start: BACKLOG-CLEAR (19/19 disposed; re-read live, header confirmed).
+RESUME RULE 1 (verify queue) SATISFIED BY OWNERSHIP CHECK, not poaching: all 6 listed verify
+items are done or owned in-flight — 中文 corpus MINED 2026-08-18 (free-data seat, card 23 grade);
+Foreign AI-quant systems MINED (Qlib 08-11, vnpy.alpha 08-13, JP/KR half 08-18 litminer run 8,
+card 24 grade); BIS 1087 wired + carry-liq screen executed (litminer run 8, commit b35e0b3b);
+KR venue-state + stablecoin-run = KR/brain seats; grouping map = R0437 (alpha org, sched 08-18).
+Backlog listing is STALE for cards 23/24 — noted for the backlog tool owner below.
+GENERATION PRIORS read: favour data_axis_watchlist.md (0.489 conv), starve: none.
+STRATEGY COVERAGE read: 0 unhunted, 6 THIN (ATTENTION-SENTIMENT, MARKET-MAKING-EXECUTION,
+EVENT-AND-CALENDAR, LEVEL-REACTION, STATISTICAL-ARBITRAGE, LEAD-LAG) — this run's threads bias
+EVENT-AND-CALENDAR (147526 new-issue premium) + Records/process.
+ITEMS THIS RUN (bounded per completion contract; oldest debt first):
+1. NP forum-2 (TRADING) thread batch, carried since 08-12: 112425 "Price patterns", 147526
+   "corporate bond new issue premium" (translate: listing/unlock premium mechanics —
+   EVENT-AND-CALENDAR THIN), 4851 "Renaissance Watch" — via CDX per-thread captures,
+   reply-chain ≥2, claim EXHAUSTED per-thread.
+2. RECORDS FAMILY FIRST TOUCH (search-space expansion ≥25%): Numerai forum post-mortems
+   (tournament/Signals/crypto burn threads) + Kaggle G-Research crypto post-mortems — the two
+   never-touched Records grounds named 08-12.
+3. (stretch) NP forum-1 2013 snapshots for post-2012 titles + f12 147620 Kelly / 147696
+   Dynamic Correlation.
+SIDE-CHECKS (recorded, not items): cards 27/28 DECIDE status (ruling owed 08-19 — verify
+landed/pending, escalate only if overdue); Wilmott robots re-probe (WALLED ×2); watchlist
+trigger probes: ETHDVOL futures listed? (dvol card), card 31/R0462 COIN-M backfill landed?
+(coinm card), POC/SFD screens run? (research_memory).
+STEP -1 DIVERGENT QUERIES (3 a different searcher would run; ≥2 spent): (a) Numerai forum
+"burn"/"what went wrong" staking post-mortems — a PARTICIPANT's query, not a mechanism-hunter's;
+(b) Kaggle G-Research winners' "what didn't work" sections — the negative-result layer of
+solution write-ups; (c) era-journalist chain on 4851: Medallion basket-options/leverage
+structure via public record rather than forum lore.
+STATUS: items 1-3 OPEN.
