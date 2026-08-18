@@ -310,6 +310,34 @@ def test_FULL_SWEEP_FORMULAS_COLLAPSE_TO_MEASURED_INDEPENDENT_CLOCKS(tmp_path: P
         "the strongest representative of a duplicate cluster should own its one clock")
 
 
+def _resolvable_book(root: Path, incumbent_names: list[str], candidate_keys: list[str]) -> None:
+    """Give every incumbent a shadow-state provenance row and every series a shared npz.
+
+    R0480 made the marginal-contribution gate bind on every spawn: an incumbent without a
+    resolvable return series reads UNMEASURED and fails closed, so a fixture that wants spawns
+    to happen must give its standing book real series -- exactly what the live cohort owes.
+    Incumbents are independent positive-drift noise (a measurable book Sharpe), candidates carry
+    stronger independent drift, so they clear the correlation hurdle with real arithmetic.
+    """
+    rng = np.random.default_rng(20260818)
+    t = (np.datetime64("2026-01-01T00:00:00", "ns").astype(np.int64)
+         + np.arange(400, dtype=np.int64) * 86_400_000_000_000)
+    payload: dict[str, np.ndarray] = {
+        "__timestamp_ns": t, "__symbol": np.array(["BTC"] * 400)}
+    (root / "data").mkdir(exist_ok=True)
+    for name in incumbent_names:
+        payload[f"inc_{name}"] = rng.normal(0.0008, 0.01, 400)
+        (root / "data" / f"{name}_shadow_state.json").write_text(json.dumps({
+            "shadow_start": "2026-01-01T00:00:00+00:00",
+            "source_kind": "full_sweep_npz",
+            "pnl_artifact": "data/full_sweep_survivor_pnl.npz",
+            "pnl_key": f"inc_{name}",
+        }), "utf-8")
+    for key in candidate_keys:
+        payload[key] = rng.normal(0.003, 0.01, 400)
+    np.savez_compressed(root / "data/full_sweep_survivor_pnl.npz", **payload)
+
+
 def test_ONE_IDLE_PLUS_ONE_DEAD_SLOT_STARTS_BOTH_FULL_SWEEP_CLOCKS_COUNT_NEUTRALLY(
         tmp_path: Path) -> None:
     (tmp_path / "data").mkdir()
@@ -327,10 +355,21 @@ def test_ONE_IDLE_PLUS_ONE_DEAD_SLOT_STARTS_BOTH_FULL_SWEEP_CLOCKS_COUNT_NEUTRAL
         "m_concurrent": 11, "m_upper": 11, "cap": 12, "complete": True,
         "over_cap": False, "idle_slots": 1, "slots": slots,
     }
+    # R0480: the book must be RESOLVABLE for a spawn to pass the marginal gate. The dead slot
+    # (cny_premium) needs no series -- the virtual pass lawfully removes a retiring clock from
+    # the incumbent matrix.
+    _resolvable_book(tmp_path, [f"healthy_{i}" for i in range(10)],
+                     ["cross_asset|lead|1h|all|decay(a)|decay(b)",
+                      "cross_asset|lead|4h|all|decay(a)|decay(b)"])
 
     out, rc = run(tmp_path, cohort=cohort)
     assert rc == 0
     assert len(out["spawned"]) == 2
+    for row in out["spawned"]:
+        adm = row["marginal_admission"]
+        assert adm and adm["admitted"] is True, (
+            "R0480(4): the Admission verdict must ride the durable spawn row")
+        assert adm["n_overlap"] == 400, "series must be joined on their common timestamps"
     assert out["retirements"][0]["state"] == "RETIRED"
     axis = json.loads((tmp_path / "data/axis_shadow_state.json").read_text("utf-8"))
     assert axis["axes"][0]["verdict"] == "RETIRED"

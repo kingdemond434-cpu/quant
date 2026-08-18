@@ -29,22 +29,32 @@ from __future__ import annotations
 
 import math
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+
 from libs.research.capacity_policy import growth_runway
+from libs.research.marginal_admission import Admission
 
 __all__ = [
     "Candidate",
+    "build_incumbent_series",
     "decide",
     "dedupe",
+    "marginal_gate",
     "order_queue",
     "parse_full_sweep_candidates",
     "parse_screen_verdicts",
+    "resolve_pnl_series",
     "slug",
     "standing_names",
 ]
+
+#: One return series: (unique sorted timestamps in ns, per-timestamp portfolio returns).
+Series = tuple[np.ndarray, np.ndarray]
 
 #: The verdict prefix the desk regards as its STRONGEST Stage-A read. It is a RANKING label and no
 #: longer an admission gate -- see ADMISSION below.
@@ -522,8 +532,150 @@ def free_slots(cohort: dict[str, Any]) -> tuple[int, str]:
     return cap - m, f"{cap - m} free slot(s) ({m}/{cap} at the upper bound){detail}"
 
 
+def resolve_pnl_series(root: Path, *, source_kind: str, pnl_key: str,
+                       pnl_artifact: str = "data/full_sweep_survivor_pnl.npz") -> Series | None:
+    """(timestamps_ns, per-timestamp portfolio returns) for an npz-provenance hypothesis, or None.
+
+    None means UNMEASURED, never "empty": axis-screen candidates carry no return series artifact
+    at all, and a full-sweep key can be absent or predate provenance schema v2. Same-timestamp
+    rows are averaged into one cross-sectional observation, exactly as the forward runner accrues
+    them -- forty symbols reacting to one impulse are not forty independent events, and a gate
+    correlating on a different collapse than the clock accrues on would compare two rulers.
+    """
+    if source_kind != "full_sweep_npz" or not pnl_key:
+        return None
+    path = root / pnl_artifact
+    try:
+        with np.load(path, allow_pickle=False) as z:
+            if pnl_key not in z.files or "__timestamp_ns" not in z.files:
+                return None
+            values = np.asarray(z[pnl_key], dtype=float)
+            times = np.asarray(z["__timestamp_ns"], dtype=np.int64)
+    except (OSError, ValueError, KeyError):
+        return None
+    if len(values) != len(times) or len(values) == 0:
+        return None
+    mask = np.isfinite(values)
+    if not np.any(mask):
+        return None
+    unique_t, inverse = np.unique(times[mask], return_inverse=True)
+    sums = np.bincount(inverse, weights=values[mask])
+    counts = np.bincount(inverse)
+    return unique_t, sums / np.maximum(counts, 1)
+
+
+def build_incumbent_series(root: Path, cohort: dict[str, Any]) -> dict[str, Series | None]:
+    """slug(name) -> return series for EVERY standing clock in the cohort; None = UNMEASURED.
+
+    Every slot gets an entry whatever its provenance -- an incumbent this desk cannot resolve is
+    kept in the map as None so the gate fails CLOSED on it (R0480 requirement 3), never silently
+    dropped, which would understate rho in exactly the direction that admits duplicates. Series
+    come from the same shadow_state provenance keys the forward runner reads, so the gate and the
+    clock can never disagree about which series a sleeve is.
+    """
+    import json
+
+    out: dict[str, Series | None] = {}
+    for s in cohort.get("slots", []) if isinstance(cohort, dict) else []:
+        if not (isinstance(s, dict) and s.get("name")):
+            continue
+        name = slug(str(s["name"]))
+        state_path = root / "data" / f"{name}_shadow_state.json"
+        series: Series | None = None
+        try:
+            state = json.loads(state_path.read_text("utf-8"))
+        except (OSError, ValueError):
+            state = None
+        if isinstance(state, dict):
+            series = resolve_pnl_series(
+                root, source_kind=str(state.get("source_kind") or ""),
+                pnl_key=str(state.get("pnl_key") or ""),
+                pnl_artifact=str(state.get("pnl_artifact")
+                                 or "data/full_sweep_survivor_pnl.npz"))
+        out[name] = series
+    return out
+
+
+def _refused_admission(reason: str, *, n_overlap: int = 0) -> Admission:
+    """A fail-closed Admission: rho_used=1.0, admitted=False -- marginal_admission's own blank."""
+    return Admission(False, reason, candidate_sharpe=0.0, portfolio_sharpe=0.0,
+                     rho_hat=float("nan"), rho_used=1.0, hurdle=float("nan"),
+                     orthogonal_ir=0.0, portfolio_sharpe_after=0.0, gain=0.0,
+                     n_overlap=n_overlap, n_eff_before=0.0, n_eff_after=0.0)
+
+
+def marginal_gate(cand_series: Series | None,
+                  incumbents: dict[str, Series | None]) -> dict[str, Any]:
+    """Judge one candidate against the book the desk ALREADY holds (R0480).
+
+    Wraps marginal_admission.evaluate() with the two disciplines it cannot supply itself:
+
+    * TIMESTAMP ALIGNMENT (requirement 2): evaluate() truncates from the front and does NOT join
+      on time, so misaligned series would produce a correlation that means nothing (same-ruler
+      law). All series are inner-joined on their common timestamps here, before the call.
+    * FAIL CLOSED ON THE UNMEASURED (requirement 3): an incumbent whose series cannot be resolved
+      reads UNMEASURED and forces rho=1 -- it is NAMED in the refusal, never dropped from the
+      matrix, because dropping it understates rho in the direction that admits duplicates. A
+      candidate whose own series cannot be resolved is refused the same way when a book exists.
+
+    The one deliberate pass-through: an EMPTY book with an unmeasurable candidate. There is
+    nothing to duplicate, so the gate's question is vacuous -- and refusing a zero-capital forward
+    clock for lacking the series the clock itself exists to produce would be the circular gate
+    the two-stage law forbids (SHADOW is the producer of the OOS observations). The verdict says
+    NOT-APPLICABLE out loud rather than manufacturing an Admission with invented numbers.
+    """
+    from libs.research.marginal_admission import evaluate
+
+    unresolved = sorted(n for n, s in incumbents.items() if s is None)
+    if unresolved:
+        return _refused_admission(
+            f"incumbent series UNMEASURED for {len(unresolved)} standing clock(s) "
+            f"({', '.join(unresolved[:4])}{'...' if len(unresolved) > 4 else ''}) -- fail closed "
+            "to rho=1: correlation to the book cannot be ruled out, and dropping an unresolvable "
+            "incumbent from the matrix would understate rho in the direction that admits "
+            "duplicates. Repair: give these clocks resolvable return-series provenance").to_dict()
+    if not incumbents:
+        if cand_series is None:
+            return {"admitted": True, "reason": (
+                "NOT-APPLICABLE: empty incumbent book and no candidate series -- nothing to "
+                "duplicate, so the marginal question is vacuous; standalone merit is the forward "
+                "clock's job (two-stage law), and demanding the series the clock exists to "
+                "produce would be a circular gate"), "gate": "NOT-APPLICABLE"}
+        t_c, r_c = cand_series
+        return evaluate(r_c, np.empty((len(r_c), 0)),
+                        periods_per_year=_periods_per_year(t_c)).to_dict()
+    if cand_series is None:
+        return _refused_admission(
+            "candidate return series UNMEASURED (no npz provenance) while a book is standing -- "
+            "fail closed to rho=1: an unmeasurable candidate cannot be told apart from a "
+            "duplicate of the book already held").to_dict()
+
+    t_c, r_c = cand_series
+    common = t_c
+    for _, s in sorted(incumbents.items()):
+        assert s is not None
+        common = np.intersect1d(common, s[0])
+    cand = r_c[np.searchsorted(t_c, common)] if common.size else np.empty(0)
+    cols = []
+    for _, s in sorted(incumbents.items()):
+        assert s is not None
+        cols.append(s[1][np.searchsorted(s[0], common)] if common.size else np.empty(0))
+    inc = np.column_stack(cols) if cols and common.size else np.empty((common.size, 0))
+    return evaluate(cand, inc, periods_per_year=_periods_per_year(common)).to_dict()
+
+
+def _periods_per_year(t_ns: np.ndarray) -> float:
+    """Annualisation from the joined grid itself; a daily default when it cannot be measured."""
+    if t_ns.size < 2:
+        return 365.0
+    step_s = float(np.median(np.diff(t_ns))) / 1e9
+    return 365.25 * 86400.0 / step_s if step_s > 0 else 365.0
+
+
 def decide(candidates: list[Candidate], standing: set[str], cohort: dict[str, Any],
-           book_usd: float | None = None) -> dict[str, Any]:
+           book_usd: float | None = None, *,
+           series_of: Callable[[Candidate], Series | None] | None = None,
+           incumbent_series: dict[str, Series | None] | None = None) -> dict[str, Any]:
     """spawn-vs-queue for one run, by EV-RANK (the two-stage law's own admission rule).
 
     Ranking is by TIME-TO-RESOLUTION -- how many calendar days a forward clock needs to settle the
@@ -534,6 +686,13 @@ def decide(candidates: list[Candidate], standing: set[str], cohort: dict[str, An
 
     NO BAR MOVES HERE. The Holm z is READ from the cohort to price the wait; admitting clocks
     RAISES m and therefore TIGHTENS every standing candidate's bar.
+
+    R0480: ev-admitted candidates then pass the MARGINAL-CONTRIBUTION gate (marginal_gate) against
+    the cohort's own standing clocks -- `series_of` resolves a candidate's return series,
+    `incumbent_series` maps slug(slot name) -> series (None = UNMEASURED, fails closed). A caller
+    providing neither judges every candidate against an all-UNMEASURED book, which refuses when
+    slots are standing -- the fail-closed default, never a silent bypass. Refusals are queued
+    with their verdict in `admissions`.
     """
     from libs.research.slot_admission import rank as ev_rank
 
@@ -544,13 +703,34 @@ def decide(candidates: list[Candidate], standing: set[str], cohort: dict[str, An
     ranking = ev_rank([c.as_rank_row(book_usd) for c in fresh], n_slots=n_free,
                       m_cohort=m_cohort)
 
-    admitted = [by_name[r["name"]] for r in ranking["admitted"] if r["name"] in by_name]
+    # R0480: THE MARGINAL-CONTRIBUTION GATE, between the EV-rank and the spawn list. The rank
+    # orders by time-to-resolution and its only dedupe upstream is NAME-based, so a differently-
+    # named candidate at rho 0.97 to the book reads as 'fresh' and takes a scarce Holm slot --
+    # the live cohort's own measured failure (three basis signals, ONE bet wearing three
+    # tickers). Every ev-admitted candidate is judged against the book the desk already holds;
+    # a refusal is QUEUED with its verdict, never silently dropped. The incumbent set comes from
+    # the cohort's OWN slots -- a slot the caller's series map does not know reads None and
+    # fails closed (never dropped from the matrix).
+    inc_names = [slug(str(s["name"])) for s in (cohort.get("slots") or [])
+                 if isinstance(s, dict) and s.get("name")]
+    provided = incumbent_series if incumbent_series is not None else {}
+    incumbents: dict[str, Series | None] = {n: provided.get(n) for n in inc_names}
+    admissions: dict[str, dict[str, Any]] = {}
+    admitted: list[Candidate] = []
+    refused: list[Candidate] = []
+    for r in ranking["admitted"]:
+        c = by_name.get(r["name"])
+        if c is None:
+            continue
+        verdict = marginal_gate(series_of(c) if series_of is not None else None, incumbents)
+        admissions[c.name] = verdict
+        (admitted if verdict.get("admitted") else refused).append(c)
     deferred_names = [r["name"] for r in ranking["deferred"] if r["name"] in by_name]
-    queued = order_queue([by_name[n] for n in deferred_names], book_usd)
+    queued = order_queue([*refused, *(by_name[n] for n in deferred_names)], book_usd)
     return {
         "spawn": admitted, "queue": queued, "duplicates": dupes,
         "free_slots": n_free, "why_free": why_free,
-        "ranking": ranking,
+        "ranking": ranking, "admissions": admissions,
         "order_law": ("EV-rank by TIME-TO-RESOLUTION (two-stage law, slot admission): fastest "
                       "forward clock first, orthogonality-capped per mechanism. A Stage-A "
                       "significance verdict is NOT an admission gate -- Stage A has zero "

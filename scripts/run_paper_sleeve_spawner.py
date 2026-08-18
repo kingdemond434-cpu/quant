@@ -53,9 +53,11 @@ if str(_ROOT) not in sys.path:
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
 from libs.research.paper_sleeves import (  # noqa: E402
     Candidate,
+    build_incumbent_series,
     decide,
     parse_full_sweep_candidates,
     parse_screen_verdicts,
+    resolve_pnl_series,
     standing_names,
 )
 
@@ -329,10 +331,21 @@ def run(root: Path, cohort: dict[str, Any] | None = None,
                 virtual.get("m_upper") if isinstance(virtual.get("m_upper"), (int, float))
                 else virtual.get("m_concurrent") or 0))
 
-    decision = decide(parsed["candidates"], standing, virtual, book_usd)
+    # R0480: the marginal-contribution gate needs every candidate's and every standing clock's
+    # return series. The incumbent map is built from the REAL cohort's slots; the virtual pass
+    # looks up its (reduced) slot set in the same map, so a retiring clock lawfully leaves the
+    # matrix while a slot the map cannot resolve stays in it as UNMEASURED and fails closed.
+    inc_series = build_incumbent_series(root, cohort)
+
+    def _series(c: Candidate):
+        return resolve_pnl_series(root, source_kind=c.source_kind, pnl_key=c.pnl_key)
+
+    decision = decide(parsed["candidates"], standing, virtual, book_usd,
+                      series_of=_series, incumbent_series=inc_series)
     # A virtual displacement may only fund ITS OWN challenger. Otherwise a higher-ranked,
     # unrelated candidate can consume the virtual seat while the outgoing clock remains live.
-    actual = decide(parsed["candidates"], standing, cohort, book_usd)
+    actual = decide(parsed["candidates"], standing, cohort, book_usd,
+                    series_of=_series, incumbent_series=inc_series)
     real_free = int(actual["free_slots"])
     lawful_spawn = []
     for candidate in decision["spawn"]:
@@ -365,6 +378,9 @@ def run(root: Path, cohort: dict[str, Any] | None = None,
                   f"sharpe_corrected={c.sharpe_corrected}; slot free at spawn time "
                   f"({decision['why_free']})")
         row = _spawn_one(root, c, reason)
+        # R0480(4): the Admission verdict this clock was spawned under, ON the durable spawn row
+        # -- the decision is auditable at the moment it was taken, not reconstructed later.
+        row["marginal_admission"] = decision["admissions"].get(c.name)
         if row["state"] == "SPAWNED":
             out["spawned"] = [*out["spawned"], row]
             spawned_now.append(row["name"])
@@ -379,14 +395,20 @@ def run(root: Path, cohort: dict[str, Any] | None = None,
 
     for c in decision["queue"]:
         kept = prior_queued.get(c.name, {})
-        out["queued"].append({
+        qrow: dict[str, Any] = {
             "name": c.name, "axis": c.axis, "trial": c.trial,
             "ts": kept.get("ts", _now()),                      # first-seen stamp survives re-runs
             "reason": kept.get("reason",
                                f"corrected {c.verdict!r} from {c.source}; queued: "
                                f"{decision['why_free']}"),
             "capacity_usd": c.capacity_usd, "ic_t": c.ic_t,
-        })
+        }
+        # R0480: a candidate the marginal gate REFUSED queues with its verdict visible -- the
+        # refusal is a measurement of the current book, not a permanent kill, and it must be
+        # readable on the queue row it produced.
+        if c.name in decision["admissions"]:
+            qrow["marginal_admission"] = decision["admissions"][c.name]
+        out["queued"].append(qrow)
 
     out["retirements"] = retirements
     if any(r.get("state") == "REFUSED" for r in retirements):
