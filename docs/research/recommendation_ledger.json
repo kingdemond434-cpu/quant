@@ -6174,11 +6174,11 @@
    "summary": "TRAIL WIDTH: the conviction sleeve gives back two-thirds of what its theses earn. MEASURED 2026-08-12 by the new R0334 decomposition over 14 closed PAPER trades: median capture ratio 0.335 -- the median trade keeps a THIRD of the peak R it reached -- and the capture figure is an UPPER bound because MFE is sampled from hourly re-marks, so a peak given back between marks is invisible. This is independently corroborated by resolve_paper_book.trail_sweep, which already re-walks every trade at six trail widths and reports best_trail_r 0.5 against a live_trail_r of 1.0, and which NOTHING was reading (state THIN, n_trades 9). Two candidate mechanisms and they need separating before any change: the trail is genuinely too wide, OR the ladder is rarely climbed (median share of ladder reached is 0.33) so most exits never get a trail at all. THIS IS PAPER AND n=14: the sleeve's own kill_condition needs n=50, realised_payoff is still labelled ASSUMED at 13/20, and a trail width fitted to 14 closes is curve-fitting. The deliverable is a pre-registered forward test of the narrower width, not a config edit.",
    "roi_bps": 120.0,
    "raised": "2026-08-12T13:30:47.974928+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "cbfdb33642d81cd2fc20d36e95d27ed02427e4c2",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-18T21:26:10.718074+00:00"
   },
   {
    "id": "R0480",
