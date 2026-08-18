@@ -22,6 +22,7 @@ _OLE_SIG: Final = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
 _FREESECT: Final = 0xFFFFFFFF
 _ENDOFCHAIN: Final = 0xFFFFFFFE
 _FATSECT: Final = 0xFFFFFFFD
+_DIFSECT: Final = 0xFFFFFFFC
 
 SECTOR: Final = 512
 MINI: Final = 64
@@ -61,9 +62,12 @@ def encode_rk(value: float) -> int:
     if scaled.is_integer() and -(2**29) <= scaled < 2**29:
         return ((int(scaled) << 2) & 0xFFFFFFFF) | 0x03
     bits = struct.unpack("<Q", struct.pack("<d", value))[0]
-    if bits & 0x00000000FFFFFFFF:
-        raise ValueError(f"{value!r} needs full f64 precision -- write it as a NUMBER record")
-    return int(bits >> 32) & 0xFFFFFFFC
+    if not bits & 0x00000000FFFFFFFF:
+        return int(bits >> 32) & 0xFFFFFFFC
+    bits100 = struct.unpack("<Q", struct.pack("<d", value * 100.0))[0]
+    if not bits100 & 0x00000000FFFFFFFF:
+        return (int(bits100 >> 32) & 0xFFFFFFFC) | 0x01
+    raise ValueError(f"{value!r} needs full f64 precision -- write it as a NUMBER record")
 
 
 def filler(n_bytes: int) -> bytes:
@@ -230,12 +234,20 @@ def build_workbook(
     return globals_block(offsets) + b"".join(bodies[i] for i in order)
 
 
-def build_ole2(streams: dict[str, bytes]) -> bytes:
+def build_ole2(streams: dict[str, bytes], *, sector: int = SECTOR) -> bytes:
     """Wrap named streams in an OLE2 compound file.
 
     Streams under :data:`MINI_CUTOFF` are placed in the miniFAT inside the root entry's stream --
     the path a reader silently misses, making small sheets vanish with no error at all.
+
+    ``sector`` is the big-sector size (512 or 4096 in real files; version 4 containers use 4096).
+    The mini stream stays 64-byte-sectored either way. Files needing more FAT sectors than the
+    109 header slots grow a DIFAT chain -- at 512 B sectors that starts at ~7.1 MB, exactly the
+    size class of multi-year government panels, so a builder without it cannot test the reader's
+    fitness for its stated target (R0475).
     """
+    if sector < 512 or sector & (sector - 1):
+        raise ValueError(f"sector size must be a power of two >= 512, got {sector}")
     names = list(streams)
     big = {n: streams[n] for n in names if len(streams[n]) >= MINI_CUTOFF}
     small = {n: streams[n] for n in names if len(streams[n]) < MINI_CUTOFF}
@@ -252,7 +264,7 @@ def build_ole2(streams: dict[str, bytes]) -> bytes:
         minifat.append(_ENDOFCHAIN)
 
     def sectors_for(size: int) -> int:
-        return max(1, -(-size // SECTOR)) if size else 0
+        return max(1, -(-size // sector)) if size else 0
 
     minifat_bytes = b"".join(struct.pack("<I", entry) for entry in minifat)
     n_dir_entries = 1 + len(names)
@@ -266,12 +278,15 @@ def build_ole2(streams: dict[str, bytes]) -> bytes:
     ]
     data_sectors = sum(count for _, count in plan)
 
-    n_fat = 1
-    while True:  # the FAT must describe itself, so grow it to a fixed point
-        if -(-(data_sectors + n_fat) // (SECTOR // 4)) <= n_fat:
+    per_sector = sector // 4       # FAT entries per FAT sector
+    per_difat = per_sector - 1     # FAT pointers per DIFAT sector; the last slot chains onward
+    n_fat, n_difat = 1, 0
+    while True:  # the FAT must describe itself AND its DIFAT, so grow both to a fixed point
+        n_difat = 0 if n_fat <= 109 else -(-(n_fat - 109) // per_difat)
+        if -(-(data_sectors + n_fat + n_difat) // per_sector) <= n_fat:
             break
         n_fat += 1
-    total = data_sectors + n_fat
+    total = data_sectors + n_fat + n_difat
 
     fat = [_FREESECT] * total
     start: dict[str, int] = {}
@@ -286,6 +301,20 @@ def build_ole2(streams: dict[str, bytes]) -> bytes:
         cursor += count
     for i in range(n_fat):
         fat[cursor + i] = _FATSECT
+    difat_base = cursor + n_fat
+    for i in range(n_difat):
+        fat[difat_base + i] = _DIFSECT
+
+    # DIFAT sectors carry the FAT-sector pointers past the 109 header slots, per_difat per
+    # sector, each spending its LAST u32 on the next DIFAT sector (ENDOFCHAIN on the final one).
+    difat_bytes = b""
+    if n_difat:
+        overflow = [cursor + i for i in range(109, n_fat)]
+        for block in range(n_difat):
+            chunk = overflow[block * per_difat : (block + 1) * per_difat]
+            chunk += [_FREESECT] * (per_difat - len(chunk))
+            chunk.append(difat_base + block + 1 if block < n_difat - 1 else _ENDOFCHAIN)
+            difat_bytes += b"".join(struct.pack("<I", entry) for entry in chunk)
 
     directory = bytearray()
 
@@ -309,7 +338,7 @@ def build_ole2(streams: dict[str, bytes]) -> bytes:
             directory += dir_entry(name, 2, start[name], len(streams[name]), -1)
         else:
             directory += dir_entry(name, 2, mini_start[name], len(streams[name]), -1)
-    directory += bytes((-len(directory)) % SECTOR)
+    directory += bytes((-len(directory)) % sector)
 
     # The directory is a planned run like any other, so it is assembled into the payload here
     # rather than spliced in afterwards -- a splice has to recompute an offset that the plan
@@ -320,32 +349,34 @@ def build_ole2(streams: dict[str, bytes]) -> bytes:
         if not count:
             continue
         blob = blobs.get(name, streams.get(name, b""))
-        payload += blob + bytes((-len(blob)) % SECTOR)
+        payload += blob + bytes((-len(blob)) % sector)
 
     # Pad the FAT out to a whole sector with FREESECT, never with zeros: a zero decodes as a
     # perfectly valid pointer to sector 0, so zero padding turns a walk off the end of the live
     # entries into a silent loop back into the file instead of a refusal.
-    fat += [_FREESECT] * (-len(fat) % (SECTOR // 4))
+    fat += [_FREESECT] * (-len(fat) % per_sector)
     fat_bytes = b"".join(struct.pack("<I", entry) for entry in fat)
 
     header = bytearray(512)
     header[:8] = _OLE_SIG
     struct.pack_into("<H", header, 0x18, 0x003E)
-    struct.pack_into("<H", header, 0x1A, 3)
+    struct.pack_into("<H", header, 0x1A, 4 if sector > 512 else 3)
     struct.pack_into("<H", header, 0x1C, 0xFFFE)
-    struct.pack_into("<H", header, 0x1E, 9)  # 1 << 9 == 512
+    struct.pack_into("<H", header, 0x1E, sector.bit_length() - 1)
     struct.pack_into("<H", header, 0x20, 6)  # 1 << 6 == 64
     struct.pack_into("<I", header, 0x2C, n_fat)
     struct.pack_into("<I", header, 0x30, start["*dir"])
     struct.pack_into("<I", header, 0x38, MINI_CUTOFF)
     struct.pack_into("<I", header, 0x3C, start["*minifat"])
     struct.pack_into("<I", header, 0x40, sectors_for(len(minifat_bytes)))
-    struct.pack_into("<I", header, 0x44, _ENDOFCHAIN)
-    struct.pack_into("<I", header, 0x48, 0)
+    struct.pack_into("<I", header, 0x44, difat_base if n_difat else _ENDOFCHAIN)
+    struct.pack_into("<I", header, 0x48, n_difat)
     for i in range(109):
         struct.pack_into("<I", header, 0x4C + 4 * i, cursor + i if i < n_fat else _FREESECT)
 
-    return bytes(header) + bytes(payload) + fat_bytes
+    # Sector 0 begins at offset ``sector`` regardless of the 512 B header, so version-4
+    # containers pad the header out to one full big sector.
+    return bytes(header) + bytes(sector - 512) + bytes(payload) + fat_bytes + difat_bytes
 
 
 def build_xls(
@@ -355,15 +386,18 @@ def build_xls(
     sst_max_payload: int = 8216,
     pad_to: int = 0,
     layout: list[int] | None = None,
+    sector: int = SECTOR,
 ) -> bytes:
     """One-call fixture: sheets plus shared strings out to a complete ``.xls`` file.
 
     ``pad_to`` inflates the workbook past :data:`MINI_CUTOFF` so the ordinary-FAT path is exercised
     as well as the miniFAT one; both are real and a reader can implement exactly one of them.
+    Past ~7.1 MB (at 512 B sectors) the file also grows a DIFAT chain -- the decoder path guarding
+    exactly the multi-year panel class the reader exists for.
     """
     workbook = build_workbook(
         sheets, strings, sst_max_payload=sst_max_payload, layout=layout
     )
     if pad_to and len(workbook) < pad_to:
         workbook += filler(pad_to - len(workbook))
-    return build_ole2({"Workbook": workbook})
+    return build_ole2({"Workbook": workbook}, sector=sector)

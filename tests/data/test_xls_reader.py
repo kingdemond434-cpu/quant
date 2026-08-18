@@ -32,6 +32,7 @@ from tests.data.xls_builder import (
     cell_number,
     cell_rk,
     cell_sst,
+    encode_rk,
     encode_sst_detailed,
     filler,
 )
@@ -379,3 +380,39 @@ def test_empty_sheet_reports_zero_extent() -> None:
     """A sheet with no cells must read as empty rather than raising on the max() of nothing."""
     sheet = read_xls(build_xls([("S", b"")]))[0]
     assert (sheet.n_rows, sheet.n_cols, sheet.rows()) == (0, 0, [])
+
+
+def test_rk_divided_double_encoding_round_trips() -> None:
+    """RK flag 0x01: value*100 fits a truncated double while the value itself does not.
+
+    The builder's branch order previously routed every value to 0x00/0x02/0x03, so the reader's
+    fourth decode branch had zero fixture coverage (R0475). The flag assertion pins the fixture to
+    the branch: without it, a regression to a NUMBER-style encoding would still round-trip.
+    """
+    assert encode_rk(0.005) & 0x03 == 0x01
+    assert read_xls(build_xls([("S", cell_rk(0, 0, 0.005))]))[0].cells[(0, 0)] == 0.005
+
+
+def test_difat_chain_round_trips_a_file_past_the_header_limit() -> None:
+    """A workbook past ~7.1 MB needs more FAT-sector pointers than the 109 header slots hold.
+
+    This is exactly the size class of the multi-year government/regulator panels the reader
+    exists for (R0317), and until this fixture existed the reader's DIFAT branch was unreachable
+    by any test (R0475). The header assertion proves the fixture really grew a DIFAT chain --
+    a pad that quietly fits under the ceiling would pass the value check while testing nothing.
+    """
+    blob = build_xls([("S", cell_rk(0, 0, 7.25))], ["x"], pad_to=7_500_000)
+    assert struct.unpack_from("<I", blob, 0x48)[0] >= 1
+    assert read_xls(blob)[0].cells[(0, 0)] == 7.25
+
+
+@pytest.mark.parametrize("pad_to", [0, 9000])
+def test_4096_byte_sectors_round_trip(pad_to: int) -> None:
+    """Version-4 containers use 4096 B sectors; government archives contain them.
+
+    Both stream homes are exercised: pad_to=0 keeps the workbook in the miniFAT, 9000 forces
+    ordinary big sectors at the wider geometry.
+    """
+    blob = build_xls([("S", cell_rk(0, 0, 7.25))], ["x"], pad_to=pad_to, sector=4096)
+    assert struct.unpack_from("<H", blob, 0x1E)[0] == 12
+    assert read_xls(blob)[0].cells[(0, 0)] == 7.25
