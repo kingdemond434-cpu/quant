@@ -2464,3 +2464,30 @@ Routed: negative_knowledge entry (KR research-systems layer, with re-explore tri
 stamped for the JP/KR half; NO new universe-map inventory (100-jquants-api and
 62-japanese-botter-ecosystem already exist; J-Quants DATA already graded excluded-paid 2026-08-12
 — the free tier's 12-week delay was already ruled on; this run adds the METHOD layer only).
+
+## 2026-08-18 PROSPECTOR — two structural findings (both evidence-backed, routed per Digging Doctrine)
+
+1. **A worked example inside a generation prompt collapses the search to variations of the example
+   — now MEASURED in someone else's harness.** Numerai forum 8235 (jefferythewind, 2026-01-29,
+   "Fine-Tuning LLMs with RL for ML Code Generation: Post-Mortem", read in full 2026-08-18): an RL
+   loop (Mistral-7B, PPO, Sharpe as reward) with ONE complete LightGBM example in the prompt
+   produced 96% LightGBM / 0% everything else and 99.9% template features across 775 experiments —
+   the author's own diagnosis is "exploitation over exploration; the model learned to copy the
+   example". Removing the example and listing only rules/packages is his fix (run 2 started, no
+   verdict published yet — watch for the follow-up). DESK RELEVANCE: independent, quantified
+   corroboration of the L1.31 rotation design premise (a model's priors + an in-prompt example
+   dominate; diversity must be STRUCTURAL, not encouraged). Anywhere a desk generation prompt
+   carries a complete worked example, expect example-echo at ~96% rates. Also his error table is a
+   free harness checklist: 43% of generated code failed to run, 34pp of that from unlisted data
+   columns — declare the schema IN the prompt. [§33: wired -> this inbox entry + rm row]
+2. **source_backlog_next.py serves a STALE verify queue — it misdirects every seat's RESUME step 1.**
+   Verified twice this run (session start + fresh re-read after the free-data commit): cards 23
+   (中文 practitioner corpus, grade: MINED 2026-08-18) and 24 (Foreign AI-quant systems, grade:
+   verified + MINED, JP/KR half 2026-08-18) still count in `n_verification_pending` and print in
+   the "VERIFY this cycle" list. Either the parser ignores the grade tokens the miners write, or
+   the card protocol has two encodings of one state (grade line vs whatever the parser keys on) —
+   the L1.61 same-name-different-question class in a markdown protocol. COST: the RESUME contract
+   sends every digger to this queue FIRST; a stale queue either burns a seat's first hour re-mining
+   dug ground or forces the per-card ownership audit this run had to do instead. FIX (named, owed
+   by an unfrozen seat): make the parser consume the grade/§33 tokens miners actually write (or
+   vice-versa), pin card 23 as non-pending in a test. Ledgered R0617. [§33: wired -> ledger R0617]

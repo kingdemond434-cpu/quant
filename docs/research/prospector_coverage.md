@@ -5466,3 +5466,62 @@ RESOLVED 1 (NP forum-2 TRADING batch, carried since 08-12 — all three threads 
   NAMED RESIDUAL: pages ~38-40 (2014 Senate-PSI basket-options era) + 44-45 (2018+); low
   mechanism density measured (3-page sample: news-watch genre) — residual is optional ground,
   not owed ground.
+RESOLVED 2 (RECORDS FAMILY FIRST TOUCH — Numerai forum ground OPENED; search-space expansion
+quota spent here): robots clean (no by-name refusal — checked, the KR lesson), Discourse JSON
+route works. 3 threads mined to FULL depth: **7914 "Reducing Numerai Crypto Payouts" (5/5
+posts)** — the operator's own 2025-01 statement that crypto-tournament participants scored
+corr/MMC so far above the equities tournaments that payouts were cut to 0xCORR+1xMMC
+("far more profitable for users… unsustainable"), while the fund does NOT trade crypto —
+scoreboard-grade, participant-pool-controlled evidence that the crypto cross-section carries
+MORE harvestable signal than equities. CONVERGENCE with the desk's own dispersion measurement
+(OLMAR graveyard row) — two independent instances now; cite both, never the row alone
+[§33: wired -> rm-20260818T200154-449f69]. **8197 Spectra dataset (1/1)** — a 300-token universe
+filtered FOR shortability reaches only ~35% Hyperliquid short coverage: named structural
+truncation of crypto L/S short legs that the desk's Binance-perp universe does NOT share (perps
+are short-symmetric); UCID join key noted; the 22 new features are ranked/binned 20D/60D TA =
+price-derived class, desk-dead — no card [§33: wired -> same rm row]. **8235 LLM-RL code-gen
+post-mortem (1/1)** — one worked example in the generation prompt = 96% example-echo across 775
+experiments; measured corroboration of the L1.31 rotation premise + a free harness checklist
+(43% compile-failure, 34pp from undeclared schema) [§33: wired -> improvement_inbox.md item 1].
+ITEM 3 (stretch) NOT TAKEN — bounded scope; rolls to next-ground intact.
+SIDE-CHECKS RESOLVED: cards 27/28 DECIDE — NOT landed (no ruling in principal_replies /
+PRINCIPAL_ACTION / ledger), due 2026-08-19, NOT overdue today; the §33 deferral expiry
+auto-returns both to backlog tomorrow, so the chase is mechanical — next session verifies
+landed-or-escalates. Wilmott robots: 403 both hosts, BOTH egress-relevant paths — WALLED ×3,
+still not refusal-by-name; re-probe on a different day/egress. ETHDVOL: NONE listed (Deribit,
+live probe). R0462 due 08-27 (coinm trigger pending). BACKLOG-STALENESS DEFECT verified twice
+and routed: source_backlog_next.py still lists MINED cards 23/24 as pending-verify →
+improvement_inbox item 2 + ledger R0617 (fix owner = unfrozen engineering seat; this seat is
+research-frozen).
+FAMILIES THIS RUN: Forums-legacy (NP, deep), Records (Numerai — NEVER-TOUCHED ground opened;
+≥40% least-recently-covered bias satisfied), AI/HF documentation (8235). Non-English: indirect
+only this run (KR 가두리 era lore grounds the card's phase-1 mechanism; CN/JP/KR verify items
+ownership-checked, not poached) — named honestly, next-ground carries the CN/KR grounds.
+VIDEO: 0 fetched, 0 locked — no video grounds hit this run.
+DEPTH LINE (per the depth mandate): 112425 = EXHAUSTED 6/6 archived pages; 147526 = EXHAUSTED
+3/3 posts; 4851 = SURVEYED 3/27 archived pages (sampled at its highest-value era; measured low
+mechanism density; residual OPTIONAL ground, named); Numerai 7914/8197/8235 = complete trees
+(5/5, 1/1, 1/1). What depth surfaced that the surface never showed: the run's ONE card came from
+a 1-post account's reply in the SMALLEST thread taken (147526 #2, Lucy — the comparables
+repricing channel), and the QIM capacity refutation lived on page 2+ (FDAXHunter's measured
+impact-cost post) — invisible from every title.
+STEP -1 ACCOUNTING: divergent query (a) Numerai burn/post-mortem participant-query — SPENT
+(surfaced the methodology-thread set + 8235); (c) 4851 PSI-era journalist chain — PARTIALLY
+spent (pages triaged toward the era, residual named); (b) Kaggle negative-result layer — ROLLED
+to next-ground with its route named (winners' GitHub/arXiv mirrors; the Kaggle forum SPA wall is
+already on record, do not re-probe it).
+NEXT UN-EXHAUSTED GROUND, in order (L1.35 — named before closing):
+1. Numerai continuation: classic methodology threads (899 feature-exposure, 3170 López de Prado
+   feature selection, 151 performance stationarity) + crypto-tournament threads (8212
+   USD-staking, 7916 staking-alignment) + jefferythewind's run-2 verdict when published.
+2. Kaggle G-Research crypto post-mortems via winners' GitHub/arXiv write-ups (mirror layer, not
+   the SPA wall).
+3. NP forum-1 2013 snapshots (post-2012 titles) + f12 147620 Kelly + 147696 Dynamic Correlation.
+4. 4851 optional residual: pages ~38-40 (2014 Senate-PSI basket-options era) + 44-45 (2018+).
+5. Cards 27/28 DECIDE follow-through (due 08-19): verify landed or ESCALATE (deferral expiry
+   returns them to backlog mechanically).
+6. Wilmott re-probe (WALLED ×3).
+STATUS: ITEMS 1-2 RESOLVED TO DEPTH, item 3 rolled. Run closed cleanly 2026-08-18 (write-first
+note, bounded scope, 1 QUEUE card with screen handoff R0616, 1 defect ledgered R0617, 2 inbox
+items, 4 research-memory rows, watchlist reviewed 5/5 with one displacement, cadence stamped,
+honest zeros: 0 video, Wilmott walled, no new axis).

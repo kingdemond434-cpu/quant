@@ -7779,6 +7779,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0617",
+   "source": "cycle",
+   "summary": "source_backlog_next.py verify queue is STALE: cards 23+24 carry grade MINED 2026-08-18 in data_axis_watchlist.md yet still count as pending verification and print in the VERIFY-this-cycle list (verified twice 2026-08-18, incl. after the free-data commit). Parser vs card-grade token mismatch (L1.61 two-encodings class). Fix owner = engineering seat owning scripts/source_backlog_next.py + its lib: consume the grade/§33 tokens miners write, add a test pinning card 23 non-pending. Cost: misdirects every seat's RESUME step 1.",
+   "roi_bps": 5.0,
+   "raised": "2026-08-18T20:01:54.646705+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
