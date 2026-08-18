@@ -25,6 +25,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
+import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -56,6 +58,86 @@ SWEEPS = ROOT / "data/carryover_sweeps.jsonl"
 SKIP_SWEEPS = 2
 _TERMINAL = ("implemented", "rejected")
 _MIN_REASON = 25          # a bare "no" / "wontfix" is not a disposition
+
+#: A citation must be the sha ITSELF, never a name that resolves to one (R0478). `git rev-parse`
+#: happily resolves 'HEAD', 'master', 'v1.0' -- and three ledgered rows carried the literal string
+#: 'HEAD', which "satisfies the non-empty check forever" while pointing at whatever some future
+#: checkout happens to have loaded. A symbolic citation is not merely unverifiable, it is actively
+#: wrong tomorrow. Hex-only closes the class at the door.
+_HEX_SHA = re.compile(r"[0-9a-f]{7,40}$")
+
+
+def _resolve_commit(commit: str) -> str:
+    """The FULL sha for a hex citation that resolves in this clone, or SystemExit.
+
+    Two refusals, deliberately distinct because they demand different repairs: a NON-HEX citation
+    ('HEAD', a branch name) is a caller passing a moving pointer -- the fix is `git rev-parse HEAD`
+    at the call site; an UNRESOLVABLE hex citation names an object this clone has never seen -- the
+    fix is finding the real commit, not relaxing the check. The full sha is stored (not the
+    caller's abbreviation) so `verify` can batch-check the whole ledger without ambiguity.
+    """
+    c = (commit or "").strip()
+    if not _HEX_SHA.fullmatch(c):
+        raise SystemExit(
+            f"REFUSING --commit {commit!r}: a citation must be the hex sha itself (7-40 chars), "
+            "never a symbolic name. 'HEAD' resolves to whatever a future checkout has loaded -- "
+            "three ledger rows carried exactly that and proved nothing (R0478). Use "
+            "`git rev-parse HEAD` and pass its output.")
+    try:
+        p = subprocess.run(["git", "rev-parse", "--verify", "--quiet", f"{c}^{{commit}}"],
+                           capture_output=True, text=True, timeout=30, cwd=ROOT)
+    except (OSError, subprocess.SubprocessError) as e:
+        raise SystemExit(f"cannot verify --commit {c}: {type(e).__name__}: {e}") from e
+    if p.returncode != 0 or not p.stdout.strip():
+        raise SystemExit(
+            f"REFUSING --commit {c}: does not resolve to a commit in this clone. An implemented "
+            "row's citation is its proof, and a proof nothing can dereference is a claim (R0478) "
+            "-- commit the work first, or find the sha that actually carries it.")
+    return p.stdout.strip()
+
+
+def verify_citations(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Re-verify every commit citation across the ledger, in ONE subprocess (R0478).
+
+    Dispose-time validation proves a citation resolved on the box that wrote it; a rebase or a
+    dropped branch can orphan it afterwards, silently turning a proven row into an unprovable one
+    -- the exact interaction already in desk memory (merges are used here instead of rebases
+    BECAUSE of it). This makes that failure visible instead of latent.
+
+    Three classes, because they demand different repairs:
+      * `unresolvable` -- hex citations naming an object this clone cannot dereference: the live
+        defect this fence exists for. Repair with `repoint` at the commit carrying the work today.
+      * `symbolic`     -- non-hex citations ('HEAD'): moving pointers, wrong by construction.
+      * `legacy_uncited` -- implemented rows with NO commit at all: the 38 pre-CLI rows that
+        reached terminal state through direct JSON writes (R0259 class). Counted, not itemised:
+        the CLI has refused this at the door since it existed, so the count can only shrink.
+    """
+    cited = [(r["id"], str(r["commit"]).strip()) for r in rows if r.get("commit")]
+    symbolic = [(rid, c) for rid, c in cited if not _HEX_SHA.fullmatch(c)]
+    hexed = [(rid, c) for rid, c in cited if _HEX_SHA.fullmatch(c)]
+    unresolvable: list[tuple[str, str]] = []
+    checked = 0
+    if hexed:
+        try:
+            p = subprocess.run(["git", "cat-file", "--batch-check"],
+                               input="".join(c + "\n" for _, c in hexed),
+                               capture_output=True, text=True, timeout=60, cwd=ROOT)
+            lines = p.stdout.splitlines()
+            if p.returncode == 0 and len(lines) == len(hexed):
+                checked = len(hexed)
+                for (rid, c), line in zip(hexed, lines, strict=True):
+                    if line.split()[-1] in ("missing", "ambiguous") \
+                            or " commit " not in f" {line} ":
+                        unresolvable.append((rid, c))
+            # A short count means git stopped mid-batch; grading only the prefix would let the
+            # tail read as clean. checked < len(hexed) says so out loud (L1.60).
+            else:
+                checked = 0
+        except (OSError, subprocess.SubprocessError):
+            checked = 0                       # UNMEASURED, reported as such -- never as clean
+    legacy = sum(1 for r in rows if r.get("status") == "implemented" and not r.get("commit"))
+    return {"checked": checked, "of": len(hexed), "symbolic": symbolic,
+            "unresolvable": unresolvable, "legacy_uncited": legacy}
 
 
 def _load() -> dict[str, Any]:
@@ -217,6 +299,11 @@ def dispose(a: argparse.Namespace) -> None:
     if a.status == "implemented" and not a.commit:
         raise SystemExit("an implemented recommendation needs --commit: the desk's standing rule "
                          "is that an artifact proves the work, never a claim")
+    # R0478: non-empty was the WHOLE check, so the literal string 'HEAD' satisfied it forever.
+    # Any citation, whatever the status, must be a hex sha resolving in this clone; the full sha
+    # is stored so a later `verify` can batch-check the ledger without ambiguity.
+    if a.commit:
+        a.commit = _resolve_commit(a.commit)
     # RE-SCHEDULING A ROW IS A DEFERRAL, AND A DEFERRAL THAT LEAVES NO TRACE IS A SKIP (L1.60).
     # This file's docstring claims "scheduled" cannot become where rows go to die because an
     # overdue schedule fires like an orphan -- true, unless the due date moves first, which this
@@ -300,17 +387,10 @@ def repoint(a: argparse.Namespace) -> None:
     if len((a.reason or "").strip()) < _MIN_REASON:
         raise SystemExit(f"a repoint needs a real reason (>={_MIN_REASON} chars): why the old "
                          "citation stopped resolving, and how the new one was identified")
-    import subprocess
-    try:
-        p = subprocess.run(["git", "rev-parse", "--verify", f"{a.commit}^{{commit}}"],
-                           capture_output=True, text=True, timeout=30, cwd=ROOT)
-    except (OSError, subprocess.SubprocessError) as e:
-        raise SystemExit(f"cannot verify {a.commit}: {type(e).__name__}: {e}") from e
-    if p.returncode != 0:
-        raise SystemExit(
-            f"REFUSING: {a.commit!r} does not resolve to a commit in this clone. Re-pointing a "
-            "citation at something unresolvable would make the ledger look repaired while still "
-            "proving nothing -- find the real commit first.")
+    # R0478: same bar as dispose -- hex-only, resolving, stored as the full sha. `rev-parse`
+    # alone accepted 'HEAD' here too, so repoint could have laundered one moving pointer into
+    # another while printing success.
+    a.commit = _resolve_commit(a.commit)
     row.setdefault("repoints", []).append({
         "was": row.get("commit"), "now": a.commit,
         "at": datetime.now(tz=UTC).isoformat(), "why": a.reason})
@@ -445,6 +525,37 @@ def report(_a: argparse.Namespace) -> None:
     else:
         print(f"  {n_owed} row(s) owe a disposition; {n_skip} of them are SKIPS "
               f"(shown to >={SKIP_SWEEPS} live sweeps and still open)")
+    # R0478: citations re-verified on every report, so a rebase or dropped branch that orphans a
+    # proven row's sha is surfaced by the next organ that looks, not by a future audit.
+    v = verify_citations(rows)
+    for rid, c in v["symbolic"]:
+        print(f"  DEFECT [citation] {rid}: --commit {c!r} is a symbolic name, not a sha -- "
+              "wrong by construction; repair with `repoint`")
+    for rid, c in v["unresolvable"]:
+        print(f"  DEFECT [citation] {rid}: --commit {c} no longer resolves in this clone "
+              "(rebase/dropped branch?) -- repair with `repoint`")
+    if v["checked"] < v["of"]:
+        print(f"  citations UNMEASURED this run ({v['checked']}/{v['of']} checked -- git "
+              "batch-check failed); an unchecked citation is not a clean one")
+
+
+def verify(_a: argparse.Namespace) -> None:
+    """R0478 fence entry: exit 1 on any symbolic or unresolvable citation."""
+    v = verify_citations(_load()["recommendations"])
+    print(f"citations: {v['checked']}/{v['of']} hex citations checked | "
+          f"{len(v['symbolic'])} symbolic | {len(v['unresolvable'])} unresolvable | "
+          f"{v['legacy_uncited']} legacy implemented rows with no citation (pre-CLI, "
+          "shrink-only)")
+    for rid, c in v["symbolic"]:
+        print(f"  SYMBOLIC {rid}: {c!r} -- a moving pointer proves nothing; `repoint` it")
+    for rid, c in v["unresolvable"]:
+        print(f"  UNRESOLVABLE {rid}: {c} -- orphaned by a rebase or dropped branch; "
+              "`repoint` at the commit carrying the work today")
+    if v["checked"] < v["of"]:
+        raise SystemExit(f"UNMEASURED: only {v['checked']}/{v['of']} citations checked -- "
+                         "git batch-check failed, and unchecked is not clean")
+    if v["symbolic"] or v["unresolvable"]:
+        raise SystemExit(1)
 
 
 def main() -> None:
@@ -492,6 +603,9 @@ def main() -> None:
     p.set_defaults(func=repoint)
     p = sub.add_parser("report", help="orphans and overdue -- both are defects, not backlog")
     p.set_defaults(func=report)
+    p = sub.add_parser("verify", help="R0478: re-verify every commit citation resolves; "
+                                      "exit 1 on symbolic or orphaned citations")
+    p.set_defaults(func=verify)
     a = ap.parse_args()
     _settle_forecasts(_load()["recommendations"])
     a.func(a)
