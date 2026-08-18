@@ -2881,3 +2881,60 @@ verification, not cataloguing — a source earns a card by serving a named need)
 
 **Not taken, named so the chain survives:** next-ground items 2–4 from the 08-12 note (OKX bulk
 depth, survivorship-polarity sweep across venues, COIN-M 285-vs-288) remain open and ranked.
+
+### SESSION CLOSE 2026-08-18 (free-data miner) — item C result, DEPTH line, categories, next ground
+
+**ITEM C CLOSED: Bybit bulk archive verified to item-1 depth (universe map `cex_trades_ohlcv` →
+`public.bybit.com` upgraded to verified-clean).** The numbers, all first-hand this run:
+- **Depth, GAPLESS:** derivatives `trading/BTCUSD/` = 2,513 daily files, **2019-10-01 → 2026-08-17
+  (T+1), ZERO missing days** by full date-grid diff. `spot/BTCUSDT/` starts only **2022-11-10**.
+- **Survivorship polarity: RETAINS.** 1,912 symbol dirs vs 850 live v5 instruments (paginated):
+  **1,065 dirs (55.7%) are dead/expired instruments the live API no longer serves** — including
+  the whole hyphenated expired-delivery-futures family (`BTC-01DEC23/`…). Live coverage 847/850;
+  the 3 absentees (DDOG/ISRG/MNST tokenized-stock perps) all **launched today** — T+1 lag, not
+  exclusion. Polarity matches Binance (89% retained), opposes Upbit (purges). Next-ground item 3
+  is now answered for **Bybit**; remaining venues still owe the test.
+- **Dead tapes serve and are immutable:** `10000NFTUSDT2022-11-01.csv.gz` → 200, last-modified
+  2022-11-02. **No checksum sidecars anywhere** (unlike Binance/Upbit) — integrity = re-download.
+- **Schema fragility, now MEASURED not asserted, three inconsistencies in ONE bucket:** trailing
+  slash in `trading/` hrefs but not `spot/`; filename separator differs by family
+  (`BTCUSD2019-10-01` vs `BTCUSDT_2022-11-10`); a `[A-Z0-9]+` symbol regex silently drops 751
+  hyphenated dirs. **Two instrument errors were caught mid-run by switching instruments:** a
+  page-capped summarising fetcher reported the tape ending 2024-09-19 (it ends yesterday), and
+  the first regex under-counted 1,161 vs 1,912. Enumerate archives with `curl` + raw counts, never
+  through a summariser.
+
+**CATEGORIES COVERED THIS RUN (honest):** cat 1 exchange-native (Bybit verified; Upbit ruling
+re-dated), cat 3 non-English (CN corpus dug), cat 4 community lakes (thuquant index; godzilla
+repo), cat 5-adjacent (retail positioning intelligence from the CN carry posts), cat 6
+vendor-replacement (godzilla connectors as endpoint enumerator — routed). **Cat 2 on-chain: NOT
+touched this run** — named, not hidden; it stays on the board. Search-space expansion (≥25%):
+the CN corpus + godzilla + the production-infra-connector-repos-as-endpoint-catalogues class are
+this run's expansion ground.
+
+**DEPTH LINE (mandate):** sljsz corpus — archive ENUMERATED to exhaustion (9/9 pages), 6 posts
+deep-read, comment layers checked (zero comments exist on sampled posts — the depth the mandate
+asks for is structurally absent on this blog); thuquant — index mined, one fork-out (godzilla)
+followed to repo+licence depth; quant67 — surface + /post/ + Wayback = refuted; Bybit — full
+listing enumeration + live-API diff + dead-file servability probe. No reply-chains ≥2 existed to
+mine on any ground touched this run (cnblogs comments empty, GitHub README-level) — stated rather
+than performed as theater.
+
+**NO NEW EV-GATE PRE-REGISTRATION OWED:** nothing surfaced today is a new tradable axis with an
+economic story (Bybit was already catalogued — this run VERIFIED it; the CN finds are crowding/
+graveyard/method intelligence, routed to research_memory + inbox, not axes).
+
+## NEXT UN-EXHAUSTED GROUND (2026-08-18 — supersedes the 08-12 list)
+
+1. **OKX bulk archive to item-1 depth** (mode-3 soft-empty index: date-grid construction + probe;
+   depth + survivorship + checksum discipline). The Bybit half of the old item 2 is DONE.
+2. **Archive-vs-API survivorship polarity, remaining venues** (Kraken CSV dumps, OKX, bitFlyer/
+   GMO, Gate, KuCoin) — Bybit now answered (RETAINS).
+3. **COIN-M `metrics` 285-vs-288 row question** — unchanged from 08-12, still cheap.
+4. **Re-list remaining S3-derived depth claims with pagination** — Binance done 08-12, Bybit done
+   today; sweep the rest of the file's S3-mode claims.
+5. **sljsz deep-read tail** — ~74 enumerated posts un-deep-read; mechanism-dense titles first
+   (低风险稳健策略：BTC套利 2022-08; 数字货币合约做市 2021-06; 稳定币网格做市 2021-07/2023-01).
+6. **FMZ 文库 strategy-square dig** (assessed RICH-ish 08-01, never dug) — the sljsz HFT post's
+   bot lives on FMZ; the public strategy layer is the natural next CN ground.
+7. **Cat 2 on-chain reconstruction** — untouched two runs; owes a session.

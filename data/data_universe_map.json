@@ -15,11 +15,17 @@
    },
    {
     "name": "public.bybit.com",
-    "type": "trades/klines",
+    "type": "derivatives daily trade CSVs (trading/, 1,912 symbol dirs incl. expired dated futures) + spot/ (1,055 dirs) + premium_index/ + spot_index/ + kline_for_metatrader4/",
     "cost": "free",
-    "status": "queued",
-    "grade": "needs-monitoring",
-    "note": "not re-opened this session; prior-session finding, unchanged"
+    "status": "verified",
+    "grade": "verified-clean (depth + survivorship, 2026-08-18)",
+    "note": "incidental: Bybit launched tokenized-stock perps DDOGUSDT/ISRGUSDT/MNSTUSDT on 2026-08-18 (equity-perp class expanding)",
+    "url": "https://public.bybit.com/",
+    "method": "HTML directory listing (mode-2: full enumeration, no key cap) -- curl the listing, NEVER a summarising fetcher (a page-capped instrument mis-reported the tape as ending 2024-09)",
+    "update_cadence": "T+1 (yesterday's file present at check time)",
+    "depth": "derivatives BTCUSD: 2019-10-01 -> T-1, 2,513 daily files, ZERO gap days (verified by full date-grid diff 2026-08-18); spot BTCUSDT: 2022-11-10 -> T-1 only",
+    "survivorship": "RETAINS dead instruments: 1,065 of 1,912 dirs (55.7%) absent from live v5 API; live-universe coverage 847/850, the 3 absent all launched same-day (T+1 lag, verified via launchTime). Same polarity as Binance (89% retained), OPPOSITE Upbit (purges). Dead tapes serve fine and are immutable (spot-checked 10000NFTUSDT 2022-11-01: 200, last-modified 2022-11-02)",
+    "failure_modes": "schema-fragile CONFIRMED with three concrete inconsistencies inside ONE bucket: trading/ hrefs carry trailing slashes, spot/ hrefs do not; derivatives filenames have no separator (BTCUSD2019-10-01) while spot uses underscore (BTCUSDT_2022-11-10); a naive [A-Z0-9]+ symbol regex silently drops 751 hyphenated expired-futures dirs (BTC-01DEC23 style). Checksum sidecars: NONE observed (unlike Binance/Upbit) -- content integrity rests on re-download"
    },
    {
     "name": "OKX public dumps",
