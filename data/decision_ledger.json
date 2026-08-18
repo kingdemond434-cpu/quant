@@ -455,7 +455,8 @@
    "success_metric": "30d post-restart: zero opens >35% of book capital, zero thin-book fills, and dead-man equity tracks executor net within noise (no silent divergence)",
    "reversal_condition": "funding capture drops materially because the depth guard skips most candidates -> recalibrate _DEPTH_MULT / pct from measured fill data, never by removing the guard",
    "review_due": "2026-08-15",
-   "review_due_source": "success_metric"
+   "review_due_source": "success_metric",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held: no repeat concentration/thin-book burn. Failed: 'no silent divergence' -- deadman-vs-executor tracking error $2,044 made fires #4/#5 measurement artifacts."
   },
   {
    "id": "2026-07-16-level5-factory-prompt-triage",
@@ -472,7 +473,8 @@
    "success_metric": "by pilot day-30 (~2026-08-15): scale-or-not decided from survivors-per-1000 evidence; zero doctrine regressions (no CAGR targeting, no DD-budget creep above the rail)",
    "reversal_condition": "pilot shows >=1 forward-validated survivor from generation throughput -> re-open the scaling question with rented compute sized by EV, and revisit the factory blueprint's throughput sections component by component",
    "review_due": "2026-08-15",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held: no doctrine regressions. Failed: the day-30 survivors-per-1000 arbitration never happened as designed (overtaken by 07-20 principal maximization order; 08-01 sweep showed 420/0 was a power artifact)."
   },
   {
    "id": "2026-07-16-audit-max-roi-upgrade",
@@ -489,7 +491,8 @@
    "success_metric": "30d: >=1 micro-audit finding leads to a verified fix or a logged ruling; brain_down pager fires within 26h in any future auth/timer outage; zero secret leaks in git or briefs",
    "reversal_condition": "30d of micro-audits with zero actionable findings (all PASS or all wrong) -> drop to weekly or retire the step per sunset discipline; pager false-positive rate >1/week -> tune thresholds",
    "review_due": "2026-08-15",
-   "review_due_source": "success_metric"
+   "review_due_source": "success_metric",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): INSUFFICIENT-EVIDENCE. Machinery ran (36 ok/78 error) then broke by 08-13 (all seats TypeError _ask timeout); no traced finding->verified-fix credit retained; July pager window not kept. Finding->fix clause UNMEASURED."
   },
   {
    "id": "2026-07-16-pager-silent-death-backoff-fix",
@@ -505,7 +508,8 @@
    "success_metric": "test page received by principal; alert state shows successful pushes resuming",
    "reversal_condition": "429s persist for >24h after volume drops -> move to a paid/alternate push channel (ntfy pro / self-hosted / Telegram bot) via EV gate",
    "review_due": "2026-08-15",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): CORRECT. Held: PAGER_DELIVERY_CONFIRMED 07-20; principal_action_needed success 2026-08-18T01:28Z; 8 categories delivering."
   },
   {
    "id": "2026-07-16-gap-elimination-override-adoption",
@@ -538,7 +542,8 @@
    "success_metric": "first pre-registered macro-crypto hypothesis clears or fails the gauntlet honestly within 30d of key placement; collector uptime >95% in health.json",
    "reversal_condition": "two quarters with zero surviving or informative macro hypotheses -> retire the collector per data-feed ROI discipline",
    "review_due": "2026-08-15",
-   "review_due_source": "success_metric"
+   "review_due_source": "success_metric",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held: collector >95% (fresh through 08-14 on 08-18 read). Failed: no macro-crypto hypothesis cleared/failed the gauntlet in 30d -- 3 overlay ideas EV-rejected; walcl_reserve_impulse shadow DEGENERATE at 3/20 obs."
   },
   {
    "id": "2026-07-16-leverage-optimizer-runaway",
@@ -554,7 +559,8 @@
    "success_metric": "brain root-causes the confidence jump within 3 cycles; no position ever exceeds cap_frac x operator capital while the clamp stands; HFT exits without a thin-book burn",
    "reversal_condition": "confidence pipeline verified honest (>=30 live days, uncontaminated window, principal sign-off) -> remove the clamp in favour of the designed gate",
    "review_due": "2026-08-15",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): CORRECT. Held: root-caused 07-19 (variance-collapsed fwd Sharpe 16.09 + stale fwd_days) inside 3 cycles; HFT closed clean 07-17; no cap breach while clamped."
   },
   {
    "id": "2026-07-16-v8-master-blueprint-triage",
@@ -584,7 +590,8 @@
    "success_metric": "first two tier1 runs produce >=7 validly-cited dimension scores per model; scores correlate with known state (e.g., alpha scored low, validation high)",
    "reversal_condition": "scores degrade into uncited or flattering numbers for 2 consecutive runs -> drop the rider, keep ranked-gap-only output",
    "review_due": "2026-08-16",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): UNCLEAR (never exercised): zero tier1 runs since adoption (last_tier1 07-16); OpenRouter 402 since ~08-08 blocks any run now."
   },
   {
    "id": "2026-07-17-data-triggered-generation",
@@ -597,7 +604,8 @@
    "success_metric": "first matured family (OI/LS ~07-29) gets its scoped generate run within 2 cycles",
    "reversal_condition": "two triggered runs produce zero EV-gate-QUEUE hypotheses -> drop to synthesize-only",
    "review_due": "2026-08-16",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): CORRECT. Held: trigger fired on ACTUAL maturity -- OI/LS matured ~08-10 (slipped by DQS-0 poisoning) and gen_done_oi_ls_taker stamped 08-11, one cycle later. The date assumption was wrong, the mechanism was right."
   },
   {
    "id": "2026-07-17-cadence-engine",
@@ -610,7 +618,8 @@
    "success_metric": "4 weeks: panels fired 7.0+-0.5d apart with zero brain involvement; no double-fires",
    "reversal_condition": "double-fires or missed windows observed -> revert to brain-scheduled with checklist",
    "review_due": "2026-08-14",
-   "review_due_source": "success_metric"
+   "review_due_source": "success_metric",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): WRONG. Failed: panels neither fired 7d apart (last_panel 07-25, last_tier1 07-16) nor avoided double-fires -- 08-04 cadence-starvation row + 07-31 audit's 6+ double-scheduled organs. Assumption that broke: stamp-last ordering under brain timeouts."
   },
   {
    "id": "2026-07-17-no-change-cap-principal-order",
@@ -623,7 +632,8 @@
    "success_metric": "30d: zero change-induced incidents despite unrestricted velocity",
    "reversal_condition": "any change-induced incident AFTER live capital deploys -> principal revisits this order with the incident on the table",
    "review_due": "2026-08-16",
-   "review_due_source": "success_metric"
+   "review_due_source": "success_metric",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): WRONG (the prediction, not the order): three change-induced incidents in 10 days (#4 amid same-day topup churn, #5 rail-ratchet defect, #6 commission loop -$1,750.65 = 94.1% of loss). The CRO's recorded dissent was vindicated."
   },
   {
    "id": "2026-07-17-throughput-amendment-and-connector-spec",
@@ -636,7 +646,8 @@
    "success_metric": "connector built to spec + breaker-tested before 2026-08-05; zero same-subsystem collision incidents under unlimited throughput",
    "reversal_condition": "auto-revocation clause fires -> throughput drops to 5/window automatically",
    "review_due": "2026-08-16",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held: connector built 07-18, sections 3-6 wired 07-26 with tests. Superseded: complexity budget deleted 07-20. Failed: zero-collision clause (#6 was a reconcile-vs-close same-subsystem interaction)."
   },
   {
    "id": "2026-07-17-shadow-clock-contamination-ruling",
@@ -654,7 +665,8 @@
    "success_metric": "no future cycle re-litigates this contamination question without new code/market evidence",
    "reversal_condition": "if the shadow computation is ever changed to read live executor fills instead of the market-data panel, this ruling must be re-evaluated",
    "review_due": "2026-08-16",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): CORRECT. Held: ruling stood, no fills-based shadow ever added (2 commits, universe-constant only), no re-litigation; carry clock ran to 52/90d."
   },
   {
    "id": "2026-07-17-carry-crowding-monitor",
@@ -675,7 +687,8 @@
    "success_metric": "web/crowding.json refreshes daily without error; monthly governance references it at least once before 2026-08-16",
    "reversal_condition": "if the detector produces persistent false decay_warnings unsupported by realized funding, recalibrate or retire the bar",
    "review_due": "2026-08-16",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held: crowding.json alive daily (08-18T05:09, live trend numbers). Failed: zero governance citations before 08-16 (CRO_BRIEFING hits are the unrelated crowding_hazard)."
   },
   {
    "id": "2026-07-17-reconciler-silent-failure-counter",
@@ -693,7 +706,8 @@
    "success_metric": "next time a hedge order is persistently rejected, a RECONCILE-FAIL line appears within 3 cycles instead of staying silent for 75+ minutes",
    "reversal_condition": "if the 3-strike threshold produces false alarms on normal transient rejections, raise the threshold or add a time-window instead of a pure consecutive-count",
    "review_due": "2026-08-16",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): WRONG. Failed: the class recurred 40x longer -- 07-25 reduceOnly rejection ran SILENT ~2 days ($1,750 re-billed) because the failing path sat outside the counted _reconcile wrapper. Counter itself functions (ONEUSDT:1)."
   },
   {
    "id": "2026-07-17-growth-audit-capital-utilization-deferral",
@@ -711,7 +725,8 @@
    "success_metric": "once GAP#14 is root-caused and GAP#15 is resolved (trim or natural close), capital utilization gap closes same-cycle with no further deferral",
    "reversal_condition": "if GAP#14/#15 remain open >14 more days with no progress, re-examine whether the deferral itself has become the conservatism defect (Aggression Clause: conservatism beyond survival constraints is itself a cost)",
    "review_due": "2026-08-16",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): CORRECT. Held: GAP#15 closed 07-17, GAP#14 root-caused 07-19, utilization closed same cycle (20%->~100% deploy 07-19) -- the deferral sequence played out exactly."
   },
   {
    "id": "2026-07-17-weekly-architecture-review",
@@ -724,7 +739,8 @@
    "success_metric": "next weekly architecture review (within 7 cycles) finds the same conclusion or identifies a genuinely new migration candidate from fresh evidence",
    "reversal_condition": "if live capital deploys and the governance-apparatus-to-capital cost ratio becomes materially unfavorable, revisit",
    "review_due": "2026-08-16",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): WRONG. Failed: no second architecture review exists anywhere (no ledger row, no cadence stamp, no artifact) -- the organ went silent after its first run."
   },
   {
    "id": "2026-07-17-hwm-contamination-false-fire",
@@ -737,7 +753,8 @@
    "success_metric": "post-reset baseline forms on clean wallet; no fourth false fire from stale references",
    "reversal_condition": "n/a (incident record)",
    "review_due": "2026-08-16",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): WRONG. Failed: fire #5 (07-22) was another phantom-reference false fire (HW ratcheted on a single noisy -56% read vs real -$63.60); re-baselining did not end the class -- the 07-22 ratchet-asymmetry patch did."
   },
   {
    "id": "2026-07-17-spec-prebuild-standing-rule",
@@ -750,7 +767,8 @@
    "success_metric": "next 3 implemented register items each had a complete spec before their build began",
    "reversal_condition": "spec backlog itself becomes the bottleneck -> spec only top-5 ranked items",
    "review_due": "2026-08-16",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held on the observable next items (gap19/gap32/connector specs pre-built). Never systematically measured across the ~70-item queue; the desk's own 07-18 reconciliation concedes the backlog lacked specs."
   },
   {
    "id": "2026-07-17-research-pack-triage",
@@ -763,7 +781,8 @@
    "success_metric": "decay-lab spec complete before monthly window; clustering live before next factory expansion",
    "reversal_condition": "per-row sunset clauses",
    "review_due": "2026-08-16",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): WRONG. Failed both clauses: no DECAY_LAB spec exists and clustering was not live before generation was maximized 07-20; both still sit in the spec-prebuild queue (inbox lines 16/427)."
   },
   {
    "id": "2026-07-17-master-expansion-package-triage",
@@ -790,7 +809,8 @@
    "success_metric": "48h: no deadman breach counts; positions ~$300-450/name; measured eq stable vs new HW",
    "reversal_condition": "any new fire -> book stays down pending full re-investigation",
    "review_due": "2026-08-16",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): WRONG. Failed: fire #4 latched 07-19T14:27Z, ~39h into its own 48h no-breach window (225 breach polls)."
   },
   {
    "id": "2026-07-18-prospector-seat-adopted",
@@ -803,7 +823,8 @@
    "success_metric": ">=1 provenance-SEMI-or-better card reaching pre-registration within 2 runs; watchlist alive by run 2",
    "reversal_condition": "zero accepted cards in 2 quarters -> retire per sunset discipline",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held: watchlist alive at run 2, which executed the full pre-registered KR-premium screen; honest zero-card sessions logged. Late: a NEW card reaching formal pre-registration (COINM R0462) landed 08-13, outside the 2-run window."
   },
   {
    "id": "2026-07-18-execution-lockdown-and-recorder-live",
@@ -816,7 +837,8 @@
    "success_metric": "7 consecutive days of gap-free hourly partitions for 5 symbols; recorder survives a cycle restart + pages on induced staleness",
    "reversal_condition": "disk or rate-limit pressure -> reduce cadence/symbols, never delete history",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held: recorder live same night, 30-symbol universe verified 07-22, cost model later built from 1.1GB. Failed/unmeasured: the named 7-consecutive-gap-free-days verification never produced an artifact; the structural freeze eroded under principal orders."
   },
   {
    "id": "2026-07-18-literature-deep-miner",
@@ -829,7 +851,8 @@
    "success_metric": ">=1 mechanism card surviving to pre-registration within 3 sessions",
    "reversal_condition": "sunset clause above",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): INSUFFICIENT-EVIDENCE. Organ live and productive (runs 7/8 engine findings), but no litminer-attributed MECHANISM card traced into any preregistration within 3 sessions -- the metric is unattributable from surviving artifacts."
   },
   {
    "id": "2026-07-18-digging-doctrine-and-autopsy-spec",
@@ -842,7 +865,8 @@
    "success_metric": "first dossier produces >=1 new monitored indicator + >=1 drill scenario",
    "reversal_condition": "3 dossiers with zero new indicators/guards/drills -> fold into OSINT lane",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): UNCLEAR (never exercised): doctrine binds (verbatim in run_cro_ai.sh) but the crisis-autopsy organ never ran -- no dossier, no stamp, black-swan library untouched since 07-12. Unwired capability (III.16 class)."
   },
   {
    "id": "2026-07-18-digging-cadence-biweekly",
@@ -868,7 +892,8 @@
    "success_metric": "Gate-0 pre-mortem produces >=1 finding worth addressing before keys",
    "reversal_condition": "n/a (event-scoped, self-limiting)",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held: incident-autopsy leg fired for fire #4. Degraded: Gate-0 premortem ran 08-05 with 1/13 substantive seats (free seats, 3 errored), and live keys were principal-armed 08-15 with gate0=False -- the blocking-premortem clause never got its 13-seat run (402)."
   },
   {
    "id": "2026-07-18-growth-audit-denominator-fix",
@@ -881,7 +906,8 @@
    "success_metric": "zero growth_defect pages while book is fully deployed at authorized size",
    "reversal_condition": "n/a (defect fix)",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): UNCLEAR. July page-window evidence not retained; today's growth_defect page (08-18 09:32) fired on a KILLED/flat book, so the 'while fully deployed' precondition is absent -- the metric is unjudgeable from surviving state."
   },
   {
    "id": "2026-07-18-digging-breadth-all-improvement-classes",
@@ -894,7 +920,8 @@
    "success_metric": "within 2 dig cycles, >=1 non-alpha improvement finding captured and spec-queued",
    "reversal_condition": "inbox floods with low-value process trivia -> raise the capture bar to material-only",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): CORRECT. Held: non-alpha findings captured and routed by 07-25 (fill-rate-decay discriminator #55, era-archaeology entries) exactly per the routing clause."
   },
   {
    "id": "2026-07-18-ai-methods-digging-gap-closed",
@@ -907,7 +934,8 @@
    "success_metric": "within 2 literature cycles, >=1 concrete engine/prompt/eval improvement captured",
    "reversal_condition": "AI-methods digs yield only hype with no adoptable method in 2 quarters -> drop the family",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held in outcome: engine improvements demonstrably captured (arxiv-pdf fabrication rule 08-12; R0614 sweep defect 08-18). In-window timing unprovable -- first two cycles' logs reaped."
   },
   {
    "id": "2026-07-18-digger-coverage-self-audit",
@@ -920,7 +948,8 @@
    "success_metric": "first coverage audit adds >=1 genuinely missing family OR credibly confirms completeness",
    "reversal_condition": "audits add only trivial families 2 quarters running -> fold into annual",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): UNCLEAR (premature): first quarterly audit due ~10-18; the 30d review horizon is a backfill artifact, not the decision's clock."
   },
   {
    "id": "2026-07-18-youtube-transcript-reality",
@@ -933,7 +962,8 @@
    "success_metric": "Prospector cites >=1 video-sourced mechanism via text mirror within 2 runs",
    "reversal_condition": "coverage log shows video-locked blockers recurring -> trigger the EV-gated proxy decision",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): WRONG. Failed: zero video-sourced mechanisms in Prospector runs 1-2; the mirror assumption then degraded (fetch_video_transcript dead-domain lie; YouTube hollow-200 wall)."
   },
   {
    "id": "2026-07-18-ex-solo-quant-priority",
@@ -946,7 +976,8 @@
    "success_metric": "within 3 Prospector runs, >=1 card sourced from an ex/solo-quant long-form piece",
    "reversal_condition": "ex/solo-quant sources yield only known/retail material 2 quarters -> demote to normal weight",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): WRONG on the metric: no ex/solo-quant long-form card within 3 Prospector runs (sources were GitHub/8btc/KR dashboards/NP forum). Near-hit outside scope: JP seat's qiita solo-botter card 08-12 (frontier run, not Prospector)."
   },
   {
    "id": "2026-07-18-source-yield-learning",
@@ -959,7 +990,8 @@
    "success_metric": "by the 2nd coverage audit, budget measurably shifted toward a proven-productive family",
    "reversal_condition": "too few survivors to yield signal -> keep equal-weight rotation, revisit at more data",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): UNCLEAR (premature): the trigger is the 2nd quarterly coverage audit, ~6 months out; nothing to grade at a 30d backfill horizon."
   },
   {
    "id": "2026-07-18-self-improvement-closed-loops",
@@ -972,7 +1004,8 @@
    "success_metric": "by the 2nd scoring run, EV priors measurably shift from realized hit-rate; memory line-count/signal-density improves after 1st consolidation",
    "reversal_condition": "outcome scores stay uninformative (too few resolved) -> lengthen the review horizon; never drop the loop",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held: scoring happens (47/234 via owed-work batches -- 2 runs). Failed: decision_outcomes.jsonl never created; consolidation never stamped; NO consumer feeds realized hit-rate into EV priors (grep clean) -- the learning edge is unwired."
   },
   {
    "id": "2026-07-18-compression-safety-and-audit-depth",
@@ -985,7 +1018,8 @@
    "success_metric": "first full-depth audit either confirms a component clean OR finds a real defect; zero compression-caused info loss (git-verifiable)",
    "reversal_condition": "deep audits never find anything in 3 quarters -> drop to quarterly",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held: deep/full audits ran and found real defects (welded gauntlet, double-scheduling); no compression-caused loss found. Failed: the consolidation duty itself never stamped/ran."
   },
   {
    "id": "2026-07-18-deterministic-freeze-exit",
@@ -998,7 +1032,8 @@
    "success_metric": "freeze-exit status logged each cycle; on the real Gate 0, activation flags automatically and every manifest item is worked + ledgered",
    "reversal_condition": "n/a (reliability infrastructure)",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held: freeze_exit_status logged every cycle with honest falses. Unexercised+bypassed: Gate 0 never fired; the desk went live 08-15 by principal arming with gate0 False -- the manifest activation path was never used."
   },
   {
    "id": "2026-07-18-evidence-gated-progressions-registry",
@@ -1011,7 +1046,8 @@
    "success_metric": "at freeze-exit, growth ramp + stage machine arm automatically; monthly review finds zero memory-dependent progressions",
    "reversal_condition": "n/a (auditability infrastructure)",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): UNCLEAR. Registry untouched since creation (mtime 07-18) and stage_state still reads S0 while margin was principal-armed 08-15 -- the registry did not govern the actual live step; whether principal-gating satisfies its terms is a principal-level question."
   },
   {
    "id": "2026-07-18-principal-design-philosophy",
@@ -1024,7 +1060,8 @@
    "success_metric": "no unjustified cap survives its measurement cycle; zero sizing-on-unproven-edge incidents",
    "reversal_condition": "aggression-default produces a ruin-risk breach traceable to the philosophy -> re-scope with the incident",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held: caps measured and removed on schedule. In-window sizing-integrity incidents occurred regardless (calibration sign-inversion fed 6.00x sizing; #6 burned 35% of the paper book) -- whether they count against 'sizing-on-unproven-edge' is judgment; they were software/measurement defects, not edge-sizing decisions."
   },
   {
    "id": "2026-07-18-digging-charter-and-github-memory",
@@ -1040,7 +1077,8 @@
    "success_metric": "diggers cite GitHub/non-English sources within 2 runs; every cycle pushes to GitHub; zero secret leak",
    "reversal_condition": "push failures persist -> diagnose credentials; charter yields only noise 2 quarters -> retune per source-yield",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): CORRECT. Held: non-EN/GitHub citations by run 2 (8btc threads, KR dashboards); continuous commits/pushes (sanctioned --no-verify cases recorded); zero secret leaks found."
   },
   {
    "id": "2026-07-18-free-first-data-stack",
@@ -1056,7 +1094,8 @@
    "success_metric": "post-Gate-0: >=3 free sources ingested + Tardis-diff-validated; zero paid data; bottleneck detector governs any exception",
    "reversal_condition": "a free source dies and is a SPOF -> the pre-required second-source/Bronze-archive rule covers it; genuine binding gap -> narrow EV-gated paid exception",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): CORRECT. Held and exceeded: 96 graded universe-map rows, reconstruction exercised (batch_kaiko), zero paid data ever."
   },
   {
    "id": "2026-07-18-live-connector-stage-machine-build",
@@ -1078,7 +1117,8 @@
    "success_metric": "engineering_backlog.json live_connector_prebuild detector (file exists) now true; CI green with the 16 new tests; GAP register row 2 remaining scope (sections 3-7) gets picked up in a future cycle before ~08-05",
    "reversal_condition": "if the keyfile-only (no env var) design proves operationally painful for the principal's SSH key-placement workflow, revisit -- but never re-add an env-var path without an explicit ledger entry re-justifying it",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held: detector true, tests exist, sections 3-6 complete+wired 07-26. Failed: modules sat test-only for 8 days (the row's own record), and section 7 (13-seat fuzz + premortem) remains open, re-deferred to 08-23 on the 402."
   },
   {
    "id": "2026-07-18-capital-utilization-followup",
@@ -1096,7 +1136,8 @@
    "success_metric": "utilization should rise on its own as GAP#14 resolves (leverage confidence pipeline root-caused) and/or if a future cycle raises top-N with evidence",
    "reversal_condition": "if utilization stays below 60% for >7 more days with GAP#14 also resolved and no capital freeze found, raising top-N becomes the next cycle's engineering task",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held: utilization rose in-window. Mis-framed: the binding constraint was the missing resize-up code (#32 reapply deployed the book next day), not candidate scarcity."
   },
   {
    "id": "2026-07-18-ci-gate-widened-execution-dir",
@@ -1113,7 +1154,8 @@
    "success_metric": "run_ci.py stays green; a future execution-directory regression gets caught before it ships",
    "reversal_condition": "if tests/execution/ ever becomes flaky or slow enough to block iteration, isolate the offending test rather than reverting the whole directory from the gate",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held: gate later widened to whole tree; caught red-at-head 07-23. Failed: the 08-09 merge still shipped a 4-day-broken fence -- collection is a separate gate the widening did not cover."
   },
   {
    "id": "2026-07-18-chinese-quant-expansion",
@@ -1126,7 +1168,8 @@
    "success_metric": "Prospector cites >=1 Chinese-source mechanism within 2 runs; Chinese seat produces >=1 gauntlet-entering card post-activation",
    "reversal_condition": "Chinese sources yield only retail noise 2 quarters -> demote per source-yield learning",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held: Chinese-source mechanism within 2 runs (8btc tid 63748 inside the run-2 kr_perasset_premium card). Not evidenced: any CN-seat card entering the gauntlet."
   },
   {
    "id": "2026-07-18-self-heal-and-frontier-batch",
@@ -1139,7 +1182,8 @@
    "success_metric": "next failed 08:45 cycle auto-recovers same day; a clearing alert produces a ✅ page; drill stays green",
    "reversal_condition": "auto-retry loops or over-triggers -> tighten the rate limit / conditions",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held: retry/canary/resolution machinery live (trigger fired 08-18). Failed in effect: the dominant real failure is QUOTA exhaustion, outside retry's reach (brain dead all day 07-19; 12 organ runs died in 48h ~08-12; fallback keyfile ABSENT)."
   },
   {
    "id": "2026-07-18-discovery-multiplier-telemetry",
@@ -1152,7 +1196,8 @@
    "success_metric": "first multiplier report segments intake + survival by region with real counts",
    "reversal_condition": "telemetry adds cost without informing allocation for 2 quarters -> simplify to intake+survival only",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): WRONG. Failed: source_region tagging appears nowhere in code and no multiplier report was ever computed -- spec'd but never wired (III.16 unwired-capability class)."
   },
   {
    "id": "2026-07-18-frontier-jp-and-stop-line",
@@ -1165,7 +1210,8 @@
    "success_metric": "JP produces >=1 gauntlet-entering card within 2 runs post-activation; no low-moat region miner is built without telemetry justification",
    "reversal_condition": "telemetry shows a stop-line region unexpectedly yielding -> reconsider that specific region on data",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held: JP seat live (3 sessions); stop-line held (no low-moat miners exist). Modest: JP output routed an execution measurement (funding_settlement_phase EV 0.0087 QUEUE), not a gauntlet-entering alpha card."
   },
   {
    "id": "2026-07-18-spec-prebuild-honest-reconciliation",
@@ -1178,7 +1224,8 @@
    "success_metric": "every item reaching an implementation window has a full spec by then; no spec written for a later-retired item",
    "reversal_condition": "an item reaches its window without a spec -> lengthen the spec lead time",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): INSUFFICIENT-EVIDENCE. Population claim never audited: observable next items had specs, but no per-window audit was ever produced across ~70 queued items. UNMEASURED as stated."
   },
   {
    "id": "2026-07-18-expansion-specs-prebuilt",
@@ -1191,7 +1238,8 @@
    "success_metric": "first region built from the template + CN profile produces a well-formed card through the full pipeline; no per-region code duplication",
    "reversal_condition": "a region needs bespoke logic the template cannot express -> extend the template, never fork per-region",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): CORRECT. Held: one parameterized runner + per-region prompts + rotation exists exactly as designed; all seven regions ran through it into the shared watchlist/EV/graveyard pipeline."
   },
   {
    "id": "2026-07-18-final-ideas-and-paid-data-rule",
@@ -1204,7 +1252,8 @@
    "success_metric": "AI-frontier scanner unlocks >=1 new source in 2 quarters; paid-data rule invoked correctly on first real data need",
    "reversal_condition": "per-item falsification clauses in the inbox",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): UNCLEAR (premature + never exercised): the AI-frontier scanner was never built (its 2-quarter clock never started) and no paid-data need ever arose for the rule to fire on."
   },
   {
    "id": "2026-07-18-operator-premortem-opened",
@@ -1217,7 +1266,8 @@
    "success_metric": "4 scenarios answered + recorded; first real incident follows the pre-committed plan",
    "reversal_condition": "n/a (ops-hardening artifact)",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): UNCLEAR (unresolvable): the 4 crisis answers were never recorded anywhere, so incidents #4-#6 had no pre-committed plan to follow. Principal-side dependency that never materialized."
   },
   {
    "id": "2026-07-18-structural-edges-deduplicated",
@@ -1230,7 +1280,8 @@
    "success_metric": ">=1 of N1/N2 produces a gauntlet-surviving card within 2 quarters of build",
    "reversal_condition": "per-idea falsification clauses in the spec",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): UNCLEAR (premature): N1/N2 were never built, so the 2-quarter survival clock never started. Spec untouched since 07-18."
   },
   {
    "id": "2026-07-18-guaranteed-implementation-amendment",
@@ -1243,7 +1294,8 @@
    "success_metric": "every >=2 bps item eventually built in EV order; sub-threshold items expire or graduate cleanly; net complexity does not creep upward without matching value",
    "reversal_condition": "guaranteed low-value items accrete complexity faster than deletion credits prune -> raise the threshold (the built-in lever)",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): UNCLEAR (superseded same day): replaced by threshold-1bps then threshold-5bps FINAL before it could bind."
   },
   {
    "id": "2026-07-18-threshold-1bps-not-picky",
@@ -1256,7 +1308,8 @@
    "success_metric": "small net-positive items get built in EV order; no net-negative small item is built; complexity does not creep without matching value",
    "reversal_condition": "low-value items accrete complexity faster than deletion credits prune -> raise the 1 bps floor",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): UNCLEAR (superseded same day by threshold-5bps FINAL)."
   },
   {
    "id": "2026-07-18-threshold-5bps-final",
@@ -1269,7 +1322,8 @@
    "success_metric": ">=5 bps items always built; <5 bps items build if cheap-and-rising else expire; no queue bloat",
    "reversal_condition": "evidence that sub-5-bps items are consistently worth it -> lower the threshold (the built-in lever)",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held: the 5bps rule lives verbatim in the brain contract. Failed: 'no queue bloat' -- 07-31 audit: no row >3.67d old ever implemented (arrival/service ~4); 08-12 scored week 101 arrivals vs 93 dispositions."
   },
   {
    "id": "2026-07-18-dynamic-capital-quarantine-both-directions",
@@ -1285,7 +1339,8 @@
    "success_metric": "VERIFIED 07-18: fix removes the hard $1,250 cap (confirmed live, _dynamic_capital=4500) but does NOT reach full deployment -- only one name opens per rotation at its funding-weighted slice (~$200-350), frozen tiny carries persist, so the book plateaus below $4,500. Full deployment REQUIRES the gap #32 guarded resize-up (tested build, not a hot-patch). Under-deployment on a PAPER book is the safe direction and low-cost; matters materially only at live capital.",
    "reversal_condition": "book fails to converge toward $4,500 within a few days (would confirm gap #32 needs the resize-up fix sooner) OR gap #14 root-cause invalidates using full --capital",
    "review_due": "2026-08-17",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): CORRECT. Held: verified live same day (_dynamic_capital=4500); its prediction that full deployment required #32 was confirmed next day when the reapply deployed the book."
   },
   {
    "id": "2026-07-19-gap14-forensic-rootcause",
@@ -1298,7 +1353,8 @@
    "success_metric": "post-Gate-0 fix ships all 4 items + property/mutation tests before `active` may drive sizing again",
    "reversal_condition": "if MtM forward returns still show an implausible Sharpe, the collapse source is elsewhere -> re-open forensic",
    "review_due": "2026-08-18",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL (leaning correct). Held: fix shipped early 07-23 (8h-block confidence, implausibility rail, clean_since), quarantine held so active never drove sizing. Unverified: the property/mutation-test item individually."
   },
   {
    "id": "2026-07-19-gap19-gap32-specs-queued",
@@ -1311,7 +1367,8 @@
    "success_metric": "both re-applied cleanly at Gate-0, tests green, no freeze contamination in the calibration window",
    "reversal_condition": "operator directs immediate implementation -> re-apply #32 from data/patches/gap32_topup.patch",
    "review_due": "2026-08-18",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): UNCLEAR (superseded within hours): the operator ordered immediate #32 reapplication -- the row's own ledgered reversal condition fired; the Gate-0 re-apply plan never existed thereafter."
   },
   {
    "id": "2026-07-19-verify-then-claim-contract",
@@ -1324,7 +1381,8 @@
    "success_metric": "no future ledger/register entry asserts state that a fresh read contradicts",
    "reversal_condition": "rule proves to add material cost without catching errors over 2 quarters -> soften to spot-check",
    "review_due": "2026-08-18",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): WRONG as a metric -- violations recurred after adoption (08-12 handed lists 0/4 accurate; 08-13 row contradicting its own cited card; CN s8 'verified+MINED' with the subject unread; R0473/R0474). The RULE itself is live and is what keeps catching them; the prediction that entries would stop asserting contradicted state failed."
   },
   {
    "id": "2026-07-19-prospector-firstrun",
@@ -1337,7 +1395,8 @@
    "success_metric": "future cadence runs execute without hand-triggering once connector/recorder free the cycle",
    "reversal_condition": "if the run had fabricated survivors that fail the gauntlet -> tighten the prospector prompt's graveyard/EV discipline",
    "review_due": "2026-08-18",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): CORRECT. Held: unattended standing runs 07-30/08-12/08-18 (today's produced a card, an R0616 handoff, and committed); honest zero-card reporting persisted."
   },
   {
    "id": "2026-07-19-breakout-variants-tested-rejected",
@@ -1350,7 +1409,8 @@
    "success_metric": "verdict is reproducible from the archived test script + params",
    "reversal_condition": "a genuinely new filter/venue (not just an exit rule) changes the orthogonality -> re-test",
    "review_due": "2026-08-18",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held: verdict + params in graveyard:93 and independently re-derived by the 08-01 sweep. Failed: the named archived test SCRIPT is absent repo-wide, so push-button reproduction is not possible."
   },
   {
    "id": "2026-07-19-data-axis-mission-standing",
@@ -1366,7 +1426,8 @@
    "success_metric": ">=1 verified new orthogonal free data axis enters the hypothesis pipeline within 2 cadence cycles post-connector",
    "reversal_condition": "3 consecutive data-axis digs yield only unverifiable/contaminated sources -> demote cadence frequency per source-yield learning",
    "review_due": "2026-08-18",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): CORRECT. Held: mission cadence alive (stamped 08-18); new orthogonal axes entered repeatedly (onchain+stablecoin 07-23; CME/energy/equity/ETF/fed 08-05; OI/LS 08-11) with screen artifacts on disk."
   },
   {
    "id": "2026-07-19-freedata-mission-full-spec",
@@ -1383,7 +1444,8 @@
    "success_metric": ">=1 verified new orthogonal free axis enters the pipeline within 2 cycles post-connector; data_universe_map grows with graded lineage",
    "reversal_condition": "sustained low validated yield across cycles -> source-yield learning demotes families (never deletes -- archived + temporally re-evaluated)",
    "review_due": "2026-08-18",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): CORRECT. Held: biweekly cadence honored (08-12, 08-18 sessions); universe map 96 rows with graded lineage including destroyed-at-source and needs-legitimacy-review classes."
   },
   {
    "id": "2026-07-19-gap32-reapplied-live-fulldeploy",
@@ -1399,7 +1461,8 @@
    "success_metric": "book holds ~100% with no recurring trim/topup churn across work ticks (verified this session)",
    "reversal_condition": "recurring trim<->topup churn on later ticks -> revert to the reconcile-aware version or back to safe under-deploy",
    "review_due": "2026-08-18",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): WRONG. Failed: churn recurred immediately (fire #4 same afternoon amid TST topup) and then catastrophically (row 206: -$1,746.66 fees from 07-25) -- the row's own reversal condition (recurring trim/topup churn) fulfilled."
   },
   {
    "id": "2026-07-19-freedata-weekly-uncapped-timer",
@@ -1433,7 +1496,8 @@
    "success_metric": "each timer fires on schedule + produces graded output; prospector honestly reports nothing-new rather than fabricating; no two claude runs collide",
    "reversal_condition": "session collisions or token cost unacceptable -> stagger further or revert to brain-cycle execution; sustained zero yield on a digger -> demote its cadence per source-yield learning",
    "review_due": "2026-08-18",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held: timers exist and fire; honest no-op preserved. Failed: collisions occurred (two-brains-one-tree forced the 07-30 global mutex) and a digger no-op page delivered today."
   },
   {
    "id": "2026-07-19-cjk-priority-license-gate",
@@ -1449,7 +1513,8 @@
    "success_metric": "CJK legitimate sources enter the map graded/verified; zero pirated/cracked sources ever adopted or downloaded to the box",
    "reversal_condition": "n/a on the gate (hard security/legal boundary); CJK priority demoted only if it yields sustained low validated value",
    "review_due": "2026-08-18",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): CORRECT. Held: CJK legit layer mined at scale with graded lineage; the gate demonstrably fires (Upbit licence escalated to principal, not self-approved); zero pirated adoptions found."
   },
   {
    "id": "2026-07-19-public-shared-data-surgical",
@@ -1465,7 +1530,8 @@
    "success_metric": "open shared datasets get adopted; proprietary finds spawn reconstruction targets; nothing proprietary/cracked adopted into live",
    "reversal_condition": "n/a on the security/adoption boundary; grading tuned if open sources get wrongly excluded",
    "review_due": "2026-08-18",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): CORRECT. Held: exactly the predicted behavior on record -- open MIT dataset adopted after verification, proprietary metrics spawned a reconstruction batch, ambiguous licence escalated."
   },
   {
    "id": "2026-07-19-digger-parity-propagation",
@@ -1481,7 +1547,8 @@
    "success_metric": "no digger persistently lags another in depth/region/cadence; new upgrades appear across all diggers within a cycle",
    "reversal_condition": "an upgrade genuinely has no equivalent for a digger -> applied only where meaningful (rule already scoped 'where meaningful')",
    "review_due": "2026-08-18",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held: shared operator library grows cross-seat (OP-052/072/074/075 cross-cited). Counter-signals: blindrediscovery no-op page today; the video fetcher sat dead desk-wide for a stretch. Formal parity audit premature."
   },
   {
    "id": "2026-07-19-discovery-doctrine-expansion",
@@ -1498,7 +1565,8 @@
    "success_metric": "operator-library entries grow with per-region adaptation rows filled within one session of origin; zero diggers lag the frontier at the quarterly parity audit; negative-knowledge reopens on triggers rather than never; weak-signal convergences produce >=1 promoted hypothesis per quarter",
    "reversal_condition": "if library/registry upkeep measurably displaces validated discovery output over 2 cycles, compress the per-session checklist (never delete records -- archive discipline)",
    "review_due": "2026-08-18",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held: operator-library SSOT, weak-signal clustering (13 obs 08-18), negative knowledge with reopen triggers, honest displacement (dvol trigger preserved) all demonstrably operating. Premature: quarterly clauses."
   },
   {
    "id": "2026-07-19-brain-api-billing-option-a",
@@ -1531,7 +1599,8 @@
    "success_metric": "brain cycles run 7 consecutive days with zero quota no-ops alongside normal interactive use",
    "reversal_condition": "any quota-starved brain cycle during an open incident -> activate Option A via ops/setup_brain_api_key.sh (pre-built, one command)",
    "review_due": "2026-08-18",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): WRONG. Failed decisively: quota no-ops chronic (brain dead all day 07-19; daily afternoon exhaustion ~08-12; 12 organ runs died at birth in 48h) and the Option-A fallback keyfile is still absent. Reversal pending on principal."
   },
   {
    "id": "2026-07-19-cro-script-unbound-dollar-fix",
@@ -1544,7 +1613,8 @@
    "success_metric": "next run creates a growing data/cro_ai_logs/<ts>.log and exits 0",
    "reversal_condition": "n/a (syntax fix)",
    "review_due": "2026-08-18",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): CORRECT. Held: brain resumed immediately (14 brain-written ledger rows in 48h) and has run since (continuous logs to 08-18)."
   },
   {
    "id": "2026-07-19-exhaustion-verified-assetclass-dormant",
@@ -1557,7 +1627,8 @@
    "success_metric": "next fires of all 4 diggers produce full-size logs; asset-class dormancy holds until a ledger-recorded activation",
    "reversal_condition": "blindrediscovery output degrades to padding -> restore a soft cap with explicit reasoning",
    "review_due": "2026-08-18",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held: diggers produced full-size outputs through 08-18. Failed: the dormancy clause ended ~08-16 (MT5 gold desk) with NO decision-ledger activation row -- activation exists only as commit-level mandates, outside the ledger this decision named."
   },
   {
    "id": "2026-07-19-admission-count-uncapped-constitutional",
@@ -1586,7 +1657,8 @@
    "success_metric": "next successful push logs a `deadman_latched`/`principal_action_needed` success timestamp in data/.last_alerts.json (not just a `_try_` attempt) -- unconfirmed as of this ledger entry, tracked as open verification",
    "reversal_condition": "n/a (defect fix; the defensive encode can only ever make pushes MORE likely to succeed, never less)",
    "review_due": "2026-08-18",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): CORRECT. Held: the exact named key exists (principal_action_needed success 08-18T01:28Z), delivery-confirmed marker 07-20, 8 categories delivered."
   },
   {
    "id": "2026-07-19-deadman-fire4-incident-autopsy",
@@ -1602,7 +1674,8 @@
    "success_metric": "the read-only reconciliation script (once built) either fully attributes the $1,838 USDT delta to specific venue records (validates the panel's caution was resolvable, not a real hole) or fails to -- either outcome is informative and gates the reset recommendation",
    "reversal_condition": "if the reconciliation attributes the full gap to ordinary settlement lag with no residual, the panel's 'unresolved accounting break' framing downgrades to 'confirmed measurement artifact' and the original lighter-weight fix direction can be reconsidered on its merits, still principal-gated",
    "review_due": "2026-08-18",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): CORRECT. Held: reconciliation fully attributed the delta (spot net -1,837.6781 vs observed -1,837.68, residual -0.0019); the panel's 'unresolved accounting break' correctly downgraded to measurement artifact."
   },
   {
    "id": "2026-07-19-founders-directives-adopted",
@@ -1618,7 +1691,8 @@
    "success_metric": "next auth failure produces a page within one cycle-start; zero doctrine additions until Gate 0; first post-Gate-0 month runs the Bybit build unchanged from spec",
    "reversal_condition": "self-test false-positives block cycles -> soften to warn-and-continue with page",
    "review_due": "2026-08-18",
-   "review_due_source": "default"
+   "review_due_source": "default",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held: Bybit second venue recording (20 symbols); auth self-test detects and attempts its page. Failed: 'zero doctrine additions until Gate 0' -- 07-20/21 added redteam/no-compromise/self-interrogation rows under principal orders."
   },
   {
    "id": "2026-07-20-implementation-caps-removed",
@@ -3361,7 +3435,8 @@
    "independence_argument": "pure data acquisition; touches no live path",
    "rails_touched": "NONE",
    "opportunity_cost": "phase 2 tranche wiring deferred to 08-01 (careful build behind money-path batch)",
-   "review_due": "2026-08-14"
+   "review_due": "2026-08-14",
+   "outcome": "SCORED 2026-08-18 (owed-work batch3-selftuned): PARTIAL. Held: phase-1 funding real (11,148 rows 2016-05..2026-07). Failed: phase-2 xbtusd 1m parquet + T~3600 screen wholly absent at 14d. (Row malformed: decision field null, content in hypothesis.)"
   },
   {
    "id": "2026-07-31-page-digest-governance-and-detector-unlaundering",

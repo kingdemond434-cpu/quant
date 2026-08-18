@@ -411,6 +411,9 @@ GROUND: the OLMAR cluster is **20 archived threads, not the 9 session D logged**
   from 115KB pages that were full of them. The class census diagnosed it in one command, on a
   second platform, hours after the operator was written for the first.
 
+
+**§33 dispositions (2026-08-18, owed-work batch3 — items above, in order):**
+- Wilmott first touch: [§33: screened] — items 1-2 closed in-block ('Full results below'); ground later measured WALLED x3 (:5490,:5523)
 ### 2026-08-04 session D (EN frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
 MINE GATE: BACKLOG-CLEAR (all 5 carded finds disposed; mining authorised). Generation priors read:
 data_axis_watchlist is the only measured class (57.1% conversion, 0d median latency) → favoured.
@@ -1315,6 +1318,9 @@ ITEMS THIS RUN (bounded per completion contract):
    §33 defect below, which outranked new ground (L1.28b: conversion before new findings). Stays
    the named next ground.
 
+
+**§33 dispositions (2026-08-18, owed-work batch3 — items above, in order):**
+- Ppomppu era-seek 2017-11→2018-02: [§33: wired -> data/ppomppu_bitcoin_era_map.json + data/ppomppu_kr_era_threads.jsonl + data/ppomppu_kr_rail_corpus.json] — DEPTH LINE at :1389, artifacts on disk
 ### 2026-08-12 session 2-on-this-branch — RESUMED RUN (the first attempt died mid-item-1; this is its continuation, not a new session)
 §33 STANDING TEST ("which artifact on disk is different because of what was mined?"):
 `data/ppomppu_bitcoin_era_map.json` + `data/ppomppu_kr_era_threads.jsonl` (**NEWLY TRACKED** —
@@ -1575,6 +1581,14 @@ ITEMS THIS RUN (bounded per completion contract; deep-forest tier first per L1.3
    (a *memories-of* post = a dated death of an arb family). STATUS: pending.
 NEXT ITEMS (for the run after this one): recorded at close.
 
+
+**§33 dispositions (2026-08-18, owed-work batch3 — items above, in order):**
+- Access probe (zenn 403 behind permissive robots): [§33: screened] — in-block record, propagated as the 200-over-403 operator
+- qiita survivors read to full depth: [§33: screened] — in-block record (blog_UKI spoofing intervention failed)
+- Self-hosted deep-forest layer: [§33: screened] — OP-073 in search_operator_library.md
+- Standing cheap probe UA matrix: [§33: deferred(2026-08-25)] — next JP session
+- qiita botter-calendar deep-read (two survivors): [§33: deferred(2026-08-25)]
+- Deep-forest 20 entries / 12 domains untouched: [§33: deferred(2026-08-25)]
 ### 2026-08-12 session (JP frontier miner) — COMPLETE (write-first note, finalized end of run)
 §33 STANDING TEST ("which artifact on disk is different because of what was mined?"):
 `data/jp_funding_clamp_census.json` (NEW, tracked via a `.gitignore` `!` exception),
@@ -1655,6 +1669,10 @@ the carry-family owner). (3) **マケデコ depth** on the 19 reachable entries 
 a closed ground is worth one cheap probe per run, never a cached verdict.
 (5) J-Quants §13 licence read, due 2026-08-19.
 
+
+**§33 dispositions (2026-08-18, owed-work batch3 — items above, in order):**
+- Calendar deep-read re-aimed (lud-botter EV 0.0006 REJECT): [§33: screened] — EV rejection + funding_settlement_phase observation routed
+- マケデコ ground opened+mapped: [§33: wired -> data/jp_makedeco_advent_calendar.jsonl] — 74 entries, artifact on disk
 ### 2026-08-12 session (JP frontier miner) — item detail (write-first record, preserved)
 RESUME STEP 1 (backlog): `source_backlog_next.py` → 0 JP-owned technical verifications. The one
 JP row in the DECIDE list (bitbank public candlestick API) was licence-read EARLIER TODAY by the
@@ -1724,6 +1742,10 @@ whole finding:
   (correct when written, wrong today). Superseded here rather than edited — the dated change is
   the evidence.
 
+
+**§33 dispositions (2026-08-18, owed-work batch3 — items above, in order):**
+- Calendar deep-read queue (plan copy): [§33: n/a -> finalized block's dispositions above]
+- マケデコ (plan copy): [§33: n/a -> finalized block's dispositions above]
 ### 2026-08-04 session 1-on-this-branch (JP frontier miner) — COMPLETE (write-first note, finalized end of run)
 §33 STANDING TEST ("which artifact on disk is different because of what was mined?"):
 data/jp_botter_advent_calendar.jsonl (new, 187 rows), docs/graveyard.md (+3 entries),
@@ -1904,6 +1926,9 @@ PENDING IN-RUN (screen-on-discovery duty): novelty-gate + Stage-A screen of the 
 **per-asset premium dispersion in a barriered market (KR per-asset KRW books — CN books are
 USDT-only post-2021, mechanism not reconstructable in-region)**; graveyard/lexicon/operator routing.
 
+
+**§33 dispositions (2026-08-18, owed-work batch3 — items above, in order):**
+- Verify-queue disposition (queue-design leak finding): [§33: wired -> F0002] — rowed, fixed f9b50e36 2026-08-12
 ### 2026-07-30 session (PROSPECTOR, standing daily) — IN PROGRESS (write-first note; updated as items resolve)
 Mine gate: BACKLOG-CLEAR (all 5 prior finds disposed; mining authorised). Generation priors read:
 only measured class = data_axis_watchlist (50% conv, 0.25d latency) — favoured; nothing starved.
@@ -2417,6 +2442,11 @@ identity-gated enclosures (知识星球, QQ, WeChat), which the §13 gate puts p
 That is a durable constraint on this region, not a gap to be closed — and it means the OPEN CN layer
 worth mining is repos, era archives and platform 文库, not live community.**
 
+
+**§33 dispositions (2026-08-18, owed-work batch3 — items above, in order):**
+- Northbound Stock Connect flow DEAD (400 sessions probed, disclosure ceased 2024-08-16): [§33: screened] — refutation recorded on the card, data_axis_watchlist.md:1604
+- 新韭菜 organic in 2017 text: [§33: n/a -> evidence line under its ITEM's tag]
+- OP-036 era-dating survives first contact: [§33: n/a -> OP-036, search_operator_library.md]
 ### SESSION CLOSE 2026-08-01 session E (EN frontier miner) — DEPTH LINE, BATTERY, STANDING TEST
 
 **STANDING TEST — "Which artifact on disk is different because of what was mined?"**
@@ -2507,6 +2537,10 @@ Phynance never touched, Kaggle G-Research and Numerai post-mortems never touched
 (SSRN/arXiv) family still never touched directly. The forest is not thin; this seat is bounded
 per-run by design.
 
+
+**§33 dispositions (2026-08-18, owed-work batch3 — items above, in order):**
+- Wilmott f=38+f=44 title harvest: [§33: killed] — ground WALLED x3 (403 both hosts, both egress paths); re-probe condition = robots change or different egress
+- OLMAR cluster remainder: [§33: killed -> docs/graveyard.md era_olps_olmar_portfolio_selection + olmar_olps_era_zero_cost_canon]
 ### SESSION CLOSE 2026-08-01 session 3 (CN frontier miner) — STANDING TEST, DEPTH, BATTERY, NEXT GROUND
 
 **STANDING TEST — "Which artifact on disk is different because of what was mined?"**
@@ -2605,6 +2639,12 @@ _Region grounds: habr.com quant/algo long-reads, smart-lab.ru, RU-language GitHu
 YouTube algo channels, RU public Telegram. Operators: OP-002 (Yandex/RU templates), OP-003
 (habr comments / smart-lab forums), OP-004 (cyberleninka.ru open archive)._
 
+
+**§33 dispositions (2026-08-18, owed-work batch3 — items above, in order):**
+- Delisting panel R0292 (123 events + three hypotheses): [§33: wired -> libs/research/listing_events.py + scripts/run_listing_watch.py + data/delisted_instruments.json + data/delisted_rosters/*]
+- Unlock screen re-run on corrected [T-30d,T] window: [§33: deferred(2026-08-25)] — no re-run evidence found anywhere; still owed
+- 8btc era board section-by-section: [§33: screened] — s7/s8 08-12/08-13 records (2013-12 ban window mined; OP-069/070/071)
+- JoinQuant/BigQuant/RiceQuant 实战 threads: [§33: deferred(2026-09-01)] — measured credential-walled
 ### 2026-08-01 session 1 (RU frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
 
 **SEAT STATUS: FIRST RUN.** There is no prior RU session note anywhere in this document — EN has
@@ -2673,6 +2713,11 @@ specialty** is a better use of a first run than deepening CROSS-VENUE-PREMIUM, w
 bits.media era boards section-by-section; RU-language GitHub `lang:ru` fork chains; RU YouTube algo
 channels via `fetch_video_transcript.py`; cyberleninka.ru citation chains (OP-004).
 
+
+**§33 dispositions (2026-08-18, owed-work batch3 — items above, in order):**
+- Backlog verification (Auer–Claessens timeline): [§33: screened] — resolved in-block; walled remainder carried in session close
+- RU living-web ground (habr + smart-lab): [§33: screened] — in-block results
+- Era-archaeology + barrier-height OOS: [§33: screened] — the-barrier-MIGRATES result; graveyard barrier-rent rows
 ### SESSION CLOSE 2026-08-01 session 1 (RU frontier miner) — STANDING TEST, DEPTH, BATTERY, NEXT GROUND
 
 **STANDING TEST — "Which artifact on disk is different because of what was mined?"**
@@ -2773,6 +2818,13 @@ _Region grounds: Naver blogs + public cafes, DCInside trading galleries, velog/t
 KR GitHub, Upbit/Bithumb developer ecosystems. Operators: OP-002 (native-language templates),
 OP-032 (native language FIRST). KR lexicon seeded 2026-07-30 by the PROSPECTOR seat._
 
+
+**§33 dispositions (2026-08-18, owed-work batch3 — items above, in order):**
+- smart-lab statarb tranche (339456/52568/504951/133052): [§33: deferred(2026-08-25)] — re-carried by later RU sessions
+- crypto-arbitrage-scanner repo chain: [§33: deferred(2026-08-25)] — table row 'UNVISITED — owed'
+- RU YouTube algo channels: [§33: screened] — RU s3 08-13: fetcher ALIVE, YouTube wall is a hollow full-size 200
+- CESifo WP 8228 / CEPR DP 14602: [§33: deferred(2026-08-25)] — attempted, not exhausted
+- Era-archaeology: [§33: screened] — RU branch-s1 08-04 (btcsec era corpus, data/btcsec_trading_topics.json)
 ### 2026-08-01 session 1 (KR frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
 
 **SEAT STATUS: FIRST RUN.** No `SESSION NOTES — KR frontier miner` section existed in this document
@@ -3196,6 +3248,11 @@ Notice window on the fuller set: **45/97 parsed (min 2.9d, median 30.9d, max 36.
 unparsed are pre-2022 delistings using a different in-title date format (`(19.01.05 종료)`), which
 is more era-convention work owed, named rather than glossed.
 
+
+**§33 dispositions (2026-08-18, owed-work batch3 — items above, in order):**
+- Backlog verification re-scoped (NAVER 4th re-confirm worth zero): [§33: screened] — in-block; queue-design leak = F0002 fixed; NAVER stays credential-blocked
+- KR community deep-mine (DCInside/Coinpan/cafés): [§33: killed] — 3/5 grounds refuse Claude BY NAME; replacement ground velog/tistory
+- Upbit/Bithumb dev ecosystem + KR GitHub: [§33: screened] — in-block results
 ### SESSION CLOSE 2026-08-01 session 1 (KR frontier miner) — STANDING TEST, DEPTH, BATTERY, NEXT GROUND
 
 **STANDING TEST — "Which artifact on disk is different because of what was mined?"**
@@ -3312,6 +3369,14 @@ exists to hold. A platform is logged only after a real attempt fails.
 
 ## SESSION NOTES — JP frontier miner
 
+
+**§33 dispositions (2026-08-18, owed-work batch3 — items above, in order):**
+- velog+tistory to comment depth: [§33: screened] — velog OPENED s5 08-04 (OP-050); tistory half deferred(2026-08-25)
+- Global-priced delisting event study (97 events): [§33: wired -> libs/research/listing_events.py + delisted rosters]
+- KRW rail-access study (239 events): [§33: deferred(2026-08-25)] — carded route (watchlist card #26)
+- category=입출금 deposit/withdrawal log: [§33: deferred(2026-08-25)] — partially advanced by the 08-12 rail corpus
+- 52 pre-2022 delisting effective dates: [§33: deferred(2026-08-25)] — fold-in to rosters unverified; deferral keeps it owed
+- Era-archaeology (Ppomppu, pre-real-name): [§33: screened] — s5 bootstrap + 08-12 era-seek artifacts
 ### 2026-08-01 session 1 (JP frontier miner, SEAT'S FIRST RUN) — IN PROGRESS (write-first note; updated as items resolve)
 
 **RESUME check done first.** `source_backlog_next.py --limit 6` → 5 pending technical
@@ -3510,6 +3575,13 @@ what it yielded), and never expect a live edge from it.
 
 ---
 
+
+**§33 dispositions (2026-08-18, owed-work batch3 — items above, in order):**
+- §13 robots sweep of all five JP grounds: [§33: screened] — in-block sweep results (5ch blocks ClaudeBot by name)
+- bitFlyer legitimacy (T2 human-dependency): [§33: wired -> commit eaa8b84a] — licence READ, 403/no-archive claims refuted, dependency removed
+- p平均法 order-sensitive bar + Irwin-Hall bug: [§33: screened] — critique + reproduced bug in session record
+- richman非定常性スコア adversarial validation: [§33: screened] — shuffle critique in session record
+- publicGetExpiredFutures survivorship-free universe: [§33: wired -> data/delisted_rosters/binance_futures.json + scripts/probe_delisted_instruments.py]
 ### SESSION CLOSE 2026-08-01 session 1 (JP frontier miner) — DEPTH, BATTERY, STANDING TEST, NEXT GROUND
 
 **DEPTH LINE (per promising lead):**
@@ -3590,6 +3662,13 @@ is gitignored**), this coverage doc, and ledger rows **R0309–R0313**.
 
 ## SESSION NOTES — BR frontier miner
 
+
+**§33 dispositions (2026-08-18, owed-work batch3 — items above, in order):**
+- botter Advent Calendar 2021-2025: [§33: wired -> data/jp_botter_advent_calendar.jsonl] — 187 entries, s6 08-04
+- GMO/bitbank licence reads (R0309/R0310): [§33: deferred(2026-08-19)] — cards 27/28 DECIDE-queue owed
+- 2017 bitFlyer-FX SFD mechanics: [§33: killed -> docs/graveyard.md jp_sfd_boundary_game] — s6
+- Bivolab + six-blog network: [§33: deferred(2026-08-25)] — no visit evidence since
+- JP lexicon seeds: [§33: screened] — s6: 13 rows, 養分+イナゴ verified, ガチホ stays SEED
 ### 2026-08-01 session 1 (BR frontier miner, SEAT'S FIRST RUN) — IN PROGRESS (write-first note; updated as items resolve)
 
 **No BR row existed in this document before this run.** The seat has never been run. Per the RESUME
@@ -3875,6 +3954,13 @@ note**). No graveyard entry: the BR premium was already there, which was the poi
 
 ---
 
+
+**§33 dispositions (2026-08-18, owed-work batch3 — items above, in order):**
+- PT-BR practitioner ground to fork/issue depth: [§33: screened] — taken by BR s2 08-12 (zecontinha corpus)
+- RFB vintage stack mirror: [§33: wired -> R0472 / commit 8f73b1f8] — recoverable vintages harvested 2026-08-18
+- BCB EstatisticasFraudesPix: [§33: deferred(2026-08-25)] — carried untouched through s2/s3
+- Era-archaeology (Mercado Bitcoin early era): [§33: deferred(2026-08-25)] — still not started at s3 close
+- BR lexicon seeds (alavancado/laranja): [§33: screened] — s2 built the BR native lexicon table
 ### 2026-08-12 session 2 (BR frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
 
 **RESUMING, NOT RESTARTING.** Read before searching: `source_backlog_next.py` (16 pending
@@ -4069,6 +4155,13 @@ kill), `docs/research/data_axis_watchlist.md` (**entry 29 census update** correc
 claim), `docs/research/improvement_inbox.md`, `docs/research/recommendation_ledger.json`, and this
 coverage doc.
 
+
+**§33 dispositions (2026-08-18, owed-work batch3 — items above, in order):**
+- Vido/zecontinha fork tree + cointegração subset: [§33: killed -> docs/graveyard.md zecontinha_eg_pairs_screen] — s3 OP-077 screen refuted; fork-tree remainder deferred(2026-08-25)
+- TCC as structural search key: [§33: screened] — s3 corpus table (29/18, OP-081); remainder deferred(2026-08-25)
+- PT-BR video ground: [§33: screened] — s3 attempted (25% fetch rate measured; dead-domain lie exposed)
+- BCB EstatisticasFraudesPix: [§33: deferred(2026-08-25)]
+- Era-archaeology: [§33: deferred(2026-08-25)]
 ### 2026-08-13 session 3 (BR frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
 
 **RESUMING, NOT RESTARTING.** Read before searching: `source_backlog_next.py` (6 pending
@@ -4367,6 +4460,12 @@ by Monte Carlo), `data/data_universe_map.json` (**source 103**, a free point-in-
 
 ## SESSION NOTES — AR frontier miner
 
+
+**§33 dispositions (2026-08-18, owed-work batch3 — items above, in order):**
+- Crypto-native cointegração subset (GustavoDMentz/moliveirasilv/Novalt, OP-077): [§33: deferred(2026-08-25)] — next BR session; no s4 evidence exists
+- PT-BR video vein + B3 unprobed x3: [§33: deferred(2026-08-25)]
+- BCB EstatisticasFraudesPix: [§33: deferred(2026-08-25)]
+- Era-archaeology: [§33: deferred(2026-08-25)]
 ### 2026-08-12 session 1 (AR frontier miner, SEAT'S FIRST RUN) — IN PROGRESS (write-first note; updated as items resolve)
 
 **No AR row existed in this document before this run** — `grep -ic arabic` over this whole file
@@ -4566,6 +4665,17 @@ in my brief and is **explicitly carried to the next run**, unstarted). Recording
 
 ---
 
+
+**§33 dispositions (2026-08-18, owed-work batch3 — items above, in order):**
+- §13 access map (OP-052 UA-matrix): [§33: screened] — in-block access map (the result trio)
+- Dead era brief replaced: [§33: screened] — in-session
+- Hijri/Ramadan + Sharia axis: [§33: killed -> docs/graveyard.md hijri_ramadan_calendar_axis] — unmeasurable_by_construction 2026-08-12, NOT refuted
+- mql5.com/ar path: [§33: killed] — s2 re-measured 404 at locale root; ground may not exist
+- AR video posture: [§33: screened] — s2 exercised it; video_locked_log.md 2026-08-13 rows
+- arabsgate.com threads: [§33: deferred(2026-08-25)] — still zero mined after s2
+- GCC regulator + exchange layer: [§33: screened] — s2 artifacts (its item 3 carries the tag)
+- arabictrader/rain.bh/adgm robots-403 re-probe: [§33: deferred(2026-08-25)] — re-carried as UNMEASURED (OP-076)
+- Era-archaeology (dead-venue layer): [§33: deferred(2026-08-25)]
 ### 2026-08-13 session 2 (AR frontier miner) — **CLOSED.** All 3 items resolved to depth; deliverables committed.
 
 **RESUMED, NOT RESTARTED.** Read first: (a) `source_backlog_next.py` — 6 pending verification,
@@ -4880,6 +4990,17 @@ outranked it; BRAIN lecture corpus untouched and named below).
 
 ---
 
+
+**§33 dispositions (2026-08-18, owed-work batch3 — items above, in order):**
+- mql5.com/ar ground resolution: [§33: killed] — 404 at locale root, in-block result
+- AR video route: [§33: screened] — 3 AR videos + EN controls logged 2026-08-13 (video_locked_log.md)
+- ADGM announcement corpus (1,109 dated URLs): [§33: deferred(2026-08-25)]
+- VARA notice bodies: [§33: deferred(2026-08-25)]
+- arabsgate thread layer: [§33: deferred(2026-08-25)]
+- AR video comment layer: [§33: deferred(2026-08-25)]
+- Era-archaeology: [§33: deferred(2026-08-25)]
+- apex robots-403 re-probes (OP-076): [§33: deferred(2026-08-25)]
+- Sharia/fatwa cross-sectional test: [§33: deferred(2026-08-25)]
 ### 2026-08-11 session F (EN frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
 MINE GATE: BACKLOG-CLEAR (19/19 carded finds disposed; header authorised). PRIOR STATE read:
 BRAIN hunter s1 ran TODAY and drained its §33 queue 10→0 — cards #23/#25 got their data legs
@@ -5138,6 +5259,14 @@ dead, 148582 dead, 5 NP indices unarchived).
 
 ---
 
+
+**§33 dispositions (2026-08-18, owed-work batch3 — items above, in order):**
+- rocky-d/wqb API wrapper: [§33: screened] — s3 08-13 API-namespace mining
+- Reimplementation/fork layer (9 repos): [§33: screened] — partial (CrisperX taken); remainder re-carried in the s4 list
+- BRAIN lecture corpus: [§33: killed] — R0527 REJECTED (500-carrying-LOGIN_REQUIRED); SOURCE-walled; re-entry = text mirror (s4 list)
+- jglazar/notes tree walk: [§33: deferred(2026-08-25)] — superseded by the s4 list
+- IQC 2026 webinar series: [§33: deferred(2026-08-25)] — superseded by the s4 list
+- BRAIN community FAILED approaches: [§33: deferred(2026-08-25)] — superseded by the s4 list
 ### 2026-08-13 session H (EN frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
 
 PRIOR STATE READ (resume rule, not restart): session G (08-12) closed cleanly — HN 9152332
@@ -5294,6 +5423,13 @@ carded finds disposed, mining authorised. **PRIOR STATE:** s2's 6-item next-grou
 intact; R0437 (grouping-map consumer wiring) verified live and correctly SCHEDULED 08-18 — owed by
 the alpha org, not this seat.
 
+
+**§33 dispositions (2026-08-18, owed-work batch3 — items above, in order):**
+- Kaggle G-Research post-mortems: [§33: screened] — resolved to depth (OP-068, WS-012, R0577)
+- NP forum-2 batch (147526/112425/4851), first copy: [§33: screened] — closed by 7c26b766 2026-08-18 (112425+147526 EXHAUSTED, 4851 surveyed; R0616 handoff)
+- NP forum-2 batch, close copy: [§33: n/a -> same disposition as above]
+- Kaggle NOTEBOOK layer via OP-068: [§33: deferred(2026-08-25)]
+- Numerai post-mortems + cards 27/28 + Wilmott: [§33: deferred(2026-08-19)] — cards owed 08-19; Wilmott killed(walled) per session E close
 ### THE FIRST THING THIS RUN DID WAS REFUTE ITS OWN PREVIOUS RUN
 
 **s2's video verdict was wrong and is now retracted in place** (see the red block at the s2 note
@@ -5405,6 +5541,14 @@ everywhere.**
 
 ---
 
+
+**§33 dispositions (2026-08-18, owed-work batch3 — items above, in order):**
+- Reimplementation/fork layer (8 repos untriaged): [§33: deferred(2026-08-25)] — next BRAIN session; no s4 evidence
+- yli188/WorldQuant_alpha101_code: [§33: deferred(2026-08-25)]
+- BRAIN lecture corpus text-mirror hunt: [§33: deferred(2026-08-25)]
+- jglazar/notes tree walk via API: [§33: deferred(2026-08-25)]
+- IQC 2026 webinar series: [§33: deferred(2026-08-25)]
+- BRAIN community FAILED approaches: [§33: deferred(2026-08-25)]
 ### 2026-08-18 PROSPECTOR session (standing daily; brain seat, real egress) — IN PROGRESS (write-first note; updated as items resolve)
 PRIOR STATE: both 08-12 sessions (brain seat + session G) closed cleanly — no dead run to
 resurrect. MINE GATE at start: BACKLOG-CLEAR (19/19 disposed; re-read live, header confirmed).
