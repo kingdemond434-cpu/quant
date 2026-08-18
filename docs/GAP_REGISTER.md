@@ -6,6 +6,24 @@ the newest overall, and the owner of the current RANK list — sits below the pr
 paragraph. That line's rows 81-87 are recorded here as 96-102; see the renumber notes at the
 foot of the register._
 
+_Re-ranked 2026-08-18T21:20Z (daily cycle, repair-mode)._ **#1 stays PRINCIPAL REARM + A/B/C**
+(verified fresh: `data/CASHCARRY_KILL` present since 08-15, 0 positions, bleed verdict = the
+diagnosed re-base echo publishing venue truth -4791.32). **Re-arm day is now a QUEUE, not just a
+switch** (principal page lists it): merge `claude/staged-probe-cap-sizing` -- the 7 re-entry
+probes were WELDED SHUT (`_alloc` never learned the $100 caps existed, so `_probe_within_cap`
+refused every authorised probe; measured this cycle from max_audit's own diagnostic output;
+fixed+tested on the staged branch, ledgered) -- plus R0062, R0162, and the quant-deadman restart
+(running process predates its own file's last commit). **Moved by being CLOSED:** standing
+recorder lint-red retired (301843d2, pre-push gates green desk-wide); ci-gate-red's
+false-attribution class fixed at the mechanism (R0412, d1352698: modified-tracked files provable
+innocent at HEAD, retraction requires proof); GAP #70 stdlib PDF extractor LANDED with a
+real-paper positive control (R0358, d1352698); R0004 discovered ALREADY IMPLEMENTED since
+699ab9f5 and disposed (the R0478 undisposed-implementing-commit gap); Eastmoney SS13 decided NO
+on charter-13 grounds (R0290). Ledger queue/72h: net -3 (RUNNING AWAY) -> 0 (FLAT), 18
+disposition acts. NOTE FOR THE NEXT SESSION: two of this session's ledger write rounds were
+erased by a sibling git-restore of the shared tree (R0423 in its worst form) -- commit ledger
+writes IN THE SAME MINUTE.
+
 _Re-ranked 2026-08-13T02:05Z (daily cycle, repair-mode)._ **#1 stays PRINCIPAL REARM + A/B/C**
 (human-gated; `web/cashcarry_live.json` read fresh: `n_carries 0`, `mode live-paper`, bleed verdict
 the diagnosed re-base accounting echo; `web/growth_audit.json` `conservatism_defects: []`, every

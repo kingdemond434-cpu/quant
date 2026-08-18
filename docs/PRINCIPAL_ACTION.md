@@ -29,3 +29,25 @@
 
 ## 2026-08-17T03:53:30.518434+00:00 POISONED DEPENDENCY
 - binance funding (live API) (DQS 0.0) feeds ['A001'] -- feeds the live cash-carry entry gate
+
+## 2026-08-17T09:50:51.015468+00:00 POISONED DEPENDENCY
+- binance funding (live API) (DQS 0.0) feeds ['A001'] -- feeds the live cash-carry entry gate
+
+## 2026-08-18T04:20:37.686921+00:00 POISONED DEPENDENCY
+- binance funding (live API) (DQS 0.0) feeds ['A001'] -- feeds the live cash-carry entry gate
+
+## 2026-08-18T04:43:42.877579+00:00 POISONED DEPENDENCY
+- binance funding (live API) (DQS 0.0) feeds ['A001'] -- feeds the live cash-carry entry gate
+
+## 2026-08-18T21:05:00+00:00 TWO ITEMS FOR RE-ARM DAY (CRO daily cycle)
+- **RESTART quant-deadman AT RE-ARM (one command, Tier-3 so it is yours):** the running process
+  (pid 1463355, up ~453h) predates its own file's last commit (2026-07-30 22:56Z), so the
+  committed rail code is INERT in memory (`daemon-stale-code-quant-deadman`, live 109h). The desk
+  does not bounce the ruin rail autonomously. With the book flat + KILL latched, NOW/re-arm day is
+  the low-risk moment: `systemctl restart quant-deadman` then verify its heartbeat carries the new
+  write-signature.
+- **RE-ARM UNLOCKS A STAGED QUEUE:** clearing data/CASHCARRY_KILL flips the L1.38 window to OPEN,
+  which un-blocks: (1) merge `claude/staged-probe-cap-sizing` (08a6874e) -- sizes the 7 recorded
+  re-entry probes at their $100 caps; without it every probe stays REFUSED; (2) R0062
+  income-ledger PnL attribution; (3) R0162 cost-model schema versioning. Rows carry the details;
+  each lands with an executor-interaction note per the independence gate.

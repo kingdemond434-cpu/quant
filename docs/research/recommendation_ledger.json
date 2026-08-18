@@ -198,11 +198,11 @@
    "summary": "docs/research/deep_sweep/ now hosts TWO producers' output (the weekly deep cold audit AND the literature deep-miner's LIT_* files) under a single _FINDING_DOCS_EXCLUDED claim whose stated reason describes only the former. The routing argument happens to hold for both (LIT findings do reach improvement_inbox, e.g. #72 -> GAP row #79), but the exclusion should say so explicitly rather than covering a second organ by directory accident.",
    "roi_bps": 0,
    "raised": "2026-07-26T20:32:01.490912+00:00",
-   "status": "scheduled",
-   "reason": "EV-ordered re-schedule at measured build throughput (~2 majors/week beside daily duties); prior due lapsed while the queue drained higher-EV rows; enforced by the section-42 fence (drain verified: ratio 1.244, debt_growing=false).",
-   "commit": null,
-   "due": "2026-08-17",
-   "disposed": "2026-08-11T16:02:27.385152+00:00"
+   "status": "implemented",
+   "reason": "max_audit _FINDING_DOCS_EXCLUDED reason now names BOTH producers on their own routing arguments; written this session, swept into sibling commit 1d64e79c (R0423 4th instance), verified at HEAD by sentinel grep. [3rd write after sibling git-restore]",
+   "commit": "1d64e79c",
+   "due": null,
+   "disposed": "2026-08-18T20:48:15.858247+00:00"
   },
   {
    "id": "R0016",
@@ -3690,10 +3690,19 @@
    "roi_bps": 0.0,
    "raised": "2026-08-01T10:10:16.037173+00:00",
    "status": "scheduled",
-   "reason": "Trade-tape micro-features (aggressor imbalance, size distribution, inter-arrival) unlock ~97% of the moat corpus for the screen -- HIGH priority and now correctly sequenced: the screen's sharpe-ceiling rail was restored this cycle (9e11c7d), so features built next enter an honest instrument instead of being mass-branded SUSPECT-LOOKAHEAD. Near-dated on purpose; this is the top build of the next research window.",
+   "reason": "Real build (trade-row micro features, ~97pct of venue-stamped records unused); needs an L1.46 clock-provenance design pass so the one clean-clock series is not contaminated at birth. One dedicated session.",
    "commit": null,
-   "due": "2026-08-16",
-   "disposed": "2026-08-11T20:51:49.450063+00:00"
+   "due": "2026-08-27",
+   "disposed": "2026-08-18T20:46:09.404274+00:00",
+   "schedule_history": [
+    {
+     "was_due": "2026-08-16",
+     "was_reason": "Trade-tape micro-features (aggressor imbalance, size distribution, inter-arrival) unlock ~97% of the moat corpus for the screen -- HIGH priority and now correctly sequenced: the screen's sharpe-ceiling rail was restored this cycle (9e11c7d), so features built next enter an honest instrument instead of being mass-branded SUSPECT-LOOKAHEAD. Near-dated on purpose; this is the top build of the next research window.",
+     "was_disposed": "2026-08-11T20:51:49.450063+00:00",
+     "rescheduled": "2026-08-18T20:46:09.404246+00:00",
+     "why": "Real build (trade-row micro features, ~97pct of venue-stamped records unused); needs an L1.46 clock-provenance design pass so the one clean-clock series is not contaminated at birth. One dedicated session."
+    }
+   ]
   },
   {
    "id": "R0282",
@@ -3797,11 +3806,11 @@
    "summary": "SS13 LEGITIMACY DECISION OWED (policy, not technical): Eastmoney datacenter-web/push2his JSON feeds -- 6 endpoints verified live keyless with up to 26y depth (margin balance RPTA_WEB_RZRQ_GGMX 2010-2026 ~6.69M rows; block trades RPT_DATA_BLOCKTRADE 2000-2026; dragon-tiger RPT_DAILYBILLBOARD_DETAILS 2004-2026; lockup expiry RPT_LIFT_STOCK forward calendar TO 2035; shareholder count; size-bucketed fund flow). These are UNDOCUMENTED INTERNAL APIs with NO STATED TERMS OF SERVICE. Charter s13 requires public AND licensed; 'no terms stated' is NOT 'licensed' and must not be treated as a default pass. DECIDE before any collector is built. WHY IT MATTERS IF IT CLEARS: RPT_LIFT_STOCK is the SAME forced-supply mechanism as the crypto unlock axis screened this run (R0288) but with 26 years of history AND a forward calendar to 2035 -- i.e. the mechanism could be validated on clean deep data BEFORE spending on a crypto collector, which is the cheaper ordering. If it does not clear, say so and close it: an unresolved grey source silently blocks a dependent axis forever.",
    "roi_bps": 12.0,
    "raised": "2026-08-01T12:57:37.390793+00:00",
-   "status": "scheduled",
-   "reason": "BLOCKED-OPERATOR re-verified 2026-08-11: zero 'eastmoney' rows in data/decision_ledger.json; charter s13 bar (public AND licensed; no-terms-stated is not licensed) means the desk cannot self-grant an undocumented internal API. Ask surfaced to the principal in data/PRINCIPAL_ACTION.md 2026-08-11 with the pass/fail template and the cost of leaving it grey (blocks the 26y forced-supply axis). On due date: principal ruling recorded -> implement or kill; no ruling -> re-page, row stays scheduled.",
+   "status": "rejected",
+   "reason": "LEGITIMACY DECISION, made on the charter's own terms: DIGGING_CHARTER s13 requires public AND licensed; these are UNDOCUMENTED INTERNAL APIs with NO STATED TERMS, and 'no terms stated' is not 'licensed' -- the row itself names the correct reading and L1.11a makes the gate absolute in every language. NO COLLECTOR IS BUILT. The 6 endpoints stay catalogued in the universe map as residual_gap/legitimacy-blocked; re-open ONLY on a named enabling change (published ToS or an official licensed mirror, L1.16a).",
    "commit": null,
-   "due": "2026-08-18",
-   "disposed": "2026-08-11T20:23:41.281073+00:00"
+   "due": null,
+   "disposed": "2026-08-18T20:40:18.391342+00:00"
   },
   {
    "id": "R0291",
@@ -4678,11 +4687,11 @@
    "summary": "GAP #70 -- LAND THE STDLIB PDF EXTRACTOR (deadline 2026-08-02 passed, prototype never committed). Two consecutive literature runs inherited the claim 'no PDF tooling on this box and the freeze forbids installs' and left five findings at ABSTRACT level. Run 3 verified the premise true but the CONCLUSION false: PDF text lives in FlateDecode streams and the stdlib ships zlib, so a ~90-line pure-stdlib extractor reads academic PDFs with zero installs. EVIDENCE IT MATTERS, already measured: the first paper extracted (Hou-Xue-Zhang) CORRECTED THREE NUMBERS the desk had recorded from a search summary a day earlier -- actual 65 pct fail at t>1.96, 82 pct at the 2.78 multiple-test hurdle, worst category trading frictions 102/106 = 96.2 pct, against a recorded 64 pct / 85 pct at t-cutoff 3 / liquidity 93 pct. The recorded prior was NARROWER than the truth, which is the dangerous direction for a desk that sizes on priors. DELIVERABLES: (1) land it as scripts/pdf_text.py, read-only, no deps; (2) add an interior_extracted field to the literature-card schema so ABSTRACT and PRIMARY are distinguishable AT THE EV GATE; (3) THE GENERALISABLE DEFECT, which is the real item -- a capability limit was asserted once and inherited verbatim across runs, silently defining what the desk could know. Adopt the standing rule: any recorded 'this box cannot X' carries a re-test date and is retried before it is inherited a second time. That is the no-ceiling axiom applied to the desk's own tooling claims, where it demonstrably was not being applied.",
    "roi_bps": 14.0,
    "raised": "2026-08-05T07:15:37.002745+00:00",
-   "status": "scheduled",
-   "reason": "[disposition sweep 2026-08-05, verified against the tree] DEADLINE PASSED AND THE ARTIFACT IS ABSENT -- verified: scripts/pdf_text.py does not exist on this tree, so gap #70 is genuinely undelivered three days past its 2026-08-02 due date. Taking the row at its word on the parts that are already evidence: the premise ('no PDF tooling and installs are frozen') is TRUE and its inherited conclusion ('therefore no PDF text') is FALSE, since PDF text lives in FlateDecode streams and zlib is stdlib; and the measured payoff is already recorded -- the first extracted paper corrected three numbers the desk had taken from a search summary, all in the NARROWER-than-truth direction, which is the dangerous one for a desk that sizes on priors. BLOCKER: none technical, ~90 lines with no dependencies; this slipped because it is nobody's organ. UNBLOCKS: one build slot. The row's third deliverable is the important one and is cheaper than the code -- the standing rule that any recorded 'this box cannot X' carries a re-test date and is retried before it is inherited a second time.",
-   "commit": null,
-   "due": "2026-08-12",
-   "disposed": "2026-08-05T13:34:54.855331+00:00"
+   "status": "implemented",
+   "reason": "libs/research/pdf_text.py landed: pure-stdlib FlateDecode+operator extraction, procedural scan (naive regex went quadratic, hung 60s on a real 2MB arXiv paper -- positive control now 0.6s, 521 streams/344 decoded/0 failed), attrition counted (L1.60), zero-decodable raises UNREADABLE (L1.28a), 7 tests, CLI consumer = litminer per-dig. [REDO after concurrent clobber]",
+   "commit": "d1352698",
+   "due": null,
+   "disposed": "2026-08-18T20:45:11.684637+00:00"
   },
   {
    "id": "R0359",
@@ -4703,10 +4712,19 @@
    "roi_bps": 40.0,
    "raised": "2026-08-05T08:09:24.785327+00:00",
    "status": "scheduled",
-   "reason": "[disposition sweep 2026-08-05, verified against the tree] PRINCIPAL DECISION OWED -- this cannot be closed by the desk, which is why it is dated rather than left open. Verified on this tree: ops/brain_env.sh:98 gates the entire metered-key fallback on `[ -f \"$_BRAIN_KEYFILE\" ]`, and the loop above it (:88-96) walks _BRAIN_MODEL_CHAIN and pages on any step past the head, so the model-fallback half IS live and reachable; only the metered-key branch below it is conditioned on a file. I could NOT verify the keyfile's absence from this checkout -- data/secrets/ is gitignored and does not exist here -- so the row's own 2026-08-05 measurement stands as the evidence and is not re-confirmed by me. BLOCKER: the principal must either supply the key at data/secrets/anthropic_api_key or authorise deleting the dead branch and correcting the comment at :86. Both are one-line changes; neither is the desk's call. A documented fallback that cannot fire is worse than none, because nobody looks for it -- so the delete-and-correct option is a real answer, not a surrender.",
+   "reason": "PRINCIPAL-ONLY, already on the page (08-12 block: metered keyfile or accept quota window). Deleting the fallback removes capability the moment a key lands. Due = re-page horizon.",
    "commit": null,
-   "due": "2026-08-12",
-   "disposed": "2026-08-05T13:34:54.855331+00:00"
+   "due": "2026-08-25",
+   "disposed": "2026-08-18T20:48:36.553390+00:00",
+   "schedule_history": [
+    {
+     "was_due": "2026-08-12",
+     "was_reason": "[disposition sweep 2026-08-05, verified against the tree] PRINCIPAL DECISION OWED -- this cannot be closed by the desk, which is why it is dated rather than left open. Verified on this tree: ops/brain_env.sh:98 gates the entire metered-key fallback on `[ -f \"$_BRAIN_KEYFILE\" ]`, and the loop above it (:88-96) walks _BRAIN_MODEL_CHAIN and pages on any step past the head, so the model-fallback half IS live and reachable; only the metered-key branch below it is conditioned on a file. I could NOT verify the keyfile's absence from this checkout -- data/secrets/ is gitignored and does not exist here -- so the row's own 2026-08-05 measurement stands as the evidence and is not re-confirmed by me. BLOCKER: the principal must either supply the key at data/secrets/anthropic_api_key or authorise deleting the dead branch and correcting the comment at :86. Both are one-line changes; neither is the desk's call. A documented fallback that cannot fire is worse than none, because nobody looks for it -- so the delete-and-correct option is a real answer, not a surrender.",
+     "was_disposed": "2026-08-05T13:34:54.855331+00:00",
+     "rescheduled": "2026-08-18T20:48:36.553355+00:00",
+     "why": "PRINCIPAL-ONLY, already on the page (08-12 block: metered keyfile or accept quota window). Deleting the fallback removes capability the moment a key lands. Due = re-page horizon."
+    }
+   ]
   },
   {
    "id": "R0361",
@@ -6104,11 +6122,11 @@
    "summary": "PRINCIPAL ACTION -- THE RECORDERS PAUSE IN ~3 DAYS. Measured 2026-08-12: used_frac 0.7195 against PAUSE_FRAC 0.80, headroom 3.22 GB, fill rate 1.03-1.07 GB/day => days_to_pause 3.0 (URGENT, well inside WARN_DAYS 21). The desk's own alarm IS firing correctly in data/moat_mine.json closure.disk and max_audit raises tape-disk-deadline; what was missing was any TREND record, now fixed by R0331's disk_headroom_ratio floor. THE ROOT EVENT: the moat fill rate STEPPED UP 53pct on ~2026-08-05, from ~0.69 to ~1.03 GB/day, confirmed two independent ways (mtime histogram over 39,098 moat files agreeing with the miner's own growth_bytes_per_day). R0073/R0331 quoted a 25.1-day runway to ~08-26 and that estimate is now 8x wrong, but nothing recompared it because no organ held the trend. WHY THIS NEEDS THE PRINCIPAL AND CANNOT BE SELF-SERVED: libs/ops/disk.py is explicit that deleting mined tape is NOT an option (the seven reconstructions are the first seven, so raw tape must stay re-readable), and buying storage is a procurement act with a latency -- which is precisely why WARN_DAYS is 21 days and we are at 3. L1.28b(f) makes this acute: pausing a collector spends irreplaceable data, the one currency the desk cannot re-earn, and a paused recorder keeps its heartbeat fresh so the stop is SILENT. Non-moat reclaimables are small change against the arithmetic: /var/log 1.1 GB and /tmp 221 MB together buy about 1.3 days. ACTION: add storage and move cold tape onto it, or accept a dated, deliberate decision to stop growing the archive.",
    "roi_bps": 400.0,
    "raised": "2026-08-12T13:30:10.618168+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "The row's named alternative B was taken on 08-17: a dated, deliberate decision to stop growing the crypto archive (6b8b61a9 -- venue retired, P26 transferred to mt5desk.tape, ~19GB reclaimed, RECORDERS_OFF no-root kill switch built, deploy no longer enables the units). Disk measured now: 37.95% used, 16.8GB headroom to PAUSE_FRAC, moat closure alarm quiet; disk_headroom_ratio floor (R0331) holds the trend. One residual is principal-owned and surfaced: recorders still run while the authorizing amendment sits un-resealed in Appendix A -- R0615 + data/PRINCIPAL_ACTION.md 2026-08-18 block carry it with the ~2-week re-fire arithmetic.",
+   "commit": "6b8b61a9",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-18T20:22:58.605690+00:00"
   },
   {
    "id": "R0477",
@@ -7809,6 +7827,20 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0618",
+   "source": "cycle",
+   "summary": "LAND claude/staged-probe-cap-sizing (08a6874e) WHEN THE L1.38 WINDOW OPENS: sizes authorised re-entry probes at min(share, recorded cap) at BOTH gate and send (welded-door fix for all 7 re-entry rows; tests green, mypy clean). BLOCKED by design: window STERILE (RAIL_BREACH, CASHCARRY_KILL). At re-arm: verify OPEN, merge, confirm first probe-eligible tick logs '<= cap' instead of REFUSED. Interaction note owed with R0062/R0162.",
+   "roi_bps": null,
+   "rank": 8.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-18T20:48:44.853145+00:00",
+   "status": "scheduled",
+   "reason": "Waits on a NAMED EVENT: clearing CASHCARRY_KILL flips the window OPEN. Due 08-25 = re-check horizon; landing executes at window-open. Branch verified on origin (08a6874e).",
+   "commit": null,
+   "due": "2026-08-25",
+   "disposed": "2026-08-18T20:48:47.130395+00:00"
   }
  ]
 }
