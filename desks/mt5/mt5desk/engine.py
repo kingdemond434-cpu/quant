@@ -14,12 +14,50 @@ import pandas as pd
 
 @dataclass(frozen=True)
 class Costs:
-    spread_per_lot: float = 0.48
+    """Round-trip cost in ACCOUNT CURRENCY PER LOT, not per unit.
+
+    THE UNIT ON spread_per_lot IS THE WHOLE TRAP, AND IT COST THIS DESK A LOT
+
+    per_oz_roundtrip() adds the spread to two commissions and the engine then
+    divides by contract_size. For that to come out as a price-unit cost,
+    spread_per_lot must be the spread MULTIPLIED BY contract size -- currency
+    per lot, matching the field name and matching commission_per_lot beside it.
+
+    Every JPY call site did that: median_spread_pts * tick_size * contract_size,
+    which divides straight back down to the true spread. Every gold call site
+    passed a hardcoded 0.48, and run_hunt6's docstring says why -- "XAUUSD
+    overridden to the measured live spread 0.48", which is 3x the measured
+    0.16/oz median written as dollars PER OUNCE into a field that wants dollars
+    per lot. The engine divided it by 100 and charged gold 0.0048/oz: three
+    percent of its real spread.
+
+    So every gold backtest on this desk has run very nearly spread-free, and the
+    3x cost-stress gate meant to catch exactly this was stressing 3% up to 9%.
+    Use from_symbol() rather than hand-rolling the arithmetic at the call site.
+    """
+    spread_per_lot: float = 16.0
     commission_per_lot: float = 3.50
     contract_oz: float = 100.0
 
     def per_oz_roundtrip(self) -> float:
         return self.spread_per_lot + self.commission_per_lot * 2.0
+
+    @classmethod
+    def from_symbol(cls, meta: dict, mult: float = 1.0,
+                    commission_per_lot: float = 3.50) -> "Costs":
+        """Costs for one symbol from its universe.json metadata.
+
+        `mult` scales the SPREAD ONLY. Commission is contractual and does not
+        widen, so stressing it models nothing that happens. mult=2.0 is the
+        honest baseline rather than a stress: a round trip crosses the spread on
+        the way in and again on the way out, and a median is a median -- half of
+        all fills are worse than it.
+        """
+        cs = float(meta.get("contract_size", 1e5))
+        spread = (float(meta.get("median_spread_pts", 0.0))
+                  * float(meta.get("tick_size", 0.0)) * cs)
+        return cls(spread_per_lot=max(spread * mult, 0.05),
+                   commission_per_lot=commission_per_lot, contract_oz=cs)
 
 
 @dataclass
