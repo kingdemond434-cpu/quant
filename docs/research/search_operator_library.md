@@ -2706,3 +2706,27 @@ guidance-vs-realized `m_*` surprise features (improvement_inbox 2026-08-18). Cos
 **Caveat that travels:** competition writeup PDFs on GitHub must NOT be read through WebFetch
 summarisation (OP-057 fabrication class) — read the `.py` via raw.githubusercontent instead; the
 code outranks the PDF anyway.
+
+## OP-086 — WAYBACK CDX CANONICALIZES QUERY PARAMS ALPHABETICALLY: PAGINATION PROBES NEED `filter=`, NEVER A TRAILING-PARAM PREFIX (prospector, 2026-08-18)
+
+**THE TRAP, measured this run:** a thread's pagination URLs (`Show Post.aspx?PostIDKey=112425&PageIndex=2`)
+canonicalize in the CDX index with params SORTED — urlkey = `...?pageindex=2&postidkey=112425`. A
+prefix probe on `...?PostIDKey=112425&*` therefore returns **[] even when every page is archived**
+(it did: 6/6 pages existed). A clean [] from a prefix probe on a parameterised URL is a FALSE
+EXHAUSTION — the third false-null class of this genre (after the JS-shell 200 and the robots-only
+pass).
+
+**THE OPERATOR:** probe pagination with a server-side regex filter over the path prefix instead:
+`cdx?url=<host>%2F<path>&matchType=prefix&filter=urlkey:.*<idparam>=<id>.*&collapse=urlkey`
+— one call returns every archived page of the thread regardless of param order. Confirmed on two
+NP threads (112425: 7 urlkeys; 4851: 27 of 45 pages, page-list printed in one pass).
+
+**PAIRED CAVEAT (capture-lattice honesty):** deep pages are captured in DIFFERENT YEARS, so a
+thread's final state can be partially lost even with "all pages archived" — 112425's page-3 final
+state predates its fill (sole 2011-01 capture). Claim EXHAUSTED against the ARCHIVED lattice and
+name the lost interval; never claim the thread's true final state.
+
+**ADAPTATION HOOKS (§16):** any forum with `?topic=<id>&page=<n>` URL grammar (Discuz `tid=`
+pages, phpBB `start=`, vBulletin `page=`) hits the same alphabetization; the filter form ports
+verbatim. Regional seats: apply when era-mining dead boards via CDX (KR Ppomppu era-seek already
+pages by URL param — same trap class).
