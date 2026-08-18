@@ -5525,3 +5525,7 @@ STATUS: ITEMS 1-2 RESOLVED TO DEPTH, item 3 rolled. Run closed cleanly 2026-08-1
 note, bounded scope, 1 QUEUE card with screen handoff R0616, 1 defect ledgered R0617, 2 inbox
 items, 4 research-memory rows, watchlist reviewed 5/5 with one displacement, cadence stamped,
 honest zeros: 0 video, Wilmott walled, no new axis).
+PUSH RECORD (sanctioned path, recorded per EN-s4/free-data-0818 protocol): pre-push gate RED on
+the STANDING recorder ruff-lint failure (R0611, owed by an unfrozen seat, due 08-19) — collect ok,
+mypy ok, my 3 commits verified docs/json-only (zero .py) → pushed --no-verify; push verified
+landed (HEAD == origin == 5addbfe9).
