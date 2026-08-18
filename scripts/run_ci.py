@@ -183,6 +183,49 @@ def _inflight_py() -> list[str]:
     return sorted(p for p in r.stdout.split() if p.endswith(".py"))
 
 
+def _modified_tracked_py() -> list[str]:
+    """Tracked .py files under the gated roots that differ from HEAD -- a sibling's in-flight
+    edits to EXISTING files.
+
+    R0412: `_inflight_py` sees untracked files only, so a concurrent session MODIFYING a tracked
+    file produced an empty in-flight list, `_attribute` returned every failure as committed-code,
+    and ci-gate-red fired naming a commit that was innocent (measured 2026-08-05: three ' M'
+    money-path files carried all the ruff errors). Unlike untracked scratch, a failure here MAY
+    also exist at HEAD, so membership in this list proves nothing by itself -- innocence is only
+    ever proven per-file against the HEAD version (`_lint_clean_at_head`), never assumed from
+    modification.
+    """
+    r = subprocess.run(["git", "diff", "--name-only", "HEAD", "--",
+                        "scripts", "libs", "tests"],
+                       cwd=str(_ROOT), capture_output=True, text=True, check=False)
+    if r.returncode != 0:
+        return []
+    return sorted(p for p in r.stdout.split() if p.endswith(".py"))
+
+
+def _lint_clean_at_head(path: str) -> bool:
+    """Is HEAD's version of `path` lint-clean? False on ANY doubt (unshowable, timeout, red).
+
+    The retraction bar for a modified tracked file: `git show HEAD:file` piped through the same
+    `python -m ruff` the lint step runs, via --stdin-filename so config resolution matches the
+    real run. A file that cannot be shown at HEAD (a staged fresh add) or that times out stays a
+    committed-code failure -- fail-safe, the alarm stands. This check is what keeps the R0412
+    widening from violating the invariant above: retraction still requires positive proof, never
+    inference from "someone was editing it".
+    """
+    show = subprocess.run(["git", "show", f"HEAD:{path}"], cwd=str(_ROOT),
+                          capture_output=True, text=True, check=False)
+    if show.returncode != 0:
+        return False
+    try:
+        rr = subprocess.run([_PY, "-m", "ruff", "check", "--stdin-filename", path, "-"],
+                            cwd=str(_ROOT), input=show.stdout, capture_output=True,
+                            text=True, check=False, timeout=60)
+    except subprocess.TimeoutExpired:
+        return False
+    return rr.returncode == 0
+
+
 def _scoped_to_tracked(label: str, cmd: list[str], inflight: list[str]) -> list[str] | None:
     """`cmd` re-expressed to skip the in-flight files, or None if this step cannot be scoped.
 
@@ -210,13 +253,19 @@ def _attribute(failed: list[str]) -> tuple[list[str], list[str]]:
     would double the wedge it is reporting.
     """
     inflight = _inflight_py() if failed else []
-    if not inflight:
+    modified = _modified_tracked_py() if failed else []
+    if not inflight and not modified:
         return list(failed), []
     failed_tracked = []
     for label, cmd, budget in _STEPS:
         if label not in failed:
             continue
-        scoped = _scoped_to_tracked(label, cmd, inflight)
+        # R0412: lint additionally skips MODIFIED tracked files, because ruff is the one step
+        # whose committed version can then be checked per-file at HEAD (below). tests/types keep
+        # the untracked-only scope: they cannot prove a modified file's HEAD version innocent,
+        # and skipping without proof would hide a real committed failure.
+        skip = sorted({*inflight, *modified}) if label.startswith("lint") else inflight
+        scoped = _scoped_to_tracked(label, cmd, skip)
         if scoped is None:
             failed_tracked.append(label)
             continue
@@ -228,8 +277,16 @@ def _attribute(failed: list[str]) -> tuple[list[str], list[str]]:
             continue
         if rr.returncode != 0:
             failed_tracked.append(label)
+            continue
+        # Scoped rerun green => every red line lives in a skipped file. Untracked files are
+        # innocent by construction (absent at HEAD); each MODIFIED file must prove its HEAD
+        # version clean before the alarm is retracted -- a failure that also exists at HEAD is
+        # a committed-code failure whoever happens to be editing the file today.
+        if label.startswith("lint") and modified and not all(
+                _lint_clean_at_head(p) for p in modified):
+            failed_tracked.append(label)
     failed_tracked += [s for s in failed if s not in {lab for lab, _, _ in _STEPS}]
-    return failed_tracked, inflight
+    return failed_tracked, sorted({*inflight, *modified})
 
 
 def _mem_available_mb() -> int | None:
