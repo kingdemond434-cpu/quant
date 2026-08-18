@@ -32,8 +32,8 @@ from pathlib import Path
 
 def _switch_wait(label: str) -> None:
     """Pause while data/RECORDERS_OFF exists. See scripts/recorder_switch.py."""
-    from pathlib import Path as _P
     import time as _t
+    from pathlib import Path as _P
     flag = _P(__file__).resolve().parent.parent / "data" / "RECORDERS_OFF"
     if not flag.exists():
         return
