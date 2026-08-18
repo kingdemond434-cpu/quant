@@ -7707,6 +7707,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0611",
+   "source": "cycle",
+   "summary": "ORIGIN TIP IS LINT-RED and the push gate now blocks every clean session: 3x ruff I001 (un-sorted in-function import blocks) in scripts/run_recorder.py:35, run_recorder_bybit.py:40, run_recorder_spot.py:43, introduced by 6b8b61a9 ('Retire the crypto tape, record the MT5 one...') which itself must have pushed around the gate. Free-data miner 2026-08-18 hit the refusal on a docs+data-only push from a CLEAN worktree (own content: collect ok, mypy ok, ruff-not-applicable) and used sanctioned --no-verify, RECORDED in the watchlist session note. FIX for an unfrozen seat: .venv/bin/ruff check --fix scripts/run_recorder.py scripts/run_recorder_bybit.py scripts/run_recorder_spot.py (all 3 auto-fixable), commit, push through the gate. Until then every seat pushes --no-verify and the gate teaches the habit L1.42 warns about.",
+   "roi_bps": null,
+   "raised": "2026-08-18T15:29:40.440869+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
