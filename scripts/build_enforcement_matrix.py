@@ -89,6 +89,7 @@ _MAP: dict[str, list[str]] = {
     # source is revised" from a disqualification into a dataset.
     "L1.11": ["moat_audit.py", "check_vendor_replacement", "run_recorder.py",
               "libs/research/vintage.py", "scripts/collect_fred_macro.py",
+              "scripts/harvest_rfb_vintages.py",
               "tests/research/test_vintage.py"],
     # L1.11a ranks ground by REVERSE-ENGINEERING COST PER UNIT OF EFFORT, and delisted rosters are
     # the cheapest high-cost ground the desk had never asked for: R0239's own docstring routed the

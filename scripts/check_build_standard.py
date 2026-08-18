@@ -130,6 +130,7 @@ _GOVERNED: tuple[str, ...] = (
     "check_repair_capacity.py",             # R0330 L1.28b repair service rate (2026-08-12)
     "run_execution_quality.py",             # R0334 six-component exec quality (2026-08-12)
     "collect_lending_risk_base_rates.py",   # R0375 the evidence under the haircut (2026-08-12)
+    "harvest_rfb_vintages.py",              # R0472 RFB vintage-stack backfill+capture (2026-08-18)
 )
 
 #: Organs that legitimately owe no cron line, with the reason. "No schedule" must be a DECISION.

@@ -31,6 +31,7 @@ from typing import Any
 import numpy as np
 
 from libs.research.axis_screen import stage_a_screen
+from libs.research.vintage import record
 
 _KEYFILE = Path("data/secrets/naver.json")
 _ENDPOINT = "https://openapi.naver.com/v1/datalab/search"
@@ -116,6 +117,17 @@ def main() -> None:
     except Exception as e:
         print(f"collect_naver_krsearch: DATA-BLOCKED ({type(e).__name__}: {e})")
         return
+
+    # R0472 collector audit: DataLab serves a RELATIVE index renormalised to the request window,
+    # so every fetch is its own vintage and yesterday's view is unrecoverable once discarded --
+    # the collect_fred_macro shape (R0316), here in the CONDITIONING variable. Capture what
+    # today's fetch SAID before deriving anything from it; the store appends only changes, so a
+    # stable window costs nothing and a renormalisation is recorded instead of silently replacing
+    # the history it rescaled.
+    n_vintage = record(Path("."), "NAVER_KRSEARCH", kr,
+                       vintage=datetime.now(tz=UTC).date().isoformat())
+    if n_vintage:
+        print(f"collect_naver_krsearch: {n_vintage} revision row(s) -> data/vintages")
 
     btc = np.array([gb[d] for d in dts])
     retmap = {dts[0]: 0.0}
