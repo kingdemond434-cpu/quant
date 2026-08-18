@@ -100,24 +100,44 @@ def per_symbol_costs(meta: dict, sym: str):
                  commission_per_lot=3.50, contract_oz=m["contract_size"])
 
 
-def fetch_h1(sym: str) -> pd.DataFrame | None:
-    import MetaTrader5 as mt5  # noqa: E402
-    if mt5.terminal_info() is None:
-        from mt5desk.config import terminal_path  # noqa: E402
-        if not mt5.initialize(path=terminal_path()):
-            slog(f"mt5 init failed: {mt5.last_error()}")
-            return None
+def fetch_h1(sym: str):
+    """Bars from whatever source is available, with the provenance attached.
+
+    THIS IMPORTED MetaTrader5 DIRECTLY, which made the entire shadow record
+    hostage to a Windows box with a logged-in terminal. When the Fusion switch
+    paused that terminal, shadow stopped, and the daily cycle has failed on
+    ModuleNotFoundError ever since -- losing the one thing that cannot be
+    recovered later, because a day of bars not evaluated is a day of evidence
+    gone.
+
+    Shadow needs bars and nothing else: no terminal, no login, no funded
+    account, no accepted order. See research/h1_source.py.
+
+    Returns a `Bars` (not a DataFrame) so the source travels with the data.
+    """
     from datetime import timedelta
+
+    from research.h1_source import fetch_h1 as _fetch  # noqa: PLC0415
     start = max(SHADOW_START - timedelta(days=FETCH_DAYS),
                 datetime(2018, 1, 1, tzinfo=timezone.utc))
-    rates = mt5.copy_rates_range(sym, mt5.TIMEFRAME_H1, start, datetime.now(timezone.utc))
-    if rates is None or len(rates) < 100:
-        slog(f"{sym}: no fresh H1 ({0 if rates is None else len(rates)} bars)")
+    bars = _fetch(sym, start)
+    if bars is None:
+        slog(f"{sym}: NO DATA from any source. That is an absence of bars, not "
+             f"an empty market, and no verdict may be drawn from it.")
         return None
-    df = pd.DataFrame(rates)
-    df["time"] = pd.to_datetime(df["time"], unit="s", utc=True)
-    return df.set_index("time").sort_index()[["open", "high", "low", "close",
-                                              "tick_volume", "spread", "real_volume"]]
+    ok, why = bars.covers(SHADOW_START)
+    slog(f"{sym}: {bars.n} bars from {bars.source} -- {why}")
+    if not ok:
+        # NOT a silent continue. Replaying a window the source does not cover
+        # records "no trades" for days there was simply no data, which is
+        # indistinguishable from a strategy standing aside and inflates the
+        # denominator of every rate the promoter computes.
+        slog(f"{sym}: REFUSING to replay an uncovered window -- {why}")
+        return None
+    if bars.stale:
+        slog(f"{sym}: source is STALE ({bars.age_hours:.1f}h old). Recorded, and "
+             f"the stamp travels with every row.")
+    return bars
 
 
 def main() -> None:
@@ -145,9 +165,16 @@ def main() -> None:
                              "status": "ACTIVE"})
         if sym not in h1_cache:
             h1_cache[sym] = fetch_h1(sym)
-        h1 = h1_cache[sym]
-        if h1 is None:
+        bars = h1_cache[sym]
+        if bars is None:
+            # RECORDED, not skipped. A sleeve that produced nothing because there
+            # were no bars is a different fact from one that stood aside, and the
+            # promoter must not count the first as evidence of the second.
+            st["last_no_data"] = today
+            st["no_data_days"] = int(st.get("no_data_days", 0)) + 1
+            state[key] = st
             continue
+        h1 = bars.df
         sigs = families.family_session_range_breakout(h1, **WINDOWS[win])
         if cond:
             # Same corrected prior-day join the sweep used. A shadow record built on a different
@@ -158,11 +185,20 @@ def main() -> None:
         res = run_backtest(h1, sigs, per_symbol_costs(meta, sym))
         trades = [t for t in res.trades if t.entry_time >= SHADOW_START]
         ledger = SHADOW_DIR / (f"ledger_{sym}_{win}" + (f"_{cond}" if cond else "") + ".json")
+        # THE SOURCE STAMP TRAVELS WITH EVERY ROW. A trade replayed on a broker
+        # feed and one replayed on cached or free bars are not the same evidence
+        # -- OHLC differ at the tick and spreads differ materially -- so an
+        # expectancy averaged across them is an average over two different
+        # games. Stamped per row so the promoter can split them.
+        _stamp = bars.stamp()
         ledger.write_text(json.dumps(
             [{"entry_time": str(t.entry_time), "exit_time": str(t.exit_time),
               "side": t.side, "entry": t.entry, "exit": t.exit,
-              "r_multiple": t.r_multiple, "reason": t.reason} for t in trades],
+              "r_multiple": t.r_multiple, "reason": t.reason, **_stamp}
+             for t in trades],
             indent=2), encoding="utf-8")
+        st["bar_source"] = bars.source
+        st["bar_source_stale"] = bars.stale
         if trades:
             rs = [t.r_multiple for t in trades]
             cum = [sum(rs[:i + 1]) for i in range(len(rs))]

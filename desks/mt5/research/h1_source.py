@@ -1,0 +1,316 @@
+"""Where shadow gets its bars, and the stamp saying which.
+
+SHADOW MUST NOT DEPEND ON A BROKER ACCEPTING ORDERS.
+
+Shadow validation is a claim about what a strategy WOULD have done. It needs
+bars and nothing else -- no terminal, no login, no funded account, no accepted
+order. Yet `shadow_forward.fetch_h1` imported MetaTrader5 directly, so the whole
+shadow record was hostage to a Windows box with a logged-in terminal. When the
+Fusion switch paused that terminal, shadow stopped, and the daily cycle has been
+failing on `ModuleNotFoundError: No module named 'MetaTrader5'` ever since.
+
+That coupling was the bug. Forward evidence is the one thing that cannot be
+recovered later -- a day of bars not evaluated is a day of evidence gone -- and
+it was wired to the most fragile component in the system.
+
+THE STAMP IS NOT BOOKKEEPING
+
+A shadow record built on Yahoo bars is NOT the same evidence as one built on the
+broker's own feed. The OHLC differ at the tick, the spread differs materially,
+and session boundaries can shift by a broker's server offset. Silently mixing
+them produces a ledger whose trades are not comparable to each other, and the
+promotion gate would then be counting apples against oranges while reporting a
+single expectancy.
+
+So every source is recorded per fetch, and the caller writes it into the ledger.
+Mixing is allowed -- half a record is better than none -- but it is VISIBLE, and
+`SourceMix.homogeneous` tells the promoter whether it is looking at one
+population or several.
+
+ABSENCE OF BARS IS NOT ABSENCE OF SIGNALS
+
+The failure that would quietly corrupt everything: a stale source returns bars
+ending three days ago, the replay finds no entries in those three days, and the
+state file records three days of "no trades". That is indistinguishable from a
+strategy that legitimately stood aside, and it inflates the denominator of every
+rate the promoter computes. `Bars.covers()` is how a caller asks whether it
+actually has data for a period, and a gap is recorded as NO_DATA rather than as
+a quiet market.
+"""
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from typing import Callable, Optional
+
+import pandas as pd
+
+H1_SOURCE_VERSION = "h1src-2026-08-18-a"
+
+BASE = Path(__file__).resolve().parent.parent
+UNI = BASE / "data" / "universe"
+
+#: A source whose freshest bar is older than this DURING TRADING HOURS is stale.
+#: Generous, because a quiet Sunday is not a fault and gold trades ~23h a day;
+#: anything past this on a weekday means the source is not keeping up.
+STALE_AFTER_H = 6.0
+
+_COLUMNS = ["open", "high", "low", "close", "tick_volume", "spread", "real_volume"]
+
+
+@dataclass
+class Bars:
+    """H1 bars plus the honest provenance of where they came from."""
+    df: pd.DataFrame
+    source: str                     # MT5 | HTTP:<host> | CACHE:<file>
+    fetched_utc: str
+    why: str = ""
+
+    @property
+    def n(self) -> int:
+        return 0 if self.df is None else len(self.df)
+
+    @property
+    def freshest(self) -> Optional[pd.Timestamp]:
+        return None if self.df is None or self.df.empty else self.df.index.max()
+
+    @property
+    def age_hours(self) -> Optional[float]:
+        f = self.freshest
+        if f is None:
+            return None
+        return (datetime.now(timezone.utc) - f.to_pydatetime()).total_seconds() / 3600.0
+
+    @property
+    def stale(self) -> bool:
+        a = self.age_hours
+        return a is not None and a > STALE_AFTER_H
+
+    def covers(self, start: datetime, end: Optional[datetime] = None) -> tuple:
+        """Does this actually contain bars for the window? Returns (bool, why).
+
+        THE CHECK THAT KEEPS A GAP FROM READING AS A QUIET MARKET. A caller that
+        replays [start, end] without asking this records "no trades" for days it
+        simply had no data for, and every rate the promoter computes is then
+        divided by a denominator that includes them.
+        """
+        end = end or datetime.now(timezone.utc)
+        if self.df is None or self.df.empty:
+            return False, f"{self.source} returned no bars at all"
+        lo, hi = self.df.index.min(), self.df.index.max()
+        if hi < pd.Timestamp(start):
+            return False, (f"{self.source} ends {hi.isoformat()}, entirely before "
+                           f"the window starting {start.isoformat()}: this period "
+                           f"is NO DATA, not a quiet market")
+        if lo > pd.Timestamp(start):
+            return False, (f"{self.source} starts {lo.isoformat()}, after the "
+                           f"window start {start.isoformat()}")
+        gap_h = (pd.Timestamp(end) - hi).total_seconds() / 3600.0
+        if gap_h > STALE_AFTER_H:
+            return False, (f"{self.source} ends {hi.isoformat()}, {gap_h:.1f}h "
+                           f"before the window end: the tail of this period is "
+                           f"NO DATA, not an absence of signals")
+        return True, f"{self.source} covers the window ({self.n} bars to {hi.isoformat()})"
+
+    def stamp(self) -> dict:
+        """What the caller writes into every ledger row built from these bars."""
+        return {"bar_source": self.source, "bars_fetched_utc": self.fetched_utc,
+                "bars_freshest": None if self.freshest is None else self.freshest.isoformat(),
+                "bars_stale": self.stale, "h1_source_version": H1_SOURCE_VERSION}
+
+
+def _normalise(df: pd.DataFrame) -> pd.DataFrame:
+    """Every source lands in the same shape the engine expects.
+
+    Missing columns are filled with 0.0 rather than dropped, because the engine
+    indexes them by name; but `spread` filled with zero would make a free source
+    look costless, so the CALLER's cost model is what charges spread -- see
+    `per_symbol_costs`, which uses the account's measured spread and never the
+    feed's column.
+    """
+    out = df.copy()
+    out.columns = [str(c).lower() for c in out.columns]
+    for col in _COLUMNS:
+        if col not in out.columns:
+            out[col] = 0.0
+    if not isinstance(out.index, pd.DatetimeIndex):
+        raise ValueError("bars must be indexed by a UTC DatetimeIndex")
+    if out.index.tz is None:
+        raise ValueError("bar index is timezone-naive; a naive index silently "
+                         "shifts every session boundary by the server offset")
+    return out[_COLUMNS].sort_index()
+
+
+# ----------------------------------------------------------------- the sources
+
+def from_mt5(sym: str, start: datetime) -> Optional[Bars]:
+    """The broker's own bars. Best evidence, least available."""
+    try:
+        import MetaTrader5 as mt5
+    except ImportError:
+        return None
+    try:
+        if mt5.terminal_info() is None:
+            from mt5desk.config import terminal_path
+            if not mt5.initialize(path=terminal_path()):
+                return None
+        rates = mt5.copy_rates_range(sym, mt5.TIMEFRAME_H1, start,
+                                     datetime.now(timezone.utc))
+        if rates is None or len(rates) < 100:
+            return None
+        df = pd.DataFrame(rates)
+        df["time"] = pd.to_datetime(df["time"], unit="s", utc=True)
+        return Bars(_normalise(df.set_index("time")), "MT5",
+                    datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                    "the venue's own bars — the only source whose sessions and "
+                    "spreads match what would actually have been traded")
+    except Exception:                                # noqa: BLE001
+        return None
+
+
+def from_cache(sym: str, start: datetime) -> Optional[Bars]:
+    """The parquet cached by `fetch_universe`. Works offline; goes stale.
+
+    Kept as a real source rather than a fallback of last resort, because a
+    strategy replayed on cached history up to the cache's end is valid evidence
+    FOR THAT PERIOD. What it must not do is pretend to cover days it does not
+    have, which is what `covers()` is for.
+    """
+    p = UNI / f"{sym}_H1.parquet"
+    if not p.exists():
+        return None
+    try:
+        df = pd.read_parquet(p)
+    except Exception:                                # noqa: BLE001
+        return None
+    if df.empty:
+        return None
+    b = Bars(_normalise(df), f"CACHE:{p.name}",
+             datetime.now(timezone.utc).isoformat(timespec="seconds"),
+             "cached history — valid evidence up to its own end, and NO DATA "
+             "after it. Re-run research/fetch_universe.py to extend.")
+    return b
+
+
+#: Symbols as the free feeds spell them. A broker's XAUUSD, a futures front
+#: month and a spot cross are NOT the same series -- they differ by carry, by
+#: session and by roll -- so the mapping is written down rather than guessed, and
+#: anything not listed is refused instead of being silently approximated.
+_YF_SYMBOLS = {
+    "XAUUSD": "XAUUSD=X", "XAGUSD": "XAGUSD=X",
+    "EURUSD": "EURUSD=X", "GBPUSD": "GBPUSD=X", "USDJPY": "USDJPY=X",
+    "AUDUSD": "AUDUSD=X", "USDCAD": "USDCAD=X", "USDCHF": "USDCHF=X",
+    "NZDUSD": "NZDUSD=X", "EURJPY": "EURJPY=X", "GBPJPY": "GBPJPY=X",
+    "CADJPY": "CADJPY=X", "CHFJPY": "CHFJPY=X", "AUDJPY": "AUDJPY=X",
+    "NZDJPY": "NZDJPY=X", "EURGBP": "EURGBP=X", "EURCHF": "EURCHF=X",
+    "AUDNZD": "AUDNZD=X", "NZDCAD": "NZDCAD=X", "AUDCAD": "AUDCAD=X",
+}
+
+
+def from_yfinance(sym: str, start: datetime) -> Optional[Bars]:
+    """H1 from Yahoo. No account, no key — the source that works on a VPS.
+
+    NOT REGISTERED BY DEFAULT. Call `register_source(from_yfinance)` to enable
+    it, because turning it on is a decision about evidence quality: these bars
+    are a different series from the broker's, and a shadow ledger silently
+    switching feeds mid-record would produce an expectancy averaged over two
+    different games. Enabling it is deliberate; the stamp then makes it visible.
+
+    Yahoo serves only ~730 days of hourly data, which is ample for a forward
+    shadow record and useless for a backtest — do not reach for this to extend
+    history, only to keep shadow alive.
+    """
+    try:
+        import yfinance as yf
+    except ImportError:
+        return None
+    tkr = _YF_SYMBOLS.get(sym.upper())
+    if tkr is None:
+        return None
+    try:
+        raw = yf.download(tkr, start=start.date().isoformat(), interval="1h",
+                          progress=False, auto_adjust=False)
+    except Exception:                                # noqa: BLE001
+        return None
+    if raw is None or raw.empty:
+        return None
+    df = raw.copy()
+    if isinstance(df.columns, pd.MultiIndex):        # yfinance >= 0.2.51
+        df.columns = df.columns.get_level_values(0)
+    df.columns = [str(c).lower() for c in df.columns]
+    df = df.rename(columns={"volume": "tick_volume"})
+    if df.index.tz is None:
+        df.index = df.index.tz_localize("UTC")
+    else:
+        df.index = df.index.tz_convert("UTC")
+    return Bars(_normalise(df), f"HTTP:yfinance/{tkr}",
+                datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                "free hourly bars — a DIFFERENT series from the broker's: no "
+                "dealer spread, different session boundaries, and no guarantee "
+                "the highs and lows match what the venue printed")
+
+
+#: Extra sources a deployment can register — an HTTP feed on the VPS, a vendor
+#: API, whatever the operator has. Kept as a registry rather than hardcoded, so
+#: this module needs no network dependency and no credentials of its own.
+EXTRA_SOURCES: list = []
+
+
+def register_source(fn: Callable[[str, datetime], Optional[Bars]]) -> None:
+    """Add a source. Tried after MT5 and before the cache."""
+    EXTRA_SOURCES.append(fn)
+
+
+def fetch_h1(sym: str, start: datetime,
+             prefer: Optional[str] = None) -> Optional[Bars]:
+    """First source that returns usable bars, in quality order.
+
+    MT5 first because it is the venue actually traded; registered sources next
+    because a live feed beats a stale file; cache last because it is always
+    available and therefore would always win if it went first.
+
+    Returns None only when NOTHING worked, which is a real condition the caller
+    must handle as NO DATA rather than as an empty market.
+    """
+    chain = [("MT5", from_mt5)] + [(f"extra{i}", f) for i, f in enumerate(EXTRA_SOURCES)] \
+            + [("CACHE", from_cache)]
+    if prefer:
+        chain.sort(key=lambda kv: 0 if kv[0].upper().startswith(prefer.upper()) else 1)
+    for _, fn in chain:
+        try:
+            b = fn(sym, start)
+        except Exception:                            # noqa: BLE001
+            continue
+        if b is not None and b.n > 0:
+            return b
+    return None
+
+
+# --------------------------------------------------------------- the mix
+
+@dataclass
+class SourceMix:
+    """Which sources a body of shadow evidence was built from."""
+    counts: dict = field(default_factory=dict)
+
+    def add(self, source: str, n: int = 1) -> None:
+        self.counts[source] = self.counts.get(source, 0) + n
+
+    @property
+    def homogeneous(self) -> bool:
+        return len(self.counts) <= 1
+
+    def render(self) -> str:
+        if not self.counts:
+            return "no evidence recorded"
+        if self.homogeneous:
+            src, n = next(iter(self.counts.items()))
+            return f"{n} row(s), all from {src}"
+        parts = ", ".join(f"{k}={v}" for k, v in sorted(self.counts.items()))
+        return (f"MIXED SOURCES ({parts}). These rows are not one population: "
+                f"OHLC differ at the tick and spreads differ materially between "
+                f"a broker feed and a free one, so an expectancy computed across "
+                f"them is an average over two different games. Split before "
+                f"promoting anything.")
