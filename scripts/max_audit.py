@@ -3057,6 +3057,14 @@ _FINDING_DOCS = (
 #: Finding-bearing docs deliberately out of scope, with the reason -- so the scope check can tell
 #: "consciously excluded" from "quietly unmonitored".
 _FINDING_DOCS_EXCLUDED = {
+    "docs/research/recent_changes.md":
+        "GENERATED 24h change digest (scripts/, regenerated on a rolling window): every line is "
+        "a QUOTED commit patch, so any numbered finding matched inside it is a copy of text that "
+        "lives in -- and is scanned at -- its source doc, or a ledger row already driving the "
+        "work. Scanning the digest would double-count each finding for exactly 24h and then drop "
+        "it as the window rolls, an unstable denominator §35 forbids. Already governed for §36 "
+        "as a terminal artifact ('append-only change record'); this entry extends the same "
+        "verdict to the findings scan, which reads a different registry.",
     "docs/UNIVERSAL_PROMOTION_PROTOCOL.md":
         "BINDING PROMOTION PROTOCOL (CLAUDE.md read-before-acting table: 'binding on every "
         "brain', one door to capital). Its numbered sections are the NINE-SHIPPED-DEFECTS "
@@ -4187,8 +4195,17 @@ def check_test_suite_collectable(defects) -> None:
             "the first move is to free host memory (check tmpfs occupancy under /tmp -- it is RAM "
             "no process owns) and re-run when the box is quiet, NOT to hunt a failing test."))
         return
-    if r.returncode != 0 or "error" in out.lower().split("short test summary")[0]:
-        why = [ln for ln in out.splitlines() if "ERROR" in ln or "ModuleNotFound" in ln][:4]
+    # LINE-ANCHORED, not substring (2026-08-18). `"error" in out.lower()` was welded ON the day
+    # tests/execution/test_spot_live_error_detail.py was added (172d6ea7): the FILENAME contains
+    # "error", so a perfectly green rc=0 collection raised test-suite-uncollectable every cycle --
+    # the substring-fence-satisfied-by-a-name failure, on the fence guarding the suite itself.
+    # Real pytest collection errors are line-anchored ("ERROR tests/...", "==== ERRORS ====") or
+    # the phrase "N error(s) during collection"; a path component can satisfy neither.
+    collect_err = re.search(r"(?m)^(?:=+ )?ERRORS?\b|errors? during collection",
+                            out.split("short test summary")[0])
+    if r.returncode != 0 or collect_err:
+        why = [ln for ln in out.splitlines()
+               if re.match(r"^(?:=+ )?ERRORS?\b", ln) or "ModuleNotFound" in ln][:4]
         defects.append((
             "test-suite-uncollectable",
             f"pytest cannot COLLECT the suite (rc={r.returncode}) -- "

@@ -130,6 +130,33 @@ class TestGenuineFailuresAreUntouched:
         max_audit.check_test_suite_collectable(defects)
         assert defects == []
 
+    def test_a_filename_containing_error_is_not_a_collection_error(
+            self, runs, monkeypatch, tmp_path):
+        """The substring weld, pinned (2026-08-18). `"error" in out.lower()` fired on the
+        FILENAME tests/execution/test_spot_live_error_detail.py in a green rc=0 listing, so the
+        fence guarding the suite raised test-suite-uncollectable every cycle it ran. A path
+        component must never satisfy an error match; only line-anchored pytest markers may."""
+        fake, _ = runs
+        fake.result = _Result(
+            0, "tests/execution/test_spot_live_error_detail.py: 7\ntests/b/test_y.py: 4\n")
+        _record_at(monkeypatch, tmp_path, {"max_collected": 2})
+        defects: list[tuple[str, str]] = []
+        max_audit.check_test_suite_collectable(defects)
+        assert defects == [], (
+            f"a filename containing 'error' welded the fence on: {defects}")
+
+    def test_interrupted_phrase_still_fires_on_rc0(self, runs, monkeypatch, tmp_path):
+        """The phrase match must survive the tightening: pytest can print the Interrupted
+        banner while a wrapper normalises the exit code, and the phrase is the only marker."""
+        fake, _ = runs
+        fake.result = _Result(
+            0, "tests/a/test_x.py: 3\n"
+               "!!!!!!!!!! Interrupted: 2 errors during collection !!!!!!!!!!\n")
+        _record_at(monkeypatch, tmp_path, {"max_collected": 2})
+        defects: list[tuple[str, str]] = []
+        max_audit.check_test_suite_collectable(defects)
+        assert [d[0] for d in defects] == ["test-suite-uncollectable"]
+
     def test_shrink_still_fires_on_a_completed_probe(self, runs, monkeypatch, tmp_path):
         """The ratchet is the important half and must survive this change intact."""
         fake, _ = runs
