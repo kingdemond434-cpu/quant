@@ -744,6 +744,41 @@ def _proc_start(pid: int) -> float | None:
     return btime + starttime / os.sysconf("SC_CLK_TCK")
 
 
+def _mtime_is_content_change(p: Path, floor: float) -> bool:
+    """Whether a post-start mtime reflects a CONTENT change, not a bulk git rewrite.
+
+    The union's mtime half exists to catch a pull/restore/rollback swapping bytes under a
+    running process -- the case commit dates miss when the swapped-in code is OLDER than the
+    process. But checkout/rebase/merge rewrite the mtime of byte-identical files too, and on
+    mtime alone the Tier-3 RUIN RAIL read as running stale code for 19 days (measured
+    2026-08-18: run_deadman_switch.py mtime 2026-08-09 from one bulk git op, content identical
+    to its 2026-07-30 commit, process started 63s AFTER that commit -- a false page telling a
+    human to restart the deadman for nothing, the cry-wolf that gets a fence switched off,
+    L1.43/L1.37). So: compare the file's bytes against the last commit touching it BEFORE the
+    process started. Identical -> the rewrite provably changed nothing, stay quiet. Different,
+    no pre-start commit, outside the repo, or git unavailable -> the alarm stands; over-reporting
+    remains the safe direction and dirty working-tree edits still fire (they differ by
+    definition).
+    """
+    if not p.is_relative_to(ROOT):
+        return True
+    rel = p.relative_to(ROOT).as_posix()
+    try:
+        base = subprocess.run(
+            ["git", "rev-list", "-1", f"--before=@{int(floor)}", "HEAD", "--", rel],
+            cwd=ROOT, capture_output=True, text=True, timeout=30, check=False,
+        ).stdout.strip()
+        if not base:
+            return True                    # born after the process started -> genuinely new
+        diff = subprocess.run(
+            ["git", "diff", "--quiet", base, "--", rel],
+            cwd=ROOT, capture_output=True, timeout=30, check=False,
+        )
+        return diff.returncode != 0
+    except (OSError, subprocess.SubprocessError):
+        return True
+
+
 def _sources_changed_since(paths: set[Path], since: float) -> list[Path]:
     """Files whose CONTENT changed since `since` -- a committed change or an uncommitted edit.
 
@@ -921,7 +956,8 @@ def check_stale_daemons(defects) -> None:
         # it (L1.43). 2.0s covers both quantisations and sits orders of magnitude below any
         # genuine deploy-then-restart gap, which is minutes at its shortest.
         floor = started + _START_SLOP_S
-        by_mtime = {p for p in closure if p.exists() and p.stat().st_mtime > floor}
+        by_mtime = {p for p in closure if p.exists() and p.stat().st_mtime > floor
+                    and _mtime_is_content_change(p, floor)}
         stale = sorted(by_mtime | set(_sources_changed_since(closure, floor)))
         if not stale:
             continue
@@ -3021,6 +3057,32 @@ _FINDING_DOCS = (
 #: Finding-bearing docs deliberately out of scope, with the reason -- so the scope check can tell
 #: "consciously excluded" from "quietly unmonitored".
 _FINDING_DOCS_EXCLUDED = {
+    "docs/UNIVERSAL_PROMOTION_PROTOCOL.md":
+        "BINDING PROMOTION PROTOCOL (CLAUDE.md read-before-acting table: 'binding on every "
+        "brain', one door to capital). Its numbered sections are the NINE-SHIPPED-DEFECTS "
+        "doctrine exemplars (Part I) and the ladder/shadow/monitoring clauses (Parts II-V) -- "
+        "teaching material and law that stay open by design, the ELITE_QUANT_INTELLIGENCE_"
+        "MANDATE precedent. Rowing them would inflate the open-finding count with items that "
+        "can never close; the protocol binds through the promotion path itself (qquant_gates, "
+        "shadow, auto_promotion), not through the findings register. Also satisfies §36(2) "
+        "artifact governance, which fired on it as claimed-by-no-law.",
+    "docs/research/COINM_CONVEXITY_PREREGISTRATION.md":
+        "PRE-REGISTRATION record (2026-08-13) governed by its own ledger row R0462: its numbered "
+        "blocks are kill criteria and promotion triggers written down BEFORE any screen, so "
+        "rowing them as findings would double-charge one obligation to two laws (the "
+        "THREE_MECHANISM_PREREGISTRATION precedent). The work it names is driven by R0462 and "
+        "watchlist card 31; the doc becomes TERMINAL when its trigger resolves, per its header",
+    "docs/research/ELITE_QUANT_INTELLIGENCE_MANDATE.md":
+        "PERMANENT STANDING POLICY (principal directive 2026-08-13, all three builder seats): "
+        "its numbered items are mandate clauses and standing hunting grounds whose whole design "
+        "is to stay open -- the DATA_UNIVERSE_TAXONOMY precedent. Rowing them would inflate the "
+        "open-finding count with policy that can never close; the mandate binds through the "
+        "doctrine and CLAUDE.md read-before-acting table, not through the findings register",
+    "docs/MANDATE_NET_COMPOUNDING.md":
+        "BINDING HUMAN MANDATE (principal, 2026-08-16, every desk and brain): sizing law for "
+        "high-drawdown books -- policy clauses, not findings owing dispositions. Same class as "
+        "ELITE_QUANT_INTELLIGENCE_MANDATE; also satisfies §36(2) artifact governance, which was "
+        "firing on it as claimed-by-no-law",
     "docs/research/SURVIVOR_YIELD_AUDIT.md": (
         "terminal repo audit -- its numbered rows classify EXISTING modules against a mandate, "
         "so they are evidence for work NOT done rather than defects owing a register row. The "
@@ -3318,6 +3380,16 @@ _PRODUCER_CADENCE = {
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
 _TERMINAL_ARTIFACTS = {
+    "docs/research/MASTER_APPENDIX_A_PENDING_RESEAL.md":
+        "PARKED CONSTITUTIONAL TEXT AWAITING THE PRINCIPAL (2026-08-18). Sections appended to "
+        "the sealed master on 08-17 by 98d63ce3+6b8b61a9 WITHOUT the principal-only --reseal; "
+        "786e98d9 restored the sealed 218-section master and parked the appendix here verbatim "
+        "so the seal check passes while the text stays reviewable. It is an immutable exhibit, "
+        "not inventory: the one action it owes is the principal's accept-or-reject, tracked by "
+        "ledger row R0615 and the 2026-08-18 PRINCIPAL_ACTION block (which carries the recorder-"
+        "polarity arithmetic). On accept it merges into the master under --reseal and this file "
+        "dies; on reject it dies too. A producer cadence or findings scan here would schedule "
+        "rewrites of a text whose whole point is that only the principal may touch it.",
     "docs/research/ELITE_QUANT_INTELLIGENCE_MANDATE.md":
         "STANDING PRINCIPAL DOCTRINE (2026-08-13), terminal by nature rather than by exhaustion. "
         "It accumulates no inventory and has no producer: it is the principal's directive on "
@@ -5070,6 +5142,16 @@ _DIG_DOCS = (
 #: Card-bearing docs deliberately OUT of §33 scope, each with its reason. Kept explicit so the
 #: scope check below can tell "consciously excluded" from "quietly unmonitored".
 _DIG_DOCS_EXCLUDED = {
+    "docs/research/COINM_CONVEXITY_PREREGISTRATION.md":
+        "PRE-REGISTRATION record: its card-shaped blocks CITE data_axis_watchlist cards 98/99 "
+        "(card 31's split), which live -- and owe their dispositions -- in the watchlist, which "
+        "IS in _DIG_DOCS. A §33 tag here would be a second bookkeeping system over the same "
+        "cards; the THREE_MECHANISM_PREREGISTRATION precedent verbatim",
+    "docs/research/ELITE_QUANT_INTELLIGENCE_MANDATE.md":
+        "PERMANENT STANDING POLICY: its card-shaped blocks are mandate specifications of WHAT to "
+        "mine (source classes, seat duties), not mined finds. A find produced UNDER this mandate "
+        "is carded where the miner writes (the watchlist / session docs), which are in scope; "
+        "the mandate itself can never be 'disposed'",
     "docs/research/feed_inbox.md":
         "A QUEUE with a process-then-DELETE protocol stated in its own header, not a card-bearing "
         "find doc. The collector appends '## <title>' entries; the CRO triages them, routes what "

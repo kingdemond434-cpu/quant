@@ -117,6 +117,43 @@ def test_stale_code_actually_raises_a_defect(monkeypatch) -> None:
         probe.unlink(missing_ok=True)
 
 
+def test_a_bulk_git_rewrite_of_identical_bytes_stays_quiet(tmp_path, monkeypatch) -> None:
+    """A rebase/checkout rewrites mtimes without changing bytes; the RUIN RAIL must not page.
+
+    Measured 2026-08-18: run_deadman_switch.py carried mtime 2026-08-09 from one bulk git
+    operation, content identical to its 2026-07-30 commit, and the process started 63s AFTER
+    that commit -- yet daemon-stale-code paged a human to restart the deadman, daily, on the
+    mtime half of the union alone. Content-vs-pre-start-commit is the discriminating evidence:
+    an identical rewrite stays quiet, while a dirty edit and a genuine rollback swap (the case
+    the mtime half exists for) both still fire.
+    """
+    env = {**os.environ, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t",
+           "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t"}
+
+    def git(*args: str) -> None:
+        subprocess.run(["git", *args], cwd=tmp_path, env=env, check=True, capture_output=True)
+
+    git("init", "-q")
+    organ = tmp_path / "organ.py"
+    organ.write_text("x = 1\n")
+    git("add", "organ.py")
+    git("commit", "-qm", "born")
+    monkeypatch.setattr(_M, "ROOT", tmp_path)
+    floor = time.time() + 60.0                 # the process "started" after the commit
+    stamp = floor + 120.0
+    os.utime(organ, (stamp, stamp))            # bulk git op: mtime rewritten, bytes identical
+    assert _M._mtime_is_content_change(organ, floor) is False
+
+    organ.write_text("x = 2\n")                # dirty edit under the running process
+    assert _M._mtime_is_content_change(organ, floor) is True
+
+    git("add", "organ.py")
+    git("commit", "-qm", "v2")                 # still before the (future) floor
+    subprocess.run(["git", "checkout", "HEAD~1", "--", "organ.py"],
+                   cwd=tmp_path, env=env, check=True, capture_output=True)
+    assert _M._mtime_is_content_change(organ, floor) is True  # rollback swap must fire
+
+
 def test_a_freshly_started_organ_is_not_stale(monkeypatch) -> None:
     """Noise discipline: unchanged source since start must stay silent."""
     probe = _probe(".organ_probe_fresh.py")
