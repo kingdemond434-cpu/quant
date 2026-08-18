@@ -2793,3 +2793,25 @@ verification, not cataloguing — a source earns a card by serving a named need)
   apex has **no DNS record at all**), `coinmena.com` (`robots.txt` returns **200 with a Next.js error
   shell and zero directives**). None of these is "closed" and none is "empty" — they are unmeasured,
   and a status-code-only crawl would have scored several of them as open and harvested nothing.
+
+## SESSION NOTE — 2026-08-18 (FREE-DATA-ALTERNATIVES miner, standing daily run) — WRITTEN FIRST, updated as items resolve
+
+**§33 state at open:** 2 items owe (T2 CN practitioner corpus, due today; T3 Upbit portal, past due
+08-15). Mine-gate CONVERT-FIRST honoured: both are this run's first work, highest tier first.
+
+**ITEMS TAKEN THIS RUN (bounded per the completion contract; depth unbounded):**
+1. **[A — §33 T2] 中文 practitioner corpus dig (card 23).** The deferral date is TODAY and the CN
+   seat has not converted it; a dated deferral that merely rolls forward on its due date is the
+   snooze §33 forbids. This seat digs it NOW: cnblogs.com/sljsz (数量技术宅) strategy-decay posts
+   as graveyard ore first, quant67.com (土法炼钢) crypto notes second, thuquant/awesome-quant as
+   index-for-breadth third. STATUS: **in progress.**
+2. **[B — §33 T3] Upbit portal legitimacy (card 1).** Principal-reply channel checked this run:
+   NO ruling (only an unrelated deadman page 08-18 01:43Z). Row #67 rule-by 2026-08-15 has LAPSED.
+   Disposition: re-defer to the next governance window WITH the lapse recorded loudly.
+   STATUS: **in progress.**
+3. **[C — named next-ground item 1, scoped] S3-pagination re-verification of one existing depth
+   claim (Bybit bulk archive), from the 08-12 note's own top item.** STATUS: **taken if budget
+   allows after A+B; otherwise named for next run.**
+
+**Not taken, named so the chain survives:** next-ground items 2–4 from the 08-12 note (OKX bulk
+depth, survivorship-polarity sweep across venues, COIN-M 285-vs-288) remain open and ranked.
