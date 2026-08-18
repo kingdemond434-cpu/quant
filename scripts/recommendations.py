@@ -167,10 +167,20 @@ def add(a: argparse.Namespace) -> None:
         if r["source"] == a.source and r["summary"].strip() == a.summary.strip():
             print(f"{r['id']} already ledgered ({r['status']})")
             return
+    # R0477 tripwire: every value ever observed in the rank-wearing-bps population was >= 7500,
+    # while the largest MEASURED estimate on the ledger is 400. A four-digit "bps" is an ordinal.
+    if a.roi_bps is not None and a.roi_bps >= 1000:
+        raise SystemExit(
+            f"--roi-bps {a.roi_bps:g} refused: bps that size are rank ordinals wearing a bps "
+            "label (R0477's 9999/9000/8000 population). Use --rank for ordering; --roi-bps "
+            "carries a MEASURED return estimate only.")
+    rank = getattr(a, "rank", None)
+    basis = "measured" if a.roi_bps is not None else ("rank" if rank is not None else None)
     rid = _next_id(d)
     d["recommendations"].append({
         "id": rid, "source": a.source, "summary": a.summary,
-        "roi_bps": a.roi_bps, "raised": datetime.now(tz=UTC).isoformat(),
+        "roi_bps": a.roi_bps, "rank": rank, "roi_basis": basis,
+        "raised": datetime.now(tz=UTC).isoformat(),
         "status": "open", "reason": None, "commit": None, "due": None, "disposed": None})
     _save(d)
     print(f"{rid} ledgered from {a.source} -- OPEN, disposition owed within {GRACE_H:.0f}h")
@@ -444,7 +454,13 @@ def main() -> None:
     p.add_argument("--source", required=True,
                    help="max_audit | deep_sweep | cycle | panel | proactive_battery | principal")
     p.add_argument("--summary", required=True)
-    p.add_argument("--roi-bps", dest="roi_bps", type=float, default=None)
+    # R0477: one field used to carry two populations -- measured bps and rank ordinals
+    # (9999/9000/8000/...) -- so a guessed rank was indistinguishable from a measured return.
+    grp = p.add_mutually_exclusive_group()
+    grp.add_argument("--roi-bps", dest="roi_bps", type=float, default=None,
+                     help="MEASURED return estimate in bps -- never an ordering ordinal")
+    grp.add_argument("--rank", dest="rank", type=float, default=None,
+                     help="priority ordinal, higher = sooner -- carries no return claim")
     p.set_defaults(func=add)
     p = sub.add_parser("dispose", help="record the decision -- the only way a row leaves open")
     p.add_argument("--id", required=True)

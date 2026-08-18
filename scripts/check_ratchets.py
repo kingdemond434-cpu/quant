@@ -172,6 +172,16 @@ def _capability_wired(d: Any) -> float | None:
     return None
 
 
+def _roi_basis_share(d: Any) -> float | None:
+    """Share of value-carrying ledger rows whose roi_bps/rank basis is DECLARED (R0477).
+
+    The denominator is rows carrying ANY value claim, so valueless adds cannot dilute it; every
+    new valued row declares at add-time, so the share can only rise -- ratchet-shaped.
+    """
+    val = d.get("roi_basis_declared_share") if isinstance(d, dict) else None
+    return float(val) if isinstance(val, (int, float)) else None
+
+
 def _repair_p_fix(d: Any) -> float | None:
     """Share of raised rows actually FIXED within the horizon -- repair capacity (R0330).
 
@@ -291,6 +301,12 @@ _METRICS: dict[str, tuple[str, Callable[[Any], float | None], float | None, str]
     # (L1.28a). 30h = a day's slack on the daily producer, so a dead fence reads STALE.
     "repair_p_fix": (
         "data/repair_metrics.json", _repair_p_fix, 30.0,
+        "python scripts/check_repair_capacity.py"),
+    # R0477: one ledger field carried two populations (measured bps vs rank ordinals
+    # 9999/9000/...), so a guessed rank was indistinguishable from a measured return. The split
+    # only closes if declaration coverage rises; floored from birth so backfill drives itself.
+    "roi_basis_declared_share": (
+        "data/repair_metrics.json", _roi_basis_share, 30.0,
         "python scripts/check_repair_capacity.py"),
     # R0331: the archive's deadline gets a floor. The alarm half already existed (days_to_pause
     # -> max_audit's tape-disk-deadline) but nothing recorded the TREND, so a 53% step-up in the

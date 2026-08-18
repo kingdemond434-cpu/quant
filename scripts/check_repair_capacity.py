@@ -67,10 +67,22 @@ def build_report(root: Path, *, now: datetime | None = None) -> dict[str, Any]:
                 "n_rows": 0}
 
     cap = measure(rows, now=now)
+    # R0477: among rows that CARRY a value claim (roi_bps or rank), how many declare which
+    # population it belongs to? Legacy rows are a frozen undeclared set and every new valued row
+    # declares at add-time, so the share can only rise -- ratchet-shaped by construction. Rows
+    # with no value claim have nothing to classify and stay out of the denominator (L1.57: the
+    # denominator counts what the run found, and here it must not be dilutable by valueless adds).
+    carrying = [r for r in rows
+                if r.get("roi_bps") is not None or r.get("rank") is not None
+                or r.get("roi_basis") in ("measured", "rank")]
+    declared = sum(1 for r in carrying if r.get("roi_basis") in ("measured", "rank"))
     return {
         "generated": now.isoformat(),
         "law": "L1.28b -- repair capacity is the service rate behind the queue",
         "ledger": _LEDGER,
+        "roi_basis_declared_share": (round(declared / len(carrying), 4) if carrying else None),
+        "roi_basis_declared": declared,
+        "roi_basis_of": len(carrying),
         **cap.as_dict(),
     }
 

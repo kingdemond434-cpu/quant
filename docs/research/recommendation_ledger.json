@@ -702,49 +702,57 @@
    "id": "R0053",
    "source": "deep_sweep",
    "summary": "SURVIVAL RAIL OFF: Tier-3 deadman should_fire() returns False at EVERY equity (hw 209.43 < _MIN_HW 500 short-circuits before any ruin comparison). Root cause is account_summary() reading totalMarginBalance (USDT-only, multiAssetsMargin=False) so $5000 USDC is invisible. ONE ~10-line fix (sum per-asset marginBalance) re-arms the rail AND dissolves the carry book's absorbing state. Add assertion: high_water<_MIN_HW while book live = defect. [exec-growth F13/F6]",
-   "roi_bps": 9999.0,
+   "roi_bps": null,
    "raised": "2026-07-30T17:08:05.711221+00:00",
    "status": "implemented",
    "reason": "equity=max(stable-sum,totalMarginBalance) in BOTH account_summary and combined_equity; probe 209.43->5773.63; service restarted, pid 1463355 on fixed code",
    "commit": "fccc580",
    "due": null,
-   "disposed": "2026-07-30T22:58:30.814206+00:00"
+   "disposed": "2026-07-30T22:58:30.814206+00:00",
+   "rank": 9999.0,
+   "roi_basis": "rank"
   },
   {
    "id": "R0054",
    "source": "deep_sweep",
    "summary": "PRINCIPAL DECISION IS MIS-SPECIFIED: option (A) 're-baseline to reconciled true equity' would re-baseline $5000 TOO LOW because the reconciled figure is built on futures_margin_balance=209.43, the same undercounted read. Fix the equity read BEFORE executing A/B/C, else the identical absorbing trap re-arms at a lower level within days. [exec-growth F6]",
-   "roi_bps": 9000.0,
+   "roi_bps": null,
    "raised": "2026-07-30T17:08:05.772086+00:00",
    "status": "implemented",
    "reason": "the read option (A) depends on is fixed BEFORE the decision, per the mandated ordering; A/B/C itself stays with the principal",
    "commit": "fccc580",
    "due": null,
-   "disposed": "2026-07-30T22:58:30.877352+00:00"
+   "disposed": "2026-07-30T22:58:30.877352+00:00",
+   "rank": 9000.0,
+   "roi_basis": "rank"
   },
   {
    "id": "R0055",
    "source": "deep_sweep",
    "summary": "AUDIT ORGAN SELF-GREENS: run_deep_sweep.py:109 and :139 grade auditors on file BYTES (>=1200) only -- never returncode, never timeout, never content. A doctrine-conforming skeleton is ~1500-1900b so an auditor that dies after writing its skeleton is graded OK and skipped by every resume window forever. Fired twice on 2026-07-30 (alpha-discovery 1736b, validation-stats 1889b, both pure TBD); log claimed 8/8 produced. Fix: require returncode==0 AND a STATUS:COMPLETE sentinel; write failure stub to <report>.FAILED instead of overwriting the partial. [meta M1]",
-   "roi_bps": 8000.0,
+   "roi_bps": null,
    "raised": "2026-07-30T17:08:05.831128+00:00",
    "status": "implemented",
    "reason": "completion sentinel + .FAILED sidecars + synthesis resume check; pre-2026-07-31 reports grandfathered",
    "commit": "fccc580",
    "due": null,
-   "disposed": "2026-07-30T22:58:30.944172+00:00"
+   "disposed": "2026-07-30T22:58:30.944172+00:00",
+   "rank": 8000.0,
+   "roi_basis": "rank"
   },
   {
    "id": "R0056",
    "source": "deep_sweep",
    "summary": "AUDIT->ACTION WIRE IS CUT: across four sweeps (~600KB of findings) only ONE of 8 dimensions (data-moat, R0003-R0009) has ever produced a ledger row. Last week's SYNTHESIS wrote P0-1 'close the audit-action loop' and P0-3 'fix the sweep runner' to improvement_inbox.md; neither was rowed, neither implemented, and P0-3's absence cost 2 audits this week. Fix: post-sweep non-LLM parser extracts 'WHAT WE TEST NEXT' -> recommendations.py add, PLUS a max_audit check sweep-findings-unrowed. Keep auditors read-only. [meta M2]",
-   "roi_bps": 7500.0,
+   "roi_bps": null,
    "raised": "2026-07-30T17:08:05.932194+00:00",
    "status": "implemented",
    "reason": "Mechanical half landed: 092310f (findings-scope-unmonitored fence catches any doc carrying numbered findings outside _FINDING_DOCS -- it fired on 20260731_s5_proposals same-day, proving it) + f57ae69 L1.28b conversion machinery (per-row rec-owed checks, repair-mode admission control). Wire measurably no longer cut: 152 arrivals/7d vs the ~1-dimension-in-4-sweeps that raised this row; deep_sweep rows R0056-R0169 all exist. The non-LLM 'WHAT WE TEST NEXT' parser variant is deliberately NOT built: auditors now row directly under L1.28b(a) as a bound duty, and a format-contract parser on LLM prose is fragile negative-EV redundancy on top of two working fences",
    "commit": "092310f",
    "due": null,
-   "disposed": "2026-07-31T18:03:59.011731+00:00"
+   "disposed": "2026-07-31T18:03:59.011731+00:00",
+   "rank": 7500.0,
+   "roi_basis": "rank"
   },
   {
    "id": "R0057",
@@ -3060,13 +3068,15 @@
    "id": "R0232",
    "source": "deep_sweep",
    "summary": "SYNTH0801 P0-1 [exec E15, SL-verified]: RESTART quant-cashcarry BEFORE clearing CASHCARRY_KILL. PID 1626623 started 2026-07-31T16:44:27 on 963df91; the guard fix 97967d6 landed 69min LATER, so the process holding the book still reads key 'generated' while run_live_guard writes 'ts' -> parsed epoch 1970 -> age 1.79e9s -> stale -> return early. Guard ORDERS size_frac=0.0/limit_only; running process uses full size + takers. Masked only by the KILL file; the masking ends at REARM, and E1 (fill-by-absence) + E2 (partial-fill over-execution) release on the same tick. Cost ~0.",
-   "roi_bps": 9000.0,
+   "roi_bps": null,
    "raised": "2026-08-01T03:34:08.765969+00:00",
    "status": "implemented",
    "reason": "PREMISE EXPIRED, ordering constraint SATISFIED, verified on this box. The row targets PID 1626623 (started 2026-07-31T16:44:27 on pre-fix 963df91). That process is gone; the executor now running is PID 3424622, started 2026-08-05T11:47:22 measured the correct way (/proc/stat btime + /proc/pid/stat field 22, not /proc mtime) -- 4.75 days AFTER the guard fix 97967d6 landed at 2026-07-31T17:53:32Z, which git merge-base --is-ancestor confirms is in the running trees history. The guard read at run_cashcarry_executor.py:1487 is read_fresh(data/live_guard.json, max_age_h=0.25, min_rows=1) with no generated key parse anywhere, so the 1970-epoch staleness the row describes cannot occur. And the ORDERING the row exists to protect held: data/CASHCARRY_KILL is still present, stamped 2026-08-01T21:55:04, i.e. the restart happened while the kill file was still in place, which is exactly the sequence demanded. The 2026-08-04 triage called this unverifiable because neither the process nor the KILL file existed in the checkout; both are observable here now.",
    "commit": "97967d6",
    "due": null,
-   "disposed": "2026-08-05T18:41:24.514001+00:00"
+   "disposed": "2026-08-05T18:41:24.514001+00:00",
+   "rank": 9000.0,
+   "roi_basis": "rank"
   },
   {
    "id": "R0233",
@@ -6082,11 +6092,11 @@
    "summary": "THE .xls READER CANNOT OPEN A FILE ABOVE ~7.1 MB, AND NO TEST CAN BUILD ONE -- which is exactly the size class R0317 targets (multi-year government/regulator panels). libs/data/xls_reader.py:184-190 follows the DIFAT chain when a file needs more than the 109 FAT-sector pointers the OLE2 header holds; at 512-byte sectors that ceiling is ~7.1 MB. tests/data/xls_builder.py:300-301 always writes n_difat=0 and uses only the 109 header slots, so build_xls(pad_to=7_500_000) yields n_fat=116 against 109 available and the READER REFUSES IT -- the DIFAT-chain branch is unreachable by any fixture, i.e. a decoder path with zero coverage guarding the exact input the module exists for. Two other builder gaps in the same family: the 4096-byte sector path is never built (SECTOR is hardcoded 512), and encode_rk can never emit RK flag 0x01 (double-divided-by-100) because the branch order routes every value to 0x00/0x02/0x03, so test_rk_encodings_round_trip's 'covers all RK branches' is 3 of 4 -- the 4th was verified correct by hand but is untested. Fix: teach build_ole2 to emit DIFAT sectors and parametrise the sector size, then assert a >7.1MB workbook round-trips. Until then the reader's fitness for its stated target file class is UNMEASURED, not known-good.",
    "roi_bps": null,
    "raised": "2026-08-12T12:33:11.647937+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "build_ole2 emits DIFAT sectors (fixed-point sizing counts them), sector size parametrised (4096-byte v4 containers with padded header), encode_rk gains the 0x01 divided-double branch. Three tests pin the shapes at header level: n_difat>=1 on a 7.5MB fixture that round-trips through the reader's DIFAT branch, exponent 12 on the 4096 path (miniFAT + big-stream both), flag&3==1 on RK 0.005. xls suite 79 green, ruff clean.",
+   "commit": "c97da81a",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-18T20:16:04.256285+00:00"
   },
   {
    "id": "R0476",
