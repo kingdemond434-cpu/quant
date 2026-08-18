@@ -50,11 +50,11 @@
    "summary": "O2 data-moat: wire hypothesis_novelty into live generation + compile ONE canonical machine graveyard (data/graveyard_priors.json) from graveyard.md+research_memory+526 candidate rows; PriorIdea constructed nowhere in production; validate first via E2 recall replay on the 420 campaign",
    "roi_bps": null,
    "raised": "2026-07-26T11:45:42.077509+00:00",
-   "status": "scheduled",
-   "reason": "WELDED GATE, and worse than the row states. hypothesis_novelty is wired at FIVE production sites (screen_idle_axes.py:61,95-96; screen_fred_macro_axis.py:188-189; screen_exchange_netflow.py:93; run_axis_generate_20260805.py:404; generation_roi.py:76-79) while carrying measurably ZERO bits: measured title-only recall 0/44 = 0.0%, paraphrase 0/10, Youden J 0.000 (deep_sweep/20260801_research-engine.md:439-462) against its own pre-registered E2 bar of >=25% recall, whose spec says 'recall <10% -> DO NOT wire it'. It is plain Jaccard at 0.7 (hypothesis_novelty.py:60-63,:87), unchanged since f290d8a. data/graveyard_priors.json exists (198 priors) with ZERO producers and ZERO consumers repo-wide, so it cannot be regenerated and the three duplicate prior-builders it was meant to replace are all still live. Work: replace Jaccard with the TF-IDF cosine already in knowledge_engine.py:81-102, then give the artifact one producer and three readers.",
-   "commit": "699ab9f",
-   "due": "2026-08-15",
-   "disposed": "2026-08-05T09:02:44.971800+00:00"
+   "status": "implemented",
+   "reason": "VERIFIED IMPLEMENTED BY FRESH READ 2026-08-18: data/graveyard_priors.json live (229KB, 268 priors, generated 08-13), scripts/build_graveyard_priors.py + scripts/replay_novelty_recall.py landed in 699ab9f5, PriorIdea constructed in production (libs/autodiscovery/generation_roi.py:45,81,98). Aged 23d for want of a disposition (R0478 gap). [4th write -- rounds 1-3 lost to concurrent ledger writers in the shared tree]",
+   "commit": "699ab9f5",
+   "due": null,
+   "disposed": "2026-08-18T20:49:19.502187+00:00"
   },
   {
    "id": "R0005",
@@ -7827,20 +7827,6 @@
    "commit": null,
    "due": null,
    "disposed": null
-  },
-  {
-   "id": "R0618",
-   "source": "cycle",
-   "summary": "LAND claude/staged-probe-cap-sizing (08a6874e) WHEN THE L1.38 WINDOW OPENS: sizes authorised re-entry probes at min(share, recorded cap) at BOTH gate and send (welded-door fix for all 7 re-entry rows; tests green, mypy clean). BLOCKED by design: window STERILE (RAIL_BREACH, CASHCARRY_KILL). At re-arm: verify OPEN, merge, confirm first probe-eligible tick logs '<= cap' instead of REFUSED. Interaction note owed with R0062/R0162.",
-   "roi_bps": null,
-   "rank": 8.0,
-   "roi_basis": "rank",
-   "raised": "2026-08-18T20:48:44.853145+00:00",
-   "status": "scheduled",
-   "reason": "Waits on a NAMED EVENT: clearing CASHCARRY_KILL flips the window OPEN. Due 08-25 = re-check horizon; landing executes at window-open. Branch verified on origin (08a6874e).",
-   "commit": null,
-   "due": "2026-08-25",
-   "disposed": "2026-08-18T20:48:47.130395+00:00"
   }
  ]
 }
