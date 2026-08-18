@@ -3593,6 +3593,10 @@ _TERMINAL_ARTIFACTS = {
         "immutable preregistration -- superseded by its result, never refreshed in place",
     "docs/research/FULL_SWEEP_PREREGISTRATION.md":
         "immutable preregistration -- superseded by its result, never refreshed in place",
+    "docs/research/TRAIL_WIDTH_PREREGISTRATION.md":
+        "immutable preregistration (R0479, 2026-08-18) -- evaluated hourly by "
+        "resolve_paper_book's trail_forward block; superseded by its verdict, never refreshed "
+        "in place",
     "docs/research/MANAGEMENT_SWEEP_PREREGISTRATION.md":
         "immutable preregistration -- superseded by its result, never refreshed in place",
     "docs/research/recent_changes.md":

@@ -245,6 +245,23 @@ TRAIL_R = 1.0
 #: visible when it happens.
 TRAIL_WIDTHS: tuple[float, ...] = (0.5, 0.75, 1.0, 1.5, 2.0, 3.0)
 
+#: R0479 -- THE PRE-REGISTERED FORWARD TEST OF THE NARROWER TRAIL. Frozen 2026-08-18; the design
+#: and every constant below bind BEFORE the forward sample exists and may not be edited after
+#: (docs/research/TRAIL_WIDTH_PREREGISTRATION.md). The in-sample evidence (median capture ratio
+#: 0.335 over 14 closes; trail_sweep best_trail_r 0.5 vs live 1.0 at n=9, state THIN) is a
+#: HYPOTHESIS-GENERATOR with zero authority: a width fitted to 14 closes is curve-fitting, so the
+#: challenger earns adoption only on trades ENTERED after this instant, walked PAIRED against the
+#: incumbent on identical bars.
+TRAIL_FWD_REGISTERED = "2026-08-18T21:00:00+00:00"
+TRAIL_FWD_CHALLENGER = 0.5
+#: Paired design: both widths walk the SAME trade on the SAME bars, so per-trade log-growth
+#: differences cancel the trade/regime draw and only the parameter under test remains. 25 paired
+#: differences at |t|>=1.7 (one-sided ~0.05) is the earliest read; 50 is the hard stop, aligned
+#: with the sleeve's own KILL_AFTER_N so the trail question cannot outlive the sleeve question.
+TRAIL_FWD_DECIDE_N = 25
+TRAIL_FWD_HARD_N = 50
+TRAIL_FWD_T = 1.7
+
 
 def walk_ladder(row: dict[str, Any], bars: list[tuple[int, float, float, float, float]],
                 *, trail_r: float = TRAIL_R) -> dict[str, Any]:
@@ -523,6 +540,116 @@ def trail_sweep(walked: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def trail_forward(swept: list[dict[str, Any]],
+                  marks: list[dict[str, Any]]) -> dict[str, Any]:
+    """R0479: the pre-registered PAIRED forward test of the 0.5R challenger trail.
+
+    trail_sweep above answers "which width was best on the record so far" -- an IN-SAMPLE curve
+    that nothing may act on, because a width fitted to 14 closes is curve-fitting in the sleeve's
+    steepest-gradient slot. This block is the forward half: only trades ENTERED after the frozen
+    registration instant count, each is walked at the challenger and the live width on identical
+    bars, and the statistic is the paired per-trade log-growth difference -- the trade/regime draw
+    cancels, only the parameter under test remains.
+
+    TWO MECHANISMS ARE KEPT SEPARATE, as R0479 requires. A capture ratio of 0.335 can mean the
+    trail is too wide OR that the ladder is rarely climbed so most exits never arm a trail at all
+    (median share of ladder reached: 0.33). `share_reaching_trail` measures the second directly on
+    the forward sample; when most trades never arm the trail, the verdict says out loud that the
+    LADDER, not the trail, is the binding lever -- adopting a narrower trail would then be tuning
+    a parameter most trades never touch.
+
+    AUTHORITY: none. TRAIL_R may change only on an ADOPT-BAR-MET state, by a reviewed commit
+    citing this block; every other state keeps the incumbent 1.0R. Kill criteria bound before the
+    run: a REFUTED or INDISTINGUISHABLE verdict retires the hypothesis, no extensions.
+    """
+    reg = datetime.fromisoformat(TRAIL_FWD_REGISTERED)
+
+    def _is_forward(key: Any) -> bool:
+        # An unparseable entry stamp cannot PROVE it is forward, so it is excluded -- the
+        # conservative direction: nothing sneaks into the out-of-sample set by being malformed.
+        try:
+            return datetime.fromisoformat(str(key)) > reg
+        except ValueError:
+            return False
+
+    by_key: dict[str, dict[float, float]] = {}
+    for w in swept:
+        tr, eq = w.get("trail_r"), w.get("equity_return")
+        if tr is None or eq is None or not _is_forward(w.get("key")):
+            continue
+        by_key.setdefault(str(w.get("key")), {})[float(tr)] = float(eq)
+    diffs = []
+    for _k, m in sorted(by_key.items()):
+        if TRAIL_FWD_CHALLENGER in m and TRAIL_R in m:
+            a, b = m[TRAIL_FWD_CHALLENGER], m[TRAIL_R]
+            if a > -1.0 and b > -1.0:
+                diffs.append(math.log1p(a) - math.log1p(b))
+    n = len(diffs)
+
+    fwd_closed = [m for m in marks
+                  if m.get("kind") == "conviction" and m.get("closed")
+                  and m.get("stage_reached") is not None and m.get("max_stage") is not None
+                  and _is_forward(m.get("key"))]
+    share = (round(sum(1.0 for m in fwd_closed
+                       if int(m["stage_reached"]) >= int(m["max_stage"])) / len(fwd_closed), 4)
+             if fwd_closed else None)
+    mech = ""
+    if share is not None and share < 0.5:
+        mech = (f" MECHANISM NOTE: only {share:.0%} of forward closes ever armed the trail -- "
+                "the binding lever is the LADDER, not the trail width, and any trail verdict is "
+                "secondary until that changes.")
+
+    out: dict[str, Any] = {
+        "registered": TRAIL_FWD_REGISTERED,
+        "challenger_r": TRAIL_FWD_CHALLENGER, "live_r": TRAIL_R,
+        "n_paired_forward": n, "decide_n": TRAIL_FWD_DECIDE_N, "hard_n": TRAIL_FWD_HARD_N,
+        "t_bar": TRAIL_FWD_T,
+        "share_reaching_trail": share, "n_forward_closed": len(fwd_closed),
+        "authority": ("measurement only. TRAIL_R changes ONLY on ADOPT-BAR-MET, by a reviewed "
+                      "commit citing this block; REFUTED/INDISTINGUISHABLE retire the hypothesis "
+                      "-- no extensions (pre-registered, R0479)."),
+    }
+    if n < 2:
+        out.update(state="ACCRUING", mean_dlog=(round(diffs[0], 6) if diffs else None),
+                   t_stat=None,
+                   why=(f"{n}/{TRAIL_FWD_DECIDE_N} paired forward closes since registration -- "
+                        "no verdict of any kind is available before the pre-registered decision "
+                        "point." + mech))
+        return out
+    mean_d = sum(diffs) / n
+    var = sum((d - mean_d) ** 2 for d in diffs) / (n - 1)
+    t = mean_d / math.sqrt(var / n) if var > 0 else 0.0
+    out.update(mean_dlog=round(mean_d, 6), t_stat=round(t, 3))
+    if n < TRAIL_FWD_DECIDE_N:
+        out.update(state="ACCRUING",
+                   why=(f"{n}/{TRAIL_FWD_DECIDE_N} paired forward closes -- running paired "
+                        f"dlog {mean_d:+.5f} (t={t:.2f}) carries NO authority before the "
+                        "pre-registered decision point." + mech))
+    elif t >= TRAIL_FWD_T:
+        out.update(state="ADOPT-BAR-MET",
+                   why=(f"paired dlog {mean_d:+.5f} at t={t:.2f} >= {TRAIL_FWD_T} over {n} "
+                        f"forward closes: the {TRAIL_FWD_CHALLENGER}R challenger compounds "
+                        "measurably harder out-of-sample. The pre-registered adoption bar is "
+                        "met; changing TRAIL_R is now authorised via a reviewed commit." + mech))
+    elif t <= -TRAIL_FWD_T:
+        out.update(state="REFUTED",
+                   why=(f"paired dlog {mean_d:+.5f} at t={t:.2f} <= -{TRAIL_FWD_T} over {n} "
+                        "forward closes: the narrower trail LOSES out-of-sample. Hypothesis "
+                        "retired; the in-sample best_trail_r=0.5 was curve-fit. NO EXTENSIONS."
+                        + mech))
+    elif n >= TRAIL_FWD_HARD_N:
+        out.update(state="INDISTINGUISHABLE",
+                   why=(f"{n} forward closes reached the hard stop with |t|={abs(t):.2f} < "
+                        f"{TRAIL_FWD_T}: the widths cannot be told apart at this sample. The "
+                        "incumbent 1.0R stays; the hypothesis is retired, not extended." + mech))
+    else:
+        out.update(state="CONTINUE",
+                   why=(f"{n} paired forward closes, |t|={abs(t):.2f} < {TRAIL_FWD_T} -- "
+                        f"between the decision point and the {TRAIL_FWD_HARD_N} hard stop; "
+                        "keep accruing." + mech))
+    return out
+
+
 def kill_check(resolved: list[dict[str, Any]]) -> dict[str, Any]:
     """Evaluate the PRE-REGISTERED exit. Written before the data existed; not adjustable after.
 
@@ -695,6 +822,9 @@ def resolve_book(root: Path, *, now: datetime | None = None,
                          4) if resolved else None),
         "realised_payoff": realised_payoff(resolved),
         "trail_sweep": trail_sweep(swept),
+        # R0479: the forward half. trail_sweep is the in-sample curve (hypothesis-generator,
+        # zero authority); this is the pre-registered paired test the curve now has to survive.
+        "trail_forward": trail_forward(swept, marks),
         "equity": curve,
         "kill_condition": kill_check(resolved),
         "setup_performance": setup_performance(resolved),
