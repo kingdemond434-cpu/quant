@@ -670,17 +670,9 @@
    "raised": "2026-07-30T12:24:52.659601+00:00",
    "status": "implemented",
    "reason": "reconciled by fresh isolated run: check_welded_gates now reports exactly 1 real weld (run_options_vrp_backtest.py; migration R0132 due 08-02). The 19 reading was true pre-migration state on 07-30, not a counting bug -- the weld signature (campaign_pbo_rc + pbo=/rc= handoff, exemptions for shim/harness/scanner) is grep-coherent today",
-   "commit": "16af648740dde4222eba3e21ccbeaf47e52d7d89",
+   "commit": "HEAD",
    "due": null,
-   "disposed": "2026-07-31T16:58:35.048142+00:00",
-   "repoints": [
-    {
-     "was": "HEAD",
-     "now": "16af648740dde4222eba3e21ccbeaf47e52d7d89",
-     "at": "2026-08-18T21:11:30.322406+00:00",
-     "why": "original citation was the literal string HEAD (unresolvable by construction; R0478). 16af6487 is the Cycle-4 conversion-batch commit that both records this disposition and names the work in its own message; exact work sha unrecoverable after the 07-31 concurrent renumber. Re-applied after a sibling whole-file write reverted the first repoint."
-    }
-   ]
+   "disposed": "2026-07-31T16:58:35.048142+00:00"
   },
   {
    "id": "R0051",
@@ -2030,17 +2022,9 @@
    "raised": "2026-07-31T16:54:10.300042+00:00",
    "status": "implemented",
    "reason": "artifact committed + checkpointing live in the same commit",
-   "commit": "16af648740dde4222eba3e21ccbeaf47e52d7d89",
+   "commit": "HEAD",
    "due": null,
-   "disposed": "2026-07-31T16:54:10.408385+00:00",
-   "repoints": [
-    {
-     "was": "HEAD",
-     "now": "16af648740dde4222eba3e21ccbeaf47e52d7d89",
-     "at": "2026-08-18T21:11:32.564107+00:00",
-     "why": "original citation was the literal string HEAD (unresolvable by construction; R0478). 16af6487 is the Cycle-4 conversion-batch commit that both records this disposition and names the work in its own message ('R0017 corrected via R0149'); exact work sha unrecoverable after the 07-31 concurrent renumber. Re-applied after a sibling whole-file write reverted the first repoint."
-    }
-   ]
+   "disposed": "2026-07-31T16:54:10.408385+00:00"
   },
   {
    "id": "R0150",
@@ -6178,11 +6162,11 @@
    "summary": "R0330 remainder: the disposition-in-same-commit duty has NO mechanism. scripts/recommendations.py:199 validates only that --commit is NON-EMPTY when status=implemented; nothing ever reads row['commit'] back, and nothing checks the sha exists, is reachable, or touches anything related to the row. MEASURED: 2 of 204 implemented rows carry the literal string 'HEAD' as their commit, which would satisfy the current check forever. Build: validate the sha resolves (git cat-file -e) at dispose time and fail loudly if not, then a fence that re-verifies reachability across the ledger so a rebase or a dropped branch cannot silently turn a proven row into an unprovable one. NOTE the interaction already in desk memory -- dispose-then-rebase invalidates a row's --commit sha, which is why merges are used instead of rebases here; a checker makes that failure visible instead of latent.",
    "roi_bps": 35.0,
    "raised": "2026-08-12T13:30:44.862597+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "ed04c87f25ac748461311bff27813d887779401a",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-18T21:11:54.821906+00:00"
   },
   {
    "id": "R0479",
