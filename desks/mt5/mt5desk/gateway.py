@@ -41,6 +41,10 @@ STATE = BASE / "data" / "gateway_state.json"
 SLEEVES_FILE = BASE / "data" / "sleeves.json"
 LEDGER = BASE / "data" / "live_ledger.jsonl"
 LOG = BASE / "logs" / "gateway.log"
+#: The pause flag `gateway_paused()` reads. Named here so the desk can set the
+#: SAME file it already honours -- a second, private pause mechanism would be a
+#: kill switch the operator does not know about.
+PAUSED = BASE / "data" / "GATEWAY_PAUSED"
 
 TERMINAL = terminal_path()
 MAGIC = 341953
@@ -454,6 +458,104 @@ def bracket_spec(hi: float, lo: float, a: float, tick: float, stops_level: int =
     }
 
 
+#: MT5 retcodes this desk has actually seen, and what each one means for the operator.
+#: A bare number in a state file is not a diagnosis, and the difference between these
+#: two is the difference between a five-minute fix and four days of silence.
+RETCODE_MEANING = {
+    10015: ("Invalid price",
+            "the PENDING ORDER PRICE sits inside the broker's stops/freeze distance. "
+            "A buy_stop must be at least stops_level points ABOVE the current ask and a "
+            "sell_stop the same distance BELOW the bid. Session-range brackets hit this "
+            "whenever price is already sitting on the range edge when the order goes out."),
+    10017: ("Trade disabled",
+            "the ACCOUNT or TERMINAL will not accept orders at all. Check "
+            "'Allow algorithmic trading' in Options > Expert Advisors, that the account "
+            "is not read-only or an expired demo, and that the symbol is enabled for "
+            "trading rather than quotes-only."),
+    10016: ("Invalid stops",
+            "the SL or TP is inside the stops/freeze distance from the entry."),
+    10019: ("No money", "insufficient free margin for the requested volume."),
+    10018: ("Market closed", "the venue is shut for this symbol."),
+    10027: ("AutoTrading disabled by client",
+            "the terminal's AutoTrading button is off. One click, in the terminal."),
+    10014: ("Invalid volume", "the lot is below the venue minimum or off its step."),
+}
+
+#: Consecutive placement passes where EVERY order was rejected, after which the
+#: gateway pauses itself. Two, because one can be a bad minute at the open and
+#: three is another whole day of a desk that is not trading and does not know it.
+MAX_TOTAL_REJECTIONS = 2
+
+
+def diagnose(retcode: int | None, comment: str = "") -> str:
+    """Turn a retcode into something an operator can act on."""
+    if retcode is None:
+        return "order_send returned nothing at all — the terminal connection is gone."
+    if retcode in (10008, 10009):                     # placed / done
+        return ""
+    name, why = RETCODE_MEANING.get(
+        retcode, (comment or "unrecognised", "not a retcode this desk has seen before; "
+                  "look it up in the MT5 docs and add it to RETCODE_MEANING."))
+    return f"{retcode} {name}: {why}"
+
+
+def note_placement(st: dict, sleeve: str, orders: list) -> bool:
+    """Record whether a placement pass succeeded, and PAUSE THE DESK if none do.
+
+    THE DEFECT THIS EXISTS TO END. `place_bracket` logged each rejection and
+    returned; nothing counted them, nothing escalated, nothing stopped. The
+    gateway ran for four days with 100% of its orders refused -- every sleeve,
+    both sides, 10015 and 10017 -- writing retcodes into a state file and trying
+    again tomorrow. Total failure and a quiet market produced the same silence,
+    which is the absence-read-as-permission pattern in its purest form: nothing
+    checked for SUCCESS, so nothing could tell them apart.
+
+    Returns True while the desk is still healthy enough to keep going.
+    """
+    # UNAVAILABLE IS NOT REJECTED. A bracket the desk declined to send because
+    # price sat inside the broker's freeze band is the strategy having nothing
+    # to do today, not the venue refusing us. Counting it would pause the desk
+    # on exactly the days it correctly stood aside.
+    attempted = [o for o in orders if not o.get("unavailable")]
+    ok = [o for o in attempted if o.get("retcode") in (10008, 10009)]
+    hist = st.setdefault("placement_health", {"consecutive_total_rejections": 0,
+                                              "last_ok": None, "last_error": None})
+    if not attempted:
+        return True
+    if ok:
+        hist["consecutive_total_rejections"] = 0
+        hist["last_ok"] = now()
+        return True
+
+    hist["consecutive_total_rejections"] += 1
+    diags = sorted({diagnose(o.get("retcode"), o.get("comment") or "")
+                    for o in orders if diagnose(o.get("retcode"), o.get("comment") or "")})
+    hist["last_error"] = {"time": now(), "sleeve": sleeve, "diagnoses": diags}
+    n = hist["consecutive_total_rejections"]
+    log(f"PLACEMENT FAILED ENTIRELY [{sleeve}] -- {n} consecutive pass(es) with no "
+        f"accepted order")
+    for d in diags:
+        log(f"    {d}")
+    if n < MAX_TOTAL_REJECTIONS:
+        return True
+
+    # PAUSE, not just shout. A desk nobody is watching that logs an error and
+    # keeps going is a desk that discovers the problem when someone happens to
+    # read a file. The pause is the same file the operator uses by hand, so
+    # clearing it is one command and the reason is written where they will look.
+    PAUSED.parent.mkdir(parents=True, exist_ok=True)
+    PAUSED.write_text(
+        f"AUTO-PAUSED {now()}: {n} consecutive placement passes with ZERO accepted "
+        f"orders.\n\n" + "\n".join(f"  {d}" for d in diags) +
+        f"\n\nNothing has traded. Fix the cause, then delete this file to re-arm.\n",
+        encoding="utf-8")
+    log("GATEWAY AUTO-PAUSED: no order has been accepted in "
+        f"{n} consecutive passes. Nothing is trading; the reason is in "
+        f"{PAUSED}. This is deliberate -- a desk whose orders are all refused is "
+        "not a desk with a quiet market.")
+    return False
+
+
 def margin_ok(symbol: str, lot: float, price: float) -> bool:
     """Skip a sleeve if margin would be tight (machine kill switch)."""
     acc = mt5.account_info()
@@ -489,8 +591,30 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float) ->
         log(f"SHADOW [{sleeve}] would place bracket: {json.dumps(spec, default=str)}")
         return {"shadow": True, "orders": []}
     sent = []
+    # Current market, read ONCE for the legality check below. A pending order
+    # whose entry sits inside the broker's freeze band is refused with 10015,
+    # and finding that out from the broker costs a rejection that then looks
+    # like a failing desk rather than an unavailable setup.
+    _t = mt5.symbol_info_tick(symbol)
+    _si = mt5.symbol_info(symbol)
+    _point = float(getattr(_si, "point", 0.01) or 0.01)
+    _lvl = int(getattr(_si, "trade_stops_level", 0) or 0)
+
     for side in ("buy_stop", "sell_stop"):
         s = spec[side]
+        if _t is not None and _lvl > 0:
+            legal, why_illegal = entry_is_legal(
+                float(s["price"]), side, float(_t.bid), float(_t.ask), _point, _lvl)
+            if not legal:
+                log(f"NOT AVAILABLE [{sleeve}] {side}: {why_illegal}")
+                # Recorded as UNAVAILABLE, which is a different fact from a
+                # rejected order and must not count toward the rejection
+                # escalation -- a desk pausing itself because the market sat on
+                # the range edge would be a desk that stops working on exactly
+                # the days its strategy has nothing to do.
+                sent.append({"side": side, "retcode": None, "unavailable": True,
+                             "comment": why_illegal})
+                continue
         req = {
             "action": mt5.TRADE_ACTION_PENDING,
             "symbol": symbol,
@@ -507,9 +631,9 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float) ->
         }
         res = mt5.order_send(req)
         code = res.retcode if res else None
-        if code == 10017:
-            log("ORDER FAILED: trade disabled - enable 'Allow algorithmic trading' "
-                "in terminal Options > Expert Advisors, and check account auth")
+        why = diagnose(code, getattr(res, "comment", "") or "")
+        if why:
+            log(f"ORDER FAILED [{sleeve}] {side}: {why}")
         # THE INTENT, RECORDED AT PLACEMENT. Without this line slippage is unknowable: once the
         # order fills, MT5 reports only the price it GOT, and the price the desk ASKED for is
         # gone. Every backtest number on this desk assumes fills at exactly `s["price"]`, and
@@ -524,7 +648,46 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float) ->
                      "comment": res.comment if res else None})
         log(f"ORDER [{sleeve}] {side} -> retcode={code} "
             f"{res.comment if res else ''}")
+    # THE SUCCESS CHECK. Without it a pass where every order was refused is
+    # indistinguishable from a quiet day, which is how four days of total
+    # rejection passed unnoticed.
+    note_placement(st, sleeve, sent)
     return {"shadow": False, "orders": sent}
+
+
+def entry_is_legal(price: float, side: str, bid: float, ask: float,
+                   point: float, stops_level: int) -> tuple[bool, str]:
+    """Is this pending-order price far enough from market for the broker?
+
+    THE CAUSE OF EVERY 10015 THIS DESK HAS SEEN. `bracket_spec` applies
+    stops_level to the SL distance, which is a different constraint: a pending
+    order is also rejected when its own ENTRY sits inside the stops/freeze band.
+    A buy_stop must be at least stops_level points above the ask, a sell_stop
+    the same below the bid.
+
+    Session-range brackets hit this constantly, because the whole point of the
+    strategy is to place the order AT the session extreme — and by the time the
+    range is complete, price is frequently sitting right on it.
+
+    Refusing here rather than pushing the price out is deliberate. Moving the
+    entry to the nearest legal level would silently trade a different strategy:
+    the edge was measured at the range boundary, not at the boundary plus
+    whatever the broker's freeze distance happens to be today.
+    """
+    band = max(stops_level, 0) * max(point, 1e-9)
+    if side == "buy_stop":
+        gap = price - ask
+        if gap < band:
+            return False, (f"buy_stop {price:.2f} is {gap:.2f} above ask {ask:.2f}; "
+                           f"broker needs {band:.2f}. Price is already at the range "
+                           f"edge, so this bracket is NOT AVAILABLE today rather "
+                           f"than available at a different level.")
+        return True, ""
+    gap = bid - price
+    if gap < band:
+        return False, (f"sell_stop {price:.2f} is {gap:.2f} below bid {bid:.2f}; "
+                       f"broker needs {band:.2f}. NOT AVAILABLE today.")
+    return True, ""
 
 
 def cancel_pending(st: dict, symbol: str) -> None:
