@@ -6116,11 +6116,19 @@
    "summary": "R0330 remainder: split roi_bps into a MEASURED field and a RANK field. One field carries two populations -- deep-sweep rows encode descending rank as 9999/9000/8000/7500 while cycle rows carry measured 5-120 bps -- so a guessed rank is indistinguishable from a measured return. Already documented at libs/research/recommendation_forecast.py:20 (which deliberately refuses to condition on roi_bps for exactly this reason) and in the 07-31 meta sweep. VERIFIED CHEAP: nothing reads roi_bps off a ledger row anywhere in the repo -- it is write-only, so no consumer breaks. The only code paths are scripts/recommendations.py --roi-bps and strategic_director.to_ledger_commands/rank (which sorts in-memory Recommendation objects, never ledger rows). Needs a consumer to avoid being an unwired field: publish the declared-basis share as a coverage number so the backfill gap is visible and drives itself.",
    "roi_bps": 40.0,
    "raised": "2026-08-12T13:30:40.854915+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "add() stores roi_bps XOR rank with roi_basis declared; >=1000bps refused as rank-wearing-bps; 5 sentinel rows (R0053-56,R0232) migrated; declared share published by check_repair_capacity over value-carrying rows (5/485=0.0103) and ratchet-floored from birth; deep-sweep prompt updated; 4 new tests green.",
+   "commit": "7806aa9b",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-18T20:21:09.212753+00:00",
+   "repoints": [
+    {
+     "was": "HEAD",
+     "now": "7806aa9b",
+     "at": "2026-08-18T20:21:21.292699+00:00",
+     "why": "commit was recorded as the literal string HEAD, which drifts with every subsequent commit; pinning to the sha that carries the work"
+    }
+   ]
   },
   {
    "id": "R0478",
