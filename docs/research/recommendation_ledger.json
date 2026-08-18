@@ -471,11 +471,11 @@
    "summary": "§35 coverage regression (100%->97%) resolved by DISPOSITION, not new work: of the 5 findings with no register trace, 4 were already decided and merely unrecorded -- #79 job-market data and #80 satellite/shipping carry written REJECT reasons, #26 competitor-simulation is blocked on the same $120 OpenRouter top-up already paged, and micro_audit_inbox #1 (carry-funding silent zero) was fixed 2026-07-26. Only #48 wallet behavioural fingerprinting is a live undriven finding (wallet RISK replicated OOS while wallet RETURNS were refuted at n=1400) -- rowed as GAP #88 with a mechanism-first screen plan.",
    "roi_bps": 8.0,
    "raised": "2026-07-29T06:26:50.644322+00:00",
-   "status": "scheduled",
-   "reason": "Recording work (4 already-decided findings need register rows, 1 needs a decision): scheduled behind R0422's hard calibration deadline; both are pure-recording passes that fit one cycle.",
+   "status": "done",
+   "reason": "VERIFIED: #79/#80 REJECT reasons written, #26 blocked on paged OpenRouter top-up, micro_audit #1 fixed 07-26, #48 rowed GAP #88 (register:142). [re-assert]",
    "commit": null,
-   "due": "2026-08-14",
-   "disposed": "2026-08-11T16:10:00.798247+00:00"
+   "due": null,
+   "disposed": "2026-08-18T20:54:58.795057+00:00"
   },
   {
    "id": "R0036",
@@ -5354,11 +5354,11 @@
    "summary": "run_ci's IN-FLIGHT ATTRIBUTION SEES UNTRACKED FILES ONLY, SO A SIBLING EDITING AN EXISTING FILE STILL TURNS THE DESK-WIDE GATE RED. _inflight_py() runs git ls-files --others --exclude-standard: that is UNTRACKED files. A concurrent session MODIFYING A TRACKED FILE produces an empty in-flight list, _attribute returns every failure as committed-code, tracked_ok goes False and ci-gate-red fires naming a commit that is innocent. MEASURED 2026-08-05 20:5x: ruff reported 2 errors (E501 in libs/execution/carry_accounting.py:161 and tests/execution/test_carry_accounting.py:222, F841 in scripts/run_live_combined.py:135). All three files were ' M' -- a sibling's uncommitted money-path work. Committed HEAD linted CLEAN in a detached worktree. So the gate was red, the desk-wide alarm was firing, and there was NOTHING WRONG WITH ANY COMMIT. THIS IS THE EXACT FAILURE _attribute WAS BUILT FOR, LEFT HALF-DONE: its own docstring says those failures 'belong to NO COMMIT, the session that observes them cannot fix them, and they clear on their own', and that is equally true of a modified tracked file -- the implementation just never covered the case, and modified-tracked is the COMMON case for agents working an existing codebase. WHY IT MATTERS BEYOND THE NOISE: run_ci.py:138 records that ci-gate-red recurred 8x in 10.7d and that fixing the instance bought exactly one cycle; a red everyone has learned to dismiss is how the genuine committed failure eb74f48 sat buried. THE FIX IS NOT TO WIDEN THE EXCLUSION LIST. Adding modified-tracked paths to the --ignore/--extend-exclude set would stop checking those files ENTIRELY, hiding a real committed error inside a file someone happens to be editing -- strictly worse. The right answer is the one R0246 just proved in deploy/pull_deploy.sh: GATE A DETACHED WORKTREE AT HEAD instead of judging the shared dirty tree, so the verdict is about a COMMIT by construction and needs no attribution heuristic at all. Note the worktree must have live data/ linked in per-entry or live-state tests pass for the wrong reason (desk lesson L0068), and it must share the CI lock -- both already solved in pull_deploy.sh and directly reusable.",
    "roi_bps": 40.0,
    "raised": "2026-08-05T20:59:52.470059+00:00",
-   "status": "scheduled",
-   "reason": "run_ci in-flight attribution blind to tracked-file edits: real, recurring (ci-gate-red recurred 9x), and the fix is bounded -- extend the attribution snapshot to tracked dirty files via git status --porcelain instead of untracked-only. Near-dated as the generalisation half of this cycle's merge-union repair; the per-instance fix (4 tests green, 9e11c7d) landed today.",
-   "commit": null,
-   "due": "2026-08-17",
-   "disposed": "2026-08-11T20:52:06.167903+00:00"
+   "status": "implemented",
+   "reason": "Lint attribution sees modified-tracked files; HEAD-proof retraction; 4 tests. [re-assert]",
+   "commit": "d1352698",
+   "due": null,
+   "disposed": "2026-08-18T20:54:43.073253+00:00"
   },
   {
    "id": "R0413",
@@ -7827,6 +7827,20 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0618",
+   "source": "cycle",
+   "summary": "LAND claude/staged-probe-cap-sizing (08a6874e) WHEN THE L1.38 WINDOW OPENS: sizes authorised re-entry probes at min(share, recorded cap) at BOTH gate and send (welded-door fix, all 7 re-entry rows; tests green, mypy clean). BLOCKED by design: window STERILE (RAIL_BREACH, CASHCARRY_KILL). At re-arm: verify OPEN, merge, confirm probe tick logs '<= cap' not REFUSED. Interaction note owed with R0062/R0162.",
+   "roi_bps": null,
+   "rank": 8.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-18T20:55:03.513105+00:00",
+   "status": "scheduled",
+   "reason": "Waits on the NAMED re-arm event (KILL cleared -> window OPEN); due = re-check horizon. Branch on origin: 08a6874e.",
+   "commit": null,
+   "due": "2026-08-25",
+   "disposed": "2026-08-18T20:55:11.301908+00:00"
   }
  ]
 }
