@@ -1483,3 +1483,13 @@ origin tip by a prior session** (not in this commit: `git show HEAD --name-only`
 zero .py). Litminer freeze bars fixing `scripts/`; pushed with `--no-verify`, recorded here. The
 lint fix belongs to whichever unfrozen seat next touches the recorders (3 errors, all `--fix`able;
 L1.38 window check applies to recorder edits).
+
+**POST-CLOSE ADDENDUM (defect 7, same run):** the push itself surfaced a near-miss worth more than
+its cost — after the sibling's force-push, `git reset --soft` onto the moved tip left this session's
+INDEX holding the old lineage's whole tree; the rebuilt commit was 72 files / 18,015 deletions
+(silently reverting the sibling's rebase across 65 files, reintroducing a 288MB blob). **GitHub's
+GH001 large-file reject was the only thing that stopped it.** Repaired with `git read-tree
+<remote-tip>` + re-adding only this run's 7 paths → clean commit `b35e0b3b`, push verified.
+Lesson recorded as **L0166** (accepted-uninjected, reason on the record); `desk_lessons.jsonl`
+deliberately NOT staged by this run — it carries the sibling's uncommitted edits (R0423 discipline);
+L0166's line rides with their next commit.
