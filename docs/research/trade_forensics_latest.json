@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-17T03:38:09.592746+00:00",
+ "updated": "2026-08-18T03:53:56.805085+00:00",
  "n_closes": 4,
  "hold_buckets": {
   "<2h": {
@@ -82,8 +82,8 @@
   "note": "instrumented 2026-07-26; records written before that carry no mode, so n_legs climbs from 0 as new fills land -- a null share is thin data, not a regression. n_legs counts only legs that PLACED AN ORDER: no-order legs ['', 'already-flat'] are excluded from the denominator (R0064)"
  },
  "execution_tape": {
-  "taped": 525,
-  "tape_days": 30.69,
+  "taped": 533,
+  "tape_days": 44.65,
   "backfilled": 0,
   "buffer_days": 38.94,
   "window_margin_days": 24.94,
@@ -145,5 +145,5 @@
   "maker fill-rate 57.1% below the 60% target over 42 legs -- patient-maker opens are not converting; fees are the dominant carry cost, so this is the primary unit-economics lever"
  ],
  "origin": "recursion rule 2026-07-22: mechanization of the principal-supplied probes that found gaps #42/#43/#34",
- "written": "2026-08-17T03:38:09.594887+00:00"
+ "written": "2026-08-18T03:53:56.853376+00:00"
 }

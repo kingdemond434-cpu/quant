@@ -159,46 +159,33 @@ open / 3d, so this fired on AGE, not depth -- the queue was shallow and simply n
     generic and adds nothing to what L1.31/L1.33 already run.
 -->
 
-## Large Language Model-Driven Small-Capitalization Trading: Integrating Financial News Sentiment, Macroeconomic Indicators, and Technical Signals
-- 2026-08-12 · http://arxiv.org/abs/2608.12283v1
-- Large language models can extract richer signals from financial news than fixed sentiment lexicons, and recent work has explored feeding such signals into portfolio construction. We study an uncertainty-aware construction that feeds model-predicted risk -- decomposed into aleatoric and epistemic components -- directly into the covariance matrix of portfolio allocators, rather than treating portfolio risk as fixed or adjusting only expected returns. We evaluate the pipeline on Russell 2000 equities under three stock-selection regimes: a pure-alpha trigger that isolates abnormal stock moves not 
-
-## Calibration Bets on the Past: Post-Training Quantization for Financial Time-Series Forecasting
-- 2026-08-12 · http://arxiv.org/abs/2608.12259v1
-- Financial forecasting models are typically developed in full precision, yet production deployment often requires low-precision inference to reduce memory and computational cost. Post-training quantization (PTQ) enables such deployment without retraining. However, reliable activation quantization requires calibration: activation ranges are estimated from historical data before deployment and then remain fixed during future inference. The importance of this deployment choice for financial forecasting remains poorly understood. We present a systematic study of activation calibration for PTQ in cr
-
-## Regime-Gated Residual Mixture-of-Experts for Cross-Sectional Volatility Forecasting
-- 2026-08-12 · http://arxiv.org/abs/2608.12251v1
-- Financial volatility is regime dependent, yet incorporating regime information into neural networks can also destabilize training. This paper asks where such information should enter a neural cross-sectional volatility forecasting model. We study five-day realized-volatility forecasts for 1,027 U.S. equities using a rolling walk-forward evaluation framework in which information, model capacity, hyperparameter tuning, and random seeds are matched across architectures. We propose RG-ResMoE, a regime-gated residual mixture-of-experts architecture in which regime information is used only for exper
-
-## Does a Structural Model Add Anything to the Closing Price? Calibrated forecasting, incremental information, and match leverage in the Italian Serie A
-- 2026-08-11 · http://arxiv.org/abs/2608.11505v1
-- Studies of association-football forecasting routinely report three-way accuracy in the low fifties and present it as competitive with the betting market. Accuracy against a uniform benchmark answers the wrong question; the question worth asking is whether a model carries information a margin-free closing price has not already absorbed. We formalise that test as the fitted weight in a logarithmic opinion pool and apply it to nineteen complete Serie A seasons (7,220 matches). The answer is negative and stable. A Dixon-Coles model with tuned exponential decay attains 53.4% accuracy and a Ranked P
-
-## FlowLOB: Efficient and Controllable Limit Order Book Generation with Flow Matching
-- 2026-08-13 · http://arxiv.org/abs/2608.13096v1
-- Limit order book (LOB) simulators are most useful to practitioners when they combine realistic market dynamics, computationally efficient sampling, controllable scenario generation, and the ability to generalize beyond the instruments seen during training---properties that existing agent-based and deep generative simulators provide only partially. We present \textbf{FlowLOB}, a conditional \textbf{flow}-matching generator of \textbf{LOB} trajectories, trained on multiple Hong Kong Exchange (HKEX) symbols at three sampling frequencies ($0.1$s, $1$s, $10$s) in tick-relative representation that t
-
-## The Price of Permission: Classification Uncertainty in Constrained Capital Markets
-- 2026-08-12 · http://arxiv.org/abs/2608.12634v1
-- Shariah-compliant equity screening provides a transparent setting in which institutional rules determine who may own a stock. A binary label identifies current eligibility but not whether the feasible investor base is fragmented across standards or close to changing. We define this instability as classification uncertainty and formalize its investor-base consequence through permitted investor mass. In a 1999-2024 CRSP-Compustat panel of 13,188 securities classified under seven researcher-emulated Shariah rulebooks, screening-rule disagreement and proximity to active boundaries rank next-month 
-
-## What Makes a Peer? Valuation-Anchored Similarity in Private Markets
-- 2026-08-12 · http://arxiv.org/abs/2608.12594v1
-- As more investors contemplate private markets and contend with limited transparency, sparse disclosures, and infrequent transactions, identifying economically meaningful peer companies for comparison is a fundamental challenge for valuation, due diligence, portfolio construction, and risk management. We propose an ensemble tree-based supervised similarity learning framework that defines company similarity through the lens of market valuation rather than static feature matching or semantic descriptions. Specifically, we train a CatBoost gradient-boosted decision tree model on observed private c
-
-## AI-Driven Multiscenario Interest Rate Forecasting: A Proof of Concept for Banking Asset Management
-- 2026-08-12 · http://arxiv.org/abs/2608.12424v1
-- This study focuses on developing an AI-supported prototype for multiperspective interest rate forecasting that combines classical econometric models with modern artificial intel-ligence methods. Tested in a major European bank, the system enables more precise and flexible prediction of interest rate developments, supporting strategic decision-making in Asset-Liability Management (ALM). It integrates topic modeling, sentiment analysis, econometric forecasting, and market-based analyses within an interactive platform. Leveraging AI to analyze large volumes of financial documents and market data 
-
-## Dependence-Informed Sparse Neural Architecture for Stock Return Prediction
-- 2026-08-14 · http://arxiv.org/abs/2608.14323v1
-- Using neural networks for stock return prediction typically requires choices about depth and hidden-layer width that are difficult to connect to financial interpretation. We study an alternative: estimate dependence among firm characteristics with a Maximally Filtered Clique Forest (MFCF), then map its clique structure to a Homological Neural Network (HNN). The MFCF maximum clique size K is the only parameter controlling architectural complexity, and it has a clear graphical meaning: it bounds the number of characteristics in each maximal clique and hence the highest interaction order the netw
-
-## Photonic Quantum Computing vs. Classical Solvers in Constrained Factor Portfolio Optimization
-- 2026-08-14 · http://arxiv.org/abs/2608.14134v1
-- The authors present a rigorous empirical evaluation of three distinct optimization paradigms for institutional factor portfolio construction: an entropy-based photonic quantum annealer (Dirac-3, Quantum Computing Inc.), a commercial mixed-integer programming solver (Gurobi), and a model-free deep reinforcement learning agent (SAC). Evaluating these pipelines on the Jensen-Kelly-Pedersen 13-factor equity library across 164 months test window, we implement a full factorial penalty sweep comprising 48 hyperparameter configurations that govern return, volatility, and skewness trade-offs. Our findi
-
-## Buy the Rumor, Sell the News: When Is News Priced In?
-- 2026-08-14 · http://arxiv.org/abs/2608.14014v1
-- Two old market sayings hold that news is already priced in by the time it is published, and that the rumor is bought while the news is sold. Both place the price move associated with a piece of news before and at publication rather than after it. Whether the claims hold, for which kinds of news, and by how much are basic questions about how fast markets absorb public information. We test them on 4.57 million financial news articles covering roughly 3,000 US stocks (2023-2026). A large language model teacher, distilled into a compact classifier through active learning, assigns each article one 
+<!-- 2026-08-18: batch of 14 q-fin papers (2608.11505..2608.15667, dated 08-11..08-16) triaged and
+cleared by the owed-work session (feed-inbox-backlog defect: oldest 6.4d against the 3d bar).
+None cleared the EV gate for a solo crypto D1 carry/derivative desk. By class:
+  * WRONG ASSET CLASS, NO CRYPTO SURFACE (8): 2608.12283 LLM small-cap Russell-2000 sentiment
+    covariance; 2608.11505 Serie A closing-price opinion-pool (its beats-the-closing-price
+    discipline is already the desk's beats_baselines gate); 2608.12594 private-market peer
+    similarity; 2608.12424 bank ALM rate forecasting; 2608.14323 dependence-informed sparse NN for
+    equity returns (price-only family analog, dead here); 2608.14134 photonic-quantum vs Gurobi
+    factor allocation (the book is a 10-symbol Kelly-shrunk carry rank, no MIP-scale surface);
+    2608.14859 human-capital disruption idio vol (earnings calls, no crypto analog data);
+    2608.12634 Shariah classification uncertainty -- the MECHANISM (permission-boundary proximity
+    reranks the investor base) is real but its crypto analog IS the desk's already-carded
+    listing/delisting event ground (S42, listing_events.py) -- novelty gate: duplicate.
+  * GENERIC TOOLING / THEORY, NO EDGE (3): 2608.12259 post-training quantization calibration (no
+    neural production inference here); 2608.15667 Pontryagin adjoint constrained portfolio math;
+    2608.15640 blockchain censorship equilibria (names no counterparty forced to trade).
+  * ENGINE-IDEA CLASS, DISTILLED AS TEXT REFERENCES, NEVER QUEUED (L1.34) (2):
+    2608.12251 RG-ResMoE -- the transferable RATIO is WHERE regime info enters (expert gating
+    only, never the trunk) -- noted for volatility_signals design if a neural vol model is ever
+    built; 2608.13096 FlowLOB conditional flow-matching LOB generator (HKEX, tick-relative) --
+    reference for the L1.11 synthetic stress-lab meta-layer; desk records its own L2, binding
+    constraint is elsewhere.
+  * TIMING NOTE (1): 2608.14014 buy-rumor-sell-news on 4.57M US articles -- pre-publication drift
+    magnitudes are the useful prior for the desk's LISTING-announcement event windows (the
+    pre-registered windows in listing_events.py are CONSTANTS; this is calibration context only,
+    not a trigger to sweep windows, which would be data-mining our own collector).
+WEAK-SIGNAL CONVERGENCE CHECK (S23, this cycle): no >=2-independent-path convergence in this
+batch; the two neural-methods papers share a family (not independent), and the two event-timing
+items converge only on ground already carded (listing events) -- convergence with an ALREADY-CARDED
+axis buys nothing new. No promotion. -->

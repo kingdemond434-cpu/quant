@@ -401,3 +401,11 @@ direction / mechanism candidate: a venue-designed asymmetric carry (short struct
 honest qualifications: (1) **This desk does not trade JP venues and no JP venue axis is proposed.** The two JPY-premium families are already dead here — `jp regional premium` (bitbank IC −0.06, noise) and the wider cross-venue fiat-premium family killed 5× with kimchi, its lone survivor, itself refuted 2026-07-30 at full depth. **No L1.16a enabling change exists, so the premium itself is NOT re-opened.** (2) The +2% figure is a practitioner's eyeball estimate with no series behind it. (3) Volumes quoted are from venues the same author says report untrustworthy volume (see universe-map source 102) — **his own credibility caveat applies to his own table.**
 independence / DERIVES-FROM: **NONE (checked)** — neither edition cites anything; first-hand operator observation. Pre-2023 for edition one, no LLM-consultation marker in either (OP-072 checked). Genuine independent convergence with the desk's clamp census on the **constant**, not on the premium.
 promotion-check: **not a tradeable signal and not proposed as one.** Its value is (i) the funding-constant corroboration above, which strengthens an existing measured finding at zero cost, and (ii) a **structural prior worth carrying**: when a venue replaces a divergence *penalty* with a *carry*, the divergence stops being bounded by rule and starts being priced — so the venue's own mechanism change is a regime boundary for any basis series that spans it. Decisive test if ever wanted, on free public data: Rakuten Wallet vs GMO/Coincheck spot, daily, 2023-01→, testing whether the dislocation is (a) real, (b) dated to ~2023-11, and (c) still open. **Nobody should run it until a JP venue is tradeable here** — it is logged so the observation is not lost, per L1.28a.
+
+---
+_Convergence check 2026-08-18 (owed-work session, with the 14-entry feed-inbox drain): no new
+>=2-independent-path convergence. The batch's two neural-methods papers share one family (not
+independent paths); its two event-timing items (2608.14014 pre-publication drift, 2608.12634
+permission-boundary reranking) converge only on the ALREADY-CARDED listing/delisting event ground
+(S42, listing_events.py) -- convergence with a carded axis promotes nothing. Standing WS rows
+unchanged; no observations added to any WS-nnn this cycle._
