@@ -116,7 +116,7 @@
    "retired_at": "2026-08-16T00:24:18.154216+00:00",
    "decided_by": "cycle",
    "requeue_as": "UNTESTED",
-   "verdict": "since 2026-08-14T10:15:33.043328+00:00",
+   "verdict": "SOURCE-GONE -> requeue UNTESTED",
    "evidence": "SOURCE-GONE",
    "observations": null,
    "why": "conv_moat_screen_results_horizon_days0_000694444_current_z_3_616_decontam_passed_true_ic_0_044: evidence SOURCE-GONE -- the exact pre-registered source identity is absent, so this clock cannot accrue another observation. Retire the clock as UNTESTED and preserve its history; never reinterpret the missing source as a zero return",
@@ -124,14 +124,15 @@
    "seats_before": 12,
    "seats_after": 11,
    "multiplicity_floor": 12,
-   "loosens_bars": false
+   "loosens_bars": false,
+   "verdict_repaired": "2026-08-18: original verdict was a bare timestamp (writer bug, run_clock_retirement_sweep); mechanism restored verbatim from this row's own why (F0011/R0049)"
   },
   {
    "clock": "full_sweep_cross_asset_lead_1h_all_decay_breakout_decay_momentum",
    "retired_at": "2026-08-16T00:24:18.154704+00:00",
    "decided_by": "cycle",
    "requeue_as": "UNTESTED",
-   "verdict": "since 2026-08-14T10:15:33.043954+00:00",
+   "verdict": "SOURCE-GONE -> requeue UNTESTED",
    "evidence": "SOURCE-GONE",
    "observations": null,
    "why": "full_sweep_cross_asset_lead_1h_all_decay_breakout_decay_momentum: evidence SOURCE-GONE -- the exact pre-registered source identity is absent, so this clock cannot accrue another observation. Retire the clock as UNTESTED and preserve its history; never reinterpret the missing source as a zero return",
@@ -139,14 +140,15 @@
    "seats_before": 12,
    "seats_after": 11,
    "multiplicity_floor": 12,
-   "loosens_bars": false
+   "loosens_bars": false,
+   "verdict_repaired": "2026-08-18: original verdict was a bare timestamp (writer bug, run_clock_retirement_sweep); mechanism restored verbatim from this row's own why (F0011/R0049)"
   },
   {
    "clock": "conv_moat_screen_results_horizon_days0_000694444_current_z_1_225_ic_0_0932_mechanism_imbalance",
    "retired_at": "2026-08-17T00:27:04.120912+00:00",
    "decided_by": "cycle",
    "requeue_as": "UNTESTED",
-   "verdict": "since 2026-08-16T00:26:07.750849+00:00",
+   "verdict": "SOURCE-GONE -> requeue UNTESTED",
    "evidence": "SOURCE-GONE",
    "observations": null,
    "why": "conv_moat_screen_results_horizon_days0_000694444_current_z_1_225_ic_0_0932_mechanism_imbalance: evidence SOURCE-GONE -- the exact pre-registered source identity is absent, so this clock cannot accrue another observation. Retire the clock as UNTESTED and preserve its history; never reinterpret the missing source as a zero return",
@@ -154,7 +156,8 @@
    "seats_before": 15,
    "seats_after": 14,
    "multiplicity_floor": 15,
-   "loosens_bars": false
+   "loosens_bars": false,
+   "verdict_repaired": "2026-08-18: original verdict was a bare timestamp (writer bug, run_clock_retirement_sweep); mechanism restored verbatim from this row's own why (F0011/R0049)"
   }
  ],
  "note": "The ONLY way a forward clock leaves the Holm cohort. Every row is an explicit, attributed decision taken against a LIVE sweep proposal, with that proposal's evidence copied verbatim. Retiring a clock SHRINKS m and LOOSENS every remaining bar -- the phantom-edge direction -- so this file is tracked in git rather than runtime state, and no organ, cycle or test may append to it."

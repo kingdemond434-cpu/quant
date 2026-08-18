@@ -416,6 +416,19 @@ def derive_slots() -> dict[str, Any]:
     # A MALFORMED OR ABSENT LEDGER RETIRES NOTHING: the cohort stays larger and every bar stays
     # tighter, so the failure mode is seats that will not free rather than bars that quietly
     # loosened.
+    #
+    # THE DISTINCTION THAT LICENSES LEAVING AT ALL (F0011/R0049, institutional_knowledge
+    # 2026-07-30). "slot_registry drops retired clocks" and "attrition must never lower the bar"
+    # (ADAPTIVE VALIDATION WINDOWS v2) are both right, about different things:
+    # REFUTED-AS-INVALID-MEASUREMENT (artifact, lookahead, DEGENERATE instrument, SOURCE-GONE --
+    # the trial was VOID) may leave, because an invalid trial is not a trial; FAILED-ON-ITS-MERITS
+    # (legitimately accrued and lost) must keep counting, or the desk can kill losers to make
+    # winners promotable -- garden-of-forking-paths with extra steps. The reconciliation is
+    # mechanical, not procedural: `multiplicity_high_water` can NEVER fall, so even a
+    # merits-failure retirement frees only the SEAT while every surviving bar keeps pricing the
+    # trial it lost. Each ledger row must therefore carry its MECHANISM (verdict + why) so the
+    # two classes stay distinguishable forever -- enforced by max_audit's
+    # clock-retirement-mechanism check; a timestamp is a date, not a mechanism.
     _retired_names = retired_names(_ROOT)
     retired = [s for s in slots if str(s.get("name")) in _retired_names]
     slots = [s for s in slots if str(s.get("name")) not in _retired_names]

@@ -75,12 +75,19 @@ def sweep(slots: list[dict[str, Any]]) -> dict[str, Any]:
         state, why = classify_slot(s)
         name = str(s.get("name", "?"))
         if state == RECLAIMABLE:
+            verdict = s.get("verdict") or s.get("state")
+            if not verdict or str(verdict).startswith("since "):
+                # A timestamp is a date, not a mechanism (F0011/R0049): derivative slots carry
+                # "since <ts>" as their state, and three ledger rows recorded that as their
+                # VERDICT -- a retirement decision no audit could classify. Compose the verdict
+                # from the evidence class instead, matching what the row's own `why` says.
+                verdict = f"{s.get('evidence') or 'UNCLASSIFIED'} -> requeue {_requeue_for(s)}"
             proposals.append({
                 "clock": name,
                 "kind": s.get("kind"),
                 "evidence": s.get("evidence"),
                 "observations": s.get("days"),
-                "verdict": s.get("verdict") or s.get("state"),
+                "verdict": verdict,
                 "why": why,
                 # The mechanism of death, which decides how the hypothesis is re-filed. L1.17 turns
                 # on this: a refutation re-queued as untested buys the same dead axis again, and an

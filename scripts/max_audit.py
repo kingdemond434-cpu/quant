@@ -8388,7 +8388,32 @@ def check_survivor_pipeline(defects) -> None:
                             "retire by a ledgered decision or re-spawn, never leave standing."))
 
 
-CHECKS += [("survivor-pipeline", check_survivor_pipeline)]
+def check_clock_retirement_mechanism(defects) -> None:
+    """Every clock that LEFT the Holm cohort must carry a classifiable mechanism (F0011/R0049).
+
+    The distinction that licenses leaving at all: REFUTED-AS-INVALID-MEASUREMENT (the trial was
+    void) may go; FAILED-ON-ITS-MERITS keeps counting via the high-water floor. Both halves rest
+    on the ledger row saying WHICH -- a row whose verdict is a bare timestamp ("since <ts>", the
+    writer bug three derivative rows shipped with) is a retirement decision no audit can
+    classify, which is the exact uncitable-decision defect the tracked ledger was built to end.
+    """
+    rows = _j(ROOT / "docs/research/CLOCK_RETIREMENTS.json", {}).get("retirements", [])
+    bad = [str(r.get("clock", "?")) for r in rows
+           if not str(r.get("why", "")).strip()
+           or not str(r.get("verdict", "")).strip()
+           or str(r.get("verdict", "")).startswith("since ")]
+    if bad:
+        defects.append(("clock-retirement-mechanism-missing",
+                        f"{len(bad)} retirement row(s) in docs/research/CLOCK_RETIREMENTS.json "
+                        f"carry no classifiable mechanism ({', '.join(sorted(bad)[:3])}...): a "
+                        "timestamp is a date, not a verdict. Without the mechanism, "
+                        "REFUTED-AS-INVALID-MEASUREMENT and FAILED-ON-ITS-MERITS are "
+                        "indistinguishable, and the attrition-never-lowers-the-bar law cannot be "
+                        "audited. Repair the row from its own why; fix the writer."))
+
+
+CHECKS += [("survivor-pipeline", check_survivor_pipeline),
+           ("clock-retirement-mechanism", check_clock_retirement_mechanism)]
 
 
 def check_paywalls_registered(defects) -> None:

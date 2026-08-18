@@ -670,6 +670,10 @@ _FENCE_OWNERS: dict[str, str] = {
     # be run at all, the other proves the CIO review actually ran rather than being a directive
     # that lives in prose. That is L1.49's exact shape.
     "check_scheduled_scripts": "L1.49",
+    # F0011/R0049: a clock may leave the Holm cohort only with a recorded, classifiable
+    # mechanism -- the REFUTED-vs-merits distinction is L1.17's structured-knowledge duty
+    # applied to the multiplicity denominator.
+    "check_clock_retirement_mechanism": "L1.17",
     "check_meta_research": "L1.49",
     # L1.28a: the §35 exclusion for self-disposing dig logs is a CLAIM ABOUT A DOCUMENT, and an
     # unchecked claim is how absence resolves to a clean verdict -- the next session adds an item,

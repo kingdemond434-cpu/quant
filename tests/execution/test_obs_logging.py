@@ -74,7 +74,10 @@ def test_stage_transitions_are_logged(caplog: pytest.LogCaptureFixture,
                                       tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from libs.execution import staging
     monkeypatch.setattr(staging, "_STATE", tmp_path / "stage_state.json")
-    with caplog.at_level(logging.INFO):
+    # F0013: pin the logger. A bare at_level() only raises the ROOT threshold; whether the
+    # record ever reaches caplog then depends on what levels/propagation earlier tests left on
+    # the module logger -- order-dependent flakiness (passed 15/15 isolated, failed in full CI).
+    with caplog.at_level(logging.INFO, logger="libs.execution.staging"):
         ok, _ = staging.promote({})            # empty evidence -> gate not met
         assert ok is False
         assert any("promote REFUSED" in r.message for r in caplog.records)
@@ -82,7 +85,7 @@ def test_stage_transitions_are_logged(caplog: pytest.LogCaptureFixture,
 
 def test_risk_gate_rejection_is_logged(caplog: pytest.LogCaptureFixture) -> None:
     from libs.risk.gate import _reject
-    with caplog.at_level(logging.WARNING):
+    with caplog.at_level(logging.WARNING, logger="libs.risk.gate"):
         d = _reject("fail-closed: invalid equity", [])
         assert d.approved is False
         assert any("risk gate REJECTED" in r.message for r in caplog.records)
@@ -93,6 +96,7 @@ def test_unarmed_signed_call_is_logged_and_still_raises(
     """Logging must ADD a trail without changing behaviour: the refusal still raises."""
     from libs.execution import binance_live
     monkeypatch.setattr(binance_live, "is_armed", lambda: (False, "keys_present=False"))
-    with caplog.at_level(logging.WARNING), pytest.raises(RuntimeError, match="not armed"):
+    with caplog.at_level(logging.WARNING, logger="libs.execution.binance_live"), \
+            pytest.raises(RuntimeError, match="not armed"):
         binance_live._signed("/fapi/v1/order", {"symbol": "BTCUSDT"}, method="POST")
     assert any("REFUSED" in r.message for r in caplog.records)
