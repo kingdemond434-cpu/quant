@@ -2373,3 +2373,27 @@ which **3 names are rebrands with a continuing price series** (MATIC→POL, RNDR
 deaths. **A rename and a delisting are opposite events that look identical in a symbol-set diff**, and
 the desk currently has no artifact that distinguishes them. Cost to build: a directory of old repos and
 a diff. No ingest built (research freeze).
+
+## 2026-08-18 — free-data miner: two routed finds from the CN corpus dig (card 23 conversion)
+
+**1. ENGINE REFERENCE (L1.34 class 4, mine-as-text, never install):**
+`godzilla-foundation/godzilla-community` — **Apache-2.0**, C++ execution core + Python strategy
+layer purpose-built for **crypto funding-rate arbitrage and market-making**, claiming 121–135µs
+median tick-to-trade; 370★/64 forks, active. Surfaced via `thuquant/awesome-quant` (MIT). Two
+readable payloads for the desk: (a) its **exchange connectors** enumerate the endpoint surface a
+production funding-arb system considers necessary — a free cross-check of the desk's own collector
+coverage for the ONE family the desk actually runs live; (b) its md/strategy/td separation and
+inventory-hedge loop are a reference architecture to diff the executor's design against, on paper.
+NOT proposed for install; supply-chain rule stands. Universe map entry 106.
+
+**2. METHOD CORROBORATION for L1.46/clock-provenance, from an independent practitioner (2020-11,
+数量技术宅):** spread-series construction pitfalls named exactly as the desk's own law names them —
+(a) two legs with IDENTICAL exchange timestamps still ARRIVE sequentially (his example: same-slice
+CFFEX ticks pushed in contract order), (b) per-leg cadence mismatch (IC 2 ticks/s vs 500ETF 1
+tick/3s) makes naive subtraction fiction, (c) the fix is choosing WHICH LEG DRIVES the merged
+series (`pd.merge` how=left/right/outer ↔ liquidity-leading leg drives; identical merge logic in
+backtest and live or the two disagree by construction). Value: when the desk's cross-venue
+lead-lag work (R0117 aliasing concern) is next touched, this is a second, independent naming of
+the same instrument-artifact class — the failure is KNOWN to practitioners, which raises the prior
+that naive cross-venue spread series in mined backtests are contaminated. No code change proposed
+here (research freeze); the note is the deliverable.

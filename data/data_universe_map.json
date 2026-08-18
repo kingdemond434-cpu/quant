@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-12",
+ "updated": "2026-08-18",
  "posture": "FREE-FIRST. No paid data until the Discovery Bottleneck Detector proves a residual gap is the binding constraint on alpha discovery. ~$1.5k paid basket replaced at $0 + cents of S3 egress.",
  "grading_legend": "verified-clean = URL opened this session + mechanism/format directly confirmed | needs-monitoring = corroborated by >=1 independent source or opened in a prior session but not diffed vs ground truth this session | UNVERIFIED = found this session, not opened/confirmed first-party, DO NOT feed a live signal | destroyed-at-source = no free or paid path reconstructs this component",
  "sources": {
@@ -1140,7 +1140,50 @@
    "status": "MEASURED this run; no ingest built (research freeze). Candidate axis, not yet collected.",
    "date": "2026-08-13",
    "found_by": "BR frontier miner s3"
-  }
+  },
+  "104-cn-practitioner-corpus-sljsz": [
+   {
+    "name": "cnblogs.com/sljsz (数量技术宅) practitioner archive",
+    "url": "https://www.cnblogs.com/sljsz",
+    "type": "CN practitioner corpus: 81 posts 2020-09-18 -> 2026-05-11, fully enumerated (9 pages); crypto carry/funding/HFT/market-making + A-share/commodity content",
+    "cost": "free",
+    "auth": "none",
+    "license": "public blog, robots.txt 'Allow: /' (verified 2026-08-11 + content read 2026-08-18); code offered only via author WeChat -> NOT adopted",
+    "status": "mined",
+    "grade": "verified-clean (content read first-hand this run)",
+    "update_cadence": "sporadic (~1 post/quarter since 2024)",
+    "failure_modes": "author's full code is WeChat-gated (sljsz01) so posts carry mechanism only; zero comment layer on sampled posts (no reply-chain to mine); listicle posts are generic filler -- mechanism density varies wildly by post",
+    "yield": "4 concrete extractions 2026-08-18: (1) CN retail funding-capture template dated 2021-05 (spot-long/perp-short, dual funding+spread gate, ask5/bid5 pricing, chase logic) -- crowding-timeline datum for the desk's live carry family; (2) dated Huobi quarterly-basis marks 2021-02-15 (BTC cq 3.39%/62d ~20%ann, nq 5.68%/153d ~13.5%ann) + 2024-11-30 (nq +5%/4mo ~15%ann) -- retail-visible basis history across two bull eras; (3) OKCoin 2016 zero-fee HFT bot full mechanism + named death cause (fees+margin removal+2017 regulation) -- graveyard entry with explicit re-entry condition = any zero-fee promo venue; (4) independent decay claim: perp-premium timing signal (jcrate) decayed post-2023 on BTC/ETH/SOL per author's own test (2025-06 post)",
+    "note": "SECTION-EXHAUSTED for enumeration 2026-08-18 (all 9 pages); 6 posts deep-read; remaining ~74 posts are titled+dated, deep-read on demand. One URL 404s both variants: p/17670256 (5-public-APIs post)"
+   }
+  ],
+  "105-cn-quant67-tufalian-gang": [
+   {
+    "name": "quant67.com (claimed 土法炼钢兴趣小组 quant notes)",
+    "url": "https://quant67.com/",
+    "type": "REFUTED-AS-CARDED: live site is an infrastructure-engineering blog (Linux/eBPF/K8s/LLM infra, 1,756 articles, 45+ categories, ZERO quant/crypto content)",
+    "cost": "n/a",
+    "status": "content-refuted",
+    "grade": "destroyed-at-source (as a quant corpus)",
+    "failure_modes": "card 23's claim ('crypto strategy notes incl. funding-rate arbitrage') is not observable: root fetch 2026-08-18 = infra blog; /post/ 403; Wayback availability API returns ZERO snapshots ever -- the claim cannot be verified even historically. 08-11 robots-only verification passed a site whose CONTENT never matched its card: reachability-verified != content-verified",
+    "yield": "negative result, recorded. Replacement hunt (s38): the real CN crypto-practitioner corpus need is served by 104-cn-practitioner-corpus-sljsz + FMZ 文库 (assessed 2026-08-01, prospector) + cn_oss_extraction batch; no further replacement owed for a source that never demonstrably existed"
+   }
+  ],
+  "106-godzilla-crypto-trading-infra": [
+   {
+    "name": "godzilla-foundation/godzilla-community (godzilla.dev)",
+    "url": "https://github.com/godzilla-foundation/godzilla-community",
+    "type": "AI-quant STRUCTURE (L1.34 class 4): open C++ core + Python strategy layer for crypto funding-rate arbitrage and MM; claims 121-135us median tick-to-trade; 370 stars/64 forks",
+    "cost": "free",
+    "license": "Apache-2.0 (read from repo page 2026-08-18) -- commercial use permitted",
+    "status": "catalogued",
+    "grade": "verified-reachable; contents UNVERIFIED (connectors/exchange list not yet read)",
+    "update_cadence": "active (45 commits main)",
+    "failure_modes": "marketing-adjacent docs: '1,000+ pairs' and 'top-10 derivatives exchange' claims unverified; exchange connector list not enumerated on the pages read",
+    "yield": "ENGINE reference only -- routed to improvement_inbox as text per the supply-chain rule (never installed). Secondary value for THIS seat: its connector code, when read, enumerates endpoint patterns for funding/MM data surfaces",
+    "note": "surfaced by thuquant/awesome-quant (MIT) index dig 2026-08-18; the only crypto-specific entry in that index's data/platform sections not already known to the desk (akshare/FMZ/BotVS/tqsdk all previously assessed)"
+   }
+  ]
  },
  "residual_gaps_unpurchasable": [
   "tick-level Binance L2 diffs BEFORE the recorder start date (destroyed at source; recorder solves forward)",

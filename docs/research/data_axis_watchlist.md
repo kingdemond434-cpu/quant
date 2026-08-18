@@ -47,7 +47,22 @@ No prior data-axis watchlist exists (this is this mission's first run). Nothing 
 
 ## SOURCE CARDS (graded; full genealogy in `data/data_universe_map.json`)
 
-### 1. Upbit Historical Market Data portal — grade: needs-legitimacy-review (data itself verified-clean; commercial-use licence is the open question, re-graded 2026-07-25) [§33: deferred(2026-08-15) tier:3]
+### 1. Upbit Historical Market Data portal — grade: needs-legitimacy-review (data itself verified-clean; commercial-use licence is the open question, re-graded 2026-07-25) [§33: deferred(2026-09-15) tier:3]
+> **§33 RE-DEFERRAL 2026-08-18 (free-data miner) — AND THE LAPSE IS THE HEADLINE: GAP_REGISTER #67's
+> "RULE BY 2026-08-15" HAS PASSED WITH NO RULING.** Checked this run: `data/principal_replies.jsonl`
+> carries no Upbit answer (latest entry is an unrelated 08-18 deadman page); row #67 is still `open`.
+> This is now a principal-owed decision **one governance window overdue**. Everything an agent can do
+> is DONE — licence read three independent times (07-25, 08-11, and the first-party notice), the
+> question is compressed to one line ("research-only" or "full use"), and a written-clarification
+> route exists (`historical_data@upbit.com`). Re-deferred to the NEXT monthly governance window
+> (2026-09-15), the only honest date. **Cost of the lapse remains zero by the card's own analysis
+> (static archive back to 2017, nothing decays), so this is not paged as urgent — but a second
+> lapsed window on 09-15 should be, because at that point "no ruling" is functioning as a silent
+> EXCLUDE that nobody decided (L1.51: an unpriced clamp).** The CM half of #67 was answered 07-26
+> (recommended EXCLUDE); the Upbit half is the ONLY remaining blocker on the deepest free KR-venue
+> archive known to the desk.
+>
+> _Prior deferral block below (unchanged, still the operative analysis):_
 > **§33 DISPOSITION 2026-08-15 — DATED DEFERRAL ON A HUMAN RULING. Unlike bitFlyer, this licence
 > HAS been read; the blocker is not access, it is AUTHORITY. An agent may not self-approve it.**
 > - **THE QUESTION, STATED SO THE PRINCIPAL CAN ANSWER IT IN ONE LINE:** Upbit's usage guide
@@ -1273,7 +1288,53 @@ mechanism prior is CONFIRMED and the prize is MEASURED. `[§33: screened -> data
   `_VECTOR_COOLDOWN_D` days. A fabricated exploration is worse than no exploration, because it
   ALSO blocks the real one.
 
-### 23. 中文 practitioner corpus (thuquant index / 数量技术宅 / 土法炼钢) — grade: verified-reachable (all three, 2026-08-11); corpus dig owed to the CN seat [§33: deferred(2026-08-18) tier:2]
+### 23. 中文 practitioner corpus (thuquant index / 数量技术宅 / 土法炼钢) — grade: MINED 2026-08-18 (sljsz corpus + thuquant index); quant67.com CONTENT-REFUTED [§33: screened -> data/data_universe_map.json]
+> **§33 CONVERTED 2026-08-18 (free-data miner, standing daily run) — the deferral date arrived and
+> this seat dug it rather than rolling the date. Full record: universe map entries 104/105/106 +
+> research_memory rm-20260818T151218-{d3916c,f21b8d,e38daf}. What the dig established:**
+> 1. **`cnblogs.com/sljsz` (数量技术宅): ENUMERATION SECTION-EXHAUSTED** — all 9 pages, 81 posts
+>    2020-09-18 → 2026-05-11, six deep-read. The card's "graveyard ore" framing was HALF right:
+>    the two strategy-decay posts (2022-09 + 2024-06) are GENERIC listicles (8 textbook causes, one
+>    toy example — low mechanism density; the 2022 post's only concrete data: SSE index strategy
+>    1131× to 2018 then 1.3%/yr for a decade; turtle-decay reference). The real ore was elsewhere:
+>    - **CN retail funding-capture template, dated 2021-05** (spot-long/perp-short, dual
+>      funding+spread entry gate, ask5/bid5 conservative pricing, chase-order logic, batch
+>      execution; failure modes named: unfilled legs, small-cap impact, CN-IP blocks). A dated
+>      crowding-timeline datum for the desk's ONLY live family.
+>    - **Dated retail-visible quarterly-basis marks:** Huobi 2021-02-15: BTC current-q 3.39%/62d
+>      (~20% ann), next-q 5.68%/153d (~13.5% ann); 2024-11-30: next-q +5%/~4mo (~15% ann), 489
+>      contracts/0.519 BTC worked example. Same ~15% retail carry across two bull eras, 3.75y apart.
+>      Era risk named by the author himself: OTC fund freezes + USDT/CNY exposure.
+>    - **OKCoin 2016 zero-fee HFT bot, mechanism-complete graveyard entry** (2021-01 post): burst
+>      momentum over 5-6 candle extremes + 50/50 inventory balancing (price-neutral), golden-ratio
+>      0.618/0.382 book-weighted pricing, 3-level reference (0.35/0.10/0.05), ±2% rebalance band,
+>      6k→250k CNY in 7mo. **Death cause dated and named: fees introduced + margin removed + 2017
+>      regulation. Re-entry condition (L1.16a): any zero-fee promo venue resurrects the class** —
+>      fee-schedule watch (universe map 102) is the tripwire.
+>    - **Independent decay claim on perp-premium timing:** author's own 2025-06 test (jcrate =
+>      perp/spot − 1, BTC/ETH/SOL, daily+30m, 2020-2025) — single-coin REVERSED vs theory,
+>      multi-coin lead **decayed post-2023**. Free out-of-sample corroboration for the desk's own
+>      funding/basis-timing screens; secondary evidence, not desk-measured.
+>    - **Method corroboration for L1.46:** the 2020-11 spread-calculation post independently names
+>      same-timestamp ticks arriving SEQUENTIALLY, per-leg frequency mismatch (IC 2 ticks/s vs
+>      500ETF 1/3s), and the merge-direction taxonomy (which leg DRIVES the spread series) —
+>      routed to improvement_inbox.
+> 2. **`quant67.com` is CONTENT-REFUTED as carded.** Live site 2026-08-18 = infrastructure blog
+>    (Linux/eBPF/K8s/LLM, 1,756 articles, zero quant); `/post/` 403; **Wayback availability API:
+>    ZERO snapshots ever** — the "crypto strategy notes" claim is unverifiable even historically.
+>    The 08-11 robots-only pass verified REACHABILITY of a site whose CONTENT never matched the
+>    card. Lesson logged: reachability-verified ≠ content-verified. §38 replacement: the corpus
+>    need is served by sljsz (above) + FMZ 文库 (assessed 2026-08-01) + cn_oss batch; no further
+>    hunt owed for a source that never demonstrably existed at this URL.
+> 3. **`thuquant/awesome-quant` (MIT) index mined for its data/platform sections:** akshare, FMZ/
+>    BotVS, tqsdk, pytdx, zvt all previously known/assessed. **One NEW crypto-specific find:
+>    `godzilla-foundation/godzilla-community` (Apache-2.0, 370★)** — C++/Python funding-arb + MM
+>    infrastructure, 121-135µs claimed tick-to-trade → universe map 106, ENGINE-idea routed to
+>    improvement_inbox (mine-as-text, never installed). The index's remaining sections are A-share
+>    tooling breadth, not depth ground.
+> **WeChat/Zhihu §13 boundary (GAP #80) untouched, exactly as the 08-11 note required: nothing
+> gated was fetched; sljsz's WeChat-only code was NOT pursued — mechanism captured from the public
+> posts, code left where it is.**
 > **§33 VERIFICATION DONE 2026-08-11 (brain-hunter seat), dig deferred to the CN miner seat:**
 > (1) `cnblogs.com/robots.txt` — `User-Agent: * / Allow: /`, no agent disallowed; (2)
 > `quant67.com/robots.txt` — `User-agent: * / Allow: /` + sitemap, fully permissive; (3)
@@ -2804,11 +2865,16 @@ verification, not cataloguing — a source earns a card by serving a named need)
    seat has not converted it; a dated deferral that merely rolls forward on its due date is the
    snooze §33 forbids. This seat digs it NOW: cnblogs.com/sljsz (数量技术宅) strategy-decay posts
    as graveyard ore first, quant67.com (土法炼钢) crypto notes second, thuquant/awesome-quant as
-   index-for-breadth third. STATUS: **in progress.**
+   index-for-breadth third. STATUS: **CONVERTED [§33: screened -> data/data_universe_map.json]** —
+   sljsz enumeration section-exhausted (81 posts, 6 deep-read, 4 dated extractions); quant67.com
+   CONTENT-REFUTED (live = infra blog, Wayback empty); thuquant mined → 1 new find (godzilla,
+   Apache-2.0). 3 research_memory rows, 3 universe-map entries (104/105/106), 2 inbox routes.
 2. **[B — §33 T3] Upbit portal legitimacy (card 1).** Principal-reply channel checked this run:
    NO ruling (only an unrelated deadman page 08-18 01:43Z). Row #67 rule-by 2026-08-15 has LAPSED.
    Disposition: re-defer to the next governance window WITH the lapse recorded loudly.
-   STATUS: **in progress.**
+   STATUS: **CONVERTED [§33: deferred(2026-09-15)]** — lapse recorded on the card; a SECOND lapsed
+   window on 09-15 escalates to a page, because at that point "no ruling" is a silent EXCLUDE
+   nobody decided (L1.51 unpriced clamp).
 3. **[C — named next-ground item 1, scoped] S3-pagination re-verification of one existing depth
    claim (Bybit bulk archive), from the 08-12 note's own top item.** STATUS: **taken if budget
    allows after A+B; otherwise named for next run.**
