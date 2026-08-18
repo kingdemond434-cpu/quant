@@ -71,6 +71,32 @@ POSITIVE = {
     "(因子|多因子|阿尔法|alpha挖掘|截面)": 3.0,
     "(高频|微观结构|订单流|做市|套利)": 2.0,
     "(量化|程序化交易|算法交易)": 1.0,
+    # --- MT5 / FX / metals / index universe (2026-08-18 mandate). The desk's market is now the
+    # full MT5/Fusion universe -- FX, gold, metals, indices, energy, share CFDs -- not crypto. The
+    # scorer stays METHODOLOGY-first (a gold walk-forward video already surfaces on the validation
+    # terms above), so asset-name-alone is deliberately weak: 1.0 is below the 3.0 floor, so it
+    # only LIFTS content that also carries the methodology vocabulary -- a gold study of
+    # out-of-sample decay, never a gold hype reel. The MECHANISM terms score 2.0 because COT
+    # positioning, carry/swap and session structure ARE the MT5-native economic signals the crypto
+    # vocabulary (funding, on-chain, liquidations) never named, and an honest piece titled only
+    # "COT positioning in gold" would otherwise score zero and never surface.
+    r"\b(gold|xau ?usd|xau|silver|xag|forex|\bfx\b|dxy|dollar index|eur ?usd|gbp ?usd|"
+    r"usd ?jpy|aud ?usd|usd ?cad|us500|nas100|us30|spx500|ger40|wti|crude oil|brent|"
+    r"natural gas)\b": 1.0,
+    r"\b(commitment of traders|\bcot\b|net positioning|positioning report|carry trade|"
+    r"interest[- ]rate differential|swap rate|rollover|roll yield|forward points)\b": 2.0,
+    r"\b(order block|fair value gap|\bfvg\b|liquidity sweep|market structure|"
+    r"break of structure|\bsmc\b|\bict\b|london (open|session)|new york session|"
+    r"asian session)\b": 1.0,
+    r"\b(nfp|non[- ]?farm|fomc|\bcpi\b|central bank|rate decision|economic calendar|"
+    r"metatrader|mt[45]\b|expert advisor|\bmql5\b)\b": 1.0,
+    # --- Chinese, MT5 universe (same rationale; NO \b for CJK). Disambiguated to avoid the
+    # homograph traps that bit the factor terms: 基差 (basis) / 利差 (differential) / 掉期 (swap)
+    # are unambiguous trading compounds.
+    "(黄金|外汇|贵金属|白银|股指|原油|美元指数|欧元美元|美元日元)": 1.0,
+    "(持仓报告|cftc持仓|净持仓|套息|利差|隔夜利息|掉期|基差 收敛|远期点)": 2.0,
+    "(订单块|流动性 扫|公允价值缺口|市场结构|伦敦时段|纽约时段|亚洲时段)": 1.0,
+    "(智能交易|mt5|mt4|ea交易|非农|美联储|经济数据 日历)": 1.0,
     # --- Academic phrasing. Abstracts state what was measured and how, which is the category
     # with this desk's best conversion record -- but they say it in different words than a video
     # title does, so without these a paper feed ranks below a YouTube tutorial.
