@@ -23,8 +23,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
-
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
@@ -182,20 +180,30 @@ def test_unmeasured_never_reads_as_ok() -> None:
 # grep for `scanned=` cannot distinguish from a fence that measured everything.
 # --------------------------------------------------------------------------------------------
 
-@pytest.fixture
-def _isolated_registry(tmp_path, monkeypatch):
-    """These tests call a real fence's main() under a SYNTHETIC scope, so their `scanned=` counts
-    are fiction. `fence_exit` records every declaration to data/denominator_contracts.jsonl and
-    takes no root, so without this they would append rows under the fences' REAL names -- e.g.
-    "check_mypy_ratchet.py scanned 1 file" -- and check_denominators reads the LAST row per
-    fence. The suite would then be publishing the desk's coverage evidence, which is the same
-    defect as a test writing to the live calibration store.
+# The per-test `_isolated_registry` fixture that used to sit here became the suite-wide autouse
+# `_denominator_registry_in_tmp` in tests/conftest.py (R0474): these tests drive real fence
+# mains under SYNTHETIC scopes, so their `scanned=` counts are fiction, and check_denominators
+# reads the LAST row per fence -- but so does every OTHER test that touches fence_exit, which is
+# why the redirect had to stop being opt-in.
+
+
+def test_suite_never_writes_the_live_denominator_registry(tmp_path) -> None:
+    """R0474, pinned: inside the suite, the registry's default root IS this test's tmp_path.
+
+    Asserted on `_root()` rather than on the live file's size because cron fences legitimately
+    append to the live registry while the suite runs -- a size assertion would flake on every
+    real fence firing.
     """
-    monkeypatch.setattr("libs.ops.denominator._root", lambda: tmp_path)
+    import libs.ops.denominator as den
+
+    assert den._root() == tmp_path
+    fence_exit("OK", {"OK"}, scanned=3, of="t", fence="t")
+    row = den.load(tmp_path).get("t")
+    assert row is not None and row["n_scanned"] == 3, "the redirected registry took the row"
 
 
 def test_a_fully_dark_utilisation_board_does_not_exit_zero(
-        tmp_path, monkeypatch, _isolated_registry) -> None:
+        tmp_path, monkeypatch) -> None:
     """Every ceiling UNMEASURED must never render as "no ceiling is unexplainedly idle".
 
     `Ceiling.status` returns UNMEASURED before any idle branch, so an unmeasured ceiling cannot
@@ -220,7 +228,7 @@ def test_a_fully_dark_utilisation_board_does_not_exit_zero(
 
 
 def test_a_measured_utilisation_board_still_passes(
-        tmp_path, monkeypatch, _isolated_registry) -> None:
+        tmp_path, monkeypatch) -> None:
     """The other direction, so the fix cannot be 'fail always' (L1.43: a fence red from day one
     gets switched off)."""
     import scripts.check_utilisation as U
@@ -236,7 +244,7 @@ def test_a_measured_utilisation_board_still_passes(
 
 
 def test_mypy_ratchet_with_nothing_checkable_does_not_exit_zero(
-        tmp_path, monkeypatch, _isolated_registry) -> None:
+        tmp_path, monkeypatch) -> None:
     """Uncheckable files are POPPED from `counts`, so "mypy could not run" and "mypy found no
     errors" produced byte-identical reports: total_errors 0, n_files_checked 0, exit 0. The
     ratchet it feeds would then record that phantom perfection as the new floor."""
@@ -251,7 +259,7 @@ def test_mypy_ratchet_with_nothing_checkable_does_not_exit_zero(
 
 
 def test_mypy_ratchet_passes_when_files_were_actually_checked(
-        tmp_path, monkeypatch, _isolated_registry) -> None:
+        tmp_path, monkeypatch) -> None:
     import scripts.check_mypy_ratchet as M
 
     monkeypatch.setattr(M, "_targets", lambda: ["scripts/a.py"])

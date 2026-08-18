@@ -36,6 +36,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 _ROOT = Path(__file__).resolve().parent.parent
 
 # PATH BOOTSTRAP, and it must happen here. pytest imports conftest before collecting anything, so
@@ -62,6 +64,42 @@ _SNAP: Snapshot | None = None
 def pytest_configure(config: Any) -> None:
     global _SNAP
     _SNAP = snapshot(_ROOT)
+
+
+def pytest_runtest_setup(item: Any) -> None:
+    """Re-baseline before EVERY test, not once per session (measured 2026-08-18).
+
+    The session-length snapshot had a false-positive mode that ERASED REAL EVIDENCE: this desk's
+    organs legitimately append to the protected files while the suite runs (the suite takes
+    60-80min; the ledger takes writes hourly), and a change made BETWEEN tests by a concurrent
+    organ is indistinguishable from a test's write under a configure-time baseline. Measured: a
+    concurrent max_audit's recommendation-ledger rows and two hand-raised rows were attributed to
+    tests/governance/test_denominators.py::test_meta_fence_runs_and_reports_a_measured_denominator
+    and 'restored' out of existence. Re-snapshotting per test absorbs between-test organ writes
+    into the baseline and keeps the guard's real property: a change that appears DURING one test
+    is that test's write, named and reverted. The residual window (an organ writing mid-test) is
+    seconds, not the session."""
+    global _SNAP
+    _SNAP = snapshot(_ROOT)
+
+
+@pytest.fixture(autouse=True)
+def _denominator_registry_in_tmp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """THE SUITE MAY NOT WRITE THE L1.57 GOVERNANCE REGISTRY EITHER (R0474).
+
+    `fence_exit(scanned=...)` appends a row to data/denominator_contracts.jsonl through
+    `denominator._root()` and exposes no redirect, so every suite run filed synthetic rows in the
+    live registry: 94/670 rows (14%) on 2026-08-12, re-accumulated to 878/6105 (14%) by
+    2026-08-18 under the names 't' and '__main__.py' -- the latter is `caller_name()` under
+    `python -m pytest`. Same class as the suite writing the live L1.29 forecast store.
+
+    NOT folded into PROTECTED above, deliberately: the registry is append-only and cron fences
+    legitimately append to it WHILE the suite runs, so restore-on-change would destroy real rows
+    and blame a test. Redirecting the default root is the correct boundary. A test that patches
+    `_root` itself still wins inside its own scope, and a test that drives a real fence through
+    a SUBPROCESS is a real fence run whose row is genuine evidence -- both stay untouched.
+    """
+    monkeypatch.setattr("libs.ops.denominator._root", lambda: tmp_path)
 
 
 def pytest_runtest_teardown(item: Any) -> None:

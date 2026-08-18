@@ -22,6 +22,7 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from scripts.check_enforcement_execution import (  # noqa: E402
+    _code_index,
     _Corpus,
     _public_symbols,
     _resolve,
@@ -59,6 +60,22 @@ def test_corpus_excludes_the_fence_itself() -> None:
     -- a docstring, a registry key -- into proof of execution."""
     corpus = _Corpus()
     assert not any(p.name == "check_enforcement_execution.py" for p in corpus.files)
+
+
+def test_a_path_in_a_dict_literal_is_a_mention_never_a_run() -> None:
+    """R0473: the fence once credited check_extractor_invariants.py as EXECUTED off the string
+    'scripts/check_extractor_invariants.py' sitting in build_enforcement_matrix._MAP -- a
+    module-level dict literal in a file that invokes nothing. In the AST a string is a Constant,
+    never a Name, so prose cannot be laundered into evidence; and a file importing no
+    process/import primitive cannot run anything it names."""
+    idx = _code_index("_MAP = {'L1.28a': ['scripts/check_extractor_invariants.py']}\n")
+    assert idx is not None
+    names, can_exec = idx
+    assert not can_exec
+    assert not any("check_extractor_invariants" in n for n in names)
+    # the primitive flips capability -- this is what separates a registry from a runner
+    idx2 = _code_index("import subprocess\n")
+    assert idx2 is not None and idx2[1] is True
 
 
 def test_unenforced_never_over_claims() -> None:
