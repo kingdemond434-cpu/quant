@@ -2397,3 +2397,70 @@ lead-lag work (R0117 aliasing concern) is next touched, this is a second, indepe
 the same instrument-artifact class — the failure is KNOWN to practitioners, which raises the prior
 that naive cross-venue spread series in mined backtests are contaminated. No code change proposed
 here (research freeze); the note is the deliverable.
+
+**2026-08-18 (litminer run 8) — ENGINE INSTRUMENT DEFECT, caught before adoption: `target_horizon_sweep`
+h>1 cells cannot pass a true multi-day mechanism (R0614).** On daily rows the sweep's target for
+signal[t] is the h-day return ending at t+1 — window (t+1−h, t+1], h−1 of its h days ALREADY KNOWN
+at signal time (`_period_returns`' "strictly future" docstring claim is false for h>1 daily rows).
+Oracle synthetic: a PERFECT 5d-forward signal reads IC −0.06 (SCREEN-UNDERPOWERED); a PERFECT 20d
+oracle reads IC −0.53 and is branded SUSPECT-LOOKAHEAD (the zwin rolling mean anti-correlates the
+z-scored signal with the target's known share — true signals INVERT); pure past-return echo reads
+raw IC +0.70/+0.55. Isolation control: identical oracle on h-spaced rows + `overlap_periods=1`
+reads +0.96/+0.98 ceiling-trip — core `stage_a_screen` is FINE; the defect is the sweep's row
+spacing. The correct idiom already exists in-repo (`screen_oi_ls_axes.py` `[::h]` grid — the live
+40d clock is CLEAN). Caller survey: `backfill_kimchi` h>1 cells void-as-measured (kill stands on
+h=1); `run_decline_detection` has the OPPOSITE defect (pre-shifted target double-rolled → tests
+(t+1,t+2]); `reflexivity_m5` carries a stray dead `np.roll(dp,−1)`. Two opposite violations = the
+CONTRACT is the defect: the harness should refuse ambiguous targets (accept prices+h for h>1, or a
+declared target basis). Repair + regression oracle test specced in R0614; freeze bars this seat
+from touching `libs/`. The engine lesson that generalises: **every multi-horizon screen needs the
+h-day ORACLE as a positive control** — this harness's h>1 path shipped 2026-08-05 and no positive
+control was ever run at h>1 (the exact "gauntlet never shown to PASS a known-good alpha" desk
+lesson, recurring at the cell level).
+
+**2026-08-18 (litminer run 8) — JP/KR AI-quant RESEARCH SYSTEMS (card 24's never-opened half): what
+the JP ecosystem has that Qlib/vnpy don't, and the measured KR negative.**
+Sources opened (all public, §13-clean): JPX-official **J-Quants-Tutorial**
+(japanexchangegroup.github.io/J-Quants-Tutorial/, repo github.com/JapanExchangeGroup/J-Quants-Tutorial
+— licence NOT yet read from the canonical file; read-before-port, row-#79 discipline),
+**UKI000/JQuants-Forum** (107★: competition runner-up's PDF + `jquants01_fund_uki_predictor.py`
+read in full via raw + `jquants02_news_uki_predictor.py` — an untested news-based predictor, noted),
+zenn.dev/gamella/articles/bdd980d4929a90 (secondary; performance numbers [RELAYED] from it, NOT
+re-derived), github.com/quantylab (org enumerated), KR probe search (7 repos surveyed).
+**Engine findings, ranked:**
+1. **TARGET ENGINEERING — predict the path-extreme rank, not the close-to-close return.** UKI's
+   runner-up model predicts post-earnings **20d HIGH/LOW** (`label_high_20`/`label_low_20`) as an
+   earnings-quality proxy — a variance-reduced, barrier-exit-shaped object; relayed rank-corr
+   0.42–0.44 on 2021 OOS. Desk transfer: the event gate already uses triple-barrier EXITS; the idea
+   that transfers is MFE-style path-extreme TARGETS for cross-sectional event screens (a NEW
+   pre-registered construction if ever run — this note is not a result).
+2. **SURPRISE FEATURES = realized minus PRIOR-PUBLISHED expectation** (`m_*` = actual vs company
+   guidance). Crypto analogue is already in the backlog: announced unlock schedule vs realized
+   on-chain movement (card 25 mint/burn remainder), predicted-vs-realized funding (L1.47). This
+   CORROBORATES those items' priority rather than spawning a new axis — no new card.
+3. **LEAK-FLAG TRANSFER: "the cumulative adjustment factor contains unmeasurable future
+   information" (splits).** Crypto analogue worth one check: in-place CONTRACT MULTIPLIER changes
+   on perps (venue "contract adjustment" announcements) would put a fake jump in any close series
+   keyed by symbol. The desk's 1000-prefix symbols were LISTED pre-scaled (safe); the open question
+   is whether any in-universe symbol ever had an in-place adjustment — checkable against the
+   Binance futures announcement archive (entry 44-exchange-announcement-calendars). Question named,
+   not a claimed defect.
+4. **Honest quality read: the public runner-up CODE is weaker than the tutorial's discipline** —
+   hardcoded 2017–2019 train window, no CV/purging visible, ffill-then-zero imputation. The
+   tutorial itself teaches 1-month purge buffers (labels embed 20d forward paths) and
+   Spearman-not-Pearson. Lesson for mining competition artifacts: **the tutorial layer and the
+   winner layer must be read separately — discipline lives in the former, alpha claims in the
+   latter, and neither implies the other.**
+5. **KR NEGATIVE (measured, AR-miner OP-075 pattern):** the open KR layer is DATA-ACCESS
+   (pykrx, krx-quant-dataloader, openkrx wrappers, koapy-class brokerage bridges), and quantylab is
+   book-companion code (rltrader 366★). **No KR Qlib-equivalent found** — KR practitioners either
+   use global tools or keep systems closed; the KR language arbitrage is in VENUE-STATE/data
+   (already separate backlog items), not research systems. One transferable idiom found anyway:
+   `jaepil-choi/krx-quant-dataloader` ships **pre-built survivorship-bias-free universes as a
+   first-class data-loader deliverable** — the same concern the desk's Bybit-archive polarity note
+   (2026-08-18) tracks by hand; a "universe file carries its own survivorship provenance" pattern
+   worth copying whenever the desk next touches universe construction.
+Routed: negative_knowledge entry (KR research-systems layer, with re-explore triggers); card 24
+stamped for the JP/KR half; NO new universe-map inventory (100-jquants-api and
+62-japanese-botter-ecosystem already exist; J-Quants DATA already graded excluded-paid 2026-08-12
+— the free tier's 12-week delay was already ruled on; this run adds the METHOD layer only).

@@ -7710,15 +7710,39 @@
   },
   {
    "id": "R0611",
-   "source": "cycle",
-   "summary": "ORIGIN TIP IS LINT-RED and the push gate now blocks every clean session: 3x ruff I001 (un-sorted in-function import blocks) in scripts/run_recorder.py:35, run_recorder_bybit.py:40, run_recorder_spot.py:43, introduced by 6b8b61a9 ('Retire the crypto tape, record the MT5 one...') which itself must have pushed around the gate. Free-data miner 2026-08-18 hit the refusal on a docs+data-only push from a CLEAN worktree (own content: collect ok, mypy ok, ruff-not-applicable) and used sanctioned --no-verify, RECORDED in the watchlist session note. FIX for an unfrozen seat: .venv/bin/ruff check --fix scripts/run_recorder.py scripts/run_recorder_bybit.py scripts/run_recorder_spot.py (all 3 auto-fixable), commit, push through the gate. Until then every seat pushes --no-verify and the gate teaches the habit L1.42 warns about.",
-   "roi_bps": null,
-   "raised": "2026-08-18T15:29:40.440869+00:00",
-   "status": "scheduled",
-   "reason": "one-command auto-fix owed by the first seat NOT under a research freeze (this seat may not write scripts/); due next day because every push desk-wide is degraded to --no-verify until it lands",
+   "source": "deep_sweep",
+   "summary": "INSTRUMENT (L1.25 first question), caught BEFORE adoption: target_horizon_sweep h>1 cells on DAILY rows test a target window (t+1-h,t+1] -- h-1 of h days already known at signal time (_period_returns docstring claims 'strictly future'; false for h>1 daily). MEASURED by oracle synthetic (litminer run8, data/carry_liq_screen.json instrument_finding): a PERFECT 5d-forward oracle reads IC -0.06 SCREEN-UNDERPOWERED; a PERFECT 20d oracle reads IC -0.53 SUSPECT-LOOKAHEAD (true signals INVERT via the zwin rolling mean); pure past-return echo reads raw IC +0.70/+0.55. The h>1 gate is structurally unable to pass the thing it screens for (L1.63 welded class) while inflating echo signals. ISOLATION: same oracle on h-spaced rows + overlap_periods=1 reads +0.96/+0.98 SUSPECT-LOOKAHEAD (correct) -- core stage_a_screen is FINE; defect is sweep row-spacing. BLAST RADIUS measured: screen_oi_ls_axes (live 40d clock) CLEAN (already uses [::h]+overlap 1 -- the in-repo correct idiom); h=1 callers clean; backfill_kimchi h=5 cell VOID as measured (kimchi kill unchanged -- stands on h=1 + mechanism contamination); run_decline_detection has the OPPOSITE defect (passes fully-forward target, harness rolls again -> tests (t+1,t+2], one-day hole); reflexivity_m5 carries a stray dead np.roll(dp,-1). Two opposite violations across callers = the CONTRACT is the defect. REPAIR (alpha org; litminer freeze bars libs/): (1) fix target_horizon_sweep to subsample [::h] per cell with overlap_periods=1, copying screen_oi_ls_axes' proven idiom -- NOT a one-line shift of _period_returns (that silently changes the same/prior-period gate semantics to mostly-future windows and would weld TIMING-ARTIFACT shut); (2) add a shape/contract guard to stage_a_screen (target basis must be declared; reject pre-rolled targets by construction, e.g. require prices+h for h>1); (3) fix run_decline_detection's double shift; (4) delete reflexivity_m5 dead roll; (5) re-run any h>1 daily-row cells recorded via the sweep. Regression test: the oracle synthetic (perfect h-day oracle MUST read ceiling-trip positive, echo MUST fail decontam) -- the positive control this harness never had at h>1.",
+   "roi_bps": 60.0,
+   "raised": "2026-08-18T19:19:48.239828+00:00",
+   "status": "open",
+   "reason": null,
    "commit": null,
-   "due": "2026-08-19",
-   "disposed": "2026-08-18T15:30:31.025390+00:00"
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0612",
+   "source": "deep_sweep",
+   "summary": "data/liquidations.parquet is a TRUNCATED parquet (PAR1 head, NO footer) -- pd.read_parquet fails persistently (re-tested minutes apart, litminer run8); listener heartbeat FRESH and liquidation_since 2026-07-09 (heartbeat-vs-payload class, top desk lesson). MECHANISM: scripts/liquidation_listener.py _flush() rewrites the WHOLE file in place via snap.to_parquet(_OUT) (line 67) -- a kill mid-write truncates; AND _flush() re-reads the corrupt file every flush (line 64 pd.read_parquet raises ArrowInvalid) so events since corruption are likely LOST while the WS loop stays alive; no backup exists (backups/ has moat only). CONSEQUENCE TODAY: pre-registered screen cells C3/C4 (carry_z -> forward sell-side liquidation intensity, watchlist card 23 / R0193 remainder) are UNMEASURABLE-INPUT-CORRUPT -- blocked, not underpowered (L1.55 distinction). Consumers screen_liquidation_reversion.py + run_llm_trader briefs read this path. EXACT PATCH: (1) atomic write -- to_parquet(tmp) + os.replace; (2) stop the O(n^2) read-modify-rewrite: append to a JSONL/daily-partitioned files, compact periodically; (3) recovery: footer is gone -- attempt row-group salvage once, else restart archive and RECORD the gap 'corrupt window' in liquidation_since provenance rather than silently restarting the clock; (4) data_health must read a ROW COUNT not existence (this corruption is invisible to an existence check).",
+   "roi_bps": 25.0,
+   "raised": "2026-08-18T19:19:56.770347+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0613",
+   "source": "deep_sweep",
+   "summary": "data/cot_btc_panel.json BUILDER COLUMN DEFECT: comm_long==noncomm_long AND comm_short==noncomm_short on 100% of 435 CME BITCOIN rows (litminer run8, data/carry_liq_screen.json cot_column_audit) -- the commercial columns are DUPLICATES of noncommercial, so every comm_* field in this SS33-credited artifact is fiction; nonrep_* verified independent (0% collision, used by M1). MECHANISM (likely): CFTC legacy futures-only column offsets mis-mapped in the 08-11 brain-hunter builder (raw zips cached at data/scratch/cot/ -- re-derivable without refetch). PATCH: fix the column map against the CFTC legacy layout, rebuild from cached zips, re-verify nonrep against total-OI arithmetic (noncomm_net + comm_net + nonrep_net = 0 identity currently CANNOT hold with duplicated columns -- use it as the rebuild's self-check). Until rebuilt: any analysis touching comm_* on this file is void; nonrep-based M1 stands.",
+   "roi_bps": 15.0,
+   "raised": "2026-08-18T19:20:11.836227+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

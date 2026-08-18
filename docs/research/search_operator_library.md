@@ -2684,3 +2684,25 @@ unchanged and this sharpens it: 96% of these alphas neutralize against a **group
 most often — the *finest* available), and `data/crypto_grouping_map.json` exists with its consumer
 wiring still owed at **R0437**. Field-count, not operator-count, is the axis to grow —
 routed to `data_axis_watchlist.md`.
+
+---
+
+## OP-085 — COMPETITION-PODIUM LADDER (JP proven; adapt per region) (litminer run 8, 2026-08-18)
+
+**Operator:** for any data-vendor or exchange-run ML competition, the runnable alpha layer is not
+the leaderboard — it is the POST-COMPETITION WRITEUP with a repo. Ladder: (1) find the competition's
+official tutorial/rules repo (org GitHub); (2) search the region's writeup platforms for podium
+language + the competition name — JP: `"{comp}" 優勝 OR 準優勝 site:zenn.dev OR site:note.com OR
+site:qiita.com`; KR: `"{comp}" 우승 OR 입상 site:velog.io OR site:tistory.com`; CN: `"{comp}" 冠军
+OR 亚军 site:zhihu.com`; (3) the writeup names the author's GitHub — the solution repo carries the
+feature set + target construction the leaderboard never shows; (4) read the TUTORIAL layer and the
+WINNER layer separately: discipline (purging, eval design) lives in the tutorial; alpha claims live
+in the winner code, and neither implies the other (measured on J-Quants: JPX tutorial teaches
+1-month purge buffers; the runner-up's public predictor has no CV at all).
+
+**Proven yield (first application):** J-Quants Fundamentals Challenge → UKI000/JQuants-Forum
+(107★) → full runner-up predictor source: path-extreme `label_high_20/low_20` targets +
+guidance-vs-realized `m_*` surprise features (improvement_inbox 2026-08-18). Cost: 2 fetches.
+**Caveat that travels:** competition writeup PDFs on GitHub must NOT be read through WebFetch
+summarisation (OP-057 fabrication class) — read the `.py` via raw.githubusercontent instead; the
+code outranks the PDF anyway.

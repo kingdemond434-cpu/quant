@@ -1342,3 +1342,144 @@ marginal restatement. **Both lessons are durably recorded where they act** — R
 #119/#120, with the failure mode and the patch — and this paragraph exists so the omission is an
 auditable decision rather than a silent gap. **The gate was right and was not routed around**; a
 budget fence that gets bypassed on the first inconvenient day is not a fence.
+
+---
+
+## RUN 8 — session note (2026-08-18, litminer standing daily; WRITE-FIRST per completion contract)
+
+**GATE:** `mine_gate.py` → BACKLOG-CLEAR, mining authorised. Generation priors read
+(`data/mine_generation_priors.json`): favour = `data_axis_watchlist.md` (45.2% conversion), starve = none.
+This run's items ARE watchlist items — aligned with the measured favour list.
+
+**ITEMS TAKEN THIS RUN (backlog verification first, per RESUME contract):**
+1. **[R0193 remainder, Tier-2] Watchlist card 23 (carry↔liquidation, BIS WP 1087): EXECUTE the
+   Stage-A screen** on data already on disk, inline via the audited `libs.research.axis_screen`
+   (freeze respected: no new runner code in `scripts/`; results → `data/` + research_memory).
+   Pre-declared constructions (each a CHARGED trial, logged win or lose, before any cell is
+   computed — garden-of-forking-paths discipline):
+   - C1: signal = BitMEX XBTUSD daily funding (sum of 8h prints per UTC day), z-scored 63d →
+     target = forward **5d** BTC log return (futclose_daily). Expected sign NEGATIVE (high carry
+     precedes crashes per WP 1087).
+   - C2: same signal → forward **20d** BTC log return. Expected NEGATIVE.
+   - C3: same signal → forward **5d** sell-side liquidation intensity (desk tick stream,
+     2026-07-09→now only, ~40d) — EXPECTED UNDERPOWERED; the honest verdict is the deliverable.
+   - C4: same signal → forward **20d** liquidation intensity — EXPECTED UNDERPOWERED (n≈20).
+   - M1 (mechanism check, NOT a predictive trial: no forward target): contemporaneous corr of
+     carry_z vs COT-BTC nonreportables net-over-OI (weekly, `data/cot_btc_panel.json`) — does
+     retail carry-DEMAND actually track carry on desk data, as the paper's WHO-side claims.
+   Timestamp alignment DECLARED: both legs desk UTC daily close; BitMEX funding stamps are venue
+   UTC settlement times aggregated to UTC day; futclose is UTC daily close; NO cross-source lag
+   ambiguity beyond that; COT is Tuesday-as-of weekly, used in M1 only (contemporaneous, no
+   release-lag trade claim). Novelty gate re-run OWED before screening (card's own condition,
+   vs `funding_momentum` graveyard kill) — logged below when run.
+2. **[Card 24 residual + SEARCH-SPACE EXPANSION ≥25%] JP/KR AI-quant RESEARCH SYSTEMS** — the
+   card's titular JP/KR half was never opened (Qlib mined 08-11, vnpy.alpha 08-13, JP/KR = nothing).
+   Hunt open-source JP/KR factor-research systems + their contributor networks; mine ARCHITECTURE →
+   `improvement_inbox.md`; datasets → universe map; operators → operator library.
+3. **[CONDITIONAL — only if 1–2 close with budget left] SSRN via OP-026a ladder end-to-end**
+   (rotation-owed since 07-26). If not reached, it stays next-ground #1.
+
+**DIVERGENT QUERIES (STEP -1, ≥2 of budget):** DQ1 (skeptic): failed replications / critiques of
+carry→crash and WP 1087 specifically, incl. non-EN. DQ2 (infrastructure archaeologist): JP/KR
+corporate tech blogs + job postings for INTERNAL factor platforms (LINE/Kakao/Mirae/Nomura/Mizuho),
+not GitHub stars. DQ3 (forgotten literature): pre-2015 FX/commodity futures papers on NONREPORTABLE
+(retail) positioning as carry-demand/crash variable — transfer prior for the COT-BTC panel.
+
+**INCIDENTAL DEFECT FOUND DURING ORIENTATION (to route this run):**
+`data/liquidations.parquet` is a TRUNCATED parquet — `PAR1` magic present at head, FOOTER absent;
+`pd.read_parquet` fails persistently (re-tested twice, minutes apart — not a mid-write race).
+The listener itself is ALIVE (heartbeat fresh, `liquidation_since` 2026-07-09). The desk's only
+liquidation ARCHIVE artifact is unreadable while its collector looks healthy — heartbeat-vs-payload
+class (top desk lesson). Exact patch (freeze bars me from applying): the writer must write
+tmp+`os.replace` (atomic), and re-emit the file from its source buffer/JSONL if recoverable.
+Routed to ledger this run (row id recorded below when raised).
+
+**RESOLUTION LOG (updated as items close):**
+- [x] Item 1 CLOSED — novelty gate passed (0.70 vs 268 priors); C1/C2 **SCREEN-UNDERPOWERED,
+  echo-dominated** (fully-forward corr −0.031/−0.038 ns; raw IC +0.25/+0.31 = 100% echo); C3/C4
+  **UNMEASURABLE-INPUT-CORRUPT**; M1 Spearman +0.23 (WHO-side consistent). NO clock, nothing
+  refuted. 4 trials charged. Artifact: `data/carry_liq_screen.json`. Card 23 stamped [§33: screened].
+  **MAJOR INSTRUMENT CATCH mid-run: `target_horizon_sweep` h>1 daily-row cells structurally cannot
+  pass a true multi-day mechanism** (perfect 20d oracle → IC −0.53 SUSPECT-LOOKAHEAD; echo → +0.70)
+  — proven by oracle synthetic + isolation control; OI/LS live clock verified CLEAN (uses the
+  correct [::h] idiom); kimchi h>1 numerics void (kill unchanged, graveyard addendum added).
+  → **R0614** (sweep defect + contract repair + caller survey), **R0615** (liquidations.parquet
+  truncated, non-atomic writer, exact patch), **R0616** (COT panel comm_*==noncomm_* on 100% of
+  rows, builder column-map defect). 2 research-memory rows. NOTE: the collision flagged here MATERIALIZED mid-run and was RESOLVED same-run — see defect 4
+  in the RUN 8 CLOSE below.
+- [ ] Item 2 JP/KR systems
+- [x] liquidations.parquet defect routed (R0615)
+- [ ] coverage table + cadence stamp + commit (explicit paths only — SHARED TREE, pid 352373)
+
+## RUN 8 CLOSE — routing totals, depth line, honest defects, next ground
+
+**ROUTING TOTALS:** **0 mechanism cards** (honest: the one screen run came back underpowered+echo;
+nothing earned a card) · **2 inbox entries** (sweep instrument defect; JP/KR systems findings) ·
+**1 operator LANDED (OP-085 competition-podium ladder)** · **3 ledger rows R0614–R0616** (sweep
+h>1 window defect; liquidations.parquet truncation; COT comm_* duplication) · **1 graveyard
+ADDENDUM** (kimchi h>1 numerics void; kill unchanged — no new kills, nothing was refuted) ·
+**1 negative-knowledge entry** (KR research-systems layer) · **3 research-memory rows** ·
+**2 watchlist stamps** (card 23 → [§33: screened -> data/carry_liq_screen.json]; card 24 JP/KR
+half MINED) · 4 trials charged (C1/C2 run, C3/C4 blocked-charged) · cadence stamped.
+
+**WHAT I VERIFIED MYSELF vs RELAYED:** VERIFIED: every number in `data/carry_liq_screen.json`
+(computed here from on-disk series); the oracle synthetic + isolation control (both directions);
+liquidations.parquet corruption (re-tested minutes apart, writer code read); COT comm==noncomm on
+435/435 rows; OI/LS screen's [::h] idiom (code read); UKI predictor internals (raw source read);
+quantylab org + KR probe (7 repos). RELAYED, flagged: UKI 0.42–0.44 rank-corr (gamella article,
+not re-derived); tutorial content (fetched render, repo licence UNREAD).
+
+**DEPTH LINE (mandated).** *Item 1* — backlog card → novelty gate → audited harness → verdict
+→ **±1d shift diagnostic → oracle synthetic → isolation control → caller survey (8 callers
+classified) → three routed defects**; depth converted "two SUSPECT cells" into a proven instrument
+defect on the desk's central sweep helper CAUGHT BEFORE ADOPTION (R0127 had just queued screens
+into it), with the live OI/LS clock verified CLEAN. The surface answer would have been wrong in
+BOTH directions: trusting the raw IC (echo) or trusting the verdict labels (defective window).
+*Item 2* — search → tutorial full read → competition article → repo file layer → **raw source of
+the runner-up predictor** → KR negative probe; depth surfaced that the podium CODE contradicts the
+tutorial's own discipline (no CV), which is itself the finding, and produced OP-085.
+
+**HONEST DEFECTS OF THIS RUN:**
+1. **+3 ledger rows into a repair-mode backlog** (245 open at start). All three are genuine
+   data/instrument integrity defects with exact patches; consolidation considered and rejected
+   (three different owners/files). Recorded, not excused.
+2. **Conditional item 3 (SSRN OP-026a ladder) NOT REACHED** — rotation debt since 07-26 stands;
+   next-ground #1 below.
+3. **The freeze means I fixed none of the three defects I proved** — each carries its exact patch
+   in its row; detect-implies-repair is half-satisfied until the alpha org lands them.
+4. **R0611 ID COLLISION — materialized and RESOLVED same-run.** The free-data seat raised
+   R0611 (recorder lint) in its worktree and pushed while this run worked; both seats' CLIs drew
+   R0611 from diverged ledger copies (the CLI's remote-id read did not see the unpushed row).
+   Resolution: remote R0611 kept; this run's rows renumbered **R0614 (sweep defect) / R0615
+   (liquidations.parquet) / R0616 (COT columns)**, ledger hand-merged onto the remote base,
+   L1.29 forecast keys remapped so calibration grades the right rows. Residual defect for the
+   ledger owner: `_next_id`'s remote read cannot see a sibling worktree's unpushed rows —
+   same-box concurrent raises still collide.
+5. **DQ2 (JP/KR corporate-blog/job-posting vein for internal platforms) opened but not mined** —
+   one Dai-ichi recruiting artifact seen; vein named in negative-knowledge triggers.
+6. **M1 used the COT panel while proving one of its column families fabricated** — M1 rests only
+   on nonrep_* (verified independent, 0% collision), but the identity-check rebuild (R0616) should
+   re-confirm M1's inputs; until then M1 is measured-but-on-a-defective-artifact.
+
+**NEXT UN-EXHAUSTED GROUND (run 9, in order):**
+1. **SSRN via OP-026a ladder end-to-end** (rotation-owed since 07-26) + journals family.
+2. **Replication/comment papers** (Critical Finance Review, JF/JFE/RFS "Comment on…") — never walked.
+3. **Theses continuation**: 6 NOT-REACHED systems + UFRGS `10183/175317`, Uppsala `diva2:1324527`.
+4. **ECB `ecb:ecbwps` on RePEc**; Two Sigma/DE Shaw practitioner residuals.
+5. **DQ2 vein**: JP/KR corporate tech blogs + job postings for internal factor platforms.
+6. **Card 25 remainder corroborated this run** (surprise-features transfer) — mint/burn pair sits
+   with R0193 (due 08-24); litminer support role only.
+7. Dated: NeurIPS eval-of-agents ~2026-10; Molnar halving-clock Oct–Nov 2026 (watch-only).
+
+**WHICH ARTIFACT ON DISK IS DIFFERENT BECAUSE OF WHAT WAS MINED (§33 standing test):**
+`data/carry_liq_screen.json` (new: screen + oracle evidence + M1), `recommendation_ledger.json`
+(R0614–R0616), `docs/graveyard.md` (kimchi addendum), `improvement_inbox.md` (+2),
+`search_operator_library.md` (+OP-085), `negative_knowledge.md` (+1), `data_axis_watchlist.md`
+(cards 23/24 stamped), 3 research-memory rows, `cadence_state.json` stamped.
+
+**PUSH RECORD (sanctioned bypass, per 2026-08-18 frozen-seat path):** pre-push gate RED on
+`scripts/run_recorder{,_bybit,_spot}.py` I001 import-sort — **pre-existing, committed red at the
+origin tip by a prior session** (not in this commit: `git show HEAD --name-only` = 7 docs files,
+zero .py). Litminer freeze bars fixing `scripts/`; pushed with `--no-verify`, recorded here. The
+lint fix belongs to whichever unfrozen seat next touches the recorders (3 errors, all `--fix`able;
+L1.38 window check applies to recorder edits).

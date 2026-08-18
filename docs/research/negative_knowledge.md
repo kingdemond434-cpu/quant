@@ -114,3 +114,20 @@ reopen-conditions: n/a — this is a routing problem with known workarounds, not
 history: 2026-07-26 recorded with substitute routes. LEGITIMACY NOTE (charter §13): the response to a
   paywall is an OPEN mirror, an author self-archive, or doing without — never circumvention. Every
   route listed above is publisher-sanctioned open access or an author's own posting.
+
+## kr-open-research-systems-layer — NO Qlib/vnpy.alpha-equivalent in the open KR ecosystem (2026-08-18, litminer run 8)
+- **Explored:** quantylab org (14 repos, pinned 3 read — book-companion: rltrader 366★),
+  KR-native probe (KRX/코스콤 오픈소스 퀀트 리서치 플랫폼 팩터 라이브러리): 7 repos surveyed — all
+  DATA-ACCESS layer (pykrx, krx-quant-dataloader, pykrx-openapi, krxon, krx-stock-api, krxbrief,
+  openkrx-mcp). Zero factor-research frameworks, zero feature-expression DSLs, zero experiment
+  harnesses.
+- **Reason for low value:** the region's open output concentrates in data wrappers + educational
+  book code; research systems appear closed (prop/asset-manager internal) or practitioners use
+  global tools directly (the OP-075 no-language-arbitrage pattern, measured for KR SYSTEMS space).
+- **Confidence adequately explored:** medium — org-level + one native-operator search; corporate
+  tech blogs and job postings (DQ2 vein) NOT yet mined for internal platform names.
+- **Re-explore triggers:** a KRX/Koscom open-platform release; any KR research framework crossing
+  ~100★; a chaebol/fintech (Kakao/Toss/Mirae) open-sourcing a factor library; the DQ2
+  job-posting/tech-blog vein being worked.
+- **Residual value found anyway:** krx-quant-dataloader's survivorship-free-universe-as-deliverable
+  idiom (routed to improvement inbox 2026-08-18).

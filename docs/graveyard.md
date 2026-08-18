@@ -406,6 +406,16 @@ close-to-close pair samples a continuously-quoted spread twice, so a mechanism a
 arbitrage-window timescale would be invisible here whether or not one exists. That is an argument
 about RESOLUTION, not evidence of a signal, and it earns a screen on intraday data -- never a slot.
 
+**ADDENDUM 2026-08-18 (litminer run 8, R0611) -- h>1 cell numerics were computed through a
+defective target window; THE KILL IS UNCHANGED.** `backfill_kimchi.py` builds `ret` as the h-day
+return ENDING at t on daily rows, so the harness's rolled target for h=5/20 spans (t+1-h, t+1] --
+h-1 of h days already known at signal time (instrument defect proven by oracle synthetic,
+`data/carry_liq_screen.json` `instrument_finding`). Consequence: the h=5d cell's raw/-0.2064,
+same-period/-0.191, residual/-0.0522 must not be cited as forward-horizon measurements. The
+TIMING-ARTIFACT verdict itself survives on structure (the premium carries the Binance price in its
+denominator -- construction, not information), and the kill rests on the h=1d cell (correct window:
+IC +0.0148 vs floor 0.041, per-era sign flips), which is untouched.
+
 ---
 
 ### jp_mlbot_atr_limit_reversion (richmanbtc `mlbot_tutorial` lineage) — PRE-EMPTIVELY KILLED by the community's own attribution study, before the desk spent a single screen on it

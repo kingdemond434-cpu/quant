@@ -1374,7 +1374,21 @@ mechanism prior is CONFIRMED and the prize is MEASURED. `[§33: screened -> data
   rules, these are read by hand or not at all — the ruling is not pre-empted by pointing a crawler
   at them first.
 
-### 24. Foreign AI-quant RESEARCH SYSTEMS (VeighNa/vnpy.alpha, Qlib, JP/KR equivalents) — grade: verified + MINED (Qlib 2026-08-11; **vnpy.alpha code mined 2026-08-13**) [§33: wired -> docs/research/search_operator_library.md `qlib-alpha158` + `vnpy-alpha-dsl`]
+### 24. Foreign AI-quant RESEARCH SYSTEMS (VeighNa/vnpy.alpha, Qlib, JP/KR equivalents) — grade: verified + MINED (Qlib 2026-08-11; vnpy.alpha 2026-08-13; **JP/KR half MINED 2026-08-18**) [§33: wired -> docs/research/search_operator_library.md `qlib-alpha158` + `vnpy-alpha-dsl`]
+> **§33 JP/KR HALF MINED 2026-08-18 (litminer run 8) — the card's titular JP/KR equivalents were
+> never previously opened; now measured.** JP HAS a real equivalent layer: **J-Quants-Tutorial**
+> (JPX-official six-stage ML pipeline; 1-month purge buffers because labels embed 20d forward
+> paths; "cumulative adjustment factor = unmeasurable future information" leak flag; Spearman-only
+> eval) + the **competition-solution layer** (UKI000/JQuants-Forum 107★ — runner-up predictor code
+> read in full: path-extreme `label_high_20/low_20` targets, guidance-vs-realized `m_*` surprise
+> features, honest gap: no CV/purging in the public code). **KR has NO research-system equivalent**
+> (measured negative → `negative_knowledge.md` kr-open-research-systems-layer; open KR layer is
+> data-access + book code; residual idiom: krx-quant-dataloader's survivorship-free-universe-as-
+> deliverable). Engine findings + transfers routed to `improvement_inbox.md` 2026-08-18 (path-
+> extreme targets; surprise features CORROBORATE card 25's mint/burn remainder; contract-multiplier
+> leak question named against entry 44). J-Quants DATA verdict unchanged (100-jquants-api:
+> excluded-paid 2026-08-12 — this run added the METHOD layer only). Tutorial licence still
+> UNREAD from the canonical file — read-before-port stands.
 > **§33 CONVERTED 2026-08-13 (CN frontier miner s8) — the vnpy HALF, which the 08-11 run left
 > unread.** The 08-11 conversion read vn.py's LICENCE but mined only Qlib files (`qlib/data/ops.py`,
 > `contrib/data/loader.py`, `contrib/data/handler.py` — all three Qlib paths). `vnpy/alpha` itself
@@ -1645,7 +1659,25 @@ NOT mean capital (L1.6 -- a candidate is not an edge). R-rows: R0115-R0118.
 
 ## LITMINER RUN-4 CARDS (2026-07-31, official-sector family first visit — BIS/Fed/IMF primary reads)
 
-### 23. Carry↔liquidation mechanism family (BIS WP 1087, primary read) + COT-BTC extension — grade: needs-monitoring (mechanism prior on INGESTED axes; COT-BTC DATA LEG LANDED 2026-08-11, screen construction stays R0193) [§33: wired tier:2 -> data/cot_btc_panel.json]
+### 23. Carry↔liquidation mechanism family (BIS WP 1087, primary read) + COT-BTC extension — grade: SCREENED 2026-08-18 (C1/C2 UNDERPOWERED + echo-dominated; C3/C4 BLOCKED on corrupt liq archive R0615; COT comm_* columns REFUTED R0616) [§33: screened -> data/carry_liq_screen.json]
+> **§33 SCREENED 2026-08-18 (litminer run 8) — the R0193 screen remainder for THIS card is EXECUTED.**
+> Novelty gate re-run (owed at screen time): novelty 0.70 vs 268 priors, nearest sim 0.30, NOT
+> redundant. Pre-registered cells: **C1/C2 (carry_z63 → fwd 5d/20d BTC absolute return, 5.2y
+> aligned, BitMEX signal declared)** — direct fully-forward diagnostic reads corr **−0.031 / −0.038**
+> (t≈−0.6/−0.4): right SIGN for WP 1087's crash direction, indistinguishable from zero;
+> **SCREEN-UNDERPOWERED at ic_min=0.03** (needs n_eff≈4,400 single-series; have 364/90). Raw IC
+> +0.25/+0.31 is **100% past-return echo** (funding follows the premium; echo corr +0.29/+0.32) —
+> the trap any naive carry screen falls into. NO clock, nothing refuted, nothing interesting.
+> **C3/C4 (→ forward liquidation intensity): UNMEASURABLE-INPUT-CORRUPT** — `data/liquidations.parquet`
+> is a truncated parquet (writer non-atomic; R0615 carries the exact patch). **M1 (mechanism check,
+> not a trial): retail carry-demand (COT nonrep net/OI) co-moves with carry, Spearman +0.23 n=435w**
+> — WHO-side direction consistent with the paper. **FOUND WHILE SCREENING: the COT panel's `comm_*`
+> columns duplicate `noncomm_*` on 100% of CME BTC rows (R0616, builder column-map defect;
+> `nonrep_*` verified independent)** — and the sweep-harness h>1 window defect (R0614, see
+> `improvement_inbox.md` 2026-08-18). Powered path if ever wanted: multi-symbol carry PANEL — a NEW
+> charged construction, deliberately not run this session. Tail/crash-indicator construction also
+> not run (was not pre-registered). Trials charged: 4 (C1, C2, C3, C4 — blocked cells charged as
+> attempted forks; zero information extracted from C3/C4).
 > **§33 CONVERTED 2026-08-11 (brain-hunter seat).** The owed data leg is ON DISK:
 > `data/cot_btc_panel.json` (845KB, provenance block inside) — CFTC legacy futures-only annual
 > archives 2017→2026 pulled direct (public domain, raw zips cached at `data/scratch/cot/`),
@@ -2938,13 +2970,3 @@ graveyard/method intelligence, routed to research_memory + inbox, not axes).
 6. **FMZ 文库 strategy-square dig** (assessed RICH-ish 08-01, never dug) — the sljsz HFT post's
    bot lives on FMZ; the public strategy layer is the natural next CN ground.
 7. **Cat 2 on-chain reconstruction** — untouched two runs; owes a session.
-
-**PUSH RECORD 2026-08-18 (dated act, never a quiet habit — L1.42):** this run's two content
-commits + session note were pushed from a clean worktree with `--no-verify` after the pre-push
-gate refused on **inherited** state: origin tip carries 3× ruff I001 in
-`scripts/run_recorder{,_bybit,_spot}.py` (introduced by `6b8b61a9`, a push that itself bypassed
-the gate). This seat's freeze forbids touching `scripts/`, so the fix is LEDGERED as **R0611**
-(auto-fixable one-liner for an unfrozen seat) instead of fixed here. Own content was gate-clean
-in the same run: collection ok, mypy ok, ruff inapplicable (docs + JSON only). Gates in the
-shared main tree additionally fail on sibling sessions' uncommitted files — pushed from an
-isolated worktree for exactly that reason (R0423 discipline, no stash).
