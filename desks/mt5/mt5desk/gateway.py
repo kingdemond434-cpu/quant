@@ -95,15 +95,21 @@ PROMOTED_MIN_EQUITY = 300.0  # EUR: below this, promoted sleeves stay dormant
                              # (0.01 lot at 300 EUR ~= 5.9% risk/trade ~= validated 5.5%)
 
 
-def promoted_lot(equity: float, live_n: int) -> float:
-    """Dynamic lot for promoted sleeves: auto_lot(equity) x ramp.
+def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None) -> float:
+    """Dynamic lot for promoted sleeves: auto_lot(equity, dist) x ramp.
 
     Ramp earns full authority only with forward proof: 0.25x before 50 live
     trades, 0.5x before 200, 1.0x after 200. Floor 0.01, cap 5.0.
+
+    `dist_usd` is the sleeve's own stop and is passed through for the same reason
+    `auto_lot` takes it: a promoted sleeve on a wide session runs the same 2.8x
+    overshoot as an armed one, and the ramp would have made it look deliberate.
     """
     ramp = 0.25 if live_n < 50 else (0.5 if live_n < 200 else 1.0)
-    lot = auto_lot(equity) * ramp
-    lot = round(lot / 0.01) * 0.01
+    lot = auto_lot(equity, dist_usd) * ramp
+    # FLOOR, not nearest. Rounding up here reintroduced the overshoot `_lot_steps`
+    # exists to prevent, on exactly the sleeves with the least forward evidence.
+    lot = math.floor(lot / 0.01 + 1e-9) * 0.01
     return float(min(max(lot, 0.01), 5.0))
 
 
@@ -159,7 +165,22 @@ def _lot_steps(raw_lot: float) -> float:
     return math.floor(raw_lot / 0.01 + 1e-9) * 0.01
 
 
-def realised_q(equity: float) -> float:
+def stop_distance(spec: dict) -> float | None:
+    """The bracket's OWN stop, in USD/oz. None when the spec cannot supply one.
+
+    None rather than a fallback: a caller that cannot see the real stop must
+    decide what to do about that, and silently substituting the house average is
+    the exact defect this function exists to end.
+    """
+    for side in ("buy_stop", "sell_stop"):
+        leg = (spec or {}).get(side) or {}
+        p, sl = leg.get("price"), leg.get("sl")
+        if p is not None and sl is not None and abs(p - sl) > 1e-9:
+            return abs(float(p) - float(sl))
+    return None
+
+
+def realised_q(equity: float, dist_usd: float | None = None) -> float:
     """The risk fraction the account WILL actually run, after the 0.01-lot floor.
 
     Not the same as Q_OPT whenever equity is small, and that gap is the whole point of this
@@ -167,17 +188,43 @@ def realised_q(equity: float) -> float:
     the lot, so a book configured for 0.75% could run at 5.9% with nothing in the code, the log
     or the state file ever saying so. A policy number that the venue silently overrides is not a
     policy.
+
+    `dist_usd` IS THE SLEEVE'S OWN STOP where the caller knows it. See `auto_lot`.
     """
-    lot = max(_lot_steps(Q_OPT * equity / (DIST_USD * CONTRACT_OZ * FX_EUR)), 0.01)
-    return float(lot * DIST_USD * CONTRACT_OZ * FX_EUR / equity) if equity > 0 else 0.0
+    d = float(dist_usd) if dist_usd and dist_usd > 0 else DIST_USD
+    lot = max(_lot_steps(Q_OPT * equity / (d * CONTRACT_OZ * FX_EUR)), 0.01)
+    return float(lot * d * CONTRACT_OZ * FX_EUR / equity) if equity > 0 else 0.0
 
 
-def auto_lot(equity: float) -> float:
+def auto_lot(equity: float, dist_usd: float | None = None) -> float:
     """Fixed-fractional sizing: Q_OPT of equity per trade, floored at the venue minimum.
 
-    THE FLOOR IS A DECISION, NOT A ROUNDING ARTIFACT. 0.01 lot risks ~EUR 17.57 on gold, so the
-    smallest position the venue will accept already implies a fixed EUR risk, and the fraction
-    that represents falls as equity grows:
+    `dist_usd` IS THE SLEEVE'S OWN STOP, AND PASSING IT IS NOT OPTIONAL IN THE LIVE PATH.
+
+    This sized every sleeve from the house constant DIST_USD = 19.1 while the caller had the
+    real bracket in hand on the line above. Fixed-fractional sizing means lot = risk_budget /
+    stop_distance, so using a stop 2.8x narrower than the real one produces a position 2.8x
+    larger than the budget bought. The live brackets on 2026-08-14 were:
+
+        sleeve        actual stop     vs DIST_USD 19.1     realised risk multiple
+        asia            $53.40             2.80x                   2.80x
+        afternoon       $48.64             2.55x                   2.55x
+        london_am       $27.91             1.46x                   1.46x
+        ny_open         $18.65             0.98x                   0.98x
+
+    So two of four sleeves ran at roughly 2.5-2.8x the stated policy, at EVERY equity, while
+    `realised_q` reported the policy figure and the heat cap admitted legs against it. The
+    three-leg book believed it was at its 3.81% budget and was closer to 8%. Nothing was wrong
+    with either number in isolation; the constant was simply not the thing being traded.
+
+    Session-range stops are the reason the gap is this large. These brackets are the session
+    high to session low, so the stop is as wide as the session was -- a quantity that varies by
+    a factor of three across the day and has no reason to sit near a single average.
+
+    THE FLOOR IS A DECISION, NOT A ROUNDING ARTIFACT. 0.01 lot risks ~EUR 17.57 on gold at the
+    house distance, so the smallest position the venue will accept already implies a fixed EUR
+    risk, and the fraction that represents falls as equity grows (figures below at DIST_USD;
+    a wider sleeve scales them by its own multiple):
 
         equity  realised q   worst historical DD (3-leg book, -33.7R)
           300      5.86%          -86.9%     <- ~full Kelly. This is where accounts die.
@@ -198,7 +245,8 @@ def auto_lot(equity: float) -> float:
     statement -- so the realised fraction is computed explicitly by `realised_q` and recorded by
     the caller instead of being inferred from a lot size after the fact.
     """
-    lot = _lot_steps(Q_OPT * equity / (DIST_USD * CONTRACT_OZ * FX_EUR))
+    d = float(dist_usd) if dist_usd and dist_usd > 0 else DIST_USD
+    lot = _lot_steps(Q_OPT * equity / (d * CONTRACT_OZ * FX_EUR))
     return float(min(max(lot, 0.01), 5.0))
 
 
@@ -751,9 +799,19 @@ def main() -> None:
             a = float(tr.ewm(alpha=1 / ATR_N, min_periods=ATR_N).mean().iloc[-1])
             spec = bracket_spec(hi, lo, max(a, 5.0), sym.trade_tick_size,
                                 stops_level=int(getattr(sym, "trade_stops_level", 0) or 20))
-            lot = auto_lot(equity) if s["lot"] == "auto" else (
-                promoted_lot(equity, sleeve_live_n(s["name"])) if s["lot"] == "auto_ramp"
+            # SIZE AGAINST THIS SLEEVE'S OWN STOP, which `spec` holds one line above.
+            # Sizing from the house DIST_USD while the real bracket was in hand made every
+            # wide-session sleeve trade 2.5-2.8x its budget -- see `auto_lot`.
+            dist = stop_distance(spec)
+            if dist is None:
+                log(f"[{s['name']}] SKIPPED: bracket spec has no usable stop distance; "
+                    f"refusing to size from the house average")
+                continue
+            lot = auto_lot(equity, dist) if s["lot"] == "auto" else (
+                promoted_lot(equity, sleeve_live_n(s["name"]), dist) if s["lot"] == "auto_ramp"
                 else float(s["lot"]))
+            log(f"[{s['name']}] stop ${dist:.2f} -> lot {lot:.2f} "
+                f"(realised q {realised_q(equity, dist):.2%})")
             # margin guard (machine kill switch): skip sleeve if tight
             if not margin_ok(s["symbol"], lot, max(hi, lo)):
                 log(f"[{s['name']}] SKIPPED: margin tight (lot={lot})")
