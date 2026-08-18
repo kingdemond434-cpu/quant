@@ -6162,11 +6162,11 @@
    "summary": "R0330 remainder: the disposition-in-same-commit duty has NO mechanism. scripts/recommendations.py:199 validates only that --commit is NON-EMPTY when status=implemented; nothing ever reads row['commit'] back, and nothing checks the sha exists, is reachable, or touches anything related to the row. MEASURED: 2 of 204 implemented rows carry the literal string 'HEAD' as their commit, which would satisfy the current check forever. Build: validate the sha resolves (git cat-file -e) at dispose time and fail loudly if not, then a fence that re-verifies reachability across the ledger so a rebase or a dropped branch cannot silently turn a proven row into an unprovable one. NOTE the interaction already in desk memory -- dispose-then-rebase invalidates a row's --commit sha, which is why merges are used instead of rebases here; a checker makes that failure visible instead of latent.",
    "roi_bps": 35.0,
    "raised": "2026-08-12T13:30:44.862597+00:00",
-   "status": "implemented",
+   "status": "open",
    "reason": null,
-   "commit": "ed04c87f25ac748461311bff27813d887779401a",
+   "commit": null,
    "due": null,
-   "disposed": "2026-08-18T21:11:54.821906+00:00"
+   "disposed": null
   },
   {
    "id": "R0479",
@@ -6186,11 +6186,11 @@
    "summary": "WIRE marginal_admission.evaluate INTO paper_sleeves.decide() -- the precise remainder of R0338, whose premise needs one correction first. R0338 said candidates are admitted on standalone OOS Sharpe against a fixed bar; that is TRUE of the campaign/simulation path (libs/validation/screen_admission.py:300, below_relevance_floor) but FALSE of the live forward-slot path, which never consults Sharpe at all: paper_sleeves.decide() delegates to slot_admission.rank(), which sorts by TIME-TO-RESOLUTION, and its only dedupe is NAME-based (paper_sleeves.py dedupe: name/signal-root/axis). So a differently-named candidate at rho 0.97 to the book is 'fresh' today and takes a scarce slot. INSERTION POINT: paper_sleeves.py, between ranking = ev_rank(...) and admitted = [by_name[r] ...] -- filter ranking['admitted'] before it becomes decision['spawn']. THE INPUT EXISTS, contrary to the first read: Candidate carries pnl_artifact + pnl_key (paper_sleeves.py:350) resolving into data/full_sweep_survivor_pnl.npz, the same timestamped (ts,symbol) series run_paper_sleeve_forward.py:115 already reads to accrue clocks; standing clocks carry the same keys in their shadow_state files. REQUIRED: (1) assemble the incumbent matrix from standing clocks' series, (2) align candidate and incumbents on IDENTICAL timestamps before calling -- evaluate() truncates from the front and does NOT join on time, so misalignment silently produces a meaningless rho (same-ruler law), (3) handle incumbents whose provenance is NOT full_sweep_npz (axis/standing clocks) -- an unresolvable incumbent must read UNMEASURED and fail CLOSED to rho=1 like marginal_admission already does, never be dropped from the matrix, (4) persist the Admission dataclass beside the spawn row. NOTE THE GATE CANNOT BIND TODAY AND THAT IS NOT A REASON TO SKIP IT: the cohort is 15/12 OVER CAP so free_slots()=0 and decide() spawns nothing -- wire it with tests now so the first spawn after a retirement is judged, rather than discovering the hole when a slot frees.",
    "roi_bps": 40.0,
    "raised": "2026-08-12T14:14:12.874458+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "bc8d7b765bac76367fcc3aa9ed319f7c8e2c46e5",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-18T21:21:47.900000+00:00"
   },
   {
    "id": "R0481",
