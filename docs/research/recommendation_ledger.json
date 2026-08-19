@@ -6230,11 +6230,11 @@
    "summary": "Screen Bybit isBlockTrade/isRPITrade as a free institutional-vs-retail conditioning variable. Present on every bybit print the desk records, read by ZERO feature code. A microstructure mechanism that only works against retail flow is a different and more durable claim than one fitted to blended flow.",
    "roi_bps": 15.0,
    "raised": "2026-08-12T14:18:31.440846+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Screened same-run through the audited harness per screen-on-discovery: novelty-gated (0.79 vs graveyard), 2 pre-registered trials both logged to research_memory (rm-20260819T022836/37), bars on the venue clock, execId-deduped. Verdicts: block_share INSUFFICIENT-DATA (no block prints in surviving tape -- the 08-17 rm -rf destroyed the only source; flags absent from Bybit public archive), rpi_share SCREEN-UNDERPOWERED ic -0.097 n=445. Extraction + re-screen committed as scripts/screen_bybit_print_flags.py; re-screen when tape accrues (~96 bars/day/symbol).",
+   "commit": "6401baf0e72122faa86e7ef178f9755f4ea275ae",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-19T02:30:34.209645+00:00"
   },
   {
    "id": "R0485",
