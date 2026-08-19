@@ -1002,8 +1002,10 @@ ban-window mining with the OP-071 selector; (3) coinsbbs.com + btcicc.com survey
 The 08-18 dig was complete (universe map 104/105/106 checked PRESENT this run before regrading);
 the grade token "MINED" is outside `source_backlog._classify`'s vocabulary so the card fail-opened
 back into every cycle's verify queue. Instance fixed by regrade; CLASS routed:
-improvement_inbox 2026-08-19 entry + ledger row **R0626** (print an UNRECOGNIZED-GRADE
-warning in the existing runner — zero new organs).
+improvement_inbox 2026-08-19 entry + ledger row: **OWED, NOT LANDED** — four add attempts (R0626 assigned twice, both times
+swept) lost races to a concurrent raw ledger writer (the mid-merge sibling session, see
+CONCURRENCY INCIDENT); the row content is durably in the improvement_inbox entry and the first
+quiet session raises it against that entry.
 
 #### ITEM 2 — CLOSED to available depth. 8btc board-2 ban window mined; OP-071 selector VALIDATED on first use. [§33: wired -> docs/graveyard.md era_crossvenue_fiat_premium_arb TENTH instance]
 Capture `20131225003502/forum-2-6.html`: 35 threads, last-replied 12-04→12-07 — exactly the
@@ -1058,8 +1060,12 @@ prioritized first. Breadth-theater check: 3 reply chains ≥2 mined, 1 cross-ven
 session in this shared tree reset the working copy (its unpopped `git stash` "pre-merge desk
 state 0953" is the mechanism visible in `git stash list`) and swept EVERY uncommitted edit of
 this session — Edit-tool writes and bash appends alike — plus the first ledger add (R0626,
-dropped by the concurrent ledger union-merge c0d7cde5; re-raised as R0626 after flock
-7f7ceb07 landed and a torn-tail ledger corruption was truncate-repaired (0 rows lost, 624 verified)). Only the last post-reset edit survived. Everything was re-applied from the
+dropped by the concurrent ledger union-merge c0d7cde5; FOUR add attempts lost the race even after flock
+7f7ceb07 landed — the writer bypasses the CLI (raw whole-file writes). Worse: the ledger was
+caught MID-TRUNCATE twice (0-byte file), one race committed an EMPTY ledger (b224a897, reverted
+1d3bcff0 via git hash-object index staging — clobber-immune), and a torn-tail corruption was
+truncate-repaired (0 of 624 rows lost, tail row verified duplicated in prefix). The ledger row
+is OWED; content preserved in improvement_inbox). Only the last post-reset edit survived. Everything was re-applied from the
 authoring context and committed in the SAME bash block as this note. Lesson unchanged from the
 standing one (commit within minutes; explicit paths; verify from `git show HEAD:`), plus the
 twist: a sibling's stash can eat BOTH write channels at once, and the author's context is the
@@ -1069,7 +1075,7 @@ only recovery path — so the write-first note must COMMIT first too, not merely
 instance), docs/research/search_operator_library.md (OP-088 + 2 field notes + 4 lexicon rows),
 docs/research/weak_signal_registry.md (WS-014), docs/research/data_axis_watchlist.md (card 23
 regrade + card 24 design input), docs/research/improvement_inbox.md (+1 with ledger row),
-docs/research/recommendation_ledger.json (R0626 + truncate repair), data/research_memory rows
+docs/research/recommendation_ledger.json (truncate repair + empty-commit revert; row itself OWED), data/research_memory rows
 rm-20260819T020435-{7b9f2b,ff957f} + rm-20260819T020436-a4abfa (gitignored store, host-local),
 this file.
 
