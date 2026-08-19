@@ -7937,6 +7937,76 @@
    "commit": "7f7ceb0703ec704b30eb394956ef8783ee70a611",
    "due": null,
    "disposed": "2026-08-19T01:51:06.168360+00:00"
+  },
+  {
+   "id": "R0626",
+   "source": "cycle",
+   "summary": "L1.64 first run: the deployed sleeve's margin construction is INHERITED (no decision row). Read data/margin_topology.json and write data/margin_topology_decision.json {construction, decided_at, decided_by, equity_at_decision_usd, evidence} -- KEEP-CURRENT is a legitimate verdict, running undecided is not. Cheapest pre-Gate-0: a later switch restarts forward evidence (L2.10). Fence: check_margin_topology.py, cron 07:29 daily.",
+   "roi_bps": null,
+   "rank": 9.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-19T02:23:14.135266+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0627",
+   "source": "cycle",
+   "summary": "L1.64 blocking input: the Multi-Assets collateral-ratio table has NO keyless endpoint (both candidates 404, recorded in data/margin_topology_terms.json fetch_log). Multi-Assets is the ONLY construction that can raise the WHOLE book toward npe 1.0 (COIN-M covers 3.8% of names, book x1.013); until a keyed or manual dated read lands {asset: ratio} in the terms file, construction (b) stays honestly UNMEASURED and the L1.64 book prize is gated on exactly this read.",
+   "roi_bps": null,
+   "rank": 8.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-19T02:23:18.401121+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0628",
+   "source": "cycle",
+   "summary": "Shadow-on-target-construction (hunt s3 brainstorm 30): if the L1.64 decision verdict is SWITCH, move the SHADOW book to the target construction immediately -- zero capital, forward evidence accrues where live will actually run, deleting the forward-evidence-restart cost (L2.10) that makes late switches expensive. Pre-Gate-0 is the cheap window.",
+   "roi_bps": null,
+   "rank": 7.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-19T02:23:22.059145+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0629",
+   "source": "cycle",
+   "summary": "Funding-book router (hunt s3 brainstorm 1): per-name harvest routing USDT-M vs COIN-M for the validated carry sleeve -- richest funding book net of fees/depth per name. First consumer of the R0462 COIN-M funding backfill when it lands; until then the per-name differential is UNMEASURED. Execution optimization of the existing sleeve, not the EV-REJECTED RV trade; the 20 CM-covered names are where the L1.64 coinm_inverse_1x row applies.",
+   "roi_bps": null,
+   "rank": 6.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-19T02:23:26.406574+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0630",
+   "source": "cycle",
+   "summary": "Bybit UTA as margin construction (e) (hunt s3 brainstorm 2): read UTA unified-margin/haircut terms into data/margin_topology_terms.json so the cross-venue construction row stops being UNMEASURED. Bybit L2 tape already archived (data moat half exists); venue onboarding is a principal act. Comparator carries venue concentration so capital efficiency never argues for deeper single-venue concentration by silence (proposal requirement 28).",
+   "roi_bps": null,
+   "rank": 4.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-19T02:23:31.384765+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
