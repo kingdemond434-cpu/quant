@@ -139,6 +139,41 @@ def _row_flags(r: dict) -> list[bool] | None:
     return None                        # nothing recorded: unmeasurable, NOT a taker
 
 
+#: Events whose legs the design deliberately CROSSES ("patient on OPENS, fast on CLOSES" -- the
+#: very fix this monitor polices). A close leg scored against the 60% maker bar is a category
+#: error one level up from `already-flat`: an order WAS placed, but the design never intended it
+#: to rest, and at steady state every open pairs with a close, so a pooled bar can fail forever
+#: on arithmetic while every patient order rests maker (measured 2026-08-19: spot closes 0/9
+#: maker BY DESIGN, dragging the pooled rate to 57.1% while entry legs read 71.9%). Close legs
+#: stay in the pooled `maker_rate` (trend-store back-compat) and in `per_leg`; they leave only
+#: the POLICED metric. Any event that is not explicitly a close -- open, topup, missing, unknown
+#: -- is policed: fail closed, an unknown intent can only push the policed share DOWN.
+_CLOSE_EVENTS = frozenset({"close"})
+
+
+def _leg_split(rows: list[dict]) -> dict[str, dict[str, Any]]:
+    """Per (leg x intent) maker counts over rows whose legs are readable (R0481 power piece).
+
+    The pooled rate blends three different processes -- futures (posts and fills), spot entries
+    (posts, often falls back) and spot closes (crosses by design) -- so it can straddle the target
+    forever while the leg that matters is determinate. Buckets: spot_entry / spot_close /
+    fut_entry / fut_close. Readability is decided by `_leg_maker_flags`, the same rule as the
+    pooled metric, so the decomposition can never count a row the pooled number refused.
+    """
+    out: dict[str, dict[str, Any]] = {b: {"legs": 0, "maker": 0} for b in
+                                      ("spot_entry", "spot_close", "fut_entry", "fut_close")}
+    for r in rows:
+        if _leg_maker_flags(r) is None:
+            continue
+        intent = "close" if str(r.get("event") or "") in _CLOSE_EVENTS else "entry"
+        for field, leg in (("spot_mode", "spot"), ("fut_mode", "fut")):
+            if field in r and leg_modes.placed_order(r[field]):
+                b = out[f"{leg}_{intent}"]
+                b["legs"] += 1
+                b["maker"] += int(leg_modes.is_maker(r[field]))
+    return out
+
+
 def _schema_understood(rows: list[dict]) -> bool:
     """Does ANY row carry a field that could express maker-vs-taker?
 
@@ -254,6 +289,21 @@ def measure(rows: list[dict]) -> dict[str, Any]:
         "taker_share_of_fills": round((n_units - len(makers)) / n_units, 4),
         "priced_rows": len(priced),
     }
+    # R0481 POWER PIECE: publish the leg-x-intent decomposition beside the pooled rate. The
+    # pooled number stays exactly as it was (the trend store and the two-reader agreement with
+    # run_trade_forensics both key on it); the decomposition adds the resolution the routing
+    # decision actually needs -- which LEG, on which INTENT, is short of the bar.
+    split = _leg_split(rows)
+    for b in split.values():
+        if b["legs"]:
+            b_lo, b_hi = wilson(int(b["maker"]), int(b["legs"]))
+            b["rate"] = round(b["maker"] / b["legs"], 4)
+            b["ci95"] = [round(b_lo, 4), round(b_hi, 4)]
+    out["per_leg"] = split
+    pk = split["spot_entry"]["maker"] + split["fut_entry"]["maker"]
+    pn = split["spot_entry"]["legs"] + split["fut_entry"]["legs"]
+    out["patient_path"] = {"legs": pn, "maker": pk,
+                          "rate": round(pk / pn, 4) if pn else None}
     if not priced:
         out.update({"fees_usd": None, "fee_concentration": None, "bps_per_rt": None,
                     "fee_note": (f"0 of {n} row(s) carry a fee field {_FEE_FIELDS} -- cost per "
@@ -287,11 +337,26 @@ def verdict(now: dict, prior: dict | None) -> tuple[str, str]:
     rate = now.get("maker_rate")
     if rate is None:
         return "NO DATA", "no fills recorded -- the loop cannot answer whether the fix works"
-    k, n = now.get("maker_fills", 0), now.get("measured_legs", 0)
-    lo, hi = wilson(int(k), int(n))
-    ci = f"{n} measured leg(s), 95% CI [{lo:.1%}, {hi:.1%}]"
+    # POLICED SCOPE (R0481). The fix under verification is "patient on OPENS, fast on CLOSES",
+    # so the bar is tested on the legs the fix actually claims: ENTRY legs. Close legs are
+    # crossed BY DESIGN and belong to the slippage measurements (spot_slip_bps), not this bar --
+    # see _CLOSE_EVENTS. A tape without event/leg data polices every measured leg exactly as
+    # before, so the pre-decomposition dict shape keeps its old verdicts bit-for-bit.
+    pp = now.get("patient_path") or {}
+    policed = bool(pp.get("legs"))
+    k = int(pp["maker"] if policed else now.get("maker_fills", 0))
+    n = int(pp["legs"] if policed else now.get("measured_legs", 0))
+    rate = (k / n) if policed and n else float(rate)
+    lo, hi = wilson(k, n)
+    scope = "patient-path entry leg(s)" if policed else "measured leg(s)"
+    ci = f"{n} {scope}, 95% CI [{lo:.1%}, {hi:.1%}]"
     cov = now.get("coverage")
     cov_s = f", coverage {cov:.1%} of rows" if isinstance(cov, (int, float)) else ""
+    spot = (now.get("per_leg") or {}).get("spot_entry") or {}
+    if policed and spot.get("legs"):
+        s_lo, s_hi = wilson(int(spot["maker"]), int(spot["legs"]))
+        cov_s += (f"; spot-entry {spot['maker']}/{spot['legs']} CI [{s_lo:.1%}, {s_hi:.1%}] "
+                  "is the routing gate")
     # A POINT ESTIMATE IS NOT A VERDICT. PASS moves real capital-sizing confidence and STALLED
     # declares an accepted fix defective; neither may rest on a sample that cannot distinguish
     # them. The bar is the CONFIDENCE INTERVAL clearing the target, never the point estimate
@@ -302,7 +367,12 @@ def verdict(now: dict, prior: dict | None) -> tuple[str, str]:
         return "UNDERPOWERED", (f"maker rate {rate:.1%} straddles the {TARGET_MAKER_RATE:.0%} "
                                 f"target -- {ci}{cov_s}. Neither PASS nor STALLED is supported; "
                                 "the answer is more measured legs, not a louder verdict.")
-    prev = (prior or {}).get("maker_rate")
+    # Trend compares like with like: a policed run against the prior's policed rate. The one
+    # transitional run whose prior predates the decomposition falls back to the pooled prior --
+    # documented, one-off, and only reachable once the CI is already determinate-below.
+    prev = (((prior or {}).get("patient_path") or {}).get("rate") if policed else None)
+    if prev is None:
+        prev = (prior or {}).get("maker_rate")
     if prev is None:
         return "BASELINE", f"maker rate {rate:.1%} recorded ({ci}{cov_s}); trend needs a second"
     delta = rate - prev

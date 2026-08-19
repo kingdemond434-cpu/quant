@@ -240,3 +240,71 @@ class TestGuardStillGuards:
         m = measure(rows)
         assert m["maker_rate"] == 0.5
         assert m["fee_concentration"] == round(0.05 / 0.06, 4), "taker still owns its fee bill"
+
+
+class TestPatientPathPolicing:
+    """R0481 power piece: the bar is tested on the legs the fix claims -- entries.
+
+    "Patient on OPENS, fast on CLOSES" CROSSES close legs by design, so a pooled bar penalises
+    the design on arithmetic alone: at steady state every open pairs with a close, and the pooled
+    rate can straddle (or fail) the target forever while every patient order rests maker. That is
+    the R0064 false-integrity-flag one level up -- an order was placed, but it was never meant to
+    rest. Closes stay in the pooled `maker_rate` (two-reader agreement, trend store) and in
+    `per_leg`; only the POLICED metric excludes them.
+    """
+
+    _TAPE: list[dict[str, Any]] = (
+        [{"event": "open", "spot_mode": "maker", "fut_mode": "maker", "notional": 10.0}] * 6
+        + [{"event": "open", "spot_mode": "taker_fallback", "fut_mode": "maker",
+            "notional": 10.0}] * 6
+        + [{"event": "close", "spot_mode": "taker", "fut_mode": "maker", "notional": 10.0}] * 9
+    )
+
+    def test_per_leg_decomposition_is_published(self) -> None:
+        pl = measure(self._TAPE)["per_leg"]
+        assert (pl["spot_entry"]["legs"], pl["spot_entry"]["maker"]) == (12, 6)
+        assert (pl["spot_close"]["legs"], pl["spot_close"]["maker"]) == (9, 0)
+        assert (pl["fut_entry"]["legs"], pl["fut_entry"]["maker"]) == (12, 12)
+        assert (pl["fut_close"]["legs"], pl["fut_close"]["maker"]) == (9, 9)
+        assert pl["spot_entry"]["ci95"][0] < 0.6 < pl["spot_entry"]["ci95"][1]
+
+    def test_pooled_rate_is_unchanged_by_the_decomposition(self) -> None:
+        """The two-reader agreement must survive: pooled counts every placed leg, closes too."""
+        m = measure(self._TAPE)
+        assert m["maker_rate"] == round(27 / 42, 4)
+        assert m["maker_rate"] == _forensics_share(self._TAPE) or (
+            round(m["maker_rate"], 3) == _forensics_share(self._TAPE))
+        assert m["patient_path"] == {"legs": 24, "maker": 18, "rate": 0.75}
+
+    def test_verdict_polices_the_patient_path_and_names_the_routing_gate(self) -> None:
+        v, why = verdict(measure(self._TAPE), None)
+        assert v == "UNDERPOWERED", "18/24 straddles 60% -- decomposition must not manufacture PASS"
+        assert "patient-path" in why
+        assert "spot-entry 6/12" in why, "the routing gate must be visible in the verdict"
+
+    def test_design_conforming_closes_cannot_fail_the_policed_bar(self) -> None:
+        """All-maker entries + all-taker closes is the DESIGN WORKING: policed PASS, not STALLED."""
+        tape = ([{"event": "open", "spot_mode": "maker", "fut_mode": "maker",
+                  "notional": 10.0}] * 100
+                + [{"event": "close", "spot_mode": "taker", "fut_mode": "taker",
+                    "notional": 10.0}] * 100)
+        m = measure(tape)
+        assert m["maker_rate"] == 0.5, "pooled tells the blended truth"
+        v, why = verdict(m, None)
+        assert v == "PASS", "200/200 patient legs maker: the fix did exactly what it claimed"
+        assert "patient-path" in why
+
+    def test_pre_decomposition_dict_shape_keeps_its_old_verdict(self) -> None:
+        """A dict without patient_path (old artifact, old fixtures) polices pooled, bit-for-bit."""
+        v, why = verdict({"maker_rate": 0.6, "maker_fills": 18, "measured_legs": 30,
+                          "coverage": 0.05}, None)
+        assert v == "UNDERPOWERED"
+        assert "measured leg(s)" in why and "patient-path" not in why
+
+    def test_unknown_event_fails_closed_into_the_policed_denominator(self) -> None:
+        """A leg whose intent is unrecorded can only push the policed share DOWN, never leave."""
+        tape = [{"spot_mode": "taker", "fut_mode": "taker", "notional": 10.0}] * 40
+        m = measure(tape)
+        assert m["patient_path"]["legs"] == 80, "no event field -> policed, not excused"
+        v, _ = verdict(m, {"maker_rate": 0.242})
+        assert v == "STALLED", "0/80 policed legs is a determinate failure, not a straddle"
