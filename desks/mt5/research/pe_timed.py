@@ -29,6 +29,16 @@ FMT = "%d/%m/%Y %H:%M:%S"
 
 # (ticket, symbol, side, lots, open, close, eur, open_time, close_time)
 TIMED = [
+    (104480241, "XAUUSD", "B", 0.1748, 4418.62, 4422.94, 65.37,
+     "12/08/2026 16:30:06", "12/08/2026 16:47:23"),
+    (104482259, "XAUUSD", "B", 0.1749, 4420.68, 4422.99, 34.98,
+     "12/08/2026 16:30:40", "12/08/2026 16:47:21"),
+    (104485534, "XAUUSD", "B", 0.1749, 4417.00, 4424.86, 119.02,
+     "12/08/2026 16:32:05", "12/08/2026 16:47:37"),
+    (104582249, "XAUUSD", "B", 0.2346, 4426.08, 4427.87, 36.35,
+     "12/08/2026 17:31:18", "12/08/2026 17:33:20"),
+    (104711848, "XAUUSD", "B", 0.2440, 4403.20, 4404.35, 24.33,
+     "12/08/2026 19:50:15", "12/08/2026 20:02:19"),
     (104716235, "XAUUSD", "B", 0.2440, 4402.87, 4404.07, 25.39,
      "12/08/2026 19:56:08", "12/08/2026 20:02:22"),
     (105442319, "DJ30", "S", 3.1614, 53887.45, 53883.55, 10.69,
@@ -103,6 +113,27 @@ def main() -> int:
           f"-{max(span) // 60}:{max(span) % 60:02d} server time, on both days.")
     print("  HYPOTHESIS (offset unverified): at UTC+3 that is 13:30-13:37 UTC,")
     print("  the first seven minutes of the New York cash session.")
+
+    print("\nWHEN DOES HE ENTER?  every timestamped entry, by server minute")
+    mins_of_day = sorted((t(r[7]).hour * 60 + t(r[7]).minute, r[1]) for r in rows)
+    for m, sym in mins_of_day:
+        print(f"  {m // 60:02d}:{m % 60:02d}  {sym}")
+    lo, hi = 16 * 60 + 30, 16 * 60 + 37
+    inwin = [1 for m, _ in mins_of_day if lo <= m <= hi]
+    n, k = len(mins_of_day), len(inwin)
+    # Gold and DJ30 are not tradeable 24h; take a conservative 12-hour active
+    # window as the denominator. A narrower one only makes this MORE extreme.
+    p = (hi - lo + 1) / (12 * 60)
+    from math import comb
+    pv = sum(comb(n, i) * p ** i * (1 - p) ** (n - i) for i in range(k, n + 1))
+    print(f"\n  {k} of {n} entries land inside 16:30-16:37 server time.")
+    print(f"  Under a uniform {12}-hour trading day that window is {100 * p:.2f}% "
+          f"of the day.")
+    print(f"  P(>= {k} of {n} by chance) = {pv:.2e}")
+    print("  This is no longer a pattern in the index trades -- 12/08 puts THREE")
+    print("  XAUUSD entries in it. The window belongs to the STRATEGY, not to a")
+    print("  symbol. At UTC+3 it is 13:30-13:37 UTC = the first seven minutes of")
+    print("  the New York cash session.")
 
     print("\nBASKET TARGETS -- lot-weighted, tickets closed together")
     grp = defaultdict(list)
