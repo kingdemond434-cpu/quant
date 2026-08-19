@@ -155,10 +155,15 @@ heartbeat_loop() {
 heartbeat_loop &
 HEARTBEAT_PID=$!
 
-CODEX_NIGHTLY_MODEL="${CODEX_NIGHTLY_MODEL_OVERRIDE:-gpt-5.6-terra}"
+# Precedence: an explicit _OVERRIDE beats everything, then whatever the unit file
+# exports, then the pinned default. The pre-merge form read ONLY _OVERRIDE, which
+# silently discarded the Environment= lines in quant-midnight-frontier.service --
+# the unit's model pin had no effect on the process the unit itself started.
+CODEX_NIGHTLY_MODEL="${CODEX_NIGHTLY_MODEL_OVERRIDE:-${CODEX_NIGHTLY_MODEL:-gpt-5.6-sol}}"
+CODEX_NIGHTLY_REASONING_EFFORT="${CODEX_NIGHTLY_REASONING_EFFORT_OVERRIDE:-${CODEX_NIGHTLY_REASONING_EFFORT:-max}}"
 CODEX_ARGS=(exec -C "$PWD" --sandbox workspace-write "${CODEX_EXEC_APPROVAL_ARGS[@]}"
     --output-last-message "$LAST_MESSAGE"
-    --config "model_reasoning_effort=${CODEX_NIGHTLY_REASONING_EFFORT_OVERRIDE:-medium}"
+    --config "model_reasoning_effort=${CODEX_NIGHTLY_REASONING_EFFORT}"
     --model "$CODEX_NIGHTLY_MODEL")
 CODEX_RC=0
 timeout --signal=TERM --kill-after=60 "${CODEX_NIGHTLY_TIMEOUT_SECONDS:-21600}" \
