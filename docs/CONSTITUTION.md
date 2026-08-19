@@ -2799,7 +2799,13 @@ construction -- the long leg itself margins the short -- consumes only the long 
 liquidation moving FURTHER away**, because the collateral appreciates in lockstep with the
 short's loss. And `data/leverage_target.json` carries growth_optimal 2.25 / ruin_cap 2.05: **the
 sizing ladder's own upper rungs are structurally unreachable under a 0.75x topology ceiling.**
-The sizing law and the capital structure had never been in the same room.
+The sizing law and the capital structure had never been in the same room. **AND THE MULTIPLIER
+IS PER COVERED NAME, NEVER THE BOOK'S BY DEFAULT** -- every book-level number is
+coverage-blended (the covered slice runs on the alternative, the rest stays inherited), because
+the first consumer run of this law's own comparator caught it publishing 1.0 as a book
+efficiency from a construction covering 3.8% of names: a +33% construction on 4% of the book is
+a +1.3% book, and swapping the 1.8 fiction for a 1.0 fiction would have been this law failing
+its own test on day one. A multiplier over an unread universe is not a measurement (L1.28a).
 
 **OPERATIVE.** Every deployed or shadow sleeve's margin construction carries a DECISION ROW
 measured against every construction available at current equity. `libs/portfolio/margin_topology`

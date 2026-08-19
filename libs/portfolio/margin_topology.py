@@ -273,8 +273,9 @@ def build_rows(terms: dict[str, Any] | None, *,
             npe_basis=f"venue PM terms as_of {t.get('as_of', '?')} ({t.get('pm_source', '?')})",
             liq_unreachable=False,
             liq_note="cross-margined pair; boundary set by the venue's PM risk model",
-            universe_coverage=None,
-            coverage_basis="PM-eligible instrument list not yet read",
+            universe_coverage=1.0,
+            coverage_basis="same USDT-M instrument set, cross-margined -- coverage is "
+                           "structural, not a roster read",
             funding_book="USDT-M",
             eligibility_floor_usd=float(pm_floor),
             eligibility_basis=str(t.get("pm_source", "venue terms")),
@@ -327,29 +328,53 @@ def eligible_at(row: ConstructionRow, equity_usd: float) -> bool:
             and equity_usd >= row.eligibility_floor_usd)
 
 
+def blended_npe(row: ConstructionRow, current_npe: float) -> float | None:
+    """BOOK-level notional_per_equity: the covered slice runs on `row`, the rest stays on the
+    inherited construction.
+
+    THE OVERCLAIM THIS PREVENTS, caught on this module's own first consumer run: COIN-M 1x is
+    npe=1.0 PER COVERED NAME but covers 3.8% of the carry universe -- publishing 1.0 as the
+    book's efficiency would swap the 1.8 fiction for a 1.0 fiction. A +33% construction on 4%
+    of names is a +1.3% book, and every book-level number says so. Unknown coverage blends
+    nothing (L1.28a): a multiplier over an unread universe is not a measurement.
+    """
+    if row.notional_per_equity is None or row.universe_coverage is None:
+        return None
+    cov = row.universe_coverage
+    return round(cov * row.notional_per_equity + (1.0 - cov) * current_npe, 6)
+
+
 def level_table(rows: list[ConstructionRow],
                 levels: tuple[float, ...] = CAPITAL_LEVELS) -> list[dict[str, Any]]:
-    """Best MEASURED+eligible notional_per_equity per capital level -- the capital plan's input.
+    """Best MEASURED+eligible BOOK-level npe per capital level -- the capital plan's input.
 
     The inherited construction needs no eligibility term (it is live), so it is always the
-    floor; UNMEASURED rows contribute nothing (L1.28a) rather than a hoped-for multiplier.
+    floor; UNMEASURED rows contribute nothing (L1.28a) rather than a hoped-for multiplier, and
+    every candidate is coverage-blended (see `blended_npe`) so a narrow construction can never
+    lend the whole book its per-name multiplier.
     """
     out: list[dict[str, Any]] = []
     current = next((r for r in rows if r.key == CURRENT_CONSTRUCTION), None)
+    cur_npe = current.notional_per_equity if current else None
     for lvl in levels:
         best_key, best_npe = None, None
         for r in rows:
-            npe = r.notional_per_equity
-            if npe is None:
-                continue
-            ok = r.key == CURRENT_CONSTRUCTION or eligible_at(r, lvl)
-            if ok and (best_npe is None or npe > best_npe):
+            if cur_npe is None:
+                break
+            if r.key == CURRENT_CONSTRUCTION:
+                npe: float | None = r.notional_per_equity
+            elif eligible_at(r, lvl):
+                npe = blended_npe(r, cur_npe)
+            else:
+                npe = None
+            if npe is not None and (best_npe is None or npe > best_npe):
                 best_key, best_npe = r.key, npe
         out.append({
             "capital_usd": lvl,
             "best_construction": best_key,
             "best_npe": best_npe,
-            "current_npe": current.notional_per_equity if current else None,
+            "npe_basis": "coverage-blended book-level npe (blended_npe)",
+            "current_npe": cur_npe,
             "n_unmeasured_at_level": sum(1 for r in rows if r.status == UNMEASURED),
         })
     return out
@@ -418,10 +443,18 @@ def price_uplift(rows: list[ConstructionRow], *,
     for r in rows:
         if r.key == current_key or r.notional_per_equity is None:
             continue
-        delta = r.notional_per_equity - cur.notional_per_equity
+        book = blended_npe(r, cur.notional_per_equity)
+        # the BOOK delta is what the desk would actually harvest; the per-name multiplier is
+        # real but only on the covered slice, and both are published so neither can pose as
+        # the other. No coverage term -> no book claim (L1.28a).
+        delta = (book - cur.notional_per_equity) if book is not None else 0.0
         alt: dict[str, Any] = {
             "construction": r.key,
             "structural_multiplier": round(r.notional_per_equity / cur.notional_per_equity, 4),
+            "structural_basis": "per COVERED name -- applies to the covered slice only",
+            "book_multiplier": (round(book / cur.notional_per_equity, 4)
+                                if book is not None else None),
+            "universe_coverage": r.universe_coverage,
             "delta_notional_per_equity": round(delta, 4),
             # None when equity is unknown -- eligibility is a claim about a specific book size
             "eligible_at_current_equity": (eligible_at(r, equity_usd)
@@ -448,7 +481,11 @@ def price_uplift(rows: list[ConstructionRow], *,
                     else "no measured alternative to price against -- run --collect"),
             "equity_basis": equity_basis,
             "current_npe": cur.notional_per_equity,
-            # eligible-now alternatives outrank larger-but-locked ones: a multiplier the desk
-            # cannot exercise today is an option, not an alternative (L1.18a's deployment race)
-            "alternatives": sorted(alts, key=lambda a: (a["eligible_at_current_equity"] is False,
-                                                        -a["structural_multiplier"]))}
+            # eligible-now alternatives outrank larger-but-locked ones (L1.18a's deployment
+            # race), and the BOOK multiplier outranks the per-name one -- a large multiplier on
+            # a sliver must not headline over a small one on the whole book.
+            "alternatives": sorted(alts, key=lambda a: (
+                a["eligible_at_current_equity"] is False,
+                a["book_multiplier"] is None,
+                -(a["book_multiplier"] or 0.0),
+                -a["structural_multiplier"]))}

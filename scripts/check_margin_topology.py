@@ -348,7 +348,10 @@ def main() -> int:
             print(f"  {r['status']:<18} {r['key']}: {npe} {cov} funding={r['funding_book']}")
         best = (rep["uplift"].get("alternatives") or [{}])[0]
         if best.get("structural_multiplier"):
-            print(f"  best alternative: {best['construction']} x{best['structural_multiplier']} "
+            book = best.get("book_multiplier")
+            book_s = f"book x{book}" if book is not None else "book x? (coverage unread)"
+            print(f"  best alternative: {best['construction']} "
+                  f"x{best['structural_multiplier']} per covered name, {book_s} "
                   f"({best['liq_direction']})")
         print(f"  why:  {rep['why']}")
         print(f"  next: {rep['next_action']}")

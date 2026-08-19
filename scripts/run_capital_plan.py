@@ -54,9 +54,10 @@ _CAPACITY_USD = 2_000_000.0
 
 def _load(p: Path) -> dict[str, Any]:
     try:
-        return json.loads(p.read_text("utf-8"))
+        data = json.loads(p.read_text("utf-8"))
     except (OSError, json.JSONDecodeError):
         return {}
+    return data if isinstance(data, dict) else {}
 
 
 def _efficiency_at(topo: dict[str, Any] | None, cap: float) -> tuple[float, str, str]:

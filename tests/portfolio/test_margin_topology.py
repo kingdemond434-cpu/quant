@@ -17,6 +17,7 @@ from libs.portfolio.margin_topology import (
     CURRENT_CONSTRUCTION,
     EXECUTOR_VENUE_LEVERAGE,
     ConstructionRow,
+    blended_npe,
     build_rows,
     coinm_inverse_npe,
     eligible_at,
@@ -111,15 +112,31 @@ def test_pm_is_listed_but_ineligible_below_its_floor():
 def test_level_table_never_awards_an_ineligible_or_unmeasured_multiplier():
     rows = build_rows(_FULL_TERMS)
     tbl = {row["capital_usd"]: row for row in level_table(rows)}
-    # at seed, PM's 1.62 must NOT appear -- the 1.8-at-seed defect this build deletes
-    assert tbl[3_846.0]["best_construction"] in ("multi_assets_usdtm", "coinm_inverse_1x")
-    assert tbl[3_846.0]["best_npe"] == pytest.approx(1.0)
+    # at seed, PM's 1.62 must NOT appear -- the 1.8-at-seed defect this build deletes -- and
+    # the winner's npe is COVERAGE-BLENDED: CM covers 5/8 of the fixture universe, so the book
+    # runs 0.625 of itself at 1.0 and the rest on the inherited 0.75.
+    assert tbl[3_846.0]["best_construction"] == "coinm_inverse_1x"
+    assert tbl[3_846.0]["best_npe"] == pytest.approx(0.625 * 1.0 + 0.375 * 0.75)
+    # PM's coverage is structural (same USDT-M instruments), so at $25k it blends at 1.0
     assert tbl[25_000.0]["best_construction"] == "portfolio_margin"
     assert tbl[25_000.0]["best_npe"] == pytest.approx(1.62)
     # with no terms at all, the only measured construction is the inherited one
     bare = level_table(build_rows(None))
     assert all(row["best_construction"] == "split_spot_usdtm" for row in bare)
     assert all(row["best_npe"] == pytest.approx(0.75) for row in bare)
+
+
+def test_blended_npe_never_lends_a_narrow_construction_the_whole_book():
+    """The overclaim caught on this module's own first consumer run: COIN-M at the REAL
+    measured coverage (20/527 = 3.8%) is a +1.3% book, not a +33% book."""
+    rows = {r.key: r for r in build_rows(_FULL_TERMS)}
+    cm = rows["coinm_inverse_1x"]
+    assert blended_npe(cm, 0.75) == pytest.approx(0.625 * 1.0 + 0.375 * 0.75)
+    real_world = ConstructionRow(**{**cm.as_dict(), "universe_coverage": 0.038})
+    assert blended_npe(real_world, 0.75) == pytest.approx(0.7595)
+    # unknown coverage -> no book claim (L1.28a)
+    unknown = ConstructionRow(**{**cm.as_dict(), "universe_coverage": None})
+    assert blended_npe(unknown, 0.75) is None
 
 
 # ---------------------------------------------------------------- grading
@@ -169,9 +186,11 @@ def test_uplift_prices_both_rungs_and_the_liq_direction():
                       equity_basis="nav_attestation (LIVE)",
                       cagr_validated=0.0, cagr_if_validated=0.01)
     best = up["alternatives"][0]
-    # at $25k PM is eligible and carries the largest measured multiplier: 1.62 / 0.75
+    # at $25k PM is eligible and carries the largest measured BOOK multiplier: 1.62 / 0.75
+    # (its coverage is structural 1.0, so book == structural for PM)
     assert best["construction"] == "portfolio_margin"
     assert best["structural_multiplier"] == pytest.approx(1.62 / 0.75, abs=1e-3)
+    assert best["book_multiplier"] == pytest.approx(1.62 / 0.75, abs=1e-3)
     # honest zero: nothing validated yet, so the validated rung is $0/day -- not omitted
     assert best["usd_per_day_at_validated_cagr"] == 0.0
     assert best["usd_per_day_if_validated"] is not None
