@@ -1,14 +1,14 @@
 {
- "probed": "2026-08-17T03:35:09.833792+00:00",
+ "probed": "2026-08-19T03:35:07.502035+00:00",
  "venues": {
   "binance_futures": {
    "endpoint": "GET fapi.binance.com/fapi/v1/exchangeInfo",
    "states": {
-    "TRADING": 737,
+    "TRADING": 744,
     "SETTLING": 127,
-    "PENDING_TRADING": 2
+    "PENDING_TRADING": 1
    },
-   "n_live": 739,
+   "n_live": 745,
    "note": "SETTLING/DELIVERING are dated delivery contracts mid-retirement; a perp that was delisted disappears from exchangeInfo entirely, so this does not recover already-dead perps -- binance.vision archives remain the route for those.",
    "partial": true,
    "n_new_this_run": 0,
@@ -31,10 +31,10 @@
   "bybit": {
    "endpoint": "GET api.bybit.com/v5/market/instruments-info?category=linear&status={Trading,Closed}",
    "states": {
-    "Trading": 821,
+    "Trading": 825,
     "Closed": 945
    },
-   "n_live": 821,
+   "n_live": 825,
    "n_new_this_run": 0,
    "verdict": "AVAILABLE",
    "n_dead": 945
@@ -62,19 +62,19 @@
   "okx": {
    "endpoint": "GET www.okx.com/api/v5/public/instruments?instType=SWAP",
    "states": {
-    "live": 446,
-    "preopen": 1
+    "preopen": 2,
+    "live": 450
    },
-   "n_live": 447,
+   "n_live": 452,
    "verdict": "ABSENT",
    "n_dead": 0
   },
   "upbit": {
    "endpoint": "GET api.upbit.com/v1/market/all",
    "states": {
-    "live": 831
+    "live": 830
    },
-   "n_live": 831,
+   "n_live": 830,
    "note": "no state field is published at all; Upbit also PURGES candles on delisting, so the treatment group is erased at the source -- R0303 snapshots forward because there is nothing to ask for after the fact.",
    "verdict": "ABSENT",
    "n_dead": 0

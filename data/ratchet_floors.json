@@ -14,8 +14,8 @@
   "disk_headroom_ratio": {
     "artifact": "data/moat_mine.json",
     "proving_command": "python -c \"import json;print(json.load(open('data/moat_mine.json'))['closure']['disk'])\"",
-    "recorded": "2026-08-12T13:10:08Z",
-    "value": 0.142857
+    "recorded": "2026-08-19T03:31:53Z",
+    "value": 1.0
   },
   "findings_coverage": {
     "artifact": "docs/research/findings_coverage_record.json",
@@ -50,7 +50,7 @@
   "scripts_mypy_clean": {
     "artifact": "data/mypy_ratchet.json",
     "proving_command": "python scripts/check_mypy_ratchet.py",
-    "recorded": "2026-08-19T03:16:28Z",
+    "recorded": "2026-08-19T03:31:53Z",
     "value": 0.406844
   },
   "test_strength::libs/autodiscovery/validation.py": {
