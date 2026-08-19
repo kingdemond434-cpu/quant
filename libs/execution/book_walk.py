@@ -5,8 +5,9 @@ book depth nobody has recorded". That was wrong, and wrong in the most embarrass
 desk has 8.2GB of self-recorded 15-second L2 depth across three venues, and `asymmetry_ledger.py`
 grades it the single EXCLUSIVE asset the desk owns. The data was never missing. It was unused.
 
-`libs/signal_engine/market_impact_forecaster.py` is a square-root participation model with
-literature coefficients. That is a reasonable prior and it is not a measurement: it says what
+`libs/signal_engine/market_impact_forecaster.py` (retired 2026-08-19, zero production callers;
+superseded by scripts/calibrate_impact.py fitting k on this tape) was a square-root participation
+model with literature coefficients. A reasonable prior, and not a measurement: it says what
 impact USUALLY looks like for a generic instrument, on a desk that holds the actual book for its
 actual pairs. Walking the recorded book is arithmetic on ground truth and it dominates any
 parametric guess for the instruments the desk trades.

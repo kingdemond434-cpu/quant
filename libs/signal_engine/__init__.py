@@ -43,7 +43,6 @@ from libs.signal_engine.governance import (
     signal_governance_gate,
 )
 from libs.signal_engine.institutional_score import institutional_signal_score
-from libs.signal_engine.market_impact_forecaster import ImpactForecast, MarketImpactForecaster
 from libs.signal_engine.meta_model import MetaModel
 from libs.signal_engine.models import (
     AlphaSignal,
@@ -142,8 +141,6 @@ __all__ = [  # noqa: RUF022  # grouped by concern
     "SignalQuality",
     "SignalFilters",
     "SignalEmbeddingEngine",
-    "MarketImpactForecaster",
-    "ImpactForecast",
     "AlphaCompetitionEngine",
     "CompetitionResult",
     "StressSignalEngine",

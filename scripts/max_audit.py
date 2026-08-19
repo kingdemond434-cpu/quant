@@ -5065,6 +5065,18 @@ def _module_reachability() -> tuple[set[str], dict[str, str]]:
                     frontier |= _refs(f.read_text("utf-8", errors="ignore"))
 
     reached: set[str] = set()
+    init_memo: dict[str, set[str]] = {}
+
+    def _init_refs(pkg: str) -> set[str]:
+        if pkg not in init_memo:
+            out: set[str] = set()
+            init = ROOT / Path(pkg.replace(".", "/")) / "__init__.py"
+            if init.exists():
+                with contextlib.suppress(OSError):
+                    out = _refs(init.read_text("utf-8", errors="ignore"))
+            init_memo[pkg] = out
+        return init_memo[pkg]
+
     while frontier:
         n = frontier.pop()
         if n in reached:
@@ -5072,11 +5084,17 @@ def _module_reachability() -> tuple[set[str], dict[str, str]]:
         reached.add(n)
         if n in mods:
             frontier |= _refs(mods[n]) - reached
-        # a package __init__ that re-exports counts as a hop
-        init = ROOT / Path(n.replace(".", "/")) / "__init__.py"
-        if init.exists():
-            with contextlib.suppress(OSError):
-                frontier |= _refs(init.read_text("utf-8", errors="ignore")) - reached
+        # Python executes EVERY ancestor package __init__ on submodule import
+        # (`from libs.pkg.sub import X` runs libs/__init__.py AND libs/pkg/__init__.py), so a
+        # re-export sitting in an ancestor init is EXECUTED code, not a token import. The old
+        # walk read only n's OWN init, so every module loaded solely via a package re-export
+        # was flagged orphan -- measured 2026-08-19: 20 of 50 census rows were this class.
+        # The blind spot this walker was built for is preserved: a dead module merely INSIDE
+        # a live package (the execution.staging case) is still orphan unless some executed
+        # init or module names it.
+        parts = n.split(".")
+        for k in range(1, len(parts) + 1):
+            frontier |= _init_refs(".".join(parts[:k])) - reached
     return reached, mods
 
 
@@ -5162,9 +5180,12 @@ def check_orphan_modules(defects) -> None:
 #: Ratchet for the module-orphan census. 67 -> 66 when run_live_guard.py wired the stage machine
 #: and connectors back in; 66 -> 49 when run_alpha_factory.py gave the seventeen research engines
 #: a production caller; 49 -> 45 when lockbox/fdr/cpcv/baselines were wired into the promotion
-#: path. Lower this as the backlog clears; raising it to make the check pass is the one edit that
-#: defeats its purpose.
-_ORPHAN_MODULE_BUDGET = 45
+#: path; 45 -> 29 when the walker learned Python's real import semantics (ancestor package
+#: __init__ files EXECUTE on submodule import -- 20 census rows were re-exports the walk could
+#: not see), market_impact_forecaster + stage15.errors were retired dead, and drawdown_metrics
+#: was wired into compute_performance. Lower this as the backlog clears; raising it to make the
+#: check pass is the one edit that defeats its purpose.
+_ORPHAN_MODULE_BUDGET = 29
 
 
 #: Docs where mined finds ACCUMULATE UN-DISPOSITIONED -- the only place §33 inventory can rot.

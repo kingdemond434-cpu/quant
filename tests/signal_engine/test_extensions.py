@@ -7,7 +7,6 @@ from tests.signal_engine.conftest import make_alpha, strong_obs
 
 from libs.signal_engine.alpha_competition_engine import AlphaCompetitionEngine
 from libs.signal_engine.engine import SignalEngine
-from libs.signal_engine.market_impact_forecaster import MarketImpactForecaster
 from libs.signal_engine.models import Regime, TradeCandidate
 from libs.signal_engine.signal_embedding_engine import SignalEmbeddingEngine, _cosine
 from libs.signal_engine.stress_signal_engine import StressSignalEngine
@@ -33,17 +32,6 @@ def test_signal_embedding_similarity_and_clusters() -> None:
 
 def test_cosine_zero_norm_guard() -> None:
     assert _cosine(np.zeros(3), np.ones(3)) == 0.0
-
-
-def test_market_impact_forecaster_scales_with_size() -> None:
-    eng = MarketImpactForecaster()
-    small = eng.forecast(notional=1e5, adv_usd=1e9)
-    big = eng.forecast(notional=5e8, adv_usd=1e9)
-    assert big.total_impact_bps > small.total_impact_bps
-    assert big.permanent_impact_bps < big.total_impact_bps
-    assert 0.0 <= big.expected_fill_quality <= small.expected_fill_quality <= 1.0
-    # zero ADV is treated as full participation (fail-closed), not a divide-by-zero
-    assert eng.forecast(notional=1.0, adv_usd=0.0).total_impact_bps > 0.0
 
 
 def test_alpha_competition_allocates_influence() -> None:

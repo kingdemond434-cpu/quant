@@ -17,7 +17,6 @@ from __future__ import annotations
 from libs.stage15.audit import ResearchAudit
 from libs.stage15.contribution import AlphaContributionForecaster
 from libs.stage15.economic_mechanism import EconomicMechanismEngine
-from libs.stage15.errors import ResearchGovernanceError, Stage15Error
 from libs.stage15.governance import ResearchGovernanceEngine, alpha_governance_gate
 from libs.stage15.models import (
     AlphaGovernanceVerdict,
@@ -68,7 +67,4 @@ __all__ = [  # noqa: RUF022  # grouped by concern
     "ResearchOrchestrator",
     "AlphaPipelineInput",
     "ResearchAudit",
-    # errors
-    "Stage15Error",
-    "ResearchGovernanceError",
 ]

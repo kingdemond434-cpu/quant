@@ -26,6 +26,7 @@ from libs.autodiscovery.models import MarketSeries
 from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
 from libs.data.lake import Layer, ParquetLake
 from libs.data.timeframe import Timeframe
+from libs.validation import drawdown_metrics
 
 _BRONZE = Path("data/lake/bronze")
 _OUT = Path("web/data.json")
@@ -107,6 +108,9 @@ def _metrics(net: np.ndarray, equity: np.ndarray, trades: list[dict[str, Any]]) 
     n_years = max(1e-9, len(net) / _PPY)
     cagr = _safe(equity[-1] ** (1.0 / n_years) - 1.0) if len(equity) and equity[-1] > 0 else -1.0
     mdd = _max_drawdown(equity)
+    dd = drawdown_metrics.report(np.log1p(net)) if len(net) else {
+        "ulcer_index": float("nan"), "martin_ratio": float("nan"),
+        "return_over_max_drawdown": float("nan")}
     win_rate = len(wins) / len(trades) if trades else 0.0
     avg_w = float(np.mean(wins)) if wins else 0.0
     avg_l = float(np.mean([abs(x) for x in losses])) if losses else 0.0
@@ -123,6 +127,12 @@ def _metrics(net: np.ndarray, equity: np.ndarray, trades: list[dict[str, Any]]) 
         "total_return": round(_safe(equity[-1] - 1.0), 4) if len(equity) else 0.0,
         "max_drawdown": round(mdd, 4),
         "calmar": round(_safe(cagr / abs(mdd)), 3) if mdd < 0 else 0.0,
+        # Path-severity trio from libs.validation.drawdown_metrics (wired 2026-08-19: the module
+        # shipped 08-01 with zero production callers while this script computed a weaker inline
+        # max-drawdown one line up). report() wants LOG returns; net is arithmetic per bar.
+        "ulcer_index": round(_safe(float(dd["ulcer_index"])), 4),
+        "martin_ratio": round(_safe(float(dd["martin_ratio"])), 3),
+        "return_over_max_drawdown": round(_safe(float(dd["return_over_max_drawdown"])), 3),
         "pct_pos_bars": round(float(np.mean(net > 0)), 4) if len(net) else 0.0,
         "avg_bars_held": round(float(np.mean([t["bars"] for t in trades])), 1) if trades else 0.0,
     }
