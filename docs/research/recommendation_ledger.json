@@ -7871,20 +7871,6 @@
    "commit": null,
    "due": null,
    "disposed": null
-  },
-  {
-   "id": "R0620",
-   "source": "cycle",
-   "summary": "EN-sI 2026-08-19: SEND GMO COIN A WRITTEN CONSENT REQUEST for off-service use of the keyless tick archive (api.coin.z.com/data/trades/) -- the named re-entry path for graveyard jp_gmo_tick_archive_direct_ingest (Art.14(15) consent-required reuse; card 27 s13 DECIDED restricted-pending-consent). A support ticket in JP: identify the desk, name the archive, ask for written permission for research/trading use. Owner: ops/principal (human step). Consent granted re-opens the axis at verified-technically-clean.",
-   "roi_bps": null,
-   "rank": 5.0,
-   "roi_basis": "rank",
-   "raised": "2026-08-19T01:37:05.625321+00:00",
-   "status": "scheduled",
-   "reason": "Human/ops step (JP-language support ticket). Due pairs with R0620's bitbank registration window -- one JP-venue admin batch.",
-   "commit": null,
-   "due": "2026-09-02",
-   "disposed": "2026-08-19T01:37:07.764215+00:00"
   }
  ]
 }
