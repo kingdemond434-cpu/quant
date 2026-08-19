@@ -954,12 +954,13 @@
   },
   "gmo_coin_tick_archive": {
    "class": "regional-venue-tick-tape (JP)",
-   "grade": "verified-technically-clean (probed live 2026-08-01: 200s, payload+schema confirmed, start date binary-searched) -- LICENCE UNREAD, no ingest until read",
+   "grade": "s13 DECIDED 2026-08-19: RESTRICTED-PENDING-CONSENT (EN-sI) -- kihon-yakkan Art.14(15) consent-required off-service reuse + Art.7(1) deemed assent; ZERO affirmative venue conduct (no GitHub org, no grant language, no API terms). KILLED to graveyard jp_gmo_tick_archive_direct_ingest; re-entry = written consent (ledgered consent request) or an API-terms grant. NO INGEST.",
    "url": "https://api.coin.z.com/data/trades/{SYMBOL}/{YYYY}/{MM}/{YYYYMMDD}_{SYMBOL}.csv.gz",
    "provides": "free keyless daily tick-by-tick trade CSVs (gz), schema symbol,side,size,price,timestamp with ms precision; start 2018-09-05 (20180904->403, 20180905->200, both spot and leveraged); 28 spot symbols + 12 margin pairs incl. JP-listing-specific MONA/XYM/FCR/NAC/WILD/XEM; spot and leveraged books served separately (same-venue basis)",
    "mechanism_note": "replacement for the licence-restricted bitFlyer axis. Moat value is the JP-only tickers at tick resolution, not BTC. CROSS-CORROBORATED two independent ways in one session: found by hunting a bitFlyer substitute, and independently present in richmanbtc/crypto_data_fetcher (CC0) which scans the same path from 2018.",
    "found_by": "JP frontier miner session 1 (2026-08-01)",
-   "s13": "robots.txt coin.z.com = 'User-agent: * / Allow: /', no ClaudeBot block; api.coin.z.com robots 404. Service docs page carries NO terms. Site kiyaku at coin.z.com/jp/corp/policy/terms/ returns 200 and is NOT bot-blocked but is JS-rendered -- body unread. LICENCE READ OWED 2026-08-05 before any collector."
+   "s13": "robots.txt coin.z.com = 'User-agent: * / Allow: /', no ClaudeBot block; api.coin.z.com robots 404. Service docs page carries NO terms. Site kiyaku at coin.z.com/jp/corp/policy/terms/ returns 200 and is NOT bot-blocked but is JS-rendered -- body unread. LICENCE READ OWED 2026-08-05 before any collector.",
+   "killed": "2026-08-19; substitution chain: bitFlyer(killed) -> GMO(killed) -> bitbank candles WIRED data/bitbank_1day.jsonl + Tardis bitflyer free tier"
   },
   "bitbank_public_candlestick": {
    "class": "regional-venue-ohlcv (JP)",

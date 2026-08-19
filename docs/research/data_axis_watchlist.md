@@ -1996,7 +1996,33 @@ first-party, §13-clean (public documented venue APIs, no login, no paywall, no 
   standing, the transitions are the fence going up or coming down, and the era record says the
   price action lives at the transitions. Pre-registered design + falsifier + EV gate (0.0061
   QUEUE, novelty 0.772) live on `prospector_watchlist.md` card `kr_rail_state_transition_global_leg`
-  (2026-08-12); the screen obligation stays HERE, one owner, now with its design. (JP venue, keyless, 2018-09-05 →) — grade: **verified-technically-clean, LICENCE READ 2026-08-12 — needs-legitimacy-review: the customer 基本約款 Art. 14(15) requires company consent for off-service use of service-obtained information; whether the anonymous keyless archive is inside 本サービス scope is a policy decision, not a technical read. Ingest stays gated.** [§33: deferred(2026-08-19) tier:3]
+  (2026-08-12); the screen obligation stays HERE, one owner, now with its design.
+
+### 27. GMO Coin free tick-trade archive (JP venue, keyless, 2018-09-05 →) — grade: **§13 DECIDED 2026-08-19: RESTRICTED-PENDING-CONSENT — Art. 14(15) consent-required reuse + Art. 7(1) deemed assent over an ambiguous 本サービス scope, and ZERO affirmative venue conduct (no GitHub org, no licensed SDKs, no grant language on the archive page — the exact opposite evidence profile from bitbank, decided the same day on the same protocol). NO INGEST without written consent; the consent request is the ledgered re-entry path.** [§33: killed -> docs/graveyard.md `jp_gmo_tick_archive_direct_ingest`]
+
+> **§13 DECISION 2026-08-19 (EN frontier miner s-I), one paragraph — full reasoning in the
+> graveyard entry:** bitbank was cleared today because its ToS has NO reuse clause AND the venue
+> affirmatively solicits programmatic use (MIT clients, sample MM bots, botter community,
+> official data distribution). GMO fails on BOTH axes: an explicit consent-required
+> information-reuse clause (Art. 14(15), deemed assent Art. 7(1)) and no affirmative conduct
+> found (org search gmo-coin/gmocoin/GMOcoin: Not Found/empty; archive page = bare symbol listing
+> in the API docs, no usage language; robots 404; no API-specific terms per the 08-12 search).
+> §13 demands CLEAR permitted usage; a restrictive clause plus silence resolves AGAINST ingest.
+> **This is evidence-gated caution, not timidity (L1.27):** the named unlock is one support
+> ticket — written consent — ledgered with an owner and a date; consent granted re-opens the card
+> at verified-technically-clean. The kill protects the desk's legitimacy boundary, not its
+> comfort.
+
+> **HEADING RESTORED 2026-08-19 (EN frontier miner, session I).** An 08-13 edit destroyed this
+> card's `### 27.` heading line, gluing its grade + §33 tag onto the tail of the KR venue-state
+> card's paragraph above. Because `mine_conversion._ITEM_RE` matches cards ONLY on `### N.`
+> heading lines, the effect was that **this card's `deferred(2026-08-19)` obligation — which
+> matured TODAY — was invisible to `mine_gate`, to `source_backlog_next` (it vanished from the
+> DECIDE queue), and to the vanished-item detector** (the tag TEXT survived in the file, so no
+> item "vanished"; it just stopped being parseable as an item). Six days of a matured T3
+> obligation outside every gate's field of view — the L1.49 shape (a gate that cannot see the
+> item cannot fire) delivered by a markdown edit. Heading text restored verbatim from commit
+> 5361358.
 _Found by JP frontier miner session 1, 2026-08-01, as the licensed replacement for the §13-restricted bitFlyer axis._
 
 > **§33 DISPOSITION 2026-08-12 — THE OWED READ IS DONE (R0309). LICENCE UNREAD → LICENCE READ.**
