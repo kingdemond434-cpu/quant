@@ -99,7 +99,8 @@ _FABRICATION = (
 )
 
 ADJUDICATION_SYSTEM = (
-    "You are screening trading hypotheses for a crypto desk. You judge EXACTLY FOUR THINGS and "
+    "You are screening trading hypotheses for an MT5/Fusion desk (FX, gold, metals, indices, "
+    "energy, share CFDs). You judge EXACTLY FOUR THINGS and "
     "nothing else:\n"
     "1. MECHANISM: does it survive 'why has nobody already arbitraged this?' Name the reason the "
     "edge persists -- a structural barrier, a forced flow, a measurement cost, a constraint. "

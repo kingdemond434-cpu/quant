@@ -1853,6 +1853,42 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: committed-script (verified running by hand this cycle)
 40 6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_crossasset.lock .venv/bin/python scripts/run_crossasset_shadow.py >> data/cro_ai_logs/crossasset_shadow.log 2>&1
 
+# MT5 HUNT PIPELINE, WIRED (principal 2026-08-19: "crypto specific venue focus should be fully
+# dead and 100% mt5 everywhere ... it must hunt all mt5 data edges now"). These entry points were
+# BUILT and TESTED but never scheduled -- desks/mt5/mt5desk/families.py carries 10+ MT5-native
+# signal families (session shock, COMEX settlement, Asia momentum, Dow effect, COT fade/momentum,
+# Monday gap, London-close momentum, breakout/failed-breakout) and full_hunt.py is the consolidated
+# hunt engine over them, reading stored MT5 bars (data/universe/*_H1.parquet) -- no live terminal
+# needed, report-only, no promotion authority. Activated rather than rebuilt (L1.50): the machinery
+# already existed, it was simply never wired into a scheduler, the identical defect class fixed for
+# edge_intake (R0437) and canonical_policy (R0438) earlier this desk's history. VERIFIED against
+# scripts/check_scheduler_manifest.py before adding: run_mt5_crossasset.py and run_mt5_portfolio.py
+# were DELIBERATELY retired (R0421, 2026-08-13, genuinely dead code) and are correctly NOT rescheduled.
+# 07:15 UTC: clear of the 06:40 crossasset-shadow slot and the 06:00 cluster.
+# EVIDENCE: desks/mt5/research/full_hunt.py -> data/full_hunt_series.parquet (report to log)
+# CONFIDENCE: committed-script (reads stored parquet only, no live/network dependency)
+15 7 * * * cd "$QUANT_ROOT" && flock -n data/.cron_full_hunt.lock .venv/bin/python desks/mt5/research/full_hunt.py >> data/cro_ai_logs/full_hunt.log 2>&1
+
+
+# 08:05 UTC: CFTC COT screen. COT is a free WEEKLY release (Fridays, for the prior Tuesday), so a
+# daily refresh is generous rather than wasteful -- it costs one keyless fetch and never over-polls
+# a source that cannot publish faster than once a week.
+# EVIDENCE: scripts/run_cot_screen.py -> the 26-year COT panel (desks/mt5/cot/, cot_tff/)
+# CONFIDENCE: committed-script, --offline cache-only fallback already built in
+5 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cot_screen.lock .venv/bin/python scripts/run_cot_screen.py >> data/cro_ai_logs/cot_screen.log 2>&1
+
+# 08:25 UTC: the research-lake discovery lab over the 26-year FX daily lake (default universe:
+# EURUSD/GBPUSD/USDJPY/USDCHF/USDCAD/AUDUSD/NZDUSD; carry/cross_asset/momentum/mean_reversion
+# families). Self-contained sqlite db (data/sor_research_lake.sqlite), no live dependency.
+# EVIDENCE: scripts/run_research_lake.py
+# CONFIDENCE: committed-script
+25 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_research_lake.lock .venv/bin/python scripts/run_research_lake.py >> data/cro_ai_logs/research_lake.log 2>&1
+
+# 08:40 UTC: the MT5 cross-asset ROBUST gauntlet (the stress-tested sibling of crossasset_shadow).
+# EVIDENCE: scripts/run_crossasset_robust.py
+# CONFIDENCE: committed-script
+40 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_crossasset_robust.lock .venv/bin/python scripts/run_crossasset_robust.py >> data/cro_ai_logs/crossasset_robust.log 2>&1
+
 # COMMIT AUDIT (L1.31/L1.43, principal 2026-08-01: "no independent validation, no second pair of
 # eyes -- every check was written by the same mind that wrote the code"). The desk owns 13 seats
 # across 11 labs and pointed NONE of them at its own commits: seats reviewed research findings and

@@ -65,7 +65,7 @@ SUBSYSTEMS = {
         "(knowledge forgotten, experiments lost, ideas rediscovered).",
     "meta-and-blindspots": "The layer above: which research ASSUMPTIONS have never been tested? "
         "Which workflows persist by habit? Which metrics could mislead? BLIND-SPOT TRANSFER -- "
-        "scan one field outside crypto-quant expertise (optimization/control-theory/signal-"
+        "scan one field outside systematic-trading expertise (optimization/control-theory/signal-"
         "processing/information-theory/network-science/OR/causal-inference/anomaly-detection/RL) "
         "for ideas that widen the hypothesis space. INSTITUTIONAL CURIOSITY: what stopped "
         "surprising us, which rejected ideas deserve re-look given new capability. Research "

@@ -173,8 +173,18 @@ class TestFailuresAreReportedNotRaisedAndNotFaked:
 
 class TestBreadthIsTerritoryAndParityWithChinese:
     def test_every_language_carries_a_real_query_set(self) -> None:
+        """LANGUAGE-PARITY LAW: every foreign/region lane gets the SAME breadth/depth/priority as
+        the Chinese lane -- a foreign lane is not a second-class citizen. Enforced against the live
+        CN breadth (not a frozen 15) so the two rise together: if the CN lane widens, the foreign
+        lanes owe the same. On 2026-08-18 the foreign lanes sat at ~18 vs the CN lane's 41, a 3.4x
+        breadth deficit; that was the violation this test now prevents from recurring silently."""
+        from scripts.mine_research_queue import BILIBILI_QUERIES
+        cn = len(BILIBILI_QUERIES)
+        floor = int(cn * 0.9)
         for lang, qs in F.LANGUAGES.items():
-            assert len(qs) >= 15, f"{lang} has {len(qs)} queries -- not parity with the CN lane"
+            assert len(qs) >= floor, (
+                f"{lang} has {len(qs)} queries vs the CN lane's {cn} (floor {floor}) -- "
+                "language-parity law: foreign lanes get the same breadth as Chinese")
             assert len(set(qs)) == len(qs), f"{lang} repeats a query"
 
     def test_the_queries_are_native_not_translated_english(self) -> None:
@@ -184,11 +194,33 @@ class TestBreadthIsTerritoryAndParityWithChinese:
         assert any("가" <= c <= "힯" for c in "".join(F.QUERIES_KO)), "no hangul in ko"
         assert any("Ѐ" <= c <= "ӿ" for c in "".join(F.QUERIES_RU)), "no cyrillic in ru"
 
-    def test_the_korean_set_covers_the_premium_the_desk_already_screens(self) -> None:
-        """capital_control_barrier_rent is measured against Upbit/Bithumb. Reading the community
-        that creates that premium is the cheapest possible mechanism research on this desk."""
-        joined = " ".join(F.QUERIES_KO)
-        assert "김치프리미엄" in joined and "업비트" in joined
+    def test_no_language_set_hunts_the_crypto_exchange_universe(self) -> None:
+        """MT5 UNIVERSE MANDATE (2026-08-18): no crypto-exchange universe is hunted in any
+        language. The crypto-native query vocabulary -- crypto assets, funding rate, perpetual
+        mechanics, kimchi premium, named crypto exchanges, on-chain/miner/whale flow -- must be
+        absent from every set, or the sweep is still hunting the forbidden universe."""
+        banned = (
+            "암호화폐", "가상화폐", "김치프리미엄", "업비트", "바이낸스", "펀딩비", "온체인",  # ko
+            "채굴자",
+            "暗号資産", "仮想通貨", "資金調達率", "無期限", "オンチェーン", "マイナー",  # ja
+            "криптовалюта", "ставка финансирования", "ончейн", "майнеры",  # ru
+            "on-chain", "funding", "kimchi", "whale", "kripto", "balina",  # vi/tr/en
+        )
+        for lang, qs in F.LANGUAGES.items():
+            joined = " ".join(qs).lower()
+            hit = [b for b in banned if b.lower() in joined]
+            assert not hit, f"{lang} still hunts crypto-exchange terms: {hit}"
+
+    def test_every_language_set_targets_the_mt5_universe(self) -> None:
+        """The other half of the mandate: each set must actually reach the desk's real market --
+        gold/FX and an MT5-native mechanism (carry/swap, COT positioning) -- not merely have had
+        crypto removed."""
+        gold = ("xauusd", "gold", "金", "золото", "vàng", "altın")  # noqa: RUF001
+        mech = ("cot", "carry", "swap", "套息", "掉期", "キャリー", "스왑", "своп")
+        for lang, qs in F.LANGUAGES.items():
+            joined = " ".join(qs).lower()
+            assert any(m in joined for m in gold), f"{lang} names no gold/FX asset"
+            assert any(m in joined for m in mech), f"{lang} names no MT5-native mechanism"
 
     def test_every_source_is_reachable_from_the_table(self) -> None:
         """The miner iterates SOURCES rather than a hardcoded list, so a source missing here is a

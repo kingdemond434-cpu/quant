@@ -160,16 +160,23 @@ def _unescape(raw: str) -> str:
 #: other sources are publication-rate-limited (arXiv announces once a weekday; polling it four
 #: times cannot mint papers), whereas B站 has a genuinely deep back-catalogue that query breadth,
 #: not poll rate, is what reaches.
-#: The added terms are deliberately spread across STRATEGY CLASS (grid/arb/HFT/market-making/CTA/
+#: The terms are deliberately spread across STRATEGY CLASS (arb/HFT/market-making/CTA/
 #: trend/mean-reversion/options), VALIDATION vocabulary (out-of-sample, walk-forward, overfit),
-#: FACTOR work, CRYPTO-NATIVE venue language (perpetuals, funding rate, Binance), and PRACTITIONER
-#: framing (live-traded, fund-side) -- because a query set clustered in one register returns one
-#: corpus repeatedly, which is the same redundancy trap L1.49 names for candidates: breadth of
-#: SEARCH, not volume of fetching, is what finds something new.
+#: FACTOR work, the MT5 UNIVERSE (gold/XAU, FX, metals, indices, energy), the MT5-NATIVE
+#: MECHANISM register (COT positioning, carry/swap, session structure, SMC/ICT liquidity), and
+#: PRACTITIONER framing (live-traded, fund-side) -- because a query set clustered in one register
+#: returns one corpus repeatedly, which is the same redundancy trap L1.49 names for candidates:
+#: breadth of SEARCH, not volume of fetching, is what finds something new.
+#:
+#: MT5 UNIVERSE MANDATE (2026-08-18). The desk's market is the full MT5/Fusion universe, and NO
+#: crypto-exchange universe (Binance/Bybit/OKX/Hyperliquid) is hunted any longer. Every
+#: crypto-exchange-native query (perpetual funding, on-chain, cross-exchange arb, liquidation
+#: cascades, miner sell-pressure) was removed here on that date; what stayed is universe-neutral
+#: (validation, microstructure, factor work transfer to any market) and what replaced them targets
+#: gold, FX, metals, indices, energy and the MT5-native mechanisms.
 BILIBILI_QUERIES = (
     "量化交易 策略",
     "量化 回测 python",
-    "加密货币 量化",
     "量化投资 因子",
     "程序化交易 策略",
     "期货 量化 策略",
@@ -178,7 +185,7 @@ BILIBILI_QUERIES = (
     "量化 过拟合",
     "策略 回测 陷阱",
     "walk forward 量化",
-    # strategy classes
+    # strategy classes (universe-neutral -- these transfer to any market)
     "网格交易 策略",
     "统计套利 策略",
     "高频交易 策略",
@@ -189,31 +196,34 @@ BILIBILI_QUERIES = (
     # factor / alpha work
     "多因子模型 选股",
     "因子 有效性 检验",
-    # crypto-native venue language
-    "永续合约 资金费率",
-    "币安 合约 量化",
-    "数字货币 套利",
     # practitioner framing
     "量化 实盘 复盘",
     "私募 量化 研究",
-    # 24 -> 34 (2026-08-05), and the WIDENING lever was chosen off the yield ratio rather than
-    # argued. Measured on like-for-like dedicated 4-page runs six hours apart: 0.1135 -> 0.0223, a
-    # 5.1x fall, while the seen-ledger went 1,443 -> 3,018. That is SATURATION OF A FIXED QUERY
-    # SET, not a dying source: 24 queries x 4 pages re-reads the same ~950 videos every run, so
-    # once the ledger has them the yield decays to the publication rate of that corpus and nothing
-    # else. Only two levers move it -- new TERRITORY or more time between runs -- and this is the
-    # first. Territory again, never synonyms: every line below names a subject none of the 24
-    # above can return, so it reaches videos the sweep has literally never fetched.
+    # microstructure and execution, where cost decides the verdict
     "订单簿 深度 分析",            # order-book depth -- the desk records L2 and never searched it
     "滑点 冲击成本 实测",          # measured slippage / impact cost
-    "资金费率 套利 实盘",          # funding arb, LIVE results rather than backtests
-    "跨交易所 价差 套利",          # cross-venue spread
-    "爆仓 清算 数据 分析",         # liquidation-cascade data work
-    "链上 数据 交易 策略",         # on-chain driven strategies
-    "矿工 抛压 链上 指标",         # miner sell pressure -- the treasury_cost_base class
-    "期现 基差 收敛 交易",         # basis convergence
     "波动率 择时 模型",            # vol timing
     "回测 幸存者偏差",             # survivorship bias -- VALIDATION register
+    # MT5 UNIVERSE (2026-08-18). Replaces the crypto-exchange-native block (perp funding, cross-
+    # exchange arb, liquidation cascades, on-chain, miner sell-pressure) removed on that date.
+    # Territory, not synonyms: gold, FX, metals, indices, energy, and the MT5-native mechanisms.
+    "黄金 交易 策略 回测",          # gold strategy, backtested
+    "黄金 xauusd 分析",            # gold / XAUUSD
+    "外汇 交易 策略 回测",          # forex strategy, backtested
+    "外汇 ea 智能交易系统",         # forex expert advisors
+    "mt5 智能交易 编写",           # writing MT5 EAs
+    "贵金属 白银 交易 策略",        # silver / precious metals
+    "股指期货 交易 策略",          # equity-index futures
+    "原油 期货 交易 策略",          # crude / energy
+    "ict 流动性 交易 结构",         # ICT liquidity / market structure
+    "订单块 公允价值缺口 交易",     # order block / FVG
+    "cot 持仓 报告 分析",          # COT positioning -- the whale-tracking analogue for MT5
+    "套息 交易 利差 策略",          # carry trade / rate differential -- the funding analogue
+    "外汇 隔夜利息 掉期 策略",      # swap / rollover carry
+    "期货 基差 收敛 交易",          # futures basis convergence (gold/index futures, generic)
+    "外汇 时段 伦敦 纽约 策略",     # session structure -- first-class in a non-24/7 universe
+    "非农 数据 外汇 交易",          # NFP / macro-event reaction
+    "美元指数 交易 策略",          # DXY
 )
 
 # 4 -> 22 (2026-08-05). THE HIGHEST-YIELDING FAMILY HAD THE NARROWEST SWEEP, which is exactly
@@ -243,39 +253,47 @@ CN_ARTICLE_QUERIES = (
     "因子 挖掘 回测",
     "因子 失效 衰减",
     "多因子 组合 优化",
-    # -- the desk's confirmed edge and its neighbours
-    "资金费率 套利 实盘",
-    "期现套利 基差 收敛",
-    "永续合约 资金费率 机制",
-    "跨交易所 套利 成本",
+    # -- MT5 universe (2026-08-18): replaces the crypto-exchange-native edge block (funding-rate
+    # arb, perp mechanics, cross-exchange arb) with the desk's real market and its analogues.
+    "黄金 交易 策略 实盘",          # gold, live-traded
+    "外汇 套息 利差 交易",          # FX carry -- the funding-rate analogue
+    "期货 基差 收敛 套利",          # futures basis (gold/index), generic
+    "cot 持仓 报告 交易 信号",      # COT positioning as a signal
     # -- microstructure and execution, where cost decides the verdict
     "做市 策略 库存 风险",
     "高频 交易 撮合 机制",
     "滑点 冲击成本 测算",
     "限价单 排队 优先级",
     # -- mechanisms the taxonomy names and the miner never asked about
-    "清算 级联 强平",
+    "止损 猎杀 流动性 扫单",        # stop-hunt / liquidity sweep -- the MT5 forced-flow analogue
     "期权 波动率 曲面 套利",
-    "链上 数据 分析 策略",
-    "矿工 抛压 链上",
+    "外汇 时段 波动 结构",          # session-structured volatility
+    "央行 利率 决议 交易",          # central-bank rate decisions -- the macro-event desk
     # -- the honest failure literature, which is where the graveyard entries live
     "网格 马丁 爆仓 复盘",
     "实盘 与 回测 差异",
 )
 
 SEARCH_QUERIES = (
+    # universe-neutral methodology -- the desk's highest-converting register, transfers to any market
     "quantitative trading backtest python",
     "algorithmic trading strategy tested",
     "backtested trading strategies statistical",
     "walk forward analysis trading",
     "monte carlo permutation test trading",
-    "crypto quant strategy research",
     "overfitting trading strategy validation",
-    "量化交易 策略 回测",
-    "量化投资 python 策略",
-    "加密货币 量化 策略",
-    "アルゴリズム取引 バックテスト",
-    "трейдинг квантовый бэктест",
+    # MT5 universe (2026-08-18): "crypto quant strategy research" removed -- the desk hunts FX,
+    # gold, metals, indices, energy now, and crypto-exchange research is no longer a target.
+    "XAUUSD gold trading strategy backtest",
+    "forex algorithmic trading walk forward",
+    "MT5 expert advisor strategy backtest",
+    "COT report positioning trading strategy",
+    "gold silver trading strategy statistical",
+    # multilingual, MT5 universe
+    "黄金 外汇 量化 策略 回测",
+    "外汇 ea 智能交易 策略",
+    "ゴールド 為替 バックテスト 検証",
+    "форекс золото стратегия бэктест",
 )
 
 

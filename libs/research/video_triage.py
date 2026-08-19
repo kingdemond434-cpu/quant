@@ -71,6 +71,52 @@ POSITIVE = {
     "(因子|多因子|阿尔法|alpha挖掘|截面)": 3.0,
     "(高频|微观结构|订单流|做市|套利)": 2.0,
     "(量化|程序化交易|算法交易)": 1.0,
+    # --- MT5 / FX / metals / index universe (2026-08-18 mandate). The desk's market is now the
+    # full MT5/Fusion universe -- FX, gold, metals, indices, energy, share CFDs -- not crypto. The
+    # scorer stays METHODOLOGY-first (a gold walk-forward video already surfaces on the validation
+    # terms above), so asset-name-alone is deliberately weak: 1.0 is below the 3.0 floor, so it
+    # only LIFTS content that also carries the methodology vocabulary -- a gold study of
+    # out-of-sample decay, never a gold hype reel. The MECHANISM terms score 2.0 because COT
+    # positioning, carry/swap and session structure ARE the MT5-native economic signals the crypto
+    # vocabulary (funding, on-chain, liquidations) never named, and an honest piece titled only
+    # "COT positioning in gold" would otherwise score zero and never surface.
+    r"\b(gold|xau ?usd|xau|silver|xag|forex|\bfx\b|dxy|dollar index|eur ?usd|gbp ?usd|"
+    r"usd ?jpy|aud ?usd|usd ?cad|us500|nas100|us30|spx500|ger40|wti|crude oil|brent|"
+    r"natural gas)\b": 1.0,
+    r"\b(commitment of traders|\bcot\b|net positioning|positioning report|carry trade|"
+    r"interest[- ]rate differential|swap rate|rollover|roll yield|forward points)\b": 2.0,
+    r"\b(order block|fair value gap|\bfvg\b|liquidity sweep|market structure|"
+    r"break of structure|\bsmc\b|\bict\b|london (open|session)|new york session|"
+    r"asian session)\b": 1.0,
+    r"\b(nfp|non[- ]?farm|fomc|\bcpi\b|central bank|rate decision|economic calendar|"
+    r"metatrader|mt[45]\b|expert advisor|\bmql5\b)\b": 1.0,
+    # --- Chinese, MT5 universe (same rationale; NO \b for CJK). Disambiguated to avoid the
+    # homograph traps that bit the factor terms: 基差 (basis) / 利差 (differential) / 掉期 (swap)
+    # are unambiguous trading compounds.
+    "(黄金|外汇|贵金属|白银|股指|原油|美元指数|欧元美元|美元日元)": 1.0,
+    "(持仓报告|cftc持仓|净持仓|套息|利差|隔夜利息|掉期|基差 收敛|远期点)": 2.0,
+    "(订单块|流动性 扫|公允价值缺口|市场结构|伦敦时段|纽约时段|亚洲时段)": 1.0,
+    "(智能交易|mt5|mt4|ea交易|非农|美联储|经济数据 日历)": 1.0,
+    # --- Japanese / Korean / Russian / Vietnamese / Turkish (2026-08-18). THIRD instance of the
+    # CJK-\b / Sogou failure class: the foreign miner fetches JA/KO/RU/VI/TR forests (1,601 rows in
+    # one measured run) and the ranker had NO pattern in any of those scripts, so every title scored
+    # 0 and the whole lane surfaced nothing -- a scorer blindspot read as an empty source. NO \b for
+    # kana/hangul/cyrillic (no word boundaries, same as CJK); Latin VI/TR terms are the diacritic
+    # ones English misses. Methodology (the desk's highest-converting register) weighted 4, market
+    # and MT5-mechanism context 2.
+    "(バックテスト|検証|検定|アウトオブサンプル|サンプル外|過学習)": 4.0,
+    "(過剰最適化|ウォークフォワード|前進分析|生存者バイアス|モンテカルロ|有意性)": 4.0,
+    "(ゴールド|為替|外国為替|貴金属|株価指数|原油)": 2.0,
+    "(自動売買|スワップ|キャリー|金利差|建玉|セッション)": 2.0,
+    "(백테스트|검증|검정|표본외|과최적화|과적합|워크포워드|생존편향|몬테카를로|유의성)": 4.0,
+    "(골드|외환|환율|귀금속|주가지수|원유|자동매매|스왑|캐리|금리차|미결제약정|세션)": 2.0,
+    "(бэктест|вне выборки|переобучение|переоптимизац)": 4.0,
+    "(форвардный анализ|выживш|монте-карло|значимость)": 4.0,
+    "(золото|форекс|валют|металл|индекс|нефть|советник|своп|кэрри|сессия|позиц)": 2.0,
+    "(kiểm định|ngoài mẫu|quá khớp|tối ưu hóa quá mức|thiên lệch kẻ sống sót)": 4.0,
+    "(vàng|ngoại hối|kim loại|chỉ số|vị thế|phiên giao dịch)": 2.0,
+    "(örneklem dışı|aşırı optimizasyon|aşırı uyum|hayatta kalma yanlılığı|geriye dönük test)": 4.0,  # noqa: RUF001
+    "(altın|döviz|endeks|emtia|pozisyon|seans)": 2.0,  # noqa: RUF001
     # --- Academic phrasing. Abstracts state what was measured and how, which is the category
     # with this desk's best conversion record -- but they say it in different words than a video
     # title does, so without these a paper feed ranks below a YouTube tutorial.

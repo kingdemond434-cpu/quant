@@ -202,7 +202,9 @@ def probe_all() -> list[dict[str, Any]]:
     for name, fn in checks:
         items, err = fn()
         rows.append({"source": name, "ok": err is None, "n": len(items), "error": err})
-    gh_items, gh_err = github("quant backtest crypto")
+    # MT5 universe (2026-08-18): was "quant backtest crypto"; the desk hunts FX/gold/metals/
+    # indices now, and MT5 expert advisors are the public-code donor GitHub is richest in.
+    gh_items, gh_err = github("MT5 forex expert advisor backtest")
     rows.append({"source": "github", "ok": gh_err is None, "n": len(gh_items),
                  "token_present": github_token() is not None, "error": gh_err})
     rows.append({"source": "reddit", "ok": False, "error": "HTTP 403 -- blocked"})
