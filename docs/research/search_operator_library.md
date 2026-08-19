@@ -962,7 +962,7 @@ CONFIRMED IN LIVE USE this run (search results + tracker-site names), not assume
 | 코인 추가 → 디지털 자산 추가 | ...chuga | "coin added" (2018 register) became "digital asset added" (2020+) | ✓ the same event renamed; an era-blind selector zero-hits 75 rows of it |
 | 가두리 | gaduri | "fish-pen / fenced enclosure" — a market whose deposit or withdrawal rail is CLOSED, so price is trapped and runs away from global. Per-ASSET, not per-venue | ✓ OBSERVED (Ppomppu 21343, 2017-12-23 "리플은 이와중에 가두리"). The retail name for the mechanism behind card `kr_rail_state_transition_global_leg`; the folk word finds the lore that 입출금 (the venue's formal word) does not |
 | 보따리상 | bottarisang | "bundle/shuttle merchant" — the physical-arbitrage carrier who buys abroad and sells into the KR book. **The era's name for the marginal premium arbitrageur** | ✓ OBSERVED (Ppomppu 22072, 2017-12-24: "보따리상들이 국내로 코인들고와서 팔아야되는데 지금 코인들 전송이 안됩니다"). THE supply-side premium key: finds threads about why the premium PERSISTS (carrier capacity) rather than that it exists |
-| 벌집계좌 | beoljip-gyejwa | "beehive account" — the omnibus/pooled corporate bank account small venues used when banks refused them individual 가상계좌 (virtual accounts) | ✓ OBSERVED (Ppomppu 76535, 2018-01-29). The 2018-01 real-name law split KR venues into a virtual-account tier (Upbit/Bithumb/Coinone/Korbit) and a beehive tier (GOPAX, Coinrail, HTS) — this term is the search key for the venue-tier / rail-access era layer and for forced-exit events at cut-off venues |
+| 벌집계좌 | beoljip-gyejwa | "beehive account" — the omnibus/pooled corporate bank account (법인계좌 with many individual sub-accounts under it) small venues used when banks refused them individual 가상계좌 (virtual accounts) | ✓ OBSERVED (Ppomppu 76535, 2018-01-29). The 2018-01 real-name law split KR venues into a virtual-account tier (Upbit/Bithumb/Coinone/Korbit) and a beehive tier — this term is the search key for the venue-tier / rail-access era layer and for forced-exit events at cut-off venues. **PRIMARY LIST RECOVERED (KR s3, 2026-08-13, body of 76535 quoting 한국블록체인협회 as of 01-23): the 7 cut-off venues are CPDAX(법인플러그), 고팍스(스트리미), 코인네스트, 코인이즈, HTS코인(한국블록체인거래소), 코인링크(써트온), 이야랩스** — users ~500k/350k/151k/57.6k/55k/14k/10k, >1M total. **AND THE CORRECTION, 44 MINUTES LATER (76551): HTS코인 and 코인네스트 both posted notices calling the report 오보 (false).** Carding the headline without the reply layer would have entered a disputed event as fact |
 | 허매수 / 허매도 | heo-maesu / heo-maedo | "fake bid / fake ask" = **spoofed walls** | ✓ OBSERVED (Ppomppu 77829, 2018-01-31: bots posting second-granularity walls). The KR key for retail-observed spoofing/microstructure lore; English "spoofing" zero-hits KR retail boards |
 | 한프 / 코프 | hanpeu / kopeu | premium abbreviations formed like 김프, almost certainly per-venue or per-country (한국/코인원?) — **gloss UNVERIFIED, recorded as observed rather than guessed** | SEED (Ppomppu 22072 title: "한프 김프 코프 하는데 궁금점요"). Worth resolving: if these are per-VENUE premium words the era had a folk vocabulary for intra-KR dispersion, which is exactly the WS-011 axis |
 
@@ -2847,3 +2847,47 @@ notice, 1 content-disabled, 1 401). Per-region adaptations (charter §16): Bilib
 = private/member-gated (triage the same way before logging); VK Video and Rutube walls are
 region-reversed (open from RU IPs, walled from abroad) so a wall verdict must name the PROBE
 ORIGIN; JP/KR: ニコニコ有料/멤버십 gates are PAID classes — loggable, they are what GAP #26 buys.
+
+## OP-090 — A REQUEST PARAMETER CARRIES ITS OWN TIMEZONE CLAIM, SEPARATE FROM THE RESPONSE FIELD — AND ONLY THE RESPONSE FIELD IS EVER AUDITED (KR frontier miner s3, 2026-08-13; landed 2026-08-19)   [active]
+
+_ID PROVENANCE: minted as "OP-072" on the unmerged branch `claude/kr-miner-s3-20260813` (2026-08-13);
+the JP s4 seat took OP-072 (LLM-contamination) the same day on the live branch, so this operator was
+RENUMBERED to OP-090 at landing (KR s4, 2026-08-19). Any reference to an "OP-072" about request
+timezones — including the KR s3 session memory — means THIS operator. The collision rule this
+minted: an operator id claimed on a side branch is not claimed; re-read the live library's max id
+at LANDING time and renumber the incoming operator plus every reference inside the same landing
+commit._
+
+**MEASURED 2026-08-13 (KR seat s3), Upbit vs Bithumb, both keyless, both "Upbit-schema-compatible":**
+the `to=` pagination parameter is interpreted in **UTC by Upbit and in KST by Bithumb**. Ask both for
+`to=2024-01-15T12:00:00` and Upbit returns the bar ending `2024-01-15T11:59:00Z` while Bithumb returns
+`2024-01-15T02:59:00Z` — **exactly 9h apart**. Add 9h to the Bithumb request and the two align **to the
+minute** (verified on 2024-01-15, 2020-03-13, 2018-01-11; the 4th test date failed for an unrelated
+reason — it landed inside a real venue outage, which is itself the finding below).
+
+**WHY EVERY EXISTING CLOCK CHECK IS BLIND TO THIS.** L1.46 made the desk declare the stamping clock of
+every record it *receives*. This is the clock of the request it *sends*, and the two are independent
+claims. The response here is **honest**: `candle_date_time_utc` really is UTC on both venues, so a
+provenance checker reading returned rows sees nothing wrong. The rows are simply **not the window you
+asked for** — no error, no gap, no warning, no anomalous value. A paginating backfill written against
+one venue and pointed at the other walks a 9h-shifted window on *every* call and compounds it across
+the entire history, and the output passes every schema, freshness and provenance gate the desk owns.
+
+**THE RULE, GENERAL:** for any historical endpoint, the timezone of the *request* is a separate
+measurement from the timezone of the *response*, and it is verified the same way — **round-trip it**.
+Ask for a known instant, read back the stamp you got, and check they agree. One call. Do this before
+any backfill loop is pointed at a second venue, however identical the schema looks. **Schema
+compatibility is precisely what makes this dangerous:** it is the reason nobody re-checks.
+
+**SEPARATE FROM, AND NOT COVERED BY, THE EXISTING KILL.** `bithumb_kr_premium_lookahead`
+(docs/graveyard.md) records that Bithumb's *daily bar boundary* is KST-day-open. That is a fact about
+the **bar**; this is a fact about the **query**. Both are live, they are different, and fixing one
+leaves the other. Re-derived independently this session before the graveyard was checked — recorded
+because the novelty gate catching a re-derivation is the gate working, not a finding.
+
+**KR ADAPTATION / WHAT IT UNBLOCKS.** The graveyard's framing reads as *"this venue is hazardous"*.
+The measurement says *"this ENDPOINT is hazardous and the hazard is removable"*: **1-minute bars are
+honest UTC on both venues and align exactly once the +9h request offset is applied**, so the intra-KR
+(Upbit−Bithumb) spread — the control WS-011 asked for, and the one construction where the cross-border
+capital-control term differences out — is cleanly constructible after all. That is the L1.25a
+distinction in its data-layer form: a blocked ROUTE is not a dead CAPABILITY.

@@ -373,6 +373,34 @@ _Superseded original grading below (kept for the record):_
 >   `api.bithumb.com/v1/candles/days?market=KRW-BTC&count=N&to=<ISO>` returns Upbit-style JSON
 >   (`candle_date_time_utc`, `opening_price`, …) — the desk's Upbit pagination code shape works
 >   nearly verbatim (option value: one collector pattern, two Korean venues).
+>
+> ⚠️ **CLOCK FENCE ADDED 2026-08-13 (KR frontier miner s3) — THE SENTENCE ABOVE IS TRUE OF THE
+> SCHEMA AND FALSE OF THE SEMANTICS, AND THAT IS EXACTLY WHY IT IS DANGEROUS.** Two independent
+> timezone facts, neither covered by the other, measured this session:
+> **(1) THE REQUEST PARAMETER (new — OP-090; minted as OP-072 on the s3 branch, renumbered at landing).** `to=` is interpreted in **KST by Bithumb** and in
+> **UTC by Upbit**. Both venues asked for `to=2024-01-15T12:00:00` return `11:59:00Z` (Upbit) and
+> `02:59:00Z` (Bithumb) — **9h apart**. Adding 9h to the Bithumb request realigns them **to the
+> minute** (verified 2024-01-15, 2020-03-13, 2018-01-11). The response field `candle_date_time_utc`
+> is **honest UTC on both**, so the rows look perfectly normal — they are simply not the window you
+> asked for. **"The desk's Upbit pagination code shape works nearly verbatim" is the precise
+> statement that makes this bite:** a backfill loop reused verbatim walks a 9h-shifted window on
+> *every* call and compounds it across the whole history, with no error, no gap and no anomalous
+> value, passing every schema/freshness/provenance gate the desk owns.
+> **(2) THE DAILY BAR BOUNDARY (already known, do not re-derive).** Upbit dailies are **UTC-days**;
+> Bithumb dailies are **KST-days** (bar labelled `…T15:00:00Z`, last trade `…T14:59:5xZ` next day).
+> The desk already killed this as `bithumb_kr_premium_lookahead` (docs/graveyard.md) and it is
+> re-recorded here only because it is a *different* fact from (1) and fixing one leaves the other.
+> **REMEDY, and it widens rather than narrows the card: 1-minute bars are honest UTC on BOTH venues
+> and align exactly once the +9h request offset is applied**, so the intra-KR (Upbit−Bithumb) spread
+> — the WS-011 control in which the cross-border capital-control term differences out — is cleanly
+> constructible. The graveyard's framing reads as *"this venue is hazardous"*; the measurement says
+> *"this ENDPOINT is hazardous and the hazard is removable"* (L1.25a: a blocked ROUTE is not a dead
+> CAPABILITY). **BOUND: any intra-KR series is limited by the SHALLOWER leg — Upbit returns clean
+> `[]` before ~2017-10 (re-probed this session at `to=2016-01-01` and `to=2014-06-01`), so Bithumb's
+> 2014 depth buys nothing for a two-venue spread and everything for a single-venue KRW history.**
+> **AND THE TAPE IS NOT CONTINUOUS:** Bithumb's 1m KRW-BTC has a **10.50h hole** on 2025-03-23/24
+> (its NH→KB bank-rail migration) while Upbit ran through it — see `data/kr_venue_bank_rail.json`
+> and WS-011 observation 2. Gap-check both legs before differencing; a hole reads as a spread.
 > - **DEPTH, probed empirically:** daily candles reach **2014-01-13** (`to=2013-06-01` → clean
 >   empty `[]`; epoch ≈ Bithumb/Xcoin launch). **1-minute candles reach at least 2014-05-31**
 >   (probed 2019/2017/2015/2014 — all served). That is **4.7 years DEEPER than the Amberdata
@@ -3095,3 +3123,47 @@ documentation, citing only AWS setup guides)._
 - **Discovery counterfactual (charter s17):** found only because the card-28 legitimacy hunt read
   the venue's whole GitHub org instead of stopping at the two repos already cited — the marginal
   cost of listing an org is one API call; the habit generalises (see operator note this session).
+
+### 35. KR venue↔bank fiat-rail registry — the venue-ASYMMETRIC barrier regressor (R0299's missing input) — grade: **catalogued + one instance MEASURED; treatment count NOT yet enumerated** [§33: screened -> data/kr_venue_bank_rail.json] _(minted as "card #33" on the unmerged KR-s3 branch 2026-08-13; renumbered at landing 2026-08-19 — live #33=VARA, #34=bitbank had taken the number)_
+- **Provides:** a per-venue, per-date KRW fiat-rail state for the licensed Korean venues. Korean
+  regulation binds each VASP to **exactly one** partner bank for KRW deposit/withdrawal (2018
+  real-name system, still in force 2026), so this is not a market variable — it is a **regulatory
+  exclusivity** that makes every bank-level event a shock to ONE venue and not its competitor.
+- **Why the desk wants it, specifically.** R0299 needs a barrier-height regressor **independent of
+  the premium it explains**, because the KR-premium construction is circular and was retracted at
+  ~73% timestamp artifact. KR-s2 showed the **intra-KR (Upbit−Bithumb) spread differences out the
+  cross-border capital control** — both legs sit behind the same control — so the residual is
+  venue-specific, and the fiat rail is the largest venue-specific state variable available. It is
+  also **structurally unbuyable**: no vendor sells "which bank is contracted to which Korean
+  exchange this quarter", and it is not derivable from price.
+- **Current mapping (2026):** Upbit→K-Bank (contract expires **Oct-2026**), Bithumb→KB Kookmin
+  (**migrated from NH 2025-03-24**), Coinone→Kakao, Korbit→Shinhan, Gopax→Jeonbuk.
+  **2018 era mapping** (primary, Ppomppu): Upbit→IBK, Bithumb→NH중앙회 only (지역농협 rejected as
+  2금융권), Bithumb→Shinhan **announced but never delivered**.
+- **MEASURED instance, not asserted:** Bithumb's 1m KRW-BTC tape has a **10.50h hole** across its
+  2025-03-24 bank migration (last bar 2025-03-23T15:30Z, next 2025-03-24T02:00Z, +51bp across the
+  halt) while Upbit ran continuous. **The rail event is observable in market data as an absence** —
+  which is also the WS-011 confounder in its sharpest form (the halting venue *is* the treated one,
+  so tape liveness correlates with treatment).
+- **Free path / cost:** free. Venue notice archives — the desk already collects
+  `data/upbit_trade_announcements.jsonl` (737 rows, 2017-10-27→) and Bithumb's `feed.bithumb.com`
+  notice feed is catalogued on card #4. Regulatory/press record for contract signings and renewals.
+  No paid tier required, no licence obstacle identified (§13: public corporate announcements).
+- **THE BLOCKING MEASUREMENT, and it decides the axis:** nobody has counted the treatment. The EV
+  gate run this session lands at **0.0019 vs a 0.002 threshold on breadth 6/yr — REJECT — and flips
+  to QUEUE at breadth 8.** So the deciding quantity is the transition count, and it has never been
+  enumerated. **Enumerate first; do not screen n=1** (L1.62: never certify a verdict on a sample
+  size nobody measured).
+- **METHOD FENCE for that enumeration (paid for by the comment layer, 2026-08-13):** the
+  **announcement date is NOT the treatment date.** Ppomppu 76535's "7 venues cut off" headline was
+  **disputed by two of the named venues within 44 minutes** (76551), and a commenter notes the cut
+  venues *"어차피 현금 입금 안되던 곳"* — the rail had already died quietly. Keying an event study on
+  announcement timestamps would mis-date its own treatment and, worse, would inherit press errors
+  as events.
+- **Honest limits.** (a) Current mapping is **reported, not venue-confirmed** — only the 2025-03-24
+  migration is corroborated by desk measurement. (b) **NAMED KILL CONDITION:** Woori Bank's CEO is
+  publicly lobbying to repeal the one-bank rule; repeal ends the asymmetry the axis rests on, so
+  this axis has an expiry rather than assumed persistence. (c) The desk holds **no KRW rail**, so
+  the KR leg is untradeable directly — any transmission is via the global leg, as on card
+  `kr_rail_state_transition_global_leg` (which is the **crypto** per-coin rail; this card is the
+  **fiat** per-venue rail — adjacent layers, different mechanisms, novelty 0.899 against it).

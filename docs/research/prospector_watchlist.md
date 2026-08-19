@@ -688,3 +688,63 @@ transparency — enrichment only, no new axis).
 **WATCHLIST (max 5 — active entries after this session): POC retest (hold), SFD cadence probe
 (hold), coinm_usdtm_basis_convexity_rv (hold), kr_rail_state_transition_global_leg (hold),
 listing_comparables_repricing (NEW). 5/5 slots used; dvol trigger lives in research memory.**
+
+## SESSION SUMMARY — 2026-08-13 session 3 (KR frontier miner) _(landed 2026-08-19 by KR s4 — this section sat on the unmerged branch `claude/kr-miner-s3-20260813` for 6 days; out of date order because the log accumulated later sessions first. Its "card #33" is now card #35; its "OP-072" is now OP-090. NOT a watchlist card — claims no slot.)_
+
+### kr_venue_exclusive_bank_rail_asymmetry — **EV-REJECTED 0.0019 (thresh 0.002), logged as watchlist memory, NOT a card** — novelty 0.899 [§33: screened -> data/kr_venue_bank_rail.json]
+
+- **Source + provenance.** Ppomppu 가상화폐 era corpus, the 85 rail/bank threads named by KR-s2's title
+  tape and mined to full comment depth this run (`data/ppomppu_kr_rail_corpus.json`, 334 of 454
+  declared comments — see the attrition note). Load-bearing primary: **76756** (2018-01-30)
+  *"거래소마다 입금계좌는 한개의 은행밖에 안되죠 / 업비트는 기업이고"* — each exchange gets a KRW deposit
+  rail at **exactly one bank** — corroborated in-thread by an independent commenter and across
+  **76746 / 76863 / 76875 / 55174**. **76875** sharpens it: 농협**중앙회** only, 지역농협 (regional
+  co-ops, 2금융권) were REJECTED — the rail is narrower than the bank name. **DERIVES-FROM: NONE
+  (checked)** for the mechanism comments — folk-original practitioner reports; the two news threads
+  (76535/76551) quote 한국블록체인협회 and are used only for the venue list, not for the mechanism.
+- **Mechanism.** Korean regulation binds each licensed VASP to ONE partner bank for KRW
+  deposit/withdrawal (2018 real-name system, **still in force 2026**). So a bank-level event —
+  cutover, maintenance, KYC throttle, contract non-renewal — is a **venue-asymmetric shock to one
+  venue's fiat rail and not the other's**: an exogenous shifter of the intra-KR (Upbit−Bithumb)
+  basis that does not move crypto price. This is the piece R0299 wants: KR-s2 established that the
+  intra-KR spread **differences out** the cross-border capital control that made kimchi ~73%
+  artifact (both legs sit behind the same control), so what survives that differencing is
+  venue-specific — and the fiat rail is the largest venue-specific state variable there is.
+- **Current mapping (verified live, not assumed from the era):** Upbit→K-Bank (**contract expires
+  Oct-2026** — a forward-dated, pre-announced, venue-asymmetric event ~2 months out),
+  Bithumb→KB Kookmin (**migrated from NH on 2025-03-24**), Coinone→Kakao, Korbit→Shinhan,
+  Gopax→Jeonbuk. **NAMED KILL CONDITION:** Woori Bank's CEO is publicly lobbying to repeal the
+  one-bank rule; repeal ends the asymmetry the whole axis rests on. The axis therefore carries an
+  expiry, not an assumed persistence.
+- **The one measured instance.** Bithumb's 1m tape has a **10.50h hole on its migration date**
+  (2025-03-23T15:30Z → 2025-03-24T02:00Z, +51bp across the halt) while Upbit ran continuous. The
+  rail event is **observable in price data as an absence**. Routed to WS-011 as its second
+  observation, which retires that entry's own "2017-18 is not 2026" caveat.
+- **EV gate — RUN, NOT ASSERTED, AND IT REJECTS.** `libs.research.alpha_economics.ev_score`:
+  est_sharpe 0.4, breadth **6** (KR venue↔bank rail transitions per year across 5 licensed venues),
+  capacity $100k, orth 0.85, 20h effort, 1.2× maint, tags new_orthogonal_data →
+  **EV 0.0019 < 0.002 → REJECT**, binding term `breadth_f 0.548`. The treatment is too rare.
+  Novelty 0.899 (nearest `coinone_kr_premium` 0.101) — **so this is rejected on ECONOMICS, not as
+  re-tested ground.**
+- **AND THE REJECTION IS KNIFE-EDGE, WHICH IS ITSELF THE FINDING.** breadth 6→REJECT but 8→QUEUE
+  (0.0022); est_sharpe 0.4→REJECT but 0.5→QUEUE (0.0023). A one-unit change in an input **I
+  estimated by hand** flips the verdict, so this gate result is a statement about my guess, not
+  about the world (GATE-OPTIMALITY DUTY). Recording it as a pass or a kill would both be
+  over-claiming. **The count is the deciding measurement.**
+- **RE-OPEN CONDITION (L1.16a — a named enabling change, not a vague "revisit").** Enumerate KR
+  venue↔bank rail transitions since 2018 from venue notice archives — the desk already holds
+  `data/upbit_trade_announcements.jsonl` (737 rows, 2017-10-27→) and Bithumb's notice feed is
+  catalogued on data-axis card #4. **If that enumeration yields ≥8 transitions/yr the EV gate flips
+  to QUEUE on inputs otherwise unchanged.** Until then this stays memory, not a card.
+- **METHOD WARNING THE COMMENT LAYER PAID FOR, and it binds that enumeration.** 76535's headline
+  ("7 beehive venues cut off, >1M users") was **disputed by the named venues within 44 minutes**
+  (76551: HTS코인 and 코인네스트 both posted 오보 notices), and a commenter observes the cut venues
+  *"어차피 현금 입금 안되던 곳"* — **the rail was already dead before the announcement**. So for this
+  axis the **announcement date is NOT the treatment date**: the news is a lagging, sometimes wrong,
+  marker of a state that changed earlier and quietly. An event study keyed on announcement
+  timestamps would mis-date its own treatment. Only the reply layer carries this.
+- **Screen status: NOT SCREENED, deliberately.** One clean dated treatment instance is n=1; that is
+  an anecdote with a timestamp, not an event study, and L1.62 forbids certifying a verdict on a
+  sample size nobody measured. A screen here manufactures either a phantom edge or a false
+  SCREEN-WEAK kill on a real mechanism. Counting the treatment comes first and is not a substitute
+  for the screen — it is its precondition.
