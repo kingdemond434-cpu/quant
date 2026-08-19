@@ -875,7 +875,19 @@ def smartlab(keyword: str) -> tuple[list[Article], str | None]:
 
 def tinhte(keyword: str) -> tuple[list[Article], str | None]:
     """Tinh te -- Vietnam's largest tech community. Vietnamese is a real crypto-retail forest and
-    the desk had NO Vietnamese lane at all."""
+    the desk had NO Vietnamese lane at all.
+
+    BLOCKED, DIAGNOSED PRECISELY 2026-08-19 (was previously mislabelled "markup changed or
+    challenged", which is wrong on both counts -- verified live from this box). `GET
+    /search/?q=X` returns a normal 52KB XenForo page with NO challenge markers and NO auth wall,
+    but the query is never echoed anywhere in the response -- the GET does not execute a search
+    at all; it silently returns the generic empty search-landing page. This is standard XenForo
+    2.x behaviour: a real search needs a CSRF token pulled from an initial page load, then a POST
+    to /search/search carrying that token and a session cookie. Same class of blocker as Bilibili
+    WBI signing (libs/data/bilibili.wbi_keys) -- a request-signature/token gate, not a markup
+    problem and not an anti-bot challenge. Fixing this needs the two-step token+POST flow, not a
+    regex change; recorded here rather than left as a vague "challenged" guess.
+    """
     hit = _backed_off("tinhte")
     if hit is not None:
         return hit
@@ -886,11 +898,16 @@ def tinhte(keyword: str) -> tuple[list[Article], str | None]:
     except Exception as exc:
         _note_429("tinhte", exc)
         return [], _err(exc)
-    rows = re.findall(r'<a[^>]+href="(/thread/[^"]+\.(\d+)/?)"[^>]*>(.*?)</a>', page, flags=re.S)
+    # XenForo migrated /thread/N/ (singular) -> /threads/slug.N/ (plural) at some point; matched
+    # here for when the CSRF+POST flow above is built, though today's GET-only fetch never
+    # populates real results so this rarely has anything to match against either way.
+    rows = re.findall(r'<a[^>]+href="(/threads?/[^"]+\.(\d+)/?)"[^>]*>(.*?)</a>', page, flags=re.S)
     if not rows:
         if re.search(r"không tìm thấy|không có kết quả", page, flags=re.I):
             return [], None
-        return [], "tinhte fetched but no thread links parsed -- markup changed or challenged"
+        return [], ("tinhte GET search does not execute (query never echoed in the response) -- "
+                    "needs a CSRF-token POST flow, same class as Bilibili WBI signing; not a "
+                    "markup change and not a challenge page")
     out: list[Article] = []
     seen: set[str] = set()
     for href, ident, raw_title in rows:
