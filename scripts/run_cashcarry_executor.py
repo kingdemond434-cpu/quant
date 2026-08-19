@@ -53,6 +53,15 @@ _CONFIG = Path("data/cashcarry_config.json")     # LIVE-tunable params (top/hold
 _WEB = Path("web/cashcarry_live.json")
 _HB = Path("data/cashcarry_exec_heartbeat")
 _KILL = Path("data/CASHCARRY_KILL")
+# PERMANENTLY RETIRED (principal 2026-08-19: "Kill cash carry executor I say we don't ever
+# need it anymore"; the desk is MT5-only from that date, per CLAUDE.md). This is stronger than
+# _KILL.exists(): that path is a REVERSIBLE pause that auto-resumes trading the moment the
+# file clears (by design, for transient risk events). This flag is a permanent, code-level
+# shutdown -- the executor closes every open carry (idempotent, retried while any leg remains)
+# and then idles forever, exactly the same well-tested close+idle path _KILL already used
+# (never a hard process exit -- that caused a 14k-respawn storm on 2026-07-13). Flipping this
+# back to False is a deliberate, reviewed, principal-authorised decision, never a default.
+_PERMANENTLY_RETIRED = True
 _ERR = Path("data/cashcarry_error.log")          # visible cycle-error log (not swallowed to null)
 # RESTORED 2026-08-13. Added by 0d31469 -- an ANCESTOR of HEAD -- and dropped by a later merge
 # together with the two functions below, so the executor lost its FAIL-CLOSED PREFLIGHT and its
@@ -1318,7 +1327,7 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
     # FLATTEN MODE: a KILL file is authoritative this tick; a risk-flatten is only known AFTER
     # prices are read, so it latches through state and binds the NEXT tick's reconcile. Both stop
     # the reconciler rebuilding a book the close path is unwinding (2026-07-28 churn incident).
-    _flatten_only = _KILL.exists() or state.get("last_risk_action") == "flatten"
+    _flatten_only = _PERMANENTLY_RETIRED or _KILL.exists() or state.get("last_risk_action") == "flatten"
     # GUARD CONSUMPTION (R0071d): live_guard computed a graded response for weeks --
     # effective_size_fraction and limit_only -- and nothing read either. Its binary KILL half
     # was wired (above); the graded half now scales this tick's sizing capital and, in
@@ -1490,7 +1499,7 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
     # MOVEUSDT (07:21) and TSTUSDT (08:58) were both under 24h and survived a demanded full
     # unwind. A ruin rail a fee heuristic can veto is not a ruin rail. Opens are already
     # impossible at top=0, so widening the forced set can only ever CLOSE.
-    _KILL_FORCES_RAIL = _KILL.exists()
+    _KILL_FORCES_RAIL = _PERMANENTLY_RETIRED or _KILL.exists()
     _rail_forced = set(cool) | (set(pos) if (_KILL_FORCES_RAIL or (
         risk is not None and risk.action == "flatten")) else set())
     for sym in list(pos):
@@ -2463,14 +2472,17 @@ def main() -> None:
             # the book (single-book invariant, 2026-07-26).
             _HB.write_text(f"{os.getpid()} {datetime.now(tz=UTC).isoformat()}",
                            "utf-8")
-        if _KILL.exists():
+        if _PERMANENTLY_RETIRED or _KILL.exists():
             # IDLE here instead of exiting: exiting made systemd respawn every ~17s for as long
             # as the kill file stood (14k restarts after the 2026-07-13 fire), which also starved
             # the daily data flywheel that rides this loop. Close everything (idempotent -- retried
             # while any leg remains), keep the flywheel + dashboard feeds alive, resume trading
             # automatically the moment the kill file is cleared.
             if not killed:
-                print("KILL: closing all carries + idling until the kill file clears")
+                msg = ("RETIRED: closing all carries + idling permanently (2026-08-19)"
+                       if _PERMANENTLY_RETIRED else
+                       "KILL: closing all carries + idling until the kill file clears")
+                print(msg)
                 killed = True
             with contextlib.suppress(Exception):
                 _daily_data_tasks()                       # halted book must not starve the flywheel
