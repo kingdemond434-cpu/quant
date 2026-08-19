@@ -3124,7 +3124,7 @@ documentation, citing only AWS setup guides)._
   the venue's whole GitHub org instead of stopping at the two repos already cited — the marginal
   cost of listing an org is one API call; the habit generalises (see operator note this session).
 
-### 35. KR venue↔bank fiat-rail registry — the venue-ASYMMETRIC barrier regressor (R0299's missing input) — grade: **catalogued + one instance MEASURED; treatment count NOT yet enumerated** [§33: screened -> data/kr_venue_bank_rail.json] _(minted as "card #33" on the unmerged KR-s3 branch 2026-08-13; renumbered at landing 2026-08-19 — live #33=VARA, #34=bitbank had taken the number)_
+### 35. KR venue↔bank fiat-rail registry — the venue-ASYMMETRIC barrier regressor (R0299's missing input) — grade: **ENUMERATED 2026-08-19 (KR s4): ~0.9 sharp episodes/yr measured vs ≥8/yr needed → event-study alpha use KILLED (graveyard `kr_bank_rail_event_study`); registry KEPT as tape-provenance layer (WS-011 gate)** [§33: screened -> data/kr_bank_rail_transitions.json] _(minted as "card #33" on the unmerged KR-s3 branch 2026-08-13; renumbered at landing 2026-08-19 — live #33=VARA, #34=bitbank had taken the number)_
 - **Provides:** a per-venue, per-date KRW fiat-rail state for the licensed Korean venues. Korean
   regulation binds each VASP to **exactly one** partner bank for KRW deposit/withdrawal (2018
   real-name system, still in force 2026), so this is not a market variable — it is a **regulatory
@@ -3154,6 +3154,12 @@ documentation, citing only AWS setup guides)._
   to QUEUE at breadth 8.** So the deciding quantity is the transition count, and it has never been
   enumerated. **Enumerate first; do not screen n=1** (L1.62: never certify a verdict on a sample
   size nobody measured).
+  **→ ENUMERATED 2026-08-19 (KR s4, `data/kr_bank_rail_transitions.json`): ~0.9 sharp
+  episodes/yr (8 in 8.6y; ONE since 2021-09), ~2.2/yr counting every weak row. EV re-run:
+  0.0004–0.0006, REJECT with no knife-edge left. The 6/yr hand estimate was 6× the measurement
+  because it lacked class boundaries (renewal noise + VASP crypto-leg suspensions counted as
+  treatments). Event-study use graveyarded; the registry's provenance role stands. Re-open only
+  on the one-bank-rule repeal transition (named enabling change).**
 - **METHOD FENCE for that enumeration (paid for by the comment layer, 2026-08-13):** the
   **announcement date is NOT the treatment date.** Ppomppu 76535's "7 venues cut off" headline was
   **disputed by two of the named venues within 44 minutes** (76551), and a commenter notes the cut

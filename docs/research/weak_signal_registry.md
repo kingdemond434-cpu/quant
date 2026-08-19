@@ -496,3 +496,32 @@ prior, not a measured decay rate. DERIVES-FROM: primary posts read this run; the
 the author's own build (cites Bailey/LdP for the gate, not for the harness).
 promotion-check: not tradeable; consumers are (a) the crowding-decay prior on any published
 mechanism the desk screens, (b) OP-072's contamination model.
+
+### WS-016 a licensed KR venue publishes a DATED counterparty-risk event stream about OTHER venues — and the desk owns it without having noticed   [observations: 1 (single archive, ~40 rows)]
+first-seen: 2026-08-19 KR frontier miner s4, found as the EXCLUDED class of the rail-transition
+enumeration (`data/kr_bank_rail_transitions.json`). Upbit's notice archive
+(`data/upbit_notice_announcements.jsonl`, fetched whole this run) carries ~40 dated rows of
+per-counterparty digital-asset deposit/withdrawal suspensions, ₩1M+ threshold restrictions,
+resumptions, and service-closure notices naming specific exchanges: FTX (2022-04 account-holder
+verification), Gate.io risk-assessment removal (2022-04), Binance suspensions (2022-05, 2023-08,
+2025-02), GDAC hack window (2023-04), Haru/Delio freeze cascade (2023-06, three rows in 8 days),
+Cashierest/Coinbit/ProBit/GDAC/Qubit service closures (2023-11→2024-06), BingX (2025-12→2026-01),
+HTX sanctions (2026-05).
+direction: a travel-rule-connected venue's compliance desk is a PAID SENSOR on counterparty
+health — these rows are its dated verdicts, published before/while the named venue dies or
+degrades. The §42 named ground "delisting unwinds" is the adjacent family; this is its
+venue-death sibling, keyed by a THIRD party's risk decision rather than the dying venue's own
+announcement (which lies late — the announcement≠treatment fence's counterparty twin).
+mechanism-vocabulary flag (mandate): maps to NONE of the 24 CRYPTO_MECHANISMS cleanly
+(counterparty/venue-death risk) — the interesting case, widens the feature space.
+honest limits: (a) single archive so far — Bithumb's equivalent feed is WALLED from this probe
+origin (IP-level 403 incl. robots.txt, browser-UA control same), so cross-venue confirmation of
+lead/lag is unfetched; (b) most named counterparties are small KR venues the desk holds no tape
+for, so the tradeable transmission (if any) is via the named GLOBAL venues (Binance/HTX rows) or
+via KR-listed assets those venues custody; (c) the stream is a candidate CONDITIONING/risk-gate
+axis, not a standing alpha claim — nothing here is screened.
+promotion-check: extraction is zero search cost (rows already on disk); the decisive next
+measurement is whether suspension rows LEAD the named venue's public death/withdrawal-halt date
+(n≈10 closures in the archive — countable in one sitting, same L1.62 discipline as the rail
+enumeration: count before screening).
+[§33: screened -> data/kr_bank_rail_transitions.json excluded_classes + this row]

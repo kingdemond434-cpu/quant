@@ -2891,3 +2891,31 @@ honest UTC on both venues and align exactly once the +9h request offset is appli
 (Upbit−Bithumb) spread — the control WS-011 asked for, and the one construction where the cross-border
 capital-control term differences out — is cleanly constructible after all. That is the L1.25a
 distinction in its data-layer form: a blocked ROUTE is not a dead CAPABILITY.
+
+## OP-091 — AN ARCHIVE YOU OWN IS ONLY AS COMPLETE AS ITS COLLECTOR'S FILTER, AND THE FILTER IS INVISIBLE IN THE ROWS: SCAN THE SOURCE'S CATEGORY ENUM BEFORE TRUSTING ANY IN-REPO CORPUS AS "THE RECORD" (KR frontier miner s4, 2026-08-19)   [active]
+
+**7th member of the false-null family** (OP-033 encoding / OP-034 compression / OP-068 SPA shell /
+OP-069 transport / OP-088 content gate / OP-089 route obituary / **OP-091 collection scope**) — and
+unlike the other six, this one lives INSIDE the desk: the ground was never fetched wrong, it was
+never fetched at all, and nothing in the artifact says so.
+
+**MEASURED (this run):** s3's enumeration plan said "count KR rail transitions from
+`data/upbit_trade_announcements.jsonl`". Scanned: **0 bank hits in 737 rows.** Not because Upbit
+never announced bank events — because the file is `category=trade` ONLY (one `Counter()` call shows
+it) while the SOURCE serves five+ categories: `notice` (776 rows — every bank/rail/real-name event),
+`event` (312), `all` (5,736 ⇒ ~3,900 rows in classes nobody has enumerated). The premise was false
+at COLLECTION time, a year before the query.
+
+**WHY EVERY EXISTING CHECK IS BLIND:** a category-filtered lake passes every fence the desk owns —
+rows well-formed, dates continuous, freshness green, no 4xx anywhere — because the filter ran at the
+producer and left no mark in the product. WS-005's shape (absence resolving to a clean verdict) at
+the collection layer. The zero-hit scan is byte-identical to "the venue never announced bank
+events", and only the category enum distinguishes them.
+
+**THE RULE:** before using any in-repo corpus as "the record of X", (1) find its producer and read
+the REQUEST it makes — every filter parameter (category/type/tag/lang/date) is a scope claim about
+the lake; (2) probe the source's enum ONCE (cheap: fire the invalid value, read the error; fire
+candidate values, read total_count); (3) if the lake is a subset, say which subset IN THE QUERY
+RESULT — "0 hits in the trade category" and "0 hits at Upbit" are different findings. Per-region
+adaptation is direct: Discuz `fid` boards, Naver cafe menus, Telegram topic threads, GitHub
+issue-vs-discussion tabs are all the same enum-vs-lake trap — a mined board is not a mined forum.

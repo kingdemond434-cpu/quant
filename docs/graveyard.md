@@ -1489,3 +1489,44 @@ lived risk ranking puts VENUE risk above strategy risk: "Сколько не ж�
 ломают, кидают, и довольно часто)"; plus the spot-market consolation fallacy in period form
 ("если не будешь специально фиксить убыток, то слить нереально" — unrealized losses read as no
 losses).
+
+### kr_bank_rail_event_study — KILLED ON MEASURED TREATMENT SCARCITY (design-level, not mechanism falsity)
+
+**RECORDED 2026-08-19 (KR frontier miner s4, R0634 — the blocking measurement s3 named).** The
+KR venue↔bank fiat-rail axis (watchlist card #35, minted as #33 on the s3 branch) proposed
+trading venue-asymmetric KRW rail transitions. s3's EV verdict was knife-edge on a HAND estimate
+(~6 transitions/yr → EV 0.0019 vs 0.002 thresh; QUEUE at ≥8/yr). **This session enumerated the
+treatment from the primary record instead of estimating it**: Upbit's complete first-party
+notice archive (776 rows, category=notice, 2017-10→2026-08, fetched whole this run —
+`data/upbit_notice_announcements.jsonl`), the desk-measured Bithumb 2025-03-24 migration, and
+press-dated rows for Coinone/Gopax/Korbit (`data/kr_bank_rail_transitions.json`, 19 rows classed
+sharp/weak/window with announce-vs-effective dates separated per the announcement≠treatment
+fence).
+
+**THE MEASURED RATE: ~0.9 sharp episodes/yr (8 episodes in 8.6y); ~2.2/yr counting every weak
+policy row.** Era structure makes it worse, not better: the mass sits in 2017-12→2021-09
+(pre-real-name freeze, launch, both big migrations, 특금법 mass cutoff); **2022+ produced ONE
+sharp episode in 4.6 years** (Bithumb NH→KB 2025-03-24). Contracts consolidated; the treatment
+is drying up, not accruing. EV re-run with measured breadth: **0.0004 (sharp) / 0.0006 (all
+rows) — 3–5× below the 0.002 threshold, REJECT with no knife-edge left** (QUEUE needed ≥8/yr =
+9× the measured sharp rate). An event study here accrues n≈9 per decade: **permanently
+underpowered by design** — the AR seat's annual-event-study lesson (retire the DESIGN, not the
+instance), arriving in KR.
+
+**WHAT SURVIVES, EXPLICITLY: the registry, as a PROVENANCE layer, not an alpha axis.** The
+mechanism is real and desk-measured (WS-011 obs 2: the 10.50h Bithumb tape hole IS a rail
+event printing as an absence). Knowing WHEN a KR venue sat in a migration/freeze window gates
+every KR premium/spread measurement the desk makes — card #35 keeps that role; what dies is
+the standing tradeable-event-study use.
+
+**RE-OPEN CONDITION (L1.16a, narrow door):** a NAMED structural change that raises rail-event
+frequency — concretely, repeal or amendment of the one-exchange-one-bank rule (Woori's CEO is
+publicly lobbying for exactly this). A repeal TRANSITION would produce a one-shot cluster of
+re-contracting migrations (tradeable as an event CLUSTER, not a standing edge) — and then end
+the exclusivity mechanism entirely. Watch the rule, not the venues.
+
+**METHOD RESIDUE (why the estimate was 6× the measurement):** s3's ~6/yr hand estimate implicitly
+counted renewal cycles and policy noise as treatments. The enumeration separates classes:
+renewals that change nothing are non-events; VASP counterparty suspensions (the ~40-row 2022+
+mass in the same archive) are CRYPTO-leg events on a different card. **A breadth estimate made
+without class definitions inflates by whatever class boundary the estimator hasn't drawn yet.**

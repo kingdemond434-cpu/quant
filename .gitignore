@@ -22,6 +22,11 @@ data/*
 !data/btcsec_trading_topics.json
 !data/ppomppu_kr_rail_corpus.json
 !data/kr_venue_bank_rail.json
+# KR s4 (2026-08-19): §33 evidence + the card-#35 blocking measurement. The notice archive is
+# the PRIMARY record the collector never pulled (category=trade only); untracked it dies with
+# the box and the enumeration becomes unverifiable.
+!data/kr_bank_rail_transitions.json
+!data/upbit_notice_announcements.jsonl
 # The authority declaration is POLICY, not generated state: it says which component
 # may reach which surface. It must be reviewable in a diff, because a grant that
 # widens silently is the failure libs/ops/agent_authority.py exists to prevent.

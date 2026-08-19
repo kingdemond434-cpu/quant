@@ -2600,3 +2600,18 @@ triage and keeps unbuyable rows out of video_locked_log's purchase gate. CONSUME
 video-mandated seat (7 regions + WorldQuant corpus mandate). EVIDENCE THIS PAYS NOW: a proven RU
 caption track sat one disabled endpoint away this run; the EN/AR locked-log rows from 08-13 hit the
 same wall class through the same rotting route.
+
+## 2026-08-19 (KR frontier miner s4) — the announcements collector reads ONE category of a five-category archive, and the missing categories carry the venue-state events card #26 collects for
+`scripts/collect_announcements.py:223` pulls `api-manager.upbit.com/api/v1/announcements?...category=trade`
+only (737 rows in the lake). Measured this run: the API also serves `category=notice` (776 rows,
+2017-10-24→live — EVERY bank/rail/real-name/maintenance event lives here; the desk's rail
+enumeration had to fetch it by hand) and `category=event` (312 rows); `category=all` totals 5,736
+(~3,900 rows outside the three named categories — unenumerated classes exist). The trade-only scope
+was invisible from the lake because a category-filtered collector's output looks complete: every
+row well-formed, dates continuous, no gap on any freshness fence (WS-005 shape at COLLECTION scope;
+the s3 enumeration premise "count transitions from upbit_trade_announcements.jsonl" was false for
+exactly this reason). ONE-LINE CHANGE for the owning organ: add notice (+event) to the category
+loop; backfill needs ~1.2s spacing + 429 backoff (measured: burst allowance ~5 pages, then 429s
+with ~2-4s recovery). Full notice backfill landed this run at data/upbit_notice_announcements.jsonl
+— the collector only owes the INCREMENTAL pull. Research freeze forbids this seat from editing the
+script; routed here per mandate.

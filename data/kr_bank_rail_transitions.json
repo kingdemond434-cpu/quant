@@ -1,0 +1,233 @@
+{
+ "generated": "2026-08-19",
+ "producer": "KR frontier miner s4 (R0634; card #35 blocking measurement)",
+ "question": "How many venue-asymmetric KRW fiat-rail (venue<->bank) state changes per year does the KR licensed-venue cross-section actually produce? s3's EV verdict was knife-edge on a HAND estimate (~6/yr); this file replaces the estimate with an enumeration.",
+ "method_fence": "announcement date != treatment date (Ppomppu 76535/76551: headline disputed in 44min, rail already dead). Both announce_date and effective_date recorded where the source carries them; event studies must key on effective_date and treat announce-only rows as UNDATED-TREATMENT.",
+ "sources": {
+  "upbit": "MEASURED -- full first-party notice archive, data/upbit_notice_announcements.jsonl (776 rows, category=notice, 2017-10-24..2026-08-14, fetched this session from api-manager.upbit.com; the desk's standing collector pulls category=trade ONLY, so the in-repo corpus structurally lacked these -- routed to improvement_inbox)",
+  "bithumb": "PARTIAL -- one desk-MEASURED instance (2025-03-24 NH->KB, 10.50h tape hole, data/kr_venue_bank_rail.json); notice archive feed.bithumb.com is WALLED from this probe origin (403 on robots.txt AND content path, browser-UA control 403 => IP/datacenter wall, not bot-name; recorded, not routed around)",
+  "coinone_korbit_gopax": "press_dated -- public record, venue-notice verification owed; L1.62 discipline: these rows are dated claims, not measurements"
+ },
+ "excluded_classes": {
+  "vasp_counterparty_suspensions": "the 2022+ mass of 'digital-asset deposit/withdrawal suspended vs exchange X' rows (~40 in the Upbit archive: FTX, Gate.io, Binance, GDAC, Cashierest, ...) are CRYPTO-leg counterparty/travel-rule events, not KRW bank-rail events -- different mechanism, different card",
+  "venue_withdrawal_delay_policies": "24h delay (2020-11-27), 72h first-deposit delay (2021-04-15) are venue policy, not bank state",
+  "sanctions_and_tax": "Russia-IP restriction 2022-03-03, NTS reporting notices"
+ },
+ "events": [
+  {
+   "venue": "upbit",
+   "announce_date": "2017-12-08",
+   "effective_date": "2017-12-08",
+   "cls": "rail_resume",
+   "strength": "sharp",
+   "source": "upbit_notice",
+   "note": "KRW deposit RESUMED (pre-real-name era; implies preceding halt -- the halt's own notice is not in the archive, so the episode start is UNDATED)"
+  },
+  {
+   "venue": "upbit",
+   "announce_date": "2017-12-29",
+   "effective_date": "2017-12-29",
+   "cls": "issuance_freeze",
+   "strength": "sharp",
+   "source": "upbit_notice",
+   "note": "new-member virtual-account issuance HALTED (bank-driven onboarding freeze; lasted until real-name launch window)"
+  },
+  {
+   "venue": "upbit",
+   "announce_date": "2018-01-05",
+   "effective_date": "2018-01-05",
+   "cls": "rail_rule",
+   "strength": "weak",
+   "source": "upbit_notice",
+   "note": "non-real-name deposits no longer processed"
+  },
+  {
+   "venue": "upbit",
+   "announce_date": "2018-01-11",
+   "effective_date": "2018-01-11",
+   "cls": "bank_infra",
+   "strength": "sharp",
+   "source": "upbit_notice",
+   "note": "KFTC->IBK network overload ON the Park Sang-ki shock day -- rail failure correlated with the crash (WS-011's confounder shape at the bank layer)"
+  },
+  {
+   "venue": "upbit",
+   "announce_date": "2018-01-17",
+   "effective_date": "2018-01-30",
+   "cls": "realname_launch",
+   "strength": "sharp",
+   "source": "upbit_notice",
+   "note": "IBK real-name account introduction pre-notice; system live 01-30"
+  },
+  {
+   "venue": "all_licensed",
+   "announce_date": "2018-01-26",
+   "effective_date": "2018-01-30",
+   "cls": "realname_launch",
+   "strength": "sharp",
+   "source": "upbit_notice+era_corpus",
+   "note": "real-name system launch across the 4 contracted venues (Upbit/IBK, Bithumb/NH, Coinone/NH, Korbit/Shinhan) -- ONE cross-sectional event, not four; the two upbit realname rows and this row are ONE episode"
+  },
+  {
+   "venue": "upbit",
+   "announce_date": "2018-10-19",
+   "effective_date": "2018-10-21",
+   "cls": "rail_maintenance",
+   "strength": "weak",
+   "source": "upbit_notice",
+   "note": "scheduled KRW rail windows 10-19..10-31 (3 notices, one episode)"
+  },
+  {
+   "venue": "upbit",
+   "announce_date": "2020-06-19",
+   "effective_date": "2020-06-23",
+   "cls": "switch_migration",
+   "strength": "sharp",
+   "source": "upbit_notice",
+   "note": "IBK->K-Bank migration edge 1: K-Bank KRW deposits open 06-23 10:00 (full open 06-30)"
+  },
+  {
+   "venue": "upbit",
+   "announce_date": "2020-07-23",
+   "effective_date": "2020-07-24",
+   "cls": "switch_migration",
+   "strength": "sharp",
+   "source": "upbit_notice",
+   "note": "IBK->K-Bank migration edge 2: legacy IBK real-name + withdrawal-only accounts UNUSABLE from 07-24 10:00 -- the hard cutoff"
+  },
+  {
+   "venue": "coinone",
+   "announce_date": "2020-11-01",
+   "effective_date": "2020-11-24",
+   "cls": "switch_migration",
+   "strength": "sharp",
+   "source": "press_dated",
+   "note": "NH->Kakao Bank switch; dates are press record, venue-notice verification owed"
+  },
+  {
+   "venue": "upbit",
+   "announce_date": "2021-04-23",
+   "effective_date": "2021-04-26",
+   "cls": "bank_policy",
+   "strength": "weak",
+   "source": "upbit_notice",
+   "note": "KRW deposit limit change"
+  },
+  {
+   "venue": "bithumb",
+   "announce_date": "2021-07-01",
+   "effective_date": "2021-08-31",
+   "cls": "renewal_standoff",
+   "strength": "window",
+   "source": "press_dated",
+   "note": "NH demanded travel-rule compliance before renewal; documented crisis WINDOW not a dated edge -- renewal eventually signed. Coinone same standoff same window"
+  },
+  {
+   "venue": "all_licensed",
+   "announce_date": "2021-09-24",
+   "effective_date": "2021-09-24",
+   "cls": "mass_cutoff",
+   "strength": "sharp",
+   "source": "press_dated",
+   "note": "특금법 registration deadline: every venue WITHOUT a bank contract lost its KRW market (dozens went coin-only); the big-4 kept theirs. Largest venue-asymmetric rail event in the record; cross-sectional but asymmetric between licensed and unlicensed"
+  },
+  {
+   "venue": "upbit",
+   "announce_date": "2022-08-01",
+   "effective_date": "2022-08-31",
+   "cls": "bank_policy",
+   "strength": "weak",
+   "source": "upbit_notice",
+   "note": "K-Bank limited-account daily transfer cap applied to deposits"
+  },
+  {
+   "venue": "gopax",
+   "announce_date": "2023-02-01",
+   "effective_date": null,
+   "cls": "renewal_standoff",
+   "strength": "window",
+   "source": "press_dated",
+   "note": "Jeonbuk relationship strained post-FTX/GOFI (Genesis exposure); renewal difficulties documented as a window; venue-notice verification owed"
+  },
+  {
+   "venue": "all_licensed",
+   "announce_date": "2023-12-04",
+   "effective_date": "2024-01-01",
+   "cls": "bank_policy",
+   "strength": "weak",
+   "source": "upbit_notice",
+   "note": "real-name account operating guideline (운영지침) -- industry-wide KRW rail changes, venue-implemented"
+  },
+  {
+   "venue": "bithumb",
+   "announce_date": "2025-03-01",
+   "effective_date": "2025-03-24",
+   "cls": "switch_migration",
+   "strength": "sharp",
+   "source": "desk_measured",
+   "note": "NH->KB migration; DESK-MEASURED 10.50h 1m-tape hole, +51bp across halt, Upbit continuous (data/kr_venue_bank_rail.json, WS-011 obs 2)"
+  },
+  {
+   "venue": "upbit",
+   "announce_date": "2025-09-01",
+   "effective_date": "2025-09-01",
+   "cls": "bank_maintenance",
+   "strength": "weak",
+   "source": "upbit_notice",
+   "note": "bank maintenance window change"
+  },
+  {
+   "venue": "upbit",
+   "announce_date": "2025-12-03",
+   "effective_date": "2025-12-03",
+   "cls": "ambiguous",
+   "strength": "weak",
+   "source": "upbit_notice",
+   "note": "'temporary deposit/withdrawal halt' -- title does not distinguish KRW vs crypto leg; body read owed"
+  }
+ ],
+ "rate": {
+  "sharp_rows": 10,
+  "sharp_episodes": 8,
+  "all_rows": 19,
+  "span_years": 8.6,
+  "sharp_episodes_per_year": 0.93,
+  "all_rows_per_year": 2.21,
+  "era_split_note": "2017-12..2021-09 carries most of the mass (pre-real-name freeze, launch, both big migrations, 특금법); 2022+ produced ONE sharp episode in 4.6y (Bithumb 2025-03). The market consolidated: switches got rarer as contracts stabilized.",
+  "vs_s3_estimate": "s3's hand estimate was ~6 transitions/yr; measured sharp-episode rate is ~0.9/yr and even counting every weak/window row ~2.2/yr. The knife-edge resolves DOWN, decisively -- QUEUE needed >=8/yr."
+ },
+ "ev_rerun": {
+  "s3_hand_estimate": {
+   "name": "kr_bank_rail_asymmetry_s3_hand_estimate",
+   "ev": 0.0039,
+   "p_survive": 0.24,
+   "breadth_f": 0.548,
+   "verdict": "QUEUE (top-EV -> research)",
+   "tags": [
+    "new_orthogonal_data"
+   ]
+  },
+  "measured_sharp_episodes": {
+   "name": "kr_bank_rail_asymmetry_measured_sharp_episodes",
+   "ev": 0.0004,
+   "p_survive": 0.06,
+   "breadth_f": 0.224,
+   "verdict": "REJECT (EV below thresh)",
+   "tags": [
+    "new_orthogonal_data",
+    "narrow_breadth"
+   ]
+  },
+  "measured_all_rows": {
+   "name": "kr_bank_rail_asymmetry_measured_all_rows",
+   "ev": 0.0006,
+   "p_survive": 0.06,
+   "breadth_f": 0.316,
+   "verdict": "REJECT (EV below thresh)",
+   "tags": [
+    "new_orthogonal_data",
+    "narrow_breadth"
+   ]
+  }
+ }
+}
