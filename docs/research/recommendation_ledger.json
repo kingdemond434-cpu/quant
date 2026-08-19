@@ -8058,11 +8058,11 @@
    "rank": 7.0,
    "roi_basis": "rank",
    "raised": "2026-08-19T06:41:28.015283+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Enumerated same-day by KR s4: data/kr_bank_rail_transitions.json (19 classed events, Upbit side MEASURED from full 776-row notice archive fetched this run). Measured ~0.9 sharp episodes/yr vs >=8 needed -> EV 0.0004-0.0006 REJECT decisively; graveyard kr_bank_rail_event_study; card #35 re-graded (registry kept as provenance, alpha use dead).",
+   "commit": "84f66d6d7f68ded2205ac0089ea4e30cbe1a86f3",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-19T06:59:58.205149+00:00"
   }
  ]
 }
