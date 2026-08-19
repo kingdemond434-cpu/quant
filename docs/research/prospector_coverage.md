@@ -5734,3 +5734,60 @@ on attempt 1. The new half vs the 08-18 lesson: after ANY ledger add, verify the
 survived, not only that yours landed.
 
 STATUS: item 1 RESOLVED. Items 2–3 open.
+
+RESOLVED 2 (Numerai continuation — next-ground #1 from 08-18, five threads to full depth):
+methodology threads 899/3170/151 + crypto-tournament 8212/7916, every post of every thread read
+(44+35+16+1+5, pagination completed via posts.json). YIELD: **2 pre-emptive falsifications
+graveyarded** — `numerai_mda_feature_selection_gain` (the +0.5% claim is ~95% evaluation
+leakage; jay1100's 3-arm measurement 0.7/0.5/0.025 proves fold-averaging DILUTES a leak, never
+removes it) and `hyperparam_grid_uniqueness_as_signal_diversity` (39.6 quadrillion combos ≈ 1
+effective bet; genuine independent convergence with OP-084 + the demeaning-floor lesson,
+DERIVES-FROM: NONE checked both ways). **4 engine items → improvement_inbox** (leak-free
+importance protocol w/ self-test; max-feature-exposure OOS-fragility diagnostic, 80-model
+measurement; era-wise prediction-on-feature neutralization + mdo's clamped variant + taori's
+helps-simple-hurts-advanced boundary; smart-sharpe |AR1| SE-inflation with the community's
+negative-AR1 sign-bug fix). 8212 graded THIN honestly (tokenomics, no mechanism).
+jefferythewind run-2 verdict **NOT YET PUBLISHED** (searched his latest posts; newest is
+2026-04-24 governance) — carried, not padded.
+
+RESOLVED 3 (item 3 side-check ESCALATED TO A FULL RESOLUTION — the GMO card's heading was
+DESTROYED): the L1.61-shaped discrepancy (two cards dated 08-19, gate counts one) was not a
+parse quirk — an 08-13 edit destroyed card 27's `### 27.` heading line, gluing its grade + §33
+tag mid-paragraph into the KR venue-state card, where `_ITEM_RE` (heading-line-only) cannot see
+it. **A matured T3 obligation sat invisible to mine_gate, source_backlog_next AND the
+vanished-item detector for 6 days** (the tag TEXT survived, so nothing "vanished"). Heading
+restored verbatim from 5361358; the obligation then DECIDED same run: **§13 RESTRICTED-PENDING-
+CONSENT** — Art. 14(15) consent-required reuse + Art. 7(1) deemed assent, and the OP-087 conduct
+check came back EMPTY for GMO (no org, no SDKs, no grant language) — clause + silence ≠ licence.
+[§33: killed -> graveyard `jp_gmo_tick_archive_direct_ingest`], re-entry = written consent
+(R0622, ops/principal, due 09-02). Substitution chain recorded: bitFlyer→GMO both licence-dead;
+bitbank (wired today) + Tardis free tier are the surviving JP tape.
+
+SESSION CLOSE 2026-08-19 (EN frontier miner s-I) — DEPTH LINE, VENUES, NEXT GROUND:
+DEPTH: bitbank legitimacy = decided on NEW primary evidence (whole-org licence read via GitHub
+API — 15 repos, 3 MIT API clients, 2 sample MM bots, botter-community + historical-data repos;
+API host robots re-probed; support-KB re-fetch attempted, CF-walled, recorded not routed
+around) + 620-call backfill with the phantom guard validated end-to-end; GMO = heading forensics
+via 4-commit git bisect + org/conduct probe + archive-page read; Numerai = 5 complete trees,
+reply-chains to full depth, refutation layers mined (the run's 2 graveyard entries BOTH came
+from reply layers, not OPs — the depth mandate's point, again). Kaggle/NP grounds untouched this
+run (bounded scope; carried).
+VENUES DISCOVERED: 1 — bitbank's official historical-orderbook S3 distribution (card 34, via the
+org listing; the practitioners' venue-harvest rule applied to a VENUE'S OWN org). VIDEO: hit 0,
+fetched 0, locked 0 (no video-shaped artifact on any ground touched).
+STRATEGY-FAMILY note: no new family hunted this run (conversion + methodology run); coverage
+denominator unchanged.
+NEXT UN-EXHAUSTED GROUND, in order (L1.35):
+1. Numerai classic-tournament remainder: threads the 08-18 list named that today's batch did not
+   reach (jefferythewind run-2 verdict when published; crypto-tournament operational threads).
+2. Kaggle G-Research winners' mirror layer (GitHub/arXiv write-ups — NOT the SPA wall).
+3. NP forum-1 2013 snapshots + f12 147620 Kelly + 147696 Dynamic Correlation (carried from 08-18).
+4. 4851 optional residual (pages ~38-40, 44-45).
+5. bitbank L2 S3 first-month screen — fires the day R0620's registration lands (screen-on-
+   discovery obligation pre-registered on card 34).
+6. Wilmott re-probe (WALLED ×3).
+STATUS: **items 1-3 ALL RESOLVED to depth** (item 1: DECIDED+WIRED+new axis; item 2: 5 threads,
+2 graveyard + 4 inbox + OP-087; item 3: heading restoration + GMO DECIDED+killed). Run closed
+cleanly 2026-08-19. Honest zeros: 0 new mechanism cards (watchlist 5/5, nothing displaced), 0
+video, 8212 THIN. Ledger races: 4 clobbers absorbed, 5-way reconcile verified from HEAD, lesson
+L0166, root fix R0623.
