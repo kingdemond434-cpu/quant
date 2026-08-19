@@ -986,6 +986,67 @@ as arb; the KR premium remains usable exactly as the desk uses kimchi — a sign
 
 ---
 
+### era_crossvenue_fiat_premium_arb — TENTH INSTANCE (CN 2013-12 ban window, mainland onramp workflow, primary text) — MARGINAL-ROUTE COST STACK + OKPAY-RESERVE CROSS-REGION CORROBORATION + ANNOUNCEMENT-VS-ENFORCEMENT TIMING
+
+**RECORDED 2026-08-19 (CN frontier miner s9, era-archaeology: 8btc board-2 ban-window page read
+with the OP-071 low-page selector — validated on first use; coinsbbs.com thread-120 mined all 8
+pages / 70 posts; btcicc.com article layer opened).** Sources, all primary era text via Wayback,
+GBK: 8btc thread-1983 "btc-e.com——搬砖的第一站" (2013-12-06, the day after 银发〔2013〕289号;
+btc-e framed as the cheap foreign leg, the arb as "让外盘和国盘价格拉近"); coinsbbs thread-120
+(the tutorial's full version, replies 12-06→12-15); btcicc article-237 "比特币 高级搬砖系列一"
+(captured 2013-12-13); 8btc threads 1944/1950/1951 (12-05, hours after the notice, replies to
+12-06). **DERIVES-FROM: NONE (checked)** — the btcicc tutorial is an original how-to with the
+author's own registration screenshots and referral code; coinsbbs's likewise (images hosted on
+coinsbbs itself); neither cites the EN Bitcointalk literature; the 8btc policy threads quote the
+notice text and named CN commentators (龚明/长铗), and the folk replies cite nothing.
+
+**(a) THE OKPAY-RESERVE BOTTLENECK IS NOW CORROBORATED FROM BOTH SIDES OF THE BARRIER,
+INDEPENDENTLY.** The FIRST instance (Bitcointalk 171349 #39, EN, 2013) named "Gox had low OKPAY
+reserves" as the real constraint. This CN mainland tutorial — original by construction — documents
+the complete CNY onramp (银联/UnionPay → rchange.net, a HK e-currency dealer → OKPay, a Cyprus
+PSP with real-name KYC: passport/ID + address proof, ENGLISH TRANSLATIONS required, 1–2 working
+days → BTC-e) and names the binding risk in the author's own words: "rchange人民币充值存在...
+okpay资金储备的问题" (the dealer's OKPay float can run short). Genuine cross-region convergence,
+provenance checked on both sides, on the mechanism's core: the premium is rent on PSP FLOAT +
+KYC LATENCY + jurisdiction hops, and the marginal arbitrageur queues behind one dealer's reserve.
+
+**(b) THE FREEZE BINDS AT THE RAIL CUT, NOT THE NOTICE.** The crowd read the payment-processor
+scope correctly within HOURS (thread-1950, 17:50 on 12-05: restrictions bind 银行/支付宝/财付通,
+not individuals; thread-1951 quotes 龚明: commodity-not-currency was the survival path — a
+currency ruling would have imposed financial-institution licensing = "全军覆没"). Domestic
+third-party payment rails were actually cut ~2 weeks later; the offshore stack in (a) was already
+operational and became the marginal route. The board admin's 12-08 read: "对抄币影响并不大，就是
+吓退了不少大妈" — little effect on trading, scared off retail. **Consequence for method: any
+regulatory event study keyed to ANNOUNCEMENT dates mis-times the treatment by weeks; the
+treatment is the RAIL-STATE change** (feeds card #26's venue-state design and the deferred
+regulatory-event timeline card — same lesson the KR ninth instance carries from the enforcement
+side).
+
+**(c) CROWDING TIMESCALE IN MANIA IS DAYS, AND THE TUTORIAL IS ITSELF THE CROWDING EVENT.**
+coinsbbs tutorial posted 12-06; by 12-07 a replier is already asking "貌似这几天MT大跌，说好的
+差价呢" (spread gone); 70 unlock-replies in 9 days; the 8btc cross-post appears the same day the
+tutorial does. A PUBLISHED banzhuan tutorial marks crowd arrival — the premium's decay clock
+starts at publication. Retail-speed corroboration of the bots-first prior (7th instance).
+
+**(d) NAMED-SCOPE LOOPHOLE, SPOTTED IN REAL TIME.** 289号 names ONLY Bitcoin; a 12-06 reply
+(8btc thread-1944 post 6195) calls it immediately — "通篇只针对比特币，没有涉及莱特币等一大堆
+密码学货币" — contrasting the Fed/ECB's "以比特币为代表的虚拟货币" drafting; by 12-09 altcoin
+banzhuan is discussed as standard practice (coinsbbs post #375 "众多山寨币搬砖"). **A regulatory
+action binds its NAMED instrument; the unnamed sibling inherits the flow** (routed to
+weak_signal_registry WS-014; modern analog: token-specific enforcement actions).
+
+**(e) THE ERA'S EDGE-DISTRIBUTION STRUCTURE, MEASURED — what era-archaeology can and cannot
+recover.** The tutorial payload sat behind a 回复可见 reply-gate (never served to the crawler:
+OP-088), the advanced version (thread-183, "another banzhuan site not known to people") behind a
+member-tier gate (even its intro unarchived), and 搬砖群 QQ groups were "绝密" and full (12-06
+reply). The PUBLIC layer of the era archive holds the ADVERTISEMENT of edges; the edges lived in
+closed groups. Metadata (who/when/how many/how fast) survives; payloads survive only where
+cross-posted or ungated — btcicc's article layer is the ungated exception, which is what makes it
+the next dig target. **Unreadable-named (zero Wayback captures): 8btc 1989 (TOP100/TOP1000
+holder-concentration analysis, 12-07 — era whale-watching methodology) and 1973.**
+
+---
+
 ### hijri_ramadan_calendar_axis (AR frontier miner, 2026-08-12) — `unmeasurable_by_construction`, **NOT refuted**
 
 _Filed under the `unlock_events` precedent: UNMEASURABLE and DEAD are different verdicts and only one
@@ -1256,3 +1317,119 @@ this checkout**, so the 1.54/29 figures are cited from the desk-lesson text, not
 
 **COST OF THIS KILL: one afternoon of Monte Carlo, zero desk data, zero forward slots.** Pre-emptive
 falsification of a mined artifact is free graveyard material and this is what it looks like.
+
+## `jp_gmo_tick_archive_direct_ingest` — GMO Coin free keyless tick archive (api.coin.z.com/data/trades/, 2018-09-05 →)
+
+**KILLED 2026-08-19 (EN frontier miner s-I). Mechanism of death: §13 LEGITIMACY — consent-required
+reuse clause with no consent held.** Not a technical failure: the archive is live, keyless,
+26 spot + 12 margin symbols including JP-only MONA/FCR/NAC/WILD.
+
+**THE OPERATIVE CLAUSE** (kihon-yakkan.pdf ver=20260725, read 2026-08-12 stdlib-extracted, R0309):
+customer 基本約款 **Art. 14(15) requires company consent for off-service use of service-obtained
+information**, and **Art. 7(1) deems use of the service to be assent** to the 約款. Whether the
+anonymous keyless archive sits inside 本サービス scope is the ambiguity — and §13 demands CLEAR
+permitted usage over a restrictive clause, so ambiguity resolves against ingest.
+
+**THE ASYMMETRY WITH BITBANK, measured 2026-08-19 (the decision's spine):** bitbank was cleared
+the same day on venue CONDUCT — MIT-licensed official Public-API clients, two published sample
+market-making bots, an official Discord botter community, an official historical-data
+distribution service — over a ToS with NO reuse clause. GMO has the OPPOSITE profile on both
+axes: an explicit consent-required reuse clause AND zero affirmative conduct (no GitHub org —
+gmo-coin/gmocoin/GMOcoin Not-Found/empty; archive page is a bare symbol listing in the API docs
+with no grant language; robots 404; no API-specific terms per the 08-12 search of policy index +
+API product page + archive index). A clause plus silence is not a licence.
+
+**RE-ENTRY CONDITION (L1.16a, named):** written consent from GMO Coin (support-ticket request,
+ledgered R0622, due 2026-09-02) OR a future API/archive terms document granting third-party
+reuse. Either re-opens the card at `verified-technically-clean`.
+
+**SUBSTITUTION CHAIN, so nobody re-derives it:** bitFlyer (killed 08-01, licence) → GMO was its
+named replacement (killed today, licence) → **the surviving licensed JP tape is bitbank**
+(candles WIRED 2026-08-19: data/bitbank_1day.jsonl; L2 orderbook S3 pending registration
+R0620, watchlist card 34) plus Tardis `bitflyer` free 1st-of-month. The JP-only-ticker moat
+argument transfers to bitbank's mona_jpy/xym_jpy, already in the wired tape.
+
+## `numerai_mda_feature_selection_gain` — "MDA/permutation feature selection improves models" (as published)
+
+**PRE-EMPTIVE FALSIFICATION (free graveyard material), recorded 2026-08-19 from primary-source
+community measurement.** The claim (Numerai forum thread 3170, 2021-05, from LdP's AFML MDA):
+selecting features by permutation importance gains "+0.5% CORR on validation". The measured
+decomposition (jay1100, same thread, post #21, 3-arm experiment): importance computed ON
+VALIDATION → **+0.7%**; importance averaged across 5 CV folds → **+0.5%**; importance computed
+ON TRAINING folds only (leak-free) → **+0.025%**. ~95% of the published gain is evaluation
+leakage, and the load-bearing lesson is sharper than "don't leak": **averaging a leaky statistic
+across folds DILUTES the leak, it does not remove it** — the intermediate arm still books 20×
+the true gain. The tool is not dead (leak-free permutation importance is sound; sklearn
+`permutation_importance`); the PUBLISHED GAIN is. Any desk feature-selection step that selects
+on the window it evaluates re-manufactures this artifact. DERIVES-FROM: AFML ch.8 (MDA); the
+refutation is independent community measurement. SOURCE: forum.numer.ai/t/3170 #1/#21.
+
+## `hyperparam_grid_uniqueness_as_signal_diversity` — "trillions of grid combinations = unique signals"
+
+**PRE-EMPTIVE FALSIFICATION, recorded 2026-08-19.** The claim (Numerai forum 7916, 2025-01):
+39.6 quadrillion hyperparameter combinations ⇒ "every staker could generate a completely unique
+model". The refutation, from the thread's own reply layer and the desk's own arithmetic: models
+drawn from one learner family on one dataset with one era structure are **correlated by
+construction** — "most of the resulting models will still be highly correlated also because they
+are subject to the same eras" (foolish_observer), "any automatic grid-searching thing still
+basically converges in aggregate to some form of example predictions — it will still just be
+xgboost" (wigglemuse). This is the desk's own measured law arriving from a foreign ecosystem:
+**independence comes from the DATA, not the MATH** (OP-084, 48/50 single-operator survivors),
+and N same-family variants are ~1 effective bet (demeaning-floor lesson). Genuine convergence,
+DERIVES-FROM: NONE (checked — neither side cites the other). Kill any future proposal that
+counts configuration-space cardinality as diversity; count effective bets on the desk's own
+panel instead (libs/research/panel_breadth).
+
+---
+
+### era_grid_ladder_vol_bot — THIRD INSTANCE (RU 2014, live A/B challenge + the author's rules corpus) — RE-ANCHOR MECHANICS + THE ERA'S OWN EXECUTION-ALGO REFRAMING
+
+**RECORDED 2026-08-19 (RU frontier miner s3, btcsec bot-class continuation; primary era text via
+Wayback, IPB3 UTF-8).** Sources: forum.btcsec.com topic 8150 "Купить и подождать против бота
+(btc-e bot by ezhrd)" (2014-06-02→04, 21 posts across 2 archived pages — page-2 capture EXISTS,
+first CDX probe at limit-20 missed it, re-queried per OP-069 discipline before claiming the
+negative); topic 1168 "Правила безопасного трейдинга на BTC-e" (izlevinv's rules corpus,
+2013-04, 20 posts); topic 6549 (1b bot lite vendor thread, 2014-03→06, 15 posts).
+**DERIVES-FROM: NONE (checked)** — folk challenge thread, cites nothing; the bot is ezhrd's
+hosted commercial grid bot for btc-e; izlevinv is a paying USER stating its mechanics, not the
+vendor.
+
+**(a) THE GRID'S OPERATING RULES, from users quoting the author:** buy-ladder below price,
+take-profit above; after a filled sell it CANCELS remaining buys and RE-PLACES the whole grid
+DOWNWARD from current price; deliberately NO auto-trail-up option — izlevinv: "чтобы при резком
+рывке вверх наверху не купить" (so a sharp up-move cannot make it buy the top); his settings:
+перекрытие (grid coverage) ≥15%, 1% отступ (offset). The re-anchor-down rule is the
+short-gamma economics one level deeper than instances #1/#2: the design ADDS inventory only on
+the way down BY CONSTRUCTION, and the sole anti-top-buying defence is refusing to follow price
+up — i.e. the failure mode is priced into the config vocabulary itself. #18 (sasa9): "Покупка
+наверху — это общая проблема многих бот-алгоритмов" — the era names top-buying as the CLASS
+failure, not this vendor's.
+
+**(b) THE ERA'S OWN NULL, converged from BOTH sides of the argument:** sceptic sasa9 #16 — "тут
+знать надо когда запускать и какой профит выставлять, а если знаешь — тогда зачем бот? купил и
+поставил ордер на продажу" (you must know WHEN to start it and WHAT profit to set; if you know
+that, why the bot); bot-user izlevinv #19 agrees from the pro side: its real use is EXECUTION
+AFTER A DISCRETIONARY TIMING CALL ("включать в момент, когда вы спрогнозировали, откуда
+покупать — купит со страховкой и дешевле"), and #21 closes: configure it so "прогноз и 'Отступ
+от' совпадали — и можно спать идти" (make the forecast and the offset coincide, then sleep).
+Both sides land on the same decomposition the desk already holds: THE GRID IS A LIMIT-LADDER
+EXECUTION WRAPPER; THE TIMING DECISION IS THE ALPHA AND IT STAYS HUMAN. A grid bot's backtest
+is therefore a JOINT test of an unstated discretionary entry signal + a ladder, and crediting
+the ladder is attribution error (the coin-selector/engine severance rule, era edition).
+
+**(c) THE CHALLENGE ITSELF DIED UNANSWERED:** sasa9 proposed a public live A/B (bot vs
+buy-and-wait, both $50/pair, 5-10% target, ~10 days) and repeatedly asked the vendor to run 2
+cloud instances; #14 "Что-то молчит автор" (the author stays silent); no test ever started
+before the thread died 2014-06-04. A sold-bot vendor declining a free public live test is the
+seller-signal of instance #2 ("если бот приносит прибыль, зачем его продавать?") in
+behavioural form.
+
+**(d) supporting era lore banked from the same slice (not separate entries):** topic 1168 rule
+№3: "Не смотрите на стенки — их очень редко грызут, чаще ими пугают" (walls are rarely eaten,
+mostly used to scare) — RU 2013 folk knowledge that DISPLAYED depth is intimidation, not
+liquidity (era-side sibling of the desk's L1.45 displayed-depth caveat); rule №7: plan orders
+in a table FIRST, then place ("Таблица-ордера, ни в коем случае не наоборот") — pre-registered
+mechanical execution as 2013 retail discipline; kinken (#16, 1168): crypto venues read as
+manipulated vs regulated FORTS futures — the era's own venue-quality ranking. Vendor-thread
+6549 facts routed to WS-009/WS-010 observation appends (venue FEE-endpoint lie; strategy-file
++ vendor-held-API-keys synchronization channels).
