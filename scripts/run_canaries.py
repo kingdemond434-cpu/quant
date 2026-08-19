@@ -99,10 +99,9 @@ def _get(url: str) -> tuple[int, str]:
         return 0, str(e)[:120]
 
 
-def _rpc(url: str) -> tuple[int, str]:
-    """C9 is a POST, not a GET -- a keyless eth_getLogs over a 700-block range."""
-    body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber",
-                       "params": []}).encode()
+def _rpc_post(url: str, method: str, params: list) -> tuple[int, str]:
+    body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method,
+                       "params": params}).encode()
     req = urllib.request.Request(
         url, data=body, headers={"Content-Type": "application/json",
                                  "User-Agent": "quant-canary/1.0"})
@@ -113,6 +112,46 @@ def _rpc(url: str) -> tuple[int, str]:
         return e.code, ""
     except (urllib.error.URLError, TimeoutError, OSError, ValueError) as e:
         return 0, str(e)[:120]
+
+
+def _rpc(url: str) -> tuple[int, str]:
+    """C9: does a KEYLESS 700-block eth_getLogs still get ACCEPTED here?
+
+    That is the doc's stated question ("keyless eth_getLogs over a 700-block range"), and it is
+    the question that broke collectors in July (403s and range caps hit getLogs while other
+    methods kept working). The first implementation POSTed eth_blockNumber and tracked the HEAD
+    -- a number that advances every ~12s, so the canary read SHIFT on every single run: welded
+    ON, zero information, the exact cry-wolf shape that gets a detector acked into silence
+    (L1.37/L1.43). The tracked value is now CATEGORICAL (ok / denied:<class> / range-capped), so
+    PASS is the steady state and SHIFT means the acceptance policy itself moved.
+    """
+    status, body = _rpc_post(url, "eth_blockNumber", [])
+    if status != 200:
+        return status, body
+    m = re.search(r'"result"\s*:\s*"(0x[0-9a-f]+)"', body)
+    if not m:
+        return 200, body                     # extractor renders this as getLogs700=no-head
+    head = int(m.group(1), 16)
+    status, body = _rpc_post(url, "eth_getLogs", [
+        {"fromBlock": hex(head - 700), "toBlock": hex(head)}])
+    return status, body
+
+
+def _numeric_shift(prev: str, val: str, band: float = 0.10) -> bool | None:
+    """SHIFT verdict for two `key=<int>` values, or None when they are not that shape.
+
+    An exact-string compare welded the count canaries ON: repo totals (C1) and publication
+    totals (C5) grow a little every day, so ANY re-run read SHIFT and the verdict carried no
+    information. The doc's own vocabulary is "UNEXPECTED shift" / "publication-velocity
+    spikes" -- a RATE question. A 10% band against the last recorded value makes PASS the
+    steady state and SHIFT a spike; the baseline still advances every run (it is the last
+    PASS/SHIFT value), so this measures change since the previous look, never since seeding.
+    """
+    mp, mv = (re.fullmatch(r"([a-z_]+)=(\d+)", s or "") for s in (prev, val))
+    if not (mp and mv and mp.group(1) == mv.group(1)):
+        return None
+    p, v = int(mp.group(2)), int(mv.group(2))
+    return abs(v - p) > band * max(p, 1)
 
 
 def _extract(kind: str, body: str) -> str:
@@ -127,8 +166,18 @@ def _extract(kind: str, body: str) -> str:
         m = re.search(r"<opensearch:totalResults[^>]*>(\d+)<", body)
         return f"total={m.group(1)}" if m else "total=?"
     if kind == "rpc":
-        m = re.search(r'"result"\s*:\s*"(0x[0-9a-f]+)"', body)
-        return f"head={int(m.group(1), 16)}" if m else "no-result"
+        # CATEGORICAL acceptance verdict, never the head (the head advances every run). The
+        # error-class taxonomy mirrors the 07-26 shift log: denial, auth demand, range cap.
+        low = body.lower()
+        if re.search(r'"result"\s*:\s*\[', body):
+            return "getLogs700=ok"
+        if '"error"' in low:
+            if "range" in low or "limit" in low or "max" in low:
+                return "getLogs700=range-capped"
+            if "auth" in low or "unauthorized" in low or "api key" in low:
+                return "getLogs700=auth-required"
+            return "getLogs700=denied"
+        return "getLogs700=no-head" if "0x" not in low else "getLogs700=unparsed"
     return f"bytes={len(body)}"
 
 
@@ -169,11 +218,19 @@ def run_all() -> dict:
             continue
         val = _extract(kind, body)
         prev = base.get(cid)
-        verdict = "PASS" if prev is None or prev == val else "SHIFT"
+        numeric = _numeric_shift(prev or "", val)
+        if prev is None:
+            verdict = "PASS"
+        elif numeric is not None:
+            verdict = "SHIFT" if numeric else "PASS"
+        else:
+            verdict = "PASS" if prev == val else "SHIFT"
         results[cid] = {"label": label, "status": status, "value": val, "verdict": verdict,
                         "baseline": prev,
                         "note": ("first numeric baseline" if prev is None else
-                                 f"{prev} -> {val}" if verdict == "SHIFT" else "unchanged")}
+                                 f"{prev} -> {val}" if verdict == "SHIFT" else
+                                 f"{prev} -> {val} (within 10% band)" if prev != val
+                                 else "unchanged")}
     return results
 
 

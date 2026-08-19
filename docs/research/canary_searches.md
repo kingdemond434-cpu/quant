@@ -121,3 +121,31 @@ as an ecosystem fact** — the canary equivalent of the frozen-grid coverage bug
 **This entry does not claim a shift check happened.** It records that the duty is now executable
 and that this environment cannot execute it. The nine canaries produce real baselines on the VPS,
 where egress is open — the same box, and the same reason, as the recorders.
+
+### 2026-08-19 — the run record moved to the organ's artifact; two welded verdicts un-welded
+
+**Governance repoint.** §36 held THIS FILE to a 4-day commit cadence while the actual run duty
+had been an organ since 08-02 — and the organ's record, `data/canary_history.jsonl`, was
+**gitignored evidence**: runs on 08-09 and 08-18 sat invisible to a fence that measures commits,
+so the file read "16d stale" 19 hours after a real run. The history file is now git-tracked and
+`max_audit._PRODUCER_CADENCE` measures **it** at the same 4-day bar (nothing loosened — same
+clock, truer subject). This file keeps the canary SET and the shift investigations, which are
+event-driven, not cadenced.
+
+**Two verdict repairs (welded-ON canaries carry zero information, L1.43):**
+- **C9 was not asking its own question.** The doc says "keyless `eth_getLogs` over a 700-block
+  range"; the implementation POSTed `eth_blockNumber` and tracked the **head** — a number that
+  advances every ~12s, so C9 read SHIFT on literally every run. It now runs the real 700-block
+  `getLogs` and tracks a **categorical** acceptance verdict (`ok` / `range-capped` /
+  `auth-required` / `denied`) — the taxonomy of the 07-26 shift log — so SHIFT now means the
+  acceptance **policy** moved.
+- **Count canaries get a 10% spike band.** C1/C5-style totals grow a little every day, so
+  exact-string compare made any re-run a SHIFT. The doc's own vocabulary is "publication-velocity
+  **spikes**": `key=<int>` values now SHIFT only on a >10% move since the last look.
+
+**Latest organ readings (08-18 VPS run, re-read under the new semantics):** C1 `total_count`
+238→249 (+4.6%, within band — the DEX-ward tilt watch from 07-26 continues, no spike);
+C5 2324→2330 (+0.3%, within band); C9's old "SHIFT" was the welded head, carrying nothing.
+C3/C6/C8 stable; C2/C4/C7 unreachable from container hosts as documented. 2026-08-19 container
+re-run: C1/C3/C6/C8 reachable and stable, no shifts; C9 blind from this host (403 — the VPS
+answers the live-path question).

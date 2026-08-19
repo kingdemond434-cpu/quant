@@ -3307,9 +3307,17 @@ _PRODUCER_CADENCE = {
     "docs/research/weak_signal_registry.md": (
         3.0, "§23: >=2 weak signals from INDEPENDENT paths auto-promote to hypothesis generation, "
              "'checked each cycle during inbox triage' -- convention, never verified"),
-    "docs/research/canary_searches.md": (
-        4.0, "re-run each digging session; an unexpected shift triggers targeted rediscovery "
-             "BEFORE the normal cadence -- nothing confirmed the canaries were re-run"),
+    # REPOINTED 2026-08-19 (was docs/research/canary_searches.md at the same 4d bar): the run
+    # duty moved from prose to an organ on 2026-08-02 (scripts/run_canaries.py appends a row per
+    # run), and this fence must measure the artifact the duty actually produces. The history was
+    # GITIGNORED EVIDENCE until today, so the .md's commit age stood in for a run record it never
+    # was -- measured 16d "stale" while the organ had run 19h earlier. Same bar, truer subject:
+    # nothing loosened. The .md keeps the canary SET + shift investigations (event-driven).
+    "data/canary_history.jsonl": (
+        4.0, "canary run-record (Charter §21): scripts/run_canaries.py appends a row per run, "
+             "miner sessions fire it per digging session and desk snapshots commit it -- a stale "
+             "COMMIT here means either the canaries stopped running or their evidence stopped "
+             "being committed, and both are the outage this fence exists to catch"),
     # THE LIVE QUEUE, and this table pointed at the WRONG FILE for weeks (fixed 2026-08-12).
     # `generation_due.md` sat here at an 8d bar while having ZERO writers anywhere in the repo
     # (content frozen since 2026-07-29, header stamped 2026-07-16); it is now recorded terminal
