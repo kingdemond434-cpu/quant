@@ -7861,16 +7861,30 @@
   {
    "id": "R0619",
    "source": "cycle",
-   "summary": "LAND THE STAGED PROBE-CAP SIZING AT RE-ARM (restores a ledger anchor destroyed by an id race: the 2026-08-18 CRO cycle recorded this obligation as R0618, a sibling whole-file ledger revert erased that row, and the freed id was re-issued 2026-08-19 to an unrelated spot-routing row -- this row is the re-anchor). THE OBLIGATION: commit 08a6874e on branch claude/staged-probe-cap-sizing sizes re-entry probes at their recorded cap -- the missing SIZER half of the re-entry protocol whose REFUSER half (_probe_within_cap, 2026-08-13) is already live, leaving all 7 recorded re-entry doors welded shut (caps $100, windows open since 08-15, budgets unspent). It is STAGED behind the L1.38 sterile-cockpit window ON PURPOSE: it must merge into the live branch when the principal re-arms / the change window opens, NOT before. Closing F0020 (pause_opens is ABSORBING) depends on this landing. Verify at landing: merge commit on claude/llm-auto-upgrade-verify-gcjac3 + a re-entry probe actually sizing at its cap.",
-   "roi_bps": 80.0,
-   "rank": null,
-   "roi_basis": "measured",
-   "raised": "2026-08-19T01:25:07.272230+00:00",
+   "summary": "EN-sI 2026-08-19 (re-add after sibling stale-read clobber): wire a FORWARD REFRESHER for data/bitbank_1day.jsonl (bitbank daily candles, 62 pairs, backfilled 2017-02-14->2026-08-18; card 28 s13 DECIDED LEGITIMATE). Scheduled append of current-year bars; engine-seat build -- miner seat frozen.",
+   "roi_bps": null,
+   "rank": 4.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-19T01:26:21.227713+00:00",
    "status": "scheduled",
-   "reason": "Waits on the principal's re-arm / L1.38 change-window OPEN -- the staged commit 08a6874e must not merge into the live branch inside the sterile window. Due date is a re-check of window state, not an evidence bar; if the window is still CLOSED at due, re-schedule citing the window artifact.",
+   "reason": "Engine-seat build (miner seat research-frozen). Backfill artifact live on disk; one week to wire priced acceptable for daily research bars.",
    "commit": null,
-   "due": "2026-09-01",
-   "disposed": "2026-08-19T01:25:43.590877+00:00"
+   "due": "2026-08-26",
+   "disposed": "2026-08-19T01:26:25.683962+00:00"
+  },
+  {
+   "id": "R0620",
+   "source": "cycle",
+   "summary": "EN-sI 2026-08-19 (re-add after sibling stale-read clobber): REGISTER for bitbank official historical ORDER-BOOK snapshot S3 (bucket 564226375708-historical-order-books; AWS-account-ID or IP registration, venue GRANTS access). L2 200x2 ~2/min: BTC+XRP 2019-03-13->, 7 pairs 2023-07-24->, SOL 2024-11-21->. Named human step (GAP #69 class); watchlist card 34.",
+   "roi_bps": null,
+   "rank": 6.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-19T01:26:23.674528+00:00",
+   "status": "scheduled",
+   "reason": "Registration is a named human/ops step (GAP #69 class); card 34 carries mechanism prior + screen obligation on grant.",
+   "commit": null,
+   "due": "2026-09-02",
+   "disposed": "2026-08-19T01:26:27.776702+00:00"
   }
  ]
 }
