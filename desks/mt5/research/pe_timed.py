@@ -29,6 +29,18 @@ FMT = "%d/%m/%Y %H:%M:%S"
 
 # (ticket, symbol, side, lots, open, close, eur, open_time, close_time)
 TIMED = [
+    (102740750, "XAUUSD", "S", 0.0145, 4395.59, 4417.15, -27.07,
+     "11/08/2026 02:30:52", "11/08/2026 03:46:42"),
+    (102740992, "XAUUSD", "S", 0.0145, 4395.60, 4417.15, -27.06,
+     "11/08/2026 02:30:54", "11/08/2026 03:46:42"),
+    (102808596, "XAUUSD", "S", 0.0126, 4409.97, 4397.73, 13.36,
+     "11/08/2026 03:54:46", "11/08/2026 04:04:04"),
+    (102808895, "XAUUSD", "S", 0.0126, 4409.58, 4397.75, 12.91,
+     "11/08/2026 03:54:54", "11/08/2026 04:04:04"),
+    (103693994, "XAUUSD", "B", 0.0741, 4363.23, 4369.35, 39.29,
+     "11/08/2026 21:10:53", "11/08/2026 21:37:52"),
+    (102811813, "XAUUSD", "S", 0.0126, 4406.82, 4397.81, 9.83,
+     "11/08/2026 04:00:38", "11/08/2026 04:04:04"),
     (104480241, "XAUUSD", "B", 0.1748, 4418.62, 4422.94, 65.37,
      "12/08/2026 16:30:06", "12/08/2026 16:47:23"),
     (104482259, "XAUUSD", "B", 0.1749, 4420.68, 4422.99, 34.98,
@@ -118,22 +130,28 @@ def main() -> int:
     mins_of_day = sorted((t(r[7]).hour * 60 + t(r[7]).minute, r[1]) for r in rows)
     for m, sym in mins_of_day:
         print(f"  {m // 60:02d}:{m % 60:02d}  {sym}")
-    lo, hi = 16 * 60 + 30, 16 * 60 + 37
-    inwin = [1 for m, _ in mins_of_day if lo <= m <= hi]
-    n, k = len(mins_of_day), len(inwin)
-    # Gold and DJ30 are not tradeable 24h; take a conservative 12-hour active
-    # window as the denominator. A narrower one only makes this MORE extreme.
-    p = (hi - lo + 1) / (12 * 60)
     from math import comb
-    pv = sum(comb(n, i) * p ** i * (1 - p) ** (n - i) for i in range(k, n + 1))
-    print(f"\n  {k} of {n} entries land inside 16:30-16:37 server time.")
-    print(f"  Under a uniform {12}-hour trading day that window is {100 * p:.2f}% "
-          f"of the day.")
-    print(f"  P(>= {k} of {n} by chance) = {pv:.2e}")
-    print("  This is no longer a pattern in the index trades -- 12/08 puts THREE")
-    print("  XAUUSD entries in it. The window belongs to the STRATEGY, not to a")
-    print("  symbol. At UTC+3 it is 13:30-13:37 UTC = the first seven minutes of")
-    print("  the New York cash session.")
+    n = len(mins_of_day)
+    # Gold trades ~23h, so the honest denominator is the whole session, not a
+    # convenient 12-hour slice. Using 23h makes every window LOOK more extreme,
+    # which is the wrong direction, so 12h is kept as the conservative choice
+    # and stated as such.
+    print()
+    for lo, hi, name in ((16 * 60 + 30, 16 * 60 + 37, "16:30-16:37"),
+                         (2 * 60 + 30, 4 * 60 + 5, "02:30-04:05")):
+        k = sum(1 for m, _ in mins_of_day if lo <= m <= hi)
+        p = (hi - lo + 1) / (12 * 60)
+        pv = sum(comb(n, i) * p ** i * (1 - p) ** (n - i) for i in range(k, n + 1))
+        print(f"  {name}:  {k} of {n} entries   window = {100 * p:.2f}% of a "
+              f"12h day   P(>= {k}) = {pv:.2e}")
+    print()
+    print("  TWO clusters, not one. The 16:30 window survived the bigger sample")
+    print("  and is not a symbol artifact -- 12/08 puts three XAUUSD entries in")
+    print("  it alongside the DJ30 fills. The 02:30-04:05 cluster only appeared")
+    print("  once 11/08 arrived, which is exactly why a claim built on one day")
+    print("  of timestamps should not have been called a finding.")
+    print("  At UTC+3: 16:30 -> 13:30 UTC (New York cash open), and")
+    print("            02:30-04:00 -> 23:30-01:00 UTC (Asia). Offset unverified.")
 
     print("\nBASKET TARGETS -- lot-weighted, tickets closed together")
     grp = defaultdict(list)
