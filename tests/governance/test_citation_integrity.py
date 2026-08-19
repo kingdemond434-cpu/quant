@@ -226,15 +226,33 @@ def _fixture_ledger(tmp_path: Path, commit: str = "HEAD") -> Path:
 
 def test_repoint_refuses_an_unresolvable_new_citation(tmp_path: Path) -> None:
     """The verb may not launder one dangling pointer into another -- that would let the ledger
-    look repaired while still proving nothing."""
+    look repaired while still proving nothing.
+
+    BOTH refusals are exercised, because different inputs reach them and the SHAPE guard runs
+    first. A symbolic name never gets as far as the resolve check, so asserting 'does not
+    resolve' against 'definitely-not-a-commit' was really asserting the shape guard's message
+    -- and the moment the shape guard was added, the resolve guard lost its only test while
+    this one went red for the wrong reason.
+    """
     import argparse
     mod = _rec_module(_fixture_ledger(tmp_path))
-    args = argparse.Namespace(id="R1", commit="definitely-not-a-commit", expect=None,
-                              reason="the original citation was a symbolic ref, per-clone")
+    untouched = "HEAD"
+
+    # Not a hex sha at all -> the shape guard, before git is ever consulted.
+    with pytest.raises(SystemExit, match="must be the hex sha itself"):
+        mod.repoint(argparse.Namespace(
+            id="R1", commit="definitely-not-a-commit", expect=None,
+            reason="the original citation was a symbolic ref, per-clone"))
+    assert json.loads(
+        mod.LEDGER.read_text("utf-8"))["recommendations"][0]["commit"] == untouched
+
+    # Well-formed hex naming an object no clone has ever held -> the resolve guard.
     with pytest.raises(SystemExit, match="does not resolve"):
-        mod.repoint(args)
-    # and the row is untouched
-    assert json.loads(mod.LEDGER.read_text("utf-8"))["recommendations"][0]["commit"] == "HEAD"
+        mod.repoint(argparse.Namespace(
+            id="R1", commit="0" * 40, expect=None,
+            reason="the original citation was a symbolic ref, per-clone"))
+    assert json.loads(
+        mod.LEDGER.read_text("utf-8"))["recommendations"][0]["commit"] == untouched
 
 
 def test_repoint_moves_the_pointer_and_logs_the_old_one(tmp_path: Path) -> None:

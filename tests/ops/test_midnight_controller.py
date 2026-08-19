@@ -71,11 +71,20 @@ def test_codex_controller_is_noninteractive_fenced_and_checkpointed() -> None:
     assert "RUNNING_PIPELINE" in source and "RUNNING_CONTROLLER" in source
     assert "LEASE_ERROR" in source and "CLAIM_RC" in source
     assert "CODEX_NIGHTLY_TIMEOUT_SECONDS:-21600" in source
-    assert 'CODEX_NIGHTLY_MODEL="${CODEX_NIGHTLY_MODEL_OVERRIDE:-gpt-5.6-terra}"' in source
-    assert "CODEX_NIGHTLY_REASONING_EFFORT_OVERRIDE:-medium" in source
+    # The unit file pins the model; the script must READ that pin rather than
+    # overwrite it. _OVERRIDE stays as the operator escape hatch, but it can no
+    # longer shadow the Environment= line into irrelevance.
+    assert (
+        'CODEX_NIGHTLY_MODEL="${CODEX_NIGHTLY_MODEL_OVERRIDE:-'
+        '${CODEX_NIGHTLY_MODEL:-gpt-5.6-sol}}"'
+    ) in source
+    assert (
+        'CODEX_NIGHTLY_REASONING_EFFORT="${CODEX_NIGHTLY_REASONING_EFFORT_OVERRIDE:-'
+        '${CODEX_NIGHTLY_REASONING_EFFORT:-max}}"'
+    ) in source
     service = SERVICE.read_text("utf-8")
-    assert "CODEX_NIGHTLY_MODEL=gpt-5.6-terra" in service
-    assert "CODEX_NIGHTLY_REASONING_EFFORT=medium" in service
+    assert "CODEX_NIGHTLY_MODEL=gpt-5.6-sol" in service
+    assert "CODEX_NIGHTLY_REASONING_EFFORT=max" in service
     assert "--dangerously-bypass-approvals-and-sandbox" not in source
     assert source.index("check_constitution_core.py") < source.index(
         "controller_checkpoint.py claim"

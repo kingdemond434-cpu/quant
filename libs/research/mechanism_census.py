@@ -500,8 +500,9 @@ TAXONOMY: tuple[MechanismClass, ...] = (
         payer="nobody is compelled -- the claim is that global liquidity and risk appetite reach "
               "a risk asset with a lag long enough to trade",
         economic_definition="Dollar, policy-liquidity and cross-asset risk states propagate into "
-                            "crypto with a delay. The tradeable form must be a standalone "
-                            "directional claim, not a conditioning overlay on an existing book.",
+                            "the traded instrument (FX, gold, indices, energy) with a delay. The "
+                            "tradeable form must be a standalone directional claim, not a "
+                            "conditioning overlay on an existing book.",
         signatures=("macro", "dxy", "dollar strength", "fed", "walcl", "net liquidity",
                     "treasury", "rates", "spx", "ndx", "equity", "gold", "digital gold",
                     "risk regime", "crossasset", "cross asset", "risk off", "rotation"),
