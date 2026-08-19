@@ -7939,4 +7939,14 @@
    "disposed": "2026-08-19T01:51:06.168360+00:00"
   }
  ]
+}_EX) on a sidecar lockfile in _load/_save closes the class. Owner: any unfrozen seat (scripts/ is outside miner freeze).",
+   "roi_bps": null,
+   "raised": "2026-08-19T01:38:14.061608+00:00",
+   "status": "scheduled",
+   "reason": "Engine/unfrozen-seat fix; miner seat cannot touch scripts/. Evidence: commits eaedb28a/d9a905ef + this session note.",
+   "commit": null,
+   "due": "2026-08-22",
+   "disposed": "2026-08-19T01:38:14.061608+00:00"
+  }
+ ]
 }

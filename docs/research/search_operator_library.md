@@ -584,6 +584,10 @@ marked ✓ were CONFIRMED IN USE this run (2026-07-26) against live CN pages/API
 | 套牢 / 踏空 / 割肉 / 装死 / 纸手 / 钻石手 | taolao / takong / gerou / zhuangsi / zhishou / zuanshishou | trapped / missed the rally / cut losses / play dead / paper hands / diamond hands | ✓ retail POSITIONING/sentiment keys |
 | 塞舌尔人 | saisheerren | "the Seychellois" = BitMEX + its degen crowd (Seychelles incorporation); era mock-slogan "塞舌尔人最低五十倍杠杆起步…唯有爆仓止损" | ✓(08-12) 8btc thread-166158 (2018-05) — the 2018 合约党 era key; finds BitMEX-era leverage lore official terms never reach |
 | 对敲 | duiqiao | self-matched/wash prints — in era derivatives context, the manipulation allegation term (bots printing against themselves to move the mark) | ✓(08-12) 8btc thread-2352 (2013-12, 796 incident) — pairs with 插针/控盘 as the DERIVATIVES manipulation key |
+| 抄币 | chaobi | "coin trading/speculation" — the PRE-炒币 era orthography (抄 for 炒), admin-register usage | ✓(08-19) coinsbbs admin post 2013-12-08 ("对抄币影响并不大") — search BOTH spellings on the 2013 stratum; the modern 炒币 alone under-recalls it |
+| MT | — | CN-era abbreviation for MtGox ("MT大跌") | ✓(08-19) coinsbbs thread-120 #229 (2013-12-07) — era key; "门头沟" (the later folk name) post-dates the 2014 collapse, so MT is the IN-ERA search key |
+| 搬砖群 / 板砖群 | banzhuanqun | closed QQ arb groups — the era's edge-distribution channel ("绝密", full by 2013-12); 板砖 is a live typo-variant of 搬砖 | ✓(08-19) coinsbbs thread-120 #171/#173 — search both orthographies; the group layer itself is §13-closed, but the term finds the RECRUITMENT/advertisement threads which are public |
+| 回复可见 / 隐藏内容 / 阅读权限 | huifukejian / yincang neirong / yuedu quanxian | reply-to-view / hidden content / read-permission — Discuz gate MARKERS, method vocabulary not slang | ✓(08-19) OP-088's discovery inversion: query gate-marker + 教程/策略/搬砖 to enumerate exactly the threads the era gated — the ranked where-the-edges-were shortlist |
 
 ### OP-033 legacy regional forums are NOT UTF-8 — decode before you judge     [active]
 class: extraction
@@ -1992,6 +1996,15 @@ recorded a fact about their fetch, not about the world (L1.28a: unmeasured is ne
 verdict). **PROPAGATE TO ALL SEATS (§16):** every region seat using Wayback is exposed, and the
 cost of the mistake is silently retiring live ground.
 
+_OP-069 field note (CN s9, 2026-08-19): a THIRD transport-layer false-null shape, cheaper than the
+503 and easier to mass-produce. An `id_` fetch at a NON-EXACT timestamp answers 302, and curl
+without `-L` writes a ZERO-BYTE file for a record whose exact-timestamp fetch returns 55–59KB
+intact — six of eight pages of coinsbbs thread-120 read "empty" in one batch because page 1's
+timestamp was reused for pages 2–8. Rule: fetch each record at ITS OWN CDX timestamp, always pass
+`-L`, and treat a 0-byte body as a fetch-side artifact to re-check against CDX `length` (the same
+free referee as the 503 case) — never as evidence about the record, and never as grounds to grade
+a capture set hollow._
+
 ### OP-070 out-of-range Discuz page aliasing means YOU EXCEEDED THE COUNT — it is not a property of the URL scheme   [active]
 
 **CORRECTS the OP-034 addendum this seat wrote on 2026-08-12**, which concluded from board 233
@@ -2050,6 +2063,17 @@ appear; page depth then walks *backwards* from it.
 `t_msgfont` and `postcontent` are both absent. Quoted replies repeat the parent's text with a
 `<author> 发表于 <date>` header, so a naive post count **double-counts** a reply chain — dedupe on
 the quote header before claiming a thread depth. GBK throughout.
+
+_OP-071 field note (CN s9, 2026-08-19): the post selector varies WITHIN one forum ACROSS capture
+dates — 8btc thread pages in the 2014-03 crawl carry `<td class="t_f" id="postmessage_NN">` while
+the 2013-12 stratum this note was written from uses `<div class="t_f">`. Parse
+`<(?:td|div) class="t_f"[^>]*>` from the first fetch; a 0-match parse on a capture whose CDX
+length says it is full-size is a SELECTOR-DRIFT tell, never an empty thread (OP-034's era-selector
+trap, one venue narrower). Two more skin details that cost a probe each: coinsbbs writes
+`<div id="post_NNN" >` with a space before `>` (anchor with `\s*>`), and 8btc board-list pages
+carry titles in `class="s xst"` anchors inside `tbody id="normalthread_TID"` rows — the
+thread-URL fragment `thread-TID-1-1` poisons naive date regexes on those rows (strip URLs before
+scanning for dates)._
 
 ### OP-072 THE POST-2023 PRACTITIONER CORPUS IS LLM-CONTAMINATED, AND THE CONVERGENCE MODULE CANNOT SEE IT   [active]
 class: provenance / anti-echo
@@ -2751,3 +2775,44 @@ docs repo — card 34 — was found exactly this way). Per-region adaptation: JP
 GitHub (bitbankinc, bitFlyer's org); CN venues on Gitee mirrors — same read, `license` field in
 the Gitee API; KR venues often publish under team accounts, search `{venue} official github` +
 the API docs' footer links rather than guessing org slugs.   [active]
+
+
+## OP-088 — A REPLY-TO-VIEW GATE MAKES AN ARCHIVED THREAD'S PAYLOAD STRUCTURALLY UNARCHIVED: THE GUEST VIEW IS THE ADVERTISEMENT, NOT THE CONTENT (CN frontier miner s9, 2026-08-19)
+
+class: false-null family, FIFTH member (OP-033 encoding / OP-034 compression / OP-068 SPA shell /
+OP-069 transport / OP-088 application-layer content gate) — and unlike the other four, this page
+is genuine, complete, intact and correctly decoded. The lie is one layer deeper: the payload was
+never SERVED to the crawler, so no amount of fetch hygiene recovers it.
+
+origin: coinsbbs.com thread-120 (the btc-e 搬砖 tutorial, 2013-12) — 8 pages / 70 posts fetched
+intact, decoded clean, mined to full depth, and the tutorial itself was in NONE of them. Discuz
+回复可见 (reply-to-view) renders to a guest — and Wayback crawls as a guest — only the intro plus
+"游客，如果您要查看本帖隐藏内容请 回复". The stronger variant, 阅读权限/member-tier (coinsbbs
+thread-183, "另外一个不被人所知的搬砖站点"), returns a bare Discuz 提示信息 permission page: even
+the intro is absent, so the advertised venue's NAME is unrecoverable from the archive.
+
+THE TELLS, all cheap, all high-precision: (1) the literal markers 回复可见 / 隐藏内容 / 提示信息;
+(2) the reply signature — a long run of contentless one-liners (谢谢/学习/看看/顶) at high
+velocity; those are UNLOCK ATTEMPTS, not discussion, and their count is a DEMAND METER for the
+gated payload (70 in 9 days here, during the ban week); (3) a tutorial-promising title over a
+body far too short to be one.
+
+WHAT REMAINS MINEABLE — it inverts: the metadata layer survives perfectly. Who sought the edge,
+when, how many, how fast (the crowding clock), what the era considered secret enough to gate.
+Two payload-recovery routes, both legitimacy-clean: (a) CROSS-POSTS — the same author advertising
+on a sibling venue pastes the intro + pointer ungated; 8btc thread-1983 is how thread-120 was
+found at all, and its hotlinked coinsbbs screenshots survive inside the 8btc capture. Hunt the
+title string on sibling venues before declaring a payload lost. (b) the /archiver/ layer — some
+old Discuz archiver builds rendered hide-blocks to guests; coinsbbs's archiver THREAD pages were
+never captured (index only, 1.7KB), so for that venue the probe is UNTESTED, not failed — record
+which. What is NEVER done: registering or replying on a live descendant, or any route around an
+access control — the gate is a §13 boundary in every language, and the gate being DEAD does not
+change whose content it is.
+
+DISCOVERY INVERSION, the reusable half: the gate markers are SEARCH KEYS. Query a forum's index
+or site-search for 回复可见 + 搬砖/教程/策略 and you enumerate precisely the threads the era's
+practitioners thought worth gating — a ranked shortlist of where the edges were, which is the
+right place to START cross-post hunts. Per-region adaptations (charter §16): KR boards gate with
+비밀글 and 등업 (level-up) walls; RU forums with [hide]/спасибо-unlock plugins (forum.bits.media
+lineage); EN-era vBulletin/XenForo with "like/thanks to see" plugins. Same tells, same metadata
+inversion, same §13 line everywhere.

@@ -409,3 +409,32 @@ independent paths); its two event-timing items (2608.14014 pre-publication drift
 permission-boundary reranking) converge only on the ALREADY-CARDED listing/delisting event ground
 (S42, listing_events.py) -- convergence with a carded axis promotes nothing. Standing WS rows
 unchanged; no observations added to any WS-nnn this cycle._
+
+
+### WS-014 a regulatory action binds its NAMED instrument — the unnamed sibling inherits the flow, and the era crowd routed within days   [observations: 2 primary, same window]
+
+**LOGGED 2026-08-19 (CN frontier miner s9, era-archaeology: 8btc + coinsbbs ban-window corpus,
+primary text via Wayback).** 银发〔2013〕289号 (the five-ministry PBoC notice, 2013-12-05) names
+ONLY Bitcoin. Observation 1: a forum reply the NEXT MORNING (8btc thread-1944 post 6195,
+2013-12-06) spots the omission — "通篇只针对比特币，没有涉及莱特币等一大堆密码学货币" — and
+contrasts the Fed/ECB drafting convention ("以比特币为代表的虚拟货币"). Observation 2: by
+2013-12-09 altcoin banzhuan is discussed as standard practice (coinsbbs thread-120 post #375,
+"众多山寨币搬砖"). The era's LTC/CNY volume boom through winter 2013-14 is the folk-visible
+aftermath: flow migrated to the formally-exempt sibling instrument.
+
+direction / mechanism candidate: around any enforcement or restriction event that names specific
+instruments (token-specific SEC actions, venue-specific delistings, stablecoin-specific rules),
+the unnamed close-substitute should see flow/premium/OI INFLOW while the named instrument sees
+the outflow — a cross-sectional event axis, not a timing one. The desk's event gate
+(listing_events.py) and the deferred regulatory-event timeline card (data_axis_watchlist card 24)
+are the natural consumers: the taxonomy must carry a NAMED-SCOPE field per event, or the
+migration cell is unmeasurable by construction.
+
+honest qualifications: (1) two observations, one era, one jurisdiction — a prior, not a result;
+(2) the 2013 CN case had unusually clean scope (one named instrument, one venue class); modern
+actions often name categories, which blurs the sibling boundary; (3) no desk screen is proposed
+until the timeline card lands — this is design input for card 24, logged so it is not lost.
+independence / DERIVES-FROM: NONE (checked) — folk replies cite nothing; the notice text itself
+is quoted in-thread. Pre-2023 corpus, LLM-contamination structurally impossible (OP-072).
+promotion-check: not a tradeable signal as logged; its value is the NAMED-SCOPE taxonomy field
+for card 24's build, plus the era exemplar for any future named-instrument event study.

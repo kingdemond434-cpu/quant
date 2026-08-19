@@ -2525,3 +2525,19 @@ as ENGINE ideas (none is a tradable mechanism; none touches a statistical bar).
    Also from the thread: an ORDINAL era/time variable in features is a leak unless CV is
    time-series CV (categorical era grouping is safe) — cheap audit question for any regime
    feature encoded as a time proxy.
+
+
+## 2026-08-19 (CN frontier miner s9) — grade-vocabulary drift silently re-enqueues RESOLVED source cards forever
+`libs/research/source_backlog.py:_classify` recognizes a closed grade vocabulary
+(verified-clean / destroyed-at-source / needs-monitoring / unverified / needs-legitimacy-review /
+§33 killed/deferred) and fail-opens everything else into the verification queue — BY DESIGN and
+correctly (never silently drop). But seats write free-form terminal grades: card 23 sat graded
+"MINED 2026-08-18" (dig complete, universe map 104/105/106 present) and re-surfaced in EVERY
+cycle's verify list until this run regraded it. The fail-open is right; what is missing is the
+OTHER half: a check that REPORTS unrecognized grade text so a human regrades it the day it
+appears, instead of the card silently costing one queue slot per cycle indefinitely (the exact
+shape of L1.28b: found-unfixed aging invisibly). Cheapest fix: source_backlog_next.py already
+parses every card — have it print a one-line `UNRECOGNIZED GRADE (will re-queue forever): card N
+"text"` warning for any card that fell through to the fail-open branch. Zero new organs, zero
+schedule, one print statement in an existing runner. (Instance fixed this run: card 23 regraded
+verified-clean. The CLASS is what this row is for.) Ledger row filed same-run.
