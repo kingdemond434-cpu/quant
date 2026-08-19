@@ -438,3 +438,28 @@ independence / DERIVES-FROM: NONE (checked) — folk replies cite nothing; the n
 is quoted in-thread. Pre-2023 corpus, LLM-contamination structurally impossible (OP-072).
 promotion-check: not a tradeable signal as logged; its value is the NAMED-SCOPE taxonomy field
 for card 24's build, plus the era exemplar for any future named-instrument event study.
+
+---
+
+### WS-015 retail research harnesses are now LLM-AGENT-DRIVEN end-to-end — the crowding clock on published mechanisms shortens   [observations: 1 primary + 2 prior regions, different layers]
+
+**LOGGED 2026-08-19 (RU frontier miner s3, smart-lab.ru depth targets).** A solo retail
+practitioner (Nedomolkov, smart-lab 1335532/1336741) runs a 39M-record PIT equity lake with a
+**Telegram LLM agent as the research interface** — launches backtests, reads reports,
+confirms paper-trade orders by button — 40k LOC, built in 6 months part-time on a 1C stack.
+Same corpus, same week: a sold-EA reviewer (EA Forex Lab, 1335574) admits ~30% of his published
+refutation text is LLM-paraphrased. Prior sightings this quarter: CN factor-mining frameworks
+(vnpy.alpha/Qlib layer, card 24), RU funding-arb commoditization (Axiona, s1 note), JP
+richmanbtc-lineage tooling. direction / what it implies: (1) the marginal cost of a
+retail-grade gauntlet is collapsing — the CROWDING clock on any published mechanism now runs
+in weeks, not years (his 231/0 took one person 6 months to instrument); (2) published
+practitioner text is increasingly LLM-mediated even when the WORK is human (OP-072's
+contamination axis now has an admitted-rate datapoint: ~30%); (3) the durable edges shift
+further toward data the crowd cannot cheaply mirror (own-fill ERM, L1.46 clock deltas,
+venue-truth reconciliation) — exactly the desk's moat thesis, now corroborated from the
+diffusion side. honest qualifications: N=1 harness sighted in RU ground (plus 2 prior regions,
+different layers); no measurement of how MANY retail harnesses exist; "weeks not years" is a
+prior, not a measured decay rate. DERIVES-FROM: primary posts read this run; the harness is
+the author's own build (cites Bailey/LdP for the gate, not for the harness).
+promotion-check: not tradeable; consumers are (a) the crowding-decay prior on any published
+mechanism the desk screens, (b) OP-072's contamination model.

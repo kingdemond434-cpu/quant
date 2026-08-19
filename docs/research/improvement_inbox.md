@@ -2541,3 +2541,39 @@ parses every card — have it print a one-line `UNRECOGNIZED GRADE (will re-queu
 "text"` warning for any card that fell through to the fail-open branch. Zero new organs, zero
 schedule, one print statement in an existing runner. (Instance fixed this run: card 23 regraded
 verified-clean. The CLASS is what this row is for.) Ledger row filed same-run.
+
+## 2026-08-19 (RU frontier miner s3) — a retail 231/0 gauntlet from the wild: three cross-checks for the desk's own instruments
+SOURCE: smart-lab.ru/blog/1335532.php + 1336741.php (Ivan Nedomolkov, 1C dev, KZ; 30y US-equity
+lake, 5,264 tickers incl. 1,083 Form-25 delistings, PIT EDGAR fundamentals; 7-stage gate; 231
+strategies → 25 pass naive walk-forward → **0 pass DSR-deflated**; his measured bar: honest
+Sharpe ≈1.7+ at his sample size). DERIVES-FROM: Bailey/López de Prado (DSR), Jobson–Korkie,
+Aronson (checked — he cites all three), so the METHOD is shared ancestry with the desk's, NOT an
+independent convergence node (GAP-#85 discipline); the independent EVENT is the 231/0 outcome on
+his data. Three routable items:
+1. **Closed-loop identity test for the crypto lake.** His single most effective instrument:
+   `raw price + all corporate actions == total return` reconciled to <0.1%/yr; any break = a
+   missing/duplicated corporate action. Desk analogue (per-venue, per-symbol, per-day):
+   `sum(aggTrades qty) == kline volume` per bar, `last trade ≤ bar-end == kline close`,
+   `funding paid == rate × OI-position × settlements` (L1.47 clock). The moat's integrity fences
+   check collector liveness and schema, and L1.46 checks CLOCK provenance — an arithmetic
+   IDENTITY across independently-collected series is a different, cheap, self-labeling check
+   (his framing: the identity "catches errors humans overlook"). Candidate consumer:
+   moat_audit / extractor_invariants family.
+2. **Benchmark-superiority significance, wired.** His gate #1-2: Sharpe+CAGR+MaxDD must beat
+   THREE benchmarks simultaneously AND the Sharpe difference must be significant
+   (Jobson–Korkie p<0.05) — i.e. superiority is a TESTED claim, not a point comparison. Desk
+   history: `benchmark_returns`/`beats_baselines` once had ZERO production callers (desk
+   lesson, libs/autodiscovery/validation.py). Cheap audit: confirm the current screen's
+   baseline-beat check (a) has a caller on the live screen path (L1.49 roster), (b) tests
+   significance of the difference, not sign. If (b) is false, that is a named upgrade with a
+   citation, not a bar change.
+3. **Wild evidence for L1.63 (partition power is edge-specific).** His 15-cell partition
+   (volatility regime × time period, ≥12/15 to pass) actively KILLED directional daily-bar
+   factor strategies — the same vol-tercile axis the desk measured as WELDED (3/3 positive,
+   6.5y) on selection-hedged carry. One partition axis, opposite discriminating power on
+   opposite edge families: supports L1.63's measured reading (top-N selection is itself the
+   hedge) and argues partition axes must be chosen PER FAMILY, never desk-wide.
+Reply-layer corroborations banked (no re-open, classes closed): Amihud illiquidity anomaly
+"real but shorted positions bleed on borrow costs" (nishtyack, independent) = third named kill
+channel on `illiquidity_premium`/`lit_trading_frictions_family`; "high in-sample Sharpe = search
+for error" (same commenter) = the desk's 9.84-Sharpe lesson restated from the wild.

@@ -1306,7 +1306,33 @@ ITEMS THIS RUN (bounded scope, depth-maxed; drawn from the s2 NEXT RUN queue in 
      strategies" — mine the gauntlet design, process mandate), 1336741 ("30y of history in an
      evening, half a year fixing the data" — data-repair war story), 1335574 (independent
      tick-level refutation of a sold MQL5 scalper → graveyard genre). Reply-depth ≥2 each.
-     STATUS: taken.
+     STATUS: DONE — all 3 mined to full comment depth. YIELD: (a) [§33: wired ->
+     docs/research/improvement_inbox.md 2026-08-19 RU s3 entry] Nedomolkov gauntlet (KZ, 1C
+     stack, 30y/5,264-ticker PIT lake w/ 1,083 Form-25 delistings): 231 strategies → 25 pass
+     naive walk-forward → 0 pass DSR-deflated (bar ≈ Sharpe 1.7 at his n); DERIVES-FROM
+     Bailey/LdP + Jobson–Korkie + Aronson (checked — method ancestry SHARED with desk, not an
+     independent convergence node; the 231/0 EVENT is independent). 3 routed cross-checks:
+     closed-loop lake identity test (aggTrades↔klines↔funding), benchmark-superiority
+     SIGNIFICANCE wiring audit (Jobson–Korkie vs the desk's once-callerless beats_baselines),
+     L1.63 wild evidence (his vol×period 15-cell gate DISCRIMINATES on directional factor
+     strategies — welding is edge-specific, per-family axes). (b) [§33: wired ->
+     docs/research/weak_signal_registry.md WS-015] Telegram-LLM-agent retail research harness
+     (3rd regional AI-quant-diffusion confirmation; crowding clock on published mechanisms →
+     weeks). (c) reply-layer corroborations, classes stay CLOSED: Amihud real-but-borrow-cost-
+     killed (3rd kill channel on illiquidity_premium/lit_trading_frictions_family, no re-open);
+     "high IS-Sharpe = search for error" = desk 9.84 lesson from the wild; bonzamen 30y-regime-
+     conflation = era-provenance discipline independently restated; VladMih broker-quote-vs-
+     clean-feed = L1.5/ERM restated. (d) 1335574 MQL5 refutation RECORDED HERE, no graveyard
+     entry (contended file + forex-land product the desk never touches): "Scalping Robot Pro
+     MT5" (80+ sales/mo, smooth marketing curve) on REAL RannForex ticks → PF 0.60, ~79% DD,
+     2,627 trades, 59% WR, avg win $0.77 vs avg loss $1.65 — high-WR/negative-skew sold-EA
+     shape; Kopcap reply: even this UNDERSTATES live damage (no requotes/slippage/spread-
+     widening modeled). Author admits ~30% LLM paraphrase → OP-072 admitted-rate datapoint.
+     (e) NEW VENUE: tezbase.kz (KZ tech-writeup platform, Nedomolkov's architecture post) —
+     unprobed. NOTE: docs/graveyard.md worktree state observed mid-run DELETING the committed
+     CN-s9 tenth-instance entry (sibling clobber shape, R0423 class) — I did NOT stage or edit
+     that file; content safe in HEAD at eb6b90bc; recorded so a wholesale sibling commit can
+     be caught.
   2. btcsec shortlist continuation — bot/strategy class (grid/ladder instances compound;
      274 unmined of 283 in data/btcsec_trading_topics.json). Bounded slice 3-5 threads to
      full capture depth. STATUS: taken.
