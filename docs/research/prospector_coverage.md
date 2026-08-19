@@ -5708,3 +5708,29 @@ upstream LOGIN_REQUIRED, not desk-death); push via sanctioned path only if gates
 standing R0611 recorder lint (check whether 301843d2 already retired it before invoking that path).
 
 STATUS: items 1–3 OPEN.
+
+RESOLVED 1 (2026-08-19, §33 T3 drain — card 28 bitbank DECIDED + WIRED, plus one NEW AXIS out of
+the hunt itself): **The §13 scope decision is MADE: LEGITIMATE** — not by re-weighing the 08-12
+evidence but on NEW venue-conduct evidence one GitHub API call surfaced: the venue MIT-licenses
+its own Public-API clients (python/node/java + MCP server), publishes TWO sample market-making
+bots, runs an official Discord botter community (ビボラボ repo), and OFFICIALLY distributes
+historical order-book data. A footer that banned commercial API use would make the venue's own
+published MM bots a ToS breach. Kill/re-entry condition on card 28; residual named (no single
+written grant; aggregate conduct). **WIRED SAME RUN: `data/bitbank_1day.jsonl`** — 100,885 rows,
+all 62 pairs, 2017-02-14 → 2026-08-18, 620 keyless calls, phantom guard VALIDATED end-to-end
+(btc_jpy dropped exactly the 43 phantom bars; true start 2017-02-14 as card 28 measured).
+Measured new: daily bars **UTC-midnight aligned, NOT JST** (offset 0 on all 3,474 btc bars);
+year-absent = **HTTP 404 + code 10000** (a non-200=failure fetcher misreads every pre-listing
+year — L1.60 class, re-probed 5/5). **NEW AXIS (screen-on-discovery honoured): card 34 — bitbank
+official historical L2 order-book snapshots** (200×2 levels ~2/min, BTC+XRP 2019-03-13→, S3,
+venue-granted registration; NOT screenable until grant — R0620 owns the human step; mechanism
+prior + sampling limit stated on card). Ledger: R0619 (forward refresher, engine seat, sched
+08-26), R0620 (registration, sched 09-02), research_memory ×2. **MINE GATE RE-RUN: BACKLOG-CLEAR,
+20/20 disposed, mining authorised.** LEDGER-RACE INCIDENT (recorded for the lesson file): my adds
+were clobbered by a sibling whole-file write, my re-add then clobbered the SIBLING's probe-cap
+re-anchor row, and a third writer reverted my dispose inside a 2-minute window — resolved by a
+single-process 3-way reconcile (R0619/R0620/R0621) committed and verified from `git show HEAD:`
+on attempt 1. The new half vs the 08-18 lesson: after ANY ledger add, verify the NEIGHBOR rows
+survived, not only that yours landed.
+
+STATUS: item 1 RESOLVED. Items 2–3 open.
