@@ -2995,3 +2995,155 @@ THIN or WALLED from curl-rendered HTML: view source for `gatsby`/`__NEXT_DATA__`
 markers, then probe the data layer. Pairs with OP-091 (the payload names its own collection scope:
 `contentTypeAlias`, query names like `allVaraNotice` are the site's own enum) and OP-074 (the data
 layer answers "what exists" independently of robots' "may I").
+
+---
+
+## OP-093 — THE VECTOR/REDUCE LAYER IS A DATA SHAPE, NOT AN OPERATOR SET — AND THE DESK ALREADY OWNS A RICHER VECTOR THAN THE PLATFORM DOES (BRAIN hunter s4, 2026-08-19)   [active]
+class: feature construction / data shape — the transferable half of an equities platform
+origin: `zhutoutoutousan/worldquant-miner` @ `master`, `generation_two/constants/operatorRAW.json`
+(**Apache-2.0**, 724★, 192 forks, pushed 2026-02-22). Catalogue artifact:
+`data/brain_operator_catalogue.json`.
+
+**THIS CLOSES S3'S NAMED LIMITATION.** s3 mined `rocky-d/wqb` and recorded honestly that the client
+gives *"the namespace and exact API paths, never the value sets"* — every enum aliased to `Any`.
+`operatorRAW.json` **is** the value set: **98 operators** with name, category, scope, level and
+semantics. §13 held: no credential held/sought/used, no call to `api.worldquantbrain.com`.
+
+**MEASURED DESK COVERAGE** (a *definition* search — `^\s*def <name>\b` over `libs/` — not a mention
+search; 26 operators whose names are python builtins or generic verbs are counted NEITHER way):
+
+| category | total | defined in `libs/` | absent |
+|---|---|---|---|
+| **Reduce** | 14 | **0** | **14** |
+| **Vector** | 4 | **0** | **4** |
+| Time Series | 29 | 1 | 28 |
+| **Group** | 10 | 2 | **8** |
+| Cross Sectional | 8 | 1 | 3 |
+| Special | 3 | 0 | 2 |
+| **TOTAL** | **98** | **5** | **67** |
+
+The five: `ts_backfill`, `vector_neut`, `trade_when`, `group_zscore`, `group_rank`.
+
+### THE FIND IS NOT THE 67 MISSING OPERATORS. IT IS WHAT 18 OF THEM IMPLY.
+
+`vec_*` (4) and `reduce_*` (14) are **18 operators that only make sense if a field can hold a VECTOR
+per instrument per day.** The platform's own worked example is explicit: *input = vector of values of
+1 instrument in a day, `(2, 3, 5, 6, 3, 8, 10)`; `vec_sum` → 37.* `reduce_*` is the general form —
+it takes a `(D × N)` or `(D × N × N)` matrix and collapses the **last** dimension.
+
+So the platform ships a **two-stage feature pipeline**: `raw vector field → reduce → scalar → the
+other 80 operators`. **The desk's pipeline has no first stage at all.** It begins at the scalar.
+
+**This is why it matters more here than there.** An equity vector field is thin — analyst estimates,
+a day's news items. The desk's per-instrument-day vectors are *dense and proprietary*:
+
+| desk-owned vector (verified on disk) | size | what one element is |
+|---|---|---|
+| `data/geckoterminal_trades.jsonl` | 153MB, **322,187 rows** | one DEX trade: signed `kind` buy/sell, `volume_usd`, **`tx_from` (wallet)**, `t_venue`+`t` dual clock |
+| `data/bybit_l2_samples` | 149MB | one order-book level |
+| `data/upbit_snapshot` | 412MB | one venue snapshot |
+
+**MEASURED ABSENCE, stated as a fact rather than an impression:** `grep -rEn "skew|kurtosis"` over
+`libs/features/` and `libs/alpha_factory/` returns **nothing**. The desk computes no distributional
+moment of any intraday vector, anywhere.
+
+### THE THREE MANDATED QUESTIONS
+
+**1. WHAT DOES IT COMPUTE?** `reduce_<stat>(input, threshold=0)` applies `<stat>` along the last
+axis, returning NaN when valid-value count falls below `threshold` — the missing-data floor is a
+*first-class parameter*, not an afterthought. Variants worth naming: `reduce_percentage(x, p)`
+(p-quantile, median at 0.5), `reduce_count(x, threshold)` (count above a cut), `reduce_ir`,
+`reduce_skewness`, `reduce_kurtosis`, `reduce_range`, `reduce_choose(x, nth)`.
+
+**2. CRYPTO ANALOGUE — and it is strictly richer than the equity original.** Over one pool-day of
+the DEX tape: `reduce_skewness(volume_usd)` = whale-vs-retail size mix; `reduce_count(volume_usd, k)`
+= large-trade count; `reduce_percentage(volume_usd, 0.5)` = median trade size (a size distribution is
+*not* recoverable from a daily volume total — that is precisely the information the scalar collapse
+destroys); signed variants keyed on `kind` give buy/sell pressure asymmetry. And `tx_from` supports a
+reduction **equities have no analogue for at all**: unique-wallet count, repeat-wallet concentration,
+and new-vs-returning wallet mix per pool-day. Add these to
+`libs/research/evidence_tier.translate_to_crypto()` when the frozen seat lifts.
+
+**3. WHAT DATA WOULD IT NEED THAT THE DESK LACKS?** For the *DEX* tape — nothing. It is on disk,
+paid for, and (per R0637) **has no analytical reader at all**. For a Binance-perp equivalent the desk
+would need the per-symbol aggTrade tape, which it does not currently retain.
+
+### THE SHARPEST SINGLE OPERATOR ON THE GROUND: `self_corr`
+
+`self_corr(x)` takes `(D × N)` with lookback `K` and returns `(D × N × N)` — every pairwise rolling
+correlation — and then `reduce_*` collapses the last axis. So `reduce_avg(self_corr(returns))` is
+**a per-symbol, per-day scalar: how correlated is this asset to the rest of the universe right now.**
+
+That is the desk's own breadth problem, expressed as a *feature* rather than a *diagnostic*:
+
+- `libs/research/cohort_independence.measure()` returns ONE `Independence` object with scalar
+  `mean_corr` / `n_eff` for a whole cohort. Breadth is a **global number, computed after the fact.**
+- `reports/cross_section_breadth.json` records the desk's cost of that: N_eff **1.54 raw**, 29
+  market-neutral. One number for the whole book.
+- `data/crypto_grouping_map.json` `corr_cluster` is a **static** assignment built once (2026-08-11,
+  296 symbols). Crypto correlation structure is regime-dependent; a static cluster map is a known
+  weakness, and `self_corr` is exactly the operator that makes it time-varying.
+
+**Two uses, and the second is the one the desk is blocked on:** (a) a *conditioning variable* — size
+into names that are currently decorrelated from the book; (b) a **dynamic grouping input**, which is
+the blocking input this organ has carried since 2026-08-07 (`group_rank`/`group_zscore` REFUSE
+without a map; wiring row **R0437** is OVERDUE, due 2026-08-18).
+
+**HONEST LIMITATION.** All of this is **mined ore, not evidence** — nothing here has been run on desk
+data. `reduce_*` on the DEX tape is a *feature family*, and a feature family is a DSR-counted trial
+set, not an edge. Nothing in this entry carries promotion authority. And the platform's own
+submission bar (IS Sharpe ≥ 1.25) is recorded as **a fact about their process, never a gate for
+ours** — L1.6, unchanged.
+
+---
+
+## OP-094 — INFORMATION-DRIVEN BARS: THE SAMPLING CLOCK IS A FREE AXIS THE DESK HAS RE-DISCOVERED THREE TIMES AND NEVER BUILT (BRAIN hunter s4, 2026-08-19)   [active]
+class: sampling / data construction — a clock change, not a signal
+origin: `worldquant-miner` `paper/chapters/crypto-trading-strategies.tex` → **its citation**, which
+is the real find (recursive-expansion mandate: repo → author → cited paper → primary source).
+
+**PROVENANCE MATTERS HERE AND THE CHAPTER'S OWN NUMBERS ARE SECOND-HAND.** The .tex chapter presents
+a comparison table (time bars Sharpe 0.85 → CUSUM 1.28) that is **`\cite{gradzki2025}` — attributed,
+not measured by that author.** Its unattributed claims ("cross-exchange arbitrage provides consistent
+2–5% monthly returns") carry no evidence at all. **Take the citation, drop the chapter's numbers.**
+
+**THE PRIMARY SOURCE, verified via Crossref (`api.crossref.org`, not the publisher wall):**
+Grądzki, Wójcik & Lessmann, *"Algorithmic crypto trading using information-driven bars, triple
+barrier labeling and deep learning"*, **Financial Innovation 11:136 (2025-12-15)**,
+`10.1186/s40854-025-00866-w`. **Licence: CC BY 4.0** (Crossref reports it for both `tdm` and `vor`
+versions) — **fully open access and legally minable.** Abstract confirms: tick-level BTC/ETH,
+**Jan 2018 → Jun 2023**; CUSUM-filtered sampling + Triple Barrier labeling beats time bars +
+next-bar prediction **after transaction costs**; Transformer variants (vanilla encoder, FEDformer,
+Autoformer) evaluated against classical ML — a *negative-results* layer worth mining separately.
+
+**ACCESS NOTE (§13, and a reusable instrument fact):** `doi.org` → `link.springer.com` →
+`idp.springer.com/authorize` (303), and the SpringerOpen journal host `jfin-swufe.springeropen.com`
+**301s back into the same loop**. That is a **cookie/consent redirect on an article that is CC BY**,
+not a paywall — so the correct move is a metadata/OA route (Crossref worked in one call), never
+credentialed egress. Do not grade a CC-BY article WALLED from a redirect loop.
+
+**THE DESK-SIDE FIND, which is bigger than the paper.** `grep` over `libs/` and `scripts/`:
+**zero** implementations of CUSUM, dollar bars, volume bars, imbalance bars, or any changepoint
+detector. Triple Barrier, by contrast, **already exists** (`libs/features/labels.py`) — so the desk
+built the labeling half and never the sampling half. The sampling gap has been independently
+re-reported **three times**:
+- `docs/research/adoption_queue.md:13` — queued, trigger never fired
+- `capability_hunt/20260805_s0_proposals.md:39` — *"zero changepoint detectors of any kind"*
+- `capability_hunt/20260801_s3_proposals.md:48` — *"`tests/validation/conftest.py:40` declares the
+  decay-detection method as CUSUM on live IC … a test fixture documenting a detector never built"*
+
+**WHY IT NEVER CLOSED IS A STRUCTURAL DEFECT, NOT A PRIORITISATION CALL — see R0638.** The adoption
+queue gates dollar/volume bars on *"a bar-sampled (non-time-bar) alpha enters the pipeline"*, under a
+header that rules "build nothing until the trigger fires". **A bar-sampled alpha cannot exist before
+the bar sampler does.** The precondition is unreachable by construction — the exclusion-cycle shape
+L1.45 names ("ask of any exclusion: what is the path back?"). There is none.
+
+**CONVERGENCE WITH A LAW THE DESK ALREADY OWNS.** L1.46 established that a *configured constant is
+not evidence of a cadence*, and R0117's sampling-phase aliasing concern is the same axis one layer
+down. The desk has a **law** about sampling clocks and an **adoption queue structurally unable to
+adopt the sampling-clock fix**. Information-driven bars are also the concrete form of L1.28c's
+"event-driven firing" — the named way past an information-arrival ceiling.
+
+**CLAIMED IS NOT VERIFIED:** the 1.28-vs-0.85 comparison is *their* measurement on BTC/ETH tick data,
+not ours. It is a hypothesis with an unusually good provenance (peer-reviewed, CC BY, costs
+included), not a result this desk may cite as its own.

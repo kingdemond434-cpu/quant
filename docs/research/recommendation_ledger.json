@@ -8091,6 +8091,34 @@
    "commit": null,
    "due": "2026-08-26",
    "disposed": "2026-08-19T07:53:54.697144+00:00"
+  },
+  {
+   "id": "R0637",
+   "source": "cycle",
+   "summary": "WRITE-ONLY MOAT TAPE, AND THE UTILISATION METER CANNOT SEE IT (BRAIN hunter s4, 2026-08-19). data/geckoterminal_trades.jsonl holds 322,187 wallet-resolved signed DEX trades (153MB) captured since 2026-08-12. Repo-wide reference audit: scripts/collect_geckoterminal_trades.py (WRITER), check_build_standard.py:116 (build registration), build_enforcement_matrix.py:539 (cites it as the evidence law L1.11 is enforced), scripts/coverage_audit.py:34 (counts the FILE). ZERO analytical readers -- no glob reader reaches it either (moat_microstructure/moat_utilisation/discretionary.tape all glob *.jsonl.gz; this is plain .jsonl). SECOND-ORDER: moat_utilisation.inventory() walks ONLY data/moat/<venue>/<SYMBOL>/*.jsonl.gz, so a flat plain-jsonl file at data/ root is in NEITHER the numerator NOR the denominator of the utilisation meter -- utilisation reads healthy because the unused asset was never counted (L1.57/L1.60 shape). The matrix comment states the desk's own reasoning: 'the one axis where waiting IS the loss -- venue retention ~300 trades/pool, capture is forward-only-unrecoverable'. So the desk correctly reasoned the data is irreplaceable, paid to capture it, and has never read it: L1.28a idleness on data already paid for, and the enforcement matrix is GREEN on the MOAT law citing an unmined file. FIX (two parts, both upward per L1.49): (a) widen moat_utilisation inventory scope to include flat data/*.jsonl moat tapes so the dataset enters the denominator -- absence must not read as health; (b) give the tape its screen-on-discovery consumer (the sibling L1.11-r0100 comment already asserts collectors 'screen what they ingest in the SAME run' -- r0291 has no screen half).",
+   "roi_bps": null,
+   "rank": 82.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-19T08:18:32.590815+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0638",
+   "source": "cycle",
+   "summary": "A SELF-BLOCKING ADOPTION TRIGGER: THE CAPABILITY'S OWN OUTPUT IS ITS ADOPTION PRECONDITION (BRAIN hunter s4, 2026-08-19). docs/research/adoption_queue.md header rules 'build nothing until the trigger fires'. Row 'Dollar / volume bars | mlfinlab AFML ch.2 | information-driven bar sampling' carries TRIGGER = 'a bar-sampled (non-time-bar) alpha enters the pipeline'. A bar-sampled alpha CANNOT exist before the bar sampler exists, so the precondition is unreachable BY CONSTRUCTION -- the exact exclusion-cycle shape L1.45 was written for ('every fence walks nodes and edges, nothing looks for cycles; ask of any exclusion: WHAT IS THE PATH BACK?'). There is no path back. Measured consequence: zero CUSUM/dollar-bar/volume-bar/imbalance-bar implementations anywhere in libs/ or scripts/ (grep), while the SAME gap has been independently re-reported three times without closing -- adoption_queue.md:13, capability_hunt/20260805_s0:39 ('zero changepoint detectors of any kind'), capability_hunt/20260801_s3:48 ('tests/validation/conftest.py:40 declares the decay-detection method as CUSUM on live IC -- a test fixture documenting a detector that was never built'). A gap re-found three times and never closed is a queue defect, not a research gap. WEAKER SECOND INSTANCE (named, not asserted equal): the 'Fractional differentiation' row triggers on 'a supervised / stationary-feature alpha enters the pipeline' -- softly circular, since frac-diff is the transform that MAKES stationary features, though another route to a stationary feature exists in principle. The other four rows are correctly gated (portfolio tools do not produce alphas; alphalens does not produce candidates; nautilus row triggers on an operator decision). FIX IS UPWARD, NEVER DELETION (L1.49): re-express the trigger as a reachable precondition -- e.g. 'the desk holds tick/trade tape for >=1 traded symbol' (ALREADY TRUE: data/geckoterminal_trades.jsonl 322k trades, data/bybit_l2_samples 149MB) -- rather than on an artifact only the unbuilt capability can produce. Also audit every other trigger table in the repo for the same self-referential shape.",
+   "roi_bps": null,
+   "rank": 78.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-19T08:18:50.760034+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

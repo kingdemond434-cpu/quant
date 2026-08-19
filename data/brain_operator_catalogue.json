@@ -1,0 +1,1062 @@
+{
+ "provenance": {
+  "built": "2026-08-19T08:19:19.828848+00:00",
+  "builder": "BRAIN hunter session 4 (2026-08-19)",
+  "source_repo": "github.com/zhutoutoutousan/worldquant-miner @ master, generation_two/constants/operatorRAW.json",
+  "source_licence": "Apache-2.0 (repo); 724 stars, 192 forks, pushed 2026-02-22",
+  "what_is_recorded": "operator NAME, CATEGORY, SCOPE, LEVEL -- factual catalogue entries only. The upstream file also carries WorldQuant's own documentation prose; that prose is NOT copied here. Semantics the desk needs are re-expressed in the desk's own words in docs/research/search_operator_library.md (OP-093).",
+  "s13_note": "No credential was held, sought or used; no call was made to api.worldquantbrain.com. Reading a public client's source is public; running it is not.",
+  "desk_coverage_method": "grep -rE '^\\s*def <name>\\b' over libs/ -- a DEFINITION search, not a mention search. Ambiguous names (python builtins / generic verbs) are counted NEITHER way."
+ },
+ "counts": {
+  "platform_operators": 98,
+  "defined_in_libs": 5,
+  "absent_from_libs": 67,
+  "ambiguous_name_not_counted": 26
+ },
+ "by_category": {
+  "Arithmetic": {
+   "total": 16,
+   "defined": 0,
+   "absent": 3,
+   "ambiguous": 13
+  },
+  "Cross Sectional": {
+   "total": 8,
+   "defined": 1,
+   "absent": 3,
+   "ambiguous": 4
+  },
+  "Group": {
+   "total": 10,
+   "defined": 2,
+   "absent": 8,
+   "ambiguous": 0
+  },
+  "Logical": {
+   "total": 11,
+   "defined": 0,
+   "absent": 4,
+   "ambiguous": 7
+  },
+  "Reduce": {
+   "total": 14,
+   "defined": 0,
+   "absent": 14,
+   "ambiguous": 0
+  },
+  "Special": {
+   "total": 3,
+   "defined": 0,
+   "absent": 2,
+   "ambiguous": 1
+  },
+  "Time Series": {
+   "total": 29,
+   "defined": 1,
+   "absent": 28,
+   "ambiguous": 0
+  },
+  "Transformational": {
+   "total": 3,
+   "defined": 1,
+   "absent": 1,
+   "ambiguous": 1
+  },
+  "Vector": {
+   "total": 4,
+   "defined": 0,
+   "absent": 4,
+   "ambiguous": 0
+  }
+ },
+ "operators": [
+  {
+   "name": "add",
+   "category": "Arithmetic",
+   "scope": [
+    "COMBO",
+    "REGULAR",
+    "SELECTION"
+   ],
+   "level": "ALL",
+   "desk_status": "AMBIGUOUS-NOT-COUNTED"
+  },
+  {
+   "name": "to_nan",
+   "category": "Arithmetic",
+   "scope": [
+    "COMBO",
+    "REGULAR",
+    "SELECTION"
+   ],
+   "level": null,
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "sqrt",
+   "category": "Arithmetic",
+   "scope": [
+    "COMBO",
+    "REGULAR",
+    "SELECTION"
+   ],
+   "level": "ALL",
+   "desk_status": "AMBIGUOUS-NOT-COUNTED"
+  },
+  {
+   "name": "log",
+   "category": "Arithmetic",
+   "scope": [
+    "COMBO",
+    "REGULAR",
+    "SELECTION"
+   ],
+   "level": "ALL",
+   "desk_status": "AMBIGUOUS-NOT-COUNTED"
+  },
+  {
+   "name": "subtract",
+   "category": "Arithmetic",
+   "scope": [
+    "COMBO",
+    "REGULAR",
+    "SELECTION"
+   ],
+   "level": "ALL",
+   "desk_status": "AMBIGUOUS-NOT-COUNTED"
+  },
+  {
+   "name": "signed_power",
+   "category": "Arithmetic",
+   "scope": [
+    "COMBO",
+    "REGULAR",
+    "SELECTION"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "sign",
+   "category": "Arithmetic",
+   "scope": [
+    "COMBO",
+    "REGULAR",
+    "SELECTION"
+   ],
+   "level": "ALL",
+   "desk_status": "AMBIGUOUS-NOT-COUNTED"
+  },
+  {
+   "name": "reverse",
+   "category": "Arithmetic",
+   "scope": [
+    "COMBO",
+    "REGULAR",
+    "SELECTION"
+   ],
+   "level": "ALL",
+   "desk_status": "AMBIGUOUS-NOT-COUNTED"
+  },
+  {
+   "name": "power",
+   "category": "Arithmetic",
+   "scope": [
+    "COMBO",
+    "REGULAR",
+    "SELECTION"
+   ],
+   "level": "ALL",
+   "desk_status": "AMBIGUOUS-NOT-COUNTED"
+  },
+  {
+   "name": "multiply",
+   "category": "Arithmetic",
+   "scope": [
+    "COMBO",
+    "REGULAR",
+    "SELECTION"
+   ],
+   "level": "ALL",
+   "desk_status": "AMBIGUOUS-NOT-COUNTED"
+  },
+  {
+   "name": "min",
+   "category": "Arithmetic",
+   "scope": [
+    "COMBO",
+    "REGULAR",
+    "SELECTION"
+   ],
+   "level": "ALL",
+   "desk_status": "AMBIGUOUS-NOT-COUNTED"
+  },
+  {
+   "name": "max",
+   "category": "Arithmetic",
+   "scope": [
+    "COMBO",
+    "REGULAR",
+    "SELECTION"
+   ],
+   "level": "ALL",
+   "desk_status": "AMBIGUOUS-NOT-COUNTED"
+  },
+  {
+   "name": "inverse",
+   "category": "Arithmetic",
+   "scope": [
+    "COMBO",
+    "REGULAR",
+    "SELECTION"
+   ],
+   "level": "ALL",
+   "desk_status": "AMBIGUOUS-NOT-COUNTED"
+  },
+  {
+   "name": "divide",
+   "category": "Arithmetic",
+   "scope": [
+    "COMBO",
+    "REGULAR",
+    "SELECTION"
+   ],
+   "level": "ALL",
+   "desk_status": "AMBIGUOUS-NOT-COUNTED"
+  },
+  {
+   "name": "abs",
+   "category": "Arithmetic",
+   "scope": [
+    "COMBO",
+    "REGULAR",
+    "SELECTION"
+   ],
+   "level": "ALL",
+   "desk_status": "AMBIGUOUS-NOT-COUNTED"
+  },
+  {
+   "name": "densify",
+   "category": "Arithmetic",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "and",
+   "category": "Logical",
+   "scope": [
+    "COMBO",
+    "REGULAR",
+    "SELECTION"
+   ],
+   "level": "ALL",
+   "desk_status": "AMBIGUOUS-NOT-COUNTED"
+  },
+  {
+   "name": "or",
+   "category": "Logical",
+   "scope": [
+    "COMBO",
+    "REGULAR",
+    "SELECTION"
+   ],
+   "level": "ALL",
+   "desk_status": "AMBIGUOUS-NOT-COUNTED"
+  },
+  {
+   "name": "not_equal",
+   "category": "Logical",
+   "scope": [
+    "COMBO",
+    "REGULAR",
+    "SELECTION"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "not",
+   "category": "Logical",
+   "scope": [
+    "COMBO",
+    "REGULAR",
+    "SELECTION"
+   ],
+   "level": "ALL",
+   "desk_status": "AMBIGUOUS-NOT-COUNTED"
+  },
+  {
+   "name": "greater",
+   "category": "Logical",
+   "scope": [
+    "COMBO",
+    "REGULAR",
+    "SELECTION"
+   ],
+   "level": "ALL",
+   "desk_status": "AMBIGUOUS-NOT-COUNTED"
+  },
+  {
+   "name": "greater_equal",
+   "category": "Logical",
+   "scope": [
+    "COMBO",
+    "REGULAR",
+    "SELECTION"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "less_equal",
+   "category": "Logical",
+   "scope": [
+    "COMBO",
+    "REGULAR",
+    "SELECTION"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "less",
+   "category": "Logical",
+   "scope": [
+    "COMBO",
+    "REGULAR",
+    "SELECTION"
+   ],
+   "level": "ALL",
+   "desk_status": "AMBIGUOUS-NOT-COUNTED"
+  },
+  {
+   "name": "is_nan",
+   "category": "Logical",
+   "scope": [
+    "COMBO",
+    "REGULAR",
+    "SELECTION"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "if_else",
+   "category": "Logical",
+   "scope": [
+    "COMBO",
+    "REGULAR",
+    "SELECTION"
+   ],
+   "level": "ALL",
+   "desk_status": "AMBIGUOUS-NOT-COUNTED"
+  },
+  {
+   "name": "equal",
+   "category": "Logical",
+   "scope": [
+    "COMBO",
+    "REGULAR",
+    "SELECTION"
+   ],
+   "level": "ALL",
+   "desk_status": "AMBIGUOUS-NOT-COUNTED"
+  },
+  {
+   "name": "days_from_last_change",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "ts_std_dev",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "ts_arg_max",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "ts_arg_min",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "ts_av_diff",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "ts_backfill",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "DEFINED"
+  },
+  {
+   "name": "ts_delay",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "ts_delta",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "ts_mean",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "ts_quantile",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "ts_rank",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "ts_scale",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "ts_count_nans",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "ts_sum",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "ts_zscore",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "ts_product",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "ts_decay_linear",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "ts_covariance",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "kth_element",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "ts_corr",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "ts_regression",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "ts_step",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "hump",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "ts_target_tvr_decay",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": null,
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "last_diff_value",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "jump_decay",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": null,
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "ts_max",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": null,
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "ts_min",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": null,
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "ts_target_tvr_delta_limit",
+   "category": "Time Series",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": null,
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "scale",
+   "category": "Cross Sectional",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "AMBIGUOUS-NOT-COUNTED"
+  },
+  {
+   "name": "vector_neut",
+   "category": "Cross Sectional",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": null,
+   "desk_status": "DEFINED"
+  },
+  {
+   "name": "normalize",
+   "category": "Cross Sectional",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "AMBIGUOUS-NOT-COUNTED"
+  },
+  {
+   "name": "zscore",
+   "category": "Cross Sectional",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "winsorize",
+   "category": "Cross Sectional",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "quantile",
+   "category": "Cross Sectional",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "AMBIGUOUS-NOT-COUNTED"
+  },
+  {
+   "name": "rank",
+   "category": "Cross Sectional",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "AMBIGUOUS-NOT-COUNTED"
+  },
+  {
+   "name": "scale_down",
+   "category": "Cross Sectional",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": null,
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "vec_min",
+   "category": "Vector",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": null,
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "vec_avg",
+   "category": "Vector",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "vec_sum",
+   "category": "Vector",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "vec_max",
+   "category": "Vector",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": null,
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "generate_stats",
+   "category": "Transformational",
+   "scope": [
+    "COMBO"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "trade_when",
+   "category": "Transformational",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "DEFINED"
+  },
+  {
+   "name": "bucket",
+   "category": "Transformational",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "AMBIGUOUS-NOT-COUNTED"
+  },
+  {
+   "name": "group_min",
+   "category": "Group",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": null,
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "group_max",
+   "category": "Group",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": null,
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "group_scale",
+   "category": "Group",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "combo_a",
+   "category": "Group",
+   "scope": [
+    "COMBO"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "group_neutralize",
+   "category": "Group",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "group_cartesian_product",
+   "category": "Group",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": null,
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "group_zscore",
+   "category": "Group",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "DEFINED"
+  },
+  {
+   "name": "group_rank",
+   "category": "Group",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "DEFINED"
+  },
+  {
+   "name": "group_mean",
+   "category": "Group",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "group_backfill",
+   "category": "Group",
+   "scope": [
+    "COMBO",
+    "REGULAR"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "universe_size",
+   "category": "Special",
+   "scope": [
+    "SELECTION"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "self_corr",
+   "category": "Special",
+   "scope": [
+    "COMBO"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "in",
+   "category": "Special",
+   "scope": [
+    "SELECTION"
+   ],
+   "level": "ALL",
+   "desk_status": "AMBIGUOUS-NOT-COUNTED"
+  },
+  {
+   "name": "reduce_stddev",
+   "category": "Reduce",
+   "scope": [
+    "COMBO"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "reduce_skewness",
+   "category": "Reduce",
+   "scope": [
+    "COMBO"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "reduce_range",
+   "category": "Reduce",
+   "scope": [
+    "COMBO"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "reduce_powersum",
+   "category": "Reduce",
+   "scope": [
+    "COMBO"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "reduce_percentage",
+   "category": "Reduce",
+   "scope": [
+    "COMBO"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "reduce_norm",
+   "category": "Reduce",
+   "scope": [
+    "COMBO"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "reduce_min",
+   "category": "Reduce",
+   "scope": [
+    "COMBO"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "reduce_max",
+   "category": "Reduce",
+   "scope": [
+    "COMBO"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "reduce_kurtosis",
+   "category": "Reduce",
+   "scope": [
+    "COMBO"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "reduce_ir",
+   "category": "Reduce",
+   "scope": [
+    "COMBO"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "reduce_count",
+   "category": "Reduce",
+   "scope": [
+    "COMBO"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "reduce_choose",
+   "category": "Reduce",
+   "scope": [
+    "COMBO"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "reduce_avg",
+   "category": "Reduce",
+   "scope": [
+    "COMBO"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  },
+  {
+   "name": "reduce_sum",
+   "category": "Reduce",
+   "scope": [
+    "COMBO"
+   ],
+   "level": "ALL",
+   "desk_status": "ABSENT"
+  }
+ ]
+}
