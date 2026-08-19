@@ -6206,11 +6206,11 @@
    "summary": "SPOT MAKER EXECUTION -- the last open leg of the R0339 Medallion programme, and the one with the highest measured ROI on the only deployed sleeve. R0339(2) reads: spot pays 18.1bps mean slippage while futures earns maker 4/4; Medallion earns the spread rather than paying it, and fixing spot execution plausibly explains the 4/4 negative hold buckets on its own. R0324 delivered the MEASUREMENT (86c7501, per-leg maker parsing of spot_mode/fut_mode sharing libs/execution/leg_modes.py with run_trade_forensics) and it is live but not yet conclusive: data/fill_quality.json as of 2026-08-12T09:19 reads verdict UNDERPOWERED -- maker rate 60.0% straddling the 60% target on 30 measured legs, 95% CI [42.3%, 75.4%], coverage 5.0% of rows. So the honest state is that the desk cannot yet tell whether spot execution is at target or 18 points below it. TWO SEPARABLE PIECES, and conflating them is how this stalls: (a) POWER -- coverage is 5.0% of rows, so most of the tape is not being parsed into leg modes at all; raising coverage is pure measurement and costs nothing in risk. (b) ROUTING -- actually posting rather than crossing on the spot leg, which is a money-path change and therefore subject to the L1.38 change window. Do (a) FIRST: a routing change justified by a 30-leg sample whose CI spans 42-75% would be sized on noise, and the CI is the reason this row exists rather than a patch. Note R0371 (fee field absent on every cash-carry fill) bounds how well (a) can be done -- cost-per-fill is structurally unmeasurable until that is closed, so the two rows are ordered: R0371, then coverage, then routing.",
    "roi_bps": 60.0,
    "raised": "2026-08-12T14:14:31.295762+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "ef68733b5c4570747bfb75747c561cd61ead3c40",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-19T01:12:58.280790+00:00"
   },
   {
    "id": "R0482",
@@ -7843,6 +7843,20 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0618",
+   "source": "cycle",
+   "summary": "SPOT-ENTRY MAKER ROUTING (R0481 follow-on, the (b) half). fill_quality now polices the patient path and publishes the routing gate per leg (ef68733b): spot-entry 7/16 = 43.8%, 95% CI [23.1%, 66.8%] vs the 60% bar; fut-entry 16/16; spot closes cross BY DESIGN and left the policed bar. ACT ONLY WHEN the spot-entry CI resolves: upper < 60% -> routing work on the spot entry leg (post-wait/reprice tuning; L1.38 change-window check FIRST -- money path); lower >= 60% -> the patient fix already works on spot, close as no-change-needed. EVIDENCE IS THE CLOCK (L1.48): the gate is OBSERVATIONS (~16 entry legs now, CI half-width ~22pts; roughly 40+ legs to resolve at the current gap), never days -- the due date on this row is a re-read date only. The weekly monitor emits the gate in every verdict; do not patch routing off a straddling CI (that is sizing on noise, the exact thing R0481 refused).",
+   "roi_bps": 60.0,
+   "rank": null,
+   "roi_basis": "measured",
+   "raised": "2026-08-19T01:12:31.614873+00:00",
+   "status": "scheduled",
+   "reason": "Waits on OBSERVATIONS, not time (L1.48): spot-entry CI [23.1%, 66.8%] must resolve against the 60% bar (~40+ entry legs; ~16 now, accruing ~0.75/day live). The due date is a re-read of the gate the weekly fill_quality verdict already publishes; re-schedule on evidence if still straddling.",
+   "commit": null,
+   "due": "2026-09-16",
+   "disposed": "2026-08-19T01:12:56.550519+00:00"
   }
  ]
 }
