@@ -8189,6 +8189,20 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0644",
+   "source": "cycle",
+   "summary": "GROWTH-AUDIT LEDGER-JUSTIFICATION (contract point 2) + the detector defect behind it. web/growth_audit.json 2026-08-19T15:00Z reports ONE NONE-justified conservatism defect: promotion_latency ACT-NOW, \"eligible sleeve not promoted = pure foregone growth\". JUSTIFIED, NOT TIMIDITY, and the evidence is in the SAME FILE two items above: (a) carry_capital_utilization is clamped by CASHCARRY_KILL, a fired survival rail latched since 2026-08-15T20:55:05Z whose lifting condition is \"principal re-arm (Tier-3 adjacent: removing/disabling a rail is never autonomous)\"; (b) live_deployment_path is HUMAN-PENDING -- web/cashcarry_shadow.json execution field says verbatim \"shadow only -- futures testnet has no spot; live needs a spot+perp account\", a forever-human hard stop. The sleeve is genuinely eligible (cash_and_carry, forward day 52, NW t 3.55 vs the 1.65 bar, regime evidence OK, backtest Sharpe 2.87) and the desk would promote it TODAY if either blocker lifted. THE DETECTOR DEFECT: run_growth_audit.py:164-173 builds promotion_latency from web/cashcarry_shadow.json fast_track ALONE and consults neither blocker, so it emits justified_by NONE while the clamp machinery that would explain it already exists in the same function and is already applied to item 1 (:186 clamped). Same disease R0415 fixed for carry_capital_utilization, one check along -- and this is the SECOND instance, so the per-instance fix is the defect: give every growth-audit item the clamp lookup rather than adding a third special case. UNTIL THEN A TRUE ALARM IS INDISTINGUISHABLE FROM THIS ONE, which is how the desk stops reading the only detector it has for its own timidity.",
+   "roi_bps": 25.0,
+   "rank": null,
+   "roi_basis": "measured",
+   "raised": "2026-08-19T15:28:01.147238+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
