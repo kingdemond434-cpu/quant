@@ -1,0 +1,168 @@
+{
+ "version": "financing-2026-08-19-a",
+ "stamp": "rollover assumed at 22:00 UTC (17:00 New York on US daylight time); one hour early on standard time. NOT read from the broker server clock -- gateway.py can supply it and does not yet",
+ "rates_supplied": null,
+ "windows": {
+  "asia": {
+   "range_start": 7,
+   "wait_bars": 12,
+   "rr": 2.0,
+   "ttl_bars": 12
+  },
+  "london_am": {
+   "range_start": 10,
+   "range_end": 13,
+   "signal_at": 13,
+   "wait_bars": 8,
+   "rr": 2.0,
+   "ttl_bars": 12
+  },
+  "ny_open": {
+   "range_start": 13,
+   "range_end": 14,
+   "signal_at": 14,
+   "wait_bars": 12,
+   "rr": 2.0,
+   "ttl_bars": 12
+  },
+  "afternoon": {
+   "range_start": 14,
+   "range_end": 17,
+   "signal_at": 17,
+   "wait_bars": 8,
+   "rr": 2.0,
+   "ttl_bars": 12
+  }
+ },
+ "rows": [
+  {
+   "name": "AUDCAD_asia_TREND_DAY",
+   "state": "NOT REPRODUCED",
+   "symbol": "AUDCAD",
+   "window": "asia",
+   "day_state": "TREND_DAY",
+   "expectancy_r": 0.080163,
+   "expectancy_published": 0.5295054812234639,
+   "trades": 202,
+   "why": "rebuilt at +0.0802R against the published +0.5295R (tolerance 0.002). This cell's parameters live in reports/hunt12_partial.json, which is absent here, so it was rebuilt from the gold window config and is a DIFFERENT sleeve. Swap exposure UNMEASURED for it -- run this on the box that has the hunt reports"
+  },
+  {
+   "name": "AUDCAD_london_am_TREND_DAY",
+   "state": "NOT REPRODUCED",
+   "symbol": "AUDCAD",
+   "window": "london_am",
+   "day_state": "TREND_DAY",
+   "expectancy_r": 0.036899,
+   "expectancy_published": 0.593423054392401,
+   "trades": 208,
+   "why": "rebuilt at +0.0369R against the published +0.5934R (tolerance 0.002). This cell's parameters live in reports/hunt12_partial.json, which is absent here, so it was rebuilt from the gold window config and is a DIFFERENT sleeve. Swap exposure UNMEASURED for it -- run this on the box that has the hunt reports"
+  },
+  {
+   "name": "AUDCAD_afternoon_TREND_DAY",
+   "state": "NOT REPRODUCED",
+   "symbol": "AUDCAD",
+   "window": "afternoon",
+   "day_state": "TREND_DAY",
+   "expectancy_r": -0.074561,
+   "expectancy_published": 0.3194157899698339,
+   "trades": 174,
+   "why": "rebuilt at -0.0746R against the published +0.3194R (tolerance 0.002). This cell's parameters live in reports/hunt12_partial.json, which is absent here, so it was rebuilt from the gold window config and is a DIFFERENT sleeve. Swap exposure UNMEASURED for it -- run this on the box that has the hunt reports"
+  },
+  {
+   "name": "AUDCAD_ny_open_TREND_DAY",
+   "state": "NOT REPRODUCED",
+   "symbol": "AUDCAD",
+   "window": "ny_open",
+   "day_state": "TREND_DAY",
+   "expectancy_r": -0.036219,
+   "expectancy_published": 0.4024324338168138,
+   "trades": 199,
+   "why": "rebuilt at -0.0362R against the published +0.4024R (tolerance 0.002). This cell's parameters live in reports/hunt12_partial.json, which is absent here, so it was rebuilt from the gold window config and is a DIFFERENT sleeve. Swap exposure UNMEASURED for it -- run this on the box that has the hunt reports"
+  },
+  {
+   "name": "gold_asia",
+   "state": "UNMEASURED",
+   "expectancy_r": 0.21220969921762065,
+   "mean_nights": 0.3763132760267431,
+   "drag_r": null,
+   "expectancy_after_r": null,
+   "breakeven_per_lot": 1734.3140675152613,
+   "why": "UNMEASURED: no broker swap table on this box. This sleeve's edge reaches ZERO at 1,734.31 per lot per night, over 0.376 charged nights per trade. rollover assumed at 22:00 UTC (17:00 New York on US daylight time); one hour early on standard time. NOT read from the broker server clock -- gateway.py can supply it and does not yet",
+   "symbol": "XAUUSD",
+   "window": "asia",
+   "day_state": "base",
+   "stop_value_per_lot": 3075.47,
+   "trades": 2094,
+   "crossings": 501,
+   "total_nights": 788,
+   "p90_nights": 1,
+   "crossing_rate": 0.23925501432664756
+  },
+  {
+   "name": "AUDCAD_asia_NORMAL_DAY",
+   "state": "NOT REPRODUCED",
+   "symbol": "AUDCAD",
+   "window": "asia",
+   "day_state": "NORMAL_DAY",
+   "expectancy_r": -0.015509,
+   "expectancy_published": 0.14800943305116585,
+   "trades": 827,
+   "why": "rebuilt at -0.0155R against the published +0.1480R (tolerance 0.002). This cell's parameters live in reports/hunt12_partial.json, which is absent here, so it was rebuilt from the gold window config and is a DIFFERENT sleeve. Swap exposure UNMEASURED for it -- run this on the box that has the hunt reports"
+  },
+  {
+   "name": "gold_london_am",
+   "state": "UNMEASURED",
+   "expectancy_r": 0.15286912412611336,
+   "mean_nights": 0.8342168674698796,
+   "drag_r": null,
+   "expectancy_after_r": null,
+   "breakeven_per_lot": 329.848223595395,
+   "why": "UNMEASURED: no broker swap table on this box. This sleeve's edge reaches ZERO at 329.85 per lot per night, over 0.834 charged nights per trade. rollover assumed at 22:00 UTC (17:00 New York on US daylight time); one hour early on standard time. NOT read from the broker server clock -- gateway.py can supply it and does not yet",
+   "symbol": "XAUUSD",
+   "window": "london_am",
+   "day_state": "base",
+   "stop_value_per_lot": 1800.0,
+   "trades": 2075,
+   "crossings": 1009,
+   "total_nights": 1731,
+   "p90_nights": 3,
+   "crossing_rate": 0.48626506024096383
+  },
+  {
+   "name": "gold_afternoon",
+   "state": "UNMEASURED",
+   "expectancy_r": 0.09566713306511082,
+   "mean_nights": 1.4810776138550352,
+   "drag_r": null,
+   "expectancy_after_r": null,
+   "breakeven_per_lot": 176.04783951007744,
+   "why": "UNMEASURED: no broker swap table on this box. This sleeve's edge reaches ZERO at 176.05 per lot per night, over 1.481 charged nights per trade. rollover assumed at 22:00 UTC (17:00 New York on US daylight time); one hour early on standard time. NOT read from the broker server clock -- gateway.py can supply it and does not yet",
+   "symbol": "XAUUSD",
+   "window": "afternoon",
+   "day_state": "base",
+   "stop_value_per_lot": 2725.5,
+   "trades": 1559,
+   "crossings": 1297,
+   "total_nights": 2309,
+   "p90_nights": 3,
+   "crossing_rate": 0.8319435535599743
+  },
+  {
+   "name": "gold_ny_open",
+   "state": "NOT REPRODUCED",
+   "symbol": "XAUUSD",
+   "window": "ny_open",
+   "day_state": "base",
+   "expectancy_r": 0.015701,
+   "expectancy_published": 0.02880491293022753,
+   "trades": 2026,
+   "why": "rebuilt at +0.0157R against the published +0.0288R (tolerance 0.002). This cell's parameters live in reports/hunt12_partial.json, which is absent here, so it was rebuilt from the gold window config and is a DIFFERENT sleeve. Swap exposure UNMEASURED for it -- run this on the box that has the hunt reports"
+  }
+ ],
+ "most_exposed": "gold_afternoon",
+ "note": "Swap is NOT in engine.Costs. Every net-R figure this desk publishes for a crossing sleeve is therefore an upper bound, by the amount below.",
+ "known_defects": [
+  "portfolio_projection.py passes spread_per_lot=0.48 for XAUUSD -- dollars per OUNCE into a field wanting dollars per LOT. The engine divides by contract_size 100 and charges gold 0.0048/oz against a measured 0.16/oz median, so every gold row in portfolio_projection.json runs at ~3% of its real spread. Costs.from_symbol exists to prevent exactly this and the projection does not call it. Reproduced here verbatim so these rows match the published book; fixing it is a separate change.",
+  "AUDCAD costs are built at mult=1.0 -- the spread crossed once, where a round trip crosses it twice."
+ ]
+}
