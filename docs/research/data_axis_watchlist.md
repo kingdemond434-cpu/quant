@@ -1288,7 +1288,13 @@ mechanism prior is CONFIRMED and the prize is MEASURED. `[§33: screened -> data
   `_VECTOR_COOLDOWN_D` days. A fabricated exploration is worse than no exploration, because it
   ALSO blocks the real one.
 
-### 23. 中文 practitioner corpus (thuquant index / 数量技术宅 / 土法炼钢) — grade: MINED 2026-08-18 (sljsz corpus + thuquant index); quant67.com CONTENT-REFUTED [§33: screened -> data/data_universe_map.json]
+### 23. 中文 practitioner corpus (thuquant index / 数量技术宅 / 土法炼钢) — grade: verified-clean (MINED 2026-08-18: sljsz corpus + thuquant index; quant67.com CONTENT-REFUTED = destroyed-at-source) [§33: screened -> data/data_universe_map.json]
+> _Regrade 2026-08-19 (CN miner s9), content unchanged: the 08-18 dig was complete (universe map
+> 104/105/106 verified present this run) but the grade token "MINED" is outside
+> `source_backlog._classify`'s vocabulary, which fail-opens the card back into every cycle's
+> verification queue. "verified-clean" is the recognized terminal token for the same fact. The
+> parser's fail-open default is BY DESIGN and untouched; residual WeChat/Zhihu §13 boundary work
+> stays tracked in GAP #80, not here._
 > **§33 CONVERTED 2026-08-18 (free-data miner, standing daily run) — the deferral date arrived and
 > this seat dug it rather than rolling the date. Full record: universe map entries 104/105/106 +
 > research_memory rm-20260818T151218-{d3916c,f21b8d,e38daf}. What the dig established:**
@@ -1769,6 +1775,17 @@ NOT mean capital (L1.6 -- a candidate is not an edge). R-rows: R0115-R0118.
   VARIANTS_TRIED priced honestly).
 - **§33 disposition:** deferred(2026-08-10) — timeline build owed (ledger row this run). Tier 3:
   new surface with a live gate path.
+- **DESIGN INPUT from primary era text (2026-08-19, CN miner s9 — evidence append only, deferral
+  untouched):** the 2013-12-05 289号 exemplar, read from in-window forum captures, adds TWO
+  schema requirements the 5-class taxonomy does not yet carry. (1) **NAMED-SCOPE field per
+  event:** 289号 named ONLY Bitcoin; the crowd spotted the LTC exemption the next morning and
+  altcoin banzhuan was standard practice within 4 days (WS-014) — without a named-instrument
+  field, the sibling-migration cell is unmeasurable by construction. (2) **ANNOUNCEMENT date vs
+  RAIL-CUT date as separate columns:** the notice's payment-processor scope was read correctly
+  within hours, but domestic rails were cut ~2 weeks later, and the offshore route (graveyard
+  10th instance, era_crossvenue_fiat_premium_arb) was already operational — an event study keyed
+  to announcement dates mis-times the treatment by weeks. The KR 9th instance carries the same
+  lesson from the enforcement side (venue-bank rail terminations, not laws, moved the premium).
 
 ### 25. Stablecoin run signature — episodic conditioning on the EXISTING stablecoin_flows family — grade: needs-monitoring (SUPPLY-LEG VARIABLES BUILT 2026-08-11; mint/burn pair + premium legs stay R0193) [§33: wired tier:2 -> data/stablecoin_run_variables.json]
 > **§33 CONVERTED 2026-08-11 (brain-hunter seat), honest scope.** `data/stablecoin_run_variables.json`
