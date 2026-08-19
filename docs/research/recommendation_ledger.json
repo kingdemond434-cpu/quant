@@ -7857,6 +7857,20 @@
    "commit": null,
    "due": "2026-09-16",
    "disposed": "2026-08-19T01:12:56.550519+00:00"
+  },
+  {
+   "id": "R0619",
+   "source": "cycle",
+   "summary": "LAND THE STAGED PROBE-CAP SIZING AT RE-ARM (restores a ledger anchor destroyed by an id race: the 2026-08-18 CRO cycle recorded this obligation as R0618, a sibling whole-file ledger revert erased that row, and the freed id was re-issued 2026-08-19 to an unrelated spot-routing row -- this row is the re-anchor). THE OBLIGATION: commit 08a6874e on branch claude/staged-probe-cap-sizing sizes re-entry probes at their recorded cap -- the missing SIZER half of the re-entry protocol whose REFUSER half (_probe_within_cap, 2026-08-13) is already live, leaving all 7 recorded re-entry doors welded shut (caps $100, windows open since 08-15, budgets unspent). It is STAGED behind the L1.38 sterile-cockpit window ON PURPOSE: it must merge into the live branch when the principal re-arms / the change window opens, NOT before. Closing F0020 (pause_opens is ABSORBING) depends on this landing. Verify at landing: merge commit on claude/llm-auto-upgrade-verify-gcjac3 + a re-entry probe actually sizing at its cap.",
+   "roi_bps": 80.0,
+   "rank": null,
+   "roi_basis": "measured",
+   "raised": "2026-08-19T01:25:07.272230+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
