@@ -1379,3 +1379,57 @@ and N same-family variants are ~1 effective bet (demeaning-floor lesson). Genuin
 DERIVES-FROM: NONE (checked — neither side cites the other). Kill any future proposal that
 counts configuration-space cardinality as diversity; count effective bets on the desk's own
 panel instead (libs/research/panel_breadth).
+
+---
+
+### era_grid_ladder_vol_bot — THIRD INSTANCE (RU 2014, live A/B challenge + the author's rules corpus) — RE-ANCHOR MECHANICS + THE ERA'S OWN EXECUTION-ALGO REFRAMING
+
+**RECORDED 2026-08-19 (RU frontier miner s3, btcsec bot-class continuation; primary era text via
+Wayback, IPB3 UTF-8).** Sources: forum.btcsec.com topic 8150 "Купить и подождать против бота
+(btc-e bot by ezhrd)" (2014-06-02→04, 21 posts across 2 archived pages — page-2 capture EXISTS,
+first CDX probe at limit-20 missed it, re-queried per OP-069 discipline before claiming the
+negative); topic 1168 "Правила безопасного трейдинга на BTC-e" (izlevinv's rules corpus,
+2013-04, 20 posts); topic 6549 (1b bot lite vendor thread, 2014-03→06, 15 posts).
+**DERIVES-FROM: NONE (checked)** — folk challenge thread, cites nothing; the bot is ezhrd's
+hosted commercial grid bot for btc-e; izlevinv is a paying USER stating its mechanics, not the
+vendor.
+
+**(a) THE GRID'S OPERATING RULES, from users quoting the author:** buy-ladder below price,
+take-profit above; after a filled sell it CANCELS remaining buys and RE-PLACES the whole grid
+DOWNWARD from current price; deliberately NO auto-trail-up option — izlevinv: "чтобы при резком
+рывке вверх наверху не купить" (so a sharp up-move cannot make it buy the top); his settings:
+перекрытие (grid coverage) ≥15%, 1% отступ (offset). The re-anchor-down rule is the
+short-gamma economics one level deeper than instances #1/#2: the design ADDS inventory only on
+the way down BY CONSTRUCTION, and the sole anti-top-buying defence is refusing to follow price
+up — i.e. the failure mode is priced into the config vocabulary itself. #18 (sasa9): "Покупка
+наверху — это общая проблема многих бот-алгоритмов" — the era names top-buying as the CLASS
+failure, not this vendor's.
+
+**(b) THE ERA'S OWN NULL, converged from BOTH sides of the argument:** sceptic sasa9 #16 — "тут
+знать надо когда запускать и какой профит выставлять, а если знаешь — тогда зачем бот? купил и
+поставил ордер на продажу" (you must know WHEN to start it and WHAT profit to set; if you know
+that, why the bot); bot-user izlevinv #19 agrees from the pro side: its real use is EXECUTION
+AFTER A DISCRETIONARY TIMING CALL ("включать в момент, когда вы спрогнозировали, откуда
+покупать — купит со страховкой и дешевле"), and #21 closes: configure it so "прогноз и 'Отступ
+от' совпадали — и можно спать идти" (make the forecast and the offset coincide, then sleep).
+Both sides land on the same decomposition the desk already holds: THE GRID IS A LIMIT-LADDER
+EXECUTION WRAPPER; THE TIMING DECISION IS THE ALPHA AND IT STAYS HUMAN. A grid bot's backtest
+is therefore a JOINT test of an unstated discretionary entry signal + a ladder, and crediting
+the ladder is attribution error (the coin-selector/engine severance rule, era edition).
+
+**(c) THE CHALLENGE ITSELF DIED UNANSWERED:** sasa9 proposed a public live A/B (bot vs
+buy-and-wait, both $50/pair, 5-10% target, ~10 days) and repeatedly asked the vendor to run 2
+cloud instances; #14 "Что-то молчит автор" (the author stays silent); no test ever started
+before the thread died 2014-06-04. A sold-bot vendor declining a free public live test is the
+seller-signal of instance #2 ("если бот приносит прибыль, зачем его продавать?") in
+behavioural form.
+
+**(d) supporting era lore banked from the same slice (not separate entries):** topic 1168 rule
+№3: "Не смотрите на стенки — их очень редко грызут, чаще ими пугают" (walls are rarely eaten,
+mostly used to scare) — RU 2013 folk knowledge that DISPLAYED depth is intimidation, not
+liquidity (era-side sibling of the desk's L1.45 displayed-depth caveat); rule №7: plan orders
+in a table FIRST, then place ("Таблица-ордера, ни в коем случае не наоборот") — pre-registered
+mechanical execution as 2013 retail discipline; kinken (#16, 1168): crypto venues read as
+manipulated vs regulated FORTS futures — the era's own venue-quality ranking. Vendor-thread
+6549 facts routed to WS-009/WS-010 observation appends (venue FEE-endpoint lie; strategy-file
++ vendor-held-API-keys synchronization channels).
