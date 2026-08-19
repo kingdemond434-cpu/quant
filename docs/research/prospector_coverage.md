@@ -5024,6 +5024,37 @@ by Monte Carlo), `data/data_universe_map.json` (**source 103**, a free point-in-
 
 ---
 
+### 2026-08-19 session 4 (BR frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+
+**RESUME STATE (mandate order followed):** `source_backlog_next.py --limit 6` reports 3 pending
+verification — but all three (watchlist cards 23/25/26) are **R0636 phantom-pendings**: each already
+carries a grade AND a §33 disposition in the watchlist itself (23 = SCREENED 2026-08-18 →
+`data/carry_liq_screen.json` by litminer run 8; 25/26 = needs-monitoring, wired/screened). The
+fail-open parser half is ledgered and scheduled(2026-08-26) by AR s3 the same day. **No real
+verification is owed; re-verifying graded cards would be duplicate spend, not conversion.** The one
+DECIDE item (Glassnode/CryptoQuant vendor-replacement) is a policy call above a miner's seat.
+
+**ITEMS THIS RUN (bounded per completion contract):**
+1. **`berlinguyinca` 30-strategy collection** vendored in `cadilhe/freqtrade_2020_tcc`
+   (`user_data/strategies/`) **+ the vendored `user_data/data/binance/*.json` OHLCV beside it** —
+   s3's named #1 ground, EXECUTABLE tier, NOT in the 08-25 deferral batch. Apply OP-082 (result
+   layer vs headline) and OP-055 (config-vs-code contradiction) per strategy; this collection is the
+   widely-copied freqtrade community baseline, so anything measured is a property of thousands of
+   retail bots, not one student.
+2. **Crypto-native `cointegração` subset** — `GustavoDMentz/JohanseneEngle-GrangerCode`,
+   `moliveirasilv/Testes-de-Raiz-Unitaria---Crypto`, `Novalt/Cointegration-Portfolio` — pulled
+   FORWARD from the 08-25 deferral: the deferral's stated reason was "no s4 evidence exists", and
+   this run IS s4. OP-077 in hand makes each a minutes-long instrument check (p-value from
+   `adfuller(OLS.resid)` — the measured 3.59×-anti-conservative EG error — vs proper
+   `coint()`/Johansen).
+3. **STRETCH only if 1–2 close:** era-archaeology first section (Mercado Bitcoin early era via
+   Wayback) — owed 3 sessions, formally deferred to 08-25.
+
+Standing obligations tracked this run: venue discovery beyond the seed list; explicit video count
+(zero stated if ground untouched); lexicon additions; DEPTH line; next ground named at close.
+
+---
+
 ## SESSION NOTES — AR frontier miner
 
 
