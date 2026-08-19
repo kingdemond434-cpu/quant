@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import sys
 from pathlib import Path
 
@@ -21,7 +22,45 @@ import pandas as pd
 
 BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE))
-sys.path.insert(0, "/home/user/Aurum")
+
+# FIND AURUM WITHOUT ASSUMING WHOSE MACHINE THIS IS. The first version hardcoded
+# a sandbox path, so it imported fine where it was written and died with
+# ModuleNotFoundError everywhere else — the calibration harness itself was not
+# portable, which is a poor look for a file whose job is catching wrong
+# assumptions. Checked in order: an explicit override, siblings of this repo,
+# then the usual home locations.
+def _find_aurum() -> Path | None:
+    def ok(c: Path) -> bool:
+        return (c / "golddesk" / "calibration.py").exists()
+
+    env = os.environ.get("AURUM_HOME")
+    if env and ok(Path(env)):
+        return Path(env)
+    # Walk up from this file and check for an Aurum beside each ancestor. A
+    # fixed list of candidates was not enough: it found the repo on the machine
+    # it was written on and missed it on both the author's own sandbox and the
+    # operator's VPS, which is the same class of mistake as hardcoding the path
+    # in the first place, just with more steps.
+    for parent in [BASE, *BASE.parents]:
+        c = parent / "Aurum"
+        if ok(c):
+            return c
+    for c in (Path.home() / "Aurum", Path("/workspace/Aurum")):
+        if ok(c):
+            return c
+    return None
+
+
+_AURUM = _find_aurum()
+if _AURUM is None:
+    raise SystemExit(
+        "cannot find Aurum. This needs golddesk/calibration.py from the Aurum "
+        "repo.\n"
+        "Set AURUM_HOME=/path/to/Aurum, or clone Aurum beside this repo or in "
+        "your home directory.\n"
+        "Refusing to guess: a calibration run against the wrong tree would "
+        "certify the wrong thing.")
+sys.path.insert(0, str(_AURUM))
 
 from golddesk.calibration import run_all                       # noqa: E402
 from mt5desk.engine import Costs, Signal, run_backtest         # noqa: E402
