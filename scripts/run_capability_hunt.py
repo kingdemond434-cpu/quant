@@ -192,10 +192,11 @@ and the next run resumes from it -- never leave a half-built capability unrecord
 #: negative term in the same objective). Offense is listed first so a majority of daily draws
 #: point at new alpha.
 _ALPHA_LENSES: list[str] = [
-    "NEW EDGE FAMILY -- name a mechanism class with a FORCED participant (liquidation cascades, "
-    "index/ETF rebalances, funding-settlement flows, options-dealer gamma, stablecoin "
-    "mint/redeem, miner/validator flows) that this desk has never screened, and the free data "
-    "that would test it. Mechanism first, never a pattern.",
+    "NEW EDGE FAMILY -- name a mechanism class with a FORCED participant (month-end / quarter-end "
+    "FX fixing, gold-ETF AP hedging, index/ETF rebalances, index-futures roll, options-dealer "
+    "gamma, central-bank operations, commodity producer hedging, sovereign / real-money mandate "
+    "flows) that this desk has never screened, and the free data that would test it. Mechanism "
+    "first, never a pattern.",
     "DATA ASYMMETRY -- information that could exist ONLY because of how WE combine data (our "
     "own-timestamp L2, our execution tape, cross-source joins). What proprietary feature is a "
     "competitor structurally unable to buy? (L1.11a: rank by reconstruction cost.)",
@@ -203,7 +204,8 @@ _ALPHA_LENSES: list[str] = [
     "FASTER: a decorrelated sleeve, a cost-tier cut (every bp is pure CAGR), a funding-harvest "
     "cadence, a capacity band we are leaving on the table.",
     "REGIME-CONDITIONED EDGE -- an edge that exists only in a nameable, DETECTABLE regime "
-    "(high-funding, high-vol, post-liquidation, low-liquidity) we could switch on and off. What "
+    "(high-carry / wide-swap, high-vol / risk-off, post-stop-run, low-liquidity / holiday session) "
+    "we could switch on and off. What "
     "regime do we not yet detect, and what edge would it gate?",
     "SMALL-CAPACITY FRONTIER -- an edge too small for a tier-1 desk to touch and therefore ours "
     "for free (L1.18a): a niche venue, a long-tail pair, an era archive, a language ecosystem. "
@@ -211,8 +213,9 @@ _ALPHA_LENSES: list[str] = [
     "FASTER PROMOTION -- what shortens the path from screen-hit to sized-capital without lowering "
     "a bar: an evidence accelerant (8h panels, event-density), a paper-sleeve auto-spawn, a "
     "resurrection-queue consumer. Time-to-alpha is a growth term.",
-    # PRINCIPAL 2026-07-31: "find every crypto strat even discretionary n all n never limit to
-    # just one thing." The lenses above all hunt NEW ground; none asked whether the ground already
+    # PRINCIPAL 2026-07-31: "find every strat even discretionary n all n never limit to just one
+    # thing" -- across the full MT5/Fusion universe (2026-08-18), never crypto exchanges. The
+    # lenses above all hunt NEW ground; none asked whether the ground already
     # walked is one family walked repeatedly. On the desk's record 41 buried candidates cluster
     # into 7 worked families out of 14, which no lens could have surfaced.
     "STRATEGY-FAMILY BREADTH -- UNLIMITED, ALL-SURFACE, NEVER-ENDING. No surface is out of scope: "

@@ -80,16 +80,19 @@ _LENSES: tuple[tuple[str, str], ...] = (
      "a schedule, funds that cannot trade until a threshold is breached"),
     ("WRONG-PRICE ANCHOR",
      "what is priced off the WRONG reference -- a stale index, a lagging proxy, a correlation "
-     "everyone assumes still holds, a funding rate anchored to a different venue"),
+     "everyone assumes still holds, a CFD priced off a stale underlying, a cross priced off its "
+     "two legs, a swap/forward rate anchored to a different curve"),
     ("SESSION AND CALENDAR",
-     "what changes at a KNOWN TIME -- session opens and closes, funding stamps, settlement, "
-     "weekend gaps, holiday liquidity, the hours no desk is staffed"),
+     "what changes at a KNOWN TIME -- session opens and closes (Tokyo/London/NY), swap rollover "
+     "and triple-swap Wednesday, futures settlement/expiry, the WMR/LBMA fixes, weekend gaps, "
+     "holiday liquidity, the hours no desk is staffed"),
     ("FAILED EXPECTATION",
      "where a widely-expected move FAILS -- failed breakouts, unbought dips, news that does not "
      "move price. The failure itself is information about positioning"),
     ("CROSS-ASSET DIVERGENCE",
-     "when two things that normally move together STOP -- gold vs real yields, BTC vs risk, a "
-     "perp vs its own spot, one venue vs another"),
+     "when two things that normally move together STOP -- gold vs real yields, an index vs its "
+     "constituents/futures, a CFD vs its underlying, a commodity currency vs its commodity, "
+     "one broker vs another"),
 )
 
 
@@ -113,14 +116,17 @@ def lens_for(stamp: str, slot: int = 0) -> tuple[str, str]:
     return _LENSES[(ordinal + slot) % len(_LENSES)]
 
 
-_BRIEF = """You are hunting for a NEW DISCRETIONARY TRADING EDGE on Binance USD-M perpetuals -- the
-kind a skilled human trader recognises on a chart and in the flow, not a statistical pattern.
+_BRIEF = """You are hunting for a NEW DISCRETIONARY TRADING EDGE on the MT5/Fusion universe -- FX
+majors/crosses/exotics, XAUUSD/XAGUSD and metals, equity indices, energy, soft commodities and US
+share CFDs -- the kind a skilled human trader recognises on a chart and in the flow, not a
+statistical pattern. Crypto is NOT a target; use it only if it predicts an MT5 instrument.
 
 TONIGHT'S LENS -- {lens_name}: {lens_body}
 
 WHAT COUNTS AS AN EDGE HERE, and most proposals fail this:
   * it names a FORCED PARTICIPANT. Who has to trade against you, and why can they not wait?
-    Liquidation engines, margin calls, index rebalances, mandates that must act after a print.
+    Stop-loss cascades, margin calls, index/ETF rebalances, real-money month-end fixing, producer
+    hedging, mandates that must act after a print.
     "RSI below 30" names nobody and is not an edge. If you cannot name who is compelled, say so
     and discard the candidate rather than dressing it up.
   * a HUMAN could recognise it in real time from price, structure and the desk's feeds. If it
@@ -140,8 +146,8 @@ OUTPUT EXACTLY ONE JSON OBJECT:
     "forced_participant": "WHO must trade against you and why they cannot wait",
     "mechanism": "why this produces a price move that is not already arbitraged",
     "falsifier": "the observation that proves it is not real",
-    "how_measured": "what data on this desk would test it -- charts, funding, liquidations, "
-                    "announcements, copy-flow, cross-venue",
+    "how_measured": "what data on this desk would test it -- charts, swap/rollover, COT "
+                    "positioning, economic-calendar announcements, broker flow, cross-venue",
     "why_not_arbitraged": "why this survives being obvious",
     "confidence": 0.4}}
 ]}}

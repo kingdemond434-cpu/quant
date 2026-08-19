@@ -18,9 +18,9 @@ write to any research artifact except the ledger. Findings that map to a FAMILY 
 at intake and debited to the source, exactly like any other contributor -- an external model that
 has not read the graveyard will re-propose corpses forever because it costs it nothing.
 
-FORBIDDEN ZONES are enforced MECHANICALLY, not requested politely. A finding mentioning Binance
-funding anomalies, RSI/TradingView combinations, Twitter sentiment, Google Trends or anything with
-a public CoinGlass/Dune dashboard is dropped before it reaches the ledger. The prompt asks; this
+FORBIDDEN ZONES are enforced MECHANICALLY, not requested politely. A finding mentioning bare COT
+extremes, RSI/TradingView combinations, Myfxbook/ForexFactory retail sentiment, Twitter sentiment,
+Google Trends or DailyFX signals is dropped before it reaches the ledger. The prompt asks; this
 enforces.
 
 BUDGET: reads data/panel_budget.json and refuses to start if the envelope is exhausted. Free and
@@ -89,14 +89,18 @@ _SEED_VECTORS = ["anything you consider under-observed"]
 # Mechanically enforced. The prompt asks for these to be avoided; this drops them.
 FORBIDDEN_SETS = [
     # Each entry is a REQUIRED TOKEN SET: the zone trips only when EVERY token is present,
-    # in any order. Exact-substring matching let "Binance funding anomaly" through while
-    # dropping "Binance funding rate anomaly" -- the same dead source, one word apart.
-    {"binance", "funding"},          # crowded beyond usefulness; 10k bots watch it
-    {"funding", "anomaly"},
-    {"open", "interest", "high"},
+    # in any order. Exact-substring matching let "COT extreme reading" through while dropping
+    # "COT extreme positioning reading" -- the same dead source, one word apart.
+    # MT5 UNIVERSE (2026-08-18): the crowded zones are now the retail-FX/metals ones every myfxbook
+    # follower already watches, not crypto perp-funding dashboards. The asset-agnostic indicator and
+    # sentiment zones stay -- an RSI cross is curve-fitting in any market.
+    {"cot", "extreme"},              # bare COT positioning; every retail FX blog quotes it
+    {"myfxbook", "sentiment"},       # retail-sentiment dashboards, crowded beyond usefulness
+    {"forexfactory", "sentiment"},
+    {"dailyfx", "signal"}, {"babypips"},
+    {"dxy", "overbought"}, {"dxy", "oversold"},
     {"rsi"}, {"macd"}, {"bollinger"}, {"stochastic"},
-    {"tradingview"}, {"coinglass"},
-    {"dune", "dashboard"},
+    {"tradingview"},                 # multi-asset retail idea stream, still crowded
     {"twitter", "sentiment"}, {"sentiment", "analysis"},
     {"google", "trends"}, {"wikipedia", "pageview"},
     {"moving", "average"},
@@ -122,9 +126,9 @@ def _doctrine(role: str = "") -> str:
 def _forbidden(text: str) -> str | None:
     """Return the tripped zone, or None. Token-set membership, order-independent.
 
-    NOTE the deliberate narrowness: multi-token zones require ALL tokens, so bare "funding"
-    is NOT blocked -- funding persistence is this desk's single confirmed edge and must stay
-    researchable. The zone blocks crowded FRAMINGS of it, not the subject.
+    NOTE the deliberate narrowness: multi-token zones require ALL tokens, so bare "cot" or
+    "carry" is NOT blocked -- COT positioning and FX carry are load-bearing MT5 mechanisms and
+    must stay researchable. The zone blocks crowded FRAMINGS of them, not the subject.
     """
     toks = set(re.findall(r"[a-z]+", text.lower()))
     for zone in FORBIDDEN_SETS:
@@ -134,8 +138,8 @@ def _forbidden(text: str) -> str | None:
 
 CHARTER = (
     "You are an INFORMATION PREDATOR for a solo quant desk. You are not a literature reviewer.\n"
-    "Your purpose: find edible information BEFORE the herd arrives. If you return 'funding rates "
-    "are interesting' or 'OI is high' you have FAILED -- that is surface water.\n\n"
+    "Your purpose: find edible information BEFORE the herd arrives. If you return 'COT shows "
+    "extreme positioning' or 'DXY is overbought' you have FAILED -- that is surface water.\n\n"
     "HARD CONSTRAINTS:\n"
     "\n"
     "EXHAUSTION MANDATE -- THERE IS NO CEILING AND NO QUOTA.\n"
@@ -152,8 +156,10 @@ CHARTER = (
     "  a search list; a fixed checklist is where everyone already looks.\n"
     "- FREE, PUBLIC, SCRAPABLE or RPC-accessible sources ONLY. Never suggest paid data APIs, "
     "institutional terminals or enterprise datasets.\n"
-    # PRINCIPAL 2026-07-31: "miners n explorers kimi etc all should find every crypto strat even
-    # discretionary n all n never limit to just one thing." This line used to read "Never suggest
+    # PRINCIPAL 2026-07-31: "miners n explorers kimi etc all should find every strat even
+    # discretionary n all n never limit to just one thing" -- now over the full MT5/Fusion universe
+    # (FX, metals, indices, energy, share CFDs), never crypto exchanges (principal 2026-08-18).
+    # This line used to read "Never suggest
     # strategies or indicators", which was aimed at PATTERN-MINING and hit STRATEGIES wholesale --
     # so the desk's only non-Claude hunter, its widest lens, was barred from returning the thing
     # the desk most needs. The real test was never source-vs-strategy; it is MECHANISM vs PATTERN,
@@ -228,17 +234,18 @@ CHARTER = (
 )
 
 WAVES = {
-    1: ("SHADOW MAPPING", "Map what the herd covered in the last 24h: English CT narratives, "
-        "Dune/CoinGlass/DefiLlama trending, GitHub trending quant repos, mainstream crypto media. "
-        "Output 10-15 covered topics labelled HERD_COVERED. Do NOT report findings yet."),
+    1: ("SHADOW MAPPING", "Map what the retail-FX/metals herd covered in the last 24h: "
+        "ForexFactory and Myfxbook threads, FX/gold fintwit narratives, TradingView trending "
+        "ideas, COT-report commentary, GitHub trending quant repos, mainstream FX & metals desks "
+        "(Bloomberg/Reuters). Output 10-15 covered topics labelled HERD_COVERED. No findings yet."),
     2: ("NEGATIVE SPACE MINING", "For each HERD_COVERED item from Wave 1, ask what ADJACENT topic "
         "they ignored because it is too small, weird or foreign. You may NOT report a finding "
         "unless you name the specific herd coverage that caused the miss."),
-    3: ("DEEP FOREST PENETRATION", "Forget the herd. Hunt: abandoned repos with 0 stars, protocols "
-        "under $10M TVL with no English docs, mempool patterns nobody has named, regulatory "
-        "filings in non-Latin scripts, bridge failure modes, perp venues with no CoinGlass page. "
-        "Findings must be things where a typical quant would say 'I didn't know that was "
-        "measurable'."),
+    3: ("DEEP FOREST PENETRATION", "Forget the herd. Hunt: abandoned MQL5/EA codebases with no "
+        "downloads, illiquid FX crosses and exotics with no retail coverage, broker-specific "
+        "quote/spread anomalies, central-bank and Treasury filings in non-Latin scripts, "
+        "futures roll/expiry dislocations, session-fix flow nobody has named. Findings must be "
+        "things where a typical quant would say 'I didn't know that was measurable'."),
 }
 
 
@@ -361,29 +368,30 @@ def _admit(line: str, wave: int, wave_text: str = "") -> tuple[bool, str, str, l
 
 
 _SELFTEST_CASES = [
-    ("INFERRED | Japanese tax reclassification drives offshore perp flow | FIEA 2027 timeline;"
-     " capital-flight mechanism is my construction | forced-flow lead | 3d | none |"
-     " JPY-hours perp volume share rises | no share change after 90d",
+    ("INFERRED | BoJ policy shift drives JPY-cross carry unwind | 2027 YCC timeline;"
+     " carry-crowding mechanism is my construction | forced-flow lead | 3d | none |"
+     " JPY-cross realised vol rises into the meeting | no vol change after 90d",
      "KEEP", "INFERRED and labelled as such -- legitimate"),
-    ("VERIFIED | Strategy preferred dividend forces BTC sales | $1.2B annual obligation |"
-     " scheduled forced seller | 2d | none | sale within 5d of dividend date | no clustering",
+    ("VERIFIED | Index reconstitution forces tracker rebalancing | mandated on effective date |"
+     " scheduled forced buyer | 2d | none | flow within 3d of reconstitution | no clustering",
      "KEEP-DOWNGRADED", "VERIFIED with no URL -> auto-downgraded to INFERRED"),
-    ("Bridge failure spike | illustrative example | edge | 1d | none | IC | none | extra",
+    ("Gold session breakout | illustrative example | edge | 1d | none | IC | none | extra",
      "DROP", "no CLAIM_CLASS in position 1"),
-    ("INFERRED | Binance funding anomaly | dashboards show it | edge | 1d | NONE | IC | none",
-     "DROP", "forbidden zone: crowded funding"),
-    ("INFERRED | RSI oversold micro caps | tradingview | edge | 1d | NONE | IC | none",
+    ("INFERRED | COT extreme positioning on gold | myfxbook shows it | edge | 1d | NONE | IC | none",
+     "DROP", "forbidden zone: crowded COT"),
+    ("INFERRED | RSI oversold FX pairs | tradingview | edge | 1d | NONE | IC | none",
      "DROP", "forbidden zone: RSI / TradingView"),
-    ("INFERRED | Twitter sentiment velocity | CT volume | edge | 1d | NONE | IC | none",
+    ("INFERRED | Twitter sentiment velocity | fintwit volume | edge | 1d | NONE | IC | none",
      "DROP", "forbidden zone: twitter sentiment"),
-    ("VERIFIED | Aave health-factor tail predicts forced liquidation | https://docs.aave.com logs"
-     " | forced-seller lead time | 2d | local node | share of cascades pre-detected > 0.4 |"
-     " no lead beyond 1 block",
+    ("VERIFIED | Month-end WMR fix forces real-money FX rebalancing | https://www.lseg.com/en/ftse"
+     "-russell/wmr-fix methodology + own bars | forced-flow lead time | 2d | own bars |"
+     " pre-fix drift share > 0.4 | no drift after 90d",
      "KEEP", "forced participant + free source + kill condition"),
-    ("VERIFIED | Validator exit queue predicts stETH discount | https://beaconcha.in API | early"
-     " warning | 1d | NONE | corr with discount > 0.3 | no relation after 60d",
+    ("VERIFIED | Gold-ETF creation/redemption forces AP hedging | https://www.spdrgoldshares.com"
+     " free daily flow | early warning | 1d | NONE | corr with gold basis > 0.3 | no relation"
+     " after 60d",
      "KEEP", "obscure, free, mechanism named"),
-    ("INFERRED | Bridge failure spike | Stargate subgraph | liquidity stress",
+    ("INFERRED | Index roll dislocation | roll calendar | flow stress",
      "DROP", "only 3 fields, charter needs 7"),
 ]
 
@@ -416,23 +424,23 @@ def _selftest() -> int:
 
 # Adversarial on purpose: 2 admissible, 1 forbidden, 1 unsourced-VERIFIED, 1 malformed.
 _MOCK_WAVES = {
-    1: ("HERD_COVERED: BTC funding squeeze; ETF flows; SOL upgrade narrative; "
-        "liquidation heatmaps; DXY macro; Dune liquidation trackers."),
-    2: ("HERD_COVERED liquidation heatmaps -- they watch CEX perp liquidations because "
-        "CoinGlass renders them, and therefore ignore DeFi lending health factors upstream.\n"
-        "VERIFIED | Aave health-factor left tail predicts forced liquidation before perps "
-        "reflect it | https://docs.aave.com event logs via free RPC, because the herd watches "
-        "CEX heatmaps | forced-seller lead time | 2d | local node | share of cascades "
-        "pre-detected > 0.4 | no lead beyond 1 block\n"
-        "INFERRED | Binance funding anomaly on majors | dashboards show it | edge | 1d | NONE "
+    1: ("HERD_COVERED: gold breakout narrative; NFP reaction; DXY macro; central-bank meeting "
+        "previews; myfxbook retail-sentiment extremes; COT commentary."),
+    2: ("HERD_COVERED retail-sentiment extremes -- they watch myfxbook long/short ratios because "
+        "the dashboards render them, and therefore ignore real-money benchmark-fix flow upstream.\n"
+        "VERIFIED | Month-end WMR London fix forces real-money FX rebalancing before retail "
+        "reacts | published fix window plus the desk's own bars, because the herd watches "
+        "sentiment gauges | forced-flow lead time | 2d | own bars | pre-fix drift share "
+        "> 0.4 | no drift after 90d\n"
+        "INFERRED | COT extreme positioning on gold | myfxbook shows it | edge | 1d | NONE "
         "| IC | none\n"),
-    3: ("VERIFIED | Validator exit queue length predicts stETH discount | "
-        "https://beaconcha.in public API | early warning on staked-ETH pressure | 1d | NONE | "
-        "corr with discount > 0.3 | no relation after 60d\n"
-        "VERIFIED | Strategy preferred dividend forces quarterly BTC sales | $1.2B annual "
-        "obligation | scheduled forced seller | 2d | NONE | sale within 5d of dividend | "
+    3: ("VERIFIED | Gold-ETF creation/redemption forces authorised-participant hedging | "
+        "free GLD/IAU flow data | early warning on gold basis pressure | 1d | NONE | "
+        "corr with gold basis > 0.3 | no relation after 60d\n"
+        "VERIFIED | Index reconstitution forces quarterly tracker rebalancing | mandated on the "
+        "effective date | scheduled forced buyer | 2d | NONE | flow within 3d of reconstitution | "
         "no clustering over 4 quarters\n"
-        "INFERRED | Bridge failure spike | Stargate subgraph | liquidity stress\n"),
+        "INFERRED | Index roll dislocation | roll calendar | flow stress\n"),
 }
 
 
