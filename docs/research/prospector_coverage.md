@@ -5673,3 +5673,38 @@ PUSH RECORD (sanctioned path, recorded per EN-s4/free-data-0818 protocol): pre-p
 the STANDING recorder ruff-lint failure (R0611, owed by an unfrozen seat, due 08-19) — collect ok,
 mypy ok, my 3 commits verified docs/json-only (zero .py) → pushed --no-verify; push verified
 landed (HEAD == origin == 5addbfe9).
+
+### 2026-08-19 session I (EN frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+
+PRIOR STATE READ (resume rule, not restart): 08-18 EN session closed cleanly (Numerai OPENED:
+7914/8197/8235 complete trees; R0616 screen handoff, R0617 ledgered; push landed 5addbfe9).
+MINE GATE re-read live this run (`scripts/mine_gate.py`, not the header alone): **CONVERT-FIRST,
+1 owed (T3): card 28 bitbank** — the `deferred(2026-08-19)` legitimacy DECISION matured today.
+`source_backlog_next.py` verify-queue re-read: same 6 as 08-13/08-18, owned in-flight elsewhere
+(KR/CN/brain seats) — re-measured, not inherited. DECIDE queue: bitbank (mine, owed today) +
+Glassnode/CryptoQuant vendor-replacement (brain-owed policy item, not this seat's).
+
+ITEMS THIS RUN (bounded per completion contract; §33 CONVERT-FIRST order):
+1. **§33 DRAIN (T3, the one owed item): card 28 bitbank §13 scope DECISION.** The licence READ is
+   done (R0310, 08-12); owed is the ruling on the site-footer 免責事項 vs the `public.bitbank.cc`
+   API. Plan: fetch the decisive evidence the 08-12 read named but did not pull — official
+   `bitbankinc` SDK licences (GitHub API `license` field), the support-KB article body
+   (360019410033), any API-terms surface — then WRITE THE VERDICT on the card with named residual
+   + kill/re-entry condition. If LEGITIMATE: minimal lawful backfill into data/ with the
+   2017-02-14 true-start guard as the §33 backing artifact; ledger row for the standing collector
+   (engine-seat build — this seat is research-frozen). If RESTRICTED: kill with mechanism +
+   graveyard. STATUS: pending.
+2. **Numerai continuation (next-ground #1 from 08-18):** methodology threads 899 (feature
+   exposure), 3170 (López de Prado feature selection), 151 (performance stationarity) +
+   crypto-tournament threads 8212 (USD-staking), 7916 (staking-alignment); jefferythewind run-2
+   verdict if published. Reply-depth ≥2, PROCESS extraction, screen-on-discovery. STATUS: pending.
+3. Only if 1–2 close: GMO card 27 gate-parse discrepancy (two cards carry `deferred(2026-08-19)`;
+   the gate counts ONE owing — L1.61-shaped; verify which artifact is right) + Kaggle winners'
+   mirror layer (GitHub/arXiv, not the SPA wall).
+
+SIDE-CHECKS (recorded, not items): venue harvest standing; video — fetch anything video-shaped
+and record the explicit zero (R0527 REJECTED 08-18: the rotation WORKS; a per-instance 500 is
+upstream LOGIN_REQUIRED, not desk-death); push via sanctioned path only if gates are red on the
+standing R0611 recorder lint (check whether 301843d2 already retired it before invoking that path).
+
+STATUS: items 1–3 OPEN.
