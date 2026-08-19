@@ -6489,3 +6489,167 @@ staged the stale image under my name (8th R0423-class ledger race). Repaired sam
 pinned 224a768c, R0636 restored + dispositioned scheduled(2026-08-26). Lesson **L0168**: before
 committing a contended whole-file store, `git diff --staged` must show ONLY your intended delta —
 HEAD-verify alone passes while you commit someone else's stale image.
+
+---
+
+## BRAIN HUNTER — session 4 (2026-08-19, dedicated daily organ)
+
+**MINE GATE re-read live** (`scripts/mine_gate.py`, not the header alone — s3's rule): **BACKLOG-CLEAR**,
+14/14 carded finds disposed, mining authorised. **BACKLOG (resume step 1):** `source_backlog_next.py`
+= 3 pending technical verifications, **none BRAIN-owned** (stablecoin-run conditioning, KR venue-state,
+BIS WP 1087 — the last already verified by litminer run 8, commit b35e0b3b); 1 policy item
+(Glassnode/CryptoQuant) is principal-gated vendor spend. Routing recorded, not silence.
+**PRIOR STATE:** s3's 6-item next-ground chain inherited intact and worked in order.
+**Worktree:** own tree (`qp-brain-s4`) per R0423 — 8 recorded instances of a sibling sweeping another
+session's staged work; the main checkout had 9 live siblings at session start.
+
+### THE ITEM S3 NAMED FIRST PAID OFF, AND IT CLOSED S3'S OWN RECORDED LIMITATION
+
+s3 predicted `zhutoutoutousan/worldquant-miner` would resolve on **`master`** ("this seat has been
+caught by a wrong default branch twice now"). **Confirmed** — both target repos default to `master`.
+
+**`generation_two/constants/operatorRAW.json` is the OPERATOR VALUE SET** (Apache-2.0, 724★, 192
+forks, pushed 2026-02-22): **98 operators** with name, category, scope, level and semantics. s3 had
+recorded honestly that `rocky-d/wqb` gives *"the namespace and exact API paths, never the value
+sets"* — **this is the value set, and it arrived from the licence-cleanest repo on the ground.**
+
+**MEASURED DESK COVERAGE — 5 of 98 defined in `libs/`, 67 absent, 26 ambiguous-not-counted**
+(a *definition* search `^\s*def <name>\b`, never a mention search). **Reduce 14/14 absent,
+Vector 4/4 absent, Group 8/10, Time Series 28/29.** Artifact: `data/brain_operator_catalogue.json`.
+
+### THE FIND IS A DATA SHAPE, NOT 67 MISSING FUNCTIONS — OP-093
+
+`vec_*` (4) + `reduce_*` (14) only make sense if a field holds a **vector per instrument-day**. The
+platform ships a two-stage pipeline (`vector field → reduce → scalar → everything else`); **the desk's
+pipeline has no first stage** — measured: `grep -rEn "skew|kurtosis"` over `libs/features/` and
+`libs/alpha_factory/` returns **nothing**. And the desk's vectors are *denser than an equity
+platform's*: `geckoterminal_trades.jsonl` carries per-trade **`tx_from` (wallet identity)**, which
+equities have no analogue for at all.
+
+**Sharpest single operator: `self_corr`** — `(D×N)` → `(D×N×N)` rolling pairwise correlation, which
+`reduce_avg` collapses into *a per-symbol per-day "how correlated am I to the universe right now"*.
+The desk's `cohort_independence.measure()` returns **one scalar for a whole cohort**, and
+`crypto_grouping_map.json`'s `corr_cluster` is a **static** 2026-08-11 assignment. `self_corr` is the
+operator that makes the desk's own blocking input *dynamic*. **[§33: wired -> search_operator_library.md OP-093 + data/brain_operator_catalogue.json]**
+
+### THE SECOND FIND WAS THE CITATION, NOT THE CHAPTER — OP-094
+
+`paper/chapters/crypto-trading-strategies.tex` presents a bars comparison (time 0.85 → CUSUM 1.28)
+that is **`\cite{gradzki2025}` — attributed, not measured by that author**; its unattributed claims
+("2–5% monthly" arbitrage) carry no evidence. **Take the citation, drop the chapter's numbers.**
+Primary source verified via **Crossref, not the publisher wall**: Grądzki, Wójcik & Lessmann,
+*Financial Innovation* **11:136 (2025-12-15)**, `10.1186/s40854-025-00866-w`, **CC BY 4.0** — tick-level
+BTC/ETH Jan-2018→Jun-2023, CUSUM+Triple-Barrier beats time bars **after costs**; Transformer variants
+(FEDformer, Autoformer) evaluated — a negative-results layer worth its own dig.
+**[§33: wired -> search_operator_library.md OP-094]**
+
+**INSTRUMENT FACT worth reusing:** `doi.org` → `link.springer.com` → `idp.springer.com/authorize`
+(303), and the SpringerOpen host `jfin-swufe.springeropen.com` **301s back into the same loop**.
+That is a **cookie/consent redirect on a CC-BY article**, not a paywall. **Do not grade a CC-BY
+article WALLED from a redirect loop** — take the metadata/OA route (Crossref answered in one call).
+
+### THE DESK-SIDE DEFECTS THIS SURFACED — both ledgered, both with named upward fixes
+
+**R0638 — a self-blocking adoption trigger.** `adoption_queue.md` rules "build nothing until the
+trigger fires"; its dollar/volume-bars row triggers on *"a bar-sampled (non-time-bar) alpha enters the
+pipeline"*. **A bar-sampled alpha cannot exist before the bar sampler** — unreachable by construction,
+the exclusion-cycle shape L1.45 names ("what is the path back?"). There is none. Measured: **zero**
+CUSUM/dollar-bar/volume-bar/changepoint implementations repo-wide, while the same gap was
+independently re-reported **three times** (`adoption_queue.md:13`, `20260805_s0:39`, `20260801_s3:48`
+— the last being a *test fixture documenting a detector that was never built*). Triple Barrier, by
+contrast, **already exists** (`libs/features/labels.py`): the desk built the labeling half and never
+the sampling half. Weaker second instance named but not asserted equal: the frac-diff row.
+**[§33: killed -> R0638 ledgered; the queue defect, not the research gap, is the finding]**
+
+**R0637 — a write-only moat tape the utilisation meter cannot see.** `data/geckoterminal_trades.jsonl`:
+**322,187 wallet-resolved signed DEX trades, 153MB, captured since 2026-08-12.** Repo-wide reference
+audit: one WRITER, one build-standard registration, one enforcement-matrix citation, one file-*counting*
+audit — **zero analytical readers**, and no glob reader reaches it (siblings all glob `*.jsonl.gz`;
+this is plain `.jsonl`). **Second-order:** `moat_utilisation.inventory()` walks only
+`data/moat/<venue>/<SYMBOL>/*.jsonl.gz`, so a flat file at `data/` root is in **neither the numerator
+nor the denominator** — utilisation reads healthy because the unused asset was never counted (L1.57/
+L1.60 shape). The enforcement matrix is **GREEN on L1.11, the moat law, citing an unmined file**, and
+its own comment states the desk's reasoning: *"the one axis where waiting IS the loss — capture is
+forward-only-unrecoverable."* **[§33: wired -> R0637 + data_axis_watchlist.md card 37]**
+
+**AND I CLOSED THE VISIBILITY HALF IN-RUN (L1.39).** The tape was in **neither** `data_universe_map.json`
+**nor** this watchlist — the two catalogues miners and the §33 generation priors actually read. A
+collector registered in governance but absent from the map is invisible to exactly the organs whose
+job is to mine it. **Axis card 37 written, measured first-hand** (not from the collector's claims):
+8-day span live today, 68 pools, **93,241 distinct wallets**, buy/sell 169,555/152,632, volume median
+$18.82 vs mean $1,336 (**71×**), **181 of 187 pool-day cells with n≥30**, richest cell skew **11.19**,
+p90/p50 17.6×. **Explicitly NOT claimed:** under L1.62 the panel's cross-sectional denominator is
+unmeasured, so **nothing there is powered and nothing is a candidate.**
+
+### HONEST NULLS — recorded so nobody re-spends
+
+- **Polymarket subtree: DUPLICATE, not re-carded.** `polymarket_core` uses
+  `gamma-api.polymarket.com/markets` unauthenticated — but `libs/data/prediction_markets.py:18`
+  **already holds that exact endpoint**, and axis card 30 already graveyards the OpenMarket corpus
+  with a strong permanent mechanism. Novelty gate did its job; re-carding would burn multiplicity
+  budget twice. Its `FactorEngine` is hand-weighted heuristics with hardcoded normalisers — **a
+  parameter set is not a mechanism**, so nothing is carded from it. **[§33: killed -> duplicate of card 30 + prediction_markets.py]**
+- **The BRAIN data-field catalogue remains §13-walled.** `data_field_fetcher.py` is an *authenticated*
+  client and the repo commits **no cached field dump** (tree scanned for `constants/`/`cache`).
+  Reading the client's source is public; running it is not. **No credential was held, sought or used;
+  no call was made to `api.worldquantbrain.com`.** OP-084's high-yield axis stays behind the wall —
+  named, not breached.
+- **R0437 IS OVERDUE** (status `scheduled`, due **2026-08-18**, `commit: None`) — this seat's own
+  blocking input, owed by the alpha org, not fixable from a research-frozen seat. Mechanical chase
+  recorded. New evidence for its owner: the map unlocks **more than R0437 assumed** — 8 of 10 GROUP
+  operators are absent, not 2.
+
+### THE TWO EXHAUSTIONS, applied honestly
+
+**SECTION-EXHAUSTED (claimed, dated — do not re-surface-scan):**
+- `generation_two/constants/operatorRAW.json` — **EXHAUSTED**, all 98 entries parsed and catalogued.
+- `polymarket/polymarket_core/alpha/factors.py` + `adapters/polymarket_http_adapter.py` — **EXHAUSTED**, both read in full.
+- `paper/main.tex` bibliography — **EXHAUSTED**, all 7 entries read.
+
+**EXPLICITLY NOT EXHAUSTED — read the section map, not the sections.** `crypto-trading-strategies.tex`:
+I read the section map, Empirical Results, Key Findings and Summary. **UNREAD: Information-Driven Bars
+implementation (L31–255), Triple Barrier (255–355), Bybit (355–485), Arbitrage — remix/cross-exchange/
+ETF (485–770), and Low-Liquidity Crypto Lottery / scam-token detection (770–849)**, that last being
+**§42 ground** (too small for funds) and the most likely mechanism vein in the chapter.
+
+**UNTOUCHED IN THIS REPO:** `generation_one` (416 files), `generation_two` (**104 of 106**),
+`stone_age` (36, incl. `alpha_generator.py`, `improved_alpha_expression_miner.py`, `machine_lib.py` 41KB),
+`tradr-platform` (84), `mini-quant` (9), `paper-zh` (13 — the **Chinese** edition, L1.34 class 5),
+**10 of 11 paper chapters**, and the **192-fork layer**. 22MB total, of which ~5,215 blobs are a
+vendored Dify copy (noise, named so nobody re-triages it).
+
+**VIDEO: 0 fetched, 0 locked** — no video route attempted this run; s3's finding stands unchanged
+(the BRAIN lecture corpus is **SOURCE-walled at 93.75%**, not tool-blocked; the text-mirror route
+remains untried and is carried below).
+
+**VENUE DISCOVERY (standing obligation):** *Financial Innovation* (`jfin-swufe.springeropen.com`,
+SpringerOpen, fully OA/CC BY) — an open-access journal actively publishing crypto ML with costs
+included; a recurring publisher worth a standing sweep rather than a one-off read. Reached by walking
+repo → paper → bibliography, exactly the recursive-expansion chain.
+
+**FAMILIES THIS RUN:** AI-quant structures / factor-mining frameworks (L1.34 class 4 — the dominant
+family), academic literature + negative-results layer (class 8), prediction markets (null, duplicate).
+Non-English: `paper-zh` **identified and named, not yet read** — carried below.
+
+### NEXT UN-EXHAUSTED GROUND, in order, for session 5 (L1.35/L1.40 — named before closing)
+
+1. **`crypto-trading-strategies.tex` L770–849, the Low-Liquidity Lottery / scam-token section** —
+   §42 ground, the chapter's most likely mechanism vein, and the one section a crowd skips.
+2. **`stone_age/python/pre_consultant/`** — `alpha_generator.py` (33KB),
+   `improved_alpha_expression_miner.py`, `promising_alpha_miner.py`, `machine_lib.py` (41KB). The
+   **generation-1 engine is where FAILED approaches are visible** (s1 item 6, still the most
+   neglected vein and named highest-yield by two prior sessions).
+3. **`generation_two/core/fast_expr_ast.py` + `expression_compiler.py` + `template_validator.py` (94KB)** —
+   expression semantics and the *validator*, which encodes what the platform rejects.
+4. **`paper-zh/` — the Chinese edition** (L1.34 class 5). Diff EN vs ZH: translated technical corpora
+   routinely carry author asides the English edition drops.
+5. **The Grądzki CC-BY paper itself, in full** — especially its **negative results** (Transformer
+   architectures) and its CUSUM threshold calibration. OA, legally minable, cost-inclusive.
+6. **`yli188/WorldQuant_alpha101_code` (851★)** — still the most-starred artifact on this ground and
+   **still unopened by any session**. No licence ⇒ mechanism-only. Carried from s3 unstarted.
+7. **The 192-fork layer + `jglazar/notes` tree walk via API** — carried from s2/s3, both unresolved.
+
+**A NULL WAS NOT AVAILABLE THIS RUN and none is claimed.** Ground is wider open than when the session
+started: one 22MB repo triaged, ~1.3% of its non-vendored blobs read, a CC-BY primary source opened,
+the Chinese edition identified, and the fork layer untouched. **Seat-exhaustion is false here as
+everywhere.**

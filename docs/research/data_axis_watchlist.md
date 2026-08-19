@@ -3231,3 +3231,49 @@ recall-UNMEASURED — the 881 untagged rows may hide relevant events (they are k
 so R0193's build can re-tag from titles at zero fetch cost); (4) no mechanism is claimed — this is
 timeline material for an existing ledgered build, not an axis; the regional-premium family stays
 graveyarded.
+
+### 37. Wallet-resolved signed DEX trade tape (OWNED, LIVE, and absent from every catalogue the miners read) — grade: **owned-and-measured; UNMINED — this card exists to make it visible** [§33: wired -> data_axis_watchlist.md card 37 + R0637]
+
+**THIS IS NOT A SOURCE TO ACQUIRE. THE DESK ALREADY OWNS IT AND HAS NEVER READ IT.**
+`scripts/collect_geckoterminal_trades.py` has been writing `data/geckoterminal_trades.jsonl` since
+2026-08-12 (R0291). The reason nobody mined it is partly that **nobody could see it**: it appears in
+neither `data/data_universe_map.json` nor this watchlist — the two catalogues the miners and the §33
+generation priors actually read. A collector registered in governance but absent from the map is
+invisible to exactly the organs whose job is to mine it. **Carding it here is the visibility half of
+the fix**; the reader half is R0637.
+
+**MEASURED FIRST-HAND 2026-08-19 by parsing the file (not from the collector's claims):**
+- **322,187 rows, 0 malformed.** Venue-clock span **2026-08-11T01:53Z → 2026-08-19T07:45Z** (live
+  today; ~8 days deep and accruing).
+- **68 distinct pools**; networks solana 249,338 / eth 72,849.
+- **93,241 distinct wallets** (`tx_from`).
+- Signed: buy 169,555 / sell 152,632 (52.6% buy).
+- `volume_usd`: median **$18.82**, mean **$1,336.47** (mean/median ≈ **71×**), max $2,702,801.
+- **187 pool-day cells, 181 of them with n ≥ 30 trades**; median cell n = **804**, max 7,245.
+
+**WHY IT IS A VECTOR FIELD AND WHAT THAT UNLOCKS (see OP-093).** Each pool-day is a *vector* of
+individual signed trades — the exact data shape WorldQuant BRAIN's 18 `vec_*`/`reduce_*` operators
+exist for, and the desk implements **0 of those 18**. Demonstrated non-degenerate on the richest
+cell (n=7,245): trade-size **skew = 11.19**, p90/p50 = **17.6×**. *A daily volume total cannot
+contain that number* — the size distribution is precisely the information the scalar collapse
+destroys. Candidate reductions, all computable today with zero new collection:
+`reduce_skewness/kurtosis(volume_usd)` (whale-vs-retail mix), `reduce_count(volume_usd, k)`
+(large-trade count), `reduce_percentage(·, 0.5)` (median trade size), signed variants keyed on
+`kind` (buy/sell pressure asymmetry), and — with **no equity analogue whatsoever** —
+`tx_from`-based unique-wallet count, repeat-wallet concentration and new-vs-returning wallet mix.
+
+**CLOCK PROVENANCE IS ALREADY CORRECT (L1.46):** every row carries `t_venue` (chain stamp) beside
+`t` with `"c":"recv"` — dual clocks declared at the row level. This tape is *not* part of the 82%
+undeclared-clock corpus.
+
+**WHAT THIS CARD DOES NOT CLAIM.** 8 days and 181 usable pool-day cells is a **short, narrow panel**.
+Under L1.62 the cross-sectional denominator here is unmeasured, so **no screen may call itself
+powered on it and nothing here is a candidate.** This is an axis to mine *as it accrues*, not an
+edge. The urgency is not statistical, it is custodial: the collector's own registration records
+venue retention at **~300 trades/pool**, so capture is **forward-only-unrecoverable** — every day
+this sits unread is a day of an irreplaceable series that is mined by nobody and cannot be re-earned
+(L1.28a; §33 "unmined proprietary data is edge already paid for and declined").
+
+**CROSS-REFS:** R0637 (write-only tape + invisible to `moat_utilisation`, whose inventory globs only
+`data/moat/<venue>/<SYMBOL>/*.jsonl.gz` and therefore counts this file in neither numerator nor
+denominator); OP-093 (the reduce/vector shape); R0291 (the collector's origin).
