@@ -2577,3 +2577,26 @@ Reply-layer corroborations banked (no re-open, classes closed): Amihud illiquidi
 "real but shorted positions bleed on borrow costs" (nishtyack, independent) = third named kill
 channel on `illiquidity_premium`/`lit_trading_frictions_family`; "high in-sample Sharpe = search
 for error" (same commenter) = the desk's 9.84-Sharpe lesson restated from the wild.
+
+---
+
+## 2026-08-19 (RU frontier miner s3 continuation) — the video-transcript ROUTE FAMILY is dying, and the tool reports its death as a per-video failure
+
+SOURCE: this run's transcript attempts (@crypto_maniacdt corpus, 3 videos, 10 routes) + OP-089.
+MEASURED: of the Piped instances scripts/fetch_video_transcript.py rotates, one now serves a
+literal "Piped has shutdown" notice as an 18-byte HTTP 200 (api.piped.projectsegfau.lt), two are
+502, two DNS-dead, two 301; the ONE live relay (api.piped.private.coffee) works but IP-walls
+per-video (`SignInConfirmNotBotException`). The Invidious family partially survives: inv.nadeko.net
+serves caption LISTS (free existence proofs) with content endpoints disabled; invidious.nerdvpn.de
+is 401. Net: the desk's only video capability degrades toward a single walled relay, and the
+wrapper's last-error-only reporting (R0592) makes every one of these distinct states read as the
+same dead-domain DNS line.
+PROPOSED (engine change, owned by desk brain — this seat is research-frozen): in
+scripts/fetch_video_transcript.py (1) add an Invidious-API fallback tier (streams→captions) with a
+per-instance capability probe (nadeko-style partial instances serve lists but not content — probe
+BOTH); (2) report ALL per-instance errors, not the last (R0592's fix, same file); (3) surface
+`PrivateContentException` as a terminal PRIVATE verdict distinct from WALLED — it feeds the OP-089
+triage and keeps unbuyable rows out of video_locked_log's purchase gate. CONSUMER: every
+video-mandated seat (7 regions + WorldQuant corpus mandate). EVIDENCE THIS PAYS NOW: a proven RU
+caption track sat one disabled endpoint away this run; the EN/AR locked-log rows from 08-13 hit the
+same wall class through the same rotting route.

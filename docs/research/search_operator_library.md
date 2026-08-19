@@ -2819,3 +2819,31 @@ right place to START cross-post hunts. Per-region adaptations (charter §16): KR
 비밀글 and 등업 (level-up) walls; RU forums with [hide]/спасибо-unlock plugins (forum.bits.media
 lineage); EN-era vBulletin/XenForo with "like/thanks to see" plugins. Same tells, same metadata
 inversion, same §13 line everywhere.
+
+## OP-089 — A FAILED VIDEO FETCH IS FOUR DIFFERENT FACTS: TRIAGE PRIVATE / IP-WALL / DEAD ROUTE / DISABLED ENDPOINT BEFORE LOGGING ANYTHING (RU frontier miner s3, 2026-08-19)
+
+The wrapper (scripts/fetch_video_transcript.py) prints ONE error for all four states — and only
+one of the four is the class the paid-unlock gate (GAP #26) exists for. Query a live relay
+directly (`api.piped.private.coffee/streams/<id>`, per the BR-s3 finding) and read the RELAYED
+exception, not the wrapper's summary:
+  1. `PrivateContentException` = content WITHDRAWN by the author. UNBUYABLE — a paid proxy cannot
+     unlock a private video, so this must NEVER be logged to video_locked_log (it would corrupt
+     the purchase-evidence gate with rows no purchase can satisfy). It IS its own finding:
+     back-catalog privatization measures a corpus rotating free content into a paid funnel —
+     mine such channels PROMPTLY on discovery, the back-catalog is unstable.
+  2. `SignInConfirmNotBotException` = per-IP anonymous-access wall. THE locked class; loggable.
+  3. A hollow 200 whose BODY is a service-shutdown notice ("Piped has shutdown", 18 bytes,
+     api.piped.projectsegfau.lt) = the ROUTE FAMILY is dying, not the video. 6th member of the
+     false-null family (OP-033 encoding / OP-034 compression / OP-068 SPA shell / OP-069
+     transport / OP-088 content gate / OP-089 route obituary) — parse the body for shutdown
+     markers before concluding anything about the CONTENT.
+  4. An Invidious instance with content endpoints disabled still serves the caption LIST
+     (`/api/v1/captions/<id>` on inv.nadeko.net) = a free EXISTENCE PROOF that a transcript
+     track exists. Cite it in the locked-log row: the purchase gate should know the thing it
+     would buy provably exists.
+MEASURED 2026-08-19 (@crypto_maniacdt corpus): 3 videos → 2 PRIVATE + 1 IP-walled with a PROVEN
+RU auto-caption track; 10 routes tried (1 live relay, 2× 502, 2× 301, 2 DNS-dead, 1 shutdown
+notice, 1 content-disabled, 1 401). Per-region adaptations (charter §16): Bilibili 私享/充电专属
+= private/member-gated (triage the same way before logging); VK Video and Rutube walls are
+region-reversed (open from RU IPs, walled from abroad) so a wall verdict must name the PROBE
+ORIGIN; JP/KR: ニコニコ有料/멤버십 gates are PAID classes — loggable, they are what GAP #26 buys.

@@ -1379,7 +1379,26 @@ ITEMS THIS RUN (bounded scope, depth-maxed; drawn from the s2 NEXT RUN queue in 
      docs/research/weak_signal_registry.md WS-010 obs 3 + data/btcsec_trading_topics.json]
   3. (stretch) @crypto_maniacdt YouTube transcripts via fetch_video_transcript.py — pair video
      with repo, hunt stated-but-uncoded failures; explicit video line owed either way.
-     STATUS: taken.
+     STATUS: DONE (honest partial — transcripts unreachable; pairing completed at the CODE
+     layer). VIDEO LINE: 3 attempted, 0 fetched, 1 LOCKED (logged: OWsum6xcNvM, with a PROVEN
+     RU auto-caption track via nadeko's list endpoint), 2 PRIVATE (ilSpSqKWkRg, LO2OpaMPZSI —
+     withdrawn, NOT locked-class, deliberately kept out of the purchase gate per OP-089).
+     FINDINGS: (a) s2's "1:1 video↔repo" ground has DECAYED in 7 days — 2 of 3 README-linked
+     walkthroughs privatized; the corpus rotates free content into its BingX-referral/products
+     funnel (author is a BingX partner; the READMEs are referral funnels) ⇒ mine such channels
+     PROMPTLY on discovery, back-catalogs are unstable. (b) The locked video's companion code
+     (habr_files) read instead: backtest models taker fees ×2 ×leverage + ATR-fraction slippage
+     (above retail average) but ZERO funding accounting on a perp hold system (WS-006 class:
+     absence of funding is the finding), and backtest↔live DIVERGE — RSI period 24 vs 96,
+     ATR-multiple exits vs fixed 0.4% stop, Binance-data/BingX-execution venue split — the
+     published backtest does not describe the live system (OP-055 family at a new boundary:
+     backtest-file vs live-file). (c) OP-089 minted: 4-way failed-fetch triage
+     (PRIVATE/IP-wall/route-obituary/disabled-endpoint); the private≠walled distinction
+     protects GAP #26's purchase-evidence gate; false-null family now 6 members. (d) The Piped
+     route family is DYING ("Piped has shutdown" served as a hollow 200) — Invidious-fallback
+     engine fix routed to improvement_inbox with consumers named (R0592-adjacent).
+     [§33: wired -> docs/research/video_locked_log.md + docs/research/improvement_inbox.md
+     2026-08-19 entry + OP-089 in search_operator_library.md]
 NEXT-RUN QUEUE IF THIS RUN DIES EARLY: Yandex Dzen first probe (robots + census); MMGP
 era-archaeology; habr full sweep via master OP-039; smart-lab 1338486 (RF-onshore crypto
 instruments seam).
