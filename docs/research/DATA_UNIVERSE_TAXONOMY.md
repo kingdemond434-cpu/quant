@@ -12,12 +12,17 @@ pipeline. A domain with no measured axis is a named gap, not background.
 Re-swept weekly at minimum (this file's own cadence, enforced by §36); the DIFF runs daily inside
 `breadth_expander` / `run_cro` whose dossiers carry this file in full.
 
-## Where each domain stands today (2026-08-04)
+## Where each domain stands today (2026-08-04; coverage column re-swept 2026-08-19)
+
+_Re-sweep 2026-08-19 (weekly §36 cadence): every changed cell below was verified against the live
+tree this session, not restated from memory — recorders: 3 systemd units active, 1,073 tape files
+written since the 08-18 19:00 restart; disk: 13.7d to recorder pause (R0635, principal); bitbank:
+data/bitbank_1day.jsonl on disk, 100,885 rows. Unchanged rows carry their 08-04 evidence._
 
 | # | domain | desk coverage today | binding constraint |
 |---|--------|--------------------|--------------------|
-| 1 | Price action / market structure | OHLCV panels (OKX 6.7y, Upbit, HL); ICT/SMC detectors land with this merge (`libs/ict`) | screened, no survivor yet |
-| 2 | Market microstructure | **moat L2/trades recorder — the 5130× owned asset** | recorders need VPS units (operator) |
+| 1 | Price action / market structure | OHLCV panels (OKX 6.7y, Upbit, HL, **bitbank 9.5y daily × 62 JP pairs — wired 08-19**); ICT/SMC detectors land with this merge (`libs/ict`) | screened, no survivor yet |
+| 2 | Market microstructure | **moat L2/trades recorder — the 5130× owned asset**; recorders RUNNING (restarted 08-18 19:00 after the 08-17 wipe; 3 units active, tape +1.05GB/day) | **disk: 13.7d to recorder pause — R0635 buy-storage, principal** |
 | 3 | Order flow | moat trades tape; CVD/footprint NOT yet derived | feature build on owned tape |
 | 4 | Volume profile / AMT | not built (playbook tier-list hypothesis, registered) | needs L2 history → moat tape |
 | 5 | On-chain | unlock screen, stablecoin issuance axis on watchlist | collector build |
@@ -25,7 +30,7 @@ Re-swept weekly at minimum (this file's own cadence, enforced by §36); the DIFF
 | 7 | Cross-asset | crossasset shadow (gold/DXY/NQ/SPX), kimchi | daily shadow runs |
 | 8 | Macro | WALCL clock, CPI/FOMC calendar kill-filters | event study organ |
 | 9 | Alternative data | GitHub commits axis, trends, papers pipeline | miner-fed, partial |
-| 10 | Proprietary | moat tape + execution tape + closes ledger | GROWS DAILY or `check_asymmetry_ratchet` fires |
+| 10 | Proprietary | moat tape + execution tape + closes ledger; **lineage fact: 08-17 rm -rf cost 19.46GB — pre-08-18 L2/print-flag history is unbackfillable** | GROWS DAILY (verified 08-19: 1,073 files since restart) or `check_asymmetry_ratchet` fires |
 | 11 | Asymmetric info | CN/RU/KR/JP/AR frontier miners (language asymmetry) | daily digs |
 | 12 | Statistical features | operators library (zscore/rank/…), regime GMM/HMM | live |
 | 13 | Volatility & options | deribit surface recorded on VPS; skew/gamma NOT derived | feature build |
