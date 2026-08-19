@@ -6384,7 +6384,19 @@ ITEMS THIS RUN (bounded per completion contract; worktree `qp-ar-s3`, branch
    `[§33: wired]` cards to improvement_inbox.
 2. VARA NOTICE BODIES (s2 next-ground #2; §13-clean per s2 robots read, re-verified this run):
    read enforcement + warning notice TEXTS; extract the reason taxonomy R0193's 5-class build
-   needs. STATUS: pending.
+   needs. STATUS: **CLOSED — deferral converted 5 days early, [§33: wired ->
+   data/vara_regulatory_events.json] (96KB).** Robots re-verified 200/zero-directives (now a
+   Cloudflare content-signals preamble, comments only, NO Content-signal directive lines ⇒
+   nothing restricted; dated observation). Via the Gatsby data layer (→ **OP-092**, new operator):
+   21 dated POLICY circulars 2023-02→2026-06 (Travel Rule 02-24-2026, CARF, FATF lists, AML
+   decree — the A–C-classifiable rows, hiding under News not Notices; s2 undersold this), 30 EN +
+   1 AR-only notice BODIES 2022-11→2026-07, 37 structured enforcement rows, 38 unlicensed, 77-
+   entity register (65/77 institutional-scoped; 58 BD / 14 exchange / 3 VA-derivatives). EN↔AR
+   circulars mirror 21/21 — bilingual by construction, the AR edge was ENDPOINT knowledge.
+   Major-exchange find: KuCoin & MEXC warning(2026-03-05)→fine(06-22/24) ~110d escalation pairs +
+   TON foundation fine 2025-07-24 (the only Binance-tradeable subject) → **WS-019** (n=2, KCS/MX
+   not desk-tradeable, AR-s1 power lesson binds: no card; promotion rides on R0193's cross-
+   regulator union). Card 33 grade → verified-clean/wired.
 3. ADGM ANNOUNCEMENT CORPUS (s2 next-ground #1): FIRST re-probe apex+www robots per OP-076 —
    policy read only; if §13 passes, mine the 1,109-URL dated sitemap for VASP/crypto/enforcement
    rows → R0193 second jurisdiction column. If robots stays unreadable, record UNMEASURED-POLICY

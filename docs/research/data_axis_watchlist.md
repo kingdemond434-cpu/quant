@@ -2952,7 +2952,7 @@ By **type**: MATRIX 2,828 · **VECTOR 1,387** · **GROUP 142** · UNIVERSE 6 · 
 
 **RESIDUAL GAP, graded:** the 4,367-field *contents* (2.8MB JSON) were **not** pulled — no desk use for equity field IDs, and bulk-copying an unlicensed artifact is not defensible under §13. The category/type counts are the whole transferable payload. **Re-entry condition (L1.16a):** if the desk ever builds a fundamentals-shaped crypto surface, the GROUP-typed field list becomes worth enumerating as a taxonomy menu.
 
-### 33. VARA (Dubai) crypto regulatory-event stream — dated licence register + named unlicensed-VASP blacklist + enforcement notices — grade: **verified-reachable, PARTIAL input to the R0193 owed build (one jurisdiction, not the panel)** [§33: deferred(2026-08-24) tier:3]
+### 33. VARA (Dubai) crypto regulatory-event stream — dated licence register + named unlicensed-VASP blacklist + enforcement notices — grade: **verified-clean — FULL CORPUS EXTRACTED 2026-08-19 (AR s3, deferral worked 5 days early because R0193 is due 08-24): 21 dated policy circulars 2023-02→2026-06 + 30 EN / 1 AR-only notice BODIES 2022-11→2026-07 + 37 enforcement rows + 38 unlicensed + 77-entity register w/ per-entity activities & institutional scope, all machine-readable, endpoints + clock declaration in the artifact** [§33: wired -> data/vara_regulatory_events.json]
 
 **WHY THIS IS CARDED AT ALL, AND IT IS NOT "a regulator publishes things".** Card 24
 (`Regulatory-event timeline, 5-class taxonomy, Auer–Claessens`) is graded *"event gate EXISTS; the
@@ -2992,6 +2992,23 @@ not inherit my enthusiasm:**
 **DISPOSITION:** `deferred(2026-08-24)` — deliberately aligned to **R0193's own due date**, because this
 is an *input* to that build and dating it separately would just create a second clock for one piece of
 work. This is alignment, not a snooze: the consuming recommendation is live, dated and owned.
+
+**2026-08-19 (AR s3) — DEFERRAL CONVERTED 5 DAYS EARLY; the corpus is now ON DISK for R0193:**
+`data/vara_regulatory_events.json` (96KB) holds the FULL machine-readable corpus, pulled from the
+Gatsby data layer (`/page-data/<path>/page-data.json` + `/page-data/sq/d/<hash>.json` — see the
+`gatsby-page-data` operator added to the operator library this run; the SPA renders these same
+payloads, nothing is routed around): **21 dated policy circulars** 2023-02-10 → 2026-06-01 (Travel
+Rule 2026-02-24, CARF consultation 2025-10-10, FATF-list updates, AML decree gap-assessment, licence-
+code creations — the POLICY-level rows the A–C classes actually want, which the s2 read undersold
+because the circulars hide under News, not Notices), **30 EN + 1 AR-only notice bodies** 2022-11-22 →
+2026-07-24 (incl. FTX MVP suspension, KuCoin + MEXC warning→fine pairs, CoinMENA + FUZE licensed-
+entity fines), **37 enforcement actions** (structured entity/date/category/detail/types — no PDF
+parsing needed), **38 unlicensed-VASP rows**, **77-entity register summary** (58 broker-dealer / 14
+exchange / 3 VA-derivatives; **65/77 institutional-scoped** — Dubai's licensed VA market is
+institutional by construction). EN↔AR circular date sets are IDENTICAL (21/21): the corpus is
+bilingual-by-construction, so the AR seat's edge here was structural (endpoint knowledge), not
+translation. Clock declaration inside the artifact (all dates = publisher's CMS stamps; register
+`createDate` is a listed-by proxy, NOT issue date). Honest limits 1–4 above STAND unchanged.
 
 **ALSO ENUMERATED, GRADED, AND DELIBERATELY NOT CARDED** (the desk's measured bottleneck is
 verification, not cataloguing — a source earns a card by serving a named need):

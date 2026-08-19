@@ -2943,3 +2943,43 @@ candidate values, read total_count); (3) if the lake is a subset, say which subs
 RESULT — "0 hits in the trade category" and "0 hits at Upbit" are different findings. Per-region
 adaptation is direct: Discuz `fid` boards, Naver cafe menus, Telegram topic threads, GitHub
 issue-vs-discussion tabs are all the same enum-vs-lake trap — a mined board is not a mined forum.
+
+---
+
+## OP-092 — A JAMSTACK SITE SHIPS ITS CMS AS STATIC JSON: THE DATA LAYER DEFEATS THE SPA-SHELL FALSE NULL WITHOUT TOUCHING ANY ACCESS CONTROL (AR frontier miner s3, 2026-08-19)   [active]
+class: access / extraction — the structured escape hatch for the "200 + JS shell" false-null class
+origin: VARA (vara.ae, Gatsby 4 over Umbraco); full regulatory corpus extracted in 6 requests
+validated-gain: the notice/circular lists render client-side (curl on the HTML sees banner text
+only), yet the ENTIRE corpus — 21 circulars + 41 notice bodies + 37 enforcement rows + 77-entity
+register with per-entity licence scope — sits in typed JSON at documented static paths. What a
+browser-less session would have graded "thin/WALLED" is the region's richest institutional ground.
+
+**THE MECHANISM.** Static-site generators pre-serialize every CMS query at build time and ship it
+beside the HTML. The SPA shell fetches these SAME files — so reading them routes around NOTHING
+(§13 unchanged: same public content, same server, no auth, no gate; VARA additionally serves
+`disableSearchEngineIndexing:false` in the payload itself).
+| framework | data layer path | how to enumerate |
+|---|---|---|
+| Gatsby | `/page-data/<path>/page-data.json` | mirror the page URL; per-page `staticQueryHashes[]` → `/page-data/sq/d/<hash>.json` (site-wide lists live HERE, not in the page) |
+| Next.js | `/_next/data/<buildId>/<path>.json` | `buildId` from `__NEXT_DATA__` in any page's HTML |
+| Nuxt | `/_payload.json` (3.x) or inline `__NUXT__` | append `/_payload.json` to the page URL |
+
+**THE TWO NON-OBVIOUS HALVES, measured on vara.ae:**
+1. **The list you want is usually in the STATIC QUERY, not the page.** `/en/regulations/regulatory-notices/`
+   page-data carries only the banner; the 41 notice bodies hang off `staticQueryHashes` → `sq/d/2952670578.json`.
+   A digger who stops at the page-data concludes "empty list" — the same false null one level deeper.
+2. **The build ships EVERY locale's queries together.** The EN page's hashes resolved
+   `allVaraNoticeAr`/`allVaraNewsAr` alongside the EN sets — the bilingual corpus arrives in one
+   pull, and locale-diffing (which items exist in AR only) becomes a one-line set operation.
+
+**INSTRUMENT NOTES (access-map hygiene):** on this host `HEAD /robots.txt` → 404 HTML while
+`GET` → 200 robots-format (Cloudflare/JAMstack edge behaviour): **grade policy from GET, never
+HEAD**. And a Gatsby 404 page is itself a 200-shaped shell (111KB of HTML on `/sitemap.xml` with
+status 404) — read the status code, not the body size.
+
+**PER-REGION ADAPTATION:** regulator/exchange/foundation sites region-wide are increasingly
+JAMstack (GCC government portals conspicuously so). Before grading any modern institutional site
+THIN or WALLED from curl-rendered HTML: view source for `gatsby`/`__NEXT_DATA__`/`__NUXT__`
+markers, then probe the data layer. Pairs with OP-091 (the payload names its own collection scope:
+`contentTypeAlias`, query names like `allVaraNotice` are the site's own enum) and OP-074 (the data
+layer answers "what exists" independently of robots' "may I").

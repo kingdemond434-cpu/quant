@@ -555,3 +555,21 @@ SIGN be regime-dependent rather than importing "airdrops dump" as a constant —
 family's conditioning lesson (R0289-class false-null risk) in the airdrop corner.
 promotion-check: adjacent to the desk's unlock/listing families; consumer is whichever seat next
 screens airdrop-shaped events.
+
+### WS-019 VARA public warning → Notice of Fines against MAJOR exchanges arrives on a measurable ~110-day lag — but the tradeable-subject set is nearly empty   [observations: 2]
+first-seen: 2026-08-19 AR frontier miner s3, from the full VARA notice-body corpus
+(`data/vara_regulatory_events.json`). Both major-exchange enforcement sequences in the corpus are
+dated end-to-end: KuCoin (Peken Global) warning 2026-03-05 → Notice of Fines 2026-06-24 (111d);
+MEXC (MX Global) warning 2026-03-05 → Notice of Fines 2026-06-22 (109d). The warning is public,
+machine-readable on arrival, and PRECEDES the fine by a quarter — a genuine lead-lag structure in
+a regulator's own publication stream.
+direction: n=2, and the instrument set is the constraint: KCS and MX are not Binance-listed; the
+one enforcement subject with a Binance perp is TON (foundation fined 2025-07-24, Marketing
+Regulations, n=1). The AR s1 lesson binds: an event family at ~1-2 relevant events/yr is
+PERMANENTLY underpowered as an annual event study — retire the DESIGN, not just the instance. This
+stays a weak signal unless the CROSS-REGULATOR union (VARA + FCA + MAS + SEC + BaFin warning→
+enforcement pairs on entities with liquid tokens) accumulates a poolable cross-sectional sample —
+that union is exactly what R0193's timeline build produces, so the promotion check rides on R0193.
+promotion-check: after R0193 lands, count warning→enforcement pairs with a Binance-listed
+instrument across ALL jurisdiction columns; if pooled n reaches double digits, screen via the
+event-study gate (libs/validation/event_study.py), pre-registered, never the continuous gauntlet.
