@@ -9,7 +9,7 @@ can only expand WITHIN our conceptual boundaries -- they inherit our blind spots
 which is precisely the failure L6 was created to prevent, reintroduced one level up.
 
 This role is given NOTHING. No map, no lenses, no graveyard, no mechanism list. Just: "you are a
-quant researcher entering crypto today with public data -- what would you study?" Then the answer
+quant researcher entering the MT5/Fusion markets today with public data -- what would you study?" Then the answer
 is DIFFED against what the desk actually covers.
 
     what it names AND we cover      -> confirms the map
@@ -57,7 +57,8 @@ SYSTEM = (
     # scored defect rather than a neutral default.
     OBJECTIVE_PREAMBLE + "\n"
     "You are a quantitative researcher who has just been given a budget and told to find "
-    "systematic trading edges in crypto using ONLY free, public data. You have no existing "
+    "systematic trading edges in the MT5/Fusion universe -- FX, gold, metals, indices, energy, "
+    "share CFDs -- using ONLY free, public data. You have no existing "
     "infrastructure, no legacy positions and no prior assumptions. Answer from first principles."
 )
 USER = (

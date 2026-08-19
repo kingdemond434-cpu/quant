@@ -60,19 +60,19 @@ LENSES = [
     ("MODALITY GAP", "The desk mines TABULAR data well and is structurally blind to other carriers "
      "(filing 0/2, transcript 0/2, video 0/1, graph 0/4, archive 0/2 covered). Name FREE, PUBLIC "
      "sources in the UNDER-COVERED carriers specifically."),
-    ("NEGATIVE SPACE", "Name information that MATTERS for crypto price formation but leaves NO "
-     "direct public footprint -- then name the free PROXY that does leave one."),
+    ("NEGATIVE SPACE", "Name information that MATTERS for FX / metals / index / energy price "
+     "formation but leaves NO direct public footprint -- then name the free PROXY that does."),
     ("CROSS-DOMAIN IMPORT", "Name information classes that OTHER disciplines mine routinely "
-     "(epidemiology, insurance, supply chain, sports analytics, intelligence, ecology) that crypto "
-     "quant does not, and the free crypto-domain equivalent."),
+     "(epidemiology, insurance, supply chain, sports analytics, intelligence, ecology) that "
+     "macro/FX quant does not, and the free market-domain equivalent."),
     ("ADVERSARIAL", "If a top quant firm had an edge this desk lacks, what INFORMATION would it be "
      "built on? Name the public shadow that information casts."),
     ("NON-ENGLISH FRONTIER", "Name free public sources in Chinese, Korean, Japanese, Russian, "
-     "Arabic, Portuguese, Turkish or Spanish that English-language crypto research systematically "
-     "misses. Native-language platforms, not English mirrors."),
-    ("INVERSION", "Start from targets (funding regime shifts, liquidation cascades, venue "
-     "migration, liquidity droughts). For each name the IDEAL observable, then the closest FREE "
-     "public proxy."),
+     "Arabic, Portuguese, Turkish or Spanish that English-language FX / gold / macro research "
+     "systematically misses. Native-language platforms, not English mirrors."),
+    ("INVERSION", "Start from targets (carry / rate-differential shifts, stop-run cascades, "
+     "central-bank surprises, session-fix flow, liquidity droughts). For each name the IDEAL "
+     "observable, then the closest FREE public proxy."),
 ]
 
 SYSTEM = (
@@ -81,7 +81,8 @@ SYSTEM = (
     # quietly recommends the timid option because nothing told it that timidity is a
     # scored defect rather than a neutral default.
     OBJECTIVE_PREAMBLE + "\n"
-    "You are a research scout for a systematic crypto trading desk. You are a COLLEAGUE helping "
+    "You are a research scout for a systematic MT5/Fusion trading desk (FX, gold, metals, indices, "
+    "energy, share CFDs; crypto only as information). You are a COLLEAGUE helping "
     "the desk's own miners see further -- not an auditor. Your job is BREADTH: name information "
     "sources, classes and modalities the desk has probably NOT considered.\n"
     "HARD RULES:\n"
@@ -91,10 +92,11 @@ SYSTEM = (
     "daily history' is useful.\n"
     "3. Prefer sources with STRUCTURED or reconstructable history -- a signal\n"
     "needs a time series.\n"
-    "4. State the MECHANISM: why would this move crypto prices, and does it LEAD or coincide?\n"
-    "5. Do NOT suggest: Binance/OKX/Bybit/Deribit standard market data, Glassnode/CryptoQuant/"
-    "Nansen/Kaiko paid tiers, generic Twitter/Reddit sentiment, or news aggregators -- all are "
-    "already covered or already refuted.\n"
+    "4. State the MECHANISM: why would this move FX / metals / index / energy prices, and does it "
+    "LEAD or coincide?\n"
+    "5. Do NOT suggest: standard broker/exchange OHLC market data, Bloomberg/Refinitiv/CQG paid "
+    "tiers, generic Twitter/Reddit sentiment, or news aggregators -- all are already covered or "
+    "already refuted. Crypto-exchange venues are out of scope as a hunted universe.\n"
     "Output ONE source per line, format:\n"
     "NAME | URL_OR_ENDPOINT | MODALITY | MECHANISM (<=20 words) | LEADS_OR_COINCIDES"
 )
