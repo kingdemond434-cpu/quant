@@ -120,3 +120,24 @@ become the real signal.
 base allocation rather than adding a satellite to it — and it is answerable entirely from data
 already on disk. It is also the clearest instance of an unread feed (defi_lending) carrying a
 decision the desk never made.
+
+---
+
+## CLOSURE STAMP — 2026-08-19 (verified by fresh ledger read, owed-work worker)
+
+Every candidate this record rowed has reached a disposition; the inventory is drained:
+
+| row | disposition | artifact |
+|---|---|---|
+| R0115 funding-spread | implemented | `scripts/screen_funding_spread.py`, scheduled daily (cron 06:40) |
+| R0116 blocked-operator axis | screened NEGATIVE | first-class negative deliverable, ledger reason |
+| R0117 cross-venue lead-lag | rejected on measurement | refuted as framed (sampling-phase aliasing, L1.46) |
+| R0118 event density | implemented | `libs/research/event_density.py`, five shadow runners wired |
+| R0119 crowding detector | implemented | residual measure + denominator built |
+| R0120 carry-vs-lending | implemented | `scripts/screen_collateral_allocation.py`, daily (cron 06:50) |
+| R0121 funding-interval arb | implemented | `scripts/screen_funding_interval_mismatch.py`, weekly (Mon 07:25) |
+
+Un-rowed candidates were routed to `docs/research/data_axis_watchlist.md` for screen-on-discovery
+and are held by that surface's own fences. Per the EXECUTION_QUEUE precedent this file is now a
+TERMINAL record in `max_audit._TERMINAL_ARTIFACTS` (a completed pass's write-up is the record,
+not a backlog); future hunts write their own dated records.

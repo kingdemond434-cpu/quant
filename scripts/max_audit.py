@@ -3364,12 +3364,6 @@ _PRODUCER_CADENCE = {
         8.0, "L1.36/L1.31: re-graded weekly by the deep-sweep synthesis from auditor evidence, "
              "and parsed by run_max_push every refresh so every sub-T1 row enters the daily "
              "hunt -- if it goes stale, gaps stop being queued and nothing would say so"),
-    # ALPHA HUNT records are producers under L1.39: each listed candidate owes a Stage-A screen,
-    # so an un-updated hunt record means candidates are sitting un-screened -- idle findings.
-    "docs/research/alpha_hunt_20260731.md": (
-        14.0, "L1.39/L1.31: every candidate listed here owes a Stage-A screen (R0115 and R0120 "
-              "were screened same-day); a stale record means candidates are accumulating "
-              "un-screened, which is precisely the idle-findings defect"),
     # THE DISCRETIONARY DESK is a PRODUCER: it states the sleeve's measured constants (noise
     # floors, costs, the cost-adjusted breakeven hit rate) and every one is a MEASUREMENT that
     # drifts. A stale page means the desk is reasoning from last month's volatility regime and
@@ -3394,6 +3388,17 @@ _PRODUCER_CADENCE = {
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
 _TERMINAL_ARTIFACTS = {
+    "docs/research/alpha_hunt_20260731.md":
+        "FULLY CONVERTED HUNT RECORD (verified by fresh read 2026-08-19). Every rowed candidate "
+        "reached a ledger disposition: R0115/R0118/R0119/R0120/R0121 implemented (screens built "
+        "and scheduled -- funding_spread, event_density, crowding residual, collateral_allocation, "
+        "funding_interval_mismatch), R0116 screened NEGATIVE (first-class deliverable), R0117 "
+        "rejected on measurement; the un-rowed candidates were routed to the axis watchlist for "
+        "screen-on-discovery, whose own fences hold them. The L1.39 concern this cadence encoded "
+        "-- candidates accumulating un-screened -- is structurally empty for a drained record: "
+        "the EXECUTION_QUEUE precedent, a completed pass's write-up is the record, not a backlog, "
+        "and a re-work clock on a dated snapshot schedules rewrites of history. Reclassified "
+        "from _PRODUCER_CADENCE with the verification stamp appended in-doc.",
     "docs/EXECUTION_QUEUE.md":
         "COMPLETED BATCH RECORD (verified by fresh read 2026-08-18). Ranks 2-7 ALL BUILT AND "
         "WIRED 07-30 (the doc's own status table, artifacts on disk); rank 1 dispositioned the "
