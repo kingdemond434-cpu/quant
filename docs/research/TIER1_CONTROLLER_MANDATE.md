@@ -38,7 +38,7 @@ Continuously move this quant toward the highest practically attainable standard 
 - leading systematic hedge funds;
 - leading electronic market makers;
 - leading quantitative research laboratories;
-- leading crypto-native quantitative firms.
+- leading MT5/FX-native quantitative firms.
 
 Do NOT imitate their scale blindly.
 
@@ -46,7 +46,7 @@ Extract the **capability principles** relevant to our capital, markets and const
 
 The goal is:
 
-**tier-1 research quality + extreme automation + small-capital agility + crypto-native information advantages.**
+**tier-1 research quality + extreme automation + small-capital agility + MT5-native information advantages.**
 
 Exploit advantages large institutions may not efficiently monetize:
 
@@ -60,8 +60,8 @@ Exploit advantages large institutions may not efficiently monetize:
 - rapid adaptation;
 - niche data;
 - public-data fusion;
-- on-chain transparency;
-- MEV/blockspace;
+- COT positioning transparency;
+- stop-hunt/liquidity-sweep mechanics;
 - event-driven forced flows;
 - execution anomalies.
 
@@ -114,11 +114,11 @@ Score evidence-backed capability across at least:
 - multilingual coverage;
 - geographic coverage;
 - alternative data;
-- on-chain;
+- COT positioning;
 - microstructure;
 - derivatives;
 - options;
-- MEV;
+- stop-hunt/liquidity-sweep;
 - event/text;
 - proprietary states;
 - archival moat;
@@ -501,8 +501,8 @@ Continuously search public work from:
 - laboratories;
 - academic groups;
 - open-source quants;
-- crypto-native researchers;
-- MEV/searcher communities;
+- MT5/FX-native researchers;
+- prop-firm/signal-provider communities;
 - execution specialists;
 - derivatives specialists;
 - practitioners;
@@ -534,16 +534,16 @@ No current market universe defines the frontier.
 Continuously evaluate economically relevant:
 
 - spot;
-- perpetual futures;
+- forwards;
 - dated futures;
 - options;
 - volatility;
 - prediction markets;
 - DEXs;
-- lending;
-- staking;
-- stablecoins;
-- tokenized assets;
+- margin lending;
+- broker rollover;
+- central-bank reserves;
+- index-linked products;
 - ETFs;
 - equities;
 - FX;
@@ -560,13 +560,13 @@ And data universes including:
 - trades;
 - derivatives;
 - options;
-- liquidations;
-- funding;
-- on-chain;
-- wallets;
+- stop-runs;
+- swap/rollover;
+- COT;
+- broker accounts;
 - entities;
-- blockchain infrastructure;
-- MEV/mempool;
+- broker infrastructure;
+- stop-hunt/liquidity-sweep;
 - text;
 - news;
 - regulation;
@@ -607,17 +607,17 @@ Use:
 
 Build high-value combinations such as:
 
-**on-chain × derivatives**
+**COT positioning × derivatives**
 
 **options × microstructure**
 
-**MEV × CEX order flow**
+**stop-hunt mechanics × broker order flow**
 
-**macro × stablecoin state**
+**macro × central-bank reserve state**
 
 **prediction markets × event risk**
 
-**wallet behavior × exchange flow**
+**COT commercial behavior × broker order flow**
 
 **text × positioning**
 
@@ -673,7 +673,7 @@ Explicitly seek alpha large institutions cannot or will not monetize efficiently
 Search:
 
 - capacity-limited anomalies;
-- fragmented crypto markets;
+- fragmented FX/CFD markets;
 - obscure instruments;
 - regional venues;
 - niche order books;

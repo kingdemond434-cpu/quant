@@ -29,19 +29,21 @@ TESTABLE MECHANISM → COMPARE WITH CURRENT DESK → GAP → REPRODUCE → FALSI
 DESCENDANTS → CANONICAL EMPIRICAL TEST → CAPACITY → PORTFOLIO CONSEQUENCE → LIVE/SHADOW EVIDENCE →
 FAILURE/SUCCESS MEMORY → RESEARCH-PROCESS IMPROVEMENT → NEW SEARCH → REPEAT WITHOUT FIXED END.
 
-## MT5 cross-asset priority (standing addition, 2026-08-16)
+## MT5 is the desk's sole traded universe (standing order, 2026-08-19, supersedes 2026-08-16)
 
-The entire intelligence function treats the liquid MT5/broker universe as a first-class research
-frontier alongside crypto: gold and silver, major and cross FX, equity indices, energy and other
-lawfully available broker instruments. Every hunter and miner must search for transferable
-mechanisms, data, code, failed strategies, costs, session effects, macro/positioning information,
-cross-asset structure and execution evidence that can be tested on this universe. Useful crypto
-mechanisms must be tested for MT5 portability, and useful MT5 mechanisms must be tested for crypto
-portability when the market structure permits it.
+The entire intelligence function hunts the liquid MT5/Fusion universe ONLY: gold and silver, major
+and cross FX, equity indices, energy and other lawfully available broker instruments.
+Crypto-exchange venues (Binance, Bybit, OKX, Hyperliquid and kin) are NOT a hunted universe --
+never a target for a new hunter, miner, screen or capital allocation. Crypto data may be read
+ONLY as an information input when it demonstrably predicts an MT5 instrument (e.g. a Coinbase
+premium informing a macro-risk read on gold); it is never itself the subject of the hunt. Every
+hunter and miner must search for transferable mechanisms, data, code, failed strategies, costs,
+session effects, macro/positioning information, cross-asset structure and execution evidence that
+can be tested on the MT5 universe.
 
-This is an opportunity priority, not a hard-coded capital split and not authority to manufacture
-an all-MT5 conclusion. Allocation between MT5, crypto and new universes remains dynamic under
-validated marginal E[log W], independence, capacity, lawful access, costs and survival. Research
+This is not a capital split to be balanced -- it is the desk's sole traded universe. Allocation
+happens WITHIN MT5 (across FX, metals, indices, energy, commodities, share CFDs) under validated
+marginal E[log W], independence, capacity, lawful access, costs and survival. Research
 uses demo or server-pinned investor/read-only accounts only. External claims and high leverage
 never bypass the canonical empirical, shadow, portfolio, promotion or deterministic risk gates.
 
@@ -343,7 +345,7 @@ capacity, capital displacement and marginal E[log W]; maximise the economically 
 population, not raw survivor count. Build common-cause relationships through shared data, venue,
 factor, participant, regime, liquidity, execution, infrastructure and model family — historical
 correlation alone is not independence. Stress: spread explosion, liquidity collapse, funding
-reversal, correlation convergence, venue failure, stablecoin stress, API outage, execution
+reversal, correlation convergence, broker/counterparty failure, API outage, execution
 latency, gaps, liquidation cascades. Ask DOES THE DESK REMAIN ALIVE?
 
 Every capability adoption preserves source provenance, hypothesis lineage, experiment lineage,
@@ -459,8 +461,8 @@ is to independently reproduce every **lawfully observable superior economic func
 
 ## The twelve layers
 
-1. **WORLD STATE** — PIT state across all authorized data: prices, books, funding, basis, OI,
-   liquidations, options, ETF flows, stablecoin flows, on-chain, tokenomics, macro, rates,
+1. **WORLD STATE** — PIT state across all authorized data: prices, books, swap/rollover, futures basis, COT
+   open interest, options, index/ETF flows, central-bank operations, macro, rates,
    liquidity, regulation, news, events, market structure, and our own executions.
 2. **CAUSAL WORLD MODEL** — PARTICIPANT → INCENTIVE → CONSTRAINT → ACTION/FLOW → MARKET
    TRANSMISSION → ASSET EFFECT → EXPECTED HORIZON → FALSIFICATION CONDITION.
@@ -632,8 +634,8 @@ capital. Always benchmark locally.
 **FRONTIER LEAPFROG.** Move GENERAL SCIENCE/AI FRONTIER → OUR QUANT directly where lawful, rather
 than waiting for FRONTIER → HEDGE FUND → PUBLIC POST → US. Remove the middleman. And periodically
 ask what a solo digital-native artificial investor would do DIFFERENTLY because it lacks a large
-firm's constraints: 24/7 crypto, micro-capacity edges, faster experimentation, no bureaucracy,
-on-chain transparency, rapid model switching. Compete where small size helps.
+firm's constraints: thin-session/exotic-pair micro-capacity edges, faster experimentation,
+no bureaucracy, rapid model switching. Compete where small size helps.
 
 ## Scorecard for Part II
 
@@ -668,8 +670,8 @@ future organ that reads an external source. Added 2026-08-14 at the principal's 
 
 ## III.0 THE OBJECTIVE, AND THE SEVEN THINGS IT IS NOT
 
-Continuously mine the highest-value public and AUTHORIZED quantitative, crypto, execution,
-microstructure, on-chain, exchange/API, research and trading communities worldwide, and convert
+Continuously mine the highest-value public and AUTHORIZED quantitative, MT5/FX/macro, execution,
+microstructure, broker/API, research and trading communities worldwide, and convert
 useful external information into NOVEL, TESTABLE, ECONOMICALLY RELEVANT proprietary research
 assets.
 
@@ -685,13 +687,13 @@ sentence of Part III and the one every other clause serves.
 
 ## III.1 SOURCE REGISTRY (SEED, NEVER COMPLETE)
 
-Tier A quant/research/infrastructure: QuantConnect, Hummingbot, Freqtrade, Jesse,
-NautilusTrader, Dune, Nansen, VectorBT, Dimitri Bianco's quant community, r/algotrading, FXGears.
+Tier A quant/research/infrastructure: QuantConnect, VectorBT, r/algotrading, r/Forex, FXGears,
+MQL5.community, EarnForex, ForexFactory forum, BabyPips.
 
-Tier A exchange/API: Binance API (English), Binance API (Chinese), OKX API, FMZ 发明者量化.
+Tier A broker/API: MetaTrader5 Python API, Fusion Markets API docs, MQL5 Market (EAs/signals), FMZ 发明者量化 (MT5-facing).
 
-Tier A structured / on-chain / event: CryptoQuant Alert, CryptoQuant Research, Glassnode, Nansen,
-Dune, Wu Blockchain (EN), 吴说区块链, BlockBeats, TechFlow.
+Tier A structured / macro / positioning: CFTC COT (weekly, free), FRED, EIA petroleum status,
+central-bank statement archives, 金十数据 (Jin10, EN+CN), 华尔街见闻 (Wallstreetcn), 汇通网 (FX678).
 
 NEVER ASSUME THIS REGISTRY IS COMPLETE. Continuously discover further English AND Chinese
 communities with higher information density than the current set.
@@ -709,17 +711,17 @@ provenance was not recorded is not evidence, because nobody can go back and chec
 
 ## III.3 WHAT TO MINE
 
-**A. ALPHA MECHANISMS.** Funding dislocations; basis/carry; liquidation cascades; open-interest
-change; order-book imbalance; market-maker inventory effects; latency; cross-exchange price
-discovery; lead/lag; forced flows; stablecoin flows; ETF/fund flows; whale and entity flows;
-wallet clustering; DEX/CEX migration; bridge activity; staking/unstaking; unlock mechanics; token
-emissions; borrow rates; lending utilisation; options skew; volatility term structure;
-cross-sectional momentum and reversal; listing/delisting effects; exchange-specific behaviour;
+**A. ALPHA MECHANISMS.** Rate/carry dislocations; futures basis; stop-run cascades; COT open-interest
+change; order-book imbalance; market-maker inventory effects; latency; cross-broker price
+discovery; lead/lag; forced flows; index/ETF fund flows; producer and institutional entity flows;
+COT positioning shifts; benchmark-fix flow; session/rollover mechanics; futures roll; contract
+expiry; central-bank operations; options skew; volatility term structure;
+cross-sectional momentum and reversal; delisting/contract-spec-change effects; broker-specific behaviour;
 regime transitions; event-driven mechanisms.
 
-**B. NEW DATA ASSETS.** APIs; WebSocket feeds; datasets; repositories; Dune tables; wallet labels;
-exchange endpoints; historical archives; order-book sources; liquidation feeds; funding histories;
-mempool data; DEX pools; bridges; stablecoin datasets; protocol state; alternative data.
+**B. NEW DATA ASSETS.** APIs; WebSocket feeds; datasets; repositories; MQL5/prop-firm signal tables;
+broker endpoints; historical archives; order-book sources; COT feeds; swap/rollover histories;
+economic-calendar data; central-bank statements; producer hedging datasets; contract-spec state; alternative data.
 
 **C. EXECUTION ALPHA** — the category this desk is structurally weakest at and therefore the one
 with the highest marginal value. Undocumented API behaviour; rate-limit behaviour; WebSocket drop
@@ -743,8 +745,8 @@ mechanism (L1.17).
 
 A community observation is NEVER accepted. It is CONVERTED.
 
-  OBSERVED (Hummingbot): "Several market makers report post-only cancellations clustering during
-  specific Binance volatility states."
+  OBSERVED (a retail EA forum): "Several traders report stop-hunt clustering during
+  specific London-fix volatility states."
 
   DO NOT ACCEPT. CONVERT TO --
 
@@ -763,13 +765,14 @@ CHINESE SOURCES (FMZ and peers): translate carefully, preserve the original text
 ECONOMIC MECHANISM. NEVER COPY PARAMETERS -- a parameter is the part of someone else's work that
 is overfit to their data.
 
-ON-CHAIN DASHBOARDS (Dune/Nansen/CryptoQuant/Glassnode): mine new REPRESENTATIONS, not chart
-screenshots. Exchange inflow + stablecoin mint + smart-money accumulation + funding inversion may
-imply a conditional liquidity-state representation; test the components individually AND jointly.
+POSITIONING DASHBOARDS (CFTC COT, Myfxbook sentiment, broker order-book widgets): mine new REPRESENTATIONS, not chart
+screenshots. COT commercial extreme + rate-differential shift + central-bank reserve change +
+session-fix flow may imply a conditional liquidity-state representation; test the components
+individually AND jointly.
 
-ASIA EVENT SENSORS (Wu Blockchain, BlockBeats, TechFlow): mine exchange changes, regional
-regulation, listing rumours later confirmed, market-maker developments, OTC and liquidity changes,
-stablecoin developments, treasury movements, unlocks, regional capital flows. **MEASURE THE LEAD
+ASIA EVENT SENSORS (Jin10, Wallstreetcn, FX678): mine central-bank changes, regional
+regulation, rate-decision rumours later confirmed, market-maker developments, session liquidity
+changes, macro-data leaks, reserve movements, regional capital flows. **MEASURE THE LEAD
 TIME AGAINST ENGLISH SOURCES. If a Chinese source consistently leads by X minutes or hours, THE
 SOURCE ITSELF IS A MEASURABLE DATA ASSET** and is registered as one.
 
@@ -874,8 +877,8 @@ ONE VALIDATED MECHANISM IS WORTH MORE THAN ONE MILLION COLLECTED MESSAGES.
 
 Added 2026-08-14 at the principal's instruction. Named seed targets: **Alpha Capital Wealth,
 Indice Hustlers, FX Goats** and the wider South African retail/prop trading scene, plus every
-public exchange leaderboard the desk can lawfully read (Binance Leaderboard, Bybit, Hyperliquid,
-and any venue publishing per-trader positions or returns).
+public MT5-native leaderboard the desk can lawfully read (MQL5 Signals marketplace, Myfxbook,
+ZuluTrade, DarwinInvestor, FX Blue, and any venue publishing per-trader positions or returns).
 
 **WHY THIS IS A SOURCE AT ALL.** These operators run REAL money through REAL execution under REAL
 constraints, and a large part of what they know is execution and behaviour knowledge that never
@@ -903,8 +906,8 @@ III.3, and it is the category this desk is weakest at.
     MARKETING and its incentives point away from accuracy. Record the revenue model beside every
     claim. This is not an accusation; it is a variable that changes what the evidence means.
   * **THEIR MARKET IS OFTEN NOT OURS.** Indices, FX and CFD behaviour under a broker's execution
-    does not transfer unexamined to crypto perps. A mechanism must be re-derived in this desk's
-    venue, cost and liquidity environment before it is a candidate here.
+    does not transfer unexamined to this desk's actual MT5/Fusion venue. A mechanism must be
+    re-derived in this desk's venue, cost and liquidity environment before it is a candidate here.
 
 **WHAT TO EXTRACT — MECHANISM AND PROCESS, NEVER PARAMETERS OR SIGNALS.**
 
@@ -949,14 +952,14 @@ is the difference between UNMEASURED and measured-null, and the desk had been re
 other for fifteen days. It now runs daily in `ops/run_research_cycle.sh` and
 `tests/ops/test_research_cycle.py` fails if that line is ever removed.
 
-**VENUE COVERAGE IS PARTIAL AND THE GAP IS STATED RATHER THAN IMPLIED.** The wired organ reads OKX
-copytrading only. Binance's leaderboard, Bybit's and Hyperliquid's per-account position feed
-(FREE_DATA_ADDENDA C3 #54: the most complete free positioning dataset in crypto, public by design)
-are IN SCOPE and NOT YET COLLECTED. Each is a separate collector against a separate endpoint, and
-none may be written speculatively from a network-denied clone -- an endpoint guessed rather than
-observed produces a collector that fails silently and a panel that looks like it is accumulating.
-Until each is built and scheduled, this category's coverage is ONE VENUE, and any claim about
-"leaderboard traders" generally is a claim about OKX copytrading specifically.
+**VENUE COVERAGE.** The wired organ reads OKX copytrading only, and that measurement (below)
+stands as historical evidence -- it is not rebuilt or extended, because crypto-exchange venues
+are retired under the 2026-08-19 MT5-only mandate (see the section header above). The forward
+owed work is the MT5-NATIVE equivalent: MQL5 Signals marketplace performance histories,
+Myfxbook public verified accounts, and DarwinInvestor D-Score panels are IN SCOPE and NOT YET
+COLLECTED. Each is a separate collector against a separate endpoint, and none may be written
+speculatively from a network-denied clone -- an endpoint guessed rather than observed produces
+a collector that fails silently and a panel that looks like it is accumulating.
 
 **WHAT A HEADLINE LIKE "165% OVER 170 DAYS, 15% MAX DRAWDOWN, 189 COPIERS" IS WORTH, CONCRETELY.**
 It is the maximum of a very large number of draws, quoted without its denominator, by a platform
