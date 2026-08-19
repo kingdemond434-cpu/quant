@@ -54,7 +54,7 @@ they are walls, not work.
 | validation_methodology | T3 | CUT 08-01: purge/embargo INERT (.train unreferenced; cpcv fraction identical to 6dp across a 250x parameter range), _PERIODS_PER_YEAR=24*260 on daily bars = 4.135x Sharpe overstatement, 3 of 11 gates carry zero information, certification is 2 targets x 1 SEED. Closer: N22 leak fix + N23 annualisation + real certification at SR 1-3 (8x12 harness exists, zero callers) | no |
 | research_governance | T2 | CUT 08-01: L2.3's third disposition converts 0/6 on its first due date; the two push/CI-blocking fences are substring whitelists with unreachable failure states; 15 rows park in a status the tooling cannot write. Closer: one honest conversion meter + rate-based admission control | no |
 | self_audit_layer | T2 | CUT 08-01: the T1 justification cited planted controls that do not exist (grep 'plant' -> no output). Closer: measure audit recall d by planting defects (X1), then restore | no |
-| llm_native_automation | T3 | CUT 08-01: miner_seats_productive 9.1% -- 10 of 11 seats configured, credentialed, unit-tested, producing nothing; frontier seat's trailing echo swallows exit code so 7 failed digs report Result=success. Closer: exit $rc + brain_mutex distinguishable + reaper glob | no |
+| llm_native_automation | T2 | RE-GRADED 08-19 (weekly pass): the 08-01 CUT is refuted by the record -- exit $rc landed (ops/run_frontier_miner.sh), data/miner_runway.json reads every frontier seat ok with same-day logs, and the git log shows daily productive miner sessions with wired artifacts 08-04..08-19 (e.g. data/bitbank_1day.jsonl, EN s-I). 411/414 LLM seats at advertised max depth. Closer to T1: seat-yield measured per lens (L1.31) + the 3 'high'-fallback seats restored | no |
 | risk_rails | T2 | R0071 money-path cluster + one clean live cycle | no |
 | data_moat | T3 | CUT 08-01: its own closer (run_moat_backup) replicates a 0-table database and its restore drill hashes the replica against ITSELF. Closer: drill compares replica to SOURCE + the 7.4MB irreplaceable set committed + T7 retention probe 08-08 | no |
 | data_engineering | T3 | CUT 08-01: survivorship at the source (LUNA/UST/FTT/SRM absent; panel selected on today's liquidity then backfilled 7y), 40% of symbols frozen 6 weeks, 5 non-crypto asset classes dark 43 days unnoticed. Closer: point-in-time universe from the exchangeInfo call already being discarded | no |
@@ -78,6 +78,15 @@ they are walls, not work.
 
 **Grading map used by the parser** (declared, arguable, in one place): T1=1.00, T2=0.66,
 T3=0.40, T4=0.15. A layer graded `—` in tier_now is time_bound by definition.
+
+**Re-benchmark stamp 2026-08-19 (weekly pass, owed-work session):** every row's cited closer was
+checked against the live tree, not re-graded from memory. MOVED: llm_native_automation T3→T2
+(closers landed + 15d production record, evidence in-row). VERIFIED-UNCHANGED, with the check
+named: vol_surface_expertise stays T4 (collect_deribit_surface still scheduled NOWHERE — 0 hits
+in crontab and manifest); data_moat stays T3 (run_moat_backup untouched since 08-04, drill still
+self-referential); conversion_repair stays T2 (last 7d: 170 raised vs 115 dispositioned — the
+30-day dispositions≥arrivals bar is not close). Rows not named here carry their 08-01/08-04
+evidence unrefuted.
 
 **Standing rule:** the deep sweep's synthesis (A) ceiling table and this register must agree —
 where they diverge, the sweep re-grades this file in the same session (ledger-first, R0056
