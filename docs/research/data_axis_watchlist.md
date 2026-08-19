@@ -3151,7 +3151,7 @@ documentation, citing only AWS setup guides)._
   the venue's whole GitHub org instead of stopping at the two repos already cited — the marginal
   cost of listing an org is one API call; the habit generalises (see operator note this session).
 
-### 35. KR venue↔bank fiat-rail registry — the venue-ASYMMETRIC barrier regressor (R0299's missing input) — grade: **ENUMERATED 2026-08-19 (KR s4): ~0.9 sharp episodes/yr measured vs ≥8/yr needed → event-study alpha use KILLED (graveyard `kr_bank_rail_event_study`); registry KEPT as tape-provenance layer (WS-011 gate)** [§33: screened -> data/kr_bank_rail_transitions.json] _(minted as "card #33" on the unmerged KR-s3 branch 2026-08-13; renumbered at landing 2026-08-19 — live #33=VARA, #34=bitbank had taken the number)_
+### 35. KR venue↔bank fiat-rail registry — the venue-ASYMMETRIC barrier regressor (R0299's missing input) — grade: **verified-clean — ENUMERATED 2026-08-19 (KR s4): ~0.9 sharp episodes/yr measured vs ≥8/yr needed → event-study alpha use KILLED (graveyard `kr_bank_rail_event_study`); registry KEPT as tape-provenance layer (WS-011 gate); grade made parser-terminal same-day 2026-08-19 by AR s3 (F0002 prevention — verdict untouched)** [§33: screened -> data/kr_bank_rail_transitions.json] _(minted as "card #33" on the unmerged KR-s3 branch 2026-08-13; renumbered at landing 2026-08-19 — live #33=VARA, #34=bitbank had taken the number)_
 - **Provides:** a per-venue, per-date KRW fiat-rail state for the licensed Korean venues. Korean
   regulation binds each VASP to **exactly one** partner bank for KRW deposit/withdrawal (2018
   real-name system, still in force 2026), so this is not a market variable — it is a **regulatory
@@ -3200,3 +3200,34 @@ documentation, citing only AWS setup guides)._
   the KR leg is untradeable directly — any transmission is via the global leg, as on card
   `kr_rail_state_transition_global_leg` (which is the **crypto** per-coin rail; this card is the
   **fiat** per-venue rail — adjacent layers, different mechanisms, novelty 0.899 against it).
+
+### 36. ADGM/FSRA (Abu Dhabi) dated announcement corpus + FSRA register pages — grade: **verified-clean — MINED 2026-08-19 (AR s3): 230 crypto/enforcement-tagged events dated FROM PAGE META 2016-05-10 → 2026-08-11, attrition 230/230 fetched 0 failed; clock calibration measured (sitemap lastmod is migration-flattened, 728/1111 stamps bulk-2024; `article:published_time` SURVIVES migration and is day-first, validated 128 day>12 / 0 month>12); 881 untagged rows kept as index; `/public-registers/fsra` 3,848 pages named UNMINED** [§33: wired -> data/adgm_regulatory_events.json]
+
+**WHY CARDED:** the second jurisdiction column for **R0193** (regulatory-event timeline, due
+2026-08-24) — sibling column to card 33 (VARA/Dubai, wired same run). s2 enumerated this ground
+2026-08-13 and deliberately did not card it; it earns the card today by producing the artifact.
+
+**§13, RESOLVED THIS RUN (was UNMEASURED under OP-076 since s2):** apex `adgm.com` 403s
+`/robots.txt` itself (Akamai edge) — but `www.adgm.com/robots.txt` is **GET 200 text/plain**:
+`User-agent: * / Allow: /` with Disallow on `/episerver /util /mediacentre/ /media-center/
+/doing-business/ /adgm-academy/ /api/`. The corpus lives at `/media/announcements/` and
+`/public-registers/` — **not covered by any Disallow** — and the sitemap is advertised in robots
+itself. Disallowed paths were not fetched. (Grade robots from **www + GET**, never apex or HEAD —
+same host-pair split OP-076 documented on bitoasis, now on a second GCC host.)
+
+**HEADLINE POLICY-CLASS ROWS (A–C-classifiable, from the artifact):** Binance **global licence
+under ADGM framework 2025-12-08** (the desk's own venue, dated); staking framework finalised
+2026-04-29 (proposed 2025-10-01 — a dated proposal→final pair); fiat-referenced-token/stablecoin
+framework finalised 2025-11-03 (proposed 2025-09-09); digital-asset framework amendments
+2026-06-10→2025-06-10; crypto-mining discussion paper 2026-01-28; broker classification framework
+2026-07-31; TON DLT Foundation base 2025-02-12; Coinbase tokenization hub 2026-08-13. Enforcement
+layer is mostly fraud-website alerts + small fines (e.g. USD 5,000 Elmar Capital) — entity-level,
+kept tag-separated exactly as on card 33.
+
+**HONEST LIMITS:** (1) one jurisdiction — a column, never the table; (2) the corpus is a
+REGULATOR'S PRESS FEED: licence-grant PR and alerts dominate; the policy-class subset is the
+value and it is a minority of rows; (3) slug-keyword tagging is precision-biased and
+recall-UNMEASURED — the 881 untagged rows may hide relevant events (they are kept in the artifact
+so R0193's build can re-tag from titles at zero fetch cost); (4) no mechanism is claimed — this is
+timeline material for an existing ledgered build, not an axis; the regional-premium family stays
+graveyarded.

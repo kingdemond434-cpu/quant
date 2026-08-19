@@ -2391,6 +2391,18 @@ ways, so re-probe rather than carrying a binary open/closed prior — and note t
 file on 2026-08-12 as *"ClaudeBot unnamed, falls to `*`"*. Either it misread or the file changed inside
 24h; **either way the lesson is the same — a policy read is a dated observation, not a standing fact.**
 
+#### OP-076 ADDENDUM (AR s3, 2026-08-19): PROBE BOTH HOSTS AND USE GET — an apex robots-403 said nothing about www
+
+`adgm.com/robots.txt` → **403** (Akamai edge, `errors.edgesuite.net`), and s2 recorded the ground
+UNMEASURED on that basis. Measured today: `www.adgm.com/robots.txt` → **GET 200 `text/plain`**, a
+real 9-directive policy naming exactly which paths are closed — which flipped a 5,302-URL corpus
+(1,111 dated announcements + 3,848 register pages) from UNMEASURED to **readable-policy OPEN** in
+one request. Second GCC host with a per-host policy split (bitoasis apex-vs-api was the first).
+And on `vara.ae` the same day: `HEAD /robots.txt` → 404 HTML while `GET` → 200 robots-format
+(JAMstack/CDN edges special-case HEAD). **Rule: a robots grade is per-HOST (apex ≠ www ≠ api) and
+per-METHOD (GET only, never HEAD); an UNMEASURED verdict requires the www + GET probe to have been
+run before it is recorded.**
+
 ---
 
 ### OP-077 AN ADF p-VALUE ON OLS RESIDUALS IS NOT A COINTEGRATION p-VALUE — AND THE GAP IS 3.6× NOMINAL   [active]

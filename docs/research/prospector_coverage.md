@@ -6400,6 +6400,53 @@ ITEMS THIS RUN (bounded per completion contract; worktree `qp-ar-s3`, branch
 3. ADGM ANNOUNCEMENT CORPUS (s2 next-ground #1): FIRST re-probe apex+www robots per OP-076 —
    policy read only; if §13 passes, mine the 1,109-URL dated sitemap for VASP/crypto/enforcement
    rows → R0193 second jurisdiction column. If robots stays unreadable, record UNMEASURED-POLICY
-   and stop at the sitemap surface already held. STATUS: pending.
-STRETCH (only if 1–3 close): arabsgate.com first thread touch — test the OP-075 thin-retail
-prediction with a measurement.
+   and stop at the sitemap surface already held. STATUS: **CLOSED — [§33: wired ->
+   data/adgm_regulatory_events.json] (277KB), new card 36.** §13 RESOLVED: apex 403 was the wrong
+   host — `www.adgm.com/robots.txt` GET 200 text/plain, real policy, corpus paths NOT disallowed,
+   sitemap advertised in robots (→ OP-076 ADDENDUM: per-host + per-method robots grading; VARA
+   same day showed GET 200 vs HEAD 404). Sitemap = 5,302 URLs: 1,111 announcements + **3,848
+   `/public-registers/fsra` pages s2 never saw — new ground, named unmined**. CLOCK MEASURED
+   (L1.46): 728/1111 lastmods flattened onto 2024 bulk-migration stamps; `article:published_time`
+   SURVIVES migration (control: 2021 event → 18/08/2021 preserved) and is day-first (validated:
+   128 rows day>12, 0 rows month>12). Crawled all 230 crypto/enforcement-tagged pages politely
+   (0.7s spacing, 230/230 ok, 0 failed) → dated titled event rows 2016-05-10→2026-08-11 incl.
+   **Binance global licence under ADGM framework 2025-12-08**, staking framework
+   proposal→final pair (2025-10-01→2026-04-29), FRT/stablecoin framework pair
+   (2025-09-09→2025-11-03), TON DLT Foundation 2025-02-12, Coinbase tokenization hub 2026-08-13.
+   881 untagged rows kept in-artifact as index (tagging is recall-unmeasured — stated on card).
+STRETCH (arabsgate first touch): NOT REACHED — items 1–3 consumed the run; carried, stays #1
+retail-layer item on the next-ground list below.
+
+#### SESSION CLOSE 2026-08-19 (AR s3) — DEPTH LINE, VENUES, VIDEO, NEXT GROUND
+
+DEPTH (per the depth mandate): item 1 = instrument-level (parser grammar read from
+`libs/research/source_backlog.py` source, 3 artifacts behind phantom cards verified first-hand,
+queue re-run measured 7→4); item 2 = **exhausted at corpus level** (VARA: every static-query
+payload the site ships — register/notices/news/enforcement/unlicensed — parsed to rows; notice
+BODIES read; §33-wired; NOT claimed: per-entity register sub-pages); item 3 = **corpus-indexed +
+tagged-subset exhausted** (ADGM: all 5,302 sitemap URLs enumerated, all 230 tagged pages fetched
+and dated; NOT claimed: 881 untagged bodies, 3,848 register pages). Zero reply-chains/forums this
+run — the ground was institutional JSON/HTML, not threads; the retail-thread debt (arabsgate)
+stays explicit and carried.
+VENUES DISCOVERED: 1 — ADGM `/public-registers/fsra` page corpus (3,848 dated pages; found via
+sitemap path-prefix enumeration, verdict RICH/unmined). VIDEO: 0 fetched, 0 locked — no
+video-shaped artifact on any ground touched this run (explicit zero per the mandate).
+STRATEGY-FAMILY note: no new family hunted (conversion + data-axis run); coverage denominator
+unchanged.
+OPERATORS CONTRIBUTED (charter s16): **OP-092** (JAMstack data layer defeats the SPA-shell false
+null — Gatsby/Next/Nuxt table + per-region adaptation), **OP-076 ADDENDUM** (robots grading is
+per-host AND per-method), watchlist header **grade-vocabulary rule** (terminal grades must carry
+a parser-recognized substring).
+NEXT UN-EXHAUSTED GROUND, in order (L1.35 — named before closing):
+1. `arabsgate.com` thread layer — THIRD carry; the OP-075 thin-retail prediction is still a
+   prediction, not a measurement. First item next run, before any institutional ground.
+2. ADGM `/public-registers/fsra` 3,848 register pages — licence-grant panel (entry side) for the
+   ADGM column; robots-allowed, enumerated, unread.
+3. VARA per-entity register sub-pages (77 URLs in the register payload) — issue dates + licence
+   conditions live there; closes the "createDate is not issue date" gap in card 33's artifact.
+4. AR video comment layer (carried from s2) — comment trees are plain HTML, never attempted;
+   rank by mechanism-keyword density (habr lesson).
+5. Era-archaeology (carried from s1): dead GCC/Levant venue layer via Wayback — still UNSTARTED.
+6. Sharia/fatwa cross-sectional test (carried from s2): 7 events × N assets design — unrun.
+7. Remaining OP-076 UNMEASURED apexes: `arabictrader.com` / `rain.bh` / `cbb.gov.bh` — re-probe
+   www + GET variants per the addendum before recording anything.
