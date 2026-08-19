@@ -1,9 +1,9 @@
 {
   "ci-gate-red": {
-    "acked": "2026-08-11T20:58:01.600916+00:00",
-    "by": "cro-cycle-20260811",
-    "reason": "ROOT-CAUSED AND FIXED THIS CYCLE, full-suite verdict pending tonight's background run. All 4 red tests shared one cause: the 08-09 lineage merge deleted the sub-daily sharpe-ceiling rescale from BOTH the harness and its caller, so the moat positive control could not find its planted edge. Restored per the d10a8b4 design in 9e11c7d (42/42 green on both affected files + 60/60 microstructure), daemon restarted with live signature verified (sharpe_ceiling_applied in the 20:53 report). Full CI fired in background at cycle end; 2d only so the next cycle confirms the suite verdict rather than assuming it.",
-    "until": "2026-08-13T20:58:01.600916+00:00",
+    "reason": "Resource state verified recovered (MemAvailable 1.77GB vs 165MB at the sig9 kills; /tmp 124M vs 467M). ruff clean + pytest --co clean run fresh this session, so the 08-19 02:49 red on 'tests (pytest)' has no recorded test names -- full suite re-run REQUIRED and LAUNCHED detached this session (setsid pid 602429, log data/cro_ai_logs/ci_owedwork_20260819.log, survives session end; suite is 60-80min). Marker data/.ci_last_run.json rewrites at completion; expiry catches a still-red result.",
+    "by": "owed-work-20260819",
+    "acked": "2026-08-19T07:34:53.481262+00:00",
+    "until": "2026-08-22T07:34:53.481262+00:00",
     "scope": "REPO"
   },
   "daemon-stale-code-quant-cashcarry": {
@@ -34,8 +34,10 @@
     "reason": "SELF-CLEARS AT 10 RECORDS (now 5) and the ADVISORY status the defect demands is already the mechanical state: data/mine_conversion_ratchet.json has ZERO consumers in scripts/ or libs/ (grep -rl, 0 files, measured 2026-08-18), so no gate binds on the thin bars. Do-not-tighten honored: no ratchet edits this session. Records accrue one per completed conversion cycle; 30d is the outside estimate for +5."
   },
   "producer-cadence-stale": {
-    "reason": "generation_due.md is 12d old against an 8d bar, and it is DOWNSTREAM of generation-skipped, not an independent staleness. The document's own text is the cadence: 'the cadence engine flags these; the brain executes SCOPED generate runs and then marks them done'. Its one outstanding flag is 'fred_macro family: deep history available -- scoped generate run owed'. So the artifact is stale for exactly one reason -- the generate run it is waiting on has not been executable since 07-31, for the funding reason recorded under generation-skipped. DELIBERATELY NOT AMENDING THE STATED CADENCE, which is the other option the defect offers: slackening an 8d generation cadence to whatever the desk currently manages would convert a funding outage into a permanently lower bar, and the ratchet forbids buying a green fence by lowering the promise. The honest state is a kept promise that is blocked, not a promise the desk should stop making. Clears with the same top-up.",
-    "until": "2026-08-15T02:29:03.335474+00:00",
+    "reason": "3 of 4 docs WORKED AND COMMITTED this session (TIER1_BENCHMARK re-graded with per-row checks; DATA_UNIVERSE_TAXONOMY coverage re-swept against live tree; DISCRETIONARY_DESK re-stated from resolver output). 4th (cadence_duties.md): producer verified ALIVE -- run_cadence.py invoked this session, running now (pid 596979, survives session as orphan) and the brain's daily run_cro_ai.sh path invokes it; doc-write lands at run end. NOTE: quant-cadence.timer named in the manifest does NOT exist on the box -- manifest confidence tag says inferred; the real scheduler is the brain. Short expiry: re-fires if the write does not land+commit.",
+    "by": "owed-work-20260819",
+    "acked": "2026-08-19T07:34:53.380885+00:00",
+    "until": "2026-08-22T07:34:53.380885+00:00",
     "scope": "REPO"
   },
   "production-stub": {
