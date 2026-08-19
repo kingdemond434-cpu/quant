@@ -1293,6 +1293,30 @@ era-archaeology (still untouched region era target); (6) habr full sweep via mas
 PUSH RECORD: see end-of-run commit; law-gate presence checked at push time per the 08-04 fork
 corollary (record below if --no-verify was needed).
 
+### 2026-08-19 session 3-on-this-branch (RU frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+BACKLOG (resume step 1): 7 pending-verification items re-read this run — all cross-desk
+mechanism/vendor/other-seat items (stablecoin-run conditioning, KR venue-state, BIS WP 1087,
+vnpy.alpha/Qlib systems [CN s8 mined the vnpy half], crypto grouping map [desk-brain build],
+bitbank candles [JP/EN ground, EN s-I already wired bitbank]); 1 policy item
+(Glassnode/CryptoQuant) is principal-gated vendor spend. NONE RU-decidable — routing unchanged
+from 08-04/08-12 notes. Recorded, not silence. §33 header this run: backlog clear, mining
+authorised.
+ITEMS THIS RUN (bounded scope, depth-maxed; drawn from the s2 NEXT RUN queue in order):
+  1. smart-lab depth targets (owed from s2): 1335532 ("platform that REJECTED all 231 of my
+     strategies" — mine the gauntlet design, process mandate), 1336741 ("30y of history in an
+     evening, half a year fixing the data" — data-repair war story), 1335574 (independent
+     tick-level refutation of a sold MQL5 scalper → graveyard genre). Reply-depth ≥2 each.
+     STATUS: taken.
+  2. btcsec shortlist continuation — bot/strategy class (grid/ladder instances compound;
+     274 unmined of 283 in data/btcsec_trading_topics.json). Bounded slice 3-5 threads to
+     full capture depth. STATUS: taken.
+  3. (stretch) @crypto_maniacdt YouTube transcripts via fetch_video_transcript.py — pair video
+     with repo, hunt stated-but-uncoded failures; explicit video line owed either way.
+     STATUS: taken.
+NEXT-RUN QUEUE IF THIS RUN DIES EARLY: Yandex Dzen first probe (robots + census); MMGP
+era-archaeology; habr full sweep via master OP-039; smart-lab 1338486 (RF-onshore crypto
+instruments seam).
+
 ## SESSION NOTES — KR frontier miner
 
 ### 2026-08-04 session 1-on-this-branch (KR frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
