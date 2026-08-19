@@ -157,6 +157,39 @@ def _load() -> dict[str, Any]:
     return {"recommendations": []}
 
 
+#: Advisory exclusive lock serializing the CLI's read-modify-write (R0623). Measured 2026-08-19:
+#: two live sessions' interleaved add/dispose calls destroyed three rows and reverted two
+#: dispositions FIVE separate times in one day -- both processes _load(), both _save(), last
+#: writer wins, first writer's row silently vanishes, which is the mass-deletion the ledger law
+#: forbids arriving through honest concurrent use. flock releases on process death (no stale-lock
+#: state), and the lock lives in data/ (per the crontab's own flock convention, untracked).
+_LOCK = ROOT / "data/.recommendation_ledger.lock"
+
+
+def _locked(timeout_s: float = 10.0) -> Any:
+    """Blocking-with-a-deadline exclusive lock; refuses LOUDLY rather than hanging or skipping.
+
+    Ledger mutations are milliseconds, so 10s of contention means a wedged holder -- and the
+    refusal path names it (L1.41: no silent swallow; a skipped lock would just re-open the race).
+    """
+    import fcntl
+    import time as _t
+    _LOCK.parent.mkdir(parents=True, exist_ok=True)
+    fh = _LOCK.open("w")
+    deadline = _t.monotonic() + timeout_s
+    while True:
+        try:
+            fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            return fh
+        except OSError:
+            if _t.monotonic() > deadline:
+                fh.close()
+                raise SystemExit(
+                    f"REFUSING: could not lock {_LOCK} within {timeout_s:g}s -- another writer "
+                    "is wedged; retry, do NOT hand-edit the ledger around the lock") from None
+            _t.sleep(0.2)
+
+
 def _save(d: dict[str, Any]) -> None:
     LEDGER.parent.mkdir(parents=True, exist_ok=True)
     tmp = LEDGER.with_suffix(".json.tmp")
@@ -607,8 +640,18 @@ def main() -> None:
                                       "exit 1 on symbolic or orphaned citations")
     p.set_defaults(func=verify)
     a = ap.parse_args()
-    _settle_forecasts(_load()["recommendations"])
-    a.func(a)
+    # THE LOCK WRAPS THE WHOLE READ-MODIFY-WRITE (R0623): acquiring it after _load() would
+    # serialize nothing -- the stale read is the race. Read-only commands skip it.
+    if a.cmd in ("add", "dispose", "correct", "repoint"):
+        fh = _locked()
+        try:
+            _settle_forecasts(_load()["recommendations"])
+            a.func(a)
+        finally:
+            fh.close()
+    else:
+        _settle_forecasts(_load()["recommendations"])
+        a.func(a)
 
 
 if __name__ == "__main__":
