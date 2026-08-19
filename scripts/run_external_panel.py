@@ -72,6 +72,39 @@ _ROTATION = ["audit", "production", "generate", "data", "premortem", "synthesize
              # production=outcome hunt (07-24); zero-based below-ceiling (07-21)
              "benchmark", "maximization"]
 
+#: Missions whose findings the CRO triages -- LOCKSTEP with max_audit.check_verify_lag's tuple
+#: (tests/scripts/test_verify_debt.py pins the two equal). "verify" is deliberately NOT in
+#: _ROTATION: it audits triage, so a clock would burn a paid run when there is nothing to audit.
+_TRIAGE_MISSIONS = ("audit", "tier1", "premortem", "maximization")
+
+
+def _verify_debt() -> bool:
+    """True when a triage-bearing panel ran and no verify pass has followed it.
+
+    THE ACTUATOR for verify-pass-skipped (max_audit.check_verify_lag). The fence could only
+    REPORT the auditee skipping his auditor: nothing anywhere ever CHOSE the verify mission,
+    because it is not in the rotation and only a human PANEL_MISSION override selected it --
+    an actuatorless law. Repaying the debt at the mission choke point makes it structural:
+    while a triage-bearing run stands unaudited, the next panel run IS the verify pass, and
+    the rotation resumes after. Fail-open on an unreadable log (the rotation runs as before);
+    an explicit override still wins, so the MONTHLY tier1 forcing is untouched.
+    """
+    last_triage, last_verify = None, None
+    try:
+        with _LOG.open() as f:
+            for line in f:
+                try:
+                    r = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if r.get("mission") == "verify":
+                    last_verify = r.get("ts")
+                elif r.get("mission") in _TRIAGE_MISSIONS:
+                    last_triage = r.get("ts")
+    except OSError:
+        return False
+    return bool(last_triage and (not last_verify or last_verify < last_triage))
+
 # CONSENSUS pre-pass themes: how many independent models raise each -> agreement = signal.
 # Lightweight keyword tally only; the CRO does the real semantic triage. Kept in sync with the
 # desk's actual components so a "5/11 flagged basis risk" line surfaces at the top of the inbox.
@@ -120,6 +153,8 @@ def _mission() -> tuple[str, str]:
     override = (sys.argv[1] if len(sys.argv) > 1 else os.environ.get("PANEL_MISSION", "")).strip()
     if override and (_MISSIONS / f"{override}.txt").exists():
         return override, _with_constitution((_MISSIONS / f"{override}.txt").read_text("utf-8"))
+    if _verify_debt() and (_MISSIONS / "verify.txt").exists():
+        return "verify", _with_constitution((_MISSIONS / "verify.txt").read_text("utf-8"))
     idx = datetime.now(tz=UTC).isocalendar().week % len(_ROTATION)
     name = _ROTATION[idx]
     path = _MISSIONS / f"{name}.txt"
