@@ -120,6 +120,50 @@ def attribute(name: str, spec: dict[str, str], state: dict[str, Any]) -> dict[st
                       "reverse. NOT survived, NOT promotable, whatever the return looks like.")}
 
 
+#: The executor's LIVE book state, per sleeve -- the same artifact max_audit's carry checks read
+#: (R0352). Consulted ONLY when a sleeve has already been judged UNATTRIBUTED, to decide whether
+#: that verdict is a live claim or a closed accounting episode. It never touches the threshold.
+_LIVE_BOOK: dict[str, str] = {"cash_and_carry": "web/cashcarry_live.json"}
+
+
+def _closed_episode(root: Path, rel: str) -> tuple[bool, str]:
+    """Is this sleeve's book FLAT with its lifetime gap ATTRIBUTED by reconciliation? (R0493)
+
+    Mirrors scripts/max_audit.py:check_carry_funding_measured (R0352), reading the STRUCTURED
+    recon fields rather than parsing the verdict string. The UNATTRIBUTED ratio is built from
+    CUMULATIVE-LIFETIME totals, so a book holding no positions cannot move either term: with
+    exposure at zero the verdict is arithmetically incapable of ever clearing -- an absorbing
+    state in the LAW GATE, which is the thing L1.43 says gets switched off. Measured live:
+    funding_harvested pinned at 113.06 since 2026-08-05 while n_carries was 0.
+
+    THE THRESHOLD IS NOT TOUCHED (UNATTRIBUTED_FRAC unchanged): a book with ANY exposure is
+    judged exactly as before. ABSENCE IS NOT ZERO (WS-005): only a PRESENT-and-zero exposure
+    reading plus explained=True AND measured=True earns the closed-episode reading; a missing
+    file, key or recon falls through and the live verdict stands.
+    """
+    try:
+        live = json.loads((root / rel).read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False, f"{rel} unreadable -- live-book state unknown, verdict stands"
+    if not isinstance(live, dict):
+        return False, f"{rel} malformed -- verdict stands"
+    legs, notl = live.get("n_carries"), live.get("deployed_notional")
+    flat = (isinstance(legs, int) and legs == 0
+            and isinstance(notl, int | float) and float(notl) == 0.0)
+    if not flat:
+        return False, "book has (or may have) exposure -- live verdict stands"
+    recon = live.get("fut_leg_reconciliation") or {}
+    if not (recon.get("explained") is True and recon.get("measured") is True):
+        return False, ("book FLAT but the lifetime gap is unexplained "
+                       f"(explained={recon.get('explained')!r} "
+                       f"measured={recon.get('measured')!r}) -- verdict stands")
+    return True, (f"book FLAT (0 carries, 0 notional) and the futures-leg reconciliation "
+                  f"attributes the lifetime gap to the ledgered inception re-base "
+                  f"(rebase_usd={recon.get('rebase_usd')}) -- a closed ACCOUNTING episode, not "
+                  "P&L the mechanism owes an explanation for. With zero exposure the cumulative "
+                  "ratio is frozen by construction and could never clear (R0352/R0493)")
+
+
 #: Where a deployed-state blob may live, in priority order. The second entry was
 #: data/cashcarry_state.json (R0333) -- a path NO organ writes, so the fallback could never fire
 #: and its silence was indistinguishable from a healthy read. The executor publishes its book
@@ -183,7 +227,14 @@ def build_report(root: Path | None = None) -> dict[str, Any]:
     for name, spec in _SLEEVES.items():
         if named and not any(name in str(s) for s in named):
             continue                                   # this sleeve is not deployed here
-        rows.append(attribute(name, spec, deployed))
+        row = attribute(name, spec, deployed)
+        if row["state"] == "UNATTRIBUTED" and name in _LIVE_BOOK:
+            closed, why = _closed_episode(root, _LIVE_BOOK[name])
+            if closed:
+                row = {**row, "state": "ATTRIBUTED", "closed_episode": True, "why": why}
+            else:
+                row["closed_episode_check"] = why
+        rows.append(row)
     unjudged = [str(s) for s in named
                 if not any(k in str(s) for k in _SLEEVES) and "paper" not in str(s)]
 
@@ -227,7 +278,8 @@ def main() -> int:
                 print(f"  {r['sleeve']}: {r['state']} -- {r['why']}")
     if args.report_only:
         return 0
-    return fence_exit(rep["status"], _PASSING)
+    return fence_exit(rep["status"], _PASSING, scanned=rep["n_sleeves"],
+                      of="sleeves with a measurable mechanism term")
 
 
 if __name__ == "__main__":
