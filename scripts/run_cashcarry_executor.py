@@ -679,6 +679,51 @@ def _probe_within_cap(sym: str, notional: float | None) -> bool:
     return notional is not None and 0.0 < float(notional) <= cap
 
 
+def _probe_caps() -> dict[str, float]:
+    """AUTHORISED probes this tick -> the recorded cap the open must be SIZED at (per-leg USDT).
+
+    The SIZING half of the L1.16a re-entry protocol. `_probe_within_cap` above is the REFUSING
+    half and has existed since 2026-08-13; alone it welded the door shut (L1.45): `_alloc` hands
+    every candidate its funding-weighted share of free capital -- hundreds of dollars against a
+    $100 cap -- so the gate refused every authorised probe at a size the sizer chose without ever
+    learning the cap existed. Measured 2026-08-18: all 7 recorded rows REFUSED, windows open,
+    budgets unspent. A bounded probe must be SIZED at its bound, not merely refused above it.
+
+    TIGHTEN-ONLY BY CONSTRUCTION: both consumers apply min(share, cap), so this map can only
+    SHRINK an open, never grow one; closes never read it; an unauthorised or capless row never
+    enters the map, so every existing refusal is byte-identical.
+    """
+    out: dict[str, float] = {}
+    rows = _reentry_conditions()
+    if not rows:
+        return out
+    tape = execution_tape.read()
+    for sym, row in rows.items():
+        if sym.startswith("_") or not isinstance(row, dict):
+            continue
+        try:
+            cap = float(row["max_notional_usd"])
+        except (KeyError, TypeError, ValueError):
+            continue                      # no declared cap => no bounded probe exists
+        if cap <= 0.0:
+            continue
+        if excitation.reentry_allowed(sym, rows, tape)[0]:
+            out[sym] = cap
+    return out
+
+
+def _size_refusal(notional: float | None) -> str:
+    """Why the size half refused -- an UNKNOWN size and an OVER-CAP size are different claims
+    (L1.55): the first is a diagnostic caller that declared no notional (max_audit's dormancy
+    probe reads the gate this way), the second is a live sizing verdict. Only the second means
+    the probe clamp failed, and a reader triaging fence output must be able to tell them apart.
+    """
+    if notional is None:
+        return ("caller declared no intended notional (diagnostic read at unknown size) -- "
+                "refused fail-closed, not a live sizing verdict")
+    return f"intended notional {notional!r} is not within the recorded max_notional_usd"
+
+
 def _structurally_bleeding(sym: str, notional: float | None = None) -> bool:
     """True => this symbol has PROVEN it loses money for the desk; block new opens.
 
@@ -747,8 +792,7 @@ def _structurally_bleeding(sym: str, notional: float | None = None) -> bool:
                     print(f"re-entry probe {sym}: {why} (<= cap, ${notional:g})")
                     return False
                 if allowed:
-                    print(f"re-entry probe {sym} REFUSED: {why}, but intended notional "
-                          f"{notional!r} is not within the recorded max_notional_usd")
+                    print(f"re-entry probe {sym} REFUSED: {why}, but {_size_refusal(notional)}")
                 return True
         except (TypeError, ValueError):
             continue
@@ -776,8 +820,8 @@ def _structurally_bleeding(sym: str, notional: float | None = None) -> bool:
             print(f"re-entry probe {sym} (persistent graveyard): {why} (<= cap, ${notional:g})")
             return False
         if allowed:
-            print(f"re-entry probe {sym} (persistent graveyard) REFUSED: {why}, but intended "
-                  f"notional {notional!r} is not within the recorded max_notional_usd")
+            print(f"re-entry probe {sym} (persistent graveyard) REFUSED: {why}, "
+                  f"but {_size_refusal(notional)}")
         return True
     return False
 
@@ -1401,11 +1445,19 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
     # tighten-only. Zero free capital gates at notional 0 -> the historical '500' bucket.
     _deployed_gate = sum(float(p["spot_qty"]) * float(p["spot_cost"]) for p in pos.values())
     _free_gate = max(0.0, capital - _deployed_gate)
+    # L1.16a SIZING HALF: an authorised re-entry probe is gated AND sent at min(share, cap),
+    # computed once per tick (reentry_allowed reads the tape) and applied at BOTH consumers so
+    # the size the gate approves is the size the venue sees. Without this clamp the $100-capped
+    # probes were unreachable (all 7 rows REFUSED, measured 2026-08-18): the sizer never learned
+    # the cap, so `_probe_within_cap` refused every authorised probe at the share _alloc chose.
+    _pcaps = _probe_caps()
     while cands:
         _int = _alloc(cands, _free_gate)
         _per_gate = _free_gate / max(1, len(cands))
         _kept = [c for c in cands
-                 if _entry_gate(c[0], c[1], notional=_int.get(c[0], _per_gate))]
+                 if _entry_gate(c[0], c[1],
+                                notional=min(_int.get(c[0], _per_gate),
+                                             _pcaps.get(c[0], float("inf"))))]
         if len(_kept) == len(cands):
             break
         cands = _kept
@@ -1611,7 +1663,11 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
         if not px or not ffl or not sfl:
             continue
         step = max(ffl["step"], sfl["step"])              # coarser step keeps both legs matched
-        qty = _round(alloc.get(sym, per) / px, step, int(min(ffl["qty_prec"], sfl["qty_prec"])))
+        # Probe symbols open at min(share, recorded cap) -- the same clamp the gate above
+        # approved them at; a gate that certifies $100 while the venue sees $1,500 is the
+        # NOMUSDT defect with extra steps.
+        want_usd = min(alloc.get(sym, per), _pcaps.get(sym, float("inf")))
+        qty = _round(want_usd / px, step, int(min(ffl["qty_prec"], sfl["qty_prec"])))
         if qty < max(ffl["min_qty"], sfl["min_qty"]) or qty <= 0:
             continue
         # THIN-BOOK GUARD: an open is optional -- never enter a book that cannot absorb the order.
