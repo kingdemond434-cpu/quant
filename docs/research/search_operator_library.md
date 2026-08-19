@@ -904,6 +904,12 @@ only observed terms enter as active keys; unobserved seeds stay marked SEED)._
 | チャッピー | ChatGPT (JP affectionate nickname) | 2023→live | OBSERVED (perp-screener: 「チャッピーの解説によると」). **NOT a trading term — an LLM-CONTAMINATION MARKER (OP-072).** Grep it to demote a page from independent node to echo |
 | 限月 | contract expiry month (futures/options) | all | OBSERVED (perp-screener). 期近 = near expiry, 期先 = far expiry — the JP calendar-spread vocabulary |
 | 爆損 | catastrophic loss (mirror of 爆益) | 2018→live | OBSERVED (マケデコ title 「機械学習モデルが爆損したときにやること」). Ruin-post key |
+| キムチパンプ | "kimchi pump" — KR retail chase filling a listing/TGE pop | ~2021→live | OBSERVED (rarirure 2024: 「Tier1なりキムチパンプによって暴騰」 as the named driver of listing TP-reach). JP practitioners attribute listing-pop fills to KR retail flow — a cross-region flow prior AND a search key for listing-mechanics posts |
+| 脳筋 / 脳筋bot | "musclebrain" — no-model, speed/simplicity-only bot logic | ~2020→live | OBSERVED (rarirure title). Self-deprecating genre marker for latency/news-race bots; finds the simple-mechanism posts the ML-heavy corpus buries. Query: 脳筋 bot 仮想通貨 |
+| 鉄火場 | gambling den = a fresh/chaotic market window (TGE, listing day) | all | OBSERVED (shidokamo starter-trader: 「鉄火場ではスピードが命」「正確さより早さ」). PROCESS vocabulary: posts using it discuss speed-vs-rigor tradeoffs in short-runway windows — the capacity-runway race from the retail side |
+| 野良SDK | "stray SDK" — unofficial community venue client | ~2020→live | OBSERVED (rarirure: fears malicious-code injection, greps then FORKS every dependency; found MEXC's stray Go SDK doing a TCP handshake per request). Supply-chain vocabulary + a venue-SDK-quality tell |
+| 無限買い | "infinite buying" — leveraged always-buy DCA bot class | 2023→live | OBSERVED (shidokamo 「Botで気軽にビットコイン無限買い」, serverless-ape-bot). Names the levered-accumulation genre; its posts carry margin/liquidation-management folk practice |
+| アシスタンスファンド / AF | Hyperliquid's official buyback fund (support bid) | 2024→live | OBSERVED (shidokamo: unannounced AF buyback as HYPE's floor support — condition (3) of the TGE dip template). An OBSERVABLE support-bid actor; search key for HL-mechanics posts |
 ### OP-034 Quantopian forum archaeology — the extraction recipe                [active]
 class: extraction
 origin: EN frontier miner session D (2026-07-28), first two threads mined to exhaustion
@@ -2133,6 +2139,24 @@ archive with a hard end-date before ~2023 — 8btc, btcsec, Ppomppu's legal era,
 Quantopian corpus — is **structurally uncontaminated**. Era-archaeology now buys a provenance
 guarantee that no living-web source can offer, which is a new and independent reason to keep
 digging it.
+
+**ADDENDUM (JP s5, 2026-08-19) — TWO SHARPENINGS FROM THE EARLIEST DOCUMENTED JP WIRING
+(`blog.shidokamo.com/trading-bitcoin-with-gpt/`, 2023-12-04):**
+1. **THE CONTAMINATION IS BIASED, NOT NOISY — it tilts toward TEXTBOOK CONSENSUS.** The author
+   documents GPT-4 in 2023 refusing persona instructions on investment topics and regressing to
+   優等生 (honor-student) answers: 「投資関連の話題だから優等生的な回答をするように訓練されている」.
+   RLHF pushes financial explanations toward the safe consensus prior, so LLM-echo convergence
+   does not just duplicate ONE upstream — it systematically reproduces the CROWD's textbook view.
+   Operational edge of the rule: cross-region agreement on a CONSENSUS-SHAPED mechanism is the
+   weakest possible convergence evidence post-2023; agreement on a WEIRD mechanism retains more
+   value, because the shared-weights explanation predicts consensus, not weirdness.
+2. **A THIRD CONTAMINATION LAYER: INTERFACE, below explanation and signal.** The earliest JP
+   wiring put the LLM in the CHAT/PSYCHOLOGY loop only (LINE → GPT parses the human's instruction
+   → writes trade config to a DB → a dumb executor reads it; the HUMAN decides direction and
+   price). Marker taxonomy: INTERFACE contamination (narrative/affect only, decisions human) <
+   EXPLANATION contamination (the page's mechanism story is model output) < SIGNAL contamination
+   (the model chooses trades). Only the last two demote a convergence node; interface-wired pages
+   remain independent nodes for their DECISIONS while their prose still gets the layer-2 check.
 
 ### OP-073 WHEN A REGION'S BIG HOSTS CLOSE, THE SAME COMMUNITY'S SELF-HOSTED TAIL IS STILL WIDE OPEN   [active]
 class: access / §13 posture

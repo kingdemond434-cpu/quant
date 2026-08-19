@@ -1530,3 +1530,21 @@ counted renewal cycles and policy noise as treatments. The enumeration separates
 renewals that change nothing are non-events; VASP counterparty suspensions (the ~40-row 2022+
 mass in the same archive) are CRYPTO-leg events on a different card. **A breadth estimate made
 without class definitions inflates by whatever class boundary the estimator hasn't drawn yet.**
+
+### arkham_alert_edge — practitioner-dated death of alert-vendor-driven trading (JP, stopped ~2024)   [pre-emptive falsification context, NOT a desk test]
+SOURCE: rarirure.rip/archives/1301 (2024-12-23, botter Advent Calendar 2024 d23), the bot's module
+list. The author RAN an "Arkham でエッジを見つけ Webhook アラートから売買する" module — trading
+Arkham Intelligence webhook alerts (entity-labelled on-chain flow) — and retired it:
+「市況が変わり、エッジじゃなくなったので現在は停止中」 (the market changed; it is no longer an
+edge; currently stopped). A documented ran→paid→died lifecycle with a stated cause, not a debunk
+of the data axis itself.
+MECHANISM OF DEATH (stated + inferable): a commercial alert product democratizes its own signal —
+every subscriber sees the same webhook at the same time, so the edge decays toward the vendor's
+subscriber count; "market changed" from the operator who was there. NOTE the boundary: this kills
+ALERT-FOLLOWING as an edge class for one practitioner in one era; it says nothing about raw
+entity-labelled flow as a conditioning axis (the desk's whale-activity/CEX-flow vocabulary), and
+his own replacement was to poll explorers DIRECTLY for hot-wallet inflows on chains Arkham does
+not cover — the practitioner's fix was to move UPSTREAM of the vendor, which is this desk's
+free-first doctrine arriving from the retail side. DERIVES-FROM: NONE checked (own operation;
+post-2023 so LLM-assist UNVERIFIABLE per OP-072, but the module lifecycle is his own record).
+[§33: killed -> this entry]

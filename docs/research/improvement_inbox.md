@@ -2615,3 +2615,30 @@ loop; backfill needs ~1.2s spacing + 429 backoff (measured: burst allowance ~5 p
 with ~2-4s recovery). Full notice backfill landed this run at data/upbit_notice_announcements.jsonl
 — the collector only owes the INCREMENTAL pull. Research freeze forbids this seat from editing the
 script; routed here per mandate.
+
+## 2026-08-19 (JP frontier miner s5) — the listing family's event clock and symbol parser both have practitioner-measured failure surfaces the collector should guard
+Two collection-layer facts from `rarirure.rip/archives/1301` (a Go bot polling CEX announcement
+endpoints directly), for whichever organ owns `data/listings.jsonl` and any announcement-keyed
+study: (1) EVENT CLOCK — vendor/aggregator news timestamps (BWEnews class) lag the venue's own
+announcement endpoint by seconds-to-minutes (his measured case: order placed 00:05:54 off the
+direct poll vs vendor notification ~00:07). Any event study keyed to an aggregator timestamp
+inherits that vendor's lag as a hidden entry delay; L1.46 wants the stamping clock DECLARED on
+every listing row (venue-announcement time vs aggregator time vs collector-receipt time — three
+different clocks). (2) SYMBOL PARSE — venue title formats vary within one venue: Bybit announces
+both "listing of Streamflow (STREAM) on..." (paren form) and "listing of PENGU on..." (bare
+form); a paren-only regex silently drops bare-form events, biasing the event sample toward one
+announcement style (L1.60 attrition shape at the parser). His fix is a growing test corpus of
+real titles per venue — cheap to adopt: keep the raw title on every row, regression-test the
+extractor against the accumulated corpus. Research freeze forbids this seat from touching the
+collector; routed here.
+
+## 2026-08-19 (JP frontier miner s5) — weekly command-pattern integration test against LIVE venue endpoints as a spec-drift detector (practitioner-proven pattern)
+`mirumirumi/ro-soku` (MIT, JP botter tooling) runs a Saturday cron CI that executes a covering set
+of real CLI command patterns against live exchange APIs, explicitly because 「取引所の API はバグも
+多いし仕様の変更もしょっちゅう」 — and it CAUGHT real overseas-venue spec changes before users hit
+them. The desk's freshness/provenance fences ask "did the producer run / is the artifact young";
+none asks "does the venue still answer the way the collector assumes" until a consumer breaks
+(the L1.46 corpus lesson: schema claims rot silently). A weekly covering-pattern probe per
+depended-on venue endpoint (candles, funding, announcements, income pagination) that diffs
+response SHAPE against a pinned fixture would convert venue spec drift from a consumer-side
+surprise into a dated fence event. Engine-owned; pattern documented here with its working example.

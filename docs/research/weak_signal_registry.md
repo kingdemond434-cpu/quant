@@ -525,3 +525,33 @@ measurement is whether suspension rows LEAD the named venue's public death/withd
 (n≈10 closures in the archive — countable in one sitting, same L1.62 discipline as the rail
 enumeration: count before screening).
 [§33: screened -> data/kr_bank_rail_transitions.json excluded_classes + this row]
+
+### WS-017 perp-DEX tapes carry a SUBSIDIZED-FLOW component CEX tapes lack — points/volume farming is structurally non-profit-seeking counterparty flow   [observations: 1]
+first-seen: 2026-08-19 JP frontier miner s5, blog.shidokamo.com/starter-trader/ — the author lists
+「出来高を稼げる」 (earns volume) among the BENEFITS of his HYPE dip-structure strategy, i.e. trading
+partly to farm points/airdrop eligibility, and treats that as normal. Perp-DEX ecosystems
+(Hyperliquid, Aster) run points seasons rewarding volume, so a measurable share of their flow is
+contractually motivated rather than profit-seeking — the "who cannot stop" §42 asks for, on the
+OTHER side of the book, with a season calendar.
+direction: (a) any cross-venue comparison that includes perp-DEXs (funding-dispersion sleeve,
+universe-map perp-DEX funding-tail row 75) should expect systematically different microstructure
+during points seasons — spread/depth/turnover readings from those windows do not transfer to
+CEX books or to post-season regimes; (b) points-season boundaries are public dated events —
+a free regime label for any future perp-DEX tape the desk ingests.
+mechanism-vocabulary flag: maps loosely to `volume/price relationships`; the SUBSIDY framing maps
+to none of the 24 — widens the space.
+promotion-check: not tradeable directly; consumer is the HL archives card (universe map, queued)
+and any perp-DEX screen the desk ever runs.
+
+### WS-018 the "airdrop = instant dump" prior FLIPPED for at least one operator in 2024 — day-0 airdrop supply pressure is regime-dependent, do not import the folk sign   [observations: 1]
+first-seen: 2026-08-19 JP frontier miner s5, rarirure.rip/archives/1301 — his `listed` module
+(instant-sell any airdropped token on arrival) is RETIRED: 「最近はなんだか即売りしないほうが良かったり
+するので使ってない」 (recently NOT instant-selling turns out better; not using it). One operator,
+no numbers, but a dated behavioural flip from someone who ran the trade both ways.
+direction: the classic zero-cost-basis dump prior (which the SAME run's HYPE mechanism relies on
+for TGE day-1) is not stable across 2021→2024: as instant-selling crowded, the immediate dump got
+front-loaded/priced and holding beat it. Any desk screen on airdrop/unlock events must let the
+SIGN be regime-dependent rather than importing "airdrops dump" as a constant — the unlock-event
+family's conditioning lesson (R0289-class false-null risk) in the airdrop corner.
+promotion-check: adjacent to the desk's unlock/listing families; consumer is whichever seat next
+screens airdrop-shaped events.

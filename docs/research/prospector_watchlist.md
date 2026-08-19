@@ -748,3 +748,59 @@ listing_comparables_repricing (NEW). 5/5 slots used; dvol trigger lives in resea
   sample size nobody measured. A screen here manufactures either a phantom edge or a false
   SCREEN-WEAK kill on a real mechanism. Counting the treatment comes first and is not a substitute
   for the screen — it is its precondition.
+
+## SESSION SUMMARY — 2026-08-19 (JP frontier miner s5): 1 mechanism EV-gated (knife-edge REJECT, re-open measurements named), 1 evidence attachment to the listing family, 0 new cards
+
+**PERP-DEX TGE DIP-STRUCTURE TEMPLATE — EV REJECT (knife-edge), memory-with-re-open-condition,
+deliberately NOT a card (KR-s4 rail precedent: the count is the deciding measurement).**
+- SOURCE: `blog.shidokamo.com/starter-trader/` (2025-12-01, botter Advent Calendar 2025 day 1) +
+  `github.com/shidokamo/starter-trader` (NO LICENSE file; blog grants modification/redistribution
+  in prose; **virtual-trade only, author's own statement** — CLAIMED, verified column empty).
+  Repo forks 7 > stars 5, pushed 2025-11-24: the template is being cloned for use, a small
+  crowding clock already running.
+- DERIVES-FROM: the author's own HYPE trading (2024-12) and ASTER re-test (~2025-09); no papers
+  cited. Post-2023 ⇒ OP-072: LLM-assist UNVERIFIABLE; the observation layer (params, virtual P&L
+  screenshots, the ASTER transfer decision) is his own record and uncontaminated by construction.
+- MECHANISM (his decomposition, unusually explicit): three EX-ANTE OBSERVABLE conditions make a
+  fresh TGE tape a recurring fast-dip-overreaction regime — (1) SINGLE-VENUE spot concentration
+  (no CEX deposit support yet ⇒ all flow on one book, entry friction keeps strong competitors
+  out); (2) ZERO-COST-BASIS holders (airdrop supply sells at any price ⇒ sloppy pricing, wild
+  swings); (3) an OFFICIAL SUPPORT BID (Hyperliquid Assistance-Fund buyback, unannounced).
+  Entry: limit at N% below the ROLLING 95TH-PERCENTILE of last-M-minute highs (fast dips only —
+  −5% in 30min triggers, −5% in 24h does not), small TP (~2.5%), time-stop. Two instances: HYPE
+  (virtual +33%/32h unlevered early; later +400% then large drawdown at ~2.5× leverage), ASTER
+  (template transferred BY DECISION on the second event — same three conditions, params seeded
+  from HYPE's early tape, exited well). WHO IS FORCED: airdrop recipients (zero basis) + points/
+  volume farmers (→ WS-017, non-profit-seeking flow) against a thin single-venue book with an
+  official bid beneath.
+- THE AUTHOR'S OWN FALSIFIER, quoted: "この戦略にαがあるのかどうかは微妙" — it may be long-beta in a
+  rising TGE; params are brute-force fit on the recent tape with NO train/test split, by his own
+  written admission. UNTESTED-ALPHA class exactly (L1.34 #6): the desk's benchmark-subtracted
+  event study answers precisely the question he could not.
+- EV GATE — RUN, NOT ASSERTED: `ev_score(est_sharpe 0.5, breadth 3/yr, capacity $50k, orth 0.8,
+  12h, maint 1.2)` → **EV 0.0016 < 0.002 REJECT**, binding term breadth_f 0.387. KNIFE-EDGE:
+  breadth 6/yr → 0.0023 QUEUE; est_sharpe 0.8 → 0.0026 QUEUE. Both deciding inputs are hand
+  guesses, so this verdict is a statement about my estimates, not the world.
+- RE-OPEN CONDITIONS (L1.16a, named): (a) ENUMERATE qualifying perp-DEX TGE windows (all three
+  conditions ex-ante) from public launch lists — ≥6/yr flips the gate on otherwise unchanged
+  inputs; (b) measure alpha-vs-hold on HYPE's own day-1..14 tape (keyless Hyperliquid candles;
+  §13 read of HL API terms owed FIRST — the existing universe-map HL archives entry is still
+  `needs-monitoring`, so no ingest until that ruling). Until either lands this stays memory.
+- Novelty gate RUN: 0.761 vs graveyard (nearest `grave:basis` 0.239) — rejected on ECONOMICS,
+  not as re-tested ground.
+
+**LISTING-FAMILY EVIDENCE ATTACHMENT (no new card — corroboration for the pre-registered
+`listing_events` hypothesis).** `rarirure.rip/archives/1301` (2024-12-23, Advent Calendar 2024
+day 23): a Go news-latency bot polling CEX announcement endpoints DIRECTLY (no vendor), multi-IP
+proxy rotation on 429, precomputed listing-state/balance/multiplier so only price is fetched at
+order time; beat BWEnews notification by >1min on one Coinbase listing (order 00:05:54 vs vendor
+00:07), "same or seconds faster" elsewhere. Bears on the desk's family three ways: (1) the
+SHORT-the-pop direction gets independent supply-side corroboration — BWEnews's own public
+complaint that Binance perp-listing insiders crashed WHY and CHEEMS into the pop, and the post's
+closing line 「インサイダーには勝てない」; (2) the pop's FILL driver is named as retail chase
+(「Tier1なりキムチパンプ」 — KR retail), i.e. the desk's short enters against exactly the crowd
+these latency bots create; (3) the announcement-latency RACE itself is DOA for this desk
+(latency-disadvantaged spread taker; his stack: home datacenter, mitigations=off, per-CEX route
+selection) — the drift/unwind horizons the desk pre-registered are the uncontested part.
+Measurement caveats routed to improvement_inbox (announcement-endpoint event clock; symbol-regex
+variants). [§33: screened]
