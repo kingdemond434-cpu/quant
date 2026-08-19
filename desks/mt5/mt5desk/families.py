@@ -764,3 +764,152 @@ def family2_cot_comm_follow(
     side[delta > 0] = 1
     side[delta < 0] = -1
     return _cot_entries(_h1(df), cot, side, "cot_comm_follow")
+
+# --------------------------------------------------------------------------
+# SMC ENCODINGS, PRICED THE SAME WAY AS EVERYTHING ELSE
+#
+# Of the five concepts retail SMC material treats as a set, three are already in
+# this file under their mechanism names: a "liquidity sweep" is
+# family_failed_breakout (pierce the prior extreme, close back inside, fade), a
+# "break of structure" is family_level_breakout, and HH/HL is a trend-state
+# label rather than an entry. The two below are the encodings this desk had
+# genuinely never measured.
+#
+# They get no special treatment and no special defence. Same closed bars, same
+# Costs, same resting-order fill model, same promotion gate. If the desk is
+# going to hold an opinion about them, the opinion should come from the same
+# rig that judged the other eight families.
+# --------------------------------------------------------------------------
+
+
+def family_fair_value_gap(
+    df: pd.DataFrame,
+    *,
+    atr_n: int = 20,
+    min_gap_atr: float = 0.25,
+    fill_depth: float = 0.0,
+    wait_bars: int = 12,
+    stop_atr: float = 0.5,
+    ttl_bars: int = 24,
+    rr: float = 2.0,
+    signal_hours: tuple = (),
+) -> list[Signal]:
+    """Three-bar imbalance, then a retrace INTO it -- continuation, not reversal.
+
+    A bullish gap exists at bar i when low[i] > high[i-2]: the middle bar
+    displaced hard enough that the band between those two prices was never
+    transacted. The claim under test is that the band is unfinished business and
+    price returning to it resumes the displacement.
+
+    THE GAP IS DETECTED ON CLOSED BARS AND ENTERED WITH A RESTING ORDER. Nothing
+    here inspects a bar it could not have seen: detection uses i-2..i, the order
+    rests from i+1, and `wait_bars` bounds how long it lives before the setup is
+    abandoned. `fill_depth` walks the entry from the near edge of the band (0.0,
+    fills often, worse price) to the far edge (1.0, fills rarely, better price)
+    -- the parameter exists because that trade-off is exactly what the hunt
+    should be pricing rather than a chart author asserting.
+    """
+    h1 = _h1(df)
+    atr = _atr(h1, atr_n)
+    if len(h1) < atr_n + 4:
+        return []
+    a = atr.to_numpy()
+    hh = h1["high"].to_numpy()
+    ll = h1["low"].to_numpy()
+    signals: list[Signal] = []
+    for i in range(2, len(h1) - 2):
+        ai = a[i]
+        if not (ai > 0) or np.isnan(ai):
+            continue
+        ts = h1.index[i]
+        if signal_hours and ts.hour not in signal_hours:
+            continue
+        if ll[i] > hh[i - 2]:
+            side, near, far = 1, ll[i], hh[i - 2]
+        elif hh[i] < ll[i - 2]:
+            side, near, far = -1, hh[i], ll[i - 2]
+        else:
+            continue
+        if abs(near - far) < min_gap_atr * ai:
+            continue
+        trigger = near + (far - near) * fill_depth
+        stop = far - side * stop_atr * ai
+        stop_dist = abs(trigger - stop)
+        if not (stop_dist > 0):
+            continue
+        signals.append(Signal(
+            time=h1.index[i], side=side, stop=stop,
+            target=trigger + side * stop_dist * rr,
+            ttl_bars=ttl_bars, tag="fair_value_gap",
+            trigger=float(trigger), wait_bars=wait_bars))
+    return signals
+
+
+def family_order_block(
+    df: pd.DataFrame,
+    *,
+    atr_n: int = 20,
+    disp_atr: float = 1.0,
+    lookback: int = 5,
+    fill_depth: float = 0.0,
+    wait_bars: int = 12,
+    stop_atr: float = 0.3,
+    ttl_bars: int = 24,
+    rr: float = 2.0,
+    signal_hours: tuple = (),
+) -> list[Signal]:
+    """Last opposite-colour bar before a displacement; enter on the retrace.
+
+    Bar i displaces at least `disp_atr` ATR in one direction. Walk back up to
+    `lookback` bars for the nearest bar that closed AGAINST that direction --
+    the order block. The claim is that unfilled interest sits in that bar's
+    range, so a retrace into it resumes the move.
+
+    Note what this shares with family_fair_value_gap: both are "displacement,
+    then retrace, then continuation". If both survive the hunt they are very
+    likely the SAME mechanism wearing two names, and the admission rule
+    (SR_new > SR_book * rho) is what will say so -- which is the point of
+    running them through it rather than arguing about it.
+    """
+    h1 = _h1(df)
+    atr = _atr(h1, atr_n)
+    if len(h1) < atr_n + lookback + 4:
+        return []
+    a = atr.to_numpy()
+    o = h1["open"].to_numpy()
+    c = h1["close"].to_numpy()
+    hh = h1["high"].to_numpy()
+    ll = h1["low"].to_numpy()
+    signals: list[Signal] = []
+    for i in range(lookback + 1, len(h1) - 2):
+        ai = a[i]
+        if not (ai > 0) or np.isnan(ai):
+            continue
+        ts = h1.index[i]
+        if signal_hours and ts.hour not in signal_hours:
+            continue
+        move = c[i] - o[i]
+        if abs(move) < disp_atr * ai:
+            continue
+        side = 1 if move > 0 else -1
+        ob = -1
+        for k in range(i - 1, i - 1 - lookback, -1):
+            if (c[k] - o[k]) * side < 0:      # closed against the displacement
+                ob = k
+                break
+        if ob < 0:
+            continue
+        # long: retrace DOWN into the block, so the near edge is its high
+        near = hh[ob] if side > 0 else ll[ob]
+        far = ll[ob] if side > 0 else hh[ob]
+        trigger = near + (far - near) * fill_depth
+        stop = far - side * stop_atr * ai
+        stop_dist = abs(trigger - stop)
+        if not (stop_dist > 0):
+            continue
+        signals.append(Signal(
+            time=h1.index[i], side=side, stop=stop,
+            target=trigger + side * stop_dist * rr,
+            ttl_bars=ttl_bars, tag="order_block",
+            trigger=float(trigger), wait_bars=wait_bars))
+    return signals
