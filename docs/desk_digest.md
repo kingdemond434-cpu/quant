@@ -1,100 +1,26 @@
 # Desk digest (auto-generated daily -- do not hand-edit)
-_updated 2026-08-17T02:44Z · companion to [[institutional_knowledge]]_
+_updated 2026-08-19T02:49Z · companion to [[institutional_knowledge]]_
 
 ## Book
-- Molded net: **$-1862.63** | funding **$113.06** | run-rate APR 0.0% | day 45.89
-- Root cause: **unknown_novel** (pause_and_page) | tracking error $2802.79
+- Molded net: **$-1710.63** | funding **$113.06** | run-rate APR 0.0% | day 47.9
+- Root cause: **unknown_novel** (pause_and_page) | tracking error $2813.35
 
 ## Validation clocks
-- **carry (DEPLOYED)**: 51/90d | bt 3.62 fwd 18.16
-- **perp L/S**: 44/90d | bt 0.88 fwd 0.41
-- **trend**: 44/90d | bt 0.99 fwd -2.01
-- **trend regime-gated**: 39/90d | bt 0.84 fwd 0.0
-- **OI/LS data**: 48/40d
-- **stablecoin data**: 46/40d
+- **carry (DEPLOYED)**: 52/90d | bt 2.87 fwd 18.47
+- **perp L/S**: 45/90d | bt 1.08 fwd 3.89
+- **trend**: 45/90d | bt 1.29 fwd -3.82
+- **trend regime-gated**: 40/90d | bt 1.26 fwd 0.0
+- **OI/LS data**: 50/40d
+- **stablecoin data**: 48/40d
 
 ## Open decisions (ledger)
 - `2026-07-04-levered-lab-3x` -- review 2026-10-02: by day 90: sim vs real comparison decisively answers the leverage question
 - `2026-07-04-trend-promotion` -- review 2026-10-02: forward Sharpe >= 0.7 (>=0.5x backtest) at day 90
 - `2026-07-09-trend-unblend-and-regime-challenger` -- review 2026-10-07: challenger fwd Sharpe > incumbent fwd Sharpe AND >=0.5 at day 90
 - `2026-07-12-external-review-fixes` -- review 2026-10-10: zero false dead-man fires in 90d; first promotion decision uses NW t + regime evidence; li
-- `2026-07-16-nom-thin-book-sizing-fix` -- review 2026-08-15: 30d post-restart: zero opens >35% of book capital, zero thin-book fills, and dead-man equi
-- `2026-07-16-level5-factory-prompt-triage` -- review 2026-08-15: by pilot day-30 (~2026-08-15): scale-or-not decided from survivors-per-1000 evidence; zero
-- `2026-07-16-audit-max-roi-upgrade` -- review 2026-08-15: 30d: >=1 micro-audit finding leads to a verified fix or a logged ruling; brain_down pager 
-- `2026-07-16-pager-silent-death-backoff-fix` -- review 2026-08-15: test page received by principal; alert state shows successful pushes resuming
-- `2026-07-16-fred-macro-collector-wired` -- review 2026-08-15: first pre-registered macro-crypto hypothesis clears or fails the gauntlet honestly within 
-- `2026-07-16-leverage-optimizer-runaway` -- review 2026-08-15: brain root-causes the confidence jump within 3 cycles; no position ever exceeds cap_frac x
-- `2026-07-17-tier1-scorecard-rider` -- review 2026-08-16: first two tier1 runs produce >=7 validly-cited dimension scores per model; scores correlat
-- `2026-07-17-data-triggered-generation` -- review 2026-08-16: first matured family (OI/LS ~07-29) gets its scoped generate run within 2 cycles
-- `2026-07-17-cadence-engine` -- review 2026-08-14: 4 weeks: panels fired 7.0+-0.5d apart with zero brain involvement; no double-fires
-- `2026-07-17-no-change-cap-principal-order` -- review 2026-08-16: 30d: zero change-induced incidents despite unrestricted velocity
-- `2026-07-17-throughput-amendment-and-connector-spec` -- review 2026-08-16: connector built to spec + breaker-tested before 2026-08-05; zero same-subsystem collision 
-- `2026-07-17-shadow-clock-contamination-ruling` -- review 2026-08-16: no future cycle re-litigates this contamination question without new code/market evidence
-- `2026-07-17-carry-crowding-monitor` -- review 2026-08-16: web/crowding.json refreshes daily without error; monthly governance references it at least
-- `2026-07-17-reconciler-silent-failure-counter` -- review 2026-08-16: next time a hedge order is persistently rejected, a RECONCILE-FAIL line appears within 3 c
-- `2026-07-17-growth-audit-capital-utilization-deferral` -- review 2026-08-16: once GAP#14 is root-caused and GAP#15 is resolved (trim or natural close), capital utiliza
-- `2026-07-17-weekly-architecture-review` -- review 2026-08-16: next weekly architecture review (within 7 cycles) finds the same conclusion or identifies 
-- `2026-07-17-hwm-contamination-false-fire` -- review 2026-08-16: post-reset baseline forms on clean wallet; no fourth false fire from stale references
-- `2026-07-17-spec-prebuild-standing-rule` -- review 2026-08-16: next 3 implemented register items each had a complete spec before their build began
-- `2026-07-17-research-pack-triage` -- review 2026-08-16: decay-lab spec complete before monthly window; clustering live before next factory expansi
-- `2026-07-17-deadman-reset-2-principal-approved` -- review 2026-08-16: 48h: no deadman breach counts; positions ~$300-450/name; measured eq stable vs new HW
-- `2026-07-18-prospector-seat-adopted` -- review 2026-08-17: >=1 provenance-SEMI-or-better card reaching pre-registration within 2 runs; watchlist aliv
-- `2026-07-18-execution-lockdown-and-recorder-live` -- review 2026-08-17: 7 consecutive days of gap-free hourly partitions for 5 symbols; recorder survives a cycle 
-- `2026-07-18-literature-deep-miner` -- review 2026-08-17: >=1 mechanism card surviving to pre-registration within 3 sessions
-- `2026-07-18-digging-doctrine-and-autopsy-spec` -- review 2026-08-17: first dossier produces >=1 new monitored indicator + >=1 drill scenario
 - `2026-07-18-digging-cadence-biweekly` -- review 2026-08-29: all coverage families visited >=1x within 6 weeks; connector progress unimpeded
-- `2026-07-18-full-panel-event-rules` -- review 2026-08-17: Gate-0 pre-mortem produces >=1 finding worth addressing before keys
-- `2026-07-18-growth-audit-denominator-fix` -- review 2026-08-17: zero growth_defect pages while book is fully deployed at authorized size
-- `2026-07-18-digging-breadth-all-improvement-classes` -- review 2026-08-17: within 2 dig cycles, >=1 non-alpha improvement finding captured and spec-queued
-- `2026-07-18-ai-methods-digging-gap-closed` -- review 2026-08-17: within 2 literature cycles, >=1 concrete engine/prompt/eval improvement captured
-- `2026-07-18-digger-coverage-self-audit` -- review 2026-08-17: first coverage audit adds >=1 genuinely missing family OR credibly confirms completeness
-- `2026-07-18-youtube-transcript-reality` -- review 2026-08-17: Prospector cites >=1 video-sourced mechanism via text mirror within 2 runs
-- `2026-07-18-ex-solo-quant-priority` -- review 2026-08-17: within 3 Prospector runs, >=1 card sourced from an ex/solo-quant long-form piece
-- `2026-07-18-source-yield-learning` -- review 2026-08-17: by the 2nd coverage audit, budget measurably shifted toward a proven-productive family
-- `2026-07-18-self-improvement-closed-loops` -- review 2026-08-17: by the 2nd scoring run, EV priors measurably shift from realized hit-rate; memory line-cou
-- `2026-07-18-compression-safety-and-audit-depth` -- review 2026-08-17: first full-depth audit either confirms a component clean OR finds a real defect; zero comp
-- `2026-07-18-deterministic-freeze-exit` -- review 2026-08-17: freeze-exit status logged each cycle; on the real Gate 0, activation flags automatically a
-- `2026-07-18-evidence-gated-progressions-registry` -- review 2026-08-17: at freeze-exit, growth ramp + stage machine arm automatically; monthly review finds zero m
-- `2026-07-18-principal-design-philosophy` -- review 2026-08-17: no unjustified cap survives its measurement cycle; zero sizing-on-unproven-edge incidents
-- `2026-07-18-digging-charter-and-github-memory` -- review 2026-08-17: diggers cite GitHub/non-English sources within 2 runs; every cycle pushes to GitHub; zero 
-- `2026-07-18-free-first-data-stack` -- review 2026-08-17: post-Gate-0: >=3 free sources ingested + Tardis-diff-validated; zero paid data; bottleneck
-- `2026-07-18-live-connector-stage-machine-build` -- review 2026-08-17: engineering_backlog.json live_connector_prebuild detector (file exists) now true; CI green
-- `2026-07-18-capital-utilization-followup` -- review 2026-08-17: utilization should rise on its own as GAP#14 resolves (leverage confidence pipeline root-c
-- `2026-07-18-ci-gate-widened-execution-dir` -- review 2026-08-17: run_ci.py stays green; a future execution-directory regression gets caught before it ships
-- `2026-07-18-chinese-quant-expansion` -- review 2026-08-17: Prospector cites >=1 Chinese-source mechanism within 2 runs; Chinese seat produces >=1 gau
-- `2026-07-18-self-heal-and-frontier-batch` -- review 2026-08-17: next failed 08:45 cycle auto-recovers same day; a clearing alert produces a ✅ page; drill 
-- `2026-07-18-discovery-multiplier-telemetry` -- review 2026-08-17: first multiplier report segments intake + survival by region with real counts
-- `2026-07-18-frontier-jp-and-stop-line` -- review 2026-08-17: JP produces >=1 gauntlet-entering card within 2 runs post-activation; no low-moat region m
-- `2026-07-18-spec-prebuild-honest-reconciliation` -- review 2026-08-17: every item reaching an implementation window has a full spec by then; no spec written for 
-- `2026-07-18-expansion-specs-prebuilt` -- review 2026-08-17: first region built from the template + CN profile produces a well-formed card through the 
-- `2026-07-18-final-ideas-and-paid-data-rule` -- review 2026-08-17: AI-frontier scanner unlocks >=1 new source in 2 quarters; paid-data rule invoked correctly
-- `2026-07-18-operator-premortem-opened` -- review 2026-08-17: 4 scenarios answered + recorded; first real incident follows the pre-committed plan
-- `2026-07-18-structural-edges-deduplicated` -- review 2026-08-17: >=1 of N1/N2 produces a gauntlet-surviving card within 2 quarters of build
-- `2026-07-18-guaranteed-implementation-amendment` -- review 2026-08-17: every >=2 bps item eventually built in EV order; sub-threshold items expire or graduate cl
-- `2026-07-18-threshold-1bps-not-picky` -- review 2026-08-17: small net-positive items get built in EV order; no net-negative small item is built; compl
-- `2026-07-18-threshold-5bps-final` -- review 2026-08-17: >=5 bps items always built; <5 bps items build if cheap-and-rising else expire; no queue b
-- `2026-07-18-dynamic-capital-quarantine-both-directions` -- review 2026-08-17: VERIFIED 07-18: fix removes the hard $1,250 cap (confirmed live, _dynamic_capital=4500) bu
-- `2026-07-19-gap14-forensic-rootcause` -- review 2026-08-18: post-Gate-0 fix ships all 4 items + property/mutation tests before `active` may drive sizi
-- `2026-07-19-gap19-gap32-specs-queued` -- review 2026-08-18: both re-applied cleanly at Gate-0, tests green, no freeze contamination in the calibration
-- `2026-07-19-verify-then-claim-contract` -- review 2026-08-18: no future ledger/register entry asserts state that a fresh read contradicts
-- `2026-07-19-prospector-firstrun` -- review 2026-08-18: future cadence runs execute without hand-triggering once connector/recorder free the cycle
-- `2026-07-19-breakout-variants-tested-rejected` -- review 2026-08-18: verdict is reproducible from the archived test script + params
-- `2026-07-19-data-axis-mission-standing` -- review 2026-08-18: >=1 verified new orthogonal free data axis enters the hypothesis pipeline within 2 cadence
-- `2026-07-19-freedata-mission-full-spec` -- review 2026-08-18: >=1 verified new orthogonal free axis enters the pipeline within 2 cycles post-connector; 
-- `2026-07-19-gap32-reapplied-live-fulldeploy` -- review 2026-08-18: book holds ~100% with no recurring trim/topup churn across work ticks (verified this sessi
 - `2026-07-19-freedata-weekly-uncapped-timer` -- review 2026-09-17: quant-dataaxis.timer fires weekly + produces graded data_universe_map entries; >=1 verifie
-- `2026-07-19-all-diggers-exhaustive-timered` -- review 2026-08-18: each timer fires on schedule + produces graded output; prospector honestly reports nothing
-- `2026-07-19-cjk-priority-license-gate` -- review 2026-08-18: CJK legitimate sources enter the map graded/verified; zero pirated/cracked sources ever ad
-- `2026-07-19-public-shared-data-surgical` -- review 2026-08-18: open shared datasets get adopted; proprietary finds spawn reconstruction targets; nothing 
-- `2026-07-19-digger-parity-propagation` -- review 2026-08-18: no digger persistently lags another in depth/region/cadence; new upgrades appear across al
-- `2026-07-19-discovery-doctrine-expansion` -- review 2026-08-18: operator-library entries grow with per-region adaptation rows filled within one session of
-- `2026-07-19-brain-auth-option-b-supersedes` -- review 2026-08-18: brain cycles run 7 consecutive days with zero quota no-ops alongside normal interactive us
-- `2026-07-19-cro-script-unbound-dollar-fix` -- review 2026-08-18: next run creates a growing data/cro_ai_logs/<ts>.log and exits 0
-- `2026-07-19-exhaustion-verified-assetclass-dormant` -- review 2026-08-18: next fires of all 4 diggers produce full-size logs; asset-class dormancy holds until a led
 - `2026-07-19-admission-count-uncapped-constitutional` -- review 2026-09-13: gauntlet admissions track EV-gate passes 1:1; FDR detector shows no inflation over 8 weeks
-- `2026-07-19-pager-unicode-fix-and-neighbours` -- review 2026-08-18: next successful push logs a `deadman_latched`/`principal_action_needed` success timestamp 
-- `2026-07-19-deadman-fire4-incident-autopsy` -- review 2026-08-18: the read-only reconciliation script (once built) either fully attributes the $1,838 USDT d
-- `2026-07-19-founders-directives-adopted` -- review 2026-08-18: next auth failure produces a page within one cycle-start; zero doctrine additions until Ga
 - `2026-07-20-implementation-caps-removed` -- review 2026-09-14: 8 weeks: implemented-change yield stays healthy and zero change-induced incidents; churn t
 - `2026-07-20-hypothesis-generation-maximized` -- review 2026-08-19: hypotheses/week up >=3x with FDR detector flat; compute per gauntlet survivor down; pager:
 - `2026-07-20-miners-activated-carveout-deadline` -- review 2026-08-19: 7 miner logs with real session notes within 48h of quota headroom; coverage map gains 7 re
@@ -189,7 +115,6 @@ _updated 2026-08-17T02:44Z · companion to [[institutional_knowledge]]_
 - `2026-07-29-largest-closure-cycle-plus-the-universal-ratchet` -- review 2026-08-28: 
 - `2026-07-30-holm-cohort-was-m4-while-12-clocks-accrued` -- review 2026-08-29: web/axis_shadows.json holm_bar tracks the derived cohort; run_alerts fires slot_budget_exc
 - `2026-07-30-the-positive-control-was-never-asked-and-a-refuted-clock-blocked-nine-axes` -- review 2026-08-29: reports/gauntlet_certification.json states, per gate path, the minimum TRUE Sharpe admitte
-- `2026-07-31-bitmex-decade-spec-and-funding-phase1` -- review 2026-08-14: phase 2: bitmex_xbtusd_1m.parquet spans 2014-11->now with both verifications green; first 
 - `2026-07-31-ci-red-deploy-pipeline-repair` -- review 2026-08-30: within 1h of push: puller tick reports up-to-date (or deployed) with CI marker green, cron
 - `2026-07-31-cycle6-r0206-carry-attribution-and-inert-moneypath-fix` -- review 2026-08-31: R0206: the ~66 bps gap decomposes with execution as the DOMINANT term when measured agains
 - `2026-08-01-cycle-calibration-sign-inversion-and-asserted-forward-clocks` -- review 2026-09-01: (a) calibration bias stays positive over pre-registered-only forecasts at the 2026-09-01 g

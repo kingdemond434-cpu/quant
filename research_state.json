@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-17T03:38:07.396718+00:00",
+  "generated": "2026-08-19T03:22:31.450191+00:00",
   "master_objective": "maximize expected lifetime geometric growth (log wealth), survival-c",
   "deployed": {
     "sleeves": [
@@ -7,17 +7,17 @@
       "perp_ls (paper)"
     ],
     "start_capital": 15000.0,
-    "equity": 17962.09,
-    "net_pnl": 2962.09,
-    "return_pct": 19.747,
-    "days_live": 45.93,
+    "equity": 18093.16,
+    "net_pnl": 3093.16,
+    "return_pct": 20.621,
+    "days_live": 47.92,
     "winrate_pct": 41.7,
     "n_closed_trades": 254,
-    "deployed_sharpe": 7.94,
+    "deployed_sharpe": 1.3,
     "funding": 113.06,
     "funding_measured": true,
     "n_carries": 0,
-    "perp_paper_net": 45.5
+    "perp_paper_net": 166.5
   },
   "binding_constraint": "calendar-time data accumulation (not engineering throughput)",
   "bottleneck_rankings": [
@@ -27,17 +27,17 @@
       "evidence": [
         {
           "edge": "oi_divergence",
-          "have_days": 48,
+          "have_days": 50,
           "needs_days": 40
         },
         {
           "edge": "ls_contrarian",
-          "have_days": 48,
+          "have_days": 50,
           "needs_days": 40
         },
         {
           "edge": "liquidation_reversal",
-          "have_days": 48,
+          "have_days": 50,
           "needs_days": 40
         }
       ],
@@ -59,20 +59,16 @@
   "retirement_candidates": [
     {
       "sleeve": "funding_momentum",
-      "marginal_sharpe": -0.1
+      "marginal_sharpe": -0.22
     },
     {
       "sleeve": "basis_carry",
-      "marginal_sharpe": -0.06
-    },
-    {
-      "sleeve": "xsec_price_mom",
-      "marginal_sharpe": -0.03
+      "marginal_sharpe": -0.1
     }
   ],
   "retirement_note": "SIGNAL ONLY \u2014 marginal-Sharpe swings ~\u00b10.15 between runs, so a single negative sign is within noise. Retire only on PERSISTENT negative contribution across runs, with promotion-grade rigor. No whipsaw.",
   "architecture_review_due": false,
-  "cycles_logged": 95,
+  "cycles_logged": 99,
   "completed_this_cycle": [
     "archive_integrity_ok",
     "watchdog_run_logged_off",
@@ -127,17 +123,17 @@
   "research_backlog": [
     {
       "edge": "oi_divergence",
-      "status": "data-blocked 48/40d",
+      "status": "data-blocked 50/40d",
       "info_value": "positive but not yet actionable"
     },
     {
       "edge": "ls_contrarian",
-      "status": "data-blocked 48/40d",
+      "status": "data-blocked 50/40d",
       "info_value": "positive but not yet actionable"
     },
     {
       "edge": "liquidation_reversal",
-      "status": "data-blocked 48/40d",
+      "status": "data-blocked 50/40d",
       "info_value": "positive but not yet actionable"
     }
   ],
@@ -149,7 +145,7 @@
   ],
   "forecast_calibration": {
     "n_resolved": 105,
-    "n_eligible": 361,
+    "n_eligible": 379,
     "n_excluded": {
       "retrospective": 30,
       "duplicate_claim": 1,

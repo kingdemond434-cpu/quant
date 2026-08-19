@@ -189,3 +189,11 @@ WEAK-SIGNAL CONVERGENCE CHECK (S23, this cycle): no >=2-independent-path converg
 batch; the two neural-methods papers share a family (not independent), and the two event-timing
 items converge only on ground already carded (listing events) -- convergence with an ALREADY-CARDED
 axis buys nothing new. No promotion. -->
+
+## Entropic Value-at-Risk portfolio optimization for tempered stable Lévy processes
+- 2026-08-18 · http://arxiv.org/abs/2608.18022v1
+- We develop parametric Entropic Value-at-Risk (EVaR) portfolio optimization for tempered stable Lévy returns. We derive portfolio cumulant-generating functions and weight-dependent admissible moment-generating-function domains under two multivariate constructions: a multivariate normal tempered stable approach and an independent component factorization. These expressions allow portfolio EVaR to be evaluated from fitted asset- or component-level parameters without repeated portfolio-level distribution fitting. We construct minimum-EVaR portfolios and two entropic reward--risk portfolios. We test
+
+## Self-Consistent Adjoint Policy Iteration for Constrained Dynamic Portfolio Choice
+- 2026-08-18 · http://arxiv.org/abs/2608.17808v1
+- We develop simulation-based policy iteration for continuous-time portfolio choice with predictable returns and convex constraints. Each outer step re-evaluates a fixed-latent OL-BPTT adjoint after deployment and solves the constrained update. Shifted-adjoint cancellation controls the adjoint--HJB Hamiltonian-gradient discrepancy by the policy-improvement residual. For CRRA portfolios, exact HJB policy iteration identifies the optimal reduced value factor, while population OL-BPTT iteration converges globally under an occupation-measure relative-error condition. A theorem-matched audit yields a

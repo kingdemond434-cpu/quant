@@ -51,3 +51,6 @@
   re-entry probes at their $100 caps; without it every probe stays REFUSED; (2) R0062
   income-ledger PnL attribution; (3) R0162 cost-model schema versioning. Rows carry the details;
   each lands with an executor-interaction note per the independence gate.
+
+## 2026-08-19T03:16:13.122872+00:00 POISONED DEPENDENCY
+- binance funding (live API) (DQS 0.0) feeds ['A001'] -- feeds the live cash-carry entry gate

@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-18T03:53:56.805085+00:00",
+ "updated": "2026-08-19T03:22:34.851817+00:00",
  "n_closes": 4,
  "hold_buckets": {
   "<2h": {
@@ -71,7 +71,7 @@
   "net": -0.03,
   "bps": -15.21
  },
- "post_gate_baseline_opens": 0,
+ "post_gate_baseline_opens": 1,
  "post_gate_opens_examined": 4,
  "maker_fill": {
   "n_legs": 42,
@@ -142,8 +142,9 @@
   "note": "the executor's structural-bleed denylist reads THIS key; worst_symbols is 14d-rolling and is for alerts only"
  },
  "flags": [
+  "ENTRY-GATE REGRESSION: 1 open(s) whose funding could not beat the symbol's modelled round-trip over the minimum hold (R0057 per-symbol contract) -- gate is not filtering",
   "maker fill-rate 57.1% below the 60% target over 42 legs -- patient-maker opens are not converting; fees are the dominant carry cost, so this is the primary unit-economics lever"
  ],
  "origin": "recursion rule 2026-07-22: mechanization of the principal-supplied probes that found gaps #42/#43/#34",
- "written": "2026-08-18T03:53:56.853376+00:00"
+ "written": "2026-08-19T03:22:34.852695+00:00"
 }
