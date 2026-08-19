@@ -9,6 +9,7 @@
   "cdx_pages_domain": 48
  },
  "mined_to_reply_depth": [
+  1168,
   1987,
   2047,
   3426,
@@ -17,7 +18,9 @@
   5499,
   5848,
   6157,
-  8115
+  6549,
+  8115,
+  8150
  ],
  "note": "'arbitr' scores ZERO slug hits across 1570 topics (OP-030: arb lore lives inside obmen/birzha/bot threads, not in titles); slugs are transliterated RU || 2026-08-12 s2: obmen/birzha class opened (159 tagged), 6 mined to depth -> graveyard 8th instance + WS-009/WS-010; slug-number ambiguity warning: URL-encoding strips punctuation so 'ot-18' = 1.8%, '25' can be 0.25/2.5 -- read the thread, never the slug, for fee numbers.",
  "topics": [

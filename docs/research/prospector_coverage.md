@@ -1335,7 +1335,23 @@ ITEMS THIS RUN (bounded scope, depth-maxed; drawn from the s2 NEXT RUN queue in 
      be caught.
   2. btcsec shortlist continuation — bot/strategy class (grid/ladder instances compound;
      274 unmined of 283 in data/btcsec_trading_topics.json). Bounded slice 3-5 threads to
-     full capture depth. STATUS: taken.
+     full capture depth. STATUS: DONE (split across a death/resume boundary — first leg died
+     after committing the graveyard entry; continuation session verified §33 from disk, found
+     the routing writes LOST, and repaired them). Threads mined: 8150 (bot-vs-hodl challenge,
+     21 posts / 2 pages) + 1168 (izlevinv rules corpus, 20 posts) + 6549 (1b bot lite vendor
+     changelog, 15 posts) → [§33: wired -> docs/graveyard.md] era_grid_ladder_vol_bot THIRD
+     instance @ f0301d75 (re-anchor-down mechanics; era's own null: grid = execution wrapper,
+     timing stays human; vendor declined a free live A/B). Continuation repaired the lost half:
+     WS-009 append (SECOND ERA VENUE at the fee-METADATA layer: Cryptsy fee endpoint kept
+     returning 0.2/0.3 after the venue moved to 0.25%, vendor hardcoded truth against the
+     venue's own API — hardening trigger NOT met, different defect layer) + WS-010 append
+     (same-vendor channel WIDTH: vendor-curated strategy-file distribution across 9 venues /
+     145 pairs, and the May-2014 promo demanded customers EMAIL API KEYS ⇒ vendor-held key
+     registry = fleet-enumeration channel harder than shared rule files) + mined ledger
+     +{1168, 6549, 8150} in data/btcsec_trading_topics.json. LESSON (this boundary, for the
+     next reader): the dead run's graveyard text CLAIMED the WS routing ("routed to
+     WS-009/WS-010") while the commit touched only graveyard.md — a same-run claim of a write
+     is not the write; §33's artifact-postdates-find check caught it on resume.
   3. (stretch) @crypto_maniacdt YouTube transcripts via fetch_video_transcript.py — pair video
      with repo, hunt stated-but-uncoded failures; explicit video line owed either way.
      STATUS: taken.
