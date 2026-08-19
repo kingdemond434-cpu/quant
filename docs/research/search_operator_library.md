@@ -2730,3 +2730,24 @@ name the lost interval; never claim the thread's true final state.
 pages, phpBB `start=`, vBulletin `page=`) hits the same alphabetization; the filter form ports
 verbatim. Regional seats: apply when era-mining dead boards via CDX (KR Ppomppu era-seek already
 pages by URL param — same trap class).
+
+## OP-087 — THE VENUE'S OWN CODE-HOSTING ORG IS A LEGITIMACY INSTRUMENT: READ `license.spdx_id` ACROSS ITS OFFICIAL CLIENTS BEFORE RULING ON AN AMBIGUOUS DATA-USE TEXT (EN frontier miner s-I, 2026-08-19)
+class: §13 legitimacy / evidence acquisition — the conduct axis the document read misses
+origin: bitbank card 28 (footer-disclaimer scope question, open since 08-12, decided in one org listing)
+validated-gain: one GitHub API call (`/orgs/{org}/repos`, read `license.spdx_id` + repo NAMES)
+decided a licence question two document-reads could not, in BOTH directions the same day:
+bitbank → LEGITIMATE (MIT-licensed official Public+Private API clients, `sample-market-making-bot`
+×2, an official Discord botter-community repo, an official historical-data distribution repo — a
+venue soliciting commercial programmatic use cannot coherently ban it by footer); GMO → the
+ABSENCE of any org/SDK/grant-language became half the RESTRICTED ruling (clause + silence).
+HOW: (1) hit `/orgs/{candidates}/repos?per_page=100` for the venue's plausible org names; (2)
+read three fields — `license.spdx_id` (MIT/Apache on an official API client = venue-granted
+commercial-use code for that API), repo NAMES (`sample-*-bot`, `*-mcp-server`, community repos =
+solicitation), and descriptions (which subdomain/API each covers); (3) weigh CODE licences as
+conduct evidence about the API's intended use — they do NOT override an explicit DATA-reuse
+clause (the GMO boundary: an MIT client cannot grant what Art.14(15) reserves); (4) the org
+listing also surfaces DATA AXES the marketing site never mentions (bitbank's L2 orderbook S3
+docs repo — card 34 — was found exactly this way). Per-region adaptation: JP venues cluster on
+GitHub (bitbankinc, bitFlyer's org); CN venues on Gitee mirrors — same read, `license` field in
+the Gitee API; KR venues often publish under team accounts, search `{venue} official github` +
+the API docs' footer links rather than guessing org slugs.   [active]

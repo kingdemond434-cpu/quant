@@ -2491,3 +2491,37 @@ stamped for the JP/KR half; NO new universe-map inventory (100-jquants-api and
    dug ground or forces the per-card ownership audit this run had to do instead. FIX (named, owed
    by an unfrozen seat): make the parser consume the grade/§33 tokens miners actually write (or
    vice-versa), pin card 23 as non-pending in a test. Ledgered R0617. [§33: wired -> ledger R0617]
+
+## 2026-08-19 EN frontier miner s-I — Numerai methodology-thread batch (899/3170/151), process extractions
+All primary-source, read to full thread depth; DERIVES-FROM chains checked per item. Routed here
+as ENGINE ideas (none is a tradable mechanism; none touches a statistical bar).
+1. **Leak-free permutation-importance protocol + the measured cost of skipping it.** Numerai
+   t/3170 #21 (jay1100): feature-selection importance computed on validation +0.7% "gain";
+   averaged across 5 folds +0.5%; computed on training folds only +0.025%. ~95% of the published
+   gain is evaluation leakage and **fold-averaging dilutes a leak, it does not remove it** (the
+   diluted arm still books 20× truth). Desk application: any composite-signal feature-selection
+   step in the alpha factory must compute importance strictly inside training folds; the 3-arm
+   decomposition is a cheap self-test to add wherever selection exists. Graveyard:
+   `numerai_mda_feature_selection_gain`. [§33: screened -> docs/graveyard.md `numerai_mda_feature_selection_gain`]
+2. **Max-feature-exposure as an OOS-fragility diagnostic for composite candidates.** t/899 (jrb):
+   across 80 GBT/NN models, in-sample max |spearman(prediction, feature)| correlates INVERSELY
+   with OOS sharpe; the r223 burn anecdote is the mechanism (concentrated feature bets die at
+   regime change). Desk analogue: for multi-feature candidates, publish max-exposure beside the
+   screen stats — a diagnostic, NOT a gate (no pass/fail authority; same posture as wq fitness).
+3. **Era-wise prediction-on-feature neutralization, with its measured boundary.** t/899: subtract
+   per-era OLS of predictions on features (proportion knob) — example model corr 0.0291→0.0255,
+   sharpe 0.9608→1.2436, burn eras flipped; mdo's torch variant clamps only exposures ABOVE a
+   target (keeps small ones). BOUNDARY recorded from the same thread (#48 taori): helps simple
+   models, HURTS advanced ones — never applied blind. Crypto analogue: residualize a composite
+   perp signal against its own inputs per rebalance bucket; the desk already demeans RETURNS
+   cross-sectionally — this is the PREDICTION-side sibling, a different operator.
+4. **Smart-Sharpe autocorrelation penalty — with the community's sign-boundary fix.** t/151
+   (mdo, from the Keyquant paper): SE inflation `sqrt(1 + 2*sum((n-i)/n * p^i))`, p = AR1 of the
+   per-era performance series. The thread's own correction (#4-#6): use **|AR1|** — the raw
+   formula turns NEGATIVE autocorrelation into a penalty <1, i.e. a certainty BONUS, a boundary
+   the source paper never hit because long TS AR1s don't go negative. Desk relevance: any t-stat
+   on serially-correlated per-period performance understates SE by exactly this factor; and the
+   |AR1| guard is the OP-084-class lesson (a formula's untested input region is where it lies).
+   Also from the thread: an ORDINAL era/time variable in features is a leak unless CV is
+   time-series CV (categorical era grouping is safe) — cheap audit question for any regime
+   feature encoded as a time proxy.
