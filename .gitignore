@@ -210,3 +210,10 @@ desks/mt5/data/daily_cycle_state.json
 # landed there and `git check-ignore` returned no match, meaning one `git add -A` would have
 # committed it. Any key that has been in this directory on an unignored commit is burned.
 secrets/
+
+# Generated research artifacts under the desk data dirs. The code that produces
+# them is committed and they are reproducible from it; an 18 MB parquet cache in
+# git history is a mistake that cannot be taken back.
+desks/*/data/*.parquet
+desks/*/data/hunt_candidates.json
+desks/*/data/recover_candidates.json
