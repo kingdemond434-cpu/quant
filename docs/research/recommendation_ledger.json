@@ -837,11 +837,11 @@
    "summary": "CARRY PnL ATTRIBUTION: run_cashcarry_executor.py:1117 computes the futures leg as a wallet delta (fut_eq - start_eq), so any non-trade wallet credit is booked as profit. Derive the futures leg from the /fapi/v1/income ledger (REALIZED_PNL + FUNDING_FEE + COMMISSION) like libs/execution/binance_testnet.py:222-239 already does, and make leak_attribution.residual an assertion that trips when it is non-zero rather than a number nobody reads.",
    "roi_bps": 0.0,
    "raised": "2026-07-30T17:32:55.982059+00:00",
-   "status": "scheduled",
-   "reason": "Wallet-delta booking SURVIVES UNCHANGED: run_cashcarry_executor.py:1629 computes fut_pnl = fut_eq - start_eq with its own comment admitting it bundles realized + funding + fees + unrealized, so any non-trade futures credit beyond a ledgered capital event still books as PROFIT (effective_start_equity at :1627 nets recorded capital events only). The fix is RE-USE, not new plumbing: the income call that would resolve it is already made two lines below at :1643-1646 (read_income -> fut.income_summary), and binance_testnet.income_summary (:243-263) already returns realized_pnl/funding/commission separately. The residual half is also still open: carry_accounting.py:138-141 computes residual, live value $10.04, and its docstring says it 'deserves a page' -- yet grep for leak_attribution finds only the writer at :1699 and prose, with NO reader, no assertion and no alarm.",
-   "commit": "",
-   "due": "2026-08-14",
-   "disposed": "2026-08-05T09:08:23.030680+00:00"
+   "status": "implemented",
+   "reason": "VERIFIED BY FRESH READ 2026-08-19; landed 2026-08-05 in d971a081 and was never dispositioned. R0062 asked for (a) the futures leg derived from the /fapi/v1/income ledger instead of a wallet delta and (b) leak_attribution.residual made an assertion that trips. Both live: run_cashcarry_executor.py:2283-2291 reads income_summary(start_ms) and keeps realized_pnl; :2320 calls reconcile_futures_leg(equity_delta=, venue_realized=, funding=, commission=, unrealized=, rebase_usd=); :2365 publishes net_pnl_basis venue-income-ledger. web/cashcarry_live.json today reads net_pnl -1877.16 on that basis, NOT the +2936.86 equity delta, and the residual trips and NAMES its cause: REBASE-LEAK, equity delta +22.70 exceeds the venue income ledger -4791.32 by +4814.02, matching the ledgered inception re-base of +4790.70. The equity delta is deliberately RETAINED as the second measurement of one leg -- two independent reads whose disagreement is the diagnostic -- which is the double-entry design the 13-model panel demanded, not the defect. Carrying this row further reads as an unfixed money-path leak and it is not one.",
+   "commit": "d971a081c63381428b9ba3f38f4ae35ea8c1ecdc",
+   "due": null,
+   "disposed": "2026-08-19T15:25:07.653683+00:00"
   },
   {
    "id": "R0063",
@@ -3193,11 +3193,11 @@
    "summary": "SYNTH0801 P2-9 [val N22, SL-verified]: CPCV purge and embargo are INERT -- _cpcv_positive_fraction in libs/autodiscovery/validation.py references s.train ZERO times, so the consuming statistic cannot see the thing purge/embargo fix. Measured: cpcv_positive_fraction identical to six decimals (0.733333) across purge 0/2/50/500 and embargo 0.00/0.01/0.10/0.40 -- a 250x parameter range. Combined with walk_forward running at embargo=0 and neither PBO implementation having purge/embargo/block structure: NO GATE IN THE LIVE PATH HAS ANY LEAK PROTECTION. Distinct from R0001 (which says the code is never called); here it IS called and the statistic ignores the training fold.",
    "roi_bps": 6500.0,
    "raised": "2026-08-01T03:34:09.509598+00:00",
-   "status": "scheduled",
-   "reason": "[disposition sweep 2026-08-05, verified against the tree] DEFECT RE-VERIFIED FROM BOTH ENDS TODAY, and it is NOT the 'already fixed' it can look like. _cpcv_positive_fraction (libs/autodiscovery/validation.py:253-284) HAS been rewritten to use the real splitter -- it constructs CPCV(n_groups, n_test_groups, purge, embargo) and averages over combinatorial paths, falling back to a contiguous split only below _CPCV_MIN_OBS -- so the combinatorial half of the original complaint is genuinely closed. The row's actual claim survives that rewrite intact: the statistic scores `arr[s.test].mean() > 0` (:276-277) and references s.train ZERO times, while libs/validation/cpcv.py:71-76 shows test membership is fixed by the group combination and purge/embargo mutate ONLY train_set. The consuming statistic is therefore provably invariant to both parameters -- which is precisely the six-decimal invariance across purge 0/2/50/500 the row measured, and it is a property of the design, not a coincidence of one sample. Consumed live at validation.py:624. BLOCKER: the fix is a redesign of the gate statistic (score something that reads the purged training fold) plus re-certification of the gate's power, not a patch; it may only TIGHTEN. UNBLOCKS: a clean validation cycle with the power re-measurement budgeted, not a spare hour.",
-   "commit": null,
-   "due": "2026-08-19",
-   "disposed": "2026-08-05T13:34:54.855331+00:00"
+   "status": "implemented",
+   "reason": "CONFIRMED LIVE AND REPAIRED 2026-08-19, and the row was RIGHT for 18 days. A prior cycle swapped np.array_split for the real CPCV splitter and wrote a docstring saying purge+embargo now stopped leakage; the residual defect R0240 names survived that fix. CPCV.split() (libs/validation/cpcv.py:70-77) discards from train_set ONLY -- test is np.sort(test), untouched. Both consumers score arr[s.test] and never read s.train, so the constants are arithmetically inert: bit-identical 0.6666666667 across purge 0..500 / embargo 0.00..0.45 on a 3000-bar AR(0.35) stream while mean|train| collapses 2000.0 -> 406.7. REPAIRED UPWARD (L1.49): constants kept and DECLARED inert at both definition sites, four false docstrings corrected, gate re-documented as sub-period consistency over 15 combinatorial paths. NOT ONE THRESHOLD MOVED, pinned by regression test. Generalised so the class cannot return: libs/validation/knob_sensitivity.py + scripts/check_knob_sensitivity.py, daily 07:19, positive control on walk_forward embargo reads LOAD_BEARING.",
+   "commit": "74460f77439a71641eff351046a0321166290fd9",
+   "due": null,
+   "disposed": "2026-08-19T15:24:52.656789+00:00"
   },
   {
    "id": "R0241",
@@ -8161,6 +8161,34 @@
    "disposed": null,
    "renumbered_from": "R0584",
    "renumber_reason": "id was allocated to a different recommendation on the other branch; renumbered at merge so citations stay unambiguous"
+  },
+  {
+   "id": "R0642",
+   "source": "cycle",
+   "summary": "R0240 FOLLOW-ON, and it is the bigger half: the gauntlet has ONE layer of leakage protection, not two, and nobody had counted. R0240 established the cpcv gate carries none (purge/embargo act on CPCVSplit.train; both consumers score s.test only). That leaves walk_forward as the only measurably load-bearing one -- revalidation.WalkForwardEngine.evaluate reads arr[split.train] to build the IS Sharpe feeding not_too_lucky -- and its embargo DEFAULTS TO 0 (libs/validation/walk_forward.py:23, libs/validation/revalidation.py:102). MEASURE, then decide: (1) enumerate every gauntlet caller of evaluate() and record the embargo each actually passes; (2) if it is 0 everywhere, that is a MEASURED finding about the desk only leakage layer and belongs in the ledger and the vault; (3) any change to the embargo VALUE is a validation-gate semantics change and must be PRE-REGISTERED before it is made, never chosen from a run that looked better -- the screen has zero promotion authority (two-stage law) so this affects ordering only, which is exactly why it can be measured honestly. DO NOT close by editing prose: the deliverable is a number per caller.",
+   "roi_bps": 200.0,
+   "rank": null,
+   "roi_basis": "measured",
+   "raised": "2026-08-19T15:25:19.731420+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0643",
+   "source": "cycle",
+   "summary": "GIT IS THE INSTITUTIONAL MEMORY AND IT HAS STOPPED ACCEPTING WORK ON EVERY BRANCH CARRYING A DESK SNAPSHOT. Measured 2026-08-19: git push from claude/llm-auto-upgrade-verify-gcjac3 REJECTED by GitHub pre-receive -- \"File backups/moat/sor_research is 275.30 MB; this exceeds GitHub file size limit of 100.00 MB\". The path is ALREADY on origin/master (git cat-file -e origin/master:backups/moat/sor_research succeeds), so it was pushed while small and has since GROWN past the limit; every new snapshot commit now carries an oversized blob and is unpushable. 45 commits sat ahead of origin/master on that branch, including other sessions work. WHY IT IS INVISIBLE: the failure is at the REMOTE, so every local gate is green, every commit succeeds, and the desk own rule that \"uncommitted output DID NOT HAPPEN\" reads satisfied because the work IS committed -- it is just stranded. Nothing measures ancestry-to-REMOTE. THE FIX IS TWO-PART AND BOTH HALVES ARE NEEDED: (1) stop scripts/run_moat_backup.py writing a growing binary into the git tree -- backups belong outside the repo or gitignored, since a backup that cannot be pushed is not a backup and git is the wrong store for a 275MB sqlite image; (2) an organ that verifies ancestry-to-remote after each snapshot and PAGES when local HEAD is not reachable from origin, because a rejected push is currently silent. WORKAROUND USED THIS CYCLE, not a fix: cherry-picked the cycle build onto a fresh branch off origin/master (claude/knob-sensitivity-r0240, pushed and ancestry-verified).",
+   "roi_bps": 400.0,
+   "rank": null,
+   "roi_basis": "measured",
+   "raised": "2026-08-19T15:25:34.837935+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
