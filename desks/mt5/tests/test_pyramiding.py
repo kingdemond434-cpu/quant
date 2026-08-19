@@ -188,3 +188,42 @@ def test_there_is_no_parameter_that_adds_into_an_adverse_move() -> None:
     s = _sig(df, add_every_r=-1.0, add_max=3, add_frac=1.0)
     t = run_backtest(df, [s], FREE).trades[0]
     assert t.adds == 0 and t.units == 1.0
+
+
+# ------------------------------------------------- the fill-bar limit defect
+
+def test_a_limit_fill_is_not_paid_by_its_own_bar() -> None:
+    """The bar that filled a BUY LIMIT may not also pay the target.
+
+    We were filled because this bar's LOW reached down to the order. Crediting
+    the same bar's HIGH with the target assumes the high came after the fill,
+    and on a down bar it did not. Measured on GBPJPY fair-value-gap before this
+    rail existed: 59.7% of trades resolved on the fill bar, 1022 targets against
+    713 stops, E[R] +0.283 there against +0.105 everywhere else. Removing it
+    took the same cell from t=+9.16 to t=-6.18.
+    """
+    df = _bars([(100, 100, 100, 100),
+                (100, 100.2, 99.9, 100.1),
+                # this bar dips to fill the limit at 99 AND prints 103 -- but we
+                # cannot know the high came after the dip
+                (100.1, 103.5, 98.9, 103.0),
+                (103.0, 103.2, 102.0, 102.5)])
+    s = _sig(df, stop=98.0, target=102.0, trigger=99.0, wait_bars=3, ttl_bars=10)
+    t = run_backtest(df, [s], FREE).trades[0]
+    assert t.entry == pytest.approx(99.0)
+    assert t.reason != "target" or t.bars_held > 1
+
+
+def test_a_stop_entry_is_still_paid_by_its_own_bar() -> None:
+    """A BUY STOP fills on the way UP, so the same bar's later high is genuinely
+    later. The rail must not fire here or every breakout family loses real
+    fills it did take."""
+    df = _bars([(100, 100, 100, 100),
+                (100, 100.2, 99.9, 100.1),
+                # low 100.5 stays clear of the 100.0 stop, so the only thing
+                # this bar can resolve is the target
+                (100.1, 104.0, 100.5, 103.8)])   # through the 101 stop, on to 103
+    s = _sig(df, stop=100.0, target=103.0, trigger=101.0, wait_bars=3, ttl_bars=10)
+    t = run_backtest(df, [s], FREE).trades[0]
+    assert t.entry == pytest.approx(101.0)
+    assert t.reason == "target" and t.bars_held == 1

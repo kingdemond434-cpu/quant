@@ -177,8 +177,15 @@ def run_backtest(
             continue
         # intrabar trigger fill: a resting stop order that lives `wait_bars` bars
         fill_bar = i
+        limit_entry = False
         if sig.trigger is not None:
             tgt = sig.trigger
+            # A LIMIT entry sits on the far side of the market from the trade's
+            # direction (buy below, sell above); a STOP entry sits beyond it.
+            # The distinction is inferred rather than declared so it also covers
+            # the families that predate this field.
+            limit_entry = ((sig.side > 0 and tgt < entry)
+                           or (sig.side < 0 and tgt > entry))
             hit = -1
             for j in range(i, min(i + sig.wait_bars, len(idx))):
                 if float(h[j]) >= tgt >= float(l[j]):
@@ -218,7 +225,8 @@ def run_backtest(
             # breakeven. It biases the measurement AGAINST pyramiding, which is
             # the direction a test of pyramiding has to be biased.
             if side > 0:
-                if not banked and bank_frac > 0 and hi >= target:
+                if (not banked and bank_frac > 0 and hi >= target
+                        and not (limit_entry and j == fill_bar)):
                     banked = True
                     banked_at = target
                     stop = max(stop, entry + sd0 * bank_protect_k)
@@ -240,11 +248,21 @@ def run_backtest(
                             # breakeven on the first add, then trailing behind
                             prev = entry + sd0 * add_every_r * (len(adds) - 1)
                             stop = max(stop, prev)
-                if not banked and hi >= target:
+                # THE FILL BAR MAY NOT PAY A LIMIT ENTRY. We were filled because
+                # this bar's LOW reached down to the order; crediting the same
+                # bar's HIGH with the target assumes the high came after the
+                # fill, and on a down bar it did not. Measured on GBPJPY
+                # fair-value-gap: 59.7% of trades resolved on the fill bar,
+                # 1022 targets against 713 stops, carrying E[R] +0.283 against
+                # +0.105 for everything that resolved later. The stop stays
+                # live on this bar -- being wrong in the pessimistic direction
+                # is the only safe way to be wrong about intrabar order.
+                if not banked and hi >= target and not (limit_entry and j == fill_bar):
                     exit_price, reason = target, "target"
                     break
             else:
-                if not banked and bank_frac > 0 and lo <= target:
+                if (not banked and bank_frac > 0 and lo <= target
+                        and not (limit_entry and j == fill_bar)):
                     banked = True
                     banked_at = target
                     stop = min(stop, entry - sd0 * bank_protect_k)
@@ -264,7 +282,7 @@ def run_backtest(
                         if sig.add_ratchets_stop:
                             prev = entry - sd0 * add_every_r * (len(adds) - 1)
                             stop = min(stop, prev)
-                if not banked and lo <= target:
+                if not banked and lo <= target and not (limit_entry and j == fill_bar):
                     exit_price, reason = target, "target"
                     break
         if exit_price is None:
