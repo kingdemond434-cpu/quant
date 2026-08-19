@@ -1888,6 +1888,29 @@ canonicalization applies; NOT a §13 route-around: Wayback's own access rules go
 
 ## SESSION NOTES — JP frontier miner
 
+### 2026-08-19 session (JP frontier miner, s5) — IN PROGRESS (write-first note; updated as items resolve)
+ITEMS THIS RUN (bounded per completion contract; resume order from s4's queue):
+0. **Standing cheap probe — UA-matrix on note.com/zenn.dev CONTENT paths (never a cached verdict;
+   their robots.txt is known to lie) + robots on every host touched this run.** STATUS: pending.
+1. **Verification lane (resume step 1).** (a) The two JP-dated dues landing today are BOTH already
+   closed by sibling seats: card 29 J-Quants killed 08-12 (excluded-paid, v1 API 410, §38 free JPX
+   replacement); card 28 bitbank verified + §13 LEGITIMATE + wired TODAY by EN s-I
+   (`data/bitbank_1day.jsonl`, 100,885 rows on disk; forward refresher = R0619, engine seat).
+   (b) bitbank still re-lists as pending-verification — the R0514/R0617 `_classify` fail-open
+   (grade token "verified-technically-clean" misses the "verified-clean" substring; §33 verb
+   `wired` not terminal in the parser). Parser is engineering-owned (R0617); THIS seat's lane fix
+   is the KR-s4-precedent token edit on its OWN card only. STATUS: pending.
+2. **Deep-forest queue, continued (s4 item 1 — all were 200-to-ClaudeBot on 08-13; re-probe first).**
+   (a) `rarirure.rip` 「おれの脳筋BOTがやっと利益を出した話」 (POSITIVE post-mortem, the rarer kind);
+   (b) `blog.shidokamo.com` 「ビットコインをChat-GPTと一緒にトレードする」 (OP-072 specimen — mine as
+   contamination evidence, not for alpha) + 「初級botで裁量トレード」 (discretionary, in scope);
+   (c) `yard.tips` 「Trading Viewで人気の戦略からセンスを磨く」 (crowding/positioning read);
+   (d) `mirumi.me` 「bot を書くためにつくって公開したもの」 (published tooling → REPO CHAIN — doubles
+   as the JP-half hunt of backlog card "Foreign AI-quant RESEARCH SYSTEMS (JP/KR equivalents)").
+   STATUS: pending.
+CARRIED (named next-run, from s4): tech.takibi.net CDX/sitemap route (RustyBot, backtest tutorial);
+coin-news.xyz XHR route (online estimation). Not taken this run.
+
 ### 2026-08-13 session (JP frontier miner) — COMPLETE (write-first note, finalized end of run)
 §33 STANDING TEST ("which artifact on disk is different because of what was mined?"):
 `docs/graveyard.md` (+2 entries), `docs/research/search_operator_library.md` (**+OP-072, +OP-073,

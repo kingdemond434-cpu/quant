@@ -2160,7 +2160,7 @@ _Found by JP frontier miner session 1, 2026-08-01, as the licensed replacement f
 
 ---
 
-### 28. bitbank public candlestick API (JP venue, keyless, whole-year-per-call) — grade: **verified-technically-clean; §13 DECIDED LEGITIMATE 2026-08-19 on NEW venue-conduct evidence (MIT-licensed official Public-API clients + published sample market-making bots + official botter community + official historical-data distribution — kill/re-entry condition on card); phantom-history trap GUARDED in the wired artifact** [§33: wired -> data/bitbank_1day.jsonl]
+### 28. bitbank public candlestick API (JP venue, keyless, whole-year-per-call) — grade: **verified-clean (technically clean; §13 DECIDED LEGITIMATE 2026-08-19 on NEW venue-conduct evidence (MIT-licensed official Public-API clients + published sample market-making bots + official botter community + official historical-data distribution — kill/re-entry condition on card); phantom-history trap GUARDED in the wired artifact. Grade token normalised 2026-08-19 by JP s5: the prior wording "verified-technically-clean" plus §33 verb `wired` both miss `_classify`'s resolved vocabulary, so this terminal card was re-listing in the verify queue every cycle — the R0514/R0617 fail-open; parser fix stays engineering-owned, this is the KR-s4-precedent card-side close)** [§33: wired -> data/bitbank_1day.jsonl]
 _Found by JP frontier miner session 1, 2026-08-01._
 
 > **§33 DISPOSITION 2026-08-19 — THE §13 DECISION IS MADE: LEGITIMATE, AND THE AXIS IS WIRED IN
