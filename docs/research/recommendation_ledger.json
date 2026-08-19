@@ -7866,25 +7866,11 @@
    "rank": 4.0,
    "roi_basis": "rank",
    "raised": "2026-08-19T01:26:21.227713+00:00",
-   "status": "scheduled",
-   "reason": "Engine-seat build (miner seat research-frozen). Backfill artifact live on disk; one week to wire priced acceptable for daily research bars.",
+   "status": "open",
+   "reason": null,
    "commit": null,
-   "due": "2026-08-26",
-   "disposed": "2026-08-19T01:26:25.683962+00:00"
-  },
-  {
-   "id": "R0620",
-   "source": "cycle",
-   "summary": "EN-sI 2026-08-19 (re-add after sibling stale-read clobber): REGISTER for bitbank official historical ORDER-BOOK snapshot S3 (bucket 564226375708-historical-order-books; AWS-account-ID or IP registration, venue GRANTS access). L2 200x2 ~2/min: BTC+XRP 2019-03-13->, 7 pairs 2023-07-24->, SOL 2024-11-21->. Named human step (GAP #69 class); watchlist card 34.",
-   "roi_bps": null,
-   "rank": 6.0,
-   "roi_basis": "rank",
-   "raised": "2026-08-19T01:26:23.674528+00:00",
-   "status": "scheduled",
-   "reason": "Registration is a named human/ops step (GAP #69 class); card 34 carries mechanism prior + screen obligation on grant.",
-   "commit": null,
-   "due": "2026-09-02",
-   "disposed": "2026-08-19T01:26:27.776702+00:00"
+   "due": null,
+   "disposed": null
   }
  ]
 }
