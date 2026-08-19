@@ -6233,6 +6233,7 @@ re-anchor row, and a third writer reverted my dispose inside a 2-minute window �
 single-process 3-way reconcile (R0619/R0620/R0621) committed and verified from `git show HEAD:`
 on attempt 1. The new half vs the 08-18 lesson: after ANY ledger add, verify the NEIGHBOR rows
 survived, not only that yours landed.
+[§33: wired -> data/bitbank_1day.jsonl]
 
 STATUS: item 1 RESOLVED. Items 2–3 open.
 
@@ -6250,6 +6251,7 @@ helps-simple-hurts-advanced boundary; smart-sharpe |AR1| SE-inflation with the c
 negative-AR1 sign-bug fix). 8212 graded THIN honestly (tokenomics, no mechanism).
 jefferythewind run-2 verdict **NOT YET PUBLISHED** (searched his latest posts; newest is
 2026-04-24 governance) — carried, not padded.
+[§33: killed -> docs/graveyard.md `numerai_mda_feature_selection_gain` + `hyperparam_grid_uniqueness_as_signal_diversity`]
 
 RESOLVED 3 (item 3 side-check ESCALATED TO A FULL RESOLUTION — the GMO card's heading was
 DESTROYED): the L1.61-shaped discrepancy (two cards dated 08-19, gate counts one) was not a
