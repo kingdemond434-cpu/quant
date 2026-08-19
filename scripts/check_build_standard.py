@@ -66,6 +66,7 @@ _GOVERNED: tuple[str, ...] = (
     "check_claim_consistency.py",                           # L1.61 does the desk contradict itself
     "check_partition_power.py",                              # L1.63 can the certificate say NO
     "check_panel_breadth.py",                               # L1.62 was that power denominator measured
+    "check_margin_topology.py",                             # L1.64 was the capital structure decided
     "check_citation_integrity.py",                          # R0369 can the proof-of-work be cashed
     "check_birth_properties.py",                            # §36/L2.9 born with its properties
     "check_capital_basis.py",                               # R0287 return-denominator invariant

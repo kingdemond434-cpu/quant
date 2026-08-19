@@ -185,6 +185,24 @@ def _cost_levers() -> dict[str, Any]:
                     "that stays near zero the routing is falling back and the reason is in `why`")}
     except Exception as exc:
         out["maker_routing"] = {"state": "UNKNOWN", "why": f"{type(exc).__name__}: {exc}"}
+    # MARGIN TOPOLOGY (L1.64): the third cost lever -- what the CONSTRUCTION pays, not the fee
+    # schedule. The book runs one margin construction among several; the comparator measures the
+    # harvestable-notional-per-equity of each. An undecided construction is an invisible ceiling
+    # in exactly the way an unclaimed fee discount is an invisible surcharge.
+    try:
+        doc = json.loads((_ROOT / "data/margin_topology.json").read_text("utf-8"))
+        best = ((doc.get("uplift") or {}).get("alternatives") or [{}])[0]
+        out["margin_topology"] = {
+            "state": doc.get("status"),
+            "current": doc.get("current_construction"),
+            "best_alternative": best.get("construction"),
+            "structural_multiplier": best.get("structural_multiplier"),
+            "why": str(doc.get("why", ""))[:180]}
+    except (OSError, ValueError) as exc:
+        out["margin_topology"] = {"state": "UNMEASURED",
+                                  "why": f"data/margin_topology.json unreadable "
+                                         f"({type(exc).__name__}) -- run "
+                                         "scripts/check_margin_topology.py. Unmeasured, not OK"}
     return out
 
 

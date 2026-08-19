@@ -2562,6 +2562,25 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # REGISTRY promotion, sleeve sizing and LIVE at 15% of book.
 11 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_partition_power.py >> data/cro_ai_logs/partition_power.log 2>&1
 
+# --- MARGIN TOPOLOGY (L1.64) -------------------------------------------------------------------
+# The deployed sleeve's margin construction (spot wallet + separately-margined USDT-M short) was
+# INHERITED from connector order, never decided. The comparator measures notional_per_equity for
+# every construction available at current equity and the fence fails until a decision row exists
+# (KEEP-CURRENT is legitimate). CADENCE: the GRADING run is daily -- its inputs are the decision
+# file, NAV attestation and terms table, so it is INFORMATION-ARRIVAL bound (L1.28c); phased to
+# 07:29 after the 07:11 partition-power fence. The --collect TERMS run is weekly -- venue margin
+# terms change on policy cadence, and the fence refuses a table older than 21 days rather than
+# grade on it, so weekly keeps 3x headroom inside its own staleness ceiling.
+# EVIDENCE: scripts/check_margin_topology.py -> data/margin_topology.json; CONSTITUTION L1.64
+# CONFIDENCE: committed-script (new this cycle); first run graded 5 constructions and found the
+# book INHERITED: inherited npe 0.75 at the executor's venue leverage 3 vs 1.0 self-collateralised
+# (+33%, liquidation risk FALLING); COIN-M 1x covers only 20/527 (3.8%) of the USDT-M carry
+# universe per-name; the Multi-Assets collateral table has NO keyless endpoint (both candidates
+# 404, refusals recorded in fetch_log) so the whole-book alternative stays UNMEASURED pending a
+# keyed/manual dated read; dollar pricing of the clamp correctly REFUSED on the molded paper book.
+29 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_margin_topology.py >> data/cro_ai_logs/margin_topology.log 2>&1
+37 6 * * 1 cd "$QUANT_ROOT" && .venv/bin/python scripts/check_margin_topology.py --collect >> data/cro_ai_logs/margin_topology.log 2>&1
+
 # --- LIVE RECOVERY + VALIDATION JOBS (verified against VPS 2026-08-15) ------------------------
 # The recorder supervisor is a five-minute idempotent watchdog, so it also supplies bounded
 # post-reboot recovery without a second undeclared @reboot path. The three validators consume

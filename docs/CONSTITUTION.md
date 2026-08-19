@@ -2765,3 +2765,72 @@ distinguishable from "this edge passed a test that has never killed anything" --
 this desk until now, and only one of them is evidence.
 
 FENCED by `scripts/check_partition_power.py` over `libs/validation/partition_power.py`.
+
+## L1.64 A MARGIN CONSTRUCTION NOBODY CHOSE IS A CEILING NOBODY MEASURED
+
+The desk's only deployed sleeve runs inside one margin construction -- long spot in the spot
+wallet, short USDT-M perp in a separately-margined futures wallet -- and **that construction was
+never chosen. It fell out of which connectors were built first** (`binance_spot_testnet` +
+`binance_testnet`: one venue, two wallets). Every fence and incident repair since has asked "is
+the accounting right GIVEN the topology" -- R0053 (multi-asset mode valued $5,000 of USDC at zero
+and disarmed the ruin rail at every equity), R0234 (LIVE equity undercount), the 07-13 NOMUSDT
+fire (the wallet holding the short cannot see the hedge, so a -$55 book read as -40.9% and the
+dead-man flattened a solvent book), the 07-19 cross-wallet accounting break (gap row 34, still
+open) -- **and not one asked "is the topology right".** That is L1.55's distinction (a restraint
+CHOSEN vs INHERITED) applied to the capital structure itself, and the L1.45 cycle-blindness
+shape: every repair individually correct, the cycle they orbit never questioned.
+
+**THE ONE PLACE EFFICIENCY *WAS* MODELLED PROVES THE POINT.** `run_capital_plan.py` carried
+`_PM_EFFICIENCY = 1.8` -- hardcoded, no derivation anywhere in the repo, applied at EVERY capital
+level including the $3,846 seed where its own `pm_steps` note says PM has an eligibility floor.
+The desk modelled only the construction it cannot use at seed, at a value nobody measured, while
+the two constructions it CAN use today (Multi-Assets Mode; COIN-M 1x self-collateralised inverse)
+were modelled nowhere: `multiAssetsMargin` appears in this repo exclusively as an equity-
+accounting hazard, and the desk itself MINED the proof that an alternative construction has no
+liquidation boundary at all (8btc thread-172717, card 31: COIN-M 1x testnet liquidation price
+rendered 一亿, effectively infinity) -- then routed that fact to signal-space and never asked the
+capital-structure question about its own book.
+
+**THE ARITHMETIC THAT WAS NEVER WRITTEN DOWN.** At the executor's own venue leverage (3, pinned
+by a regression test), $1 of carry notional under the inherited construction consumes $1 of spot
+plus $1/3 of short margin: **notional_per_equity = 1/(1+1/3) = 0.75**. A self-collateralised
+construction -- the long leg itself margins the short -- consumes only the long leg:
+**notional_per_equity ~= 1.0, a +33% carry-capacity multiplier at identical equity, with
+liquidation moving FURTHER away**, because the collateral appreciates in lockstep with the
+short's loss. And `data/leverage_target.json` carries growth_optimal 2.25 / ruin_cap 2.05: **the
+sizing ladder's own upper rungs are structurally unreachable under a 0.75x topology ceiling.**
+The sizing law and the capital structure had never been in the same room.
+
+**OPERATIVE.** Every deployed or shadow sleeve's margin construction carries a DECISION ROW
+measured against every construction available at current equity. `libs/portfolio/margin_topology`
+builds one row per construction -- notional_per_equity, liquidation reachability, universe
+coverage, funding book, eligibility floor, forward-evidence restart -- and the fence grades the
+live construction: **DECIDED** (a decision row names the running construction, made against >=1
+MEASURED alternative, equity not doubled since) / **DECIDED-STALE** (equity >= 2x the decision's
+equity -- eligibility is information-arrival bound and NAV doubling is the arrival, L1.28c) /
+**DIVERGED** (the decision names a construction the book does not run -- the L1.61 class) /
+**INHERITED** (no decision row: the failing state this law exists for) / **UNMEASURED** (no rows,
+or a decision recorded against zero measured alternatives -- paperwork, not a comparison,
+L1.28a). Ineligible constructions stay LISTED with an eligibility clock rather than dropping out
+of the denominator (L1.60). Venue terms are DATED READS with a staleness ceiling -- a stale
+collateral table must not mint MEASURED rows (L1.44), and an unstamped one is refused outright
+(L1.46). The clamp is PRICED per L1.51: structural multiplier plus both CAGR rungs, refusing
+dollar figures on a MOLDED paper book and publishing per-$10k rates instead.
+
+**THE SWITCH IS NEVER SILENT, AND KEEP-CURRENT IS LEGITIMATE.** This law's fence sizes nothing
+and flips no account mode. A construction switch is a principal-grade act that restarts forward
+evidence (L2.10) -- so the artifact prices `forward_evidence_restart` deployment-race style
+(L1.18a), which is also why the comparison is cheapest BEFORE Gate-0: every week of shadow
+accrued on an undecided construction is evidence that may have to be re-earned.
+
+**ANTI-TIMIDITY READING, THE ENTIRE PURPOSE.** A MEASUREMENT duty and a SCOPE EXPANSION. It
+lifts nothing, sizes nothing, promotes nothing, opens no gate and loosens no bar; the ruin
+rails, the two-stage law and the gated-leverage ladder behave identically before and after. Its
+whole effect is to make "the desk runs this construction because it compared the alternatives"
+distinguishable from "the desk runs this construction because those connectors got built first"
+-- byte-identical until now, and only one is a decision. And the pricing cuts BOTH ways: this is
+the instrument that finally lets a capacity raise that LOWERS liquidation risk argue for itself
+-- the rare aggression that costs no ruin budget -- while equally letting KEEP-CURRENT cite its
+measured reason instead of inertia.
+
+FENCED by `scripts/check_margin_topology.py` over `libs/portfolio/margin_topology.py`.

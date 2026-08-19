@@ -450,6 +450,20 @@ _MAP: dict[str, list[str]] = {
               "scripts/screen_oi_ls_axes.py",
               "scripts/check_cross_section_floor.py", "libs/research/cross_section_floor.py",
               "scripts/run_derivative_shadow.py"],
+    # L1.64: the only deployed sleeve's margin construction (spot wallet + separately-margined
+    # USDT-M short) was INHERITED from connector order, never decided. The one place capital
+    # efficiency was modelled hardcoded _PM_EFFICIENCY=1.8 and applied it at every equity level
+    # including the PM-ineligible seed, while the constructions usable TODAY (Multi-Assets;
+    # COIN-M 1x self-collateralised, liq unreachable -- the desk's own mined 8btc card-31
+    # evidence) were modelled nowhere. The comparator measures notional_per_equity per
+    # construction (inherited: 0.75 at the executor's venue leverage 3; self-collateralised:
+    # ~1.0, +33% capacity with liquidation risk FALLING); the fence fails INHERITED /
+    # DIVERGED / DECIDED-STALE / UNMEASURED, and a decision against zero measured alternatives
+    # is refused as paperwork (L1.28a). run_capital_plan is a regression site -- it now imports
+    # CAPITAL_LEVELS + split_wallet_npe from the comparator, and the AST test that pins the
+    # deleted constant turns red if the fork returns.
+    "L1.64": ["scripts/check_margin_topology.py", "libs/portfolio/margin_topology.py",
+              "scripts/run_capital_plan.py"],
     # R0369 (under L2.3/§42): an implemented row's --commit is the ledger's whole proof mechanism,
     # and it was enforced only at WRITE time -- `dispose` refuses an empty field and asks nothing
     # else. A rebase rewrites SHAs and the citation quietly names an object no other clone can
