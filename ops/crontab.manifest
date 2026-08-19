@@ -327,6 +327,17 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 40 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/screen_funding_spread.py >> data/cro_ai_logs/funding_spread_screen.log 2>&1
 
+# BYBIT PRINT-FLAGS RE-SCREEN (R0484, orphan-scripts wiring 2026-08-19). The isBlockTrade/isRPI
+# conditioning axis is UNBACKFILLABLE (flags absent from Bybit's public archive; the 08-17 rm -rf
+# destroyed 19.46 GB of tape), so power accrues only at recorder speed ~96 bars/day/symbol and the
+# screen self-reports SCREEN-UNDERPOWERED until the tape can answer. Weekly matches the
+# data-arrival ceiling (L1.28c): a day adds ~1% of a detection-floor sample, so daily would re-read
+# near-unchanged state. Trials are pre-registered in the script; re-runs add observations, never
+# constructions, so this burns no new multiplicity.
+# EVIDENCE: scripts/screen_bybit_print_flags.py -> reports/axis_screens/bybit_print_flags.json
+# CONFIDENCE: committed-script (cadence chosen here, data-arrival matched)
+35 5 * * 0 cd "$QUANT_ROOT" && flock -n data/.cron_bybit_print_flags.lock nice -n 19 .venv/bin/python scripts/screen_bybit_print_flags.py >> data/cro_ai_logs/bybit_print_flags_screen.log 2>&1
+
 # SETTLEMENT-CALENDAR MISMATCH SCREEN (R0121, §42 capacity lens). Stage A only, zero promotion
 # authority. Asks whether two venues' funding grids are genuinely OFFSET in phase -- the only
 # condition under which a window can collect one venue's settlement and avoid the other's -- or
