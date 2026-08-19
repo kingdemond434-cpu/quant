@@ -147,7 +147,7 @@ def test_foreign_language_methodology_titles_surface():
         "暗号資産 バックテスト 過学習 検証",              # JA: backtest / overfitting / validation
         "금 XAUUSD 백테스트 과최적화 검증",              # KO: gold backtest / over-optimization
         "золото стратегия бэктест переобучение",          # RU: gold strategy backtest / overfitting  # noqa: E501
-        "vàng backtest quá khớp kiểm định ngoài mẫu",     # VI: gold overfit / oos  # noqa: RUF001, E501
+        "vàng backtest quá khớp kiểm định ngoài mẫu",     # VI: gold overfit / oos
         "altın geriye dönük test aşırı optimizasyon",     # TR: gold backtest / over-optimization  # noqa: RUF001, E501
     ):
         s, _ = score_title(title)

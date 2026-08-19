@@ -143,6 +143,30 @@ QUERIES_JA: Final[tuple[str, ...]] = (
     "ロンドン ニューヨーク 時間帯 為替",      # session structure -- first-class off 24/7
     "経済指標 雇用統計 為替 反応",            # NFP / macro-event reaction
     "実運用 バックテスト 乖離",               # live-vs-backtest divergence
+    # -- breadth parity with the CN lane (2026-08-18): same territory, native vocabulary
+    "順張り トレンドフォロー 戦略",           # trend following
+    "逆張り 平均回帰 戦略",                   # mean reversion
+    "ブレイクアウト 戦略 検証",               # breakout
+    "ボラティリティ ブレイクアウト 戦略",     # volatility breakout
+    "グリッドトレード リスク 破綻",           # grid trading risk
+    "統計的裁定 ペアトレード",                # statistical arbitrage / pairs
+    "CTA トレンド 戦略 検証",                 # CTA
+    "オプション ボラティリティ 戦略",         # options vol
+    "マルチファクター モデル 検証",           # multi-factor
+    "クロスセクション ファクター アルファ",   # cross-sectional factor
+    "オーダーブロック 手法 検証",             # SMC order block
+    "フェアバリューギャップ FVG 手法",        # SMC / ICT FVG
+    "流動性 スイープ 相場構造",               # liquidity sweep / market structure
+    "銀 XAGUSD 取引 戦略",                    # silver
+    "ドル円 ユーロドル トレード 戦略",        # USDJPY / EURUSD
+    "日経225 ダウ ナスダック 戦略",           # equity indices
+    "ロンドンフィックス 実需 フロー",         # London WMR fix flow
+    "先物 ロールオーバー 期日 取引",          # futures roll
+    "中央銀行 政策金利 発表 反応",            # central-bank event
+    "週末 窓開け ギャップ リスク",            # weekend gap risk
+    "生産者 ヘッジ COT 商業筋",               # producer hedging (COT commercial)
+    "破産 ロスカット 反省 実弾",              # blow-up / ruin post-mortem
+    "プロップファーム 手法 検証",             # prop-firm methods
 )
 
 QUERIES_KO: Final[tuple[str, ...]] = (
@@ -164,6 +188,30 @@ QUERIES_KO: Final[tuple[str, ...]] = (
     "런던 뉴욕 세션 외환 변동성",             # session structure
     "고용지표 비농업 외환 반응",              # NFP / macro-event reaction
     "실전 백테스트 괴리",                     # live-vs-backtest divergence
+    # -- breadth parity with the CN lane (2026-08-18)
+    "추세추종 트렌드 전략",                   # trend following
+    "역추세 평균회귀 전략",                   # mean reversion
+    "돌파 브레이크아웃 전략 검증",            # breakout
+    "변동성 돌파 전략",                       # volatility breakout
+    "그리드 매매 리스크 청산",                # grid trading risk
+    "통계적 차익거래 페어트레이딩",           # statistical arbitrage / pairs
+    "CTA 추세 전략 검증",                     # CTA
+    "옵션 변동성 전략",                       # options vol
+    "멀티팩터 모델 검증",                     # multi-factor
+    "횡단면 팩터 알파",                       # cross-sectional factor
+    "오더블록 기법 검증",                     # SMC order block
+    "공정가치갭 FVG 기법",                    # SMC / ICT FVG
+    "유동성 스윕 시장구조",                   # liquidity sweep / market structure
+    "은 XAGUSD 트레이딩 전략",                # silver
+    "달러엔 유로달러 트레이딩 전략",          # USDJPY / EURUSD
+    "코스피200 나스닥 지수 전략",             # equity indices
+    "런던 픽싱 실수요 플로우",                # London WMR fix flow
+    "선물 롤오버 만기 거래",                  # futures roll
+    "중앙은행 금리 결정 반응",                # central-bank event
+    "주말 갭 리스크",                         # weekend gap risk
+    "생산자 헤지 COT 상업",                   # producer hedging (COT commercial)
+    "깡통 손절 복기 실전",                    # blow-up / ruin post-mortem
+    "프랍 펌 기법 검증",                      # prop-firm methods
 )
 
 QUERIES_RU: Final[tuple[str, ...]] = (
@@ -185,6 +233,30 @@ QUERIES_RU: Final[tuple[str, ...]] = (
     "лондон нью-йорк сессия волатильность",   # session structure
     "макроэкономика ставка ЦБ реакция",       # central-bank macro reaction
     "реальная торговля отличие бэктеста",     # live-vs-backtest divergence
+    # -- breadth parity with the CN lane (2026-08-18)
+    "следование тренду стратегия",            # trend following
+    "возврат к среднему стратегия",           # mean reversion
+    "пробой уровня стратегия",                # breakout
+    "волатильный пробой стратегия",           # volatility breakout
+    "сеточная торговля риск слив",            # grid trading risk
+    "статистический арбитраж пары",           # statistical arbitrage / pairs
+    "CTA трендовая стратегия",                # CTA
+    "опционы волатильность стратегия",        # options vol
+    "мультифакторная модель проверка",        # multi-factor
+    "кросс-секционный фактор альфа",          # cross-sectional factor
+    "ордер блок метод проверка",              # SMC order block
+    "гэп справедливой цены FVG",              # SMC / ICT FVG
+    "снятие ликвидности структура рынка",     # liquidity sweep / market structure
+    "серебро XAGUSD торговая стратегия",      # silver  # noqa: RUF001
+    "доллар йена евродоллар стратегия",       # USDJPY / EURUSD
+    "индекс насдак торговая стратегия",       # equity indices
+    "лондонский фиксинг реальный поток",      # London WMR fix flow
+    "ролловер фьючерс экспирация",            # futures roll
+    "центробанк ставка решение реакция",      # central-bank event
+    "выходной гэп риск",                      # weekend gap risk
+    "хеджирование производителей COT",        # producer hedging (COT commercial)
+    "слив депозита разбор стоп",              # blow-up / ruin post-mortem
+    "проп фирма метод проверка",              # prop-firm methods
 )
 
 #: language -> (queries, the source functions that speak it). Consulted by the miner so adding a
@@ -209,6 +281,30 @@ QUERIES_VI: Final[tuple[str, ...]] = (
     "phiên luân đôn new york biến động",     # session structure
     "chỉ báo quá khớp dữ liệu lịch sử",      # indicator overfit to history
     "quản lý vốn kelly rủi ro phá sản",      # Kelly sizing / ruin risk
+    # -- breadth parity with the CN lane (2026-08-18)
+    "theo xu hướng trend following",          # trend following
+    "hồi quy trung bình chiến lược",          # mean reversion
+    "phá vỡ breakout chiến lược",             # breakout
+    "phá vỡ biến động chiến lược",            # volatility breakout
+    "giao dịch lưới rủi ro cháy",             # grid trading risk
+    "kinh doanh chênh lệch thống kê cặp",     # statistical arbitrage / pairs
+    "CTA chiến lược xu hướng",                # CTA
+    "quyền chọn biến động chiến lược",        # options vol
+    "mô hình đa nhân tố kiểm định",           # multi-factor
+    "nhân tố cắt ngang alpha",                # cross-sectional factor
+    "order block phương pháp",                # SMC order block
+    "khoảng trống giá trị hợp lý FVG",        # SMC / ICT FVG
+    "quét thanh khoản cấu trúc thị trường",   # liquidity sweep / market structure
+    "bạc XAGUSD chiến lược giao dịch",        # silver
+    "đô la yên euro đô la chiến lược",        # USDJPY / EURUSD
+    "chỉ số nasdaq chiến lược giao dịch",     # equity indices
+    "phiên định giá luân đôn dòng tiền",      # London WMR fix flow
+    "đáo hạn hợp đồng tương lai giao dịch",   # futures roll
+    "ngân hàng trung ương lãi suất phản ứng",  # central-bank event
+    "khoảng trống cuối tuần rủi ro",          # weekend gap risk
+    "phòng hộ nhà sản xuất COT",              # producer hedging (COT commercial)
+    "cháy tài khoản dừng lỗ rút kinh nghiệm",  # blow-up / ruin post-mortem
+    "prop firm phương pháp kiểm định",        # prop-firm methods
 )
 
 #: TURKISH -- Turkey has a large retail trading community, and lira-pair microstructure (a
@@ -233,6 +329,30 @@ QUERIES_TR: Final[tuple[str, ...]] = (
     "lira paritesi döviz volatilite",        # lira-pair FX -- kept: it IS the MT5 universe
     "kelly kriteri pozisyon büyüklüğü",      # Kelly sizing
     "gerçek işlem backtest sapması",         # live-vs-backtest divergence  # noqa: RUF001
+    # -- breadth parity with the CN lane (2026-08-18)
+    "trend takip stratejisi",                # trend following
+    "ortalamaya dönüş stratejisi",           # mean reversion
+    "kırılım breakout stratejisi",           # breakout  # noqa: RUF001
+    "volatilite kırılımı stratejisi",        # volatility breakout  # noqa: RUF001
+    "grid işlem riski patlama",              # grid trading risk
+    "istatistiksel arbitraj çift işlem",     # statistical arbitrage / pairs
+    "CTA trend stratejisi testi",            # CTA
+    "opsiyon volatilite stratejisi",         # options vol
+    "çok faktörlü model testi",              # multi-factor
+    "kesitsel faktör alfa",                  # cross-sectional factor
+    "order block yöntemi testi",             # SMC order block
+    "adil değer boşluğu FVG yöntemi",        # SMC / ICT FVG
+    "likidite süpürme piyasa yapısı",        # liquidity sweep / market structure  # noqa: RUF001
+    "gümüş XAGUSD işlem stratejisi",         # silver
+    "dolar yen euro dolar stratejisi",       # USDJPY / EURUSD
+    "endeks nasdaq işlem stratejisi",        # equity indices
+    "londra fixing gerçek akışı",            # London WMR fix flow  # noqa: RUF001
+    "vadeli sözleşme rollover vade",         # futures roll
+    "merkez bankası faiz kararı tepki",      # central-bank event  # noqa: RUF001
+    "hafta sonu boşluk riski",               # weekend gap risk
+    "üretici hedge COT ticari",              # producer hedging (COT commercial)
+    "hesap patlatma stop loss ders",         # blow-up / ruin post-mortem
+    "prop firma yöntem testi",               # prop-firm methods
 )
 
 

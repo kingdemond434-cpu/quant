@@ -138,8 +138,18 @@ class TestFailuresAreReportedNotRaisedAndNotFaked:
 
 class TestBreadthIsTerritoryAndParityWithChinese:
     def test_every_language_carries_a_real_query_set(self) -> None:
+        """LANGUAGE-PARITY LAW: every foreign/region lane gets the SAME breadth/depth/priority as
+        the Chinese lane -- a foreign lane is not a second-class citizen. Enforced against the live
+        CN breadth (not a frozen 15) so the two rise together: if the CN lane widens, the foreign
+        lanes owe the same. On 2026-08-18 the foreign lanes sat at ~18 vs the CN lane's 41, a 3.4x
+        breadth deficit; that was the violation this test now prevents from recurring silently."""
+        from scripts.mine_research_queue import BILIBILI_QUERIES
+        cn = len(BILIBILI_QUERIES)
+        floor = int(cn * 0.9)
         for lang, qs in F.LANGUAGES.items():
-            assert len(qs) >= 15, f"{lang} has {len(qs)} queries -- not parity with the CN lane"
+            assert len(qs) >= floor, (
+                f"{lang} has {len(qs)} queries vs the CN lane's {cn} (floor {floor}) -- "
+                "language-parity law: foreign lanes get the same breadth as Chinese")
             assert len(set(qs)) == len(qs), f"{lang} repeats a query"
 
     def test_the_queries_are_native_not_translated_english(self) -> None:
