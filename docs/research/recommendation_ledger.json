@@ -8077,20 +8077,6 @@
    "commit": null,
    "due": "2026-08-22",
    "disposed": "2026-08-19T07:22:46.279478+00:00"
-  },
-  {
-   "id": "R0636",
-   "source": "cycle",
-   "summary": "source_backlog._classify: fail-open serves terminally-graded cards as pending-verification forever when the grade lacks a terminal substring (F0002 recurrence: 3 of 7 queue items were phantom on 2026-08-19 — cards 24/27/32 'verified + MINED'/'BUILT'/'structural-reference'; card 35 minted same-day in the same shape). Docs half fixed same-run by AR s3 (grades made parser-terminal + vocabulary rule in watchlist header). ENGINE half owed: print a GRADE-UNPARSEABLE (possibly phantom) warning when the unrecognized-grade card carries a [s33: wired/screened -> artifact] marker, so the ambiguity surfaces instead of masquerading as work. Frozen for the miner seat (scripts/).",
-   "roi_bps": null,
-   "rank": 3.0,
-   "roi_basis": "rank",
-   "raised": "2026-08-19T07:51:29.945270+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
-   "due": null,
-   "disposed": null
   }
  ]
 }
