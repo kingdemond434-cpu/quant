@@ -3,9 +3,10 @@
 Every leakage instrument this desk owns validates the FEATURE. `leakage_detector.audit` is
 `audit(feature, fwd_ret, same_ret)` and all eight of its contracts regress the *feature* against
 the return. `libs/features/validation.py` "target leakage" means the feature reads the label.
-`axis_screen`'s angle-20 gate de-contaminates the *signal*. CPCV purge/embargo protects the
-*split*. NOT ONE of them takes the return series as the object under test -- it is the axiom they
-all assume.
+`axis_screen`'s angle-20 gate de-contaminates the *signal*. `walk_forward`'s embargo protects the
+*split* (and is the only one of these that measurably does -- the `cpcv` gate's purge/embargo were
+found inert for their consumer on 2026-08-19, R0240). NOT ONE of them takes the return series as
+the object under test -- it is the axiom they all assume.
 
 That makes payout contamination not merely undetected but ANTI-DETECTED: a P&L series crediting
 flows the position could not have held for passes every instrument MORE cleanly than a real edge

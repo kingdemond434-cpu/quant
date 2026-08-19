@@ -331,11 +331,22 @@ def capacity_race(capacity_usd: float, *, validation_days: float,
                        if verdict != "REACHES-LIVE" else "none needed")}
 _CPCV_MIN_POSITIVE = 0.6   # >=60% of purged folds positive
 
-# Real CPCV settings. 6 groups choose 2 gives 15 test paths; purge drops the observations
-# straddling each boundary and the embargo holds out a further 1% after it, which is what stops
-# a serially-correlated stream leaking its answer across the split.
+# Real CPCV settings. 6 groups choose 2 gives 15 combinatorial test paths, which is what this
+# gate buys over a contiguous k-fold split.
 _CPCV_GROUPS = 6
 _CPCV_TEST_GROUPS = 2
+
+# DECLARED INERT FOR THIS CONSUMER, and measured so on 2026-08-19 (R0240).
+# `CPCV.split()` applies purge and embargo by discarding indices from `CPCVSplit.train` --
+# `test` is untouched, by construction and correctly so. `_cpcv_positive_fraction` below scores
+# `arr[s.test].mean() > 0` and never references `s.train`, so NEITHER CONSTANT CAN REACH THE
+# STATISTIC. On a 3,000-bar AR(0.35) stream the output is bit-identical at 0.6666666667 across
+# purge 0..500 and embargo 0.00..0.45 while the mean train slice collapses 2000.0 -> 406.7.
+# They are kept, not deleted: they are the correct settings for any FUTURE consumer that fits
+# inside a split, and deleting them would make the next author re-derive the same thing. What
+# was wrong was the claim, not the values. `scripts/check_knob_sensitivity.py` holds this
+# honest -- if a consumer ever starts reading `s.train`, the probe flips to LOAD_BEARING and
+# this comment is the thing that must change.
 _CPCV_PURGE = 2
 _CPCV_EMBARGO = 0.01
 _CPCV_MIN_OBS = 60         # below this there is nothing to be combinatorial about
@@ -354,22 +365,29 @@ _FDR_ALPHA = 0.10
 
 
 def _cpcv_positive_fraction(returns: np.ndarray, *, k: int = 5) -> float:
-    """Fraction of COMBINATORIAL PURGED folds whose test slice is positive.
+    """Fraction of COMBINATORIAL test paths whose test slice is positive.
 
-    This was a plain `np.array_split` into k contiguous folds -- not purged, not embargoed, and
-    not combinatorial, despite the gate being named `cpcv` and the module docstring claiming
-    CPCV. `libs/validation/cpcv.py` implements the real thing (Lopez de Prado ch.12) and was
-    imported by nothing but its own test.
+    WHAT THIS MEASURES, STATED HONESTLY (corrected 2026-08-19, R0240). It is a SUB-PERIOD
+    CONSISTENCY statistic on an already-computed return stream, not a cross-validation. 6 groups
+    choose 2 gives 15 overlapping test paths instead of the one contiguous partition a plain
+    `np.array_split` gives, so the fraction is estimated over many sub-periods rather than five.
+    That -- and only that -- is what the CPCV splitter buys here.
 
-    The difference is not cosmetic. Contiguous k-fold on overlapping financial samples leaks
-    information across the fold boundary, so the old measure was systematically optimistic on
-    exactly the serially-correlated return streams this desk trades. Purge + embargo remove the
-    observations that straddle the boundary; the combinatorial part gives many test paths instead
-    of one, so the fraction means something.
+    IT CARRIES NO LEAKAGE PROTECTION, AND SAID OTHERWISE FOR MONTHS. Purge and embargo are the
+    mechanism that stops a fold seeing its own future, and they work by removing observations
+    from the TRAIN set. This function never fits anything and never reads `s.train`, so both
+    constants are inert here by construction -- measured bit-identical across purge 0..500 and
+    embargo 0.00..0.45 (see the constant block above, and `scripts/check_knob_sensitivity.py`
+    which keeps the claim and the code in agreement from now on).
 
-    Falls back to the contiguous split only when the sample is too short to purge -- with a short
-    series there is nothing to be combinatorial about, and refusing to score would fail candidates
-    for being new rather than for being bad.
+    THE OPEN QUESTION THIS EXPOSES IS BIGGER THAN THIS GATE and is tracked in the ledger, not
+    papered over here: leakage protection has to live wherever a model is FIT, and the gauntlet's
+    real fitting boundary is `walk_forward` (whose embargo IS load-bearing --
+    `revalidation.evaluate` reads `arr[split.train]`). A reader who took this docstring at its
+    word believed the desk had two layers of protection where it has one.
+
+    Falls back to the contiguous split only when the sample is too short to be combinatorial --
+    refusing to score would fail candidates for being new rather than for being bad.
     """
     arr = np.asarray(returns, dtype="float64")
     if len(arr) >= _CPCV_MIN_OBS:

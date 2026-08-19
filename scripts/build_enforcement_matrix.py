@@ -332,8 +332,17 @@ _MAP: dict[str, list[str]] = {
     # so a silent deletion fails while a sharper rewrite passes. L1.50's utilisation and queue
     # clauses additionally have live measuring fences, named here because they genuinely measure
     # those clauses rather than merely relating to them.
+    # The knob fence is L1.49's own shape one layer below the gate: L1.49 says a gate nobody can
+    # fail is not a standard, and a KNOB whose value cannot change the output is the parameter-
+    # level version of exactly that -- the gate runs, discriminates and reads every input, while
+    # the constant advertised as its protection is arithmetically inert. Measured 2026-08-19
+    # (R0240): _CPCV_PURGE/_CPCV_EMBARGO in BOTH gauntlet copies. Mapped here rather than given a
+    # new principle id, because L1.59 presumes doctrine expansion negative-ROI and this loophole
+    # is closed by an INSTRUMENT, not by more prose.
     "L1.49": ["tests/validation/test_weak_is_not_dead.py",
-              "libs/research/cohort_independence.py"],
+              "libs/research/cohort_independence.py",
+              "scripts/check_knob_sensitivity.py", "libs/validation/knob_sensitivity.py",
+              "tests/validation/test_knob_sensitivity.py"],
     "L1.50": ["tests/validation/test_weak_is_not_dead.py", "scripts/check_utilisation.py",
               "scripts/check_conversion.py"],
     # L1.51: a clamp without a price. Every risk breach is priced to the cent and NOT ONE CLAMP

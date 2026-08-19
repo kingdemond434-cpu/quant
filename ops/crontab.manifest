@@ -2609,6 +2609,24 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # REGISTRY promotion, sleeve sizing and LIVE at 15% of book.
 11 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_partition_power.py >> data/cro_ai_logs/partition_power.log 2>&1
 
+# --- KNOB SENSITIVITY (L1.49 family) -----------------------------------------------------------
+# Does a constant advertised as protection actually change the output it protects? Every other
+# gate instrument reads a gate's OUTPUT (ran / fired / could-fail / scanned / inputs-present) and
+# none can see a knob whose value the consumer's arithmetic never touches.
+# CADENCE: daily. Its input is the REPO -- the probes run against shipped code on a fixed
+# synthetic stream, never against market data -- so it is INFORMATION-ARRIVAL bound (L1.28c) and
+# changes only when someone edits a consumer or adds a knob. Firing hourly would re-probe an
+# unchanged tree. Phased to 07:19, after the two power fences, so all three power/honesty
+# measurements land in one morning and one log review covers them.
+# EVIDENCE: scripts/check_knob_sensitivity.py -> data/knob_sensitivity.json; libs/validation/
+# knob_sensitivity.py; CONSTITUTION L1.49 (a gate nobody can fail is not a standard).
+# CONFIDENCE: committed-script (new 2026-08-19). First run graded 5 probes and found FOUR
+# DECORATIVE -- _CPCV_PURGE and _CPCV_EMBARGO in BOTH gauntlet copies, bit-identical output at
+# 0.6666666667 across purge 0..500 / embargo 0.00..0.45 (R0240). The fifth is the walk-forward
+# embargo POSITIVE CONTROL and reads LOAD_BEARING; if it ever goes dark the fence is broken and
+# every DECORATIVE reading it publishes is suspect.
+19 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_knob_sensitivity.py >> data/cro_ai_logs/knob_sensitivity.log 2>&1
+
 # --- MARGIN TOPOLOGY (L1.64) -------------------------------------------------------------------
 # The deployed sleeve's margin construction (spot wallet + separately-margined USDT-M short) was
 # INHERITED from connector order, never decided. The comparator measures notional_per_equity for

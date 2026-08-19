@@ -91,6 +91,17 @@ GOVERNED = {
     "run_upbit_snapshot.py",
     "screen_funding_interval_mismatch.py",
     "ship_restart.py",
+    # --- added to _GOVERNED without this contract, resynced 2026-08-19 (second drift) ---
+    "check_citation_integrity.py",
+    "check_claim_consistency.py",
+    "check_knob_sensitivity.py",
+    "check_margin_topology.py",
+    "check_panel_breadth.py",
+    "check_partition_power.py",
+    "collect_lending_risk_base_rates.py",
+    "harvest_rfb_vintages.py",
+    "run_cadence.py",
+    "run_fee_attribution.py",
 }
 
 

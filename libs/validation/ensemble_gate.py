@@ -147,6 +147,13 @@ _PBO_THRESHOLD = 0.5
 _CPCV_MIN_POSITIVE = 0.6
 _CPCV_GROUPS = 6
 _CPCV_TEST_GROUPS = 2
+
+# DECLARED INERT FOR THIS CONSUMER (R0240, measured 2026-08-19). Identical to the per-candidate
+# path's declaration and deliberately kept in step with it -- one defect in two files means
+# fixing one leaves the other authoritative. `CPCV.split()` purges and embargoes `train` only;
+# `_cpcv_positive_fraction` below scores `returns[s.test]` and never reads `s.train`, so neither
+# constant can reach the statistic. Held honest by `scripts/check_knob_sensitivity.py`, which
+# probes BOTH copies.
 _CPCV_PURGE = 2
 _CPCV_EMBARGO = 0.01
 
@@ -413,11 +420,13 @@ def sharpe_ceiling(n: int, mean_corr: float) -> dict[str, float]:
 
 
 def _cpcv_positive_fraction(returns: np.ndarray) -> float:
-    """Fraction of COMBINATORIAL PURGED folds whose test slice is positive.
+    """Fraction of COMBINATORIAL test paths whose test slice is positive.
 
-    Same splitter and same settings as the per-candidate gate: purge and embargo remove the
-    observations straddling a fold boundary, which on serially-correlated return streams is the
-    difference between a real out-of-sample reading and a leaked one.
+    Same splitter, same settings and the SAME HONEST SCOPE as the per-candidate gate: this is a
+    sub-period consistency statistic over 15 combinatorial test paths, NOT a leakage test. Purge
+    and embargo act on `CPCVSplit.train`, which this function never reads, so they are inert here
+    by construction (measured 2026-08-19, R0240; the previous wording claimed they were "the
+    difference between a real out-of-sample reading and a leaked one", and they were not).
     """
     splitter = CPCV(n_groups=_CPCV_GROUPS, n_test_groups=_CPCV_TEST_GROUPS,
                     purge=_CPCV_PURGE, embargo=_CPCV_EMBARGO)

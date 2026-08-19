@@ -16,7 +16,9 @@ because they describe different ways the same observations fail to be new.
 
 **THIS IS NOT `evidence_clock` AND IT IS NOT `cpcv`, though all three are about dependence.**
 `evidence_clock` deflates FORWARD evidence for a promotion decision -- how much a live record has
-earned. `cpcv` CONSTRUCTS purged, embargoed splits so a fold cannot see its own future. This one
+earned. `cpcv` CONSTRUCTS purged, embargoed splits; note that the gauntlet's two consumers of it
+score the TEST slice only, so for them the purge and embargo are inert and the gate reads as
+sub-period consistency rather than leakage protection (measured 2026-08-19, R0240). This one
 answers the question neither asks: given a sample already in hand, how many independent
 observations does it contain, and therefore what `n` may a test legitimately use.
 
