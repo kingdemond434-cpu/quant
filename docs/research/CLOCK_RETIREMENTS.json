@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-17T00:27:04.120912+00:00",
+ "updated": "2026-08-19T05:03:42.107734+00:00",
  "retirements": [
   {
    "clock": "walcl_reserve_impulse",
@@ -158,6 +158,51 @@
    "multiplicity_floor": 15,
    "loosens_bars": false,
    "verdict_repaired": "2026-08-18: original verdict was a bare timestamp (writer bug, run_clock_retirement_sweep); mechanism restored verbatim from this row's own why (F0011/R0049)"
+  },
+  {
+   "clock": "conv_moat_campaign_rows_obi_pressure_btcusdt",
+   "retired_at": "2026-08-19T05:03:42.105249+00:00",
+   "decided_by": "cycle",
+   "requeue_as": "UNTESTED",
+   "verdict": "SOURCE-GONE -> requeue UNTESTED",
+   "evidence": "SOURCE-GONE",
+   "observations": null,
+   "why": "conv_moat_campaign_rows_obi_pressure_btcusdt: evidence SOURCE-GONE -- the exact pre-registered source identity is absent, so this clock cannot accrue another observation. Retire the clock as UNTESTED and preserve its history; never reinterpret the missing source as a zero return",
+   "kind": "derivative",
+   "seats_before": 14,
+   "seats_after": 13,
+   "multiplicity_floor": 14,
+   "loosens_bars": false
+  },
+  {
+   "clock": "conv_orderbook_state_screen_rows_bybit_adausdt_20260721_book_slope_asymmetry_residualised_60000ms",
+   "retired_at": "2026-08-19T05:03:42.106636+00:00",
+   "decided_by": "cycle",
+   "requeue_as": "UNTESTED",
+   "verdict": "SOURCE-GONE -> requeue UNTESTED",
+   "evidence": "SOURCE-GONE",
+   "observations": null,
+   "why": "conv_orderbook_state_screen_rows_bybit_adausdt_20260721_book_slope_asymmetry_residualised_60000ms: evidence SOURCE-GONE -- the exact pre-registered source identity is absent, so this clock cannot accrue another observation. Retire the clock as UNTESTED and preserve its history; never reinterpret the missing source as a zero return",
+   "kind": "derivative",
+   "seats_before": 14,
+   "seats_after": 13,
+   "multiplicity_floor": 14,
+   "loosens_bars": false
+  },
+  {
+   "clock": "conv_orderbook_state_screen_rows_bybit_adausdt_20260721_obi_touch_residualised_60000ms",
+   "retired_at": "2026-08-19T05:03:42.107734+00:00",
+   "decided_by": "cycle",
+   "requeue_as": "UNTESTED",
+   "verdict": "SOURCE-GONE -> requeue UNTESTED",
+   "evidence": "SOURCE-GONE",
+   "observations": null,
+   "why": "conv_orderbook_state_screen_rows_bybit_adausdt_20260721_obi_touch_residualised_60000ms: evidence SOURCE-GONE -- the exact pre-registered source identity is absent, so this clock cannot accrue another observation. Retire the clock as UNTESTED and preserve its history; never reinterpret the missing source as a zero return",
+   "kind": "derivative",
+   "seats_before": 14,
+   "seats_after": 13,
+   "multiplicity_floor": 14,
+   "loosens_bars": false
   }
  ],
  "note": "The ONLY way a forward clock leaves the Holm cohort. Every row is an explicit, attributed decision taken against a LIVE sweep proposal, with that proposal's evidence copied verbatim. Retiring a clock SHRINKS m and LOOSENS every remaining bar -- the phantom-edge direction -- so this file is tracked in git rather than runtime state, and no organ, cycle or test may append to it."
