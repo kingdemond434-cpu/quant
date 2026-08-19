@@ -168,6 +168,25 @@ Not a target — a diagnostic, so the desk knows which term is short:
 at the leverage this sleeve runs. That number is an input to the kill condition and to the
 `EDGE vs FREQUENCY` constraint the resolver publishes. It is not something to hit.
 
+**Re-stated from the resolver's measured output, 2026-08-19** (source artifacts:
+`data/discretionary_max.json` 07:15Z, `data/conviction_trader.json` 06:54Z — this block is the
+§36 weekly re-statement; every number below is read from those files, not carried forward):
+
+- **25 closed marked trades now exist** — the "needs closed trades" era above is over for the
+  unconditional terms. Measured hit rate **44.0%**; the organ re-aims at 48% (L1.25a).
+- **Winner shape is MEASURED at 2.519:1**, against the 3.0:1 the sleeve assumed. At the doc's own
+  ~24%-of-R cost stack, breakeven at the *measured* shape is (1+0.244)/(1+2.519) ≈ **35.4%**, not
+  31.1% — the 31.1% figure is the 3:1 *design* number. Measured 44% clears both, but the margin
+  is 8.6pp, not 12.9pp. The resolver's own gradient note: one extra R of winner ≈ 5pp of hit
+  rate; RIGHT-BUT-TRUNCATED reviews are the signal the trail banks winners early.
+- **Live call cost snapshot**: `expected_cost_R` 0.1655 (fees+slippage+funding for the current
+  call's horizon — the per-call term inside the ~24% stack, not a replacement for it).
+- **Noise floor: MEASURED** — floor 0.5%, median adverse excursion 0.2794% over 480 bars.
+- **Conditional hit rates: still INSUFFICIENT** — nothing conditional is measurable below ~20
+  trades per bucket (binding lever = EVIDENCE, rank 0). The buckets exist; they refuse to grade.
+- **Independent bets n: UNMEASURED** — 18 correlated perps are close to ONE bet; trade count
+  overstates n. This is the term the growth identity is currently blind on.
+
 Growth is `g × N`. The desk maximises both under the survival rails and reports whichever is
 binding. Whatever CAGR falls out is the answer, not the goal.
 
