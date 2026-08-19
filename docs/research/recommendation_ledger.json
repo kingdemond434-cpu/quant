@@ -7866,61 +7866,39 @@
    "rank": 4.0,
    "roi_basis": "rank",
    "raised": "2026-08-19T01:26:21.227713+00:00",
-   "status": "scheduled",
-   "reason": "Engine-seat build (miner seat research-frozen). Backfill artifact live on disk; one week to wire priced acceptable for daily research bars.",
+   "status": "open",
+   "reason": null,
    "commit": null,
-   "due": "2026-08-26",
-   "disposed": "2026-08-19T01:38:14.061608+00:00"
+   "due": null,
+   "disposed": null
   },
   {
    "id": "R0620",
    "source": "cycle",
-   "summary": "EN-sI 2026-08-19 (re-add x3 after ledger races): REGISTER for bitbank official historical ORDER-BOOK snapshot S3 (bucket 564226375708-historical-order-books; AWS-account-ID or IP registration, venue GRANTS access). L2 200x2 ~2/min: BTC+XRP 2019-03-13->, 7 pairs 2023-07-24->, SOL 2024-11-21->. Named human step (GAP #69 class); watchlist card 34.",
-   "roi_bps": null,
-   "raised": "2026-08-19T01:38:14.061608+00:00",
+   "summary": "SEMANTIC CLUSTERING PRE-GAUNTLET (escalated from GAP #23, the #70-to-R0358 precedent: dates 08-12 and prior both missed, so the register was not driving it). Near-duplicate generated candidates burn DSR multiplicity budget: 420 tested / 0 survivors with dsr/pbo/reality_check each rejecting >=98%, and corrections scale with TRUE tested N, so variants deflate every genuine candidate while adding no information. BUILD: embed + cluster candidates PRE-gauntlet, test one representative per cluster, count the CLUSTER as the tested unit; wire into run_discovery ahead of the gauntlet. Research lane, no risk path, CI-gated. This RAISES survivor probability without touching any bar -- the one lever with that property.",
+   "roi_bps": 50.0,
+   "rank": null,
+   "roi_basis": "measured",
+   "raised": "2026-08-19T01:45:15.336708+00:00",
    "status": "scheduled",
-   "reason": "Registration is a named human/ops step (GAP #69 class); card 34 carries mechanism prior + screen obligation on grant.",
+   "reason": "Build slot: research-lane, unblocked, ~half-day with tests; scheduled into the next brain build window ahead of the gauntlet's next campaign so the multiplicity saving lands before new candidates are spent.",
    "commit": null,
-   "due": "2026-09-02",
-   "disposed": "2026-08-19T01:38:14.061608+00:00"
+   "due": "2026-08-30",
+   "disposed": "2026-08-19T01:45:35.284374+00:00"
   },
   {
    "id": "R0621",
    "source": "cycle",
-   "summary": "LAND THE STAGED PROBE-CAP SIZING AT RE-ARM (restores a ledger anchor destroyed by an id race: the 2026-08-18 CRO cycle recorded this obligation as R0618, a sibling whole-file ledger revert erased that row, and the freed id was re-issued 2026-08-19 to an unrelated spot-routing row -- this row is the re-anchor). THE OBLIGATION: commit 08a6874e on branch claude/staged-probe-cap-sizing sizes re-entry probes at their recorded cap -- the missing SIZER half of the re-entry protocol whose REFUSER half (_probe_within_cap, 2026-08-13) is already live, leaving all 7 recorded re-entry doors welded shut (caps $100, windows open since 08-15, budgets unspent). It is STAGED behind the L1.38 sterile-cockpit window ON PURPOSE: it must merge into the live branch when the principal re-arms / the change window opens, NOT before. Closing F0020 (pause_opens is ABSORBING) depends on this landing. Verify at landing: merge commit on claude/llm-auto-upgrade-verify-gcjac3 + a re-entry probe actually sizing at its cap. [id re-anchored R0619->R0621 2026-08-19 by EN-sI after repeated concurrent-writer clobbers; content verbatim from 05035e51]",
-   "roi_bps": 80.0,
+   "summary": "EDGE-DECAY LABORATORY (escalated from GAP #24, same precedent: 08-15 date missed). Protects the ONE deployed edge against its #1 risk -- slow crowding decay, invisible to daily PnL. The crowding RESIDUAL half landed as R0119; this row owns the LAB: branch on (fill-ratio, realized-vol) pairs per improvement_inbox #55 -- fill-ratio collapse with stable vol = structural kill; stable fill-ratio with collapsed realized vol = regime pause that must NOT be graveyarded (graveyard is permanent, a wrong entry unrecoverable). CHEAP PREREQUISITE FIRST: log per-sleeve fill-ratio + realized vol alongside P&L. Output is a sizing-haircut hook, clamp-respecting.",
+   "roi_bps": 70.0,
    "rank": null,
    "roi_basis": "measured",
-   "raised": "2026-08-19T01:25:07.272230+00:00",
+   "raised": "2026-08-19T01:45:22.046765+00:00",
    "status": "scheduled",
-   "reason": "Waits on the principal's re-arm / L1.38 change-window OPEN -- the staged commit 08a6874e must not merge into the live branch inside the sterile window. Due date is a re-check of window state, not an evidence bar; if the window is still CLOSED at due, re-schedule citing the window artifact.",
+   "reason": "Prerequisite (per-sleeve fill-ratio + realized-vol logging) is a small executor-adjacent change subject to the L1.38 window check; the lab itself is research-lane. Scheduled with the same build window as R0620; the deployed edge's decay clock makes this the higher-ROI of the pair.",
    "commit": null,
-   "due": "2026-09-01",
-   "disposed": "2026-08-19T01:25:43.590877+00:00"
-  },
-  {
-   "id": "R0622",
-   "source": "cycle",
-   "summary": "EN-sI 2026-08-19: SEND GMO COIN A WRITTEN CONSENT REQUEST for off-service use of the keyless tick archive (api.coin.z.com/data/trades/) -- the named re-entry path for graveyard jp_gmo_tick_archive_direct_ingest (Art.14(15) consent-required reuse; card 27 s13 DECIDED restricted-pending-consent). Owner: ops/principal (JP support ticket). Consent granted re-opens the axis at verified-technically-clean.",
-   "roi_bps": null,
-   "raised": "2026-08-19T01:38:14.061608+00:00",
-   "status": "scheduled",
-   "reason": "Human/ops step (JP-language support ticket). Due pairs with R0620 bitbank registration window -- one JP-venue admin batch.",
-   "commit": null,
-   "due": "2026-09-02",
-   "disposed": "2026-08-19T01:38:14.061608+00:00"
-  },
-  {
-   "id": "R0623",
-   "source": "cycle",
-   "summary": "EN-sI 2026-08-19: ADD AN ADVISORY FILE LOCK (flock) around recommendations.py read-modify-write. MEASURED TODAY: 4 whole-file stale-read clobbers inside one session window destroyed disposed rows 3x (mine and a sibling CRO row, each restored by hand from git); the CLI is lockless read->write and every concurrent caller is a destroyer. One fcntl.flock(LOCK_EX) on a sidecar lockfile in _load/_save closes the class. Owner: any unfrozen seat (scripts/ is outside miner freeze).",
-   "roi_bps": null,
-   "raised": "2026-08-19T01:38:14.061608+00:00",
-   "status": "scheduled",
-   "reason": "Engine/unfrozen-seat fix; miner seat cannot touch scripts/. Evidence: commits eaedb28a/d9a905ef + this session note.",
-   "commit": null,
-   "due": "2026-08-22",
-   "disposed": "2026-08-19T01:38:14.061608+00:00"
+   "due": "2026-08-30",
+   "disposed": "2026-08-19T01:45:43.181423+00:00"
   }
  ]
 }
