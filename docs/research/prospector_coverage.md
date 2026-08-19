@@ -6359,3 +6359,35 @@ STATUS: **items 1-3 ALL RESOLVED to depth** (item 1: DECIDED+WIRED+new axis; ite
 cleanly 2026-08-19. Honest zeros: 0 new mechanism cards (watchlist 5/5, nothing displaced), 0
 video, 8212 THIN. Ledger races: 4 clobbers absorbed, 5-way reconcile verified from HEAD, lesson
 L0166, root fix R0623.
+
+---
+
+## AR FRONTIER MINER — session 3 (2026-08-19) — IN PROGRESS (write-first note; updated as items resolve)
+
+MINE GATE at start: BACKLOG-CLEAR (19/19 disposed; header authorised). PRIOR STATE read per
+RESUME(2): s2 (08-13) closed with a 7-item next-ground list re-ordered by OP-075; owed-work
+batch3 (08-18) batch-deferred all seven to 2026-08-25. Working the top of that list EARLY is
+strictly better than the deferral date because items 1–2 feed R0193 (regulatory-event timeline
+reconstruction) which is due 2026-08-24 — BEFORE the deferral matures. Verify-queue read per
+RESUME(1): 7 pending, of which 3 are PHANTOM (F0002 class — resolved cards whose grade lines
+lack the parser's terminal substrings; verified first-hand: card 24 `qlib-alpha158`+`vnpy-alpha-dsl`
+present in operator library, card 27 `data/crypto_grouping_map.json` 27KB/4 maps, card 32 routed
+rows present) and 4 are GENUINELY pending with work ledgered elsewhere (23→R0615 liq-archive
+repair; 25→R0193 remaining legs; 26→KR screen owed; KR fiat-rail→R0299) — those four are
+CORRECTLY served by the queue's conservative design and are not touched.
+
+ITEMS THIS RUN (bounded per completion contract; worktree `qp-ar-s3`, branch
+`claude/ar-miner-s3-20260819`, R0423 discipline):
+1. BACKLOG HYGIENE (Tier-1 defect-closer; RESUME(1) duty): re-grade phantom cards 24/27/32 with
+   parser-terminal vocabulary (`verified-clean`), content preserved; add the grade-vocabulary
+   rule to the watchlist header so the trap stops recurring; route the silent fail-open on
+   `[§33: wired]` cards to improvement_inbox.
+2. VARA NOTICE BODIES (s2 next-ground #2; §13-clean per s2 robots read, re-verified this run):
+   read enforcement + warning notice TEXTS; extract the reason taxonomy R0193's 5-class build
+   needs. STATUS: pending.
+3. ADGM ANNOUNCEMENT CORPUS (s2 next-ground #1): FIRST re-probe apex+www robots per OP-076 —
+   policy read only; if §13 passes, mine the 1,109-URL dated sitemap for VASP/crypto/enforcement
+   rows → R0193 second jurisdiction column. If robots stays unreadable, record UNMEASURED-POLICY
+   and stop at the sitemap surface already held. STATUS: pending.
+STRETCH (only if 1–3 close): arabsgate.com first thread touch — test the OP-075 thin-retail
+prediction with a measurement.
