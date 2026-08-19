@@ -567,6 +567,7 @@ def _churn_guard(held_h: float, funding: float, rail_forced: bool) -> bool:
 _DEFAULT_RT_BPS = 39.5          # p90 of measured pair round-trip; pessimistic when unmeasured
 _COST_MODEL = Path("data/cost_model.json")
 _FORENSICS = Path("web/trade_forensics.json")
+_PRINT_IMPACT = Path("data/print_impact.json")   # L1.11b third basis (R0483): third-party prints
 # STRUCTURAL-BLEED DENYLIST (2026-07-23). run_trade_forensics.py already PROVED which
 # names lose money as a class (NOMUSDT -149bps/5 trades, PEOPLEUSDT -73/5, BNBUSDT
 # -67/11, GTCUSDT -29/10) but nothing consumed its output, so the desk kept re-opening
@@ -818,6 +819,43 @@ def _realised_rt_bps(sym: str) -> float | None:
     return slips[len(slips) // 2]
 
 
+def _print_rt_bps(sym: str) -> float | None:
+    """Pair ROUND-TRIP cost from THIRD-PARTY PRINTS (R0483), or None when unmeasured.
+
+    The third cost basis (L1.11b), beside the book walk and our own fills. Reads the pair table
+    fit_print_impact.py publishes: `print_pair_open_bps` exists only when BOTH legs' fits are
+    MEASURED at the fit notional and that size sits inside the identified flow range
+    (ImpactFit.cost_bps returns None otherwise), so absence is the fail-closed state and no
+    status logic is re-implemented here. Round trip = 2x the open: under the fit's own
+    convention (half_spread + 0.5*lambda*N per leg) the closing pair pays the same half-spread
+    and the same impact magnitude in the opposite direction.
+
+    TIGHTEN-ONLY BY CONSTRUCTION: the caller folds this in through the same max() the realised
+    floor uses, so a print basis reading CHEAPER than the book walk -- the thin-book ratios
+    (CELR 0.40x, ZEN 0.43x, TST 0.44x) that deferred R0483 -- never binds; only a cost the book
+    walk MISSED can change the gate, and that change is a refusal. Stale degrade direction,
+    declared (L1.44): a stale print basis STILL TIGHTENS, exactly as the realised-fills floor
+    and the stale-cost-model clamp already do. The fit is priced at its own desk_notional (the
+    artifact records it); at gate sizes the spread is 91-99.75% of the number, so the size
+    mismatch is bounded and points the conservative way (lambda fitted on small flow OVERSTATES
+    larger orders -- ImpactFit.cost_bps's own caveat)."""
+    fr = read_fresh(_PRINT_IMPACT, max_age_h=48.0, min_rows=1,
+                    caller="run_cashcarry_executor._print_rt_bps")
+    pairs = fr.data.get("pairs") if isinstance(fr.data, dict) else None
+    if not isinstance(pairs, list):
+        return None
+    for p in pairs:
+        if isinstance(p, dict) and p.get("symbol") == sym:
+            v = p.get("print_pair_open_bps")
+            if v is None:
+                return None
+            try:
+                return 2.0 * float(v)
+            except (TypeError, ValueError):
+                return None
+    return None
+
+
 def _cost_bucket_key(pair: Any, notional: float | None) -> str:
     """R0247: the cost-model size bucket that COVERS the intended per-leg notional.
 
@@ -901,9 +939,16 @@ def _rt_bps(sym: str, notional: float | None = None) -> float:
         modelled = _DEFAULT_RT_BPS
     # REALITY FLOORS THE MODEL (L1.11b). MAX, never average: this may only TIGHTEN the gate, the
     # same direction the stale-model rule above already enforces. A bad realised sample can cost
-    # us a trade; it can never admit one.
+    # us a trade; it can never admit one. Three LABELLED bases (R0483): the book walk, our own
+    # fills, and third-party prints -- each can only raise the bar the others set.
+    bases = {"book_walk": modelled}
     real = _realised_rt_bps(sym)
-    return max(modelled, real) if real is not None else modelled
+    if real is not None:
+        bases["own_fills"] = real
+    print_rt = _print_rt_bps(sym)
+    if print_rt is not None:
+        bases["third_party_prints"] = print_rt
+    return max(bases.values())
 
 
 def _entry_gate(sym: str, funding: float, min_hold_h: float = _MIN_HOLD_H,
