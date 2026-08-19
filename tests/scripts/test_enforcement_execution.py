@@ -44,10 +44,22 @@ def test_repository_enforcement_map_is_executable_and_portable() -> None:
     assert report["broken"] == []
     assert report["laws_unenforced"] == []
     assert report["laws_weakened"] == []
-    assert report["manual"] == [
-        {
-            "path": "scripts/deep_review.py",
-            "laws": ["L1.7"],
-            "reason": execution._MANUAL["scripts/deep_review.py"],
-        }
-    ]
+    # MANUAL is a decision on the record, never a default: every reported manual citation must
+    # be registered in _MANUAL and carry its registered reason verbatim. The exact membership is
+    # NOT pinned -- an entry legitimately leaves this list when a caller starts running it
+    # (deep_review.py did exactly that: shell/CI runner ops/run_cro_ai.sh now executes it, and
+    # the stale exact-list pin here read that improvement as a failure).
+    manual_paths = {m["path"] for m in report["manual"]}
+    assert manual_paths, "the on-the-record exemption mechanism must be exercised, not vestigial"
+    assert manual_paths <= set(execution._MANUAL), (
+        f"unregistered MANUAL citation(s): {manual_paths - set(execution._MANUAL)}"
+    )
+    for m in report["manual"]:
+        assert m["reason"] == execution._MANUAL[m["path"]]
+    # A registered exemption must still be a live citation: either it is reported MANUAL or a
+    # caller upgraded it to EXECUTED. A _MANUAL entry matching NO citation is dead vocabulary.
+    cited = {r["path"]: r["verdict"] for r in report["citations"]}
+    for path in execution._MANUAL:
+        assert cited.get(path) in ("MANUAL", "EXECUTED"), (
+            f"_MANUAL entry {path} resolves to {cited.get(path)!r} -- exemption without a citation"
+        )
