@@ -592,7 +592,7 @@ TAXONOMY: tuple[MechanismClass, ...] = (
             availability=DataAvailability.ON_DISK,
             note="Real and already available to anyone. Orthogonality ~0 by definition: it is "
                  "the benchmark, so testing it more cannot widen the hypothesis set."),
-        priority=23),
+        priority=29),
     MechanismClass(
         id="liquidity_provision_immediacy",
         name="liquidity provision / immediacy",
@@ -614,7 +614,7 @@ TAXONOMY: tuple[MechanismClass, ...] = (
             availability=DataAvailability.ON_DISK,
             note="Tested to exhaustion on price alone. The only untested escalation needs the "
                  "book, which is a different class (orderbook_microstructure_state)."),
-        priority=24),
+        priority=30),
     MechanismClass(
         id="price_continuation",
         name="price continuation / underreaction",
@@ -635,7 +635,7 @@ TAXONOMY: tuple[MechanismClass, ...] = (
             note="The desk's most-tested class by an order of magnitude and the one an "
                  "independent 2013-14 pre-registered natural experiment killed as well. Adding "
                  "candidates here cannot widen the hypothesis set."),
-        priority=25),
+        priority=31),
     # ================================================================================ 2026-08-05
     # SIX CLASSES THE TAXONOMY HAD NEVER NAMED. The census can only rank what it has named, so an
     # absent class is not low-ranked -- it is INVISIBLE, and every coverage number the desk quotes
@@ -810,6 +810,168 @@ TAXONOMY: tuple[MechanismClass, ...] = (
                  "small. Recorded anyway: L1.49 says a weak mechanism is not a dead one, and an "
                  "UNNAMED class cannot even be ranked as weak."),
         priority=22),
+    # ================================================================================ 2026-08-18
+    # SIX MT5-NATIVE CLASSES THE TAXONOMY HAD NEVER NAMED. The desk's universe is now the full
+    # MT5/Fusion market (FX, gold, metals, indices, energy, share CFDs), and every forced-flow
+    # mechanism below was INVISIBLE to a census whose vocabulary was crypto: FX carry is a sovereign
+    # rate differential, not perp funding; COT producer hedging is a physical short, not a miner
+    # dump; a benchmark fix is a mandated order, not an inferred sweep. Each is data-specific, so it
+    # sorts before the generic price tail (priorities 29-31, bumped up to open this band). All are
+    # testable on FREE data the desk already reaches or can pull keyless: FRED rate curves, the
+    # CFTC COT weekly file, EIA inventories, and the desk's own MT5 session bars.
+    MechanismClass(
+        id="fx_carry_rate_differential",
+        name="FX carry / interest-rate differential",
+        payer="the holder short the higher-yielding currency, who is contractually debited the "
+              "overnight interest-rate differential every day the position is held -- a swap / "
+              "rollover charge the broker MUST apply and that the position cannot avoid without "
+              "closing -- and pays it to whoever is long the carry and warehouses the crash risk",
+        economic_definition="Two sovereign short rates differ, and a position spanning them earns "
+                            "or pays that differential as a daily rollover independent of any "
+                            "price forecast. The excess return is compensation for bearing the "
+                            "crash risk that periodically unwinds the carry trade violently, so "
+                            "the payoff is negatively skewed by construction rather than by luck.",
+        signatures=("carry", "carry trade", "interest rate differential", "rate differential",
+                    "rollover", "swap points", "swap long", "swap short", "forward points",
+                    "covered interest parity", "cip", "funding currency", "yield differential"),
+        plausibility=0.80, orthogonality=0.75,
+        data=DataRequirement(
+            datasets=("FRED sovereign policy / short rates per currency (keyless, free)",
+                      "the desk's FX spot bars for the two legs on the same clock",
+                      "broker swap_long/swap_short for the realised (not theoretical) daily cost"),
+            availability=DataAvailability.FREE_ACQUIRABLE,
+            note="NOT derivative_carry_basis: that class's payer is a crypto perpetual long paying "
+                 "an 8-hour funding rate to a shorter; this payer is short a sovereign yield and "
+                 "pays a rollover set by two central banks' policy rates -- a different balance "
+                 "sheet, a different clock, and an unwind driven by rate-regime shifts."),
+        priority=23),
+    MechanismClass(
+        id="central_bank_event_surprise",
+        name="central-bank / macro event surprise",
+        payer="every holder forced to reprice at a scheduled, known-instant policy decision or "
+              "top-tier data print (FOMC, ECB, BoE, NFP, CPI): the surprise -- actual minus what "
+              "the futures curve had priced -- lands on whoever was mandated to hold through the "
+              "release and cannot pre-position past their risk limit; it moves in one clock tick",
+        economic_definition="The market prices a consensus before a scheduled release; the gap "
+                            "between outcome and that priced consensus drives an immediate jump "
+                            "plus a documented multi-hour drift as slower participants complete "
+                            "the adjustment. The tradeable object is the SURPRISE, constructed "
+                            "point-in-time, not the announced level.",
+        signatures=("nfp", "non-farm", "non farm payrolls", "cpi", "fomc", "ecb", "boe", "boj",
+                    "rate decision", "central bank", "economic calendar", "surprise", "consensus",
+                    "data release", "post-announcement drift", "eco surprise", "macro print"),
+        plausibility=0.75, orthogonality=0.70,
+        data=DataRequirement(
+            datasets=("FRED releases plus a free economic-calendar consensus (keyless)",
+                      "fed-funds / STIR futures-implied probabilities to build the surprise",
+                      "the desk's FX / metal / index bars stamped around each release"),
+            availability=DataAvailability.FREE_ACQUIRABLE,
+            note="NOT macro_liquidity_transmission: that class is a slow, ambient drift of "
+                 "dollar and rates liquidity into a risk asset with NO event; this one is an "
+                 "instantaneous, scheduled, known-clock repricing whose signal is the surprise "
+                 "around a single timestamp, not a lagged spillover."),
+        priority=24),
+    MechanismClass(
+        id="session_fix_liquidity",
+        name="session structure / benchmark-fix liquidity",
+        payer="the passive fund and the corporate hedger mandated to execute at a published "
+              "benchmark fixing they do not control -- the 4pm WMR London FX fix, the LBMA gold "
+              "fix -- who MUST submit a price-insensitive, time-concentrated order at the window "
+              "regardless of level, and pays the warehouser who takes the other side of that flow",
+        economic_definition="A benchmark fix concentrates mandated, price-insensitive order flow "
+                            "into a fixed daily window, so the flow imbalance predicts a "
+                            "systematic pre-fix drift and post-fix reversal; and the session-open "
+                            "and -close handoffs (Tokyo to London to New York) carry their own "
+                            "liquidity-regime transitions that a 24-hour tape would smear out.",
+        signatures=("session", "london fix", "wmr", "4pm fix", "lbma", "gold fix", "asian session",
+                    "london open", "new york session", "tokyo session", "session open",
+                    "fixing", "benchmark fix", "rollover time", "session close"),
+        plausibility=0.65, orthogonality=0.75,
+        data=DataRequirement(
+            datasets=("the desk's own intraday FX / metal bars stamped to session and fix windows",
+                      "published fix times and methodology (free)"),
+            availability=DataAvailability.FREE_ACQUIRABLE,
+            note="NOT liquidity_provision_immediacy: that class fades a generic forced flow "
+                 "wherever a price band says it sits; this one is anchored to a CALENDARED, "
+                 "published fixing whose participants and clock are known in advance, so the "
+                 "forced flow is scheduled rather than inferred from price."),
+        priority=25),
+    MechanismClass(
+        id="commodity_inventory_supply",
+        name="commodity inventory / convenience yield",
+        payer="the physically-short consumer or the long forced to finance storage when "
+              "inventories swing -- a refiner, a utility, a merchant -- whose hedging book MUST "
+              "rebalance to a published inventory print (EIA petroleum status, LME/COMEX "
+              "warehouse stocks) and pays whoever holds the convenience-yield term structure",
+        economic_definition="Physical inventory levels and their surprises drive the convenience "
+                            "yield and the front-of-curve spread; a consumer short the physical "
+                            "must pay up when stocks draw and the curve backwardates. The signal "
+                            "is the inventory surprise, and it is orthogonal to every "
+                            "financial-flow mechanism the desk already names.",
+        signatures=("inventory", "eia", "petroleum status", "warehouse stocks", "convenience yield",
+                    "contango", "backwardation", "storage", "wasde", "crop report", "lme stocks",
+                    "comex warehouse", "physical supply", "stock draw", "stock build"),
+        plausibility=0.65, orthogonality=0.85,
+        data=DataRequirement(
+            datasets=("EIA weekly petroleum status (free public file)",
+                      "USDA/WASDE and LME/COMEX warehouse stocks (free)",
+                      "the desk's energy / metal bars on the release clock"),
+            availability=DataAvailability.FREE_ACQUIRABLE,
+            note="NOT mechanical_supply_release: that class is a crypto insider or miner dumping "
+                 "vested coins with a near-zero cost basis on a fixed unlock date; this is a "
+                 "physical-commodity inventory surprise repricing a convenience yield -- a storage "
+                 "economy, not a vesting schedule."),
+        priority=26),
+    MechanismClass(
+        id="overnight_gap_risk_premium",
+        name="overnight / weekend gap-risk premium",
+        payer="the holder who cannot flatten across a market closure -- an FX book into the "
+              "weekend, an index or share CFD overnight -- who either pays for gap insurance or is "
+              "compensated for warehousing the jump risk a closed market cannot price "
+              "continuously; the closure is a hard calendar fact the position cannot trade around",
+        economic_definition="Instruments with defined session closes accumulate information while "
+                            "shut and re-open at a gap, so the close-to-open jump carries a risk "
+                            "premium distinct from intraday realised variance, fat-tailed around "
+                            "weekends, holidays and scheduled closures.",
+        signatures=("gap", "overnight", "weekend gap", "holiday gap", "close to open",
+                    "opening gap", "session close", "gap risk", "jump risk", "overnight hold",
+                    "carry across weekend", "monday gap", "gap fill"),
+        plausibility=0.60, orthogonality=0.70,
+        data=DataRequirement(
+            datasets=("the desk's own bars split into close-to-open jumps versus intraday range",
+                      "the session / holiday calendar per instrument (free)"),
+            availability=DataAvailability.FREE_ACQUIRABLE,
+            note="NOT volatility_risk_premium: that class sells implied-minus-realised variance "
+                 "through options; this one prices the discrete close-to-open JUMP of an "
+                 "instrument that literally stops trading -- a gap risk 24/7 crypto does not have "
+                 "and that needs no options market to measure."),
+        priority=27),
+    MechanismClass(
+        id="producer_hedging_flow",
+        name="commodity producer hedging flow (COT commercial)",
+        payer="the commodity producer contractually forward-selling output to lock a fiat margin "
+              "-- a gold miner, an oil driller, a farmer -- whose hedge is a mandated, "
+              "price-insensitive supply visible in the CFTC commercial category, and who MUST "
+              "roll and add to it on the operator's calendar regardless of where price sits",
+        economic_definition="Commercial hedgers carry a structural short driven by production "
+                            "schedules, not by a forecast; the extremes and changes of their COT "
+                            "position mark where price-insensitive supply is entering, which "
+                            "predicts the speculative side's forced accommodation.",
+        signatures=("producer hedging", "commercial hedger", "cot commercial", "cot",
+                    "commitments of traders", "forward selling", "producer short",
+                    "hedging pressure", "commercial net", "swap dealer", "merchant hedge",
+                    "gold miner hedge", "disaggregated cot"),
+        plausibility=0.65, orthogonality=0.80,
+        data=DataRequirement(
+            datasets=("CFTC COT commercial / hedger category (free weekly file, already parsed "
+                      "for the desk's positioning work)",
+                      "the desk's futures / CFD bars for gold, silver, energy and indices"),
+            availability=DataAvailability.FREE_ACQUIRABLE,
+            note="NOT treasury_cost_base_liquidation: that class is a crypto miner selling block "
+                 "rewards to cover a fiat electricity bill, read on-chain; this is a TradFi "
+                 "commodity producer forward-hedging output, read in the CFTC commercial COT "
+                 "category -- a hedging programme, not an on-chain payout."),
+        priority=28),
 )
 
 CLASS_BY_ID: dict[str, MechanismClass] = {c.id: c for c in TAXONOMY}

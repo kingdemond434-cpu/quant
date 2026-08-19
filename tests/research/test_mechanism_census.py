@@ -458,3 +458,68 @@ class TestTheSixClassesTheTaxonomyHadNeverNamed:
     def test_priorities_remain_unique_after_the_insertion(self) -> None:
         pris = [c.priority for c in TAXONOMY]
         assert len(set(pris)) == len(pris), "ties must break deterministically"
+
+
+class TestMt5NativeClasses:
+    """The 2026-08-18 MT5 batch: the forced-participant classes a crypto-worded census left
+    INVISIBLE. Same guard as the 2026-08-05 six -- a class added without a named compulsion, a
+    merge-guard note and free data is a coverage number inflated on paper, and a class that sorts
+    after a promiscuous price word is a specific mechanism a generic one can silently outbid.
+    """
+
+    _NEW_MT5: ClassVar[dict[str, str]] = {
+        "fx_carry_rate_differential": "derivative_carry_basis",
+        "central_bank_event_surprise": "macro_liquidity_transmission",
+        "session_fix_liquidity": "liquidity_provision_immediacy",
+        "commodity_inventory_supply": "mechanical_supply_release",
+        "overnight_gap_risk_premium": "volatility_risk_premium",
+        "producer_hedging_flow": "treasury_cost_base_liquidation",
+    }
+
+    def test_all_present(self) -> None:
+        missing = sorted(set(self._NEW_MT5) - {c.id for c in TAXONOMY})
+        assert not missing, f"MT5-native class(es) missing from the taxonomy: {missing}"
+
+    def test_each_names_a_compelled_payer(self) -> None:
+        compelled = ("cannot", "must", "forced", "mandate", "mandated", "court", "statute",
+                     "obligation", "compelled", "rule", "contract", "does not", "regardless")
+        for cid in self._NEW_MT5:
+            cls = CLASS_BY_ID[cid]
+            assert any(w in cls.payer.lower() for w in compelled), (
+                f"{cid}: the payer story does not name a compulsion")
+            assert len(cls.payer) > 120, f"{cid}: payer story too thin to be falsifiable"
+
+    def test_each_records_why_it_is_not_the_class_it_most_resembles(self) -> None:
+        for cid, resembles in self._NEW_MT5.items():
+            note = CLASS_BY_ID[cid].data.note.lower()
+            assert resembles.split("_")[0] in note or "not " in note, (
+                f"{cid} does not record how it differs from {resembles}")
+
+    def test_each_is_testable_on_free_data(self) -> None:
+        for cid in self._NEW_MT5:
+            cls = CLASS_BY_ID[cid]
+            assert cls.data.availability is DataAvailability.FREE_ACQUIRABLE, (
+                f"{cid} is not free-acquirable")
+            assert cls.data.datasets, f"{cid} names no datasets"
+
+    def test_they_are_mt5_native_not_crypto_reworded(self) -> None:
+        """The point of the batch: each must speak an FX/metals/macro mechanism, and none may be a
+        crypto class with the venue words swapped out."""
+        banned = ("perp", "perpetual", "on-chain", "onchain", "binance", "bybit", "kimchi",
+                  "miner reward", "block reward", "stablecoin", "wallet")
+        for cid in self._NEW_MT5:
+            cls = CLASS_BY_ID[cid]
+            hay = (cls.payer + cls.economic_definition + " ".join(cls.signatures)).lower()
+            hit = [b for b in banned if b in hay]
+            assert not hit, f"{cid} still speaks crypto: {hit}"
+
+    def test_the_specific_classes_still_outrank_the_generic_price_ones(self) -> None:
+        pri = {c.id: c.priority for c in TAXONOMY}
+        generic = max(pri["market_risk_premium"], pri["liquidity_provision_immediacy"],
+                      pri["price_continuation"])
+        for cid in self._NEW_MT5:
+            assert pri[cid] < generic, f"{cid} sorts after a generic price class"
+
+    def test_priorities_remain_unique(self) -> None:
+        pris = [c.priority for c in TAXONOMY]
+        assert len(set(pris)) == len(pris), "ties must break deterministically"
