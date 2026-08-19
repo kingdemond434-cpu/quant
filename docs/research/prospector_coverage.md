@@ -6450,3 +6450,11 @@ NEXT UN-EXHAUSTED GROUND, in order (L1.35 — named before closing):
 6. Sharia/fatwa cross-sectional test (carried from s2): 7 events × N assets design — unrun.
 7. Remaining OP-076 UNMEASURED apexes: `arabictrader.com` / `rain.bh` / `cbb.gov.bh` — re-probe
    www + GET variants per the addendum before recording anything.
+
+POST-CLOSE OPS NOTE (AR s3, 2026-08-19): the run's ONE defect was mine — commit 81627908 deleted
+R0636 30 seconds after the ff-merge landed it: a concurrent whole-file ledger writer regressed the
+WORKING copy between merge and `git add`, my HEAD-verify read only the committed blob, and the add
+staged the stale image under my name (8th R0423-class ledger race). Repaired same-minute from
+pinned 224a768c, R0636 restored + dispositioned scheduled(2026-08-26). Lesson **L0168**: before
+committing a contended whole-file store, `git diff --staged` must show ONLY your intended delta —
+HEAD-verify alone passes while you commit someone else's stale image.
