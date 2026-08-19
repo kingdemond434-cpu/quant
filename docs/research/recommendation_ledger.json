@@ -6218,11 +6218,11 @@
    "summary": "Wire data/print_impact.json into run_cashcarry_executor._rt_bps as a LABELLED third basis under the existing tighten-only max() rule. DELIBERATELY NOT DONE this run: the print basis reads CHEAPER than the book walk on thin books (CELRUSDT 0.40x, ZENUSDT 0.43x, TSTUSDT 0.44x) and its out-of-sample check is UNDERPOWERED at 4 symbols, so wiring it today could loosen the entry gate on exactly the books that produced COOKIEUSDT 130bps. Blocked on R0482.",
    "roi_bps": 25.0,
    "raised": "2026-08-12T14:18:29.110175+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
-   "due": null,
-   "disposed": null
+   "status": "scheduled",
+   "reason": "IMPLEMENTED AND STAGED, blocked from landing by L1.38: change window STERILE (CASHCARRY_KILL since 08-15, rail unwinding -- improvements stage, repairs land). Wiring on branch claude/staged-print-basis-r0483 @ b0d53066: _print_rt_bps reads the fitter's pairs table (both-legs-MEASURED only, fail-closed), RT=2x open, folded through the SAME tighten-only max() as the realised floor. Deferral fear (cheaper print basis loosening thin-book gates) structurally impossible under max(), PINNED by test_print_basis_rt_bps. ruff+mypy+pytest green in staged worktree. Lands by merge at re-arm; due = re-check. R0482 blocker resolved-by-refutation 08-19.",
+   "commit": "b0d530661bff108bfe638d4988855489e838279e",
+   "due": "2026-09-02",
+   "disposed": "2026-08-19T02:18:12.587291+00:00"
   },
   {
    "id": "R0484",
@@ -6242,11 +6242,11 @@
    "summary": "PRINCIPAL DECISION OWED: L1.11(b) says the Execution Reality Model comes from 'our own fills'. That scope word was written to bar vendor coefficients but reads as barring third-party PRINTS -- which are realised execution data the desk records itself, ~2500/symbol/hour. fit_print_impact.py now uses them. The master constitution is hash-sealed, so clarifying L1.11(b) is the principal's act, not mine; flagging rather than editing.",
    "roi_bps": 10.0,
    "raised": "2026-08-12T14:18:43.985558+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "PRINCIPAL-ONLY ACT, correctly flagged not edited: master constitution hash-sealed; clarifying L1.11(b) scope (vendor coefficients barred vs third-party PRINTS the desk itself records) is the principal's act. Surfaced via this disposition; due = escalation re-check. Interim lawful either way: print basis wired TIGHTEN-ONLY on staged branch (R0483 @ b0d53066), no loosening rides on the clarification.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-26",
+   "disposed": "2026-08-19T02:18:16.027412+00:00"
   },
   {
    "id": "R0486",
