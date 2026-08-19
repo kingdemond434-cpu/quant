@@ -483,6 +483,9 @@ marked [UNVERIFIED] and must be negative-controlled before budget is spent on th
 | резерв(ы) | exchanger float/inventory — the capacity variable of the whole dealer layer; "резервов нет" = rail at capacity | 2013- | [V] btcsec 5848/3426 ("Апдейт, резервы актуальны") | `обменник резервы направление` |
 | складчина | group-buy / cost-sharing (of bots, courses, signals) — finds the retail tooling-distribution layer and its monoculture (WS-010) | perennial | [V] btcsec 4382 reply 20 | `складчина бот стратегия торговый` |
 | стенка | order-book wall (large limit order); "ловить стенку" = wall-catching, the era's book-reading verb — era bots shipped wall-filters with spoof-ignore limits | 2013- | [V] btcsec 4382 OP | `стенка стакан бот ловить` |
+| сетка (тягать сетку) | the order GRID itself; "тягание сетки туда-сюда" (dragging the grid back and forth) is the vendor's own name for grid-bot order management — THE key for grid-bot content AND for venue cancel-policy discussions (fill-ratio enforcement killed the class on Bittrex) | 2013- | [V] ezhrd blog comment 2018-01-06 | `сетка ордеров бот биржа отмененные` |
+| фикс / фикс-ордер | the take-profit CLOSE leg of a grid/ladder cycle ("бот не скорректировал фикс-ордер"); also фиксить убыток = realize a loss — the sizing/exit-discussion key | 2013- | [V] ezhrd blog comments 2015-08-24 + btcsec 6475 | `фикс ордер бот закуп` |
+| депо | deposit = bankroll; the era's sizing unit ("торговля на 100% депо – это самоубийство") — finds position-sizing and risk folk-rails | perennial | [V] ezhrd blog comment 2017-02-05 | `какой процент депо бот торговля` |
 
 ## ARCHIVED
 (none yet)

@@ -1433,3 +1433,59 @@ mechanical execution as 2013 retail discipline; kinken (#16, 1168): crypto venue
 manipulated vs regulated FORTS futures — the era's own venue-quality ranking. Vendor-thread
 6549 facts routed to WS-009/WS-010 observation appends (venue FEE-endpoint lie; strategy-file
 + vendor-held-API-keys synchronization channels).
+
+**(e) THE CHALLENGED BOT'S OWN AUTHOR THREAD FOUND AND MINED (continuation, same run family:
+topic 4320 + the author's LIVE blog).** Topic 4320 "Бот для торговли на btc-e" (2013→2014-05,
+12 posts) is ezhrd's own thread — Evgeny Pozharsky = ezhrd (ezhrd.wordpress.com linked in-thread;
+blog post "btc-e bot by ezhrd", 2014-01-05); the bot was FREE with optional paid features
+("бот бесплатен? — в целом да; некоторые доп фичи по подписке"), which re-answers instance #2's
+seller-signal: this vendor's economics were distribution-first, then subscription. Author's own
+mechanism statement (May-2014 update): "покупаем при достаточно резком скачке вниз и продаем на
+отскоке" + "функция контроля ордеров по стенкам стакана" + a borrow-coins-and-trade-down
+pseudo-short. The wall-control line closes a loop with (d): by 2013-14 displayed-wall signals had
+AUTOMATED retail consumers — the walls of rule №3 were scaring BOTS, not only humans, so wall
+manipulation had algorithmic flow to harvest. Reply layer (WS-003 shape): a user ran forensics on
+the AUTHOR'S OWN SCREENSHOT — "113908816 отменяется дважды с промежутком в 10 секунд" — duplicate
+cancels in the vendor's published evidence, caught by a reader; and the era's partial-fill
+mechanics explained in-thread. Successor chain: btcsec topic 7990 → forum.bits.media topic 7990
+(the thread SURVIVED the forum's 2015 rename — btcsec topic ids carry over to bits.media).
+
+**(f) THE VENUE-POLICY KILL CHANNEL — dated, author-stated, and the class's fourth kill
+mechanism.** Blog comment 2018-01-06, ezhrd on why Bittrex was dropped: "битрикс стал предъявлять
+претензии... за малый процент заполнения ордеров (слишком много отмененных ордеров по отношению к
+выполненным) и начал требовать платить за отмененные ордера (!). Поскольку алгоритм работы бота
+основан на тягании сетки ордеров туда-сюда, такие заявления биржи делают работу данного алгоритма
+торговли невозможной." The grid's order footprint — many cancels, few fills — is structurally
+indistinguishable from the quote-stuffing footprint venues police, so fill-ratio enforcement and
+cancel fees are a class-level kill switch that NO grid backtest prices. Kill channels for this
+class now: (1) short-gamma economics + fee stack (instance #1), (2) vendor no-show under live
+test (instance #3a-c), (3) timing-is-the-alpha attribution (the era's own null), (4) VENUE POLICY
+on cancel-to-fill ratio (this — and its modern echo is every order-to-trade limit and cancel-rate
+tier on today's venues, including the ones this desk trades).
+
+**(g) FLEET FACTS from the same chain (era record, banked here, not separate entries):** bot-2
+(2015→2018+, cloudbot.uk) is a VENDOR-CLOUD subscription — the entire customer fleet executes
+from the vendor's servers ("Бот работает в облаке... из-за океана": during BTC-E's DDoS
+mitigations whole network segments lost access while the far hemisphere kept trading — a
+cross-geography LIVENESS asymmetry the era's overseas-hosted bots collected structurally). The
+fleet MIGRATED venues during the BTC-E seizure week (customer 2017-08-01: "btc-e не работает уже
+неделю... переключиться бы на полонекс"; vendor: send new keys — and WEX appears as a supported
+venue by 2017-10). Bitfinex was disabled 2016-08-04 "по понятным причинам" — two days after the
+hack — and re-enabled 08-11. EXMO named (by the vendor, against his own interest) as the venue
+with NO key-permission granularity: "У EXMO права ключа вообще никак не настраиваются – любой
+ключ может делать все." BTC-E's nonce watermark made a key single-machine-forever ("хоть один
+запрос под этим же ключем с другой машины – ключ перестанет работать навсегда"), which is the
+mechanical reason vendors demanded FRESH keys (WS-010's registry channel has an era-API cause,
+not just a business one). Author's folk sizing rail: "торговля на 100% депо – это самоубийство"
+(recommends 60-70%). NAMED GROUND, unmined: forum.bits.media topic 27623 — the bot's FREE LIVE
+real-money trading chronicle ("хроника реальных торгов", running from 2017-05): a primary P&L
+record of the grid class across the 2017 mania and crash, better evidence than any marketing
+claim on either side.
+
+**(h) topic 6475 corroborations (mined same slice):** the engine/strategy severance gets a THIRD
+independent era voice — "Прибыль зависит не от самого бота, а от стратегии - алгоритма торговли,
+который в него заложен" (profit lives in the loaded strategy, not the bot) — and the era's
+lived risk ranking puts VENUE risk above strategy risk: "Сколько не жалко потерять. (биржи
+ломают, кидают, и довольно часто)"; plus the spot-market consolation fallacy in period form
+("если не будешь специально фиксить убыток, то слить нереально" — unrealized losses read as no
+losses).

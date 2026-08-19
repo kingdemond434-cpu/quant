@@ -1352,6 +1352,31 @@ ITEMS THIS RUN (bounded scope, depth-maxed; drawn from the s2 NEXT RUN queue in 
      next reader): the dead run's graveyard text CLAIMED the WS routing ("routed to
      WS-009/WS-010") while the commit touched only graveyard.md — a same-run claim of a write
      is not the write; §33's artifact-postdates-find check caught it on resume.
+     CONTINUATION EXTENSION (same session, slice completed at 5 threads): +4320 ("Бот для
+     торговли на btc-e" — ezhrd's OWN thread: the 8150-challenged bot, author = Evgeny
+     Pozharsky, FREE + paid features; mechanism from the author: sharp-dip buy / bounce sell +
+     WALL-CONDITIONED order control ⇒ displayed walls had automated retail consumers by
+     2013-14; reply-layer forensic catch: duplicate cancels on the vendor's own screenshot)
+     and +6475 ("Трейдинг ботом или майнинг" — engine/strategy severance THIRD era voice;
+     venue-risk-over-strategy-risk lore). DEPTH CHAIN from 4320 (the run's best vein):
+     ezhrd.wordpress.com is LIVE in 2026, robots-clean (§13 PASS, admin-paths only) — 86
+     comments 2015→2018 mined on the 2014/01/05 post → graveyard third instance grew blocks
+     (e)-(h): the Bittrex VENUE-POLICY KILL (2018-01, cancel-fee/fill-ratio enforcement ends
+     grid mechanics, author-stated — the class's 4th kill channel), vendor-cloud fleet
+     mechanics + BTC-E→WEX seizure-week migration + Bitfinex-hack off/on, EXMO
+     no-key-granularity, BTC-E nonce one-key-one-machine; WS-010 obs 3 = SECOND INDEPENDENT
+     VENDOR (vendor-EXECUTED cloud fleet, synchronized by construction) → header now
+     [observations: 3 across 2 vendors]; +3 RU lexicon rows (сетка/тягать сетку, фикс, депо).
+     MID-RUN CLOBBER REPAIR: desk-snapshot a5c30542 (03:23Z) committed a stale graveyard.md
+     over f0301d75 (02:32Z), deleting BOTH the RU third instance AND the CN-s9 tenth instance
+     (6th R0423-class instance; pure-deletion diff verified) — restored from pinned f0301d75
+     @ 4dd08abf, both entries HEAD-verified. NEW GROUNDS from the chain (recorded, unmined):
+     forum.bits.media topic 27623 (ezhrd's FREE LIVE real-money trading chronicle from
+     2017-05 — primary grid-class P&L across the 2017 mania+crash, the highest-value next
+     target of this vein), bits.media topic 7990 (bot-2 thread, btcsec topic ids SURVIVE the
+     2015 rename), blog.cloudbot.uk (2018+ generation), mensfreedom.ru/forum (RU bot-release
+     forum, unprobed), ezhrd blog earlier posts. [§33: wired -> docs/graveyard.md (e)-(h) +
+     docs/research/weak_signal_registry.md WS-010 obs 3 + data/btcsec_trading_topics.json]
   3. (stretch) @crypto_maniacdt YouTube transcripts via fetch_video_transcript.py — pair video
      with repo, hunt stated-but-uncoded failures; explicit video line owed either way.
      STATUS: taken.

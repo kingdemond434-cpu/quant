@@ -364,7 +364,7 @@ direction: this is the L1.46 provenance family at the PRECISION layer rather tha
 independence: two threads, two venues (BTC-E tape precision; Cryptsy fee metadata), ONE forum and — for the taker-only corroboration — ONE vendor, so still effectively a single community path; in-thread primary captures keep it closer to a measurement than a claim. The desk's own L1.45 lesson ("a book-walk measures DISPLAYED depth") is the live-market twin derived independently from own fills. NOTE: the promotion-check's hardening trigger (second venue's hidden-channel/ROUNDING evidence) is NOT met by the Cryptsy fact — fee metadata is a different defect layer; the prior widens, the rule-hardening still waits.
 promotion-check: not a tradeable signal — a DATA-QUALITY prior. Consume it wherever an era-tape axis is screened (the moat's historical-monopolisation program); if a second era venue's hidden-channel/rounding evidence surfaces, harden from prior to rule in the era-tape screen harness.
 
-### WS-010 strategy-file monoculture: mass-distributed identical rule-sets synchronize retail flow   [observations: 2, same vendor]
+### WS-010 strategy-file monoculture: mass-distributed identical rule-sets synchronize retail flow   [observations: 3 across 2 vendors]
 first-seen: 2026-08-12 RU frontier miner s2-on-branch (forum.btcsec.com topic 4382, Jan-2014, page 1 of 75: the 1b-bot vendor shipped downloadable strategy FILES ("Скачиваем стратегию с сайта... работала на реальных деньгах, практически безрисковая") loaded verbatim into identical rule-table engines (book-imbalance thresholds like deltaVolume5m, 5× bid/ask volume ratios, wall-detection with spoof-ignore limits); N buyers ran the SAME triggers on the same venue; group-buys ("складчина") widened distribution further)
 latest: 2026-08-19 RU s3 continuation · SAME VENDOR (1bbot.com), second product, and the channel is
 WIDER and HARDER than obs 1 recorded: forum.btcsec.com topic 6549 (1b bot lite, Cryptsy/BTC-E/BTER/
@@ -377,6 +377,18 @@ vendor-enabled; (b) licence is PER API KEY ($99.95/key) and the May-2014 promo r
 venue API keys, a fleet-enumeration channel one level harder than shared rule files: whoever holds
 that registry can count, time and in principle read its fleet. Independence caveat: same vendor as
 obs 1 ⇒ vendor count stays 1; what rose is the measured WIDTH (venues × pairs × the key registry).
+obs 3, 2026-08-19 same run · SECOND INDEPENDENT VENDOR, and the channel's strongest form yet:
+ezhrd/cloudbot (btcsec topic 4320 + ezhrd.wordpress.com, LIVE and robots-clean in 2026, comment
+layer mined 2015→2018) ran a VENDOR-EXECUTED cloud fleet — customers hand API keys to a hosted
+service and every customer's orders originate from the vendor's own servers ("Просто купили
+подписку – и бот работает"), i.e. the fleet is synchronized BY CONSTRUCTION, not merely by shared
+rule files; and it moved venues as one (BTC-E→WEX in the 2017 seizure week; Bitfinex off/on around
+the 2016-08 hack). Fleet-level venue-policy feedback observed: Bittrex's cancel-fee/fill-ratio
+enforcement killed the whole fleet's algorithm on that venue in one stroke (2018-01, see
+era_grid_ladder_vol_bot third instance (f)). Independence: ezhrd ≠ 1bbot (different author,
+product, stack: free-then-cloud vs licensed desktop) ⇒ 2 genuine vendor paths. Promotion trigger
+UNCHANGED: still no MEASURED threshold-time flow clustering; more channel instances do not
+substitute for the measurement.
 direction: identical-rule herding turns a private trigger into a synchronized flow event: when the shared condition fires, the crowd's orders arrive together, amplifying imbalance cascades at exactly the thresholds the files encode. Modern echoes with the same structure: copy-trading leaders on Bybit/Binance/BingX, Telegram signal channels, TradingView public scripts with alert-webhook bridges (the RU diaspora census already found webhook bridges standard tooling). Desk-testable shadow: order-flow bursts time-clustered around round-number indicator thresholds on high-copy-trade symbols; also an ecology prior — any public backtest genre popular enough to be mass-copied degrades ITSELF (crowding-at-threshold), which is a decay mechanism to price into any mined-from-public mechanism.
 independence: single path (2014 RU vendor thread; the era's monoculture is documented, its flow effect is inferred, not measured). Adjacent but distinct from known copy-trading literature: the WEAK part is threshold-synchronization as a MEASURABLE microstructure event, not the social fact of copying.
 promotion-check: converged-with: none yet. Promote to hypothesis if a second independent path names threshold-time flow clustering on copy-traded symbols, or if a desk look at trade-intensity around canonical indicator levels (from own tape) shows the clustering; event-shaped ⇒ event-study gate.
