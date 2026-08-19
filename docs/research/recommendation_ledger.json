@@ -6218,11 +6218,11 @@
    "summary": "Instrument EVERY cashcarry close with spot_slip_bps/fut_slip_bps: only 12 of 531 execution_tape rows carry them, which starves BOTH the L1.45 own-fills basis and the new print-impact falsifier (4 paired symbols, UNDERPOWERED). The executor already computes both values and writes them on 2.3% of rows -- this is evidence destroyed at zero saving (L1.47 pattern).",
    "roi_bps": 40.0,
    "raised": "2026-08-12T14:18:16.237426+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "Premise refuted by measurement 2026-08-19: the executor drops nothing. Every live tape row since the TCA wrapper landed carries spot_slip_bps/fut_slip_bps -- 20/20 from 2026-07-28 onward, incl. 12/12 closes. The 513 rows without the fields are 504 PAPER closes from 2026-07-26/27 (no real fill exists; writing slip on a paper mark is L1.55 fabrication) plus 9 pre-instrument live rows (2026-07-26/27) whose decision-time mids were never captured and cannot be back-filled. Instrumentation is already permanent and lossless; the print-impact falsifier's power constraint is LIVE FILL COUNT, which only the L1.45 ramp raises.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-19T01:05:17.289818+00:00"
   },
   {
    "id": "R0483",
