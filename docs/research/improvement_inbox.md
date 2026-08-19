@@ -2642,3 +2642,19 @@ none asks "does the venue still answer the way the collector assumes" until a co
 depended-on venue endpoint (candles, funding, announcements, income pagination) that diffs
 response SHAPE against a pinned fixture would convert venue spec drift from a consumer-side
 surprise into a dated fence event. Engine-owned; pattern documented here with its working example.
+
+## 2026-08-19 (AR miner s3) — source_backlog classifier: silent fail-open on terminally-graded cards
+
+`libs/research/source_backlog._classify` fails open to "verification" on unrecognized grade text
+(right for genuinely unknown text, per its own docstring). Measured today: 3 of 7 queue items were
+phantom — cards 24/27/32, resolved in substance ("verified + MINED" / "BUILT" /
+"structural-reference", §33 wired/screened with real artifacts) but lacking the two terminal
+substrings, so they were served to EVERY cycle since resolution (F0002 recurrence, same class the
+2026-08-11 EN session found for cards 3/21). Cards re-graded + vocabulary rule added to the
+watchlist header this run. ENGINE HALF (owed a `scripts/` change, seat is frozen): the classifier
+should distinguish "unrecognized grade" from "unrecognized grade on a card whose §33 marker is
+wired/screened WITH an artifact path" — the latter is a deliberate desk-written disposition, and
+silently queueing it is how a resolved card becomes forever-pending. Minimal fix: keep fail-open,
+but print a `GRADE-UNPARSEABLE (possibly phantom)` warning line for wired/screened-marker cards so
+the ambiguity surfaces to the session instead of masquerading as work. Ledger row raised this run
+(see session note).

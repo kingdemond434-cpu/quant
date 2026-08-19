@@ -3,6 +3,16 @@
 _Companion to `data/data_universe_map.json`. Session summaries logged here chronologically per
 FREE_DATA_ALTERNATIVES_SPEC. This is the operator-visible "what did the data digger find" record._
 
+**GRADE VOCABULARY IS MACHINE-READ (added 2026-08-19 AR s3, after 3 phantom-pending cards).**
+`libs/research/source_backlog.py` classifies every `### N. … — grade: …` line and FAILS OPEN to
+"pending verification" on unrecognized text. A card leaves the verify queue ONLY via: grade text
+containing `verified-clean` or `destroyed-at-source`; or marker `[§33: killed …]`; or
+`[§33: deferred(YYYY-MM-DD)]` with a future date. `needs-legitimacy-review` routes to the
+legitimacy queue; `needs-monitoring` / `unverified` stay pending (by design — partial resolution
+keeps the whole card pending). A terminal grade written as "MINED"/"BUILT"/"structural-reference"
+WITHOUT one of the terminal substrings is served to every future cycle forever (F0002). Write the
+substring.
+
 ---
 
 ## SESSION SUMMARY — 2026-07-19T00:00:00+00:00 (first manual run, operator-triggered)
@@ -1408,7 +1418,7 @@ mechanism prior is CONFIRMED and the prize is MEASURED. `[§33: screened -> data
   rules, these are read by hand or not at all — the ruling is not pre-empted by pointing a crawler
   at them first.
 
-### 24. Foreign AI-quant RESEARCH SYSTEMS (VeighNa/vnpy.alpha, Qlib, JP/KR equivalents) — grade: verified + MINED (Qlib 2026-08-11; vnpy.alpha 2026-08-13; **JP/KR half MINED 2026-08-18**) [§33: wired -> docs/research/search_operator_library.md `qlib-alpha158` + `vnpy-alpha-dsl`]
+### 24. Foreign AI-quant RESEARCH SYSTEMS (VeighNa/vnpy.alpha, Qlib, JP/KR equivalents) — grade: verified-clean + MINED (Qlib 2026-08-11; vnpy.alpha 2026-08-13; **JP/KR half MINED 2026-08-18**; grade made parser-terminal 2026-08-19 AR s3 — was phantom-pending, F0002 class) [§33: wired -> docs/research/search_operator_library.md `qlib-alpha158` + `vnpy-alpha-dsl`]
 > **§33 JP/KR HALF MINED 2026-08-18 (litminer run 8) — the card's titular JP/KR equivalents were
 > never previously opened; now measured.** JP HAS a real equivalent layer: **J-Quants-Tutorial**
 > (JPX-official six-stage ML pipeline; 1-month purge buffers because labels embed 20d forward
@@ -1593,7 +1603,7 @@ mechanism prior is CONFIRMED and the prize is MEASURED. `[§33: screened -> data
 - **PROVENANCE:** a Reddit commenter answering "where do you get long crypto history". Worth
   stating that the desk's own weekly free-data mission should have found this before a forum
   comment did — the failure was not effort, it was that a familiar name reads as a covered one.
-### 27. Crypto grouping map — THE BLOCKING INPUT for group_rank/group_zscore, built proprietary — grade: **BUILT from owned bars 2026-08-11 (L1.11: zero vendor, zero licence surface)** [§33: wired -> data/crypto_grouping_map.json]
+### 27. Crypto grouping map — THE BLOCKING INPUT for group_rank/group_zscore, built proprietary — grade: **verified-clean — BUILT from owned bars 2026-08-11 (L1.11: zero vendor, zero licence surface; grade made parser-terminal 2026-08-19 AR s3 — was phantom-pending, F0002 class; consumer wiring = R0437, tracked in the ledger not here)** [§33: wired -> data/crypto_grouping_map.json]
 > **BUILT 2026-08-11 (brain-hunter seat).** `wq_operators.group_rank/group_zscore` REFUSE without
 > a `dict[symbol, group]` map; since 2026-08-07 all 179,712 cross-sectional cells could only ask
 > "extreme vs ALL coins", never "vs PEERS". `data/crypto_grouping_map.json` now holds FOUR
@@ -2906,7 +2916,7 @@ This item is graded **UNVERIFIED for content, verified for reachability + enumer
 
 ## 2026-08-12 — BRAIN hunter s2: the field taxonomy, and what it says about the desk's data surface
 
-### 32. WorldQuant BRAIN data-field catalogue (USA TOP3000, delay=1) — a competitor's ENTIRE feature surface, enumerated — grade: **structural-reference, no ingest possible (equities), routed for its SHAPE not its contents** [§33: screened -> docs/research/search_operator_library.md]
+### 32. WorldQuant BRAIN data-field catalogue (USA TOP3000, delay=1) — a competitor's ENTIRE feature surface, enumerated — grade: **verified-clean — structural-reference, no ingest possible (equities), routed for its SHAPE not its contents (grade made parser-terminal 2026-08-19 AR s3 — was phantom-pending, F0002 class)** [§33: screened -> docs/research/search_operator_library.md]
 
 **SOURCE:** `QuantML-Research/wq-alpha-research`, `references/wq_usa_top3000_delay1_data_fields_summary.json` — a machine-generated summary of a 219-page field enumeration. **NO LICENCE FILE ⇒ all-rights-reserved**; counts and categories are facts, extracted as such, **no verbatim text or bulk data reused**, nothing installed. DERIVES-FROM: **NONE (checked)** — no desk artifact references this repo.
 
