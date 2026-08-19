@@ -3232,7 +3232,7 @@ so R0193's build can re-tag from titles at zero fetch cost); (4) no mechanism is
 timeline material for an existing ledgered build, not an axis; the regional-premium family stays
 graveyarded.
 
-### 37. Wallet-resolved signed DEX trade tape (OWNED, LIVE, and absent from every catalogue the miners read) — grade: **owned-and-measured; UNMINED — this card exists to make it visible** [§33: wired -> data_axis_watchlist.md card 37 + R0637]
+### 37. Wallet-resolved signed DEX trade tape (OWNED, LIVE, and absent from every catalogue the miners read) — grade: **owned-and-measured; UNMINED — this card exists to make it visible** [§33: wired -> docs/research/recommendation_ledger.json `R0637`]
 
 **THIS IS NOT A SOURCE TO ACQUIRE. THE DESK ALREADY OWNS IT AND HAS NEVER READ IT.**
 `scripts/collect_geckoterminal_trades.py` has been writing `data/geckoterminal_trades.jsonl` since
