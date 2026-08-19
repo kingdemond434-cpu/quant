@@ -6653,3 +6653,20 @@ Non-English: `paper-zh` **identified and named, not yet read** — carried below
 started: one 22MB repo triaged, ~1.3% of its non-vendored blobs read, a CC-BY primary source opened,
 the Chinese edition identified, and the fork layer untouched. **Seat-exhaustion is false here as
 everywhere.**
+
+**POST-CLOSE OPS NOTE — 9th R0423-class ledger race, and it manufactured a FALSE §33 defect (L0168).**
+After the merge, `mine_gate` reported *"1 claim conversion with NO backing artifact — anchor-absent:
+`recommendation_ledger.json` does not contain 'R0637'"*. It did contain it: `git show HEAD:` had
+**637 rows incl. R0637+R0638** while the **working copy had 635** — a sibling's whole-file writer had
+reverted it. Row-level diff first (the rule): **strict subset, the sibling added nothing**, so healing
+from the pinned sha destroyed no one's work. It then **reverted AGAIN within ~60s of the first heal**
+(mtime 08:27:25) — an active cadence, not a one-shot. Healing and gating in **one atomic command**
+returned the true verdict: **BACKLOG-CLEAR, all 15 carded finds disposed.**
+**The generalisable half:** a gate that reads the WORKING COPY does not merely *bury* failures in a
+shared tree (the 2026-08-05 dirty-tree lesson) — it **manufactures** them against correctly-committed
+work. Diff HEAD vs working copy for the gate's input before believing any gate verdict here. And
+**fleeing to a fresh worktree does not escape it**: the worktree lacks gitignored `data/` and faked a
+*larger* red (4 unbacked vs the true 0). Fix already ledgered upstream (R0623, flock); not re-rowed.
+**One real defect of my own, caught by the gate and fixed:** card 37's first `[§33: wired -> ...]`
+named *itself* and was not path-shaped. Corrected to the checked ``path `anchor`​`` form. A
+self-referential disposition is a conversion claim backed by the claim.
