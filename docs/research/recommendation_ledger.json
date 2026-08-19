@@ -6254,11 +6254,11 @@
    "summary": "Five OLDUSDT TEST-FIXTURE rows are welded into the live money-path execution tape (data/moat/execution_tape/cashcarry_trades.jsonl), each stamped closed=2020-01-01T00:00:00Z. They inflate execution_tape.coverage()[days] from ~31 real days to 2404.91 -- a 78x overstatement of the desk's execution track record, published by run_trade_forensics as tape_days and named load-bearing in libs/risk/capital_events.py. check_gate0_ready keys on n rather than days so live-readiness is NOT currently flipped, but the span is wrong everywhere it is read. Fix: purge the fixture symbol and add a fence forbidding test symbols in the money-path tape.",
    "roi_bps": 20.0,
    "raised": "2026-08-12T14:19:41.549340+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Purge + fence both landed 2026-08-13 @ 50bd5ef4: tape now holds 0 OLDUSDT rows (live and backup), no pre-2026-06 closes across all 533 rows, tape_days reads 44.65 (was 2404.91). Fence sits at the WRITE CHOKEPOINT (_writable raises on live-default writes under a test harness) -- stronger than a symbol denylist, which rots. Verified fresh this session.",
+   "commit": "50bd5ef454decca31ef01227047dfc4093210e15",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-19T07:04:36.233427+00:00"
   },
   {
    "id": "R0487",
@@ -6338,11 +6338,11 @@
    "summary": "MECHANISM-ATTRIBUTION FENCE IS ABSORBING ON THE SAME FROZEN RATIO R0352 JUST FIXED -- the sibling fence nobody checked. check_mechanism_attribution.py breaches the law gate today with 'cash_and_carry: UNATTRIBUTED -- unexplained WIN +2,782.28 is 2461% of the +113.06 mechanism term'. Those are the SAME two frozen numbers as the carry-bleed alarm: web/cashcarry_live.json holds n_carries 0 and deployed_notional 0.0, so no new funding and no new non-funding P&L can accrue and BOTH terms of the ratio are pinned by construction -- funding_harvested has read exactly 113.06 since 2026-08-05. R0352 repaired max_audit's consumer (flat book + an EXPLAINED fut_leg_reconciliation is a closed accounting episode, not a live leak) and this fence was not in that row's scope, so it keeps firing on a number arithmetically incapable of moving, in the LAW GATE, where a permanently-red fence is the thing L1.43 says gets switched off. THE CAUSE IS ALREADY ON DISK AND STRUCTURED: fut_leg_reconciliation reports explained=true measured=true gap=4795.41 rebase_usd=4790.70 -- the ledgered inception re-base, i.e. ACCOUNTING, NOT EDGE. FIX: give it the same flat-book + attributed-recon reading max_audit now has (scripts/max_audit.py check_carry_funding_measured, commit this session, tests/ops/test_carry_bleed_absorbing.py), reading the structured recon fields rather than parsing the verdict string. Do NOT touch the 0.5 alert_frac -- the threshold is not the defect and lowering it is forbidden.",
    "roi_bps": 5.0,
    "raised": "2026-08-12T15:57:50.995458+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Mirrored max_audit R0352 reading into check_mechanism_attribution: flat book (exposure keys PRESENT and zero) + fut_leg_reconciliation explained=True measured=True (structured fields) -> closed accounting episode, ATTRIBUTED with the re-base named. alert_frac/UNATTRIBUTED_FRAC untouched; exposure books judged as before; absence never quiets. 16 tests green incl. sibling suite; live fence flipped exit 2 -> 0.",
+   "commit": "f0734492a7f9960a9378e409713580ef143d0676",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-19T07:07:45.913429+00:00"
   },
   {
    "id": "R0494",
@@ -6350,11 +6350,11 @@
    "summary": "EVENT GUARD IS FAIL-CLOSED AND UNWIRED, AND WIRING IT BEFORE ITS CALENDAR EXISTS WOULD HALT THE SLEEVE. Split from R0357, whose primary half (the evidence ladder) is now wired. libs/execution/event_guard.py returns allowed=False on EMPTY/STALE/BLACKOUT and has ZERO callers; data/event_calendar.json has no producer anywhere in the repo. So the hourly conviction sleeve opens into FOMC/CPI windows with a stop a gap jumps straight through, AND the naive repair -- adding the call -- would refuse every entry forever, because absent-calendar is indistinguishable from permanent-blackout by construction. ORDER IS LOAD-BEARING: (1) build the calendar producer, (2) prove it publishes a non-empty MEASURED calendar with a freshness contract, (3) only then wire the guard. TWO BLOCKERS ON THE WIRING STEP, both real: libs/execution/ is MONEY_PATH and the L1.38 change window is STERILE (RAIL_BREACH, CASHCARRY_KILL present, book unwinding), and a fail-closed guard on an absent input is the L1.55 fabricated-default class pointed at the order path. The calendar PRODUCER is not money-path and can be built now.",
    "roi_bps": 12.0,
    "raised": "2026-08-12T16:31:13.293347+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Already complete when raised -- row split from R0357 against a stale snapshot. R0276 @ ddd366ff (2026-08-06) did the full load-bearing order: (1) scripts/build_event_calendar.py builds from the Fed's own schedule, cron'd monthly (crontab.manifest:118); (2) data/event_calendar.json holds 16 FOMC windows valid_through 2027-12-08, guard enforces its own freshness (STALE blocks); (3) guard wired in run_conviction_trader.py:438 -- calendar fails CLOSED, ImportError fails OPEN and PUBLISHED (GUARD-UNAVAILABLE), so a packaging mistake cannot silently halt the sleeve. Verified live this session: check() -> CLEAR, next 2026-09-16.",
+   "commit": "ddd366ff1359bcd5fc0306f7560e36272a0a5c72",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-19T07:08:50.346674+00:00"
   },
   {
    "id": "R0495",
@@ -8063,6 +8063,20 @@
    "commit": "84f66d6d7f68ded2205ac0089ea4e30cbe1a86f3",
    "due": null,
    "disposed": "2026-08-19T06:59:58.205149+00:00"
+  },
+  {
+   "id": "R0635",
+   "source": "owed-work",
+   "summary": "BUY DISK BEFORE THE RECORDERS PAUSE: 13.7 days of headroom measured 2026-08-19 (data/moat_mine.json closure.disk: 20.6GB free, tape growth 1.05GB/day, recorders pause at 80% used = 31.97GB). The moat tape is the desk's one irreplaceable dataset and the 08-17 rm -rf already cost 19.46GB of it; a pause spends data that cannot be re-earned (L1.28b(f)). PRINCIPAL ACTION: upgrade VPS disk (38G -> 80G+) or attach block storage and move COLD tape (data/moat/**/2026*) onto it. The alternative -- throttling recorders -- is forbidden by L1.28b(f); deleting mined tape is forbidden by the reconstruction rule in the artifact's own note.",
+   "roi_bps": 40.0,
+   "rank": null,
+   "roi_basis": "measured",
+   "raised": "2026-08-19T07:22:38.076842+00:00",
+   "status": "scheduled",
+   "reason": "Needs the principal: a VPS disk upgrade is a spend + provider-console act this box cannot perform on itself. Scheduled 3d out (well inside the 13.7d fuse) so the escalation re-fires while plenty of headroom remains; the tape-disk-deadline fence pages independently.",
+   "commit": null,
+   "due": "2026-08-22",
+   "disposed": "2026-08-19T07:22:46.279478+00:00"
   }
  ]
 }
