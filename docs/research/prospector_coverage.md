@@ -1637,6 +1637,44 @@ search cost. (2) The Cocoa repo chain (item 2, untaken). (3) The 2018-02→2018-
 uncalibrated between no 85000 (2018-02-16) and 100000 (2018-12-06) — the post-ban bear era, the
 cheapest remaining binary-search extension.
 
+### 2026-08-19 session 4 (KR frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+RESUME STATE READ FIRST, and it found the run's top item before any searching: **KR s3
+(2026-08-13, commit c32ed2be, branch `claude/kr-miner-s3-20260813`, own worktree) was never
+merged into this branch** — the branch every organ reads. `git merge-base --is-ancestor` says NO.
+Cost of that gap, verified in this tree today: (a) the **batch_premium.py Bithumb 15h look-ahead
+producer s3 found is STILL LIVE** (`scripts/batch_premium.py` `bithumb()` still keys KST-day 24h
+bars by UTC start-date; the two commits that touched the file since were lint/type passes) because
+s3's repair rows (R0583/R0584 on its branch) never reached the live ledger — the repair queue has
+been structurally blind to a found leak for 6 days; (b) WS-011 still reads [observations: 1] here
+(s3 measured obs 2: Bithumb 10.50h tape hole across the 2025-03-24 NH→KB migration); (c) s3's
+card #33 (KR venue↔bank fiat-rail registry) + `data/kr_venue_bank_rail.json` +
+`data/ppomppu_kr_rail_corpus.json` tracking are absent from HEAD; (d) **the OP id s3 minted
+COLLIDED**: live's library now carries TWO OP-072 headers (s3's request-param timezone operator
+landed by some path at one line, JP s4's LLM-contamination operator at another) and every repo
+reference to "OP-072" outside the library means the JP one. A partial, referenceless landing is
+worse than none — it fakes presence.
+BACKLOG (resume step 1): the one KR item in the verify list (KR venue-state layer, card #26) is
+disposed on disk and its successor collector is LIVE — `data/kr_venue_flags.jsonl` 3,505 rows,
+last write TODAY 06:22Z, rows carry `"clock": "recv_only"` (L1.46 discipline). Not re-probed;
+re-measuring a constant. `data/mining_suspended` absent ⇒ mining authorised (§33 backlog clear).
+ITEMS THIS RUN (bounded per completion contract; landing owed work outranks new ground, L1.28b):
+0. **Land KR s3 into the live branch** — reconciling merge in a private worktree (13 sibling
+   worktrees share the main checkout; R0423 ×6). Semantic resolutions required, not textual:
+   s3's card #33 renumbers to **#35** (live's #33 = VARA Dubai, #34 = bitbank order-book);
+   s3's operator renumbers to **OP-090** (dedup the double OP-072, keep JP as 072 — all
+   references point there); WS-011 obs 2 lands into the CURRENT registry text; the
+   batch_premium repair lands as FRESH ledger rows via scripts/recommendations.py so the live
+   repair queue finally sees it. STATUS: pending.
+1. **s3's named next ground #1: enumerate KR venue↔bank rail transitions since 2018** from
+   `data/upbit_trade_announcements.jsonl` (737 rows, 2017-10→2026-07, on disk) + Bithumb notice
+   surface — the single blocking measurement for the renumbered card #35; flips s3's knife-edge
+   EV REJECT (0.0019 vs 0.002) either way at the pre-stated re-open condition (≥8
+   transitions/yr). The announcement≠treatment fence (s3, thread 76535/76551: headline disputed
+   in 44 min, rail already dead before the notice) binds this enumeration. STATUS: pending.
+2. **Cocoa repo chain** (OP-001) — deferred by s1, s2, s3; a FOURTH silent deferral would be a
+   standing skip, so if this run cannot take it the deferral is named loudly with its count.
+   STATUS: pending.
+
 ## SESSION NOTES — JP frontier miner
 
 ### 2026-08-13 session (JP frontier miner) — COMPLETE (write-first note, finalized end of run)
