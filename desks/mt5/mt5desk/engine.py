@@ -72,6 +72,8 @@ class Trade:
     bars_held: int
     r_multiple: float
     reason: str
+    units: float = 1.0  # total size held at exit, in initial-unit multiples
+    adds: int = 0       # pyramid adds that actually filled
 
 
 @dataclass
@@ -87,6 +89,17 @@ class Signal:
     bank_frac: float = 0.0  # 0 = flat target exit; >0 = close this fraction at target, rest runs
     bank_protect_k: float = 0.0  # runner stop moves to entry + stop_dist*k after bank (0 = BE)
     runner_trail_k: float = 0.0  # 0 = fixed stop; >0 = chandelier trail at stop_dist*k off extreme
+    # --- winner pyramiding: exposure grows only after the market has PROVED the
+    # thesis, which is the opposite of averaging down and must never be confused
+    # with it. Add k fills at entry + side*k*add_every_r*stop_dist.
+    add_every_r: float = 0.0   # 0 = no adds; else spacing between adds, in R
+    add_max: int = 0           # hard cap on the number of adds
+    add_frac: float = 0.0      # size of each add relative to the initial unit
+    # After add k the stop for the WHOLE stack moves to the (k-1)th add level --
+    # breakeven on the first add. Without this the stack's open risk grows with
+    # every add, which is how a pyramid turns into the thing it is not supposed
+    # to be. Set False only to MEASURE that difference, never to trade it.
+    add_ratchets_stop: bool = True
 
 
 @dataclass
@@ -188,22 +201,45 @@ def run_backtest(
         exit_price: float | None = None
         reason = "ttl"
         bars_held = 0
+        sd0 = abs(entry - sig.stop)          # the initial risk unit; R is measured in it
+        add_every_r = sig.add_every_r
+        add_max = sig.add_max
+        add_frac = sig.add_frac
+        adds: list[float] = []               # fill prices of the pyramid adds
+        pyramid = add_every_r > 0 and add_max > 0 and add_frac > 0 and sd0 > 0
         last = min(len(idx), fill_bar + ttl)
         for j in range(fill_bar, last):
             bars_held = j - fill_bar + 1
             hi, lo = float(h[j]), float(l[j])
+            # THE STOP IS EVALUATED FIRST, against the level in force at bar
+            # open, and an add can only fill on a bar the stop survived. Within
+            # one OHLC bar the path is unknown, so this denies the pyramid a
+            # mid-bar stop ratchet that would have turned a full loss into a
+            # breakeven. It biases the measurement AGAINST pyramiding, which is
+            # the direction a test of pyramiding has to be biased.
             if side > 0:
                 if not banked and bank_frac > 0 and hi >= target:
                     banked = True
                     banked_at = target
-                    stop = max(stop, entry + abs(entry - sig.stop) * bank_protect_k)
+                    stop = max(stop, entry + sd0 * bank_protect_k)
                 if banked:
                     trail_ext = max(trail_ext, hi)
                     if runner_trail_k > 0:
-                        stop = max(stop, trail_ext - abs(entry - sig.stop) * runner_trail_k)
+                        stop = max(stop, trail_ext - sd0 * runner_trail_k)
                 if lo <= stop:
                     exit_price, reason = stop, "bank" if banked else "stop"
                     break
+                if pyramid:
+                    while len(adds) < add_max:
+                        lvl = entry + sd0 * add_every_r * (len(adds) + 1)
+                        if hi < lvl:
+                            break
+                        adds.append(lvl)
+                        if sig.add_ratchets_stop:
+                            # whole stack ratchets to the PREVIOUS add level:
+                            # breakeven on the first add, then trailing behind
+                            prev = entry + sd0 * add_every_r * (len(adds) - 1)
+                            stop = max(stop, prev)
                 if not banked and hi >= target:
                     exit_price, reason = target, "target"
                     break
@@ -211,14 +247,23 @@ def run_backtest(
                 if not banked and bank_frac > 0 and lo <= target:
                     banked = True
                     banked_at = target
-                    stop = min(stop, entry - abs(entry - sig.stop) * bank_protect_k)
+                    stop = min(stop, entry - sd0 * bank_protect_k)
                 if banked:
                     trail_ext = min(trail_ext, lo)
                     if runner_trail_k > 0:
-                        stop = min(stop, trail_ext + abs(entry - sig.stop) * runner_trail_k)
+                        stop = min(stop, trail_ext + sd0 * runner_trail_k)
                 if hi >= stop:
                     exit_price, reason = stop, "bank" if banked else "stop"
                     break
+                if pyramid:
+                    while len(adds) < add_max:
+                        lvl = entry - sd0 * add_every_r * (len(adds) + 1)
+                        if lo > lvl:
+                            break
+                        adds.append(lvl)
+                        if sig.add_ratchets_stop:
+                            prev = entry - sd0 * add_every_r * (len(adds) - 1)
+                            stop = min(stop, prev)
                 if not banked and lo <= target:
                     exit_price, reason = target, "target"
                     break
@@ -236,7 +281,15 @@ def run_backtest(
                 + (1.0 - bank_frac) * (exit_price - entry) / stop_dist * side
         else:
             r = (exit_price - entry) / stop_dist * side
-        r -= per_oz_cost / stop_dist
+        # Each add is its own position: its P&L runs from ITS fill price, not
+        # the original entry, and it pays its own full round trip. Charging one
+        # round trip for a three-unit stack is the same class of error as the
+        # 0.48 spread -- it makes a costly mechanism look free.
+        units = 1.0
+        for fill_px in adds:
+            r += add_frac * (exit_price - fill_px) / stop_dist * side
+            units += add_frac
+        r -= per_oz_cost * units / stop_dist
         trades.append(
             Trade(
                 entry_time=pd.Timestamp(idx[fill_bar]),
@@ -244,6 +297,7 @@ def run_backtest(
                 side=side, entry=entry, exit=exit_price,
                 stop=sig.stop, target=sig.target,
                 bars_held=bars_held, r_multiple=float(r), reason=reason,
+                units=float(units), adds=len(adds),
             )
         )
         filled += 1
