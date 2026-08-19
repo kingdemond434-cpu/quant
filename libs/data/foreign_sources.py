@@ -116,30 +116,62 @@ class Article:
 # --------------------------------------------------------------------------- query territories
 # ONE TERRITORY PER LINE, never a synonym of the line above. The Chinese set learned this the
 # expensive way: four rephrasings of "quant backtest" return one forest four times. Each list
-# below walks the same axes as CN_ARTICLE_QUERIES -- validation, factors, funding/basis,
-# microstructure and cost, mechanism-specific, and the failure literature -- in the vocabulary the
-# local community actually uses, because a translated English phrase finds translated English
-# content and that is the one corpus already covered.
+# below walks the same axes as CN_ARTICLE_QUERIES -- validation, factors, the MT5 universe
+# (gold/FX/metals/indices/energy), MT5-native mechanisms (carry/swap, futures basis, COT
+# positioning, session structure), microstructure and cost, and the failure literature -- in the
+# vocabulary the local community actually uses, because a translated English phrase finds
+# translated English content and that is the one corpus already covered.
+#
+# MT5 UNIVERSE MANDATE (2026-08-18). Every crypto-exchange-native query (crypto assets, funding
+# rate, perpetual mechanics, cross-exchange/kimchi/on-chain/miner-flow, whale wallets) was removed
+# from all five language sets on that date and replaced with the desk's real market and its
+# analogues. No crypto-exchange universe is hunted in any language any longer. What stayed is
+# universe-neutral (validation, microstructure, factor work transfer to any market).
 
 QUERIES_JA: Final[tuple[str, ...]] = (
-    "暗号資産 バックテスト 過学習",          # overfitting in backtests
-    "仮想通貨 アウトオブサンプル 検証",       # out-of-sample validation
+    "バックテスト 過学習 検証",              # overfitting in backtests
+    "アウトオブサンプル 検証 失敗",           # out-of-sample validation
     "先読みバイアス バックテスト",            # lookahead bias
     "生存者バイアス 検証",                    # survivorship bias
     "ファクター 有効性 検証",                 # factor validity
-    "資金調達率 アービトラージ 実績",         # funding-rate arb, realised
-    "現物 先物 ベーシス 収束",                # cash-futures basis convergence
-    "無期限先物 資金調達率 仕組み",           # perp funding mechanics
-    "取引所間 裁定 コスト",                   # cross-exchange arb cost
+    "ゴールド XAUUSD トレード 戦略",          # gold / XAUUSD
+    "為替 FX アルゴリズム 戦略 検証",         # forex algorithmic strategy
+    "MT5 EA 自動売買 開発",                   # MT5 expert advisors
+    "スワップ キャリー 金利差 取引",          # carry / swap -- the funding-rate analogue
+    "先物 現物 ベーシス 収束",                # futures-cash basis convergence (index/gold)
+    "COT 建玉 ポジション 分析",               # COT positioning -- the whale-tracking analogue
+    "株価指数 先物 戦略",                     # equity-index futures
+    "原油 コモディティ トレード 戦略",        # energy / commodities
     "マーケットメイク 在庫リスク",            # market-making inventory risk
     "板 スリッページ 執行コスト",             # book slippage / execution cost
     "高頻度取引 約定 メカニズム",             # HFT matching mechanics
-    "強制ロスカット 連鎖",                    # liquidation cascade
-    "オプション ボラティリティ 裁定",         # options vol arb
-    "オンチェーン データ 分析 戦略",          # on-chain data strategy
-    "マイナー 売り圧力 オンチェーン",         # miner sell pressure
-    "botter 損失 反省",                       # the JP crypto-bot community's failure writeups
+    "ロンドン ニューヨーク 時間帯 為替",      # session structure -- first-class off 24/7
+    "経済指標 雇用統計 為替 反応",            # NFP / macro-event reaction
     "実運用 バックテスト 乖離",               # live-vs-backtest divergence
+    # -- breadth parity with the CN lane (2026-08-18): same territory, native vocabulary
+    "順張り トレンドフォロー 戦略",           # trend following
+    "逆張り 平均回帰 戦略",                   # mean reversion
+    "ブレイクアウト 戦略 検証",               # breakout
+    "ボラティリティ ブレイクアウト 戦略",     # volatility breakout
+    "グリッドトレード リスク 破綻",           # grid trading risk
+    "統計的裁定 ペアトレード",                # statistical arbitrage / pairs
+    "CTA トレンド 戦略 検証",                 # CTA
+    "オプション ボラティリティ 戦略",         # options vol
+    "マルチファクター モデル 検証",           # multi-factor
+    "クロスセクション ファクター アルファ",   # cross-sectional factor
+    "オーダーブロック 手法 検証",             # SMC order block
+    "フェアバリューギャップ FVG 手法",        # SMC / ICT FVG
+    "流動性 スイープ 相場構造",               # liquidity sweep / market structure
+    "銀 XAGUSD 取引 戦略",                    # silver
+    "ドル円 ユーロドル トレード 戦略",        # USDJPY / EURUSD
+    "日経225 ダウ ナスダック 戦略",           # equity indices
+    "ロンドンフィックス 実需 フロー",         # London WMR fix flow
+    "先物 ロールオーバー 期日 取引",          # futures roll
+    "中央銀行 政策金利 発表 反応",            # central-bank event
+    "週末 窓開け ギャップ リスク",            # weekend gap risk
+    "生産者 ヘッジ COT 商業筋",               # producer hedging (COT commercial)
+    "破産 ロスカット 反省 実弾",              # blow-up / ruin post-mortem
+    "プロップファーム 手法 検証",             # prop-firm methods
 )
 
 QUERIES_KO: Final[tuple[str, ...]] = (
@@ -148,84 +180,184 @@ QUERIES_KO: Final[tuple[str, ...]] = (
     "미래참조 편향 백테스트",                 # lookahead bias
     "생존편향 검증",                          # survivorship bias
     "팩터 유효성 소멸",                       # factor decay
-    "펀딩비 차익거래 실전",                   # funding arb, live
-    "현물 선물 베이시스 수렴",                # basis convergence
-    "김치프리미엄 차익거래",                  # THE kimchi premium -- the desk screens it and has
-    "업비트 바이낸스 가격차이",               #   never read the community creating it
-    "거래소간 재정거래 비용",                 # cross-exchange arb cost
+    "금 XAUUSD 트레이딩 전략",                # gold / XAUUSD
+    "외환 FX 알고리즘 전략 검증",             # forex algorithmic strategy
+    "MT5 EA 자동매매 개발",                   # MT5 expert advisors
+    "캐리 트레이드 스왑 금리차",              # carry / swap -- the funding analogue
+    "선물 현물 베이시스 수렴",                # futures-cash basis convergence (index/gold)
+    "COT 미결제약정 포지션 분석",             # COT positioning -- the whale-tracking analogue
+    "주가지수 선물 전략",                     # equity-index futures
+    "원유 상품 트레이딩 전략",                # energy / commodities
     "마켓메이킹 재고 리스크",                 # market-making inventory
     "호가창 슬리피지 체결",                   # book slippage / fills
-    "청산 연쇄 강제청산",                     # liquidation cascade
-    "온체인 데이터 분석 전략",                # on-chain strategy
-    "채굴자 매도 압력",                       # miner sell pressure
-    "자동매매 손실 복기",                     # algo-trading loss post-mortems
+    "런던 뉴욕 세션 외환 변동성",             # session structure
+    "고용지표 비농업 외환 반응",              # NFP / macro-event reaction
     "실전 백테스트 괴리",                     # live-vs-backtest divergence
+    # -- breadth parity with the CN lane (2026-08-18)
+    "추세추종 트렌드 전략",                   # trend following
+    "역추세 평균회귀 전략",                   # mean reversion
+    "돌파 브레이크아웃 전략 검증",            # breakout
+    "변동성 돌파 전략",                       # volatility breakout
+    "그리드 매매 리스크 청산",                # grid trading risk
+    "통계적 차익거래 페어트레이딩",           # statistical arbitrage / pairs
+    "CTA 추세 전략 검증",                     # CTA
+    "옵션 변동성 전략",                       # options vol
+    "멀티팩터 모델 검증",                     # multi-factor
+    "횡단면 팩터 알파",                       # cross-sectional factor
+    "오더블록 기법 검증",                     # SMC order block
+    "공정가치갭 FVG 기법",                    # SMC / ICT FVG
+    "유동성 스윕 시장구조",                   # liquidity sweep / market structure
+    "은 XAGUSD 트레이딩 전략",                # silver
+    "달러엔 유로달러 트레이딩 전략",          # USDJPY / EURUSD
+    "코스피200 나스닥 지수 전략",             # equity indices
+    "런던 픽싱 실수요 플로우",                # London WMR fix flow
+    "선물 롤오버 만기 거래",                  # futures roll
+    "중앙은행 금리 결정 반응",                # central-bank event
+    "주말 갭 리스크",                         # weekend gap risk
+    "생산자 헤지 COT 상업",                   # producer hedging (COT commercial)
+    "깡통 손절 복기 실전",                    # blow-up / ruin post-mortem
+    "프랍 펌 기법 검증",                      # prop-firm methods
 )
 
 QUERIES_RU: Final[tuple[str, ...]] = (
-    "криптовалюта бэктест переобучение",      # overfitting
+    "бэктест переобучение проверка",          # overfitting
     "проверка вне выборки стратегия",         # out-of-sample validation
     "заглядывание в будущее бэктест",         # lookahead bias
     "ошибка выжившего тестирование",          # survivorship bias
     "фактор затухание доходности",            # factor decay
-    "ставка финансирования арбитраж",         # funding-rate arb
-    "базис фьючерс спот сходимость",          # basis convergence
-    "межбиржевой арбитраж издержки",          # cross-exchange arb cost
+    "золото XAUUSD торговая стратегия",       # gold / XAUUSD
+    "форекс алгоритмическая стратегия тест",  # forex algorithmic strategy
+    "MT5 советник эксперт разработка",        # MT5 expert advisors
+    "кэрри трейд своп разница ставок",        # carry / swap -- the funding analogue
+    "базис фьючерс спот сходимость",          # futures-cash basis convergence (index/gold)
+    "COT отчёт позиции анализ",               # COT positioning -- the whale-tracking analogue
+    "индекс фьючерс торговая стратегия",      # equity-index futures
+    "нефть сырьевые товары стратегия",        # energy / commodities
     "маркетмейкинг риск запасов",             # market-making inventory risk
     "проскальзывание стакан исполнение",      # slippage / book / execution
-    "каскад ликвидаций маржинколл",           # liquidation cascade
-    "опционы волатильность арбитраж",         # options vol arb
-    "ончейн анализ стратегия",                # on-chain strategy
-    "майнеры давление продаж",                # miner sell pressure
-    "торговый робот убытки разбор",           # trading-bot loss post-mortems
+    "лондон нью-йорк сессия волатильность",   # session structure
+    "макроэкономика ставка ЦБ реакция",       # central-bank macro reaction
     "реальная торговля отличие бэктеста",     # live-vs-backtest divergence
+    # -- breadth parity with the CN lane (2026-08-18)
+    "следование тренду стратегия",            # trend following
+    "возврат к среднему стратегия",           # mean reversion
+    "пробой уровня стратегия",                # breakout
+    "волатильный пробой стратегия",           # volatility breakout
+    "сеточная торговля риск слив",            # grid trading risk
+    "статистический арбитраж пары",           # statistical arbitrage / pairs
+    "CTA трендовая стратегия",                # CTA
+    "опционы волатильность стратегия",        # options vol
+    "мультифакторная модель проверка",        # multi-factor
+    "кросс-секционный фактор альфа",          # cross-sectional factor
+    "ордер блок метод проверка",              # SMC order block
+    "гэп справедливой цены FVG",              # SMC / ICT FVG
+    "снятие ликвидности структура рынка",     # liquidity sweep / market structure
+    "серебро XAGUSD торговая стратегия",      # silver  # noqa: RUF001
+    "доллар йена евродоллар стратегия",       # USDJPY / EURUSD
+    "индекс насдак торговая стратегия",       # equity indices
+    "лондонский фиксинг реальный поток",      # London WMR fix flow
+    "ролловер фьючерс экспирация",            # futures roll
+    "центробанк ставка решение реакция",      # central-bank event
+    "выходной гэп риск",                      # weekend gap risk
+    "хеджирование производителей COT",        # producer hedging (COT commercial)
+    "слив депозита разбор стоп",              # blow-up / ruin post-mortem
+    "проп фирма метод проверка",              # prop-firm methods
 )
 
 #: language -> (queries, the source functions that speak it). Consulted by the miner so adding a
 #: language is a table entry rather than a code path.
-#: VIETNAMESE -- a lane the desk did not have at all. Vietnam runs one of the highest
-#: crypto-adoption rates on earth and its retail derivatives community argues in Vietnamese only.
+#: VIETNAMESE -- a lane the desk did not have at all. Vietnam has a large and vocal retail
+#: forex/gold trading community that argues MT5/EA mechanics in Vietnamese only.
 QUERIES_VI: Final[tuple[str, ...]] = (
     "backtest quá khớp tối ưu",              # overfitting a backtest
     "kiểm định ngoài mẫu chiến lược",        # out-of-sample validation
     "thiên lệch nhìn trước dữ liệu",         # look-ahead bias
     "thiên lệch kẻ sống sót kiểm định",      # survivorship bias
-    "phí funding chênh lệch giá",            # funding-rate arbitrage
-    "chênh lệch giá sàn giao dịch",          # cross-venue basis
-    "basis hợp đồng tương lai giao ngay",    # futures/spot basis
-    "thanh lý hàng loạt đòn bẩy",            # liquidation cascades
-    "trượt giá sổ lệnh khớp lệnh",           # slippage and order-book fills
+    "vàng XAUUSD chiến lược giao dịch",      # gold / XAUUSD
+    "forex ngoại hối chiến lược thuật toán",  # forex algorithmic strategy
+    "MT5 EA robot giao dịch phát triển",     # MT5 expert advisors
+    "carry trade lãi suất swap qua đêm",     # carry / swap -- the funding analogue
+    "basis hợp đồng tương lai giao ngay",    # futures/spot basis (index/gold)
+    "COT báo cáo vị thế phân tích",          # COT positioning -- the whale-tracking analogue
+    "chỉ số chứng khoán tương lai chiến lược",  # equity-index futures
+    "dầu thô hàng hóa chiến lược giao dịch",  # energy / commodities
     "tạo lập thị trường rủi ro tồn kho",     # market-making inventory risk
-    "phân tích on-chain chiến lược",         # on-chain analysis
-    "bot giao dịch thua lỗ rút kinh nghiệm",  # trading-bot loss post-mortems
-    "chênh lệch giá P2P sàn nội địa",        # domestic P2P spread -- a local mechanism
-    "phí giao dịch maker taker tối ưu",      # maker/taker fee optimisation
-    "dữ liệu on-chain ví cá voi theo dõi",   # whale-wallet tracking
+    "trượt giá sổ lệnh khớp lệnh",           # slippage and order-book fills
+    "phiên luân đôn new york biến động",     # session structure
     "chỉ báo quá khớp dữ liệu lịch sử",      # indicator overfit to history
     "quản lý vốn kelly rủi ro phá sản",      # Kelly sizing / ruin risk
+    # -- breadth parity with the CN lane (2026-08-18)
+    "theo xu hướng trend following",          # trend following
+    "hồi quy trung bình chiến lược",          # mean reversion
+    "phá vỡ breakout chiến lược",             # breakout
+    "phá vỡ biến động chiến lược",            # volatility breakout
+    "giao dịch lưới rủi ro cháy",             # grid trading risk
+    "kinh doanh chênh lệch thống kê cặp",     # statistical arbitrage / pairs
+    "CTA chiến lược xu hướng",                # CTA
+    "quyền chọn biến động chiến lược",        # options vol
+    "mô hình đa nhân tố kiểm định",           # multi-factor
+    "nhân tố cắt ngang alpha",                # cross-sectional factor
+    "order block phương pháp",                # SMC order block
+    "khoảng trống giá trị hợp lý FVG",        # SMC / ICT FVG
+    "quét thanh khoản cấu trúc thị trường",   # liquidity sweep / market structure
+    "bạc XAGUSD chiến lược giao dịch",        # silver
+    "đô la yên euro đô la chiến lược",        # USDJPY / EURUSD
+    "chỉ số nasdaq chiến lược giao dịch",     # equity indices
+    "phiên định giá luân đôn dòng tiền",      # London WMR fix flow
+    "đáo hạn hợp đồng tương lai giao dịch",   # futures roll
+    "ngân hàng trung ương lãi suất phản ứng",  # central-bank event
+    "khoảng trống cuối tuần rủi ro",          # weekend gap risk
+    "phòng hộ nhà sản xuất COT",              # producer hedging (COT commercial)
+    "cháy tài khoản dừng lỗ rút kinh nghiệm",  # blow-up / ruin post-mortem
+    "prop firm phương pháp kiểm định",        # prop-firm methods
 )
 
-#: TURKISH -- Turkish retail crypto volume is enormous relative to the economy, and lira-pair
-#: microstructure (a currency under sustained pressure) is a mechanism family the English-language
-#: forests barely discuss.
+#: TURKISH -- Turkey has a large retail trading community, and lira-pair microstructure (a
+#: currency under sustained pressure: USDTRY, EURTRY) is exactly the MT5/FX universe and a
+#: mechanism family the English-language forests barely discuss.
 QUERIES_TR: Final[tuple[str, ...]] = (
     "backtest aşırı optimizasyon",           # overfitting  # noqa: RUF001
     "örneklem dışı test strateji",           # out-of-sample testing  # noqa: RUF001
     "ileriye bakma yanlılığı",               # look-ahead bias  # noqa: RUF001
     "hayatta kalma yanlılığı test",          # survivorship bias  # noqa: RUF001
-    "fonlama oranı arbitraj",                # funding-rate arbitrage  # noqa: RUF001
-    "borsalar arası arbitraj maliyet",       # cross-venue arbitrage cost  # noqa: RUF001
-    "vadeli spot baz farkı",                 # futures/spot basis  # noqa: RUF001
-    "zincirleme likidasyon kaldıraç",        # liquidation cascades  # noqa: RUF001
+    "altın XAUUSD işlem stratejisi",         # gold / XAUUSD  # noqa: RUF001
+    "forex döviz algoritmik strateji",       # forex algorithmic strategy
+    "MT5 uzman danışman geliştirme",         # MT5 expert advisors  # noqa: RUF001
+    "carry trade swap faiz farkı",           # carry / swap -- the funding analogue  # noqa: RUF001
+    "vadeli spot baz farkı yakınsama",       # futures/spot basis (index/gold)  # noqa: RUF001
+    "COT raporu pozisyon analizi",           # COT positioning -- the whale-tracking analogue
+    "endeks vadeli işlem stratejisi",        # equity-index futures
+    "petrol emtia işlem stratejisi",         # energy / commodities
     "emir defteri kayma slipaj",             # order-book slippage
     "piyasa yapıcılığı envanter riski",      # market-making inventory risk  # noqa: RUF001
-    "zincir üstü veri analiz strateji",      # on-chain analysis
-    "alım satım botu zarar analiz",          # bot loss post-mortems  # noqa: RUF001
-    "lira paritesi kripto arbitraj",         # lira-pair arbitrage -- the local mechanism
-    "yerli borsa fiyat farkı arbitraj",      # domestic-venue price gap  # noqa: RUF001
-    "maker taker komisyon optimizasyon",     # maker/taker fee optimisation
+    "londra new york seans volatilite",      # session structure
+    "lira paritesi döviz volatilite",        # lira-pair FX -- kept: it IS the MT5 universe
     "kelly kriteri pozisyon büyüklüğü",      # Kelly sizing
-    "balina cüzdan takip zincir analizi",    # whale-wallet tracking
+    "gerçek işlem backtest sapması",         # live-vs-backtest divergence  # noqa: RUF001
+    # -- breadth parity with the CN lane (2026-08-18)
+    "trend takip stratejisi",                # trend following
+    "ortalamaya dönüş stratejisi",           # mean reversion
+    "kırılım breakout stratejisi",           # breakout  # noqa: RUF001
+    "volatilite kırılımı stratejisi",        # volatility breakout  # noqa: RUF001
+    "grid işlem riski patlama",              # grid trading risk
+    "istatistiksel arbitraj çift işlem",     # statistical arbitrage / pairs
+    "CTA trend stratejisi testi",            # CTA
+    "opsiyon volatilite stratejisi",         # options vol
+    "çok faktörlü model testi",              # multi-factor
+    "kesitsel faktör alfa",                  # cross-sectional factor
+    "order block yöntemi testi",             # SMC order block
+    "adil değer boşluğu FVG yöntemi",        # SMC / ICT FVG
+    "likidite süpürme piyasa yapısı",        # liquidity sweep / market structure  # noqa: RUF001
+    "gümüş XAGUSD işlem stratejisi",         # silver
+    "dolar yen euro dolar stratejisi",       # USDJPY / EURUSD
+    "endeks nasdaq işlem stratejisi",        # equity indices
+    "londra fixing gerçek akışı",            # London WMR fix flow  # noqa: RUF001
+    "vadeli sözleşme rollover vade",         # futures roll
+    "merkez bankası faiz kararı tepki",      # central-bank event  # noqa: RUF001
+    "hafta sonu boşluk riski",               # weekend gap risk
+    "üretici hedge COT ticari",              # producer hedging (COT commercial)
+    "hesap patlatma stop loss ders",         # blow-up / ruin post-mortem
+    "prop firma yöntem testi",               # prop-firm methods
 )
 
 

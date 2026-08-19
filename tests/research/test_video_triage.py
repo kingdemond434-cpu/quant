@@ -135,3 +135,20 @@ class TestCJKHomographTraps:
         """验证 means 'authenticate' only in the auth compounds -- alone it is still the
         desk's highest-value word, so the disambiguator must be compound-scoped."""
         assert score_title("样本外验证")[0] >= SURFACE_THRESHOLD
+
+
+def test_foreign_language_methodology_titles_surface():
+    """THE THIRD INSTANCE of the CJK-\\b / Sogou failure class (2026-08-18). The foreign miner
+    fetches Japanese/Korean/Russian/Vietnamese/Turkish forests, and the ranker had NO pattern in
+    any of those scripts -- so a measured run fetched 1,601 rows and surfaced ZERO. A real
+    methodology title in each language must now clear the threshold, or the lane is silently dead
+    again."""
+    for title in (
+        "暗号資産 バックテスト 過学習 検証",              # JA: backtest / overfitting / validation
+        "금 XAUUSD 백테스트 과최적화 검증",              # KO: gold backtest / over-optimization
+        "золото стратегия бэктест переобучение",          # RU: gold strategy backtest / overfitting  # noqa: E501
+        "vàng backtest quá khớp kiểm định ngoài mẫu",     # VI: gold overfit / oos
+        "altın geriye dönük test aşırı optimizasyon",     # TR: gold backtest / over-optimization  # noqa: RUF001, E501
+    ):
+        s, _ = score_title(title)
+        assert s >= SURFACE_THRESHOLD, f"foreign methodology title scored {s}: {title}"

@@ -103,7 +103,9 @@ SYSTEM = (
     # whose most likely outcome is a DISPROOF is a good hypothesis, or it will only ever
     # propose things it expects to confirm, which is the lowest-information batch available.
     OBJECTIVE_PREAMBLE + RESIDUAL_MANDATE + RESIDUAL_PROTOCOL + "\n"
-    "You are a quantitative researcher generating TESTABLE hypotheses for a crypto trading desk.\n"
+    "You are a quantitative researcher generating TESTABLE hypotheses for a trading desk whose "
+    "universe is the full MT5/Fusion market -- FX majors/crosses/exotics, gold and metals, equity "
+    "indices, energy, soft commodities and share CFDs; crypto only as information for an MT5 move.\n"
     "HARD RULES:\n"
     "1. Every hypothesis must name a MECHANISM -- a reason the edge exists that survives the "
     "question 'why has nobody arbitraged this?'. No mechanism = rejected.\n"
