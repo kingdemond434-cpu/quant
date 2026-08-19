@@ -923,8 +923,14 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
             "metric (verified-finding rate over its next 2 runs) and an auto-revert condition. "
             "Prompts live in git -- every revision is diffable and revertible. Mark done: set "
             "last_prompt_review in data/cadence_state.json.")
+    # WRITTEN EVERY FIRING, EMPTY OR NOT (producer-cadence-stale, 2026-08-18). The old
+    # `if due:` guard left the file untouched through any quiet stretch, so its AGE conflated
+    # "no duties have come due" (healthy) with "run_cadence stopped firing" (the outage the
+    # §36 fence exists to catch) -- measured: file 9d old while cadence_state.json was 30min
+    # fresh. An unconditional rewrite makes the mtime a true engine heartbeat and the fence's
+    # premise sound; the empty-state text says so explicitly for any reader.
+    _DUE_NOTE.parent.mkdir(parents=True, exist_ok=True)
     if due:
-        _DUE_NOTE.parent.mkdir(parents=True, exist_ok=True)
         _DUE_NOTE.write_text(
             f"# Generation due -- {now.isoformat()[:16]}Z (stage {stage})\n\n"
             "The cadence engine flags these; the brain executes SCOPED generate runs "
@@ -932,6 +938,13 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
             "setting gen_done_<name> / last_live_generate in data/cadence_state.json.\n\n"
             + "\n".join(f"- {d}" for d in due) + "\n", "utf-8")
         print(f"cadence: {len(due)} generation trigger(s) flagged -> {_DUE_NOTE}")
+    else:
+        _DUE_NOTE.write_text(
+            f"# Generation due -- {now.isoformat()[:16]}Z (stage {stage})\n\n"
+            "NO generation duties due this firing: every cadence stamp is inside its bar. "
+            "This file is rewritten on EVERY run_cadence firing, so its age measures the "
+            "cadence engine's liveness, never merely how long the queue has been empty.\n",
+            "utf-8")
 
     # FREEZE-EXIT (deterministic; principal 2026-07-18): evaluate the 5 lockdown exit
     # criteria every cycle so the freeze lifts on EVIDENCE, not on memory. Pre-Gate-0
