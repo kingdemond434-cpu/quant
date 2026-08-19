@@ -2089,8 +2089,54 @@ _Found by JP frontier miner session 1, 2026-08-01, as the licensed replacement f
 
 ---
 
-### 28. bitbank public candlestick API (JP venue, keyless, whole-year-per-call) — grade: **verified-technically-clean WITH A CONFIRMED PHANTOM-HISTORY TRAP, LICENCE READ 2026-08-12 — needs-legitimacy-review: the ToS (Art. 17/19/20) contains NO data-reuse restriction and the venue's own support docs invite programmatic public-data retrieval; the one restrictive text is the site-footer disclaimer ("private use only, not for commercial purposes" over news/prices/data), whose scope over the public.bitbank.cc API subdomain is the open policy question. Ingest stays gated.** [§33: deferred(2026-08-19) tier:3]
+### 28. bitbank public candlestick API (JP venue, keyless, whole-year-per-call) — grade: **verified-technically-clean; §13 DECIDED LEGITIMATE 2026-08-19 on NEW venue-conduct evidence (MIT-licensed official Public-API clients + published sample market-making bots + official botter community + official historical-data distribution — kill/re-entry condition on card); phantom-history trap GUARDED in the wired artifact** [§33: wired -> data/bitbank_1day.jsonl]
 _Found by JP frontier miner session 1, 2026-08-01._
+
+> **§33 DISPOSITION 2026-08-19 — THE §13 DECISION IS MADE: LEGITIMATE, AND THE AXIS IS WIRED IN
+> THE SAME RUN (EN frontier miner, session I).**
+> **THE RULING:** the site-footer 免責事項 does NOT govern `public.bitbank.cc`; keyless public
+> market-data retrieval, including for this desk's commercial research, is inside the venue's
+> invited use. **DECIDED ON NEW EVIDENCE, NOT BY RE-WEIGHING THE OLD** — the 08-12 seat ruled the
+> scope question not-seat-decidable on ToS+footer alone; L1.16a's narrow door: a named enabling
+> change addressing the original mechanism of uncertainty. The change (all fetched 2026-08-19 via
+> the GitHub API `license.spdx_id` field, org `bitbankinc`):
+> - **The venue licences its own Public-API clients MIT**: `python-bitbankcc` ("Public & Private
+>   API を…扱うライブラリ", MIT, 66★), `node-bitbankcc` (MIT), `java-bitbankcc` (MIT),
+>   `bitbank-mcp-server` (MIT). MIT expressly permits commercial use — a venue cannot coherently
+>   ship commercial-use-licensed client code for an API whose data is private-use-only.
+> - **The venue publishes `sample-market-making-bot` + `sample-xrp-market-making-bot`** —
+>   market-making is commercial API use by definition; it is solicited, not tolerated.
+> - **`bitbank-botters-labo`** — code the venue distributed at its OFFICIAL Discord botter
+>   community (ビボラボ): an official botter community is an invitation.
+> - **`bitbank-historical-orderbooks-docs`** — the venue OFFICIALLY runs a historical
+>   order-book distribution service (→ card 34): a venue distributing its historical data is not
+>   one whose footer bans data use.
+> - Standing 08-12 evidence unchanged: ToS Art. 17/19/20 carry no data-reuse clause and no
+>   bitFlyer-style anti-robot clause; the API host carries no terms/robots/disclaimer (robots 404
+>   re-confirmed 2026-08-19); support KB 360019410033 describes programmatic retrieval as the
+>   API's purpose (08-12 read; today the KB sits behind a Cloudflare JS challenge — noted, not
+>   routed around, and no longer load-bearing given the org evidence).
+> **THE COHERENT SCOPE of the footer** is the marketing/news site's editorial content (liability
+> + anti-solicitation boilerplate); the reading that bans commercial API consumption would make
+> the venue's own published MM bots a ToS breach.
+> **NAMED RESIDUAL (honest):** no single explicit written grant covers the public API; the ruling
+> rests on the venue's aggregate conduct. **KILL / RE-ENTRY CONDITION:** any venue communication
+> (ToS amendment, API terms doc, KB update, or notice) asserting the 免責事項 or a new clause
+> covers `public.bitbank.cc` data → ingest STOPS, card re-grades restricted-by-licence, artifact
+> quarantined. An explicit future API-terms grant retires the residual entirely.
+> **WIRED IN THE SAME RUN:** `data/bitbank_1day.jsonl` (untracked-on-disk per data/* convention;
+> meta line 1 = clock provenance + guard + per-pair coverage) — **100,885 kept rows, all 62 live
+> pairs (46 _jpy + 16 _btc), 2017-02-14 → 2026-08-18**, 620 keyless calls (330 served; 290
+> pre-listing years refused as **HTTP 404 + `code 10000`**, re-probed 5/5 to confirm the class —
+> a naive non-200=failure fetcher mis-classifies every pre-listing year, L1.60). **Guard
+> applied:** per-pair leading zero-volume bars dropped — btc_jpy dropped 43 phantom bars, true
+> start **2017-02-14 exactly as this card measured** (OP-045 validated end-to-end). **Two
+> measured facts new to the desk:** (1) daily bars are **UTC-midnight aligned** (offset 0 ms on
+> all 3,474 btc_jpy bars) — NOT JST; never assume venue-local day boundaries on cross-venue
+> joins (L1.46). (2) xrp_jpy runs from 2017-05-25 with zero phantom bars — the phantom backfill
+> is btc_jpy-only, i.e. a reference-index import, not a venue-wide defect.
+> **FORWARD REFRESHER OWED: R0619** (engine seat — this seat is research-frozen); until wired the
+> tape ages at 1 day/day, priced negligible for daily research bars (the backfill is the value).
 
 > **§33 DISPOSITION 2026-08-12 — THE OWED READ IS DONE (R0310), AND THE EGRESS DIAGNOSIS IS
 > CORRECTED.** The 08-04 attempt failed because it fetched the WRONG URL, not (only) the wrong box:
@@ -2970,3 +3016,39 @@ graveyard/method intelligence, routed to research_memory + inbox, not axes).
 6. **FMZ 文库 strategy-square dig** (assessed RICH-ish 08-01, never dug) — the sljsz HFT post's
    bot lives on FMZ; the public strategy layer is the natural next CN ground.
 7. **Cat 2 on-chain reconstruction** — untouched two runs; owes a session.
+
+---
+
+### 34. bitbank official historical ORDER-BOOK snapshots (S3, registration-granted) — grade: **verified-documented, NOT SCREENABLE TODAY: access is a venue-granted registration (named human step, GAP #69 class) — mechanism prior stated, screen owed on access grant** [§33: deferred(2026-09-02) tier:2]
+_Discovered by EN frontier miner session I, 2026-08-19, while gathering §13 evidence for card 28
+(the org listing surfaced `bitbankinc/bitbank-historical-orderbooks-docs`). SOURCE:
+`github.com/bitbankinc/bitbank-historical-orderbooks-docs` README.md (read in full via
+raw.githubusercontent this run). DERIVES-FROM: NONE (checked — it is the venue's own primary
+documentation, citing only AWS setup guides)._
+
+- **What it is.** The venue OFFICIALLY distributes L2 order-book snapshots from its production
+  exchange: **200 levels above and 200 below best bid/ask, ~2 snapshots/minute**, CSV in
+  `.csv.gz` daily objects, updated T+2 (~23:00 JST), via S3 bucket
+  `564226375708-historical-order-books`, path `orderbook-snapshot/${TICKER}JPY/YYYY_MM/`.
+- **Coverage (from the venue's own table):** BTC + XRP **2019-03-13 →** (≈7.4y of JP-venue L2
+  depth); ETH/DOGE/XLM/ADA/LTC/LINK/AVAX **2023-07-24 →**; SOL **2024-11-21 →**. JPY-quoted.
+- **§13:** the CLEANEST form available — access is not scraped but **GRANTED BY THE VENUE** after
+  AWS-account-ID or IP registration ("After registration, the Company will grant you access").
+  Public repo documents it; no licence file in the repo (the grant itself is the permission
+  surface; read any terms presented at registration and record them on this card).
+- **Why it matters (mechanism prior, stated before any screen):** the desk's own-book L2
+  archives start far later; a **7.4-year JP retail-venue depth tape** spans the 2019 pre-halving
+  regime, COVID, the 2021 cycle and the 2022 deleveraging. Priors it can serve without any alpha
+  claim: (a) book-imbalance/depth-slope features at a venue the desk never recorded; (b)
+  cross-venue liquidity-migration studies (JP retail vs global) with era-archaeology value; (c)
+  execution-reality calibration for any future JP-venue routing. ~2/min sampling bounds it to
+  slow features — it cannot serve sub-minute microstructure, and that limit is stated now, not
+  discovered later.
+- **NOT SCREENABLE TODAY, and why that is not a §33 dodge:** ingest requires the registration
+  grant — a human/ops step this research-frozen seat cannot execute. Same pattern as NAVER card
+  21. **Routed: R0620** (registration decision + execution, principal/ops). §33 deferral dated
+  to R0620's resolve-by window; on grant, screen-on-discovery applies to the FIRST pulled month
+  in the same run that pulls it.
+- **Discovery counterfactual (charter s17):** found only because the card-28 legitimacy hunt read
+  the venue's whole GitHub org instead of stopping at the two repos already cited — the marginal
+  cost of listing an org is one API call; the habit generalises (see operator note this session).

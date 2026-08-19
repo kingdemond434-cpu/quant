@@ -963,12 +963,14 @@
   },
   "bitbank_public_candlestick": {
    "class": "regional-venue-ohlcv (JP)",
-   "grade": "verified-technically-clean WITH A CONFIRMED PHANTOM-HISTORY TRAP -- licence unread",
+   "grade": "s13 DECIDED LEGITIMATE 2026-08-19 (EN-sI: MIT-licensed official Public-API clients + sample MM bots + official botter community + official historical-data distribution; kill/re-entry condition on watchlist card 28) -- WIRED [s33: wired -> data/bitbank_1day.jsonl], phantom trap GUARDED (btc_jpy true start 2017-02-14, 43 phantom bars dropped)",
    "url": "https://public.bitbank.cc/{pair}/candlestick/{type}/{YYYY}",
    "provides": "keyless whole-year-of-OHLCV per call, [open,high,low,close,volume,timestamp_ms]",
    "mechanism_note": "TRAP (=> OP-045): 2014/2015/2016 return success:1 with 362/365/363 daily bars of MOVING OHLC and volume 0.0000 on EVERY bar. First non-zero volume 1487030400000 = 2017-02-14 (real launch). ~1,090 untradeable phantom bars served ahead of the venue's existence. TRUE START 2017-02-14. Year-per-call works for 1day; 1hour/2017 -> {'success':0,'code':10000}.",
    "found_by": "JP frontier miner session 1 (2026-08-01)",
-   "s13": "bitbank.cc robots 200 no ClaudeBot block; public.bitbank.cc robots 404. github.com/bitbankinc/bitbank-api-docs has NO LICENSE file (license:None via API). Site kiyaku at bitbank.cc/error/terms (200, 6500B) body unread. LICENCE READ OWED 2026-08-05."
+   "s13": "bitbank.cc robots 200 no ClaudeBot block; public.bitbank.cc robots 404. github.com/bitbankinc/bitbank-api-docs has NO LICENSE file (license:None via API). Site kiyaku at bitbank.cc/error/terms (200, 6500B) body unread. LICENCE READ OWED 2026-08-05.",
+   "wired_artifact": "data/bitbank_1day.jsonl (100,885 rows, 62 pairs, 2017-02-14 -> 2026-08-18; meta line declares venue-clock provenance L1.46 + UTC-midnight day boundary MEASURED offset-0)",
+   "forward_refresher": "R0619 (engine seat)"
   },
   "bitflyer_public_api": {
    "class": "regional-venue (JP) -- RESTRICTED",
@@ -1189,7 +1191,16 @@
     "yield": "ENGINE reference only -- routed to improvement_inbox as text per the supply-chain rule (never installed). Secondary value for THIS seat: its connector code, when read, enumerates endpoint patterns for funding/MM data surfaces",
     "note": "surfaced by thuquant/awesome-quant (MIT) index dig 2026-08-18; the only crypto-specific entry in that index's data/platform sections not already known to the desk (akshare/FMZ/BotVS/tqsdk all previously assessed)"
    }
-  ]
+  ],
+  "107-bitbank-historical-orderbook-s3": {
+   "class": "regional-venue-L2-depth-history (JP, official distribution)",
+   "grade": "verified-documented 2026-08-19; NOT SCREENABLE TODAY -- access is a venue-granted registration (AWS account ID or IP), R0620 owns the grant step; screen-on-discovery owed on first pulled month",
+   "url": "github.com/bitbankinc/bitbank-historical-orderbooks-docs (S3 bucket 564226375708-historical-order-books, path orderbook-snapshot/${TICKER}JPY/YYYY_MM/)",
+   "provides": "L2 snapshots 200 levels above+below best, ~2/min, CSV .gz daily objects, T+2 update ~23:00 JST. BTC+XRP 2019-03-13->, ETH/DOGE/XLM/ADA/LTC/LINK/AVAX 2023-07-24->, SOL 2024-11-21->",
+   "mechanism_note": "7.4y JP retail-venue depth tape spanning 2019 pre-halving, COVID, 2021 cycle, 2022 deleveraging. ~2/min sampling bounds it to slow features (stated at discovery, not found later). s13 = cleanest form: venue GRANTS access after registration.",
+   "found_by": "EN frontier miner session I 2026-08-19 (card-28 legitimacy hunt read the whole GitHub org)",
+   "watchlist_card": "docs/research/data_axis_watchlist.md card 34"
+  }
  },
  "residual_gaps_unpurchasable": [
   "tick-level Binance L2 diffs BEFORE the recorder start date (destroyed at source; recorder solves forward)",
