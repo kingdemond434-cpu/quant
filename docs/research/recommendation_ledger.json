@@ -7866,11 +7866,11 @@
    "rank": null,
    "roi_basis": "measured",
    "raised": "2026-08-19T01:25:07.272230+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "Waits on the principal's re-arm / L1.38 change-window OPEN -- the staged commit 08a6874e must not merge into the live branch inside the sterile window. Due date is a re-check of window state, not an evidence bar; if the window is still CLOSED at due, re-schedule citing the window artifact.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-09-01",
+   "disposed": "2026-08-19T01:25:43.590877+00:00"
   }
  ]
 }
