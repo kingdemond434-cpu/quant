@@ -132,7 +132,7 @@
    {
     "name": "Upbit Historical Market Data portal",
     "url": "https://www.upbit.com/historical_data/main ; https://docs.upbit.com/kr/docs/how-to-download-candle-data ; notice: https://www.upbit.com/service_center/notice?id=5419",
-    "type": "candle (캔들) + trade/execution (체결) data, CSV zipped",
+    "type": "candle (\uce94\ub4e4) + trade/execution (\uccb4\uacb0) data, CSV zipped",
     "serves": "Korean-venue exchange-native dump -- klines + trades, mandatory regional target",
     "cost": "free",
     "auth": "none stated for the download portal; API key required for the live candle API (200-candles/call cap, must paginate for history)",
@@ -140,7 +140,7 @@
     "grade": "needs-legitimacy-review (data verified-clean; personal-use-only licence is the open question -- routed to legitimacy queue, NOT self-approved)",
     "method": "direct file API extracted from portal webpack chunk: listing https://crix-data-api.upbit.com/api/v1/market-data/listing?prefix= ; files https://crix-data.upbit.com/<key> ; tree {candle|trade}/<MARKET>/{daily|monthly}/<interval>/<year>/ -> .zip + .zip.checksum (SHA256)",
     "license": "EXPLICIT AND RESTRICTIVE (re-verified 2026-07-25): personal purposes only; commercial use/redistribution/processing/sale prohibited; own-strategy backtesting + personal-PC storage explicitly PERMITTED -- prop desk sits exactly on the line, human/legal ruling required. Licensed diff alternative in hand: Tardis covers upbit since 2021-03-03",
-    "cadence": "T+1 daily, observed 01:00 UTC upload (old '14:00 KST schedule' claim WRONG -- Korean text is a BY-14:00 deadline); candles 1m-and-up from 2017-10-24 (launch day; old 2022-05/2023-07 claims WRONG -- 2023-07 start is 1s bars, 초봉 mistranslated as minute-bars; 2022-05 belongs to trade/tick product); 786 markets (KRW 270, BTC 308, USDT 208); intervals 1s..month",
+    "cadence": "T+1 daily, observed 01:00 UTC upload (old '14:00 KST schedule' claim WRONG -- Korean text is a BY-14:00 deadline); candles 1m-and-up from 2017-10-24 (launch day; old 2022-05/2023-07 claims WRONG -- 2023-07 start is 1s bars, \ucd08\ubd09 mistranslated as minute-bars; 2022-05 belongs to trade/tick product); 786 markets (KRW 270, BTC 308, USDT 208); intervals 1s..month",
     "failure_modes": [
      "SURVIVORSHIP BIAS STRUCTURAL: guide states delisted coins are NOT provided -- every backtest on this archive is survivorship-biased by construction",
      "FILES MUTABLE: periods may be modified and re-uploaded without notice; checksum verifies a download, not a version -- archive on ingest",
@@ -194,7 +194,7 @@
     ],
     "verification": "RE-VERIFIED 2026-07-25 (EN frontier miner) from primary docs + live probes; the >=4 Japanese blogs were RIGHT on all three load-bearing claims (a logged case of cross-source consensus earning its keep). Full record in docs/research/data_axis_watchlist.md card 3",
     "note": "Same shape as the desk's existing Binance-liq-ws forward-only pattern -- only a forward recorder closes this.",
-    "replacement_hunt": "OPEN (§38, seeded 2026-07-26): no replacement recorded. Hunt the PRIMARY source this vendor reads (facts are not copyrightable -- reconstruct), then differently-licensed vendors, academic/government mirrors, community datasets, regional venues and archives. If none exists, grade the residual WITH the failed search."
+    "replacement_hunt": "OPEN (\u00a738, seeded 2026-07-26): no replacement recorded. Hunt the PRIMARY source this vendor reads (facts are not copyrightable -- reconstruct), then differently-licensed vendors, academic/government mirrors, community datasets, regional venues and archives. If none exists, grade the residual WITH the failed search."
    },
    {
     "name": "Coincheck public historical OHLC",
@@ -203,16 +203,16 @@
     "status": "not-found",
     "grade": "destroyed-at-source",
     "note": "Search returned no Coincheck-specific public bulk historical endpoint or archive (only generic aggregator listicles: CoinGecko/CoinAPI/Bitquery, none of which are Coincheck-native). Logged as a genuine negative result, not papered over -- if a Coincheck-native archive exists it was not surfaced in this session's budget; retry next cycle with a narrower Japanese-language query.",
-    "replacement_hunt": "OPEN (§38, seeded 2026-07-26): no replacement recorded. Hunt the PRIMARY source this vendor reads (facts are not copyrightable -- reconstruct), then differently-licensed vendors, academic/government mirrors, community datasets, regional venues and archives. If none exists, grade the residual WITH the failed search."
+    "replacement_hunt": "OPEN (\u00a738, seeded 2026-07-26): no replacement recorded. Hunt the PRIMARY source this vendor reads (facts are not copyrightable -- reconstruct), then differently-licensed vendors, academic/government mirrors, community datasets, regional venues and archives. If none exists, grade the residual WITH the failed search."
    },
    {
     "name": "KR kimchi-premium tracker ecosystem (kimpga.com / kimp.co.kr / cryprice.com / coinsect.io / 94bit.com)",
-    "type": "live per-coin KR premium (김프/역프) dashboards",
+    "type": "live per-coin KR premium (\uae40\ud504/\uc5ed\ud504) dashboards",
     "cost": "free",
     "auth": "none",
     "status": "catalogued",
     "grade": "needs-monitoring",
-    "note": "PROSPECTOR 2026-07-30: >=6 live public trackers = behavioral evidence KR retail watches per-asset premium in real time (counterparty prior for kr_perasset_premium axis). Real-time only, no obvious public history API (JS-heavy). Desk RECONSTRUCTS from primaries (Upbit+Binance+ECB, same-instant verified) -- trackers are corroboration pointers, not adopted data. Lexicon: 김프/역프/따리 ('더따리' tracker)."
+    "note": "PROSPECTOR 2026-07-30: >=6 live public trackers = behavioral evidence KR retail watches per-asset premium in real time (counterparty prior for kr_perasset_premium axis). Real-time only, no obvious public history API (JS-heavy). Desk RECONSTRUCTS from primaries (Upbit+Binance+ECB, same-instant verified) -- trackers are corroboration pointers, not adopted data. Lexicon: \uae40\ud504/\uc5ed\ud504/\ub530\ub9ac ('\ub354\ub530\ub9ac' tracker)."
    },
    {
     "name": "Upbit announcement archive (api-manager, keyless)",
@@ -229,7 +229,7 @@
    {
     "name": "Upbit market_event flags (market/all?isDetails=true, keyless)",
     "url": "https://api.upbit.com/v1/market/all?isDetails=true",
-    "type": "venue-computed per-asset state: warning (유의종목) + caution{PRICE_FLUCTUATIONS, TRADING_VOLUME_SOARING, DEPOSIT_AMOUNT_SOARING, GLOBAL_PRICE_DIFFERENCES, CONCENTRATION_OF_SMALL_ACCOUNTS}",
+    "type": "venue-computed per-asset state: warning (\uc720\uc758\uc885\ubaa9) + caution{PRICE_FLUCTUATIONS, TRADING_VOLUME_SOARING, DEPOSIT_AMOUNT_SOARING, GLOBAL_PRICE_DIFFERENCES, CONCENTRATION_OF_SMALL_ACCOUNTS}",
     "serves": "the venue's own labels on Korean-retail crowding, frenzy and premium, per asset",
     "cost": "free",
     "auth": "none",
@@ -292,7 +292,8 @@
     "residual_gap": "RATES: fully reconstructable -- the prior 'window/partition/decay not published' limit is REFUTED (all three published; it is 10 partitions not 12, and inverse-time weighting not a linear ramp). INDICES: partially -- the one irreducible input is CIRCULATING SUPPLY under Kaiko's proprietary restrictive definition (9 exclusion categories published, per-asset determinations are research judgement); also the Kaiko Asset Taxonomy/Theme classification. Other residuals: LMAX Digital trade HISTORY destroyed-at-source for free users (forward-recordable only); per-rate constituent lists unpublished except the BTC rate; the literal weighting equation is a symbol-font image (verbal spec recovered, exact form UNVERIFIED); Kaiko Exchange Ranking qualitative scores (KYC/AML 'Strong' etc) are not computable. Rate/index VALUES are API-key gated (403) with no free tier",
     "grade": "needs-monitoring (raw ticks via own recorder); RATES METHODOLOGY = FULLY RECONSTRUCTABLE (re-graded 2026-07-26, both rulebook interiors extracted); INDEX METHODOLOGY = PARTIALLY RECONSTRUCTABLE (blocked only on proprietary circulating supply); needs-legitimacy-review on the rulebook disclaimer (see below)",
     "verification": "[T1-a] CLOSED 2026-07-26. BOTH owed gaps closed with INDEPENDENT primary sources. (1) RULEBOOK INTERIOR EXTRACTED -- 'no PDF tooling on this box' was true but never load-bearing: stdlib zlib suffices. Indices Rulebook md5 4ae1e1ec42b8caeec7c4646ac4abd073, 2,527,759 B, 31pp, 51,470 chars; Benchmark Rates Rulebook 666,559 B, 21pp, 28,579 chars; Cboe/CFTC filing 654,696 B, 47pp, 124,734 chars (needed /ObjStm expansion). (2) ESMA REGISTER INDEPENDENTLY CONFIRMED via the register's public unauthenticated Solr backend: entity 'Kaiko Indices SAS' (NOT plain 'Kaiko'), esmaId FRBMR2019000003, LEI 969500BKJ2X29T7NJH85, FRANCE, AMF-supervised, status 'Registration under Art. 34' (REGISTERED, not authorised), register snapshot 2026-07-26T00:18:12.959Z. Negative control logged: q=kaiko on the default field returns 0 hits -- a query artefact, not an absence (core holds 28,134 docs); stopping there would have produced a false refutation. (3) INDEPENDENT NON-KAIKO CORROBORATION of the method: Cboe rule filing to the CFTC (cdn.cboe.com .../25-023-Bitcoin-Continuous-Futures.pdf == cftc.gov/filings/orgrules/rules10202531765.pdf, byte-identical) confirms 10 partitions, VWM at 50% cumulative volume, recency-weighted TWAP. NOTE the filing itself contains a drafting error ('six weighted prices' for CKBR) -- 10 is correct per Kaiko's own rulebook. (4) COPYRIGHT OWNER is 'Challenger Deep SAS' (parent), a THIRD name distinct from both 'Kaiko' and the ESMA-registered 'Kaiko Indices SAS'. WARNING -- the existing reconstruction data/kaiko_vwm_reference_rate.jsonl used coinbase/kraken/bitfinex/bitstamp and deliberately EXCLUDED Gemini: that is 2-of-5 overlap with Kaiko's real constituent set, and Coinbase (80% of the desk's tape) is NOT a Kaiko constituent while Gemini IS. The 1.42 bps agreement figure is therefore NOT evidence of tracking Kaiko. Re-run against Bitstamp+Crypto.com+Gemini+Kraken+LMAX. LICENCE: both rulebooks carry a disclaimer barring use of 'the Information' to 'create indexes, databases, risk models, analytics, software' or to 'verify or correct other data' -- which CONTRADICTS the notice one page later permitting use with attribution. Unilateral browsewrap, no assent mechanism. NOT self-approved; routed to the legitimacy queue (GAP_REGISTER #67). The clean path needs no ruling: facts (venue trades) + an unprotectable method = zero Kaiko property. Only diffing against Kaiko's published VALUES is blocked. Full record: docs/research/deep_sweep/T1a_kaiko_verification.md and data_axis_watchlist.md card 8",
-    "replacement_hunt": "OPEN (§38, seeded 2026-07-26): no replacement recorded. Hunt the PRIMARY source this vendor reads (facts are not copyrightable -- reconstruct), then differently-licensed vendors, academic/government mirrors, community datasets, regional venues and archives. If none exists, grade the residual WITH the failed search."
+    "replacement_hunt": "OPEN (\u00a738, seeded 2026-07-26): no replacement recorded. Hunt the PRIMARY source this vendor reads (facts are not copyrightable -- reconstruct), then differently-licensed vendors, academic/government mirrors, community datasets, regional venues and archives. If none exists, grade the residual WITH the failed search.",
+    "ground_truth_for_diff": "THREE-PART, from the documented free hunt (deep_sweep/T1a_kaiko_verification.md, 2026-07-26; endpoint RE-VERIFIED LIVE 2026-08-19: reference-data-api.kaiko.io/v1/exchanges 200 keyless, 10,196B -- grown since 07-26, census maintained). (1) FACTS (trades/L2): the venues' OWN native archives are the primary ground truth -- Kaiko reads the same primaries, so a vendor sample tests vendor-agreement, not truth; the desk already diffs its reconstruction against data.binance.vision / Bybit bucket / OKX archives. (2) COVERAGE/UNIVERSE: Kaiko's free keyless reference-data API (2.2M instruments with trade_start_time/trade_end_time/trade_count across 149 venues incl. dead ones) is a vendor-grade free diff target for the desk's universe/coverage layer -- query it, never rehost (EU sui-generis DB ruling in T1a). (3) PRICE/RATE VALUES: NO free sample exists -- documented failed search 2026-07-26 (403 on market-api, no trial, no sample endpoint, GitHub org zero market data); value-level diff graded residual_gap per the free-frontier axiom."
    }
   ],
   "onchain": [
@@ -311,7 +312,7 @@
     "grade": "EXCLUDE-for-production / research-only (verification+diff) winding down",
     "license": "CC BY-NC 4.0, PLUS the CM Terms of Use s4.1 gloss 'solely for non-commercial internal business purposes'. Operative doc = ToU (deleted from live web after the Talos acquisition; read from Wayback 20260206210011). ToU s6(iii) separately bans use in relation to ANY AI SYSTEM incl 'MACHINE MODELS' -- binds independently of the NonCommercial question. ToU s7 also bars building 'a product or service that will act as a substitute for or otherwise compete with the Services'. No CM/Talos statement expanding Community terms exists anywhere (docs FAQ, Labs page, and the whole talos.com legal sitemap all checked -- null)",
     "note": "RULING DOSSIER: docs/research/deep_sweep/T1b_coinmetrics_licence.md. Ruling answers GAP_REGISTER #67(b). DO NOT generalise to #67(a) Upbit -- Upbit AFFIRMATIVELY PERMITS 'developing one's own strategy and backtesting'; CM grants no such permission. Split the row. data/coinmetrics_flows.jsonl (9,866 rows) -> quarantine, do not delete (evidence for the completed screen; also the desk's ONLY pre-2015 BTC price series). Blast radius is one file: scripts/collect_coinmetrics_flows.py, nothing in libs/. THE DESK'S FINDINGS SURVIVE THE RULING -- the measured negative (metric class carries no daily-horizon edge over 15y) is the desk's own measurement, not CM content. CHEAPEST UNBLOCK, and it is Creative Commons' own advice ('contact the rights holder'): one email to info@coinmetrics.io / Talos could convert EXCLUDE -> ADOPT. HUMAN action, not an agent's",
-    "replacement_hunt": "OPEN (§38, seeded 2026-07-26): no replacement recorded. Hunt the PRIMARY source this vendor reads (facts are not copyrightable -- reconstruct), then differently-licensed vendors, academic/government mirrors, community datasets, regional venues and archives. If none exists, grade the residual WITH the failed search."
+    "replacement_hunt": "OPEN (\u00a738, seeded 2026-07-26): no replacement recorded. Hunt the PRIMARY source this vendor reads (facts are not copyrightable -- reconstruct), then differently-licensed vendors, academic/government mirrors, community datasets, regional venues and archives. If none exists, grade the residual WITH the failed search."
    },
    {
     "name": "DefiLlama open API",
@@ -466,7 +467,7 @@
     "verification": "2026-07-26: 200, 2,380,707 B; embedded Plotly JSON carries traces named Price / Realised Price / MVRV at 6,415 daily points, 2009-01-01 -> 2026-07-25 -- exactly the series and depth the desk wants, keyless",
     "license": "NONE. checkonchain.com carries only 'Copyright (c) 2024 _checkonchain' -- no terms of use, no licence, no API. Default all-rights-reserved",
     "note": "LOGGED AS A TEMPTATION TO REFUSE, NOT A LEAD TO FOLLOW. Scraping an unlicensed chart payload for commercial signal generation is STRICTLY WORSE than the Coin Metrics position the desk is trying to escape -- CM at least grants something. Only a written licence from the operator changes this",
-    "replacement_hunt": "OPEN (§38, seeded 2026-07-26): no replacement recorded. Hunt the PRIMARY source this vendor reads (facts are not copyrightable -- reconstruct), then differently-licensed vendors, academic/government mirrors, community datasets, regional venues and archives. If none exists, grade the residual WITH the failed search."
+    "replacement_hunt": "OPEN (\u00a738, seeded 2026-07-26): no replacement recorded. Hunt the PRIMARY source this vendor reads (facts are not copyrightable -- reconstruct), then differently-licensed vendors, academic/government mirrors, community datasets, regional venues and archives. If none exists, grade the residual WITH the failed search."
    },
    {
     "name": "LICENCE-LAUNDERING TRAP (standing rule, learned 2026-07-26)",
@@ -582,7 +583,7 @@
   "44-exchange-announcement-calendars": {
    "class": "event-timestamps",
    "grade": "adopted-pending-verify",
-   "note": "Binance/Bybit/OKX listing/delisting/contract-change with timestamps; own Bronze = integrity layer. COLLECTOR ROUTES FOUND (RU miner 2026-08-12, from github.com/roman-boop/bybit-trading-on-delistings — working practitioner code): Binance CMS news endpoint (bot parses Binance news articles for tickers) + Telegram @Bybit_Announcements as machine-readable feed (telethon). Mechanism EV-gated this run: delisting_announcement_unwind_window EV 0.0013 REJECT at prior, measurement trigger = this row's verify (see prospector_watchlist 2026-08-12 RU entry).",
+   "note": "Binance/Bybit/OKX listing/delisting/contract-change with timestamps; own Bronze = integrity layer. COLLECTOR ROUTES FOUND (RU miner 2026-08-12, from github.com/roman-boop/bybit-trading-on-delistings \u2014 working practitioner code): Binance CMS news endpoint (bot parses Binance news articles for tickers) + Telegram @Bybit_Announcements as machine-readable feed (telethon). Mechanism EV-gated this run: delisting_announcement_unwind_window EV 0.0013 REJECT at prior, measurement trigger = this row's verify (see prospector_watchlist 2026-08-12 RU entry).",
    "origin": "principal-addenda-BCD-2026-07-20"
   },
   "45-kraken-csv-dumps": {
@@ -830,13 +831,13 @@
   "77-jvcea-japan-regulated-margin-panel": {
    "source": "77-jvcea-japan-regulated-margin-panel",
    "url": "https://jvcea.or.jp/statistics/information/  (files: https://jvcea.or.jp/cms/wp-content/themes/jvcea/images/pdf/statistics/{YYYYMM}-KOUKAI-01-FINAL.pdf)",
-   "provides": "MONTHLY, all-licensed-Japanese-exchanges AGGREGATE, per coin (BTC/ETH/XRP+): spot volume (数量/金額); margin volume; margin OPEN INTEREST SPLIT LONG vs SHORT (売建数/買建数/合計 and 売建額/買建額/合計); customer deposits split crypto vs FIAT (利用者預託金残高 暗号資産/金銭等); accounts opened vs ACTIVE (設定口座/稼働口座), spot and margin separately. Coverage 2018-09 -> 2026-05, published ~3rd of following month.",
-   "mechanism": "The ONLY regulator-supervised, venue-aggregated LONG/SHORT open-interest series found for any crypto market. JVCEA is the JFSA-designated self-regulatory organisation; figures are member filings to the SRO, not exchange marketing. Cohort measured is structurally identified as noise-trading by Japanese tax statute (crypto gains = 雑所得, up to 55% marginal; losses NOT offsettable against other income and NOT carried forward pre-reform => a symmetric bet carries ~-27.5% statutory expectation before costs).",
-   "highest_value_use": "VERIFICATION not signal: diff the desk's exchange-self-reported long/short ratio (BTC, month-end resample) against JVCEA 売建数 vs 買建数 over ~94 months. First chance to grade an unaudited positioning feed against an audited one (OP-008 class).",
-   "alignment_convention": "CAPTURED BEFORE USE: 預託金残高 / 建玉残高 / 口座数 are MONTH-END STOCKS; 取引高 are month-total FLOWS (stated in the file's own footnote).",
+   "provides": "MONTHLY, all-licensed-Japanese-exchanges AGGREGATE, per coin (BTC/ETH/XRP+): spot volume (\u6570\u91cf/\u91d1\u984d); margin volume; margin OPEN INTEREST SPLIT LONG vs SHORT (\u58f2\u5efa\u6570/\u8cb7\u5efa\u6570/\u5408\u8a08 and \u58f2\u5efa\u984d/\u8cb7\u5efa\u984d/\u5408\u8a08); customer deposits split crypto vs FIAT (\u5229\u7528\u8005\u9810\u8a17\u91d1\u6b8b\u9ad8 \u6697\u53f7\u8cc7\u7523/\u91d1\u92ad\u7b49); accounts opened vs ACTIVE (\u8a2d\u5b9a\u53e3\u5ea7/\u7a3c\u50cd\u53e3\u5ea7), spot and margin separately. Coverage 2018-09 -> 2026-05, published ~3rd of following month.",
+   "mechanism": "The ONLY regulator-supervised, venue-aggregated LONG/SHORT open-interest series found for any crypto market. JVCEA is the JFSA-designated self-regulatory organisation; figures are member filings to the SRO, not exchange marketing. Cohort measured is structurally identified as noise-trading by Japanese tax statute (crypto gains = \u96d1\u6240\u5f97, up to 55% marginal; losses NOT offsettable against other income and NOT carried forward pre-reform => a symmetric bet carries ~-27.5% statutory expectation before costs).",
+   "highest_value_use": "VERIFICATION not signal: diff the desk's exchange-self-reported long/short ratio (BTC, month-end resample) against JVCEA \u58f2\u5efa\u6570 vs \u8cb7\u5efa\u6570 over ~94 months. First chance to grade an unaudited positioning feed against an audited one (OP-008 class).",
+   "alignment_convention": "CAPTURED BEFORE USE: \u9810\u8a17\u91d1\u6b8b\u9ad8 / \u5efa\u7389\u6b8b\u9ad8 / \u53e3\u5ea7\u6570 are MONTH-END STOCKS; \u53d6\u5f15\u9ad8 are month-total FLOWS (stated in the file's own footnote).",
    "format": "PDF only, 8 pages/month, ~94 files; URL pattern is address-predictable by YYYYMM so the full history is retrievable by iteration. Parsed successfully this session with a dependency-free extractor.",
-   "license": "PUBLIC, no paywall/login -> passes charter s13 for INTERNAL RESEARCH USE ONLY. NOT open-licensed: JVCEA asserts copyright ('掲載内容のデータやテキスト等は著作権の対象となり...') and disclaims accuracy of member-submitted figures. NO redistribution, NO republication of tables.",
-   "known_expiry": "Japanese crypto tax reform ENACTED 2026-03-31 moves 特定暗号資産 to 20% flat 申告分離課税 with 3-year loss carryforward, effective 1 Jan of the year after FIEA implementation (anticipated 2028-01-01). The behavioural mechanism above LEGISLATIVELY EXPIRES then; any fit on 2018-2027 data is fit on a regime with a published end date. Effective date sourced from a tax-practitioner writeup, NOT yet from 国税庁/金融庁 primary - confirm before relying on it.",
+   "license": "PUBLIC, no paywall/login -> passes charter s13 for INTERNAL RESEARCH USE ONLY. NOT open-licensed: JVCEA asserts copyright ('\u63b2\u8f09\u5185\u5bb9\u306e\u30c7\u30fc\u30bf\u3084\u30c6\u30ad\u30b9\u30c8\u7b49\u306f\u8457\u4f5c\u6a29\u306e\u5bfe\u8c61\u3068\u306a\u308a...') and disclaims accuracy of member-submitted figures. NO redistribution, NO republication of tables.",
+   "known_expiry": "Japanese crypto tax reform ENACTED 2026-03-31 moves \u7279\u5b9a\u6697\u53f7\u8cc7\u7523 to 20% flat \u7533\u544a\u5206\u96e2\u8ab2\u7a0e with 3-year loss carryforward, effective 1 Jan of the year after FIEA implementation (anticipated 2028-01-01). The behavioural mechanism above LEGISLATIVELY EXPIRES then; any fit on 2018-2027 data is fit on a regime with a published end date. Effective date sourced from a tax-practitioner writeup, NOT yet from \u56fd\u7a0e\u5e81/\u91d1\u878d\u5e81 primary - confirm before relying on it.",
    "grade": "verified-clean (index page + 202503 PDF downloaded and text-extracted this session; column headers, per-coin rows and month-end footnote read from the file)",
    "value": "HIGH as data loot + verification asset. As a SIGNAL: weak - monthly cadence, n~94, breadth ~3 coins; same starvation that graveyarded options VRP under no_breadth. Parked as a pre-registerable monthly-horizon test only; NOT proposed as a sleeve, NOT as a daily signal, NOT as a conditioning overlay.",
    "graveyard_check": "NOT a Japan premium (bitbank_jp IC -0.06 killed the JP price-premium axis) - this is a positioning/deposits panel, different axis. Not attention, not price-only, not an overlay.",
@@ -857,11 +858,11 @@
   },
   "79-fsc-korea-vasp-survey": {
    "source": "79-fsc-korea-vasp-survey",
-   "url": "https://www.fsc.go.kr  (가상자산사업자 실태조사, semi-annual; e.g. /no010101/86534, /no010101/85419, /po010101/84618) + KDI mirror https://eiec.kdi.re.kr/policy/materialView.do",
-   "provides": "Semi-annual official survey of ALL registered Korean VASPs: 원화예치금 (KRW deposits held at Korean exchanges), tradeable-user counts, daily-average trading volume, listed market cap, operator profit. Published by 금융정보분석원(FIU)/금융감독원 via FSC.",
-   "mechanism": "원화예치금 is the literal DRY POWDER behind the kimchi premium - the KRW sitting at Korean venues waiting to buy. It is a capital-stock measure of Korean demand that is fully orthogonal to price, unlike the premium itself which is a price ratio.",
+   "url": "https://www.fsc.go.kr  (\uac00\uc0c1\uc790\uc0b0\uc0ac\uc5c5\uc790 \uc2e4\ud0dc\uc870\uc0ac, semi-annual; e.g. /no010101/86534, /no010101/85419, /po010101/84618) + KDI mirror https://eiec.kdi.re.kr/policy/materialView.do",
+   "provides": "Semi-annual official survey of ALL registered Korean VASPs: \uc6d0\ud654\uc608\uce58\uae08 (KRW deposits held at Korean exchanges), tradeable-user counts, daily-average trading volume, listed market cap, operator profit. Published by \uae08\uc735\uc815\ubcf4\ubd84\uc11d\uc6d0(FIU)/\uae08\uc735\uac10\ub3c5\uc6d0 via FSC.",
+   "mechanism": "\uc6d0\ud654\uc608\uce58\uae08 is the literal DRY POWDER behind the kimchi premium - the KRW sitting at Korean venues waiting to buy. It is a capital-stock measure of Korean demand that is fully orthogonal to price, unlike the premium itself which is a price ratio.",
    "grade": "UNVERIFIED - press-release landing pages located via native-language search; no release PDF opened first-party this session.",
-   "license": "Korean government press releases; public. Confirm reuse terms (통상 공공누리/KOGL) before republication.",
+   "license": "Korean government press releases; public. Confirm reuse terms (\ud1b5\uc0c1 \uacf5\uacf5\ub204\ub9ac/KOGL) before republication.",
    "value": "MEDIUM - mechanism is good and directly load-bearing on the desk's best axis, but SEMI-ANNUAL cadence (~2 obs/yr, n<10) makes it a context/validation series, NOT a signal. Log it as such and do not attempt to build a clock on it.",
    "cataloged": "2026-07-26T05:20:00+00:00",
    "origin": "LIT-d non-English/thesis deep-miner 2026-07-26"
@@ -883,7 +884,7 @@
    "url": "POST https://cyberleninka.ru/api/search  body {\"mode\":\"articles\",\"q\":\"<russian query>\",\"size\":N,\"from\":0}",
    "provides": "RESEARCH CORPUS: keyless JSON search over the Russian national open-access aggregator; returns result COUNT, titles, authors, year, journal, article link and OCR snippets.",
    "mechanism": "Keyless and countable, so a corpus can be honestly declared EXHAUSTED with numbers rather than impressions. Used this session to run 16 native Russian queries and quantify that RU open-access academia contains no crypto-perp microstructure literature.",
-   "finding": "RU crypto academic corpus = law/regulation/macro-policy/GARCH volatility. LEXICAL TRAP: 'арбитраж' means ARBITRATION (courts) in Russian and routes into criminal-law papers; and 'фандинг'/'перпетуал' have NO academic usage (фандинг matches only фандрайзинг). RU academic and RU practitioner corpora are lexically DISJOINT - mine them with separate operators.",
+   "finding": "RU crypto academic corpus = law/regulation/macro-policy/GARCH volatility. LEXICAL TRAP: '\u0430\u0440\u0431\u0438\u0442\u0440\u0430\u0436' means ARBITRATION (courts) in Russian and routes into criminal-law papers; and '\u0444\u0430\u043d\u0434\u0438\u043d\u0433'/'\u043f\u0435\u0440\u043f\u0435\u0442\u0443\u0430\u043b' have NO academic usage (\u0444\u0430\u043d\u0434\u0438\u043d\u0433 matches only \u0444\u0430\u043d\u0434\u0440\u0430\u0439\u0437\u0438\u043d\u0433). RU academic and RU practitioner corpora are lexically DISJOINT - mine them with separate operators.",
    "grade": "verified-clean (API called directly, 16 queries, counts recorded)",
    "license": "Open access aggregator; per-article licences vary.",
    "value": "MEDIUM as an exhaustion instrument; the RU academic corpus itself graded EXHAUSTED-EMPTY for this desk.",
@@ -994,9 +995,9 @@
   "90-ru-btcsec-forum-wayback-corpus": {
    "source": "90-ru-btcsec-forum-wayback-corpus",
    "url": "http://web.archive.org/cdx/search/cdx?url=forum.btcsec.com*&filter=original:.*topic.* (48 CDX pages domain-wide; replay with id_ + -L)",
-   "provides": "ERA CORPUS: dead Russian bitcoin forum (btcsec.com, IPB3, UTF-8 — no 1251 trap), 2011-2015, renamed bits.media in 2015 (live successor forum.bits.media, robots User-agent:* only, no bot-name blocks). 1,570 unique topics captured with HTTP 200; 283-topic trading shortlist with best-capture timestamps on disk at data/btcsec_trading_topics.json.",
-   "mechanism": "OP-034 CDX map + slug-keyword triage; Wayback replay of IPB topic URLs needs curl -L (302 to exact ts). 'arbitr' scores ZERO slug hits across all 1,570 topics — arb lore lives INSIDE obmen/birzha/bot threads (OP-030: lexical zero, not absence).",
-   "finding": "3 threads mined to reply-depth on 2026-08-04 yielded: grid-bot short-gamma instance #2 with correlated-outage failure mode (topic 5499), barrier-rent route-dispersion quantification ~12% with Bitstamp-anchor fact (topic 1987), real-time Gox-untradeable knowledge 6wk pre-collapse (topic 4083) — all in docs/graveyard.md era entries. +6 threads 2026-08-12 (obmen/birzha class: 3426/6157/5848/2047/4382/8115) yielded: barrier-rent 8th instance (demand-direction sign on a dealer menu, 15k-RUB legal capacity cap, fraud-premium term), WS-009 (BTC-E public tape display-rounded + hidden MT4 channel + no history API — era-tape provenance prior), WS-010 (strategy-file monoculture syncs retail flow). 274 shortlisted topics remain unmined.",
+   "provides": "ERA CORPUS: dead Russian bitcoin forum (btcsec.com, IPB3, UTF-8 \u2014 no 1251 trap), 2011-2015, renamed bits.media in 2015 (live successor forum.bits.media, robots User-agent:* only, no bot-name blocks). 1,570 unique topics captured with HTTP 200; 283-topic trading shortlist with best-capture timestamps on disk at data/btcsec_trading_topics.json.",
+   "mechanism": "OP-034 CDX map + slug-keyword triage; Wayback replay of IPB topic URLs needs curl -L (302 to exact ts). 'arbitr' scores ZERO slug hits across all 1,570 topics \u2014 arb lore lives INSIDE obmen/birzha/bot threads (OP-030: lexical zero, not absence).",
+   "finding": "3 threads mined to reply-depth on 2026-08-04 yielded: grid-bot short-gamma instance #2 with correlated-outage failure mode (topic 5499), barrier-rent route-dispersion quantification ~12% with Bitstamp-anchor fact (topic 1987), real-time Gox-untradeable knowledge 6wk pre-collapse (topic 4083) \u2014 all in docs/graveyard.md era entries. +6 threads 2026-08-12 (obmen/birzha class: 3426/6157/5848/2047/4382/8115) yielded: barrier-rent 8th instance (demand-direction sign on a dealer menu, 15k-RUB legal capacity cap, fraud-premium term), WS-009 (BTC-E public tape display-rounded + hidden MT4 channel + no history API \u2014 era-tape provenance prior), WS-010 (strategy-file monoculture syncs retail flow). 274 shortlisted topics remain unmined.",
    "grade": "T3-era-corpus (finite, one-time-exhaustible; zero ongoing collection cost)",
    "license": "public web archive of a public forum; charter s13 PASS (no login wall, no closed group, robots permissive on both era and successor domains)",
    "value": "era-mechanism provenance + free falsification context; NOT a price/series source",
@@ -1006,7 +1007,7 @@
   "91-kr-ppomppu-bitcoin-board": {
    "source": "91-kr-ppomppu-bitcoin-board",
    "url": "https://www.ppomppu.co.kr/zboard/zboard.php?id=bitcoin (pagination; view.php?id=bitcoin&no=<n> for threads)",
-   "provides": "ERA CORPUS + LIVE GROUND: Ppomppu 가상화폐 board, ~190,481 posts / ~6,300 pages, continuous 2014-07 -> live 2026-08, NO purge (post no=1..18 still served at page 6300). Spans pre-mania 2014-16, the 2017-12 kimchi mania (premium >40%), the 2018-01 Park Sang-ki ban shock + real-name-law transition, and every later KR barrier event. The deepest robots-clean KR retail crypto corpus known to the desk (DCInside coin gallery refuses this agent family by name; Naver cafes closed; Ppomppu is the legal twin).",
+   "provides": "ERA CORPUS + LIVE GROUND: Ppomppu \uac00\uc0c1\ud654\ud3d0 board, ~190,481 posts / ~6,300 pages, continuous 2014-07 -> live 2026-08, NO purge (post no=1..18 still served at page 6300). Spans pre-mania 2014-16, the 2017-12 kimchi mania (premium >40%), the 2018-01 Park Sang-ki ban shock + real-name-law transition, and every later KR barrier event. The deepest robots-clean KR retail crypto corpus known to the desk (DCInside coin gallery refuses this agent family by name; Naver cafes closed; Ppomppu is the legal twin).",
    "mechanism": "robots.txt 2026-08-04: User-agent:* Allow:/zboard/ with Disallows only on market/personal boards and /search_bbs.php -- so SITE SEARCH IS FORBIDDEN; access = OP-021 era-seek (binary-search post `no` -> date; no=150 = 2014-07-18, no=190481 = 2026-08-04) + page pagination. Decode cp949 with errors=replace (mixed bytes defeat strict euc-kr). 30 posts/page.",
    "grade": "verified-clean (board opened this session: page 1, page 6300, post no=150 all fetched; depth + era floor measured first-party)",
    "status": "BOOTSTRAPPED 2026-08-04 (KR frontier miner s1-on-branch): ground mapped, zero threads mined yet -- era-seek calibration of the 2017-12/2018-01 window is next run's first item",
@@ -1015,7 +1016,7 @@
   "92-kr-velog-graphql-corpus": {
    "source": "92-kr-velog-graphql-corpus",
    "url": "https://v3.velog.io/graphql (searchPosts/post queries, keyless); SSR fallback https://velog.io/@<user>/<slug> -> window.__APOLLO_STATE__",
-   "provides": "KR dev-blog platform (code-included practitioner writeups): quant/auto-trading/kimchi-premium/order-flow build logs with primary numbers. 486 posts match 업비트 API, 207 빗썸 API, 157 호가창, 55 김치프리미엄, 20 펀딩비. 6-post deep-read corpus archived at data/velog_kr_quant_posts.jsonl (83KB: CoinWhale CVD/OI series, Bithumb mis-credit timeline, Cocoa route-optimizer, papapat falsification pair).",
+   "provides": "KR dev-blog platform (code-included practitioner writeups): quant/auto-trading/kimchi-premium/order-flow build logs with primary numbers. 486 posts match \uc5c5\ube44\ud2b8 API, 207 \ube57\uc378 API, 157 \ud638\uac00\ucc3d, 55 \uae40\uce58\ud504\ub9ac\ubbf8\uc5c4, 20 \ud380\ub529\ube44. 6-post deep-read corpus archived at data/velog_kr_quant_posts.jsonl (83KB: CoinWhale CVD/OI series, Bithumb mis-credit timeline, Cocoa route-optimizer, papapat falsification pair).",
    "mechanism": "OP-050: GraphQL introspection open, searchPosts(input:{keyword,offset,limit}); TRAPS: invalid field -> HTTP 200 EMPTY body (not an error object); strict-AND phrase matching (compound KR phrases 0-hit; single folk terms hit); no-match falls back to generic corpus with count=10000 sentinel; search index retains DELETED posts (404-check before carding); GraphQL body can be null while SSR __APOLLO_STATE__ carries it (json raw_decode past trailing JS).",
    "grade": "verified-clean (all routes exercised this session)",
    "legitimacy": "s13 PASS: robots User-agent:* with zero disallow rules (re-verified 2026-08-04); public keyless API"
@@ -1030,15 +1031,15 @@
   "94-jp-adventar-org": {
    "source": "94-jp-adventar-org",
    "url": "https://adventar.org (pre-2021 botter calendars hosted here)",
-   "provides": "NOTHING USABLE — excluded-blocked: ClaudeBot named Disallow:/ (Cloudflare Managed Content block, fetched 2026-08-04); '*' additionally disallows /calendars/ + /users/. Fleet ruling: origin robots governs archives -> Wayback equally closed.",
+   "provides": "NOTHING USABLE \u2014 excluded-blocked: ClaudeBot named Disallow:/ (Cloudflare Managed Content block, fetched 2026-08-04); '*' additionally disallows /calendars/ + /users/. Fleet ruling: origin robots governs archives -> Wayback equally closed.",
    "status": "excluded-blocked; replacement_hunt: FOUND for 2021+ (row 93); pre-2021 entries discoverable via author back-catalogs on note.com (open, low priority)",
    "added": "2026-08-04 jp_frontier_miner_s1_on_branch"
   },
   "95-binance-premium-index-klines": {
    "source": "95-binance-premium-index-klines",
    "url": "GET https://fapi.binance.com/fapi/v1/premiumIndexKlines?symbol=BTCUSDT&interval=1m (keyless)",
-   "provides": "Minute-sampled premium index (PI) — the series FR is computed from. Restores information the clamp dead-band destroys (PI in (-0.04%,+0.06%) prints as FR=0.01%); reveals intra-window sign flips. Mechanism prior + 5-fence checklist: improvement_inbox 2026-08-04 (R0021).",
-   "status": "unverified (catalogued, not pulled — Binance 429 ban expired 08-02, pulls must be gentle); Stage-A FR-vs-PI comparison deferred(2026-08-11) tier:2, see data_axis_watchlist",
+   "provides": "Minute-sampled premium index (PI) \u2014 the series FR is computed from. Restores information the clamp dead-band destroys (PI in (-0.04%,+0.06%) prints as FR=0.01%); reveals intra-window sign flips. Mechanism prior + 5-fence checklist: improvement_inbox 2026-08-04 (R0021).",
+   "status": "unverified (catalogued, not pulled \u2014 Binance 429 ban expired 08-02, pulls must be gentle); Stage-A FR-vs-PI comparison deferred(2026-08-11) tier:2, see data_axis_watchlist",
    "added": "2026-08-04 jp_frontier_miner_s1_on_branch"
   },
   "96-graphsense-tagpacks-address-attribution": {
@@ -1047,7 +1048,7 @@
    "url": "https://github.com/graphsense/graphsense-tagpacks",
    "provides": "curated TagPacks (address->entity attribution incl. exchanges) + ActorPacks; BTC explicitly covered; machine-processable YAML",
    "mechanism_note": "exchange-address labels = enabling ingredient for exchange-netflow reconstruction (CryptoQuant vendor-replacement row) and the netflow graveyard row's named re-entry condition (per-exchange decomposition); complements EVM-only dawsbot/eth-labels",
-   "s13": "MIT + public-source-only policy — adoptable; tag VOLUME unmeasured from this box (github 403 container-side; verified via harness fetch), count owed at adoption",
+   "s13": "MIT + public-source-only policy \u2014 adoptable; tag VOLUME unmeasured from this box (github 403 container-side; verified via harness fetch), count owed at adoption",
    "found_by": "litminer run 6, 2026-08-12 (s39 advance of the CryptoQuant OPEN row)",
    "catalogued": "2026-08-12"
   },
@@ -1057,7 +1058,7 @@
    "url": "https://huggingface.co/datasets/gregyoung14/openmarket-btc-polymarket (paper arXiv 2607.26245; code github.com/gregyoung14/openmarket v0.5.2 Rust/Parquet)",
    "provides": "727,098,247 deduplicated rows, ms-level paired Polymarket-BTC / Binance-BTCUSDT, 2026-02-12..2026-05-15, 2,936,031 explicit lead-lag pairs with pairing metadata",
    "mechanism_note": "(a) free backfill/calibration corpus for watchlist card 29 (Polymarket-Deribit wedge measurement); (b) sampling-SYNCHRONIZED cross-venue corpus = the enabling-change class for the refuted R0117 lead-lag lane, subject to the raw-trades-not-marks identification rule (arXiv 2608.09188); (c) reference ms-pairing implementation for desk two-venue clock alignment (L1.46)",
-   "s13": "CC BY 4.0 + public HF/GitHub — adoptable pending LICENSE-file confirmation at ingest; author's own honest negative on 15-min binaries graveyarded separately",
+   "s13": "CC BY 4.0 + public HF/GitHub \u2014 adoptable pending LICENSE-file confirmation at ingest; author's own honest negative on 15-min binaries graveyarded separately",
    "found_by": "litminer run 6 arXiv sweep, 2026-08-12",
    "catalogued": "2026-08-12"
   },
@@ -1103,7 +1104,7 @@
    "url": "https://api.jquants.com (v1 = HTTP 410 GONE) | plan matrix: https://www.jpx.co.jp/corporate/news/news-releases/6020/20250822-01.html",
    "provides": "JPX-operated JP cash-equity data API. FREE tier: listed issues, daily OHLCV, financials, earnings dates, trading calendar -- 2 YEARS history at 12-WEEK DELAY.",
    "status": "excluded-paid 2026-08-12 (free-first protocol; paid-data trigger NOT met)",
-   "why_excluded": "The axis card 29 wanted -- flow by investor category -- IS NOT ON THE FREE TIER. First-party plan matrix: 投資部門別情報 requires LIGHT Y1650/mo; 売買内訳データ requires PREMIUM Y16500/mo. Card 29 also equated the two ('売買内訳データ = flow by investor category') and they are DIFFERENT PRODUCTS at different price points. And the API card 29 describes is retired: /v1/* returns HTTP 410 'J-QuantsはV2に移行しました', so all four マケデコ Advent Calendar writeups it was built on document a dead surface. Desk trades Binance crypto; JP cash equities are the lowest rung of source priority. Marginal value ~ zero.",
+   "why_excluded": "The axis card 29 wanted -- flow by investor category -- IS NOT ON THE FREE TIER. First-party plan matrix: \u6295\u8cc7\u90e8\u9580\u5225\u60c5\u5831 requires LIGHT Y1650/mo; \u58f2\u8cb7\u5185\u8a33\u30c7\u30fc\u30bf requires PREMIUM Y16500/mo. Card 29 also equated the two ('\u58f2\u8cb7\u5185\u8a33\u30c7\u30fc\u30bf = flow by investor category') and they are DIFFERENT PRODUCTS at different price points. And the API card 29 describes is retired: /v1/* returns HTTP 410 'J-Quants\u306fV2\u306b\u79fb\u884c\u3057\u307e\u3057\u305f', so all four \u30de\u30b1\u30c7\u30b3 Advent Calendar writeups it was built on document a dead surface. Desk trades Binance crypto; JP cash equities are the lowest rung of source priority. Marginal value ~ zero.",
    "failure_modes": [
     "App host jpx-jquants.com CloudFront-403s every non-browser client incl. WebFetch; the CORPORATE host www.jpx.co.jp does not -- use it for first-party policy reads.",
     "Practitioner-writeup corpora (Advent Calendar) date SILENTLY: entries stay up and read as current after the API they document is withdrawn."
@@ -1113,8 +1114,8 @@
   "101-jpx-investor-type-free": {
    "source": "101-jpx-investor-type-free",
    "url": "https://www.jpx.co.jp/markets/statistics-equities/investor-type/ (JA) | https://www.jpx.co.jp/english/markets/statistics-equities/investor-type/ (EN)",
-   "provides": "投資部門別売買状況 / Trading by Type of Investors -- WEEKLY, free .xls + .pdf (stock_val_* = value, stock_vol_* = volume), no registration, no API key, no plan tier, no 12-week delay.",
-   "replaces": "J-Quants LIGHT tier (Y1650/mo) 投資部門別情報 -- the venue SELLS VIA API what it PUBLISHES FREE on its own website, in a worse format. Opened as the s38 replacement hunt for 100-jquants-api.",
+   "provides": "\u6295\u8cc7\u90e8\u9580\u5225\u58f2\u8cb7\u72b6\u6cc1 / Trading by Type of Investors -- WEEKLY, free .xls + .pdf (stock_val_* = value, stock_vol_* = volume), no registration, no API key, no plan tier, no 12-week delay.",
+   "replaces": "J-Quants LIGHT tier (Y1650/mo) \u6295\u8cc7\u90e8\u9580\u5225\u60c5\u5831 -- the venue SELLS VIA API what it PUBLISHES FREE on its own website, in a worse format. Opened as the s38 replacement hunt for 100-jquants-api.",
    "status": "needs-monitoring 2026-08-12 -- reachable + format-authentic, CONTENTS UNPARSED",
    "verification": "HTTP 200, 99,840 bytes, magic d0cf11e0a1b11ae1 = genuine OLE2/BIFF (a real legacy Excel file, NOT an HTML error page with an .xls extension). COLUMN SEMANTICS NOT READ: box has no xlrd and this mission runs under the research freeze, so no install. The table's contents are NOT claimed.",
    "failure_modes": [
@@ -1135,24 +1136,24 @@
    "value": "MEDIUM-HIGH (data-integrity / conditioning; gates existing volume features rather than adding one)",
    "ev_gate": "venue_fee_volume_credibility: EV 0.0058 p_survive 0.24 -> QUEUE (top-EV -> research); novelty 0.816, nearest graveyard prior sim 0.184. The ONLY one of this session's four scored candidates to clear the gate.",
    "decisive_test": "Point-in-time fee regime per symbol from Binance's announcement archive, then (a) test whether volume/volatility elasticity differs between promo-fee and normal-fee names, which is the practitioner's own diagnostic, and (b) re-run any live volume-based feature with promo-fee names excluded and compare. THE LOOK-AHEAD TRAP IS NAMED IN ADVANCE: today's fee schedule applied to history is a look-ahead in the CONDITIONING variable -- the same defect class as pct_circ_now (R0289) and the RFB vintage stack, and it fails toward a FALSE NULL, the direction no gate here catches.",
-   "provenance": "SOURCE: gitan.dev (seekseek77), 'ビットコインbotterにとっての各マーケットの特徴', 2023 and 2024 editions. DERIVES-FROM: NONE (checked) -- the posts cite no paper, no repo and no other writeup; they are first-hand venue observation by an operator who trades them. Pre-2023 for the first edition and no LLM disclosure in either (OP-072 checked).",
+   "provenance": "SOURCE: gitan.dev (seekseek77), '\u30d3\u30c3\u30c8\u30b3\u30a4\u30f3botter\u306b\u3068\u3063\u3066\u306e\u5404\u30de\u30fc\u30b1\u30c3\u30c8\u306e\u7279\u5fb4', 2023 and 2024 editions. DERIVES-FROM: NONE (checked) -- the posts cite no paper, no repo and no other writeup; they are first-hand venue observation by an operator who trades them. Pre-2023 for the first edition and no LLM disclosure in either (OP-072 checked).",
    "residual_gap": "The practitioner's evidence is JP venues; the Binance analogue is ASSERTED here, not measured. The first task is to establish that a promo-fee cohort exists on the desk's own panel with a recoverable point-in-time history -- if the announcement archive does not support point-in-time reconstruction, this axis is UNMEASURABLE rather than dead, and must be recorded that way."
   },
   "103-pit-universe-from-repo-git-history": {
    "source": "103-pit-universe-from-repo-git-history",
-   "url": "https://github.com/Vido/zecontinha (Apache-2.0) — file coint/binance_futures.py, 11 commits 2020-06-28 -> 2025-11-21 across TWO paths (pre/post a src/ move) | live control: https://fapi.binance.com/fapi/v1/exchangeInfo",
+   "url": "https://github.com/Vido/zecontinha (Apache-2.0) \u2014 file coint/binance_futures.py, 11 commits 2020-06-28 -> 2025-11-21 across TWO paths (pre/post a src/ move) | live control: https://fapi.binance.com/fapi/v1/exchangeInfo",
    "provides": "A POINT-IN-TIME VENUE UNIVERSE, reconstructed for free from the git history of a hardcoded ticker list in a public repo. THE DESK GAP THIS ANSWERS IS ALREADY ON THE RECORD: 'exchangeInfo is a look-ahead in the UNIVERSE' (free-data-miner 2026-08-12) -- the live endpoint returns TODAY's symbol set and nothing else, so any backtest that builds its universe from it silently excludes every name that has since been removed. A stale hardcoded list is the inverse artifact: it is a DATED ATTESTATION that a set of symbols was tradeable when it was written, and git history turns one such file into a TIME SERIES of universes. MEASURED HERE (vintage -> names absent from live exchangeInfo, 865 symbols / 731 TRADING): 2020-06-28 n=25 -> 1 gone; 2023-03-07 n=213 -> 55 gone; 2023-12-05 n=202 -> 50; 2025-11-14 n=199 -> 48.",
    "the_number_that_matters": "8.7% TRUE USDT-perp survivorship erasure, NOT the headline 25.8%. Of the 55 names in the 2023-03-07 vintage now absent, 40 are BUSD-quote pairs killed by the BUSD wind-down -- a QUOTE-CURRENCY retirement, not a delisting -- leaving 15 of 173 USDT names = 8.7%. AND 3 OF THOSE 15 ARE REBRANDS WITH A CONTINUING PRICE SERIES, confirmed against live exchangeInfo: MATICUSDT->POLUSDT (TRADING), RNDRUSDT->RENDERUSDT (TRADING), TOMOUSDT->VICUSDT (SETTLING). So ~6.9% genuine removal + ~1.7% rename. A RENAME AND A DELISTING ARE OPPOSITE EVENTS THAT LOOK IDENTICAL IN A SYMBOL-SET DIFF: treat a rename as a death and you book a phantom delisting; ignore it and you sever a live series.",
    "how_to_use": "(1) As a SURVIVORSHIP CONTROL: any universe built from live exchangeInfo is missing ~7% of the 2023 USDT cross-section by construction, and the missing names are non-random (they died). (2) As a RENAME MAP: the diff between adjacent vintages proposes rename candidates that are then confirmed one call at a time against exchangeInfo status. (3) GENERALISES FLEET-WIDE AND COSTS NOTHING: every region has repos with hardcoded symbol/ticker lists, and every one of them is a dated universe snapshot its author never intended to publish. The older and DEADER the repo, the better the vintage -- this is the one axis where an abandoned repo beats a maintained one.",
    "limits_stated_honestly": "This is an AUTHOR's universe, not the exchange's: it is a LOWER BOUND on what was listed (names in it existed) and says nothing about names the author omitted. It is evidence of EXISTENCE at a date, never of COMPLETENESS. Also: the obvious commits?path= query returns only 3 of the 11 commits because it is rename-blind (OP-078) -- query the pre-move path or mis-date the whole series.",
-   "cost": "free, keyless, public; §13 Apache-2.0 (permissive, redistribution allowed with attribution)",
+   "cost": "free, keyless, public; \u00a713 Apache-2.0 (permissive, redistribution allowed with attribution)",
    "status": "MEASURED this run; no ingest built (research freeze). Candidate axis, not yet collected.",
    "date": "2026-08-13",
    "found_by": "BR frontier miner s3"
   },
   "104-cn-practitioner-corpus-sljsz": [
    {
-    "name": "cnblogs.com/sljsz (数量技术宅) practitioner archive",
+    "name": "cnblogs.com/sljsz (\u6570\u91cf\u6280\u672f\u5b85) practitioner archive",
     "url": "https://www.cnblogs.com/sljsz",
     "type": "CN practitioner corpus: 81 posts 2020-09-18 -> 2026-05-11, fully enumerated (9 pages); crypto carry/funding/HFT/market-making + A-share/commodity content",
     "cost": "free",
@@ -1168,14 +1169,14 @@
   ],
   "105-cn-quant67-tufalian-gang": [
    {
-    "name": "quant67.com (claimed 土法炼钢兴趣小组 quant notes)",
+    "name": "quant67.com (claimed \u571f\u6cd5\u70bc\u94a2\u5174\u8da3\u5c0f\u7ec4 quant notes)",
     "url": "https://quant67.com/",
     "type": "REFUTED-AS-CARDED: live site is an infrastructure-engineering blog (Linux/eBPF/K8s/LLM infra, 1,756 articles, 45+ categories, ZERO quant/crypto content)",
     "cost": "n/a",
     "status": "content-refuted",
     "grade": "destroyed-at-source (as a quant corpus)",
     "failure_modes": "card 23's claim ('crypto strategy notes incl. funding-rate arbitrage') is not observable: root fetch 2026-08-18 = infra blog; /post/ 403; Wayback availability API returns ZERO snapshots ever -- the claim cannot be verified even historically. 08-11 robots-only verification passed a site whose CONTENT never matched its card: reachability-verified != content-verified",
-    "yield": "negative result, recorded. Replacement hunt (s38): the real CN crypto-practitioner corpus need is served by 104-cn-practitioner-corpus-sljsz + FMZ 文库 (assessed 2026-08-01, prospector) + cn_oss_extraction batch; no further replacement owed for a source that never demonstrably existed"
+    "yield": "negative result, recorded. Replacement hunt (s38): the real CN crypto-practitioner corpus need is served by 104-cn-practitioner-corpus-sljsz + FMZ \u6587\u5e93 (assessed 2026-08-01, prospector) + cn_oss_extraction batch; no further replacement owed for a source that never demonstrably existed"
    }
   ],
   "106-godzilla-crypto-trading-infra": [
@@ -1231,7 +1232,14 @@
  },
  "addenda_record": "docs/research/FREE_DATA_ADDENDA_BCD.md",
  "adhoc_scanning": "CLOSED per addendum D item 75 (2026-07-20) -- discovery routes through standing cadence",
- "last_free_dig": "2026-07-22T23:21:50.541800+00:00",
+ "last_free_dig": "2026-08-19T07:31:23.609781+00:00",
  "overlap_corrected": "2026-07-22T23:46:26.342668+00:00",
- "last_genuine_dig": "2026-07-26 [T1-a] kaiko"
+ "last_genuine_dig": "2026-07-26 [T1-a] kaiko",
+ "free_dig_log": [
+  {
+   "ts": "2026-08-19T07:31:23.609781+00:00",
+   "session": "owed-work-20260819",
+   "landed": "Kaiko ground_truth_for_diff filled from the T1a documented hunt + live re-verification of the free reference-data endpoint (200 keyless, census grown 8,955B->10,196B since 07-26)"
+  }
+ ]
 }
