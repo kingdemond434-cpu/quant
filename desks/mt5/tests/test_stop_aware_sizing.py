@@ -37,9 +37,11 @@ def _load():
           "MAX_DRAWDOWN_TOLERANCE": MAX_DRAWDOWN_TOLERANCE,
           "_BOOK_WORST_DD_R": BOOK_WORST_DD_R}
     wanted_fn = {"realised_q", "auto_lot", "_lot_steps", "stop_distance",
-                 "promoted_lot", "heat_budget", "cap_by_heat"}
+                 "promoted_lot", "heat_budget", "cap_by_heat",
+                 "_eur_per_price_unit", "min_lot_risk_eur"}
     wanted_const = {"DIST_USD", "CONTRACT_OZ", "FX_EUR", "MIN_LOT_RISK_EUR",
-                    "MAX_HEAT_CEILING", "_HEAT_BASE_KEFF", "_HEAT_BASE_LEGS"}
+                    "MAX_HEAT_CEILING", "_HEAT_BASE_KEFF", "_HEAT_BASE_LEGS",
+                    "GOLD_SYMBOL"}
     keep = [n for n in tree.body
             if (isinstance(n, ast.FunctionDef) and n.name in wanted_fn)
             or (isinstance(n, ast.Assign) and any(
@@ -49,6 +51,12 @@ def _load():
 
 
 NS = _load()
+
+#: EUR risked per 1.0 USD/oz per lot of gold, READ FROM THE VENUE rather than from
+#: `CONTRACT_OZ * FX_EUR`. Those constants said 92.00; the broker's own tick value says 86.41,
+#: so every expectation below that was written against the constant was 6.5% off -- not because
+#: the sizing was wrong but because a frozen EUR/USD rate had drifted. See mt5desk.risk_units.
+GOLD_PU = NS["_eur_per_price_unit"](NS["GOLD_SYMBOL"])
 
 
 def _spec(stop, price=4360.0):
@@ -83,12 +91,25 @@ def test_a_wider_stop_buys_a_smaller_lot():
 
 def test_every_live_sleeve_lands_within_a_lot_step_of_policy():
     """The property that was false. At EUR 25,000 the grain is fine enough that
-    realised q should sit at Q_OPT for every sleeve regardless of its stop."""
+    realised q should sit at Q_OPT for every sleeve regardless of its stop.
+
+    THE TOLERANCE IS DERIVED, NOT TYPED. It was `abs=0.0015`, a band that happened to fit
+    while gold was priced at the frozen `CONTRACT_OZ * FX_EUR` = 92.00. At the venue's true
+    86.41 the asia leg snaps to 1.107% and the hardcoded band failed -- for the LOT GRAIN, not
+    for a sizing error. One lot step on a $53.40 stop at EUR 25,000 is 0.185% of equity, so a
+    fixed 0.15% band was asserting something finer than the venue can express, and any change
+    to gold's tick value would have broken it again. The invariant this test is named for is
+    "within one lot step, and never above policy"; that is now what it checks.
+    """
     eq = 25_000.0
     for name, stop in LIVE_STOPS.items():
         q = NS["realised_q"](eq, stop)
-        assert q == pytest.approx(NS["Q_OPT"], abs=0.0015), (
-            f"{name} at ${stop} runs {q:.3%} against policy {NS['Q_OPT']:.3%}")
+        step_q = 0.01 * stop * GOLD_PU / eq          # one 0.01-lot grain, as a risk fraction
+        assert q <= NS["Q_OPT"] + 1e-12, (
+            f"{name} at ${stop} runs {q:.3%} ABOVE policy {NS['Q_OPT']:.3%}")
+        assert q > NS["Q_OPT"] - step_q, (
+            f"{name} at ${stop} runs {q:.3%}, more than one lot step ({step_q:.3%}) "
+            f"below policy {NS['Q_OPT']:.3%}")
 
 
 def test_the_old_constant_overshot_the_wide_sleeves_by_the_recorded_multiple():
@@ -98,7 +119,7 @@ def test_the_old_constant_overshot_the_wide_sleeves_by_the_recorded_multiple():
     house = NS["DIST_USD"]
     for name, stop in LIVE_STOPS.items():
         lot_house = NS["auto_lot"](eq, house)          # what it used to do
-        realised = lot_house * stop * NS["CONTRACT_OZ"] * NS["FX_EUR"] / eq
+        realised = lot_house * stop * GOLD_PU / eq
         assert realised == pytest.approx(NS["Q_OPT"] * stop / house, rel=0.05), name
     # asia specifically: 2.8x its budget
     assert LIVE_STOPS["asia"] / house == pytest.approx(2.80, abs=0.02)
@@ -110,7 +131,7 @@ def test_the_three_leg_book_was_over_its_own_cap_under_the_old_sizing():
     house = NS["DIST_USD"]
     lot = NS["auto_lot"](eq, house)
     legs = ("asia", "london_am", "ny_open")
-    heat = sum(lot * LIVE_STOPS[s] * NS["CONTRACT_OZ"] * NS["FX_EUR"] / eq for s in legs)
+    heat = sum(lot * LIVE_STOPS[s] * GOLD_PU / eq for s in legs)
     assert heat > 0.0381, f"old sizing produced {heat:.2%}, cap 3.81%"
 
 
@@ -127,7 +148,7 @@ def test_the_venue_floor_still_binds_and_is_reported_honestly():
     """At EUR 300 the 0.01 floor forces a risk far above policy. That must show
     up in realised_q rather than being hidden by the lot being 'valid'."""
     q = NS["realised_q"](300.0, LIVE_STOPS["asia"])
-    assert q == pytest.approx(0.01 * 53.40 * NS["CONTRACT_OZ"] * NS["FX_EUR"] / 300.0,
+    assert q == pytest.approx(0.01 * 53.40 * GOLD_PU / 300.0,
                               rel=1e-6)
     assert q > 0.15, f"asia at EUR 300 is {q:.2%}, not a policy-compliant number"
 
@@ -144,7 +165,7 @@ def test_lots_are_still_floored_never_rounded_up():
         for eq in (300.0, 1_684.0, 8_000.0, 25_000.0):
             lot = NS["auto_lot"](eq, stop)
             assert abs(lot / 0.01 - round(lot / 0.01)) < 1e-9
-            raw = NS["Q_OPT"] * eq / (stop * NS["CONTRACT_OZ"] * NS["FX_EUR"])
+            raw = NS["Q_OPT"] * eq / (stop * GOLD_PU)
             assert lot <= max(raw, 0.01) + 1e-9
 
 

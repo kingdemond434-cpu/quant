@@ -89,8 +89,27 @@ from mt5desk.gateway_config_fallback import (  # noqa: E402
     Q_OPT,
 )
 DIST_USD = 19.1         # ~1.2xATR stop distance (USD/oz), used for auto lot scaling
+
+#: GOLD'S contract size and a frozen EUR/USD rate. THESE ARE NO LONGER THE SIZING PATH and must
+#: never become it again -- see `_eur_per_price_unit` and `mt5desk.risk_units`. They priced EVERY
+#: sleeve's stop as `dist * CONTRACT_OZ * FX_EUR` = `dist * 92`, which is gold's economics applied
+#: to whatever symbol the sleeve named. Measured against the venue's own tick values, one price
+#: unit per lot is worth EUR 0.86 on BTCUSD, 86.41 on XAUUSD, 542.40 on every JPY cross and
+#: 86,414 on EURUSD, so the constant was wrong by 107x in one direction and 939x in the other.
+#:
+#: The live consequence, measured at EUR 1,683.89 equity on 2026-08-20: a promoted CADJPY sleeve
+#: on a 0.50 stop sized to 0.46 lot, reported EUR 21.16 at risk (1.26%, on policy) and actually
+#: risked EUR 124.75 -- 7.41% of equity, 5.90x the policy -- while `cap_by_heat` charged it gold's
+#: 0.98% and admitted three such sleeves for a believed 2.94% book against a true 22.2%.
+#:
+#: KEPT, NOT DELETED, because they remain the honest fallback for gold when no tick data can be
+#: read at all, and because deleting them would silently change `MIN_LOT_RISK_EUR` for readers.
 CONTRACT_OZ = 100
 FX_EUR = 0.92
+
+#: The armed book's symbol. Named rather than spelled inline so a caller that omits `symbol`
+#: is asking for gold DELIBERATELY, and a grep for the default finds every such site.
+GOLD_SYMBOL = "XAUUSD"
 RR = 2.0
 ATR_N = 20
 CANCEL_HOUR = 20.5      # cancel unfilled brackets at 20:30 UTC
@@ -99,7 +118,8 @@ PROMOTED_MIN_EQUITY = 300.0  # EUR: below this, promoted sleeves stay dormant
                              # (0.01 lot at 300 EUR ~= 5.9% risk/trade ~= validated 5.5%)
 
 
-def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None) -> float:
+def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
+                 symbol: str = GOLD_SYMBOL, info: object | None = None) -> float:
     """Dynamic lot for promoted sleeves: auto_lot(equity, dist) x ramp.
 
     Ramp earns full authority only with forward proof: 0.25x before 50 live
@@ -108,9 +128,15 @@ def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None) -> f
     `dist_usd` is the sleeve's own stop and is passed through for the same reason
     `auto_lot` takes it: a promoted sleeve on a wide session runs the same 2.8x
     overshoot as an armed one, and the ramp would have made it look deliberate.
+
+    `symbol` IS THE SLEEVE'S OWN INSTRUMENT. Promoted sleeves are the ONLY non-gold things this
+    gateway trades, so this function was the single place where gold's constants were guaranteed
+    to be applied to something that is not gold. `sleeve_set` rewrites every promoted sleeve's
+    lot field to "auto_ramp", so the literal 0.01 the promoter writes never reaches the venue and
+    this path is always taken.
     """
     ramp = 0.25 if live_n < 50 else (0.5 if live_n < 200 else 1.0)
-    lot = auto_lot(equity, dist_usd) * ramp
+    lot = auto_lot(equity, dist_usd, symbol, info) * ramp
     # FLOOR, not nearest. Rounding up here reintroduced the overshoot `_lot_steps`
     # exists to prevent, on exactly the sleeves with the least forward evidence.
     lot = math.floor(lot / 0.01 + 1e-9) * 0.01
@@ -145,10 +171,48 @@ GOLD_WINDOWS = [
 ]
 
 
+def _eur_per_price_unit(symbol: str, info: object | None = None) -> float:
+    """EUR risked per 1.0 of price movement per 1.0 lot of `symbol`.
+
+    THE ONE CONVERSION EVERY SIZING FUNCTION BELOW GOES THROUGH. Live `symbol_info` first --
+    `tick_value` carries today's FX rate and is therefore the only current answer -- then the
+    `universe.json` snapshot, then, for GOLD ALONE, the legacy constants.
+
+    The gold fallback is not a house average: it is gold's own contract size, and it is reached
+    only when the terminal and the snapshot have both failed for the one symbol whose economics
+    are hardcoded correctly. For any other symbol an unreadable tick value RAISES, because
+    returning 92 for a JPY cross is exactly the defect this function exists to delete, and a
+    number that looks plausible is worse than a refusal the caller must handle (L1.28a).
+    """
+    from mt5desk import risk_units as _ru                      # noqa: PLC0415
+
+    try:
+        return _ru.eur_per_price_unit(symbol, info)             # type: ignore[arg-type]
+    except _ru.RiskUnitUnmeasured:
+        if symbol == GOLD_SYMBOL:
+            return float(CONTRACT_OZ * FX_EUR)
+        raise
+
+
 #: EUR put at risk by the venue's smallest tradeable position on gold. Below the equity where
 #: this equals Q_OPT, the FLOOR sets the risk and the policy does not -- deliberately kept, so a
 #: small account can trade and compound up rather than being locked out, but never silently.
-MIN_LOT_RISK_EUR = 0.01 * DIST_USD * CONTRACT_OZ * FX_EUR   # ~17.57
+#:
+#: STILL COMPUTED FROM THE LEGACY CONSTANTS, deliberately: it is a module-scope value and a
+#: module-scope read of the live tick value would freeze at import for the life of the daemon
+#: (L1.66). Callers that need the true figure ask `min_lot_risk_eur(symbol, dist)`.
+MIN_LOT_RISK_EUR = 0.01 * DIST_USD * CONTRACT_OZ * FX_EUR   # ~17.57 (true gold figure ~16.51)
+
+
+def min_lot_risk_eur(symbol: str = GOLD_SYMBOL, dist_price: float | None = None,
+                     info: object | None = None) -> float:
+    """EUR risked by the venue's smallest ticket on `symbol` at `dist_price`.
+
+    Read fresh on every call rather than cached at import, so a re-fetched universe or a moved
+    FX rate reaches the next trade rather than the next restart.
+    """
+    d = float(dist_price) if dist_price and dist_price > 0 else DIST_USD
+    return 0.01 * d * _eur_per_price_unit(symbol, info)
 
 
 def _lot_steps(raw_lot: float) -> float:
@@ -184,7 +248,8 @@ def stop_distance(spec: dict) -> float | None:
     return None
 
 
-def realised_q(equity: float, dist_usd: float | None = None) -> float:
+def realised_q(equity: float, dist_usd: float | None = None,
+               symbol: str = GOLD_SYMBOL, info: object | None = None) -> float:
     """The risk fraction the account WILL actually run, after the 0.01-lot floor.
 
     Not the same as Q_OPT whenever equity is small, and that gap is the whole point of this
@@ -194,13 +259,19 @@ def realised_q(equity: float, dist_usd: float | None = None) -> float:
     policy.
 
     `dist_usd` IS THE SLEEVE'S OWN STOP where the caller knows it. See `auto_lot`.
+
+    `symbol` IS THE SLEEVE'S OWN INSTRUMENT, for the same reason and with a larger error. This
+    read `dist * CONTRACT_OZ * FX_EUR` for every sleeve, so it reported gold's risk fraction for
+    a JPY cross and understated it 5.90x.
     """
     d = float(dist_usd) if dist_usd and dist_usd > 0 else DIST_USD
-    lot = max(_lot_steps(Q_OPT * equity / (d * CONTRACT_OZ * FX_EUR)), 0.01)
-    return float(lot * d * CONTRACT_OZ * FX_EUR / equity) if equity > 0 else 0.0
+    per_unit = _eur_per_price_unit(symbol, info)
+    lot = max(_lot_steps(Q_OPT * equity / (d * per_unit)), 0.01)
+    return float(lot * d * per_unit / equity) if equity > 0 else 0.0
 
 
-def auto_lot(equity: float, dist_usd: float | None = None) -> float:
+def auto_lot(equity: float, dist_usd: float | None = None,
+             symbol: str = GOLD_SYMBOL, info: object | None = None) -> float:
     """Fixed-fractional sizing: Q_OPT of equity per trade, floored at the venue minimum.
 
     `dist_usd` IS THE SLEEVE'S OWN STOP, AND PASSING IT IS NOT OPTIONAL IN THE LIVE PATH.
@@ -250,7 +321,7 @@ def auto_lot(equity: float, dist_usd: float | None = None) -> float:
     the caller instead of being inferred from a lot size after the fact.
     """
     d = float(dist_usd) if dist_usd and dist_usd > 0 else DIST_USD
-    lot = _lot_steps(Q_OPT * equity / (d * CONTRACT_OZ * FX_EUR))
+    lot = _lot_steps(Q_OPT * equity / (d * _eur_per_price_unit(symbol, info)))
     return float(min(max(lot, 0.01), 5.0))
 
 
@@ -349,22 +420,72 @@ def cap_by_heat(sleeves: list[dict], equity: float,
     is placed first by `sleeve_set()`, which makes the armed, human-authorised sleeves senior to
     anything the promoter added on its own. A cap that dropped sleeves arbitrarily could silently
     retire the one book with forward evidence behind it in favour of three that have none.
+
+    EACH SLEEVE IS CHARGED ITS OWN q, NOT THE BOOK'S. This multiplied ONE q -- gold's, because
+    `realised_q` defaulted to gold's contract economics -- by the sleeve COUNT, so a book of
+    heterogeneous instruments was capped as though every leg cost what a gold leg costs. The two
+    errors compounded: the sizing path put a JPY cross on 5.90x its budget, and this function
+    then billed that sleeve at gold's 0.98%, so three of them read as a 2.94% book against a true
+    22.2%. A cap that cannot see what a leg actually costs is not a cap.
     """
     if equity <= 0 or not sleeves:
         return list(sleeves), None
-    q = per_sleeve_q if per_sleeve_q is not None else realised_q(equity)
-    if q <= 0:
-        return list(sleeves), None
     budget = heat_budget(k_eff)
-    room = int(budget / q)
-    if room >= len(sleeves):
+    # Per-sleeve q: an explicit scalar override still applies to every sleeve (that is what a
+    # caller asking for one means), otherwise each sleeve is priced on ITS OWN instrument.
+    qs: list[float] = []
+    for s in sleeves:
+        if per_sleeve_q is not None:
+            qs.append(float(per_sleeve_q))
+            continue
+        try:
+            d = s.get("dist")
+            sym_name = s.get("symbol", GOLD_SYMBOL)
+            if d and float(d) > 0:
+                qs.append(realised_q(equity, float(d), sym_name))
+            elif sym_name == GOLD_SYMBOL:
+                # Gold has a house nominal stop in the right units, and using it KEEPS THE
+                # FLOOR VISIBLE: 0.01 lot is a larger fraction of a smaller account, so a
+                # shrinking account must see its per-sleeve q RISE. A flat policy figure here
+                # would hide exactly the risk a heat budget exists to catch.
+                qs.append(realised_q(equity, None, sym_name))
+            else:
+                # NO STOP KNOWN AND NO NOMINAL IN THIS INSTRUMENT'S UNITS. DIST_USD is 19.1
+                # dollars per ounce; read as a JPY cross's stop it is ~19 yen, which prices a
+                # 0.01 lot at 6.2% and would defer every JPY sleeve forever for a distance
+                # nobody ever intended to trade -- the timidity half of this same defect.
+                # Q_OPT is what the sizer now achieves whenever the floor does not bind, and on
+                # these instruments it binds only at stops far wider than they trade (a JPY
+                # cross needs a 3.9 yen stop at current equity). The first bracket replaces
+                # this estimate with the sleeve's own measured stop.
+                qs.append(float(Q_OPT))
+        except Exception:                                       # noqa: BLE001
+            # UNMEASURABLE IS CHARGED AT THE MOST EXPENSIVE MEASURED LEG, never at gold's by
+            # default. An instrument whose risk cannot be priced must not be the cheapest thing
+            # in the book (L1.28a); if nothing at all is measurable the budget admits nobody.
+            qs.append(float("nan"))
+    known = [q for q in qs if q == q and q > 0]
+    fallback = max(known) if known else 0.0
+    qs = [(q if q == q and q > 0 else fallback) for q in qs]
+    if fallback <= 0:
+        note = ("PORTFOLIO HEAT CAP: no sleeve's risk could be priced in account currency; "
+                "admitting none rather than sizing from another instrument's constants")
+        return [], note
+    admitted: list[dict] = []
+    used = 0.0
+    for s, q in zip(sleeves, qs, strict=True):
+        if used + q > budget + 1e-12:
+            break
+        admitted.append(s)
+        used += q
+    if len(admitted) == len(sleeves):
         return list(sleeves), None
-    dropped = [s.get("name", "?") for s in sleeves[max(room, 0):]]
-    note = (f"PORTFOLIO HEAT CAP: {len(sleeves)} sleeves x {q:.2%} = "
-            f"{len(sleeves) * q:.1%} exceeds {budget:.1%} "
+    dropped = [s.get("name", "?") for s in sleeves[len(admitted):]]
+    note = (f"PORTFOLIO HEAT CAP: {len(sleeves)} sleeves totalling {sum(qs):.1%} "
+            f"exceed {budget:.1%} "
             f"(k_eff {'unmeasured' if k_eff is None else format(k_eff, '.2f')}); "
-            f"admitting {max(room, 0)}, deferring {dropped}")
-    return sleeves[:max(room, 0)], note
+            f"admitting {len(admitted)} at {used:.1%}, deferring {dropped}")
+    return admitted, note
 
 
 def regime_hibernate(sleeves: list[dict]) -> set[str]:
@@ -924,6 +1045,15 @@ def main() -> None:
     k_eff, k_why = measure_from_ledger(
         ledger_rows(), _prov.current_account(mt5.account_info()))
     log(k_why)
+    # EACH SLEEVE'S LAST REAL STOP, so the cap prices legs on what they actually traded rather
+    # than on a house average. The gateway already records every bracket it places; not reading
+    # them back meant the one number that decides how much heat a leg costs was the only number
+    # the cap did not have.
+    for _s in sleeves:
+        _spec = (st.get("brackets", {}).get(_s["name"]) or {}).get("spec")
+        _d = stop_distance(_spec) if _spec else None
+        if _d:
+            _s["dist"] = _d
     sleeves, heat_note = cap_by_heat(sleeves, equity, k_eff=k_eff)
     if heat_note:
         log(heat_note)
@@ -970,11 +1100,22 @@ def main() -> None:
                 log(f"[{s['name']}] SKIPPED: bracket spec has no usable stop distance; "
                     f"refusing to size from the house average")
                 continue
-            lot = auto_lot(equity, dist) if s["lot"] == "auto" else (
-                promoted_lot(equity, sleeve_live_n(s["name"]), dist) if s["lot"] == "auto_ramp"
-                else float(s["lot"]))
-            log(f"[{s['name']}] stop ${dist:.2f} -> lot {lot:.2f} "
-                f"(realised q {realised_q(equity, dist):.2%})")
+            # SIZE IN THIS SLEEVE'S OWN INSTRUMENT, from the LIVE symbol_info already in hand.
+            # `sym` carries trade_tick_value, which is what the venue will actually credit for
+            # one tick in the account currency at today's FX -- the quantity `CONTRACT_OZ *
+            # FX_EUR` was a frozen stand-in for. A sleeve whose risk cannot be priced does not
+            # trade, for the same reason a sleeve with no usable stop does not.
+            try:
+                lot = auto_lot(equity, dist, s["symbol"], sym) if s["lot"] == "auto" else (
+                    promoted_lot(equity, sleeve_live_n(s["name"]), dist, s["symbol"], sym)
+                    if s["lot"] == "auto_ramp" else float(s["lot"]))
+                q_real = realised_q(equity, dist, s["symbol"], sym)
+            except Exception as exc:                              # noqa: BLE001
+                log(f"[{s['name']}] SKIPPED: cannot price {s['symbol']} risk in account "
+                    f"currency ({exc}); refusing to size from the house average")
+                continue
+            log(f"[{s['name']}] stop {dist:.5g} -> lot {lot:.2f} "
+                f"(realised q {q_real:.2%})")
             # margin guard (machine kill switch): skip sleeve if tight
             if not margin_ok(s["symbol"], lot, max(hi, lo)):
                 log(f"[{s['name']}] SKIPPED: margin tight (lot={lot})")

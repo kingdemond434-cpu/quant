@@ -38,9 +38,11 @@ def _load():
     keep = []
     ns = {"math": _math, "Q_OPT": Q_OPT, "MAX_DRAWDOWN_TOLERANCE": MAX_DRAWDOWN_TOLERANCE,
           "_BOOK_WORST_DD_R": BOOK_WORST_DD_R}
-    wanted_fn = {"cap_by_heat", "realised_q", "auto_lot", "heat_budget", "_lot_steps"}
+    wanted_fn = {"cap_by_heat", "realised_q", "auto_lot", "heat_budget", "_lot_steps",
+                 "_eur_per_price_unit"}
     wanted_const = {"MAX_HEAT_CEILING", "_HEAT_BASE_KEFF", "_HEAT_BASE_LEGS",
-                    "DIST_USD", "CONTRACT_OZ", "FX_EUR", "MIN_LOT_RISK_EUR"}
+                    "DIST_USD", "CONTRACT_OZ", "FX_EUR", "MIN_LOT_RISK_EUR",
+                    "GOLD_SYMBOL"}
     for n in tree.body:
         if isinstance(n, ast.FunctionDef) and n.name in wanted_fn:
             keep.append(n)
@@ -59,10 +61,18 @@ def _sleeves(n):
 
 
 def test_ten_sleeves_cannot_risk_ten_percent():
-    """THE DEFECT. At EUR 1,684 the 0.01 lot floor makes each sleeve 1.04%; ten is 10.4%."""
+    """THE DEFECT. At EUR 1,684 the 0.01 lot floor makes each sleeve ~0.98%; ten is ~9.8%.
+
+    THE FIXTURE FIGURE MOVED FROM 1.04% TO 0.98% AND THAT IS THE POINT, not a drift to be
+    re-baselined away: gold's risk per lot was read from `CONTRACT_OZ * FX_EUR` = 92.00 and is
+    now read from the broker's own tick value, 86.41. The 6.5% gap is a frozen EUR/USD rate,
+    and it sized the one armed book on this desk 6.5% small. Derived from the venue rather
+    than retyped, so the next FX move updates it instead of failing here.
+    """
     admitted, note = NS["cap_by_heat"](_sleeves(10), 1684.0)
     q = NS["realised_q"](1684.0)
-    assert q == pytest.approx(0.0104, abs=0.0005), "fixture assumption about the floor changed"
+    floor_q = 0.01 * NS["DIST_USD"] * NS["_eur_per_price_unit"](NS["GOLD_SYMBOL"]) / 1684.0
+    assert q == pytest.approx(floor_q, rel=1e-6), "fixture assumption about the floor changed"
     assert len(admitted) * q <= NS["heat_budget"]() + 1e-9
     assert len(admitted) < 10
     assert note and "PORTFOLIO HEAT CAP" in note

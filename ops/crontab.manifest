@@ -2703,3 +2703,21 @@ SYSTEMD unit="quant-autodiscovery-slice6.timer" on="*:3" exec="scripts/run_crypt
 SYSTEMD unit="quant-autodiscovery-slice7.timer" on="*:13" exec="scripts/run_crypto_research.py"
 SYSTEMD unit="quant-autodiscovery-slice8.timer" on="*:23" exec="scripts/run_crypto_research.py"
 SYSTEMD unit="quant-autodiscovery-slice9.timer" on="*:33" exec="scripts/run_crypto_research.py"
+
+# --- RISK UNITS ON THE SIZING PATH (L1.67) -----------------------------------------------------
+# A stop distance multiplied by the wrong instrument's contract size produces a lot that is
+# well-formed, fresh, internally consistent and wrong by three orders of magnitude. Every MT5
+# sizing function priced every sleeve as `dist * CONTRACT_OZ * FX_EUR` = 92.00 -- gold's contract
+# times a frozen EUR/USD rate -- against a measured 0.86 (BTCUSD) to 86,414 (EURUSD) EUR per price
+# unit per lot. Live, not latent: sleeve_set rewrites promoted sleeves to "auto_ramp", so the
+# promoter's literal 0.01 never reaches the venue. Measured at EUR 1,683.89, a promoted CADJPY
+# sleeve sized 0.46 lot, logged 1.26% risk and ran 7.41%, and cap_by_heat admitted three for a
+# believed 2.94% book against a true 22.2%.
+# CADENCE: daily. Its inputs are the universe snapshot (re-fetched at most daily) and gateway.py
+# (changed by commits, not by the clock), so it is INFORMATION-ARRIVAL bound (L1.28c) -- firing
+# hourly would re-read an unchanged AST. Phased to 06:59, after the 06:53 panel-breadth fence.
+# EVIDENCE: scripts/check_risk_units.py -> data/risk_units.json; CONSTITUTION L1.67
+# CONFIDENCE: committed-script (new this cycle); positive control PASSES against the pre-fix
+# gateway (CONSTANT-ON-SIZING-PATH at auto_lot:203 and realised_q:187, plus 5 call sites
+# defaulting to gold), and the first post-fix run reads OK over 22 priced symbols / 6 call sites.
+59 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_risk_units.py >> data/cro_ai_logs/risk_units.log 2>&1

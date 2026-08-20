@@ -8161,6 +8161,76 @@
    "disposed": null,
    "renumbered_from": "R0584",
    "renumber_reason": "id was allocated to a different recommendation on the other branch; renumbered at merge so citations stay unambiguous"
+  },
+  {
+   "id": "R0642",
+   "source": "cycle",
+   "summary": "L1.61 money-path contradiction: desks/mt5/gateway_state.json publishes equity EUR 1683.89 while desks/mt5/docs/MT5_DESK_STATE.json publishes account.equity EUR 633.89 -- a 2.66x disagreement between two artifacts a human reads as the desk's balance, and MT5_DESK_STATE also carries sizing_model.risk_per_trade_pct_equity 5.5 against a live Q_OPT of 1.27%. Neither side is fenced; register the claim in libs/ops/claim_registry.py.",
+   "roi_bps": null,
+   "rank": 82.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-20T02:13:53.610517+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0643",
+   "source": "cycle",
+   "summary": "L1.36 UNREACHED: L1.65 (data recoverability) and L1.66 (frozen values) have live cron entries running check_data_recoverability.py and check_frozen_values.py, but appear ZERO times in docs/CONSTITUTION.md, scripts/build_enforcement_matrix.py and ops/crontab.manifest -- so the enforcement matrix cannot see them and the scheduler manifest reports them as live-only DRIFT. Every law L1.61-L1.64 is present in all three. Wire both, or the fences enforce laws the desk cannot cite.",
+   "roi_bps": null,
+   "rank": 78.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-20T02:13:57.317418+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0644",
+   "source": "cycle",
+   "summary": "GAP #114 sibling on the PROMOTION path: desks/mt5/research/shadow_forward.py:97 hardcodes XAUUSD spread_per_lot=0.48 -- the same 3%-of-true figure mt5desk/engine.Costs documents as 'every gold backtest has run very nearly spread-free' -- while Costs.from_symbol exists to end exactly this. shadow_forward is the ONLY artifact accruing forward evidence for promotion, so the two-stage law's promotion evidence is generated at 3% of gold's true cost. Replace the hand-rolled Costs with Costs.from_symbol.",
+   "roi_bps": null,
+   "rank": 70.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-20T02:13:59.969914+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0645",
+   "source": "cycle",
+   "summary": "L1.62 two-copy risk, MT5 half: the (stop/tick_size)*tick_value conversion now lives correctly in desks/mt5/mt5desk/risk_units.py (L1.67) but THREE inline re-implementations remain -- research/book_sizing.py:137 (local closure), research/swap_exposure.py:111, research/book_reality.py:257. Not collapsed in this run because they are research-side and the money path was the ruin risk; collapse them onto risk_units so one bug cannot leave two files authoritative.",
+   "roi_bps": null,
+   "rank": 66.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-20T02:14:02.759430+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0646",
+   "source": "cycle",
+   "summary": "DEAD LITERAL on the money path: desks/mt5/research/promoter.py:39 PROMOTED_LOT=0.01 is written into sleeves.json and then OVERWRITTEN by gateway.sleeve_set(), which sets lot='auto_ramp' for every promoted sleeve. The constant reads like the size a promoted sleeve trades and has no effect whatsoever -- it is what made the L1.67 defect look defused on inspection. Delete it or make sleeve_set honour it.",
+   "roi_bps": null,
+   "rank": 60.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-20T02:14:05.072887+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

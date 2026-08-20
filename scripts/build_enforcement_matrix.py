@@ -464,6 +464,17 @@ _MAP: dict[str, list[str]] = {
     # deleted constant turns red if the fork returns.
     "L1.64": ["scripts/check_margin_topology.py", "libs/portfolio/margin_topology.py",
               "scripts/run_capital_plan.py"],
+    # L1.67: every sizing function on the MT5 money path priced a stop as `dist * CONTRACT_OZ *
+    # FX_EUR` -- gold's contract size times a frozen EUR/USD rate, 92.00 -- for whatever symbol
+    # the sleeve named. The venue's own tick economics say 0.86 EUR per price unit per lot on
+    # BTCUSD, 86.41 on XAUUSD, 542.40 on every JPY cross and 86,414 on EURUSD. Live, not latent:
+    # sleeve_set rewrites every promoted sleeve's lot to "auto_ramp", so promoted_lot -> auto_lot
+    # is always taken. Measured at EUR 1,683.89 -- a CADJPY sleeve sized 0.46 lot, logged 1.26%
+    # risk and ran 7.41%, while cap_by_heat billed it gold's 0.98% and admitted three for a
+    # believed 2.94% book against a true 22.2%. gateway.py is the regression site; the positive
+    # control (the pre-fix gateway must read CONSTANT-ON-SIZING-PATH) is committed as a test.
+    "L1.67": ["scripts/check_risk_units.py", "desks/mt5/mt5desk/risk_units.py",
+              "desks/mt5/mt5desk/gateway.py"],
     # R0369 (under L2.3/§42): an implemented row's --commit is the ledger's whole proof mechanism,
     # and it was enforced only at WRITE time -- `dispose` refuses an empty field and asks nothing
     # else. A rebase rewrites SHAs and the citation quietly names an object no other clone can

@@ -2840,3 +2840,71 @@ the instrument that finally lets a capacity raise that LOWERS liquidation risk a
 measured reason instead of inertia.
 
 FENCED by `scripts/check_margin_topology.py` over `libs/portfolio/margin_topology.py`.
+
+## L1.67 A POSITION SIZED IN THE WRONG INSTRUMENT'S UNITS IS A BET NOBODY PLACED
+
+Every fence on this desk asks whether a number was FRESH (L1.44), whether its inputs were
+PRESENT (L1.55), whether a denominator was REAL (L1.57/L1.60), whether two boards AGREE (L1.61),
+or whether a gate ever RAN (L1.49). **Not one of them can ask whether a number is in the UNITS it
+claims.** A stop distance multiplied by the wrong instrument's contract size produces a lot that
+is well-formed, fresh, internally consistent, agreed upon by every board that reads it, and
+wrong by three orders of magnitude -- and the position it opens is real money.
+
+**THE PROVING INSTANCE WAS LIVE ON THE ONLY PATH TO CAPITAL.** `gateway.auto_lot`, `realised_q`
+and `promoted_lot` priced every sleeve's stop as `dist * CONTRACT_OZ * FX_EUR` -- gold's
+100-ounce contract times a frozen EUR/USD rate, 92.00 -- whatever symbol the sleeve named.
+Measured against the broker's own tick economics in `universe.json`, EUR risked per price unit
+per lot is **0.86 on BTCUSD, 86.41 on XAUUSD, 542.40 on every JPY cross and 86,414 on EURUSD**:
+one constant, five orders of magnitude, wrong by 107x in one direction and 939x in the other.
+
+**IT WAS LIVE RATHER THAN LATENT, AND THE ARGUMENT THAT IT WAS DEFUSED WAS WRONG.** `promoter.py`
+writes `"lot": PROMOTED_LOT = 0.01` as a literal, which looks like it bypasses the sizer --
+but `sleeve_set()` **rewrites every promoted sleeve's lot field to `"auto_ramp"`**, so the
+literal never reaches the venue and `promoted_lot -> auto_lot` is always the path taken.
+Measured at EUR 1,683.89 on 2026-08-20: a promoted CADJPY sleeve on a 0.50 stop sized to **0.46
+lot**, logged **EUR 21.16 at risk (1.26%, on policy)** and actually risked **EUR 124.75 -- 7.41%
+of equity, 5.90x policy** -- while `cap_by_heat` billed it gold's 0.98% and admitted three such
+sleeves for a believed **2.94% book against a true 22.2%**. The correct lot was 0.07.
+
+**THE CONVERSION WAS NEVER UNKNOWN, ONLY NEVER SHARED.** `research/book_sizing.py` names the
+exact error in its own docstring -- *"min_lot * contract_size * stop_distance is correct only
+when the quote currency is the account currency. On the JPY crosses it returns yen and reads
+them as euros"* -- and then implements the right one as a **local closure**.
+`research/swap_exposure.py` and `research/book_reality.py` each re-implement it inline. Three
+correct copies in the research half, none importable, and the money path kept the constant. **A
+conversion written down three times and shared zero times is not a shared capability; it is
+three chances to fix one of them and leave the other two authoritative** (L1.62's two-copy
+lesson, one layer out).
+
+**AND THE ERROR RAN BOTH WAYS, WHICH IS WHY NEITHER DIRECTION CAUGHT IT.** On gold -- the only
+armed book -- 92.00 against a true 86.41 charged the desk **6.5% MORE risk than it was taking**,
+so it sized 6.5% small and the heat cap admitted fewer legs than the budget bought. Nobody
+audits a number that is already small (L1.55). On every FX cross the promoter can promote it
+charged 5.90x to 939x LESS than the truth, which is the direction that ends an account.
+
+**OPERATIVE.** Every sizing path prices a stop through `mt5desk.risk_units`, which reads the
+venue's own `tick_value / tick_size` -- **live `symbol_info` first, snapshot second, and gold's
+hardcoded contract economics for GOLD ALONE, third**. An instrument that cannot be priced
+**RAISES** rather than returning a plausible number: a fallback to another instrument's
+constants is exactly the defect, and the caller cannot tell a fallback from a measurement
+(L1.28a). `cap_by_heat` charges **each sleeve its own q**; an unpriceable sleeve is billed at
+the most expensive measured leg and is never the cheapest thing in the book. The universe
+snapshot carries an FX rate, so **SNAPSHOT-STALE is its own status** -- a stale conversion is
+the frozen constant again with a more recent date on it.
+
+**THE FENCE MUST BE SHOWN TO FIND THE BUG, NOT MERELY TO BE QUIET.** A detector whose only
+observed behaviour is silence has not been validated -- this desk has paid for that twice (the
+L1.66 prototype scored 0/3 on hand-verified positives and reported a clean sweep). The positive
+control is committed as a test: the pre-fix gateway must come back CONSTANT-ON-SIZING-PATH, and
+the docstrings that quote the old formula deliberately, as the record of what went wrong, must
+NOT be flagged -- a fence that punished the record would be edited to delete the record.
+
+**ANTI-TIMIDITY READING, THE ENTIRE PURPOSE.** A MEASUREMENT duty and a units check. It lifts
+nothing, promotes nothing, opens no gate and loosens no statistical bar, and it has no
+vocabulary for turning a failing verdict into a passing one. Its effect on size is to make it
+CORRECT in both directions at once: it cuts a JPY cross from 7.41% to 1.13% and it releases the
+6.5% the frozen FX rate was quietly taking off the only armed book. Its whole effect is to make
+"this lot was priced in the account's currency" distinguishable from "this lot was priced in
+gold's" -- byte-identical on this desk until now, and only one of them is a position size.
+
+FENCED by `scripts/check_risk_units.py` over `desks/mt5/mt5desk/risk_units.py`.
