@@ -165,6 +165,48 @@ def fetch_h1(sym: str):
     return bars
 
 
+def enable_free_feed(state: dict) -> str:
+    """Register the free HTTP source -- but ONLY into a record it cannot contaminate.
+
+    **SHADOW HAS BEEN STARVING, NOT FAILING.** Measured 2026-08-20: all 19 sleeves at n=0,
+    days_active=0. The replay runs correctly and REFUSES every window, because the only live
+    source registered by default is the Windows MT5 terminal, that terminal has been paused for
+    the Fusion switch, and the bar cache therefore ends 2026-08-14 -- before SHADOW_START on
+    08-16. Shadow is right to refuse: an uncovered window is NO DATA, not a quiet market. But the
+    result is that the desk's one source of forward evidence has produced nothing at all while
+    five sleeves wait on it, and a day of bars not evaluated cannot be recovered later.
+
+    `h1_source.from_yfinance` exists for exactly this and is deliberately unregistered, because
+    turning it on is a decision about evidence quality: those bars are a DIFFERENT SERIES from the
+    broker's, and `SourceMix` will call a ledger built from both "an average over two different
+    games".
+
+    **THE DECISION IS EASY ONLY BECAUSE THE RECORD IS EMPTY.** With every sleeve at n=0 there is
+    no evidence to mix: the record starts homogeneous and stays that way. That is a property of
+    today, not a general licence, so it is CHECKED rather than assumed -- if any sleeve has
+    accrued rows from a different source this refuses to register and says why. A feed that
+    switches mid-record is the failure `SourceMix` was built to name, and it must not be
+    introduced by the function meant to keep the record alive.
+
+    The stamp travels regardless: every row carries `HTTP:yfinance/<ticker>`, so a promoter or a
+    reader can always see which game the evidence came from.
+    """
+    from research.h1_source import from_yfinance, register_source     # noqa: PLC0415
+
+    sleeves = [v for v in state.values() if isinstance(v, dict)]
+    accrued = [v for v in sleeves if int(v.get("n", 0) or 0) > 0]
+    if accrued:
+        srcs = {s for v in accrued for s in (v.get("sources") or {})}
+        if not srcs <= {"HTTP:yfinance"} and not all(s.startswith("HTTP:yfinance") for s in srcs):
+            return (f"free feed NOT registered: {len(accrued)} sleeve(s) already carry rows from "
+                    f"{sorted(srcs) or 'an unrecorded source'}. Registering now would switch the "
+                    "feed mid-record and average two different games (SourceMix). Finish the "
+                    "broker switch and let MT5 serve these, or start a fresh record.")
+    register_source(from_yfinance)
+    return ("free feed REGISTERED (HTTP:yfinance) -- the record is empty, so it starts and stays "
+            "homogeneous. These are NOT the broker's bars; the stamp says so on every row.")
+
+
 def main() -> None:
     from mt5desk import families  # noqa: E402
     from mt5desk.engine import run_backtest  # noqa: E402
@@ -177,6 +219,7 @@ def main() -> None:
             state = json.loads(state_path.read_text(encoding="utf-8"))
         except Exception:
             state = {}
+    slog(enable_free_feed(state))
     today = datetime.now(timezone.utc).date().isoformat()
     if state.get("last_run") == today:
         slog("shadow already ran today; skip")

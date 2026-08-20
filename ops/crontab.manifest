@@ -2738,3 +2738,14 @@ SYSTEMD unit="quant-autodiscovery-slice9.timer" on="*:33" exec="scripts/run_cryp
 # control is load-bearing: the first version of this fence matched only outermost callees, missed
 # `np.maximum.accumulate`, scanned 1,362 files and reported a clean tree that meant nothing.
 57 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_private_bisection.py >> data/cro_ai_logs/private_bisection.log 2>&1
+
+# --- VALIDATED AND ACCRUING NOTHING (GAP 119) --------------------------------------------------
+# The ladder's rungs each report their own success and nobody owns the JOIN: a sweep prints
+# "4 survivors" and exits 0, shadow prints its ledger and exits 0, and a cell that cleared a gate
+# but was never added to shadow_forward.SLEEVES is invisible in both. III.16 applied to evidence.
+# CADENCE: daily, after the hunts and before shadow's own run.
+# EVIDENCE: desks/mt5/research/shadow_gap.py -> desks/mt5/shadow_gap.json
+# CONFIDENCE: exit 2 when NO GATED CELL is readable -- reports/ is gitignored, and "0 missing"
+# with an empty denominator is absence read as a clean verdict. It tests the denominator, not the
+# file count; the first version tested the file count and printed a vacuous all-clear.
+5 7 * * * cd "$QUANT_ROOT/desks/mt5" && "$QUANT_ROOT/.venv/bin/python" research/shadow_gap.py >> "$QUANT_ROOT/data/cro_ai_logs/shadow_gap.log" 2>&1
