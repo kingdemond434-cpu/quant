@@ -42,11 +42,12 @@ def git_tree() -> Path:
     return sibling if sibling.exists() else BASE
 
 
-def git(*args: str, timeout: int = 60) -> tuple[int, str]:
+def git(*args: str, timeout: int = 60, binary: bool = False) -> tuple[int, object]:
     try:
         r = subprocess.run(["git", *args], cwd=str(git_tree()),
-                           capture_output=True, text=True, timeout=timeout)
-        return r.returncode, (r.stdout or "") + (r.stderr or "")
+                           capture_output=True, timeout=timeout)
+        out: object = r.stdout if binary else (r.stdout or b"") + (r.stderr or b"")
+        return r.returncode, out
     except Exception as e:
         return -1, f"{e!r}"
 
@@ -61,12 +62,12 @@ def main() -> int:
     out: dict = {"checked_at": datetime.now(timezone.utc).isoformat(),
                  "box": BOX, "git_tree": str(tree), "branch": BRANCH}
     rc, msg = git("rev-parse", "--short", "HEAD")
-    out["local_head"] = msg.strip() if rc == 0 else "?"
+    out["local_head"] = str(msg).strip() if rc == 0 else "?"
     rc, msg = git("fetch", "origin", BRANCH)
     out["fetch_ok"] = rc == 0
     if rc == 0:
         rc, msg = git("rev-parse", "--short", f"origin/{BRANCH}")
-        out["remote_tip"] = msg.strip() if rc == 0 else "?"
+        out["remote_tip"] = str(msg).strip() if rc == 0 else "?"
     else:
         out["remote_tip"] = "fetch-failed"
 
@@ -87,8 +88,9 @@ def main() -> int:
     for f in KEY_FILES:
         fp = desk / "research" / f
         local_h = sha256(fp.read_bytes()) if fp.exists() else "missing"
-        rc, blob = git("cat-file", "blob", f"origin/{BRANCH}:desks/mt5/research/{f}")
-        remote_h = sha256(blob.encode()) if rc == 0 else "missing"
+        rc, blob = git("cat-file", "blob", f"origin/{BRANCH}:desks/mt5/research/{f}",
+                       binary=True)
+        remote_h = sha256(bytes(blob)) if rc == 0 else "missing"
         match = local_h == remote_h
         files[f] = {"match": match, "local": local_h[:12], "remote": remote_h[:12]}
         all_ok = all_ok and match
@@ -113,6 +115,10 @@ def main() -> int:
     print(f"UNIVERSAL STATE VERIFY: ok={all_ok} "
           f"head={out.get('local_head')} remote={out.get('remote_tip')}", flush=True)
     return 0 if all_ok else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
 
 
 if __name__ == "__main__":
