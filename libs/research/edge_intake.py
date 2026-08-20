@@ -57,11 +57,35 @@ DISPOSITIONS: tuple[str, ...] = (
 #: Words that make a queue row a MECHANISM claim rather than a topic. A row naming a mechanism can
 #: be turned into a hypothesis; one that does not is missing an ingredient, and saying WHICH is
 #: the difference between a shopping list and a shrug.
+#:
+#: MT5 UNIVERSE WIDENING (2026-08-20, principal: "mine strategies not bs"). Measured on two live
+#: runs this desk actually made: 78/111 and 129/188 surfaced rows landed BLOCKED_PENDING_DATA, not
+#: because the source was thin but because the miner's own queries and this word list were built
+#: for crypto derivative-market microstructure (funding rate, liquidation, unlock) and never
+#: extended to name FX/gold/index/ICT mechanisms -- so a title that names a real, codeable MT5 rule
+#: still scored as "no mechanism" and got parked instead of routed to a hypothesis. Added below:
+#: COT/positioning, ICT/SMC structure, session and carry mechanics, and the rule-language
+#: (entry/exit/parameter/source) that marks a title as a REPRODUCIBLE system rather than commentary
+#: about one.
 _MECHANISM_WORDS = (
     "套利", "arbitrage", "basis", "基差", "funding", "资金费率", "liquidation", "清算", "爆仓",
     "spread", "价差", "premium", "溢价", "parity", "平价", "carry", "skew", "偏度",
     "impact", "冲击", "slippage", "滑点", "orderflow", "订单流", "imbalance", "失衡",
     "unlock", "解锁", "flow", "资金流", "inventory", "库存", "queue", "排队",
+    # COT / positioning -- the whale-tracking analogue for MT5
+    "cot", "持仓报告", "commercial", "商业头寸", "投机头寸", "净头寸", "producer hedg",
+    "生产者对冲",
+    # ICT / SMC structure -- named, reproducible entry mechanics, not commentary
+    "订单块", "order block", "流动性扫", "liquidity sweep", "公允价值缺口", "fair value gap", "fvg",
+    "止损猎杀", "stop hunt", "市场结构", "market structure", "流动性扫荡",
+    # session / carry / gap mechanics
+    "伦敦定盘", "london fix", "session open", "开盘时段", "利差", "掉期", "swap", "rollover",
+    "隔夜利息", "overnight interest", "跳空", "gap risk", "季节性", "seasonal pattern",
+    # central bank / macro event mechanics
+    "央行", "central bank", "利率决议", "rate decision", "非农", "nfp",
+    # rule-language -- the strongest signal a title names a REPRODUCIBLE system, not a topic
+    "入场规则", "entry rule", "出场规则", "exit rule", "止损设置", "stop loss", "止盈设置",
+    "take profit", "参数设置", "策略源码", "source code", "ea源码", " ea ",
 )
 
 

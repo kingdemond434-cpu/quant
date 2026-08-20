@@ -12,6 +12,11 @@ data/*
 !data/nav_attestation.jsonl
 !data/decision_ledger.json
 !data/cashcarry_config.json
+# The monthly $ envelope for external-LLM seats (CRO/GPT, kimi_hunter's model chain,
+# run_external_panel) is CONFIG, not generated state: a gitignored cap evaporates on the next
+# container reset and never reaches the VPS, which is how the desk ends up back on the code's
+# unset-file default ($120/mo) without anyone deciding that.
+!data/panel_budget.json
 # Stage-A screen results are EVIDENCE named in ledger rows (R0288 cites this path), not generated
 # state: a gitignored evidence path is a dangling citation on every machine but the one that ran it,
 # and §33 requires a named artifact to exist and be non-empty. 12K.

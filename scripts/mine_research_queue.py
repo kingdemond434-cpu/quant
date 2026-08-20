@@ -242,6 +242,19 @@ BILIBILI_QUERIES = (
     "外汇 时段 伦敦 纽约 策略",     # session structure -- first-class in a non-24/7 universe
     "非农 数据 外汇 交易",          # NFP / macro-event reaction
     "美元指数 交易 策略",          # DXY
+    # SECRET-SAUCE REVEALS (2026-08-20, principal: "mine strategies not bs"). Validation-vocabulary
+    # queries above convert on volume but mostly BLOCKED_PENDING_DATA in practice -- they surface
+    # commentary ABOUT testing, not a reproducible rule to test. This block targets titles that name
+    # a specific, codeable system: parameters, entry/exit rules, source code, or a named trader's
+    # disclosed method -- the highest-value class edge_intake.classify() can actually convert.
+    "ea 参数 设置 详解",            # EA parameter settings, explained in detail
+    "策略 源码 公开",              # strategy source code, made public
+    "交易系统 完整 规则",           # complete trading system rules
+    "跟单 高手 策略 拆解",          # top copy-trader's strategy, broken down
+    "顶级 交易员 策略 揭秘",        # top trader's strategy, revealed
+    "ea 回测 参数 优化",            # EA backtest, parameter optimisation
+    "黄金 ea 参数 公开",            # gold EA, parameters disclosed
+    "mql5 信号源 策略 分析",        # MQL5 Signals -- a public copy-trading leaderboard
 )
 
 # 4 -> 22 (2026-08-05). THE HIGHEST-YIELDING FAMILY HAD THE NARROWEST SWEEP, which is exactly
@@ -290,6 +303,10 @@ CN_ARTICLE_QUERIES = (
     # -- the honest failure literature, which is where the graveyard entries live
     "网格 马丁 爆仓 复盘",
     "实盘 与 回测 差异",
+    # -- SECRET-SAUCE REVEALS (2026-08-20): named, reproducible systems, not validation commentary
+    "ea 源码 策略 详解",
+    "交易系统 入场 出场 规则",
+    "跟单 策略 拆解 分析",
 )
 
 SEARCH_QUERIES = (
