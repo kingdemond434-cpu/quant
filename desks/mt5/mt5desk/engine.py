@@ -89,6 +89,21 @@ class Signal:
     bank_frac: float = 0.0  # 0 = flat target exit; >0 = close this fraction at target, rest runs
     bank_protect_k: float = 0.0  # runner stop moves to entry + stop_dist*k after bank (0 = BE)
     runner_trail_k: float = 0.0  # 0 = fixed stop; >0 = chandelier trail at stop_dist*k off extreme
+    # --- stall-conditioned tightening. A trail that STAYS wide bleeds: on a
+    # pullback entry after a strong run, a static chandelier at k=4 lost $16.82
+    # an ounce over 95 events while the same k tightened to 1 after three bars
+    # without a new extreme MADE $9.80. Paired against the whole static family
+    # on identical events the difference is +$11.63/oz, better 63% of the time,
+    # t = 2.48 -- one hypothesis, so no deflation is owed.
+    #
+    # The mechanism is not "a better constant". Breathing room and profit
+    # protection are wanted at DIFFERENT TIMES: while the move is still
+    # printing new extremes, and once it has stopped. `runner_trail_k` alone
+    # cannot say that, so it was a constant answering a question with two
+    # answers. Note the effect is ~nil (t = 1.11) on entries taken at the high:
+    # this pays for a pullback entry and does not rescue a chase.
+    trail_tighten_k: float = 0.0  # 0 = never tighten; else k once stalled
+    trail_stall_bars: int = 0     # bars with no new extreme before tightening
     # --- winner pyramiding: exposure grows only after the market has PROVED the
     # thesis, which is the opposite of averaging down and must never be confused
     # with it. Add k fills at entry + side*k*add_every_r*stop_dist.
@@ -202,9 +217,12 @@ def run_backtest(
         bank_frac = sig.bank_frac
         bank_protect_k = sig.bank_protect_k
         runner_trail_k = sig.runner_trail_k
+        trail_tighten_k = sig.trail_tighten_k
+        trail_stall_bars = sig.trail_stall_bars
         banked = False
         banked_at = 0.0
         trail_ext = entry
+        stall = 0
         exit_price: float | None = None
         reason = "ttl"
         bars_held = 0
@@ -230,13 +248,34 @@ def run_backtest(
                     banked = True
                     banked_at = target
                     stop = max(stop, entry + sd0 * bank_protect_k)
-                if banked:
-                    trail_ext = max(trail_ext, hi)
-                    if runner_trail_k > 0:
-                        stop = max(stop, trail_ext - sd0 * runner_trail_k)
+                # THE STOP IS CHECKED BEFORE THIS BAR'S EXTREME FEEDS THE TRAIL.
+                # The trail used to ratchet on the bar's own high and then be
+                # tested against that same bar's low, so a bar that printed a
+                # new high and then collapsed was paid at the RATCHETED stop --
+                # the engine resolving unknown intrabar order in the trade's
+                # favour. It is the fill-bar leak wearing a different hat, and
+                # it is the ordering the pyramid path already refuses ("denies
+                # the pyramid a mid-bar stop ratchet"), so the trail was the
+                # inconsistent one. It also disagreed with the research that
+                # motivated stall-tightening, which checked the low first --
+                # the engine would have scored the policy better than the study
+                # that justified it, which is how a t = 9.16 gets born.
                 if lo <= stop:
                     exit_price, reason = stop, "bank" if banked else "stop"
                     break
+                # Trail with no bank leg is now expressible: `bank_frac == 0`
+                # used to mean no trail at all, which made a pure runner
+                # impossible to write down.
+                if banked or bank_frac <= 0:
+                    if hi > trail_ext:
+                        trail_ext, stall = hi, 0
+                    else:
+                        stall += 1
+                    k = runner_trail_k
+                    if trail_tighten_k > 0 and stall >= trail_stall_bars:
+                        k = trail_tighten_k
+                    if k > 0:
+                        stop = max(stop, trail_ext - sd0 * k)
                 if pyramid:
                     while len(adds) < add_max:
                         lvl = entry + sd0 * add_every_r * (len(adds) + 1)
@@ -266,13 +305,19 @@ def run_backtest(
                     banked = True
                     banked_at = target
                     stop = min(stop, entry - sd0 * bank_protect_k)
-                if banked:
-                    trail_ext = min(trail_ext, lo)
-                    if runner_trail_k > 0:
-                        stop = min(stop, trail_ext + sd0 * runner_trail_k)
-                if hi >= stop:
+                if hi >= stop:            # stop first — see the long side
                     exit_price, reason = stop, "bank" if banked else "stop"
                     break
+                if banked or bank_frac <= 0:
+                    if lo < trail_ext:
+                        trail_ext, stall = lo, 0
+                    else:
+                        stall += 1
+                    k = runner_trail_k
+                    if trail_tighten_k > 0 and stall >= trail_stall_bars:
+                        k = trail_tighten_k
+                    if k > 0:
+                        stop = min(stop, trail_ext + sd0 * k)
                 if pyramid:
                     while len(adds) < add_max:
                         lvl = entry - sd0 * add_every_r * (len(adds) + 1)

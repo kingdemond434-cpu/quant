@@ -49,6 +49,7 @@ for _p in (str(_DESK), str(_DESK / "research")):
 
 from mt5desk import families                                   # noqa: E402
 from mt5desk.engine import Costs, run_backtest                 # noqa: E402
+from mt5desk.sizing import q_for_drawdown  # noqa: E402
 from run_hunt11 import WINDOWS                                 # noqa: E402
 
 UNI = _DESK / "data" / "universe"
@@ -83,16 +84,21 @@ def daily(trades):
 
 
 def q_for_dd(r, target, shift):
-    x = r.to_numpy(float) - shift
-    lo, hi = 1e-5, 0.5
-    for _ in range(60):
-        q = (lo + hi) / 2
-        eq = np.cumprod(1.0 + q * x)
-        if float((1.0 - eq / np.maximum.accumulate(eq)).max()) > target:
-            hi = q
-        else:
-            lo = q
-    return lo
+    """Delegates to `mt5desk.sizing` -- this file carried its own copy of the ruin bug.
+
+    THE COPY THAT WAS HERE SIZED **UP** PAST RUIN. At a large enough q some day has
+    `1 + q*x <= 0`, the account is not drawn down but GONE, cumprod goes negative, the drawdown
+    expression yields NaN, and `NaN > target` evaluates to False -- so the search concluded the
+    budget was respected and raised q. It was also unbounded above at 0.5 regardless of how bad
+    the worst observed day was.
+
+    `mt5desk/sizing.py` was made the single implementation on 2026-08-19 precisely to end this,
+    and its commit named `growth_now.py` and `exit_sweep.py` as the latent siblings. This copy
+    survived anyway -- it reached the merged tree from master rather than from the branch that
+    did the rewiring, which is row 110's defect class one more time: a fix applied where it was
+    found and not swept for twins.
+    """
+    return q_for_drawdown(r.to_numpy(float) - shift, target)
 
 
 def growth(r):
