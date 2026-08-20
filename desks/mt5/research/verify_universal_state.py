@@ -56,18 +56,23 @@ def sha256(data: bytes) -> str:
     return hashlib.sha256(data.replace(b"\r\n", b"\n")).hexdigest()
 
 
+def dec(data: object) -> str:
+    return data.decode("utf-8", errors="replace") if isinstance(data, bytes) \
+        else str(data)
+
+
 def main() -> int:
     REPORTS.mkdir(exist_ok=True)
     tree = git_tree()
     out: dict = {"checked_at": datetime.now(timezone.utc).isoformat(),
                  "box": BOX, "git_tree": str(tree), "branch": BRANCH}
     rc, msg = git("rev-parse", "--short", "HEAD")
-    out["local_head"] = str(msg).strip() if rc == 0 else "?"
+    out["local_head"] = dec(msg).strip() if rc == 0 else "?"
     rc, msg = git("fetch", "origin", BRANCH)
     out["fetch_ok"] = rc == 0
     if rc == 0:
         rc, msg = git("rev-parse", "--short", f"origin/{BRANCH}")
-        out["remote_tip"] = str(msg).strip() if rc == 0 else "?"
+        out["remote_tip"] = dec(msg).strip() if rc == 0 else "?"
     else:
         out["remote_tip"] = "fetch-failed"
 
@@ -76,7 +81,7 @@ def main() -> int:
         rc2, msg2 = git("merge", "--no-edit", "-X", "theirs",
                         f"origin/{BRANCH}", timeout=180)
         pulls.append({"action": "merge -X theirs", "ok": rc2 == 0,
-                      "detail": (msg2.strip().splitlines() or [""])[-1]})
+                      "detail": (dec(msg2).strip().splitlines() or [""])[-1]})
         if rc2 == 0:
             out["local_head"] = out.get("remote_tip")
     out["pull"] = pulls
