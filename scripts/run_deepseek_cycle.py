@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import random
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -30,6 +31,23 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from libs.ops import deepseek_cycle as ds  # noqa: E402
+
+_CYCLE_STATE = _ROOT / "data" / "deepseek_cycle_state.json"
+
+
+def _next_cycle_index() -> int:
+    """Persisted round-robin pointer over SEED_ROLES. A counter that resets every run would
+    re-run role 0 every hour and never reach role 33 -- the opposite of X's 'every role gets a
+    genuine turn.'"""
+    try:
+        idx = int(json.loads(_CYCLE_STATE.read_text("utf-8")).get("cycle_index", -1)) + 1
+    except (OSError, ValueError, TypeError):
+        idx = 0
+    _CYCLE_STATE.parent.mkdir(parents=True, exist_ok=True)
+    _CYCLE_STATE.write_text(json.dumps({"cycle_index": idx, "updated_utc":
+                                        datetime.now(tz=UTC).isoformat(timespec="seconds")}),
+                            "utf-8")
+    return idx
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -97,19 +115,37 @@ def main(argv: list[str] | None = None) -> int:
               "flywheel exists to produce.")
         return 0
 
-    # ---- 4/5. Cold phase and routing run here once the seat is lit on a real box.
-    roles = [r for r, _ in ds.SEED_ROLES]
+    # ---- 4/5. COLD PHASE + ROUTE. One role per cycle, round-robin over SEED_ROLES (X: no role
+    # is favoured by list order), bulk/deep drawn per the state's escalation_mix (IV: not sacred,
+    # a starting point). ONE call, matching budget_gate's "checked once, cheaply, before the
+    # cycle" design -- a 24/7 hourly organ multiplying calls per cycle is exactly how V's own
+    # docstring says a month's budget disappears by the 3rd.
+    all_roles = ds.SEED_ROLES
     if args.roles:
         want = {s.strip() for s in args.roles.split(",") if s.strip()}
-        roles = [r for r in roles if r in want]
-    report["result"] = "READY"
-    report["roles"] = roles
-    report["escalation"] = ds.escalation_mix(args.state)
+        all_roles = tuple(r for r in all_roles if r[0] in want) or all_roles
+    idx = _next_cycle_index()
+    role_name, role_brief = all_roles[idx % len(all_roles)]
+    mix = ds.escalation_mix(args.state)
+    deep = random.random() < mix["deep_share"]  # noqa: S311 -- research-cadence draw, not security
+
+    result = ds.run_role(role_name, role_brief, deep=deep, state={}, root=_ROOT)
+    report["result"] = result["status"]
+    report["role"] = role_name
+    report["cycle_index"] = idx
+    report["escalation"] = mix
+    report["deep_this_cycle"] = deep
+    report["run"] = result
     report["authority"] = ("RESEARCH GENERATION ONLY -- cannot promote a survivor, allocate "
                            "capital, override policy or merge authoritative code (CXCV-12..15)")
-    print(json.dumps(report, indent=1) if args.json else
-          f"DEEPSEEK READY: policy {gate['version']}, {len(roles)} role(s), "
-          f"{seat.provider}:{seat.bulk_model}")
+    if args.json:
+        print(json.dumps(report, indent=1))
+    else:
+        print(f"DEEPSEEK {result['status']}: role={role_name} "
+              f"({'deep' if deep else 'bulk'}:{result.get('model', '?')}) -- "
+              f"{result.get('n_findings', 0)} finding(s), "
+              f"{result.get('capability_walks_proposed', 0)} capability walk(s), "
+              f"{result.get('why', '')}")
     return 0
 
 

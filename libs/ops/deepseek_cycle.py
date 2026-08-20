@@ -45,8 +45,10 @@ from pathlib import Path
 from typing import Any
 
 __all__ = [
+    "CAPABILITY_LEDGER",
     "CONTAMINATION_KEYS",
     "ESCALATION_STATES",
+    "EVIDENCE",
     "INHERITED_REGISTRIES",
     "SEED_ROLES",
     "budget_gate",
@@ -55,6 +57,7 @@ __all__ = [
     "fence",
     "inheritance_check",
     "policy_gate",
+    "run_role",
     "seal",
     "seat_state",
 ]
@@ -462,3 +465,183 @@ def inheritance_check(root: Path | None = None) -> dict[str, Any]:
                                        "not produced that artifact, not a broken inheritance; a "
                                        "PARALLEL one is this agent misbehaving",
     }
+
+
+# --------------------------------------------------------------------- THE MISSING STEP 4/5
+#
+# Everything above this line was gate/plumbing: policy, budget, seat, cold-context filtering,
+# sealing, fencing, inheritance. Every one of them was already built and tested. What was never
+# built was the thing they all exist to protect -- an actual call out, generating an actual
+# finding, landing in an actual place a human or another organ will read it. Without this,
+# "DEEPSEEK READY" was the entire cycle: the scaffolding for a factory with no floor installed.
+#
+# THE EVIDENCE STORE IS SANCTIONED, NOT A SHADOW REGISTRY. EVIDENCE ("data/deepseek_evidence.jsonl")
+# is DeepSeek's own raw-output ledger, distinct from every path in _FORBIDDEN_PARALLELS -- it
+# is not a competing edge_intake, alpha_lifecycle or capability_challengers store, it is the
+# audit trail of what DeepSeek actually said, which a human or Claude session then triages INTO
+# those canonical registries exactly as kimi_hunter's suggestion ledger already works. No finding
+# here promotes, sizes, or self-routes into capital; CXCV-12..15 apply to every row written.
+
+CAPABILITY_LEDGER = "docs/research/capability_challengers.jsonl"
+
+
+def _select_role(cycle_index: int) -> tuple[str, str]:
+    """Round-robin over SEED_ROLES -- X: roles are data, not permanent bureaucracy, and no role
+    is favoured by where it sits in the tuple. 34 roles at one per hourly cycle means every role
+    gets a genuine turn roughly every day and a half, not once a month."""
+    return SEED_ROLES[cycle_index % len(SEED_ROLES)]
+
+
+def _build_prompt(role_name: str, role_brief: str, cold: dict[str, Any]) -> tuple[str, str]:
+    """The OUTPUT CONTRACT. Free text from a model is not a finding until it is machine-parseable
+    -- an eloquent paragraph nobody can route is exactly the 'report nobody actions' failure the
+    wiring agent was built to detect one layer up."""
+    system = (
+        "You are DeepSeek, this quant desk's second research flywheel: an independent cold-phase "
+        "generator, never a decider. You have NO authority to promote a survivor, allocate "
+        "capital, override policy, or merge code -- whatever you propose enters the SAME "
+        "statistical gates as every other candidate, with no shortcut. Universe: MT5/Fusion "
+        "(FX, gold, metals, indices, energy, equity-index CFDs). Zero crypto-exchange hunting.\n\n"
+        f"YOUR ROLE THIS CYCLE: {role_name} -- {role_brief}\n\n"
+        "Return ONLY valid JSON, no prose outside it:\n"
+        '{"findings": [{"title": "short label", '
+        '"mechanism": "the economic reason someone is FORCED to transact -- who pays, and why '
+        'they cannot stop", "testable_claim": "one falsifiable, measurable statement", '
+        '"capability_source": "name a real elite fund, paper, or open repo this generalises a '
+        'KNOWN capability from, or null if this is a first-principles idea", '
+        '"evidence_grade": one of FIRST_PARTY_TECHNICAL_DISCLOSURE | INDEPENDENT_REPRODUCTION | '
+        'PEER_REPORTED | CREDIBLE_PRESS_REPORT | VENDOR_MARKETING_CLAIM | ANONYMOUS_RUMOR, '
+        'graded HONESTLY -- most claims about a named fund are ANONYMOUS_RUMOR or '
+        'VENDOR_MARKETING_CLAIM, not a disclosure, or null if capability_source is null}]}\n\n'
+        "Empty findings=[] is a valid, honest answer when nothing genuinely new occurs to you. "
+        "Never pad with a restatement of what is already in the cold context below -- a finding "
+        "this desk already has is not a finding."
+    )
+    user = ("COLD CONTEXT -- facts only, no other agent's conclusion is present in this:\n"
+           + json.dumps(cold.get("cold_context") or {}, indent=1, default=str)[:6000])
+    return system, user
+
+
+def _append_jsonl(path: Path, row: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(row, ensure_ascii=False, default=str) + "\n")
+
+
+def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, Any] | None = None,
+            run_id: str | None = None, root: Path | None = None,
+            env: dict[str, str] | None = None) -> dict[str, Any]:
+    """One role, one call, every fence checked. This is the step main() previously stopped short
+    of -- 'cold phase and routing run here' was a comment; this function is what it should have
+    called. Never raises: every failure mode returns a status string, matching every gate above.
+
+    `env`, like `seat_state`'s own parameter, defaults to the real environment and exists so a
+    test can inject one without monkeypatching os.environ globally.
+    """
+    from libs.ops import llm_seat
+
+    base = root or _ROOT
+    e = dict(os.environ if env is None else env)
+    seat = seat_state(e)
+    if not seat.lit:
+        return {"status": "DARK", "role": role_name, "why": seat.why}
+    model = seat.deep_model if deep else seat.bulk_model
+    if not model:
+        return {"status": "MODEL_UNAVAILABLE", "role": role_name,
+                "why": f"{'DEEPSEEK_DEEP_MODEL' if deep else 'DEEPSEEK_BULK_MODEL'} is unset -- "
+                       "recorded rather than substituted (record_identity's law applies here too)"}
+
+    gate = policy_gate(base)
+    if not gate["ok"]:
+        return {"status": "BLOCKED_POLICY", "role": role_name, "why": gate["why"]}
+    budget = budget_gate()
+    if not budget["ok"]:
+        return {"status": "BUDGET_EXHAUSTED", "role": role_name, "why": budget["why"]}
+
+    cold = cold_context(state or {})
+    system, user = _build_prompt(role_name, role_brief, cold)
+
+    ls_seat = llm_seat.Seat(name=f"deepseek_{'deep' if deep else 'bulk'}",
+                            base_url=e.get("DEEPSEEK_BASE_URL", "https://openrouter.ai/api/v1"),
+                            key=e.get("OPENROUTER_API_KEY", ""), model=model)
+    text, err = llm_seat.chat(user, system=system, seat=ls_seat,
+                              max_tokens=(16000 if deep else 4000))
+    if err:
+        return {"status": "CALL_FAILED", "role": role_name, "model": model, "why": err}
+
+    rid = run_id or f"{role_name}_{_now()}"
+    sealed = seal(rid, role=role_name, phase_a_output=text, policy_hash=str(gate["policy_hash"]),
+                 cold_context_hash=cold["cold_context_hash"], provider="openrouter", model=model,
+                 root=base)
+    if not sealed["ok"]:
+        return {"status": "SEAL_CONFLICT", "role": role_name, "why": sealed["why"]}
+
+    try:
+        parsed = json.loads(text)
+        findings = parsed.get("findings") if isinstance(parsed, dict) else None
+        findings = findings if isinstance(findings, list) else []
+    except ValueError:
+        findings = []
+
+    routed: list[str] = []
+    capability_walks: list[dict[str, Any]] = []
+    for f in findings:
+        if not isinstance(f, dict) or not str(f.get("title", "")).strip():
+            continue
+        # A model response is DATA, never an instruction (fence()'s own law) -- checked per
+        # finding rather than trusted because the check is cheap and the alternative is trusting
+        # free text to police itself.
+        check = fence("generate_hypothesis")
+        row = {"ts": _now(), "role": role_name, "model": model, "deep": deep,
+              "seal_path": sealed.get("path"), "title": str(f.get("title"))[:300],
+              "mechanism": str(f.get("mechanism") or "")[:2000],
+              "testable_claim": str(f.get("testable_claim") or "")[:2000],
+              "capability_source": f.get("capability_source"),
+              "evidence_grade": f.get("evidence_grade"), "authority": check["verdict"]}
+        _append_jsonl(base / EVIDENCE, row)
+        routed.append(row["title"])
+        # REVERSE-ENGINEERING PATH (principal 2026-08-20): a finding naming a real capability
+        # source is a High-Flyer-class walk candidate, not a bare hypothesis -- route it into
+        # capability_challenger's own register() so it is VALIDATED against the mandate's eight
+        # stations rather than silently sitting as one more evidence row nobody structures. This
+        # only VALIDATES (register()); the benchmark/adopt() verdict needs a real controlled test
+        # this text response cannot itself run, so it stays PROPOSED until a human or Claude
+        # session executes that test -- same authority boundary as everything else DeepSeek does.
+        src = f.get("capability_source")
+        if src and str(src).strip():
+            capability_walks.append(_propose_capability_walk(
+                name=row["title"], source=str(src), mechanism=row["mechanism"],
+                evidence_grade=f.get("evidence_grade"), root=base))
+
+    return {"status": "OK", "role": role_name, "model": model, "deep": deep,
+           "seal": sealed["verdict"], "n_findings": len(findings), "routed_titles": routed,
+           "capability_walks_proposed": len(capability_walks),
+           "cold_context_removed_keys": cold["removed_keys"]}
+
+
+def _propose_capability_walk(*, name: str, source: str, mechanism: str,
+                             evidence_grade: str | None, root: Path) -> dict[str, Any]:
+    """Validate (never adopt) a DeepSeek-proposed High-Flyer/elite-fund/open-strategy capability
+    walk against capability_challenger's eight stations, and log the proposal -- register() alone
+    does not persist, and record() needs a benchmark verdict this text response cannot produce,
+    so the PROPOSAL itself is what gets written here for a later controlled test to complete.
+    """
+    from libs.research.capability_challenger import EVIDENCE_GRADES, Capability, register
+
+    grade = str(evidence_grade or "").strip().upper()
+    if grade not in EVIDENCE_GRADES:
+        grade = "ANONYMOUS_RUMOR"          # the weakest prior, never invented as something stronger
+    cap = Capability(
+        name=name, public_capability=f"{source}: {mechanism}"[:2000], evidence_grade=grade,
+        economic_mechanism=mechanism, desk_analogue="UNASSESSED -- proposed by DeepSeek, not yet "
+        "compared against this desk's current approach",
+        gap="UNASSESSED", solo_scale_implementation="UNASSESSED",
+        controlled_test="UNASSESSED -- needs a human/Claude session to design and run one",
+        source=source)
+    verdict = register(cap)
+    row = {"ts": _now(), "proposed_by": "deepseek_cycle", "status": "PROPOSED_UNBENCHMARKED",
+          "capability": {"name": cap.name, "source": cap.source,
+                        "evidence_grade": cap.evidence_grade},
+          "registration": verdict}
+    _append_jsonl(root / CAPABILITY_LEDGER, row)
+    return row

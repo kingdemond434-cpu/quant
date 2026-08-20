@@ -3,6 +3,9 @@ second desk."""
 from __future__ import annotations
 
 from pathlib import Path
+from typing import ClassVar
+
+import pytest
 
 from libs.ops.deepseek_cycle import (
     CONTAMINATION_KEYS,
@@ -250,3 +253,193 @@ def test_the_inherited_list_names_what_each_registry_carries() -> None:
     from libs.ops.deepseek_cycle import INHERITED_REGISTRIES
     assert len(INHERITED_REGISTRIES) >= 6
     assert all(path.strip() and what.strip() for path, what in INHERITED_REGISTRIES)
+
+
+# ------------------------------------------------------------------ run_role: the missing step 4/5
+class TestRunRole:
+    """2026-08-20: main() previously stopped at 'READY' -- 'cold phase and routing run here' was
+    a comment. run_role() is what it should have called. Every gate composed here was already
+    tested above in isolation; these tests exercise the composition and the one genuinely new
+    piece (the actual call + routing), never a live network call."""
+
+    _LIT_ENV: ClassVar[dict[str, str]] = {
+        "OPENROUTER_API_KEY": "sk-test", "DEEPSEEK_BULK_MODEL": "deepseek/bulk-x",
+        "DEEPSEEK_DEEP_MODEL": "deepseek/deep-x",
+    }
+
+    def test_dark_seat_short_circuits_before_any_call(self) -> None:
+        from libs.ops.deepseek_cycle import run_role
+        out = run_role("cold_alpha_inventor", "brief", deep=False, env={})
+        assert out["status"] == "DARK"
+
+    def test_lit_seat_missing_the_drawn_models_env_var_is_model_unavailable(self) -> None:
+        from libs.ops.deepseek_cycle import run_role
+        out = run_role("cold_alpha_inventor", "brief", deep=True,
+                       env={"OPENROUTER_API_KEY": "sk-test", "DEEPSEEK_BULK_MODEL": "b"})
+        assert out["status"] == "MODEL_UNAVAILABLE"
+        assert "DEEPSEEK_DEEP_MODEL" in out["why"]
+
+    def test_a_failed_policy_gate_blocks_before_any_call(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    ) -> None:
+        import libs.ops.deepseek_cycle as ds_mod
+        monkeypatch.setattr(ds_mod, "policy_gate",
+                            lambda root=None: {"ok": False, "why": "MISSING_POLICY (test)"})
+        out = ds_mod.run_role("cold_alpha_inventor", "brief", deep=False,
+                              env=self._LIT_ENV, root=tmp_path)
+        assert out["status"] == "BLOCKED_POLICY"
+
+    def test_an_exhausted_budget_blocks_before_any_call(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    ) -> None:
+        import libs.ops.deepseek_cycle as ds_mod
+        monkeypatch.setattr(ds_mod, "policy_gate",
+                            lambda root=None: {"ok": True, "policy_hash": "h"})
+        monkeypatch.setattr(ds_mod, "budget_gate",
+                            lambda: {"ok": False, "why": "BUDGET_EXHAUSTED (test)"})
+        out = ds_mod.run_role("cold_alpha_inventor", "brief", deep=False,
+                              env=self._LIT_ENV, root=tmp_path)
+        assert out["status"] == "BUDGET_EXHAUSTED"
+
+    def _pass_gates(self, monkeypatch: pytest.MonkeyPatch, ds_mod) -> None:
+        monkeypatch.setattr(ds_mod, "policy_gate",
+                            lambda root=None: {"ok": True, "policy_hash": "test-hash"})
+        monkeypatch.setattr(ds_mod, "budget_gate",
+                            lambda: {"ok": True, "why": "$0.00 of $20.00 spent this month"})
+
+    def test_a_call_failure_is_reported_never_raised(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    ) -> None:
+        import libs.ops.deepseek_cycle as ds_mod
+        import libs.ops.llm_seat as llm_seat_mod
+        self._pass_gates(monkeypatch, ds_mod)
+        monkeypatch.setattr(llm_seat_mod, "chat", lambda *a, **kw: ("", "monthly cap reached"))
+        out = ds_mod.run_role("cold_alpha_inventor", "brief", deep=False,
+                              env=self._LIT_ENV, root=tmp_path)
+        assert out["status"] == "CALL_FAILED" and "monthly cap" in out["why"]
+
+    def test_a_malformed_response_yields_zero_findings_not_a_crash(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    ) -> None:
+        import libs.ops.deepseek_cycle as ds_mod
+        import libs.ops.llm_seat as llm_seat_mod
+        self._pass_gates(monkeypatch, ds_mod)
+        monkeypatch.setattr(llm_seat_mod, "chat", lambda *a, **kw: ("not json at all", None))
+        out = ds_mod.run_role("cold_alpha_inventor", "brief", deep=False,
+                              env=self._LIT_ENV, root=tmp_path)
+        assert out["status"] == "OK" and out["n_findings"] == 0
+
+    def test_a_genuine_finding_is_written_to_deepseeks_own_evidence_store(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    ) -> None:
+        """The evidence store is sanctioned (EVIDENCE, distinct from every _FORBIDDEN_PARALLELS
+        path) -- this is the one new artifact this build introduces, and it must actually land."""
+        import json as _json
+
+        import libs.ops.deepseek_cycle as ds_mod
+        import libs.ops.llm_seat as llm_seat_mod
+        self._pass_gates(monkeypatch, ds_mod)
+        payload = _json.dumps({"findings": [
+            {"title": "weekend gap fade on XAUUSD", "mechanism": "forced deleveraging into the "
+             "Friday close reopens with a measurable mean-reverting gap",
+             "testable_claim": "gap direction predicts the first 2h return, |t|>2",
+             "capability_source": None, "evidence_grade": None}]})
+        monkeypatch.setattr(llm_seat_mod, "chat", lambda *a, **kw: (payload, None))
+        out = ds_mod.run_role("cold_alpha_inventor", "brief", deep=False,
+                              env=self._LIT_ENV, root=tmp_path)
+        assert out["status"] == "OK"
+        assert out["n_findings"] == 1
+        assert out["routed_titles"] == ["weekend gap fade on XAUUSD"]
+        assert out["capability_walks_proposed"] == 0
+        rows = (tmp_path / ds_mod.EVIDENCE).read_text("utf-8").splitlines()
+        assert len(rows) == 1
+        row = _json.loads(rows[0])
+        assert row["role"] == "cold_alpha_inventor" and row["deep"] is False
+        assert row["authority"] == "ALLOWED_RESEARCH_ONLY"
+
+    def test_a_finding_naming_a_capability_source_also_proposes_a_challenger_walk(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    ) -> None:
+        """The reverse-engineering path (principal 2026-08-20): a finding that names a real
+        capability source is a High-Flyer-class walk candidate, routed into
+        capability_challenger's own register() -- validated, never auto-adopted."""
+        import json as _json
+
+        import libs.ops.deepseek_cycle as ds_mod
+        import libs.ops.llm_seat as llm_seat_mod
+        self._pass_gates(monkeypatch, ds_mod)
+        payload = _json.dumps({"findings": [
+            {"title": "systematic factor-mining at industrial scale", "mechanism": "compute "
+             "advantage lets many more hypotheses clear the same statistical bar per unit time",
+             "testable_claim": "marginal E[log W] per research-hour rises with parallel test "
+             "throughput, holding the multiplicity correction fixed",
+             "capability_source": "High-Flyer", "evidence_grade": "CREDIBLE_PRESS_REPORT"}]})
+        monkeypatch.setattr(llm_seat_mod, "chat", lambda *a, **kw: (payload, None))
+        out = ds_mod.run_role("research_technology_hunter", "brief", deep=True,
+                              env=self._LIT_ENV, root=tmp_path)
+        assert out["status"] == "OK" and out["capability_walks_proposed"] == 1
+        rows = (tmp_path / ds_mod.CAPABILITY_LEDGER).read_text("utf-8").splitlines()
+        assert len(rows) == 1
+        row = _json.loads(rows[0])
+        assert row["status"] == "PROPOSED_UNBENCHMARKED"
+        assert row["capability"]["source"] == "High-Flyer"
+        assert row["capability"]["evidence_grade"] == "CREDIBLE_PRESS_REPORT"
+        assert row["registration"]["status"] == "REGISTERED"
+
+    def test_an_invalid_evidence_grade_is_never_invented_as_something_stronger(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    ) -> None:
+        import json as _json
+
+        import libs.ops.deepseek_cycle as ds_mod
+        import libs.ops.llm_seat as llm_seat_mod
+        self._pass_gates(monkeypatch, ds_mod)
+        payload = _json.dumps({"findings": [
+            {"title": "x", "mechanism": "y", "testable_claim": "z",
+             "capability_source": "Some Fund", "evidence_grade": "TOTALLY_CONFIRMED"}]})
+        monkeypatch.setattr(llm_seat_mod, "chat", lambda *a, **kw: (payload, None))
+        ds_mod.run_role("cold_alpha_inventor", "brief", deep=False,
+                        env=self._LIT_ENV, root=tmp_path)
+        row = _json.loads((tmp_path / ds_mod.CAPABILITY_LEDGER).read_text("utf-8").splitlines()[0])
+        assert row["capability"]["evidence_grade"] == "ANONYMOUS_RUMOR"
+
+    def test_the_cold_context_actually_reaches_the_prompt_with_contamination_stripped(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    ) -> None:
+        import json as _json
+
+        import libs.ops.deepseek_cycle as ds_mod
+        import libs.ops.llm_seat as llm_seat_mod
+        self._pass_gates(monkeypatch, ds_mod)
+        captured: dict = {}
+
+        def fake_chat(prompt, *, system="", **kw):
+            captured["prompt"] = prompt
+            captured["system"] = system
+            return (_json.dumps({"findings": []}), None)
+
+        monkeypatch.setattr(llm_seat_mod, "chat", fake_chat)
+        state = {"measured_sharpe": 1.2, "claude_opinion": "this looks promising"}
+        ds_mod.run_role("cold_alpha_inventor", "brief", deep=False,
+                        env=self._LIT_ENV, root=tmp_path, state=state)
+        assert "measured_sharpe" in captured["prompt"]
+        assert "claude_opinion" not in captured["prompt"]
+        assert "this looks promising" not in captured["prompt"]
+
+    def test_a_resealed_run_id_with_different_content_is_a_conflict_not_a_silent_overwrite(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    ) -> None:
+        import json as _json
+
+        import libs.ops.deepseek_cycle as ds_mod
+        import libs.ops.llm_seat as llm_seat_mod
+        self._pass_gates(monkeypatch, ds_mod)
+        calls = iter([_json.dumps({"findings": []}), _json.dumps({"findings": [
+            {"title": "different", "mechanism": "m", "testable_claim": "t"}]})])
+        monkeypatch.setattr(llm_seat_mod, "chat", lambda *a, **kw: (next(calls), None))
+        first = ds_mod.run_role("cold_alpha_inventor", "brief", deep=False, env=self._LIT_ENV,
+                                root=tmp_path, run_id="fixed-id")
+        assert first["status"] == "OK"
+        second = ds_mod.run_role("cold_alpha_inventor", "brief", deep=False, env=self._LIT_ENV,
+                                 root=tmp_path, run_id="fixed-id")
+        assert second["status"] == "SEAL_CONFLICT"
