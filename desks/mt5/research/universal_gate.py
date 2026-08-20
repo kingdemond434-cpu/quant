@@ -141,9 +141,13 @@ def iter_hunt_cells(modname: str, meta: dict) -> list[Cell]:
     return out
 
 
-def _ug_daily(args) -> pd.Series:
+def _ug_daily(args) -> pd.Series | None:
     df, sigs, costs = args
-    return daily_series(df, sigs, costs)
+    try:
+        return daily_series(df, sigs, costs)
+    except Exception as e:
+        print(f"  daily series error: {e!r}", flush=True)
+        return None
 
 
 def _ug_verdict(args) -> dict:
@@ -196,16 +200,42 @@ def _ug_verdict(args) -> dict:
 
 def gauntlet(cells: list[Cell], hunt: str) -> dict:
     import multiprocessing as mp
-    workers = min(8, len(cells) or 1)
-    with mp.Pool(workers) as pool:
-        daily = list(pool.map(_ug_daily, [
-            (c.df, c.sigs, c.costs) for c in cells]))
-        daily_x3 = list(pool.map(_ug_daily, [
-            (c.df, c.sigs, Costs(c.costs.spread_per_lot * COST_SCENARIO,
-                                 c.costs.commission_per_lot * COST_SCENARIO,
-                                 c.costs.contract_oz)) for c in cells]))
-    cols = [s.to_numpy(float) for s in daily]
-    cols = [a for a in cols if len(a) >= 60]
+    import psutil as _ps
+    avail_mb = _ps.virtual_memory().available / 1048576
+    cap = 1 if os.name != "nt" and avail_mb < 1024 else (2 if os.name != "nt" else 8)
+    workers = min(cap, len(cells) or 1)
+    if workers <= 1:
+        print(f"  {hunt}: sequential mode (free={avail_mb:.0f}MB)", flush=True)
+    for attempt in range(3):
+        try:
+            return _gauntlet_once(cells, hunt, workers)
+        except (BrokenPipeError, OSError) as e:
+            print(f"  {hunt}: pool died (attempt {attempt + 1}/3, {e!r}); "
+                  f"free={avail_mb:.0f}MB, retrying in 60s", flush=True)
+            time.sleep(60)
+    raise RuntimeError(f"{hunt}: pool kept dying (3 attempts)")
+
+
+def _gauntlet_once(cells: list[Cell], hunt: str, workers: int) -> dict:
+    import multiprocessing as mp
+    daily_args = [(c.df, c.sigs, c.costs) for c in cells]
+    x3_args = [(c.df, c.sigs, Costs(c.costs.spread_per_lot * COST_SCENARIO,
+                                    c.costs.commission_per_lot * COST_SCENARIO,
+                                    c.costs.contract_oz)) for c in cells]
+    if workers <= 1:
+        daily = [_ug_daily(a) for a in daily_args]
+        daily_x3 = [_ug_daily(a) for a in x3_args]
+    else:
+        with mp.Pool(workers) as pool:
+            daily = list(pool.map(_ug_daily, daily_args))
+            daily_x3 = list(pool.map(_ug_daily, x3_args))
+    cols = []
+    for s in daily:
+        if s is None:
+            continue
+        a = s.to_numpy(float)
+        if len(a) >= 60:
+            cols.append(a)
     if not cols:
         return {"hunt": hunt, "error": "no cells with >=60 days", "verdicts": []}
     min_len = min(len(a) for a in cols)
@@ -221,17 +251,27 @@ def gauntlet(cells: list[Cell], hunt: str) -> dict:
 
     args = []
     for k, c in enumerate(cells):
+        if daily[k] is None:
+            args.append((c.id, c.sym, np.array([]), np.array([]),
+                         pbo_ok, float(pbo.pbo), spa_ok, float(spa.p_value),
+                         n_trials, float(sharpes.var(ddof=1))))
+            continue
         arr = daily[k].to_numpy(float)
         if len(arr) < 60:
             args.append((c.id, c.sym, np.array([]), np.array([]),
                          pbo_ok, float(pbo.pbo), spa_ok, float(spa.p_value),
                          n_trials, float(sharpes.var(ddof=1))))
             continue
-        args.append((c.id, c.sym, arr, daily_x3[k].to_numpy(float),
+        x3 = daily_x3[k]
+        args.append((c.id, c.sym, arr, x3.to_numpy(float) if x3 is not None
+                     else np.array([]),
                      pbo_ok, float(pbo.pbo), spa_ok, float(spa.p_value),
                      n_trials, float(sharpes.var(ddof=1))))
-    with mp.Pool(workers) as pool:
-        verdicts = list(pool.map(_ug_verdict, args))
+    if workers <= 1:
+        verdicts = [_ug_verdict(a) for a in args]
+    else:
+        with mp.Pool(workers) as pool:
+            verdicts = list(pool.map(_ug_verdict, args))
     gate_fails: dict[str, int] = {}
     for v in verdicts:
         for name, s in v.get("stages", {}).items():
