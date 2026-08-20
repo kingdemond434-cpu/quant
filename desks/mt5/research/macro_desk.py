@@ -157,9 +157,23 @@ def anchors() -> None:
         log("anchors: no series fetched (network issue)")
         return
     df = pd.DataFrame(cols).sort_index()
+    prev = None
+    if ANCHORS_F.exists():
+        try:
+            prev = pd.read_pickle(ANCHORS_F)
+            prev = prev[~prev.index.isin(df.index)]
+        except Exception as e:
+            log(f"anchors: prior pickle unreadable, replacing ({e!r})")
+    if prev is not None and not prev.empty:
+        df = pd.concat([prev, df]).sort_index()
+        df = df[~df.index.duplicated(keep="last")]
     df.to_pickle(ANCHORS_F)
     log(f"anchors saved {df.shape[0]} daily rows x {df.shape[1]} cols "
         f"(last {df.index[-1].date()})")
+    for c in ["T10YIE", "DTWEXBGS", "DCOILWTICO", "GOLDAMGBD228NLBM"]:
+        if c not in df.columns or df[c].dropna().empty:
+            log(f"anchors WARNING: {c} missing/empty (families will emit no "
+                f"signals and gates will fail closed)")
 
 
 def build_state() -> None:

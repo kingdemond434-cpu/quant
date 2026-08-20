@@ -73,6 +73,9 @@ TARGETS = [
          marker="reports/DONE_crowding_never", match="crowding_miner.py"),
     dict(name="news_desk", args=["-u", "-W", "ignore", "research/news_desk.py"],
          marker="reports/DONE_news_final", match="news_desk.py"),
+    dict(name="signal_gate", args=["-u", "-W", "ignore",
+                                   "research/signal_gate.py", "run_hunt18"],
+         marker="reports/DONE_signal_gate_never", match="signal_gate.py"),
     dict(name="universal",
          python=r"C:\Users\dell\quant-platform\.venv\Scripts\python.exe",
          args=["-u", "-W", "ignore", "research/universal_gate.py"],
@@ -145,6 +148,19 @@ def main() -> int:
             log("supervisor: disabled flag appeared, exiting")
             return 0
         now = time.time()
+        if now - float(state.get("last_verify", 0) or 0) > 3600:
+            try:
+                subprocess.run(
+                    [str(Path(sys.executable)), "-u", "-W", "ignore",
+                     "research/verify_universal_state.py"],
+                    cwd=str(BASE), capture_output=True, text=True, timeout=240)
+                state["last_verify"] = now
+                try:
+                    STATE.write_text(json.dumps(state), encoding="utf-8")
+                except Exception:
+                    pass
+            except Exception as e:
+                log(f"universal-state verify failed: {e!r}")
         for t in TARGETS:
             if (BASE / "data" / f"HOLD_{t['name']}").exists():
                 continue
