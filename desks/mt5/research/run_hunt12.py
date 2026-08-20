@@ -24,6 +24,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
+# main() has called these since the E_MAX correction and never imported them, so
+# the script has been dead at line 174 -- a NameError two statements into main(),
+# AFTER the module imports cleanly. A collection gate cannot see that and neither
+# can a smoke import; only running it does.
+from mt5desk.multiplicity import deflation, sweep_size  # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
