@@ -1,0 +1,1 @@
+     sym fam                      side  win        state           n     exp     t  defl    PF   maxDD  GATE

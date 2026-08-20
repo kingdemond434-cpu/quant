@@ -63,9 +63,7 @@
     },
     "created_at": "2026-08-17T21:20:53.429723+00:00",
     "status": "DONE",
-    "started_at": "2026-08-20T15:08:50.060849+00:00",
-    "finished_at": "2026-08-20T15:09:27.438614+00:00",
-    "n_survivors": 1
+    "started_at": "2026-08-17T22:00:01.714597+00:00"
   },
   {
     "id": "h18-005",
@@ -80,10 +78,7 @@
       "yield_z": -0.25
     },
     "created_at": "2026-08-17T21:20:53.429723+00:00",
-    "status": "DONE",
-    "started_at": "2026-08-20T15:15:03.073591+00:00",
-    "finished_at": "2026-08-20T15:15:38.608154+00:00",
-    "n_survivors": 0
+    "status": "DONE"
   },
   {
     "id": "h18-006",
@@ -98,9 +93,75 @@
       "yield_z": -0.5
     },
     "created_at": "2026-08-17T21:20:53.429723+00:00",
+    "status": "DONE"
+  },
+  {
+    "id": "h18-007",
+    "geneology_id": "hunt17:gold_dxy_shock",
+    "hypothesis": "Dollar-regime-gated gold momentum: gold and DXY are strongly inverse; momentum taken with the dollar regime. DXY 2y rolling z <= -0.5 (weak dollar) for LONG, >= +0.5 for SHORT. Anchors-desk data, fail-closed when missing.",
+    "family": "gold_dxy_shock",
+    "side": "LONG",
+    "params": {
+      "n": 34,
+      "rr": 2.0,
+      "ttl": 12,
+      "dxy_z": 0.5
+    },
+    "created_at": "2026-08-20T19:15:50.793118+00:00",
     "status": "DONE",
-    "started_at": "2026-08-17T23:45:03.019765+00:00",
-    "finished_at": "2026-08-17T23:45:34.086599+00:00",
+    "started_at": "2026-08-20T19:20:02.618606+00:00",
+    "finished_at": "2026-08-20T19:20:33.621117+00:00",
+    "n_survivors": 0
+  },
+  {
+    "id": "h18-008",
+    "geneology_id": "hunt17:gold_dxy_shock",
+    "hypothesis": "Same mechanism with stronger dollar gate (|z|>=0.75), slower trend filter n=55, wider target rr=2.5, longer hold ttl=24 \u2014 fewer but higher-conviction regime trades.",
+    "family": "gold_dxy_shock",
+    "side": "SHORT",
+    "params": {
+      "n": 55,
+      "rr": 2.5,
+      "ttl": 24,
+      "dxy_z": 0.75
+    },
+    "created_at": "2026-08-20T19:15:50.793118+00:00",
+    "status": "RUNNING",
+    "started_at": "2026-08-20T19:25:03.848930+00:00"
+  },
+  {
+    "id": "h18-009",
+    "geneology_id": "hunt17:asia_meanrev",
+    "hypothesis": "Asia-session (00-08 UTC) mean reversion: H4 close at >=2 ATR from the 20-H4 SMA in the thin Asian session fades; over-extensions revert when London/NY liquidity returns. Fade both sides.",
+    "family": "asia_meanrev",
+    "side": "LONG",
+    "params": {
+      "n": 20,
+      "rr": 1.5,
+      "ttl": 6,
+      "z_thr": 2.0
+    },
+    "created_at": "2026-08-20T19:15:50.793118+00:00",
+    "status": "DONE",
+    "started_at": "2026-08-20T19:30:02.627987+00:00",
+    "finished_at": "2026-08-20T19:30:29.923102+00:00",
+    "n_survivors": 0
+  },
+  {
+    "id": "h18-010",
+    "geneology_id": "hunt17:london_ny_breakout",
+    "hypothesis": "London-NY overlap (13-17 UTC) breakout of the prior 5 sessions overlap high/low: concentrated liquidity makes range breaks persist into the NY close. Price-only, runs on every symbol.",
+    "family": "london_ny_breakout",
+    "side": "LONG",
+    "params": {
+      "win": 5,
+      "rr": 2.0,
+      "ttl": 12
+    },
+    "created_at": "2026-08-20T19:15:50.793118+00:00",
+    "status": "DONE",
+    "started_at": "2026-08-20T19:35:03.154558+00:00",
+    "finished_at": "2026-08-20T19:35:36.009858+00:00",
     "n_survivors": 0
   }
 ]
