@@ -19,13 +19,28 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
 
-BASE = Path(__file__).resolve().parent.parent
+#: `.parent`, NOT `.parent.parent`. This file sits at `desks/mt5/`, so the old form resolved BASE
+#: to `desks/` and every derived path with it: UNI became `desks/data/universe`, which does not
+#: exist, and the script died on its FIRST data read. **It has not been runnable since it was
+#: moved up one directory** -- the same shape as run_hunt12's missing import, and hidden the same
+#: way: it imports cleanly, so nothing that checks imports or collection can see it.
+#:
+#: That is why `portfolio_projection.json` is stale. The artifact the entire book ranking rests on
+#: -- mean_corr 0.0799, n_eff 5.49, port_sharpe 3.44 -- was produced by a version of this script
+#: that no longer exists, and nobody could regenerate it to check.
+BASE = Path(__file__).resolve().parent
 UNI = BASE / "data" / "universe"
+
+#: WHERE THE CONSUMERS ACTUALLY READ IT. The old write went to `BASE/"reports"/...`, which under
+#: the broken BASE was `desks/reports/` and under the fixed one is a directory that does not
+#: exist -- while the live artifact sits beside this file and `research/swap_exposure.py` reads it
+#: from there. One artifact, one path, or the two disagree silently.
+OUT = BASE / "portfolio_projection.json"
 
 GOLD_WINDOWS = {
     "asia": dict(range_start=7, wait_bars=12, rr=2.0, ttl_bars=12),
@@ -47,9 +62,26 @@ def cell_trades(sym: str, win: str, state: str | None, h1: pd.DataFrame,
 
 
 def load_h12_survivors() -> list[dict]:
+    """The hunt12 survivor cells. RAISES when the report is absent — it must never return [].
+
+    **THE EMPTY LIST SILENTLY TRUNCATED THE BOOK.** Five of the nine deployed sleeves are hunt12
+    cells; the other four are gold. On any clone without `reports/hunt12_partial.json` — which is
+    gitignored, so that is every fresh clone and the whole cloud sandbox — this returned [], main()
+    built a gold-only book, and line 143 wrote it over the committed nine-sleeve artifact. The
+    result is not an error anywhere: mean_corr, n_eff and port_sharpe are all recomputed
+    consistently on four sleeves and look exactly like a real answer.
+
+    That is the WS-005 shape and it is aimed at the artifact the whole book ranking rests on. An
+    absent input must produce a refusal, not a smaller book (L1.28a).
+    """
     p = BASE / "reports" / "hunt12_partial.json"
     if not p.exists():
-        return []
+        raise SystemExit(
+            f"REFUSING to project: {p} is absent, so the hunt12 survivor cells cannot be loaded.\n"
+            "Five of the nine deployed sleeves live in that file. Returning an empty list here "
+            "would build a GOLD-ONLY book and overwrite the nine-sleeve artifact with it, and "
+            "nothing downstream could tell the difference. Run this on the host that has the "
+            "hunt reports.")
     saved = json.loads(p.read_text(encoding="utf-8"))
     return [c for c in saved.get("all", []) if c.get("gate")]
 
@@ -60,7 +92,17 @@ def main() -> None:
     sleeves = []  # dicts: name, sym, win, state, trades(list of r_multiple), dates
 
     h1g = families._h1(pd.read_parquet(UNI / "XAUUSD_H1.parquet"))
-    gold_costs = Costs(spread_per_lot=0.48, commission_per_lot=3.50, contract_oz=100)
+    # GAP 114: this read `Costs(spread_per_lot=0.48, ...)` until 2026-08-20. 0.48 is dollars per
+    # OUNCE in a field that wants dollars per LOT, so the engine divided by contract_size 100 and
+    # charged gold 0.0048/oz against a measured 0.16/oz median -- 3% of its real spread, on every
+    # gold row in the artifact the whole book ranking rests on.
+    #
+    # `Costs.from_symbol` was written to end exactly this and this call site never adopted it
+    # (row 110's defect class). `calibrate_engine.py` confirms both halves with a known-answer
+    # probe: the old constant recovers 0.2099x of the planted cost and FAILS, from_symbol recovers
+    # 0.9166x and passes. mult=2.0 is the honest baseline, not a stress -- a round trip crosses
+    # the spread on the way in and again on the way out.
+    gold_costs = Costs.from_symbol(meta["XAUUSD"], mult=2.0)
     for wname, wp in GOLD_WINDOWS.items():
         tr = cell_trades("XAUUSD", wname, None, h1g, gold_costs, None)
         sleeves.append(dict(name=f"gold_{wname}", sym="XAUUSD", win=wname,
@@ -74,9 +116,9 @@ def main() -> None:
         sym, win, state = cell["sym"], cell["win"], cell["state"]
         h1 = families._h1(pd.read_parquet(UNI / f"{sym}_H1.parquet"))
         m = meta[sym]
-        costs = Costs(spread_per_lot=0.48 if sym == "XAUUSD" else max(
-            m["median_spread_pts"] * m["tick_size"] * m["contract_size"], 0.05),
-            commission_per_lot=3.50, contract_oz=m["contract_size"])
+        # Same fix, and the non-gold branch was under-charged too: it built the spread at mult=1.0,
+        # crossing it once where a round trip crosses it twice.
+        costs = Costs.from_symbol(m, mult=2.0)
         states = day_states(h1)
         tr = cell_trades(sym, win, state, h1, costs, states)
         sleeves.append(dict(name=f"{sym}_{win}_{state}", sym=sym, win=win,
@@ -140,9 +182,8 @@ def main() -> None:
                      for s in rows],
                mean_corr=mean_corr, n_eff=n_eff, port_sharpe=sharpe,
                port_daily_mean=m, port_daily_std=s)
-    (BASE / "reports" / "portfolio_projection.json").write_text(
-        json.dumps(out, indent=2, default=str), encoding="utf-8")
-    print("\n-> reports/portfolio_projection.json")
+    OUT.write_text(json.dumps(out, indent=2, default=str), encoding="utf-8")
+    print(f"\n-> {OUT}")
 
 
 if __name__ == "__main__":
