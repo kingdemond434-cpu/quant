@@ -1873,7 +1873,7 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # COST NOTE: this spends OpenRouter, not the Claude seats. The principal's standing instruction
 # is that OpenRouter cadences are held as-is, so this line is additive to that budget and does
 # not touch any Claude-local cadence.
-7 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_deepseek.lock .venv/bin/python scripts/run_deepseek_cycle.py >> data/cro_ai_logs/deepseek_cycle.log 2>&1
+7 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_deepseek.lock .venv/bin/python scripts/run_deepseek_cycle.py >> data/cro_ai_logs/deepseek_cycle.log 2>&1
 # REAL CAMPAIGN (2026-08-01). Runs the ACTUAL gauntlet on the ACTUAL history and reports WHERE
 # EVERY CANDIDATE DIES. "Zero survivors" is not a finding, it is the absence of one; a per-gate
 # death count turns it into either "the mechanisms have no edge" or "one gate is eating

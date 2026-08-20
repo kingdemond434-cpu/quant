@@ -163,6 +163,18 @@ export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-claude-opus-5}"  # primary = OPUS 5 (
 export _BRAIN_MODEL_CHAIN="${_BRAIN_MODEL_CHAIN:-claude-opus-5 claude-opus-4-8 claude-fable-5}"
 export _MINER_MODEL_CHAIN="${_MINER_MODEL_CHAIN:-claude-fable-5 claude-opus-5 claude-opus-4-8}"
 
+# DEEPSEEK SECOND FLYWHEEL (docs/policy/DEEPSEEK_SECOND_FLYWHEEL_MANDATE.md V: "EVERY 1 HOUR,
+# 24 HOURS/DAY" is the deliberate, standing cadence -- 2026-08-20 correction: it was briefly cut
+# to 1x/day in the general OpenRouter cost sweep before the mandate was checked, which was wrong;
+# the mandate itself already anticipated the cost question by splitting BULK (the hourly heartbeat)
+# from DEEP (the higher-value, less-frequent pass) into separate env-selected models. Both were
+# simply never set, so the cycle has run DARK (MODEL_UNAVAILABLE, correctly not a failure) since
+# it was built. BULK on the free tier keeps the mandated hourly cadence at ~zero marginal cost;
+# DEEP stays on the paid flagship for the passes actually worth paying for -- same split as
+# kimi_hunter's ROUTINE_MODEL_CHAIN vs MODEL_CHAIN, applied to the sibling organ.
+export DEEPSEEK_BULK_MODEL="${DEEPSEEK_BULK_MODEL:-deepseek/deepseek-r1:free}"
+export DEEPSEEK_DEEP_MODEL="${DEEPSEEK_DEEP_MODEL:-deepseek/deepseek-r1}"
+
 # brain_seat <organ-label> -- put THIS organ on its policy seat before brain_auth_check.
 # Resolution is delegated to libs.ops.model_chain.chain_for() so shell and python agree by
 # construction; if python is unavailable the organ keeps the default chain rather than guessing,

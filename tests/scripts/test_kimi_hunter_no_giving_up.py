@@ -90,9 +90,19 @@ class TestAChainNeverASingleName:
             {"model": "some/other-model", "base_url": "https://openrouter.ai/api/v1",
              "key": "sk-test"}]}), "utf-8")
         monkeypatch.setattr(K, "KEYS", keys)
-        chain = K._providers()
-        assert chain, "an OpenRouter seat must be able to route the chain models"
-        assert K.MODEL_CHAIN[0] in {m for m, _, _ in chain}, "the preferred model must be tried"
+        # 2026-08-20: routine (deep=False, the default) and --deep now use DIFFERENT chains --
+        # free-tier-first for the 8x/day heartbeat, paid-first only for the 2x/week deep pass.
+        # The routing property under test (a seat can serve a chain model it is not named as)
+        # must hold for both chains, so both are checked against their own preferred entry.
+        routine_chain = K._providers()
+        assert routine_chain, "an OpenRouter seat must be able to route the routine chain models"
+        assert K.ROUTINE_MODEL_CHAIN[0] in {m for m, _, _ in routine_chain}, \
+            "the preferred routine model must be tried"
+
+        deep_chain = K._providers(deep=True)
+        assert deep_chain, "an OpenRouter seat must be able to route the deep chain models"
+        assert K.MODEL_CHAIN[0] in {m for m, _, _ in deep_chain}, \
+            "the preferred deep model must be tried"
 
     def test_no_credential_anywhere_yields_an_empty_chain_not_an_invention(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
