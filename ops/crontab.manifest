@@ -595,7 +595,7 @@ QUANT_ROOT=/home/quant/quant-platform
 # EVIDENCE: scripts/run_model_upgrade.py + libs/ops/model_chain.py + ops/model_chain.env (single
 #           source, extracted from 3 hardcoded copies 2026-07-30); tests/ops/test_model_chain.py
 # CONFIDENCE: committed-script (new this cycle)
-11 4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_model_upgrade.py --apply >> data/cro_ai_logs/model_upgrade.log 2>&1
+0 4 1 * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_model_upgrade.py --apply >> data/cro_ai_logs/model_upgrade.log 2>&1
 
 # WIRING AGENT: built things get WIRED automatically (principal order 2026-07-30). Detection
 # alone reproduced the original failure one level up -- a dormancy report nobody actions is itself
@@ -715,7 +715,7 @@ QUANT_ROOT=/home/quant/quant-platform
 # instead of after two of four. Beyond 4x/day the director re-reads unchanged desk state --
 # the honest ceiling is the information-arrival rate, not the cron syntax; the path past it
 # is EVENT-DRIVEN fires (rowed), not a denser fixed grid. Dormant until OpenRouter is funded.
-40 4,10,16,22 * * * cd "$QUANT_ROOT" && flock -n data/.cron_strategic_director.lock .venv/bin/python scripts/run_strategic_director.py --ledger >> data/cro_ai_logs/strategic_director.log 2>&1
+40 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_strategic_director.lock .venv/bin/python scripts/run_strategic_director.py --ledger >> data/cro_ai_logs/strategic_director.log 2>&1
 
 # BACKTEST ENGINE SELF-VERIFICATION: cross-checks the event-driven engine against an independent
 # pure-NumPy reference that shares no code path with it. Activates libs/backtest, which max_audit
@@ -1703,7 +1703,7 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # ledger ROWS, not value: a seat whose job is finding what Claude did not think of is not
 # scored by row count, and it has been DARK (no key) for most of that window so the denominator
 # was never a fair test of the cadence.
-20 5,11,17,23 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cro.lock .venv/bin/python scripts/run_cro.py >> data/cro_ai_logs/cro.log 2>&1
+20 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cro.lock .venv/bin/python scripts/run_cro.py >> data/cro_ai_logs/cro.log 2>&1
 
 # SURVIVOR BOTTLENECK PANEL -- every seat argues about why nothing has ever survived.
 # The desk's root-cause finding (52 of 350 recorded negatives, 14.9%, were powered enough to mean
@@ -1873,7 +1873,7 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # COST NOTE: this spends OpenRouter, not the Claude seats. The principal's standing instruction
 # is that OpenRouter cadences are held as-is, so this line is additive to that budget and does
 # not touch any Claude-local cadence.
-7 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_deepseek.lock .venv/bin/python scripts/run_deepseek_cycle.py >> data/cro_ai_logs/deepseek_cycle.log 2>&1
+7 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_deepseek.lock .venv/bin/python scripts/run_deepseek_cycle.py >> data/cro_ai_logs/deepseek_cycle.log 2>&1
 # REAL CAMPAIGN (2026-08-01). Runs the ACTUAL gauntlet on the ACTUAL history and reports WHERE
 # EVERY CANDIDATE DIES. "Zero survivors" is not a finding, it is the absence of one; a per-gate
 # death count turns it into either "the mechanisms have no edge" or "one gate is eating
