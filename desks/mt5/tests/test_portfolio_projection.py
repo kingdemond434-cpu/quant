@@ -1,10 +1,17 @@
-"""THE PROJECTION'S TWO SILENT DEFECTS -- a path that made it unrunnable, and an absent input
-that made it produce a smaller book instead of an error.
+"""THE PROJECTION'S DEFECTS -- an absent input that produced a smaller book instead of an error,
+a cost constant in the wrong units, and a stale duplicate that made both look like something else.
 
 `portfolio_projection.json` is the artifact the entire MT5 book ranking rests on: mean_corr
 0.0799, n_eff 5.49, port_sharpe 3.44, and the per-sleeve expectancies every sizing decision reads.
-Both defects here attack that artifact, and neither is visible to ruff, mypy or collection --
-the module imports cleanly under both.
+Every defect here attacks that artifact, and none is visible to ruff, mypy or collection -- the
+module imports cleanly with all of them present.
+
+THE DUPLICATE IS PINNED HERE BECAUSE IT CAUSED A WRONG DIAGNOSIS, NOT BECAUSE IT IS UNTIDY. Six
+files exist at both `desks/mt5/` and `desks/mt5/research/`. `BASE` is written for the `research/`
+depth, so the top-level copy fails on its first data read -- and reading THAT failure produced the
+confident, wrong claim that "the projection has been unrunnable since it was moved". The live
+module under `research/` runs fine. A stale duplicate does not just rot; it answers questions
+about the original, incorrectly.
 """
 
 from __future__ import annotations
@@ -19,7 +26,7 @@ _DESK = Path(__file__).resolve().parents[1]
 if str(_DESK) not in sys.path:
     sys.path.insert(0, str(_DESK))
 
-SRC = _DESK / "portfolio_projection.py"
+SRC = _DESK / "research" / "portfolio_projection.py"
 
 
 def _assign(name: str) -> ast.expr:
@@ -32,33 +39,32 @@ def _assign(name: str) -> ast.expr:
     raise AssertionError(f"{name} is not assigned at module level in {SRC.name}")
 
 
-class TestBaseResolvesToTheDeskNotItsParent:
-    """`.parent.parent` from `desks/mt5/portfolio_projection.py` is `desks/`, and every derived
-    path went with it. The script died on its first data read and had done since it was moved up
-    one directory -- invisibly, because it still IMPORTS cleanly."""
+class TestTheLiveModuleIsTheOneUnderResearch:
+    """Six files sit at both `desks/mt5/` and `desks/mt5/research/`. The live projection is the
+    one under `research/` -- it carries `build_sleeves`/`build_daily` (imported by
+    `research/orthogonality.py`) and the VPS's hourly sync commits. The top-level copy is stale,
+    and because BASE is written for the `research/` depth it FAILS THERE with a path error that
+    looks exactly like a bug in the live file. That misread cost a round trip; this pins it."""
 
-    def test_the_data_directory_the_module_derives_actually_exists(self) -> None:
+    def test_the_live_modules_data_directory_exists(self) -> None:
+        sys.path.insert(0, str(_DESK / "research"))
         import portfolio_projection as pp          # noqa: PLC0415
-        assert pp.UNI.is_dir(), (
-            f"UNI resolved to {pp.UNI}, which does not exist. BASE is one level off and the "
-            "script cannot read a single bar")
+        assert pp.UNI.is_dir(), f"UNI resolved to {pp.UNI}, which does not exist"
         assert (pp.UNI / "universe.json").is_file()
 
-    def test_BASE_is_parent_not_parent_parent(self) -> None:
-        # Pinned on the SOURCE as well as the value: a future move of this file must break this
-        # test loudly rather than silently re-point BASE at a directory that happens to exist.
-        src = ast.unparse(_assign("BASE"))
-        assert ".parent.parent" not in src, (
-            "BASE must be `Path(__file__).resolve().parent` -- this file lives in desks/mt5/, "
-            f"so .parent.parent is desks/. Got: {src}")
+    def test_the_live_module_carries_the_shared_loaders(self) -> None:
+        src = SRC.read_text(encoding="utf-8")
+        for fn in ("def build_sleeves", "def build_daily"):
+            assert fn in src, (
+                f"{fn} is missing -- this is not the live module, and research/orthogonality.py "
+                "imports both from it")
 
-    def test_the_artifact_is_written_where_its_consumers_read_it(self) -> None:
-        import portfolio_projection as pp          # noqa: PLC0415
-        from research import swap_exposure          # noqa: PLC0415
-        assert pp.OUT == swap_exposure.PROJECTION, (
-            "the projection writes one path and swap_exposure reads another, so the two would "
-            "disagree about the deployed book without either one erroring")
-        assert pp.OUT.parent.is_dir()
+    def test_the_top_level_duplicate_refuses_instead_of_running(self) -> None:
+        dup = (_DESK / "portfolio_projection.py").read_text(encoding="utf-8")
+        assert "SUPERSEDED" in dup and "SystemExit" in dup, (
+            "the stale duplicate must refuse and name its replacement. One that still executes "
+            "is the trap that produced the wrong diagnosis in the first place")
+        assert "def main" not in dup, "the duplicate should not carry a runnable projection"
 
 
 class TestAnAbsentSurvivorReportIsARefusalNotASmallerBook:

@@ -1,190 +1,37 @@
-"""Portfolio projection for all current survivors (gold book + hunt12 cells).
+"""SUPERSEDED COPY -- the live projection is `desks/mt5/research/portfolio_projection.py`.
 
-Recomputes per-trade cost-adjusted R for every survivor cell, builds aligned
-daily-R series, then reports:
-  - per-sleeve stats + rank
-  - cross-sleeve correlation / effective independent count
-  - portfolio net Sharpe (daily R, annualized) and 8y CAGR at two risk
-    budgets (q_total = 5.5% and 5.5%*sqrt(N_eff), per-day R units)
+This file is a stale duplicate. Nothing imports it, nothing schedules it, and it has diverged:
+the live module grew `build_sleeves()` and `build_daily()` (which `research/orthogonality.py`
+imports) and this copy never did. Its history is one commit plus a fix applied to it by mistake;
+the live one carries the VPS's hourly `mt5 desk hourly sync` commits.
 
-All R figures are net of the validation cost model (spread+commission).
+**IT WAS ALSO BROKEN IN A WAY THAT LOOKED LIKE THE LIVE FILE'S BUG, AND THAT COST A ROUND TRIP.**
+`BASE = Path(__file__).resolve().parent.parent` is correct from `research/` and resolves to
+`desks/` from here, so this copy died on its first data read while the live one ran fine. Reading
+the failure here and concluding "the projection is unrunnable" was wrong, and the correction is
+the point of this file: a duplicate at the wrong depth reproduces a path bug that does not exist
+in the original.
+
+Six files sit at both depths (`mech_battery`, `mech_split`, `portfolio_projection`,
+`run_gateway_loop`, `run_hunt11`, `run_hunt12`); `run_hunt12` diverges most -- the missing-import
+repair of 2026-08-19 landed in `research/` only. Rowed as GAP 116 for a proper sweep rather than
+deleted here, because deleting six tracked files is not this change's business.
+
+Refusing rather than running: a stale duplicate that still executes is the trap. One that names
+its replacement is a signpost.
 """
 
 from __future__ import annotations
 
-import json
 import sys
-from pathlib import Path
 
-import numpy as np
-import pandas as pd
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
-from mt5desk import families  # noqa: E402
-from mt5desk.engine import Costs, run_backtest  # noqa: E402
-
-#: `.parent`, NOT `.parent.parent`. This file sits at `desks/mt5/`, so the old form resolved BASE
-#: to `desks/` and every derived path with it: UNI became `desks/data/universe`, which does not
-#: exist, and the script died on its FIRST data read. **It has not been runnable since it was
-#: moved up one directory** -- the same shape as run_hunt12's missing import, and hidden the same
-#: way: it imports cleanly, so nothing that checks imports or collection can see it.
-#:
-#: That is why `portfolio_projection.json` is stale. The artifact the entire book ranking rests on
-#: -- mean_corr 0.0799, n_eff 5.49, port_sharpe 3.44 -- was produced by a version of this script
-#: that no longer exists, and nobody could regenerate it to check.
-BASE = Path(__file__).resolve().parent
-UNI = BASE / "data" / "universe"
-
-#: WHERE THE CONSUMERS ACTUALLY READ IT. The old write went to `BASE/"reports"/...`, which under
-#: the broken BASE was `desks/reports/` and under the fixed one is a directory that does not
-#: exist -- while the live artifact sits beside this file and `research/swap_exposure.py` reads it
-#: from there. One artifact, one path, or the two disagree silently.
-OUT = BASE / "portfolio_projection.json"
-
-GOLD_WINDOWS = {
-    "asia": dict(range_start=7, wait_bars=12, rr=2.0, ttl_bars=12),
-    "london_am": dict(range_start=10, range_end=13, signal_at=13, wait_bars=8, rr=2.0, ttl_bars=12),
-    "ny_open": dict(range_start=13, range_end=14, signal_at=14, wait_bars=12, rr=2.0, ttl_bars=12),
-    "afternoon": dict(range_start=14, range_end=17, signal_at=17, wait_bars=8, rr=2.0, ttl_bars=12),
-}
-H12_WINDOWS = GOLD_WINDOWS  # identical structure in run_hunt12
-
-
-def cell_trades(sym: str, win: str, state: str | None, h1: pd.DataFrame,
-                costs: Costs, states: dict | None) -> list:
-    sigs = families.family_session_range_breakout(h1, **H12_WINDOWS[win])
-    if states is not None:
-        sdays = [pd.Timestamp(s.time).date() for s in sigs]
-        sigs = [s for s, d in zip(sigs, sdays) if states.get(d) == state]
-    r = run_backtest(h1, sigs, costs)
-    return r.trades
-
-
-def load_h12_survivors() -> list[dict]:
-    """The hunt12 survivor cells. RAISES when the report is absent — it must never return [].
-
-    **THE EMPTY LIST SILENTLY TRUNCATED THE BOOK.** Five of the nine deployed sleeves are hunt12
-    cells; the other four are gold. On any clone without `reports/hunt12_partial.json` — which is
-    gitignored, so that is every fresh clone and the whole cloud sandbox — this returned [], main()
-    built a gold-only book, and line 143 wrote it over the committed nine-sleeve artifact. The
-    result is not an error anywhere: mean_corr, n_eff and port_sharpe are all recomputed
-    consistently on four sleeves and look exactly like a real answer.
-
-    That is the WS-005 shape and it is aimed at the artifact the whole book ranking rests on. An
-    absent input must produce a refusal, not a smaller book (L1.28a).
-    """
-    p = BASE / "reports" / "hunt12_partial.json"
-    if not p.exists():
-        raise SystemExit(
-            f"REFUSING to project: {p} is absent, so the hunt12 survivor cells cannot be loaded.\n"
-            "Five of the nine deployed sleeves live in that file. Returning an empty list here "
-            "would build a GOLD-ONLY book and overwrite the nine-sleeve artifact with it, and "
-            "nothing downstream could tell the difference. Run this on the host that has the "
-            "hunt reports.")
-    saved = json.loads(p.read_text(encoding="utf-8"))
-    return [c for c in saved.get("all", []) if c.get("gate")]
-
-
-def main() -> None:
-    meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
-
-    sleeves = []  # dicts: name, sym, win, state, trades(list of r_multiple), dates
-
-    h1g = families._h1(pd.read_parquet(UNI / "XAUUSD_H1.parquet"))
-    # GAP 114: this read `Costs(spread_per_lot=0.48, ...)` until 2026-08-20. 0.48 is dollars per
-    # OUNCE in a field that wants dollars per LOT, so the engine divided by contract_size 100 and
-    # charged gold 0.0048/oz against a measured 0.16/oz median -- 3% of its real spread, on every
-    # gold row in the artifact the whole book ranking rests on.
-    #
-    # `Costs.from_symbol` was written to end exactly this and this call site never adopted it
-    # (row 110's defect class). `calibrate_engine.py` confirms both halves with a known-answer
-    # probe: the old constant recovers 0.2099x of the planted cost and FAILS, from_symbol recovers
-    # 0.9166x and passes. mult=2.0 is the honest baseline, not a stress -- a round trip crosses
-    # the spread on the way in and again on the way out.
-    gold_costs = Costs.from_symbol(meta["XAUUSD"], mult=2.0)
-    for wname, wp in GOLD_WINDOWS.items():
-        tr = cell_trades("XAUUSD", wname, None, h1g, gold_costs, None)
-        sleeves.append(dict(name=f"gold_{wname}", sym="XAUUSD", win=wname,
-                            state="base",
-                            r=[t.r_multiple for t in tr],
-                            dates=[t.entry_time.date() for t in tr]))
-
-    from research.run_hunt12 import day_states  # noqa: PLC0415
-
-    for cell in load_h12_survivors():
-        sym, win, state = cell["sym"], cell["win"], cell["state"]
-        h1 = families._h1(pd.read_parquet(UNI / f"{sym}_H1.parquet"))
-        m = meta[sym]
-        # Same fix, and the non-gold branch was under-charged too: it built the spread at mult=1.0,
-        # crossing it once where a round trip crosses it twice.
-        costs = Costs.from_symbol(m, mult=2.0)
-        states = day_states(h1)
-        tr = cell_trades(sym, win, state, h1, costs, states)
-        sleeves.append(dict(name=f"{sym}_{win}_{state}", sym=sym, win=win,
-                            state=state,
-                            r=[t.r_multiple for t in tr],
-                            dates=[t.entry_time.date() for t in tr]))
-
-    print(f"{'rank':>4} {'sleeve':<26} {'n':>5} {'exp':>7} {'PF':>5} "
-          f"{'maxDD':>7} {'S/trade':>7} {'annSharpe':>9}")
-    rows = []
-    for s in sleeves:
-        rs = np.array(s["r"])
-        n = len(rs)
-        exp = float(rs.mean())
-        std = float(rs.std(ddof=1)) if n > 1 else 0.0
-        pf = float(rs[rs > 0].sum() / abs(rs[rs < 0].sum())) if (rs < 0).any() else np.inf
-        cum = np.cumsum(rs)
-        maxdd = float(min(cum[i] - cum[:i + 1].max() for i in range(len(cum))))
-        st = exp / std if std > 0 else 0.0
-        days = len(set(s["dates"]))
-        ann = st * np.sqrt(252 * days / max(n, 1))
-        s.update(n=n, exp=exp, pf=pf, maxdd=maxdd, st=st, ann=ann)
-        rows.append(s)
-
-    rows.sort(key=lambda s: -s["ann"])
-    for i, s in enumerate(rows, 1):
-        print(f"{i:4d} {s['name']:<26} {s['n']:5d} {s['exp']:+7.3f} {s['pf']:5.2f} "
-              f"{s['maxdd']:7.1f} {s['st']:7.3f} {s['ann']:9.2f}")
-
-    # aligned daily R per sleeve
-    alldays = sorted({d for s in sleeves for d in s["dates"]})
-    daily = pd.DataFrame(index=alldays,
-                         columns=[s["name"] for s in rows],
-                         dtype=float)
-    for s in rows:
-        d = pd.Series(s["r"], index=pd.Index(s["dates"]))
-        daily[s["name"]] = d.groupby(level=0).sum().reindex(alldays).fillna(0.0)
-
-    corr = daily.corr()
-    vals = corr.values
-    off = vals[~np.eye(len(vals), dtype=bool)]
-    mean_corr = float(off.mean()) if len(off) else 0.0
-    n_eff = len(rows) / (1 + (len(rows) - 1) * mean_corr)
-
-    port = daily.sum(axis=1)
-    m, s = port.mean(), port.std(ddof=1)
-    sharpe = m / s * np.sqrt(252) if s > 0 else 0.0
-    print(f"\nmean cross-sleeve corr = {mean_corr:.3f} | effective N = {n_eff:.1f} "
-          f"of {len(rows)} sleeves")
-
-    for q in (0.055, 0.055 * np.sqrt(n_eff)):
-        w = (1.0 + q * port).prod()
-        years = (max(alldays) - min(alldays)).days / 365.25
-        cagr = w ** (1 / years) - 1
-        worst = float((1.0 + q * port).cumprod().min())
-        print(f"q_total={q:.3f}/day-R: net Sharpe {sharpe:.2f}, 8y CAGR {cagr*100:.1f}%, "
-              f"min wealth {worst:.3f}")
-
-    out = dict(rows=[{k: s[k] for k in ("name", "sym", "win", "state", "n",
-                                        "exp", "pf", "maxdd", "st", "ann")}
-                     for s in rows],
-               mean_corr=mean_corr, n_eff=n_eff, port_sharpe=sharpe,
-               port_daily_mean=m, port_daily_std=s)
-    OUT.write_text(json.dumps(out, indent=2, default=str), encoding="utf-8")
-    print(f"\n-> {OUT}")
-
+_LIVE = "desks/mt5/research/portfolio_projection.py"
 
 if __name__ == "__main__":
-    main()
+    print(f"REFUSING: this is a superseded duplicate. The live projection is {_LIVE}.\n"
+          "  cd desks/mt5 && python research/portfolio_projection.py\n"
+          "It needs reports/hunt12_partial.json, which is gitignored and absent on both this "
+          "clone and the VPS -- regenerate it with `python research/run_hunt12.py` first, and "
+          "note that run_hunt12 was itself dead with a missing import until 2026-08-19.",
+          file=sys.stderr)
+    raise SystemExit(2)
