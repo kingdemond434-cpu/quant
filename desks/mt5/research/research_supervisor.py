@@ -14,6 +14,7 @@ Disable permanently: create data/SUPERVISOR_OFF
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import time
@@ -26,7 +27,12 @@ BASE = Path(__file__).resolve().parent.parent
 LOGS = BASE / "logs"
 STATE = LOGS / "supervisor_state.json"
 LOG = LOGS / "supervisor.log"
-PYW = Path(sys.executable).parent / "pythonw.exe"
+if os.name == "nt":
+    PYW = Path(sys.executable).parent / "pythonw.exe"
+    CHILD_LOGS = Path(os.environ.get("TEMP", r"C:\Windows\Temp")) / "opencode" / "logs"
+else:
+    PYW = Path(sys.executable)
+    CHILD_LOGS = LOGS / "child"
 TARGETS = [
     dict(name="hunt12", args=["-u", "-W", "ignore", "research/run_hunt12.py"],
          marker="reports/DONE_hunt12", match="run_hunt12.py"),
@@ -89,7 +95,7 @@ def log(msg: str) -> None:
         f.write(line + "\n")
 
 
-CHILD_LOGS = Path(r"C:\Users\dell\AppData\Local\Temp\opencode\logs")
+CHILD_LOGS = CHILD_LOGS  # resolved above (platform-aware)
 
 
 def is_running(match: str) -> bool:
@@ -142,6 +148,9 @@ def main() -> int:
         for t in TARGETS:
             if (BASE / "data" / f"HOLD_{t['name']}").exists():
                 continue
+            if (BASE / "data" / "VPS_AUTHORITY").exists() \
+                    and t["name"] in ("universal", "merge", "allocation"):
+                continue
             if (BASE / t["marker"]).exists():
                 continue
             if is_running(t["match"]):
@@ -155,12 +164,14 @@ def main() -> int:
             try:
                 CHILD_LOGS.mkdir(parents=True, exist_ok=True)
                 sl = open(CHILD_LOGS / f"{t['name']}_super.log", "ab")
-                py = t.get("python") or PYW
-                proc = subprocess.Popen(
-                    [str(py)] + t["args"], cwd=str(BASE),
-                    stdout=sl, stderr=subprocess.STDOUT,
-                    creationflags=subprocess.DETACHED_PROCESS
-                    | subprocess.CREATE_NEW_PROCESS_GROUP)
+                py = sys.executable if os.name != "nt" else (t.get("python") or PYW)
+                kwargs = {"stdout": sl, "stderr": subprocess.STDOUT}
+                if os.name == "nt":
+                    kwargs["creationflags"] = subprocess.DETACHED_PROCESS \
+                        | subprocess.CREATE_NEW_PROCESS_GROUP
+                else:
+                    kwargs["start_new_session"] = True
+                proc = subprocess.Popen([str(py)] + t["args"], cwd=str(BASE), **kwargs)
                 state[t["name"]] = {"last_spawn": now, "pid": proc.pid}
                 STATE.write_text(json.dumps(state), encoding="utf-8")
                 log(f"supervisor: respawned {t['name']} pid={proc.pid}")

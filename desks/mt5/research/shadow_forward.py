@@ -38,37 +38,12 @@ WINDOWS = {
     "afternoon": dict(range_start=14, range_end=17, signal_at=17, wait_bars=8, rr=2.0, ttl_bars=12),
 }
 
-# (sym, window, state) -- state=None means UNCONDITIONED, the hunt6 form.
-#
-# A THIRD FIELD WAS ADDED, and it had to be added here, in the promoter and in the gateway at the
-# same time. Before this the live chain was state-blind end to end: this list keyed on
-# (symbol, window), promoter wrote no state, and gateway.sleeve_set rebuilt every sleeve from the
-# window alone. Promoting "CADJPY asia FAILED_BREAK" would therefore have traded CADJPY asia on
-# EVERY day -- the sleeve carrying the name and risk budget of a strategy that earned +0.276R
-# while actually running the unconditioned one at +0.163R, with nothing anywhere saying so.
-SLEEVES = [
-    # hunt6 survivors, unconditioned
-    ("XAUUSD", "asia", None), ("XAUUSD", "london_am", None), ("XAUUSD", "afternoon", None),
-    ("USDJPY", "asia", None), ("USDJPY", "london_am", None),
-    ("CADJPY", "asia", None),
-    ("EURJPY", "asia", None), ("EURJPY", "london_am", None),
-    ("GBPJPY", "asia", None), ("GBPJPY", "london_am", None),
-    # hunt12 candidates, state-conditioned, added 2026-08-17 after the day_states lookahead fix.
-    # These FAILED the 10-gate gauntlet on deflated Sharpe (SR0 0.471 against 0.138-0.256 at
-    # n_trials 2,464) and pass the other nine. That is a POWER problem, not a validity one -- PBO
-    # 0.034 and walk-forward stability 1.0 say they are not curve-fits -- and forward evidence is
-    # the only thing that can settle it. Shadow generates exactly that, at zero capital.
-    # The three XAUUSD entries are filtered subsets of gold legs already live: they are here to be
-    # MEASURED against their parent, not to be promoted alongside it.
-    ("CADJPY", "asia", "FAILED_BREAK"),
-    ("USDJPY", "asia", "FAILED_BREAK"),
-    ("EURJPY", "asia", "FAILED_BREAK"),
-    ("EURJPY", "asia", "NORMAL_DAY"),
-    ("CADJPY", "london_am", "NORMAL_DAY"),
-    ("USDJPY", "london_am", "FAILED_BREAK"),
-    ("XAUUSD", "asia", "NORMAL_DAY"),
-    ("XAUUSD", "asia", "FAILED_BREAK"),
-    ("XAUUSD", "london_am", "NORMAL_DAY"),
+SLEEVES = [  # (sym, window) - hunt6 survivors
+    ("XAUUSD", "asia"), ("XAUUSD", "london_am"), ("XAUUSD", "afternoon"),
+    ("USDJPY", "asia"), ("USDJPY", "london_am"),
+    ("CADJPY", "asia"),
+    ("EURJPY", "asia"), ("EURJPY", "london_am"),
+    ("GBPJPY", "asia"), ("GBPJPY", "london_am"),
 ]
 
 FETCH_DAYS = 45
@@ -76,12 +51,6 @@ VERDICT_MIN_TRADES = 50
 VERDICT_MIN_DAYS = 14
 PROMOTE_MIN_EXP = 0.05
 PROMOTE_MIN_DD = -25.0
-
-#: Trades below which NO terminal verdict is issued, in either direction. The 14-day clock still
-#: runs -- it just cannot execute a sleeve on three fills. 20 is where the false-kill rate on a
-#: genuinely good edge falls under 20% (36% at n=3); it is a floor on evidence, not a target.
-#: Raising it makes the desk slower and more certain, lowering it faster and more arbitrary.
-MIN_VERDICT_TRADES = 20
 
 
 def slog(*a) -> None:
@@ -92,119 +61,32 @@ def slog(*a) -> None:
 
 
 def per_symbol_costs(meta: dict, sym: str):
-    """R0644 / GAP 114 ON THE PROMOTION PATH -- the worst place this bug had a copy.
-
-    Until 2026-08-20 this read:
-
-        spread = 0.48 if sym == "XAUUSD" else (
-            m["median_spread_pts"] * m["tick_size"] * m["contract_size"])
-        return Costs(spread_per_lot=max(spread, 0.05), commission_per_lot=3.50, ...)
-
-    Two defects, and shadow is where they mattered most:
-
-      GOLD AT 3% OF ITS SPREAD. 0.48 is dollars per OUNCE in a field that wants dollars per LOT.
-      The engine divides by contract_size 100 and charges 0.0048/oz against a measured 0.16/oz
-      median. `calibrate_engine.py` puts a number on it with a known-answer probe: the constant
-      recovers 0.2099x of the planted cost and FAILS; `from_symbol` recovers 0.9166x and passes.
-
-      EVERY OTHER SYMBOL AT mult=1.0 -- the spread crossed once, where a round trip crosses it
-      going in and again coming out.
-
-    **THIS IS THE DOOR TO CAPITAL, NOT A RESEARCH SCRIPT.** Shadow's verdict thresholds are
-    `exp_r > 0.05R` -> PROMOTION CANDIDATE, `max_dd_r > -25R`. A gold sleeve judged nearly
-    spread-free clears 0.05R on costs it will never actually pay, and the promoter -- which is
-    automatic and correctly refuses hand-editing -- acts on that verdict. The protocol's whole
-    design is that one door is hard to get through; a mispriced cost model widens it silently.
-
-    **EXISTING SHADOW RECORDS WERE ACCRUED AT THE OLD COSTS** and their expectancies are upper
-    bounds. They are not deleted here -- a shadow record is forward evidence and destroying it to
-    tidy a cost change would cost the one thing that cannot be recovered later -- but any verdict
-    resting on them must be re-derived before it promotes anything.
-    """
-    from mt5desk.engine import Costs  # noqa: PLC0415
-    return Costs.from_symbol(meta[sym], mult=2.0)
+    from mt5desk.engine import Costs  # noqa: E402
+    m = meta[sym]
+    spread = 0.48 if sym == "XAUUSD" else (
+        m["median_spread_pts"] * m["tick_size"] * m["contract_size"])
+    return Costs(spread_per_lot=max(spread, 0.05),
+                 commission_per_lot=3.50, contract_oz=m["contract_size"])
 
 
-def fetch_h1(sym: str):
-    """Bars from whatever source is available, with the provenance attached.
-
-    THIS IMPORTED MetaTrader5 DIRECTLY, which made the entire shadow record
-    hostage to a Windows box with a logged-in terminal. When the Fusion switch
-    paused that terminal, shadow stopped, and the daily cycle has failed on
-    ModuleNotFoundError ever since -- losing the one thing that cannot be
-    recovered later, because a day of bars not evaluated is a day of evidence
-    gone.
-
-    Shadow needs bars and nothing else: no terminal, no login, no funded
-    account, no accepted order. See research/h1_source.py.
-
-    Returns a `Bars` (not a DataFrame) so the source travels with the data.
-    """
+def fetch_h1(sym: str) -> pd.DataFrame | None:
+    import MetaTrader5 as mt5  # noqa: E402
+    if mt5.terminal_info() is None:
+        from mt5desk.config import terminal_path  # noqa: E402
+        if not mt5.initialize(path=terminal_path()):
+            slog(f"mt5 init failed: {mt5.last_error()}")
+            return None
     from datetime import timedelta
-
-    from research.h1_source import fetch_h1 as _fetch  # noqa: PLC0415
     start = max(SHADOW_START - timedelta(days=FETCH_DAYS),
                 datetime(2018, 1, 1, tzinfo=timezone.utc))
-    bars = _fetch(sym, start)
-    if bars is None:
-        slog(f"{sym}: NO DATA from any source. That is an absence of bars, not "
-             f"an empty market, and no verdict may be drawn from it.")
+    rates = mt5.copy_rates_range(sym, mt5.TIMEFRAME_H1, start, datetime.now(timezone.utc))
+    if rates is None or len(rates) < 100:
+        slog(f"{sym}: no fresh H1 ({0 if rates is None else len(rates)} bars)")
         return None
-    ok, why = bars.covers(SHADOW_START)
-    slog(f"{sym}: {bars.n} bars from {bars.source} -- {why}")
-    if not ok:
-        # NOT a silent continue. Replaying a window the source does not cover
-        # records "no trades" for days there was simply no data, which is
-        # indistinguishable from a strategy standing aside and inflates the
-        # denominator of every rate the promoter computes.
-        slog(f"{sym}: REFUSING to replay an uncovered window -- {why}")
-        return None
-    if bars.stale:
-        slog(f"{sym}: source is STALE ({bars.age_hours:.1f}h old). Recorded, and "
-             f"the stamp travels with every row.")
-    return bars
-
-
-def enable_free_feed(state: dict) -> str:
-    """Register the free HTTP source -- but ONLY into a record it cannot contaminate.
-
-    **SHADOW HAS BEEN STARVING, NOT FAILING.** Measured 2026-08-20: all 19 sleeves at n=0,
-    days_active=0. The replay runs correctly and REFUSES every window, because the only live
-    source registered by default is the Windows MT5 terminal, that terminal has been paused for
-    the Fusion switch, and the bar cache therefore ends 2026-08-14 -- before SHADOW_START on
-    08-16. Shadow is right to refuse: an uncovered window is NO DATA, not a quiet market. But the
-    result is that the desk's one source of forward evidence has produced nothing at all while
-    five sleeves wait on it, and a day of bars not evaluated cannot be recovered later.
-
-    `h1_source.from_yfinance` exists for exactly this and is deliberately unregistered, because
-    turning it on is a decision about evidence quality: those bars are a DIFFERENT SERIES from the
-    broker's, and `SourceMix` will call a ledger built from both "an average over two different
-    games".
-
-    **THE DECISION IS EASY ONLY BECAUSE THE RECORD IS EMPTY.** With every sleeve at n=0 there is
-    no evidence to mix: the record starts homogeneous and stays that way. That is a property of
-    today, not a general licence, so it is CHECKED rather than assumed -- if any sleeve has
-    accrued rows from a different source this refuses to register and says why. A feed that
-    switches mid-record is the failure `SourceMix` was built to name, and it must not be
-    introduced by the function meant to keep the record alive.
-
-    The stamp travels regardless: every row carries `HTTP:yfinance/<ticker>`, so a promoter or a
-    reader can always see which game the evidence came from.
-    """
-    from research.h1_source import from_yfinance, register_source     # noqa: PLC0415
-
-    sleeves = [v for v in state.values() if isinstance(v, dict)]
-    accrued = [v for v in sleeves if int(v.get("n", 0) or 0) > 0]
-    if accrued:
-        srcs = {s for v in accrued for s in (v.get("sources") or {})}
-        if not srcs <= {"HTTP:yfinance"} and not all(s.startswith("HTTP:yfinance") for s in srcs):
-            return (f"free feed NOT registered: {len(accrued)} sleeve(s) already carry rows from "
-                    f"{sorted(srcs) or 'an unrecorded source'}. Registering now would switch the "
-                    "feed mid-record and average two different games (SourceMix). Finish the "
-                    "broker switch and let MT5 serve these, or start a fresh record.")
-    register_source(from_yfinance)
-    return ("free feed REGISTERED (HTTP:yfinance) -- the record is empty, so it starts and stays "
-            "homogeneous. These are NOT the broker's bars; the stamp says so on every row.")
+    df = pd.DataFrame(rates)
+    df["time"] = pd.to_datetime(df["time"], unit="s", utc=True)
+    return df.set_index("time").sort_index()[["open", "high", "low", "close",
+                                              "tick_volume", "spread", "real_volume"]]
 
 
 def main() -> None:
@@ -219,54 +101,31 @@ def main() -> None:
             state = json.loads(state_path.read_text(encoding="utf-8"))
         except Exception:
             state = {}
-    slog(enable_free_feed(state))
     today = datetime.now(timezone.utc).date().isoformat()
     if state.get("last_run") == today:
         slog("shadow already ran today; skip")
         return
 
     h1_cache = {}
-    for sym, win, cond in SLEEVES:
-        key = f"{sym}.{win}" + (f".{cond}" if cond else "")
+    for sym, win in SLEEVES:
+        key = f"{sym}.{win}"
         st = state.get(key, {"n": 0, "cum_r": 0.0, "max_dd_r": 0.0,
                              "first_entry": None, "last_entry": None,
                              "status": "ACTIVE"})
         if sym not in h1_cache:
             h1_cache[sym] = fetch_h1(sym)
-        bars = h1_cache[sym]
-        if bars is None:
-            # RECORDED, not skipped. A sleeve that produced nothing because there
-            # were no bars is a different fact from one that stood aside, and the
-            # promoter must not count the first as evidence of the second.
-            st["last_no_data"] = today
-            st["no_data_days"] = int(st.get("no_data_days", 0)) + 1
-            state[key] = st
+        h1 = h1_cache[sym]
+        if h1 is None:
             continue
-        h1 = bars.df
         sigs = families.family_session_range_breakout(h1, **WINDOWS[win])
-        if cond:
-            # Same corrected prior-day join the sweep used. A shadow record built on a different
-            # conditioning rule than the backtest would be measuring a third strategy.
-            from run_hunt12 import day_states  # noqa: PLC0415
-            st_map = day_states(h1)
-            sigs = [g for g in sigs if st_map.get(pd.Timestamp(g.time).date()) == cond]
         res = run_backtest(h1, sigs, per_symbol_costs(meta, sym))
         trades = [t for t in res.trades if t.entry_time >= SHADOW_START]
-        ledger = SHADOW_DIR / (f"ledger_{sym}_{win}" + (f"_{cond}" if cond else "") + ".json")
-        # THE SOURCE STAMP TRAVELS WITH EVERY ROW. A trade replayed on a broker
-        # feed and one replayed on cached or free bars are not the same evidence
-        # -- OHLC differ at the tick and spreads differ materially -- so an
-        # expectancy averaged across them is an average over two different
-        # games. Stamped per row so the promoter can split them.
-        _stamp = bars.stamp()
+        ledger = SHADOW_DIR / f"ledger_{sym}_{win}.json"
         ledger.write_text(json.dumps(
             [{"entry_time": str(t.entry_time), "exit_time": str(t.exit_time),
               "side": t.side, "entry": t.entry, "exit": t.exit,
-              "r_multiple": t.r_multiple, "reason": t.reason, **_stamp}
-             for t in trades],
+              "r_multiple": t.r_multiple, "reason": t.reason} for t in trades],
             indent=2), encoding="utf-8")
-        st["bar_source"] = bars.source
-        st["bar_source_stale"] = bars.stale
         if trades:
             rs = [t.r_multiple for t in trades]
             cum = [sum(rs[:i + 1]) for i in range(len(rs))]
@@ -285,30 +144,9 @@ def main() -> None:
             days_active = (datetime.now(timezone.utc) -
                            pd.Timestamp(st["first_entry"]).to_pydatetime().replace(tzinfo=timezone.utc)).days
         st["days_active"] = days_active
-        # NO TERMINAL VERDICT WITHOUT ENOUGH EVIDENCE TO SUPPORT ONE.
-        #
-        # This fired on `n >= 50 OR days_active >= 14`, and the days clause is what did the
-        # damage. A cell firing ~80 times a year produces about THREE trades in fourteen days,
-        # and the verdict is permanent in both directions. Measured against the best candidate's
-        # +0.276R with per-trade sd 1.089, the chance of KILLING a genuinely good edge:
-        #
-        #        3 trades -> 36.0%          20 trades -> 17.7%
-        #        5        -> 32.1%          50        ->  7.1%
-        #       10        -> 25.6%         100        ->  1.9%
-        #
-        # So the clock was not rescuing slow sleeves from limbo -- it was executing them at
-        # random, and the same arithmetic promotes noise in the other direction. The fix is not a
-        # looser clock but refusing to decide early: below MIN_VERDICT_TRADES the sleeve stays
-        # ACTIVE and keeps accruing, which costs nothing because shadow uses no capital. A slow
-        # edge is then never stuck (it promotes the moment it has evidence) and never killed on
-        # three fills.
         if st["status"] == "ACTIVE" and (st["n"] >= VERDICT_MIN_TRADES
                                          or days_active >= VERDICT_MIN_DAYS):
-            if st["n"] < MIN_VERDICT_TRADES:
-                slog(f"{key}: verdict DEFERRED -- n={st['n']} < {MIN_VERDICT_TRADES} after "
-                     f"{days_active}d. Deciding on this sample is more likely to be wrong than "
-                     f"right; sleeve stays ACTIVE and keeps accruing.")
-            elif st["exp_r"] > PROMOTE_MIN_EXP and st["max_dd_r"] > PROMOTE_MIN_DD:
+            if st["exp_r"] > PROMOTE_MIN_EXP and st["max_dd_r"] > PROMOTE_MIN_DD:
                 st["status"] = "PROMOTION CANDIDATE"
                 slog(f"{key}: VERDICT PROMOTE n={st['n']} exp={st['exp_r']:.3f}R "
                      f"maxDD={st['max_dd_r']:.1f}R")

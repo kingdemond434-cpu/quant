@@ -1,0 +1,106 @@
+[
+  {
+    "id": "h18-001",
+    "geneology_id": "hunt17:d1_inside",
+    "hypothesis": "Inside-day completion pays on the SHORT side: hunt17 showed d1_inside LONG negative everywhere while SHORT had the least-bad cells (NZDCAD SHORT +0.020R, +0.136/+0.169 WF folds). Quiet compression days precede downside continuation more reliably. Lower rr 1.5 (take profits earlier, less 2R friction) and ttl 24.",
+    "family": "d1_inside",
+    "side": "SHORT",
+    "params": {
+      "rr": 1.5,
+      "ttl": 24
+    },
+    "created_at": "2026-08-17T12:30:00+00:00",
+    "status": "DONE",
+    "started_at": "2026-08-17T12:41:42.922655+00:00",
+    "finished_at": "2026-08-17T12:42:30.387905+00:00",
+    "n_survivors": 0
+  },
+  {
+    "id": "h18-002",
+    "geneology_id": "hunt17:d1_swing_break",
+    "hypothesis": "Breakdowns beat breakouts on D1 swings: hunt17 d1_swing_break SHORT had systematically less-negative exp than LONG across symbols (USDJPY SHORT -0.451 vs LONG -0.010; AUDCAD SHORT -0.393 vs LONG -0.398). Stronger expansion filter (exp_mult 1.2) + rr 2.5 + ttl 24 to isolate the breakout-quality mechanism.",
+    "family": "d1_swing_break",
+    "side": "SHORT",
+    "params": {
+      "exp_mult": 1.2,
+      "rr": 2.5,
+      "ttl": 24
+    },
+    "created_at": "2026-08-17T12:30:00+00:00",
+    "status": "DONE",
+    "started_at": "2026-08-17T12:42:38.485100+00:00",
+    "finished_at": "2026-08-17T12:43:30.944333+00:00",
+    "n_survivors": 0
+  },
+  {
+    "id": "h18-003",
+    "geneology_id": "hunt17:h4_momentum",
+    "hypothesis": "Long-horizon momentum persistence with wider targets: hunt17 h4_momentum LONG n=55/rr2.5 was the least-negative parameterization family-wide; longer MA horizon filters whipsaw, rr 2.5 + ttl 24 captures the persistence leg that 2R/12-bar exits cut off.",
+    "family": "h4_momentum",
+    "side": "LONG",
+    "params": {
+      "n": 55,
+      "rr": 2.5,
+      "ttl": 24
+    },
+    "created_at": "2026-08-17T12:30:00+00:00",
+    "status": "DONE",
+    "started_at": "2026-08-17T12:43:39.088981+00:00",
+    "finished_at": "2026-08-17T12:44:32.802784+00:00",
+    "n_survivors": 0
+  },
+  {
+    "id": "h18-004",
+    "geneology_id": "newdata:macro_gold_yield",
+    "hypothesis": "Real-yield regime gates gold momentum: 2y rolling z of T10YIE (macrod desk anchors) filters H4 SMA cross entries - LONG only when breakevens are at/below average (falling real yield = gold bid), SHORT above. Mechanism: real-yield is the dominant gold driver; momentum with the regime survives the 2018-2026 rate cycle. Baseline: h4_momentum n34. yield_z=0.0, rr2.0 ttl12.",
+    "family": "macro_gold_yield",
+    "side": "LONG",
+    "params": {
+      "n": 34,
+      "rr": 2.0,
+      "ttl": 12,
+      "yield_z": 0.0
+    },
+    "created_at": "2026-08-17T21:20:53.429723+00:00",
+    "status": "DONE",
+    "started_at": "2026-08-20T15:08:50.060849+00:00",
+    "finished_at": "2026-08-20T15:09:27.438614+00:00",
+    "n_survivors": 1
+  },
+  {
+    "id": "h18-005",
+    "geneology_id": "newdata:macro_gold_yield",
+    "hypothesis": "Mirror of h18-004 on the SHORT side: gold momentum SHORT only when real-yield z >= +0.25 (rising breakevens = gold headwind). Wider n55 + rr2.5 to catch persistence legs in the higher-yield regime. yield_z=-0.25.",
+    "family": "macro_gold_yield",
+    "side": "SHORT",
+    "params": {
+      "n": 55,
+      "rr": 2.5,
+      "ttl": 24,
+      "yield_z": -0.25
+    },
+    "created_at": "2026-08-17T21:20:53.429723+00:00",
+    "status": "DONE",
+    "started_at": "2026-08-20T15:15:03.073591+00:00",
+    "finished_at": "2026-08-20T15:15:38.608154+00:00",
+    "n_survivors": 0
+  },
+  {
+    "id": "h18-006",
+    "geneology_id": "newdata:macro_gold_yield",
+    "hypothesis": "Tighter regime filter isolation: yield_z=-0.5 forces entries only in clearly-low real-yield states - tests whether the regime filter carries the edge rather than the momentum base. n34 rr2.0 ttl12.",
+    "family": "macro_gold_yield",
+    "side": "LONG",
+    "params": {
+      "n": 34,
+      "rr": 2.0,
+      "ttl": 12,
+      "yield_z": -0.5
+    },
+    "created_at": "2026-08-17T21:20:53.429723+00:00",
+    "status": "DONE",
+    "started_at": "2026-08-17T23:45:03.019765+00:00",
+    "finished_at": "2026-08-17T23:45:34.086599+00:00",
+    "n_survivors": 0
+  }
+]

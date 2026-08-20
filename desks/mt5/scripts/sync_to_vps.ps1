@@ -26,26 +26,30 @@ if ($lastSync) {
 }
 if (-not $due) { exit 0 }
 
-# 1. Build the bundle (Copy-Item; robocopy file-source is a no-op)
+# 1. Build the bundle (data files under bundle\data, dirs under bundle\<name>)
 if (Test-Path $bundle) { Remove-Item -Recurse -Force $bundle }
 New-Item -ItemType Directory -Force -Path $bundle | Out-Null
-foreach ($d in @("mt5desk", "research", "docs", "scripts", "reports", "data")) {
+foreach ($d in @("mt5desk", "research", "docs", "scripts", "reports")) {
     $src = Join-Path $base $d
-    if (Test-Path $src) {
-        if ($d -eq "data") {
-            Copy-Item -Path (Join-Path $src "universe") -Destination $bundle -Recurse -Force
-            Copy-Item -Path (Join-Path $src "states") -Destination $bundle -Recurse -Force
-            foreach ($f in @("gateway_state.json","live_ledger.jsonl","regime_state.json",
-                             "sleeves.json","terminal_path.txt","GATEWAY_PAUSED",
-                             "frontier_inbox.json","sync_marker.json","data_registry.json",
-                             "free_data_frontier.json","cot","cot_tff","cot_tff.json")) {
-                $p = Join-Path $src $f
-                if (Test-Path $p) { Copy-Item $p -Destination $bundle -Recurse -Force }
-            }
-        } else {
-            Copy-Item -Path $src -Destination $bundle -Recurse -Force
-        }
-    }
+    if (Test-Path $src) { Copy-Item -Path $src -Destination $bundle -Recurse -Force }
+}
+foreach ($f in @("AGENTS.md", "CLAUDE.md")) {
+    $p = Join-Path $base $f
+    if (Test-Path $p) { Copy-Item $p -Destination $bundle -Force }
+}
+$dataOut = Join-Path $bundle "data"
+New-Item -ItemType Directory -Force -Path $dataOut | Out-Null
+$src = Join-Path $base "data"
+foreach ($d in @("universe", "states", "cot", "cot_tff", "cot_disagg", "lake",
+                 "gateway_state.json","live_ledger.jsonl","regime_state.json",
+                 "sleeves.json","terminal_path.txt","GATEWAY_PAUSED",
+                 "frontier_inbox.json","sync_marker.json","data_registry.json",
+                 "free_data_frontier.json","cot_tff.json","research_queue.json",
+                 "macro_state.json","cross_asset_anchors.pkl","crowding_state.json",
+                 "options_archive.parquet","news_state.json","HOLD_qquant_gates",
+                 "HOLD_universal","HOLD_merge","HOLD_allocation","HOLD_qquant")) {
+    $p = Join-Path $src $d
+    if (Test-Path $p) { Copy-Item $p -Destination $dataOut -Recurse -Force }
 }
 
 # 2. Upload

@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import sys
 import time
 from datetime import datetime, timezone
@@ -44,7 +45,8 @@ REPORTS = BASE / "reports"
 UNI = BASE / "data" / "universe"
 sys.path.insert(0, str(BASE))
 sys.path.insert(0, str(BASE / "research"))
-sys.path.insert(0, str(Path(r"C:\Users\dell\quant-platform")))
+QP = Path(r"C:\Users\dell\quant-platform") if os.name == "nt" else Path.home() / "quant-platform"
+sys.path.insert(0, str(QP))
 
 from libs.validation.cpcv import CPCV  # noqa: E402
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E402
@@ -247,7 +249,8 @@ def gauntlet(cells: list[Cell], hunt: str) -> dict:
 
 def main() -> int:
     done_flag = REPORTS / "DONE_qquant_gates"
-    if not done_flag.exists():
+    held_flag = BASE / "data" / "HOLD_qquant_gates"
+    if not done_flag.exists() and not held_flag.exists():
         print("waiting for DONE_qquant_gates (hunt12/16 REAL3 path) ...", flush=True)
         while not done_flag.exists():
             time.sleep(60)
@@ -286,7 +289,7 @@ def main() -> int:
             continue
         report = json.loads(rp.read_text("utf-8"))
         fam = report.get("family")
-        if not fam or not (REPORTS / "hunt18_placeholder").exists():
+        if not fam:
             print(f"{rp.stem}: no family key, skipping", flush=True)
             continue
         from run_hunt17 import FAMILIES as F17, resample as r17resample
@@ -327,6 +330,19 @@ def main() -> int:
                             "apply before portfolio entry.",
                     "swept_at": datetime.now(timezone.utc).isoformat()},
                    indent=2, default=str), encoding="utf-8")
+    ledger_path = REPORTS / "SURVIVORS_LEDGER.json"
+    ledger: dict = {}
+    if ledger_path.exists():
+        try:
+            ledger = json.loads(ledger_path.read_text("utf-8")).get("claims", {})
+        except Exception:
+            ledger = {}
+    for k, v in survivors_all.items():
+        ledger[k] = {**v, "status": "UNIVERSAL",
+                     "updated_at": datetime.now(timezone.utc).isoformat()}
+    ledger_path.write_text(
+        json.dumps({"n": len(ledger), "claims": ledger}, indent=2, default=str),
+        encoding="utf-8")
     print(f"\nUNIVERSAL SURVIVORS: {len(survivors_all)}", flush=True)
     return 0
 

@@ -1,0 +1,29 @@
+{
+ "updated": "2026-08-18T22:15:02.056237+00:00",
+ "latest": {
+  "ts": "2026-08-18T22:15:02.055055+00:00",
+  "query": "retrack trading strategy",
+  "mechanism": "rft_retrack",
+  "github": {},
+  "reddit": {
+   "posts": 0,
+   "avg_score": 0.0,
+   "comments": 0
+  },
+  "github_stars_delta": 0,
+  "news_topics": {
+   "fed": 20,
+   "cpi": 1,
+   "nonfarm": 0,
+   "rates": 0,
+   "oil": 0,
+   "gold": 0,
+   "bonds": 0,
+   "inflation": 1,
+   "crypto": 0
+  },
+  "edge_publicity": "LOW",
+  "expected_decay": "NORMAL"
+ },
+ "history_len": 15
+}

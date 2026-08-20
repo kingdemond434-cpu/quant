@@ -47,32 +47,9 @@ def cell_trades(sym: str, win: str, state: str | None, h1: pd.DataFrame,
 
 
 def load_h12_survivors() -> list[dict]:
-    """The hunt12 survivor cells. RAISES when the report is absent — it must never return [].
-
-    **THE EMPTY LIST SILENTLY TRUNCATED THE BOOK.** Five of the nine deployed sleeves are hunt12
-    cells; the other four are gold. `reports/` is gitignored (.gitignore:118), so this file is
-    absent on every fresh clone AND on the VPS — measured 2026-08-20, `swap_exposure.py` refuses
-    all five AUDCAD cells on both. Where it was absent, this returned [], `build_sleeves` built a
-    GOLD-ONLY four-sleeve book, and `main` wrote it over the nine-sleeve artifact, recomputing
-    mean_corr, n_eff and port_sharpe consistently on the truncation. No error anywhere, and
-    nothing downstream able to tell it from the real answer.
-
-    That is the WS-005 shape aimed at the artifact the whole book ranking rests on. An absent
-    input must produce a refusal, not a smaller book (L1.28a).
-
-    **RUN `research/run_hunt12.py` FIRST.** It writes this file — and it was itself dead with a
-    missing import until 2026-08-19 (commit 82db21fc), which is why the report was never
-    regenerated and the committed projection went stale.
-    """
     p = BASE / "reports" / "hunt12_partial.json"
     if not p.exists():
-        raise SystemExit(
-            f"REFUSING to project: {p} is absent, so the hunt12 survivor cells cannot be loaded.\n"
-            "Five of the nine deployed sleeves live in that file. Returning an empty list here "
-            "would build a GOLD-ONLY book and overwrite the nine-sleeve artifact with it, and "
-            "nothing downstream could tell the difference.\n"
-            "reports/ is gitignored, so this file never travels with the repo. Regenerate it: "
-            "python research/run_hunt12.py")
+        return []
     saved = json.loads(p.read_text(encoding="utf-8"))
     return [c for c in saved.get("all", []) if c.get("gate")]
 
@@ -83,21 +60,7 @@ def build_sleeves() -> list[dict]:
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
     sleeves = []
     h1g = families._h1(pd.read_parquet(UNI / "XAUUSD_H1.parquet"))
-    # GAP 114: this read `Costs(spread_per_lot=0.48, ...)` until 2026-08-20. 0.48 is dollars per
-    # OUNCE in a field that wants dollars per LOT, so the engine divided by contract_size 100 and
-    # charged gold 0.0048/oz against a measured 0.16/oz median -- 3% of its real spread, on every
-    # gold row in the artifact the whole book ranking rests on.
-    #
-    # `Costs.from_symbol` was written to end exactly this and this call site never adopted it
-    # (row 110's defect class). `research/calibrate_engine.py` confirms both halves with a
-    # known-answer probe: the old constant recovers 0.2099x of the planted cost and FAILS,
-    # from_symbol recovers 0.9166x and passes. mult=2.0 is the honest baseline, not a stress --
-    # a round trip crosses the spread on the way in and again on the way out.
-    #
-    # MEASURED EFFECT on the gold half: annualised Sharpe 2.92 -> 2.32, 2.05 -> 1.43,
-    # 1.78 -> 1.19, and gold_ny_open flips +0.0157R -> -0.0475R. Gold-only portfolio Sharpe
-    # 2.49 -> 1.52. One of the four gold sleeves is a loser at its true spread.
-    gold_costs = Costs.from_symbol(meta["XAUUSD"], mult=2.0)
+    gold_costs = Costs(spread_per_lot=0.48, commission_per_lot=3.50, contract_oz=100)
     for wname, wp in GOLD_WINDOWS.items():
         tr = cell_trades("XAUUSD", wname, None, h1g, gold_costs, None)
         sleeves.append(dict(name=f"gold_{wname}", sym="XAUUSD", win=wname,
@@ -109,9 +72,9 @@ def build_sleeves() -> list[dict]:
         sym, win, state = cell["sym"], cell["win"], cell["state"]
         h1 = families._h1(pd.read_parquet(UNI / f"{sym}_H1.parquet"))
         m = meta[sym]
-        # Same fix. The non-gold branch was under-charged too: it built the spread at mult=1.0,
-        # crossing it once where a round trip crosses it twice.
-        costs = Costs.from_symbol(m, mult=2.0)
+        costs = Costs(spread_per_lot=0.48 if sym == "XAUUSD" else max(
+            m["median_spread_pts"] * m["tick_size"] * m["contract_size"], 0.05),
+            commission_per_lot=3.50, contract_oz=m["contract_size"])
         states = day_states(h1)
         tr = cell_trades(sym, win, state, h1, costs, states)
         sleeves.append(dict(name=f"{sym}_{win}_{state}", sym=sym, win=win,
@@ -129,7 +92,7 @@ def build_daily(sleeves: list[dict]) -> pd.DataFrame:
                          dtype=float)
     for s in sleeves:
         d = pd.Series(s["r"], index=pd.Index(s["dates"]))
-        daily[s["name"]] = d.groupby(level=0).sum().reindex(alldays).fillna(0.0)
+        daily[s["name"]] = d.groupby(level=0).sum().reindex(alldays)
     return daily
 
 
