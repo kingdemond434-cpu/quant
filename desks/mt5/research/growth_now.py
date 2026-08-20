@@ -38,6 +38,7 @@ for _p in (str(_DESK), str(_DESK / "research")):
 
 from mt5desk import families                                    # noqa: E402
 from mt5desk.engine import Costs, run_backtest                  # noqa: E402
+from mt5desk.sizing import q_for_drawdown                       # noqa: E402
 from run_hunt11 import WINDOWS                                  # noqa: E402
 
 UNI = _DESK / "data" / "universe"
@@ -66,25 +67,12 @@ def daily(trades):
                      ).groupby(level=0).sum()
 
 
-def q_for_dd(r, target, shift):
-    x = r.to_numpy(float) - shift
-    lo, hi = 1e-6, 1.0
-    for _ in range(80):
-        q = (lo + hi) / 2
-        eq = np.cumprod(1.0 + q * x)
-        if float((1.0 - eq / np.maximum.accumulate(eq)).max()) > target:
-            hi = q
-        else:
-            lo = q
-    return lo
-
-
 def growth(r, target):
     """CAGR at the stated drawdown budget, half-edge. Returns (cagr, q, n)."""
     if len(r) < 100:
         return float("nan"), 0.0, len(r)
     shift = 0.5 * float(r.mean())
-    q = q_for_dd(r, target, shift)
+    q = q_for_drawdown(r.to_numpy(float) - shift, target)
     x = r.to_numpy(float) - shift
     yrs = max((max(r.index) - min(r.index)).days / 365.25, 0.5)
     eq = float(np.prod(1.0 + q * x))
