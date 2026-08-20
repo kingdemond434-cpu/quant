@@ -92,12 +92,37 @@ def slog(*a) -> None:
 
 
 def per_symbol_costs(meta: dict, sym: str):
-    from mt5desk.engine import Costs  # noqa: E402
-    m = meta[sym]
-    spread = 0.48 if sym == "XAUUSD" else (
-        m["median_spread_pts"] * m["tick_size"] * m["contract_size"])
-    return Costs(spread_per_lot=max(spread, 0.05),
-                 commission_per_lot=3.50, contract_oz=m["contract_size"])
+    """R0644 / GAP 114 ON THE PROMOTION PATH -- the worst place this bug had a copy.
+
+    Until 2026-08-20 this read:
+
+        spread = 0.48 if sym == "XAUUSD" else (
+            m["median_spread_pts"] * m["tick_size"] * m["contract_size"])
+        return Costs(spread_per_lot=max(spread, 0.05), commission_per_lot=3.50, ...)
+
+    Two defects, and shadow is where they mattered most:
+
+      GOLD AT 3% OF ITS SPREAD. 0.48 is dollars per OUNCE in a field that wants dollars per LOT.
+      The engine divides by contract_size 100 and charges 0.0048/oz against a measured 0.16/oz
+      median. `calibrate_engine.py` puts a number on it with a known-answer probe: the constant
+      recovers 0.2099x of the planted cost and FAILS; `from_symbol` recovers 0.9166x and passes.
+
+      EVERY OTHER SYMBOL AT mult=1.0 -- the spread crossed once, where a round trip crosses it
+      going in and again coming out.
+
+    **THIS IS THE DOOR TO CAPITAL, NOT A RESEARCH SCRIPT.** Shadow's verdict thresholds are
+    `exp_r > 0.05R` -> PROMOTION CANDIDATE, `max_dd_r > -25R`. A gold sleeve judged nearly
+    spread-free clears 0.05R on costs it will never actually pay, and the promoter -- which is
+    automatic and correctly refuses hand-editing -- acts on that verdict. The protocol's whole
+    design is that one door is hard to get through; a mispriced cost model widens it silently.
+
+    **EXISTING SHADOW RECORDS WERE ACCRUED AT THE OLD COSTS** and their expectancies are upper
+    bounds. They are not deleted here -- a shadow record is forward evidence and destroying it to
+    tidy a cost change would cost the one thing that cannot be recovered later -- but any verdict
+    resting on them must be re-derived before it promotes anything.
+    """
+    from mt5desk.engine import Costs  # noqa: PLC0415
+    return Costs.from_symbol(meta[sym], mult=2.0)
 
 
 def fetch_h1(sym: str):

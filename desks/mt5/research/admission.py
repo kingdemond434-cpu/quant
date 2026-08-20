@@ -68,6 +68,7 @@ warnings.filterwarnings("ignore")
 
 from mt5desk import families                                    # noqa: E402
 from mt5desk.engine import Costs, run_backtest                  # noqa: E402
+from mt5desk.sizing import solve_size                        # noqa: E402
 from run_hunt11 import WINDOWS                                  # noqa: E402
 from book_sizing import FIVE, SYMBOLS, WINS, compound, q_for_drawdown  # noqa: E402
 
@@ -289,14 +290,13 @@ def main() -> int:
             out.sort(reverse=True)
             return float(np.mean(out[:5])) if out else 0.0
 
-        lo, hi = 1e-5, 0.20
-        for _ in range(50):
-            mid = 0.5 * (lo + hi)
-            if mean_top5(mid) > DD_TARGET * 0.6:
-                hi = mid
-            else:
-                lo = mid
-        return compound(port, lo, yrs, shift=shift)[0]
+        # THE SEARCH COMES FROM mt5desk.sizing, THE OBJECTIVE STAYS HERE. `mean_top5` is a
+        # genuinely different statistic from a single worst drawdown, so this cannot call
+        # `q_for_drawdown` -- but it does not need its own bisection either. `solve_size` bounds
+        # the search at `ruin_q(v)`, the q at which one observed day wipes the account out, which
+        # the hardcoded 0.20 ceiling here did not: that number never moved when the worst day did.
+        q = solve_size(mean_top5, v, DD_TARGET * 0.6)
+        return compound(port, q, yrs, shift=shift)[0]
 
     base_vol = float((pd.Series(base.to_numpy(dtype=float) @ w5).std(ddof=1))
                      * math.sqrt(TPY)) * 0.0343      # q* of the 5, from above

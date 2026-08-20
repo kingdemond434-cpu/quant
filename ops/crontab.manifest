@@ -2721,3 +2721,20 @@ SYSTEMD unit="quant-autodiscovery-slice9.timer" on="*:33" exec="scripts/run_cryp
 # gateway (CONSTANT-ON-SIZING-PATH at auto_lot:203 and realised_q:187, plus 5 call sites
 # defaulting to gold), and the first post-fix run reads OK over 22 priced symbols / 6 call sites.
 59 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_risk_units.py >> data/cro_ai_logs/risk_units.log 2>&1
+
+# --- ONE DRAWDOWN SOLVER, NOT FIVE (GAP 117) ---------------------------------------------------
+# `if max_dd(q) > target: hi = q else: lo = q` reads RUIN as a passed check: past the point where
+# some day has 1 + q*x <= 0 the account is gone, cumprod goes negative, the drawdown expression is
+# NaN, and `NaN > target` is False -- so the search sizes UP. push_ceiling returned q = 2.0000 on
+# every arm, CAGR +inf and -100%. mt5desk/sizing.py was made the single implementation on 08-19;
+# two more copies survived into the merged tree from MASTER (exit_sweep, pyramid_sweep) and a
+# third objective-variant sat in admission.py. Grep found the first two; only this fence found
+# admission, and only after its own positive control caught the fence not working at all.
+# CADENCE: daily. Its input is the source tree, which changes on commits rather than on the clock
+# (L1.28c). Phased to 06:57, before the 06:59 risk-units fence.
+# EVIDENCE: scripts/check_private_bisection.py -> data/private_bisection.json; GAP_REGISTER 117
+# CONFIDENCE: committed-script + positive control -- tests/test_check_private_bisection.py carries
+# the shipped bug verbatim and asserts it is flagged, plus rename/nancumprod/BOM variants. That
+# control is load-bearing: the first version of this fence matched only outermost callees, missed
+# `np.maximum.accumulate`, scanned 1,362 files and reported a clean tree that meant nothing.
+57 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_private_bisection.py >> data/cro_ai_logs/private_bisection.log 2>&1

@@ -33,7 +33,7 @@ from __future__ import annotations
 
 import numpy as np
 
-__all__ = ["max_drawdown", "q_for_drawdown", "ruin_q", "NO_LOSS_CAP"]
+__all__ = ["max_drawdown", "q_for_drawdown", "ruin_q", "solve_size", "NO_LOSS_CAP"]
 
 #: Fallback ceiling when a return series has no losing day at all. Such a series
 #: has zero drawdown at every size, so a drawdown budget simply does not bind on
@@ -74,6 +74,43 @@ def max_drawdown(x: np.ndarray, q: float) -> float:
         if not np.all(np.isfinite(eq)) or np.any(eq <= 0.0):
             return 1.0
         return float((1.0 - eq / np.maximum.accumulate(eq)).max())
+
+
+def solve_size(measure, x: np.ndarray, target: float, *, hi: float | None = None,
+               iters: int = 90) -> float:
+    """The SEARCH, factored out so a different objective does not need a different bisection.
+
+    `measure(q) -> float` is any risk statistic that rises with q; the answer is the largest q
+    whose measure stays within `target`, returned from the LOW side of the bracket so it is a
+    size that satisfied the budget rather than one that just breached it.
+
+    **WHY THIS EXISTS SEPARATELY FROM `q_for_drawdown`.** `research/admission.py` solves for the
+    MEAN OF THE FIVE DEEPEST TROUGHS rather than the single worst drawdown -- a legitimately
+    different objective, and one `q_for_drawdown` cannot express. Before this it therefore had to
+    carry its own bisection, and "one implementation" quietly became "one implementation plus the
+    ones with a different objective", which is how the shape spreads. Now the objective varies and
+    the SEARCH does not: the ruin bound and the low-side return live here, once.
+
+    The bound still comes from the data -- `ruin_q(x)`, the q at which one observed day can wipe
+    the account out -- so no caller can search past ruin regardless of what its measure returns
+    there.
+    """
+    x = np.asarray(x, float)
+    x = x[np.isfinite(x)]
+    if x.size == 0:
+        return 0.0
+    cap = ruin_q(x)
+    hi = min(hi, cap) if hi is not None else cap
+    if not np.isfinite(hi):
+        hi = NO_LOSS_CAP
+    lo = 0.0
+    for _ in range(iters):
+        mid = (lo + hi) / 2
+        if measure(mid) > target:
+            hi = mid
+        else:
+            lo = mid
+    return lo
 
 
 def q_for_drawdown(x: np.ndarray, target: float, *, hi: float | None = None,
