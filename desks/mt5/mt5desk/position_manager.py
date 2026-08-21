@@ -1,4 +1,16 @@
-"""Ratchet the guaranteed outcome of an open position upward, without choking the runner.
+"""Ratchet the stop-protected outcome of an open position upward, without choking the runner.
+
+IT IS "STOP-PROTECTED", NOT "GUARANTEED", AND THE DIFFERENCE IS NOT PEDANTRY
+
+An MT5 stop is a REQUEST, not a floor. Weekend gaps, news spikes, spread blowouts and thin
+books all fill worse than the level asked for -- sometimes much worse. What the invariant below
+actually guarantees is that this desk never REQUESTS a worse level of protection than it
+already holds. The market decides the fill.
+
+Calling it "guaranteed" would have been the same class of error this module exists to fix:
+a number that reads as a certainty while the execution path quietly fails to deliver it. The
+tail risk that survives here -- gap through the stop -- is real, unhedged, and belongs in the
+ruin analysis rather than being papered over by the name of a variable.
 
 WHAT THIS EXISTS TO FIX, AND IT IS NOT A REFINEMENT
 
@@ -19,14 +31,33 @@ it (III.16 -- built is not a status; name the caller).
 
 THE INVARIANT, WHICH IS THE WHOLE DESIGN
 
-Let G be the GUARANTEED OUTCOME of the thesis -- what the position banks if the market
-immediately reverses and takes the current stop:
+Let P be the STOP-PROTECTED OUTCOME of the thesis -- what the position banks if the market
+reverses and the stop fills as requested:
 
-    G = banked_r + remaining_fraction * side * (stop - entry) / stop_distance
+    P = banked_r + remaining_fraction * side * (stop - entry) / stop_distance
 
-Management is only ever allowed to make G larger. Never smaller. Every action here is checked
+Management is only ever allowed to make P larger. Never smaller. Every action here is checked
 against that, and a stop that would widen is REFUSED rather than clamped, because a management
 routine that can loosen a stop is a way to lose more than the position was sized to lose.
+
+THE BROKER IS THE STATE, AND THIS MODULE HOLDS NONE
+
+The floor must advance only when the BROKER has acknowledged the new stop -- not when this
+code has calculated one. A modify can be rejected (invalid stops level, market closed, requote,
+connection lost); a manager that advanced its own internal floor on send would then believe it
+held protection the account does not have, which is the same fiction the module was written to
+eliminate, merely relocated.
+
+That failure mode is designed out rather than guarded against: this module is stateless, and
+`current_stop` MUST be the stop the broker last reported (`position.sl` from a fresh
+`positions_get`). A rejected modify therefore changes nothing -- the next cycle re-reads the
+unchanged stop and simply re-proposes. Idempotency and acknowledgement come free from having
+no state to disagree with the account.
+
+For the same reason `banked_r` and `remaining_fraction` MUST be derived from executed deals and
+live position volume, never from what a simulation thinks was banked. If this module were told
+30% was banked while the broker still held 100%, P would be fiction in the one direction that
+matters -- overstating protection.
 
 WHY A RATCHET AND NOT A TIGHT TRAIL
 
@@ -62,7 +93,7 @@ accident. Arming it against a live account is a separate act, gated by the gatew
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal, Optional
+from typing import Literal
 
 #: Chandelier multiple while the move is still printing new extremes. Wide on purpose: this is
 #: the number that lets a winner become a 5R winner.
@@ -80,9 +111,9 @@ STALL_BARS = 3
 class RatchetDecision:
     """What management wants to do, and why -- in a form a human can audit before it is armed."""
 
-    new_stop: Optional[float]      # None = leave the stop exactly where it is
-    guaranteed_r_before: float
-    guaranteed_r_after: float
+    new_stop: float | None      # None = leave the stop exactly where it is
+    protected_r_before: float
+    protected_r_after: float
     k_used: float
     stalled: bool
     reason: str
@@ -93,18 +124,23 @@ class RatchetDecision:
 
     @property
     def improvement_r(self) -> float:
-        return self.guaranteed_r_after - self.guaranteed_r_before
+        return self.protected_r_after - self.protected_r_before
 
 
-def guaranteed_r(*, entry: float, stop: float, stop_distance: float,
-                 side: Literal[1, -1], banked_r: float = 0.0,
-                 remaining_fraction: float = 1.0) -> float:
-    """What this thesis banks if the market reverses right now and takes the stop.
+def stop_protected_r(*, entry: float, stop: float, stop_distance: float,
+                     side: Literal[1, -1], banked_r: float = 0.0,
+                     remaining_fraction: float = 1.0) -> float:
+    """What this thesis banks if the market reverses and the stop fills AS REQUESTED.
 
     THE NUMBER THE RATCHET IS DEFINED ON. Unrealised P&L is not it: unrealised P&L can be
     +1,490 and still become a loss, which is precisely the outcome management exists to
-    prevent. `guaranteed_r` can only be changed by moving the stop or by banking, so it is the
-    honest measure of what has actually been secured.
+    prevent. This quantity can only be changed by moving the stop or by banking, so it is the
+    honest measure of what has actually been secured -- subject to the fill caveat in the
+    module docstring, which is why it is "protected" and not "guaranteed".
+
+    `stop` must be the BROKER-REPORTED stop and `banked_r`/`remaining_fraction` must come from
+    executed deals and live volume. Passing intended-but-unacknowledged values overstates
+    protection, which is the one direction of error that actually costs money.
 
     Negative until the stop passes entry, and that is correct rather than a flaw -- a trade
     whose stop is still below entry has secured nothing, however green it looks.
@@ -114,6 +150,40 @@ def guaranteed_r(*, entry: float, stop: float, stop_distance: float,
     if not 0.0 <= remaining_fraction <= 1.0:
         raise ValueError(f"remaining_fraction must be in [0,1], got {remaining_fraction}")
     return banked_r + remaining_fraction * side * (stop - entry) / stop_distance
+
+
+def banked_state(*, original_volume: float, live_volume: float,
+                 realised_quote: float, risk_per_lot_quote: float) -> tuple[float, float]:
+    """Reconstruct (banked_r, remaining_fraction) FROM THE BROKER, never from intent.
+
+    `original_volume` is the volume the position was opened with, `live_volume` what
+    `positions_get` reports now, and `realised_quote` the summed profit of the DEAL_ENTRY_OUT
+    deals that closed the difference. `risk_per_lot_quote` converts one lot's initial stop
+    distance into quote currency, so the realised amount becomes an R multiple on the same
+    scale as the open leg.
+
+    THIS EXISTS SO THE TWO NUMBERS CANNOT BE GUESSED. `stop_protected_r` is only honest if
+    what it is told was banked actually was; a partial close that was requested and rejected,
+    or filled at a different size, has to show up here as the broker saw it. Everything is
+    derived from executed quantities, so there is no path by which intent leaks in.
+
+    A position whose live volume EXCEEDS the original is not a partial close -- it is a pyramid
+    add, a reconciliation error, or the wrong ticket, and it refuses rather than returning a
+    negative banked fraction that would flatter the protected outcome.
+    """
+    if original_volume <= 0:
+        raise ValueError(f"original_volume must be positive, got {original_volume}")
+    if live_volume < 0:
+        raise ValueError(f"live_volume cannot be negative, got {live_volume}")
+    if live_volume > original_volume:
+        raise ValueError(
+            f"live volume {live_volume} exceeds original {original_volume} -- this is not a "
+            f"partial close; refusing rather than reporting a negative banked fraction")
+    if risk_per_lot_quote <= 0:
+        raise ValueError(f"risk_per_lot_quote must be positive, got {risk_per_lot_quote}")
+    remaining_fraction = live_volume / original_volume
+    banked_r = realised_quote / (risk_per_lot_quote * original_volume)
+    return banked_r, remaining_fraction
 
 
 def is_stalled(bars_since_extreme: int, stall_bars: int = STALL_BARS) -> bool:
@@ -162,7 +232,7 @@ def ratchet(*, entry: float, current_stop: float, stop_distance: float,
     if side not in (1, -1):
         raise ValueError(f"side must be 1 or -1, got {side}")
 
-    before = guaranteed_r(entry=entry, stop=current_stop, stop_distance=stop_distance,
+    before = stop_protected_r(entry=entry, stop=current_stop, stop_distance=stop_distance,
                           side=side, banked_r=banked_r,
                           remaining_fraction=remaining_fraction)
 
@@ -178,7 +248,7 @@ def ratchet(*, entry: float, current_stop: float, stop_distance: float,
             f"hold: {'trending' if not stalled else 'stalled'} chandelier at k={k:g} sits "
             f"{'below' if side == 1 else 'above'} the current stop, and a stop is never widened")
 
-    after = guaranteed_r(entry=entry, stop=candidate, stop_distance=stop_distance,
+    after = stop_protected_r(entry=entry, stop=candidate, stop_distance=stop_distance,
                          side=side, banked_r=banked_r,
                          remaining_fraction=remaining_fraction)
 
@@ -194,4 +264,5 @@ def ratchet(*, entry: float, current_stop: float, stop_distance: float,
     return RatchetDecision(
         candidate, before, after, k, stalled,
         f"{'stalled' if stalled else 'trending'}: chandelier k={k:g} x ATR {atr:.5f} off "
-        f"extreme {extreme:.5f} -> stop {candidate:.5f}; guaranteed {before:+.3f}R -> {after:+.3f}R")
+        f"extreme {extreme:.5f} -> stop {candidate:.5f}; "
+        f"protected {before:+.3f}R -> {after:+.3f}R")

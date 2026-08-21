@@ -16,44 +16,52 @@ if str(_DESK) not in sys.path:
     sys.path.insert(0, str(_DESK))
 
 from mt5desk.position_manager import (  # noqa: E402
-    K_STALLED, K_TREND, STALL_BARS, chandelier_stop, guaranteed_r, is_stalled, ratchet)
+    K_STALLED,
+    K_TREND,
+    STALL_BARS,
+    banked_state,
+    chandelier_stop,
+    is_stalled,
+    ratchet,
+    stop_protected_r,
+)
 
 # A long that has run well: entered 1.1573, stop 20 pips under, now extended to 1.1693.
-LONG = dict(entry=1.15730, current_stop=1.15530, stop_distance=0.00200,
-            extreme=1.16932, atr=0.00180, side=1)
+LONG = {"entry": 1.15730, "current_stop": 1.15530, "stop_distance": 0.00200,
+        "extreme": 1.16932, "atr": 0.00180, "side": 1}
 #: A short that has actually run far enough for a k=4 trail to beat its opening stop. The
 #: distinction matters: at ATR 18 the trending chandelier sits 72 points off the extreme, so a
 #: move of less than that leaves the ORIGINAL stop tighter -- see
 #: `test_an_early_move_correctly_declines_to_trail_yet`, which pins that case rather than
 #: hiding it behind friendlier numbers.
-SHORT = dict(entry=4391.49, current_stop=4411.49, stop_distance=20.0,
-             extreme=4280.00, atr=18.0, side=-1)
+SHORT = {"entry": 4391.49, "current_stop": 4411.49, "stop_distance": 20.0,
+         "extreme": 4280.00, "atr": 18.0, "side": -1}
 
 
 # ------------------------------------------------- the guaranteed outcome
 
-def test_guaranteed_r_is_negative_while_the_stop_is_still_below_entry():
+def test_stop_protected_r_is_negative_while_the_stop_is_still_below_entry():
     """A trade that looks green has secured NOTHING until its stop passes entry.
 
     This is the distinction the whole module rests on: unrealised P&L can be strongly positive
     and still resolve as a loss. Only `guaranteed_r` can be ratcheted, precisely because it
     cannot move on its own.
     """
-    g = guaranteed_r(entry=1.15730, stop=1.15530, stop_distance=0.00200, side=1)
+    g = stop_protected_r(entry=1.15730, stop=1.15530, stop_distance=0.00200, side=1)
     assert g == pytest.approx(-1.0), "stop one full stop-distance below entry is exactly -1R"
 
 
-def test_guaranteed_r_ignores_current_price_entirely():
+def test_stop_protected_r_ignores_current_price_entirely():
     """Unrealised profit is not an input. If it were, the ratchet would chase price."""
-    a = guaranteed_r(entry=1.15730, stop=1.15900, stop_distance=0.00200, side=1)
-    b = guaranteed_r(entry=1.15730, stop=1.15900, stop_distance=0.00200, side=1)
+    a = stop_protected_r(entry=1.15730, stop=1.15900, stop_distance=0.00200, side=1)
+    b = stop_protected_r(entry=1.15730, stop=1.15900, stop_distance=0.00200, side=1)
     assert a == b == pytest.approx(0.85)
 
 
 def test_banking_raises_the_guaranteed_outcome_without_touching_the_stop():
     """The second lever. Banking secures wealth when tightening would cost more than it saves."""
-    unbanked = guaranteed_r(entry=1.15730, stop=1.15530, stop_distance=0.00200, side=1)
-    banked = guaranteed_r(entry=1.15730, stop=1.15530, stop_distance=0.00200, side=1,
+    unbanked = stop_protected_r(entry=1.15730, stop=1.15530, stop_distance=0.00200, side=1)
+    banked = stop_protected_r(entry=1.15730, stop=1.15530, stop_distance=0.00200, side=1,
                           banked_r=1.5, remaining_fraction=0.5)
     assert banked > unbanked
     assert banked == pytest.approx(1.5 + 0.5 * -1.0)
@@ -63,11 +71,57 @@ def test_banking_raises_the_guaranteed_outcome_without_touching_the_stop():
     (1, 1.15930, 1.0),      # long, stop one stop-distance ABOVE entry = +1R secured
     (-1, 4371.49, 1.0),     # short, stop one stop-distance BELOW entry = +1R secured
 ])
-def test_guaranteed_r_is_symmetric_in_side(side, stop, expected):
+def test_stop_protected_r_is_symmetric_in_side(side, stop, expected):
     entry = 1.15730 if side == 1 else 4391.49
     dist = 0.00200 if side == 1 else 20.0
-    assert guaranteed_r(entry=entry, stop=stop, stop_distance=dist,
+    assert stop_protected_r(entry=entry, stop=stop, stop_distance=dist,
                         side=side) == pytest.approx(expected)
+
+
+# ------------------------------------------------- banked state comes from the broker
+
+def test_banked_state_is_reconstructed_from_executed_volume_not_intent():
+    """Half the position closed for +1.5R worth of quote currency, half still open."""
+    banked_r, remaining = banked_state(original_volume=1.00, live_volume=0.50,
+                                       realised_quote=300.0, risk_per_lot_quote=200.0)
+    assert remaining == pytest.approx(0.5)
+    assert banked_r == pytest.approx(1.5)
+
+
+def test_an_untouched_position_has_banked_nothing_and_is_wholly_remaining():
+    banked_r, remaining = banked_state(original_volume=1.45, live_volume=1.45,
+                                       realised_quote=0.0, risk_per_lot_quote=200.0)
+    assert banked_r == 0.0 and remaining == pytest.approx(1.0)
+
+
+def test_volume_above_the_original_refuses_rather_than_flattering_the_outcome():
+    """A pyramid add or the wrong ticket. Returning a negative banked fraction here would
+    OVERSTATE protection, which is the one direction of error that costs money."""
+    with pytest.raises(ValueError, match="not a partial close"):
+        banked_state(original_volume=1.00, live_volume=1.50,
+                     realised_quote=0.0, risk_per_lot_quote=200.0)
+
+
+def test_a_realised_loss_on_the_closed_leg_lowers_the_protected_outcome():
+    """Banking is not automatically good. A partial closed at a loss must show as negative."""
+    banked_r, remaining = banked_state(original_volume=1.00, live_volume=0.50,
+                                       realised_quote=-100.0, risk_per_lot_quote=200.0)
+    assert banked_r == pytest.approx(-0.5) and remaining == pytest.approx(0.5)
+    total = stop_protected_r(entry=1.15730, stop=1.15730, stop_distance=0.00200, side=1,
+                             banked_r=banked_r, remaining_fraction=remaining)
+    assert total == pytest.approx(-0.5), "a losing partial must drag the protected total down"
+
+
+@pytest.mark.parametrize("kwargs", [
+    {"original_volume": 0.0, "live_volume": 0.0,
+     "realised_quote": 0.0, "risk_per_lot_quote": 200.0},
+    {"original_volume": 1.0, "live_volume": -0.1,
+     "realised_quote": 0.0, "risk_per_lot_quote": 200.0},
+    {"original_volume": 1.0, "live_volume": 0.5, "realised_quote": 0.0, "risk_per_lot_quote": 0.0},
+])
+def test_banked_state_rejects_impossible_inputs(kwargs):
+    with pytest.raises(ValueError):
+        banked_state(**kwargs)
 
 
 # ------------------------------------------------- the stall switch
@@ -86,7 +140,7 @@ def test_a_stalled_move_gets_a_tighter_stop_than_a_trending_one():
     assert stalled.k_used == K_STALLED and stalled.stalled
     assert stalled.new_stop > trending.new_stop, (
         "a stalled move must protect more, or the two-state design buys nothing")
-    assert stalled.guaranteed_r_after > trending.guaranteed_r_after
+    assert stalled.protected_r_after > trending.protected_r_after
 
 
 def test_the_trending_stop_leaves_real_room_rather_than_hugging_price():
@@ -106,7 +160,7 @@ def test_a_stop_is_never_widened_long():
     d = ratchet(entry=1.15730, current_stop=1.15900, stop_distance=0.00200,
                 extreme=1.15950, atr=0.00500, side=1, bars_since_extreme=0)
     assert not d.moves, "widened a long's stop"
-    assert d.guaranteed_r_after == d.guaranteed_r_before
+    assert d.protected_r_after == d.protected_r_before
     assert "never widened" in d.reason
 
 
@@ -114,7 +168,7 @@ def test_a_stop_is_never_widened_short():
     d = ratchet(entry=4391.49, current_stop=4371.49, stop_distance=20.0,
                 extreme=4365.00, atr=60.0, side=-1, bars_since_extreme=0)
     assert not d.moves, "widened a short's stop"
-    assert d.guaranteed_r_after == d.guaranteed_r_before
+    assert d.protected_r_after == d.protected_r_before
 
 
 def test_the_guaranteed_outcome_never_decreases_across_any_sequence():
@@ -128,17 +182,17 @@ def test_the_guaranteed_outcome_never_decreases_across_any_sequence():
     stop = 1.15530
     path = [(1.1600, 0), (1.1650, 0), (1.1693, 0), (1.1693, 1), (1.1693, 2),
             (1.1693, 3), (1.1693, 5), (1.1720, 0), (1.1750, 0), (1.1750, 4)]
-    prev_g = guaranteed_r(entry=entry, stop=stop, stop_distance=dist, side=1)
+    prev_g = stop_protected_r(entry=entry, stop=stop, stop_distance=dist, side=1)
     for extreme, bars in path:
         d = ratchet(entry=entry, current_stop=stop, stop_distance=dist,
                     extreme=extreme, atr=atr, side=1, bars_since_extreme=bars)
-        assert d.guaranteed_r_after >= prev_g - 1e-12, (
-            f"guaranteed outcome fell {prev_g:+.4f}R -> {d.guaranteed_r_after:+.4f}R "
+        assert d.protected_r_after >= prev_g - 1e-12, (
+            f"guaranteed outcome fell {prev_g:+.4f}R -> {d.protected_r_after:+.4f}R "
             f"at extreme={extreme} bars={bars}")
         if d.moves:
             assert d.new_stop > stop, "a 'move' that did not improve the long's stop"
             stop = d.new_stop
-        prev_g = max(prev_g, d.guaranteed_r_after)
+        prev_g = max(prev_g, d.protected_r_after)
     assert prev_g > 0, "a move this favourable should have secured a positive outcome"
 
 
@@ -153,7 +207,7 @@ def test_a_runner_that_reverses_hard_keeps_what_it_secured():
     d = ratchet(entry=entry, current_stop=1.15530, stop_distance=dist,
                 extreme=1.16932, atr=atr, side=1, bars_since_extreme=STALL_BARS)
     assert d.moves and d.new_stop > entry
-    assert d.guaranteed_r_after > 0, "stalled at +6R of open profit and secured nothing"
+    assert d.protected_r_after > 0, "stalled at +6R of open profit and secured nothing"
 
 
 # ------------------------------------------------- input validation
@@ -161,7 +215,7 @@ def test_a_runner_that_reverses_hard_keeps_what_it_secured():
 @pytest.mark.parametrize("bad", [0.0, -1.0])
 def test_a_nonpositive_stop_distance_raises_rather_than_dividing(bad):
     with pytest.raises(ValueError):
-        guaranteed_r(entry=1.0, stop=0.9, stop_distance=bad, side=1)
+        stop_protected_r(entry=1.0, stop=0.9, stop_distance=bad, side=1)
 
 
 def test_a_nonpositive_atr_raises_rather_than_producing_a_stop_at_the_extreme():
@@ -178,7 +232,7 @@ def test_an_invalid_side_raises():
 
 def test_remaining_fraction_outside_zero_to_one_raises():
     with pytest.raises(ValueError):
-        guaranteed_r(entry=1.0, stop=0.9, stop_distance=0.1, side=1, remaining_fraction=1.5)
+        stop_protected_r(entry=1.0, stop=0.9, stop_distance=0.1, side=1, remaining_fraction=1.5)
 
 
 # ------------------------------------------------- shorts get the same guarantees
@@ -186,14 +240,14 @@ def test_remaining_fraction_outside_zero_to_one_raises():
 def test_the_short_side_ratchets_downward():
     d = ratchet(**SHORT, bars_since_extreme=0)
     assert d.moves and d.new_stop < SHORT["current_stop"]
-    assert d.guaranteed_r_after > d.guaranteed_r_before
+    assert d.protected_r_after > d.protected_r_before
 
 
 def test_the_short_side_tightens_when_stalled():
     trending = ratchet(**SHORT, bars_since_extreme=0)
     stalled = ratchet(**SHORT, bars_since_extreme=STALL_BARS)
     assert stalled.new_stop < trending.new_stop
-    assert stalled.guaranteed_r_after > trending.guaranteed_r_after
+    assert stalled.protected_r_after > trending.protected_r_after
 
 
 def test_an_early_move_correctly_declines_to_trail_yet():
@@ -209,5 +263,5 @@ def test_an_early_move_correctly_declines_to_trail_yet():
     d = ratchet(entry=4391.49, current_stop=4411.49, stop_distance=20.0,
                 extreme=4340.00, atr=18.0, side=-1, bars_since_extreme=0)
     assert not d.moves
-    assert d.guaranteed_r_after == d.guaranteed_r_before == pytest.approx(-1.0)
+    assert d.protected_r_after == d.protected_r_before == pytest.approx(-1.0)
     assert "never widened" in d.reason
