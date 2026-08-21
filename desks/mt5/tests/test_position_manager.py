@@ -21,6 +21,7 @@ from mt5desk.position_manager import (  # noqa: E402
     STALL_BARS,
     banked_state,
     chandelier_stop,
+    extreme_and_stall,
     is_stalled,
     ratchet,
     stop_protected_r,
@@ -122,6 +123,53 @@ def test_a_realised_loss_on_the_closed_leg_lowers_the_protected_outcome():
 def test_banked_state_rejects_impossible_inputs(kwargs):
     with pytest.raises(ValueError):
         banked_state(**kwargs)
+
+
+# ------------------------------------------------- locating the extreme
+
+def test_extreme_and_stall_finds_the_high_water_mark_for_a_long():
+    highs = [1.1600, 1.1650, 1.1693, 1.1670, 1.1660]
+    lows = [1.1580, 1.1620, 1.1660, 1.1640, 1.1630]
+    extreme, bars = extreme_and_stall(highs=highs, lows=lows, side=1)
+    assert extreme == pytest.approx(1.1693)
+    assert bars == 2, "two bars have printed since the high"
+
+
+def test_extreme_and_stall_uses_lows_for_a_short():
+    highs = [4400.0, 4380.0, 4360.0, 4370.0]
+    lows = [4390.0, 4370.0, 4340.0, 4355.0]
+    extreme, bars = extreme_and_stall(highs=highs, lows=lows, side=-1)
+    assert extreme == pytest.approx(4340.0)
+    assert bars == 1
+
+
+def test_a_fresh_extreme_on_the_latest_bar_is_never_stalled():
+    highs = [1.1600, 1.1650, 1.1700]
+    lows = [1.1580, 1.1620, 1.1660]
+    _, bars = extreme_and_stall(highs=highs, lows=lows, side=1)
+    assert bars == 0 and not is_stalled(bars)
+
+
+def test_a_revisited_extreme_re_confirms_rather_than_counting_as_stale():
+    """LAST occurrence wins on ties, and this is a deliberate choice.
+
+    A move that pulls back and then returns to its high has RE-CONFIRMED the level. Taking the
+    first occurrence would call this three bars stale and tighten the stop on a trend that is
+    still working -- exactly the choke the stall switch exists to avoid.
+    """
+    highs = [1.1693, 1.1670, 1.1660, 1.1693]
+    lows = [1.1660, 1.1640, 1.1630, 1.1660]
+    extreme, bars = extreme_and_stall(highs=highs, lows=lows, side=1)
+    assert extreme == pytest.approx(1.1693)
+    assert bars == 0, "a revisited high is a fresh extreme, not a stale one"
+    assert not is_stalled(bars)
+
+
+def test_extreme_and_stall_refuses_empty_or_ragged_input():
+    with pytest.raises(ValueError, match="no bars"):
+        extreme_and_stall(highs=[], lows=[], side=1)
+    with pytest.raises(ValueError, match="length mismatch"):
+        extreme_and_stall(highs=[1.0, 2.0], lows=[1.0], side=1)
 
 
 # ------------------------------------------------- the stall switch

@@ -32,6 +32,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import MetaTrader5 as mt5
 import numpy as np
 import pandas as pd
+from mt5desk import position_manager as _pm  # noqa: E402
 from mt5desk import provenance as _prov  # noqa: E402
 from mt5desk.independence import measure_from_ledger  # noqa: E402
 from mt5desk.config import desk_root, gateway_paused, terminal_path  # noqa: E402
@@ -841,6 +842,157 @@ def close_positions(st: dict, symbol: str) -> None:
             f"{res.comment if res else ''}")
 
 
+#: Minimum improvement, in R, before a stop modification is worth sending. A modify costs a
+#: round trip to the broker and a chance of rejection; nudging a stop by a fraction of a tick
+#: every pass spends both for nothing. Expressed in R rather than price so it means the same
+#: thing on gold and on EURUSD.
+MIN_RATCHET_IMPROVEMENT_R = 0.05
+
+
+def _original_stop_distance(st: dict, ticket: int, price_open: float, sl: float) -> float | None:
+    """The stop distance this position was OPENED with, captured once and then remembered.
+
+    R is defined against the INITIAL risk. Once management starts moving the stop, the live
+    `sl` no longer encodes it, so the distance has to be captured while it still does -- the
+    first time this ticket is seen -- and reused thereafter.
+
+    THE RESTART HAZARD IS REAL AND IS LOGGED RATHER THAN HIDDEN. If `data/gateway_state.json`
+    is lost while a managed position is open, first sight after the restart captures the ALREADY
+    MOVED stop and every subsequent R for that ticket is computed against a smaller denominator,
+    overstating the multiple. The capture is therefore logged loudly on the pass it happens, so
+    a capture appearing for a position that is not brand new is visible as the anomaly it is.
+    A position with no stop at all returns None and is left alone: there is no initial risk to
+    ratchet against, and inventing one would be inventing the denominator of every number that
+    follows.
+    """
+    if not sl:
+        return None
+    store = st.setdefault("orig_stop_dist", {})
+    key = str(ticket)
+    if key not in store:
+        dist = abs(price_open - sl)
+        if dist <= 0:
+            return None
+        store[key] = dist
+        log(f"MANAGE capture: ticket {ticket} initial stop distance {dist:.5f} "
+            f"(open {price_open:.5f} sl {sl:.5f}) -- expected only on a position's first pass")
+    return float(store[key])
+
+
+def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
+    """Ratchet the stop on every open position. SHADOW UNLESS `st["armed"]`.
+
+    THE GAP THIS CLOSES. `engine.py` models a trailing, banking runner and every backtest
+    expectancy on this desk is computed with it applied; this gateway placed a stop at entry and
+    never touched it again. The two were different strategies and the difference was the whole
+    right tail -- a live winner could round-trip to its opening stop, an outcome the backtest
+    would never have shown because there the stop had moved.
+
+    THE BROKER IS THE STATE. `p.sl` is re-read from `positions_get` on every pass and fed in as
+    the current stop, so a rejected modify simply leaves the next pass re-proposing against the
+    unchanged level. Nothing is cached that could disagree with the account, which is what makes
+    this idempotent and acknowledgement-driven rather than merely hopeful.
+    """
+    symbols = list({s["symbol"] for s in sleeves} | {"XAUUSD"})
+    for symbol in symbols:
+        positions = mt5.positions_get(symbol=symbol) or []
+        if not positions:
+            continue
+        info = mt5.symbol_info(symbol)
+        if info is None:
+            log(f"MANAGE {symbol}: no symbol_info; skipped")
+            continue
+        for p in positions:
+            side = 1 if p.type == mt5.POSITION_TYPE_BUY else -1
+            dist = _original_stop_distance(st, p.ticket, p.price_open, p.sl)
+            if dist is None:
+                log(f"MANAGE ticket {p.ticket} ({symbol}): no stop on the position; "
+                    f"nothing to ratchet against and none invented")
+                continue
+
+            # Bars SINCE ENTRY only. A pre-entry extreme is a level the thesis never reached.
+            since = mt5.copy_rates_range(symbol, mt5.TIMEFRAME_H1,
+                                         datetime.fromtimestamp(p.time, tz=UTC),
+                                         datetime.now(tz=UTC))
+            if since is None or len(since) < 2:
+                log(f"MANAGE ticket {p.ticket} ({symbol}): fewer than 2 bars since entry; "
+                    f"too early to locate an extreme")
+                continue
+            bars = pd.DataFrame(since)
+
+            # ATR on a longer window than the holding period, because a young position has too
+            # few bars of its own to characterise volatility with.
+            h1 = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_H1, 0, 400)
+            if h1 is None or len(h1) < ATR_N + 1:
+                log(f"MANAGE ticket {p.ticket} ({symbol}): ATR unavailable; skipped")
+                continue
+            hd = pd.DataFrame(h1)
+            tr = pd.concat(
+                [hd["high"] - hd["low"],
+                 (hd["high"] - hd["close"].shift(1)).abs(),
+                 (hd["low"] - hd["close"].shift(1)).abs()], axis=1).max(axis=1)
+            atr = float(tr.ewm(alpha=1 / ATR_N, min_periods=ATR_N).mean().iloc[-1])
+            if not (atr > 0):
+                log(f"MANAGE ticket {p.ticket} ({symbol}): ATR non-positive; skipped")
+                continue
+
+            extreme, stall = _pm.extreme_and_stall(
+                highs=[float(x) for x in bars["high"]],
+                lows=[float(x) for x in bars["low"]], side=side)
+            decision = _pm.ratchet(
+                entry=float(p.price_open), current_stop=float(p.sl), stop_distance=dist,
+                extreme=extreme, atr=atr, side=side, bars_since_extreme=stall)
+
+            tag = f"MANAGE ticket {p.ticket} ({symbol})"
+            if not decision.moves:
+                log(f"{tag}: {decision.reason}")
+                continue
+            if decision.improvement_r < MIN_RATCHET_IMPROVEMENT_R:
+                log(f"{tag}: improvement {decision.improvement_r:+.3f}R below the "
+                    f"{MIN_RATCHET_IMPROVEMENT_R:.2f}R floor; not worth a modify")
+                continue
+
+            # THE VENUE'S OWN MINIMUM DISTANCE. A stop inside stops_level is rejected, and a
+            # rejection every pass is a management loop that looks busy and protects nothing.
+            stops_level = int(getattr(info, "trade_stops_level", 0) or 0)
+            tick_size = float(getattr(info, "trade_tick_size", 0.0) or 0.0)
+            tick_now = mt5.symbol_info_tick(symbol)
+            if stops_level and tick_size and tick_now is not None:
+                ref = tick_now.bid if side == 1 else tick_now.ask
+                if abs(ref - decision.new_stop) < stops_level * tick_size:
+                    log(f"{tag}: proposed stop {decision.new_stop:.5f} is inside the venue's "
+                        f"{stops_level}-point stops level; held")
+                    continue
+
+            if not st["armed"]:
+                log(f"SHADOW would modify {tag}: sl {p.sl:.5f} -> {decision.new_stop:.5f} "
+                    f"| {decision.reason}")
+                continue
+
+            res = mt5.order_send({
+                "action": mt5.TRADE_ACTION_SLTP,
+                "symbol": symbol,
+                "position": p.ticket,
+                "sl": decision.new_stop,
+                "tp": p.tp,
+                "magic": MAGIC,
+            })
+            rc = res.retcode if res else None
+            log(f"{tag}: MODIFY sl {p.sl:.5f} -> {decision.new_stop:.5f} "
+                f"(protected {decision.protected_r_before:+.3f}R -> "
+                f"{decision.protected_r_after:+.3f}R) retcode={rc} "
+                f"{diagnose(rc, res.comment if res else '')}")
+
+            # CONFIRM FROM THE BROKER, not from the return code. A retcode is an answer about
+            # the request; the position is the answer about the account.
+            after = mt5.positions_get(ticket=p.ticket) or []
+            if after:
+                got = float(after[0].sl)
+                if abs(got - decision.new_stop) > (tick_size or 1e-9):
+                    log(f"{tag}: WARNING requested sl {decision.new_stop:.5f} but the broker "
+                        f"reports {got:.5f} -- next pass re-proposes against what it reports")
+
+
 def reconcile(st: dict) -> dict:
     pos = []
     pend = []
@@ -1019,6 +1171,21 @@ def main() -> None:
         save_state(st)
 
     sleeves = sleeve_set()
+
+    # MANAGE WHAT IS ALREADY OPEN BEFORE CONSIDERING ANYTHING NEW, and run it on EVERY pass --
+    # before the regime filter, before the equity floor, before heat. Those gates decide whether
+    # to OPEN a position; a position that is already on carries risk regardless of whether the
+    # desk would enter it again today, and hibernating a sleeve must not orphan its open trade.
+    # Shadow unless st["armed"]: unarmed passes log the modification they would have sent.
+    try:
+        manage_open_positions(st, sleeves)
+    except Exception as exc:                                        # noqa: BLE001
+        # Never let management take the gateway down. A desk that cannot ratchet a stop is
+        # degraded; a desk that cannot place or reconcile anything because management raised is
+        # broken, and the second is strictly worse than the first.
+        log(f"MANAGE FAILED (positions left untouched): {type(exc).__name__}: {exc}")
+    save_state(st)
+
     reg_killed = regime_hibernate(sleeves)
     if reg_killed:
         log(f"REGIME: auto-hibernate, no new brackets: {reg_killed}")

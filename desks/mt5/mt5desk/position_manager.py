@@ -92,6 +92,7 @@ accident. Arming it against a live account is a separate act, gated by the gatew
 """
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Literal
 
@@ -184,6 +185,31 @@ def banked_state(*, original_volume: float, live_volume: float,
     remaining_fraction = live_volume / original_volume
     banked_r = realised_quote / (risk_per_lot_quote * original_volume)
     return banked_r, remaining_fraction
+
+
+def extreme_and_stall(*, highs: Sequence[float], lows: Sequence[float],
+                      side: Literal[1, -1]) -> tuple[float, int]:
+    """The high-water mark of the thesis, and how many bars have passed since it was set.
+
+    `highs`/`lows` must cover ONLY the bars since the position opened, oldest first. Including
+    bars from before entry would let a pre-entry extreme define the trail, which is a level the
+    thesis never actually reached.
+
+    LAST occurrence wins on ties, not first. A move that revisits its high after a pullback has
+    RE-CONFIRMED the extreme, and treating it as three bars stale would tighten the stop on a
+    trend that is still working -- the precise failure the stall switch exists to avoid.
+
+    Returns bars-since as a count of bars AFTER the extreme bar, so the bar that sets a fresh
+    extreme yields 0 and cannot be stalled.
+    """
+    if len(highs) != len(lows):
+        raise ValueError(f"highs/lows length mismatch: {len(highs)} vs {len(lows)}")
+    if not highs:
+        raise ValueError("no bars since entry; cannot locate an extreme")
+    series = highs if side == 1 else lows
+    best = max(series) if side == 1 else min(series)
+    idx = len(series) - 1 - list(reversed(series)).index(best)
+    return float(best), len(series) - 1 - idx
 
 
 def is_stalled(bars_since_extreme: int, stall_bars: int = STALL_BARS) -> bool:
