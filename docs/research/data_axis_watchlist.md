@@ -3307,3 +3307,47 @@ this sits unread is a day of an irreplaceable series that is mined by nobody and
 **CROSS-REFS:** R0637 (write-only tape + invisible to `moat_utilisation`, whose inventory globs only
 `data/moat/<venue>/<SYMBOL>/*.jsonl.gz` and therefore counts this file in neither numerator nor
 denominator); OP-093 (the reduce/vector shape); R0291 (the collector's origin).
+
+### 38. Free 1-second NQ futures archive (2010-2026), community-shared via Google Drive — grade: **UNVERIFIED — second-hand from a social post, NOT FETCHED, and blocked from this container** [§33: pending -> needs the box]
+- **Provides / replaces:** claimed 16 years of 1-SECOND Nasdaq-100 futures (NQ) data, 2010-2026,
+  released free by a retail algo-trading Discord (their own paid source is stated as Databento).
+  Would be the desk's first sub-minute archive of ANY instrument and its first index-complex data
+  of any granularity.
+- **Mandate check — PASSES, and this needed checking before anything else.** The MT5/Fusion
+  mandate names equity indices explicitly, and NQ informs the NAS100/USTEC CFD, so this is
+  reference data for an in-universe instrument rather than a return to a forbidden venue-native
+  universe. It is NOT a crypto-exchange source and does not touch that prohibition.
+- **Provenance:** a TikTok screenshot relayed by the principal, 2026-08-21. The Drive folder id is
+  legible in the image. Nothing was fetched: `drive.google.com` returns 403 at this container's
+  proxy (same policy block as `dash.quanttt.xyz`), so NOT ONE BYTE of this has been seen. The
+  claim is entirely the poster's.
+- **THE PREREQUISITE, AND IT INVERTS THE OBVIOUS ORDER.** The desk holds NO index instrument.
+  `mt5desk/universe.py` records that US500/USTEC/NAS100/SPX500/JP225 "were simply not offered on
+  the Vantage account", and the current 23-symbol universe is FX + metals + BTC/ETH. So before
+  this archive is worth a single hour: run `research/discover_universe.py` and find out whether
+  Fusion lists an index CFD at all. If it does not, this data informs nothing this desk can
+  trade, and that is a five-minute question gating a multi-day ingest.
+- **Verify-don't-trust — four separate reasons the headline oversells it:**
+  1. **1s is 3,600x finer than the H1 this desk trades.** It is not a signal-discovery input at
+     the desk's horizon and will not surface H1 edges that H1 data cannot.
+  2. **Its real value is the reality gap.** `engine.py` fills at bar opens and stops at bar
+     extremes; 1s data is what MEASURES whether that is optimistic. That is the same
+     backtest-vs-execution theme as the unwired runner, and it is worth more than another hunt.
+  3. **CME NQ futures are NOT the Fusion NAS100 CFD.** Basis, trading hours, contract roll and
+     the CFD's own synthetic spread all differ. A backtest on futures ticks that is executed on
+     a CFD is a reality gap of its own, freshly created.
+  4. **Provenance is a Google Drive folder from an anonymous community.** Cross-check against a
+     known-good reference before any result is believed; an unverified archive that silently
+     drops sessions produces beautiful, wrong microstructure.
+- **The "free strategies" half is NOT a data source and should not be treated as one.** The
+  ELITE_QUANT_INTELLIGENCE_MANDATE PART III rule applies exactly: social proof is never evidence,
+  and a source earns budget by measured downstream conversion. Note the poster says it himself --
+  "test every single online strategy you know... you'll realize how messed up this industry is".
+  Published strategies enter as HYPOTHESES against the same universal gate as anything else, and
+  that gate now demands t ~ 4.9-5.7 after deflation. They get no shortcut for being free.
+- **Genealogy:** cadence = one-off dump, no update guarantee · license = unstated (a Drive share
+  is not a licence grant; check before any commercial reliance) · failure modes: unverifiable
+  provenance, possible session gaps, contract-roll handling unknown, no stated methodology.
+- **Grade: UNVERIFIED.** Honest gap: the source has not been reached, the data has not been seen,
+  and the instrument it would inform is not currently in the desk's universe. Three unknowns, in
+  the order they must be resolved.
