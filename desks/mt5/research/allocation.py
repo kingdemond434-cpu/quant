@@ -26,7 +26,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from portfolio_projection import build_daily, build_sleeves  # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
-Q_TOTAL = 0.055
+
+# THE DESK HAS ONE RISK BUDGET AND IT LIVES IN THE GATEWAY. This read 0.055 -- the old
+# ~92%-of-Kelly setting -- while gateway.Q_OPT is derived from the drawdown tolerance, so the
+# allocator was optimising and reporting a book at several times the risk the account actually
+# runs. Two files disagreeing about the risk budget is how a superseded number gets quoted back
+# as evidence. Imported rather than copied, so it can never drift again.
+#
+# RESTORED 2026-08-20 after the VPS sync reverted it to a literal for the second time. If this
+# line is ever a bare number again, that is the same regression, not a new decision.
+try:
+    from mt5desk.gateway import Q_OPT as Q_TOTAL          # noqa: E402
+except Exception:                                          # MetaTrader5 absent (research boxes)
+    from mt5desk.gateway_config_fallback import Q_OPT as Q_TOTAL  # type: ignore  # noqa: E402
 LR = 5e-3
 ITERS = 4000
 

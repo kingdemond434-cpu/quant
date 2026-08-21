@@ -115,18 +115,54 @@ def test_coverage_counts_usable_separately_from_present():
 
 
 def test_the_real_universe_on_disk_classifies_cleanly():
-    """Against the actual 22-symbol universe.json, so the classifier is checked on real names."""
+    """Against the actual universe.json, so the classifier is checked on real names.
+
+    THE PIN HERE USED TO BE `len(usable) == 19` AND `stale == [AUDCAD, AUDNZD, NZDCAD]`, and both
+    halves were retired by a genuine universe refresh rather than by a regression:
+
+      - the stale summary metadata was fixed upstream, so AUDNZD and NZDCAD now carry real bar
+        counts and there is no unusable symbol left to name;
+      - EURAUD and GBPAUD were added;
+      - AUDCAD WAS DROPPED FROM THE VENUE SNAPSHOT ENTIRELY.
+
+    That last one is not cosmetic and is asserted separately below -- hunt12 published five
+    AUDCAD survivors, so the desk holds gated cells naming an instrument the broker no longer
+    lists. The count is deliberately NOT re-pinned to 23: a fixed number here fails on every
+    legitimate universe refresh and teaches whoever is on shift to edit the number rather than
+    read it, which is how the previous pin died. What must hold is that every symbol classifies
+    and every symbol is usable; growth is expected.
+    """
     import json
     p = _DESK / "data" / "universe" / "universe.json"
     if not p.exists():
         pytest.skip("universe.json not present")
-    inst = classify_all(json.loads(p.read_text(encoding="utf-8")))
+    raw = json.loads(p.read_text(encoding="utf-8"))
+    inst = classify_all(raw)
     unknown = [i.symbol for i in inst if i.asset_class == "unknown"]
     assert not unknown, f"unclassified symbols in the live universe: {unknown}"
-    # 19 of 22 usable: AUDCAD/AUDNZD/NZDCAD carry bars=0 in universe.json even though their
-    # parquet files hold full history (hunt12 swept AUDCAD over 53,625 bars). Stale summary
-    # metadata, not missing data -- pinned so a real regression is distinguishable from it.
     usable = sorted(i.symbol for i in inst if i.usable)
     stale = sorted(i.symbol for i in inst if not i.usable)
-    assert len(usable) == 19, f"expected 19 usable, got {len(usable)}: {usable}"
-    assert stale == ["AUDCAD", "AUDNZD", "NZDCAD"], f"different symbols unusable: {stale}"
+    assert not stale, (
+        f"symbols present but unusable: {stale}. Every symbol carried real bar counts at the "
+        f"2026-08-20 refresh, so an unusable one is stale summary metadata to chase, not a pin "
+        f"to widen")
+    assert len(usable) >= 19, f"universe shrank below the 2026-08 floor: {usable}"
+
+
+def test_audcad_left_the_universe_and_its_survivors_are_therefore_unpriceable():
+    """A gated cell naming an instrument the venue no longer lists cannot reach capital.
+
+    hunt12 published five AUDCAD survivors. AUDCAD is absent from the current snapshot, so any
+    consumer that does `meta[sym]` on a survivor list raises KeyError mid-run -- which is how
+    `portfolio_projection` died rather than reporting a smaller book. The refusal has to be
+    explicit and named (L1.28a): the sleeve is UNPRICEABLE, which is a real answer, and is not
+    the same as the sleeve being absent or having failed.
+    """
+    import json
+    p = _DESK / "data" / "universe" / "universe.json"
+    if not p.exists():
+        pytest.skip("universe.json not present")
+    raw = json.loads(p.read_text(encoding="utf-8"))
+    assert "AUDCAD" not in raw, (
+        "AUDCAD is back in the venue snapshot -- delete this test and re-admit its hunt12 "
+        "survivors through the universal gate rather than assuming the old results still stand")

@@ -41,6 +41,32 @@ UNIVERSE = json.loads(
 #: What the deleted constant asserted for every instrument on the desk.
 LEGACY_CONSTANT = 100 * 0.92
 
+#: Gold's EUR-per-price-unit, DERIVED FROM THE SNAPSHOT rather than pinned as a literal.
+#:
+#: This was `86.414` written out three times. That number is `tick_value / tick_size` for XAUUSD
+#: in `universe.json`, and `tick_value` carries the EUR/USD rate of the day the snapshot was
+#: taken -- so it moves every time the universe is refreshed. It duly broke on the refresh that
+#: took EUR/USD from 1.15722 to 1.15844, failing three tests over a 0.1% FX move that is not a
+#: defect in anything.
+#:
+#: A pin is only worth having when the pinned thing is supposed to hold still. What these tests
+#: actually assert is that gold is priced FROM THE VENUE SNAPSHOT instead of from the deleted
+#: `CONTRACT_OZ * FX_EUR` constant, and that survives re-derivation. `LEGACY_CONSTANT` above
+#: stays a literal for exactly the opposite reason: it is a historical fact about deleted code
+#: and must never track anything.
+GOLD_EUR_PER_UNIT = float(UNIVERSE["XAUUSD"]["tick_value"]) / float(
+    UNIVERSE["XAUUSD"]["tick_size"])
+
+#: Same reasoning for the JPY cross used in the fallback-chain test (was pinned at `542.40`).
+CADJPY_EUR_PER_UNIT = float(UNIVERSE["CADJPY"]["tick_value"]) / float(
+    UNIVERSE["CADJPY"]["tick_size"])
+
+# The re-derivation is worthless if it can silently agree with a broken snapshot, so bound it:
+# gold near 1 EUR/tick at 0.01 ticks is ~86, and anything outside this band means the snapshot
+# itself is wrong rather than merely current.
+assert 50.0 < GOLD_EUR_PER_UNIT < 150.0, (
+    f"XAUUSD tick economics out of band in universe.json: {GOLD_EUR_PER_UNIT}")
+
 
 def _load():
     """Exec the pure sizing helpers; gateway.py imports MetaTrader5."""
@@ -100,7 +126,7 @@ def test_live_symbol_info_beats_the_snapshot():
     """tick_value carries today's FX rate, so a live handle is the only current answer."""
     live = _Info(tick_size=0.01, tick_value=1.00)          # snapshot says 0.864140
     assert ru.eur_per_price_unit("XAUUSD", live) == pytest.approx(100.0)
-    assert ru.eur_per_price_unit("XAUUSD") == pytest.approx(86.414, rel=1e-4)
+    assert ru.eur_per_price_unit("XAUUSD") == pytest.approx(GOLD_EUR_PER_UNIT, rel=1e-4)
 
 
 def test_an_unpriceable_instrument_refuses_rather_than_defaulting():
@@ -153,7 +179,7 @@ def test_realised_q_tells_the_truth_for_every_instrument():
 def test_gold_is_unchanged_within_the_stale_fx_constant():
     """The gold book is the only armed one, so its numbers may only move by the amount the
     frozen FX rate was actually wrong -- 92 against a measured 86.41, i.e. 6.5%."""
-    assert NS["_eur_per_price_unit"]("XAUUSD") == pytest.approx(86.414, rel=1e-4)
+    assert NS["_eur_per_price_unit"]("XAUUSD") == pytest.approx(GOLD_EUR_PER_UNIT, rel=1e-4)
     assert abs(NS["_eur_per_price_unit"]("XAUUSD") / LEGACY_CONSTANT - 1) < 0.07
 
 
@@ -163,8 +189,9 @@ def test_the_fallback_chain_is_live_then_snapshot_then_gold_alone():
     the hardcoded constants, where gold answers and everything else refuses."""
     dead = _Info(0.0, 0.0)
     # tier 2: live handle is useless, snapshot still prices both
-    assert NS["_eur_per_price_unit"]("XAUUSD", dead) == pytest.approx(86.414, rel=1e-4)
-    assert NS["_eur_per_price_unit"]("CADJPY", dead) == pytest.approx(542.40, rel=1e-4)
+    assert NS["_eur_per_price_unit"]("XAUUSD", dead) == pytest.approx(GOLD_EUR_PER_UNIT, rel=1e-4)
+    assert NS["_eur_per_price_unit"]("CADJPY", dead) == pytest.approx(
+        CADJPY_EUR_PER_UNIT, rel=1e-4)
     # tier 3: absent from the snapshot too -- and it is not gold, so it refuses
     with pytest.raises(ru.RiskUnitUnmeasured):
         NS["_eur_per_price_unit"]("NOSUCHPAIR", dead)

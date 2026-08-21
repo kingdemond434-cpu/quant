@@ -47,9 +47,32 @@ def cell_trades(sym: str, win: str, state: str | None, h1: pd.DataFrame,
 
 
 def load_h12_survivors() -> list[dict]:
+    """The hunt12 survivor cells. RAISES when the report is absent — it must never return [].
+
+    **THE EMPTY LIST SILENTLY TRUNCATED THE BOOK.** Five of the nine deployed sleeves are hunt12
+    cells; the other four are gold. `reports/` is gitignored (.gitignore:118), so this file is
+    absent on every fresh clone AND on the VPS — measured 2026-08-20, `swap_exposure.py` refuses
+    all five AUDCAD cells on both. Where it was absent, this returned [], `build_sleeves` built a
+    GOLD-ONLY four-sleeve book, and `main` wrote it over the nine-sleeve artifact, recomputing
+    mean_corr, n_eff and port_sharpe consistently on the truncation. No error anywhere, and
+    nothing downstream able to tell it from the real answer.
+
+    That is the WS-005 shape aimed at the artifact the whole book ranking rests on. An absent
+    input must produce a refusal, not a smaller book (L1.28a).
+
+    **RUN `research/run_hunt12.py` FIRST.** It writes this file — and it was itself dead with a
+    missing import until 2026-08-19 (commit 82db21fc), which is why the report was never
+    regenerated and the committed projection went stale.
+    """
     p = BASE / "reports" / "hunt12_partial.json"
     if not p.exists():
-        return []
+        raise SystemExit(
+            f"REFUSING to project: {p} is absent, so the hunt12 survivor cells cannot be loaded.\n"
+            "Five of the nine deployed sleeves live in that file. Returning an empty list here "
+            "would build a GOLD-ONLY book and overwrite the nine-sleeve artifact with it, and "
+            "nothing downstream could tell the difference.\n"
+            "reports/ is gitignored, so this file never travels with the repo. Regenerate it: "
+            "python research/run_hunt12.py")
     saved = json.loads(p.read_text(encoding="utf-8"))
     return [c for c in saved.get("all", []) if c.get("gate")]
 
@@ -60,7 +83,21 @@ def build_sleeves() -> list[dict]:
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
     sleeves = []
     h1g = families._h1(pd.read_parquet(UNI / "XAUUSD_H1.parquet"))
-    gold_costs = Costs(spread_per_lot=0.48, commission_per_lot=3.50, contract_oz=100)
+    # GAP 114: this read `Costs(spread_per_lot=0.48, ...)` until 2026-08-20. 0.48 is dollars per
+    # OUNCE in a field that wants dollars per LOT, so the engine divided by contract_size 100 and
+    # charged gold 0.0048/oz against a measured 0.16/oz median -- 3% of its real spread, on every
+    # gold row in the artifact the whole book ranking rests on.
+    #
+    # `Costs.from_symbol` was written to end exactly this and this call site never adopted it
+    # (row 110's defect class). `research/calibrate_engine.py` confirms both halves with a
+    # known-answer probe: the old constant recovers 0.2099x of the planted cost and FAILS,
+    # from_symbol recovers 0.9166x and passes. mult=2.0 is the honest baseline, not a stress --
+    # a round trip crosses the spread on the way in and again on the way out.
+    #
+    # MEASURED EFFECT on the gold half: annualised Sharpe 2.92 -> 2.32, 2.05 -> 1.43,
+    # 1.78 -> 1.19, and gold_ny_open flips +0.0157R -> -0.0475R. Gold-only portfolio Sharpe
+    # 2.49 -> 1.52. One of the four gold sleeves is a loser at its true spread.
+    gold_costs = Costs.from_symbol(meta["XAUUSD"], mult=2.0)
     for wname, wp in GOLD_WINDOWS.items():
         tr = cell_trades("XAUUSD", wname, None, h1g, gold_costs, None)
         sleeves.append(dict(name=f"gold_{wname}", sym="XAUUSD", win=wname,
@@ -68,19 +105,45 @@ def build_sleeves() -> list[dict]:
                             r=[t.r_multiple for t in tr],
                             dates=[t.entry_time.date() for t in tr]))
     from research.run_hunt12 import day_states  # noqa: PLC0415
+    unpriceable: list[str] = []
     for cell in load_h12_survivors():
         sym, win, state = cell["sym"], cell["win"], cell["state"]
-        h1 = families._h1(pd.read_parquet(UNI / f"{sym}_H1.parquet"))
+        # A SURVIVOR CAN NAME AN INSTRUMENT THE VENUE NO LONGER LISTS, AND THAT IS NOT A CRASH.
+        #
+        # AUDCAD was dropped from the venue snapshot at the 2026-08-20 refresh while hunt12's five
+        # AUDCAD survivors stayed in `hunt12_partial.json`. `meta[sym]` then raised KeyError
+        # halfway through the loop, so the projection died with a traceback instead of publishing
+        # a book -- and a run that dies is indistinguishable from a run nobody started.
+        #
+        # Skipping quietly is the other failure and the worse one: it would publish a SMALLER book
+        # and call it the book (row 115's defect class, and WS-005). So the sleeve is named,
+        # counted, and reported as UNPRICEABLE -- a real answer under L1.28a, distinct both from
+        # "this sleeve failed" and from "this sleeve does not exist".
+        parquet = UNI / f"{sym}_H1.parquet"
+        if sym not in meta or not parquet.exists():
+            why = "absent from universe.json" if sym not in meta else "no H1 parquet on disk"
+            unpriceable.append(f"{sym}_{win}_{state} ({why})")
+            continue
+        h1 = families._h1(pd.read_parquet(parquet))
         m = meta[sym]
-        costs = Costs(spread_per_lot=0.48 if sym == "XAUUSD" else max(
-            m["median_spread_pts"] * m["tick_size"] * m["contract_size"], 0.05),
-            commission_per_lot=3.50, contract_oz=m["contract_size"])
+        # Same fix. The non-gold branch was under-charged too: it built the spread at mult=1.0,
+        # crossing it once where a round trip crosses it twice.
+        costs = Costs.from_symbol(m, mult=2.0)
         states = day_states(h1)
         tr = cell_trades(sym, win, state, h1, costs, states)
         sleeves.append(dict(name=f"{sym}_{win}_{state}", sym=sym, win=win,
                             state=state,
                             r=[t.r_multiple for t in tr],
                             dates=[t.entry_time.date() for t in tr]))
+    if unpriceable:
+        # Printed on every run, not written to a report nobody opens. The book below is missing
+        # these sleeves and the reader has to know that before ranking anything in it.
+        print(f"UNPRICEABLE: {len(unpriceable)} gated survivor(s) excluded from this book -- "
+              f"the venue no longer prices them:", flush=True)
+        for name in unpriceable:
+            print(f"  - {name}", flush=True)
+        print("  These are NOT failures and NOT absences. Re-admit through the universal gate if "
+              "the venue relists them; do not carry the old result forward.", flush=True)
     return sleeves
 
 
@@ -92,7 +155,7 @@ def build_daily(sleeves: list[dict]) -> pd.DataFrame:
                          dtype=float)
     for s in sleeves:
         d = pd.Series(s["r"], index=pd.Index(s["dates"]))
-        daily[s["name"]] = d.groupby(level=0).sum().reindex(alldays)
+        daily[s["name"]] = d.groupby(level=0).sum().reindex(alldays).fillna(0.0)
     return daily
 
 
