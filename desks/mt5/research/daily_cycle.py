@@ -105,11 +105,40 @@ def _markout() -> None:
     }, indent=2), encoding="utf-8")
 
 
+def _export_aurum() -> None:
+    """Re-export the findings Aurum's absorption channel reads.
+
+    ABSORPTION WAS A ONE-SHOT SCRIPT AND THEREFORE IDLE BY DEFAULT. Aurum's
+    step_absorb runs daily and reads inbox/quant_findings.jsonl; nothing on
+    this side wrote it until export_aurum_findings.py existed, and a script
+    that only runs when a human remembers is the same defect one step later --
+    the channel reports "0 new findings" and that is indistinguishable from
+    this desk having learned nothing.
+
+    Runs LAST, after shadow and the promoter, so any finding derived from
+    today's forward evidence is exported the same day it is produced rather
+    than a cycle behind. The exporter appends and content-hashes, and Aurum's
+    Absorber dedups by claim, so a repeat run is a no-op rather than a
+    duplicate -- which is what makes it safe to run unconditionally, every
+    day, forever.
+    """
+    import export_aurum_findings
+    rc = export_aurum_findings.main()
+    # rc 2 means NO SWEEP ARTEFACTS, which is a real state and not a failure of
+    # this step: reports/ is gitignored and lives on whichever host ran the
+    # hunts. Raising on it would make the whole cycle report FAILED every day
+    # on a clone that legitimately has no reports.
+    if rc not in (0, 2):
+        raise RuntimeError(f"export_aurum_findings returned {rc}")
+
+
 #: ORDER IS LOAD-BEARING. The promoter reads the state shadow has just written, so running it
-#: first would decide today on yesterday's evidence. Markout runs last and unconditionally: it
-#: reads the live ledger, so it reports on the armed book whether or not shadow could reach a
-#: terminal.
-STEPS = (("shadow", _shadow), ("promoter", _promote), ("markout", _markout))
+#: first would decide today on yesterday's evidence. Markout runs last-but-one and
+#: unconditionally: it reads the live ledger, so it reports on the armed book whether or not
+#: shadow could reach a terminal. The Aurum export runs after all of them, so it can carry
+#: anything today's cycle produced.
+STEPS = (("shadow", _shadow), ("promoter", _promote), ("markout", _markout),
+         ("export_aurum", _export_aurum))
 
 
 def main(argv: list[str] | None = None) -> int:

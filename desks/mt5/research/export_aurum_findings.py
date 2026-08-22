@@ -212,13 +212,44 @@ def main() -> int:
               "That is UNMEASURED, not 'no findings' -- run the sweeps first.")
         return 2
 
+    # IDEMPOTENT BY CLAIM, because this now runs EVERY DAY from daily_cycle.
+    # Aurum's Absorber already dedups on a content hash of (statement,
+    # measured_on), so a duplicate would be harmless there -- but it would
+    # still grow this file without bound and make "what did the desk export
+    # this week" unreadable. Deduped on the same pair Aurum hashes on, so the
+    # two sides agree about what counts as the same claim; re-exporting an
+    # unchanged finding is a no-op, and a finding whose NUMBERS changed
+    # (because the sweep was re-run) has a different statement and is a new
+    # row, which is the behaviour wanted.
     REPORTS.mkdir(parents=True, exist_ok=True)
+    seen: set[tuple[str, str]] = set()
+    if OUT.exists():
+        for line in OUT.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            try:
+                old = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            seen.add((old.get("statement", "").strip().lower(),
+                      old.get("measured_on", "").strip().lower()))
+
+    fresh = [r for r in findings
+             if (r["statement"].strip().lower(),
+                 r["measured_on"].strip().lower()) not in seen]
+    if not fresh:
+        print(f"{len(findings)} finding(s) built, ALL already exported -- nothing "
+              f"appended.\nThat is the steady state for a daily run, not a problem: "
+              f"a claim is re-exported\nonly when its numbers actually change.")
+        return 0
+
     with OUT.open("a", encoding="utf-8") as fh:      # APPEND: see the docstring
-        for row in findings:
+        for row in fresh:
             fh.write(json.dumps(row) + "\n")
 
-    print(f"{len(findings)} finding(s) appended to {OUT}\n")
-    for row in findings:
+    print(f"{len(fresh)} new finding(s) appended to {OUT} "
+          f"({len(findings) - len(fresh)} already present)\n")
+    for row in fresh:
         print(f"  [{row['grade']}] {row['statement'][:96]}...")
         print(f"        measured on: {row['measured_on']}")
     print("\nTRANSPORT IS A SEPARATE, OPERATOR-PERFORMED STEP -- this script does "
