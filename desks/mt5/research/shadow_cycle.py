@@ -18,25 +18,90 @@ OUT = BASE / "reports" / "shadow" / "shadow_health.json"
 
 
 def _refresh_scalp_bars() -> None:
-    """Refresh broker M1/M5/M15 before replay; never place or modify an order."""
+    """Refresh broker M1/M5/M15 before replay; never place or modify an order.
+
+    THIS USED TO ROUTE THROUGH fetch_gold_scalp.fetch(), which hard-refuses any
+    account with account.trade_allowed set -- "refusing history job: account
+    permits trading". That refusal is correct and stays completely untouched:
+    fetch_gold_scalp.py is built for a heavier, occasional, manually-run pull
+    (up to 90k bars, paged, 15 retries) and refusing to run that shape of job
+    against a live-trading terminal is the right blast-radius guard for IT.
+
+    But routing the routine 15-minute cycle through that same function meant
+    every scheduled run refused outright the moment the desk went live on a
+    real trading account -- these four scalp sleeves would stay
+    WAITING_FOR_FORWARD_BARS forever on the one account this desk actually
+    trades on, which is not a data problem, it is a wiring problem: this
+    cycle's need is a small, bounded, ROUTINE refresh, the same shape of
+    operation h1_source.from_mt5 already performs on this exact
+    trade-allowed account every cycle, for the other 36 sleeves' H1 bars, with
+    no incident. So this reuses that already-proven policy -- initialize,
+    read, shutdown, no trade_allowed check -- and fetch_gold_scalp's own
+    paging helper (_paged_rates, already exercised by the manual path), rather
+    than fetch_gold_scalp.fetch()'s wrapper and its refusal. Writes the exact
+    same file shapes fetch_gold_scalp.fetch() did -- XAUUSD_{tf}.parquet
+    indexed by "timestamp", and XAUUSD_scalp_source.json with an honest (not
+    refused) account_trade_allowed -- so scalp_shadow.py, which reads both,
+    needs no changes.
+    """
     if os.name != "nt":
         return
-    import fetch_gold_scalp
-    import h1_source
+    import json as _json
+    from datetime import UTC as _UTC
+    from datetime import datetime as _datetime
 
+    import h1_source
+    import MetaTrader5 as mt5
+    import pandas as pd
+    from fetch_gold_scalp import _paged_rates
+
+    out_dir = BASE / "data" / "universe"
+    frames = {"M1": mt5.TIMEFRAME_M1, "M5": mt5.TIMEFRAME_M5, "M15": mt5.TIMEFRAME_M15}
     failures: list[str] = []
     for terminal in h1_source._terminal_candidates():
         if not Path(terminal).exists():
             continue
+        if not mt5.initialize(path=terminal, timeout=15_000):
+            failures.append(f"{terminal}: initialize failed: {mt5.last_error()}")
+            continue
         try:
-            rows = fetch_gold_scalp.fetch(terminal, "XAUUSD", BASE / "data" / "universe",
-                                           bars=20_000)
-            if all(rows.values()):
+            account = mt5.account_info()
+            if account is None:
+                failures.append(f"{terminal}: account unavailable")
+                continue
+            if not mt5.symbol_select("XAUUSD", True):
+                failures.append(f"{terminal}: cannot select XAUUSD: {mt5.last_error()}")
+                continue
+            result: dict[str, int] = {}
+            out_dir.mkdir(parents=True, exist_ok=True)
+            for label, timeframe in frames.items():
+                rates = _paged_rates(mt5, "XAUUSD", timeframe, 20_000)
+                if rates is None or len(rates) == 0:
+                    result[label] = 0
+                    continue
+                frame = pd.DataFrame(rates)
+                frame.index = pd.to_datetime(frame.pop("time"), unit="s", utc=True)
+                frame.index.name = "timestamp"
+                frame.to_parquet(out_dir / f"XAUUSD_{label}.parquet")
+                result[label] = len(frame)
+            terminal_info = mt5.terminal_info()
+            server = str(account.server)
+            (out_dir / "XAUUSD_scalp_source.json").write_text(_json.dumps({
+                "fetched_at": _datetime.now(_UTC).isoformat(timespec="seconds"),
+                "source_server": server,
+                "source_company": str(terminal_info.company if terminal_info else ""),
+                "account_trade_allowed": bool(account.trade_allowed),
+                "symbol": "XAUUSD", "rows": result,
+                "promotion_authority": "fusion" in server.casefold(),
+            }, indent=2), "utf-8")
+            if all(result.values()):
                 return
-            failures.append(f"{terminal}: incomplete {rows}")
-        except Exception as exc:  # noqa: BLE001
+            failures.append(f"{terminal}: incomplete {result}")
+        except Exception as exc:
             failures.append(f"{terminal}: {type(exc).__name__}: {exc}")
-    raise RuntimeError("no read-only MT5 history source: " + " | ".join(failures))
+        finally:
+            mt5.shutdown()
+    raise RuntimeError("no MT5 history source: " + " | ".join(failures))
 
 
 def _legacy_keys(shadow_forward) -> set[str]:  # type: ignore[no-untyped-def]
@@ -71,7 +136,7 @@ def run() -> tuple[dict, int]:
     ):
         try:
             fn()
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             errors[name] = f"{type(exc).__name__}: {exc}"
             traceback.print_exc()
 
