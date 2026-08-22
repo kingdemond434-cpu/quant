@@ -136,8 +136,9 @@ QUANT_CONTROLLER_TOKEN=$("$PY" -c 'import json,sys; print(json.load(open(sys.arg
 write_status "RUNNING_CONTROLLER" "Codex holds the fenced lease and is processing the current frontier" -1
 
 {
-    printf '=== SEALED AUTHORITATIVE MASTER CONSTITUTION (verified before lease claim) ===\n'
-    cat docs/MASTER_QUANT_CONSTITUTION.md
+    printf '=== SEALED MASTER STATUS ===\n'
+    printf 'docs/MASTER_QUANT_CONSTITUTION.md passed scripts/check_constitution_core.py. '
+    printf 'It remains authoritative; inspect only the relevant clauses on demand.\n'
     printf '\n=== SINGLE MT5-ONLY MIDNIGHT OPERATING BRIEF ===\n'
     cat ops/midnight_codex_prompt.txt
     printf '\nRUNTIME STATE: deterministic pipeline exit code=%s; controller epoch=%s.\n' \
@@ -157,14 +158,14 @@ HEARTBEAT_PID=$!
 # exports, then the pinned default. The pre-merge form read ONLY _OVERRIDE, which
 # silently discarded the Environment= lines in quant-midnight-frontier.service --
 # the unit's model pin had no effect on the process the unit itself started.
-CODEX_NIGHTLY_MODEL="${CODEX_NIGHTLY_MODEL_OVERRIDE:-${CODEX_NIGHTLY_MODEL:-gpt-5.6-sol}}"
-CODEX_NIGHTLY_REASONING_EFFORT="${CODEX_NIGHTLY_REASONING_EFFORT_OVERRIDE:-${CODEX_NIGHTLY_REASONING_EFFORT:-max}}"
+CODEX_NIGHTLY_MODEL="${CODEX_NIGHTLY_MODEL_OVERRIDE:-${CODEX_NIGHTLY_MODEL:-gpt-5.6-terra}}"
+CODEX_NIGHTLY_REASONING_EFFORT="${CODEX_NIGHTLY_REASONING_EFFORT_OVERRIDE:-${CODEX_NIGHTLY_REASONING_EFFORT:-medium}}"
 CODEX_ARGS=(exec -C "$PWD" --sandbox workspace-write "${CODEX_EXEC_APPROVAL_ARGS[@]}"
     --output-last-message "$LAST_MESSAGE"
     --config "model_reasoning_effort=${CODEX_NIGHTLY_REASONING_EFFORT}"
     --model "$CODEX_NIGHTLY_MODEL")
 CODEX_RC=0
-timeout --signal=TERM --kill-after=60 "${CODEX_NIGHTLY_TIMEOUT_SECONDS:-21600}" \
+timeout --signal=TERM --kill-after=60 "${CODEX_NIGHTLY_TIMEOUT_SECONDS:-10800}" \
     codex "${CODEX_GLOBAL_ARGS[@]}" "${CODEX_ARGS[@]}" - <"$PROMPT_FILE" >>"$LOG" 2>&1 \
     || CODEX_RC=$?
 kill "$HEARTBEAT_PID" >/dev/null 2>&1 || true

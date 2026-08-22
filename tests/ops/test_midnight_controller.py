@@ -77,25 +77,26 @@ def test_codex_controller_is_noninteractive_fenced_and_checkpointed() -> None:
     assert "CLI_INCOMPATIBLE" in source
     assert "RUNNING_PIPELINE" in source and "RUNNING_CONTROLLER" in source
     assert "LEASE_ERROR" in source and "CLAIM_RC" in source
-    assert "CODEX_NIGHTLY_TIMEOUT_SECONDS:-21600" in source
+    assert "CODEX_NIGHTLY_TIMEOUT_SECONDS:-10800" in source
     # The unit file pins the model; the script must READ that pin rather than
     # overwrite it. _OVERRIDE stays as the operator escape hatch, but it can no
     # longer shadow the Environment= line into irrelevance.
     assert (
         'CODEX_NIGHTLY_MODEL="${CODEX_NIGHTLY_MODEL_OVERRIDE:-'
-        '${CODEX_NIGHTLY_MODEL:-gpt-5.6-sol}}"'
+        '${CODEX_NIGHTLY_MODEL:-gpt-5.6-terra}}"'
     ) in source
     assert (
         'CODEX_NIGHTLY_REASONING_EFFORT="${CODEX_NIGHTLY_REASONING_EFFORT_OVERRIDE:-'
-        '${CODEX_NIGHTLY_REASONING_EFFORT:-max}}"'
+        '${CODEX_NIGHTLY_REASONING_EFFORT:-medium}}"'
     ) in source
     service = SERVICE.read_text("utf-8")
-    assert "CODEX_NIGHTLY_MODEL=gpt-5.6-sol" in service
-    assert "CODEX_NIGHTLY_REASONING_EFFORT=max" in service
+    assert "CODEX_NIGHTLY_MODEL=gpt-5.6-terra" in service
+    assert "CODEX_NIGHTLY_REASONING_EFFORT=medium" in service
     assert "--dangerously-bypass-approvals-and-sandbox" not in source
     assert source.index("check_constitution_core.py") < source.index(
         "controller_checkpoint.py claim"
-    ) < source.index("cat docs/MASTER_QUANT_CONSTITUTION.md")
+    ) < source.index("cat ops/midnight_codex_prompt.txt")
+    assert "cat docs/MASTER_QUANT_CONSTITUTION.md" not in source
     assert "CHECKPOINT_RC=0" in source and "TRANSFER_RC=0" in source
     assert "HANDOFF_INCOMPLETE" in source
     assert '|| CHECKPOINT_RC=$?' in source
@@ -123,6 +124,7 @@ def test_controller_prompt_is_one_compact_mt5_only_operating_brief() -> None:
         "IMPLEMENTED+TESTED",
         "checkpoint",
         "scripts/run_deadman_switch.py",
+        "implementation ledger of at most 500 words",
     ):
         assert required.casefold() in prompt.casefold()
     assert MANDATE.exists() and len(MANDATE.read_text("utf-8")) > 20_000
