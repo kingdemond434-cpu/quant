@@ -136,10 +136,16 @@ def test_the_three_leg_book_was_over_its_own_cap_under_the_old_sizing():
 
 
 def test_stop_aware_sizing_brings_the_book_back_inside_the_cap():
+    """THE CAP IS READ, NOT PINNED. This asserted `<= 0.0381`, the budget at Q_OPT=1.27%; the
+    budget is Q_OPT x 3 legs and moved with it, so a hardcoded 3.81% turned this into a second
+    copy of the risk policy -- the defect gateway_config_fallback.py exists to remove. What is
+    under test is that stop-aware sizing puts the three-leg book INSIDE whatever the cap is,
+    which is the property that survives the budget changing."""
     eq = 25_000.0
     legs = ("asia", "london_am", "ny_open")
     heat = sum(NS["realised_q"](eq, LIVE_STOPS[s]) for s in legs)
-    assert heat <= 0.0381 + 1e-9, f"stop-aware sizing still at {heat:.2%}"
+    cap = NS["heat_budget"](None)
+    assert heat <= cap + 1e-9, f"stop-aware sizing at {heat:.2%} against a {cap:.2%} cap"
 
 
 # --------------------------------------------------------------- the floor

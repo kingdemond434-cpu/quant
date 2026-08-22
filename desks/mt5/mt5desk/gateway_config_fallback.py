@@ -25,7 +25,41 @@ from __future__ import annotations
 #: makes LESS money than sizing well below it, because past the true optimum the geometric rate
 #: falls; at 2x Kelly it goes negative while every backtest number still looks excellent. More
 #: size is not more aggression past that point, it is less money.
-MAX_DRAWDOWN_TOLERANCE = 0.35
+#:
+#: RAISED 0.35 -> 0.642 ON 2026-08-22, PRINCIPAL'S EXPLICIT AND REPEATED INSTRUCTION, to put
+#: Q_OPT at 3.00%. Raised HERE rather than hardcoding Q_OPT, so the derivation stays intact and
+#: the number re-solves itself when BOOK_WORST_DD_R is next measured.
+#:
+#: WHAT THE EVIDENCE SAID, INCLUDING THE PART AGAINST IT. Measured on 5,731 real gold session
+#: trades (682/yr, exp +0.1176R in-sample), growth by TRUE edge as a fraction of backtest:
+#:
+#:     true edge   Kelly q*    g(2%)   g(3%)      <- 3% is at/near optimum only if the edge
+#:       x1.00       8.00%      323%    671%         lands around a THIRD of backtest
+#:       x0.50       5.10%       90%    132%
+#:       x0.33       3.30%       45%     54%
+#:       x0.25       2.50%       27%     27%      <- 2% and 3% TIE here
+#:       x0.15       1.50%        8%      0%      <- 3% is the last non-negative size
+#:
+#: 3.00% is the LARGEST q whose worst case across those scenarios is still non-negative; 3.5%
+#: returns -7% there and 5% returns -33%. That is the argument for it, and it is a real one.
+#:
+#: THE ARGUMENT AGAINST, RECORDED SO IT IS NOT LOST. At x0.25 3% buys NOTHING over 2% (+27% both)
+#: while costing 15 more points of drawdown, and the 5-year bad-decile outcome on $5,000 is
+#: $3,836 at 3% against $6,241 at 2% -- one path in eight ends five years of compounding BELOW
+#: starting capital, and 2.3% of paths end under $1,000. Trailing stops and profit locks do not
+#: mitigate this: the worst drawdown is -45.8R built from 168 small losses against 94 wins, whose
+#: largest single loss was -1.12R. There is no fat loss for a tighter stop to cut and no open
+#: winner for a trail to protect, so drawdown here is attrition, not tail events.
+#:
+#: THE UNCERTAINTY THAT DOMINATES BOTH. The spread between x1.00 and x0.15 at a FIXED 3% is 671%
+#: to 0%. Which column is true matters far more than 2% vs 3%, and nothing in a backtest can say
+#: which it is. Shadow forward evidence is the only thing that narrows it, and it currently holds
+#: ZERO trades. Until it does, this constant rests on in-sample data by necessity.
+#: EXACTLY half measured Kelly. 0.6417324740 is not a taste: it is the tolerance that solves
+#: q* = 3.0000% at BOOK_WORST_DD_R = 33.7R, i.e. 0.06/2. Chosen to the tenth decimal so the
+#: budget lands ON the half-Kelly fence rather than 0.0022% over it -- a bound that is "about
+#: right" is a bound nobody can test against.
+MAX_DRAWDOWN_TOLERANCE = 0.6417324740
 
 #: Worst peak-to-trough drawdown the armed book has produced, in R, at the sweep that validated
 #: it. Risk is solved against THIS, so the numbers answer a question about the actual book rather

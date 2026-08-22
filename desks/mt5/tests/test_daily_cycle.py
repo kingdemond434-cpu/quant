@@ -52,8 +52,18 @@ def test_the_three_steps_run_in_order(cyc, monkeypatch):
 
 
 def test_the_real_step_order_is_shadow_then_promoter_then_markout():
-    """Pins the module's own STEPS, not just the fixture's."""
-    assert [n for n, _ in daily_cycle.STEPS] == ["shadow", "promoter", "markout"]
+    """Pins the module's own STEPS, not just the fixture's.
+
+    export_aurum was appended 2026-08-22 and runs LAST on purpose: it exports findings derived
+    from today's cycle, so it must see the promoter's output rather than yesterday's. The
+    load-bearing part is that shadow precedes promoter -- asserted explicitly below so a future
+    step appended at the end does not have to touch this test again, while a REORDERING of the
+    first three still fails it."""
+    names = [n for n, _ in daily_cycle.STEPS]
+    assert names[:3] == ["shadow", "promoter", "markout"]
+    assert names.index("shadow") < names.index("promoter"), (
+        "the promoter must read state shadow has already written")
+    assert "export_aurum" in names and names[-1] == "export_aurum"
 
 
 def test_it_runs_once_per_utc_day(cyc, monkeypatch):

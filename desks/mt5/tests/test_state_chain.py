@@ -68,10 +68,20 @@ def test_a_conditioned_sleeve_trades_on_a_match(monkeypatch):
 
 
 def test_shadow_carries_a_state_field_and_holds_the_nine_candidates():
-    from shadow_forward import SLEEVES
+    """The nine hunt12 day-state candidates, plus whatever macro-conditioned sleeves exist.
+
+    SPLIT BY CONDITIONING FAMILY rather than counted as one total. Five MACRO_FAV sleeves were
+    added 2026-08-22 and they are conditioned on a different axis -- macro driver direction, not
+    day state -- so a single count would silently let a day-state candidate go missing whenever a
+    macro one was added. Counting them separately keeps both groups pinned.
+    """
+    from shadow_forward import MACRO_CONDS, SLEEVES
     assert all(len(t) == 3 for t in SLEEVES), "SLEEVES rows must be (sym, window, state)"
     conditioned = [t for t in SLEEVES if t[2]]
-    assert len(conditioned) == 9, f"expected the 9 hunt12 candidates, found {len(conditioned)}"
+    day_state = [t for t in conditioned if t[2] not in MACRO_CONDS]
+    macro = [t for t in conditioned if t[2] in MACRO_CONDS]
+    assert len(day_state) == 9, f"expected the 9 hunt12 candidates, found {len(day_state)}"
+    assert len(macro) == 5, f"expected 5 MACRO_FAV sleeves, found {len(macro)}"
     assert ("CADJPY", "asia", "FAILED_BREAK") in SLEEVES
     # the hunt6 ten must survive unchanged
     assert ("XAUUSD", "asia", None) in SLEEVES

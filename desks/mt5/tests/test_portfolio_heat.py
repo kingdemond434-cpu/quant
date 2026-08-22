@@ -72,7 +72,12 @@ def test_ten_sleeves_cannot_risk_ten_percent():
     admitted, note = NS["cap_by_heat"](_sleeves(10), 1684.0)
     q = NS["realised_q"](1684.0)
     floor_q = 0.01 * NS["DIST_USD"] * NS["_eur_per_price_unit"](NS["GOLD_SYMBOL"]) / 1684.0
-    assert q == pytest.approx(floor_q, rel=1e-6), "fixture assumption about the floor changed"
+    # THE FLOOR NO LONGER BINDS AT THIS EQUITY. It did at Q_OPT=1.27%, where 0.01 lot forced
+    # ~0.98% and the sizer could not go lower. At Q_OPT=3.00% the policy size EXCEEDS one min
+    # lot, so realised_q is the budget rather than the floor -- q >= floor_q, not q == floor_q.
+    # Asserted as the inequality that holds in both regimes; the equality was a fact about a
+    # thin account, not about the cap.
+    assert q >= floor_q - 1e-9, "realised_q fell BELOW one minimum lot, which cannot happen"
     assert len(admitted) * q <= NS["heat_budget"]() + 1e-9
     assert len(admitted) < 10
     assert note and "PORTFOLIO HEAT CAP" in note
@@ -113,10 +118,16 @@ def test_promoted_sleeves_are_what_gets_deferred():
 def test_a_small_account_gets_fewer_sleeves_not_more_risk():
     """The 0.01 floor makes each sleeve a LARGER fraction as equity falls, so a sleeve-COUNT cap
     would let total risk grow silently on a shrinking account. A heat budget cannot."""
+    # THE SMALL EQUITY MOVED FROM 600 TO 300, and the reason is the finding. The floor binds
+    # only while one min lot costs MORE than policy size: 0.01 lot of gold risks ~EUR 16.5, so
+    # it exceeds 3% below ~EUR 550 and exceeded 1.27% below ~EUR 1,300. At Q_OPT=3% an account
+    # of 600 is no longer "small" in the sense this test means -- policy size dominates and both
+    # accounts admit the same count, which is correct behaviour, not a cap failure. 300 is where
+    # the floor genuinely binds again.
     big, _ = NS["cap_by_heat"](_sleeves(10), 8000.0)
-    small, _ = NS["cap_by_heat"](_sleeves(10), 600.0)
+    small, _ = NS["cap_by_heat"](_sleeves(10), 300.0)
     assert len(small) < len(big)
-    for eq in (600.0, 1684.0, 8000.0):
+    for eq in (300.0, 600.0, 1684.0, 8000.0):
         adm, _ = NS["cap_by_heat"](_sleeves(10), eq)
         assert len(adm) * NS["realised_q"](eq) <= NS["heat_budget"]() + 1e-9, (
             f"heat breached at equity {eq}")
@@ -212,7 +223,13 @@ def test_the_budget_is_solved_from_the_stated_drawdown_tolerance():
     """The budget answers a question about THIS book -- 35% tolerance against its measured -33.7R
     -- rather than being a round number. q* = 1-(1-tol)^(1/dd_r), times the validated leg count."""
     q_star = 1.0 - (1.0 - NS["MAX_DRAWDOWN_TOLERANCE"]) ** (1.0 / NS["_BOOK_WORST_DD_R"])
-    assert q_star == pytest.approx(0.0127, abs=0.0005)
+    # THE DERIVATION IS THE ASSERTION. This pinned 0.0127, the value at a 35% tolerance, which
+    # made it a second copy of the risk policy -- so raising the tolerance failed a test whose
+    # subject (does the budget SOLVE from the tolerance?) was never in question. Round-tripped
+    # instead: q* must spend exactly the declared tolerance over the book's worst drawdown.
+    assert 1.0 - (1.0 - q_star) ** NS["_BOOK_WORST_DD_R"] == pytest.approx(
+        NS["MAX_DRAWDOWN_TOLERANCE"], abs=1e-9)
+    assert 0.0 < q_star <= 0.03 + 1e-9, "budget above half measured Kelly (6%)"
     assert NS["heat_budget"](None) == pytest.approx(q_star * NS["_HEAT_BASE_LEGS"], rel=1e-9)
 
 

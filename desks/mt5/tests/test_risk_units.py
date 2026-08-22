@@ -31,6 +31,7 @@ if str(_DESK) not in sys.path:
     sys.path.insert(0, str(_DESK))
 
 from mt5desk import risk_units as ru  # noqa: E402
+from mt5desk.gateway_config_fallback import Q_OPT  # noqa: E402
 
 _SRC = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
 
@@ -160,10 +161,19 @@ def test_the_floor_can_exceed_the_budget_and_says_so():
 
 @pytest.mark.parametrize("sym,stop", [("CADJPY", 0.50), ("USDJPY", 0.60), ("EURUSD", 0.0040)])
 def test_non_gold_sleeves_are_sized_in_their_own_currency(sym, stop):
-    """WITHOUT THE FIX these run at 7.3-7.4% of equity while logging 1.26%."""
+    """WITHOUT THE FIX these run at 7.3-7.4% of equity while logging 1.26%.
+
+    THE BOUND IS Q_OPT, NOT A LITERAL. It read `< 0.02`, which was a proxy for "near the budget"
+    chosen when Q_OPT was 1.27%; raising the budget to 3% made a correctly-sized sleeve fail it.
+    A hardcoded level here is a SECOND copy of the risk policy -- exactly what
+    gateway_config_fallback.py exists to prevent -- so it is expressed against the real budget.
+    The headroom is 1.25x, enough to absorb lot-rounding on a 0.01 grid without admitting the
+    7.3% the original defect produced, which this would still catch by a wide margin.
+    """
     lot = NS["promoted_lot"](EQ, 500, stop, sym)
     true_risk = ru.realised_risk_eur(sym, stop, lot)
-    assert true_risk / EQ < 0.02, f"{sym} sized to {true_risk / EQ:.2%} of equity"
+    assert true_risk / EQ < Q_OPT * 1.25, (
+        f"{sym} sized to {true_risk / EQ:.2%} of equity against a {Q_OPT:.2%} budget")
     assert NS["realised_q"](EQ, stop, sym) == pytest.approx(true_risk / EQ, rel=1e-6)
 
 
@@ -216,12 +226,25 @@ def test_an_unpriceable_sleeve_does_not_trade():
 # ------------------------------------------------- the heat cap bills per sleeve
 
 def test_the_cap_charges_each_sleeve_its_own_q():
-    """ONE q times a COUNT cannot see a heterogeneous book. Three gold legs at their real
-    2026-08-14 stops genuinely total 6.7% against a 3.81% budget."""
-    gold = [{"name": f"gold_{w}", "symbol": "XAUUSD", "dist": d}
-            for w, d in (("asia", 53.40), ("london_am", 27.91), ("afternoon", 48.64))]
+    """ONE q times a COUNT cannot see a heterogeneous book.
+
+    THE BOOK IS NOW BUILT TO EXCEED THE CURRENT BUDGET rather than pinned at three legs. The
+    original used the real 2026-08-14 gold stops, which totalled 6.7% against the 3.81% budget
+    of the day -- a genuine overflow then, and not one after the budget moved to 9.01% at
+    Q_OPT=3%. What is being tested is that the cap BILLS EACH SLEEVE ITS OWN q and defers the
+    overflow, not that any particular count overflows; pinning the count made this a second copy
+    of the budget, which is the defect gateway_config_fallback.py exists to remove.
+    """
+    stops = (53.40, 27.91, 48.64)
+    gold, used = [], 0.0
+    i = 0
+    while used <= NS["heat_budget"](None):
+        d = stops[i % len(stops)]
+        gold.append({"name": f"gold_{i}", "symbol": "XAUUSD", "dist": d})
+        used += NS["realised_q"](EQ, d, "XAUUSD")
+        i += 1
     admitted, note = NS["cap_by_heat"](gold, EQ, k_eff=None)
-    assert len(admitted) < len(gold)
+    assert len(admitted) < len(gold), f"budget {NS['heat_budget'](None):.4f}, note={note}"
     assert "totalling" in note and "deferring" in note
     # The admitted set must fit the budget, measured the same way the sizer measures it.
     used = sum(NS["realised_q"](EQ, s["dist"], s["symbol"]) for s in admitted)
@@ -238,11 +261,34 @@ def test_a_cheap_sleeve_is_not_billed_at_an_expensive_one_s_rate():
 
 
 def test_an_unpriceable_sleeve_is_not_the_cheapest_thing_in_the_book():
-    """Charging it gold's q by default is how an unmeasured leg gets admitted first."""
+    """Charging it gold's q by default is how an unmeasured leg gets admitted first.
+
+    THE ASSERTION IS THE BILLING RATE, NOT THE ADMITTED COUNT. It read `len(admitted) <= 1`,
+    which passed only because the 3.81% budget ran out of room before the second sleeve -- an
+    accident of the level, not the property. At 9.01% both fit and the count assertion broke
+    while the actual invariant held perfectly.
+
+    That invariant is: an instrument whose risk cannot be priced is charged the MOST EXPENSIVE
+    measured leg in the book, never the cheapest and never gold's by default (L1.28a). Asserted
+    directly below.
+
+    THE MONEY PATH HAS ITS OWN REFUSAL and does not depend on this. `auto_lot` raises
+    RiskUnitUnmeasured for an unpriceable symbol (see test_an_unpriceable_sleeve_does_not_trade),
+    so a sleeve the cap admits still cannot be sized. Admission is not permission to trade.
+    """
     mixed = [{"name": "bad", "symbol": "NOSUCHPAIR", "dist": 1.0},
              {"name": "gold_asia", "symbol": "XAUUSD", "dist": 53.40}]
     admitted, _ = NS["cap_by_heat"](mixed, EQ, k_eff=None)
-    assert len(admitted) <= 1
+    # It is billed at the dearest MEASURED leg, so it can never be admitted ahead of one.
+    gold_q = NS["realised_q"](EQ, 53.40, "XAUUSD")
+    budget = NS["heat_budget"](None)
+    assert 2 * gold_q <= budget, (
+        "this book no longer fits the budget, so the test is exercising the cap's overflow path "
+        "rather than its billing rate -- widen the book or re-read the assertion below")
+    assert len(admitted) == 2, "both fit at the dearest rate; the cap must not silently drop one"
+    # And the sizer still refuses it, which is the guarantee that actually protects capital.
+    with pytest.raises(ru.RiskUnitUnmeasured):
+        NS["auto_lot"](EQ, 1.0, "NOSUCHPAIR")
 
 
 def test_a_book_that_cannot_be_priced_at_all_admits_nobody():
