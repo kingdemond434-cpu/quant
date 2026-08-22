@@ -93,6 +93,62 @@ SLEEVES = [
     ("USDJPY", "london_am", "MACRO_FAV"),
 ]
 
+#: THE WHOLE-UNIVERSE HALF OF THE DESK. (symbol, family) -- no session window,
+#: because these families do not have one.
+#:
+#: WHY THESE AND NOT THE TOP 47. reports/universe_sweep.json screened 12 families
+#: across all 23 symbols and 47 cells cleared the Stage-A bar. Taking all 47 would
+#: buy almost nothing: the heat budget scales with sqrt(k_eff), so ten sleeves that
+#: fire on the same dollar move are worth about one, and each extra correlated
+#: sleeve adds turnover and drawdown without adding capacity. These are the members
+#: of the greedy |rho| < 0.30 set -- measured at mean pairwise rho +0.045, k_eff
+#: 13.06, which is what lifts the budget from the 9.00% base to the 15% ceiling.
+#:
+#: SESSION-RANGE ENTRIES ARE DELIBERATELY ABSENT HERE even where they screened
+#: highest: XAUUSD, USDJPY, CADJPY, EURJPY and GBPJPY already run that family
+#: through SLEEVES above, and listing them again would double-count one mechanism
+#: as two sleeves and charge the book twice for the same bet.
+#:
+#: STAGE A ONLY. Screening decides who gets a forward slot, never who gets capital.
+#: 272 cells at t>=1.96 produce false positives by construction; the 14-day/20-trade
+#: forward clock is what separates them, and it has not run yet.
+UNIVERSE_SLEEVES = [
+    ("CADJPY", "fair_value_gap"),        # n=2792 t=4.65 +0.1232R
+    ("BTCUSD", "monday_gap"),            # n= 371 t=4.31 +0.3866R
+    ("NZDJPY", "dow_effect"),            # n= 892 t=4.18 +0.1940R
+    ("GBPJPY", "level_breakout"),        # n=1623 t=4.27 +0.0610R
+    ("XAGUSD", "level_breakout"),        # n=1573 t=4.05 +0.0634R
+    ("NZDJPY", "fair_value_gap"),        # n=2848 t=3.91 +0.1025R
+    ("GBPJPY", "fair_value_gap"),        # n=2715 t=3.83 +0.1025R
+    ("CADJPY", "level_breakout"),        # n=1611 t=3.59 +0.0525R
+    ("GBPAUD", "session_range_breakout"),  # n=2035 t=4.19 +0.0914R -- not in SLEEVES
+    ("GBPUSD", "session_range_breakout"),  # n=2175 t=4.03 +0.1090R -- not in SLEEVES
+    ("BTCUSD", "session_range_breakout"),  # n=1765 t=3.69 +0.0899R -- not in SLEEVES
+    ("NZDJPY", "session_range_breakout"),  # n=1866 t=3.36 +0.0650R -- not in SLEEVES
+]
+
+#: Families UNIVERSE_SLEEVES may name. An explicit ALLOWLIST, not
+#: getattr(families, ...) on whatever a sleeve happens to say: a typo must fail
+#: as a named wiring error rather than as an AttributeError halfway through a
+#: replay, and a sleeve must not be able to reach a family nobody screened.
+#:
+#: Names, not function objects: `families` is imported inside main() (it pulls
+#: pandas/numpy work at import), so resolving here would move that cost to module
+#: load and make this file unimportable wherever mt5desk is not on the path --
+#: which is precisely where the tests read SLEEVES from.
+UNIVERSE_FAMILIES_ALLOWED = frozenset({
+    "session_range_breakout", "level_breakout", "fair_value_gap",
+    "dow_effect", "monday_gap", "failed_breakout", "order_block",
+})
+
+
+def universe_family(name: str, families_mod):
+    """Resolve a UNIVERSE_SLEEVES family name against the allowlist, or None."""
+    if name not in UNIVERSE_FAMILIES_ALLOWED:
+        return None
+    return getattr(families_mod, f"family_{name}", None) or getattr(
+        families_mod, {"dow_effect": "family_dow_effect"}.get(name, ""), None)
+
 #: Conditioning values served by the macro history rather than by day_states.
 #: Kept as a set so the dispatch in main() is a membership test rather than a
 #: string comparison that silently falls through to the day_states branch.
@@ -302,7 +358,14 @@ def main() -> None:
         return
 
     h1_cache = {}
-    for sym, win, cond in SLEEVES:
+    # SLEEVES rows are (sym, window, cond) and always session_range_breakout.
+    # UNIVERSE_SLEEVES rows are (sym, family) -- a different shape because they
+    # are a different thing, and flattening them into one list would have made
+    # `window` meaningless for families that have no session window at all.
+    # Normalised here into one loop rather than duplicating the body.
+    _work = [(s, w, c, "session_range_breakout") for s, w, c in SLEEVES]
+    _work += [(s, f, None, f) for s, f in UNIVERSE_SLEEVES]
+    for sym, win, cond, fam in _work:
         key = f"{sym}.{win}" + (f".{cond}" if cond else "")
         st = state.get(key, {"n": 0, "cum_r": 0.0, "max_dd_r": 0.0,
                              "first_entry": None, "last_entry": None,
@@ -319,7 +382,19 @@ def main() -> None:
             state[key] = st
             continue
         h1 = bars.df
-        sigs = families.family_session_range_breakout(h1, **WINDOWS[win])
+        if fam == "session_range_breakout":
+            sigs = families.family_session_range_breakout(h1, **WINDOWS[win])
+        else:
+            fn = universe_family(fam, families)
+            if fn is None:
+                # NOT a silent skip. A sleeve naming a family this module cannot
+                # build is a wiring error, and recording it as "no data" would
+                # hide it behind the same counter that means "the feed was down".
+                slog(f"{key}: UNKNOWN FAMILY {fam!r} -- sleeve cannot be replayed")
+                st["last_error"] = f"unknown family {fam}"
+                state[key] = st
+                continue
+            sigs = fn(h1)
         if cond in MACRO_CONDS:
             fav = macro_favourable_dates(sym)
             if fav is None:
