@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+from datetime import UTC, datetime
 from pathlib import Path
 
 from scripts.build_mt5_midnight_state import build
@@ -12,6 +14,7 @@ def _write(path: Path, value: object) -> None:
 
 
 def test_build_reports_mt5_conversion_state_without_execution_authority(tmp_path: Path) -> None:
+    now = datetime(2026, 8, 22, 12, tzinfo=UTC)
     desk = tmp_path / "desks" / "mt5"
     _write(desk / "data" / "universe" / "universe.json", {"XAUUSD": {}, "EURUSD": {}})
     (desk / "data" / "universe" / "XAUUSD_H1.parquet").write_bytes(b"bars")
@@ -24,8 +27,15 @@ def test_build_reports_mt5_conversion_state_without_execution_authority(tmp_path
         desk / "reports" / "shadow" / "shadow_state.json",
         {"last_run": "2026-08-22", "s1": {"n": 7}, "s2": {"n": 3}},
     )
+    _write(desk / "reports" / "markout.json", {"usable": False})
+    _write(desk / "reports" / "hypothesis_demo.jsonl", {})
+    for path in (
+        desk / "data" / "universe" / "XAUUSD_H1.parquet",
+        desk / "reports" / "hypothesis_demo.jsonl",
+    ):
+        os.utime(path, (now.timestamp(), now.timestamp()))
 
-    result = build(tmp_path)
+    result = build(tmp_path, now=now)
 
     assert result["scope"] == "MT5_FUSION_ONLY"
     assert result["execution_authority"] is False
@@ -42,6 +52,23 @@ def test_build_reports_mt5_conversion_state_without_execution_authority(tmp_path
 
 
 def test_build_fails_visible_when_mt5_inputs_are_absent(tmp_path: Path) -> None:
-    result = build(tmp_path)
+    result = build(tmp_path, now=datetime(2026, 8, 22, 12, tzinfo=UTC))
     assert result["defects"]
     assert result["conversion"]["universal_survivors"] == 0
+
+
+def test_build_names_stale_shadow_and_missing_markout(tmp_path: Path) -> None:
+    desk = tmp_path / "desks" / "mt5"
+    _write(desk / "data" / "universe" / "universe.json", {"XAUUSD": {}})
+    (desk / "data" / "universe" / "XAUUSD_H1.parquet").write_bytes(b"bars")
+    _write(desk / "data" / "research_queue.json", [{"id": "a", "status": "DONE"}])
+    _write(
+        desk / "reports" / "shadow" / "shadow_state.json",
+        {"last_run": "2026-08-17", "s1": {"n": 5}},
+    )
+    _write(desk / "reports" / "hypothesis_demo.jsonl", {})
+
+    result = build(tmp_path, now=datetime(2026, 8, 22, 12, tzinfo=UTC))
+
+    assert "forward shadow daily clock stale" in result["defects"]
+    assert "execution markout missing; costs remain unmeasured" in result["defects"]

@@ -6,7 +6,7 @@ import argparse
 import json
 import os
 from collections import Counter
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -24,7 +24,21 @@ def _mtime(path: Path) -> str | None:
     return datetime.fromtimestamp(path.stat().st_mtime, tz=UTC).isoformat()
 
 
-def build(root: Path) -> dict[str, Any]:
+def _older_than(stamp: str | None, now: datetime, hours: float) -> bool:
+    if not stamp:
+        return True
+    try:
+        parsed = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+    except ValueError:
+        return True
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=UTC)
+    age = now - parsed.astimezone(UTC)
+    return age < -timedelta(minutes=5) or age > timedelta(hours=hours)
+
+
+def build(root: Path, *, now: datetime | None = None) -> dict[str, Any]:
+    now = (now or datetime.now(tz=UTC)).astimezone(UTC)
     desk = root / "desks" / "mt5"
     data = desk / "data"
     reports = desk / "reports"
@@ -46,6 +60,12 @@ def build(root: Path) -> dict[str, Any]:
     survivor_rows = survivors.get("survivors", survivors) if isinstance(survivors, dict) else []
     survivor_count = len(survivor_rows) if isinstance(survivor_rows, (dict, list)) else 0
     h1 = sorted(universe_dir.glob("*_H1.parquet"))
+    newest_h1 = max((_mtime(path) for path in h1), default=None)
+    research_loop = _mtime(reports / "hypothesis_demo.jsonl")
+    universal_gate = _mtime(reports / "UNIVERSAL_SURVIVORS.json")
+    allocation = _mtime(reports / "allocation.json")
+    markout = _mtime(reports / "markout.json")
+    shadow_last = shadow.get("last_run") if isinstance(shadow, dict) else None
 
     defects: list[str] = []
     if not desk.is_dir():
@@ -58,30 +78,43 @@ def build(root: Path) -> dict[str, Any]:
         defects.append("research queue empty or unreadable")
     if not shadow_rows:
         defects.append("forward shadow state missing or empty")
+    else:
+        try:
+            shadow_day = date.fromisoformat(str(shadow_last))
+        except ValueError:
+            shadow_day = date.min
+        if shadow_day < now.date() - timedelta(days=1):
+            defects.append("forward shadow daily clock stale")
+    if _older_than(research_loop, now, 2):
+        defects.append("hourly research loop stale or unmeasured")
+    if markout is None:
+        defects.append("execution markout missing; costs remain unmeasured")
+    if _older_than(newest_h1, now, 48):
+        defects.append("MT5 universe bars stale")
 
     return {
         "schema_version": 1,
-        "generated_at": datetime.now(tz=UTC).isoformat(),
+        "generated_at": now.isoformat(),
         "scope": "MT5_FUSION_ONLY",
         "execution_authority": False,
         "universe": {
             "metadata_entities": len(meta) if isinstance(meta, (dict, list)) else 0,
             "h1_bar_files": len(h1),
             "metadata_mtime": _mtime(universe_dir / "universe.json"),
-            "newest_h1_mtime": max((_mtime(path) for path in h1), default=None),
+            "newest_h1_mtime": newest_h1,
         },
         "conversion": {
             "research_queue": dict(sorted(queue_states.items())),
             "universal_survivors": survivor_count,
             "shadow_sleeves": len(shadow_rows),
             "shadow_observations": sum(int(row.get("n", 0) or 0) for row in shadow_rows),
-            "shadow_last_run": shadow.get("last_run") if isinstance(shadow, dict) else None,
+            "shadow_last_run": shadow_last,
         },
         "freshness": {
-            "research_loop": _mtime(reports / "hypothesis_demo.jsonl"),
-            "universal_gate": _mtime(reports / "UNIVERSAL_SURVIVORS.json"),
-            "allocation": _mtime(reports / "allocation.json"),
-            "markout": _mtime(reports / "markout.json"),
+            "research_loop": research_loop,
+            "universal_gate": universal_gate,
+            "allocation": allocation,
+            "markout": markout,
         },
         "defects": defects,
     }
