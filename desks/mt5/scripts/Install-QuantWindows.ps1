@@ -53,6 +53,7 @@
 param(
     [string] $DeskRoot,
     [string] $Python,
+    [string] $AurumRoot,
     [switch] $WhatIfOnly
 )
 
@@ -133,7 +134,7 @@ $tasks = @(
        Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
                      -RepetitionInterval (New-TimeSpan -Hours 1) `
                      -RepetitionDuration (New-TimeSpan -Days 3650) }
-       Desc = "Health, mining, and the daily chain: shadow -> promoter -> markout -> export." }
+       Desc = "Health, mining, and the daily chain: shadow -> promoter -> markout -> export." },
     @{ Name = "MT5-Shadow"
        Script = "research\shadow_cycle.py"
        Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
@@ -246,6 +247,50 @@ if ((Test-Path $shadowSync) -and -not $WhatIfOnly) {
     }
 } elseif ($WhatIfOnly) {
     Write-Host "  [DRY ] MT5-ShadowSync 15-minute artifact publisher"
+}
+
+# ---- THE LINK THAT WAS NOT AUTOMATIC ---------------------------------------
+# quant EXPORTS findings daily (daily_cycle step 4) and Aurum READS them daily
+# (aurum_cycle step_absorb). Both ends ran on a schedule; NOTHING CARRIED THE
+# FILE BETWEEN THEM. A pipe whose middle section is a human remembering to run a
+# script is a pipe that stops the first busy week, and it stops SILENTLY --
+# Aurum keeps reporting "0 new findings", which reads exactly like the quant
+# desk having learned nothing.
+#
+# Runs at 22:15 UTC, after the 21:45 daily cycle has written the export. The
+# script is idempotent on (statement, measured_on), so an early or repeated run
+# appends nothing rather than duplicating.
+if ($AurumRoot) {
+    $syncScript = Join-Path $AurumRoot "deploy\windows\Sync-QuantFindings.ps1"
+    if (-not (Test-Path $syncScript)) {
+        Write-Host ("  [SKIP] {0,-14} not found at {1}" -f "Aurum-Sync", $syncScript)
+    } elseif ($WhatIfOnly) {
+        Write-Host ("  [DRY ] {0,-14} {1}" -f "Aurum-Sync", $syncScript)
+    } else {
+        $quantRoot = Split-Path -Parent (Split-Path -Parent $DeskRoot)
+        $sa = New-ScheduledTaskAction -Execute "powershell.exe" `
+            -Argument ("-NoProfile -ExecutionPolicy Bypass -File `"$syncScript`" " +
+                       "-QuantRoot `"$quantRoot`" -AurumRoot `"$AurumRoot`"") `
+            -WorkingDirectory $AurumRoot
+        $stg = New-ScheduledTaskSettingsSet -StartWhenAvailable -RestartCount 3 `
+            -RestartInterval (New-TimeSpan -Minutes 5) `
+            -ExecutionTimeLimit (New-TimeSpan -Minutes 10)
+        try {
+            Unregister-ScheduledTask -TaskName "Aurum-Sync" -Confirm:$false -ErrorAction SilentlyContinue
+            Register-ScheduledTask -TaskName "Aurum-Sync" -Action $sa `
+                -Trigger (New-ScheduledTaskTrigger -Daily -At "22:15") -Settings $stg `
+                -Description "Carry quant's exported findings into Aurum's absorption inbox." `
+                -User "SYSTEM" -RunLevel Highest | Out-Null
+            Write-Host ("  [OK  ] {0,-14} daily 22:15 -> {1}" -f "Aurum-Sync", $AurumRoot)
+        } catch {
+            Write-Host ("  [FAIL] {0,-14} {1}" -f "Aurum-Sync", $_.Exception.Message)
+        }
+    }
+} else {
+    Write-Host ""
+    Write-Host "  NOTE: -AurumRoot not given, so the findings transport is NOT scheduled."
+    Write-Host "        quant will export daily and Aurum will read daily, but nothing"
+    Write-Host "        moves the file between them. Re-run with -AurumRoot C:\Aurum."
 }
 
 Write-Host ""
