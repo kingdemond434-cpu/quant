@@ -275,12 +275,21 @@ if ($AurumRoot) {
         $stg = New-ScheduledTaskSettingsSet -StartWhenAvailable -RestartCount 3 `
             -RestartInterval (New-TimeSpan -Minutes 5) `
             -ExecutionTimeLimit (New-TimeSpan -Minutes 10)
+        # NOT the SYSTEM account. Registering a task to run as SYSTEM needs
+        # SeAssignPrimaryTokenPrivilege/SeIncreaseQuotaPrivilege to impersonate
+        # it via CIM, and several VPS base images (Contabo's included) strip
+        # that from every local account, admin or not -- Register-ScheduledTask
+        # then fails "Access is denied" with no clue it was the account choice.
+        # The interactive user works with no impersonation right at all, and
+        # autologon keeps that session present, so Interactive logon is enough.
+        $syncPrincipal = New-ScheduledTaskPrincipal -UserId $env:USERNAME `
+            -LogonType Interactive -RunLevel Highest
         try {
             Unregister-ScheduledTask -TaskName "Aurum-Sync" -Confirm:$false -ErrorAction SilentlyContinue
             Register-ScheduledTask -TaskName "Aurum-Sync" -Action $sa `
                 -Trigger (New-ScheduledTaskTrigger -Daily -At "22:15") -Settings $stg `
                 -Description "Carry quant's exported findings into Aurum's absorption inbox." `
-                -User "SYSTEM" -RunLevel Highest | Out-Null
+                -Principal $syncPrincipal | Out-Null
             Write-Host ("  [OK  ] {0,-14} daily 22:15 -> {1}" -f "Aurum-Sync", $AurumRoot)
         } catch {
             Write-Host ("  [FAIL] {0,-14} {1}" -f "Aurum-Sync", $_.Exception.Message)
