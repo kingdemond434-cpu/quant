@@ -27,6 +27,7 @@ BASE = Path(__file__).resolve().parent.parent
 LOGS = BASE / "logs"
 STATE = LOGS / "supervisor_state.json"
 LOG = LOGS / "supervisor.log"
+PIDFILE = LOGS / "research_supervisor.pid"
 if os.name == "nt":
     PYW = Path(sys.executable).parent / "pythonw.exe"
     CHILD_LOGS = Path(os.environ.get("TEMP", r"C:\Windows\Temp")) / "opencode" / "logs"
@@ -139,6 +140,7 @@ def main() -> int:
         return 0
 
     LOGS.mkdir(exist_ok=True)
+    PIDFILE.write_text(str(os.getpid()), encoding="ascii")
     state: dict = {}
     try:
         state = json.loads(STATE.read_text("utf-8"))
