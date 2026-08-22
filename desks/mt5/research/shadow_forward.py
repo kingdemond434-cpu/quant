@@ -69,7 +69,83 @@ SLEEVES = [
     ("XAUUSD", "asia", "NORMAL_DAY"),
     ("XAUUSD", "asia", "FAILED_BREAK"),
     ("XAUUSD", "london_am", "NORMAL_DAY"),
+    # MACRO-CONDITIONED, added 2026-08-22. Same session_range_breakout family and the same
+    # window params as the unconditioned parent directly above it in this list -- the ONLY
+    # difference is that entries are kept solely on days when the symbol's macro driver was
+    # falling over the prior 20 days (real 10y yield for metals, DXY for a USD-quoted pair).
+    #
+    # WHY THESE ARE HERE. Screening (reports/edges_macro_fusion_sweep.json) found the filter
+    # RAISES PER-TRADE EXPECTANCY while halving the sample: XAUUSD +0.1603R -> +0.1987R,
+    # GBPUSD +0.1184R -> +0.1709R. The t-statistic FALLS in both cases, purely because n
+    # halves, which is exactly the shape a screen cannot resolve -- a better filter and a
+    # luckier subset look identical in backtest. Forward evidence is the only thing that
+    # separates them, so they go to shadow rather than to an argument.
+    #
+    # PAIRED WITH THEIR PARENTS ON PURPOSE. Each is a strict subset of a sleeve already in
+    # this list, so the comparison is against the same family on the same bars over the same
+    # window -- the filter's value is the DIFFERENCE, and that is only readable if the parent
+    # is accruing beside it. They are here to be measured against those parents, not to be
+    # promoted alongside them.
+    ("XAUUSD", "asia", "MACRO_FAV"),
+    ("XAUUSD", "london_am", "MACRO_FAV"),
+    ("XAUUSD", "afternoon", "MACRO_FAV"),
+    ("USDJPY", "asia", "MACRO_FAV"),
+    ("USDJPY", "london_am", "MACRO_FAV"),
 ]
+
+#: Conditioning values served by the macro history rather than by day_states.
+#: Kept as a set so the dispatch in main() is a membership test rather than a
+#: string comparison that silently falls through to the day_states branch.
+MACRO_CONDS = {"MACRO_FAV"}
+
+#: symbol -> (macro column, lookback days, favourable_sign).
+#:
+#: THE SIGN IS NOT COSMETIC AND IS THE EASIEST THING HERE TO GET WRONG. -1
+#: means a FALLING series is the supportive state; +1 means a RISING one is.
+#: Gold rallies as its carry cost falls (-1) and a USD-quoted pair rallies as
+#: the dollar falls (-1), but USDJPY is the opposite: it is the DOLLAR that is
+#: the base currency, and a RISING US 10y lifts it (+1). Writing USDJPY as -1
+#: would filter to precisely the wrong half of history and would not crash,
+#: look wrong, or fail a test -- it would produce a clean, confident, inverted
+#: number, which is the failure mode run_cot_macro_sweep.py documents at
+#: length for the same reason.
+MACRO_DRIVER = {
+    "XAUUSD": ("REAL_YIELD_10Y", 20, -1),
+    "XAGUSD": ("REAL_YIELD_10Y", 20, -1),
+    "GBPUSD": ("DXY", 20, -1),
+    "USDJPY": ("DGS10", 20, +1),
+}
+
+
+def macro_favourable_dates(sym: str) -> set | None:
+    """Dates whose macro driver was in the supportive state for `sym`.
+
+    Returns None when the macro history or the symbol's driver is absent --
+    None is NOT an empty set, and the caller must not treat it as "no
+    favourable days". An empty set would silently zero the sleeve while
+    looking like a legitimate measurement; None makes the caller record NO
+    DATA, which is the honest state and the one the promoter can act on.
+    """
+    from mt5desk import macro_regime
+
+    spec = MACRO_DRIVER.get(sym)
+    if spec is None:
+        return None
+    col, lookback, fav_sign = spec
+    hist = macro_regime.load_history()
+    if hist is None or col not in hist.columns:
+        return None
+    s = hist[col].dropna()
+    if len(s) < lookback + 2:
+        return None
+    change = (s - s.shift(lookback)).dropna()
+    # PUBLICATION LAG. FRED prints daily market series the following morning,
+    # so a value dated D is only knowable from D+1. Shifting the index forward
+    # before the join is what keeps this a forward filter rather than a
+    # one-day look-ahead applied uniformly across the whole record.
+    change.index = pd.to_datetime(change.index) + pd.Timedelta(days=1)
+    fav = (change < 0) if fav_sign < 0 else (change > 0)
+    return {d.date() for d in fav[fav].index}
 
 FETCH_DAYS = 45
 VERDICT_MIN_TRADES = 50
@@ -244,7 +320,18 @@ def main() -> None:
             continue
         h1 = bars.df
         sigs = families.family_session_range_breakout(h1, **WINDOWS[win])
-        if cond:
+        if cond in MACRO_CONDS:
+            fav = macro_favourable_dates(sym)
+            if fav is None:
+                # NO DATA, recorded as such. Distinct from "the macro state stood
+                # aside": one is a missing input, the other is evidence. Collapsing
+                # them is the defect this file already guards against for bars.
+                st["last_no_data"] = today
+                st["no_data_days"] = int(st.get("no_data_days", 0)) + 1
+                state[key] = st
+                continue
+            sigs = [g for g in sigs if pd.Timestamp(g.time).date() in fav]
+        elif cond:
             # Same corrected prior-day join the sweep used. A shadow record built on a different
             # conditioning rule than the backtest would be measuring a third strategy.
             from run_hunt12 import day_states  # noqa: PLC0415
