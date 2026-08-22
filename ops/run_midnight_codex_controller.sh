@@ -138,10 +138,8 @@ write_status "RUNNING_CONTROLLER" "Codex holds the fenced lease and is processin
 {
     printf '=== SEALED AUTHORITATIVE MASTER CONSTITUTION (verified before lease claim) ===\n'
     cat docs/MASTER_QUANT_CONSTITUTION.md
-    printf '\n=== MIDNIGHT CONTROLLER OPERATING BRIEF ===\n'
+    printf '\n=== SINGLE MT5-ONLY MIDNIGHT OPERATING BRIEF ===\n'
     cat ops/midnight_codex_prompt.txt
-    printf '\n=== SHARED DYNAMIC CONVERSION CONTROL (ALL BRAINS) ===\n'
-    cat ops/shared_conversion_controller.txt
     printf '\nRUNTIME STATE: deterministic pipeline exit code=%s; controller epoch=%s.\n' \
         "$PIPELINE_RC" "$QUANT_CONTROLLER_EPOCH"
 } >"$PROMPT_FILE"

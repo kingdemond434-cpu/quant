@@ -18,12 +18,13 @@ SERVICE = Path("ops/quant-midnight-frontier.service")
 TIMER = Path("ops/quant-midnight-frontier.timer")
 
 
-def test_THE_EXECUTION_STAGE_IS_SCHEDULED_AT_ALL() -> None:
-    """The finding this closes: mining was automated, testing was not."""
+def test_THE_MIDNIGHT_CONTROLLER_SNAPSHOTS_THE_MT5_FACTORY() -> None:
+    """The legacy research cycle remains testable, but the midnight venue is MT5/Fusion only."""
     assert CYCLE.exists() and SERVICE.exists() and TIMER.exists()
     assert "run_midnight_frontier.sh" in SERVICE.read_text("utf-8")
-    assert "run_sweep_then_cycle.sh" in Path("ops/run_midnight_frontier.sh").read_text("utf-8")
-    assert "run_research_cycle.sh" in Path("ops/run_sweep_then_cycle.sh").read_text("utf-8")
+    midnight = Path("ops/run_midnight_frontier.sh").read_text("utf-8")
+    assert "build_mt5_midnight_state.py" in midnight
+    assert "run_sweep_then_cycle.sh" not in midnight
     assert "OnCalendar" in TIMER.read_text("utf-8")
 
 

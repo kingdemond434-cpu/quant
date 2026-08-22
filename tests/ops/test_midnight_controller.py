@@ -20,11 +20,12 @@ def test_midnight_is_a_vps_controller_cycle_not_an_app_automation() -> None:
     assert "00:00:00 Europe/Dublin" in TIMER.read_text("utf-8")
     assert "run_midnight_frontier.sh" in SERVICE.read_text("utf-8")
     wrapper = WRAPPER.read_text("utf-8")
-    # A pre-run status publication is allowed, but deterministic evidence must finish
+    # A pre-run status publication is allowed, but the fresh MT5 snapshot must finish
     # before the actual reasoning-controller invocation.
-    assert wrapper.index("run_sweep_then_cycle.sh") < wrapper.rindex(
+    assert wrapper.index("build_mt5_midnight_state.py") < wrapper.rindex(
         "run_midnight_codex_controller.sh"
     )
+    assert "run_sweep_then_cycle.sh" not in wrapper
     assert ".midnight_controller_cycle.lock" in wrapper
     assert "quant-midnight-frontier.timer" in DEPLOY.read_text("utf-8")
     assert "quant-midnight-frontier" in RECONSTITUTE.read_text("utf-8")
@@ -48,6 +49,12 @@ def test_overnight_contract_names_the_authority_and_collision_free_units() -> No
     }
     assert contract["controller_mandate"] == "docs/MASTER_QUANT_CONSTITUTION.md"
     assert contract["implementation_mandate"] == "docs/research/TIER1_CONTROLLER_MANDATE.md"
+    assert contract["venue_scope"] == "MT5_FUSION_ONLY"
+    assert contract["pipeline"] == [
+        "ops/run_midnight_frontier.sh",
+        "scripts/build_mt5_midnight_state.py",
+        "ops/run_midnight_codex_controller.sh",
+    ]
     assert "data/constitution_core.lock" in contract["required_artifacts"]
 
 
@@ -95,19 +102,14 @@ def test_codex_controller_is_noninteractive_fenced_and_checkpointed() -> None:
     assert '|| TRANSFER_RC=$?' in source
 
 
-def test_midnight_waits_for_an_existing_pipeline_before_reasoning() -> None:
+def test_midnight_builds_mt5_state_before_reasoning() -> None:
     wrapper = WRAPPER.read_text("utf-8")
-    sweep = Path("ops/run_sweep_then_cycle.sh").read_text("utf-8")
-    assert "run_sweep_then_cycle.sh --cycle-only --wait-existing" in wrapper
-    assert wrapper.index("--pipeline-start") < wrapper.index("run_sweep_then_cycle.sh")
-    assert 'if [ "$WAIT_EXISTING" -eq 1 ]' in sweep
-    assert sweep.index("flock 9") < sweep.index("existing overnight frontier completed")
-    assert "HANDOFF_MTIME" in sweep
-    assert 'd.get("pipeline", {}).get("rc")' in sweep
-    assert "--cycle-only) CYCLE_ONLY=1" in sweep
+    assert wrapper.index("--pipeline-start") < wrapper.index("build_mt5_midnight_state.py")
+    assert "MT5/Fusion-only" in wrapper
+    assert "legacy crypto-wide study registry" in wrapper
 
 
-def test_controller_prompt_forces_continuation_conversion_and_open_world_coverage() -> None:
+def test_controller_prompt_is_one_compact_mt5_only_operating_brief() -> None:
     prompt = PROMPT.read_text("utf-8")
     # Keep the nightly controller implementation-first and prevent mandate duplication
     # from silently consuming the reasoning budget again.
@@ -116,57 +118,48 @@ def test_controller_prompt_forces_continuation_conversion_and_open_world_coverag
         "MASTER_QUANT_CONSTITUTION.md",
         "continuation cycle",
         "Never reset",
-        "open-world coverage",
+        "MT5/Fusion only",
         "Convert, do not summarize",
-        "IMPLEMENT, TEST, BLOCKED",
+        "IMPLEMENTED+TESTED",
         "checkpoint",
         "scripts/run_deadman_switch.py",
     ):
         assert required.casefold() in prompt.casefold()
     assert MANDATE.exists() and len(MANDATE.read_text("utf-8")) > 20_000
     assert "controller_continuity.py" in AGENTS.read_text("utf-8")
+    for excluded_venue in ("Binance", "Bybit", "OKX", "Hyperliquid"):
+        assert "Do not hunt" in prompt and excluded_venue in prompt
+    controller = CONTROLLER.read_text("utf-8")
+    assert controller.count("cat ops/midnight_codex_prompt.txt") == 1
+    assert "cat ops/shared_conversion_controller.txt" not in controller
 
 
 def test_midnight_aggressively_converts_real_orphans_end_to_end() -> None:
     prompt = PROMPT.read_text("utf-8")
     for required in (
-        "web/intelligence_cycle.json",
-        "data/published_gaps/orphan_chain.json",
         "ORPHAN",
         "INERT",
         "CONVERSION_FAILURE",
-        "WIRE, TEST, ARCHIVE, DELETE or BLOCKED",
+        "WIRE+TEST, ARCHIVE, DELETE, or BLOCK",
         "producer -> durable output -> consumer -> decision/research",
     ):
         assert required in prompt
 
 
-def test_midnight_routes_l2_and_every_conversion_family() -> None:
+def test_midnight_routes_mt5_data_and_every_conversion_family() -> None:
     prompt = PROMPT.read_text("utf-8")
-    cycle = Path("ops/run_research_cycle.sh").read_text("utf-8")
     for required in (
-        "data/l2_daily_conversion.json",
-        "100% mining over a frozen denominator",
-        "preregistered hypothesis generation",
-        "near-survivor/survivor disposition",
-        "zero-capital paper shadow",
-        "WHOLE-FACTORY CONVERSION-DEBT SWEEP",
-        "statistical validity and overdue forecasts",
-        "mutation breadth",
-        "blind-spot fields/entities/crosses",
-        "scheduler integrity",
-        "governance defects/law fences",
-        "Every Claude, Codex, OpenCode",
-        "web/conversion_control.json",
-        "fixed counts",
+        "broker bars/ticks/DOM",
+        "preregistered hypothesis",
+        "near-survivor/survivor",
+        "zero-capital forward shadow",
+        "multiplicity/PBO/SPA",
+        "failure and near-survivor recycling",
+        "real-fill attribution",
+        "Claude, Codex, OpenCode",
+        "No hardcoded output quota",
     ):
         assert required in prompt
-    assert cycle.index("run_moat_utilisation.py") < cycle.index(
-        "check_l2_daily_conversion.py"
-    )
     controller = Path("ops/run_midnight_codex_controller.sh").read_text("utf-8")
-    assert "cat ops/shared_conversion_controller.txt" in controller
-    shared = Path("ops/shared_conversion_controller.txt").read_text("utf-8")
-    assert "STATISTICALLY_VALID ->\nSHADOW -> OOS_VALIDATED" in shared
-    assert "SHADOW is the producer of untouched post-selection OOS observations" in shared
-    assert "scripts/run_conversion_control.py" in cycle
+    assert "SINGLE MT5-ONLY MIDNIGHT OPERATING BRIEF" in controller
+    assert "shared_conversion_controller.txt" not in controller
