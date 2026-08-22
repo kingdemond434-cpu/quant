@@ -1097,3 +1097,101 @@ def family_dip_atr_shock(
             time=h1.index[i + 1], side=1, stop=stop, target=entry + stop_dist * rr,
             ttl_bars=ttl_bars, tag=f"dip_atrshock.{atr_k:.1f}"))
     return signals
+
+
+def family_macro_swing(
+    df: pd.DataFrame,
+    macro: pd.Series,
+    *,
+    lookback_days: int = 20,
+    hold_bars: int = 240,
+    stop_atr: float = 3.0,
+    rr: float = 2.0,
+    atr_n: int = 20,
+    sign: int = -1,
+    min_gap_bars: int = 120,
+    pub_lag_days: int = 1,
+) -> list[Signal]:
+    """Macro AS the signal, held for swing length -- not macro as a filter.
+
+    Every other macro use in this file conditions an existing price-structure
+    entry. This one has no price trigger at all: the macro series turning IS
+    the entire thesis, and price only supplies the stop distance. That makes
+    it the actual test of "is macro an edge in itself", which a conditioning
+    study cannot answer no matter how it comes out.
+
+    `sign=-1` means a FALLING macro series is bullish -- the correct default
+    for gold against the real yield (a zero-coupon asset rallies as its carry
+    cost falls) and for a USD-quoted pair against the dollar. `sign=+1`
+    inverts it for a series whose RISE is the bullish state.
+
+    WHY THE HOLD IS LONG AND THE STOP IS WIDE. Macro repricings run for weeks,
+    not hours, and the cost argument for swing length is arithmetic rather
+    than hopeful: one spread crossing amortised over a 10-day hold is a tenth
+    the drag of the same crossing over a 1-day hold. `hold_bars=240` is ~10
+    trading days of H1 bars; `stop_atr=3.0` is deliberately wide, because a
+    tight stop on a multi-week thesis just pays the spread to be shaken out.
+
+    POINT-IN-TIME: `pub_lag_days` shifts the macro series forward before any
+    join, so a value dated D is only visible from D+`pub_lag_days`. FRED
+    publishes most daily market series the following morning; joining on the
+    reference date would let the backtest read a number nobody had. That
+    look-ahead is small, systematic, and exactly the profile that survives a
+    naive out-of-sample split and then fails live.
+
+    `min_gap_bars` stops one slow macro trend emitting a signal every bar for
+    a month: consecutive entries must be at least that far apart, so the
+    sample counts distinct macro events rather than the same event several
+    hundred times. Without it the trade count is an artefact of bar frequency
+    and every t-stat built on it is inflated.
+    """
+    h1 = _h1(df)
+    if len(h1) < atr_n + 4 or macro is None or len(macro) == 0:
+        return []
+    atr = _atr(h1, atr_n)
+
+    m = macro.dropna().sort_index()
+    if len(m) < lookback_days + 2:
+        return []
+    change = (m - m.shift(lookback_days)).dropna()
+    if change.empty:
+        return []
+    # Publication lag, applied BEFORE the join. See the docstring.
+    change.index = pd.to_datetime(change.index) + pd.Timedelta(days=pub_lag_days)
+
+    idx = h1.index
+    if change.index.tz is None and idx.tz is not None:
+        change.index = change.index.tz_localize(idx.tz)
+    elif change.index.tz is not None and idx.tz is None:
+        change.index = change.index.tz_localize(None)
+    aligned = change.reindex(idx, method="ffill")
+
+    a = atr.to_numpy()
+    c = h1["close"].to_numpy()
+    av = aligned.to_numpy()
+    signals: list[Signal] = []
+    last_i = -(10**9)
+    for i in range(atr_n + 1, len(h1) - 2):
+        if np.isnan(a[i]) or not (a[i] > 0):
+            continue
+        ch, prev = av[i], av[i - 1]
+        if np.isnan(ch) or np.isnan(prev):
+            continue
+        # Fire on the CROSSING, not on the state -- a state fires every bar it
+        # holds, which is the same event counted hundreds of times.
+        if not (prev >= 0 > ch) and not (prev <= 0 < ch):
+            continue
+        side = int(np.sign(ch) * sign)
+        if side == 0 or i - last_i < min_gap_bars:
+            continue
+        stop_dist = stop_atr * a[i]
+        if not (stop_dist > 0):
+            continue
+        entry = c[i]
+        signals.append(Signal(
+            time=h1.index[i], side=side,
+            stop=entry - side * stop_dist,
+            target=entry + side * stop_dist * rr,
+            ttl_bars=hold_bars, tag=f"macro_swing.{lookback_days}d"))
+        last_i = i
+    return signals
