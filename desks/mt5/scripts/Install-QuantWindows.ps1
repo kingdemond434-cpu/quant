@@ -104,6 +104,18 @@ Write-Host "  interpreter $Python"
 $logDir = Join-Path $DeskRoot "logs"
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 
+#: REPETITION DURATION IS 10 YEARS, NOT [TimeSpan]::MaxValue. MaxValue
+#: serialises to the ISO-8601 duration P99999999DT23H59M59S, which the Task
+#: Scheduler service rejects outright:
+#:
+#:   Register-ScheduledTask : The task XML contains a value which is
+#:   incorrectly formatted or out of range. (8,42):Duration:P99999999DT23H59M59S
+#:
+#: It fails at REGISTRATION, so the task simply does not exist afterwards --
+#: and a script that reports the other tasks fine leaves an operator believing
+#: the schedule is installed. 3650 days is indefinite for any practical purpose
+#: and serialises to a duration the service accepts.
+#:
 #: name -> (script, schedule-builder, description)
 #: The gateway runs EVERY MINUTE and holds its own file lock, so overlapping
 #: passes cannot double-bracket. The hourly cycle self-guards on a UTC date
@@ -114,13 +126,13 @@ $tasks = @(
        Script = "research\run_gateway_loop.py"
        Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
                      -RepetitionInterval (New-TimeSpan -Minutes 1) `
-                     -RepetitionDuration ([TimeSpan]::MaxValue) }
+                     -RepetitionDuration (New-TimeSpan -Days 3650) }
        Desc = "One gateway pass per minute; file-locked against overlap." },
     @{ Name = "MT5-Hourly"
        Script = "research\hourly_cycle.py"
        Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
                      -RepetitionInterval (New-TimeSpan -Hours 1) `
-                     -RepetitionDuration ([TimeSpan]::MaxValue) }
+                     -RepetitionDuration (New-TimeSpan -Days 3650) }
        Desc = "Health, mining, and the daily chain: shadow -> promoter -> markout -> export." }
 )
 
