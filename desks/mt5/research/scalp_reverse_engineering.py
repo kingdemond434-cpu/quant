@@ -67,8 +67,11 @@ def _signals(df: pd.DataFrame, cfg: Config) -> np.ndarray:
     rng = prev_hi - prev_lo
     disp = np.zeros(len(df), dtype=np.int8)
     good = (rng >= cfg.displacement_atr * prev_atr) & (rng > 0)
-    disp[good & ((prev_close - prev_open) / rng > 0.5)] = 1
-    disp[good & ((prev_close - prev_open) / rng < -0.5)] = -1
+    body_fraction = np.divide(
+        prev_close - prev_open, rng, out=np.zeros_like(rng), where=rng > 0,
+    )
+    disp[good & (body_fraction > 0.5)] = 1
+    disp[good & (body_fraction < -0.5)] = -1
     if cfg.family == "sweep_reclaim":
         return sweep
     if cfg.family == "displacement_continuation":
@@ -84,19 +87,35 @@ def _atr(df: pd.DataFrame) -> np.ndarray:
     return tr.ewm(alpha=1 / 14, min_periods=14).mean().to_numpy(float)
 
 
-def simulate(df: pd.DataFrame, cfg: Config, *, cost: str = "fusion_zero") -> np.ndarray:
+def simulate(
+    df: pd.DataFrame,
+    cfg: Config,
+    *,
+    cost: str = "fusion_zero",
+    signal_override: np.ndarray | None = None,
+    atr_override: np.ndarray | None = None,
+    detailed: bool = False,
+) -> np.ndarray | list[dict]:
     """Return non-overlapping basket R. Same-bar ambiguity is always stop-first."""
-    sig, atr = _signals(df, cfg), _atr(df)
+    sig = _signals(df, cfg) if signal_override is None else signal_override
+    atr = _atr(df) if atr_override is None else atr_override
+    if len(sig) != len(df) or len(atr) != len(df):
+        raise ValueError("signal and ATR arrays must align exactly with bars")
     opn, high, low, close = (df[c].to_numpy(float) for c in ("open", "high", "low", "close"))
     point = 0.01
     spreads = df.get("spread", pd.Series(0.0, index=df.index)).to_numpy(float) * point
-    out: list[float] = []
+    out: list[dict] = []
     i, n = max(40, cfg.lookback + 3), len(df) - 1
-    while i < n:
+    event_indices = np.flatnonzero(sig != 0)
+    event_pos = int(np.searchsorted(event_indices, i))
+    while event_pos < len(event_indices):
+        i = int(event_indices[event_pos])
+        if i >= n:
+            break
         direction = int(sig[i])
         a = float(atr[i])
-        if direction == 0 or not math.isfinite(a) or a <= 0:
-            i += 1
+        if not math.isfinite(a) or a <= 0:
+            event_pos += 1
             continue
         first = float(opn[i])
         stop = first - direction * cfg.stop_atr * a
@@ -129,9 +148,15 @@ def simulate(df: pd.DataFrame, cfg: Config, *, cost: str = "fusion_zero") -> np.
                         cost_r += units * (spreads[j] + FUSION_COMMISSION_PRICE)
             exit_price = float(close[j])
         pnl_r = sum(u * direction * (exit_price - p) for p, u in entries) - cost_r
-        out.append(float(pnl_r))
-        i = j + 1
-    return np.asarray(out, dtype=float)
+        out.append({
+            "opened_at": df.index[i].isoformat(), "closed_at": df.index[j].isoformat(),
+            "direction": direction, "depth": len(entries), "r": float(pnl_r),
+            "risk_allocated_r": 1.0 if cfg.mode == "single" else 0.25 * len(entries),
+        })
+        event_pos = int(np.searchsorted(event_indices, j + 1))
+    if detailed:
+        return out
+    return np.asarray([row["r"] for row in out], dtype=float)
 
 
 def _stats(rs: np.ndarray) -> dict:

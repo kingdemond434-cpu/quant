@@ -18,11 +18,11 @@
       "source": "Vantage Markets live MT5 terminal, read-only account",
       "symbol": "XAUUSD",
       "timeframes": ["M1", "M5", "M15"],
-      "bars_per_timeframe": 30000,
+      "bars_per_timeframe": 90000,
       "format": "parquet",
       "path": "data/universe/XAUUSD_M*.parquet",
       "ingested": "2026-08-22",
-      "notes": "Retains broker spread points. Used as price/spread proxy for the screenshot scalp falsification; Fusion Zero execution arm adds official $4.50/lot round-turn commission. Not Fusion-native history.",
+      "notes": "Paged in 5k blocks below MT5's native request crash boundary and retains broker spread points. Used as price/spread proxy for scalp falsification; Fusion Zero execution arm adds official $4.50/lot round-turn commission. Not Fusion-native history and therefore has no capital-promotion authority.",
       "provenance": "fetch_gold_scalp.py via MT5 copy_rates_from_pos"
     },
     "fred_macro": {

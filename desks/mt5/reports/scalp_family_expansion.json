@@ -1,0 +1,1834 @@
+{
+  "version": "gold-scalp-expansion-2026-08-22-a",
+  "design": "7 labelled anti-signals x 4 sessions x 2 preregistered exit geometries",
+  "prior_base_family_verdict": "All seven ordinary-direction families rejected on the 90k-bar rerun; this artifact tests the economically distinct anti-crowd hypothesis.",
+  "selection": "first 60%; untouched last 40%",
+  "cost": "recorded broker spread plus Fusion Zero $4.50/lot round turn",
+  "timeframes": {
+    "M1": {
+      "status": "MEASURED",
+      "bars": 90000,
+      "families": 7,
+      "train_trials": 56,
+      "selected": [
+        {
+          "choice": {
+            "family": "anti_ema_pullback",
+            "session": "new_york",
+            "stop_atr": 1.0,
+            "target_atr": 1.5,
+            "max_hold": 15
+          },
+          "train_mean_r": -0.08146,
+          "arms": {
+            "single": {
+              "train": null,
+              "costed": {
+                "n": 460,
+                "mean_r": -0.21262,
+                "t_stat": -3.78,
+                "psr": 0.000155,
+                "win_rate": 0.3717,
+                "worst_r": -1.2925,
+                "total_r": -97.8
+              },
+              "frictionless": {
+                "n": 460,
+                "mean_r": -0.06966,
+                "t_stat": -1.239,
+                "psr": 0.111469,
+                "win_rate": 0.3717,
+                "worst_r": -1.0,
+                "total_r": -32.04
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            },
+            "bounded_structural": {
+              "train": null,
+              "costed": {
+                "n": 461,
+                "mean_r": -0.05263,
+                "t_stat": -2.184,
+                "psr": 0.018202,
+                "win_rate": 0.3709,
+                "worst_r": -1.3277,
+                "total_r": -24.26
+              },
+              "frictionless": {
+                "n": 461,
+                "mean_r": 0.00223,
+                "t_stat": 0.092,
+                "psr": 0.536865,
+                "win_rate": 0.3709,
+                "worst_r": -1.0,
+                "total_r": 1.03
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            }
+          }
+        },
+        {
+          "choice": {
+            "family": "anti_donchian_breakout",
+            "session": "new_york",
+            "stop_atr": 1.0,
+            "target_atr": 1.5,
+            "max_hold": 15
+          },
+          "train_mean_r": -0.04625,
+          "arms": {
+            "single": {
+              "train": null,
+              "costed": {
+                "n": 481,
+                "mean_r": -0.19425,
+                "t_stat": -3.538,
+                "psr": 0.000341,
+                "win_rate": 0.3805,
+                "worst_r": -1.2991,
+                "total_r": -93.43
+              },
+              "frictionless": {
+                "n": 481,
+                "mean_r": -0.05489,
+                "t_stat": -0.997,
+                "psr": 0.162497,
+                "win_rate": 0.3805,
+                "worst_r": -1.0,
+                "total_r": -26.4
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            },
+            "bounded_structural": {
+              "train": null,
+              "costed": {
+                "n": 481,
+                "mean_r": 0.00162,
+                "t_stat": 0.058,
+                "psr": 0.5231,
+                "win_rate": 0.3846,
+                "worst_r": -1.0561,
+                "total_r": 0.78
+              },
+              "frictionless": {
+                "n": 481,
+                "mean_r": 0.05545,
+                "t_stat": 1.899,
+                "psr": 0.989356,
+                "win_rate": 0.3846,
+                "worst_r": -1.0,
+                "total_r": 26.67
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            }
+          }
+        },
+        {
+          "choice": {
+            "family": "anti_wick_exhaustion",
+            "session": "new_york",
+            "stop_atr": 1.0,
+            "target_atr": 1.5,
+            "max_hold": 15
+          },
+          "train_mean_r": -0.03384,
+          "arms": {
+            "single": {
+              "train": null,
+              "costed": {
+                "n": 582,
+                "mean_r": -0.14039,
+                "t_stat": -2.773,
+                "psr": 0.003386,
+                "win_rate": 0.4021,
+                "worst_r": -1.3026,
+                "total_r": -81.71
+              },
+              "frictionless": {
+                "n": 582,
+                "mean_r": 0.00237,
+                "t_stat": 0.047,
+                "psr": 0.518634,
+                "win_rate": 0.4021,
+                "worst_r": -1.0,
+                "total_r": 1.38
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            },
+            "bounded_structural": {
+              "train": null,
+              "costed": {
+                "n": 582,
+                "mean_r": -0.03196,
+                "t_stat": -1.715,
+                "psr": 0.049481,
+                "win_rate": 0.3986,
+                "worst_r": -1.2346,
+                "total_r": -18.6
+              },
+              "frictionless": {
+                "n": 582,
+                "mean_r": 0.01289,
+                "t_stat": 0.688,
+                "psr": 0.757797,
+                "win_rate": 0.3986,
+                "worst_r": -1.0,
+                "total_r": 7.5
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            }
+          }
+        },
+        {
+          "choice": {
+            "family": "anti_compression_breakout",
+            "session": "london",
+            "stop_atr": 1.0,
+            "target_atr": 1.5,
+            "max_hold": 15
+          },
+          "train_mean_r": 1.38344,
+          "arms": {
+            "single": {
+              "train": null,
+              "costed": {
+                "n": 2,
+                "mean_r": 0.01393,
+                "t_stat": 0.012,
+                "psr": 0.0,
+                "win_rate": 0.5,
+                "worst_r": -1.1858,
+                "total_r": 0.03
+              },
+              "frictionless": {
+                "n": 2,
+                "mean_r": 0.25,
+                "t_stat": 0.2,
+                "psr": 0.0,
+                "win_rate": 0.5,
+                "worst_r": -1.0,
+                "total_r": 0.5
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            },
+            "bounded_structural": {
+              "train": null,
+              "costed": {
+                "n": 2,
+                "mean_r": 0.41215,
+                "t_stat": 0.582,
+                "psr": 0.0,
+                "win_rate": 0.5,
+                "worst_r": -0.2965,
+                "total_r": 0.82
+              },
+              "frictionless": {
+                "n": 2,
+                "mean_r": 0.56758,
+                "t_stat": 0.694,
+                "psr": 0.0,
+                "win_rate": 0.5,
+                "worst_r": -0.25,
+                "total_r": 1.14
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            }
+          }
+        },
+        {
+          "choice": {
+            "family": "anti_three_bar_momentum",
+            "session": "overlap",
+            "stop_atr": 1.0,
+            "target_atr": 1.5,
+            "max_hold": 15
+          },
+          "train_mean_r": -0.07192,
+          "arms": {
+            "single": {
+              "train": null,
+              "costed": {
+                "n": 692,
+                "mean_r": -0.14817,
+                "t_stat": -3.182,
+                "psr": 0.000943,
+                "win_rate": 0.4061,
+                "worst_r": -1.2991,
+                "total_r": -102.53
+              },
+              "frictionless": {
+                "n": 692,
+                "mean_r": 0.0137,
+                "t_stat": 0.295,
+                "psr": 0.61605,
+                "win_rate": 0.4061,
+                "worst_r": -1.0,
+                "total_r": 9.48
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            },
+            "bounded_structural": {
+              "train": null,
+              "costed": {
+                "n": 700,
+                "mean_r": -0.01365,
+                "t_stat": -0.741,
+                "psr": 0.232769,
+                "win_rate": 0.4157,
+                "worst_r": -1.2291,
+                "total_r": -9.56
+              },
+              "frictionless": {
+                "n": 700,
+                "mean_r": 0.04477,
+                "t_stat": 2.39,
+                "psr": 0.994382,
+                "win_rate": 0.4157,
+                "worst_r": -1.0,
+                "total_r": 31.34
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            }
+          }
+        },
+        {
+          "choice": {
+            "family": "anti_vwap_exhaustion",
+            "session": "new_york",
+            "stop_atr": 1.0,
+            "target_atr": 1.5,
+            "max_hold": 15
+          },
+          "train_mean_r": -0.09551,
+          "arms": {
+            "single": {
+              "train": null,
+              "costed": {
+                "n": 118,
+                "mean_r": -0.17341,
+                "t_stat": -1.548,
+                "psr": 0.068117,
+                "win_rate": 0.3814,
+                "worst_r": -1.2701,
+                "total_r": -20.46
+              },
+              "frictionless": {
+                "n": 118,
+                "mean_r": -0.03923,
+                "t_stat": -0.35,
+                "psr": 0.364591,
+                "win_rate": 0.3814,
+                "worst_r": -1.0,
+                "total_r": -4.63
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            },
+            "bounded_structural": {
+              "train": null,
+              "costed": {
+                "n": 118,
+                "mean_r": -0.06663,
+                "t_stat": -1.697,
+                "psr": 0.051669,
+                "win_rate": 0.3814,
+                "worst_r": -0.9077,
+                "total_r": -7.86
+              },
+              "frictionless": {
+                "n": 118,
+                "mean_r": -0.02144,
+                "t_stat": -0.551,
+                "psr": 0.294529,
+                "win_rate": 0.3814,
+                "worst_r": -0.75,
+                "total_r": -2.53
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            }
+          }
+        },
+        {
+          "choice": {
+            "family": "anti_london_opening_range",
+            "session": "all",
+            "stop_atr": 1.0,
+            "target_atr": 1.5,
+            "max_hold": 15
+          },
+          "train_mean_r": -0.19776,
+          "arms": {
+            "single": {
+              "train": null,
+              "costed": {
+                "n": 115,
+                "mean_r": -0.03876,
+                "t_stat": -0.333,
+                "psr": 0.37034,
+                "win_rate": 0.4522,
+                "worst_r": -1.3375,
+                "total_r": -4.46
+              },
+              "frictionless": {
+                "n": 115,
+                "mean_r": 0.14314,
+                "t_stat": 1.24,
+                "psr": 0.893816,
+                "win_rate": 0.4522,
+                "worst_r": -1.0,
+                "total_r": 16.46
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            },
+            "bounded_structural": {
+              "train": null,
+              "costed": {
+                "n": 116,
+                "mean_r": 0.00324,
+                "t_stat": 0.083,
+                "psr": 0.533121,
+                "win_rate": 0.4483,
+                "worst_r": -0.9824,
+                "total_r": 0.38
+              },
+              "frictionless": {
+                "n": 116,
+                "mean_r": 0.06036,
+                "t_stat": 1.524,
+                "psr": 0.948742,
+                "win_rate": 0.4483,
+                "worst_r": -0.75,
+                "total_r": 7.0
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            }
+          }
+        }
+      ]
+    },
+    "M5": {
+      "status": "MEASURED",
+      "bars": 90000,
+      "families": 7,
+      "train_trials": 56,
+      "selected": [
+        {
+          "choice": {
+            "family": "anti_ema_pullback",
+            "session": "new_york",
+            "stop_atr": 1.0,
+            "target_atr": 1.5,
+            "max_hold": 9
+          },
+          "train_mean_r": -0.01969,
+          "arms": {
+            "single": {
+              "train": null,
+              "costed": {
+                "n": 565,
+                "mean_r": -0.07875,
+                "t_stat": -1.55,
+                "psr": 0.06352,
+                "win_rate": 0.3912,
+                "worst_r": -1.1129,
+                "total_r": -44.49
+              },
+              "frictionless": {
+                "n": 565,
+                "mean_r": -0.0278,
+                "t_stat": -0.547,
+                "psr": 0.293424,
+                "win_rate": 0.3912,
+                "worst_r": -1.0,
+                "total_r": -15.71
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            },
+            "bounded_structural": {
+              "train": null,
+              "costed": {
+                "n": 563,
+                "mean_r": -0.01895,
+                "t_stat": -0.872,
+                "psr": 0.202277,
+                "win_rate": 0.3925,
+                "worst_r": -1.1344,
+                "total_r": -10.67
+              },
+              "frictionless": {
+                "n": 563,
+                "mean_r": 0.00013,
+                "t_stat": 0.006,
+                "psr": 0.502422,
+                "win_rate": 0.3943,
+                "worst_r": -1.0,
+                "total_r": 0.07
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            }
+          }
+        },
+        {
+          "choice": {
+            "family": "anti_donchian_breakout",
+            "session": "overlap",
+            "stop_atr": 1.0,
+            "target_atr": 1.5,
+            "max_hold": 9
+          },
+          "train_mean_r": 0.00335,
+          "arms": {
+            "single": {
+              "train": null,
+              "costed": {
+                "n": 409,
+                "mean_r": 0.0577,
+                "t_stat": 0.958,
+                "psr": 0.83183,
+                "win_rate": 0.4548,
+                "worst_r": -1.1084,
+                "total_r": 23.6
+              },
+              "frictionless": {
+                "n": 409,
+                "mean_r": 0.11272,
+                "t_stat": 1.87,
+                "psr": 0.970433,
+                "win_rate": 0.4548,
+                "worst_r": -1.0,
+                "total_r": 46.1
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            },
+            "bounded_structural": {
+              "train": {
+                "n": 594,
+                "mean_r": 0.02772,
+                "t_stat": 1.527,
+                "psr": 0.944189,
+                "win_rate": 0.4377,
+                "worst_r": -0.9527,
+                "total_r": 16.46
+              },
+              "costed": {
+                "n": 409,
+                "mean_r": 0.05844,
+                "t_stat": 2.462,
+                "psr": 0.997389,
+                "win_rate": 0.4621,
+                "worst_r": -0.8235,
+                "total_r": 23.9
+              },
+              "frictionless": {
+                "n": 409,
+                "mean_r": 0.0771,
+                "t_stat": 3.21,
+                "psr": 0.999928,
+                "win_rate": 0.4645,
+                "worst_r": -0.75,
+                "total_r": 31.53
+              },
+              "original_gate": true,
+              "chronological_stability": true,
+              "chronological_thirds": [
+                {
+                  "n": 331,
+                  "mean_r": 0.00521,
+                  "t_stat": 0.21,
+                  "psr": 0.583905,
+                  "win_rate": 0.4079,
+                  "worst_r": -0.9527,
+                  "total_r": 1.72
+                },
+                {
+                  "n": 331,
+                  "mean_r": 0.06088,
+                  "t_stat": 2.599,
+                  "psr": 0.996799,
+                  "win_rate": 0.4834,
+                  "worst_r": -0.835,
+                  "total_r": 20.15
+                },
+                {
+                  "n": 340,
+                  "mean_r": 0.05465,
+                  "t_stat": 2.043,
+                  "psr": 0.989765,
+                  "win_rate": 0.4529,
+                  "worst_r": -0.8235,
+                  "total_r": 18.58
+                }
+              ],
+              "disposition": "EXPLORATORY_SHADOW_CANDIDATE"
+            }
+          }
+        },
+        {
+          "choice": {
+            "family": "anti_wick_exhaustion",
+            "session": "new_york",
+            "stop_atr": 1.0,
+            "target_atr": 1.5,
+            "max_hold": 9
+          },
+          "train_mean_r": 0.02805,
+          "arms": {
+            "single": {
+              "train": null,
+              "costed": {
+                "n": 615,
+                "mean_r": -0.0261,
+                "t_stat": -0.534,
+                "psr": 0.297594,
+                "win_rate": 0.4163,
+                "worst_r": -1.1235,
+                "total_r": -16.05
+              },
+              "frictionless": {
+                "n": 615,
+                "mean_r": 0.02493,
+                "t_stat": 0.51,
+                "psr": 0.695579,
+                "win_rate": 0.4179,
+                "worst_r": -1.0,
+                "total_r": 15.33
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            },
+            "bounded_structural": {
+              "train": null,
+              "costed": {
+                "n": 615,
+                "mean_r": 0.00325,
+                "t_stat": 0.219,
+                "psr": 0.586674,
+                "win_rate": 0.4179,
+                "worst_r": -0.8117,
+                "total_r": 2.0
+              },
+              "frictionless": {
+                "n": 615,
+                "mean_r": 0.01839,
+                "t_stat": 1.236,
+                "psr": 0.895523,
+                "win_rate": 0.4195,
+                "worst_r": -0.75,
+                "total_r": 11.31
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            }
+          }
+        },
+        {
+          "choice": {
+            "family": "anti_compression_breakout",
+            "session": "overlap",
+            "stop_atr": 1.0,
+            "target_atr": 1.5,
+            "max_hold": 9
+          },
+          "train_mean_r": 1.42295,
+          "arms": {
+            "single": {
+              "train": null,
+              "costed": {
+                "n": 1,
+                "mean_r": -1.07589,
+                "t_stat": 0.0,
+                "psr": 0.0,
+                "win_rate": 0.0,
+                "worst_r": -1.0759,
+                "total_r": -1.08
+              },
+              "frictionless": {
+                "n": 1,
+                "mean_r": -1.0,
+                "t_stat": 0.0,
+                "psr": 0.0,
+                "win_rate": 0.0,
+                "worst_r": -1.0,
+                "total_r": -1.0
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            },
+            "bounded_structural": {
+              "train": null,
+              "costed": {
+                "n": 1,
+                "mean_r": -0.26897,
+                "t_stat": 0.0,
+                "psr": 0.0,
+                "win_rate": 0.0,
+                "worst_r": -0.269,
+                "total_r": -0.27
+              },
+              "frictionless": {
+                "n": 1,
+                "mean_r": -0.25,
+                "t_stat": 0.0,
+                "psr": 0.0,
+                "win_rate": 0.0,
+                "worst_r": -0.25,
+                "total_r": -0.25
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            }
+          }
+        },
+        {
+          "choice": {
+            "family": "anti_three_bar_momentum",
+            "session": "new_york",
+            "stop_atr": 1.0,
+            "target_atr": 1.5,
+            "max_hold": 9
+          },
+          "train_mean_r": -0.02991,
+          "arms": {
+            "single": {
+              "train": null,
+              "costed": {
+                "n": 918,
+                "mean_r": 0.02174,
+                "t_stat": 0.539,
+                "psr": 0.705433,
+                "win_rate": 0.4314,
+                "worst_r": -1.1129,
+                "total_r": 19.96
+              },
+              "frictionless": {
+                "n": 918,
+                "mean_r": 0.0704,
+                "t_stat": 1.745,
+                "psr": 0.960716,
+                "win_rate": 0.4325,
+                "worst_r": -1.0,
+                "total_r": 64.62
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            },
+            "bounded_structural": {
+              "train": {
+                "n": 1394,
+                "mean_r": 0.02183,
+                "t_stat": 1.619,
+                "psr": 0.959364,
+                "win_rate": 0.424,
+                "worst_r": -0.9191,
+                "total_r": 30.43
+              },
+              "costed": {
+                "n": 920,
+                "mean_r": 0.04442,
+                "t_stat": 2.872,
+                "psr": 0.998906,
+                "win_rate": 0.4348,
+                "worst_r": -0.8227,
+                "total_r": 40.86
+              },
+              "frictionless": {
+                "n": 920,
+                "mean_r": 0.06095,
+                "t_stat": 3.91,
+                "psr": 0.999991,
+                "win_rate": 0.437,
+                "worst_r": -0.75,
+                "total_r": 56.08
+              },
+              "original_gate": true,
+              "chronological_stability": true,
+              "chronological_thirds": [
+                {
+                  "n": 765,
+                  "mean_r": 0.0078,
+                  "t_stat": 0.394,
+                  "psr": 0.6584,
+                  "win_rate": 0.4078,
+                  "worst_r": -0.9191,
+                  "total_r": 5.96
+                },
+                {
+                  "n": 793,
+                  "mean_r": 0.03442,
+                  "t_stat": 2.182,
+                  "psr": 0.988125,
+                  "win_rate": 0.4313,
+                  "worst_r": -0.8076,
+                  "total_r": 27.29
+                },
+                {
+                  "n": 755,
+                  "mean_r": 0.05072,
+                  "t_stat": 2.936,
+                  "psr": 0.999208,
+                  "win_rate": 0.4464,
+                  "worst_r": -0.8227,
+                  "total_r": 38.3
+                }
+              ],
+              "disposition": "EXPLORATORY_SHADOW_CANDIDATE"
+            }
+          }
+        },
+        {
+          "choice": {
+            "family": "anti_vwap_exhaustion",
+            "session": "overlap",
+            "stop_atr": 1.0,
+            "target_atr": 1.5,
+            "max_hold": 9
+          },
+          "train_mean_r": 0.15761,
+          "arms": {
+            "single": {
+              "train": null,
+              "costed": {
+                "n": 114,
+                "mean_r": -0.10357,
+                "t_stat": -0.915,
+                "psr": 0.186305,
+                "win_rate": 0.3772,
+                "worst_r": -1.1112,
+                "total_r": -11.81
+              },
+              "frictionless": {
+                "n": 114,
+                "mean_r": -0.05539,
+                "t_stat": -0.489,
+                "psr": 0.315123,
+                "win_rate": 0.3772,
+                "worst_r": -1.0,
+                "total_r": -6.31
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            },
+            "bounded_structural": {
+              "train": null,
+              "costed": {
+                "n": 114,
+                "mean_r": -0.00584,
+                "t_stat": -0.168,
+                "psr": 0.434084,
+                "win_rate": 0.3772,
+                "worst_r": -0.7574,
+                "total_r": -0.67
+              },
+              "frictionless": {
+                "n": 114,
+                "mean_r": 0.00787,
+                "t_stat": 0.225,
+                "psr": 0.589087,
+                "win_rate": 0.3772,
+                "worst_r": -0.75,
+                "total_r": 0.9
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            }
+          }
+        },
+        {
+          "choice": {
+            "family": "anti_london_opening_range",
+            "session": "all",
+            "stop_atr": 1.0,
+            "target_atr": 1.5,
+            "max_hold": 9
+          },
+          "train_mean_r": -0.1432,
+          "arms": {
+            "single": {
+              "train": null,
+              "costed": {
+                "n": 281,
+                "mean_r": -0.06756,
+                "t_stat": -0.939,
+                "psr": 0.177168,
+                "win_rate": 0.4021,
+                "worst_r": -1.1021,
+                "total_r": -18.98
+              },
+              "frictionless": {
+                "n": 281,
+                "mean_r": -0.0057,
+                "t_stat": -0.079,
+                "psr": 0.468519,
+                "win_rate": 0.4021,
+                "worst_r": -1.0,
+                "total_r": -1.6
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            },
+            "bounded_structural": {
+              "train": null,
+              "costed": {
+                "n": 281,
+                "mean_r": -0.01051,
+                "t_stat": -0.473,
+                "psr": 0.320062,
+                "win_rate": 0.4021,
+                "worst_r": -0.8282,
+                "total_r": -2.95
+              },
+              "frictionless": {
+                "n": 281,
+                "mean_r": 0.0079,
+                "t_stat": 0.354,
+                "psr": 0.63923,
+                "win_rate": 0.4021,
+                "worst_r": -0.75,
+                "total_r": 2.22
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            }
+          }
+        }
+      ]
+    },
+    "M15": {
+      "status": "MEASURED",
+      "bars": 90000,
+      "families": 7,
+      "train_trials": 56,
+      "selected": [
+        {
+          "choice": {
+            "family": "anti_ema_pullback",
+            "session": "all",
+            "stop_atr": 1.0,
+            "target_atr": 1.5,
+            "max_hold": 6
+          },
+          "train_mean_r": -0.08551,
+          "arms": {
+            "single": {
+              "train": null,
+              "costed": {
+                "n": 3293,
+                "mean_r": -0.01013,
+                "t_stat": -0.515,
+                "psr": 0.303686,
+                "win_rate": 0.4343,
+                "worst_r": -1.1275,
+                "total_r": -33.35
+              },
+              "frictionless": {
+                "n": 3293,
+                "mean_r": 0.02624,
+                "t_stat": 1.334,
+                "psr": 0.909789,
+                "win_rate": 0.4367,
+                "worst_r": -1.0,
+                "total_r": 86.41
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            },
+            "bounded_structural": {
+              "train": {
+                "n": 4933,
+                "mean_r": 0.15115,
+                "t_stat": 0.957,
+                "psr": 0.966216,
+                "win_rate": 0.4367,
+                "worst_r": -1.8235,
+                "total_r": 745.62
+              },
+              "costed": {
+                "n": 3295,
+                "mean_r": 0.01696,
+                "t_stat": 2.127,
+                "psr": 0.98473,
+                "win_rate": 0.4437,
+                "worst_r": -1.1152,
+                "total_r": 55.9
+              },
+              "frictionless": {
+                "n": 3295,
+                "mean_r": 0.03167,
+                "t_stat": 3.962,
+                "psr": 0.999979,
+                "win_rate": 0.4483,
+                "worst_r": -1.0,
+                "total_r": 104.34
+              },
+              "original_gate": true,
+              "chronological_stability": false,
+              "chronological_thirds": [
+                {
+                  "n": 2745,
+                  "mean_r": -0.0046,
+                  "t_stat": -0.534,
+                  "psr": 0.297584,
+                  "win_rate": 0.4459,
+                  "worst_r": -1.3133,
+                  "total_r": -12.61
+                },
+                {
+                  "n": 2737,
+                  "mean_r": 0.28365,
+                  "t_stat": 0.997,
+                  "psr": 0.976216,
+                  "win_rate": 0.4333,
+                  "worst_r": -1.8235,
+                  "total_r": 776.36
+                },
+                {
+                  "n": 2743,
+                  "mean_r": 0.01356,
+                  "t_stat": 1.541,
+                  "psr": 0.941117,
+                  "win_rate": 0.4389,
+                  "worst_r": -1.1152,
+                  "total_r": 37.19
+                }
+              ],
+              "disposition": "REJECT"
+            }
+          }
+        },
+        {
+          "choice": {
+            "family": "anti_donchian_breakout",
+            "session": "all",
+            "stop_atr": 1.0,
+            "target_atr": 1.5,
+            "max_hold": 6
+          },
+          "train_mean_r": -0.05629,
+          "arms": {
+            "single": {
+              "train": null,
+              "costed": {
+                "n": 2756,
+                "mean_r": -0.02155,
+                "t_stat": -0.989,
+                "psr": 0.162221,
+                "win_rate": 0.4292,
+                "worst_r": -1.1147,
+                "total_r": -59.4
+              },
+              "frictionless": {
+                "n": 2756,
+                "mean_r": 0.01338,
+                "t_stat": 0.614,
+                "psr": 0.730896,
+                "win_rate": 0.4303,
+                "worst_r": -1.0,
+                "total_r": 36.88
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            },
+            "bounded_structural": {
+              "train": {
+                "n": 4158,
+                "mean_r": 0.01633,
+                "t_stat": 2.367,
+                "psr": 0.993237,
+                "win_rate": 0.4481,
+                "worst_r": -1.1077,
+                "total_r": 67.89
+              },
+              "costed": {
+                "n": 2757,
+                "mean_r": 0.02499,
+                "t_stat": 2.912,
+                "psr": 0.998993,
+                "win_rate": 0.4454,
+                "worst_r": -0.8611,
+                "total_r": 68.91
+              },
+              "frictionless": {
+                "n": 2757,
+                "mean_r": 0.03772,
+                "t_stat": 4.376,
+                "psr": 0.999999,
+                "win_rate": 0.4472,
+                "worst_r": -0.75,
+                "total_r": 103.99
+              },
+              "original_gate": true,
+              "chronological_stability": true,
+              "chronological_thirds": [
+                {
+                  "n": 2246,
+                  "mean_r": 0.01385,
+                  "t_stat": 1.472,
+                  "psr": 0.935596,
+                  "win_rate": 0.4439,
+                  "worst_r": -1.1077,
+                  "total_r": 31.12
+                },
+                {
+                  "n": 2388,
+                  "mean_r": 0.01804,
+                  "t_stat": 1.996,
+                  "psr": 0.981935,
+                  "win_rate": 0.4464,
+                  "worst_r": -0.9231,
+                  "total_r": 43.09
+                },
+                {
+                  "n": 2279,
+                  "mean_r": 0.02697,
+                  "t_stat": 2.835,
+                  "psr": 0.998789,
+                  "win_rate": 0.4498,
+                  "worst_r": -0.8611,
+                  "total_r": 61.46
+                }
+              ],
+              "disposition": "EXPLORATORY_SHADOW_CANDIDATE"
+            }
+          }
+        },
+        {
+          "choice": {
+            "family": "anti_wick_exhaustion",
+            "session": "london",
+            "stop_atr": 1.0,
+            "target_atr": 1.5,
+            "max_hold": 6
+          },
+          "train_mean_r": -0.02278,
+          "arms": {
+            "single": {
+              "train": null,
+              "costed": {
+                "n": 709,
+                "mean_r": 0.06994,
+                "t_stat": 1.613,
+                "psr": 0.947657,
+                "win_rate": 0.4654,
+                "worst_r": -1.1154,
+                "total_r": 49.59
+              },
+              "frictionless": {
+                "n": 709,
+                "mean_r": 0.10863,
+                "t_stat": 2.505,
+                "psr": 0.994288,
+                "win_rate": 0.4669,
+                "worst_r": -1.0,
+                "total_r": 77.02
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            },
+            "bounded_structural": {
+              "train": {
+                "n": 1106,
+                "mean_r": -0.00024,
+                "t_stat": -0.023,
+                "psr": 0.491012,
+                "win_rate": 0.4503,
+                "worst_r": -0.8247,
+                "total_r": -0.27
+              },
+              "costed": {
+                "n": 709,
+                "mean_r": 0.02859,
+                "t_stat": 2.17,
+                "psr": 0.986267,
+                "win_rate": 0.4669,
+                "worst_r": -1.033,
+                "total_r": 20.27
+              },
+              "frictionless": {
+                "n": 709,
+                "mean_r": 0.04009,
+                "t_stat": 3.039,
+                "psr": 0.999081,
+                "win_rate": 0.4683,
+                "worst_r": -1.0,
+                "total_r": 28.42
+              },
+              "original_gate": true,
+              "chronological_stability": false,
+              "chronological_thirds": [
+                {
+                  "n": 629,
+                  "mean_r": -0.00556,
+                  "t_stat": -0.391,
+                  "psr": 0.348745,
+                  "win_rate": 0.4499,
+                  "worst_r": -0.6814,
+                  "total_r": -3.5
+                },
+                {
+                  "n": 610,
+                  "mean_r": 0.01107,
+                  "t_stat": 0.768,
+                  "psr": 0.779968,
+                  "win_rate": 0.4525,
+                  "worst_r": -0.8247,
+                  "total_r": 6.75
+                },
+                {
+                  "n": 575,
+                  "mean_r": 0.02898,
+                  "t_stat": 1.975,
+                  "psr": 0.977553,
+                  "win_rate": 0.4678,
+                  "worst_r": -1.033,
+                  "total_r": 16.66
+                }
+              ],
+              "disposition": "REJECT"
+            }
+          }
+        },
+        {
+          "choice": {
+            "family": "anti_compression_breakout",
+            "session": "new_york",
+            "stop_atr": 1.0,
+            "target_atr": 1.5,
+            "max_hold": 6
+          },
+          "train_mean_r": 0.58461,
+          "arms": {
+            "single": {
+              "train": null,
+              "costed": {
+                "n": 5,
+                "mean_r": 0.74073,
+                "t_stat": 1.502,
+                "psr": 0.814298,
+                "win_rate": 0.8,
+                "worst_r": -1.0254,
+                "total_r": 3.7
+              },
+              "frictionless": {
+                "n": 5,
+                "mean_r": 0.77302,
+                "t_stat": 1.562,
+                "psr": 0.820163,
+                "win_rate": 0.8,
+                "worst_r": -1.0,
+                "total_r": 3.87
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            },
+            "bounded_structural": {
+              "train": null,
+              "costed": {
+                "n": 5,
+                "mean_r": 0.18518,
+                "t_stat": 1.502,
+                "psr": 0.814298,
+                "win_rate": 0.8,
+                "worst_r": -0.2564,
+                "total_r": 0.93
+              },
+              "frictionless": {
+                "n": 5,
+                "mean_r": 0.19325,
+                "t_stat": 1.562,
+                "psr": 0.820163,
+                "win_rate": 0.8,
+                "worst_r": -0.25,
+                "total_r": 0.97
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            }
+          }
+        },
+        {
+          "choice": {
+            "family": "anti_three_bar_momentum",
+            "session": "all",
+            "stop_atr": 1.0,
+            "target_atr": 1.5,
+            "max_hold": 6
+          },
+          "train_mean_r": -0.06756,
+          "arms": {
+            "single": {
+              "train": null,
+              "costed": {
+                "n": 4477,
+                "mean_r": 0.00029,
+                "t_stat": 0.017,
+                "psr": 0.506756,
+                "win_rate": 0.4385,
+                "worst_r": -1.1116,
+                "total_r": 1.29
+              },
+              "frictionless": {
+                "n": 4477,
+                "mean_r": 0.03452,
+                "t_stat": 2.031,
+                "psr": 0.979405,
+                "win_rate": 0.4423,
+                "worst_r": -1.0,
+                "total_r": 154.53
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            },
+            "bounded_structural": {
+              "train": {
+                "n": 6569,
+                "mean_r": 0.01163,
+                "t_stat": 2.118,
+                "psr": 0.985647,
+                "win_rate": 0.4395,
+                "worst_r": -1.1997,
+                "total_r": 76.42
+              },
+              "costed": {
+                "n": 4500,
+                "mean_r": 0.0239,
+                "t_stat": 3.739,
+                "psr": 0.999953,
+                "win_rate": 0.448,
+                "worst_r": -0.8996,
+                "total_r": 107.55
+              },
+              "frictionless": {
+                "n": 4500,
+                "mean_r": 0.03584,
+                "t_stat": 5.592,
+                "psr": 1.0,
+                "win_rate": 0.4511,
+                "worst_r": -0.7807,
+                "total_r": 161.27
+              },
+              "original_gate": true,
+              "chronological_stability": true,
+              "chronological_thirds": [
+                {
+                  "n": 3638,
+                  "mean_r": 0.00605,
+                  "t_stat": 0.849,
+                  "psr": 0.804504,
+                  "win_rate": 0.4398,
+                  "worst_r": -1.1997,
+                  "total_r": 22.01
+                },
+                {
+                  "n": 3702,
+                  "mean_r": 0.01833,
+                  "t_stat": 2.454,
+                  "psr": 0.995437,
+                  "win_rate": 0.4376,
+                  "worst_r": -0.992,
+                  "total_r": 67.87
+                },
+                {
+                  "n": 3724,
+                  "mean_r": 0.02545,
+                  "t_stat": 3.607,
+                  "psr": 0.999922,
+                  "win_rate": 0.4522,
+                  "worst_r": -0.8996,
+                  "total_r": 94.79
+                }
+              ],
+              "disposition": "EXPLORATORY_SHADOW_CANDIDATE"
+            }
+          }
+        },
+        {
+          "choice": {
+            "family": "anti_vwap_exhaustion",
+            "session": "new_york",
+            "stop_atr": 1.0,
+            "target_atr": 1.5,
+            "max_hold": 6
+          },
+          "train_mean_r": 0.02967,
+          "arms": {
+            "single": {
+              "train": null,
+              "costed": {
+                "n": 117,
+                "mean_r": 0.11895,
+                "t_stat": 1.063,
+                "psr": 0.857091,
+                "win_rate": 0.4701,
+                "worst_r": -1.0792,
+                "total_r": 13.92
+              },
+              "frictionless": {
+                "n": 117,
+                "mean_r": 0.14626,
+                "t_stat": 1.306,
+                "psr": 0.905525,
+                "win_rate": 0.4701,
+                "worst_r": -1.0,
+                "total_r": 17.11
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            },
+            "bounded_structural": {
+              "train": null,
+              "costed": {
+                "n": 117,
+                "mean_r": 0.03786,
+                "t_stat": 1.179,
+                "psr": 0.884105,
+                "win_rate": 0.4615,
+                "worst_r": -0.5242,
+                "total_r": 4.43
+              },
+              "frictionless": {
+                "n": 117,
+                "mean_r": 0.04557,
+                "t_stat": 1.414,
+                "psr": 0.925181,
+                "win_rate": 0.4615,
+                "worst_r": -0.5,
+                "total_r": 5.33
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            }
+          }
+        },
+        {
+          "choice": {
+            "family": "anti_london_opening_range",
+            "session": "all",
+            "stop_atr": 1.0,
+            "target_atr": 1.0,
+            "max_hold": 4
+          },
+          "train_mean_r": -0.18742,
+          "arms": {
+            "single": {
+              "train": null,
+              "costed": {
+                "n": 564,
+                "mean_r": -0.06917,
+                "t_stat": -1.72,
+                "psr": 0.043183,
+                "win_rate": 0.484,
+                "worst_r": -1.1045,
+                "total_r": -39.01
+              },
+              "frictionless": {
+                "n": 564,
+                "mean_r": -0.02902,
+                "t_stat": -0.721,
+                "psr": 0.235902,
+                "win_rate": 0.4858,
+                "worst_r": -1.0,
+                "total_r": -16.37
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            },
+            "bounded_structural": {
+              "train": null,
+              "costed": {
+                "n": 564,
+                "mean_r": -0.0164,
+                "t_stat": -1.559,
+                "psr": 0.060114,
+                "win_rate": 0.4876,
+                "worst_r": -0.5172,
+                "total_r": -9.25
+              },
+              "frictionless": {
+                "n": 564,
+                "mean_r": -0.00588,
+                "t_stat": -0.558,
+                "psr": 0.288614,
+                "win_rate": 0.4911,
+                "worst_r": -0.5,
+                "total_r": -3.32
+              },
+              "original_gate": false,
+              "chronological_stability": false,
+              "chronological_thirds": null,
+              "disposition": "REJECT"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "shadow_candidates": [
+    {
+      "timeframe": "M5",
+      "choice": {
+        "family": "anti_donchian_breakout",
+        "session": "overlap",
+        "stop_atr": 1.0,
+        "target_atr": 1.5,
+        "max_hold": 9
+      },
+      "mode": "bounded_structural",
+      "train": {
+        "n": 594,
+        "mean_r": 0.02772,
+        "t_stat": 1.527,
+        "psr": 0.944189,
+        "win_rate": 0.4377,
+        "worst_r": -0.9527,
+        "total_r": 16.46
+      },
+      "costed": {
+        "n": 409,
+        "mean_r": 0.05844,
+        "t_stat": 2.462,
+        "psr": 0.997389,
+        "win_rate": 0.4621,
+        "worst_r": -0.8235,
+        "total_r": 23.9
+      },
+      "frictionless": {
+        "n": 409,
+        "mean_r": 0.0771,
+        "t_stat": 3.21,
+        "psr": 0.999928,
+        "win_rate": 0.4645,
+        "worst_r": -0.75,
+        "total_r": 31.53
+      },
+      "original_gate": true,
+      "chronological_stability": true,
+      "chronological_thirds": [
+        {
+          "n": 331,
+          "mean_r": 0.00521,
+          "t_stat": 0.21,
+          "psr": 0.583905,
+          "win_rate": 0.4079,
+          "worst_r": -0.9527,
+          "total_r": 1.72
+        },
+        {
+          "n": 331,
+          "mean_r": 0.06088,
+          "t_stat": 2.599,
+          "psr": 0.996799,
+          "win_rate": 0.4834,
+          "worst_r": -0.835,
+          "total_r": 20.15
+        },
+        {
+          "n": 340,
+          "mean_r": 0.05465,
+          "t_stat": 2.043,
+          "psr": 0.989765,
+          "win_rate": 0.4529,
+          "worst_r": -0.8235,
+          "total_r": 18.58
+        }
+      ],
+      "disposition": "EXPLORATORY_SHADOW_CANDIDATE"
+    },
+    {
+      "timeframe": "M5",
+      "choice": {
+        "family": "anti_three_bar_momentum",
+        "session": "new_york",
+        "stop_atr": 1.0,
+        "target_atr": 1.5,
+        "max_hold": 9
+      },
+      "mode": "bounded_structural",
+      "train": {
+        "n": 1394,
+        "mean_r": 0.02183,
+        "t_stat": 1.619,
+        "psr": 0.959364,
+        "win_rate": 0.424,
+        "worst_r": -0.9191,
+        "total_r": 30.43
+      },
+      "costed": {
+        "n": 920,
+        "mean_r": 0.04442,
+        "t_stat": 2.872,
+        "psr": 0.998906,
+        "win_rate": 0.4348,
+        "worst_r": -0.8227,
+        "total_r": 40.86
+      },
+      "frictionless": {
+        "n": 920,
+        "mean_r": 0.06095,
+        "t_stat": 3.91,
+        "psr": 0.999991,
+        "win_rate": 0.437,
+        "worst_r": -0.75,
+        "total_r": 56.08
+      },
+      "original_gate": true,
+      "chronological_stability": true,
+      "chronological_thirds": [
+        {
+          "n": 765,
+          "mean_r": 0.0078,
+          "t_stat": 0.394,
+          "psr": 0.6584,
+          "win_rate": 0.4078,
+          "worst_r": -0.9191,
+          "total_r": 5.96
+        },
+        {
+          "n": 793,
+          "mean_r": 0.03442,
+          "t_stat": 2.182,
+          "psr": 0.988125,
+          "win_rate": 0.4313,
+          "worst_r": -0.8076,
+          "total_r": 27.29
+        },
+        {
+          "n": 755,
+          "mean_r": 0.05072,
+          "t_stat": 2.936,
+          "psr": 0.999208,
+          "win_rate": 0.4464,
+          "worst_r": -0.8227,
+          "total_r": 38.3
+        }
+      ],
+      "disposition": "EXPLORATORY_SHADOW_CANDIDATE"
+    },
+    {
+      "timeframe": "M15",
+      "choice": {
+        "family": "anti_donchian_breakout",
+        "session": "all",
+        "stop_atr": 1.0,
+        "target_atr": 1.5,
+        "max_hold": 6
+      },
+      "mode": "bounded_structural",
+      "train": {
+        "n": 4158,
+        "mean_r": 0.01633,
+        "t_stat": 2.367,
+        "psr": 0.993237,
+        "win_rate": 0.4481,
+        "worst_r": -1.1077,
+        "total_r": 67.89
+      },
+      "costed": {
+        "n": 2757,
+        "mean_r": 0.02499,
+        "t_stat": 2.912,
+        "psr": 0.998993,
+        "win_rate": 0.4454,
+        "worst_r": -0.8611,
+        "total_r": 68.91
+      },
+      "frictionless": {
+        "n": 2757,
+        "mean_r": 0.03772,
+        "t_stat": 4.376,
+        "psr": 0.999999,
+        "win_rate": 0.4472,
+        "worst_r": -0.75,
+        "total_r": 103.99
+      },
+      "original_gate": true,
+      "chronological_stability": true,
+      "chronological_thirds": [
+        {
+          "n": 2246,
+          "mean_r": 0.01385,
+          "t_stat": 1.472,
+          "psr": 0.935596,
+          "win_rate": 0.4439,
+          "worst_r": -1.1077,
+          "total_r": 31.12
+        },
+        {
+          "n": 2388,
+          "mean_r": 0.01804,
+          "t_stat": 1.996,
+          "psr": 0.981935,
+          "win_rate": 0.4464,
+          "worst_r": -0.9231,
+          "total_r": 43.09
+        },
+        {
+          "n": 2279,
+          "mean_r": 0.02697,
+          "t_stat": 2.835,
+          "psr": 0.998789,
+          "win_rate": 0.4498,
+          "worst_r": -0.8611,
+          "total_r": 61.46
+        }
+      ],
+      "disposition": "EXPLORATORY_SHADOW_CANDIDATE"
+    },
+    {
+      "timeframe": "M15",
+      "choice": {
+        "family": "anti_three_bar_momentum",
+        "session": "all",
+        "stop_atr": 1.0,
+        "target_atr": 1.5,
+        "max_hold": 6
+      },
+      "mode": "bounded_structural",
+      "train": {
+        "n": 6569,
+        "mean_r": 0.01163,
+        "t_stat": 2.118,
+        "psr": 0.985647,
+        "win_rate": 0.4395,
+        "worst_r": -1.1997,
+        "total_r": 76.42
+      },
+      "costed": {
+        "n": 4500,
+        "mean_r": 0.0239,
+        "t_stat": 3.739,
+        "psr": 0.999953,
+        "win_rate": 0.448,
+        "worst_r": -0.8996,
+        "total_r": 107.55
+      },
+      "frictionless": {
+        "n": 4500,
+        "mean_r": 0.03584,
+        "t_stat": 5.592,
+        "psr": 1.0,
+        "win_rate": 0.4511,
+        "worst_r": -0.7807,
+        "total_r": 161.27
+      },
+      "original_gate": true,
+      "chronological_stability": true,
+      "chronological_thirds": [
+        {
+          "n": 3638,
+          "mean_r": 0.00605,
+          "t_stat": 0.849,
+          "psr": 0.804504,
+          "win_rate": 0.4398,
+          "worst_r": -1.1997,
+          "total_r": 22.01
+        },
+        {
+          "n": 3702,
+          "mean_r": 0.01833,
+          "t_stat": 2.454,
+          "psr": 0.995437,
+          "win_rate": 0.4376,
+          "worst_r": -0.992,
+          "total_r": 67.87
+        },
+        {
+          "n": 3724,
+          "mean_r": 0.02545,
+          "t_stat": 3.607,
+          "psr": 0.999922,
+          "win_rate": 0.4522,
+          "worst_r": -0.8996,
+          "total_r": 94.79
+        }
+      ],
+      "disposition": "EXPLORATORY_SHADOW_CANDIDATE"
+    }
+  ],
+  "verdict": "SHADOW_CANDIDATES"
+}

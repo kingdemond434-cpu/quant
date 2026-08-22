@@ -7,13 +7,34 @@ column because a one-minute gold backtest without the contemporaneous spread is 
 from __future__ import annotations
 
 import argparse
+import json
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
 
 
-def fetch(terminal: str, symbol: str, out_dir: Path, bars: int = 30_000) -> dict[str, int]:
+def _paged_rates(mt5, symbol: str, timeframe: int, bars: int):  # type: ignore[no-untyped-def]
+    """Read backwards in 5k blocks, avoiding the terminal's native large-request crash."""
+    pieces = []
+    for offset in range(0, bars, 5_000):
+        take = min(5_000, bars - offset)
+        rates = mt5.copy_rates_from_pos(symbol, timeframe, offset, take)
+        if rates is None or len(rates) == 0:
+            break
+        pieces.append(rates)
+        if len(rates) < take:
+            break
+    if not pieces:
+        return None
+    # Offset zero is newest; canonical research order is oldest -> newest.
+    import numpy as np
+
+    return np.concatenate(list(reversed(pieces)))
+
+
+def fetch(terminal: str, symbol: str, out_dir: Path, bars: int = 90_000) -> dict[str, int]:
     import MetaTrader5 as mt5
 
     if not mt5.initialize(path=terminal, timeout=15_000):
@@ -36,10 +57,9 @@ def fetch(terminal: str, symbol: str, out_dir: Path, bars: int = 30_000) -> dict
         for label, timeframe in frames.items():
             rates = None
             # Bounded retries let a cold terminal cache warm. Requests stay below MT5's native
-            # 100k crash boundary; thirty thousand bars is 20 trading days on M1 and over a year
-            # on M15, enough for a first falsification without destabilising the terminal.
+            # 100k crash boundary and are paged in 5k blocks.
             for _ in range(15):
-                rates = mt5.copy_rates_from_pos(symbol, timeframe, 0, bars)
+                rates = _paged_rates(mt5, symbol, timeframe, bars)
                 if rates is not None and len(rates):
                     break
                 time.sleep(1.0)
@@ -51,6 +71,15 @@ def fetch(terminal: str, symbol: str, out_dir: Path, bars: int = 30_000) -> dict
             frame.index.name = "timestamp"
             frame.to_parquet(out_dir / f"XAUUSD_{label}.parquet")
             result[label] = len(frame)
+        terminal_info = mt5.terminal_info()
+        (out_dir / "XAUUSD_scalp_source.json").write_text(json.dumps({
+            "fetched_at": datetime.now(UTC).isoformat(timespec="seconds"),
+            "source_server": str(account.server),
+            "source_company": str(terminal_info.company if terminal_info else ""),
+            "account_trade_allowed": bool(account.trade_allowed),
+            "symbol": symbol, "rows": result,
+            "promotion_authority": "fusion" in str(account.server).lower(),
+        }, indent=2), "utf-8")
         return result
     finally:
         mt5.shutdown()
@@ -60,7 +89,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--terminal", required=True)
     parser.add_argument("--symbol", default="XAUUSD")
-    parser.add_argument("--bars", type=int, default=30_000)
+    parser.add_argument("--bars", type=int, default=90_000)
     parser.add_argument("--out", type=Path, default=Path(__file__).parents[1] / "data" / "universe")
     args = parser.parse_args()
     result = fetch(args.terminal, args.symbol, args.out, args.bars)

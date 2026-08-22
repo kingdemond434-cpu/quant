@@ -50,3 +50,24 @@ def test_no_intraday_bars_is_unmeasured(tmp_path: Path, monkeypatch: pytest.Monk
     assert report["verdict"].startswith("REJECTED")
     assert all(v["status"] == "UNMEASURED" for v in report["timeframes"].values())
     assert report["shadow_candidates"] == []
+
+
+def test_detailed_records_expose_one_basket_not_fake_ticket_wins(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    idx = pd.date_range("2026-01-01", periods=70, freq="min", tz="UTC")
+    df = pd.DataFrame({
+        "open": np.full(70, 100.0), "high": np.full(70, 100.2),
+        "low": np.full(70, 99.8), "close": np.full(70, 100.0),
+        "spread": np.zeros(70),
+    }, index=idx)
+    signals = np.zeros(70, dtype=np.int8)
+    signals[45] = 1
+    df.iloc[46, df.columns.get_loc("high")] = 102.0
+    monkeypatch.setattr(scalp, "_signals", lambda *_: signals)
+    monkeypatch.setattr(scalp, "_atr", lambda *_: np.ones(70))
+    cfg = scalp.Config("sweep_reclaim", 20, 1.5, 1.0, 1.0, 5, "bounded_structural")
+    records = scalp.simulate(df, cfg, cost="frictionless", detailed=True)
+    assert len(records) == 1
+    assert records[0]["depth"] == 1
+    assert records[0]["risk_allocated_r"] == 0.25

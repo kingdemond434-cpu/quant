@@ -7,9 +7,9 @@
   "timeframes": {
     "M1": {
       "status": "MEASURED",
-      "bars": 30000,
-      "train_bars": 18000,
-      "oos_bars": 12000,
+      "bars": 90000,
+      "train_bars": 54000,
+      "oos_bars": 36000,
       "configs_tried": 48,
       "selected": [
         {
@@ -23,22 +23,22 @@
             "mode": "single"
           },
           "oos": {
-            "n": 909,
-            "mean_r": -0.1336,
-            "t_stat": -4.923,
+            "n": 2724,
+            "mean_r": -0.13208,
+            "t_stat": -8.45,
             "psr": 0.0,
-            "win_rate": 0.5754,
-            "worst_r": -1.3442,
-            "total_r": -121.45
+            "win_rate": 0.583,
+            "worst_r": -1.3509,
+            "total_r": -359.79
           },
           "frictionless_ablation": {
-            "n": 909,
-            "mean_r": -0.03257,
-            "t_stat": -1.203,
-            "psr": 0.113157,
-            "win_rate": 0.5765,
+            "n": 2724,
+            "mean_r": -0.02207,
+            "t_stat": -1.412,
+            "psr": 0.07804,
+            "win_rate": 0.5844,
             "worst_r": -1.0,
-            "total_r": -29.6
+            "total_r": -60.11
           },
           "original_gate": false,
           "disposition": "REJECT"
@@ -48,28 +48,28 @@
             "family": "sweep_reclaim",
             "lookback": 20,
             "displacement_atr": 1.5,
-            "stop_atr": 1.0,
+            "stop_atr": 1.5,
             "target_atr": 1.0,
             "max_hold": 15,
             "mode": "bounded_structural"
           },
           "oos": {
-            "n": 1043,
-            "mean_r": -0.03793,
-            "t_stat": -3.426,
-            "psr": 0.000397,
-            "win_rate": 0.4947,
-            "worst_r": -1.7911,
-            "total_r": -39.56
+            "n": 2729,
+            "mean_r": -0.0399,
+            "t_stat": -6.034,
+            "psr": 0.0,
+            "win_rate": 0.594,
+            "worst_r": -1.3381,
+            "total_r": -108.87
           },
           "frictionless_ablation": {
-            "n": 1043,
-            "mean_r": 0.01175,
-            "t_stat": 1.057,
-            "psr": 0.857766,
-            "win_rate": 0.4947,
+            "n": 2729,
+            "mean_r": 0.00229,
+            "t_stat": 0.348,
+            "psr": 0.63609,
+            "win_rate": 0.5947,
             "worst_r": -1.0,
-            "total_r": 12.25
+            "total_r": 6.26
           },
           "original_gate": false,
           "disposition": "REJECT"
@@ -85,22 +85,22 @@
             "mode": "single"
           },
           "oos": {
-            "n": 908,
-            "mean_r": -0.13637,
-            "t_stat": -5.444,
+            "n": 2668,
+            "mean_r": -0.16504,
+            "t_stat": -11.258,
             "psr": 0.0,
-            "win_rate": 0.5297,
-            "worst_r": -1.3365,
-            "total_r": -123.82
+            "win_rate": 0.5172,
+            "worst_r": -1.3624,
+            "total_r": -440.32
           },
           "frictionless_ablation": {
-            "n": 908,
-            "mean_r": -0.03404,
-            "t_stat": -1.361,
-            "psr": 0.085313,
-            "win_rate": 0.5529,
+            "n": 2668,
+            "mean_r": -0.05504,
+            "t_stat": -3.761,
+            "psr": 7.3e-05,
+            "win_rate": 0.5379,
             "worst_r": -1.0,
-            "total_r": -30.91
+            "total_r": -146.84
           },
           "original_gate": false,
           "disposition": "REJECT"
@@ -116,22 +116,22 @@
             "mode": "bounded_structural"
           },
           "oos": {
-            "n": 908,
-            "mean_r": -0.0357,
-            "t_stat": -5.636,
+            "n": 2668,
+            "mean_r": -0.04196,
+            "t_stat": -11.345,
             "psr": 0.0,
-            "win_rate": 0.5286,
-            "worst_r": -0.5409,
-            "total_r": -32.41
+            "win_rate": 0.5169,
+            "worst_r": -0.5735,
+            "total_r": -111.95
           },
           "frictionless_ablation": {
-            "n": 908,
-            "mean_r": -0.00983,
-            "t_stat": -1.556,
-            "psr": 0.058433,
-            "win_rate": 0.5507,
+            "n": 2668,
+            "mean_r": -0.01421,
+            "t_stat": -3.847,
+            "psr": 5.1e-05,
+            "win_rate": 0.5371,
             "worst_r": -0.5,
-            "total_r": -8.93
+            "total_r": -37.9
           },
           "original_gate": false,
           "disposition": "REJECT"
@@ -147,22 +147,22 @@
             "mode": "single"
           },
           "oos": {
-            "n": 1532,
-            "mean_r": -0.13377,
-            "t_stat": -6.924,
+            "n": 4520,
+            "mean_r": -0.15199,
+            "t_stat": -13.513,
             "psr": 0.0,
-            "win_rate": 0.5372,
-            "worst_r": -1.3365,
-            "total_r": -204.93
+            "win_rate": 0.527,
+            "worst_r": -1.3624,
+            "total_r": -686.99
           },
           "frictionless_ablation": {
-            "n": 1532,
-            "mean_r": -0.03114,
-            "t_stat": -1.614,
-            "psr": 0.052082,
-            "win_rate": 0.5587,
+            "n": 4520,
+            "mean_r": -0.04172,
+            "t_stat": -3.712,
+            "psr": 9.1e-05,
+            "win_rate": 0.548,
             "worst_r": -1.0,
-            "total_r": -47.71
+            "total_r": -188.56
           },
           "original_gate": false,
           "disposition": "REJECT"
@@ -178,22 +178,22 @@
             "mode": "bounded_structural"
           },
           "oos": {
-            "n": 1531,
-            "mean_r": -0.03629,
-            "t_stat": -5.775,
+            "n": 4524,
+            "mean_r": -0.04134,
+            "t_stat": -11.449,
             "psr": 0.0,
-            "win_rate": 0.5474,
-            "worst_r": -1.1519,
-            "total_r": -55.55
+            "win_rate": 0.5393,
+            "worst_r": -1.2262,
+            "total_r": -187.03
           },
           "frictionless_ablation": {
-            "n": 1531,
-            "mean_r": -0.00415,
-            "t_stat": -0.662,
-            "psr": 0.253475,
-            "win_rate": 0.5689,
+            "n": 4524,
+            "mean_r": -0.00742,
+            "t_stat": -2.062,
+            "psr": 0.019389,
+            "win_rate": 0.5584,
             "worst_r": -1.0,
-            "total_r": -6.35
+            "total_r": -33.58
           },
           "original_gate": false,
           "disposition": "REJECT"
@@ -202,9 +202,9 @@
     },
     "M5": {
       "status": "MEASURED",
-      "bars": 30000,
-      "train_bars": 18000,
-      "oos_bars": 12000,
+      "bars": 90000,
+      "train_bars": 54000,
+      "oos_bars": 36000,
       "configs_tried": 48,
       "selected": [
         {
@@ -214,26 +214,26 @@
             "displacement_atr": 1.5,
             "stop_atr": 1.5,
             "target_atr": 1.0,
-            "max_hold": 9,
+            "max_hold": 3,
             "mode": "single"
           },
           "oos": {
-            "n": 917,
-            "mean_r": -0.08102,
-            "t_stat": -3.09,
-            "psr": 0.000848,
-            "win_rate": 0.566,
-            "worst_r": -1.1193,
-            "total_r": -74.3
+            "n": 3067,
+            "mean_r": -0.0531,
+            "t_stat": -4.302,
+            "psr": 6e-06,
+            "win_rate": 0.5318,
+            "worst_r": -1.1014,
+            "total_r": -162.85
           },
           "frictionless_ablation": {
-            "n": 917,
-            "mean_r": -0.03813,
-            "t_stat": -1.454,
-            "psr": 0.071611,
-            "win_rate": 0.5671,
+            "n": 3067,
+            "mean_r": -0.01665,
+            "t_stat": -1.348,
+            "psr": 0.087846,
+            "win_rate": 0.5439,
             "worst_r": -1.0,
-            "total_r": -34.96
+            "total_r": -51.06
           },
           "original_gate": false,
           "disposition": "REJECT"
@@ -243,28 +243,28 @@
             "family": "sweep_reclaim",
             "lookback": 20,
             "displacement_atr": 1.5,
-            "stop_atr": 1.5,
+            "stop_atr": 1.0,
             "target_atr": 1.0,
             "max_hold": 9,
             "mode": "bounded_structural"
           },
           "oos": {
-            "n": 917,
-            "mean_r": -0.02325,
-            "t_stat": -2.281,
-            "psr": 0.010113,
-            "win_rate": 0.5769,
-            "worst_r": -1.1086,
-            "total_r": -21.32
+            "n": 3144,
+            "mean_r": -0.00933,
+            "t_stat": -1.551,
+            "psr": 0.061178,
+            "win_rate": 0.5038,
+            "worst_r": -1.0951,
+            "total_r": -29.34
           },
           "frictionless_ablation": {
-            "n": 917,
-            "mean_r": -0.00709,
-            "t_stat": -0.698,
-            "psr": 0.241778,
-            "win_rate": 0.5791,
+            "n": 3144,
+            "mean_r": 0.00818,
+            "t_stat": 1.357,
+            "psr": 0.913551,
+            "win_rate": 0.5057,
             "worst_r": -1.0,
-            "total_r": -6.5
+            "total_r": 25.72
           },
           "original_gate": false,
           "disposition": "REJECT"
@@ -274,28 +274,28 @@
             "family": "displacement_continuation",
             "lookback": 20,
             "displacement_atr": 1.5,
-            "stop_atr": 1.0,
+            "stop_atr": 1.5,
             "target_atr": 1.0,
             "max_hold": 3,
             "mode": "single"
           },
           "oos": {
-            "n": 846,
-            "mean_r": -0.10925,
-            "t_stat": -3.376,
-            "psr": 0.000398,
-            "win_rate": 0.4681,
-            "worst_r": -1.141,
-            "total_r": -92.42
+            "n": 2386,
+            "mean_r": -0.05564,
+            "t_stat": -3.832,
+            "psr": 5.2e-05,
+            "win_rate": 0.5231,
+            "worst_r": -1.0976,
+            "total_r": -132.76
           },
           "frictionless_ablation": {
-            "n": 846,
-            "mean_r": -0.0482,
-            "t_stat": -1.49,
-            "psr": 0.068695,
-            "win_rate": 0.4728,
+            "n": 2386,
+            "mean_r": -0.02094,
+            "t_stat": -1.442,
+            "psr": 0.073687,
+            "win_rate": 0.5335,
             "worst_r": -1.0,
-            "total_r": -40.78
+            "total_r": -49.97
           },
           "original_gate": false,
           "disposition": "REJECT"
@@ -305,28 +305,28 @@
             "family": "displacement_continuation",
             "lookback": 20,
             "displacement_atr": 1.5,
-            "stop_atr": 1.0,
+            "stop_atr": 1.5,
             "target_atr": 1.0,
             "max_hold": 3,
             "mode": "bounded_structural"
           },
           "oos": {
-            "n": 846,
-            "mean_r": -0.02761,
-            "t_stat": -3.406,
-            "psr": 0.000356,
-            "win_rate": 0.4681,
-            "worst_r": -0.5113,
-            "total_r": -23.36
+            "n": 2386,
+            "mean_r": -0.01422,
+            "t_stat": -3.907,
+            "psr": 3.8e-05,
+            "win_rate": 0.5218,
+            "worst_r": -0.5179,
+            "total_r": -33.93
           },
           "frictionless_ablation": {
-            "n": 846,
-            "mean_r": -0.01234,
-            "t_stat": -1.523,
-            "psr": 0.064432,
-            "win_rate": 0.4728,
-            "worst_r": -0.4856,
-            "total_r": -10.44
+            "n": 2386,
+            "mean_r": -0.00552,
+            "t_stat": -1.516,
+            "psr": 0.063847,
+            "win_rate": 0.5319,
+            "worst_r": -0.5,
+            "total_r": -13.16
           },
           "original_gate": false,
           "disposition": "REJECT"
@@ -338,26 +338,26 @@
             "displacement_atr": 1.5,
             "stop_atr": 1.5,
             "target_atr": 1.0,
-            "max_hold": 9,
+            "max_hold": 3,
             "mode": "single"
           },
           "oos": {
-            "n": 1417,
-            "mean_r": -0.0825,
-            "t_stat": -3.902,
-            "psr": 3.7e-05,
-            "win_rate": 0.5646,
-            "worst_r": -1.1193,
-            "total_r": -116.9
+            "n": 4507,
+            "mean_r": -0.05846,
+            "t_stat": -5.67,
+            "psr": 0.0,
+            "win_rate": 0.5243,
+            "worst_r": -1.1014,
+            "total_r": -263.46
           },
           "frictionless_ablation": {
-            "n": 1417,
-            "mean_r": -0.04043,
-            "t_stat": -1.913,
-            "psr": 0.026976,
-            "win_rate": 0.5674,
+            "n": 4507,
+            "mean_r": -0.02258,
+            "t_stat": -2.19,
+            "psr": 0.01385,
+            "win_rate": 0.5358,
             "worst_r": -1.0,
-            "total_r": -57.28
+            "total_r": -101.76
           },
           "original_gate": false,
           "disposition": "REJECT"
@@ -367,28 +367,28 @@
             "family": "sweep_or_displacement",
             "lookback": 20,
             "displacement_atr": 1.5,
-            "stop_atr": 1.0,
+            "stop_atr": 1.5,
             "target_atr": 1.0,
             "max_hold": 3,
             "mode": "bounded_structural"
           },
           "oos": {
-            "n": 1613,
-            "mean_r": -0.02145,
-            "t_stat": -3.397,
-            "psr": 0.000359,
-            "win_rate": 0.4842,
-            "worst_r": -0.8538,
-            "total_r": -34.6
+            "n": 4506,
+            "mean_r": -0.01455,
+            "t_stat": -4.745,
+            "psr": 1e-06,
+            "win_rate": 0.5337,
+            "worst_r": -0.7983,
+            "total_r": -65.58
           },
           "frictionless_ablation": {
-            "n": 1613,
-            "mean_r": -0.00365,
-            "t_stat": -0.577,
-            "psr": 0.282052,
-            "win_rate": 0.4935,
+            "n": 4506,
+            "mean_r": -0.00348,
+            "t_stat": -1.134,
+            "psr": 0.128181,
+            "win_rate": 0.5468,
             "worst_r": -0.75,
-            "total_r": -5.89
+            "total_r": -15.69
           },
           "original_gate": false,
           "disposition": "REJECT"
@@ -397,9 +397,9 @@
     },
     "M15": {
       "status": "MEASURED",
-      "bars": 30000,
-      "train_bars": 18000,
-      "oos_bars": 12000,
+      "bars": 90000,
+      "train_bars": 54000,
+      "oos_bars": 36000,
       "configs_tried": 48,
       "selected": [
         {
@@ -413,22 +413,22 @@
             "mode": "single"
           },
           "oos": {
-            "n": 1044,
-            "mean_r": -0.05826,
-            "t_stat": -2.974,
-            "psr": 0.001296,
-            "win_rate": 0.5,
-            "worst_r": -1.0407,
-            "total_r": -60.83
+            "n": 3244,
+            "mean_r": -0.04696,
+            "t_stat": -4.167,
+            "psr": 1.2e-05,
+            "win_rate": 0.5145,
+            "worst_r": -1.0843,
+            "total_r": -152.32
           },
           "frictionless_ablation": {
-            "n": 1044,
-            "mean_r": -0.03867,
-            "t_stat": -1.974,
-            "psr": 0.023262,
-            "win_rate": 0.5115,
+            "n": 3244,
+            "mean_r": -0.02241,
+            "t_stat": -1.988,
+            "psr": 0.022762,
+            "win_rate": 0.5256,
             "worst_r": -1.0,
-            "total_r": -40.37
+            "total_r": -72.71
           },
           "original_gate": false,
           "disposition": "REJECT"
@@ -438,28 +438,28 @@
             "family": "sweep_reclaim",
             "lookback": 20,
             "displacement_atr": 1.5,
-            "stop_atr": 1.0,
+            "stop_atr": 1.5,
             "target_atr": 1.0,
-            "max_hold": 6,
+            "max_hold": 2,
             "mode": "bounded_structural"
           },
           "oos": {
-            "n": 1011,
-            "mean_r": -0.0199,
-            "t_stat": -1.908,
-            "psr": 0.030231,
-            "win_rate": 0.4787,
-            "worst_r": -1.0541,
-            "total_r": -20.12
+            "n": 3244,
+            "mean_r": -0.01207,
+            "t_stat": -3.573,
+            "psr": 0.000172,
+            "win_rate": 0.5277,
+            "worst_r": -0.6753,
+            "total_r": -39.15
           },
           "frictionless_ablation": {
-            "n": 1011,
-            "mean_r": -0.01042,
-            "t_stat": -0.999,
-            "psr": 0.161154,
-            "win_rate": 0.4787,
-            "worst_r": -1.0,
-            "total_r": -10.53
+            "n": 3244,
+            "mean_r": -0.00417,
+            "t_stat": -1.234,
+            "psr": 0.108371,
+            "win_rate": 0.5379,
+            "worst_r": -0.6617,
+            "total_r": -13.51
           },
           "original_gate": false,
           "disposition": "REJECT"
@@ -469,28 +469,28 @@
             "family": "displacement_continuation",
             "lookback": 20,
             "displacement_atr": 1.5,
-            "stop_atr": 1.0,
+            "stop_atr": 1.5,
             "target_atr": 1.0,
-            "max_hold": 2,
+            "max_hold": 6,
             "mode": "single"
           },
           "oos": {
-            "n": 841,
-            "mean_r": -0.08973,
-            "t_stat": -2.944,
-            "psr": 0.001737,
-            "win_rate": 0.459,
-            "worst_r": -1.06,
-            "total_r": -75.47
+            "n": 2462,
+            "mean_r": -0.05877,
+            "t_stat": -3.753,
+            "psr": 7.3e-05,
+            "win_rate": 0.5516,
+            "worst_r": -1.0759,
+            "total_r": -144.69
           },
           "frictionless_ablation": {
-            "n": 841,
-            "mean_r": -0.06228,
-            "t_stat": -2.044,
-            "psr": 0.020987,
-            "win_rate": 0.4685,
+            "n": 2462,
+            "mean_r": -0.0369,
+            "t_stat": -2.356,
+            "psr": 0.008812,
+            "win_rate": 0.5548,
             "worst_r": -1.0,
-            "total_r": -52.38
+            "total_r": -90.84
           },
           "original_gate": false,
           "disposition": "REJECT"
@@ -500,28 +500,28 @@
             "family": "displacement_continuation",
             "lookback": 20,
             "displacement_atr": 1.5,
-            "stop_atr": 1.0,
+            "stop_atr": 1.5,
             "target_atr": 1.0,
             "max_hold": 2,
             "mode": "bounded_structural"
           },
           "oos": {
-            "n": 841,
-            "mean_r": -0.02246,
-            "t_stat": -2.947,
-            "psr": 0.001719,
-            "win_rate": 0.459,
-            "worst_r": -0.265,
-            "total_r": -18.89
+            "n": 2500,
+            "mean_r": -0.01459,
+            "t_stat": -4.314,
+            "psr": 6e-06,
+            "win_rate": 0.5148,
+            "worst_r": -0.3689,
+            "total_r": -36.47
           },
           "frictionless_ablation": {
-            "n": 841,
-            "mean_r": -0.01559,
-            "t_stat": -2.047,
-            "psr": 0.020855,
-            "win_rate": 0.4685,
-            "worst_r": -0.25,
-            "total_r": -13.11
+            "n": 2500,
+            "mean_r": -0.0091,
+            "t_stat": -2.691,
+            "psr": 0.003346,
+            "win_rate": 0.5252,
+            "worst_r": -0.3621,
+            "total_r": -22.74
           },
           "original_gate": false,
           "disposition": "REJECT"
@@ -531,28 +531,28 @@
             "family": "sweep_or_displacement",
             "lookback": 20,
             "displacement_atr": 1.5,
-            "stop_atr": 1.0,
+            "stop_atr": 1.5,
             "target_atr": 1.0,
             "max_hold": 6,
             "mode": "single"
           },
           "oos": {
-            "n": 1513,
-            "mean_r": -0.08414,
-            "t_stat": -3.382,
-            "psr": 0.000383,
-            "win_rate": 0.4746,
-            "worst_r": -1.06,
-            "total_r": -127.31
+            "n": 4291,
+            "mean_r": -0.0628,
+            "t_stat": -5.352,
+            "psr": 0.0,
+            "win_rate": 0.5509,
+            "worst_r": -1.0843,
+            "total_r": -269.47
           },
           "frictionless_ablation": {
-            "n": 1513,
-            "mean_r": -0.05564,
-            "t_stat": -2.237,
-            "psr": 0.012904,
-            "win_rate": 0.4746,
+            "n": 4291,
+            "mean_r": -0.03946,
+            "t_stat": -3.362,
+            "psr": 0.000351,
+            "win_rate": 0.5551,
             "worst_r": -1.0,
-            "total_r": -84.19
+            "total_r": -169.31
           },
           "original_gate": false,
           "disposition": "REJECT"
@@ -562,28 +562,28 @@
             "family": "sweep_or_displacement",
             "lookback": 20,
             "displacement_atr": 1.5,
-            "stop_atr": 1.0,
+            "stop_atr": 1.5,
             "target_atr": 1.0,
-            "max_hold": 6,
+            "max_hold": 2,
             "mode": "bounded_structural"
           },
           "oos": {
-            "n": 1514,
-            "mean_r": -0.02199,
-            "t_stat": -2.87,
-            "psr": 0.002417,
-            "win_rate": 0.4756,
-            "worst_r": -1.0541,
-            "total_r": -33.3
+            "n": 4770,
+            "mean_r": -0.01423,
+            "t_stat": -5.337,
+            "psr": 0.0,
+            "win_rate": 0.5197,
+            "worst_r": -0.5565,
+            "total_r": -67.87
           },
           "frictionless_ablation": {
-            "n": 1514,
-            "mean_r": -0.01364,
-            "t_stat": -1.78,
-            "psr": 0.039329,
-            "win_rate": 0.4756,
-            "worst_r": -1.0,
-            "total_r": -20.65
+            "n": 4770,
+            "mean_r": -0.00722,
+            "t_stat": -2.71,
+            "psr": 0.003326,
+            "win_rate": 0.5296,
+            "worst_r": -0.5024,
+            "total_r": -34.45
           },
           "original_gate": false,
           "disposition": "REJECT"
