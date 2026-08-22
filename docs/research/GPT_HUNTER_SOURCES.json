@@ -1,5 +1,5 @@
 {
- "_": "Seed sources for the unified GPT Hunter missions: transcript, extreme-return, public-strategy and elite external-intelligence. Seeds are not a ceiling; discovered related sources persist in shared state. Kimi and Claude miners are independent and unchanged. X CREATOR GRAPH (2026-08-13): x-surface seeds are DISCOVERY ROUTERS, not authorities -- the mandated path is POST -> PRIMARY SOURCE -> PAPER/CODE/DATA -> MECHANISM -> CANONICAL TEST -> VERDICT, and the graph must expand automatically to the accounts, authors and repos they cite. Rank by mechanisms surfaced and survivors attributable, never by follower count. See docs/research/ELITE_QUANT_INTELLIGENCE_MANDATE.md Part II.",
+ "_": "Seed sources for the unified GPT Hunter missions: transcript, extreme-return, public-strategy and elite external-intelligence. Seeds are not a ceiling; discovered related sources persist in shared state. Kimi and Claude miners are independent and unchanged. All downstream conversion is MT5_FUSION_ONLY: external crypto material may be a feature for a named Fusion-executable instrument but never a crypto-exchange strategy. X/video seeds are DISCOVERY ROUTERS, not authorities -- the mandated path is SOURCE -> PRIMARY SOURCE -> PAPER/CODE/DATA -> MECHANISM -> MT5 CANONICAL TEST -> VERDICT, and the graph expands to qualified cited channels, authors and repositories. Rank by mechanisms surfaced and survivors attributable, never by followers or headline returns.",
  "sources": [
   {
    "name": "Lewis Jackson",
@@ -7,6 +7,30 @@
    "kind": "youtube",
    "language": "en",
    "surface": "youtube"
+  },
+  {
+   "name": "Algo Trading Space",
+   "url": "https://www.youtube.com/@algotradingspace",
+   "kind": "youtube",
+   "language": "en",
+   "surface": "youtube",
+   "mandatory": true
+  },
+  {
+   "name": "Critical Trading",
+   "url": "https://www.youtube.com/@criticaltrading",
+   "kind": "youtube",
+   "language": "en",
+   "surface": "youtube",
+   "mandatory": true
+  },
+  {
+   "name": "Neuro Trader",
+   "url": "https://www.youtube.com/@neurotrader888",
+   "kind": "youtube",
+   "language": "en",
+   "surface": "youtube",
+   "mandatory": true
   },
   {
    "name": "Chart Fanatics",

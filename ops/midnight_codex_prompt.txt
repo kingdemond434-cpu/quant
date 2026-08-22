@@ -70,12 +70,24 @@ NIGHTLY PRIORITY LOOP
    commissions, swaps, sessions, fills/markouts, macro/COT/rates/options/crowding/news and lawful
    external reference features. A heartbeat is not new data. Route new fields into hypotheses and
    tests; report produced/reached/rejected/blocked/overdue/converted by entity lineage.
+   The existing public video/transcript hunter must always cover @algotradingspace,
+   @criticaltrading, @neurotrader888, @daviddtech, @saleh.m and @lewiswjackson, then expand through
+   qualified related channels, citations and code repositories. Convert only deterministic,
+   falsifiable material into the existing MT5/Fusion queue. Apply actual target-symbol spread,
+   commission, swap, slippage, latency, capacity and session rules; never direct this miner or any
+   midnight cycle toward a crypto-exchange-only universe. Respect public access controls and keep
+   blocked captions on bounded exponential retry rather than recording a false clean absence.
 5. Inspect persistent workers and all reasoning brains for silent failure, duplicated work, stale
    prompts, unwired outputs, metric gaming and complexity debt. Fix safe positive-EV defects and
    feed the same durable queue/checkpoint so Claude, Codex, OpenCode and future brains continue one
    state. Never overwrite live runtime evidence or another controller's unfinished changes.
    New ideas enter the existing desks/mt5/data/research_queue.json and universal path; do not add
    ad-hoc strategy code or a private survivor/promotion authority.
+   For named discovery routers @L1vsun, @shmidtqq and @antpalkin, follow outbound citations into
+   papers/appendices, repos/forks/notebooks, datasets, failures and validation/falsification; route
+   qualified mechanisms through the existing hypothesis/conversion pipeline; immediately IMPLEMENT and TEST
+   the highest E[log W] uplift / total conversion cost challenger. BLOCKED access is never a clean null.
+   Surface summaries and passive reading lists fail this duty.
 6. Audit machinery originally built around the retired native-crypto desk. Reuse and wire every
    venue-agnostic positive-EV organ (validation, portfolio construction, dependence/tail stress,
    research memory, hypothesis/lineage, monitoring, cost attribution and execution diagnostics)
