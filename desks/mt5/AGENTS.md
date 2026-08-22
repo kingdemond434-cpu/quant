@@ -46,3 +46,46 @@ Any brain finding this note stale (a new box, the laptop un-retired on
 purpose, Contabo decommissioned) should update this section in the same
 commit that changes the topology, not leave the next reader to rediscover it
 by re-breaking something already fixed once.
+
+## VERIFYING CONTABO WITHOUT A SHELL ON IT
+
+No installer in this repo ever enables an SSH SERVER on Contabo -- every SSH
+usage that exists (sync_to_vps.ps1, sync_shadow_to_vps.ps1) is Contabo acting
+as the CLIENT, reaching OUT to Hetzner. Nothing sets it up to accept inbound
+connections. A brain that tries to SSH INTO Contabo directly is fighting an
+undocumented, unsupported path -- and the failure mode observed 2026-08-22
+was exactly this: blocked by a host-key mismatch, unable to verify Contabo,
+and it substituted the laptop as a stand-in instead. That substitution is
+never correct (see above); the right move is a different verification path,
+not a different box.
+
+**THE SUPPORTED PATH: read Hetzner's synced copy.** MT5-ShadowSync already
+pushes `reports/shadow/shadow_health.json` from Contabo to Hetzner
+(`/home/quant/quant-platform/desks/mt5/reports/shadow/`) every 15 minutes.
+That file carries `status`, `configured_sleeves`, `sleeves_with_forward_
+trades`, `evidence_blocked_sleeves`, `errors`, `gateway_armed` and
+`promoted_live_sleeves` -- everything needed to answer "is Contabo healthy
+and what is its live-arm state" without ever touching Contabo directly. Any
+brain with Hetzner access (`quant@95.216.191.70`) or a synced local checkout
+reads that file. This is the DEFAULT verification method. If it looks stale
+(older than ~20 minutes), the finding is "the sync pipe may be down," not
+"Contabo may be down" -- those are different problems with different fixes.
+
+**IF DIRECT SSH TO CONTABO IS GENUINELY NEEDED** (running a live command,
+not just reading state) and it presents a host key that doesn't match a
+cached one: DO NOT accept-and-continue, and DO NOT disable host-key checking.
+Verify out-of-band first, from a channel a network attacker cannot also
+control:
+  1. Log into the Contabo customer portal -> the VPS -> its VNC/KVM console
+     (not a network SSH/RDP session -- the provider's own screen view).
+  2. From that console, in an elevated PowerShell: check whether an SSH
+     server is even running (`Get-Service sshd -ErrorAction SilentlyContinue`)
+     and if so, its host key fingerprint (`ssh-keygen -lf
+     "C:\ProgramData\ssh\ssh_host_ed25519_key.pub"` once OpenSSH Server is
+     confirmed installed, or the equivalent Ed25519/RSA key file present).
+  3. Compare that fingerprint, read from the console, against what the
+     failing SSH client reported. Match -> the earlier key was stale
+     (reprovision/reinstall); remove ONLY that one entry from the client's
+     known_hosts and reconnect. Mismatch -> stop, do not connect, treat as a
+     possible compromise and involve the principal before doing anything
+     else.
