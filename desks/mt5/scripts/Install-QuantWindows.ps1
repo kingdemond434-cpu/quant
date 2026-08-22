@@ -215,6 +215,34 @@ if (Test-Path $supervisor) {
     }
 }
 
+$shadowSync = Join-Path $DeskRoot "scripts\sync_shadow_to_vps.ps1"
+if ((Test-Path $shadowSync) -and -not $WhatIfOnly) {
+    try {
+        $syncAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument `
+            ("-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"{0}`"" -f $shadowSync)
+        # Five minutes after the 00/15/30/45 replay slots: never race a ledger write.
+        $syncTrigger = New-ScheduledTaskTrigger -Once -At ((Get-Date).Date.AddMinutes(5)) `
+            -RepetitionInterval (New-TimeSpan -Minutes 15) `
+            -RepetitionDuration (New-TimeSpan -Days 3650)
+        $syncSettings = New-ScheduledTaskSettingsSet `
+            -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
+            -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) `
+            -ExecutionTimeLimit (New-TimeSpan -Minutes 10) -MultipleInstances IgnoreNew
+        $syncPrincipal = New-ScheduledTaskPrincipal -UserId $env:USERNAME `
+            -LogonType Interactive -RunLevel Limited
+        Unregister-ScheduledTask -TaskName "MT5-ShadowSync" `
+            -Confirm:$false -ErrorAction SilentlyContinue
+        Register-ScheduledTask -TaskName "MT5-ShadowSync" -Action $syncAction `
+            -Trigger $syncTrigger -Settings $syncSettings -Principal $syncPrincipal `
+            -Description "Publish complete MT5 shadow evidence to the shared VPS." | Out-Null
+        Write-Host "  [OK  ] MT5-ShadowSync registered"
+    } catch {
+        Write-Host ("  [FAIL] MT5-ShadowSync {0}" -f $_.Exception.Message)
+    }
+} elseif ($WhatIfOnly) {
+    Write-Host "  [DRY ] MT5-ShadowSync 15-minute artifact publisher"
+}
+
 Write-Host ""
 Write-Host "VERIFY -- these are the only checks that mean anything:"
 Write-Host "  Get-ScheduledTask MT5-Gateway,MT5-Hourly | Select TaskName,State"
