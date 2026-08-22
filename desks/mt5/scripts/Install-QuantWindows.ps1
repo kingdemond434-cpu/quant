@@ -275,21 +275,25 @@ if ($AurumRoot) {
         $stg = New-ScheduledTaskSettingsSet -StartWhenAvailable -RestartCount 3 `
             -RestartInterval (New-TimeSpan -Minutes 5) `
             -ExecutionTimeLimit (New-TimeSpan -Minutes 10)
-        # NOT the SYSTEM account. Registering a task to run as SYSTEM needs
-        # SeAssignPrimaryTokenPrivilege/SeIncreaseQuotaPrivilege to impersonate
-        # it via CIM, and several VPS base images (Contabo's included) strip
-        # that from every local account, admin or not -- Register-ScheduledTask
-        # then fails "Access is denied" with no clue it was the account choice.
-        # The interactive user works with no impersonation right at all, and
-        # autologon keeps that session present, so Interactive logon is enough.
+        # NOT SYSTEM, and NOT RunLevel Highest. Both were tried and both threw
+        # the identical "Access is denied" (0x80070005) from Register-Scheduled
+        # Task -- SYSTEM needs SeAssignPrimaryTokenPrivilege/SeIncreaseQuotaPriv
+        # ilege to impersonate via CIM, and several VPS base images (Contabo's
+        # included) restrict elevated-run-level task CREATION even from an
+        # account named Administrator, independent of which account owns it.
+        # MT5-ShadowSync registers successfully on this same box with the same
+        # interactive account at RunLevel Limited -- that is the only
+        # combination proven to register here, and the sync script needs no
+        # elevation: it only reads quant's export and writes into Aurum's own
+        # inbox, both already owned by this user.
         $syncPrincipal = New-ScheduledTaskPrincipal -UserId $env:USERNAME `
-            -LogonType Interactive -RunLevel Highest
+            -LogonType Interactive -RunLevel Limited
         try {
             Unregister-ScheduledTask -TaskName "Aurum-Sync" -Confirm:$false -ErrorAction SilentlyContinue
             Register-ScheduledTask -TaskName "Aurum-Sync" -Action $sa `
                 -Trigger (New-ScheduledTaskTrigger -Daily -At "22:15") -Settings $stg `
                 -Description "Carry quant's exported findings into Aurum's absorption inbox." `
-                -Principal $syncPrincipal | Out-Null
+                -Principal $syncPrincipal -ErrorAction Stop | Out-Null
             Write-Host ("  [OK  ] {0,-14} daily 22:15 -> {1}" -f "Aurum-Sync", $AurumRoot)
         } catch {
             Write-Host ("  [FAIL] {0,-14} {1}" -f "Aurum-Sync", $_.Exception.Message)
