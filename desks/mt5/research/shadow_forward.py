@@ -352,10 +352,8 @@ def main() -> None:
         except Exception:
             state = {}
     slog(enable_free_feed(state))
+    attempt_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     today = datetime.now(timezone.utc).date().isoformat()
-    if state.get("last_run") == today:
-        slog("shadow already ran today; skip")
-        return
 
     h1_cache = {}
     # SLEEVES rows are (sym, window, cond) and always session_range_breakout.
@@ -363,13 +361,14 @@ def main() -> None:
     # are a different thing, and flattening them into one list would have made
     # `window` meaningless for families that have no session window at all.
     # Normalised here into one loop rather than duplicating the body.
-    _work = [(s, w, c, "session_range_breakout") for s, w, c in SLEEVES]
-    _work += [(s, f, None, f) for s, f in UNIVERSE_SLEEVES]
-    for sym, win, cond, fam in _work:
+    _work = [(s, w, c, "session_range_breakout", False) for s, w, c in SLEEVES]
+    _work += [(s, f, None, f, True) for s, f in UNIVERSE_SLEEVES]
+    for sym, win, cond, fam, is_universe in _work:
         key = f"{sym}.{win}" + (f".{cond}" if cond else "")
         st = state.get(key, {"n": 0, "cum_r": 0.0, "max_dd_r": 0.0,
                              "first_entry": None, "last_entry": None,
                              "status": "ACTIVE"})
+        st["last_attempt_at"] = attempt_at
         if sym not in h1_cache:
             h1_cache[sym] = fetch_h1(sym)
         bars = h1_cache[sym]
@@ -377,12 +376,17 @@ def main() -> None:
             # RECORDED, not skipped. A sleeve that produced nothing because there
             # were no bars is a different fact from one that stood aside, and the
             # promoter must not count the first as evidence of the second.
+            if st.get("last_no_data") != today:
+                st["no_data_days"] = int(st.get("no_data_days", 0)) + 1
             st["last_no_data"] = today
-            st["no_data_days"] = int(st.get("no_data_days", 0)) + 1
+            if st.get("status") not in {"KILL", "PROMOTION CANDIDATE"}:
+                st["status"] = "NO_DATA"
             state[key] = st
             continue
         h1 = bars.df
-        if fam == "session_range_breakout":
+        if st.get("status") in {"NO_DATA", "PROXY_SHADOW"}:
+            st["status"] = "ACTIVE"
+        if fam == "session_range_breakout" and not is_universe:
             sigs = families.family_session_range_breakout(h1, **WINDOWS[win])
         else:
             fn = universe_family(fam, families)
@@ -401,8 +405,11 @@ def main() -> None:
                 # NO DATA, recorded as such. Distinct from "the macro state stood
                 # aside": one is a missing input, the other is evidence. Collapsing
                 # them is the defect this file already guards against for bars.
+                if st.get("last_no_data") != today:
+                    st["no_data_days"] = int(st.get("no_data_days", 0)) + 1
                 st["last_no_data"] = today
-                st["no_data_days"] = int(st.get("no_data_days", 0)) + 1
+                if st.get("status") not in {"KILL", "PROMOTION CANDIDATE"}:
+                    st["status"] = "NO_DATA"
                 state[key] = st
                 continue
             sigs = [g for g in sigs if pd.Timestamp(g.time).date() in fav]
@@ -429,6 +436,7 @@ def main() -> None:
             indent=2), encoding="utf-8")
         st["bar_source"] = bars.source
         st["bar_source_stale"] = bars.stale
+        st["promotion_authority"] = bars.promotion_authority
         if trades:
             rs = [t.r_multiple for t in trades]
             cum = [sum(rs[:i + 1]) for i in range(len(rs))]
@@ -471,9 +479,15 @@ def main() -> None:
                      f"{days_active}d. Deciding on this sample is more likely to be wrong than "
                      f"right; sleeve stays ACTIVE and keeps accruing.")
             elif st["exp_r"] > PROMOTE_MIN_EXP and st["max_dd_r"] > PROMOTE_MIN_DD:
-                st["status"] = "PROMOTION CANDIDATE"
-                slog(f"{key}: VERDICT PROMOTE n={st['n']} exp={st['exp_r']:.3f}R "
-                     f"maxDD={st['max_dd_r']:.1f}R")
+                if bars.promotion_authority:
+                    st["status"] = "PROMOTION CANDIDATE"
+                    slog(f"{key}: VERDICT PROMOTE n={st['n']} exp={st['exp_r']:.3f}R "
+                         f"maxDD={st['max_dd_r']:.1f}R")
+                else:
+                    st["status"] = "PROXY_SHADOW"
+                    st["proxy_verdict"] = "WOULD_PROMOTE_ON_MATCHING_FUSION_EVIDENCE"
+                    slog(f"{key}: proxy evidence passes numerically, but {bars.source} has no "
+                         "Fusion capital authority; continue shadow")
             else:
                 st["status"] = "KILL"
                 slog(f"{key}: VERDICT KILL n={st['n']} exp={st['exp_r']:.3f}R "
@@ -483,8 +497,14 @@ def main() -> None:
              f"exp={st['exp_r']:+.3f}R maxDD={st['max_dd_r']:.1f}R "
              f"days={days_active} [{st['status']}]")
     state["last_run"] = today
+    state["updated_at"] = attempt_at
+    state["configured_sleeves"] = len(_work)
+    state["represented_sleeves"] = sum(
+        isinstance(v, dict) for k, v in state.items()
+        if k not in {"last_run", "updated_at", "configured_sleeves", "represented_sleeves"}
+    )
     state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
-    slog(f"shadow state saved ({len(SLEEVES)} sleeves)")
+    slog(f"shadow state saved ({len(_work)} configured sleeves)")
 
 
 if __name__ == "__main__":

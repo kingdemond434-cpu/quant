@@ -210,7 +210,9 @@ def main() -> None:
                 tprint("all hunt18 experiments already gated")
         else:
             tprint("no hunt18 experiments yet")
-        time.sleep(3600)
+        # Reports arrive asynchronously from the experiment worker. Poll cheaply once per minute;
+        # an unconditional hour made a completed hypothesis wait up to 59 minutes for validation.
+        time.sleep(60)
 
     tasks = [(f, 1, {}) for f in fams] + [(f, -1, {}) for f in fams]
     stem = sys.argv[1].replace("run_", "")

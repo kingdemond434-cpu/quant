@@ -43,6 +43,30 @@ CANDIDATES = {
 }
 
 
+def _market_open(ts: pd.Timestamp) -> bool:
+    """Approximate the broker's 24/5 gold/FX session for freshness accounting."""
+    ts = pd.Timestamp(ts).tz_convert("UTC")
+    wd, hour = ts.weekday(), ts.hour
+    return not (wd == 5 or (wd == 4 and hour >= 22) or (wd == 6 and hour < 22))
+
+
+def _trading_lag_hours(last_bar: pd.Timestamp, now: datetime) -> float:
+    """Elapsed market-open hours; weekends must not manufacture stale evidence alarms."""
+    cursor = pd.Timestamp(last_bar).ceil("h")
+    end = pd.Timestamp(now)
+    if cursor.tzinfo is None:
+        cursor = cursor.tz_localize("UTC")
+    else:
+        cursor = cursor.tz_convert("UTC")
+    end = end.tz_localize("UTC") if end.tzinfo is None else end.tz_convert("UTC")
+    hours = 0
+    while cursor < end:
+        if _market_open(cursor):
+            hours += 1
+        cursor += pd.Timedelta(hours=1)
+    return float(hours)
+
+
 def _source() -> dict:
     path = DATA / "XAUUSD_scalp_source.json"
     if not path.exists():
@@ -67,7 +91,7 @@ def run(now: datetime | None = None) -> dict:
     state: dict = {
         "updated_at": now.isoformat(timespec="seconds"),
         "shadow_start": SHADOW_START.isoformat(),
-        "source": source, "sleeves": {},
+        "source": source, "configured_sleeves": len(CANDIDATES), "sleeves": {},
     }
     SHADOW.mkdir(parents=True, exist_ok=True)
     cache: dict[str, tuple[pd.DataFrame, dict[str, np.ndarray]]] = {}
@@ -93,12 +117,16 @@ def run(now: datetime | None = None) -> dict:
         rs = [float(row["r"]) for row in records]
         n = len(rs)
         last_bar = pd.Timestamp(df.index[-1])
+        lag_hours = _trading_lag_hours(last_bar, now)
+        stale_source = lag_hours > (1.0 if tf == "M5" else 2.0)
         days = max(0, (last_bar.date() - SHADOW_START.date()).days)
         exp = float(np.mean(rs)) if rs else None
         max_dd = _drawdown(rs)
         matured = n >= 50 or (days >= 14 and n >= 20)
         if last_bar < SHADOW_START:
             status = "WAITING_FOR_FORWARD_BARS"
+        elif stale_source:
+            status = "STALE_SOURCE"
         elif not authority:
             status = "PROXY_SHADOW"
         elif not matured:
@@ -111,10 +139,12 @@ def run(now: datetime | None = None) -> dict:
             "status": status, "timeframe": tf, "choice": choice.__dict__,
             "n": n, "days": days, "expectancy_r": exp, "max_drawdown_r": max_dd,
             "last_source_bar": last_bar.isoformat(), "matured": matured,
+            "source_trading_lag_hours": lag_hours, "source_stale": stale_source,
             "promotion_authority": authority,
             "note": ("Proxy bars may accrue diagnostic evidence but cannot authorize capital."
-                     if not authority else "Fusion-native forward shadow."),
+            if not authority else "Fusion-native forward shadow."),
         }
+    state["represented_sleeves"] = len(state["sleeves"])
     STATE.write_text(json.dumps(state, indent=2), "utf-8")
     return state
 

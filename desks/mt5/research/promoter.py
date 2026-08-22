@@ -145,7 +145,7 @@ def main() -> None:
     changed = False
 
     for key, st in shadow.items():
-        if key == "last_run":
+        if not isinstance(st, dict):
             continue
         if st.get("status") != "PROMOTION CANDIDATE":
             continue

@@ -134,6 +134,12 @@ $tasks = @(
                      -RepetitionInterval (New-TimeSpan -Hours 1) `
                      -RepetitionDuration (New-TimeSpan -Days 3650) }
        Desc = "Health, mining, and the daily chain: shadow -> promoter -> markout -> export." }
+    @{ Name = "MT5-Shadow"
+       Script = "research\shadow_cycle.py"
+       Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
+                     -RepetitionInterval (New-TimeSpan -Minutes 15) `
+                     -RepetitionDuration (New-TimeSpan -Days 3650) }
+       Desc = "Refresh broker bars and replay every configured zero-capital sleeve every 15m." }
 )
 
 foreach ($t in $tasks) {
@@ -145,7 +151,9 @@ foreach ($t in $tasks) {
     $log = Join-Path $logDir ("{0}.log" -f $t.Name)
     # cmd /c wraps the redirect: Task Scheduler has no shell, so `>>` in the
     # arguments field is passed to python as a literal argument otherwise.
-    $cmd = "/c `"$Python`" $pyArgs`"$script`" >> `"$log`" 2>&1"
+    # cmd.exe needs an OUTER quote pair when the executable itself is quoted. Without it,
+    # Task Scheduler returns 1 before Python starts and no log is created.
+    $cmd = "/d /s /c `"`"$Python`" $pyArgs`"$script`" >> `"$log`" 2>&1`""
 
     if ($WhatIfOnly) {
         Write-Host ("  [DRY ] {0,-14} cmd {1}" -f $t.Name, $cmd)
@@ -165,12 +173,45 @@ foreach ($t in $tasks) {
 
     try {
         Unregister-ScheduledTask -TaskName $t.Name -Confirm:$false -ErrorAction SilentlyContinue
+        $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME `
+            -LogonType Interactive -RunLevel Limited
         Register-ScheduledTask -TaskName $t.Name -Action $action `
             -Trigger (& $t.Trigger) -Settings $settings `
-            -Description $t.Desc -User "SYSTEM" -RunLevel Highest | Out-Null
+            -Description $t.Desc -Principal $principal | Out-Null
         Write-Host ("  [OK  ] {0,-14} registered -> {1}" -f $t.Name, $log)
     } catch {
         Write-Host ("  [FAIL] {0,-14} {1}" -f $t.Name, $_.Exception.Message)
+    }
+}
+
+# The research supervisor is a persistent queue/experiment worker, not a one-shot task. A short
+# recurring trigger supplies crash recovery; IgnoreNew keeps exactly one live owner.
+$supervisor = Join-Path $DeskRoot "research\research_supervisor.py"
+if (Test-Path $supervisor) {
+    if ($WhatIfOnly) {
+        Write-Host "  [DRY ] MT5-ResearchSupervisor persistent canonical worker"
+    } else {
+        try {
+            $supAction = New-ScheduledTaskAction -Execute $Python `
+                -Argument ("{0}`"{1}`"" -f $pyArgs, $supervisor) -WorkingDirectory $DeskRoot
+            $supTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
+                -RepetitionInterval (New-TimeSpan -Minutes 5) `
+                -RepetitionDuration (New-TimeSpan -Days 3650)
+            $supSettings = New-ScheduledTaskSettingsSet `
+                -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
+                -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) `
+                -ExecutionTimeLimit (New-TimeSpan -Hours 72) -MultipleInstances IgnoreNew
+            $supPrincipal = New-ScheduledTaskPrincipal -UserId $env:USERNAME `
+                -LogonType Interactive -RunLevel Limited
+            Unregister-ScheduledTask -TaskName "MT5-ResearchSupervisor" `
+                -Confirm:$false -ErrorAction SilentlyContinue
+            Register-ScheduledTask -TaskName "MT5-ResearchSupervisor" -Action $supAction `
+                -Trigger $supTrigger -Settings $supSettings -Principal $supPrincipal `
+                -Description "Persistent canonical MT5 hypothesis/research worker." | Out-Null
+            Write-Host "  [OK  ] MT5-ResearchSupervisor registered"
+        } catch {
+            Write-Host ("  [FAIL] MT5-ResearchSupervisor {0}" -f $_.Exception.Message)
+        }
     }
 }
 
@@ -185,8 +226,5 @@ Write-Host "SHADOW IS THE THING TO WATCH. Every sleeve sits at n=0 until bars"
 Write-Host "reach it. If they stay at 0 after a run, logs\shadow.log names the"
 Write-Host "reason per symbol -- it is a data question, never a silent one."
 Write-Host ""
-Write-Host "STILL HARDCODED ELSEWHERE, and this script cannot fix it for you:"
-Write-Host "  research\research_supervisor.py carries"
-Write-Host "  C:\Users\dell\quant-platform\.venv\Scripts\python.exe for the"
-Write-Host "  qquant_gates target. That path is another machine's. Edit it or"
-Write-Host "  that one target fails while every other target runs."
+Write-Host "All recurring tasks use the interpreter and checkout printed above;"
+Write-Host "no research target carries a second machine-specific Python path."

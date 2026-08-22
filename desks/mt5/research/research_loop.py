@@ -133,8 +133,10 @@ def main() -> int:
         except Exception as e:
             log(f"diagnose failed: {e!r}")
         hourly_demo_snapshot()
-        log(f"next hourly tick in {until_next_hour():.0f}s")
-        time.sleep(until_next_hour())
+        # A non-empty queue is work, not a clock. The old unconditional hourly sleep left every
+        # second and later hypothesis idle even though the sole worker was free. Continue directly;
+        # the queue-empty branch above remains the low-cost backoff.
+        log("experiment finished; draining the next queued hypothesis immediately")
 
 
 if __name__ == "__main__":
