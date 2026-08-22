@@ -249,6 +249,38 @@ if ((Test-Path $shadowSync) -and -not $WhatIfOnly) {
     Write-Host "  [DRY ] MT5-ShadowSync 15-minute artifact publisher"
 }
 
+# Publish the complete Fusion universe and execution evidence after the hourly producer. The
+# 15-minute shadow bundle is intentionally small and cannot satisfy midnight's universe/markout
+# freshness contract by itself.
+$artifactSync = Join-Path $DeskRoot "scripts\sync_to_vps.ps1"
+if (Test-Path $artifactSync) {
+    if ($WhatIfOnly) {
+        Write-Host "  [DRY ] MT5-ArtifactSync hourly universe/markout publisher"
+    } else {
+        try {
+            $artifactAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument `
+                ("-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"{0}`"" -f $artifactSync)
+            $artifactTrigger = New-ScheduledTaskTrigger -Once -At ((Get-Date).Date.AddMinutes(10)) `
+                -RepetitionInterval (New-TimeSpan -Hours 1) `
+                -RepetitionDuration (New-TimeSpan -Days 3650)
+            $artifactSettings = New-ScheduledTaskSettingsSet `
+                -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
+                -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 2) `
+                -ExecutionTimeLimit (New-TimeSpan -Minutes 30) -MultipleInstances IgnoreNew
+            $artifactPrincipal = New-ScheduledTaskPrincipal -UserId $env:USERNAME `
+                -LogonType Interactive -RunLevel Limited
+            Unregister-ScheduledTask -TaskName "MT5-ArtifactSync" `
+                -Confirm:$false -ErrorAction SilentlyContinue
+            Register-ScheduledTask -TaskName "MT5-ArtifactSync" -Action $artifactAction `
+                -Trigger $artifactTrigger -Settings $artifactSettings -Principal $artifactPrincipal `
+                -Description "Publish full Fusion universe, research evidence and markouts to VPS." | Out-Null
+            Write-Host "  [OK  ] MT5-ArtifactSync registered"
+        } catch {
+            Write-Host ("  [FAIL] MT5-ArtifactSync {0}" -f $_.Exception.Message)
+        }
+    }
+}
+
 # ---- THE LINK THAT WAS NOT AUTOMATIC ---------------------------------------
 # quant EXPORTS findings daily (daily_cycle step 4) and Aurum READS them daily
 # (aurum_cycle step_absorb). Both ends ran on a schedule; NOTHING CARRIED THE

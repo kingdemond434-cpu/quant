@@ -66,7 +66,13 @@ def build(root: Path, *, now: datetime | None = None) -> dict[str, Any]:
     research_loop = _mtime(reports / "hypothesis_demo.jsonl")
     universal_gate = _mtime(reports / "UNIVERSAL_SURVIVORS.json")
     allocation = _mtime(reports / "allocation.json")
-    markout = _mtime(reports / "markout.json")
+    markout_path = reports / "markout.json"
+    markout_row = _read(markout_path, {})
+    markout = (
+        str(markout_row.get("at"))
+        if isinstance(markout_row, dict) and markout_row.get("at")
+        else _mtime(markout_path)
+    )
     shadow_last = shadow.get("last_run") if isinstance(shadow, dict) else None
 
     defects: list[str] = []
@@ -89,8 +95,10 @@ def build(root: Path, *, now: datetime | None = None) -> dict[str, Any]:
             defects.append("forward shadow daily clock stale")
     if _older_than(research_loop, now, 2):
         defects.append("hourly research loop stale or unmeasured")
-    if markout is None:
+    if not markout_row or markout is None:
         defects.append("execution markout missing; costs remain unmeasured")
+    elif _older_than(markout, now, 30):
+        defects.append("execution markout stale; current costs remain unmeasured")
     if _older_than(newest_h1, now, 48):
         defects.append("MT5 universe bars stale")
     if not reuse:
@@ -121,6 +129,14 @@ def build(root: Path, *, now: datetime | None = None) -> dict[str, Any]:
             "universal_gate": universal_gate,
             "allocation": allocation,
             "markout": markout,
+            "markout_usable": (
+                bool(markout_row.get("usable")) if isinstance(markout_row, dict) else False
+            ),
+            "markout_matched_fills": (
+                int(markout_row.get("n_matched", 0) or 0)
+                if isinstance(markout_row, dict)
+                else 0
+            ),
         },
         "capability_reuse": {
             "artifact": str(reuse_path.relative_to(root)),

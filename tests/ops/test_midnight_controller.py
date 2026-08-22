@@ -99,6 +99,8 @@ def test_codex_controller_is_noninteractive_fenced_and_checkpointed() -> None:
     assert "cat docs/MASTER_QUANT_CONSTITUTION.md" not in source
     assert "CHECKPOINT_RC=0" in source and "TRANSFER_RC=0" in source
     assert "HANDOFF_INCOMPLETE" in source
+    assert "workspace sandbox failure; refusing false success" in source
+    assert "CODEX_RC=126" in source
     assert '|| CHECKPOINT_RC=$?' in source
     assert '|| TRANSFER_RC=$?' in source
 

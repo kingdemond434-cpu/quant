@@ -168,6 +168,16 @@ CODEX_RC=0
 timeout --signal=TERM --kill-after=60 "${CODEX_NIGHTLY_TIMEOUT_SECONDS:-10800}" \
     codex "${CODEX_GLOBAL_ARGS[@]}" "${CODEX_ARGS[@]}" - <"$PROMPT_FILE" >>"$LOG" 2>&1 \
     || CODEX_RC=$?
+# Codex 0.147 returned rc=0 when its own workspace sandbox failed before the first command. Never
+# checkpoint that as a completed controller cycle: a controller that could not inspect or change
+# the repository did not perform the mandate, regardless of its process exit code.
+if [ "$CODEX_RC" -eq 0 ] && grep -Eqi \
+    'workspace command sandbox fails|bwrap: .*Operation not permitted|could not read.*repository' \
+    "$LAST_MESSAGE"; then
+    CODEX_RC=126
+    echo "midnight-codex: controller reported a workspace sandbox failure; refusing false success" \
+        | tee -a "$LOG"
+fi
 kill "$HEARTBEAT_PID" >/dev/null 2>&1 || true
 wait "$HEARTBEAT_PID" 2>/dev/null || true
 HEARTBEAT_PID=""

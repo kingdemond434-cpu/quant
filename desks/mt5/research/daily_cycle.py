@@ -95,7 +95,9 @@ def _markout() -> None:
                 load_jsonl(DATA / "live_ledger.jsonl"))
     for line in render(m).splitlines():
         dlog("  " + line)
-    (BASE / "reports" / "markout.json").write_text(json.dumps({
+    markout_path = BASE / "reports" / "markout.json"
+    markout_path.parent.mkdir(parents=True, exist_ok=True)
+    markout_path.write_text(json.dumps({
         "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "usable": m.usable, "n_matched": m.n_matched,
         "n_unfilled_intents": m.n_unfilled_intents,

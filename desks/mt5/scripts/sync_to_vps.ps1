@@ -34,8 +34,8 @@
 # holds, because anything genuinely newer on this box belongs in a commit.
 #
 # So the bundle now carries ARTIFACTS ONLY: data\ and reports\, the things git does not track
-# and the VPS cannot obtain any other way. Code reaches the VPS by `git pull`, which this script
-# now runs before committing.
+# and the VPS cannot obtain any other way. Code reaches every box through git; live artifacts
+# travel separately and never create commits in a controller's dirty worktree.
 #
 # IF THIS BOX HAS LOCAL CODE EDITS, THEY ARE NOT STRANDED -- THEY ARE UNCOMMITTED. Commit them
 # from the quant-platform checkout like every other brain does. That is not extra ceremony; it
@@ -46,15 +46,14 @@
 # so it is a decision to make deliberately and not a default to drift back into.
 
 $ErrorActionPreference = "Continue"
-$base = "C:\Users\dell\mt5-research"
+# Relocatable: canonical Contabo is C:\opt\quant; the retired laptop used another path.
+$base = Split-Path -Parent $PSScriptRoot
 $marker = Join-Path $base "data\sync_marker.json"
 $last   = Join-Path $base "data\last_sync.json"
 $log    = Join-Path $base "logs\sync_to_vps.log"
 $bundle = Join-Path $env:TEMP "opencode\mt5_desk_bundle"
 $vpsHost = "quant@95.216.191.70"
 $vpsRepo = "/home/quant/quant-platform"
-$vps = "${vpsHost}:${vpsRepo}/desks/mt5/"
-$branch = "claude/llm-auto-upgrade-verify-gcjac3"
 
 # Set to $true ONLY to deliberately re-arm code-over-git syncing. See the header.
 $SYNC_CODE = $false
@@ -107,7 +106,8 @@ $dataOut = Join-Path $bundle "data"
 New-Item -ItemType Directory -Force -Path $dataOut | Out-Null
 $src = Join-Path $base "data"
 foreach ($d in @("universe", "states", "cot", "cot_tff", "cot_disagg", "lake",
-                 "gateway_state.json","live_ledger.jsonl","regime_state.json",
+                 "gateway_state.json","live_ledger.jsonl","order_intents.jsonl",
+                 "daily_cycle_state.json","regime_state.json",
                  "sleeves.json","terminal_path.txt","GATEWAY_PAUSED",
                  "frontier_inbox.json","sync_marker.json","data_registry.json",
                  "free_data_frontier.json","cot_tff.json","research_queue.json",
@@ -118,46 +118,31 @@ foreach ($d in @("universe", "states", "cot", "cot_tff", "cot_disagg", "lake",
     if (Test-Path $p) { Copy-Item $p -Destination $dataOut -Recurse -Force }
 }
 
-# 2. PULL BEFORE ANYTHING LANDS. The VPS must be current before this box's artifacts are written
-#    over it, so that a commit made here is a commit on top of the shared history rather than
-#    beside it. `git push -q` on a stale checkout fails as a non-fast-forward, which is precisely
-#    the failure the old script routed to Out-Null.
+# 2. Runtime evidence must not depend on the VPS git worktree being clean. Coupling this transport
+#    to fetch/merge/commit meant one unrelated dirty controller file stopped every Fusion bar and
+#    markout from reaching midnight. Code still moves only through git; artifacts use an archive.
 $ssh = Get-Command ssh -ErrorAction SilentlyContinue
 if (-not $ssh) { Write-SyncLog "ABORT: ssh not on PATH"; exit 1 }
-
-$pullCmd = "cd $vpsRepo && git fetch origin $branch && git merge --no-edit origin/$branch"
-$pullOut = & $ssh -o ConnectTimeout=20 $vpsHost $pullCmd 2>&1
-if ($LASTEXITCODE -ne 0) {
-    # FAIL CLOSED. Committing artifacts on top of a checkout that could not take the shared
-    # history is how two trees drift apart, and drifting apart silently is the whole defect.
-    Write-SyncLog "ABORT: VPS could not merge origin/$branch -- $($pullOut -join ' | ')"
-    exit 1
-}
-Write-SyncLog "pulled: $($pullOut | Select-Object -Last 1)"
-
-# 3. Upload
 $scp = Get-Command scp -ErrorAction SilentlyContinue
 if (-not $scp) { Write-SyncLog "ABORT: scp not on PATH"; exit 1 }
-$scpOut = & $scp -r -q "$bundle\*" $vps 2>&1
+$archive = Join-Path $env:TEMP ("mt5-full-{0}.tgz" -f $env:COMPUTERNAME)
+$remote = "/tmp/mt5-full-$env:COMPUTERNAME.tgz"
+& tar -czf $archive -C $bundle .
+if ($LASTEXITCODE -ne 0) { Write-SyncLog "ABORT: tar failed"; exit 1 }
+$scpOut = & $scp -q -o BatchMode=yes -o ConnectTimeout=20 $archive "${vpsHost}:$remote" 2>&1
 if ($LASTEXITCODE -ne 0) {
     Write-SyncLog "ABORT: scp failed -- $($scpOut -join ' | ')"
     exit 1
 }
-
-# 4. Commit + push on the VPS repo (whole-brain visibility).
-#    `git add` is scoped to the artifact paths when code sync is off, so a stray edit in the
-#    VPS's own working tree cannot ride along inside an "hourly sync" commit unnoticed.
-$addPaths = if ($SYNC_CODE) { "desks/mt5" } else { "desks/mt5/data desks/mt5/reports" }
-$stamp = Get-Date -Format yyyy-MM-dd_HHmm
-$pushCmd = "cd $vpsRepo && git add $addPaths && " +
-           "(git diff --cached --quiet && echo 'sync: nothing to commit' || " +
-           "(git commit -m 'mt5 desk hourly artifact sync $stamp' -q && git push origin $branch))"
-$pushOut = & $ssh -o ConnectTimeout=40 $vpsHost $pushCmd 2>&1
+$extractCmd = "set -eu; mkdir -p '$vpsRepo/desks/mt5/data' '$vpsRepo/desks/mt5/reports'; " +
+              "tar -xzf '$remote' -C '$vpsRepo/desks/mt5'; rm -f '$remote'"
+$pushOut = & $ssh -o BatchMode=yes -o ConnectTimeout=40 $vpsHost $extractCmd 2>&1
 if ($LASTEXITCODE -ne 0) {
-    Write-SyncLog "FAILED: commit/push -- $($pushOut -join ' | ')"
+    Write-SyncLog "FAILED: remote extract -- $($pushOut -join ' | ')"
     exit 1
 }
-Write-SyncLog "synced ok: $($pushOut | Select-Object -Last 1)"
+Remove-Item -LiteralPath $archive -Force -ErrorAction SilentlyContinue
+Write-SyncLog "synced complete Fusion artifacts to VPS"
 
 # 5. Record. Only after a run that actually succeeded -- stamping the marker on a failed sync
 #    buys an hour of silence before the next attempt, which is an hour of believing a broken

@@ -27,7 +27,10 @@ def test_build_reports_mt5_conversion_state_without_execution_authority(tmp_path
         desk / "reports" / "shadow" / "shadow_state.json",
         {"last_run": "2026-08-22", "s1": {"n": 7}, "s2": {"n": 3}},
     )
-    _write(desk / "reports" / "markout.json", {"usable": False})
+    _write(
+        desk / "reports" / "markout.json",
+        {"at": now.isoformat(), "usable": False, "n_matched": 0},
+    )
     _write(desk / "reports" / "hypothesis_demo.jsonl", {})
     _write(
         tmp_path / "data" / "intelligence" / "mt5_capability_reuse.json",
@@ -60,6 +63,8 @@ def test_build_reports_mt5_conversion_state_without_execution_authority(tmp_path
         "UNWIRED_REVIEW": 2,
     }
     assert result["capability_reuse"]["proof_level"] == "STATIC_REACHABILITY_ONLY"
+    assert result["freshness"]["markout_usable"] is False
+    assert result["freshness"]["markout_matched_fills"] == 0
     assert result["defects"] == []
 
 
@@ -84,3 +89,31 @@ def test_build_names_stale_shadow_and_missing_markout(tmp_path: Path) -> None:
 
     assert "forward shadow daily clock stale" in result["defects"]
     assert "execution markout missing; costs remain unmeasured" in result["defects"]
+
+
+def test_build_rejects_a_stale_markout_even_when_file_mtime_is_fresh(tmp_path: Path) -> None:
+    now = datetime(2026, 8, 22, 12, tzinfo=UTC)
+    desk = tmp_path / "desks" / "mt5"
+    _write(desk / "data" / "universe" / "universe.json", {"XAUUSD": {}})
+    bars = desk / "data" / "universe" / "XAUUSD_H1.parquet"
+    bars.write_bytes(b"bars")
+    _write(desk / "data" / "research_queue.json", [{"id": "a", "status": "DONE"}])
+    _write(
+        desk / "reports" / "shadow" / "shadow_state.json",
+        {"last_run": "2026-08-22", "s1": {"n": 5}},
+    )
+    _write(desk / "reports" / "hypothesis_demo.jsonl", {})
+    _write(
+        desk / "reports" / "markout.json",
+        {"at": "2026-08-20T00:00:00+00:00", "usable": True, "n_matched": 7},
+    )
+    _write(
+        tmp_path / "data" / "intelligence" / "mt5_capability_reuse.json",
+        {"generated_at": now.isoformat(), "counts": {}},
+    )
+    for path in (bars, desk / "reports" / "hypothesis_demo.jsonl"):
+        os.utime(path, (now.timestamp(), now.timestamp()))
+
+    result = build(tmp_path, now=now)
+
+    assert "execution markout stale; current costs remain unmeasured" in result["defects"]
