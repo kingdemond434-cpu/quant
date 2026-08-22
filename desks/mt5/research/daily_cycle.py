@@ -89,10 +89,10 @@ def _promote() -> None:
 
 
 def _markout() -> None:
-    from mt5desk.config import DATA
     from mt5desk.markout import compute, load_jsonl, render
-    m = compute(load_jsonl(DATA / "order_intents.jsonl"),
-                load_jsonl(DATA / "live_ledger.jsonl"))
+    data = BASE / "data"
+    m = compute(load_jsonl(data / "order_intents.jsonl"),
+                load_jsonl(data / "live_ledger.jsonl"))
     for line in render(m).splitlines():
         dlog("  " + line)
     markout_path = BASE / "reports" / "markout.json"
