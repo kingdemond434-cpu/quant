@@ -62,6 +62,13 @@ NIGHTLY PRIORITY LOOP
    state. Never overwrite live runtime evidence or another controller's unfinished changes.
    New ideas enter the existing desks/mt5/data/research_queue.json and universal path; do not add
    ad-hoc strategy code or a private survivor/promotion authority.
+6. Audit machinery originally built around the retired native-crypto desk. Reuse and wire every
+   venue-agnostic positive-EV organ (validation, portfolio construction, dependence/tail stress,
+   research memory, hypothesis/lineage, monitoring, cost attribution and execution diagnostics)
+   into a real MT5 producer-to-consumer path. Translate only when MT5 semantics are provably
+   equivalent. Archive or leave explicitly blocked native-exchange execution, funding, liquidation,
+   order-book and on-chain organs rather than pretending they operate on MT5. Report each organ as
+   OPERATING, WIRED_NOT_OPERATING, BLOCKED_VENUE_SPECIFIC, DOMINATED or RETIRED with runtime proof.
 
 SAFETY AND EXIT
 Never weaken legality, survival, ruin, exposure, cost, leakage, multiplicity, untouched-forward,

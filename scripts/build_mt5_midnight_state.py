@@ -47,6 +47,8 @@ def build(root: Path, *, now: datetime | None = None) -> dict[str, Any]:
     queue = _read(data / "research_queue.json", [])
     survivors = _read(reports / "UNIVERSAL_SURVIVORS.json", {})
     shadow = _read(reports / "shadow" / "shadow_state.json", {})
+    reuse_path = root / "data" / "intelligence" / "mt5_capability_reuse.json"
+    reuse = _read(reuse_path, {})
 
     queue_rows = queue if isinstance(queue, list) else []
     queue_states = Counter(
@@ -91,6 +93,10 @@ def build(root: Path, *, now: datetime | None = None) -> dict[str, Any]:
         defects.append("execution markout missing; costs remain unmeasured")
     if _older_than(newest_h1, now, 48):
         defects.append("MT5 universe bars stale")
+    if not reuse:
+        defects.append("shared-library to MT5 capability reuse audit missing")
+    elif _older_than(str(reuse.get("generated_at") or ""), now, 30):
+        defects.append("shared-library to MT5 capability reuse audit stale")
 
     return {
         "schema_version": 1,
@@ -115,6 +121,12 @@ def build(root: Path, *, now: datetime | None = None) -> dict[str, Any]:
             "universal_gate": universal_gate,
             "allocation": allocation,
             "markout": markout,
+        },
+        "capability_reuse": {
+            "artifact": str(reuse_path.relative_to(root)),
+            "generated_at": reuse.get("generated_at") if isinstance(reuse, dict) else None,
+            "counts": reuse.get("counts", {}) if isinstance(reuse, dict) else {},
+            "proof_level": "STATIC_REACHABILITY_ONLY",
         },
         "defects": defects,
     }

@@ -29,6 +29,13 @@ def test_build_reports_mt5_conversion_state_without_execution_authority(tmp_path
     )
     _write(desk / "reports" / "markout.json", {"usable": False})
     _write(desk / "reports" / "hypothesis_demo.jsonl", {})
+    _write(
+        tmp_path / "data" / "intelligence" / "mt5_capability_reuse.json",
+        {
+            "generated_at": now.isoformat(),
+            "counts": {"REACHABLE_MT5_STATIC": 3, "UNWIRED_REVIEW": 2},
+        },
+    )
     for path in (
         desk / "data" / "universe" / "XAUUSD_H1.parquet",
         desk / "reports" / "hypothesis_demo.jsonl",
@@ -48,6 +55,11 @@ def test_build_reports_mt5_conversion_state_without_execution_authority(tmp_path
         "shadow_observations": 10,
         "shadow_last_run": "2026-08-22",
     }
+    assert result["capability_reuse"]["counts"] == {
+        "REACHABLE_MT5_STATIC": 3,
+        "UNWIRED_REVIEW": 2,
+    }
+    assert result["capability_reuse"]["proof_level"] == "STATIC_REACHABILITY_ONLY"
     assert result["defects"] == []
 
 
