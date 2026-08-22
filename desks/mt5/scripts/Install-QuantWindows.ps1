@@ -186,16 +186,19 @@ foreach ($t in $tasks) {
 
 # The research supervisor is a persistent queue/experiment worker, not a one-shot task. A short
 # recurring trigger supplies crash recovery; IgnoreNew keeps exactly one live owner.
-$supervisor = Join-Path $DeskRoot "scripts\start_research_supervisor.ps1"
+$supervisor = Join-Path $DeskRoot "research\research_supervisor.py"
 if (Test-Path $supervisor) {
     if ($WhatIfOnly) {
         Write-Host "  [DRY ] MT5-ResearchSupervisor persistent canonical worker"
     } else {
         try {
-            # The launcher detaches a hidden base-Python process. Task Scheduler otherwise owns
-            # and kills the persistent child when its short-lived venv launcher exits.
-            $supAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument `
-                ("-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"{0}`"" -f $supervisor)
+            # Use base pythonw directly: no console and no short-lived venv launcher parent for
+            # Task Scheduler to mistake for the persistent worker.
+            $basePython = (& $Python -c "import sys; print(sys._base_executable)").Trim()
+            $supervisorPython = Join-Path (Split-Path $basePython) "pythonw.exe"
+            if (-not (Test-Path $supervisorPython)) { $supervisorPython = $basePython }
+            $supAction = New-ScheduledTaskAction -Execute $supervisorPython `
+                -Argument ("`"{0}`"" -f $supervisor) -WorkingDirectory $DeskRoot
             $supTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
                 -RepetitionInterval (New-TimeSpan -Minutes 5) `
                 -RepetitionDuration (New-TimeSpan -Days 3650)
