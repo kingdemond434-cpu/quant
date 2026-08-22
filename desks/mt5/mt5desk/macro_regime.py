@@ -43,9 +43,15 @@ BASE = Path(__file__).resolve().parent.parent
 STATE_F = BASE / "data" / "macro_state.json"
 
 #: FRED publishes most macro series monthly; daily rates series refresh on
-#: business days. 48h keeps a Friday read usable through the weekend while
-#: still catching a watcher that has actually stopped.
-DEFAULT_MAX_AGE_H = 48.0
+#: business days. 48h looked like it kept a Friday read usable through the
+#: weekend, but it does not: a Friday-afternoon fetch is already >48h old by
+#: Sunday night, so every MACRO_FAV sleeve fails closed to NO_DATA every
+#: single weekend on a watcher that never stopped. This is the identical
+#: defect fixed on Aurum's side (golddesk/macro_context.py, 48->96h) after
+#: live evidence showed the same blanking; it was never ported here. 96h
+#: covers a full Fri-evening-to-Mon-morning gap while still catching a
+#: watcher that has genuinely died (which would be stale for days, not hours).
+DEFAULT_MAX_AGE_H = 96.0
 
 
 @dataclass(frozen=True)
