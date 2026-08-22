@@ -124,7 +124,9 @@ def test_controller_prompt_is_one_compact_mt5_only_operating_brief() -> None:
         "IMPLEMENTED+TESTED",
         "checkpoint",
         "scripts/run_deadman_switch.py",
-        "implementation ledger of at most 500 words",
+        "implementation ledger of at most 300 words",
+        "never a replacement, reduction or amendment",
+        "preserve every master obligation",
     ):
         assert required.casefold() in prompt.casefold()
     assert MANDATE.exists() and len(MANDATE.read_text("utf-8")) > 20_000
