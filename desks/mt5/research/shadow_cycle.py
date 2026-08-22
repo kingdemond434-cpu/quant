@@ -154,6 +154,17 @@ def run() -> tuple[dict, int]:
     missing = sorted((expected_legacy - represented_legacy) | (expected_scalp - represented_scalp))
     blocked = sum(row.get("status") in {"NO_DATA", "WAITING_FOR_FORWARD_BARS", "STALE_SOURCE"}
                   for row in rows)
+    # LIVE-ARM STATE, SURFACED HERE ON PURPOSE. `armed` lives in data/gateway_state.json,
+    # box-local and gitignored -- no other brain (Hetzner, a future session, anyone without
+    # a shell on this exact machine) can see it any other way. This file is the one artifact
+    # already pushed to Hetzner every 15 minutes by MT5-ShadowSync (sync_shadow_to_vps.ps1
+    # tars up reports/shadow verbatim), so riding it costs no new sync plumbing. READ ONLY:
+    # this never writes gateway_state.json or sleeves.json -- arming stays the human's act,
+    # this only makes the CURRENT fact visible everywhere the health report already goes.
+    gw = _read(BASE / "data" / "gateway_state.json")
+    sleeves_doc = _read(BASE / "data" / "sleeves.json")
+    live_sleeves = [s.get("name") for s in (sleeves_doc.get("sleeves") or [])
+                    if isinstance(s, dict) and s.get("status") == "LIVE"]
     health = {
         "updated_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "configured_sleeves": len(expected_legacy) + len(expected_scalp),
@@ -163,6 +174,8 @@ def run() -> tuple[dict, int]:
         "missing_sleeves": missing,
         "errors": errors,
         "seconds": round((datetime.now(UTC) - started).total_seconds(), 3),
+        "gateway_armed": bool(gw.get("armed", False)),
+        "promoted_live_sleeves": live_sleeves,
     }
     health["status"] = "OPERATING" if not missing and not errors else "FAILED"
     OUT.parent.mkdir(parents=True, exist_ok=True)
