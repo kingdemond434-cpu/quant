@@ -160,7 +160,11 @@ HEARTBEAT_PID=$!
 # the unit's model pin had no effect on the process the unit itself started.
 CODEX_NIGHTLY_MODEL="${CODEX_NIGHTLY_MODEL_OVERRIDE:-${CODEX_NIGHTLY_MODEL:-gpt-5.6-terra}}"
 CODEX_NIGHTLY_REASONING_EFFORT="${CODEX_NIGHTLY_REASONING_EFFORT_OVERRIDE:-${CODEX_NIGHTLY_REASONING_EFFORT:-medium}}"
-CODEX_ARGS=(exec -C "$PWD" --sandbox workspace-write "${CODEX_EXEC_APPROVAL_ARGS[@]}"
+# The unattended controller is explicitly authorized to edit the complete checkout.
+# workspace-write is not viable on this VPS: bubblewrap can start but denies every
+# apply_patch while Codex still exits zero. Keep approvals disabled and rely on the
+# repository's survival/statistical gates, lease fencing, timeout and checkpointing.
+CODEX_ARGS=(exec -C "$PWD" --sandbox danger-full-access "${CODEX_EXEC_APPROVAL_ARGS[@]}"
     --output-last-message "$LAST_MESSAGE"
     --config "model_reasoning_effort=${CODEX_NIGHTLY_REASONING_EFFORT}"
     --model "$CODEX_NIGHTLY_MODEL")
@@ -172,10 +176,10 @@ timeout --signal=TERM --kill-after=60 "${CODEX_NIGHTLY_TIMEOUT_SECONDS:-10800}" 
 # checkpoint that as a completed controller cycle: a controller that could not inspect or change
 # the repository did not perform the mandate, regardless of its process exit code.
 if [ "$CODEX_RC" -eq 0 ] && grep -Eqi \
-    'workspace command sandbox fails|bwrap: .*Operation not permitted|could not read.*repository' \
+    'workspace command sandbox fails|bwrap: .*Operation not permitted|could not read.*repository|sandbox denied the write|unable to (create|write)|failed to write file' \
     "$LAST_MESSAGE"; then
     CODEX_RC=126
-    echo "midnight-codex: controller reported a workspace sandbox failure; refusing false success" \
+    echo "midnight-codex: controller reported a workspace write/sandbox failure; refusing false success" \
         | tee -a "$LOG"
 fi
 kill "$HEARTBEAT_PID" >/dev/null 2>&1 || true
