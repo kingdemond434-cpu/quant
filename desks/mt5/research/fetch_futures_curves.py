@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import time
 import urllib.error
 import urllib.parse
@@ -26,10 +27,25 @@ PRODUCTS = {
     "GC": {"suffix": "CMX", "months": (2, 4, 6, 8, 10, 12)},
     "CL": {"suffix": "NYM", "months": tuple(range(1, 13))},
 }
+CODE_MONTH = {code: month for month, code in MONTH_CODE.items()}
 
 
 def contract_symbol(root: str, year: int, month: int) -> str:
     return f"{root}{MONTH_CODE[month]}{year % 100:02d}.{PRODUCTS[root]['suffix']}"
+
+
+def contract_month_anchor(symbol: str) -> pd.Timestamp:
+    """Return the contract delivery-month end encoded in a standard Yahoo futures symbol.
+
+    This is not claimed to be the exchange's exact last-trade timestamp. It is a transparent
+    ordering/tenor anchor when Yahoo omits ``expireDate``; exact-expiry-sensitive trading remains
+    blocked pending an authoritative contract calendar.
+    """
+    match = re.match(r"^[A-Z]+([FGHJKMNQUVXZ])(\d{2})\.", symbol)
+    if not match or match.group(1) not in CODE_MONTH:
+        return pd.NaT
+    month, year = CODE_MONTH[match.group(1)], 2000 + int(match.group(2))
+    return pd.Timestamp(year=year, month=month, day=1, tz="UTC") + pd.offsets.MonthEnd(0)
 
 
 def fetch_contract(symbol: str) -> tuple[pd.DataFrame, dict]:
@@ -60,12 +76,16 @@ def fetch_contract(symbol: str) -> tuple[pd.DataFrame, dict]:
         "volume": quote.get("volume"),
     }).dropna(subset=["close"])
     expiry = meta.get("expireDate")
+    expiry_source = "yahoo_expireDate" if expiry else "contract_code_month_end_anchor"
+    expiry_value = (pd.to_datetime(expiry, unit="s", utc=True).normalize()
+                    if expiry else contract_month_anchor(symbol))
     frame["symbol"] = symbol
-    frame["expiration"] = (pd.to_datetime(expiry, unit="s", utc=True).normalize()
-                            if expiry else pd.NaT)
+    frame["expiration"] = expiry_value
+    frame["expiration_source"] = expiry_source
     frame = frame.drop_duplicates(subset=["date"], keep="last").sort_values("date")
     return frame, {"symbol": symbol, "status": "OK", "rows": len(frame),
-                   "expiration": None if not expiry else str(frame["expiration"].iloc[0])}
+                   "expiration": None if pd.isna(expiry_value) else str(expiry_value),
+                   "expiration_source": expiry_source}
 
 
 def build_curve(contracts: list[pd.DataFrame], root: str) -> pd.DataFrame:
@@ -127,6 +147,7 @@ def main(argv: list[str] | None = None) -> int:
         "contracts": coverage,
         "usable_curve_dates": usable,
         "promotion_authority": False,
+        "exact_expiry_sensitive_use": "BLOCKED without authoritative contract calendar",
         "status": "MEASURED" if usable else "UNMEASURED",
     }
     REPORT.parent.mkdir(parents=True, exist_ok=True)

@@ -16,7 +16,7 @@ for path in (DESK, DESK / "research", DESK.parent.parent):
 
 from mt5desk.tape import contract_terms_row
 from mt5desk.triangle_tape import executable_loops
-from research.fetch_futures_curves import build_curve, contract_symbol
+from research.fetch_futures_curves import build_curve, contract_month_anchor, contract_symbol
 
 
 def test_contract_terms_are_point_in_time_and_keep_both_sides() -> None:
@@ -44,6 +44,7 @@ def test_triangle_uses_executable_bid_ask_not_mid_prices() -> None:
 
 def test_contract_curve_is_expiry_ranked_and_has_roll_yield() -> None:
     assert contract_symbol("GC", 2026, 12) == "GCZ26.CMX"
+    assert contract_month_anchor("GCZ26.CMX") == pd.Timestamp("2026-12-31", tz="UTC")
     date = pd.Timestamp("2026-08-20", tz="UTC")
     frames = [
         pd.DataFrame({"date": [date], "close": [4400.0], "expiration": [
