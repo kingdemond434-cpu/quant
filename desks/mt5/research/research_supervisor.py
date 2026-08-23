@@ -47,7 +47,7 @@ TARGETS = [
          marker="reports/DONE_fragility", match="fragility.py"),
     dict(name="qquant_gates",
          args=["-u", "-W", "ignore", "research/qquant_gates.py", "--workers", "8"],
-         marker="reports/DONE_qquant_gates_original10_v1", match="qquant_gates.py"),
+         marker="reports/DONE_qquant_gates_original10_v2", match="qquant_gates.py"),
     dict(name="regime_oos", args=["-u", "-W", "ignore", "research/regime_discovery.py"],
          marker="reports/DONE_regime_oos", match="regime_discovery.py"),
     dict(name="merge", args=["-u", "-W", "ignore", "research/merge_qquant.py"],

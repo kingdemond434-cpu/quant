@@ -20,7 +20,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -110,6 +110,7 @@ def feed_items(payload: bytes, *, source: Source) -> list[dict[str, Any]]:
         if not link and values.get("videoId"):
             link = f"https://www.youtube.com/watch?v={values['videoId']}"
         if link:
+            video_id = values.get("videoId") or _youtube_video_id(link)
             rows.append(
                 {
                     "source": source.name,
@@ -122,6 +123,7 @@ def feed_items(payload: bytes, *, source: Source) -> list[dict[str, Any]]:
                     "description": html.unescape(
                         values.get("description") or values.get("summary", "")
                     ),
+                    "video_id": video_id,
                 }
             )
     return rows
@@ -132,9 +134,12 @@ def discover(source: Source, getter: Callable[[str], bytes] = fetch) -> list[dic
         channel = youtube_channel_id(getter(source.url))
         if not channel:
             raise ValueError("YouTube channel ID not discoverable from public handle page")
-        return feed_items(
+        rows = feed_items(
             getter(f"https://www.youtube.com/feeds/videos.xml?channel_id={channel}"), source=source
         )
+        for row in rows:
+            row["channel_id"] = channel
+        return rows
     if source.kind in {"atom", "rss"}:
         return feed_items(getter(source.url), source=source)
     # A site is kept in coverage and freshness state, but a generic page is not hallucinated into
@@ -198,13 +203,21 @@ def youtube_transcript(
     text = watch_page.decode("utf-8", errors="ignore")
     match = re.search(r'"captionTracks":(\[.*?\])(?:,"audioTracks"|,"videoDetails")', text)
     if not match:
-        return {"transcript_state": "UNAVAILABLE", "text": "", "reason": "captionTracks absent"}
+        return {
+            "transcript_state": "UNAVAILABLE",
+            "text": "",
+            "reason": "captionTracks absent",
+            "caption_language": None,
+            "caption_provenance": "youtube_watch_page",
+        }
     try:
         tracks = json.loads(match.group(1))
         track = next(
             (t for t in tracks if str(t.get("languageCode", "")).startswith("en")), tracks[0]
         )
         url = str(track["baseUrl"])
+        language = str(track.get("languageCode") or "unknown")
+        provenance = "youtube_public_caption_track"
     except (KeyError, IndexError, ValueError) as exc:
         return {"transcript_state": TRANSCRIPT_UNREADABLE, "text": "",
                 "reason": f"caption track list unusable: {type(exc).__name__}: {exc}"}
@@ -239,7 +252,48 @@ def youtube_transcript(
         "transcript_state": "FULL" if len(transcript) >= 1000 else "PARTIAL",
         "text": transcript,
         "reason": "public caption track",
+        "caption_language": language,
+        "caption_provenance": provenance,
     }
+
+
+def _youtube_video_id(url: str) -> str | None:
+    parsed = urllib.parse.urlparse(url)
+    host = parsed.netloc.casefold().removeprefix("www.")
+    if host == "youtu.be":
+        return parsed.path.strip("/").split("/", 1)[0] or None
+    if host in {"youtube.com", "m.youtube.com"}:
+        if parsed.path == "/watch":
+            return urllib.parse.parse_qs(parsed.query).get("v", [None])[0]
+        if parsed.path.startswith(("/shorts/", "/live/")):
+            return parsed.path.strip("/").split("/", 1)[1]
+    return None
+
+
+def _item_identity(item: Mapping[str, object]) -> str:
+    video_id = str(item.get("video_id") or _youtube_video_id(str(item.get("url", ""))) or "")
+    if video_id:
+        return f"youtube-video:{video_id}"
+    url = str(item.get("url", ""))
+    return f"{url}#{item['content_hash']}" if item.get("content_hash") else url
+
+
+def _qualified_related_source(extracted: Mapping[str, object]) -> bool:
+    """Admit related sources only when the retrieved item exposes testable research substance."""
+    substantive = any(
+        bool(extracted.get(key))
+        for key in (
+            "mechanism",
+            "hypothesis",
+            "validation",
+            "execution",
+            "data",
+            "reproducible",
+            "research_system",
+            "testing_process",
+        )
+    )
+    return substantive and evidence_tier(extracted.get("evidence_class")) >= 0
 
 
 def missions(item: Mapping[str, object]) -> list[str]:
@@ -355,8 +409,13 @@ validation, failures, performance_claim, evidence_class, transferable, falsifier
 relationships, capability_gaps, open_questions, descendant_hypotheses, reproducible, new_sources,
 component_assets, failure_cause, emergence_class, regional_terms, combine_with_internal,
 research_system, discovery_process, testing_process, data_pipeline, superior_capabilities,
-internal_analogue, measurable_gap, replication_plan. Use null
-for anything not stated. Evidence class must be one of MARKETING_CLAIM,
+internal_analogue, measurable_gap, replication_plan, source_license, mt5_experiment,
+regime_hypothesis, activation_rule, reduced_rule, hibernation_rule and unconditional_control.
+Use null when the source does not specify them. A regime is part of the
+hypothesis, must be observable point-in-time and frozen before OOS, and creates an additional
+counted trial. Always retain the unconditional strategy as a separately counted control; never
+discover a winning regime on the holdout and relabel it as preregistered.
+Evidence class must be one of MARKETING_CLAIM,
 SCREENSHOT_SELECTED_RESULT, BACKTEST, FORWARD_PAPER_TRADING, LIVE_BROKER_EXCHANGE,
 INDEPENDENTLY_VERIFIABLE, INSTITUTIONAL_AUDITED. Preserve hidden leverage, selection, capacity,
 cost and drawdown concerns explicitly. A failed whole strategy may still yield components.
@@ -367,6 +426,24 @@ portfolio/execution use and self-improvement. Identify atomic capabilities that 
 the desk's current analogue and specify a measurable challenger. Convert useful material into a
 falsifiable replication, component test, data acquisition or explicit rejection; a reading-list
 summary is not completion and an external threshold never becomes an internal gate.
+
+VENUE LAW: convert only into hypotheses for instruments executable through the dynamically
+discovered Fusion Markets MT5 catalogue. Crypto/on-chain material is admissible only as a stamped
+explanatory feature for a named Fusion-executable instrument; never create a Binance, Bybit, OKX,
+Hyperliquid or other crypto-exchange strategy. Cost tests must use the target MT5 symbol's actual
+point-in-time spread, commission, swap/financing, slippage, latency, capacity and session rules.
+Preserve source-code and dataset links in source_code_links and new_sources. Generic news, price
+predictions, lifestyle, affiliate reviews and motivation do not qualify as research sources unless
+this retrieved item contains a deterministic falsifiable mechanism.
+
+If and only if the mechanism has an exact executable analogue in the existing MT5 research
+factory, mt5_experiment must be an object with family, side (LONG or SHORT) and param_overrides.
+The only family names currently accepted are d1_trend_pullback, d1_swing_break, h4_momentum,
+h4_vol_break, d1_inside, macro_gold_yield, gold_dxy_shock, asia_meanrev and
+london_ny_breakout. Do not force a novel mechanism into a vaguely similar family: use null and
+name the missing implementation or data in measurable_gap. Code under AGPL or another reciprocal
+licence may be studied as public evidence, but must not be copied into this repository; specify an
+independent clean-room replication instead.
 
 RETRIEVED CONTENT:
 {content[:50000]}
@@ -392,9 +469,13 @@ def run(
     *,
     getter: Callable[[str], bytes] = fetch,
     max_new_per_source: int = 10,
+    max_transcript_retries_per_run: int = 2,
 ) -> dict[str, Any]:
-    watch_timestamp = datetime.now(tz=UTC).isoformat()
+    now = datetime.now(tz=UTC)
+    watch_timestamp = now.isoformat()
     seen = set(state.get("seen", []))
+    retry_state = dict(state.get("transcript_retry", {}))
+    retries_attempted = 0
     processed, failures, discovered_sources = [], [], set(state.get("discovered_sources", []))
     for source in sources:
         try:
@@ -404,13 +485,24 @@ def run(
             continue
         for item in items[:max_new_per_source]:
             url = str(item["url"])
-            dedupe_key = f"{url}#{item['content_hash']}" if item.get("content_hash") else url
+            dedupe_key = _item_identity(item)
             if dedupe_key in seen:
                 continue
-            seen.add(dedupe_key)
             mission_set = missions(item)
             content = str(item.get("description", ""))
             if "VIDEO_TRANSCRIPT" in mission_set:
+                prior = retry_state.get(dedupe_key, {})
+                due_raw = prior.get("next_retry_at") if isinstance(prior, Mapping) else None
+                try:
+                    due = datetime.fromisoformat(str(due_raw)) if due_raw else None
+                except ValueError:
+                    due = None
+                if due and due > now:
+                    continue
+                if prior and retries_attempted >= max_transcript_retries_per_run:
+                    continue
+                if prior:
+                    retries_attempted += 1
                 # THE CALLER HALF OF R0466. This handler used to flatten every failure of the
                 # WATCH-PAGE fetch to UNAVAILABLE, so hardening youtube_transcript alone would
                 # have fixed nothing: a 403 on the watch page never reached it and still read as
@@ -425,6 +517,30 @@ def run(
                                   "reason": f"watch page unusable: {type(exc).__name__}: {exc}"}
                 item.update(transcript)
                 content = str(transcript.get("text") or content)
+                if item.get("transcript_state") in TRANSCRIPT_UNKNOWN_STATES:
+                    attempts = integer(prior.get("attempts"), default=0) + 1
+                    delay_hours = min(24 * 7, 6 * (2 ** min(attempts - 1, 5)))
+                    retry_state[dedupe_key] = {
+                        "attempts": attempts,
+                        "next_retry_at": (now + timedelta(hours=delay_hours)).isoformat(),
+                        "last_state": item.get("transcript_state"),
+                        "http_status": item.get("http_status"),
+                    }
+                    processed.append(
+                        {
+                            **item,
+                            "first_seen_at": watch_timestamp,
+                            "missions": mission_set,
+                            "mission": mission_set[0],
+                            "status": "TRANSCRIPT_RETRY_PENDING",
+                            "mechanism": "",
+                            "evidence_tier": -1,
+                            "canonical_item_id": dedupe_key,
+                        }
+                    )
+                    continue
+                retry_state.pop(dedupe_key, None)
+            seen.add(dedupe_key)
             prompt = extraction_prompt(item, content, mission_set)
             try:
                 extracted = parse_extraction(ask(prompt))
@@ -458,6 +574,7 @@ def run(
                     "status": "EXTRACTED",
                     "authority": "EXTERNAL_PRIOR_ONLY",
                     "evidence_tier": evidence_tier(extracted.get("evidence_class")),
+                    "canonical_item_id": dedupe_key,
                 }
             )
             for found in (
@@ -465,7 +582,8 @@ def run(
                 if isinstance(extracted.get("new_sources"), list)
                 else []
             ):
-                discovered_sources.add(str(found))
+                if _qualified_related_source(extracted):
+                    discovered_sources.add(str(found))
     previous_reputation = state.get("source_reputation", {})
     if not isinstance(previous_reputation, Mapping):
         previous_reputation = {}
@@ -483,6 +601,7 @@ def run(
             "discovered_sources": sorted(discovered_sources),
             "source_reputation": reputation,
             "mechanism_sources": mechanism_sources,
+            "transcript_retry": retry_state,
         },
         "source_reputation": reputation,
         "emergence_watch": emergent,
@@ -494,9 +613,11 @@ def run(
             "ELITE_EXTERNAL_INTELLIGENCE",
         ],
         "conversion_law": (
-            "discover -> classify -> extract -> independently replicate -> mutate/combine -> "
-            "validate -> survivor or negative knowledge -> reputation update"
+            "discover -> canonical ID dedupe -> extract -> MT5/Fusion hypothesis -> preregister -> "
+            "cost-aware validate -> untouched forward shadow -> survivor or negative knowledge -> "
+            "portfolio marginal contribution -> reputation update"
         ),
+        "venue_scope": "MT5_FUSION_ONLY",
         "k_miner_replaced": False,
     }
 
@@ -514,20 +635,34 @@ def load_sources(path: Path, discovered_sources: Sequence[object] = ()) -> list[
         for r in doc.get("sources", [])
         if isinstance(r, dict)
     ]
-    known = {source.url for source in sources}
+    def identity(url: str) -> str:
+        parsed = urllib.parse.urlparse(url)
+        host = parsed.netloc.casefold().removeprefix("www.")
+        if host in {"youtube.com", "m.youtube.com"}:
+            return f"youtube:{parsed.path.rstrip('/').casefold()}"
+        return urllib.parse.urlunparse(
+            (parsed.scheme.casefold(), host, parsed.path.rstrip("/"), "", parsed.query, "")
+        )
+
+    known = {identity(source.url) for source in sources}
     for raw in discovered_sources:
         url = str(raw).strip()
         parsed = urllib.parse.urlparse(url)
-        if parsed.scheme not in {"http", "https"} or not parsed.netloc or url in known:
+        source_id = identity(url)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc or source_id in known:
             continue
+        is_youtube = parsed.netloc.casefold().removeprefix("www.") in {
+            "youtube.com",
+            "m.youtube.com",
+        } and parsed.path.startswith(("/@", "/channel/"))
         sources.append(
             Source(
                 name=f"discovered:{parsed.netloc}",
                 url=url,
-                kind="site",
+                kind="youtube" if is_youtube else "site",
                 language="unknown",
                 surface="discovered",
             )
         )
-        known.add(url)
+        known.add(source_id)
     return sources

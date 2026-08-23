@@ -1,5 +1,5 @@
 {
- "_": "Seed sources for the unified GPT Hunter missions: transcript, extreme-return, public-strategy and elite external-intelligence. Seeds are not a ceiling; discovered related sources persist in shared state. Kimi and Claude miners are independent and unchanged. X CREATOR GRAPH (2026-08-13): x-surface seeds are DISCOVERY ROUTERS, not authorities -- the mandated path is POST -> PRIMARY SOURCE -> PAPER/CODE/DATA -> MECHANISM -> CANONICAL TEST -> VERDICT, and the graph must expand automatically to the accounts, authors and repos they cite. Rank by mechanisms surfaced and survivors attributable, never by follower count. See docs/research/ELITE_QUANT_INTELLIGENCE_MANDATE.md Part II.",
+ "_": "Seed sources for the unified GPT Hunter missions: transcript, extreme-return, public-strategy and elite external-intelligence. Seeds are not a ceiling; discovered related sources persist in shared state. Kimi and Claude miners are independent and unchanged. All downstream conversion is MT5_FUSION_ONLY: external crypto material may be a feature for a named Fusion-executable instrument but never a crypto-exchange strategy. X/video seeds are DISCOVERY ROUTERS, not authorities -- the mandated path is SOURCE -> PRIMARY SOURCE -> PAPER/CODE/DATA -> MECHANISM -> MT5 CANONICAL TEST -> VERDICT, and the graph expands to qualified cited channels, authors and repositories. Rank by mechanisms surfaced and survivors attributable, never by followers or headline returns.",
  "sources": [
   {
    "name": "Lewis Jackson",
@@ -7,6 +7,30 @@
    "kind": "youtube",
    "language": "en",
    "surface": "youtube"
+  },
+  {
+   "name": "Algo Trading Space",
+   "url": "https://www.youtube.com/@algotradingspace",
+   "kind": "youtube",
+   "language": "en",
+   "surface": "youtube",
+   "mandatory": true
+  },
+  {
+   "name": "Critical Trading",
+   "url": "https://www.youtube.com/@criticaltrading",
+   "kind": "youtube",
+   "language": "en",
+   "surface": "youtube",
+   "mandatory": true
+  },
+  {
+   "name": "Neuro Trader",
+   "url": "https://www.youtube.com/@neurotrader888",
+   "kind": "youtube",
+   "language": "en",
+   "surface": "youtube",
+   "mandatory": true
   },
   {
    "name": "Chart Fanatics",
@@ -272,6 +296,52 @@
    "surface": "x",
    "why": "Self-improving trading/research loops, prediction-market systems, and explicit preservation of NEGATIVE results as research state. Do not assume the account authored or verified every concept it surfaces.",
    "seed_only": true
+  },
+  {
+   "name": "Alert_Attention_5905 submitted posts",
+   "url": "https://www.reddit.com/user/Alert_Attention_5905/submitted/",
+   "kind": "site",
+   "language": "en",
+   "surface": "reddit",
+   "mandatory": true,
+   "why": "Public tick-research workflow and binary-outcome claims. Extract multi-rate tick representations, point-in-time outcome labels, selection funnel, execution assumptions and falsifiers; screenshots and self-reported paper results are claims only. Translate only to Fusion/MT5 instruments and require broker-native ticks."
+  },
+  {
+   "name": "Forven research community",
+   "url": "https://www.reddit.com/r/Forven/",
+   "kind": "site",
+   "language": "en",
+   "surface": "reddit",
+   "mandatory": true,
+   "why": "Mine public failures, gauntlet defects, family saturation, parameter-jitter findings, cost sensitivity and research-process improvements. Community claims are external priors, never survivor evidence."
+  },
+  {
+   "name": "Forven launch and research workflow",
+   "url": "https://www.reddit.com/r/ai_trading/comments/1ucu4og/i_spent_the_past_8_months_working_on_my_own/",
+   "kind": "site",
+   "language": "en",
+   "surface": "reddit",
+   "mandatory": true,
+   "why": "Public description of hypothesis-to-code agents, validation and paper workflow. Independently benchmark each capability against the existing MT5 factory rather than adopting its claims or thresholds."
+  },
+  {
+   "name": "Forven public source",
+   "url": "https://github.com/judder659/Forven",
+   "kind": "site",
+   "language": "en",
+   "surface": "github",
+   "mandatory": true,
+   "why": "Public AGPL-3.0-or-later research-system implementation. Audit architecture and defects as text only; do not copy code into the quant repository. Reimplement positive-EV capabilities independently and retain source/licence provenance."
+  },
+  {
+   "name": "151 Trading Strategies — Kakushadze and Serur",
+   "url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3247865",
+   "kind": "paper",
+   "language": "en",
+   "surface": "ssrn",
+   "mandatory": true,
+   "source_license": "all rights reserved; summarize mechanisms only; never redistribute or copy text/code",
+   "why": "Daily mechanism-index source, not performance evidence. Prioritize the MT5-transferable FX/commodity/futures chapters: one-sided HP-filter trend, high-minus-low and dollar carry, momentum-plus-carry, triangular residuals, commodity roll yield/hedging pressure/value, futures calendar spreads, contrarian activity and trend. Deduplicate before testing: triangular residuals already map to run_hunt21.py; hedging pressure to run_cot_macro_sweep.py; trend/contrarian to existing families. Carry requires point-in-time rate/swap history and futures roll/calendar strategies require actual curve data; mark them DATA_BLOCKED rather than proxying spot CFDs. The HP filter must be trailing/endpoint-only because a full-sample two-sided HP trend leaks future data. Every novel implementation still enters the canonical MT5 ten-gate and forward-shadow path."
   }
  ]
 }

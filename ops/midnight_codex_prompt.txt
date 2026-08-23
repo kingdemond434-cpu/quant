@@ -12,8 +12,8 @@ TOKEN-EFFICIENT EXECUTION CONTRACT
   ingestion and overlapping-charter reloads.
 - Prefer deterministic scripts and machine-readable artifacts for breadth. Use the reasoning
   controller only where judgment changes an implementation decision.
-- Final output is a terse implementation ledger of at most 300 words: commits/files, tests/runtime
-  proof, measured economic effect, exact blockers and next dependency. No analysis narrative,
+- Final output is a terse implementation ledger, at most 300 words -- a bound on the report's length only, never on breadth per run (L1.35).
+  It must cover: commits/files, tests/runtime proof, measured economic effect, exact blockers and next dependency. No analysis narrative,
   doctrine recap or recommendation without an implemented or explicitly blocked disposition.
 - Stop when the next action's marginal expected value is below its token/compute/complexity cost.
 
@@ -59,6 +59,10 @@ NIGHTLY PRIORITY LOOP
    CPCV/walk-forward/cost stress, failure and near-survivor recycling, shadow accrual, independence,
    portfolio admission, real-fill attribution, financing/cost leakage, capacity and capital use.
 2. Audit the whole Fusion catalogue across appropriate horizons/regimes and cross-asset relations.
+   Treat the preregistered strategy-regime cell as the economic unit: test its unconditional arm
+   as a separately counted control, validate positive net OOS expectancy only while the frozen
+   point-in-time state is active, activate ON only in that state, reduce on measured uncertainty,
+   and hibernate OFF outside it. Unknown state fails closed. Never select a regime on holdout data.
    Search mechanism-first, data-first, anomaly/residual-first, participant/constraint-first, causal,
    graph, incident, adversarial, reverse-engineering and distant-domain methods. Expand weak cells
    without confusing breadth with edge; count every tried cell and preserve negative results.
@@ -70,12 +74,36 @@ NIGHTLY PRIORITY LOOP
    commissions, swaps, sessions, fills/markouts, macro/COT/rates/options/crowding/news and lawful
    external reference features. A heartbeat is not new data. Route new fields into hypotheses and
    tests; report produced/reached/rejected/blocked/overdue/converted by entity lineage.
+   The existing public video/transcript hunter must always cover @algotradingspace,
+   @criticaltrading, @neurotrader888, @daviddtech, @saleh.m and @lewiswjackson, then expand through
+   qualified related channels, citations and code repositories. Convert only deterministic,
+   falsifiable material into the existing MT5/Fusion queue. Apply actual target-symbol spread,
+   commission, swap, slippage, latency, capacity and session rules; never direct this miner or any
+   midnight cycle toward a crypto-exchange-only universe. Respect public access controls and keep
+   blocked captions on bounded exponential retry rather than recording a false clean absence.
+   Treat the Alert_Attention_5905 submitted-post feed, r/Forven, the Forven launch thread and its
+   public repository, plus Kakushadze/Serur's 151 Trading Strategies SSRN mechanism index, as
+   mandatory daily public-source grounds. Summarize copyrighted material; never redistribute it.
+   Deduplicate its MT5-transferable FX/commodity/futures mechanisms against existing HP/trend,
+   carry, triangular-residual, COT hedging-pressure, value, contrarian and trend paths; block roll
+   yield/calendar spread until real futures-curve data exists rather than proxying a spot CFD. Read
+   data/intelligence/mt5_external_intake.json after the hunter: execute every exact QUEUED recipe
+   through the existing factory and convert each BLOCKED_IMPLEMENTATION item into an independent
+   preregistered MT5 challenger or an evidence-based reject. Do not leave it as a chat summary.
+   For reciprocal-licence code such as AGPL Forven, mine architecture and failures but implement
+   independently rather than copying source. The MT5 tick tape is the required data producer for
+   tick-pressure/multi-rate hypotheses; verify it is growing, then test newly measurable cards.
 5. Inspect persistent workers and all reasoning brains for silent failure, duplicated work, stale
    prompts, unwired outputs, metric gaming and complexity debt. Fix safe positive-EV defects and
    feed the same durable queue/checkpoint so Claude, Codex, OpenCode and future brains continue one
    state. Never overwrite live runtime evidence or another controller's unfinished changes.
    New ideas enter the existing desks/mt5/data/research_queue.json and universal path; do not add
    ad-hoc strategy code or a private survivor/promotion authority.
+   For named discovery routers @L1vsun, @shmidtqq and @antpalkin, follow outbound citations into
+   papers/appendices, repos/forks/notebooks, datasets, failures and validation/falsification; route
+   qualified mechanisms through the existing hypothesis/conversion pipeline; immediately IMPLEMENT and TEST
+   the highest E[log W] uplift / total conversion cost challenger. BLOCKED access is never a clean null.
+   Surface summaries and passive reading lists fail this duty.
 6. Audit machinery originally built around the retired native-crypto desk. Reuse and wire every
    venue-agnostic positive-EV organ (validation, portfolio construction, dependence/tail stress,
    research memory, hypothesis/lineage, monitoring, cost attribution and execution diagnostics)
