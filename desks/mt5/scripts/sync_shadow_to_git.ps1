@@ -82,9 +82,15 @@ for ($attempt = 1; $attempt -le 3 -and -not $pushed; $attempt++) {
     $fetchRc = Git-In-Repo @("fetch", "origin", $branch)
     if ($fetchRc -ne 0) { Write-SyncLog "ABORT: git fetch failed rc=$fetchRc"; exit 1 }
 
-    $mergeRc = Git-In-Repo @("merge", "--no-edit", "origin/$branch")
+    # FETCH_HEAD, not origin/$branch: a `git fetch origin <branch>` with an explicit branch
+    # argument does NOT update the origin/<branch> remote-tracking ref unless one already exists
+    # and is configured for it -- confirmed live on Contabo (2026-08-23), where `git log
+    # origin/claude/...` failed with "unknown revision" right after a successful fetch of the
+    # same branch. FETCH_HEAD is always populated by the fetch that just ran, regardless of
+    # tracking-ref configuration, so it is the only reliable target here.
+    $mergeRc = Git-In-Repo @("merge", "--no-edit", "FETCH_HEAD")
     if ($mergeRc -ne 0) {
-        Write-SyncLog "ABORT: merge conflict against origin/$branch -- aborting merge, leaving commit local for a human"
+        Write-SyncLog "ABORT: merge conflict against FETCH_HEAD (origin/$branch) -- aborting merge, leaving commit local for a human"
         Git-In-Repo @("merge", "--abort") | Out-Null
         exit 1
     }
