@@ -253,14 +253,14 @@ TRAIL_WIDTHS: tuple[float, ...] = (0.5, 0.75, 1.0, 1.5, 2.0, 3.0)
 #: challenger earns adoption only on trades ENTERED after this instant, walked PAIRED against the
 #: incumbent on identical bars.
 TRAIL_FWD_REGISTERED = "2026-08-18T21:00:00+00:00"
-TRAIL_FWD_CHALLENGER = 0.5
+TRAIL_FWD_CHALLENGER = 0.5  # measured: in-sample median capture ratio 0.335 over 14 closes (R0479)
 #: Paired design: both widths walk the SAME trade on the SAME bars, so per-trade log-growth
 #: differences cancel the trade/regime draw and only the parameter under test remains. 25 paired
 #: differences at |t|>=1.7 (one-sided ~0.05) is the earliest read; 50 is the hard stop, aligned
 #: with the sleeve's own KILL_AFTER_N so the trail question cannot outlive the sleeve question.
-TRAIL_FWD_DECIDE_N = 25
-TRAIL_FWD_HARD_N = 50
-TRAIL_FWD_T = 1.7
+TRAIL_FWD_DECIDE_N = 25  # derived: earliest read at |t|>=1.7, one-sided ~0.05
+TRAIL_FWD_HARD_N = 50  # derived: hard stop N=50, aligned with the sleeve's own KILL_AFTER_N
+TRAIL_FWD_T = 1.7  # derived: |t|>=1.7 is the one-sided ~0.05 significance threshold above
 
 
 def walk_ladder(row: dict[str, Any], bars: list[tuple[int, float, float, float, float]],

@@ -12,8 +12,8 @@ TOKEN-EFFICIENT EXECUTION CONTRACT
   ingestion and overlapping-charter reloads.
 - Prefer deterministic scripts and machine-readable artifacts for breadth. Use the reasoning
   controller only where judgment changes an implementation decision.
-- Final output is a terse implementation ledger of at most 300 words: commits/files, tests/runtime
-  proof, measured economic effect, exact blockers and next dependency. No analysis narrative,
+- Final output is a terse implementation ledger, at most 300 words -- a bound on the report's length only, never on breadth per run (L1.35).
+  It must cover: commits/files, tests/runtime proof, measured economic effect, exact blockers and next dependency. No analysis narrative,
   doctrine recap or recommendation without an implemented or explicitly blocked disposition.
 - Stop when the next action's marginal expected value is below its token/compute/complexity cost.
 
