@@ -27,7 +27,7 @@ from research.shadow_forward import (  # noqa: E402
 FORBIDDEN = ("effective", "deflated", "harsher", "clears_effective_bar")
 
 
-def test_original_gate_is_the_only_shadow_admission_bar() -> None:
+def test_original_screen_only_queues_the_exact_universal_gate() -> None:
     rng = np.random.default_rng(11)
     frame = pd.DataFrame({
         "strong": rng.normal(0.01, 0.02, 300),
@@ -39,7 +39,7 @@ def test_original_gate_is_the_only_shadow_admission_bar() -> None:
     assert row["original_screen"]["version"] == SCREEN_VERSION
     assert row["original_screen"]["psr_threshold"] == 0.95
     assert row["original_screen"]["sr_benchmark"] == 0.0
-    assert row["shadow_status"] == "ELIGIBLE_ZERO_CAPITAL"
+    assert row["shadow_status"] == "PENDING_UNIVERSAL_10_GATE"
     assert row["promotion_authority"] is False
     assert row["forward_policy"] == FORWARD_POLICY
     assert not any(token in key.lower() for key in row for token in FORBIDDEN)
