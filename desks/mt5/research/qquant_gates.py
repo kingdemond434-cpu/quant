@@ -425,16 +425,25 @@ def main() -> int:
     print(f"running the original universal gauntlet on all {len(rows)} tested cells "
           f"({WORKERS} workers; no battery prefilter)...", flush=True)
 
+    # pool.imap() passes exactly one argument per call from its iterable -- it cannot fan out the
+    # 8 constant arguments worker_eval_row also needs (same for every row). starmap() unpacks a
+    # tuple of arguments per call instead, which is what this actually needs; zip() builds those
+    # tuples by pairing each row with the (repeated) constants. Confirmed live 2026-08-23: this
+    # crashed with `TypeError: Pool.imap() takes from 3 to 4 positional arguments but 11 were
+    # given` on line 412, after ~5 minutes of real upstream computation (cell series, trial
+    # matrices, program-level PBO/SPA) -- the script had never been run to completion before.
     with mp.Pool(WORKERS, initializer=_init_eval_worker, initargs=(cell_map,)) as pool:
-        verdicts = list(pool.imap(worker_eval_row, rows,
-                                  itertools.repeat(float(pbo12.pbo)),
-                                  itertools.repeat(float(pbo16.pbo)),
-                                  itertools.repeat(float(spa12.p_value)),
-                                  itertools.repeat(float(spa16.p_value)),
-                                  itertools.repeat(n_trials12),
-                                  itertools.repeat(n_trials16),
-                                  itertools.repeat(sharpes12),
-                                  itertools.repeat(sharpes16)))
+        verdicts = pool.starmap(worker_eval_row, zip(
+            rows,
+            itertools.repeat(float(pbo12.pbo)),
+            itertools.repeat(float(pbo16.pbo)),
+            itertools.repeat(float(spa12.p_value)),
+            itertools.repeat(float(spa16.p_value)),
+            itertools.repeat(n_trials12),
+            itertools.repeat(n_trials16),
+            itertools.repeat(sharpes12),
+            itertools.repeat(sharpes16),
+        ))
     n_pass = sum(1 for v in verdicts if v.get("passed"))
     gate_fails: dict[str, int] = {}
     for v in verdicts:
