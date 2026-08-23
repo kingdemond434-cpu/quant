@@ -45,7 +45,12 @@ REPORTS = BASE / "reports"
 UNI = BASE / "data" / "universe"
 sys.path.insert(0, str(BASE))
 sys.path.insert(0, str(BASE / "research"))
-QP = Path(r"C:\Users\dell\quant-platform") if os.name == "nt" else Path.home() / "quant-platform"
+# REPO ROOT, DERIVED -- not a hardcoded "C:\Users\dell\quant-platform". That path is both the
+# retired laptop's user account AND a folder name ("quant-platform") this repo does not even
+# have on Contabo (it is checked out as "quant"). libs/validation/* -- everything this gate
+# imports next -- lives two levels above desks/mt5, wherever the checkout actually sits, so QP
+# is derived from BASE the same way every other path in this repo was fixed to be tonight.
+QP = BASE.parent.parent
 sys.path.insert(0, str(QP))
 
 from libs.validation.cpcv import CPCV  # noqa: E402
@@ -56,17 +61,20 @@ from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus  #
 
 from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
+from gate_policy import (  # noqa: E402
+    ATTESTATION as GATE_POLICY,
+    COST_SCENARIO,
+    DSR_THRESHOLD,
+    DONE_MARKER,
+    GATES as GATE_NAMES,
+    PBO_THRESHOLD,
+    SPA_ALPHA,
+    TRIALS_MULTIPLIER,
+    WF_MIN_STABILITY,
+    WF_SPLITS,
+)
 
-TRIALS_MULTIPLIER = 7.0
-DSR_THRESHOLD = 0.95
-PBO_THRESHOLD = 0.5
-SPA_ALPHA = 0.05
-WF_SPLITS = 4
-WF_MIN_STABILITY = 0.5
-COST_SCENARIO = 3.0
-GATES = ["economic_prior", "in_sample_screen", "deflated_sharpe", "pbo",
-         "reality_check_spa", "cpcv", "walk_forward", "stress_costs",
-         "lockbox", "expected_value"]
+GATES = list(GATE_NAMES)
 HUNTS = ["hunt17", "hunt19", "hunt20", "hunt21", "hunt22", "hunt23"]
 GATE_MODULES = {  # hunt -> module + report file
     "hunt17": ("run_hunt17", "hunt17.json"),
@@ -141,9 +149,13 @@ def iter_hunt_cells(modname: str, meta: dict) -> list[Cell]:
     return out
 
 
-def _ug_daily(args) -> pd.Series:
+def _ug_daily(args) -> pd.Series | None:
     df, sigs, costs = args
-    return daily_series(df, sigs, costs)
+    try:
+        return daily_series(df, sigs, costs)
+    except Exception as e:
+        print(f"  daily series error: {e!r}", flush=True)
+        return None
 
 
 def _ug_verdict(args) -> dict:
@@ -196,16 +208,42 @@ def _ug_verdict(args) -> dict:
 
 def gauntlet(cells: list[Cell], hunt: str) -> dict:
     import multiprocessing as mp
-    workers = min(8, len(cells) or 1)
-    with mp.Pool(workers) as pool:
-        daily = list(pool.map(_ug_daily, [
-            (c.df, c.sigs, c.costs) for c in cells]))
-        daily_x3 = list(pool.map(_ug_daily, [
-            (c.df, c.sigs, Costs(c.costs.spread_per_lot * COST_SCENARIO,
-                                 c.costs.commission_per_lot * COST_SCENARIO,
-                                 c.costs.contract_oz)) for c in cells]))
-    cols = [s.to_numpy(float) for s in daily]
-    cols = [a for a in cols if len(a) >= 60]
+    import psutil as _ps
+    avail_mb = _ps.virtual_memory().available / 1048576
+    cap = 1 if os.name != "nt" and avail_mb < 1024 else (2 if os.name != "nt" else 8)
+    workers = min(cap, len(cells) or 1)
+    if workers <= 1:
+        print(f"  {hunt}: sequential mode (free={avail_mb:.0f}MB)", flush=True)
+    for attempt in range(3):
+        try:
+            return _gauntlet_once(cells, hunt, workers)
+        except (BrokenPipeError, OSError) as e:
+            print(f"  {hunt}: pool died (attempt {attempt + 1}/3, {e!r}); "
+                  f"free={avail_mb:.0f}MB, retrying in 60s", flush=True)
+            time.sleep(60)
+    raise RuntimeError(f"{hunt}: pool kept dying (3 attempts)")
+
+
+def _gauntlet_once(cells: list[Cell], hunt: str, workers: int) -> dict:
+    import multiprocessing as mp
+    daily_args = [(c.df, c.sigs, c.costs) for c in cells]
+    x3_args = [(c.df, c.sigs, Costs(c.costs.spread_per_lot * COST_SCENARIO,
+                                    c.costs.commission_per_lot * COST_SCENARIO,
+                                    c.costs.contract_oz)) for c in cells]
+    if workers <= 1:
+        daily = [_ug_daily(a) for a in daily_args]
+        daily_x3 = [_ug_daily(a) for a in x3_args]
+    else:
+        with mp.Pool(workers) as pool:
+            daily = list(pool.map(_ug_daily, daily_args))
+            daily_x3 = list(pool.map(_ug_daily, x3_args))
+    cols = []
+    for s in daily:
+        if s is None:
+            continue
+        a = s.to_numpy(float)
+        if len(a) >= 60:
+            cols.append(a)
     if not cols:
         return {"hunt": hunt, "error": "no cells with >=60 days", "verdicts": []}
     min_len = min(len(a) for a in cols)
@@ -221,17 +259,27 @@ def gauntlet(cells: list[Cell], hunt: str) -> dict:
 
     args = []
     for k, c in enumerate(cells):
+        if daily[k] is None:
+            args.append((c.id, c.sym, np.array([]), np.array([]),
+                         pbo_ok, float(pbo.pbo), spa_ok, float(spa.p_value),
+                         n_trials, float(sharpes.var(ddof=1))))
+            continue
         arr = daily[k].to_numpy(float)
         if len(arr) < 60:
             args.append((c.id, c.sym, np.array([]), np.array([]),
                          pbo_ok, float(pbo.pbo), spa_ok, float(spa.p_value),
                          n_trials, float(sharpes.var(ddof=1))))
             continue
-        args.append((c.id, c.sym, arr, daily_x3[k].to_numpy(float),
+        x3 = daily_x3[k]
+        args.append((c.id, c.sym, arr, x3.to_numpy(float) if x3 is not None
+                     else np.array([]),
                      pbo_ok, float(pbo.pbo), spa_ok, float(spa.p_value),
                      n_trials, float(sharpes.var(ddof=1))))
-    with mp.Pool(workers) as pool:
-        verdicts = list(pool.map(_ug_verdict, args))
+    if workers <= 1:
+        verdicts = [_ug_verdict(a) for a in args]
+    else:
+        with mp.Pool(workers) as pool:
+            verdicts = list(pool.map(_ug_verdict, args))
     gate_fails: dict[str, int] = {}
     for v in verdicts:
         for name, s in v.get("stages", {}).items():
@@ -248,10 +296,10 @@ def gauntlet(cells: list[Cell], hunt: str) -> dict:
 
 
 def main() -> int:
-    done_flag = REPORTS / "DONE_qquant_gates"
+    done_flag = REPORTS / DONE_MARKER
     held_flag = BASE / "data" / "HOLD_qquant_gates"
     if not done_flag.exists() and not held_flag.exists():
-        print("waiting for DONE_qquant_gates (hunt12/16 REAL3 path) ...", flush=True)
+        print(f"waiting for {DONE_MARKER} (current original ten-gate run) ...", flush=True)
         while not done_flag.exists():
             time.sleep(60)
         print("qquant gates done, starting universal gauntlet", flush=True)
@@ -283,6 +331,13 @@ def main() -> int:
         (REPORTS / f"DONE_universal_{hunt}").write_text(
             datetime.now(timezone.utc).isoformat(), encoding="utf-8")
     # hunt18 loop-experiment reports
+    # Clear run_hunt17 anchor cache so it reloads fresh T10YIE
+    import run_hunt17 as _rh17
+    if hasattr(_rh17, "_ANC"):
+        _rh17._ANC = None
+    import mt5desk.families as _mt5fam
+    if hasattr(_mt5fam, "_ANC"):
+        _mt5fam._ANC = None
     for rp in sorted(REPORTS.glob("hunt18_*.json")):
         marker = REPORTS / f"DONE_universal_{rp.stem}"
         if marker.exists():
@@ -326,6 +381,7 @@ def main() -> int:
 
     (REPORTS / "UNIVERSAL_SURVIVORS.json").write_text(
         json.dumps({"n": len(survivors_all), "survivors": survivors_all,
+                    "gate_policy": GATE_POLICY,
                     "note": "UNIVERSAL 10-GATE PASS ONLY. Placebo null + fragility "
                             "apply before portfolio entry.",
                     "swept_at": datetime.now(timezone.utc).isoformat()},

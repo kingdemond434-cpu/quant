@@ -141,8 +141,15 @@ def test_an_empty_source_covers_nothing():
 
 
 def test_staleness_is_measured_from_the_freshest_bar():
-    assert bars(end=NOW - timedelta(hours=20)).stale
-    assert not bars().stale
+    monday = datetime(2026, 8, 17, 12, tzinfo=UTC)
+    assert H.trading_lag_hours(pd.Timestamp(monday - timedelta(hours=20)), monday) > 6
+    assert H.trading_lag_hours(pd.Timestamp(monday), monday) == 0
+
+
+def test_closed_weekend_does_not_manufacture_staleness():
+    friday_close = datetime(2026, 8, 21, 23, tzinfo=UTC)
+    saturday = datetime(2026, 8, 22, 20, tzinfo=UTC)
+    assert H.trading_lag_hours(pd.Timestamp(friday_close), saturday) == 0
 
 
 # -------------------------------------------------------------- the stamp

@@ -46,9 +46,8 @@ TARGETS = [
     dict(name="fragility", args=["-u", "-W", "ignore", "research/fragility.py"],
          marker="reports/DONE_fragility", match="fragility.py"),
     dict(name="qquant_gates",
-         python=r"C:\Users\dell\quant-platform\.venv\Scripts\python.exe",
          args=["-u", "-W", "ignore", "research/qquant_gates.py", "--workers", "8"],
-         marker="reports/DONE_qquant_gates", match="qquant_gates.py"),
+         marker="reports/DONE_qquant_gates_original10_v1", match="qquant_gates.py"),
     dict(name="regime_oos", args=["-u", "-W", "ignore", "research/regime_discovery.py"],
          marker="reports/DONE_regime_oos", match="regime_discovery.py"),
     dict(name="merge", args=["-u", "-W", "ignore", "research/merge_qquant.py"],
@@ -73,16 +72,16 @@ TARGETS = [
          marker="reports/DONE_crowding_never", match="crowding_miner.py"),
     dict(name="news_desk", args=["-u", "-W", "ignore", "research/news_desk.py"],
          marker="reports/DONE_news_final", match="news_desk.py"),
+    dict(name="signal_gate", args=["-u", "-W", "ignore",
+                                   "research/signal_gate.py", "run_hunt18"],
+         marker="reports/DONE_signal_gate_never", match="signal_gate.py"),
     dict(name="universal",
-         python=r"C:\Users\dell\quant-platform\.venv\Scripts\python.exe",
          args=["-u", "-W", "ignore", "research/universal_gate.py"],
          marker="reports/DONE_universal_hunt23", match="universal_gate.py"),
     dict(name="meta_desk",
-python=r"C:\Users\dell\quant-platform\.venv\Scripts\python.exe",
           args=["-u", "-W", "ignore", "research/meta_desk.py"],
           marker="reports/DONE_meta", match="meta_desk.py"),
     dict(name="allocation",
-          python=r"C:\Users\dell\quant-platform\.venv\Scripts\python.exe",
           args=["-u", "-W", "ignore", "research/allocation.py"],
           marker="reports/DONE_allocation", match="allocation.py"),
 ]
@@ -111,9 +110,15 @@ def is_running(match: str) -> bool:
 
 def already_supervised() -> bool:
     me = psutil.Process().pid
+    parent = psutil.Process(me).ppid()
     for p in psutil.process_iter(["name", "cmdline"]):
         try:
             if p.pid == me:
+                continue
+            # Windows venv launchers may leave a short-lived parent/child Python pair with the
+            # identical command line. They are one invocation, not a second supervisor. Treating
+            # the launcher as a peer made every scheduled start exit immediately.
+            if p.pid == parent or p.ppid() == me:
                 continue
             if not (p.info["name"] or "").lower().startswith("python"):
                 continue
@@ -145,6 +150,19 @@ def main() -> int:
             log("supervisor: disabled flag appeared, exiting")
             return 0
         now = time.time()
+        if now - float(state.get("last_verify", 0) or 0) > 3600:
+            try:
+                subprocess.run(
+                    [str(Path(sys.executable)), "-u", "-W", "ignore",
+                     "research/verify_universal_state.py"],
+                    cwd=str(BASE), capture_output=True, text=True, timeout=240)
+                state["last_verify"] = now
+                try:
+                    STATE.write_text(json.dumps(state), encoding="utf-8")
+                except Exception:
+                    pass
+            except Exception as e:
+                log(f"universal-state verify failed: {e!r}")
         for t in TARGETS:
             if (BASE / "data" / f"HOLD_{t['name']}").exists():
                 continue

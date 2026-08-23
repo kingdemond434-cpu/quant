@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One midnight frontier: deterministic evidence production, then the fenced Codex reasoner.
+# One MT5/Fusion-only midnight frontier: fresh state snapshot, then the fenced Codex reasoner.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p data
@@ -13,10 +13,14 @@ fi
 # successful status from masking a hung current cycle.
 bash ops/run_midnight_codex_controller.sh --pipeline-start || exit $?
 
-# The cycle builds bars before running every registered study, including full_sweep. Skipping
-# the wrapper's pre-bars sweep prevents duplicate compute and a stale-bars false BLOCKED result.
-bash ops/run_sweep_then_cycle.sh --cycle-only --wait-existing
-PIPELINE_RC=$?
+# Persistent MT5 workers collect and test continuously. Midnight snapshots their exact shared
+# state instead of launching the legacy crypto-wide study registry (which is outside the standing
+# MT5 venue mandate and previously OOM-killed this unit before the controller could start).
+"${PYTHON:-.venv/bin/python}" scripts/audit_mt5_capability_reuse.py
+REUSE_RC=$?
+"${PYTHON:-.venv/bin/python}" scripts/build_mt5_midnight_state.py
+STATE_RC=$?
+PIPELINE_RC=$(( REUSE_RC != 0 ? REUSE_RC : STATE_RC ))
 bash ops/run_midnight_codex_controller.sh "$PIPELINE_RC"
 CONTROLLER_RC=$?
 

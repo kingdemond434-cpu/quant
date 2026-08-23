@@ -1,10 +1,20 @@
 {
- "updated": "2026-08-18T22:15:02.056237+00:00",
+ "updated": "2026-08-23T01:40:44.383917+00:00",
  "latest": {
-  "ts": "2026-08-18T22:15:02.055055+00:00",
-  "query": "retrack trading strategy",
-  "mechanism": "rft_retrack",
-  "github": {},
+  "ts": "2026-08-23T01:40:44.382049+00:00",
+  "query": "TTM squeeze trading",
+  "mechanism": "squeeze",
+  "github": {
+   "count": 2,
+   "top_stars": [
+    6,
+    0
+   ],
+   "top_names": [
+    "GiustiRo/squeezem-adx-ttm",
+    "CrazyHasNoIdeaWhatToDo/TTM-squeeze-dots-tradingview"
+   ]
+  },
   "reddit": {
    "posts": 0,
    "avg_score": 0.0,
@@ -12,10 +22,10 @@
   },
   "github_stars_delta": 0,
   "news_topics": {
-   "fed": 20,
+   "fed": 21,
    "cpi": 1,
    "nonfarm": 0,
-   "rates": 0,
+   "rates": 1,
    "oil": 0,
    "gold": 0,
    "bonds": 0,
@@ -25,5 +35,5 @@
   "edge_publicity": "LOW",
   "expected_decay": "NORMAL"
  },
- "history_len": 15
+ "history_len": 43
 }

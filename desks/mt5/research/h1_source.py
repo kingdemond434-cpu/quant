@@ -40,6 +40,7 @@ a quiet market.
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -60,6 +61,26 @@ STALE_AFTER_H = 6.0
 _COLUMNS = ["open", "high", "low", "close", "tick_volume", "spread", "real_volume"]
 
 
+def _market_open(ts: pd.Timestamp) -> bool:
+    ts = pd.Timestamp(ts).tz_convert("UTC")
+    wd, hour = ts.weekday(), ts.hour
+    return not (wd == 5 or (wd == 4 and hour >= 22) or (wd == 6 and hour < 22))
+
+
+def trading_lag_hours(last_bar: pd.Timestamp, end: datetime | pd.Timestamp) -> float:
+    """Market-open hours missing after a bar; a closed weekend is not stale data."""
+    cursor = pd.Timestamp(last_bar).ceil("h")
+    finish = pd.Timestamp(end)
+    cursor = cursor.tz_localize("UTC") if cursor.tzinfo is None else cursor.tz_convert("UTC")
+    finish = finish.tz_localize("UTC") if finish.tzinfo is None else finish.tz_convert("UTC")
+    hours = 0
+    while cursor < finish:
+        if _market_open(cursor):
+            hours += 1
+        cursor += pd.Timedelta(hours=1)
+    return float(hours)
+
+
 @dataclass
 class Bars:
     """H1 bars plus the honest provenance of where they came from."""
@@ -67,6 +88,7 @@ class Bars:
     source: str                     # MT5 | HTTP:<host> | CACHE:<file>
     fetched_utc: str
     why: str = ""
+    promotion_authority: bool = False
 
     @property
     def n(self) -> int:
@@ -84,8 +106,13 @@ class Bars:
         return (datetime.now(timezone.utc) - f.to_pydatetime()).total_seconds() / 3600.0
 
     @property
+    def trading_age_hours(self) -> Optional[float]:
+        f = self.freshest
+        return None if f is None else trading_lag_hours(f, datetime.now(timezone.utc))
+
+    @property
     def stale(self) -> bool:
-        a = self.age_hours
+        a = self.trading_age_hours
         return a is not None and a > STALE_AFTER_H
 
     def covers(self, start: datetime, end: Optional[datetime] = None) -> tuple:
@@ -107,7 +134,7 @@ class Bars:
         if lo > pd.Timestamp(start):
             return False, (f"{self.source} starts {lo.isoformat()}, after the "
                            f"window start {start.isoformat()}")
-        gap_h = (pd.Timestamp(end) - hi).total_seconds() / 3600.0
+        gap_h = trading_lag_hours(hi, end)
         if gap_h > STALE_AFTER_H:
             return False, (f"{self.source} ends {hi.isoformat()}, {gap_h:.1f}h "
                            f"before the window end: the tail of this period is "
@@ -118,7 +145,26 @@ class Bars:
         """What the caller writes into every ledger row built from these bars."""
         return {"bar_source": self.source, "bars_fetched_utc": self.fetched_utc,
                 "bars_freshest": None if self.freshest is None else self.freshest.isoformat(),
-                "bars_stale": self.stale, "h1_source_version": H1_SOURCE_VERSION}
+                "bars_stale": self.stale,
+                "promotion_authority": self.promotion_authority,
+                "h1_source_version": H1_SOURCE_VERSION}
+
+
+def _terminal_candidates() -> list[str]:
+    """Configured terminal first, then explicitly configured/read-only fallbacks."""
+    paths: list[str] = []
+    try:
+        from mt5desk.config import terminal_path
+        paths.append(str(terminal_path()))
+    except Exception:  # noqa: BLE001
+        pass
+    paths.extend(p for p in os.environ.get("MT5_SHADOW_TERMINALS", "").split(os.pathsep) if p)
+    if os.name == "nt":
+        paths.extend([
+            r"C:\Program Files\Fusion Markets MetaTrader 5\terminal64.exe",
+            r"C:\Program Files\VIG Group MT5 Terminal\terminal64.exe",
+        ])
+    return list(dict.fromkeys(paths))
 
 
 def _normalise(df: pd.DataFrame) -> pd.DataFrame:
@@ -151,23 +197,32 @@ def from_mt5(sym: str, start: datetime) -> Optional[Bars]:
         import MetaTrader5 as mt5
     except ImportError:
         return None
-    try:
-        if mt5.terminal_info() is None:
-            from mt5desk.config import terminal_path
-            if not mt5.initialize(path=terminal_path()):
-                return None
-        rates = mt5.copy_rates_range(sym, mt5.TIMEFRAME_H1, start,
-                                     datetime.now(timezone.utc))
-        if rates is None or len(rates) < 100:
-            return None
-        df = pd.DataFrame(rates)
-        df["time"] = pd.to_datetime(df["time"], unit="s", utc=True)
-        return Bars(_normalise(df.set_index("time")), "MT5",
-                    datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                    "the venue's own bars — the only source whose sessions and "
-                    "spreads match what would actually have been traded")
-    except Exception:                                # noqa: BLE001
-        return None
+    candidates: list[str | None] = [None] if mt5.terminal_info() is not None else []
+    candidates.extend(_terminal_candidates())
+    for terminal in candidates:
+        try:
+            if terminal is not None:
+                mt5.shutdown()
+                if not mt5.initialize(path=terminal, timeout=15_000):
+                    continue
+            account = mt5.account_info()
+            server = str(getattr(account, "server", "unknown"))
+            rates = mt5.copy_rates_range(sym, mt5.TIMEFRAME_H1, start,
+                                         datetime.now(timezone.utc))
+            if rates is None or len(rates) < 100:
+                continue
+            df = pd.DataFrame(rates)
+            df["time"] = pd.to_datetime(df["time"], unit="s", utc=True)
+            authority = "fusion" in server.casefold()
+            return Bars(
+                _normalise(df.set_index("time")), f"MT5:{server}",
+                datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                "broker-native bars; capital authority only when the server is the configured "
+                "Fusion venue", authority,
+            )
+        except Exception:                            # noqa: BLE001
+            continue
+    return None
 
 
 def from_cache(sym: str, start: datetime) -> Optional[Bars]:

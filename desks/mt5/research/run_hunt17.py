@@ -217,6 +217,10 @@ def _anchors_df() -> pd.DataFrame:
             _ANC = pd.read_pickle(BASE / "data" / "cross_asset_anchors.pkl")
         except Exception:
             _ANC = pd.DataFrame()
+        if not _ANC.empty and "T10YIE" not in _ANC.columns:
+            print("WARNING: cross_asset_anchors.pkl has no T10YIE "
+                  "(macro families emit NO signals -> gauntlet fails closed)",
+                  flush=True)
     return _ANC
 
 
@@ -262,6 +266,119 @@ def fam_macro_gold_yield(h4: pd.DataFrame, d1: pd.DataFrame, side: int,
     return out
 
 
+def fam_gold_dxy_shock(h4: pd.DataFrame, d1: pd.DataFrame, side: int,
+                       n: int = 34, rr: float = 2.0, ttl: int = 12,
+                       dxy_z: float = 0.5) -> list[Signal]:
+    """H4 momentum gated by the DOLLAR state (DXY 2y rolling z from the macro
+    anchors desk): LONG only when z <= -dxy_z (weak dollar), SHORT only when
+    z >= dxy_z. Mechanism: gold and DXY are strongly inverse; take momentum
+    with the dollar regime, never against it. Missing anchors -> no signals."""
+    anc = _anchors_df()
+    if anc.empty or "DXY" not in anc.columns:
+        return []
+    dx = anc["DXY"].dropna()
+    roll = dx.rolling(504, min_periods=120)
+    z = (dx - roll.mean()) / roll.std()
+    if z.index.tz is not None:
+        z = z.tz_localize(None)
+    sm = _sma(h4["close"], n)
+    a = _atr(h4, ATR_N)
+    cl = h4["close"].to_numpy(float)
+    smv = sm.to_numpy(float)
+    out = []
+    for i in range(2, len(h4)):
+        zv = z.get(pd.Timestamp(h4.index[i].date()), float("nan"))
+        if zv != zv:
+            continue
+        if side > 0 and zv <= -dxy_z and cl[i] > smv[i] \
+                and cl[i - 1] > smv[i - 1] and cl[i - 2] > smv[i - 2]:
+            try:
+                out.append(_sig(h4.index[i], 1, float(cl[i]), float(a.iloc[i]),
+                                rr, ttl, "gold_dxy_shock"))
+            except ValueError:
+                pass
+        if side < 0 and zv >= dxy_z and cl[i] < smv[i] \
+                and cl[i - 1] < smv[i - 1] and cl[i - 2] < smv[i - 2]:
+            try:
+                out.append(_sig(h4.index[i], -1, float(cl[i]), float(a.iloc[i]),
+                                rr, ttl, "gold_dxy_shock"))
+            except ValueError:
+                pass
+    return out
+
+
+def fam_asia_meanrev(h4: pd.DataFrame, d1: pd.DataFrame, side: int,
+                     n: int = 20, rr: float = 1.5, ttl: int = 6,
+                     z_thr: float = 2.0) -> list[Signal]:
+    """Asia-session (00:00-08:00 UTC) mean reversion: distance of close from
+    the n-H4 SMA in ATR units >= z_thr -> fade the spike (LONG after a
+    down-spike, SHORT after an up-spike). Mechanism: thin Asian liquidity
+    over-extends prices that revert when London/NY liquidity returns."""
+    sm = _sma(h4["close"], n)
+    a = _atr(h4, ATR_N)
+    cl = h4["close"].to_numpy(float)
+    smv = sm.to_numpy(float)
+    av = a.to_numpy(float)
+    out = []
+    for i in range(2, len(h4)):
+        t = h4.index[i]
+        if t.hour < 0 or t.hour >= 8:
+            continue
+        if av[i] <= 0 or av[i] != av[i]:
+            continue
+        z = (cl[i] - smv[i]) / av[i]
+        if side > 0 and z <= -z_thr:
+            try:
+                out.append(_sig(t, 1, float(cl[i]), float(av[i]), rr, ttl,
+                                "asia_meanrev"))
+            except ValueError:
+                pass
+        if side < 0 and z >= z_thr:
+            try:
+                out.append(_sig(t, -1, float(cl[i]), float(av[i]), rr, ttl,
+                                "asia_meanrev"))
+            except ValueError:
+                pass
+    return out
+
+
+def fam_london_ny_breakout(h4: pd.DataFrame, d1: pd.DataFrame, side: int,
+                           win: int = 5, rr: float = 2.0,
+                           ttl: int = 12) -> list[Signal]:
+    """London-NY (12:00-20:00 UTC) breakout of the prior `win` days' range
+    (high/low). Mechanism: concentrated liquidity during the overlap makes
+    breaks of the multi-day range persist into the NY close."""
+    dhi = d1["high"].shift(1).rolling(win, min_periods=win).max()
+    dlo = d1["low"].shift(1).rolling(win, min_periods=win).min()
+    dmap = {pd.Timestamp(d).date(): i for i, d in enumerate(d1.index)}
+    a = _atr(h4, ATR_N)
+    cl = h4["close"].to_numpy(float)
+    out = []
+    for i in range(2, len(h4)):
+        t = h4.index[i]
+        if not (12 <= t.hour < 20):
+            continue
+        j = dmap.get(t.date())
+        if j is None or j < win:
+            continue
+        hi_p, lo_p = float(dhi.iloc[j]), float(dlo.iloc[j])
+        if hi_p != hi_p or lo_p != lo_p:
+            continue
+        if side > 0 and cl[i] > hi_p:
+            try:
+                out.append(_sig(t, 1, float(cl[i]), float(a.iloc[i]), rr, ttl,
+                                "london_ny_breakout"))
+            except ValueError:
+                pass
+        if side < 0 and cl[i] < lo_p:
+            try:
+                out.append(_sig(t, -1, float(cl[i]), float(a.iloc[i]), rr, ttl,
+                                "london_ny_breakout"))
+            except ValueError:
+                pass
+    return out
+
+
 FAMILIES = {
     "d1_trend_pullback": fam_d1_trend_pullback,
     "d1_swing_break": fam_d1_swing_break,
@@ -269,6 +386,9 @@ FAMILIES = {
     "h4_vol_break": fam_h4_vol_break,
     "d1_inside": fam_d1_inside,
     "macro_gold_yield": fam_macro_gold_yield,
+    "gold_dxy_shock": fam_gold_dxy_shock,
+    "asia_meanrev": fam_asia_meanrev,
+    "london_ny_breakout": fam_london_ny_breakout,
 }
 PARAMS = {
     "d1_trend_pullback": [dict(d1_n=50, h4_n=20, rr=2.0, ttl=12),
@@ -283,6 +403,12 @@ PARAMS = {
                   dict(rr=2.5, ttl=24)],
     "macro_gold_yield": [dict(n=34, rr=2.0, ttl=12, yield_z=0.0),
                          dict(n=55, rr=2.5, ttl=24, yield_z=-0.25)],
+    "gold_dxy_shock": [dict(n=34, rr=2.0, ttl=12, dxy_z=0.5),
+                       dict(n=55, rr=2.5, ttl=24, dxy_z=0.75)],
+    "asia_meanrev": [dict(n=20, rr=1.5, ttl=6, z_thr=2.0),
+                     dict(n=30, rr=2.0, ttl=12, z_thr=2.5)],
+    "london_ny_breakout": [dict(win=5, rr=2.0, ttl=12),
+                           dict(win=10, rr=2.5, ttl=24)],
 }
 
 

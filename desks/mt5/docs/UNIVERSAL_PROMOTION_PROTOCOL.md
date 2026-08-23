@@ -20,8 +20,19 @@ No session starts without reading this file. Linked from AGENTS.md and CLAUDE.md
 ## The single path to capital
 
 Survivor claim → universal 10-gate pass (original quant-platform
-libs/validation, verbatim thresholds) → signal gate → allocation
+libs/validation, verbatim thresholds) → signal-information gate → allocation
 (E[log W], NaN-aware) → deployment. Nothing else promotes anything.
+
+- signal gate (research/signal_gate.py): per-experiment block-bootstrap
+  (999 reps, block 5) on forward returns at horizons 1/2/5/10 H4 bars.
+  A survivor only enters allocation with verdict INFORMED (p < 0.05 at any
+  horizon, n >= 60) on its exact cell; NULL / SPARSE / absent report =
+  EXCLUDED (fail-closed). Allocation waits for the report, never assumes.
+- gate runs are auto-discovered by the supervisor (new hunt18_* reports are
+  gated automatically; resume from partial reports; per-experiment DONE
+  markers reports/DONE_signal_gate_<stem>).
+- universal gate retries pool deaths (3 attempts) and sizes workers to
+  available memory (1 worker below 512MB free on POSIX).
 
 ## Fail closed — the operating rule
 
