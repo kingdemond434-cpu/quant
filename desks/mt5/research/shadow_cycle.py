@@ -183,11 +183,16 @@ def run() -> tuple[dict, int]:
         "gateway_armed": bool(gw.get("armed", False)),
         "promoted_live_sleeves": live_sleeves,
     }
-    health["status"] = "OPERATING" if not missing and not errors else "FAILED"
+    if missing or errors:
+        health["status"] = "FAILED"
+    elif blocked:
+        health["status"] = "EVIDENCE_BLOCKED"
+    else:
+        health["status"] = "OPERATING"
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(health, indent=2), "utf-8")
     print(json.dumps(health, indent=2))
-    return health, 0 if health["status"] == "OPERATING" else 1
+    return health, {"OPERATING": 0, "EVIDENCE_BLOCKED": 2}.get(health["status"], 1)
 
 
 def main() -> int:

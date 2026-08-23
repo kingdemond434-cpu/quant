@@ -83,6 +83,7 @@ def main() -> int:
             "promotion_authority": False,
             "order_authority": False,
         })
+        row.setdefault("n", 0)
         if bars is None:
             row.update(status="NO_DATA", why="no H1 source returned bars")
             state[key] = row

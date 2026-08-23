@@ -43,7 +43,8 @@ def test_cycle_counts_only_certified_shadow_books_before_promoter(
     monkeypatch.setattr(shadow_cycle, "OUT", reports / "health.json")
     health, rc = shadow_cycle.run()
     assert calls == ["refresh", "legacy", "scalp", "qquant", "promoter"]
-    assert rc == 0 and health["configured_sleeves"] == 3
+    assert rc == 2 and health["configured_sleeves"] == 3
+    assert health["status"] == "EVIDENCE_BLOCKED"
     assert health["represented_sleeves"] == 3
     assert health["quarantined_uncertified_candidates"] == 40
 
