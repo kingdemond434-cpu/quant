@@ -54,3 +54,20 @@ def test_contract_curve_is_expiry_ranked_and_has_roll_yield() -> None:
     curve = build_curve(frames, "GC")
     assert list(curve["curve_rank"]) == [1, 2]
     assert curve["annualized_roll_yield"].notna().all()
+
+
+def test_contract_curve_normalizes_mixed_yahoo_timezones() -> None:
+    frames = [
+        pd.DataFrame({"date": [pd.Timestamp("2026-08-20", tz="UTC")], "close": [4400.0],
+                      "expiration": [pd.Timestamp("2026-12-29")],
+                      "symbol": ["GCZ26.CMX"]}),
+        pd.DataFrame({"date": [pd.Timestamp("2026-08-20")], "close": [4450.0],
+                      "expiration": [pd.Timestamp("2027-02-25", tz="UTC")],
+                      "symbol": ["GCG27.CMX"]}),
+        pd.DataFrame({"date": [pd.Timestamp("2026-08-20")], "close": [1.0],
+                      "expiration": [pd.NaT], "symbol": ["UNKNOWN"]}),
+    ]
+    curve = build_curve(frames, "GC")
+    assert len(curve) == 2
+    assert str(curve["date"].dt.tz) == "UTC"
+    assert curve["annualized_roll_yield"].notna().all()
