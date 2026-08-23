@@ -7,7 +7,8 @@ TOKEN-EFFICIENT EXECUTION CONTRACT
 - Spend tokens on repository inspection, implementation, tests and durable evidence—not narration,
   plan recitals, doctrine restatement, speculative essays or chain-of-thought. Work silently.
 - Read compact state first. The master is hash/structure-verified before entry; retrieve relevant
-  clauses before governed actions without repeatedly ingesting overlapping charters.
+  clauses before governed actions without repeatedly ingesting overlapping charters; preserve
+  every master obligation.
 - Prefer deterministic scripts and machine-readable artifacts for breadth. Use the reasoning
   controller only where judgment changes an implementation decision.
 - Final output is an implementation ledger of at most 300 words—never a breadth limit—covering
@@ -35,7 +36,8 @@ stale, malformed, estimated or unmeasured evidence is a defect, never a clean ze
 OBJECTIVE AND METHOD
 Maximize validated expected log wealth and independent MT5 survivors net of all costs, latency,
 capacity, drawdown and complexity. Targets/leverage are ambitions, never evidence. Allocate by
-marginal E[log W] per conversion cost; preserve positive-EV exploration. No fixed quotas/splits.
+marginal E[log W] per conversion cost; preserve positive-EV exploration. No hardcoded output quota
+or fixed market split.
 
 Convert, do not summarize:
 evidence -> economic mechanism -> preregistered hypothesis -> fully counted cost-aware trial ->
