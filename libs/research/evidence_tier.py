@@ -231,6 +231,30 @@ def translate_to_crypto(text: str) -> list[tuple[str, str]]:
     return [(a, b) for a, b in _TRANSLATIONS if a in low]
 
 
+_MT5_TRANSLATIONS: tuple[tuple[str, str], ...] = (
+    ("sector neutral", "neutralize by MT5 asset class and currency-risk bucket"),
+    ("industry neutral", "neutralize by MT5 asset class and currency-risk bucket"),
+    ("commitment of traders", "point-in-time CFTC COT hedging pressure by mapped future"),
+    ("futures basis", "dated front/next futures curve and annualized roll yield"),
+    ("roll yield", "dated front/next futures curve and annualized roll yield"),
+    ("carry", "point-in-time MT5 long/short swap plus futures-curve carry"),
+    ("order imbalance", "broker-native bid/ask tick-change imbalance; DOM only when real"),
+    ("market maker inventory", "quote asymmetry and spread-state proxy; no invented dealer book"),
+    ("cross-sectional momentum", "rank returns across contemporaneous Fusion MT5 symbols"),
+    ("flight to quality", "gold, USD, JPY, CHF, rates and equity-index relative-state basket"),
+)
+
+
+def translate_to_mt5(text: str) -> list[tuple[str, str]]:
+    """Map public mechanisms to data the active Fusion MT5 desk can actually test.
+
+    The result is a hypothesis translation, never evidence and never an order permission. Missing
+    mappings remain explicit data/capability gaps instead of being silently redirected to crypto.
+    """
+    low = (text or "").lower()
+    return [(source, target) for source, target in _MT5_TRANSLATIONS if source in low]
+
+
 @dataclass(frozen=True)
 class MiningRecord:
     """The schema a miner fills per discovery: mechanism -> hypothesis -> evidence -> data -> repro.

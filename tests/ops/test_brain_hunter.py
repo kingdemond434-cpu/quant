@@ -69,17 +69,18 @@ def test_IT_HUNTS_RECURSIVELY_RATHER_THAN_SEARCHING_ONE_LABEL() -> None:
     assert "do NOT search only for" in src
 
 
-def test_IT_EXTRACTS_MECHANISMS_AND_DEMANDS_A_CRYPTO_ANALOGUE() -> None:
+def test_IT_EXTRACTS_MECHANISMS_AND_DEMANDS_AN_MT5_ANALOGUE() -> None:
     """A copied formula is a crowded expression over a universe the desk does not trade. The
     platform is primarily an EQUITIES venue, so a factor rarely transfers while its transformation,
     neutralization idea or methodology often does."""
     src = _prompt()
     assert "EXTRACT MECHANISMS, NOT FORMULAS" in src
-    assert "CRYPTO ANALOGUE" in src and "translate_to_crypto" in src
+    assert "MT5 ANALOGUE" in src and "translate_to_mt5" in src
+    assert "CURRENT VENUE OVERRIDE — MT5/FUSION" in src
     assert "PRIMARILY AN EQUITIES VENUE" in src.upper()
 
 
-def test_AN_OPERATOR_WITH_NO_CRYPTO_ANALOGUE_IS_STILL_LOGGED() -> None:
+def test_AN_OPERATOR_WITH_NO_MT5_ANALOGUE_IS_STILL_LOGGED() -> None:
     """It names data the desk does not have, which is the information-frontier axis. Discarding it
     would silently narrow the search to what the desk can already measure."""
     src = _prompt()

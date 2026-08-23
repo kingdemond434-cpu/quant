@@ -17,9 +17,8 @@ from __future__ import annotations
 
 import json
 import subprocess
-import sys
-import time
-from datetime import datetime, timezone
+from contextlib import suppress
+from datetime import UTC, datetime
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
@@ -102,7 +101,7 @@ def mine() -> dict:
 
 
 def frontier_report(health: dict) -> None:
-    rep = {"swept_at": datetime.now(timezone.utc).isoformat(), "health": health}
+    rep = {"swept_at": datetime.now(UTC).isoformat(), "health": health}
     for name in ("hunt12_partial", "hunt16_partial", "placebo_test", "hunt13"):
         fp = BASE / "reports" / f"{name}.json"
         if fp.exists():
@@ -112,10 +111,8 @@ def frontier_report(health: dict) -> None:
                 rep[name] = None
     gw = BASE / "data" / "gateway_state.json"
     if gw.exists():
-        try:
+        with suppress(Exception):
             rep["gateway"] = json.loads(gw.read_text(encoding="utf-8"))
-        except Exception:
-            pass
     (BASE / "reports" / "frontier.json").write_text(
         json.dumps(rep, indent=1, default=str), encoding="utf-8")
     print(f"frontier report written ({rep['swept_at']})", flush=True)
@@ -135,10 +132,10 @@ def daily() -> dict:
     because the laptop was shut at the scheduled minute.
     """
     try:
-        import daily_cycle  # noqa: PLC0415
+        import daily_cycle
         return {"exit_code": daily_cycle.main([]),
-                "at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
-    except Exception as exc:                                            # noqa: BLE001
+                "at": datetime.now(UTC).isoformat(timespec="seconds")}
+    except Exception as exc:
         # Reported, never swallowed: this hourly cycle must survive, but a desk that cannot run its
         # promotion chain has to say so rather than print "cycle done".
         print(f"daily cycle FAILED to start: {type(exc).__name__}: {exc}", flush=True)
@@ -148,11 +145,17 @@ def daily() -> dict:
 def record_tape() -> dict:
     """Persist broker-native ticks every hourly cycle before any research consumes them."""
     try:
-        from mt5desk import tape  # noqa: PLC0415
+        from mt5desk import (
+            tape,
+            triangle_tape,
+        )
 
-        return {"exit_code": tape.main([]),
-                "at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
-    except Exception as exc:  # noqa: BLE001
+        tape_rc = tape.main([])
+        triangle_rc = triangle_tape.main()
+        return {"exit_code": max(tape_rc, triangle_rc),
+                "triangle_exit_code": triangle_rc,
+                "at": datetime.now(UTC).isoformat(timespec="seconds")}
+    except Exception as exc:
         print(f"tick tape FAILED: {type(exc).__name__}: {exc}", flush=True)
         return {"error": f"{type(exc).__name__}: {exc}"}
 
@@ -164,7 +167,7 @@ def main() -> None:
     m = mine()
     frontier_report(h)
     (BASE / "data" / "sync_marker.json").write_text(
-        json.dumps({"last_cycle": datetime.now(timezone.utc).isoformat(),
+        json.dumps({"last_cycle": datetime.now(UTC).isoformat(),
                     "health": h, "tape": t, "daily": d, "mine": m}, indent=1), encoding="utf-8")
     print("cycle done", flush=True)
 
