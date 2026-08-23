@@ -148,14 +148,17 @@ def run() -> tuple[dict, int]:
     rows = [legacy[key] for key in represented_legacy]
     rows += [(scalp.get("sleeves") or {})[key] for key in represented_scalp]
     rows += [qquant[key] for key in represented_qquant]
+    terminal_statuses = {"KILL", "RETIRED", "QUARANTINED_UNCERTIFIED"}
+    active_rows = [row for row in rows if row.get("status") not in terminal_statuses]
+    terminal_rows = [row for row in rows if row.get("status") in terminal_statuses]
     certified = (int(legacy.get("configured_sleeves", 0) or 0)
                  + int(scalp.get("configured_sleeves", 0) or 0)
                  + int(qquant.get("certified_qquant_sleeves", 0) or 0))
-    represented = len(represented_legacy) + len(represented_scalp) + len(represented_qquant)
-    missing = [] if represented >= certified else [f"{certified - represented} certified sleeve(s)"]
+    recorded = len(rows)
+    missing = [] if recorded >= certified else [f"{certified - recorded} certified sleeve(s)"]
     blocked = sum(row.get("status") in {"NO_DATA", "WAITING_FOR_FORWARD_BARS", "STALE_SOURCE",
                                          "BLOCKED_UNIVERSAL_GATES"}
-                  for row in rows)
+                  for row in active_rows)
     # LIVE-ARM STATE, SURFACED HERE ON PURPOSE. `armed` lives in data/gateway_state.json,
     # box-local and gitignored -- no other brain (Hetzner, a future session, anyone without
     # a shell on this exact machine) can see it any other way. This file is the one artifact
@@ -169,13 +172,17 @@ def run() -> tuple[dict, int]:
                     if isinstance(s, dict) and s.get("status") == "LIVE"]
     health = {
         "updated_at": datetime.now(UTC).isoformat(timespec="seconds"),
-        "configured_sleeves": certified,
-        "represented_sleeves": represented,
+        "configured_sleeves": len(active_rows),
+        "represented_sleeves": len(active_rows),
+        "certified_sleeves_total": certified,
+        "retired_shadow_sleeves": len(terminal_rows),
         "quarantined_uncertified_candidates": (
             int(legacy.get("gate_blocked_sleeves", 0) or 0)
             + int(scalp.get("gate_blocked_sleeves", 0) or 0)
         ),
-        "sleeves_with_forward_trades": sum(int(row.get("n", 0) or 0) > 0 for row in rows),
+        "sleeves_with_forward_trades": sum(
+            int(row.get("n", 0) or 0) > 0 for row in active_rows
+        ),
         "evidence_blocked_sleeves": blocked,
         "missing_sleeves": missing,
         "errors": errors,

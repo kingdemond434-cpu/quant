@@ -46,7 +46,39 @@ def test_cycle_counts_only_certified_shadow_books_before_promoter(
     assert rc == 2 and health["configured_sleeves"] == 3
     assert health["status"] == "EVIDENCE_BLOCKED"
     assert health["represented_sleeves"] == 3
+    assert health["certified_sleeves_total"] == 3
+    assert health["retired_shadow_sleeves"] == 0
     assert health["quarantined_uncertified_candidates"] == 40
+
+
+def test_terminal_shadow_verdict_is_retained_but_not_active(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import promoter
+    import qquant_shadow
+    import scalp_shadow
+    import shadow_forward
+
+    for module in (shadow_forward, scalp_shadow, qquant_shadow, promoter):
+        monkeypatch.setattr(module, "main", lambda: None)
+    monkeypatch.setattr(shadow_cycle, "_refresh_scalp_bars", lambda: None)
+    reports = tmp_path / "reports" / "shadow"
+    reports.mkdir(parents=True)
+    (reports / "shadow_state.json").write_text(json.dumps({"configured_sleeves": 0}))
+    (reports / "scalp_shadow_state.json").write_text(json.dumps({
+        "configured_sleeves": 0, "sleeves": {},
+    }))
+    (reports / "qquant_shadow_state.json").write_text(json.dumps({
+        "certified_qquant_sleeves": 1,
+        "qquant.retired": {"n": 50, "status": "KILL"},
+    }))
+    monkeypatch.setattr(shadow_cycle, "BASE", tmp_path)
+    monkeypatch.setattr(shadow_cycle, "OUT", reports / "health.json")
+    health, rc = shadow_cycle.run()
+    assert rc == 0 and health["status"] == "OPERATING"
+    assert health["configured_sleeves"] == 0
+    assert health["certified_sleeves_total"] == 1
+    assert health["retired_shadow_sleeves"] == 1
 
 
 def test_missing_sleeve_fails_loud(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
