@@ -82,12 +82,16 @@ def _init_worker() -> None:
                                       .read_text("utf-8"))}
 
     def costs_for(sym: str, mult: float = 1.0) -> Costs:
+        # WAS: a hand-rolled hardcoded 0.48 special-case for XAUUSD -- the EXACT bug diagnosed
+        # and fixed in Costs' own class docstring (engine.py) and in portfolio_projection.py
+        # (commit 1fbbf3c3, 2026-08-20): 0.48 is dollars per OUNCE passed into a field that wants
+        # dollars per LOT, so gold ran at ~3% of its real spread. This call site never got that
+        # fix -- caught live 2026-08-23 while checking whether stress_costs/deflated_sharpe were
+        # unfairly harsh. They were not: costs here were UNDERSTATED, not overstated, so the
+        # fix makes real costs higher, not lower. Costs.from_symbol() derives every symbol,
+        # gold included, from the same universe.json metadata formula -- no special case.
         m = _worker_ctx["meta"].get(sym, {})
-        return Costs(
-            spread_per_lot=0.48 * mult if sym == "XAUUSD" else max(
-                m.get("median_spread_pts", 1) * m.get("tick_size", 1e-5)
-                * m.get("contract_size", 1e5), 0.05) * mult,
-            commission_per_lot=3.50 * mult, contract_oz=m.get("contract_size", 1e5))
+        return Costs.from_symbol(m, mult=mult)
 
     _worker_ctx["costs_for"] = costs_for
 
@@ -133,8 +137,11 @@ def _series_of(hunt: int, sym: str, fam: str, side: str, win: str, state: str,
     sub = [s for s, d in zip(sigs, sdays) if states.get(d) == state]
     if not sub:
         return None
+    # mult=2.0 is the HONEST baseline, not a stress (Costs.from_symbol's own docstring): a round
+    # trip crosses the spread twice, on the way in and the way out. The stress scenario applies
+    # COST_SCENARIO ON TOP of that honest baseline, not instead of it -- see costs_for() below.
     res = run_backtest(h1, sub, _worker_ctx["costs_for"](
-        sym, COST_SCENARIO if stress else 1.0))
+        sym, 2.0 * COST_SCENARIO if stress else 2.0))
     series = pd.Series({pd.Timestamp(t.entry_time).date(): t.r_multiple
                         for t in res.trades}, dtype=float)
     series = series.groupby(level=0).sum()
