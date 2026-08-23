@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -16,6 +17,7 @@ for path in (DESK, DESK / "research", DESK.parent.parent):
 
 from mt5desk.tape import contract_terms_row
 from mt5desk.triangle_tape import executable_loops
+from research.curve_strategy_screen import endpoint_hp, strategy_positions
 from research.fetch_futures_curves import build_curve, contract_month_anchor, contract_symbol
 
 
@@ -72,3 +74,15 @@ def test_contract_curve_normalizes_mixed_yahoo_timezones() -> None:
     assert len(curve) == 2
     assert str(curve["date"].dt.tz) == "UTC"
     assert curve["annualized_roll_yield"].notna().all()
+
+
+def test_endpoint_hp_is_causal_and_compendium_families_are_distinct() -> None:
+    idx = pd.date_range("2020-01-01", periods=180, freq="D", tz="UTC")
+    base = pd.Series(np.exp(np.linspace(4.0, 4.4, len(idx))), index=idx)
+    first = endpoint_hp(base)
+    extended = pd.concat([base, pd.Series([1e9], index=[idx[-1] + pd.Timedelta(days=1)])])
+    second = endpoint_hp(extended)
+    pd.testing.assert_series_equal(first, second.iloc[:-1], check_names=False, check_freq=False)
+    positions = strategy_positions(base)
+    assert set(positions) == {"endpoint_hp_trend", "futures_trend_63d",
+                              "futures_contrarian_5d"}

@@ -116,6 +116,13 @@ def _futures_curves() -> None:
         raise RuntimeError(f"fetch_futures_curves returned {rc}")
 
 
+def _curve_strategies() -> None:
+    """Test causal HP/trend/contrarian descendants immediately after refreshing curves."""
+    import curve_strategy_screen
+
+    curve_strategy_screen.main()
+
+
 def _export_aurum() -> None:
     """Re-export the findings Aurum's absorption channel reads.
 
@@ -148,7 +155,8 @@ def _export_aurum() -> None:
 #: unconditionally: it reads the live ledger, so it reports on the armed book whether or not
 #: shadow could reach a terminal. The Aurum export runs after all of them, so it can carry
 #: anything today's cycle produced.
-STEPS = (("futures_curves", _futures_curves), ("shadow", _shadow),
+STEPS = (("futures_curves", _futures_curves), ("curve_strategies", _curve_strategies),
+         ("shadow", _shadow),
          ("promoter", _promote), ("markout", _markout),
          ("export_aurum", _export_aurum))
 
