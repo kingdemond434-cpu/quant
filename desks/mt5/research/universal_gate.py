@@ -80,7 +80,7 @@ from libs.validation.reality_check import hansen_spa
 from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus
 
 GATES = list(GATE_NAMES)
-HUNTS = ["hunt17", "hunt19", "hunt20", "hunt21", "hunt22", "hunt23"]
+HUNTS = ["hunt17", "hunt19", "hunt20", "hunt21", "hunt22", "hunt23", "curve_compendium"]
 GATE_MODULES = {  # hunt -> module + report file
     "hunt17": ("run_hunt17", "hunt17.json"),
     "hunt19": ("run_hunt19", "hunt19.json"),
@@ -88,6 +88,7 @@ GATE_MODULES = {  # hunt -> module + report file
     "hunt21": ("run_hunt21", "hunt21.json"),
     "hunt22": ("run_hunt22", "hunt22.json"),
     "hunt23": ("run_hunt23", "hunt23.json"),
+    "curve_compendium": ("curve_strategy_screen", "curve_strategy_screen.json"),
 }
 
 
@@ -106,15 +107,29 @@ def daily_series(df: pd.DataFrame, sigs: list, costs: Costs) -> pd.Series:
 
 
 class Cell:
-    __slots__ = ("costs", "df", "id", "sigs", "sym")
+    __slots__ = ("costs", "df", "id", "series", "series_x3", "sigs", "sym")
 
-    def __init__(self, cid: str, sym: str, df: pd.DataFrame, sigs: list, costs: Costs):
+    def __init__(self, cid: str, sym: str, df: pd.DataFrame | None, sigs: list,
+                 costs: Costs | None, *, series: pd.Series | None = None,
+                 series_x3: pd.Series | None = None):
         self.id, self.sym, self.df, self.sigs, self.costs = cid, sym, df, sigs, costs
+        self.series, self.series_x3 = series, series_x3
 
 
 def iter_hunt_cells(modname: str, meta: dict) -> list[Cell]:
     """Enumerate every tested cell of a hunt (report-all structure rebuilt from
     the hunt's own family code + params)."""
+    if modname == "curve_strategy_screen":
+        out = []
+        series_dir = BASE / "data" / "cell_series" / "curve_compendium"
+        for path in sorted(series_dir.glob("*.parquet")):
+            frame = pd.read_parquet(path)
+            if {"net_return", "stress_x3_return"} <= set(frame):
+                symbol = "XAUUSD" if path.stem.startswith("GC_") else "XTIUSD"
+                out.append(Cell(path.stem, symbol, None, [], None,
+                                series=frame["net_return"].dropna(),
+                                series_x3=frame["stress_x3_return"].dropna()))
+        return out
     mod = __import__(modname)
     if hasattr(mod, "UNIVERSAL_CELLS"):  # hunt supplies its own cell iterator
         return list(mod.UNIVERSAL_CELLS(meta))
@@ -154,6 +169,8 @@ def iter_hunt_cells(modname: str, meta: dict) -> list[Cell]:
 def _ug_daily(args) -> pd.Series | None:
     df, sigs, costs = args
     try:
+        if isinstance(df, pd.Series):
+            return df
         return daily_series(df, sigs, costs)
     except Exception as e:
         print(f"  daily series error: {e!r}", flush=True)
@@ -227,12 +244,18 @@ def gauntlet(cells: list[Cell], hunt: str) -> dict:
 
 def _gauntlet_once(cells: list[Cell], hunt: str, workers: int) -> dict:
     import multiprocessing as mp
-    daily_args = [(c.df, c.sigs, c.costs) for c in cells]
+    daily_args = [((c.series, None, None) if c.series is not None
+                   else (c.df, c.sigs, c.costs)) for c in cells]
     # Baseline already crosses 2x the measured spread. X3 means three crossings, not baseline*3;
     # contractual commission does not widen with market stress.
-    x3_args = [(c.df, c.sigs, Costs(c.costs.spread_per_lot * COST_SCENARIO / 2.0,
-                                    c.costs.commission_per_lot,
-                                    c.costs.contract_oz)) for c in cells]
+    x3_args = []
+    for c in cells:
+        if c.series_x3 is not None:
+            x3_args.append((c.series_x3, None, None))
+        else:
+            x3_args.append((c.df, c.sigs,
+                            Costs(c.costs.spread_per_lot * COST_SCENARIO / 2.0,
+                                  c.costs.commission_per_lot, c.costs.contract_oz)))
     if workers <= 1:
         daily = [_ug_daily(a) for a in daily_args]
         daily_x3 = [_ug_daily(a) for a in x3_args]

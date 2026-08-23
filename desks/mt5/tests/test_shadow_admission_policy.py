@@ -134,3 +134,5 @@ def test_every_hunt_uses_the_same_calibrated_cost_and_trial_policy() -> None:
     assert "Costs.from_symbol" in source
     assert "commission_per_lot * COST_SCENARIO" not in source
     assert "pd.DataFrame(cols).sort_index().fillna(0.0)" in source
+    assert '"curve_compendium"' in source
+    assert "stress_x3_return" in source
