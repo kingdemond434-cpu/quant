@@ -39,8 +39,11 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
-from mt5desk.config import DATA
 
+# Derive from this module rather than importing the newer config.DATA alias. The live VPS lineage
+# can legitimately lag that convenience constant; the desk's own location is invariant on both
+# Windows and Linux and prevents a collector from resolving a legacy C:\\ path on Linux.
+DATA = Path(__file__).resolve().parents[1] / "data"
 TAPE = DATA / "tape"
 TICKS = TAPE / "ticks"
 DEPTH = TAPE / "depth"
