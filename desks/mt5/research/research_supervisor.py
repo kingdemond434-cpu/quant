@@ -18,7 +18,7 @@ import os
 import subprocess
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import psutil
@@ -77,7 +77,7 @@ TARGETS = [
          marker="reports/DONE_signal_gate_never", match="signal_gate.py"),
     dict(name="universal",
          args=["-u", "-W", "ignore", "research/universal_gate.py"],
-         marker="reports/DONE_universal_hunt23", match="universal_gate.py"),
+         marker="reports/DONE_universal_curve_compendium", match="universal_gate.py"),
     dict(name="meta_desk",
           args=["-u", "-W", "ignore", "research/meta_desk.py"],
           marker="reports/DONE_meta", match="meta_desk.py"),
@@ -88,7 +88,7 @@ TARGETS = [
 
 
 def log(msg: str) -> None:
-    line = f"{datetime.now(timezone.utc).isoformat()} {msg}"
+    line = f"{datetime.now(UTC).isoformat()} {msg}"
     print(line, flush=True)
     with open(LOG, "a", encoding="utf-8") as f:
         f.write(line + "\n")
@@ -177,7 +177,7 @@ def main() -> int:
             last = float(st.get("last_spawn", 0) or 0)
             if now - last < 180:
                 log(f"supervisor: {t['name']} keeps dying, quarantined until "
-                    f"{datetime.fromtimestamp(last + 1800, timezone.utc).isoformat()}")
+                    f"{datetime.fromtimestamp(last + 1800, UTC).isoformat()}")
                 continue
             try:
                 CHILD_LOGS.mkdir(parents=True, exist_ok=True)

@@ -17,7 +17,7 @@ for path in (DESK, DESK / "research", DESK.parent.parent):
 
 from mt5desk.tape import contract_terms_row
 from mt5desk.triangle_tape import executable_loops
-from research.curve_strategy_screen import endpoint_hp, strategy_positions
+from research.curve_strategy_screen import costed_returns, endpoint_hp, strategy_positions
 from research.fetch_futures_curves import build_curve, contract_month_anchor, contract_symbol
 
 
@@ -86,3 +86,13 @@ def test_endpoint_hp_is_causal_and_compendium_families_are_distinct() -> None:
     positions = strategy_positions(base)
     assert set(positions) == {"endpoint_hp_trend", "futures_trend_63d",
                               "futures_contrarian_5d"}
+
+
+def test_curve_stress_increases_spread_only() -> None:
+    idx = pd.date_range("2026-01-01", periods=4, freq="D", tz="UTC")
+    close = pd.Series([100.0, 101.0, 100.0, 102.0], index=idx)
+    pos = pd.Series([0.0, 1.0, -1.0, 1.0], index=idx)
+    meta = {"contract_size": 100.0, "median_spread_pts": 2.0, "tick_size": 0.01}
+    baseline = costed_returns(close, pos, meta, spread_crossings=2.0)
+    stress = costed_returns(close, pos, meta, spread_crossings=3.0)
+    assert (stress <= baseline).all()

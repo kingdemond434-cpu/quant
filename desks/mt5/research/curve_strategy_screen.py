@@ -56,12 +56,14 @@ def strategy_positions(front: pd.Series) -> dict[str, pd.Series]:
             "futures_contrarian_5d": contrarian}
 
 
-def costed_returns(close: pd.Series, position: pd.Series, meta: dict) -> pd.Series:
+def costed_returns(
+    close: pd.Series, position: pd.Series, meta: dict, *, spread_crossings: float = 2.0,
+) -> pd.Series:
     aligned = pd.concat([close.rename("close"), position.rename("position")], axis=1).dropna()
     gross = aligned["position"] * aligned["close"].pct_change().fillna(0.0)
     contract = max(float(meta.get("contract_size", 1.0)), 1.0)
     spread_price = (float(meta.get("median_spread_pts", 0.0))
-                    * float(meta.get("tick_size", 0.0)) * 2.0)
+                    * float(meta.get("tick_size", 0.0)) * spread_crossings)
     commission_price = 4.50 / contract
     turnover = aligned["position"].diff().abs().fillna(aligned["position"].abs())
     friction = turnover * (spread_price + commission_price) / aligned["close"]
@@ -94,7 +96,12 @@ def run() -> dict:
         close.index = pd.to_datetime(close.index, utc=True).normalize()
         for family, position in strategy_positions(front).items():
             returns = costed_returns(close, position, meta.get(symbol, {})).dropna()
-            returns.to_frame().to_parquet(SERIES / f"{root}_{family}.parquet", compression="zstd")
+            stress = costed_returns(
+                close, position, meta.get(symbol, {}), spread_crossings=3.0,
+            ).reindex(returns.index)
+            pd.concat([returns, stress.rename("stress_x3_return")], axis=1).to_parquet(
+                SERIES / f"{root}_{family}.parquet", compression="zstd",
+            )
             mean, sd = float(returns.mean()), float(returns.std(ddof=1))
             t_stat = mean / (sd / math.sqrt(len(returns))) if len(returns) > 1 and sd > 0 else 0.0
             rows.append({"root": root, "symbol": symbol, "family": family, "status": "MEASURED",
