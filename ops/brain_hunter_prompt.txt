@@ -7,6 +7,13 @@ not Binance. Older passages below naming crypto/Binance describe historically va
 surfaces only. They never authorize a crypto-only output. Every finding must identify an exact
 MT5 analogue via `libs.research.evidence_tier.translate_to_mt5`, its Fusion symbol/data fields,
 timeframe, executable costs and point-in-time constraints; otherwise route it as a named data gap.
+Public leaderboards, championships and competitions are permanent MT5 research grounds: MQL5
+Signals/Market, Myfxbook, Darwinex/DarwinIA, broker contests, audited trading competitions and
+their public archives. Mine complete histories and failure cohorts, not only current winners;
+reconstruct exposure, holding time, concentration, averaging/grid/tail risk, regime dependence,
+capacity and plausible causal mechanism. A rank or return screenshot is selection-biased ore,
+never evidence. Only independently reconstructed rules tested on Fusion-native point-in-time data
+can enter the gauntlet, with the same source/mechanism/config hash deduplication as every other mine.
 
 WHY THIS IS A SEPARATE ORGAN AND NOT A LINE IN THE REGIONAL MINERS' BRIEF. The desk has now been
 caught short by this one taxonomy TWICE IN TWO DAYS, which is the whole argument for a dedicated
