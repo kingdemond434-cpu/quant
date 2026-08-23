@@ -221,7 +221,7 @@ if (Test-Path $supervisor) {
     }
 }
 
-$shadowSync = Join-Path $DeskRoot "scripts\sync_shadow_to_vps.ps1"
+$shadowSync = Join-Path $DeskRoot "scripts\sync_shadow_to_git.ps1"
 if ((Test-Path $shadowSync) -and -not $WhatIfOnly) {
     try {
         $syncAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument `
@@ -240,7 +240,7 @@ if ((Test-Path $shadowSync) -and -not $WhatIfOnly) {
             -Confirm:$false -ErrorAction SilentlyContinue
         Register-ScheduledTask -TaskName "MT5-ShadowSync" -Action $syncAction `
             -Trigger $syncTrigger -Settings $syncSettings -Principal $syncPrincipal `
-            -Description "Publish complete MT5 shadow evidence to the shared VPS." | Out-Null
+            -Description "Commit MT5 shadow-health state to git for cross-brain visibility." | Out-Null
         Write-Host "  [OK  ] MT5-ShadowSync registered"
     } catch {
         Write-Host ("  [FAIL] MT5-ShadowSync {0}" -f $_.Exception.Message)

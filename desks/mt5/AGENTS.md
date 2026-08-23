@@ -14,19 +14,24 @@
    NOT OneDrive).
 6. Hold files `data/HOLD_<target>` pause a supervisor target. Lifting a hold
    resumes it. Do not fake markers.
-7. VPS (quant@95.216.191.70, desks/mt5) is the always-on research authority
-   when this box is off; changes must be synced (scripts/sync_to_vps.ps1)
-   and pushed so every brain sees them.
+7. Hetzner (quant@95.216.191.70) was fully decommissioned 2026-08-23 -- it
+   was still running the retired native-crypto desk's own cron/systemd
+   alongside serving as the shadow-sync destination, so it is gone entirely,
+   not just the crypto half. It is no longer a research authority, a sync
+   target, or reachable for anything. Cross-brain visibility now travels
+   through git itself (scripts/sync_shadow_to_git.ps1, see below) -- push so
+   every brain sees changes, same as always, just with no VPS in the loop.
 
 ## CANONICAL LIVE BOX (2026-08-22, standing until superseded here)
 
 **Contabo (`C:\opt\quant`, Windows) is the sole canonical live execution box.**
 It runs MT5-Gateway/MT5-Hourly/MT5-Shadow/MT5-ShadowSync/MT5-ResearchSupervisor
 against the FUSION LIVE account (server `FusionMarkets-Live`), and its
-`reports/shadow/shadow_health.json` (synced to Hetzner every 15 min by
-MT5-ShadowSync) is the ONE authoritative shadow-evidence state -- it now also
-carries `gateway_armed` and `promoted_live_sleeves` so live-arm state is
-visible without a shell on the box.
+`reports/shadow/shadow_health.json` (committed straight to git every 15 min
+by MT5-ShadowSync running scripts/sync_shadow_to_git.ps1 -- Hetzner is
+decommissioned, see rule 7 above) is the ONE authoritative shadow-evidence
+state -- it now also carries `gateway_armed` and `promoted_live_sleeves` so
+live-arm state is visible without a shell on the box.
 
 **The principal's laptop (`C:\Users\dell\mt5-research`) is RETIRED, not idle.**
 Its MT5-*, QuantMT5Frontier and MarkerTest scheduled tasks are disabled ON
@@ -49,27 +54,32 @@ by re-breaking something already fixed once.
 
 ## VERIFYING CONTABO WITHOUT A SHELL ON IT
 
-No installer in this repo ever enables an SSH SERVER on Contabo -- every SSH
-usage that exists (sync_to_vps.ps1, sync_shadow_to_vps.ps1) is Contabo acting
-as the CLIENT, reaching OUT to Hetzner. Nothing sets it up to accept inbound
-connections. A brain that tries to SSH INTO Contabo directly is fighting an
-undocumented, unsupported path -- and the failure mode observed 2026-08-22
-was exactly this: blocked by a host-key mismatch, unable to verify Contabo,
-and it substituted the laptop as a stand-in instead. That substitution is
-never correct (see above); the right move is a different verification path,
-not a different box.
+No installer in this repo ever enables an SSH SERVER on Contabo -- historically
+the only SSH usage (sync_to_vps.ps1, sync_shadow_to_vps.ps1, both now unwired
+-- see rule 7 and CANONICAL LIVE BOX above) was Contabo acting as the CLIENT,
+reaching OUT to Hetzner, which is fully decommissioned as of 2026-08-23.
+Nothing ever set Contabo up to accept inbound connections, and there is now
+no VPS to reach outbound to either. A brain that tries to SSH INTO Contabo
+directly is fighting an undocumented, unsupported path -- and the failure
+mode observed 2026-08-22 was exactly this: blocked by a host-key mismatch,
+unable to verify Contabo, and it substituted the laptop as a stand-in
+instead. That substitution is never correct (see above); the right move is a
+different verification path, not a different box.
 
-**THE SUPPORTED PATH: read Hetzner's synced copy.** MT5-ShadowSync already
-pushes `reports/shadow/shadow_health.json` from Contabo to Hetzner
-(`/home/quant/quant-platform/desks/mt5/reports/shadow/`) every 15 minutes.
-That file carries `status`, `configured_sleeves`, `sleeves_with_forward_
-trades`, `evidence_blocked_sleeves`, `errors`, `gateway_armed` and
+**THE SUPPORTED PATH: read the git-committed shadow state.** MT5-ShadowSync
+now runs scripts/sync_shadow_to_git.ps1, which commits and pushes
+`desks/mt5/reports/shadow/shadow_health.json` (plus `data/gateway_state.json`,
+`data/sleeves.json`, `data/regime_state.json`) straight to the shared branch
+every 15 minutes -- no VPS, no ssh, no scp. shadow_health.json carries
+`status`, `configured_sleeves`, `sleeves_with_forward_trades`,
+`evidence_blocked_sleeves`, `errors`, `gateway_armed` and
 `promoted_live_sleeves` -- everything needed to answer "is Contabo healthy
 and what is its live-arm state" without ever touching Contabo directly. Any
-brain with Hetzner access (`quant@95.216.191.70`) or a synced local checkout
-reads that file. This is the DEFAULT verification method. If it looks stale
-(older than ~20 minutes), the finding is "the sync pipe may be down," not
-"Contabo may be down" -- those are different problems with different fixes.
+brain that can `git fetch`/`git pull` this branch already has it -- that is
+now the entire requirement, nothing box-specific. This is the DEFAULT
+verification method. If it looks stale (older than ~20 minutes), the finding
+is "the sync task may be down on Contabo," not "Contabo may be down" -- those
+are different problems with different fixes.
 
 **IF DIRECT SSH TO CONTABO IS GENUINELY NEEDED** (running a live command,
 not just reading state) and it presents a host key that doesn't match a

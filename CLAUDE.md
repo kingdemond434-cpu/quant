@@ -39,9 +39,14 @@ with the vocabulary the document itself would use.
 
 ## Standing orders that bind the UNIVERSE, not the method
 
-- **VPS IP: 95.216.191.70** — the production box this repo deploys to. No SSH access from this
-  container (confirmed repeatedly — only HTTPS reads via `dash.quanttt.xyz`'s static `web/*.json`
-  work). If SSH ever becomes reachable, this is the host.
+- **95.216.191.70 (Hetzner, `dash.quanttt.xyz`) was FULLY DECOMMISSIONED 2026-08-23** (principal's
+  standing order) — it was still running the retired native-crypto desk's own cron/systemd
+  alongside serving as the MT5 desk's shadow-sync destination and dashboard host, so both went
+  together, not just the crypto half. It is no longer a production box, a sync target, or
+  reachable for anything — do not point new work at it. Cross-brain MT5 visibility now travels
+  through git (`desks/mt5/reports/shadow/shadow_health.json` etc., committed every 15 min by
+  `desks/mt5/scripts/sync_shadow_to_git.ps1` — see `desks/mt5/AGENTS.md`). A fresh MT5 dashboard
+  UI is planned but not yet built; there is no dashboard host today.
 - **MT5 UNIVERSE MANDATE (2026-08-18, principal's standing order)** — the desk's primary market
   universe is the full MT5/Fusion Markets universe: FX majors/crosses/exotics, gold (XAUUSD),
   silver, metals, equity indices, energy, soft commodities, US share CFDs. **No crypto-exchange
