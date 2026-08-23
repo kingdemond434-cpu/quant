@@ -366,7 +366,7 @@ def main() -> None:
     _declared = [(s, w, c, "session_range_breakout", False) for s, w, c in SLEEVES]
     _declared += [(s, f, None, f, True) for s, f in UNIVERSE_SLEEVES]
     _work, _blocked = partition_work(_declared, BASE)
-    for sym, selector, cond, fam, _is_universe in _blocked:
+    for sym, selector, cond, _fam, _is_universe in _blocked:
         key = f"{sym}.{selector}" + (f".{cond}" if cond else "")
         st = state.get(key, {"n": 0, "cum_r": 0.0, "max_dd_r": 0.0,
                              "first_entry": None, "last_entry": None})

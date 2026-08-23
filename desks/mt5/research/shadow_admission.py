@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 try:  # package import (tests/library callers) versus direct script execution
     from .gate_policy import all_ten_pass, is_exact_policy
