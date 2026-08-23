@@ -1,5 +1,24 @@
 # GAP REGISTER — live ranked list of known inefficiencies & missing capabilities
 
+**#130 NEW, LOGGED NOT RANKED (2026-08-23) — the data-source intake pipeline itself never
+migrated off crypto.** `docs/research/data_axis_watchlist.md` (3353 lines, 42 catalogued sources)
+is almost entirely crypto-exchange-native (Upbit/Bithumb venue state, Kraken historical archive,
+CoinGecko taxonomy, Polymarket-vs-Deribit BTC contracts, DEX wallet tape, stablecoin flows) with
+essentially zero MT5/FX-macro content (1 incidental grep match repo-wide). `scripts/
+source_backlog_next.py --limit 0` currently surfaces exactly these crypto items as "VERIFY this
+cycle" / "DECIDE this cycle" — i.e. the desk's own designated tool for "what data source to hunt
+next" is actively directing effort at the MT5 UNIVERSAL MANDATE's explicitly banned target
+(CLAUDE.md: "no miner, hunter, query... may target crypto-exchange-native opportunities"). Same
+defect class as the Hetzner crontab.manifest drift fixed the same day (legacy crypto machinery
+still directing live effort post-pivot), just in the research-intake pipeline instead of ops.
+NOT fixed here: this needs a genuine per-source re-evaluation against the MT5/FX-macro universe
+(42 entries, each requiring real verification work per the watchlist's own stated process), not a
+mechanical edit — attempting one blind risks corrupting `libs/research/source_backlog.py`'s
+parsing contract for a 3353-line, format-sensitive file. Principal declined the bounded-fix and
+full-rebuild options offered in-session in favor of logging this as its own priority item first.
+NEXT STEP: a dedicated research pass rebuilding the watchlist against MT5/FX/metals/indices/
+energy/commodities mechanisms, source by source, same rigor as the original crypto build.
+
 _MERGE 2026-08-04 (two account lines united; nothing dropped): the governance line's newest
 re-rank is 2026-08-01T17:35Z (directly below); the execution line's 2026-08-02T13:20Z re-rank —
 the newest overall, and the owner of the current RANK list — sits below the principal-override
