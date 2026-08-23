@@ -45,7 +45,12 @@ REPORTS = BASE / "reports"
 UNI = BASE / "data" / "universe"
 sys.path.insert(0, str(BASE))
 sys.path.insert(0, str(BASE / "research"))
-QP = Path(r"C:\Users\dell\quant-platform") if os.name == "nt" else Path.home() / "quant-platform"
+# REPO ROOT, DERIVED -- not a hardcoded "C:\Users\dell\quant-platform". That path is both the
+# retired laptop's user account AND a folder name ("quant-platform") this repo does not even
+# have on Contabo (it is checked out as "quant"). libs/validation/* -- everything this gate
+# imports next -- lives two levels above desks/mt5, wherever the checkout actually sits, so QP
+# is derived from BASE the same way every other path in this repo was fixed to be tonight.
+QP = BASE.parent.parent
 sys.path.insert(0, str(QP))
 
 from libs.validation.cpcv import CPCV  # noqa: E402
