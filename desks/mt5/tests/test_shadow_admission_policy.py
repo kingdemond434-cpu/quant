@@ -12,8 +12,8 @@ for path in (DESK, DESK / "research", DESK.parent.parent):
 from gate_policy import (  # noqa: E402
     ATTESTATION,
     COST_SCENARIO,
-    DSR_THRESHOLD,
     DONE_MARKER,
+    DSR_THRESHOLD,
     GATES,
     PBO_THRESHOLD,
     SPA_ALPHA,
@@ -121,3 +121,12 @@ def test_hunt16_stage_one_rejects_remain_in_universal_trial_ledger() -> None:
     reject_continue = source.index("continue", reject_append)
     assert reject_append < reject_continue
     assert '"all": results' in source[reject_append:reject_continue]
+
+
+def test_every_hunt_uses_the_same_calibrated_cost_and_trial_policy() -> None:
+    source = (DESK / "research" / "universal_gate.py").read_text(encoding="utf-8")
+    assert "calibrated_census_report" in source
+    assert "charged_trial_count" in source
+    assert "Costs.from_symbol" in source
+    assert "commission_per_lot * COST_SCENARIO" not in source
+    assert "pd.DataFrame(cols).sort_index().fillna(0.0)" in source

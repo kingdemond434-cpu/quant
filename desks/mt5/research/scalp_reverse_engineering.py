@@ -26,7 +26,7 @@ from libs.validation.dsr import probabilistic_sharpe_ratio  # noqa: E402
 
 DATA = DESK / "data" / "universe"
 OUT = DESK / "reports" / "scalp_reverse_engineering.json"
-VERSION = "screenshot-scalp-2026-08-22-a"
+VERSION = "public-scalp-reconstruction-2026-08-23-b"
 FUSION_COMMISSION_PRICE = 0.045  # $4.50 round turn / 100 oz XAUUSD contract
 
 
@@ -72,6 +72,26 @@ def _signals(df: pd.DataFrame, cfg: Config) -> np.ndarray:
     )
     disp[good & (body_fraction > 0.5)] = 1
     disp[good & (body_fraction < -0.5)] = -1
+    if cfg.family == "sweep_fvg_retrace":
+        # Public-video descendant, reconstructed as a causal bar rule rather than copied claims:
+        # bar t-2 sweeps liquidity and closes back inside; bar t-1 displaces away and leaves a
+        # three-bar imbalance; bar t retraces into that imbalance; enter no earlier than t+1 open.
+        # There is deliberately no session or higher-timeframe bias: those filters hurt the
+        # source's own claimed study and constitute separate hypotheses, not hidden defaults.
+        out = np.zeros(len(df), dtype=np.int8)
+        for i in range(4, len(df) - 1):
+            direction = int(sweep[i - 1])
+            if direction == 0 or int(disp[i]) != direction:
+                continue
+            if direction > 0:
+                gap_lo, gap_hi = float(high[i - 2]), float(low[i])
+            else:
+                gap_lo, gap_hi = float(high[i]), float(low[i - 2])
+            if gap_hi <= gap_lo:
+                continue
+            if float(low[i + 1]) <= gap_hi and float(high[i + 1]) >= gap_lo:
+                out[i + 2 if i + 2 < len(out) else i + 1] = direction
+        return out
     if cfg.family == "sweep_reclaim":
         return sweep
     if cfg.family == "displacement_continuation":
@@ -176,7 +196,8 @@ def _stats(rs: np.ndarray) -> dict:
 def _configs(timeframe: str) -> list[Config]:
     holds = {"M1": (5, 15), "M5": (3, 9), "M15": (2, 6)}[timeframe]
     return [Config(*values) for values in itertools.product(
-        ("sweep_reclaim", "displacement_continuation", "sweep_or_displacement"),
+        ("sweep_reclaim", "displacement_continuation", "sweep_or_displacement",
+         "sweep_fvg_retrace"),
         (20,), (1.5,), (1.0, 1.5), (0.5, 1.0), holds,
         ("single", "bounded_structural"),
     )]
@@ -189,7 +210,7 @@ def run() -> dict:
         "selection": "first 60% chronological; report/promote on untouched last 40%",
         "same_bar_policy": "stop_first", "timeframes": {},
     }
-    promote: list[dict] = []
+    screens: list[dict] = []
     for tf in ("M1", "M5", "M15"):
         path = DATA / f"XAUUSD_{tf}.parquet"
         if not path.exists():
@@ -205,7 +226,8 @@ def run() -> dict:
             ranked.append((float(rs.mean()) if len(rs) else -math.inf, cfg))
         # One winner per mechanism and implementation mode, not one cherry-picked global winner.
         selected = []
-        for family in ("sweep_reclaim", "displacement_continuation", "sweep_or_displacement"):
+        for family in ("sweep_reclaim", "displacement_continuation", "sweep_or_displacement",
+                       "sweep_fvg_retrace"):
             for mode in ("single", "bounded_structural"):
                 eligible = [(score, cfg) for score, cfg in ranked
                             if cfg.family == family and cfg.mode == mode]
@@ -214,18 +236,21 @@ def run() -> dict:
                 zero = simulate(test, winner, cost="frictionless")
                 stats, zero_stats = _stats(oos), _stats(zero)
                 row = {"config": winner.__dict__, "oos": stats, "frictionless_ablation": zero_stats}
-                # Existing original research screen: PSR >= .95 vs SR0=0. Shadow only.
+                # Cheap ranking screen only. It has zero promotion authority: every positive screen
+                # must next become a dated return series and clear the universal ten gates.
                 row["original_gate"] = bool(stats["n"] >= 30 and stats["psr"] >= 0.95)
-                row["disposition"] = "SHADOW_CANDIDATE" if row["original_gate"] else "REJECT"
+                row["disposition"] = "GAUNTLET_REQUIRED" if row["original_gate"] else "REJECT"
                 selected.append(row)
                 if row["original_gate"]:
-                    promote.append({"timeframe": tf, **row})
+                    screens.append({"timeframe": tf, **row})
         report["timeframes"][tf] = {
             "status": "MEASURED", "bars": len(df), "train_bars": len(train),
             "oos_bars": len(test), "configs_tried": len(configs), "selected": selected,
         }
-    report["shadow_candidates"] = promote
-    report["verdict"] = ("SHADOW_CANDIDATES" if promote else
+    report["screen_candidates"] = screens
+    # Compatibility key retained for consumers, but it can never contain a PSR-only screen.
+    report["shadow_candidates"] = []
+    report["verdict"] = ("GAUNTLET_REQUIRED" if screens else
                          "REJECTED: no costed untouched-OOS arm cleared the original gate")
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(report, indent=2), "utf-8")
@@ -235,7 +260,8 @@ def run() -> dict:
 def main() -> int:
     report = run()
     print(json.dumps({"verdict": report["verdict"],
-                      "shadow_candidates": len(report["shadow_candidates"])}, indent=2))
+                      "screen_candidates": len(report["screen_candidates"]),
+                      "shadow_candidates": 0}, indent=2))
     for tf, result in report["timeframes"].items():
         print(tf, result.get("status"), "bars=", result.get("bars", 0))
         for row in result.get("selected", []):

@@ -34,16 +34,17 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import datetime, timedelta, timezone
+from contextlib import suppress
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
-
 from mt5desk.config import DATA
 
 TAPE = DATA / "tape"
 TICKS = TAPE / "ticks"
 DEPTH = TAPE / "depth"
+TERMS = TAPE / "contract_terms"
 STATE = TAPE / "tape_state.json"
 PROBE = TAPE / "depth_probe.json"
 
@@ -54,6 +55,50 @@ MAX_TICKS_PER_CALL = 2_000_000
 #: How far back a symbol with no recorded state starts. Deliberately short: the point is to stop
 #: losing NEW seconds, and a broker's tick history is usually thin anyway.
 COLD_START_DAYS = 7
+
+
+def contract_terms_row(symbol: str, info: object, at: datetime) -> dict:
+    """Point-in-time broker financing and contract terms; never backfilled from today's values."""
+    return {
+        "observed_at": at.isoformat(timespec="seconds"),
+        "symbol": symbol,
+        "swap_long": float(info.swap_long),
+        "swap_short": float(info.swap_short),
+        "swap_mode": int(info.swap_mode),
+        "swap_rollover3days": int(info.swap_rollover3days),
+        "contract_size": float(info.trade_contract_size),
+        "tick_size": float(info.trade_tick_size),
+        "tick_value": float(info.trade_tick_value),
+        "currency_profit": str(getattr(info, "currency_profit", "")),
+        "currency_margin": str(getattr(info, "currency_margin", "")),
+    }
+
+
+def record_contract_terms(symbols: list[str]) -> dict:
+    """Accrue the missing point-in-time swap history from the connected Fusion terminal."""
+    import MetaTrader5 as mt5
+
+    at = datetime.now(UTC)
+    rows, failures = [], {}
+    for symbol in symbols:
+        info = mt5.symbol_info(symbol)
+        if info is None:
+            failures[symbol] = "symbol_info unavailable"
+            continue
+        try:
+            rows.append(contract_terms_row(symbol, info, at))
+        except (AttributeError, TypeError, ValueError) as exc:
+            failures[symbol] = f"{type(exc).__name__}: {exc}"
+    if rows:
+        path = TERMS / f"{at.date().isoformat()}.parquet"
+        frame = pd.DataFrame(rows)
+        if path.exists():
+            frame = pd.concat([pd.read_parquet(path), frame], ignore_index=True)
+        frame = frame.drop_duplicates(subset=["observed_at", "symbol"], keep="last")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        frame.to_parquet(path, index=False, compression="zstd")
+    return {"observed_at": at.isoformat(timespec="seconds"), "rows": len(rows),
+            "failures": failures}
 
 
 def _load(path: Path, default):
@@ -90,18 +135,16 @@ def probe_depth(symbols: list[str]) -> dict:
                         rec["verdict"] = "REAL_DEPTH"
                     elif len(book):
                         rec["verdict"] = "TOP_OF_BOOK_ONLY"
-        except Exception as exc:                                        # noqa: BLE001
+        except Exception as exc:
             rec["error"] = f"{type(exc).__name__}: {exc}"
         finally:
-            try:
+            with suppress(Exception):
                 mt5.market_book_release(sym)
-            except Exception:                                           # noqa: BLE001
-                pass
         out[sym] = rec
 
     real = [s for s, r in out.items() if r["verdict"] == "REAL_DEPTH"]
     verdict = {
-        "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "at": datetime.now(UTC).isoformat(timespec="seconds"),
         "symbols": out,
         "symbols_with_real_depth": real,
         "section_222_buildable": bool(real),
@@ -126,16 +169,16 @@ def record_ticks(symbols: list[str]) -> dict:
     import MetaTrader5 as mt5
 
     state = _load(STATE, {})
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     summary: dict[str, dict] = {}
 
     for sym in symbols:
         last = state.get(sym, {}).get("last_tick_ms")
-        start = (datetime.fromtimestamp(last / 1000.0, tz=timezone.utc) + timedelta(milliseconds=1)
+        start = (datetime.fromtimestamp(last / 1000.0, tz=UTC) + timedelta(milliseconds=1)
                  if last else now - timedelta(days=COLD_START_DAYS))
         try:
             ticks = mt5.copy_ticks_range(sym, start, now, mt5.COPY_TICKS_ALL)
-        except Exception as exc:                                        # noqa: BLE001
+        except Exception as exc:
             summary[sym] = {"error": f"{type(exc).__name__}: {exc}"}
             continue
         if ticks is None or len(ticks) == 0:
@@ -164,7 +207,7 @@ def record_ticks(symbols: list[str]) -> dict:
         state[sym] = {"last_tick_ms": int(df["time_msc"].iloc[-1]),
                       "last_run": now.isoformat(timespec="seconds"),
                       "last_tick_utc": str(df["ts"].iloc[-1])}
-        summary[sym] = {"new_ticks": int(len(df)), "rows_on_disk_touched": written,
+        summary[sym] = {"new_ticks": len(df), "rows_on_disk_touched": written,
                         "through": str(df["ts"].iloc[-1])}
 
     TAPE.mkdir(parents=True, exist_ok=True)
@@ -201,8 +244,8 @@ def tape_features(sym: str, day: str) -> pd.DataFrame | None:
 
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
-    from mt5desk.config import terminal_path
     import MetaTrader5 as mt5
+    from mt5desk.config import terminal_path
 
     if mt5.terminal_info() is None and not mt5.initialize(path=terminal_path()):
         print(f"mt5 init failed: {mt5.last_error()}")
@@ -219,6 +262,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"constitution 222 buildable here: {v['section_222_buildable']}")
         return 0
 
+    terms = record_contract_terms(symbols)
     summary = record_ticks(symbols)
     total = sum(r.get("new_ticks", 0) for r in summary.values())
     for s, r in sorted(summary.items()):
@@ -227,6 +271,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(f"  {s:<10} +{r.get('new_ticks', 0):>9,} ticks  through {r.get('through', '-')}")
     print(f"\n{total:,} new ticks recorded to {TICKS}")
+    print(f"{terms['rows']:,} point-in-time contract/swap rows recorded to {TERMS}")
     return 0
 
 

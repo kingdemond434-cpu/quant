@@ -28,7 +28,7 @@ from __future__ import annotations
 import json
 import sys
 import traceback
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
@@ -41,7 +41,7 @@ LOG = BASE / "logs" / "daily_cycle.log"
 
 
 def dlog(msg: str) -> None:
-    line = f"{datetime.now(timezone.utc).isoformat(timespec='seconds')} {msg}"
+    line = f"{datetime.now(UTC).isoformat(timespec='seconds')} {msg}"
     print(line, flush=True)
     LOG.parent.mkdir(parents=True, exist_ok=True)
     with LOG.open("a", encoding="utf-8") as f:
@@ -65,16 +65,16 @@ def run_step(name: str, fn) -> dict:
     first failure would mean a closed laptop silently suppresses the execution measurement too --
     and an unmeasured failure is the thing this desk is least willing to have.
     """
-    started = datetime.now(timezone.utc)
+    started = datetime.now(UTC)
     try:
         fn()
         out = {"ok": True}
         dlog(f"{name}: ok")
-    except Exception as exc:                                        # noqa: BLE001
+    except Exception as exc:
         out = {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
         dlog(f"{name}: FAILED -- {out['error']}")
         dlog(traceback.format_exc().rstrip())
-    out["seconds"] = round((datetime.now(timezone.utc) - started).total_seconds(), 1)
+    out["seconds"] = round((datetime.now(UTC) - started).total_seconds(), 1)
     return out
 
 
@@ -98,13 +98,22 @@ def _markout() -> None:
     markout_path = BASE / "reports" / "markout.json"
     markout_path.parent.mkdir(parents=True, exist_ok=True)
     markout_path.write_text(json.dumps({
-        "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "at": datetime.now(UTC).isoformat(timespec="seconds"),
         "usable": m.usable, "n_matched": m.n_matched,
         "n_unfilled_intents": m.n_unfilled_intents,
         "n_unmatched_deals": m.n_unmatched_deals,
         "mean_slip_quote": m.mean_slip_quote, "mean_slip_r": m.mean_slip_r,
         "edge_share": m.edge_share, "why": m.why,
     }, indent=2), encoding="utf-8")
+
+
+def _futures_curves() -> None:
+    """Accrue real contract curves so roll/calendar hypotheses stop remaining prose-blocked."""
+    import fetch_futures_curves
+
+    rc = fetch_futures_curves.main([])
+    if rc not in (0, 2):
+        raise RuntimeError(f"fetch_futures_curves returned {rc}")
 
 
 def _export_aurum() -> None:
@@ -139,14 +148,15 @@ def _export_aurum() -> None:
 #: unconditionally: it reads the live ledger, so it reports on the armed book whether or not
 #: shadow could reach a terminal. The Aurum export runs after all of them, so it can carry
 #: anything today's cycle produced.
-STEPS = (("shadow", _shadow), ("promoter", _promote), ("markout", _markout),
+STEPS = (("futures_curves", _futures_curves), ("shadow", _shadow),
+         ("promoter", _promote), ("markout", _markout),
          ("export_aurum", _export_aurum))
 
 
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     force = "--force" in argv
-    today = datetime.now(timezone.utc).date().isoformat()
+    today = datetime.now(UTC).date().isoformat()
     stamp = _load_stamp()
 
     if stamp.get("last_run") == today and not force:
