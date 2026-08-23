@@ -61,17 +61,20 @@ from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus  #
 
 from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
+from gate_policy import (  # noqa: E402
+    ATTESTATION as GATE_POLICY,
+    COST_SCENARIO,
+    DSR_THRESHOLD,
+    DONE_MARKER,
+    GATES as GATE_NAMES,
+    PBO_THRESHOLD,
+    SPA_ALPHA,
+    TRIALS_MULTIPLIER,
+    WF_MIN_STABILITY,
+    WF_SPLITS,
+)
 
-TRIALS_MULTIPLIER = 7.0
-DSR_THRESHOLD = 0.95
-PBO_THRESHOLD = 0.5
-SPA_ALPHA = 0.05
-WF_SPLITS = 4
-WF_MIN_STABILITY = 0.5
-COST_SCENARIO = 3.0
-GATES = ["economic_prior", "in_sample_screen", "deflated_sharpe", "pbo",
-         "reality_check_spa", "cpcv", "walk_forward", "stress_costs",
-         "lockbox", "expected_value"]
+GATES = list(GATE_NAMES)
 HUNTS = ["hunt17", "hunt19", "hunt20", "hunt21", "hunt22", "hunt23"]
 GATE_MODULES = {  # hunt -> module + report file
     "hunt17": ("run_hunt17", "hunt17.json"),
@@ -293,10 +296,10 @@ def _gauntlet_once(cells: list[Cell], hunt: str, workers: int) -> dict:
 
 
 def main() -> int:
-    done_flag = REPORTS / "DONE_qquant_gates"
+    done_flag = REPORTS / DONE_MARKER
     held_flag = BASE / "data" / "HOLD_qquant_gates"
     if not done_flag.exists() and not held_flag.exists():
-        print("waiting for DONE_qquant_gates (hunt12/16 REAL3 path) ...", flush=True)
+        print(f"waiting for {DONE_MARKER} (current original ten-gate run) ...", flush=True)
         while not done_flag.exists():
             time.sleep(60)
         print("qquant gates done, starting universal gauntlet", flush=True)
@@ -328,6 +331,13 @@ def main() -> int:
         (REPORTS / f"DONE_universal_{hunt}").write_text(
             datetime.now(timezone.utc).isoformat(), encoding="utf-8")
     # hunt18 loop-experiment reports
+    # Clear run_hunt17 anchor cache so it reloads fresh T10YIE
+    import run_hunt17 as _rh17
+    if hasattr(_rh17, "_ANC"):
+        _rh17._ANC = None
+    import mt5desk.families as _mt5fam
+    if hasattr(_mt5fam, "_ANC"):
+        _mt5fam._ANC = None
     for rp in sorted(REPORTS.glob("hunt18_*.json")):
         marker = REPORTS / f"DONE_universal_{rp.stem}"
         if marker.exists():
@@ -371,6 +381,7 @@ def main() -> int:
 
     (REPORTS / "UNIVERSAL_SURVIVORS.json").write_text(
         json.dumps({"n": len(survivors_all), "survivors": survivors_all,
+                    "gate_policy": GATE_POLICY,
                     "note": "UNIVERSAL 10-GATE PASS ONLY. Placebo null + fragility "
                             "apply before portfolio entry.",
                     "swept_at": datetime.now(timezone.utc).isoformat()},

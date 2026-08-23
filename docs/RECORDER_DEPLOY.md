@@ -1,3 +1,8 @@
+> **DECOMMISSIONED 2026-08-23.** The Hetzner VPS this document deploys to (95.216.191.70) is fully
+> torn down. The desk migrated to MT5/Fusion (`CLAUDE.md` MT5 UNIVERSAL MANDATE); the live box is
+> Contabo (`desks/mt5/AGENTS.md`). Kept as historical record -- do not follow it to bring anything
+> back up.
+
 # Starting the recorders — the one action that unblocks everything downstream
 
 > **This document covers the DATA side only.** For the whole desk — the cadence engine, the pager,

@@ -23,6 +23,11 @@ Survivor claim → universal 10-gate pass (original quant-platform
 libs/validation, verbatim thresholds) → signal-information gate → allocation
 (E[log W], NaN-aware) → deployment. Nothing else promotes anything.
 
+The same original ten-gate pass is the sole admission authority for shadow.
+Battery scores, discovery screens, effective-N experiments and later harsher
+bars are diagnostics only: they cannot admit, veto, revoke or grandfather a
+shadow sleeve. Missing or threshold-drifted gate attestations fail closed.
+
 - signal gate (research/signal_gate.py): per-experiment block-bootstrap
   (999 reps, block 5) on forward returns at horizons 1/2/5/10 H4 bars.
   A survivor only enters allocation with verdict INFORMED (p < 0.05 at any

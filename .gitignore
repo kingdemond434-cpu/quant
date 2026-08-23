@@ -115,7 +115,21 @@ data/*
 !data/delisted_rosters/*.json
 web/*
 !web/index.html
-reports/
+# shadow_health.json is the ONE reports/ artifact allowlisted through, at any depth (so this
+# covers desks/mt5/reports/shadow/ too, where the live file actually is): Hetzner (the prior
+# cross-brain sync destination) was fully decommissioned 2026-08-23, so this file now reaches
+# every brain (Claude, Codex, OpenCode, DeepSeek) by riding the git branch they already
+# read/write, committed by desks/mt5/scripts/sync_shadow_to_git.ps1 on the same 15-min cadence
+# the old scp pipe used. It is a small, machine-overwritten JSON health summary, not a data lake.
+# GIT CANNOT RE-INCLUDE A FILE WHOSE PARENT DIRECTORY WAS ITSELF EXCLUDED -- a bare `reports/`
+# (no trailing `*`) excludes the whole subtree with no descent possible, so no `!` pattern below
+# it can ever see inside. This broke once already in-session (silently unignored the ENTIRE
+# desks/mt5/reports tree via a differently-broken anchoring mistake) before landing on the same
+# `dirname/*` idiom `data/delisted_rosters/` already uses above, which keeps descent open.
+**/reports/*
+!**/reports/shadow/
+**/reports/shadow/*
+!**/reports/shadow/shadow_health.json
 lake/
 docs/EXTERNAL_PANEL_DOSSIER.md
 # commit-audit payload: 425KB of `git log --since=24h` patches, REGENERATED on every run by

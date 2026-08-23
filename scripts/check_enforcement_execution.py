@@ -131,6 +131,40 @@ def _strip_citation(raw: str) -> str:
     return s.strip()
 
 
+def _module_or_script(s: str, p: Path) -> str:
+    """'module' (checked by import/reference evidence) or 'script' (checked by process
+    evidence) -- and the split used to be a bare `libs/` prefix, which is a directory-naming
+    guess, not a structural fact. It produced a false DECORATIVE verdict on
+    desks/mt5/mt5desk/risk_units.py (L1.67): that file is a genuine library module -- imported
+    and called from gateway.py, never run standalone -- but it lives under desks/, not libs/,
+    so it was classified 'script' and then judged by `invoked()`, which asks "does anything run
+    this as a process". A pure library module can never produce that evidence even when it is
+    working exactly as designed; demanding it is a category error, not a wiring gap.
+
+    THE STRUCTURAL SIGNAL: `if __name__ == "__main__":`. A file with one is DESIGNED to run as a
+    process (gateway.py has one; it is genuinely `python gateway.py`-able). A file with neither
+    that guard nor a `libs/` path is a library module by construction, wherever it happens to
+    live, and belongs on the import-evidence path instead.
+    """
+    if s.startswith("libs/"):
+        return "module"
+    try:
+        text = p.read_text("utf-8", errors="ignore")
+    except OSError:
+        return "script"
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return "script"
+    has_main_guard = any(
+        isinstance(n, ast.If)
+        and isinstance(n.test, ast.Compare)
+        and isinstance(n.test.left, ast.Name) and n.test.left.id == "__name__"
+        for n in ast.walk(tree)
+    )
+    return "script" if has_main_guard else "module"
+
+
 def _resolve(cite: str) -> tuple[str, Path | None]:
     """-> (kind, path). kind in {standing, test, script, module, fence, unknown}."""
     s = _strip_citation(cite)
@@ -143,11 +177,11 @@ def _resolve(cite: str) -> tuple[str, Path | None]:
     if s.endswith(".py"):
         p = _ROOT / s
         if p.exists():
-            return ("module" if s.startswith("libs/") else "script"), p
+            return (_module_or_script(s, p)), p
         alt = _ROOT / "scripts" / s  # bare 'revalidate_clocks.py'
         if alt.exists():
             return "script", alt
-        return ("module" if s.startswith("libs/") else "script"), p
+        return (_module_or_script(s, p)), p
     if "/" not in s and "." not in s:
         return "fence", _AUDIT  # a max_audit fence function name
     return "unknown", _ROOT / s
@@ -257,7 +291,13 @@ class _Corpus:
         # reported the tool as INVOKED. A checker that cites itself as evidence launders any
         # mention -- a docstring, a registry key -- into proof of execution.
         _self = Path(__file__).resolve()
-        for f in _py_files("scripts", "libs"):
+        # "desks" WAS MISSING, AND IT IS WHERE EVERY DESK'S OWN CODE ACTUALLY LIVES. A caller
+        # inside desks/mt5/mt5desk/gateway.py referencing a symbol in desks/mt5/mt5desk/
+        # risk_units.py was invisible to this scan by construction -- not a lazy-import edge
+        # case, a directory this corpus never read at all. That produced a false DECORATIVE
+        # verdict on risk_units.py (L1.67) the moment the real caller and the real callee both
+        # happened to live in the one tree this fence never looked at.
+        for f in _py_files("scripts", "libs", "desks"):
             if f.resolve() == _self:
                 continue
             try:

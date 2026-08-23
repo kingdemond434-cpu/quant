@@ -1,3 +1,10 @@
+> **RETIRED, DO NOT FOLLOW.** This arms LIVE CRYPTO trading (Binance futures/spot) on the Hetzner
+> VPS, which is fully decommissioned (2026-08-23) and, independent of that, crypto-exchange-native
+> trading is banned by the standing MT5 UNIVERSAL MANDATE in `CLAUDE.md` -- "no miner, hunter,
+> query... may target crypto-exchange-native opportunities," which covers arming as much as
+> hunting. The only live-arming path today is the MT5/Fusion desk's own gateway
+> (`desks/mt5/mt5desk/gateway.py`), armed via its own documented process, never this runbook.
+
 # Playbook — go-live (S0 -> S1 arming)
 
 Frozen build spec: `docs/LIVE_CONNECTOR_SPEC.md`. Stage machine: `libs/execution/staging.py`

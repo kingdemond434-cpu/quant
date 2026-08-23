@@ -1,4 +1,9 @@
-"""LIVE OI / LONG-SHORT COLLECTOR -- the desk's best mechanism has been running on 2023 data.
+"""DOMINATED (2026-08-23): the desk's MT5-universe analog of "who is crowded" is COT positioning
+(desks/mt5/mt5desk/fetch_cot.py, fetch_tff.py, fetch_cot_disagg.py) -- regulator-published, not a
+scraped venue metric, and it already runs. This script is not deleted (native-crypto machinery
+stays per standing instruction) but is retired from any live schedule; do not re-wire it.
+
+LIVE OI / LONG-SHORT COLLECTOR -- the desk's best mechanism has been running on 2023 data.
 
 THE FINDING THAT MOTIVATED THIS. data/oi_ls_history.jsonl ends 2023-12-03. It is a static backfill
 written once by dl_metrics_history.py for OOS backtesting -- correct as an archive, useless as a

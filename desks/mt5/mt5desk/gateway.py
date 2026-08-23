@@ -683,7 +683,7 @@ def margin_ok(symbol: str, lot: float, price: float) -> bool:
     acc = mt5.account_info()
     if acc is None or acc.margin_free <= 0:
         return False
-    need = mt5.order_calc_margin(symbol, mt5.ORDER_TYPE_BUY, lot, price)
+    need = mt5.order_calc_margin(mt5.ORDER_TYPE_BUY, symbol, lot, price)
     if need is None:
         return True  # cannot compute; let broker decide
     return need <= acc.margin_free * 0.9

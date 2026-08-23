@@ -221,7 +221,7 @@ if (Test-Path $supervisor) {
     }
 }
 
-$shadowSync = Join-Path $DeskRoot "scripts\sync_shadow_to_vps.ps1"
+$shadowSync = Join-Path $DeskRoot "scripts\sync_shadow_to_git.ps1"
 if ((Test-Path $shadowSync) -and -not $WhatIfOnly) {
     try {
         $syncAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument `
@@ -240,7 +240,7 @@ if ((Test-Path $shadowSync) -and -not $WhatIfOnly) {
             -Confirm:$false -ErrorAction SilentlyContinue
         Register-ScheduledTask -TaskName "MT5-ShadowSync" -Action $syncAction `
             -Trigger $syncTrigger -Settings $syncSettings -Principal $syncPrincipal `
-            -Description "Publish complete MT5 shadow evidence to the shared VPS." | Out-Null
+            -Description "Commit MT5 shadow-health state to git for cross-brain visibility." | Out-Null
         Write-Host "  [OK  ] MT5-ShadowSync registered"
     } catch {
         Write-Host ("  [FAIL] MT5-ShadowSync {0}" -f $_.Exception.Message)
@@ -249,36 +249,59 @@ if ((Test-Path $shadowSync) -and -not $WhatIfOnly) {
     Write-Host "  [DRY ] MT5-ShadowSync 15-minute artifact publisher"
 }
 
-# Publish the complete Fusion universe and execution evidence after the hourly producer. The
-# 15-minute shadow bundle is intentionally small and cannot satisfy midnight's universe/markout
-# freshness contract by itself.
-$artifactSync = Join-Path $DeskRoot "scripts\sync_to_vps.ps1"
-if (Test-Path $artifactSync) {
+# MT5-ArtifactSync (sync_to_vps.ps1) is UNWIRED, not deleted (2026-08-23): its whole job was
+# scp'ing to Hetzner (95.216.191.70), which is now fully decommissioned. There is no destination
+# left, so registering this task would just fail every hour forever. Ensure it is NOT registered
+# -- unregistering on every install run makes this durable even if a prior run (or a stale task
+# from before this fix) left it behind, unlike a one-off manual Unregister-ScheduledTask.
+# sync_to_vps.ps1 itself is untouched in case a VPS destination is ever needed again.
+if (-not $WhatIfOnly) {
+    Unregister-ScheduledTask -TaskName "MT5-ArtifactSync" -Confirm:$false -ErrorAction SilentlyContinue
+}
+Write-Host "  [OK  ] MT5-ArtifactSync intentionally not registered (Hetzner decommissioned)"
+
+# L1.67 FENCE, WIRED, NOT JUST WRITTEN. scripts/check_risk_units.py exists, is correct, and
+# CAUGHT NOTHING for its entire life because nothing ever ran it -- the exact bug it exists to
+# catch (gateway.py silently reverted to gold's flat sizing constants, 5.9x over-risk on a
+# promoted non-gold sleeve) shipped and sat undetected in a same-night regression until a broken
+# TEST COLLECTION forced a manual trace. The desk's own enforcement matrix (build_enforcement_
+# matrix.py) counts a fence as "ENFORCED" the moment the file exists, and cannot see the
+# difference between that and a fence that actually runs -- this is what closes that gap for L1.67
+# specifically. Daily cadence: sizing correctness does not drift minute to minute, and the fence's
+# own universe-snapshot staleness check already tolerates up to 30 days.
+$fenceQuantRoot = Split-Path -Parent (Split-Path -Parent $DeskRoot)
+$riskUnitsFence = Join-Path $fenceQuantRoot "scripts\check_risk_units.py"
+if (Test-Path $riskUnitsFence) {
     if ($WhatIfOnly) {
-        Write-Host "  [DRY ] MT5-ArtifactSync hourly universe/markout publisher"
+        Write-Host "  [DRY ] MT5-RiskUnitsFence daily L1.67 sizing-path audit"
     } else {
         try {
-            $artifactAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument `
-                ("-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"{0}`"" -f $artifactSync)
-            $artifactTrigger = New-ScheduledTaskTrigger -Once -At ((Get-Date).Date.AddMinutes(10)) `
-                -RepetitionInterval (New-TimeSpan -Hours 1) `
-                -RepetitionDuration (New-TimeSpan -Days 3650)
-            $artifactSettings = New-ScheduledTaskSettingsSet `
+            # cmd /c wraps the redirect: Task Scheduler has no shell, so `>>` passed directly
+            # in a Python argument string is taken as a literal argument, not a redirect --
+            # same fix as the main $tasks loop above, for the same reason.
+            $fenceLog = Join-Path $logDir "MT5-RiskUnitsFence.log"
+            $fenceCmd = "/d /s /c `"`"$Python`" $pyArgs`"$riskUnitsFence`" >> `"$fenceLog`" 2>&1`""
+            $fenceAction = New-ScheduledTaskAction -Execute "cmd.exe" -Argument $fenceCmd `
+                -WorkingDirectory $fenceQuantRoot
+            $fenceTrigger = New-ScheduledTaskTrigger -Daily -At "06:20"
+            $fenceSettings = New-ScheduledTaskSettingsSet `
                 -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
-                -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 2) `
-                -ExecutionTimeLimit (New-TimeSpan -Minutes 30) -MultipleInstances IgnoreNew
-            $artifactPrincipal = New-ScheduledTaskPrincipal -UserId $env:USERNAME `
+                -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 5) `
+                -ExecutionTimeLimit (New-TimeSpan -Minutes 15) -MultipleInstances IgnoreNew
+            $fencePrincipal = New-ScheduledTaskPrincipal -UserId $env:USERNAME `
                 -LogonType Interactive -RunLevel Limited
-            Unregister-ScheduledTask -TaskName "MT5-ArtifactSync" `
+            Unregister-ScheduledTask -TaskName "MT5-RiskUnitsFence" `
                 -Confirm:$false -ErrorAction SilentlyContinue
-            Register-ScheduledTask -TaskName "MT5-ArtifactSync" -Action $artifactAction `
-                -Trigger $artifactTrigger -Settings $artifactSettings -Principal $artifactPrincipal `
-                -Description "Publish full Fusion universe, research evidence and markouts to VPS." | Out-Null
-            Write-Host "  [OK  ] MT5-ArtifactSync registered"
+            Register-ScheduledTask -TaskName "MT5-RiskUnitsFence" -Action $fenceAction `
+                -Trigger $fenceTrigger -Settings $fenceSettings -Principal $fencePrincipal `
+                -Description "L1.67 daily fence: no sizing call site may price a stop from another instrument's constants." | Out-Null
+            Write-Host "  [OK  ] MT5-RiskUnitsFence registered"
         } catch {
-            Write-Host ("  [FAIL] MT5-ArtifactSync {0}" -f $_.Exception.Message)
+            Write-Host ("  [FAIL] MT5-RiskUnitsFence {0}" -f $_.Exception.Message)
         }
     }
+} else {
+    Write-Host "  [SKIP] MT5-RiskUnitsFence scripts\check_risk_units.py not found at repo root"
 }
 
 # ---- THE LINK THAT WAS NOT AUTOMATIC ---------------------------------------

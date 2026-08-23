@@ -43,6 +43,11 @@ def desk(tmp_path, monkeypatch):
     monkeypatch.setattr(promoter, "LEDGER", tmp_path / "data" / "live_ledger.jsonl")
     monkeypatch.setattr(promoter, "LOG", tmp_path / "logs" / "promoter.log")
     monkeypatch.setattr(promoter.provenance, "current_account", lambda _acc: _ACC)
+    monkeypatch.setattr(promoter, "authorized_specs", lambda _base: {
+        (sym, "asia", state, "session_range_breakout", False)
+        for sym in ("CADJPY", "USDJPY", "EURJPY", "XAUUSD")
+        for state in (None, "FAILED_BREAK", "NORMAL_DAY")
+    })
 
     class Desk:
         root = tmp_path
@@ -91,6 +96,14 @@ def test_an_unconditioned_candidate_promotes_with_a_null_state(desk):
     promoter.main()
     (s,) = desk.sleeves()
     assert s["state"] is None
+
+
+def test_candidate_without_original_ten_gate_certificate_is_blocked(desk, monkeypatch):
+    monkeypatch.setattr(promoter, "authorized_specs", lambda _base: set())
+    desk.shadow({"CADJPY.asia": dict(_GOOD)})
+    promoter.main()
+    assert desk.sleeves() == []
+    assert desk.read_shadow()["CADJPY.asia"]["status"] == "BLOCKED_UNIVERSAL_GATES"
 
 
 def test_promotion_is_idempotent(desk):

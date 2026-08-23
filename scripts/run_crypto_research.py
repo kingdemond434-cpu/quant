@@ -1,4 +1,9 @@
-"""Industrialized crypto hypothesis factory over the Parquet lake -- the daily throughput engine.
+"""DOMINATED (2026-08-23): this role -- the perpetual autonomous hypothesis factory -- is filled
+on the MT5 desk by desks/mt5/research/research_loop.py under MT5-ResearchSupervisor, already
+running. Native-crypto machinery stays in the repo per standing instruction, but is retired from
+any live schedule (the 10 quant-autodiscovery-slice*.timer systemd units that ran this).
+
+Industrialized crypto hypothesis factory over the Parquet lake -- the daily throughput engine.
 
 Feeds the whole crypto universe (lake bars + Level-3 funding) into the generic AutoDiscoveryLab: the
 same validation gauntlet, net of real perp cost, with cross-campaign DSR deflation on the cumulative

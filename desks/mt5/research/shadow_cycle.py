@@ -152,7 +152,8 @@ def run() -> tuple[dict, int]:
     rows = [legacy[key] for key in represented_legacy]
     rows += [(scalp.get("sleeves") or {})[key] for key in represented_scalp]
     missing = sorted((expected_legacy - represented_legacy) | (expected_scalp - represented_scalp))
-    blocked = sum(row.get("status") in {"NO_DATA", "WAITING_FOR_FORWARD_BARS", "STALE_SOURCE"}
+    blocked = sum(row.get("status") in {"NO_DATA", "WAITING_FOR_FORWARD_BARS", "STALE_SOURCE",
+                                         "BLOCKED_UNIVERSAL_GATES"}
                   for row in rows)
     # LIVE-ARM STATE, SURFACED HERE ON PURPOSE. `armed` lives in data/gateway_state.json,
     # box-local and gitignored -- no other brain (Hetzner, a future session, anyone without

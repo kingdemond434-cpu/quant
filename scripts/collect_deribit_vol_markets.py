@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# RETIRED, GENUINELY VENUE-SPECIFIC (2026-08-23): Fusion's MT5 catalogue carries no options, so
+# there is no MT5 translation of a crypto options vol surface. Kept per standing instruction, but
+# never wire this into any live schedule again.
+#
 # INTENDED CADENCE (NOT wired here -- ops/crontab.manifest is owned by another agent this wave, so
 # this comment is the REQUEST, not the installation):
 #

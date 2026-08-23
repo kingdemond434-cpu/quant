@@ -2,12 +2,26 @@
 # PRE-PUSH GATE. Tracked in ops/githooks so all three builder seats get the same one; activate
 # per clone with:  git config core.hooksPath ops/githooks
 #
-# Runs the three FAST gates only (~1 min). The full suite is deliberately not run here: a
-# 60-80 minute pre-push hook gets bypassed within a day, and a gate that is routinely bypassed is
-# worse than none because everyone believes it ran. Run `ops/gates.sh --full` before any commit
-# touching libs/, where the coverage ratchet applies.
+# Runs the three FAST gates (~1 min) plus the constitutional law fences (~30s, L1.37). The full
+# suite is deliberately not run here: a 60-80 minute pre-push hook gets bypassed within a day, and
+# a gate that is routinely bypassed is worse than none because everyone believes it ran. Run
+# `ops/gates.sh --full` before any commit touching libs/, where the coverage ratchet applies.
+#
+# Historically deploy/git_hooks/pre-push carried the law-gate call and this file did not, and
+# core.hooksPath pointed here -- so the law fences ran on deploy but never on an actual push from
+# this checkout. Merged so one active hook enforces both.
 #
 # ESCAPE HATCH, ON PURPOSE AND NAMED: `git push --no-verify` skips this. That is correct for a
 # genuine emergency and dishonest for routine work; the hook cannot tell the difference, and a
 # hook with no escape hatch gets uninstalled instead of bypassed.
-exec "$(git rev-parse --show-toplevel)/ops/gates.sh"
+ROOT="$(git rev-parse --show-toplevel)"
+"$ROOT/ops/gates.sh" || exit 1
+
+PY="$ROOT/.venv/bin/python"
+[ -x "$PY" ] || PY=python3
+if ! "$PY" "$ROOT/scripts/run_law_gate.py" --laws-only; then
+    echo "" >&2
+    echo "PUSH REFUSED: a constitutional law fence is failing (L1.37)." >&2
+    echo "Fix the breach, or push with --no-verify and record why." >&2
+    exit 1
+fi
