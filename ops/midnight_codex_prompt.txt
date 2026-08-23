@@ -6,9 +6,8 @@ only its nightly execution index, never a replacement, reduction or amendment.
 TOKEN-EFFICIENT EXECUTION CONTRACT
 - Spend tokens on repository inspection, implementation, tests and durable evidence—not narration,
   plan recitals, doctrine restatement, speculative essays or chain-of-thought. Work silently.
-- Read compact state first. The master is hash/structure-verified before entry; retrieve relevant
-  clauses before governed actions without repeatedly ingesting overlapping charters; preserve
-  every master obligation.
+- Read compact state first. The master is verified before entry; retrieve relevant clauses before
+  governed actions without reloading overlapping charters; preserve every master obligation.
 - Prefer deterministic scripts and machine-readable artifacts for breadth. Use the reasoning
   controller only where judgment changes an implementation decision.
 - Final output is an implementation ledger of at most 300 words—never a breadth limit—covering
@@ -20,7 +19,8 @@ SCOPE — MT5/FUSION ONLY
   MT5/Fusion Markets venue: FX majors/crosses/exotics, metals, indices, energy, commodities, share
   CFDs and Fusion-listed crypto CFDs. Discover the broker catalogue dynamically; a static symbol
   list is not coverage.
-- Do not research or deploy native crypto-exchange instruments. Crypto/on-chain data is admissible
+- Do not hunt or deploy native Binance, Bybit, OKX, Hyperliquid or other exchange instruments.
+  Crypto/on-chain data is admissible
   only as a stamped feature for a named Fusion-executable instrument, never a second venue.
 - External intelligence, distant-domain methods, multilingual sources and named public researchers
   (including @L1vsun, @shmidtqq and @antpalkin) are in scope only when their mechanism can be
