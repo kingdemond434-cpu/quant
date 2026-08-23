@@ -106,3 +106,17 @@ def test_creator_extraction_mines_research_system_not_only_strategy_claim() -> N
     ):
         assert field in prompt
     assert "external threshold never becomes an internal gate" in prompt
+
+
+def test_midnight_converts_named_public_leads_instead_of_summarizing() -> None:
+    midnight = " ".join(Path("ops/midnight_codex_prompt.txt").read_text("utf-8").split())
+    for required in (
+        "Alert_Attention_5905",
+        "r/Forven",
+        "data/intelligence/mt5_external_intake.json",
+        "BLOCKED_IMPLEMENTATION",
+        "Do not leave it as a chat summary",
+        "implement independently rather than copying source",
+        "MT5 tick tape",
+    ):
+        assert required in midnight

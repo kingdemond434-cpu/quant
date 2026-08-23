@@ -77,6 +77,14 @@ NIGHTLY PRIORITY LOOP
    commission, swap, slippage, latency, capacity and session rules; never direct this miner or any
    midnight cycle toward a crypto-exchange-only universe. Respect public access controls and keep
    blocked captions on bounded exponential retry rather than recording a false clean absence.
+   Treat the Alert_Attention_5905 submitted-post feed, r/Forven, the Forven launch thread and its
+   public repository as mandatory daily public-source grounds. Read
+   data/intelligence/mt5_external_intake.json after the hunter: execute every exact QUEUED recipe
+   through the existing factory and convert each BLOCKED_IMPLEMENTATION item into an independent
+   preregistered MT5 challenger or an evidence-based reject. Do not leave it as a chat summary.
+   For reciprocal-licence code such as AGPL Forven, mine architecture and failures but implement
+   independently rather than copying source. The MT5 tick tape is the required data producer for
+   tick-pressure/multi-rate hypotheses; verify it is growing, then test newly measurable cards.
 5. Inspect persistent workers and all reasoning brains for silent failure, duplicated work, stale
    prompts, unwired outputs, metric gaming and complexity debt. Fix safe positive-EV defects and
    feed the same durable queue/checkpoint so Claude, Codex, OpenCode and future brains continue one

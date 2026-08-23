@@ -296,6 +296,42 @@
    "surface": "x",
    "why": "Self-improving trading/research loops, prediction-market systems, and explicit preservation of NEGATIVE results as research state. Do not assume the account authored or verified every concept it surfaces.",
    "seed_only": true
+  },
+  {
+   "name": "Alert_Attention_5905 submitted posts",
+   "url": "https://www.reddit.com/user/Alert_Attention_5905/submitted/",
+   "kind": "site",
+   "language": "en",
+   "surface": "reddit",
+   "mandatory": true,
+   "why": "Public tick-research workflow and binary-outcome claims. Extract multi-rate tick representations, point-in-time outcome labels, selection funnel, execution assumptions and falsifiers; screenshots and self-reported paper results are claims only. Translate only to Fusion/MT5 instruments and require broker-native ticks."
+  },
+  {
+   "name": "Forven research community",
+   "url": "https://www.reddit.com/r/Forven/",
+   "kind": "site",
+   "language": "en",
+   "surface": "reddit",
+   "mandatory": true,
+   "why": "Mine public failures, gauntlet defects, family saturation, parameter-jitter findings, cost sensitivity and research-process improvements. Community claims are external priors, never survivor evidence."
+  },
+  {
+   "name": "Forven launch and research workflow",
+   "url": "https://www.reddit.com/r/ai_trading/comments/1ucu4og/i_spent_the_past_8_months_working_on_my_own/",
+   "kind": "site",
+   "language": "en",
+   "surface": "reddit",
+   "mandatory": true,
+   "why": "Public description of hypothesis-to-code agents, validation and paper workflow. Independently benchmark each capability against the existing MT5 factory rather than adopting its claims or thresholds."
+  },
+  {
+   "name": "Forven public source",
+   "url": "https://github.com/judder659/Forven",
+   "kind": "site",
+   "language": "en",
+   "surface": "github",
+   "mandatory": true,
+   "why": "Public AGPL-3.0-or-later research-system implementation. Audit architecture and defects as text only; do not copy code into the quant repository. Reimplement positive-EV capabilities independently and retain source/licence provenance."
   }
  ]
 }
