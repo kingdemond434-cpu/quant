@@ -69,7 +69,16 @@ def fetch_contract(symbol: str) -> tuple[pd.DataFrame, dict]:
 
 
 def build_curve(contracts: list[pd.DataFrame], root: str) -> pd.DataFrame:
-    frame = pd.concat(contracts, ignore_index=True).sort_values(["date", "expiration", "symbol"])
+    frame = pd.concat(contracts, ignore_index=True)
+    # Yahoo mixes timezone-aware chart stamps, timezone-naive metadata and missing expiries across
+    # contract vintages. Normalize both columns before subtraction; an unknown expiry cannot define
+    # a curve rank and is retained in coverage but excluded from the measured curve.
+    frame["date"] = pd.to_datetime(frame["date"], utc=True, errors="coerce").dt.normalize()
+    frame["expiration"] = pd.to_datetime(
+        frame["expiration"], utc=True, errors="coerce",
+    ).dt.normalize()
+    frame = frame.dropna(subset=["date", "expiration", "close"])
+    frame = frame.sort_values(["date", "expiration", "symbol"])
     frame["root"] = root
     frame["days_to_expiry"] = (frame["expiration"] - frame["date"]).dt.days
     frame = frame[frame["days_to_expiry"] > 0].copy()
