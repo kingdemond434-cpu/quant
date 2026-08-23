@@ -120,6 +120,11 @@ def build() -> dict[str, Any]:
             "required_data": row.get("data"),
             "empirical_test": row.get("validation"),
             "falsifier": row.get("falsifier"),
+            "regime_hypothesis": row.get("regime_hypothesis"),
+            "activation_rule": row.get("activation_rule"),
+            "reduced_rule": row.get("reduced_rule"),
+            "hibernation_rule": row.get("hibernation_rule"),
+            "unconditional_control": row.get("unconditional_control"),
             "evidence_class": row.get("evidence_class"),
             "component_assets": row.get("component_assets", []),
         }
@@ -342,6 +347,11 @@ def inject_mt5_experiments(items: list[dict[str, Any]]) -> dict[str, Any]:
             "source": item.get("url", item.get("source")),
             "evidence_class": item.get("evidence_class", "UNVERIFIED"),
             "authority": "EXTERNAL_PRIOR_ONLY_ORIGINAL_TEN_GATES_REQUIRED",
+            "regime_hypothesis": item.get("regime_hypothesis"),
+            "activation_rule": item.get("activation_rule"),
+            "reduced_rule": item.get("reduced_rule"),
+            "hibernation_rule": item.get("hibernation_rule"),
+            "unconditional_control": item.get("unconditional_control"),
             "created_at": now,
             "status": "QUEUED",
         })

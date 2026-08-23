@@ -21,8 +21,8 @@ if str(_DESK) not in sys.path:
     sys.path.insert(0, str(_DESK))
 
 from mt5desk.canonical import (  # noqa: E402
-    CLONE_RHO, canonical_formula, census_report, deflation_pair, effective_trials,
-    expected_max_z, fingerprint)
+    CLONE_RHO, calibrated_census_report, canonical_formula, census_report, deflation_pair,
+    effective_trials, expected_max_z, fingerprint, null_calibrated_effective_trials)
 
 RNG = np.random.default_rng(20260817)
 
@@ -78,6 +78,25 @@ def test_independent_trials_are_not_discounted():
     c = effective_trials(_indep(30))
     assert c.n_effective > 25, f"independent trials were discounted to {c.n_effective:.1f}"
     assert c.n_effective <= 30
+
+
+def test_null_calibration_removes_the_estimators_finite_sample_floor():
+    cols = _indep(30, t=90)
+    raw = effective_trials(cols)
+    calibrated = null_calibrated_effective_trials(cols)
+    assert raw.n_effective < 30
+    assert calibrated.n_effective >= raw.n_effective
+    assert calibrated.n_effective > 27
+    assert calibrated.method == "null_calibrated_participation_ratio"
+
+
+def test_null_calibration_is_fixed_and_clone_sensitive():
+    base = RNG.normal(size=120)
+    cols = [base.copy() for _ in range(12)]
+    first = null_calibrated_effective_trials(cols)
+    second = null_calibrated_effective_trials(cols)
+    assert first == second
+    assert 2.0 <= first.n_effective <= 2.5
 
 
 def test_two_tight_clusters_are_seen_as_two_searches_not_twelve():
@@ -150,6 +169,12 @@ def test_both_thresholds_are_always_reported():
     assert {"sr0_raw", "sr0_effective", "n_raw", "n_effective", "threshold_relief"} <= set(d)
     assert d["sr0_effective"] < d["sr0_raw"]
     assert d["threshold_relief"] > 0
+
+
+def test_gate_authoritative_report_identifies_null_calibration():
+    rep = calibrated_census_report(_indep(12, t=80), sd_sharpe=0.30)
+    assert rep["method"] == "null_calibrated_participation_ratio"
+    assert "independent-null rank" in rep["why"]
 
 
 def test_deduplication_cannot_raise_a_threshold_or_invent_relief():

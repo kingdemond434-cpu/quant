@@ -59,6 +59,10 @@ NIGHTLY PRIORITY LOOP
    CPCV/walk-forward/cost stress, failure and near-survivor recycling, shadow accrual, independence,
    portfolio admission, real-fill attribution, financing/cost leakage, capacity and capital use.
 2. Audit the whole Fusion catalogue across appropriate horizons/regimes and cross-asset relations.
+   Treat the preregistered strategy-regime cell as the economic unit: test its unconditional arm
+   as a separately counted control, validate positive net OOS expectancy only while the frozen
+   point-in-time state is active, activate ON only in that state, reduce on measured uncertainty,
+   and hibernate OFF outside it. Unknown state fails closed. Never select a regime on holdout data.
    Search mechanism-first, data-first, anomaly/residual-first, participant/constraint-first, causal,
    graph, incident, adversarial, reverse-engineering and distant-domain methods. Expand weak cells
    without confusing breadth with edge; count every tried cell and preserve negative results.
@@ -78,7 +82,11 @@ NIGHTLY PRIORITY LOOP
    midnight cycle toward a crypto-exchange-only universe. Respect public access controls and keep
    blocked captions on bounded exponential retry rather than recording a false clean absence.
    Treat the Alert_Attention_5905 submitted-post feed, r/Forven, the Forven launch thread and its
-   public repository as mandatory daily public-source grounds. Read
+   public repository, plus Kakushadze/Serur's 151 Trading Strategies SSRN mechanism index, as
+   mandatory daily public-source grounds. Summarize copyrighted material; never redistribute it.
+   Deduplicate its MT5-transferable FX/commodity/futures mechanisms against existing HP/trend,
+   carry, triangular-residual, COT hedging-pressure, value, contrarian and trend paths; block roll
+   yield/calendar spread until real futures-curve data exists rather than proxying a spot CFD. Read
    data/intelligence/mt5_external_intake.json after the hunter: execute every exact QUEUED recipe
    through the existing factory and convert each BLOCKED_IMPLEMENTATION item into an independent
    preregistered MT5 challenger or an evidence-based reject. Do not leave it as a chat summary.

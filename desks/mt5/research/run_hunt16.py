@@ -44,6 +44,7 @@ from research.run_hunt12 import battery, day_states, wf_oos  # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
+HUNT_VERSION = "hunt16-v2-complete-trial-ledger"
 E_MAX = 1.5
 WINDOWS = {
     "asia": dict(range_start=7, wait_bars=12, rr=2.0, ttl_bars=12),
@@ -366,8 +367,9 @@ def main() -> None:
     if partial.exists():
         try:
             saved = json.loads(partial.read_text(encoding="utf-8"))
-            done = saved.get("done", [])
-            results = list(saved.get("all", []))
+            if saved.get("hunt_version") == HUNT_VERSION:
+                done = saved.get("done", [])
+                results = list(saved.get("all", []))
         except Exception:
             pass
     done_cells = {tuple(x) for x in done}
@@ -388,9 +390,7 @@ def main() -> None:
             continue
         h1 = families._h1(pd.read_parquet(fp))
         m = meta.get(sym, {})
-        costs = Costs(spread_per_lot=0.48 if sym == "XAUUSD" else max(
-            m.get("median_spread_pts", 1) * m.get("tick_size", 1e-5) * m.get("contract_size", 1e5), 0.05),
-            commission_per_lot=3.50, contract_oz=m.get("contract_size", 1e5))
+        costs = Costs.from_symbol(m, mult=2.0)
         states = day_states(h1)
         for fname, ffn in FAMILIES.items():
             for side in SIDES:
@@ -408,7 +408,20 @@ def main() -> None:
                             done.append(list(key))
                             continue
                         if not cheap_gate(h1, sub, costs):
+                            # `all` is the universal gate's trial ledger, not a winners list.
+                            # Dropping stage-1 failures here made qquant's claimed full-matrix run
+                            # see only 17 selected cells and undercount the search that selected
+                            # them. Retain every evaluable cell; the universal path independently
+                            # rebuilds its return series and ignores this diagnostic prefilter.
+                            results.append(dict(
+                                sym=sym, fam=fname, side=side, win=wname,
+                                state=st_name, stage1_passed=False, gate=False,
+                            ))
                             done.append(list(key))
+                            partial.write_text(json.dumps(
+                                {"hunt_version": HUNT_VERSION, "done": done, "all": results},
+                                indent=2, default=str),
+                                encoding="utf-8")
                             continue
                         b = battery(h1, sub, costs)
                         wfs = " ".join(f"{x:+.3f}" if x == x else "  nan" for x in b["wf"])
@@ -417,13 +430,15 @@ def main() -> None:
                                f"{b['pf']:5.2f} {b['maxdd']:7.1f} "
                                f"{'PASS' if b['gate'] else 'fail':>5}  WF[{wfs}]")
                         results.append(dict(sym=sym, fam=fname, side=side, win=wname,
-                                            state=st_name, **b))
+                                            state=st_name, stage1_passed=True, **b))
                         done.append(list(key))
                         partial.write_text(json.dumps(
-                            {"done": done, "all": results}, indent=2, default=str),
+                            {"hunt_version": HUNT_VERSION, "done": done, "all": results},
+                            indent=2, default=str),
                             encoding="utf-8")
     (BASE / "reports" / "hunt16.json").write_text(
-        json.dumps({"survivors": [r for r in results if r["gate"]], "all": results,
+        json.dumps({"hunt_version": HUNT_VERSION,
+                    "survivors": [r for r in results if r["gate"]], "all": results,
                     "swept_at": datetime.now(timezone.utc).isoformat()},
                    indent=2, default=str), encoding="utf-8")
     tprint(f"\n{sum(1 for r in results if r['gate'])} survivors of {len(results)} "

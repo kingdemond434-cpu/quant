@@ -332,6 +332,16 @@
    "surface": "github",
    "mandatory": true,
    "why": "Public AGPL-3.0-or-later research-system implementation. Audit architecture and defects as text only; do not copy code into the quant repository. Reimplement positive-EV capabilities independently and retain source/licence provenance."
+  },
+  {
+   "name": "151 Trading Strategies — Kakushadze and Serur",
+   "url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3247865",
+   "kind": "paper",
+   "language": "en",
+   "surface": "ssrn",
+   "mandatory": true,
+   "source_license": "all rights reserved; summarize mechanisms only; never redistribute or copy text/code",
+   "why": "Daily mechanism-index source, not performance evidence. Prioritize the MT5-transferable FX/commodity/futures chapters: one-sided HP-filter trend, high-minus-low and dollar carry, momentum-plus-carry, triangular residuals, commodity roll yield/hedging pressure/value, futures calendar spreads, contrarian activity and trend. Deduplicate before testing: triangular residuals already map to run_hunt21.py; hedging pressure to run_cot_macro_sweep.py; trend/contrarian to existing families. Carry requires point-in-time rate/swap history and futures roll/calendar strategies require actual curve data; mark them DATA_BLOCKED rather than proxying spot CFDs. The HP filter must be trailing/endpoint-only because a full-sample two-sided HP trend leaks future data. Every novel implementation still enters the canonical MT5 ten-gate and forward-shadow path."
   }
  ]
 }

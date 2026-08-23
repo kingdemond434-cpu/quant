@@ -409,8 +409,13 @@ validation, failures, performance_claim, evidence_class, transferable, falsifier
 relationships, capability_gaps, open_questions, descendant_hypotheses, reproducible, new_sources,
 component_assets, failure_cause, emergence_class, regional_terms, combine_with_internal,
 research_system, discovery_process, testing_process, data_pipeline, superior_capabilities,
-internal_analogue, measurable_gap, replication_plan, source_license, mt5_experiment. Use null
-for anything not stated. Evidence class must be one of MARKETING_CLAIM,
+internal_analogue, measurable_gap, replication_plan, source_license, mt5_experiment,
+regime_hypothesis, activation_rule, reduced_rule, hibernation_rule and unconditional_control.
+Use null when the source does not specify them. A regime is part of the
+hypothesis, must be observable point-in-time and frozen before OOS, and creates an additional
+counted trial. Always retain the unconditional strategy as a separately counted control; never
+discover a winning regime on the holdout and relabel it as preregistered.
+Evidence class must be one of MARKETING_CLAIM,
 SCREENSHOT_SELECTED_RESULT, BACKTEST, FORWARD_PAPER_TRADING, LIVE_BROKER_EXCHANGE,
 INDEPENDENTLY_VERIFIABLE, INSTITUTIONAL_AUDITED. Preserve hidden leverage, selection, capacity,
 cost and drawdown concerns explicitly. A failed whole strategy may still yield components.
