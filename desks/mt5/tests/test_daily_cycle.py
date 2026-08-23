@@ -121,3 +121,5 @@ def test_the_hourly_loop_actually_calls_it():
     assert "daily_cycle" in src, (
         "hourly_cycle does not invoke daily_cycle -- the three processes that move an edge toward "
         "capital are unscheduled again")
+    assert "record_tape()" in src
+    assert '"tape": t' in src

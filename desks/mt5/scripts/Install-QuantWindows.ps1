@@ -141,12 +141,6 @@ $tasks = @(
                      -RepetitionInterval (New-TimeSpan -Minutes 15) `
                      -RepetitionDuration (New-TimeSpan -Days 3650) }
        Desc = "Refresh broker bars and replay every configured zero-capital sleeve every 15m." }
-    @{ Name = "MT5-Tape"
-       Script = "mt5desk\tape.py"
-       Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
-                     -RepetitionInterval (New-TimeSpan -Minutes 15) `
-                     -RepetitionDuration (New-TimeSpan -Days 3650) }
-       Desc = "Persist every available Fusion MT5 tick for the dynamic research universe every 15m." }
 )
 
 foreach ($t in $tasks) {
@@ -176,8 +170,7 @@ foreach ($t in $tasks) {
         -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
         -StartWhenAvailable -RestartCount 3 `
         -RestartInterval (New-TimeSpan -Minutes 1) `
-        -ExecutionTimeLimit (New-TimeSpan -Hours 4) `
-        -MultipleInstances IgnoreNew
+        -ExecutionTimeLimit (New-TimeSpan -Hours 4)
 
     try {
         Unregister-ScheduledTask -TaskName $t.Name -Confirm:$false -ErrorAction SilentlyContinue

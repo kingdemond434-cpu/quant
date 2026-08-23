@@ -145,14 +145,27 @@ def daily() -> dict:
         return {"error": f"{type(exc).__name__}: {exc}"}
 
 
+def record_tape() -> dict:
+    """Persist broker-native ticks every hourly cycle before any research consumes them."""
+    try:
+        from mt5desk import tape  # noqa: PLC0415
+
+        return {"exit_code": tape.main([]),
+                "at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+    except Exception as exc:  # noqa: BLE001
+        print(f"tick tape FAILED: {type(exc).__name__}: {exc}", flush=True)
+        return {"error": f"{type(exc).__name__}: {exc}"}
+
+
 def main() -> None:
     h = health()
+    t = record_tape()
     d = daily()
     m = mine()
     frontier_report(h)
     (BASE / "data" / "sync_marker.json").write_text(
         json.dumps({"last_cycle": datetime.now(timezone.utc).isoformat(),
-                    "health": h, "daily": d, "mine": m}, indent=1), encoding="utf-8")
+                    "health": h, "tape": t, "daily": d, "mine": m}, indent=1), encoding="utf-8")
     print("cycle done", flush=True)
 
 
