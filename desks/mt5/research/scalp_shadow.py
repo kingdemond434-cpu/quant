@@ -55,10 +55,7 @@ def _trading_lag_hours(last_bar: pd.Timestamp, now: datetime) -> float:
     """Elapsed market-open hours; weekends must not manufacture stale evidence alarms."""
     cursor = pd.Timestamp(last_bar).ceil("h")
     end = pd.Timestamp(now)
-    if cursor.tzinfo is None:
-        cursor = cursor.tz_localize("UTC")
-    else:
-        cursor = cursor.tz_convert("UTC")
+    cursor = cursor.tz_localize("UTC") if cursor.tzinfo is None else cursor.tz_convert("UTC")
     end = end.tz_localize("UTC") if end.tzinfo is None else end.tz_convert("UTC")
     hours = 0
     while cursor < end:
@@ -99,8 +96,9 @@ def run(now: datetime | None = None) -> dict:
         "updated_at": now.isoformat(timespec="seconds"),
         "shadow_start": SHADOW_START.isoformat(), "source": source,
         "declared_sleeves": len(CANDIDATES), "configured_sleeves": len(admitted),
-        "gate_blocked_sleeves": len(blocked_names), "sleeves": {
-            name: {"status": "BLOCKED_UNIVERSAL_GATES", "n": 0,
+        "gate_blocked_sleeves": len(blocked_names), "sleeves": {},
+        "quarantined_candidates": {
+            name: {"status": "QUARANTINED_UNCERTIFIED", "n": 0,
                    "promotion_authority": False,
                    "gate_reason": "missing exact original universal ten-gate pass"}
             for name in blocked_names

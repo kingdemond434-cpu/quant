@@ -104,15 +104,6 @@ def _refresh_scalp_bars() -> None:
     raise RuntimeError("no MT5 history source: " + " | ".join(failures))
 
 
-def _legacy_keys(shadow_forward) -> set[str]:  # type: ignore[no-untyped-def]
-    keys = {
-        f"{sym}.{window}" + (f".{state}" if state else "")
-        for sym, window, state in shadow_forward.SLEEVES
-    }
-    keys.update(f"{sym}.{family}" for sym, family in shadow_forward.UNIVERSE_SLEEVES)
-    return keys
-
-
 def _read(path: Path) -> dict:
     try:
         row = json.loads(path.read_text("utf-8"))
@@ -123,6 +114,7 @@ def _read(path: Path) -> dict:
 
 def run() -> tuple[dict, int]:
     import promoter
+    import qquant_shadow
     import scalp_shadow
     import shadow_forward
 
@@ -132,6 +124,7 @@ def run() -> tuple[dict, int]:
         ("scalp_bar_refresh", _refresh_scalp_bars),
         ("legacy_shadow", shadow_forward.main),
         ("scalp_shadow", scalp_shadow.main),
+        ("qquant_shadow", qquant_shadow.main),
         ("promoter", promoter.main),
     ):
         try:
@@ -142,16 +135,24 @@ def run() -> tuple[dict, int]:
 
     legacy = _read(BASE / "reports" / "shadow" / "shadow_state.json")
     scalp = _read(BASE / "reports" / "shadow" / "scalp_shadow_state.json")
-    expected_legacy = _legacy_keys(shadow_forward)
-    represented_legacy = {key for key in expected_legacy if isinstance(legacy.get(key), dict)}
-    expected_scalp = set(scalp_shadow.CANDIDATES)
-    represented_scalp = {
-        key for key in expected_scalp
-        if isinstance((scalp.get("sleeves") or {}).get(key), dict)
+    qquant = _read(BASE / "reports" / "shadow" / "qquant_shadow_state.json")
+    represented_legacy = {
+        key for key, row in legacy.items()
+        if isinstance(row, dict) and row.get("gate_admission") == "ORIGINAL_UNIVERSAL_10_PASS"
+    }
+    represented_scalp = set((scalp.get("sleeves") or {}).keys())
+    represented_qquant = {
+        key for key, row in qquant.items()
+        if key.startswith("qquant.") and isinstance(row, dict)
     }
     rows = [legacy[key] for key in represented_legacy]
     rows += [(scalp.get("sleeves") or {})[key] for key in represented_scalp]
-    missing = sorted((expected_legacy - represented_legacy) | (expected_scalp - represented_scalp))
+    rows += [qquant[key] for key in represented_qquant]
+    certified = (int(legacy.get("configured_sleeves", 0) or 0)
+                 + int(scalp.get("configured_sleeves", 0) or 0)
+                 + int(qquant.get("certified_qquant_sleeves", 0) or 0))
+    represented = len(represented_legacy) + len(represented_scalp) + len(represented_qquant)
+    missing = [] if represented >= certified else [f"{certified - represented} certified sleeve(s)"]
     blocked = sum(row.get("status") in {"NO_DATA", "WAITING_FOR_FORWARD_BARS", "STALE_SOURCE",
                                          "BLOCKED_UNIVERSAL_GATES"}
                   for row in rows)
@@ -168,8 +169,12 @@ def run() -> tuple[dict, int]:
                     if isinstance(s, dict) and s.get("status") == "LIVE"]
     health = {
         "updated_at": datetime.now(UTC).isoformat(timespec="seconds"),
-        "configured_sleeves": len(expected_legacy) + len(expected_scalp),
-        "represented_sleeves": len(represented_legacy) + len(represented_scalp),
+        "configured_sleeves": certified,
+        "represented_sleeves": represented,
+        "quarantined_uncertified_candidates": (
+            int(legacy.get("gate_blocked_sleeves", 0) or 0)
+            + int(scalp.get("gate_blocked_sleeves", 0) or 0)
+        ),
         "sleeves_with_forward_trades": sum(int(row.get("n", 0) or 0) > 0 for row in rows),
         "evidence_blocked_sleeves": blocked,
         "missing_sleeves": missing,

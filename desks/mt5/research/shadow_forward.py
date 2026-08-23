@@ -16,7 +16,7 @@ hunt5-param gold book.
 
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
@@ -27,17 +27,20 @@ BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
 SHADOW_DIR = BASE / "reports" / "shadow"
 SHADOW_DIR.mkdir(parents=True, exist_ok=True)
-LOG = open(BASE / "logs" / "shadow.log", "a", encoding="utf-8")
+LOG = BASE / "logs" / "shadow.log"
 
 from shadow_admission import partition_work  # noqa: E402
 
-SHADOW_START = datetime(2026, 8, 16, tzinfo=timezone.utc)
+SHADOW_START = datetime(2026, 8, 16, tzinfo=UTC)
 
 WINDOWS = {
-    "asia": dict(range_start=7, wait_bars=12, rr=2.0, ttl_bars=12),
-    "london_am": dict(range_start=10, range_end=13, signal_at=13, wait_bars=8, rr=2.0, ttl_bars=12),
-    "ny_open": dict(range_start=13, range_end=14, signal_at=14, wait_bars=12, rr=2.0, ttl_bars=12),
-    "afternoon": dict(range_start=14, range_end=17, signal_at=17, wait_bars=8, rr=2.0, ttl_bars=12),
+    "asia": {"range_start": 7, "wait_bars": 12, "rr": 2.0, "ttl_bars": 12},
+    "london_am": {"range_start": 10, "range_end": 13, "signal_at": 13,
+                   "wait_bars": 8, "rr": 2.0, "ttl_bars": 12},
+    "ny_open": {"range_start": 13, "range_end": 14, "signal_at": 14,
+                 "wait_bars": 12, "rr": 2.0, "ttl_bars": 12},
+    "afternoon": {"range_start": 14, "range_end": 17, "signal_at": 17,
+                   "wait_bars": 8, "rr": 2.0, "ttl_bars": 12},
 }
 
 # (sym, window, state) -- state=None means UNCONDITIONED, the hunt6 form.
@@ -221,8 +224,9 @@ MIN_VERDICT_TRADES = 20
 def slog(*a) -> None:
     msg = " ".join(str(x) for x in a)
     print(msg, flush=True)
-    LOG.write(msg + "\n")
-    LOG.flush()
+    LOG.parent.mkdir(parents=True, exist_ok=True)
+    with LOG.open("a", encoding="utf-8") as stream:
+        stream.write(msg + "\n")
 
 
 def per_symbol_costs(meta: dict, sym: str):
@@ -255,7 +259,7 @@ def per_symbol_costs(meta: dict, sym: str):
     tidy a cost change would cost the one thing that cannot be recovered later -- but any verdict
     resting on them must be re-derived before it promotes anything.
     """
-    from mt5desk.engine import Costs  # noqa: PLC0415
+    from mt5desk.engine import Costs
     return Costs.from_symbol(meta[sym], mult=2.0)
 
 
@@ -276,9 +280,9 @@ def fetch_h1(sym: str):
     """
     from datetime import timedelta
 
-    from research.h1_source import fetch_h1 as _fetch  # noqa: PLC0415
+    from research.h1_source import fetch_h1 as _fetch
     start = max(SHADOW_START - timedelta(days=FETCH_DAYS),
-                datetime(2018, 1, 1, tzinfo=timezone.utc))
+                datetime(2018, 1, 1, tzinfo=UTC))
     bars = _fetch(sym, start)
     if bars is None:
         slog(f"{sym}: NO DATA from any source. That is an absence of bars, not "
@@ -325,7 +329,7 @@ def enable_free_feed(state: dict) -> str:
     The stamp travels regardless: every row carries `HTTP:yfinance/<ticker>`, so a promoter or a
     reader can always see which game the evidence came from.
     """
-    from research.h1_source import from_yfinance, register_source     # noqa: PLC0415
+    from research.h1_source import from_yfinance, register_source
 
     sleeves = [v for v in state.values() if isinstance(v, dict)]
     accrued = [v for v in sleeves if int(v.get("n", 0) or 0) > 0]
@@ -342,8 +346,8 @@ def enable_free_feed(state: dict) -> str:
 
 
 def main() -> None:
-    from mt5desk import families  # noqa: E402
-    from mt5desk.engine import run_backtest  # noqa: E402
+    from mt5desk import families
+    from mt5desk.engine import run_backtest
 
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
     state_path = SHADOW_DIR / "shadow_state.json"
@@ -354,8 +358,8 @@ def main() -> None:
         except Exception:
             state = {}
     slog(enable_free_feed(state))
-    attempt_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    today = datetime.now(timezone.utc).date().isoformat()
+    attempt_at = datetime.now(UTC).isoformat(timespec="seconds")
+    today = datetime.now(UTC).date().isoformat()
 
     h1_cache = {}
     # SLEEVES rows are (sym, window, cond) and always session_range_breakout.
@@ -366,18 +370,28 @@ def main() -> None:
     _declared = [(s, w, c, "session_range_breakout", False) for s, w, c in SLEEVES]
     _declared += [(s, f, None, f, True) for s, f in UNIVERSE_SLEEVES]
     _work, _blocked = partition_work(_declared, BASE)
+    quarantine = {}
     for sym, selector, cond, _fam, _is_universe in _blocked:
         key = f"{sym}.{selector}" + (f".{cond}" if cond else "")
-        st = state.get(key, {"n": 0, "cum_r": 0.0, "max_dd_r": 0.0,
+        st = state.pop(key, {"n": 0, "cum_r": 0.0, "max_dd_r": 0.0,
                              "first_entry": None, "last_entry": None})
         st.update({
-            "status": "BLOCKED_UNIVERSAL_GATES",
+            "status": "QUARANTINED_UNCERTIFIED",
             "promotion_authority": False,
             "gate_admission": "BLOCKED",
             "gate_reason": "missing exact original universal ten-gate pass",
             "last_attempt_at": attempt_at,
         })
-        state[key] = st
+        quarantine[key] = st
+    # Uncertified historical rows are preserved for diagnosis, but they are not
+    # shadow sleeves. Keeping them in shadow_state made a zero-authority research
+    # backlog appear as 36 active sleeves and allowed stale dashboards to report
+    # a promotion-bearing pool that did not exist.
+    (SHADOW_DIR / "shadow_quarantine.json").write_text(json.dumps({
+        "updated_at": attempt_at,
+        "reason": "missing exact original universal ten-gate pass",
+        "candidates": quarantine,
+    }, indent=2), encoding="utf-8")
     (SHADOW_DIR / "shadow_admission.json").write_text(json.dumps({
         "at": attempt_at,
         "policy": "mt5-original-universal-10-v2-calibrated-inputs",
@@ -443,7 +457,7 @@ def main() -> None:
         elif cond:
             # Same corrected prior-day join the sweep used. A shadow record built on a different
             # conditioning rule than the backtest would be measuring a third strategy.
-            from run_hunt12 import day_states  # noqa: PLC0415
+            from run_hunt12 import day_states
             st_map = day_states(h1)
             sigs = [g for g in sigs if st_map.get(pd.Timestamp(g.time).date()) == cond]
         res = run_backtest(h1, sigs, per_symbol_costs(meta, sym))
@@ -479,8 +493,8 @@ def main() -> None:
             st.setdefault("exp_r", 0.0)
         days_active = 0
         if st.get("first_entry"):
-            days_active = (datetime.now(timezone.utc) -
-                           pd.Timestamp(st["first_entry"]).to_pydatetime().replace(tzinfo=timezone.utc)).days
+            days_active = (datetime.now(UTC) -
+                           pd.Timestamp(st["first_entry"]).to_pydatetime().replace(tzinfo=UTC)).days
         st["days_active"] = days_active
         # NO TERMINAL VERDICT WITHOUT ENOUGH EVIDENCE TO SUPPORT ONE.
         #
@@ -530,7 +544,8 @@ def main() -> None:
     state["gate_blocked_sleeves"] = len(_blocked)
     state["represented_sleeves"] = sum(
         isinstance(v, dict) for k, v in state.items()
-        if k not in {"last_run", "updated_at", "configured_sleeves", "represented_sleeves"}
+        if k not in {"last_run", "updated_at", "declared_sleeves", "configured_sleeves",
+                     "gate_blocked_sleeves", "represented_sleeves"}
     )
     state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
     slog(f"shadow state saved ({len(_work)} configured sleeves)")
@@ -539,6 +554,6 @@ def main() -> None:
 if __name__ == "__main__":
     try:
         main()
-    except Exception as e:
+    except Exception:
         import traceback
         slog("shadow error:", traceback.format_exc())
