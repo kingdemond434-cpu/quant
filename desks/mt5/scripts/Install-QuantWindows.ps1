@@ -304,6 +304,47 @@ if (Test-Path $riskUnitsFence) {
     Write-Host "  [SKIP] MT5-RiskUnitsFence scripts\check_risk_units.py not found at repo root"
 }
 
+# QQUANT GATES CERTIFICATION, RUN ON A SCHEDULE (principal decision 2026-08-23). Shadow entry no
+# longer requires a certificate (shadow_forward.py/scalp_shadow.py admit every declared sleeve
+# unconditionally now -- see that commit), but LIVE PROMOTION still does: promoter.py refuses
+# anything without a real pass in QQUANT_GATES.json/REAL_SURVIVORS.json/UNIVERSAL_SURVIVORS.json.
+# Verified live on this box 2026-08-23: neither QQUANT_GATES.json nor REAL_SURVIVORS.json existed
+# at all -- the certificate step had never been run here, not merely gone stale. Running it once by
+# hand answers today's question; running it daily is what stops today's question from recurring
+# every time shadow accrues enough evidence for a sleeve to be worth re-checking. 23:00 UTC: after
+# the 22:00 UTC gateway/shadow_forward/promoter cycle has written the day's shadow state, so the
+# certification run sees the freshest evidence rather than racing it.
+$qquantGates = Join-Path $DeskRoot "research\qquant_gates.py"
+if (Test-Path $qquantGates) {
+    if ($WhatIfOnly) {
+        Write-Host "  [DRY ] MT5-QQuantGatesCertify daily original 10-gate certification run"
+    } else {
+        try {
+            $qgLog = Join-Path $logDir "MT5-QQuantGatesCertify.log"
+            $qgCmd = "/d /s /c `"`"$Python`" $pyArgs`"$qquantGates`" >> `"$qgLog`" 2>&1`""
+            $qgAction = New-ScheduledTaskAction -Execute "cmd.exe" -Argument $qgCmd `
+                -WorkingDirectory $DeskRoot
+            $qgTrigger = New-ScheduledTaskTrigger -Daily -At "23:00"
+            $qgSettings = New-ScheduledTaskSettingsSet `
+                -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
+                -RestartCount 2 -RestartInterval (New-TimeSpan -Minutes 10) `
+                -ExecutionTimeLimit (New-TimeSpan -Hours 2) -MultipleInstances IgnoreNew
+            $qgPrincipal = New-ScheduledTaskPrincipal -UserId $env:USERNAME `
+                -LogonType Interactive -RunLevel Limited
+            Unregister-ScheduledTask -TaskName "MT5-QQuantGatesCertify" `
+                -Confirm:$false -ErrorAction SilentlyContinue
+            Register-ScheduledTask -TaskName "MT5-QQuantGatesCertify" -Action $qgAction `
+                -Trigger $qgTrigger -Settings $qgSettings -Principal $qgPrincipal `
+                -Description "Daily original-10-gate certification (QQUANT_GATES.json) -- the only thing promoter.py accepts for live promotion." | Out-Null
+            Write-Host "  [OK  ] MT5-QQuantGatesCertify registered"
+        } catch {
+            Write-Host ("  [FAIL] MT5-QQuantGatesCertify {0}" -f $_.Exception.Message)
+        }
+    }
+} else {
+    Write-Host "  [SKIP] MT5-QQuantGatesCertify research\qquant_gates.py not found"
+}
+
 # ---- THE LINK THAT WAS NOT AUTOMATIC ---------------------------------------
 # quant EXPORTS findings daily (daily_cycle step 4) and Aurum READS them daily
 # (aurum_cycle step_absorb). Both ends ran on a schedule; NOTHING CARRIED THE
