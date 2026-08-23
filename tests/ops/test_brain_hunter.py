@@ -59,6 +59,16 @@ def test_THE_RUNNER_FOLLOWS_THE_RESUMABLE_PATTERN_THE_OTHER_MINERS_USE() -> None
         "run_model_upgrade.py adopts a newer flagship, and nothing would report it")
 
 
+def test_CLAUDE_AUTH_FAILURE_FAILS_OVER_TO_THE_SAME_CODEX_MINER() -> None:
+    src = RUNNER.read_text("utf-8")
+    assert 'CONTROLLER="codex"' in src
+    assert "Codex fallback" in src
+    assert "--ask-for-approval never" in src
+    assert "--sandbox danger-full-access" in src
+    assert "dig_prompt ops/brain_hunter_prompt.txt" in src
+    assert "all controller auth unavailable" in src
+
+
 def test_IT_HUNTS_RECURSIVELY_RATHER_THAN_SEARCHING_ONE_LABEL() -> None:
     """Searching the platform's own label traps the organ inside what the platform CALLS an alpha.
     The alternative-implementation node is usually the highest-yield one: someone who reimplemented
