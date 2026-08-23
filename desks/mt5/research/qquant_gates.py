@@ -29,11 +29,11 @@ Output: reports/QQUANT_GATES.json + reports/DONE_qquant_gates.
 
 from __future__ import annotations
 
-import json
 import itertools
+import json
 import math
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -43,22 +43,15 @@ BASE = Path(__file__).resolve().parent.parent
 REPORTS = BASE / "reports"
 sys.path.insert(0, str(BASE))
 sys.path.insert(0, str(BASE / "research"))
-sys.path.insert(0, str(Path(__file__).resolve().parents[3]))  # quant repo root: libs/validation lives there
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
-from libs.validation.cpcv import CPCV  # noqa: E402
-from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E402
-from mt5desk.canonical import calibrated_census_report  # noqa: E402
-from libs.validation.pbo import probability_backtest_overfitting  # noqa: E402
-from libs.validation.reality_check import hansen_spa  # noqa: E402
-from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus  # noqa: E402
-
-from mt5desk import families  # noqa: E402
-from mt5desk.engine import Costs, run_backtest  # noqa: E402
 from gate_policy import (  # noqa: E402
     ATTESTATION as GATE_POLICY,
+)
+from gate_policy import (  # noqa: E402
     COST_SCENARIO,
-    DSR_THRESHOLD,
     DONE_MARKER,
+    DSR_THRESHOLD,
     GATES,
     PBO_THRESHOLD,
     SPA_ALPHA,
@@ -67,6 +60,15 @@ from gate_policy import (  # noqa: E402
     WF_SPLITS,
     charged_trial_count,
 )
+from mt5desk import families  # noqa: E402
+from mt5desk.canonical import calibrated_census_report  # noqa: E402
+from mt5desk.engine import Costs, run_backtest  # noqa: E402
+
+from libs.validation.cpcv import CPCV  # noqa: E402
+from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E402
+from libs.validation.pbo import probability_backtest_overfitting  # noqa: E402
+from libs.validation.reality_check import hansen_spa  # noqa: E402
+from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus  # noqa: E402
 
 WORKERS = int(sys.argv[sys.argv.index("--workers") + 1]) if "--workers" in sys.argv else 8
 
@@ -76,8 +78,9 @@ _worker_ctx: dict = {}
 def _init_worker() -> None:
     """Per-process imports + caches (spawn-safe: no closures over main state)."""
     global _worker_ctx
-    from run_hunt12 import WINDOWS as W12, day_states
-    from run_hunt16 import WINDOWS as W16, FAMILIES as F16
+    from run_hunt12 import WINDOWS as W12
+    from run_hunt16 import FAMILIES as F16
+    from run_hunt16 import WINDOWS as W16
     _worker_ctx = {"W12": W12, "W16": W16, "F16": F16,
                    "h1_cache": {}, "sig_cache": {}, "states_cache": {},
                    "meta": json.loads((BASE / "data" / "universe" / "universe.json")
@@ -132,7 +135,7 @@ def _series_of(hunt: int, sym: str, fam: str, side: str, win: str, state: str,
     states = _worker_ctx["states_cache"][sym]
     sigs = _sigs_of(hunt, sym, fam, side, win)
     sdays = [pd.Timestamp(s.time).date() for s in sigs]
-    sub = [s for s, d in zip(sigs, sdays) if states.get(d) == state]
+    sub = [s for s, d in zip(sigs, sdays, strict=True) if states.get(d) == state]
     if not sub:
         return None
     res = run_backtest(h1, sub, _worker_ctx["costs_for"](
@@ -256,13 +259,17 @@ def main() -> int:
     all12 = h12.get("all", [])
     all16 = h16.get("all", [])
     n_cells = {12: len(all12), 16: len(all16)}
-    t0 = datetime.now(timezone.utc)
+    t0 = datetime.now(UTC)
 
     cells = []
     for c in all12:
-        c = dict(c); c["_hunt"] = 12; cells.append(c)
+        c = dict(c)
+        c["_hunt"] = 12
+        cells.append(c)
     for c in all16:
-        c = dict(c); c["_hunt"] = 16; cells.append(c)
+        c = dict(c)
+        c["_hunt"] = 16
+        cells.append(c)
     print(f"{len(cells)} cells -> {WORKERS} workers ({t0.isoformat()})", flush=True)
 
     with mp.Pool(WORKERS, initializer=_init_worker) as pool:
@@ -270,7 +277,7 @@ def main() -> int:
         for k, r in enumerate(pool.imap_unordered(worker_cell, cells, chunksize=4)):
             results.append(r)
             if (k + 1) % 50 == 0:
-                el = (datetime.now(timezone.utc) - t0).total_seconds()
+                el = (datetime.now(UTC) - t0).total_seconds()
                 print(f"cells {k + 1}/{len(cells)} "
                       f"({el / (k + 1) * len(cells) / 60:.1f} min ETA)", flush=True)
 
@@ -284,7 +291,7 @@ def main() -> int:
         else:
             fail += 1
     print(f"cell series computed: {ok} ok, {fail} empty/failed "
-          f"in {(datetime.now(timezone.utc) - t0).total_seconds():.0f}s", flush=True)
+          f"in {(datetime.now(UTC) - t0).total_seconds():.0f}s", flush=True)
 
     # ----- original program-level stats on the full trial matrices ----------
     def build_matrix(hunt: int) -> tuple[np.ndarray | None, list]:
@@ -357,8 +364,8 @@ def main() -> int:
               flush=True)
         return df.to_numpy(dtype=float), col_meta
 
-    m12, cm12 = build_matrix(12)
-    m16, cm16 = build_matrix(16)
+    m12, _cm12 = build_matrix(12)
+    m16, _cm16 = build_matrix(16)
     print(f"matrix hunt12: {m12.shape if m12 is not None else 'none'}  "
           f"hunt16: {m16.shape if m16 is not None else 'none'}", flush=True)
 
@@ -469,19 +476,26 @@ def main() -> int:
         "survivors_total": len(verdicts),
         "gate_fails": gate_fails,
         "verdicts": verdicts,
-        "swept_at": datetime.now(timezone.utc).isoformat(),
-        "wall_s": round((datetime.now(timezone.utc) - t0).total_seconds(), 1),
+        "swept_at": datetime.now(UTC).isoformat(),
+        "wall_s": round((datetime.now(UTC) - t0).total_seconds(), 1),
         "workers": WORKERS,
     }
     (REPORTS / "QQUANT_GATES.json").write_text(json.dumps(out, indent=2, default=str),
                                                encoding="utf-8")
+    # A ten-gate certificate that remains only in QQUANT_GATES is economically inert. Publish it
+    # atomically into the canonical ledgers consumed by shadow admission. This is deliberately
+    # after the complete report write: a partial/crashed campaign has no promotion authority.
+    from survivor_publication import publish_qquant_survivors
+    publication = publish_qquant_survivors(out, REPORTS)
     (REPORTS / "DONE_qquant_gates").write_text(
-        datetime.now(timezone.utc).isoformat(), encoding="utf-8")
+        datetime.now(UTC).isoformat(), encoding="utf-8")
     (REPORTS / DONE_MARKER).write_text(
-        datetime.now(timezone.utc).isoformat(), encoding="utf-8")
+        datetime.now(UTC).isoformat(), encoding="utf-8")
     print(f"\nUNIVERSAL GAUNTLET: {n_pass}/{len(verdicts)} survivors pass all 10 gates "
-          f"(wall {(datetime.now(timezone.utc) - t0).total_seconds() / 60:.1f} min)",
+          f"(wall {(datetime.now(UTC) - t0).total_seconds() / 60:.1f} min)",
           flush=True)
+    print(f"  canonical survivor ledger: {publication['survivor_count']} total; "
+          f"{len(publication['published'])} QQUANT certificate(s) published", flush=True)
     for name, cnt in sorted(gate_fails.items()):
         print(f"  gate fail [{name}]: {cnt}", flush=True)
     return 0

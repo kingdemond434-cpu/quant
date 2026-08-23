@@ -12,6 +12,10 @@ from __future__ import annotations
 
 import argparse
 import socket
+import subprocess
+import sys
+import threading
+import time
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -32,6 +36,26 @@ def _lan_ip() -> str:
 
 
 class _Handler(SimpleHTTPRequestHandler):
+    _refresh_lock = threading.Lock()
+    _last_refresh = 0.0
+
+    def do_GET(self) -> None:
+        if self.path.split("?", 1)[0] == "/zentech_state.json":
+            # The browser polls every 15 seconds. Rebuild from canonical artifacts before each
+            # response (coalescing simultaneous tabs) so a polished view can never cache a stale
+            # account snapshot and call it live.
+            with self._refresh_lock:
+                now = time.monotonic()
+                if now - self._last_refresh >= 2.0:
+                    subprocess.run(
+                        [sys.executable, str(_WEB.parent / "scripts" /
+                                              "build_zentech_state.py")],
+                        cwd=str(_WEB.parent), check=False, timeout=10,
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                    )
+                    type(self)._last_refresh = now
+        super().do_GET()
+
     def end_headers(self) -> None:                      # always serve fresh JSON, never stale cache
         self.send_header("Cache-Control", "no-store, max-age=0")
         self.send_header("Access-Control-Allow-Origin", "*")
@@ -47,11 +71,15 @@ def main() -> None:
     ap.add_argument("--host", default="0.0.0.0")  # noqa: S104 -- deliberate LAN bind; read-only, and the HOST FIREWALL is the control (gap register: exposure surface)           # bind LAN so the phone can reach it
     args = ap.parse_args()
     _WEB.mkdir(parents=True, exist_ok=True)
+    # Build once before serving so localhost never opens on a missing/stale state file. The daily
+    # MT5 cycle refreshes it thereafter; this best-effort call cannot mutate trading state.
+    subprocess.run([sys.executable, str(_WEB.parent / "scripts" / "build_zentech_state.py")],
+                   cwd=str(_WEB.parent), check=False)
     handler = partial(_Handler, directory=str(_WEB))
     httpd = ThreadingHTTPServer((args.host, args.port), handler)
     print(f"dashboard serving {_WEB} on {args.host}:{args.port}\n"
-          f"  this PC : http://127.0.0.1:{args.port}/\n"
-          f"  phone   : http://{_lan_ip()}:{args.port}/   (same Wi-Fi)")
+          f"  ZENTECH : http://127.0.0.1:{args.port}/zentech.html\n"
+          f"  phone   : http://{_lan_ip()}:{args.port}/zentech.html   (same Wi-Fi)")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

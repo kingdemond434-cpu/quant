@@ -115,6 +115,7 @@ data/*
 !data/delisted_rosters/*.json
 web/*
 !web/index.html
+!web/zentech.html
 reports/
 lake/
 docs/EXTERNAL_PANEL_DOSSIER.md

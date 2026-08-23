@@ -83,6 +83,11 @@ def _shadow() -> None:
     shadow_forward.main()
 
 
+def _qquant_shadow() -> None:
+    import qquant_shadow
+    qquant_shadow.main()
+
+
 def _promote() -> None:
     import promoter
     promoter.main()
@@ -150,15 +155,22 @@ def _export_aurum() -> None:
         raise RuntimeError(f"export_aurum_findings returned {rc}")
 
 
+def _zentech() -> None:
+    root = BASE.parent.parent
+    sys.path.insert(0, str(root / "scripts"))
+    import build_zentech_state
+    build_zentech_state.main()
+
+
 #: ORDER IS LOAD-BEARING. The promoter reads the state shadow has just written, so running it
 #: first would decide today on yesterday's evidence. Markout runs last-but-one and
 #: unconditionally: it reads the live ledger, so it reports on the armed book whether or not
 #: shadow could reach a terminal. The Aurum export runs after all of them, so it can carry
 #: anything today's cycle produced.
 STEPS = (("futures_curves", _futures_curves), ("curve_strategies", _curve_strategies),
-         ("shadow", _shadow),
+         ("shadow", _shadow), ("qquant_shadow", _qquant_shadow),
          ("promoter", _promote), ("markout", _markout),
-         ("export_aurum", _export_aurum))
+         ("zentech", _zentech), ("export_aurum", _export_aurum))
 
 
 def main(argv: list[str] | None = None) -> int:
