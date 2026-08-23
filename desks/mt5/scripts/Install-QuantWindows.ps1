@@ -281,6 +281,50 @@ if (Test-Path $artifactSync) {
     }
 }
 
+# L1.67 FENCE, WIRED, NOT JUST WRITTEN. scripts/check_risk_units.py exists, is correct, and
+# CAUGHT NOTHING for its entire life because nothing ever ran it -- the exact bug it exists to
+# catch (gateway.py silently reverted to gold's flat sizing constants, 5.9x over-risk on a
+# promoted non-gold sleeve) shipped and sat undetected in a same-night regression until a broken
+# TEST COLLECTION forced a manual trace. The desk's own enforcement matrix (build_enforcement_
+# matrix.py) counts a fence as "ENFORCED" the moment the file exists, and cannot see the
+# difference between that and a fence that actually runs -- this is what closes that gap for L1.67
+# specifically. Daily cadence: sizing correctness does not drift minute to minute, and the fence's
+# own universe-snapshot staleness check already tolerates up to 30 days.
+$fenceQuantRoot = Split-Path -Parent (Split-Path -Parent $DeskRoot)
+$riskUnitsFence = Join-Path $fenceQuantRoot "scripts\check_risk_units.py"
+if (Test-Path $riskUnitsFence) {
+    if ($WhatIfOnly) {
+        Write-Host "  [DRY ] MT5-RiskUnitsFence daily L1.67 sizing-path audit"
+    } else {
+        try {
+            # cmd /c wraps the redirect: Task Scheduler has no shell, so `>>` passed directly
+            # in a Python argument string is taken as a literal argument, not a redirect --
+            # same fix as the main $tasks loop above, for the same reason.
+            $fenceLog = Join-Path $logDir "MT5-RiskUnitsFence.log"
+            $fenceCmd = "/d /s /c `"`"$Python`" $pyArgs`"$riskUnitsFence`" >> `"$fenceLog`" 2>&1`""
+            $fenceAction = New-ScheduledTaskAction -Execute "cmd.exe" -Argument $fenceCmd `
+                -WorkingDirectory $fenceQuantRoot
+            $fenceTrigger = New-ScheduledTaskTrigger -Daily -At "06:20"
+            $fenceSettings = New-ScheduledTaskSettingsSet `
+                -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
+                -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 5) `
+                -ExecutionTimeLimit (New-TimeSpan -Minutes 15) -MultipleInstances IgnoreNew
+            $fencePrincipal = New-ScheduledTaskPrincipal -UserId $env:USERNAME `
+                -LogonType Interactive -RunLevel Limited
+            Unregister-ScheduledTask -TaskName "MT5-RiskUnitsFence" `
+                -Confirm:$false -ErrorAction SilentlyContinue
+            Register-ScheduledTask -TaskName "MT5-RiskUnitsFence" -Action $fenceAction `
+                -Trigger $fenceTrigger -Settings $fenceSettings -Principal $fencePrincipal `
+                -Description "L1.67 daily fence: no sizing call site may price a stop from another instrument's constants." | Out-Null
+            Write-Host "  [OK  ] MT5-RiskUnitsFence registered"
+        } catch {
+            Write-Host ("  [FAIL] MT5-RiskUnitsFence {0}" -f $_.Exception.Message)
+        }
+    }
+} else {
+    Write-Host "  [SKIP] MT5-RiskUnitsFence scripts\check_risk_units.py not found at repo root"
+}
+
 # ---- THE LINK THAT WAS NOT AUTOMATIC ---------------------------------------
 # quant EXPORTS findings daily (daily_cycle step 4) and Aurum READS them daily
 # (aurum_cycle step_absorb). Both ends ran on a schedule; NOTHING CARRIED THE
