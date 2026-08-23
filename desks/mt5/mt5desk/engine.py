@@ -36,7 +36,8 @@ class Costs:
     Use from_symbol() rather than hand-rolling the arithmetic at the call site.
     """
     spread_per_lot: float = 16.0
-    commission_per_lot: float = 3.50
+    # Fusion Zero's published contract is USD 2.25 per lot per side ($4.50 round turn).
+    commission_per_lot: float = 2.25
     contract_oz: float = 100.0
 
     def per_oz_roundtrip(self) -> float:
@@ -44,7 +45,7 @@ class Costs:
 
     @classmethod
     def from_symbol(cls, meta: dict, mult: float = 1.0,
-                    commission_per_lot: float = 3.50) -> "Costs":
+                    commission_per_lot: float = 2.25) -> "Costs":
         """Costs for one symbol from its universe.json metadata.
 
         `mult` scales the SPREAD ONLY. Commission is contractual and does not

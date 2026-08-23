@@ -409,8 +409,13 @@ validation, failures, performance_claim, evidence_class, transferable, falsifier
 relationships, capability_gaps, open_questions, descendant_hypotheses, reproducible, new_sources,
 component_assets, failure_cause, emergence_class, regional_terms, combine_with_internal,
 research_system, discovery_process, testing_process, data_pipeline, superior_capabilities,
-internal_analogue, measurable_gap, replication_plan. Use null
-for anything not stated. Evidence class must be one of MARKETING_CLAIM,
+internal_analogue, measurable_gap, replication_plan, source_license, mt5_experiment,
+regime_hypothesis, activation_rule, reduced_rule, hibernation_rule and unconditional_control.
+Use null when the source does not specify them. A regime is part of the
+hypothesis, must be observable point-in-time and frozen before OOS, and creates an additional
+counted trial. Always retain the unconditional strategy as a separately counted control; never
+discover a winning regime on the holdout and relabel it as preregistered.
+Evidence class must be one of MARKETING_CLAIM,
 SCREENSHOT_SELECTED_RESULT, BACKTEST, FORWARD_PAPER_TRADING, LIVE_BROKER_EXCHANGE,
 INDEPENDENTLY_VERIFIABLE, INSTITUTIONAL_AUDITED. Preserve hidden leverage, selection, capacity,
 cost and drawdown concerns explicitly. A failed whole strategy may still yield components.
@@ -430,6 +435,15 @@ point-in-time spread, commission, swap/financing, slippage, latency, capacity an
 Preserve source-code and dataset links in source_code_links and new_sources. Generic news, price
 predictions, lifestyle, affiliate reviews and motivation do not qualify as research sources unless
 this retrieved item contains a deterministic falsifiable mechanism.
+
+If and only if the mechanism has an exact executable analogue in the existing MT5 research
+factory, mt5_experiment must be an object with family, side (LONG or SHORT) and param_overrides.
+The only family names currently accepted are d1_trend_pullback, d1_swing_break, h4_momentum,
+h4_vol_break, d1_inside, macro_gold_yield, gold_dxy_shock, asia_meanrev and
+london_ny_breakout. Do not force a novel mechanism into a vaguely similar family: use null and
+name the missing implementation or data in measurable_gap. Code under AGPL or another reciprocal
+licence may be studied as public evidence, but must not be copied into this repository; specify an
+independent clean-room replication instead.
 
 RETRIEVED CONTENT:
 {content[:50000]}

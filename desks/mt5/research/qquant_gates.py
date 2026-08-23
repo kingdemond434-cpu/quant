@@ -9,7 +9,8 @@ Run under the quant-platform venv python.
 Gate order (gauntlet.py + run_campaign.py):
   1 economic_prior     - mechanism documented (every MT5 family has a registered rationale)
   2 in_sample_screen   - Sharpe > 0
-  3 deflated_sharpe    - DSR >= 0.95, n_trials = max(2, ceil(cells_tested * 7.0))
+  3 deflated_sharpe    - DSR >= 0.95, n_trials = ceil(N_eff(cells) * 7.0), with a
+                         fail-closed raw-cell fallback when dependence is unmeasurable
   4 pbo                - CSCV PBO <= 0.5
   5 reality_check_spa  - Hansen SPA p < 0.05
   6 cpcv               - CPCV mean OOS Sharpe > 0 (purge + embargo)
@@ -46,7 +47,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3]))  # quant repo root:
 
 from libs.validation.cpcv import CPCV  # noqa: E402
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E402
-from mt5desk.canonical import census_report  # noqa: E402
+from mt5desk.canonical import calibrated_census_report  # noqa: E402
 from libs.validation.pbo import probability_backtest_overfitting  # noqa: E402
 from libs.validation.reality_check import hansen_spa  # noqa: E402
 from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus  # noqa: E402
@@ -64,6 +65,7 @@ from gate_policy import (  # noqa: E402
     TRIALS_MULTIPLIER,
     WF_MIN_STABILITY,
     WF_SPLITS,
+    charged_trial_count,
 )
 
 WORKERS = int(sys.argv[sys.argv.index("--workers") + 1]) if "--workers" in sys.argv else 8
@@ -82,12 +84,16 @@ def _init_worker() -> None:
                                       .read_text("utf-8"))}
 
     def costs_for(sym: str, mult: float = 1.0) -> Costs:
+        # WAS: a hand-rolled hardcoded 0.48 special-case for XAUUSD -- the EXACT bug diagnosed
+        # and fixed in Costs' own class docstring (engine.py) and in portfolio_projection.py
+        # (commit 1fbbf3c3, 2026-08-20): 0.48 is dollars per OUNCE passed into a field that wants
+        # dollars per LOT, so gold ran at ~3% of its real spread. This call site never got that
+        # fix -- caught live 2026-08-23 while checking whether stress_costs/deflated_sharpe were
+        # unfairly harsh. They were not: costs here were UNDERSTATED, not overstated, so the
+        # fix makes real costs higher, not lower. Costs.from_symbol() derives every symbol,
+        # gold included, from the same universe.json metadata formula -- no special case.
         m = _worker_ctx["meta"].get(sym, {})
-        return Costs(
-            spread_per_lot=0.48 * mult if sym == "XAUUSD" else max(
-                m.get("median_spread_pts", 1) * m.get("tick_size", 1e-5)
-                * m.get("contract_size", 1e5), 0.05) * mult,
-            commission_per_lot=3.50 * mult, contract_oz=m.get("contract_size", 1e5))
+        return Costs.from_symbol(m, mult=mult)
 
     _worker_ctx["costs_for"] = costs_for
 
@@ -133,8 +139,11 @@ def _series_of(hunt: int, sym: str, fam: str, side: str, win: str, state: str,
     sub = [s for s, d in zip(sigs, sdays) if states.get(d) == state]
     if not sub:
         return None
+    # mult=2.0 is the HONEST baseline, not a stress (Costs.from_symbol's own docstring): a round
+    # trip crosses the spread twice, on the way in and the way out. The stress scenario applies
+    # COST_SCENARIO ON TOP of that honest baseline, not instead of it -- see costs_for() below.
     res = run_backtest(h1, sub, _worker_ctx["costs_for"](
-        sym, COST_SCENARIO if stress else 1.0))
+        sym, 2.0 * COST_SCENARIO if stress else 2.0))
     series = pd.Series({pd.Timestamp(t.entry_time).date(): t.r_multiple
                         for t in res.trades}, dtype=float)
     series = series.groupby(level=0).sum()
@@ -362,30 +371,45 @@ def main() -> int:
 
     sharpes12 = np.array([sharpe_ratio(m12[:, k]) for k in range(m12.shape[1])])
     sharpes16 = np.array([sharpe_ratio(m16[:, k]) for k in range(m16.shape[1])])
-    n_trials12 = max(2, math.ceil(n_cells[12] * TRIALS_MULTIPLIER))
-    n_trials16 = max(2, math.ceil(n_cells[16] * TRIALS_MULTIPLIER))
+    raw_trials12 = max(2, math.ceil(n_cells[12] * TRIALS_MULTIPLIER))
+    raw_trials16 = max(2, math.ceil(n_cells[16] * TRIALS_MULTIPLIER))
 
     # HOW MANY SEARCHES WERE ACTUALLY PERFORMED, as distinct from how many cells were counted.
     # The DSR threshold scales with E[max of N], derived for N INDEPENDENT draws, and a sweep over
     # (symbol x family x side x window x state x params) manufactures near-copies structurally:
     # rr=2.0/ttl=12 and rr=2.0/ttl=13 are one search sampled twice. Reported at BOTH counts and
     # never silently substituted -- lowering N makes every threshold easier, so the correction has
-    # to be visible. The gates below still run on n_trials (the raw count); this census is the
-    # evidence for whether that count is the right one.
+    # to be visible. The gate uses only the fixed participation-ratio result and retains the 7x
+    # campaign-history multiplier; an unmeasurable census fails closed to raw cells x 7.
     census = {}
-    for hunt, mat, sh, n_raw in ((12, m12, sharpes12, n_trials12),
-                                 (16, m16, sharpes16, n_trials16)):
+    charged_trials = {12: raw_trials12, 16: raw_trials16}
+    for hunt, mat, sh, n_raw in ((12, m12, sharpes12, raw_trials12),
+                                 (16, m16, sharpes16, raw_trials16)):
         if mat.size and mat.shape[1] >= 2:
             sd = float(np.std(sh)) if len(sh) > 1 else 0.0
-            rep = census_report([mat[:, k] for k in range(mat.shape[1])], sd_sharpe=sd)
-            rep["n_raw_declared"] = n_raw     # cells x TRIALS_MULTIPLIER, what the gates use
+            rep = calibrated_census_report(
+                [mat[:, k] for k in range(mat.shape[1])], sd_sharpe=sd)
+            rep["n_raw_declared"] = n_raw
+            # The 7x campaign multiplier remains intact: it prices the broader steered search,
+            # while the fixed, independent-null-calibrated participation census removes only
+            # dependence beyond the estimator's finite-sample floor. If the census is absent,
+            # malformed, or not the expected fixed method, the raw burden remains.
+            charged_trials[hunt], rep["trial_count_basis"] = charged_trial_count(
+                mat.shape[1], rep.get("n_effective"), rep.get("method"))
+            rep["n_trials_charged"] = charged_trials[hunt]
             census[f"hunt{hunt}"] = rep
             print(f"trial census hunt{hunt}: {rep['n_raw']} cells behave as "
                   f"{rep['n_effective']} independent searches ({rep['inflation']}x inflation); "
                   f"SR0 {rep['sr0_raw']} -> {rep['sr0_effective']}", flush=True)
         else:
             census[f"hunt{hunt}"] = {"status": "UNMEASURABLE", "n_raw_declared": n_raw,
+                                     "n_trials_charged": charged_trials[hunt],
+                                     "trial_count_basis":
+                                         "raw_cells_x_campaign_multiplier_fail_closed",
                                      "why": "fewer than two usable columns in the trial matrix"}
+
+    n_trials12 = charged_trials[12]
+    n_trials16 = charged_trials[16]
 
     print("program-level: PBO + SPA on full trial matrices...", flush=True)
     pbo12 = probability_backtest_overfitting(m12)
@@ -446,6 +470,8 @@ def main() -> int:
         },
         "gates": list(GATES),
         "gate_policy": GATE_POLICY,
+        "admission_unit": GATE_POLICY["regime_admission_unit"],
+        "activation_law": GATE_POLICY["regime_control"],
         "survivors_passing_all": n_pass,
         "survivors_total": len(verdicts),
         "gate_fails": gate_fails,

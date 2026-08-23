@@ -147,6 +147,13 @@ def test_mandatory_video_sources_and_midnight_scope_are_mt5_only() -> None:
         "never direct this miner or any midnight cycle toward a crypto-exchange-only universe"
         in prompt
     )
+    required_public = {
+        "https://www.reddit.com/user/alert_attention_5905/submitted/",
+        "https://www.reddit.com/r/forven/",
+        "https://www.reddit.com/r/ai_trading/comments/1ucu4og/i_spent_the_past_8_months_working_on_my_own/",
+        "https://github.com/judder659/forven",
+    }
+    assert required_public <= urls
 
 
 def test_evidence_tiers_and_discovered_sources_become_next_sweep_inputs(tmp_path) -> None:
@@ -179,6 +186,18 @@ def test_evidence_tiers_and_discovered_sources_become_next_sweep_inputs(tmp_path
     assert sources[1].surface == "discovered"
     assert evidence_tier("audited") == 6
     assert evidence_tier("5000% screenshot") == -1
+
+
+def test_public_code_extraction_requires_license_and_clean_room_replication() -> None:
+    prompt = extraction_prompt(
+        {"url": "https://github.com/example/research", "title": "research system"},
+        "public source",
+        ["PUBLIC_STRATEGY", "ELITE_EXTERNAL_INTELLIGENCE"],
+    )
+    assert "source_license" in prompt
+    assert "mt5_experiment" in prompt
+    assert "must not be copied into this repository" in prompt
+    assert "Do not force a novel mechanism" in prompt
 
 
 def test_reputation_and_emergence_use_independent_sources_not_follower_count() -> None:

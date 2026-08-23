@@ -387,7 +387,7 @@ def main() -> None:
         state[key] = st
     (SHADOW_DIR / "shadow_admission.json").write_text(json.dumps({
         "at": attempt_at,
-        "policy": "mt5-original-universal-10-v1",
+        "policy": "mt5-original-universal-10-v2-calibrated-inputs",
         "declared": len(_declared),
         "admitted": len(_work),
         "blocked": len(_blocked),

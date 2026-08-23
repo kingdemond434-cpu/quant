@@ -20,6 +20,7 @@ from gate_policy import (  # noqa: E402
     TRIALS_MULTIPLIER,
     WF_MIN_STABILITY,
     all_ten_pass,
+    charged_trial_count,
 )
 from shadow_admission import authorized_specs, partition_work  # noqa: E402
 
@@ -36,7 +37,29 @@ def test_original_thresholds_are_one_fixed_policy() -> None:
     assert WF_MIN_STABILITY == 0.5
     assert COST_SCENARIO == 3.0
     assert ATTESTATION["wf_test_size"] == "max(20,len//6)"
-    assert DONE_MARKER == "DONE_qquant_gates_original10_v1"
+    assert "preregistered point-in-time regime" in ATTESTATION["regime_admission_unit"]
+    assert "unknown or incompatible live regime is OFF" in ATTESTATION["regime_control"]
+    assert DONE_MARKER == "DONE_qquant_gates_original10_v2"
+    assert ATTESTATION["trial_count_basis"].startswith(
+        "ceil(null_calibrated_participation_ratio_effective_cells * 7)")
+
+
+def test_universal_gate_uses_effective_cells_but_keeps_campaign_multiplier() -> None:
+    assert charged_trial_count(368, 277.40, "null_calibrated_participation_ratio") == (
+        1942, "measured_effective_cells_x_campaign_multiplier")
+    assert charged_trial_count(17, 17.0, "null_calibrated_participation_ratio") == (
+        119, "measured_effective_cells_x_campaign_multiplier")
+    assert charged_trial_count(368, 246.46, "participation_ratio") == (
+        2576, "raw_cells_x_campaign_multiplier_fail_closed")
+
+
+def test_trial_count_relief_fails_closed_without_valid_fixed_census() -> None:
+    expected = (2576, "raw_cells_x_campaign_multiplier_fail_closed")
+    assert charged_trial_count(368, None, "unmeasurable") == expected
+    assert charged_trial_count(368, 1.0, "null_calibrated_participation_ratio") == expected
+    assert charged_trial_count(368, 246.46, "hand_tuned") == expected
+    assert charged_trial_count(
+        368, float("nan"), "null_calibrated_participation_ratio") == expected
 
 
 def test_partial_extra_or_failed_gate_sets_never_admit() -> None:
@@ -94,3 +117,11 @@ def test_production_path_has_no_harsher_prefilter() -> None:
         "live promotion must still independently require a real certificate")
     supervisor = (DESK / "research" / "research_supervisor.py").read_text(encoding="utf-8")
     assert DONE_MARKER in supervisor
+
+
+def test_hunt16_stage_one_rejects_remain_in_universal_trial_ledger() -> None:
+    source = (DESK / "research" / "run_hunt16.py").read_text(encoding="utf-8")
+    reject_append = source.index("stage1_passed=False")
+    reject_continue = source.index("continue", reject_append)
+    assert reject_append < reject_continue
+    assert '"all": results' in source[reject_append:reject_continue]
