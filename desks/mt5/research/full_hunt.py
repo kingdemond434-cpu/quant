@@ -206,8 +206,8 @@ def main() -> int:
         cache_frame.to_parquet(_cache)
         candidate_out, candidate_rows = write_candidates(cache_frame, n_trials)
         print(f"\n  series cached to {_cache.name} — re-analysis needs no re-run")
-        print(f"  {len(candidate_rows)} original-bar candidates written to "
-              f"{candidate_out.name} for zero-capital shadow")
+        print(f"  {len(candidate_rows)} discovery-screen candidates written to "
+              f"{candidate_out.name}; universal ten-gate certification is required for shadow")
     if not survivors:
         print("""
   NOTHING PASSED THE ORIGINAL SCREEN, AND THAT IS THE MEASURED RESULT.

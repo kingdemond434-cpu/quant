@@ -38,8 +38,23 @@ def test_proxy_feed_can_never_authorize_capital(
     monkeypatch.setattr(shadow, "DATA", data)
     monkeypatch.setattr(shadow, "SHADOW", reports)
     monkeypatch.setattr(shadow, "STATE", reports / "state.json")
+    monkeypatch.setattr(shadow, "authorized_specs", lambda _base: {
+        ("XAUUSD", name, None, "gold_scalp", False) for name in shadow.CANDIDATES
+    })
     monkeypatch.setattr(shadow, "_source", lambda: {"promotion_authority": authority})
     monkeypatch.setattr(shadow.core, "simulate", lambda *a, **k: records)
     state = shadow.run(datetime(2026, 8, 23, tzinfo=UTC))
     assert all(row["status"] == expected for row in state["sleeves"].values())
     assert all(row["n"] == 60 for row in state["sleeves"].values())
+
+
+def test_missing_universal_certificate_blocks_every_scalp(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(shadow, "DESK", tmp_path)
+    monkeypatch.setattr(shadow, "SHADOW", tmp_path / "reports")
+    monkeypatch.setattr(shadow, "STATE", tmp_path / "reports" / "state.json")
+    monkeypatch.setattr(shadow, "authorized_specs", lambda _base: set())
+    state = shadow.run(datetime(2026, 8, 23, tzinfo=UTC))
+    assert state["configured_sleeves"] == 0
+    assert state["gate_blocked_sleeves"] == len(shadow.CANDIDATES)
+    assert all(row["status"] == "BLOCKED_UNIVERSAL_GATES"
+               for row in state["sleeves"].values())

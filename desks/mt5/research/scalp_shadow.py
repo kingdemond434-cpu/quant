@@ -20,6 +20,7 @@ sys.path.insert(0, str(ROOT))
 
 from desks.mt5.research import scalp_family_expansion as families  # noqa: E402
 from desks.mt5.research import scalp_reverse_engineering as core  # noqa: E402
+from desks.mt5.research.shadow_admission import authorized_specs  # noqa: E402
 
 DESK = Path(__file__).resolve().parents[1]
 DATA = DESK / "data" / "universe"
@@ -88,14 +89,26 @@ def run(now: datetime | None = None) -> dict:
     now = now or datetime.now(UTC)
     source = _source()
     authority = bool(source.get("promotion_authority"))
+    gate_authority = authorized_specs(DESK)
+    admitted = {
+        name: value for name, value in CANDIDATES.items()
+        if ("XAUUSD", name, None, "gold_scalp", False) in gate_authority
+    }
+    blocked_names = sorted(set(CANDIDATES) - set(admitted))
     state: dict = {
         "updated_at": now.isoformat(timespec="seconds"),
-        "shadow_start": SHADOW_START.isoformat(),
-        "source": source, "configured_sleeves": len(CANDIDATES), "sleeves": {},
+        "shadow_start": SHADOW_START.isoformat(), "source": source,
+        "declared_sleeves": len(CANDIDATES), "configured_sleeves": len(admitted),
+        "gate_blocked_sleeves": len(blocked_names), "sleeves": {
+            name: {"status": "BLOCKED_UNIVERSAL_GATES", "n": 0,
+                   "promotion_authority": False,
+                   "gate_reason": "missing exact original universal ten-gate pass"}
+            for name in blocked_names
+        },
     }
     SHADOW.mkdir(parents=True, exist_ok=True)
     cache: dict[str, tuple[pd.DataFrame, dict[str, np.ndarray]]] = {}
-    for name, (tf, choice) in CANDIDATES.items():
+    for name, (tf, choice) in admitted.items():
         path = DATA / f"XAUUSD_{tf}.parquet"
         if not path.exists():
             state["sleeves"][name] = {"status": "NO_DATA", "n": 0}

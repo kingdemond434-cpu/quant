@@ -61,17 +61,19 @@ from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus  #
 
 from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
+from gate_policy import (  # noqa: E402
+    ATTESTATION as GATE_POLICY,
+    COST_SCENARIO,
+    DSR_THRESHOLD,
+    GATES as GATE_NAMES,
+    PBO_THRESHOLD,
+    SPA_ALPHA,
+    TRIALS_MULTIPLIER,
+    WF_MIN_STABILITY,
+    WF_SPLITS,
+)
 
-TRIALS_MULTIPLIER = 7.0
-DSR_THRESHOLD = 0.95
-PBO_THRESHOLD = 0.5
-SPA_ALPHA = 0.05
-WF_SPLITS = 4
-WF_MIN_STABILITY = 0.5
-COST_SCENARIO = 3.0
-GATES = ["economic_prior", "in_sample_screen", "deflated_sharpe", "pbo",
-         "reality_check_spa", "cpcv", "walk_forward", "stress_costs",
-         "lockbox", "expected_value"]
+GATES = list(GATE_NAMES)
 HUNTS = ["hunt17", "hunt19", "hunt20", "hunt21", "hunt22", "hunt23"]
 GATE_MODULES = {  # hunt -> module + report file
     "hunt17": ("run_hunt17", "hunt17.json"),
@@ -378,6 +380,7 @@ def main() -> int:
 
     (REPORTS / "UNIVERSAL_SURVIVORS.json").write_text(
         json.dumps({"n": len(survivors_all), "survivors": survivors_all,
+                    "gate_policy": GATE_POLICY,
                     "note": "UNIVERSAL 10-GATE PASS ONLY. Placebo null + fragility "
                             "apply before portfolio entry.",
                     "swept_at": datetime.now(timezone.utc).isoformat()},

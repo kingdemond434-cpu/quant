@@ -1,9 +1,9 @@
-"""Apply the desk's immutable original screen and emit zero-capital candidates.
+"""Apply the immutable discovery screen and emit candidates for the gauntlet.
 
 There is deliberately no later, harsher, effective-N, or deflated admission
-bar here. The screen version recorded when a candidate enters is the only
-discovery bar used for that candidate. Shadow data alone can grant promotion
-authority; this in-sample screen never can.
+bar here. This screen ranks discoveries only: it cannot admit shadow or grant
+promotion authority. Shadow admission requires the fixed original universal
+ten-gate certificate in ``gate_policy.py``.
 """
 from __future__ import annotations
 
@@ -64,7 +64,7 @@ def candidate_row(cell: str, sharpe: float, psr: float, n_trials: int) -> dict:
             "psr_threshold": PSR_THRESHOLD,
             "sr_benchmark": SR_BENCHMARK,
         },
-        "shadow_status": "ELIGIBLE_ZERO_CAPITAL",
+        "shadow_status": "PENDING_UNIVERSAL_10_GATE",
         "promotion_authority": False,
         "capital_confirmation": "FORWARD_ONLY",
         "forward_policy": dict(FORWARD_POLICY),
@@ -146,8 +146,8 @@ def main(argv: list[str] | None = None) -> int:
     _path, rows = write_candidates(df, n_trials)
     print(f"ORIGINAL IMMUTABLE SCREEN {SCREEN_VERSION}")
     print(f"PSR >= {PSR_THRESHOLD:.2f} against SR0={SR_BENCHMARK:.1f}")
-    print(f"{len(rows)} candidates admitted to zero-capital shadow; no later bar counted")
-    print("capital authority remains forward-only: 50 trades or 14 days, minimum 20 trades")
+    print(f"{len(rows)} discoveries queued for the original universal ten-gate gauntlet")
+    print("no discovery screen or harsher overlay can admit a sleeve to shadow")
     return 0
 
 

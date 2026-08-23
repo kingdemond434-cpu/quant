@@ -1,5 +1,5 @@
 """QQUANT UNIVERSAL GATES — the original qquant platform validation stack, applied
-verbatim to the MT5 hunt survivors. PARALLEL build (same statistics, same
+verbatim to every tested MT5 cell without a battery prefilter. PARALLEL build (same statistics, same
 thresholds, same libs — only the orchestration is parallelized).
 
 Uses the EXACT implementations from C:\\Users\\dell\\quant-platform\\libs\\validation
@@ -53,14 +53,18 @@ from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus  #
 
 from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
+from gate_policy import (  # noqa: E402
+    ATTESTATION as GATE_POLICY,
+    COST_SCENARIO,
+    DSR_THRESHOLD,
+    GATES,
+    PBO_THRESHOLD,
+    SPA_ALPHA,
+    TRIALS_MULTIPLIER,
+    WF_MIN_STABILITY,
+    WF_SPLITS,
+)
 
-TRIALS_MULTIPLIER = 7.0
-DSR_THRESHOLD = 0.95
-PBO_THRESHOLD = 0.5
-SPA_ALPHA = 0.05
-WF_SPLITS = 4
-WF_MIN_STABILITY = 0.5
-COST_SCENARIO = 3.0  # X3
 WORKERS = int(sys.argv[sys.argv.index("--workers") + 1]) if "--workers" in sys.argv else 8
 
 _worker_ctx: dict = {}
@@ -243,10 +247,7 @@ def worker_eval_row(r: dict, pbo12_v: float, pbo16_v: float, spa12_v: float,
 
 def main() -> int:
     import multiprocessing as mp
-    from run_hunt12 import WINDOWS as W12  # noqa
-    from run_hunt16 import WINDOWS as W16  # noqa
 
-    sv = json.loads((REPORTS / "REAL_SURVIVORS.json").read_text("utf-8"))
     h12 = json.loads((REPORTS / "hunt12.json").read_text("utf-8"))
     h16 = json.loads((REPORTS / "hunt16.json").read_text("utf-8"))
     all12 = h12.get("all", [])
@@ -398,9 +399,13 @@ def main() -> int:
     print(f"hunt12 PBO={pbo12.pbo:.3f} SPA p={spa12.p_value:.3f} | "
           f"hunt16 PBO={pbo16.pbo:.3f} SPA p={spa16.p_value:.3f}", flush=True)
 
-    rows = sv["real_survivors"]
-    print(f"running the universal gauntlet on {len(rows)} REAL survivors "
-          f"({WORKERS} workers)...", flush=True)
+    # The old path evaluated only rows that had already cleared the hunt battery,
+    # making that later/harsher diagnostic an undeclared pre-veto on the original
+    # ten gates. Evaluate EVERY tested cell; only these ten verdicts decide shadow.
+    rows = ([{**r, "hunt": "hunt12.json"} for r in all12]
+            + [{**r, "hunt": "hunt16.json"} for r in all16])
+    print(f"running the original universal gauntlet on all {len(rows)} tested cells "
+          f"({WORKERS} workers; no battery prefilter)...", flush=True)
 
     with mp.Pool(WORKERS, initializer=_init_eval_worker, initargs=(cell_map,)) as pool:
         verdicts = list(pool.imap(worker_eval_row, rows,
@@ -429,9 +434,8 @@ def main() -> int:
             "hunt16": {"pbo": round(float(pbo16.pbo), 4),
                        "spa_p": round(float(spa16.p_value), 4)},
         },
-        "gates": [n for n in ("economic_prior", "in_sample_screen", "deflated_sharpe",
-                              "pbo", "reality_check_spa", "cpcv", "walk_forward",
-                              "stress_costs", "lockbox", "expected_value")],
+        "gates": list(GATES),
+        "gate_policy": GATE_POLICY,
         "survivors_passing_all": n_pass,
         "survivors_total": len(verdicts),
         "gate_fails": gate_fails,

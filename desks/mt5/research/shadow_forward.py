@@ -29,6 +29,8 @@ SHADOW_DIR = BASE / "reports" / "shadow"
 SHADOW_DIR.mkdir(parents=True, exist_ok=True)
 LOG = open(BASE / "logs" / "shadow.log", "a", encoding="utf-8")
 
+from shadow_admission import partition_work  # noqa: E402
+
 SHADOW_START = datetime(2026, 8, 16, tzinfo=timezone.utc)
 
 WINDOWS = {
@@ -361,14 +363,39 @@ def main() -> None:
     # are a different thing, and flattening them into one list would have made
     # `window` meaningless for families that have no session window at all.
     # Normalised here into one loop rather than duplicating the body.
-    _work = [(s, w, c, "session_range_breakout", False) for s, w, c in SLEEVES]
-    _work += [(s, f, None, f, True) for s, f in UNIVERSE_SLEEVES]
+    _declared = [(s, w, c, "session_range_breakout", False) for s, w, c in SLEEVES]
+    _declared += [(s, f, None, f, True) for s, f in UNIVERSE_SLEEVES]
+    _work, _blocked = partition_work(_declared, BASE)
+    for sym, selector, cond, fam, _is_universe in _blocked:
+        key = f"{sym}.{selector}" + (f".{cond}" if cond else "")
+        st = state.get(key, {"n": 0, "cum_r": 0.0, "max_dd_r": 0.0,
+                             "first_entry": None, "last_entry": None})
+        st.update({
+            "status": "BLOCKED_UNIVERSAL_GATES",
+            "promotion_authority": False,
+            "gate_admission": "BLOCKED",
+            "gate_reason": "missing exact original universal ten-gate pass",
+            "last_attempt_at": attempt_at,
+        })
+        state[key] = st
+    (SHADOW_DIR / "shadow_admission.json").write_text(json.dumps({
+        "at": attempt_at,
+        "policy": "mt5-original-universal-10-v1",
+        "declared": len(_declared),
+        "admitted": len(_work),
+        "blocked": len(_blocked),
+        "blocked_keys": [f"{s}.{w}" + (f".{c}" if c else "")
+                         for s, w, c, _f, _u in _blocked],
+    }, indent=2), encoding="utf-8")
     for sym, win, cond, fam, is_universe in _work:
         key = f"{sym}.{win}" + (f".{cond}" if cond else "")
         st = state.get(key, {"n": 0, "cum_r": 0.0, "max_dd_r": 0.0,
                              "first_entry": None, "last_entry": None,
                              "status": "ACTIVE"})
         st["last_attempt_at"] = attempt_at
+        st["gate_admission"] = "ORIGINAL_UNIVERSAL_10_PASS"
+        if st.get("status") == "BLOCKED_UNIVERSAL_GATES":
+            st["status"] = "ACTIVE"
         if sym not in h1_cache:
             h1_cache[sym] = fetch_h1(sym)
         bars = h1_cache[sym]
@@ -498,7 +525,9 @@ def main() -> None:
              f"days={days_active} [{st['status']}]")
     state["last_run"] = today
     state["updated_at"] = attempt_at
+    state["declared_sleeves"] = len(_declared)
     state["configured_sleeves"] = len(_work)
+    state["gate_blocked_sleeves"] = len(_blocked)
     state["represented_sleeves"] = sum(
         isinstance(v, dict) for k, v in state.items()
         if k not in {"last_run", "updated_at", "configured_sleeves", "represented_sleeves"}

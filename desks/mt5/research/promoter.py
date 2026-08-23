@@ -29,6 +29,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from mt5desk import provenance  # noqa: E402
+from shadow_admission import authorized_specs  # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
 SHADOW_DIR = BASE / "reports" / "shadow"
@@ -142,6 +143,7 @@ def main() -> None:
     sleeves = load_sleeves()
     ledger = load_ledger()
     existing = {s["name"] for s in sleeves}
+    gate_authority = authorized_specs(BASE)
     changed = False
 
     for key, st in shadow.items():
@@ -159,6 +161,14 @@ def main() -> None:
         parts = key.split(".")
         sym, win = parts[0], parts[1]
         cond = parts[2] if len(parts) > 2 else None
+        gate_spec = (sym, win, cond, "session_range_breakout", False)
+        if gate_spec not in gate_authority:
+            st["status"] = "BLOCKED_UNIVERSAL_GATES"
+            st["promotion_authority"] = False
+            st["gate_reason"] = "missing exact original universal ten-gate pass"
+            plog(f"{key}: live promotion refused -- no canonical ten-gate certificate")
+            changed = True
+            continue
         if win not in GOLD_WINDOWS:
             continue
         if sym == "XAUUSD":

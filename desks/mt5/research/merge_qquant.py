@@ -52,6 +52,7 @@ def main() -> int:
         r["qquant_gates"] = {
             "passed": bool(v.get("passed")),
             "stages": v.get("stages", {}),
+            "policy": qq.get("gate_policy"),
         }
         r["REAL3"] = bool(v.get("passed"))
         if r["REAL3"]:
