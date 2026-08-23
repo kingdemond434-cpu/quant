@@ -1,4 +1,9 @@
-"""Cash-and-carry EXECUTOR -- the delta-neutral funding-harvest book, executed on the testnets.
+"""RETIRED, GENUINELY VENUE-SPECIFIC (2026-08-23): no MT5 translation exists. This trade needs a
+dual spot+perpetual-futures listing on the SAME instrument to arb the convergence; Fusion's MT5
+catalogue is CFDs, with no second, independently-priced futures leg to hedge against. Kept in the
+repo per standing instruction, but never wire this into any live schedule again.
+
+Cash-and-carry EXECUTOR -- the delta-neutral funding-harvest book, executed on the testnets.
 
 Long spot (spot testnet) + short perp (futures testnet) on the top POSITIVE-funding perps that trade
 on BOTH venues. Persistent loop with a BANDED rebalance (carry compounds -> hold, don't churn): it

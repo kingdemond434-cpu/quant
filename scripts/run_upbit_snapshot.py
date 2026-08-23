@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""UPBIT FULL-MARKET CANDLE SNAPSHOT (R0303) -- archive what the venue deletes.
+"""RETIRED, GENUINELY VENUE-SPECIFIC (2026-08-23): Upbit's KRW on/off-ramp premium ("kimchi
+premium") has no MT5/Fusion equivalent -- no MT5 instrument prices a Korean-exchange-specific
+arbitrage. Kept per standing instruction, but never wire this into any live schedule again.
+
+UPBIT FULL-MARKET CANDLE SNAPSHOT (R0303) -- archive what the venue deletes.
 
 Upbit PURGES a market's candle history at delisting: verified 6/6 delisted markets return
 HTTP 404 on /v1/candles/days (OXT/NKN/LOOM/QTCON/PCI/MARO, 2026-08-01), ~11.4 KRW markets/yr

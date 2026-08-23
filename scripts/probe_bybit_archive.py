@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""IS THE FREE BYBIT L2 ARCHIVE ON ROLLING RETENTION? -- R0243's T7, as a standing instrument.
+"""RETIRED, GENUINELY VENUE-SPECIFIC (2026-08-23): a fact about one crypto exchange's own archive
+retention policy, with no MT5/Fusion equivalent question to ask. Kept in the repo per standing
+instruction, but never wire this into any live schedule again.
+
+IS THE FREE BYBIT L2 ARCHIVE ON ROLLING RETENTION? -- R0243's T7, as a standing instrument.
 
 WHAT IS AT STAKE. quote-saver.bycsi.com is Bybit's own publication of its own L2 book at 200
 levels / 100ms / 24h per file -- 8x the depth and 41x the resolution of the desk's own recorder,

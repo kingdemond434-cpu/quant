@@ -1,4 +1,8 @@
-"""Crypto regime detection + per-regime sleeve performance.
+"""DOMINATED (2026-08-23): the MT5 desk has its own regime module,
+desks/mt5/mt5desk/macro_regime.py, built independently during the migration. Native-crypto
+machinery stays in the repo per standing instruction, but is retired from any live schedule.
+
+Crypto regime detection + per-regime sleeve performance.
 
 Many crypto edges only work in specific environments (funding carry shines in funding-rich,
 leveraged markets; trend in directional regimes; everything correlates in a crash). This labels each

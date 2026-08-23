@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Universe OI/LS metrics + futures-klines history downloader (Bronze static ingestion).
+"""DOMINATED (2026-08-23): superseded on the MT5 desk by COT positioning
+(desks/mt5/mt5desk/fetch_cot.py, fetch_tff.py, fetch_cot_disagg.py). Native-crypto machinery
+stays in the repo per standing instruction, but is retired from any live schedule.
+
+Universe OI/LS metrics + futures-klines history downloader (Bronze static ingestion).
 
 Feeds the CROSS-SECTIONAL held-out OOS for the two pre-registered derivative sleeves
 (oi_divergence, ls_contrarian in scripts/run_derivative_shadow.py). Single-asset history is a

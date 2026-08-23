@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Stage-A axis screen: oi_ls_daily / binance_metrics / futclose_daily.
+"""DOMINATED (2026-08-23): superseded on the MT5 desk by COT positioning
+(desks/mt5/mt5desk/fetch_cot.py, fetch_tff.py, fetch_cot_disagg.py). Native-crypto machinery
+stays in the repo per standing instruction, but is retired from any live schedule.
+
+Stage-A axis screen: oi_ls_daily / binance_metrics / futclose_daily.
 
 MECHANISM-FIRST. Trial grid is PRE-DECLARED below and every cell is executed and logged --
 there is no "run more until something prints" loop. Screen verdicts come exclusively from
