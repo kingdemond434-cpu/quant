@@ -50,7 +50,8 @@ def main() -> int:
     state = _read(STATE)
     now = datetime.now(UTC)
     rows = certs.get("survivors", {}) if is_exact_policy(certs.get("gate_policy")) else {}
-    active = 0
+    certified = 0
+    processed = 0
     for key, cert in rows.items():
         if not str(key).startswith("qquant.") or not isinstance(cert, dict):
             continue
@@ -59,6 +60,7 @@ def main() -> int:
         spec = cert.get("shadow_spec")
         if not isinstance(spec, dict) or spec.get("hunt") != "hunt16.json":
             continue
+        certified += 1
         family = str(spec.get("family"))
         selector = str(spec.get("selector"))
         if family not in FAMILIES or selector not in WINDOWS:
@@ -140,12 +142,13 @@ def main() -> int:
             row["status"] = "KILL"
             row["why"] = "Fusion-native forward evidence completed without positive net expectancy"
         state[key] = row
-        active += 1
+        processed += 1
     state["updated_at"] = now.isoformat()
-    state["certified_qquant_sleeves"] = active
+    state["certified_qquant_sleeves"] = certified
+    state["processed_qquant_sleeves"] = processed
     SHADOW.mkdir(parents=True, exist_ok=True)
     STATE.write_text(json.dumps(state, indent=2), encoding="utf-8")
-    print(f"qquant shadow: {active} exact certificate(s) processed")
+    print(f"qquant shadow: {processed}/{certified} exact certificate(s) processed")
     return 0
 
 
