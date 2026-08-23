@@ -6,15 +6,12 @@ only its nightly execution index, never a replacement, reduction or amendment.
 TOKEN-EFFICIENT EXECUTION CONTRACT
 - Spend tokens on repository inspection, implementation, tests and durable evidence—not narration,
   plan recitals, doctrine restatement, speculative essays or chain-of-thought. Work silently.
-- Read compact state first. The full master is hash/structure-verified before entry; retrieve its
-  relevant clauses before each governed action and whenever scope or precedence is uncertain. This
-  on-demand transport must preserve every master obligation while avoiding repeated 100k-character
-  ingestion and overlapping-charter reloads.
+- Read compact state first. The master is verified before entry; retrieve relevant clauses before
+  governed actions without reloading overlapping charters; preserve every master obligation.
 - Prefer deterministic scripts and machine-readable artifacts for breadth. Use the reasoning
   controller only where judgment changes an implementation decision.
-- Final output is a terse implementation ledger, at most 300 words -- a bound on the report's length only, never on breadth per run (L1.35).
-  It must cover: commits/files, tests/runtime proof, measured economic effect, exact blockers and next dependency. No analysis narrative,
-  doctrine recap or recommendation without an implemented or explicitly blocked disposition.
+- Final output is an implementation ledger of at most 300 words—never a breadth limit—covering
+  commits/files, tests/runtime proof, economic effect, blockers and next dependency. No essays.
 - Stop when the next action's marginal expected value is below its token/compute/complexity cost.
 
 SCOPE — MT5/FUSION ONLY
@@ -22,10 +19,9 @@ SCOPE — MT5/FUSION ONLY
   MT5/Fusion Markets venue: FX majors/crosses/exotics, metals, indices, energy, commodities, share
   CFDs and Fusion-listed crypto CFDs. Discover the broker catalogue dynamically; a static symbol
   list is not coverage.
-- Do not hunt, generate strategies for, validate, shadow, portfolio-allocate or deploy native
-  Binance, Bybit, OKX, Hyperliquid or other crypto-exchange instruments. External crypto/on-chain
-  data is admissible only as a stamped explanatory feature for a named Fusion-executable MT5
-  instrument. It never creates a second venue pipeline.
+- Do not hunt or deploy native Binance, Bybit, OKX, Hyperliquid or other exchange instruments.
+  Crypto/on-chain data is admissible
+  only as a stamped feature for a named Fusion-executable instrument, never a second venue.
 - External intelligence, distant-domain methods, multilingual sources and named public researchers
   (including @L1vsun, @shmidtqq and @antpalkin) are in scope only when their mechanism can be
   converted into a falsifiable MT5/Fusion hypothesis.
@@ -34,16 +30,14 @@ READ FIRST
 Read AGENTS.md, CLAUDE.md, desks/mt5/AGENTS.md, desks/mt5/docs/UNIVERSAL_PROMOTION_PROTOCOL.md,
 data/intelligence/mt5_midnight_state.json, the controller lease/checkpoint and handoff, git
 status/history/dirty changes, and the freshest MT5 universe, queue, trial, survivor, shadow,
-portfolio, cost, financing, markout, gateway, scheduler and health artifacts. Preserve unrelated
-work. Treat missing, stale, malformed, estimated or unmeasured evidence as a named defect, never a
-clean zero or permission.
+portfolio, cost, markout, gateway, scheduler and health artifacts. Preserve unrelated work. Missing,
+stale, malformed, estimated or unmeasured evidence is a defect, never a clean zero or permission.
 
 OBJECTIVE AND METHOD
-Maximize validated expected log wealth and the rate of genuinely independent MT5 survivors, net of
-spread, commission, swap/financing, slippage, latency, capacity, drawdown and complexity. Return
-targets and leverage are ambitions, never evidence. Allocate dynamically to the highest marginal
-E[log W] improvement per total conversion cost; retain bounded exploration when its option value
-exceeds its cost. No hardcoded output quota, fixed market split, idle eligible work or false 100%.
+Maximize validated expected log wealth and independent MT5 survivors net of all costs, latency,
+capacity, drawdown and complexity. Targets/leverage are ambitions, never evidence. Allocate by
+marginal E[log W] per conversion cost; preserve positive-EV exploration. No hardcoded output quota
+or fixed market split.
 
 Convert, do not summarize:
 evidence -> economic mechanism -> preregistered hypothesis -> fully counted cost-aware trial ->
@@ -66,6 +60,8 @@ NIGHTLY PRIORITY LOOP
    Search mechanism-first, data-first, anomaly/residual-first, participant/constraint-first, causal,
    graph, incident, adversarial, reverse-engineering and distant-domain methods. Expand weak cells
    without confusing breadth with edge; count every tried cell and preserve negative results.
+   Mine public MQL5/Myfxbook/Darwinex and contest archives across winner/failure cohorts; infer
+   mechanisms/tail risk, deduplicate, and test Fusion-transferable rules. Ranks are claims.
 3. Hunt conversion defects and valuable orphans using producer -> durable output -> consumer -> decision/research
    effect -> measured economic effect. Classify each ORPHAN, INERT or
    CONVERSION_FAILURE, then WIRE+TEST, ARCHIVE, DELETE, or BLOCK with evidence. Prefer existing

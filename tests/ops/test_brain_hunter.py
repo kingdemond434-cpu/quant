@@ -59,6 +59,16 @@ def test_THE_RUNNER_FOLLOWS_THE_RESUMABLE_PATTERN_THE_OTHER_MINERS_USE() -> None
         "run_model_upgrade.py adopts a newer flagship, and nothing would report it")
 
 
+def test_CLAUDE_AUTH_FAILURE_FAILS_OVER_TO_THE_SAME_CODEX_MINER() -> None:
+    src = RUNNER.read_text("utf-8")
+    assert 'CONTROLLER="codex"' in src
+    assert "Codex fallback" in src
+    assert "--ask-for-approval never" in src
+    assert "--sandbox danger-full-access" in src
+    assert "dig_prompt ops/brain_hunter_prompt.txt" in src
+    assert "all controller auth unavailable" in src
+
+
 def test_IT_HUNTS_RECURSIVELY_RATHER_THAN_SEARCHING_ONE_LABEL() -> None:
     """Searching the platform's own label traps the organ inside what the platform CALLS an alpha.
     The alternative-implementation node is usually the highest-yield one: someone who reimplemented
@@ -69,17 +79,27 @@ def test_IT_HUNTS_RECURSIVELY_RATHER_THAN_SEARCHING_ONE_LABEL() -> None:
     assert "do NOT search only for" in src
 
 
-def test_IT_EXTRACTS_MECHANISMS_AND_DEMANDS_A_CRYPTO_ANALOGUE() -> None:
+def test_PUBLIC_COMPETITIONS_ARE_MINED_AS_MT5_ORE_NOT_EVIDENCE() -> None:
+    src = _prompt()
+    for source in ("MQL5", "Myfxbook", "Darwinex/DarwinIA", "broker contests"):
+        assert source in src
+    assert "complete histories and failure cohorts" in src
+    assert "selection-biased ore" in src
+    assert "Fusion-native point-in-time data" in src
+
+
+def test_IT_EXTRACTS_MECHANISMS_AND_DEMANDS_AN_MT5_ANALOGUE() -> None:
     """A copied formula is a crowded expression over a universe the desk does not trade. The
     platform is primarily an EQUITIES venue, so a factor rarely transfers while its transformation,
     neutralization idea or methodology often does."""
     src = _prompt()
     assert "EXTRACT MECHANISMS, NOT FORMULAS" in src
-    assert "CRYPTO ANALOGUE" in src and "translate_to_crypto" in src
+    assert "MT5 ANALOGUE" in src and "translate_to_mt5" in src
+    assert "CURRENT VENUE OVERRIDE — MT5/FUSION" in src
     assert "PRIMARILY AN EQUITIES VENUE" in src.upper()
 
 
-def test_AN_OPERATOR_WITH_NO_CRYPTO_ANALOGUE_IS_STILL_LOGGED() -> None:
+def test_AN_OPERATOR_WITH_NO_MT5_ANALOGUE_IS_STILL_LOGGED() -> None:
     """It names data the desk does not have, which is the information-frontier axis. Discarding it
     would silently narrow the search to what the desk can already measure."""
     src = _prompt()
