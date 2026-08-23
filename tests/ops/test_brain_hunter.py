@@ -69,6 +69,15 @@ def test_IT_HUNTS_RECURSIVELY_RATHER_THAN_SEARCHING_ONE_LABEL() -> None:
     assert "do NOT search only for" in src
 
 
+def test_PUBLIC_COMPETITIONS_ARE_MINED_AS_MT5_ORE_NOT_EVIDENCE() -> None:
+    src = _prompt()
+    for source in ("MQL5", "Myfxbook", "Darwinex/DarwinIA", "broker contests"):
+        assert source in src
+    assert "complete histories and failure cohorts" in src
+    assert "selection-biased ore" in src
+    assert "Fusion-native point-in-time data" in src
+
+
 def test_IT_EXTRACTS_MECHANISMS_AND_DEMANDS_AN_MT5_ANALOGUE() -> None:
     """A copied formula is a crowded expression over a universe the desk does not trade. The
     platform is primarily an EQUITIES venue, so a factor rarely transfers while its transformation,

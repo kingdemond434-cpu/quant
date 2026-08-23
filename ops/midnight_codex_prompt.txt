@@ -66,6 +66,10 @@ NIGHTLY PRIORITY LOOP
    Search mechanism-first, data-first, anomaly/residual-first, participant/constraint-first, causal,
    graph, incident, adversarial, reverse-engineering and distant-domain methods. Expand weak cells
    without confusing breadth with edge; count every tried cell and preserve negative results.
+   Include public MT5 leaderboards, championships and competition archives (MQL5, Myfxbook,
+   Darwinex/DarwinIA and broker contests): mine full winner-and-failure cohorts, reverse-engineer
+   mechanisms and hidden tail risk, deduplicate, and test only Fusion-transferable causal rules.
+   Rank and return screenshots are claims, never survivor evidence.
 3. Hunt conversion defects and valuable orphans using producer -> durable output -> consumer -> decision/research
    effect -> measured economic effect. Classify each ORPHAN, INERT or
    CONVERSION_FAILURE, then WIRE+TEST, ARCHIVE, DELETE, or BLOCK with evidence. Prefer existing
