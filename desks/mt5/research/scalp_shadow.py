@@ -20,7 +20,6 @@ sys.path.insert(0, str(ROOT))
 
 from desks.mt5.research import scalp_family_expansion as families  # noqa: E402
 from desks.mt5.research import scalp_reverse_engineering as core  # noqa: E402
-from desks.mt5.research.shadow_admission import authorized_specs  # noqa: E402
 
 DESK = Path(__file__).resolve().parents[1]
 DATA = DESK / "data" / "universe"
@@ -89,12 +88,12 @@ def run(now: datetime | None = None) -> dict:
     now = now or datetime.now(UTC)
     source = _source()
     authority = bool(source.get("promotion_authority"))
-    gate_authority = authorized_specs(DESK)
-    admitted = {
-        name: value for name, value in CANDIDATES.items()
-        if ("XAUUSD", name, None, "gold_scalp", False) in gate_authority
-    }
-    blocked_names = sorted(set(CANDIDATES) - set(admitted))
+    # SHADOW ENTRY is not the live-capital gate (principal decision 2026-08-23): every declared
+    # candidate gets a real shadow-forward attempt, no prior 10-gate certificate required. Live
+    # promotion is unaffected -- promoter.py independently re-checks authorized_specs() at the
+    # moment of actual promotion, so uncertified shadow evidence still cannot reach live capital.
+    admitted = dict(CANDIDATES)
+    blocked_names: list[str] = []
     state: dict = {
         "updated_at": now.isoformat(timespec="seconds"),
         "shadow_start": SHADOW_START.isoformat(), "source": source,
