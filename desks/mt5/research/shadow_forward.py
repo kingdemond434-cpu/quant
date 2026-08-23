@@ -29,7 +29,6 @@ SHADOW_DIR = BASE / "reports" / "shadow"
 SHADOW_DIR.mkdir(parents=True, exist_ok=True)
 LOG = open(BASE / "logs" / "shadow.log", "a", encoding="utf-8")
 
-from shadow_admission import partition_work  # noqa: E402
 
 SHADOW_START = datetime(2026, 8, 16, tzinfo=timezone.utc)
 
@@ -365,7 +364,15 @@ def main() -> None:
     # Normalised here into one loop rather than duplicating the body.
     _declared = [(s, w, c, "session_range_breakout", False) for s, w, c in SLEEVES]
     _declared += [(s, f, None, f, True) for s, f in UNIVERSE_SLEEVES]
-    _work, _blocked = partition_work(_declared, BASE)
+    # SHADOW ENTRY is not the live-capital gate (principal decision 2026-08-23): every declared
+    # sleeve gets a real shadow-forward attempt and gets to build a genuine track record, no
+    # prior 10-gate certificate required -- `shadow_admission.partition_work` (which used to
+    # filter entry by certificate) is no longer called here. Live promotion is unaffected and
+    # stays exactly as strict as before -- promoter.py independently re-checks
+    # `authorized_specs()` at the moment of actual promotion (its own gate_authority lookup), so a
+    # sleeve with real shadow evidence but no certified 10-gate pass still cannot reach live
+    # capital. Only the "prove yourself in shadow first" door was closed; it is now open.
+    _work, _blocked = _declared, []
     for sym, selector, cond, _fam, _is_universe in _blocked:
         key = f"{sym}.{selector}" + (f".{cond}" if cond else "")
         st = state.get(key, {"n": 0, "cum_r": 0.0, "max_dd_r": 0.0,
