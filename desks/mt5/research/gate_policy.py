@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import Any
 
 VERSION = "mt5-original-universal-10-v1"
+DONE_MARKER = "DONE_qquant_gates_original10_v1"
 GATES = (
     "economic_prior", "in_sample_screen", "deflated_sharpe", "pbo",
     "reality_check_spa", "cpcv", "walk_forward", "stress_costs",

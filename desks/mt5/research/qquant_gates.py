@@ -57,6 +57,7 @@ from gate_policy import (  # noqa: E402
     ATTESTATION as GATE_POLICY,
     COST_SCENARIO,
     DSR_THRESHOLD,
+    DONE_MARKER,
     GATES,
     PBO_THRESHOLD,
     SPA_ALPHA,
@@ -447,6 +448,8 @@ def main() -> int:
     (REPORTS / "QQUANT_GATES.json").write_text(json.dumps(out, indent=2, default=str),
                                                encoding="utf-8")
     (REPORTS / "DONE_qquant_gates").write_text(
+        datetime.now(timezone.utc).isoformat(), encoding="utf-8")
+    (REPORTS / DONE_MARKER).write_text(
         datetime.now(timezone.utc).isoformat(), encoding="utf-8")
     print(f"\nUNIVERSAL GAUNTLET: {n_pass}/{len(verdicts)} survivors pass all 10 gates "
           f"(wall {(datetime.now(timezone.utc) - t0).total_seconds() / 60:.1f} min)",

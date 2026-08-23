@@ -13,6 +13,7 @@ from gate_policy import (  # noqa: E402
     ATTESTATION,
     COST_SCENARIO,
     DSR_THRESHOLD,
+    DONE_MARKER,
     GATES,
     PBO_THRESHOLD,
     SPA_ALPHA,
@@ -35,6 +36,7 @@ def test_original_thresholds_are_one_fixed_policy() -> None:
     assert WF_MIN_STABILITY == 0.5
     assert COST_SCENARIO == 3.0
     assert ATTESTATION["wf_test_size"] == "max(20,len//6)"
+    assert DONE_MARKER == "DONE_qquant_gates_original10_v1"
 
 
 def test_partial_extra_or_failed_gate_sets_never_admit() -> None:
@@ -78,3 +80,5 @@ def test_production_path_has_no_harsher_prefilter() -> None:
     assert 'for r in all12' in qquant and 'for r in all16' in qquant
     assert "partition_work(_declared, BASE)" in shadow
     assert "gate_spec not in gate_authority" in promoter
+    supervisor = (DESK / "research" / "research_supervisor.py").read_text(encoding="utf-8")
+    assert DONE_MARKER in supervisor

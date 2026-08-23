@@ -65,6 +65,7 @@ from gate_policy import (  # noqa: E402
     ATTESTATION as GATE_POLICY,
     COST_SCENARIO,
     DSR_THRESHOLD,
+    DONE_MARKER,
     GATES as GATE_NAMES,
     PBO_THRESHOLD,
     SPA_ALPHA,
@@ -295,10 +296,10 @@ def _gauntlet_once(cells: list[Cell], hunt: str, workers: int) -> dict:
 
 
 def main() -> int:
-    done_flag = REPORTS / "DONE_qquant_gates"
+    done_flag = REPORTS / DONE_MARKER
     held_flag = BASE / "data" / "HOLD_qquant_gates"
     if not done_flag.exists() and not held_flag.exists():
-        print("waiting for DONE_qquant_gates (hunt12/16 REAL3 path) ...", flush=True)
+        print(f"waiting for {DONE_MARKER} (current original ten-gate run) ...", flush=True)
         while not done_flag.exists():
             time.sleep(60)
         print("qquant gates done, starting universal gauntlet", flush=True)
