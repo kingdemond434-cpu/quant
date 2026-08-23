@@ -27,7 +27,32 @@ dig_dry_run "brain-hunter" "ops/brain_hunter_prompt.txt" && exit 0
 echo "=== brain-hunter attempt $(date -u) ===" >> "$LOG"
 export BRAIN_MUTEX_LOGFILE="$LOG"
 brain_mutex "brain-hunter"
-brain_auth_check || { echo "auth unavailable -- next run resumes ($(date -u))" >> "$LOG"; exit 1; }
+CONTROLLER="claude"
+if ! brain_auth_check; then
+    # Claude subscription/auth outages previously erased the whole daily WorldQuant/competition
+    # ground. Use the already-authenticated Codex seat against the SAME prompt, ledger and mutex;
+    # this is controller failover, not a second miner. The VPS cannot use workspace-write/bwrap,
+    # so the repository gates and research-only prompt remain the mutation fence.
+    CODEX_BIN="${CODEX_BIN:-/home/quant/.local/bin/codex}"
+    if [ -x "$CODEX_BIN" ] && "$CODEX_BIN" login status 2>&1 | grep -q "Logged in"; then
+        CONTROLLER="codex"
+        echo "claude auth unavailable -- using authenticated Codex fallback" >> "$LOG"
+    else
+        echo "all controller auth unavailable -- next run resumes ($(date -u))" >> "$LOG"
+        exit 1
+    fi
+fi
 echo "=== brain-hunter start $(date -u) ===" >> "$LOG"
-claude --effort max --append-system-prompt "$_DOCTRINE" -p "$(dig_prompt ops/brain_hunter_prompt.txt)" --dangerously-skip-permissions >> "$LOG" 2>&1
-echo "=== brain-hunter exit $? at $(date -u) ===" >> "$LOG"
+if [ "$CONTROLLER" = "claude" ]; then
+    claude --effort max --append-system-prompt "$_DOCTRINE" \
+        -p "$(dig_prompt ops/brain_hunter_prompt.txt)" --dangerously-skip-permissions \
+        >> "$LOG" 2>&1
+    RC=$?
+else
+    { printf '%s\n\n' "$_DOCTRINE"; dig_prompt ops/brain_hunter_prompt.txt; } \
+        | "$CODEX_BIN" --ask-for-approval never exec -C "$PWD" --sandbox danger-full-access \
+            --model gpt-5.6-sol --config model_reasoning_effort=medium - >> "$LOG" 2>&1
+    RC=$?
+fi
+echo "=== brain-hunter controller=$CONTROLLER exit $RC at $(date -u) ===" >> "$LOG"
+exit "$RC"
