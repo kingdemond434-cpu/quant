@@ -1,0 +1,17 @@
+cell                                 n     exp     t    PF   maxDD
+XAUUSD.cmr_xau_factor_resid.L      365  +0.077  1.38  1.17   -10.2
+XAUUSD.cmr_xau_factor_resid.S      348  -0.126 -2.24  0.77   -47.9
+EURGBP.cmr_tri_resid.L             299  +0.167  1.65  1.31   -31.7
+EURGBP.cmr_tri_resid.S             285  -0.101 -1.56  0.82   -40.2
+AUDNZD.cmr_tri_resid.L             296  -0.106 -0.34  0.88   -99.9
+AUDNZD.cmr_tri_resid.S             291  -0.138 -2.23  0.75   -46.2
+AUDCAD.cmr_tri_resid.L             291  +0.260  3.14  1.59    -8.4
+AUDCAD.cmr_tri_resid.S             277  -0.142 -2.31  0.74   -44.0
+NZDCAD.cmr_tri_resid.L             374  +0.035  0.12  1.04  -105.4
+NZDCAD.cmr_tri_resid.S             354  -0.094 -1.70  0.82   -42.9
+EURCHF.cmr_tri_resid.L             273  +0.000  0.00  1.00   -27.8
+EURCHF.cmr_tri_resid.S             278  -0.189 -3.04  0.68   -51.5
+GBPJPY.cmr_tri_resid.L             248  +0.031  0.42  1.06   -10.3
+GBPJPY.cmr_tri_resid.S             244  -0.158 -2.38  0.72   -42.2
+
+14 cells swept. Survivor claims pending universal 10-gate pass.
