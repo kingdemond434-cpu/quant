@@ -1,12 +1,12 @@
 {
-  "updated_at": "2026-08-24T19:30:10+00:00",
+  "updated_at": "2026-08-24T19:45:10+00:00",
   "configured_sleeves": 40,
   "represented_sleeves": 40,
   "sleeves_with_forward_trades": 39,
   "evidence_blocked_sleeves": 0,
   "missing_sleeves": [],
   "errors": {},
-  "seconds": 2.843,
+  "seconds": 2.875,
   "gateway_armed": true,
   "promoted_live_sleeves": [],
   "status": "OPERATING"
