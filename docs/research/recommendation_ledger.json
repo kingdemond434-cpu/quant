@@ -8231,6 +8231,20 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0647",
+   "source": "cycle",
+   "summary": "Snapshot public Fusion-relevant MT5 leaderboard and competition state point-in-time: retain first_seen/source timestamp, rule version, full observable failure cohort, and disappearance state before public access changes; route only reconstructed rules to the universal promotion protocol.",
+   "roi_bps": null,
+   "rank": 2.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-24T15:14:17.231189+00:00",
+   "status": "scheduled",
+   "reason": "Research-only BRAIN seat cannot build or schedule an external collector in scripts/libs. The next BRAIN session will first specify a public, rights-clean source and existing consumer path; a build is authorized only with same-change wiring and the universal promotion protocol unchanged.",
+   "commit": null,
+   "due": "2026-09-01",
+   "disposed": "2026-08-24T15:14:24.815431+00:00"
   }
  ]
 }

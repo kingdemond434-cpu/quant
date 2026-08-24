@@ -1796,7 +1796,15 @@ NOT mean capital (L1.6 -- a candidate is not an edge). R-rows: R0115-R0118.
 - **§33 disposition:** deferred(2026-08-07) — construction owed by the alpha org via ledger row
   (R-row this run); litminer freeze bars new runner code. Tier 2: mechanism prior on ingested axes.
 
-### 24. Regulatory-event timeline (5-class taxonomy, Auer–Claessens) — grade: needs-monitoring (event gate EXISTS; timeline dataset is the owed build) [§33: deferred(2026-08-24) tier:3]
+### 24. Regulatory-event timeline (5-class taxonomy, Auer–Claessens) — grade: verified-clean (two regulator-native jurisdiction columns now exist; the original 151-event table remains a reconstruction reference, not an absent dataset) [§33: wired -> data/vara_regulatory_events.json + data/adgm_regulatory_events.json]
+> **§33 CLOSED 2026-08-24 (BRAIN hunter s5).** The card no longer has an absent producer:
+> `data/vara_regulatory_events.json` and `data/adgm_regulatory_events.json` both postdate the find,
+> are non-empty machine-readable regulator-native event corpora, declare clocks/provenance, and name
+> R0193 as consumer. This does **not** claim the Auer–Claessens 151-event appendix was recovered or
+> that any event alpha survived; it closes the dataset-build obligation with two independently
+> reconstructed jurisdiction columns. Active Fusion translation is a separate hypothesis step:
+> regulatory events must map to exact traded underlyings (for example USD, gold or an equity index)
+> and be evaluated through the event-shaped gate on Fusion-native point-in-time bars.
 > **§33 RE-DEFERRED 2026-08-24 with a FAILED SEARCH DOCUMENTED (2026-08-11, brain-hunter seat).**
 > The cheap path was probed and does not exist: the BIS QR Sep-2018 article page
 > (`bis.org/publ/qtrpdf/r_qt1809f.htm`) links ONLY the 240KB article PDF — no annex, no online
@@ -2513,7 +2521,16 @@ using this axis live than the archival decay is.
 
 ## LITMINER RUN-6 CARDS (2026-08-12, arXiv q-fin full-subcategory sweep — first execution; ground file `deep_sweep/20260812_litminer_arxiv.md` carries full evidence + URLs)
 
-### 27. Copula-state BTC-hedged alt spread reversion at 5-min (STAT-ARB — the desk's only never-tested family, n=0) — grade: needs-monitoring (screen construction owed; hourly rung of the family is graveyard-KILLED) [§33: deferred(2026-08-24) tier:2]
+### 27. Copula-state BTC-hedged alt spread reversion at 5-min (STAT-ARB — the desk's only never-tested family, n=0) — grade: needs-monitoring (screen construction owed; hourly rung of the family is graveyard-KILLED) [§33: deferred(2026-09-01) tier:2]
+> **§33 RE-DEFERRED 2026-08-24 with the active-venue blocker made explicit.** The original 5-minute
+> crypto construction still lacks its declared 5-minute multi-symbol panel, and the current venue
+> mandate is Fusion MT5 rather than Binance. `translate_to_mt5()` returns no mapping for this
+> construction. The legitimate analogue is a rolling, re-selected cointegration/residual-reversion
+> study over Fusion FX/metals pairs (candidate basket: EURUSD/GBPUSD or XAUUSD/XAGUSD), but the exact
+> 5-minute panel is absent for those pairs: only XAUUSD_M5 is present. Rebuilding at H1/M15 would be
+> an unregistered construction substitution. Lifting condition: point-in-time Fusion M5 bars for
+> both legs, executable spread/swap from the symbol contract, and a newly registered MT5-specific
+> hypothesis before the audited screen. No crypto-only screen is authorized by this deferral.
 - **Provides:** the first testable construction for the STATISTICAL-ARBITRAGE family: 3-week
   formation / 1-week trading rolling cycles on Binance USDT-M perps; spread = BTC − β·ALT
   (Engle–Granger per cycle, re-selected — never static), copula conditional-probability entry
@@ -2543,7 +2560,16 @@ using this axis live than the archival decay is.
   bars; owed by the alpha org via **R0459** (due 2026-08-24). Novelty gate re-run
   owed at screen time; every construction (bar size, α₁, copula family) logged as a charged trial.
 
-### 28. Quarter-hour clock: scheduled-algo order-imbalance leakage, 4–12h horizon (EVENT-AND-CALENDAR × ORDER-FLOW, sub-daily) — grade: needs-monitoring (dual-use; execution-hygiene leg needs NO alpha claim) [§33: deferred(2026-08-24) tier:2]
+### 28. Quarter-hour clock: scheduled-algo order-imbalance leakage, 4–12h horizon (EVENT-AND-CALENDAR × ORDER-FLOW, sub-daily) — grade: needs-monitoring (dual-use; execution-hygiene leg needs NO alpha claim) [§33: deferred(2026-09-01) tier:2]
+> **§33 RE-DEFERRED 2026-08-24 for an MT5 measurement gap, not lack of a mechanism.** Running
+> `translate_to_mt5("order imbalance")` maps this to broker-native bid/ask tick-change imbalance,
+> with DOM only when real. The current Fusion research inventory has bars and spread metadata but no
+> point-in-time bid/ask tick-change or DOM tape carrying receipt and venue clocks, so the named
+> conditioner cannot be built honestly. Exact target surface after the tape exists: Fusion
+> EURUSD/GBPUSD/USDJPY/XAUUSD at :00/:15/:30/:45, 4h/8h/12h forward returns, M15 decision grid;
+> executable cost is each symbol's observed spread/tick value plus swap across held rollovers.
+> Lifting condition: Fusion-native tick/quote tape with clock provenance and a pre-registered MT5
+> trial grid. OHLCV bar direction is not substituted for order imbalance.
 - **Provides:** clock-phase-resolved order-imbalance at :00/:15/:30/:45 marks → 4–12h forward
   returns, on the desk's OWN-CLOCK L2/trade recorder (the one instrument class R0117 taught the
   desk to demand); funding-window (00/08/16 UTC) conditioning as the desk's differentiator.
@@ -2573,7 +2599,16 @@ using this axis live than the archival decay is.
   the hygiene leg (mark-avoidance in the executor's child-order timing — but executor code is
   MONEY PATH: L1.38 change-window check applies to that consumer, not to the measurement).
 
-### 29. Polymarket-vs-Deribit binary wedge on BTC threshold contracts (VOL-AND-OPTIONS relative value — NOT the EV-rejected DVOL variance-carry) — grade: needs-legitimacy-review (TRADING leg only; measurement leg is free and §13-clean) [§33: deferred(2026-08-24) tier:2]
+### 29. Polymarket-vs-Deribit binary wedge on BTC threshold contracts (VOL-AND-OPTIONS relative value — NOT the EV-rejected DVOL variance-carry) — grade: needs-legitimacy-review (TRADING leg only; measurement leg is free and §13-clean) [§33: deferred(2026-09-01) tier:2]
+> **§33 RE-DEFERRED 2026-08-24 because the active destination has no matching instrument.**
+> `translate_to_mt5()` returns no mapping for prediction-market binary contracts. The current
+> Fusion universe contains spot/CFD symbols (including BTCUSD/ETHUSD) but no listed binary option or
+> expiry/strike surface, so an exact hedge cannot be expressed and a crypto-only output is forbidden
+> by the venue override. Named data gap: Fusion's complete option/share-CFD symbol catalogue with
+> expiry, strike, exercise convention, session, spread, swap and contract specifications; absent a
+> matched binary instrument this remains measurement-only external ore. Lifting condition: an exact
+> Fusion-tradeable binary/option analogue plus point-in-time quotes, or a formal disposition that the
+> broker offers none. The Polymarket trading-leg legitimacy gate remains untouched.
 - **Provides:** hourly wedge series = Polymarket Yes price − discounted option-implied binary
   (Deribit surface the desk already holds) at matched strike/maturity; wedge as (a) tradeable
   RV candidate, (b) zero-execution positioning-sentiment input to the options book.

@@ -6872,3 +6872,110 @@ work. Diff HEAD vs working copy for the gate's input before believing any gate v
 **One real defect of my own, caught by the gate and fixed:** card 37's first `[§33: wired -> ...]`
 named *itself* and was not path-shaped. Corrected to the checked ``path `anchor`​`` form. A
 self-referential disposition is a conversion claim backed by the claim.
+
+---
+
+## BRAIN HUNTER — session 5 (2026-08-24, dedicated daily organ)
+
+**CONVERSION CONTROL READ FRESH:** the shared ladder is stranded at `STATISTICALLY_VALID → SHADOW`
+(6→0), with the tracked 50/50 exploitation/exploration prior unchanged because two-sided realised
+value/cost evidence remains absent. This research-frozen seat cannot start MT5 shadow clocks or edit
+the money path. **MINE GATE at open:** CONVERT-FIRST, 4 owed, weighted 14, highest T2. They were
+worked before new ground.
+
+### §33 DRAIN — 4→0, highest tier first, without manufacturing a screen
+
+- **T2 copula 5-minute stat-arb:** `[§33: deferred(2026-09-01)]` — original 5-minute crypto panel
+  absent; active Fusion analogue needs paired M5 bars but only `XAUUSD_M5` exists. Named candidate
+  pairs are EURUSD/GBPUSD and XAUUSD/XAGUSD; H1/M15 substitution refused as a new construction.
+- **T2 quarter-hour imbalance:** `[§33: deferred(2026-09-01)]` —
+  `translate_to_mt5("order imbalance")` correctly returns bid/ask tick-change imbalance (DOM only
+  when real), but the Fusion inventory has bars/spread metadata and no clock-proven quote tape.
+- **T2 Polymarket–Deribit binary wedge:** `[§33: deferred(2026-09-01)]` —
+  `translate_to_mt5()` returns no binary-contract mapping and the current Fusion universe exposes no
+  strike/expiry surface. Crypto-only output is forbidden; exact broker instrument gap named.
+- **T3 Auer–Claessens regulatory timeline:** `[§33: wired -> data/vara_regulatory_events.json +
+  data/adgm_regulatory_events.json]` — both artifacts postdate the find, are non-empty regulator-
+  native event corpora with clocks/provenance, and name R0193 as consumer. This closes the dataset
+  build, not the original appendix extraction and not an alpha verdict.
+
+### CARRIED GROUND 1 — low-liquidity lottery section, EXHAUSTED and rejected
+
+`worldquant-miner/paper/chapters/crypto-trading-strategies.tex` lines 770–849 (Apache-2.0) were read
+in full. The section hardcodes liquidity/volume/24h-change/holder/age thresholds, buys after a 50%
+recent pump, and sets 50% TP / 30% SL / 1h hold. It supplies **no dataset, point-in-time universe,
+backtest, cost model, citation or forced counterparty**. The code calls the condition suspicious and
+then buys it; that is a parameter set, not a mechanism. **Fusion verdict:**
+`[§33: killed -> data/brain_hunter_s5_20260824.json BH-S5-F1]`. `translate_to_mt5()` returned no
+mapping. Closest possible surface—thin/new Fusion share CFDs—is absent from the current 23-symbol
+universe, so the complete share-CFD listing/delisting/contract/tick-cost history is logged as a data
+gap rather than silently replacing the hypothesis with BTCUSD/ETHUSD.
+
+### NEW DEEP-FOREST VENUE — `zl3311/alpha-mining`, RICH and rights-bounded
+
+Found by recursive public search from BRAIN → alternative agent implementations → published failure
+archives. The public archived repo contains **63 session narratives, 28 dead zones, 29 patterns and
+~53,000 reported simulations**. Its value is not the selected in-sample winners; it is the full
+failure notebook. `POSTMORTEM.md`, `DATA-NOTICE.md`, the complete 28-file dead-zone index and the
+available author-analysis bodies were mined as TEXT. **§13 boundary read before content:** MIT covers
+code, methodology, session narratives, knowledge-base structure and author analysis; submitted
+formulas are WorldQuant property under the author's agreement, while platform-derived field metadata
+has a rights caveat. No formulas or field catalogue were copied; no credential/API used; no code run.
+
+The transferable result is **OP-095**: match transform clock to genuine source arrivals. The public
+negative notebook repeatedly shows overlapping-window differences, delta/std normalisation and fast
+sign gates turning slow quarterly fields into high-turnover noise, while daily rolling-regression
+fields remain dense despite a long lookback. For Fusion, weekly COT and scheduled macro values become
+release innovations/slow states at first availability, never synthetic daily observations. Exact
+symbols, H1/D1 horizons, costs and release-time constraints are recorded in OP-095 and the JSON
+artifact. This is `[§33: screened]` methodology—**no MT5 alpha trial or forward clock was minted**.
+
+The second result independently confirms mechanism/core-level correlation budgeting. The source's
+own negation dead zone stayed ~0.94 correlated because the shared core dominated the sign-flipped
+anchor. Fusion uses absolute correlation of aligned net sleeve returns; a polarity pair is one edge.
+Repo audit found this direction already has consumers, so it is confirmation rather than a new build.
+
+### VENUE DISCOVERY / DEPTH / VIDEO
+
+| venue | what lives there | how found | first-pass verdict |
+|---|---|---|---|
+| `github.com/zl3311/alpha-mining` | public BRAIN laboratory notebook with failures, sessions and process memory | BRAIN → agent implementation → failure archive | **RICH; methodology clean, formula/field reuse fenced** |
+| `github.com/aircrushin/wq-alpha-agent` | new MIT BRAIN agent framework; failure-preserving/evolution workflow | adjacent repository search | **RICH, UNMINED beyond README/licence** |
+| `github.com/angel4angelov-glitch/wq-alpha-pipeline` | IQC 2026 brute-force pipeline and known-limit list | adjacent repository search | **RICH, UNMINED beyond README/licence** |
+
+**SECTION EXHAUSTED 2026-08-24:** low-liquidity lottery chapter; `zl3311` rights notice and
+postmortem; the 28-file dead-zone index. **NOT EXHAUSTED:** 63 session narratives, 29 pattern files,
+13 skills, the two new adjacent repos, and the remaining session-4 carried repo sections.
+**VIDEO: 0 fetched, 0 locked** — no video-shaped artifact encountered.
+
+### SELF-INTERROGATION BATTERY — named reads, not rubber stamps
+
+- **Contingency / config-vs-outcome:** the source's missing final platform snapshot proves that a
+  configured external account is not durable evidence; artifact = its `POSTMORTEM.md` admission.
+- **Adjacency / regression:** cadence mismatch generalises from quarterly fundamentals to Fusion
+  COT/macro, but not to dense price/quote series; scope is pinned in OP-095 so the negative result
+  cannot kill the dense-series branch.
+- **Cost inversion:** the low-liquidity lottery source had zero cost field; current Fusion spread,
+  tick value, min volume and swap are mandatory before any analogue exists.
+- **Negative space:** `translate_to_mt5()` returned empty for three discovered phrases; the exact
+  broker data gaps are recorded instead of treating absence as permission.
+- **Ratchet / rail integrity:** no gate, confirmation threshold, survival rail or promotion path was
+  edited; research-only artifacts changed.
+
+### NEXT UN-EXHAUSTED GROUND (named before close)
+
+1. Sample `zl3311` early/middle/late session narratives to reconstruct how its search policy changed
+   before and after the correlation wall; do not touch submitted formulas or field metadata.
+2. `worldquant-miner/stone_age/python/pre_consultant/alpha_generator.py` + `machine_lib.py` — the
+   generation-one failures, carried from s4.
+3. `generation_two/core/fast_expr_ast.py`, `expression_compiler.py`, `template_validator.py` —
+   refusal paths and learned-error semantics.
+4. `paper-zh/` versus English diff; the non-English edition remains untouched.
+5. Grądzki–Wójcik–Lessmann CC-BY full negative-results tables.
+6. `yli188/WorldQuant_alpha101_code` mechanism-only read under its no-licence boundary.
+7. The 192-fork layer + `jglazar/notes` API tree walk, plus the two new adjacent MIT repos above.
+
+**Which artifact on disk is different because of what was mined?**
+`data/brain_hunter_s5_20260824.json` now holds the source boundary, exact Fusion translations,
+screen/disposition state and the next-ground chain; OP-095 and data-universe source 108 make it
+discoverable by later brains.

@@ -3264,3 +3264,43 @@ absorbing the page's sidebar and "read next" chrome. Measured on smart-lab 13355
 comment scored `density=20` with roughly half its tokens from nav furniture, against `13` for the
 genuine best. **Truncate each block at the site's nav marker** (smart-lab: `Читайте на SMART-LAB:`)
 before scoring, or the ranker systematically promotes whichever comment is last.
+
+## OP-095 — TRANSFORM THE ARRIVALS, NOT THE EMPTY DAYS: MATCH THE OPERATOR CLOCK TO THE SOURCE CLOCK (BRAIN hunter s5, 2026-08-24)   [active]
+
+**SOURCE:** `zl3311/alpha-mining` public research archive, `POSTMORTEM.md` plus all 28 indexed
+`data/knowledge/dead_zones/*.md` analyses (MIT for methodology/author analysis; its `DATA-NOTICE.md`
+explicitly withholds reuse authority for submitted formulas and platform-derived field metadata).
+Read as text only: no BRAIN credential, API call, formula reuse or third-party execution.
+**DERIVES-FROM:** NONE (checked in each dead-zone note; session ids are internal evidence links,
+not citations to an outside method). Desk-side convergence is independent: the COT/macro stack
+already preserves release/vintage semantics, but the operator library had no general cadence rule.
+
+**WHAT IT COMPUTES / REFUSES.** Before applying a rolling transform, measure the source's genuine
+update process. For a field that is flat between discrete releases, do **not** manufacture daily
+"observations" and then apply overlapping-window differences, `delta/std`, a fast sign gate, or a
+short-vs-long window subtraction. Those transformations mostly measure distance from the last
+release and denominator noise. Represent the new information as:
+
+1. the point-in-time release innovation at first availability;
+2. an event clock since release; or
+3. a slow state held unchanged until the next legitimate update.
+
+This is a search operator, not a universal negative claim. The same window transform can be valid
+on a dense price, quote, IV or execution series; the refusal is **field-clock specific**. The source
+itself contains the falsifier: multi-horizon transforms remained explicitly untested on dense
+series and therefore cannot be graveyarded there.
+
+**FUSION MT5 ANALOGUE — exact and point-in-time.** `translate_to_mt5()` returns no row for the
+phrase "update cadence"; that empty result is recorded as a mapping gap, not permission to reuse a
+crypto destination. The manual active-venue translation is weekly CFTC COT pressure and scheduled
+macro releases mapped to Fusion `EURUSD`, `GBPUSD`, `USDJPY`, `XAUUSD` (and their cross-pair
+descendants). COT's Tuesday reference state becomes observable only at the official Friday release;
+a revised macro value is unavailable before its vintage timestamp. Use H1/D1 decisions after
+first-seen, and price every candidate with the Fusion contract's observed median spread points ×
+tick value plus long/short swap across any held rollover. Never forward-fill a future release into
+earlier bars and never count the unchanged days as independent observations.
+
+**SAME-RUN VERDICT.** `[§33: screened]` as methodology, not alpha: repository audit found no new
+tradeable hypothesis was created, so no Stage-A trial or forward clock was minted. The public
+equity backtests are selection-biased ore and do not establish a Fusion return. Artifact:
+`data/brain_hunter_s5_20260824.json`.

@@ -2807,3 +2807,40 @@ other side — *"hysteresis must key on the ECONOMIC condition, never on a rank 
 the ones with a defect shape rather than an idea shape; nothing here is a build order, and per this
 file's own standing note **this inbox does not drive work** — anything that must be driven belongs
 in the recommendation ledger.
+
+## 2026-08-24 — BRAIN hunter s5: public laboratory-notebook postmortem, process imports only
+
+**SOURCE / BOUNDARY:** `zl3311/alpha-mining` (`POSTMORTEM.md`, `DATA-NOTICE.md`, dead-zone corpus),
+public GitHub. Code/methodology/author analysis are MIT. Submitted expressions belong to WorldQuant
+under the author's agreement and platform-derived field metadata carries an explicit rights caveat,
+so neither was copied or ingested. No credential or BRAIN endpoint was used.
+
+1. **Search correlation budget at mechanism/core level.** After roughly 50 submitted alphas, the
+   source reports correlation-to-book—not plausible-signal generation—as its binding transition.
+   The negative corpus sharpens the mechanism: negating one anchor did not escape a shared
+   analyst/intraday core (~0.94 correlation), and fresh weak legs could not rescue a saturated
+   strong core. Fusion translation is timestamp-aligned **net sleeve returns** against the existing
+   MT5 book; an exact polarity inversion has absolute correlation one and is a duplicate, not a
+   second edge. Desk audit found real consumers already (`libs/stage15/contribution.py`,
+   `libs/portfolio/capital_competition.py`), so this is `[§33: screened]` confirmation and search
+   emphasis, not a new subsystem recommendation.
+
+2. **Snapshot external state before access disappears.** The source lost BRAIN access after a
+   normal final session and had no durable last points/rank/leaderboard snapshot or lock trace. For
+   the active MT5 mandate, public MQL5/Myfxbook/Darwinex/competition histories must be captured with
+   `first_seen`, source timestamp, rule version, complete failure cohort and disappearance state.
+   A current winner screenshot is selection-biased ore. `[§33: screened]` process evidence; this
+   session's durable source card is `data/data_universe_map.json` entry 108.
+
+3. **Do not import "stop at the first platform pass" as a desk objective.** The source says this
+   tripled submissions per compute on a platform with its own fixed IS gate. On this desk it would
+   create an arbitrary top-1 choke point and leave independent positive-EV candidates idle. The
+   transferable residue is only *evaluation ordering*: cheap falsification first, then stop
+   spending on a candidate once its next disposition is determined. `[§33: killed]` as a policy
+   import; higher-ERV alternative is exhaustive independent-survivor conversion under the unchanged
+   universal promotion protocol.
+
+**Economic disposition:** no direct alpha claim and zero capital authority. The useful output is a
+lower re-test rate on cadence-mismatched transforms and stronger lineage-level independence search.
+Artifact with the exact Fusion mappings, uncertainty and rights boundary:
+`data/brain_hunter_s5_20260824.json`.

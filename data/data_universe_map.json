@@ -1202,6 +1202,16 @@
    "mechanism_note": "7.4y JP retail-venue depth tape spanning 2019 pre-halving, COVID, 2021 cycle, 2022 deleveraging. ~2/min sampling bounds it to slow features (stated at discovery, not found later). s13 = cleanest form: venue GRANTS access after registration.",
    "found_by": "EN frontier miner session I 2026-08-19 (card-28 legitimacy hunt read the whole GitHub org)",
    "watchlist_card": "docs/research/data_axis_watchlist.md card 34"
+  },
+  "108-zl3311-alpha-mining-public-research-archive": {
+   "class": "public BRAIN research-process archive and negative-results corpus",
+   "grade": "verified-clean for methodology/author analysis under MIT; RESTRICTED-READ-ONLY boundary for submitted alpha expressions and platform-derived field metadata per DATA-NOTICE.md",
+   "url": "https://github.com/zl3311/alpha-mining",
+   "provides": "63 session narratives, 28 explicit dead-zone analyses, 29 process patterns, a postmortem and a rights notice; reports ~53,000 BRAIN simulations and 68 book records, all in-sample/selection-biased",
+   "mechanism_note": "Highest value is research-process and failure knowledge: cadence-matched transforms, correlation-budget search and external-state snapshotting. No formula or BRAIN field metadata is imported, and no platform claim is MT5 evidence.",
+   "fusion_translation": "Method-only. Exact Fusion use is timestamp-aligned net sleeve correlation against the existing MT5 book and point-in-time handling of slow COT/macro releases. translate_to_mt5 returned no automatic mapping for the archive's novel phrases, so missing mappings remain explicit rather than silently redirected to crypto.",
+   "found_by": "BRAIN hunter session 5, 2026-08-24, via recursive public-web venue discovery",
+   "artifact": "data/brain_hunter_s5_20260824.json"
   }
  },
  "residual_gaps_unpurchasable": [
