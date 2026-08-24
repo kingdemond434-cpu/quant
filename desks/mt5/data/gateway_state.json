@@ -24,7 +24,7 @@
   },
   "position": null,
   "last_bracket_date": "2026-08-24",
-  "last_reconcile": "2026-08-24T10:05:02+00:00",
+  "last_reconcile": "2026-08-24T10:19:02+00:00",
   "bracket_cancelled": true,
   "pending": null,
   "brackets": {
@@ -60,10 +60,30 @@
           }
         ]
       }
+    },
+    "gold_london_am": {
+      "date": "2026-08-24",
+      "hi": 4654.62,
+      "lo": 4628.87,
+      "spec": {
+        "buy_stop": {
+          "price": 4654.62,
+          "sl": 4628.67,
+          "tp": 4706.12
+        },
+        "sell_stop": {
+          "price": 4628.87,
+          "sl": 4654.82,
+          "tp": 4577.37
+        }
+      },
+      "result": {
+        "margin": false
+      }
     }
   },
   "lot": 0.06,
-  "equity": 500.0,
+  "equity": 0.0,
   "placement_health": {
     "consecutive_total_rejections": 1,
     "last_ok": null,
