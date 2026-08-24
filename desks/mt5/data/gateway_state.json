@@ -24,10 +24,55 @@
   },
   "position": null,
   "last_bracket_date": "2026-08-24",
-  "last_reconcile": "2026-08-24T03:49:03+00:00",
+  "last_reconcile": "2026-08-24T04:04:02+00:00",
   "bracket_cancelled": true,
   "pending": null,
-  "brackets": {},
+  "brackets": {
+    "gold_asia": {
+      "date": "2026-08-24",
+      "hi": 4656.73,
+      "lo": 4594.82,
+      "spec": {
+        "buy_stop": {
+          "price": 4656.73,
+          "sl": 4594.62,
+          "tp": 4780.549999999999
+        },
+        "sell_stop": {
+          "price": 4594.82,
+          "sl": 4656.929999999999,
+          "tp": 4471.0
+        }
+      },
+      "placed_at": "2026-08-24T04:00:02+00:00",
+      "result": {
+        "shadow": false,
+        "orders": [
+          {
+            "side": "buy_stop",
+            "retcode": 10027,
+            "comment": "AutoTrading disabled by client"
+          },
+          {
+            "side": "sell_stop",
+            "retcode": 10027,
+            "comment": "AutoTrading disabled by client"
+          }
+        ]
+      }
+    }
+  },
   "lot": 0.06,
-  "equity": 500.0
+  "equity": 500.0,
+  "placement_health": {
+    "consecutive_total_rejections": 1,
+    "last_ok": null,
+    "last_error": {
+      "time": "2026-08-24T04:00:02+00:00",
+      "sleeve": "gold_asia",
+      "diagnoses": [
+        "10027 AutoTrading disabled by client: the terminal's AutoTrading button is off. One click, in the terminal."
+      ]
+    }
+  }
 }
