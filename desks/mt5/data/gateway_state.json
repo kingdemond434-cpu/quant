@@ -24,7 +24,7 @@
   },
   "position": null,
   "last_bracket_date": "2026-08-24",
-  "last_reconcile": "2026-08-24T10:19:02+00:00",
+  "last_reconcile": "2026-08-24T10:34:03+00:00",
   "bracket_cancelled": true,
   "pending": null,
   "brackets": {
@@ -83,7 +83,7 @@
     }
   },
   "lot": 0.06,
-  "equity": 0.0,
+  "equity": 500.0,
   "placement_health": {
     "consecutive_total_rejections": 1,
     "last_ok": null,
