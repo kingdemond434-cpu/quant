@@ -97,7 +97,7 @@ def fetch_transcript(video_id: str) -> str | None:
                 words.append(seg.get("utf8", ""))
         text = "".join(words).strip()
         return text[:20000] if text else None
-    except Exception:                                                    # noqa: BLE001
+    except Exception:
         return None
 
 
@@ -132,7 +132,7 @@ def main() -> int:
                     reg["channels"].setdefault(q, {})
                     report["discovered_channels"] += 1
                     continue
-            except Exception as exc:                                     # noqa: BLE001
+            except Exception as exc:
                 report["errors"].append(f"forHandle {handle}: {exc}")
             if search_dead:
                 continue
@@ -144,15 +144,15 @@ def main() -> int:
                     reg["discovered"].setdefault(q, {})[cid] = item["snippet"]["title"]
                     report["discovered_channels"] += 1
                 reg["channels"].setdefault(q, {})
-            except Exception as exc:                                     # noqa: BLE001
+            except Exception as exc:
                 search_dead = True
                 report["errors"].append(f"search {q}: {exc}")
 
         # 2. ENUMERATION: for every followed channel id, incremental uploads sweep.
         follow: dict[str, str] = {}
-        for q, hits in reg["discovered"].items():
+        for _q, hits in reg["discovered"].items():
             follow.update(hits)
-        follow.update({cid: t for cid, t in reg.get("follow", {}).items()})
+        follow.update(dict(reg.get("follow", {}).items()))
         for cid, title in list(follow.items()):
             try:
                 ch = api("channels", spent, LIST_COST, part="contentDetails", id=cid)
@@ -192,7 +192,7 @@ def main() -> int:
                 if newest_seen:
                     reg["cursors"][cid] = newest_seen
                 report["channels_swept"] += 1
-            except Exception as exc:                                     # noqa: BLE001
+            except Exception as exc:
                 report["errors"].append(f"channel {title}: {exc}")
     except RuntimeError as exc:
         report["errors"].append(str(exc))

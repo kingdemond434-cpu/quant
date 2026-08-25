@@ -16,6 +16,7 @@ import json
 import subprocess
 import sys
 import time
+from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -72,10 +73,8 @@ def main() -> int:
     if not hard:
         return 0
     last = 0.0
-    try:
+    with suppress(OSError, ValueError):
         last = float(STAMP.read_text().strip())
-    except (OSError, ValueError):
-        pass
     for h in hard:
         log(f"P0: {h}")
     if now - last < COOLDOWN_S:
