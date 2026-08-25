@@ -57,6 +57,14 @@ advantage); **cold exploration** (master 40 — ground with no prior, entered de
 decay, L1.19). No permanent hypothesis exhaustion (master 39): "exhausted" requires per-axis
 evidence (L1.51) and is always reversible.
 
+**Macro and data ARE edge, not background:** central-bank operations and calendars, rates and
+curve dynamics, COT/TFF positioning, futures curves and basis, FRED/ALFRED vintages
+(point-in-time, revision-aware), flows, seasonality, cross-asset transmission and macro-regime
+conditioning are hunted as first-class alpha axes for the MT5 universe — the desk's own recorded
+tape, execution reality and forward archives (self-footprint moat, master 32) compound on top as
+the data nobody else can buy. Every owned dataset below 100% explored is a standing breach
+(sealed core): the data moat is mined at maximum cadence, forever.
+
 ## 3. SOURCES AND SEARCH DISCIPLINE (the digging charter, carried whole)
 
 - **Language-blind, always.** EN, CN, RU, JP, KR, AR, PT, TR, ES are one ground. Native operators
@@ -93,9 +101,15 @@ The MT5 universe's native intelligence layer, hunted permanently and broad:
 - **Championships and contests:** trading championships and broker contests with public
   trade-by-trade archives; era archives (pre-MQL5 communities, dead-forum attachments — posted
   EA source and MT4/MT5 statements, CDX-recoverable).
-- **Winner forensics (master 26) and reverse-engineering:** infer entry/exit logic, session bias,
-  instrument set, sizing and risk habits from published statements; every reverse-engineered
-  mechanism becomes a preregistered hypothesis in the desk's own families, never a copied signal.
+- **Winner forensics (master 26) and BLACK-BOX REVERSE ENGINEERING, first-class and permanent:**
+  every high-return account, strategy, EA, algo, signal service or fund whose OUTPUTS are visible
+  is a black box to be reverse-engineered — infer entry/exit logic, session bias, instrument set,
+  holding times, sizing and risk habits from published statements, trade lists, equity curves and
+  drawdown geometry; reconstruct the mechanism, not the trades. Treat verified outperformance
+  anywhere as evidence a learnable mechanism EXISTS; extraction cost is just another ranked axis
+  (L1.11a). Every reverse-engineered mechanism becomes a preregistered hypothesis in the desk's
+  own families — never a copied signal — and enters the survivor pipeline like any other
+  candidate.
 - **Failure intelligence (master 25):** blown accounts, dead EAs, teardown/refutation genres
   (RU `поделка`, EN teardown forums) — negative knowledge at zero cost; the graveyard grows from
   OTHER people's capital.
