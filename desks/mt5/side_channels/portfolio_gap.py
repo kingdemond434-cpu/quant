@@ -27,7 +27,7 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-from .gate_policy import GATES
+from desks.mt5.research.gate_policy import GATES
 
 
 @dataclass

@@ -90,7 +90,17 @@ src = ["libs", "app", "tests"]
 # refuses to deploy on a red gate, so scratch at the root silently disables auto-deploy for the
 # whole desk. Moved rather than deleted -- nothing here is mine to throw away -- and excluded so
 # the gate measures the codebase instead of the debris.
-exclude = ["scratch", "desks/mt5"]
+# hourly_controller.py at repo root is the hourly survivor controller's LIVE working copy -- the
+# user timer and crontab invoke it by that path, and its tracked home is
+# desks/mt5/side_channels/hourly_controller.py (already excluded with the rest of desks/mt5).
+# On 2026-08-25 ten such root working copies turned the shared gate red (779 errors) and blocked
+# pushes whose contents were green; nine were duplicates of their tracked side_channels twins and
+# were deleted (newest code synced home first). Only the live entry point remains, excluded by
+# basename (measured collision-free: no other lintable file shares it -- unlike
+# gate_calibration.py, whose libs/validation twin must STAY linted). Any new root debris still
+# reds the gate and gets triaged; a broad "/*.py" glob was measured to exclude the whole tree --
+# a vacuous green, the denominator trick the laws forbid.
+exclude = ["scratch", "desks/mt5", "hourly_controller.py"]
 # `desks/mt5` is the mirror copy of the MT5 research desk (executes on the local Windows host;
 # this copy is for visibility/coordination only). External code with its own host conventions
 # (MetaTrader5 import, Windows paths, legacy style) -- same treatment as scratch: the gate should

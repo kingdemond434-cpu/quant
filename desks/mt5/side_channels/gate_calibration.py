@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-from .gate_policy import GATES, ATTESTATION, charged_trial_count, all_ten_pass
+from desks.mt5.research.gate_policy import GATES, ATTESTATION, charged_trial_count, all_ten_pass
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
 from libs.validation.pbo import probability_backtest_overfitting
 from libs.validation.reality_check import hansen_spa
