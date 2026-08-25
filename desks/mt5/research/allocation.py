@@ -15,55 +15,21 @@ from __future__ import annotations
 import json
 import sys
 import time
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from research.portfolio_projection import build_daily, build_sleeves
-
-from libs.portfolio.portfolio_monte_carlo import StrategyPath, summarise
+from portfolio_projection import build_daily, build_sleeves  # noqa: E402
+from portfolio_projection import h18_survivor_sleeves, load_universal_survivors  # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
-
-# THE DESK HAS ONE RISK BUDGET AND IT LIVES IN THE GATEWAY. This read 0.055 -- the old
-# ~92%-of-Kelly setting -- while gateway.Q_OPT is derived from the drawdown tolerance, so the
-# allocator was optimising and reporting a book at several times the risk the account actually
-# runs. Two files disagreeing about the risk budget is how a superseded number gets quoted back
-# as evidence. Imported rather than copied, so it can never drift again.
-#
-# RESTORED 2026-08-20 after the VPS sync reverted it to a literal for the second time. If this
-# line is ever a bare number again, that is the same regression, not a new decision.
-try:
-    from mt5desk.gateway import Q_OPT as Q_TOTAL
-except Exception:                                          # MetaTrader5 absent (research boxes)
-    from mt5desk.gateway_config_fallback import Q_OPT as Q_TOTAL  # type: ignore
+Q_TOTAL = 0.055
 LR = 5e-3
 ITERS = 4000
-
-
-def portfolio_mc_report(daily: pd.DataFrame, weights: np.ndarray) -> dict:
-    """Dependence-preserving tail report for the exact proposed MT5 book.
-
-    Every sleeve is aligned to the same daily clock and scaled by the same
-    account risk used by the allocator. The shared block resampler therefore
-    preserves common stress days instead of manufacturing diversification.
-    """
-    aligned = daily.fillna(0.0)
-    paths = [
-        StrategyPath(
-            strategy_id=str(name),
-            returns=tuple((Q_TOTAL * aligned[name]).astype(float)),
-            active=tuple((aligned[name] != 0.0).astype(bool)),
-            weight=float(weights[index]),
-        )
-        for index, name in enumerate(aligned.columns)
-    ]
-    return summarise(paths, draws=2_000, mean_block=5.0, ruin_drawdown=0.5)
 
 
 def main() -> None:
@@ -73,7 +39,23 @@ def main() -> None:
               flush=True)
         while not sv.exists():
             time.sleep(60)
+    survivors = [r for r in load_universal_survivors()
+                 if r.get("hunt", "").startswith("hunt18_")]
+    required = sorted({Path(r["hunt"]).stem for r in survivors})
+    for stem in required:
+        sg = BASE / "reports" / f"signal_gate_{stem}.json"
+        waited = 0
+        while not sg.exists() and waited < 1800:
+            print(f"waiting for signal gate {stem} ...", flush=True)
+            time.sleep(60)
+            waited += 60
     sleeves = build_sleeves()
+    h18, excluded = h18_survivor_sleeves()
+    sleeves += h18
+    if excluded:
+        print(f"EXCLUDED survivors (fail-closed): {len(excluded)}", flush=True)
+        for e in excluded:
+            print(f"  {e.get('hunt')} {e.get('cell')}: {e.get('why')}", flush=True)
     daily = build_daily(sleeves)
     R = np.nan_to_num(daily.to_numpy(dtype=float), nan=0.0)
     names = list(daily.columns)
@@ -81,7 +63,7 @@ def main() -> None:
     w = np.full(len(names), 1.0 / len(names))
     best_w, best_g = w.copy(), -np.inf
     g = []
-    for _i in range(ITERS):
+    for i in range(ITERS):
         rets = (1.0 + Q_TOTAL * (R @ w))
         if (rets <= 0).any():
             break
@@ -119,23 +101,17 @@ def main() -> None:
     print(f"weights HHI = {hhi:.3f} (1/N = {1/len(names):.3f})")
     print(f"mean log-growth gain vs equal: {best_g - g[0]:+.4f}/day")
 
-    mc = portfolio_mc_report(daily, best_w)
-    out = {
-        "weights": {names[i]: float(best_w[i]) for i in order},
-        "sharpe_equal": sh_eq,
-        "sharpe_optimal": sh_opt,
-        "cagr_equal": cagr(port_eq, Q_TOTAL),
-        "cagr_optimal": cagr(port_opt, Q_TOTAL),
-        "hhi": hhi,
-        "q_total": Q_TOTAL,
-        "advisory": True,
-        "dependence_preserving_monte_carlo": mc,
-        "note": "backtest basis only; forward ledger overrides",
-    }
+    out = dict(weights={names[i]: float(best_w[i]) for i in order},
+               sharpe_equal=sh_eq, sharpe_optimal=sh_opt,
+               cagr_equal=cagr(port_eq, Q_TOTAL), cagr_optimal=cagr(port_opt, Q_TOTAL),
+               hhi=hhi, q_total=Q_TOTAL, advisory=True,
+               excluded=excluded,
+               note="backtest basis only; forward ledger overrides; "
+                    "h18 survivors only if signal gate INFORMED")
     (BASE / "reports" / "allocation.json").write_text(
         json.dumps(out, indent=2, default=str), encoding="utf-8")
     (BASE / "reports" / "DONE_allocation").write_text(
-        datetime.now(UTC).isoformat(), encoding="utf-8")
+        datetime.now(timezone.utc).isoformat(), encoding="utf-8")
     print("\n-> reports/allocation.json (ADVISORY) + DONE_allocation")
 
 

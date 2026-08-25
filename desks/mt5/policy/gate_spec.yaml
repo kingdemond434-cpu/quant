@@ -1,0 +1,169 @@
+# Machine-readable universal gate specification
+# Single source of truth for gate definitions, thresholds, and classifications
+# Used to generate: gate_policy.py, documentation, tests, and validation code
+
+version: "mt5-original-universal-10-v2-calibrated-inputs"
+description: "MT5 universal gate gauntlet — 10 gates, 2 classifications (VALIDITY vs POWER)"
+
+# Gate classifications per promotion protocol:
+# - VALIDITY failures = DEAD (no cure, hard fail)
+# - POWER failures = SHADOW (forward evidence can cure)
+gate_classifications:
+  validity:
+    - economic_prior
+    - pbo
+    - reality_check_spa
+    - stress_costs
+    - lockbox
+  power:
+    - in_sample_screen
+    - deflated_sharpe
+    - cpcv
+    - walk_forward
+    - expected_value
+
+gates:
+  - name: economic_prior
+    classification: validity
+    description: "Mechanism documented at hunt registration — economic rationale for the edge"
+    threshold: "documented"
+    implementation: "manual_attestation"
+    fail_closed: true
+    cure_by_forward: false
+
+  - name: in_sample_screen
+    classification: power
+    description: "Minimal signal presence — Sharpe > 0 on in-sample period"
+    threshold: "sharpe > 0.0"
+    metric: "sharpe_ratio"
+    fail_closed: true
+    cure_by_forward: true
+    forward_cure_threshold: "exp_r > 0.05R, n >= 50, maxDD > -25R, days >= 14"
+
+  - name: deflated_sharpe
+    classification: power
+    description: "Deflated Sharpe Ratio accounting for multiple testing (DSR >= 0.95)"
+    threshold: "dsr >= 0.95"
+    metric: "deflated_sharpe_ratio"
+    params:
+      trials_multiplier: 7.0
+      trial_count_basis: "ceil(null_calibrated_participation_ratio_effective_cells * 7)"
+      fail_closed_to: "raw_cells * 7"
+    fail_closed: true
+    cure_by_forward: true
+    forward_cure_threshold: "exp_r > 0.05R, n >= 50, maxDD > -25R, days >= 14"
+
+  - name: pbo
+    classification: validity
+    description: "Probability of Backtest Overfitting via CSCV (PBO <= 0.5)"
+    threshold: "pbo <= 0.5"
+    metric: "probability_backtest_overfitting"
+    fail_closed: true
+    cure_by_forward: false
+
+  - name: reality_check_spa
+    classification: validity
+    description: "Hansen's Superior Predictive Ability test (p < 0.05)"
+    threshold: "spa_p < 0.05"
+    metric: "hansen_spa_p_value"
+    fail_closed: true
+    cure_by_forward: false
+
+  - name: cpcv
+    classification: power
+    description: "Combinatorial Purged Cross-Validation mean OOS Sharpe > 0"
+    threshold: "mean_oos_sharpe > 0.0"
+    metric: "cpcv_mean_oos_sharpe"
+    params:
+      n_groups: 6
+      n_test_groups: 2
+      purge_embargo: true
+    fail_closed: true
+    cure_by_forward: true
+    forward_cure_threshold: "exp_r > 0.05R, n >= 50, maxDD > -25R, days >= 14"
+
+  - name: walk_forward
+    classification: power
+    description: "Walk-forward engine: 4 splits, test_size=max(20, len//6), min_oos_sharpe=0, min_stability=0.5"
+    threshold: "status == PASSED"
+    metric: "walk_forward_oos_sharpe"
+    params:
+      n_splits: 4
+      test_size: "max(20, len//6)"
+      min_oos_sharpe: 0.0
+      min_stability: 0.5
+    fail_closed: true
+    cure_by_forward: true
+    forward_cure_threshold: "exp_r > 0.05R, n >= 50, maxDD > -25R, days >= 14"
+
+  - name: stress_costs
+    classification: validity
+    description: "Strategy survives 3x transaction costs (expected R at 3x costs > 0)"
+    threshold: "exp_x3 > 0.0"
+    metric: "expected_r_at_3x_costs"
+    fail_closed: true
+    cure_by_forward: false
+
+  - name: lockbox
+    classification: validity
+    description: "Genuine untouched holdout — last 20% of data (min 60 bars), Sharpe > 0"
+    threshold: "lockbox_sharpe > 0.0"
+    metric: "holdout_sharpe"
+    params:
+      holdout_fraction: 0.20
+      min_holdout_bars: 60
+      min_train_bars: 100
+    fail_closed: true
+    cure_by_forward: false
+    note: "INDEPENDENT from walk_forward — uses chronological holdout, not purged splits"
+
+  - name: expected_value
+    classification: power
+    description: "Positive mean daily return (explicit EV gate)"
+    threshold: "ev > 0.0"
+    metric: "mean_daily_r"
+    fail_closed: true
+    cure_by_forward: true
+    forward_cure_threshold: "exp_r > 0.05R, n >= 50, maxDD > -25R, days >= 14"
+
+# Promotion protocol thresholds
+promotion:
+  validity_requirement: "ALL validity gates MUST pass (hard fail)"
+  power_cure_via_forward: true
+  forward_cure_thresholds:
+    min_trades: 50
+    min_exp_r: 0.05
+    max_dd_r: -25.0
+    min_days_active: 14
+  canary_ramp:
+    - name: "FORWARD_READY"
+      trades: 0
+      authority: 0.0
+    - name: "CANARY_25"
+      trades_min: 1
+      trades_max: 49
+      authority: 0.25
+    - name: "CANARY_50"
+      trades_min: 50
+      trades_max: 199
+      authority: 0.50
+    - name: "LIVE_FULL"
+      trades_min: 200
+      authority: 1.00
+
+# Attestation (must match exactly for certificate validity)
+attestation:
+  version: "mt5-original-universal-10-v2-calibrated-inputs"
+  gates: ["economic_prior", "in_sample_screen", "deflated_sharpe", "pbo", "reality_check_spa", "cpcv", "walk_forward", "stress_costs", "lockbox", "expected_value"]
+  trials_multiplier: 7.0
+  dsr_threshold: 0.95
+  pbo_max: 0.5
+  spa_alpha: 0.05
+  wf_splits: 4
+  wf_test_size: "max(20, len//6)"
+  wf_min_oos_sharpe: 0.0
+  wf_min_stability: 0.5
+  cost_multiplier: 3.0
+  lockout_holdout_fraction: 0.20
+  lockout_min_bars: 60
+  expected_value_min: 0.0

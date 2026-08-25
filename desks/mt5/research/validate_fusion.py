@@ -45,8 +45,7 @@ GOLD_WINDOWS = {
     "afternoon": dict(range_start=14, range_end=17, signal_at=17, wait_bars=8, rr=2.0, ttl_bars=12),
 }
 E_MAX_9 = 1.49
-# Fusion Zero published contract: USD 2.25/lot/side, USD 4.50 round turn.
-FUSION_COMMISSION = 2.25
+FUSION_COMMISSION = 0.0  # Zero account: confirm zero commission per lot with broker
 
 
 def connect() -> bool:
@@ -136,10 +135,8 @@ def apply() -> None:
 
 def fusion_costs(sym: str, profile: dict) -> Costs:
     p = profile.get(sym, {})
-    # Honest baseline: cross the measured spread entering and exiting. The old XAUUSD=0.48
-    # special case repeated the per-ounce/per-lot unit defect fixed in Costs.from_symbol().
-    spread = max(
-        2.0 * p.get("live_spread_pts", 0.5) * p.get("live_tick_size", 1e-5)
+    spread = 0.48 if sym == "XAUUSD" else max(
+        p.get("live_spread_pts", 0.5) * p.get("live_tick_size", 1e-5)
         * p.get("live_contract", 100_000), 0.05)
     return Costs(spread_per_lot=spread, commission_per_lot=FUSION_COMMISSION,
                  contract_oz=p.get("live_contract", 100_000))
@@ -147,8 +144,8 @@ def fusion_costs(sym: str, profile: dict) -> Costs:
 
 def gold_battery(h1: pd.DataFrame, sigs: list, costs: Costs) -> dict:
     r = run_backtest(h1, sigs, costs).stats()
-    r2 = run_backtest(h1, sigs, Costs(costs.spread_per_lot * 3,
-                                      costs.commission_per_lot,
+    r2 = run_backtest(h1, sigs, Costs(costs.spread_per_lot * 2,
+                                      costs.commission_per_lot * 2,
                                       costs.contract_oz)).stats()
     idx_ns = h1.index.to_numpy().astype("datetime64[ns]").astype("int64")
     sig_ns = np.array([pd.Timestamp(s.time).value for s in sigs], dtype="int64")

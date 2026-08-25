@@ -1,7 +1,7 @@
 {
- "updated": "2026-08-23T01:40:44.383917+00:00",
+ "updated": "2026-08-21T22:55:02.997860+00:00",
  "latest": {
-  "ts": "2026-08-23T01:40:44.382049+00:00",
+  "ts": "2026-08-21T22:55:02.993856+00:00",
   "query": "TTM squeeze trading",
   "mechanism": "squeeze",
   "github": {
@@ -22,10 +22,10 @@
   },
   "github_stars_delta": 0,
   "news_topics": {
-   "fed": 21,
+   "fed": 24,
    "cpi": 1,
    "nonfarm": 0,
-   "rates": 1,
+   "rates": 0,
    "oil": 0,
    "gold": 0,
    "bonds": 0,
@@ -35,5 +35,5 @@
   "edge_publicity": "LOW",
   "expected_decay": "NORMAL"
  },
- "history_len": 43
+ "history_len": 23
 }

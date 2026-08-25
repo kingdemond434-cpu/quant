@@ -11,6 +11,7 @@ for path in (DESK, DESK / "research", DESK.parent.parent):
 
 from gate_policy import ATTESTATION, GATES  # noqa: E402
 from survivor_publication import publish_qquant_survivors  # noqa: E402
+from universal_gate import retained_exact_survivors  # noqa: E402
 
 
 def _stages(passed: bool = True) -> dict:
@@ -59,3 +60,17 @@ def test_failed_or_partial_rows_never_publish(tmp_path: Path) -> None:
         ],
     }
     assert publish_qquant_survivors(report, reports)["survivor_count"] == 0
+
+
+def test_incremental_universal_sweep_retains_only_exact_prior_passes(tmp_path: Path) -> None:
+    path = tmp_path / "UNIVERSAL_SURVIVORS.json"
+    path.write_text(json.dumps({
+        "gate_policy": ATTESTATION,
+        "survivors": {
+            "qquant.kept": {"gates": _stages(), "shadow_spec": {"symbol": "AUDNZD"}},
+            "partial.rejected": {"gates": {"economic_prior": {"passed": True}}},
+        },
+    }), encoding="utf-8")
+    assert retained_exact_survivors(path) == {
+        "qquant.kept": {"gates": _stages(), "shadow_spec": {"symbol": "AUDNZD"}},
+    }

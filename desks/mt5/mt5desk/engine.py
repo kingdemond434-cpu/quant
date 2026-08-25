@@ -14,51 +14,12 @@ import pandas as pd
 
 @dataclass(frozen=True)
 class Costs:
-    """Round-trip cost in ACCOUNT CURRENCY PER LOT, not per unit.
-
-    THE UNIT ON spread_per_lot IS THE WHOLE TRAP, AND IT COST THIS DESK A LOT
-
-    per_oz_roundtrip() adds the spread to two commissions and the engine then
-    divides by contract_size. For that to come out as a price-unit cost,
-    spread_per_lot must be the spread MULTIPLIED BY contract size -- currency
-    per lot, matching the field name and matching commission_per_lot beside it.
-
-    Every JPY call site did that: median_spread_pts * tick_size * contract_size,
-    which divides straight back down to the true spread. Every gold call site
-    passed a hardcoded 0.48, and run_hunt6's docstring says why -- "XAUUSD
-    overridden to the measured live spread 0.48", which is 3x the measured
-    0.16/oz median written as dollars PER OUNCE into a field that wants dollars
-    per lot. The engine divided it by 100 and charged gold 0.0048/oz: three
-    percent of its real spread.
-
-    So every gold backtest on this desk has run very nearly spread-free, and the
-    3x cost-stress gate meant to catch exactly this was stressing 3% up to 9%.
-    Use from_symbol() rather than hand-rolling the arithmetic at the call site.
-    """
-    spread_per_lot: float = 16.0
-    # Fusion Zero's published contract is USD 2.25 per lot per side ($4.50 round turn).
-    commission_per_lot: float = 2.25
+    spread_per_lot: float = 0.48
+    commission_per_lot: float = 3.50
     contract_oz: float = 100.0
 
     def per_oz_roundtrip(self) -> float:
         return self.spread_per_lot + self.commission_per_lot * 2.0
-
-    @classmethod
-    def from_symbol(cls, meta: dict, mult: float = 1.0,
-                    commission_per_lot: float = 2.25) -> "Costs":
-        """Costs for one symbol from its universe.json metadata.
-
-        `mult` scales the SPREAD ONLY. Commission is contractual and does not
-        widen, so stressing it models nothing that happens. mult=2.0 is the
-        honest baseline rather than a stress: a round trip crosses the spread on
-        the way in and again on the way out, and a median is a median -- half of
-        all fills are worse than it.
-        """
-        cs = float(meta.get("contract_size", 1e5))
-        spread = (float(meta.get("median_spread_pts", 0.0))
-                  * float(meta.get("tick_size", 0.0)) * cs)
-        return cls(spread_per_lot=max(spread * mult, 0.05),
-                   commission_per_lot=commission_per_lot, contract_oz=cs)
 
 
 @dataclass
@@ -73,8 +34,6 @@ class Trade:
     bars_held: int
     r_multiple: float
     reason: str
-    units: float = 1.0  # total size held at exit, in initial-unit multiples
-    adds: int = 0       # pyramid adds that actually filled
 
 
 @dataclass
@@ -90,32 +49,6 @@ class Signal:
     bank_frac: float = 0.0  # 0 = flat target exit; >0 = close this fraction at target, rest runs
     bank_protect_k: float = 0.0  # runner stop moves to entry + stop_dist*k after bank (0 = BE)
     runner_trail_k: float = 0.0  # 0 = fixed stop; >0 = chandelier trail at stop_dist*k off extreme
-    # --- stall-conditioned tightening. A trail that STAYS wide bleeds: on a
-    # pullback entry after a strong run, a static chandelier at k=4 lost $16.82
-    # an ounce over 95 events while the same k tightened to 1 after three bars
-    # without a new extreme MADE $9.80. Paired against the whole static family
-    # on identical events the difference is +$11.63/oz, better 63% of the time,
-    # t = 2.48 -- one hypothesis, so no deflation is owed.
-    #
-    # The mechanism is not "a better constant". Breathing room and profit
-    # protection are wanted at DIFFERENT TIMES: while the move is still
-    # printing new extremes, and once it has stopped. `runner_trail_k` alone
-    # cannot say that, so it was a constant answering a question with two
-    # answers. Note the effect is ~nil (t = 1.11) on entries taken at the high:
-    # this pays for a pullback entry and does not rescue a chase.
-    trail_tighten_k: float = 0.0  # 0 = never tighten; else k once stalled
-    trail_stall_bars: int = 0     # bars with no new extreme before tightening
-    # --- winner pyramiding: exposure grows only after the market has PROVED the
-    # thesis, which is the opposite of averaging down and must never be confused
-    # with it. Add k fills at entry + side*k*add_every_r*stop_dist.
-    add_every_r: float = 0.0   # 0 = no adds; else spacing between adds, in R
-    add_max: int = 0           # hard cap on the number of adds
-    add_frac: float = 0.0      # size of each add relative to the initial unit
-    # After add k the stop for the WHOLE stack moves to the (k-1)th add level --
-    # breakeven on the first add. Without this the stack's open risk grows with
-    # every add, which is how a pyramid turns into the thing it is not supposed
-    # to be. Set False only to MEASURE that difference, never to trade it.
-    add_ratchets_stop: bool = True
 
 
 @dataclass
@@ -193,15 +126,8 @@ def run_backtest(
             continue
         # intrabar trigger fill: a resting stop order that lives `wait_bars` bars
         fill_bar = i
-        limit_entry = False
         if sig.trigger is not None:
             tgt = sig.trigger
-            # A LIMIT entry sits on the far side of the market from the trade's
-            # direction (buy below, sell above); a STOP entry sits beyond it.
-            # The distinction is inferred rather than declared so it also covers
-            # the families that predate this field.
-            limit_entry = ((sig.side > 0 and tgt < entry)
-                           or (sig.side < 0 and tgt > entry))
             hit = -1
             for j in range(i, min(i + sig.wait_bars, len(idx))):
                 if float(h[j]) >= tgt >= float(l[j]):
@@ -218,117 +144,44 @@ def run_backtest(
         bank_frac = sig.bank_frac
         bank_protect_k = sig.bank_protect_k
         runner_trail_k = sig.runner_trail_k
-        trail_tighten_k = sig.trail_tighten_k
-        trail_stall_bars = sig.trail_stall_bars
         banked = False
         banked_at = 0.0
         trail_ext = entry
-        stall = 0
         exit_price: float | None = None
         reason = "ttl"
         bars_held = 0
-        sd0 = abs(entry - sig.stop)          # the initial risk unit; R is measured in it
-        add_every_r = sig.add_every_r
-        add_max = sig.add_max
-        add_frac = sig.add_frac
-        adds: list[float] = []               # fill prices of the pyramid adds
-        pyramid = add_every_r > 0 and add_max > 0 and add_frac > 0 and sd0 > 0
         last = min(len(idx), fill_bar + ttl)
         for j in range(fill_bar, last):
             bars_held = j - fill_bar + 1
             hi, lo = float(h[j]), float(l[j])
-            # THE STOP IS EVALUATED FIRST, against the level in force at bar
-            # open, and an add can only fill on a bar the stop survived. Within
-            # one OHLC bar the path is unknown, so this denies the pyramid a
-            # mid-bar stop ratchet that would have turned a full loss into a
-            # breakeven. It biases the measurement AGAINST pyramiding, which is
-            # the direction a test of pyramiding has to be biased.
             if side > 0:
-                if (not banked and bank_frac > 0 and hi >= target
-                        and not (limit_entry and j == fill_bar)):
+                if not banked and bank_frac > 0 and hi >= target:
                     banked = True
                     banked_at = target
-                    stop = max(stop, entry + sd0 * bank_protect_k)
-                # THE STOP IS CHECKED BEFORE THIS BAR'S EXTREME FEEDS THE TRAIL.
-                # The trail used to ratchet on the bar's own high and then be
-                # tested against that same bar's low, so a bar that printed a
-                # new high and then collapsed was paid at the RATCHETED stop --
-                # the engine resolving unknown intrabar order in the trade's
-                # favour. It is the fill-bar leak wearing a different hat, and
-                # it is the ordering the pyramid path already refuses ("denies
-                # the pyramid a mid-bar stop ratchet"), so the trail was the
-                # inconsistent one. It also disagreed with the research that
-                # motivated stall-tightening, which checked the low first --
-                # the engine would have scored the policy better than the study
-                # that justified it, which is how a t = 9.16 gets born.
+                    stop = max(stop, entry + abs(entry - sig.stop) * bank_protect_k)
+                if banked:
+                    trail_ext = max(trail_ext, hi)
+                    if runner_trail_k > 0:
+                        stop = max(stop, trail_ext - abs(entry - sig.stop) * runner_trail_k)
                 if lo <= stop:
                     exit_price, reason = stop, "bank" if banked else "stop"
                     break
-                # Trail with no bank leg is now expressible: `bank_frac == 0`
-                # used to mean no trail at all, which made a pure runner
-                # impossible to write down.
-                if banked or bank_frac <= 0:
-                    if hi > trail_ext:
-                        trail_ext, stall = hi, 0
-                    else:
-                        stall += 1
-                    k = runner_trail_k
-                    if trail_tighten_k > 0 and stall >= trail_stall_bars:
-                        k = trail_tighten_k
-                    if k > 0:
-                        stop = max(stop, trail_ext - sd0 * k)
-                if pyramid:
-                    while len(adds) < add_max:
-                        lvl = entry + sd0 * add_every_r * (len(adds) + 1)
-                        if hi < lvl:
-                            break
-                        adds.append(lvl)
-                        if sig.add_ratchets_stop:
-                            # whole stack ratchets to the PREVIOUS add level:
-                            # breakeven on the first add, then trailing behind
-                            prev = entry + sd0 * add_every_r * (len(adds) - 1)
-                            stop = max(stop, prev)
-                # THE FILL BAR MAY NOT PAY A LIMIT ENTRY. We were filled because
-                # this bar's LOW reached down to the order; crediting the same
-                # bar's HIGH with the target assumes the high came after the
-                # fill, and on a down bar it did not. Measured on GBPJPY
-                # fair-value-gap: 59.7% of trades resolved on the fill bar,
-                # 1022 targets against 713 stops, carrying E[R] +0.283 against
-                # +0.105 for everything that resolved later. The stop stays
-                # live on this bar -- being wrong in the pessimistic direction
-                # is the only safe way to be wrong about intrabar order.
-                if not banked and hi >= target and not (limit_entry and j == fill_bar):
+                if not banked and hi >= target:
                     exit_price, reason = target, "target"
                     break
             else:
-                if (not banked and bank_frac > 0 and lo <= target
-                        and not (limit_entry and j == fill_bar)):
+                if not banked and bank_frac > 0 and lo <= target:
                     banked = True
                     banked_at = target
-                    stop = min(stop, entry - sd0 * bank_protect_k)
-                if hi >= stop:            # stop first — see the long side
+                    stop = min(stop, entry - abs(entry - sig.stop) * bank_protect_k)
+                if banked:
+                    trail_ext = min(trail_ext, lo)
+                    if runner_trail_k > 0:
+                        stop = min(stop, trail_ext + abs(entry - sig.stop) * runner_trail_k)
+                if hi >= stop:
                     exit_price, reason = stop, "bank" if banked else "stop"
                     break
-                if banked or bank_frac <= 0:
-                    if lo < trail_ext:
-                        trail_ext, stall = lo, 0
-                    else:
-                        stall += 1
-                    k = runner_trail_k
-                    if trail_tighten_k > 0 and stall >= trail_stall_bars:
-                        k = trail_tighten_k
-                    if k > 0:
-                        stop = min(stop, trail_ext + sd0 * k)
-                if pyramid:
-                    while len(adds) < add_max:
-                        lvl = entry - sd0 * add_every_r * (len(adds) + 1)
-                        if lo > lvl:
-                            break
-                        adds.append(lvl)
-                        if sig.add_ratchets_stop:
-                            prev = entry - sd0 * add_every_r * (len(adds) - 1)
-                            stop = min(stop, prev)
-                if not banked and lo <= target and not (limit_entry and j == fill_bar):
+                if not banked and lo <= target:
                     exit_price, reason = target, "target"
                     break
         if exit_price is None:
@@ -345,15 +198,7 @@ def run_backtest(
                 + (1.0 - bank_frac) * (exit_price - entry) / stop_dist * side
         else:
             r = (exit_price - entry) / stop_dist * side
-        # Each add is its own position: its P&L runs from ITS fill price, not
-        # the original entry, and it pays its own full round trip. Charging one
-        # round trip for a three-unit stack is the same class of error as the
-        # 0.48 spread -- it makes a costly mechanism look free.
-        units = 1.0
-        for fill_px in adds:
-            r += add_frac * (exit_price - fill_px) / stop_dist * side
-            units += add_frac
-        r -= per_oz_cost * units / stop_dist
+        r -= per_oz_cost / stop_dist
         trades.append(
             Trade(
                 entry_time=pd.Timestamp(idx[fill_bar]),
@@ -361,7 +206,6 @@ def run_backtest(
                 side=side, entry=entry, exit=exit_price,
                 stop=sig.stop, target=sig.target,
                 bars_held=bars_held, r_multiple=float(r), reason=reason,
-                units=float(units), adds=len(adds),
             )
         )
         filled += 1

@@ -54,6 +54,88 @@ def load_h12_survivors() -> list[dict]:
     return [c for c in saved.get("all", []) if c.get("gate")]
 
 
+def load_universal_survivors() -> list[dict]:
+    """UNIVERSAL_SURVIVORS.json -> survivor records. Fail-closed: missing or
+    unreadable -> [] (never assume survivors)."""
+    p = BASE / "reports" / "UNIVERSAL_SURVIVORS.json"
+    if not p.exists():
+        return []
+    try:
+        return list(json.loads(p.read_text(encoding="utf-8")).get("survivors", {}).values())
+    except Exception:
+        return []
+
+
+def h18_survivor_sleeves() -> tuple[list[dict], list[dict]]:
+    """h18 UNIVERSAL survivors -> sleeves, each REQUIRED to pass the
+    signal-information gate (reports/signal_gate_<stem>.json, verdict
+    INFORMED on the exact cell). Fail-closed: missing report, NULL or SPARSE
+    verdict, or any rebuild error -> survivor EXCLUDED with a reason."""
+    survivors = load_universal_survivors()
+    meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
+    from research.run_hunt17 import FAMILIES as F17  # noqa: PLC0415
+    from research.run_hunt17 import PARAMS as F17_PARAMS  # noqa: PLC0415
+    from research.run_hunt17 import resample as r17resample  # noqa: PLC0415
+    sleeves: list[dict] = []
+    excluded: list[dict] = []
+    for rec in survivors:
+        hunt = rec.get("hunt", "")
+        if not hunt.startswith("hunt18_"):
+            continue
+        stem = Path(hunt).stem
+        cell = rec.get("cell", "")
+        parts = cell.split(".")
+        sym = parts[0] if parts else ""
+        fam = parts[1] if len(parts) > 1 else ""
+        side = 1 if len(parts) < 3 or parts[2] == "1" else -1
+        fn = F17.get(fam)
+        if not fn:
+            excluded.append({**rec, "why": "family no longer registered"})
+            continue
+        try:
+            report = json.loads((BASE / "reports" / hunt).read_text("utf-8"))
+        except Exception:
+            excluded.append({**rec, "why": "experiment report unreadable"})
+            continue
+        params = dict(report.get("params") or {})
+        if not params and report.get("param") is not None:
+            pl = F17_PARAMS.get(fam)
+            if pl:
+                params = dict(pl[int(report["param"])])
+        sg = BASE / "reports" / f"signal_gate_{stem}.json"
+        if not sg.exists():
+            excluded.append({**rec, "why": "no signal gate report"})
+            continue
+        try:
+            sgdata = json.loads(sg.read_text("utf-8"))
+        except Exception:
+            excluded.append({**rec, "why": "signal gate report unreadable"})
+            continue
+        vd = next((c for c in sgdata.get("cells", []) if c.get("cell") == cell), None)
+        if not vd:
+            excluded.append({**rec, "why": "signal gate cell absent"})
+            continue
+        if vd.get("verdict") != "INFORMED":
+            excluded.append({**rec, "why": f"signal gate {vd.get('verdict')}"})
+            continue
+        try:
+            h1 = families._h1(pd.read_parquet(UNI / f"{sym}_H1.parquet"))
+            h4, d1 = r17resample(h1)
+            sigs = fn(h4, d1, side, **params)
+            m = meta[sym]
+            costs = Costs(spread_per_lot=0.48 if sym == "XAUUSD" else max(
+                m["median_spread_pts"] * m["tick_size"] * m["contract_size"], 0.05),
+                commission_per_lot=3.50, contract_oz=m["contract_size"])
+            r = run_backtest(h4, sigs, costs)
+        except Exception as e:
+            excluded.append({**rec, "why": f"rebuild error {e!r}"})
+            continue
+        sleeves.append(dict(name=f"{stem}.{cell}", sym=sym, win=stem, state=cell,
+                            r=[t.r_multiple for t in r.trades],
+                            dates=[pd.Timestamp(t.entry_time).date() for t in r.trades]))
+    return sleeves, excluded
+
+
 def build_sleeves() -> list[dict]:
     """Sleeve records (name, sym, win, state, r, dates) for gold book
     (armed windows) + current hunt12 survivors. Shared loader."""

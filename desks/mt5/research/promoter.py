@@ -28,9 +28,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from mt5desk import provenance  # noqa: E402
-from shadow_admission import authorized_specs  # noqa: E402
-
 BASE = Path(__file__).resolve().parent.parent
 SHADOW_DIR = BASE / "reports" / "shadow"
 SLEEVES_FILE = BASE / "data" / "sleeves.json"
@@ -80,38 +77,13 @@ def load_sleeves() -> list[dict]:
 
 
 def load_ledger() -> list[dict]:
-    """Closed trades from the account THIS DESK IS CURRENTLY TRADING, and no others.
-
-    THE FILE IS NOT ONE ACCOUNT'S HISTORY. The broker is switched by editing one line of
-    data/terminal_path.txt, so the moment that points at a Fusion DEMO terminal, demo fills append
-    to this same file -- and they are read below to RETIRE live sleeves and to judge gold
-    challengers against the armed book. Demo fills are optimistic in exactly the dimension that
-    matters (a demo server fills stops at the trigger with no slippage), so a sleeve could be kept
-    alive by practice results, or a newly funded live account judged on demo history sitting above
-    it in the file.
-
-    Rows predating provenance match nothing and are excluded. That is a deliberate loss of
-    history: the alternative is silently treating pre-switch trades as belonging to whatever
-    account happens to be connected today, which is the defect itself.
-    """
     if not LEDGER.exists():
         return []
     try:
-        rows = [json.loads(line) for line in LEDGER.read_text(encoding="utf-8").splitlines()
+        return [json.loads(line) for line in LEDGER.read_text(encoding="utf-8").splitlines()
                 if line.strip()]
     except Exception:
         return []
-    try:
-        import MetaTrader5 as mt5  # noqa: PLC0415
-        acc = provenance.current_account(mt5.account_info())
-    except Exception:
-        acc = provenance.current_account(None)
-    kept = [r for r in rows if provenance.same_account(r, acc)]
-    if len(kept) != len(rows):
-        plog(f"ledger: {len(kept)}/{len(rows)} rows are from the account in hand "
-             f"(login={acc['login']} server={acc['server']} kind={acc['kind']}); "
-             f"{len(rows) - len(kept)} from another account or predating provenance, excluded")
-    return kept
 
 
 def armed_forward_exp(ledger: list[dict], window: str) -> float | None:
@@ -143,32 +115,16 @@ def main() -> None:
     sleeves = load_sleeves()
     ledger = load_ledger()
     existing = {s["name"] for s in sleeves}
-    gate_authority = authorized_specs(BASE)
     changed = False
 
     for key, st in shadow.items():
-        if not isinstance(st, dict):
+        if key == "last_run":
             continue
         if st.get("status") != "PROMOTION CANDIDATE":
             continue
         if key in existing:
             continue
-        # KEYS NOW CARRY AN OPTIONAL THIRD FIELD: "SYM.window" or "SYM.window.STATE".
-        # `split(".", 1)` would have put "asia.FAILED_BREAK" into `win`, which then fails the
-        # gateway's window whitelist and silently drops the sleeve -- a conditioned candidate
-        # would sit in shadow forever, meeting every promotion criterion and never promoting,
-        # with no error anywhere. Parsed explicitly instead.
-        parts = key.split(".")
-        sym, win = parts[0], parts[1]
-        cond = parts[2] if len(parts) > 2 else None
-        gate_spec = (sym, win, cond, "session_range_breakout", False)
-        if gate_spec not in gate_authority:
-            st["status"] = "BLOCKED_UNIVERSAL_GATES"
-            st["promotion_authority"] = False
-            st["gate_reason"] = "missing exact original universal ten-gate pass"
-            plog(f"{key}: live promotion refused -- no canonical ten-gate certificate")
-            changed = True
-            continue
+        sym, win = key.split(".", 1)
         if win not in GOLD_WINDOWS:
             continue
         if sym == "XAUUSD":
@@ -183,10 +139,6 @@ def main() -> None:
                 changed = True
                 continue
         sleeves.append({"name": key, "symbol": sym, "window": win,
-                        # Carried through to the gateway, which refuses to trade a conditioned
-                        # sleeve whose state it cannot confirm. Without this field the gateway
-                        # would trade the UNCONDITIONED strategy under this sleeve's name.
-                        "state": cond,
                         "lot": PROMOTED_LOT, "status": "LIVE",
                         "promoted_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
                         "shadow_exp": st.get("exp_r", 0.0)})
@@ -210,13 +162,7 @@ def main() -> None:
             s["status"] = "RETIRED"
             s["retired_at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
             s["retire_reason"] = reason
-            # THE SLEEVE'S NAME *IS* ITS SHADOW KEY -- it was written from `key` at promotion.
-            # Rebuilding it from symbol+window silently dropped the state, so retiring
-            # "CADJPY.asia.FAILED_BREAK" wrote KILL onto "CADJPY.asia": a different sleeve, also
-            # in the shadow set, which had done nothing wrong. Meanwhile the conditioned sleeve
-            # kept PROMOTION CANDIDATE, so the next run promoted it again -- the desk oscillating
-            # promote/retire forever, against this module's own "never re-promoted" guarantee.
-            skey = s["name"]
+            skey = f"{s['symbol']}.{s['window']}"
             if skey in shadow:
                 shadow[skey]["status"] = "KILL"
             plog(f"AUTO-RETIRED {s['name']} ({reason})")

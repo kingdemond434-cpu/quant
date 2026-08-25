@@ -17,8 +17,9 @@ from __future__ import annotations
 
 import json
 import subprocess
-from contextlib import suppress
-from datetime import UTC, datetime
+import sys
+import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
@@ -101,7 +102,7 @@ def mine() -> dict:
 
 
 def frontier_report(health: dict) -> None:
-    rep = {"swept_at": datetime.now(UTC).isoformat(), "health": health}
+    rep = {"swept_at": datetime.now(timezone.utc).isoformat(), "health": health}
     for name in ("hunt12_partial", "hunt16_partial", "placebo_test", "hunt13"):
         fp = BASE / "reports" / f"{name}.json"
         if fp.exists():
@@ -111,64 +112,22 @@ def frontier_report(health: dict) -> None:
                 rep[name] = None
     gw = BASE / "data" / "gateway_state.json"
     if gw.exists():
-        with suppress(Exception):
+        try:
             rep["gateway"] = json.loads(gw.read_text(encoding="utf-8"))
+        except Exception:
+            pass
     (BASE / "reports" / "frontier.json").write_text(
         json.dumps(rep, indent=1, default=str), encoding="utf-8")
     print(f"frontier report written ({rep['swept_at']})", flush=True)
 
 
-def daily() -> dict:
-    """The operating chain -- shadow -> promoter -> markout -- run once per UTC day.
-
-    THIS WAS THE HOLE. Health checks, web mining and a frontier report all ran hourly while the
-    three processes that actually move an edge toward capital ran NOWHERE: nine validated
-    candidates sat in `shadow_forward.SLEEVES` accruing no evidence and unable to promote. The
-    supervisor could not have hosted them either -- it is built around one-shot DONE markers, so a
-    recurring job would run once and never again.
-
-    Called every hour deliberately. `daily_cycle` self-guards on a UTC date stamp, so this box gets
-    exactly one run per day whenever it happens to be awake, instead of missing the day entirely
-    because the laptop was shut at the scheduled minute.
-    """
-    try:
-        import daily_cycle
-        return {"exit_code": daily_cycle.main([]),
-                "at": datetime.now(UTC).isoformat(timespec="seconds")}
-    except Exception as exc:
-        # Reported, never swallowed: this hourly cycle must survive, but a desk that cannot run its
-        # promotion chain has to say so rather than print "cycle done".
-        print(f"daily cycle FAILED to start: {type(exc).__name__}: {exc}", flush=True)
-        return {"error": f"{type(exc).__name__}: {exc}"}
-
-
-def record_tape() -> dict:
-    """Persist broker-native ticks every hourly cycle before any research consumes them."""
-    try:
-        from mt5desk import (
-            tape,
-            triangle_tape,
-        )
-
-        tape_rc = tape.main([])
-        triangle_rc = triangle_tape.main()
-        return {"exit_code": max(tape_rc, triangle_rc),
-                "triangle_exit_code": triangle_rc,
-                "at": datetime.now(UTC).isoformat(timespec="seconds")}
-    except Exception as exc:
-        print(f"tick tape FAILED: {type(exc).__name__}: {exc}", flush=True)
-        return {"error": f"{type(exc).__name__}: {exc}"}
-
-
 def main() -> None:
     h = health()
-    t = record_tape()
-    d = daily()
     m = mine()
     frontier_report(h)
     (BASE / "data" / "sync_marker.json").write_text(
-        json.dumps({"last_cycle": datetime.now(UTC).isoformat(),
-                    "health": h, "tape": t, "daily": d, "mine": m}, indent=1), encoding="utf-8")
+        json.dumps({"last_cycle": datetime.now(timezone.utc).isoformat(),
+                    "health": h, "mine": m}, indent=1), encoding="utf-8")
     print("cycle done", flush=True)
 
 

@@ -23,11 +23,111 @@
     }
   },
   "position": null,
-  "last_bracket_date": "2026-08-17",
+  "last_bracket_date": "2026-08-21",
   "last_reconcile": "2026-08-17T00:05:02+00:00",
   "bracket_cancelled": true,
   "pending": null,
-  "brackets": {},
+  "brackets": {
+    "gold_asia": {
+      "date": "2026-08-21",
+      "hi": 4543.67,
+      "lo": 4508.81,
+      "spec": {
+        "buy_stop": {
+          "price": 4543.67,
+          "sl": 4508.61,
+          "tp": 4613.39
+        },
+        "sell_stop": {
+          "price": 4508.81,
+          "sl": 4543.870000000001,
+          "tp": 4439.09
+        }
+      },
+      "placed_at": "2026-08-21T19:51:15+00:00",
+      "result": {
+        "shadow": false,
+        "orders": [
+          {
+            "side": "buy_stop",
+            "retcode": 10015,
+            "comment": "Invalid price"
+          },
+          {
+            "side": "sell_stop",
+            "retcode": 10009,
+            "comment": "Request executed"
+          }
+        ]
+      }
+    },
+    "gold_london_am": {
+      "date": "2026-08-21",
+      "hi": 4602.03,
+      "lo": 4558.51,
+      "spec": {
+        "buy_stop": {
+          "price": 4602.03,
+          "sl": 4558.3099999999995,
+          "tp": 4689.07
+        },
+        "sell_stop": {
+          "price": 4558.51,
+          "sl": 4602.2300000000005,
+          "tp": 4471.47
+        }
+      },
+      "placed_at": "2026-08-21T19:51:16+00:00",
+      "result": {
+        "shadow": false,
+        "orders": [
+          {
+            "side": "buy_stop",
+            "retcode": 10015,
+            "comment": "Invalid price"
+          },
+          {
+            "side": "sell_stop",
+            "retcode": 10009,
+            "comment": "Request executed"
+          }
+        ]
+      }
+    },
+    "gold_afternoon": {
+      "date": "2026-08-21",
+      "hi": 4604.53,
+      "lo": 4563.57,
+      "spec": {
+        "buy_stop": {
+          "price": 4604.53,
+          "sl": 4563.37,
+          "tp": 4686.45
+        },
+        "sell_stop": {
+          "price": 4563.57,
+          "sl": 4604.73,
+          "tp": 4481.65
+        }
+      },
+      "placed_at": "2026-08-21T19:51:16+00:00",
+      "result": {
+        "shadow": false,
+        "orders": [
+          {
+            "side": "buy_stop",
+            "retcode": 10015,
+            "comment": "Invalid price"
+          },
+          {
+            "side": "sell_stop",
+            "retcode": 10009,
+            "comment": "Request executed"
+          }
+        ]
+      }
+    }
+  },
   "lot": 0.06,
-  "equity": 1683.89
+  "equity": 21127.01
 }

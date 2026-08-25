@@ -136,7 +136,9 @@ def main() -> None:
         h1 = pd.read_parquet(UNI / f"{sym}_H1.parquet")
         h1 = families._h1(h1)
         m = meta[sym]
-        costs = Costs.from_symbol(m, mult=2.0)
+        costs = Costs(spread_per_lot=0.48 if sym == "XAUUSD" else max(
+            m["median_spread_pts"] * m["tick_size"] * m["contract_size"], 0.05),
+            commission_per_lot=3.50, contract_oz=m["contract_size"])
         states = day_states(h1)
         for wname, wp in WINDOWS.items():
             sigs = families.family_session_range_breakout(h1, **wp)

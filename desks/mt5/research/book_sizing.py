@@ -120,10 +120,7 @@ def h1(sym: str) -> pd.DataFrame:
 def cell(sym: str, win: str) -> dict | None:
     """One unconditioned symbol-window sleeve: daily R, and euros per ticket."""
     m = META[sym]
-    cost = Costs(
-        spread_per_lot=0.48 if sym == "XAUUSD" else max(
-            m["median_spread_pts"] * m["tick_size"] * m["contract_size"], 0.05),
-        commission_per_lot=3.50, contract_oz=m["contract_size"])
+    cost = Costs.from_symbol(m, mult=2.0)  # canonical costs (round-trip spread * 2)
     sigs = list(families.family_session_range_breakout(h1(sym), **WINDOWS[win]))
     trades = run_backtest(h1(sym), sigs, cost).trades
     if len(trades) < 60:
