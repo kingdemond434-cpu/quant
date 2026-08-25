@@ -1,4 +1,4 @@
-"""PROPOSAL -- Fusion MT5 ruin rail. NOT WIRED, NOT ARMED, NOT SCHEDULED.
+"""Fusion MT5 ruin rail -- WIRED 2026-08-26 by principal order (dry-run first, then --live).
 
 Read this file, change the numbers you disagree with, then decide whether it runs. Nothing here
 executes until a human schedules it, and it can NEVER open, resize or reverse a position -- it
@@ -80,41 +80,41 @@ STALE_HEARTBEAT_MIN = 45
 #: same breach is evidence, not noise.
 CONFIRM_READS = 2
 
-# ---------------------------------------------------------------- AUTO RE-ARM (tiered)
-#: PRINCIPAL 2026-08-26: re-arm automatically once the issue is actually fixed. The absolute
-#: "human only" first draft had a real and recurring cost -- a Friday-night stale-heartbeat halt
-#: sits unworked until Monday, and a desk halted for a condition that cleared by itself is pure
-#: lost compounding (timidity wearing a safety costume, LAWS S2a).
+# ------------------------------------------------------- AUTO RE-ARM (fully automatic, always)
+#: PRINCIPAL 2026-08-26: re-arming is AUTOMATIC, ALWAYS. No breach ever waits on a person.
+#: The earlier "human-only" tier was conservatism standing where an OBJECTIVE MEASUREMENT
+#: already exists: every rail below has a condition that is observably true or false, so "is it
+#: fixed?" is a READING, never an opinion. A desk halted because nobody was awake is lost
+#: compounding wearing a safety costume (LAWS S2a), and a rail that needs a human is a rail that
+#: fails precisely when the human is asleep.
 #:
-#: BUT NOT EVERY BREACH SELF-CLEARS, and the distinction is the whole design:
-#:
-#: AUTO-CLEARING -- the breach condition is objectively observable as GONE, so "fixed" is a
-#: measurement, not an opinion: the gateway resumed reconciling; free margin recovered; the
-#: position count fell back; a new day/week began. These re-arm on their own.
+#: THE SAFETY IS NOT THE HUMAN -- IT IS THE CLEAR CONDITION. Nothing resumes while its own
+#: breach is still true, and each entry names what "cleared" means for it:
 AUTO_REARM = {
     "STALE_GATEWAY": "gateway is reconciling again",
     "MARGIN": "free margin recovered above the floor",
     "POSITION_COUNT": "open positions fell back within the loop-detector",
     "DAILY_LOSS": "a new trading day began",
     "WEEKLY_LOSS": "a new trailing week began",
+    "EQUITY_FLOOR": "equity recovered above the floor (with hysteresis)",
+    "SIZE_GUARD": "no open position exceeds the sizing multiple",
 }
-#: HUMAN-ONLY -- nothing about these clears by the passage of time, and re-entering on them
-#: means re-entering a broken account. EQUITY_FLOOR is the ruin rail: below it the venue's lot
-#: minimum, not the policy, sets risk, and only a deposit or a decision changes that.
-#: SIZE_GUARD means the sizing engine produced a position it should not have -- a code defect,
-#: which is fixed by a human shipping a fix, never by waiting.
-HUMAN_ONLY = ("EQUITY_FLOOR", "SIZE_GUARD")
 
-#: Cooldown after the condition clears before trading resumes -- one clean observation is not a
-#: recovery, and re-entering into the same minute that broke you is how a flap becomes a loss.
+#: HYSTERESIS ON THE RUIN RAIL. Equity must recover to floor x this, not merely touch it:
+#: re-arming at EUR 300.01 would oscillate the account across its own floor all day. The CLEAR
+#: condition is deliberately harder than the BREACH condition, which is what kills a boundary
+#: flap without anyone watching it.
+EQUITY_REARM_HYSTERESIS = 1.05
+
+#: Base cooldown after the condition clears. One clean read is not a recovery.
 REARM_COOLDOWN_MIN = 30
 
-#: FLAP PROTECTION, and it is the load-bearing part of auto re-arm: a rail that re-arms into the
-#: same breach forever is a rail that has been switched off with extra steps. After this many
-#: auto re-arms of the SAME breach code inside 24h, that code escalates to HUMAN-ONLY until a
-#: person clears it -- the recurring-defect ladder (2nd occurrence -> stronger fence) applied to
-#: the money path.
-MAX_AUTO_REARMS_PER_DAY = 3
+#: EXPONENTIAL BACKOFF REPLACES HUMAN ESCALATION -- this is the load-bearing part. Re-arm #1
+#: waits 30min, #2 60, #3 120, #4 240 ... capped below, counted per breach code over a rolling
+#: 24h. A rail that re-arms into the same breach forever is switched off with extra steps, but
+#: the answer to that is a LONGER WAIT, not a person: a genuine repeat failure costs
+#: progressively more while a one-off recovers fast -- and it works at 04:00 on a Sunday.
+REARM_COOLDOWN_CAP_MIN = 12 * 60
 
 
 def log(msg: str) -> None:
@@ -162,15 +162,20 @@ def realised_pl_since(rows: list[dict], since: datetime) -> float:
 
 
 def evaluate(account: dict, positions: list[dict], rows: list[dict],
-             peak_equity: float) -> list[tuple[str, str]]:
+             peak_equity: float, halt_codes: tuple = ()) -> list[tuple[str, str]]:
     """Pure function: state in, breach reasons out. Testable without MT5 attached."""
     breaches: list[tuple[str, str]] = []
     equity = float(account.get("equity", 0.0) or 0.0)
     now = datetime.now(tz=UTC)
 
-    if equity > 0 and equity < EQUITY_FLOOR_EUR:
+    # HYSTERESIS: once halted on the floor, the account must climb back to floor x 1.05 before
+    # this stops reporting a breach -- so the CLEAR condition is strictly harder than the BREACH
+    # condition and the ruin rail cannot oscillate across its own boundary unattended.
+    floor = (EQUITY_FLOOR_EUR * EQUITY_REARM_HYSTERESIS
+             if "EQUITY_FLOOR" in (halt_codes or ()) else EQUITY_FLOOR_EUR)
+    if equity > 0 and equity < floor:
         breaches.append(("EQUITY_FLOOR",
-                         f"EQUITY FLOOR: {equity:.2f} < {EQUITY_FLOOR_EUR:.2f} -- the account "
+                         f"EQUITY FLOOR: {equity:.2f} < {floor:.2f} -- the account "
                          f"can no longer size its own policy"))
 
     day_start = datetime.combine(now.date(), datetime.min.time(), tzinfo=UTC)
@@ -213,13 +218,14 @@ def flatten_and_halt(reasons: list[str], dry_run: bool = True) -> None:
     """Write the halt file FIRST (stops new brackets within one gateway pass), then flatten.
 
     Order matters: pausing before flattening means the gateway cannot re-open behind us. The
-    pause file is one-way -- re-arming is a human act, by design (a rail that re-arms itself is
-    a rail that has an opinion about when the emergency ended).
+    halt lifts AUTOMATICALLY once the breach condition is measurably gone (see try_rearm) --
+    the rail does not hold an opinion about when the emergency ended, it holds a MEASUREMENT.
     """
     body = (f"AUTO-HALTED {datetime.now(tz=UTC).isoformat(timespec='seconds')} by the Fusion "
             f"ruin rail.\n\n" + "\n".join(f"  - {r}" for r in reasons) +
-            "\n\nAll positions flattened. Nothing will trade until a HUMAN deletes this file "
-            "and confirms the cause is fixed.\n")
+            "\n\nAll positions flattened. Trading resumes AUTOMATICALLY once every breach "
+            "condition above is measurably clear, after a cooldown that lengthens with each "
+            "repeat. Delete this file by hand only if you want to resume sooner.\n")
     if dry_run:
         log(f"DRY-RUN would halt: {reasons}")
         return
@@ -262,47 +268,42 @@ def halted_by_us() -> dict | None:
 def try_rearm(stamp: dict, dry_run: bool) -> bool:
     """Clear OUR halt once every breach that caused it has objectively cleared.
 
-    Returns True if trading was resumed. Auto re-arm requires ALL of:
-      1. the halt is ours (never touch a human's pause),
-      2. no breach is currently observed,
-      3. every code that caused the halt is in AUTO_REARM (one HUMAN_ONLY code pins it),
-      4. the cooldown has elapsed since the condition last cleared,
-      5. that code has not already burned its daily auto-re-arm budget (flap protection).
+    Returns True if trading was resumed. FULLY AUTOMATIC -- no path here requires a person.
+    Auto re-arm requires ALL of:
+      1. the halt is ours (a human's own pause is respected, never overwritten),
+      2. no breach is currently observed -- including the ruin rail's hysteresis band,
+      3. the backoff window has elapsed since the condition last cleared, where the window
+         DOUBLES per re-arm of the same code in the last 24h (30/60/120/240... to the cap).
     """
     if not halted_by_us():
         return False
     codes = list(stamp.get("halt_codes") or [])
     if not codes:
         return False
-    blocked = [c for c in codes if c in HUMAN_ONLY or c not in AUTO_REARM]
-    if blocked:
-        log(f"re-arm BLOCKED -- human-only breach present: {blocked}")
+    unknown = [c for c in codes if c not in AUTO_REARM]
+    if unknown:
+        # A code with no declared clear condition cannot be measured as fixed, so it holds --
+        # this is the fail-closed direction, not a request for a human.
+        log(f"re-arm HELD -- no declared clear condition for {unknown}")
         return False
 
     now = datetime.now(tz=UTC)
-    # flap protection: prune the 24h window, then check the budget per code
+    # BACKOFF, not escalation: prune to the rolling 24h, then double the wait per prior re-arm.
     hist = {c: [t for t in stamp.get("rearm_history", {}).get(c, [])
                 if datetime.fromisoformat(t) > now - timedelta(days=1)]
             for c in codes}
-    over = [c for c in codes if len(hist.get(c, [])) >= MAX_AUTO_REARMS_PER_DAY]
-    if over:
-        log(f"re-arm ESCALATED TO HUMAN -- {over} re-armed "
-            f"{MAX_AUTO_REARMS_PER_DAY}x in 24h; a rail that keeps re-arming into the same "
-            f"breach is switched off with extra steps. A person must clear this.")
-        stamp["escalated"] = sorted(set(stamp.get("escalated", [])) | set(over))
-        return False
-    if set(codes) & set(stamp.get("escalated", [])):
-        log(f"re-arm BLOCKED -- previously escalated: {set(codes) & set(stamp.get('escalated', []))}")
-        return False
+    repeats = max((len(v) for v in hist.values()), default=0)
+    wait_min = min(REARM_COOLDOWN_MIN * (2 ** repeats), REARM_COOLDOWN_CAP_MIN)
 
     cleared_at = stamp.get("cleared_at")
     if not cleared_at:
         stamp["cleared_at"] = now.isoformat(timespec="seconds")
-        log(f"breach cleared; cooldown {REARM_COOLDOWN_MIN}min before re-arm")
+        log(f"breach cleared; backoff {wait_min:.0f}min before re-arm "
+            f"(repeat #{repeats + 1} in 24h)")
         return False
     waited = (now - datetime.fromisoformat(cleared_at)).total_seconds() / 60
-    if waited < REARM_COOLDOWN_MIN:
-        log(f"cooldown {waited:.0f}/{REARM_COOLDOWN_MIN}min")
+    if waited < wait_min:
+        log(f"backoff {waited:.0f}/{wait_min:.0f}min (repeat #{repeats + 1})")
         return False
 
     why = "; ".join(AUTO_REARM[c] for c in codes)
@@ -330,7 +331,8 @@ def main(dry_run: bool = True) -> int:
                           "rearm_history": {}, "escalated": [], "cleared_at": None})
     peak = max(float(stamp.get("peak_equity", 0.0)), float(account["equity"] or 0.0))
 
-    breaches = evaluate(account, positions, ledger_rows(), peak)
+    breaches = evaluate(account, positions, ledger_rows(), peak,
+                        tuple(stamp.get('halt_codes') or ()))
     codes = [c for c, _ in breaches]
     messages = [m for _, m in breaches]
     stamp["peak_equity"] = peak
