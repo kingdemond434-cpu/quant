@@ -1,0 +1,7 @@
+[Unit]
+Description=Worktree reap: retire LANDED+CLEAN+IDLE agent checkouts (R0423 second half)
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/bin/sh -c '.venv/bin/python scripts/check_worktree_reap.py --reap >> data/cro_ai_logs/worktree_reap.log 2>&1'
