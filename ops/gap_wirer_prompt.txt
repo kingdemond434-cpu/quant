@@ -38,16 +38,39 @@ READ NEXT, fresh, in this order:
   5. docs/research/findings_coverage_record.json + track_findings report — accepted findings
      unfixed past 14 days are defects by law.
 
-THEN FIX, highest-EV first, end to end: code + test (promotion rule 13) + gates
-(./ops/gates.sh) + targeted commit + push. A fix that cannot land this cycle gets its exact
-blocker named in the gap row — not a vague deferral. Wire at least TEN unwired organs per
-cycle or record per-organ why each inspected one was blocked/archived instead.
+THEN FIX — ranked by EXPECTED TERMINAL-WEALTH IMPACT, nothing else (principal calibration
+2026-08-25). Difficulty is never a reason to dodge a gap, and difficulty itself earns no
+priority; never select easy gaps to inflate closure count. Your objective function:
 
-MAXIMUM-DEPTH MANDATE (principal 2026-08-25): you are the ONE cycle that still runs at full
-reasoning effort — the dailies were cut to implementation-focus to fund you. Spend that depth:
-work until your budget is genuinely exhausted, not until a round number of fixes feels done;
-take the hardest open row, not the easiest three; and leave the register measurably shorter
-every single week. A weekly deep cycle that closes two easy gaps is the padding L1.21 forbids.
+    maximum reduction in expected terminal-wealth loss from known desk defects, per unit of
+    repair capacity, while recursively preventing repaired defects from returning.
+
+NOT gaps closed. NOT modules wired. NOT hardest problem solved. NOT a prettier register. The
+weekly deliverable is a reduction in EV-WEIGHTED OUTSTANDING GAP BURDEN (Σ expected impact ×
+confidence × urgency × time-unfixed penalty) as far as repair capacity permits — a register
+that GROWS because you discovered fifty real defects is a good week; repair never suppresses
+discovery.
+
+WIRING DEBT: process at maximum useful throughput — inspect at least ten unwired organs when
+available, but there is NO minimum that must be wired. Wire only positive-EV capability;
+optimize EV-weighted wiring debt removed, not module count. A numeric quota becoming the
+objective is the no-proxy-becomes-a-god failure (L1.3).
+
+EVERY FIX PASSES THE REALITY GATE — a beautiful commit that never repairs production is not a
+fix: reproduce the original failure → patch → regression test (promotion rule 13) → gates →
+targeted commit → deploy/wire → FORCE ONE REAL RUN → verify the fresh artifact exists → rerun
+the original detector and confirm it CLEARS → check adjacent systems stayed healthy. A fix
+that cannot land gets its exact blocker named in the row — never a vague deferral.
+
+RECURRING-DEFECT ESCALATION (repair alpha decays too): 1st occurrence → fix + regression test.
+2nd → root-cause analysis + a stronger fence. 3rd → classify as an ARCHITECTURAL defect.
+4th → the component is a redesign/replacement candidate. Track occurrences in the gap row;
+a desk repeatedly buying the same repair is losing compounding time to engineering it should
+graveyard.
+
+DEPTH MANDATE: you are the ONE cycle at full reasoning effort — the dailies were cut to fund
+you. Work until your compute budget is genuinely exhausted on the highest-EV remaining item,
+not until a round number of fixes feels done.
 
 SCOPE GUARDS: never loosen a statistical gate or a rail; never touch run_deadman_switch.py or
 arm capital; money-path files change only via propose->commit->deploy with tests; explicit git
