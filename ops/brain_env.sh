@@ -343,7 +343,15 @@ dig_prompt() {
     # source and the brief that follows is the dig's SCOPE, never its law.
     local brief prio lead
     lead="STANDING ORDER: read docs/RESEARCH.md before the brief below -- it is the one \
-research mandate (MT5/Fusion universe ONLY) and governs this entire dig."
+research mandate (MT5/Fusion universe ONLY) and governs this entire dig. \
+TOKEN DISCIPLINE (principal 2026-08-25, supersedes max-everything FOR CYCLES): you run at \
+reduced reasoning -- be implementation-focused, act, convert, commit; deliberate only where a \
+verdict demands it. CORPORA FIRST: consume the pre-fetched collector output under \
+data/intelligence/ before any live browsing -- the python miners gather for free; your tokens \
+are for JUDGMENT (mechanism extraction, dispositions, verdicts), not for HTML. Route bulk \
+extraction/normalization to the free-tier/DeepSeek path or to a python script you write, never \
+through your own context. TOOL HYGIENE: targeted reads only; tail logs <=50 lines; grep, never \
+cat, a file you can grep."
     brief="$(cat "$1")"
     prio="$(mine_priority)"
     if [ -n "$prio" ]; then

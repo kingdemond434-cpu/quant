@@ -4,6 +4,12 @@
 set -uo pipefail
 cd /home/quant/quant-platform
 source ops/brain_env.sh
+# TODAY-GUARD (2026-08-25): one real dig per day; chain and scattered timers cannot double-run.
+if [ "${1:-}" = "unified" ] && find data/cro_ai_logs -name "frontier_unified_$(date -u +%Y%m%d)T*.log" -size +1500c 2>/dev/null | grep -q .; then
+    echo "unified frontier: already produced today -- skipping (chain/timer no-op)"
+    exit 0
+fi
+
 REGION="${1:?region arg required (en|cn|ru|kr|jp|ar|br)}"
 dig_dry_run "frontier-$REGION" "ops/frontier_${REGION}_prompt.txt" && exit 0
 # ATTEMPT-FIRST (2026-08-11): the stub is written BEFORE the mutex/auth exits. organ_catchup
@@ -37,5 +43,5 @@ brain_auth_check || { echo "auth unavailable -- next run resumes ($(date -u))" >
 # mines on in the SAME run -- mining is never throttled. It replaces a `_MINE_PRIORITY`
 # variable that was computed here and never referenced, under this exact comment.
 echo "=== frontier-$REGION start $(date -u) ===" >> "$LOG"
-claude --effort max --append-system-prompt "$_DOCTRINE" -p "$(dig_prompt ops/frontier_${REGION}_prompt.txt)" --dangerously-skip-permissions >> "$LOG" 2>&1
+claude --effort "${BRAIN_EFFORT:-low}" --append-system-prompt "$_DOCTRINE" -p "$(dig_prompt ops/frontier_${REGION}_prompt.txt)" --dangerously-skip-permissions >> "$LOG" 2>&1
 echo "=== frontier-$REGION exit $? at $(date -u) ===" >> "$LOG"

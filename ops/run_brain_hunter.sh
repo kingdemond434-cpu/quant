@@ -44,7 +44,7 @@ if ! brain_auth_check; then
 fi
 echo "=== brain-hunter start $(date -u) ===" >> "$LOG"
 if [ "$CONTROLLER" = "claude" ]; then
-    claude --effort max --append-system-prompt "$_DOCTRINE" \
+    claude --effort "${BRAIN_EFFORT:-low}" --append-system-prompt "$_DOCTRINE" \
         -p "$(dig_prompt ops/brain_hunter_prompt.txt)" --dangerously-skip-permissions \
         >> "$LOG" 2>&1
     RC=$?

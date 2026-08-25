@@ -18,5 +18,5 @@ brain_auth_check || { echo "auth unavailable -- next run resumes ($(date -u))" >
 # mines on in the SAME run -- mining is never throttled. It replaces a `_MINE_PRIORITY`
 # variable that was computed here and never referenced, under this exact comment.
 # ALL digs at max effort (principal 2026-07-24: Max plan, max everything).
-_DIG_EFFORT=max
-claude --effort "$_DIG_EFFORT" --append-system-prompt "$_DOCTRINE" -p "$(dig_prompt ops/dataaxis_dig_prompt.txt)" --dangerously-skip-permissions >> "$LOG" 2>&1
+_DIG_EFFORT="${BRAIN_EFFORT:-low}"
+claude --effort "${BRAIN_EFFORT:-low}" --append-system-prompt "$_DOCTRINE" -p "$(dig_prompt ops/dataaxis_dig_prompt.txt)" --dangerously-skip-permissions >> "$LOG" 2>&1
