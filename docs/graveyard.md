@@ -1569,3 +1569,28 @@ our favour). Free fallback if ever re-opened: card 27's proprietary maps + DeFiL
 categories (licence equally unread — same read owed). DERIVES-FROM: NONE (checked — card 28 is the
 desk's own carding of a vendor API surface, no upstream writeup).
 [§33: killed -> this entry]
+
+### retail_fx_stophunt_feed_manipulation — folk mechanism "the broker manipulates YOUR quote feed to hunt YOUR stop", insider-refuted (EN, 2020-21)   [pre-emptive falsification context, NOT a desk test — and the REAL mechanisms it obscures are execution intel for the MT5 desk]
+SOURCE: HN 25219314 comment tree (mined to full depth 2026-08-25): AdrianAvtomat 25253286 +
+25253035 (retail-FX industry, self-identified, corroborates a platform-vendor's account);
+iamacyborg 26045541 (ex-spread-betting-firm employee, London); lordnacho 25219798 (ex-FX HF).
+THE FOLK CLAIM KILLED: per-client quote-feed manipulation to trigger an individual trader's stop.
+Insider verdict verbatim: "a broker wouldn't even need a front-running bot. If they're the
+intermediary (A book) then they can just apply markups to the quotes from their maker. If they're
+the maker (B book), they're the ones quoting the prices. Front-running is moot in either case …
+manipulating the quote feed for thousands of traders just to hit one guy's stop … impractical if
+not impossible using industry standard platforms."
+WHAT IS REAL INSTEAD (the boundary, and it is desk-relevant execution reality): (1) A-book =
+routed to LPs WITH broker markup on the spread — the desk's spread is a POLICY variable, not a
+market constant; (2) B-book = internalized against the house, the broker profits from client
+losses directly (corroborated first-person: "education" funnel downstairs, B-book upstairs);
+(3) TOXIC-FLOW RE-ROUTING — consistently-winning accounts get moved B→A book ("if someone is too
+good they just send him to the market"), so a profitable desk's execution regime CHANGES as its
+edge is detected: treatment is ENDOGENOUS to desk PnL. Naming correction from the reply layer
+(depth mandate, again): B-book = against the maker, A-book = to market — the OP had it backwards.
+NOTE the class: stop CLUSTERING at round numbers is visible to any market participant and
+stop-cascade mechanics at the MARKET level remain real; what dies is only the per-client
+feed-manipulation story. FXCM's CFTC ban (undisclosed dealing-desk interest while advertising
+"No Dealing Desk") is the canonical documented case of the REAL defect class.
+DERIVES-FROM: NONE (checked — first-person industry accounts, no cited upstream).
+[§33: killed -> this entry]

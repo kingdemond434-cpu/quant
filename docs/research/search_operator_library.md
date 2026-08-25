@@ -3304,3 +3304,74 @@ earlier bars and never count the unchanged days as independent observations.
 tradeable hypothesis was created, so no Stage-A trial or forward clock was minted. The public
 equity backtests are selection-biased ore and do not establish a Fusion return. Artifact:
 `data/brain_hunter_s5_20260824.json`.
+
+---
+
+## OP-096b — CDX ATTACHMENT-CORPUS HARVEST: a dead vBulletin board's file uploads are a minable code corpus (EN miner s-J, 2026-08-25)
+
+**THE OPERATOR.** For any dead/archived vBulletin-era forum, the Wayback CDX index exposes the
+board's ATTACHMENT namespace as a flat, filterable file corpus — no thread crawling needed:
+
+    http://web.archive.org/cdx/search/cdx?url=<domain>&matchType=domain
+      &filter=original:.*attachments/<subforum-slug>.*&filter=statuscode:200
+      &collapse=urlkey&fl=timestamp,original
+
+Demonstrated live on forex-tsd.com (dead pre-MQL5 MT4/MT5 EA community, 2005–2015): the PUBLIC
+`attachments/digital-filters/` namespace returns archived `.mq4`/`.mqh` SOURCE FILES with 200s
+(Jurik JJMASeries.mqh, jvel1, AMA 2007, DTM 2007, T3 variants) plus posted MT4 equity statements
+(`*mtstatement*.htm` — era-authentic BACKTEST-MINER ore, claimed-not-verified). File-ID URL
+schemes carry POST DATES in the slug (`100541d1271046538` = attachment 100541, unix 1271046538),
+so the corpus is datable without the thread. Thread TEXT lives in parallel under the pre-2013
+URL shape `/<subforum>/<id>-<slug>-<page>.html` with `-print` variants (clean text, ~10 posts/pp).
+**ROUTE NOTE (this box, measured 2026-08-25): web.archive.org is UNREACHABLE via WebFetch but
+fully reachable via curl — use the shell route for Wayback, always.**
+
+**§13 BOUNDARY, encoded as a PATH RULE:** on forex-tsd.com the paid closed-group areas live under
+`attachments/advanced-elite/`, `attachments/elite-section/`, `/forum/exclusive-forum/*` — HARD
+STOP even though Wayback captured them (mining a paid section via the archive is routing around
+access control). The free-registration public subforums (`digital-filters`, `trading-systems/
+graduated/*`, `broker-talks`, `indicators-expert-systems`) are in scope. Apply the same
+path-partition test to every archived board before mining it.
+
+**PER-REGION ADAPTATIONS (charter §16):** RU — the same vBulletin attachment shape on archived
+forex.kbpauk.ru / onix boards; the RU school is the ORIGIN of this corpus (see OP-096c provenance).
+CN — Discuz! boards use `attachment.php?aid=` (query-string, needs `matchType=domain` + filter on
+`attachment`); JP — 2ch-era boards carry no attachments (text-only; skip the operator, mine dat
+mirrors). EN — Steve Hopwood forums / Donna Forex (both dead) publish the same shape; NEXT GROUND.
+
+## OP-096c — RETAIL DSP FILTER FAMILY as unary feature transforms + the ADAPTIVE-LENGTH composition pattern (era-archaeology, Forex-TSD digital-filters 2005–2013)
+
+**WHAT THE ERA BUILT** (public subforum, thread 198 "jurik", 29 archived pages 2007–2009, read
+this run): a coherent school of LOW-LAG SMOOTHERS used as feature transforms on FX/gold/index
+bars — exactly the MT5 universe. Family: **JMA** (Jurik adaptive MA; phase param −100..+100),
+**JRSX** (noise-reduced RSI), **CFB** (composite fractal behavior — a market-state functional
+returning an ADAPTIVE LENGTH), **AMA** (Kaufman), **T3** (Tillson), **FATL/SATL/RFTL/RSTL**
+(Finware fixed-coefficient spectral FIR filters), **NRTR** (trailing-reverse state). All were
+MT4-implementable and traded on exactly Fusion's instruments (EURUSD/GBPUSD/XAUUSD, H1 and
+below).
+
+**THE TRANSFERABLE PATTERN (the process, not the formula):** the era separated the SMOOTHER from
+the PERIOD-SELECTOR — `adaptive_length = f(market_state)` composed with ANY base operator:
+thread-documented construction `JRSX.length = ceil(Lo + norm(CFB) * (Hi − Lo))`. That is a
+first-class operator-library pattern: `base_op(series, length=state_fn(series))` — an unary
+transform whose window is itself a feature. The desk's operator set has fixed-window transforms;
+a state-driven window is the structural upgrade this ground contributes. MT5 translation: apply
+to H1 FX/gold features (trend-state estimator drives lookback of momentum/zscore transforms);
+price with Fusion spread+swap as always; every (state_fn, base_op, hi, lo) cell is a DSR-counted
+trial — the era swept these visually, which is precisely why its curves cannot be trusted.
+
+**PROVENANCE / DERIVES-FROM (recorded so convergence cannot be double-counted, GAP #85):** the EN
+Forex-TSD corpus is substantially a TRANSLATION LAYER over the RU MQL school — thread-explicit:
+"I translated those mt4 indicators from russian language"; JJMASeries.mqh authored by **Nikolay
+Kositsin** (RU; his libraries live on today, public, in the MQL5 codebase); FATL/SATL are Finware
+(RU) filters. ANY future EN↔RU "independent convergence" on this family is ONE reading of one
+school, not two events.
+
+**FREE FALSIFICATION CONTEXT (era's own debunking layer, harvested):** (1) REPAINT SIGNATURE
+spotted by a user in 2007 in the thread's own words — "a 3rd color … can be seen on older data,
+but on current data only two colors are seen": an indicator whose HISTORICAL bars differ from its
+LIVE bars is repainting, and every visual/era backtest of a repainting construct is invalid. TEST:
+record live values, recompute historically, diff. (2) The era's equity evidence is posted MT4
+statements on B-book demo/micro accounts, pre-cost — ore, never evidence. `[§33: screened]` as
+methodology: no tradeable hypothesis minted this run, no Stage-A trial, no forward clock; the
+contribution is the operator pattern + provenance + the two falsifiers, routed here.

@@ -2844,3 +2844,25 @@ so neither was copied or ingested. No credential or BRAIN endpoint was used.
 lower re-test rate on cadence-mismatched transforms and stronger lineage-level independence search.
 Artifact with the exact Fusion mappings, uncertainty and rights boundary:
 `data/brain_hunter_s5_20260824.json`.
+
+---
+
+## ENGINE IDEA (EN miner s-J, 2026-08-25): measure the MT5 broker's ENDOGENOUS treatment of the desk — spread/slippage/rejects as a function of rolling desk PnL
+
+FROM the HN 25219314 insider tree (see graveyard `retail_fx_stophunt_feed_manipulation` for the
+full provenance): retail FX/CFD brokers (a) apply house MARKUPS to LP quotes on A-book flow,
+(b) internalize B-book flow against the house, and (c) RE-ROUTE consistently-winning accounts
+B→A ("too good → send him to the market"). Consequence for THIS desk: execution quality on the
+Fusion account is NOT a stationary market property — it is a policy function of the desk's own
+profitability, and it can STEP when the broker's toxic-flow classifier re-labels the account.
+An execution-reality model fitted on the quiet era silently mis-prices the profitable era — the
+exact regime where sizing decisions matter most (L1.58 waterfall: a step in venue treatment lands
+in the UNEXPLAINED residual unless it is a named regressor).
+MEASURABLE, with data the desk already holds or can hold free: (1) per-fill effective spread and
+slippage vs the desk's rolling 20d PnL (breakpoint/step test, not a linear fit); (2) reject/
+requote rate over the same clock; (3) a cross-broker quote benchmark — Fusion bid/ask vs a second
+free MT5 demo feed on the same symbols — separates HOUSE markup moves from MARKET spread moves
+(the free_data_cache multi-source pattern already does this shape for macro). NULL IS INFORMATIVE:
+flat treatment across the PnL clock is evidence the A-book claim holds for this account size.
+`[§33: wired -> this entry]` as an engine idea routed per seat charter; no capital claim, no gate
+touched. The consumer is the MT5 desk's execution-reality layer when it next fits cost models.

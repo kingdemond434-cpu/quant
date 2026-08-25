@@ -6979,3 +6979,94 @@ postmortem; the 28-file dead-zone index. **NOT EXHAUSTED:** 63 session narrative
 `data/brain_hunter_s5_20260824.json` now holds the source boundary, exact Fusion translations,
 screen/disposition state and the next-ground chain; OP-095 and data-universe source 108 make it
 discoverable by later brains.
+
+---
+
+### 2026-08-25 session J (EN frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+
+MINE GATE at start: CONVERT-FIRST, 3 owing (2×T3 + 1×T4) → **ALL 3 DISPOSED THIS RUN, gate
+re-verified BACKLOG-CLEAR** (commit cb74d2e0, pushed+verified): Kraken card 26 licence read DONE
+(global-terms §8/§9 quoted; own-benefit grant, redistribution barred) + MANDATE RE-GRADE (3
+crypto-universe uses struck; surviving use = pre-2018/sub-H1 reference tape for BTCUSD/ETHUSD,
+live in the 19-symbol MT5 universe) → deferred(2026-09-08) scoped to MT5 symbols; NAVER card 21
+4th deferral + split re-grade (crypto half DEAD, 해외선물 cafe ground survives; GAP #69 re-dated
+09-08 after SECOND operator lapse); CoinGecko card 28 KILLED → graveyard `coingecko_category_
+taxonomy` (sole consumer = 296-perp cross-section, banned 08-18). INSTRUMENT DEFECT FOUND+LEDGERED
+R0648: `[§33: killed]` cards are resolved-filtered out of `_mine_items`, firing one FALSE
+mine-item-vanished per box AND structurally pinning n_killed=0 — the KILL_SHARE_BAR=0.60 mass-kill
+fence can never trip (L1.49 welded-gate class). Exact patch in the row.
+
+RESUME(1) backlog read: 4 pending-verification + 1 decision, ALL crypto-universe subjects
+(stablecoin runs, Upbit/Bithumb venue-state, BIS carry↔liq, DEX tape; Glassnode decision), all
+already §33-terminal — their residual verification work awaits MANDATE RE-GRADE by owning seats
+per the R0637 split-the-row precedent; deep-verifying them now would be banned-universe hunting.
+RESUME(2): s-I closed cleanly; carried next-ground list is largely MANDATE-VOIDED (bitbank =
+crypto venue; Numerai crypto-tournament threads; G-Research crypto). Surviving carried items:
+Wilmott re-probe (WALLED ×3), NP 4851 residual. REGION RE-RANK UNDER MT5 MANDATE (2026-08-18):
+EN grounds re-aim at FX/gold/indices/energy/US-share-CFD practitioner layers — Wilmott (FX/vol
+native), EliteTrader FX+futures archives, Quantopian archive (equities→share-CFD/index
+translation), HN full history (MT5-angled), and NEW era-archaeology chapter: the dead pre-MQL5
+MT4/MT5 EA-era forums (Forex-TSD 2005-2015, Steve Hopwood, Donna Forex) replacing the voided
+Bitcointalk-era target. The MT5 desk's own hourly miner (desks/mt5/docs/MANDATE_GLOBAL_MINER.md)
+covers the living-web layer (YouTube/X/Reddit/MQL5/Myfxbook) — this seat's differentiator stays
+the DEEP/LEGACY archival layer it never touches.
+
+ITEMS THIS RUN (bounded per completion contract):
+1. Wilmott re-probe (carried #6; 4th probe, NEW route — this box's fetcher differs from the 3
+   walled attempts). Verdict + if open: FX/vol practitioner thread mining to depth.
+2. HN full-history dig, MT5-angled, via the public Algolia API (keyless, §13-clean): broker/FX
+   microstructure + systematic FX/gold/index mechanism threads; comment trees ≥2 deep; venue
+   harvest + data axes; debunkings → graveyard.
+3. Era-archaeology route test: Forex-TSD via Wayback (web.archive.org UNREACHABLE via WebFetch
+   this box — trying curl route); if blocked, record route-blocked honestly + substitute one
+   Forex Factory archive probe.
+
+SESSION CLOSE 2026-08-25 (EN frontier miner s-J) — ITEM VERDICTS, DEPTH LINE, VENUES, NEXT GROUND:
+ITEM 1 (Wilmott re-probe): **WALLED ×4** — forum.wilmott.com HTTP 403 to this box's WebFetch
+(4th distinct route). STOP live re-probes (a 5th is quota re-measuring a constant — the GAP#69
+lesson). NEW ROUTE OPENED INSTEAD: Wayback is reachable via curl (NOT via WebFetch — route
+asymmetry measured this run), and forum.wilmott.com has captures → next-ground item.
+ITEM 2 (HN full-history, MT5-angled): Algolia API keyless route CONFIRMED (items endpoint returns
+FULL comment trees as JSON — venue upgrade for all EN digs). Threads 25219314 + 26044449 mined to
+full depth (35 + 89 comments, every reply layer read). YIELD: graveyard entry
+`retail_fx_stophunt_feed_manipulation` (insider-refuted folk mechanism, 3 independent first-person
+sources, naming correction found in reply layer d3 — the OP had A/B-book backwards); engine idea
+routed to improvement_inbox (endogenous broker treatment: B→A re-routing makes execution regime a
+function of desk PnL — measurable with held data); 26044449 otherwise THIN for mechanisms (meme-
+stock sociology) — honest null recorded.
+ITEM 3 (Forex-TSD era-archaeology): GROUND OPENED, structure fully mapped from 2016-01 capture.
+vBulletin board 2005–2015, THE pre-MQL5 MT4/MT5 EA community. **§13 PATH RULE ENCODED** (public
+subforums in scope; `advanced-elite/`+`elite-section/`+`exclusive-forum/` = PAID closed-group =
+HARD STOP even via archive). **CDX ATTACHMENT-CORPUS DISCOVERY: the public subforums' file
+uploads (.mq4/.mqh source + posted MT4 statements) are archived with 200s and filterable as a
+flat corpus** → OP-096b (harvest operator, per-region adaptations recorded). Thread 198 "jurik"
+(29 archived pages, 2007-09) read pp.1-2: → OP-096c (retail DSP filter family as unary
+transforms; the adaptive-length composition pattern; RU-school DERIVES-FROM recorded so EN↔RU
+convergence on this family can never double-count — GAP #85; era repaint-signature falsifier
+harvested from the thread's own words).
+DISCOVERY COUNTERFACTUAL (charter s17): the attachment corpus would NOT have been found by the
+MT5 desk's living-web hourly miner (its source list carries MQL5 but no dead-forum layer), and
+the CDX route was found BECAUSE WebFetch's Wayback block forced the curl route where CDX is the
+natural index — the blocked door pointed at the better one.
+DEPTH: HN = 2 full trees, every layer (the run's graveyard kill came from reply layers d3-d4, not
+the OP — depth mandate vindicated again); Forex-TSD = index → subforum → CDX namespace → thread
+198 pp.1-2 verbatim (print variants); Wilmott = probe only (walled). BREADTH-THEATER CHECK: 3
+items taken, 3 closed to depth or honest verdict; 0 surface-touched-and-abandoned.
+VENUES DISCOVERED (3): hn.algolia.com items API (full trees, keyless — RICH, now standing EN
+tooling); Forex-TSD Wayback attachment corpus (RICH, finite, era); forum.wilmott.com Wayback
+captures (untested — next run). VIDEO: 0 video-shaped artifacts hit, 0 fetched, 0 locked.
+STRATEGY-FAMILY LINE: retail DSP/adaptive-filter family formally entered via OP-096c (a
+previously unhunted family in the coverage sense — entered as OPERATOR vocabulary, no tradeable
+card minted, no trial burned). MANDATE NOTE: crypto-era backlog verifications (4+1) recorded
+above as awaiting owner re-grades — NOT worked, per 08-18 universe order.
+NEXT UN-EXHAUSTED GROUND, in order (L1.35):
+1. Forex-TSD thread 198 pp.3-29 + `broker-talks` subforum (era broker-mechanics lore to
+   cross-check the HN insider account from the retail side of the SAME era).
+2. Forex-TSD CDX sweep of remaining PUBLIC subforum attachment namespaces (graduated systems:
+   catfx50, phoenix, dolly — datable .mq4 corpus + posted statements).
+3. Wilmott via Wayback captures (curl route; live board stays WALLED ×4).
+4. Steve Hopwood forums + Donna Forex (dead EN EA-era boards — same CDX operator, §13 path rule
+   first).
+5. Quantopian forum archive re-entry under MT5 lens (equities/futures mechanism threads →
+   share-CFD/index translation).
+6. NP 4851 residual (carried; unchanged).
