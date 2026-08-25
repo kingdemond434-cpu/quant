@@ -3553,7 +3553,7 @@ operator set, daily.
   bars, Fridays→23:00, NFP/CPI spike at labeled hour 15 on USDJPY AND EURUSD. Every session-logic
   or macro-calendar join on these files is 2–3h wrong until repointed.
 
-### 40. COT position-CHANGE liquidity premium on MT5 legs (KRT channel — the construction the 41y screen never charged) — grade: **EV-QUEUED 0.0032 (bar 0.002), literature replication-checked; prereg + Stage-A owed** [§33: carded -> EV gate artifact in this entry; screen owed next cycle]
+### 40. COT position-CHANGE liquidity premium on MT5 legs (KRT channel — the construction the 41y screen never charged) — grade: **SCREEN-KILLED 2026-08-25 (preregistered bar): pooled Δ1w NW t=−0.41 (n=12,356, 10 assets, 26 trials), recent-24m sign POSITIVE (t=+0.24), XS IC −0.011 (t=−0.92)** [§33: killed -> data/cot_change_screen.json]
 - **Provenance (litminer run 10, 2026-08-25):** Kang–Rouwenhorst–Tang *JF 2020* (197 citers) —
   TWO premiums: hedging-pressure LEVEL earns an insurance premium at long horizons; position
   CHANGES earn a LIQUIDITY-PROVISION premium at ~weekly horizon (commercials smooth
