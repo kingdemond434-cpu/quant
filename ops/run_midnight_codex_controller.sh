@@ -186,6 +186,17 @@ kill "$HEARTBEAT_PID" >/dev/null 2>&1 || true
 wait "$HEARTBEAT_PID" 2>/dev/null || true
 HEARTBEAT_PID=""
 
+# Quota exhaustion is a NAMED external resource limit, not a controller crash: since 2026-08-22
+# every nightly ran into "You've hit your usage limit" and the unit read as failed, which polluted
+# the P0 failed-unit channel with a state nobody on-box can repair (the fix is a principal quota
+# purchase or the free-path reasoner). Classify it so real crashes keep owning the red.
+QUOTA_HIT=0
+if [ "$CODEX_RC" -ne 0 ] && grep -qi "hit your usage limit" "$LOG"; then
+    QUOTA_HIT=1
+    echo "midnight-codex: Codex usage quota exhausted (external resource); reasoning skipped this window" \
+        | tee -a "$LOG"
+fi
+
 CHECKPOINT_RC=0
 "$PY" scripts/controller_checkpoint.py checkpoint \
     --note "midnight Codex finished rc=$CODEX_RC after deterministic pipeline rc=$PIPELINE_RC" \
@@ -202,6 +213,9 @@ fi
 
 if [ "$CODEX_RC" -eq 0 ] && [ "$CHECKPOINT_RC" -eq 0 ] && [ "$TRANSFER_RC" -eq 0 ]; then
     write_status "CHECKPOINTED_FOR_CLAUDE" "Midnight controller completed, checkpointed, and atomically transferred" 0
+    FINAL_RC=0
+elif [ "$QUOTA_HIT" -eq 1 ] && [ "$CHECKPOINT_RC" -eq 0 ] && [ "$TRANSFER_RC" -eq 0 ]; then
+    write_status "QUOTA_EXHAUSTED" "Codex usage limit hit; state checkpointed and transferred; reasoning skipped -- quota purchase/free-path routing is the principal-level fix" 0
     FINAL_RC=0
 elif [ "$CHECKPOINT_RC" -eq 0 ] && [ "$TRANSFER_RC" -eq 0 ]; then
     write_status "CONTROLLER_FAILED_CHECKPOINTED" "Controller rc=$CODEX_RC; exact state checkpointed and transferred; inspect $LOG" "$CODEX_RC"
