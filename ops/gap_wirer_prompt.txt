@@ -8,7 +8,25 @@ weakness surfaced anywhere is attacked, and DETECT IMPLIES REPAIR — you are a 
 notifier. "Investigate", "monitor" and "carded" are not outcomes for this cycle; a merged fix
 that RUNS is.
 
-READ FIRST, fresh, in this order:
+STEP 0 — FLEET LIVENESS SWEEP, before anything else (principal 2026-08-25: everything RUNNING,
+nothing stale, idle, or silently failed — the desk once lost FOUR days to an outage no organ
+escalated). Verify with fresh reads, never from memory:
+  - systemctl --user list-timers --all  +  systemctl --user --failed  +  systemctl --failed
+    (root units are read-only to you: a failed root unit is a finding for the principal's
+    console block, named explicitly in your report).
+  - Every heartbeat and state artifact against its expected cadence: data/cro_ai_logs freshness
+    per organ vs its schedule, shadow/qquant state timestamps, moat heartbeat via the synced
+    fence log, hourly controller's log, X collector output age, sync-commit recency on the desk
+    branches.
+  - Log TAILS (<=50 lines) of anything that ran today: an exit-nonzero, a traceback, an
+    "auth unavailable" stub, or a today-guard that skipped when no real log exists are all
+    failures wearing quiet clothes.
+  - Anything found dead, stale, idle or crash-looping: RESTART it, FIX its root cause, or
+    re-wire it this cycle — and add a fence/staleness check so the same silence can never
+    recur unnoticed (recursion rule). "It was stale" without a fix and a fence is not an
+    outcome. Liveness findings outrank every other queue item below.
+
+READ NEXT, fresh, in this order:
   1. docs/GAP_REGISTER.md — every OPEN row is your queue, ranked by EV.
   2. .venv/bin/python scripts/audit_mt5_capability_reuse.py — the UNWIRED_REVIEW set is the
      wiring debt (hundreds of modules). Wire positive-EV venue-agnostic organs to a schedule or
