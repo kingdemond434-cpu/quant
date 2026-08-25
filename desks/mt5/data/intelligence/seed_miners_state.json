@@ -1,5 +1,5 @@
 {
-"forextsd_offset": 600,
+"forextsd_offset": 900,
 "gh_stars": {
 "Meridiansz/MT5-Popular-Charts-Dashboard": 0,
 "ZovraT/MT5-volume-profile-indicator": 2,
@@ -18,7 +18,7 @@
 "masdevid/mt5-quant": 27,
 "Vandoriz/MT5-Economic-News-Filter": 1,
 "Dream-XR/MT5-Post-Trade-Insight-Reporter": 118,
-"youcefbibo53/PropGuard-Trailing-Equity-Armor": 118,
+"youcefbibo53/PropGuard-Trailing-Equity-Armor": 119,
 "Aloni-zin/Equity-Ray-Tracer": 116,
 "Syed-Imran88/MT5-Exposure-Mesh-Analyzer": 117,
 "tharindu2028/Trade-Terminator-Closer": 115,
@@ -29,6 +29,7 @@
 "Avenmoqe/MT5-PropFirm-MultiPass-Dashboard": 0,
 "peridotfoundation/MT5-Directional-Flow-Dashboard": 115,
 "Kaltorim/MT5-Trend-Direction-Predictor": 1,
-"ZrakD/Mt5-Forex-position-size-calculator": 0
+"ZrakD/Mt5-Forex-position-size-calculator": 0,
+"VelmoPk/Smart-Money-Concepts-indicator-MT5": 2
 }
 }

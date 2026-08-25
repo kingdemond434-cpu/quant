@@ -1,0 +1,12 @@
+[
+ {
+  "source": "broker_swaps",
+  "kind": "fetch_error",
+  "title": "fusionmarkets: 404 Client Error: Not Found for url: https://fusionmarkets.com/pricing/swap-rates",
+  "url": "https://fusionmarkets.com/en/pricing/swap-rates",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-25T23:24:34+00:00",
+  "needs_selector_work": true
+ }
+]

@@ -21,8 +21,8 @@
   "expected_orthogonality": 0.8000000000000002,
   "estimated_edge_bps": 10.5,
   "source_strategies": [
-    "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY",
     "external.XAUUSD.session_range_breakout",
+    "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY",
     "external.CADJPY.session_range_breakout"
   ],
   "recombination_type": "orthogonal",

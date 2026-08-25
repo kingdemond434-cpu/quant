@@ -1,0 +1,16 @@
+[
+ {
+  "source": "share4you",
+  "kind": "fetch_error",
+  "title": "404 Client Error: Not Found for url: https://www.share4you.com/en/leaders?page=4",
+  "url": "https://www.share4you.com/en/leaders?page=4",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-25T22:41:05+00:00",
+  "region": "CIS/Asia",
+  "needs_selector_work": true,
+  "diagnosis": "HTTP_BLOCKED",
+  "fix_hint": "HTTP 404 -- try the Contabo Windows IP (this box is a datacenter range many venues refuse), a regional mirror, or the archive",
+  "http_status": 404
+ }
+]
