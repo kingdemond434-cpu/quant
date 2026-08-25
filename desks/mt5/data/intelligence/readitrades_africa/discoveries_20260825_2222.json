@@ -1,0 +1,13 @@
+[
+ {
+  "source": "readitrades_africa",
+  "kind": "fetch_error",
+  "title": "HTTPSConnectionPool(host='www.ready-trade.com', port=443): Max retries exceeded with url: / (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certif",
+  "url": "https://www.ready-trade.com/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-25T22:22:50+00:00",
+  "region": "Africa",
+  "needs_selector_work": true
+ }
+]

@@ -1,0 +1,13 @@
+[
+ {
+  "source": "roboforex_copyfx",
+  "kind": "raw_capture",
+  "title": "page 3 shape unknown",
+  "url": "https://copy.roboforex.pro/ratings/traders-all/?page=3",
+  "text": "<!DOCTYPE html><html dir=\"ltr\" lang=\"en\"  class='no-js' prefix=\"og: http://ogp.me/ns#\"><head><meta charset=\"UTF-8\" ><meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"><meta http-equiv=\"Cache-control\" content=\"no-transform\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><link rel=\"preload\" as=\"font\" type=\"font/woff2\" crossorigin href=\"/themes/rbforex/fonts/roboto/v18/KFOlCnqEu92Fr1MmSU5fChc4AMP6lbBP.woff2\"><link rel=\"preload\" as=\"font\" type=\"font/woff2\" crossorigin href=\"/themes/rbforex/fonts/roboto/v18/KFOmCnqEu92Fr1Mu7GxKKTU1Kvnz.woff2\"><link rel=\"preload\" as=\"font\" type=\"font/woff2\" crossorigin href=\"/themes/rbforex/fonts/roboto/v18/KFOlCnqEu92Fr1MmEU9fChc4AMP6lbBP.woff2\"><link rel=\"preload\" as=\"font\" type=\"font/woff2\" crossorigin href=\"/themes/rbforex/fonts/roboto/v18/KFOlCnqEu92Fr1MmWUlfChc4AMP6lbBP.woff2\"><link rel=\"preload\" as=\"font\" type=\"font/woff2\" crossorigin href=\"/themes/rbforex/fonts/roboto/v18/KFOlCnqEu92Fr1MmSU5fBBc4AMP6lQ.woff2\"><link rel=\"preload\" as=\"font\" type=\"font/woff2\" crossorigin href=\"/themes/rbforex/fonts/roboto/v18/KFOmCnqEu92Fr1Mu4mxKKTU1Kg.woff2\"><link rel=\"preload\" as=\"font\" type=\"font/woff2\" crossorigin href=\"/themes/rbforex/f",
+  "symbols": [],
+  "found_at": "2026-08-25T22:22:41+00:00",
+  "region": "CIS/global",
+  "needs_selector_work": true
+ }
+]

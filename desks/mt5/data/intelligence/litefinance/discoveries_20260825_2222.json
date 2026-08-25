@@ -1,0 +1,13 @@
+[
+ {
+  "source": "litefinance",
+  "kind": "raw_capture",
+  "title": "page 3 shape unknown",
+  "url": "https://my.litefinance.org/traders?page=3",
+  "text": "    <!DOCTYPE html>\n    <html lang=\"en\" class=\"\">\n    <head>\n        <meta charset=\"UTF-8\">\n        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n        <meta property=\"og:title\" content=\"Popular | Social Trading\">\n        <meta property=\"og:description\"\n              content=\"TRADE CHAT COPY\">\n        <meta property=\"og:image\"\n              content=\"https://my.litefinance.org/images/general/logo-mini.png\">\n        <meta name=\"apple-itunes-app\" content=\"app-id=1400177519,  app-argument=https://www.litefinance.org/mobile-privacy-policy/\">\n        <meta name=\"facebook-domain-verification\" content=\"h0aaqlsc7smcfftu1ss1jgg4y0nedx\"/>\n        <meta name=\"csrf-param\" content=\"_protected\">\n<meta name=\"csrf-token\" content=\"kSrD7spEhTSaspzVorBRD0oxVKeThnh5LCUKVKdVYVHpR6C5mzzHR-7T0ZzN3SdFDX4dl8XvLBFrckkVniElYA==\">\n        <title>Popular | Social Trading \u2014 LiteFinance</title>\n                        <link href=\"https://fonts.googleapis.com/css?family=Roboto:300,400,500,700,900&amp;display=swap\" rel=\"stylesheet\">\n<link href=\"/css/style.css?v=1787042542\" rel=\"stylesheet\">\n<script src=\"/assets/741a9bee/jquery.min.js?v=1781076723\"></script>\n<script>\n\n(function(w,d,s,l,i){",
+  "symbols": [],
+  "found_at": "2026-08-25T22:22:32+00:00",
+  "region": "CIS/SEA",
+  "needs_selector_work": true
+ }
+]

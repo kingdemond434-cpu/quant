@@ -1,10 +1,15 @@
 {
-"cursor": 1,
+"cursor": 2,
 "queries_done": {
 "zh": [
 "\u8ddf\u5355 MT4",
 "\u8ddf\u5355 MT5",
 "\u8ddf\u5355 ranking"
+],
+"ja": [
+"\u30b3\u30d4\u30fc\u30c8\u30ec\u30fc\u30c9 MT4",
+"\u30b3\u30d4\u30fc\u30c8\u30ec\u30fc\u30c9 MT5",
+"\u30b3\u30d4\u30fc\u30c8\u30ec\u30fc\u30c9 ranking"
 ]
 }
 }

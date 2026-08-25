@@ -1,0 +1,12 @@
+[
+ {
+  "source": "quantconnect",
+  "kind": "raw_capture",
+  "title": "forum shape drifted",
+  "url": "https://www.quantconnect.com/forum",
+  "text": "<!DOCTYPE html>\n<html xmlns=\"http://www.w3.org/1999/xhtml\" id=\"QuantConnect\" class=\"quantconnect\" prefix=\"og: http://ogp.me/ns#\" lang=\"en\">\n\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n    <meta property=\"fb:app_id\" content=\"147227222023467\"> \n<meta property=\"og:title\" content=\"QUANTCONNECT COMMUNITY - QuantConnect.com\"> \n<meta property=\"og:image\" content=\"https://cdn.quantconnect.com/web/i/icon_small.png\"> \n<meta property=\"og:url\" content=\"https://www.quantconnect.com/discussions/1/newest\"> \n<meta property=\"og:type\" content=\"website\"> \n<meta property=\"og:site_name\" content=\"QUANTCONNECT COMMUNITY - QuantConnect.com\"> \n<meta name=\"description\" content=\"QuantConnect provides a backtesting, parameter optimization, and live trading platform to design quantitative trading strategies.\"> \n<meta name=\"keywords\" content=\"Forum QuantConnect Algo Trading Community\"> \n<meta name=\"Content-Type\" content=\"text/html; charset=utf-8\"> \n<meta property=\"fb:admins\" content=\"551240720\"> \n    <link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/qc.ico\">\n       <link type=\"text/css\" rel=\"stylesheet\"  href=\"https://fonts.googleapis.com/css?fam",
+  "symbols": [],
+  "found_at": "2026-08-25T22:23:36+00:00",
+  "needs_selector_work": true
+ }
+]

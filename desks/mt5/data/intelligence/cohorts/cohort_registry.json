@@ -4172,5 +4172,207 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"fc30052911a2ce0e": {
+"t0": "2026-08-25T22:24:33+00:00",
+"frozen": {
+"source": "mql5_survivors",
+"kind": "track_record",
+"title": "",
+"url": "https://www.mql5.com/en/signals/2280569",
+"symbols": [
+"AUDCAD",
+"AUDUSD",
+"NADCAD",
+"NZDCAD"
+],
+"found_at": "2026-08-25T22:22:52+00:00",
+"platform": "mt5",
+"phenotypes": [
+"max_growth",
+"low_dd_high_return",
+"high_pf",
+"algo_survivor",
+"multi_fx"
+],
+"ev_score": 43.158,
+"growth_pct": 3336.6,
+"weeks": 87.0,
+"pf": 3.8,
+"max_dd_pct": null,
+"trades": 2153.0,
+"win_pct": 1727.0,
+"algo_pct": 92.0,
+"subscribers": 18.0,
+"author": "/en/users/gutiv",
+"author_other_signals": [
+{
+"sid": "2361746",
+"title": "'GridWise 8015' by Ihor Hut",
+"growth": "226%",
+"curve_points": 20,
+"curve_dd": 0.0
+},
+{
+"sid": "2385784",
+"title": "'X2 med 0594' by Ihor Hut",
+"growth": "137%",
+"curve_points": 20,
+"curve_dd": -11.0
+},
+{
+"sid": "2354616",
+"title": "'GridWise qq 4321' by Ihor Hut",
+"growth": "223%",
+"curve_points": 20,
+"curve_dd": 0.0
+}
+],
+"hour_histogram": {
+"22": 3,
+"01": 2,
+"00": 3,
+"12": 2,
+"09": 3,
+"08": 2,
+"18": 2,
+"04": 1,
+"17": 1,
+"15": 3,
+"10": 2,
+"05": 5,
+"21": 4,
+"11": 1,
+"13": 2,
+"02": 1,
+"03": 3,
+"14": 1,
+"19": 1,
+"07": 1
+}
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"4a0de2539a73a687": {
+"t0": "2026-08-25T22:24:33+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "NulveKN/Forex-Scalping-EA-MT5-MT1",
+"url": "https://github.com/NulveKN/Forex-Scalping-EA-MT5-MT1",
+"text": "MQL5 scalping EA for MT5 \u2014 executes high-frequency trades on M1/M5 charts with built-in risk management, equity protection, and momentum-based entry logic. Optimized for low-spread brokers and fast execution environments.",
+"symbols": [],
+"found_at": "2026-08-25T22:24:27+00:00",
+"topic": "mql5",
+"stars": 2,
+"star_delta": 0,
+"pushed": "2026-08-25T22:24:01Z"
+},
+"mechanism_tags": [
+"scalping",
+"trend",
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"1fc82ba8805c9a07": {
+"t0": "2026-08-25T22:24:33+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Avenmoqe/MT5-PropFirm-MultiPass-Dashboard",
+"url": "https://github.com/Avenmoqe/MT5-PropFirm-MultiPass-Dashboard",
+"text": "Parallel prop firm challenge dashboard MetaTrader for MT5 / MT4. Tracks Phase 1, Phase 2 and Funded accounts with profit-target bars, daily / max drawdown caps, min-day counters and payout countdowns across FTMO, MFF and FundedNext.",
+"symbols": [],
+"found_at": "2026-08-25T22:24:27+00:00",
+"topic": "mql5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-25T22:21:34Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"98604dc00292c8d4": {
+"t0": "2026-08-25T22:24:33+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "peridotfoundation/MT5-Directional-Flow-Dashboard",
+"url": "https://github.com/peridotfoundation/MT5-Directional-Flow-Dashboard",
+"text": "MT5 Live Trend Direction Signal Hub 2026 \u2013 Real-Time Forex & CFD Alerts",
+"symbols": [],
+"found_at": "2026-08-25T22:24:27+00:00",
+"topic": "mql5",
+"stars": 115,
+"star_delta": 0,
+"pushed": "2026-08-25T22:21:31Z"
+},
+"mechanism_tags": [
+"trend",
+"copy_trading",
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"ddd9633c6e147e2b": {
+"t0": "2026-08-25T22:24:33+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Kaltorim/MT5-Trend-Direction-Predictor",
+"url": "https://github.com/Kaltorim/MT5-Trend-Direction-Predictor",
+"text": "MT5 live BUY/SELL signal dashboard with trend direction feed, WebSocket login, asset selector, and real-time alerts for forex and CFD traders on Windows.",
+"symbols": [],
+"found_at": "2026-08-25T22:24:27+00:00",
+"topic": "mql5",
+"stars": 1,
+"star_delta": 0,
+"pushed": "2026-08-25T22:18:28Z"
+},
+"mechanism_tags": [
+"trend",
+"copy_trading",
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"89c07b851a2db477": {
+"t0": "2026-08-25T22:24:33+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "ZrakD/Mt5-Forex-position-size-calculator",
+"url": "https://github.com/ZrakD/Mt5-Forex-position-size-calculator",
+"text": "MQL5 position size calculator for MT5 \u2014 computes exact lot size based on account balance, risk percentage, and stop-loss distance. Supports dynamic scaling and drawdown control for consistent risk-per-trade across all forex pairs.",
+"symbols": [],
+"found_at": "2026-08-25T22:24:27+00:00",
+"topic": "mql5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-25T22:10:52Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }
