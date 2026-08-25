@@ -3511,3 +3511,158 @@ quant-video/column layers the frontier digs have not yet exhausted.
 ### S8. KR ground continuation — grade: pending verification
 Naver blogs/cafes covered (3 docs); extend to KR quant communities per the KR miner's existing
 operator set, daily.
+
+### 39. Session-fix / benchmark-auction window family (WMR 4pm London FX · LBMA gold-silver auctions · Tokyo 09:55 nakane) — grade: **literature CONVERGENT, mechanism EQUILIBRIUM-GRADE; desk's own gotobi screen: replicated 2018–2020, DEAD in current regime** [§33: screened -> data/gotobi_screen.json]
+- **Provenance (litminer run 10, 2026-08-25):** Osler–Turnbull *JBF 2026* "Dealer misconduct and
+  price dynamics at the fix" (WP: Brandeis 101R, 403-walled; EconPapers abstract read) — model:
+  dealers holding advance client fix orders extract the signal; predicts pre-fix accelerating
+  drift + partial retracement in ALL THREE regimes (independent/info-sharing/collusion), i.e.
+  **predictability is an equilibrium feature of benchmark execution, not a misconduct residue**.
+  Ito–Yamada *JIMF 2018* (VERBATIM abstract, RePEc): volume spike died post-2015 reform, price
+  anomalies PERSIST, passive execution "generates another predictability". Ito–Yamada NBER w22820:
+  Tokyo-fix order imbalances predictable in direction. Bessho–Sugimoto–Suzuki arXiv 2301.13204
+  (ar5iv full read): gotobi USDJPY drift onset ~03:00 JST, strategy PF 2.60 (N=167, EBS 2018–2020),
+  specificity control PF~0.5 on non-gotobi. Decay layer: month-end fix crowding −45% YoY
+  (run 9, RELAYED); JP retail EA/TradingView productization of gotobi (MQL5 product 162603 etc.).
+- **Mechanism (who is forced, why they persist):** benchmark-tracking clients (index/FX-hedged
+  funds at WMR; importers' invoice custom at nakane; ETF/OTC settlement at LBMA auctions) MUST
+  transact at the print; dealers/banks internalize the flow and execute into the window. The flow
+  is contractual/customary — it cannot stop; only its footprint migrates as execution style shifts.
+- **Desk evidence THIS RUN (`data/gotobi_screen.json`, preregistered, 3 trials):** JST
+  03:00→10:00 USDJPY on own broker tape: 2018–2020 gotobi excess **+5.33bp/d, t=2.55, p=0.006**
+  (independent replication of the paper on different data); **2021–2026 OOS +0.43bp, t=0.26 —
+  gross below the 1.02bp RT cost; current-regime NET-NEGATIVE.** Full-sample p=0.0499 knife-edge,
+  carried entirely by the dead years → NOT queued to the gauntlet; graveyarded with re-open
+  trigger (see `gotobi_nakane_drift`).
+- **Open ends, ranked:** (a) **LBMA auction path**: IBA per-round transparency reports (price,
+  bid/offer volume, participants per 45s round) publish FREE same-day; **historical bulk is
+  licence-gated (Historical Access License) — §13: bulk NOT touchable; daily-report reuse terms
+  UNRESOLVED, read ICE ToU before any collector**; PRIMARY-source alternative needing no IBA data:
+  desk's own XAUUSD M1 around 10:30/15:00 London (M1 pull needed — universe lake is H1;
+  gateway serves M1). **15:00-London ≡ 10:00-NY US-release confound is a MANDATORY control**
+  (LBMA rebuttal, run 9). (b) WMR month-end M1 screen on majors — same M1 data need. (c) EFMA2017_0580
+  "Transparency in Commodities Markets" — the ONLY direct post-reform predictability-decay study
+  found; UNREADABLE (efmaefm.org TLS broken server-side, 2 routes, 2 runs) and author identity
+  unfound after 3 searches — recovery route: EFMA 2017 Athens programme page. (d) Crain–Hoelscher–
+  Jones ACRN 2020 (open, PDF on disk /tmp lost at reboot; acrn-journals.eu/resources/jofrp09m.pdf):
+  Benford/clustering structural break at reform — manipulation-forensics grade, no exploitability
+  test. On-box extractor cannot decode its fonts (font-subsetting class — known GAP#70 limitation).
+- **CLOCK-PROVENANCE DEFECT found en route (L1.46, routed to ledger this run):** every
+  `desks/mt5/data/universe/*_H1.parquet` timestamp is broker SERVER time (NY-anchored UTC+2/+3)
+  **labeled UTC** (`gateway.py:1268` stamps `utc=True` on server epochs). Proven: zero Sunday
+  bars, Fridays→23:00, NFP/CPI spike at labeled hour 15 on USDJPY AND EURUSD. Every session-logic
+  or macro-calendar join on these files is 2–3h wrong until repointed.
+
+### 40. COT position-CHANGE liquidity premium on MT5 legs (KRT channel — the construction the 41y screen never charged) — grade: **EV-QUEUED 0.0032 (bar 0.002), literature replication-checked; prereg + Stage-A owed** [§33: carded -> EV gate artifact in this entry; screen owed next cycle]
+- **Provenance (litminer run 10, 2026-08-25):** Kang–Rouwenhorst–Tang *JF 2020* (197 citers) —
+  TWO premiums: hedging-pressure LEVEL earns an insurance premium at long horizons; position
+  CHANGES earn a LIQUIDITY-PROVISION premium at ~weekly horizon (commercials smooth
+  noncommercials' demand; change-chasers pay, faders earn). Replication state, checked this run:
+  **Maréchal *JFM 2023* 43(5):580-614 "A tale of two premiums revisited"** (1994–2017, open drafts:
+  acfr.aut.ac.nz P3.pdf + loicmarechal.dev): **liquidity premium ROBUST to risk adjustments
+  (momentum, basis, basis-momentum, OI, crowding) and to financialization; insurance premium decays
+  0.43→0.34, 1%→10% significance, "eventually vanishes"** (RELAYED from search+abstract; draft PDF
+  is open for verbatim numbers). BoE WP 2025 (liquidity/monetary-policy interaction) downloaded,
+  UNREADABLE on-box (extractor limitation, see run note). RT2012 already flagged the change-return
+  correlation weakening in recent samples — decay watch is part of the falsifier.
+- **Desk prior it does NOT re-litigate (L1.17):** `COT_SCREEN_RESULT.md` killed the LEVEL/lagged
+  construction (pooled NW t=−0.64, 41y, 6 contracts, 24 trials) — that kill is now
+  LITERATURE-CONVERGENT (Maréchal's vanishing insurance premium). This card is the OTHER channel:
+  weekly net-position CHANGES → short-horizon reversal/liquidity premium, untested on desk data.
+- **Mechanism (who pays, why they persist):** noncommercials demanding immediacy in size move
+  futures away from fundamental value; commercials accommodate and earn the reversion. Persistent
+  because speculative flow is momentum/mandate-driven and commercial capacity is balance-sheet
+  bound — neither side can stop.
+- **MT5 mapping:** COT/TFF covers the desk's XAUUSD, XAGUSD, WTI/Brent, NatGas, SP500/NAS100/US30,
+  EUR/JPY/GBP/AUD/CAD/CHF/NZD legs → breadth ~12 (N_eff lower; measure). Price legs: desk's own
+  H1 parquets (2018→) resampled weekly; deeper history via the licence-clean FRED legs already
+  used by `run_cot_screen.py`.
+- **Falsifier / prereg constants (to fix in AXIS_PREREGISTRATIONS before any computation):**
+  release-aligned (Friday 15:30 ET publication of Tuesday snapshot — NO use of Tuesday info before
+  release; the desk's PIT discipline), Δnet_noncommercial (1w and 4w) → next-week return, sign
+  NEGATIVE (reversal), per-instrument time-series AND small-cross-section forms, trials counted
+  per cell. KILL: pooled effect ≥ 0 or indistinguishable at the standard bar.
+- **Dependencies, named:** (a) parser: REUSE `run_cot_screen.py`'s era-alias/prefix-anchored
+  parser (its self-found defects are already fixed) — do NOT reuse the `cot_btc_panel.json`
+  builder (R0613 comm==noncomm defect OPEN); (b) clock: parquet timestamps are server-time
+  mislabeled UTC (this run's L1.46 find) — weekly resampling must use the corrected clock or
+  release-day boundaries are wrong by 2–3h (usually sub-material at weekly horizon, still fix).
+- **EV gate (this run, honest inputs logged):** est_sharpe 0.35 (published, post-risk-adj),
+  breadth 12, orthogonality 0.7 vs trend/breakout book, effort 12h, tags [new_orthogonal_data]
+  (NOT crowded_known — retail COT folklore trades level-extremes, not changes) → **EV 0.0032,
+  p_survive 0.24, QUEUE**. Run-9 note for contrast: both its session-fix candidates scored 0.0001.
+
+## PRINCIPAL SEED DROP 2 — 2026-08-25 evening (miner breadth-out: maximum survivor hunting)
+
+Same rules as Drop 1: seeds never boundaries, §13 gate unchanged, screen-on-discovery, §33
+dispositions. PRIORITY ORDER IS THE MEASURED SOURCE-CLASS ROI: creator/track-record grounds
+produced 94 stage-A survivors and the desk's only exact certificate; build those miners first.
+Each card is a PYTHON-MINABLE enumeration target (token-free collector -> data/intelligence/*),
+with Claude judging afterward — the corpora-first split, by construction.
+
+### S9. MQL5 Signals leaderboard deep-miner — grade: pending verification
+Per-signal public stat pages: growth curve, drawdown, trade count, weekly history, subscriber
+count. LIVE verified track records on the desk's own platform — the single richest black-box
+reverse-engineering ground (RESEARCH §4). Extract stats + rank deltas; flag high-growth/low-dd
+signals for mechanism inference. [§33: deferred(2026-09-01) tier:1]
+
+### S10. Myfxbook public systems + community outlook — grade: pending verification
+Verified track records (equity curves, per-trade history where public) AND the community outlook
+endpoint (retail % long/short per pair) — the positioning axis, consumed WITH the standing
+B-book debias prior (retail ruin is cost extraction, never naive fade). [§33: deferred(2026-09-01) tier:1]
+
+### S11. Darwinex public DARWIN metrics — grade: pending verification
+Public API: d-scores, return series, investor capacity per DARWIN. A regulated, curated
+track-record universe with its own risk-normalization to reverse-engineer. [§33: deferred(2026-09-01) tier:1]
+
+### S12. TradingView public Pine library, systematic — grade: pending verification
+Open-source script pages (full Pine source = direct strategy corpus), per-script boost/use
+counts, author graphs, per-symbol ideas streams. hunt16's families were TradingView-style
+indicator recreations — this is that ground, mined at the source. [§33: deferred(2026-09-01) tier:1]
+
+### S13. FX Blue public profiles — grade: pending verification
+Public stats pages of live accounts (many prop-firm passers publish here). [§33: deferred(2026-09-05) tier:2]
+
+### S14. Collective2 public strategy leaderboards — grade: pending verification
+Cross-asset strategies with published records + fee/capacity data. [§33: deferred(2026-09-05) tier:2]
+
+### S15. QuantConnect forum + published algorithms — grade: pending verification
+Shared LEAN algorithms (source available), forum strategy threads, league rankings. [§33: deferred(2026-09-05) tier:2]
+
+### S16. ForexPeaceArmy performance tests + review corpus — grade: pending verification
+The EN refutation genre (RU поделка analogue): independent live performance tests of EAs and
+signal services — free graveyard material + occasional real survivors. [§33: deferred(2026-09-05) tier:2]
+
+### S17. ForexFactory Trade Explorer public profiles — grade: pending verification
+Live retail trade streams from linked accounts; plus PIT calendar REVISION capture (the
+existing calendar miner keeps only current values — vintages are the revision-aware layer
+h19-003 needs). [§33: deferred(2026-09-05) tier:2]
+
+### S18. Wayback CDX walker for dead EA forums — grade: pending verification
+Forex-TSD attachments corpus (OP-096b, already carded by the EN dig): flat CDX enumeration of
+.mq4 sources + posted MT4 statements from the pre-MQL5 era. Pure python; web.archive.org works
+via curl from this box (measured). [§33: deferred(2026-09-08) tier:2]
+
+### S19. quant.stackexchange full dump — grade: pending verification
+Stack Exchange data dumps (CC BY-SA, archive.org): every quant Q&A ever, offline-minable —
+mechanism folklore + refutations at zero marginal cost. [§33: deferred(2026-09-08) tier:3]
+
+### S20. arXiv q-fin API daily feed — grade: pending verification
+Keyless Atom API: new q-fin abstracts daily into the corpus; the monthly lit dig then judges a
+pre-built month instead of browsing. [§33: deferred(2026-09-08) tier:3]
+
+### S21. BIS central-banker speeches full-text — grade: pending verification
+bis.org aggregates ALL central banks' speeches with dates — the PIT text layer behind h19-003's
+event trading, no per-CB scrapers needed. [§33: deferred(2026-09-08) tier:2]
+
+### S22. Broker swap/spread tables across MT5 brokers — grade: pending verification
+Extend broker_physics_miner: daily swap-table snapshots across brokers = the carry structure of
+the CFD universe (swap arbitrage/carry tilt axis) + spread menus for the cost surface. [§33: deferred(2026-09-08) tier:2]
+
+### S23. GitHub topic/star-delta novelty sweeps — grade: pending verification
+Systematic (not incidental) sweeps of mql4/mql5/pine/forex-ea/backtesting topics with star/fork
+DELTAS as the novelty signal; fork-graph expansion from any repo that converts. [§33: deferred(2026-09-08) tier:3]
+
+### S24. Prop-firm public leaderboards (FTMO et al.) — grade: pending verification
+Passer/payout leaderboards + published stats where public: a survivorship-heavy but
+selection-documented track-record ground; selection-bias defense (master 23) mandatory. [§33: deferred(2026-09-08) tier:3]

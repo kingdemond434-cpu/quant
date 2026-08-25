@@ -1,177 +1,353 @@
 [
-  {
-    "id": "h18-001",
-    "geneology_id": "hunt17:d1_inside",
-    "hypothesis": "Inside-day completion pays on the SHORT side: hunt17 showed d1_inside LONG negative everywhere while SHORT had the least-bad cells (NZDCAD SHORT +0.020R, +0.136/+0.169 WF folds). Quiet compression days precede downside continuation more reliably. Lower rr 1.5 (take profits earlier, less 2R friction) and ttl 24.",
-    "family": "d1_inside",
-    "side": "SHORT",
-    "params": {
-      "rr": 1.5,
-      "ttl": 24
-    },
-    "created_at": "2026-08-17T12:30:00+00:00",
-    "status": "DONE",
-    "started_at": "2026-08-17T12:41:42.922655+00:00",
-    "finished_at": "2026-08-17T12:42:30.387905+00:00",
-    "n_survivors": 0
+ {
+  "id": "h18-001",
+  "geneology_id": "hunt17:d1_inside",
+  "hypothesis": "Inside-day completion pays on the SHORT side: hunt17 showed d1_inside LONG negative everywhere while SHORT had the least-bad cells (NZDCAD SHORT +0.020R, +0.136/+0.169 WF folds). Quiet compression days precede downside continuation more reliably. Lower rr 1.5 (take profits earlier, less 2R friction) and ttl 24.",
+  "family": "d1_inside",
+  "side": "SHORT",
+  "params": {
+   "rr": 1.5,
+   "ttl": 24
   },
-  {
-    "id": "h18-002",
-    "geneology_id": "hunt17:d1_swing_break",
-    "hypothesis": "Breakdowns beat breakouts on D1 swings: hunt17 d1_swing_break SHORT had systematically less-negative exp than LONG across symbols (USDJPY SHORT -0.451 vs LONG -0.010; AUDCAD SHORT -0.393 vs LONG -0.398). Stronger expansion filter (exp_mult 1.2) + rr 2.5 + ttl 24 to isolate the breakout-quality mechanism.",
-    "family": "d1_swing_break",
-    "side": "SHORT",
-    "params": {
-      "exp_mult": 1.2,
-      "rr": 2.5,
-      "ttl": 24
-    },
-    "created_at": "2026-08-17T12:30:00+00:00",
-    "status": "DONE",
-    "started_at": "2026-08-17T12:42:38.485100+00:00",
-    "finished_at": "2026-08-17T12:43:30.944333+00:00",
-    "n_survivors": 0
+  "created_at": "2026-08-17T12:30:00+00:00",
+  "status": "DONE",
+  "started_at": "2026-08-17T12:41:42.922655+00:00",
+  "finished_at": "2026-08-17T12:42:30.387905+00:00",
+  "n_survivors": 0
+ },
+ {
+  "id": "h18-002",
+  "geneology_id": "hunt17:d1_swing_break",
+  "hypothesis": "Breakdowns beat breakouts on D1 swings: hunt17 d1_swing_break SHORT had systematically less-negative exp than LONG across symbols (USDJPY SHORT -0.451 vs LONG -0.010; AUDCAD SHORT -0.393 vs LONG -0.398). Stronger expansion filter (exp_mult 1.2) + rr 2.5 + ttl 24 to isolate the breakout-quality mechanism.",
+  "family": "d1_swing_break",
+  "side": "SHORT",
+  "params": {
+   "exp_mult": 1.2,
+   "rr": 2.5,
+   "ttl": 24
   },
-  {
-    "id": "h18-003",
-    "geneology_id": "hunt17:h4_momentum",
-    "hypothesis": "Long-horizon momentum persistence with wider targets: hunt17 h4_momentum LONG n=55/rr2.5 was the least-negative parameterization family-wide; longer MA horizon filters whipsaw, rr 2.5 + ttl 24 captures the persistence leg that 2R/12-bar exits cut off.",
-    "family": "h4_momentum",
-    "side": "LONG",
-    "params": {
-      "n": 55,
-      "rr": 2.5,
-      "ttl": 24
-    },
-    "created_at": "2026-08-17T12:30:00+00:00",
-    "status": "DONE",
-    "started_at": "2026-08-17T12:43:39.088981+00:00",
-    "finished_at": "2026-08-17T12:44:32.802784+00:00",
-    "n_survivors": 0
+  "created_at": "2026-08-17T12:30:00+00:00",
+  "status": "DONE",
+  "started_at": "2026-08-17T12:42:38.485100+00:00",
+  "finished_at": "2026-08-17T12:43:30.944333+00:00",
+  "n_survivors": 0
+ },
+ {
+  "id": "h18-003",
+  "geneology_id": "hunt17:h4_momentum",
+  "hypothesis": "Long-horizon momentum persistence with wider targets: hunt17 h4_momentum LONG n=55/rr2.5 was the least-negative parameterization family-wide; longer MA horizon filters whipsaw, rr 2.5 + ttl 24 captures the persistence leg that 2R/12-bar exits cut off.",
+  "family": "h4_momentum",
+  "side": "LONG",
+  "params": {
+   "n": 55,
+   "rr": 2.5,
+   "ttl": 24
   },
-  {
-    "id": "h18-004",
-    "geneology_id": "newdata:macro_gold_yield",
-    "hypothesis": "Real-yield regime gates gold momentum: 2y rolling z of T10YIE (macrod desk anchors) filters H4 SMA cross entries - LONG only when breakevens are at/below average (falling real yield = gold bid), SHORT above. Mechanism: real-yield is the dominant gold driver; momentum with the regime survives the 2018-2026 rate cycle. Baseline: h4_momentum n34. yield_z=0.0, rr2.0 ttl12.",
-    "family": "macro_gold_yield",
-    "side": "LONG",
-    "params": {
-      "n": 34,
-      "rr": 2.0,
-      "ttl": 12,
-      "yield_z": 0.0
-    },
-    "created_at": "2026-08-17T21:20:53.429723+00:00",
-    "status": "DONE",
-    "started_at": "2026-08-20T15:08:50.060849+00:00",
-    "finished_at": "2026-08-20T15:09:27.438614+00:00",
-    "n_survivors": 1
+  "created_at": "2026-08-17T12:30:00+00:00",
+  "status": "DONE",
+  "started_at": "2026-08-17T12:43:39.088981+00:00",
+  "finished_at": "2026-08-17T12:44:32.802784+00:00",
+  "n_survivors": 0
+ },
+ {
+  "id": "h18-004",
+  "geneology_id": "newdata:macro_gold_yield",
+  "hypothesis": "Real-yield regime gates gold momentum: 2y rolling z of T10YIE (macrod desk anchors) filters H4 SMA cross entries - LONG only when breakevens are at/below average (falling real yield = gold bid), SHORT above. Mechanism: real-yield is the dominant gold driver; momentum with the regime survives the 2018-2026 rate cycle. Baseline: h4_momentum n34. yield_z=0.0, rr2.0 ttl12.",
+  "family": "macro_gold_yield",
+  "side": "LONG",
+  "params": {
+   "n": 34,
+   "rr": 2.0,
+   "ttl": 12,
+   "yield_z": 0.0
   },
-  {
-    "id": "h18-005",
-    "geneology_id": "newdata:macro_gold_yield",
-    "hypothesis": "Mirror of h18-004 on the SHORT side: gold momentum SHORT only when real-yield z >= +0.25 (rising breakevens = gold headwind). Wider n55 + rr2.5 to catch persistence legs in the higher-yield regime. yield_z=-0.25.",
-    "family": "macro_gold_yield",
-    "side": "SHORT",
-    "params": {
-      "n": 55,
-      "rr": 2.5,
-      "ttl": 24,
-      "yield_z": -0.25
-    },
-    "created_at": "2026-08-17T21:20:53.429723+00:00",
-    "status": "DONE",
-    "started_at": "2026-08-20T15:15:03.073591+00:00",
-    "finished_at": "2026-08-20T15:15:38.608154+00:00",
-    "n_survivors": 0
+  "created_at": "2026-08-17T21:20:53.429723+00:00",
+  "status": "DONE",
+  "started_at": "2026-08-20T15:08:50.060849+00:00",
+  "finished_at": "2026-08-20T15:09:27.438614+00:00",
+  "n_survivors": 1
+ },
+ {
+  "id": "h18-005",
+  "geneology_id": "newdata:macro_gold_yield",
+  "hypothesis": "Mirror of h18-004 on the SHORT side: gold momentum SHORT only when real-yield z >= +0.25 (rising breakevens = gold headwind). Wider n55 + rr2.5 to catch persistence legs in the higher-yield regime. yield_z=-0.25.",
+  "family": "macro_gold_yield",
+  "side": "SHORT",
+  "params": {
+   "n": 55,
+   "rr": 2.5,
+   "ttl": 24,
+   "yield_z": -0.25
   },
-  {
-    "id": "h18-006",
-    "geneology_id": "newdata:macro_gold_yield",
-    "hypothesis": "Tighter regime filter isolation: yield_z=-0.5 forces entries only in clearly-low real-yield states - tests whether the regime filter carries the edge rather than the momentum base. n34 rr2.0 ttl12.",
-    "family": "macro_gold_yield",
-    "side": "LONG",
-    "params": {
-      "n": 34,
-      "rr": 2.0,
-      "ttl": 12,
-      "yield_z": -0.5
-    },
-    "created_at": "2026-08-17T21:20:53.429723+00:00",
-    "status": "DONE",
-    "started_at": "2026-08-17T23:45:03.019765+00:00",
-    "finished_at": "2026-08-17T23:45:34.086599+00:00",
-    "n_survivors": 0
+  "created_at": "2026-08-17T21:20:53.429723+00:00",
+  "status": "DONE",
+  "started_at": "2026-08-20T15:15:03.073591+00:00",
+  "finished_at": "2026-08-20T15:15:38.608154+00:00",
+  "n_survivors": 0
+ },
+ {
+  "id": "h18-006",
+  "geneology_id": "newdata:macro_gold_yield",
+  "hypothesis": "Tighter regime filter isolation: yield_z=-0.5 forces entries only in clearly-low real-yield states - tests whether the regime filter carries the edge rather than the momentum base. n34 rr2.0 ttl12.",
+  "family": "macro_gold_yield",
+  "side": "LONG",
+  "params": {
+   "n": 34,
+   "rr": 2.0,
+   "ttl": 12,
+   "yield_z": -0.5
   },
-  {
-    "id": "h18-007",
-    "geneology_id": "hunt17:gold_dxy_shock",
-    "hypothesis": "Dollar-regime-gated gold momentum: gold and DXY are strongly inverse; momentum taken with the dollar regime. DXY 2y rolling z <= -0.5 (weak dollar) for LONG, >= +0.5 for SHORT. Anchors-desk data, fail-closed when missing.",
-    "family": "gold_dxy_shock",
-    "side": "LONG",
-    "params": {
-      "n": 34,
-      "rr": 2.0,
-      "ttl": 12,
-      "dxy_z": 0.5
-    },
-    "created_at": "2026-08-20T19:15:50.793118+00:00",
-    "status": "DONE",
-    "started_at": "2026-08-20T19:20:02.618606+00:00",
-    "finished_at": "2026-08-20T19:20:33.621117+00:00",
-    "n_survivors": 0
+  "created_at": "2026-08-17T21:20:53.429723+00:00",
+  "status": "DONE",
+  "started_at": "2026-08-17T23:45:03.019765+00:00",
+  "finished_at": "2026-08-17T23:45:34.086599+00:00",
+  "n_survivors": 0
+ },
+ {
+  "id": "h18-007",
+  "geneology_id": "hunt17:gold_dxy_shock",
+  "hypothesis": "Dollar-regime-gated gold momentum: gold and DXY are strongly inverse; momentum taken with the dollar regime. DXY 2y rolling z <= -0.5 (weak dollar) for LONG, >= +0.5 for SHORT. Anchors-desk data, fail-closed when missing.",
+  "family": "gold_dxy_shock",
+  "side": "LONG",
+  "params": {
+   "n": 34,
+   "rr": 2.0,
+   "ttl": 12,
+   "dxy_z": 0.5
   },
-  {
-    "id": "h18-008",
-    "geneology_id": "hunt17:gold_dxy_shock",
-    "hypothesis": "Same mechanism with stronger dollar gate (|z|>=0.75), slower trend filter n=55, wider target rr=2.5, longer hold ttl=24 \u2014 fewer but higher-conviction regime trades.",
-    "family": "gold_dxy_shock",
-    "side": "SHORT",
-    "params": {
-      "n": 55,
-      "rr": 2.5,
-      "ttl": 24,
-      "dxy_z": 0.75
-    },
-    "created_at": "2026-08-20T19:15:50.793118+00:00",
-    "status": "DONE",
-    "started_at": "2026-08-20T22:15:03.317998+00:00",
-    "finished_at": "2026-08-20T22:15:38.476440+00:00",
-    "n_survivors": 0
+  "created_at": "2026-08-20T19:15:50.793118+00:00",
+  "status": "DONE",
+  "started_at": "2026-08-20T19:20:02.618606+00:00",
+  "finished_at": "2026-08-20T19:20:33.621117+00:00",
+  "n_survivors": 0
+ },
+ {
+  "id": "h18-008",
+  "geneology_id": "hunt17:gold_dxy_shock",
+  "hypothesis": "Same mechanism with stronger dollar gate (|z|>=0.75), slower trend filter n=55, wider target rr=2.5, longer hold ttl=24 \u2014 fewer but higher-conviction regime trades.",
+  "family": "gold_dxy_shock",
+  "side": "SHORT",
+  "params": {
+   "n": 55,
+   "rr": 2.5,
+   "ttl": 24,
+   "dxy_z": 0.75
   },
-  {
-    "id": "h18-009",
-    "geneology_id": "hunt17:asia_meanrev",
-    "hypothesis": "Asia-session (00-08 UTC) mean reversion: H4 close at >=2 ATR from the 20-H4 SMA in the thin Asian session fades; over-extensions revert when London/NY liquidity returns. Fade both sides.",
-    "family": "asia_meanrev",
-    "side": "LONG",
-    "params": {
-      "n": 20,
-      "rr": 1.5,
-      "ttl": 6,
-      "z_thr": 2.0
-    },
-    "created_at": "2026-08-20T19:15:50.793118+00:00",
-    "status": "DONE",
-    "started_at": "2026-08-20T19:30:02.627987+00:00",
-    "finished_at": "2026-08-20T19:30:29.923102+00:00",
-    "n_survivors": 0
+  "created_at": "2026-08-20T19:15:50.793118+00:00",
+  "status": "DONE",
+  "started_at": "2026-08-20T22:15:03.317998+00:00",
+  "finished_at": "2026-08-20T22:15:38.476440+00:00",
+  "n_survivors": 0
+ },
+ {
+  "id": "h18-009",
+  "geneology_id": "hunt17:asia_meanrev",
+  "hypothesis": "Asia-session (00-08 UTC) mean reversion: H4 close at >=2 ATR from the 20-H4 SMA in the thin Asian session fades; over-extensions revert when London/NY liquidity returns. Fade both sides.",
+  "family": "asia_meanrev",
+  "side": "LONG",
+  "params": {
+   "n": 20,
+   "rr": 1.5,
+   "ttl": 6,
+   "z_thr": 2.0
   },
-  {
-    "id": "h18-010",
-    "geneology_id": "hunt17:london_ny_breakout",
-    "hypothesis": "London-NY overlap (13-17 UTC) breakout of the prior 5 sessions overlap high/low: concentrated liquidity makes range breaks persist into the NY close. Price-only, runs on every symbol.",
-    "family": "london_ny_breakout",
-    "side": "LONG",
-    "params": {
-      "win": 5,
-      "rr": 2.0,
-      "ttl": 12
-    },
-    "created_at": "2026-08-20T19:15:50.793118+00:00",
-    "status": "DONE",
-    "started_at": "2026-08-20T19:35:03.154558+00:00",
-    "finished_at": "2026-08-20T19:35:36.009858+00:00",
-    "n_survivors": 0
+  "created_at": "2026-08-20T19:15:50.793118+00:00",
+  "status": "DONE",
+  "started_at": "2026-08-20T19:30:02.627987+00:00",
+  "finished_at": "2026-08-20T19:30:29.923102+00:00",
+  "n_survivors": 0
+ },
+ {
+  "id": "h18-010",
+  "geneology_id": "hunt17:london_ny_breakout",
+  "hypothesis": "London-NY overlap (13-17 UTC) breakout of the prior 5 sessions overlap high/low: concentrated liquidity makes range breaks persist into the NY close. Price-only, runs on every symbol.",
+  "family": "london_ny_breakout",
+  "side": "LONG",
+  "params": {
+   "win": 5,
+   "rr": 2.0,
+   "ttl": 12
+  },
+  "created_at": "2026-08-20T19:15:50.793118+00:00",
+  "status": "DONE",
+  "started_at": "2026-08-20T19:35:03.154558+00:00",
+  "finished_at": "2026-08-20T19:35:36.009858+00:00",
+  "n_survivors": 0
+ },
+ {
+  "id": "ext-20260825-a360e0",
+  "geneology_id": "external:ext_github_XAUUSD_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XAUUSD session_range_breakout params={'rr': 2.5, 'wait_bars': 12} screened at n=2101 exp=0.1941R t=7.18 pf=1.462 maxDD=-24.7R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.5,
+   "wait_bars": 12
+  },
+  "created_at": "2026-08-25T20:45:15.768315+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 2101,
+   "exp_r": 0.1941,
+   "t_stat": 7.18,
+   "profit_factor": 1.462,
+   "max_dd_r": -24.7,
+   "win_rate": 0.4955,
+   "symbol": "XAUUSD"
   }
+ },
+ {
+  "id": "ext-20260825-0e7607",
+  "geneology_id": "external:ext_github_XAUUSD_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XAUUSD session_range_breakout params={'rr': 2.0, 'wait_bars': 12} screened at n=2101 exp=0.1702R t=6.75 pf=1.409 maxDD=-25.6R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.0,
+   "wait_bars": 12
+  },
+  "created_at": "2026-08-25T20:45:15.768315+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 2101,
+   "exp_r": 0.1702,
+   "t_stat": 6.75,
+   "profit_factor": 1.409,
+   "max_dd_r": -25.6,
+   "win_rate": 0.5017,
+   "symbol": "XAUUSD"
+  }
+ },
+ {
+  "id": "ext-20260825-fa2ab3",
+  "geneology_id": "external:ext_github_XAUUSD_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XAUUSD session_range_breakout params={'rr': 1.5, 'wait_bars': 12} screened at n=2101 exp=0.144R t=6.33 pf=1.359 maxDD=-24.24R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 1.5,
+   "wait_bars": 12
+  },
+  "created_at": "2026-08-25T20:45:15.768315+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 2101,
+   "exp_r": 0.144,
+   "t_stat": 6.33,
+   "profit_factor": 1.359,
+   "max_dd_r": -24.24,
+   "win_rate": 0.524,
+   "symbol": "XAUUSD"
+  }
+ },
+ {
+  "id": "ext-20260825-1c567e",
+  "geneology_id": "external:ext_central_bank_USDJPY_central_bank_reaction",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: USDJPY session_range_breakout params={'rr': 2.0, 'wait_bars': 12} screened at n=2107 exp=0.1203R t=5.68 pf=1.356 maxDD=-16.09R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.0,
+   "wait_bars": 12
+  },
+  "created_at": "2026-08-25T20:45:15.768315+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 2107,
+   "exp_r": 0.1203,
+   "t_stat": 5.68,
+   "profit_factor": 1.356,
+   "max_dd_r": -16.09,
+   "win_rate": 0.5192,
+   "symbol": "USDJPY"
+  }
+ },
+ {
+  "id": "ext-20260825-ff4ffe",
+  "geneology_id": "external:ext_central_bank_USDJPY_central_bank_reaction",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: USDJPY session_range_breakout params={'rr': 2.5, 'wait_bars': 12} screened at n=2107 exp=0.1249R t=5.65 pf=1.367 maxDD=-15.09R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.5,
+   "wait_bars": 12
+  },
+  "created_at": "2026-08-25T20:45:15.768315+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 2107,
+   "exp_r": 0.1249,
+   "t_stat": 5.65,
+   "profit_factor": 1.367,
+   "max_dd_r": -15.09,
+   "win_rate": 0.5145,
+   "symbol": "USDJPY"
+  }
+ },
+ {
+  "id": "ext-20260825-c7d00c",
+  "geneology_id": "external:ext_central_bank_USDJPY_central_bank_reaction",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: USDJPY session_range_breakout params={'rr': 1.5, 'wait_bars': 12} screened at n=2107 exp=0.1045R t=5.32 pf=1.315 maxDD=-13.99R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 1.5,
+   "wait_bars": 12
+  },
+  "created_at": "2026-08-25T20:45:15.768315+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 2107,
+   "exp_r": 0.1045,
+   "t_stat": 5.32,
+   "profit_factor": 1.315,
+   "max_dd_r": -13.99,
+   "win_rate": 0.5278,
+   "symbol": "USDJPY"
+  }
+ },
+ {
+  "id": "ext-20260825-68bcbf",
+  "geneology_id": "external:ext_central_bank_CADJPY_central_bank_reaction",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: CADJPY session_range_breakout params={'rr': 2.0, 'wait_bars': 12} screened at n=2142 exp=0.113R t=5.06 pf=1.298 maxDD=-14.38R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.0,
+   "wait_bars": 12
+  },
+  "created_at": "2026-08-25T20:45:15.768315+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 2142,
+   "exp_r": 0.113,
+   "t_stat": 5.06,
+   "profit_factor": 1.298,
+   "max_dd_r": -14.38,
+   "win_rate": 0.5149,
+   "symbol": "CADJPY"
+  }
+ },
+ {
+  "id": "ext-20260825-bad0b2",
+  "geneology_id": "external:ext_central_bank_EURJPY_central_bank_reaction",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: EURJPY session_range_breakout params={'rr': 2.0, 'wait_bars': 12} screened at n=2148 exp=0.1095R t=5.02 pf=1.298 maxDD=-14.08R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.0,
+   "wait_bars": 12
+  },
+  "created_at": "2026-08-25T20:45:15.768315+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 2148,
+   "exp_r": 0.1095,
+   "t_stat": 5.02,
+   "profit_factor": 1.298,
+   "max_dd_r": -14.08,
+   "win_rate": 0.5121,
+   "symbol": "EURJPY"
+  }
+ }
 ]
