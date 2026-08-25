@@ -41,10 +41,10 @@ from __future__ import annotations
 
 import json
 import os
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Callable, Optional
 
 import pandas as pd
 
@@ -95,27 +95,27 @@ class Bars:
         return 0 if self.df is None else len(self.df)
 
     @property
-    def freshest(self) -> Optional[pd.Timestamp]:
+    def freshest(self) -> pd.Timestamp | None:
         return None if self.df is None or self.df.empty else self.df.index.max()
 
     @property
-    def age_hours(self) -> Optional[float]:
+    def age_hours(self) -> float | None:
         f = self.freshest
         if f is None:
             return None
-        return (datetime.now(timezone.utc) - f.to_pydatetime()).total_seconds() / 3600.0
+        return (datetime.now(UTC) - f.to_pydatetime()).total_seconds() / 3600.0
 
     @property
-    def trading_age_hours(self) -> Optional[float]:
+    def trading_age_hours(self) -> float | None:
         f = self.freshest
-        return None if f is None else trading_lag_hours(f, datetime.now(timezone.utc))
+        return None if f is None else trading_lag_hours(f, datetime.now(UTC))
 
     @property
     def stale(self) -> bool:
         a = self.trading_age_hours
         return a is not None and a > STALE_AFTER_H
 
-    def covers(self, start: datetime, end: Optional[datetime] = None) -> tuple:
+    def covers(self, start: datetime, end: datetime | None = None) -> tuple:
         """Does this actually contain bars for the window? Returns (bool, why).
 
         THE CHECK THAT KEEPS A GAP FROM READING AS A QUIET MARKET. A caller that
@@ -123,7 +123,7 @@ class Bars:
         simply had no data for, and every rate the promoter computes is then
         divided by a denominator that includes them.
         """
-        end = end or datetime.now(timezone.utc)
+        end = end or datetime.now(UTC)
         if self.df is None or self.df.empty:
             return False, f"{self.source} returned no bars at all"
         lo, hi = self.df.index.min(), self.df.index.max()
@@ -156,7 +156,7 @@ def _terminal_candidates() -> list[str]:
     try:
         from mt5desk.config import terminal_path
         paths.append(str(terminal_path()))
-    except Exception:  # noqa: BLE001
+    except Exception:
         pass
     paths.extend(p for p in os.environ.get("MT5_SHADOW_TERMINALS", "").split(os.pathsep) if p)
     if os.name == "nt":
@@ -191,7 +191,7 @@ def _normalise(df: pd.DataFrame) -> pd.DataFrame:
 
 # ----------------------------------------------------------------- the sources
 
-def from_mt5(sym: str, start: datetime) -> Optional[Bars]:
+def from_mt5(sym: str, start: datetime) -> Bars | None:
     """The broker's own bars. Best evidence, least available."""
     try:
         import MetaTrader5 as mt5
@@ -208,7 +208,7 @@ def from_mt5(sym: str, start: datetime) -> Optional[Bars]:
             account = mt5.account_info()
             server = str(getattr(account, "server", "unknown"))
             rates = mt5.copy_rates_range(sym, mt5.TIMEFRAME_H1, start,
-                                         datetime.now(timezone.utc))
+                                         datetime.now(UTC))
             if rates is None or len(rates) < 100:
                 continue
             df = pd.DataFrame(rates)
@@ -216,16 +216,16 @@ def from_mt5(sym: str, start: datetime) -> Optional[Bars]:
             authority = "fusion" in server.casefold()
             return Bars(
                 _normalise(df.set_index("time")), f"MT5:{server}",
-                datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                datetime.now(UTC).isoformat(timespec="seconds"),
                 "broker-native bars; capital authority only when the server is the configured "
                 "Fusion venue", authority,
             )
-        except Exception:                            # noqa: BLE001
+        except Exception:
             continue
     return None
 
 
-def from_cache(sym: str, start: datetime) -> Optional[Bars]:
+def from_cache(sym: str, start: datetime) -> Bars | None:
     """The parquet cached by `fetch_universe`. Works offline; goes stale.
 
     Kept as a real source rather than a fallback of last resort, because a
@@ -242,7 +242,7 @@ def from_cache(sym: str, start: datetime) -> Optional[Bars]:
         return None
     try:
         df = pd.read_parquet(p)
-    except Exception:                                # noqa: BLE001
+    except Exception:
         return None
     if df.empty:
         return None
@@ -262,7 +262,7 @@ def from_cache(sym: str, start: datetime) -> Optional[Bars]:
             pass
 
     b = Bars(_normalise(df), f"CACHE:{p.name}",
-             datetime.now(timezone.utc).isoformat(timespec="seconds"),
+             datetime.now(UTC).isoformat(timespec="seconds"),
              "cached history \u2014 valid evidence up to its own end, and NO DATA "
              "after it. Re-run research/fetch_universe.py to extend.",
              promotion_authority=is_fusion)
@@ -284,7 +284,7 @@ _YF_SYMBOLS = {
 }
 
 
-def from_yfinance(sym: str, start: datetime) -> Optional[Bars]:
+def from_yfinance(sym: str, start: datetime) -> Bars | None:
     """H1 from Yahoo. No account, no key — the source that works on a VPS.
 
     NOT REGISTERED BY DEFAULT. Call `register_source(from_yfinance)` to enable
@@ -307,7 +307,7 @@ def from_yfinance(sym: str, start: datetime) -> Optional[Bars]:
     try:
         raw = yf.download(tkr, start=start.date().isoformat(), interval="1h",
                           progress=False, auto_adjust=False)
-    except Exception:                                # noqa: BLE001
+    except Exception:
         return None
     if raw is None or raw.empty:
         return None
@@ -321,7 +321,7 @@ def from_yfinance(sym: str, start: datetime) -> Optional[Bars]:
     else:
         df.index = df.index.tz_convert("UTC")
     return Bars(_normalise(df), f"HTTP:yfinance/{tkr}",
-                datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                datetime.now(UTC).isoformat(timespec="seconds"),
                 "free hourly bars — a DIFFERENT series from the broker's: no "
                 "dealer spread, different session boundaries, and no guarantee "
                 "the highs and lows match what the venue printed")
@@ -333,13 +333,14 @@ def from_yfinance(sym: str, start: datetime) -> Optional[Bars]:
 EXTRA_SOURCES: list = []
 
 
-def register_source(fn: Callable[[str, datetime], Optional[Bars]]) -> None:
+def register_source(fn: Callable[[str, datetime], Bars | None]) -> None:
     """Add a source. Tried after MT5 and before the cache."""
     EXTRA_SOURCES.append(fn)
 
 
 def fetch_h1(sym: str, start: datetime,
-             prefer: Optional[str] = None) -> Optional[Bars]:
+             prefer: str | None = None,
+             prefer_promotion_authority: bool = False) -> Bars | None:
     """First source that returns usable bars, in quality order.
 
     MT5 first because it is the venue actually traded; registered sources next
@@ -353,14 +354,18 @@ def fetch_h1(sym: str, start: datetime,
             + [("CACHE", from_cache)]
     if prefer:
         chain.sort(key=lambda kv: 0 if kv[0].upper().startswith(prefer.upper()) else 1)
+    best_proxy: Bars | None = None
     for _, fn in chain:
         try:
             b = fn(sym, start)
-        except Exception:                            # noqa: BLE001
+        except Exception:
             continue
         if b is not None and b.n > 0:
-            return b
-    return None
+            if not prefer_promotion_authority or b.promotion_authority:
+                return b
+            if best_proxy is None:
+                best_proxy = b
+    return best_proxy
 
 
 # --------------------------------------------------------------- the mix
