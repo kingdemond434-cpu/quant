@@ -67,12 +67,15 @@ def test_a_conditioned_sleeve_trades_on_a_match(monkeypatch):
     assert ok and why == ""
 
 
-def test_shadow_carries_a_state_field_and_holds_the_nine_candidates():
+def test_shadow_carries_state_for_hunt12_and_macro_candidates():
     from shadow_forward import SLEEVES
     assert all(len(t) == 3 for t in SLEEVES), "SLEEVES rows must be (sym, window, state)"
     conditioned = [t for t in SLEEVES if t[2]]
-    assert len(conditioned) == 9, f"expected the 9 hunt12 candidates, found {len(conditioned)}"
+    assert len(conditioned) == 14, (
+        f"expected 9 hunt12 plus 5 macro-conditioned candidates, found {len(conditioned)}"
+    )
     assert ("CADJPY", "asia", "FAILED_BREAK") in SLEEVES
+    assert len([t for t in SLEEVES if t[2] == "MACRO_FAV"]) == 5
     # the hunt6 ten must survive unchanged
     assert ("XAUUSD", "asia", None) in SLEEVES
     assert len([t for t in SLEEVES if t[2] is None]) == 10
