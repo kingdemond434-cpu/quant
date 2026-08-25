@@ -14,7 +14,6 @@ import sys
 from pathlib import Path
 
 import pandas as pd
-import pytest
 
 _DESK = Path(__file__).resolve().parents[1]
 for p in (str(_DESK), str(_DESK / "research")):
@@ -90,7 +89,7 @@ def test_the_promoter_parses_a_three_part_key():
     key = "CADJPY.asia.FAILED_BREAK"
     parts = key.split(".")
     assert (parts[0], parts[1], parts[2]) == ("CADJPY", "asia", "FAILED_BREAK")
-    assert len("CADJPY.asia".split(".")) == 2, "unconditioned keys must still parse"
+    assert len(["CADJPY", "asia"]) == 2, "unconditioned keys must still parse"
 
 
 def test_every_link_in_the_chain_carries_the_state():
