@@ -277,9 +277,13 @@ _law_gate_fast
 #
 # `_BRAIN_ROOT` defaults to the same absolute path, so the VPS behaviour is byte-identical; what
 # changes is that the failure is now LOUD and the file is findable from a relocated checkout.
-_DOCTRINE="$(cat "$_BRAIN_ROOT/ops/principal_doctrine.txt" 2>/dev/null)"
+# CONSOLIDATION 2026-08-25: the doctrine file is now the slim order channel (sealed core + MT5
+# universe mandate); the operative constitution lives in docs/LAWS.md. Both are injected together
+# so every organ carries the sealed core AND the full compact law set -- one source, no drift.
+# (Total injection SHRANK: the old 227-line doctrine outweighed doctrine+LAWS combined.)
+_DOCTRINE="$(cat "$_BRAIN_ROOT/ops/principal_doctrine.txt" "$_BRAIN_ROOT/docs/LAWS.md" 2>/dev/null)"
 if [ -z "$_DOCTRINE" ]; then
-    printf 'brain_env: DOCTRINE EMPTY (%s) -- every organ sourcing this would run undirected\n' \
+    printf 'brain_env: DOCTRINE EMPTY (%s + docs/LAWS.md) -- every organ sourcing this would run undirected\n' \
         "$_BRAIN_ROOT/ops/principal_doctrine.txt" >&2
 fi
 _CONVERSION_CONTROL="$(cat "$_BRAIN_ROOT/ops/shared_conversion_controller.txt" 2>/dev/null)"
@@ -334,13 +338,19 @@ artifact before mining new ground. (last error: ${out:-no interpreter found})"
 # Prompt actually handed to an organ: the conversion duty FIRST, then the organ's own brief.
 # Order is the point -- the gate's instruction is to spend this run's first effort converting.
 dig_prompt() {
-    local brief prio
+    # RESEARCH-MANDATE LEAD (2026-08-25): every dig opens with the one research mandate, so no
+    # organ can run on a stale per-prompt copy of the rules -- docs/RESEARCH.md is the single
+    # source and the brief that follows is the dig's SCOPE, never its law.
+    local brief prio lead
+    lead="STANDING ORDER: read docs/RESEARCH.md before the brief below -- it is the one \
+research mandate (MT5/Fusion universe ONLY) and governs this entire dig."
     brief="$(cat "$1")"
     prio="$(mine_priority)"
     if [ -n "$prio" ]; then
-        printf '%s\n\n%s' "$prio" "$brief"
+        # §33 keeps the lead position -- dig_dry_run and the readiness probe verify it there.
+        printf '%s\n\n%s\n\n%s' "$prio" "$lead" "$brief"
     else
-        printf '%s' "$brief"
+        printf '%s\n\n%s' "$lead" "$brief"
     fi
 }
 

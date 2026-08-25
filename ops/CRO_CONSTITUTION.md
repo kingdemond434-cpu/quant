@@ -1,3 +1,8 @@
+> **SUPERSEDED 2026-08-25 (principal consolidation order).** Operative law now lives in
+> docs/LAWS.md and docs/RESEARCH.md; dispositions in docs/MANDATE_COVERAGE.md. This file is the
+> unabridged ANNEX — consult it for detail, never for standing orders; on conflict the compact
+> documents govern. The MT5 UNIVERSE MANDATE (LAWS §1) voids every crypto-universe clause herein.
+
 ---
 name: cro-daily-research-cycle
 description: Daily CRO institutional research + engineering cycle for the crypto quant platform

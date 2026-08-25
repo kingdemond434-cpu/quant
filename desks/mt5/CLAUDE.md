@@ -1,6 +1,6 @@
 # Claude instructions (binding)
 
-Read `docs/UNIVERSAL_PROMOTION_PROTOCOL.md` first — it is binding on every
+Read `docs/LAWS.md` + `docs/RESEARCH.md` first (consolidated 2026-08-25) — binding on every
 session. Then AGENTS.md for the standing wiring (supervisor, holds, queue,
 hourly cadence, universal gate as the only promotion path). Absence is never
 permission; everything fails closed.

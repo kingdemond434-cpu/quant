@@ -149,11 +149,14 @@ def fast_gate(root: Path | None = None) -> dict[str, Any]:
     except (OSError, subprocess.TimeoutExpired) as exc:
         failures.append(f"CORE-SEAL unrunnable ({exc}) -- counts as FAILED, never skipped")
 
-    # 2. THE DOCTRINE CARRIES EVERY FAMILY. The doctrine is what reaches the organ; if a family's
-    #    laws are missing from it, that organ is about to run without them (the L2.3 defect).
+    # 2. THE DOCTRINE CARRIES EVERY FAMILY. What reaches the organ is, since the 2026-08-25
+    #    consolidation, the doctrine PLUS docs/LAWS.md (ops/brain_env.sh concatenates them into
+    #    the appended system prompt), so the family check reads the same concatenation; if a
+    #    family's laws are missing from it, that organ is about to run without them (L2.3).
     try:
         from scripts.check_law_families import FAMILIES
-        doctrine = (root / "ops/principal_doctrine.txt").read_text("utf-8", errors="ignore")
+        doctrine = (root / "ops/principal_doctrine.txt").read_text("utf-8", errors="ignore") \
+            + (root / "docs/LAWS.md").read_text("utf-8", errors="ignore")
         for fam, (members, _fence, _prevents) in FAMILIES.items():
             missing = [m for m in members if m not in doctrine]
             if missing:

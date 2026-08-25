@@ -1,6 +1,6 @@
 # Agent instructions (binding)
 
-1. Read `docs/UNIVERSAL_PROMOTION_PROTOCOL.md` before doing anything.
+1. Read `docs/LAWS.md` + `docs/RESEARCH.md` before doing anything (promotion detail: the bannered `docs/UNIVERSAL_PROMOTION_PROTOCOL.md` annex).
    It is binding on every session: fail closed, absence is never permission,
    and the universal 10-gate pass is the single path to capital.
 2. Universal gate is the only survivor gate. Battery numbers are descriptive.
