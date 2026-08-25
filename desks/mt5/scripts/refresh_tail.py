@@ -2,9 +2,11 @@
 
 Fetches only recent bars per symbol, appends new CLOSED bars to the
 existing parquet, dedupes by timestamp, saves in-place.
+Also records the MT5 server name so the VPS can verify promotion_authority.
 Run on the Windows box where MetaTrader5 is available.
 """
 
+import json
 import sys
 from pathlib import Path
 
@@ -45,7 +47,15 @@ def main() -> None:
         if not mt5.initialize(path=TERMINAL):
             print(f"initialize failed: {mt5.last_error()}")
             sys.exit(1)
+
+    # Record broker server for promotion_authority on VPS
+    account = mt5.account_info()
+    server_name = getattr(account, "server", "unknown") if account else "unknown"
+    is_fusion = "fusion" in server_name.lower()
+    print(f"Broker server: {server_name} (Fusion={is_fusion})")
+
     results = []
+    broker_info = {}
     for pq in sorted(OUT.glob("*_H1.parquet")):
         sym = pq.stem.replace("_H1", "")
         try:
@@ -54,8 +64,27 @@ def main() -> None:
             status = f"error:{e}"
         results.append(f"{sym:8s} {status}")
         print(results[-1], flush=True)
+        # Record server for this symbol
+        info = mt5.symbol_info(sym)
+        if info:
+            broker_info[sym] = {
+                "server": server_name,
+                "is_fusion": is_fusion,
+                "account": getattr(account, "login", 0) if account else 0,
+            }
     ok = sum(1 for r in results if r.split(None, 1)[1].startswith("+"))
     print(f"\n{ok}/{len(results)} symbols refreshed")
+
+    # Save broker info for VPS promotion_authority
+    broker_info_path = OUT / "broker_info.json"
+    broker_info_path.write_text(json.dumps({
+        "server": server_name,
+        "is_fusion": is_fusion,
+        "account": getattr(account, "login", 0) if account else 0,
+        "symbols": broker_info,
+    }, indent=2), encoding="utf-8")
+    print(f"Broker info saved: {server_name}")
+
     mt5.shutdown()
 
 

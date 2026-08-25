@@ -232,6 +232,10 @@ def from_cache(sym: str, start: datetime) -> Optional[Bars]:
     strategy replayed on cached history up to the cache's end is valid evidence
     FOR THAT PERIOD. What it must not do is pretend to cover days it does not
     have, which is what `covers()` is for.
+
+    Reads broker_info.json (written by refresh_tail.py on the Windows box)
+    to determine promotion_authority: if the MT5 server is Fusion, the cached
+    bars carry the same evidence quality as live broker bars for promotion.
     """
     p = UNI / f"{sym}_H1.parquet"
     if not p.exists():
@@ -242,10 +246,26 @@ def from_cache(sym: str, start: datetime) -> Optional[Bars]:
         return None
     if df.empty:
         return None
+
+    # Check broker_info.json for promotion_authority
+    broker_info_path = UNI / "broker_info.json"
+    is_fusion = False
+    if broker_info_path.exists():
+        try:
+            broker_info = json.loads(broker_info_path.read_text(encoding="utf-8"))
+            is_fusion = broker_info.get("is_fusion", False)
+            # Per-symbol override if available
+            sym_info = broker_info.get("symbols", {}).get(sym, {})
+            if "is_fusion" in sym_info:
+                is_fusion = sym_info["is_fusion"]
+        except Exception:
+            pass
+
     b = Bars(_normalise(df), f"CACHE:{p.name}",
              datetime.now(timezone.utc).isoformat(timespec="seconds"),
-             "cached history — valid evidence up to its own end, and NO DATA "
-             "after it. Re-run research/fetch_universe.py to extend.")
+             "cached history \u2014 valid evidence up to its own end, and NO DATA "
+             "after it. Re-run research/fetch_universe.py to extend.",
+             promotion_authority=is_fusion)
     return b
 
 
