@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# WEEKLY GAP-FIXER/WIRER -- principal-ordered 2026-08-25. The desk's only scheduled organ whose
+# sole job is REPAIR: fix open gap-register rows, wire unwired organs (III.16), hunt and fix
+# weaknesses the detectors keep finding. Detection without scheduled repair was the measured
+# failure mode: 535 unwired modules, 4 silent dead days, money-path reverts.
+set -uo pipefail
+cd /home/quant/quant-platform
+source ops/brain_env.sh
+dig_dry_run gap-wirer ops/gap_wirer_prompt.txt && exit 0
+mkdir -p data/cro_ai_logs
+LOG="data/cro_ai_logs/gap_wirer_$(date -u +%Y%m%dT%H%M).log"
+echo "=== gap-wirer attempt $(date -u) ===" >> "$LOG"
+export BRAIN_MUTEX_LOGFILE="$LOG"
+brain_mutex gap-wirer
+brain_auth_check || { echo "auth unavailable -- next run resumes ($(date -u))" >> "$LOG"; exit 1; }
+claude --effort max --append-system-prompt "$_DOCTRINE" -p "$(dig_prompt ops/gap_wirer_prompt.txt)" --dangerously-skip-permissions >> "$LOG" 2>&1
+echo "=== gap-wirer exit $? at $(date -u) ===" >> "$LOG"
