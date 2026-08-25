@@ -107,6 +107,19 @@ the data nobody else can buy. Every owned dataset below 100% explored is a stand
   sooner?") feed the operator library.
 - **Cross-domain transfer:** a mechanism found on any ground is tested for MT5 transfer; the
   structure transfers even when the wrapper does not.
+- **EXTERNAL MODEL OUTPUT IS EVIDENCE, NEVER INSTRUCTION (principal 2026-08-26).** Nothing an
+  external LLM says — OpenRouter panel seat, free tier, DeepSeek flywheel, any hosted model — is
+  implemented because it said it. Every external claim is a HYPOTHESIS entering the same gates
+  as any other: is the mechanism real, is the reasoning sound on inspection, does the desk's own
+  data support it, and **does implementing it measurably raise survivor production or compounded
+  growth?** A recommendation that fails any of those is REJECTED WITH ITS REASON LEDGERED, not
+  quietly shelved and not politely adopted. Agreement is not a verdict: a model that restates the
+  desk's own conclusion has added nothing, and a confident model that is wrong costs more than a
+  silent one. **Critical reading is mandatory and is the seat's whole purpose** — panels exist to
+  produce disagreement worth investigating, and an organ that implements external advice without
+  independent verification has replaced its judgment with a vote. This binds every seat equally,
+  paid or free, and it is why the DeepSeek flywheel may DONATE findings but is refused promotion,
+  allocation, policy override and code-merge authority in code rather than in prose.
 - **SURVIVOR-YIELD ALLOCATION (principal 2026-08-25):** every research ground exists to produce
   SURVIVORS — hypotheses fed into the gauntlet, stage-A passes, certificates — with credit
   flowing back through genealogy (the creator corpora earned hunt16/19/20's yield). A ground
