@@ -21,6 +21,27 @@ class Costs:
     def per_oz_roundtrip(self) -> float:
         return self.spread_per_lot + self.commission_per_lot * 2.0
 
+    @classmethod
+    def from_symbol(cls, m: dict, mult: float = 2.0) -> "Costs":
+        """Canonical costs from a universe.json symbol entry.
+
+        spread_per_lot = median_spread_pts * tick_size * contract_size,
+        scaled by `mult` as a conservatism factor; commission $3.50/lot/side.
+        """
+        if not m:
+            return cls()
+        spread_usd = (
+            float(m.get("median_spread_pts", 1.0))
+            * float(m.get("tick_size", 0.0))
+            * float(m.get("contract_size", 100.0))
+        )
+        cs = float(m.get("contract_size", 100.0))
+        return cls(
+            spread_per_lot=max(spread_usd * mult, 0.05),
+            commission_per_lot=3.50,
+            contract_oz=cs,
+        )
+
 
 @dataclass
 class Trade:

@@ -33,6 +33,8 @@ foreach ($d in @("mt5desk", "research", "docs", "scripts", "reports")) {
     $src = Join-Path $base $d
     if (Test-Path $src) { Copy-Item -Path $src -Destination $bundle -Recurse -Force }
 }
+# NEVER overwrite VPS-live shadow state with this (often-stale) local copy
+if (Test-Path "$bundle\reports\shadow") { Remove-Item -Recurse -Force "$bundle\reports\shadow" }
 foreach ($f in @("AGENTS.md", "CLAUDE.md")) {
     $p = Join-Path $base $f
     if (Test-Path $p) { Copy-Item $p -Destination $bundle -Force }
