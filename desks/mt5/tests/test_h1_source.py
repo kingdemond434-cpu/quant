@@ -10,7 +10,7 @@ ever since -- losing days of bars that no later run can re-evaluate.
 from __future__ import annotations
 
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
@@ -22,7 +22,6 @@ if str(_DESK) not in sys.path:
 
 from research import h1_source as H  # noqa: E402
 
-UTC = timezone.utc
 NOW = datetime.now(UTC)
 
 
@@ -99,6 +98,26 @@ def test_a_registered_source_beats_the_cache(monkeypatch, tmp_path):
     frame().to_parquet(tmp_path / "XAUUSD_H1.parquet")
     monkeypatch.setattr(H, "UNI", tmp_path)
     assert H.fetch_h1("XAUUSD", NOW - timedelta(days=5)).source == "HTTP:test"
+
+
+def test_authoritative_fusion_cache_beats_registered_proxy_when_requested(
+    monkeypatch, tmp_path,
+):
+    monkeypatch.setattr(H, "from_mt5", lambda s, t: None)
+    monkeypatch.setattr(H, "EXTRA_SOURCES", [lambda s, t: bars(source="HTTP:test")])
+    frame().to_parquet(tmp_path / "XAUUSD_H1.parquet")
+    (tmp_path / "broker_info.json").write_text(
+        '{"is_fusion": true}', encoding="utf-8",
+    )
+    monkeypatch.setattr(H, "UNI", tmp_path)
+
+    chosen = H.fetch_h1(
+        "XAUUSD", NOW - timedelta(days=5), prefer_promotion_authority=True,
+    )
+
+    assert chosen is not None
+    assert chosen.source.startswith("CACHE")
+    assert chosen.promotion_authority is True
 
 
 def test_a_raising_source_does_not_take_the_chain_with_it(monkeypatch, tmp_path):

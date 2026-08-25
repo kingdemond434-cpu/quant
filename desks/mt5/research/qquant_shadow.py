@@ -87,7 +87,9 @@ def main() -> int:
         else:
             frozen_at = frozen_at.tz_convert("UTC")
         start = frozen_at.to_pydatetime() - timedelta(days=45)
-        bars = fetch_h1(str(spec["symbol"]), start, prefer="MT5")
+        bars = fetch_h1(
+            str(spec["symbol"]), start, prefer="MT5", prefer_promotion_authority=True,
+        )
         row = state.get(key, {}) if isinstance(state.get(key), dict) else {}
         row.update({
             "certificate": key,
