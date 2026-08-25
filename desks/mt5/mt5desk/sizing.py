@@ -1,142 +1,63 @@
-"""Solve the bet size that just fits a drawdown budget. One implementation.
+"""Generic risk-fraction position sizing for promoted sleeves (principal order 2026-08-25).
 
-THE BUG THIS EXISTS TO KILL
+Replaces the gold-parameterized auto_lot math on the PROMOTED path: every promoted sleeve
+risks BASE_RISK_FRAC of current account equity per trade (3% base minimum, principal-set),
+computed from the trade's OWN stop distance and the symbol's OWN tick economics as the broker
+reports them -- no per-symbol constants, no hardcoded contract math (LAWS anti-hardcode).
 
-Three research scripts each carried their own copy of a bisection like:
+Dynamic-up: a sleeve row in data/sleeves.json may carry "risk_frac" above the base when the
+promoter records the economic justification (Kelly-shrunk evidence); it is clamped to
+[BASE_RISK_FRAC, MAX_RISK_FRAC]. The canary authority ramp (0.25x/0.5x/1.0x by live trade
+count) multiplies the risk fraction, not the lot, so authority scales risk in equity terms.
 
-    eq = np.cumprod(1.0 + q * x)
-    if (1.0 - eq / np.maximum.accumulate(eq)).max() > target:
-        hi = q
-    else:
-        lo = q
+Pure module on purpose: no MetaTrader5 import, so the arithmetic is unit-testable off-box
+(promotion rule 13) and reusable by the promoter for capacity checks. The gateway passes the
+broker-truth fields in.
 
-At a large enough q some day has `1 + q*x <= 0` -- the account is not drawn
-down, it is GONE -- and from there the cumulative product goes negative, the
-drawdown expression yields NaN or inf, and `NaN > target` evaluates to False.
-So the search concludes the budget was respected and moves q UP. Every arm in
-research/push_ceiling.py returned q = 2.0000, the hard upper bound, reporting
-CAGR of +inf and -100%.
-
-It is the worst shape of bug this desk keeps finding: a catastrophic outcome
-that reads as a passing check. It did not announce itself in growth_now.py only
-because that series never reached ruin inside the search bounds -- the defect
-was there too, waiting for a sleeve with one bad enough day.
-
-WHAT CORRECT LOOKS LIKE
-
-Ruin is worse than any drawdown target, so it must compare as such. And the
-search is bounded above by the q at which ruin FIRST becomes possible, which is
-knowable in closed form from the worst single return: any q >= 1/|min(x)| can
-wipe the account out on that day alone, so there is no reason to look there.
+The armed GOLD book is untouched (hunt5 authority, q=5.5% validated 2026-08-16, human-armed);
+this governs promoted sleeves only.
 """
 from __future__ import annotations
 
-import numpy as np
-
-__all__ = ["max_drawdown", "q_for_drawdown", "ruin_q", "solve_size", "NO_LOSS_CAP"]
-
-#: Fallback ceiling when a return series has no losing day at all. Such a series
-#: has zero drawdown at every size, so a drawdown budget simply does not bind on
-#: it; this is a declared stand-in, not a computed answer.
-NO_LOSS_CAP = 10.0
+BASE_RISK_FRAC = 0.03   # principal 2026-08-25: base minimum risk per promoted trade
+MAX_RISK_FRAC = 0.10    # dynamic-up ceiling; raising it is a principal act, never autonomous
 
 
-def ruin_q(x: np.ndarray) -> float:
-    """The smallest q at which a single observed day can wipe the account out.
+def authority_ramp(live_n: int) -> float:
+    """Canary authority by forward-proven live trades: 0.25x <50, 0.5x <200, 1.0x after."""
+    return 0.25 if live_n < 50 else (0.5 if live_n < 200 else 1.0)
 
-    With fractional sizing, equity multiplies by (1 + q*x). The worst day sets
-    the limit: q >= 1/|min(x)| makes that day a total loss. Searching above this
-    is not conservative-but-fine, it is searching a region where the equity
-    curve stops being a curve.
+
+def clamp_risk_frac(value: object) -> float:
+    """A sleeve's requested risk fraction, clamped to [base, max]; junk falls to base."""
+    try:
+        f = float(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return BASE_RISK_FRAC
+    return min(max(f, BASE_RISK_FRAC), MAX_RISK_FRAC)
+
+
+def risk_lot(equity: float, sl_dist_price: float, tick_value: float, tick_size: float,
+             volume_min: float, volume_step: float, volume_max: float,
+             risk_frac: float = BASE_RISK_FRAC, live_n: int = 0) -> float:
+    """Lots such that (stop distance x per-lot value) == risk_frac x ramp x equity.
+
+    tick_value/tick_size are the broker's account-currency economics for ONE lot, so the
+    FX conversion is the broker's, not ours. Returns 0.0 when the trade cannot be sized
+    honestly (degenerate inputs, or even volume_min risks more than twice the target --
+    an unsizeable trade is skipped, never silently oversized).
     """
-    x = np.asarray(x, float)
-    worst = float(np.nanmin(x)) if x.size else 0.0
-    return float("inf") if worst >= 0 else 1.0 / abs(worst)
-
-
-def max_drawdown(x: np.ndarray, q: float) -> float:
-    """Peak-to-trough fraction for returns `x` at size `q`. Ruin returns 1.0.
-
-    Returning 1.0 rather than NaN is the whole point: a caller comparing this
-    against a budget must see ruin as a violation, and NaN compares False
-    against everything.
-    """
-    x = np.asarray(x, float)
-    growth = 1.0 + q * x
-    if not np.all(np.isfinite(growth)) or np.any(growth <= 0.0):
-        return 1.0
-    # Overflow is EXPECTED while bisecting: the search deliberately probes sizes
-    # that may run the product past float range, and the isfinite check below is
-    # how that is handled. Letting the warning escape would turn a controlled
-    # probe into a crash under `-W error`.
-    with np.errstate(over="ignore", invalid="ignore"):
-        eq = np.cumprod(growth)
-        if not np.all(np.isfinite(eq)) or np.any(eq <= 0.0):
-            return 1.0
-        return float((1.0 - eq / np.maximum.accumulate(eq)).max())
-
-
-def solve_size(measure, x: np.ndarray, target: float, *, hi: float | None = None,
-               iters: int = 90) -> float:
-    """The SEARCH, factored out so a different objective does not need a different bisection.
-
-    `measure(q) -> float` is any risk statistic that rises with q; the answer is the largest q
-    whose measure stays within `target`, returned from the LOW side of the bracket so it is a
-    size that satisfied the budget rather than one that just breached it.
-
-    **WHY THIS EXISTS SEPARATELY FROM `q_for_drawdown`.** `research/admission.py` solves for the
-    MEAN OF THE FIVE DEEPEST TROUGHS rather than the single worst drawdown -- a legitimately
-    different objective, and one `q_for_drawdown` cannot express. Before this it therefore had to
-    carry its own bisection, and "one implementation" quietly became "one implementation plus the
-    ones with a different objective", which is how the shape spreads. Now the objective varies and
-    the SEARCH does not: the ruin bound and the low-side return live here, once.
-
-    The bound still comes from the data -- `ruin_q(x)`, the q at which one observed day can wipe
-    the account out -- so no caller can search past ruin regardless of what its measure returns
-    there.
-    """
-    x = np.asarray(x, float)
-    x = x[np.isfinite(x)]
-    if x.size == 0:
+    if equity <= 0 or sl_dist_price <= 0 or tick_value <= 0 or tick_size <= 0 \
+            or volume_step <= 0 or volume_min <= 0:
         return 0.0
-    cap = ruin_q(x)
-    hi = min(hi, cap) if hi is not None else cap
-    if not np.isfinite(hi):
-        hi = NO_LOSS_CAP
-    lo = 0.0
-    for _ in range(iters):
-        mid = (lo + hi) / 2
-        if measure(mid) > target:
-            hi = mid
-        else:
-            lo = mid
-    return lo
-
-
-def q_for_drawdown(x: np.ndarray, target: float, *, hi: float | None = None,
-                   iters: int = 90) -> float:
-    """Largest q whose worst drawdown stays within `target`.
-
-    Returns the LOW side of the bracket, so the answer is always a size that
-    satisfied the budget rather than one that just breached it.
-    """
-    x = np.asarray(x, float)
-    x = x[np.isfinite(x)]
-    if x.size == 0:
+    per_lot_risk = sl_dist_price * (tick_value / tick_size)
+    target = equity * clamp_risk_frac(risk_frac) * authority_ramp(live_n)
+    raw = target / per_lot_risk
+    lots = int(raw / volume_step) * volume_step          # round DOWN: never oversize
+    lots = round(lots, 8)
+    if lots < volume_min:
+        # volume_min itself may still be acceptable if it does not blow the target badly.
+        if per_lot_risk * volume_min <= 2.0 * target:
+            return float(min(volume_min, volume_max))
         return 0.0
-    cap = ruin_q(x)
-    hi = min(hi, cap) if hi is not None else cap
-    if not np.isfinite(hi):
-        # A series with no losing day has zero drawdown at every size, so a
-        # drawdown budget cannot size it -- the honest answer is "this
-        # constraint does not bind", and the caller needs a different one.
-        # Returning a huge number instead would look like an answer.
-        hi = NO_LOSS_CAP
-    lo = 0.0
-    for _ in range(iters):
-        mid = (lo + hi) / 2
-        if max_drawdown(x, mid) > target:
-            hi = mid
-        else:
-            lo = mid
-    return lo
+    return float(min(lots, volume_max))

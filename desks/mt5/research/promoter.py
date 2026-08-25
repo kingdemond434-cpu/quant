@@ -6,7 +6,7 @@ PROMOTE (fully automatic):
   - shadow verdict == PROMOTION CANDIDATE and not yet promoted:
     * XAUUSD challengers: promote only if their forward exp >= the armed gold
       sleeve's forward exp (live ledger, same window) - 0.02 margin; else KILL.
-    * JPY-cross sleeves: promote directly at PROMOTED_LOT.
+    * JPY-cross sleeves: promote directly at 3% base risk (gateway sizes at order time).
   - promoted sleeves are written to data/sleeves.json (status LIVE) and the
     gateway picks them up on the next pass (< 1 min).
 
@@ -34,7 +34,12 @@ SLEEVES_FILE = BASE / "data" / "sleeves.json"
 LEDGER = BASE / "data" / "live_ledger.jsonl"
 LOG = BASE / "logs" / "promoter.log"
 
-PROMOTED_LOT = 0.01
+# SIZING (principal 2026-08-25): promoted sleeves are sized by the gateway at order time --
+# 3% of equity base risk per trade off the bracket's own stop distance (mt5desk/sizing.py),
+# canary-ramped by live trade count. The promoter records the sleeve's risk fraction;
+# raising it above the base requires recorded economic justification and stays capped there.
+PROMOTED_RISK_FRAC = 0.03
+PROMOTED_LOT = 0.01     # legacy field kept for old readers; the gateway ignores it
 CHAMPION_MARGIN = 0.02   # challenger must beat armed forward exp by this much
 RETIRE_MIN_N = 10
 RETIRE_MAX_DD = -25.0
@@ -139,10 +144,11 @@ def main() -> None:
                 changed = True
                 continue
         sleeves.append({"name": key, "symbol": sym, "window": win,
-                        "lot": PROMOTED_LOT, "status": "LIVE",
+                        "lot": "auto_ramp", "risk_frac": PROMOTED_RISK_FRAC,
+                        "status": "LIVE",
                         "promoted_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
                         "shadow_exp": st.get("exp_r", 0.0)})
-        plog(f"AUTO-PROMOTED {key} -> LIVE at {PROMOTED_LOT} lot "
+        plog(f"AUTO-PROMOTED {key} -> LIVE at {PROMOTED_RISK_FRAC:.0%} base risk "
              f"(shadow exp={st.get('exp_r', 0.0):.3f}R n={st.get('n', 0)})")
         changed = True
 
