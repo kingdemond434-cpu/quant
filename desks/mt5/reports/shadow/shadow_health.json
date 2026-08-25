@@ -1,13 +1,18 @@
 {
-  "updated_at": "2026-08-25T23:15:07+00:00",
-  "configured_sleeves": 40,
-  "represented_sleeves": 40,
+  "updated_at": "2026-08-25T23:30:06+00:00",
+  "configured_sleeves": 41,
+  "represented_sleeves": 41,
+  "certified_sleeves_total": 41,
+  "retired_shadow_sleeves": 0,
+  "quarantined_uncertified_candidates": 0,
   "sleeves_with_forward_trades": 39,
   "evidence_blocked_sleeves": 0,
   "missing_sleeves": [],
-  "errors": {},
-  "seconds": 2.161,
+  "errors": {
+    "qquant_shadow": "PermissionError: [Errno 13] Permission denied: 'C:\\\\opt\\\\quant\\\\desks\\\\mt5\\\\reports\\\\shadow\\\\ledger_qquant.hunt16.json.AUDNZD_dav_range_filter_adx_SHORT_afternoon_NORMAL_DAY.json'"
+  },
+  "seconds": 0.661,
   "gateway_armed": true,
   "promoted_live_sleeves": [],
-  "status": "OPERATING"
+  "status": "FAILED"
 }
