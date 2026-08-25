@@ -57,6 +57,15 @@ advantage); **cold exploration** (master 40 — ground with no prior, entered de
 decay, L1.19). No permanent hypothesis exhaustion (master 39): "exhausted" requires per-axis
 evidence (L1.51) and is always reversible.
 
+**STANDING INTELLIGENCE FAMILIES (principal 2026-08-25) — hypothesis families with a full
+promotion path, never side-projects:** (a) **trade management** — partial-takes, break-even
+locks, volatility trails, banking intelligence — tested as EXIT VARIANTS paired against their
+parent cells (queue h19-001/002); (b) **news/event trading** — PIT macro-calendar structure
+before retail reacts (h19-003); (c) **cross-asset lead-lag conditioning** — reference-market
+state driving MT5 legs, institution-style, maximised as a standing direction where **the only
+accepted bottleneck is time, never scope** (h19-004). Each enters the same 10-gate → shadow →
+promoter door as everything else; none is a switch, all are testable claims.
+
 **Macro and data ARE edge, not background:** central-bank operations and calendars, rates and
 curve dynamics, COT/TFF positioning, futures curves and basis, FRED/ALFRED vintages
 (point-in-time, revision-aware), flows, seasonality, cross-asset transmission and macro-regime
