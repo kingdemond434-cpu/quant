@@ -243,7 +243,10 @@ def policy_gate(root: Path | None = None) -> dict[str, Any]:
     "we could not check" and "it checks out" are different answers.
     """
     try:
-        from libs.ops import canonical_policy
+        # The resolver is future wiring shared with the other brains; until it lands this
+        # import fails and the except below REFUSES the cycle -- which is the designed
+        # behavior, not an oversight. mypy cannot know an absent module is intentional.
+        from libs.ops import canonical_policy  # type: ignore[attr-defined]
     except ImportError as exc:
         return {"ok": False, "verdict": "RESOLVER_UNAVAILABLE",
                 "why": f"cannot import the canonical resolver ({exc}); refusing to run "
@@ -445,7 +448,8 @@ def inheritance_check(root: Path | None = None) -> dict[str, Any]:
     convenience at a time.
     """
     base = root or _ROOT
-    readable, absent = [], []
+    readable: list[dict[str, str]] = []
+    absent: list[dict[str, str]] = []
     for rel, what in INHERITED_REGISTRIES:
         (readable if (base / rel).exists() else absent).append({"path": rel, "carries": what})
     shadows = [p for p in _FORBIDDEN_PARALLELS if (base / p).exists()]
@@ -626,7 +630,11 @@ def _propose_capability_walk(*, name: str, source: str, mechanism: str,
     does not persist, and record() needs a benchmark verdict this text response cannot produce,
     so the PROPOSAL itself is what gets written here for a later controlled test to complete.
     """
-    from libs.research.capability_challenger import EVIDENCE_GRADES, Capability, register
+    from libs.research.capability_challenger import (  # type: ignore[import-untyped]
+        EVIDENCE_GRADES,
+        Capability,
+        register,
+    )
 
     grade = str(evidence_grade or "").strip().upper()
     if grade not in EVIDENCE_GRADES:

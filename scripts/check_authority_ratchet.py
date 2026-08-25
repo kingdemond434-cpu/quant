@@ -73,7 +73,7 @@ def main() -> int:
             continue
         try:
             n = int(counter(data))
-        except Exception:                                                # noqa: BLE001
+        except Exception:
             continue
         counts[name] = n
         floor = int(floors["counts"].get(name, 0))

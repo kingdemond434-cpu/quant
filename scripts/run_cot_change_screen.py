@@ -28,7 +28,6 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-
 from scripts.run_cot_screen import _fred, _nw_t
 
 _ROOT = Path(__file__).resolve().parent.parent
