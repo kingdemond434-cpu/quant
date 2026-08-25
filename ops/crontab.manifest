@@ -59,7 +59,8 @@ QUANT_ROOT=/home/quant/quant-platform
 # EVIDENCE: docs/GAP_REGISTER.md:272 ("the */5 divergence sampler");
 #   docs/research/deep_sweep/20260729_data-intelligence.md:77 ("venue_divergence every 5m")
 # CONFIDENCE: documented-cadence
-*/5 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_venue_divergence_shadow.py >> data/cro_ai_logs/venue_divergence_cron.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# */5 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_venue_divergence_shadow.py >> data/cro_ai_logs/venue_divergence_cron.log 2>&1
 
 # RATCHET FENCE (constitution L1.0/L2.0): every measurable property of the desk reported as
 # value (floor, distance-to-100%), failing on any regression / unmeasured / unfloored metric.
@@ -240,7 +241,8 @@ QUANT_ROOT=/home/quant/quant-platform
 # frequency ceiling is data arrival (daily snapshot growth), and daily is that ceiling.
 # EVIDENCE: scripts/micro_factory.py (moat-local; primary box only -- the twin holds no L2)
 # CONFIDENCE: committed-script (new this cycle)
-30 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_micro_factory.lock .venv/bin/python scripts/micro_factory.py >> data/cro_ai_logs/micro_factory.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 30 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_micro_factory.lock .venv/bin/python scripts/micro_factory.py >> data/cro_ai_logs/micro_factory.log 2>&1
 
 # THIRD DIG SLOTS (principal 2026-07-31 "max frequency left"): midday opportunistic harvest.
 # flock -n makes an occupied seat a FREE instant skip, so extra slots cost nothing when the
@@ -270,7 +272,8 @@ QUANT_ROOT=/home/quant/quant-platform
 # evidence for a principal allocation decision -- it moves no funds and never auto-switches.
 # EVIDENCE: scripts/screen_collateral_allocation.py -> data/collateral_allocation.json; R0120
 # CONFIDENCE: committed-script (new this cycle)
-50 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/screen_collateral_allocation.py >> data/cro_ai_logs/collateral_allocation.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 50 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/screen_collateral_allocation.py >> data/cro_ai_logs/collateral_allocation.log 2>&1
 
 # ORDER-BOOK MICROSTRUCTURE STATE SCREEN (max_audit defect `unwired-caller`, 2026-08-05). Stage A
 # only, zero promotion authority. The script carried its own intended cron line as a COMMENT --
@@ -303,7 +306,8 @@ QUANT_ROOT=/home/quant/quant-platform
 # EVIDENCE: scripts/screen_orderbook_state.py -> data/orderbook_state_screen.json (verified
 #   status=SCREENED on a 24-file run 2026-08-05); libs/research/orderbook_state.py
 # CONFIDENCE: committed-script (cadence and budget as pre-registered by the script's own header)
-23 */6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_obstate.lock choom -n 1000 -- nice -n 19 .venv/bin/python scripts/screen_orderbook_state.py --files 240 >> data/cro_ai_logs/orderbook_state_screen.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 23 */6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_obstate.lock choom -n 1000 -- nice -n 19 .venv/bin/python scripts/screen_orderbook_state.py --files 240 >> data/cro_ai_logs/orderbook_state_screen.log 2>&1
 
 # FUNDING-SPREAD SCREEN (R0115, L1.39 zero-idle: the candidate advances its next stage
 # AUTOMATICALLY rather than waiting for a human to run it). Stage A only -- measures whether the
@@ -312,7 +316,8 @@ QUANT_ROOT=/home/quant/quant-platform
 # Daily is the right cadence: funding prints every 8h, so a day adds ~3 observations per venue.
 # EVIDENCE: scripts/screen_funding_spread.py -> data/funding_spread_screen.json; row R0115
 # CONFIDENCE: committed-script (new this cycle)
-40 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/screen_funding_spread.py >> data/cro_ai_logs/funding_spread_screen.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 40 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/screen_funding_spread.py >> data/cro_ai_logs/funding_spread_screen.log 2>&1
 
 # SETTLEMENT-CALENDAR MISMATCH SCREEN (R0121, §42 capacity lens). Stage A only, zero promotion
 # authority. Asks whether two venues' funding grids are genuinely OFFSET in phase -- the only
@@ -330,7 +335,8 @@ QUANT_ROOT=/home/quant/quant-platform
 # landing, which are the only two events that can move this verdict.
 # EVIDENCE: scripts/screen_funding_interval_mismatch.py -> reports/screen_funding_interval_mismatch.json; row R0121
 # CONFIDENCE: committed-script (new this cycle; first run SCREEN-CONDITIONAL, no clock opened)
-25 7 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_ivmismatch.lock .venv/bin/python scripts/screen_funding_interval_mismatch.py >> data/cro_ai_logs/funding_interval_mismatch.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 25 7 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_ivmismatch.lock .venv/bin/python scripts/screen_funding_interval_mismatch.py >> data/cro_ai_logs/funding_interval_mismatch.log 2>&1
 
 # CONVICTION SLEEVE (R0125, principal request 2026-07-31: "the Binance equivalent of my MT5
 # leveraged discretionary trading -- aggressive"). Claude takes AGGRESSIVE leveraged directional
@@ -346,7 +352,8 @@ QUANT_ROOT=/home/quant/quant-platform
 # bounded total exposure IS the compounding lever; bigger shots are not.
 # EVIDENCE: scripts/run_conviction_trader.py -> data/conviction_trader.json + conviction_book.jsonl
 # CONFIDENCE: committed-script (new this cycle)
-45 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_conviction.lock .venv/bin/python scripts/run_conviction_trader.py >> data/cro_ai_logs/conviction.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 45 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_conviction.lock .venv/bin/python scripts/run_conviction_trader.py >> data/cro_ai_logs/conviction.log 2>&1
 
 # CHART CONTEXT (R0134): the charts the discretionary sleeve was never shown. It was asked to name
 # swing levels it had no price structure for -- a headline reader with a leverage dial, which is
@@ -360,7 +367,8 @@ QUANT_ROOT=/home/quant/quant-platform
 # instruments are RECORDED -- a universe that shrinks to whatever answered is one nobody chose.
 # EVIDENCE: scripts/build_chart_context.py -> data/chart_context.json
 # CONFIDENCE: committed-script (new this cycle, 18-instrument universe verified live on OKX)
-*/20 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_charts.lock .venv/bin/python scripts/build_chart_context.py >> data/cro_ai_logs/chart_context.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# */20 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_charts.lock .venv/bin/python scripts/build_chart_context.py >> data/cro_ai_logs/chart_context.log 2>&1
 
 # PAPER BOOK RESOLVER (R0133): marks EVERY paper call against real bars. Both sleeves above wrote
 # books nobody read -- an unmarked book accumulates confident rows, reports no failure and reads
@@ -376,7 +384,8 @@ QUANT_ROOT=/home/quant/quant-platform
 # Prices: Binance USD-M first, OKX fallback (Binance answers 451 from this egress region).
 # EVIDENCE: scripts/resolve_paper_book.py -> data/paper_book_pnl.json + paper_book_marks.jsonl
 # CONFIDENCE: committed-script (new this cycle, OKX endpoints verified live 2026-07-31)
-20 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_paperbook.lock .venv/bin/python scripts/resolve_paper_book.py >> data/cro_ai_logs/paper_book.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 20 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_paperbook.lock .venv/bin/python scripts/resolve_paper_book.py >> data/cro_ai_logs/paper_book.log 2>&1
 
 # UNSTRUCTURED EVENT COLLECTOR (R0122b): the feed the LLM sleeve actually trades. EVERY 15 MIN,
 # and the cadence IS the edge: steady-state information latency equals the collection interval,
@@ -389,7 +398,8 @@ QUANT_ROOT=/home/quant/quant-platform
 # recover it. Failures are RECORDED, never silently absent.
 # EVIDENCE: scripts/collect_announcements.py -> data/exchange_announcements.jsonl
 # CONFIDENCE: committed-script (new this cycle, verified against live endpoints)
-*/15 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_announcements.lock .venv/bin/python scripts/collect_announcements.py >> data/cro_ai_logs/announcements.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# */15 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_announcements.lock .venv/bin/python scripts/collect_announcements.py >> data/cro_ai_logs/announcements.log 2>&1
 
 # LLM DISCRETIONARY SLEEVE (R0122, principal request 2026-07-31 "a strategy where Claude acts
 # like a human trader with a brain, 24/7"). PAPER ONLY -- places no orders, imports no connector,
@@ -400,7 +410,8 @@ QUANT_ROOT=/home/quant/quant-platform
 # story generator. PASS is a first-class answer and most windows should be one.
 # EVIDENCE: scripts/run_llm_trader.py -> data/llm_trader.json + data/llm_trader_book.jsonl
 # CONFIDENCE: committed-script (new this cycle)
-15 */4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_llm_trader.lock .venv/bin/python scripts/run_llm_trader.py >> data/cro_ai_logs/llm_trader.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 15 */4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_llm_trader.lock .venv/bin/python scripts/run_llm_trader.py >> data/cro_ai_logs/llm_trader.log 2>&1
 
 # DECLINE GRADER (R0123). The line above promises the model that "a PASS is also scored ... marked
 # against the same horizon as a real call"; record_call kept that promise only for CALLs, and the
@@ -418,7 +429,8 @@ QUANT_ROOT=/home/quant/quant-platform
 # score_forecasts at :50. Running hourly would re-read unchanged state three times in four.
 # EVIDENCE: scripts/resolve_llm_trader_book.py -> reports/llm_trader_decline_value.json; row R0123
 # CONFIDENCE: committed-script (new this cycle)
-25 */4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_declinegrade.lock .venv/bin/python scripts/resolve_llm_trader_book.py >> data/cro_ai_logs/llm_trader_declines.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 25 */4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_declinegrade.lock .venv/bin/python scripts/resolve_llm_trader_book.py >> data/cro_ai_logs/llm_trader_declines.log 2>&1
 
 # FENCE YIELD (L1.43, 2026-07-31): does the governance layer EARN its brain cycles? A fence that
 # has never caught anything is decoration, and this desk added ~15 laws in one session -- L1.26
@@ -630,12 +642,14 @@ QUANT_ROOT=/home/quant/quant-platform
 # TCA fills (the cost-DRIFT signal no single organ could compute). Recommend-only by design.
 # EVIDENCE: scripts/run_execution_intel.py (built 2026-07-29, triage #102)
 # CONFIDENCE: committed-script (new this cycle)
-*/20 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_execution_intel.py >> data/cro_ai_logs/execution_intel.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# */20 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_execution_intel.py >> data/cro_ai_logs/execution_intel.log 2>&1
 
 # REALITY GAP: backtest -> shadow -> live -> venue-truth chain comparison (constitution L2.10).
 # EVIDENCE: scripts/run_reality_gap.py (built 2026-07-29, triage #127)
 # CONFIDENCE: committed-script (new this cycle)
-23 */2 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_reality_gap.py >> data/cro_ai_logs/reality_gap.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 23 */2 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_reality_gap.py >> data/cro_ai_logs/reality_gap.log 2>&1
 
 # DAILY EXECUTION ECONOMICS: the one page that adds the desk's execution costs UP -- net APR
 # decomposed (gross funding - futures comm - SPOT comm - slippage - funding paid), churn (round
@@ -657,7 +671,8 @@ QUANT_ROOT=/home/quant/quant-platform
 # the sum run_deadman_reconciliation.py:108-110 already performs). First run on this checkout:
 # status UNMEASURED with every term NOT-READABLE-HERE (no runtime state here), exit 0.
 # CONFIDENCE: committed-script (new this cycle -- cadence chosen here, not observed on the box)
-30 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_exec_economics.lock .venv/bin/python scripts/run_execution_economics.py >> data/cro_ai_logs/execution_economics.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 30 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_exec_economics.lock .venv/bin/python scripts/run_execution_economics.py >> data/cro_ai_logs/execution_economics.log 2>&1
 
 # DATA ASSET REGISTRY + LABEL FACTORY (EXECUTION_QUEUE.md RANK 4 + RANK 6). Both also run inside
 # run_intelligence_cycle (every 6h) because the organs there navigate by the registry; these daily
@@ -668,7 +683,8 @@ QUANT_ROOT=/home/quant/quant-platform
 #   scripts/build_labels.py + libs/research/label_factory.py (built 2026-07-30)
 # CONFIDENCE: committed-script (new this cycle -- cadence chosen here, not observed on the box)
 27 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_data_registry.lock .venv/bin/python scripts/build_data_registry.py --deep >> data/cro_ai_logs/data_registry.log 2>&1
-52 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_labels.lock .venv/bin/python scripts/build_labels.py >> data/cro_ai_logs/label_factory.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 52 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_labels.lock .venv/bin/python scripts/build_labels.py >> data/cro_ai_logs/label_factory.log 2>&1
 
 # KNOWLEDGE ENGINE (2026-08-05). The one consumer of the registry's SPAN column that nothing ever
 # ran: scripts/knowledge_engine.py:47 names data/data_assets.json and annotates itself "--deep,
@@ -758,7 +774,8 @@ QUANT_ROOT=/home/quant/quant-platform
 #   ensure_recorder.py + pgrep-respawn every 10 min");
 #   docs/research/deep_sweep/20260729_data-intelligence.md:77-78 ("recorders re-spawned every 10m")
 # CONFIDENCE: documented-cadence
-*/10 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/ensure_recorder.py >> data/cro_ai_logs/ensure_recorder_cron.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# */10 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/ensure_recorder.py >> data/cro_ai_logs/ensure_recorder_cron.log 2>&1
 
 # spot + bybit recorder pgrep-guards: bracket trick mandatory -- self-matching monitors reported
 # a dead recorder as RUNNING twice (docs/playbooks/ops_checklist.md:12).
@@ -766,8 +783,10 @@ QUANT_ROOT=/home/quant/quant-platform
 #   (mirrors run_recorder_bybit.py)"); docs/institutional_knowledge.md:456 ("cron pgrep
 #   self-heal" for all three moat recorders); docs/GAP_REGISTER.md:272 ("spot recorder")
 # CONFIDENCE: documented-cadence
-*/10 * * * * cd "$QUANT_ROOT" && { pgrep -f "run_recorder_spo[t]" >/dev/null || setsid nohup .venv/bin/python scripts/run_recorder_spot.py >> data/recorder_spot.log 2>&1 ; }
-*/10 * * * * cd "$QUANT_ROOT" && { pgrep -f "run_recorder_bybi[t]" >/dev/null || setsid nohup .venv/bin/python scripts/run_recorder_bybit.py >> data/recorder_bybit.log 2>&1 ; }
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# */10 * * * * cd "$QUANT_ROOT" && { pgrep -f "run_recorder_spo[t]" >/dev/null || setsid nohup .venv/bin/python scripts/run_recorder_spot.py >> data/recorder_spot.log 2>&1 ; }
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# */10 * * * * cd "$QUANT_ROOT" && { pgrep -f "run_recorder_bybi[t]" >/dev/null || setsid nohup .venv/bin/python scripts/run_recorder_bybit.py >> data/recorder_bybit.log 2>&1 ; }
 
 # --------------------------------------------------------------------------------------------
 # DETERMINISTIC COLLECTORS -- the desk is not all-LLM at the base layer
@@ -777,20 +796,24 @@ QUANT_ROOT=/home/quant/quant-platform
 
 # EVIDENCE: .../20260729_data-intelligence.md:76 ("defi_lending hourly (:17)")
 # CONFIDENCE: documented-cadence
-17 * * * * cd "$QUANT_ROOT" && flock -n /tmp/defi_lend.lock .venv/bin/python scripts/collect_defi_lending.py >> data/cro_ai_logs/defi_lending_cron.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 17 * * * * cd "$QUANT_ROOT" && flock -n /tmp/defi_lend.lock .venv/bin/python scripts/collect_defi_lending.py >> data/cro_ai_logs/defi_lending_cron.log 2>&1
 
 # EVIDENCE: .../20260729_data-intelligence.md:76 ("oi_ls_live hourly (:32)")
 # CONFIDENCE: documented-cadence
-32 * * * * cd "$QUANT_ROOT" && flock -n /tmp/oils.lock .venv/bin/python scripts/collect_oi_ls_live.py >> data/cro_ai_logs/oi_ls_live_cron.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 32 * * * * cd "$QUANT_ROOT" && flock -n /tmp/oils.lock .venv/bin/python scripts/collect_oi_ls_live.py >> data/cro_ai_logs/oi_ls_live_cron.log 2>&1
 
 # EVIDENCE: .../20260729_data-intelligence.md:76 ("coinmetrics daily 03:47")
 # CONFIDENCE: documented-cadence
-47 3 * * * cd "$QUANT_ROOT" && flock -n /tmp/cmflows.lock .venv/bin/python scripts/collect_coinmetrics_flows.py >> data/cro_ai_logs/coinmetrics_cron.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 47 3 * * * cd "$QUANT_ROOT" && flock -n /tmp/cmflows.lock .venv/bin/python scripts/collect_coinmetrics_flows.py >> data/cro_ai_logs/coinmetrics_cron.log 2>&1
 
 # EVIDENCE: .../20260729_data-intelligence.md:77 ("dl_oi_ls_universe daily 06:20")
 # CONFIDENCE: documented-cadence
 # LOCK ported 2026-07-31 from the legacy line (same-minute twin under a split lock = parquet race):
-20 6 * * * cd "$QUANT_ROOT" && flock -n /tmp/dl_oils.lock .venv/bin/python scripts/dl_oi_ls_universe.py >> data/cro_ai_logs/oi_ls_universe_cron.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 20 6 * * * cd "$QUANT_ROOT" && flock -n /tmp/dl_oils.lock .venv/bin/python scripts/dl_oi_ls_universe.py >> data/cro_ai_logs/oi_ls_universe_cron.log 2>&1
 
 # THE GENUINELY CROSS-SECTIONAL SCREEN THIS FEEDS -- HAD NEVER RUN.
 # PRINCIPAL ORDER 2026-08-12: after a proposed VRP cross-sectional reconstruction turned out not
@@ -817,7 +840,8 @@ QUANT_ROOT=/home/quant/quant-platform
 #   logged on this box with the archive absent, every one correctly INSUFFICIENT-DATA rather than
 #   a crash). Schema matches what finalize_axis_screens.py globs and corrects.
 # CONFIDENCE: committed-script; pure local CPU/pandas, no venue call, no model.
-35 6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_oi_ls_axes.lock .venv/bin/python scripts/screen_oi_ls_axes.py >> data/cro_ai_logs/screen_oi_ls_axes.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 35 6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_oi_ls_axes.lock .venv/bin/python scripts/screen_oi_ls_axes.py >> data/cro_ai_logs/screen_oi_ls_axes.log 2>&1
 
 # MEASURED 2026-08-13: scripts/run_stablecoin_flows.py's 40-day forward clock crossed its own
 # pre-registered threshold (41/40d) with no organ anywhere ever screening it against forward
@@ -830,7 +854,8 @@ QUANT_ROOT=/home/quant/quant-platform
 # table, so the day's archive row is always written before this screen reads it.
 # EVIDENCE: scripts/screen_stablecoin_flows.py -> reports/axis_screens/stablecoin_flows_20260813.json
 # CONFIDENCE: committed-script; pure local CPU/pandas, no venue call, no model.
-30 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_stablecoin_screen.lock .venv/bin/python scripts/screen_stablecoin_flows.py >> data/cro_ai_logs/screen_stablecoin_flows.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 30 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_stablecoin_screen.lock .venv/bin/python scripts/screen_stablecoin_flows.py >> data/cro_ai_logs/screen_stablecoin_flows.log 2>&1
 
 # MEASURED 2026-08-13: screen_cme_basis.py is DATA-BLOCKED (CME futures history is a one-time
 # paid drop, R0143 makes buying it a principal decision, not purchased). Hunted a free
@@ -842,14 +867,16 @@ QUANT_ROOT=/home/quant/quant-platform
 # observation is always on disk before this screen reads it.
 # EVIDENCE: scripts/screen_coinbase_premium.py -> reports/axis_screens/coinbase_premium_20260813.json
 # CONFIDENCE: committed-script; pure local CPU/pandas, no new venue call, no model.
-5 0 * * * cd "$QUANT_ROOT" && flock -n data/.cron_coinbase_premium.lock .venv/bin/python scripts/screen_coinbase_premium.py >> data/cro_ai_logs/screen_coinbase_premium.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 5 0 * * * cd "$QUANT_ROOT" && flock -n data/.cron_coinbase_premium.lock .venv/bin/python scripts/screen_coinbase_premium.py >> data/cro_ai_logs/screen_coinbase_premium.log 2>&1
 
 # EVIDENCE: .../20260729_data-intelligence.md:77 ("ingest_axes daily 06:40"); the log name is
 #   the live one (docs/research/deep_sweep/20260726_data-intelligence.md:153 "ingest_axes_cron.log")
 # CONFIDENCE: documented-cadence
 # ARGS+LOCK ported 2026-07-31 from the legacy line (deep-sweep DI-1: two 06:40 variants under
 # DIFFERENT locks would have raced on bronze partitions; --tranche 400 is the operator-proven cap).
-40 6 * * * cd "$QUANT_ROOT" && flock -n /tmp/ingest_axes.lock .venv/bin/python scripts/ingest_axes.py --tranche 400 >> data/cro_ai_logs/ingest_axes_cron.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 40 6 * * * cd "$QUANT_ROOT" && flock -n /tmp/ingest_axes.lock .venv/bin/python scripts/ingest_axes.py --tranche 400 >> data/cro_ai_logs/ingest_axes_cron.log 2>&1
 
 # --------------------------------------------------------------------------------------------
 # BRAIN / ORGANS -- cron plane
@@ -922,7 +949,8 @@ QUANT_ROOT=/home/quant/quant-platform
 # cron ownership; max_audit fences its product at <=30h (scripts/max_audit.py:1081), so at
 # least daily. Slot chosen here.
 # CONFIDENCE: inferred
-30 1 * * * cd "$QUANT_ROOT" && flock -n data/.cron_crypto_factory.lock /bin/bash ops/run_crypto_factory.sh
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 30 1 * * * cd "$QUANT_ROOT" && flock -n data/.cron_crypto_factory.lock /bin/bash ops/run_crypto_factory.sh
 
 # deep cold-audit organ: WEEKLY, per the recorded cadence ruling further down this file
 # ("deep sweep stays WEEKLY -- 8 max-effort auditors; 2x/wk would re-audit unchanged state at
@@ -1093,17 +1121,22 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # scripts/report_gate_audit.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 34 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/report_gate_audit.py >> data/cro_ai_logs/report_gate_audit.log 2>&1
 # scripts/run_kama_squeeze_backtest.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-32 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_kama_squeeze_backtest.py >> data/cro_ai_logs/run_kama_squeeze_backtest.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 32 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_kama_squeeze_backtest.py >> data/cro_ai_logs/run_kama_squeeze_backtest.log 2>&1
 # scripts/run_trend_gauntlet.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-40 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_trend_gauntlet.py >> data/cro_ai_logs/run_trend_gauntlet.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 40 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_trend_gauntlet.py >> data/cro_ai_logs/run_trend_gauntlet.log 2>&1
 # scripts/run_prediction_markets.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 57 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_prediction_markets.py >> data/cro_ai_logs/run_prediction_markets.log 2>&1
 # scripts/run_onchain_history_backtest.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-25 4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_onchain_history_backtest.py >> data/cro_ai_logs/run_onchain_history_backtest.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 25 4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_onchain_history_backtest.py >> data/cro_ai_logs/run_onchain_history_backtest.log 2>&1
 # scripts/run_xsec_funding.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-53 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_xsec_funding.py >> data/cro_ai_logs/run_xsec_funding.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 53 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_xsec_funding.py >> data/cro_ai_logs/run_xsec_funding.log 2>&1
 # scripts/run_carry_harvest.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-55 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_carry_harvest.py >> data/cro_ai_logs/run_carry_harvest.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 55 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_carry_harvest.py >> data/cro_ai_logs/run_carry_harvest.log 2>&1
 # scripts/compute_performance.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 34 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/compute_performance.py >> data/cro_ai_logs/compute_performance.log 2>&1
 # scripts/certify_gauntlet.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
@@ -1111,7 +1144,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # scripts/research_alpha_optimizer.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 24 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/research_alpha_optimizer.py >> data/cro_ai_logs/research_alpha_optimizer.log 2>&1
 # scripts/run_carry_crowding.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-5 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_carry_crowding.py >> data/cro_ai_logs/run_carry_crowding.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 5 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_carry_crowding.py >> data/cro_ai_logs/run_carry_crowding.log 2>&1
 
 # TWO PRE-REGISTERED FORWARD CLOCKS (oi_divergence, ls_contrarian) COULD NEVER COMPLETE A RUN.
 # MEASURED 2026-08-12, answering a direct question about why they had not moved in the ~40 days
@@ -1129,7 +1163,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 #   container specifically (many other organs share the same exchangeInfo dependency unwrapped,
 #   so this reads as a container/proxy restriction, not a code defect) -- now refuses cleanly
 #   (SystemExit, exit 1) instead of an uncaught traceback either way.
-20 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_binance_metrics.lock .venv/bin/python scripts/collect_binance_metrics.py >> data/cro_ai_logs/collect_binance_metrics.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 20 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_binance_metrics.lock .venv/bin/python scripts/collect_binance_metrics.py >> data/cro_ai_logs/collect_binance_metrics.log 2>&1
 # EVIDENCE: scripts/run_derivative_shadow.py -> web/derivative_shadow.json (days_accumulated,
 #   forward_sharpe once >=40 days, anytime-valid e-process peek readable from day 12).
 # NOTE, NAMED RATHER THAN HIDDEN: even once this clock reaches 40 days and reports VALIDATING,
@@ -1138,7 +1173,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 #   resolution.py closed for the axis-screen sleeve family, not yet extended to this one. A
 #   VALIDATING status here is a finding for a person, not yet a promotion.
 # CONFIDENCE: committed-script; pure local CPU/pandas, no venue call once the archive exists.
-25 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_derivative_shadow.lock .venv/bin/python scripts/run_derivative_shadow.py >> data/cro_ai_logs/run_derivative_shadow.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 25 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_derivative_shadow.lock .venv/bin/python scripts/run_derivative_shadow.py >> data/cro_ai_logs/run_derivative_shadow.log 2>&1
 # MEASURED 2026-08-12: this is dash.quanttt.xyz's Discovery panel (#disc) actual producer -- it
 #   had never run. Missing sys.path preamble (same fix as every organ above), and a separate bug
 #   in check_build_standard.py's scheduling detector meant this organ's own COMMENT mentions
@@ -1149,7 +1185,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 #   pending data-gated clocks with live day-counts). CONFIDENCE: committed-script; the
 #   universe-discovery call refuses cleanly (SystemExit) instead of an uncaught traceback if
 #   list_liquid_perps fails, same fix already applied to collect_binance_metrics.py above.
-52 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_discovery.lock .venv/bin/python scripts/run_discovery.py >> data/cro_ai_logs/run_discovery.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 52 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_discovery.lock .venv/bin/python scripts/run_discovery.py >> data/cro_ai_logs/run_discovery.log 2>&1
 # MEASURED 2026-08-12: run_discovery.py's DEPLOYABLE/SHADOW sleeves have no Stage-B forward clock
 #   -- oi_divergence/ls_contrarian have run_derivative_shadow.py, these have nothing. A gauntlet
 #   pass on backtest data is Stage A (zero promotion authority); this accrues real out-of-sample
@@ -1159,29 +1196,34 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 #   sleeve, peek-safe e-value, birth-date ledger at data/discovery_forward_birth.json).
 # CONFIDENCE: committed-script + 12 tests; ZERO promotion authority (measurement only, matching
 #   run_derivative_shadow.py's own standing).
-57 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_discovery_forward.lock .venv/bin/python scripts/run_discovery_forward.py >> data/cro_ai_logs/run_discovery_forward.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 57 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_discovery_forward.lock .venv/bin/python scripts/run_discovery_forward.py >> data/cro_ai_logs/run_discovery_forward.log 2>&1
 # The last link: turns discovery_forward.json's real forward days into a fraction of full Kelly
 #   (libs.risk.kelly_shrink.shrink_fraction, already principal-adopted 2026-07-12 -- no new rung
 #   table invented). REPORTS A FRACTION ONLY, never a dollar figure or a percent of book; no
 #   execution path reads its output yet. 59 5 * * * -- 2 minutes after the forward clock updates.
 # EVIDENCE: scripts/check_discovery_gate.py -> data/discovery_promotion_gate.json.
 # CONFIDENCE: committed-script + 13 tests (shared with the actuator below).
-59 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_discovery_gate.lock .venv/bin/python scripts/check_discovery_gate.py >> data/cro_ai_logs/discovery_gate.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 59 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_discovery_gate.lock .venv/bin/python scripts/check_discovery_gate.py >> data/cro_ai_logs/discovery_gate.log 2>&1
 # Transmits the gate above with run_promotion_actuator.py's exact asymmetry (immediate-down,
 #   wall-clock-24h-gated-up) per sleeve. Writes data/discovery_authority.json -- an authorized
 #   fraction only; nothing executes against it (that wiring does not exist yet, and building it
 #   is a separate, larger, still-unbuilt piece). 6:01 -- after the gate above.
 # EVIDENCE: scripts/run_discovery_actuator.py -> data/discovery_authority.json.
 # CONFIDENCE: committed-script + 13 tests (shared with the gate above).
-1 6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_discovery_actuator.lock .venv/bin/python scripts/run_discovery_actuator.py >> data/cro_ai_logs/discovery_actuator.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 1 6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_discovery_actuator.lock .venv/bin/python scripts/run_discovery_actuator.py >> data/cro_ai_logs/discovery_actuator.log 2>&1
 # scripts/carry_viability.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-47 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/carry_viability.py >> data/cro_ai_logs/carry_viability.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 47 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/carry_viability.py >> data/cro_ai_logs/carry_viability.log 2>&1
 # scripts/run_research_tick.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 44 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_research_tick.py >> data/cro_ai_logs/run_research_tick.log 2>&1
 # scripts/bundle_all.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 4 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/bundle_all.py >> data/cro_ai_logs/bundle_all.log 2>&1
 # scripts/bundle_algo.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-25 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/bundle_algo.py >> data/cro_ai_logs/bundle_algo.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 25 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/bundle_algo.py >> data/cro_ai_logs/bundle_algo.log 2>&1
 # <<< WIRING AGENT <<<
 # GATE 0 READINESS (launch day, 2026-07-30). s1_entry_met is the gate that admits real capital,
 # and NOTHING assembled its evidence dict from reality -- so "what is actually left?" required
@@ -1260,7 +1302,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: libs/execution/sub_accounts.py -> data/subaccounts.json;
 #           tests/execution/test_sub_accounts.py (13 tests, all guards exercised)
 # CONFIDENCE: committed-script (new this cycle)
-48 5 * * * cd "$QUANT_ROOT" && .venv/bin/python -c "from libs.execution.sub_accounts import probe; print(probe().detail)" >> data/cro_ai_logs/subaccounts.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 48 5 * * * cd "$QUANT_ROOT" && .venv/bin/python -c "from libs.execution.sub_accounts import probe; print(probe().detail)" >> data/cro_ai_logs/subaccounts.log 2>&1
 
 # CADENCE MAXIMISATION (principal order 2026-07-31: "maximise and exhaust cadence frequencies for
 # everything if it benefits and has ROI, ignoring costs"). Raised above: max-push, promotion
@@ -1367,7 +1410,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # so flock provided no mutual exclusion between the two -- exactly the max_audit/quota_verdict
 # class. check_scheduler_manifest now fences same-script-different-lock structurally.
 # CONFIDENCE: adopted-live (cadences observed, not re-derived).
-*/30 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_growth_audit.py >/dev/null 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# */30 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_growth_audit.py >/dev/null 2>&1
 
 # REJECT RECOVERY LOOP (wired 2026-07-31, closes rejection-shadow-unscored): rescore matured
 # rejects on their post-rejection forward window, then re-run the shadow audit that judges gate
@@ -1377,7 +1421,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # Chain: reject_forward_scores.json -> run_rejection_shadow -> web/reject_shadow.json -> max_audit.
 # EVIDENCE: _forward_score smoke-tested 10/10 on backdated cutoffs this cycle (log in ledger)
 # CONFIDENCE: committed-script
-50 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_rejection_rescore.py >> data/cro_ai_logs/reject_rescore.log 2>&1 && .venv/bin/python scripts/run_rejection_shadow.py >> data/cro_ai_logs/reject_rescore.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 50 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_rejection_rescore.py >> data/cro_ai_logs/reject_rescore.log 2>&1 && .venv/bin/python scripts/run_rejection_shadow.py >> data/cro_ai_logs/reject_rescore.log 2>&1
 
 # MECHANISM ATTRIBUTION (R0137): no sleeve may read as SURVIVED on P&L its stated mechanism cannot
 # explain. Built after a live near-miss -- the dashboard showed funding carry as a survivor on
@@ -1389,7 +1434,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # still unhedged, and will reverse. HOURLY, alongside the other live-state fences.
 # EVIDENCE: scripts/check_mechanism_attribution.py -> data/mechanism_attribution.json
 # CONFIDENCE: committed-script (new this cycle; caught the live case on its first run)
-35 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_attribution.lock .venv/bin/python scripts/check_mechanism_attribution.py --report-only >> data/cro_ai_logs/attribution.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 35 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_attribution.lock .venv/bin/python scripts/check_mechanism_attribution.py --report-only >> data/cro_ai_logs/attribution.log 2>&1
 
 # TRADE REVIEW (R0139): the discretionary desk's LEARNING LOOP, on BINANCE perps. Reads each closed
 # paper trade against what was claimed at entry -- thesis, named structure, falsifier, chart state
@@ -1404,7 +1450,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # 3x/day, offset from the resolver so it reads freshly-closed trades.
 # EVIDENCE: scripts/run_trade_review.py -> data/trading_playbook.json + data/trade_review.json
 # CONFIDENCE: committed-script (new this cycle)
-40 2,10,18 * * * cd "$QUANT_ROOT" && flock -n data/.cron_review.lock .venv/bin/python scripts/run_trade_review.py >> data/cro_ai_logs/trade_review.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 40 2,10,18 * * * cd "$QUANT_ROOT" && flock -n data/.cron_review.lock .venv/bin/python scripts/run_trade_review.py >> data/cro_ai_logs/trade_review.log 2>&1
 
 # COPYTRADING SCREEN (R0140): Stage A, ZERO promotion authority. Two hypotheses live under the
 # word "copytrading" and they get opposite verdicts. H1 FOLLOW A LEAD TRADER is NOT TESTABLE from
@@ -1420,7 +1467,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # days apart the verdict is NO-DATA, never "promising".
 # EVIDENCE: scripts/screen_copytrading.py -> data/copytrading_screen.json + copytrading_panel.jsonl
 # CONFIDENCE: committed-script (new this cycle; OKX endpoints verified live, Binance 451s here)
-50 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_copytrade.lock .venv/bin/python scripts/screen_copytrading.py >> data/cro_ai_logs/copytrading.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 50 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_copytrade.lock .venv/bin/python scripts/screen_copytrading.py >> data/cro_ai_logs/copytrading.log 2>&1
 
 # SLEEVE ALLOCATOR (R0141): risk across DISCRETIONARY sleeves by MARGINAL growth contribution.
 # Adding sleeves only multiplies growth if they are INDEPENDENT -- five sleeves all long crypto
@@ -1435,7 +1483,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # DAILY, after the resolver has marked the day's closes.
 # EVIDENCE: scripts/run_sleeve_allocator.py -> data/sleeve_allocation.json
 # CONFIDENCE: committed-script (new this cycle)
-25 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_alloc.lock .venv/bin/python scripts/run_sleeve_allocator.py >> data/cro_ai_logs/sleeve_alloc.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 25 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_alloc.lock .venv/bin/python scripts/run_sleeve_allocator.py >> data/cro_ai_logs/sleeve_alloc.log 2>&1
 
 # CALIBRATION PROBE (R0142): does this model family's stated probability mean ANYTHING? The whole
 # discretionary sizer consumes one number -- Kelly is f*=(pb-q)/b, so if p is noise the sizer is
@@ -1452,7 +1501,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # uncalibrated forecaster shrinks its own future size with nobody deciding to intervene.
 # EVIDENCE: scripts/run_calibration_probe.py -> data/calibration_probe.json + .jsonl
 # CONFIDENCE: committed-script (new this cycle)
-5 */6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_calprobe.lock .venv/bin/python scripts/run_calibration_probe.py >> data/cro_ai_logs/cal_probe.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 5 */6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_calprobe.lock .venv/bin/python scripts/run_calibration_probe.py >> data/cro_ai_logs/cal_probe.log 2>&1
 
 # ORGAN LIVENESS (R0144): is every scheduled organ actually PRODUCING? check_scheduler_manifest
 # proves the LINE is installed and check_exploration covers six named hunters; nothing covered the
@@ -1483,7 +1533,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # this organ could have. HOURLY with the other live-state fences.
 # EVIDENCE: scripts/check_promotion_gate.py -> data/promotion_gate.json
 # CONFIDENCE: committed-script (new this cycle)
-55 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_promotion.lock .venv/bin/python scripts/check_promotion_gate.py >> data/cro_ai_logs/promotion.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 55 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_promotion.lock .venv/bin/python scripts/check_promotion_gate.py >> data/cro_ai_logs/promotion.log 2>&1
 
 # DISCRETIONARY MAX (R0151): the ceiling-pusher for the discretionary desk -- L1.28c and L1.25a
 # applied to this section like every other. TARGET: a 38pct hit rate. That number is LEGAL where a
@@ -1501,7 +1552,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # 4x/day.
 # EVIDENCE: scripts/run_discretionary_max.py -> data/discretionary_max.json
 # CONFIDENCE: committed-script (new this cycle)
-15 1,7,13,19 * * * cd "$QUANT_ROOT" && flock -n data/.cron_discmax.lock .venv/bin/python scripts/run_discretionary_max.py >> data/cro_ai_logs/disc_max.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 15 1,7,13,19 * * * cd "$QUANT_ROOT" && flock -n data/.cron_discmax.lock .venv/bin/python scripts/run_discretionary_max.py >> data/cro_ai_logs/disc_max.log 2>&1
 
 # DISCRETIONARY EDGE HUNT (R0152): find the NEXT discretionary edge, not just tune the current one.
 # The section had an optimiser (R0151 pushes the existing sleeve's hit rate) and a learner (R0139
@@ -1525,7 +1577,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # edge or the first one wearing a new name. DAILY.
 # EVIDENCE: scripts/run_discretionary_hunt.py -> data/discretionary_hunt.json + discretionary_edges.json
 # CONFIDENCE: committed-script (new this cycle)
-40 23 * * * cd "$QUANT_ROOT" && flock -n data/.cron_dischunt.lock .venv/bin/python scripts/run_discretionary_hunt.py >> data/cro_ai_logs/disc_hunt.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 40 23 * * * cd "$QUANT_ROOT" && flock -n data/.cron_dischunt.lock .venv/bin/python scripts/run_discretionary_hunt.py >> data/cro_ai_logs/disc_hunt.log 2>&1
 
 # ---------------------------------------------------------------------------------------------
 # COST HUNT (R0198) -- the one growth lever that needs no proven edge.
@@ -1540,7 +1593,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # 8h freshness contract trade_cost_view declares, with margin for a missed run.
 # EVIDENCE: scripts/run_cost_hunt.py -> data/cost_hunt.json
 # CONFIDENCE: committed-script (new this cycle)
-23 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_costhunt.lock .venv/bin/python scripts/run_cost_hunt.py >> data/cro_ai_logs/cost_hunt.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 23 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_costhunt.lock .venv/bin/python scripts/run_cost_hunt.py >> data/cro_ai_logs/cost_hunt.log 2>&1
 
 # ---------------------------------------------------------------------------------------------
 # STRATEGY-FAMILY COVERAGE (R0200) -- what KINDS of edge the miners come back with.
@@ -1553,7 +1607,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # own closed trades. DAILY, ahead of the miner slots so their next dig can read it.
 # EVIDENCE: scripts/run_strategy_coverage.py -> data/strategy_coverage.json
 # CONFIDENCE: committed-script (new this cycle)
-50 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_stratcov.lock .venv/bin/python scripts/run_strategy_coverage.py --import-discretionary >> data/cro_ai_logs/strategy_coverage.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 50 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_stratcov.lock .venv/bin/python scripts/run_strategy_coverage.py --import-discretionary >> data/cro_ai_logs/strategy_coverage.log 2>&1
 
 # ---------------------------------------------------------------------------------------------
 # STRATEGY-BREADTH FENCE (R0202) -- the clock behind "never limit to just one thing".
@@ -1567,7 +1622,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # measurement it reads is never older than the producer's own cycle.
 # EVIDENCE: scripts/check_strategy_breadth.py -> data/strategy_breadth.json
 # CONFIDENCE: committed-script (new this cycle)
-35 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_stratbreadth.lock .venv/bin/python scripts/check_strategy_breadth.py >> data/cro_ai_logs/strategy_breadth.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 35 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_stratbreadth.lock .venv/bin/python scripts/check_strategy_breadth.py >> data/cro_ai_logs/strategy_breadth.log 2>&1
 
 # ---------------------------------------------------------------------------------------------
 # PRINCIPAL BENCHMARK (R0213) -- does the machine beat the human it was built to copy?
@@ -1580,7 +1636,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CADENCE: hourly, alongside the resolver that produces the marks it reads.
 # EVIDENCE: scripts/run_principal_benchmark.py -> data/principal_benchmark.json
 # CONFIDENCE: committed-script (new this cycle)
-47 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_prinbench.lock .venv/bin/python scripts/run_principal_benchmark.py >> data/cro_ai_logs/principal_benchmark.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 47 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_prinbench.lock .venv/bin/python scripts/run_principal_benchmark.py >> data/cro_ai_logs/principal_benchmark.log 2>&1
 
 # ---------------------------------------------------------------------------------------------
 # ORGAN ER (R0215) -- coma gets TREATED the same day, not counted.
@@ -1613,7 +1670,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # from this measurement again -- at that point the answer IS moving and the cadence should follow.
 # EVIDENCE: scripts/screen_carry_basis_path.py -> reports/carry_basis_path.json
 # CONFIDENCE: committed-script (new this cycle)
-20 4 1 * * cd "$QUANT_ROOT" && flock -n data/.cron_carrybasis.lock .venv/bin/python scripts/screen_carry_basis_path.py >> data/cro_ai_logs/carry_basis_path.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 20 4 1 * * cd "$QUANT_ROOT" && flock -n data/.cron_carrybasis.lock .venv/bin/python scripts/screen_carry_basis_path.py >> data/cro_ai_logs/carry_basis_path.log 2>&1
 
 # --- L1.45 EXECUTION EXCITATION (capability hunt s4, 2026-08-01) ---------------------------
 # CEILING TYPE (L1.28c): DATA-ARRIVAL bound for both lines. Their inputs are the execution tape
@@ -1630,11 +1688,13 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/run_cost_identification.py -> data/cost_surface.json; CONSTITUTION L1.45
 # CONFIDENCE: committed-script (new this cycle; first run reported UNDERPOWERED and published
 # nothing, which is the refusal path working -- 7 usable fills against MIN_FILLS_FOR_RAMP=30)
-20 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_costident.lock .venv/bin/python scripts/run_cost_identification.py --write-ramp >> data/cro_ai_logs/cost_identification.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 20 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_costident.lock .venv/bin/python scripts/run_cost_identification.py --write-ramp >> data/cro_ai_logs/cost_identification.log 2>&1
 # EVIDENCE: scripts/check_excitation.py -> data/excitation_status.json; CONSTITUTION L1.45
 # CONFIDENCE: committed-script (new this cycle; first run fired ABSORBING and named the two
 # incident-#6 symbols permanently denylisted on the desk's own since-fixed close bug)
-35 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_excitation.lock .venv/bin/python scripts/check_excitation.py --report-only >> data/cro_ai_logs/excitation.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 35 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_excitation.lock .venv/bin/python scripts/check_excitation.py --report-only >> data/cro_ai_logs/excitation.log 2>&1
 # EVIDENCE: scripts/fit_passive_impact.py -> data/passive_impact.json; CONSTITUTION L1.45 / R0267
 # CADENCE CEILING (L1.28c): DATA-ARRIVAL. The estimand is a book-level constant fitted from
 # data/moat, which accrues continuously, but a decay length does not move hour to hour and the
@@ -1643,7 +1703,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # against nearly the same tape. Raise it if the decay length is ever measured to move faster.
 # CONFIDENCE: committed-script (new this cycle; the own-fills half refuses UNIDENTIFIED by
 # construction -- every desk quote rests at the touch, so the offset has no variance to fit)
-50 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_passive_impact.lock .venv/bin/python scripts/fit_passive_impact.py --report-only >> data/cro_ai_logs/passive_impact.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 50 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_passive_impact.lock .venv/bin/python scripts/fit_passive_impact.py --report-only >> data/cro_ai_logs/passive_impact.log 2>&1
 # MOAT MICROSTRUCTURE CAMPAIGN (principal 2026-08-01). Scores order-book candidates against the
 # RECORDED tape -- the only dataset this desk owns that the crowd does not. Runs on the PRIMARY
 # only: the moat lives on one box by design (two collectors writing two lakes is divergence, not
@@ -1656,7 +1717,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # rather than a weak number that reads like a result.
 # EVIDENCE: scripts/run_moat_campaign.py -> reports/moat_campaign.json
 # CONFIDENCE: committed-script (new; first run may legitimately report BLOCKED on sample length)
-10 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_moatcamp.lock .venv/bin/python scripts/run_moat_campaign.py >> data/cro_ai_logs/moat_campaign.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 10 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_moatcamp.lock .venv/bin/python scripts/run_moat_campaign.py >> data/cro_ai_logs/moat_campaign.log 2>&1
 
 # THE MOAT SCREEN AND ITS EXPLOIT LEG -- both were UNSCHEDULED, on the one dataset the desk owns
 # that the crowd cannot buy. `run_moat_campaign` (above) and `run_moat_utilisation` were in the
@@ -1678,8 +1740,10 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # scripts/promote_moat_survivors.py -> the pre-registration ledger.
 # CONFIDENCE: measured for the resolution arithmetic (17,424 bars at Holm z=2.64, read from
 # libs/research/slot_admission); the tape's own volume is NOT readable in this checkout.
-40 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_moatscreen.lock nice -n 19 .venv/bin/python scripts/screen_moat.py >> data/cro_ai_logs/moat_screen.log 2>&1
-55 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_moatpromote.lock .venv/bin/python scripts/promote_moat_survivors.py >> data/cro_ai_logs/moat_promote.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 40 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_moatscreen.lock nice -n 19 .venv/bin/python scripts/screen_moat.py >> data/cro_ai_logs/moat_screen.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 55 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_moatpromote.lock .venv/bin/python scripts/promote_moat_survivors.py >> data/cro_ai_logs/moat_promote.log 2>&1
 # CHIEF RESEARCH OFFICER (principal 2026-08-01). The desk's SECOND BRAIN: a cross-family model
 # whose only job is to think, criticise, discover, prioritise and recommend -- never to implement.
 # Implementation agents execute what it validates; the separation is the point.
@@ -1890,7 +1954,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/run_real_campaign.py -> reports/real_campaign.json
 # CONFIDENCE: committed-script (measured 2026-08-01: 196 candidates over 2,018-2,439 OKX daily
 # bars; admitted set correlation 0.247 vs pool 0.047, 5.2x a random subset, p=0.002)
-0 6 * * 0 cd "$QUANT_ROOT" && flock -n data/.cron_realcamp.lock .venv/bin/python scripts/run_real_campaign.py >> data/cro_ai_logs/real_campaign.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 0 6 * * 0 cd "$QUANT_ROOT" && flock -n data/.cron_realcamp.lock .venv/bin/python scripts/run_real_campaign.py >> data/cro_ai_logs/real_campaign.log 2>&1
 # --- L1.46 CLOCK PROVENANCE (capability hunt s0, 2026-08-01) --------------------------------
 # CEILING TYPE (L1.28c): DATA-ARRIVAL bound, and the arrival granularity is EXACTLY ONE HOUR --
 # the moat tape rotates hourly (data/moat/<venue>/<SYMBOL>/YYYYMMDD_HH.jsonl.gz), so the fence's
@@ -1907,7 +1972,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: committed-script (new this cycle; first run fired MIXED-CLOCK and named fut/* and
 # spot/* as interleaving two clocks under one field name, and independently reproduced the
 # achieved-vs-configured period gap on both Binance recorders -- 8.28s and 7.84s against 5.0s)
-40 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_clockprov.lock .venv/bin/python scripts/check_clock_provenance.py --report-only >> data/cro_ai_logs/clock_provenance.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 40 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_clockprov.lock .venv/bin/python scripts/check_clock_provenance.py --report-only >> data/cro_ai_logs/clock_provenance.log 2>&1
 
 # KERNEL-LOG READABILITY FENCE (R0350) -- the same L1.40 "unmeasured must never read as OK"
 # doctrine as check_clock_provenance above, applied to the input every kill/OOM diagnosis starts
@@ -1940,7 +2006,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # (265 closes booked $93.58 of estimated funding, not one differenced against venue truth),
 # FORFEITING (59/265 closes inside 1h of a settlement, z=+4.8), MIS-MARKED (41.5% of closes wrong
 # by >=0.5 settlement) and PHASE-BLIND (close rows carry no rail/reason field))
-43 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_fundcap.lock .venv/bin/python scripts/check_funding_capture.py --report-only >> data/cro_ai_logs/funding_capture.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 43 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_fundcap.lock .venv/bin/python scripts/check_funding_capture.py --report-only >> data/cro_ai_logs/funding_capture.log 2>&1
 
 # CROSS-SECTIONAL FUNDING SNAPSHOT (R0119 producer -- the crowding denominator).
 # `current_funding()` returns all ~855 USD-M perps at ONE instant and five production callers
@@ -1955,7 +2022,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # PHASE :07 -- not aligned to any funding stamp (00/04/08/12/16/20 UTC), and clear of the :4x
 # fence cluster so the tape is already written when check_crowding reads it at :46.
 # EVIDENCE: scripts/collect_funding_cross_section.py -> data/funding_cross_section.jsonl; §42
-7 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_fundxs.lock .venv/bin/python scripts/collect_funding_cross_section.py >> data/cro_ai_logs/funding_cross_section.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 7 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_fundxs.lock .venv/bin/python scripts/collect_funding_cross_section.py >> data/cro_ai_logs/funding_cross_section.log 2>&1
 
 # CROWDING FENCE (R0119 -- §42 capacity parity / L1.19 information decay).
 # The desk's capacity assumption is that its carry names are too small for funds to bother with,
@@ -1969,7 +2037,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # PHASE :46 -- inside the fence cluster (:40 clock provenance, :43 funding capture, :45), and 39
 # minutes after the collector so a snapshot is always on tape before it is read.
 # EVIDENCE: scripts/check_crowding.py -> data/crowding_status.json; CONSTITUTION L1.19 / §42
-46 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_crowding.lock .venv/bin/python scripts/check_crowding.py --report-only >> data/cro_ai_logs/crowding.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 46 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_crowding.lock .venv/bin/python scripts/check_crowding.py --report-only >> data/cro_ai_logs/crowding.log 2>&1
 
 # FORECAST SCORER (L1.29 calibration). The desk had a forecast LOGGER and no SCORER, so
 # check_calibration sat OVERDUE with 7 unscored predictions -- the worst asymmetry available,
@@ -1983,7 +2052,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/score_forecasts.py -> data/forecast_log.json (outcomes via fc.resolve)
 # CONFIDENCE: committed-script (first run graded 6 of 7, Brier 0.2484, and left the one ambiguous
 # conviction claim unresolved rather than guessing it)
-50 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_fcscore.lock .venv/bin/python scripts/score_forecasts.py --write >> data/cro_ai_logs/forecast_scoring.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 50 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_fcscore.lock .venv/bin/python scripts/score_forecasts.py --write >> data/cro_ai_logs/forecast_scoring.log 2>&1
 
 # NET-PROFIT OPTIMISER (principal 2026-08-01: "net profits must always be set to maximum possible
 # -- carry holding longer or shorter, size, lower fees"). Measures net PnL per hour held from the
@@ -2001,7 +2071,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # the dominant lever. Caveat recorded with the number: the 254-trade sample spans the 07-27 churn
 # incident, whose rail-forced closes distort the hold distribution, so the verdict must be re-read
 # on post-fix fills before any parameter moves.
-25 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_netopt.lock .venv/bin/python scripts/optimise_net_profit.py >> data/cro_ai_logs/net_profit_optimum.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 25 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_netopt.lock .venv/bin/python scripts/optimise_net_profit.py >> data/cro_ai_logs/net_profit_optimum.log 2>&1
 
 # POINT-IN-TIME UNIVERSE SNAPSHOT (R0239). list_perp_symbols filters exchangeInfo to
 # status == TRADING and discards the rest, so every backfilled panel is conditioned on the symbol
@@ -2018,7 +2089,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # 00:20 UTC: early enough that the snapshot describes the day it is named for, clear of midnight.
 # EVIDENCE: scripts/snapshot_universe.py -> data/universe_snapshots.jsonl.gz (append-only)
 # CONFIDENCE: committed-script (first run recorded 851 symbols across 3 statuses)
-20 0 * * * cd "$QUANT_ROOT" && flock -n data/.cron_universe.lock .venv/bin/python scripts/snapshot_universe.py >> data/cro_ai_logs/universe_snapshot.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 20 0 * * * cd "$QUANT_ROOT" && flock -n data/.cron_universe.lock .venv/bin/python scripts/snapshot_universe.py >> data/cro_ai_logs/universe_snapshot.log 2>&1
 
 # RECOMMENDATION WORKER (principal 2026-08-01: "make claude keep up with recommendation
 # implementations, immediate, automated"). §41 made every recommendation reach a disposition and
@@ -2113,7 +2185,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # live-book concentration: HHI/greeks of the actual book -- sole importer of libs/portfolio/
 # concentration; unwired until 2026-08-04 (same defect class as the two rows above).
 # EVIDENCE: scripts/measure_live_book_concentration.py; CONFIDENCE: inferred (daily -- the book moves daily)
-55 7 * * * cd "$QUANT_ROOT" && flock -n data/.cron_bookconc.lock .venv/bin/python scripts/measure_live_book_concentration.py >> data/cro_ai_logs/book_concentration.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 55 7 * * * cd "$QUANT_ROOT" && flock -n data/.cron_bookconc.lock .venv/bin/python scripts/measure_live_book_concentration.py >> data/cro_ai_logs/book_concentration.log 2>&1
 
 # WEEKLY WHOLE-DESK RE-TRIAGE (principal 2026-08-04: "just like today, weekly the whole quant
 # gets sweeped to get maxxed out"). The daily layer (max_audit every cycle, daily_max defect
@@ -2139,7 +2212,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # holder_concentration 21 new rows (DEGRADED, 1 token error of 22); perpdex_funding 233,030 new
 # rows (aster 50,974 / lighter 131,299 / klines 50,757) + screen-on-discovery in the same run.
 # CONFIDENCE: measured (row counts above are from the runs, not estimates).
-15 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_dexscreener.lock .venv/bin/python scripts/collect_dexscreener.py >> data/cro_ai_logs/collect_dexscreener.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 15 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_dexscreener.lock .venv/bin/python scripts/collect_dexscreener.py >> data/cro_ai_logs/collect_dexscreener.log 2>&1
 
 # CIRCULATING-SUPPLY HISTORY -- the half of the unlock screen that can ONLY be built forward.
 # screen_unlock_supply_series is blocked on two inputs and they are NOT symmetric: the unlock
@@ -2163,9 +2237,12 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # data/circulating_supply_status.json (reports days_covered, never row count -- a thousand rows
 # collected in one afternoon is not a series).
 # CONFIDENCE: measured (6 of 6 ids written across two live runs 2026-08-05).
-10 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_circsupply.lock .venv/bin/python scripts/collect_circulating_supply.py >> data/cro_ai_logs/circulating_supply.log 2>&1
-25 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_holderconc.lock .venv/bin/python scripts/collect_holder_concentration.py >> data/cro_ai_logs/collect_holder_concentration.log 2>&1
-35 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_perpdex.lock .venv/bin/python scripts/collect_perpdex_funding.py >> data/cro_ai_logs/collect_perpdex_funding.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 10 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_circsupply.lock .venv/bin/python scripts/collect_circulating_supply.py >> data/cro_ai_logs/circulating_supply.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 25 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_holderconc.lock .venv/bin/python scripts/collect_holder_concentration.py >> data/cro_ai_logs/collect_holder_concentration.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 35 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_perpdex.lock .venv/bin/python scripts/collect_perpdex_funding.py >> data/cro_ai_logs/collect_perpdex_funding.log 2>&1
 
 # ============================================================================================
 # THE RESEARCH-TO-CAPITAL CYCLE -- one ordered pass, every 15 minutes, ~6 seconds.
@@ -2209,7 +2286,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/run_pipeline_cycle.py -> data/pipeline_cycle.json. First run 2026-08-12:
 #   7/7 stages OK in 5.2s.
 # CONFIDENCE: measured (per-stage timings above, taken on this box).
-*/15 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_pipeline_cycle.lock .venv/bin/python scripts/run_pipeline_cycle.py >> data/cro_ai_logs/pipeline_cycle.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# */15 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_pipeline_cycle.lock .venv/bin/python scripts/run_pipeline_cycle.py >> data/cro_ai_logs/pipeline_cycle.log 2>&1
 # ============================================================================================
 
 # R0104 CAPABILITY RATCHET (owed-work, 2026-08-05). The principal's standing order -- every aspect
@@ -2306,7 +2384,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # longest, risk_pause_opens, 7.47d live. It also killed its own premise: best stablecoin APY
 # 3.78% vs risk-free 3.73%/yr, so net of the 300bps haircut the lending rung loses; breakeven
 # haircut is 5.5bps, so that underived constant decides the verdict single-handed)
-27 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_idlecost.lock .venv/bin/python scripts/check_idle_cost.py --report-only >> data/cro_ai_logs/idle_cost.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 27 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_idlecost.lock .venv/bin/python scripts/check_idle_cost.py --report-only >> data/cro_ai_logs/idle_cost.log 2>&1
 # PROMPT RATCHET (2026-08-05). Prompts are the desk's highest-leverage artifacts -- 30 governed
 # files (11 miner/dig prompts, 13 panel missions, the doctrine, the CRO constitution, the two
 # inline scheduled-Routine prompts) that every organ pays on every call -- and they were the one
@@ -2360,7 +2439,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # checkout reported NOT-READABLE-HERE with 4 missing paths, 10 screened-but-unrecorded names, 5
 # unread bybit depth levels and 14 scripts that open the tape and record nothing they read.
 # CONFIDENCE: committed-script (new this cycle -- cadence chosen here, not observed on the box)
-56 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_moat_util.lock .venv/bin/python scripts/run_moat_utilisation.py >> data/cro_ai_logs/moat_utilisation.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 56 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_moat_util.lock .venv/bin/python scripts/run_moat_utilisation.py >> data/cro_ai_logs/moat_utilisation.log 2>&1
 
 # ---------------------------------------------------------------------------------------------
 # THREE STAGE-A SCREENS THAT WERE BUILT AND THEN NOT RUN (2026-08-05).
@@ -2383,13 +2463,16 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # ---------------------------------------------------------------------------------------------
 # EVIDENCE: scripts/screen_announcement_diffusion.py -> data/announcement_diffusion_screen.json
 # CONFIDENCE: committed-script (cadence taken from the script's own header request)
-40 6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_anndiff.lock nice -n 19 .venv/bin/python scripts/screen_announcement_diffusion.py >> data/cro_ai_logs/announcement_diffusion.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 40 6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_anndiff.lock nice -n 19 .venv/bin/python scripts/screen_announcement_diffusion.py >> data/cro_ai_logs/announcement_diffusion.log 2>&1
 # EVIDENCE: scripts/screen_unlock_supply_series.py -> data/unlock_supply_series_screen.json
 # CONFIDENCE: committed-script (cadence taken from the script's own header request)
-25 6 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_unlockseries.lock nice -n 19 .venv/bin/python scripts/screen_unlock_supply_series.py >> data/cro_ai_logs/unlock_supply_series.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 25 6 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_unlockseries.lock nice -n 19 .venv/bin/python scripts/screen_unlock_supply_series.py >> data/cro_ai_logs/unlock_supply_series.log 2>&1
 # EVIDENCE: scripts/screen_venue_subsidy.py -> data/venue_subsidy_screen.json
 # CONFIDENCE: committed-script (cadence taken from the script's own header request)
-53 6 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_venuesub.lock nice -n 19 .venv/bin/python scripts/screen_venue_subsidy.py --probe-venues >> data/cro_ai_logs/venue_subsidy.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 53 6 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_venuesub.lock nice -n 19 .venv/bin/python scripts/screen_venue_subsidy.py --probe-venues >> data/cro_ai_logs/venue_subsidy.log 2>&1
 
 # NATURAL EXPERIMENT -- the desk's first CAUSAL study (R0207, 2026-08-05). Every hypothesis this
 # desk had ever tested was OBSERVATIONAL: an IC or a Sharpe on a correlational panel, defended by
@@ -2406,7 +2489,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/run_natural_experiment.py -> data/natural_experiment.json; row R0207
 # CONFIDENCE: committed-script (new this cycle; first run REFUSED on all three designs at the
 #   parallel-trends rail -- a refusal is a first-class result and no clock was opened)
-50 7 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_natexp.lock choom -n 1000 -- nice -n 19 .venv/bin/python scripts/run_natural_experiment.py >> data/cro_ai_logs/natural_experiment.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 50 7 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_natexp.lock choom -n 1000 -- nice -n 19 .venv/bin/python scripts/run_natural_experiment.py >> data/cro_ai_logs/natural_experiment.log 2>&1
 # ---------------------------------------------------------------------------------------------
 # FOUR MORE ORGANS THAT ASKED TO BE SCHEDULED AND WERE NOT (2026-08-05, second batch).
 #
@@ -2428,22 +2512,27 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # ---------------------------------------------------------------------------------------------
 # EVIDENCE: scripts/collect_primary_market_flow.py -> data/primary_market_flow.jsonl
 # CONFIDENCE: committed-script (cadence taken from the script's own header request)
-41 23 * * * cd "$QUANT_ROOT" && flock -n data/.cron_pmflow_c.lock nice -n 19 .venv/bin/python scripts/collect_primary_market_flow.py >> data/cro_ai_logs/primary_market_flow.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 41 23 * * * cd "$QUANT_ROOT" && flock -n data/.cron_pmflow_c.lock nice -n 19 .venv/bin/python scripts/collect_primary_market_flow.py >> data/cro_ai_logs/primary_market_flow.log 2>&1
 # ...and its consumer, 36min later, so it reads the collection that just closed the trading day.
 # EVIDENCE: scripts/screen_primary_market_flow.py -> data/primary_market_flow_screen.json
 # CONFIDENCE: committed-script (cadence taken from the script's own header request)
-17 0 * * * cd "$QUANT_ROOT" && flock -n data/.cron_pmflow_s.lock nice -n 19 .venv/bin/python scripts/screen_primary_market_flow.py >> data/cro_ai_logs/primary_market_flow_screen.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 17 0 * * * cd "$QUANT_ROOT" && flock -n data/.cron_pmflow_s.lock nice -n 19 .venv/bin/python scripts/screen_primary_market_flow.py >> data/cro_ai_logs/primary_market_flow_screen.log 2>&1
 # The widened Deribit vol-market collector: daily snapshot is what accrues CALENDAR TIME on the
 # option chain, and calendar time is the binding constraint the gap-#5 screen measured (69 common
 # days against 1,068 needed). The weekly backfill widens history where a listed contract allows.
 # EVIDENCE: scripts/collect_deribit_vol_markets.py -> data/deribit_vol_markets.jsonl
 # CONFIDENCE: committed-script (cadence taken from the script's own header request)
-17 9 * * * cd "$QUANT_ROOT" && flock -n data/.cron_dvm.lock nice -n 19 .venv/bin/python scripts/collect_deribit_vol_markets.py --mode snapshot >> data/cro_ai_logs/deribit_vol_markets.log 2>&1
-41 3 * * 0 cd "$QUANT_ROOT" && flock -n data/.cron_dvm.lock nice -n 19 .venv/bin/python scripts/collect_deribit_vol_markets.py --mode backfill >> data/cro_ai_logs/deribit_vol_markets.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 17 9 * * * cd "$QUANT_ROOT" && flock -n data/.cron_dvm.lock nice -n 19 .venv/bin/python scripts/collect_deribit_vol_markets.py --mode snapshot >> data/cro_ai_logs/deribit_vol_markets.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 41 3 * * 0 cd "$QUANT_ROOT" && flock -n data/.cron_dvm.lock nice -n 19 .venv/bin/python scripts/collect_deribit_vol_markets.py --mode backfill >> data/cro_ai_logs/deribit_vol_markets.log 2>&1
 # ...and its consumer, 80min after the snapshot lands.
 # EVIDENCE: scripts/screen_vol_risk_premium.py -> data/vol_risk_premium_screen.json
 # CONFIDENCE: committed-script (cadence taken from the script's own header request)
-37 10 * * * cd "$QUANT_ROOT" && flock -n data/.cron_vrp.lock nice -n 19 .venv/bin/python scripts/screen_vol_risk_premium.py >> data/cro_ai_logs/vol_risk_premium.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 37 10 * * * cd "$QUANT_ROOT" && flock -n data/.cron_vrp.lock nice -n 19 .venv/bin/python scripts/screen_vol_risk_premium.py >> data/cro_ai_logs/vol_risk_premium.log 2>&1
 
 # ---------------------------------------------------------------------------------------------
 # LLM ROUTING EXPOSURE (L1.54 clause 1). Twelve-plus organs read the panel roster and, measured
@@ -2548,7 +2637,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # latency for nothing.
 # EVIDENCE: libs/research/slot_liveness.report() -> PRODUCER_UNSCHEDULED, the only such clock.
 # CONFIDENCE: committed-script; pure CPU over our own captured tape, no venue call, no model.
-40 6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_liqrev_screen.lock nice -n 19 .venv/bin/python scripts/screen_liquidation_reversion.py >> data/cro_ai_logs/liquidation_reversion_screen.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 40 6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_liqrev_screen.lock nice -n 19 .venv/bin/python scripts/screen_liquidation_reversion.py >> data/cro_ai_logs/liquidation_reversion_screen.log 2>&1
 
 # ---------------------------------------------------------------------------------------------
 # BYBIT L2 ARCHIVE RETENTION ALARM -- is the free 349-day backfill EXPIRING while we wait?
@@ -2576,7 +2666,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 #   wiped data/ cannot silently disarm the baseline the alarm is measured against)
 # CONFIDENCE: committed-script + 10 tests, including the partial-outage case that would otherwise
 #   converge on a too-recent boundary and shout ROLLING
-20 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_bybit_archive.lock .venv/bin/python scripts/probe_bybit_archive.py >> data/cro_ai_logs/bybit_archive.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 20 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_bybit_archive.lock .venv/bin/python scripts/probe_bybit_archive.py >> data/cro_ai_logs/bybit_archive.log 2>&1
 
 # ---------------------------------------------------------------------------------------------
 # ORPHAN RECLAMATION (2026-08-12): 56 real, runnable organs found built and never scheduled by
@@ -2600,81 +2691,112 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # build_scoreboard.py: aggregates existing reports/*.json -> web/strategies.json
 1 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_scoreboard.lock .venv/bin/python scripts/build_scoreboard.py >> data/cro_ai_logs/scoreboard.log 2>&1
 # capacity_simulator.py: min viable per-carry notional from exchange lot rules -> data/capacity_floor.json
-2 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capacity_sim.lock .venv/bin/python scripts/capacity_simulator.py >> data/cro_ai_logs/capacity_sim.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 2 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capacity_sim.lock .venv/bin/python scripts/capacity_simulator.py >> data/cro_ai_logs/capacity_sim.log 2>&1
 # check_shell_hygiene.py: syntax+regex gate over ops/*.sh, dry-run mode
 3 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_shell_hygiene.lock .venv/bin/python scripts/check_shell_hygiene.py >> data/cro_ai_logs/shell_hygiene.log 2>&1
 # cme_basis.py: CME-vs-offshore basis segmentation screen -> data/cme_basis_screen.json
-4 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cme_basis_screen.lock .venv/bin/python scripts/cme_basis.py >> data/cro_ai_logs/cme_basis_screen.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 4 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cme_basis_screen.lock .venv/bin/python scripts/cme_basis.py >> data/cro_ai_logs/cme_basis_screen.log 2>&1
 # collateral_spread.py: USDT-vs-USDC funding spread screen -> data/collateral_spread.json
-5 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_collateral_spread.lock .venv/bin/python scripts/collateral_spread.py >> data/cro_ai_logs/collateral_spread.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 5 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_collateral_spread.lock .venv/bin/python scripts/collateral_spread.py >> data/cro_ai_logs/collateral_spread.log 2>&1
 # backfill_oi_ls_oos.py: held-out OOS backtest of oi_divergence/ls_contrarian -- fixed: missing sys.path preamble
-6 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_oi_ls_oos.lock .venv/bin/python scripts/backfill_oi_ls_oos.py >> data/cro_ai_logs/oi_ls_oos.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 6 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_oi_ls_oos.lock .venv/bin/python scripts/backfill_oi_ls_oos.py >> data/cro_ai_logs/oi_ls_oos.log 2>&1
 # batch_altdata.py: alt-data (Wikipedia/DefiLlama) vs BTC screen -- fixed: missing sys.path preamble
-7 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_batch_altdata.lock .venv/bin/python scripts/batch_altdata.py >> data/cro_ai_logs/batch_altdata.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 7 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_batch_altdata.lock .venv/bin/python scripts/batch_altdata.py >> data/cro_ai_logs/batch_altdata.log 2>&1
 # collect_free_signals.py: Fear&Greed/dominance/HL-dispersion archiver -- fixed: missing sys.path preamble
-8 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_free_signals.lock .venv/bin/python scripts/collect_free_signals.py >> data/cro_ai_logs/free_signals.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 8 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_free_signals.lock .venv/bin/python scripts/collect_free_signals.py >> data/cro_ai_logs/free_signals.log 2>&1
 # collect_hyperliquid_funding.py: HL funding forward-only archive -- fixed: missing sys.path preamble
-9 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_hl_funding.lock .venv/bin/python scripts/collect_hyperliquid_funding.py >> data/cro_ai_logs/hl_funding.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 9 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_hl_funding.lock .venv/bin/python scripts/collect_hyperliquid_funding.py >> data/cro_ai_logs/hl_funding.log 2>&1
 # funding_persistence.py: entry-time funding vs realised-funding persistence test
-10 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_funding_persist.lock .venv/bin/python scripts/funding_persistence.py >> data/cro_ai_logs/funding_persist.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 10 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_funding_persist.lock .venv/bin/python scripts/funding_persistence.py >> data/cro_ai_logs/funding_persist.log 2>&1
 # hl_flow_alpha.py: HL trader-cohort signed taker-flow lead test -- fixed: missing sys.path preamble
-11 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_hl_flow_alpha.lock .venv/bin/python scripts/hl_flow_alpha.py >> data/cro_ai_logs/hl_flow_alpha.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 11 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_hl_flow_alpha.lock .venv/bin/python scripts/hl_flow_alpha.py >> data/cro_ai_logs/hl_flow_alpha.log 2>&1
 # hl_gapped.py: HL skill-persistence re-test with a gapped window
-12 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_hl_gapped.lock .venv/bin/python scripts/hl_gapped.py >> data/cro_ai_logs/hl_gapped.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 12 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_hl_gapped.lock .venv/bin/python scripts/hl_gapped.py >> data/cro_ai_logs/hl_gapped.log 2>&1
 # hl_skill_persistence.py: HL trader past-PnL predicts future-PnL test
-13 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_hl_skill.lock .venv/bin/python scripts/hl_skill_persistence.py >> data/cro_ai_logs/hl_skill.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 13 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_hl_skill.lock .venv/bin/python scripts/hl_skill_persistence.py >> data/cro_ai_logs/hl_skill.log 2>&1
 # hold_optimizer.py: optimal hold bucket from the desk's own realised carry closes
-14 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_hold_optimizer.lock .venv/bin/python scripts/hold_optimizer.py >> data/cro_ai_logs/hold_optimizer.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 14 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_hold_optimizer.lock .venv/bin/python scripts/hold_optimizer.py >> data/cro_ai_logs/hold_optimizer.log 2>&1
 # horizon_search.py: cross-source horizon-discovery screen, Bonferroni-guarded
-15 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_horizon_search.lock .venv/bin/python scripts/horizon_search.py >> data/cro_ai_logs/horizon_search.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 15 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_horizon_search.lock .venv/bin/python scripts/horizon_search.py >> data/cro_ai_logs/horizon_search.log 2>&1
 # ingest_crypto_enriched.py: refreshes funding+flow+basis columns into the parquet lake -- fixed: missing sys.path preamble
-16 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_ingest_crypto_enriched.lock .venv/bin/python scripts/ingest_crypto_enriched.py >> data/cro_ai_logs/ingest_crypto_enriched.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 16 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_ingest_crypto_enriched.lock .venv/bin/python scripts/ingest_crypto_enriched.py >> data/cro_ai_logs/ingest_crypto_enriched.log 2>&1
 # iros_batch.py: 3 pre-registered hypothesis tests via GitHub/Binance/DefiLlama/Wikipedia
-17 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_iros_batch.lock .venv/bin/python scripts/iros_batch.py >> data/cro_ai_logs/iros_batch.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 17 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_iros_batch.lock .venv/bin/python scripts/iros_batch.py >> data/cro_ai_logs/iros_batch.log 2>&1
 # log_swaps.py: MT5 swap_long/swap_short snapshot -- fixed: missing sys.path preamble (needs MetaTrader5, VPS-only)
 18 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_log_swaps.lock .venv/bin/python scripts/log_swaps.py >> data/cro_ai_logs/log_swaps.log 2>&1
 # publish_dashboard_url.py: current tunnel URL -> web/dashboard_url.json, pages on change
 19 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_dashboard_url.lock .venv/bin/python scripts/publish_dashboard_url.py >> data/cro_ai_logs/dashboard_url.log 2>&1
 # reconstruct_kaiko_reference_rate.py: reconstructs Kaiko's published VWM/TWAP benchmark from 5 public venues
-20 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_kaiko_reference.lock .venv/bin/python scripts/reconstruct_kaiko_reference_rate.py >> data/cro_ai_logs/kaiko_reference.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 20 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_kaiko_reference.lock .venv/bin/python scripts/reconstruct_kaiko_reference_rate.py >> data/cro_ai_logs/kaiko_reference.log 2>&1
 # reflexivity_m5.py: rolling OI/price reflexivity beta vs forward vol -- fixed: missing sys.path preamble
-21 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_reflexivity_m5.lock .venv/bin/python scripts/reflexivity_m5.py >> data/cro_ai_logs/reflexivity_m5.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 21 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_reflexivity_m5.lock .venv/bin/python scripts/reflexivity_m5.py >> data/cro_ai_logs/reflexivity_m5.log 2>&1
 # run_capital_plan.py: sizing plan gated on forward-shadow t-stat evidence
-22 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capital_plan.lock .venv/bin/python scripts/run_capital_plan.py >> data/cro_ai_logs/capital_plan.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 22 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capital_plan.lock .venv/bin/python scripts/run_capital_plan.py >> data/cro_ai_logs/capital_plan.log 2>&1
 # run_cot_screen.py: 26yr CFTC COT decay + GHR lag screen (fetch-cache path fixed separately)
 23 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cot_screen.lock .venv/bin/python scripts/run_cot_screen.py >> data/cro_ai_logs/cot_screen.log 2>&1
 # run_alpha_registry.py: persists sleeves as AlphaCards -> web/registry.json -- fixed: missing sys.path preamble + import order
 24 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_alpha_registry.lock .venv/bin/python scripts/run_alpha_registry.py >> data/cro_ai_logs/alpha_registry.log 2>&1
 # run_capture_analysis.py: capture-ratio diagnostic -> web/capture.json -- fixed: missing sys.path preamble
-25 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capture_analysis.lock .venv/bin/python scripts/run_capture_analysis.py >> data/cro_ai_logs/capture_analysis.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 25 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capture_analysis.lock .venv/bin/python scripts/run_capture_analysis.py >> data/cro_ai_logs/capture_analysis.log 2>&1
 # run_cashcarry_backtest.py: delta-neutral cash-carry vs perp-only funding carry -- fixed: missing sys.path preamble
-26 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cashcarry_backtest.lock .venv/bin/python scripts/run_cashcarry_backtest.py >> data/cro_ai_logs/cashcarry_backtest.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 26 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cashcarry_backtest.lock .venv/bin/python scripts/run_cashcarry_backtest.py >> data/cro_ai_logs/cashcarry_backtest.log 2>&1
 # run_combined_stats.py: max-Sharpe/inverse-vol capital split report -- fixed: missing sys.path preamble
-27 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_combined_stats.lock .venv/bin/python scripts/run_combined_stats.py >> data/cro_ai_logs/combined_stats.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 27 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_combined_stats.lock .venv/bin/python scripts/run_combined_stats.py >> data/cro_ai_logs/combined_stats.log 2>&1
 # run_crossasset_robust.py: MT5 cross-asset gauntlet raw vs vol-target overlay -- fixed: missing sys.path preamble
 28 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_crossasset_robust.lock .venv/bin/python scripts/run_crossasset_robust.py >> data/cro_ai_logs/crossasset_robust.log 2>&1
 # run_crossexchange_backtest.py: cross-exchange funding-dispersion carry test -- fixed: missing sys.path preamble
-29 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_crossexchange_backtest.lock .venv/bin/python scripts/run_crossexchange_backtest.py >> data/cro_ai_logs/crossexchange_backtest.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 29 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_crossexchange_backtest.lock .venv/bin/python scripts/run_crossexchange_backtest.py >> data/cro_ai_logs/crossexchange_backtest.log 2>&1
 # run_derivative_backtest.py: OI-divergence/LS-contrarian backtest on real derivatives history -- fixed: missing sys.path preamble
-30 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_derivative_backtest.lock .venv/bin/python scripts/run_derivative_backtest.py >> data/cro_ai_logs/derivative_backtest.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 30 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_derivative_backtest.lock .venv/bin/python scripts/run_derivative_backtest.py >> data/cro_ai_logs/derivative_backtest.log 2>&1
 # run_factor_model.py: PCA factor-risk decomposition of the sleeve correlation matrix -- fixed: missing sys.path preamble
-31 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_factor_model.lock .venv/bin/python scripts/run_factor_model.py >> data/cro_ai_logs/factor_model.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 31 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_factor_model.lock .venv/bin/python scripts/run_factor_model.py >> data/cro_ai_logs/factor_model.log 2>&1
 # run_reversal_costtest.py: reversal/lead-lag survives maker fees + wider bands? -- fixed: missing sys.path preamble
-32 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_reversal_costtest.lock .venv/bin/python scripts/run_reversal_costtest.py >> data/cro_ai_logs/reversal_costtest.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 32 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_reversal_costtest.lock .venv/bin/python scripts/run_reversal_costtest.py >> data/cro_ai_logs/reversal_costtest.log 2>&1
 # run_xsec_funding_max.py: max cross-sectional funding-carry sweep -- fixed: missing sys.path preamble
-33 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_xsec_funding_max.lock .venv/bin/python scripts/run_xsec_funding_max.py >> data/cro_ai_logs/xsec_funding_max.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 33 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_xsec_funding_max.lock .venv/bin/python scripts/run_xsec_funding_max.py >> data/cro_ai_logs/xsec_funding_max.log 2>&1
 # screen_fred_macro_axis.py: 5 FRED macro series vs BTC screen -- fixed: uncaught crash on missing FRED key, now graceful-skip
-34 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_fred_macro_axis.lock .venv/bin/python scripts/screen_fred_macro_axis.py >> data/cro_ai_logs/fred_macro_axis.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 34 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_fred_macro_axis.lock .venv/bin/python scripts/screen_fred_macro_axis.py >> data/cro_ai_logs/fred_macro_axis.log 2>&1
 # run_factory.py: sleeve leaderboard / milestone view -> web/factory.json -- fixed: missing sys.path preamble
 35 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_factory.lock .venv/bin/python scripts/run_factory.py >> data/cro_ai_logs/factory.log 2>&1
 # run_factory_status.py: Information Advantage Score -> web/factory.json -- fixed: missing sys.path preamble
-36 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_factory_status.lock .venv/bin/python scripts/run_factory_status.py >> data/cro_ai_logs/factory_status.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 36 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_factory_status.lock .venv/bin/python scripts/run_factory_status.py >> data/cro_ai_logs/factory_status.log 2>&1
 # run_firm_alphas_backtest.py: 4 new candidate alpha families through DSR gauntlet -- fixed: missing sys.path preamble
-37 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_firm_alphas_backtest.lock .venv/bin/python scripts/run_firm_alphas_backtest.py >> data/cro_ai_logs/firm_alphas_backtest.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 37 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_firm_alphas_backtest.lock .venv/bin/python scripts/run_firm_alphas_backtest.py >> data/cro_ai_logs/firm_alphas_backtest.log 2>&1
 # run_freedata_backtest.py: Fear&Greed contrarian/de-risk overlay backtest -- fixed: missing sys.path preamble
-38 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_freedata_backtest.lock .venv/bin/python scripts/run_freedata_backtest.py >> data/cro_ai_logs/freedata_backtest.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 38 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_freedata_backtest.lock .venv/bin/python scripts/run_freedata_backtest.py >> data/cro_ai_logs/freedata_backtest.log 2>&1
 # run_funding_8h.py: funding carry re-test at native 8h resolution -- fixed: missing sys.path preamble
-39 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_funding_8h.lock .venv/bin/python scripts/run_funding_8h.py >> data/cro_ai_logs/funding_8h.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 39 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_funding_8h.lock .venv/bin/python scripts/run_funding_8h.py >> data/cro_ai_logs/funding_8h.log 2>&1
 # run_mt5_crossasset.py: MT5 cross-asset momentum/trend gauntlet -- fixed: missing sys.path preamble
 40 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_mt5_crossasset.lock .venv/bin/python scripts/run_mt5_crossasset.py >> data/cro_ai_logs/mt5_crossasset.log 2>&1
 # run_mt5_funding_bridge.py: Binance funding predicts MT5 crypto-CFD moves? -- fixed: missing sys.path preamble
@@ -2684,35 +2806,47 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # run_mutation_test.py: mutation-tests 5 money-path files against scratch copies, never the real tree
 43 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_mutation_test.lock .venv/bin/python scripts/run_mutation_test.py >> data/cro_ai_logs/mutation_test.log 2>&1
 # run_overlay_backtest.py: vol-target/beta-hedge overlay validation on the real perp book -- fixed: missing sys.path preamble
-44 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_overlay_backtest.lock .venv/bin/python scripts/run_overlay_backtest.py >> data/cro_ai_logs/overlay_backtest.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 44 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_overlay_backtest.lock .venv/bin/python scripts/run_overlay_backtest.py >> data/cro_ai_logs/overlay_backtest.log 2>&1
 # run_regime_allocation.py: SHADOW regime-tilt report, never auto-applied -- fixed: uncaught crash on missing upstream report
-45 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_regime_alloc.lock .venv/bin/python scripts/run_regime_allocation.py >> data/cro_ai_logs/regime_alloc.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 45 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_regime_alloc.lock .venv/bin/python scripts/run_regime_allocation.py >> data/cro_ai_logs/regime_alloc.log 2>&1
 # run_research_lake.py: discovery lab over the 26yr FX daily lake -- fixed: missing sys.path preamble
 46 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_research_lake.lock .venv/bin/python scripts/run_research_lake.py >> data/cro_ai_logs/research_lake.log 2>&1
 # run_tournament.py: ranks registered alphas by marginal contribution x crowding
 47 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_tournament.lock .venv/bin/python scripts/run_tournament.py >> data/cro_ai_logs/tournament.log 2>&1
 # run_venue_reconcile.py: read-only testnet balance reconciliation vs the deadman rail
-48 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_venue_reconcile.lock .venv/bin/python scripts/run_venue_reconcile.py >> data/cro_ai_logs/venue_reconcile.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 48 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_venue_reconcile.lock .venv/bin/python scripts/run_venue_reconcile.py >> data/cro_ai_logs/venue_reconcile.log 2>&1
 # screen_etf_flows.py: spot-BTC-ETF net flows vs BTC returns, look-ahead controlled
-49 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_etf_flows_screen.lock .venv/bin/python scripts/screen_etf_flows.py >> data/cro_ai_logs/etf_flows_screen.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 49 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_etf_flows_screen.lock .venv/bin/python scripts/screen_etf_flows.py >> data/cro_ai_logs/etf_flows_screen.log 2>&1
 # screen_fx_debasement.py: EM debasement basket + synthetic DXY vs BTC
-50 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_fx_debasement_screen.lock .venv/bin/python scripts/screen_fx_debasement.py >> data/cro_ai_logs/fx_debasement_screen.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 50 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_fx_debasement_screen.lock .venv/bin/python scripts/screen_fx_debasement.py >> data/cro_ai_logs/fx_debasement_screen.log 2>&1
 # screen_idle_axes.py: taker-flow absorption / on-chain throughput / stablecoin-rent screen
-51 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_idle_axes_screen.lock .venv/bin/python scripts/screen_idle_axes.py >> data/cro_ai_logs/idle_axes_screen.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 51 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_idle_axes_screen.lock .venv/bin/python scripts/screen_idle_axes.py >> data/cro_ai_logs/idle_axes_screen.log 2>&1
 # screen_mining.py: hashrate/difficulty/hashprice forced-seller screen
-52 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_mining_screen.lock .venv/bin/python scripts/screen_mining.py >> data/cro_ai_logs/mining_screen.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 52 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_mining_screen.lock .venv/bin/python scripts/screen_mining.py >> data/cro_ai_logs/mining_screen.log 2>&1
 # screen_wikipedia.py: attention (pageview) screen vs crypto returns
-53 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_wikipedia_screen.lock .venv/bin/python scripts/screen_wikipedia.py >> data/cro_ai_logs/wikipedia_screen.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 53 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_wikipedia_screen.lock .venv/bin/python scripts/screen_wikipedia.py >> data/cro_ai_logs/wikipedia_screen.log 2>&1
 # stageb_capacity.py: Holm-correction cost curve for concurrent Stage-B slot count
 54 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_stageb_capacity.lock .venv/bin/python scripts/stageb_capacity.py >> data/cro_ai_logs/stageb_capacity.log 2>&1
 # structural_spreads.py: stablecoin-peg / liquid-staking-discount persistence screen
-55 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_structural_spreads.lock .venv/bin/python scripts/structural_spreads.py >> data/cro_ai_logs/structural_spreads.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 55 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_structural_spreads.lock .venv/bin/python scripts/structural_spreads.py >> data/cro_ai_logs/structural_spreads.log 2>&1
 # 3 MORE, added after re-triage: check_spot_testnet.py/check_testnet.py were classified ONE-OFF
 #   ("run once after adding keys") but are genuinely read-only, no-arg, graceful-on-missing-keys
 #   connectivity diagnostics -- reasonable as periodic health-checks, not just a manual step.
 #   screen_cme_basis.py was BROKEN (uncaught crash on its one-time paid CME data drop being
 #   absent) -- fixed to DATA-BLOCKED like every other screen with a missing input; the data
 #   itself is NOT re-ingested here (R0143: buying a licensed feed is a principal decision).
-56 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_spot_testnet_check.lock .venv/bin/python scripts/check_spot_testnet.py >> data/cro_ai_logs/spot_testnet_check.log 2>&1
-57 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_testnet_check.lock .venv/bin/python scripts/check_testnet.py >> data/cro_ai_logs/testnet_check.log 2>&1
-58 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cme_futures_basis_screen.lock .venv/bin/python scripts/screen_cme_basis.py >> data/cro_ai_logs/cme_futures_basis_screen.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 56 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_spot_testnet_check.lock .venv/bin/python scripts/check_spot_testnet.py >> data/cro_ai_logs/spot_testnet_check.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 57 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_testnet_check.lock .venv/bin/python scripts/check_testnet.py >> data/cro_ai_logs/testnet_check.log 2>&1
+# DISABLED 2026-08-25: crypto-exchange-venue machinery retired -- desk is MT5-only (principal directive).
+# 58 16 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cme_futures_basis_screen.lock .venv/bin/python scripts/screen_cme_basis.py >> data/cro_ai_logs/cme_futures_basis_screen.log 2>&1
