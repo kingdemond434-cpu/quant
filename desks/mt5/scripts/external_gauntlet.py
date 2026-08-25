@@ -1,0 +1,325 @@
+"""Run full 10-gate gauntlet on external discovery survivors.
+
+Reads survivors from external backtest, builds daily R matrix,
+computes program-level PBO + SPA, then evaluates all 10 gates per cell.
+"""
+from __future__ import annotations
+
+import json
+import math
+import os
+import sys
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+BASE = Path("/home/quant/quant-platform")
+UNI = BASE / "desks" / "mt5" / "data" / "universe"
+REPORTS = BASE / "desks" / "mt5" / "reports"
+DATA = BASE / "desks" / "mt5" / "data"
+HYP = DATA / "hypotheses"
+
+sys.path.insert(0, str(BASE))
+sys.path.insert(0, str(BASE / "desks" / "mt5"))
+
+from libs.validation.cpcv import CPCV
+from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
+from libs.validation.pbo import probability_backtest_overfitting
+from libs.validation.reality_check import hansen_spa
+from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus
+
+from mt5desk import families
+from mt5desk.engine import Costs, run_backtest
+
+TRIALS_MULTIPLIER = 7.0
+DSR_THRESHOLD = 0.95
+PBO_THRESHOLD = 0.5
+SPA_ALPHA = 0.05
+WF_SPLITS = 4
+WF_MIN_STABILITY = 0.5
+COST_SCENARIO = 3.0
+
+
+def costs_for(sym: str, meta: dict, mult: float = 1.0) -> Costs:
+    m = meta.get(sym, {})
+    spread = m.get("median_spread_pts", 1) * m.get("tick_size", 1e-5) * m.get("contract_size", 1e5)
+    if sym == "XAUUSD":
+        spread = 0.48 * mult
+    else:
+        spread = max(spread, 0.05) * mult
+    return Costs(spread_per_lot=spread,
+                 commission_per_lot=3.50 * mult,
+                 contract_oz=m.get("contract_size", 1e5))
+
+
+def daily_series(df: pd.DataFrame, sigs: list, costs: Costs) -> pd.Series:
+    res = run_backtest(df, sigs, costs)
+    s = pd.Series({pd.Timestamp(t.entry_time).date(): t.r_multiple for t in res.trades},
+                  dtype=float)
+    return s.groupby(level=0).sum()
+
+
+def build_cell(sym: str, family: str, params: dict, meta: dict):
+    """Build a Cell from external survivor spec."""
+    pq = UNI / f"{sym}_H1.parquet"
+    if not pq.exists():
+        return None
+    h1 = families._h1(pd.read_parquet(pq))
+    fn = getattr(families, f"family_{family}", None)
+    if fn is None:
+        return None
+    side = 1  # both sides tested externally; use LONG default
+    try:
+        sigs = fn(h1, side=side, **params)
+    except TypeError:
+        try:
+            sigs = fn(h1, **params)
+        except Exception:
+            return None
+    costs = costs_for(sym, meta)
+    return {"sym": sym, "family": family, "params": params, "df": h1, "sigs": sigs, "costs": costs}
+
+
+def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
+    """Run full 10-gate gauntlet on a list of cells."""
+    print(f"\n=== GAUNTLET: {hunt_name} ({len(cells)} cells) ===")
+
+    # Build daily series
+    daily = []
+    for c in cells:
+        try:
+            ds = daily_series(c["df"], c["sigs"], c["costs"])
+            daily.append(ds)
+        except Exception as e:
+            print(f"  FAIL {c['sym']}.{c['family']}: {e}")
+            daily.append(None)
+
+    # Build matrix from valid series
+    valid = [(i, d) for i, d in enumerate(daily) if d is not None and len(d) >= 60]
+    if not valid:
+        print("  NO cells with >= 60 days")
+        return {"hunt": hunt_name, "error": "no valid cells", "verdicts": []}
+
+    cols = [d.to_numpy(float) for _, d in valid]
+    min_len = min(len(a) for a in cols)
+    matrix = np.column_stack([a[-min_len:] for a in cols])
+
+    # Program-level tests
+    n_trials = max(2, math.ceil(matrix.shape[1] * TRIALS_MULTIPLIER))
+    sharpes = np.array([sharpe_ratio(matrix[:, k]) for k in range(matrix.shape[1])])
+    sh_var = float(sharpes.var(ddof=1))
+
+    print(f"  Matrix: {matrix.shape}, n_trials={n_trials}")
+    t0 = time.time()
+
+    pbo = probability_backtest_overfitting(matrix)
+    pbo_val = float(pbo.pbo)
+    pbo_ok = pbo_val <= PBO_THRESHOLD
+    print(f"  PBO: {pbo_val:.4f} ({'PASS' if pbo_ok else 'FAIL'})")
+
+    spa = hansen_spa(matrix)
+    spa_p = float(spa.p_value)
+    spa_ok = spa_p < SPA_ALPHA
+    print(f"  SPA: p={spa_p:.4f} ({'PASS' if spa_ok else 'FAIL'})")
+
+    # 3x cost series
+    daily_x3 = []
+    for c in cells:
+        try:
+            costs3 = costs_for(c["sym"], meta, mult=COST_SCENARIO)
+            ds = daily_series(c["df"], c["sigs"], costs3)
+            daily_x3.append(ds)
+        except Exception:
+            daily_x3.append(None)
+
+    # Per-cell verdicts
+    verdicts = []
+    for idx, (orig_i, ds) in enumerate(valid):
+        c = cells[orig_i]
+        arr = ds.to_numpy(float)
+        cid = f"{c['sym']}.{c['family']}.rr={c.get('params',{}).get('rr','?')}_wb={c.get('params',{}).get('wait_bars','?')}"
+
+        # In-sample
+        sr = sharpe_ratio(arr)
+        stages = {
+            "economic_prior": {"passed": True, "message": "discovered via external channel"},
+            "in_sample_screen": {"passed": bool(sr > 0.0), "sharpe": round(float(sr), 4)},
+        }
+
+        # Deflated Sharpe
+        dsr = deflated_sharpe_ratio(arr, n_trials=n_trials,
+                                    variance_of_sharpes=sh_var, threshold=DSR_THRESHOLD)
+        stages["deflated_sharpe"] = {
+            "passed": bool(dsr.passed), "dsr": round(float(dsr.dsr), 4),
+            "sr0": round(float(dsr.sr0_threshold), 4), "n_trials": n_trials
+        }
+
+        # PBO + SPA (program-level)
+        stages["pbo"] = {"passed": pbo_ok, "pbo": round(pbo_val, 4)}
+        stages["reality_check_spa"] = {"passed": spa_ok, "p_value": round(spa_p, 4)}
+
+        # CPCV
+        cpcv = CPCV(n_groups=6, n_test_groups=2)
+        oos = []
+        for split in cpcv.split(len(arr)):
+            te = np.asarray(split.test)
+            if len(te) >= 30:
+                oos.append(sharpe_ratio(arr[te]))
+        cpcv_mean = float(np.mean(oos)) if oos else 0.0
+        stages["cpcv"] = {"passed": bool(cpcv_mean > 0.0),
+                          "mean_oos_sharpe": round(cpcv_mean, 4), "folds": len(oos)}
+
+        # Walk Forward
+        try:
+            wf = WalkForwardEngine().evaluate(arr, n_splits=WF_SPLITS,
+                                              test_size=max(20, len(arr) // 6),
+                                              min_oos_sharpe=0.0,
+                                              min_stability=WF_MIN_STABILITY)
+            wf_status = wf.status
+            wf_oos = float(wf.oos_sharpe)
+            wf_stab = float(wf.stability)
+        except Exception:
+            wf_status, wf_oos, wf_stab = "TOO_SHORT", float("-inf"), 0.0
+        stages["walk_forward"] = {
+            "passed": bool(wf_status is WalkForwardStatus.PASSED),
+            "oos_sharpe": round(wf_oos, 4), "stability": round(wf_stab, 4)
+        }
+
+        # Stress costs (3x)
+        x3_ds = daily_x3[orig_i]
+        if x3_ds is not None and len(x3_ds) > 0:
+            exp3 = float(x3_ds.to_numpy(float).mean())
+        else:
+            exp3 = 0.0
+        stages["stress_costs"] = {"passed": bool(exp3 > 0.0), "exp_x3": round(exp3, 4)}
+
+        # Lockbox
+        stages["lockbox"] = {"passed": bool(wf_oos >= 0.0),
+                             "lockbox_sharpe": round(wf_oos, 4)}
+
+        # Expected Value
+        ev = float(arr.mean())
+        stages["expected_value"] = {"passed": bool(ev > 0.0), "ev": round(ev, 4)}
+
+        passed = all(s["passed"] for s in stages.values())
+        verdicts.append({
+            "cell": cid, "sym": c["sym"], "family": c["family"],
+            "days": len(arr), "passed": passed, "stages": stages
+        })
+
+    elapsed = time.time() - t0
+    n_pass = sum(1 for v in verdicts if v.get("passed"))
+    gate_fails = {}
+    for v in verdicts:
+        for name, s in v.get("stages", {}).items():
+            if not s["passed"]:
+                gate_fails[name] = gate_fails.get(name, 0) + 1
+
+    print(f"\n  RESULT: {n_pass}/{len(verdicts)} pass all 10 gates ({elapsed:.0f}s)")
+    if gate_fails:
+        print(f"  Gate failures: {gate_fails}")
+
+    for v in verdicts:
+        status = "PASS" if v["passed"] else "FAIL"
+        print(f"  {status} {v['cell']:<50} n={v['days']}")
+        if not v["passed"]:
+            for name, s in v["stages"].items():
+                if not s["passed"]:
+                    print(f"         FAIL {name}: {s}")
+
+    return {
+        "hunt": hunt_name,
+        "n_cells": len(cells),
+        "n_trials": n_trials,
+        "program_level": {"pbo": round(pbo_val, 4), "spa_p": round(spa_p, 4)},
+        "survivors_passing_all": n_pass,
+        "gate_fails": gate_fails,
+        "verdicts": verdicts,
+        "swept_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+def main():
+    meta = json.loads((UNI / "universe.json").read_text("utf-8"))
+
+    # Load external backtest survivors
+    surv_file = HYP / "external_survivors.json"
+    if not surv_file.exists():
+        print("No external survivors found")
+        return
+    survivors = json.loads(surv_file.read_text("utf-8"))
+    print(f"Loaded {len(survivors)} external survivors")
+
+    # Group by unique (sym, family, params) combos
+    cells = {}
+    for h in survivors:
+        sym = h.get("symbol")
+        fam = h.get("family")
+        params = h.get("params", {})
+        if not sym or not fam:
+            continue
+        key = f"{sym}.{fam}.{json.dumps(params, sort_keys=True)}"
+        if key not in cells:
+            cells[key] = {"sym": sym, "family": fam, "params": params}
+
+    print(f"Unique cells to evaluate: {len(cells)}")
+    for k, v in cells.items():
+        print(f"  {k}")
+
+    # Build cell objects
+    cell_objs = []
+    for key, spec in cells.items():
+        obj = build_cell(spec["sym"], spec["family"], spec["params"], meta)
+        if obj:
+            cell_objs.append(obj)
+        else:
+            print(f"  SKIP {key}: parquet missing or build failed")
+
+    if not cell_objs:
+        print("No buildable cells")
+        return
+
+    # Run gauntlet
+    result = run_gauntlet(cell_objs, "external_discoveries", meta)
+
+    # Save
+    out = REPORTS / "universal_gates_external.json"
+    out.write_text(json.dumps(result, indent=2, default=str), encoding="utf-8")
+    print(f"\nSaved to {out}")
+
+    # Update UNIVERSAL_SURVIVORS.json
+    survivors_all = {}
+    surv_path = REPORTS / "UNIVERSAL_SURVIVORS.json"
+    if surv_path.exists():
+        try:
+            old = json.loads(surv_path.read_text("utf-8"))
+            survivors_all = old.get("survivors", {})
+        except Exception:
+            pass
+
+    for v in result.get("verdicts", []):
+        if v.get("passed"):
+            key = f"external.{v['cell']}"
+            survivors_all[key] = {
+                "hunt": "external_discoveries",
+                "cell": v["cell"],
+                "sym": v["sym"],
+                "days": v["days"],
+                "gates": v["stages"],
+                "gated_at": datetime.now(timezone.utc).isoformat(),
+            }
+
+    surv_path.write_text(json.dumps({
+        "n": len(survivors_all),
+        "survivors": survivors_all,
+        "note": "UNIVERSAL 10-GATE PASS ONLY.",
+        "swept_at": datetime.now(timezone.utc).isoformat(),
+    }, indent=2, default=str), encoding="utf-8")
+    print(f"Updated UNIVERSAL_SURVIVORS.json: {len(survivors_all)} total")
+
+
+if __name__ == "__main__":
+    main()

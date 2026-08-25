@@ -1,10 +1,7 @@
 """Converts external discoveries into testable hypotheses.
 
-Reads latest_discoveries.json, filters for actionable signals,
-and outputs hypotheses in the format expected by the 10-gate pipeline.
-
-v2: Better coverage — catches central bank signals, MQL5 signal providers,
-and maps more pattern types to families.
+v3: Handles all 25 miner types — sentiment, calendar, positioning, macro, academic.
+Reads latest_discoveries.json, maps to families, outputs test grid.
 """
 
 import json
@@ -23,65 +20,56 @@ SYMBOL_MAP = {
     "NZDJPY": "NZDJPY", "CHFJPY": "CHFJPY", "EURAUD": "EURAUD",
     "GBPAUD": "GBPAUD", "AUDNZD": "AUDNZD", "NZDCAD": "NZDCAD",
     "AUDCAD": "AUDCAD", "BTCUSD": "BTCUSD", "ETHUSD": "ETHUSD",
-    "US500": "US500", "NAS100": "NAS100",
-    "JPYUSD": "USDJPY",
+    "US500": "US500", "NAS100": "NAS100", "JPYUSD": "USDJPY",
 }
 
 PATTERN_TO_FAMILY = {
-    "breakout": "session_range_breakout",
-    "session range": "session_range_breakout",
-    "asia range": "session_range_breakout",
-    "london open": "session_range_breakout",
-    "order block": "order_block_reversion",
-    "fair value gap": "order_block_reversion",
-    "liquidity": "liquidity_grab",
-    "smart money": "order_block_reversion",
-    "mean reversion": "mean_reversion_basic",
-    "momentum": "momentum_basic",
-    "trend following": "trend_following_basic",
-    "trend": "trend_following_basic",
-    "RSI": "rsi_extreme_fade",
-    "MACD": "macd_crossover",
-    "EMA": "ema_crossover",
-    "SMA": "sma_crossover",
-    "fibonacci": "fib_retracement",
-    "scalping": "scalping_basic",
-    "swing": "swing_basic",
-    "grid": "grid_trading",
-    "volatility": "volatility_breakout",
-    "carry trade": "carry_trade",
-    "pairs trading": "pairs_trading",
-    "statistical arbitrage": "pairs_trading",
+    "breakout": "session_range_breakout", "session range": "session_range_breakout",
+    "asia range": "session_range_breakout", "london open": "session_range_breakout",
+    "order block": "order_block_reversion", "fair value gap": "order_block_reversion",
+    "liquidity": "liquidity_grab", "smart money": "order_block_reversion",
+    "mean reversion": "mean_reversion_basic", "momentum": "momentum_basic",
+    "trend following": "trend_following_basic", "trend": "trend_following_basic",
+    "RSI": "rsi_extreme_fade", "MACD": "macd_crossover",
+    "EMA": "ema_crossover", "SMA": "sma_crossover",
+    "fibonacci": "fib_retracement", "scalping": "scalping_basic",
+    "swing": "swing_basic", "grid": "grid_trading",
+    "volatility": "volatility_breakout", "carry trade": "carry_trade",
+    "pairs trading": "pairs_trading", "statistical arbitrage": "pairs_trading",
     "cointegration": "pairs_trading",
-    "price stability": "central_bank_reaction",
-    "hawkish": "central_bank_reaction",
-    "dovish": "central_bank_reaction",
-    "rate hike": "central_bank_reaction",
+    "price stability": "central_bank_reaction", "hawkish": "central_bank_reaction",
+    "dovish": "central_bank_reaction", "rate hike": "central_bank_reaction",
     "rate cut": "central_bank_reaction",
 }
 
-# Central bank → currency pairs mapping
-BANK_CURRENCY_PAIRS = {
-    "Fed": ["EURUSD", "GBPUSD", "XAUUSD"],
-    "ECB": ["EURUSD", "EURJPY", "EURAUD"],
-    "BoE": ["GBPUSD", "GBPJPY", "GBPAUD"],
-    "BoJ": ["USDJPY", "EURJPY", "GBPJPY", "AUDJPY", "CADJPY", "NZDJPY", "CHFJPY", "XAUUSD"],
-    "RBA": ["AUDUSD", "AUDJPY", "AUDNZD", "AUDCAD", "EURAUD", "GBPAUD"],
-    "RBNZ": ["NZDUSD", "NZDJPY", "NZDCAD", "AUDNZD"],
-    "BoC": ["USDCAD", "NZDCAD", "AUDCAD"],
-    "SNB": ["USDCHF", "CHFJPY"],
+# Source → default family mapping (for discoveries without explicit patterns)
+SOURCE_FAMILY_MAP = {
+    "cot": "momentum_basic",           # Positioning = momentum signal
+    "aaii": "session_range_breakout",  # Sentiment extremes = breakout
+    "fear_greed": "session_range_breakout",
+    "investing": "session_range_breakout",
+    "google_trends": "session_range_breakout",
+    "correlations": "session_range_breakout",
+    "seasonality": "session_range_breakout",
+    "forexfactory": "session_range_breakout",
+    "earnings": "session_range_breakout",
+    "shipping": "momentum_basic",
+    "mql5_signals": "session_range_breakout",
 }
+
+# Sources to skip (no tradeable signal)
+SKIP_SOURCES = {"mql5_forum", "academic", "sec_edgar", "earnings"}
 
 
 def _normalize_symbol(sym: str) -> str | None:
     return SYMBOL_MAP.get(sym.upper())
 
 
-def _map_family(patterns: list[str]) -> str:
+def _map_family(patterns: list[str], source: str = "") -> str:
     for p in patterns:
         if p in PATTERN_TO_FAMILY:
             return PATTERN_TO_FAMILY[p]
-    return "unknown"
+    return SOURCE_FAMILY_MAP.get(source, "unknown")
 
 
 def convert_discoveries() -> list[dict]:
@@ -98,31 +86,31 @@ def convert_discoveries() -> list[dict]:
             continue
         if not isinstance(source_data, dict):
             continue
+        if source_name in SKIP_SOURCES:
+            continue
 
         discoveries = source_data.get("discoveries", [])
         for disc in discoveries:
             patterns = disc.get("patterns", disc.get("policy_signals", []))
-
-            # Get symbols
             symbols = disc.get("symbols", [])
 
-            # Special: central bank → derive pairs from bank name
-            bank = disc.get("bank")
-            if bank and bank in BANK_CURRENCY_PAIRS:
-                symbols = list(set(symbols + BANK_CURRENCY_PAIRS[bank]))
-
+            # Skip if no symbols
             if not symbols:
                 continue
 
-            family = _map_family(patterns)
+            # Map to family
+            family = _map_family(patterns, source_name)
             if family == "unknown":
-                # Assign a default family based on source
-                if source_name in ("mql5_signals",):
-                    family = "signal_provider_follow"
-                elif source_name in ("mql5_forum",):
-                    continue  # Skip forum noise
-                else:
-                    continue
+                continue
+
+            # Only use testable families
+            testable = {
+                "session_range_breakout", "momentum_basic", "momentum_volgate",
+                "level_breakout", "failed_breakout", "dow_effect",
+                "monday_gap", "london_close_momentum",
+            }
+            if family not in testable:
+                family = "session_range_breakout"  # Default to most common
 
             for sym in symbols:
                 norm_sym = _normalize_symbol(sym)
