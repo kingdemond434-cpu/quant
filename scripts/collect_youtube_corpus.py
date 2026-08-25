@@ -62,6 +62,45 @@ def read_json(p: Path, default):
         return default
 
 
+TRANSCRIPTS_PER_RUN = 3     # best-effort; each is a watch-page fetch + one timedtext fetch
+
+
+def fetch_transcript(video_id: str) -> str | None:
+    """Best-effort public captions via the player's own timedtext route (no API quota).
+
+    The official Data API only serves captions to the video's OWNER, so this parses the watch
+    page's captionTracks (the exact data the player uses) and pulls the track text. Returns
+    None quietly on any miss -- this box previously measured YouTube data routes as flaky, and
+    the pipeline treats video as an INDEX (titles/descriptions/links) with transcripts a bonus,
+    never a dependency.
+    """
+    try:
+        req = urllib.request.Request(
+            f"https://www.youtube.com/watch?v={video_id}",
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+        with urllib.request.urlopen(req, timeout=20) as r:
+            html = r.read().decode("utf-8", errors="replace")
+        m = re.search(r'"captionTracks":(\[.*?\])', html)
+        if not m:
+            return None
+        tracks = json.loads(m.group(1))
+        track = next((t for t in tracks if t.get("languageCode", "").startswith("en")),
+                     tracks[0] if tracks else None)
+        if not track or not track.get("baseUrl"):
+            return None
+        url = track["baseUrl"].replace("\\u0026", "&") + "&fmt=json3"
+        with urllib.request.urlopen(url, timeout=20) as r:
+            data = json.load(r)
+        words = []
+        for ev in data.get("events", []):
+            for seg in ev.get("segs", []) or []:
+                words.append(seg.get("utf8", ""))
+        text = "".join(words).strip()
+        return text[:20000] if text else None
+    except Exception:                                                    # noqa: BLE001
+        return None
+
+
 def main() -> int:
     if not KEYFILE.exists():
         print("youtube key absent (data/secrets/youtube_api_key) -- nothing collected, "
@@ -75,21 +114,38 @@ def main() -> int:
     rows: list[dict] = []
 
     try:
-        # 1. DISCOVERY: resolve any seed/registered name lacking a channel id (search = 100u,
-        # so at most a few per run; once resolved, never searched again).
+        # 1. DISCOVERY, forHandle FIRST (1 unit vs search's 100 -- and the project's search
+        # quota was measured exhausted on day one while list quota was untouched). Handles are
+        # guessed from the seed name with spaces stripped; a miss falls back to ONE budgeted
+        # search only when the search quota works at all this run.
+        search_dead = False
         unresolved = [q for q in SEED_QUERIES if q not in reg["channels"]
-                      and q not in reg["discovered"]][:3]
+                      and q not in reg["discovered"]][:6]
         for q in unresolved:
+            handle = "@" + re.sub(r"[^A-Za-z0-9]", "", q)
+            try:
+                d = api("channels", spent, LIST_COST, part="snippet", forHandle=handle)
+                items = d.get("items", [])
+                if items:
+                    cid, title = items[0]["id"], items[0]["snippet"]["title"]
+                    reg["discovered"].setdefault(q, {})[cid] = title
+                    reg["channels"].setdefault(q, {})
+                    report["discovered_channels"] += 1
+                    continue
+            except Exception as exc:                                     # noqa: BLE001
+                report["errors"].append(f"forHandle {handle}: {exc}")
+            if search_dead:
+                continue
             try:
                 d = api("search", spent, SEARCH_COST, part="snippet", q=q,
                         type="channel", maxResults=3)
                 for item in d.get("items", []):
                     cid = item["id"]["channelId"]
-                    title = item["snippet"]["title"]
-                    reg["discovered"].setdefault(q, {})[cid] = title
+                    reg["discovered"].setdefault(q, {})[cid] = item["snippet"]["title"]
                     report["discovered_channels"] += 1
-                reg["channels"].setdefault(q, {})   # mark resolved even if empty
+                reg["channels"].setdefault(q, {})
             except Exception as exc:                                     # noqa: BLE001
+                search_dead = True
                 report["errors"].append(f"search {q}: {exc}")
 
         # 2. ENUMERATION: for every followed channel id, incremental uploads sweep.
@@ -140,6 +196,20 @@ def main() -> int:
                 report["errors"].append(f"channel {title}: {exc}")
     except RuntimeError as exc:
         report["errors"].append(str(exc))
+
+    # 3. TRANSCRIPTS, best-effort, newest videos first, hard-capped per run.
+    got_t = 0
+    for row in sorted(rows, key=lambda r: r.get("published", ""), reverse=True):
+        if got_t >= TRANSCRIPTS_PER_RUN:
+            break
+        vid = row.get("video_id")
+        if not vid:
+            continue
+        t = fetch_transcript(vid)
+        row["transcript"] = t
+        if t:
+            got_t += 1
+    report["transcripts"] = got_t
 
     report["videos"] = len(rows)
     report["units_spent"] = spent[0]
