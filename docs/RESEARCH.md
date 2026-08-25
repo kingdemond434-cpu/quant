@@ -71,8 +71,20 @@ the data nobody else can buy. Every owned dataset below 100% explored is a stand
   via the Search Operator Library (`docs/research/search_operator_library.md`) — the single
   source of truth for ALL search capability; every new operator lands there with provenance.
 - **GitHub maximalism**; archives, Wayback/CDX, academic mirrors, government portals, vendor free
-  tiers, forgotten APIs, community lakes. FREE-FIRST in every language; a paid path only after
-  the documented free hunt fails, graded residual_gap in the universe map.
+  tiers, forgotten APIs, community lakes.
+- **PERMANENT FREE-FRONTIER (principal 2026-08-25; LAWS L1.11 outranks any softer wording):**
+  free-first is not a preference — it is permanent, and there is NO paid path. Every apparent
+  data deficiency triggers another maximum-depth, maximum-breadth free-alternative search:
+  official archives, APIs, repositories, Issues/Discussions/forks, mirrors, academic and public
+  datasets, non-English ecosystems, historical archives, regional communities, public samples,
+  self-recording, and reconstruction from raw public information. **A commercial vendor is
+  evidence that useful information may exist — never permission to buy it:** decompose the
+  product and reproduce the research-relevant information wherever technically and legally
+  possible. "We couldn't find it" ≠ "no free alternative exists" — it means UNRESOLVED → deepen
+  the search → expand languages/regions → follow citation/repo/maintainer graphs → reconstruct →
+  record forward → periodically rediscover. Search-space expansion continues indefinitely because
+  the free source universe is assumed incomplete; a residual gap is graded only after that loop
+  is documented, and it stays on the rediscovery cadence forever.
 - **Information value over source prestige.** The comment/reply layer is first-class. Extreme
   claims are mined for their mechanism and screened like everything else — social proof is NEVER
   evidence, in any language, from any source.
@@ -132,9 +144,14 @@ The MT5 universe's native intelligence layer, hunted permanently and broad:
 - **§33 MINED-TO-WIRED, binding over any conflicting cadence:** every carded find carries exactly
   one inline disposition by end of next cycle — `[§33: wired -> artifact]` / `screened` /
   `killed` / `deferred(DATE)`. Conversion is credited from ARTIFACTS ON DISK that postdate the
-  find, never from a report. While anything owes a disposition, digs refuse to start
-  (`data/mining_suspended`). Backlog worked highest-ROI first, expensive tier first; a kill is
-  not a conversion; the conversion ratchet only tightens.
+  find, never from a report. **THE PROTECTION RULE (principal, reaffirmed 2026-08-25, supersedes
+  every "digs refuse to start" formulation):** a conversion backlog preempts a dig's PRIORITY,
+  never its EXISTENCE — the owed backlog leads the prompt and is worked FIRST, and the dig then
+  mines on in the SAME run. Mining stops ONLY for an actual integrity, survival or
+  resource-exhaustion problem, never because downstream conversion is behind: discovery backlog →
+  scale conversion/extraction HARDER, never → stop discovering (L1.8; `scripts/mine_gate.py`
+  already implements exactly this — always exit 0, fail-open loudly). Backlog worked highest-ROI
+  first, expensive tier first; a kill is not a conversion; the conversion ratchet only tightens.
 - **Every discovery is a structured packet** (source, claim, mechanism, evidence class, cost to
   verify, MT5 instrument it informs) — a find that updates no frontier region is a number in a
   file.
@@ -180,6 +197,53 @@ The MT5 universe's native intelligence layer, hunted permanently and broad:
 - **Capacity parity (L1.18a):** judged against ONE SLEEVE, never the whole book; the score goes
   flat above sufficiency; both capacity bands hunted concurrently; retirement only at
   growth_runway < 1, and then hunt one tier larger NOW.
+- **QUEUED MATHEMATICAL-CORE UPGRADE (carded 2026-08-25, principal-endorsed):** correcting only
+  the 12 concurrently active forward slots does not automatically guarantee LIFETIME
+  false-discovery control across unlimited sequential cohorts. Investigate an anytime-valid
+  sequential framework — alpha-investing / e-values / online FDR — where evidence accumulates
+  forever without a trial-count explosion destroying power. The bar must NOT be made continually
+  harsher with generation (that recreates the problem the two-stage law solved); this is a
+  preregistered research item with its own gap-register row, not a licence to touch the current
+  bar before the replacement is validated.
+
+## 6a. THE CANONICAL GATE POLICY (principal-fixed, 2026-08-25 — the ONE door, used daily, always)
+
+**Version: `mt5-original-universal-10-v2-calibrated-inputs`. These constants are CANON. Any
+harsher bar recomputed from inflated trial counts, generation volume or multiplicity re-pricing
+is diagnostics ONLY and is COMPLETELY IGNORED for promotion decisions — hypotheses are promoted
+to forward shadow using these original universal gates and thresholds, fixed for life, and
+nothing else. Every hypothesis, every day, the same way.**
+
+| # | Gate | Class | Threshold |
+|---|---|---|---|
+| 1 | economic_prior | VALIDITY | documented at hunt creation |
+| 2 | in_sample_screen | POWER | sharpe > 0.0 |
+| 3 | deflated_sharpe | POWER | DSR ≥ 0.95 (fixed 7× trial multiplier) |
+| 4 | pbo | VALIDITY | PBO ≤ 0.5 (CSCV) |
+| 5 | reality_check_spa | VALIDITY | SPA p < 0.05 (Hansen) |
+| 6 | cpcv | POWER | mean OOS sharpe > 0 (6 groups, 2 test, purge+embargo) |
+| 7 | walk_forward | POWER | PASSED (4 splits, test=max(20, len//6), min OOS sharpe 0, min stability 0.5) |
+| 8 | stress_costs | VALIDITY | exp_R at 3× costs > 0 |
+| 9 | lockbox | VALIDITY | untouched 20% holdout sharpe > 0 (min 60 bars, min 100 train, chronological) |
+| 10 | expected_value | POWER | mean daily R > 0 |
+
+**Classification:** a VALIDITY failure (gates 1, 4, 5, 8, 9) = **DEAD** — no cure, hard fail.
+A POWER failure (gates 2, 3, 6, 7, 10) = **SHADOW** — forward evidence can cure.
+
+**DISCOVERY → LIVE, the explicit daily pipeline (canon, acted on the same way every day):**
+1. Hypothesis (preregistered, novelty-gated) → the 10 gates above.
+2. All-pass or POWER-only failures → **forward shadow** in the canonical universal shadow.
+3. **Judgment schedule:** reaches **50 trades at any time** → judged INSTANTLY. Has **≥ 20
+   trades at day 14** → judged at day 14. Has **< 20 trades at day 14** (slow edges) → STAYS in
+   shadow until it accumulates 20 trades, then judged. Judgment = promote or reject against the
+   forward-cure thresholds: exp_R ≥ 0.05R, maxDD > −25R, days_active ≥ 14; full cure at n ≥ 50.
+4. **Canary ramp (authority escalation):** FORWARD_READY 0 trades → 0.0 · CANARY_25 (1–49) →
+   0.25 · CANARY_50 (50–199) → 0.50 · LIVE_FULL (200+) → 1.00.
+5. Promotion is executed by the promoter, never by hand (LAWS §4); rejection feeds the graveyard
+   and the descendant loop (§7).
+
+The fixed 7× DSR multiplier is where multiplicity is priced — ONCE, as a constant — which is
+exactly why the bar never rises with generation and generation is never throttled by the bar.
 
 ## 7. SURVIVORS AND THE FACTORY (the renewable engine)
 

@@ -203,7 +203,11 @@ axis accruing within 7 days).
 
 Two-stage discovery law (sealed direction): the backtest gauntlet is a SCREEN with zero promotion
 authority; promotion comes only from pre-registered forward evidence, Holm-corrected, concurrent
-slots capped (`MAX_FORWARD_SLOTS=12`). The thirteen compressed rules of the promotion protocol
+slots capped (`MAX_FORWARD_SLOTS=12`). **The one operative door is the CANONICAL GATE POLICY
+(`mt5-original-universal-10-v2-calibrated-inputs`, RESEARCH §6a): fixed constants for life —
+any harsher bar recomputed from inflated trial counts is diagnostics only and NEVER blocks a
+promotion. THE PROTECTION RULE: a conversion or validation backlog re-orders a dig's priority,
+never its existence — mining stops only for integrity, survival or resource exhaustion (L1.8).** The thirteen compressed rules of the promotion protocol
 bind every brain: fail closed; count trials; never join a day to its own future; a gate holds at
 every layer; import the number, never restate it; absence ≠ zero; never swallow an exception that
 changes a computation; check units against the account; implausible abundance is a bug report;
