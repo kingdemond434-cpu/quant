@@ -262,6 +262,42 @@ A POWER failure (gates 2, 3, 6, 7, 10) = **SHADOW** — forward evidence can cur
 The fixed 7× DSR multiplier is where multiplicity is priced — ONCE, as a constant — which is
 exactly why the bar never rises with generation and generation is never throttled by the bar.
 
+## 6b. RECENCY LAW — recent evidence outranks ancient evidence (principal 2026-08-26)
+
+**Markets are non-stationary; a strategy's last two years say more about its next two years than
+its first eight do.** Full-history testing that dilutes live regime with dead regime hides both
+kinds of error: it passes strategies that died years ago, and it fails strategies that only
+became viable under current structure (post-2022 rates, current Fusion spreads, current session
+microstructure). The desk therefore evaluates on TWO windows, always, and routes on both:
+
+| Recent window (trailing 24 months) | Full history | Verdict |
+|---|---|---|
+| PASS | PASS | **Strongest** — highest forward-slot priority |
+| PASS | FAIL | **SHADOW** — earns a forward slot, flagged `recent_only`; ancient regime may simply be irrelevant, and forward evidence is what settles it |
+| FAIL | PASS | **DEAD** — a stale winner. Passing only on history the market has left behind is not an edge; this is a KILL, not a deferral |
+| FAIL | FAIL | DEAD |
+
+**WHY THIS IS A TIGHTENING, NOT A LOOSENING — and the reason it does not breach L1.6.** The
+recent window is ADDED as a requirement, never substituted for the full one: a candidate must now
+be alive in current regime, which kills stale winners that full-history testing previously waved
+through. The only relaxation is in the OTHER direction — recent-pass/full-fail is routed to
+SHADOW rather than to the graveyard — and under the two-stage law that costs nothing, because
+**the gauntlet only decides who gets a forward clock, never who gets capital.** Promotion still
+requires pre-registered Fusion-native forward evidence at the unchanged canonical thresholds.
+The bar that guards money does not move; only the bar that guards a zero-capital shadow slot
+becomes recency-aware.
+
+**The honest cost, stated:** a 24-month window carries fewer observations, so its statistics are
+weaker — the recent window is scored with the SAME deflation math and the same trial charging,
+never a discounted one. A candidate whose recent window is too short to deflate honestly is
+UNMEASURED (L1.28a), not passed. And a `recent_only` sleeve carries that flag through promotion,
+retirement and the genealogy, so nothing ever forgets which evidence it was admitted on.
+
+**Standing corollary — edge decay is measured, not assumed:** any LIVE sleeve whose trailing
+24-month expectancy turns negative while its lifetime expectancy remains positive is a
+retirement candidate on the same logic that admits `recent_only` candidates. Recency cuts both
+ways or it is not a law.
+
 ## 7. SURVIVORS AND THE FACTORY (the renewable engine)
 
 The survivor factory is the primary renewable engine: continuous meaningful candidate production,

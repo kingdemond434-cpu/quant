@@ -212,7 +212,12 @@ slots capped (`MAX_FORWARD_SLOTS=12`). **The one operative door is the CANONICAL
 (`mt5-original-universal-10-v2-calibrated-inputs`, RESEARCH §6a): fixed constants for life —
 any harsher bar recomputed from inflated trial counts is diagnostics only and NEVER blocks a
 promotion. THE PROTECTION RULE: a conversion or validation backlog re-orders a dig's priority,
-never its existence — mining stops only for integrity, survival or resource exhaustion (L1.8).** The thirteen compressed rules of the promotion protocol
+never its existence — mining stops only for integrity, survival or resource exhaustion (L1.8).
+THE RECENCY LAW (RESEARCH §6b): every candidate is judged on a trailing 24-month window AND on
+full history — recent failure with historical success is a stale winner and is KILLED; recent
+success with historical failure earns a zero-capital shadow slot flagged `recent_only`, because
+the gauntlet decides who gets a forward clock, never who gets capital. The money bar is
+unchanged; recency cuts both ways, including retiring live sleeves whose recent expectancy dies.** The thirteen compressed rules of the promotion protocol
 bind every brain: fail closed; count trials; never join a day to its own future; a gate holds at
 every layer; import the number, never restate it; absence ≠ zero; never swallow an exception that
 changes a computation; check units against the account; implausible abundance is a bug report;
