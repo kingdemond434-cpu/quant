@@ -298,6 +298,51 @@ retirement and the genealogy, so nothing ever forgets which evidence it was admi
 retirement candidate on the same logic that admits `recent_only` candidates. Recency cuts both
 ways or it is not a law.
 
+## 6c. REGIME SPECIALIZATION LAW — a sleeve that wins in ONE regime is a specialist, not a
+failure (principal 2026-08-26)
+
+**EXPECTING ONE SLEEVE TO WIN IN EVERY REGIME IS THE ERROR.** Regimes are different games:
+trending and ranging, high and low volatility, risk-on and risk-off, pre- and post-event, thin
+and deep liquidity. A mechanism that exploits one of them has no obligation to exploit its
+opposite, and demanding that it does is how a desk rejects the very specialists that would have
+covered each regime between them. **A sleeve is NEVER rejected for being regime-conditional.**
+
+**THE ADMISSION UNIT ALREADY SAYS SO, and this law makes it operative rather than decorative:**
+the sealed policy admits on `strategy × instrument × side × horizon/session × preregistered
+point-in-time regime` — the regime is PART OF THE CANDIDATE'S IDENTITY, not a caveat attached to
+it. Judging a specialist on blended unconditional lifetime statistics averages its good regime
+with its dead one and calls the result mediocre; that number describes a strategy nobody is
+proposing to trade. **Score every candidate on its OWN regime's conditional expectancy.**
+
+**THE OPERATING CONSEQUENCE — a portfolio of specialists, switched dynamically:**
+- A sleeve runs at **FULL capacity in its own regime** — never penalised in sizing or heat
+  allocation for being idle elsewhere. Idle-out-of-regime is correct behaviour, not weakness.
+- Out of regime it **HIBERNATES**, and hibernation is a reversible state, never a death. Its
+  forward clock, ledger and genealogy continue; only its capital is released.
+- Released capital flows to sleeves whose regime IS active. **The book's exposure rotates with
+  the regime; the sleeve set does not shrink.**
+- **HIBERNATION MUST BE TWO-WAY.** A monitor that can only put sleeves to sleep is a slow
+  retirement engine wearing a regime costume: it must WAKE a sleeve the moment its regime
+  returns, on the same evidence that hibernated it. (Standing defect at the time of writing:
+  `regime_monitor.py` flags `hibernate` and has no wake path — carded, GAP 130.)
+
+**REGIME COVERAGE IS A PORTFOLIO OBJECTIVE, and an uncovered regime is a GAP, not an acceptable
+state.** The desk maintains a coverage map of regime → sleeves that profit in it, and a regime
+with no profitable sleeve is a NAMED hunting target for the factory, ranked like any other gap.
+Breadth across regimes is also the cheapest real growth: uncorrelated-by-construction sleeves
+raise measured k_eff, and the heat budget scales with √k_eff to the 15% ceiling — so covering
+more regimes literally raises the total risk the book may safely carry.
+
+**THE DISCIPLINE THAT KEEPS IT HONEST, and it is not optional:** the regime must be
+**preregistered and point-in-time** — declared before out-of-sample, computable from information
+available at decision time, never fitted afterwards to explain where the strategy happened to
+work. The unconditional arm is kept as a **separately counted control** (a conditioned arm that
+cannot beat its own unconditional parent has discovered nothing), every regime variant is a
+DSR-counted trial, and a regime that cannot be computed live means the sleeve is **OFF**, never
+"assume the good regime" — absence is not permission. Slicing history until a profitable subset
+appears is not specialization, it is the garden of forking paths, and the trial accounting is
+what separates the two.
+
 ## 7. SURVIVORS AND THE FACTORY (the renewable engine)
 
 The survivor factory is the primary renewable engine: continuous meaningful candidate production,

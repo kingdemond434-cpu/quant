@@ -217,7 +217,15 @@ THE RECENCY LAW (RESEARCH §6b): every candidate is judged on a trailing 24-mont
 full history — recent failure with historical success is a stale winner and is KILLED; recent
 success with historical failure earns a zero-capital shadow slot flagged `recent_only`, because
 the gauntlet decides who gets a forward clock, never who gets capital. The money bar is
-unchanged; recency cuts both ways, including retiring live sleeves whose recent expectancy dies.** The thirteen compressed rules of the promotion protocol
+unchanged; recency cuts both ways, including retiring live sleeves whose recent expectancy dies.
+THE REGIME SPECIALIZATION LAW (RESEARCH §6c): a sleeve is NEVER rejected for winning in only
+some regimes — the regime is part of the candidate's identity (it is in the sealed admission
+unit), specialists run at FULL capacity in their own regime and HIBERNATE reversibly outside it
+while their capital rotates to whichever sleeve's regime is live. Scoring is per-regime
+conditional, never blended lifetime. An uncovered regime is a named GAP; regime breadth raises
+k_eff and therefore the heat budget itself. Regimes must be preregistered, point-in-time and
+DSR-counted, with the unconditional arm kept as a control — an uncomputable live regime means
+OFF, never "assume the good one".** The thirteen compressed rules of the promotion protocol
 bind every brain: fail closed; count trials; never join a day to its own future; a gate holds at
 every layer; import the number, never restate it; absence ≠ zero; never swallow an exception that
 changes a computation; check units against the account; implausible abundance is a bug report;
