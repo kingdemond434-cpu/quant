@@ -143,6 +143,79 @@ def sleeve_forward_stats(ledger: list[dict], name: str) -> dict:
             "roll20_exp": sum(roll) / len(roll)}
 
 
+def load_qquant_shadow() -> dict:
+    """The qquant (hunt-certified) forward clock, kept in its own state file."""
+    p = SHADOW_DIR / "qquant_shadow_state.json"
+    try:
+        v = json.loads(p.read_text(encoding="utf-8"))
+        return v if isinstance(v, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def load_cert_specs() -> dict[str, dict]:
+    """Certificate key -> published shadow_spec, exact policy only (fail closed)."""
+    from gate_policy import all_ten_pass, is_exact_policy  # noqa: PLC0415
+    p = BASE / "reports" / "UNIVERSAL_SURVIVORS.json"
+    try:
+        certs = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    if not is_exact_policy(certs.get("gate_policy")):
+        return {}
+    out = {}
+    for key, cert in (certs.get("survivors") or {}).items():
+        if isinstance(cert, dict) and all_ten_pass(cert.get("gates")) \
+                and isinstance(cert.get("shadow_spec"), dict):
+            out[key] = cert["shadow_spec"]
+    return out
+
+
+def promote_generic(sleeves: list[dict], qshadow: dict, existing: set,
+                    gate_authority: set) -> bool:
+    """GAP 124: hunt-certified (qquant) candidates gain the same automatic door.
+
+    A qquant sleeve promotes when its OWN Fusion-native forward clock says
+    PROMOTION_CANDIDATE (the canon 50-trade / day-14-with-20 schedule lives in
+    qquant_shadow.py, not re-derived here) AND its certificate's published
+    shadow_spec is in the exact-policy authority set. The sleeve row carries
+    exec="family_market": the gateway executes it through the family-executor
+    path, which stays LOG-ONLY until data/GENERIC_EXEC_ENABLED exists -- wired
+    end to end, armed by one explicit human act (LAWS §4).
+    """
+    changed = False
+    cert_specs = load_cert_specs()
+    for key, row in qshadow.items():
+        if not isinstance(row, dict) or row.get("status") != "PROMOTION_CANDIDATE":
+            continue
+        if key in existing:
+            continue
+        spec = cert_specs.get(key)
+        if not spec:
+            plog(f"{key}: qquant PROMOTION_CANDIDATE but no exact-policy shadow_spec; refused")
+            continue
+        tup = (str(spec["symbol"]), str(spec["selector"]), spec.get("condition") or None,
+               str(spec["family"]), spec.get("is_universe") is True)
+        if tup not in gate_authority:
+            row["status"] = "BLOCKED_UNIVERSAL_GATES"
+            plog(f"{key}: qquant candidate refused -- spec not in exact-gate authority")
+            changed = True
+            continue
+        sleeves.append({"name": key, "symbol": tup[0], "selector": tup[1],
+                        "state": tup[2], "family": tup[3],
+                        "side": str(spec.get("side", "LONG")).upper(),
+                        "exec": "family_market",
+                        "lot": "auto_ramp", "risk_frac": PROMOTED_RISK_FRAC,
+                        "status": "LIVE",
+                        "promoted_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                        "shadow_exp": row.get("exp_r", 0.0)})
+        plog(f"AUTO-PROMOTED (generic) {key} -> LIVE at {PROMOTED_RISK_FRAC:.0%} base risk, "
+             f"ramped, exec=family_market (shadow exp={row.get('exp_r', 0.0):.3f}R "
+             f"n={row.get('n', 0)}) -- orders LOG-ONLY until data/GENERIC_EXEC_ENABLED")
+        changed = True
+    return changed
+
+
 def main() -> None:
     shadow = load_shadow()
     sleeves = load_sleeves()
@@ -150,6 +223,12 @@ def main() -> None:
     existing = {s["name"] for s in sleeves}
     gate_authority = authorized_specs(BASE)
     changed = False
+
+    qshadow = load_qquant_shadow()
+    if promote_generic(sleeves, qshadow, existing, gate_authority):
+        changed = True
+        (SHADOW_DIR / "qquant_shadow_state.json").write_text(
+            json.dumps(qshadow, indent=2), encoding="utf-8")
 
     for key, st in shadow.items():
         if not isinstance(st, dict):
