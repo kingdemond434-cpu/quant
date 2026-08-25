@@ -50,7 +50,20 @@ def main() -> int:
     certs = _read(REPORTS / "UNIVERSAL_SURVIVORS.json")
     state = _read(STATE)
     now = datetime.now(UTC)
-    rows = certs.get("survivors", {}) if is_exact_policy(certs.get("gate_policy")) else {}
+    policy_valid = is_exact_policy(certs.get("gate_policy"))
+    if not policy_valid:
+        state["updated_at"] = now.isoformat()
+        state["source_gate_policy_valid"] = False
+        state["source_error"] = (
+            "UNIVERSAL_SURVIVORS.json lacks the exact immutable gate-policy attestation"
+        )
+        SHADOW.mkdir(parents=True, exist_ok=True)
+        STATE.write_text(json.dumps(state, indent=2), encoding="utf-8")
+        print("qquant shadow refused: survivor source has no exact gate-policy attestation")
+        return 1
+    state.pop("source_error", None)
+    state["source_gate_policy_valid"] = True
+    rows = certs.get("survivors", {})
     certified = 0
     processed = 0
     for key, cert in rows.items():
