@@ -10,7 +10,7 @@
     "patterns": [
       "momentum"
     ],
-    "created": "2026-08-25T18:48:23.500861+00:00"
+    "created": "2026-08-25T20:01:11.516882+00:00"
   },
   {
     "id": "ext_github_XAUUSD_ema_crossover",
@@ -23,7 +23,7 @@
     "patterns": [
       "EMA"
     ],
-    "created": "2026-08-25T18:48:23.500882+00:00"
+    "created": "2026-08-25T20:01:11.516917+00:00"
   },
   {
     "id": "ext_github_XAUUSD_sma_crossover",
@@ -40,7 +40,7 @@
       "liquidity",
       "smart money"
     ],
-    "created": "2026-08-25T18:48:23.500890+00:00"
+    "created": "2026-08-25T20:01:11.516925+00:00"
   },
   {
     "id": "ext_github_XAUUSD_session_range_breakout",
@@ -54,85 +54,7 @@
       "breakout",
       "RSI"
     ],
-    "created": "2026-08-25T18:48:23.500898+00:00"
-  },
-  {
-    "id": "ext_central_bank_USDJPY_central_bank_reaction",
-    "source": "external_central_bank",
-    "symbol": "USDJPY",
-    "family": "central_bank_reaction",
-    "description": "",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
-    "confidence": 0.3,
-    "patterns": [
-      "price stability"
-    ],
-    "created": "2026-08-25T18:48:23.500919+00:00"
-  },
-  {
-    "id": "ext_central_bank_XAUUSD_central_bank_reaction",
-    "source": "external_central_bank",
-    "symbol": "XAUUSD",
-    "family": "central_bank_reaction",
-    "description": "",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
-    "confidence": 0.3,
-    "patterns": [
-      "price stability"
-    ],
-    "created": "2026-08-25T18:48:23.500924+00:00"
-  },
-  {
-    "id": "ext_central_bank_CADJPY_central_bank_reaction",
-    "source": "external_central_bank",
-    "symbol": "CADJPY",
-    "family": "central_bank_reaction",
-    "description": "",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
-    "confidence": 0.3,
-    "patterns": [
-      "price stability"
-    ],
-    "created": "2026-08-25T18:48:23.500929+00:00"
-  },
-  {
-    "id": "ext_central_bank_NZDJPY_central_bank_reaction",
-    "source": "external_central_bank",
-    "symbol": "NZDJPY",
-    "family": "central_bank_reaction",
-    "description": "",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
-    "confidence": 0.3,
-    "patterns": [
-      "price stability"
-    ],
-    "created": "2026-08-25T18:48:23.500933+00:00"
-  },
-  {
-    "id": "ext_central_bank_CHFJPY_central_bank_reaction",
-    "source": "external_central_bank",
-    "symbol": "CHFJPY",
-    "family": "central_bank_reaction",
-    "description": "",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
-    "confidence": 0.3,
-    "patterns": [
-      "price stability"
-    ],
-    "created": "2026-08-25T18:48:23.500938+00:00"
-  },
-  {
-    "id": "ext_central_bank_AUDJPY_central_bank_reaction",
-    "source": "external_central_bank",
-    "symbol": "AUDJPY",
-    "family": "central_bank_reaction",
-    "description": "",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
-    "confidence": 0.3,
-    "patterns": [
-      "price stability"
-    ],
-    "created": "2026-08-25T18:48:23.500943+00:00"
+    "created": "2026-08-25T20:01:11.516938+00:00"
   },
   {
     "id": "ext_central_bank_GBPJPY_central_bank_reaction",
@@ -145,7 +67,72 @@
     "patterns": [
       "price stability"
     ],
-    "created": "2026-08-25T18:48:23.500946+00:00"
+    "created": "2026-08-25T20:01:11.517338+00:00"
+  },
+  {
+    "id": "ext_central_bank_USDJPY_central_bank_reaction",
+    "source": "external_central_bank",
+    "symbol": "USDJPY",
+    "family": "central_bank_reaction",
+    "description": "",
+    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+    "confidence": 0.3,
+    "patterns": [
+      "price stability"
+    ],
+    "created": "2026-08-25T20:01:11.517353+00:00"
+  },
+  {
+    "id": "ext_central_bank_AUDJPY_central_bank_reaction",
+    "source": "external_central_bank",
+    "symbol": "AUDJPY",
+    "family": "central_bank_reaction",
+    "description": "",
+    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+    "confidence": 0.3,
+    "patterns": [
+      "price stability"
+    ],
+    "created": "2026-08-25T20:01:11.517358+00:00"
+  },
+  {
+    "id": "ext_central_bank_NZDJPY_central_bank_reaction",
+    "source": "external_central_bank",
+    "symbol": "NZDJPY",
+    "family": "central_bank_reaction",
+    "description": "",
+    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+    "confidence": 0.3,
+    "patterns": [
+      "price stability"
+    ],
+    "created": "2026-08-25T20:01:11.517362+00:00"
+  },
+  {
+    "id": "ext_central_bank_XAUUSD_central_bank_reaction",
+    "source": "external_central_bank",
+    "symbol": "XAUUSD",
+    "family": "central_bank_reaction",
+    "description": "",
+    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+    "confidence": 0.3,
+    "patterns": [
+      "price stability"
+    ],
+    "created": "2026-08-25T20:01:11.517365+00:00"
+  },
+  {
+    "id": "ext_central_bank_CHFJPY_central_bank_reaction",
+    "source": "external_central_bank",
+    "symbol": "CHFJPY",
+    "family": "central_bank_reaction",
+    "description": "",
+    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+    "confidence": 0.3,
+    "patterns": [
+      "price stability"
+    ],
+    "created": "2026-08-25T20:01:11.517369+00:00"
   },
   {
     "id": "ext_central_bank_EURJPY_central_bank_reaction",
@@ -158,6 +145,118 @@
     "patterns": [
       "price stability"
     ],
-    "created": "2026-08-25T18:48:23.500950+00:00"
+    "created": "2026-08-25T20:01:11.517373+00:00"
+  },
+  {
+    "id": "ext_central_bank_CADJPY_central_bank_reaction",
+    "source": "external_central_bank",
+    "symbol": "CADJPY",
+    "family": "central_bank_reaction",
+    "description": "",
+    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+    "confidence": 0.3,
+    "patterns": [
+      "price stability"
+    ],
+    "created": "2026-08-25T20:01:11.517377+00:00"
+  },
+  {
+    "id": "ext_reddit_XAUUSD_ema_crossover",
+    "source": "external_reddit",
+    "symbol": "XAUUSD",
+    "family": "ema_crossover",
+    "description": "Is Gold Ready for Another Push Higher?",
+    "url": "",
+    "confidence": 0.3,
+    "patterns": [
+      "EMA"
+    ],
+    "created": "2026-08-25T20:01:11.517387+00:00"
+  },
+  {
+    "id": "ext_reddit_EURUSD_swing_basic",
+    "source": "external_reddit",
+    "symbol": "EURUSD",
+    "family": "swing_basic",
+    "description": "Thoughts on EURUSD",
+    "url": "",
+    "confidence": 0.3,
+    "patterns": [
+      "scalp",
+      "swing",
+      "trend"
+    ],
+    "created": "2026-08-25T20:01:11.517394+00:00"
+  },
+  {
+    "id": "ext_reddit_XAUUSD_fib_retracement",
+    "source": "external_reddit",
+    "symbol": "XAUUSD",
+    "family": "fib_retracement",
+    "description": "Why do all my XAUUSD strategies suddenly work better after 2023",
+    "url": "",
+    "confidence": 0.3,
+    "patterns": [
+      "reversal",
+      "fibonacci",
+      "liquidity"
+    ],
+    "created": "2026-08-25T20:01:11.517400+00:00"
+  },
+  {
+    "id": "ext_reddit_XAUUSD_momentum_basic",
+    "source": "external_reddit",
+    "symbol": "XAUUSD",
+    "family": "momentum_basic",
+    "description": "Monday price actin prediction (XAUUSD). Thoughts ?",
+    "url": "",
+    "confidence": 0.3,
+    "patterns": [
+      "reversal",
+      "momentum"
+    ],
+    "created": "2026-08-25T20:01:11.517407+00:00"
+  },
+  {
+    "id": "ext_reddit_XAUUSD_liquidity_grab",
+    "source": "external_reddit",
+    "symbol": "XAUUSD",
+    "family": "liquidity_grab",
+    "description": "Gold at 4608 \u2014 What\u2019s Your Monday Bias?",
+    "url": "",
+    "confidence": 0.3,
+    "patterns": [
+      "pullback",
+      "liquidity"
+    ],
+    "created": "2026-08-25T20:01:11.517412+00:00"
+  },
+  {
+    "id": "ext_reddit_XAUUSD_sma_crossover",
+    "source": "external_reddit",
+    "symbol": "XAUUSD",
+    "family": "sma_crossover",
+    "description": "Friday",
+    "url": "",
+    "confidence": 0.3,
+    "patterns": [
+      "SMA"
+    ],
+    "created": "2026-08-25T20:01:11.517423+00:00"
+  },
+  {
+    "id": "ext_reddit_USDJPY_session_range_breakout",
+    "source": "external_reddit",
+    "symbol": "USDJPY",
+    "family": "session_range_breakout",
+    "description": "Waiting to Buy from 159.22- USDJPY (H1)",
+    "url": "",
+    "confidence": 0.3,
+    "patterns": [
+      "breakout",
+      "resistance",
+      "EMA"
+    ],
+    "created": "2026-08-25T20:01:11.517430+00:00"
   }
 ]
