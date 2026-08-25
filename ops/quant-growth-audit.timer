@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer for restored organ: growth-audit
+
+[Timer]
+OnCalendar=*-*-* *:00/30:00
+RandomizedDelaySec=60
+Unit=quant-growth-audit.service
+
+[Install]
+WantedBy=timers.target

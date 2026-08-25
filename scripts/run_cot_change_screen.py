@@ -176,8 +176,8 @@ def main() -> int:
     # XS: weekly Spearman across assets, weeks with >= 6 assets (prereg)
     xs: dict[str, Any] = {}
     bydate: dict[str, list[tuple[float, float, float]]] = {}
-    for d, _a, y, x1, x4 in rows:
-        bydate.setdefault(d, []).append((y, x1, x4))
+    for d, _a, yv, x1v, x4v in rows:
+        bydate.setdefault(d, []).append((yv, x1v, x4v))
     for name, xi in (("dx1", 1), ("dx4", 2)):
         ics = []
         for d in sorted(bydate):
