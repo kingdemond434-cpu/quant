@@ -23,7 +23,11 @@ if ! git diff --quiet -- "${INTEL_PATHS[@]}" 2>/dev/null \
     git add -- "${INTEL_PATHS[@]}" 2>/dev/null
     git commit -q -m "intelligence hourly sync $(date -u +%Y-%m-%d_%H%M): miners/frontier/cohorts artifacts" \
         && echo "intel committed" || echo "nothing to commit"
-    git pull --rebase -q origin desk-sync-clean 2>&1 | tail -1
+    # AUTOSTASH IS MANDATORY HERE, measured 2026-08-25: sibling organs (and this suite's own
+    # long-running miners) write artifacts DURING the commit, so a plain `pull --rebase` aborts
+    # on "unstaged changes" and the push never happens -- the bus would silently stop feeding
+    # the other brains, which is the exact failure it exists to prevent.
+    git -c rebase.autoStash=true pull --rebase -q origin desk-sync-clean 2>&1 | tail -1
     git push -q --no-verify origin desk-sync-clean 2>&1 | tail -1 \
         && echo "intel pushed" || echo "push failed -- next hour retries"
 fi
