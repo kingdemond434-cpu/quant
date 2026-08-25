@@ -1594,3 +1594,42 @@ feed-manipulation story. FXCM's CFTC ban (undisclosed dealing-desk interest whil
 "No Dealing Desk") is the canonical documented case of the REAL defect class.
 DERIVES-FROM: NONE (checked — first-person industry accounts, no cited upstream).
 [§33: killed -> this entry]
+
+### cn_bucketshop_retail_loss_as_directional_signal — folk premise "retail loses ⇒ fade retail direction" refuted by the CN bucket-shop industry's own fee arithmetic (CN, 2011-2017 era; pre-emptive falsification for every retail-sentiment-contrarian hypothesis, incl. the 反向跟单 reverse-copy-trade industry built on it)
+SOURCE: 南都/凤凰财经 2014-06-18 exposé (dead link; recovered via Wayback CDX this run, 3 captures,
+2015-05-21 capture read to full depth — 6,559-char article) + 武久文 legal-mode analysis (sohu
+193763502) + CSRC Shenzhen cleanup Q&A + 2026 反向跟单 vendor/search layer (qhfgd.com 68-part
+series located, unmined).
+THE FOLK PREMISE KILLED: CN member-firm B-books (贵金属交易所 era) proved retail "always loses",
+and an entire 反向跟单 (reverse-copy-trade) software industry monetised fading aggregate retail
+direction. THE REFUTATION IS IN THE HOUSE'S OWN ARITHMETIC (insider 杨诚, quoted with worked
+numbers): one silver round-trip at ¥4000/kg, 100kg lot, 1% margin, 8bp commission, 2bp/day
+overnight, ¥8/kg spread = **¥1,528 = 38.2% of the margin posted** — "就算不亏损，仅交易中涉及到的
+手续费和点差反复倒腾几次就足以让整个保证金变为零". Client ruin was COST EXTRACTION plus churn
+(measured case: ¥500k principal → ¥40M+ turnover in 10 trading days, advisor-driven 刷单), not
+directional wrongness — so the anti-signal in retail direction is far weaker than retail LOSS
+RATES imply. Any Myfxbook/retail-positioning contrarian screen must debias for cost-driven loss
+or it manufactures a phantom edge from fee drag. Reply-layer reasons the 反向跟单 mirror-leg also
+fails (search-layer, unmined to depth — leads only): B-book internal tape ≠ market prices (the
+mirror executes on a DIFFERENT price series than the one the clients lost on), double-charged
+costs, and the churned component of retail flow carries no direction at all.
+WHAT IS REAL INSTEAD (execution intel, second independent instance of the EN entry above): the
+2014 back-office screenshots show TOXIC-FLOW SEGMENTATION AS A GUI — menu "扫描赚钱的人" (scan
+for profitable clients) with per-client 延迟 5s / 滑点 ¥10 auto-handling, 大笔入金/高频交易/
+同一局域网 scans, 净头寸超限 — plus asymmetric order-gating (book 1000 short vs 2000 long →
+"只能卖空不能买多"), engineered two-sided wicks on INTERNAL quotes (">1% dip to blow 1%-margin
+longs, then resume"), NFP-window server "outages", and the platform economics: client losses
+(头寸) rebated 100% to member firms + agents by negotiated split while the venue keeps fees —
+a LISTED company (大智慧/民泰, 天贵所 member #166) booked ¥86.57M fees + ¥219M "investment
+income" from this in ONE quarter, then sold the unit for ¥392M to the chairman's brother-in-law
+when 418 victims (~¥90M) besieged HQ. Leverage sold: silver 4-100×, FX 80-160× vs a stated 20×
+legal max. CONVERGENCE NOTE (charter §14): same segmentation structure as the EN/HN insider
+account mined TODAY by EN s-J (A/B-book, winner re-routing) — 2014 CN court-adjacent journalism
+and 2020-21 HN first-person accounts share no derivation path; this is genuine cross-ecosystem
+corroboration that broker treatment is ENDOGENOUS to account profitability. Legal-mode taxonomy
+(武久文): member-firm 对赌 mode, 邮币卡 closed-pump mode, 微盘 mode with quotes "参考国内外市场
+价格甚至虚设价格行情"; criminalised as 非法经营罪/诈骗罪/聚众赌博. Era boundary: 38号文 (2011)
+naming rule quoted in the exposé; 清理整顿办公室 est. 2014-04-11.
+DERIVES-FROM: NONE between the CN and EN source families (checked both ways: the 2014 南都 exposé
+cites CN insiders and CCTV's 天交所 coverage; the HN threads cite no CN material).
+[§33: killed -> this entry]

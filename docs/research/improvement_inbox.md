@@ -2866,3 +2866,16 @@ free MT5 demo feed on the same symbols — separates HOUSE markup moves from MAR
 flat treatment across the PnL clock is evidence the A-book claim holds for this account size.
 `[§33: wired -> this entry]` as an engine idea routed per seat charter; no capital claim, no gate
 touched. The consumer is the MT5 desk's execution-reality layer when it next fits cost models.
+
+> **SECOND INDEPENDENT INSTANCE, same day (CN miner s12, 2026-08-25):** the 2014 南都/凤凰
+> exposé of CN precious-metals member firms (graveyard
+> `cn_bucketshop_retail_loss_as_directional_signal`) shows the SAME segmentation implemented as
+> a back-office GUI: menu "扫描赚钱的人" (scan for profitable clients) with per-client 延迟 5s /
+> 滑点 ¥10 auto-handling + large-deposit/HFT/same-LAN scans. No derivation path between the CN
+> and HN source families (checked both ways) — genuine cross-ecosystem convergence that broker
+> treatment is a POLICY FUNCTION of measured client profitability. ADDS one observable to the
+> measurement above: **data-release-window treatment** — the CN houses timed order-gating and
+> server "outages" to US data releases (非农/NFP named explicitly), so test (4): reject/requote/
+> spread quality in the ±5min around top-tier calendar events vs quiet hours, from the desk's own
+> MT5 logs. A broker that degrades exactly when the desk's event edges would fire is a cost model
+> no quiet-hour fit can see.

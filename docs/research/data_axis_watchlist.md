@@ -3390,3 +3390,77 @@ this sits unread is a day of an irreplaceable series that is mined by nobody and
 **CROSS-REFS:** R0637 (write-only tape + invisible to `moat_utilisation`, whose inventory globs only
 `data/moat/<venue>/<SYMBOL>/*.jsonl.gz` and therefore counts this file in neither numerator nor
 denominator); OP-093 (the reduce/vector shape); R0291 (the collector's origin).
+
+### 38. CN gold layer — SGE Au99.99/Au(T+D) premium vs XAUUSD + 递延费 (deferred-fee) direction — grade: **routes VERIFIED live 2026-08-25 (CN s12); bulk history pull throttle-blocked this session; collector exists UNWIRED (R0649)** [§33: deferred(2026-08-26) tier:2]
+
+**MT5-MANDATE NATIVE: this is an XAUUSD/XAGUSD conditioning layer, not a crypto axis.** First CN
+dig under the 2026-08-18 universe order. The MT5 desk already believed in this axis enough to build
+`desks/mt5/research/fetch_sge_premium.py` — which has ZERO callers, zero output artifacts, and a
+sole configured source its own parser cannot parse (III.16 built-never-run; repair = R0649).
+
+**MECHANISM (two-sided, regime-labelled — primary CN sources, read this run):**
+- China is the largest physical consumer; imports need a per-shipment PBoC permit
+  (《中国人民银行黄金及黄金制品进出口准许证》), so the SGE↔London arb is QUOTA-GATED and the
+  premium does not self-equalise. Structural cost floor ≈ few $/oz (freight/insurance/customs/vault).
+- **Premium (+) regime = quota binding.** PBoC tightens quotas precisely when CNY depreciates fast
+  (gold-as-capital-flight channel), so premium spikes carry USDCNH-pressure information, not just
+  jewellery demand. Sept-2023 episode (Tianfeng macro, primary): premium ≈ **5%**, SGE briefly
+  >470 CNY/g, gold-implied CNY rate 7.6–7.7 vs 7.3 actual; July-2023 HK→mainland imports −26% m/m
+  (quota evidence); H1-2023 consumption 554.9t vs domestic production 178.6t (3.1× import
+  dependence). Their falsifier: premium persists until FX expectations stabilise; quota relaxation
+  is the narrowing mechanism.
+- **Discount (−) regime = demand weak / quota slack** (2020 COVID; and LIVE NOW: cngold 2026-07-01
+  reports 贴水 8.07 CNY/g with the deferred fee negative). End-to-end unit sanity this run: SGE
+  intraday last 990.08 CNY/g → $4,564/oz (via DEXCHUS 6.7474) vs desk XAUUSD H1 $4,643 ≈ −1.7%,
+  consistent sign. Historical base rates (CN financial-media layer): premium positive 81% of
+  2002-10→2019-12; long-run mean ≈ +$6/oz.
+- **递延费/延期补偿费 (deferred compensation fee) = the funding-carry-family observable on SGE
+  gold.** Direction set DAILY by physical delivery-declaration imbalance (交收申报 15:00–15:30
+  CST; 中立仓 15:31–15:40; the side with FEWER declarations pays the side with more), official
+  spec fetched this run: **1.75bp of contract value per NATURAL day** (≈6.4%/yr one-sided).
+  Direction knowable ~**07:40 UTC** daily → clean Asia-close → London/NY forward alignment for
+  XAUUSD. The desk's only repeat-survivor family (funding/carry) in MT5-universe form. SIGN
+  SEMANTICS UNRESOLVED (weak signal): cngold reads 空付多 as bearish futures sentiment; the
+  mechanical rule implies take-delivery demand > make-delivery supply. Resolving needs the
+  declaration QUANTITIES, not just direction (the desk's own R0021 lesson: read the underlying
+  imbalance, not the quantized fee). CROWDING MARKER: CN retail media is running "躺着赚钱"
+  carry articles on the fee (2026-07) — the carry is advertised, price accordingly.
+
+**ROUTES (all keyless, probed 2026-08-25):**
+- HISTORY: Eastmoney `push2his.eastmoney.com/api/qt/stock/kline/get?secid=118.<CODE>&klt=101` —
+  `118.AU9999` 5,511 daily rows from **2004-01-02**; `118.AUTD` 3,456 from **2012-06-05**; CNY/g.
+  `118.AGTD` (silver leg → XAGUSD premium) claimed by analogy, **UNVERIFIED** (throttle hit first).
+  RATE-LIMIT SEMANTICS: burst → TLS drop (curl SSL EOF / urllib RemoteDisconnected), NOT 429; IP
+  cooldown ≥30min observed. Bulk recipe: window `beg`/`end` in year-chunks, 20–30s gaps, or pull
+  from the VPS box. klt=102/103 (weekly/monthly) untested.
+- LIVE INTRADAY: `sge.com.cn/graph/quotations` HTTP 200 from this box — Au99.99 current-session
+  minute tape `{times:[782],data:[floats],heyue:"Au99.99"}`, night session 19:50→02:30 books to
+  next day (payload starts 20:00). This is the payload the existing collector cannot parse (R0649).
+- FEE DIRECTION: SGE daily notices (延期补偿费支付方向) — collector owed, named in R0649.
+- FX LEG: FRED DEXCHUS is **~2.5wk stale** (last 08-07 on 08-25) — fine for history, names the
+  freshness cap; USDCNH absent from the 19-symbol MT5 universe (R0649 names the option).
+**CLOCKS (L1.46):** SGE venue-local CST trading-day labels; day close 15:30 CST = 07:30 UTC;
+declarations→fee direction ~07:40 UTC; XAUUSD 24h; DEXCHUS NY-noon rate lagged weeks. Any premium
+series mixes three clocks — declare per-leg at screen time; predicting post-07:40-UTC XAUUSD from
+same-day SGE close is the leak-free construction.
+**§13:** public quote APIs serving the venues' own public pages, keyless, no licence text
+encountered barring research use (own-benefit posture, same grade as Kraken card 26); SGE spec page
+public. Zhihu practitioner layer WALLED ×2 (question 403, zhuanlan 403) — recorded, not routed
+around.
+**DERIVES-FROM:** Tianfeng Securities macro note 2023-09 (林彦), sina mirror (original CN
+sell-side analysis); cfbond/中国财富网 explainer 2021 (CN financial media; the zhuanlan copy is the
+SAME article — one source, not two); cngold.org 2026-07-01 fee article; SGE official contract spec
++ quotations endpoint (primary). The premium PHENOMENON is internationally known (Reuters quotes
+SGE premia weekly) — what is CN-native here is the quota-FX mechanism quantification, the
+declaration microstructure, and the fee-direction lore. NOT an independent-convergence claim.
+**FALSIFIERS / KILL PATHS:** (a) premium is quota-policy-driven → regime breaks on import
+liberalisation (named enabling change for re-open); (b) if premium extremes carry no XAUUSD
+forward information at any mechanism-appropriate horizon (screen through the MT5 desk's own
+gauntlet — this card grants ZERO promotion authority); (c) fee-direction signal dies if
+declaration imbalance is dominated by warehouse logistics rather than positioning (test needs
+declaration quantities); (d) 2013-era premium spikes coincide with the 中国大妈 retail-mania
+window — any backtest must separate demand-shock from quota-shock episodes or it conflates two
+mechanisms.
+**NEXT:** bulk pull on cooldown expiry → `data/sge_daily_klines.jsonl` (script staged this run at
+/tmp/sge_fetch.py, windowing owed); AGTD verification; fee-direction notice route mapping; then
+hand to the MT5 desk's screen via R0649.

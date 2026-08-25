@@ -596,6 +596,19 @@ marked ✓ were CONFIRMED IN USE this run (2026-07-26) against live CN pages/API
 | MT | — | CN-era abbreviation for MtGox ("MT大跌") | ✓(08-19) coinsbbs thread-120 #229 (2013-12-07) — era key; "门头沟" (the later folk name) post-dates the 2014 collapse, so MT is the IN-ERA search key |
 | 搬砖群 / 板砖群 | banzhuanqun | closed QQ arb groups — the era's edge-distribution channel ("绝密", full by 2013-12); 板砖 is a live typo-variant of 搬砖 | ✓(08-19) coinsbbs thread-120 #171/#173 — search both orthographies; the group layer itself is §13-closed, but the term finds the RECRUITMENT/advertisement threads which are public |
 | 回复可见 / 隐藏内容 / 阅读权限 | huifukejian / yincang neirong / yuedu quanxian | reply-to-view / hidden content / read-permission — Discuz gate MARKERS, method vocabulary not slang | ✓(08-19) OP-088's discovery inversion: query gate-marker + 教程/策略/搬砖 to enumerate exactly the threads the era gated — the ranked where-the-edges-were shortlist |
+| 贴水 | tieshui | SGE gold trading BELOW international parity (antonym 升水 = premium; unobserved this session) | ✓(08-25, MT5-era row) cngold "贴水扩大至8.07元/克" — pair with 沪金/伦敦金 to find premium-regime threads |
+| 延期补偿费 / 延期费 | yanqi buchangfei / yanqifei | SGE T+D deferred compensation fee — the funding-rate analog on CN gold/silver; direction set by delivery-declaration imbalance (递延费 is a common variant, unobserved this session) | ✓(08-25) SGE official spec + cngold; THE key for CN gold carry/positioning lore |
+| 交收申报 / 中立仓 | jiaoshou shenbao / zhonglicang | delivery declaration / neutral-warehouse declaration — the 15:00–15:40 CST window that SETS the fee direction | ✓(08-25) SGE spec; microstructure vocabulary, finds rules + lore the retail words miss |
+| 空头付多头 / 多付空 | kongtou fu duotou | shorts-pay-longs (fee direction reading); abbreviated 空付多/多付空 | ✓(08-25) cngold; the direction-flip event key |
+| 对赌 / 对赌盘 | dudu/ dudupan (duìdǔ) | member-firm B-book — the house takes the other side of its own clients | ✓(08-25) 2014 南都 exposé + 武久文 legal analysis; THE bucket-shop-era mechanics key |
+| 吃头寸 | chi toucun | "eating the position" = booking client losses as house revenue (头寸 = the client-loss pool rebated to member firms) | ✓(08-25) exposé, insider-quoted; finds B-book economics threads |
+| 喊单 / 带盘 / 老师 / 托 | handan / daipan / laoshi / tuo | call-room signal-calling / guided trading / the "teacher" / the shill | ✓(08-25) exposé + legal analysis; the call-room-structure key set |
+| 刷单 | shuadan | churning client accounts for fees (advisor-driven turnover) | ✓(08-25) exposé (¥500k → ¥40M turnover in 10 days); finds churn-complaint threads |
+| 反向跟单 / 反跟单 | fanxiang gendan | reverse copy-trade — industrial fading of aggregate retail flow; an entire CN software-vendor genre | ✓(08-25) vendor corpus qhfgd.com (68-part series, unmined); BOTH orthographies needed |
+| 滑点 | huadian | slippage — in bucket-shop context an ADMINISTERED per-client parameter, not a market outcome | ✓(08-25) back-office menu screenshot ("滑点金额：10"); pairs with 后台 for software-manipulation lore |
+| 维权 | weiquan | victims' rights-defense — collapse/fraud aftermath threads (QQ groups, HQ sieges) | ✓(08-25) exposé; 维权 + venue name = the post-mortem layer of ANY dead CN platform, era-universal |
+| 清理整顿 | qingli zhengdun | the State-Council venue cleanup (38号文 2011 / 37号文 2012 / 2017 回头看) | ✓(08-25) CSRC official Q&A; THE era-boundary key for the bucket-shop stratum |
+| 现货白银 / 贵金属交易所 | xianhuo baiyin / guijinshu jiaoyisuo | "spot silver" / local precious-metals bourse — the 2011-2017 CFD-shaped retail era on gold/silver | ✓(08-25) all primary sources this run; the era's own name for itself |
 
 ### OP-033 legacy regional forums are NOT UTF-8 — decode before you judge     [active]
 class: extraction
@@ -3375,3 +3388,31 @@ record live values, recompute historically, diff. (2) The era's equity evidence 
 statements on B-book demo/micro accounts, pre-cost — ore, never evidence. `[§33: screened]` as
 methodology: no tradeable hypothesis minted this run, no Stage-A trial, no forward clock; the
 contribution is the operator pattern + provenance + the two falsifiers, routed here.
+
+## OP-097 — EASTMONEY `push2his` KLINE BY MARKET NAMESPACE: CN-listed non-equity instruments have a keyless daily-history API, and its rate limit masquerades as a DEAD ROUTE (CN frontier miner s12, 2026-08-25)   [active]
+
+**THE ROUTE.** `https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=<MKT>.<CODE>&klt=101`
+`&fqt=0&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58&beg=0&end=20500101`
+`&lmt=<N>` with `Referer: https://quote.eastmoney.com/`. Keyless, JSON, daily rows as CSV strings
+`date,open,close,high,low,volume,amount,amplitude`. `klt` 102/103 = weekly/monthly (untested).
+**THE NAMESPACE IS THE FIND**: `<MKT>` selects an EXCHANGE, and the coverage extends far past
+A-shares. VERIFIED this run: **118 = Shanghai Gold Exchange** — `118.AU9999` (Au99.99 spot
+benchmark, daily from **2004-01-02**, 5,511 rows, CNY/gram), `118.AUTD` (gold T+D from
+2012-06-05). UNVERIFIED leads for the MT5 translation layer (probe with the same recipe): SHFE /
+INE / DCE / CZCE / CFFEX market codes would give 沪铜/沪银/SC crude etc. — the 内外盘 ratio legs
+for copper/silver/oil CFDs; akshare/efinance source code is the free market-code index.
+**THE THROTTLE MASQUERADES AS A DEAD ROUTE (false-null family, OP-069's transport class):** burst
+calls are answered with a **TLS drop** — curl `SSL_read: unexpected eof`, urllib
+`RemoteDisconnected` — never HTTP 429, and the cooldown persists ≥30min once tripped. Two
+correct calls then hard EOFs on every subsequent attempt looks EXACTLY like "the route died";
+it is the rate limiter. RECIPE: space calls ≥10-20s, window bulk history via `beg`/`end`
+year-chunks, and treat a TLS-layer failure on a route that JUST worked as a cooldown signal —
+switch task and return, never re-probe in a loop (each probe may extend the window).
+**PER-REGION ADAPTATIONS (charter §16):** CN — as above; the same host also serves guba sentiment
+(source_alternatives.py already catalogues it) so one cooldown can starve two collectors: schedule
+them apart. KR/JP — Naver/Rakuten finance chart APIs are the analogous quote-page backends; when
+one "dies" mid-session, test the TLS-drop-vs-429 distinction before recording a WALLED verdict.
+ALL SEATS — a venue-adjacent PORTAL (financial-media quote API) often carries longer clean history
+for a venue's instruments than the venue's own site, whose official endpoint serves only the
+current session (measured here: SGE official = today's minute tape; Eastmoney = 22 years) — probe
+the portal layer FIRST for history, the venue for provenance/spec.

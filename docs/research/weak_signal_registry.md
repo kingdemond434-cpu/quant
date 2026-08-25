@@ -616,3 +616,23 @@ that union is exactly what R0193's timeline build produces, so the promotion che
 promotion-check: after R0193 lands, count warning→enforcement pairs with a Binance-listed
 instrument across ALL jurisdiction columns; if pooled n reaches double digits, screen via the
 event-study gate (libs/validation/event_study.py), pre-registered, never the continuous gauntlet.
+
+### WS-020 SGE deferred-fee direction: the retail read ("bearish sentiment") and the mechanical rule (delivery-declaration imbalance) assign OPPOSITE meanings to the same print   [observations: 1]
+logged: 2026-08-25 (CN frontier miner s12) | source: cngold.org 2026-07-01 fee article + SGE
+official contract spec (fetched this run; card #38 carries both)
+signal: Au(T+D) 延期补偿费 direction flipped to 空头付多头 (shorts pay longs) in mid-2026 while
+SGE traded at an 8.07 CNY/g DISCOUNT to international. CN retail media reads shorts-pay-longs as
+"bearish sentiment crowding" — but the OFFICIAL rule sets direction by DELIVERY DECLARATIONS
+(fewer-declarations side pays), under which shorts-pay-longs means take-delivery demand exceeds
+make-delivery supply, a PHYSICAL-DEMAND excess reading. Both cannot be the operative
+interpretation at once, and the discount context makes the tension sharp (physical-demand excess
+during a discount is itself odd — unless declaration behaviour is dominated by warehouse/
+financing logistics rather than either sentiment or demand, which would kill the fee direction
+as a signal entirely: card #38 falsifier (c)).
+direction: the desk's own R0021 lesson transfers exactly (funding is a quantized/clamped proxy —
+read the underlying imbalance, not the fee): the resolving observable is the DECLARATION
+QUANTITIES (交收申报量) per side per day, if SGE publishes them (daily-report route unmapped;
+named in card #38 NEXT). n=1 regime observation; no signal claim, no trial burned.
+promotion-check: once a declaration-quantity series exists, test whether fee-direction flips are
+declaration-led (physical) or price-led (sentiment) across ≥3 direction regimes before any
+XAUUSD conditioning use.

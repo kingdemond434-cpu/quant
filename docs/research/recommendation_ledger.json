@@ -8259,6 +8259,20 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0649",
+   "source": "deep_sweep",
+   "summary": "MT5 desk: fetch_sge_premium.py is UNWIRED (zero callers, zero output artifacts, never ran) AND its sole configured SGE source cannot parse: sge.com.cn/graph/quotations returns {times:[...],data:[floats],heyue:Au99.99} (intraday minute tape, live-verified 2026-08-25 HTTP 200) while the parser expects a list of dicts with instid/date keys - fetch succeeds, zero rows parse, fails closed forever. Its docstring belief (no free SGE history API) is REFUTED: Eastmoney push2his kline secid=118.AU9999 serves Au99.99 daily CNY/g from 2004-01-02 (5511 rows) and 118.AUTD from 2012-06-05 (3456 rows), keyless (probes verified 2026-08-25; units cross-checked vs desk XAUUSD within 2 pct). EXACT PATCH: (1) add eastmoney_push2his to SGE_SOURCES with a kline-string parser (date,open,close,high,low CSV rows); bulk pull must window beg/end in chunks with 20-30s gaps - the API rate-limits by TLS drop (SSL EOF/RemoteDisconnected), not 429; (2) fix or delete the dead sge_official_json parser branch (payload shape recorded in CN s12 session note); (3) FX-leg staleness: FRED DEXCHUS runs ~2.5wk behind (last 08-07 on 08-25) - name it in the report or add USDCNH to the MT5 universe pull; (4) extension: 118.AGTD gives the silver leg for an XAGUSD premium at zero marginal collector cost; (5) NEW companion axis: Au(T+D) deferred-fee direction (SGE daily delivery-declaration imbalance, spec 1.75bp/day of contract value, declarations 15:00-15:30 CST so direction knowable ~07:40 UTC) = funding-carry-family positioning observable for XAUUSD; route via SGE daily notices, collector owed. Watchlist card 38 (CN s12) carries mechanism, clocks, falsifiers.",
+   "roi_bps": null,
+   "rank": 8.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-25T15:51:15.889880+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

@@ -7070,3 +7070,114 @@ NEXT UN-EXHAUSTED GROUND, in order (L1.35):
 5. Quantopian forum archive re-entry under MT5 lens (equities/futures mechanism threads →
    share-CFD/index translation).
 6. NP 4851 residual (carried; unchanged).
+
+---
+
+### 2026-08-25 session s12 (CN frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+
+MINE GATE at start: BACKLOG-CLEAR (13/13 disposed; verified by the spawn header + no
+`data/mining_suspended`). RESUME(1) backlog read: the 4 pending-verification + 1 decision items
+are ALL crypto-universe subjects and were recorded TODAY by EN s-J as awaiting MANDATE RE-GRADE
+by owning seats (R0637 split-the-row precedent) — not re-worked here; the queue is also
+stale-listed (cards 23/25/26/37 carry §33-terminal grades; the grade-vocabulary fail-open class
+is already ledgered from CN s9). RESUME(2): CN s9's carried next-grounds (8btc board-2
+April-2014 rail-cut window; btcicc 2013-14 article layer; coinsbbs; board-233 residue) are
+**MANDATE-VOIDED as opportunity grounds** (2026-08-18 universe order — crypto-exchange-native
+mechanisms may not be hunted; the era corpus keeps only graveyard/provenance value already
+banked). CN GROUND RE-RANK UNDER MT5 MANDATE: the CN seat's durable differentiator is the
+CN-LANGUAGE deep/archival layer the MT5 desk's hourly living-web miner (all-language, MQL5/
+YouTube/X-facing) never touches. Re-ranked CN ground map: (1) **CN gold layer** — SGE/沪金/水贝
+premium mechanics + 内外盘 arb lore → XAUUSD/XAGUSD (virgin on this desk, 0 hits); (2) **CN
+precious-metals bucket-shop era 2011–2017** (贵金属交易所/天通银/现货白银, 38号文/37号文 cleanup)
+— the CN twin of EN s-J's broker-mechanics ground, on the SAME instrument class as Fusion
+XAUUSD/XAGUSD CFDs (virgin, 0 hits); (3) USDCNH 中间价/逆周期因子 fix mechanics; (4) 内外盘
+commodity ratio layer (沪铜/伦铜, SC/Brent) → copper/oil CFDs; (5) CN retail FX/gold info
+infrastructure (金十/汇通/FX110) as data-axis + process ground.
+
+ITEMS THIS RUN (bounded per completion contract):
+1. **SGE/沪金 gold layer OPEN**: mechanism prior + free-data route probe (SGE daily prices —
+   AU9999/Au(T+D)/Ag(T+D), benchmark fix) + CN practitioner thread mining to depth
+   (内外盘套利/沪金溢价). Deliverable: data-axis card with provenance + clock declaration;
+   screen state recorded honestly (harness fit checked, not hand-rolled); lexicon rows.
+2. **CN bucket-shop era ground SURVEY** (贵金属交易所/天通银 era): map + §13 assessment + first
+   threads to depth; 反向跟单 (reverse copy-trade) mechanism BOTH SIDES (the industrial practice
+   AND its documented failure modes) → graveyard/watchlist/process routing; cross-check against
+   EN s-J's HN insider A/B-book account (charter §14 parity).
+3. (light) Operator/lexicon/venue contributions from items 1–2 back to the shared library.
+
+SESSION CLOSE 2026-08-25 (CN frontier miner s12) — ITEM VERDICTS, DEPTH LINE, VENUES, NEXT GROUND:
+ITEM 1 (SGE gold layer): **GROUND OPENED, card #38 minted, and the biggest find was on OUR OWN
+DISK**: `desks/mt5/research/fetch_sge_premium.py` is a III.16 built-never-run collector — zero
+callers, zero artifacts, sole configured source live (HTTP 200 this run) but structurally
+unparseable by its own parser (`{times,data:[floats]}` vs expected dict rows), and its docstring
+belief "no stable free SGE API" REFUTED in one probe: Eastmoney `118.AU9999` = Au99.99 daily
+CNY/g from **2004-01-02** (5,511 rows), `118.AUTD` from 2012 — 22 years of the exact series its
+formula names. **R0649** carries the exact patch (source add + parser fix + FRED-DEXCHUS-staleness
+note + AGTD silver extension + 递延费 companion axis); blind-spot row logged (origin=self).
+Mechanism card is two-sided and regime-labelled (quota-binding premium = USDCNH-pressure gauge,
+Sept-2023 ≈5% with implied CNY 7.6-7.7; slack/discount regime LIVE now at −8.07 CNY/g), plus the
+**递延费 deferred-fee direction axis** — the funding-carry family (the desk's only repeat-survivor
+class) in MT5-universe form, direction knowable 07:40 UTC daily, official rate 1.75bp/NATURAL day
+fetched from the SGE spec. Sign-semantics tension → **WS-020** (retail "bearish sentiment" read
+vs mechanical declaration-imbalance read; resolver = declaration quantities, R0021 lesson
+transferred). Unit sanity verified end-to-end (990.08 CNY/g → $4,564/oz vs desk XAUUSD $4,643).
+BULK PULL: throttle-blocked this session (TLS-drop rate limit, cooldown outlasted a 4×-retry
+background job) → card [§33: deferred(2026-08-26)], recipe durable in OP-097. Same-run screen NOT
+run and said so: no Stage-A trial burned, no forward clock minted, zero promotion authority
+claimed — the screen is owed through the MT5 desk's own gauntlet (named in R0649).
+ITEM 2 (CN bucket-shop era survey): **SURVEY COMPLETE, mechanism-dense.** Primary reads: 2014
+南都/凤凰 exposé (dead link → **recovered via Wayback CDX**, 3 captures, 6,559-char article read
+whole), 武久文 legal-mode taxonomy (对赌/邮币卡/微盘 modes + criminal classifications), CSRC
+cleanup Q&A. Yield: graveyard **`cn_bucketshop_retail_loss_as_directional_signal`** — the folk
+"retail loses ⇒ fade retail" premise killed by the house's own arithmetic (one round-trip =
+¥1,528 = **38.2% of margin**; ruin was COST EXTRACTION + advisor churn ¥500k→¥40M/10d, not
+directional wrongness) — a standing debias prior for every retail-sentiment-contrarian screen
+including the MT5 desk's crowding work. **Cross-region convergence banked (charter §14): the 2014
+back-office GUI ("扫描赚钱的人", per-client 延迟5s/滑点¥10, deposit/HFT/same-LAN scans) is the
+second independent instance of endogenous-broker-treatment**, corroborating EN s-J's HN insider
+account mined the SAME DAY, derivation checked both ways = none → inbox addendum adds the
+data-release-window observable (CN houses timed order-gating/server "outages" to 非农/NFP).
+Era-boundary map: 38号文 (2011) naming rule, 清理整顿办公室 est. 2014-04-11, leverage sold
+4-100× silver / 80-160× FX vs 20× stated legal max; listed-company B-book P&L visible in 大智慧
+filings (¥86.57M fees + ¥219M "investment income" in one quarter).
+ITEM 3 (contributions): **OP-097** (Eastmoney push2his market-namespace kline route: 118=SGE
+verified; SHFE/INE lead named for 内外盘 ratio legs; rate-limit-as-TLS-drop false-null semantics,
+OP-069 family; per-region adaptations for KR/JP/all seats); **+14 CN lexicon rows** all verified
+in-session text (贴水, 延期补偿费/延期费, 交收申报/中立仓, 空头付多头, 对赌/对赌盘, 吃头寸,
+喊单/带盘/老师/托, 刷单, 反向跟单/反跟单, 滑点, 维权, 清理整顿, 现货白银/贵金属交易所);
+research-memory ×2, blind-spot ×1.
+RESUME/BACKLOG LINE: 4+1 crypto-universe backlog items NOT worked (mandate; recorded by EN s-J
+today as awaiting owner re-grades — one-line concur, no duplication). CN s9's carried crypto-era
+next-grounds recorded MANDATE-VOIDED above.
+DEPTH: item 1 = official spec + live venue endpoint + 2 full primary articles + 2 API probe
+series; practitioner reply-chain layer WALLED (Zhihu question 403, zhuanlan 403, CSDN 521 — all
+recorded; depth achieved through primary/official docs instead, which out-rank forum surface).
+Item 2 = full-article depth ×2 + search-layer taxonomy; the reverse-copytrade VENDOR corpus
+(qhfgd.com, 68-part series) located but explicitly UNMINED — named next ground, not claimed.
+BREADTH-THEATER CHECK: 2 grounds taken, both closed to survey/card depth with honest blockers; 0
+surface-touched-and-abandoned. VIDEO: 0 video-shaped artifacts hit, 0 fetched, 0 locked.
+STRATEGY-FAMILY LINE: no new tradeable family hunted, no trial burned; deliverables are a
+conditioning-axis card, a debias prior, and process/execution intel.
+VENUES DISCOVERED (4): Eastmoney push2his 118-namespace (RICH, data venue, now standing CN
+tooling); cngold.org 金投网 T+D/贵金属 section (RICH, live retail gold/silver layer + fee-flip
+articles); qhfgd.com 反向跟单 vendor corpus (RICH, unmined, 68 parts); 无讼/itslaw article layer
+(public legal-case analyses — the §13-open mirror of the login-gated 裁判文书网; venue CLASS:
+court-case analysis platforms carry mechanism-precise fraud mechanics).
+DISCOVERY COUNTERFACTUAL (charter s17): the SGE route was found because the CN seat queried the
+CN PORTAL layer (Eastmoney) for a series whose EN-language builder had only probed the venue's
+own site — the portal-vs-venue asymmetry is now OP-097's core rule. The MT5 mandate re-rank is
+what aimed the CN seat at gold at all; under the old universe this collector would have starved
+indefinitely.
+NEXT UN-EXHAUSTED GROUND, in order (L1.35):
+1. SGE bulk pull on cooldown expiry (windowed beg/end, ≥20s gaps) → data artifact; verify
+   118.AGTD; map the 延期补偿费方向 daily-notice route (card #38 NEXT block).
+2. qhfgd.com 68-part 反向跟单 vendor series to depth — the failure-mode primary (why the mirror
+   leg loses: B-book tape vs market prices, double costs); free graveyard material.
+3. 天通银/天贵所 CCTV coverage + 维权 thread layer (new lexicon key) — victim post-mortems carry
+   dated venue-mechanics evidence.
+4. 水贝 wholesale premium layer (term UNVERIFIED — verify in live text first, OP-037 discipline).
+5. USDCNH 中间价/逆周期因子 ground (unopened; Fusion trades USDCNH).
+6. 内外盘 commodity ratio legs via OP-097 namespace probes (SHFE 沪铜/沪银, INE SC) → copper/
+   silver/oil CFD conditioning.
+MANDATE-VOIDED (recorded, not next): 8btc board-2 April-2014 window, coinsbbs, btcicc article
+layer — graveyard/provenance value already banked; no further opportunity-mining there.
