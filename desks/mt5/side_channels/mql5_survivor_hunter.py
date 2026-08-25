@@ -47,14 +47,18 @@ def fetch(url: str) -> str:
 
 
 def field(html: str, label: str) -> float | None:
-    m = re.search(label + r"\s*:?\s*(?:</[^>]+>\s*<[^>]+>\s*)*(" + NUM + r")\s*%?", html,
-                  re.IGNORECASE)
-    if not m:
-        return None
-    try:
-        return float(m.group(1).replace(" ", "").replace(",", "").replace(" ", ""))
-    except ValueError:
-        return None
+    # Two passes: plain label:value, then markup-tolerant (MQL5 renders e.g.
+    # `drawdown red">53%` -- label and value separated by class/markup fragments).
+    for pat in (label + r"\s*:?\s*(?:</[^>]+>\s*<[^>]+>\s*)*(" + NUM + r")\s*%?",
+                label + r"[^%<>]{0,40}?[\">]\s*(" + NUM + r")\s*%"):
+        m = re.search(pat, html, re.IGNORECASE)
+        if m:
+            try:
+                return float(m.group(1).replace(",", "").replace("\u00a0", "")
+                             .replace(" ", ""))
+            except ValueError:
+                continue
+    return None
 
 
 def deep_stats(sid: str) -> dict:
@@ -72,6 +76,26 @@ def deep_stats(sid: str) -> dict:
     syms = sorted(set(re.findall(r'\b([A-Z]{6}|XAUUSD|XAGUSD|XAUEUR|US500|NAS100|USOIL)\b',
                                  html)))[:12]
     stats["symbols_seen"] = syms
+    # FREE CURVE GEOMETRY + AUTHOR GENEALOGY: the page inlines the author's OTHER signals with
+    # their growth% and full sparkline equity values -- blowup morphology and author track
+    # record without a single extra fetch.
+    author = re.search(r'href="(/en/users/[A-Za-z0-9_\-.]+)"', html)
+    stats["author"] = author.group(1) if author else None
+    others = []
+    for m in re.finditer(r'href="https://www\.mql5\.com(/en/signals/(\d+))\?[^"]*"[^>]*'
+                         r'title="([^"]{3,80})".*?name="growth"[^>]*value="([^"]+)"'
+                         r'.*?name="value"[^>]*value="([^"]+)"', html, re.DOTALL):
+        curve = [float(x) for x in m.group(5).split(",")[:200] if
+                 x.strip().lstrip("-").replace(".", "").isdigit()]
+        dd_curve = 0.0
+        peak = 0.0
+        for v in curve:
+            peak = max(peak, v)
+            dd_curve = min(dd_curve, v - peak)
+        others.append({"sid": m.group(2), "title": m.group(3),
+                       "growth": m.group(4).replace(" ", ""),
+                       "curve_points": len(curve), "curve_dd": round(dd_curve, 2)})
+    stats["author_other_signals"] = others[:10]
     # session DNA seed: hour histogram of any trade timestamps present on the page
     hours = re.findall(r"\b\d{4}\.\d{2}\.\d{2}\s+(\d{2}):\d{2}", html)
     if hours:

@@ -80,7 +80,14 @@ def enroll_new(reg: dict) -> int:
             cid = cohort_id(r)
             if cid in reg:
                 continue
+            try:
+                from lang_intel import detect_mechanisms  # noqa: PLC0415
+                tags = detect_mechanisms(" ".join(str(r.get(k, "")) for k in
+                                                  ("title", "text")))
+            except Exception:                                            # noqa: BLE001
+                tags = []
             reg[cid] = {"t0": now.isoformat(timespec="seconds"), "frozen": r,
+                        "mechanism_tags": tags,
                         "status": "ALIVE", "observations": 0, "next_due_d": SCHEDULE_D[0]}
             added += 1
     return added
@@ -172,11 +179,41 @@ def rebuild_identity_graph(reg: dict) -> dict:
                                    key=lambda kv: -kv[1]["scores"]["independent_evidence"])[:500])}
 
 
+def write_funnel(reg: dict) -> None:
+    """The subsystem's supreme-metric diagnostics (principal 2026-08-26): validated
+    incremental E[log W] per unit of hunting capacity, decomposed into its funnel. Counted
+    from artifacts on disk, never from reports."""
+    shortlist = _read(INTEL / "survivor_shortlist.json", {}).get("shortlist", [])
+    queue = _read(BASE / "data" / "research_queue.json", [])
+    ext_cards = [c for c in queue if isinstance(c, dict)
+                 and str(c.get("id", "")).startswith("ext-")]
+    surv = _read(BASE / "data" / "hypotheses" / "external_survivors.json", [])
+    surv_n = len(surv if isinstance(surv, list) else surv.get("survivors", []))
+    certs = _read(BASE / "reports" / "UNIVERSAL_SURVIVORS.json", {})
+    funnel = {
+        "updated_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+        "supreme_metric": "validated incremental E[log W] per unit of survivor-hunting "
+                          "capacity -- everything below is diagnostic, never the objective",
+        "cohort_registry": len(reg),
+        "cohort_alive": sum(1 for m in reg.values() if m.get("status") == "ALIVE"),
+        "cohort_dead": sum(1 for m in reg.values() if m.get("status") == "DEAD"),
+        "credible_shortlist": len(shortlist),
+        "external_stageA_survivors": surv_n,
+        "promoted_to_gauntlet_queue": len(ext_cards),
+        "exact_certificates": len(certs.get("survivors", {})),
+        "frozen_clones": 0,          # clone-spec stage not built yet -- honest zero
+        "forward_clone_match_rate": None,
+        "fusion_forward_survivors": None,
+    }
+    (INTEL / "survivor_funnel.json").write_text(json.dumps(funnel, indent=1), "utf-8")
+
+
 def run_and_save() -> dict:
     COHORTS.mkdir(parents=True, exist_ok=True)
     reg = _read(REGISTRY, {})
     added = enroll_new(reg)
     checked = observe_due(reg)
+    write_funnel(reg)
     REGISTRY.write_text(json.dumps(reg, indent=0, default=str), "utf-8")
     graph = rebuild_identity_graph(reg)
     GRAPH.write_text(json.dumps(graph, indent=1), "utf-8")

@@ -283,7 +283,22 @@ def mine_mql5_survivors() -> list[dict]:
     return _hunt()
 
 
+def mine_regional_survivors() -> list[dict]:
+    """Global regional family (14 grounds + FBS tape), rotating-cursor hourly depth."""
+    from regional_survivor_hunters import run_and_save as _hunt  # noqa: PLC0415
+    res = _hunt()
+    return [r for v in res.values() for r in v.get("discoveries", [])]
+
+
+def mine_global_frontier() -> list[dict]:
+    """Adaptive per-locale discovery cell: native queries -> new populations -> graduation."""
+    from global_survivor_frontier import run_and_save as _frontier  # noqa: PLC0415
+    return _frontier().get("discoveries", [])
+
+
 MINERS = {
+    "global_frontier": mine_global_frontier,
+    "regional_survivors": mine_regional_survivors,
     "mql5_survivors": mine_mql5_survivors,
     "mql5_signals": mine_mql5_signals, "myfxbook_outlook": mine_myfxbook_outlook,
     "darwinex": mine_darwinex, "tradingview_scripts": mine_tradingview_scripts,
