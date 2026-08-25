@@ -34,6 +34,7 @@ _TREND = Path("web/trend_shadow.json")           # trend candidate -- OWN shadow
 _TREND_RG = Path("web/trend_regime_shadow.json")  # regime-gated challenger (own clock)
 _OUT = Path("web/live_combined.json")
 _PORT = Path("web/portfolio.json")
+_CRYPTO_RETIRED = Path("data/RECORDERS_OFF")
 _BASE = 5000.0                                   # equalised start per leg = fresh testnet balance
 
 
@@ -110,6 +111,17 @@ def _start_equity(st: dict[str, Any], fut_eq: float) -> float:
 
 
 def main() -> None:
+    # The desk's operative universe is MT5/Fusion only. RECORDERS_OFF is the durable retirement
+    # marker installed with that mandate. Historical ledgers remain immutable, but these two
+    # files are ACTIVE operator views and must not keep republishing an abandoned crypto book as
+    # if it were current capital. The root timer may outlive the migration, so make the producer
+    # itself fail closed rather than depending on one machine's unit-file state.
+    if _CRYPTO_RETIRED.exists():
+        for path in (_OUT, _PORT):
+            path.unlink(missing_ok=True)
+        print("crypto reporting retired: active portfolio artifacts removed; history preserved")
+        return
+
     cc, st = _load(_CC), _load(_STATE)
 
     fa = fut.account_summary() if fut.has_keys() else {}

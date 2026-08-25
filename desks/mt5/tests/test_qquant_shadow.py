@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import sys
 from pathlib import Path
 
@@ -26,3 +27,11 @@ def test_qquant_shadow_has_no_order_authority() -> None:
     assert '"order_authority": False' in source
     assert "promotion_authority" in source
     assert "FULL_TRADES = 50" in source and "MIN_DAYS = 14" in source
+
+
+def test_qquant_shadow_exposes_zero_trade_observation_evidence() -> None:
+    source = inspect.getsource(__import__("qquant_shadow").main)
+    assert '"forward_bars_evaluated"' in source
+    assert '"forward_decision_bars"' in source
+    assert '"forward_eligible_signals"' in source
+    assert '"last_evaluated_bar"' in source

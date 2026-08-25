@@ -1,0 +1,16 @@
+[Unit]
+Description=Unified MT5 forward-shadow cycle (all certified sleeves)
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform/desks/mt5
+ExecStart=/home/quant/quant-platform/.venv/bin/python /home/quant/quant-platform/desks/mt5/research/shadow_cycle.py
+StandardOutput=append:/home/quant/logs/shadow_user.log
+StandardError=append:/home/quant/logs/shadow_user.log
+MemoryMax=700M
+CPUQuota=75%
+TimeoutStartSec=900
+# EVIDENCE_BLOCKED is an honest research state, not a scheduler crash.
+SuccessExitStatus=2
+
