@@ -277,7 +277,14 @@ def mine_propfirm_boards() -> list[dict]:
                 needs_selector_work=True)]
 
 
+def mine_mql5_survivors() -> list[dict]:
+    """S++ flagship: phenotype-screened MQL5 survivor hunt (own module, richest ground)."""
+    from mql5_survivor_hunter import run_and_save as _hunt  # noqa: PLC0415
+    return _hunt()
+
+
 MINERS = {
+    "mql5_survivors": mine_mql5_survivors,
     "mql5_signals": mine_mql5_signals, "myfxbook_outlook": mine_myfxbook_outlook,
     "darwinex": mine_darwinex, "tradingview_scripts": mine_tradingview_scripts,
     "fxblue": mine_fxblue, "collective2": mine_collective2,
@@ -318,6 +325,13 @@ def run_and_save() -> dict:
     latest_p.write_text(json.dumps(latest, indent=1, default=str), "utf-8")
     print(f"seed miners: {summary['total']} rows across {len(MINERS)} sources "
           f"(ok={summary['ok']} raw={summary['raw_only']} failed={summary['failed']})")
+    # JOIN STAGE (Drop 3): forward-cohort enrollment/mortality + identity graph run on every
+    # sweep's output -- relationships and TIME are the corpus the sites cannot sell us.
+    try:
+        from cohort_and_identity import run_and_save as _cohorts  # noqa: PLC0415
+        _cohorts()
+    except Exception as exc:                                             # noqa: BLE001
+        print(f"cohort/identity join failed (non-fatal): {exc}")
     return results
 
 
