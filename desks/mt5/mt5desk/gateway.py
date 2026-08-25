@@ -33,7 +33,6 @@ import numpy as np
 import pandas as pd
 
 from mt5desk.config import gateway_paused, terminal_path
-from mt5desk.sizing import clamp_risk_frac, risk_lot
 
 BASE = Path(r"C:\Users\dell\mt5-research")
 STATE = BASE / "data" / "gateway_state.json"
@@ -353,8 +352,7 @@ def sleeve_set() -> list[dict]:
                         "window": s["window"],
                         "sig_hour": next(w[1] for w in GOLD_WINDOWS if w[0] == s["window"]),
                         "rng": next(w[2] for w in GOLD_WINDOWS if w[0] == s["window"]),
-                        "lot": "auto_ramp", "risk_frac": s.get("risk_frac"),
-                        "status": "LIVE"})
+                        "lot": "auto_ramp", "status": "LIVE"})
     return sleeves
 
 
@@ -430,30 +428,9 @@ def main() -> None:
             a = float(tr.ewm(alpha=1 / ATR_N, min_periods=ATR_N).mean().iloc[-1])
             spec = bracket_spec(hi, lo, max(a, 5.0), sym.trade_tick_size,
                                 stops_level=int(getattr(sym, "trade_stops_level", 0) or 20))
-            # PROMOTED sleeves: generic 3%-base risk sizing off THIS bracket's stop distance
-            # and THIS symbol's broker-reported tick economics (principal 2026-08-25) --
-            # promoted_lot()'s gold-parameterized math sized a JPY cross on gold risk. Gold
-            # book ("auto") keeps its hunt5-validated q=5.5% path untouched. lot 0.0 means
-            # the trade cannot be sized honestly at this equity and is SKIPPED, logged.
-            if s["lot"] == "auto":
-                lot = auto_lot(equity)
-            elif s["lot"] == "auto_ramp":
-                sl_dist = spec["buy_stop"]["price"] - spec["buy_stop"]["sl"]
-                lot = risk_lot(
-                    equity=equity, sl_dist_price=abs(sl_dist),
-                    tick_value=float(sym.trade_tick_value),
-                    tick_size=float(sym.trade_tick_size),
-                    volume_min=float(sym.volume_min), volume_step=float(sym.volume_step),
-                    volume_max=float(sym.volume_max),
-                    risk_frac=clamp_risk_frac(s.get("risk_frac")),
-                    live_n=sleeve_live_n(s["name"]),
-                )
-                if lot <= 0.0:
-                    log(f"[{s['name']}] SKIPPED: unsizeable at equity {equity:.0f} "
-                        f"(sl_dist={abs(sl_dist):.5f})")
-                    continue
-            else:
-                lot = float(s["lot"])
+            lot = auto_lot(equity) if s["lot"] == "auto" else (
+                promoted_lot(equity, sleeve_live_n(s["name"])) if s["lot"] == "auto_ramp"
+                else float(s["lot"]))
             # margin guard (machine kill switch): skip sleeve if tight
             if not margin_ok(s["symbol"], lot, max(hi, lo)):
                 log(f"[{s['name']}] SKIPPED: margin tight (lot={lot})")

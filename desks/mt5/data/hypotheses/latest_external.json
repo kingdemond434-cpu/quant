@@ -10,7 +10,7 @@
     "patterns": [
       "momentum"
     ],
-    "created": "2026-08-25T18:43:33.667180+00:00"
+    "created": "2026-08-25T18:48:23.500861+00:00"
   },
   {
     "id": "ext_github_XAUUSD_ema_crossover",
@@ -23,7 +23,7 @@
     "patterns": [
       "EMA"
     ],
-    "created": "2026-08-25T18:43:33.667200+00:00"
+    "created": "2026-08-25T18:48:23.500882+00:00"
   },
   {
     "id": "ext_github_XAUUSD_sma_crossover",
@@ -40,7 +40,7 @@
       "liquidity",
       "smart money"
     ],
-    "created": "2026-08-25T18:43:33.667207+00:00"
+    "created": "2026-08-25T18:48:23.500890+00:00"
   },
   {
     "id": "ext_github_XAUUSD_session_range_breakout",
@@ -54,33 +54,7 @@
       "breakout",
       "RSI"
     ],
-    "created": "2026-08-25T18:43:33.667214+00:00"
-  },
-  {
-    "id": "ext_central_bank_XAUUSD_central_bank_reaction",
-    "source": "external_central_bank",
-    "symbol": "XAUUSD",
-    "family": "central_bank_reaction",
-    "description": "",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
-    "confidence": 0.3,
-    "patterns": [
-      "price stability"
-    ],
-    "created": "2026-08-25T18:43:33.667234+00:00"
-  },
-  {
-    "id": "ext_central_bank_GBPJPY_central_bank_reaction",
-    "source": "external_central_bank",
-    "symbol": "GBPJPY",
-    "family": "central_bank_reaction",
-    "description": "",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
-    "confidence": 0.3,
-    "patterns": [
-      "price stability"
-    ],
-    "created": "2026-08-25T18:43:33.667238+00:00"
+    "created": "2026-08-25T18:48:23.500898+00:00"
   },
   {
     "id": "ext_central_bank_USDJPY_central_bank_reaction",
@@ -93,7 +67,20 @@
     "patterns": [
       "price stability"
     ],
-    "created": "2026-08-25T18:43:33.667242+00:00"
+    "created": "2026-08-25T18:48:23.500919+00:00"
+  },
+  {
+    "id": "ext_central_bank_XAUUSD_central_bank_reaction",
+    "source": "external_central_bank",
+    "symbol": "XAUUSD",
+    "family": "central_bank_reaction",
+    "description": "",
+    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+    "confidence": 0.3,
+    "patterns": [
+      "price stability"
+    ],
+    "created": "2026-08-25T18:48:23.500924+00:00"
   },
   {
     "id": "ext_central_bank_CADJPY_central_bank_reaction",
@@ -106,7 +93,7 @@
     "patterns": [
       "price stability"
     ],
-    "created": "2026-08-25T18:43:33.667247+00:00"
+    "created": "2026-08-25T18:48:23.500929+00:00"
   },
   {
     "id": "ext_central_bank_NZDJPY_central_bank_reaction",
@@ -119,20 +106,7 @@
     "patterns": [
       "price stability"
     ],
-    "created": "2026-08-25T18:43:33.667250+00:00"
-  },
-  {
-    "id": "ext_central_bank_EURJPY_central_bank_reaction",
-    "source": "external_central_bank",
-    "symbol": "EURJPY",
-    "family": "central_bank_reaction",
-    "description": "",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
-    "confidence": 0.3,
-    "patterns": [
-      "price stability"
-    ],
-    "created": "2026-08-25T18:43:33.667254+00:00"
+    "created": "2026-08-25T18:48:23.500933+00:00"
   },
   {
     "id": "ext_central_bank_CHFJPY_central_bank_reaction",
@@ -145,7 +119,7 @@
     "patterns": [
       "price stability"
     ],
-    "created": "2026-08-25T18:43:33.667257+00:00"
+    "created": "2026-08-25T18:48:23.500938+00:00"
   },
   {
     "id": "ext_central_bank_AUDJPY_central_bank_reaction",
@@ -158,6 +132,32 @@
     "patterns": [
       "price stability"
     ],
-    "created": "2026-08-25T18:43:33.667261+00:00"
+    "created": "2026-08-25T18:48:23.500943+00:00"
+  },
+  {
+    "id": "ext_central_bank_GBPJPY_central_bank_reaction",
+    "source": "external_central_bank",
+    "symbol": "GBPJPY",
+    "family": "central_bank_reaction",
+    "description": "",
+    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+    "confidence": 0.3,
+    "patterns": [
+      "price stability"
+    ],
+    "created": "2026-08-25T18:48:23.500946+00:00"
+  },
+  {
+    "id": "ext_central_bank_EURJPY_central_bank_reaction",
+    "source": "external_central_bank",
+    "symbol": "EURJPY",
+    "family": "central_bank_reaction",
+    "description": "",
+    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+    "confidence": 0.3,
+    "patterns": [
+      "price stability"
+    ],
+    "created": "2026-08-25T18:48:23.500950+00:00"
   }
 ]
