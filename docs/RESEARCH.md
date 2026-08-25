@@ -422,6 +422,31 @@ unauditable against everyone else's. *Standing defect, measured 2026-08-26: `qqu
 they converge into the one engine as queued work; until then they are bound by the same clock
 fields and thresholds, and NO fourth pipeline may be created for any reason.*
 
+## 6e. LIVE DECAY LAW — promotion's arithmetic, mirrored (principal 2026-08-26)
+
+**EVERY LIVE SLEEVE IS ON A DECAY CLOCK FROM ITS FIRST TRADE.** The organ is
+`desks/mt5/research/decay_monitor.py`, wired into the daily chain (shadow → promoter → markout →
+**decay** → export) and acting on `data/sleeves.json` — the file the gateway trades from. A decay
+flag nothing consumes is an opinion; this one halves risk and frees slots. *(meta_desk item 11
+remains a research view: unscheduled, consequence-free, and needing 120 days of history the live
+book will not have for years.)*
+
+**THE LADDER REUSES THE PROMOTION BAR, SIGN-FLIPPED — one arithmetic for both doors:**
+- **FADE** (risk × 0.5): trailing `t ≤ 0` or `exp_r < 0` at `n ≥ 20` — the edge is statistically
+  absent at the same n the desk trusts for promotion. Auto-recovers when health returns: a fade is
+  a hedge on uncertainty, not a sentence.
+- **RETIRE** (slot freed, same day): trailing `t ≤ −2.5` at `n ≥ 20` — as much evidence of harm as
+  promotion required of good; or trailing `maxDD ≤ −25R` at ANY n — the hard rail that does not
+  wait for a t-test.
+- Below n=20 there is **no statistical verdict either way** (a verdict on a handful of trades is a
+  coin flip wearing a certificate); only the DD rail is armed.
+
+**REPLACEMENT IS THE PIPELINE'S OWN JOB.** A retired sleeve frees its slot and the daily promoter
+refills it from matured forward candidates the same day (§6d back half). Re-entry for the retired
+sleeve is ONLY through a fresh pre-registered forward window — its certificate stands unless
+revoked, shadow re-enrols it automatically, and it re-earns live risk exactly the way it earned it
+first. No instant re-arm, no second door.
+
 ## 7. SURVIVORS AND THE FACTORY (the renewable engine)
 
 The survivor factory is the primary renewable engine: continuous meaningful candidate production,

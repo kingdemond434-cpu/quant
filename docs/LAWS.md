@@ -195,6 +195,13 @@ not patience to exercise. ONE shadow/forward engine for ALL lanes — a lane tha
 forward loop has built a second door around the law and is a defect on sight. Full text:
 RESEARCH §6d. Fence: `scripts/check_sameday_pipeline.py`.
 
+**L1.59 LIVE DECAY.** Every live sleeve is monitored from its first trade by the wired decay organ
+(daily chain), judged by promotion's own bar sign-flipped: FADE (risk × 0.5) at trailing t ≤ 0 over
+n ≥ 20, RETIRE (slot freed same day) at t ≤ −2.5 over n ≥ 20 or maxDD ≤ −25R at any n. Below n=20
+only the DD rail is armed. The promoter refills freed slots the same day; a retired sleeve re-enters
+only through a fresh forward window. A decay flag nothing consumes is an opinion, not a monitor.
+Full text: RESEARCH §6e. Organ: `desks/mt5/research/decay_monitor.py`.
+
 **Named absorbed laws (in force):** NO-CEILING ("we are at max" requires evidence);
 FREE-FRONTIER (a free alternative exists and has not been found yet; never English-only);
 MINING-NEVER-REGRESSES (volume, breadth, depth never fall; shrinking a denominator to fake a rate

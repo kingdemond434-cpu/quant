@@ -93,6 +93,11 @@ def _promote() -> None:
     promoter.main()
 
 
+def _decay() -> None:
+    import decay_monitor
+    decay_monitor.main()
+
+
 def _markout() -> None:
     from mt5desk.markout import compute, load_jsonl, render
     data = BASE / "data"
@@ -170,6 +175,7 @@ def _zentech() -> None:
 STEPS = (("futures_curves", _futures_curves), ("curve_strategies", _curve_strategies),
          ("shadow", _shadow), ("qquant_shadow", _qquant_shadow),
          ("promoter", _promote), ("markout", _markout),
+         ("decay", _decay),
          ("zentech", _zentech), ("export_aurum", _export_aurum))
 
 
