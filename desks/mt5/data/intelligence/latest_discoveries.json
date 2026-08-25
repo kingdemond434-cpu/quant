@@ -4,7 +4,7 @@
     "discoveries": []
   },
   "github": {
-    "count": 29,
+    "count": 24,
     "discoveries": [
       {
         "source": "github",
@@ -353,74 +353,6 @@
           "RSI"
         ],
         "confidence": 0.48699999999999993
-      },
-      {
-        "source": "github",
-        "repo": "JustinGuese/python_tradingbot_framework",
-        "url": "https://github.com/JustinGuese/python_tradingbot_framework",
-        "description": "Python algorithmic trading bot framework for Kubernetes: backtesting, hyperparameter optimization, 150+ technical analysis indicators (RSI, MACD, Bollinger Bands, ADX), portfolio management, PostgreSQL integration, Helm deployment, CronJob scheduling. Minimal overhead, production-ready, Yahoo Finance data.",
-        "stars": 35,
-        "language": "Jupyter Notebook",
-        "symbols": [],
-        "patterns": [
-          "bollinger",
-          "RSI",
-          "MACD"
-        ],
-        "confidence": 0.48499999999999993
-      },
-      {
-        "source": "github",
-        "repo": "ashikscreativemath-commits/Paldo-ALM",
-        "url": "https://github.com/ashikscreativemath-commits/Paldo-ALM",
-        "description": "\ud83e\udde0 Build adaptive algorithmic trading bots using machine learning and custom logic for MetaTrader 5 scalping and swing strategies.",
-        "stars": 21,
-        "language": "Python",
-        "symbols": [],
-        "patterns": [
-          "scalping",
-          "swing"
-        ],
-        "confidence": 0.321
-      },
-      {
-        "source": "github",
-        "repo": "ELOSPO/algorithmic-tradingUR2023I",
-        "url": "https://github.com/ELOSPO/algorithmic-tradingUR2023I",
-        "description": "Este repositorio contiene las funciones b\u00e1sicas del curso de Trading Algor\u00edtmico con Python y MT5 dictado en la Universidad del Rosario as\u00ed como los robots desarrollados durante el curso",
-        "stars": 37,
-        "language": "Python",
-        "symbols": [],
-        "patterns": [
-          "RSI"
-        ],
-        "confidence": 0.187
-      },
-      {
-        "source": "github",
-        "repo": "ilahuerta-IA/tradingsystem",
-        "url": "https://github.com/ilahuerta-IA/tradingsystem",
-        "description": "Modular backtesting framework for algorithmic trading using Backtrader. Features a 4-phase state machine strategy, JPY pair P&L correction (ERIS logic), and professional reporting. Educational resource for learning systematic trading.",
-        "stars": 16,
-        "language": "Python",
-        "symbols": [],
-        "patterns": [
-          "EMA"
-        ],
-        "confidence": 0.16599999999999998
-      },
-      {
-        "source": "github",
-        "repo": "ThePredictiveDev/Automated-Financial-Market-Trading-System",
-        "url": "https://github.com/ThePredictiveDev/Automated-Financial-Market-Trading-System",
-        "description": "This project is a Python-based trading simulator that allows users to simulate trading strategies, manage an order book, and interact with a mock trading environment using various algorithmic traders. The simulator includes a FIX (Financial Information eXchange) protocol handler, a market-making algorithm, and synthetic liquidity generation.",
-        "stars": 36,
-        "language": "Python",
-        "symbols": [],
-        "patterns": [
-          "liquidity"
-        ],
-        "confidence": 0.186
       }
     ]
   },
@@ -570,10 +502,734 @@
     "count": 0,
     "discoveries": []
   },
+  "reddit": {
+    "count": 18,
+    "discoveries": [
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "XAUUSD SETUP 25 AUGUST",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Is Gold Ready for Another Push Higher?",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "EMA"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Thoughts on EURUSD",
+        "url": "",
+        "symbols": [
+          "EURUSD"
+        ],
+        "patterns": [
+          "scalp",
+          "swing",
+          "trend"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Some setups I called before the move last Friday",
+        "url": "",
+        "symbols": [
+          "NAS100",
+          "GBPJPY",
+          "USDJPY"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Watching GBPJPY for a potential sell setup.",
+        "url": "",
+        "symbols": [
+          "GBPJPY"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Why do all my XAUUSD strategies suddenly work better after 2023",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "reversal",
+          "fibonacci",
+          "liquidity"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "When a \u201cstable\u201d EA suddenly stops being stable",
+        "url": "",
+        "symbols": [
+          "EURUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Gold Pullback: Can 4580 Hold? \ud83d\udc40",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "pullback",
+          "EMA"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "What I'm watching after last week's HTF moves",
+        "url": "",
+        "symbols": [
+          "USDCAD",
+          "EURUSD",
+          "GBPUSD"
+        ],
+        "patterns": [
+          "pullback"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Monday price actin prediction (XAUUSD). Thoughts ?",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "reversal",
+          "momentum"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Gold at 4608 \u2014 What\u2019s Your Monday Bias?",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "pullback",
+          "liquidity"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Good enough strategy?",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "retest",
+          "support",
+          "resistance",
+          "liquidity"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Friday",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "SMA"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Waiting to Buy from 159.22- USDJPY (H1)",
+        "url": "",
+        "symbols": [
+          "USDJPY"
+        ],
+        "patterns": [
+          "breakout",
+          "resistance",
+          "EMA"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "WARNING: Vantage Markets caught manipulating MT5 Server Logs to withhold client profits \u2013 Six support agents exposed!",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "support",
+          "EMA"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "I'm Really Pissed \ud83e\udd2c. Please give me Genuine advice rather than usual Bshit",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Ending day",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "XAUUSD BULLISH SETUP 20th august",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      }
+    ]
+  },
+  "forexfactory": {
+    "count": 15,
+    "discoveries": [
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "Treasury Sec Bessent Speaks",
+        "currency": "USD",
+        "impact": "MEDIUM",
+        "date": "2026-08-24T13:00:00-04:00",
+        "symbols": [
+          "GBPUSD",
+          "USDJPY",
+          "NZDUSD",
+          "USDCHF",
+          "US500",
+          "EURUSD",
+          "AUDUSD",
+          "XAUUSD",
+          "NAS100",
+          "USDCAD"
+        ],
+        "confidence": 0.4,
+        "description": "Medium impact USD event: Treasury Sec Bessent Speaks"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "CB Consumer Confidence",
+        "currency": "USD",
+        "impact": "MEDIUM",
+        "date": "2026-08-25T10:00:00-04:00",
+        "symbols": [
+          "GBPUSD",
+          "USDJPY",
+          "NZDUSD",
+          "USDCHF",
+          "US500",
+          "EURUSD",
+          "AUDUSD",
+          "XAUUSD",
+          "NAS100",
+          "USDCAD"
+        ],
+        "confidence": 0.4,
+        "description": "Medium impact USD event: CB Consumer Confidence"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "CPI m/m",
+        "currency": "AUD",
+        "impact": "HIGH",
+        "date": "2026-08-25T21:30:00-04:00",
+        "symbols": [
+          "GBPAUD",
+          "AUDCAD",
+          "AUDUSD",
+          "AUDJPY",
+          "AUDNZD",
+          "EURAUD"
+        ],
+        "confidence": 0.7,
+        "description": "High impact AUD event: CPI m/m"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "CPI y/y",
+        "currency": "AUD",
+        "impact": "HIGH",
+        "date": "2026-08-25T21:30:00-04:00",
+        "symbols": [
+          "GBPAUD",
+          "AUDCAD",
+          "AUDUSD",
+          "AUDJPY",
+          "AUDNZD",
+          "EURAUD"
+        ],
+        "confidence": 0.7,
+        "description": "High impact AUD event: CPI y/y"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "Trimmed Mean CPI m/m",
+        "currency": "AUD",
+        "impact": "HIGH",
+        "date": "2026-08-25T21:30:00-04:00",
+        "symbols": [
+          "GBPAUD",
+          "AUDCAD",
+          "AUDUSD",
+          "AUDJPY",
+          "AUDNZD",
+          "EURAUD"
+        ],
+        "confidence": 0.7,
+        "description": "High impact AUD event: Trimmed Mean CPI m/m"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "Core PCE Price Index m/m",
+        "currency": "USD",
+        "impact": "HIGH",
+        "date": "2026-08-26T08:30:00-04:00",
+        "symbols": [
+          "GBPUSD",
+          "USDJPY",
+          "NZDUSD",
+          "USDCHF",
+          "US500",
+          "EURUSD",
+          "AUDUSD",
+          "XAUUSD",
+          "NAS100",
+          "USDCAD"
+        ],
+        "confidence": 0.7,
+        "description": "High impact USD event: Core PCE Price Index m/m"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "Prelim GDP q/q",
+        "currency": "USD",
+        "impact": "HIGH",
+        "date": "2026-08-26T08:30:00-04:00",
+        "symbols": [
+          "GBPUSD",
+          "USDJPY",
+          "NZDUSD",
+          "USDCHF",
+          "US500",
+          "EURUSD",
+          "AUDUSD",
+          "XAUUSD",
+          "NAS100",
+          "USDCAD"
+        ],
+        "confidence": 0.7,
+        "description": "High impact USD event: Prelim GDP q/q"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "Prelim GDP Price Index q/q",
+        "currency": "USD",
+        "impact": "MEDIUM",
+        "date": "2026-08-26T08:30:00-04:00",
+        "symbols": [
+          "GBPUSD",
+          "USDJPY",
+          "NZDUSD",
+          "USDCHF",
+          "US500",
+          "EURUSD",
+          "AUDUSD",
+          "XAUUSD",
+          "NAS100",
+          "USDCAD"
+        ],
+        "confidence": 0.4,
+        "description": "Medium impact USD event: Prelim GDP Price Index q/q"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "Unemployment Claims",
+        "currency": "USD",
+        "impact": "MEDIUM",
+        "date": "2026-08-27T08:30:00-04:00",
+        "symbols": [
+          "GBPUSD",
+          "USDJPY",
+          "NZDUSD",
+          "USDCHF",
+          "US500",
+          "EURUSD",
+          "AUDUSD",
+          "XAUUSD",
+          "NAS100",
+          "USDCAD"
+        ],
+        "confidence": 0.4,
+        "description": "Medium impact USD event: Unemployment Claims"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "Tokyo Core CPI y/y",
+        "currency": "JPY",
+        "impact": "MEDIUM",
+        "date": "2026-08-27T19:30:00-04:00",
+        "symbols": [
+          "EURJPY",
+          "USDJPY",
+          "AUDJPY",
+          "CADJPY",
+          "XAUUSD",
+          "CHFJPY",
+          "NZDJPY",
+          "GBPJPY"
+        ],
+        "confidence": 0.4,
+        "description": "Medium impact JPY event: Tokyo Core CPI y/y"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "GDP m/m",
+        "currency": "CAD",
+        "impact": "HIGH",
+        "date": "2026-08-28T08:30:00-04:00",
+        "symbols": [
+          "USDCAD",
+          "AUDCAD",
+          "NZDCAD"
+        ],
+        "confidence": 0.7,
+        "description": "High impact CAD event: GDP m/m"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "Fed Chairman Warsh Speaks",
+        "currency": "USD",
+        "impact": "HIGH",
+        "date": "2026-08-28T10:00:00-04:00",
+        "symbols": [
+          "GBPUSD",
+          "USDJPY",
+          "NZDUSD",
+          "USDCHF",
+          "US500",
+          "EURUSD",
+          "AUDUSD",
+          "XAUUSD",
+          "NAS100",
+          "USDCAD"
+        ],
+        "confidence": 0.7,
+        "description": "High impact USD event: Fed Chairman Warsh Speaks"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "Prelim Benchmark Payrolls Revision",
+        "currency": "USD",
+        "impact": "HIGH",
+        "date": "2026-08-28T10:00:00-04:00",
+        "symbols": [
+          "GBPUSD",
+          "USDJPY",
+          "NZDUSD",
+          "USDCHF",
+          "US500",
+          "EURUSD",
+          "AUDUSD",
+          "XAUUSD",
+          "NAS100",
+          "USDCAD"
+        ],
+        "confidence": 0.7,
+        "description": "High impact USD event: Prelim Benchmark Payrolls Revision"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "Revised UoM Consumer Sentiment",
+        "currency": "USD",
+        "impact": "MEDIUM",
+        "date": "2026-08-28T10:00:00-04:00",
+        "symbols": [
+          "GBPUSD",
+          "USDJPY",
+          "NZDUSD",
+          "USDCHF",
+          "US500",
+          "EURUSD",
+          "AUDUSD",
+          "XAUUSD",
+          "NAS100",
+          "USDCAD"
+        ],
+        "confidence": 0.4,
+        "description": "Medium impact USD event: Revised UoM Consumer Sentiment"
+      },
+      {
+        "source": "forexfactory",
+        "type": "calendar_event",
+        "title": "Revised UoM Inflation Expectations",
+        "currency": "USD",
+        "impact": "MEDIUM",
+        "date": "2026-08-28T10:00:00-04:00",
+        "symbols": [
+          "GBPUSD",
+          "USDJPY",
+          "NZDUSD",
+          "USDCHF",
+          "US500",
+          "EURUSD",
+          "AUDUSD",
+          "XAUUSD",
+          "NAS100",
+          "USDCAD"
+        ],
+        "confidence": 0.4,
+        "description": "Medium impact USD event: Revised UoM Inflation Expectations"
+      }
+    ]
+  },
+  "cot": {
+    "count": 11,
+    "discoveries": [
+      {
+        "source": "cot",
+        "type": "positioning",
+        "symbol": "USDCHF",
+        "contract": "SWISS FRANC - CHICAGO MERCANTILE EXCHANGE",
+        "date": "2026-08-18",
+        "open_interest": 92,
+        "non_commercial_long": 113749,
+        "non_commercial_short": 66963,
+        "non_commercial_net": 46786,
+        "commercial_long": 10081,
+        "commercial_short": 11775,
+        "commercial_net": -1694,
+        "spec_pct_of_oi": 50854.35,
+        "comm_pct_of_oi": -1841.3
+      },
+      {
+        "source": "cot",
+        "type": "positioning",
+        "symbol": "GBPUSD",
+        "contract": "BRITISH POUND - CHICAGO MERCANTILE EXCHANGE",
+        "date": "2026-08-18",
+        "open_interest": 96,
+        "non_commercial_long": 286371,
+        "non_commercial_short": 133730,
+        "non_commercial_net": 152641,
+        "commercial_long": 5589,
+        "commercial_short": 70821,
+        "commercial_net": -65232,
+        "spec_pct_of_oi": 159001.04,
+        "comm_pct_of_oi": -67950.0
+      },
+      {
+        "source": "cot",
+        "type": "positioning",
+        "symbol": "USDJPY",
+        "contract": "JAPANESE YEN - CHICAGO MERCANTILE EXCHANGE",
+        "date": "2026-08-18",
+        "open_interest": 97,
+        "non_commercial_long": 380811,
+        "non_commercial_short": 102005,
+        "non_commercial_net": 278806,
+        "commercial_long": 23933,
+        "commercial_short": 67776,
+        "commercial_net": -43843,
+        "spec_pct_of_oi": 287428.87,
+        "comm_pct_of_oi": -45198.97
+      },
+      {
+        "source": "cot",
+        "type": "positioning",
+        "symbol": "EURUSD",
+        "contract": "EURO FX - CHICAGO MERCANTILE EXCHANGE",
+        "date": "2026-08-18",
+        "open_interest": 99,
+        "non_commercial_long": 804940,
+        "non_commercial_short": 53199,
+        "non_commercial_net": 751741,
+        "commercial_long": 59975,
+        "commercial_short": 90140,
+        "commercial_net": -30165,
+        "spec_pct_of_oi": 759334.34,
+        "comm_pct_of_oi": -30469.7
+      },
+      {
+        "source": "cot",
+        "type": "positioning",
+        "symbol": "AUDUSD",
+        "contract": "AUSTRALIAN DOLLAR - CHICAGO MERCANTILE EXCHANGE",
+        "date": "2026-08-18",
+        "open_interest": 232,
+        "non_commercial_long": 288526,
+        "non_commercial_short": 84525,
+        "non_commercial_net": 204001,
+        "commercial_long": 2717,
+        "commercial_short": 75644,
+        "commercial_net": -72927,
+        "spec_pct_of_oi": 87931.47,
+        "comm_pct_of_oi": -31434.05
+      },
+      {
+        "source": "cot",
+        "type": "positioning",
+        "symbol": "EURUSD",
+        "contract": "EURO FX/BRITISH POUND XRATE - CHICAGO MERCANTILE EXCHANGE",
+        "date": "2026-08-18",
+        "open_interest": 99,
+        "non_commercial_long": 40347,
+        "non_commercial_short": 447,
+        "non_commercial_net": 39900,
+        "commercial_long": 1143,
+        "commercial_short": 3466,
+        "commercial_net": -2323,
+        "spec_pct_of_oi": 40303.03,
+        "comm_pct_of_oi": -2346.46
+      },
+      {
+        "source": "cot",
+        "type": "positioning",
+        "symbol": "EURUSD",
+        "contract": "EURO FX/JAPANESE YEN XRATE - CHICAGO MERCANTILE EXCHANGE",
+        "date": "2026-08-18",
+        "open_interest": 99,
+        "non_commercial_long": 21477,
+        "non_commercial_short": 413,
+        "non_commercial_net": 21064,
+        "commercial_long": 289,
+        "commercial_short": 954,
+        "commercial_net": -665,
+        "spec_pct_of_oi": 21276.77,
+        "comm_pct_of_oi": -671.72
+      },
+      {
+        "source": "cot",
+        "type": "positioning",
+        "symbol": "USDMXN",
+        "contract": "MEXICAN PESO - CHICAGO MERCANTILE EXCHANGE",
+        "date": "2026-08-18",
+        "open_interest": 95,
+        "non_commercial_long": 284591,
+        "non_commercial_short": 23875,
+        "non_commercial_net": 260716,
+        "commercial_long": 2009,
+        "commercial_short": 132396,
+        "commercial_net": -130387,
+        "spec_pct_of_oi": 274437.89,
+        "comm_pct_of_oi": -137249.47
+      },
+      {
+        "source": "cot",
+        "type": "positioning",
+        "symbol": "NZDUSD",
+        "contract": "NZ DOLLAR - CHICAGO MERCANTILE EXCHANGE",
+        "date": "2026-08-18",
+        "open_interest": 112,
+        "non_commercial_long": 89153,
+        "non_commercial_short": 71209,
+        "non_commercial_net": 17944,
+        "commercial_long": 490,
+        "commercial_short": 4249,
+        "commercial_net": -3759,
+        "spec_pct_of_oi": 16021.43,
+        "comm_pct_of_oi": -3356.25
+      },
+      {
+        "source": "cot",
+        "type": "extreme_positioning",
+        "symbol": "EURUSD",
+        "spec_pct": 21276.77,
+        "direction": "long",
+        "contrarian_signal": "short",
+        "confidence": 0.8,
+        "description": "Speculators 21276.8% net long - contrarian reversal signal"
+      },
+      {
+        "source": "cot",
+        "type": "positioning_shift",
+        "symbol": "EURUSD",
+        "spec_change": -19026.26,
+        "direction": "decreasing",
+        "confidence": 0.6,
+        "description": "Speculator positioning decreasing by 19026.3% in one week"
+      }
+    ]
+  },
   "summary": {
-    "total_miners": 11,
-    "total_discoveries": 41,
-    "successful_miners": 4,
-    "timestamp": "2026-08-25T18:43:33.665525+00:00"
+    "total_miners": 14,
+    "total_discoveries": 80,
+    "successful_miners": 7,
+    "timestamp": "2026-08-25T19:30:30.839439+00:00"
   }
 }

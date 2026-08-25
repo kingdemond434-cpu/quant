@@ -27,6 +27,9 @@ from quantconnect_miner import run_and_save as quantconnect_mine
 from central_bank_miner import run_and_save as central_bank_mine
 from china_miner import run_and_save as china_mine
 from korea_miner import run_and_save as korea_mine
+from reddit_miner import run_and_save as reddit_mine
+from forexfactory_miner import run_and_save as forexfactory_mine
+from cot_miner import run_and_save as cot_mine
 
 # truth_social_miner is class-based (TruthSocialCollector), no run_and_save.
 # Silently skipped — runs via its own entry point.
@@ -44,6 +47,9 @@ ALL_MINERS = [
     ("central_bank", central_bank_mine),
     ("china", china_mine),
     ("korea", korea_mine),
+    ("reddit", reddit_mine),
+    ("forexfactory", forexfactory_mine),
+    ("cot", cot_mine),
 ]
 
 
