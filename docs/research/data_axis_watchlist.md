@@ -503,7 +503,7 @@ _Superseded original grading below (kept for the record):_
 - **Residual gap: pre-recorder-start L2 tick diffs are destroyed at source** — no free or paid
   provider reconstructs history the recorder didn't capture forward. Already logged, unchanged.
 
-### 7. Glassnode / CryptoQuant vendor-replacement — grade: **VERIFIED FREE PRIMARY FOUND for the metric class (Coin Metrics community), needs-legitimacy-review for production use (CC BY-NC) — re-graded 2026-07-25** [§33: wired tier:1 -> data/coinmetrics_flows.jsonl]
+### 7. Glassnode / CryptoQuant vendor-replacement — grade: **verified-clean at source level; §13 LEGITIMACY DECIDED 2026-08-25 (prospector): production adoption BARRED — Coin Metrics community terms are CC BY-NC, and a signal built on data the desk cannot use commercially is un-deployable (§13(1)), so the NC file class is not adopted; MANDATE RE-GRADE same day: the crypto on-chain metric program is retired with the universe — data/coinmetrics_flows.jsonl retained as research history only, its metric class already measured FLAT (4/4 SCREEN-WEAK banked 2026-07-26) and its sole tested consumer (cm_mvrv) graveyarded. §38 replacement hunt CLOSED WITHOUT SUCCESSOR: the exclusion removes no live capability — the consumer was removed by principal order, not the source** [§33: wired tier:1 -> data/coinmetrics_flows.jsonl]
 > **§33 CONVERSION 2026-07-26 — FOUND became WIRED. `scripts/collect_coinmetrics_flows.py`,
 > BUILT AND RUN; the free primary is now INGESTED, DIFF-VERIFIED and SCREENED, not catalogued.**
 > - **INGESTED AT FULL ARCHIVE DEPTH (§33.7 depth parity — full history, not a slice):**
@@ -1781,7 +1781,7 @@ NOT mean capital (L1.6 -- a candidate is not an edge). R-rows: R0115-R0118.
 
 ## LITMINER RUN-4 CARDS (2026-07-31, official-sector family first visit — BIS/Fed/IMF primary reads)
 
-### 23. Carry↔liquidation mechanism family (BIS WP 1087, primary read) + COT-BTC extension — grade: SCREENED 2026-08-18 (C1/C2 UNDERPOWERED + echo-dominated; C3/C4 BLOCKED on corrupt liq archive R0615; COT comm_* columns REFUTED R0616) [§33: screened -> data/carry_liq_screen.json]
+### 23. Carry↔liquidation mechanism family (BIS WP 1087, primary read) + COT-BTC extension — grade: **verified-clean — SCREENED 2026-08-18 (C1/C2 underpowered + echo-dominated, trials charged 4) + MANDATE RE-GRADE 2026-08-25 (prospector): the C3/C4 forward-liquidation remainder and its corrupt-liq-archive dependency are VOID — the crypto liquidation tape is retired with the universe (2026-08-18 mandate, recorders off), so no repair and no screen is owed. SURVIVING HALF, named: data/cot_btc_panel.json (public-domain CFTC, 1,715 rows 2017-12→2026-08) stands as a positioning-reference axis for the Fusion BTCUSD/ETHUSD CFDs — COT/TFF positioning is a named first-class MT5 axis (RESEARCH §2); any future screen is a NEW preregistration under the MT5 desk's gauntlet. CITATION FIXES: the comm_*-duplication builder defect is R0613 (this line previously mis-cited R0616 = the listing-comparables handoff row); the body's liq-parquet patch cite "R0615" is also a collision (R0615 = Appendix-A principal row) — moot, the archive is retired** [§33: screened -> data/carry_liq_screen.json]
 > **§33 SCREENED 2026-08-18 (litminer run 8) — the R0193 screen remainder for THIS card is EXECUTED.**
 > Novelty gate re-run (owed at screen time): novelty 0.70 vs 268 priors, nearest sim 0.30, NOT
 > redundant. Pre-registered cells: **C1/C2 (carry_z63 → fwd 5d/20d BTC absolute return, 5.2y
@@ -1911,7 +1911,7 @@ NOT mean capital (L1.6 -- a candidate is not an edge). R-rows: R0115-R0118.
   to announcement dates mis-times the treatment by weeks. The KR 9th instance carries the same
   lesson from the enforcement side (venue-bank rail terminations, not laws, moved the premium).
 
-### 25. Stablecoin run signature — episodic conditioning on the EXISTING stablecoin_flows family — grade: needs-monitoring (SUPPLY-LEG VARIABLES BUILT 2026-08-11; mint/burn pair + premium legs stay R0193) [§33: wired tier:2 -> data/stablecoin_run_variables.json]
+### 25. Stablecoin run signature — episodic conditioning on the EXISTING stablecoin_flows family — grade: **verified-clean — supply leg BUILT 2026-08-11, re-verified 08-12 (probes recomputed, 0 refuted) + MANDATE RE-GRADE 2026-08-25 (prospector): surviving scope = episodic run-state conditioning for the Fusion BTCUSD/ETHUSD CFDs ONLY (crypto reference data informing an MT5 instrument — the LAWS §1 carve-out); the R0193-owned remainder (treasury mint/burn pair + safe-coin premium off the desk's 4-venue tape) is VOID — the venue tape is retired (RECORDERS_OFF) and crypto-exchange constructions may not be hunted. The price leg stays declared-absent and must never read as "peg held". Nothing further owed unless an MT5 crypto-CFD sleeve preregisters an episodic-conditioning hypothesis** [§33: wired tier:2 -> data/stablecoin_run_variables.json]
 > **§33 CONVERTED 2026-08-11 (brain-hunter seat), honest scope.** `data/stablecoin_run_variables.json`
 > (363KB) — DefiLlama `/stablecoincharts/all` (free, keyless, sr1073's own cited class): **USDT
 > 3,178d 2017-11-29→2026-08-11, USDC 2,892d**, columns date/circulating/d1%/d7%/**burn_z63**
@@ -2055,7 +2055,7 @@ unplanned **positive control on the desk's own wiring**: our panel reproduced th
 null in the window where a null is expected. Weak evidence the instrument is sound (L1.25 diagnostic
 step 1), obtained for free.
 
-### 26. KR venue-state layer — Upbit + Bithumb event archive, market flags and rail state — grade: needs-monitoring (verified live, ingest STARTED, screen owed) [§33: screened -> data/upbit_trade_announcements.jsonl]
+### 26. KR venue-state layer — Upbit + Bithumb event archive, market flags and rail state — grade: KILLED by mandate re-grade 2026-08-25 (prospector; crypto-exchange-native ground banned 2026-08-18 — the cb74d2e0/R0637 precedent; collector already stopped: data/kr_venue_flags.jsonl last write 2026-08-20, flag surface stale 5d; artifacts retained on disk as provenance; the owed screen dies UNRUN — no trial charged, no forward clock ever minted) [§33: killed tier:3 -> docs/graveyard.md `kr_venue_state_layer`]
 _Discovered and verified by the KR frontier miner, session 1, 2026-08-01. All endpoints keyless,
 first-party, §13-clean (public documented venue APIs, no login, no paywall, no scraping)._
 > **RE-VERIFIED 2026-08-12 (litminer run 6, §33(8) artifact check):**
@@ -3345,7 +3345,7 @@ so R0193's build can re-tag from titles at zero fetch cost); (4) no mechanism is
 timeline material for an existing ledgered build, not an axis; the regional-premium family stays
 graveyarded.
 
-### 37. Wallet-resolved signed DEX trade tape (OWNED, LIVE, and absent from every catalogue the miners read) — grade: **owned-and-measured; UNMINED — this card exists to make it visible** [§33: wired -> docs/research/recommendation_ledger.json `R0637`]
+### 37. Wallet-resolved signed DEX trade tape (OWNED, frozen 2026-08-20, and absent from every catalogue the miners read) — grade: KILLED by mandate re-grade 2026-08-25 (prospector): the mining program this card demanded is banned ground (DEX-native cross-section); the collector stopped in the 08-20 retirement wave (data/geckoterminal_trades.jsonl frozen at 197MB, 2026-08-11→08-20), so the custodial-urgency argument — forward-only-unrecoverable accrual — is moot. Tape stays owned on disk as provenance. UNIVERSE-INDEPENDENT HALVES stay live in R0637 (open; split prescribed by brain-s5 2026-08-20, owner = brain seat): (a) utilisation-meter blindness to registered-but-uncatalogued collectors; (b) the vec_*/reduce_* vector-operator gap (0 of 18 implemented) — the identical data shape exists on the MT5 desk's own per-tick tape, which is where that capability belongs now [§33: killed tier:3 -> docs/graveyard.md `dex_wallet_tape_mining`]
 
 **THIS IS NOT A SOURCE TO ACQUIRE. THE DESK ALREADY OWNS IT AND HAS NEVER READ IT.**
 `scripts/collect_geckoterminal_trades.py` has been writing `data/geckoterminal_trades.jsonl` since
@@ -3464,3 +3464,50 @@ mechanisms.
 **NEXT:** bulk pull on cooldown expiry → `data/sge_daily_klines.jsonl` (script staged this run at
 /tmp/sge_fetch.py, windowing owed); AGTD verification; fee-direction notice route mapping; then
 hand to the MT5 desk's screen via R0649.
+
+---
+
+## PRINCIPAL SEED DROP — 2026-08-25 (daily research cycles: hunt these grounds and more)
+
+Seeds, NEVER boundaries (anti-hardcode law, LAWS §1): each is an entry point whose graph the
+diggers expand — repos lead to maintainers, forums to authors, statements to calendars. Every
+find flows through the unchanged §13 legitimacy gate, screen-on-discovery, and §33 dispositions.
+YouTube transcripts are EXCLUDED for now: transcript retrieval measured unreachable from this
+box (principal 2026-08-25) — re-probe quarterly like any walled source, do not burn daily budget.
+
+### S1. MQL5 full surface — grade: pending verification
+Codebase (public .mq4/.mq5), Articles, **Signals** (verified track records — RESEARCH §4
+black-box reverse-engineering ground), Forum reply layers, Market teardowns/reviews (refutation
+genre). The MT5 universe's NATIVE ecosystem; currently the thinnest-covered major source
+(1 doc mentions it vs 8+ for TradingView/CN grounds).
+
+### S2. GitHub code repos, systematic (not incidental) — grade: pending verification
+Beyond ad-hoc searches: topic/language sweeps for MT5/MQL/FX strategy repos, fork graphs of
+high-star strategy repos, Issues/Discussions of broker-API wrappers, dead-repo archaeology
+(L1.11a). GitHub maximalism is already law; this seed makes the DAILY cycle own it.
+
+### S3. TradingView public scripts — grade: pending verification
+Pine Script public library: strategy scripts with visible logic + boosts/comments as a crowding
+signal. Already covered in 8 docs — the seed here is the DAILY cadence, not novelty.
+
+### S4. QuantConnect — grade: pending verification
+Public algorithms, forum, Alpha league results. Mechanism extraction + the failure genre
+(live-vs-backtest divergence threads are free execution-reality data).
+
+### S5. Trump Truth Social — grade: needs-legitimacy-review
+Macro/policy event source for the MT5 universe (DXY, gold, indices, energy): tariff/Fed/dollar
+statements move hunted instruments. Route: public web/archives only, timestamps preserved
+point-in-time; event-study gate (RESEARCH §6) is the ONLY admissible test shape.
+
+### S6. Central-bank statements, systematic — grade: pending verification
+Fed/ECB/BoJ/BoE/SNB/RBA/RBNZ/BoC full text + minutes + speaker calendars, diffed
+statement-over-statement (hawkish/dovish delta as a data axis, ALFRED-style point-in-time).
+Macro is a first-class edge axis (RESEARCH §2); this is its primary free document stream.
+
+### S7. CN ground: Bilibili + Zhihu — grade: pending verification
+Already first-class in the CN miner (8–9 docs); seed confirms DAILY cadence and extends to the
+quant-video/column layers the frontier digs have not yet exhausted.
+
+### S8. KR ground continuation — grade: pending verification
+Naver blogs/cafes covered (3 docs); extend to KR quant communities per the KR miner's existing
+operator set, daily.
