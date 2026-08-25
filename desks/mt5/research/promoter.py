@@ -28,8 +28,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from mt5desk import provenance  # noqa: E402
-from shadow_admission import authorized_specs  # noqa: E402
+from mt5desk import provenance
+from shadow_admission import authorized_specs, power_cure_specs
 
 BASE = Path(__file__).resolve().parent.parent
 SHADOW_DIR = BASE / "reports" / "shadow"
@@ -49,6 +49,25 @@ RETIRE_MAX_DD = -25.0
 RETIRE_MIN_EXP = 0.05
 
 GOLD_WINDOWS = ["asia", "london_am", "ny_open", "afternoon"]
+
+
+def _cure_thresholds() -> dict:
+    """Forward-cure bar, read from the CANONICAL SPEC rather than restated here.
+
+    Two copies of one threshold WILL drift, and the drift surfaces as a promotion nobody can
+    explain against a policy nobody changed. gate_spec.yaml is the single source.
+    """
+    try:
+        from gate_policy import get_promotion_thresholds
+        th = get_promotion_thresholds().get("forward_cure_thresholds", {})
+        if th:
+            return th
+    except Exception:
+        pass
+    return {"min_trades": 50, "min_exp_r": 0.05, "max_dd_r": -25.0, "min_days_active": 14}
+
+
+CURE = _cure_thresholds()
 
 
 def plog(msg: str) -> None:
@@ -107,7 +126,7 @@ def load_ledger() -> list[dict]:
     except Exception:
         return []
     try:
-        import MetaTrader5 as mt5  # noqa: PLC0415
+        import MetaTrader5 as mt5
         acc = provenance.current_account(mt5.account_info())
     except Exception:
         acc = provenance.current_account(None)
@@ -155,7 +174,7 @@ def load_qquant_shadow() -> dict:
 
 def load_cert_specs() -> dict[str, dict]:
     """Certificate key -> published shadow_spec, exact policy only (fail closed)."""
-    from gate_policy import all_ten_pass, is_exact_policy  # noqa: PLC0415
+    from gate_policy import all_ten_pass, is_exact_policy
     p = BASE / "reports" / "UNIVERSAL_SURVIVORS.json"
     try:
         certs = json.loads(p.read_text(encoding="utf-8"))
@@ -222,6 +241,7 @@ def main() -> None:
     ledger = load_ledger()
     existing = {s["name"] for s in sleeves}
     gate_authority = authorized_specs(BASE)
+    cure_authority = power_cure_specs(BASE)
     changed = False
 
     qshadow = load_qquant_shadow()
@@ -246,6 +266,31 @@ def main() -> None:
         sym, win = parts[0], parts[1]
         cond = parts[2] if len(parts) > 2 else None
         gate_spec = (sym, win, cond, "session_range_breakout", False)
+        # POWER-CURE PATH (gate_spec.yaml: power_cure_via_forward = true). A sleeve that cleared
+        # every VALIDITY gate and missed only POWER gates was sent to shadow PRECISELY so forward
+        # evidence could settle it -- and until now it could complete that cure and still be
+        # refused here for lacking a certificate it was never going to earn. The policy promised
+        # a cure with no path to cash it (L1.46: a duty with no instrument is a wish).
+        # Admission uses the SPEC'S OWN thresholds, which are STRICTER than the ordinary bar,
+        # never looser: 50 trades AND >= 0.05R AND maxDD > -25R AND >= 14 days.
+        if gate_spec not in gate_authority and gate_spec in cure_authority:
+            fs = sleeve_forward_stats(ledger, key)
+            if (fs["n"] >= CURE["min_trades"] and fs["exp"] >= CURE["min_exp_r"]
+                    and fs["max_dd"] > CURE["max_dd_r"]
+                    and int(st.get("days_active", 0)) >= CURE["min_days_active"]):
+                plog(f"{key}: POWER-CURE MET -- all validity gates passed, power failure cured "
+                     f"by forward evidence (n={fs['n']} exp={fs['exp']:.3f}R "
+                     f"dd={fs['max_dd']:.1f}R days={st.get('days_active')})")
+                gate_authority = gate_authority | {gate_spec}
+            else:
+                st["status"] = "POWER_CURE_PENDING"
+                st["gate_reason"] = (
+                    f"validity-clean, power failure curing: n={fs['n']}/{CURE['min_trades']} "
+                    f"exp={fs['exp']:.3f}/{CURE['min_exp_r']}R "
+                    f"days={st.get('days_active', 0)}/{CURE['min_days_active']}")
+                plog(f"{key}: power cure accruing -- {st['gate_reason']}")
+                changed = True
+                continue
         if gate_spec not in gate_authority:
             st["status"] = "BLOCKED_UNIVERSAL_GATES"
             st["promotion_authority"] = False
@@ -317,6 +362,6 @@ def main() -> None:
 if __name__ == "__main__":
     try:
         main()
-    except Exception as e:
+    except Exception:
         import traceback
         plog("promoter error: " + traceback.format_exc())

@@ -32,7 +32,7 @@ STALE_WATCH = {
     "x_signals": ("web/x_signals.json", 180),
     "moneypath_fence_log_write": ("data/moneypath_fence.log", None),  # presence-only info
 }
-ALARMS = ["data/FENCE_ALARM.txt"]
+ALARMS = ["data/FENCE_ALARM.txt", "data/AUTHORITY_ALARM.txt"]
 
 
 def log(msg: str) -> None:

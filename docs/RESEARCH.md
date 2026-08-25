@@ -356,6 +356,72 @@ DSR-counted trial, and a regime that cannot be computed live means the sleeve is
 appears is not specialization, it is the garden of forking paths, and the trial accounting is
 what separates the two.
 
+## 6d. SAME-DAY PIPELINE LAW — the front half has no waiting room (principal 2026-08-26)
+
+**UNIVERSAL AND CANON, FOR ALL, ALWAYS (principal 2026-08-26: "for all always canon universal").**
+This is the ONE door and there is no other. Every hunt, every miner, every hypothesis source —
+YouTube, GitHub, Reddit, COT, ForexFactory, leaderboards, championships, moat, regional hunters,
+identity/cohort work, the DeepSeek factory, qquant, scalp, external, generic, and anything built
+after this line is written — enters the same pipeline in the same order and is bound by the same
+clock. There is no fast lane, no legacy lane, no "this one is different", and no promotion path
+that does not pass through a ten-gate certificate and a pre-registered forward window. A discovery
+route that cannot state which day it certified and which day its clock started is not a route, it
+is an unmeasured claim (L1.28a). *Grandfathering is not an exception to this law: 36 rows once
+carried `gate_reason: "missing exact original universal ten-gate pass"` and sat in shadow anyway —
+they are subject to the same door, and either certify through it or hold no promotion authority.*
+
+**THE DAILY CYCLE RUNS ALL SIX STAGES EVERY DAY.** Same-day means the *machinery* completes
+end-to-end every day, not that a candidate reaches live capital in a day: discover → backtest →
+gauntlet → certificate → enrol happens the day a candidate appears, and on that same daily pass any
+sleeve whose forward window has already matured is promoted **that day**, never at the next weekly
+batch. The pipeline never sleeps between stages; only the forward window takes time, and it takes
+exactly the time it takes.
+
+**DISCOVERY → BACKTEST → TEN-GATE GAUNTLET → FORWARD ENROLMENT IS ONE ACT, COMPLETED THE SAME
+DAY.** A candidate discovered today is backtested today, gauntleted today, and — if it certifies —
+carries a forward clock today, alongside every sleeve already on one. Nothing waits for a batch, a
+sweep, a review or a session. **Then** the 14-day forward window runs, and **then** it goes live.
+
+**WHY THE FRONT IS FREE AND THE BACK IS NOT.** Enrolment risks no capital, so a day spent
+un-enrolled buys no safety whatsoever — it only destroys forward evidence that would already be
+accruing, and it is subtracted directly from compounding (LAWS §2a, the catch-up law). The forward
+window is the opposite: it is the **only evidence in the entire system that was not available
+during selection**, and it may never be compressed, backdated or waived for any reason including
+urgency. Speed belongs to everything before the clock starts and to nothing after.
+
+**THE CLOCK STARTS AT PRE-REGISTRATION.** Every forward row carries `forward_start`, stamped once
+when the row is created and never moved. Day counts run from that stamp — never from the first
+trade the sleeve happened to take. *Measured 2026-08-26: 36 rows carried no stamp, so their
+`days_active` ran from `trades[0].entry_time`, and five certified externals stood 8/14 through a
+"forward" window whose evidence was gathered while they were still being selected. Corrected;
+`scripts/check_sameday_pipeline.py` now fails on any unstamped live clock.*
+
+**SUFFICIENT EVIDENCE, NOT A ROUND NUMBER.** Promotion requires `days ≥ 14` **AND** genuine
+statistical sufficiency: either `n ≥ 50`, or `n ≥ 20` with a forward t-statistic `≥ 2.5` on mean R.
+The flat 50 was a proxy for "enough to overturn the power-gate doubt"; at this desk's measured rate
+(~0.75 trades/sleeve/day) that proxy cost ~66 days and made the 14-day clause dead letter. The
+t-test measures the thing the proxy stood for: a large true edge clears it early, a marginal one
+still fails at n=200. **This is stricter, not looser** — and the join is AND, never OR. *A prior
+`or` meant a sleeve holding ONE trade would take a verdict on day 14; four rows were on course to
+do exactly that.*
+
+**SILENCE IS A DEFECT, NOT PATIENCE.** A sleeve on the clock taking zero trades is accumulating
+evidence neither for nor against itself and will reach day 14 with nothing to judge (L1.28a).
+Report and repair it as a firing defect — feed, signal, or session filter.
+
+**ONE SHADOW, ONE FORWARD — BESPOKE PIPELINES ARE BANNED (principal 2026-08-26: "all must enter
+the same one shadow pipeline and forward pipeline and never make their own ones").** There is
+exactly ONE shadow/forward engine, one state ledger, one clock format (`forward_start`, `n`,
+`exp_r`, `max_dd_r`, `days_active`, `forward_t`, `status`), and one verdict rule. Every lane —
+qquant, scalp, external, generic, moat, and every future hunt — ENROLS into it and reads verdicts
+out of it; no lane ever implements its own forward loop, its own day-counting, or its own
+promotion arithmetic. A private forward pipeline is not initiative, it is a second door around the
+law: it will drift from the canonical thresholds the day either changes, and its verdicts are
+unauditable against everyone else's. *Standing defect, measured 2026-08-26: `qquant_shadow` and
+`scalp_shadow` run as separate engines with their own state files alongside `shadow_forward` —
+they converge into the one engine as queued work; until then they are bound by the same clock
+fields and thresholds, and NO fourth pipeline may be created for any reason.*
+
 ## 7. SURVIVORS AND THE FACTORY (the renewable engine)
 
 The survivor factory is the primary renewable engine: continuous meaningful candidate production,

@@ -94,3 +94,72 @@ def partition_work(
     for spec in declared:
         (admitted if spec in authority else blocked).append(spec)
     return admitted, blocked
+
+def power_cure_specs(base: Path = BASE) -> set[tuple[str, str, str | None, str, bool]]:
+    """Specs that failed ONLY power gates -- admissible once forward evidence cures them.
+
+    THE POLICY HAD NO INSTRUMENT (L1.46). gate_spec.yaml states `power_cure_via_forward: true`
+    and classifies five gates as POWER (in_sample_screen, deflated_sharpe, cpcv, walk_forward,
+    expected_value) versus five as VALIDITY (economic_prior, pbo, reality_check_spa,
+    stress_costs, lockbox), with VALIDITY a hard fail. That is the whole reason 36 sleeves sit
+    on forward clocks: they cleared every validity gate and missed on deflated Sharpe, which
+    forward evidence is explicitly allowed to settle.
+
+    But `authorized_specs` only ever admitted EXACT ten-gate certificates -- so a sleeve could
+    complete the cure the policy promised and still be refused at the door, forever. The cure
+    was unreachable, which makes it a wish rather than a rule. This function is the missing
+    instrument: it returns the power-cure-eligible specs, and the PROMOTER (not this file)
+    applies the forward thresholds before anything is promoted.
+    """
+    from gate_policy import is_exact_policy
+    reports = base / "reports"
+    out: set[tuple[str, str, str | None, str, bool]] = set()
+    # CLASSIFICATIONS FROM THE SPEC, WITH FALLBACKS. The desk box runs a different branch whose
+    # gate_policy predates get_validity_gates/get_power_gates, so importing them unconditionally
+    # turned a policy improvement into an ImportError that killed the entire promoter run. A
+    # capability that works only on one box's revision is not deployed. Read the spec when the
+    # helpers are missing, the canonical literal when even the spec cannot be read, and FAIL
+    # SOFT: a promoter that cannot classify skips the cure path, never aborts promotion.
+    try:
+        from gate_policy import get_power_gates, get_validity_gates
+        validity, power = get_validity_gates(), get_power_gates()
+    except ImportError:
+        try:
+            import yaml
+            spec = yaml.safe_load((base / "policy" / "gate_spec.yaml").read_text("utf-8"))
+            cls = spec.get("gate_classifications", {})
+            validity = frozenset(cls.get("validity", ()))
+            power = frozenset(cls.get("power", ()))
+        except Exception:
+            validity = frozenset({"economic_prior", "pbo", "reality_check_spa",
+                                  "stress_costs", "lockbox"})
+            power = frozenset({"in_sample_screen", "deflated_sharpe", "cpcv",
+                               "walk_forward", "expected_value"})
+    if not validity or not power:
+        return out
+    qq = _read(reports / "QQUANT_GATES.json")
+    if not is_exact_policy(qq.get("gate_policy")):
+        return out
+    for r in qq.get("verdicts", []):
+        stages = r.get("stages") if isinstance(r, dict) else None
+        if not isinstance(stages, dict):
+            continue
+        # VALIDITY IS ABSOLUTE: one validity miss and the cell is DEAD, never cured.
+        if not all(isinstance(stages.get(g), dict) and stages[g].get("passed") is True
+                   for g in validity):
+            continue
+        # and it must actually be a POWER failure -- a full pass belongs to authorized_specs.
+        failed_power = [g for g in power
+                        if not (isinstance(stages.get(g), dict)
+                                and stages[g].get("passed") is True)]
+        if not failed_power:
+            continue
+        parts = str(r.get("id") or "").split()
+        if len(parts) != 5:
+            continue
+        symbol, family, _side, selector, condition = parts
+        if family.casefold() not in {"breakout", "session_range_breakout"}:
+            continue
+        state = None if condition.upper() in {"NONE", "ALL", "UNCONDITIONED"} else condition
+        out.add((symbol, selector, state, "session_range_breakout", False))
+    return out

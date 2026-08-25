@@ -135,6 +135,27 @@ def run() -> tuple[dict, int]:
             errors[name] = f"{type(exc).__name__}: {exc}"
             traceback.print_exc()
 
+    # PRE-REGISTRATION STAMP, CENTRALIZED (RESEARCH §6d). Every live forward row must carry
+    # `forward_start` from the moment it exists; a clock counted from the first trade ever taken
+    # was letting selection-era evidence pose as forward evidence (36 rows measured 2026-08-26).
+    # The stamp is applied HERE -- by the orchestrator that owns these files -- so every engine,
+    # present and future, is covered by one code path instead of each reimplementing it (the
+    # one-pipeline law). First-seen-now is the only defensible stamp; backdating is fabrication.
+    _terminal = {"KILL", "KILLED", "PROMOTED", "DEAD", "REJECTED", "RETIRED"}
+    for _sf in ("shadow_state.json", "scalp_shadow_state.json", "qquant_shadow_state.json"):
+        _p = BASE / "reports" / "shadow" / _sf
+        _d = _read(_p)
+        _stamped = 0
+        for _row in list(_d.values()) + list((_d.get("sleeves") or {}).values()):
+            if (isinstance(_row, dict) and ("status" in _row or "n" in _row)
+                    and str(_row.get("status") or "").upper() not in _terminal
+                    and not _row.get("forward_start")):
+                _row["forward_start"] = datetime.now(UTC).isoformat()
+                _stamped += 1
+        if _stamped:
+            _p.write_text(json.dumps(_d, indent=2), "utf-8")
+            print(f"stamped forward_start on {_stamped} row(s) in {_sf}")
+
     legacy = _read(BASE / "reports" / "shadow" / "shadow_state.json")
     scalp = _read(BASE / "reports" / "shadow" / "scalp_shadow_state.json")
     qquant = _read(BASE / "reports" / "shadow" / "qquant_shadow_state.json")

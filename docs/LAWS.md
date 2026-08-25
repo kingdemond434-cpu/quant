@@ -185,6 +185,16 @@ retained net log wealth — not return, and not architecture; a verdict over an 
 vacuous, never a pass. **L2.3** forced disposition (§41). **L2.4** artifact over claim.
 **L2.5** blind-spot origin accounting.
 
+**L1.58 SAME-DAY PIPELINE.** Discovery → backtest → ten-gate gauntlet → forward enrolment is ONE
+act completed the same day; only then the 14-day forward window, only then live. The front half
+risks no capital, so latency there buys no safety and is subtracted straight from compounding. The
+forward window itself is never compressed, backdated or waived — every clock carries a
+`forward_start` stamped at pre-registration, promotion requires `days ≥ 14` AND sufficiency
+(`n ≥ 50`, or `n ≥ 20` with forward t ≥ 2.5), and a sleeve firing zero trades is a defect to repair,
+not patience to exercise. ONE shadow/forward engine for ALL lanes — a lane that builds its own
+forward loop has built a second door around the law and is a defect on sight. Full text:
+RESEARCH §6d. Fence: `scripts/check_sameday_pipeline.py`.
+
 **Named absorbed laws (in force):** NO-CEILING ("we are at max" requires evidence);
 FREE-FRONTIER (a free alternative exists and has not been found yet; never English-only);
 MINING-NEVER-REGRESSES (volume, breadth, depth never fall; shrinking a denominator to fake a rate
