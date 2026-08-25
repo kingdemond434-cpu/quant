@@ -105,3 +105,32 @@ def test_missing_sleeve_fails_loud(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     monkeypatch.setattr(shadow_cycle, "OUT", tmp_path / "health.json")
     health, rc = shadow_cycle.run()
     assert rc == 1 and health["missing_sleeves"] == ["1 certified sleeve(s)"]
+
+
+def test_nonzero_step_result_fails_loud(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import promoter
+    import qquant_shadow
+    import scalp_shadow
+    import shadow_forward
+
+    monkeypatch.setattr(shadow_forward, "main", lambda: None)
+    monkeypatch.setattr(scalp_shadow, "main", lambda: None)
+    monkeypatch.setattr(qquant_shadow, "main", lambda: 1)
+    monkeypatch.setattr(promoter, "main", lambda: None)
+    monkeypatch.setattr(shadow_cycle, "_refresh_scalp_bars", lambda: None)
+    reports = tmp_path / "reports" / "shadow"
+    reports.mkdir(parents=True)
+    (reports / "shadow_state.json").write_text(json.dumps({"configured_sleeves": 0}))
+    (reports / "scalp_shadow_state.json").write_text(json.dumps({
+        "configured_sleeves": 0, "sleeves": {},
+    }))
+    (reports / "qquant_shadow_state.json").write_text(json.dumps({
+        "certified_qquant_sleeves": 0,
+    }))
+    monkeypatch.setattr(shadow_cycle, "BASE", tmp_path)
+    monkeypatch.setattr(shadow_cycle, "OUT", tmp_path / "health.json")
+
+    health, rc = shadow_cycle.run()
+
+    assert rc == 1
+    assert health["errors"]["qquant_shadow"] == "RuntimeError: returned non-zero status 1"

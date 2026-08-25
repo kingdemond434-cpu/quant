@@ -128,7 +128,9 @@ def run() -> tuple[dict, int]:
         ("promoter", promoter.main),
     ):
         try:
-            fn()
+            result = fn()
+            if isinstance(result, int) and not isinstance(result, bool) and result != 0:
+                raise RuntimeError(f"returned non-zero status {result}")
         except Exception as exc:
             errors[name] = f"{type(exc).__name__}: {exc}"
             traceback.print_exc()

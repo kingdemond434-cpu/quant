@@ -35,3 +35,5 @@ def test_qquant_shadow_exposes_zero_trade_observation_evidence() -> None:
     assert '"forward_decision_bars"' in source
     assert '"forward_eligible_signals"' in source
     assert '"last_evaluated_bar"' in source
+    assert '"source_gate_policy_valid"' in source
+    assert "return 1" in source
