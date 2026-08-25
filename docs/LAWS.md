@@ -94,7 +94,12 @@ evidence-gated aggression compounds, blind aggression exhausts.
 
 **THE CATCH-UP LAW (principal 2026-08-25):** utilisation and conversion are ALWAYS maxed and
 ALWAYS catching up to the raw growth of what the desk acquires — data ingested, candidates
-generated, findings carded, capabilities built. The catch-up gap (unconverted finds, unmined
+generated, findings carded, capabilities built. **WIRING PARITY is the first face of this law
+and a standing acted-upon priority: the desk's wiring permanently catches up to its builds —
+every organ built gets its consumer, schedule and artifact (III.16) — and the catch-up NEVER
+regresses a build: retiring, gutting or deferring a working capability to make the wiring
+ledger look balanced is the denominator trick, forbidden. Builds grow; wiring chases; both
+ratchet.** The catch-up gap (unconverted finds, unmined
 data, unwired organs, unfilled slots) is itself a floored, fenced, ratcheted metric: it may only
 close. Every weakness surfaced anywhere — by a gate, an audit, a breach, a null streak, the
 principal — becomes a TARGETED work item the same cycle, worked highest-EV first until maximised

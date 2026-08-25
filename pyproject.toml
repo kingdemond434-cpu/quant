@@ -100,7 +100,13 @@ src = ["libs", "app", "tests"]
 # gate_calibration.py, whose libs/validation twin must STAY linted). Any new root debris still
 # reds the gate and gets triaged; a broad "/*.py" glob was measured to exclude the whole tree --
 # a vacuous green, the denominator trick the laws forbid.
-exclude = ["scratch", "desks/mt5", "hourly_controller.py"]
+# hourly_controller_with_discovery.py and youtube_miner.py joined the exclude 2026-08-25 for the
+# same reason with fresh evidence: the controller REGENERATES its root working files dirty every
+# hour, so a one-time cleanup re-reds the shared gate within the hour, forever. youtube_miner's
+# only tracked twin lives under desks/mt5 (already excluded); hourly_controller_with_discovery
+# has none, so basename exclusion is collision-free for both.
+exclude = ["scratch", "desks/mt5", "hourly_controller.py",
+           "hourly_controller_with_discovery.py", "youtube_miner.py"]
 # `desks/mt5` is the mirror copy of the MT5 research desk (executes on the local Windows host;
 # this copy is for visibility/coordination only). External code with its own host conventions
 # (MetaTrader5 import, Windows paths, legacy style) -- same treatment as scratch: the gate should
