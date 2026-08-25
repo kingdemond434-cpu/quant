@@ -8639,3 +8639,207 @@ def check_blocked_routes_hunted(defects) -> None:
 
 
 CHECKS += [("blocked-routes", check_blocked_routes_hunted)]
+
+
+# ---------------------------------------------------------------------------------------------
+# SESSION-DERIVED FENCES (2026-08-26). The recursion rule, applied: every defect this desk finds
+# becomes a standing automatic check, so the same class can never run unnoticed again. Each of
+# the four below is a REAL failure measured on this box, not a hypothetical.
+# ---------------------------------------------------------------------------------------------
+
+def check_verifier_reads_injection(defects) -> None:
+    """A law verifier must read the SAME text the organ receives.
+
+    MEASURED 2026-08-26: the governance consolidation made the injected prompt doctrine +
+    docs/LAWS.md, but libs/ops/lawful.py kept reading the doctrine alone, declared all six law
+    families missing, and paged on every guard() call -- 292 OOM kills in two hours. A verifier
+    that reads LESS than the organ does reports on a prompt nobody is running.
+    """
+    inj = ROOT / "ops/brain_env.sh"
+    if not inj.exists():
+        return
+    try:
+        env = inj.read_text("utf-8", errors="ignore")
+    except OSError:
+        return
+    # what brain_env actually concatenates into _DOCTRINE
+    m = re.search(r'_DOCTRINE="\$\(cat ([^)]+)\)"', env)
+    if not m:
+        return
+    sources = {p.strip().strip('"').split("/")[-1] for p in m.group(1).split()
+               if ("/" in p or p.strip().startswith("$")) and ">" not in p}
+    sources = {s for s in sources if "." in s and not s.startswith("dev")}
+    for verifier in ("libs/ops/lawful.py", "scripts/run_law_gate.py"):
+        p = ROOT / verifier
+        if not p.exists():
+            continue
+        try:
+            body = p.read_text("utf-8", errors="ignore")
+        except OSError:
+            continue
+        if "check_law_families" not in body and "FAMILIES" not in body:
+            continue
+        missing = [s for s in sources if s and s not in body]
+        if missing:
+            defects.append(("verifier-reads-less-than-injection",
+                            f"{verifier} verifies law families but does not read {missing} -- "
+                            f"ops/brain_env.sh injects them into every organ. A verifier reading "
+                            f"less than the organ receives reports on a prompt nobody runs, and "
+                            f"its false gaps page in a loop (measured: 292 OOM kills, 2026-08-26)."))
+
+
+def check_authority_writers_scheduled(defects) -> None:
+    """Every script that writes an AUTHORITY artifact must be on a clock.
+
+    MEASURED 2026-08-26: universal_gate.py is the sole writer of UNIVERSAL_SURVIVORS.json -- the
+    file shadow_admission and the promoter treat as certificate authority -- and it had no task
+    on any box. Candidates could never obtain a certificate, so nothing could ever promote, and
+    the nightly job everyone assumed was the certifier writes diagnostics only. III.16 sitting on
+    the certification door.
+    """
+    authority = {"UNIVERSAL_SURVIVORS.json": "certificate authority",
+                 "constitution_core.lock": "the sealed core"}
+    for artifact, role in authority.items():
+        writers = []
+        for py in (ROOT / "desks/mt5/research").glob("*.py"):
+            try:
+                body = py.read_text("utf-8", errors="ignore")
+            except OSError:
+                continue
+            # PROXIMITY, not co-occurrence: promoter.py READS this artifact and WRITES a
+            # different one, and a naive `name in body and write_text in body` calls that a
+            # writer. Require the artifact name to sit within 200 chars of the write call.
+            # SAME LINE, not merely nearby: the real writer reads
+            # `(REPORTS / "ARTIFACT").write_text(` -- one statement. Readers like
+            # qquant_shadow.py mention the artifact on a DIFFERENT line from their own
+            # (unrelated) write, and a proximity window still called them writers.
+            is_writer = any(artifact in ln and ".write_text" in ln
+                            for ln in body.splitlines())
+            if is_writer:
+                writers.append(py.name)
+        for w in writers:
+            stem = w[:-3]
+            scheduled = any(stem in f.read_text("utf-8", errors="ignore")
+                            for f in list((ROOT / "ops").glob("*.sh"))
+                            if f.is_file())
+            marker = ROOT / "data" / f".sched_{stem}"
+            if not scheduled and not marker.exists():
+                defects.append(("authority-writer-unscheduled",
+                                f"{w} writes {artifact} ({role}) but no ops/ runner references "
+                                f"it. An authority artifact nothing refreshes is a gate that "
+                                f"cannot mint -- candidates accrue forward evidence they can "
+                                f"never cash (measured 2026-08-26)."))
+
+
+def check_one_way_flags(defects) -> None:
+    """A flag an organ can SET must have a path that CLEARS it.
+
+    MEASURED 2026-08-26 (GAP 130): regime_monitor.py writes flag="hibernate" and the gateway
+    drops flagged sleeves, but nothing anywhere clears the flag when the regime returns. Under
+    the Regime Specialization Law a specialist is SUPPOSED to sleep out of regime and wake in
+    it, so every hibernation was a permanent loss of a deliberately-admitted sleeve.
+    """
+    pairs = [("hibernate", "desks/mt5/research/regime_monitor.py",
+              "regime hibernation (specialists must WAKE, RESEARCH 6c)")]
+    for token, path, why in pairs:
+        p = ROOT / path
+        if not p.exists():
+            continue
+        try:
+            body = p.read_text("utf-8", errors="ignore")
+        except OSError:
+            continue
+        sets = f'"{token}"' in body or f"'{token}'" in body
+        if not sets:
+            continue
+        clears = any(k in body for k in ("wake", '"ok"', "clear", "unhibernate", "resume"))
+        if not clears:
+            defects.append(("one-way-flag",
+                            f"{path} SETS '{token}' with no clear/wake path -- {why}. A flag that "
+                            f"only ever goes one way is a slow retirement engine wearing a "
+                            f"reversible name."))
+            continue
+        # THE SUBTLER TRAP, measured 2026-08-26: a wake path can EXIST and still be unreachable
+        # if its evidence comes from a source the flag itself switches off. regime_monitor
+        # recomputes the flag every run (a real wake path) from LIVE LEDGER rows -- but a
+        # hibernated sleeve stops trading, stops producing rows, and its trailing window freezes
+        # at the values that hibernated it. Starved recovery evidence is a one-way door wearing
+        # a two-way name, and it is invisible to a grep for "wake".
+        if "live_ledger" in body or "ledger" in body.lower():
+            defects.append(("clear-evidence-starved",
+                            f"{path} can clear '{token}', but its clear condition reads the LIVE "
+                            f"ledger -- which the flag itself stops filling. A hibernated sleeve "
+                            f"produces no trades, so its window never recovers and the wake path "
+                            f"can never fire. Drive the wake from ZERO-CAPITAL SHADOW replay, "
+                            f"which keeps running while the sleeve is dark ({why})."))
+
+
+def check_page_before_spawn(defects) -> None:
+    """No paging path may spawn a heavyweight process before its dedupe check.
+
+    MEASURED 2026-08-26: lawful._page() ran `bash -c source ops/brain_env.sh`, which spawns
+    libs.ops.repair_mode at source time -- so a page SUPPRESSED by the 6h dedupe still bought a
+    ~73MB python interpreter, every call. The alert was correctly silent while the cost ran
+    unbounded, which is exactly why it went unnoticed for hours.
+    """
+    for rel in ("libs/ops/lawful.py",):
+        p = ROOT / rel
+        if not p.exists():
+            continue
+        try:
+            body = p.read_text("utf-8", errors="ignore")
+        except OSError:
+            continue
+        if "brain_env.sh" not in body:
+            continue
+        # the CODE site, not a docstring mention: the subprocess line that sources it
+        m_spawn = re.search(r"subprocess\.run\([^)]*brain_env\.sh", body, re.DOTALL)
+        if not m_spawn:
+            continue
+        pre = body[:m_spawn.start()]
+        if "brain_page_stamps" not in pre and "_PAGE_DEDUPE" not in pre:
+            defects.append(("page-spawns-before-dedupe",
+                            f"{rel} spawns brain_env.sh (which starts repair_mode at source "
+                            f"time) BEFORE any dedupe check -- a suppressed page still costs a "
+                            f"python interpreter. Dedupe first, spawn second."))
+
+
+def check_recursion_rule_applied(defects) -> None:
+    """THE RULE THAT AUTOMATES THIS FILE'S OWN GROWTH.
+
+    Every FIXED gap-register row should leave behind a standing check, or the desk relearns the
+    same lesson. This compares recent FIXED rows against the CHECKS registry and names the ones
+    that closed without a fence -- so 'turn defects into checks' stops depending on whoever
+    happens to remember it (the recursion rule, made mechanical).
+    """
+    reg = ROOT / "docs/GAP_REGISTER.md"
+    if not reg.exists():
+        return
+    try:
+        rows = reg.read_text("utf-8", errors="ignore").splitlines()
+    except OSError:
+        return
+    fixed = [ln for ln in rows if ln.startswith("| 1") and "FIXED" in ln.upper()]
+    if not fixed:
+        return
+    slugs = {name for name, _fn in CHECKS}
+    unfenced = 0
+    for ln in fixed[-15:]:                       # the recent tail, not all history
+        cells = [c.strip() for c in ln.split("|")]
+        title = cells[2].lower() if len(cells) > 2 else ""
+        words = {w.strip("*`,.:;()") for w in title.split() if len(w) > 5}
+        if not any(any(w in s for w in words) for s in slugs):
+            unfenced += 1
+    if unfenced >= 5:
+        defects.append(("recursion-rule-unapplied",
+                        f"{unfenced} of the last 15 FIXED gap rows have no matching check in "
+                        f"max_audit's registry ({len(slugs)} checks). A defect fixed without a "
+                        f"fence is a lesson the desk will pay for twice -- the recursion rule "
+                        f"exists precisely so remembering is not the mechanism."))
+
+
+CHECKS += [("verifier-reads-injection", check_verifier_reads_injection),
+           ("authority-writer-scheduled", check_authority_writers_scheduled),
+           ("one-way-flag", check_one_way_flags),
+           ("page-before-spawn", check_page_before_spawn),
+           ("recursion-rule", check_recursion_rule_applied)]
