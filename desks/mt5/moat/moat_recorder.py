@@ -71,8 +71,10 @@ def read_json(path: Path, default: dict) -> dict:
 
 
 def write_json_atomic(path: Path, obj: dict) -> None:
+    # tmp name carries the pid: two instances racing the same tmp was measured to throw
+    # WinError 5 on os.replace during the 2026-08-25 first deployment.
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
+    tmp = path.with_suffix(f".{os.getpid()}.tmp")
     tmp.write_text(json.dumps(obj, separators=(",", ":"), default=str), "utf-8")
     os.replace(tmp, path)
 
@@ -93,7 +95,15 @@ def single_instance() -> bool:
             stale = False       # cannot verify -> assume alive; refuse to double-run
     if pid and not stale:
         return False
-    write_json_atomic(LOCK, {"pid": os.getpid(), "started": datetime.now(tz=UTC).isoformat()})
+    try:
+        write_json_atomic(LOCK,
+                          {"pid": os.getpid(), "started": datetime.now(tz=UTC).isoformat()})
+    except PermissionError as exc:
+        # Non-elevated shell against an admin-owned C:\moat, or a concurrent starter winning
+        # the race -- either way this instance must not record. Say why and stand down.
+        log(f"cannot take the lock ({exc}) -- run from the ELEVATED shell that owns "
+            f"{LOCK.parent}; standing down")
+        return False
     return True
 
 
