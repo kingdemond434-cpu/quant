@@ -8,6 +8,8 @@
 set -uo pipefail
 cd /home/quant/quant-platform
 echo "=== brain chain start $(date -u) ==="
+# TOKEN-FREE COLLECTORS FIRST (corpora-first law): the digs below judge what these gathered.
+.venv/bin/python scripts/collect_youtube_corpus.py || echo "chain: youtube collector failed -- digs fall back to text/code routes"
 bash ops/run_cro_ai.sh          || echo "chain: cro-ai failed -- continuing"
 bash ops/run_frontier_miner.sh unified || echo "chain: unified frontier failed -- continuing"
 bash ops/run_video_hunter.sh    || echo "chain: video hunter failed -- continuing"
