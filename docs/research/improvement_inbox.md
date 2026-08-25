@@ -2894,3 +2894,53 @@ touched. The consumer is the MT5 desk's execution-reality layer when it next fit
    strategy-factory (mass-generate → walk-forward → incubation → small-live) and the repeat-winner
    cohort's sizing-under-barrier solution independently converge on the desk's two-stage law +
    robust-Kelly-with-rails. No action owed; citable when the architecture is next questioned.
+
+## 2026-08-25 · litminer run 10 · AI-METHODS FRONTIER (item 3; engine findings, both with numbers)
+
+### A. The verification-gap survey externally validates the desk's core design — and grades one desk habit WEAK
+arXiv 2608.05179 (Aug 2026, survey of AI-scientist systems 2023→06/2026), read to depth:
+- **Verification-signal hierarchy (strongest→weakest): executable/formal verifiers → physical
+  oracles → HELD-OUT TEMPORAL VALIDATION → learned/proxy rewards → debate/LLM-judge → model
+  opinion.** The desk's two-stage law (backtest screen = zero authority; promotion ONLY from
+  pre-registered forward evidence) IS the survey's top-tier recommendation ("held-out temporal
+  validation … the strongest signal … makes validity mechanically checkable"). External
+  confirmation, no change needed — a rare honest "already at frontier".
+- **CONTRARIAN vs desk habit: multi-agent debate/panel consensus is graded WEAK** — "debate
+  scores, Elo tournaments, and reviewer agents all reduce to one model grading another";
+  sycophancy/self-preference propagate; "consensus aggregation" is listed as a FAILURE MODE.
+  Judge DIVERSITY is explicitly NOT the fix (shared-prior homogenization persists): "a thousand
+  independently generated ideas … may still collapse onto a handful of templates" → the survey
+  prescribes POPULATION-LEVEL ENTROPY AUDITING of idea batches. Desk's own measurements agree
+  (run 6: 65–76% prior anchoring, menu-order 100% selection dependence; JP s4 llm-convergence).
+  **GAP NAMED: `hypothesis_novelty` gates candidates vs the graveyard/HISTORY; NOTHING measures
+  within-cohort template collapse.** Exact instrument: on each generation batch, cluster-count /
+  pairwise-similarity distribution on the SAME embedding the novelty gate already uses; floor =
+  measured baseline, ratchet up. (Ledger row this run.)
+- Self-referential-judge datum (companion search result, flagged RELAYED): same-family
+  judge self-assessment only **25–39% faithful** to actual computation — a measured number for
+  the two-model-family law's (L1.31/L1.33) justification file.
+- Survey's open problems that are ALREADY desk law (convergence, cite when defending these laws
+  externally): memory provenance/"authority of a memory to act" = L1.44 consumption-time
+  freshness; negative-results infrastructure = graveyard/L1.17; calibrated abstention = L1.29.
+- Calibration prior: ResearchClawBench-style end-to-end rediscovery benchmarks — top agents pass
+  only ~20%, failing on the "missing scientific core" (RELAYED from search synthesis). Prior for
+  how much unsupervised trust generation organs get.
+
+### B. False success is the dominant agent failure mode, measured — and the cheap detector BEATS the LLM judge
+arXiv 2606.09863 (Advani), abstract verbatim-read: agents assert completion contradicted by
+environment state at **45–48% of failures** (single-control tau2-bench, 9,876 trajectories,
+8 model families), **75.8%** among self-assessing coding-agent trajectories (AppWorld), vs **3%**
+where a second control channel exists (dual-control). LLM judges MISS it for mechanistic reasons
+(they read confident-closing LANGUAGE and action VOLUME, not state). **Lightweight TF-IDF
+detectors: AUROC 0.83–0.95, recover 4–8× more false successes than LLM judges, 3,300× faster.**
+Desk mapping: the desk's artifact-over-claim (L2.4), exit-code-vs-artifact lesson, and
+anti-rubber-stamp citation floor are exactly anti-false-success fences — now externally
+validated with rates. **UPGRADE AVAILABLE: mechanize the anti-rubber-stamp check as a lexical
+confident-closing-without-citation detector over cycle reports/session notes** (the 3% dual-control
+number is the argument: a SECOND CHANNEL collapses the failure mode; the desk's second channel is
+the artifact read — make it automatic). (Same ledger row as A; two exact patches, one owner-org
+each, consolidated deliberately to keep repair-mode row count down.)
+
+State-of-the-frontier one-liner for the coverage table: verification is the frontier's named
+bottleneck (83% release code, 38% release what a verifier needs); the field is converging on the
+desk's own laws — the desk's edge is having them ENFORCED, not written.

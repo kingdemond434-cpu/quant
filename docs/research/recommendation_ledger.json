@@ -8315,6 +8315,62 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0653",
+   "source": "deep_sweep",
+   "summary": "CLOCK PROVENANCE (L1.46, litminer run 10): every desks/mt5/data/universe/*_H1.parquet timestamp is broker SERVER time (NY-anchored UTC+2/+3) stamped utc=True by gateway.py:1268 (ticks: :1174). PROVEN: zero Sunday bars, Fridays run to 23:00, NFP/CPI vol spike at labeled hour 15 on USDJPY AND EURUSD (true UTC would put it at 13). Live housekeeping uses datetime.now(tz=UTC) so the MONEY PATH is coherent; the poisoned surface is HISTORY exports: all session logic (Asia/London/NY - RESEARCH names sessions first-class) and every join to a true-UTC macro calendar (h19-003 news family) lands 2-3h wrong. EXACT PATCH: at export convert server epoch to true UTC (server_wall minus 7h, localize America/New_York, convert UTC) or store tz-naive with an explicit clock=server metadata field; regression test asserting post-fix NFP-hour==13 and week boundary at 21/22:00 UTC. Evidence artifact: data/gotobi_screen.json preregistration block (screen ran clock-corrected). Owner: MT5 desk seat (litminer frozen out of scripts/).",
+   "roi_bps": null,
+   "rank": 9.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-25T19:28:35.959276+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0654",
+   "source": "deep_sweep",
+   "summary": "EV-GATE BREADTH DOUBLE-CHARGE (re-raise of diverged-lineage R0693, litminer run 9 2026-08-19; that lineage never merged - this row is the content re-raise with one claim CORRECTED). Verified at HEAD today: libs/research/alpha_economics.py charges breadth TWICE - p_survive multiplies _PRIORS[narrow_breadth]=0.25 for any tagged idea AND ev_score multiplies breadth_f=(breadth/20)**0.5; combined ~8x penalty at breadth 5 vs breadth-20 untagged. The desk's own paid lesson names double-costing as the defect that made a prior gauntlet 4x too strict. CORRECTION vs run 9 framing: MT5 universe is NOT entirely below NARROW_BREADTH_LINE=5.0 (measured MT5 N_eff 13.37, prospector 2026-08-19) - the live defect is the structural double-charge PLUS silent no-artifact rejection at this gate (a rejected idea leaves nothing on disk - WS-005 shape). EXACT PATCH: decide which term prices breadth (keep breadth_f for IR scaling; re-scope narrow_breadth to price P(mechanism real) only, or delete one), document the decision in _PRIORS comments, and make every REJECT verdict leave a one-line artifact row. Owner: alpha org (owns alpha_economics).",
+   "roi_bps": null,
+   "rank": 6.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-25T19:29:01.376921+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0655",
+   "source": "deep_sweep",
+   "summary": "BANNED-UNIVERSE PROMPT SURFACE STILL LIVE (residual of diverged-lineage R0692; most surfaces since repaired - brain_hunter_prompt migrated, DIGGING_CHARTER s10 named void by LAWS s1): prompts/external_panel_prompt.txt:18 still briefs 'Venue: Binance spot + USDT-perpetuals (currently testnet; live imminent)' and scripts/run_external_panel.py is a LIVE consumer - a decision organ is fed a banned-universe premise plus a false operational claim. EXACT PATCH: replace the venue line with the MT5/Fusion universe pointed at desks/mt5/universe/universe.json (anti-hardcode: registry reference, not a symbol list) and sweep the rest of that prompt for crypto-native vocabulary in the same edit. One-line fix, mandate-compliance class. Owner: any unfrozen seat touching prompts/.",
+   "roi_bps": null,
+   "rank": 5.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-25T19:29:07.432661+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0656",
+   "source": "deep_sweep",
+   "summary": "ENGINE UPGRADES FROM THE AI-METHODS FRONTIER (litminer run 10 inbox entry 2026-08-25, arXiv 2608.05179 + 2606.09863; two exact patches consolidated deliberately - both are verification-gap fences): (1) WITHIN-BATCH TEMPLATE-COLLAPSE AUDIT - hypothesis_novelty gates candidates against the graveyard/HISTORY but NOTHING measures within-cohort collapse ('a thousand ideas may collapse onto a handful of templates' - and the desk measured its own 65-76% prior anchoring, run 6); instrument: per generation batch, pairwise-similarity distribution + cluster count on the SAME embedding the novelty gate already uses, floored on first measurement per L2.0. Owner: alpha_factory/research org. (2) LEXICAL FALSE-SUCCESS FENCE - agents assert completion contradicted by state at 45-48% of failures (75.8% self-assessing; 3% when a SECOND CHANNEL exists) and TF-IDF detectors beat LLM judges 4-8x at AUROC 0.83-0.95: mechanize the anti-rubber-stamp check as a confident-closing-language-without-artifact-citation scorer over cycle reports/session notes; the desk's second channel (artifact read) becomes automatic. Owner: governance/fence org. Full detail + numbers in improvement_inbox 2026-08-25 entry (inbox is write-only - this row is the disposition-tracked half).",
+   "roi_bps": null,
+   "rank": 6.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-25T19:29:29.991009+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

@@ -198,16 +198,6 @@ reports/principal_drop.json
 /show_*.py
 /test_*.py
 
-# one-off operator scripts; scratch/ is ruff-excluded in pyproject
-/check_*.py
-/chk_*.py
-/dbg_*.py
-/debug_*.py
-/fix_*.py
-/patch_*.py
-/show_*.py
-/test_*.py
-
 # Per-box daily-cycle stamp. MUST NOT be shared between machines: it records "the operating chain
 # already ran for this UTC day", and only the Windows box with a live MT5 terminal can actually run
 # the shadow step. Committing a stamp written on a research box would make the execution box pull
@@ -222,6 +212,13 @@ secrets/
 # Generated research artifacts under the desk data dirs. The code that produces
 # them is committed and they are reproducible from it; an 18 MB parquet cache in
 # git history is a mistake that cannot be taken back.
-desks/*/data/*.parquet
+desks/*/data/**/*.parquet
 desks/*/data/hunt_candidates.json
 desks/*/data/recover_candidates.json
+
+# Runtime state files (mt5-state branch only)
+**/shadow_health.json
+**/gateway_state.json
+**/sleeves.json
+**/regime_state.json
+**/sync_marker.json

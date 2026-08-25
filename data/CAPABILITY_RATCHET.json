@@ -1,18 +1,18 @@
 {
  "_": "HIGH-WATER MARKS for desk CAPABILITY, one score per named aspect on the 0-10 scale the principal's standing order is stated on. Raised automatically; NEVER lowered by code. A FALL is a defect reported with a NAMED CAUSE, a FLATLINE is reported with the binding constraint that is holding the aspect down, and UNMEASURED is its own state -- never silently a 0 and never silently a 10.",
  "law": "R0104 -- every aspect is pushed toward 10/10 every day, non-exhaustively. A rating nobody records cannot ratchet, and a score that can silently fall is not a standard.",
- "generated": "2026-08-23T12:24:13.074989+00:00",
+ "generated": "2026-08-25T23:49:19.099864+00:00",
  "status": "REGRESSED",
  "scale_max": 10.0,
  "stall_days": 7.0,
  "n_aspects": 26,
  "n_measured": 25,
  "n_unmeasured": 1,
- "measured_mean": 7.46,
+ "measured_mean": 7.63,
  "first_recorded": "2026-08-05T12:09:08.679174+00:00",
- "last_raise_at": "2026-08-20T16:37:58.724512+00:00",
- "days_since_raise": 2.82,
- "n_raises": 15,
+ "last_raise_at": "2026-08-25T23:36:47.714105+00:00",
+ "days_since_raise": 0.01,
+ "n_raises": 16,
  "binding_constraint": {
   "state": "MEASURED",
   "aspect": "alpha_output",
@@ -25,7 +25,7 @@
   "_": "LOWEST-SCORING COMPONENT DESK-WIDE: alpha_output.promotion_rung at 0.0/10 out of data/promotion_gate.json. This is the line to work first. 6 component(s) are UNMEASURED and are NOT eligible to be this minimum -- an absent measurement has no score, and letting it win here would bury every real defect under things nobody has looked at yet."
  },
  "high_water": {
-  "alerting_pager": 9.3,
+  "alerting_pager": 9.6,
   "alpha_output": 5.0,
   "ambition_discipline": 10.0,
   "backup_dr": 10.0,
@@ -43,7 +43,7 @@
   "llm_seat_coverage": 10.0,
   "mutation_breadth": 6.1,
   "ops_autonomy": 8.0,
-  "recorder_tape": 9.5,
+  "recorder_tape": 10.0,
   "research_discipline": 7.5,
   "risk_rails": 9.9,
   "scheduler_integrity": 10.0,
@@ -54,7 +54,7 @@
  },
  "component_high_water": {
   "alerting_pager.alert_channels_not_silent": 10.0,
-  "alerting_pager.pager_deliveries_ok": 8.9,
+  "alerting_pager.pager_deliveries_ok": 9.1,
   "alpha_output.forward_slots_occupied": 10.0,
   "alpha_output.promotion_rung": 0.0,
   "ambition_discipline.prompt_timidity_hits": 10.0,
@@ -136,7 +136,7 @@
   "self_improvement.ledger_dispositioned": 6.0,
   "source_resilience.dead_sources_without_alternatives": 10.0,
   "source_resilience.sources_healthy": 5.7,
-  "statistical_validation.forecasts_resolved": 4.1,
+  "statistical_validation.forecasts_resolved": 4.2,
   "statistical_validation.mutation_kill_validation_stack": 9.0
  },
  "aspects": [
@@ -146,8 +146,8 @@
    "score": 5.5,
    "high_water": 9.0,
    "movement": "FELL",
-   "cause": "statistical_validation.mutation_kill_validation_stack 9.0 -> 6.9 (data/mutation_score.json): 2 target(s) at bar 0.9: stepwise.py 0.90, validation.py 0.48; measured 2026-08-05T15:23:17Z",
-   "binding_constraint": "forecasts_resolved at 4.1 -- +54 logged forecasts scored against an outcome (221 -> 275 of 538) buys the next point [+1 UNMEASURED component(s): mutation_kill_validation_stack::validation.py -- the score above covers only 2 of 3 components]",
+   "cause": "statistical_validation.forecasts_resolved 4.2 -> 4.1 (data/calibration_status.json): status OVERDUE: 22 forecast(s) past their grading deadline -- score them; brier 0.2752, 22 overdue; statistical_validation.mutation_kill_validation_stack 9.0 -> 6.9 (data/mutation_score.json): 2 target(s) at bar 0.9: stepwise.py 0.90, validation.py 0.48; measured 2026-08-05T15:23:17Z",
+   "binding_constraint": "forecasts_resolved at 4.1 -- +54 logged forecasts scored against an outcome (225 -> 279 of 547) buys the next point [+1 UNMEASURED component(s): mutation_kill_validation_stack::validation.py -- the score above covers only 2 of 3 components]",
    "ceiling": "the validation stack's own tests kill every mutant of it, over complete (never truncated) runs -- the desk cannot fool itself about whether an edge is real",
    "artifacts": [
     "data/mutation_score.json",
@@ -175,8 +175,8 @@
      "state": "MEASURED",
      "score": 4.1,
      "artifact": "data/calibration_status.json",
-     "detail": "status OVERDUE: 11 forecast(s) past their grading deadline -- score them; brier 0.2757, 11 overdue",
-     "constraint": "+54 logged forecasts scored against an outcome (221 -> 275 of 538) buys the next point"
+     "detail": "status OVERDUE: 22 forecast(s) past their grading deadline -- score them; brier 0.2752, 22 overdue",
+     "constraint": "+54 logged forecasts scored against an outcome (225 -> 279 of 547) buys the next point"
     }
    ]
   },
@@ -210,8 +210,8 @@
      "state": "MEASURED",
      "score": 9.0,
      "artifact": "docs/graveyard.md",
-     "detail": "40 permanent kill/retirement entries -- the desk's record of ideas it closed rather than left open",
-     "constraint": "+10 graveyard entries (40 -> 50, the next rung) buys the next point"
+     "detail": "48 permanent kill/retirement entries -- the desk's record of ideas it closed rather than left open",
+     "constraint": "+2 graveyard entries (48 -> 50, the next rung) buys the next point"
     },
     {
      "key": "families_hunted",
@@ -242,7 +242,7 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/strategy_breadth.json",
-     "detail": "status OK; live breadth state NOT-RUN -- the live measurement is NOT scored here when it did not run",
+     "detail": "status OK; live breadth state OK -- the live measurement is NOT scored here when it did not run",
      "constraint": "AT CEILING (14/14 hunting surfaces carrying the breadth mandate) -- the work is now HOLDING it"
     }
    ]
@@ -250,10 +250,10 @@
   {
    "key": "risk_rails",
    "state": "MEASURED",
-   "score": 5.8,
+   "score": 7.8,
    "high_water": 9.9,
    "movement": "FELL",
-   "cause": "risk_rails.drill_cadence 10.0 -> 0.0 (data/organ_liveness.json): scripts/run_drills.py is STALE (age 80.68h against its own 72.0h tolerance); evidence data/drill_report.json, data/drill_log.jsonl; risk_rails.mutation_kill_risk_stack 9.3 -> 9.1 (data/mutation_score.json): 3 target(s) at bar 0.9: gate.py 1.00, sizing.py 0.86, sizing.py 0.86; measured 2026-08-05T15:23:17Z; risk_rails.sizing_constants_derived 10.0 -> 0.0 (data/sizing_derivation.json): status UNJUSTIFIED-CONSTANTS: 47 money-path constants across 3 modules, 4 without a cited derivation: resolve_paper_book.py:TRAIL_FWD_CHALLENGER, resolve_paper_book.py:TRAIL_FWD_DECIDE_N, resolve_paper_book.py:TRAIL_FWD_HARD_N, resolve_paper_book.py:TRAIL_FWD_T",
+   "cause": "risk_rails.mutation_kill_risk_stack 9.3 -> 9.1 (data/mutation_score.json): 3 target(s) at bar 0.9: gate.py 1.00, sizing.py 0.86, sizing.py 0.86; measured 2026-08-05T15:23:17Z; risk_rails.sizing_constants_derived 10.0 -> 0.0 (data/sizing_derivation.json): status UNJUSTIFIED-CONSTANTS: 47 money-path constants across 3 modules, 4 without a cited derivation: resolve_paper_book.py:TRAIL_FWD_CHALLENGER, resolve_paper_book.py:TRAIL_FWD_DECIDE_N, resolve_paper_book.py:TRAIL_FWD_HARD_N, resolve_paper_book.py:TRAIL_FWD_T",
    "binding_constraint": "sizing_constants_derived at 0.0 -- +2 money-path modules with every constant derived (-1 -> 1 of 3) buys the next point",
    "ceiling": "every rail mutation-proof and the ruin rail measurably clear from the box that owns the state -- no rail whose status is unknown",
    "artifacts": [
@@ -293,27 +293,27 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/drill_report.json",
-     "detail": "3/3 drills passed at 2026-08-20T03:40:09.146620+00:00; 0 CRITICAL failure(s)",
+     "detail": "3/3 drills passed at 2026-08-25T23:30:29.424673+00:00; 0 CRITICAL failure(s)",
      "constraint": "AT CEILING (3/3 rail drills passing) -- the work is now HOLDING it"
     },
     {
      "key": "drill_cadence",
      "state": "MEASURED",
-     "score": 0.0,
+     "score": 10.0,
      "artifact": "data/organ_liveness.json",
-     "detail": "scripts/run_drills.py is STALE (age 80.68h against its own 72.0h tolerance); evidence data/drill_report.json, data/drill_log.jsonl",
-     "constraint": "RESTART IT -- scripts/run_drills.py last produced 80.68h ago against a 72.0h tolerance; something STOPPED (auth, quota, upstream), which is a different repair from never wired"
+     "detail": "scripts/run_drills.py is FRESH (age 0.22h against its own 72.0h tolerance); evidence data/drill_report.json, data/drill_log.jsonl",
+     "constraint": "AT CEILING -- producing inside its own declared cadence, and the work is now HOLDING it"
     }
    ]
   },
   {
    "key": "governance",
    "state": "MEASURED",
-   "score": 7.6,
+   "score": 5.5,
    "high_water": 9.0,
    "movement": "FELL",
-   "cause": "governance.audit_defects_live 6.0 -> 4.0 (data/max_audit_report.json): 48.0 unacknowledged defects at 2026-08-23T09:16:29.420102+00:00; by scope {'REPO': 41, 'RUNTIME': 6, 'UNSCOPED': 1}; governance.fences_earning_their_place 10.0 -> 8.8 (data/fence_yield.json): status UNREGISTERED-PRESENT: 14/16 fences have caught something real; 2 quiet, 0 never run; 0 FIRED-STALE (caught something, silent for more than 30 census runs); 14/68 fences on disk are in the census at all (54 UNREGISTERED -- yield unmeasurable); never run 0; governance.law_fences_passing 10.0 -> 5.6 (data/law_gate.json): 14.0/25.0 fences green; failures ['check_enforcement_execution.py (rc=2): -> data/enforcement_execution.json', 'check_sizing_derivation.py (rc=2):   scripts/resolve_paper_book.py:263 TRAIL_FWD_T: no derivation cited', 'check_conversion.py (rc=2): -> /home/quant/quant-platform/data/conversion_status.json', 'check_exploration.py (rc=2): -> /home/quant/quant-platform/data/exploration_status.json', 'check_calibration.py (rc=2): -> /home/quant/quant-platform/data/calibration_status.json', 'run_organ_er.py (rc=2):   BLOCKED      deep_sweep_meta      a NAMED external dependency is missing; escalate with the blocker -- no re-fir', 'check_scheduler_manifest.py (rc=1): scheduler-manifest: DRIFT', 'check_mechanism_attribution.py (rc=2):   cash_and_carry: UNATTRIBUTED -- unexplained WIN +2,980.10 is 2636% of the +113.06 mechanism term -- this sleeve is being credited with P&L its mechanism canno', 'check_organ_liveness.py (rc=2):   NEVER-PRODUCED  scripts/check_private_bisection.py    age=None tol=72.0h', 'check_excitation.py (rc=2):   next: Record a re-entry condition per blocked symbol in data/execution_reentry.json: m minimum-size probes after d days (L1.16a)', 'check_clock_provenance.py (rc=2):   next: Restart the recorders so new rows carry the `c` marker; historical rows stay readable through clock_provenance._HISTORICAL']",
-   "binding_constraint": "audit_defects_live at 4.0 -- -17 live audit defects (48 -> 31, back under the 32 rung) buys the next point",
+   "cause": "governance.audit_defects_live 6.0 -> 4.0 (data/max_audit_report.json): 50.0 unacknowledged defects at 2026-08-25T08:38:49.767785+00:00; by scope {'REPO': 41, 'RUNTIME': 7, 'UNSCOPED': 2}; governance.fences_earning_their_place 10.0 -> 8.8 (data/fence_yield.json): status UNREGISTERED-PRESENT: 14/16 fences have caught something real; 2 quiet, 0 never run; 0 FIRED-STALE (caught something, silent for more than 30 census runs); 14/68 fences on disk are in the census at all (54 UNREGISTERED -- yield unmeasurable); never run 0; governance.law_families_enforced 10.0 -> 0.0 (data/law_families.json): status FAILING: 0/6 families fully enforced; failing: aggression, exploration, conversion, survival, validation_honesty, moat over 35 governed laws; governance.law_fences_passing 10.0 -> 4.8 (data/law_gate.json): 12.0/25.0 fences green; failures ['check_law_families.py (rc=2): -> /home/quant/quant-platform/data/law_families.json', 'check_enforcement_execution.py (rc=2): -> data/enforcement_execution.json', 'check_timidity_language.py (rc=1): -> data/timidity_audit.json', 'check_sizing_derivation.py (rc=2):   scripts/resolve_paper_book.py:263 TRAIL_FWD_T: no derivation cited', 'check_conversion.py (rc=2): -> /home/quant/quant-platform/data/conversion_status.json', 'check_exploration.py (rc=2): -> /home/quant/quant-platform/data/exploration_status.json', 'check_calibration.py (rc=2): -> /home/quant/quant-platform/data/calibration_status.json', 'run_organ_er.py (rc=2):   BLOCKED      kimi_hunter          a NAMED external dependency is missing; escalate with the blocker -- no re-fir', 'check_scheduler_manifest.py (rc=1): scheduler-manifest: DRIFT', 'check_mechanism_attribution.py (rc=2):   cash_and_carry: UNATTRIBUTED -- unexplained WIN +2,980.10 is 2636% of the +113.06 mechanism term -- this sleeve is being credited with P&L its mechanism canno', 'check_organ_liveness.py (rc=2):   NEVER-PRODUCED  scripts/check_private_bisection.py    age=None tol=72.0h', 'check_excitation.py (rc=2):   next: Record a re-entry condition per blocked symbol in data/execution_reentry.json: m minimum-size probes after d days (L1.16a)', 'check_clock_provenance.py (rc=2):   next: Restart the recorders so new rows carry the `c` marker; historical rows stay readable through clock_provenance._HISTORICAL']",
+   "binding_constraint": "law_families_enforced at 0.0 -- +1 law families fully enforced (0 -> 1 of 6) buys the next point",
    "ceiling": "every law fence green and ZERO live audit defects -- the laws are enforced by machinery rather than by attention",
    "artifacts": [
     "data/law_gate.json",
@@ -326,18 +326,18 @@
     {
      "key": "law_fences_passing",
      "state": "MEASURED",
-     "score": 5.6,
+     "score": 4.8,
      "artifact": "data/law_gate.json",
-     "detail": "14.0/25.0 fences green; failures ['check_enforcement_execution.py (rc=2): -> data/enforcement_execution.json', 'check_sizing_derivation.py (rc=2):   scripts/resolve_paper_book.py:263 TRAIL_FWD_T: no derivation cited', 'check_conversion.py (rc=2): -> /home/quant/quant-platform/data/conversion_status.json', 'check_exploration.py (rc=2): -> /home/quant/quant-platform/data/exploration_status.json', 'check_calibration.py (rc=2): -> /home/quant/quant-platform/data/calibration_status.json', 'run_organ_er.py (rc=2):   BLOCKED      deep_sweep_meta      a NAMED external dependency is missing; escalate with the blocker -- no re-fir', 'check_scheduler_manifest.py (rc=1): scheduler-manifest: DRIFT', 'check_mechanism_attribution.py (rc=2):   cash_and_carry: UNATTRIBUTED -- unexplained WIN +2,980.10 is 2636% of the +113.06 mechanism term -- this sleeve is being credited with P&L its mechanism canno', 'check_organ_liveness.py (rc=2):   NEVER-PRODUCED  scripts/check_private_bisection.py    age=None tol=72.0h', 'check_excitation.py (rc=2):   next: Record a re-entry condition per blocked symbol in data/execution_reentry.json: m minimum-size probes after d days (L1.16a)', 'check_clock_provenance.py (rc=2):   next: Restart the recorders so new rows carry the `c` marker; historical rows stay readable through clock_provenance._HISTORICAL']",
-     "constraint": "+3 law fences passing (14 -> 17 of 25) buys the next point"
+     "detail": "12.0/25.0 fences green; failures ['check_law_families.py (rc=2): -> /home/quant/quant-platform/data/law_families.json', 'check_enforcement_execution.py (rc=2): -> data/enforcement_execution.json', 'check_timidity_language.py (rc=1): -> data/timidity_audit.json', 'check_sizing_derivation.py (rc=2):   scripts/resolve_paper_book.py:263 TRAIL_FWD_T: no derivation cited', 'check_conversion.py (rc=2): -> /home/quant/quant-platform/data/conversion_status.json', 'check_exploration.py (rc=2): -> /home/quant/quant-platform/data/exploration_status.json', 'check_calibration.py (rc=2): -> /home/quant/quant-platform/data/calibration_status.json', 'run_organ_er.py (rc=2):   BLOCKED      kimi_hunter          a NAMED external dependency is missing; escalate with the blocker -- no re-fir', 'check_scheduler_manifest.py (rc=1): scheduler-manifest: DRIFT', 'check_mechanism_attribution.py (rc=2):   cash_and_carry: UNATTRIBUTED -- unexplained WIN +2,980.10 is 2636% of the +113.06 mechanism term -- this sleeve is being credited with P&L its mechanism canno', 'check_organ_liveness.py (rc=2):   NEVER-PRODUCED  scripts/check_private_bisection.py    age=None tol=72.0h', 'check_excitation.py (rc=2):   next: Record a re-entry condition per blocked symbol in data/execution_reentry.json: m minimum-size probes after d days (L1.16a)', 'check_clock_provenance.py (rc=2):   next: Restart the recorders so new rows carry the `c` marker; historical rows stay readable through clock_provenance._HISTORICAL']",
+     "constraint": "+3 law fences passing (12 -> 15 of 25) buys the next point"
     },
     {
      "key": "audit_defects_live",
      "state": "MEASURED",
      "score": 4.0,
      "artifact": "data/max_audit_report.json",
-     "detail": "48.0 unacknowledged defects at 2026-08-23T09:16:29.420102+00:00; by scope {'REPO': 41, 'RUNTIME': 6, 'UNSCOPED': 1}",
-     "constraint": "-17 live audit defects (48 -> 31, back under the 32 rung) buys the next point"
+     "detail": "50.0 unacknowledged defects at 2026-08-25T08:38:49.767785+00:00; by scope {'REPO': 41, 'RUNTIME': 7, 'UNSCOPED': 2}",
+     "constraint": "-19 live audit defects (50 -> 31, back under the 32 rung) buys the next point"
     },
     {
      "key": "principles_mechanically_enforced",
@@ -350,10 +350,10 @@
     {
      "key": "law_families_enforced",
      "state": "MEASURED",
-     "score": 10.0,
+     "score": 0.0,
      "artifact": "data/law_families.json",
-     "detail": "status OK: 6/6 families fully enforced over 35 governed laws",
-     "constraint": "AT CEILING (6/6 law families fully enforced) -- the work is now HOLDING it"
+     "detail": "status FAILING: 0/6 families fully enforced; failing: aggression, exploration, conversion, survival, validation_honesty, moat over 35 governed laws",
+     "constraint": "+1 law families fully enforced (0 -> 1 of 6) buys the next point"
     },
     {
      "key": "fences_earning_their_place",
@@ -368,11 +368,11 @@
   {
    "key": "data_coverage",
    "state": "MEASURED",
-   "score": 5.4,
+   "score": 5.9,
    "high_water": 7.4,
    "movement": "FELL",
-   "cause": "data_coverage.assets_with_measured_span 6.6 -> 6.5 (data/data_assets.json): 87/134 assets have a readable span (22 absent on disk); deep=True; data_coverage.exploration_organs_fresh 10.0 -> 2.0 (data/exploration_status.json): status STALE: 1 fresh, 4 stale, 0 dark",
-   "binding_constraint": "exploration_organs_fresh at 2.0 -- +1 unknown-unknown organs fresh (1 -> 2 of 5) buys the next point",
+   "cause": "data_coverage.assets_with_measured_span 6.6 -> 6.5 (data/data_assets.json): 87/134 assets have a readable span (22 absent on disk); deep=True; data_coverage.exploration_organs_fresh 10.0 -> 4.0 (data/exploration_status.json): status STALE: 2 fresh, 3 stale, 0 dark",
+   "binding_constraint": "exploration_organs_fresh at 4.0 -- +1 unknown-unknown organs fresh (2 -> 3 of 5) buys the next point",
    "ceiling": "every registered asset carrying a measured span and every unknown-unknown organ fresh -- no dark corner of the desk's own data",
    "artifacts": [
     "data/data_assets.json",
@@ -392,10 +392,10 @@
     {
      "key": "exploration_organs_fresh",
      "state": "MEASURED",
-     "score": 2.0,
+     "score": 4.0,
      "artifact": "data/exploration_status.json",
-     "detail": "status STALE: 1 fresh, 4 stale, 0 dark",
-     "constraint": "+1 unknown-unknown organs fresh (1 -> 2 of 5) buys the next point"
+     "detail": "status STALE: 2 fresh, 3 stale, 0 dark",
+     "constraint": "+1 unknown-unknown organs fresh (2 -> 3 of 5) buys the next point"
     },
     {
      "key": "datasets_with_declared_provenance",
@@ -476,11 +476,11 @@
   {
    "key": "self_improvement",
    "state": "MEASURED",
-   "score": 6.7,
+   "score": 5.8,
    "high_water": 7.5,
    "movement": "FELL",
-   "cause": "self_improvement.conversion_flow_7d 10.0 -> 6.4 (data/conversion_status.json): status ARRIVALS-COLLAPSED: 21.0 dispositioned vs 33.0 raised in 7d; backlog 260, oldest 28.02d",
-   "binding_constraint": "ledger_dispositioned at 6.0 -- +67 ledger rows reaching a terminal verdict (385 -> 452 of 645) buys the next point",
+   "cause": "self_improvement.conversion_flow_7d 10.0 -> 2.8 (data/conversion_status.json): status ARRIVALS-COLLAPSED: 10.0 dispositioned vs 36.0 raised in 7d; backlog 269, oldest 30.5d; self_improvement.ledger_dispositioned 6.0 -> 5.9 (docs/research/recommendation_ledger.json): 386 dispositioned of 655 raised (269 still open or scheduled) -- a reasoned rejection counts, silence does not",
+   "binding_constraint": "conversion_flow_7d at 2.8 -- +4 of the last 7 days' arrivals dispositioned (10 -> 14 of 36) buys the next point",
    "ceiling": "every ledger row reaching a terminal verdict and 7-day conversion keeping pace with 7-day arrivals -- found equals fixed",
    "artifacts": [
     "docs/research/recommendation_ledger.json",
@@ -492,25 +492,25 @@
     {
      "key": "ledger_dispositioned",
      "state": "MEASURED",
-     "score": 6.0,
+     "score": 5.9,
      "artifact": "docs/research/recommendation_ledger.json",
-     "detail": "385 dispositioned of 645 raised (260 still open or scheduled) -- a reasoned rejection counts, silence does not",
-     "constraint": "+67 ledger rows reaching a terminal verdict (385 -> 452 of 645) buys the next point"
+     "detail": "386 dispositioned of 655 raised (269 still open or scheduled) -- a reasoned rejection counts, silence does not",
+     "constraint": "+66 ledger rows reaching a terminal verdict (386 -> 452 of 655) buys the next point"
     },
     {
      "key": "conversion_flow_7d",
      "state": "MEASURED",
-     "score": 6.4,
+     "score": 2.8,
      "artifact": "data/conversion_status.json",
-     "detail": "status ARRIVALS-COLLAPSED: 21.0 dispositioned vs 33.0 raised in 7d; backlog 260, oldest 28.02d",
-     "constraint": "+4 of the last 7 days' arrivals dispositioned (21 -> 25 of 33) buys the next point"
+     "detail": "status ARRIVALS-COLLAPSED: 10.0 dispositioned vs 36.0 raised in 7d; backlog 269, oldest 30.5d",
+     "constraint": "+4 of the last 7 days' arrivals dispositioned (10 -> 14 of 36) buys the next point"
     },
     {
      "key": "instrumentation_coverage",
      "state": "MEASURED",
      "score": 7.5,
      "artifact": "data/instrumentation_coverage.jsonl",
-     "detail": "15 instrumented, 5 owed at 2026-08-23T09:11:59.685227+00:00 over 105 recorded sweeps",
+     "detail": "15 instrumented, 5 owed at 2026-08-25T08:32:44.330794+00:00 over 111 recorded sweeps",
      "constraint": "+10 % of declared instrumentation points wired (75 -> 85 of 100) buys the next point"
     },
     {
@@ -518,7 +518,7 @@
      "state": "MEASURED",
      "score": 7.0,
      "artifact": "data/instrumentation_chase.json",
-     "detail": "5.0 gap(s) carrying a cycle counter at 2026-08-23T09:11:59.685900+00:00 -- the counter never resets except by closing the gap",
+     "detail": "5.0 gap(s) carrying a cycle counter at 2026-08-25T08:32:44.331326+00:00 -- the counter never resets except by closing the gap",
      "constraint": "-2 instrumentation gaps standing open across cycles (5 -> 3, back under the 4 rung) buys the next point"
     }
    ]
@@ -526,10 +526,10 @@
   {
    "key": "ops_autonomy",
    "state": "MEASURED",
-   "score": 6.3,
+   "score": 5.1,
    "high_water": 8.0,
    "movement": "FELL",
-   "cause": "ops_autonomy.kernel_log_channels_readable 5.0 -> 0.0 (data/kernel_log_status.json): verdict UNREADABLE: NO kernel-log channel is readable -- every 'no OOM / no kernel event' conclusion on this box is VOID until this is restored (R0350); ops_autonomy.organs_healthy 10.0 -> 8.0 (data/organ_er.json): status TREATED: 4/5 organs healthy; 0 discharged; untreated comas []; ops_autonomy.organs_producing 9.8 -> 3.6 (data/organ_liveness.json): status DARK: 3 never produced, 57 stale",
+   "cause": "ops_autonomy.kernel_log_channels_readable 5.0 -> 0.0 (data/kernel_log_status.json): verdict UNREADABLE: NO kernel-log channel is readable -- every 'no OOM / no kernel event' conclusion on this box is VOID until this is restored (R0350); ops_autonomy.organ_comas_untreated 10.0 -> 8.0 (data/organ_er.json): 3.0 untreated coma(s) after 24.0h; treatments []; ops_autonomy.organs_healthy 10.0 -> 4.0 (data/organ_er.json): status COMA-UNTREATED: 2/5 organs healthy; 3 in coma >24h; UNTREATED: capability_hunt, blindspot_max, kimi_hunter; untreated comas ['capability_hunt', 'blindspot_max', 'kimi_hunter']; ops_autonomy.organs_producing 9.8 -> 3.5 (data/organ_liveness.json): status DARK: 4 never produced, 58 stale",
    "binding_constraint": "kernel_log_channels_readable at 0.0 -- +1 kernel-log channels provably readable (0 -> 1 of 2) buys the next point",
    "ceiling": "every scheduled organ producing fresh output unattended and every organ assembling a lawful prompt",
    "artifacts": [
@@ -542,34 +542,34 @@
     {
      "key": "organs_producing",
      "state": "MEASURED",
-     "score": 3.6,
+     "score": 3.5,
      "artifact": "data/organ_liveness.json",
-     "detail": "status DARK: 3 never produced, 57 stale",
-     "constraint": "+10 scheduled organs producing fresh output (34 -> 44 of 94) buys the next point"
+     "detail": "status DARK: 4 never produced, 58 stale",
+     "constraint": "+10 scheduled organs producing fresh output (33 -> 43 of 95) buys the next point"
     },
     {
      "key": "organs_ready",
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/organ_readiness.json",
-     "detail": "11.0/11.0 organs ready at 2026-08-23T09:21:44.510693+00:00 (gate_ok=True)",
+     "detail": "11.0/11.0 organs ready at 2026-08-25T17:23:33.959930+00:00 (gate_ok=True)",
      "constraint": "AT CEILING (11/11 organs assembling a lawful prompt) -- the work is now HOLDING it"
     },
     {
      "key": "organs_healthy",
      "state": "MEASURED",
-     "score": 8.0,
+     "score": 4.0,
      "artifact": "data/organ_er.json",
-     "detail": "status TREATED: 4/5 organs healthy; 0 discharged; untreated comas []",
-     "constraint": "+1 organs healthy under the ER's own triage (4 -> 5 of 5) buys the next point"
+     "detail": "status COMA-UNTREATED: 2/5 organs healthy; 3 in coma >24h; UNTREATED: capability_hunt, blindspot_max, kimi_hunter; untreated comas ['capability_hunt', 'blindspot_max', 'kimi_hunter']",
+     "constraint": "+1 organs healthy under the ER's own triage (2 -> 3 of 5) buys the next point"
     },
     {
      "key": "organ_comas_untreated",
      "state": "MEASURED",
-     "score": 10.0,
+     "score": 8.0,
      "artifact": "data/organ_er.json",
-     "detail": "0.0 untreated coma(s) after 24.0h; treatments [{'organ': 'deep_sweep_meta', 'attempted': False, 'outcome': 'ESCALATED', 'why': 'a NAMED external dependency is missing; escalate with the blocker -- no re-fire fixes a patient whose treatment is a credit card'}]",
-     "constraint": "AT CEILING (0 comatose organs with no treatment applied) -- the work is now HOLDING it"
+     "detail": "3.0 untreated coma(s) after 24.0h; treatments []",
+     "constraint": "-2 comatose organs with no treatment applied (3 -> 1, back under the 2 rung) buys the next point"
     },
     {
      "key": "kernel_log_channels_readable",
@@ -616,43 +616,43 @@
   {
    "key": "alerting_pager",
    "state": "MEASURED",
-   "score": 8.9,
-   "high_water": 9.3,
-   "movement": "FELL",
-   "cause": "alerting_pager.alert_channels_not_silent became UNMEASURED (stood at 10.0): data/alert_canary_state.json is 69.12h old against a 6h bound (scripts/run_alert_canary.py --interval-h default) -- the canary's own liveness, which is what makes the silence flag's ABSENCE mean anything. A stale reading is not a bad reading and not a good one: it is last week's observation wearing today's date, and scoring it either way invents information",
-   "binding_constraint": "pager_deliveries_ok at 8.9 -- +132 logged page attempts that DELIVERED (1210 -> 1342 of 1355) buys the next point [+1 UNMEASURED component(s): alert_channels_not_silent -- the score above covers only 1 of 2 components]",
+   "score": 9.6,
+   "high_water": 9.6,
+   "movement": "FLATLINE",
+   "cause": "pager_deliveries_ok at 9.1 -- +145 logged page attempts that DELIVERED (1421 -> 1566, the whole remaining gap) is the last +0.9 to 10/10",
+   "binding_constraint": "pager_deliveries_ok at 9.1 -- +145 logged page attempts that DELIVERED (1421 -> 1566, the whole remaining gap) is the last +0.9 to 10/10",
    "ceiling": "the pager provably delivers between incidents, on more than one channel, with the canary auditing the ledger rather than the code",
    "artifacts": [
     "data/alert_delivery.jsonl",
-    "data/alert_canary_state.json"
+    "data/ALERT_CHANNELS_SILENT"
    ],
    "components": [
     {
      "key": "pager_deliveries_ok",
      "state": "MEASURED",
-     "score": 8.9,
+     "score": 9.1,
      "artifact": "data/alert_delivery.jsonl",
-     "detail": "1210/1355 ledger attempts delivered; last row channel ntfy ok=True -- http 200",
-     "constraint": "+132 logged page attempts that DELIVERED (1210 -> 1342 of 1355) buys the next point"
+     "detail": "1421/1566 ledger attempts delivered; last row channel ntfy ok=True -- http 200",
+     "constraint": "+145 logged page attempts that DELIVERED (1421 -> 1566, the whole remaining gap) is the last +0.9 to 10/10"
     },
     {
      "key": "alert_channels_not_silent",
-     "state": "UNMEASURED",
-     "score": null,
-     "artifact": "data/alert_canary_state.json",
-     "detail": "data/alert_canary_state.json is 69.12h old against a 6h bound (scripts/run_alert_canary.py --interval-h default) -- the canary's own liveness, which is what makes the silence flag's ABSENCE mean anything. A stale reading is not a bad reading and not a good one: it is last week's observation wearing today's date, and scoring it either way invents information",
-     "constraint": "MEASURE IT -- data/alert_canary_state.json is 69.12h old against a 6h bound (scripts/run_alert_canary.py --interval-h default) -- the canary's own liveness, which is what makes the silence flag's ABSENCE mean anything. A stale reading is not a bad reading and not a good one: it is last week's observation wearing today's date, and scoring it either way invents information. Unmeasured is neither a 0 nor a 10; it is the state of not knowing, and it stays that until an artifact says otherwise."
+     "state": "MEASURED",
+     "score": 10.0,
+     "artifact": "data/ALERT_CHANNELS_SILENT",
+     "detail": "no silence flag, and the canary ran 0.35h ago (bound 6h) -- a live canary that is not complaining",
+     "constraint": "AT CEILING -- a page has landed inside the canary's own lookback AND the canary is itself alive; HOLDING it means keeping the canary on its cadence, because a silent canary and a working pager look identical from here"
     }
    ]
   },
   {
    "key": "cost_model_fidelity",
    "state": "MEASURED",
-   "score": 5.0,
+   "score": 10.0,
    "high_water": 10.0,
-   "movement": "FELL",
-   "cause": "cost_model_fidelity.cost_hunt_freshness 10.0 -> 0.0 (data/organ_liveness.json): scripts/run_cost_hunt.py is STALE (age 63.97h against its own 3.0h tolerance); evidence data/cost_hunt.json; cost_model_fidelity.cost_surface_identified 10.0 -> 0.0 (data/organ_liveness.json): scripts/run_cost_identification.py is STALE (age 64.01h against its own 3.0h tolerance); evidence data/cost_surface.json",
-   "binding_constraint": "cost_hunt_freshness at 0.0 -- RESTART IT -- scripts/run_cost_hunt.py last produced 63.97h ago against a 3.0h tolerance; something STOPPED (auth, quota, upstream), which is a different repair from never wired",
+   "movement": "AT-CEILING",
+   "cause": "10/10 held. funding_rates_measured at 10.0 -- AT CEILING (18/18 universe symbols with a measured funding rate) -- the work is now HOLDING it",
+   "binding_constraint": "funding_rates_measured at 10.0 -- AT CEILING (18/18 universe symbols with a measured funding rate) -- the work is now HOLDING it",
    "ceiling": "the cost model refreshed on its own cadence over the whole universe, with every declared input readable so the realised-versus-modelled residual is a measurement",
    "artifacts": [
     "data/cost_hunt.json",
@@ -671,18 +671,18 @@
     {
      "key": "cost_hunt_freshness",
      "state": "MEASURED",
-     "score": 0.0,
+     "score": 10.0,
      "artifact": "data/organ_liveness.json",
-     "detail": "scripts/run_cost_hunt.py is STALE (age 63.97h against its own 3.0h tolerance); evidence data/cost_hunt.json",
-     "constraint": "RESTART IT -- scripts/run_cost_hunt.py last produced 63.97h ago against a 3.0h tolerance; something STOPPED (auth, quota, upstream), which is a different repair from never wired"
+     "detail": "scripts/run_cost_hunt.py is FRESH (age 0.26h against its own 3.0h tolerance); evidence data/cost_hunt.json",
+     "constraint": "AT CEILING -- producing inside its own declared cadence, and the work is now HOLDING it"
     },
     {
      "key": "cost_surface_identified",
      "state": "MEASURED",
-     "score": 0.0,
+     "score": 10.0,
      "artifact": "data/organ_liveness.json",
-     "detail": "scripts/run_cost_identification.py is STALE (age 64.01h against its own 3.0h tolerance); evidence data/cost_surface.json",
-     "constraint": "RESTART IT -- scripts/run_cost_identification.py last produced 64.01h ago against a 3.0h tolerance; something STOPPED (auth, quota, upstream), which is a different repair from never wired"
+     "detail": "scripts/run_cost_identification.py is FRESH (age 0.26h against its own 3.0h tolerance); evidence data/cost_surface.json",
+     "constraint": "AT CEILING -- producing inside its own declared cadence, and the work is now HOLDING it"
     },
     {
      "key": "cost_inputs_readable",
@@ -721,7 +721,7 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/replacement_rate.json",
-     "detail": "status OK: >=21 birth(s) vs 19 death(s) (3 graveyard + 16 retired clock(s)) in 90d; 11 live forward clock(s); 6 history row(s) undated (clocks already running when the record opened) -> births is a FLOOR",
+     "detail": "status OK: >=21 birth(s) vs 20 death(s) (4 graveyard + 16 retired clock(s)) in 90d; 11 live forward clock(s); 6 history row(s) undated (clocks already running when the record opened) -> births is a FLOOR",
      "constraint": "AT CEILING -- births are counted from a dated promotion history; HOLDING it means keeping that history append-only"
     },
     {
@@ -729,19 +729,19 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/replacement_rate.json",
-     "detail": "21 births vs 19 deaths in 90d; 11 live forward clocks",
-     "constraint": "AT CEILING (1.105/1 of one-for-one replacement over the window) -- the work is now HOLDING it"
+     "detail": "21 births vs 20 deaths in 90d; 11 live forward clocks",
+     "constraint": "AT CEILING (1.05/1 of one-for-one replacement over the window) -- the work is now HOLDING it"
     }
    ]
   },
   {
    "key": "recorder_tape",
    "state": "MEASURED",
-   "score": 9.5,
-   "high_water": 9.5,
-   "movement": "FLATLINE",
-   "cause": "tape_clock_declared at 8.6 -- +1 tape streams declaring the clock that stamped them (6 -> 7 of 7) buys the next point",
-   "binding_constraint": "tape_clock_declared at 8.6 -- +1 tape streams declaring the clock that stamped them (6 -> 7 of 7) buys the next point",
+   "score": 10.0,
+   "high_water": 10.0,
+   "movement": "FELL",
+   "cause": "recorder_tape.tape_clock_declared became UNMEASURED (stood at 8.6): the clock fence returned NO-DATA -- no tape under /home/quant/quant-platform/data/moat -- there is no corpus to check. That is the fence refusing to grade an absent or unclassifiable corpus, and a refusal is not a defect of the tape any more than it is a clean bill",
+   "binding_constraint": "execution_tape_store at 10.0 -- AT CEILING -- the tape exists and is replicated; HOLDING it is the recorder staying up [+1 UNMEASURED component(s): tape_clock_declared -- the score above covers only 2 of 3 components]",
    "ceiling": "the desk's own tape recording continuously, every stream declaring the clock that stamped it, replicated off the host, with retention clearing the analysis window",
    "artifacts": [
     "data/clock_provenance_status.json",
@@ -751,11 +751,11 @@
    "components": [
     {
      "key": "tape_clock_declared",
-     "state": "MEASURED",
-     "score": 8.6,
+     "state": "UNMEASURED",
+     "score": null,
      "artifact": "data/clock_provenance_status.json",
-     "detail": "status MIXED-CLOCK: 1 stream(s) mix clocks with no marker: fut/* (recv+venue undeclared in one file) -- a reader sorting raw `t` reorders events silently; 6766 rows sampled over 12 files",
-     "constraint": "+1 tape streams declaring the clock that stamped them (6 -> 7 of 7) buys the next point"
+     "detail": "the clock fence returned NO-DATA -- no tape under /home/quant/quant-platform/data/moat -- there is no corpus to check. That is the fence refusing to grade an absent or unclassifiable corpus, and a refusal is not a defect of the tape any more than it is a clean bill",
+     "constraint": "MEASURE IT -- the clock fence returned NO-DATA -- no tape under /home/quant/quant-platform/data/moat -- there is no corpus to check. That is the fence refusing to grade an absent or unclassifiable corpus, and a refusal is not a defect of the tape any more than it is a clean bill. Unmeasured is neither a 0 nor a 10; it is the state of not knowing, and it stays that until an artifact says otherwise."
     },
     {
      "key": "execution_tape_store",
@@ -882,8 +882,8 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "docs/desk_lessons.jsonl",
-     "detail": "171 lesson(s); most recent L0171 learned 2026-08-20",
-     "constraint": "AT CEILING (171 recorded desk lessons, each with its cost and recurrence count, top rung 50) -- the ladder is exhausted and the next point needs a HARDER ladder, argued for in the diff"
+     "detail": "172 lesson(s); most recent L0172 learned 2026-08-25",
+     "constraint": "AT CEILING (172 recorded desk lessons, each with its cost and recurrence count, top rung 50) -- the ladder is exhausted and the next point needs a HARDER ladder, argued for in the diff"
     }
    ]
   },
@@ -893,8 +893,8 @@
    "score": 7.4,
    "high_water": 10.0,
    "movement": "FELL",
-   "cause": "backup_dr.backup_cadence 10.0 -> 0.0 (data/organ_liveness.json): scripts/run_moat_backup.py is STALE (age 80.42h against its own 72.0h tolerance); evidence data/backup_status.json; backup_dr.disk_headroom_over_fuse 10.0 -> 9.7 (data/backup_status.json): disk free 14.53% against a 15.0% fuse (status DISK-FUSE); uncovered bulk lake/L2 need the Storage-Box/R2 principal decision -- measured here every run so the gap stays a number",
-   "binding_constraint": "backup_cadence at 0.0 -- RESTART IT -- scripts/run_moat_backup.py last produced 80.42h ago against a 72.0h tolerance; something STOPPED (auth, quota, upstream), which is a different repair from never wired",
+   "cause": "backup_dr.backup_cadence 10.0 -> 0.0 (data/organ_liveness.json): scripts/run_moat_backup.py is STALE (age 139.79h against its own 72.0h tolerance); evidence data/backup_status.json; backup_dr.disk_headroom_over_fuse 10.0 -> 9.7 (data/backup_status.json): disk free 14.53% against a 15.0% fuse (status DISK-FUSE); uncovered bulk lake/L2 need the Storage-Box/R2 principal decision -- measured here every run so the gap stays a number",
+   "binding_constraint": "backup_cadence at 0.0 -- RESTART IT -- scripts/run_moat_backup.py last produced 139.79h ago against a 72.0h tolerance; something STOPPED (auth, quota, upstream), which is a different repair from never wired",
    "ceiling": "every durable store replicated off the host and a restore actually EXERCISED, with disk headroom clear of the backup organ's own fuse",
    "artifacts": [
     "data/backup_status.json",
@@ -930,8 +930,8 @@
      "state": "MEASURED",
      "score": 0.0,
      "artifact": "data/organ_liveness.json",
-     "detail": "scripts/run_moat_backup.py is STALE (age 80.42h against its own 72.0h tolerance); evidence data/backup_status.json",
-     "constraint": "RESTART IT -- scripts/run_moat_backup.py last produced 80.42h ago against a 72.0h tolerance; something STOPPED (auth, quota, upstream), which is a different repair from never wired"
+     "detail": "scripts/run_moat_backup.py is STALE (age 139.79h against its own 72.0h tolerance); evidence data/backup_status.json",
+     "constraint": "RESTART IT -- scripts/run_moat_backup.py last produced 139.79h ago against a 72.0h tolerance; something STOPPED (auth, quota, upstream), which is a different repair from never wired"
     }
    ]
   },
@@ -1025,7 +1025,7 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/organ_readiness.json",
-     "detail": "log_dir_writable=True, gate_ok=True, doctrine 96790 bytes at 2026-08-23T09:21:44.510693+00:00",
+     "detail": "log_dir_writable=True, gate_ok=True, doctrine 8031 bytes at 2026-08-25T17:23:33.959930+00:00",
      "constraint": "AT CEILING -- the desk can write its own evidence"
     },
     {
@@ -1225,7 +1225,7 @@
      "state": "MEASURED",
      "score": 9.4,
      "artifact": "docs/research/CONSTITUTION_RATCHET.json",
-     "detail": "mean 9.41/10 over 27 principles; weakest P11 at 7, updated 2026-08-23T09:44:35.985824+00:00",
+     "detail": "mean 9.41/10 over 27 principles; weakest P11 at 7, updated 2026-08-25T09:09:23.086596+00:00",
      "constraint": "+0.593 of full aggression, meaned over the constitution's own marks (9.407 -> 10, the whole remaining gap) is the last +0.6 to 10/10"
     },
     {
@@ -1241,11 +1241,11 @@
   {
    "key": "ambition_discipline",
    "state": "MEASURED",
-   "score": 10.0,
+   "score": 9.7,
    "high_water": 10.0,
-   "movement": "AT-CEILING",
-   "cause": "10/10 held. restraints_classified at 10.0 -- AT CEILING (79/79 restraints classified as scope, evidence or risk) -- the work is now HOLDING it",
-   "binding_constraint": "restraints_classified at 10.0 -- AT CEILING (79/79 restraints classified as scope, evidence or risk) -- the work is now HOLDING it",
+   "movement": "FELL",
+   "cause": "ambition_discipline.prompt_timidity_hits 10.0 -> 9.0 (data/timidity_audit.json): 1.0 hit(s) across 25 prompt surfaces; doctrine injected=False",
+   "binding_constraint": "prompt_timidity_hits at 9.0 -- -1 timid instructions found in live prompt surfaces (1 -> 0, back under the 1 rung) buys the next point",
    "ceiling": "every restraint declared as scope, evidence or risk; no timid instruction in a live prompt; no return NUMBER bound to goal language",
    "artifacts": [
     "data/timidity_audit.json",
@@ -1263,10 +1263,10 @@
     {
      "key": "prompt_timidity_hits",
      "state": "MEASURED",
-     "score": 10.0,
+     "score": 9.0,
      "artifact": "data/timidity_audit.json",
-     "detail": "0.0 hit(s) across 25 prompt surfaces; doctrine injected=True",
-     "constraint": "AT CEILING (0 timid instructions found in live prompt surfaces) -- the work is now HOLDING it"
+     "detail": "1.0 hit(s) across 25 prompt surfaces; doctrine injected=False",
+     "constraint": "-1 timid instructions found in live prompt surfaces (1 -> 0, back under the 1 rung) buys the next point"
     },
     {
      "key": "surfaces_free_of_return_targets",
@@ -1285,7 +1285,7 @@
    "movement": "FELL",
    "score": 5.5,
    "high_water": 9.0,
-   "cause": "statistical_validation.mutation_kill_validation_stack 9.0 -> 6.9 (data/mutation_score.json): 2 target(s) at bar 0.9: stepwise.py 0.90, validation.py 0.48; measured 2026-08-05T15:23:17Z"
+   "cause": "statistical_validation.forecasts_resolved 4.2 -> 4.1 (data/calibration_status.json): status OVERDUE: 22 forecast(s) past their grading deadline -- score them; brier 0.2752, 22 overdue; statistical_validation.mutation_kill_validation_stack 9.0 -> 6.9 (data/mutation_score.json): 2 target(s) at bar 0.9: stepwise.py 0.90, validation.py 0.48; measured 2026-08-05T15:23:17Z"
   },
   {
    "aspect": "research_discipline",
@@ -1297,23 +1297,23 @@
   {
    "aspect": "risk_rails",
    "movement": "FELL",
-   "score": 5.8,
+   "score": 7.8,
    "high_water": 9.9,
-   "cause": "risk_rails.drill_cadence 10.0 -> 0.0 (data/organ_liveness.json): scripts/run_drills.py is STALE (age 80.68h against its own 72.0h tolerance); evidence data/drill_report.json, data/drill_log.jsonl; risk_rails.mutation_kill_risk_stack 9.3 -> 9.1 (data/mutation_score.json): 3 target(s) at bar 0.9: gate.py 1.00, sizing.py 0.86, sizing.py 0.86; measured 2026-08-05T15:23:17Z; risk_rails.sizing_constants_derived 10.0 -> 0.0 (data/sizing_derivation.json): status UNJUSTIFIED-CONSTANTS: 47 money-path constants across 3 modules, 4 without a cited derivation: resolve_paper_book.py:TRAIL_FWD_CHALLENGER, resolve_paper_book.py:TRAIL_FWD_DECIDE_N, resolve_paper_book.py:TRAIL_FWD_HARD_N, resolve_paper_book.py:TRAIL_FWD_T"
+   "cause": "risk_rails.mutation_kill_risk_stack 9.3 -> 9.1 (data/mutation_score.json): 3 target(s) at bar 0.9: gate.py 1.00, sizing.py 0.86, sizing.py 0.86; measured 2026-08-05T15:23:17Z; risk_rails.sizing_constants_derived 10.0 -> 0.0 (data/sizing_derivation.json): status UNJUSTIFIED-CONSTANTS: 47 money-path constants across 3 modules, 4 without a cited derivation: resolve_paper_book.py:TRAIL_FWD_CHALLENGER, resolve_paper_book.py:TRAIL_FWD_DECIDE_N, resolve_paper_book.py:TRAIL_FWD_HARD_N, resolve_paper_book.py:TRAIL_FWD_T"
   },
   {
    "aspect": "governance",
    "movement": "FELL",
-   "score": 7.6,
+   "score": 5.5,
    "high_water": 9.0,
-   "cause": "governance.audit_defects_live 6.0 -> 4.0 (data/max_audit_report.json): 48.0 unacknowledged defects at 2026-08-23T09:16:29.420102+00:00; by scope {'REPO': 41, 'RUNTIME': 6, 'UNSCOPED': 1}; governance.fences_earning_their_place 10.0 -> 8.8 (data/fence_yield.json): status UNREGISTERED-PRESENT: 14/16 fences have caught something real; 2 quiet, 0 never run; 0 FIRED-STALE (caught something, silent for more than 30 census runs); 14/68 fences on disk are in the census at all (54 UNREGISTERED -- yield unmeasurable); never run 0; governance.law_fences_passing 10.0 -> 5.6 (data/law_gate.json): 14.0/25.0 fences green; failures ['check_enforcement_execution.py (rc=2): -> data/enforcement_execution.json', 'check_sizing_derivation.py (rc=2):   scripts/resolve_paper_book.py:263 TRAIL_FWD_T: no derivation cited', 'check_conversion.py (rc=2): -> /home/quant/quant-platform/data/conversion_status.json', 'check_exploration.py (rc=2): -> /home/quant/quant-platform/data/exploration_status.json', 'check_calibration.py (rc=2): -> /home/quant/quant-platform/data/calibration_status.json', 'run_organ_er.py (rc=2):   BLOCKED      deep_sweep_meta      a NAMED external dependency is missing; escalate with the blocker -- no re-fir', 'check_scheduler_manifest.py (rc=1): scheduler-manifest: DRIFT', 'check_mechanism_attribution.py (rc=2):   cash_and_carry: UNATTRIBUTED -- unexplained WIN +2,980.10 is 2636% of the +113.06 mechanism term -- this sleeve is being credited with P&L its mechanism canno', 'check_organ_liveness.py (rc=2):   NEVER-PRODUCED  scripts/check_private_bisection.py    age=None tol=72.0h', 'check_excitation.py (rc=2):   next: Record a re-entry condition per blocked symbol in data/execution_reentry.json: m minimum-size probes after d days (L1.16a)', 'check_clock_provenance.py (rc=2):   next: Restart the recorders so new rows carry the `c` marker; historical rows stay readable through clock_provenance._HISTORICAL']"
+   "cause": "governance.audit_defects_live 6.0 -> 4.0 (data/max_audit_report.json): 50.0 unacknowledged defects at 2026-08-25T08:38:49.767785+00:00; by scope {'REPO': 41, 'RUNTIME': 7, 'UNSCOPED': 2}; governance.fences_earning_their_place 10.0 -> 8.8 (data/fence_yield.json): status UNREGISTERED-PRESENT: 14/16 fences have caught something real; 2 quiet, 0 never run; 0 FIRED-STALE (caught something, silent for more than 30 census runs); 14/68 fences on disk are in the census at all (54 UNREGISTERED -- yield unmeasurable); never run 0; governance.law_families_enforced 10.0 -> 0.0 (data/law_families.json): status FAILING: 0/6 families fully enforced; failing: aggression, exploration, conversion, survival, validation_honesty, moat over 35 governed laws; governance.law_fences_passing 10.0 -> 4.8 (data/law_gate.json): 12.0/25.0 fences green; failures ['check_law_families.py (rc=2): -> /home/quant/quant-platform/data/law_families.json', 'check_enforcement_execution.py (rc=2): -> data/enforcement_execution.json', 'check_timidity_language.py (rc=1): -> data/timidity_audit.json', 'check_sizing_derivation.py (rc=2):   scripts/resolve_paper_book.py:263 TRAIL_FWD_T: no derivation cited', 'check_conversion.py (rc=2): -> /home/quant/quant-platform/data/conversion_status.json', 'check_exploration.py (rc=2): -> /home/quant/quant-platform/data/exploration_status.json', 'check_calibration.py (rc=2): -> /home/quant/quant-platform/data/calibration_status.json', 'run_organ_er.py (rc=2):   BLOCKED      kimi_hunter          a NAMED external dependency is missing; escalate with the blocker -- no re-fir', 'check_scheduler_manifest.py (rc=1): scheduler-manifest: DRIFT', 'check_mechanism_attribution.py (rc=2):   cash_and_carry: UNATTRIBUTED -- unexplained WIN +2,980.10 is 2636% of the +113.06 mechanism term -- this sleeve is being credited with P&L its mechanism canno', 'check_organ_liveness.py (rc=2):   NEVER-PRODUCED  scripts/check_private_bisection.py    age=None tol=72.0h', 'check_excitation.py (rc=2):   next: Record a re-entry condition per blocked symbol in data/execution_reentry.json: m minimum-size probes after d days (L1.16a)', 'check_clock_provenance.py (rc=2):   next: Restart the recorders so new rows carry the `c` marker; historical rows stay readable through clock_provenance._HISTORICAL']"
   },
   {
    "aspect": "data_coverage",
    "movement": "FELL",
-   "score": 5.4,
+   "score": 5.9,
    "high_water": 7.4,
-   "cause": "data_coverage.assets_with_measured_span 6.6 -> 6.5 (data/data_assets.json): 87/134 assets have a readable span (22 absent on disk); deep=True; data_coverage.exploration_organs_fresh 10.0 -> 2.0 (data/exploration_status.json): status STALE: 1 fresh, 4 stale, 0 dark"
+   "cause": "data_coverage.assets_with_measured_span 6.6 -> 6.5 (data/data_assets.json): 87/134 assets have a readable span (22 absent on disk); deep=True; data_coverage.exploration_organs_fresh 10.0 -> 4.0 (data/exploration_status.json): status STALE: 2 fresh, 3 stale, 0 dark"
   },
   {
    "aspect": "execution_path",
@@ -1325,16 +1325,16 @@
   {
    "aspect": "self_improvement",
    "movement": "FELL",
-   "score": 6.7,
+   "score": 5.8,
    "high_water": 7.5,
-   "cause": "self_improvement.conversion_flow_7d 10.0 -> 6.4 (data/conversion_status.json): status ARRIVALS-COLLAPSED: 21.0 dispositioned vs 33.0 raised in 7d; backlog 260, oldest 28.02d"
+   "cause": "self_improvement.conversion_flow_7d 10.0 -> 2.8 (data/conversion_status.json): status ARRIVALS-COLLAPSED: 10.0 dispositioned vs 36.0 raised in 7d; backlog 269, oldest 30.5d; self_improvement.ledger_dispositioned 6.0 -> 5.9 (docs/research/recommendation_ledger.json): 386 dispositioned of 655 raised (269 still open or scheduled) -- a reasoned rejection counts, silence does not"
   },
   {
    "aspect": "ops_autonomy",
    "movement": "FELL",
-   "score": 6.3,
+   "score": 5.1,
    "high_water": 8.0,
-   "cause": "ops_autonomy.kernel_log_channels_readable 5.0 -> 0.0 (data/kernel_log_status.json): verdict UNREADABLE: NO kernel-log channel is readable -- every 'no OOM / no kernel event' conclusion on this box is VOID until this is restored (R0350); ops_autonomy.organs_healthy 10.0 -> 8.0 (data/organ_er.json): status TREATED: 4/5 organs healthy; 0 discharged; untreated comas []; ops_autonomy.organs_producing 9.8 -> 3.6 (data/organ_liveness.json): status DARK: 3 never produced, 57 stale"
+   "cause": "ops_autonomy.kernel_log_channels_readable 5.0 -> 0.0 (data/kernel_log_status.json): verdict UNREADABLE: NO kernel-log channel is readable -- every 'no OOM / no kernel event' conclusion on this box is VOID until this is restored (R0350); ops_autonomy.organ_comas_untreated 10.0 -> 8.0 (data/organ_er.json): 3.0 untreated coma(s) after 24.0h; treatments []; ops_autonomy.organs_healthy 10.0 -> 4.0 (data/organ_er.json): status COMA-UNTREATED: 2/5 organs healthy; 3 in coma >24h; UNTREATED: capability_hunt, blindspot_max, kimi_hunter; untreated comas ['capability_hunt', 'blindspot_max', 'kimi_hunter']; ops_autonomy.organs_producing 9.8 -> 3.5 (data/organ_liveness.json): status DARK: 4 never produced, 58 stale"
   },
   {
    "aspect": "alpha_output",
@@ -1344,25 +1344,18 @@
    "cause": "alpha_output.forward_slots_occupied 10.0 -> 9.2 (data/promotion_queue.json): 11/12 slots running; 0 screened survivors queued"
   },
   {
-   "aspect": "alerting_pager",
+   "aspect": "recorder_tape",
    "movement": "FELL",
-   "score": 8.9,
-   "high_water": 9.3,
-   "cause": "alerting_pager.alert_channels_not_silent became UNMEASURED (stood at 10.0): data/alert_canary_state.json is 69.12h old against a 6h bound (scripts/run_alert_canary.py --interval-h default) -- the canary's own liveness, which is what makes the silence flag's ABSENCE mean anything. A stale reading is not a bad reading and not a good one: it is last week's observation wearing today's date, and scoring it either way invents information"
-  },
-  {
-   "aspect": "cost_model_fidelity",
-   "movement": "FELL",
-   "score": 5.0,
+   "score": 10.0,
    "high_water": 10.0,
-   "cause": "cost_model_fidelity.cost_hunt_freshness 10.0 -> 0.0 (data/organ_liveness.json): scripts/run_cost_hunt.py is STALE (age 63.97h against its own 3.0h tolerance); evidence data/cost_hunt.json; cost_model_fidelity.cost_surface_identified 10.0 -> 0.0 (data/organ_liveness.json): scripts/run_cost_identification.py is STALE (age 64.01h against its own 3.0h tolerance); evidence data/cost_surface.json"
+   "cause": "recorder_tape.tape_clock_declared became UNMEASURED (stood at 8.6): the clock fence returned NO-DATA -- no tape under /home/quant/quant-platform/data/moat -- there is no corpus to check. That is the fence refusing to grade an absent or unclassifiable corpus, and a refusal is not a defect of the tape any more than it is a clean bill"
   },
   {
    "aspect": "backup_dr",
    "movement": "FELL",
    "score": 7.4,
    "high_water": 10.0,
-   "cause": "backup_dr.backup_cadence 10.0 -> 0.0 (data/organ_liveness.json): scripts/run_moat_backup.py is STALE (age 80.42h against its own 72.0h tolerance); evidence data/backup_status.json; backup_dr.disk_headroom_over_fuse 10.0 -> 9.7 (data/backup_status.json): disk free 14.53% against a 15.0% fuse (status DISK-FUSE); uncovered bulk lake/L2 need the Storage-Box/R2 principal decision -- measured here every run so the gap stays a number"
+   "cause": "backup_dr.backup_cadence 10.0 -> 0.0 (data/organ_liveness.json): scripts/run_moat_backup.py is STALE (age 139.79h against its own 72.0h tolerance); evidence data/backup_status.json; backup_dr.disk_headroom_over_fuse 10.0 -> 9.7 (data/backup_status.json): disk free 14.53% against a 15.0% fuse (status DISK-FUSE); uncovered bulk lake/L2 need the Storage-Box/R2 principal decision -- measured here every run so the gap stays a number"
   },
   {
    "aspect": "mutation_breadth",
@@ -1391,18 +1384,30 @@
    "score": 6.0,
    "high_water": 8.5,
    "cause": "blind_spot_coverage.unread_fields 7.0 -> 2.0 (data/blindspot_max.json): 185 unread field(s), 200.0 unmodelled entities, 300.0 uncrossed pairs -- data bought and never asked a question of"
+  },
+  {
+   "aspect": "ambition_discipline",
+   "movement": "FELL",
+   "score": 9.7,
+   "high_water": 10.0,
+   "cause": "ambition_discipline.prompt_timidity_hits 10.0 -> 9.0 (data/timidity_audit.json): 1.0 hit(s) across 25 prompt surfaces; doctrine injected=False"
   }
  ],
  "flatlined": [
   {
+   "aspect": "alerting_pager",
+   "score": 9.6,
+   "binding_constraint": "pager_deliveries_ok at 9.1 -- +145 logged page attempts that DELIVERED (1421 -> 1566, the whole remaining gap) is the last +0.9 to 10/10"
+  },
+  {
+   "aspect": "cost_model_fidelity",
+   "score": 10.0,
+   "binding_constraint": "10/10 held. funding_rates_measured at 10.0 -- AT CEILING (18/18 universe symbols with a measured funding rate) -- the work is now HOLDING it"
+  },
+  {
    "aspect": "forward_clock_hygiene",
    "score": 7.8,
    "binding_constraint": "promotion_latency_measured at 3.3 -- +1 latency terms MEASURED rather than designed or estimated (1 -> 2 of 3) buys the next point"
-  },
-  {
-   "aspect": "recorder_tape",
-   "score": 9.5,
-   "binding_constraint": "tape_clock_declared at 8.6 -- +1 tape streams declaring the clock that stamped them (6 -> 7 of 7) buys the next point"
   },
   {
    "aspect": "llm_seat_coverage",
@@ -1438,11 +1443,6 @@
    "aspect": "constitutional_aggression",
    "score": 9.7,
    "binding_constraint": "principle_aggression at 9.4 -- +0.593 of full aggression, meaned over the constitution's own marks (9.407 -> 10, the whole remaining gap) is the last +0.6 to 10/10"
-  },
-  {
-   "aspect": "ambition_discipline",
-   "score": 10.0,
-   "binding_constraint": "10/10 held. restraints_classified at 10.0 -- AT CEILING (79/79 restraints classified as scope, evidence or risk) -- the work is now HOLDING it"
   }
  ],
  "raised": [],
@@ -1456,10 +1456,10 @@
    "why": "libs/autodiscovery/validation.py ran BUDGET-TRUNCATED (14 of 137 sites) -- a truncated run samples the mutants it reached, so its kill rate is not a strength measurement and is refused rather than scored"
   },
   {
-   "aspect": "alerting_pager",
-   "component": "alert_channels_not_silent",
-   "artifact": "data/alert_canary_state.json",
-   "why": "data/alert_canary_state.json is 69.12h old against a 6h bound (scripts/run_alert_canary.py --interval-h default) -- the canary's own liveness, which is what makes the silence flag's ABSENCE mean anything. A stale reading is not a bad reading and not a good one: it is last week's observation wearing today's date, and scoring it either way invents information"
+   "aspect": "recorder_tape",
+   "component": "tape_clock_declared",
+   "artifact": "data/clock_provenance_status.json",
+   "why": "the clock fence returned NO-DATA -- no tape under /home/quant/quant-platform/data/moat -- there is no corpus to check. That is the fence refusing to grade an absent or unclassifiable corpus, and a refusal is not a defect of the tape any more than it is a clean bill"
   },
   {
    "aspect": "mutation_breadth",

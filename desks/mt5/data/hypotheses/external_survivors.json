@@ -132,17 +132,6 @@
     "max_dd_r": -13.06
   },
   {
-    "symbol": "USDCAD",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.0,
-      "wait_bars": 12
-    },
-    "n": 2215,
-    "exp_r": 0.0824,
-    "max_dd_r": -29.16
-  },
-  {
     "symbol": "GBPUSD",
     "family": "session_range_breakout",
     "params": {
@@ -176,6 +165,17 @@
     "max_dd_r": -24.71
   },
   {
+    "symbol": "USDCAD",
+    "family": "session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+    },
+    "n": 2215,
+    "exp_r": 0.0824,
+    "max_dd_r": -29.16
+  },
+  {
     "symbol": "AUDCAD",
     "family": "session_range_breakout",
     "params": {
@@ -207,39 +207,6 @@
     "n": 2122,
     "exp_r": 0.0509,
     "max_dd_r": -25.51
-  },
-  {
-    "symbol": "AUDJPY",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 1.5,
-      "wait_bars": 12
-    },
-    "n": 2065,
-    "exp_r": 0.0588,
-    "max_dd_r": -24.22
-  },
-  {
-    "symbol": "AUDJPY",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.0,
-      "wait_bars": 12
-    },
-    "n": 2065,
-    "exp_r": 0.0552,
-    "max_dd_r": -28.91
-  },
-  {
-    "symbol": "AUDJPY",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.5,
-      "wait_bars": 12
-    },
-    "n": 2065,
-    "exp_r": 0.0564,
-    "max_dd_r": -29.54
   },
   {
     "symbol": "GBPAUD",
@@ -308,6 +275,39 @@
     "max_dd_r": -16.06
   },
   {
+    "symbol": "AUDJPY",
+    "family": "session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 12
+    },
+    "n": 2065,
+    "exp_r": 0.0588,
+    "max_dd_r": -24.22
+  },
+  {
+    "symbol": "AUDJPY",
+    "family": "session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+    },
+    "n": 2065,
+    "exp_r": 0.0552,
+    "max_dd_r": -28.91
+  },
+  {
+    "symbol": "AUDJPY",
+    "family": "session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+    },
+    "n": 2065,
+    "exp_r": 0.0564,
+    "max_dd_r": -29.54
+  },
+  {
     "symbol": "EURAUD",
     "family": "session_range_breakout",
     "params": {
@@ -339,6 +339,39 @@
     "n": 2110,
     "exp_r": 0.0796,
     "max_dd_r": -19.16
+  },
+  {
+    "symbol": "NZDJPY",
+    "family": "session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 12
+    },
+    "n": 2043,
+    "exp_r": 0.0598,
+    "max_dd_r": -15.88
+  },
+  {
+    "symbol": "NZDJPY",
+    "family": "session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+    },
+    "n": 2043,
+    "exp_r": 0.0597,
+    "max_dd_r": -16.62
+  },
+  {
+    "symbol": "NZDJPY",
+    "family": "session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+    },
+    "n": 2043,
+    "exp_r": 0.0647,
+    "max_dd_r": -16.12
   },
   {
     "symbol": "GBPJPY",
@@ -559,38 +592,5 @@
     "n": 2148,
     "exp_r": 0.138,
     "max_dd_r": -12.84
-  },
-  {
-    "symbol": "NZDJPY",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 1.5,
-      "wait_bars": 12
-    },
-    "n": 2043,
-    "exp_r": 0.0598,
-    "max_dd_r": -15.88
-  },
-  {
-    "symbol": "NZDJPY",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.0,
-      "wait_bars": 12
-    },
-    "n": 2043,
-    "exp_r": 0.0597,
-    "max_dd_r": -16.62
-  },
-  {
-    "symbol": "NZDJPY",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.5,
-      "wait_bars": 12
-    },
-    "n": 2043,
-    "exp_r": 0.0647,
-    "max_dd_r": -16.12
   }
 ]

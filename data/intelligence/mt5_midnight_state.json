@@ -1,43 +1,43 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-24T23:03:26.609155+00:00",
+  "generated_at": "2026-08-25T23:24:51.142244+00:00",
   "scope": "MT5_FUSION_ONLY",
   "execution_authority": false,
   "universe": {
     "metadata_entities": 23,
     "h1_bar_files": 24,
-    "metadata_mtime": "2026-08-23T21:21:23.969673+00:00",
-    "newest_h1_mtime": "2026-08-24T17:55:04.995505+00:00"
+    "metadata_mtime": "2026-08-25T22:32:07.943589+00:00",
+    "newest_h1_mtime": "2026-08-25T22:32:09.941741+00:00"
   },
   "conversion": {
     "research_queue": {
-      "DONE": 10
+      "DONE": 10,
+      "PENDING": 8
     },
-    "universal_survivors": 1,
-    "shadow_sleeves": 1,
-    "shadow_observations": 0,
-    "shadow_last_run": "2026-08-23"
+    "universal_survivors": 14,
+    "shadow_sleeves": 37,
+    "shadow_observations": 59,
+    "shadow_last_run": "2026-08-25"
   },
   "freshness": {
-    "research_loop": "2026-08-24T18:00:00.051055+00:00",
-    "universal_gate": "2026-08-24T23:03:25.524618+00:00",
-    "allocation": "2026-08-20T20:06:55.299437+00:00",
+    "research_loop": "2026-08-25T22:32:37.660856+00:00",
+    "universal_gate": "2026-08-25T23:14:25.493101+00:00",
+    "allocation": "2026-08-25T22:32:19.500470+00:00",
     "markout": "2026-08-22T23:45:23+00:00",
     "markout_usable": false,
     "markout_matched_fills": 0
   },
   "capability_reuse": {
     "artifact": "data/intelligence/mt5_capability_reuse.json",
-    "generated_at": "2026-08-24T23:00:17.396980+00:00",
+    "generated_at": "2026-08-25T23:00:25.461790+00:00",
     "counts": {
-      "REACHABLE_MT5_STATIC": 64,
-      "UNWIRED_REVIEW": 534,
+      "REACHABLE_MT5_STATIC": 63,
+      "UNWIRED_REVIEW": 536,
       "VENUE_SPECIFIC_REVIEW": 11
     },
     "proof_level": "STATIC_REACHABILITY_ONLY"
   },
   "defects": [
-    "hourly research loop stale or unmeasured",
     "execution markout stale; current costs remain unmeasured"
   ]
 }

@@ -2749,3 +2749,10 @@ SYSTEMD unit="quant-autodiscovery-slice9.timer" on="*:33" exec="scripts/run_cryp
 # with an empty denominator is absence read as a clean verdict. It tests the denominator, not the
 # file count; the first version tested the file count and printed a vacuous all-clear.
 5 7 * * * cd "$QUANT_ROOT/desks/mt5" && "$QUANT_ROOT/.venv/bin/python" research/shadow_gap.py >> "$QUANT_ROOT/data/cro_ai_logs/shadow_gap.log" 2>&1
+
+# --------------------------------------------------------------------------------------------
+# BAR SPAN FENCE (adopted 2026-08-26 in the branch unification; principal: canon carries all)
+# EVIDENCE: scripts/check_bar_span.py -> data/bar_span_report.json
+# A "D1" label claims a full day of market time; short-covering bars poison every gate that
+# consumes the series. Daily, after the fetchers and before the research day starts.
+53 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_bar_span.py >> data/cro_ai_logs/bar_span.log 2>&1

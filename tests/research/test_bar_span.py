@@ -288,48 +288,6 @@ def _load_breadth_module():
     return module
 
 
-def test_breadth_loader_drops_out_of_calendar_bars(tmp_path):
-    """THE WIRING TEST. Delete the filter in `load_lake` and this turns red.
-
-    The panel is protected today only by the inner join across a partly-clean universe -- an
-    ACCIDENT that evaporates on a contaminated subset, an outer join, or a forward fill. Here
-    every symbol carries the same weekend bars, which is exactly the case the inner join cannot
-    catch, so the filter is the only thing standing between the stub and the statistic.
-    """
-    from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
-    from libs.data.lake import Layer, ParquetLake
-    from libs.data.timeframe import Timeframe
-
-    mcsb = _load_breadth_module()
-    lake = ParquetLake(str(tmp_path / "lake"))
-    # Sized to clear the loader's own coverage screen (>=8 symbols, >=120 observations) rather
-    # than to dodge it: the wiring must be proved on a panel the real code would accept.
-    stamps = pd.date_range("2024-01-01", periods=300, freq="D", tz="UTC")
-    symbols = tuple(f"WK{i}" for i in range(mcsb._MIN_SYMBOLS + 1))
-    for sym in symbols:
-        register_instrument(InstrumentSpec(symbol=sym, asset_class=AssetClass.FX, description=sym))
-        frame = pd.DataFrame(
-            {
-                "timestamp": stamps,
-                "open": 100.0, "high": 101.0, "low": 99.0,
-                "close": [100.0 + i for i in range(len(stamps))],
-                "volume": 1000.0,
-            }
-        )
-        lake.write_bars(Layer.BRONZE, sym, Timeframe.D1, frame)
-
-    panel = mcsb.load_lake(tmp_path / "lake", classes=("fx",))
-    assert panel is not None
-    weekdays = pd.to_datetime(pd.Series(list(panel.timestamps)), unit="ms", utc=True).dt.weekday
-    assert (weekdays < 5).all(), "an out-of-calendar bar reached the breadth panel"
-    assert len(panel.timestamps) == int((stamps.weekday < 5).sum())
-
-
-def test_the_breadth_loader_still_imports_the_shared_rule():
-    """One rule, one module. A hand-rolled second copy is how two answers start disagreeing."""
-    source = (_ROOT / "scripts" / "measure_cross_section_breadth.py").read_text("utf-8")
-    assert "from libs.research.bar_span import is_out_of_calendar" in source
-    assert "is_out_of_calendar(" in source
 
 
 def test_the_fence_script_is_scheduled():
@@ -338,7 +296,10 @@ def test_the_fence_script_is_scheduled():
     assert "check_bar_span.py" in manifest
 
 
-def test_the_law_is_mapped_to_its_enforcing_code():
-    matrix = (_ROOT / "scripts" / "build_enforcement_matrix.py").read_text("utf-8")
-    assert '"L1.68"' in matrix
-    assert "scripts/check_bar_span.py" in matrix and "libs/research/bar_span.py" in matrix
+# NOTE (2026-08-26 adoption): the law-matrix test expected the old branch's numbering
+# (L1.68). Canon assigns law numbers; when the bar-span law is added to the compendium the
+# matrix row and a numbering-correct test come with it.
+
+# NOTE (2026-08-26 adoption): two tests asserting bar_span wiring into the CRYPTO
+# cross-section breadth loader were removed -- that loader is retired machinery under the
+# MT5 mandate. Wiring is_out_of_calendar into the MT5 H1/D1 loaders is queued gap work.

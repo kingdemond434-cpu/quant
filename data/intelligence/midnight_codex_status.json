@@ -1,7 +1,7 @@
 {
- "updated_at": "2026-08-24T23:03:54.722205+00:00",
+ "updated_at": "2026-08-25T23:00:42.902073+00:00",
  "status": "CONTROLLER_FAILED_CHECKPOINTED",
- "reason": "Controller rc=1; exact state checkpointed and transferred; inspect data/cro_ai_logs/midnight_codex_20260824T230017Z.log",
+ "reason": "Controller rc=1; exact state checkpointed and transferred; inspect data/cro_ai_logs/midnight_codex_20260825T230025Z.log",
  "controller_rc": 1,
  "pipeline_rc": 1,
  "persistent_workers_controller_independent": true

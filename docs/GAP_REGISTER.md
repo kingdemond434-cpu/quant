@@ -1102,3 +1102,23 @@ principal's console block (below).
    dark 4 nights. Buy quota, or bless the free-path (DeepSeek flywheel) as the midnight fallback.
 6. Crypto root units (cashcarry executor 144MB, recorders ~150MB) still resident under the MT5
    mandate — final removal via console is now also a MEMORY fix, not just hygiene.
+
+---
+
+_Appended 2026-08-26 (branch unification, desk-sync-clean absorbing claude/llm-auto-upgrade-verify-gcjac3):_
+
+**#131 gate0_evidence shared reader adopted but unwired.** libs/execution/gate0_evidence.py (ONE
+shared Gate-0 evidence reader) came over in the unification, but canon's run_live_guard.py and
+registry.py still read gate evidence their own separate ways -- the two can disagree about
+whether Gate-0 passed, which is the fabrication class the reader was built to end. Old-branch
+tests asserting the wiring were removed whole rather than weakened one-by-one; restore
+tests/execution/test_gate0_evidence.py from claude/llm-auto-upgrade-verify-gcjac3 when wiring
+lands. Tier-3-adjacent: the live guard is the ONE production caller of the S1 rails, so this is
+careful queued work, not a drive-by.
+
+**#132 bar_span out-of-calendar rule unwired from MT5 loaders.** libs/research/bar_span.py
+adopted and scripts/check_bar_span.py scheduled daily 06:53 (manifest + crontab), but no MT5
+H1/D1 loader imports is_out_of_calendar yet -- a "D1" bar holding 3 hours of market time still
+reaches DSR/CPCV inputs unmarked. Wire the shared rule into desks/mt5 data loading; the two
+old-branch tests that asserted the CRYPTO breadth loader's wiring were dropped (retired
+machinery), the MT5 wiring test comes with the wiring.

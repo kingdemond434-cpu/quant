@@ -39,6 +39,7 @@ def test_build_reports_mt5_conversion_state_without_execution_authority(tmp_path
     for path in (
         desk / "data" / "universe" / "XAUUSD_H1.parquet",
         desk / "reports" / "hypothesis_demo.jsonl",
+        desk / "reports" / "markout.json",
     ):
         os.utime(path, (now.timestamp(), now.timestamp()))
 
@@ -84,3 +85,30 @@ def test_build_names_stale_shadow_and_missing_markout(tmp_path: Path) -> None:
 
     assert "forward shadow daily clock stale" in result["defects"]
     assert "execution markout missing; costs remain unmeasured" in result["defects"]
+
+
+def test_build_counts_qquant_forward_shadow_when_legacy_book_is_empty(tmp_path: Path) -> None:
+    now = datetime(2026, 8, 22, 12, tzinfo=UTC)
+    desk = tmp_path / "desks" / "mt5"
+    _write(desk / "data" / "universe" / "universe.json", {"AUDNZD": {}})
+    (desk / "data" / "universe" / "AUDNZD_H1.parquet").write_bytes(b"bars")
+    _write(desk / "data" / "research_queue.json", [{"id": "a", "status": "DONE"}])
+    _write(desk / "reports" / "shadow" / "shadow_state.json", {"configured_sleeves": 0})
+    _write(desk / "reports" / "shadow" / "qquant_shadow_state.json", {
+        "updated_at": now.isoformat(),
+        "qquant.hunt16.pass": {"n": 3, "status": "ACTIVE"},
+    })
+    _write(desk / "reports" / "markout.json", {"usable": False})
+    _write(desk / "reports" / "hypothesis_demo.jsonl", {})
+    _write(tmp_path / "data" / "intelligence" / "mt5_capability_reuse.json", {
+        "generated_at": now.isoformat(), "counts": {},
+    })
+    for path in (desk / "data" / "universe" / "AUDNZD_H1.parquet",
+                 desk / "reports" / "hypothesis_demo.jsonl"):
+        os.utime(path, (now.timestamp(), now.timestamp()))
+
+    result = build(tmp_path, now=now)
+
+    assert result["conversion"]["shadow_sleeves"] == 1
+    assert result["conversion"]["shadow_observations"] == 3
+    assert "forward shadow state missing or empty" not in result["defects"]

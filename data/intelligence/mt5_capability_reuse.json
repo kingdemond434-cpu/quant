@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-25T16:30:06.908430+00:00",
+  "generated_at": "2026-08-25T23:41:53.625935+00:00",
   "scope": "ALL_SHARED_LIBS_TO_MT5",
   "authority": "AUDIT_ONLY_NO_PROMOTION_NO_EXECUTION",
   "counts": {
     "REACHABLE_MT5_STATIC": 63,
-    "UNWIRED_REVIEW": 535,
+    "UNWIRED_REVIEW": 553,
     "VENUE_SPECIFIC_REVIEW": 11
   },
   "rows": [
@@ -1088,6 +1088,13 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
+      "module": "libs.execution.gate0_evidence",
+      "path": "libs/execution/gate0_evidence.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
       "module": "libs.execution.idempotency",
       "path": "libs/execution/idempotency.py",
       "status": "UNWIRED_REVIEW",
@@ -1487,6 +1494,13 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
+      "module": "libs.ops.audit_recheck",
+      "path": "libs/ops/audit_recheck.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
       "module": "libs.ops.backup",
       "path": "libs/ops/backup.py",
       "status": "UNWIRED_REVIEW",
@@ -1496,6 +1510,13 @@
     {
       "module": "libs.ops.blind_trigger",
       "path": "libs/ops/blind_trigger.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.box_state",
+      "path": "libs/ops/box_state.py",
       "status": "UNWIRED_REVIEW",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"
@@ -1536,8 +1557,22 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
+      "module": "libs.ops.deepseek_cycle",
+      "path": "libs/ops/deepseek_cycle.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
       "module": "libs.ops.deferral",
       "path": "libs/ops/deferral.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.delay_cost",
+      "path": "libs/ops/delay_cost.py",
       "status": "UNWIRED_REVIEW",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"
@@ -1578,6 +1613,13 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
+      "module": "libs.ops.disposition_landed",
+      "path": "libs/ops/disposition_landed.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
       "module": "libs.ops.doc_citations",
       "path": "libs/ops/doc_citations.py",
       "status": "UNWIRED_REVIEW",
@@ -1594,6 +1636,13 @@
     {
       "module": "libs.ops.fence_exit",
       "path": "libs/ops/fence_exit.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.fence_history",
+      "path": "libs/ops/fence_history.py",
       "status": "UNWIRED_REVIEW",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"
@@ -1629,6 +1678,13 @@
     {
       "module": "libs.ops.lawful",
       "path": "libs/ops/lawful.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.ledger_reversion",
+      "path": "libs/ops/ledger_reversion.py",
       "status": "UNWIRED_REVIEW",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"
@@ -1718,6 +1774,20 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
+      "module": "libs.ops.suite_record",
+      "path": "libs/ops/suite_record.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.value_staleness",
+      "path": "libs/ops/value_staleness.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
       "module": "libs.ops.watchdog",
       "path": "libs/ops/watchdog.py",
       "status": "UNWIRED_REVIEW",
@@ -1727,6 +1797,13 @@
     {
       "module": "libs.ops.workers",
       "path": "libs/ops/workers.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.worktree_reaper",
+      "path": "libs/ops/worktree_reaper.py",
       "status": "UNWIRED_REVIEW",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"
@@ -2033,6 +2110,13 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
+      "module": "libs.research.bar_span",
+      "path": "libs/research/bar_span.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
       "module": "libs.research.book_microstructure",
       "path": "libs/research/book_microstructure.py",
       "status": "UNWIRED_REVIEW",
@@ -2084,6 +2168,13 @@
     {
       "module": "libs.research.capital_basis",
       "path": "libs/research/capital_basis.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.carry_symbol_ledger",
+      "path": "libs/research/carry_symbol_ledger.py",
       "status": "UNWIRED_REVIEW",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"
@@ -2446,6 +2537,13 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
+      "module": "libs.research.forward_ladder",
+      "path": "libs/research/forward_ladder.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
       "module": "libs.research.frontier",
       "path": "libs/research/frontier.py",
       "status": "UNWIRED_REVIEW",
@@ -2455,6 +2553,13 @@
     {
       "module": "libs.research.funding_clock",
       "path": "libs/research/funding_clock.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.funding_interval_history",
+      "path": "libs/research/funding_interval_history.py",
       "status": "UNWIRED_REVIEW",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"
@@ -2852,6 +2957,13 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
+      "module": "libs.research.recoverability",
+      "path": "libs/research/recoverability.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
       "module": "libs.research.regime_coverage",
       "path": "libs/research/regime_coverage.py",
       "status": "UNWIRED_REVIEW",
@@ -3106,6 +3218,13 @@
     {
       "module": "libs.research.video_intelligence",
       "path": "libs/research/video_intelligence.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.video_routes",
+      "path": "libs/research/video_routes.py",
       "status": "UNWIRED_REVIEW",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"
@@ -4027,6 +4146,8 @@
       "direct_mt5_consumers": [
         "desks/mt5/research/qquant_gates.py",
         "desks/mt5/research/universal_gate.py",
+        "desks/mt5/scripts/external_gauntlet.py",
+        "desks/mt5/side_channels/full_pipeline.py",
         "desks/mt5/side_channels/gate_calibration.py",
         "desks/mt5/side_channels/ug_remote.py"
       ],
@@ -4049,6 +4170,8 @@
         "desks/mt5/research/qquant_gates.py",
         "desks/mt5/research/scalp_reverse_engineering.py",
         "desks/mt5/research/universal_gate.py",
+        "desks/mt5/scripts/external_gauntlet.py",
+        "desks/mt5/side_channels/full_pipeline.py",
         "desks/mt5/side_channels/gate_calibration.py",
         "desks/mt5/side_channels/ug_remote.py"
       ],
@@ -4132,6 +4255,13 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
+      "module": "libs.validation.knob_sensitivity",
+      "path": "libs/validation/knob_sensitivity.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
       "module": "libs.validation.lockbox",
       "path": "libs/validation/lockbox.py",
       "status": "REACHABLE_MT5_STATIC",
@@ -4166,6 +4296,8 @@
       "direct_mt5_consumers": [
         "desks/mt5/research/qquant_gates.py",
         "desks/mt5/research/universal_gate.py",
+        "desks/mt5/scripts/external_gauntlet.py",
+        "desks/mt5/side_channels/full_pipeline.py",
         "desks/mt5/side_channels/gate_calibration.py",
         "desks/mt5/side_channels/ug_remote.py"
       ],
@@ -4199,6 +4331,8 @@
       "direct_mt5_consumers": [
         "desks/mt5/research/qquant_gates.py",
         "desks/mt5/research/universal_gate.py",
+        "desks/mt5/scripts/external_gauntlet.py",
+        "desks/mt5/side_channels/full_pipeline.py",
         "desks/mt5/side_channels/gate_calibration.py",
         "desks/mt5/side_channels/ug_remote.py"
       ],
@@ -4239,6 +4373,8 @@
       "direct_mt5_consumers": [
         "desks/mt5/research/qquant_gates.py",
         "desks/mt5/research/universal_gate.py",
+        "desks/mt5/scripts/external_gauntlet.py",
+        "desks/mt5/side_channels/full_pipeline.py",
         "desks/mt5/side_channels/gate_calibration.py",
         "desks/mt5/side_channels/ug_remote.py"
       ],

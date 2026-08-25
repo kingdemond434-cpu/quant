@@ -1704,3 +1704,28 @@ the desk's own robust-Kelly-with-rails objective, independently converged on.
 RELATED: cn_bucketshop_retail_loss_as_directional_signal (same debias-prior shape, CN s12
 2026-08-25); master-23 selection-bias defense now carries operator-text + regulator-text
 evidence.
+
+## cot_hedging_pressure_level (upgraded to literature-convergent, litminer run 10 2026-08-25)
+The desk's own kill (COT_SCREEN_RESULT.md: pooled lagged NW t=−0.64, 41y, 6 contracts, 24 trials,
+GHR gate replicated) is now CONVERGENT with the published replication layer: Maréchal JFM 2023
+(1994–2017) finds the insurance/hedging-pressure-level premium decays 0.43→0.34, significance
+1%→10%, and "eventually vanishes" post-financialization, while GHR reject lagged predictability
+outright. Two independent methods, same verdict. Level/lagged COT direction stays DEAD; re-entry
+per L1.16a only on a construction-level enabling change (e.g. intraday positioning frequency).
+The CHANGE/liquidity channel is explicitly NOT covered by this kill — it is carded live as
+watchlist #40 (EV-queued).
+
+## gotobi_nakane_drift (new entry, litminer run 10 2026-08-25 — replicated THEN measured dead)
+USDJPY drift into the 09:55 JST Tokyo fix on gotobi days (importer USD settlement custom;
+Ito–Yamada NBER w22820; Bessho–Sugimoto–Suzuki arXiv 2301.13204). Desk's own preregistered screen
+(`data/gotobi_screen.json`, 3 trials, USDJPY H1 2018–2026, clock-corrected): **2018–2020 REPLICATES
+the literature (+5.33bp/d gotobi excess, t=2.55, p=0.006); 2021–2026 DEAD (+0.43bp, t=0.26, gross
+below the 1.02bp RT cost)** — killed by crowding (MQL5/TradingView EA productization of the exact
+pattern; drift onset already front-run to ~03:00 JST in the 2018–2020 EBS data) and/or the
+2022–2024 JPY intervention regime. NOT sent to the gauntlet: current-regime net expectancy is
+negative — a forward slot would be spent confirming a measured null. RE-OPEN TRIGGERS (named):
+(a) JPY rate-regime normalization (BoJ policy-rate path flattens, carry stabilises) AND
+(b) retail abandonment measurable via MQL5 gotobi-EA product activity/reviews going quiet.
+The MECHANISM (invoice-custom settlement demand) is not refuted — only its current-price is zero;
+the flow persists per Akiyama et al. (JAFEE 19, 2021, JP): anomaly strength tracks USD invoice
+share of JP imports.
